@@ -33,3 +33,4 @@ C:\GIT\FastMediaSorter\obj\Debug\FastMedi.434F00D8.Up2Date
 C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.exe
 C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.xml
 C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.pdb
+C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.exe.config

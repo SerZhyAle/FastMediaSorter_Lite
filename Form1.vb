@@ -9,16 +9,19 @@
 
 Option Strict On
 
-Imports System.Runtime.InteropServices
-Imports System.IO
-Imports System.ComponentModel
-Imports Microsoft.Win32
 Imports System.Collections.ObjectModel
-Imports Microsoft.VisualBasic.FileIO
+Imports System.ComponentModel
+Imports System.Drawing.Imaging
+Imports System.IO
+Imports System.Runtime.InteropServices
+Imports System.Security.Cryptography
+Imports System.Text.RegularExpressions
 Imports System.Threading
+Imports System.Windows.Media
+Imports Microsoft.VisualBasic.FileIO
 Imports Microsoft.Web.WebView2.Core
 Imports Microsoft.Web.WebView2.WinForms
-Imports System.Text.RegularExpressions
+Imports Microsoft.Win32
 
 <ComVisible(True)>
 Public Class Form1
@@ -27,6 +30,7 @@ Public Class Form1
     Private Const theJPGFileExtension As String = ".jpg"
     Private Const theJPGFileTypeDescription As String = "JPEG Image"
     Private applicationRunsCount As Integer
+    Private isComboSetAuto As Boolean = False
 
     Private isFileReseivedFromOutside As Boolean = False
     Private firstScrollEvent As Boolean = False
@@ -169,16 +173,6 @@ Public Class Form1
         Dim createdNew As Boolean
         mutex = New Mutex(True, AppMutexName, createdNew)
 
-        'If Not createdNew Then
-        '    If My.Application.CommandLineArgs.Count > 0 Then
-        '        SendArgumentToExistingInstance(My.Application.CommandLineArgs(0))
-        '    End If
-        '    Process.GetCurrentProcess().Kill()
-
-        '    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w003: Close current process because onf the another one")
-        '    Return
-        'End If
-
         InitializeComponent()
         BgWorker.WorkerReportsProgress = True
         BgWorker.WorkerSupportsCancellation = True
@@ -202,27 +196,6 @@ Public Class Form1
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0040: LoadImage: " & nextAfterCurrentFileName)
         Return nextImage
     End Function
-
-    'Private Function LoadScaledImage(filePath As String, targetWidth As Integer, targetHeight As Integer) As Image
-    '    Dim nextImage As Image
-    '    Using stream As New FileStream(nextAfterCurrentFileName, FileMode.Open, FileAccess.Read, FileShare.Read)
-    '        nextImage = Image.FromStream(stream)
-    '    End Using
-
-    '    Using originalImage As Image = nextImage
-    '        Dim scaleWidth As Integer = targetWidth
-    '        Dim scaleHeight As Integer = CInt(originalImage.Height * (targetWidth / originalImage.Width))
-    '        If scaleHeight > targetHeight Then
-    '            scaleHeight = targetHeight
-    '            scaleWidth = CInt(originalImage.Width * (targetHeight / originalImage.Height))
-    '        End If
-
-    '        loadedImageScale = targetWidth.ToString & "x" & targetHeight.ToString
-
-    '        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0040: LoadScaledImage: " & scaleWidth.ToString & "x" & scaleHeight.ToString)
-    '        Return New Bitmap(originalImage, scaleWidth, scaleHeight)
-    '    End Using
-    'End Function
 
     Private Sub BgWorker_DoWork(sender As Object, e As DoWorkEventArgs) Handles BgWorker.DoWork
         Dim worker As BackgroundWorker = DirectCast(sender, BackgroundWorker)
@@ -285,9 +258,9 @@ Public Class Form1
         Else
 
             currentSecondLoadedFileName = ""
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0120: No needs for the Next file, backload is cancelled")
-                e.Cancel = True
-            End If
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0120: No needs for the Next file, backload is cancelled")
+            e.Cancel = True
+        End If
     End Sub
 
     Private Sub PictureBox1_LoadCompleted(sender As Object, e As System.ComponentModel.AsyncCompletedEventArgs)
@@ -404,21 +377,31 @@ Public Class Form1
 
                 Dim folderPathSaved = GetSetting(appName, secName, "ImageFolder", "")
                 If folderPathSaved = currentFolderPath Then
-                    Integer.TryParse(GetSetting(appName, secName, "LastCounter"), currentFileIndex)
-                    If currentFileIndex > 0 AndAlso currentFileIndex < totalFilesCount Then
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0250: folder set from arg, but file found in settings")
 
-                        ReadShowMediaFile(80)
+                    Integer.TryParse(GetSetting(appName, secName, "LastCounter"), currentFileIndex)
+                    If currentFileIndex > 0 Then
+                        totalFilesCount = FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
+                        If currentFileIndex < totalFilesCount Then
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0250: folder is set from arg, file found in savings")
+
+                            ReadShowMediaFile("ReadFiles")
+                        Else
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0260: folder is set from arg, but file is not found in savings")
+                            currentFileIndex = 1
+
+                            ReadShowMediaFile("ReadFolderAndFile")
+                        End If
                     Else
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0260: folder set from arg, but file is not found in settings")
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0265: folder is set from arg, but file wasnt in savings")
                         currentFileIndex = 1
 
-                        ReadShowMediaFile(99)
+                        ReadShowMediaFile("ReadFolderAndFile")
                     End If
                 Else
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0270: folder set from arg")
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0270: folder is set from arg")
+                    currentFileIndex = 1
 
-                    ReadShowMediaFile(99)
+                    ReadShowMediaFile("ReadFolderAndFile")
                 End If
             Else
                 If Not File.Exists(argument) Then
@@ -434,7 +417,7 @@ Public Class Form1
                 TextBox1.Text = currentFolderPath
                 isTextBoxEdition = False
 
-                ReadShowMediaFile(91)
+                ReadShowMediaFile("ReadFolderAndKnownFile")
             End If
 
         Catch ex As Exception
@@ -455,7 +438,7 @@ Public Class Form1
 
         If folderBrowse.ShowDialog() = Windows.Forms.DialogResult.OK Then
             currentFolderPath = folderBrowse.SelectedPath
-            ReadShowMediaFile(0)
+            ReadShowMediaFile("ReadFolderAndFile")
             StatusL.Text = If(lngRus, "выбрана папка", "folder selected")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0310: Folder read")
         End If
@@ -481,7 +464,7 @@ Public Class Form1
         Return outArr
     End Function
 
-    Private Sub ReadShowMediaFile(ByVal readMode As Integer)
+    Private Sub ReadShowMediaFile(ByVal readMode As String)
 
         If Not isFolderReadRequired Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0320: ReadShowMediaFile = " & readMode.ToString)
@@ -500,7 +483,7 @@ Public Class Form1
 
             Label_SLide.Text = If(SlideShowTimer.Enabled, (SlideShowTimer.Interval / 1000).ToString() & "s", "")
 
-            Dim isAfterUndo As Boolean = (readMode = 98)
+            Dim isAfterUndo As Boolean = (readMode = "ReadAfterUndo")
             Dim isFileFound As Boolean = True
             If Not UpdateFileIndexAndList(readMode, isFileFound) Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0350: Mastering the file is failed")
@@ -549,14 +532,14 @@ Public Class Form1
         End If
     End Sub
 
-    Private Function UpdateFileIndexAndList(readMode As Integer, ByRef isFileFound As Boolean) As Boolean
+    Private Function UpdateFileIndexAndList(readMode As String, ByRef isFileFound As Boolean) As Boolean
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0400: UpdateFileIndexAndList = " & readMode.ToString)
 
         Select Case readMode
-            Case 1
+            Case "ReadNextFile" ' 1
                 If wasExternalInputLast Then
                     If Not LoadFilesForExternalInput(isFileFound) Then
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0410: case 1 is filed")
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0410: case ReadNextFile is failed")
                         Return False
                     End If
                 End If
@@ -565,45 +548,45 @@ Public Class Form1
 
                 StatusL.Text = ""
 
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0420: case 1")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0420: case ReadNextFile ReadNextFile")
 
-            Case 80
+            Case "ReadFiles" '80
                 If Not LoadFiles() Then Return False
                 If currentFileIndex < 0 Then currentFileIndex = 0
                 If currentFileIndex > totalFilesCount - 1 Then currentFileIndex = totalFilesCount - 1
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0430: case 80")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0430: case ReadFiles")
 
-            Case 99
+            Case "SetFile" '99
                 If currentFileIndex < 0 Then currentFileIndex = 0
                 If currentFileIndex > totalFilesCount - 1 Then currentFileIndex = totalFilesCount - 1
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0440: case 99")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0440: case SetFile")
 
-            Case 0
+            Case "ReadFolderAndFile" '0
                 StatusL.Text = If(lngRus, "чтение каталога.. ждите!", "reading files.. wait!")
 
                 If Not LoadFiles() Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0450: case 0 is failed")
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0450: case ReadFolderAndFile is failed")
                     Return False
                 End If
                 StatusL.Text = ""
                 currentFileIndex = 0
 
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0460: case 0")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0460: case ReadFolderAndFile")
 
-            Case 91
+            Case "ReadFolderAndKnownFile" '91
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0470: isExternalInputReceived = " & isExternalInputReceived)
                 isFileFound = False
+
                 If isExternalInputReceived Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0480: GetDirectoryInfo = " & currentFolderPath)
 
                     currentFileIndex = 0
-                    '                    totalFilesCount = FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
                     isExternalInputReceived = False
                     wasExternalInputLast = True
                 Else
                     wasExternalInputLast = False
                     If Not LoadFilesForExternalInput(isFileFound) Then
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0490: case 91 is failed")
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0490: case ReadFolderAndKnownFile is failed")
                         Return False
                     End If
                     If currentFileIndex < 0 OrElse Not isFileFound Then
@@ -614,12 +597,12 @@ Public Class Form1
                 End If
                 StatusL.Text = ""
 
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0510: case 91")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0510: case ReadFolderAndKnownFile")
 
-            Case 2
+            Case "ReadPrevFile" '2
                 If wasExternalInputLast Then
                     If Not LoadFilesForExternalInput(isFileFound) Then
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0520: case 2 is failed")
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0520: case ReadPrevFile is failed")
                         Return False
                     End If
                 End If
@@ -627,12 +610,12 @@ Public Class Form1
                 If currentFileIndex < 0 Then currentFileIndex = totalFilesCount - 1
                 StatusL.Text = ""
 
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0530: case 2")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0530: case ReadPrevFile")
 
-            Case 3
+            Case "DeleteFile" '3
                 If String.IsNullOrEmpty(currentFileName) Then
                     StatusL.Text = If(lngRus, "! Нет файла для удаления", "! No file for deleting")
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0540: case 3 failed")
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0540: case DeleteFile failed")
                     Return False
                 End If
 
@@ -647,7 +630,7 @@ Public Class Form1
                         End If
                     End If
 
-                        currentLoadedFileName = ""
+                    currentLoadedFileName = ""
 
                     If My.Computer.FileSystem.FileExists(currentFileName) Then
                         If Form2.UseIndependentThreadForOperationsWithFiles.Checked Then
@@ -675,32 +658,32 @@ Public Class Form1
                             If currentFileIndex > totalFilesCount - 1 Then currentFileIndex = totalFilesCount - 1
                             StatusL.Text = If(lngRus, "удален: ", "file deleted: ") & currentFileName
                         End If
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0570: case 3")
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0570: case DeleteFile")
                     Else
                         StatusL.Text = If(lngRus, "! Файл не найден", "! File not found")
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0580: case 3 failed: not found")
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0580: case DeleteFile failed: not found")
                     End If
                 Catch ex As Exception
                     MsgBox("E001 " & ex.Message)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0590: ERR: " & ex.Message)
                 End Try
 
-            Case 4
+            Case "ReadForRandom" '4
                 If Not LoadFilesForRandomOrSlideshow(isFileFound, True) Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0600: case 4 failed")
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0600: case ReadForRandomOrSlideshow failed")
                     Return False
                 End If
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0610: case 4")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0610: case ReadForRandomOrSlideshow")
 
-            Case 5
+            Case "ReadForSlideShow" '5
                 If Not LoadFilesForRandomOrSlideshow(isFileFound, isSlideShowRandom) Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0620: case 5 failed")
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0620: case ReadForSlideShow failed")
                     Return False
                 End If
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0630: case 5")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0630: case ReadForSlideShow")
 
-            Case 98 'after undo
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0640: case 98")
+            Case "AfterUndo" '98
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0640: case AfterUndo")
         End Select
 
         Return True
@@ -1011,6 +994,13 @@ Public Class Form1
 
     End Sub
 
+    Private Function GetOppositeColor(backgroundColor As System.Drawing.Color) As System.Drawing.Color
+        If backgroundColor.R = 128 AndAlso backgroundColor.G = 128 AndAlso backgroundColor.B = 128 Then
+            Return System.Drawing.Color.Black
+        End If
+        Return System.Drawing.Color.FromArgb(255 - backgroundColor.R, 255 - backgroundColor.G, 255 - backgroundColor.B)
+    End Function
+
     Private Sub UpdateControlVisibility()
 
         PictureBox1.Visible = isPictureBox1Visible
@@ -1026,10 +1016,40 @@ Public Class Form1
                 webView2Control.Visible = False
             End If
 
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0945: picture box sizes: " & If(isPictureBox1Visible, "P1: ", "P2: ") & If(isPictureBox1Visible, PictureBox1.Width.ToString, PictureBox2.Width.ToString) & "x" & If(isPictureBox1Visible, PictureBox1.Height.ToString, PictureBox2.Height.ToString))
-        End If
+            Dim bmp As Bitmap = Nothing
 
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0950: Visibility set: " & If(isPictureBox1Visible, "P1-YES ", "P1-NO ") & If(isPictureBox2Visible, "P2-YES ", "P2-NO ") & If(isWebBrowser1Visible, "WB-YES ", "WB-NO ") & If(isWebView2Visible, "WV2-YES", "WV2-NO "))
+            If isPictureBox1Visible OrElse isPictureBox2Visible Then
+                If isPictureBox1Visible AndAlso PictureBox1.Image IsNot Nothing AndAlso TypeOf PictureBox1.Image Is Bitmap Then
+                    bmp = CType(PictureBox1.Image, Bitmap)
+                Else
+                    If isPictureBox2Visible AndAlso PictureBox2.Image IsNot Nothing AndAlso TypeOf PictureBox2.Image Is Bitmap Then
+                        bmp = CType(PictureBox2.Image, Bitmap)
+                    End If
+                End If
+
+                If bmp IsNot Nothing Then
+                    If 1 < bmp.Width AndAlso 1 < bmp.Height Then
+                        Dim pixelColor As System.Drawing.Color = bmp.GetPixel(1, 1)
+                        Me.BackColor = pixelColor
+
+                        Dim OppositeColor = GetOppositeColor(Me.BackColor)
+                        For Each ctrl As Control In Me.Controls
+                            If TypeOf ctrl Is Label Then
+                                Dim lbl As Label = CType(ctrl, Label)
+                                lbl.ForeColor = OppositeColor
+                            ElseIf TypeOf ctrl Is Button Then
+                                Dim btn As Button = CType(ctrl, Button)
+                                btn.ForeColor = OppositeColor
+                            End If
+                        Next
+                    End If
+                End If
+            End If
+
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0945: picture box sizes: " & If(isPictureBox1Visible, "P1: ", "P2: ") & If(isPictureBox1Visible, PictureBox1.Width.ToString, PictureBox2.Width.ToString) & "x" & If(isPictureBox1Visible, PictureBox1.Height.ToString, PictureBox2.Height.ToString))
+                End If
+
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0950: Visibility set: " & If(isPictureBox1Visible, "P1-YES ", "P1-NO ") & If(isPictureBox2Visible, "P2-YES ", "P2-NO ") & If(isWebBrowser1Visible, "WB-YES ", "WB-NO ") & If(isWebView2Visible, "WV2-YES", "WV2-NO "))
     End Sub
 
     Private Sub UpdateCurrentFileAndDisplay(isFileFound As Boolean, isAfterUndo As Boolean)
@@ -1210,14 +1230,25 @@ Public Class Form1
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
+        Debug.WriteLine(" - - - ")
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1115: Form started")
 
+        isTextBoxEdition = True
         applicationRunsCount = 0
         Integer.TryParse(GetSetting(appName, secName, "RunsCount", "0"), applicationRunsCount)
         lngRus = GetSetting(appName, secName, "LngRus", "1") = "1"
+
+        SortComboBox.SelectedIndex = 0
+        ButtonLNG.Text = If(lngRus, "EN", "RU")
+        LngCh()
+
+        Dim isFirstRunStriing As String = GetSetting(appName, secName, "FirstRun", "1")
+        FirstRun.Visible = isFirstRunStriing = "1"
+
         copyMode = GetSetting(appName, secName, "CopyMode", "0") = "1"
         chkTopMost.Checked = GetSetting(appName, secName, "chkTopMost", "0") = "1"
         isTableFormOpen = GetSetting(appName, secName, "TableOpened", "0") = "1"
+
         Dim videoVolumeStr = GetSetting(appName, secName, "VideoVolume", "1.0")
         Double.TryParse(videoVolumeStr, videoVolume)
 
@@ -1230,6 +1261,7 @@ Public Class Form1
         If Not String.IsNullOrEmpty(recentFoldersString) Then
             recentFolders = recentFoldersString.Split("|"c).ToList()
             recentFolders.RemoveAll(Function(x) String.IsNullOrEmpty(x))
+
             For Each folder In recentFolders
                 If TextBox1.Items.Count < MaxRecentFolders Then
                     TextBox1.Items.Add(folder)
@@ -1237,24 +1269,37 @@ Public Class Form1
             Next
         End If
 
-        Dim isFirstRunStriing As String = GetSetting(appName, secName, "FirstRun", "1")
-        FirstRun.Visible = isFirstRunStriing = "1"
-
         If Form2.UseIndependentThreadForOperationsWithFiles IsNot Nothing Then
             Form2.UseIndependentThreadForOperationsWithFiles.Checked = GetSetting(appName, secName, "UseIndependentThreadForOperationsWithFiles", "0") = "1"
         End If
 
-        SortComboBox.SelectedIndex = 0
-        ButtonLNG.Text = If(lngRus, "EN", "RU")
-        LngCh()
-
         If My.Application.CommandLineArgs.Count > 0 Then
             ProcessArgument(My.Application.CommandLineArgs(0))
+        Else
+            currentFolderPath = GetSetting(appName, secName, "ImageFolder", "")
+            If Not currentFolderPath = "" Then
+                totalFilesCount = FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
+
+                Integer.TryParse(GetSetting(appName, secName, "LastCounter"), currentFileIndex)
+                If currentFileIndex > 0 AndAlso currentFileIndex < totalFilesCount Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1156: folder and file found in savings")
+
+                    ReadShowMediaFile("ReadFiles")
+                Else
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1157: folder set from savings, but saved file is not found")
+                    currentFileIndex = 1
+
+                    ReadShowMediaFile("ReadFolderAndFile")
+                End If
+            Else
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1158: no folder saved")
+            End If
         End If
 
         If isTableFormOpen Then
             Form2.Show()
         End If
+        isTextBoxEdition = False
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1120: Form Loaded")
     End Sub
@@ -1271,14 +1316,14 @@ Public Class Form1
 
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
         SlideShowTimer.Enabled = False
-        ReadShowMediaFile(2)
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1130: Button2_Click")
+        ReadShowMediaFile("ReadPrevFile")
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1130: Button2_Click ReadPrevFile")
     End Sub
 
     Private Sub Button3_Click(sender As Object, e As EventArgs) Handles Button3.Click
         SlideShowTimer.Enabled = False
-        ReadShowMediaFile(1)
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1140: Button3_Click")
+        ReadShowMediaFile("ReadNextFile")
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1140: Button3_Click ReadNextFile")
     End Sub
 
     Private Sub PictureBox1_MouseDown(sender As Object, e As MouseEventArgs) Handles PictureBox1.MouseDown
@@ -1291,31 +1336,70 @@ Public Class Form1
         MouseUse(e)
     End Sub
 
+
     Private Sub MouseUse(ByVal e As MouseEventArgs)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1170: MouseUse, Delta: " & e.Delta.ToString)
 
         SlideShowTimer.Enabled = False
-        Select Case e.Delta
-            Case Is < 0 ' Прокрутка вниз
-                ReadShowMediaFile(1) ' Следующий файл
-            Case Is > 0 ' Прокрутка вверх
-                ReadShowMediaFile(2) ' Предыдущий файл
-            Case 0 ' Клик
-                Select Case e.Button
-                    Case MouseButtons.Left
-                        ReadShowMediaFile(1) ' Следующий файл
-                    Case MouseButtons.Right
-                        If Not isWebBrowser1Visible Then
-                            ReadShowMediaFile(2)
-                        End If
-                    Case Windows.Forms.MouseButtons.Middle
-                        RenameCurrentFile()
-                    Case Windows.Forms.MouseButtons.XButton1
-                        ReadShowMediaFile(1)
-                    Case Windows.Forms.MouseButtons.XButton2
-                        ReadShowMediaFile(2)
-                End Select
-        End Select
+
+        If (Control.ModifierKeys And Keys.Alt) = Keys.Alt Then
+
+            Dim isTop = StatusL.Top + StatusL.Height - 4
+
+            PictureBox1.Top = isTop
+            PictureBox1.Left = 2
+            PictureBox1.Width = Me.Width - 4
+            PictureBox1.Height = Me.Height - isTop - 4
+
+            PictureBox2.Size = PictureBox1.Size
+            PictureBox2.Location = PictureBox1.Location
+
+        ElseIf e.Delta <> 0 AndAlso (isPictureBox1Visible OrElse isPictureBox2Visible) AndAlso (Control.ModifierKeys And Keys.Control) = Keys.Control Then
+            Dim ratio As Integer = CInt(PictureBox1.Size.Width * 100 / Me.Width)
+            Dim oldWidth As Integer = PictureBox1.Width
+            Dim oldHeight As Integer = PictureBox1.Height
+            Dim zoomFactor As Double = If(e.Delta > 0, If(ratio <= 1000, 1.1, 1), If(ratio >= 100, 0.9, 1))
+            Dim newWidth As Integer = CInt(oldWidth * zoomFactor)
+            Dim newHeight As Integer = CInt(oldHeight * zoomFactor)
+
+            Dim clickX As Integer = e.X
+            Dim clickY As Integer = e.Y
+
+            PictureBox1.Size = New Size(CInt(PictureBox1.Width * 0.9), CInt(PictureBox1.Height * 0.9))
+
+            Dim newLeft As Integer = PictureBox1.Left - CInt((clickX * zoomFactor) - clickX)
+            Dim newTop As Integer = PictureBox1.Top - CInt((clickY * zoomFactor) - clickY)
+
+            PictureBox1.Size = New Size(newWidth, newHeight)
+            PictureBox1.Location = New Point(newLeft, newTop)
+
+            PictureBox2.Size = PictureBox1.Size
+            PictureBox2.Location = PictureBox1.Location
+
+        Else
+            Select Case e.Delta
+                Case Is < 0 ' Прокрутка вниз
+                    ReadShowMediaFile("ReadNextFile") ' Следующий файл
+                Case Is > 0 ' Прокрутка вверх
+                    ReadShowMediaFile("ReadPrevFile") ' Предыдущий файл
+                Case 0 ' Клик
+                    Select Case e.Button
+                        Case MouseButtons.Left
+                            ReadShowMediaFile("ReadNextFile") ' Следующий файл
+                        Case MouseButtons.Right
+                            If Not isWebBrowser1Visible Then
+                                ReadShowMediaFile("ReadPrevFile")
+                            End If
+                        Case Windows.Forms.MouseButtons.Middle
+                            RenameCurrentFile()
+                        Case Windows.Forms.MouseButtons.XButton1
+                            ReadShowMediaFile("ReadNextFile")
+                        Case Windows.Forms.MouseButtons.XButton2
+                            ReadShowMediaFile("ReadPrevFile")
+                    End Select
+            End Select
+        End If
+
     End Sub
 
     Private Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
@@ -1433,7 +1517,7 @@ Public Class Form1
             currentFileName = newFullPath
             StatusL.Text = If(lngRus, "Файл переименован: " & newFileName & fileExtension, "File renamed: " & newFileName & fileExtension)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1280: file is renamed")
-            ReadShowMediaFile(99)
+            ReadShowMediaFile("SetFile")
         Catch ex As Exception
             MsgBox("E011 " & ex.Message)
             StatusL.Text = If(lngRus, "! Ошибка переименования", "! Rename error")
@@ -1446,7 +1530,7 @@ Public Class Form1
         If Me.TextBox1.Focused Then
             If e.KeyCode = Keys.Enter AndAlso TextBox1.Text <> "" Then
                 currentFolderPath = TextBox1.Text
-                ReadShowMediaFile(0)
+                ReadShowMediaFile("ReadFolderAndFile")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1300: Enter pressed")
             End If
             Exit Sub
@@ -1455,12 +1539,12 @@ Public Class Form1
         Select Case e.KeyCode
             Case Keys.N, Keys.Next, Keys.PageDown, Keys.Space, Keys.Right, Keys.BrowserForward
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1310: to next file")
-                ReadShowMediaFile(1)
+                ReadShowMediaFile("ReadNextFile")
             Case Keys.P, Keys.PageUp, Keys.Left, Keys.B, Keys.BrowserBack
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1320: to prev file")
-                ReadShowMediaFile(2)
+                ReadShowMediaFile("ReadPrevFile")
             Case Keys.Y
-                ReadShowMediaFile(4)
+                ReadShowMediaFile("ReadForRandom")
             Case Keys.U
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1330: to slide show")
                 isSlideShowRandom = True
@@ -1473,7 +1557,7 @@ Public Class Form1
                     SlideShowTimer.Interval = 10000
                     SlideShowTimer.Enabled = True
                 End If
-                ReadShowMediaFile(5)
+                ReadShowMediaFile("ReadForSlideShow")
             Case Keys.F6
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1340: to rename")
                 If Not String.IsNullOrEmpty(currentFileName) Then
@@ -1494,20 +1578,20 @@ Public Class Form1
                     SlideShowTimer.Interval = 10000
                     SlideShowTimer.Enabled = True
                 End If
-                ReadShowMediaFile(5)
+                ReadShowMediaFile("ReadForDlideShow")
             Case Keys.Home, Keys.H, Keys.BrowserHome
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1370: to first file")
                 currentFileIndex = 0
-                ReadShowMediaFile(99)
+                ReadShowMediaFile("SetFile")
                 StatusL.Text = If(lngRus, "первый файл", "first file")
             Case Keys.End, Keys.E, Keys.L, Keys.BrowserStop
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1380: to last file")
                 currentFileIndex = totalFilesCount
-                ReadShowMediaFile(99)
+                ReadShowMediaFile("SetFile")
                 StatusL.Text = If(lngRus, "последний файл", "last file")
             Case Keys.D, Keys.Delete
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1390: to delete")
-                ReadShowMediaFile(3)
+                ReadShowMediaFile("DeleteFile")
             Case Keys.D1, Keys.NumPad1
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1400: 01")
                 PoMove(1)
@@ -1569,22 +1653,22 @@ Public Class Form1
             Case Keys.Up
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1580: -10")
                 currentFileIndex = currentFileIndex - 10
-                ReadShowMediaFile(99)
+                ReadShowMediaFile("SetFile")
                 StatusL.Text = If(lngRus, "-10 файлов", "-10 files")
             Case Keys.Down
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1590: +10")
                 currentFileIndex = currentFileIndex + 10
-                ReadShowMediaFile(99)
+                ReadShowMediaFile("SetFile")
                 StatusL.Text = If(lngRus, "+10 файлов", "+10 files")
             Case Keys.Enter
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1600: +100")
                 currentFileIndex = currentFileIndex + 100
-                ReadShowMediaFile(99)
+                ReadShowMediaFile("SetFile")
                 StatusL.Text = If(lngRus, "+100 файлов", "+100 files")
             Case Keys.Back
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1610: -100")
                 currentFileIndex = currentFileIndex - 100
-                ReadShowMediaFile(99)
+                ReadShowMediaFile("SetFile")
                 StatusL.Text = If(lngRus, "-100 файлов", "-100 files")
             Case Keys.F1
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1620: F1 help")
@@ -1601,8 +1685,8 @@ Public Class Form1
 
     Private Sub Button4_Click(sender As Object, e As EventArgs) Handles Button4.Click
         SlideShowTimer.Enabled = False
-        ReadShowMediaFile(3)
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1650: Button4_Click")
+        ReadShowMediaFile("DeleteFile")
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1650: Button4_Click delete")
     End Sub
 
     Private Sub Form1_MouseDown(sender As Object, e As MouseEventArgs) Handles MyBase.MouseDown
@@ -1641,7 +1725,7 @@ Public Class Form1
 
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1690: copy async run")
 
-                            ReadShowMediaFile(1)
+                            ReadShowMediaFile("ReadNextFile")
                         Else
                             currentFileOperation = "Move"
                             currentFileOperationArgs = New String() {currentFileName, newDest, textKey}
@@ -1664,7 +1748,7 @@ Public Class Form1
                             totalFilesCount -= 1
                             If currentFileIndex > (totalFilesCount - 1) Then currentFileIndex = totalFilesCount - 1
 
-                            ReadShowMediaFile(99)
+                            ReadShowMediaFile("SetFile")
                         End If
                     Else
                         If copyMode Then
@@ -1674,7 +1758,7 @@ Public Class Form1
                             Me.Refresh()
                             My.Computer.FileSystem.CopyFile(currentFileName, newDest)
                             StatusL.Text = If(lngRus, "файл скопирован (" & textKey & ") в каталог " & newDest, "file copied (" & textKey & ") to " & newDest)
-                            ReadShowMediaFile(1)
+                            ReadShowMediaFile("ReadNextFile")
                         Else
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1720: move run")
 
@@ -1695,7 +1779,7 @@ Public Class Form1
                             totalFilesCount -= 1
                             If currentFileIndex > (totalFilesCount - 1) Then currentFileIndex = totalFilesCount - 1
                             StatusL.Text = If(lngRus, "файл перенесен (" & textKey & ") в каталог " & newDest, "file moved (" & textKey & ") to " & newDest)
-                            ReadShowMediaFile(99)
+                            ReadShowMediaFile("SetFile")
                         End If
                     End If
                 Catch ex As Exception
@@ -1745,7 +1829,7 @@ Public Class Form1
                         filesList.Insert(currentFileIndex, historySourceFileName)
                     End If
                     totalFilesCount += 1
-                    ReadShowMediaFile(98) ' Показываем следующий файл сразу
+                    ReadShowMediaFile("AfterUndo")
                 Else
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1790: undo move deletion")
                     Try
@@ -1759,7 +1843,7 @@ Public Class Form1
                         End If
                         totalFilesCount += 1
                         StatusL.Text = If(lngRus, "файл возвращен в каталог " & historySourceFileName, "file back to " & historySourceFileName)
-                        ReadShowMediaFile(98)
+                        ReadShowMediaFile("AfterUndo")
                         historyDestinationFileName = ""
                         historySourceFileName = ""
                     Catch ex As Exception
@@ -1839,7 +1923,7 @@ Public Class Form1
 
     Private Sub FolderSelected()
         If currentFolderPath <> "" Then
-            ReadShowMediaFile(0)
+            ReadShowMediaFile("ReadFolderAndFile")
         Else
             If lngRus Then
                 MsgBox("Укажите каталог с медиа файлами..")
@@ -1851,7 +1935,7 @@ Public Class Form1
 
     Public Sub DoKey(ByVal keyIndex As Integer)
         If keyIndex = 0 Then
-            ReadShowMediaFile(3)
+            ReadShowMediaFile("DeleteFile")
         Else
             PoMove(keyIndex + 1)
         End If
@@ -1881,19 +1965,21 @@ Public Class Form1
             SlideShowTimer.Interval = 10000
             SlideShowTimer.Enabled = True
         End If
-        ReadShowMediaFile(5)
+        ReadShowMediaFile("ReadForSlideShow")
     End Sub
 
     Private Sub SlideShow_Elapsed() Handles SlideShowTimer.Tick
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1890: SlideShow_Elapsed")
-        ReadShowMediaFile(5)
+        ReadShowMediaFile("ReadForSlideShow")
     End Sub
 
     Private Sub Button7_Click(sender As Object, e As EventArgs) Handles Button7.Click
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1900: Button7_Click")
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1900: Button7_Click (to fullscreen)")
+
         isFullScreen = True
         Buttons_to_fullscreen()
         SetViewSizes()
+
     End Sub
 
     Private Sub Buttons_to_fullscreen()
@@ -2153,7 +2239,7 @@ Public Class Form1
     Private Sub Button8_Click(sender As Object, e As EventArgs) Handles Button8.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1990: Button8_Click")
         SlideShowTimer.Enabled = False
-        ReadShowMediaFile(4)
+        ReadShowMediaFile("ReadForRandom")
     End Sub
 
     Private Sub Button9_Click(sender As Object, e As EventArgs) Handles Button9.Click
@@ -2168,7 +2254,7 @@ Public Class Form1
             SlideShowTimer.Interval = 10000
             SlideShowTimer.Enabled = True
         End If
-        ReadShowMediaFile(5)
+        ReadShowMediaFile("ReadForSlideShow")
     End Sub
 
     Private Sub chkTopMost_CheckedChanged(sender As Object, e As EventArgs) Handles chkTopMost.CheckedChanged
@@ -2182,7 +2268,7 @@ Public Class Form1
         lngRus = Not lngRus
         ButtonLNG.Text = If(lngRus, "EN", "RU")
         LngCh()
-        ReadShowMediaFile(99)
+        ReadShowMediaFile("SetFile")
     End Sub
 
     Private Sub ButtonRename_Click(sender As Object, e As EventArgs) Handles ButtonRename.Click
@@ -2286,21 +2372,25 @@ Public Class Form1
     End Sub
 
     Private Sub TextBox1_SelectedIndexChanged(sender As Object, e As EventArgs) Handles TextBox1.SelectedIndexChanged
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2130: TextBox1_SelectedIndexChanged")
+        If Not isTextBoxEdition Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2130: TextBox1_SelectedIndexChanged")
 
-        If Not isTextBoxEdition AndAlso TextBox1.SelectedIndex >= 0 Then
-            currentFolderPath = TextBox1.SelectedItem.ToString()
+            If TextBox1.SelectedIndex >= 0 Then
+                currentFolderPath = TextBox1.SelectedItem.ToString()
 
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2140: currentFolderPath = " & currentFolderPath)
-            ReadShowMediaFile(0)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2140: currentFolderPath = " & currentFolderPath)
+                ReadShowMediaFile("ReadFolderAndFile")
+            End If
         End If
     End Sub
 
     Private Sub SortComboBox_SelectedIndexChanged(sender As Object, e As EventArgs) Handles SortComboBox.SelectedIndexChanged
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2150: SortComboBox_SelectedIndexChanged")
+        If Not isTextBoxEdition Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2150: SortComboBox_SelectedIndexChanged")
 
-        If Not String.IsNullOrEmpty(currentFolderPath) Then
-            ReadShowMediaFile(0)
+            If Not String.IsNullOrEmpty(currentFolderPath) Then
+                ReadShowMediaFile("ReadFolderAndFile")
+            End If
         End If
     End Sub
 
@@ -2388,4 +2478,15 @@ Public Class Form1
         End If
     End Sub
 
+    Private Sub Label1_Click(sender As Object, e As EventArgs) Handles Label1.Click
+        If Not String.IsNullOrEmpty(TextBox1.Text) Then
+            Clipboard.SetText(TextBox1.Text)
+            StatusL.Text = If(lngRus, "Имя папки скопировано в буфер", "Folder sent to clipboard")
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2240: Folder sent to clipboard")
+        End If
+    End Sub
+
+    Private Sub StatusL_Click(sender As Object, e As EventArgs) Handles StatusL.Click
+
+    End Sub
 End Class
