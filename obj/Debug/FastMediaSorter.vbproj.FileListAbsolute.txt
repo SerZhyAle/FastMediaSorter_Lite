@@ -21,8 +21,6 @@ C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.vbproj.AssemblyReference.cache
 C:\GIT\FastMediaSorter\obj\Debug\Interop.WMPLib.dll
 C:\GIT\FastMediaSorter\obj\Debug\AxInterop.WMPLib.dll
 C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.vbproj.ResolveComReference.cache
-C:\GIT\FastMediaSorter\obj\Debug\fms.Form1.resources
-C:\GIT\FastMediaSorter\obj\Debug\fms.Form2.resources
 C:\GIT\FastMediaSorter\obj\Debug\fms.Resources.resources
 C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.vbproj.GenerateResource.cache
 C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.vbproj.CoreCompileInputs.cache
@@ -34,3 +32,5 @@ C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.exe
 C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.xml
 C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.pdb
 C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.exe.config
+C:\GIT\FastMediaSorter\obj\Debug\fms.the_Main_Form.resources
+C:\GIT\FastMediaSorter\obj\Debug\fms.the_Table_Form.resources
