@@ -87,7 +87,7 @@ Partial Class the_Table_Form
         '
         Me.chkbox_Independent_Thread_For_File_Operation.AutoSize = True
         Me.chkbox_Independent_Thread_For_File_Operation.Location = New System.Drawing.Point(24, 562)
-        Me.chkbox_Independent_Thread_For_File_Operation.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+        Me.chkbox_Independent_Thread_For_File_Operation.Margin = New System.Windows.Forms.Padding(4)
         Me.chkbox_Independent_Thread_For_File_Operation.Name = "chkbox_Independent_Thread_For_File_Operation"
         Me.chkbox_Independent_Thread_For_File_Operation.Size = New System.Drawing.Size(501, 29)
         Me.chkbox_Independent_Thread_For_File_Operation.TabIndex = 6

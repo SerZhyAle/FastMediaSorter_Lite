@@ -91,4 +91,8 @@ Public Class the_Table_Form
     Private Sub CheckBox1_CheckedChanged(sender As Object, e As EventArgs) Handles chkbox_Copy_Mode.CheckedChanged
         copyMode = chkbox_Copy_Mode.Checked
     End Sub
+
+    Private Sub Data_Grid_View_CellContentClick(sender As Object, e As DataGridViewCellEventArgs) Handles Data_Grid_View.CellContentClick
+
+    End Sub
 End Class
