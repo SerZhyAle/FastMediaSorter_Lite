@@ -286,38 +286,6 @@ Public Class the_Main_Form
         End If
     End Sub
 
-    'Private Sub PictureBox1_LoadCompleted(sender As Object, e As System.ComponentModel.AsyncCompletedEventArgs)
-    '    If e.Error Is Nothing Then
-    '        If Not isSecondaryPictureBoxActive Then
-    '            isPictureBox1Visible = True
-    '            UpdateControlVisibility()
-    '            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0130: P1 loaded and visible")
-    '        End If
-    '    Else
-    '        If Not isSecondaryPictureBoxActive Then
-    '            isPictureBox1Visible = True
-    '            UpdateControlVisibility()
-    '            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0140: P1 not loaded and invisible")
-    '        End If
-    '    End If
-    'End Sub
-
-    'Private Sub PictureBox2_LoadCompleted(sender As Object, e As System.ComponentModel.AsyncCompletedEventArgs)
-    '    If e.Error Is Nothing Then
-    '        If isSecondaryPictureBoxActive Then
-    '            isPictureBox2Visible = True
-    '            UpdateControlVisibility()
-    '            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0150: P2 loaded and visible")
-    '        End If
-    '    Else
-    '        If isSecondaryPictureBoxActive Then
-    '            isPictureBox2Visible = True
-    '            UpdateControlVisibility()
-    '            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0160: P2 not loaded and invisible")
-    '        End If
-    '    End If
-    'End Sub
-
     Private Sub BgWorker_ProgressChanged(sender As Object, e As ProgressChangedEventArgs) Handles BgWorker.ProgressChanged
         Dim userState As Dictionary(Of String, String) = DirectCast(e.UserState, Dictionary(Of String, String))
 
@@ -378,7 +346,6 @@ Public Class the_Main_Form
     End Sub
 
     Public Sub ProcessArgument(argument As String)
-
         argument = argument.Trim()
 
         Try
@@ -396,52 +363,49 @@ Public Class the_Main_Form
 
                 Dim folderPathSaved = GetSetting(appName, secName, "ImageFolder", "")
                 If folderPathSaved = currentFolderPath Then
-
                     Integer.TryParse(GetSetting(appName, secName, "LastCounter"), currentFileIndex)
                     If currentFileIndex > 0 Then
                         totalFilesCount = FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
                         If currentFileIndex < totalFilesCount Then
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0250: folder is set from arg, file found in savings")
-
                             ReadShowMediaFile("ReadFiles")
                         Else
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0260: folder is set from arg, but file is not found in savings")
-                            currentFileIndex = 1
-
+                            currentFileIndex = 0
                             ReadShowMediaFile("ReadFolderAndFile")
                         End If
                     Else
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0265: folder is set from arg, but file wasnt in savings")
-                        currentFileIndex = 1
-
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0265: folder is set from arg, but file wasn't in savings")
+                        currentFileIndex = 0
                         ReadShowMediaFile("ReadFolderAndFile")
                     End If
                 Else
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0270: folder is set from arg")
-                    currentFileIndex = 1
-
+                    currentFileIndex = 0
                     ReadShowMediaFile("ReadFolderAndFile")
                 End If
             Else
                 If Not File.Exists(argument) Then
-                    'MsgBox(If(lngRus, "Ошибка: файл не существует: " + argument, "Error: File does not exist: " + argument))
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0280: File from arg is not exist: " & argument)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0280: File from arg does not exist: " & argument)
                     Return
                 End If
 
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0290: File is set from arg")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0290: File is set from arg: " & argument)
                 currentFolderPath = Path.GetDirectoryName(argument)
                 targetImagePath = argument
+                currentFileName = argument
                 isTextBoxEdition = True
                 cmbox_Media_Folder.Text = currentFolderPath
                 isTextBoxEdition = False
+                isExternalInputReceived = True
+                wasExternalInputLast = True
+                currentFileIndex = 0
+                totalFilesCount = 1
 
                 ReadShowMediaFile("ReadFolderAndKnownFile")
             End If
-
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0300: Error processing argument: " & ex.Message)
-
             currentFolderPath = ""
             isTextBoxEdition = True
             cmbox_Media_Folder.Text = ""
@@ -716,7 +680,7 @@ Public Class the_Main_Form
             If currentFileIndex = 0 Then
                 wasExternalInputLast = False
                 lbl_Status.Text = If(lngRus, "чтение каталога.. ждите!", "reading files.. wait!")
-                Refresh()
+                '         Refresh()
                 Dim files As Object = GetFiles()
                 If files Is Nothing Then
                     lbl_Status.Text = If(lngRus, "! Ошибка чтения файлов", "! Error reading files")
@@ -774,10 +738,10 @@ Public Class the_Main_Form
 
     Private Function LoadFilesForExternalInput(ByRef isFileFound As Boolean) As Boolean
         Try
-            If currentFileIndex = 0 Then
+            If wasExternalInputLast Then
                 wasExternalInputLast = False
                 lbl_Status.Text = If(lngRus, "чтение каталога.. ждите!", "reading files.. wait!")
-                ' Refresh()
+
                 Dim files As Object = GetFiles()
                 If files Is Nothing Then
                     lbl_Status.Text = If(lngRus, "! Ошибка чтения файлов", "! Error reading files")
@@ -785,8 +749,7 @@ Public Class the_Main_Form
                     cmbox_Media_Folder.Text = ""
                     totalFilesCount = 0
                     currentFileIndex = 0
-
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0720: files arnt set")
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0720: files aren't set")
                     Return False
                 End If
 
@@ -798,35 +761,38 @@ Public Class the_Main_Form
 
                 lbl_Status.Text = ""
                 totalFilesCount = If(useArray, filesArray.Length, filesList.Count)
-                currentFileIndex = 0
-                If totalFilesCount = 0 Then
-                    lbl_Status.Text = If(lngRus, "! Нет файлов в папке", "! No files in folder")
+                currentFileIndex = If(useArray, Array.IndexOf(filesArray, targetImagePath), filesList.IndexOf(targetImagePath))
+                isFileFound = currentFileIndex >= 0
 
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0730: file count is 0")
-                    Return False
-                Else
-                    currentFileIndex = If(useArray, Array.IndexOf(filesArray, targetImagePath), filesList.IndexOf(targetImagePath))
-                    isFileFound = currentFileIndex >= 0
+                If Not isFileFound Then
+                    If useArray Then
+                        filesArray = AddAt(filesArray, targetImagePath, 0)
+                    Else
+                        filesList.Insert(0, targetImagePath)
+                    End If
+                    totalFilesCount += 1
+                    currentFileIndex = 0
+                    isFileFound = True
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0745: targetImagePath added to file list")
                 End If
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0740: new folder is read")
+                Return True
             Else
                 currentFileIndex += 1
                 isFileFound = True
-
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0750: next one is choosen")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0750: next one is chosen")
+                Return True
             End If
-            Return True
-
         Catch ex As Exception
             MsgBox("E003 " & ex.Message)
             currentFolderPath = ""
             cmbox_Media_Folder.Text = ""
-
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0760: E003 " & ex.Message)
             Return False
         End Try
     End Function
+
 
     Private Function LoadFiles() As Boolean
         Try
@@ -909,7 +875,6 @@ Public Class the_Main_Form
 
     Private Sub LoadVideoInWebBrowser(fileUri As String)
         Try
-            '            isWebBrowserLoaded = False
             isWebBrowser1Visible = False
             isWebView2Visible = False
             isPictureBox1Visible = False
@@ -966,7 +931,7 @@ Public Class the_Main_Form
                 If Not isSecondaryPictureBoxActive Then
                     isPictureBox2Visible = True
                     isPictureBox1Visible = False
-                    Picture_Box_2.Refresh()
+                    '                    Picture_Box_2.Refresh()
 
                     bgWorkerResult = "USED P2"
                     isSecondaryPictureBoxActive = True
@@ -974,7 +939,7 @@ Public Class the_Main_Form
                 Else
                     isPictureBox2Visible = False
                     isPictureBox1Visible = True
-                    Picture_Box_1.Refresh()
+                    '                    Picture_Box_1.Refresh()
 
                     bgWorkerResult = "USED P1"
                     isSecondaryPictureBoxActive = False
@@ -990,7 +955,7 @@ Public Class the_Main_Form
                     If Not thisIsFirstPictureFileWeShow AndAlso isSecondaryPictureBoxActive Then
                         If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
                         Picture_Box_2.Image = newImage
-                        Picture_Box_2.Refresh()
+                        '  Picture_Box_2.Refresh()
 
                         isPictureBox2Visible = True
                         isPictureBox1Visible = False
@@ -1000,7 +965,7 @@ Public Class the_Main_Form
                     Else
                         If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
                         Picture_Box_1.Image = newImage
-                        Picture_Box_1.Refresh()
+                        ' Picture_Box_1.Refresh()
 
                         isPictureBox1Visible = True
                         isPictureBox2Visible = False
@@ -1065,12 +1030,12 @@ Public Class the_Main_Form
 
             If isPictureBox1Visible AndAlso Picture_Box_1.Image IsNot Nothing AndAlso TypeOf Picture_Box_1.Image Is Bitmap Then
                 bmp = CType(Picture_Box_1.Image, Bitmap)
-                Picture_Box_1.Refresh()
+                '    Picture_Box_1.Refresh()
                 Picture_Box_1.BringToFront()
             ElseIf isPictureBox2Visible AndAlso Picture_Box_2.Image IsNot Nothing AndAlso TypeOf Picture_Box_2.Image Is Bitmap Then
                 bmp = CType(Picture_Box_2.Image, Bitmap)
-                    Picture_Box_2.Refresh()
-                    Picture_Box_2.BringToFront()
+                '       Picture_Box_2.Refresh()
+                Picture_Box_2.BringToFront()
                 End If
 
                 If bmp IsNot Nothing Then
@@ -1116,7 +1081,9 @@ Public Class the_Main_Form
     End Sub
 
     Private Sub UpdateCurrentFileAndDisplay(isFileFound As Boolean, isAfterUndo As Boolean)
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0381: UpdateCurrentFileAndDisplay, currentFileName: " & currentFileName)
         currentFileName = ""
+
         If totalFilesCount <> 0 Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0960: isFileFound = " & isFileFound.ToString)
             If isFileFound Then
@@ -1156,8 +1123,10 @@ Public Class the_Main_Form
                 If isSlideShowRandom OrElse isFileReseivedFromOutside Then
                     nextAfterCurrentFileName = ""
                     isFileReseivedFromOutside = False
-                Else
+                ElseIf Not wasExternalInputLast AndAlso Not (fileList Is Nothing And filesArray Is Nothing) Then
                     nextAfterCurrentFileName = If(totalFilesCount > 0, If(totalFilesCount = currentFileIndex + 1, If(useArray, filesArray(0), filesList(0)), If(useArray, filesArray(currentFileIndex + 1), filesList(currentFileIndex + 1))), "")
+                Else
+                    nextAfterCurrentFileName = ""
                 End If
 
                 If bgWorkerOnline OrElse BgWorker.IsBusy Then
@@ -1753,13 +1722,13 @@ Public Class the_Main_Form
                         If isSecondaryPictureBoxActive Then
                             If isPictureBox2Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
                                 Picture_Box_2.Image.RotateFlip(RotateFlipType.Rotate90FlipNone)
-                                Picture_Box_2.Refresh()
+                                '   Picture_Box_2.Refresh()
                                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1510: P2 Rotated")
                             End If
                         Else
                             If isPictureBox1Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
                                 Picture_Box_1.Image.RotateFlip(RotateFlipType.Rotate90FlipNone)
-                                Picture_Box_1.Refresh()
+                                '    Picture_Box_1.Refresh()
                                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1520: P1 Rotated")
                             End If
                         End If
@@ -1773,13 +1742,13 @@ Public Class the_Main_Form
                         If isSecondaryPictureBoxActive Then
                             If isPictureBox2Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
                                 Picture_Box_2.Image.RotateFlip(RotateFlipType.Rotate270FlipNone)
-                                Picture_Box_2.Refresh()
+                                '     Picture_Box_2.Refresh()
                                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1530: P2 Rotated")
                             End If
                         Else
                             If isPictureBox1Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
                                 Picture_Box_1.Image.RotateFlip(RotateFlipType.Rotate270FlipNone)
-                                Picture_Box_1.Refresh()
+                                '       Picture_Box_1.Refresh()
                                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1540: P1 Rotated")
                             End If
                         End If
@@ -1905,7 +1874,7 @@ Public Class the_Main_Form
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1710: copy run")
 
                             lbl_Status.Text = If(lngRus, "!Ждите.. Файл копируется (" & textKey & ") в каталог " & newDest, "!Wait.. File copying (" & textKey & ") to " & newDest)
-                            Me.Refresh()
+                            '     Me.Refresh()
                             My.Computer.FileSystem.CopyFile(currentFileName, newDest)
                             lbl_Status.Text = If(lngRus, "файл скопирован (" & textKey & ") в каталог " & newDest, "file copied (" & textKey & ") to " & newDest)
 
@@ -1932,7 +1901,7 @@ Public Class the_Main_Form
                                     Web_View2.Source = New Uri("about:blank")
                                 End If
                                 lbl_Status.Text = If(lngRus, "!Ждите.. Файл переносится (" & textKey & ") в каталог " & newDest, "!Wait.. File moving (" & textKey & ") to " & newDest)
-                            Me.Refresh()
+                            '      Me.Refresh()
                             My.Computer.FileSystem.MoveFile(currentFileName, newDest)
                                 If useArray Then
                                     filesArray = RemoveAt(filesArray, currentFileIndex)
@@ -2000,7 +1969,7 @@ Public Class the_Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1790: undo move deletion")
                     Try
                         lbl_Status.Text = If(lngRus, "!Ждите. Возвращается в каталог " & historySourceFileName, "!Wait. File back to " & historySourceFileName)
-                        Me.Refresh()
+                        '            Me.Refresh()
                         My.Computer.FileSystem.MoveFile(historyDestinationFileName, historySourceFileName)
                         If useArray Then
                             filesArray = AddAt(filesArray, historySourceFileName, currentFileIndex)
