@@ -1,0 +1,541 @@
+
+This document includes licensing information relating to free, open-source, and public-source software included with or used in connection with the Intel conectivity wireless firmware code (hereafter, the "Software"). The terms of the applicable free, open-source, and public-source licenses govern Intel's distribution and your use of the Software. Intel, and the third-party authors, licensors, and distributors of the Software disclaim all warranties and liability arising from any and all use and distribution of the Software. Intel has reproduced below copyright and other licensing notices appearing within some or all of the Software. While Intel seeks to provide complete and accurate copyright and licensing information for each item of Software, Intel does not represent or warrant that the following information is complete, correct, or error-free. Software recipients are encouraged to (a) investigate the identified Software packages to confirm the accuracy of the licensing information provided herein. Certain open source software licenses (such as the GNU General Public Licenses, GNU Library/Lesser General Public Licenses, Affero General Public Licenses, Mozilla Public Licenses, Common Development and Distribution Licenses, Common Public License, and Eclipse Public License) require that the source code corresponding to distributed OSS binaries be made available to recipients or other requestors under the terms of the sameopen source software license. To the extend such source code is not provided with the delivery of the Software, such source code can be requested from Intel. 
+
+
+
+-------
+STLport
+-------
+Project homepage/download site: http://www.stlport.org/
+Project licensing notices:
+LEGALESE
+This software is being distributed under the following terms:
+* * * Copyright (c) 1994 * Hewlett-Packard Company * * Copyright (c) 1996-
+1999 * Silicon Graphics Computer Systems, Inc. * * Copyright (c) 1997 *
+Moscow Center for SPARC Technology * * Copyright (c) 1999-2003 * Boris
+Fomitchev * * This material is provided "as is", with absolutely no warranty
+expressed * or implied. Any use is at your own risk. * * Permission to use or
+copy this software for any purpose is hereby granted * without fee, provided
+the above notices are retained on all copies. * Permission to modify the code
+and to distribute modified code is granted, * provided the above notices are
+retained, and a notice that the code was * modified is included with the
+above copyright notice.
+
+--------------
+OpenBSD regex
+--------------
+Project homepage/download site: http://www.arglist.com/regex/
+Project licensing notices:
+Copyright (c) 1986, 1993, 1995 by University of Toronto. Written by Henry
+Spencer. Not derived from licensed software.
+Permission is granted to anyone to use this software for any purpose on any
+computer system, and to redistribute it in any way, subject to the following
+restrictions:
+1. The author is not responsible for the consequences of use of this
+software, no matter how awful, even if they arise from defects in it.
+2. The origin of this software must not be misrepresented, either by explicit
+claim or by omission.
+3. Altered versions must be plainly marked as such, and must not be
+misrepresented (by explicit claim or omission) as being the original
+software.
+4. This notice must not be removed or altered.
+
+-----------
+NetBSD C99
+-----------
+Project homepage/download site: http://cvsweb.netbsd.org/bsdweb.cgi/src/lib/libm/src/#dirlist
+Project licensing notices:
+Copyright (c) 1999-2008 The NetBSD Foundation, Inc.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+1. Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE
+
+---------
+libsupc++
+---------
+Project homepage/download site: https://gcc.gnu.org/
+Project licensing notices:
+Copyright (C) 1994-2016 Free Software Foundation, Inc.
+This file is part of GCC.
+GCC is free software; you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation; either version 3, or (at your option) any later version.
+GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+Under Section 7 of GPL version 3, you are granted additional permissions
+described in the GCC Runtime Library Exception, version 3.1, as published by
+the Free Software Foundation.
+You should have received a copy of the GNU General Public License and a copy
+of the GCC Runtime Library Exception along with this program; see the files
+COPYING3 and COPYING.RUNTIME respectively. If not, see
+<http://www.gnu.org/licenses/>.
+GCC RUNTIME LIBRARY EXCEPTION
+Version 3.1, 31 March 2009
+Copyright (C) 2009 Free Software Foundation, Inc. <http://fsf.org/>
+Everyone is permitted to copy and distribute verbatim copies of this license
+document, but changing it is not allowed.
+This GCC Runtime Library Exception ("Exception") is an additional permission
+under section 7 of the GNU General Public License, version 3 ("GPLv3"). It
+applies to a given file (the "Runtime Library") that bears a notice placed by
+the copyright holder of the file stating that the file is governed by GPLv3
+along with this Exception.
+When you use GCC to compile a program, GCC may combine portions of certain
+GCC header files and runtime libraries with the compiled program. The purpose
+of this Exception is to allow compilation of non-GPL (including proprietary)
+programs to use, in this way, the header files and runtime libraries covered
+by this Exception.
+0. Definitions.
+A file is an "Independent Module" if it either requires the Runtime Library
+for execution after a Compilation Process, or makes use of an interface
+provided by the Runtime Library, but is not otherwise based on the Runtime
+Library.
+"GCC" means a version of the GNU Compiler Collection, with or without
+modifications, governed by version 3 (or a specified later version) of the
+GNU General Public License (GPL) with the option of using any subsequent
+versions published by the FSF.
+"GPL-compatible Software" is software whose conditions of propagation,
+modification and use would permit combination with GCC in accord with the
+license of GCC.
+"Target Code" refers to output from any compiler for a real or virtual target
+processor architecture, in executable form or suitable for input to an
+assembler, loader, linker and/or execution phase. Notwithstanding that,
+Target Code does not include data in any format that is used as a compiler
+intermediate representation, or used for producing a compiler intermediate
+representation.
+The "Compilation Process" transforms code entirely represented in nonintermediate languages designed for human-written code, and/or in Java
+Virtual Machine byte code, into Target Code. Thus, for example, use of source
+code generators and preprocessors need not be considered part of the
+Compilation Process, since the Compilation Process can be understood as
+starting with the output of the generators or preprocessors.
+A Compilation Process is "Eligible" if it is done using GCC, alone or with
+other GPL-compatible software, or if it is done without using any work based
+on GCC. For example, using non-GPL-compatible Software to optimize any GCC
+intermediate representations would not qualify as an Eligible Compilation
+Process.
+1. Grant of Additional Permission.
+You have permission to propagate a work of Target Code formed by combining
+the Runtime Library with Independent Modules, even if such propagation would
+otherwise violate the terms of GPLv3, provided that all Target Code was
+generated by Eligible Compilation Processes. You may then convey such a
+combination under terms of your choice, consistent with the licensing of the
+Independent Modules.
+2. No Weakening of GCC Copyleft.
+The availability of this Exception does not imply any general presumption
+that third-party software is unaffected by the copyleft requirements of the
+license of GCC
+
+
+------
+libclc
+------
+Project homepage/download site: http://libclc.llvm.org/
+Project licensing notices:
+=============================================================================
+libclc License
+=============================================================================
+The libclc library is dual licensed under both the University of Illinois
+"BSD-Like" license and the MIT license. As a user of this code you may choose
+to use it under either license. As a contributor, you agree to allow your
+code to be used under both.
+Full text of the relevant licenses is included below.
+=============================================================================
+Copyright (c) 2011-2016 by the contributors listed in CREDITS.TXT
+All rights reserved.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+with the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+* Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimers.
+* Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimers in the documentation
+and/or other materials provided with the distribution.
+* The names of the contributors may not be used to endorse or promote
+products derived from this Software without specific prior written
+permission.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH
+THE SOFTWARE.
+=============================================================================
+Copyright (c) 2011-2014 by the contributors listed in CREDITS.TXT
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+-------
+Duktape
+-------
+Project homepage/download site: http://www.duktape.org/
+Project licensing notices:
+=============== Duktape license ===============
+(http://opensource.org/licenses/MIT)
+Copyright (c) 2013-2016 by Duktape authors (see AUTHORS.rst)
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+=============== Duktape authors ===============
+Copyright =========
+Duktape copyrights are held by its authors. Each author has a copyright to
+their contribution, and agrees to irrevocably license the contribution under
+the Duktape ``LICENSE.txt``.
+Authors =======
+Please include an e-mail address, a link to your GitHub profile, or something
+similar to allow your contribution to be identified accurately.
+The following people have contributed code, website contents, or Wiki
+contents, and agreed to irrevocably license their contributions under the
+Duktape ``LICENSE.txt`` (in order of appearance):
+* Sami Vaarala <sami.vaarala@iki.fi> * Niki Dobrev * Andreas Öman
+<andreas@lonelycoder.com> * László Langó <llango.uszeged@partner.samsung.com> * Legimet <legimet.calc@gmail.com> * Karl Skomski
+<karl@skomski.com> * Bruce Pascoe <fatcerberus1@gmail.com> * René Hollander
+<rene@rene8888.at> * Julien Hamaide (https://github.com/crazyjul) * Sebastian
+Götte (https://github.com/jaseg)
+Other contributions ===================
+The following people have contributed something other than code (e.g.
+reported bugs, provided ideas, etc; roughly in order of appearance):
+* Greg Burns * Anthony Rabine * Carlos Costa * Aurélien Bouilland * Preet
+Desai (Pris Matic) * judofyr (http://www.reddit.com/user/judofyr) * Jason
+Woofenden * Michał Przybyś * Anthony Howe * Conrad Pankoff * Jim Schimpf *
+Rajaran Gaunker (https://github.com/zimbabao) * Andreas Öman * Doug Sanden *
+Josh Engebretson (https://github.com/JoshEngebretson) * Remo Eichenberger
+(https://github.com/remoe) * Mamod Mehyar (https://github.com/mamod) * David
+Demelier (https://github.com/markand) * Tim Caswell
+(https://github.com/creationix) * Mitchell Blank Jr
+(https://github.com/mitchblank) * https://github.com/yushli * Seo Sanghyeon
+(https://github.com/sanxiyn) * Han ChoongWoo (https://github.com/tunz) *
+Joshua Peek (https://github.com/josh) * Bruce E. Pascoe
+(https://github.com/fatcerberus) * https://github.com/Kelledin *
+https://github.com/sstruchtrup * Michael Drake (https://github.com/tlsa) *
+https://github.com/chris-y * Laurent Zubiaur (https://github.com/lzubiaur) *
+Ole André Vadla Ravnås (https://github.com/oleavr)
+If you are accidentally missing from this list, send me an e-mail
+(``sami.vaarala@iki.fi``) and I'll fix the omission.
+
+------
+Caffe
+------
+Project homepage/download site: https://github.com/BVLC/caffe/tree/master/models
+Project licensing notices: https://github.com/BVLC/caffe/blob/master/LICENSE
+LICENSE:
+COPYRIGHT
+All contributions by the University of California: Copyright (c) 2014-2017 The Regents
+of the University of California (Regents) All rights reserved.
+All other contributions: Copyright (c) 2014-2017, the respective contributors All
+rights reserved.
+Caffe uses a shared copyright model: each contributor holds copyright over their
+contributions to Caffe. The project versioning records all such contribution and
+copyright details. If a contributor wants to further mark their specific copyright on
+a particular contribution, they should indicate their copyright solely in the commit
+message of the change when it is committed.
+LICENSE
+Redistribution and use in source and binary forms, with or without modification, are
+permitted provided that the following conditions are met:
+1. Redistributions of source code must retain the above copyright notice, this list of
+conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list
+of conditions and the following disclaimer in the documentation and/or other materials
+provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGE.
+CONTRIBUTION AGREEMENT
+By contributing to the BVLC/caffe repository through pull-request, comment, or
+otherwise, the contributor releases their content to the license and copyright terms
+herein.
+
+--------
+Autoconf
+--------
+Project homepage/download site: http://www.gnu.org/software/autoconf/
+Project licensing notices: https://www.gnu.org/licenses/autoconf-exception.html
+AUTOCONF CONFIGURE SCRIPT EXCEPTION
+Version 3.0, 18 August 2009
+Copyright © 2009 Free Software Foundation, Inc. <https://fsf.org/>
+Everyone is permitted to copy and distribute verbatim copies of this license
+document, but changing it is not allowed.
+This Exception is an additional permission under section 7 of the GNU General
+Public License, version 3 ("GPLv3"). It applies to a given file that bears a
+notice placed by the copyright holder of the file stating that the file is
+governed by GPLv3 along with this Exception.
+The purpose of this Exception is to allow distribution of Autoconf's typical
+output under terms of the recipient's choice (including proprietary).
+0. Definitions.
+"Covered Code" is the source or object code of a version of Autoconf that is
+a covered work under this License.
+"Normally Copied Code" for a version of Autoconf means all parts of its
+Covered Code which that version can copy from its code (i.e., not from its
+input file) into its minimally verbose, non-debugging and non-tracing output.
+"Ineligible Code" is Covered Code that is not Normally Copied Code.
+1. Grant of Additional Permission.
+You have permission to propagate output of Autoconf, even if such propagation
+would otherwise violate the terms of GPLv3. However, if by modifying Autoconf
+you cause any Ineligible Code of the version you received to become Normally
+Copied Code of your modified version, then you void this Exception for the
+resulting covered work. If you convey that resulting covered work, you must
+remove this Exception in accordance with the second paragraph of Section 7 of
+GPLv3.
+2. No Weakening of Autoconf Copyleft.
+The availability of this Exception does not imply any general presumption
+that third-party software is unaffected by the copyleft requirements of the
+license of Autoconf.
+
+------
+Cython
+------
+Project homepage/download site: http://cython.org
+Project licensing notices: https://github.com/cython/cython/blob/master/LICENSE.txt
+COPYING.txt
+The original Pyrex code as of 2006-04 is licensed under the following
+license: "Copyright stuff: Pyrex is free of restrictions. You may use,
+redistribute, modify and distribute modified versions."
+------------------
+Cython, which derives from Pyrex, is licensed under the Apache 2.0 Software
+License. More precisely, all modifications and new code made to go from Pyrex
+to Cython are so licensed.
+See LICENSE.txt for more details.
+------------------
+The output of a Cython compilation is NOT considered a derivative work of
+Cython. Specifically, though the compilation process may embed snippets of
+varying lengths into the final output, these snippets, as embedded in the
+output, do not encumber the resulting output with any license restrictions.
+LICENSE.txt
+
+-----
+ELFIO
+-----
+Project homepage/download site: http://elfio.sourceforge.net
+Project licensing notices:
+MIT License
+Copyright (C) 2001-2011 by Serge Lamikhov-Center
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+--------
+Libmetal
+--------
+Project homepage/download site: https://github.com/OpenAMP/libmetal
+Project licensing notices: https://github.com/OpenAMP/libmetal/blob/master/LICENSE.md
+Software License Agreement (BSD License)
+========================================
+Copyright (c) 2015, Xilinx Inc. and Contributors. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+1. Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+3. Neither the name of Xilinx nor the names of its contributors may be used
+to endorse or promote products derived from this software without specific
+prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+Notes
+=========================================
+Use the following tag instead of the full license text in the individual
+files:
+SPDX-License-Identifier: BSD-3-Clause
+This enables machine processing of license information based on the SPDX
+License Identifiers that are here available: http://spdx.org/licenses/
+
+-------------
+LLVM CellSPU
+------------
+Project homepage/download site:
+Project licensing notices:
+The LLVM Compiler Infrastructure
+This file is distributed under the University of Illinois Open Source
+License. See LICENSE.TXT for details.
+README:
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NONINFRINGEMENT, OR
+OTHERWISE. IN NO EVENT SHALL THE AEROSPACE CORPORATION BE LIABLE FOR DAMAGES
+OF ANY KIND OR NATURE WHETHER BASED IN CONTRACT, TORT, OR OTHERWISE ARISING
+OUT OF OR IN CONNECTION WITH THE USE OF THE SOFTWARE INCLUDING, WITHOUT
+LIMITATION, DAMAGES RESULTING FROM LOST OR CONTAMINATED DATA, LOST PROFITS OR
+REVENUE, COMPUTER MALFUNCTION, OR FOR ANY SPECIAL, INCIDENTAL, CONSEQUENTIAL,
+OR PUNITIVE DAMAGES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES OR
+SUCH DAMAGES ARE FORESEEABLE.
+
+
+--------
+Llvmlite
+--------
+Project homepage/download site: https://pypi.python.org/pypi/llvmlite;
+https://github.com/numba/llvmlite
+Project licensing notices: https://github.com/numba/llvmlite/blob/master/LICENSE
+Copyright (c) 2014-, Continuum Analytics, Inc. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution. THIS SOFTWARE IS
+PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+
+
+
+-------------------------------------------
+Open Asymmetric Multi Processing (OpenAMP)
+-------------------------------------------
+Project homepage/download site: https://github.com/OpenAMP/open-amp
+Project licensing notices: https://github.com/OpenAMP/open-amp/blob/master/LICENSE.md
+Copyright (c) 1986, 1993, 1995 by University of Toronto. Written by Henry
+Spencer. Not derived from licensed software.
+Permission is granted to anyone to use this software for any purpose on any
+computer system, and to redistribute it in any way, subject to the following
+restrictions:
+1. The author is not responsible for the consequences of use of this
+software, no matter how awful, even if they arise from defects in it.
+2. The origin of this software must not be misrepresented, either by explicit
+claim or by omission.
+3. Altered versions must be plainly marked as such, and must not be
+misrepresented (by explicit claim or omission) as being the original
+software.
+4. This notice must not be removed or altered
+
+
+
+-------
+OpenCV
+-------
+Project homepage/download site: http://opencv.org
+Project licensing notices:
+By downloading, copying, installing or using the software you agree to this license.
+If you do not agree to this license, do not download, install, copy or use the
+software.
+License Agreement For Open Source Computer Vision Library (3-clause BSD License)
+Copyright (C) 2000-2016, Intel Corporation, all rights reserved. Copyright (C) 2009-
+2011, Willow Garage Inc., all rights reserved. Copyright (C) 2009-2016, NVIDIA
+Corporation, all rights reserved. Copyright (C) 2010-2013, Advanced Micro Devices,
+Inc., all rights reserved. Copyright (C) 2015-2016, OpenCV Foundation, all rights
+reserved. Copyright (C) 2015-2016, Itseez Inc., all rights reserved. Third party
+copyrights are property of their respective owners.
+Redistribution and use in source and binary forms, with or without modification, are
+permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this list of
+conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice, this list
+of conditions and the following disclaimer in the documentation and/or other materials
+provided with the distribution.
+* Neither the names of the copyright holders nor the names of the contributors may be
+used to endorse or promote products derived from this software without specific prior
+written permission.
+This software is provided by the copyright holders and contributors "as is" and any
+express or implied warranties, including, but not limited to, the implied warranties
+of merchantability and fitness for a particular purpose are disclaimed. In no event
+shall copyright holders or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not limited
+to, procurement of substitute goods or services; loss of use, data, or profits; or
+business interruption) however caused and on any theory of liability, whether in
+contract, strict liability, or tort (including negligence or otherwise) arising in any
+way out of the use of this software, even if advised of the possibility of such
+damage.
+
+-------
+OpenVX
+-------
+Project homepage/download site: https://www.khronos.org/openvx/
+Project licensing notices:
+Copyright (c) 2012-2014 The Khronos Group Inc.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this
+software and/or associated documentation files (the "Materials"), to deal in the
+Materials without restriction, including without limitation the rights to use, copy,
+modify, merge, publish, distribute, sublicense, and/or sell copies of the Materials,
+and to permit persons to whom the Materials are furnished to do so, subject to the
+following conditions:
+The above copyright notice and this permission notice shall be included in all copies
+or substantial portions of the Materials.
+THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE MATERIALS
+OR THE USE OR OTHER DEALINGS IN THE MATERIALS.

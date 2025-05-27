@@ -1,0 +1,325 @@
+<?xml version="1.0"?>
+<instrumentationManifest xsi:schemaLocation="http://schemas.microsoft.com/win/2004/08/events eventman.xsd" xmlns="http://schemas.microsoft.com/win/2004/08/events" xmlns:win="http://manifests.microsoft.com/win/2004/08/windows/events" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:trace="http://schemas.microsoft.com/win/2004/08/events/trace">
+	<instrumentation>
+		<events>
+			<provider name="Intel-WiFi-Infra_customer" guid="{F65A7474-539C-43C4-96A0-2F42B631C77B}" symbol="Intel_WiFi_Infra_customer" resourceFileName="%windir%\system32\drivers\IntelWiFiDriverEtw_driver_customer.dll" messageFileName="%windir%\system32\drivers\IntelWiFiDriverEtw_driver_customer.dll" parameterFileName="%windir%\system32\drivers\IntelWiFiDriverEtw_driver_customer.dll">
+				<events>
+					<event symbol="InitFlowFailureOtherReason" value="0" version="0" level="win:LogAlways" message="$(string.Intel-WiFi-Infra.event.63.message)"></event>
+					<event symbol="DriverDisabledEnabled" value="1" version="0" level="DiagnosticsLevelInfo" template="t_DriverDisabledEnabled" message="$(string.Intel-WiFi-Infra.event.25.message)"></event>
+					<event symbol="RFKillRadioOFFStarted" value="2" version="0" level="win:LogAlways" template="t_timingReport" message="$(string.Intel-WiFi-Infra.event.8.message)"></event>
+					<event symbol="RFKillRadioOFFComplete" value="3" version="0" level="win:LogAlways" template="t_timingReport" message="$(string.Intel-WiFi-Infra.event.13.message)"></event>
+					<event symbol="RFKillRadioOnStarted" value="4" version="0" level="win:LogAlways" template="t_timingReport" message="$(string.Intel-WiFi-Infra.event.16.message)"></event>
+					<event symbol="RFKillRadioOnComplete" value="5" version="0" level="win:LogAlways" template="t_timingReport" message="$(string.Intel-WiFi-Infra.event.20.message)"></event>
+					<event symbol="CannotAccessDATFile" value="6" version="0" level="win:LogAlways" message="$(string.Intel-WiFi-Infra.event.60.message)"></event>
+					<event symbol="FwNotValid" value="7" version="0" level="win:LogAlways" message="$(string.Intel-WiFi-Infra.event.61.message)"></event>
+					<event symbol="NoAliveInitImage" value="8" version="0" level="win:LogAlways" message="$(string.Intel-WiFi-Infra.event.62.message)"></event>
+				</events>
+				<levels>
+					<level name="DiagnosticsLevelInfo" symbol="DiagnosticsLevelInfo" value="17" message="$(string.Intel-WiFi-Infra.level.DiagnosticsLevelInfo.message)"></level>
+				</levels>
+				<maps>
+					<valueMap name="DISABLE_ENABLE">
+						<map value="0" message="$(string.Intel-Wifi-Infra.map.DISABLE_ENABLE.0.message)"></map>
+						<map value="1" message="$(string.Intel-Wifi-Infra.map.DISABLE_ENABLE.1.message)"></map>
+					</valueMap>
+				</maps>
+				<templates>
+					<template tid="t_DriverDisabledEnabled">
+						<data name="enableDisable" inType="win:UInt32" map="DISABLE_ENABLE"></data>
+					</template>
+					<template tid="t_timingReport">
+						<data name="timeStamp" inType="win:UInt64" outType="xs:unsignedLong"></data>
+					</template>
+				</templates>
+			</provider>
+			<provider name="Intel-Wifi-Connectivity_customer" guid="{3AF026B7-F872-4BCA-9BA1-AA6DC6D861FD}" symbol="Intel_Wifi_Connectivity_customer" resourceFileName="%windir%\system32\drivers\IntelWiFiDriverEtw_ext.dll" messageFileName="%windir%\system32\drivers\IntelWiFiDriverEtw_ext.dll" parameterFileName="%windir%\system32\drivers\IntelWiFiDriverEtw_ext.dll">
+				<events>
+					<event symbol="ScanStarted" value="2" version="0" level="win:LogAlways" task="ConnectionFlow_customer" template="t_timingReport" keywords="SCANCNCT_KEYWORD " message="$(string.Intel-Wifi-Connectivity.event.82.message)"></event>
+					<event symbol="ScanCompleted" value="3" version="0" level="win:LogAlways" task="ConnectionFlow_customer" template="t_operationTimeReport" keywords="SCANCNCT_KEYWORD " message="$(string.Intel-Wifi-Connectivity.event.83.message)"></event>
+					<event symbol="BssConnectionStart" value="0" version="0" level="win:LogAlways" template="t_timingReport" message="$(string.Intel-Wifi-Connectivity.event.90.message)"></event>
+					<event symbol="BssDisconnectionStart" value="1" version="0" level="win:LogAlways" template="t_timingReport" message="$(string.Intel-Wifi-Connectivity.event.91.message)"></event>
+				</events>
+				<levels></levels>
+				<tasks>
+					<task name="ConnectionFlow_customer" symbol="ConnectionFlow_customer" value="1" eventGUID="{751E258C-59BC-4BB1-B685-16EC2E4872C8}"></task>
+				</tasks>
+				<keywords>
+					<keyword name="SCANCNCT_KEYWORD" symbol="SCAN_KEYWORD" mask="0x400000000000"></keyword>
+				</keywords>
+				<templates>
+					<template tid="t_OperationTime">
+						<data name="operationTime" inType="win:UInt32" outType="xs:unsignedInt"></data>
+					</template>
+					<template tid="t_timingReport">
+						<data name="timeStamp" inType="win:UInt64" outType="xs:unsignedLong"></data>
+					</template>
+					<template tid="t_operationTimeReport">
+						<data name="operationTime" inType="win:UInt32" outType="xs:unsignedInt"></data>
+						<data name="timeStamp" inType="win:UInt64" outType="xs:unsignedLong"></data>
+					</template>
+				</templates>
+			</provider>
+			<provider name="Intel-WiFi-Common_customer" guid="{60AF67B7-9AED-40DD-9C30-5FB78E5317F0}" symbol="Intel_WiFi_Common_customer" resourceFileName="%windir%\system32\drivers\IntelWiFiDriverEtw_ext.dll" messageFileName="%windir%\system32\drivers\IntelWiFiDriverEtw_ext.dll" parameterFileName="%windir%\system32\drivers\IntelWiFiDriverEtw_ext.dll">
+				<events>
+					<event symbol="ReceivedDeauthOrDeassocReason" value="2" version="0" level="win:LogAlways" task="CommonConnectionFlow_customer" template="t_DeauthOrDisassocReason" message="$(string.Intel-WiFi-Common.event.5.message)"></event>
+					<event symbol="IndAssocComplete" value="3" version="0" level="win:LogAlways" task="CommonConnectionFlow_customer" template="t_AssocStatus" message="$(string.Intel-WiFi-Common.event.6.message)"></event>
+					<event symbol="BeaconChannelSwitchStart" value="4" version="0" level="win:LogAlways" task="CommonRoamFlow_customer" template="t_ChannelSwitchStart" message="$(string.Intel-WiFi-Common.event.7.message)"></event>
+					<event symbol="ChannelSwitchEnd" value="0" version="0" level="win:LogAlways" task="CommonRoamFlow_customer" template="t_ChannelSwitchEnd" message="$(string.Intel-WiFi-Common.event.9.message)"></event>
+					<event symbol="DeauthOrDeassocReasonSucceeded" value="1" version="0" level="win:LogAlways" task="CommonConnectionFlow_customer" template="t_DeauthOrDisassocSucceeded" message="$(string.Intel-WiFi-Common.event.53.message)"></event>
+					<event symbol="ChannelSwitchAbort" value="6" version="0" level="win:LogAlways" task="CommonRoamFlow_customer" message="$(string.Intel-WiFi-Common_customer.event.6.message)"></event>
+					<event symbol="BtCoexSarUpdate" value="7" version="0" template="t_BtCoexSarUpdate"></event>
+				</events>
+				<levels></levels>
+				<tasks>
+					<task name="CommonRoamFlow_customer" symbol="_task_Roaming" value="1" eventGUID="{AD21A46C-1F08-4FEE-A520-E25E2CC184F8}" message="$(string.Intel-WiFi-Common.task._task_Roaming.message)"></task>
+					<task name="CommonConnectionFlow_customer" symbol="_task_CommonConnectionFlow" value="2" eventGUID="{3230F544-A3C1-4A43-9E19-D8582121B6BA}" message="$(string.Intel-WiFi-Common.task._task_ConnectionFlow.message)"></task>
+				</tasks>
+				<maps>
+					<valueMap name="AssocStatus">
+						<map value="0" message="$(string.Intel-WiFi-WFD.map.AssocStatus.0.message)"></map>
+						<map value="1" message="$(string.Intel-WiFi-WFD.map.AssocStatus.1.message)"></map>
+						<map value="7" message="$(string.Intel-WiFi-WFD.map.AssocStatus.7.message)"></map>
+						<map value="5" message="$(string.Intel-WiFi-WFD.map.AssocStatus.5.message)"></map>
+						<map value="4" message="$(string.Intel-WiFi-WFD.map.AssocStatus.4.message)"></map>
+						<map value="3" message="$(string.Intel-WiFi-WFD.map.AssocStatus.3.message)"></map>
+						<map value="10" message="$(string.Intel-WiFi-WFD.map.AssocStatus.10.message)"></map>
+						<map value="9" message="$(string.Intel-WiFi-WFD.map.AssocStatus.9.message)"></map>
+					</valueMap>
+					<valueMap name="MacType">
+						<map value="1" message="$(string.Intel-WiFi-Common.map.MacType.1.message)"></map>
+						<map value="2" message="$(string.Intel-WiFi-Common.map.MacType.2.message)"></map>
+						<map value="3" message="$(string.Intel-WiFi-Common.map.MacType.3.message)"></map>
+						<map value="4" message="$(string.Intel-WiFi-Common.map.MacType.4.message)"></map>
+						<map value="5" message="$(string.Intel-WiFi-Common.map.MacType.5.message)"></map>
+						<map value="6" message="$(string.Intel-WiFi-Common.map.MacType.6.message)"></map>
+						<map value="7" message="$(string.Intel-WiFi-Common.map.MacType.7.message)"></map>
+						<map value="8" message="$(string.Intel-WiFi-Common.map.MacType.8.message)"></map>
+						<map value="9" message="$(string.Intel-WiFi-Common.map.MacType.9.message)"></map>
+					</valueMap>
+					<valueMap name="802_11DeauthReasonCode">
+						<map value="0" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.0.message)"></map>
+						<map value="1" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.1.message)"></map>
+						<map value="2" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.2.message)"></map>
+						<map value="3" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.3.message)"></map>
+						<map value="4" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.4.message)"></map>
+						<map value="5" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.5.message)"></map>
+						<map value="6" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.6.message)"></map>
+						<map value="7" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.7.message)"></map>
+						<map value="8" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.8.message)"></map>
+						<map value="9" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.9.message)"></map>
+						<map value="10" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.10.message)"></map>
+						<map value="11" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.11.message)"></map>
+						<map value="12" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.12.message)"></map>
+						<map value="13" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.13.message)"></map>
+						<map value="14" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.14.message)"></map>
+						<map value="15" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.15.message)"></map>
+						<map value="16" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.16.message)"></map>
+						<map value="17" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.17.message)"></map>
+						<map value="18" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.18.message)"></map>
+						<map value="19" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.19.message)"></map>
+						<map value="20" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.20.message)"></map>
+						<map value="21" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.21.message)"></map>
+						<map value="22" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.22.message)"></map>
+						<map value="23" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.23.message)"></map>
+						<map value="24" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.24.message)"></map>
+						<map value="25" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.25.message)"></map>
+						<map value="26" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.26.message)"></map>
+						<map value="27" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.27.message)"></map>
+						<map value="28" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.28.message)"></map>
+						<map value="29" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.29.message)"></map>
+						<map value="30" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.30.message)"></map>
+						<map value="31" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.31.message)"></map>
+						<map value="32" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.32.message)"></map>
+						<map value="33" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.33.message)"></map>
+						<map value="34" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.34.message)"></map>
+						<map value="35" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.35.message)"></map>
+						<map value="36" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.36.message)"></map>
+						<map value="37" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.37.message)"></map>
+						<map value="38" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.38.message)"></map>
+						<map value="39" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.39.message)"></map>
+						<map value="40" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.40.message)"></map>
+						<map value="98" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.98.message)"></map>
+						<map value="99" message="$(string.Intel-WiFi-Common.map.802_11DeauthReasonCode.99.message)"></map>
+					</valueMap>
+				</maps>
+				<templates>
+					<template tid="t_AssocStatus">
+						<data name="assocReason" inType="win:UInt32" map="AssocStatus"></data>
+						<data name="nodeAddress" inType="win:UInt8" outType="win:HexInt8" count="6"></data>
+						<data name="macType" inType="win:UInt32" map="MacType"></data>
+					</template>
+					<template tid="t_DeauthOrDisassocReason">
+						<data name="nodeAddress" inType="win:UInt8" outType="win:HexInt8" count="6"></data>
+						<data name="macType" inType="win:UInt32" map="MacType"></data>
+						<data name="peerAddress" inType="win:UInt8" outType="win:HexInt8" count="6"></data>
+						<data name="vifIdAndColor" inType="win:UInt32" outType="xs:unsignedInt"></data>
+						<data name="reason" inType="win:UInt16" map="802_11DeauthReasonCode"></data>
+					</template>
+					<template tid="t_DeauthOrDisassocSucceeded">
+						<data name="node Address" inType="win:UInt8" outType="win:HexInt8" count="6"></data>
+						<data name="macType" inType="win:UInt32" map="MacType"></data>
+						<data name="peerAddress" inType="win:UInt8" outType="win:HexInt8" count="6"></data>
+					</template>
+					<template tid="t_ChannelSwitchStart">
+						<data name="count" inType="win:UInt8" outType="xs:unsignedByte"></data>
+						<data name="channel" inType="win:UInt8" outType="xs:unsignedByte"></data>
+						<data name="isVhtSwitch" inType="win:Boolean" outType="xs:boolean"></data>
+						<data name="nodeAddress" inType="win:UInt8" outType="win:HexInt8" count="6"></data>
+						<data name="macType" inType="win:UInt32" map="MacType"></data>
+					</template>
+					<template tid="t_ChannelSwitchEnd">
+						<data name="oldChannel" inType="win:UInt8" outType="xs:unsignedByte"></data>
+						<data name="newChannel" inType="win:UInt8" outType="xs:unsignedByte"></data>
+						<data name="isNewChannelVht" inType="win:Boolean" outType="xs:boolean"></data>
+						<data name="nodeAddress" inType="win:UInt8" outType="win:HexInt8" count="6"></data>
+						<data name="macType" inType="win:UInt32" map="MacType"></data>
+					</template>
+					<template tid="t_BtCoexSarUpdate">
+						<data name="btCoexSarUpdateVersion" inType="win:UInt32" outType="xs:unsignedInt"></data>
+						<data name="btCoexSarUpdateTimestamp" inType="win:UInt64" outType="win:unsignedLong"></data>
+						<data name="btCoexSarUpdateSize" inType="win:UInt32" outType="xs:unsignedInt"></data>
+						<data name="btCoexSarUpdateData" inType="win:Binary" outType="xs:hexBinary" length="btCoexSarUpdateSize"></data>
+					</template>
+				</templates>
+			</provider>
+			<provider name="Intel-WiFi-WFD_customer" guid="{DC01153F-C7A0-4831-B7EE-8A6A25F492EB}" symbol="Intel_WiFi_WFD_customer" resourceFileName="%windir%\system32\drivers\IntelWiFiDriverEtw_ext.dll" messageFileName="%windir%\system32\drivers\IntelWiFiDriverEtw_ext.dll" parameterFileName="%windir%\system32\drivers\IntelWiFiDriverEtw_ext.dll">
+				<events>
+					<event symbol="GoNegotiationRequestReceived" value="1" version="0" level="win:LogAlways" task="Paring_customer" opcode="Rx" template="t_PeerMacAddress" keywords="Connectivity " message="$(string.Intel-WiFi-WFD.event.3.message)"></event>
+					<event symbol="FinishedGoStartFlow" value="2" version="0" level="win:LogAlways" task="GoSetup" template="t_GoStart" keywords="Connectivity " message="$(string.Intel-WiFi-WFD.event.17.message)"></event>
+					<event symbol="FinishedGoStopFlow" value="3" version="0" level="win:LogAlways" task="GoSetup" template="t_VifIdAndColor" keywords="Connectivity " message="$(string.Intel-WiFi-WFD.event.35.message)"></event>
+					<event symbol="BeginGoStartFlow" value="4" version="0" level="win:LogAlways" task="GoSetup" template="t_GoStart" keywords="Connectivity " message="$(string.Intel-WiFi-WFD.event.50.message)"></event>
+					<event symbol="GoStartFlowFailed" value="5" version="0" level="win:LogAlways" task="GoSetup" template="t_GoFail" keywords="Connectivity " message="$(string.Intel-WiFi-WFD.event.51.message)"></event>
+					<event symbol="BeginGoStopFlow" value="0" version="0" level="win:LogAlways" task="GoSetup" template="t_VifIdAndColor" keywords="Connectivity " message="$(string.Intel-WiFi-WFD.event.52.message)"></event>
+				</events>
+				<levels></levels>
+				<tasks>
+					<task name="Paring_customer" symbol="WFDParing" value="1" eventGUID="{C3CA2B18-3C93-450D-8D7E-0FB8D1663D52}"></task>
+					<task name="GoSetup" symbol="GoSetup" value="4" eventGUID="{48E39E27-025A-475E-A71F-42162AD41DA0}"></task>
+				</tasks>
+				<opcodes>
+					<opcode name="Rx" symbol="Rx" value="11"></opcode>
+				</opcodes>
+				<keywords>
+					<keyword name="Connectivity" symbol="Connectivity" mask="0x1"></keyword>
+				</keywords>
+				<templates>
+					<template tid="t_GoStart">
+						<data name="VifIdAndColor" inType="win:UInt32" outType="xs:unsignedInt"></data>
+						<data name="MacAddress" inType="win:UInt8" outType="win:HexInt8" count="6"></data>
+						<data name="Channel" inType="win:UInt8" outType="xs:unsignedByte"></data>
+					</template>
+					<template tid="t_GoFail">
+						<data name="VifIdAndColor" inType="win:UInt32" outType="xs:unsignedInt"></data>
+						<data name="MacAddress" inType="win:UInt8" outType="win:HexInt8" count="6"></data>
+						<data name="Channel" inType="win:UInt8" outType="xs:unsignedByte"></data>
+						<data name="FailReason" inType="win:UInt32" outType="xs:unsignedInt"></data>
+					</template>
+					<template tid="t_VifIdAndColor">
+						<data name="VifIdAndColor" inType="win:UInt32" outType="xs:unsignedInt"></data>
+					</template>
+					<template tid="t_PeerMacAddress">
+						<data name="PeerMacAddress" inType="win:UInt8" outType="win:HexInt8" count="6"></data>
+					</template>
+				</templates>
+			</provider>
+		</events>
+	</instrumentation>
+	<localization>
+		<resources culture="en-US">
+			<stringTable>
+				<string id="level.LogAlways" value="Log Always"></string>
+				<string id="Intel-Wifi-Infra.map.DISABLE_ENABLE.1.message" value="driver_enabled"></string>
+				<string id="Intel-Wifi-Infra.map.DISABLE_ENABLE.0.message" value="driver_disabled"></string>
+				<string id="Intel-Wifi-Connectivity.event.91.message" value="BSS disconnection start"></string>
+				<string id="Intel-Wifi-Connectivity.event.90.message" value="BSS connection start"></string>
+				<string id="Intel-Wifi-Connectivity.event.83.message" value="Scan Completed within %1 ms"></string>
+				<string id="Intel-Wifi-Connectivity.event.82.message" value="Scan Started"></string>
+				<string id="Intel-WiFi-WFD.map.AssocStatus.9.message" value="ASSOC_STATUS_DISASSOCIATED_BY_RESET"></string>
+				<string id="Intel-WiFi-WFD.map.AssocStatus.7.message" value="ASSOC_STATUS_DISASSOCIATED_BY_OS"></string>
+				<string id="Intel-WiFi-WFD.map.AssocStatus.5.message" value="ASSOC_STATUS_CANCELLED"></string>
+				<string id="Intel-WiFi-WFD.map.AssocStatus.4.message" value="ASSOC_STATUS_PHY_DISABLED"></string>
+				<string id="Intel-WiFi-WFD.map.AssocStatus.3.message" value="ASSOC_STATUS_RADIO_OFF"></string>
+				<string id="Intel-WiFi-WFD.map.AssocStatus.10.message" value="ASSOC_STATUS_SYSTEM_ERROR"></string>
+				<string id="Intel-WiFi-WFD.map.AssocStatus.1.message" value="ASSOC_STATUS_FAILURE"></string>
+				<string id="Intel-WiFi-WFD.map.AssocStatus.0.message" value="ASSOC_STATUS_SUCCESS"></string>
+				<string id="Intel-WiFi-WFD.event.52.message" value="GO (ID and Color = %1) Has received cmd to stop"></string>
+				<string id="Intel-WiFi-WFD.event.51.message" value="GO (ID and color = %1, Mac address = %2) Has been failed to start on channel: %3. Failure Status: %4"></string>
+				<string id="Intel-WiFi-WFD.event.50.message" value="GO (ID and color = %1, Mac address = %2) Has recived cmd to start on channel: %3"></string>
+				<string id="Intel-WiFi-WFD.event.35.message" value="GO (ID and Color = %1) Has been stopped"></string>
+				<string id="Intel-WiFi-WFD.event.3.message" value="Received GO Negotiation request from peer: %1"></string>
+				<string id="Intel-WiFi-WFD.event.17.message" value="GO (ID and color = %1, Mac address = %2) Has been started on channel: %3"></string>
+				<string id="Intel-WiFi-Infra.level.DiagnosticsLevelInfo.message" value="DiagnosticsLevelInfo"></string>
+				<string id="Intel-WiFi-Infra.event.8.message" value="Radio state changed from ON to OFF, Starting Radio Off flow"></string>
+				<string id="Intel-WiFi-Infra.event.63.message" value="Failure Of Init Flow For Any Other Reason"></string>
+				<string id="Intel-WiFi-Infra.event.62.message" value="No Alive On Init Image"></string>
+				<string id="Intel-WiFi-Infra.event.61.message" value="FW Unsigned Or Not Valid"></string>
+				<string id="Intel-WiFi-Infra.event.60.message" value="Cannot Access DAT File"></string>
+				<string id="Intel-WiFi-Infra.event.25.message" value="Suspend Flow - unconsolidated image, loading D3 image"></string>
+				<string id="Intel-WiFi-Infra.event.20.message" value="RF Kill - setup complete, complete radio ON flow"></string>
+				<string id="Intel-WiFi-Infra.event.16.message" value="Radio state changed from Off to ON, Starting Radio ON flow"></string>
+				<string id="Intel-WiFi-Infra.event.13.message" value="Complete radio off flow"></string>
+				<string id="Intel-WiFi-Common_customer.event.6.message" value="Abort channel switching"></string>
+				<string id="Intel-WiFi-Common.task._task_Roaming.message" value="This task includes events that are associated with roaming flow"></string>
+				<string id="Intel-WiFi-Common.task._task_ConnectionFlow.message" value="All connection events"></string>
+				<string id="Intel-WiFi-Common.map.MacType.9.message" value="TEST_MAC_TYPE"></string>
+				<string id="Intel-WiFi-Common.map.MacType.8.message" value="GO_MAC_TYPE"></string>
+				<string id="Intel-WiFi-Common.map.MacType.7.message" value="P2P_STA_MAC_TYPE"></string>
+				<string id="Intel-WiFi-Common.map.MacType.6.message" value="P2P_DEVICE_MAC_TYPE"></string>
+				<string id="Intel-WiFi-Common.map.MacType.5.message" value="BSS_STA_MAC_TYPE"></string>
+				<string id="Intel-WiFi-Common.map.MacType.4.message" value="IBSS_MAC_TYPE"></string>
+				<string id="Intel-WiFi-Common.map.MacType.3.message" value="PIBSS_MAC_TYPE"></string>
+				<string id="Intel-WiFi-Common.map.MacType.2.message" value="LISTENER_MAC_TYPE"></string>
+				<string id="Intel-WiFi-Common.map.MacType.1.message" value="AUX_MAC_TYPE"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.99.message" value="Used when the reason code sent in a deassoc req or deauth by the client is invalid - invalid length, invalid value etc. Example: Send a Deauth to the AP with the reason code to be invalid, say zero"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.98.message" value="Cisco defined - TBD"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.9.message" value="Station requesting (re)association is not authenticated with responding station"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.8.message" value="Disassociated because sending station is leaving (or has left) BSS"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.7.message" value="Class 3 frame received from nonassociated station"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.6.message" value="Class 2 frame received from nonauthenticated station"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.5.message" value="Disassociated because AP is unable to handle all currently associated stations"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.40.message" value="Peer QSTA does not support the requested cipher suite"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.4.message" value="Disassociated due to inactivity"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.39.message" value="Requested from peer QSTA due to timeout"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.38.message" value="Requested from peer QSTA as the QSTA received frames using the mechanism for which a setup is required"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.37.message" value="Requested from peer QSTA as it does not want to use the mechanism"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.36.message" value="Requested from peer QSTA as the QSTA is leaving the QBSS (or resetting)"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.35.message" value="Disassociated because QSTA is transmitting outside the limits of its TXOPs"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.34.message" value="Disassociated because excessive number of frames need to be acknowledged, but are not acknowledged due to AP transmissions and/or poor channel conditions"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.33.message" value="Disassociated because QAP lacks sufficient bandwidth for this QSTA"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.32.message" value="Disassociated for unspecified, QoS-related reason"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.31.message" value="Reserved"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.30.message" value="Reserved"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.3.message" value="station is leaving (or has left) IBSS or ESS"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.29.message" value="Reserved"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.28.message" value="Reserved"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.27.message" value="Reserved"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.26.message" value="Reserved"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.25.message" value="Reserved"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.24.message" value="Cipher suite rejected because of the security policy"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.23.message" value="IEEE 802.1X authentication failed"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.22.message" value="Invalid RSN information element capabilities"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.21.message" value="Unsupported RSN information element version"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.20.message" value="Invalid AKMP"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.2.message" value="Previous authentication no longer valid"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.19.message" value="Invalid pairwise cipher"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.18.message" value="Invalid group cipher"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.17.message" value="Information element in 4-Way Handshake different from (Re)Association Request/Probe"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.16.message" value="Group Key Handshake timeout"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.15.message" value="4-Way Handshake timeout"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.14.message" value="Message integrity code (MIC) failure"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.13.message" value="Invalid information element, i.e., an information element defined in this standard for"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.12.message" value="Reserved"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.11.message" value="Disassociated because the information in the Supported Channels element is unacceptable"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.10.message" value="Disassociated because the information in the Power Capability element is unacceptable"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.1.message" value="Unspecified reason"></string>
+				<string id="Intel-WiFi-Common.map.802_11DeauthReasonCode.0.message" value="Reserved"></string>
+				<string id="Intel-WiFi-Common.event.9.message" value="(macAddress %4, macType %5) Finished channel switching. Old channel = %1, new channel = %2. Is new channel VHT = %3"></string>
+				<string id="Intel-WiFi-Common.event.8.message" value="(macAddress = %4, macType = %5) receive channel switch action frame to channel %2 with count = %1, Switch to VHT = %3"></string>
+				<string id="Intel-WiFi-Common.event.7.message" value="(macAddress= %4, macType = %5) receive channel switch in Beacons to channel %2 with count = %1, Switch to VHT = %3"></string>
+				<string id="Intel-WiFi-Common.event.6.message" value="Association was completed with status %1 (macAddress %2, macType %3)"></string>
+				<string id="Intel-WiFi-Common.event.53.message" value="(macAddress %1, macType %2) Has successfully disconnected from %3."></string>
+				<string id="Intel-WiFi-Common.event.5.message" value="(macAddress %1, macType %2) received Deauth or Disassoc from %3, Reason - %4"></string>
+			</stringTable>
+		</resources>
+	</localization>
+</instrumentationManifest>

@@ -1,0 +1,292 @@
+
+
+
+
+BODY {
+
+	color: inherit;
+
+	background-color: white ;
+
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+
+	font-size: 10.0pt;
+
+	font-style: normal;
+
+	font-weight: normal;
+
+}
+
+
+
+P {
+
+	background-color: inherit ;
+
+	font-size: 10.0pt;
+
+	color: #000000;
+
+	font-family: Verdana, sans-serif;
+
+}
+
+
+
+
+
+
+
+
+
+H1 {
+
+	background-color: inherit ;
+
+	font-weight: bold;
+
+	color: #000000;
+
+	font-size: 16pt;
+
+	font-family: Verdana, sans-serif;
+
+}
+
+
+
+
+
+
+
+
+
+H2 {
+
+	background-color: inherit;
+
+	font-weight: bold;
+
+	font-size: 14pt;
+
+	color: #000000;
+
+	font-family: Verdana, sans-serif;
+
+}
+
+
+
+
+
+
+
+
+
+H3 {
+
+	background-color: inherit;
+
+	font-weight: bold;
+
+	font-size: 12pt;
+
+	color: #000000;
+
+	font-family: Verdana, sans-serif;
+
+}
+
+
+
+
+
+
+
+
+
+H4 {
+
+	background-color:inherit;
+
+	font-weight: bold;
+
+	font-size: 10pt;
+
+	color: #000000;
+
+	font-family: Verdana, sans-serif;
+
+}
+
+
+
+.table 
+
+{
+
+
+
+border: solid 2px;  
+
+margin-left: 0em;
+
+font-family: Verdana, Arial, Helvetica, sans-serif;
+
+font-size: 10.0pt;
+
+color: #000000;
+
+background-color:inherit;
+table-layout:auto;
+}
+
+th  
+
+{
+
+
+
+border: solid 1px;
+
+text-align: left;
+
+vertical-align: top;
+
+font-family: Verdana, Arial, Helvetica, sans-serif;
+
+font-size: 10.0pt;
+
+color: #000000;
+
+background-color:inherit;
+
+}
+
+td 
+
+{ 
+
+
+
+border: solid 1px;   
+
+text-align: left;
+
+vertical-align: top;
+
+}
+
+
+
+A:link {
+
+	color: #0000ff;
+
+	background-color:inherit;
+
+}
+
+
+
+A:visited {
+
+	color: #800080;
+
+	background-color: inherit;
+
+}
+
+
+
+A.expandspot {
+
+	cursor: auto;
+
+	color: #008000;
+
+	background-color:inherit;
+
+	font-style: normal;
+
+}
+
+
+
+SPAN.expandtext {
+
+	color: #ff0000;
+
+	background-color: inherit;
+
+	font-weight: normal;
+
+	font-style: italic;
+
+}
+
+
+
+A.dropspot {
+
+	font-style: italic;
+
+	color: #008000;
+
+	background-color: inherit;
+
+	cursor: auto;
+
+}
+
+
+
+A.glossterm {
+
+	cursor: auto;
+
+	color: #800000;
+
+	background-color:inherit;
+
+	font-style: normal;
+
+}
+
+
+
+SPAN.glosstext {
+
+	color: #0000ff;
+
+	background-color:inherit;
+
+	font-weight: normal;
+
+	font-style: italic;
+
+}
+
+ol {
+
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+
+	font-size: 10pt;
+
+	font-style: normal;
+
+	list-style-type: decimal;
+
+}
+
+ul {
+
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+
+	font-size: 10pt;
+
+	list-style-type: disc;
+
+}
+

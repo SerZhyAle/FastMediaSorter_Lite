@@ -58,6 +58,7 @@ Partial Class the_Main_Form
         '
         'btn_Select_Folder
         '
+        Me.btn_Select_Folder.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
         Me.btn_Select_Folder.Location = New System.Drawing.Point(968, -2)
         Me.btn_Select_Folder.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
         Me.btn_Select_Folder.Name = "btn_Select_Folder"
@@ -78,26 +79,30 @@ Partial Class the_Main_Form
         '
         'btn_Prev_File
         '
+        Me.btn_Prev_File.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
+        Me.btn_Prev_File.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
         Me.btn_Prev_File.Location = New System.Drawing.Point(284, 46)
         Me.btn_Prev_File.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
         Me.btn_Prev_File.Name = "btn_Prev_File"
         Me.btn_Prev_File.Size = New System.Drawing.Size(180, 44)
         Me.btn_Prev_File.TabIndex = 2
-        Me.btn_Prev_File.Text = "<< (P)rev"
+        Me.btn_Prev_File.Text = "< (P)rev"
         Me.btn_Prev_File.UseVisualStyleBackColor = True
         '
         'btn_Next_File
         '
+        Me.btn_Next_File.ImageAlign = System.Drawing.ContentAlignment.MiddleRight
         Me.btn_Next_File.Location = New System.Drawing.Point(468, 46)
         Me.btn_Next_File.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
         Me.btn_Next_File.Name = "btn_Next_File"
         Me.btn_Next_File.Size = New System.Drawing.Size(196, 44)
         Me.btn_Next_File.TabIndex = 3
-        Me.btn_Next_File.Text = "(N)ext >>"
+        Me.btn_Next_File.Text = "(N)ext >"
         Me.btn_Next_File.UseVisualStyleBackColor = True
         '
         'bt_Delete
         '
+        Me.bt_Delete.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
         Me.bt_Delete.Location = New System.Drawing.Point(1268, 48)
         Me.bt_Delete.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
         Me.bt_Delete.Name = "bt_Delete"
@@ -108,6 +113,7 @@ Partial Class the_Main_Form
         '
         'btn_Move_Table
         '
+        Me.btn_Move_Table.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
         Me.btn_Move_Table.Location = New System.Drawing.Point(868, 46)
         Me.btn_Move_Table.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
         Me.btn_Move_Table.Name = "btn_Move_Table"
@@ -159,6 +165,7 @@ Partial Class the_Main_Form
         '
         'btn_Review
         '
+        Me.btn_Review.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
         Me.btn_Review.Location = New System.Drawing.Point(1036, -2)
         Me.btn_Review.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
         Me.btn_Review.Name = "btn_Review"
@@ -179,6 +186,8 @@ Partial Class the_Main_Form
         '
         'btn_Full_Screen
         '
+        Me.btn_Full_Screen.BackgroundImage = CType(resources.GetObject("btn_Full_Screen.BackgroundImage"), System.Drawing.Image)
+        Me.btn_Full_Screen.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
         Me.btn_Full_Screen.Location = New System.Drawing.Point(1116, -2)
         Me.btn_Full_Screen.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
         Me.btn_Full_Screen.Name = "btn_Full_Screen"
@@ -200,6 +209,7 @@ Partial Class the_Main_Form
         'btn_Next_Random
         '
         Me.btn_Next_Random.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(204, Byte))
+        Me.btn_Next_Random.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
         Me.btn_Next_Random.Location = New System.Drawing.Point(668, 44)
         Me.btn_Next_Random.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
         Me.btn_Next_Random.Name = "btn_Next_Random"
@@ -252,6 +262,7 @@ Partial Class the_Main_Form
         '
         'btn_Rename
         '
+        Me.btn_Rename.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
         Me.btn_Rename.Location = New System.Drawing.Point(1200, 46)
         Me.btn_Rename.Margin = New System.Windows.Forms.Padding(4)
         Me.btn_Rename.Name = "btn_Rename"
@@ -282,6 +293,7 @@ Partial Class the_Main_Form
         '
         'Picture_Box_2
         '
+        Me.Picture_Box_2.InitialImage = Nothing
         Me.Picture_Box_2.Location = New System.Drawing.Point(0, 162)
         Me.Picture_Box_2.Margin = New System.Windows.Forms.Padding(4)
         Me.Picture_Box_2.Name = "Picture_Box_2"
@@ -292,6 +304,7 @@ Partial Class the_Main_Form
         '
         'Picture_Box_1
         '
+        Me.Picture_Box_1.InitialImage = Nothing
         Me.Picture_Box_1.Location = New System.Drawing.Point(0, 162)
         Me.Picture_Box_1.Margin = New System.Windows.Forms.Padding(4)
         Me.Picture_Box_1.Name = "Picture_Box_1"

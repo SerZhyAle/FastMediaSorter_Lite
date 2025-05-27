@@ -4,9 +4,8 @@
 'sza250502 refactor
 'sza250506 grok
 'FastMediaSorter
-'sza250520 
+'sza2505207
 
-'W275
 
 Option Strict On
 
@@ -31,6 +30,7 @@ Public Class the_Main_Form
     Private Const theJPGFileExtension As String = ".jpg"
     Private Const theJPGFileTypeDescription As String = "JPEG Image"
     Private applicationRunsCount As Integer
+    Private mediaViewedCount As Integer
     Private isComboSetAuto As Boolean = False
 
     Private isFileReseivedFromOutside As Boolean = False
@@ -73,7 +73,6 @@ Public Class the_Main_Form
     Private isPictureBox1Visible As Boolean
     Private isPictureBox2Visible As Boolean
     Private isWebView2Loaded As Boolean = False
-    '    Private isWebBrowserLoaded As Boolean = False
     Private lastLoadedUri As String = ""
     Private isFolderReadRequired As Boolean = False
 
@@ -122,13 +121,13 @@ Public Class the_Main_Form
         Public lpData As IntPtr
     End Structure
 
-    ' Declare the necessary Windows API functions
     <DllImport("user32.dll", CharSet:=CharSet.Auto)>
     Private Shared Function SendMessage(hWnd As IntPtr, msg As Integer, wParam As IntPtr, ByRef lParam As COPYDATASTRUCT) As Integer
     End Function
 
     Protected Overrides Sub WndProc(ByRef m As Message)
         If m.Msg = WM_COPYDATA Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0888: WM_COPYDATA")
             Try
                 Dim cds As COPYDATASTRUCT = CType(Marshal.PtrToStructure(m.LParam, GetType(COPYDATASTRUCT)), COPYDATASTRUCT)
                 Dim receivedData As String = Marshal.PtrToStringAnsi(cds.lpData, cds.cbData)
@@ -192,9 +191,6 @@ Public Class the_Main_Form
         InitializeExtensionLists()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0004: SetWebBrowserCompatibilityMode")
         SetWebBrowserCompatibilityMode()
-        '        AddHandler Web_Browser.DocumentCompleted, AddressOf WebBrowser1_DocumentCompleted
-        '        AddHandler Picture_Box_1.LoadCompleted, AddressOf PictureBox1_LoadCompleted
-        '        AddHandler Picture_Box_2.LoadCompleted, AddressOf PictureBox2_LoadCompleted
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0005: CheckWebView2Availability")
         CheckWebView2Availability()
@@ -266,8 +262,6 @@ Public Class the_Main_Form
             Dim SecondFileExtension = Path.GetExtension(nextAfterCurrentFileName).ToLower
 
             If imageFileExtensions.Contains(SecondFileExtension) Then
-
-                '                Dim nextImage As Image = LoadScaledImage(nextAfterCurrentFileName, PictureBox1.Width, PictureBox1.Height)
                 Dim nextImage As Image = LoadImage(nextAfterCurrentFileName)
                 currentSecondLoadedFileName = nextAfterCurrentFileName
 
@@ -449,6 +443,8 @@ Public Class the_Main_Form
     End Function
 
     Private Sub ReadShowMediaFile(ByVal readMode As String)
+
+        mediaViewedCount = mediaViewedCount + 1
 
         If Not isFolderReadRequired Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0050: ReadShowMediaFile = " & readMode.ToString)
@@ -680,8 +676,8 @@ Public Class the_Main_Form
             If currentFileIndex = 0 Then
                 wasExternalInputLast = False
                 lbl_Status.Text = If(lngRus, "чтение каталога.. ждите!", "reading files.. wait!")
-                '         Refresh()
                 Dim files As Object = GetFiles()
+
                 If files Is Nothing Then
                     lbl_Status.Text = If(lngRus, "! Ошибка чтения файлов", "! Error reading files")
                     currentFolderPath = ""
@@ -931,7 +927,6 @@ Public Class the_Main_Form
                 If Not isSecondaryPictureBoxActive Then
                     isPictureBox2Visible = True
                     isPictureBox1Visible = False
-                    '                    Picture_Box_2.Refresh()
 
                     bgWorkerResult = "USED P2"
                     isSecondaryPictureBoxActive = True
@@ -939,7 +934,6 @@ Public Class the_Main_Form
                 Else
                     isPictureBox2Visible = False
                     isPictureBox1Visible = True
-                    '                    Picture_Box_1.Refresh()
 
                     bgWorkerResult = "USED P1"
                     isSecondaryPictureBoxActive = False
@@ -955,7 +949,6 @@ Public Class the_Main_Form
                     If Not thisIsFirstPictureFileWeShow AndAlso isSecondaryPictureBoxActive Then
                         If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
                         Picture_Box_2.Image = newImage
-                        '  Picture_Box_2.Refresh()
 
                         isPictureBox2Visible = True
                         isPictureBox1Visible = False
@@ -965,7 +958,6 @@ Public Class the_Main_Form
                     Else
                         If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
                         Picture_Box_1.Image = newImage
-                        ' Picture_Box_1.Refresh()
 
                         isPictureBox1Visible = True
                         isPictureBox2Visible = False
@@ -1003,7 +995,7 @@ Public Class the_Main_Form
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0942: colorsum " & sumColor.ToString)
 
-        If sumColor < 200 Then
+        If sumColor < 300 Then
             Return System.Drawing.Color.White
         Else
             Return System.Drawing.Color.Black
@@ -1030,49 +1022,58 @@ Public Class the_Main_Form
 
             If isPictureBox1Visible AndAlso Picture_Box_1.Image IsNot Nothing AndAlso TypeOf Picture_Box_1.Image Is Bitmap Then
                 bmp = CType(Picture_Box_1.Image, Bitmap)
-                '    Picture_Box_1.Refresh()
                 Picture_Box_1.BringToFront()
             ElseIf isPictureBox2Visible AndAlso Picture_Box_2.Image IsNot Nothing AndAlso TypeOf Picture_Box_2.Image Is Bitmap Then
                 bmp = CType(Picture_Box_2.Image, Bitmap)
-                '       Picture_Box_2.Refresh()
                 Picture_Box_2.BringToFront()
-                End If
+            End If
 
-                If bmp IsNot Nothing Then
-                    If 1 < bmp.Width AndAlso 1 < bmp.Height Then
-                        Dim pixelColor As System.Drawing.Color = System.Drawing.Color.Black
+            If bmp IsNot Nothing Then
+                If 1 < bmp.Width AndAlso 1 < bmp.Height Then
+                    Dim pixelColor As System.Drawing.Color = System.Drawing.Color.Black
 
-                        If bmp.Width > 1 AndAlso bmp.Height > 1 Then
-                            pixelColor = bmp.GetPixel(1, 1)
+                    If bmp.Width > 5 AndAlso bmp.Height > 5 Then
+                        Dim pixelColor5 = bmp.GetPixel(5, 5)
+                        Dim pixelColor1 = bmp.GetPixel(1, 1)
+                        Dim dif As Long = CLng(Math.Abs(CInt(pixelColor5.R) - CInt(pixelColor1.R))) +
+                                              CLng(Math.Abs(CInt(pixelColor5.G) - CInt(pixelColor1.G))) +
+                                              CLng(Math.Abs(CInt(pixelColor5.B) - CInt(pixelColor1.B)))
+                        If dif < 10 Then
+                            pixelColor = pixelColor1
+                        Else
+                            pixelColor = bmp.GetPixel(CInt(bmp.Width / 20), CInt(bmp.Height / 20))
                         End If
+                    Else
+                        pixelColor = bmp.GetPixel(CInt(bmp.Width / 20), CInt(bmp.Height / 20))
+                    End If
 
-                        If pixelColor <> lastBackColor Then
-                            lastBackColor = pixelColor
+                    If pixelColor <> lastBackColor Then
+                        lastBackColor = pixelColor
 
-                            Me.BackColor = pixelColor
+                        Me.BackColor = pixelColor
 
-                            Dim OppositeColor = GetOppositeColor(pixelColor)
-                            For Each ctrl As Control In Me.Controls
-                                If TypeOf ctrl Is Label Then
-                                    Dim lbl As Label = CType(ctrl, Label)
-                                    lbl.ForeColor = OppositeColor
-                                    lbl.BackColor = System.Drawing.Color.Transparent
-                                ElseIf TypeOf ctrl Is Button Then
-                                    Dim btn As Button = CType(ctrl, Button)
-                                    btn.ForeColor = OppositeColor
-                                ElseIf TypeOf ctrl Is ComboBox Then
-                                    Dim cmb As ComboBox = CType(ctrl, ComboBox)
-                                    cmb.BackColor = pixelColor
-                                    cmb.ForeColor = OppositeColor
-                                ElseIf TypeOf ctrl Is CheckBox Then
-                                    Dim chb As CheckBox = CType(ctrl, CheckBox)
-                                    chb.BackColor = pixelColor
-                                    chb.ForeColor = OppositeColor
-                                End If
-                            Next
-                        End If
+                        Dim OppositeColor = GetOppositeColor(pixelColor)
+                        For Each ctrl As Control In Me.Controls
+                            If TypeOf ctrl Is Label Then
+                                Dim lbl As Label = CType(ctrl, Label)
+                                lbl.ForeColor = OppositeColor
+                                lbl.BackColor = System.Drawing.Color.Transparent
+                            ElseIf TypeOf ctrl Is Button Then
+                                Dim btn As Button = CType(ctrl, Button)
+                                btn.ForeColor = OppositeColor
+                            ElseIf TypeOf ctrl Is ComboBox Then
+                                Dim cmb As ComboBox = CType(ctrl, ComboBox)
+                                cmb.BackColor = pixelColor
+                                cmb.ForeColor = OppositeColor
+                            ElseIf TypeOf ctrl Is CheckBox Then
+                                Dim chb As CheckBox = CType(ctrl, CheckBox)
+                                chb.BackColor = pixelColor
+                                chb.ForeColor = OppositeColor
+                            End If
+                        Next
                     End If
                 End If
+            End If
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0945: picture box sizes: " & If(isPictureBox1Visible, "P1: ", "P2: ") & If(isPictureBox1Visible, Picture_Box_1.Width.ToString, Picture_Box_2.Width.ToString) & "x" & If(isPictureBox1Visible, Picture_Box_1.Height.ToString, Picture_Box_2.Height.ToString))
         End If
@@ -1192,7 +1193,6 @@ Public Class the_Main_Form
                 .FileDate = f.LastWriteTime
             }).ToList()
 
-            ' Ограничиваем количество файлов
             If fileEntries.Count > MaxFiles Then
                 fileEntries = fileEntries.Take(MaxFiles).ToList()
             End If
@@ -1201,7 +1201,6 @@ Public Class the_Main_Form
                 Return Nothing
             End If
 
-            ' Шаг 2: Сортировка в памяти
             Dim orderedEntries As IEnumerable(Of FileEntry)
             Select Case cmbox_Sort.SelectedItem?.ToString()
                 Case "abc"
@@ -1270,10 +1269,30 @@ Public Class the_Main_Form
         ISizeChanged()
     End Sub
 
+    Private Sub Form1_DragEnter(sender As Object, e As DragEventArgs) Handles Me.DragEnter
+        If e.Data.GetDataPresent(DataFormats.FileDrop) Then
+            e.Effect = DragDropEffects.Copy
+        Else
+            e.Effect = DragDropEffects.None
+        End If
+    End Sub
+
+    Private Sub Form1_DragDrop(sender As Object, e As DragEventArgs) Handles Me.DragDrop
+        If e.Data.GetDataPresent(DataFormats.FileDrop) Then
+            Dim files() As String = CType(e.Data.GetData(DataFormats.FileDrop), String())
+            For Each file As String In files
+                ProcessArgument(file)
+                Exit For
+            Next
+        End If
+    End Sub
+
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
         Debug.WriteLine(" - - - ")
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0000: Form started")
+        Me.AllowDrop = True
+
         InitNew()
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0010: init finished")
@@ -1282,6 +1301,8 @@ Public Class the_Main_Form
         applicationRunsCount = 0
         Integer.TryParse(GetSetting(appName, secName, "RunsCount", "0"), applicationRunsCount)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0020: Apps RUN: " & applicationRunsCount.ToString)
+
+        Integer.TryParse(GetSetting(appName, secName, "mediaViewedCount", "0"), mediaViewedCount)
 
         lngRus = GetSetting(appName, secName, "LngRus", "1") = "1"
 
@@ -1457,14 +1478,14 @@ Public Class the_Main_Form
             Picture_Box_2.Location = Picture_Box_1.Location
         Else
             Select Case e.Delta
-                Case Is < 0 ' Прокрутка вниз
-                    ReadShowMediaFile("ReadNextFile") ' Следующий файл
-                Case Is > 0 ' Прокрутка вверх
-                    ReadShowMediaFile("ReadPrevFile") ' Предыдущий файл
-                Case 0 ' Клик
+                Case Is < 0
+                    ReadShowMediaFile("ReadNextFile")
+                Case Is > 0
+                    ReadShowMediaFile("ReadPrevFile")
+                Case 0
                     Select Case e.Button
                         Case MouseButtons.Left
-                            ReadShowMediaFile("ReadNextFile") ' Следующий файл
+                            ReadShowMediaFile("ReadNextFile") ' next
                         Case MouseButtons.Right
                             If Not isWebBrowser1Visible Then
                                 ReadShowMediaFile("ReadPrevFile")
@@ -1483,7 +1504,7 @@ Public Class the_Main_Form
 
     Private Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
         Try
-            SaveSetting(appName, secName, "ImageFolder", currentFolderPath)
+            If currentFolderPath IsNot Nothing Then SaveSetting(appName, secName, "ImageFolder", currentFolderPath)
             SaveSetting(appName, secName, "LastCounter", currentFileIndex.ToString)
             SaveSetting(appName, secName, "chkTopMost", If(chkbox_Top_Most.Checked, "1", "0"))
             For z = 0 To 9
@@ -1500,6 +1521,7 @@ Public Class the_Main_Form
             SaveSetting(appName, secName, "CopyMode", If(copyMode, "1", "0"))
             SaveSetting(appName, secName, "TableOpened", If(the_Table_Form.Visible, "1", "0"))
             SaveSetting(appName, secName, "RunsCount", (applicationRunsCount + 1).ToString)
+            SaveSetting(appName, secName, "mediaViewedCount", (mediaViewedCount).ToString)
 
             If Me.Top >= 0 Then SaveSetting(appName, secName, "AppTop", Me.Top.ToString)
             If Me.Left >= 0 Then SaveSetting(appName, secName, "AppLeft", Me.Left.ToString)
@@ -1515,7 +1537,6 @@ Public Class the_Main_Form
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1190: settings are saved")
         Catch ex As Exception
-            MsgBox("E010 " & ex.Message)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1200: ERR: " & ex.Message)
         End Try
 
@@ -1531,7 +1552,7 @@ Public Class the_Main_Form
 
         If FileOperationWorker.IsBusy Then
             FileOperationWorker.CancelAsync()
-            Dim timeout As Integer = 5000 ' Увеличим таймаут для операций с файлами
+            Dim timeout As Integer = 5000
             Dim startTime As DateTime = DateTime.Now
             While FileOperationWorker.IsBusy AndAlso (DateTime.Now - startTime).TotalMilliseconds < timeout
                 Thread.Sleep(10)
@@ -1548,7 +1569,6 @@ Public Class the_Main_Form
             Web_View2 = Nothing
         End If
         If Web_Browser IsNot Nothing Then
-            '       RemoveHandler Web_Browser.DocumentCompleted, AddressOf WebBrowser1_DocumentCompleted
             Web_Browser.DocumentText = ""
             Web_Browser.Dispose()
         End If
@@ -1722,13 +1742,11 @@ Public Class the_Main_Form
                         If isSecondaryPictureBoxActive Then
                             If isPictureBox2Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
                                 Picture_Box_2.Image.RotateFlip(RotateFlipType.Rotate90FlipNone)
-                                '   Picture_Box_2.Refresh()
                                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1510: P2 Rotated")
                             End If
                         Else
                             If isPictureBox1Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
                                 Picture_Box_1.Image.RotateFlip(RotateFlipType.Rotate90FlipNone)
-                                '    Picture_Box_1.Refresh()
                                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1520: P1 Rotated")
                             End If
                         End If
@@ -1742,13 +1760,11 @@ Public Class the_Main_Form
                         If isSecondaryPictureBoxActive Then
                             If isPictureBox2Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
                                 Picture_Box_2.Image.RotateFlip(RotateFlipType.Rotate270FlipNone)
-                                '     Picture_Box_2.Refresh()
                                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1530: P2 Rotated")
                             End If
                         Else
                             If isPictureBox1Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
                                 Picture_Box_1.Image.RotateFlip(RotateFlipType.Rotate270FlipNone)
-                                '       Picture_Box_1.Refresh()
                                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1540: P1 Rotated")
                             End If
                         End If
@@ -1874,7 +1890,6 @@ Public Class the_Main_Form
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1710: copy run")
 
                             lbl_Status.Text = If(lngRus, "!Ждите.. Файл копируется (" & textKey & ") в каталог " & newDest, "!Wait.. File copying (" & textKey & ") to " & newDest)
-                            '     Me.Refresh()
                             My.Computer.FileSystem.CopyFile(currentFileName, newDest)
                             lbl_Status.Text = If(lngRus, "файл скопирован (" & textKey & ") в каталог " & newDest, "file copied (" & textKey & ") to " & newDest)
 
@@ -1898,25 +1913,24 @@ Public Class the_Main_Form
 
                             Web_Browser.DocumentText = ""
                             If Web_View2 IsNot Nothing Then
-                                    Web_View2.Source = New Uri("about:blank")
-                                End If
-                                lbl_Status.Text = If(lngRus, "!Ждите.. Файл переносится (" & textKey & ") в каталог " & newDest, "!Wait.. File moving (" & textKey & ") to " & newDest)
-                            '      Me.Refresh()
-                            My.Computer.FileSystem.MoveFile(currentFileName, newDest)
-                                If useArray Then
-                                    filesArray = RemoveAt(filesArray, currentFileIndex)
-                                Else
-                                    filesList.RemoveAt(currentFileIndex)
-                                End If
-                                totalFilesCount -= 1
-                                If currentFileIndex > (totalFilesCount - 1) Then currentFileIndex = totalFilesCount - 1
-                                lbl_Status.Text = If(lngRus, "файл перенесен (" & textKey & ") в каталог " & newDest, "file moved (" & textKey & ") to " & newDest)
-
-                                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1729: file is moved to " & newDest)
-
-                                ReadShowMediaFile("SetFile")
+                                Web_View2.Source = New Uri("about:blank")
                             End If
+                            lbl_Status.Text = If(lngRus, "!Ждите.. Файл переносится (" & textKey & ") в каталог " & newDest, "!Wait.. File moving (" & textKey & ") to " & newDest)
+                            My.Computer.FileSystem.MoveFile(currentFileName, newDest)
+                            If useArray Then
+                                filesArray = RemoveAt(filesArray, currentFileIndex)
+                            Else
+                                filesList.RemoveAt(currentFileIndex)
+                            End If
+                            totalFilesCount -= 1
+                            If currentFileIndex > (totalFilesCount - 1) Then currentFileIndex = totalFilesCount - 1
+                            lbl_Status.Text = If(lngRus, "файл перенесен (" & textKey & ") в каталог " & newDest, "file moved (" & textKey & ") to " & newDest)
+
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1729: file is moved to " & newDest)
+
+                            ReadShowMediaFile("SetFile")
                         End If
+                    End If
                 Catch ex As Exception
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1730: E014 " & ex.Message)
                     MsgBox("E014 " & ex.Message)
@@ -1969,7 +1983,6 @@ Public Class the_Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1790: undo move deletion")
                     Try
                         lbl_Status.Text = If(lngRus, "!Ждите. Возвращается в каталог " & historySourceFileName, "!Wait. File back to " & historySourceFileName)
-                        '            Me.Refresh()
                         My.Computer.FileSystem.MoveFile(historyDestinationFileName, historySourceFileName)
                         If useArray Then
                             filesArray = AddAt(filesArray, historySourceFileName, currentFileIndex)
@@ -2111,7 +2124,7 @@ Public Class the_Main_Form
     End Sub
 
     Private Sub Button7_Click(sender As Object, e As EventArgs) Handles btn_Full_Screen.Click
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1900: btn_Full_Screen (fullscreen)")
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1900: btn_Full_Screen")
         isFullScreen = Not isFullScreen
         SetViewSizes()
     End Sub
@@ -2481,12 +2494,9 @@ Public Class the_Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2060: WebView2_NavigationCompleted IsSuccess")
             isWebView2Loaded = True
             isWebView2Visible = True
-
-            '    UpdateControlVisibility()
         Else
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2070: WebView2_NavigationCompleted Error: " & e.WebErrorStatus.ToString())
             isWebView2Visible = False
-         '   UpdateControlVisibility()
         End If
     End Sub
 
@@ -2515,18 +2525,6 @@ Public Class the_Main_Form
             End Try
         End If
     End Sub
-
-    'Private Sub WebBrowser1_DocumentCompleted(sender As Object, e As WebBrowserDocumentCompletedEventArgs)
-    '    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2100: Web Browser_DocumentCompleted")
-
-    '    isWebBrowserLoaded = True
-    '    'lastLoadedUri = e.Url.ToString()
-
-    '    'If lastLoadedUri <> "about:blank" AndAlso Web_Browser.DocumentText <> "" Then
-    '    '    isWebBrowser1Visible = True
-    '    '    UpdateControlVisibility()
-    '    'End If
-    'End Sub
 
     Private Sub Label3_MouseClick(sender As Object, e As MouseEventArgs) Handles lbl_Current_File.MouseClick
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2110: lbl_Current_File.MouseClick")
