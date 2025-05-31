@@ -49,20 +49,19 @@ Partial Class the_Main_Form
         'lbl_Folder
         '
         Me.lbl_Folder.AutoSize = True
-        Me.lbl_Folder.Location = New System.Drawing.Point(96, 6)
-        Me.lbl_Folder.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
+        Me.lbl_Folder.Location = New System.Drawing.Point(72, 5)
         Me.lbl_Folder.Name = "lbl_Folder"
-        Me.lbl_Folder.Size = New System.Drawing.Size(79, 25)
+        Me.lbl_Folder.Size = New System.Drawing.Size(58, 20)
         Me.lbl_Folder.TabIndex = 1
         Me.lbl_Folder.Text = "Folder:"
         '
         'btn_Select_Folder
         '
         Me.btn_Select_Folder.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
-        Me.btn_Select_Folder.Location = New System.Drawing.Point(968, -2)
-        Me.btn_Select_Folder.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
+        Me.btn_Select_Folder.Location = New System.Drawing.Point(726, -2)
+        Me.btn_Select_Folder.Margin = New System.Windows.Forms.Padding(3, 5, 3, 5)
         Me.btn_Select_Folder.Name = "btn_Select_Folder"
-        Me.btn_Select_Folder.Size = New System.Drawing.Size(56, 44)
+        Me.btn_Select_Folder.Size = New System.Drawing.Size(42, 35)
         Me.btn_Select_Folder.TabIndex = 1
         Me.btn_Select_Folder.Text = "..."
         Me.btn_Select_Folder.UseVisualStyleBackColor = True
@@ -70,10 +69,9 @@ Partial Class the_Main_Form
         'lbl_File_Number
         '
         Me.lbl_File_Number.BackColor = System.Drawing.Color.Transparent
-        Me.lbl_File_Number.Location = New System.Drawing.Point(4, 56)
-        Me.lbl_File_Number.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
+        Me.lbl_File_Number.Location = New System.Drawing.Point(3, 45)
         Me.lbl_File_Number.Name = "lbl_File_Number"
-        Me.lbl_File_Number.Size = New System.Drawing.Size(272, 35)
+        Me.lbl_File_Number.Size = New System.Drawing.Size(204, 28)
         Me.lbl_File_Number.TabIndex = 4
         Me.lbl_File_Number.Text = "Files: 0"
         '
@@ -81,10 +79,10 @@ Partial Class the_Main_Form
         '
         Me.btn_Prev_File.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
         Me.btn_Prev_File.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        Me.btn_Prev_File.Location = New System.Drawing.Point(284, 46)
-        Me.btn_Prev_File.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
+        Me.btn_Prev_File.Location = New System.Drawing.Point(213, 37)
+        Me.btn_Prev_File.Margin = New System.Windows.Forms.Padding(3, 5, 3, 5)
         Me.btn_Prev_File.Name = "btn_Prev_File"
-        Me.btn_Prev_File.Size = New System.Drawing.Size(180, 44)
+        Me.btn_Prev_File.Size = New System.Drawing.Size(135, 35)
         Me.btn_Prev_File.TabIndex = 2
         Me.btn_Prev_File.Text = "< (P)rev"
         Me.btn_Prev_File.UseVisualStyleBackColor = True
@@ -92,10 +90,10 @@ Partial Class the_Main_Form
         'btn_Next_File
         '
         Me.btn_Next_File.ImageAlign = System.Drawing.ContentAlignment.MiddleRight
-        Me.btn_Next_File.Location = New System.Drawing.Point(468, 46)
-        Me.btn_Next_File.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
+        Me.btn_Next_File.Location = New System.Drawing.Point(351, 37)
+        Me.btn_Next_File.Margin = New System.Windows.Forms.Padding(3, 5, 3, 5)
         Me.btn_Next_File.Name = "btn_Next_File"
-        Me.btn_Next_File.Size = New System.Drawing.Size(196, 44)
+        Me.btn_Next_File.Size = New System.Drawing.Size(147, 35)
         Me.btn_Next_File.TabIndex = 3
         Me.btn_Next_File.Text = "(N)ext >"
         Me.btn_Next_File.UseVisualStyleBackColor = True
@@ -103,10 +101,10 @@ Partial Class the_Main_Form
         'bt_Delete
         '
         Me.bt_Delete.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        Me.bt_Delete.Location = New System.Drawing.Point(1268, 48)
-        Me.bt_Delete.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
+        Me.bt_Delete.Location = New System.Drawing.Point(951, 38)
+        Me.bt_Delete.Margin = New System.Windows.Forms.Padding(3, 5, 3, 5)
         Me.bt_Delete.Name = "bt_Delete"
-        Me.bt_Delete.Size = New System.Drawing.Size(124, 44)
+        Me.bt_Delete.Size = New System.Drawing.Size(93, 35)
         Me.bt_Delete.TabIndex = 5
         Me.bt_Delete.Text = "(D)elete"
         Me.bt_Delete.UseVisualStyleBackColor = True
@@ -114,10 +112,10 @@ Partial Class the_Main_Form
         'btn_Move_Table
         '
         Me.btn_Move_Table.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        Me.btn_Move_Table.Location = New System.Drawing.Point(868, 46)
-        Me.btn_Move_Table.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
+        Me.btn_Move_Table.Location = New System.Drawing.Point(651, 37)
+        Me.btn_Move_Table.Margin = New System.Windows.Forms.Padding(3, 5, 3, 5)
         Me.btn_Move_Table.Name = "btn_Move_Table"
-        Me.btn_Move_Table.Size = New System.Drawing.Size(320, 44)
+        Me.btn_Move_Table.Size = New System.Drawing.Size(240, 35)
         Me.btn_Move_Table.TabIndex = 4
         Me.btn_Move_Table.Text = "MoveTo table"
         Me.btn_Move_Table.UseVisualStyleBackColor = True
@@ -126,10 +124,9 @@ Partial Class the_Main_Form
         '
         Me.lbl_Current_File.AutoSize = True
         Me.lbl_Current_File.BackColor = System.Drawing.Color.Transparent
-        Me.lbl_Current_File.Location = New System.Drawing.Point(8, 96)
-        Me.lbl_Current_File.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
+        Me.lbl_Current_File.Location = New System.Drawing.Point(6, 77)
         Me.lbl_Current_File.Name = "lbl_Current_File"
-        Me.lbl_Current_File.Size = New System.Drawing.Size(113, 25)
+        Me.lbl_Current_File.Size = New System.Drawing.Size(83, 20)
         Me.lbl_Current_File.TabIndex = 0
         Me.lbl_Current_File.Text = "current file"
         '
@@ -137,10 +134,9 @@ Partial Class the_Main_Form
         '
         Me.lbl_Status.AutoSize = True
         Me.lbl_Status.BackColor = System.Drawing.Color.Transparent
-        Me.lbl_Status.Location = New System.Drawing.Point(8, 133)
-        Me.lbl_Status.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
+        Me.lbl_Status.Location = New System.Drawing.Point(6, 106)
         Me.lbl_Status.Name = "lbl_Status"
-        Me.lbl_Status.Size = New System.Drawing.Size(70, 25)
+        Me.lbl_Status.Size = New System.Drawing.Size(53, 20)
         Me.lbl_Status.TabIndex = 100
         Me.lbl_Status.Text = "status"
         '
@@ -152,12 +148,11 @@ Partial Class the_Main_Form
         Me.lbl_Help_Info.BackColor = System.Drawing.Color.White
         Me.lbl_Help_Info.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D
         Me.lbl_Help_Info.FlatStyle = System.Windows.Forms.FlatStyle.Popup
-        Me.lbl_Help_Info.Font = New System.Drawing.Font("Microsoft Sans Serif", 12.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(204, Byte))
+        Me.lbl_Help_Info.Font = New System.Drawing.Font("Microsoft Sans Serif", 10.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(204, Byte))
         Me.lbl_Help_Info.ForeColor = System.Drawing.Color.Black
-        Me.lbl_Help_Info.Location = New System.Drawing.Point(8, 90)
-        Me.lbl_Help_Info.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
+        Me.lbl_Help_Info.Location = New System.Drawing.Point(6, 72)
         Me.lbl_Help_Info.Name = "lbl_Help_Info"
-        Me.lbl_Help_Info.Size = New System.Drawing.Size(1380, 663)
+        Me.lbl_Help_Info.Size = New System.Drawing.Size(1035, 530)
         Me.lbl_Help_Info.TabIndex = 0
         Me.lbl_Help_Info.Text = "First run"
         Me.lbl_Help_Info.TextAlign = System.Drawing.ContentAlignment.MiddleCenter
@@ -166,20 +161,20 @@ Partial Class the_Main_Form
         'btn_Review
         '
         Me.btn_Review.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
-        Me.btn_Review.Location = New System.Drawing.Point(1036, -2)
-        Me.btn_Review.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
+        Me.btn_Review.Location = New System.Drawing.Point(777, -2)
+        Me.btn_Review.Margin = New System.Windows.Forms.Padding(3, 5, 3, 5)
         Me.btn_Review.Name = "btn_Review"
-        Me.btn_Review.Size = New System.Drawing.Size(76, 44)
+        Me.btn_Review.Size = New System.Drawing.Size(57, 35)
         Me.btn_Review.TabIndex = 106
         Me.btn_Review.Text = "RE"
         Me.btn_Review.UseVisualStyleBackColor = True
         '
         'btn_Slideshow
         '
-        Me.btn_Slideshow.Location = New System.Drawing.Point(804, 50)
-        Me.btn_Slideshow.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
+        Me.btn_Slideshow.Location = New System.Drawing.Point(603, 40)
+        Me.btn_Slideshow.Margin = New System.Windows.Forms.Padding(3, 5, 3, 5)
         Me.btn_Slideshow.Name = "btn_Slideshow"
-        Me.btn_Slideshow.Size = New System.Drawing.Size(64, 37)
+        Me.btn_Slideshow.Size = New System.Drawing.Size(48, 30)
         Me.btn_Slideshow.TabIndex = 107
         Me.btn_Slideshow.Text = ">>"
         Me.btn_Slideshow.UseVisualStyleBackColor = True
@@ -188,10 +183,10 @@ Partial Class the_Main_Form
         '
         Me.btn_Full_Screen.BackgroundImage = CType(resources.GetObject("btn_Full_Screen.BackgroundImage"), System.Drawing.Image)
         Me.btn_Full_Screen.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
-        Me.btn_Full_Screen.Location = New System.Drawing.Point(1116, -2)
-        Me.btn_Full_Screen.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
+        Me.btn_Full_Screen.Location = New System.Drawing.Point(837, -2)
+        Me.btn_Full_Screen.Margin = New System.Windows.Forms.Padding(3, 5, 3, 5)
         Me.btn_Full_Screen.Name = "btn_Full_Screen"
-        Me.btn_Full_Screen.Size = New System.Drawing.Size(76, 44)
+        Me.btn_Full_Screen.Size = New System.Drawing.Size(57, 35)
         Me.btn_Full_Screen.TabIndex = 108
         Me.btn_Full_Screen.Text = "^^"
         Me.btn_Full_Screen.UseVisualStyleBackColor = True
@@ -199,10 +194,9 @@ Partial Class the_Main_Form
         'Web_Browser
         '
         Me.Web_Browser.AllowWebBrowserDrop = False
-        Me.Web_Browser.Location = New System.Drawing.Point(0, 162)
-        Me.Web_Browser.Margin = New System.Windows.Forms.Padding(4)
+        Me.Web_Browser.Location = New System.Drawing.Point(0, 130)
         Me.Web_Browser.Name = "Web_Browser"
-        Me.Web_Browser.Size = New System.Drawing.Size(1388, 662)
+        Me.Web_Browser.Size = New System.Drawing.Size(1041, 530)
         Me.Web_Browser.TabIndex = 109
         Me.Web_Browser.TabStop = False
         '
@@ -210,10 +204,10 @@ Partial Class the_Main_Form
         '
         Me.btn_Next_Random.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(204, Byte))
         Me.btn_Next_Random.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        Me.btn_Next_Random.Location = New System.Drawing.Point(668, 44)
-        Me.btn_Next_Random.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
+        Me.btn_Next_Random.Location = New System.Drawing.Point(501, 35)
+        Me.btn_Next_Random.Margin = New System.Windows.Forms.Padding(3, 5, 3, 5)
         Me.btn_Next_Random.Name = "btn_Next_Random"
-        Me.btn_Next_Random.Size = New System.Drawing.Size(72, 44)
+        Me.btn_Next_Random.Size = New System.Drawing.Size(54, 35)
         Me.btn_Next_Random.TabIndex = 111
         Me.btn_Next_Random.Text = "(Y)Rnd>"
         Me.btn_Next_Random.UseVisualStyleBackColor = True
@@ -222,19 +216,18 @@ Partial Class the_Main_Form
         '
         Me.lbl_Slideshow_Time.AutoSize = True
         Me.lbl_Slideshow_Time.BackColor = System.Drawing.Color.Transparent
-        Me.lbl_Slideshow_Time.Location = New System.Drawing.Point(1196, 2)
-        Me.lbl_Slideshow_Time.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
+        Me.lbl_Slideshow_Time.Location = New System.Drawing.Point(897, 2)
         Me.lbl_Slideshow_Time.Name = "lbl_Slideshow_Time"
-        Me.lbl_Slideshow_Time.Size = New System.Drawing.Size(35, 25)
+        Me.lbl_Slideshow_Time.Size = New System.Drawing.Size(26, 20)
         Me.lbl_Slideshow_Time.TabIndex = 112
         Me.lbl_Slideshow_Time.Text = "1s"
         '
         'btn_Random_Slideshow
         '
-        Me.btn_Random_Slideshow.Location = New System.Drawing.Point(740, 50)
-        Me.btn_Random_Slideshow.Margin = New System.Windows.Forms.Padding(4, 6, 4, 6)
+        Me.btn_Random_Slideshow.Location = New System.Drawing.Point(555, 40)
+        Me.btn_Random_Slideshow.Margin = New System.Windows.Forms.Padding(3, 5, 3, 5)
         Me.btn_Random_Slideshow.Name = "btn_Random_Slideshow"
-        Me.btn_Random_Slideshow.Size = New System.Drawing.Size(64, 37)
+        Me.btn_Random_Slideshow.Size = New System.Drawing.Size(48, 30)
         Me.btn_Random_Slideshow.TabIndex = 113
         Me.btn_Random_Slideshow.Text = "R>"
         Me.btn_Random_Slideshow.UseVisualStyleBackColor = True
@@ -242,20 +235,18 @@ Partial Class the_Main_Form
         'chkbox_Top_Most
         '
         Me.chkbox_Top_Most.AutoSize = True
-        Me.chkbox_Top_Most.Location = New System.Drawing.Point(1296, 2)
-        Me.chkbox_Top_Most.Margin = New System.Windows.Forms.Padding(4)
+        Me.chkbox_Top_Most.Location = New System.Drawing.Point(972, 2)
         Me.chkbox_Top_Most.Name = "chkbox_Top_Most"
-        Me.chkbox_Top_Most.Size = New System.Drawing.Size(28, 27)
+        Me.chkbox_Top_Most.Size = New System.Drawing.Size(22, 21)
         Me.chkbox_Top_Most.TabIndex = 115
         Me.chkbox_Top_Most.UseVisualStyleBackColor = True
         '
         'btn_Language
         '
         Me.btn_Language.Font = New System.Drawing.Font("Microsoft Sans Serif", 7.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(204, Byte))
-        Me.btn_Language.Location = New System.Drawing.Point(1336, -2)
-        Me.btn_Language.Margin = New System.Windows.Forms.Padding(4)
+        Me.btn_Language.Location = New System.Drawing.Point(1002, -2)
         Me.btn_Language.Name = "btn_Language"
-        Me.btn_Language.Size = New System.Drawing.Size(60, 37)
+        Me.btn_Language.Size = New System.Drawing.Size(45, 30)
         Me.btn_Language.TabIndex = 116
         Me.btn_Language.Text = "RU"
         Me.btn_Language.UseVisualStyleBackColor = True
@@ -263,10 +254,9 @@ Partial Class the_Main_Form
         'btn_Rename
         '
         Me.btn_Rename.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        Me.btn_Rename.Location = New System.Drawing.Point(1200, 46)
-        Me.btn_Rename.Margin = New System.Windows.Forms.Padding(4)
+        Me.btn_Rename.Location = New System.Drawing.Point(900, 37)
         Me.btn_Rename.Name = "btn_Rename"
-        Me.btn_Rename.Size = New System.Drawing.Size(60, 44)
+        Me.btn_Rename.Size = New System.Drawing.Size(45, 35)
         Me.btn_Rename.TabIndex = 117
         Me.btn_Rename.Text = "RN"
         Me.btn_Rename.UseVisualStyleBackColor = True
@@ -274,10 +264,9 @@ Partial Class the_Main_Form
         'cmbox_Media_Folder
         '
         Me.cmbox_Media_Folder.FormattingEnabled = True
-        Me.cmbox_Media_Folder.Location = New System.Drawing.Point(168, 2)
-        Me.cmbox_Media_Folder.Margin = New System.Windows.Forms.Padding(4)
+        Me.cmbox_Media_Folder.Location = New System.Drawing.Point(126, 2)
         Me.cmbox_Media_Folder.Name = "cmbox_Media_Folder"
-        Me.cmbox_Media_Folder.Size = New System.Drawing.Size(788, 33)
+        Me.cmbox_Media_Folder.Size = New System.Drawing.Size(592, 28)
         Me.cmbox_Media_Folder.TabIndex = 118
         '
         'cmbox_Sort
@@ -285,19 +274,17 @@ Partial Class the_Main_Form
         Me.cmbox_Sort.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
         Me.cmbox_Sort.FormattingEnabled = True
         Me.cmbox_Sort.Items.AddRange(New Object() {"abc", "xyz", "rnd", ">size", "<size"})
-        Me.cmbox_Sort.Location = New System.Drawing.Point(8, -2)
-        Me.cmbox_Sort.Margin = New System.Windows.Forms.Padding(4)
+        Me.cmbox_Sort.Location = New System.Drawing.Point(6, -2)
         Me.cmbox_Sort.Name = "cmbox_Sort"
-        Me.cmbox_Sort.Size = New System.Drawing.Size(76, 33)
+        Me.cmbox_Sort.Size = New System.Drawing.Size(58, 28)
         Me.cmbox_Sort.TabIndex = 119
         '
         'Picture_Box_2
         '
         Me.Picture_Box_2.InitialImage = Nothing
-        Me.Picture_Box_2.Location = New System.Drawing.Point(0, 162)
-        Me.Picture_Box_2.Margin = New System.Windows.Forms.Padding(4)
+        Me.Picture_Box_2.Location = New System.Drawing.Point(0, 130)
         Me.Picture_Box_2.Name = "Picture_Box_2"
-        Me.Picture_Box_2.Size = New System.Drawing.Size(1388, 662)
+        Me.Picture_Box_2.Size = New System.Drawing.Size(1041, 530)
         Me.Picture_Box_2.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom
         Me.Picture_Box_2.TabIndex = 120
         Me.Picture_Box_2.TabStop = False
@@ -305,19 +292,18 @@ Partial Class the_Main_Form
         'Picture_Box_1
         '
         Me.Picture_Box_1.InitialImage = Nothing
-        Me.Picture_Box_1.Location = New System.Drawing.Point(0, 162)
-        Me.Picture_Box_1.Margin = New System.Windows.Forms.Padding(4)
+        Me.Picture_Box_1.Location = New System.Drawing.Point(0, 130)
         Me.Picture_Box_1.Name = "Picture_Box_1"
-        Me.Picture_Box_1.Size = New System.Drawing.Size(1388, 662)
+        Me.Picture_Box_1.Size = New System.Drawing.Size(1041, 530)
         Me.Picture_Box_1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom
         Me.Picture_Box_1.TabIndex = 0
         Me.Picture_Box_1.TabStop = False
         '
         'the_Main_Form
         '
-        Me.AutoScaleDimensions = New System.Drawing.SizeF(12.0!, 25.0!)
+        Me.AutoScaleDimensions = New System.Drawing.SizeF(9.0!, 20.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(1396, 833)
+        Me.ClientSize = New System.Drawing.Size(1047, 666)
         Me.Controls.Add(Me.cmbox_Media_Folder)
         Me.Controls.Add(Me.cmbox_Sort)
         Me.Controls.Add(Me.btn_Rename)
@@ -344,7 +330,7 @@ Partial Class the_Main_Form
         Me.Controls.Add(Me.Picture_Box_1)
         Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
         Me.KeyPreview = True
-        Me.Margin = New System.Windows.Forms.Padding(4, 2, 4, 2)
+        Me.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.Name = "the_Main_Form"
         Me.Text = "Fast Media Sorter by SZA"
         CType(Me.Picture_Box_2, System.ComponentModel.ISupportInitialize).EndInit()

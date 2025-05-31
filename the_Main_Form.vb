@@ -15,9 +15,11 @@ Imports System.Drawing.Imaging
 Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Security.Cryptography
+Imports System.Text
 Imports System.Text.RegularExpressions
 Imports System.Threading
 Imports System.Windows.Media
+Imports Microsoft.VisualBasic.ApplicationServices
 Imports Microsoft.VisualBasic.FileIO
 Imports Microsoft.Web.WebView2.Core
 Imports Microsoft.Web.WebView2.WinForms
@@ -125,8 +127,55 @@ Public Class the_Main_Form
     Private Shared Function SendMessage(hWnd As IntPtr, msg As Integer, wParam As IntPtr, ByRef lParam As COPYDATASTRUCT) As Integer
     End Function
 
+    Private Declare Function MapViewOfFile Lib "kernel32.dll" (ByVal hFileMappingObject As IntPtr, ByVal dwDesiredAccess As Integer, ByVal dwFileOffsetHigh As Integer, ByVal dwFileOffsetLow As Integer, ByVal dwNumberOfBytesToMap As Integer) As IntPtr
+    Private Declare Function UnmapViewOfFile Lib "kernel32.dll" (ByVal lpBaseAddress As IntPtr) As Boolean
+    Private Declare Function CloseHandle Lib "kernel32.dll" (ByVal hObject As IntPtr) As Boolean
+
+    Const WM_USER As Integer = &H400
+    Const MY_CUSTOM_MESSAGE As Integer = WM_USER + 1
+    Const FILE_MAP_READ As Integer = &H4
+
     Protected Overrides Sub WndProc(ByRef m As Message)
+
+        If m.Msg = MY_CUSTOM_MESSAGE Then
+            Dim hMap As IntPtr = m.WParam
+            If hMap <> IntPtr.Zero Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0777: MY_CUSTOM_MESSAGE")
+                Try
+                    Dim pBuf As IntPtr = MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0)
+                    If pBuf <> IntPtr.Zero Then
+                        Try
+                            Dim length As Integer = 0
+                            While Marshal.ReadByte(pBuf, length) <> 0
+                                length += 1
+                            End While
+
+                            Dim bytes(length - 1) As Byte
+                            Marshal.Copy(pBuf, bytes, 0, length)
+                            Dim receivedString As String = Encoding.UTF8.GetString(bytes)
+                            If Not String.IsNullOrEmpty(receivedString) Then
+                                External_message(receivedString)
+                            Else
+                                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0778: Error processing MY_CUSTOM_MESSAGE - received empty")
+                            End If
+                        Finally
+                            UnmapViewOfFile(pBuf)
+                        End Try
+                    Else
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0776: Error processing MY_CUSTOM_MESSAGE: " & Marshal.GetLastWin32Error())
+                    End If
+                Catch ex As Exception
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0779: Error processing MY_CUSTOM_MESSAGE: " & ex.Message)
+                Finally
+                    CloseHandle(hMap)
+                End Try
+            Else
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0779: Error processing MY_CUSTOM_MESSAGE - received NULL")
+            End If
+        End If
+
         If m.Msg = WM_COPYDATA Then
+
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0888: WM_COPYDATA")
             Try
                 Dim cds As COPYDATASTRUCT = CType(Marshal.PtrToStructure(m.LParam, GetType(COPYDATASTRUCT)), COPYDATASTRUCT)
@@ -136,20 +185,26 @@ Public Class the_Main_Form
                     Return
                 End If
 
-                Dim argument As String = receivedData.TrimEnd(Chr(0)).Trim()
-                argument = Regex.Replace(argument, "(?<!^)(\\\\)+", "\")
+                External_message(receivedData)
 
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0010: received from new instance: " & argument)
-
-                isExternalInputReceived = True
-                isFileReseivedFromOutside = True
-                ProcessArgument(argument)
             Catch ex As Exception
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0020: Error processing WM_COPYDATA - " & ex.Message)
             End Try
         End If
 
         MyBase.WndProc(m)
+    End Sub
+
+    Private Sub External_message(receivedData As String)
+        Dim argument As String = receivedData.TrimEnd(Chr(0)).Trim()
+        argument = Regex.Replace(argument, "(?<!^)(\\\\)+", "\")
+
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0010: received from new instance: " & argument)
+
+        isExternalInputReceived = True
+        isFileReseivedFromOutside = True
+        ProcessArgument(argument)
+
     End Sub
 
     Private Sub SetWebBrowserCompatibilityMode()
@@ -275,7 +330,7 @@ Public Class the_Main_Form
         Else
 
             currentSecondLoadedFileName = ""
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0120: No needs for the Next file, backload is cancelled")
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0120: No needs for the Next file, backload is cancelled; isSlideShowRandom " & isSlideShowRandom.ToString & " nextAfterCurrentFileName = " & nextAfterCurrentFileName)
             e.Cancel = True
         End If
     End Sub
@@ -416,8 +471,8 @@ Public Class the_Main_Form
 
         If folderBrowse.ShowDialog() = Windows.Forms.DialogResult.OK Then
             currentFolderPath = folderBrowse.SelectedPath
+            lbl_Status.Text = If(lngRus, "выбрана папка", "folder selected") & ": " & currentFolderPath
             ReadShowMediaFile("ReadFolderAndFile")
-            lbl_Status.Text = If(lngRus, "выбрана папка", "folder selected")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0310: Folder read")
         End If
     End Sub
@@ -429,6 +484,7 @@ Public Class the_Main_Form
         Array.Copy(arr, lBound, outArr, lBound, index)
         outArr(index) = newOne
         Array.Copy(arr, index, outArr, index + 1, uBound - index + 1)
+
         Return outArr
     End Function
 
@@ -439,6 +495,7 @@ Public Class the_Main_Form
         Dim outArr(uBound - 1) As T
         Array.Copy(arr, lBound, outArr, lBound, index)
         Array.Copy(arr, index + 1, outArr, index, uBound - index)
+
         Return outArr
     End Function
 
@@ -450,8 +507,8 @@ Public Class the_Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0050: ReadShowMediaFile = " & readMode.ToString)
 
             Dim currentTime As DateTime = DateTime.Now
-            If lastActionTime.AddSeconds(0.1) > currentTime Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0330: Try to read the new file less than 0.1s - cancelled")
+            If lastActionTime.AddSeconds(0.04) > currentTime Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0330: Try to read the new file less than 0.4s - cancelled")
                 Exit Sub
             End If
             lastActionTime = currentTime
@@ -461,7 +518,8 @@ Public Class the_Main_Form
                 Exit Sub
             End If
 
-            lbl_Slideshow_Time.Text = If(SlideShowTimer.Enabled, (SlideShowTimer.Interval / 1000).ToString() & "s", "")
+            Dim sls = If(SlideShowTimer.Enabled, (SlideShowTimer.Interval / 1000).ToString() & "s", "")
+            If Not lbl_Slideshow_Time.Text = sls Then lbl_Slideshow_Time.Text = sls
 
             Dim isAfterUndo As Boolean = (readMode = "ReadAfterUndo")
             Dim isFileFound As Boolean = True
@@ -476,10 +534,8 @@ Public Class the_Main_Form
             End If
 
             isTextBoxEdition = True
-            Dim needsUpdate As Boolean = True
-            needsUpdate = Not cmbox_Media_Folder.Text = currentFolderPath
 
-            If needsUpdate Then
+            If Not cmbox_Media_Folder.Text = currentFolderPath Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0370: folder combo list is updated")
                 If recentFolders.LastOrDefault() <> currentFolderPath Then
                     recentFolders.Remove(currentFolderPath)
@@ -542,6 +598,12 @@ Public Class the_Main_Form
                 If currentFileIndex < 0 Then currentFileIndex = 0
                 If currentFileIndex > totalFilesCount - 1 Then currentFileIndex = totalFilesCount - 1
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0440: case SetFile")
+
+            Case "InSlideShow" '0
+                currentFileIndex = currentFileIndex + 1
+                If currentFileIndex < 0 Then currentFileIndex = 0
+                If currentFileIndex > totalFilesCount - 1 Then currentFileIndex = totalFilesCount - 1
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0460: case InSlideShow")
 
             Case "ReadFolderAndFile" '0
                 lbl_Status.Text = If(lngRus, "чтение каталога.. ждите!", "reading files.. wait!")
@@ -677,6 +739,7 @@ Public Class the_Main_Form
                 wasExternalInputLast = False
                 lbl_Status.Text = If(lngRus, "чтение каталога.. ждите!", "reading files.. wait!")
                 Dim files As Object = GetFiles()
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0642: files got for slideshow")
 
                 If files Is Nothing Then
                     lbl_Status.Text = If(lngRus, "! Ошибка чтения файлов", "! Error reading files")
@@ -702,11 +765,11 @@ Public Class the_Main_Form
                         Dim random As New Random
                         currentFileIndex = random.Next(0, totalFilesCount)
                         isFileFound = True
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0660: New random file set")
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0660: New random file set currentFileIndex=" & currentFileIndex.ToString)
                     Else
                         currentFileIndex = If(useArray, Array.IndexOf(filesArray, targetImagePath), filesList.IndexOf(targetImagePath))
                         isFileFound = currentFileIndex >= 0
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0670: Next slideshow file set")
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0670: Next slideshow file set currentFileIndex=" & currentFileIndex.ToString)
                     End If
                 Else
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0680: No files for slides")
@@ -740,7 +803,7 @@ Public Class the_Main_Form
 
                 Dim files As Object = GetFiles()
                 If files Is Nothing Then
-                    lbl_Status.Text = If(lngRus, "! Ошибка чтения файлов", "! Error reading files")
+                    'lbl_Status.Text = If(lngRus, "! Ошибка чтения файлов", "! Error reading files")
                     currentFolderPath = ""
                     cmbox_Media_Folder.Text = ""
                     totalFilesCount = 0
@@ -876,23 +939,37 @@ Public Class the_Main_Form
             isPictureBox1Visible = False
             isPictureBox2Visible = False
 
-            Dim escapedUri As String = Uri.EscapeUriString(fileUri)
-            Dim contentHtml As String = "<video id='videoPlayer' controls autoplay style='width:100%;calc(100% - 35px);object-fit:fill;'>" &
-                            "<source src='" & escapedUri & "'>" &
-                            If(lngRus, "Ваш браузер не поддерживает видео.", "Your browser does not support video.") &
-                            "</video>"
+            Dim localFileAsUri As New Uri(fileUri)
+            Dim htmlEscapedUri As String = localFileAsUri.AbsoluteUri
+
+            Dim contentHtml As String = "<video id='videoPlayer' controls autoplay style='width:100%;height:calc(100% - 35px);object-fit:fill;'>" &
+                                    "<source src='" & htmlEscapedUri & "' type='video/mp4'>" & ' <<< ИЗМЕНЕНО ЗДЕСЬ
+                                    "<track kind='captions' default>" &
+                                    "<p style='color: white; text-align: center;'>" &
+                                    If(lngRus, "Ваш браузер не поддерживает видео.", "Your browser does not support video.") & "</p>" & ' Добавлено </p> здесь для корректности HTML
+                                    "</video>"
+
             Dim html As String = "<html><head><meta http-equiv='X-UA-Compatible' content='IE=edge'>" &
-                         "<style>" &
-                         "body { margin: 0; overflow: hidden; background: black; }" &
-                         "video { width: 100%; height: calc(100% - 35px); object-fit: fill; position: absolute; top: 0; left: 0; }" &
-                         "</style></head>" &
-                         "<body oncontextmenu='return false;'>" & contentHtml &
-                         "<script>" &
-                         "var player = document.getElementById('videoPlayer');" &
-                         "player.volume = " & videoVolume.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) & ";" &
-                         "player.oncontextmenu = function(e) { e.preventDefault(); if (this.paused) this.play(); else this.pause(); return false; };" &
-                         "player.onvolumechange = function() { try { window.external.SetVolume(this.volume); } catch(e) { } };" &
-                         "</script></body></html>"
+                             "<style>" &
+                             "body { margin: 0; overflow: hidden; background: black; }" &
+                             "video { width: 100%; height: calc(100% - 35px); object-fit: fill; position: absolute; top: 0; left: 0; }" &
+                             "</style></head>" &
+                             "<body oncontextmenu='return false;'>" & contentHtml &
+                             "<script>" &
+                             "var player = document.getElementById('videoPlayer');" &
+                             "player.volume = " & videoVolume.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) & ";" &
+                             "player.oncontextmenu = function(e) { e.preventDefault(); if (this.paused) this.play(); else this.pause(); return false; };" &
+                             "player.onvolumechange = function() { try { window.external.SetVolume(this.volume); } catch(e) { } };" &
+                             "document.addEventListener('DOMContentLoaded', function() { " &
+                             "  var video = document.getElementById('videoPlayer'); " &
+                             "  video.onerror = function() { " &
+                             "    var errorMsg = 'Error: Unsupported video type or invalid file path. Source: ' + (video.querySelector('source') ? video.querySelector('source').src : 'not found'); " &
+                             "    var p = document.createElement('p'); p.style.color='white'; p.style.textAlign='center'; p.innerText = errorMsg; " &
+                             "    video.parentNode.insertBefore(p, video.nextSibling); " &
+                             "    console.error(errorMsg); " &
+                             "  }; " &
+                             "});" &
+                             "</script></body></html>"
 
             lastLoadedUri = ""
             Web_Browser.DocumentText = html
@@ -904,9 +981,9 @@ Public Class the_Main_Form
 
             UpdateControlVisibility()
 
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0850: WebBrowser is loaded")
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0850: WebBrowser is loaded with URI: " & htmlEscapedUri)
         Catch ex As Exception
-            Web_Browser.DocumentText = ""
+            Web_Browser.DocumentText = "<html><body style='background:black; color:white; text-align:center;'><p>Error preparing video player: " & ex.Message & "</p></body></html>"
             isWebBrowser1Visible = False
 
             UpdateControlVisibility()
@@ -995,7 +1072,7 @@ Public Class the_Main_Form
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0942: colorsum " & sumColor.ToString)
 
-        If sumColor < 300 Then
+        If sumColor <300 Then
             Return System.Drawing.Color.White
         Else
             Return System.Drawing.Color.Black
@@ -1007,13 +1084,13 @@ Public Class the_Main_Form
         Picture_Box_1.Visible = isPictureBox1Visible
         Picture_Box_2.Visible = isPictureBox2Visible
         Web_Browser.Visible = isWebBrowser1Visible
-        If isWebView2Available AndAlso Web_View2 IsNot Nothing Then
+        If isWebView2Available AndAlso Web_View2 IsNot Nothing AndAlso Not Web_View2.Visible = isWebView2Visible Then
             Web_View2.Visible = isWebView2Visible
         End If
 
         If isPictureBox1Visible OrElse isPictureBox2Visible Then
             Web_Browser.Visible = False
-            If Web_View2 IsNot Nothing AndAlso Web_View2.Visible Then
+            If Web_View2 IsNot Nothing AndAlso isWebView2Visible AndAlso Web_View2.Visible Then
                 isWebView2Visible = False
                 Web_View2.Visible = isWebView2Visible
             End If
@@ -1035,6 +1112,7 @@ Public Class the_Main_Form
                     If bmp.Width > 5 AndAlso bmp.Height > 5 Then
                         Dim pixelColor5 = bmp.GetPixel(5, 5)
                         Dim pixelColor1 = bmp.GetPixel(1, 1)
+
                         Dim dif As Long = CLng(Math.Abs(CInt(pixelColor5.R) - CInt(pixelColor1.R))) +
                                               CLng(Math.Abs(CInt(pixelColor5.G) - CInt(pixelColor1.G))) +
                                               CLng(Math.Abs(CInt(pixelColor5.B) - CInt(pixelColor1.B)))
@@ -1088,10 +1166,17 @@ Public Class the_Main_Form
         If totalFilesCount <> 0 Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0960: isFileFound = " & isFileFound.ToString)
             If isFileFound Then
-                currentFileName = If(useArray, filesArray(currentFileIndex), filesList(currentFileIndex))
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0970: currentFileIndex = " & currentFileIndex.ToString)
+                currentFileName = If(useArray, filesArray(currentFileIndex), filesList(currentFileIndex))
             Else
-                currentFileName = targetImagePath
+                If targetImagePath Is Nothing Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0972: targetImagePath Is Nothing")
+                    currentFileIndex = 0
+                    currentFileName = If(useArray, filesArray(currentFileIndex), filesList(currentFileIndex))
+                    targetImagePath = currentFileName
+                Else
+                    currentFileName = targetImagePath
+                End If
             End If
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0980: currentFileName = " & currentFileName)
@@ -1124,7 +1209,7 @@ Public Class the_Main_Form
                 If isSlideShowRandom OrElse isFileReseivedFromOutside Then
                     nextAfterCurrentFileName = ""
                     isFileReseivedFromOutside = False
-                ElseIf Not wasExternalInputLast AndAlso Not (fileList Is Nothing And filesArray Is Nothing) Then
+                ElseIf Not wasExternalInputLast AndAlso Not (filesList Is Nothing And filesArray Is Nothing) Then
                     nextAfterCurrentFileName = If(totalFilesCount > 0, If(totalFilesCount = currentFileIndex + 1, If(useArray, filesArray(0), filesList(0)), If(useArray, filesArray(currentFileIndex + 1), filesList(currentFileIndex + 1))), "")
                 Else
                     nextAfterCurrentFileName = ""
@@ -1198,6 +1283,8 @@ Public Class the_Main_Form
             End If
 
             If fileEntries.Count = 0 Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1096: Files count=0")
+                lbl_Status.Text = If(lngRus, "Папка пустая", "Folder is empty")
                 Return Nothing
             End If
 
@@ -1229,6 +1316,7 @@ Public Class the_Main_Form
             Else
                 Return filePaths
             End If
+
         Catch ex As Exception
             lbl_Status.Text = If(lngRus, "! Ошибка чтения файлов", "! Error reading files")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1110: Error reading files: " & ex.Message)
@@ -1258,6 +1346,13 @@ Public Class the_Main_Form
 
         Web_Browser.Size = Picture_Box_1.Size
         Web_Browser.Location = Picture_Box_1.Location
+        If Picture_Box_1.Left >= 0 Then
+            lbl_Help_Info.Location = Picture_Box_1.Location
+            lbl_Help_Info.Size = Picture_Box_1.Size
+        Else
+            lbl_Help_Info.Location = New Point(0, 0)
+            lbl_Help_Info.Size = Me.Size
+        End If
 
         If Web_View2 IsNot Nothing Then
             Web_View2.Size = Picture_Box_1.Size
@@ -1627,11 +1722,15 @@ Public Class the_Main_Form
 
     Public Sub KeybUse(e As KeyEventArgs)
         SlideShowTimer.Enabled = False
+        isSlideShowRandom = False
+
         If Me.cmbox_Media_Folder.Focused Then
             If e.KeyCode = Keys.Enter AndAlso cmbox_Media_Folder.Text <> "" Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1300: Enter pressed")
                 currentFolderPath = cmbox_Media_Folder.Text
                 ReadShowMediaFile("ReadFolderAndFile")
+            Else
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1302: key skip - in editing")
             End If
             Exit Sub
         End If
@@ -1662,15 +1761,15 @@ Public Class the_Main_Form
                 Case Keys.S
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1330: to slide show")
                     isSlideShowRandom = True
+                    Dim newInterval = 10000
                     If SlideShowTimer.Enabled Then
-                        SlideShowTimer.Interval = CInt(SlideShowTimer.Interval / 2)
-                        If SlideShowTimer.Interval < 50 Then
-                            SlideShowTimer.Interval = 50
-                        End If
+                        newInterval = CInt(SlideShowTimer.Interval / 2)
+                        If newInterval < 50 Then newInterval = 50
                     Else
-                        SlideShowTimer.Interval = 10000
                         SlideShowTimer.Enabled = True
                     End If
+                    SlideShowTimer.Interval = newInterval
+
                     ReadShowMediaFile("ReadForSlideShow")
                 Case Keys.F6
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1340: to rename")
@@ -1683,15 +1782,15 @@ Public Class the_Main_Form
                 Case Keys.I, Keys.F5
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1360: to random show")
                     isSlideShowRandom = False
+                    Dim newInterval = 10000
                     If SlideShowTimer.Enabled Then
-                        SlideShowTimer.Interval = CInt(SlideShowTimer.Interval / 2)
-                        If SlideShowTimer.Interval < 50 Then
-                            SlideShowTimer.Interval = 50
-                        End If
+                        newInterval = CInt(SlideShowTimer.Interval / 2)
+                        If newInterval < 50 Then newInterval = 50
                     Else
-                        SlideShowTimer.Interval = 10000
                         SlideShowTimer.Enabled = True
                     End If
+                    SlideShowTimer.Interval = newInterval
+
                     ReadShowMediaFile("ReadForSlideShow")
                 Case Keys.Home, Keys.H, Keys.BrowserHome
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1370: to first file")
@@ -1785,7 +1884,7 @@ Public Class the_Main_Form
                 Case Keys.F1
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1620: F1 help")
                     lbl_Help_Info.Visible = True
-                    lbl_Help_Info.Show()
+                    lbl_Help_Info.BringToFront()
                 Case Keys.F2
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1630: F2")
                     the_Table_Form.Show()
@@ -2106,21 +2205,21 @@ Public Class the_Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1880: btn_Slideshow")
 
         isSlideShowRandom = False
+        Dim newInterval = 10000
         If SlideShowTimer.Enabled Then
-            SlideShowTimer.Interval = CInt(SlideShowTimer.Interval / 2)
-            If SlideShowTimer.Interval < 50 Then
-                SlideShowTimer.Interval = 50
-            End If
+            newInterval = CInt(SlideShowTimer.Interval / 2)
+            If newInterval < 50 Then newInterval = 50
         Else
-            SlideShowTimer.Interval = 10000
             SlideShowTimer.Enabled = True
         End If
+        SlideShowTimer.Interval = newInterval
+
         ReadShowMediaFile("ReadForSlideShow")
     End Sub
 
     Private Sub SlideShow_Elapsed() Handles SlideShowTimer.Tick
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1890: SlideShowTimer")
-        ReadShowMediaFile("ReadForSlideShow")
+        ReadShowMediaFile("InSlideShow")
     End Sub
 
     Private Sub Button7_Click(sender As Object, e As EventArgs) Handles btn_Full_Screen.Click
@@ -2427,15 +2526,15 @@ Public Class the_Main_Form
     Private Sub Button9_Click(sender As Object, e As EventArgs) Handles btn_Random_Slideshow.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2000: btn_Random_Slideshow")
         isSlideShowRandom = True
+        Dim newInterval = 10000
         If SlideShowTimer.Enabled Then
-            SlideShowTimer.Interval = CInt(SlideShowTimer.Interval / 2)
-            If SlideShowTimer.Interval < 50 Then
-                SlideShowTimer.Interval = 50
-            End If
+            newInterval = CInt(SlideShowTimer.Interval / 2)
+            If newInterval < 50 Then newInterval = 50
         Else
-            SlideShowTimer.Interval = 10000
             SlideShowTimer.Enabled = True
         End If
+        SlideShowTimer.Interval = newInterval
+
         ReadShowMediaFile("ReadForSlideShow")
     End Sub
 
@@ -2656,5 +2755,15 @@ Public Class the_Main_Form
 
     Private Sub StatusL_Click(sender As Object, e As EventArgs) Handles lbl_Status.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2300: Visibility set: " & If(isPictureBox1Visible, "P1-YES ", "P1-NO ") & If(isPictureBox2Visible, "P2-YES ", "P2-NO ") & If(isWebBrowser1Visible, "WB-YES ", "WB-NO ") & If(isWebView2Visible, "WV2-YES", "WV2-NO "))
+    End Sub
+
+    Private Sub Picture_Box_1_KeyDown(sender As Object, e As KeyEventArgs) Handles Picture_Box_1.KeyDown
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1248: keyb on P1: " & e.KeyCode.ToString)
+        KeybUse(e)
+    End Sub
+
+    Private Sub Picture_Box_2_KeyDown(sender As Object, e As KeyEventArgs) Handles Picture_Box_2.KeyDown
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1249: keyb on P2: " & e.KeyCode.ToString)
+        KeybUse(e)
     End Sub
 End Class
