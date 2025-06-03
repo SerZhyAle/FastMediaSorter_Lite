@@ -62,7 +62,7 @@ Public Class the_Main_Form
     Private filesList As List(Of String) = Nothing
     Private filesArray As String() = Nothing
     Private useArray As Boolean = False
-    Private Const MaxFiles As Integer = 22222
+    Private Const MaxFiles As Integer = 122220
 
     Private isTableFormOpen As Boolean
     Private lastActionTime As DateTime
@@ -104,9 +104,28 @@ Public Class the_Main_Form
     Private WithEvents ResizeDebounceTimer As New System.Windows.Forms.Timer()
     Private lastFullScreenState As Boolean = False
 
+    <DllImport("user32.dll")>
+    Private Shared Function ShowWindow(hWnd As IntPtr, nCmdShow As Integer) As Boolean
+    End Function
+
+    <DllImport("user32.dll")>
+    Private Shared Function SetForegroundWindow(hWnd As IntPtr) As Boolean
+    End Function
+
+    <DllImport("user32.dll")>
+    Private Shared Function GetForegroundWindow() As IntPtr
+    End Function
+
+    Private Const SW_SHOWNOACTIVATE As Integer = 4
+    Private Const SW_RESTORE As Integer = 9
+
     Private Sub InitializeFileOperationWorker()
         FileOperationWorker.WorkerSupportsCancellation = True
     End Sub
+
+    Private lastMediaAreaClickTime As DateTime = DateTime.MinValue
+    Private lastMediaAreaClickButton As MouseButtons = MouseButtons.None
+    Private ReadOnly DoubleClickTimeThreshold As Integer = SystemInformation.DoubleClickTime
 
     Private Sub InitializeExtensionLists()
         allSupportedExtensions.UnionWith(imageFileExtensions)
@@ -201,10 +220,31 @@ Public Class the_Main_Form
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0010: received from new instance: " & argument)
 
+        Dim wasMinimized As Boolean = (Me.WindowState = FormWindowState.Minimized)
+        Dim previousForegroundWindowHandle As IntPtr = IntPtr.Zero
+
+        If Not wasMinimized Then
+            previousForegroundWindowHandle = GetForegroundWindow()
+            If previousForegroundWindowHandle = Me.Handle Then
+                previousForegroundWindowHandle = IntPtr.Zero
+            End If
+        End If
+
         isExternalInputReceived = True
         isFileReseivedFromOutside = True
+
         ProcessArgument(argument)
 
+        If wasMinimized Then
+            ShowWindow(Me.Handle, SW_SHOWNOACTIVATE)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0011: focus recovered")
+        ElseIf previousForegroundWindowHandle <> IntPtr.Zero Then
+            Dim currentForegroundHandle As IntPtr = GetForegroundWindow()
+            If currentForegroundHandle = Me.Handle Then
+                SetForegroundWindow(previousForegroundWindowHandle)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0012: try focus another: " & previousForegroundWindowHandle.ToString())
+            End If
+        End If
     End Sub
 
     Private Sub SetWebBrowserCompatibilityMode()
@@ -274,7 +314,9 @@ Public Class the_Main_Form
     Private Sub BgWorker_DoWork(sender As Object, e As DoWorkEventArgs) Handles BgWorker.DoWork
         Dim worker As BackgroundWorker = DirectCast(sender, BackgroundWorker)
 
-        If worker.CancellationPending Then
+        If noBackgroundTasksMode OrElse
+            worker.CancellationPending Then
+
             e.Cancel = True
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0050: BgWorker got cancellation")
         End If
@@ -394,18 +436,36 @@ Public Class the_Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0230: bgWorkerResult: " & bgWorkerResult)
     End Sub
 
-    Public Sub ProcessArgument(argument As String)
-        argument = argument.Trim()
+    Public Sub ProcessArgument(rawArgument As String)
+        Dim argumentForPath As String = rawArgument.Trim()
+        Dim argumentForFlags As String = rawArgument.ToLowerInvariant()
+        Dim isNoBackFlagSetInThisCall As Boolean = argumentForFlags.Contains("-noback")
+
+        If isNoBackFlagSetInThisCall Then
+            noBackgroundTasksMode = True
+            argumentForPath = System.Text.RegularExpressions.Regex.Replace(argumentForPath, "-noback", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim()
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0232: ProcessArgument: -NoBack")
+        End If
+
+        If String.IsNullOrEmpty(argumentForPath) Then
+            If noBackgroundTasksMode Then
+                lbl_Status.Text = If(lngRus, "Режим -NoBack активен. Ожидание файла/папки.", "NoBack mode active. Awaiting file/folder.")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0234: ProcessArgument: -NoBack but no file")
+            Else
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0236: ProcessArgument: no file argumented")
+            End If
+            Return
+        End If
 
         Try
-            If String.IsNullOrEmpty(argument) Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0240: arg is EMPTY")
-                Return
-            End If
-
-            Dim isDirectory As Boolean = Directory.Exists(argument)
+            Dim isDirectory As Boolean = Directory.Exists(argumentForPath)
             If isDirectory Then
-                currentFolderPath = argument
+                If Not isNoBackFlagSetInThisCall Then
+                    noBackgroundTasksMode = False
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0278: ProcessArgument: folder without -NoBack. mode -NoBack is off")
+                End If
+
+                currentFolderPath = argumentForPath
                 isTextBoxEdition = True
                 cmbox_Media_Folder.Text = currentFolderPath
                 isTextBoxEdition = False
@@ -414,35 +474,33 @@ Public Class the_Main_Form
                 If folderPathSaved = currentFolderPath Then
                     Integer.TryParse(GetSetting(appName, secName, "LastCounter"), currentFileIndex)
                     If currentFileIndex > 0 Then
-                        totalFilesCount = FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
-                        If currentFileIndex < totalFilesCount Then
-                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0250: folder is set from arg, file found in savings")
-                            ReadShowMediaFile("ReadFiles")
-                        Else
-                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0260: folder is set from arg, but file is not found in savings")
-                            currentFileIndex = 0
-                            ReadShowMediaFile("ReadFolderAndFile")
-                        End If
                     Else
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0265: folder is set from arg, but file wasn't in savings")
                         currentFileIndex = 0
-                        ReadShowMediaFile("ReadFolderAndFile")
                     End If
                 Else
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0270: folder is set from arg")
                     currentFileIndex = 0
-                    ReadShowMediaFile("ReadFolderAndFile")
                 End If
+
+                ReadShowMediaFile("ReadFolderAndFile")
             Else
-                If Not File.Exists(argument) Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0280: File from arg does not exist: " & argument)
+                If Not File.Exists(argumentForPath) Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0280: file of argument is NOT exists: " & argumentForPath)
                     Return
                 End If
 
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0290: File is set from arg: " & argument)
-                currentFolderPath = Path.GetDirectoryName(argument)
-                targetImagePath = argument
-                currentFileName = argument
+                Dim newFolderPath As String = Path.GetDirectoryName(argumentForPath)
+
+                If Not String.Equals(currentFolderPath, newFolderPath, StringComparison.OrdinalIgnoreCase) Then
+                    If Not isNoBackFlagSetInThisCall Then
+                        noBackgroundTasksMode = False
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0288: ProcessArgument: file from the NEW folder with -NoBack. Mode -NoBack is off.")
+                    End If
+                End If
+
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0290: File is set from arg: " & argumentForPath)
+                currentFolderPath = newFolderPath
+                targetImagePath = argumentForPath
+                currentFileName = argumentForPath
                 isTextBoxEdition = True
                 cmbox_Media_Folder.Text = currentFolderPath
                 isTextBoxEdition = False
@@ -459,6 +517,7 @@ Public Class the_Main_Form
             isTextBoxEdition = True
             cmbox_Media_Folder.Text = ""
             isTextBoxEdition = False
+            noBackgroundTasksMode = False
         End Try
     End Sub
 
@@ -472,6 +531,7 @@ Public Class the_Main_Form
         If folderBrowse.ShowDialog() = Windows.Forms.DialogResult.OK Then
             currentFolderPath = folderBrowse.SelectedPath
             lbl_Status.Text = If(lngRus, "выбрана папка", "folder selected") & ": " & currentFolderPath
+            noBackgroundTasksMode = False
             ReadShowMediaFile("ReadFolderAndFile")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0310: Folder read")
         End If
@@ -600,10 +660,16 @@ Public Class the_Main_Form
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0440: case SetFile")
 
             Case "InSlideShow" '0
-                currentFileIndex = currentFileIndex + 1
-                If currentFileIndex < 0 Then currentFileIndex = 0
-                If currentFileIndex > totalFilesCount - 1 Then currentFileIndex = totalFilesCount - 1
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0460: case InSlideShow")
+                If isSlideShowRandom Then
+                    currentFileIndex = CInt(Math.Floor(Rnd() * totalFilesCount))
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0460: case RND InSlideShow")
+                Else
+                    currentFileIndex = currentFileIndex + 1
+                    If currentFileIndex < 0 Then currentFileIndex = 0
+                    If currentFileIndex > totalFilesCount - 1 Then currentFileIndex = totalFilesCount - 1
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0460: case InSlideShow")
+                End If
+
 
             Case "ReadFolderAndFile" '0
                 lbl_Status.Text = If(lngRus, "чтение каталога.. ждите!", "reading files.. wait!")
@@ -852,7 +918,6 @@ Public Class the_Main_Form
         End Try
     End Function
 
-
     Private Function LoadFiles() As Boolean
         Try
             Dim files As Object = GetFiles()
@@ -931,6 +996,25 @@ Public Class the_Main_Form
         End If
     End Sub
 
+    Private Sub Web_View2_DoubleClick(sender As Object, e As EventArgs) Handles Web_View2.DoubleClick
+        If isFullScreen Then
+            isFullScreen = False
+            SetViewSizes()
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " Web_View2_DoubleClick: Выход из полноэкранного режима (WebView2)")
+        End If
+    End Sub
+
+    Public Sub HandleWebBrowserDoubleClick()
+        If Me.InvokeRequired Then
+            Me.Invoke(New Action(AddressOf HandleWebBrowserDoubleClick))
+        Else
+            If isFullScreen Then
+                isFullScreen = False
+                SetViewSizes()
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0842: HandleWebBrowserDoubleClick: (WebBrowser)")
+            End If
+        End If
+    End Sub
 
     Private Sub LoadVideoInWebBrowser(fileUri As String)
         Try
@@ -943,33 +1027,34 @@ Public Class the_Main_Form
             Dim htmlEscapedUri As String = localFileAsUri.AbsoluteUri
 
             Dim contentHtml As String = "<video id='videoPlayer' controls autoplay style='width:100%;height:calc(100% - 35px);object-fit:fill;'>" &
-                                    "<source src='" & htmlEscapedUri & "' type='video/mp4'>" & ' <<< ИЗМЕНЕНО ЗДЕСЬ
-                                    "<track kind='captions' default>" &
-                                    "<p style='color: white; text-align: center;'>" &
-                                    If(lngRus, "Ваш браузер не поддерживает видео.", "Your browser does not support video.") & "</p>" & ' Добавлено </p> здесь для корректности HTML
-                                    "</video>"
+                                "<source src='" & htmlEscapedUri & "'>" &
+                                "<track kind='captions' default>" &
+                                "<p style='color: white; text-align: center;'>" &
+                                If(lngRus, "Ваш браузер не поддерживает видео.", "Your browser does not support video.") & "</p>" &
+                                "</video>"
 
             Dim html As String = "<html><head><meta http-equiv='X-UA-Compatible' content='IE=edge'>" &
-                             "<style>" &
-                             "body { margin: 0; overflow: hidden; background: black; }" &
-                             "video { width: 100%; height: calc(100% - 35px); object-fit: fill; position: absolute; top: 0; left: 0; }" &
-                             "</style></head>" &
-                             "<body oncontextmenu='return false;'>" & contentHtml &
-                             "<script>" &
-                             "var player = document.getElementById('videoPlayer');" &
-                             "player.volume = " & videoVolume.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) & ";" &
-                             "player.oncontextmenu = function(e) { e.preventDefault(); if (this.paused) this.play(); else this.pause(); return false; };" &
-                             "player.onvolumechange = function() { try { window.external.SetVolume(this.volume); } catch(e) { } };" &
-                             "document.addEventListener('DOMContentLoaded', function() { " &
-                             "  var video = document.getElementById('videoPlayer'); " &
-                             "  video.onerror = function() { " &
-                             "    var errorMsg = 'Error: Unsupported video type or invalid file path. Source: ' + (video.querySelector('source') ? video.querySelector('source').src : 'not found'); " &
-                             "    var p = document.createElement('p'); p.style.color='white'; p.style.textAlign='center'; p.innerText = errorMsg; " &
-                             "    video.parentNode.insertBefore(p, video.nextSibling); " &
-                             "    console.error(errorMsg); " &
-                             "  }; " &
-                             "});" &
-                             "</script></body></html>"
+                         "<style>" &
+                         "body { margin: 0; overflow: hidden; background: black; }" &
+                         "video { width: 100%; height: calc(100% - 35px); object-fit: fill; position: absolute; top: 0; left: 0; }" &
+                         "</style></head>" &
+                         "<body oncontextmenu='return false;' ondblclick='handlePageDoubleClick();'>" & contentHtml &
+                         "<script>" &
+                         "var player = document.getElementById('videoPlayer');" &
+                         "player.volume = " & videoVolume.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) & ";" &
+                         "player.oncontextmenu = function(e) { e.preventDefault(); if (this.paused) this.play(); else this.pause(); return false; };" &
+                         "player.onvolumechange = function() { try { window.external.SetVolume(this.volume); } catch(e) { } };" &
+                         "function handlePageDoubleClick() { try { window.external.HandleWebBrowserDoubleClick(); } catch(e) { console.error('Error calling HandleWebBrowserDoubleClick: ' + e.message); } }" & ' <<< НОВАЯ JAVASCRIPT ФУНКЦИЯ
+                         "document.addEventListener('DOMContentLoaded', function() { " &
+                         "  var video = document.getElementById('videoPlayer'); " &
+                         "  video.onerror = function() { " &
+                         "    var errorMsg = 'Error: Unsupported video type or invalid file path. Source: ' + (video.querySelector('source') ? video.querySelector('source').src : 'not found'); " &
+                         "    var p = document.createElement('p'); p.style.color='white'; p.style.textAlign='center'; p.innerText = errorMsg; " &
+                         "    video.parentNode.insertBefore(p, video.nextSibling); " &
+                         "    console.error(errorMsg); " &
+                         "  }; " &
+                         "});" &
+                         "</script></body></html>"
 
             lastLoadedUri = ""
             Web_Browser.DocumentText = html
@@ -1209,22 +1294,31 @@ Public Class the_Main_Form
                 If isSlideShowRandom OrElse isFileReseivedFromOutside Then
                     nextAfterCurrentFileName = ""
                     isFileReseivedFromOutside = False
-                ElseIf Not wasExternalInputLast AndAlso Not (filesList Is Nothing And filesArray Is Nothing) Then
+                ElseIf Not wasExternalInputLast AndAlso
+                    Not (filesList Is Nothing And filesArray Is Nothing) Then
                     nextAfterCurrentFileName = If(totalFilesCount > 0, If(totalFilesCount = currentFileIndex + 1, If(useArray, filesArray(0), filesList(0)), If(useArray, filesArray(currentFileIndex + 1), filesList(currentFileIndex + 1))), "")
                 Else
                     nextAfterCurrentFileName = ""
                 End If
 
-                If bgWorkerOnline OrElse BgWorker.IsBusy Then
+                If bgWorkerOnline OrElse
+                    BgWorker.IsBusy Then
+
                     BgWorker.CancelAsync()
                     bgWorkerOnline = False
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1050: BgWorker set off line")
                 End If
 
-                If Not bgWorkerOnline AndAlso Not BgWorker.IsBusy Then
+                If Not noBackgroundTasksMode AndAlso
+                    Not bgWorkerOnline AndAlso
+                    Not BgWorker.IsBusy Then
+
                     bgWorkerOnline = True
                     BgWorker.RunWorkerAsync()
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1060: BgWorker is run")
+                Else
+                    lbl_Current_File.Text = If(lngRus, "Текущий: ", "Current: ") & currentFileName
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1065: BgWorker is not run, online=" & bgWorkerOnline.ToString & " IsBusy=" & BgWorker.IsBusy.ToString)
                 End If
 
             Catch ex As Exception
@@ -1236,6 +1330,7 @@ Public Class the_Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1080: UNdo E005 " & ex.Message)
                 End If
             End Try
+
         Else
             If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
             If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
@@ -1278,43 +1373,42 @@ Public Class the_Main_Form
                 .FileDate = f.LastWriteTime
             }).ToList()
 
-            If fileEntries.Count > MaxFiles Then
-                fileEntries = fileEntries.Take(MaxFiles).ToList()
-            End If
-
             If fileEntries.Count = 0 Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1096: Files count=0")
                 lbl_Status.Text = If(lngRus, "Папка пустая", "Folder is empty")
                 Return Nothing
             End If
 
-            Dim orderedEntries As IEnumerable(Of FileEntry)
-            Select Case cmbox_Sort.SelectedItem?.ToString()
-                Case "abc"
-                    orderedEntries = fileEntries.OrderBy(Function(f) f.FileName)
-                Case "xyz"
-                    orderedEntries = fileEntries.OrderByDescending(Function(f) f.FileName)
-                Case "rnd"
-                    orderedEntries = fileEntries.OrderBy(Function(f) Guid.NewGuid())
-                Case ">size"
-                    orderedEntries = fileEntries.OrderByDescending(Function(f) f.FileSize)
-                Case "<size"
-                    orderedEntries = fileEntries.OrderBy(Function(f) f.FileSize)
-                Case ">time"
-                    orderedEntries = fileEntries.OrderByDescending(Function(f) f.FileDate)
-                Case "<time"
-                    orderedEntries = fileEntries.OrderBy(Function(f) f.FileDate)
-                Case Else
-                    orderedEntries = fileEntries.OrderBy(Function(f) f.FilePath)
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1109:  sort is lost?!")
-            End Select
+            If fileEntries.Count < MaxFiles Then
+                useArray = False
 
-            Dim filePaths As List(Of String) = orderedEntries.Select(Function(f) f.FilePath).ToList()
+                Dim orderedEntries As IEnumerable(Of FileEntry)
+                Select Case cmbox_Sort.SelectedItem?.ToString()
+                    Case "abc"
+                        orderedEntries = fileEntries.OrderBy(Function(f) f.FileName)
+                    Case "xyz"
+                        orderedEntries = fileEntries.OrderByDescending(Function(f) f.FileName)
+                    Case "rnd"
+                        orderedEntries = fileEntries.OrderBy(Function(f) Guid.NewGuid())
+                    Case ">size"
+                        orderedEntries = fileEntries.OrderByDescending(Function(f) f.FileSize)
+                    Case "<size"
+                        orderedEntries = fileEntries.OrderBy(Function(f) f.FileSize)
+                    Case ">time"
+                        orderedEntries = fileEntries.OrderByDescending(Function(f) f.FileDate)
+                    Case "<time"
+                        orderedEntries = fileEntries.OrderBy(Function(f) f.FileDate)
+                    Case Else
+                        orderedEntries = fileEntries.OrderBy(Function(f) f.FilePath)
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1107:  sort is lost?!")
+                End Select
 
-            If useArray Then
-                Return filePaths.ToArray()
-            Else
+                Dim filePaths As List(Of String) = orderedEntries.Select(Function(f) f.FilePath).ToList()
                 Return filePaths
+            Else
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1109:  too mant files - just array, no sorting !")
+                useArray = True
+                Return fileEntries.ToArray()
             End If
 
         Catch ex As Exception
@@ -1437,25 +1531,35 @@ Public Class the_Main_Form
         End If
 
         If My.Application.CommandLineArgs.Count > 0 Then
-            ProcessArgument(My.Application.CommandLineArgs(0))
+            Dim fullCommandLine As String = String.Join(" ", My.Application.CommandLineArgs.ToArray())
+            ProcessArgument(fullCommandLine)
         Else
             currentFolderPath = GetSetting(appName, secName, "ImageFolder", "")
             If Not currentFolderPath = "" Then
-                totalFilesCount = FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
+                Try
+                    totalFilesCount = FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
+                Catch ex As Exception
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1139: ERR: " & ex.Message)
+                Finally
+                    totalFilesCount = 0
+                End Try
 
                 Integer.TryParse(GetSetting(appName, secName, "LastCounter"), currentFileIndex)
-                If currentFileIndex > 0 AndAlso currentFileIndex < totalFilesCount Then
+                If Not totalFilesCount = 0 AndAlso
+                currentFileIndex > 0 AndAlso
+                currentFileIndex < totalFilesCount Then
+
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0040: folder and file found in savings")
 
                     ReadShowMediaFile("ReadFiles")
                 Else
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1157: folder set from savings, but saved file is not found")
-                    currentFileIndex = 1
+                        currentFileIndex = 1
 
-                    ReadShowMediaFile("ReadFolderAndFile")
+                    If Not totalFilesCount = 0 Then ReadShowMediaFile("ReadFolderAndFile")
                 End If
-            Else
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1158: no folder saved")
+
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1158: no folder saved")
             End If
         End If
 
@@ -1466,16 +1570,16 @@ Public Class the_Main_Form
 
         Dim appTopInt As Integer = 100
         Dim appLeftInt As Integer = 100
-        Dim appWidthInt As Integer = 640
-        Dim appHeightInt As Integer = 480
+        Dim appWidthInt As Integer = 800
+        Dim appHeightInt As Integer = 600
 
         Integer.TryParse(GetSetting(appName, secName, "AppTop"), appTopInt)
         Integer.TryParse(GetSetting(appName, secName, "AppLeft"), appLeftInt)
         Integer.TryParse(GetSetting(appName, secName, "AppWidth"), appWidthInt)
         Integer.TryParse(GetSetting(appName, secName, "AppHeight"), appHeightInt)
 
-        appTopInt = If(appTopInt < 0 OrElse appTopInt > 1920, 100, appTopInt)
-        appLeftInt = If(appLeftInt < 0 OrElse appLeftInt > 720, 100, appLeftInt)
+        appTopInt = If(appTopInt < 0 OrElse appTopInt > 720, 100, appTopInt)
+        appLeftInt = If(appLeftInt < 0 OrElse appLeftInt > 1920, 100, appLeftInt)
         appWidthInt = If(appWidthInt < 640 OrElse appWidthInt > 1920, 640, appWidthInt)
         appHeightInt = If(appHeightInt < 480 OrElse appHeightInt > 1024, 480, appHeightInt)
 
@@ -1513,16 +1617,40 @@ Public Class the_Main_Form
         ReadShowMediaFile("ReadNextFile")
     End Sub
 
-    Private Sub PictureBox1_MouseDown(sender As Object, e As MouseEventArgs) Handles Picture_Box_1.MouseDown
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1150: PictureBox1_MouseDown")
+    Private Sub HandlePictureBoxMouseDown(sender As Object, e As MouseEventArgs)
+        If isFullScreen AndAlso (e.Button = MouseButtons.Left OrElse e.Button = MouseButtons.Middle) Then
+            Dim clickTime As DateTime = DateTime.Now
+
+            If (clickTime - lastMediaAreaClickTime).TotalMilliseconds < DoubleClickTimeThreshold Then
+
+                isFullScreen = False
+                SetViewSizes()
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1150: MediaArea Manual DoubleClick (" & e.Button.ToString & ")")
+
+                lastMediaAreaClickTime = DateTime.MinValue
+                lastMediaAreaClickButton = MouseButtons.None
+                SlideShowTimer.Enabled = False
+
+                Return
+            End If
+
+            lastMediaAreaClickTime = clickTime
+            lastMediaAreaClickButton = e.Button
+        ElseIf (e.Button = MouseButtons.Left OrElse e.Button = MouseButtons.Middle) Then
+            lastMediaAreaClickTime = DateTime.MinValue
+            lastMediaAreaClickButton = MouseButtons.None
+        End If
+
         MouseUse(e)
+    End Sub
+
+    Private Sub PictureBox1_MouseDown(sender As Object, e As MouseEventArgs) Handles Picture_Box_1.MouseDown
+        HandlePictureBoxMouseDown(sender, e)
     End Sub
 
     Private Sub PictureBox2_MouseDown(sender As Object, e As MouseEventArgs) Handles Picture_Box_2.MouseDown
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1160: PictureBox2_MouseDown")
-        MouseUse(e)
+        HandlePictureBoxMouseDown(sender, e)
     End Sub
-
 
     Private Sub MouseUse(ByVal e As MouseEventArgs)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1170: MouseUse Delta: " & e.Delta.ToString)
@@ -1530,7 +1658,7 @@ Public Class the_Main_Form
         SlideShowTimer.Enabled = False
 
         If (Control.ModifierKeys And Keys.Alt) = Keys.Alt Then
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1171: zoom reset")
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1172: zoom reset")
 
             Dim isTop = lbl_Status.Top + lbl_Status.Height - 4
 
@@ -1567,7 +1695,7 @@ Public Class the_Main_Form
             Picture_Box_1.Left = newLeft
             Picture_Box_1.Top = newTop
 
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1172: new size: " & newWidth.ToString & "-" & newHeight.ToString & " " & newLeft.ToString & "-" & newTop.ToString)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1173: new size: " & newWidth.ToString & "-" & newHeight.ToString & " " & newLeft.ToString & "-" & newTop.ToString)
 
             Picture_Box_2.Size = Picture_Box_1.Size
             Picture_Box_2.Location = Picture_Box_1.Location
@@ -2171,6 +2299,7 @@ Public Class the_Main_Form
     End Sub
 
     Private Sub FolderSelected()
+        noBackgroundTasksMode = False
         If currentFolderPath <> "" Then
             ReadShowMediaFile("ReadFolderAndFile")
         Else
@@ -2643,6 +2772,7 @@ Public Class the_Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2130: cmbox_MediaFolder SelectedIndexChanged")
 
             If cmbox_Media_Folder.SelectedIndex >= 0 Then
+                noBackgroundTasksMode = False
                 currentFolderPath = cmbox_Media_Folder.SelectedItem.ToString()
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2140: currentFolderPath = " & currentFolderPath)
@@ -2765,5 +2895,9 @@ Public Class the_Main_Form
     Private Sub Picture_Box_2_KeyDown(sender As Object, e As KeyEventArgs) Handles Picture_Box_2.KeyDown
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1249: keyb on P2: " & e.KeyCode.ToString)
         KeybUse(e)
+    End Sub
+
+    Private Sub Picture_Box_1_KeyUp(sender As Object, e As KeyEventArgs) Handles Picture_Box_1.KeyUp
+
     End Sub
 End Class
