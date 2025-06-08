@@ -44,7 +44,7 @@ Namespace My
         End Sub
 
         Private Sub MyApplication_Startup(sender As Object, e As StartupEventArgs) Handles Me.Startup
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0001: MyApplication_Startup")
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-1: MyApplication_Startup")
         End Sub
     End Class
 End Namespace

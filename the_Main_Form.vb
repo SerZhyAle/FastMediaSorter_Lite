@@ -5,7 +5,8 @@
 'sza250506 grok
 'FastMediaSorter
 'sza2505207
-
+'sza250606 gemini
+'sza250608 copilot
 
 Option Strict On
 
@@ -15,6 +16,7 @@ Imports System.Drawing.Imaging
 Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Security.Cryptography
+Imports System.Security.Principal
 Imports System.Text
 Imports System.Text.RegularExpressions
 Imports System.Threading
@@ -25,12 +27,11 @@ Imports Microsoft.Web.WebView2.Core
 Imports Microsoft.Web.WebView2.WinForms
 Imports Microsoft.Win32
 
+
 <ComVisible(True)>
 Public Class the_Main_Form
     Private Shared mutex As Mutex
     Private Const AppMutexName As String = "FastMediaSorterSingleInstanceMutex"
-    Private Const theJPGFileExtension As String = ".jpg"
-    Private Const theJPGFileTypeDescription As String = "JPEG Image"
     Private applicationRunsCount As Integer
     Private mediaViewedCount As Integer
     Private isComboSetAuto As Boolean = False
@@ -114,6 +115,10 @@ Public Class the_Main_Form
 
     <DllImport("user32.dll")>
     Private Shared Function GetForegroundWindow() As IntPtr
+    End Function
+
+    <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode)>
+    Private Shared Function StrCmpLogicalW(psz1 As String, psz2 As String) As Integer
     End Function
 
     Private Const SW_SHOWNOACTIVATE As Integer = 4
@@ -265,7 +270,7 @@ Public Class the_Main_Form
 
     Public Sub InitNew()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0001: init new")
-        ResizeDebounceTimer.Interval = 100
+        ResizeDebounceTimer.Interval = 200
         ResizeDebounceTimer.Enabled = False
 
         Dim createdNew As Boolean
@@ -274,7 +279,8 @@ Public Class the_Main_Form
         isTextBoxEdition = True
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0002: Initialize")
         cmbox_Sort.Items.Clear()
-        cmbox_Sort.Items.AddRange(New String() {"abc", "xyz", "rnd", ">size", "<size", ">time", "<time"})
+        cmbox_Sort.Items.AddRange(New String() {"abc", "xyz", "rnd", ">size", "<size", ">time", "<time", "<0123", ">3210"})
+
         cmbox_Sort.SelectedIndex = 0
         isTextBoxEdition = False
 
@@ -325,20 +331,25 @@ Public Class the_Main_Form
             lbl_Current_File.Text = ""
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0060: File is lost for BgWorker size calculation")
         Else
+            Dim userState As New Dictionary(Of String, String)
+
             Dim fileInfo = My.Computer.FileSystem.GetFileInfo(currentFileName)
             Dim fileSize = fileInfo.Length
             Dim fileSizeText As String
 
-            If fileSize = 0 Then
-                fileSizeText = "0 bytes!"
+            If fileSize < 1000 Then
+                fileSizeText = fileSize.ToString & "B"
             ElseIf fileSize / 1000 > 1000 Then
-                fileSizeText = (fileSize / 1000000).ToString("F1") + "MB"
+                fileSizeText = (fileSize / 1000000).ToString("F1") + "MiB"
             Else
-                fileSizeText = (fileSize / 1000).ToString("F1") + "KB"
+                fileSizeText = (fileSize / 1000).ToString("F1") + "KiB"
             End If
 
-            Dim userState As New Dictionary(Of String, String)
             userState("fileSizeText") = fileSizeText
+
+            Dim fileTimeText = fileInfo.LastWriteTime.ToString("yyMMdd HH:mm")
+            userState("fileTimeText") = fileTimeText
+
             DirectCast(sender, BackgroundWorker).ReportProgress(0, userState)
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0070: BgWorker reported size calculation")
@@ -346,7 +357,7 @@ Public Class the_Main_Form
 
         If wasExternalInputLast Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0080: folder files going be counted on background..")
-            totalFilesCount = FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
+            totalFilesCount = My.Computer.FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
 
             Dim userState As New Dictionary(Of String, String)
             userState("totalFilesCountText") = totalFilesCount.ToString
@@ -381,12 +392,23 @@ Public Class the_Main_Form
         Dim userState As Dictionary(Of String, String) = DirectCast(e.UserState, Dictionary(Of String, String))
 
         If userState.ContainsKey("fileSizeText") Then
+
+            Dim resultText = If(lngRus, "Текущий: ", "Current: ") & currentFileName
+
+            Dim fileTimeText As String = userState("fileTimeText")
+
+            If Not fileTimeText = Nothing Then
+                resultText = resultText & " (" & fileTimeText & ")"
+            End If
+
             Dim fileSizeText As String = userState("fileSizeText")
 
             If Not fileSizeText = Nothing Then
-                lbl_Current_File.Text = If(lngRus, "Текущий: ", "Current: ") & currentFileName & " " & fileSizeText
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0170: BgWorker size calculated: " & fileSizeText)
+                resultText = resultText & " " & fileSizeText
             End If
+
+            lbl_Current_File.Text = resultText
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0170: BgWorker size and time calculated")
 
         ElseIf userState.ContainsKey("totalFilesCountText") Then
             Dim totalFilesCountText As String = userState("totalFilesCountText")
@@ -1029,7 +1051,9 @@ Public Class the_Main_Form
             Dim contentHtml As String = "<video id='videoPlayer' controls autoplay style='width:100%;height:calc(100% - 35px);object-fit:fill;'>" &
                                 "<source src='" & htmlEscapedUri & "'>" &
                                 "<track kind='captions' default>" &
-                                "<p style='color: white; text-align: center;'>" &
+                                "<p style='color: " &
+                                If(color_scheme = 0, "black", "white") &
+                                "; text-align: center;'>" &
                                 If(lngRus, "Ваш браузер не поддерживает видео.", "Your browser does not support video.") & "</p>" &
                                 "</video>"
 
@@ -1049,7 +1073,9 @@ Public Class the_Main_Form
                          "  var video = document.getElementById('videoPlayer'); " &
                          "  video.onerror = function() { " &
                          "    var errorMsg = 'Error: Unsupported video type or invalid file path. Source: ' + (video.querySelector('source') ? video.querySelector('source').src : 'not found'); " &
-                         "    var p = document.createElement('p'); p.style.color='white'; p.style.textAlign='center'; p.innerText = errorMsg; " &
+                         "    var p = document.createElement('p'); p.style.color='" &
+                                If(color_scheme = 0, "black", "white") &
+                                "'; p.style.textAlign='center'; p.innerText = errorMsg; " &
                          "    video.parentNode.insertBefore(p, video.nextSibling); " &
                          "    console.error(errorMsg); " &
                          "  }; " &
@@ -1068,7 +1094,9 @@ Public Class the_Main_Form
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0850: WebBrowser is loaded with URI: " & htmlEscapedUri)
         Catch ex As Exception
-            Web_Browser.DocumentText = "<html><body style='background:black; color:white; text-align:center;'><p>Error preparing video player: " & ex.Message & "</p></body></html>"
+            Web_Browser.DocumentText = "<html><body style='background:black; color:" &
+                                If(color_scheme = 0, "black", "white") &
+                                "; text-align:center;'><p>Error preparing video player: " & ex.Message & "</p></body></html>"
             isWebBrowser1Visible = False
 
             UpdateControlVisibility()
@@ -1155,7 +1183,7 @@ Public Class the_Main_Form
     Private Function GetOppositeColor(backgroundColor As System.Drawing.Color) As System.Drawing.Color
         Dim sumColor = (Int(backgroundColor.R) + Int(backgroundColor.G) + Int(backgroundColor.B))
 
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0942: colorsum " & sumColor.ToString)
+        '  Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0942: colorsum " & sumColor.ToString)
 
         If sumColor <300 Then
             Return System.Drawing.Color.White
@@ -1173,69 +1201,178 @@ Public Class the_Main_Form
             Web_View2.Visible = isWebView2Visible
         End If
 
-        If isPictureBox1Visible OrElse isPictureBox2Visible Then
+        If isPictureBox1Visible OrElse
+            isPictureBox2Visible Then
+
             Web_Browser.Visible = False
             If Web_View2 IsNot Nothing AndAlso isWebView2Visible AndAlso Web_View2.Visible Then
                 isWebView2Visible = False
                 Web_View2.Visible = isWebView2Visible
             End If
 
-            Dim bmp As Bitmap = Nothing
+            Dim pic_to As Int16 = 0
 
-            If isPictureBox1Visible AndAlso Picture_Box_1.Image IsNot Nothing AndAlso TypeOf Picture_Box_1.Image Is Bitmap Then
-                bmp = CType(Picture_Box_1.Image, Bitmap)
+            If isPictureBox1Visible AndAlso
+                    Picture_Box_1.Image IsNot Nothing AndAlso
+                    TypeOf Picture_Box_1.Image Is Bitmap Then
+
                 Picture_Box_1.BringToFront()
-            ElseIf isPictureBox2Visible AndAlso Picture_Box_2.Image IsNot Nothing AndAlso TypeOf Picture_Box_2.Image Is Bitmap Then
-                bmp = CType(Picture_Box_2.Image, Bitmap)
+                pic_to = 1
+
+            ElseIf isPictureBox2Visible AndAlso
+                    Picture_Box_2.Image IsNot Nothing AndAlso
+                    TypeOf Picture_Box_2.Image Is Bitmap Then
+
                 Picture_Box_2.BringToFront()
+                pic_to = 2
             End If
 
-            If bmp IsNot Nothing Then
-                If 1 < bmp.Width AndAlso 1 < bmp.Height Then
-                    Dim pixelColor As System.Drawing.Color = System.Drawing.Color.Black
+            Dim pixelColor As System.Drawing.Color = System.Drawing.Color.Black
 
-                    If bmp.Width > 5 AndAlso bmp.Height > 5 Then
-                        Dim pixelColor5 = bmp.GetPixel(5, 5)
-                        Dim pixelColor1 = bmp.GetPixel(1, 1)
+            If color_scheme = 2 Then
+                pixelColor = System.Drawing.Color.White
+            ElseIf color_scheme = 0 Then
 
-                        Dim dif As Long = CLng(Math.Abs(CInt(pixelColor5.R) - CInt(pixelColor1.R))) +
-                                              CLng(Math.Abs(CInt(pixelColor5.G) - CInt(pixelColor1.G))) +
-                                              CLng(Math.Abs(CInt(pixelColor5.B) - CInt(pixelColor1.B)))
-                        If dif < 10 Then
-                            pixelColor = pixelColor1
+                Dim bmp As Bitmap = Nothing
+
+                If pic_to = 1 Then
+                    bmp = CType(Picture_Box_1.Image, Bitmap)
+                ElseIf pic_to = 2 Then
+                    bmp = CType(Picture_Box_2.Image, Bitmap)
+                End If
+
+                If bmp IsNot Nothing Then
+                    If 1 < bmp.Width AndAlso
+                        1 < bmp.Height Then
+
+                        If bmp.Width > 5 AndAlso
+                            bmp.Height > 5 Then
+
+                            Dim pixelColor5 = bmp.GetPixel(5, 5)
+                            Dim pixelColor1 = bmp.GetPixel(1, 1)
+
+                            Dim dif As Long = CLng(Math.Abs(CInt(pixelColor5.R) - CInt(pixelColor1.R))) +
+                                                  CLng(Math.Abs(CInt(pixelColor5.G) - CInt(pixelColor1.G))) +
+                                                  CLng(Math.Abs(CInt(pixelColor5.B) - CInt(pixelColor1.B)))
+                            If dif < 10 Then
+                                pixelColor = pixelColor1
+                            Else
+                                pixelColor = bmp.GetPixel(CInt(bmp.Width / 20), CInt(bmp.Height / 20))
+                            End If
                         Else
                             pixelColor = bmp.GetPixel(CInt(bmp.Width / 20), CInt(bmp.Height / 20))
                         End If
-                    Else
-                        pixelColor = bmp.GetPixel(CInt(bmp.Width / 20), CInt(bmp.Height / 20))
-                    End If
 
-                    If pixelColor <> lastBackColor Then
-                        lastBackColor = pixelColor
-
-                        Me.BackColor = pixelColor
-
-                        Dim OppositeColor = GetOppositeColor(pixelColor)
-                        For Each ctrl As Control In Me.Controls
-                            If TypeOf ctrl Is Label Then
-                                Dim lbl As Label = CType(ctrl, Label)
-                                lbl.ForeColor = OppositeColor
-                                lbl.BackColor = System.Drawing.Color.Transparent
-                            ElseIf TypeOf ctrl Is Button Then
-                                Dim btn As Button = CType(ctrl, Button)
-                                btn.ForeColor = OppositeColor
-                            ElseIf TypeOf ctrl Is ComboBox Then
-                                Dim cmb As ComboBox = CType(ctrl, ComboBox)
-                                cmb.BackColor = pixelColor
-                                cmb.ForeColor = OppositeColor
-                            ElseIf TypeOf ctrl Is CheckBox Then
-                                Dim chb As CheckBox = CType(ctrl, CheckBox)
-                                chb.BackColor = pixelColor
-                                chb.ForeColor = OppositeColor
-                            End If
-                        Next
                     End If
                 End If
+            ElseIf color_scheme = 3 Then 'by side
+
+                Dim bmp As Bitmap = Nothing
+
+                If pic_to = 1 Then
+                    bmp = CType(Picture_Box_1.Image, Bitmap)
+                ElseIf pic_to = 2 Then
+                    bmp = CType(Picture_Box_2.Image, Bitmap)
+                End If
+
+                If bmp IsNot Nothing AndAlso
+                     1 < bmp.Width AndAlso
+                        1 < bmp.Height Then
+
+                    Dim pixelColor_in As System.Drawing.Color
+                    Dim difR, difG, difB As Long
+                    Dim c As Integer = 0
+                    For z = 1 To bmp.Height Step 100
+                        pixelColor_in = bmp.GetPixel(1, z)
+                        difR = difR + CInt(pixelColor_in.R)
+                        difG = difG + CInt(pixelColor_in.G)
+                        difB = difB + CInt(pixelColor_in.B)
+                        c = c + 1
+                    Next
+
+                    pixelColor = System.Drawing.Color.FromArgb(CInt(difR / c), CInt(difG / c), CInt(difB / c))
+                End If
+
+            ElseIf color_scheme = 4 Then 'by top
+
+                Dim bmp As Bitmap = Nothing
+
+                If pic_to = 1 Then
+                    bmp = CType(Picture_Box_1.Image, Bitmap)
+                ElseIf pic_to = 2 Then
+                    bmp = CType(Picture_Box_2.Image, Bitmap)
+                End If
+
+                If bmp IsNot Nothing AndAlso
+                     1 < bmp.Width AndAlso
+                        1 < bmp.Height Then
+
+                    Dim pixelColor_in As System.Drawing.Color
+                    Dim difR, difG, difB As Long
+                    Dim c As Integer = 0
+                    For z = 1 To bmp.Width Step 100
+                        pixelColor_in = bmp.GetPixel(z, 1)
+                        difR = difR + CInt(pixelColor_in.R)
+                        difG = difG + CInt(pixelColor_in.G)
+                        difB = difB + CInt(pixelColor_in.B)
+                        c = c + 1
+                    Next
+
+                    pixelColor = System.Drawing.Color.FromArgb(CInt(difR / c), CInt(difG / c), CInt(difB / c))
+                End If
+            ElseIf color_scheme = 5 Then 'by buttom
+
+                Dim bmp As Bitmap = Nothing
+
+                If pic_to = 1 Then
+                    bmp = CType(Picture_Box_1.Image, Bitmap)
+                ElseIf pic_to = 2 Then
+                    bmp = CType(Picture_Box_2.Image, Bitmap)
+                End If
+
+                If bmp IsNot Nothing AndAlso
+                     1 < bmp.Width AndAlso
+                        1 < bmp.Height Then
+
+                    Dim pixelColor_in As System.Drawing.Color
+                    Dim difR, difG, difB As Long
+                    Dim c As Integer = 0
+                    For z = 1 To bmp.Width Step 100
+                        pixelColor_in = bmp.GetPixel(z, bmp.Height - 1)
+                        difR = difR + CInt(pixelColor_in.R)
+                        difG = difG + CInt(pixelColor_in.G)
+                        difB = difB + CInt(pixelColor_in.B)
+                        c = c + 1
+                    Next
+
+                    pixelColor = System.Drawing.Color.FromArgb(CInt(difR / c), CInt(difG / c), CInt(difB / c))
+                End If
+            End If
+
+            If pixelColor <> lastBackColor Then
+                lastBackColor = pixelColor
+
+                Me.BackColor = pixelColor
+
+                Dim OppositeColor = GetOppositeColor(pixelColor)
+                For Each ctrl As Control In Me.Controls
+                    If TypeOf ctrl Is Label Then
+                        Dim lbl As Label = CType(ctrl, Label)
+                        lbl.ForeColor = OppositeColor
+                        lbl.BackColor = System.Drawing.Color.Transparent
+                    ElseIf TypeOf ctrl Is Button Then
+                        Dim btn As Button = CType(ctrl, Button)
+                        btn.ForeColor = OppositeColor
+                    ElseIf TypeOf ctrl Is ComboBox Then
+                        Dim cmb As ComboBox = CType(ctrl, ComboBox)
+                        cmb.BackColor = pixelColor
+                        cmb.ForeColor = OppositeColor
+                    ElseIf TypeOf ctrl Is CheckBox Then
+                        Dim chb As CheckBox = CType(ctrl, CheckBox)
+                        chb.BackColor = pixelColor
+                        chb.ForeColor = OppositeColor
+                    End If
+                Next
             End If
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0945: picture box sizes: " & If(isPictureBox1Visible, "P1: ", "P2: ") & If(isPictureBox1Visible, Picture_Box_1.Width.ToString, Picture_Box_2.Width.ToString) & "x" & If(isPictureBox1Visible, Picture_Box_1.Height.ToString, Picture_Box_2.Height.ToString))
@@ -1359,11 +1496,18 @@ Public Class the_Main_Form
         Public Property FileDate As Date
     End Structure
 
+    Private Class NaturalFilenameComparer
+        Implements IComparer(Of String)
+        Public Function Compare(x As String, y As String) As Integer Implements IComparer(Of String).Compare
+            Return StrCmpLogicalW(x, y)
+        End Function
+    End Class
+
     Private Function GetFiles() As Object
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1095: GetFiles..")
 
         Try
-            Dim dirInfo As DirectoryInfo = FileSystem.GetDirectoryInfo(currentFolderPath)
+            Dim dirInfo As DirectoryInfo = My.Computer.FileSystem.GetDirectoryInfo(currentFolderPath)
             Dim fileEntries As List(Of FileEntry) = dirInfo.EnumerateFiles() _
             .Where(Function(f) allSupportedExtensions.Contains(f.Extension.ToLower())) _
             .Select(Function(f) New FileEntry With {
@@ -1398,6 +1542,10 @@ Public Class the_Main_Form
                         orderedEntries = fileEntries.OrderByDescending(Function(f) f.FileDate)
                     Case "<time"
                         orderedEntries = fileEntries.OrderBy(Function(f) f.FileDate)
+                    Case "<0123"
+                        orderedEntries = fileEntries.OrderBy(Function(f) f.FileName, New NaturalFilenameComparer())
+                    Case ">3210"
+                        orderedEntries = fileEntries.OrderByDescending(Function(f) f.FileName, New NaturalFilenameComparer())
                     Case Else
                         orderedEntries = fileEntries.OrderBy(Function(f) f.FilePath)
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1107:  sort is lost?!")
@@ -1483,6 +1631,7 @@ Public Class the_Main_Form
         Me.AllowDrop = True
 
         InitNew()
+        CheckAndOfferImageAssociations()
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0010: init finished")
 
@@ -1492,10 +1641,21 @@ Public Class the_Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0020: Apps RUN: " & applicationRunsCount.ToString)
 
         Integer.TryParse(GetSetting(appName, secName, "mediaViewedCount", "0"), mediaViewedCount)
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0021: media Viewed: " & mediaViewedCount.ToString)
+
+        Integer.TryParse(GetSetting(appName, secName, "color_scheme", "1"), color_scheme)
 
         lngRus = GetSetting(appName, secName, "LngRus", "1") = "1"
 
-        cmbox_Sort.SelectedIndex = 0
+        Dim SortDir = 0
+        Integer.TryParse(GetSetting(appName, secName, "SortDir", "0"), SortDir)
+
+        If SortDir < 0 Then
+            SortDir = 0
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1138: cmbox_Sort is set to 0")
+        End If
+        cmbox_Sort.SelectedIndex = SortDir
+
         btn_Language.Text = If(lngRus, "EN", "RU")
         LngCh()
 
@@ -1536,12 +1696,11 @@ Public Class the_Main_Form
         Else
             currentFolderPath = GetSetting(appName, secName, "ImageFolder", "")
             If Not currentFolderPath = "" Then
+                totalFilesCount = 0
                 Try
-                    totalFilesCount = FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
+                    totalFilesCount = My.Computer.FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
                 Catch ex As Exception
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1139: ERR: " & ex.Message)
-                Finally
-                    totalFilesCount = 0
                 End Try
 
                 Integer.TryParse(GetSetting(appName, secName, "LastCounter"), currentFileIndex)
@@ -1549,17 +1708,17 @@ Public Class the_Main_Form
                 currentFileIndex > 0 AndAlso
                 currentFileIndex < totalFilesCount Then
 
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0040: folder and file found in savings")
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0040: folder and file found in savings: " & currentFolderPath & " - " & currentFileIndex.ToString)
 
                     ReadShowMediaFile("ReadFiles")
                 Else
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1157: folder set from savings, but saved file is not found")
-                        currentFileIndex = 1
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1157: folder set from savings, but saved file is not found: " & currentFolderPath & " - " & currentFileIndex.ToString)
+                    currentFileIndex = 1
 
                     If Not totalFilesCount = 0 Then ReadShowMediaFile("ReadFolderAndFile")
                 End If
-
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1158: no folder saved")
+            Else
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1158: no folder saved")
             End If
         End If
 
@@ -1728,7 +1887,8 @@ Public Class the_Main_Form
     Private Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
         Try
             If currentFolderPath IsNot Nothing Then SaveSetting(appName, secName, "ImageFolder", currentFolderPath)
-            SaveSetting(appName, secName, "LastCounter", currentFileIndex.ToString)
+            If Not currentFileIndex = 0 Then SaveSetting(appName, secName, "LastCounter", currentFileIndex.ToString)
+
             SaveSetting(appName, secName, "chkTopMost", If(chkbox_Top_Most.Checked, "1", "0"))
             For z = 0 To 9
                 Try
@@ -1745,6 +1905,8 @@ Public Class the_Main_Form
             SaveSetting(appName, secName, "TableOpened", If(the_Table_Form.Visible, "1", "0"))
             SaveSetting(appName, secName, "RunsCount", (applicationRunsCount + 1).ToString)
             SaveSetting(appName, secName, "mediaViewedCount", (mediaViewedCount).ToString)
+            SaveSetting(appName, secName, "SortDir", (cmbox_Sort.SelectedIndex).ToString)
+            SaveSetting(appName, secName, "color_scheme", (color_scheme).ToString)
 
             If Me.Top >= 0 Then SaveSetting(appName, secName, "AppTop", Me.Top.ToString)
             If Me.Left >= 0 Then SaveSetting(appName, secName, "AppLeft", Me.Left.ToString)
@@ -2712,7 +2874,8 @@ Public Class the_Main_Form
             allSupportedExtensions.ExceptWith(webImageFileExtensions)
             Dim message As String = If(lngRus, "Ошибка проверки WebView2: " & ex.Message & vbCrLf & "Форматы .webp, .heic, .avif, .svg не поддерживаются.",
                               "Error checking WebView2: " & ex.Message & vbCrLf & "Formats .webp, .heic, .avif, .svg are not supported.")
-            MessageBox.Show(message, If(lngRus, "Ограниченный функционал", "Limited Functionality"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            lbl_Status.Text = message
+            'MessageBox.Show(message, If(lngRus, "Ограниченный функционал", "Limited Functionality"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2050: WebView2 check failed with error: " & ex.Message)
         End Try
     End Sub
@@ -2897,7 +3060,124 @@ Public Class the_Main_Form
         KeybUse(e)
     End Sub
 
-    Private Sub Picture_Box_1_KeyUp(sender As Object, e As KeyEventArgs) Handles Picture_Box_1.KeyUp
+    Function IsRunningAsAdministrator() As Boolean
+        Dim identity = WindowsIdentity.GetCurrent()
+        Dim principal = New WindowsPrincipal(identity)
+        Return principal.IsInRole(WindowsBuiltInRole.Administrator)
+    End Function
 
+    ' Add this function to check .jpg association
+    Private Function IsJpgAssociatedWithThisApp() As Boolean
+        Try
+            Using key = Registry.ClassesRoot.OpenSubKey(".jpg")
+                If key Is Nothing Then Return False
+                Dim progId = key.GetValue("")?.ToString()
+                If String.IsNullOrEmpty(progId) Then Return False
+                Using progKey = Registry.ClassesRoot.OpenSubKey(progId & "\shell\open\command")
+                    If progKey Is Nothing Then Return False
+                    Dim command = progKey.GetValue("")?.ToString()
+                    If String.IsNullOrEmpty(command) Then Return False
+                    Dim exePath = Application.ExecutablePath.ToLowerInvariant()
+                    Return command.ToLowerInvariant().Contains(exePath)
+                End Using
+            End Using
+        Catch
+            Return False
+        End Try
+    End Function
+
+    Private Sub AssociateJpgWithThisApp()
+        Try
+            Dim exePath = Application.ExecutablePath
+            Dim progId = "FastMediaSorter.jpg"
+            ' Set ProgID
+            Using progKey = Registry.ClassesRoot.CreateSubKey(progId)
+                progKey.SetValue("", "JPEG Image - FastMediaSorter")
+                Using shellKey = progKey.CreateSubKey("shell\open\command")
+                    shellKey.SetValue("", """" & exePath & """ ""%1""")
+                End Using
+            End Using
+            ' Set .jpg default
+            Using extKey = Registry.ClassesRoot.CreateSubKey(".jpg")
+                extKey.SetValue("", progId)
+            End Using
+        Catch ex As Exception
+            MessageBox.Show(If(lngRus, "Оштибка ассоциации: ", "Failed to set association: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
+
+    Private Sub CheckAndOfferJpgAssociation()
+        If IsRunningAsAdministrator() AndAlso Not IsJpgAssociatedWithThisApp() Then
+            Dim msg = If(lngRus, "Ассоциировать .JPG файлы с этой программой?", "Associate .JPG files with this application?")
+            If MessageBox.Show(msg, "Association", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
+                AssociateJpgWithThisApp()
+            End If
+        End If
+    End Sub
+
+    Private Function AreImageTypesAssociatedWithThisApp() As Boolean
+        Return IsExtensionAssociatedWithThisApp(".jpg") AndAlso
+           IsExtensionAssociatedWithThisApp(".png") AndAlso
+           IsExtensionAssociatedWithThisApp(".gif")
+    End Function
+
+    ' Check if a specific extension is associated with this app
+    Private Function IsExtensionAssociatedWithThisApp(ext As String) As Boolean
+        Try
+            Using key = Registry.ClassesRoot.OpenSubKey(ext)
+                If key Is Nothing Then Return False
+                Dim progId = key.GetValue("")?.ToString()
+                If String.IsNullOrEmpty(progId) Then Return False
+                Using progKey = Registry.ClassesRoot.OpenSubKey(progId & "\shell\open\command")
+                    If progKey Is Nothing Then Return False
+                    Dim command = progKey.GetValue("")?.ToString()
+                    If String.IsNullOrEmpty(command) Then Return False
+                    Dim exePath = Application.ExecutablePath.ToLowerInvariant()
+                    Return command.ToLowerInvariant().Contains(exePath)
+                End Using
+            End Using
+        Catch
+            Return False
+        End Try
+    End Function
+
+    ' Associate .jpg, .png, .gif with this app
+    Private Sub AssociateImageTypesWithThisApp()
+        AssociateExtensionWithThisApp(".jpg", "FastMediaSorter.jpg", "JPEG Image - FastMediaSorter")
+        AssociateExtensionWithThisApp(".png", "FastMediaSorter.png", "PNG Image - FastMediaSorter")
+        AssociateExtensionWithThisApp(".gif", "FastMediaSorter.gif", "GIF Image - FastMediaSorter")
+        MessageBox.Show(If(lngRus, "Ассоциации установлены. Возможно потребуется перезапустить Проводник или Windows.", "Associations set. You may need to restart Explorer or Windows for changes to take effect."), "Association", MessageBoxButtons.OK, MessageBoxIcon.Information)
+    End Sub
+
+    Private Sub AssociateExtensionWithThisApp(ext As String, progId As String, description As String)
+        Try
+            Dim exePath = Application.ExecutablePath
+            Using progKey = Registry.ClassesRoot.CreateSubKey(progId)
+                progKey.SetValue("", description)
+                Using shellKey = progKey.CreateSubKey("shell\open\command")
+                    shellKey.SetValue("", """" & exePath & """ ""%1""")
+                End Using
+            End Using
+            Using extKey = Registry.ClassesRoot.CreateSubKey(ext)
+                extKey.SetValue("", progId)
+            End Using
+        Catch ex As Exception
+            MessageBox.Show(If(lngRus, "Ошибка ассоциации: ", "Failed to set association: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub CheckAndOfferImageAssociations()
+        If GetSetting(appName, secName, "UserAlreadyAskedForAssociations", "0") = "0" AndAlso
+            IsRunningAsAdministrator() AndAlso
+            Not AreImageTypesAssociatedWithThisApp() Then
+
+            Dim msg = If(lngRus, "Ассоциировать .JPG, .PNG, .GIF файлы с этой программой?", "Associate .JPG, .PNG, .GIF files with this application?")
+            If MessageBox.Show(msg, "Association", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
+                AssociateImageTypesWithThisApp()
+            End If
+
+            SaveSetting(appName, secName, "UserAlreadyAskedForAssociations", "1")
+        End If
+    End Sub
+
 End Class

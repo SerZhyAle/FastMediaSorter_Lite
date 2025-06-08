@@ -9,6 +9,20 @@ Public Class the_Table_Form
     End Sub
 
     Private Sub Form2_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-2: the_Table_Form_Load")
+
+        cmbox_color_schema.Items.Clear()
+        cmbox_color_schema.Items.Add(If(lngRus, "По углу", "By corner"))
+        cmbox_color_schema.Items.Add(If(lngRus, "Черный", "Black"))
+        cmbox_color_schema.Items.Add(If(lngRus, "Белый", "White"))
+        cmbox_color_schema.Items.Add(If(lngRus, "По краю", "By side"))
+        cmbox_color_schema.Items.Add(If(lngRus, "По верху", "By top"))
+        cmbox_color_schema.Items.Add(If(lngRus, "По низу", "By buttom"))
+        cmbox_color_schema.SelectedIndex = color_scheme
+
+        lbl_Color.Text = If(lngRus, "Цвет:", "Color:")
+
         chkbox_Copy_Mode.Checked = copyMode
         Data_Grid_View.Rows.Clear()
         Data_Grid_View.Rows.Add()
@@ -94,5 +108,9 @@ Public Class the_Table_Form
 
     Private Sub Data_Grid_View_CellContentClick(sender As Object, e As DataGridViewCellEventArgs) Handles Data_Grid_View.CellContentClick
 
+    End Sub
+
+    Private Sub cmbox_color_schema_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmbox_color_schema.SelectedIndexChanged
+        color_scheme = cmbox_color_schema.SelectedIndex
     End Sub
 End Class
