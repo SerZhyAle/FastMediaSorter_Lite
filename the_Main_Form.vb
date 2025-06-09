@@ -7,6 +7,7 @@
 'sza2505207
 'sza250606 gemini
 'sza250608 copilot
+'sza250609 gif fix
 
 Option Strict On
 
@@ -30,6 +31,7 @@ Imports Microsoft.Win32
 
 <ComVisible(True)>
 Public Class the_Main_Form
+
     Private Shared mutex As Mutex
     Private Const AppMutexName As String = "FastMediaSorterSingleInstanceMutex"
     Private applicationRunsCount As Integer
@@ -86,8 +88,10 @@ Public Class the_Main_Form
     Dim historyDestinationFileName As String = ""
     Private WithEvents BgWorker As New BackgroundWorker()
     Private bgWorkerOnline As Boolean
-    Private bgWorkerResult As String = "EMPTY"
 
+    Private bgWorkerResult As String = "EMPTY"
+    Private pb1Stream As IO.MemoryStream
+    Private pb2Stream As IO.MemoryStream
     Private Const WmCopyData As Integer = &H4A
 
     Private allSupportedExtensions As New HashSet(Of String)()
@@ -301,16 +305,32 @@ Public Class the_Main_Form
         InitializeFileOperationWorker()
     End Sub
 
-    Private Function LoadImage(filePath As String) As Image
+    ' sza250609 - GIF fix: changed to return a Tuple with the stream to keep it alive
+    Private Function LoadImage(filePath As String) As Tuple(Of Image, IO.MemoryStream)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0035: LoadImage begin " & filePath)
+        If Not My.Computer.FileSystem.FileExists(filePath) Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0036: LoadImage file not found")
+            Return Nothing
+        End If
         Try
-            Dim nextImage As Image
-            Using stream As New FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read)
-                nextImage = Image.FromStream(stream)
-            End Using
+            Dim imageBytes As Byte() = File.ReadAllBytes(filePath)
+            Dim ms As New IO.MemoryStream(imageBytes)
+            Dim nextImage As Image = Image.FromStream(ms)
+
+            If nextImage.RawFormat.Equals(ImageFormat.Gif) Then
+                Try
+                    Dim frameCount As Integer = nextImage.GetFrameCount(FrameDimension.Time)
+                Catch ex As Exception
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0902: Error reading GIF: " & ex.Message)
+                    nextImage?.Dispose()
+                    ms?.Dispose()
+                    lbl_Status.Text = If(lngRus, "Ошибка чтения GIF: " & ex.Message, "Error reading GIF: " & ex.Message)
+                    Return Nothing
+                End Try
+            End If
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0040: LoadImage end ")
-            Return nextImage
+            Return Tuple.Create(nextImage, ms)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0041: ERR loading image " & ex.Message)
             Return Nothing
@@ -370,18 +390,20 @@ Public Class the_Main_Form
             Dim SecondFileExtension = Path.GetExtension(nextAfterCurrentFileName).ToLower
 
             If imageFileExtensions.Contains(SecondFileExtension) Then
-                Dim nextImage As Image = LoadImage(nextAfterCurrentFileName)
-                currentSecondLoadedFileName = nextAfterCurrentFileName
-
-                e.Result = New Tuple(Of Image, Boolean)(nextImage, isFirstPictureBoxNeedToBeCached)
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0100: BgWorker loaded image into memory: " & nextAfterCurrentFileName.ToString)
-
+                ' sza250609 - GIF fix
+                Dim imageData As Tuple(Of Image, IO.MemoryStream) = LoadImage(nextAfterCurrentFileName)
+                If imageData IsNot Nothing Then
+                    currentSecondLoadedFileName = nextAfterCurrentFileName
+                    e.Result = New Tuple(Of Image, IO.MemoryStream, Boolean)(imageData.Item1, imageData.Item2, isFirstPictureBoxNeedToBeCached)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0100: BgWorker loaded image into memory: " & nextAfterCurrentFileName.ToString)
+                Else
+                    e.Cancel = True
+                End If
             Else
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0110: Next file is not image, backload is cancelled")
                 e.Cancel = True
             End If
         Else
-
             currentSecondLoadedFileName = ""
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0120: No needs for the Next file, backload is cancelled; isSlideShowRandom " & isSlideShowRandom.ToString & " nextAfterCurrentFileName = " & nextAfterCurrentFileName)
             e.Cancel = True
@@ -436,18 +458,24 @@ Public Class the_Main_Form
         ElseIf currentSecondLoadedFileName = "" Then
             bgWorkerResult = "SKIPED"
         Else
-            Dim result As Tuple(Of Image, Boolean) = DirectCast(e.Result, Tuple(Of Image, Boolean))
+            ' sza250609 - GIF fix
+            Dim result As Tuple(Of Image, IO.MemoryStream, Boolean) = DirectCast(e.Result, Tuple(Of Image, IO.MemoryStream, Boolean))
             Dim nextImage As Image = result.Item1
-            Dim isFirstPictureBox As Boolean = result.Item2
+            Dim nextStream As IO.MemoryStream = result.Item2
+            Dim isFirstPictureBox As Boolean = result.Item3
 
             If isFirstPictureBox Then
                 If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
+                If pb1Stream IsNot Nothing Then pb1Stream?.Dispose()
                 Picture_Box_1.Image = nextImage
+                pb1Stream = nextStream
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0210: bgWorker: P1 is loaded")
             Else
                 If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
+                If pb2Stream IsNot Nothing Then pb2Stream?.Dispose()
                 Picture_Box_2.Image = nextImage
+                pb2Stream = nextStream
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0220: bgWorker: P2 is loaded")
             End If
@@ -1130,31 +1158,39 @@ Public Class the_Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0880: P1 is found already loaded isSecondaryPictureBoxActive =false")
                 End If
             Else
-                Dim newImage As Image
+
                 Try
-                    Using stream As New FileStream(currentFileName, FileMode.Open, FileAccess.Read, FileShare.Read)
-                        newImage = Image.FromStream(stream)
-                    End Using
+                    ' sza250609 - GIF fix
+                    Dim imageData As Tuple(Of Image, IO.MemoryStream) = LoadImage(currentFileName)
+                    If imageData IsNot Nothing Then
+                        Dim newImage As Image = imageData.Item1
+                        Dim newStream As IO.MemoryStream = imageData.Item2
 
-                    If Not thisIsFirstPictureFileWeShow AndAlso isSecondaryPictureBoxActive Then
-                        If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
-                        Picture_Box_2.Image = newImage
-
-                        isPictureBox2Visible = True
-                        isPictureBox1Visible = False
-                        isSecondaryPictureBoxActive = True
-
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0890: P2 set (not found loaded) isSecondaryPictureBoxActive=true")
+                        If Not thisIsFirstPictureFileWeShow AndAlso isSecondaryPictureBoxActive Then
+                            If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
+                            If pb2Stream IsNot Nothing Then pb2Stream?.Dispose()
+                            Picture_Box_2.Image = newImage
+                            pb2Stream = newStream
+                            isPictureBox2Visible = True
+                            isPictureBox1Visible = False
+                            isSecondaryPictureBoxActive = True
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0890: P2 set (not found loaded) isSecondaryPictureBoxActive=true")
+                        Else
+                            If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
+                            If pb1Stream IsNot Nothing Then pb1Stream?.Dispose()
+                            Picture_Box_1.Image = newImage
+                            pb1Stream = newStream
+                            isPictureBox1Visible = True
+                            isPictureBox2Visible = False
+                            isSecondaryPictureBoxActive = False
+                            thisIsFirstPictureFileWeShow = False
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0900: P1 set (not found loaded) isSecondaryPictureBoxActive=false")
+                        End If
                     Else
                         If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
-                        Picture_Box_1.Image = newImage
-
-                        isPictureBox1Visible = True
-                        isPictureBox2Visible = False
-                        isSecondaryPictureBoxActive = False
-                        thisIsFirstPictureFileWeShow = False
-
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0900: P1 set (not found loaded) isSecondaryPictureBoxActive=false")
+                        If pb1Stream IsNot Nothing Then pb1Stream?.Dispose()
+                        If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
+                        If pb2Stream IsNot Nothing Then pb2Stream?.Dispose()
                     End If
                 Catch ex As Exception
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0905: Error loading image: " & ex.Message)
