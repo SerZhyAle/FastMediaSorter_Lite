@@ -340,74 +340,78 @@ Public Class the_Main_Form
     Private Sub BgWorker_DoWork(sender As Object, e As DoWorkEventArgs) Handles BgWorker.DoWork
         Dim worker As BackgroundWorker = DirectCast(sender, BackgroundWorker)
 
-        If noBackgroundTasksMode OrElse
+        Try
+            If noBackgroundTasksMode OrElse
             worker.CancellationPending Then
 
-            e.Cancel = True
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0050: BgWorker got cancellation")
-        End If
-
-        If currentFileName = "" OrElse Not My.Computer.FileSystem.FileExists(currentFileName) Then
-            lbl_Current_File.Text = ""
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0060: File is lost for BgWorker size calculation")
-        Else
-            Dim userState As New Dictionary(Of String, String)
-
-            Dim fileInfo = My.Computer.FileSystem.GetFileInfo(currentFileName)
-            Dim fileSize = fileInfo.Length
-            Dim fileSizeText As String
-
-            If fileSize < 1000 Then
-                fileSizeText = fileSize.ToString & "B"
-            ElseIf fileSize / 1000 > 1000 Then
-                fileSizeText = (fileSize / 1000000).ToString("F1") + "MiB"
-            Else
-                fileSizeText = (fileSize / 1000).ToString("F1") + "KiB"
+                e.Cancel = True
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0050: BgWorker got cancellation")
             End If
 
-            userState("fileSizeText") = fileSizeText
+            If currentFileName = "" OrElse Not My.Computer.FileSystem.FileExists(currentFileName) Then
+                lbl_Current_File.Text = ""
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0060: File is lost for BgWorker size calculation")
+            Else
+                Dim userState As New Dictionary(Of String, String)
 
-            Dim fileTimeText = fileInfo.LastWriteTime.ToString("yyMMdd HH:mm")
-            userState("fileTimeText") = fileTimeText
+                Dim fileInfo = My.Computer.FileSystem.GetFileInfo(currentFileName)
+                Dim fileSize = fileInfo.Length
+                Dim fileSizeText As String
 
-            DirectCast(sender, BackgroundWorker).ReportProgress(0, userState)
-
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0070: BgWorker reported size calculation")
-        End If
-
-        If wasExternalInputLast Then
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0080: folder files going be counted on background..")
-            totalFilesCount = My.Computer.FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
-
-            Dim userState As New Dictionary(Of String, String)
-            userState("totalFilesCountText") = totalFilesCount.ToString
-            DirectCast(sender, BackgroundWorker).ReportProgress(0, userState)
-
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0090: folder files: " & totalFilesCount)
-        End If
-
-        If Not isSlideShowRandom AndAlso Not nextAfterCurrentFileName = "" AndAlso Not nextAfterCurrentFileName = currentFileName Then
-            Dim SecondFileExtension = Path.GetExtension(nextAfterCurrentFileName).ToLower
-
-            If imageFileExtensions.Contains(SecondFileExtension) Then
-                ' sza250609 - GIF fix
-                Dim imageData As Tuple(Of Image, IO.MemoryStream) = LoadImage(nextAfterCurrentFileName)
-                If imageData IsNot Nothing Then
-                    currentSecondLoadedFileName = nextAfterCurrentFileName
-                    e.Result = New Tuple(Of Image, IO.MemoryStream, Boolean)(imageData.Item1, imageData.Item2, isFirstPictureBoxNeedToBeCached)
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0100: BgWorker loaded image into memory: " & nextAfterCurrentFileName.ToString)
+                If fileSize < 1000 Then
+                    fileSizeText = fileSize.ToString & "B"
+                ElseIf fileSize / 1000 > 1000 Then
+                    fileSizeText = (fileSize / 1000000).ToString("F1") + "MiB"
                 Else
+                    fileSizeText = (fileSize / 1000).ToString("F1") + "KiB"
+                End If
+
+                userState("fileSizeText") = fileSizeText
+
+                Dim fileTimeText = fileInfo.LastWriteTime.ToString("yyMMdd HH:mm")
+                userState("fileTimeText") = fileTimeText
+
+                DirectCast(sender, BackgroundWorker).ReportProgress(0, userState)
+
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0070: BgWorker reported size calculation")
+            End If
+
+            If wasExternalInputLast Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0080: folder files going be counted on background..")
+                totalFilesCount = My.Computer.FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
+
+                Dim userState As New Dictionary(Of String, String)
+                userState("totalFilesCountText") = totalFilesCount.ToString
+                DirectCast(sender, BackgroundWorker).ReportProgress(0, userState)
+
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0090: folder files: " & totalFilesCount)
+            End If
+
+            If Not isSlideShowRandom AndAlso Not nextAfterCurrentFileName = "" AndAlso Not nextAfterCurrentFileName = currentFileName Then
+                Dim SecondFileExtension = Path.GetExtension(nextAfterCurrentFileName).ToLower
+
+                If imageFileExtensions.Contains(SecondFileExtension) Then
+                    ' sza250609 - GIF fix
+                    Dim imageData As Tuple(Of Image, IO.MemoryStream) = LoadImage(nextAfterCurrentFileName)
+                    If imageData IsNot Nothing Then
+                        currentSecondLoadedFileName = nextAfterCurrentFileName
+                        e.Result = New Tuple(Of Image, IO.MemoryStream, Boolean)(imageData.Item1, imageData.Item2, isFirstPictureBoxNeedToBeCached)
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0100: BgWorker loaded image into memory: " & nextAfterCurrentFileName.ToString)
+                    Else
+                        e.Cancel = True
+                    End If
+                Else
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0110: Next file is not image, backload is cancelled")
                     e.Cancel = True
                 End If
             Else
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0110: Next file is not image, backload is cancelled")
+                currentSecondLoadedFileName = ""
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0120: No needs for the Next file, backload is cancelled; isSlideShowRandom " & isSlideShowRandom.ToString & " nextAfterCurrentFileName = " & nextAfterCurrentFileName)
                 e.Cancel = True
             End If
-        Else
-            currentSecondLoadedFileName = ""
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0120: No needs for the Next file, backload is cancelled; isSlideShowRandom " & isSlideShowRandom.ToString & " nextAfterCurrentFileName = " & nextAfterCurrentFileName)
-            e.Cancel = True
-        End If
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0041: ERR BCK! " & ex.Message)
+        End Try
     End Sub
 
     Private Sub BgWorker_ProgressChanged(sender As Object, e As ProgressChangedEventArgs) Handles BgWorker.ProgressChanged
