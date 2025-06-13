@@ -987,12 +987,14 @@ Public Class the_Main_Form
             End If
 
             If useArray Then
-                filesArray = DirectCast(files, String())
+                Dim fileEntries = DirectCast(files, FileEntry())
+                filesArray = fileEntries.Select(Function(fe) fe.FilePath).ToArray()
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0780: folder files ARRAY is counted: " & filesArray.Length.ToString)
             Else
                 filesList = DirectCast(files, List(Of String))
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0790: folder files LIST is counted: " & filesList.Count.ToString)
             End If
+
             totalFilesCount = If(useArray, filesArray.Length, filesList.Count)
 
             Return True
@@ -1225,7 +1227,7 @@ Public Class the_Main_Form
 
         '  Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0942: colorsum " & sumColor.ToString)
 
-        If sumColor <300 Then
+        If sumColor < 333 Then
             Return System.Drawing.Color.White
         Else
             Return System.Drawing.Color.Black
