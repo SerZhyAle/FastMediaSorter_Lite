@@ -1,0 +1,263 @@
+﻿Imports System.Windows.Forms
+Imports System.IO
+Imports System.Drawing
+Imports System.Drawing.Drawing2D
+Imports System.Threading.Tasks
+
+Public Class Image_Panel_Form
+    Inherits Form
+
+    ' --- UI Controls and Constants ---
+    Private imagePanel As FlowLayoutPanel
+    Private WithEvents virtualScrollBar As VScrollBar
+
+    Private Const PictureBoxSize As Integer = 80
+    Private Const MaxPictureBoxCount As Integer = 100
+    Private Const ResizeTimerInterval As Integer = 200
+
+    ' --- State Management for Virtualization ---
+    Private allImageFiles As New List(Of String)()
+    Private pictureControls As New List(Of PictureBox)()
+    Private isLoading As Boolean = False
+    Private resizeDebounceTimer As New System.Windows.Forms.Timer()
+
+    Public Sub New()
+        Me.Text = If(Is_Russian_Language, "Панель изображений", "Image Panel")
+        Me.Size = New Drawing.Size(800, 600)
+
+        imagePanel = New FlowLayoutPanel()
+        With imagePanel
+            .Dock = DockStyle.Fill
+            .AutoScroll = False
+            .FlowDirection = FlowDirection.LeftToRight
+        End With
+
+        virtualScrollBar = New VScrollBar()
+        With virtualScrollBar
+            .Dock = DockStyle.Right
+            .Visible = False
+        End With
+
+        Me.Controls.Add(imagePanel)
+        Me.Controls.Add(virtualScrollBar)
+
+        AddHandler Me.Resize, AddressOf OnFormResize
+        AddHandler Me.Shown, AddressOf OnFormShown ' *** ADDED: Handle the Shown event
+        resizeDebounceTimer.Interval = ResizeTimerInterval
+        AddHandler resizeDebounceTimer.Tick, AddressOf OnResizeTimerTick
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        ' This now only prepares data and controls, without binding images
+        InitializeState()
+    End Sub
+
+    ' --- Event Handlers ---
+
+    Private Sub OnFormShown(sender As Object, e As EventArgs)
+        ' This event fires once the form is fully displayed and layout is stable.
+        ' It's the correct place to do the initial data binding.
+        RemoveHandler Me.Shown, AddressOf OnFormShown ' Ensure it only runs once
+        UpdateScrollBar()
+        BindDataToControls()
+    End Sub
+
+    Private Sub OnFormResize(sender As Object, e As EventArgs)
+        resizeDebounceTimer.Stop()
+        resizeDebounceTimer.Start()
+    End Sub
+
+    Private Sub OnResizeTimerTick(sender As Object, e As EventArgs)
+        resizeDebounceTimer.Stop()
+        UpdateScrollBar()
+        BindDataToControls()
+    End Sub
+
+    Private Sub virtualScrollBar_Scroll(sender As Object, e As ScrollEventArgs) Handles virtualScrollBar.Scroll
+        ' Using ThumbTrack gives a smoother scrolling experience
+        If e.Type = ScrollEventType.EndScroll OrElse e.Type = ScrollEventType.ThumbTrack Then
+            BindDataToControls()
+        End If
+    End Sub
+
+    ' --- Core Logic ---
+
+    Private Sub InitializeState()
+        ' This method now only prepares data and controls. It does not bind images.
+        ' 1. Clear previous state
+        imagePanel.Visible = False
+        For Each pb In pictureControls
+            pb.Image?.Dispose()
+            pb.Dispose()
+        Next
+        pictureControls.Clear()
+        imagePanel.Controls.Clear()
+        allImageFiles.Clear()
+
+        ' 2. Get all image file paths from the source
+        Dim current_Folder_Path As String = Main_Form.Current_Folder_Path
+        If Not String.IsNullOrEmpty(current_Folder_Path) AndAlso Directory.Exists(current_Folder_Path) Then
+            Dim extensions As String() = Main_Form.Image_File_Extensions
+            allImageFiles = Directory.GetFiles(current_Folder_Path).Where(Function(f) extensions.Contains(Path.GetExtension(f).ToLower())).ToList()
+        End If
+
+        ' 3. Create a fixed pool of PictureBox controls
+        Dim numToCreate = Math.Min(allImageFiles.Count, MaxPictureBoxCount)
+        For i = 0 To numToCreate - 1
+            Dim pb = New PictureBox()
+            With pb
+                .Width = PictureBoxSize
+                .Height = PictureBoxSize
+                .BorderStyle = BorderStyle.FixedSingle
+                .BackColor = Color.LightGray
+            End With
+            pictureControls.Add(pb)
+            imagePanel.Controls.Add(pb)
+        Next
+
+        imagePanel.Visible = True
+    End Sub
+
+    ' Returns the number of columns and rows that fit in the current panel
+    Private Sub GetGridSize(ByRef cols As Integer, ByRef rows As Integer)
+        cols = Math.Max(1, imagePanel.ClientSize.Width \ (PictureBoxSize + 6))
+        rows = Math.Max(1, imagePanel.ClientSize.Height \ (PictureBoxSize + 6))
+    End Sub
+
+    Private Sub UpdatePictureBoxPool()
+        Dim cols As Integer, rows As Integer
+        GetGridSize(cols, rows)
+        Dim neededCount = cols * rows
+        Dim currentCount = pictureControls.Count
+        If neededCount > currentCount Then
+            ' Add new PictureBoxes
+            For i = currentCount To neededCount - 1
+                Dim pb = New PictureBox()
+                With pb
+                    .Width = PictureBoxSize
+                    .Height = PictureBoxSize
+                    .BorderStyle = BorderStyle.FixedSingle
+                    .BackColor = Color.LightGray
+                End With
+                pictureControls.Add(pb)
+                imagePanel.Controls.Add(pb)
+            Next
+        ElseIf neededCount < currentCount Then
+            ' Hide extra PictureBoxes (do not remove, just hide)
+            For i = neededCount To currentCount - 1
+                pictureControls(i).Visible = False
+            Next
+        End If
+    End Sub
+
+    Private Sub UpdateScrollBar()
+        If allImageFiles.Count = 0 Then
+            virtualScrollBar.Visible = False
+            Return
+        End If
+
+        Dim cols As Integer, rows As Integer
+        GetGridSize(cols, rows)
+        Dim totalRows = CInt(Math.Ceiling(allImageFiles.Count / CDbl(cols)))
+        Dim visibleRows = rows
+
+        ' Save current value to attempt to restore it after resize
+        Dim oldValue = virtualScrollBar.Value
+
+        If totalRows > visibleRows Then
+            virtualScrollBar.Visible = True
+            virtualScrollBar.Minimum = 0
+            virtualScrollBar.Maximum = Math.Max(0, totalRows - visibleRows)
+            virtualScrollBar.LargeChange = 1
+            virtualScrollBar.SmallChange = 1
+            ' Restore scroll position if possible
+            virtualScrollBar.Value = Math.Min(oldValue, virtualScrollBar.Maximum)
+        Else
+            virtualScrollBar.Visible = False
+            virtualScrollBar.Value = 0
+        End If
+    End Sub
+
+    Private Async Function BindDataToControls() As Task
+        If isLoading Then Return
+        isLoading = True
+
+        UpdatePictureBoxPool()
+
+        Dim cols As Integer, rows As Integer
+        GetGridSize(cols, rows)
+        Dim topRowIndex = If(virtualScrollBar.Visible, virtualScrollBar.Value, 0)
+        Dim firstFileIndex = topRowIndex * cols
+
+        Dim tasks As New List(Of Task)()
+
+        For i = 0 To (cols * rows) - 1
+            If i >= pictureControls.Count Then Exit For
+            Dim pb = pictureControls(i)
+            Dim currentFileIndex = firstFileIndex + i
+
+            If currentFileIndex < allImageFiles.Count Then
+                Dim filePath = allImageFiles(currentFileIndex)
+                pb.Visible = True
+
+                If CStr(pb.Tag) <> filePath Then
+                    pb.Tag = filePath
+                    pb.Image?.Dispose()
+                    pb.Image = Nothing
+                    pb.BackColor = Color.LightGray
+
+                    tasks.Add(Task.Run(Sub()
+                                           Dim thumbnail = CreateThumbnail(filePath, PictureBoxSize, PictureBoxSize)
+                                           If Me.IsDisposed OrElse pb.IsDisposed OrElse CStr(pb.Tag) <> filePath Then Return
+
+                                           If thumbnail IsNot Nothing Then
+                                               pb.Invoke(New Action(Sub() pb.Image = thumbnail))
+                                           Else
+                                               pb.Invoke(New Action(Sub() pb.BackColor = Color.Red))
+                                           End If
+                                       End Sub))
+                End If
+            Else
+                pb.Visible = False
+                pb.Image?.Dispose()
+                pb.Image = Nothing
+                pb.Tag = Nothing
+            End If
+        Next
+
+        Await Task.WhenAll(tasks)
+        isLoading = False
+    End Function
+
+    Private Function CreateThumbnail(imagePath As String, width As Integer, height As Integer) As Image
+        Try
+            Using ms As New MemoryStream(File.ReadAllBytes(imagePath))
+                Using originalImage As Image = Image.FromStream(ms)
+                    Dim sourceWidth As Integer = originalImage.Width
+                    Dim sourceHeight As Integer = originalImage.Height
+                    Dim nPercentW As Single = CSng(width) / CSng(sourceWidth)
+                    Dim nPercentH As Single = CSng(height) / CSng(sourceHeight)
+                    Dim nPercent As Single = Math.Min(nPercentW, nPercentH)
+
+                    Dim destWidth As Integer = CInt(sourceWidth * nPercent)
+                    Dim destHeight As Integer = CInt(sourceHeight * nPercent)
+                    Dim destX As Integer = (width - destWidth) \ 2
+                    Dim destY As Integer = (height - destHeight) \ 2
+
+                    Dim bmPhoto As New Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
+                    bmPhoto.SetResolution(originalImage.HorizontalResolution, originalImage.VerticalResolution)
+
+                    Using grPhoto As Graphics = Graphics.FromImage(bmPhoto)
+                        grPhoto.Clear(Color.LightGray)
+                        grPhoto.InterpolationMode = InterpolationMode.HighQualityBicubic
+                        grPhoto.DrawImage(originalImage, New Rectangle(destX, destY, destWidth, destHeight), New Rectangle(0, 0, sourceWidth, sourceHeight), GraphicsUnit.Pixel)
+                    End Using
+                    Return bmPhoto
+                End Using
+            End Using
+        Catch ex As Exception
+            Return Nothing
+        End Try
+    End Function
+End Class

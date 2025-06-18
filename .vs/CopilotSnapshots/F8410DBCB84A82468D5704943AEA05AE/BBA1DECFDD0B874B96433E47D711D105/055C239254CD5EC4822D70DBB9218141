@@ -1,0 +1,45 @@
+﻿Imports System.Windows.Forms
+Imports System.IO
+Imports System.Drawing
+Imports System.Drawing.Drawing2D
+Imports System.Threading.Tasks
+
+Public Class Image_Panel_Form
+    Inherits Form
+
+    ' --- UI Controls and Constants ---
+    Private imagePanel As FlowLayoutPanel
+    Private Const PictureBoxSize As Integer = 80
+    Private Const ResizeTimerInterval As Integer = 200
+
+    ' --- State Management ---
+    Private allImageFiles As New List(Of String)()
+    Private selectedPictureControls As New List(Of PictureBox)()
+    Private currentlyLoadedIndex As Integer = 0
+    Private isLoading As Boolean = False
+    Private resizeDebounceTimer As New System.Windows.Forms.Timer()
+
+    Public Sub New()
+        Me.Text = If(Is_Russian_Language, "Панель изображений", "Image Panel")
+        Me.Size = New Drawing.Size(800, 600)
+        Me.KeyPreview = True ' To capture key presses on the form
+
+        imagePanel = New FlowLayoutPanel()
+        With imagePanel
+            .Dock = DockStyle.Fill
+            .AutoScroll = True
+            .FlowDirection = FlowDirection.LeftToRight
+        End With
+        Me.Controls.Add(imagePanel)
+
+        AddHandler Me.Resize, AddressOf OnFormResize
+        AddHandler Me.Shown, AddressOf OnFormShown
+        AddHandler Me.KeyDown, AddressOf OnFormKeyDown
+        AddHandler imagePanel.Paint, AddressOf OnPanelPaint
+        resizeDebounceTimer.Interval = ResizeTimerInterval
+        AddHandler resizeDebounceTimer.Tick, AddressOf OnResizeTimerTick
+
+        ApplyColorScheme()
+    End Sub
+
+    Private

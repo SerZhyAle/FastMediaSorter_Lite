@@ -1,0 +1,234 @@
+﻿Imports System.Windows.Forms
+Imports System.IO
+Imports System.Drawing
+Imports System.Drawing.Drawing2D
+Imports System.Threading.Tasks
+
+Public Class Image_Panel_Form
+    Inherits Form
+
+    ' UI Controls and constants
+    Private imagePanel As FlowLayoutPanel
+    Private Const PictureBox_Size As Integer = 100
+    Private Const Max_PictureBox_Count As Integer = 200
+    Private Const resize_Timer_Interval As Integer = 250
+    Private Const Max_Visible_PictureBox As Integer = 250
+    Private firstVisibleIndex As Integer = 0
+
+    ' State Management
+    Private all_Image_Files As New List(Of String)()
+    Private current_Load_Index As Integer = 0
+    Private is_Loading As Boolean = False
+    Private resizeDebounceTimer As New System.Windows.Forms.Timer()
+
+    Public Sub New()
+        Me.Text = "Image Panel"
+        Me.Size = New Drawing.Size(800, 600)
+
+        imagePanel = New FlowLayoutPanel()
+        With imagePanel
+            .Dock = DockStyle.Fill
+            .AutoScroll = True
+            .FlowDirection = FlowDirection.LeftToRight
+        End With
+        Me.Controls.Add(imagePanel)
+
+        AddHandler Me.Resize, AddressOf OnFormResize
+        AddHandler imagePanel.Paint, AddressOf OnPanelPaint
+        AddHandler imagePanel.Scroll, AddressOf OnImagePanelScroll
+
+        resizeDebounceTimer.Interval = resize_Timer_Interval 'ms
+        AddHandler resizeDebounceTimer.Tick, AddressOf OnResizeTimerTick
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        InitializeAndLoadImagesAsync()
+    End Sub
+
+    Private Sub OnFormResize(sender As Object, e As EventArgs)
+        resizeDebounceTimer.Stop()
+        resizeDebounceTimer.Start()
+    End Sub
+
+    Private Sub OnResizeTimerTick(sender As Object, e As EventArgs)
+        resizeDebounceTimer.Stop()
+        If Not imagePanel.VerticalScroll.Visible Then
+            LoadNextBatchAsync()
+
+        End If
+    End Sub
+
+    Private Sub OnImagePanelScroll(sender As Object, e As ScrollEventArgs)
+        If is_Loading OrElse all_Image_Files.Count <= Max_Visible_PictureBox Then Return
+
+        Dim visibleRows = Math.Max(1, imagePanel.ClientSize.Height \ (PictureBox_Size + 6))
+        Dim cols = Math.Max(1, imagePanel.ClientSize.Width \ (PictureBox_Size + 6))
+        Dim visibleCount = visibleRows * cols
+
+        Dim newFirstIndex = Math.Min(Math.Max(0, (imagePanel.VerticalScroll.Value \ (PictureBox_Size + 6)) * cols), all_Image_Files.Count - visibleCount)
+        If newFirstIndex <> firstVisibleIndex Then
+            firstVisibleIndex = newFirstIndex
+            LoadVisibleImagesAsync()
+        End If
+    End Sub
+
+    Private Async Sub LoadVisibleImagesAsync()
+        is_Loading = True
+
+        ' Dispose and clear all PictureBoxes
+        For Each ctrl As Control In imagePanel.Controls
+            If TypeOf ctrl Is PictureBox Then
+                CType(ctrl, PictureBox).Image?.Dispose()
+            End If
+            ctrl.Dispose()
+        Next
+        imagePanel.Controls.Clear()
+
+        Dim cols = Math.Max(1, imagePanel.ClientSize.Width \ (PictureBox_Size + 6))
+        Dim rows = Math.Max(1, Max_Visible_PictureBox \ cols)
+        Dim visibleCount = Math.Min(Max_Visible_PictureBox, all_Image_Files.Count - firstVisibleIndex)
+
+        Dim tasks As New List(Of Task)()
+        For i = 0 To visibleCount - 1
+            Dim fileIndex = firstVisibleIndex + i
+            If fileIndex >= all_Image_Files.Count Then Exit For
+            Dim filePath = all_Image_Files(fileIndex)
+            Dim pb = New PictureBox()
+            With pb
+                .Width = PictureBox_Size
+                .Height = PictureBox_Size
+                .BorderStyle = BorderStyle.FixedSingle
+                .BackColor = Color.LightGray
+            End With
+            imagePanel.Controls.Add(pb)
+
+            tasks.Add(Task.Run(Sub()
+                                   Dim thumbnail = CreateThumbnail(filePath, PictureBox_Size, PictureBox_Size)
+                                   If Me.IsDisposed OrElse pb.IsDisposed Then Return
+                                   If thumbnail IsNot Nothing Then
+                                       pb.Invoke(New Action(Sub() pb.Image = thumbnail))
+                                   Else
+                                       pb.Invoke(New Action(Sub() pb.BackColor = Color.Red))
+                                   End If
+                               End Sub))
+        Next
+
+        Await Task.WhenAll(tasks)
+        is_Loading = False
+    End Sub
+
+    Private Async Sub InitializeAndLoadImagesAsync()
+        If is_Loading Then Return
+        is_Loading = True
+
+        For Each ctrl As Control In imagePanel.Controls
+            If TypeOf ctrl Is PictureBox Then
+                CType(ctrl, PictureBox).Image?.Dispose()
+            End If
+            ctrl.Dispose()
+        Next
+        imagePanel.Controls.Clear()
+        all_Image_Files.Clear()
+        current_Load_Index = 0
+
+        Dim current_Folder_Path As String = Main_Form.Current_Folder_Path
+        If String.IsNullOrEmpty(current_Folder_Path) OrElse Not Directory.Exists(current_Folder_Path) Then
+            is_Loading = False
+            Return
+        End If
+        Dim extensions As String() = Main_Form.Image_File_Extensions
+        all_Image_Files = Directory.GetFiles(current_Folder_Path).Where(Function(f) extensions.Contains(Path.GetExtension(f).ToLower())).ToList()
+
+        is_Loading = False
+
+        If all_Image_Files.Count > 0 Then
+            Await LoadNextBatchAsync()
+        End If
+    End Sub
+
+    Private Async Function LoadNextBatchAsync() As Task
+        If is_Loading OrElse current_Load_Index >= all_Image_Files.Count OrElse imagePanel.Controls.Count >= Max_PictureBox_Count Then Return
+
+        is_Loading = True
+
+        Dim cols = Math.Max(1, imagePanel.ClientSize.Width \ (PictureBox_Size + 6))
+        Dim batchSize = cols * 2
+
+        Dim remainingFiles = all_Image_Files.Count - current_Load_Index
+        Dim remainingSlots = Max_PictureBox_Count - imagePanel.Controls.Count
+        batchSize = Math.Min(batchSize, Math.Min(remainingFiles, remainingSlots))
+
+        If batchSize <= 0 Then
+            is_Loading = False
+            Return
+        End If
+
+        Dim tasks As New List(Of Task)()
+        Dim startIndex = current_Load_Index
+        Dim endIndex = startIndex + batchSize - 1
+
+        For i = startIndex To endIndex
+            Dim filePath = all_Image_Files(i)
+            Dim pb = New PictureBox()
+            With pb
+                .Width = PictureBox_Size
+                .Height = PictureBox_Size
+                .BorderStyle = BorderStyle.FixedSingle
+                .BackColor = Color.LightGray
+            End With
+            imagePanel.Controls.Add(pb)
+
+            tasks.Add(Task.Run(Sub()
+                                   Dim thumbnail = CreateThumbnail(filePath, PictureBox_Size, PictureBox_Size)
+                                   If Me.IsDisposed OrElse pb.IsDisposed Then Return
+
+                                   If thumbnail IsNot Nothing Then
+                                       pb.Invoke(New Action(Sub() pb.Image = thumbnail))
+                                   Else
+                                       pb.Invoke(New Action(Sub() pb.BackColor = Color.Red))
+                                   End If
+                               End Sub))
+        Next
+
+        current_Load_Index += batchSize
+
+        Await Task.WhenAll(tasks)
+        is_Loading = False
+
+        If Not imagePanel.VerticalScroll.Visible Then
+            Await LoadNextBatchAsync()
+        End If
+    End Function
+
+    Private Function CreateThumbnail(imagePath As String, width As Integer, height As Integer) As Image
+        Try
+            Using ms As New MemoryStream(File.ReadAllBytes(imagePath))
+                Using originalImage As Image = Image.FromStream(ms)
+                    Dim sourceWidth As Integer = originalImage.Width
+                    Dim sourceHeight As Integer = originalImage.Height
+                    Dim nPercentW As Single = CSng(width) / CSng(sourceWidth)
+                    Dim nPercentH As Single = CSng(height) / CSng(sourceHeight)
+                    Dim nPercent As Single = Math.Min(nPercentW, nPercentH)
+
+                    Dim destWidth As Integer = CInt(sourceWidth * nPercent)
+                    Dim destHeight As Integer = CInt(sourceHeight * nPercent)
+                    Dim destX As Integer = (width - destWidth) \ 2
+                    Dim destY As Integer = (height - destHeight) \ 2
+
+                    Dim bmPhoto As New Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
+                    bmPhoto.SetResolution(originalImage.HorizontalResolution, originalImage.VerticalResolution)
+
+                    Using grPhoto As Graphics = Graphics.FromImage(bmPhoto)
+                        grPhoto.Clear(Color.LightGray)
+                        grPhoto.InterpolationMode = InterpolationMode.HighQualityBicubic
+                        grPhoto.DrawImage(originalImage, New Rectangle(destX, destY, destWidth, destHeight), New Rectangle(0, 0, sourceWidth, sourceHeight), GraphicsUnit.Pixel)
+                    End Using
+                    Return bmPhoto
+                End Using
+            End Using
+        Catch ex As Exception
+            Return Nothing
+        End Try
+    End Function
+End Class

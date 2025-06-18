@@ -1,0 +1,175 @@
+﻿Imports System.Windows.Forms
+Imports System.IO
+Imports System.Drawing
+Imports System.Drawing.Drawing2D
+Imports System.Threading.Tasks
+
+Public Class Image_Panel_Form
+    Inherits Form
+
+    ' --- UI Controls and Constants ---
+    Private imagePanel As FlowLayoutPanel
+    Private Const PictureBoxSize As Integer = 80
+    Private Const ResizeTimerInterval As Integer = 200
+
+    ' --- State Management for Dynamic Loading ---
+    Private allImageFiles As New List(Of String)()
+    Private currentlyLoadedIndex As Integer = 0
+    Private isLoading As Boolean = False
+    Private resizeDebounceTimer As New System.Windows.Forms.Timer()
+
+    Public Sub New()
+        Me.Text = If(Is_Russian_Language, "Панель изображений", "Image Panel")
+        Me.Size = New Drawing.Size(800, 600)
+
+        imagePanel = New FlowLayoutPanel()
+        With imagePanel
+            .Dock = DockStyle.Fill
+            .AutoScroll = True ' Use native scrollbar
+            .FlowDirection = FlowDirection.LeftToRight
+        End With
+        Me.Controls.Add(imagePanel)
+
+        AddHandler Me.Resize, AddressOf OnFormResize
+        AddHandler Me.Shown, AddressOf OnFormShown
+        AddHandler imagePanel.Paint, AddressOf OnPanelPaint
+        resizeDebounceTimer.Interval = ResizeTimerInterval
+        AddHandler resizeDebounceTimer.Tick, AddressOf OnResizeTimerTick
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        InitializeState()
+    End Sub
+
+    ' --- Event Handlers ---
+
+    Private Sub OnFormShown(sender As Object, e As EventArgs)
+        RemoveHandler Me.Shown, AddressOf OnFormShown
+        FillVisibleAreaAsync()
+    End Sub
+
+    Private Sub OnFormResize(sender As Object, e As EventArgs)
+        resizeDebounceTimer.Stop()
+        resizeDebounceTimer.Start()
+    End Sub
+
+    Private Sub OnResizeTimerTick(sender As Object, e As EventArgs)
+        resizeDebounceTimer.Stop()
+        FillVisibleAreaAsync()
+    End Sub
+
+    Private Sub OnPanelPaint(sender As Object, e As PaintEventArgs)
+        If isLoading OrElse Not imagePanel.VerticalScroll.Visible Then Return
+
+        If imagePanel.VerticalScroll.Value >= (imagePanel.VerticalScroll.Maximum - imagePanel.VerticalScroll.LargeChange) Then
+            LoadNextBatchAsync()
+        End If
+    End Sub
+
+    ' --- Core Logic ---
+
+    Private Sub InitializeState()
+        For Each ctrl As Control In imagePanel.Controls
+            ctrl.Dispose()
+        Next
+        imagePanel.Controls.Clear()
+        allImageFiles.Clear()
+        currentlyLoadedIndex = 0
+
+        Dim current_Folder_Path As String = Main_Form.Current_Folder_Path
+        If Not String.IsNullOrEmpty(current_Folder_Path) AndAlso Directory.Exists(current_Folder_Path) Then
+            Dim extensions As String() = Main_Form.Image_File_Extensions
+            allImageFiles = Directory.GetFiles(current_Folder_Path).Where(Function(f) extensions.Contains(Path.GetExtension(f).ToLower())).ToList()
+        End If
+    End Sub
+
+    Private Async Sub FillVisibleAreaAsync()
+        While Not imagePanel.VerticalScroll.Visible AndAlso currentlyLoadedIndex < allImageFiles.Count
+            If isLoading Then Return
+            Await LoadNextBatchAsync()
+            Await Task.Delay(10) ' Allow UI to process layout
+        End While
+    End Sub
+
+
+
+    Private Async Function LoadNextBatchAsync() As Task
+        If isLoading OrElse currentlyLoadedIndex >= allImageFiles.Count Then Return
+
+        Try
+            isLoading = True
+
+            Dim cols = Math.Max(1, imagePanel.ClientSize.Width \ (PictureBoxSize + 6))
+            Dim batchSize = cols * 2 ' Load two rows at a time
+
+            Dim startIndex = currentlyLoadedIndex
+            Dim endIndex = Math.Min(startIndex + batchSize - 1, allImageFiles.Count - 1)
+
+            If startIndex > endIndex Then Return
+
+            Dim tasks As New List(Of Task)()
+
+            For i = startIndex To endIndex
+                Dim filePath = allImageFiles(i)
+                Dim pb = New PictureBox()
+                With pb
+                    .Width = PictureBoxSize
+                    .Height = PictureBoxSize
+                    .BorderStyle = BorderStyle.FixedSingle
+                    .BackColor = Color.LightGray
+                    .Tag = filePath
+                End With
+                imagePanel.Controls.Add(pb)
+
+                tasks.Add(Task.Run(Sub()
+                                       Dim thumbnail = CreateThumbnail(filePath, PictureBoxSize, PictureBoxSize)
+                                       If Me.IsDisposed OrElse pb.IsDisposed OrElse CStr(pb.Tag) <> filePath Then Return
+
+                                       If thumbnail IsNot Nothing Then
+                                           pb.Invoke(New Action(Sub() pb.Image = thumbnail))
+                                       Else
+                                           pb.Invoke(New Action(Sub() pb.BackColor = Color.Red))
+                                       End If
+                                   End Sub))
+            Next
+
+            currentlyLoadedIndex = endIndex + 1
+            Await Task.WhenAll(tasks)
+        Finally
+            isLoading = False
+        End Try
+    End Function
+
+    Private Function CreateThumbnail(imagePath As String, width As Integer, height As Integer) As Image
+        Try
+            Using ms As New MemoryStream(File.ReadAllBytes(imagePath))
+                Using originalImage As Image = Image.FromStream(ms)
+                    Dim sourceWidth As Integer = originalImage.Width
+                    Dim sourceHeight As Integer = originalImage.Height
+                    Dim nPercentW As Single = CSng(width) / CSng(sourceWidth)
+                    Dim nPercentH As Single = CSng(height) / CSng(sourceHeight)
+                    Dim nPercent As Single = Math.Min(nPercentW, nPercentH)
+
+                    Dim destWidth As Integer = CInt(sourceWidth * nPercent)
+                    Dim destHeight As Integer = CInt(sourceHeight * nPercent)
+                    Dim destX As Integer = (width - destWidth) \ 2
+                    Dim destY As Integer = (height - destHeight) \ 2
+
+                    Dim bmPhoto As New Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
+                    bmPhoto.SetResolution(originalImage.HorizontalResolution, originalImage.VerticalResolution)
+
+                    Using grPhoto As Graphics = Graphics.FromImage(bmPhoto)
+                        grPhoto.Clear(Color.LightGray)
+                        'grPhoto.InterpolationMode = InterpolationMode.HighQualityBicubic
+                        grPhoto.InterpolationMode = InterpolationMode.Low
+                        grPhoto.DrawImage(originalImage, New Rectangle(destX, destY, destWidth, destHeight), New Rectangle(0, 0, sourceWidth, sourceHeight), GraphicsUnit.Pixel)
+                    End Using
+                    Return bmPhoto
+                End Using
+            End Using
+        Catch ex As Exception
+            Return Nothing
+        End Try
+    End Function
+End Class

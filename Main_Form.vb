@@ -14,22 +14,16 @@ Option Strict On
 
 Imports System.Collections.ObjectModel
 Imports System.ComponentModel
-Imports System.Drawing
-Imports System.Drawing.Imaging
 Imports System.IO
-Imports System.Net
 Imports System.Runtime.InteropServices
-Imports System.Security.Cryptography
 Imports System.Security.Principal
 Imports System.Text
 Imports System.Text.RegularExpressions
 Imports System.Threading
-Imports System.Windows.Media
-Imports Microsoft.VisualBasic.ApplicationServices
-Imports Microsoft.VisualBasic.FileIO
 Imports Microsoft.Web.WebView2.Core
 Imports Microsoft.Web.WebView2.WinForms
 Imports Microsoft.Win32
+
 
 <ComVisible(True)>
 Public Class Main_Form
@@ -48,17 +42,17 @@ Public Class Main_Form
     Private Const first_Color_X As Integer = 0
     Private Const first_Color_Y As Integer = 0
     Private Const second_Color_X As Integer = 5
-    Private Const secondColorY As Integer = 5
-    Private Const firstRunTop = 50
-    Private Const firstRunLeft = 50
-    Private Const firstRunWidth = 800
-    Private Const firstRunHeight = 600
-    Private Const positionLimitTop = 720
-    Private Const positionLimitLeft = 1000
-    Private Const positionLimitWidthTop = 3000
-    Private Const positionLimitWidthLow = 320
-    Private Const positionLimitHeightTop = 3000
-    Private Const positionLimitHeightLow = 240
+    Private Const second_Color_Y As Integer = 5
+    Private Const first_run_top = 50
+    Private Const first_run_left = 50
+    Private Const first_run_width = 800
+    Private Const first_run_height = 600
+    Private Const main_form_position_Limit_Top = 720
+    Private Const main_form_position_Limit_Left = 1000
+    Private Const main_form_position_Limit_Width = 3000
+    Private Const main_form_position_Limit_Width_Low = 320
+    Private Const main_form_position_Limit_Height = 3000
+    Private Const main_form_position_Limit_Height_Low = 240
     Private Const the_Height_For_buttons = 20
     Private Const the_Width_For_buttons = 15
     Private Const top_first_line = 0
@@ -67,83 +61,89 @@ Public Class Main_Form
     Private Const slideshow_limit_to_change_color = 2000
     Private Const how_long_wait_before_draw_perspective = 50
 
-    Private imageFileExtensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tiff", ".ico", ".wmf", ".emf", ".exif"}
-    Private videoFileExtensions As New HashSet(Of String) From {".webm", ".ogg", ".3g2", ".mkv", ".3gp", ".mp4", ".m4v", ".m4a", ".mov", ".mp3", ".avi", ".wmv", ".asf", ".mpg", ".mpeg", ".flv", ".wav", ".wma"}
-    Private webImageFileExtensions As New HashSet(Of String) From {".webp", ".heic", ".avif", ".svg"}
+    Public Image_File_Extensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tiff", ".ico", ".wmf", ".emf", ".exif"}
+    Private video_File_Extensions As New HashSet(Of String) From {".webm", ".ogg", ".3g2", ".mkv", ".3gp", ".mp4", ".m4v", ".m4a", ".mov", ".mp3", ".avi", ".wmv", ".asf", ".mpg", ".mpeg", ".flv", ".wav", ".wma"}
+    Private web_specific_image_extensions As New HashSet(Of String) From {".webp", ".heic", ".avif", ".svg"}
+
+    Public Current_Folder_Path As String = ""
+    Public Is_slide_show_mode As Boolean = False
+    Public Is_to_show_picture_sizes As Boolean = False
+    Public Is_to_show_file_sizes As Boolean = True
+    Public Is_to_show_file_datetime As Boolean = True
+
+    Private Image_Panel_Form As Image_Panel_Form
 
     Private is_form_shown As Boolean = False
-    Private lastPerspectiveDraw As DateTime
+    Private last_Perspective_Draw_Time As DateTime
     Private Shared mutex As Mutex
-    Private applicationRunsCount As Integer
-    Private mediaViewedCount As Integer
-    Private isComboSetAuto As Boolean = False
-    Public is_slide_show_mode As Boolean = False
+    Private app_Run_Count As Integer
+    Private media_View_Count As Integer
+    Private is_Combo_Set_Auto As Boolean = False
 
-    Private isFileReseivedFromOutside As Boolean = False
-    Private firstScrollEvent As Boolean = False
-    Private currentFolderPath As String
-    Private isSecondaryPictureBoxActive As Boolean = False
-    Private thisIsFirstPictureFileWeShow As Boolean = True
-    Private isFirstPictureBoxNeedToBeCached As Boolean = False
-    Private targetImagePath As String
-    Private fileList As ReadOnlyCollection(Of String)
-    Private currentFileIndex As Integer
-    Private currentSecondLoadedFileName As String
-    Private totalFilesCount As Integer
-    Private currentFileName As String
-    Private nextAfterCurrentFileName As String
-    Private currentLoadedFileName As String
-    Private historyFileName As String
-    Private loadedImageScale As String = ""
-    Private lastBackColor As System.Drawing.Color
+    Private is_File_Reseived_From_Outside As Boolean = False
+    Private is_First_Scroll_Event As Boolean = False
 
-    Private historyOperatedTargetPath As String
-    Private isImageMode As Boolean = True
+    Private is_Second_PictureBox_Active As Boolean = False
+    Private is_this_First_Picture_File_We_Show As Boolean = True
+    Private is_First_Picture_Box_Need_To_Be_Cached As Boolean = False
+    Private current_File_List As ReadOnlyCollection(Of String)
+    Private current_File_Index As Integer
+    Private current_Second_File_Name As String
+    Private total_File_Count As Integer
 
-    Private filesList As List(Of String) = Nothing
-    Private filesArray As String() = Nothing
-    Private useArray As Boolean = False
+    Private next_File_After_Current As String
+    Private current_Loaded_File_Name As String
+    Private history_File_Name As String
+    Private current_Image_Scale As String = ""
+    Private last_Back_Color As System.Drawing.Color
 
-    Private isTableFormOpen As Boolean
-    Private lastActionTime As DateTime
-    Private isFullScreen As Boolean
-    Private isExternalInputReceived As Boolean = False
-    Private wasExternalInputLast As Boolean
+    Private history_Operation_Target_Path As String
+    Private is_Image_Mode As Boolean = True
+
+    Private files_List As List(Of String) = Nothing
+    Private files_Array As String() = Nothing
+    Private is_Files_Array_Active As Boolean = False
+
+    Private is_Table_Form_Open As Boolean
+    Private last_Action_Time As DateTime
+    Private is_Full_Screen_Mode As Boolean
+    Private is_External_Input_Received As Boolean = False
+    Private was_External_Input_Previously As Boolean
     Private WithEvents SlideShowTimer As New System.Windows.Forms.Timer()
-    Private isSlideShowRandom As Boolean
-    Private isWebBrowser1Visible As Boolean
-    Private isPictureBox1Visible As Boolean
-    Private isPictureBox2Visible As Boolean
-    Private isWebView2Loaded As Boolean = False
-    Private lastLoadedUri As String = ""
-    Private isFolderReadRequired As Boolean = False
+    Private is_Slide_Show_Random_Mode As Boolean
+    Private is_WebBrowser_Visible As Boolean
+    Private is_PictureBox1_Visible As Boolean
+    Private is_PictureBox2_Visible As Boolean
+    Private last_Loaded_Uri As String = ""
+    Private is_Folder_Read_Required As Boolean = False
 
-    Private videoVolume As Double = 1
-    Private isTextBoxEdition As Boolean = False
+    Private video_Volume_Level As Double = 1
+    Private is_TextBox_Editing As Boolean = False
 
-    Dim historySourceFileName As String = ""
-    Dim historyDestinationFileName As String = ""
+    Dim history_Source_File_Name As String = ""
+    Dim history_Destination_File_Name As String = ""
     Private WithEvents BgWorker As New BackgroundWorker()
-    Private bgWorkerOnline As Boolean
+    Private is_BgWorker_Online As Boolean
 
-    Private bgWorkerResult As String = "EMPTY"
-    Private pb1Stream As IO.MemoryStream
-    Private pb2Stream As IO.MemoryStream
+    Private bgWorker_Result As String = "EMPTY"
+    Private pictureBox1_Stream As IO.MemoryStream
+    Private pictureBox2_Stream As IO.MemoryStream
     Private Const WmCopyData As Integer = &H4A
 
-    Private allSupportedExtensions As New HashSet(Of String)()
-    Private recentFolders As New List(Of String)
+    Private all_Supported_Extensions As New HashSet(Of String)()
+    Private recent_Folder_List As New List(Of String)
 
-    Private isWebView2Available As Boolean = False
+    Private is_WebView2_Available As Boolean = False
     Private WithEvents Web_View2 As WebView2 = Nothing
-    Private isWebView2Visible As Boolean = False
+    Private is_WebView2_Visible As Boolean = False
+    Private is_WebView2_Loaded As Boolean = False
 
     Private WithEvents FileOperationWorker As New BackgroundWorker
-    Private currentFileOperation As String
-    Private currentFileOperationArgs As Object
+    Private current_File_Operation As String
+    Private current_File_Operation_Args As Object
 
     Private WithEvents ResizeDebounceTimer As New System.Windows.Forms.Timer()
-    Private lastFullScreenState As Boolean = False
+    Private is_Last_Full_Screen_State As Boolean = False
 
     <DllImport("user32.dll")>
     Private Shared Function ShowWindow(hWnd As IntPtr, nCmdShow As Integer) As Boolean
@@ -157,22 +157,18 @@ Public Class Main_Form
     Private Shared Function GetForegroundWindow() As IntPtr
     End Function
 
-    <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode)>
-    Private Shared Function StrCmpLogicalW(psz1 As String, psz2 As String) As Integer
-    End Function
-
     Private Sub InitializeFileOperationWorker()
         FileOperationWorker.WorkerSupportsCancellation = True
     End Sub
 
-    Private lastMediaAreaClickTime As DateTime = DateTime.MinValue
-    Private lastMediaAreaClickButton As MouseButtons = MouseButtons.None
+    Private last_Media_Area_Click_Time As DateTime = DateTime.MinValue
+    Private last_Media_Area_Click_Button As MouseButtons = MouseButtons.None
     Private ReadOnly DoubleClickTimeThreshold As Integer = SystemInformation.DoubleClickTime
 
     Private Sub InitializeExtensionLists()
-        allSupportedExtensions.UnionWith(imageFileExtensions)
-        allSupportedExtensions.UnionWith(videoFileExtensions)
-        allSupportedExtensions.UnionWith(webImageFileExtensions)
+        all_Supported_Extensions.UnionWith(Image_File_Extensions)
+        all_Supported_Extensions.UnionWith(video_File_Extensions)
+        all_Supported_Extensions.UnionWith(web_specific_image_extensions)
     End Sub
 
     Private Const WM_COPYDATA As Integer = &H4A
@@ -195,6 +191,26 @@ Public Class Main_Form
     Const WM_USER As Integer = &H400
     Const MY_CUSTOM_MESSAGE As Integer = WM_USER + 1
     Const FILE_MAP_READ As Integer = &H4
+
+    <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode)>
+    Public Shared Function StrCmpLogicalW(psz1 As String, psz2 As String) As Integer
+    End Function
+
+    Public Class NaturalFilenameComparer
+        Implements IComparer(Of String)
+        Public Function Compare(x As String, y As String) As Integer Implements IComparer(Of String).Compare
+            Return StrCmpLogicalW(x, y)
+        End Function
+    End Class
+
+
+    ' Add this handler in Main_Form
+    Private Sub Image_Panel_Form_FormClosed(sender As Object, e As FormClosedEventArgs)
+        If Not String.IsNullOrEmpty(Choosen_Picture_From_Panel) Then
+            External_message(Choosen_Picture_From_Panel)
+            Choosen_Picture_From_Panel = "" ' Optionally reset after use
+        End If
+    End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
 
@@ -240,13 +256,13 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0888: WM_COPYDATA")
             Try
                 Dim cds As COPYDATASTRUCT = CType(Marshal.PtrToStructure(m.LParam, GetType(COPYDATASTRUCT)), COPYDATASTRUCT)
-                Dim receivedData As String = Marshal.PtrToStringAnsi(cds.lpData, cds.cbData)
-                If String.IsNullOrEmpty(receivedData) Then
+                Dim received_Data As String = Marshal.PtrToStringAnsi(cds.lpData, cds.cbData)
+                If String.IsNullOrEmpty(received_Data) Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0000: Error processing WM_COPYDATA - received data is null or empty")
                     Return
                 End If
 
-                External_message(receivedData)
+                External_message(received_Data)
 
             Catch ex As Exception
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0020: Error processing WM_COPYDATA - " & ex.Message)
@@ -262,29 +278,29 @@ Public Class Main_Form
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0010: received from new instance: " & argument)
 
-        Dim wasMinimized As Boolean = (Me.WindowState = FormWindowState.Minimized)
-        Dim previousForegroundWindowHandle As IntPtr = IntPtr.Zero
+        Dim is_Form_Minimized As Boolean = (Me.WindowState = FormWindowState.Minimized)
+        Dim prev_Foreground_Window_Handle As IntPtr = IntPtr.Zero
 
-        If Not wasMinimized Then
-            previousForegroundWindowHandle = GetForegroundWindow()
-            If previousForegroundWindowHandle = Me.Handle Then
-                previousForegroundWindowHandle = IntPtr.Zero
+        If Not is_Form_Minimized Then
+            prev_Foreground_Window_Handle = GetForegroundWindow()
+            If prev_Foreground_Window_Handle = Me.Handle Then
+                prev_Foreground_Window_Handle = IntPtr.Zero
             End If
         End If
 
-        isExternalInputReceived = True
-        isFileReseivedFromOutside = True
+        is_External_Input_Received = True
+        is_File_Reseived_From_Outside = True
 
         ProcessArgument(argument)
 
-        If wasMinimized Then
+        If is_Form_Minimized Then
             ShowWindow(Me.Handle, SW_SHOWNOACTIVATE)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0011: focus recovered")
-        ElseIf previousForegroundWindowHandle <> IntPtr.Zero Then
+        ElseIf prev_Foreground_Window_Handle <> IntPtr.Zero Then
             Dim currentForegroundHandle As IntPtr = GetForegroundWindow()
             If currentForegroundHandle = Me.Handle Then
-                SetForegroundWindow(previousForegroundWindowHandle)
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0012: try focus another: " & previousForegroundWindowHandle.ToString())
+                SetForegroundWindow(prev_Foreground_Window_Handle)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0012: try focus another: " & prev_Foreground_Window_Handle.ToString())
             End If
         End If
     End Sub
@@ -310,16 +326,16 @@ Public Class Main_Form
         ResizeDebounceTimer.Interval = 200
         ResizeDebounceTimer.Enabled = False
 
-        Dim createdNew As Boolean
-        mutex = New Mutex(True, app_Mutex_Name, createdNew)
+        Dim is_New_Instance_Created As Boolean
+        mutex = New Mutex(True, app_Mutex_Name, is_New_Instance_Created)
 
-        isTextBoxEdition = True
+        is_TextBox_Editing = True
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0002: Initialize")
         cmbox_Sort.Items.Clear()
         cmbox_Sort.Items.AddRange(New String() {"abc", "xyz", "rnd", ">size", "<size", ">time", "<time", "<0123", ">3210"})
 
         cmbox_Sort.SelectedIndex = 0
-        isTextBoxEdition = False
+        is_TextBox_Editing = False
 
         BgWorker.WorkerReportsProgress = True
         BgWorker.WorkerSupportsCancellation = True
@@ -338,99 +354,104 @@ Public Class Main_Form
         InitializeFileOperationWorker()
     End Sub
 
-    ' sza250609 - GIF fix: changed to return a Tuple with the stream to keep it alive
-    Private Function LoadImage(filePath As String) As Tuple(Of Image, IO.MemoryStream)
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0035: LoadImage begin " & filePath)
-        If Not My.Computer.FileSystem.FileExists(filePath) Then
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0036: LoadImage file not found")
-            Return Nothing
-        End If
-        Try
-            Dim imageBytes As Byte() = File.ReadAllBytes(filePath)
-            Dim ms As New IO.MemoryStream(imageBytes)
-            Dim nextImage As Image = Image.FromStream(ms)
-
-            If nextImage.RawFormat.Equals(ImageFormat.Gif) Then
-                Try
-                    Dim frameCount As Integer = nextImage.GetFrameCount(FrameDimension.Time)
-                Catch ex As Exception
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0902: Error reading GIF: " & ex.Message)
-                    nextImage?.Dispose()
-                    ms?.Dispose()
-                    lbl_Status.Text = If(is_Russian_Language, "Ошибка чтения GIF: " & ex.Message, "Error reading GIF: " & ex.Message)
-                    Return Nothing
-                End Try
-            End If
-
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0040: LoadImage end ")
-
-            Return Tuple.Create(nextImage, ms)
-        Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0041: ERR loading image " & ex.Message)
-            Return Nothing
-        End Try
-    End Function
-
     Private Sub BgWorker_DoWork(sender As Object, e As DoWorkEventArgs) Handles BgWorker.DoWork
         Dim worker As BackgroundWorker = DirectCast(sender, BackgroundWorker)
 
+        Dim file_Names_Pair As Tuple(Of String, String) = TryCast(e.Argument, Tuple(Of String, String))
+        Dim current_File_Name_in_worker As String = Nothing
+        Dim next_File_After_Current_in_worker As String = Nothing
+        If file_Names_Pair IsNot Nothing Then
+            current_File_Name_in_worker = file_Names_Pair.Item1
+            next_File_After_Current_in_worker = file_Names_Pair.Item2
+        End If
+
         Try
-            If is_No_Background_Tasks OrElse
+            If Is_No_Background_Tasks OrElse
             worker.CancellationPending Then
 
                 e.Cancel = True
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0050: BgWorker got cancellation")
             End If
 
-            If currentFileName = "" OrElse Not My.Computer.FileSystem.FileExists(currentFileName) Then
+            If current_File_Name_in_worker = "" OrElse
+                Not My.Computer.FileSystem.FileExists(current_File_Name_in_worker) Then
+
                 lbl_Current_File.Text = ""
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0060: File is lost for BgWorker size calculation")
             Else
-                Dim userState As New Dictionary(Of String, String)
+                Dim file_Meta_State As New Dictionary(Of String, String)
 
-                Dim fileInfo = My.Computer.FileSystem.GetFileInfo(currentFileName)
-                Dim fileSize = fileInfo.Length
-                Dim fileSizeText As String
+                file_Meta_State("fileName") = current_File_Name_in_worker
 
-                If fileSize < 1000 Then
-                    fileSizeText = fileSize.ToString & "B"
-                ElseIf fileSize / 1000 > 1000 Then
-                    fileSizeText = (fileSize / 1000000).ToString("F1") + "MiB"
-                Else
-                    fileSizeText = (fileSize / 1000).ToString("F1") + "KiB"
+                If Is_to_show_file_sizes OrElse
+                        Is_to_show_picture_sizes OrElse
+                        Is_to_show_file_datetime Then
+
+                    Dim current_File_Info = My.Computer.FileSystem.GetFileInfo(current_File_Name_in_worker)
+                    If Is_to_show_file_sizes Then
+                        Dim current_File_Size = current_File_Info.Length
+                        Dim current_File_Size_Text As String
+
+                        If current_File_Size < 1000 Then
+                            current_File_Size_Text = current_File_Size.ToString & "B"
+                        ElseIf current_File_Size / 1000 > 1000 Then
+                            current_File_Size_Text = (current_File_Size / 1000000).ToString("F1") + "MiB"
+                        Else
+                            current_File_Size_Text = (current_File_Size / 1000).ToString("F1") + "KiB"
+                        End If
+
+                        file_Meta_State("fileSizeText") = current_File_Size_Text
+                    End If
+
+                    If Is_to_show_file_datetime Then
+                        file_Meta_State("fileTimeText") = current_File_Info.LastWriteTime.ToString("yyMMdd HH:mm")
+                    End If
+
+                    If Is_to_show_picture_sizes Then
+                        Dim fileExtension As String = current_File_Info.Extension.ToLower()
+                        If Image_File_Extensions.Contains(fileExtension) Then
+                            Try
+                                Using img As Image = Image.FromFile(current_File_Name)
+                                    file_Meta_State("imageWidth") = img.Width.ToString()
+                                    file_Meta_State("imageHeight") = img.Height.ToString()
+                                End Using
+                            Catch ex As Exception
+                                file_Meta_State("imageWidth") = "?"
+                                file_Meta_State("imageHeight") = "?"
+                            End Try
+                        End If
+                    End If
                 End If
 
-                userState("fileSizeText") = fileSizeText
+                DirectCast(sender, BackgroundWorker).ReportProgress(0, file_Meta_State)
 
-                Dim fileTimeText = fileInfo.LastWriteTime.ToString("yyMMdd HH:mm")
-                userState("fileTimeText") = fileTimeText
-
-                DirectCast(sender, BackgroundWorker).ReportProgress(0, userState)
-
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0070: BgWorker reported size calculation")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0070: BgWorker reported file info")
             End If
 
-            If wasExternalInputLast Then
+            If was_External_Input_Previously Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0080: folder files going be counted on background..")
-                totalFilesCount = My.Computer.FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
+                total_File_Count = My.Computer.FileSystem.GetDirectoryInfo(Current_Folder_Path).EnumerateFiles.Count
 
-                Dim userState As New Dictionary(Of String, String)
-                userState("totalFilesCountText") = totalFilesCount.ToString
-                DirectCast(sender, BackgroundWorker).ReportProgress(0, userState)
+                Dim folder_File_Count_State As New Dictionary(Of String, String)
+                folder_File_Count_State("totalFilesCountText") = total_File_Count.ToString
+                DirectCast(sender, BackgroundWorker).ReportProgress(0, folder_File_Count_State)
 
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0090: folder files: " & totalFilesCount)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0090: folder files: " & total_File_Count)
             End If
 
-            If Not isSlideShowRandom AndAlso Not nextAfterCurrentFileName = "" AndAlso Not nextAfterCurrentFileName = currentFileName Then
-                Dim SecondFileExtension = Path.GetExtension(nextAfterCurrentFileName).ToLower
+            If Not is_Slide_Show_Random_Mode AndAlso
+                Not next_File_After_Current_in_worker = "" AndAlso
+                Not next_File_After_Current_in_worker = current_File_Name_in_worker Then
 
-                If imageFileExtensions.Contains(SecondFileExtension) Then
+                Dim SecondFileExtension = Path.GetExtension(next_File_After_Current_in_worker).ToLower
+
+                If Image_File_Extensions.Contains(SecondFileExtension) Then
                     ' sza250609 - GIF fix
-                    Dim imageData As Tuple(Of Image, IO.MemoryStream) = LoadImage(nextAfterCurrentFileName)
-                    If imageData IsNot Nothing Then
-                        currentSecondLoadedFileName = nextAfterCurrentFileName
-                        e.Result = New Tuple(Of Image, IO.MemoryStream, Boolean)(imageData.Item1, imageData.Item2, isFirstPictureBoxNeedToBeCached)
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0100: BgWorker loaded image into memory: " & nextAfterCurrentFileName.ToString)
+                    Dim next_Image_Data As Tuple(Of Image, IO.MemoryStream) = LoadImageWithStream(next_File_After_Current_in_worker)
+                    If next_Image_Data IsNot Nothing Then
+                        current_Second_File_Name = next_File_After_Current_in_worker
+                        e.Result = New Tuple(Of Image, IO.MemoryStream, Boolean)(next_Image_Data.Item1, next_Image_Data.Item2, is_First_Picture_Box_Need_To_Be_Cached)
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0100: BgWorker loaded image into memory: " & next_File_After_Current_in_worker.ToString)
                     Else
                         e.Cancel = True
                     End If
@@ -439,8 +460,8 @@ Public Class Main_Form
                     e.Cancel = True
                 End If
             Else
-                currentSecondLoadedFileName = ""
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0120: No needs for the Next file, backload is cancelled; isSlideShowRandom " & isSlideShowRandom.ToString & " nextAfterCurrentFileName = " & nextAfterCurrentFileName)
+                current_Second_File_Name = ""
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0120: No needs for the Next file, backload is cancelled; isSlideShowRandom " & is_Slide_Show_Random_Mode.ToString & " nextAfterCurrentFileName = " & next_File_After_Current_in_worker)
                 e.Cancel = True
             End If
         Catch ex As Exception
@@ -449,36 +470,53 @@ Public Class Main_Form
     End Sub
 
     Private Sub BgWorker_ProgressChanged(sender As Object, e As ProgressChangedEventArgs) Handles BgWorker.ProgressChanged
-        Dim userState As Dictionary(Of String, String) = DirectCast(e.UserState, Dictionary(Of String, String))
+        Dim file_Meta_State As Dictionary(Of String, String) = DirectCast(e.UserState, Dictionary(Of String, String))
 
-        If userState.ContainsKey("fileSizeText") Then
+        If file_Meta_State.ContainsKey("fileName") Then
 
-            'Dim resultText = If(lngRus, "Текущий: ", "Current: ") & currentFileName
-            Dim resultText = currentFileName
+            Dim current_File_Display_Text = file_Meta_State("fileName")
 
-            Dim fileTimeText As String = userState("fileTimeText")
+            If Is_to_show_file_datetime AndAlso
+                    file_Meta_State.ContainsKey("fileTimeText") Then
 
-            If Not fileTimeText = Nothing Then
-                resultText = resultText & " (" & fileTimeText & ")"
+                Dim file_DateTime_Text As String = file_Meta_State("fileTimeText")
+
+                If Not file_DateTime_Text = Nothing Then
+                    current_File_Display_Text = current_File_Display_Text & " (" & file_DateTime_Text & ")"
+                End If
             End If
 
-            Dim fileSizeText As String = userState("fileSizeText")
+            If Is_to_show_picture_sizes AndAlso
+                file_Meta_State.ContainsKey("imageWidth") Then
 
-            If Not fileSizeText = Nothing Then
-                resultText = resultText & " " & fileSizeText
+                Dim image_Width_Text As String = file_Meta_State("imageWidth")
+
+                If Not image_Width_Text = Nothing Then
+                    current_File_Display_Text = current_File_Display_Text & " (" & image_Width_Text & "x" & file_Meta_State("imageHeight") & ")"
+                End If
             End If
 
-            lbl_Current_File.Text = resultText
+            If Is_to_show_file_sizes AndAlso
+                        file_Meta_State.ContainsKey("fileSizeText") Then
+
+                Dim file_Size_Text As String = file_Meta_State("fileSizeText")
+
+                If Not file_Size_Text = Nothing Then
+                    current_File_Display_Text = current_File_Display_Text & " " & file_Size_Text
+                End If
+            End If
+
+            lbl_Current_File.Text = current_File_Display_Text
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0170: BgWorker size and time calculated")
 
-        ElseIf userState.ContainsKey("totalFilesCountText") Then
-            Dim totalFilesCountText As String = userState("totalFilesCountText")
+        ElseIf file_Meta_State.ContainsKey("totalFilesCountText") Then
+            Dim totalFilesCountText As String = file_Meta_State("totalFilesCountText")
 
             If Not totalFilesCountText = Nothing Then
-                lbl_File_Number.Text = If(is_Russian_Language, "Файл: 1 из " & totalFilesCountText, "File: 1 from " & totalFilesCountText)
+                lbl_File_Number.Text = If(Is_Russian_Language, "Файл: 1 из " & totalFilesCountText, "File: 1 from " & totalFilesCountText)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0175: BgWorker files count calculated: " & totalFilesCountText)
             Else
-                lbl_File_Number.Text = If(is_Russian_Language, "Файл: 0 ", "File: 0 ")
+                lbl_File_Number.Text = If(Is_Russian_Language, "Файл: 0 ", "File: 0 ")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0180: BgWorker files count calculated: " & totalFilesCountText)
             End If
         Else
@@ -488,57 +526,57 @@ Public Class Main_Form
     End Sub
 
     Private Sub BgWorker_RunWorkerCompleted(sender As Object, e As RunWorkerCompletedEventArgs) Handles BgWorker.RunWorkerCompleted
-        bgWorkerOnline = False
+        is_BgWorker_Online = False
 
         If e.Cancelled Then
-            bgWorkerResult = "CANCELLED"
+            bgWorker_Result = "CANCELLED"
         ElseIf e.Error IsNot Nothing Then
-            bgWorkerResult = "ERR: " & e.Error.Message
-        ElseIf currentSecondLoadedFileName = "" Then
-            bgWorkerResult = "SKIPED"
+            bgWorker_Result = "ERR: " & e.Error.Message
+        ElseIf current_Second_File_Name = "" Then
+            bgWorker_Result = "SKIPED"
         Else
             ' sza250609 - GIF fix
             Dim result As Tuple(Of Image, IO.MemoryStream, Boolean) = DirectCast(e.Result, Tuple(Of Image, IO.MemoryStream, Boolean))
-            Dim nextImage As Image = result.Item1
-            Dim nextStream As IO.MemoryStream = result.Item2
-            Dim isFirstPictureBox As Boolean = result.Item3
+            Dim next_Image_To_Display As Image = result.Item1
+            Dim next_Image_Stream As IO.MemoryStream = result.Item2
+            Dim is_PictureBox1_Active As Boolean = result.Item3
 
-            If isFirstPictureBox Then
+            If is_PictureBox1_Active Then
                 If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
-                If pb1Stream IsNot Nothing Then pb1Stream?.Dispose()
-                Picture_Box_1.Image = nextImage
-                pb1Stream = nextStream
+                If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
+                Picture_Box_1.Image = next_Image_To_Display
+                pictureBox1_Stream = next_Image_Stream
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0210: bgWorker: P1 is loaded")
             Else
                 If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
-                If pb2Stream IsNot Nothing Then pb2Stream?.Dispose()
-                Picture_Box_2.Image = nextImage
-                pb2Stream = nextStream
+                If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
+                Picture_Box_2.Image = next_Image_To_Display
+                pictureBox2_Stream = next_Image_Stream
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0220: bgWorker: P2 is loaded")
             End If
 
-            bgWorkerResult = "LOADED"
+            bgWorker_Result = "LOADED"
         End If
 
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0230: bgWorkerResult: " & bgWorkerResult)
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0230: bgWorkerResult: " & bgWorker_Result)
     End Sub
 
-    Public Sub ProcessArgument(rawArgument As String)
-        Dim argumentForPath As String = rawArgument.Trim()
-        Dim argumentForFlags As String = rawArgument.ToLowerInvariant()
-        Dim isNoBackFlagSetInThisCall As Boolean = argumentForFlags.Contains("-noback")
+    Public Sub ProcessArgument(argument_Raw_Text As String)
+        Dim argument_For_Path As String = argument_Raw_Text.Trim()
+        Dim argument_For_Flags As String = argument_Raw_Text.ToLowerInvariant()
+        Dim is_No_Back_Flag_In_This_Call As Boolean = argument_For_Flags.Contains("-noback")
 
-        If isNoBackFlagSetInThisCall Then
-            is_No_Background_Tasks = True
-            argumentForPath = System.Text.RegularExpressions.Regex.Replace(argumentForPath, "-noback", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim()
+        If is_No_Back_Flag_In_This_Call Then
+            Is_No_Background_Tasks = True
+            argument_For_Path = System.Text.RegularExpressions.Regex.Replace(argument_For_Path, "-noback", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim()
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0232: ProcessArgument: -NoBack")
         End If
 
-        If String.IsNullOrEmpty(argumentForPath) Then
-            If is_No_Background_Tasks Then
-                lbl_Status.Text = If(is_Russian_Language, "Режим -NoBack активен. Ожидание файла/папки.", "NoBack mode active. Awaiting file/folder.")
+        If String.IsNullOrEmpty(argument_For_Path) Then
+            If Is_No_Background_Tasks Then
+                lbl_Status.Text = If(Is_Russian_Language, "Режим -NoBack активен. Ожидание файла/папки.", "NoBack mode active. Awaiting file/folder.")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0234: ProcessArgument: -NoBack but no file")
             Else
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0236: ProcessArgument: no file argumented")
@@ -547,191 +585,169 @@ Public Class Main_Form
         End If
 
         Try
-            Dim isDirectory As Boolean = Directory.Exists(argumentForPath)
-            If isDirectory Then
-                If Not isNoBackFlagSetInThisCall Then
-                    is_No_Background_Tasks = False
+            Dim is_Directory As Boolean = Directory.Exists(argument_For_Path)
+            If is_Directory Then
+                If Not is_No_Back_Flag_In_This_Call Then
+                    Is_No_Background_Tasks = False
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0278: ProcessArgument: folder without -NoBack. mode -NoBack is off")
                 End If
 
-                currentFolderPath = argumentForPath
-                isTextBoxEdition = True
-                cmbox_Media_Folder.Text = currentFolderPath
-                isTextBoxEdition = False
+                Current_Folder_Path = argument_For_Path
+                is_TextBox_Editing = True
+                cmbox_Media_Folder.Text = Current_Folder_Path
+                is_TextBox_Editing = False
 
-                Dim folderPathSaved = GetSetting(app_name, second_App_Name, "ImageFolder", "")
-                If folderPathSaved = currentFolderPath Then
-                    Integer.TryParse(GetSetting(app_name, second_App_Name, "LastCounter"), currentFileIndex)
-                    If currentFileIndex > 0 Then
+                Dim saved_Folder_Path = GetSetting(App_name, Second_App_Name, "ImageFolder", "")
+                If saved_Folder_Path = Current_Folder_Path Then
+                    Integer.TryParse(GetSetting(App_name, Second_App_Name, "LastCounter"), current_File_Index)
+                    If current_File_Index > 0 Then
                     Else
-                        currentFileIndex = 0
+                        current_File_Index = 0
                     End If
                 Else
-                    currentFileIndex = 0
+                    current_File_Index = 0
                 End If
 
                 ReadShowMediaFile("ReadFolderAndFile")
             Else
-                If Not File.Exists(argumentForPath) Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0280: file of argument is NOT exists: " & argumentForPath)
+                If Not File.Exists(argument_For_Path) Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0280: file of argument is NOT exists: " & argument_For_Path)
                     Return
                 End If
 
-                Dim newFolderPath As String = Path.GetDirectoryName(argumentForPath)
+                Dim argument_Folder_Path As String = Path.GetDirectoryName(argument_For_Path)
 
-                If Not String.Equals(currentFolderPath, newFolderPath, StringComparison.OrdinalIgnoreCase) Then
-                    If Not isNoBackFlagSetInThisCall Then
-                        is_No_Background_Tasks = False
+                If Not String.Equals(Current_Folder_Path, argument_Folder_Path, StringComparison.OrdinalIgnoreCase) Then
+                    If Not is_No_Back_Flag_In_This_Call Then
+                        Is_No_Background_Tasks = False
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0288: ProcessArgument: file from the NEW folder with -NoBack. Mode -NoBack is off.")
                     End If
                 End If
 
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0290: File is set from arg: " & argumentForPath)
-                currentFolderPath = newFolderPath
-                targetImagePath = argumentForPath
-                currentFileName = argumentForPath
-                isTextBoxEdition = True
-                cmbox_Media_Folder.Text = currentFolderPath
-                isTextBoxEdition = False
-                isExternalInputReceived = True
-                wasExternalInputLast = True
-                currentFileIndex = 0
-                totalFilesCount = 1
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0290: File is set from arg: " & argument_For_Path)
+                Current_Folder_Path = argument_Folder_Path
+                Current_Image_Path = argument_For_Path
+                current_File_Name = argument_For_Path
+                is_TextBox_Editing = True
+                cmbox_Media_Folder.Text = Current_Folder_Path
+                is_TextBox_Editing = False
+                is_External_Input_Received = True
+                was_External_Input_Previously = True
+                current_File_Index = 0
+                total_File_Count = 1
 
                 ReadShowMediaFile("ReadFolderAndKnownFile")
             End If
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0300: Error processing argument: " & ex.Message)
-            currentFolderPath = ""
-            isTextBoxEdition = True
+            Current_Folder_Path = ""
+            is_TextBox_Editing = True
             cmbox_Media_Folder.Text = ""
-            isTextBoxEdition = False
-            is_No_Background_Tasks = False
+            is_TextBox_Editing = False
+            Is_No_Background_Tasks = False
         End Try
     End Sub
 
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles btn_Select_Folder.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0305: btn_Select_Folder")
-        Dim folderBrowse As New FolderBrowserDialog()
-        folderBrowse.SelectedPath = currentFolderPath
+        Dim folder_Browser_Dialog As New FolderBrowserDialog()
+        folder_Browser_Dialog.SelectedPath = Current_Folder_Path
 
-        folderBrowse.Description = If(is_Russian_Language, "Выберите папку с медиафайлами..", "Set folder of media files..")
+        folder_Browser_Dialog.Description = If(Is_Russian_Language, "Выберите папку с медиафайлами..", "Set folder of media files..")
 
-        If folderBrowse.ShowDialog() = Windows.Forms.DialogResult.OK Then
-            currentFolderPath = folderBrowse.SelectedPath
-            lbl_Status.Text = If(is_Russian_Language, "выбрана папка", "folder selected") & ": " & currentFolderPath
-            is_No_Background_Tasks = False
+        If folder_Browser_Dialog.ShowDialog() = Windows.Forms.DialogResult.OK Then
+            Current_Folder_Path = folder_Browser_Dialog.SelectedPath
+            lbl_Status.Text = If(Is_Russian_Language, "выбрана папка", "folder selected") & ": " & Current_Folder_Path
+            Is_No_Background_Tasks = False
             ReadShowMediaFile("ReadFolderAndFile")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0310: Folder read")
         End If
     End Sub
 
-    Private Function AddAt(Of T)(ByVal arr As T(), ByVal newOne As T, ByVal index As Integer) As T()
-        Dim uBound = arr.GetUpperBound(0)
-        Dim lBound = arr.GetLowerBound(0)
-        Dim outArr(uBound + 1) As T
-        Array.Copy(arr, lBound, outArr, lBound, index)
-        outArr(index) = newOne
-        Array.Copy(arr, index, outArr, index + 1, uBound - index + 1)
+    Private Sub ReadShowMediaFile(ByVal read_Mode_Type As String)
 
-        Return outArr
-    End Function
+        media_View_Count += 1
 
-    Private Function RemoveAt(Of T)(ByVal arr As T(), ByVal index As Integer) As T()
-        Dim uBound = arr.GetUpperBound(0)
-        Dim lBound = arr.GetLowerBound(0)
-        If uBound < lBound Then Return New T() {}
-        Dim outArr(uBound - 1) As T
-        Array.Copy(arr, lBound, outArr, lBound, index)
-        Array.Copy(arr, index + 1, outArr, index, uBound - index)
+        If Not is_Folder_Read_Required Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0050: ReadShowMediaFile = " & read_Mode_Type.ToString)
 
-        Return outArr
-    End Function
-
-    Private Sub ReadShowMediaFile(ByVal readMode As String)
-
-        mediaViewedCount = mediaViewedCount + 1
-
-        If Not isFolderReadRequired Then
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0050: ReadShowMediaFile = " & readMode.ToString)
-
-            Dim currentTime As DateTime = DateTime.Now
-            If lastActionTime.AddSeconds(0.04) > currentTime Then
+            Dim current_Operation_Time As DateTime = DateTime.Now
+            If last_Action_Time.AddSeconds(0.04) > current_Operation_Time Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0330: Try to read the new file less than 0.4s - cancelled")
                 Exit Sub
             End If
-            lastActionTime = currentTime
+            last_Action_Time = current_Operation_Time
 
             If FileOperationWorker.IsBusy Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0340: Read file skiped while FileOperationWorker")
                 Exit Sub
             End If
 
-            Dim sls = If(is_slide_show_mode, (SlideShowTimer.Interval / 1000).ToString() & "s", "")
-            If Not lbl_Slideshow_Time.Text = sls Then lbl_Slideshow_Time.Text = sls
+            Dim slideshow_Interval_Text = If(Is_slide_show_mode, (SlideShowTimer.Interval / 1000).ToString() & "s", "")
+            If Not lbl_Slideshow_Time.Text = slideshow_Interval_Text Then lbl_Slideshow_Time.Text = slideshow_Interval_Text
 
-            Dim isAfterUndo As Boolean = (readMode = "ReadAfterUndo")
-            Dim isFileFound As Boolean = True
-            If Not UpdateFileIndexAndList(readMode, isFileFound) Then
+            Dim is_After_Undo_Operation As Boolean = (read_Mode_Type = "ReadAfterUndo")
+            Dim is_File_Found As Boolean = True
+            If Not UpdateFileIndexAndList(read_Mode_Type, is_File_Found) Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0350: Mastering the file is failed")
                 Return
             End If
 
-            If String.IsNullOrEmpty(currentFolderPath) Then
+            If String.IsNullOrEmpty(Current_Folder_Path) Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0360: currentFolderPath is lost")
                 Return
             End If
 
-            isTextBoxEdition = True
+            is_TextBox_Editing = True
 
-            If Not cmbox_Media_Folder.Text = currentFolderPath Then
+            If Not cmbox_Media_Folder.Text = Current_Folder_Path Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0370: folder combo list is updated")
-                If recentFolders.LastOrDefault() <> currentFolderPath Then
-                    recentFolders.Remove(currentFolderPath)
-                    recentFolders.Add(currentFolderPath)
-                    If recentFolders.Count > max_Namber_of_Recent_Folders Then
-                        recentFolders.RemoveAt(0)
+                If recent_Folder_List.LastOrDefault() <> Current_Folder_Path Then
+                    recent_Folder_List.Remove(Current_Folder_Path)
+                    recent_Folder_List.Add(Current_Folder_Path)
+                    If recent_Folder_List.Count > max_Namber_of_Recent_Folders Then
+                        recent_Folder_List.RemoveAt(0)
                     End If
                 End If
 
                 If cmbox_Media_Folder.InvokeRequired Then
                     cmbox_Media_Folder.Invoke(Sub()
                                                   cmbox_Media_Folder.Items.Clear()
-                                                  For Each folder In recentFolders
+                                                  For Each folder In recent_Folder_List
                                                       cmbox_Media_Folder.Items.Add(folder)
                                                   Next
-                                                  cmbox_Media_Folder.SelectedIndex = recentFolders.Count - 1
+                                                  cmbox_Media_Folder.SelectedIndex = recent_Folder_List.Count - 1
                                               End Sub)
                 Else
                     cmbox_Media_Folder.Items.Clear()
-                    For Each folder In recentFolders
+                    For Each folder In recent_Folder_List
                         cmbox_Media_Folder.Items.Add(folder)
                     Next
-                    cmbox_Media_Folder.SelectedIndex = recentFolders.Count - 1
+                    cmbox_Media_Folder.SelectedIndex = recent_Folder_List.Count - 1
                 End If
             End If
-            isTextBoxEdition = False
+            is_TextBox_Editing = False
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0380: UpdateCurrentFileAndDisplay")
-            UpdateCurrentFileAndDisplay(isFileFound, isAfterUndo)
+            UpdateCurrentFileAndDisplay(is_File_Found, is_After_Undo_Operation)
         Else
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0390: folder read is skiped")
         End If
     End Sub
 
-    Private Function UpdateFileIndexAndList(readMode As String, ByRef isFileFound As Boolean) As Boolean
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0400: UpdateFileIndexAndList = " & readMode.ToString)
+    Private Function UpdateFileIndexAndList(read_Mode_Type As String, ByRef is_File_Found As Boolean) As Boolean
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0400: UpdateFileIndexAndList = " & read_Mode_Type.ToString)
 
-        Select Case readMode
+        Select Case read_Mode_Type
             Case "ReadNextFile" ' 1
-                If wasExternalInputLast Then
-                    If Not LoadFilesForExternalInput(isFileFound) Then
+                If was_External_Input_Previously Then
+                    If Not LoadFilesForExternalInput(is_File_Found) Then
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0410: case ReadNextFile is failed")
                         Return False
                     End If
                 End If
-                currentFileIndex += 1
-                If currentFileIndex > totalFilesCount - 1 Then currentFileIndex = 0
+                current_File_Index += 1
+                If current_File_Index > total_File_Count - 1 Then current_File_Index = 0
 
                 lbl_Status.Text = ""
 
@@ -739,59 +755,59 @@ Public Class Main_Form
 
             Case "ReadFiles" '80
                 If Not LoadFiles() Then Return False
-                If currentFileIndex < 0 Then currentFileIndex = 0
-                If currentFileIndex > totalFilesCount - 1 Then currentFileIndex = totalFilesCount - 1
+                If current_File_Index < 0 Then current_File_Index = 0
+                If current_File_Index > total_File_Count - 1 Then current_File_Index = total_File_Count - 1
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0430: case ReadFiles")
 
             Case "SetFile" '99
-                If currentFileIndex < 0 Then currentFileIndex = 0
-                If currentFileIndex > totalFilesCount - 1 Then currentFileIndex = totalFilesCount - 1
+                If current_File_Index < 0 Then current_File_Index = 0
+                If current_File_Index > total_File_Count - 1 Then current_File_Index = total_File_Count - 1
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0440: case SetFile")
 
             Case "InSlideShow" '0
-                If isSlideShowRandom Then
-                    currentFileIndex = CInt(Math.Floor(Rnd() * totalFilesCount))
+                If is_Slide_Show_Random_Mode Then
+                    current_File_Index = CInt(Math.Floor(Rnd() * total_File_Count))
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0460: case RND InSlideShow")
                 Else
-                    currentFileIndex = currentFileIndex + 1
-                    If currentFileIndex < 0 Then currentFileIndex = 0
-                    If currentFileIndex > totalFilesCount - 1 Then currentFileIndex = totalFilesCount - 1
+                    current_File_Index += 1
+                    If current_File_Index < 0 Then current_File_Index = 0
+                    If current_File_Index > total_File_Count - 1 Then current_File_Index = total_File_Count - 1
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0460: case InSlideShow")
                 End If
 
 
             Case "ReadFolderAndFile" '0
-                lbl_Status.Text = If(is_Russian_Language, "чтение каталога.. ждите!", "reading files.. wait!")
+                lbl_Status.Text = If(Is_Russian_Language, "чтение каталога.. ждите!", "reading files.. wait!")
 
                 If Not LoadFiles() Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0450: case ReadFolderAndFile is failed")
                     Return False
                 End If
                 lbl_Status.Text = ""
-                currentFileIndex = 0
+                current_File_Index = 0
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0460: case ReadFolderAndFile")
 
             Case "ReadFolderAndKnownFile" '91
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0470: isExternalInputReceived = " & isExternalInputReceived)
-                isFileFound = False
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0470: isExternalInputReceived = " & is_External_Input_Received)
+                is_File_Found = False
 
-                If isExternalInputReceived Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0480: GetDirectoryInfo = " & currentFolderPath)
+                If is_External_Input_Received Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0480: GetDirectoryInfo = " & Current_Folder_Path)
 
-                    currentFileIndex = 0
-                    isExternalInputReceived = False
-                    wasExternalInputLast = True
+                    current_File_Index = 0
+                    is_External_Input_Received = False
+                    was_External_Input_Previously = True
                 Else
-                    wasExternalInputLast = False
-                    If Not LoadFilesForExternalInput(isFileFound) Then
+                    was_External_Input_Previously = False
+                    If Not LoadFilesForExternalInput(is_File_Found) Then
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0490: case ReadFolderAndKnownFile is failed")
                         Return False
                     End If
-                    If currentFileIndex < 0 OrElse Not isFileFound Then
+                    If current_File_Index < 0 OrElse Not is_File_Found Then
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0500: targetImagePath not found in file list")
-                        currentFileIndex = 0
-                        isFileFound = True
+                        current_File_Index = 0
+                        is_File_Found = True
                     End If
                 End If
                 lbl_Status.Text = ""
@@ -799,67 +815,67 @@ Public Class Main_Form
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0510: case ReadFolderAndKnownFile")
 
             Case "ReadPrevFile" '2
-                If wasExternalInputLast Then
-                    If Not LoadFilesForExternalInput(isFileFound) Then
+                If was_External_Input_Previously Then
+                    If Not LoadFilesForExternalInput(is_File_Found) Then
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0520: case ReadPrevFile is failed")
                         Return False
                     End If
                 End If
-                currentFileIndex -= 1
-                If currentFileIndex < 0 Then currentFileIndex = totalFilesCount - 1
+                current_File_Index -= 1
+                If current_File_Index < 0 Then current_File_Index = total_File_Count - 1
                 lbl_Status.Text = ""
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0530: case ReadPrevFile")
 
             Case "DeleteFile" '3
-                If String.IsNullOrEmpty(currentFileName) Then
-                    lbl_Status.Text = If(is_Russian_Language, "! Нет файла для удаления", "! No file for deleting")
+                If String.IsNullOrEmpty(current_File_Name) Then
+                    lbl_Status.Text = If(Is_Russian_Language, "! Нет файла для удаления", "! No file for deleting")
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0540: case DeleteFile failed")
                     Return False
                 End If
 
                 Try
-                    If isWebBrowser1Visible Then
+                    If is_WebBrowser_Visible Then
                         Web_Browser.DocumentText = ""
                     Else
-                        If isPictureBox1Visible Then
+                        If is_PictureBox1_Visible Then
                             If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
                         Else
                             If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
                         End If
                     End If
 
-                    currentLoadedFileName = ""
+                    current_Loaded_File_Name = ""
 
-                    If My.Computer.FileSystem.FileExists(currentFileName) Then
+                    If My.Computer.FileSystem.FileExists(current_File_Name) Then
                         If Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked Then
-                            currentFileOperation = "Delete"
-                            currentFileOperationArgs = currentFileName
+                            current_File_Operation = "Delete"
+                            current_File_Operation_Args = current_File_Name
                             FileOperationWorker.RunWorkerAsync()
-                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0550: file in task to be deleted: " & currentFileName)
-                            If useArray Then
-                                filesArray = RemoveAt(filesArray, currentFileIndex)
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0550: file in task to be deleted: " & current_File_Name)
+                            If is_Files_Array_Active Then
+                                files_Array = RemoveAt(files_Array, current_File_Index)
                             Else
-                                filesList.RemoveAt(currentFileIndex)
+                                files_List.RemoveAt(current_File_Index)
                             End If
-                            totalFilesCount -= 1
-                            If currentFileIndex > totalFilesCount - 1 Then currentFileIndex = totalFilesCount - 1
-                            lbl_Status.Text = If(is_Russian_Language, "удален: ", "file deleted: ") & currentFileName
+                            total_File_Count -= 1
+                            If current_File_Index > total_File_Count - 1 Then current_File_Index = total_File_Count - 1
+                            lbl_Status.Text = If(Is_Russian_Language, "удален: ", "file deleted: ") & current_File_Name
                         Else
-                            My.Computer.FileSystem.DeleteFile(currentFileName)
-                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0560: file deleted: " & currentFileName)
-                            If useArray Then
-                                filesArray = RemoveAt(filesArray, currentFileIndex)
+                            DeleteFile(current_File_Name)
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0560: file deleted: " & current_File_Name)
+                            If is_Files_Array_Active Then
+                                files_Array = RemoveAt(files_Array, current_File_Index)
                             Else
-                                filesList.RemoveAt(currentFileIndex)
+                                files_List.RemoveAt(current_File_Index)
                             End If
-                            totalFilesCount -= 1
-                            If currentFileIndex > totalFilesCount - 1 Then currentFileIndex = totalFilesCount - 1
-                            lbl_Status.Text = If(is_Russian_Language, "удален: ", "file deleted: ") & currentFileName
+                            total_File_Count -= 1
+                            If current_File_Index > total_File_Count - 1 Then current_File_Index = total_File_Count - 1
+                            lbl_Status.Text = If(Is_Russian_Language, "удален: ", "file deleted: ") & current_File_Name
                         End If
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0570: case DeleteFile")
                     Else
-                        lbl_Status.Text = If(is_Russian_Language, "! Файл не найден", "! File not found")
+                        lbl_Status.Text = If(Is_Russian_Language, "! Файл не найден", "! File not found")
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0580: case DeleteFile failed: not found")
                     End If
                 Catch ex As Exception
@@ -868,14 +884,14 @@ Public Class Main_Form
                 End Try
 
             Case "ReadForRandom" '4
-                If Not LoadFilesForRandomOrSlideshow(isFileFound, True) Then
+                If Not LoadFilesForRandomOrSlideshow(is_File_Found, True) Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0600: case ReadForRandomOrSlideshow failed")
                     Return False
                 End If
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0610: case ReadForRandomOrSlideshow")
 
             Case "ReadForSlideShow" '5
-                If Not LoadFilesForRandomOrSlideshow(isFileFound, isSlideShowRandom) Then
+                If Not LoadFilesForRandomOrSlideshow(is_File_Found, is_Slide_Show_Random_Mode) Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0620: case ReadForSlideShow failed")
                     Return False
                 End If
@@ -888,119 +904,119 @@ Public Class Main_Form
         Return True
     End Function
 
-    Private Function LoadFilesForRandomOrSlideshow(ByRef isFileFound As Boolean, isRandom As Boolean) As Boolean
+    Private Function LoadFilesForRandomOrSlideshow(ByRef is_File_Found As Boolean, is_Random_File_Mode As Boolean) As Boolean
         Try
-            If currentFileIndex = 0 Then
-                wasExternalInputLast = False
-                lbl_Status.Text = If(is_Russian_Language, "чтение каталога.. ждите!", "reading files.. wait!")
+            If current_File_Index = 0 Then
+                was_External_Input_Previously = False
+                lbl_Status.Text = If(Is_Russian_Language, "чтение каталога.. ждите!", "reading files.. wait!")
                 Dim files As Object = GetFiles()
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0642: files got for slideshow")
 
                 If files Is Nothing Then
-                    lbl_Status.Text = If(is_Russian_Language, "! Ошибка чтения файлов", "! Error reading files")
-                    currentFolderPath = ""
+                    lbl_Status.Text = If(Is_Russian_Language, "! Ошибка чтения файлов", "! Error reading files")
+                    Current_Folder_Path = ""
                     cmbox_Media_Folder.Text = ""
-                    totalFilesCount = 0
-                    currentFileIndex = 0
+                    total_File_Count = 0
+                    current_File_Index = 0
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0650: Error loading slideshow")
                     Return False
                 End If
 
-                If useArray Then
-                    filesArray = DirectCast(files, String())
+                If is_Files_Array_Active Then
+                    files_Array = DirectCast(files, String())
                 Else
-                    filesList = DirectCast(files, List(Of String))
+                    files_List = DirectCast(files, List(Of String))
                 End If
 
                 lbl_Status.Text = ""
-                totalFilesCount = If(useArray, filesArray.Length, filesList.Count)
-                currentFileIndex = 0
-                If totalFilesCount <> 0 Then
-                    If isRandom Then
+                total_File_Count = If(is_Files_Array_Active, files_Array.Length, files_List.Count)
+                current_File_Index = 0
+                If total_File_Count <> 0 Then
+                    If is_Random_File_Mode Then
                         Dim random As New Random
-                        currentFileIndex = random.Next(0, totalFilesCount)
-                        isFileFound = True
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0660: New random file set currentFileIndex=" & currentFileIndex.ToString)
+                        current_File_Index = random.Next(0, total_File_Count)
+                        is_File_Found = True
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0660: New random file set currentFileIndex=" & current_File_Index.ToString)
                     Else
-                        currentFileIndex = If(useArray, Array.IndexOf(filesArray, targetImagePath), filesList.IndexOf(targetImagePath))
-                        isFileFound = currentFileIndex >= 0
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0670: Next slideshow file set currentFileIndex=" & currentFileIndex.ToString)
+                        current_File_Index = If(is_Files_Array_Active, Array.IndexOf(files_Array, Current_Image_Path), files_List.IndexOf(Current_Image_Path))
+                        is_File_Found = current_File_Index >= 0
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0670: Next slideshow file set currentFileIndex=" & current_File_Index.ToString)
                     End If
                 Else
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0680: No files for slides")
                 End If
             Else
                 lbl_Status.Text = ""
-                If isRandom Then
+                If is_Random_File_Mode Then
                     Dim random As New Random
-                    currentFileIndex = random.Next(0, totalFilesCount)
+                    current_File_Index = random.Next(0, total_File_Count)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0690: random file set")
                 Else
-                    currentFileIndex += 1
+                    current_File_Index += 1
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0700: slide file set")
                 End If
             End If
             Return True
         Catch ex As Exception
             MsgBox("E002 " & ex.Message)
-            currentFolderPath = ""
+            Current_Folder_Path = ""
             cmbox_Media_Folder.Text = ""
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0710: E002 " & ex.Message)
             Return False
         End Try
     End Function
 
-    Private Function LoadFilesForExternalInput(ByRef isFileFound As Boolean) As Boolean
+    Private Function LoadFilesForExternalInput(ByRef is_File_Found As Boolean) As Boolean
         Try
-            If wasExternalInputLast Then
-                wasExternalInputLast = False
-                lbl_Status.Text = If(is_Russian_Language, "чтение каталога.. ждите!", "reading files.. wait!")
+            If was_External_Input_Previously Then
+                was_External_Input_Previously = False
+                lbl_Status.Text = If(Is_Russian_Language, "чтение каталога.. ждите!", "reading files.. wait!")
 
                 Dim files As Object = GetFiles()
                 If files Is Nothing Then
                     'lbl_Status.Text = If(lngRus, "! Ошибка чтения файлов", "! Error reading files")
-                    currentFolderPath = ""
+                    Current_Folder_Path = ""
                     cmbox_Media_Folder.Text = ""
-                    totalFilesCount = 0
-                    currentFileIndex = 0
+                    total_File_Count = 0
+                    current_File_Index = 0
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0720: files aren't set")
                     Return False
                 End If
 
-                If useArray Then
-                    filesArray = DirectCast(files, String())
+                If is_Files_Array_Active Then
+                    files_Array = DirectCast(files, String())
                 Else
-                    filesList = DirectCast(files, List(Of String))
+                    files_List = DirectCast(files, List(Of String))
                 End If
 
                 lbl_Status.Text = ""
-                totalFilesCount = If(useArray, filesArray.Length, filesList.Count)
-                currentFileIndex = If(useArray, Array.IndexOf(filesArray, targetImagePath), filesList.IndexOf(targetImagePath))
-                isFileFound = currentFileIndex >= 0
+                total_File_Count = If(is_Files_Array_Active, files_Array.Length, files_List.Count)
+                current_File_Index = If(is_Files_Array_Active, Array.IndexOf(files_Array, Current_Image_Path), files_List.IndexOf(Current_Image_Path))
+                is_File_Found = current_File_Index >= 0
 
-                If Not isFileFound Then
-                    If useArray Then
-                        filesArray = AddAt(filesArray, targetImagePath, 0)
+                If Not is_File_Found Then
+                    If is_Files_Array_Active Then
+                        files_Array = AddAt(files_Array, Current_Image_Path, 0)
                     Else
-                        filesList.Insert(0, targetImagePath)
+                        files_List.Insert(0, Current_Image_Path)
                     End If
-                    totalFilesCount += 1
-                    currentFileIndex = 0
-                    isFileFound = True
+                    total_File_Count += 1
+                    current_File_Index = 0
+                    is_File_Found = True
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0745: targetImagePath added to file list")
                 End If
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0740: new folder is read")
                 Return True
             Else
-                currentFileIndex += 1
-                isFileFound = True
+                current_File_Index += 1
+                is_File_Found = True
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0750: next one is chosen")
                 Return True
             End If
         Catch ex As Exception
             MsgBox("E003 " & ex.Message)
-            currentFolderPath = ""
+            Current_Folder_Path = ""
             cmbox_Media_Folder.Text = ""
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0760: E003 " & ex.Message)
             Return False
@@ -1012,70 +1028,70 @@ Public Class Main_Form
             Dim files As Object = GetFiles()
             If files Is Nothing Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0770: files arnt set")
-                lbl_Status.Text = If(is_Russian_Language, "! Ошибка чтения файлов", "! Error reading files")
-                currentFolderPath = ""
+                lbl_Status.Text = If(Is_Russian_Language, "! Ошибка чтения файлов", "! Error reading files")
+                Current_Folder_Path = ""
                 cmbox_Media_Folder.Text = ""
-                totalFilesCount = 0
-                currentFileIndex = 0
+                total_File_Count = 0
+                current_File_Index = 0
 
                 Return False
             End If
 
-            If useArray Then
-                Dim fileEntries = DirectCast(files, FileEntry())
-                filesArray = fileEntries.Select(Function(fe) fe.FilePath).ToArray()
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0780: folder files ARRAY is counted: " & filesArray.Length.ToString)
+            If is_Files_Array_Active Then
+                Dim file_Entries = DirectCast(files, FileEntry())
+                files_Array = file_Entries.Select(Function(fe) fe.FilePath).ToArray()
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0780: folder files ARRAY is counted: " & files_Array.Length.ToString)
             Else
-                filesList = DirectCast(files, List(Of String))
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0790: folder files LIST is counted: " & filesList.Count.ToString)
+                files_List = DirectCast(files, List(Of String))
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0790: folder files LIST is counted: " & files_List.Count.ToString)
             End If
 
-            totalFilesCount = If(useArray, filesArray.Length, filesList.Count)
+            total_File_Count = If(is_Files_Array_Active, files_Array.Length, files_List.Count)
 
             Return True
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0800: E004 " & ex.Message)
-            lbl_Status.Text = If(is_Russian_Language, "! Ошибка чтения файлов", "! Error reading files")
+            lbl_Status.Text = If(Is_Russian_Language, "! Ошибка чтения файлов", "! Error reading files")
             MsgBox("E004 " & ex.Message)
-            currentFolderPath = ""
+            Current_Folder_Path = ""
             cmbox_Media_Folder.Text = ""
-            totalFilesCount = 0
-            currentFileIndex = 0
+            total_File_Count = 0
+            current_File_Index = 0
 
             Return False
         End Try
     End Function
 
     Public Sub SetVolume(volume As Double)
-        videoVolume = Math.Max(0.0, Math.Min(1.0, volume))
+        video_Volume_Level = Math.Max(0.0, Math.Min(1.0, volume))
     End Sub
 
-    Private Sub LoadWebImageInWebView2(fileUri As String)
-        If Not isWebView2Available OrElse Web_View2 Is Nothing Then
-            lbl_Status.Text = If(is_Russian_Language, "Формат .webp не поддерживается: WebView2 недоступен или не инициализирован", "Format .webp not supported: WebView2 is unavailable or not initialized")
+    Private Sub LoadWebImageInWebView2(web_Image_Uri As String)
+        If Not is_WebView2_Available OrElse Web_View2 Is Nothing Then
+            lbl_Status.Text = If(Is_Russian_Language, "Формат .webp не поддерживается: WebView2 недоступен или не инициализирован", "Format .webp not supported: WebView2 is unavailable or not initialized")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0810: WebView2 is missing or not initialized")
             Return
         End If
 
         Try
-            isWebView2Loaded = False
-            isWebView2Visible = False
-            isWebBrowser1Visible = False
-            isPictureBox1Visible = False
-            isPictureBox2Visible = False
+            is_WebView2_Loaded = False
+            is_WebView2_Visible = False
+            is_WebBrowser_Visible = False
+            is_PictureBox1_Visible = False
+            is_PictureBox2_Visible = False
 
             UpdateControlVisibility()
 
-            Web_View2.Source = New Uri(fileUri)
-            currentLoadedFileName = currentFileName
+            Web_View2.Source = New Uri(web_Image_Uri)
+            current_Loaded_File_Name = current_File_Name
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0820: WebView2 is loaded")
         Catch ex As Exception
-            lbl_Status.Text = If(is_Russian_Language, "Ошибка загрузки в WebView2: " & ex.Message, "Error loading in WebView2: " & ex.Message)
+            lbl_Status.Text = If(Is_Russian_Language, "Ошибка загрузки в WebView2: " & ex.Message, "Error loading in WebView2: " & ex.Message)
             If Web_View2 IsNot Nothing Then
                 Web_View2.Source = New Uri("about:blank")
                 Web_View2.Visible = False
             End If
-            isWebView2Visible = False
+            is_WebView2_Visible = False
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0830: Error loading in WebView2: " & ex.Message)
 
             UpdateControlVisibility()
@@ -1088,8 +1104,8 @@ Public Class Main_Form
     End Sub
 
     Private Sub Web_View2_DoubleClick(sender As Object, e As EventArgs) Handles Web_View2.DoubleClick
-        If isFullScreen Then
-            isFullScreen = False
+        If is_Full_Screen_Mode Then
+            is_Full_Screen_Mode = False
             SetViewSizes()
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " Web_View2_DoubleClick: Выход из полноэкранного режима (WebView2)")
         End If
@@ -1099,43 +1115,43 @@ Public Class Main_Form
         If Me.InvokeRequired Then
             Me.Invoke(New Action(AddressOf HandleWebBrowserDoubleClick))
         Else
-            If isFullScreen Then
-                isFullScreen = False
+            If is_Full_Screen_Mode Then
+                is_Full_Screen_Mode = False
                 SetViewSizes()
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0842: HandleWebBrowserDoubleClick: (WebBrowser)")
             End If
         End If
     End Sub
 
-    Private Sub LoadVideoInWebBrowser(fileUri As String)
+    Private Sub LoadVideoInWebBrowser(video_File_Path As String)
         Try
-            isWebBrowser1Visible = False
-            isWebView2Visible = False
-            isPictureBox1Visible = False
-            isPictureBox2Visible = False
+            is_WebBrowser_Visible = False
+            is_WebView2_Visible = False
+            is_PictureBox1_Visible = False
+            is_PictureBox2_Visible = False
 
-            Dim localFileAsUri As New Uri(fileUri)
-            Dim htmlEscapedUri As String = localFileAsUri.AbsoluteUri
+            Dim video_File_As_Uri As New Uri(video_File_Path)
+            Dim video_File_Absolute_Uri As String = video_File_As_Uri.AbsoluteUri
 
-            Dim contentHtml As String = "<video id='videoPlayer' controls autoplay style='width:100%;height:calc(100% - " & height_For_instruments_on_WebPanel & "px);object-fit:fill;'>" &
-                                "<source src='" & htmlEscapedUri & "'>" &
+            Dim video_Html_Content As String = "<video id='videoPlayer' controls autoplay style='width:100%;height:calc(100% - " & height_For_instruments_on_WebPanel & "px);object-fit:fill;'>" &
+                                "<source src='" & video_File_Absolute_Uri & "'>" &
                                 "<track kind='captions' default>" &
                                 "<p style='color: " &
-                                If(form_Color_Scheme = 0, "black", "white") &
+                                If(Form_Color_Scheme = 0, "black", "white") &
                                 "; text-align: center;'>" &
-                                If(is_Russian_Language, "Ваш браузер не поддерживает видео.", "Your browser does not support video.") & "</p>" &
+                                If(Is_Russian_Language, "Ваш браузер не поддерживает видео.", "Your browser does not support video.") & "</p>" &
                                 "</video>"
 
             Dim html As String = "<html><head><meta http-equiv='X-UA-Compatible' content='IE=edge'>" &
                          "<style>" &
                          "body { margin: 0; overflow: hidden; background: " &
-                                If(form_Color_Scheme = 0, "black", "white") & "; }" &
+                                If(Form_Color_Scheme = 0, "black", "white") & "; }" &
                          "video { width: 100%; height: calc(100% - " & height_For_instruments_on_WebPanel & "px); object-fit: fill; position: absolute; top: 0; left: 0; }" &
                          "</style></head>" &
-                         "<body oncontextmenu='return false;' ondblclick='handlePageDoubleClick();'>" & contentHtml &
+                         "<body oncontextmenu='return false;' ondblclick='handlePageDoubleClick();'>" & video_Html_Content &
                          "<script>" &
                          "var player = document.getElementById('videoPlayer');" &
-                         "player.volume = " & videoVolume.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) & ";" &
+                         "player.volume = " & video_Volume_Level.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) & ";" &
                          "player.oncontextmenu = function(e) { e.preventDefault(); if (this.paused) this.play(); else this.pause(); return false; };" &
                          "player.onvolumechange = function() { try { window.external.SetVolume(this.volume); } catch(e) { } };" &
                          "function handlePageDoubleClick() { try { window.external.HandleWebBrowserDoubleClick(); } catch(e) { console.error('Error calling HandleWebBrowserDoubleClick: ' + e.message); } }" & ' <<< НОВАЯ JAVASCRIPT ФУНКЦИЯ
@@ -1144,7 +1160,7 @@ Public Class Main_Form
                          "  video.onerror = function() { " &
                          "    var errorMsg = 'Error: Unsupported video type or invalid file path. Source: ' + (video.querySelector('source') ? video.querySelector('source').src : 'not found'); " &
                          "    var p = document.createElement('p'); p.style.color='" &
-                                If(form_Color_Scheme = 0, "black", "white") &
+                                If(Form_Color_Scheme = 0, "black", "white") &
                                 "'; p.style.textAlign='center'; p.innerText = errorMsg; " &
                          "    video.parentNode.insertBefore(p, video.nextSibling); " &
                          "    console.error(errorMsg); " &
@@ -1152,94 +1168,97 @@ Public Class Main_Form
                          "});" &
                          "</script></body></html>"
 
-            lastLoadedUri = ""
+            last_Loaded_Uri = ""
             Web_Browser.DocumentText = html
-            currentLoadedFileName = currentFileName
+            current_Loaded_File_Name = current_File_Name
 
-            isWebBrowser1Visible = True
-            isPictureBox1Visible = False
-            isPictureBox2Visible = False
+            is_WebBrowser_Visible = True
+            is_PictureBox1_Visible = False
+            is_PictureBox2_Visible = False
 
             UpdateControlVisibility()
 
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0850: WebBrowser is loaded with URI: " & htmlEscapedUri)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0850: WebBrowser is loaded with URI: " & video_File_Absolute_Uri)
         Catch ex As Exception
             Web_Browser.DocumentText = "<html><body style='background:black; color:" &
-                                If(form_Color_Scheme = 0, "black", "white") &
+                                If(Form_Color_Scheme = 0, "black", "white") &
                                 "; text-align:center;'><p>Error preparing video player: " & ex.Message & "</p></body></html>"
-            isWebBrowser1Visible = False
+            is_WebBrowser_Visible = False
 
             UpdateControlVisibility()
-            lbl_Status.Text = If(is_Russian_Language, "Ошибка загрузки видео: " & ex.Message, "Error loading video: " & ex.Message)
+            lbl_Status.Text = If(Is_Russian_Language, "Ошибка загрузки видео: " & ex.Message, "Error loading video: " & ex.Message)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0860: Error loading video: " & ex.Message)
         End Try
     End Sub
 
     Private Sub LoadStandardImageInPictureBox()
-        isPictureBox1Visible = False
-        isPictureBox2Visible = False
-        isWebBrowser1Visible = False
-        isWebView2Visible = False
+        is_PictureBox1_Visible = False
+        is_PictureBox2_Visible = False
+        is_WebBrowser_Visible = False
+        is_WebView2_Visible = False
 
-        If currentLoadedFileName <> currentFileName Then
+        If current_Loaded_File_Name <> current_File_Name Then
 
-            If bgWorkerResult = "LOADED" AndAlso currentSecondLoadedFileName = currentFileName Then
-                If Not isSecondaryPictureBoxActive Then
-                    isPictureBox2Visible = True
-                    isPictureBox1Visible = False
+            If bgWorker_Result = "LOADED" AndAlso
+                current_Second_File_Name = current_File_Name Then
 
-                    bgWorkerResult = "USED P2"
-                    isSecondaryPictureBoxActive = True
+                If Not is_Second_PictureBox_Active Then
+                    is_PictureBox2_Visible = True
+                    is_PictureBox1_Visible = False
+
+                    bgWorker_Result = "USED P2"
+                    is_Second_PictureBox_Active = True
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0870: P2 is found already loaded isSecondaryPictureBoxActive=true")
                 Else
-                    isPictureBox2Visible = False
-                    isPictureBox1Visible = True
+                    is_PictureBox2_Visible = False
+                    is_PictureBox1_Visible = True
 
-                    bgWorkerResult = "USED P1"
-                    isSecondaryPictureBoxActive = False
+                    bgWorker_Result = "USED P1"
+                    is_Second_PictureBox_Active = False
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0880: P1 is found already loaded isSecondaryPictureBoxActive =false")
                 End If
             Else
 
                 Try
                     ' sza250609 - GIF fix
-                    Dim imageData As Tuple(Of Image, IO.MemoryStream) = LoadImage(currentFileName)
-                    If imageData IsNot Nothing Then
-                        Dim newImage As Image = imageData.Item1
-                        Dim newStream As IO.MemoryStream = imageData.Item2
+                    Dim image_Data_Tuple As Tuple(Of Image, IO.MemoryStream) = LoadImageWithStream(current_File_Name)
 
-                        If Not thisIsFirstPictureFileWeShow AndAlso isSecondaryPictureBoxActive Then
+                    If image_Data_Tuple IsNot Nothing Then
+                        Dim loaded_Image As Image = image_Data_Tuple.Item1
+                        Dim loaded_Image_Stream As IO.MemoryStream = image_Data_Tuple.Item2
+
+                        If Not is_this_First_Picture_File_We_Show AndAlso is_Second_PictureBox_Active Then
                             If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
-                            If pb2Stream IsNot Nothing Then pb2Stream?.Dispose()
-                            Picture_Box_2.Image = newImage
-                            pb2Stream = newStream
-                            isPictureBox2Visible = True
-                            isPictureBox1Visible = False
-                            isSecondaryPictureBoxActive = True
+                            If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
+                            Picture_Box_2.Image = loaded_Image
+                            pictureBox2_Stream = loaded_Image_Stream
+                            is_PictureBox2_Visible = True
+                            is_PictureBox1_Visible = False
+                            is_Second_PictureBox_Active = True
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0890: P2 set (not found loaded) isSecondaryPictureBoxActive=true")
                         Else
                             If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
-                            If pb1Stream IsNot Nothing Then pb1Stream?.Dispose()
-                            Picture_Box_1.Image = newImage
-                            pb1Stream = newStream
-                            isPictureBox1Visible = True
-                            isPictureBox2Visible = False
-                            isSecondaryPictureBoxActive = False
-                            thisIsFirstPictureFileWeShow = False
+                            If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
+                            Picture_Box_1.Image = loaded_Image
+                            pictureBox1_Stream = loaded_Image_Stream
+                            is_PictureBox1_Visible = True
+                            is_PictureBox2_Visible = False
+                            is_Second_PictureBox_Active = False
+                            is_this_First_Picture_File_We_Show = False
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0900: P1 set (not found loaded) isSecondaryPictureBoxActive=false")
                         End If
                     Else
                         If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
-                        If pb1Stream IsNot Nothing Then pb1Stream?.Dispose()
+                        If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
                         If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
-                        If pb2Stream IsNot Nothing Then pb2Stream?.Dispose()
+                        If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
                     End If
                 Catch ex As Exception
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0905: Error loading image: " & ex.Message)
                     Return
                 End Try
             End If
-            currentLoadedFileName = currentFileName
+            current_Loaded_File_Name = current_File_Name
 
             UpdateControlVisibility()
 
@@ -1248,7 +1267,7 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0920: file is a same, pic set is skipped")
         End If
 
-        If Web_View2 IsNot Nothing AndAlso isWebView2Visible Then
+        If Web_View2 IsNot Nothing AndAlso is_WebView2_Visible Then
             Web_View2.Source = New Uri("about:blank")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0930: WV2 blank")
         End If
@@ -1260,178 +1279,167 @@ Public Class Main_Form
 
     End Sub
 
-    Private Function GetOppositeColor(backgroundColor As System.Drawing.Color) As System.Drawing.Color
-        Dim sumColor = (Int(backgroundColor.R) + Int(backgroundColor.G) + Int(backgroundColor.B))
-
-        '  Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0942: colorsum " & sumColor.ToString)
-
-        If sumColor < 333 Then
-            Return System.Drawing.Color.White
-        Else
-            Return System.Drawing.Color.Black
-        End If
-    End Function
-
     Private Sub UpdateControlVisibility()
 
-        Picture_Box_1.Visible = isPictureBox1Visible
-        Picture_Box_2.Visible = isPictureBox2Visible
-        Web_Browser.Visible = isWebBrowser1Visible
-        If isWebView2Available AndAlso Web_View2 IsNot Nothing AndAlso Not Web_View2.Visible = isWebView2Visible Then
-            Web_View2.Visible = isWebView2Visible
+        Picture_Box_1.Visible = is_PictureBox1_Visible
+        Picture_Box_2.Visible = is_PictureBox2_Visible
+        Web_Browser.Visible = is_WebBrowser_Visible
+
+        If is_WebView2_Available AndAlso Web_View2 IsNot Nothing AndAlso Not Web_View2.Visible = is_WebView2_Visible Then
+            Web_View2.Visible = is_WebView2_Visible
         End If
 
-        If (isPictureBox1Visible OrElse
-            isPictureBox2Visible) AndAlso
-            (Not is_slide_show_mode Or
+        If (is_PictureBox1_Visible OrElse
+            is_PictureBox2_Visible) AndAlso
+            (Not Is_slide_show_mode Or
             SlideShowTimer.Interval > slideshow_limit_to_change_color) Then
 
             Web_Browser.Visible = False
-            If Web_View2 IsNot Nothing AndAlso isWebView2Visible AndAlso Web_View2.Visible Then
-                isWebView2Visible = False
-                Web_View2.Visible = isWebView2Visible
+            If Web_View2 IsNot Nothing AndAlso is_WebView2_Visible AndAlso Web_View2.Visible Then
+                is_WebView2_Visible = False
+                Web_View2.Visible = is_WebView2_Visible
             End If
 
-            Dim pic_to As Int16 = 0
+            Dim pic_to_Display As Int16 = 0
 
-            If isPictureBox1Visible AndAlso
+            If is_PictureBox1_Visible AndAlso
                     Picture_Box_1.Image IsNot Nothing AndAlso
                     TypeOf Picture_Box_1.Image Is Bitmap Then
 
                 Picture_Box_1.BringToFront()
-                pic_to = 1
+                pic_to_Display = 1
 
-            ElseIf isPictureBox2Visible AndAlso
+            ElseIf is_PictureBox2_Visible AndAlso
                     Picture_Box_2.Image IsNot Nothing AndAlso
                     TypeOf Picture_Box_2.Image Is Bitmap Then
 
                 Picture_Box_2.BringToFront()
-                pic_to = 2
+                pic_to_Display = 2
             End If
 
-            Dim pixelColor As System.Drawing.Color = System.Drawing.Color.Black
+            Dim back_Color As System.Drawing.Color = System.Drawing.Color.Black
 
-            Dim bmp As Bitmap = Nothing
+            Dim active_Bitmap As Bitmap = Nothing
 
-            If form_Color_Scheme = 2 Then
-                pixelColor = System.Drawing.Color.White
-            ElseIf form_Color_Scheme = 0 Then
+            If Form_Color_Scheme = 2 Then
+                back_Color = System.Drawing.Color.White
+            ElseIf Form_Color_Scheme = 0 Then
 
-                If pic_to = 1 Then
-                    bmp = CType(Picture_Box_1.Image, Bitmap)
-                ElseIf pic_to = 2 Then
-                    bmp = CType(Picture_Box_2.Image, Bitmap)
+                If pic_to_Display = 1 Then
+                    active_Bitmap = CType(Picture_Box_1.Image, Bitmap)
+                ElseIf pic_to_Display = 2 Then
+                    active_Bitmap = CType(Picture_Box_2.Image, Bitmap)
                 End If
 
-                If bmp IsNot Nothing Then
-                    If 1 < bmp.Width AndAlso
-                        1 < bmp.Height Then
+                If active_Bitmap IsNot Nothing Then
+                    If 1 < active_Bitmap.Width AndAlso
+                        1 < active_Bitmap.Height Then
 
-                        If bmp.Width > second_Color_X AndAlso
-                            bmp.Height > secondColorY Then
+                        If active_Bitmap.Width > second_Color_X AndAlso
+                            active_Bitmap.Height > second_Color_Y Then
 
-                            Dim pixelColor5 = bmp.GetPixel(second_Color_X, secondColorY)
-                            Dim pixelColor1 = bmp.GetPixel(first_Color_X, first_Color_Y)
+                            Dim first_Color_Pixel = active_Bitmap.GetPixel(first_Color_X, first_Color_Y)
+                            Dim second_Color_Pixel = active_Bitmap.GetPixel(second_Color_X, second_Color_Y)
 
-                            Dim dif As Long = CLng(Math.Abs(CInt(pixelColor5.R) - CInt(pixelColor1.R))) +
-                                                  CLng(Math.Abs(CInt(pixelColor5.G) - CInt(pixelColor1.G))) +
-                                                  CLng(Math.Abs(CInt(pixelColor5.B) - CInt(pixelColor1.B)))
+                            Dim dif As Long = CLng(Math.Abs(CInt(second_Color_Pixel.R) - CInt(first_Color_Pixel.R))) +
+                                                  CLng(Math.Abs(CInt(second_Color_Pixel.G) - CInt(first_Color_Pixel.G))) +
+                                                  CLng(Math.Abs(CInt(second_Color_Pixel.B) - CInt(first_Color_Pixel.B)))
                             If dif < percent_of_color_deviation Then
-                                pixelColor = pixelColor1
+                                back_Color = first_Color_Pixel
                             Else
-                                pixelColor = bmp.GetPixel(CInt(bmp.Width / percent_of_second_Color_Point), CInt(bmp.Height / percent_of_second_Color_Point))
+                                back_Color = active_Bitmap.GetPixel(CInt(active_Bitmap.Width / percent_of_second_Color_Point), CInt(active_Bitmap.Height / percent_of_second_Color_Point))
                             End If
                         Else
-                            pixelColor = bmp.GetPixel(CInt(bmp.Width / percent_of_second_Color_Point), CInt(bmp.Height / percent_of_second_Color_Point))
+                            back_Color = active_Bitmap.GetPixel(CInt(active_Bitmap.Width / percent_of_second_Color_Point), CInt(active_Bitmap.Height / percent_of_second_Color_Point))
                         End If
 
                     End If
                 End If
-            ElseIf form_Color_Scheme = 3 Then 'by side
+            ElseIf Form_Color_Scheme = 3 Then 'by side
 
-                If pic_to = 1 Then
-                    bmp = CType(Picture_Box_1.Image, Bitmap)
-                ElseIf pic_to = 2 Then
-                    bmp = CType(Picture_Box_2.Image, Bitmap)
+                If pic_to_Display = 1 Then
+                    active_Bitmap = CType(Picture_Box_1.Image, Bitmap)
+                ElseIf pic_to_Display = 2 Then
+                    active_Bitmap = CType(Picture_Box_2.Image, Bitmap)
                 End If
 
-                If bmp IsNot Nothing AndAlso
-                     1 < bmp.Width AndAlso
-                        1 < bmp.Height Then
+                If active_Bitmap IsNot Nothing AndAlso
+                     1 < active_Bitmap.Width AndAlso
+                        1 < active_Bitmap.Height Then
 
-                    Dim pixelColor_in As System.Drawing.Color
+                    Dim side_Pixel_Color As System.Drawing.Color
                     Dim difR, difG, difB As Long
                     Dim c As Integer = 0
-                    For z = 0 To bmp.Height - 1 Step step_size_while_color_Search
-                        pixelColor_in = bmp.GetPixel(1, z)
-                        difR = difR + CInt(pixelColor_in.R)
-                        difG = difG + CInt(pixelColor_in.G)
-                        difB = difB + CInt(pixelColor_in.B)
-                        c = c + 1
+                    For z = 0 To active_Bitmap.Height - 1 Step step_size_while_color_Search
+                        side_Pixel_Color = active_Bitmap.GetPixel(1, z)
+                        difR += CInt(side_Pixel_Color.R)
+                        difG += CInt(side_Pixel_Color.G)
+                        difB += CInt(side_Pixel_Color.B)
+                        c += 1
                     Next
 
-                    pixelColor = System.Drawing.Color.FromArgb(CInt(difR / c), CInt(difG / c), CInt(difB / c))
+                    back_Color = System.Drawing.Color.FromArgb(CInt(difR / c), CInt(difG / c), CInt(difB / c))
                 End If
 
-            ElseIf form_Color_Scheme = 4 Then 'by top
+            ElseIf Form_Color_Scheme = 4 Then 'by top
 
-                If pic_to = 1 Then
-                    bmp = CType(Picture_Box_1.Image, Bitmap)
-                ElseIf pic_to = 2 Then
-                    bmp = CType(Picture_Box_2.Image, Bitmap)
+                If pic_to_Display = 1 Then
+                    active_Bitmap = CType(Picture_Box_1.Image, Bitmap)
+                ElseIf pic_to_Display = 2 Then
+                    active_Bitmap = CType(Picture_Box_2.Image, Bitmap)
                 End If
 
-                If bmp IsNot Nothing AndAlso
-                     1 < bmp.Width AndAlso
-                        1 < bmp.Height Then
+                If active_Bitmap IsNot Nothing AndAlso
+                     1 < active_Bitmap.Width AndAlso
+                        1 < active_Bitmap.Height Then
 
-                    Dim pixelColor_in As System.Drawing.Color
+                    Dim top_Pixel_Color As System.Drawing.Color
                     Dim difR, difG, difB As Long
                     Dim c As Integer = 0
-                    For z = 0 To bmp.Width - 1 Step step_size_while_color_Search
-                        pixelColor_in = bmp.GetPixel(z, 1)
-                        difR = difR + CInt(pixelColor_in.R)
-                        difG = difG + CInt(pixelColor_in.G)
-                        difB = difB + CInt(pixelColor_in.B)
-                        c = c + 1
+                    For z = 0 To active_Bitmap.Width - 1 Step step_size_while_color_Search
+                        top_Pixel_Color = active_Bitmap.GetPixel(z, 1)
+                        difR += CInt(top_Pixel_Color.R)
+                        difG += CInt(top_Pixel_Color.G)
+                        difB += CInt(top_Pixel_Color.B)
+                        c += 1
                     Next
 
-                    pixelColor = System.Drawing.Color.FromArgb(CInt(difR / c), CInt(difG / c), CInt(difB / c))
+                    back_Color = System.Drawing.Color.FromArgb(CInt(difR / c), CInt(difG / c), CInt(difB / c))
                 End If
-            ElseIf form_Color_Scheme = 5 Then 'by buttom
+            ElseIf Form_Color_Scheme = 5 Then 'by buttom
 
-                If pic_to = 1 Then
-                    bmp = CType(Picture_Box_1.Image, Bitmap)
-                ElseIf pic_to = 2 Then
-                    bmp = CType(Picture_Box_2.Image, Bitmap)
+                If pic_to_Display = 1 Then
+                    active_Bitmap = CType(Picture_Box_1.Image, Bitmap)
+                ElseIf pic_to_Display = 2 Then
+                    active_Bitmap = CType(Picture_Box_2.Image, Bitmap)
                 End If
 
-                If bmp IsNot Nothing AndAlso
-                     1 < bmp.Width AndAlso
-                        1 < bmp.Height Then
+                If active_Bitmap IsNot Nothing AndAlso
+                     1 < active_Bitmap.Width AndAlso
+                        1 < active_Bitmap.Height Then
 
-                    Dim pixelColor_in As System.Drawing.Color
+                    Dim bottom_Pixel_Color As System.Drawing.Color
                     Dim difR, difG, difB As Long
                     Dim c As Integer = 0
-                    For z = 0 To bmp.Width - 1 Step step_size_while_color_Search
-                        pixelColor_in = bmp.GetPixel(z, bmp.Height - 1)
-                        difR = difR + CInt(pixelColor_in.R)
-                        difG = difG + CInt(pixelColor_in.G)
-                        difB = difB + CInt(pixelColor_in.B)
-                        c = c + 1
+                    For z = 0 To active_Bitmap.Width - 1 Step step_size_while_color_Search
+                        bottom_Pixel_Color = active_Bitmap.GetPixel(z, active_Bitmap.Height - 1)
+                        difR += CInt(bottom_Pixel_Color.R)
+                        difG += CInt(bottom_Pixel_Color.G)
+                        difB += CInt(bottom_Pixel_Color.B)
+                        c += 1
                     Next
 
-                    pixelColor = System.Drawing.Color.FromArgb(CInt(difR / c), CInt(difG / c), CInt(difB / c))
+                    back_Color = System.Drawing.Color.FromArgb(CInt(difR / c), CInt(difG / c), CInt(difB / c))
                 End If
             End If
 
 
-            If pixelColor <> lastBackColor Then
-                lastBackColor = pixelColor
+            If back_Color <> last_Back_Color Then
+                last_Back_Color = back_Color
 
-                Me.BackColor = pixelColor
+                Me.BackColor = back_Color
 
-                Dim OppositeColor = GetOppositeColor(pixelColor)
+                Dim OppositeColor = GetOppositeColor(back_Color)
                 For Each ctrl As Control In Me.Controls
                     If TypeOf ctrl Is Label Then
                         Dim lbl As Label = CType(ctrl, Label)
@@ -1442,123 +1450,125 @@ Public Class Main_Form
                         btn.ForeColor = OppositeColor
                     ElseIf TypeOf ctrl Is ComboBox Then
                         Dim cmb As ComboBox = CType(ctrl, ComboBox)
-                        cmb.BackColor = pixelColor
+                        cmb.BackColor = back_Color
                         cmb.ForeColor = OppositeColor
                     ElseIf TypeOf ctrl Is CheckBox Then
                         Dim chb As CheckBox = CType(ctrl, CheckBox)
-                        chb.BackColor = pixelColor
+                        chb.BackColor = back_Color
                         chb.ForeColor = OppositeColor
                     End If
                 Next
             End If
 
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0945: picture box sizes: " & If(isPictureBox1Visible, "P1: ", "P2: ") & If(isPictureBox1Visible, Picture_Box_1.Width.ToString, Picture_Box_2.Width.ToString) & "x" & If(isPictureBox1Visible, Picture_Box_1.Height.ToString, Picture_Box_2.Height.ToString))
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0945: picture box sizes: " & If(is_PictureBox1_Visible, "P1: ", "P2: ") & If(is_PictureBox1_Visible, Picture_Box_1.Width.ToString, Picture_Box_2.Width.ToString) & "x" & If(is_PictureBox1_Visible, Picture_Box_1.Height.ToString, Picture_Box_2.Height.ToString))
         End If
 
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0950: Visibility set: " & If(isPictureBox1Visible, "P1-YES ", "P1-NO ") & If(isPictureBox2Visible, "P2-YES ", "P2-NO ") & If(isWebBrowser1Visible, "WB-YES ", "WB-NO ") & If(isWebView2Visible, "WV2-YES", "WV2-NO "))
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0950: Visibility set: " & If(is_PictureBox1_Visible, "P1-YES ", "P1-NO ") & If(is_PictureBox2_Visible, "P2-YES ", "P2-NO ") & If(is_WebBrowser_Visible, "WB-YES ", "WB-NO ") & If(is_WebView2_Visible, "WV2-YES", "WV2-NO "))
     End Sub
 
-    Private Sub UpdateCurrentFileAndDisplay(isFileFound As Boolean, isAfterUndo As Boolean)
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0381: UpdateCurrentFileAndDisplay, currentFileName: " & currentFileName)
-        currentFileName = ""
+    Private Sub UpdateCurrentFileAndDisplay(is_File_Found As Boolean, is_After_Undo_Operation As Boolean)
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0381: UpdateCurrentFileAndDisplay, currentFileName: " & current_File_Name)
+        current_File_Name = ""
 
-        If totalFilesCount <> 0 Then
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0960: isFileFound = " & isFileFound.ToString)
-            If isFileFound Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0970: currentFileIndex = " & currentFileIndex.ToString)
-                currentFileName = If(useArray, filesArray(currentFileIndex), filesList(currentFileIndex))
+        If total_File_Count <> 0 Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0960: isFileFound = " & is_File_Found.ToString)
+            If is_File_Found Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0970: currentFileIndex = " & current_File_Index.ToString)
+                current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
             Else
-                If targetImagePath Is Nothing Then
+                If Current_Image_Path Is Nothing Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0972: targetImagePath Is Nothing")
-                    currentFileIndex = 0
-                    currentFileName = If(useArray, filesArray(currentFileIndex), filesList(currentFileIndex))
-                    targetImagePath = currentFileName
+                    current_File_Index = 0
+                    current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
+                    Current_Image_Path = current_File_Name
                 Else
-                    currentFileName = targetImagePath
+                    current_File_Name = Current_Image_Path
                 End If
             End If
 
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0980: currentFileName = " & currentFileName)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0980: currentFileName = " & current_File_Name)
 
-            Dim fileIndexDisplay As Integer = currentFileIndex + 1
-            lbl_File_Number.Text = If(is_Russian_Language, "Файл: " & fileIndexDisplay.ToString() & " из " & totalFilesCount.ToString(), "File: " & fileIndexDisplay.ToString() & " from " & totalFilesCount.ToString())
+            Dim current_File_Number As Integer = current_File_Index + 1
+            lbl_File_Number.Text = If(Is_Russian_Language, "Файл: " & current_File_Number.ToString() & " из " & total_File_Count.ToString(), "File: " & current_File_Number.ToString() & " from " & total_File_Count.ToString())
 
-            '    Try
-            Dim fileExtension As String = Path.GetExtension(currentFileName).ToLower()
-            Dim fileUri As String = New Uri(currentFileName).ToString()
+            Try
+                Dim current_File_Extension As String = Path.GetExtension(current_File_Name).ToLower()
+                Dim current_File_Uri As String = New Uri(current_File_Name).ToString()
 
-            If imageFileExtensions.Contains(fileExtension) Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1030: P to load")
-                LoadStandardImageInPictureBox()
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1040: Picture box is set")
-            ElseIf videoFileExtensions.Contains(fileExtension) Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1010: WB to load")
-                LoadVideoInWebBrowser(fileUri)
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: WB is set")
-            ElseIf isWebView2Available AndAlso webImageFileExtensions.Contains(fileExtension) Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0990: WV2 to load")
-                LoadWebImageInWebView2(fileUri)
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1000: WV2 is set")
-            Else
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1045: No selected control to show!?")
-            End If
+                If Image_File_Extensions.Contains(current_File_Extension) Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1030: P to load")
+                    LoadStandardImageInPictureBox()
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1040: Picture box is set")
+                ElseIf video_File_Extensions.Contains(current_File_Extension) Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1010: WB to load")
+                    LoadVideoInWebBrowser(current_File_Uri)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: WB is set")
+                ElseIf is_WebView2_Available AndAlso web_specific_image_extensions.Contains(current_File_Extension) Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0990: WV2 to load")
+                    LoadWebImageInWebView2(current_File_Uri)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1000: WV2 is set")
+                Else
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1045: No selected control to show!?")
+                End If
 
-            isFirstPictureBoxNeedToBeCached = isSecondaryPictureBoxActive
+                is_First_Picture_Box_Need_To_Be_Cached = is_Second_PictureBox_Active
 
-            If isSlideShowRandom OrElse isFileReseivedFromOutside Then
-                nextAfterCurrentFileName = ""
-                isFileReseivedFromOutside = False
-            ElseIf Not wasExternalInputLast AndAlso
-                    Not (filesList Is Nothing And filesArray Is Nothing) Then
-                nextAfterCurrentFileName = If(totalFilesCount > 0, If(totalFilesCount = currentFileIndex + 1, If(useArray, filesArray(0), filesList(0)), If(useArray, filesArray(currentFileIndex + 1), filesList(currentFileIndex + 1))), "")
-            Else
-                nextAfterCurrentFileName = ""
-            End If
+                If is_Slide_Show_Random_Mode OrElse is_File_Reseived_From_Outside Then
+                    next_File_After_Current = ""
+                    is_File_Reseived_From_Outside = False
+                ElseIf Not was_External_Input_Previously AndAlso
+                        Not (files_List Is Nothing And files_Array Is Nothing) Then
+                    next_File_After_Current = If(total_File_Count > 0, If(total_File_Count = current_File_Index + 1, If(is_Files_Array_Active, files_Array(0), files_List(0)), If(is_Files_Array_Active, files_Array(current_File_Index + 1), files_List(current_File_Index + 1))), "")
+                Else
+                    next_File_After_Current = ""
+                End If
 
-            If bgWorkerOnline OrElse
-                    BgWorker.IsBusy Then
+                If is_BgWorker_Online OrElse
+                        BgWorker.IsBusy Then
 
-                BgWorker.CancelAsync()
-                bgWorkerOnline = False
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1050: BgWorker set off line")
-            End If
+                    BgWorker.CancelAsync()
+                    is_BgWorker_Online = False
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1050: BgWorker set off line")
+                End If
 
-            If Not is_No_Background_Tasks AndAlso
-                    Not bgWorkerOnline AndAlso
-                    Not BgWorker.IsBusy Then
+                If Not Is_No_Background_Tasks AndAlso
+                        Not is_BgWorker_Online AndAlso
+                        Not BgWorker.IsBusy Then
 
-                bgWorkerOnline = True
-                BgWorker.RunWorkerAsync()
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1060: BgWorker is run")
-            Else
-                lbl_Current_File.Text = If(is_Russian_Language, "Текущий: ", "Current: ") & currentFileName
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1065: BgWorker is not run, online=" & bgWorkerOnline.ToString & " IsBusy=" & BgWorker.IsBusy.ToString)
-            End If
+                    is_BgWorker_Online = True
 
-            '     Catch ex As Exception
-            '         If Not isAfterUndo Then
-            '          MsgBox("E005 " & ex.Message)
-            '              Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1070: E005 " & ex.Message)
-            '          Else
-            '            lbl_Status.Text = If(lngRus, "Файл " & currentFileName & " перемещается назад операционной системой.", "File " & currentFileName & " moving back by OS.")
-            '            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1080: UNdo E005 " & ex.Message)
-            '    End If
-            '       End Try
+                    BgWorker.RunWorkerAsync(New Tuple(Of String, String)(current_File_Name, next_File_After_Current))
+
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1060: BgWorker is run")
+                Else
+                    lbl_Current_File.Text = If(Is_Russian_Language, "Текущий: ", "Current: ") & current_File_Name
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1065: BgWorker is not run, online=" & is_BgWorker_Online.ToString & " IsBusy=" & BgWorker.IsBusy.ToString)
+                End If
+
+            Catch ex As Exception
+                If Not is_After_Undo_Operation Then
+                    MsgBox("E005 " & ex.Message)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1070: E005 " & ex.Message)
+                Else
+                    lbl_Status.Text = If(Is_Russian_Language, "Файл " & current_File_Name & " перемещается назад операционной системой.", "File " & current_File_Name & " moving back by OS.")
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1080: UNdo E005 " & ex.Message)
+                End If
+            End Try
 
         Else
             If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
             If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
-            currentLoadedFileName = ""
+            current_Loaded_File_Name = ""
             Web_Browser.DocumentText = ""
             If Web_View2 IsNot Nothing Then
                 Web_View2.Source = New Uri("about:blank")
             End If
             lbl_File_Number.Text = ""
-            lbl_Status.Text = If(is_Russian_Language, "! Нет файлов в папке", "! No files in folder")
-            isPictureBox1Visible = False
-            isPictureBox2Visible = False
-            isWebBrowser1Visible = False
-            isWebView2Visible = False
+            lbl_Status.Text = If(Is_Russian_Language, "! Нет файлов в папке", "! No files in folder")
+            is_PictureBox1_Visible = False
+            is_PictureBox2_Visible = False
+            is_WebBrowser_Visible = False
+            is_WebView2_Visible = False
 
             UpdateControlVisibility()
 
@@ -1573,20 +1583,13 @@ Public Class Main_Form
         Public Property FileDate As Date
     End Structure
 
-    Private Class NaturalFilenameComparer
-        Implements IComparer(Of String)
-        Public Function Compare(x As String, y As String) As Integer Implements IComparer(Of String).Compare
-            Return StrCmpLogicalW(x, y)
-        End Function
-    End Class
-
     Private Function GetFiles() As Object
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1095: GetFiles..")
 
         Try
-            Dim dirInfo As DirectoryInfo = My.Computer.FileSystem.GetDirectoryInfo(currentFolderPath)
-            Dim fileEntries As List(Of FileEntry) = dirInfo.EnumerateFiles() _
-            .Where(Function(f) allSupportedExtensions.Contains(f.Extension.ToLower())) _
+            Dim current_Directory_Info As DirectoryInfo = My.Computer.FileSystem.GetDirectoryInfo(Current_Folder_Path)
+            Dim file_Entry_List As List(Of FileEntry) = current_Directory_Info.EnumerateFiles() _
+            .Where(Function(f) all_Supported_Extensions.Contains(f.Extension.ToLower())) _
             .Select(Function(f) New FileEntry With {
                 .FilePath = f.FullName,
                 .FileSize = f.Length,
@@ -1594,50 +1597,50 @@ Public Class Main_Form
                 .FileDate = f.LastWriteTime
             }).ToList()
 
-            If fileEntries.Count = 0 Then
+            If file_Entry_List.Count = 0 Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1096: Files count=0")
-                lbl_Status.Text = If(is_Russian_Language, "Папка пустая", "Folder is empty")
+                lbl_Status.Text = If(Is_Russian_Language, "Папка пустая", "Folder is empty")
                 Return Nothing
             End If
 
-            If fileEntries.Count < max_Number_Of_Files_For_List Then
-                useArray = False
+            If file_Entry_List.Count < max_Number_Of_Files_For_List Then
+                is_Files_Array_Active = False
 
                 Dim orderedEntries As IEnumerable(Of FileEntry)
                 Select Case cmbox_Sort.SelectedItem?.ToString()
                     Case "abc"
-                        orderedEntries = fileEntries.OrderBy(Function(f) f.FileName)
+                        orderedEntries = file_Entry_List.OrderBy(Function(f) f.FileName)
                     Case "xyz"
-                        orderedEntries = fileEntries.OrderByDescending(Function(f) f.FileName)
+                        orderedEntries = file_Entry_List.OrderByDescending(Function(f) f.FileName)
                     Case "rnd"
-                        orderedEntries = fileEntries.OrderBy(Function(f) Guid.NewGuid())
+                        orderedEntries = file_Entry_List.OrderBy(Function(f) Guid.NewGuid())
                     Case ">size"
-                        orderedEntries = fileEntries.OrderByDescending(Function(f) f.FileSize)
+                        orderedEntries = file_Entry_List.OrderByDescending(Function(f) f.FileSize)
                     Case "<size"
-                        orderedEntries = fileEntries.OrderBy(Function(f) f.FileSize)
+                        orderedEntries = file_Entry_List.OrderBy(Function(f) f.FileSize)
                     Case ">time"
-                        orderedEntries = fileEntries.OrderByDescending(Function(f) f.FileDate)
+                        orderedEntries = file_Entry_List.OrderByDescending(Function(f) f.FileDate)
                     Case "<time"
-                        orderedEntries = fileEntries.OrderBy(Function(f) f.FileDate)
+                        orderedEntries = file_Entry_List.OrderBy(Function(f) f.FileDate)
                     Case "<0123"
-                        orderedEntries = fileEntries.OrderBy(Function(f) f.FileName, New NaturalFilenameComparer())
+                        orderedEntries = file_Entry_List.OrderBy(Function(f) f.FileName, New NaturalFilenameComparer())
                     Case ">3210"
-                        orderedEntries = fileEntries.OrderByDescending(Function(f) f.FileName, New NaturalFilenameComparer())
+                        orderedEntries = file_Entry_List.OrderByDescending(Function(f) f.FileName, New NaturalFilenameComparer())
                     Case Else
-                        orderedEntries = fileEntries.OrderBy(Function(f) f.FilePath)
+                        orderedEntries = file_Entry_List.OrderBy(Function(f) f.FilePath)
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1107:  sort is lost?!")
                 End Select
 
-                Dim filePaths As List(Of String) = orderedEntries.Select(Function(f) f.FilePath).ToList()
-                Return filePaths
+                Dim file_Paths_List As List(Of String) = orderedEntries.Select(Function(f) f.FilePath).ToList()
+                Return file_Paths_List
             Else
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1109:  too mant files - just array, no sorting !")
-                useArray = True
-                Return fileEntries.ToArray()
+                is_Files_Array_Active = True
+                Return file_Entry_List.ToArray()
             End If
 
         Catch ex As Exception
-            lbl_Status.Text = If(is_Russian_Language, "! Ошибка чтения файлов", "! Error reading files")
+            lbl_Status.Text = If(Is_Russian_Language, "! Ошибка чтения файлов", "! Error reading files")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1110: Error reading files: " & ex.Message)
             Return Nothing
         End Try
@@ -1646,18 +1649,18 @@ Public Class Main_Form
     Private Sub ISizeChanged()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1935: ISizeChanged")
 
-        If isFullScreen <> lastFullScreenState Then
-            If isFullScreen Then
+        If is_Full_Screen_Mode <> is_Last_Full_Screen_State Then
+            If is_Full_Screen_Mode Then
                 FormBorderStyle = FormBorderStyle.None
                 WindowState = FormWindowState.Maximized
             Else
                 FormBorderStyle = FormBorderStyle.Sizable
                 WindowState = FormWindowState.Normal
             End If
-            lastFullScreenState = isFullScreen
+            is_Last_Full_Screen_State = is_Full_Screen_Mode
         End If
 
-        If isFullScreen Then
+        If is_Full_Screen_Mode Then
             Buttons_to_fullscreen()
         Else
             Buttons_to_normal()
@@ -1714,53 +1717,56 @@ Public Class Main_Form
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0010: init finished")
 
-        isTextBoxEdition = True
-        applicationRunsCount = 0
-        Integer.TryParse(GetSetting(app_name, second_App_Name, "RunsCount", "0"), applicationRunsCount)
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0020: Apps RUN: " & applicationRunsCount.ToString)
+        is_TextBox_Editing = True
+        app_Run_Count = 0
+        Integer.TryParse(GetSetting(App_name, Second_App_Name, "RunsCount", "0"), app_Run_Count)
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0020: Apps RUN: " & app_Run_Count.ToString)
 
-        Integer.TryParse(GetSetting(app_name, second_App_Name, "mediaViewedCount", "0"), mediaViewedCount)
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0021: media Viewed: " & mediaViewedCount.ToString)
+        Integer.TryParse(GetSetting(App_name, Second_App_Name, "mediaViewedCount", "0"), media_View_Count)
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0021: media Viewed: " & media_View_Count.ToString)
 
-        Integer.TryParse(GetSetting(app_name, second_App_Name, "color_scheme", "1"), form_Color_Scheme)
+        Integer.TryParse(GetSetting(App_name, Second_App_Name, "color_scheme", "1"), Form_Color_Scheme)
 
-        is_Russian_Language = GetSetting(app_name, second_App_Name, "LngRus", "1") = "1"
+        Is_Russian_Language = GetSetting(App_name, Second_App_Name, "LngRus", "1") = "1"
 
-        is_Pespective = GetSetting(app_name, second_App_Name, "isPerspective", "1") = "1"
+        Is_Pespective = GetSetting(App_name, Second_App_Name, "isPerspective", "1") = "1"
 
-        Dim SortDir = 0
-        Integer.TryParse(GetSetting(app_name, second_App_Name, "SortDir", "0"), SortDir)
+        Is_to_show_picture_sizes = GetSetting(App_name, Second_App_Name, "ShowPictureSizes", "1") = "1"
+        Is_to_show_file_sizes = GetSetting(App_name, Second_App_Name, "ShowFileSizes", "1") = "1"
+        Is_to_show_file_datetime = GetSetting(App_name, Second_App_Name, "ShowFileDates", "1") = "1"
 
-        If SortDir < 0 Then
-            SortDir = 0
+        Dim sort_Direction_Index = 0
+        Integer.TryParse(GetSetting(App_name, Second_App_Name, "SortDir", "0"), sort_Direction_Index)
+
+        If sort_Direction_Index < 0 Then
+            sort_Direction_Index = 0
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1138: cmbox_Sort is set to 0")
         End If
-        cmbox_Sort.SelectedIndex = SortDir
+        cmbox_Sort.SelectedIndex = sort_Direction_Index
 
-        btn_Language.Text = If(is_Russian_Language, "EN", "RU")
+        btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
         LngCh()
 
-        Dim isFirstRunStriing As String = GetSetting(app_name, second_App_Name, "FirstRun", "1")
-        lbl_Help_Info.Visible = isFirstRunStriing = "1"
+        lbl_Help_Info.Visible = GetSetting(App_name, Second_App_Name, "FirstRun", "1") = "1"
 
-        is_Copying_not_Moving = GetSetting(app_name, second_App_Name, "CopyMode", "0") = "1"
-        chkbox_Top_Most.Checked = GetSetting(app_name, second_App_Name, "chkTopMost", "0") = "1"
-        isTableFormOpen = GetSetting(app_name, second_App_Name, "TableOpened", "0") = "1"
+        Is_Copying_not_Moving = GetSetting(App_name, Second_App_Name, "CopyMode", "0") = "1"
+        chkbox_Top_Most.Checked = GetSetting(App_name, Second_App_Name, "chkTopMost", "0") = "1"
+        is_Table_Form_Open = GetSetting(App_name, Second_App_Name, "TableOpened", "0") = "1"
 
-        Dim videoVolumeStr = GetSetting(app_name, second_App_Name, "VideoVolume", "1.0")
-        Double.TryParse(videoVolumeStr, videoVolume)
+        Dim video_Volume_String = GetSetting(App_name, Second_App_Name, "VideoVolume", "1.0")
+        Double.TryParse(video_Volume_String, video_Volume_Level)
 
         For z = 0 To 9
-            hardkeys_to_move_mediafile(z) = GetSetting(app_name, second_App_Name, "MoveOn" & z.ToString, "")
+            Hardkeys_to_move_mediafile(z) = GetSetting(App_name, Second_App_Name, "MoveOn" & z.ToString, "")
         Next
-        hardkeys_to_move_mediafile(10) = GetSetting(app_name, second_App_Name, "MoveOn0", "")
+        Hardkeys_to_move_mediafile(10) = GetSetting(App_name, Second_App_Name, "MoveOn0", "")
 
-        Dim recentFoldersString As String = GetSetting(app_name, second_App_Name, "RecentFolders", "")
-        If Not String.IsNullOrEmpty(recentFoldersString) Then
-            recentFolders = recentFoldersString.Split("|"c).ToList()
-            recentFolders.RemoveAll(Function(x) String.IsNullOrEmpty(x))
+        Dim recent_Folders_Data As String = GetSetting(App_name, Second_App_Name, "RecentFolders", "")
+        If Not String.IsNullOrEmpty(recent_Folders_Data) Then
+            recent_Folder_List = recent_Folders_Data.Split("|"c).ToList()
+            recent_Folder_List.RemoveAll(Function(x) String.IsNullOrEmpty(x))
 
-            For Each folder In recentFolders
+            For Each folder In recent_Folder_List
                 If cmbox_Media_Folder.Items.Count < max_Namber_of_Recent_Folders Then
                     cmbox_Media_Folder.Items.Add(folder)
                 End If
@@ -1768,63 +1774,64 @@ Public Class Main_Form
         End If
 
         If Table_Form.chkbox_Independent_Thread_For_File_Operation IsNot Nothing Then
-            Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked = GetSetting(app_name, second_App_Name, "UseIndependentThreadForOperationsWithFiles", "0") = "1"
+            Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked = GetSetting(App_name, Second_App_Name, "UseIndependentThreadForOperationsWithFiles", "0") = "1"
         End If
 
         If My.Application.CommandLineArgs.Count > 0 Then
             Dim fullCommandLine As String = String.Join(" ", My.Application.CommandLineArgs.ToArray())
             ProcessArgument(fullCommandLine)
         Else
-            currentFolderPath = GetSetting(app_name, second_App_Name, "ImageFolder", "")
-            If Not currentFolderPath = "" Then
-                totalFilesCount = 0
+            Current_Folder_Path = GetSetting(App_name, Second_App_Name, "ImageFolder", "")
+            If Not Current_Folder_Path = "" Then
+                total_File_Count = 0
                 Try
-                    totalFilesCount = My.Computer.FileSystem.GetDirectoryInfo(currentFolderPath).EnumerateFiles.Count
+                    total_File_Count = My.Computer.FileSystem.GetDirectoryInfo(Current_Folder_Path).EnumerateFiles.Count
                 Catch ex As Exception
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1139: ERR: " & ex.Message)
                 End Try
 
-                Integer.TryParse(GetSetting(app_name, second_App_Name, "LastCounter"), currentFileIndex)
-                If Not totalFilesCount = 0 AndAlso
-                currentFileIndex > 0 AndAlso
-                currentFileIndex < totalFilesCount Then
+                Integer.TryParse(GetSetting(App_name, Second_App_Name, "LastCounter"), current_File_Index)
 
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0040: folder and file found in savings: " & currentFolderPath & " - " & currentFileIndex.ToString)
+                If Not total_File_Count = 0 AndAlso
+                current_File_Index > 0 AndAlso
+                current_File_Index < total_File_Count Then
+
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0040: folder and file found in savings: " & Current_Folder_Path & " - " & current_File_Index.ToString)
 
                     ReadShowMediaFile("ReadFiles")
                 Else
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1157: folder set from savings, but saved file is not found: " & currentFolderPath & " - " & currentFileIndex.ToString)
-                    currentFileIndex = 1
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1157: folder set from savings, but saved file is not found: " & Current_Folder_Path & " - " & current_File_Index.ToString)
+                    current_File_Index = 1
 
-                    If Not totalFilesCount = 0 Then ReadShowMediaFile("ReadFolderAndFile")
+                    If Not total_File_Count = 0 Then ReadShowMediaFile("ReadFolderAndFile")
                 End If
             Else
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1158: no folder saved")
             End If
         End If
 
-        If isTableFormOpen Then
+        If is_Table_Form_Open Then
             Table_Form.Show()
         End If
-        isTextBoxEdition = False
+        is_TextBox_Editing = False
 
-        Dim appTopInt As Integer = firstRunTop
-        Dim appLeftInt As Integer = firstRunLeft
-        Dim appWidthInt As Integer = firstRunWidth
-        Dim appHeightInt As Integer = firstRunHeight
+        Dim app_Top_Int As Integer = first_run_top
+        Dim app_Left_Int As Integer = first_run_left
+        Dim app_Width_Int As Integer = first_run_width
+        Dim app_Height_Int As Integer = first_run_height
 
-        Integer.TryParse(GetSetting(app_name, second_App_Name, "AppTop"), appTopInt)
-        Integer.TryParse(GetSetting(app_name, second_App_Name, "AppLeft"), appLeftInt)
-        Integer.TryParse(GetSetting(app_name, second_App_Name, "AppWidth"), appWidthInt)
-        Integer.TryParse(GetSetting(app_name, second_App_Name, "AppHeight"), appHeightInt)
+        Integer.TryParse(GetSetting(App_name, Second_App_Name, "AppTop"), app_Top_Int)
+        Integer.TryParse(GetSetting(App_name, Second_App_Name, "AppLeft"), app_Left_Int)
+        Integer.TryParse(GetSetting(App_name, Second_App_Name, "AppWidth"), app_Width_Int)
+        Integer.TryParse(GetSetting(App_name, Second_App_Name, "AppHeight"), app_Height_Int)
 
-        appTopInt = If(appTopInt < 0 OrElse appTopInt > positionLimitTop, firstRunTop, appTopInt)
-        appLeftInt = If(appLeftInt < 0 OrElse appLeftInt > positionLimitLeft, firstRunLeft, appLeftInt)
-        appWidthInt = If(appWidthInt < positionLimitWidthLow OrElse appWidthInt > positionLimitWidthTop, firstRunWidth, appWidthInt)
-        appHeightInt = If(appHeightInt < positionLimitHeightLow OrElse appHeightInt > positionLimitHeightTop, firstRunHeight, appHeightInt)
+        app_Top_Int = If(app_Top_Int < 0 OrElse app_Top_Int > main_form_position_Limit_Top, first_run_top, app_Top_Int)
+        app_Left_Int = If(app_Left_Int < 0 OrElse app_Left_Int > main_form_position_Limit_Left, first_run_left, app_Left_Int)
+        app_Width_Int = If(app_Width_Int < main_form_position_Limit_Width_Low OrElse app_Width_Int > main_form_position_Limit_Width, first_run_width, app_Width_Int)
+        app_Height_Int = If(app_Height_Int < main_form_position_Limit_Height_Low OrElse app_Height_Int > main_form_position_Limit_Height, first_run_height, app_Height_Int)
 
-        Me.SetBounds(appLeftInt, appTopInt, appWidthInt, appHeightInt)
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1950: Form_Sizes: " & appLeftInt.ToString & " - " & appTopInt.ToString & " " & appWidthInt.ToString & " - " & appHeightInt.ToString)
+        Me.SetBounds(app_Left_Int, app_Top_Int, app_Width_Int, app_Height_Int)
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1950: Form_Sizes: " & app_Left_Int.ToString & " - " & app_Top_Int.ToString & " " & app_Width_Int.ToString & " - " & app_Height_Int.ToString)
 
         ResizeDebounceTimer.Stop()
 
@@ -1849,27 +1856,27 @@ Public Class Main_Form
 
     Private Function CheckCornerColorsAndSetBeginPoint(list_of_corner_colors As List(Of System.Drawing.Color)) As Long
 
-        Dim count As Integer = list_of_corner_colors.Count
-        If count > percent_of_color_smooth_To_Remove Then
-            Dim removeCount As Integer = CInt(Math.Floor(count * percent_of_color_smooth_To_Remove / 100))
+        Dim corner_colors_Count As Integer = list_of_corner_colors.Count
+        If corner_colors_Count > percent_of_color_smooth_To_Remove Then
+            Dim color_Trim_Count As Integer = CInt(Math.Floor(corner_colors_Count * percent_of_color_smooth_To_Remove / 100))
 
             ' Prepare sorted lists for each channel
-            Dim sortedR = list_of_corner_colors.Select(Function(c) CInt(c.R)).OrderBy(Function(v) v).ToList()
-            Dim sortedG = list_of_corner_colors.Select(Function(c) CInt(c.G)).OrderBy(Function(v) v).ToList()
-            Dim sortedB = list_of_corner_colors.Select(Function(c) CInt(c.B)).OrderBy(Function(v) v).ToList()
+            Dim sorted_R = list_of_corner_colors.Select(Function(c) CInt(c.R)).OrderBy(Function(v) v).ToList()
+            Dim sorted_G = list_of_corner_colors.Select(Function(c) CInt(c.G)).OrderBy(Function(v) v).ToList()
+            Dim sorted_B = list_of_corner_colors.Select(Function(c) CInt(c.B)).OrderBy(Function(v) v).ToList()
 
             ' Remove bottom and top 10%
-            sortedR = sortedR.Skip(removeCount).Take(sortedR.Count - 2 * removeCount).ToList()
-            sortedG = sortedG.Skip(removeCount).Take(sortedG.Count - 2 * removeCount).ToList()
-            sortedB = sortedB.Skip(removeCount).Take(sortedB.Count - 2 * removeCount).ToList()
+            sorted_R = sorted_R.Skip(color_Trim_Count).Take(sorted_R.Count - 2 * color_Trim_Count).ToList()
+            sorted_G = sorted_G.Skip(color_Trim_Count).Take(sorted_G.Count - 2 * color_Trim_Count).ToList()
+            sorted_B = sorted_B.Skip(color_Trim_Count).Take(sorted_B.Count - 2 * color_Trim_Count).ToList()
 
             ' Calculate min, max, and diffSum on trimmed lists
-            Dim maxR As Integer = sortedR.Max()
-            Dim minR As Integer = sortedR.Min()
-            Dim maxG As Integer = sortedG.Max()
-            Dim minG As Integer = sortedG.Min()
-            Dim maxB As Integer = sortedB.Max()
-            Dim minB As Integer = sortedB.Min()
+            Dim maxR As Integer = sorted_R.Max()
+            Dim minR As Integer = sorted_R.Min()
+            Dim maxG As Integer = sorted_G.Max()
+            Dim minG As Integer = sorted_G.Min()
+            Dim maxB As Integer = sorted_B.Max()
+            Dim minB As Integer = sorted_B.Min()
 
             Return (maxR - minR) + (maxG - minG) + (maxB - minB)
 
@@ -1893,34 +1900,34 @@ Public Class Main_Form
         '  Dim sw As New Stopwatch()
         '   sw.Start()
 
-        If is_Pespective AndAlso
-            (isPictureBox1Visible OrElse
-            isPictureBox2Visible) AndAlso
-            (Not is_slide_show_mode Or
+        If Is_Pespective AndAlso
+            (is_PictureBox1_Visible OrElse
+            is_PictureBox2_Visible) AndAlso
+            (Not Is_slide_show_mode Or
             SlideShowTimer.Interval > slideshow_limit_to_change_color) AndAlso
-            lastPerspectiveDraw < DateTime.Now.Subtract(TimeSpan.FromMilliseconds(how_long_wait_before_draw_perspective)) Then
+            last_Perspective_Draw_Time < DateTime.Now.Subtract(TimeSpan.FromMilliseconds(how_long_wait_before_draw_perspective)) Then
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1129: corners redrawn")
-            lastPerspectiveDraw = DateTime.Now()
+            last_Perspective_Draw_Time = DateTime.Now()
 
-            Dim bmp As Bitmap = Nothing
-            Dim pic_to As Int16 = 0
+            Dim active_Bitmap As Bitmap = Nothing
+            Dim active_PictureBox_Index As Int16 = 0
             Dim is_perspective_drown As Boolean = False
 
-            If isPictureBox1Visible Then
-                bmp = CType(Picture_Box_1.Image, Bitmap)
-                pic_to = 1
-            ElseIf isPictureBox2Visible Then
-                bmp = CType(Picture_Box_2.Image, Bitmap)
-                pic_to = 2
+            If is_PictureBox1_Visible Then
+                active_Bitmap = CType(Picture_Box_1.Image, Bitmap)
+                active_PictureBox_Index = 1
+            ElseIf is_PictureBox2_Visible Then
+                active_Bitmap = CType(Picture_Box_2.Image, Bitmap)
+                active_PictureBox_Index = 2
             End If
 
-            If bmp IsNot Nothing AndAlso
-                    bmp.Width > 1 AndAlso
-                    bmp.Height > 1 Then
+            If active_Bitmap IsNot Nothing AndAlso
+                    active_Bitmap.Width > 1 AndAlso
+                    active_Bitmap.Height > 1 Then
 
-                Dim bH = bmp.Height - 1
-                Dim bW = bmp.Width - 1
+                Dim bH = active_Bitmap.Height - 1
+                Dim bW = active_Bitmap.Width - 1
 
                 '  Try
                 Dim bitmap_proportion = bW / bH
@@ -1933,43 +1940,43 @@ Public Class Main_Form
 
                     Dim proportionalScale_H = h / bH
                     Dim proportionalScale_W = w / bW
-                    Dim canvas As New Bitmap(w + 1, h + 1)
+                    Dim Perspective_Bitmap As New Bitmap(w + 1, h + 1)
 
                     Dim brush_wide = 1
                     Dim brush_size_H = CInt(proportionalScale_H * brush_wide + 1)
                     Dim brush_size_W = CInt(proportionalScale_W * brush_wide + 1)
                     Dim brush_size_line = 0
                     Dim middle_point = 0
-                    Dim curs = 0
+                    Dim color_Sample_Count = 0
                     Dim begin_point As New Point(0, 0)
                     Dim end_point As New Point(0, 0)
                     Dim to_draw_the_wide As Boolean = False
                     Dim diffSum As Long = 0
 
                     Dim list_of_corner_colors As New List(Of System.Drawing.Color)
-                    Dim threshold = (percent_of_color_deviation / 100) * 255 * 3
+                    Dim color_deviation_threshold = (percent_of_color_deviation / 100) * 255 * 3
 
                     If bitmap_proportion < pictureBox_proportion Then
                         'left
                         For y As Integer = 0 To h Step step_size_while_color_Search
-                            list_of_corner_colors.Add(bmp.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
-                            curs += 1
+                            list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
+                            color_Sample_Count += 1
                         Next
 
                         If list_of_corner_colors.Count > 0 Then
 
                             diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
 
-                            If diffSum < threshold Then
+                            If diffSum < color_deviation_threshold Then
                                 begin_point = New Point(0, CInt(h / 2))
                                 end_point = New Point(CInt(w / 2), CInt(h / 2))
                                 brush_size_line = h + 1
 
-                                Using g As Graphics = Graphics.FromImage(canvas)
-                                    If curs > 0 Then
-                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / curs)
-                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / curs)
-                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / curs)
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    If color_Sample_Count > 0 Then
+                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
+                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
+                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
 
                                         avgR = Math.Min(Math.Max(avgR, 0), 255)
                                         avgG = Math.Min(Math.Max(avgG, 0), 255)
@@ -1988,12 +1995,12 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For y As Integer = 0 To h Step brush_wide
-                                    list_of_corner_colors.Add(bmp.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
+                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
                                 Next
 
                                 middle_point = CInt(w / 2)
 
-                                Using g As Graphics = Graphics.FromImage(canvas)
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
                                     For y As Integer = 0 To h Step brush_wide
 
                                         begin_point = New Point(0, y)
@@ -2007,29 +2014,29 @@ Public Class Main_Form
                             End If
                         End If
 
-                        curs = 0
+                        color_Sample_Count = 0
                         list_of_corner_colors.Clear()
 
                         'right
                         For y As Integer = 0 To h Step step_size_while_color_Search
-                            list_of_corner_colors.Add(bmp.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
-                            curs += 1
+                            list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
+                            color_Sample_Count += 1
                         Next
 
                         If list_of_corner_colors.Count > 0 Then
 
                             diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
 
-                            If diffSum < threshold Then
+                            If diffSum < color_deviation_threshold Then
                                 begin_point = New Point(CInt(w / 2), CInt(h / 2))
                                 end_point = New Point(w, CInt(h / 2))
                                 brush_size_line = h
 
-                                Using g As Graphics = Graphics.FromImage(canvas)
-                                    If curs > 0 Then
-                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / curs)
-                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / curs)
-                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / curs)
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    If color_Sample_Count > 0 Then
+                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
+                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
+                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
 
                                         avgR = Math.Min(Math.Max(avgR, 0), 255)
                                         avgG = Math.Min(Math.Max(avgG, 0), 255)
@@ -2048,12 +2055,12 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For y As Integer = 0 To h Step brush_wide
-                                    list_of_corner_colors.Add(bmp.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
+                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
                                 Next
 
                                 middle_point = CInt(w / 2)
 
-                                Using g As Graphics = Graphics.FromImage(canvas)
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
                                     For y As Integer = 0 To h Step brush_wide
 
                                         begin_point = New Point(middle_point, y)
@@ -2071,24 +2078,24 @@ Public Class Main_Form
                     Else
                         'top
                         For x As Integer = 0 To w Step step_size_while_color_Search
-                            list_of_corner_colors.Add(bmp.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
-                            curs += 1
+                            list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
+                            color_Sample_Count += 1
                         Next
 
                         If list_of_corner_colors.Count > 0 Then
 
                             diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
 
-                            If diffSum < threshold Then
+                            If diffSum < color_deviation_threshold Then
                                 begin_point = New Point(CInt(w / 2), 0)
                                 end_point = New Point(CInt(w / 2), CInt(h / 2))
                                 brush_size_line = w
 
-                                Using g As Graphics = Graphics.FromImage(canvas)
-                                    If curs > 0 Then
-                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / curs)
-                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / curs)
-                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / curs)
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    If color_Sample_Count > 0 Then
+                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
+                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
+                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
 
                                         avgR = Math.Min(Math.Max(avgR, 0), 255)
                                         avgG = Math.Min(Math.Max(avgG, 0), 255)
@@ -2107,12 +2114,12 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For x As Integer = 0 To w Step brush_wide
-                                    list_of_corner_colors.Add(bmp.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
+                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
                                 Next
 
                                 middle_point = CInt(h / 2)
 
-                                Using g As Graphics = Graphics.FromImage(canvas)
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
                                     For x As Integer = 0 To w Step brush_wide
 
                                         begin_point = New Point(x, middle_point)
@@ -2126,29 +2133,29 @@ Public Class Main_Form
                             End If
                         End If
 
-                        curs = 0
+                        color_Sample_Count = 0
                         list_of_corner_colors.Clear()
 
                         'buttom
                         For x As Integer = 0 To w Step step_size_while_color_Search
-                            list_of_corner_colors.Add(bmp.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
-                            curs += 1
+                            list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
+                            color_Sample_Count += 1
                         Next
 
                         If list_of_corner_colors.Count > 0 Then
 
                             diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
 
-                            If diffSum < threshold Then
+                            If diffSum < color_deviation_threshold Then
                                 begin_point = New Point(CInt(w / 2), CInt(h / 2))
                                 end_point = New Point(CInt(w / 2), h)
                                 brush_size_line = w
 
-                                Using g As Graphics = Graphics.FromImage(canvas)
-                                    If curs > 0 Then
-                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / curs)
-                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / curs)
-                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / curs)
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    If color_Sample_Count > 0 Then
+                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
+                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
+                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
 
                                         avgR = Math.Min(Math.Max(avgR, 0), 255)
                                         avgG = Math.Min(Math.Max(avgG, 0), 255)
@@ -2167,12 +2174,12 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For x As Integer = 0 To w Step brush_wide
-                                    list_of_corner_colors.Add(bmp.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
+                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
                                 Next
 
                                 middle_point = CInt(h / 2)
 
-                                Using g As Graphics = Graphics.FromImage(canvas)
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
                                     For x As Integer = 0 To w Step brush_wide
 
                                         begin_point = New Point(x, middle_point)
@@ -2189,10 +2196,10 @@ Public Class Main_Form
                     End If
 
                     If is_perspective_drown Then
-                        If pic_to = 1 Then
-                            Picture_Box_1.BackgroundImage = canvas
-                        ElseIf pic_to = 2 Then
-                            Picture_Box_2.BackgroundImage = canvas
+                        If active_PictureBox_Index = 1 Then
+                            Picture_Box_1.BackgroundImage = Perspective_Bitmap
+                        ElseIf active_PictureBox_Index = 2 Then
+                            Picture_Box_2.BackgroundImage = Perspective_Bitmap
                         End If
                     End If
                 End If
@@ -2203,12 +2210,12 @@ Public Class Main_Form
 
                 Try
                     If Not is_perspective_drown Then
-                        If pic_to = 1 AndAlso
+                        If active_PictureBox_Index = 1 AndAlso
                                 Picture_Box_1.BackgroundImage IsNot Nothing Then
 
                             Picture_Box_1.BackgroundImage = Nothing
 
-                        ElseIf pic_to = 2 AndAlso
+                        ElseIf active_PictureBox_Index = 2 AndAlso
                                 Picture_Box_2.BackgroundImage IsNot Nothing Then
 
                             Picture_Box_2.BackgroundImage = Nothing
@@ -2239,27 +2246,29 @@ Public Class Main_Form
     End Sub
 
     Private Sub HandlePictureBoxMouseDown(sender As Object, e As MouseEventArgs)
-        If isFullScreen AndAlso (e.Button = MouseButtons.Left OrElse e.Button = MouseButtons.Middle) Then
-            Dim clickTime As DateTime = DateTime.Now
+        If is_Full_Screen_Mode AndAlso
+            (e.Button = MouseButtons.Left OrElse e.Button = MouseButtons.Middle) Then
 
-            If (clickTime - lastMediaAreaClickTime).TotalMilliseconds < DoubleClickTimeThreshold Then
+            Dim current_Click_Time As DateTime = DateTime.Now
 
-                isFullScreen = False
+            If (current_Click_Time - last_Media_Area_Click_Time).TotalMilliseconds < DoubleClickTimeThreshold Then
+
+                is_Full_Screen_Mode = False
                 SetViewSizes()
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1150: MediaArea Manual DoubleClick (" & e.Button.ToString & ")")
 
-                lastMediaAreaClickTime = DateTime.MinValue
-                lastMediaAreaClickButton = MouseButtons.None
+                last_Media_Area_Click_Time = DateTime.MinValue
+                last_Media_Area_Click_Button = MouseButtons.None
                 SlideShowStop()
 
                 Return
             End If
 
-            lastMediaAreaClickTime = clickTime
-            lastMediaAreaClickButton = e.Button
+            last_Media_Area_Click_Time = current_Click_Time
+            last_Media_Area_Click_Button = e.Button
         ElseIf (e.Button = MouseButtons.Left OrElse e.Button = MouseButtons.Middle) Then
-            lastMediaAreaClickTime = DateTime.MinValue
-            lastMediaAreaClickButton = MouseButtons.None
+            last_Media_Area_Click_Time = DateTime.MinValue
+            last_Media_Area_Click_Button = MouseButtons.None
         End If
 
         MouseUse(e)
@@ -2281,42 +2290,42 @@ Public Class Main_Form
         If (Control.ModifierKeys And Keys.Alt) = Keys.Alt Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1172: zoom reset")
 
-            Dim isTop = lbl_Status.Top + lbl_Status.Height
+            Dim top_first_row = lbl_Status.Top + lbl_Status.Height
 
-            Picture_Box_1.Top = isTop
+            Picture_Box_1.Top = top_first_row
             Picture_Box_1.Left = left_first_column
             Picture_Box_1.Width = Me.Width
-            Picture_Box_1.Height = Me.Height - isTop
+            Picture_Box_1.Height = Me.Height - top_first_row
 
             Picture_Box_2.Size = Picture_Box_1.Size
             Picture_Box_2.Location = Picture_Box_1.Location
 
-        ElseIf e.Delta <> 0 AndAlso (isPictureBox1Visible OrElse isPictureBox2Visible) AndAlso (Control.ModifierKeys And Keys.Control) = Keys.Control Then
-            Dim zoomFactor As Single = If(e.Delta > 0, 1.1F, 0.9F)
+        ElseIf e.Delta <> 0 AndAlso (is_PictureBox1_Visible OrElse is_PictureBox2_Visible) AndAlso (Control.ModifierKeys And Keys.Control) = Keys.Control Then
+            Dim zoom_Scale_Factor As Single = If(e.Delta > 0, 1.1F, 0.9F)
 
-            Dim oldWidth As Integer = Picture_Box_1.Width
-            Dim oldHeight As Integer = Picture_Box_1.Height
-            Dim oldLeft As Integer = Picture_Box_1.Left
-            Dim oldTop As Integer = Picture_Box_1.Top
+            Dim old_Width As Integer = Picture_Box_1.Width
+            Dim old_Height As Integer = Picture_Box_1.Height
+            Dim old_Left As Integer = Picture_Box_1.Left
+            Dim old_Top As Integer = Picture_Box_1.Top
 
-            Dim newWidth As Integer = CInt(oldWidth * zoomFactor)
-            Dim newHeight As Integer = CInt(oldHeight * zoomFactor)
+            Dim new_Width As Integer = CInt(old_Width * zoom_Scale_Factor)
+            Dim new_Height As Integer = CInt(old_Height * zoom_Scale_Factor)
 
-            Dim mouseX As Integer = e.X - oldLeft
-            Dim mouseY As Integer = e.Y - oldTop
+            Dim mouse_X As Integer = e.X - old_Left
+            Dim mouse_Y As Integer = e.Y - old_Top
 
-            Dim relativeX As Single = CSng(mouseX / oldWidth)
-            Dim relativeY As Single = CSng(mouseY / oldHeight)
+            Dim relative_X As Single = CSng(mouse_X / old_Width)
+            Dim relative_Y As Single = CSng(mouse_Y / old_Height)
 
-            Dim newLeft As Integer = CInt(oldLeft - (newWidth - oldWidth) * relativeX)
-            Dim newTop As Integer = CInt(oldTop - (newHeight - oldHeight) * relativeY)
+            Dim new_Left As Integer = CInt(old_Left - (new_Width - old_Width) * relative_X)
+            Dim new_Top As Integer = CInt(old_Top - (new_Height - old_Height) * relative_Y)
 
-            Picture_Box_1.Width = newWidth
-            Picture_Box_1.Height = newHeight
-            Picture_Box_1.Left = newLeft
-            Picture_Box_1.Top = newTop
+            Picture_Box_1.Width = new_Width
+            Picture_Box_1.Height = new_Height
+            Picture_Box_1.Left = new_Left
+            Picture_Box_1.Top = new_Top
 
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1173: new size: " & newWidth.ToString & "-" & newHeight.ToString & " " & newLeft.ToString & "-" & newTop.ToString)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1173: new size: " & new_Width.ToString & "-" & new_Height.ToString & " " & new_Left.ToString & "-" & new_Top.ToString)
 
             Picture_Box_2.Size = Picture_Box_1.Size
             Picture_Box_2.Location = Picture_Box_1.Location
@@ -2331,7 +2340,7 @@ Public Class Main_Form
                         Case MouseButtons.Left
                             ReadShowMediaFile("ReadNextFile") ' next
                         Case MouseButtons.Right
-                            If Not isWebBrowser1Visible Then
+                            If Not is_WebBrowser_Visible Then
                                 ReadShowMediaFile("ReadPrevFile")
                             End If
                         Case Windows.Forms.MouseButtons.Middle
@@ -2348,41 +2357,43 @@ Public Class Main_Form
 
     Private Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
         Try
-            If currentFolderPath IsNot Nothing Then SaveSetting(app_name, second_App_Name, "ImageFolder", currentFolderPath)
-            If Not currentFileIndex = 0 Then SaveSetting(app_name, second_App_Name, "LastCounter", currentFileIndex.ToString)
+            If Current_Folder_Path IsNot Nothing Then SaveSetting(App_name, Second_App_Name, "ImageFolder", Current_Folder_Path)
+            If Not current_File_Index = 0 Then SaveSetting(App_name, Second_App_Name, "LastCounter", current_File_Index.ToString)
 
-            SaveSetting(app_name, second_App_Name, "chkTopMost", If(chkbox_Top_Most.Checked, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "chkTopMost", If(chkbox_Top_Most.Checked, "1", "0"))
             For z = 0 To 9
                 Try
-                    SaveSetting(app_name, second_App_Name, "MoveOn" & z.ToString, hardkeys_to_move_mediafile(z).ToString)
+                    SaveSetting(App_name, Second_App_Name, "MoveOn" & z.ToString, Hardkeys_to_move_mediafile(z).ToString)
                 Catch ex As Exception
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1180: ERR: " & ex.Message)
                 Finally
-                    hardkeys_to_move_mediafile(z) = Nothing
+                    Hardkeys_to_move_mediafile(z) = Nothing
                 End Try
             Next
 
-            SaveSetting(app_name, second_App_Name, "LngRus", If(is_Russian_Language, "1", "0"))
-            SaveSetting(app_name, second_App_Name, "FirstRun", "0")
-            SaveSetting(app_name, second_App_Name, "CopyMode", If(is_Copying_not_Moving, "1", "0"))
-            SaveSetting(app_name, second_App_Name, "isPerspective", If(is_Pespective, "1", "0"))
-            SaveSetting(app_name, second_App_Name, "TableOpened", If(Table_Form.Visible, "1", "0"))
-            SaveSetting(app_name, second_App_Name, "RunsCount", (applicationRunsCount + 1).ToString)
-            SaveSetting(app_name, second_App_Name, "mediaViewedCount", (mediaViewedCount).ToString)
-            SaveSetting(app_name, second_App_Name, "SortDir", (cmbox_Sort.SelectedIndex).ToString)
-            SaveSetting(app_name, second_App_Name, "color_scheme", (form_Color_Scheme).ToString)
+            SaveSetting(App_name, Second_App_Name, "LngRus", If(Is_Russian_Language, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "FirstRun", "0")
+            SaveSetting(App_name, Second_App_Name, "CopyMode", If(Is_Copying_not_Moving, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "isPerspective", If(Is_Pespective, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "TableOpened", If(Table_Form.Visible, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "RunsCount", (app_Run_Count + 1).ToString)
+            SaveSetting(App_name, Second_App_Name, "mediaViewedCount", (media_View_Count).ToString)
+            SaveSetting(App_name, Second_App_Name, "SortDir", (cmbox_Sort.SelectedIndex).ToString)
+            SaveSetting(App_name, Second_App_Name, "color_scheme", (Form_Color_Scheme).ToString)
 
-            If Me.Top >= 0 Then SaveSetting(app_name, second_App_Name, "AppTop", Me.Top.ToString)
-            If Me.Left >= 0 Then SaveSetting(app_name, second_App_Name, "AppLeft", Me.Left.ToString)
-            If Me.Height >= 200 Then SaveSetting(app_name, second_App_Name, "AppHeight", Me.Height.ToString)
-            If Me.Width >= 320 Then SaveSetting(app_name, second_App_Name, "AppWidth", Me.Width.ToString)
+            SaveSetting(App_name, Second_App_Name, "ShowPictureSizes", If(Is_to_show_picture_sizes, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "ShowFileSizes", If(Is_to_show_file_sizes, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "ShowFileDates", If(Is_to_show_file_datetime, "1", "0"))
 
-            SaveSetting(app_name, second_App_Name, "VideoVolume", videoVolume.ToString("F2"))
+            If Me.Top >= 0 Then SaveSetting(App_name, Second_App_Name, "AppTop", Me.Top.ToString)
+            If Me.Left >= 0 Then SaveSetting(App_name, Second_App_Name, "AppLeft", Me.Left.ToString)
+            If Me.Height >= 200 Then SaveSetting(App_name, Second_App_Name, "AppHeight", Me.Height.ToString)
+            If Me.Width >= 320 Then SaveSetting(App_name, Second_App_Name, "AppWidth", Me.Width.ToString)
 
-            Dim recentFoldersString As String = String.Join("|", recentFolders)
-            SaveSetting(app_name, second_App_Name, "RecentFolders", recentFoldersString)
+            SaveSetting(App_name, Second_App_Name, "VideoVolume", video_Volume_Level.ToString("F2"))
+            SaveSetting(App_name, Second_App_Name, "RecentFolders", String.Join("|", recent_Folder_List))
 
-            SaveSetting(app_name, second_App_Name, "UseIndependentThreadForOperationsWithFiles", If(Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "UseIndependentThreadForOperationsWithFiles", If(Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked, "1", "0"))
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1190: settings are saved")
         Catch ex As Exception
@@ -2391,9 +2402,9 @@ Public Class Main_Form
 
         If BgWorker.IsBusy Then
             BgWorker.CancelAsync()
-            Dim timeout As Integer = 1000
-            Dim startTime As DateTime = DateTime.Now
-            While BgWorker.IsBusy AndAlso (DateTime.Now - startTime).TotalMilliseconds < timeout
+            Dim bgworker_Cancel_Timeout As Integer = 1000
+            Dim bgworker_Cancel_StartTime As DateTime = DateTime.Now
+            While BgWorker.IsBusy AndAlso (DateTime.Now - bgworker_Cancel_StartTime).TotalMilliseconds < bgworker_Cancel_Timeout
                 Thread.Sleep(10)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1210: BgWorker try to CancelAsync")
             End While
@@ -2401,9 +2412,9 @@ Public Class Main_Form
 
         If FileOperationWorker.IsBusy Then
             FileOperationWorker.CancelAsync()
-            Dim timeout As Integer = 5000
-            Dim startTime As DateTime = DateTime.Now
-            While FileOperationWorker.IsBusy AndAlso (DateTime.Now - startTime).TotalMilliseconds < timeout
+            Dim file_operation_cancel_timeout As Integer = 5000
+            Dim file_operation_cancel_start_time As DateTime = DateTime.Now
+            While FileOperationWorker.IsBusy AndAlso (DateTime.Now - file_operation_cancel_start_time).TotalMilliseconds < file_operation_cancel_timeout
                 Thread.Sleep(10)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1220: FileOperationWorker try to CancelAsync")
             End While
@@ -2435,57 +2446,61 @@ Public Class Main_Form
 
     Private Sub RenameCurrentFile()
         Try
-            If Not My.Computer.FileSystem.FileExists(currentFileName) Then
-                lbl_Status.Text = If(is_Russian_Language, "! Файл не найден", "! File not found")
+            If Not My.Computer.FileSystem.FileExists(current_File_Name) Then
+                lbl_Status.Text = If(Is_Russian_Language, "! Файл не найден", "! File not found")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1250: file not found")
                 Return
             End If
-            Dim fileNameWithoutExtension As String = Path.GetFileNameWithoutExtension(currentFileName)
-            Dim fileExtension As String = Path.GetExtension(currentFileName)
-            Dim newFileName As String = InputBox(If(is_Russian_Language, "Введите новое имя файла:", "Enter new file name:"),
-                                            If(is_Russian_Language, "Переименование файла", "Rename File"),
-                                            fileNameWithoutExtension)
-            If String.IsNullOrEmpty(newFileName) Then
+            Dim current_File_Name_Without_Extension As String = Path.GetFileNameWithoutExtension(current_File_Name)
+            Dim current_File_Extension As String = Path.GetExtension(current_File_Name)
+            Dim new_File_Name As String = InputBox(If(Is_Russian_Language, "Введите новое имя файла:", "Enter new file name:"),
+                                            If(Is_Russian_Language, "Переименование файла", "Rename File"),
+                                            current_File_Name_Without_Extension)
+            If String.IsNullOrEmpty(new_File_Name) Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1260: empty new file name - no rename")
                 Return
             End If
-            Dim directory As String = Path.GetDirectoryName(currentFileName)
-            Dim newFullPath As String = Path.Combine(directory, newFileName & fileExtension)
-            If newFullPath = currentFileName Then
-                lbl_Status.Text = If(is_Russian_Language, "! Имя не изменено", "! Name not changed")
+
+            Dim current_Directory_Path As String = Path.GetDirectoryName(current_File_Name)
+            Dim new_File_Full_Path As String = Path.Combine(current_Directory_Path, new_File_Name & current_File_Extension)
+            If new_File_Full_Path = current_File_Name Then
+                lbl_Status.Text = If(Is_Russian_Language, "! Имя не изменено", "! Name not changed")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1270: file is not new")
                 Return
             End If
-            My.Computer.FileSystem.RenameFile(currentFileName, newFileName & fileExtension)
-            If useArray Then
-                filesArray(currentFileIndex) = newFullPath
+
+            RenameFile(current_File_Name, new_File_Name & current_File_Extension)
+
+
+            If is_Files_Array_Active Then
+                files_Array(current_File_Index) = new_File_Full_Path
             Else
-                filesList(currentFileIndex) = newFullPath
+                files_List(current_File_Index) = new_File_Full_Path
             End If
-            currentFileName = newFullPath
-            lbl_Status.Text = If(is_Russian_Language, "Файл переименован: " & newFileName & fileExtension, "File renamed: " & newFileName & fileExtension)
+            current_File_Name = new_File_Full_Path
+            lbl_Status.Text = If(Is_Russian_Language, "Файл переименован: " & new_File_Name & current_File_Extension, "File renamed: " & new_File_Name & current_File_Extension)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1280: file is renamed")
 
             ReadShowMediaFile("SetFile")
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1290: ERR: " & ex.Message)
             MsgBox("E011 " & ex.Message)
-            lbl_Status.Text = If(is_Russian_Language, "! Ошибка переименования", "! Rename error")
+            lbl_Status.Text = If(Is_Russian_Language, "! Ошибка переименования", "! Rename error")
         End Try
     End Sub
 
     Public Function GetWas_slideshow() As Boolean
-        Return is_slide_show_mode
+        Return Is_slide_show_mode
     End Function
 
-    Public Sub KeybUse(e As KeyEventArgs, was_slideshow As Boolean)
+    Public Sub KeybUse(e As KeyEventArgs, was_Slide_Show_Mode As Boolean)
         SlideShowStop()
-        isSlideShowRandom = False
+        is_Slide_Show_Random_Mode = False
 
         If Me.cmbox_Media_Folder.Focused Then
             If e.KeyCode = Keys.Enter AndAlso cmbox_Media_Folder.Text <> "" Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1300: Enter pressed")
-                currentFolderPath = cmbox_Media_Folder.Text
+                Current_Folder_Path = cmbox_Media_Folder.Text
                 ReadShowMediaFile("ReadFolderAndFile")
             Else
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1302: key skip - in editing")
@@ -2497,14 +2512,14 @@ Public Class Main_Form
             Select Case e.KeyCode
                 Case Keys.PageDown
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1600: +100")
-                    currentFileIndex = currentFileIndex + 100
+                    current_File_Index += 100
                     ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(is_Russian_Language, "+100 файлов", "+100 files")
+                    lbl_Status.Text = If(Is_Russian_Language, "+100 файлов", "+100 files")
                 Case Keys.PageUp
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1610: -100")
-                    currentFileIndex = currentFileIndex - 100
+                    current_File_Index -= 100
                     ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(is_Russian_Language, "-100 файлов", "-100 files")
+                    lbl_Status.Text = If(Is_Russian_Language, "-100 файлов", "-100 files")
             End Select
         Else
             Select Case e.KeyCode
@@ -2520,24 +2535,24 @@ Public Class Main_Form
                     SetSlideShow()
                 Case Keys.F6
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1340: to rename")
-                    If Not String.IsNullOrEmpty(currentFileName) Then
+                    If Not String.IsNullOrEmpty(current_File_Name) Then
                         RenameCurrentFile()
                     Else
-                        lbl_Status.Text = If(is_Russian_Language, "! Нет файла для переименования", "! No file to rename")
+                        lbl_Status.Text = If(Is_Russian_Language, "! Нет файла для переименования", "! No file to rename")
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1350: No file to rename")
                     End If
                 Case Keys.I, Keys.F5
                     SetRandomSlideShow()
                 Case Keys.Home, Keys.H, Keys.BrowserHome
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1370: to first file")
-                    currentFileIndex = 0
+                    current_File_Index = 0
                     ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(is_Russian_Language, "первый файл", "first file")
+                    lbl_Status.Text = If(Is_Russian_Language, "первый файл", "first file")
                 Case Keys.End, Keys.E, Keys.L, Keys.BrowserStop
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1380: to last file")
-                    currentFileIndex = totalFilesCount
+                    current_File_Index = total_File_Count
                     ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(is_Russian_Language, "последний файл", "last file")
+                    lbl_Status.Text = If(Is_Russian_Language, "последний файл", "last file")
                 Case Keys.D, Keys.Delete
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1390: to delete")
                     ReadShowMediaFile("DeleteFile")
@@ -2574,13 +2589,13 @@ Public Class Main_Form
                 Case Keys.R
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1500: Rotate")
                     Try
-                        If isSecondaryPictureBoxActive Then
-                            If isPictureBox2Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
+                        If is_Second_PictureBox_Active Then
+                            If is_PictureBox2_Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
                                 Picture_Box_2.Image.RotateFlip(RotateFlipType.Rotate90FlipNone)
                                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1510: P2 Rotated")
                             End If
                         Else
-                            If isPictureBox1Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
+                            If is_PictureBox1_Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
                                 Picture_Box_1.Image.RotateFlip(RotateFlipType.Rotate90FlipNone)
                                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1520: P1 Rotated")
                             End If
@@ -2592,13 +2607,13 @@ Public Class Main_Form
                 Case Keys.T
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1540: Rev Rotate")
                     Try
-                        If isSecondaryPictureBoxActive Then
-                            If isPictureBox2Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
+                        If is_Second_PictureBox_Active Then
+                            If is_PictureBox2_Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
                                 Picture_Box_2.Image.RotateFlip(RotateFlipType.Rotate270FlipNone)
                                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1530: P2 Rotated")
                             End If
                         Else
-                            If isPictureBox1Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
+                            If is_PictureBox1_Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
                                 Picture_Box_1.Image.RotateFlip(RotateFlipType.Rotate270FlipNone)
                                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1540: P1 Rotated")
                             End If
@@ -2609,14 +2624,14 @@ Public Class Main_Form
                     End Try
                 Case Keys.Up
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1580: -10")
-                    currentFileIndex = currentFileIndex - 10
+                    current_File_Index -= 10
                     ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(is_Russian_Language, "-10 файлов", "-10 files")
+                    lbl_Status.Text = If(Is_Russian_Language, "-10 файлов", "-10 files")
                 Case Keys.Down
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1590: +10")
-                    currentFileIndex = currentFileIndex + 10
+                    current_File_Index += 10
                     ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(is_Russian_Language, "+10 файлов", "+10 files")
+                    lbl_Status.Text = If(Is_Russian_Language, "+10 файлов", "+10 files")
                 Case Keys.F1
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1620: F1 help")
                     lbl_Help_Info.Visible = True
@@ -2624,13 +2639,16 @@ Public Class Main_Form
                 Case Keys.F2
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1630: F2")
                     Table_Form.Show()
+                Case Keys.F3
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1630: F5")
+                    ShowImagePanelForm()
                 Case Keys.U
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1640: UnDo")
                     Undo()
                 Case Keys.Escape, Keys.X, Keys.Q
-                    If isFullScreen Then
+                    If is_Full_Screen_Mode Then
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1641: ESC to normal")
-                        isFullScreen = False
+                        is_Full_Screen_Mode = False
                         SetViewSizes()
                     Else
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1642: ESC to close")
@@ -2656,44 +2674,45 @@ Public Class Main_Form
         MouseUse(e)
     End Sub
 
-    Private Sub PoMove(ByVal moveSec As Integer)
-        Dim moveTo As String = hardkeys_to_move_mediafile(moveSec)
-        Dim textKey As String = moveSec.ToString
-        If textKey = "10" Then textKey = "0"
-        If moveTo = "" Then
-            lbl_Status.Text = If(is_Russian_Language, "! Нет каталога-получателя для клавиши " & textKey, "! No dest folder set with key " & textKey)
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1680: No dest folder set with key " & textKey)
+    Private Sub PoMove(ByVal move_Slot_index As Integer)
+        Dim destination_Folder_Path As String = Hardkeys_to_move_mediafile(move_Slot_index)
+        Dim move_Slot_Key As String = move_Slot_index.ToString
+        If move_Slot_Key = "10" Then move_Slot_Key = "0"
+
+        If destination_Folder_Path = "" Then
+            lbl_Status.Text = If(Is_Russian_Language, "! Нет каталога-получателя для клавиши " & move_Slot_Key, "! No dest folder set with key " & move_Slot_Key)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1680: No dest folder set with key " & move_Slot_Key)
         Else
-            If currentFileName <> "" Then
+            If current_File_Name <> "" Then
                 Try
-                    Dim newDest As String = moveTo
-                    Dim testFile As System.IO.FileInfo
-                    testFile = My.Computer.FileSystem.GetFileInfo(currentFileName)
-                    newDest = newDest & "\" & testFile.Name
-                    historySourceFileName = currentFileName
-                    historyDestinationFileName = newDest
+                    Dim destination_Folder_Full_Path As String = destination_Folder_Path
+                    Dim source_File_Info As System.IO.FileInfo
+                    source_File_Info = My.Computer.FileSystem.GetFileInfo(current_File_Name)
+                    destination_Folder_Full_Path = destination_Folder_Full_Path & "\" & source_File_Info.Name
+                    history_Source_File_Name = current_File_Name
+                    history_Destination_File_Name = destination_Folder_Full_Path
 
                     If Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked Then
-                        If is_Copying_not_Moving Then
-                            currentFileOperation = "Copy"
-                            currentFileOperationArgs = New String() {currentFileName, newDest, textKey}
-                            lbl_Status.Text = If(is_Russian_Language, "!Ждите.. Файл копируется (" & textKey & ") в каталог " & newDest, "!Wait.. File copying (" & textKey & ") to " & newDest)
+                        If Is_Copying_not_Moving Then
+                            current_File_Operation = "Copy"
+                            current_File_Operation_Args = New String() {current_File_Name, destination_Folder_Full_Path, move_Slot_Key}
+                            lbl_Status.Text = If(Is_Russian_Language, "!Ждите.. Файл копируется (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "!Wait.. File copying (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
                             FileOperationWorker.RunWorkerAsync()
 
-                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1690: file is copied ASYNC to " & newDest)
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1690: file is copied ASYNC to " & destination_Folder_Full_Path)
 
                             ReadShowMediaFile("ReadNextFile")
                         Else
-                            currentFileOperation = "Move"
-                            currentFileOperationArgs = New String() {currentFileName, newDest, textKey}
+                            current_File_Operation = "Move"
+                            current_File_Operation_Args = New String() {current_File_Name, destination_Folder_Full_Path, move_Slot_Key}
 
-                            If isSecondaryPictureBoxActive Then
-                                If isPictureBox2Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
+                            If is_Second_PictureBox_Active Then
+                                If is_PictureBox2_Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
                                     Picture_Box_2.Image?.Dispose()
                                     Picture_Box_2.Image = Nothing
                                 End If
                             Else
-                                If isPictureBox1Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
+                                If is_PictureBox1_Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
                                     Picture_Box_1.Image?.Dispose()
                                     Picture_Box_1.Image = Nothing
                                 End If
@@ -2703,44 +2722,44 @@ Public Class Main_Form
                             If Web_View2 IsNot Nothing Then
                                 Web_View2.Source = New Uri("about:blank")
                             End If
-                            lbl_Status.Text = If(is_Russian_Language, "!Ждите.. Файл переносится (" & textKey & ") в каталог " & newDest, "!Wait.. File moving (" & textKey & ") to " & newDest)
+                            lbl_Status.Text = If(Is_Russian_Language, "!Ждите.. Файл переносится (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "!Wait.. File moving (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
 
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1700: move async run")
 
                             FileOperationWorker.RunWorkerAsync()
-                            If useArray Then
-                                filesArray = RemoveAt(filesArray, currentFileIndex)
+                            If is_Files_Array_Active Then
+                                files_Array = RemoveAt(files_Array, current_File_Index)
                             Else
-                                filesList.RemoveAt(currentFileIndex)
+                                files_List.RemoveAt(current_File_Index)
                             End If
-                            totalFilesCount -= 1
-                            If currentFileIndex > (totalFilesCount - 1) Then currentFileIndex = totalFilesCount - 1
+                            total_File_Count -= 1
+                            If current_File_Index > (total_File_Count - 1) Then current_File_Index = total_File_Count - 1
 
-                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1705: file is moved ASYNC to " & newDest)
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1705: file is moved ASYNC to " & destination_Folder_Full_Path)
 
                             ReadShowMediaFile("SetFile")
                         End If
                     Else
-                        If is_Copying_not_Moving Then
+                        If Is_Copying_not_Moving Then
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1710: copy run")
 
-                            lbl_Status.Text = If(is_Russian_Language, "!Ждите.. Файл копируется (" & textKey & ") в каталог " & newDest, "!Wait.. File copying (" & textKey & ") to " & newDest)
-                            My.Computer.FileSystem.CopyFile(currentFileName, newDest)
-                            lbl_Status.Text = If(is_Russian_Language, "файл скопирован (" & textKey & ") в каталог " & newDest, "file copied (" & textKey & ") to " & newDest)
+                            lbl_Status.Text = If(Is_Russian_Language, "!Ждите.. Файл копируется (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "!Wait.. File copying (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
+                            CopyFile(current_File_Name, destination_Folder_Full_Path)
+                            lbl_Status.Text = If(Is_Russian_Language, "файл скопирован (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "file copied (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
 
-                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1715: file is copied to " & newDest)
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1715: file is copied to " & destination_Folder_Full_Path)
 
                             ReadShowMediaFile("ReadNextFile")
                         Else
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1720: move run")
 
-                            If isSecondaryPictureBoxActive Then
-                                If isPictureBox1Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
+                            If is_Second_PictureBox_Active Then
+                                If is_PictureBox1_Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
                                     Picture_Box_2.Image?.Dispose()
                                     Picture_Box_2.Image = Nothing
                                 End If
                             Else
-                                If isPictureBox1Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
+                                If is_PictureBox1_Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
                                     Picture_Box_1.Image?.Dispose()
                                     Picture_Box_1.Image = Nothing
                                 End If
@@ -2750,18 +2769,20 @@ Public Class Main_Form
                             If Web_View2 IsNot Nothing Then
                                 Web_View2.Source = New Uri("about:blank")
                             End If
-                            lbl_Status.Text = If(is_Russian_Language, "!Ждите.. Файл переносится (" & textKey & ") в каталог " & newDest, "!Wait.. File moving (" & textKey & ") to " & newDest)
-                            My.Computer.FileSystem.MoveFile(currentFileName, newDest)
-                            If useArray Then
-                                filesArray = RemoveAt(filesArray, currentFileIndex)
-                            Else
-                                filesList.RemoveAt(currentFileIndex)
-                            End If
-                            totalFilesCount -= 1
-                            If currentFileIndex > (totalFilesCount - 1) Then currentFileIndex = totalFilesCount - 1
-                            lbl_Status.Text = If(is_Russian_Language, "файл перенесен (" & textKey & ") в каталог " & newDest, "file moved (" & textKey & ") to " & newDest)
+                            lbl_Status.Text = If(Is_Russian_Language, "!Ждите.. Файл переносится (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "!Wait.. File moving (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
 
-                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1729: file is moved to " & newDest)
+                            MoveFile(current_File_Name, destination_Folder_Full_Path)
+
+                            If is_Files_Array_Active Then
+                                files_Array = RemoveAt(files_Array, current_File_Index)
+                            Else
+                                files_List.RemoveAt(current_File_Index)
+                            End If
+                            total_File_Count -= 1
+                            If current_File_Index > (total_File_Count - 1) Then current_File_Index = total_File_Count - 1
+                            lbl_Status.Text = If(Is_Russian_Language, "файл перенесен (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "file moved (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
+
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1729: file is moved to " & destination_Folder_Full_Path)
 
                             ReadShowMediaFile("SetFile")
                         End If
@@ -2771,29 +2792,29 @@ Public Class Main_Form
                     MsgBox("E014 " & ex.Message)
                 End Try
             Else
-                lbl_Status.Text = If(is_Russian_Language, "! Нет файла ", "! No file")
+                lbl_Status.Text = If(Is_Russian_Language, "! Нет файла ", "! No file")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1740: No file")
             End If
         End If
     End Sub
 
     Private Sub Undo()
-        If historyDestinationFileName <> "" Then
-            If is_Copying_not_Moving Then
+        If history_Destination_File_Name <> "" Then
+            If Is_Copying_not_Moving Then
                 If Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1750: undo copied async deletion")
 
-                    currentFileOperation = "DeleteUndo"
-                    currentFileOperationArgs = historyDestinationFileName
-                    lbl_Status.Text = If(is_Russian_Language, "!Ждите. Файл удаляется в каталоге " & historyDestinationFileName, "!Wait. File deleting in " & historyDestinationFileName)
+                    current_File_Operation = "DeleteUndo"
+                    current_File_Operation_Args = history_Destination_File_Name
+                    lbl_Status.Text = If(Is_Russian_Language, "!Ждите. Файл удаляется в каталоге " & history_Destination_File_Name, "!Wait. File deleting in " & history_Destination_File_Name)
                     FileOperationWorker.RunWorkerAsync()
                 Else
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1760: undo copied deletion")
                     Try
-                        My.Computer.FileSystem.DeleteFile(historyDestinationFileName)
-                        lbl_Status.Text = If(is_Russian_Language, "файл удален в каталоге " & historyDestinationFileName, "file deleted in " & historyDestinationFileName)
-                        historyDestinationFileName = ""
-                        historySourceFileName = ""
+                        DeleteFile(history_Destination_File_Name)
+                        lbl_Status.Text = If(Is_Russian_Language, "файл удален в каталоге " & history_Destination_File_Name, "file deleted in " & history_Destination_File_Name)
+                        history_Destination_File_Name = ""
+                        history_Source_File_Name = ""
                     Catch ex As Exception
                         MsgBox("E015 " & ex.Message)
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1770: undo E015 " & ex.Message)
@@ -2803,32 +2824,34 @@ Public Class Main_Form
                 If Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1780: undo move async deletion")
 
-                    currentFileOperation = "MoveUndo"
-                    currentFileOperationArgs = New String() {historyDestinationFileName, historySourceFileName}
-                    lbl_Status.Text = If(is_Russian_Language, "!Ждите. Возвращается в каталог " & historySourceFileName, "!Wait. File back to " & historySourceFileName)
+                    current_File_Operation = "MoveUndo"
+                    current_File_Operation_Args = New String() {history_Destination_File_Name, history_Source_File_Name}
+                    lbl_Status.Text = If(Is_Russian_Language, "!Ждите. Возвращается в каталог " & history_Source_File_Name, "!Wait. File back to " & history_Source_File_Name)
                     FileOperationWorker.RunWorkerAsync()
-                    If useArray Then
-                        filesArray = AddAt(filesArray, historySourceFileName, currentFileIndex)
+                    If is_Files_Array_Active Then
+                        files_Array = AddAt(files_Array, history_Source_File_Name, current_File_Index)
                     Else
-                        filesList.Insert(currentFileIndex, historySourceFileName)
+                        files_List.Insert(current_File_Index, history_Source_File_Name)
                     End If
-                    totalFilesCount += 1
+                    total_File_Count += 1
                     ReadShowMediaFile("AfterUndo")
                 Else
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1790: undo move deletion")
                     Try
-                        lbl_Status.Text = If(is_Russian_Language, "!Ждите. Возвращается в каталог " & historySourceFileName, "!Wait. File back to " & historySourceFileName)
-                        My.Computer.FileSystem.MoveFile(historyDestinationFileName, historySourceFileName)
-                        If useArray Then
-                            filesArray = AddAt(filesArray, historySourceFileName, currentFileIndex)
+                        lbl_Status.Text = If(Is_Russian_Language, "!Ждите. Возвращается в каталог " & history_Source_File_Name, "!Wait. File back to " & history_Source_File_Name)
+
+                        MoveFile(history_Destination_File_Name, history_Source_File_Name)
+
+                        If is_Files_Array_Active Then
+                            files_Array = AddAt(files_Array, history_Source_File_Name, current_File_Index)
                         Else
-                            filesList.Insert(currentFileIndex, historySourceFileName)
+                            files_List.Insert(current_File_Index, history_Source_File_Name)
                         End If
-                        totalFilesCount += 1
-                        lbl_Status.Text = If(is_Russian_Language, "файл возвращен в каталог " & historySourceFileName, "file back to " & historySourceFileName)
+                        total_File_Count += 1
+                        lbl_Status.Text = If(Is_Russian_Language, "файл возвращен в каталог " & history_Source_File_Name, "file back to " & history_Source_File_Name)
                         ReadShowMediaFile("AfterUndo")
-                        historyDestinationFileName = ""
-                        historySourceFileName = ""
+                        history_Destination_File_Name = ""
+                        history_Source_File_Name = ""
                     Catch ex As Exception
                         MsgBox("E016 " & ex.Message)
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1800: undo E016 " & ex.Message)
@@ -2840,7 +2863,7 @@ Public Class Main_Form
                 Web_View2.Source = New Uri("about:blank")
             End If
         Else
-            lbl_Status.Text = If(is_Russian_Language, "! Нет истории о переносе", "! No history about moved files")
+            lbl_Status.Text = If(Is_Russian_Language, "! Нет истории о переносе", "! No history about moved files")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1810: No history about moved files")
         End If
     End Sub
@@ -2854,7 +2877,7 @@ Public Class Main_Form
     Private Sub LngCh()
         If lbl_Status.Text = "status" Then lbl_Status.Text = ""
 
-        If is_Russian_Language Then
+        If Is_Russian_Language Then
             lbl_Folder.Text = "Каталог:"
             btn_Prev_File.Text = "<< пред(PgUp)"
             btn_Next_File.Text = "след(PgDn) >>"
@@ -2867,6 +2890,7 @@ Public Class Main_Form
                 "Стрелки вверх-вниз: +10-10 и Shift+ PgDn/PgUp: + 100/ - 100 файлов" & Chr(10) &
                 "Y- случайно, S- случайное слайдшоу, I- слайдшоу. " & Chr(10) &
                 "R/T для поворота картинки. " & Chr(10) &
+                "F3 для просмотра пагнли изображений папки. " & Chr(10) &
                 "F6 для переименования файла. " & Chr(10) &
                 "Или за счет переноса/копирования по папкам клавишами (1,2,3.. - 0). " & Chr(10) &
                 "Или за счет удаления текущего файла (del). " & Chr(10) &
@@ -2878,7 +2902,7 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0030: Russian is set")
         Else
             btn_Language.Text = "RU"
-            is_Russian_Language = False
+            Is_Russian_Language = False
             lbl_Folder.Text = "Folder:"
             btn_Prev_File.Text = "<< (P)rev"
             btn_Next_File.Text = "(N)ext >>"
@@ -2893,6 +2917,7 @@ Public Class Main_Form
                 "Or move/copy files into dest folders by keys (1,2.. - 0). " & Chr(10) &
                 "Or by deleting files (del key). " & Chr(10) &
                 "R/T to rotate the image. " & Chr(10) &
+                "F3 to see the panel of folder's images. " & Chr(10) &
                 "F6 to rename the file. " & Chr(10) &
                 "You can lock Window with folders table and click on key numbers. " & Chr(10) &
                 "(U)ndo last moved action (delete copying file). " & Chr(10) & Chr(10) &
@@ -2902,17 +2927,17 @@ Public Class Main_Form
         End If
     End Sub
 
-    Private Sub butI_Click(sender As Object, e As EventArgs) Handles btn_Review.Click
+    Private Sub ButI_Click(sender As Object, e As EventArgs) Handles btn_Review.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1850: btn_Review clicked")
         FolderSelected()
     End Sub
 
     Private Sub FolderSelected()
-        is_No_Background_Tasks = False
-        If currentFolderPath <> "" Then
+        Is_No_Background_Tasks = False
+        If Current_Folder_Path <> "" Then
             ReadShowMediaFile("ReadFolderAndFile")
         Else
-            If is_Russian_Language Then
+            If Is_Russian_Language Then
                 MsgBox("Укажите каталог с медиа файлами..")
             Else
                 MsgBox("Select folder with media files..")
@@ -2934,7 +2959,7 @@ Public Class Main_Form
         If e.KeyChar = Convert.ToChar(Keys.Enter) Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1870: Enter pressed in folder box")
 
-            currentFolderPath = Me.cmbox_Media_Folder.Text
+            Current_Folder_Path = Me.cmbox_Media_Folder.Text
             FolderSelected()
         End If
     End Sub
@@ -2946,14 +2971,14 @@ Public Class Main_Form
 
     Private Sub SetSlideShow()
 
-        isSlideShowRandom = False
-        Dim newInterval = biggest_slide_show_interval
-        If is_slide_show_mode Then
-            newInterval = CInt(SlideShowTimer.Interval / 2)
-            If newInterval < slide_show_limit Then newInterval = slide_show_limit
+        is_Slide_Show_Random_Mode = False
+        Dim slide_show_new_interval = biggest_slide_show_interval
+        If Is_slide_show_mode Then
+            slide_show_new_interval = CInt(SlideShowTimer.Interval / 2)
+            If slide_show_new_interval < slide_show_limit Then slide_show_new_interval = slide_show_limit
         End If
         SlideShowStart()
-        SlideShowTimer.Interval = newInterval
+        SlideShowTimer.Interval = slide_show_new_interval
 
         ReadShowMediaFile("ReadForSlideShow")
     End Sub
@@ -2965,7 +2990,7 @@ Public Class Main_Form
 
     Private Sub Button7_Click(sender As Object, e As EventArgs) Handles btn_Full_Screen.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1900: btn_Full_Screen")
-        isFullScreen = Not isFullScreen
+        is_Full_Screen_Mode = Not is_Full_Screen_Mode
         SetViewSizes()
     End Sub
 
@@ -2978,7 +3003,7 @@ Public Class Main_Form
         Picture_Box_2.Size = Picture_Box_1.Size
         Picture_Box_2.Location = Picture_Box_1.Location
 
-        If isWebView2Available Then
+        If is_WebView2_Available Then
             Web_View2.Size = Picture_Box_1.Size
             Web_View2.Location = Picture_Box_1.Location
         End If
@@ -2990,14 +3015,14 @@ Public Class Main_Form
         btn_Move_Table.Visible = False
 
         cmbox_Sort.Visible = False
-        Dim the_font = New Font("Arial", 6, FontStyle.Regular)
+        Dim the_Font_For_Fullscreen = New Font("Arial", 6, FontStyle.Regular)
 
         With chkbox_Top_Most
             .Top = top_first_line
             .Left = left_first_column
             .Width = the_Width_For_buttons * 2
             .Height = btn_Select_Folder.Height
-            .Font = the_font
+            .Font = the_Font_For_Fullscreen
             .Visible = True
         End With
         With btn_Select_Folder
@@ -3005,7 +3030,7 @@ Public Class Main_Form
             .Left = chkbox_Top_Most.Left + chkbox_Top_Most.Width + 2
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = the_font
+            .Font = the_Font_For_Fullscreen
             .Visible = True
         End With
         With btn_Review
@@ -3013,15 +3038,23 @@ Public Class Main_Form
             .Left = btn_Select_Folder.Left + btn_Select_Folder.Width + 10
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = the_font
+            .Font = the_Font_For_Fullscreen
             .Visible = True
         End With
-        With btn_Prev_File
+        With btn_Panel
             .Top = top_first_line
             .Left = btn_Review.Left + btn_Review.Width + 20
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = the_font
+            .Font = the_Font_For_Fullscreen
+            .Visible = True
+        End With
+        With btn_Prev_File
+            .Top = top_first_line
+            .Left = btn_Panel.Left + btn_Panel.Width + 20
+            .Width = the_Width_For_buttons * 2
+            .Height = the_Height_For_buttons
+            .Font = the_Font_For_Fullscreen
             .Visible = True
         End With
         With btn_Next_File
@@ -3029,7 +3062,7 @@ Public Class Main_Form
             .Left = btn_Prev_File.Left + btn_Prev_File.Width + 2
             .Width = the_Width_For_buttons * 3
             .Height = the_Height_For_buttons
-            .Font = the_font
+            .Font = the_Font_For_Fullscreen
             .Visible = True
         End With
         With btn_Next_Random
@@ -3037,7 +3070,7 @@ Public Class Main_Form
             .Left = btn_Next_File.Left + btn_Next_File.Width + 2
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = the_font
+            .Font = the_Font_For_Fullscreen
             .Visible = True
         End With
         With btn_Random_Slideshow
@@ -3045,7 +3078,7 @@ Public Class Main_Form
             .Left = btn_Next_Random.Left + btn_Next_Random.Width + 20
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = the_font
+            .Font = the_Font_For_Fullscreen
             .Visible = True
         End With
         With btn_Slideshow
@@ -3053,7 +3086,7 @@ Public Class Main_Form
             .Left = btn_Random_Slideshow.Left + btn_Random_Slideshow.Width + 2
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = the_font
+            .Font = the_Font_For_Fullscreen
             .Visible = True
         End With
         With btn_Rename
@@ -3061,15 +3094,15 @@ Public Class Main_Form
             .Left = left_first_column
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = the_font
+            .Font = the_Font_For_Fullscreen
             .Visible = True
         End With
         With bt_Delete
             .Top = btn_Rename.Top + btn_Rename.Height + 30
             .Left = 0
-            .Width = the_Width_For_buttons * 2
+            .Width = the_Width_For_buttons * 3
             .Height = the_Height_For_buttons
-            .Font = the_font
+            .Font = the_Font_For_Fullscreen
             .Visible = True
         End With
 
@@ -3078,31 +3111,31 @@ Public Class Main_Form
 
     Private Sub Buttons_to_normal()
 
-        Dim isTop = lbl_Status.Top + lbl_Status.Height
+        Dim top_offset_normal = lbl_Status.Top + lbl_Status.Height
 
         lbl_Folder.Visible = True
         btn_Move_Table.Visible = True
 
-        If Not Picture_Box_1.Top = isTop OrElse
+        If Not Picture_Box_1.Top = top_offset_normal OrElse
             Not Picture_Box_1.Width = Me.Width OrElse
-            Not Picture_Box_1.Height = Me.Height - isTop Then
+            Not Picture_Box_1.Height = Me.Height - top_offset_normal Then
 
-            Picture_Box_1.Top = isTop
+            Picture_Box_1.Top = top_offset_normal
             Picture_Box_1.Left = left_first_column
             Picture_Box_1.Width = Me.Width
-            Picture_Box_1.Height = Me.Height - isTop
+            Picture_Box_1.Height = Me.Height - top_offset_normal
 
             Picture_Box_2.Size = Picture_Box_1.Size
             Picture_Box_2.Location = Picture_Box_1.Location
 
-            Dim the_font = New Font("Arial", 7, FontStyle.Regular)
+            Dim the_font_for_normal = New Font("Arial", 7, FontStyle.Regular)
 
             With chkbox_Top_Most
                 .Top = top_first_line
                 .Left = left_first_column
                 .Width = the_Width_For_buttons * 2
                 .Height = btn_Select_Folder.Height
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             With cmbox_Sort
@@ -3110,14 +3143,14 @@ Public Class Main_Form
                 .Left = chkbox_Top_Most.Left + chkbox_Top_Most.Width + 2
                 .Width = the_Width_For_buttons * 3
                 .Height = cmbox_Media_Folder.Height
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             With lbl_Folder
                 .Top = top_first_line
                 .Left = cmbox_Sort.Left + cmbox_Sort.Width + 2
                 .Height = cmbox_Media_Folder.Height
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             With btn_Select_Folder
@@ -3125,7 +3158,7 @@ Public Class Main_Form
                 .Left = cmbox_Media_Folder.Width + cmbox_Media_Folder.Left + 2
                 .Width = the_Width_For_buttons * 2
                 .Height = the_Height_For_buttons
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             With btn_Review
@@ -3133,15 +3166,23 @@ Public Class Main_Form
                 .Left = btn_Select_Folder.Left + btn_Select_Folder.Width + 10
                 .Width = the_Width_For_buttons * 2
                 .Height = the_Height_For_buttons
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
-            With btn_Full_Screen
+            With btn_Panel
                 .Top = top_first_line
                 .Left = btn_Review.Left + btn_Review.Width + 10
                 .Width = the_Width_For_buttons * 2
                 .Height = the_Height_For_buttons
-                .Font = the_font
+                .Font = the_font_for_normal
+                .Visible = True
+            End With
+            With btn_Full_Screen
+                .Top = top_first_line
+                .Left = btn_Panel.Left + btn_Panel.Width + 10
+                .Width = the_Width_For_buttons * 2
+                .Height = the_Height_For_buttons
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             With lbl_Slideshow_Time
@@ -3149,22 +3190,22 @@ Public Class Main_Form
                 .Left = btn_Full_Screen.Left + btn_Full_Screen.Width + 10
                 .Width = the_Width_For_buttons * 4
                 .Height = btn_Select_Folder.Height
-                .Font = the_font
-                .Visible = is_slide_show_mode
+                .Font = the_font_for_normal
+                .Visible = Is_slide_show_mode
             End With
             With btn_Language
                 .Top = top_first_line
                 .Left = btn_Full_Screen.Left + btn_Full_Screen.Width + 20 + the_Width_For_buttons * 4
                 .Width = the_Width_For_buttons * 2
                 .Height = the_Height_For_buttons
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             'second line
             With lbl_File_Number
                 .Top = cmbox_Sort.Top + cmbox_Sort.Height + 2
                 .Left = left_first_column
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             With btn_Prev_File
@@ -3172,7 +3213,7 @@ Public Class Main_Form
                 .Left = cmbox_Media_Folder.Left + 50
                 .Width = the_Width_For_buttons * 6
                 .Height = the_Height_For_buttons
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             With btn_Next_File
@@ -3180,7 +3221,7 @@ Public Class Main_Form
                 .Left = btn_Prev_File.Left + btn_Prev_File.Width + 2
                 .Width = the_Width_For_buttons * 6
                 .Height = the_Height_For_buttons
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             With btn_Next_Random
@@ -3188,7 +3229,7 @@ Public Class Main_Form
                 .Left = btn_Next_File.Left + btn_Next_File.Width + 2
                 .Width = the_Width_For_buttons * 3
                 .Height = the_Height_For_buttons
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             With btn_Random_Slideshow
@@ -3196,7 +3237,7 @@ Public Class Main_Form
                 .Left = btn_Next_Random.Left + btn_Next_Random.Width + 20
                 .Width = the_Width_For_buttons * 3
                 .Height = the_Height_For_buttons
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             With btn_Slideshow
@@ -3204,7 +3245,7 @@ Public Class Main_Form
                 .Left = btn_Random_Slideshow.Left + btn_Random_Slideshow.Width + 2
                 .Width = the_Width_For_buttons * 3
                 .Height = the_Height_For_buttons
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             With btn_Move_Table
@@ -3212,7 +3253,7 @@ Public Class Main_Form
                 .Left = btn_Slideshow.Left + btn_Slideshow.Width + 20
                 .Width = the_Width_For_buttons * 7
                 .Height = the_Height_For_buttons
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             With btn_Rename
@@ -3220,15 +3261,15 @@ Public Class Main_Form
                 .Left = btn_Move_Table.Left + btn_Move_Table.Width + 20
                 .Width = the_Width_For_buttons * 3
                 .Height = the_Height_For_buttons
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             With bt_Delete
                 .Top = btn_Rename.Top
                 .Left = btn_Rename.Left + btn_Rename.Width + 20
-                .Width = the_Width_For_buttons * 3
+                .Width = the_Width_For_buttons * 4
                 .Height = the_Height_For_buttons
-                .Font = the_font
+                .Font = the_font_for_normal
                 .Visible = True
             End With
 
@@ -3241,7 +3282,7 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1920: buttons resized to normal screen")
         End If
 
-        If isWebView2Available Then
+        If is_WebView2_Available Then
             Web_View2.Size = Picture_Box_1.Size
             Web_View2.Location = Picture_Box_1.Location
         End If
@@ -3258,7 +3299,7 @@ Public Class Main_Form
 
     Private Sub SlideShowStop()
         SlideShowTimer().Enabled = False
-        is_slide_show_mode = False
+        Is_slide_show_mode = False
         lbl_Slideshow_Time.Visible = False
     End Sub
 
@@ -3290,20 +3331,20 @@ Public Class Main_Form
 
     Private Sub SlideShowStart()
         SlideShowTimer.Enabled = True
-        is_slide_show_mode = True
+        Is_slide_show_mode = True
         lbl_Slideshow_Time.Visible = True
     End Sub
 
     Private Sub SetRandomSlideShow()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2000: btn_Random_Slideshow")
-        isSlideShowRandom = True
-        Dim newInterval = biggest_slide_show_interval
-        If is_slide_show_mode Then
-            newInterval = CInt(SlideShowTimer.Interval / 2)
-            If newInterval < slide_show_limit Then newInterval = slide_show_limit
+        is_Slide_Show_Random_Mode = True
+        Dim slide_show_new_interval = biggest_slide_show_interval
+        If Is_slide_show_mode Then
+            slide_show_new_interval = CInt(SlideShowTimer.Interval / 2)
+            If slide_show_new_interval < slide_show_limit Then slide_show_new_interval = slide_show_limit
         End If
         SlideShowStart()
-        SlideShowTimer.Interval = newInterval
+        SlideShowTimer.Interval = slide_show_new_interval
 
         ReadShowMediaFile("ReadForSlideShow")
     End Sub
@@ -3316,8 +3357,8 @@ Public Class Main_Form
     Private Sub ButtonLNG_Click(sender As Object, e As EventArgs) Handles btn_Language.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2020: btn_Language")
 
-        is_Russian_Language = Not is_Russian_Language
-        btn_Language.Text = If(is_Russian_Language, "EN", "RU")
+        Is_Russian_Language = Not Is_Russian_Language
+        btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
         LngCh()
         'ReadShowMediaFile("SetFile")
     End Sub
@@ -3325,36 +3366,36 @@ Public Class Main_Form
     Private Sub ButtonRename_Click(sender As Object, e As EventArgs) Handles btn_Rename.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2030: btn_Rename")
 
-        If Not String.IsNullOrEmpty(currentFileName) Then
+        If Not String.IsNullOrEmpty(current_File_Name) Then
             RenameCurrentFile()
         Else
-            lbl_Status.Text = If(is_Russian_Language, "! Нет файла для переименования", "! No file to rename")
+            lbl_Status.Text = If(Is_Russian_Language, "! Нет файла для переименования", "! No file to rename")
         End If
     End Sub
 
     Private Sub CheckWebView2Availability()
-        If isWebView2Available Then Return
+        If is_WebView2_Available Then Return
 
         Try
-            Dim version As String = CoreWebView2Environment.GetAvailableBrowserVersionString()
-            If Not String.IsNullOrEmpty(version) Then
-                isWebView2Available = True
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0006: WebView2 Runtime found, version: " & version)
+            Dim webview2_version_string As String = CoreWebView2Environment.GetAvailableBrowserVersionString()
+            If Not String.IsNullOrEmpty(webview2_version_string) Then
+                is_WebView2_Available = True
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0006: WebView2 Runtime found, version: " & webview2_version_string)
             Else
-                isWebView2Available = False
-                allSupportedExtensions.ExceptWith(webImageFileExtensions)
-                Dim message As String = If(is_Russian_Language, "WebView2 Runtime не установлен. Форматы .webp, .heic, .avif, .svg не поддерживаются. Установите WebView2 для полной функциональности.",
+                is_WebView2_Available = False
+                all_Supported_Extensions.ExceptWith(web_specific_image_extensions)
+                Dim message As String = If(Is_Russian_Language, "WebView2 Runtime не установлен. Форматы .webp, .heic, .avif, .svg не поддерживаются. Установите WebView2 для полной функциональности.",
                                   "WebView2 Runtime is not installed. Formats .webp, .heic, .avif, .svg are not supported. Install WebView2 for full functionality.")
                 lbl_Status.Text = message
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2040: WebView2 Runtime is not found")
             End If
         Catch ex As Exception
-            isWebView2Available = False
-            allSupportedExtensions.ExceptWith(webImageFileExtensions)
-            Dim message As String = If(is_Russian_Language, "Ошибка проверки WebView2: " & ex.Message & vbCrLf & "Форматы .webp, .heic, .avif, .svg не поддерживаются.",
+            is_WebView2_Available = False
+            all_Supported_Extensions.ExceptWith(web_specific_image_extensions)
+            Dim webview2_Error_Message As String = If(Is_Russian_Language, "Ошибка проверки WebView2: " & ex.Message & vbCrLf & "Форматы .webp, .heic, .avif, .svg не поддерживаются.",
                               "Error checking WebView2: " & ex.Message & vbCrLf & "Formats .webp, .heic, .avif, .svg are not supported.")
-            lbl_Status.Text = message
-            'MessageBox.Show(message, If(lngRus, "Ограниченный функционал", "Limited Functionality"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            lbl_Status.Text = webview2_Error_Message
+            'MessageBox.Show(webview2_Error_Message, If(lngRus, "Ограниченный функционал", "Limited Functionality"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2050: WebView2 check failed with error: " & ex.Message)
         End Try
     End Sub
@@ -3362,16 +3403,16 @@ Public Class Main_Form
     Private Sub WebView2_NavigationCompleted(sender As Object, e As CoreWebView2NavigationCompletedEventArgs)
         If e.IsSuccess Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2060: WebView2_NavigationCompleted IsSuccess")
-            isWebView2Loaded = True
-            isWebView2Visible = True
+            is_WebView2_Loaded = True
+            is_WebView2_Visible = True
         Else
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2070: WebView2_NavigationCompleted Error: " & e.WebErrorStatus.ToString())
-            isWebView2Visible = False
+            is_WebView2_Visible = False
         End If
     End Sub
 
     Private Sub InitializeWebView2()
-        If isWebView2Available AndAlso Web_View2 Is Nothing Then
+        If is_WebView2_Available AndAlso Web_View2 Is Nothing Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0008: InitializeWebView2Async")
             Try
                 Web_View2 = New WebView2()
@@ -3388,8 +3429,8 @@ Public Class Main_Form
                     Web_View2.Dispose()
                     Web_View2 = Nothing
                 End If
-                isWebView2Available = False
-                allSupportedExtensions.ExceptWith(webImageFileExtensions)
+                is_WebView2_Available = False
+                all_Supported_Extensions.ExceptWith(web_specific_image_extensions)
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2090: InitializeWebView2Async ERR " & ex.Message)
             End Try
@@ -3402,32 +3443,33 @@ Public Class Main_Form
     End Sub
 
     Private Sub CopyFilePathToClipboard()
-        If Not String.IsNullOrEmpty(currentFileName) Then
+        If Not String.IsNullOrEmpty(current_File_Name) Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2120: Filename sent to clipboard")
-            Clipboard.SetText(currentFileName)
-            lbl_Status.Text = If(is_Russian_Language, "Имя файла скопировано в буфер", "Filename sent to clipboard")
+            CopyTextToClipboard(current_File_Name, lbl_Status, If(Is_Russian_Language, "Имя файла скопировано в буфер", "Filename sent to clipboard"))
         End If
     End Sub
 
     Private Sub TextBox1_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmbox_Media_Folder.SelectedIndexChanged
-        If Not isTextBoxEdition Then
+        If Not is_TextBox_Editing Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2130: cmbox_MediaFolder SelectedIndexChanged")
 
             If cmbox_Media_Folder.SelectedIndex >= 0 Then
-                is_No_Background_Tasks = False
-                currentFolderPath = cmbox_Media_Folder.SelectedItem.ToString()
+                Is_No_Background_Tasks = False
+                Current_Folder_Path = cmbox_Media_Folder.SelectedItem.ToString()
 
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2140: currentFolderPath = " & currentFolderPath)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2140: currentFolderPath = " & Current_Folder_Path)
                 ReadShowMediaFile("ReadFolderAndFile")
             End If
+
+            btn_Next_File.Focus()
         End If
     End Sub
 
     Private Sub SortComboBox_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmbox_Sort.SelectedIndexChanged
-        If Not isTextBoxEdition Then
+        If Not is_TextBox_Editing Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2150: cmbox_Sort SelectedIndexChanged")
 
-            If Not String.IsNullOrEmpty(currentFolderPath) Then
+            If Not String.IsNullOrEmpty(Current_Folder_Path) Then
                 ReadShowMediaFile("ReadFolderAndFile")
             End If
         End If
@@ -3436,45 +3478,48 @@ Public Class Main_Form
     Private Sub FileOperationWorker_DoWork(sender As Object, e As DoWorkEventArgs) Handles FileOperationWorker.DoWork
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2160: FileOperationWorker_DoWork")
 
-        Select Case currentFileOperation
+        Select Case current_File_Operation
             Case "Copy"
-                Dim args As String() = DirectCast(currentFileOperationArgs, String())
+                Dim args As String() = DirectCast(current_File_Operation_Args, String())
                 Dim sourceFile As String = args(0)
                 Dim destFile As String = args(1)
-                My.Computer.FileSystem.CopyFile(sourceFile, destFile)
+                CopyFile(sourceFile, destFile)
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2170: file copied")
 
             Case "Move"
-                Dim args As String() = DirectCast(currentFileOperationArgs, String())
+                Dim args As String() = DirectCast(current_File_Operation_Args, String())
                 Dim sourceFile As String = args(0)
                 Dim destFile As String = args(1)
-                My.Computer.FileSystem.MoveFile(sourceFile, destFile)
+
+                MoveFile(sourceFile, destFile)
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2180: file moved")
 
             Case "Delete"
-                Dim filePath As String = DirectCast(currentFileOperationArgs, String)
-                My.Computer.FileSystem.DeleteFile(filePath)
-                historyDestinationFileName = ""
-                historySourceFileName = ""
+                Dim filePath As String = DirectCast(current_File_Operation_Args, String)
+                DeleteFile(filePath)
+                history_Destination_File_Name = ""
+                history_Source_File_Name = ""
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2190: file deleted")
 
             Case "DeleteUndo"
                 ' #todo: check undo from garbage bin
-                Dim filePath As String = DirectCast(currentFileOperationArgs, String)
-                My.Computer.FileSystem.DeleteFile(filePath)
-                historyDestinationFileName = ""
-                historySourceFileName = ""
+                Dim filePath As String = DirectCast(current_File_Operation_Args, String)
+                DeleteFile(filePath)
+                history_Destination_File_Name = ""
+                history_Source_File_Name = ""
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2200: file deleted in undo")
 
             Case "MoveUndo"
-                Dim args As String() = DirectCast(currentFileOperationArgs, String())
+                Dim args As String() = DirectCast(current_File_Operation_Args, String())
                 Dim sourceFile As String = args(0)
                 Dim destFile As String = args(1)
-                My.Computer.FileSystem.MoveFile(sourceFile, destFile)
-                historyDestinationFileName = ""
+
+                MoveFile(sourceFile, destFile)
+
+                history_Destination_File_Name = ""
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2210: file moved after undo")
             Case Else
@@ -3486,33 +3531,33 @@ Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2220: FileOperationWorker_RunWorkerCompleted")
 
         If e.Error Is Nothing Then
-            Select Case currentFileOperation
+            Select Case current_File_Operation
                 Case "Copy"
-                    Dim args As String() = DirectCast(currentFileOperationArgs, String())
+                    Dim args As String() = DirectCast(current_File_Operation_Args, String())
                     Dim textKey As String = args(2)
                     Dim destFile As String = args(1)
-                    lbl_Status.Text = If(is_Russian_Language, "файл скопирован (" & textKey & ") в каталог " & destFile, "file copied (" & textKey & ") to " & destFile)
+                    lbl_Status.Text = If(Is_Russian_Language, "файл скопирован (" & textKey & ") в каталог " & destFile, "file copied (" & textKey & ") to " & destFile)
 
                 Case "Move"
-                    Dim args As String() = DirectCast(currentFileOperationArgs, String())
+                    Dim args As String() = DirectCast(current_File_Operation_Args, String())
                     Dim textKey As String = args(2)
                     Dim destFile As String = args(1)
-                    lbl_Status.Text = If(is_Russian_Language, "файл перенесен (" & textKey & ") в каталог " & destFile, "file moved (" & textKey & ") to " & destFile)
+                    lbl_Status.Text = If(Is_Russian_Language, "файл перенесен (" & textKey & ") в каталог " & destFile, "file moved (" & textKey & ") to " & destFile)
 
                 Case "Delete"
 
                 Case "DeleteUndo"
-                    lbl_Status.Text = If(is_Russian_Language, "файл удален в каталоге " & historyDestinationFileName, "file deleted in " & historyDestinationFileName)
-                    historyDestinationFileName = ""
-                    historySourceFileName = ""
+                    lbl_Status.Text = If(Is_Russian_Language, "файл удален в каталоге " & history_Destination_File_Name, "file deleted in " & history_Destination_File_Name)
+                    history_Destination_File_Name = ""
+                    history_Source_File_Name = ""
 
                 Case "MoveUndo"
-                    lbl_Status.Text = If(is_Russian_Language, "файл возвращен в каталог " & historySourceFileName, "file back to " & historySourceFileName)
-                    historyDestinationFileName = ""
-                    historySourceFileName = ""
+                    lbl_Status.Text = If(Is_Russian_Language, "файл возвращен в каталог " & history_Source_File_Name, "file back to " & history_Source_File_Name)
+                    history_Destination_File_Name = ""
+                    history_Source_File_Name = ""
             End Select
         Else
-            lbl_Status.Text = If(is_Russian_Language, "Ошибка операции: " & e.Error.Message, "Operation error: " & e.Error.Message)
+            lbl_Status.Text = If(Is_Russian_Language, "Ошибка операции: " & e.Error.Message, "Operation error: " & e.Error.Message)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2230: FileOperationWorker_RunWorkerCompleted ERR " & e.Error.Message)
         End If
     End Sub
@@ -3520,13 +3565,12 @@ Public Class Main_Form
     Private Sub Label1_Click(sender As Object, e As EventArgs) Handles lbl_Folder.Click
         If Not String.IsNullOrEmpty(cmbox_Media_Folder.Text) Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2240: Folder sent to clipboard")
-            Clipboard.SetText(cmbox_Media_Folder.Text)
-            lbl_Status.Text = If(is_Russian_Language, "Имя папки скопировано в буфер", "Folder sent to clipboard")
+            CopyTextToClipboard(cmbox_Media_Folder.Text, lbl_Status, If(Is_Russian_Language, "Имя папки скопировано в буфер", "Folder sent to clipboard"))
         End If
     End Sub
 
     Private Sub StatusL_Click(sender As Object, e As EventArgs) Handles lbl_Status.Click
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2300: Visibility set: " & If(isPictureBox1Visible, "P1-YES ", "P1-NO ") & If(isPictureBox2Visible, "P2-YES ", "P2-NO ") & If(isWebBrowser1Visible, "WB-YES ", "WB-NO ") & If(isWebView2Visible, "WV2-YES", "WV2-NO "))
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2300: Visibility set: " & If(is_PictureBox1_Visible, "P1-YES ", "P1-NO ") & If(is_PictureBox2_Visible, "P2-YES ", "P2-NO ") & If(is_WebBrowser_Visible, "WB-YES ", "WB-NO ") & If(is_WebView2_Visible, "WV2-YES", "WV2-NO "))
     End Sub
 
     Private Sub Picture_Box_1_KeyDown(sender As Object, e As KeyEventArgs) Handles Picture_Box_1.KeyDown
@@ -3583,14 +3627,14 @@ Public Class Main_Form
                 extKey.SetValue("", progId)
             End Using
         Catch ex As Exception
-            MessageBox.Show(If(is_Russian_Language, "Ошибка ассоциации: ", "Failed to set association: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show(If(Is_Russian_Language, "Ошибка ассоциации: ", "Failed to set association: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ERR with JPG associacion.." & ex.Message)
         End Try
     End Sub
 
     Private Sub CheckAndOfferJpgAssociation()
         If IsRunningAsAdministrator() AndAlso Not IsJpgAssociatedWithThisApp() Then
-            Dim msg = If(is_Russian_Language, "Ассоциировать .JPG файлы с этой программой?", "Associate .JPG files with this application?")
+            Dim msg = If(Is_Russian_Language, "Ассоциировать .JPG файлы с этой программой?", "Associate .JPG files with this application?")
             If MessageBox.Show(msg, "Association", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
                 AssociateJpgWithThisApp()
             End If
@@ -3627,7 +3671,8 @@ Public Class Main_Form
         AssociateExtensionWithThisApp(".jpg", "FastMediaSorter.jpg", "JPEG Image - FastMediaSorter")
         AssociateExtensionWithThisApp(".png", "FastMediaSorter.png", "PNG Image - FastMediaSorter")
         AssociateExtensionWithThisApp(".gif", "FastMediaSorter.gif", "GIF Image - FastMediaSorter")
-        MessageBox.Show(If(is_Russian_Language, "Ассоциации установлены. Возможно потребуется перезапустить Проводник или Windows.", "Associations set. You may need to restart Explorer or Windows for changes to take effect."), "Association", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+        MessageBox.Show(If(Is_Russian_Language, "Ассоциации установлены. Возможно потребуется перезапустить Проводник или Windows.", "Associations set. You may need to restart Explorer or Windows for changes to take effect."), "Association", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
     Private Sub AssociateExtensionWithThisApp(ext As String, progId As String, description As String)
@@ -3643,24 +3688,38 @@ Public Class Main_Form
                 extKey.SetValue("", progId)
             End Using
         Catch ex As Exception
-            MessageBox.Show(If(is_Russian_Language, "Ошибка ассоциации: ", "Failed to set association: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show(If(Is_Russian_Language, "Ошибка ассоциации: ", "Failed to set association: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ERR Ext associaciated: " & ex.Message)
         End Try
     End Sub
 
     Private Sub CheckAndOfferImageAssociations()
-        If GetSetting(app_name, second_App_Name, "UserAlreadyAskedForAssociations", "0") = "0" AndAlso
+        If GetSetting(App_name, Second_App_Name, "UserAlreadyAskedForAssociations", "0") = "0" AndAlso
             IsRunningAsAdministrator() AndAlso
             Not AreImageTypesAssociatedWithThisApp() Then
 
-            Dim msg = If(is_Russian_Language, "Ассоциировать .JPG, .PNG, .GIF файлы с этой программой?", "Associate .JPG, .PNG, .GIF files with this application?")
+            Dim msg = If(Is_Russian_Language, "Ассоциировать .JPG, .PNG, .GIF файлы с этой программой?", "Associate .JPG, .PNG, .GIF files with this application?")
             If MessageBox.Show(msg, "Association", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
                 AssociateImageTypesWithThisApp()
             End If
 
-            SaveSetting(app_name, second_App_Name, "UserAlreadyAskedForAssociations", "1")
+            SaveSetting(App_name, Second_App_Name, "UserAlreadyAskedForAssociations", "1")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2440: asked for association")
         End If
+    End Sub
+
+    Private Sub btn_Panel_Click(sender As Object, e As EventArgs) Handles btn_Panel.Click
+        SlideShowStop()
+        ShowImagePanelForm()
+    End Sub
+
+    Private Sub ShowImagePanelForm()
+        If Image_Panel_Form Is Nothing OrElse Image_Panel_Form.IsDisposed Then
+            Image_Panel_Form = New Image_Panel_Form()
+            AddHandler Image_Panel_Form.FormClosed, AddressOf Image_Panel_Form_FormClosed
+        End If
+        Image_Panel_Form.Show()
+        Image_Panel_Form.BringToFront()
     End Sub
 
 End Class

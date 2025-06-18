@@ -4,7 +4,7 @@
   <description asmv2:iconFile="Fast_Media_Sorter.ico" xmlns="urn:schemas-microsoft-com:asm.v1" />
   <application />
   <entryPoint>
-    <assemblyIdentity name="FastMediaSorter" version="25.6.8.1150" language="neutral" processorArchitecture="msil" />
+    <assemblyIdentity name="FastMediaSorter" version="25.6.18.1740" language="neutral" processorArchitecture="msil" />
     <commandLine file="FastMediaSorter.exe" parameters="" />
   </entryPoint>
   <trustInfo>
@@ -43,14 +43,14 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="FastMediaSorter.exe" size="212992">
-      <assemblyIdentity name="FastMediaSorter" version="25.6.8.1150" language="neutral" processorArchitecture="msil" />
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="FastMediaSorter.exe" size="233984">
+      <assemblyIdentity name="FastMediaSorter" version="25.6.18.1740" language="neutral" processorArchitecture="msil" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>kHYaF5WRoo+DJzWTgZwno1M0Q6Gk72JpLCkIwJ0YcjE=</dsig:DigestValue>
+        <dsig:DigestValue>dd/tIu4jnrJLLxYW8Cs1GpWLcxa5/otUmlgcldnhLio=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
@@ -62,7 +62,7 @@
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>avmni9xbQ/p3LprwpjhHltV2BjnqMwXN/WWdpAYBXns=</dsig:DigestValue>
+        <dsig:DigestValue>3JrEKsVRd+5TrGEoZckn9M0CtKZLnkEJr94x7cgVo0o=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>

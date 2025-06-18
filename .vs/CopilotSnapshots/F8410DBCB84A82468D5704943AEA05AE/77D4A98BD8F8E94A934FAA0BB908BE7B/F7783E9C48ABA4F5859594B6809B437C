@@ -1,0 +1,89 @@
+﻿' ImagePanelForm.vb
+Imports System.Windows.Forms
+Imports System.IO
+Imports System.Drawing
+Imports System.Threading.Tasks
+
+Public Class Image_Panel_Form
+    Inherits Form
+
+    Private imagePanel As Panel
+    Private pictureBoxSize As Integer = 100
+    Private pictureBoxes As New List(Of PictureBox)
+    Private imageFiles As List(Of String)
+
+    Public Sub New()
+        Me.Text = "Image Panel"
+        Me.Size = New Drawing.Size(800, 600)
+        imagePanel = New Panel()
+        imagePanel.Dock = DockStyle.Fill
+        Me.Controls.Add(imagePanel)
+        AddHandler Me.Resize, AddressOf ImagePanelForm_Resize
+        LayoutPictureBoxes()
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        LoadImagesAsync()
+    End Sub
+
+    Private Sub ImagePanelForm_Resize(sender As Object, e As EventArgs)
+        LayoutPictureBoxes()
+        LoadImagesAsync()
+    End Sub
+
+    Private Sub LayoutPictureBoxes()
+        imagePanel.Controls.Clear()
+        pictureBoxes.Clear()
+        Dim cols As Integer = Math.Max(1, imagePanel.Width \ pictureBoxSize)
+        Dim rows As Integer = Math.Max(1, imagePanel.Height \ pictureBoxSize)
+        For row As Integer = 0 To rows - 1
+            For col As Integer = 0 To cols - 1
+                Dim pb As New PictureBox()
+                pb.Width = pictureBoxSize
+                pb.Height = pictureBoxSize
+                pb.Left = col * pictureBoxSize
+                pb.Top = row * pictureBoxSize
+                pb.BorderStyle = BorderStyle.FixedSingle
+                pb.BackColor = Drawing.Color.LightGray
+                pb.SizeMode = PictureBoxSizeMode.Zoom
+                imagePanel.Controls.Add(pb)
+                pictureBoxes.Add(pb)
+            Next
+        Next
+    End Sub
+
+    Private Sub LoadImagesAsync()
+        ' Clear previous images
+        For Each pb In pictureBoxes
+            If pb.Image IsNot Nothing Then
+                pb.Image.Dispose()
+                pb.Image = Nothing
+            End If
+        Next
+        ' Get image files from Main_Form.Current_Image_Path
+        Dim mainForm As Main_Form = TryCast(Application.OpenForms("Main_Form"), Main_Form)
+        If mainForm Is Nothing OrElse String.IsNullOrEmpty(mainForm.Current_Image_Path) Then Return
+        Dim folderPath As String = Path.GetDirectoryName(mainForm.Current_Image_Path)
+        Dim extensions = {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".ico", ".wmf", ".emf", ".exif"}
+        Dim files = Directory.GetFiles(folderPath).Where(Function(f) extensions.Contains(Path.GetExtension(f).ToLower())).ToList()
+        imageFiles = files
+        Dim maxImages = Math.Min(imageFiles.Count, pictureBoxes.Count)
+        If maxImages = 0 Then Return
+        Task.Run(Sub()
+            Parallel.For(0, maxImages, New ParallelOptions With {.MaxDegreeOfParallelism = 4}, Sub(i)
+                Try
+                    Dim img As Image = Image.FromFile(imageFiles(i))
+                    pictureBoxes(i).Invoke(Sub()
+                        If pictureBoxes(i).Image IsNot Nothing Then pictureBoxes(i).Image.Dispose()
+                        pictureBoxes(i).Image = New Bitmap(img)
+                        img.Dispose()
+                    End Sub)
+                Catch ex As Exception
+                    pictureBoxes(i).Invoke(Sub() pictureBoxes(i).BackColor = Color.Red)
+                End
+
+
+
+
+
