@@ -1,5 +1,5 @@
 ﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
-Partial Class the_Main_Form
+Partial Class Main_Form
     Inherits System.Windows.Forms.Form
 
     <System.Diagnostics.DebuggerNonUserCode()>
@@ -17,7 +17,7 @@ Partial Class the_Main_Form
 
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
-        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(the_Main_Form))
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(Main_Form))
         Me.lbl_Folder = New System.Windows.Forms.Label()
         Me.btn_Select_Folder = New System.Windows.Forms.Button()
         Me.lbl_File_Number = New System.Windows.Forms.Label()

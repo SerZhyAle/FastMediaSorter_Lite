@@ -1,14 +1,14 @@
 ﻿Imports System.Runtime.InteropServices
 
-Module Module1
-    Public moveOnKey(10) As String
-    Public lngRus As Boolean
-    Public copyMode As Boolean
-    Public secName As String = "FastMediaSorter"
-    Public appName As String = "SZA"
-    Public noBackgroundTasksMode As Boolean = False
-    Public is_pespective As Boolean = True
-    Public color_scheme As Integer = 0 ' 0 - dynamic, 1 - black, 2 - white, 3 - most
+Module Common_Module
+    Public hardkeys_to_move_mediafile(10) As String
+    Public is_Russian_Language As Boolean
+    Public is_Copying_not_Moving As Boolean
+    Public second_App_Name As String = "FastMediaSorter"
+    Public app_name As String = "SZA"
+    Public is_No_Background_Tasks As Boolean = False
+    Public is_Pespective As Boolean = True
+    Public form_Color_Scheme As Integer = 0 ' 0 - dynamic, 1 - black, 2 - white, 3 - most
 
     ' --- WinAPI Declarations ---
     <DllImport("user32.dll")>

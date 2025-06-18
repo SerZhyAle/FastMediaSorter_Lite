@@ -9,9 +9,9 @@ Namespace My
 
             e.BringToForeground = False
 
-            Dim mainFormInstance As the_Main_Form = Nothing
-            If Application.MainForm IsNot Nothing AndAlso TypeOf Application.MainForm Is the_Main_Form Then
-                mainFormInstance = DirectCast(Application.MainForm, the_Main_Form)
+            Dim mainFormInstance As Main_Form = Nothing
+            If Application.MainForm IsNot Nothing AndAlso TypeOf Application.MainForm Is Main_Form Then
+                mainFormInstance = DirectCast(Application.MainForm, Main_Form)
             End If
 
             If mainFormInstance IsNot Nothing AndAlso e.CommandLine.Count > 0 Then
@@ -21,7 +21,7 @@ Namespace My
                 Dim previousForegroundWindowHandle As IntPtr = IntPtr.Zero
 
                 If Not wasMinimized Then
-                    previousForegroundWindowHandle = Module1.GetForegroundWindow()
+                    previousForegroundWindowHandle = Common_Module.GetForegroundWindow()
                     If previousForegroundWindowHandle = mainFormInstance.Handle Then
                         previousForegroundWindowHandle = IntPtr.Zero
                     End If
@@ -31,12 +31,12 @@ Namespace My
                 mainFormInstance.ProcessArgument(fullCommandLine)
 
                 If wasMinimized Then
-                    Module1.ShowWindow(mainFormInstance.Handle, Module1.SW_SHOWNOACTIVATE)
+                    Common_Module.ShowWindow(mainFormInstance.Handle, Common_Module.SW_SHOWNOACTIVATE)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " AppEvents: unwraped")
                 ElseIf previousForegroundWindowHandle <> IntPtr.Zero Then
-                    Dim currentForegroundHandle As IntPtr = Module1.GetForegroundWindow()
+                    Dim currentForegroundHandle As IntPtr = Common_Module.GetForegroundWindow()
                     If currentForegroundHandle = mainFormInstance.Handle Then
-                        Module1.SetForegroundWindow(previousForegroundWindowHandle)
+                        Common_Module.SetForegroundWindow(previousForegroundWindowHandle)
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " AppEvents: try to focus back: " & previousForegroundWindowHandle.ToString())
                     End If
                 End If
