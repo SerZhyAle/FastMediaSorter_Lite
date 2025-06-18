@@ -7,6 +7,7 @@ Module Module1
     Public secName As String = "FastMediaSorter"
     Public appName As String = "SZA"
     Public noBackgroundTasksMode As Boolean = False
+    Public is_pespective As Boolean = True
     Public color_scheme As Integer = 0 ' 0 - dynamic, 1 - black, 2 - white, 3 - most
 
     ' --- WinAPI Declarations ---

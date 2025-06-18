@@ -43,14 +43,14 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="FastMediaSorter.exe" size="202752">
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="FastMediaSorter.exe" size="212480">
       <assemblyIdentity name="FastMediaSorter" version="25.6.8.1150" language="neutral" processorArchitecture="msil" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>QRYnQo7jB8IpRSJ96og5cQgOtrckZY1DO/nTNxJqjDI=</dsig:DigestValue>
+        <dsig:DigestValue>OUjZJNuFuA280NJzhr0ggfyBCdC6aLGK9ePCjkUI3oc=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>

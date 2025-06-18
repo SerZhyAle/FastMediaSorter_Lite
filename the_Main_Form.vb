@@ -8,13 +8,16 @@
 'sza250606 gemini
 'sza250608 copilot
 'sza250609 gif fix
+'sza250617 
 
 Option Strict On
 
 Imports System.Collections.ObjectModel
 Imports System.ComponentModel
+Imports System.Drawing
 Imports System.Drawing.Imaging
 Imports System.IO
+Imports System.Net
 Imports System.Runtime.InteropServices
 Imports System.Security.Cryptography
 Imports System.Security.Principal
@@ -28,15 +31,53 @@ Imports Microsoft.Web.WebView2.Core
 Imports Microsoft.Web.WebView2.WinForms
 Imports Microsoft.Win32
 
-
 <ComVisible(True)>
 Public Class the_Main_Form
 
-    Private Shared mutex As Mutex
+    Private Const slide_show_limit As Integer = 30
+    Private Const MaxRecentFolders As Integer = 100
     Private Const AppMutexName As String = "FastMediaSorterSingleInstanceMutex"
+    Private Const MaxFilesForList As Integer = 100000 'after - the array without sorting
+    Private Const webPanelHeight As String = "40"
+    Private Const secondColorPointPercent = 20
+    Private Const colorSearchStepSize = 100
+    Private Const SW_SHOWNOACTIVATE As Integer = 4
+    Private Const SW_RESTORE As Integer = 9
+    Private Const color_Deviation_Percent As Integer = 4
+    Private Const percent_of_color_smooth_To_Remove = 7
+    Private Const firstColorX As Integer = 0
+    Private Const firstColorY As Integer = 0
+    Private Const secondColorX As Integer = 5
+    Private Const secondColorY As Integer = 5
+    Private Const firstRunTop = 50
+    Private Const firstRunLeft = 50
+    Private Const firstRunWidth = 800
+    Private Const firstRunHeight = 600
+    Private Const positionLimitTop = 720
+    Private Const positionLimitLeft = 1000
+    Private Const positionLimitWidthTop = 3000
+    Private Const positionLimitWidthLow = 320
+    Private Const positionLimitHeightTop = 3000
+    Private Const positionLimitHeightLow = 240
+    Private Const the_Height_For_buttons = 20
+    Private Const the_Width_For_buttons = 15
+    Private Const top_first_line = 0
+    Private Const left_first_column = 0
+    Private Const biggest_slide_show_interval = 10000
+    Private Const slideshow_limit_to_change_color = 2000
+    Private Const how_long_wait_before_draw_perspective = 50
+
+    Private imageFileExtensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tiff", ".ico", ".wmf", ".emf", ".exif"}
+    Private videoFileExtensions As New HashSet(Of String) From {".webm", ".ogg", ".3g2", ".mkv", ".3gp", ".mp4", ".m4v", ".m4a", ".mov", ".mp3", ".avi", ".wmv", ".asf", ".mpg", ".mpeg", ".flv", ".wav", ".wma"}
+    Private webImageFileExtensions As New HashSet(Of String) From {".webp", ".heic", ".avif", ".svg"}
+
+    Private is_form_shown As Boolean = False
+    Private lastPerspectiveDraw As DateTime
+    Private Shared mutex As Mutex
     Private applicationRunsCount As Integer
     Private mediaViewedCount As Integer
     Private isComboSetAuto As Boolean = False
+    Public is_slide_show_mode As Boolean = False
 
     Private isFileReseivedFromOutside As Boolean = False
     Private firstScrollEvent As Boolean = False
@@ -52,9 +93,6 @@ Public Class the_Main_Form
     Private currentFileName As String
     Private nextAfterCurrentFileName As String
     Private currentLoadedFileName As String
-    Private imageFileExtensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tiff", ".ico", ".wmf", ".emf", ".exif"}
-    Private videoFileExtensions As New HashSet(Of String) From {".webm", ".ogg", ".3g2", ".mkv", ".3gp", ".mp4", ".m4v", ".m4a", ".mov", ".mp3", ".avi", ".wmv", ".asf", ".mpg", ".mpeg", ".flv", ".wav", ".wma"}
-    Private webImageFileExtensions As New HashSet(Of String) From {".webp", ".heic", ".avif", ".svg"}
     Private historyFileName As String
     Private loadedImageScale As String = ""
     Private lastBackColor As System.Drawing.Color
@@ -65,7 +103,6 @@ Public Class the_Main_Form
     Private filesList As List(Of String) = Nothing
     Private filesArray As String() = Nothing
     Private useArray As Boolean = False
-    Private Const MaxFiles As Integer = 122220
 
     Private isTableFormOpen As Boolean
     Private lastActionTime As DateTime
@@ -96,7 +133,6 @@ Public Class the_Main_Form
 
     Private allSupportedExtensions As New HashSet(Of String)()
     Private recentFolders As New List(Of String)
-    Private Const MaxRecentFolders As Integer = 100
 
     Private isWebView2Available As Boolean = False
     Private WithEvents Web_View2 As WebView2 = Nothing
@@ -124,9 +160,6 @@ Public Class the_Main_Form
     <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode)>
     Private Shared Function StrCmpLogicalW(psz1 As String, psz2 As String) As Integer
     End Function
-
-    Private Const SW_SHOWNOACTIVATE As Integer = 4
-    Private Const SW_RESTORE As Integer = 9
 
     Private Sub InitializeFileOperationWorker()
         FileOperationWorker.WorkerSupportsCancellation = True
@@ -168,7 +201,7 @@ Public Class the_Main_Form
         If m.Msg = MY_CUSTOM_MESSAGE Then
             Dim hMap As IntPtr = m.WParam
             If hMap <> IntPtr.Zero Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0777: MY_CUSTOM_MESSAGE")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0777: MESSAGE")
                 Try
                     Dim pBuf As IntPtr = MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0)
                     If pBuf <> IntPtr.Zero Then
@@ -330,6 +363,7 @@ Public Class the_Main_Form
             End If
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0040: LoadImage end ")
+
             Return Tuple.Create(nextImage, ms)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0041: ERR loading image " & ex.Message)
@@ -419,7 +453,8 @@ Public Class the_Main_Form
 
         If userState.ContainsKey("fileSizeText") Then
 
-            Dim resultText = If(lngRus, "Текущий: ", "Current: ") & currentFileName
+            'Dim resultText = If(lngRus, "Текущий: ", "Current: ") & currentFileName
+            Dim resultText = currentFileName
 
             Dim fileTimeText As String = userState("fileTimeText")
 
@@ -632,7 +667,7 @@ Public Class the_Main_Form
                 Exit Sub
             End If
 
-            Dim sls = If(SlideShowTimer.Enabled, (SlideShowTimer.Interval / 1000).ToString() & "s", "")
+            Dim sls = If(is_slide_show_mode, (SlideShowTimer.Interval / 1000).ToString() & "s", "")
             If Not lbl_Slideshow_Time.Text = sls Then lbl_Slideshow_Time.Text = sls
 
             Dim isAfterUndo As Boolean = (readMode = "ReadAfterUndo")
@@ -1082,7 +1117,7 @@ Public Class the_Main_Form
             Dim localFileAsUri As New Uri(fileUri)
             Dim htmlEscapedUri As String = localFileAsUri.AbsoluteUri
 
-            Dim contentHtml As String = "<video id='videoPlayer' controls autoplay style='width:100%;height:calc(100% - 35px);object-fit:fill;'>" &
+            Dim contentHtml As String = "<video id='videoPlayer' controls autoplay style='width:100%;height:calc(100% - " & webPanelHeight & "px);object-fit:fill;'>" &
                                 "<source src='" & htmlEscapedUri & "'>" &
                                 "<track kind='captions' default>" &
                                 "<p style='color: " &
@@ -1093,8 +1128,9 @@ Public Class the_Main_Form
 
             Dim html As String = "<html><head><meta http-equiv='X-UA-Compatible' content='IE=edge'>" &
                          "<style>" &
-                         "body { margin: 0; overflow: hidden; background: black; }" &
-                         "video { width: 100%; height: calc(100% - 35px); object-fit: fill; position: absolute; top: 0; left: 0; }" &
+                         "body { margin: 0; overflow: hidden; background: " &
+                                If(color_scheme = 0, "black", "white") & "; }" &
+                         "video { width: 100%; height: calc(100% - " & webPanelHeight & "px); object-fit: fill; position: absolute; top: 0; left: 0; }" &
                          "</style></head>" &
                          "<body oncontextmenu='return false;' ondblclick='handlePageDoubleClick();'>" & contentHtml &
                          "<script>" &
@@ -1206,6 +1242,8 @@ Public Class the_Main_Form
             currentLoadedFileName = currentFileName
 
             UpdateControlVisibility()
+
+            If is_form_shown Then Draw_Perspective()
         Else
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0920: file is a same, pic set is skipped")
         End If
@@ -1243,8 +1281,10 @@ Public Class the_Main_Form
             Web_View2.Visible = isWebView2Visible
         End If
 
-        If isPictureBox1Visible OrElse
-            isPictureBox2Visible Then
+        If (isPictureBox1Visible OrElse
+            isPictureBox2Visible) AndAlso
+            (Not is_slide_show_mode Or
+            SlideShowTimer.Interval > slideshow_limit_to_change_color) Then
 
             Web_Browser.Visible = False
             If Web_View2 IsNot Nothing AndAlso isWebView2Visible AndAlso Web_View2.Visible Then
@@ -1271,11 +1311,11 @@ Public Class the_Main_Form
 
             Dim pixelColor As System.Drawing.Color = System.Drawing.Color.Black
 
+            Dim bmp As Bitmap = Nothing
+
             If color_scheme = 2 Then
                 pixelColor = System.Drawing.Color.White
             ElseIf color_scheme = 0 Then
-
-                Dim bmp As Bitmap = Nothing
 
                 If pic_to = 1 Then
                     bmp = CType(Picture_Box_1.Image, Bitmap)
@@ -1287,29 +1327,27 @@ Public Class the_Main_Form
                     If 1 < bmp.Width AndAlso
                         1 < bmp.Height Then
 
-                        If bmp.Width > 5 AndAlso
-                            bmp.Height > 5 Then
+                        If bmp.Width > secondColorX AndAlso
+                            bmp.Height > secondColorY Then
 
-                            Dim pixelColor5 = bmp.GetPixel(5, 5)
-                            Dim pixelColor1 = bmp.GetPixel(1, 1)
+                            Dim pixelColor5 = bmp.GetPixel(secondColorX, secondColorY)
+                            Dim pixelColor1 = bmp.GetPixel(firstColorX, firstColorY)
 
                             Dim dif As Long = CLng(Math.Abs(CInt(pixelColor5.R) - CInt(pixelColor1.R))) +
                                                   CLng(Math.Abs(CInt(pixelColor5.G) - CInt(pixelColor1.G))) +
                                                   CLng(Math.Abs(CInt(pixelColor5.B) - CInt(pixelColor1.B)))
-                            If dif < 10 Then
+                            If dif < color_Deviation_Percent Then
                                 pixelColor = pixelColor1
                             Else
-                                pixelColor = bmp.GetPixel(CInt(bmp.Width / 20), CInt(bmp.Height / 20))
+                                pixelColor = bmp.GetPixel(CInt(bmp.Width / secondColorPointPercent), CInt(bmp.Height / secondColorPointPercent))
                             End If
                         Else
-                            pixelColor = bmp.GetPixel(CInt(bmp.Width / 20), CInt(bmp.Height / 20))
+                            pixelColor = bmp.GetPixel(CInt(bmp.Width / secondColorPointPercent), CInt(bmp.Height / secondColorPointPercent))
                         End If
 
                     End If
                 End If
             ElseIf color_scheme = 3 Then 'by side
-
-                Dim bmp As Bitmap = Nothing
 
                 If pic_to = 1 Then
                     bmp = CType(Picture_Box_1.Image, Bitmap)
@@ -1324,7 +1362,7 @@ Public Class the_Main_Form
                     Dim pixelColor_in As System.Drawing.Color
                     Dim difR, difG, difB As Long
                     Dim c As Integer = 0
-                    For z = 1 To bmp.Height Step 100
+                    For z = 0 To bmp.Height - 1 Step colorSearchStepSize
                         pixelColor_in = bmp.GetPixel(1, z)
                         difR = difR + CInt(pixelColor_in.R)
                         difG = difG + CInt(pixelColor_in.G)
@@ -1337,8 +1375,6 @@ Public Class the_Main_Form
 
             ElseIf color_scheme = 4 Then 'by top
 
-                Dim bmp As Bitmap = Nothing
-
                 If pic_to = 1 Then
                     bmp = CType(Picture_Box_1.Image, Bitmap)
                 ElseIf pic_to = 2 Then
@@ -1352,7 +1388,7 @@ Public Class the_Main_Form
                     Dim pixelColor_in As System.Drawing.Color
                     Dim difR, difG, difB As Long
                     Dim c As Integer = 0
-                    For z = 1 To bmp.Width Step 100
+                    For z = 0 To bmp.Width - 1 Step colorSearchStepSize
                         pixelColor_in = bmp.GetPixel(z, 1)
                         difR = difR + CInt(pixelColor_in.R)
                         difG = difG + CInt(pixelColor_in.G)
@@ -1364,8 +1400,6 @@ Public Class the_Main_Form
                 End If
             ElseIf color_scheme = 5 Then 'by buttom
 
-                Dim bmp As Bitmap = Nothing
-
                 If pic_to = 1 Then
                     bmp = CType(Picture_Box_1.Image, Bitmap)
                 ElseIf pic_to = 2 Then
@@ -1379,7 +1413,7 @@ Public Class the_Main_Form
                     Dim pixelColor_in As System.Drawing.Color
                     Dim difR, difG, difB As Long
                     Dim c As Integer = 0
-                    For z = 1 To bmp.Width Step 100
+                    For z = 0 To bmp.Width - 1 Step colorSearchStepSize
                         pixelColor_in = bmp.GetPixel(z, bmp.Height - 1)
                         difR = difR + CInt(pixelColor_in.R)
                         difG = difG + CInt(pixelColor_in.G)
@@ -1390,6 +1424,7 @@ Public Class the_Main_Form
                     pixelColor = System.Drawing.Color.FromArgb(CInt(difR / c), CInt(difG / c), CInt(difB / c))
                 End If
             End If
+
 
             If pixelColor <> lastBackColor Then
                 lastBackColor = pixelColor
@@ -1448,67 +1483,67 @@ Public Class the_Main_Form
             Dim fileIndexDisplay As Integer = currentFileIndex + 1
             lbl_File_Number.Text = If(lngRus, "Файл: " & fileIndexDisplay.ToString() & " из " & totalFilesCount.ToString(), "File: " & fileIndexDisplay.ToString() & " from " & totalFilesCount.ToString())
 
-            Try
-                Dim fileExtension As String = Path.GetExtension(currentFileName).ToLower()
-                Dim fileUri As String = New Uri(currentFileName).ToString()
+            '    Try
+            Dim fileExtension As String = Path.GetExtension(currentFileName).ToLower()
+            Dim fileUri As String = New Uri(currentFileName).ToString()
 
-                If imageFileExtensions.Contains(fileExtension) Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1030: P to load")
-                    LoadStandardImageInPictureBox()
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1040: Picture box is set")
-                ElseIf videoFileExtensions.Contains(fileExtension) Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1010: WB to load")
-                    LoadVideoInWebBrowser(fileUri)
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: WB is set")
-                ElseIf isWebView2Available AndAlso webImageFileExtensions.Contains(fileExtension) Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0990: WV2 to load")
-                    LoadWebImageInWebView2(fileUri)
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1000: WV2 is set")
-                Else
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1045: No selected control to show!?")
-                End If
+            If imageFileExtensions.Contains(fileExtension) Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1030: P to load")
+                LoadStandardImageInPictureBox()
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1040: Picture box is set")
+            ElseIf videoFileExtensions.Contains(fileExtension) Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1010: WB to load")
+                LoadVideoInWebBrowser(fileUri)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: WB is set")
+            ElseIf isWebView2Available AndAlso webImageFileExtensions.Contains(fileExtension) Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0990: WV2 to load")
+                LoadWebImageInWebView2(fileUri)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1000: WV2 is set")
+            Else
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1045: No selected control to show!?")
+            End If
 
-                isFirstPictureBoxNeedToBeCached = isSecondaryPictureBoxActive
+            isFirstPictureBoxNeedToBeCached = isSecondaryPictureBoxActive
 
-                If isSlideShowRandom OrElse isFileReseivedFromOutside Then
-                    nextAfterCurrentFileName = ""
-                    isFileReseivedFromOutside = False
-                ElseIf Not wasExternalInputLast AndAlso
+            If isSlideShowRandom OrElse isFileReseivedFromOutside Then
+                nextAfterCurrentFileName = ""
+                isFileReseivedFromOutside = False
+            ElseIf Not wasExternalInputLast AndAlso
                     Not (filesList Is Nothing And filesArray Is Nothing) Then
-                    nextAfterCurrentFileName = If(totalFilesCount > 0, If(totalFilesCount = currentFileIndex + 1, If(useArray, filesArray(0), filesList(0)), If(useArray, filesArray(currentFileIndex + 1), filesList(currentFileIndex + 1))), "")
-                Else
-                    nextAfterCurrentFileName = ""
-                End If
+                nextAfterCurrentFileName = If(totalFilesCount > 0, If(totalFilesCount = currentFileIndex + 1, If(useArray, filesArray(0), filesList(0)), If(useArray, filesArray(currentFileIndex + 1), filesList(currentFileIndex + 1))), "")
+            Else
+                nextAfterCurrentFileName = ""
+            End If
 
-                If bgWorkerOnline OrElse
+            If bgWorkerOnline OrElse
                     BgWorker.IsBusy Then
 
-                    BgWorker.CancelAsync()
-                    bgWorkerOnline = False
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1050: BgWorker set off line")
-                End If
+                BgWorker.CancelAsync()
+                bgWorkerOnline = False
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1050: BgWorker set off line")
+            End If
 
-                If Not noBackgroundTasksMode AndAlso
+            If Not noBackgroundTasksMode AndAlso
                     Not bgWorkerOnline AndAlso
                     Not BgWorker.IsBusy Then
 
-                    bgWorkerOnline = True
-                    BgWorker.RunWorkerAsync()
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1060: BgWorker is run")
-                Else
-                    lbl_Current_File.Text = If(lngRus, "Текущий: ", "Current: ") & currentFileName
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1065: BgWorker is not run, online=" & bgWorkerOnline.ToString & " IsBusy=" & BgWorker.IsBusy.ToString)
-                End If
+                bgWorkerOnline = True
+                BgWorker.RunWorkerAsync()
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1060: BgWorker is run")
+            Else
+                lbl_Current_File.Text = If(lngRus, "Текущий: ", "Current: ") & currentFileName
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1065: BgWorker is not run, online=" & bgWorkerOnline.ToString & " IsBusy=" & BgWorker.IsBusy.ToString)
+            End If
 
-            Catch ex As Exception
-                If Not isAfterUndo Then
-                    MsgBox("E005 " & ex.Message)
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1070: E005 " & ex.Message)
-                Else
-                    lbl_Status.Text = If(lngRus, "Файл " & currentFileName & " перемещается назад операционной системой.", "File " & currentFileName & " moving back by OS.")
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1080: UNdo E005 " & ex.Message)
-                End If
-            End Try
+            '     Catch ex As Exception
+            '         If Not isAfterUndo Then
+            '          MsgBox("E005 " & ex.Message)
+            '              Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1070: E005 " & ex.Message)
+            '          Else
+            '            lbl_Status.Text = If(lngRus, "Файл " & currentFileName & " перемещается назад операционной системой.", "File " & currentFileName & " moving back by OS.")
+            '            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1080: UNdo E005 " & ex.Message)
+            '    End If
+            '       End Try
 
         Else
             If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
@@ -1565,7 +1600,7 @@ Public Class the_Main_Form
                 Return Nothing
             End If
 
-            If fileEntries.Count < MaxFiles Then
+            If fileEntries.Count < MaxFilesForList Then
                 useArray = False
 
                 Dim orderedEntries As IEnumerable(Of FileEntry)
@@ -1643,6 +1678,8 @@ Public Class the_Main_Form
             Web_View2.Location = Picture_Box_1.Location
         End If
 
+        If is_form_shown Then Draw_Perspective()
+
     End Sub
     Private Sub SetViewSizes()
         ISizeChanged()
@@ -1688,6 +1725,8 @@ Public Class the_Main_Form
         Integer.TryParse(GetSetting(appName, secName, "color_scheme", "1"), color_scheme)
 
         lngRus = GetSetting(appName, secName, "LngRus", "1") = "1"
+
+        is_pespective = GetSetting(appName, secName, "isPerspective", "1") = "1"
 
         Dim SortDir = 0
         Integer.TryParse(GetSetting(appName, secName, "SortDir", "0"), SortDir)
@@ -1769,20 +1808,20 @@ Public Class the_Main_Form
         End If
         isTextBoxEdition = False
 
-        Dim appTopInt As Integer = 100
-        Dim appLeftInt As Integer = 100
-        Dim appWidthInt As Integer = 800
-        Dim appHeightInt As Integer = 600
+        Dim appTopInt As Integer = firstRunTop
+        Dim appLeftInt As Integer = firstRunLeft
+        Dim appWidthInt As Integer = firstRunWidth
+        Dim appHeightInt As Integer = firstRunHeight
 
         Integer.TryParse(GetSetting(appName, secName, "AppTop"), appTopInt)
         Integer.TryParse(GetSetting(appName, secName, "AppLeft"), appLeftInt)
         Integer.TryParse(GetSetting(appName, secName, "AppWidth"), appWidthInt)
         Integer.TryParse(GetSetting(appName, secName, "AppHeight"), appHeightInt)
 
-        appTopInt = If(appTopInt < 0 OrElse appTopInt > 720, 100, appTopInt)
-        appLeftInt = If(appLeftInt < 0 OrElse appLeftInt > 1920, 100, appLeftInt)
-        appWidthInt = If(appWidthInt < 640 OrElse appWidthInt > 1920, 640, appWidthInt)
-        appHeightInt = If(appHeightInt < 480 OrElse appHeightInt > 1024, 480, appHeightInt)
+        appTopInt = If(appTopInt < 0 OrElse appTopInt > positionLimitTop, firstRunTop, appTopInt)
+        appLeftInt = If(appLeftInt < 0 OrElse appLeftInt > positionLimitLeft, firstRunLeft, appLeftInt)
+        appWidthInt = If(appWidthInt < positionLimitWidthLow OrElse appWidthInt > positionLimitWidthTop, firstRunWidth, appWidthInt)
+        appHeightInt = If(appHeightInt < positionLimitHeightLow OrElse appHeightInt > positionLimitHeightTop, firstRunHeight, appHeightInt)
 
         Me.SetBounds(appLeftInt, appTopInt, appWidthInt, appHeightInt)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1950: Form_Sizes: " & appLeftInt.ToString & " - " & appTopInt.ToString & " " & appWidthInt.ToString & " - " & appHeightInt.ToString)
@@ -1790,6 +1829,8 @@ Public Class the_Main_Form
         ResizeDebounceTimer.Stop()
 
         ISizeChanged()
+
+        is_form_shown = True
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1120: Form Loaded")
     End Sub
@@ -1806,15 +1847,394 @@ Public Class the_Main_Form
         ISizeChanged()
     End Sub
 
+    Private Function CheckCornerColorsAndSetBeginPoint(list_of_corner_colors As List(Of System.Drawing.Color)) As Long
+
+        Dim count As Integer = list_of_corner_colors.Count
+        If count > percent_of_color_smooth_To_Remove Then
+            Dim removeCount As Integer = CInt(Math.Floor(count * percent_of_color_smooth_To_Remove / 100))
+
+            ' Prepare sorted lists for each channel
+            Dim sortedR = list_of_corner_colors.Select(Function(c) CInt(c.R)).OrderBy(Function(v) v).ToList()
+            Dim sortedG = list_of_corner_colors.Select(Function(c) CInt(c.G)).OrderBy(Function(v) v).ToList()
+            Dim sortedB = list_of_corner_colors.Select(Function(c) CInt(c.B)).OrderBy(Function(v) v).ToList()
+
+            ' Remove bottom and top 10%
+            sortedR = sortedR.Skip(removeCount).Take(sortedR.Count - 2 * removeCount).ToList()
+            sortedG = sortedG.Skip(removeCount).Take(sortedG.Count - 2 * removeCount).ToList()
+            sortedB = sortedB.Skip(removeCount).Take(sortedB.Count - 2 * removeCount).ToList()
+
+            ' Calculate min, max, and diffSum on trimmed lists
+            Dim maxR As Integer = sortedR.Max()
+            Dim minR As Integer = sortedR.Min()
+            Dim maxG As Integer = sortedG.Max()
+            Dim minG As Integer = sortedG.Min()
+            Dim maxB As Integer = sortedB.Max()
+            Dim minB As Integer = sortedB.Min()
+
+            Return (maxR - minR) + (maxG - minG) + (maxB - minB)
+
+        Else
+            ' Fallback to original logic if not enough data
+            Dim maxR As Integer = list_of_corner_colors.Max(Function(c) CInt(c.R))
+            Dim maxG As Integer = list_of_corner_colors.Max(Function(c) CInt(c.G))
+            Dim maxB As Integer = list_of_corner_colors.Max(Function(c) CInt(c.B))
+
+            Dim minR As Integer = list_of_corner_colors.Min(Function(c) CInt(c.R))
+            Dim minG As Integer = list_of_corner_colors.Min(Function(c) CInt(c.G))
+            Dim minB As Integer = list_of_corner_colors.Min(Function(c) CInt(c.B))
+
+            Return (maxR - minR) + (maxG - minG) + (maxB - minB)
+        End If
+
+    End Function
+
+    Private Sub Draw_Perspective()
+
+        '  Dim sw As New Stopwatch()
+        '   sw.Start()
+
+        If is_pespective AndAlso
+            (isPictureBox1Visible OrElse
+            isPictureBox2Visible) AndAlso
+            (Not is_slide_show_mode Or
+            SlideShowTimer.Interval > slideshow_limit_to_change_color) AndAlso
+            lastPerspectiveDraw < DateTime.Now.Subtract(TimeSpan.FromMilliseconds(how_long_wait_before_draw_perspective)) Then
+
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1129: corners redrawn")
+            lastPerspectiveDraw = DateTime.Now()
+
+            Dim bmp As Bitmap = Nothing
+            Dim pic_to As Int16 = 0
+            Dim is_perspective_drown As Boolean = False
+
+            If isPictureBox1Visible Then
+                bmp = CType(Picture_Box_1.Image, Bitmap)
+                pic_to = 1
+            ElseIf isPictureBox2Visible Then
+                bmp = CType(Picture_Box_2.Image, Bitmap)
+                pic_to = 2
+            End If
+
+            If bmp IsNot Nothing AndAlso
+                    bmp.Width > 1 AndAlso
+                    bmp.Height > 1 Then
+
+                Dim bH = bmp.Height - 1
+                Dim bW = bmp.Width - 1
+
+                '  Try
+                Dim bitmap_proportion = bW / bH
+                Dim pictureBox_proportion = Picture_Box_1.Width / Picture_Box_1.Height
+
+                If Not Math.Round(bitmap_proportion, 2) = Math.Round(pictureBox_proportion, 2) Then
+
+                    Dim w = Picture_Box_1.Width - 1
+                    Dim h = Picture_Box_1.Height - 1
+
+                    Dim proportionalScale_H = h / bH
+                    Dim proportionalScale_W = w / bW
+                    Dim canvas As New Bitmap(w + 1, h + 1)
+
+                    Dim brush_wide = 1
+                    Dim brush_size_H = CInt(proportionalScale_H * brush_wide + 1)
+                    Dim brush_size_W = CInt(proportionalScale_W * brush_wide + 1)
+                    Dim brush_size_line = 0
+                    Dim middle_point = 0
+                    Dim curs = 0
+                    Dim begin_point As New Point(0, 0)
+                    Dim end_point As New Point(0, 0)
+                    Dim to_draw_the_wide As Boolean = False
+                    Dim diffSum As Long = 0
+
+                    Dim list_of_corner_colors As New List(Of System.Drawing.Color)
+                    Dim threshold = (color_Deviation_Percent / 100) * 255 * 3
+
+                    If bitmap_proportion < pictureBox_proportion Then
+                        'left
+                        For y As Integer = 0 To h Step colorSearchStepSize
+                            list_of_corner_colors.Add(bmp.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
+                            curs += 1
+                        Next
+
+                        If list_of_corner_colors.Count > 0 Then
+
+                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
+
+                            If diffSum < threshold Then
+                                begin_point = New Point(0, CInt(h / 2))
+                                end_point = New Point(CInt(w / 2), CInt(h / 2))
+                                brush_size_line = h + 1
+
+                                Using g As Graphics = Graphics.FromImage(canvas)
+                                    If curs > 0 Then
+                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / curs)
+                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / curs)
+                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / curs)
+
+                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
+                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
+                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
+
+                                        is_perspective_drown = True
+
+                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    End If
+                                End Using
+
+                            Else
+                                list_of_corner_colors.Clear()
+                                is_perspective_drown = True
+
+                                For y As Integer = 0 To h Step brush_wide
+                                    list_of_corner_colors.Add(bmp.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
+                                Next
+
+                                middle_point = CInt(w / 2)
+
+                                Using g As Graphics = Graphics.FromImage(canvas)
+                                    For y As Integer = 0 To h Step brush_wide
+
+                                        begin_point = New Point(0, y)
+                                        end_point = New Point(middle_point, y)
+
+                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(y), brush_size_H)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    Next
+                                End Using
+                            End If
+                        End If
+
+                        curs = 0
+                        list_of_corner_colors.Clear()
+
+                        'right
+                        For y As Integer = 0 To h Step colorSearchStepSize
+                            list_of_corner_colors.Add(bmp.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
+                            curs += 1
+                        Next
+
+                        If list_of_corner_colors.Count > 0 Then
+
+                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
+
+                            If diffSum < threshold Then
+                                begin_point = New Point(CInt(w / 2), CInt(h / 2))
+                                end_point = New Point(w, CInt(h / 2))
+                                brush_size_line = h
+
+                                Using g As Graphics = Graphics.FromImage(canvas)
+                                    If curs > 0 Then
+                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / curs)
+                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / curs)
+                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / curs)
+
+                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
+                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
+                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
+
+                                        is_perspective_drown = True
+
+                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    End If
+                                End Using
+
+                            Else
+                                list_of_corner_colors.Clear()
+                                is_perspective_drown = True
+
+                                For y As Integer = 0 To h Step brush_wide
+                                    list_of_corner_colors.Add(bmp.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
+                                Next
+
+                                middle_point = CInt(w / 2)
+
+                                Using g As Graphics = Graphics.FromImage(canvas)
+                                    For y As Integer = 0 To h Step brush_wide
+
+                                        begin_point = New Point(middle_point, y)
+                                        end_point = New Point(w, y)
+
+                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(y), brush_size_H)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    Next
+                                End Using
+
+                            End If
+                        End If
+
+                    Else
+                        'top
+                        For x As Integer = 0 To w Step colorSearchStepSize
+                            list_of_corner_colors.Add(bmp.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
+                            curs += 1
+                        Next
+
+                        If list_of_corner_colors.Count > 0 Then
+
+                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
+
+                            If diffSum < threshold Then
+                                begin_point = New Point(CInt(w / 2), 0)
+                                end_point = New Point(CInt(w / 2), CInt(h / 2))
+                                brush_size_line = w
+
+                                Using g As Graphics = Graphics.FromImage(canvas)
+                                    If curs > 0 Then
+                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / curs)
+                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / curs)
+                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / curs)
+
+                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
+                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
+                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
+
+                                        is_perspective_drown = True
+
+                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    End If
+                                End Using
+
+                            Else
+                                list_of_corner_colors.Clear()
+                                is_perspective_drown = True
+
+                                For x As Integer = 0 To w Step brush_wide
+                                    list_of_corner_colors.Add(bmp.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
+                                Next
+
+                                middle_point = CInt(h / 2)
+
+                                Using g As Graphics = Graphics.FromImage(canvas)
+                                    For x As Integer = 0 To w Step brush_wide
+
+                                        begin_point = New Point(x, middle_point)
+                                        end_point = New Point(x, 0)
+
+                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(x), brush_size_W)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    Next
+                                End Using
+                            End If
+                        End If
+
+                        curs = 0
+                        list_of_corner_colors.Clear()
+
+                        'buttom
+                        For x As Integer = 0 To w Step colorSearchStepSize
+                            list_of_corner_colors.Add(bmp.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
+                            curs += 1
+                        Next
+
+                        If list_of_corner_colors.Count > 0 Then
+
+                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
+
+                            If diffSum < threshold Then
+                                begin_point = New Point(CInt(w / 2), CInt(h / 2))
+                                end_point = New Point(CInt(w / 2), h)
+                                brush_size_line = w
+
+                                Using g As Graphics = Graphics.FromImage(canvas)
+                                    If curs > 0 Then
+                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / curs)
+                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / curs)
+                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / curs)
+
+                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
+                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
+                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
+
+                                        is_perspective_drown = True
+
+                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    End If
+                                End Using
+
+                            Else
+                                list_of_corner_colors.Clear()
+                                is_perspective_drown = True
+
+                                For x As Integer = 0 To w Step brush_wide
+                                    list_of_corner_colors.Add(bmp.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
+                                Next
+
+                                middle_point = CInt(h / 2)
+
+                                Using g As Graphics = Graphics.FromImage(canvas)
+                                    For x As Integer = 0 To w Step brush_wide
+
+                                        begin_point = New Point(x, middle_point)
+                                        end_point = New Point(x, h)
+
+                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(x), brush_size_W)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    Next
+                                End Using
+
+                            End If
+                        End If
+                    End If
+
+                    If is_perspective_drown Then
+                        If pic_to = 1 Then
+                            Picture_Box_1.BackgroundImage = canvas
+                        ElseIf pic_to = 2 Then
+                            Picture_Box_2.BackgroundImage = canvas
+                        End If
+                    End If
+                End If
+                '      Catch ex As Exception
+                '         MsgBox("E104 " & ex.Message)
+                '        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w3050: E104 " & ex.Message)
+                '   End Try
+
+                Try
+                    If Not is_perspective_drown Then
+                        If pic_to = 1 AndAlso
+                                Picture_Box_1.BackgroundImage IsNot Nothing Then
+
+                            Picture_Box_1.BackgroundImage = Nothing
+
+                        ElseIf pic_to = 2 AndAlso
+                                Picture_Box_2.BackgroundImage IsNot Nothing Then
+
+                            Picture_Box_2.BackgroundImage = Nothing
+                        End If
+                    End If
+                Catch ex As Exception
+                    MsgBox("E105 " & ex.Message)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w3070: E105 " & ex.Message)
+                End Try
+            End If
+        End If
+
+        '  sw.Stop()
+        ' Debug.WriteLine("Draw_Perspective elapsed: " & sw.ElapsedMilliseconds & " ms")
+
+    End Sub
+
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles btn_Prev_File.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1130: btn_Prev_File")
-        SlideShowTimer.Enabled = False
+        SlideShowStop()
         ReadShowMediaFile("ReadPrevFile")
     End Sub
 
     Private Sub Button3_Click(sender As Object, e As EventArgs) Handles btn_Next_File.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1140: btn_Next_File")
-        SlideShowTimer.Enabled = False
+        SlideShowStop()
         ReadShowMediaFile("ReadNextFile")
     End Sub
 
@@ -1830,7 +2250,7 @@ Public Class the_Main_Form
 
                 lastMediaAreaClickTime = DateTime.MinValue
                 lastMediaAreaClickButton = MouseButtons.None
-                SlideShowTimer.Enabled = False
+                SlideShowStop()
 
                 Return
             End If
@@ -1856,17 +2276,17 @@ Public Class the_Main_Form
     Private Sub MouseUse(ByVal e As MouseEventArgs)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1170: MouseUse Delta: " & e.Delta.ToString)
 
-        SlideShowTimer.Enabled = False
+        SlideShowStop()
 
         If (Control.ModifierKeys And Keys.Alt) = Keys.Alt Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1172: zoom reset")
 
-            Dim isTop = lbl_Status.Top + lbl_Status.Height - 4
+            Dim isTop = lbl_Status.Top + lbl_Status.Height
 
             Picture_Box_1.Top = isTop
-            Picture_Box_1.Left = 2
-            Picture_Box_1.Width = Me.Width - 4
-            Picture_Box_1.Height = Me.Height - isTop - 4
+            Picture_Box_1.Left = left_first_column
+            Picture_Box_1.Width = Me.Width
+            Picture_Box_1.Height = Me.Height - isTop
 
             Picture_Box_2.Size = Picture_Box_1.Size
             Picture_Box_2.Location = Picture_Box_1.Location
@@ -1941,9 +2361,11 @@ Public Class the_Main_Form
                     moveOnKey(z) = Nothing
                 End Try
             Next
+
             SaveSetting(appName, secName, "LngRus", If(lngRus, "1", "0"))
             SaveSetting(appName, secName, "FirstRun", "0")
             SaveSetting(appName, secName, "CopyMode", If(copyMode, "1", "0"))
+            SaveSetting(appName, secName, "isPerspective", If(is_pespective, "1", "0"))
             SaveSetting(appName, secName, "TableOpened", If(the_Table_Form.Visible, "1", "0"))
             SaveSetting(appName, secName, "RunsCount", (applicationRunsCount + 1).ToString)
             SaveSetting(appName, secName, "mediaViewedCount", (mediaViewedCount).ToString)
@@ -1987,7 +2409,7 @@ Public Class the_Main_Form
             End While
         End If
 
-        SlideShowTimer.Enabled = False
+        SlideShowStop()
         SlideShowTimer.Dispose()
 
         If Web_View2 IsNot Nothing Then
@@ -2008,7 +2430,7 @@ Public Class the_Main_Form
 
     Private Sub Form1_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1240: keyb: " & e.KeyCode.ToString)
-        KeybUse(e)
+        KeybUse(e, GetWas_slideshow())
     End Sub
 
     Private Sub RenameCurrentFile()
@@ -2052,8 +2474,12 @@ Public Class the_Main_Form
         End Try
     End Sub
 
-    Public Sub KeybUse(e As KeyEventArgs)
-        SlideShowTimer.Enabled = False
+    Public Function GetWas_slideshow() As Boolean
+        Return is_slide_show_mode
+    End Function
+
+    Public Sub KeybUse(e As KeyEventArgs, was_slideshow As Boolean)
+        SlideShowStop()
         isSlideShowRandom = False
 
         If Me.cmbox_Media_Folder.Focused Then
@@ -2091,18 +2517,7 @@ Public Class the_Main_Form
                 Case Keys.Y
                     ReadShowMediaFile("ReadForRandom")
                 Case Keys.S
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1330: to slide show")
-                    isSlideShowRandom = True
-                    Dim newInterval = 10000
-                    If SlideShowTimer.Enabled Then
-                        newInterval = CInt(SlideShowTimer.Interval / 2)
-                        If newInterval < 50 Then newInterval = 50
-                    Else
-                        SlideShowTimer.Enabled = True
-                    End If
-                    SlideShowTimer.Interval = newInterval
-
-                    ReadShowMediaFile("ReadForSlideShow")
+                    SetSlideShow()
                 Case Keys.F6
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1340: to rename")
                     If Not String.IsNullOrEmpty(currentFileName) Then
@@ -2112,18 +2527,7 @@ Public Class the_Main_Form
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1350: No file to rename")
                     End If
                 Case Keys.I, Keys.F5
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1360: to random show")
-                    isSlideShowRandom = False
-                    Dim newInterval = 10000
-                    If SlideShowTimer.Enabled Then
-                        newInterval = CInt(SlideShowTimer.Interval / 2)
-                        If newInterval < 50 Then newInterval = 50
-                    Else
-                        SlideShowTimer.Enabled = True
-                    End If
-                    SlideShowTimer.Interval = newInterval
-
-                    ReadShowMediaFile("ReadForSlideShow")
+                    SetRandomSlideShow()
                 Case Keys.Home, Keys.H, Keys.BrowserHome
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1370: to first file")
                     currentFileIndex = 0
@@ -2238,7 +2642,7 @@ Public Class the_Main_Form
 
     Private Sub Button4_Click(sender As Object, e As EventArgs) Handles bt_Delete.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1650: bt_Delete")
-        SlideShowTimer.Enabled = False
+        SlideShowStop()
         ReadShowMediaFile("DeleteFile")
     End Sub
 
@@ -2448,7 +2852,8 @@ Public Class the_Main_Form
     End Sub
 
     Private Sub LngCh()
-        lbl_Status.Text = ""
+        If lbl_Status.Text = "status" Then lbl_Status.Text = ""
+
         If lngRus Then
             lbl_Folder.Text = "Каталог:"
             btn_Prev_File.Text = "<< пред(PgUp)"
@@ -2536,15 +2941,18 @@ Public Class the_Main_Form
 
     Private Sub Button6_Click(sender As Object, e As EventArgs) Handles btn_Slideshow.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1880: btn_Slideshow")
+        SetSlideShow()
+    End Sub
+
+    Private Sub SetSlideShow()
 
         isSlideShowRandom = False
-        Dim newInterval = 10000
-        If SlideShowTimer.Enabled Then
+        Dim newInterval = biggest_slide_show_interval
+        If is_slide_show_mode Then
             newInterval = CInt(SlideShowTimer.Interval / 2)
-            If newInterval < 50 Then newInterval = 50
-        Else
-            SlideShowTimer.Enabled = True
+            If newInterval < slide_show_limit Then newInterval = slide_show_limit
         End If
+        SlideShowStart()
         SlideShowTimer.Interval = newInterval
 
         ReadShowMediaFile("ReadForSlideShow")
@@ -2562,9 +2970,6 @@ Public Class the_Main_Form
     End Sub
 
     Private Sub Buttons_to_fullscreen()
-        Dim the_Height_For_buttons = 20
-        Dim the_Width_For_buttons = 15
-
         Picture_Box_1.Top = 0
         Picture_Box_1.Left = 0
         Picture_Box_1.Width = Me.Width
@@ -2585,77 +2990,86 @@ Public Class the_Main_Form
         btn_Move_Table.Visible = False
 
         cmbox_Sort.Visible = False
+        Dim the_font = New Font("Arial", 6, FontStyle.Regular)
 
+        With chkbox_Top_Most
+            .Top = top_first_line
+            .Left = left_first_column
+            .Width = the_Width_For_buttons * 2
+            .Height = btn_Select_Folder.Height
+            .Font = the_font
+            .Visible = True
+        End With
         With btn_Select_Folder
-            .Top = 2
-            .Left = 2
+            .Top = top_first_line
+            .Left = chkbox_Top_Most.Left + chkbox_Top_Most.Width + 2
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = New Font("Arial", 6, FontStyle.Regular)
+            .Font = the_font
             .Visible = True
         End With
         With btn_Review
-            .Top = 2
+            .Top = top_first_line
             .Left = btn_Select_Folder.Left + btn_Select_Folder.Width + 10
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = New Font("Arial", 6, FontStyle.Regular)
+            .Font = the_font
             .Visible = True
         End With
         With btn_Prev_File
-            .Top = 2
+            .Top = top_first_line
             .Left = btn_Review.Left + btn_Review.Width + 20
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = New Font("Arial", 6, FontStyle.Regular)
+            .Font = the_font
             .Visible = True
         End With
         With btn_Next_File
-            .Top = 2
+            .Top = top_first_line
             .Left = btn_Prev_File.Left + btn_Prev_File.Width + 2
             .Width = the_Width_For_buttons * 3
             .Height = the_Height_For_buttons
-            .Font = New Font("Arial", 6, FontStyle.Regular)
+            .Font = the_font
             .Visible = True
         End With
         With btn_Next_Random
-            .Top = 2
+            .Top = top_first_line
             .Left = btn_Next_File.Left + btn_Next_File.Width + 2
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = New Font("Arial", 6, FontStyle.Regular)
+            .Font = the_font
             .Visible = True
         End With
         With btn_Random_Slideshow
-            .Top = 2
+            .Top = top_first_line
             .Left = btn_Next_Random.Left + btn_Next_Random.Width + 20
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = New Font("Arial", 6, FontStyle.Regular)
+            .Font = the_font
             .Visible = True
         End With
         With btn_Slideshow
-            .Top = 2
+            .Top = top_first_line
             .Left = btn_Random_Slideshow.Left + btn_Random_Slideshow.Width + 2
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = New Font("Arial", 6, FontStyle.Regular)
+            .Font = the_font
             .Visible = True
         End With
         With btn_Rename
             .Top = lbl_Status.Top + lbl_Status.Height + 32
-            .Left = 2
+            .Left = left_first_column
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = New Font("Arial", 6, FontStyle.Regular)
+            .Font = the_font
             .Visible = True
         End With
         With bt_Delete
             .Top = btn_Rename.Top + btn_Rename.Height + 30
-            .Left = 2
+            .Left = 0
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
-            .Font = New Font("Arial", 6, FontStyle.Regular)
+            .Font = the_font
             .Visible = True
         End With
 
@@ -2664,106 +3078,109 @@ Public Class the_Main_Form
 
     Private Sub Buttons_to_normal()
 
-        Dim isTop = lbl_Status.Top + lbl_Status.Height - 4
+        Dim isTop = lbl_Status.Top + lbl_Status.Height
 
         lbl_Folder.Visible = True
         btn_Move_Table.Visible = True
 
-        If Not Picture_Box_1.Top = isTop OrElse Not Picture_Box_1.Width = Me.Width - 4 OrElse Not Picture_Box_1.Height = Me.Height - isTop - 4 Then
-
-            Dim the_Height_For_buttons = 20
-            Dim the_Width_For_buttons = 15
+        If Not Picture_Box_1.Top = isTop OrElse
+            Not Picture_Box_1.Width = Me.Width OrElse
+            Not Picture_Box_1.Height = Me.Height - isTop Then
 
             Picture_Box_1.Top = isTop
-            Picture_Box_1.Left = 2
-            Picture_Box_1.Width = Me.Width - 4
-            Picture_Box_1.Height = Me.Height - isTop - 4
+            Picture_Box_1.Left = left_first_column
+            Picture_Box_1.Width = Me.Width
+            Picture_Box_1.Height = Me.Height - isTop
 
             Picture_Box_2.Size = Picture_Box_1.Size
             Picture_Box_2.Location = Picture_Box_1.Location
 
+            Dim the_font = New Font("Arial", 7, FontStyle.Regular)
+
+            With chkbox_Top_Most
+                .Top = top_first_line
+                .Left = left_first_column
+                .Width = the_Width_For_buttons * 2
+                .Height = btn_Select_Folder.Height
+                .Font = the_font
+                .Visible = True
+            End With
             With cmbox_Sort
-                .Top = 2
-                .Left = 2
+                .Top = top_first_line
+                .Left = chkbox_Top_Most.Left + chkbox_Top_Most.Width + 2
                 .Width = the_Width_For_buttons * 3
                 .Height = cmbox_Media_Folder.Height
-                .Font = New Font("Arial", 7, FontStyle.Regular)
+                .Font = the_font
                 .Visible = True
             End With
             With lbl_Folder
-                .Top = 2
+                .Top = top_first_line
                 .Left = cmbox_Sort.Left + cmbox_Sort.Width + 2
                 .Height = cmbox_Media_Folder.Height
-                .Font = New Font("Arial", 6, FontStyle.Regular)
+                .Font = the_font
                 .Visible = True
             End With
             With btn_Select_Folder
-                .Top = 2
+                .Top = top_first_line
                 .Left = cmbox_Media_Folder.Width + cmbox_Media_Folder.Left + 2
                 .Width = the_Width_For_buttons * 2
                 .Height = the_Height_For_buttons
-                .Font = New Font("Arial", 6, FontStyle.Regular)
+                .Font = the_font
                 .Visible = True
             End With
             With btn_Review
-                .Top = 2
+                .Top = top_first_line
                 .Left = btn_Select_Folder.Left + btn_Select_Folder.Width + 10
                 .Width = the_Width_For_buttons * 2
                 .Height = the_Height_For_buttons
-                .Font = New Font("Arial", 6, FontStyle.Regular)
+                .Font = the_font
                 .Visible = True
             End With
             With btn_Full_Screen
-                .Top = 2
+                .Top = top_first_line
                 .Left = btn_Review.Left + btn_Review.Width + 10
                 .Width = the_Width_For_buttons * 2
                 .Height = the_Height_For_buttons
-                .Font = New Font("Arial", 6, FontStyle.Regular)
+                .Font = the_font
                 .Visible = True
             End With
             With lbl_Slideshow_Time
-                .Top = 2
+                .Top = top_first_line
                 .Left = btn_Full_Screen.Left + btn_Full_Screen.Width + 10
-                .Width = the_Width_For_buttons * 3
+                .Width = the_Width_For_buttons * 4
                 .Height = btn_Select_Folder.Height
-                .Visible = True
-            End With
-            With chkbox_Top_Most
-                .Top = 2
-                .Left = lbl_Slideshow_Time.Left + lbl_Slideshow_Time.Width + 40
-                .Width = the_Width_For_buttons * 2
-                .Height = btn_Select_Folder.Height
-                .Font = New Font("Arial", 6, FontStyle.Regular)
-                .Visible = True
+                .Font = the_font
+                .Visible = is_slide_show_mode
             End With
             With btn_Language
-                .Top = 2
-                .Left = chkbox_Top_Most.Left + chkbox_Top_Most.Width + 10
+                .Top = top_first_line
+                .Left = btn_Full_Screen.Left + btn_Full_Screen.Width + 20 + the_Width_For_buttons * 4
                 .Width = the_Width_For_buttons * 2
                 .Height = the_Height_For_buttons
-                .Font = New Font("Arial", 6, FontStyle.Regular)
+                .Font = the_font
                 .Visible = True
             End With
             'second line
             With lbl_File_Number
-                .Top = cmbox_Sort.Top + cmbox_Sort.Height + 4
-                .Left = 2
+                .Top = cmbox_Sort.Top + cmbox_Sort.Height + 2
+                .Left = left_first_column
+                .Font = the_font
                 .Visible = True
             End With
             With btn_Prev_File
                 .Top = lbl_File_Number.Top
                 .Left = cmbox_Media_Folder.Left + 50
-                .Width = the_Width_For_buttons * 7
+                .Width = the_Width_For_buttons * 6
                 .Height = the_Height_For_buttons
-                .Font = New Font("Arial", 6, FontStyle.Regular)
+                .Font = the_font
                 .Visible = True
             End With
             With btn_Next_File
                 .Top = btn_Prev_File.Top
                 .Left = btn_Prev_File.Left + btn_Prev_File.Width + 2
-                .Width = the_Width_For_buttons * 7
+                .Width = the_Width_For_buttons * 6
                 .Height = the_Height_For_buttons
-                .Font = New Font("Arial", 6, FontStyle.Regular)
+                .Font = the_font
                 .Visible = True
             End With
             With btn_Next_Random
@@ -2771,7 +3188,7 @@ Public Class the_Main_Form
                 .Left = btn_Next_File.Left + btn_Next_File.Width + 2
                 .Width = the_Width_For_buttons * 3
                 .Height = the_Height_For_buttons
-                .Font = New Font("Arial", 6, FontStyle.Regular)
+                .Font = the_font
                 .Visible = True
             End With
             With btn_Random_Slideshow
@@ -2779,7 +3196,7 @@ Public Class the_Main_Form
                 .Left = btn_Next_Random.Left + btn_Next_Random.Width + 20
                 .Width = the_Width_For_buttons * 3
                 .Height = the_Height_For_buttons
-                .Font = New Font("Arial", 6, FontStyle.Regular)
+                .Font = the_font
                 .Visible = True
             End With
             With btn_Slideshow
@@ -2787,7 +3204,7 @@ Public Class the_Main_Form
                 .Left = btn_Random_Slideshow.Left + btn_Random_Slideshow.Width + 2
                 .Width = the_Width_For_buttons * 3
                 .Height = the_Height_For_buttons
-                .Font = New Font("Arial", 6, FontStyle.Regular)
+                .Font = the_font
                 .Visible = True
             End With
             With btn_Move_Table
@@ -2795,7 +3212,7 @@ Public Class the_Main_Form
                 .Left = btn_Slideshow.Left + btn_Slideshow.Width + 20
                 .Width = the_Width_For_buttons * 7
                 .Height = the_Height_For_buttons
-                .Font = New Font("Arial", 6, FontStyle.Regular)
+                .Font = the_font
                 .Visible = True
             End With
             With btn_Rename
@@ -2803,7 +3220,7 @@ Public Class the_Main_Form
                 .Left = btn_Move_Table.Left + btn_Move_Table.Width + 20
                 .Width = the_Width_For_buttons * 3
                 .Height = the_Height_For_buttons
-                .Font = New Font("Arial", 6, FontStyle.Regular)
+                .Font = the_font
                 .Visible = True
             End With
             With bt_Delete
@@ -2811,9 +3228,15 @@ Public Class the_Main_Form
                 .Left = btn_Rename.Left + btn_Rename.Width + 20
                 .Width = the_Width_For_buttons * 3
                 .Height = the_Height_For_buttons
-                .Font = New Font("Arial", 6, FontStyle.Regular)
+                .Font = the_font
                 .Visible = True
             End With
+
+            lbl_Current_File.Left = left_first_column
+            lbl_Current_File.Top = btn_Prev_File.Top + btn_Prev_File.Height + 2
+
+            lbl_Status.Left = left_first_column
+            lbl_Status.Top = lbl_Current_File.Top + lbl_Current_File.Height + 2
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1920: buttons resized to normal screen")
         End If
@@ -2833,10 +3256,15 @@ Public Class the_Main_Form
         ISizeChanged()
     End Sub
 
+    Private Sub SlideShowStop()
+        SlideShowTimer().Enabled = False
+        is_slide_show_mode = False
+        lbl_Slideshow_Time.Visible = False
+    End Sub
+
     Private Sub Button5_Click(sender As Object, e As EventArgs) Handles btn_Move_Table.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1960: btn_MoveTable")
-
-        SlideShowTimer.Enabled = False
+        SlideShowStop()
         the_Table_Form.Show()
     End Sub
 
@@ -2852,26 +3280,35 @@ Public Class the_Main_Form
 
     Private Sub Button8_Click(sender As Object, e As EventArgs) Handles btn_Next_Random.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1990: btn_Next_Random")
-        SlideShowTimer.Enabled = False
+        SlideShowStop()
         ReadShowMediaFile("ReadForRandom")
     End Sub
 
     Private Sub Button9_Click(sender As Object, e As EventArgs) Handles btn_Random_Slideshow.Click
+        SetRandomSlideShow()
+    End Sub
+
+    Private Sub SlideShowStart()
+        SlideShowTimer.Enabled = True
+        is_slide_show_mode = True
+        lbl_Slideshow_Time.Visible = True
+    End Sub
+
+    Private Sub SetRandomSlideShow()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2000: btn_Random_Slideshow")
         isSlideShowRandom = True
-        Dim newInterval = 10000
-        If SlideShowTimer.Enabled Then
+        Dim newInterval = biggest_slide_show_interval
+        If is_slide_show_mode Then
             newInterval = CInt(SlideShowTimer.Interval / 2)
-            If newInterval < 50 Then newInterval = 50
-        Else
-            SlideShowTimer.Enabled = True
+            If newInterval < slide_show_limit Then newInterval = slide_show_limit
         End If
+        SlideShowStart()
         SlideShowTimer.Interval = newInterval
 
         ReadShowMediaFile("ReadForSlideShow")
     End Sub
 
-    Private Sub chkTopMost_CheckedChanged(sender As Object, e As EventArgs) Handles chkbox_Top_Most.CheckedChanged
+    Private Sub ChkTopMost_CheckedChanged(sender As Object, e As EventArgs) Handles chkbox_Top_Most.CheckedChanged
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2010: chkTopMost_CheckedChanged")
         Me.TopMost = chkbox_Top_Most.Checked
     End Sub
@@ -3094,12 +3531,12 @@ Public Class the_Main_Form
 
     Private Sub Picture_Box_1_KeyDown(sender As Object, e As KeyEventArgs) Handles Picture_Box_1.KeyDown
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1248: keyb on P1: " & e.KeyCode.ToString)
-        KeybUse(e)
+        KeybUse(e, GetWas_slideshow())
     End Sub
 
     Private Sub Picture_Box_2_KeyDown(sender As Object, e As KeyEventArgs) Handles Picture_Box_2.KeyDown
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1249: keyb on P2: " & e.KeyCode.ToString)
-        KeybUse(e)
+        KeybUse(e, GetWas_slideshow())
     End Sub
 
     Function IsRunningAsAdministrator() As Boolean
@@ -3111,6 +3548,7 @@ Public Class the_Main_Form
     ' Add this function to check .jpg association
     Private Function IsJpgAssociatedWithThisApp() As Boolean
         Try
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2410: check for JPG associacion")
             Using key = Registry.ClassesRoot.OpenSubKey(".jpg")
                 If key Is Nothing Then Return False
                 Dim progId = key.GetValue("")?.ToString()
@@ -3130,6 +3568,7 @@ Public Class the_Main_Form
 
     Private Sub AssociateJpgWithThisApp()
         Try
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2420: JPG associacion..")
             Dim exePath = Application.ExecutablePath
             Dim progId = "FastMediaSorter.jpg"
             ' Set ProgID
@@ -3144,7 +3583,8 @@ Public Class the_Main_Form
                 extKey.SetValue("", progId)
             End Using
         Catch ex As Exception
-            MessageBox.Show(If(lngRus, "Оштибка ассоциации: ", "Failed to set association: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show(If(lngRus, "Ошибка ассоциации: ", "Failed to set association: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ERR with JPG associacion.." & ex.Message)
         End Try
     End Sub
 
@@ -3163,7 +3603,6 @@ Public Class the_Main_Form
            IsExtensionAssociatedWithThisApp(".gif")
     End Function
 
-    ' Check if a specific extension is associated with this app
     Private Function IsExtensionAssociatedWithThisApp(ext As String) As Boolean
         Try
             Using key = Registry.ClassesRoot.OpenSubKey(ext)
@@ -3178,12 +3617,12 @@ Public Class the_Main_Form
                     Return command.ToLowerInvariant().Contains(exePath)
                 End Using
             End Using
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2430: Ext associaciated")
         Catch
             Return False
         End Try
     End Function
 
-    ' Associate .jpg, .png, .gif with this app
     Private Sub AssociateImageTypesWithThisApp()
         AssociateExtensionWithThisApp(".jpg", "FastMediaSorter.jpg", "JPEG Image - FastMediaSorter")
         AssociateExtensionWithThisApp(".png", "FastMediaSorter.png", "PNG Image - FastMediaSorter")
@@ -3205,6 +3644,7 @@ Public Class the_Main_Form
             End Using
         Catch ex As Exception
             MessageBox.Show(If(lngRus, "Ошибка ассоциации: ", "Failed to set association: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ERR Ext associaciated: " & ex.Message)
         End Try
     End Sub
 
@@ -3219,6 +3659,7 @@ Public Class the_Main_Form
             End If
 
             SaveSetting(appName, secName, "UserAlreadyAskedForAssociations", "1")
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2440: asked for association")
         End If
     End Sub
 

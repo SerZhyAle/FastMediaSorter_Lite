@@ -1,4 +1,5 @@
 ﻿'sza130806
+'sza250617
 Option Strict On
 
 Public Class the_Table_Form
@@ -13,15 +14,16 @@ Public Class the_Table_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-2: the_Table_Form_Load")
 
         cmbox_color_schema.Items.Clear()
-        cmbox_color_schema.Items.Add(If(lngRus, "По углу", "By corner"))
-        cmbox_color_schema.Items.Add(If(lngRus, "Черный", "Black"))
-        cmbox_color_schema.Items.Add(If(lngRus, "Белый", "White"))
-        cmbox_color_schema.Items.Add(If(lngRus, "По краю", "By side"))
-        cmbox_color_schema.Items.Add(If(lngRus, "По верху", "By top"))
-        cmbox_color_schema.Items.Add(If(lngRus, "По низу", "By buttom"))
+        cmbox_color_schema.Items.Add(If(lngRus, "По углу", "By corner")) '0
+        cmbox_color_schema.Items.Add(If(lngRus, "Черный", "Black")) '1
+        cmbox_color_schema.Items.Add(If(lngRus, "Белый", "White")) '2
+        cmbox_color_schema.Items.Add(If(lngRus, "По краю", "By side")) '3
+        cmbox_color_schema.Items.Add(If(lngRus, "По верху", "By top")) '4
+        cmbox_color_schema.Items.Add(If(lngRus, "По низу", "By buttom")) '5
         cmbox_color_schema.SelectedIndex = color_scheme
 
         lbl_Color.Text = If(lngRus, "Цвет:", "Color:")
+        chb_perspectiva.Text = If(lngRus, "Перспектива", "Perspective")
 
         chkbox_Copy_Mode.Checked = copyMode
         Data_Grid_View.Rows.Clear()
@@ -32,7 +34,7 @@ Public Class the_Table_Form
         For z As Integer = 1 To 10
             Data_Grid_View.Rows.Add()
             Data_Grid_View.Item(0, z).Value = z.ToString()
-            Data_Grid_View.Item(1, z).Value = If(moveOnKey(z) Is Nothing, "", moveOnKey(z))
+            Data_Grid_View.Item(1, z).Value = If(moveOnKey(z), "")
         Next
         Data_Grid_View.Item(0, 10).Value = "0"
         If lngRus Then
@@ -54,6 +56,9 @@ Public Class the_Table_Form
         Else
             setThisOnTop = False
         End If
+
+        chb_perspectiva.Checked = is_pespective
+
         TopOrNot()
     End Sub
 
@@ -99,7 +104,7 @@ Public Class the_Table_Form
     End Sub
 
     Private Sub Form2_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
-        the_Main_Form.KeybUse(e)
+        the_Main_Form.KeybUse(e, the_Main_Form.GetWas_slideshow())
     End Sub
 
     Private Sub CheckBox1_CheckedChanged(sender As Object, e As EventArgs) Handles chkbox_Copy_Mode.CheckedChanged
@@ -112,5 +117,9 @@ Public Class the_Table_Form
 
     Private Sub cmbox_color_schema_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmbox_color_schema.SelectedIndexChanged
         color_scheme = cmbox_color_schema.SelectedIndex
+    End Sub
+
+    Private Sub chb_perspectiva_CheckedChanged(sender As Object, e As EventArgs) Handles chb_perspectiva.CheckedChanged
+        is_pespective = chb_perspectiva.Checked
     End Sub
 End Class
