@@ -1,0 +1,313 @@
+﻿<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastMediaSorter by SZA - Organize Your Media Files with Ease</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+        .header {
+            background-color: #343a40;
+            color: white;
+            padding: 3rem 1rem;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        .content {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        .section-title {
+            font-size: 1.8rem;
+            color: #343a40;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 0.5rem;
+        }
+        .feature {
+            margin-bottom: 2rem;
+        }
+        .feature h4 {
+            font-size: 1.3rem;
+            color: #007bff;
+            margin-bottom: 0.5rem;
+        }
+        .feature p {
+            margin-bottom: 0.5rem;
+        }
+        .example {
+            background-color: #f1f1f1;
+            padding: 1rem;
+            border-left: 4px solid #007bff;
+            margin-top: 0.5rem;
+            border-radius: 5px;
+        }
+        .download-btn {
+            margin-top: 2rem;
+            text-align: center;
+        }
+        .download-btn a {
+            font-size: 1.2rem;
+            padding: 0.75rem 2rem;
+        }
+        .lang-switch {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+        }
+        .contact-info {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 1rem;
+            color: #6c757d;
+        }
+        .requirements {
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            color: #495057;
+        }
+        .requirements a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .requirements a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- Language Switch -->
+    <div class="lang-switch">
+        <button class="btn btn-outline-secondary btn-sm" onclick="switchLanguage('en')">English</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="switchLanguage('ru')">Русский</button>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <h1 id="title">FastMediaSorter by SZA</h1>
+        <p id="subtitle">Organize Your Media Files Effortlessly – Free and Powerful</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <!-- Introduction -->
+        <div class="feature">
+            <h2 class="section-title" id="intro-title">Simplify Your Media Management</h2>
+            <p id="intro-text">FastMediaSorter by SZA is a free, user-friendly tool designed to help you organize your media files with ease. Whether you're dealing with a cluttered <strong>Downloads</strong> folder, a chaotic <strong>TEMP</strong> directory, or a massive collection in your <strong>PHOTOS</strong> folder, this program makes sorting a breeze. With its intuitive interface and powerful features, you can sort, move, and manage your files in just a few clicks. Say goodbye to media chaos and hello to an organized digital life!</p>
+        </div>
+
+        <!-- Key Features -->
+        <div class="feature">
+            <h2 class="section-title" id="features-title">Key Features of FastMediaSorter</h2>
+            <div class="feature">
+                <h4 id="feature-1-title">Flexible Sorting Options</h4>
+                <p id="feature-1-text">Sort your media files by name (alphabetically or reverse), size (ascending or descending), or randomly with a single click. This makes it easy to prioritize or shuffle your files as needed.</p>
+                <div class="example">
+                    <p id="example-1-text"><strong>Example:</strong> You have hundreds of images in your Downloads folder. Use the "abc" option to sort them alphabetically, or ">size" to start with the smallest files, making it easier to delete unnecessary ones.</p>
+                </div>
+            </div>
+            <div class="feature">
+                <h4 id="feature-2-title">Hotkey-Driven File Management</h4>
+                <p id="feature-2-text">Assign folders to hotkeys (1-9, 0) and quickly move or copy files to them. This feature speeds up your workflow by eliminating the need to drag and drop manually.</p>
+                <div class="example">
+                    <p id="example-2-text"><strong>Example:</strong> Set hotkey "1" to your PHOTOS folder and "2" to TEMP. While browsing files in Downloads, press "1" to move a photo to PHOTOS or "2" to send a temporary file to TEMP without interrupting your sorting.</p>
+                </div>
+            </div>
+            <div class="feature">
+                <h4 id="feature-3-title">Wide Format Support</h4>
+                <p id="feature-3-text">Supports a variety of media formats, including images (.jpg, .png, etc.), videos (.mp4, .mov, etc.), and modern web formats like .webp, .heic, and .avif, ensuring you can manage all your files in one place.</p>
+                <div class="example">
+                    <p id="example-3-text"><strong>Example:</strong> Found a mix of .webp images and .mp4 videos in your Downloads folder? FastMediaSorter lets you preview and sort them seamlessly, saving you from using multiple tools.</p>
+                </div>
+            </div>
+            <div class="feature">
+                <h4 id="feature-4-title">Asynchronous Operations for Seamless Workflow</h4>
+                <p id="feature-4-text">Perform file operations like copying, moving, or deleting in the background, allowing you to continue sorting without waiting for each action to complete.</p>
+                <div class="example">
+                    <p id="example-4-text"><strong>Example:</strong> While moving a large video file from Downloads to PHOTOS, you can continue browsing and sorting other files without delay, thanks to asynchronous processing.</p>
+                </div>
+            </div>
+            <div class="feature">
+                <h4 id="feature-5-title">Recent Folders for Quick Access</h4>
+                <p id="feature-5-text">Access your frequently used folders (like Downloads, TEMP, or PHOTOS) instantly from a dropdown list, saving time when switching between directories.</p>
+                <div class="example">
+                    <p id="example-5-text"><strong>Example:</strong> After sorting files in Downloads, switch to TEMP or PHOTOS with one click from the recent folders list, without navigating through your file system.</p>
+                </div>
+            </div>
+            <div class="feature">
+                <h4 id="feature-6-title">Multilingual Interface</h4>
+                <p id="feature-6-text">Choose between English and Russian interfaces to work in the language you're most comfortable with.</p>
+            </div>
+        </div>
+
+        <!-- Why Choose -->
+        <div class="feature">
+            <h2 class="section-title" id="why-title">Why Choose FastMediaSorter?</h2>
+            <p id="why-text">FastMediaSorter is designed with simplicity and efficiency in mind. It's completely free, making it accessible to everyone who needs to organize their media files. The program's lightweight design ensures it runs smoothly even on older systems, while its powerful features cater to both casual users and power users. Whether you're cleaning up your Downloads folder, organizing your PHOTO collection, or managing temporary files in TEMP, FastMediaSorter saves you time and effort with its streamlined workflow.</p>
+            <p id="requirements-text" class="requirements">FastMediaSorter is compatible with the Windows operating system and requires .NET Framework 4.8 and WebView2 to function properly. Download them from Microsoft if you don't have them installed: <a href="https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48" target="_blank">.NET Framework 4.8</a> | <a href="https://developer.microsoft.com/en-us/microsoft-edge/webview2/" target="_blank">WebView2</a>.</p>
+        </div>
+
+        <!-- Download Button -->
+        <div class="download-btn">
+            <a href="http://thelifespan.online/FastMediaSorter/FastMediaSorter_pack.exe" class="btn btn-primary" id="download-btn">Download Now for Free</a>
+        </div>
+
+        <!-- Contact Info -->
+        <div class="contact-info">
+            <p id="contact-text">For support or inquiries, contact us at <a href="mailto:sza@ukr.net">sza@ukr.net</a></p>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and custom script for language switching -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const translations = {
+            en: {
+                title: "FastMediaSorter by SZA",
+                subtitle: "Organize Your Media Files Effortlessly – Free and Powerful",
+                introTitle: "Simplify Your Media Management",
+                introText: "FastMediaSorter by SZA is a free, user-friendly tool designed to help you organize your media files with ease. Whether you're dealing with a cluttered <strong>Downloads</strong> folder, a chaotic <strong>TEMP</strong> directory, or a massive collection in your <strong>PHOTOS</strong> folder, this program makes sorting a breeze. With its intuitive interface and powerful features, you can sort, move, and manage your files in just a few clicks. Say goodbye to media chaos and hello to an organized digital life!",
+                featuresTitle: "Key Features of FastMediaSorter",
+                feature1Title: "Flexible Sorting Options",
+                feature1Text: "Sort your media files by name (alphabetically or reverse), size (ascending or descending), or randomly with a single click. This makes it easy to prioritize or shuffle your files as needed.",
+                example1Text: "<strong>Example:</strong> You have hundreds of images in your Downloads folder. Use the \"abc\" option to sort them alphabetically, or \">size\" to start with the smallest files, making it easier to delete unnecessary ones.",
+                feature2Title: "Hotkey-Driven File Management",
+                feature2Text: "Assign folders to hotkeys (1-9, 0) and quickly move or copy files to them. This feature speeds up your workflow by eliminating the need to drag and drop manually.",
+                example2Text: "<strong>Example:</strong> Set hotkey \"1\" to your PHOTOS folder and \"2\" to TEMP. While browsing files in Downloads, press \"1\" to move a photo to PHOTOS or \"2\" to send a temporary file to TEMP without interrupting your sorting.",
+                feature3Title: "Wide Format Support",
+                feature3Text: "Supports a variety of media formats, including images (.jpg, .png, etc.), videos (.mp4, .mov, etc.), and modern web formats like .webp, .heic, and .avif, ensuring you can manage all your files in one place.",
+                example3Text: "<strong>Example:</strong> Found a mix of .webp images and .mp4 videos in your Downloads folder? FastMediaSorter lets you preview and sort them seamlessly, saving you from using multiple tools.",
+                feature4Title: "Asynchronous Operations for Seamless Workflow",
+                feature4Text: "Perform file operations like copying, moving, or deleting in the background, allowing you to continue sorting without waiting for each action to complete.",
+                example4Text: "<strong>Example:</strong> While moving a large video file from Downloads to PHOTOS, you can continue browsing and sorting other files without delay, thanks to asynchronous processing.",
+                feature5Title: "Recent Folders for Quick Access",
+                feature5Text: "Access your frequently used folders (like Downloads, TEMP, or PHOTOS) instantly from a dropdown list, saving time when switching between directories.",
+                example5Text: "<strong>Example:</strong> After sorting files in Downloads, switch to TEMP or PHOTOS with one click from the recent folders list, without navigating through your file system.",
+                feature6Title: "Multilingual Interface",
+                feature6Text: "Choose between English and Russian interfaces to work in the language you're most comfortable with.",
+                whyTitle: "Why Choose FastMediaSorter?",
+                whyText: "FastMediaSorter is designed with simplicity and efficiency in mind. It's completely free, making it accessible to everyone who needs to organize their media files. The program's lightweight design ensures it runs smoothly even on older systems, while its powerful features cater to both casual users and power users. Whether you're cleaning up your Downloads folder, organizing your PHOTO collection, or managing temporary files in TEMP, FastMediaSorter saves you time and effort with its streamlined workflow.",
+                requirementsText: "FastMediaSorter is compatible with the Windows operating system and requires .NET Framework 4.8 and WebView2 to function properly. Download them from Microsoft if you don't have them installed: <a href=\"https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48\" target=\"_blank\">.NET Framework 4.8</a> | <a href=\"https://developer.microsoft.com/en-us/microsoft-edge/webview2/\" target=\"_blank\">WebView2</a>.",
+                downloadBtn: "Download Now for Free",
+                contactText: "For support or inquiries, contact us at <a href='mailto:sza@ukr.net'>sza@ukr.net</a>"
+            },
+            ru: {
+                title: "FastMediaSorter от SZA",
+                subtitle: "Организуйте свои медиафайлы легко и бесплатно",
+                introTitle: "Упростите управление медиафайлами",
+                introText: "FastMediaSorter от SZA — это бесплатный и удобный инструмент, который поможет вам организовать ваши медиафайлы без лишних усилий. Если у вас накопились файлы в папке <strong>Downloads</strong>, беспорядок в <strong>TEMP</strong> или огромная коллекция в <strong>PHOTOS</strong>, эта программа сделает сортировку проще простого. Благодаря интуитивно понятному интерфейсу и мощным функциям вы можете сортировать, перемещать и управлять файлами всего за несколько кликов. Попрощайтесь с хаосом в медиафайлах и наслаждайтесь организованным цифровым пространством!",
+                featuresTitle: "Основные функции FastMediaSorter",
+                feature1Title: "Гибкие варианты сортировки",
+                feature1Text: "Сортируйте медиафайлы по имени (по алфавиту или в обратном порядке), размеру (по возрастанию или убыванию) или случайным образом одним кликом. Это позволяет легко расставить приоритеты или перемешать файлы по вашему усмотрению.",
+                example1Text: "<strong>Пример:</strong> У вас сотни изображений в папке Downloads. Используйте опцию \"abc\", чтобы отсортировать их по алфавиту, или \">size\", чтобы начать с самых маленьких файлов, упрощая удаление ненужных.",
+                feature2Title: "Управление файлами с помощью горячих клавиш",
+                feature2Text: "Назначьте папки на горячие клавиши (1-9, 0) и быстро перемещайте или копируйте файлы в них. Эта функция ускоряет вашу работу, устраняя необходимость перетаскивания файлов вручную.",
+                example2Text: "<strong>Пример:</strong> Назначьте клавишу \"1\" на папку PHOTOS, а \"2\" — на TEMP. Просматривая файлы в Downloads, нажмите \"1\", чтобы переместить фото в PHOTOS, или \"2\", чтобы отправить временный файл в TEMP, не прерывая сортировку.",
+                feature3Title: "Широкая поддержка форматов",
+                feature3Text: "Поддерживает множество форматов медиафайлов, включая изображения (.jpg, .png и др.), видео (.mp4, .mov и др.) и современные веб-форматы, такие как .webp, .heic и .avif, позволяя управлять всеми файлами в одном месте.",
+                example3Text: "<strong>Пример:</strong> Нашли в папке Downloads смесь изображений .webp и видео .mp4? FastMediaSorter позволяет просматривать и сортировать их без лишних усилий, избавляя от необходимости использовать несколько инструментов.",
+                feature4Title: "Асинхронные операции для бесперебойной работы",
+                feature4Text: "Выполняйте операции с файлами, такие как копирование, перемещение или удаление, в фоновом режиме, чтобы продолжать сортировку, не дожидаясь завершения каждой операции.",
+                example4Text: "<strong>Пример:</strong> Перемещая большое видео из Downloads в PHOTOS, вы можете продолжать просматривать и сортировать другие файлы без задержек благодаря асинхронной обработке.",
+                feature5Title: "Список последних папок для быстрого доступа",
+                feature5Text: "Получайте мгновенный доступ к часто используемым папкам (например, Downloads, TEMP или PHOTOS) через выпадающий список, экономя время при переключении между каталогами.",
+                example5Text: "<strong>Пример:</strong> После сортировки файлов в Downloads переключитесь на TEMP или PHOTOS одним кликом из списка последних папок, не тратя время на навигацию по файловой системе.",
+                feature6Title: "Многоязычный интерфейс",
+                feature6Text: "Выбирайте между английским и русским интерфейсом, чтобы работать на языке, который вам удобнее.",
+                whyTitle: "Почему стоит выбрать FastMediaSorter?",
+                whyText: "FastMediaSorter создан с упором на простоту и эффективность. Программа полностью бесплатна, что делает её доступной для всех, кто хочет организовать свои медиафайлы. Лёгкий дизайн обеспечивает плавную работу даже на старых системах, а мощные функции подойдут как обычным пользователям, так и опытным. Будь то очистка папки Downloads, организация коллекции PHOTOS или управление временными файлами в TEMP, FastMediaSorter сэкономит ваше время и силы благодаря оптимизированному рабочему процессу.",
+                requirementsText: "FastMediaSorter совместим с операционной системой Windows и требует установленного .NET Framework 4.8 и WebView2 для корректной работы. Скачайте их с сайта Microsoft, если они у вас не установлены: <a href=\"https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48\" target=\"_blank\">.NET Framework 4.8</a> | <a href=\"https://developer.microsoft.com/en-us/microsoft-edge/webview2/\" target=\"_blank\">WebView2</a>.",
+                downloadBtn: "Скачать бесплатно",
+                contactText: "Для поддержки или вопросов свяжитесь с нами по адресу <a href='mailto:sza@ukr.net'>sza@ukr.net</a>"
+            }
+        };
+
+        function switchLanguage(lang) {
+            document.getElementById('title').innerHTML = translations[lang].title;
+            document.getElementById('subtitle').innerHTML = translations[lang].subtitle;
+            document.getElementById('intro-title').innerHTML = translations[lang].introTitle;
+            document.getElementById('intro-text').innerHTML = translations[lang].introText;
+            document.getElementById('features-title').innerHTML = translations[lang].featuresTitle;
+            document.getElementById('feature-1-title').innerHTML = translations[lang].feature1Title;
+            document.getElementById('feature-1-text').innerHTML = translations[lang].feature1Text;
+            document.getElementById('example-1-text').innerHTML = translations[lang].example1Text;
+            document.getElementById('feature-2-title').innerHTML = translations[lang].feature2Title;
+            document.getElementById('feature-2-text').innerHTML = translations[lang].feature2Text;
+            document.getElementById('example-2-text').innerHTML = translations[lang].example2Text;
+            document.getElementById('feature-3-title').innerHTML = translations[lang].feature3Title;
+            document.getElementById('feature-3-text').innerHTML = translations[lang].feature3Text;
+            document.getElementById('example-3-text').innerHTML = translations[lang].example3Text;
+            document.getElementById('feature-4-title').innerHTML = translations[lang].feature4Title;
+            document.getElementById('feature-4-text').innerHTML = translations[lang].feature4Text;
+            document.getElementById('example-4-text').innerHTML = translations[lang].example4Text;
+            document.getElementById('feature-5-title').innerHTML = translations[lang].feature5Title;
+            document.getElementById('feature-5-text').innerHTML = translations[lang].feature5Text;
+            document.getElementById('example-5-text').innerHTML = translations[lang].example5Text;
+            document.getElementById('feature-6-title').innerHTML = translations[lang].feature6Title;
+            document.getElementById('feature-6-text').innerHTML = translations[lang].feature6Text;
+            document.getElementById('why-title').innerHTML = translations[lang].whyTitle;
+            document.getElementById('why-text').innerHTML = translations[lang].whyText;
+            document.getElementById('requirements-text').innerHTML = translations[lang].requirementsText;
+            document.getElementById('download-btn').innerHTML = translations[lang].downloadBtn;
+            document.getElementById('contact-text').innerHTML = translations[lang].contactText;
+        }
+
+        switchLanguage('en');
+    </script>
+</body>
+</html>

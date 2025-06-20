@@ -60,6 +60,7 @@ Public Class Main_Form
     Private Const biggest_slide_show_interval = 10000
     Private Const slideshow_limit_to_change_color = 2000
     Private Const how_long_wait_before_draw_perspective = 50
+    Private Const max_Number_Of_Recent_Media_Files As Integer = 50
 
     Public Image_File_Extensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tiff", ".ico", ".wmf", ".emf", ".exif"}
     Private video_File_Extensions As New HashSet(Of String) From {".webm", ".ogg", ".3g2", ".mkv", ".3gp", ".mp4", ".m4v", ".m4a", ".mov", ".mp3", ".avi", ".wmv", ".asf", ".mpg", ".mpeg", ".flv", ".wav", ".wma"}
@@ -71,6 +72,7 @@ Public Class Main_Form
     Public Is_to_show_file_sizes As Boolean = True
     Public Is_to_show_file_datetime As Boolean = True
 
+    Private recent_Media_File_List As New List(Of String)
     Private Image_Panel_Form As Image_Panel_Form
     Private toolTip As ToolTip
 
@@ -247,6 +249,8 @@ Public Class Main_Form
         toolTip.SetToolTip(lbl_Current_File, If(Is_Russian_Language, "Нажмите, чтобы скопировать путь к файлу", "Click to copy the file path"))
         toolTip.SetToolTip(lbl_Status, If(Is_Russian_Language, "Статус текущей операции", "Status of the current operation"))
         toolTip.SetToolTip(lbl_File_Number, If(Is_Russian_Language, "Номер текущего файла и общее количество", "Current file number and total count"))
+
+        toolTip.SetToolTip(btn_RecentFiles, If(Is_Russian_Language, "Недавние файлы", "Recent files"))
 
         ' --- Main Display Area ---
         'Dim mediaControlTooltip As String = If(Is_Russian_Language,
@@ -1543,6 +1547,14 @@ Public Class Main_Form
                 End If
             End If
 
+            If Not String.IsNullOrEmpty(Current_File_Name) Then
+                recent_Media_File_List.Remove(Current_File_Name)
+                recent_Media_File_List.Add(Current_File_Name)
+                If recent_Media_File_List.Count > max_Number_Of_Recent_Media_Files Then
+                    recent_Media_File_List.RemoveAt(0)
+                End If
+            End If
+
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0980: currentFileName = " & Current_File_Name)
 
             Dim current_File_Number As Integer = current_File_Index + 1
@@ -1763,6 +1775,30 @@ Public Class Main_Form
         End If
     End Sub
 
+    Private Sub btn_RecentFiles_Click(sender As Object, e As EventArgs) Handles btn_RecentFiles.Click
+        If recent_Media_File_List Is Nothing OrElse
+            recent_Media_File_List.Count = 0 Then
+
+            '   MessageBox.Show(If(Is_Russian_Language, "Нет недавних файлов.", "No recent files."), "Recent Files", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+
+        Dim menu As New ContextMenuStrip()
+        For Each file In recent_Media_File_List.AsEnumerable().Reverse()
+            Dim item = menu.Items.Add(System.IO.Path.GetFileName(file))
+            item.Tag = file
+        Next
+
+        AddHandler menu.ItemClicked, Sub(s, args)
+                                         Dim selectedFile = TryCast(args.ClickedItem.Tag, String)
+                                         If Not String.IsNullOrEmpty(selectedFile) Then
+                                             ProcessArgument(selectedFile)
+                                         End If
+                                     End Sub
+
+        menu.Show(btn_RecentFiles, New Point(0, btn_RecentFiles.Height))
+    End Sub
+
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
         Debug.WriteLine(" - - - ")
@@ -1833,6 +1869,15 @@ Public Class Main_Form
                     cmbox_Media_Folder.Items.Add(folder)
                 End If
             Next
+        End If
+
+        Dim recent_Media_Files_Data As String = GetSetting(App_name, Second_App_Name, "RecentMediaFiles", "")
+        If Not String.IsNullOrEmpty(recent_Media_Files_Data) Then
+            recent_Media_File_List = recent_Media_Files_Data.Split("|"c).ToList()
+            recent_Media_File_List.RemoveAll(Function(x) String.IsNullOrEmpty(x))
+            If recent_Media_File_List.Count > max_Number_Of_Recent_Media_Files Then
+                recent_Media_File_List = recent_Media_File_List.Skip(recent_Media_File_List.Count - max_Number_Of_Recent_Media_Files).ToList()
+            End If
         End If
 
         If Table_Form.chkbox_Independent_Thread_For_File_Operation IsNot Nothing Then
@@ -2442,6 +2487,7 @@ Public Class Main_Form
             SaveSetting(App_name, Second_App_Name, "mediaViewedCount", (media_View_Count).ToString)
             SaveSetting(App_name, Second_App_Name, "SortDir", (cmbox_Sort.SelectedIndex).ToString)
             SaveSetting(App_name, Second_App_Name, "color_scheme", (Form_Color_Scheme).ToString)
+            SaveSetting(App_name, Second_App_Name, "RecentMediaFiles", String.Join("|", recent_Media_File_List))
 
             SaveSetting(App_name, Second_App_Name, "ShowPictureSizes", If(Is_to_show_picture_sizes, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "ShowFileSizes", If(Is_to_show_file_sizes, "1", "0"))
@@ -3340,8 +3386,11 @@ Public Class Main_Form
                 .Visible = True
             End With
 
-            lbl_Current_File.Left = left_first_column
-            lbl_Current_File.Top = btn_Prev_File.Top + btn_Prev_File.Height + 2
+            btn_RecentFiles.Left = left_first_column
+            btn_RecentFiles.Top = btn_Prev_File.Top + btn_Prev_File.Height + 2
+
+            lbl_Current_File.Left = btn_RecentFiles.Left + btn_RecentFiles.Width + 2
+            lbl_Current_File.Top = btn_RecentFiles.Top
 
             lbl_Status.Left = left_first_column
             lbl_Status.Top = lbl_Current_File.Top + lbl_Current_File.Height + 2

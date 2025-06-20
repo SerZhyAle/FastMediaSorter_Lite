@@ -1,0 +1,254 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastMediaSorter Help</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .lang-switcher {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+        .lang-switcher button {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            background: #f0f0f0;
+            cursor: pointer;
+        }
+        .lang-switcher button.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        h1, h2, h3 {
+            color: #0056b3;
+        }
+        h1 {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background: #eef;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        code {
+            background: #eee;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="lang-switcher">
+            <button id="lang-en" class="active">English</button>
+            <button id="lang-ru">Русский</button>
+        </div>
+
+        <div id="content-en">
+            <h1>Welcome to FastMediaSorter!</h1>
+
+            <h2>1. Application Goals</h2>
+            <p>FastMediaSorter is designed for rapid sorting and management of large collections of photos and videos. The primary goal is to provide a highly efficient workflow for users who need to organize media files into different folders quickly, using extensive keyboard shortcuts to minimize mouse usage.</p>
+
+            <h2>2. Full List of Functionality</h2>
+            <h3>File Viewing & Navigation</h3>
+            <ul>
+                <li><strong>Next/Previous File</strong>: Navigate with <code>&rarr;</code>/<code>&larr;</code> arrows, <code>PgDn</code>/<code>PgUp</code>, <code>N</code>/<code>P</code> keys, mouse wheel, or left/right mouse clicks.</li>
+                <li><strong>Jump Navigation</strong>: Use <code>&uarr;</code>/<code>&darr;</code> arrows to jump 10 files at a time, or <code>Shift+PgDn/PgUp</code> to jump 100 files.</li>
+                <li><strong>Go to First/Last</strong>: Press <code>Home</code> or <code>End</code>.</li>
+                <li><strong>Random File</strong>: Press <code>Y</code> to view a random file from the current folder.</li>
+                <li><strong>Drag and Drop</strong>: Drop a file or folder onto the application window to open it.</li>
+            </ul>
+
+            <h3>Display Modes</h3>
+            <ul>
+                <li><strong>Fullscreen</strong>: Toggle with the 'Fullscreen' button or by pressing <code>F11</code>. Double-click the media to exit fullscreen.</li>
+                <li><strong>Slideshow</strong>: Press <code>S</code> for a sequential slideshow. Press again to speed it up.</li>
+                <li><strong>Random Slideshow</strong>: Press <code>I</code> or <code>F5</code> for a random slideshow.</li>
+                <li><strong>Image Panel</strong>: Press <code>F3</code> to see a thumbnail panel of all images in the folder for quick selection.</li>
+                <li><strong>Always on Top</strong>: Use the checkbox to keep the window above all others.</li>
+            </ul>
+
+            <h3>File Operations</h3>
+            <ul>
+                <li><strong>Move/Copy</strong>: Press number keys <code>0</code>-<code>9</code> to move (or copy) the current file to a pre-configured destination folder.</li>
+                <li><strong>Rename</strong>: Press <code>F6</code> or middle-click the media to rename it.</li>
+                <li><strong>Delete</strong>: Press <code>Delete</code> to permanently delete the current file (a confirmation can be enabled/disabled).</li>
+                <li><strong>Undo</strong>: Press <code>U</code> to undo the last move or copy operation.</li>
+            </ul>
+
+            <h3>Interface and Other Features</h3>
+            <ul>
+                <li><strong>Folder Selection</strong>: Choose a folder using the 'Select Folder' button or by pasting a path into the folder dropdown and pressing <code>Enter</code>.</li>
+                <li><strong>Recent Files/Folders</strong>: Quickly access recent folders from the main dropdown, or recent files from the '▼' button next to the current file name.</li>
+                <li><strong>Configuration Table</strong>: Press <code>F2</code> to open the settings table where you can assign destination folders to number keys (<code>0</code>-<code>9</code>) and configure other options.</li>
+                <li><strong>Copy Paths</strong>: Click on the folder path or file path labels to copy them to the clipboard.</li>
+                <li><strong>Image Manipulation</strong>: Press <code>R</code> to rotate an image clockwise, and <code>T</code> to rotate counter-clockwise.</li>
+                <li><strong>Zoom</strong>: Use <code>Ctrl + Mouse Wheel</code> to zoom in and out on images. Use <code>Alt + Mouse Wheel</code> to reset zoom.</li>
+                <li><strong>Multi-language</strong>: Switch between English and Russian interface.</li>
+            </ul>
+
+            <h2>3. Step-by-Step Usage Guide</h2>
+            <ol>
+                <li><strong>Initial Setup</strong>:
+                    <ul>
+                        <li>Run the application. If prompted, allow it to associate with common image file types for easier access.</li>
+                        <li>Press <code>F2</code> to open the 'Destination Folders Table'.</li>
+                        <li>In this table, click 'Choose folder' for each key (0-9) and select a destination folder where you want to sort your files.</li>
+                        <li>You can also set other options here, like running file operations in the background or changing the default action from 'Move' to 'Copy'.</li>
+                    </ul>
+                </li>
+                <li><strong>Open Your Media</strong>:
+                    <ul>
+                        <li>Click the 'Select Folder' button to browse for the folder containing the media you want to sort.</li>
+                        <li>Alternatively, drag and drop a folder or a single media file directly onto the application window.</li>
+                    </ul>
+                </li>
+                <li><strong>Sort Your Files</strong>:
+                    <ul>
+                        <li>Use the navigation controls (keyboard arrows, mouse clicks/wheel) to browse through your files.</li>
+                        <li>When you find a file you want to sort, press the number key (<code>0</code>-<code>9</code>) corresponding to the destination folder you configured. The file will be moved or copied instantly.</li>
+                        <li>If you make a mistake, press <code>U</code> to undo the last action.</li>
+                        <li>To delete a file, press the <code>Delete</code> key.</li>
+                    </ul>
+                </li>
+                <li><strong>Explore and View</strong>:
+                    <ul>
+                        <li>Use the slideshow modes (<code>S</code>, <code>I</code>, <code>F5</code>) for hands-free viewing.</li>
+                        <li>Press <code>F3</code> to get a quick visual overview of the entire folder in the Image Panel.</li>
+                        <li>Use zoom and rotate functions as needed for better viewing.</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <div id="content-ru" class="hidden">
+            <h1>Добро пожаловать в FastMediaSorter!</h1>
+
+            <h2>1. Цели приложения</h2>
+            <p>FastMediaSorter предназначен для быстрой сортировки и управления большими коллекциями фотографий и видео. Основная цель — предоставить высокоэффективный рабочий процесс для пользователей, которым необходимо быстро организовывать медиафайлы по разным папкам, используя обширные сочетания клавиш для минимизации использования мыши.</p>
+
+            <h2>2. Полный список функциональности</h2>
+            <h3>Просмотр и навигация по файлам</h3>
+            <ul>
+                <li><strong>Следующий/Предыдущий файл</strong>: Перемещайтесь с помощью стрелок <code>&rarr;</code>/<code>&larr;</code>, клавиш <code>PgDn</code>/<code>PgUp</code>, <code>N</code>/<code>P</code>, колеса мыши или кликов левой/правой кнопкой мыши.</li>
+                <li><strong>Быстрый переход</strong>: Используйте стрелки <code>&uarr;</code>/<code>&darr;</code> для перехода на 10 файлов вперед/назад или <code>Shift+PgDn/PgUp</code> для перехода на 100 файлов.</li>
+                <li><strong>Перейти к первому/последнему</strong>: Нажмите <code>Home</code> или <code>End</code>.</li>
+                <li><strong>Случайный файл</strong>: Нажмите <code>Y</code> для просмотра случайного файла из текущей папки.</li>
+                <li><strong>Перетаскивание</strong>: Перетащите файл или папку в окно приложения, чтобы открыть их.</li>
+            </ul>
+
+            <h3>Режимы отображения</h3>
+            <ul>
+                <li><strong>Полноэкранный режим</strong>: Переключите с помощью кнопки 'Fullscreen' или нажатием <code>F11</code>. Дважды щелкните по медиа, чтобы выйти из полноэкранного режима.</li>
+                <li><strong>Слайд-шоу</strong>: Нажмите <code>S</code> для последовательного слайд-шоу. Нажмите еще раз, чтобы ускорить.</li>
+                <li><strong>Случайное слайд-шоу</strong>: Нажмите <code>I</code> или <code>F5</code> для случайного слайд-шоу.</li>
+                <li><strong>Панель изображений</strong>: Нажмите <code>F3</code>, чтобы увидеть панель с миниатюрами всех изображений в папке для быстрого выбора.</li>
+                <li><strong>Поверх всех окон</strong>: Используйте флажок, чтобы держать окно поверх всех остальных.</li>
+            </ul>
+
+            <h3>Операции с файлами</h3>
+            <ul>
+                <li><strong>Перемещение/Копирование</strong>: Нажимайте цифровые клавиши <code>0</code>-<code>9</code>, чтобы переместить (или скопировать) текущий файл в предварительно настроенную папку назначения.</li>
+                <li><strong>Переименовать</strong>: Нажмите <code>F6</code> или среднюю кнопку мыши на медиа, чтобы переименовать его.</li>
+                <li><strong>Удалить</strong>: Нажмите <code>Delete</code>, чтобы безвозвратно удалить текущий файл (подтверждение можно включить/отключить).</li>
+                <li><strong>Отменить</strong>: Нажмите <code>U</code>, чтобы отменить последнюю операцию перемещения или копирования.</li>
+            </ul>
+
+            <h3>Интерфейс и другие возможности</h3>
+            <ul>
+                <li><strong>Выбор папки</strong>: Выберите папку с помощью кнопки 'Выбрать папку' или вставив путь в выпадающий список папок и нажав <code>Enter</code>.</li>
+                <li><strong>Недавние файлы/папки</strong>: Быстрый доступ к недавним папкам из основного выпадающего списка или к недавним файлам с помощью кнопки '▼' рядом с именем текущего файла.</li>
+                <li><strong>Таблица настроек</strong>: Нажмите <code>F2</code>, чтобы открыть таблицу настроек, где вы можете назначить папки назначения цифровым клавишам (<code>0</code>-<code>9</code>) и настроить другие параметры.</li>
+                <li><strong>Копировать пути</strong>: Щелкните по меткам пути к папке или файлу, чтобы скопировать их в буфер обмена.</li>
+                <li><strong>Манипуляции с изображением</strong>: Нажмите <code>R</code> для поворота изображения по часовой стрелке и <code>T</code> для поворота против часовой стрелки.</li>
+                <li><strong>Масштабирование</strong>: Используйте <code>Ctrl + Колесо мыши</code> для увеличения и уменьшения масштаба изображений. Используйте <code>Alt + Колесо мыши</code> для сброса масштаба.</li>
+                <li><strong>Многоязычность</strong>: Переключение между английским и русским интерфейсом.</li>
+            </ul>
+
+            <h2>3. Пошаговое руководство по использованию</h2>
+            <ol>
+                <li><strong>Начальная настройка</strong>:
+                    <ul>
+                        <li>Запустите приложение. Если будет предложено, разрешите ему ассоциироваться с распространенными типами файлов изображений для более удобного доступа.</li>
+                        <li>Нажмите <code>F2</code>, чтобы открыть 'Таблицу папок-получателей'.</li>
+                        <li>В этой таблице нажмите 'Выбрать папку' для каждой клавиши (0-9) и выберите папку назначения, куда вы хотите сортировать файлы.</li>
+                        <li>Здесь же можно настроить другие параметры, например, выполнение файловых операций в фоновом режиме или изменение действия по умолчанию с 'Переместить' на 'Копировать'.</li>
+                    </ul>
+                </li>
+                <li><strong>Откройте ваши медиафайлы</strong>:
+                    <ul>
+                        <li>Нажмите кнопку 'Выбрать папку', чтобы найти папку с медиафайлами, которые вы хотите отсортировать.</li>
+                        <li>Или перетащите папку или один медиафайл прямо в окно приложения.</li>
+                    </ul>
+                </li>
+                <li><strong>Сортируйте ваши файлы</strong>:
+                    <ul>
+                        <li>Используйте элементы управления навигацией (клавиши со стрелками, клики/колесо мыши) для просмотра файлов.</li>
+                        <li>Когда вы найдете файл, который хотите отсортировать, нажмите цифровую клавишу (<code>0</code>-<code>9</code>), соответствующую настроенной вами папке назначения. Файл будет мгновенно перемещен или скопирован.</li>
+                        <li>Если вы ошиблись, нажмите <code>U</code>, чтобы отменить последнее действие.</li>
+                        <li>Чтобы удалить файл, нажмите клавишу <code>Delete</code>.</li>
+                    </ul>
+                </li>
+                <li><strong>Исследуйте и просматривайте</strong>:
+                    <ul>
+                        <li>Используйте режимы слайд-шоу (<code>S</code>, <code>I</code>, <code>F5</code>) для просмотра без помощи рук.</li>
+                        <li>Нажмите <code>F3</code>, чтобы получить быстрый визуальный обзор всей папки на Панели изображений.</li>
+                        <li>Используйте функции масштабирования и поворота по мере необходимости для лучшего просмотра.</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnEn = document.getElementById('lang-en');
+            const btnRu = document.getElementById('lang-ru');
+            const contentEn = document.getElementById('content-en');
+            const contentRu = document.getElementById('content-ru');
+
+            btnEn.addEventListener('click', function() {
+                contentEn.classList.remove('hidden');
+                contentRu.classList.add('hidden');
+                btnEn.classList.add('active');
+                btnRu.classList.remove('active');
+            });
+
+            btnRu.addEventListener('click', function() {
+                contentRu.classList.remove('hidden');
+                contentEn.classList.add('hidden');
+                btnRu.classList.add('active');
+                btnEn.classList.remove('active');
+            });
+        });
+    </script>
+</body>
+</html>

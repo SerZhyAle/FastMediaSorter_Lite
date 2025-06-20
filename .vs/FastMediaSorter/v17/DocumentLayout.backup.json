@@ -7,8 +7,12 @@
       "RelativeMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|solutionrelative:main_form.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|C:\\GIT\\FastMediaSorter\\main_form.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}|Form",
-      "RelativeMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|solutionrelative:main_form.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}|Form"
+      "AbsoluteMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|c:\\git\\fastmediasorter\\readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|",
+      "RelativeMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|solutionrelative:readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|c:\\git\\fastmediasorter\\main_form.designer.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "RelativeMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|solutionrelative:main_form.designer.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|C:\\GIT\\FastMediaSorter\\image_panel_form.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
@@ -30,7 +34,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 7,
+          "SelectedChildIndex": 8,
           "Children": [
             {
               "$type": "Bookmark",
@@ -59,14 +63,28 @@
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "Main_Form.vb [Design]",
-              "DocumentMoniker": "C:\\GIT\\FastMediaSorter\\Main_Form.vb",
-              "RelativeDocumentMoniker": "Main_Form.vb",
-              "ToolTip": "C:\\GIT\\FastMediaSorter\\Main_Form.vb [Design]*",
-              "RelativeToolTip": "Main_Form.vb [Design]*",
+              "Title": "README.md",
+              "DocumentMoniker": "C:\\GIT\\FastMediaSorter\\README.md",
+              "RelativeDocumentMoniker": "README.md",
+              "ToolTip": "C:\\GIT\\FastMediaSorter\\README.md",
+              "RelativeToolTip": "README.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2025-06-20T01:03:43.226Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Main_Form.Designer.vb",
+              "DocumentMoniker": "C:\\GIT\\FastMediaSorter\\Main_Form.Designer.vb",
+              "RelativeDocumentMoniker": "Main_Form.Designer.vb",
+              "ToolTip": "C:\\GIT\\FastMediaSorter\\Main_Form.Designer.vb",
+              "RelativeToolTip": "Main_Form.Designer.vb",
+              "ViewState": "AgIAAG0AAAAAAAAAAAAAAIMAAABOAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-06-18T23:12:18.87Z",
-              "EditorCaption": " [Design]"
+              "WhenOpened": "2025-06-20T00:49:20.806Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -74,27 +92,28 @@
               "Title": "Main_Form.vb",
               "DocumentMoniker": "C:\\GIT\\FastMediaSorter\\Main_Form.vb",
               "RelativeDocumentMoniker": "Main_Form.vb",
-              "ToolTip": "C:\\GIT\\FastMediaSorter\\Main_Form.vb*",
-              "RelativeToolTip": "Main_Form.vb*",
-              "ViewState": "AgIAABgAAAAAAAAAAAAAACIAAABEAAAAAAAAAA==",
+              "ToolTip": "C:\\GIT\\FastMediaSorter\\Main_Form.vb",
+              "RelativeToolTip": "Main_Form.vb",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsGAAASAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2025-06-18T00:40:53.181Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "Table_Form.vb [Design]",
               "DocumentMoniker": "C:\\GIT\\FastMediaSorter\\Table_Form.vb",
               "RelativeDocumentMoniker": "Table_Form.vb",
               "ToolTip": "C:\\GIT\\FastMediaSorter\\Table_Form.vb [Design]",
               "RelativeToolTip": "Table_Form.vb [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-06-18T08:09:38.907Z"
+              "WhenOpened": "2025-06-18T08:09:38.907Z",
+              "EditorCaption": " [Design]"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "Image_Panel_Form.vb",
               "DocumentMoniker": "C:\\GIT\\FastMediaSorter\\Image_Panel_Form.vb",
               "RelativeDocumentMoniker": "Image_Panel_Form.vb",
@@ -102,11 +121,12 @@
               "RelativeToolTip": "Image_Panel_Form.vb",
               "ViewState": "AgIAAFYBAAAAAAAAAAAiwFwBAAAhAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-06-18T11:59:17.881Z"
+              "WhenOpened": "2025-06-18T11:59:17.881Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "Table_Form.vb",
               "DocumentMoniker": "C:\\GIT\\FastMediaSorter\\Table_Form.vb",
               "RelativeDocumentMoniker": "Table_Form.vb",
@@ -114,7 +134,8 @@
               "RelativeToolTip": "Table_Form.vb",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAAiAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-06-18T08:16:43.128Z"
+              "WhenOpened": "2025-06-18T08:16:43.128Z",
+              "EditorCaption": ""
             }
           ]
         }
