@@ -32,7 +32,7 @@ Public Class Main_Form
     Private Const max_Namber_of_Recent_Folders As Integer = 100
     Private Const app_Mutex_Name As String = "FastMediaSorterSingleInstanceMutex"
     Private Const max_Number_Of_Files_For_List As Integer = 100000 'after - the array without sorting
-    Private Const height_For_instruments_on_WebPanel As String = "40"
+    Private Const height_For_instruments_on_WebPanel As String = "45"
     Private Const percent_of_second_Color_Point = 20
     Private Const step_size_while_color_Search = 100
     Private Const SW_SHOWNOACTIVATE As Integer = 4
@@ -72,6 +72,7 @@ Public Class Main_Form
     Public Is_to_show_file_datetime As Boolean = True
 
     Private Image_Panel_Form As Image_Panel_Form
+    Private toolTip As ToolTip
 
     Private is_form_shown As Boolean = False
     Private last_Perspective_Draw_Time As DateTime
@@ -191,6 +192,7 @@ Public Class Main_Form
     Const WM_USER As Integer = &H400
     Const MY_CUSTOM_MESSAGE As Integer = WM_USER + 1
     Const FILE_MAP_READ As Integer = &H4
+    Private Const minimum_time_before_next_media_file As Double = 0.04
 
     <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode)>
     Public Shared Function StrCmpLogicalW(psz1 As String, psz2 As String) As Integer
@@ -210,6 +212,53 @@ Public Class Main_Form
             External_message(Choosen_Picture_From_Panel)
             Choosen_Picture_From_Panel = "" ' Optionally reset after use
         End If
+    End Sub
+
+    Private Sub InitializeTooltips()
+        If toolTip Is Nothing Then
+            toolTip = New ToolTip()
+            ' Optional: Customize tooltip appearance and behavior
+            toolTip.AutoPopDelay = 5000 ' Linger time
+            toolTip.InitialDelay = 700  ' Time before appearing
+            toolTip.ReshowDelay = 500   ' Time before reappearing
+            toolTip.ShowAlways = True   ' Show even if form is not active
+        End If
+
+        ' --- Buttons and Checkboxes ---
+        toolTip.SetToolTip(btn_Select_Folder, If(Is_Russian_Language, "Выбрать папку с медиафайлами", "Select a folder with media files"))
+        toolTip.SetToolTip(btn_Review, If(Is_Russian_Language, "Перечитать текущую папку", "Reload the current folder"))
+        toolTip.SetToolTip(btn_Panel, If(Is_Russian_Language, "Показать панель изображений (F3)", "Show the image panel (F3)"))
+        toolTip.SetToolTip(btn_Full_Screen, If(Is_Russian_Language, "Полноэкранный режим", "Toggle fullscreen mode"))
+        toolTip.SetToolTip(btn_Prev_File, If(Is_Russian_Language, "Предыдущий файл (Стрелка влево, PgUp)", "Previous file (Left Arrow, PgUp)"))
+        toolTip.SetToolTip(btn_Next_File, If(Is_Russian_Language, "Следующий файл (Стрелка вправо, PgDn)", "Next file (Right Arrow, PgDn)"))
+        toolTip.SetToolTip(btn_Next_Random, If(Is_Russian_Language, "Случайный файл (Y)", "Random file (Y)"))
+        toolTip.SetToolTip(btn_Random_Slideshow, If(Is_Russian_Language, "Случайное слайд-шоу (I, F5)", "Random slideshow (I, F5)"))
+        toolTip.SetToolTip(btn_Slideshow, If(Is_Russian_Language, "Слайд-шоу (S)", "Slideshow (S)"))
+        toolTip.SetToolTip(btn_Move_Table, If(Is_Russian_Language, "Открыть таблицу папок-получателей и насчтройки (F2)", "Open the destination folders table and Options (F2)"))
+        toolTip.SetToolTip(btn_Rename, If(Is_Russian_Language, "Переименовать файл (F6)", "Rename file (F6)"))
+        toolTip.SetToolTip(bt_Delete, If(Is_Russian_Language, "Удалить файл (Del)", "Delete file (Del)"))
+        toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык на английский", "Switch language to Russian"))
+        toolTip.SetToolTip(chkbox_Top_Most, If(Is_Russian_Language, "Поверх всех окон", "Always on top"))
+
+        ' --- ComboBoxes and Labels ---
+        toolTip.SetToolTip(cmbox_Sort, If(Is_Russian_Language, "Порядок сортировки файлов", "File sort order"))
+        toolTip.SetToolTip(cmbox_Media_Folder, If(Is_Russian_Language, "Текущая папка. Введите путь и нажмите Enter для перехода.", "Current folder. Type a path and press Enter to navigate."))
+        toolTip.SetToolTip(lbl_Folder, If(Is_Russian_Language, "Нажмите, чтобы скопировать путь к папке", "Click to copy the folder path"))
+        toolTip.SetToolTip(lbl_Current_File, If(Is_Russian_Language, "Нажмите, чтобы скопировать путь к файлу", "Click to copy the file path"))
+        toolTip.SetToolTip(lbl_Status, If(Is_Russian_Language, "Статус текущей операции", "Status of the current operation"))
+        toolTip.SetToolTip(lbl_File_Number, If(Is_Russian_Language, "Номер текущего файла и общее количество", "Current file number and total count"))
+
+        ' --- Main Display Area ---
+        'Dim mediaControlTooltip As String = If(Is_Russian_Language,
+        '"ЛКМ: Следующий файл" & vbCrLf & "ПКМ: Предыдущий файл" & vbCrLf & "СКМ: Переименовать" & vbCrLf & "Колесо мыши: Навигация" & vbCrLf & "Ctrl+Колесо: Масштаб" & vbCrLf & "Alt+Колесо: Сброс масштаба" & vbCrLf & "Двойной клик: Выход из полноэкранного режима",
+        '"Left-Click: Next file" & vbCrLf & "Right-Click: Previous file" & vbCrLf & "Middle-Click: Rename" & vbCrLf & "Mouse Wheel: Navigate" & vbCrLf & "Ctrl+Wheel: Zoom" & vbCrLf & "Alt+Wheel: Reset Zoom" & vbCrLf & "Double-Click: Exit fullscreen")
+
+        'toolTip.SetToolTip(Picture_Box_1, mediaControlTooltip)
+        'toolTip.SetToolTip(Picture_Box_2, mediaControlTooltip)
+        'toolTip.SetToolTip(Web_Browser, mediaControlTooltip)
+        'If Web_View2 IsNot Nothing Then
+        '        toolTip.SetToolTip(Web_View2, mediaControlTooltip)
+        '       End If
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -411,7 +460,7 @@ Public Class Main_Form
                         Dim fileExtension As String = current_File_Info.Extension.ToLower()
                         If Image_File_Extensions.Contains(fileExtension) Then
                             Try
-                                Using img As Image = Image.FromFile(current_File_Name)
+                                Using img As Image = Image.FromFile(Current_File_Name)
                                     file_Meta_State("imageWidth") = img.Width.ToString()
                                     file_Meta_State("imageHeight") = img.Height.ToString()
                                 End Using
@@ -627,7 +676,7 @@ Public Class Main_Form
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0290: File is set from arg: " & argument_For_Path)
                 Current_Folder_Path = argument_Folder_Path
                 Current_Image_Path = argument_For_Path
-                current_File_Name = argument_For_Path
+                Current_File_Name = argument_For_Path
                 is_TextBox_Editing = True
                 cmbox_Media_Folder.Text = Current_Folder_Path
                 is_TextBox_Editing = False
@@ -672,7 +721,7 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0050: ReadShowMediaFile = " & read_Mode_Type.ToString)
 
             Dim current_Operation_Time As DateTime = DateTime.Now
-            If last_Action_Time.AddSeconds(0.04) > current_Operation_Time Then
+            If last_Action_Time.AddSeconds(minimum_time_before_next_media_file) > current_Operation_Time Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0330: Try to read the new file less than 0.4s - cancelled")
                 Exit Sub
             End If
@@ -828,10 +877,18 @@ Public Class Main_Form
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0530: case ReadPrevFile")
 
             Case "DeleteFile" '3
-                If String.IsNullOrEmpty(current_File_Name) Then
+                If String.IsNullOrEmpty(Current_File_Name) Then
                     lbl_Status.Text = If(Is_Russian_Language, "! Нет файла для удаления", "! No file for deleting")
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0540: case DeleteFile failed")
                     Return False
+                End If
+
+                Dim confirmMsg = If(Is_Russian_Language, $"Вы уверены, что хотите безвозвратно удалить файл '{Path.GetFileName(Current_File_Name)}'?", $"Are you sure you want to permanently delete the file '{Path.GetFileName(Current_File_Name)}'?")
+
+                If Not Is_no_request_before_file_operation AndAlso
+                    MessageBox.Show(confirmMsg, If(Is_Russian_Language, "Подтверждение удаления", "Deletion Confirmation"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then
+
+                    Return False ' User cancelled
                 End If
 
                 Try
@@ -847,12 +904,12 @@ Public Class Main_Form
 
                     current_Loaded_File_Name = ""
 
-                    If My.Computer.FileSystem.FileExists(current_File_Name) Then
+                    If My.Computer.FileSystem.FileExists(Current_File_Name) Then
                         If Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked Then
                             current_File_Operation = "Delete"
-                            current_File_Operation_Args = current_File_Name
+                            current_File_Operation_Args = Current_File_Name
                             FileOperationWorker.RunWorkerAsync()
-                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0550: file in task to be deleted: " & current_File_Name)
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0550: file in task to be deleted: " & Current_File_Name)
                             If is_Files_Array_Active Then
                                 files_Array = RemoveAt(files_Array, current_File_Index)
                             Else
@@ -860,10 +917,10 @@ Public Class Main_Form
                             End If
                             total_File_Count -= 1
                             If current_File_Index > total_File_Count - 1 Then current_File_Index = total_File_Count - 1
-                            lbl_Status.Text = If(Is_Russian_Language, "удален: ", "file deleted: ") & current_File_Name
+                            lbl_Status.Text = If(Is_Russian_Language, "удален: ", "file deleted: ") & Current_File_Name
                         Else
-                            DeleteFile(current_File_Name)
-                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0560: file deleted: " & current_File_Name)
+                            DeleteFile(Current_File_Name)
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0560: file deleted: " & Current_File_Name)
                             If is_Files_Array_Active Then
                                 files_Array = RemoveAt(files_Array, current_File_Index)
                             Else
@@ -871,7 +928,7 @@ Public Class Main_Form
                             End If
                             total_File_Count -= 1
                             If current_File_Index > total_File_Count - 1 Then current_File_Index = total_File_Count - 1
-                            lbl_Status.Text = If(Is_Russian_Language, "удален: ", "file deleted: ") & current_File_Name
+                            lbl_Status.Text = If(Is_Russian_Language, "удален: ", "file deleted: ") & Current_File_Name
                         End If
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0570: case DeleteFile")
                     Else
@@ -1083,7 +1140,7 @@ Public Class Main_Form
             UpdateControlVisibility()
 
             Web_View2.Source = New Uri(web_Image_Uri)
-            current_Loaded_File_Name = current_File_Name
+            current_Loaded_File_Name = Current_File_Name
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0820: WebView2 is loaded")
         Catch ex As Exception
             lbl_Status.Text = If(Is_Russian_Language, "Ошибка загрузки в WebView2: " & ex.Message, "Error loading in WebView2: " & ex.Message)
@@ -1170,7 +1227,7 @@ Public Class Main_Form
 
             last_Loaded_Uri = ""
             Web_Browser.DocumentText = html
-            current_Loaded_File_Name = current_File_Name
+            current_Loaded_File_Name = Current_File_Name
 
             is_WebBrowser_Visible = True
             is_PictureBox1_Visible = False
@@ -1197,10 +1254,10 @@ Public Class Main_Form
         is_WebBrowser_Visible = False
         is_WebView2_Visible = False
 
-        If current_Loaded_File_Name <> current_File_Name Then
+        If current_Loaded_File_Name <> Current_File_Name Then
 
             If bgWorker_Result = "LOADED" AndAlso
-                current_Second_File_Name = current_File_Name Then
+                current_Second_File_Name = Current_File_Name Then
 
                 If Not is_Second_PictureBox_Active Then
                     is_PictureBox2_Visible = True
@@ -1221,7 +1278,7 @@ Public Class Main_Form
 
                 Try
                     ' sza250609 - GIF fix
-                    Dim image_Data_Tuple As Tuple(Of Image, IO.MemoryStream) = LoadImageWithStream(current_File_Name)
+                    Dim image_Data_Tuple As Tuple(Of Image, IO.MemoryStream) = LoadImageWithStream(Current_File_Name)
 
                     If image_Data_Tuple IsNot Nothing Then
                         Dim loaded_Image As Image = image_Data_Tuple.Item1
@@ -1258,7 +1315,7 @@ Public Class Main_Form
                     Return
                 End Try
             End If
-            current_Loaded_File_Name = current_File_Name
+            current_Loaded_File_Name = Current_File_Name
 
             UpdateControlVisibility()
 
@@ -1467,33 +1524,33 @@ Public Class Main_Form
     End Sub
 
     Private Sub UpdateCurrentFileAndDisplay(is_File_Found As Boolean, is_After_Undo_Operation As Boolean)
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0381: UpdateCurrentFileAndDisplay, currentFileName: " & current_File_Name)
-        current_File_Name = ""
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0381: UpdateCurrentFileAndDisplay, currentFileName: " & Current_File_Name)
+        Current_File_Name = ""
 
         If total_File_Count <> 0 Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0960: isFileFound = " & is_File_Found.ToString)
             If is_File_Found Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0970: currentFileIndex = " & current_File_Index.ToString)
-                current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
+                Current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
             Else
                 If Current_Image_Path Is Nothing Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0972: targetImagePath Is Nothing")
                     current_File_Index = 0
-                    current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
-                    Current_Image_Path = current_File_Name
+                    Current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
+                    Current_Image_Path = Current_File_Name
                 Else
-                    current_File_Name = Current_Image_Path
+                    Current_File_Name = Current_Image_Path
                 End If
             End If
 
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0980: currentFileName = " & current_File_Name)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0980: currentFileName = " & Current_File_Name)
 
             Dim current_File_Number As Integer = current_File_Index + 1
             lbl_File_Number.Text = If(Is_Russian_Language, "Файл: " & current_File_Number.ToString() & " из " & total_File_Count.ToString(), "File: " & current_File_Number.ToString() & " from " & total_File_Count.ToString())
 
             Try
-                Dim current_File_Extension As String = Path.GetExtension(current_File_Name).ToLower()
-                Dim current_File_Uri As String = New Uri(current_File_Name).ToString()
+                Dim current_File_Extension As String = Path.GetExtension(Current_File_Name).ToLower()
+                Dim current_File_Uri As String = New Uri(Current_File_Name).ToString()
 
                 If Image_File_Extensions.Contains(current_File_Extension) Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1030: P to load")
@@ -1537,11 +1594,11 @@ Public Class Main_Form
 
                     is_BgWorker_Online = True
 
-                    BgWorker.RunWorkerAsync(New Tuple(Of String, String)(current_File_Name, next_File_After_Current))
+                    BgWorker.RunWorkerAsync(New Tuple(Of String, String)(Current_File_Name, next_File_After_Current))
 
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1060: BgWorker is run")
                 Else
-                    lbl_Current_File.Text = If(Is_Russian_Language, "Текущий: ", "Current: ") & current_File_Name
+                    lbl_Current_File.Text = If(Is_Russian_Language, "Текущий: ", "Current: ") & Current_File_Name
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1065: BgWorker is not run, online=" & is_BgWorker_Online.ToString & " IsBusy=" & BgWorker.IsBusy.ToString)
                 End If
 
@@ -1550,7 +1607,7 @@ Public Class Main_Form
                     MsgBox("E005 " & ex.Message)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1070: E005 " & ex.Message)
                 Else
-                    lbl_Status.Text = If(Is_Russian_Language, "Файл " & current_File_Name & " перемещается назад операционной системой.", "File " & current_File_Name & " moving back by OS.")
+                    lbl_Status.Text = If(Is_Russian_Language, "Файл " & Current_File_Name & " перемещается назад операционной системой.", "File " & Current_File_Name & " moving back by OS.")
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1080: UNdo E005 " & ex.Message)
                 End If
             End Try
@@ -1727,9 +1784,14 @@ Public Class Main_Form
 
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "color_scheme", "1"), Form_Color_Scheme)
 
-        Is_Russian_Language = GetSetting(App_name, Second_App_Name, "LngRus", "1") = "1"
+        Is_Russian_Language = GetSetting(App_name, Second_App_Name, "Is_Russian_Language", "1") = "1"
+        InitializeTooltips()
+
+        Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Width_At_Panel", "80"), Picture_Box_Width_At_Panel)
+        Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Height_At_Panel", "80"), Picture_Box_Height_At_Panel)
 
         Is_Pespective = GetSetting(App_name, Second_App_Name, "isPerspective", "1") = "1"
+        Is_no_request_before_file_operation = GetSetting(App_name, Second_App_Name, "NoRequestBeforeFileOperation", "0") = "1"
 
         Is_to_show_picture_sizes = GetSetting(App_name, Second_App_Name, "ShowPictureSizes", "1") = "1"
         Is_to_show_file_sizes = GetSetting(App_name, Second_App_Name, "ShowFileSizes", "1") = "1"
@@ -1929,284 +1991,284 @@ Public Class Main_Form
                 Dim bH = active_Bitmap.Height - 1
                 Dim bW = active_Bitmap.Width - 1
 
-                '  Try
-                Dim bitmap_proportion = bW / bH
-                Dim pictureBox_proportion = Picture_Box_1.Width / Picture_Box_1.Height
+                Try
+                    Dim bitmap_proportion = bW / bH
+                    Dim pictureBox_proportion = Picture_Box_1.Width / Picture_Box_1.Height
 
-                If Not Math.Round(bitmap_proportion, 2) = Math.Round(pictureBox_proportion, 2) Then
+                    If Not Math.Round(bitmap_proportion, 2) = Math.Round(pictureBox_proportion, 2) Then
 
-                    Dim w = Picture_Box_1.Width - 1
-                    Dim h = Picture_Box_1.Height - 1
+                        Dim w = Picture_Box_1.Width - 1
+                        Dim h = Picture_Box_1.Height - 1
 
-                    Dim proportionalScale_H = h / bH
-                    Dim proportionalScale_W = w / bW
-                    Dim Perspective_Bitmap As New Bitmap(w + 1, h + 1)
+                        Dim proportionalScale_H = h / bH
+                        Dim proportionalScale_W = w / bW
+                        Dim Perspective_Bitmap As New Bitmap(w + 1, h + 1)
 
-                    Dim brush_wide = 1
-                    Dim brush_size_H = CInt(proportionalScale_H * brush_wide + 1)
-                    Dim brush_size_W = CInt(proportionalScale_W * brush_wide + 1)
-                    Dim brush_size_line = 0
-                    Dim middle_point = 0
-                    Dim color_Sample_Count = 0
-                    Dim begin_point As New Point(0, 0)
-                    Dim end_point As New Point(0, 0)
-                    Dim to_draw_the_wide As Boolean = False
-                    Dim diffSum As Long = 0
+                        Dim brush_wide = 1
+                        Dim brush_size_H = CInt(proportionalScale_H * brush_wide + 1)
+                        Dim brush_size_W = CInt(proportionalScale_W * brush_wide + 1)
+                        Dim brush_size_line = 0
+                        Dim middle_point = 0
+                        Dim color_Sample_Count = 0
+                        Dim begin_point As New Point(0, 0)
+                        Dim end_point As New Point(0, 0)
+                        Dim to_draw_the_wide As Boolean = False
+                        Dim diffSum As Long = 0
 
-                    Dim list_of_corner_colors As New List(Of System.Drawing.Color)
-                    Dim color_deviation_threshold = (percent_of_color_deviation / 100) * 255 * 3
+                        Dim list_of_corner_colors As New List(Of System.Drawing.Color)
+                        Dim color_deviation_threshold = (percent_of_color_deviation / 100) * 255 * 3
 
-                    If bitmap_proportion < pictureBox_proportion Then
-                        'left
-                        For y As Integer = 0 To h Step step_size_while_color_Search
-                            list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
-                            color_Sample_Count += 1
-                        Next
+                        If bitmap_proportion < pictureBox_proportion Then
+                            'left
+                            For y As Integer = 0 To h Step step_size_while_color_Search
+                                list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
+                                color_Sample_Count += 1
+                            Next
 
-                        If list_of_corner_colors.Count > 0 Then
+                            If list_of_corner_colors.Count > 0 Then
 
-                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
+                                diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
 
-                            If diffSum < color_deviation_threshold Then
-                                begin_point = New Point(0, CInt(h / 2))
-                                end_point = New Point(CInt(w / 2), CInt(h / 2))
-                                brush_size_line = h + 1
+                                If diffSum < color_deviation_threshold Then
+                                    begin_point = New Point(0, CInt(h / 2))
+                                    end_point = New Point(CInt(w / 2), CInt(h / 2))
+                                    brush_size_line = h + 1
 
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    If color_Sample_Count > 0 Then
-                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
-                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
-                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
+                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                        If color_Sample_Count > 0 Then
+                                            Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
+                                            Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
+                                            Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
 
-                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
-                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
-                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
+                                            avgR = Math.Min(Math.Max(avgR, 0), 255)
+                                            avgG = Math.Min(Math.Max(avgG, 0), 255)
+                                            avgB = Math.Min(Math.Max(avgB, 0), 255)
 
-                                        is_perspective_drown = True
+                                            is_perspective_drown = True
 
-                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
-                                            g.DrawLine(customPen, begin_point, end_point)
-                                        End Using
-                                    End If
-                                End Using
+                                            Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
+                                                g.DrawLine(customPen, begin_point, end_point)
+                                            End Using
+                                        End If
+                                    End Using
 
-                            Else
-                                list_of_corner_colors.Clear()
-                                is_perspective_drown = True
+                                Else
+                                    list_of_corner_colors.Clear()
+                                    is_perspective_drown = True
 
-                                For y As Integer = 0 To h Step brush_wide
-                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
-                                Next
-
-                                middle_point = CInt(w / 2)
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
                                     For y As Integer = 0 To h Step brush_wide
-
-                                        begin_point = New Point(0, y)
-                                        end_point = New Point(middle_point, y)
-
-                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(y), brush_size_H)
-                                            g.DrawLine(customPen, begin_point, end_point)
-                                        End Using
+                                        list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
                                     Next
-                                End Using
+
+                                    middle_point = CInt(w / 2)
+
+                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                        For y As Integer = 0 To h Step brush_wide
+
+                                            begin_point = New Point(0, y)
+                                            end_point = New Point(middle_point, y)
+
+                                            Using customPen As New System.Drawing.Pen(list_of_corner_colors(y), brush_size_H)
+                                                g.DrawLine(customPen, begin_point, end_point)
+                                            End Using
+                                        Next
+                                    End Using
+                                End If
                             End If
-                        End If
 
-                        color_Sample_Count = 0
-                        list_of_corner_colors.Clear()
+                            color_Sample_Count = 0
+                            list_of_corner_colors.Clear()
 
-                        'right
-                        For y As Integer = 0 To h Step step_size_while_color_Search
-                            list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
-                            color_Sample_Count += 1
-                        Next
+                            'right
+                            For y As Integer = 0 To h Step step_size_while_color_Search
+                                list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
+                                color_Sample_Count += 1
+                            Next
 
-                        If list_of_corner_colors.Count > 0 Then
+                            If list_of_corner_colors.Count > 0 Then
 
-                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
+                                diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
 
-                            If diffSum < color_deviation_threshold Then
-                                begin_point = New Point(CInt(w / 2), CInt(h / 2))
-                                end_point = New Point(w, CInt(h / 2))
-                                brush_size_line = h
+                                If diffSum < color_deviation_threshold Then
+                                    begin_point = New Point(CInt(w / 2), CInt(h / 2))
+                                    end_point = New Point(w, CInt(h / 2))
+                                    brush_size_line = h
 
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    If color_Sample_Count > 0 Then
-                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
-                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
-                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
+                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                        If color_Sample_Count > 0 Then
+                                            Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
+                                            Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
+                                            Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
 
-                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
-                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
-                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
+                                            avgR = Math.Min(Math.Max(avgR, 0), 255)
+                                            avgG = Math.Min(Math.Max(avgG, 0), 255)
+                                            avgB = Math.Min(Math.Max(avgB, 0), 255)
 
-                                        is_perspective_drown = True
+                                            is_perspective_drown = True
 
-                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
-                                            g.DrawLine(customPen, begin_point, end_point)
-                                        End Using
-                                    End If
-                                End Using
+                                            Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
+                                                g.DrawLine(customPen, begin_point, end_point)
+                                            End Using
+                                        End If
+                                    End Using
 
-                            Else
-                                list_of_corner_colors.Clear()
-                                is_perspective_drown = True
+                                Else
+                                    list_of_corner_colors.Clear()
+                                    is_perspective_drown = True
 
-                                For y As Integer = 0 To h Step brush_wide
-                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
-                                Next
-
-                                middle_point = CInt(w / 2)
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
                                     For y As Integer = 0 To h Step brush_wide
-
-                                        begin_point = New Point(middle_point, y)
-                                        end_point = New Point(w, y)
-
-                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(y), brush_size_H)
-                                            g.DrawLine(customPen, begin_point, end_point)
-                                        End Using
+                                        list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
                                     Next
-                                End Using
 
+                                    middle_point = CInt(w / 2)
+
+                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                        For y As Integer = 0 To h Step brush_wide
+
+                                            begin_point = New Point(middle_point, y)
+                                            end_point = New Point(w, y)
+
+                                            Using customPen As New System.Drawing.Pen(list_of_corner_colors(y), brush_size_H)
+                                                g.DrawLine(customPen, begin_point, end_point)
+                                            End Using
+                                        Next
+                                    End Using
+
+                                End If
+                            End If
+
+                        Else
+                            'top
+                            For x As Integer = 0 To w Step step_size_while_color_Search
+                                list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
+                                color_Sample_Count += 1
+                            Next
+
+                            If list_of_corner_colors.Count > 0 Then
+
+                                diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
+
+                                If diffSum < color_deviation_threshold Then
+                                    begin_point = New Point(CInt(w / 2), 0)
+                                    end_point = New Point(CInt(w / 2), CInt(h / 2))
+                                    brush_size_line = w
+
+                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                        If color_Sample_Count > 0 Then
+                                            Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
+                                            Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
+                                            Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
+
+                                            avgR = Math.Min(Math.Max(avgR, 0), 255)
+                                            avgG = Math.Min(Math.Max(avgG, 0), 255)
+                                            avgB = Math.Min(Math.Max(avgB, 0), 255)
+
+                                            is_perspective_drown = True
+
+                                            Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
+                                                g.DrawLine(customPen, begin_point, end_point)
+                                            End Using
+                                        End If
+                                    End Using
+
+                                Else
+                                    list_of_corner_colors.Clear()
+                                    is_perspective_drown = True
+
+                                    For x As Integer = 0 To w Step brush_wide
+                                        list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
+                                    Next
+
+                                    middle_point = CInt(h / 2)
+
+                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                        For x As Integer = 0 To w Step brush_wide
+
+                                            begin_point = New Point(x, middle_point)
+                                            end_point = New Point(x, 0)
+
+                                            Using customPen As New System.Drawing.Pen(list_of_corner_colors(x), brush_size_W)
+                                                g.DrawLine(customPen, begin_point, end_point)
+                                            End Using
+                                        Next
+                                    End Using
+                                End If
+                            End If
+
+                            color_Sample_Count = 0
+                            list_of_corner_colors.Clear()
+
+                            'buttom
+                            For x As Integer = 0 To w Step step_size_while_color_Search
+                                list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
+                                color_Sample_Count += 1
+                            Next
+
+                            If list_of_corner_colors.Count > 0 Then
+
+                                diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
+
+                                If diffSum < color_deviation_threshold Then
+                                    begin_point = New Point(CInt(w / 2), CInt(h / 2))
+                                    end_point = New Point(CInt(w / 2), h)
+                                    brush_size_line = w
+
+                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                        If color_Sample_Count > 0 Then
+                                            Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
+                                            Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
+                                            Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
+
+                                            avgR = Math.Min(Math.Max(avgR, 0), 255)
+                                            avgG = Math.Min(Math.Max(avgG, 0), 255)
+                                            avgB = Math.Min(Math.Max(avgB, 0), 255)
+
+                                            is_perspective_drown = True
+
+                                            Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
+                                                g.DrawLine(customPen, begin_point, end_point)
+                                            End Using
+                                        End If
+                                    End Using
+
+                                Else
+                                    list_of_corner_colors.Clear()
+                                    is_perspective_drown = True
+
+                                    For x As Integer = 0 To w Step brush_wide
+                                        list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
+                                    Next
+
+                                    middle_point = CInt(h / 2)
+
+                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                        For x As Integer = 0 To w Step brush_wide
+
+                                            begin_point = New Point(x, middle_point)
+                                            end_point = New Point(x, h)
+
+                                            Using customPen As New System.Drawing.Pen(list_of_corner_colors(x), brush_size_W)
+                                                g.DrawLine(customPen, begin_point, end_point)
+                                            End Using
+                                        Next
+                                    End Using
+
+                                End If
                             End If
                         End If
 
-                    Else
-                        'top
-                        For x As Integer = 0 To w Step step_size_while_color_Search
-                            list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
-                            color_Sample_Count += 1
-                        Next
-
-                        If list_of_corner_colors.Count > 0 Then
-
-                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
-
-                            If diffSum < color_deviation_threshold Then
-                                begin_point = New Point(CInt(w / 2), 0)
-                                end_point = New Point(CInt(w / 2), CInt(h / 2))
-                                brush_size_line = w
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    If color_Sample_Count > 0 Then
-                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
-                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
-                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
-
-                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
-                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
-                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
-
-                                        is_perspective_drown = True
-
-                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
-                                            g.DrawLine(customPen, begin_point, end_point)
-                                        End Using
-                                    End If
-                                End Using
-
-                            Else
-                                list_of_corner_colors.Clear()
-                                is_perspective_drown = True
-
-                                For x As Integer = 0 To w Step brush_wide
-                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
-                                Next
-
-                                middle_point = CInt(h / 2)
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    For x As Integer = 0 To w Step brush_wide
-
-                                        begin_point = New Point(x, middle_point)
-                                        end_point = New Point(x, 0)
-
-                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(x), brush_size_W)
-                                            g.DrawLine(customPen, begin_point, end_point)
-                                        End Using
-                                    Next
-                                End Using
-                            End If
-                        End If
-
-                        color_Sample_Count = 0
-                        list_of_corner_colors.Clear()
-
-                        'buttom
-                        For x As Integer = 0 To w Step step_size_while_color_Search
-                            list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
-                            color_Sample_Count += 1
-                        Next
-
-                        If list_of_corner_colors.Count > 0 Then
-
-                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
-
-                            If diffSum < color_deviation_threshold Then
-                                begin_point = New Point(CInt(w / 2), CInt(h / 2))
-                                end_point = New Point(CInt(w / 2), h)
-                                brush_size_line = w
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    If color_Sample_Count > 0 Then
-                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
-                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
-                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
-
-                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
-                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
-                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
-
-                                        is_perspective_drown = True
-
-                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
-                                            g.DrawLine(customPen, begin_point, end_point)
-                                        End Using
-                                    End If
-                                End Using
-
-                            Else
-                                list_of_corner_colors.Clear()
-                                is_perspective_drown = True
-
-                                For x As Integer = 0 To w Step brush_wide
-                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
-                                Next
-
-                                middle_point = CInt(h / 2)
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    For x As Integer = 0 To w Step brush_wide
-
-                                        begin_point = New Point(x, middle_point)
-                                        end_point = New Point(x, h)
-
-                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(x), brush_size_W)
-                                            g.DrawLine(customPen, begin_point, end_point)
-                                        End Using
-                                    Next
-                                End Using
-
+                        If is_perspective_drown Then
+                            If active_PictureBox_Index = 1 Then
+                                Picture_Box_1.BackgroundImage = Perspective_Bitmap
+                            ElseIf active_PictureBox_Index = 2 Then
+                                Picture_Box_2.BackgroundImage = Perspective_Bitmap
                             End If
                         End If
                     End If
-
-                    If is_perspective_drown Then
-                        If active_PictureBox_Index = 1 Then
-                            Picture_Box_1.BackgroundImage = Perspective_Bitmap
-                        ElseIf active_PictureBox_Index = 2 Then
-                            Picture_Box_2.BackgroundImage = Perspective_Bitmap
-                        End If
-                    End If
-                End If
-                '      Catch ex As Exception
-                '         MsgBox("E104 " & ex.Message)
-                '        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w3050: E104 " & ex.Message)
-                '   End Try
+                Catch ex As Exception
+                    MsgBox("E104 " & ex.Message)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w3050: E104 " & ex.Message)
+                End Try
 
                 Try
                     If Not is_perspective_drown Then
@@ -2371,7 +2433,7 @@ Public Class Main_Form
                 End Try
             Next
 
-            SaveSetting(App_name, Second_App_Name, "LngRus", If(Is_Russian_Language, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "Is_Russian_Language", If(Is_Russian_Language, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "FirstRun", "0")
             SaveSetting(App_name, Second_App_Name, "CopyMode", If(Is_Copying_not_Moving, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "isPerspective", If(Is_Pespective, "1", "0"))
@@ -2384,11 +2446,15 @@ Public Class Main_Form
             SaveSetting(App_name, Second_App_Name, "ShowPictureSizes", If(Is_to_show_picture_sizes, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "ShowFileSizes", If(Is_to_show_file_sizes, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "ShowFileDates", If(Is_to_show_file_datetime, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "NoRequestBeforeFileOperation", If(Is_no_request_before_file_operation, "1", "0"))
+
+            SaveSetting(App_name, Second_App_Name, "Picture_Box_Width_At_Panel", Picture_Box_Width_At_Panel.ToString)
+            SaveSetting(App_name, Second_App_Name, "Picture_Box_Height_At_Panel", Picture_Box_Height_At_Panel.ToString)
 
             If Me.Top >= 0 Then SaveSetting(App_name, Second_App_Name, "AppTop", Me.Top.ToString)
             If Me.Left >= 0 Then SaveSetting(App_name, Second_App_Name, "AppLeft", Me.Left.ToString)
-            If Me.Height >= 200 Then SaveSetting(App_name, Second_App_Name, "AppHeight", Me.Height.ToString)
-            If Me.Width >= 320 Then SaveSetting(App_name, Second_App_Name, "AppWidth", Me.Width.ToString)
+            If Me.Height >= main_form_position_Limit_Width_Low Then SaveSetting(App_name, Second_App_Name, "AppHeight", Me.Height.ToString)
+            If Me.Width >= main_form_position_Limit_Height_Low Then SaveSetting(App_name, Second_App_Name, "AppWidth", Me.Width.ToString)
 
             SaveSetting(App_name, Second_App_Name, "VideoVolume", video_Volume_Level.ToString("F2"))
             SaveSetting(App_name, Second_App_Name, "RecentFolders", String.Join("|", recent_Folder_List))
@@ -2422,6 +2488,7 @@ Public Class Main_Form
 
         SlideShowStop()
         SlideShowTimer.Dispose()
+        If toolTip IsNot Nothing Then toolTip.Dispose()
 
         If Web_View2 IsNot Nothing Then
             RemoveHandler Web_View2.NavigationCompleted, AddressOf WebView2_NavigationCompleted
@@ -2446,13 +2513,13 @@ Public Class Main_Form
 
     Private Sub RenameCurrentFile()
         Try
-            If Not My.Computer.FileSystem.FileExists(current_File_Name) Then
+            If Not My.Computer.FileSystem.FileExists(Current_File_Name) Then
                 lbl_Status.Text = If(Is_Russian_Language, "! Файл не найден", "! File not found")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1250: file not found")
                 Return
             End If
-            Dim current_File_Name_Without_Extension As String = Path.GetFileNameWithoutExtension(current_File_Name)
-            Dim current_File_Extension As String = Path.GetExtension(current_File_Name)
+            Dim current_File_Name_Without_Extension As String = Path.GetFileNameWithoutExtension(Current_File_Name)
+            Dim current_File_Extension As String = Path.GetExtension(Current_File_Name)
             Dim new_File_Name As String = InputBox(If(Is_Russian_Language, "Введите новое имя файла:", "Enter new file name:"),
                                             If(Is_Russian_Language, "Переименование файла", "Rename File"),
                                             current_File_Name_Without_Extension)
@@ -2461,23 +2528,22 @@ Public Class Main_Form
                 Return
             End If
 
-            Dim current_Directory_Path As String = Path.GetDirectoryName(current_File_Name)
+            Dim current_Directory_Path As String = Path.GetDirectoryName(Current_File_Name)
             Dim new_File_Full_Path As String = Path.Combine(current_Directory_Path, new_File_Name & current_File_Extension)
-            If new_File_Full_Path = current_File_Name Then
+            If new_File_Full_Path = Current_File_Name Then
                 lbl_Status.Text = If(Is_Russian_Language, "! Имя не изменено", "! Name not changed")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1270: file is not new")
                 Return
             End If
 
-            RenameFile(current_File_Name, new_File_Name & current_File_Extension)
-
+            RenameFile(Current_File_Name, new_File_Name & current_File_Extension)
 
             If is_Files_Array_Active Then
                 files_Array(current_File_Index) = new_File_Full_Path
             Else
                 files_List(current_File_Index) = new_File_Full_Path
             End If
-            current_File_Name = new_File_Full_Path
+            Current_File_Name = new_File_Full_Path
             lbl_Status.Text = If(Is_Russian_Language, "Файл переименован: " & new_File_Name & current_File_Extension, "File renamed: " & new_File_Name & current_File_Extension)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1280: file is renamed")
 
@@ -2535,7 +2601,7 @@ Public Class Main_Form
                     SetSlideShow()
                 Case Keys.F6
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1340: to rename")
-                    If Not String.IsNullOrEmpty(current_File_Name) Then
+                    If Not String.IsNullOrEmpty(Current_File_Name) Then
                         RenameCurrentFile()
                     Else
                         lbl_Status.Text = If(Is_Russian_Language, "! Нет файла для переименования", "! No file to rename")
@@ -2550,7 +2616,7 @@ Public Class Main_Form
                     lbl_Status.Text = If(Is_Russian_Language, "первый файл", "first file")
                 Case Keys.End, Keys.E, Keys.L, Keys.BrowserStop
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1380: to last file")
-                    current_File_Index = total_File_Count
+                    current_File_Index = total_File_Count - 1
                     ReadShowMediaFile("SetFile")
                     lbl_Status.Text = If(Is_Russian_Language, "последний файл", "last file")
                 Case Keys.D, Keys.Delete
@@ -2638,7 +2704,8 @@ Public Class Main_Form
                     lbl_Help_Info.BringToFront()
                 Case Keys.F2
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1630: F2")
-                    Table_Form.Show()
+                    Table_Form.PrepareForDisplay()
+                    Table_Form.ShowDialog(Me)
                 Case Keys.F3
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1630: F5")
                     ShowImagePanelForm()
@@ -3306,7 +3373,8 @@ Public Class Main_Form
     Private Sub Button5_Click(sender As Object, e As EventArgs) Handles btn_Move_Table.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1960: btn_MoveTable")
         SlideShowStop()
-        Table_Form.Show()
+        Table_Form.PrepareForDisplay()
+        Table_Form.ShowDialog(Me)
     End Sub
 
     Private Sub Label1_MouseClick(sender As Object, e As MouseEventArgs) Handles lbl_Folder.MouseClick
@@ -3708,7 +3776,7 @@ Public Class Main_Form
         End If
     End Sub
 
-    Private Sub btn_Panel_Click(sender As Object, e As EventArgs) Handles btn_Panel.Click
+    Private Sub Btn_Panel_Click(sender As Object, e As EventArgs) Handles btn_Panel.Click
         SlideShowStop()
         ShowImagePanelForm()
     End Sub
@@ -3718,8 +3786,14 @@ Public Class Main_Form
             Image_Panel_Form = New Image_Panel_Form()
             AddHandler Image_Panel_Form.FormClosed, AddressOf Image_Panel_Form_FormClosed
         End If
-        Image_Panel_Form.Show()
-        Image_Panel_Form.BringToFront()
+        Image_Panel_Form.PrepareForDisplay()
+        Image_Panel_Form.ShowDialog(Me)
     End Sub
 
+    Private Sub Main_Form_Deactivate(sender As Object, e As EventArgs) Handles Me.Deactivate
+        If toolTip IsNot Nothing Then
+            toolTip.Dispose()
+            toolTip = Nothing
+        End If
+    End Sub
 End Class

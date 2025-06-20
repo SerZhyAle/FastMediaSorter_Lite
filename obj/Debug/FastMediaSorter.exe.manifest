@@ -4,7 +4,7 @@
   <description asmv2:iconFile="Fast_Media_Sorter.ico" xmlns="urn:schemas-microsoft-com:asm.v1" />
   <application />
   <entryPoint>
-    <assemblyIdentity name="FastMediaSorter" version="25.6.18.1740" language="neutral" processorArchitecture="msil" />
+    <assemblyIdentity name="FastMediaSorter" version="25.6.19.242" language="neutral" processorArchitecture="msil" />
     <commandLine file="FastMediaSorter.exe" parameters="" />
   </entryPoint>
   <trustInfo>
@@ -38,19 +38,19 @@
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>1VqVs0RjZUNDKjoPxJU91dIn5ZiSYCKSvN9xKQZ45o0=</dsig:DigestValue>
+        <dsig:DigestValue>5QbRwwbBCZCbSahoj0PAmHBZikAt2smraBgm/zQpf8U=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="FastMediaSorter.exe" size="233984">
-      <assemblyIdentity name="FastMediaSorter" version="25.6.18.1740" language="neutral" processorArchitecture="msil" />
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="FastMediaSorter.exe" size="249856">
+      <assemblyIdentity name="FastMediaSorter" version="25.6.19.242" language="neutral" processorArchitecture="msil" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>dd/tIu4jnrJLLxYW8Cs1GpWLcxa5/otUmlgcldnhLio=</dsig:DigestValue>
+        <dsig:DigestValue>xsHNbHI2UCcJ4vF9zyS3Cl3XkOLBiQThCLSoCV2XIE0=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
@@ -62,7 +62,7 @@
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>3JrEKsVRd+5TrGEoZckn9M0CtKZLnkEJr94x7cgVo0o=</dsig:DigestValue>
+        <dsig:DigestValue>zsUU4Yo2Ea9V1iyN3Ej1IyX9MuGfP5cNc6i2jZ4CtCc=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>

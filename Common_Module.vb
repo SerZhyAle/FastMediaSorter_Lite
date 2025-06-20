@@ -12,6 +12,9 @@ Module Common_Module
     Public Choosen_Picture_From_Panel As String = ""
     Public Current_File_Name As String
     Public Current_Image_Path As String
+    Public Is_no_request_before_file_operation As Boolean = False
+    Public Picture_Box_Width_At_Panel As Integer = 80
+    Public Picture_Box_Height_At_Panel As Integer = 80
 
     ' --- WinAPI Declarations ---
     <DllImport("user32.dll")>

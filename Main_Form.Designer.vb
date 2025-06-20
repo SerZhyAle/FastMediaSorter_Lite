@@ -238,7 +238,7 @@ Partial Class Main_Form
         Me.chkbox_Top_Most.AutoSize = True
         Me.chkbox_Top_Most.Location = New System.Drawing.Point(0, 0)
         Me.chkbox_Top_Most.Name = "chkbox_Top_Most"
-        Me.chkbox_Top_Most.Size = New System.Drawing.Size(15, 14)
+        Me.chkbox_Top_Most.Size = New System.Drawing.Size(28, 27)
         Me.chkbox_Top_Most.TabIndex = 115
         Me.chkbox_Top_Most.UseVisualStyleBackColor = True
         '
@@ -307,11 +307,12 @@ Partial Class Main_Form
         '
         'btn_Panel
         '
+        Me.btn_Panel.FlatAppearance.BorderSize = 4
         Me.btn_Panel.Location = New System.Drawing.Point(841, 2)
         Me.btn_Panel.Name = "btn_Panel"
         Me.btn_Panel.Size = New System.Drawing.Size(48, 31)
         Me.btn_Panel.TabIndex = 121
-        Me.btn_Panel.Text = "brw"
+        Me.btn_Panel.Text = "█"
         Me.btn_Panel.UseVisualStyleBackColor = True
         '
         'Main_Form

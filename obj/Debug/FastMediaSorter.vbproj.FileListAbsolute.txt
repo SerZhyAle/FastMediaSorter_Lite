@@ -31,6 +31,6 @@ C:\GIT\FastMediaSorter\obj\Debug\FastMedi.434F00D8.Up2Date
 C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.exe
 C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.xml
 C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.pdb
-C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.exe.config
 C:\GIT\FastMediaSorter\obj\Debug\fms.Main_Form.resources
 C:\GIT\FastMediaSorter\obj\Debug\fms.Table_Form.resources
+C:\GIT\FastMediaSorter\obj\Debug\FastMediaSorter.exe.config

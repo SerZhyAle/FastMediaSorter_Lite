@@ -1,4 +1,5 @@
-﻿Imports System
+﻿Imports System.Resources
+Imports System
 Imports System.Reflection
 Imports System.Runtime.InteropServices
 
@@ -9,7 +10,7 @@ Imports System.Runtime.InteropServices
 ' Проверьте значения атрибутов сборки
 
 <Assembly: AssemblyTitle("FastMediaSorter")>
-<Assembly: AssemblyDescription("sza@ukr.net")> 
+<Assembly: AssemblyDescription("sza@ukr.net")>
 <Assembly: AssemblyCompany("SZA")>
 <Assembly: AssemblyProduct("fast image and video sorter")>
 <Assembly: AssemblyCopyright("Copyright © 2013-2025")>
@@ -31,5 +32,6 @@ Imports System.Runtime.InteropServices
 ' используя "*", как показано ниже:
 ' <Assembly: AssemblyVersion("1.0.*")> 
 
-<Assembly: AssemblyVersion("25.06.18.1740")>
+<Assembly: AssemblyVersion("25.06.19.0242")>
 <Assembly: AssemblyFileVersion("25.06.18.1740")>
+<Assembly: NeutralResourcesLanguage("EN")>

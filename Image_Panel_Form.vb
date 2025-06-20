@@ -10,7 +10,6 @@ Public Class Image_Panel_Form
     Inherits Form
 
     ' --- UI Controls and Constants ---
-    Private Const picture_box_size As Integer = 80
     Private Const resize_debounce_interval As Integer = 200
     Private Const first_run_top = 50
     Private Const first_run_left = 50
@@ -35,6 +34,7 @@ Public Class Image_Panel_Form
     Private is_Loading As Boolean = False
     Private resizeDebounceTimer As New System.Windows.Forms.Timer()
     Private sortIndexFromMainForm As Integer = 0
+    Private toolTip As ToolTip
 
     <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode)>
     Public Shared Function StrCmpLogicalW(psz1 As String, psz2 As String) As Integer
@@ -64,7 +64,7 @@ Public Class Image_Panel_Form
         Me.Controls.Add(imagePanel)
 
         AddHandler Me.Resize, AddressOf OnFormResize
-        AddHandler Me.Shown, AddressOf OnFormShown
+        AddHandler Me.VisibleChanged, AddressOf OnVisibleChanged ' CHANGED: Use VisibleChanged instead of Shown
         AddHandler Me.KeyDown, AddressOf OnFormKeyDown
         AddHandler imagePanel.Paint, AddressOf OnPanelPaint
         resizeDebounceTimer.Interval = resize_debounce_interval
@@ -77,8 +77,14 @@ Public Class Image_Panel_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
-        InitializeState()
+        ' PrepareForDisplay is now called from Main_Form before showing, which is correct.
+    End Sub
+
+    Public Sub PrepareForDisplay()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " p0010: PicPanel init")
+
+        InitializeState()
+        InitializeTooltips()
 
         Dim app_Top_Int As Integer = first_run_top
         Dim app_Left_Int As Integer = first_run_left
@@ -98,20 +104,29 @@ Public Class Image_Panel_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " p0020: Form_Sizes: " & app_Left_Int.ToString & " - " & app_Top_Int.ToString & " " & app_Width_Int.ToString & " - " & app_Height_Int.ToString)
     End Sub
 
+    ' ADDED: New handler for the VisibleChanged event
+    Private Async Sub OnVisibleChanged(sender As Object, e As EventArgs)
+        If Me.Visible Then
+            Await LoadContentAsync()
+        End If
+    End Sub
 
-    Private Async Sub OnFormShown(sender As Object, e As EventArgs)
-        RemoveHandler Me.Shown, AddressOf OnFormShown
+    ' ADDED: New method containing the async loading logic
+    Private Async Function LoadContentAsync() As Task
         Dim targetFile = Current_File_Name
 
         initial_Target_PictureBox = Nothing ' Reset special highlight
 
         If String.IsNullOrEmpty(targetFile) OrElse Not allImageFiles.Contains(targetFile) Then
-            FillVisibleAreaAsync()
+            Await FillVisibleAreaAsync()
             Return
         End If
 
         While initial_Target_PictureBox Is Nothing AndAlso currently_Loaded_Index < allImageFiles.Count
-            If is_Loading Then Await Task.Delay(50) : Continue While
+            If is_Loading Then
+                Await Task.Delay(50)
+                Continue While
+            End If
             Await LoadNextBatchAsync()
             initial_Target_PictureBox = imagePanel.Controls.OfType(Of PictureBox)().FirstOrDefault(Function(p) CStr(p.Tag) = targetFile)
         End While
@@ -123,9 +138,11 @@ Public Class Image_Panel_Form
             UpdateSelectionVisuals()
         End If
 
-        FillVisibleAreaAsync()
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " p0030: PicPanel shown")
-    End Sub
+        Await FillVisibleAreaAsync()
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " p0030: PicPanel content loaded")
+    End Function
+
+    ' REMOVED: The OnFormShown event handler is no longer needed.
 
     Private Sub OnFormResize(sender As Object, e As EventArgs)
         resizeDebounceTimer.Stop()
@@ -183,11 +200,50 @@ Public Class Image_Panel_Form
     End Sub
 
     Private Sub OnFormKeyDown(sender As Object, e As KeyEventArgs)
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " p0070: key down")
-        If e.KeyCode = Keys.Delete AndAlso selectedPictureControls.Count > 0 Then
-            e.Handled = True
-            DeleteSelectedFiles()
-        End If
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " p0070: key down: " & e.KeyCode.ToString())
+
+        If selectedPictureControls.Count = 0 AndAlso e.KeyCode <> Keys.Escape Then Return ' No action if nothing is selected, except for Escape
+
+        Select Case e.KeyCode
+            Case Keys.Delete
+                e.Handled = True
+                DeleteSelectedFiles()
+
+            Case Keys.D1, Keys.NumPad1
+                e.Handled = True
+                PoMove_for_Panel(1)
+            Case Keys.D2, Keys.NumPad2
+                e.Handled = True
+                PoMove_for_Panel(2)
+            Case Keys.D3, Keys.NumPad3
+                e.Handled = True
+                PoMove_for_Panel(3)
+            Case Keys.D4, Keys.NumPad4
+                e.Handled = True
+                PoMove_for_Panel(4)
+            Case Keys.D5, Keys.NumPad5
+                e.Handled = True
+                PoMove_for_Panel(5)
+            Case Keys.D6, Keys.NumPad6
+                e.Handled = True
+                PoMove_for_Panel(6)
+            Case Keys.D7, Keys.NumPad7
+                e.Handled = True
+                PoMove_for_Panel(7)
+            Case Keys.D8, Keys.NumPad8
+                e.Handled = True
+                PoMove_for_Panel(8)
+            Case Keys.D9, Keys.NumPad9
+                e.Handled = True
+                PoMove_for_Panel(9)
+            Case Keys.D0, Keys.NumPad0
+                e.Handled = True
+                PoMove_for_Panel(0) ' Key '0' uses index 0
+
+            Case Keys.Escape
+                e.Handled = True
+                Me.Close()
+        End Select
     End Sub
 
     ' --- Selection and Deletion Logic ---
@@ -222,10 +278,38 @@ Public Class Image_Panel_Form
         Next
     End Sub
 
+    Private Sub InitializeTooltips()
+        If toolTip Is Nothing Then
+            toolTip = New ToolTip()
+            ' Optional: Customize tooltip appearance and behavior
+            toolTip.AutoPopDelay = 7000 ' Linger time
+            toolTip.InitialDelay = 700  ' Time before appearing
+            toolTip.ReshowDelay = 500   ' Time before reappearing
+            toolTip.ShowAlways = True   ' Show even if form is not active
+        End If
+
+        Dim panelTooltipText As String = If(Is_Russian_Language,
+    "ЛКМ: Выбрать изображение" & vbCrLf &
+    "Ctrl+ЛКМ: Добавить/убрать из выделения" & vbCrLf &
+    "Двойной клик: Открыть изображение в главном окне" & vbCrLf &
+    "Del: Удалить выделенные файлы" & vbCrLf &
+    "Цифры (0-9): Переместить/копировать выделенные файлы" & vbCrLf &
+    "Esc: Закрыть эту панель",
+    "Left-Click: Select image" & vbCrLf &
+    "Ctrl+Click: Add/remove from selection" & vbCrLf &
+    "Double-Click: Open image in main window" & vbCrLf &
+    "Del: Delete selected file(s)" & vbCrLf &
+    "Number Keys (0-9): Move/copy selected file(s)" & vbCrLf &
+    "Esc: Close this panel")
+
+        toolTip.SetToolTip(imagePanel, panelTooltipText)
+    End Sub
+
     Private Sub DeleteSelectedFiles()
         Dim filesToDelete = selectedPictureControls.Select(Function(pb) CStr(pb.Tag)).ToList()
         Dim confirmMsg = If(Is_Russian_Language, $"Вы уверены, что хотите безвозвратно удалить {filesToDelete.Count} файл(ов)?", $"Are you sure you want to permanently delete {filesToDelete.Count} file(s)?")
-        If MessageBox.Show(confirmMsg, If(Is_Russian_Language, "Подтверждение удаления", "Deletion.."), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
+        If Not Is_no_request_before_file_operation AndAlso
+            MessageBox.Show(confirmMsg, If(Is_Russian_Language, "Подтверждение удаления", "Deletion.."), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
 
         For Each pbToDelete In selectedPictureControls.ToList() ' Use ToList to create a copy for safe iteration
             If pbToDelete Is initial_Target_PictureBox Then initial_Target_PictureBox = Nothing
@@ -242,8 +326,6 @@ Public Class Image_Panel_Form
         ClearSelection()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " p0080: pics deleted")
     End Sub
-
-    ' --- Core Loading Logic ---
 
     Private Sub InitializeState()
         ClearSelection()
@@ -263,6 +345,7 @@ Public Class Image_Panel_Form
             Catch
                 sortIndex = 0
             End Try
+
             Select Case sortIndex
                 Case 0 : files = files.OrderBy(Function(f) Path.GetFileName(f)).ToList()
                 Case 1 : files = files.OrderByDescending(Function(f) Path.GetFileName(f)).ToList()
@@ -280,19 +363,24 @@ Public Class Image_Panel_Form
         End If
     End Sub
 
-    Private Async Sub FillVisibleAreaAsync()
+    Private Async Function FillVisibleAreaAsync() As Task
         While Not imagePanel.VerticalScroll.Visible AndAlso currently_Loaded_Index < allImageFiles.Count
             If is_Loading Then Return
             Await LoadNextBatchAsync()
             Await Task.Delay(10)
         End While
-    End Sub
+    End Function
 
     Private Sub Image_Panel_Form_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
         If Me.Top >= 0 Then SaveSetting(App_name, Second_App_Name, "PicturePanelTop", Me.Top.ToString)
         If Me.Left >= 0 Then SaveSetting(App_name, Second_App_Name, "PicturePanelLeft", Me.Left.ToString)
         If Me.Height >= 200 Then SaveSetting(App_name, Second_App_Name, "PicturePanelHeight", Me.Height.ToString)
         If Me.Width >= 320 Then SaveSetting(App_name, Second_App_Name, "PicturePanelWidth", Me.Width.ToString)
+
+        If toolTip IsNot Nothing Then
+            toolTip.Dispose()
+            toolTip = Nothing
+        End If
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " p0100: PicPanel closed")
     End Sub
@@ -301,7 +389,7 @@ Public Class Image_Panel_Form
         If is_Loading OrElse currently_Loaded_Index >= allImageFiles.Count Then Return
         Try
             is_Loading = True
-            Dim cols = Math.Max(1, imagePanel.ClientSize.Width \ (picture_box_size + 6))
+            Dim cols = Math.Max(1, imagePanel.ClientSize.Width \ (Picture_Box_Width_At_Panel + 6))
             Dim batchSize = cols * 2
             Dim startIndex = currently_Loaded_Index
             Dim endIndex = Math.Min(startIndex + batchSize - 1, allImageFiles.Count - 1)
@@ -312,8 +400,8 @@ Public Class Image_Panel_Form
                 Dim filePath = allImageFiles(i)
                 Dim pb = New PictureBox()
                 With pb
-                    .Width = picture_box_size
-                    .Height = picture_box_size
+                    .Width = Picture_Box_Width_At_Panel
+                    .Height = Picture_Box_Height_At_Panel
                     .BorderStyle = BorderStyle.None ' Border is now custom painted
                     .Tag = filePath
                 End With
@@ -322,7 +410,7 @@ Public Class Image_Panel_Form
                 AddHandler pb.DoubleClick, AddressOf OnPictureBoxDoubleClick ' Add DoubleClick handler
                 imagePanel.Controls.Add(pb)
                 tasks.Add(Task.Run(Sub()
-                                       Dim thumbnail = CreateThumbnail(filePath, picture_box_size, picture_box_size)
+                                       Dim thumbnail = CreateThumbnail(filePath, Picture_Box_Width_At_Panel, Picture_Box_Height_At_Panel)
                                        If Me.IsDisposed OrElse pb.IsDisposed OrElse CStr(pb.Tag) <> filePath Then Return
                                        If thumbnail IsNot Nothing Then
                                            pb.Invoke(New Action(Sub() pb.Image = thumbnail))
@@ -365,4 +453,70 @@ Public Class Image_Panel_Form
             Return Nothing
         End Try
     End Function
+
+    Private Sub PoMove_for_Panel(ByVal move_Slot_index As Integer)
+        If selectedPictureControls.Count = 0 Then Return
+
+        ' In Main_Form, key '0' corresponds to index 10
+        Dim destination_Folder_Path As String = Hardkeys_to_move_mediafile(If(move_Slot_index = 0, 10, move_Slot_index))
+        Dim move_Slot_Key As String = If(move_Slot_index = 0, "0", move_Slot_index.ToString())
+
+        If String.IsNullOrEmpty(destination_Folder_Path) Then
+            MessageBox.Show(If(Is_Russian_Language, "! Нет каталога-получателя для клавиши " & move_Slot_Key, "! No destination folder set for key " & move_Slot_Key), If(Is_Russian_Language, "Внимание", "Warning"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        Dim filesToProcess = selectedPictureControls.Select(Function(pb) CStr(pb.Tag)).ToList()
+        Dim operation_type_string = If(Is_Copying_not_Moving, If(Is_Russian_Language, "копировать", "copy"), If(Is_Russian_Language, "переместить", "move"))
+        Dim confirmMsg = If(Is_Russian_Language, $"Вы уверены, что хотите {operation_type_string} {filesToProcess.Count} файл(ов) в '{destination_Folder_Path}'?", $"Are you sure you want to {operation_type_string} {filesToProcess.Count} file(s) to '{destination_Folder_Path}'?")
+
+        If Not Is_no_request_before_file_operation AndAlso
+MessageBox.Show(confirmMsg, If(Is_Russian_Language, "Подтверждение", "Confirm"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+
+        Dim success_count = 0
+        Dim error_messages As New System.Text.StringBuilder()
+
+        For Each pbToProcess In selectedPictureControls.ToList()
+            Dim source_file_path = CStr(pbToProcess.Tag)
+            Dim destination_file_path = Path.Combine(destination_Folder_Path, Path.GetFileName(source_file_path))
+
+            Try
+                If Is_Copying_not_Moving Then
+                    File.Copy(source_file_path, destination_file_path, True) ' Allow overwrite
+                Else
+                    File.Move(source_file_path, destination_file_path)
+                    ' If move is successful, remove from UI
+                    allImageFiles.Remove(source_file_path)
+                    imagePanel.Controls.Remove(pbToProcess)
+                    pbToProcess.Dispose()
+                End If
+                success_count += 1
+            Catch ex As Exception
+                error_messages.AppendLine(If(Is_Russian_Language, $"Не удалось обработать {source_file_path}: {ex.Message}", $"Failed to process {source_file_path}: {ex.Message}"))
+            End Try
+        Next
+
+        ClearSelection()
+        UpdateSelectionVisuals() ' Refresh the panel
+
+        Dim summary_message As New System.Text.StringBuilder()
+        summary_message.AppendLine(If(Is_Russian_Language, $"{success_count} из {filesToProcess.Count} файлов обработано.", $"{success_count} of {filesToProcess.Count} files processed."))
+        If error_messages.Length > 0 Then
+            summary_message.AppendLine(If(Is_Russian_Language, "Ошибки:", "Errors:"))
+            summary_message.Append(error_messages.ToString())
+        End If
+
+        If Not Is_no_request_before_file_operation Then
+            MessageBox.Show(summary_message.ToString(), If(Is_Russian_Language, "Операция завершена", "Operation Complete"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+        End If
+
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & $" p0085: pics moved/copied. Success: {success_count}, Failed: {filesToProcess.Count - success_count}")
+    End Sub
+
+    Private Sub Image_Panel_Form_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
+        If toolTip IsNot Nothing Then
+            toolTip.Dispose()
+            toolTip = Nothing
+        End If
+    End Sub
 End Class
