@@ -974,7 +974,6 @@ Public Class Main_Form
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0642: files got for slideshow")
 
                 If files Is Nothing Then
-                    lbl_Status.Text = If(Is_Russian_Language, "! Ошибка чтения файлов", "! Error reading files")
                     Current_Folder_Path = ""
                     cmbox_Media_Folder.Text = ""
                     total_File_Count = 0
@@ -984,7 +983,8 @@ Public Class Main_Form
                 End If
 
                 If is_Files_Array_Active Then
-                    files_Array = DirectCast(files, String())
+                    Dim file_Entries = DirectCast(files, FileEntry())
+                    files_Array = file_Entries.Select(Function(fe) fe.FilePath).ToArray()
                 Else
                     files_List = DirectCast(files, List(Of String))
                 End If
@@ -1045,7 +1045,8 @@ Public Class Main_Form
                 End If
 
                 If is_Files_Array_Active Then
-                    files_Array = DirectCast(files, String())
+                    Dim file_Entries = DirectCast(files, FileEntry())
+                    files_Array = file_Entries.Select(Function(fe) fe.FilePath).ToArray()
                 Else
                     files_List = DirectCast(files, List(Of String))
                 End If
@@ -1535,9 +1536,24 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0960: isFileFound = " & is_File_Found.ToString)
             If is_File_Found Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0970: currentFileIndex = " & current_File_Index.ToString)
+
+                If is_Files_Array_Active Then
+                    If files_Array Is Nothing AndAlso
+                    Not files_List Is Nothing Then
+
+                        is_Files_Array_Active = False
+                    End If
+                Else
+                    If Not files_Array Is Nothing AndAlso
+                    files_List Is Nothing Then
+
+                        is_Files_Array_Active = True
+                    End If
+                End If
+
                 Current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
-            Else
-                If Current_Image_Path Is Nothing Then
+                Else
+                    If Current_Image_Path Is Nothing Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0972: targetImagePath Is Nothing")
                     current_File_Index = 0
                     Current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
@@ -2029,291 +2045,296 @@ Public Class Main_Form
                 active_PictureBox_Index = 2
             End If
 
+            Dim w = Picture_Box_1.Width - 1
+            Dim h = Picture_Box_1.Height - 1
+
             If active_Bitmap IsNot Nothing AndAlso
                     active_Bitmap.Width > 1 AndAlso
-                    active_Bitmap.Height > 1 Then
+                    active_Bitmap.Height > 1 AndAlso
+            w > 1 AndAlso
+                h > 1 Then
 
                 Dim bH = active_Bitmap.Height - 1
                 Dim bW = active_Bitmap.Width - 1
 
-                Try
-                    Dim bitmap_proportion = bW / bH
-                    Dim pictureBox_proportion = Picture_Box_1.Width / Picture_Box_1.Height
+                'Try
 
-                    If Not Math.Round(bitmap_proportion, 2) = Math.Round(pictureBox_proportion, 2) Then
+                Dim bitmap_proportion = bW / bH
+                Dim pictureBox_proportion = w / h
 
-                        Dim w = Picture_Box_1.Width - 1
-                        Dim h = Picture_Box_1.Height - 1
 
-                        Dim proportionalScale_H = h / bH
-                        Dim proportionalScale_W = w / bW
-                        Dim Perspective_Bitmap As New Bitmap(w + 1, h + 1)
+                If Not Math.Round(bitmap_proportion, 2) = Math.Round(pictureBox_proportion, 2) Then
 
-                        Dim brush_wide = 1
-                        Dim brush_size_H = CInt(proportionalScale_H * brush_wide + 1)
-                        Dim brush_size_W = CInt(proportionalScale_W * brush_wide + 1)
-                        Dim brush_size_line = 0
-                        Dim middle_point = 0
-                        Dim color_Sample_Count = 0
-                        Dim begin_point As New Point(0, 0)
-                        Dim end_point As New Point(0, 0)
-                        Dim to_draw_the_wide As Boolean = False
-                        Dim diffSum As Long = 0
 
-                        Dim list_of_corner_colors As New List(Of System.Drawing.Color)
-                        Dim color_deviation_threshold = (percent_of_color_deviation / 100) * 255 * 3
+                    Dim proportionalScale_H = h / bH
+                    Dim proportionalScale_W = w / bW
+                    Dim Perspective_Bitmap As New Bitmap(w + 1, h + 1)
 
-                        If bitmap_proportion < pictureBox_proportion Then
-                            'left
-                            For y As Integer = 0 To h Step step_size_while_color_Search
-                                list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
-                                color_Sample_Count += 1
-                            Next
+                    Dim brush_wide = 1
+                    Dim brush_size_H = CInt(proportionalScale_H * brush_wide + 1)
+                    Dim brush_size_W = CInt(proportionalScale_W * brush_wide + 1)
+                    Dim brush_size_line = 0
+                    Dim middle_point = 0
+                    Dim color_Sample_Count = 0
+                    Dim begin_point As New Point(0, 0)
+                    Dim end_point As New Point(0, 0)
+                    Dim to_draw_the_wide As Boolean = False
+                    Dim diffSum As Long = 0
 
-                            If list_of_corner_colors.Count > 0 Then
+                    Dim list_of_corner_colors As New List(Of System.Drawing.Color)
+                    Dim color_deviation_threshold = (percent_of_color_deviation / 100) * 255 * 3
 
-                                diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
+                    If bitmap_proportion < pictureBox_proportion Then
+                        'left
+                        For y As Integer = 0 To h Step step_size_while_color_Search
+                            list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
+                            color_Sample_Count += 1
+                        Next
 
-                                If diffSum < color_deviation_threshold Then
-                                    begin_point = New Point(0, CInt(h / 2))
-                                    end_point = New Point(CInt(w / 2), CInt(h / 2))
-                                    brush_size_line = h + 1
+                        If list_of_corner_colors.Count > 0 Then
 
-                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                        If color_Sample_Count > 0 Then
-                                            Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
-                                            Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
-                                            Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
+                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
 
-                                            avgR = Math.Min(Math.Max(avgR, 0), 255)
-                                            avgG = Math.Min(Math.Max(avgG, 0), 255)
-                                            avgB = Math.Min(Math.Max(avgB, 0), 255)
+                            If diffSum < color_deviation_threshold Then
+                                begin_point = New Point(0, CInt(h / 2))
+                                end_point = New Point(CInt(w / 2), CInt(h / 2))
+                                brush_size_line = h + 1
 
-                                            is_perspective_drown = True
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    If color_Sample_Count > 0 Then
+                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
+                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
+                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
 
-                                            Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
-                                                g.DrawLine(customPen, begin_point, end_point)
-                                            End Using
-                                        End If
-                                    End Using
+                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
+                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
+                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
 
-                                Else
-                                    list_of_corner_colors.Clear()
-                                    is_perspective_drown = True
+                                        is_perspective_drown = True
 
+                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    End If
+                                End Using
+
+                            Else
+                                list_of_corner_colors.Clear()
+                                is_perspective_drown = True
+
+                                For y As Integer = 0 To h Step brush_wide
+                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
+                                Next
+
+                                middle_point = CInt(w / 2)
+
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
                                     For y As Integer = 0 To h Step brush_wide
-                                        list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
+
+                                        begin_point = New Point(0, y)
+                                        end_point = New Point(middle_point, y)
+
+                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(y), brush_size_H)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
                                     Next
-
-                                    middle_point = CInt(w / 2)
-
-                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                        For y As Integer = 0 To h Step brush_wide
-
-                                            begin_point = New Point(0, y)
-                                            end_point = New Point(middle_point, y)
-
-                                            Using customPen As New System.Drawing.Pen(list_of_corner_colors(y), brush_size_H)
-                                                g.DrawLine(customPen, begin_point, end_point)
-                                            End Using
-                                        Next
-                                    End Using
-                                End If
-                            End If
-
-                            color_Sample_Count = 0
-                            list_of_corner_colors.Clear()
-
-                            'right
-                            For y As Integer = 0 To h Step step_size_while_color_Search
-                                list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
-                                color_Sample_Count += 1
-                            Next
-
-                            If list_of_corner_colors.Count > 0 Then
-
-                                diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
-
-                                If diffSum < color_deviation_threshold Then
-                                    begin_point = New Point(CInt(w / 2), CInt(h / 2))
-                                    end_point = New Point(w, CInt(h / 2))
-                                    brush_size_line = h
-
-                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                        If color_Sample_Count > 0 Then
-                                            Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
-                                            Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
-                                            Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
-
-                                            avgR = Math.Min(Math.Max(avgR, 0), 255)
-                                            avgG = Math.Min(Math.Max(avgG, 0), 255)
-                                            avgB = Math.Min(Math.Max(avgB, 0), 255)
-
-                                            is_perspective_drown = True
-
-                                            Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
-                                                g.DrawLine(customPen, begin_point, end_point)
-                                            End Using
-                                        End If
-                                    End Using
-
-                                Else
-                                    list_of_corner_colors.Clear()
-                                    is_perspective_drown = True
-
-                                    For y As Integer = 0 To h Step brush_wide
-                                        list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
-                                    Next
-
-                                    middle_point = CInt(w / 2)
-
-                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                        For y As Integer = 0 To h Step brush_wide
-
-                                            begin_point = New Point(middle_point, y)
-                                            end_point = New Point(w, y)
-
-                                            Using customPen As New System.Drawing.Pen(list_of_corner_colors(y), brush_size_H)
-                                                g.DrawLine(customPen, begin_point, end_point)
-                                            End Using
-                                        Next
-                                    End Using
-
-                                End If
-                            End If
-
-                        Else
-                            'top
-                            For x As Integer = 0 To w Step step_size_while_color_Search
-                                list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
-                                color_Sample_Count += 1
-                            Next
-
-                            If list_of_corner_colors.Count > 0 Then
-
-                                diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
-
-                                If diffSum < color_deviation_threshold Then
-                                    begin_point = New Point(CInt(w / 2), 0)
-                                    end_point = New Point(CInt(w / 2), CInt(h / 2))
-                                    brush_size_line = w
-
-                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                        If color_Sample_Count > 0 Then
-                                            Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
-                                            Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
-                                            Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
-
-                                            avgR = Math.Min(Math.Max(avgR, 0), 255)
-                                            avgG = Math.Min(Math.Max(avgG, 0), 255)
-                                            avgB = Math.Min(Math.Max(avgB, 0), 255)
-
-                                            is_perspective_drown = True
-
-                                            Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
-                                                g.DrawLine(customPen, begin_point, end_point)
-                                            End Using
-                                        End If
-                                    End Using
-
-                                Else
-                                    list_of_corner_colors.Clear()
-                                    is_perspective_drown = True
-
-                                    For x As Integer = 0 To w Step brush_wide
-                                        list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
-                                    Next
-
-                                    middle_point = CInt(h / 2)
-
-                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                        For x As Integer = 0 To w Step brush_wide
-
-                                            begin_point = New Point(x, middle_point)
-                                            end_point = New Point(x, 0)
-
-                                            Using customPen As New System.Drawing.Pen(list_of_corner_colors(x), brush_size_W)
-                                                g.DrawLine(customPen, begin_point, end_point)
-                                            End Using
-                                        Next
-                                    End Using
-                                End If
-                            End If
-
-                            color_Sample_Count = 0
-                            list_of_corner_colors.Clear()
-
-                            'buttom
-                            For x As Integer = 0 To w Step step_size_while_color_Search
-                                list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
-                                color_Sample_Count += 1
-                            Next
-
-                            If list_of_corner_colors.Count > 0 Then
-
-                                diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
-
-                                If diffSum < color_deviation_threshold Then
-                                    begin_point = New Point(CInt(w / 2), CInt(h / 2))
-                                    end_point = New Point(CInt(w / 2), h)
-                                    brush_size_line = w
-
-                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                        If color_Sample_Count > 0 Then
-                                            Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
-                                            Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
-                                            Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
-
-                                            avgR = Math.Min(Math.Max(avgR, 0), 255)
-                                            avgG = Math.Min(Math.Max(avgG, 0), 255)
-                                            avgB = Math.Min(Math.Max(avgB, 0), 255)
-
-                                            is_perspective_drown = True
-
-                                            Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
-                                                g.DrawLine(customPen, begin_point, end_point)
-                                            End Using
-                                        End If
-                                    End Using
-
-                                Else
-                                    list_of_corner_colors.Clear()
-                                    is_perspective_drown = True
-
-                                    For x As Integer = 0 To w Step brush_wide
-                                        list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
-                                    Next
-
-                                    middle_point = CInt(h / 2)
-
-                                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                        For x As Integer = 0 To w Step brush_wide
-
-                                            begin_point = New Point(x, middle_point)
-                                            end_point = New Point(x, h)
-
-                                            Using customPen As New System.Drawing.Pen(list_of_corner_colors(x), brush_size_W)
-                                                g.DrawLine(customPen, begin_point, end_point)
-                                            End Using
-                                        Next
-                                    End Using
-
-                                End If
+                                End Using
                             End If
                         End If
 
-                        If is_perspective_drown Then
-                            If active_PictureBox_Index = 1 Then
-                                Picture_Box_1.BackgroundImage = Perspective_Bitmap
-                            ElseIf active_PictureBox_Index = 2 Then
-                                Picture_Box_2.BackgroundImage = Perspective_Bitmap
+                        color_Sample_Count = 0
+                        list_of_corner_colors.Clear()
+
+                        'right
+                        For y As Integer = 0 To h Step step_size_while_color_Search
+                            list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
+                            color_Sample_Count += 1
+                        Next
+
+                        If list_of_corner_colors.Count > 0 Then
+
+                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
+
+                            If diffSum < color_deviation_threshold Then
+                                begin_point = New Point(CInt(w / 2), CInt(h / 2))
+                                end_point = New Point(w, CInt(h / 2))
+                                brush_size_line = h
+
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    If color_Sample_Count > 0 Then
+                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
+                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
+                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
+
+                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
+                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
+                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
+
+                                        is_perspective_drown = True
+
+                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    End If
+                                End Using
+
+                            Else
+                                list_of_corner_colors.Clear()
+                                is_perspective_drown = True
+
+                                For y As Integer = 0 To h Step brush_wide
+                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
+                                Next
+
+                                middle_point = CInt(w / 2)
+
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    For y As Integer = 0 To h Step brush_wide
+
+                                        begin_point = New Point(middle_point, y)
+                                        end_point = New Point(w, y)
+
+                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(y), brush_size_H)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    Next
+                                End Using
+
+                            End If
+                        End If
+
+                    Else
+                        'top
+                        For x As Integer = 0 To w Step step_size_while_color_Search
+                            list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
+                            color_Sample_Count += 1
+                        Next
+
+                        If list_of_corner_colors.Count > 0 Then
+
+                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
+
+                            If diffSum < color_deviation_threshold Then
+                                begin_point = New Point(CInt(w / 2), 0)
+                                end_point = New Point(CInt(w / 2), CInt(h / 2))
+                                brush_size_line = w
+
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    If color_Sample_Count > 0 Then
+                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
+                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
+                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
+
+                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
+                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
+                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
+
+                                        is_perspective_drown = True
+
+                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    End If
+                                End Using
+
+                            Else
+                                list_of_corner_colors.Clear()
+                                is_perspective_drown = True
+
+                                For x As Integer = 0 To w Step brush_wide
+                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
+                                Next
+
+                                middle_point = CInt(h / 2)
+
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    For x As Integer = 0 To w Step brush_wide
+
+                                        begin_point = New Point(x, middle_point)
+                                        end_point = New Point(x, 0)
+
+                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(x), brush_size_W)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    Next
+                                End Using
+                            End If
+                        End If
+
+                        color_Sample_Count = 0
+                        list_of_corner_colors.Clear()
+
+                        'buttom
+                        For x As Integer = 0 To w Step step_size_while_color_Search
+                            list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
+                            color_Sample_Count += 1
+                        Next
+
+                        If list_of_corner_colors.Count > 0 Then
+
+                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
+
+                            If diffSum < color_deviation_threshold Then
+                                begin_point = New Point(CInt(w / 2), CInt(h / 2))
+                                end_point = New Point(CInt(w / 2), h)
+                                brush_size_line = w
+
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    If color_Sample_Count > 0 Then
+                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
+                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
+                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
+
+                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
+                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
+                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
+
+                                        is_perspective_drown = True
+
+                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    End If
+                                End Using
+
+                            Else
+                                list_of_corner_colors.Clear()
+                                is_perspective_drown = True
+
+                                For x As Integer = 0 To w Step brush_wide
+                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
+                                Next
+
+                                middle_point = CInt(h / 2)
+
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    For x As Integer = 0 To w Step brush_wide
+
+                                        begin_point = New Point(x, middle_point)
+                                        end_point = New Point(x, h)
+
+                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(x), brush_size_W)
+                                            g.DrawLine(customPen, begin_point, end_point)
+                                        End Using
+                                    Next
+                                End Using
+
                             End If
                         End If
                     End If
-                Catch ex As Exception
-                    MsgBox("E104 " & ex.Message)
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w3050: E104 " & ex.Message)
-                End Try
+
+                    If is_perspective_drown Then
+                        If active_PictureBox_Index = 1 Then
+                            Picture_Box_1.BackgroundImage = Perspective_Bitmap
+                        ElseIf active_PictureBox_Index = 2 Then
+                            Picture_Box_2.BackgroundImage = Perspective_Bitmap
+                        End If
+                    End If
+                End If
+                ' Catch ex As Exception
+                '   MsgBox("E104 " & ex.Message)
+                '     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w3050: E104 " & ex.Message)
+                ' End Try
 
                 Try
                     If Not is_perspective_drown Then
@@ -3423,7 +3444,7 @@ Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1960: btn_MoveTable")
         SlideShowStop()
         Table_Form.PrepareForDisplay()
-        Table_Form.ShowDialog(Me)
+        Table_Form.Show(Me)
     End Sub
 
     Private Sub Label1_MouseClick(sender As Object, e As MouseEventArgs) Handles lbl_Folder.MouseClick

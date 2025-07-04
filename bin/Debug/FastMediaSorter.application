@@ -7,14 +7,14 @@
     <framework targetVersion="4.8" profile="Full" supportedRuntime="4.0.30319" />
   </compatibleFrameworks>
   <dependency>
-    <dependentAssembly dependencyType="install" codebase="FastMediaSorter.exe.manifest" size="9231">
+    <dependentAssembly dependencyType="install" codebase="FastMediaSorter.exe.manifest" size="9233">
       <assemblyIdentity name="FastMediaSorter.exe" version="25.05.23.0" publicKeyToken="0000000000000000" language="neutral" processorArchitecture="msil" type="win32" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>n00fKxLmq+guKbeFcRrOZ9RN/f0eU/tJAaAu1AM0BPA=</dsig:DigestValue>
+        <dsig:DigestValue>2w8ESK6XvXlpEj+eyFU6IaU9myjQZErHAx5JIsLS4kU=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
