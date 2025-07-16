@@ -3,15 +3,15 @@
   "WorkspaceRootPath": "C:\\GIT\\FastMediaSorter\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|C:\\GIT\\FastMediaSorter\\main_form.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|FastMediaSorter||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|c:\\git\\fastmediasorter\\main_form.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
       "RelativeMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|solutionrelative:main_form.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|C:\\GIT\\FastMediaSorter\\main_form.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}|Form",
       "RelativeMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|solutionrelative:main_form.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}|Form"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|FastMediaSorter||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
     },
     {
       "AbsoluteMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|C:\\GIT\\FastMediaSorter\\table_form.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}|Form",
@@ -40,7 +40,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 7,
+          "SelectedChildIndex": 6,
           "Children": [
             {
               "$type": "Bookmark",
@@ -68,40 +68,39 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "FastMediaSorter",
               "DocumentMoniker": "C:\\GIT\\FastMediaSorter\\FastMediaSorter.vbproj",
               "RelativeDocumentMoniker": "FastMediaSorter.vbproj",
               "ToolTip": "C:\\GIT\\FastMediaSorter\\FastMediaSorter.vbproj",
               "RelativeToolTip": "FastMediaSorter.vbproj",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2025-06-26T20:45:46.496Z",
+              "WhenOpened": "2025-07-16T20:02:09.595Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "Main_Form.vb",
               "DocumentMoniker": "C:\\GIT\\FastMediaSorter\\Main_Form.vb",
               "RelativeDocumentMoniker": "Main_Form.vb",
               "ToolTip": "C:\\GIT\\FastMediaSorter\\Main_Form.vb",
               "RelativeToolTip": "Main_Form.vb",
-              "ViewState": "AgIAAPEDAAAAAAAAAAAcwAQEAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAHUCAAAAAAAAAAAgwJYCAAApAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2025-06-18T00:40:53.181Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "Main_Form.vb [Design]",
               "DocumentMoniker": "C:\\GIT\\FastMediaSorter\\Main_Form.vb",
               "RelativeDocumentMoniker": "Main_Form.vb",
               "ToolTip": "C:\\GIT\\FastMediaSorter\\Main_Form.vb [Design]",
               "RelativeToolTip": "Main_Form.vb [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-06-21T13:25:04.805Z",
-              "EditorCaption": " [Design]"
+              "WhenOpened": "2025-06-21T13:25:04.805Z"
             },
             {
               "$type": "Document",
@@ -113,7 +112,8 @@
               "RelativeToolTip": "README.md",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABwAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2025-06-20T01:03:43.226Z"
+              "WhenOpened": "2025-06-20T01:03:43.226Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -124,7 +124,8 @@
               "ToolTip": "C:\\GIT\\FastMediaSorter\\Table_Form.vb [Design]",
               "RelativeToolTip": "Table_Form.vb [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-06-18T08:09:38.907Z"
+              "WhenOpened": "2025-06-18T08:09:38.907Z",
+              "EditorCaption": " [Design]"
             },
             {
               "$type": "Document",
@@ -148,7 +149,8 @@
               "RelativeToolTip": "Table_Form.vb",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAAiAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-06-18T08:16:43.128Z"
+              "WhenOpened": "2025-06-18T08:16:43.128Z",
+              "EditorCaption": ""
             }
           ]
         }

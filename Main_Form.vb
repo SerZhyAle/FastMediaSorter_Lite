@@ -83,6 +83,9 @@ Public Class Main_Form
     Private media_View_Count As Integer
     Private is_Combo_Set_Auto As Boolean = False
 
+    Private bgWorker_Pending_Args As Tuple(Of String, String) = Nothing
+    Private bgWorker_Has_Pending_Operation As Boolean = False
+
     Private is_File_Reseived_From_Outside As Boolean = False
     Private is_First_Scroll_Event As Boolean = False
 
@@ -483,13 +486,14 @@ Public Class Main_Form
 
             If was_External_Input_Previously Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0080: folder files going be counted on background..")
-                total_File_Count = My.Computer.FileSystem.GetDirectoryInfo(Current_Folder_Path).EnumerateFiles.Count
+                Dim background_Total_File_Count As Integer = My.Computer.FileSystem.GetDirectoryInfo(Current_Folder_Path).EnumerateFiles.Count
 
                 Dim folder_File_Count_State As New Dictionary(Of String, String)
-                folder_File_Count_State("totalFilesCountText") = total_File_Count.ToString
+                folder_File_Count_State("totalFilesCountText") = background_Total_File_Count.ToString
+                folder_File_Count_State("updateTotalFileCount") = background_Total_File_Count.ToString
                 DirectCast(sender, BackgroundWorker).ReportProgress(0, folder_File_Count_State)
 
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0090: folder files: " & total_File_Count)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0090: folder files: " & background_Total_File_Count)
             End If
 
             If Not is_Slide_Show_Random_Mode AndAlso
@@ -572,6 +576,16 @@ Public Class Main_Form
                 lbl_File_Number.Text = If(Is_Russian_Language, "Файл: 0 ", "File: 0 ")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0180: BgWorker files count calculated: " & totalFilesCountText)
             End If
+
+            ' Update total_File_Count on UI thread if provided
+            If file_Meta_State.ContainsKey("updateTotalFileCount") Then
+                Dim newTotalCount As String = file_Meta_State("updateTotalFileCount")
+                Dim newCount As Integer
+                If Integer.TryParse(newTotalCount, newCount) Then
+                    total_File_Count = newCount
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0185: total_File_Count updated on UI thread: " & total_File_Count)
+                End If
+            End If
         Else
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0190: BgWorker reported wrong progress!")
         End If
@@ -581,36 +595,77 @@ Public Class Main_Form
     Private Sub BgWorker_RunWorkerCompleted(sender As Object, e As RunWorkerCompletedEventArgs) Handles BgWorker.RunWorkerCompleted
         is_BgWorker_Online = False
 
-        If e.Cancelled Then
+        ' Dispose resources in all paths
+        If e.Result IsNot Nothing Then
+            Try
+                Dim result As Tuple(Of Image, IO.MemoryStream, Boolean) = DirectCast(e.Result, Tuple(Of Image, IO.MemoryStream, Boolean))
+
+                If e.Cancelled Then
+                    ' Operation was cancelled - dispose resources
+                    result.Item1?.Dispose()
+                    result.Item2?.Dispose()
+                    bgWorker_Result = "CANCELLED"
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0201: BgWorker cancelled - resources disposed")
+                ElseIf e.Error IsNot Nothing Then
+                    ' Error occurred - dispose resources
+                    result.Item1?.Dispose()
+                    result.Item2?.Dispose()
+                    bgWorker_Result = "ERR: " & e.Error.Message
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0205: Error disposing BgWorker result: " & e.Error.Message)
+                ElseIf current_Second_File_Name = "" Then
+                    ' No second file - dispose resources
+                    result.Item1?.Dispose()
+                    result.Item2?.Dispose()
+                    bgWorker_Result = "SKIPED"
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0207: BgWorker skipped - resources disposed")
+                Else
+                    ' Success - transfer ownership to UI controls
+                    Dim next_Image_To_Display As Image = result.Item1
+                    Dim next_Image_Stream As IO.MemoryStream = result.Item2
+                    Dim is_PictureBox1_Active As Boolean = result.Item3
+
+                    If is_PictureBox1_Active Then
+                        If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
+                        If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
+                        Picture_Box_1.Image = next_Image_To_Display
+                        pictureBox1_Stream = next_Image_Stream
+
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0210: bgWorker: P1 is loaded")
+                    Else
+                        If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
+                        If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
+                        Picture_Box_2.Image = next_Image_To_Display
+                        pictureBox2_Stream = next_Image_Stream
+
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0220: bgWorker: P2 is loaded")
+                    End If
+
+                    bgWorker_Result = "LOADED"
+                End If
+            Catch ex As Exception
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0203: Error handling BgWorker result: " & ex.Message)
+                bgWorker_Result = "ERR: " & ex.Message
+            End Try
+        ElseIf e.Cancelled Then
             bgWorker_Result = "CANCELLED"
         ElseIf e.Error IsNot Nothing Then
             bgWorker_Result = "ERR: " & e.Error.Message
-        ElseIf current_Second_File_Name = "" Then
-            bgWorker_Result = "SKIPED"
         Else
-            ' sza250609 - GIF fix
-            Dim result As Tuple(Of Image, IO.MemoryStream, Boolean) = DirectCast(e.Result, Tuple(Of Image, IO.MemoryStream, Boolean))
-            Dim next_Image_To_Display As Image = result.Item1
-            Dim next_Image_Stream As IO.MemoryStream = result.Item2
-            Dim is_PictureBox1_Active As Boolean = result.Item3
+            bgWorker_Result = "SKIPED"
+        End If
 
-            If is_PictureBox1_Active Then
-                If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
-                If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
-                Picture_Box_1.Image = next_Image_To_Display
-                pictureBox1_Stream = next_Image_Stream
+        ' Check if there's a pending operation to start
+        If bgWorker_Has_Pending_Operation AndAlso bgWorker_Pending_Args IsNot Nothing Then
+            bgWorker_Has_Pending_Operation = False
+            Dim pending_Args As Tuple(Of String, String) = bgWorker_Pending_Args
+            bgWorker_Pending_Args = Nothing
 
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0210: bgWorker: P1 is loaded")
-            Else
-                If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
-                If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
-                Picture_Box_2.Image = next_Image_To_Display
-                pictureBox2_Stream = next_Image_Stream
-
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0220: bgWorker: P2 is loaded")
+            ' Start the pending operation
+            If Not Is_No_Background_Tasks Then
+                is_BgWorker_Online = True
+                BgWorker.RunWorkerAsync(pending_Args)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0235: BgWorker started pending operation")
             End If
-
-            bgWorker_Result = "LOADED"
         End If
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0230: bgWorkerResult: " & bgWorker_Result)
@@ -985,8 +1040,10 @@ Public Class Main_Form
                 If is_Files_Array_Active Then
                     Dim file_Entries = DirectCast(files, FileEntry())
                     files_Array = file_Entries.Select(Function(fe) fe.FilePath).ToArray()
+                    files_List = Nothing ' Clear list when using array
                 Else
                     files_List = DirectCast(files, List(Of String))
+                    files_Array = Nothing ' Clear array when using list
                 End If
 
                 lbl_Status.Text = ""
@@ -1047,8 +1104,10 @@ Public Class Main_Form
                 If is_Files_Array_Active Then
                     Dim file_Entries = DirectCast(files, FileEntry())
                     files_Array = file_Entries.Select(Function(fe) fe.FilePath).ToArray()
+                    files_List = Nothing ' Clear list when using array
                 Else
                     files_List = DirectCast(files, List(Of String))
+                    files_Array = Nothing ' Clear array when using list
                 End If
 
                 lbl_Status.Text = ""
@@ -1102,9 +1161,11 @@ Public Class Main_Form
             If is_Files_Array_Active Then
                 Dim file_Entries = DirectCast(files, FileEntry())
                 files_Array = file_Entries.Select(Function(fe) fe.FilePath).ToArray()
+                files_List = Nothing ' Clear list when using array
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0780: folder files ARRAY is counted: " & files_Array.Length.ToString)
             Else
                 files_List = DirectCast(files, List(Of String))
+                files_Array = Nothing ' Clear array when using list
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0790: folder files LIST is counted: " & files_List.Count.ToString)
             End If
 
@@ -1537,20 +1598,6 @@ Public Class Main_Form
             If is_File_Found Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0970: currentFileIndex = " & current_File_Index.ToString)
 
-                If is_Files_Array_Active Then
-                    If files_Array Is Nothing AndAlso
-                    Not files_List Is Nothing Then
-
-                        is_Files_Array_Active = False
-                    End If
-                Else
-                    If Not files_Array Is Nothing AndAlso
-                    files_List Is Nothing Then
-
-                        is_Files_Array_Active = True
-                    End If
-                End If
-
                 Current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
                 Else
                     If Current_Image_Path Is Nothing Then
@@ -1608,23 +1655,20 @@ Public Class Main_Form
                     next_File_After_Current = ""
                 End If
 
-                If is_BgWorker_Online OrElse
-                        BgWorker.IsBusy Then
+                If Not Is_No_Background_Tasks Then
+                    Dim new_Args As New Tuple(Of String, String)(Current_File_Name, next_File_After_Current)
 
-                    BgWorker.CancelAsync()
-                    is_BgWorker_Online = False
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1050: BgWorker set off line")
-                End If
-
-                If Not Is_No_Background_Tasks AndAlso
-                        Not is_BgWorker_Online AndAlso
-                        Not BgWorker.IsBusy Then
-
-                    is_BgWorker_Online = True
-
-                    BgWorker.RunWorkerAsync(New Tuple(Of String, String)(Current_File_Name, next_File_After_Current))
-
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1060: BgWorker is run")
+                    If is_BgWorker_Online OrElse BgWorker.IsBusy Then
+                        ' Store the pending operation instead of canceling
+                        bgWorker_Pending_Args = new_Args
+                        bgWorker_Has_Pending_Operation = True
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1050: BgWorker operation queued")
+                    Else
+                        ' Start the operation immediately
+                        is_BgWorker_Online = True
+                        BgWorker.RunWorkerAsync(new_Args)
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1060: BgWorker is run")
+                    End If
                 Else
                     lbl_Current_File.Text = If(Is_Russian_Language, "Текущий: ", "Current: ") & Current_File_Name
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1065: BgWorker is not run, online=" & is_BgWorker_Online.ToString & " IsBusy=" & BgWorker.IsBusy.ToString)
@@ -1690,6 +1734,7 @@ Public Class Main_Form
 
             If file_Entry_List.Count < max_Number_Of_Files_For_List Then
                 is_Files_Array_Active = False
+                files_Array = Nothing ' Clear array when using list
 
                 Dim orderedEntries As IEnumerable(Of FileEntry)
                 Select Case cmbox_Sort.SelectedItem?.ToString()
@@ -1721,6 +1766,7 @@ Public Class Main_Form
             Else
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1109:  too mant files - just array, no sorting !")
                 is_Files_Array_Active = True
+                files_List = Nothing ' Clear list when using array
                 Return file_Entry_List.ToArray()
             End If
 

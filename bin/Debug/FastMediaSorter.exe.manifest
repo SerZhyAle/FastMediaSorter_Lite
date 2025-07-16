@@ -43,14 +43,14 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="FastMediaSorter.exe" size="251904">
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="FastMediaSorter.exe" size="253440">
       <assemblyIdentity name="FastMediaSorter" version="25.6.26.2245" language="neutral" processorArchitecture="msil" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>8YZrLJtfFgKc9LsxebYfnn7lI1q2RQUi4yplL87EUZA=</dsig:DigestValue>
+        <dsig:DigestValue>O/dmikbxILqo5En44wmE15phTj0Qs5l1vt7cI7lPGGI=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
@@ -62,7 +62,7 @@
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>LJbxq+K432o6VCC+OLre7gm4OvVFuFKyA5pyTgRdzck=</dsig:DigestValue>
+        <dsig:DigestValue>bWDe5ao4YGvyoYLeaIdfrX81zzu3cVj15j8jTEtijbk=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
