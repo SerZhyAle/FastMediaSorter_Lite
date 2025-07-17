@@ -595,24 +595,19 @@ Public Class Main_Form
     Private Sub BgWorker_RunWorkerCompleted(sender As Object, e As RunWorkerCompletedEventArgs) Handles BgWorker.RunWorkerCompleted
         is_BgWorker_Online = False
 
-        ' Dispose resources in all paths
-        If e.Result IsNot Nothing Then
+        ' Check for cancellation or error BEFORE accessing e.Result
+        If e.Cancelled Then
+            bgWorker_Result = "CANCELLED"
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0201: BgWorker cancelled")
+        ElseIf e.Error IsNot Nothing Then
+            bgWorker_Result = "ERR: " & e.Error.Message
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0205: BgWorker error: " & e.Error.Message)
+        ElseIf e.Result IsNot Nothing Then
+            ' Only access e.Result if operation completed successfully
             Try
                 Dim result As Tuple(Of Image, IO.MemoryStream, Boolean) = DirectCast(e.Result, Tuple(Of Image, IO.MemoryStream, Boolean))
 
-                If e.Cancelled Then
-                    ' Operation was cancelled - dispose resources
-                    result.Item1?.Dispose()
-                    result.Item2?.Dispose()
-                    bgWorker_Result = "CANCELLED"
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0201: BgWorker cancelled - resources disposed")
-                ElseIf e.Error IsNot Nothing Then
-                    ' Error occurred - dispose resources
-                    result.Item1?.Dispose()
-                    result.Item2?.Dispose()
-                    bgWorker_Result = "ERR: " & e.Error.Message
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0205: Error disposing BgWorker result: " & e.Error.Message)
-                ElseIf current_Second_File_Name = "" Then
+                If current_Second_File_Name = "" Then
                     ' No second file - dispose resources
                     result.Item1?.Dispose()
                     result.Item2?.Dispose()
@@ -646,12 +641,10 @@ Public Class Main_Form
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0203: Error handling BgWorker result: " & ex.Message)
                 bgWorker_Result = "ERR: " & ex.Message
             End Try
-        ElseIf e.Cancelled Then
-            bgWorker_Result = "CANCELLED"
-        ElseIf e.Error IsNot Nothing Then
-            bgWorker_Result = "ERR: " & e.Error.Message
         Else
+            ' Completed successfully but no result
             bgWorker_Result = "SKIPED"
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0208: BgWorker completed with no result")
         End If
 
         ' Check if there's a pending operation to start
