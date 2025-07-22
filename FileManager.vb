@@ -7,11 +7,11 @@ Public Module FileManager
     ''' Loads an image from file and returns a Tuple with the Image and its MemoryStream.
     ''' </summary>
     Public Function LoadImageWithStream(filePath As String) As Tuple(Of Image, IO.MemoryStream)
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0035: LoadImage begin " & filePath)
-        If Not My.Computer.FileSystem.FileExists(filePath) Then
+        If String.IsNullOrEmpty(filePath) OrElse Not File.Exists(filePath) Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0036: LoadImage file not found")
             Return Nothing
         End If
+
         Try
             Dim imageBytes As Byte() = File.ReadAllBytes(filePath)
             Dim ms As New IO.MemoryStream(imageBytes)
@@ -33,7 +33,7 @@ Public Module FileManager
 
             Return Tuple.Create(nextImage, ms)
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0041: ERR loading image " & ex.Message)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " E041: ERR loading image " & ex.Message)
             Return Nothing
         End Try
     End Function

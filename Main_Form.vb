@@ -9,6 +9,7 @@
 'sza250608 copilot
 'sza250609 gif fix
 'sza250617 
+'sza250721 choose file
 
 Option Strict On
 
@@ -122,6 +123,7 @@ Public Class Main_Form
     Private is_PictureBox2_Visible As Boolean
     Private last_Loaded_Uri As String = ""
     Private is_Folder_Read_Required As Boolean = False
+    Private total_Files_Count_Text As String = "0"
 
     Private video_Volume_Level As Double = 1
     Private is_TextBox_Editing As Boolean = False
@@ -244,6 +246,7 @@ Public Class Main_Form
         toolTip.SetToolTip(bt_Delete, If(Is_Russian_Language, "Удалить файл (Del)", "Delete file (Del)"))
         toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык на английский", "Switch language to Russian"))
         toolTip.SetToolTip(chkbox_Top_Most, If(Is_Russian_Language, "Поверх всех окон", "Always on top"))
+        toolTip.SetToolTip(btn_choose_file, If(Is_Russian_Language, "Выбрать файл..", "Choose file.."))
 
         ' --- ComboBoxes and Labels ---
         toolTip.SetToolTip(cmbox_Sort, If(Is_Russian_Language, "Порядок сортировки файлов", "File sort order"))
@@ -567,14 +570,14 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0170: BgWorker size and time calculated")
 
         ElseIf file_Meta_State.ContainsKey("totalFilesCountText") Then
-            Dim totalFilesCountText As String = file_Meta_State("totalFilesCountText")
+            total_Files_Count_Text = file_Meta_State("totalFilesCountText")
 
-            If Not totalFilesCountText = Nothing Then
-                lbl_File_Number.Text = If(Is_Russian_Language, "Файл: 1 из " & totalFilesCountText, "File: 1 from " & totalFilesCountText)
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0175: BgWorker files count calculated: " & totalFilesCountText)
+            If Not total_Files_Count_Text = Nothing Then
+                lbl_File_Number.Text = If(Is_Russian_Language, "Файл: 1 из " & total_Files_Count_Text, "File: 1 from " & total_Files_Count_Text)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0175: BgWorker files count calculated: " & total_Files_Count_Text)
             Else
                 lbl_File_Number.Text = If(Is_Russian_Language, "Файл: 0 ", "File: 0 ")
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0180: BgWorker files count calculated: " & totalFilesCountText)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0180: BgWorker files count calculated: " & total_Files_Count_Text)
             End If
 
             ' Update total_File_Count on UI thread if provided
@@ -1308,34 +1311,59 @@ Public Class Main_Form
     End Sub
 
     Private Sub LoadStandardImageInPictureBox()
-        is_PictureBox1_Visible = False
-        is_PictureBox2_Visible = False
+        ' Don't immediately hide the current image - let it stay visible until the new one is ready
         is_WebBrowser_Visible = False
         is_WebView2_Visible = False
 
         If current_Loaded_File_Name <> Current_File_Name Then
 
             If bgWorker_Result = "LOADED" AndAlso
-                current_Second_File_Name = Current_File_Name Then
+            current_Second_File_Name = Current_File_Name Then
 
+                ' Pre-loaded image is available - use it immediately
                 If Not is_Second_PictureBox_Active Then
+                    ' Switch to PictureBox2 - make it visible FIRST, then hide PictureBox1
                     is_PictureBox2_Visible = True
+                    UpdateControlVisibility() ' Update visibility immediately
                     is_PictureBox1_Visible = False
 
                     bgWorker_Result = "USED P2"
                     is_Second_PictureBox_Active = True
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0870: P2 is found already loaded isSecondaryPictureBoxActive=true")
                 Else
-                    is_PictureBox2_Visible = False
+                    ' Switch to PictureBox1 - make it visible FIRST, then hide PictureBox2
                     is_PictureBox1_Visible = True
+                    UpdateControlVisibility() ' Update visibility immediately
+                    is_PictureBox2_Visible = False
 
                     bgWorker_Result = "USED P1"
                     is_Second_PictureBox_Active = False
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0880: P1 is found already loaded isSecondaryPictureBoxActive =false")
                 End If
             Else
-
+                ' No pre-loaded image - load it now
                 Try
+                    ' Check if file exists and is accessible
+                    If Not File.Exists(Current_File_Name) Then
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0906: File does not exist: " & Current_File_Name)
+                        lbl_Status.Text = If(Is_Russian_Language, "Файл не найден: " & Path.GetFileName(Current_File_Name), "File not found: " & Path.GetFileName(Current_File_Name))
+
+                        ' Skip to next file if current file doesn't exist
+                        ReadShowMediaFile("ReadNextFile")
+                        Return
+                    End If
+
+                    ' Verify file is not empty
+                    Dim fileInfo As New FileInfo(Current_File_Name)
+                    If fileInfo.Length = 0 Then
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0907: File is empty: " & Current_File_Name)
+                        lbl_Status.Text = If(Is_Russian_Language, "Файл пуст: " & Path.GetFileName(Current_File_Name), "File is empty: " & Path.GetFileName(Current_File_Name))
+
+                        ' Skip to next file if current file is empty
+                        ReadShowMediaFile("ReadNextFile")
+                        Return
+                    End If
+
                     ' sza250609 - GIF fix
                     Dim image_Data_Tuple As Tuple(Of Image, IO.MemoryStream) = LoadImageWithStream(Current_File_Name)
 
@@ -1344,38 +1372,68 @@ Public Class Main_Form
                         Dim loaded_Image_Stream As IO.MemoryStream = image_Data_Tuple.Item2
 
                         If Not is_this_First_Picture_File_We_Show AndAlso is_Second_PictureBox_Active Then
+                            ' Use PictureBox2 - load image first, then update visibility
                             If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
                             If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
                             Picture_Box_2.Image = loaded_Image
                             pictureBox2_Stream = loaded_Image_Stream
+
+                            ' Now update visibility - show P2 first, then hide P1
                             is_PictureBox2_Visible = True
+                            UpdateControlVisibility()
                             is_PictureBox1_Visible = False
                             is_Second_PictureBox_Active = True
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0890: P2 set (not found loaded) isSecondaryPictureBoxActive=true")
                         Else
+                            ' Use PictureBox1 - load image first, then update visibility
                             If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
                             If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
                             Picture_Box_1.Image = loaded_Image
                             pictureBox1_Stream = loaded_Image_Stream
+
+                            ' Now update visibility - show P1 first, then hide P2
                             is_PictureBox1_Visible = True
+                            UpdateControlVisibility()
                             is_PictureBox2_Visible = False
                             is_Second_PictureBox_Active = False
                             is_this_First_Picture_File_We_Show = False
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0900: P1 set (not found loaded) isSecondaryPictureBoxActive=false")
                         End If
                     Else
-                        If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
-                        If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
-                        If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
-                        If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
+                        ' Image loading failed - skip to next file
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0908: Image loading failed for: " & Current_File_Name)
+                        lbl_Status.Text = If(Is_Russian_Language, "Не удалось загрузить: " & Path.GetFileName(Current_File_Name), "Failed to load: " & Path.GetFileName(Current_File_Name))
+
+                        ' Try to move to next file automatically
+                        ReadShowMediaFile("ReadNextFile")
+                        Return
                     End If
+                Catch ex As ArgumentException
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0905: ArgumentException loading image: " & ex.Message & " File: " & Current_File_Name)
+                    lbl_Status.Text = If(Is_Russian_Language, "Недопустимый файл изображения: " & Path.GetFileName(Current_File_Name), "Invalid image file: " & Path.GetFileName(Current_File_Name))
+
+                    ' Skip to next file if image is invalid
+                    ReadShowMediaFile("ReadNextFile")
+                    Return
+                Catch ex As OutOfMemoryException
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0909: OutOfMemoryException loading image: " & ex.Message & " File: " & Current_File_Name)
+                    lbl_Status.Text = If(Is_Russian_Language, "Недостаточно памяти для загрузки: " & Path.GetFileName(Current_File_Name), "Out of memory loading: " & Path.GetFileName(Current_File_Name))
+
+                    ' Skip to next file if out of memory
+                    ReadShowMediaFile("ReadNextFile")
+                    Return
                 Catch ex As Exception
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0905: Error loading image: " & ex.Message)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0905: Error loading image: " & ex.Message & " File: " & Current_File_Name)
+                    lbl_Status.Text = If(Is_Russian_Language, "Ошибка загрузки: " & Path.GetFileName(Current_File_Name), "Loading error: " & Path.GetFileName(Current_File_Name))
+
+                    ' Skip to next file if any other error occurs
+                    ReadShowMediaFile("ReadNextFile")
                     Return
                 End Try
             End If
             current_Loaded_File_Name = Current_File_Name
 
+            ' Final visibility update
             UpdateControlVisibility()
 
             If is_form_shown Then Draw_Perspective()
@@ -1584,7 +1642,10 @@ Public Class Main_Form
 
     Private Sub UpdateCurrentFileAndDisplay(is_File_Found As Boolean, is_After_Undo_Operation As Boolean)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0381: UpdateCurrentFileAndDisplay, currentFileName: " & Current_File_Name)
+
+        Dim previous_File_Name As String = Current_File_Name
         Current_File_Name = ""
+        current_Loaded_File_Name = "" ' Clear this to force reload
 
         If total_File_Count <> 0 Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0960: isFileFound = " & is_File_Found.ToString)
@@ -1592,8 +1653,34 @@ Public Class Main_Form
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0970: currentFileIndex = " & current_File_Index.ToString)
 
                 Current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
-                Else
-                    If Current_Image_Path Is Nothing Then
+                If Not File.Exists(Current_File_Name) Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0975: New current file does not exist: " & Current_File_Name)
+                    lbl_Status.Text = If(Is_Russian_Language, "Файл не найден, переход к следующему", "File not found, moving to next")
+
+                    ' Remove the invalid file from the list and try the next one
+                    If is_Files_Array_Active Then
+                        files_Array = RemoveAt(files_Array, current_File_Index)
+                    Else
+                        files_List.RemoveAt(current_File_Index)
+                    End If
+                    total_File_Count -= 1
+
+                    ' Adjust index if necessary
+                    If current_File_Index >= total_File_Count Then
+                        current_File_Index = Math.Max(0, total_File_Count - 1)
+                    End If
+
+                    ' Try again with the adjusted index
+                    If total_File_Count > 0 Then
+                        Current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0976: Adjusted to new file: " & Current_File_Name)
+                    Else
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0977: No more files available")
+                        Return
+                    End If
+                End If
+            Else
+                If Current_Image_Path Is Nothing Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0972: targetImagePath Is Nothing")
                     current_File_Index = 0
                     Current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
@@ -1669,8 +1756,28 @@ Public Class Main_Form
 
             Catch ex As Exception
                 If Not is_After_Undo_Operation Then
-                    MsgBox("E005 " & ex.Message)
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1070: E005 " & ex.Message)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1070: E005 " & ex.Message & " File: " & Current_File_Name)
+
+                    ' Instead of showing error, try to skip to next file
+                    lbl_Status.Text = If(Is_Russian_Language, "Ошибка файла, переход к следующему: " & Path.GetFileName(Current_File_Name), "File error, moving to next: " & Path.GetFileName(Current_File_Name))
+
+                    ' Remove the problematic file from the list
+                    If is_Files_Array_Active Then
+                        files_Array = RemoveAt(files_Array, current_File_Index)
+                    Else
+                        files_List.RemoveAt(current_File_Index)
+                    End If
+                    total_File_Count -= 1
+
+                    ' Adjust index and try next file
+                    If current_File_Index >= total_File_Count Then
+                        current_File_Index = Math.Max(0, total_File_Count - 1)
+                    End If
+
+                    If total_File_Count > 0 Then
+                        ' Recursively try the next file
+                        UpdateCurrentFileAndDisplay(True, False)
+                    End If
                 Else
                     lbl_Status.Text = If(Is_Russian_Language, "Файл " & Current_File_Name & " перемещается назад операционной системой.", "File " & Current_File_Name & " moving back by OS.")
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1080: UNdo E005 " & ex.Message)
@@ -2725,6 +2832,12 @@ Public Class Main_Form
                     current_File_Index = total_File_Count - 1
                     ReadShowMediaFile("SetFile")
                     lbl_Status.Text = If(Is_Russian_Language, "последний файл", "last file")
+                Case Keys.F, Keys.F4
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1385: choose file")
+                    Choose_file()
+                Case Keys.N
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1386: jump to number")
+                    Jump_To_file_Number()
                 Case Keys.D, Keys.Delete
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1390: to delete")
                     ReadShowMediaFile("DeleteFile")
@@ -3198,9 +3311,17 @@ Public Class Main_Form
             .Font = the_Font_For_Fullscreen
             .Visible = True
         End With
-        With btn_Select_Folder
+        With btn_choose_file
             .Top = top_first_line
             .Left = chkbox_Top_Most.Left + chkbox_Top_Most.Width + 2
+            .Width = the_Width_For_buttons * 2
+            .Height = the_Height_For_buttons
+            .Font = the_Font_For_Fullscreen
+            .Visible = True
+        End With
+        With btn_Select_Folder
+            .Top = top_first_line
+            .Left = btn_choose_file.Left + btn_choose_file.Width + 2
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
             .Font = the_Font_For_Fullscreen
@@ -3326,9 +3447,17 @@ Public Class Main_Form
                 .Font = the_font_for_normal
                 .Visible = True
             End With
-            With btn_Select_Folder
+            With btn_choose_file
                 .Top = top_first_line
                 .Left = cmbox_Media_Folder.Width + cmbox_Media_Folder.Left + 2
+                .Width = the_Width_For_buttons * 2
+                .Height = the_Height_For_buttons
+                .Font = the_font_for_normal
+                .Visible = True
+            End With
+            With btn_Select_Folder
+                .Top = top_first_line
+                .Left = btn_choose_file.Width + btn_choose_file.Left + 2
                 .Width = the_Width_For_buttons * 2
                 .Height = the_Height_For_buttons
                 .Font = the_font_for_normal
@@ -3903,6 +4032,76 @@ Public Class Main_Form
         If toolTip IsNot Nothing Then
             toolTip.Dispose()
             toolTip = Nothing
+        End If
+    End Sub
+
+    Private Sub btn_choose_file_Click(sender As Object, e As EventArgs) Handles btn_choose_file.Click
+        Choose_file()
+    End Sub
+
+    Private Sub Choose_file()
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2450: btn_choose_file clicked")
+        SlideShowStop()
+        Using openFileDialog As New OpenFileDialog()
+            openFileDialog.Filter = "All Supported Files|*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.avif;*.svg|JPEG Files|*.jpg;*.jpeg|PNG Files|*.png|GIF Files|*.gif|BMP Files|*.bmp|WebP Files|*.webp|HEIC Files|*.heic|AVIF Files|*.avif|SVG Files|*.svg"
+            openFileDialog.InitialDirectory = If(String.IsNullOrEmpty(Current_Folder_Path), Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), Current_Folder_Path)
+            openFileDialog.Title = If(Is_Russian_Language, "Выберите файл изображения", "Select an image file")
+            If openFileDialog.ShowDialog() = DialogResult.OK Then
+                Dim selected_File_Path As String = openFileDialog.FileName
+                Dim selected_Folder_Path As String = Path.GetDirectoryName(selected_File_Path)
+
+                ' Set up the necessary state for external input processing
+                Current_Folder_Path = selected_Folder_Path
+                Current_Image_Path = selected_File_Path
+                Current_File_Name = selected_File_Path
+
+                ' Update the folder combo box
+                is_TextBox_Editing = True
+                cmbox_Media_Folder.Text = Current_Folder_Path
+                is_TextBox_Editing = False
+
+                ' Mark as external input to ensure proper processing
+                is_External_Input_Received = True
+                was_External_Input_Previously = True
+
+                ' Reset file index and count for the new selection
+                current_File_Index = 0
+                total_File_Count = 1
+
+                ReadShowMediaFile("ReadFolderAndKnownFile")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2455: File chosen - " & selected_File_Path)
+            End If
+        End Using
+    End Sub
+
+    Private Sub lbl_File_Number_Click(sender As Object, e As EventArgs) Handles lbl_File_Number.Click
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2460: jump to file clicked")
+        SlideShowStop()
+        Jump_To_file_Number()
+    End Sub
+
+
+    Private Sub Jump_To_file_Number()
+
+        Dim fileNumber As Integer
+        Dim take_number As String
+
+        take_number = InputBox(If(Is_Russian_Language, "Введите номер файла:", "Enter file number:"), If(Is_Russian_Language, "Перейти к файлу", "Jump To File Number"), (current_File_Index + 1).ToString, 1, total_File_Count)
+
+        If Integer.TryParse(take_number, fileNumber) Then
+
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2465: Jumping to file number " & fileNumber.ToString())
+
+            If fileNumber > 0 AndAlso fileNumber <= total_File_Count Then
+                ' Adjust for zero-based index
+                current_File_Index = fileNumber - 1
+                ReadShowMediaFile("ReadForJumpToFile")
+            Else
+                MessageBox.Show(If(Is_Russian_Language, "Номер файла вне диапазона.", "File number out of range."), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End If
+
+        Else
+            MessageBox.Show("Invalid file number.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End If
     End Sub
 End Class
