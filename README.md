@@ -1,13 +1,12 @@
-# FastMediaSorter
+# FastMediaSorter LITE
 
-FastMediaSorter is a Windows Forms application for quickly sorting, viewing, and managing image and video files. It supports a wide range of media formats and provides features such as:
+FastMediaSorter LITE is a Windows Forms application for quickly sorting, viewing, and managing image and video files. It supports a wide range of media formats and provides features such as:
 
 - Fast navigation through large folders of images and videos
 - Slideshow and random file viewing modes
 - Recent files and folders tracking
 - File operations: move, copy, rename, and delete
 - Image panel for quick visual navigation
-- Support for modern image formats (WebP, HEIC, AVIF, SVG) via WebView2
 - Customizable keyboard shortcuts for efficient workflow
 - Multi-language support (English/Russian)
 
@@ -22,7 +21,6 @@ FastMediaSorter is a Windows Forms application for quickly sorting, viewing, and
 ## Requirements
 - Windows 7/10/11
 - .NET Framework 4.8
-- [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) (for advanced image format support)
 
 ## License
 This project is provided as-is for personal use.

@@ -1,0 +1,26 @@
+﻿# FastMediaSorter LITE
+
+FastMediaSorter LITE is a Windows Forms application for quickly sorting, viewing, and managing image and video files. It supports a wide range of media formats and provides features such as:
+
+- Fast navigation through large folders of images and videos
+- Slideshow and random file viewing modes
+- Recent files and folders tracking
+- File operations: move, copy, rename, and delete
+- Image panel for quick visual navigation
+- Customizable keyboard shortcuts for efficient workflow
+- Multi-language support (English/Russian)
+
+## Usage
+
+1. Select a folder containing your media files.
+2. Navigate files using keyboard, mouse, or on-screen buttons.
+3. Use the panel and recent files features for quick access.
+4. Move, copy, or delete files as needed.
+5. Enjoy fast and efficient media sorting!
+
+## Requirements
+- Windows 7/10/11
+- .NET Framework 4.8
+
+## License
+This project is provided as-is for personal use.

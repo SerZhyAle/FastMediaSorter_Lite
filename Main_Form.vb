@@ -3,13 +3,14 @@
 'sza250411 random, filters, etc
 'sza250502 refactor
 'sza250506 grok
-'FastMediaSorter
+'FastMediaSorter LITE
 'sza2505207
 'sza250606 gemini
 'sza250608 copilot
 'sza250609 gif fix
 'sza250617 
 'sza250721 choose file
+'sza250723 LITE
 
 Option Strict On
 
@@ -21,8 +22,6 @@ Imports System.Security.Principal
 Imports System.Text
 Imports System.Text.RegularExpressions
 Imports System.Threading
-Imports Microsoft.Web.WebView2.Core
-Imports Microsoft.Web.WebView2.WinForms
 Imports Microsoft.Win32
 
 
@@ -140,11 +139,6 @@ Public Class Main_Form
 
     Private all_Supported_Extensions As New HashSet(Of String)()
     Private recent_Folder_List As New List(Of String)
-
-    Private is_WebView2_Available As Boolean = False
-    Private WithEvents Web_View2 As WebView2 = Nothing
-    Private is_WebView2_Visible As Boolean = False
-    Private is_WebView2_Loaded As Boolean = False
 
     Private WithEvents FileOperationWorker As New BackgroundWorker
     Private current_File_Operation As String
@@ -266,9 +260,6 @@ Public Class Main_Form
         'toolTip.SetToolTip(Picture_Box_1, mediaControlTooltip)
         'toolTip.SetToolTip(Picture_Box_2, mediaControlTooltip)
         'toolTip.SetToolTip(Web_Browser, mediaControlTooltip)
-        'If Web_View2 IsNot Nothing Then
-        '        toolTip.SetToolTip(Web_View2, mediaControlTooltip)
-        '       End If
     End Sub
 
     Protected Overrides Sub WndProc(ByRef m As Message)
@@ -405,10 +396,6 @@ Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0004: SetWebBrowserCompatibilityMode")
         SetWebBrowserCompatibilityMode()
 
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0005: CheckWebView2Availability")
-        CheckWebView2Availability()
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0007: InitializeWebView2")
-        InitializeWebView2()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0009: InitializeFileOperationWorker")
         InitializeFileOperationWorker()
     End Sub
@@ -1185,51 +1172,6 @@ Public Class Main_Form
         video_Volume_Level = Math.Max(0.0, Math.Min(1.0, volume))
     End Sub
 
-    Private Sub LoadWebImageInWebView2(web_Image_Uri As String)
-        If Not is_WebView2_Available OrElse Web_View2 Is Nothing Then
-            lbl_Status.Text = If(Is_Russian_Language, "Формат .webp не поддерживается: WebView2 недоступен или не инициализирован", "Format .webp not supported: WebView2 is unavailable or not initialized")
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0810: WebView2 is missing or not initialized")
-            Return
-        End If
-
-        Try
-            is_WebView2_Loaded = False
-            is_WebView2_Visible = False
-            is_WebBrowser_Visible = False
-            is_PictureBox1_Visible = False
-            is_PictureBox2_Visible = False
-
-            UpdateControlVisibility()
-
-            Web_View2.Source = New Uri(web_Image_Uri)
-            current_Loaded_File_Name = Current_File_Name
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0820: WebView2 is loaded")
-        Catch ex As Exception
-            lbl_Status.Text = If(Is_Russian_Language, "Ошибка загрузки в WebView2: " & ex.Message, "Error loading in WebView2: " & ex.Message)
-            If Web_View2 IsNot Nothing Then
-                Web_View2.Source = New Uri("about:blank")
-                Web_View2.Visible = False
-            End If
-            is_WebView2_Visible = False
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0830: Error loading in WebView2: " & ex.Message)
-
-            UpdateControlVisibility()
-        End Try
-
-        If Not Web_Browser.DocumentText = "" Then
-            Web_Browser.DocumentText = ""
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0840: WebBrowser is vanished")
-        End If
-    End Sub
-
-    Private Sub Web_View2_DoubleClick(sender As Object, e As EventArgs) Handles Web_View2.DoubleClick
-        If is_Full_Screen_Mode Then
-            is_Full_Screen_Mode = False
-            SetViewSizes()
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " Web_View2_DoubleClick: Выход из полноэкранного режима (WebView2)")
-        End If
-    End Sub
-
     Public Sub HandleWebBrowserDoubleClick()
         If Me.InvokeRequired Then
             Me.Invoke(New Action(AddressOf HandleWebBrowserDoubleClick))
@@ -1245,7 +1187,6 @@ Public Class Main_Form
     Private Sub LoadVideoInWebBrowser(video_File_Path As String)
         Try
             is_WebBrowser_Visible = False
-            is_WebView2_Visible = False
             is_PictureBox1_Visible = False
             is_PictureBox2_Visible = False
 
@@ -1313,7 +1254,6 @@ Public Class Main_Form
     Private Sub LoadStandardImageInPictureBox()
         ' Don't immediately hide the current image - let it stay visible until the new one is ready
         is_WebBrowser_Visible = False
-        is_WebView2_Visible = False
 
         If current_Loaded_File_Name <> Current_File_Name Then
 
@@ -1407,7 +1347,7 @@ Public Class Main_Form
                         ' Try to move to next file automatically
                         ReadShowMediaFile("ReadNextFile")
                         Return
-                    End If
+                        End End If
                 Catch ex As ArgumentException
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0905: ArgumentException loading image: " & ex.Message & " File: " & Current_File_Name)
                     lbl_Status.Text = If(Is_Russian_Language, "Недопустимый файл изображения: " & Path.GetFileName(Current_File_Name), "Invalid image file: " & Path.GetFileName(Current_File_Name))
@@ -1441,11 +1381,6 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0920: file is a same, pic set is skipped")
         End If
 
-        If Web_View2 IsNot Nothing AndAlso is_WebView2_Visible Then
-            Web_View2.Source = New Uri("about:blank")
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0930: WV2 blank")
-        End If
-
         If Not Web_Browser.DocumentText = "" Then
             Web_Browser.DocumentText = ""
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0940: WB blank")
@@ -1459,22 +1394,14 @@ Public Class Main_Form
         Picture_Box_2.Visible = is_PictureBox2_Visible
         Web_Browser.Visible = is_WebBrowser_Visible
 
-        If is_WebView2_Available AndAlso Web_View2 IsNot Nothing AndAlso Not Web_View2.Visible = is_WebView2_Visible Then
-            Web_View2.Visible = is_WebView2_Visible
-        End If
-
         If (is_PictureBox1_Visible OrElse
             is_PictureBox2_Visible) AndAlso
             (Not Is_slide_show_mode Or
             SlideShowTimer.Interval > slideshow_limit_to_change_color) Then
 
             Web_Browser.Visible = False
-            If Web_View2 IsNot Nothing AndAlso is_WebView2_Visible AndAlso Web_View2.Visible Then
-                is_WebView2_Visible = False
-                Web_View2.Visible = is_WebView2_Visible
-            End If
 
-            Dim pic_to_Display As Int16 = 0
+            Dim picto_Display As Int16 = 0
 
             If is_PictureBox1_Visible AndAlso
                     Picture_Box_1.Image IsNot Nothing AndAlso
@@ -1634,10 +1561,10 @@ Public Class Main_Form
                 Next
             End If
 
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0945: picture box sizes: " & If(is_PictureBox1_Visible, "P1: ", "P2: ") & If(is_PictureBox1_Visible, Picture_Box_1.Width.ToString, Picture_Box_2.Width.ToString) & "x" & If(is_PictureBox1_Visible, Picture_Box_1.Height.ToString, Picture_Box_2.Height.ToString))
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0950: Visibility set: " & If(is_PictureBox1_Visible, "P1-YES ", "P1-NO ") & If(is_PictureBox2_Visible, "P2-YES ", "P2-NO ") & If(is_WebBrowser_Visible, "WB-YES ", "WB-NO "))
         End If
 
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0950: Visibility set: " & If(is_PictureBox1_Visible, "P1-YES ", "P1-NO ") & If(is_PictureBox2_Visible, "P2-YES ", "P2-NO ") & If(is_WebBrowser_Visible, "WB-YES ", "WB-NO ") & If(is_WebView2_Visible, "WV2-YES", "WV2-NO "))
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0955: pictureBox2_Stream is disposed: " & (pictureBox2_Stream Is Nothing).ToString)
     End Sub
 
     Private Sub UpdateCurrentFileAndDisplay(is_File_Found As Boolean, is_After_Undo_Operation As Boolean)
@@ -1715,10 +1642,6 @@ Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1010: WB to load")
                     LoadVideoInWebBrowser(current_File_Uri)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: WB is set")
-                ElseIf is_WebView2_Available AndAlso web_specific_image_extensions.Contains(current_File_Extension) Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0990: WV2 to load")
-                    LoadWebImageInWebView2(current_File_Uri)
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1000: WV2 is set")
                 Else
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1045: No selected control to show!?")
                 End If
@@ -1774,6 +1697,7 @@ Public Class Main_Form
                         current_File_Index = Math.Max(0, total_File_Count - 1)
                     End If
 
+                    ' Try again with the adjusted index
                     If total_File_Count > 0 Then
                         ' Recursively try the next file
                         UpdateCurrentFileAndDisplay(True, False)
@@ -1789,15 +1713,11 @@ Public Class Main_Form
             If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
             current_Loaded_File_Name = ""
             Web_Browser.DocumentText = ""
-            If Web_View2 IsNot Nothing Then
-                Web_View2.Source = New Uri("about:blank")
-            End If
             lbl_File_Number.Text = ""
             lbl_Status.Text = If(Is_Russian_Language, "! Нет файлов в папке", "! No files in folder")
             is_PictureBox1_Visible = False
             is_PictureBox2_Visible = False
             is_WebBrowser_Visible = False
-            is_WebView2_Visible = False
 
             UpdateControlVisibility()
 
@@ -1907,11 +1827,6 @@ Public Class Main_Form
             lbl_Help_Info.Size = Me.Size
         End If
 
-        If Web_View2 IsNot Nothing Then
-            Web_View2.Size = Picture_Box_1.Size
-            Web_View2.Location = Picture_Box_1.Location
-        End If
-
         If is_form_shown Then Draw_Perspective()
 
     End Sub
@@ -1941,7 +1856,8 @@ Public Class Main_Form
         If recent_Media_File_List Is Nothing OrElse
             recent_Media_File_List.Count = 0 Then
 
-            '   MessageBox.Show(If(Is_Russian_Language, "Нет недавних файлов.", "No recent files."), "Recent Files", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            '   MessageBox.Show(If(Is_Russian_Language, "Нет недавних файлов.", "No recent files")),
+            "Recent Files", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
 
@@ -2003,7 +1919,6 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1138: cmbox_Sort is set to 0")
         End If
         cmbox_Sort.SelectedIndex = sort_Direction_Index
-
         btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
         LngCh()
 
@@ -2070,7 +1985,7 @@ Public Class Main_Form
                     ReadShowMediaFile("ReadFiles")
                 Else
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1157: folder set from savings, but saved file is not found: " & Current_Folder_Path & " - " & current_File_Index.ToString)
-                    current_File_Index = 1
+                    current_File_Index = 0
 
                     If Not total_File_Count = 0 Then ReadShowMediaFile("ReadFolderAndFile")
                 End If
@@ -2617,7 +2532,7 @@ Public Class Main_Form
                             If Not is_WebBrowser_Visible Then
                                 ReadShowMediaFile("ReadPrevFile")
                             End If
-                        Case Windows.Forms.MouseButtons.Middle
+                        Case MouseButtons.Middle
                             RenameCurrentFile()
                         Case Windows.Forms.MouseButtons.XButton1
                             ReadShowMediaFile("ReadNextFile")
@@ -2703,11 +2618,6 @@ Public Class Main_Form
         SlideShowTimer.Dispose()
         If toolTip IsNot Nothing Then toolTip.Dispose()
 
-        If Web_View2 IsNot Nothing Then
-            RemoveHandler Web_View2.NavigationCompleted, AddressOf WebView2_NavigationCompleted
-            Web_View2.Dispose()
-            Web_View2 = Nothing
-        End If
         If Web_Browser IsNot Nothing Then
             Web_Browser.DocumentText = ""
             Web_Browser.Dispose()
@@ -2734,7 +2644,7 @@ Public Class Main_Form
             Dim current_File_Name_Without_Extension As String = Path.GetFileNameWithoutExtension(Current_File_Name)
             Dim current_File_Extension As String = Path.GetExtension(Current_File_Name)
             Dim new_File_Name As String = InputBox(If(Is_Russian_Language, "Введите новое имя файла:", "Enter new file name:"),
-                                            If(Is_Russian_Language, "Переименование файла", "Rename File"),
+                                            If(Is_Russian_Language, "Переименовать файл", "Rename File"),
                                             current_File_Name_Without_Extension)
             If String.IsNullOrEmpty(new_File_Name) Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1260: empty new file name - no rename")
@@ -2969,19 +2879,19 @@ Public Class Main_Form
             lbl_Status.Text = If(Is_Russian_Language, "! Нет каталога-получателя для клавиши " & move_Slot_Key, "! No dest folder set with key " & move_Slot_Key)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1680: No dest folder set with key " & move_Slot_Key)
         Else
-            If current_File_Name <> "" Then
+            If Current_File_Name <> "" Then
                 Try
                     Dim destination_Folder_Full_Path As String = destination_Folder_Path
                     Dim source_File_Info As System.IO.FileInfo
-                    source_File_Info = My.Computer.FileSystem.GetFileInfo(current_File_Name)
+                    source_File_Info = My.Computer.FileSystem.GetFileInfo(Current_File_Name)
                     destination_Folder_Full_Path = destination_Folder_Full_Path & "\" & source_File_Info.Name
-                    history_Source_File_Name = current_File_Name
+                    history_Source_File_Name = Current_File_Name
                     history_Destination_File_Name = destination_Folder_Full_Path
 
                     If Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked Then
                         If Is_Copying_not_Moving Then
                             current_File_Operation = "Copy"
-                            current_File_Operation_Args = New String() {current_File_Name, destination_Folder_Full_Path, move_Slot_Key}
+                            current_File_Operation_Args = New String() {Current_File_Name, destination_Folder_Full_Path, move_Slot_Key}
                             lbl_Status.Text = If(Is_Russian_Language, "!Ждите.. Файл копируется (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "!Wait.. File copying (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
                             FileOperationWorker.RunWorkerAsync()
 
@@ -2990,7 +2900,7 @@ Public Class Main_Form
                             ReadShowMediaFile("ReadNextFile")
                         Else
                             current_File_Operation = "Move"
-                            current_File_Operation_Args = New String() {current_File_Name, destination_Folder_Full_Path, move_Slot_Key}
+                            current_File_Operation_Args = New String() {Current_File_Name, destination_Folder_Full_Path, move_Slot_Key}
 
                             If is_Second_PictureBox_Active Then
                                 If is_PictureBox2_Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
@@ -3005,9 +2915,7 @@ Public Class Main_Form
                             End If
 
                             Web_Browser.DocumentText = ""
-                            If Web_View2 IsNot Nothing Then
-                                Web_View2.Source = New Uri("about:blank")
-                            End If
+
                             lbl_Status.Text = If(Is_Russian_Language, "!Ждите.. Файл переносится (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "!Wait.. File moving (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
 
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1700: move async run")
@@ -3030,7 +2938,7 @@ Public Class Main_Form
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1710: copy run")
 
                             lbl_Status.Text = If(Is_Russian_Language, "!Ждите.. Файл копируется (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "!Wait.. File copying (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
-                            CopyFile(current_File_Name, destination_Folder_Full_Path)
+                            CopyFile(Current_File_Name, destination_Folder_Full_Path)
                             lbl_Status.Text = If(Is_Russian_Language, "файл скопирован (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "file copied (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
 
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1715: file is copied to " & destination_Folder_Full_Path)
@@ -3052,12 +2960,10 @@ Public Class Main_Form
                             End If
 
                             Web_Browser.DocumentText = ""
-                            If Web_View2 IsNot Nothing Then
-                                Web_View2.Source = New Uri("about:blank")
-                            End If
+
                             lbl_Status.Text = If(Is_Russian_Language, "!Ждите.. Файл переносится (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "!Wait.. File moving (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
 
-                            MoveFile(current_File_Name, destination_Folder_Full_Path)
+                            MoveFile(Current_File_Name, destination_Folder_Full_Path)
 
                             If is_Files_Array_Active Then
                                 files_Array = RemoveAt(files_Array, current_File_Index)
@@ -3145,9 +3051,6 @@ Public Class Main_Form
                 End If
             End If
             Web_Browser.DocumentText = ""
-            If Web_View2 IsNot Nothing Then
-                Web_View2.Source = New Uri("about:blank")
-            End If
         Else
             lbl_Status.Text = If(Is_Russian_Language, "! Нет истории о переносе", "! No history about moved files")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1810: No history about moved files")
@@ -3155,9 +3058,8 @@ Public Class Main_Form
     End Sub
 
     Private Sub FirstRun_Click(sender As Object, e As EventArgs) Handles lbl_Help_Info.Click
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1820: lbl_Help_Info clicked and hidden")
-        lbl_Help_Info.Visible = False
-        lbl_Help_Info.Hide()
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1820: lbl_Folder MouseClick")
+        CopyFilePathToClipboard()
     End Sub
 
     Private Sub LngCh()
@@ -3289,11 +3191,6 @@ Public Class Main_Form
         Picture_Box_2.Size = Picture_Box_1.Size
         Picture_Box_2.Location = Picture_Box_1.Location
 
-        If is_WebView2_Available Then
-            Web_View2.Size = Picture_Box_1.Size
-            Web_View2.Location = Picture_Box_1.Location
-        End If
-
         Web_Browser.Size = Picture_Box_1.Size
         Web_Browser.Location = Picture_Box_1.Location
 
@@ -3337,7 +3234,7 @@ Public Class Main_Form
         End With
         With btn_Panel
             .Top = top_first_line
-            .Left = btn_Review.Left + btn_Review.Width + 20
+            .Left = btn_Review.Left + btn_Review.Width + 10
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
             .Font = the_Font_For_Fullscreen
@@ -3345,7 +3242,7 @@ Public Class Main_Form
         End With
         With btn_Prev_File
             .Top = top_first_line
-            .Left = btn_Panel.Left + btn_Panel.Width + 20
+            .Left = btn_Panel.Left + btn_Panel.Width + 10
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
             .Font = the_Font_For_Fullscreen
@@ -3378,6 +3275,14 @@ Public Class Main_Form
         With btn_Slideshow
             .Top = top_first_line
             .Left = btn_Random_Slideshow.Left + btn_Random_Slideshow.Width + 2
+            .Width = the_Width_For_buttons * 2
+            .Height = the_Height_For_buttons
+            .Font = the_Font_For_Fullscreen
+            .Visible = True
+        End With
+        With btn_Move_Table
+            .Top = top_first_line
+            .Left = btn_Slideshow.Left + btn_Slideshow.Width + 20
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
             .Font = the_Font_For_Fullscreen
@@ -3553,7 +3458,7 @@ Public Class Main_Form
             With btn_Move_Table
                 .Top = btn_Slideshow.Top
                 .Left = btn_Slideshow.Left + btn_Slideshow.Width + 20
-                .Width = the_Width_For_buttons * 7
+                .Width = the_Width_For_buttons * 2
                 .Height = the_Height_For_buttons
                 .Font = the_font_for_normal
                 .Visible = True
@@ -3585,11 +3490,6 @@ Public Class Main_Form
             lbl_Status.Top = lbl_Current_File.Top + lbl_Current_File.Height + 2
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1920: buttons resized to normal screen")
-        End If
-
-        If is_WebView2_Available Then
-            Web_View2.Size = Picture_Box_1.Size
-            Web_View2.Location = Picture_Box_1.Location
         End If
 
         Web_Browser.Size = Picture_Box_1.Size
@@ -3672,74 +3572,10 @@ Public Class Main_Form
     Private Sub ButtonRename_Click(sender As Object, e As EventArgs) Handles btn_Rename.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2030: btn_Rename")
 
-        If Not String.IsNullOrEmpty(current_File_Name) Then
+        If Not String.IsNullOrEmpty(Current_File_Name) Then
             RenameCurrentFile()
         Else
             lbl_Status.Text = If(Is_Russian_Language, "! Нет файла для переименования", "! No file to rename")
-        End If
-    End Sub
-
-    Private Sub CheckWebView2Availability()
-        If is_WebView2_Available Then Return
-
-        Try
-            Dim webview2_version_string As String = CoreWebView2Environment.GetAvailableBrowserVersionString()
-            If Not String.IsNullOrEmpty(webview2_version_string) Then
-                is_WebView2_Available = True
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0006: WebView2 Runtime found, version: " & webview2_version_string)
-            Else
-                is_WebView2_Available = False
-                all_Supported_Extensions.ExceptWith(web_specific_image_extensions)
-                Dim message As String = If(Is_Russian_Language, "WebView2 Runtime не установлен. Форматы .webp, .heic, .avif, .svg не поддерживаются. Установите WebView2 для полной функциональности.",
-                                  "WebView2 Runtime is not installed. Formats .webp, .heic, .avif, .svg are not supported. Install WebView2 for full functionality.")
-                lbl_Status.Text = message
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2040: WebView2 Runtime is not found")
-            End If
-        Catch ex As Exception
-            is_WebView2_Available = False
-            all_Supported_Extensions.ExceptWith(web_specific_image_extensions)
-            Dim webview2_Error_Message As String = If(Is_Russian_Language, "Ошибка проверки WebView2: " & ex.Message & vbCrLf & "Форматы .webp, .heic, .avif, .svg не поддерживаются.",
-                              "Error checking WebView2: " & ex.Message & vbCrLf & "Formats .webp, .heic, .avif, .svg are not supported.")
-            lbl_Status.Text = webview2_Error_Message
-            'MessageBox.Show(webview2_Error_Message, If(lngRus, "Ограниченный функционал", "Limited Functionality"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2050: WebView2 check failed with error: " & ex.Message)
-        End Try
-    End Sub
-
-    Private Sub WebView2_NavigationCompleted(sender As Object, e As CoreWebView2NavigationCompletedEventArgs)
-        If e.IsSuccess Then
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2060: WebView2_NavigationCompleted IsSuccess")
-            is_WebView2_Loaded = True
-            is_WebView2_Visible = True
-        Else
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2070: WebView2_NavigationCompleted Error: " & e.WebErrorStatus.ToString())
-            is_WebView2_Visible = False
-        End If
-    End Sub
-
-    Private Sub InitializeWebView2()
-        If is_WebView2_Available AndAlso Web_View2 Is Nothing Then
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0008: InitializeWebView2Async")
-            Try
-                Web_View2 = New WebView2()
-                Web_View2.Visible = False
-                Web_View2.Location = Picture_Box_1.Location
-                Web_View2.Size = Picture_Box_1.Size
-                Me.Controls.Add(Web_View2)
-                Web_View2.EnsureCoreWebView2Async(Nothing)
-                AddHandler Web_View2.NavigationCompleted, AddressOf WebView2_NavigationCompleted
-                Web_View2.Source = New Uri("about:blank")
-
-            Catch ex As Exception
-                If Web_View2 IsNot Nothing Then
-                    Web_View2.Dispose()
-                    Web_View2 = Nothing
-                End If
-                is_WebView2_Available = False
-                all_Supported_Extensions.ExceptWith(web_specific_image_extensions)
-
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2090: InitializeWebView2Async ERR " & ex.Message)
-            End Try
         End If
     End Sub
 
@@ -3749,9 +3585,9 @@ Public Class Main_Form
     End Sub
 
     Private Sub CopyFilePathToClipboard()
-        If Not String.IsNullOrEmpty(current_File_Name) Then
+        If Not String.IsNullOrEmpty(Current_File_Name) Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2120: Filename sent to clipboard")
-            CopyTextToClipboard(current_File_Name, lbl_Status, If(Is_Russian_Language, "Имя файла скопировано в буфер", "Filename sent to clipboard"))
+            CopyTextToClipboard(Current_File_Name, lbl_Status, If(Is_Russian_Language, "Имя файла скопировано в буфер", "Filename sent to clipboard"))
         End If
     End Sub
 
@@ -3876,7 +3712,7 @@ Public Class Main_Form
     End Sub
 
     Private Sub StatusL_Click(sender As Object, e As EventArgs) Handles lbl_Status.Click
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2300: Visibility set: " & If(is_PictureBox1_Visible, "P1-YES ", "P1-NO ") & If(is_PictureBox2_Visible, "P2-YES ", "P2-NO ") & If(is_WebBrowser_Visible, "WB-YES ", "WB-NO ") & If(is_WebView2_Visible, "WV2-YES", "WV2-NO "))
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2300: Visibility set: " & If(is_PictureBox1_Visible, "P1-YES ", "P1-NO ") & If(is_PictureBox2_Visible, "P2-YES ", "P2-NO ") & If(is_WebBrowser_Visible, "WB-YES ", "WB-NO "))
     End Sub
 
     Private Sub Picture_Box_1_KeyDown(sender As Object, e As KeyEventArgs) Handles Picture_Box_1.KeyDown
@@ -3920,12 +3756,12 @@ Public Class Main_Form
         Try
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2420: JPG associacion..")
             Dim exePath = Application.ExecutablePath
-            Dim progId = "FastMediaSorter.jpg"
+            Dim progId = "FastMediaSorter LITE.jpg"
             ' Set ProgID
             Using progKey = Registry.ClassesRoot.CreateSubKey(progId)
-                progKey.SetValue("", "JPEG Image - FastMediaSorter")
+                progKey.SetValue("", "JPEG Image - FastMediaSorter LITE")
                 Using shellKey = progKey.CreateSubKey("shell\open\command")
-                    shellKey.SetValue("", """" & exePath & """ ""%1""")
+                    shellKey.SetValue("", """" & exePath & """ "%1"")
                 End Using
             End Using
             ' Set .jpg default
@@ -3938,13 +3774,30 @@ Public Class Main_Form
         End Try
     End Sub
 
-    Private Sub CheckAndOfferJpgAssociation()
-        If IsRunningAsAdministrator() AndAlso Not IsJpgAssociatedWithThisApp() Then
-            Dim msg = If(Is_Russian_Language, "Ассоциировать .JPG файлы с этой программой?", "Associate .JPG files with this application?")
-            If MessageBox.Show(msg, "Association", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
-                AssociateJpgWithThisApp()
-            End If
-        End If
+    Private Sub AssociateImageTypesWithThisApp()
+        AssociateExtensionWithThisApp(".jpg", "FastMediaSorter LITE.jpg", "JPEG Image - FastMediaSorter LITE")
+        AssociateExtensionWithThisApp(".png", "FastMediaSorter LITE.png", "PNG Image - FastMediaSorter LITE")
+        AssociateExtensionWithThisApp(".gif", "FastMediaSorter LITE.gif", "GIF Image - FastMediaSorter LITE")
+
+        MessageBox.Show(If(Is_Russian_Language, "Ассоциации установлены. Возможно потребуется перезапустить Проводник или Windows.", "Associations set. You may need to restart Explorer or Windows for changes to take effect."), "Association", MessageBoxButtons.OK, MessageBoxIcon.Information)
+    End Sub
+
+    Private Sub AssociateExtensionWithThisApp(ext As String, progId As String, description As String)
+        Try
+            Dim exePath = Application.ExecutablePath
+            Using progKey = Registry.ClassesRoot.CreateSubKey(progId)
+                progKey.SetValue("", description)
+                Using shellKey = progKey.CreateSubKey("shell\open\command")
+                    shellKey.SetValue("", """" & exePath & """ "%1"")
+                End Using
+            End Using
+            Using extKey = Registry.ClassesRoot.CreateSubKey(ext)
+                extKey.SetValue("", progId)
+            End Using
+        Catch ex As Exception
+            MessageBox.Show(If(Is_Russian_Language, "Ошибка ассоциации: ", "Failed to set association: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ERR Ext associaciated: " & ex.Message)
+        End Try
     End Sub
 
     Private Function AreImageTypesAssociatedWithThisApp() As Boolean
@@ -3974,9 +3827,9 @@ Public Class Main_Form
     End Function
 
     Private Sub AssociateImageTypesWithThisApp()
-        AssociateExtensionWithThisApp(".jpg", "FastMediaSorter.jpg", "JPEG Image - FastMediaSorter")
-        AssociateExtensionWithThisApp(".png", "FastMediaSorter.png", "PNG Image - FastMediaSorter")
-        AssociateExtensionWithThisApp(".gif", "FastMediaSorter.gif", "GIF Image - FastMediaSorter")
+        AssociateExtensionWithThisApp(".jpg", "FastMediaSorter LITE.jpg", "JPEG Image - FastMediaSorter LITE")
+        AssociateExtensionWithThisApp(".png", "FastMediaSorter LITE.png", "PNG Image - FastMediaSorter LITE")
+        AssociateExtensionWithThisApp(".gif", "FastMediaSorter LITE.gif", "GIF Image - FastMediaSorter LITE")
 
         MessageBox.Show(If(Is_Russian_Language, "Ассоциации установлены. Возможно потребуется перезапустить Проводник или Windows.", "Associations set. You may need to restart Explorer or Windows for changes to take effect."), "Association", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
@@ -3987,7 +3840,7 @@ Public Class Main_Form
             Using progKey = Registry.ClassesRoot.CreateSubKey(progId)
                 progKey.SetValue("", description)
                 Using shellKey = progKey.CreateSubKey("shell\open\command")
-                    shellKey.SetValue("", """" & exePath & """ ""%1""")
+                    shellKey.SetValue("", """" & exePath & """ "%1"")
                 End Using
             End Using
             Using extKey = Registry.ClassesRoot.CreateSubKey(ext)
