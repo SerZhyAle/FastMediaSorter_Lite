@@ -3,7 +3,7 @@
 'sza250411 random, filters, etc
 'sza250502 refactor
 'sza250506 grok
-'FastMediaSorter LITE
+'FastMediaSorter
 'sza2505207
 'sza250606 gemini
 'sza250608 copilot
@@ -560,10 +560,10 @@ Public Class Main_Form
             total_Files_Count_Text = file_Meta_State("totalFilesCountText")
 
             If Not total_Files_Count_Text = Nothing Then
-                lbl_File_Number.Text = If(Is_Russian_Language, "Файл: 1 из " & total_Files_Count_Text, "File: 1 from " & total_Files_Count_Text)
+                lbl_File_Number.Text = If(Is_Russian_Language, "1 из " & total_Files_Count_Text, "1 from " & total_Files_Count_Text)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0175: BgWorker files count calculated: " & total_Files_Count_Text)
             Else
-                lbl_File_Number.Text = If(Is_Russian_Language, "Файл: 0 ", "File: 0 ")
+                lbl_File_Number.Text = "0 "
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0180: BgWorker files count calculated: " & total_Files_Count_Text)
             End If
 
@@ -1347,7 +1347,7 @@ Public Class Main_Form
                         ' Try to move to next file automatically
                         ReadShowMediaFile("ReadNextFile")
                         Return
-                        End End If
+                    End If
                 Catch ex As ArgumentException
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0905: ArgumentException loading image: " & ex.Message & " File: " & Current_File_Name)
                     lbl_Status.Text = If(Is_Russian_Language, "Недопустимый файл изображения: " & Path.GetFileName(Current_File_Name), "Invalid image file: " & Path.GetFileName(Current_File_Name))
@@ -1401,7 +1401,7 @@ Public Class Main_Form
 
             Web_Browser.Visible = False
 
-            Dim picto_Display As Int16 = 0
+            Dim pic_to_Display As Int16 = 0
 
             If is_PictureBox1_Visible AndAlso
                     Picture_Box_1.Image IsNot Nothing AndAlso
@@ -1561,10 +1561,10 @@ Public Class Main_Form
                 Next
             End If
 
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0950: Visibility set: " & If(is_PictureBox1_Visible, "P1-YES ", "P1-NO ") & If(is_PictureBox2_Visible, "P2-YES ", "P2-NO ") & If(is_WebBrowser_Visible, "WB-YES ", "WB-NO "))
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0945: picture box sizes: " & If(is_PictureBox1_Visible, "P1: ", "P2: ") & If(is_PictureBox1_Visible, Picture_Box_1.Width.ToString, Picture_Box_2.Width.ToString) & "x" & If(is_PictureBox1_Visible, Picture_Box_1.Height.ToString, Picture_Box_2.Height.ToString))
         End If
 
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0955: pictureBox2_Stream is disposed: " & (pictureBox2_Stream Is Nothing).ToString)
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0950: Visibility set: " & If(is_PictureBox1_Visible, "P1-YES ", "P1-NO ") & If(is_PictureBox2_Visible, "P2-YES ", "P2-NO ") & If(is_WebBrowser_Visible, "WB-YES ", "WB-NO "))
     End Sub
 
     Private Sub UpdateCurrentFileAndDisplay(is_File_Found As Boolean, is_After_Undo_Operation As Boolean)
@@ -1628,7 +1628,7 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0980: currentFileName = " & Current_File_Name)
 
             Dim current_File_Number As Integer = current_File_Index + 1
-            lbl_File_Number.Text = If(Is_Russian_Language, "Файл: " & current_File_Number.ToString() & " из " & total_File_Count.ToString(), "File: " & current_File_Number.ToString() & " from " & total_File_Count.ToString())
+            lbl_File_Number.Text = current_File_Number.ToString() & If(Is_Russian_Language, " из ", " from ") & total_File_Count.ToString()
 
             Try
                 Dim current_File_Extension As String = Path.GetExtension(Current_File_Name).ToLower()
@@ -1697,7 +1697,6 @@ Public Class Main_Form
                         current_File_Index = Math.Max(0, total_File_Count - 1)
                     End If
 
-                    ' Try again with the adjusted index
                     If total_File_Count > 0 Then
                         ' Recursively try the next file
                         UpdateCurrentFileAndDisplay(True, False)
@@ -1713,6 +1712,7 @@ Public Class Main_Form
             If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
             current_Loaded_File_Name = ""
             Web_Browser.DocumentText = ""
+
             lbl_File_Number.Text = ""
             lbl_Status.Text = If(Is_Russian_Language, "! Нет файлов в папке", "! No files in folder")
             is_PictureBox1_Visible = False
@@ -1856,8 +1856,7 @@ Public Class Main_Form
         If recent_Media_File_List Is Nothing OrElse
             recent_Media_File_List.Count = 0 Then
 
-            '   MessageBox.Show(If(Is_Russian_Language, "Нет недавних файлов.", "No recent files")),
-            "Recent Files", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            '   MessageBox.Show(If(Is_Russian_Language, "Нет недавних файлов.", "No recent files."), "Recent Files", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
 
@@ -1919,6 +1918,7 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1138: cmbox_Sort is set to 0")
         End If
         cmbox_Sort.SelectedIndex = sort_Direction_Index
+
         btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
         LngCh()
 
@@ -1985,7 +1985,7 @@ Public Class Main_Form
                     ReadShowMediaFile("ReadFiles")
                 Else
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1157: folder set from savings, but saved file is not found: " & Current_Folder_Path & " - " & current_File_Index.ToString)
-                    current_File_Index = 0
+                    current_File_Index = 1
 
                     If Not total_File_Count = 0 Then ReadShowMediaFile("ReadFolderAndFile")
                 End If
@@ -2532,7 +2532,7 @@ Public Class Main_Form
                             If Not is_WebBrowser_Visible Then
                                 ReadShowMediaFile("ReadPrevFile")
                             End If
-                        Case MouseButtons.Middle
+                        Case Windows.Forms.MouseButtons.Middle
                             RenameCurrentFile()
                         Case Windows.Forms.MouseButtons.XButton1
                             ReadShowMediaFile("ReadNextFile")
@@ -2644,7 +2644,7 @@ Public Class Main_Form
             Dim current_File_Name_Without_Extension As String = Path.GetFileNameWithoutExtension(Current_File_Name)
             Dim current_File_Extension As String = Path.GetExtension(Current_File_Name)
             Dim new_File_Name As String = InputBox(If(Is_Russian_Language, "Введите новое имя файла:", "Enter new file name:"),
-                                            If(Is_Russian_Language, "Переименовать файл", "Rename File"),
+                                            If(Is_Russian_Language, "Переименование файла", "Rename File"),
                                             current_File_Name_Without_Extension)
             If String.IsNullOrEmpty(new_File_Name) Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1260: empty new file name - no rename")
@@ -3051,6 +3051,7 @@ Public Class Main_Form
                 End If
             End If
             Web_Browser.DocumentText = ""
+
         Else
             lbl_Status.Text = If(Is_Russian_Language, "! Нет истории о переносе", "! No history about moved files")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1810: No history about moved files")
@@ -3058,8 +3059,9 @@ Public Class Main_Form
     End Sub
 
     Private Sub FirstRun_Click(sender As Object, e As EventArgs) Handles lbl_Help_Info.Click
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1820: lbl_Folder MouseClick")
-        CopyFilePathToClipboard()
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1820: lbl_Help_Info clicked and hidden")
+        lbl_Help_Info.Visible = False
+        lbl_Help_Info.Hide()
     End Sub
 
     Private Sub LngCh()
@@ -3191,6 +3193,7 @@ Public Class Main_Form
         Picture_Box_2.Size = Picture_Box_1.Size
         Picture_Box_2.Location = Picture_Box_1.Location
 
+
         Web_Browser.Size = Picture_Box_1.Size
         Web_Browser.Location = Picture_Box_1.Location
 
@@ -3234,7 +3237,7 @@ Public Class Main_Form
         End With
         With btn_Panel
             .Top = top_first_line
-            .Left = btn_Review.Left + btn_Review.Width + 10
+            .Left = btn_Review.Left + btn_Review.Width + 20
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
             .Font = the_Font_For_Fullscreen
@@ -3242,7 +3245,7 @@ Public Class Main_Form
         End With
         With btn_Prev_File
             .Top = top_first_line
-            .Left = btn_Panel.Left + btn_Panel.Width + 10
+            .Left = btn_Panel.Left + btn_Panel.Width + 20
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
             .Font = the_Font_For_Fullscreen
@@ -3275,14 +3278,6 @@ Public Class Main_Form
         With btn_Slideshow
             .Top = top_first_line
             .Left = btn_Random_Slideshow.Left + btn_Random_Slideshow.Width + 2
-            .Width = the_Width_For_buttons * 2
-            .Height = the_Height_For_buttons
-            .Font = the_Font_For_Fullscreen
-            .Visible = True
-        End With
-        With btn_Move_Table
-            .Top = top_first_line
-            .Left = btn_Slideshow.Left + btn_Slideshow.Width + 20
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
             .Font = the_Font_For_Fullscreen
@@ -3417,7 +3412,7 @@ Public Class Main_Form
             End With
             With btn_Prev_File
                 .Top = lbl_File_Number.Top
-                .Left = cmbox_Media_Folder.Left + 50
+                .Left = cmbox_Media_Folder.Left
                 .Width = the_Width_For_buttons * 6
                 .Height = the_Height_For_buttons
                 .Font = the_font_for_normal
@@ -3458,7 +3453,7 @@ Public Class Main_Form
             With btn_Move_Table
                 .Top = btn_Slideshow.Top
                 .Left = btn_Slideshow.Left + btn_Slideshow.Width + 20
-                .Width = the_Width_For_buttons * 2
+                .Width = the_Width_For_buttons * 7
                 .Height = the_Height_For_buttons
                 .Font = the_font_for_normal
                 .Visible = True
@@ -3491,6 +3486,7 @@ Public Class Main_Form
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1920: buttons resized to normal screen")
         End If
+
 
         Web_Browser.Size = Picture_Box_1.Size
         Web_Browser.Location = Picture_Box_1.Location
@@ -3756,12 +3752,12 @@ Public Class Main_Form
         Try
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2420: JPG associacion..")
             Dim exePath = Application.ExecutablePath
-            Dim progId = "FastMediaSorter LITE.jpg"
+            Dim progId = "FastMediaSorter.jpg"
             ' Set ProgID
             Using progKey = Registry.ClassesRoot.CreateSubKey(progId)
-                progKey.SetValue("", "JPEG Image - FastMediaSorter LITE")
+                progKey.SetValue("", "JPEG Image - FastMediaSorter")
                 Using shellKey = progKey.CreateSubKey("shell\open\command")
-                    shellKey.SetValue("", """" & exePath & """ "%1"")
+                    shellKey.SetValue("", """" & exePath & """ ""%1""")
                 End Using
             End Using
             ' Set .jpg default
@@ -3774,30 +3770,13 @@ Public Class Main_Form
         End Try
     End Sub
 
-    Private Sub AssociateImageTypesWithThisApp()
-        AssociateExtensionWithThisApp(".jpg", "FastMediaSorter LITE.jpg", "JPEG Image - FastMediaSorter LITE")
-        AssociateExtensionWithThisApp(".png", "FastMediaSorter LITE.png", "PNG Image - FastMediaSorter LITE")
-        AssociateExtensionWithThisApp(".gif", "FastMediaSorter LITE.gif", "GIF Image - FastMediaSorter LITE")
-
-        MessageBox.Show(If(Is_Russian_Language, "Ассоциации установлены. Возможно потребуется перезапустить Проводник или Windows.", "Associations set. You may need to restart Explorer or Windows for changes to take effect."), "Association", MessageBoxButtons.OK, MessageBoxIcon.Information)
-    End Sub
-
-    Private Sub AssociateExtensionWithThisApp(ext As String, progId As String, description As String)
-        Try
-            Dim exePath = Application.ExecutablePath
-            Using progKey = Registry.ClassesRoot.CreateSubKey(progId)
-                progKey.SetValue("", description)
-                Using shellKey = progKey.CreateSubKey("shell\open\command")
-                    shellKey.SetValue("", """" & exePath & """ "%1"")
-                End Using
-            End Using
-            Using extKey = Registry.ClassesRoot.CreateSubKey(ext)
-                extKey.SetValue("", progId)
-            End Using
-        Catch ex As Exception
-            MessageBox.Show(If(Is_Russian_Language, "Ошибка ассоциации: ", "Failed to set association: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ERR Ext associaciated: " & ex.Message)
-        End Try
+    Private Sub CheckAndOfferJpgAssociation()
+        If IsRunningAsAdministrator() AndAlso Not IsJpgAssociatedWithThisApp() Then
+            Dim msg = If(Is_Russian_Language, "Ассоциировать .JPG файлы с этой программой?", "Associate .JPG files with this application?")
+            If MessageBox.Show(msg, "Association", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
+                AssociateJpgWithThisApp()
+            End If
+        End If
     End Sub
 
     Private Function AreImageTypesAssociatedWithThisApp() As Boolean
@@ -3827,9 +3806,9 @@ Public Class Main_Form
     End Function
 
     Private Sub AssociateImageTypesWithThisApp()
-        AssociateExtensionWithThisApp(".jpg", "FastMediaSorter LITE.jpg", "JPEG Image - FastMediaSorter LITE")
-        AssociateExtensionWithThisApp(".png", "FastMediaSorter LITE.png", "PNG Image - FastMediaSorter LITE")
-        AssociateExtensionWithThisApp(".gif", "FastMediaSorter LITE.gif", "GIF Image - FastMediaSorter LITE")
+        AssociateExtensionWithThisApp(".jpg", "FastMediaSorter.jpg", "JPEG Image - FastMediaSorter")
+        AssociateExtensionWithThisApp(".png", "FastMediaSorter.png", "PNG Image - FastMediaSorter")
+        AssociateExtensionWithThisApp(".gif", "FastMediaSorter.gif", "GIF Image - FastMediaSorter")
 
         MessageBox.Show(If(Is_Russian_Language, "Ассоциации установлены. Возможно потребуется перезапустить Проводник или Windows.", "Associations set. You may need to restart Explorer or Windows for changes to take effect."), "Association", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
@@ -3840,7 +3819,7 @@ Public Class Main_Form
             Using progKey = Registry.ClassesRoot.CreateSubKey(progId)
                 progKey.SetValue("", description)
                 Using shellKey = progKey.CreateSubKey("shell\open\command")
-                    shellKey.SetValue("", """" & exePath & """ "%1"")
+                    shellKey.SetValue("", """" & exePath & """ ""%1""")
                 End Using
             End Using
             Using extKey = Registry.ClassesRoot.CreateSubKey(ext)
