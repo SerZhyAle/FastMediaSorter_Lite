@@ -38,7 +38,7 @@
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>wZyrdzspu/erwgKWtvhr7FuC5AvFwV53YFWxOVUpcng=</dsig:DigestValue>
+        <dsig:DigestValue>1CgvU0AU0vt9D2cbCfjBRjqPFd/IhNwGf33bPkyW5vk=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
@@ -58,33 +58,6 @@
       </dsig:Transforms>
       <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
       <dsig:DigestValue>5fljkQxgDgBFFP14ojkzfsNTjg7sxH0IKTIbkyfMSgw=</dsig:DigestValue>
-    </hash>
-  </file>
-  <file name="runtimes\win-arm64\native\WebView2Loader.dll" size="144984">
-    <hash>
-      <dsig:Transforms>
-        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
-      </dsig:Transforms>
-      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-      <dsig:DigestValue>Xf4sUtjvcNkyCzNufI2vCtrKkKxV7JX9OyUdSfO8pq4=</dsig:DigestValue>
-    </hash>
-  </file>
-  <file name="runtimes\win-x64\native\WebView2Loader.dll" size="159320">
-    <hash>
-      <dsig:Transforms>
-        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
-      </dsig:Transforms>
-      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-      <dsig:DigestValue>HyeLMwRIzvzPvCaR+uUlud/Ufkdo8ShoV+ReoN8H/z8=</dsig:DigestValue>
-    </hash>
-  </file>
-  <file name="runtimes\win-x86\native\WebView2Loader.dll" size="119888">
-    <hash>
-      <dsig:Transforms>
-        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
-      </dsig:Transforms>
-      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-      <dsig:DigestValue>/U0mO8ORvJx44BGjKifiwnnkHS8Z1AECnI3S1wtVFkA=</dsig:DigestValue>
     </hash>
   </file>
   <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">

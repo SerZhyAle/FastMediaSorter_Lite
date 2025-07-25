@@ -1542,23 +1542,32 @@ Public Class Main_Form
 
                 Dim OppositeColor = GetOppositeColor(back_Color)
                 For Each ctrl As Control In Me.Controls
-                    If TypeOf ctrl Is Label Then
-                        Dim lbl As Label = CType(ctrl, Label)
-                        lbl.ForeColor = OppositeColor
-                        lbl.BackColor = System.Drawing.Color.Transparent
-                    ElseIf TypeOf ctrl Is Button Then
-                        Dim btn As Button = CType(ctrl, Button)
-                        btn.ForeColor = OppositeColor
-                    ElseIf TypeOf ctrl Is ComboBox Then
-                        Dim cmb As ComboBox = CType(ctrl, ComboBox)
-                        cmb.BackColor = back_Color
-                        cmb.ForeColor = OppositeColor
-                    ElseIf TypeOf ctrl Is CheckBox Then
-                        Dim chb As CheckBox = CType(ctrl, CheckBox)
-                        chb.BackColor = back_Color
-                        chb.ForeColor = OppositeColor
+                    If ctrl.Visible Then
+                        If TypeOf ctrl Is Label Then
+                            Dim lbl As Label = CType(ctrl, Label)
+                            lbl.ForeColor = OppositeColor
+                            lbl.BackColor = System.Drawing.Color.Transparent
+                        ElseIf TypeOf ctrl Is Button Then
+                            Dim btn As Button = CType(ctrl, Button)
+                            btn.ForeColor = OppositeColor
+                        ElseIf TypeOf ctrl Is ComboBox Then
+                            Dim cmb As ComboBox = CType(ctrl, ComboBox)
+                            cmb.BackColor = back_Color
+                            cmb.ForeColor = OppositeColor
+                        ElseIf TypeOf ctrl Is CheckBox Then
+                            Dim chb As CheckBox = CType(ctrl, CheckBox)
+                            chb.BackColor = back_Color
+                            chb.ForeColor = OppositeColor
+                        End If
                     End If
                 Next
+
+                If is_PictureBox1_Visible Then
+                    Picture_Box_1.BackColor = back_Color
+                ElseIf is_PictureBox2_Visible Then
+                    Picture_Box_2.BackColor = back_Color
+                End If
+
             End If
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0945: picture box sizes: " & If(is_PictureBox1_Visible, "P1: ", "P2: ") & If(is_PictureBox1_Visible, Picture_Box_1.Width.ToString, Picture_Box_2.Width.ToString) & "x" & If(is_PictureBox1_Visible, Picture_Box_1.Height.ToString, Picture_Box_2.Height.ToString))
@@ -3204,16 +3213,15 @@ Public Class Main_Form
         Dim the_Font_For_Fullscreen = New Font("Arial", 6, FontStyle.Regular)
 
         With chkbox_Top_Most
-            .Top = top_first_line
-            .Left = left_first_column
+            .Top = top_first_line - 4
+            .Left = left_first_column - 4
             .Width = the_Width_For_buttons * 2
             .Height = btn_Select_Folder.Height
             .Font = the_Font_For_Fullscreen
             .Visible = True
         End With
         With btn_choose_file
-            .Top = top_first_line
-            .Left = chkbox_Top_Most.Left + chkbox_Top_Most.Width + 2
+            .Top = chkbox_Top_Most.Left + chkbox_Top_Most.Width + 2
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
             .Font = the_Font_For_Fullscreen
@@ -3284,7 +3292,7 @@ Public Class Main_Form
             .Visible = True
         End With
         With btn_Rename
-            .Top = lbl_Status.Top + lbl_Status.Height + 32
+            .Top = lbl_Status.Top + lbl_Status.Height + 30
             .Left = left_first_column
             .Width = the_Width_For_buttons * 2
             .Height = the_Height_For_buttons
@@ -3325,8 +3333,8 @@ Public Class Main_Form
             Dim the_font_for_normal = New Font("Arial", 7, FontStyle.Regular)
 
             With chkbox_Top_Most
-                .Top = top_first_line
-                .Left = left_first_column
+                .Top = top_first_line-4
+                .Left = left_first_column - 4
                 .Width = the_Width_For_buttons * 2
                 .Height = btn_Select_Folder.Height
                 .Font = the_font_for_normal
@@ -3822,6 +3830,7 @@ Public Class Main_Form
                     shellKey.SetValue("", """" & exePath & """ ""%1""")
                 End Using
             End Using
+
             Using extKey = Registry.ClassesRoot.CreateSubKey(ext)
                 extKey.SetValue("", progId)
             End Using
