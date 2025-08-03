@@ -13,6 +13,10 @@
     {
       "AbsoluteMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|C:\\GIT\\FastMediaSorter_Lite\\image_panel_form.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
       "RelativeMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|solutionrelative:image_panel_form.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|C:\\GIT\\FastMediaSorter_Lite\\filemanager.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "RelativeMoniker": "D:0:0:{266169F5-C474-4ED0-90B6-66CAE8275FB7}|FastMediaSorter.vbproj|solutionrelative:filemanager.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     }
   ],
   "DocumentGroupContainers": [
@@ -22,7 +26,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 7,
+          "SelectedChildIndex": 8,
           "Children": [
             {
               "$type": "Bookmark",
@@ -50,6 +54,18 @@
             },
             {
               "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "FileManager.vb",
+              "DocumentMoniker": "C:\\GIT\\FastMediaSorter_Lite\\FileManager.vb",
+              "RelativeDocumentMoniker": "FileManager.vb",
+              "ToolTip": "C:\\GIT\\FastMediaSorter_Lite\\FileManager.vb",
+              "RelativeToolTip": "FileManager.vb",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAxwEsAAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
+              "WhenOpened": "2025-08-01T23:32:24.336Z"
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 2,
               "Title": "Image_Panel_Form.vb",
               "DocumentMoniker": "C:\\GIT\\FastMediaSorter_Lite\\Image_Panel_Form.vb",
@@ -68,7 +84,7 @@
               "RelativeDocumentMoniker": "Main_Form.vb",
               "ToolTip": "C:\\GIT\\FastMediaSorter_Lite\\Main_Form.vb",
               "RelativeToolTip": "Main_Form.vb",
-              "ViewState": "AgIAAI0MAAAAAAAAAAAUwJYMAAATAAAAAAAAAA==",
+              "ViewState": "AgIAAHcPAAAAAAAAAAAUwIkPAAALAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2025-07-23T09:58:21.101Z",
               "EditorCaption": ""

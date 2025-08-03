@@ -23,7 +23,6 @@ Imports System.Text
 Imports System.Text.RegularExpressions
 Imports System.Threading
 Imports Microsoft.Win32
-Imports System.Diagnostics ' Add this line with other imports
 
 
 <ComVisible(True)>
@@ -1185,49 +1184,6 @@ Public Class Main_Form
         End If
     End Sub
 
-    ' Add this method to handle video errors from JavaScript
-    Public Sub HandleVideoError(errorMessage As String)
-        If Me.InvokeRequired Then
-            Me.Invoke(New Action(Of String)(AddressOf HandleVideoError), errorMessage)
-        Else
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0865: Video error detected: " & errorMessage)
-
-            ' Check if it's an unsupported video error
-            If errorMessage.Contains("Unsupported video type") OrElse errorMessage.Contains("invalid file path") Then
-                TryOpenVideoWithDefaultPlayer()
-            End If
-        End If
-    End Sub
-
-    ' Add this method to launch video with default Windows media player
-    Private Sub TryOpenVideoWithDefaultPlayer()
-        Try
-            If Not String.IsNullOrEmpty(Current_File_Name) AndAlso File.Exists(Current_File_Name) Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0866: Opening video with default player: " & Current_File_Name)
-
-                ' Clear the web browser to avoid confusion
-                Web_Browser.DocumentText = "<html><body style='background:" &
-                                        If(Form_Color_Scheme = 0, "black", "white") &
-                                        "; color:" & If(Form_Color_Scheme = 0, "white", "black") &
-                                        "; text-align:center; font-family:Arial;'>" &
-                                        "<h3>" & If(Is_Russian_Language, "Видео открыто во внешнем плеере", "Video opened in external player") & "</h3>" &
-                                        "<p>" & Path.GetFileName(Current_File_Name) & "</p>" &
-                                        "<p style='font-size:12px; color:gray;'>" &
-                                        If(Is_Russian_Language, "Нажмите стрелки для перехода к следующему файлу", "Use arrow keys to navigate to next file") &
-                                        "</p></body></html>"
-
-                ' Launch with default application
-                Process.Start(Current_File_Name)
-
-                lbl_Status.Text = If(Is_Russian_Language, "Видео открыто во внешнем плеере: " & Path.GetFileName(Current_File_Name), "Video opened in external player: " & Path.GetFileName(Current_File_Name))
-
-            End If
-        Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0867: Error opening video with default player: " & ex.Message)
-            lbl_Status.Text = If(Is_Russian_Language, "Ошибка запуска внешнего плеера: " & ex.Message, "Error launching external player: " & ex.Message)
-        End Try
-    End Sub
-
     Private Sub LoadVideoInWebBrowser(video_File_Path As String)
         Try
             is_WebBrowser_Visible = False
@@ -1238,50 +1194,39 @@ Public Class Main_Form
             Dim video_File_Absolute_Uri As String = video_File_As_Uri.AbsoluteUri
 
             Dim video_Html_Content As String = "<video id='videoPlayer' controls autoplay style='width:100%;height:calc(100% - " & height_For_instruments_on_WebPanel & "px);object-fit:fill;'>" &
-                            "<source src='" & video_File_Absolute_Uri & "'>" &
-                            "<track kind='captions' default>" &
-                            "<p style='color: " &
-                            If(Form_Color_Scheme = 0, "black", "white") &
-                            "; text-align: center;'>" &
-                            If(Is_Russian_Language, "Ваш браузер не поддерживает видео.", "Your browser does not support video.") & "</p>" &
-                            "</video>"
+                                "<source src='" & video_File_Absolute_Uri & "'>" &
+                                "<track kind='captions' default>" &
+                                "<p style='color: " &
+                                If(Form_Color_Scheme = 0, "black", "white") &
+                                "; text-align: center;'>" &
+                                If(Is_Russian_Language, "Ваш браузер не поддерживает видео.", "Your browser does not support video.") & "</p>" &
+                                "</video>"
 
             Dim html As String = "<html><head><meta http-equiv='X-UA-Compatible' content='IE=edge'>" &
-                     "<style>" &
-                     "body { margin: 0; overflow: hidden; background: " &
-                            If(Form_Color_Scheme = 0, "black", "white") & "; }" &
-                     "video { width: 100%; height: calc(100% - " & height_For_instruments_on_WebPanel & "px); object-fit: fill; position: absolute; top: 0; left: 0; }" &
-                     "</style></head>" &
-                     "<body oncontextmenu='return false;' ondblclick='handlePageDoubleClick();'>" & video_Html_Content &
-                     "<script>" &
-                     "var player = document.getElementById('videoPlayer');" &
-                     "var errorDetected = false;" &
-                     "player.volume = " & video_Volume_Level.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) & ";" &
-                     "player.oncontextmenu = function(e) { e.preventDefault(); if (this.paused) this.play(); else this.pause(); return false; };" &
-                     "player.onvolumechange = function() { try { window.external.SetVolume(this.volume); } catch(e) { } };" &
-                     "function handlePageDoubleClick() { try { window.external.HandleWebBrowserDoubleClick(); } catch(e) { console.error('Error calling HandleWebBrowserDoubleClick: ' + e.message); } }" &
-                     "document.addEventListener('DOMContentLoaded', function() { " &
-                     "  var video = document.getElementById('videoPlayer'); " &
-                     "  video.onerror = function() { " &
-                     "    if (!errorDetected) { " &
-                     "      errorDetected = true; " &
-                     "      var errorMsg = 'Error: Unsupported video type or invalid file path. Source: ' + (video.querySelector('source') ? video.querySelector('source').src : 'not found'); " &
-                     "      console.error(errorMsg); " &
-                     "      try { " &
-                     "        window.external.HandleVideoError(errorMsg); " &
-                     "      } catch(e) { " &
-                     "        console.error('Error calling HandleVideoError: ' + e.message); " &
-                     "        var p = document.createElement('p'); " &
-                     "        p.style.color='" & If(Form_Color_Scheme = 0, "black", "white") & "'; " &
-                     "        p.style.textAlign='center'; " &
-                     "        p.innerText = errorMsg; " &
-                     "        video.parentNode.insertBefore(p, video.nextSibling); " &
-                     "      } " &
-                     "    } " &
-                     "  }; " &
-                     "  video.addEventListener('loadstart', function() { errorDetected = false; }); " &
-                     "});" &
-                     "</script></body></html>"
+                         "<style>" &
+                         "body { margin: 0; overflow: hidden; background: " &
+                                If(Form_Color_Scheme = 0, "black", "white") & "; }" &
+                         "video { width: 100%; height: calc(100% - " & height_For_instruments_on_WebPanel & "px); object-fit: fill; position: absolute; top: 0; left: 0; }" &
+                         "</style></head>" &
+                         "<body oncontextmenu='return false;' ondblclick='handlePageDoubleClick();'>" & video_Html_Content &
+                         "<script>" &
+                         "var player = document.getElementById('videoPlayer');" &
+                         "player.volume = " & video_Volume_Level.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) & ";" &
+                         "player.oncontextmenu = function(e) { e.preventDefault(); if (this.paused) this.play(); else this.pause(); return false; };" &
+                         "player.onvolumechange = function() { try { window.external.SetVolume(this.volume); } catch(e) { } };" &
+                         "function handlePageDoubleClick() { try { window.external.HandleWebBrowserDoubleClick(); } catch(e) { console.error('Error calling HandleWebBrowserDoubleClick: ' + e.message); } }" & ' <<< НОВАЯ JAVASCRIPT ФУНКЦИЯ
+                         "document.addEventListener('DOMContentLoaded', function() { " &
+                         "  var video = document.getElementById('videoPlayer'); " &
+                         "  video.onerror = function() { " &
+                         "    var errorMsg = 'Error: Unsupported video type or invalid file path. Source: ' + (video.querySelector('source') ? video.querySelector('source').src : 'not found'); " &
+                         "    var p = document.createElement('p'); p.style.color='" &
+                                If(Form_Color_Scheme = 0, "black", "white") &
+                                "'; p.style.textAlign='center'; p.innerText = errorMsg; " &
+                         "    video.parentNode.insertBefore(p, video.nextSibling); " &
+                         "    console.error(errorMsg); " &
+                         "  }; " &
+                         "});" &
+                         "</script></body></html>"
 
             last_Loaded_Uri = ""
             Web_Browser.DocumentText = html
@@ -1296,8 +1241,8 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0850: WebBrowser is loaded with URI: " & video_File_Absolute_Uri)
         Catch ex As Exception
             Web_Browser.DocumentText = "<html><body style='background:black; color:" &
-                            If(Form_Color_Scheme = 0, "black", "white") &
-                            "; text-align:center;'><p>Error preparing video player: " & ex.Message & "</p></body></html>"
+                                If(Form_Color_Scheme = 0, "black", "white") &
+                                "; text-align:center;'><p>Error preparing video player: " & ex.Message & "</p></body></html>"
             is_WebBrowser_Visible = False
 
             UpdateControlVisibility()
@@ -3388,7 +3333,7 @@ Public Class Main_Form
             Dim the_font_for_normal = New Font("Arial", 7, FontStyle.Regular)
 
             With chkbox_Top_Most
-                .Top = top_first_line - 4
+                .Top = top_first_line-4
                 .Left = left_first_column - 4
                 .Width = the_Width_For_buttons * 2
                 .Height = btn_Select_Folder.Height
@@ -3939,16 +3884,9 @@ Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2450: btn_choose_file clicked")
         SlideShowStop()
         Using openFileDialog As New OpenFileDialog()
-            ' Build video extensions string for filter
-            Dim videoExtensions As String = String.Join(";", video_File_Extensions.Select(Function(ext) "*" & ext))
-            Dim imageExtensions As String = "*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.avif;*.svg"
-
-            openFileDialog.Filter = "All Supported Files|" & imageExtensions & ";" & videoExtensions &
-                               "|Image Files|" & imageExtensions &
-                               "|Video Files|" & videoExtensions &
-                               "|JPEG Files|*.jpg;*.jpeg|PNG Files|*.png|GIF Files|*.gif|BMP Files|*.bmp|WebP Files|*.webp|HEIC Files|*.heic|AVIF Files|*.avif|SVG Files|*.svg"
+            openFileDialog.Filter = "All Supported Files|*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.avif;*.svg|JPEG Files|*.jpg;*.jpeg|PNG Files|*.png|GIF Files|*.gif|BMP Files|*.bmp|WebP Files|*.webp|HEIC Files|*.heic|AVIF Files|*.avif|SVG Files|*.svg"
             openFileDialog.InitialDirectory = If(String.IsNullOrEmpty(Current_Folder_Path), Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), Current_Folder_Path)
-            openFileDialog.Title = If(Is_Russian_Language, "Выберите медиафайл", "Select a media file")
+            openFileDialog.Title = If(Is_Russian_Language, "Выберите файл изображения", "Select an image file")
             If openFileDialog.ShowDialog() = DialogResult.OK Then
                 Dim selected_File_Path As String = openFileDialog.FileName
                 Dim selected_Folder_Path As String = Path.GetDirectoryName(selected_File_Path)
@@ -3976,7 +3914,6 @@ Public Class Main_Form
             End If
         End Using
     End Sub
-
 
     Private Sub lbl_File_Number_Click(sender As Object, e As EventArgs) Handles lbl_File_Number.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2460: jump to file clicked")

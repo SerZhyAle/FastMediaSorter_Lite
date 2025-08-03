@@ -23,7 +23,6 @@ Imports System.Text
 Imports System.Text.RegularExpressions
 Imports System.Threading
 Imports Microsoft.Win32
-Imports System.Diagnostics ' Add this line with other imports
 
 
 <ComVisible(True)>
@@ -1185,46 +1184,40 @@ Public Class Main_Form
         End If
     End Sub
 
-    ' Add this method to handle video errors from JavaScript
-    Public Sub HandleVideoError(errorMessage As String)
+    ''' <summary>
+    ''' Called from JavaScript when video fails to load
+    ''' </summary>
+    Public Sub HandleVideoError()
         If Me.InvokeRequired Then
-            Me.Invoke(New Action(Of String)(AddressOf HandleVideoError), errorMessage)
+            Me.Invoke(New Action(AddressOf HandleVideoError))
         Else
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0865: Video error detected: " & errorMessage)
-
-            ' Check if it's an unsupported video error
-            If errorMessage.Contains("Unsupported video type") OrElse errorMessage.Contains("invalid file path") Then
-                TryOpenVideoWithDefaultPlayer()
-            End If
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0843: HandleVideoError called from JavaScript")
+            TryOpenVideoWithDefaultPlayer()
         End If
     End Sub
 
-    ' Add this method to launch video with default Windows media player
+    ''' <summary>
+    ''' Attempts to open the current video file with the default Windows media player
+    ''' </summary>
     Private Sub TryOpenVideoWithDefaultPlayer()
+        If String.IsNullOrEmpty(Current_File_Name) OrElse Not File.Exists(Current_File_Name) Then
+            lbl_Status.Text = If(Is_Russian_Language, "Файл видео не найден", "Video file not found")
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0844: Video file not found for default player")
+            Return
+        End If
+
         Try
-            If Not String.IsNullOrEmpty(Current_File_Name) AndAlso File.Exists(Current_File_Name) Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0866: Opening video with default player: " & Current_File_Name)
-
-                ' Clear the web browser to avoid confusion
-                Web_Browser.DocumentText = "<html><body style='background:" &
-                                        If(Form_Color_Scheme = 0, "black", "white") &
-                                        "; color:" & If(Form_Color_Scheme = 0, "white", "black") &
-                                        "; text-align:center; font-family:Arial;'>" &
-                                        "<h3>" & If(Is_Russian_Language, "Видео открыто во внешнем плеере", "Video opened in external player") & "</h3>" &
-                                        "<p>" & Path.GetFileName(Current_File_Name) & "</p>" &
-                                        "<p style='font-size:12px; color:gray;'>" &
-                                        If(Is_Russian_Language, "Нажмите стрелки для перехода к следующему файлу", "Use arrow keys to navigate to next file") &
-                                        "</p></body></html>"
-
-                ' Launch with default application
-                Process.Start(Current_File_Name)
-
-                lbl_Status.Text = If(Is_Russian_Language, "Видео открыто во внешнем плеере: " & Path.GetFileName(Current_File_Name), "Video opened in external player: " & Path.GetFileName(Current_File_Name))
-
+            Dim success As Boolean = OpenWithDefaultApplication(Current_File_Name)
+            If success Then
+                lbl_Status.Text = If(Is_Russian_Language, "Видео открыто в стандартном плеере", "Video opened in default player")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0845: Video opened with default application: " & Current_File_Name)
+            Else
+                lbl_Status.Text = If(Is_Russian_Language, "Не удалось открыть видео в стандартном плеере", "Failed to open video in default player")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0846: Failed to open video with default application")
             End If
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0867: Error opening video with default player: " & ex.Message)
-            lbl_Status.Text = If(Is_Russian_Language, "Ошибка запуска внешнего плеера: " & ex.Message, "Error launching external player: " & ex.Message)
+            lbl_Status.Text = If(Is_Russian_Language, "Ошибка при открытии видео: " & ex.Message, "Error opening video: " & ex.Message)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0847: Exception opening video with default application: " & ex.Message)
         End Try
     End Sub
 
@@ -1238,50 +1231,39 @@ Public Class Main_Form
             Dim video_File_Absolute_Uri As String = video_File_As_Uri.AbsoluteUri
 
             Dim video_Html_Content As String = "<video id='videoPlayer' controls autoplay style='width:100%;height:calc(100% - " & height_For_instruments_on_WebPanel & "px);object-fit:fill;'>" &
-                            "<source src='" & video_File_Absolute_Uri & "'>" &
-                            "<track kind='captions' default>" &
-                            "<p style='color: " &
-                            If(Form_Color_Scheme = 0, "black", "white") &
-                            "; text-align: center;'>" &
-                            If(Is_Russian_Language, "Ваш браузер не поддерживает видео.", "Your browser does not support video.") & "</p>" &
-                            "</video>"
+                                "<source src='" & video_File_Absolute_Uri & "'>" &
+                                "<track kind='captions' default>" &
+                                "<p style='color: " &
+                                If(Form_Color_Scheme = 0, "black", "white") &
+                                "; text-align: center;'>" &
+                                If(Is_Russian_Language, "Ваш браузер не поддерживает видео.", "Your browser does not support video.") & "</p>" &
+                                "</video>"
 
             Dim html As String = "<html><head><meta http-equiv='X-UA-Compatible' content='IE=edge'>" &
-                     "<style>" &
-                     "body { margin: 0; overflow: hidden; background: " &
-                            If(Form_Color_Scheme = 0, "black", "white") & "; }" &
-                     "video { width: 100%; height: calc(100% - " & height_For_instruments_on_WebPanel & "px); object-fit: fill; position: absolute; top: 0; left: 0; }" &
-                     "</style></head>" &
-                     "<body oncontextmenu='return false;' ondblclick='handlePageDoubleClick();'>" & video_Html_Content &
-                     "<script>" &
-                     "var player = document.getElementById('videoPlayer');" &
-                     "var errorDetected = false;" &
-                     "player.volume = " & video_Volume_Level.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) & ";" &
-                     "player.oncontextmenu = function(e) { e.preventDefault(); if (this.paused) this.play(); else this.pause(); return false; };" &
-                     "player.onvolumechange = function() { try { window.external.SetVolume(this.volume); } catch(e) { } };" &
-                     "function handlePageDoubleClick() { try { window.external.HandleWebBrowserDoubleClick(); } catch(e) { console.error('Error calling HandleWebBrowserDoubleClick: ' + e.message); } }" &
-                     "document.addEventListener('DOMContentLoaded', function() { " &
-                     "  var video = document.getElementById('videoPlayer'); " &
-                     "  video.onerror = function() { " &
-                     "    if (!errorDetected) { " &
-                     "      errorDetected = true; " &
-                     "      var errorMsg = 'Error: Unsupported video type or invalid file path. Source: ' + (video.querySelector('source') ? video.querySelector('source').src : 'not found'); " &
-                     "      console.error(errorMsg); " &
-                     "      try { " &
-                     "        window.external.HandleVideoError(errorMsg); " &
-                     "      } catch(e) { " &
-                     "        console.error('Error calling HandleVideoError: ' + e.message); " &
-                     "        var p = document.createElement('p'); " &
-                     "        p.style.color='" & If(Form_Color_Scheme = 0, "black", "white") & "'; " &
-                     "        p.style.textAlign='center'; " &
-                     "        p.innerText = errorMsg; " &
-                     "        video.parentNode.insertBefore(p, video.nextSibling); " &
-                     "      } " &
-                     "    } " &
-                     "  }; " &
-                     "  video.addEventListener('loadstart', function() { errorDetected = false; }); " &
-                     "});" &
-                     "</script></body></html>"
+                         "<style>" &
+                         "body { margin: 0; overflow: hidden; background: " &
+                                If(Form_Color_Scheme = 0, "black", "white") & "; }" &
+                         "video { width: 100%; height: calc(100% - " & height_For_instruments_on_WebPanel & "px); object-fit: fill; position: absolute; top: 0; left: 0; }" &
+                         "</style></head>" &
+                         "<body oncontextmenu='return false;' ondblclick='handlePageDoubleClick();'>" & video_Html_Content &
+                         "<script>" &
+                         "var player = document.getElementById('videoPlayer');" &
+                         "player.volume = " & video_Volume_Level.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) & ";" &
+                         "player.oncontextmenu = function(e) { e.preventDefault(); if (this.paused) this.play(); else this.pause(); return false; };" &
+                         "player.onvolumechange = function() { try { window.external.SetVolume(this.volume); } catch(e) { } };" &
+                         "function handlePageDoubleClick() { try { window.external.HandleWebBrowserDoubleClick(); } catch(e) { console.error('Error calling HandleWebBrowserDoubleClick: ' + e.message); } }" & ' <<< НОВАЯ JAVASCRIPT ФУНКЦИЯ
+                         "document.addEventListener('DOMContentLoaded', function() { " &
+                         "  var video = document.getElementById('videoPlayer'); " &
+                         "  video.onerror = function() { " &
+                         "    var errorMsg = 'Error: Unsupported video type or invalid file path. Source: ' + (video.querySelector('source') ? video.querySelector('source').src : 'not found'); " &
+                         "    var p = document.createElement('p'); p.style.color='" &
+                                If(Form_Color_Scheme = 0, "black", "white") &
+                                "'; p.style.textAlign='center'; p.innerText = errorMsg; " &
+                         "    video.parentNode.insertBefore(p, video.nextSibling); " &
+                         "    console.error(errorMsg); " &
+                         "  }; " &
+                         "});" &
+                         "</script></body></html>"
 
             last_Loaded_Uri = ""
             Web_Browser.DocumentText = html
@@ -1296,8 +1278,8 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0850: WebBrowser is loaded with URI: " & video_File_Absolute_Uri)
         Catch ex As Exception
             Web_Browser.DocumentText = "<html><body style='background:black; color:" &
-                            If(Form_Color_Scheme = 0, "black", "white") &
-                            "; text-align:center;'><p>Error preparing video player: " & ex.Message & "</p></body></html>"
+                                If(Form_Color_Scheme = 0, "black", "white") &
+                                "; text-align:center;'><p>Error preparing video player: " & ex.Message & "</p></body></html>"
             is_WebBrowser_Visible = False
 
             UpdateControlVisibility()
@@ -1761,8 +1743,8 @@ Public Class Main_Form
                         current_File_Index = Math.Max(0, total_File_Count - 1)
                     End If
 
+                    ' Try again with the adjusted index
                     If total_File_Count > 0 Then
-                        ' Recursively try the next file
                         UpdateCurrentFileAndDisplay(True, False)
                     End If
                 Else
@@ -1920,7 +1902,7 @@ Public Class Main_Form
         If recent_Media_File_List Is Nothing OrElse
             recent_Media_File_List.Count = 0 Then
 
-            '   MessageBox.Show(If(Is_Russian_Language, "Нет недавних файлов.", "No recent files."), "Recent Files", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            '   MessageBox.Show(If(Is_Russian_Language, "Нет недавних файлов.", "No recent files"), "Recent Files", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
 
@@ -2049,7 +2031,7 @@ Public Class Main_Form
                     ReadShowMediaFile("ReadFiles")
                 Else
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1157: folder set from savings, but saved file is not found: " & Current_Folder_Path & " - " & current_File_Index.ToString)
-                    current_File_Index = 1
+                    current_File_Index = 0
 
                     If Not total_File_Count = 0 Then ReadShowMediaFile("ReadFolderAndFile")
                 End If
@@ -2708,7 +2690,7 @@ Public Class Main_Form
             Dim current_File_Name_Without_Extension As String = Path.GetFileNameWithoutExtension(Current_File_Name)
             Dim current_File_Extension As String = Path.GetExtension(Current_File_Name)
             Dim new_File_Name As String = InputBox(If(Is_Russian_Language, "Введите новое имя файла:", "Enter new file name:"),
-                                            If(Is_Russian_Language, "Переименование файла", "Rename File"),
+                                            If(Is_Russian_Language, "Переименовать файл", "Rename File"),
                                             current_File_Name_Without_Extension)
             If String.IsNullOrEmpty(new_File_Name) Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1260: empty new file name - no rename")
@@ -3123,7 +3105,7 @@ Public Class Main_Form
     End Sub
 
     Private Sub FirstRun_Click(sender As Object, e As EventArgs) Handles lbl_Help_Info.Click
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1820: lbl_Help_Info clicked and hidden")
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1820: lbl_Folder MouseClick")
         lbl_Help_Info.Visible = False
         lbl_Help_Info.Hide()
     End Sub
@@ -3839,71 +3821,6 @@ Public Class Main_Form
             If MessageBox.Show(msg, "Association", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
                 AssociateJpgWithThisApp()
             End If
-        End If
-    End Sub
-
-    Private Function AreImageTypesAssociatedWithThisApp() As Boolean
-        Return IsExtensionAssociatedWithThisApp(".jpg") AndAlso
-           IsExtensionAssociatedWithThisApp(".png") AndAlso
-           IsExtensionAssociatedWithThisApp(".gif")
-    End Function
-
-    Private Function IsExtensionAssociatedWithThisApp(ext As String) As Boolean
-        Try
-            Using key = Registry.ClassesRoot.OpenSubKey(ext)
-                If key Is Nothing Then Return False
-                Dim progId = key.GetValue("")?.ToString()
-                If String.IsNullOrEmpty(progId) Then Return False
-                Using progKey = Registry.ClassesRoot.OpenSubKey(progId & "\shell\open\command")
-                    If progKey Is Nothing Then Return False
-                    Dim command = progKey.GetValue("")?.ToString()
-                    If String.IsNullOrEmpty(command) Then Return False
-                    Dim exePath = Application.ExecutablePath.ToLowerInvariant()
-                    Return command.ToLowerInvariant().Contains(exePath)
-                End Using
-            End Using
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2430: Ext associaciated")
-        Catch
-            Return False
-        End Try
-    End Function
-
-    Private Sub AssociateImageTypesWithThisApp()
-        AssociateExtensionWithThisApp(".jpg", "FastMediaSorter.jpg", "JPEG Image - FastMediaSorter")
-        AssociateExtensionWithThisApp(".png", "FastMediaSorter.png", "PNG Image - FastMediaSorter")
-        AssociateExtensionWithThisApp(".gif", "FastMediaSorter.gif", "GIF Image - FastMediaSorter")
-
-        MessageBox.Show(If(Is_Russian_Language, "Ассоциации установлены. Возможно потребуется перезапустить Проводник или Windows.", "Associations set. You may need to restart Explorer or Windows for changes to take effect."), "Association", MessageBoxButtons.OK, MessageBoxIcon.Information)
-    End Sub
-
-    Private Sub AssociateExtensionWithThisApp(ext As String, progId As String, description As String)
-        Try
-            Dim exePath = Application.ExecutablePath
-            Using progKey = Registry.ClassesRoot.CreateSubKey(progId)
-                progKey.SetValue("", description)
-                Using shellKey = progKey.CreateSubKey("shell\open\command")
-                    shellKey.SetValue("", """" & exePath & """ ""%1""")
-                End Using
-            End Using
-
-            Using extKey = Registry.ClassesRoot.CreateSubKey(ext)
-                extKey.SetValue("", progId)
-            End Using
-        Catch ex As Exception
-            MessageBox.Show(If(Is_Russian_Language, "Ошибка ассоциации: ", "Failed to set association: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ERR Ext associaciated: " & ex.Message)
-        End Try
-    End Sub
-
-    Private Sub CheckAndOfferImageAssociations()
-        If GetSetting(App_name, Second_App_Name, "UserAlreadyAskedForAssociations", "0") = "0" AndAlso
-            IsRunningAsAdministrator() AndAlso
-            Not AreImageTypesAssociatedWithThisApp() Then
-
-            Dim msg = If(Is_Russian_Language, "Ассоциировать .JPG, .PNG, .GIF файлы с этой программой?", "Associate .JPG, .PNG, .GIF files with this application?")
-            If MessageBox.Show(msg, "Association", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
-                AssociateImageTypesWithThisApp()
-            End If
 
             SaveSetting(App_name, Second_App_Name, "UserAlreadyAskedForAssociations", "1")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2440: asked for association")
@@ -3939,16 +3856,9 @@ Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2450: btn_choose_file clicked")
         SlideShowStop()
         Using openFileDialog As New OpenFileDialog()
-            ' Build video extensions string for filter
-            Dim videoExtensions As String = String.Join(";", video_File_Extensions.Select(Function(ext) "*" & ext))
-            Dim imageExtensions As String = "*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.avif;*.svg"
-
-            openFileDialog.Filter = "All Supported Files|" & imageExtensions & ";" & videoExtensions &
-                               "|Image Files|" & imageExtensions &
-                               "|Video Files|" & videoExtensions &
-                               "|JPEG Files|*.jpg;*.jpeg|PNG Files|*.png|GIF Files|*.gif|BMP Files|*.bmp|WebP Files|*.webp|HEIC Files|*.heic|AVIF Files|*.avif|SVG Files|*.svg"
+            openFileDialog.Filter = "All Supported Files|*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.avif;*.svg|JPEG Files|*.jpg;*.jpeg|PNG Files|*.png|GIF Files|*.gif|BMP Files|*.bmp|WebP Files|*.webp|HEIC Files|*.heic|AVIF Files|*.avif|SVG Files|*.svg"
             openFileDialog.InitialDirectory = If(String.IsNullOrEmpty(Current_Folder_Path), Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), Current_Folder_Path)
-            openFileDialog.Title = If(Is_Russian_Language, "Выберите медиафайл", "Select a media file")
+            openFileDialog.Title = If(Is_Russian_Language, "Выберите файл изображения", "Select an image file")
             If openFileDialog.ShowDialog() = DialogResult.OK Then
                 Dim selected_File_Path As String = openFileDialog.FileName
                 Dim selected_Folder_Path As String = Path.GetDirectoryName(selected_File_Path)
@@ -3976,7 +3886,6 @@ Public Class Main_Form
             End If
         End Using
     End Sub
-
 
     Private Sub lbl_File_Number_Click(sender As Object, e As EventArgs) Handles lbl_File_Number.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2460: jump to file clicked")
@@ -4008,4 +3917,56 @@ Public Class Main_Form
             MessageBox.Show("Invalid file number.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End If
     End Sub
-End Class
+
+    Public Sub SetVolume(volume As Double)
+        video_Volume_Level = Math.Max(0.0, Math.Min(1.0, volume))
+    End Sub
+
+    Public Sub HandleWebBrowserDoubleClick()
+        If Me.InvokeRequired Then
+            Me.Invoke(New Action(AddressOf HandleWebBrowserDoubleClick))
+        Else
+            If is_Full_Screen_Mode Then
+                is_Full_Screen_Mode = False
+                SetViewSizes()
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0842: HandleWebBrowserDoubleClick: (WebBrowser)")
+            End If
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Called from JavaScript when video fails to load
+    ''' </summary>
+    Public Sub HandleVideoError()
+        If Me.InvokeRequired Then
+            Me.Invoke(New Action(AddressOf HandleVideoError))
+        Else
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0843: HandleVideoError called from JavaScript")
+            TryOpenVideoWithDefaultPlayer()
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Attempts to open the current video file with the default Windows media player
+    ''' </summary>
+    Private Sub TryOpenVideoWithDefaultPlayer()
+        If String.IsNullOrEmpty(Current_File_Name) OrElse Not File.Exists(Current_File_Name) Then
+            lbl_Status.Text = If(Is_Russian_Language, "Файл видео не найден", "Video file not found")
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0844: Video file not found for default player")
+            Return
+        End If
+
+        Try
+            Dim success As Boolean = OpenWithDefaultApplication(Current_File_Name)
+            If success Then
+                lbl_Status.Text = If(Is_Russian_Language, "Видео открыто в стандартном плеере", "Video opened in default player")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0845: Video opened with default application: " & Current_File_Name)
+            Else
+                lbl_Status.Text = If(Is_Russian_Language, "Не удалось открыть видео в стандартном плеере", "Failed to open video in default player")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0846: Failed to open video with default application")
+            End If
+        Catch ex As Exception
+            lbl_Status.Text = If(Is_Russian_Language, "Ошибка при открытии видео: " & ex.Message, "Error opening video: " & ex.Message)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0847: Exception opening video with default application: " & ex.Message)
+        End Try
+    End Sub
