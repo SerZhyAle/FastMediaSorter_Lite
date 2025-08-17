@@ -47,6 +47,51 @@ Public Class Image_Panel_Form
         End Function
     End Class
 
+    Private Function GetOppositeColor(inputColor As Color) As Color
+        ' Calculate luminance using the same logic as Main_Form
+        Dim luminance As Double = (0.299 * inputColor.R + 0.587 * inputColor.G + 0.114 * inputColor.B) / 255
+
+        ' Return white for dark colors, black for light colors
+        If luminance > 0.5 Then
+            Return Color.Black
+        Else
+            Return Color.White
+        End If
+    End Function
+
+    Private Sub UpdateBackgroundColor()
+        Dim back_Color As System.Drawing.Color = System.Drawing.Color.Black
+
+        ' Use the same color scheme logic as Main_Form
+        Select Case Form_Color_Scheme
+            Case 0 ' Dynamic color based on current image
+                ' Try to get the background color from Main_Form if it's available
+                Try
+                    If Main_Form IsNot Nothing Then
+                        back_Color = Main_Form.BackColor
+                    Else
+                        back_Color = System.Drawing.Color.Black
+                    End If
+                Catch
+                    back_Color = System.Drawing.Color.Black
+                End Try
+            Case 1 ' Black
+                back_Color = System.Drawing.Color.Black
+            Case 2 ' White  
+                back_Color = System.Drawing.Color.White
+            Case Else ' Default to black
+                back_Color = System.Drawing.Color.Black
+        End Select
+
+        ' Apply the color to both the form and the image panel
+        Me.BackColor = back_Color
+        imagePanel.BackColor = back_Color
+
+        ' Update the text color to contrast with background
+        Dim text_Color As Color = GetOppositeColor(back_Color)
+        Me.ForeColor = text_Color
+    End Sub
+
     Public Sub New()
         Me.Text = If(Is_Russian_Language, "Панель изображений", "Image Panel")
         Me.KeyPreview = True
@@ -58,13 +103,13 @@ Public Class Image_Panel_Form
             .FlowDirection = FlowDirection.LeftToRight
         End With
 
-        imagePanel.BackColor = If(Form_Color_Scheme = 0, Color.Black, Color.White)
-        Me.BackColor = imagePanel.BackColor
+        ' Apply the same background color logic as Main_Form
+        UpdateBackgroundColor()
 
         Me.Controls.Add(imagePanel)
 
         AddHandler Me.Resize, AddressOf OnFormResize
-        AddHandler Me.VisibleChanged, AddressOf OnVisibleChanged ' CHANGED: Use VisibleChanged instead of Shown
+        AddHandler Me.VisibleChanged, AddressOf OnVisibleChanged
         AddHandler Me.KeyDown, AddressOf OnFormKeyDown
         AddHandler imagePanel.Paint, AddressOf OnPanelPaint
         resizeDebounceTimer.Interval = resize_debounce_interval
@@ -82,6 +127,9 @@ Public Class Image_Panel_Form
 
     Public Sub PrepareForDisplay()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " p0010: PicPanel init")
+
+        ' Update background color when preparing for display
+        UpdateBackgroundColor()
 
         InitializeState()
         InitializeTooltips()
@@ -442,7 +490,7 @@ Public Class Image_Panel_Form
                     Dim bmPhoto As New Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
                     bmPhoto.SetResolution(originalImage.HorizontalResolution, originalImage.VerticalResolution)
                     Using grPhoto As Graphics = Graphics.FromImage(bmPhoto)
-                        grPhoto.Clear(imagePanel.BackColor) ' Use panel background color
+                        grPhoto.Clear(Me.BackColor)  ' Use panel background color
                         grPhoto.InterpolationMode = InterpolationMode.Low
                         grPhoto.DrawImage(originalImage, New Rectangle(destX, destY, destWidth, destHeight), New Rectangle(0, 0, sourceWidth, sourceHeight), GraphicsUnit.Pixel)
                     End Using

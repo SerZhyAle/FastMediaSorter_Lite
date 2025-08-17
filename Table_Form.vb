@@ -43,6 +43,8 @@ Public Class Table_Form
         toolTip.SetToolTip(chkb_no_request_before_file_operation, If(Is_Russian_Language, "Если отмечено, приложение не будет запрашивать подтверждение перед операциями с файлами.", "If checked, the application will not ask for confirmation before file operations."))
         toolTip.SetToolTip(cmb_Picture_Size, If(Is_Russian_Language, "Выберите размер карточки для формы панели изображений", "Choose the size of the card for the image panel"))
 
+        toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык интерфейса на английский", "Switch interface language to English"))
+
     End Sub
 
     Private Sub Form2_Load(sender As Object, e As EventArgs) Handles MyBase.Load
@@ -52,6 +54,29 @@ Public Class Table_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-2: the_Table_Form_Load")
 
         InitializeTooltips()
+
+        ' Initialize DataGridView columns BEFORE adding rows
+        If Data_Grid_View.Columns.Count = 0 Then
+            Data_Grid_View.Columns.Clear()
+
+            ' Add Key column
+            Dim keyColumn As New DataGridViewTextBoxColumn()
+            keyColumn.Name = "KeyColumn"
+            keyColumn.HeaderText = "KEY"
+            keyColumn.Width = 60
+            keyColumn.ReadOnly = True
+            Data_Grid_View.Columns.Add(keyColumn)
+
+            ' Add Folder Path column
+            Dim folderColumn As New DataGridViewTextBoxColumn()
+            folderColumn.Name = "FolderColumn"
+            folderColumn.HeaderText = "Destination Folder"
+            folderColumn.Width = 300
+            folderColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+            Data_Grid_View.Columns.Add(folderColumn)
+
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-3: DataGridView columns initialized")
+        End If
 
         cmbox_color_schema.Items.Clear()
         cmbox_color_schema.Items.Add(If(Is_Russian_Language, "По углу", "By corner")) '0
@@ -106,6 +131,7 @@ Public Class Table_Form
         chkb_no_request_before_file_operation.Checked = Is_no_request_before_file_operation
 
         chb_perspectiva.Text = If(Is_Russian_Language, "Перспектива", "Perspective")
+        btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
 
         chkbox_Copy_Mode.Checked = Is_Copying_not_Moving
         Data_Grid_View.Rows.Clear()
@@ -198,6 +224,18 @@ Public Class Table_Form
     End Sub
 
     Private Sub Form2_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
+        ' Don't forward key presses if user is editing a DataGridView cell
+        If Data_Grid_View.IsCurrentCellInEditMode Then
+            Return
+        End If
+
+        ' Don't forward key presses if any text input control has focus
+        If TypeOf Me.ActiveControl Is TextBox OrElse
+       TypeOf Me.ActiveControl Is ComboBox Then
+            Return
+        End If
+
+        ' Forward key presses to Main_Form only when not editing
         Main_Form.KeybUse(e, Main_Form.GetWas_slideshow())
     End Sub
 
@@ -240,5 +278,22 @@ Public Class Table_Form
     Private Sub Cmb_Picture_Size_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmb_Picture_Size.SelectedIndexChanged
         Picture_Box_Width_At_Panel = CInt(cmb_Picture_Size.SelectedItem.ToString().Split("x"c)(0))
         Picture_Box_Height_At_Panel = CInt(cmb_Picture_Size.SelectedItem.ToString().Split("x"c)(1))
+    End Sub
+
+    Private Sub btn_Language_Click(sender As Object, e As EventArgs) Handles btn_Language.Click
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2021: btn_Language")
+
+        Is_Russian_Language = Not Is_Russian_Language
+        btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
+        LngCh()
+        Main_Form.LngCh()
+
+    End Sub
+
+    Public Sub LngCh()
+        ' Update the form and controls to reflect the new language
+        PrepareForDisplay()
+        InitializeTooltips()
+
     End Sub
 End Class

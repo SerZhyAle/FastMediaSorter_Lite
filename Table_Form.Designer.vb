@@ -40,6 +40,7 @@ Partial Class Table_Form
         Me.chkb_show_file_size = New System.Windows.Forms.CheckBox()
         Me.chkb_is_to_show_file_datetime = New System.Windows.Forms.CheckBox()
         Me.chkb_show_pic_size = New System.Windows.Forms.CheckBox()
+        Me.btn_Language = New System.Windows.Forms.Button()
         CType(Me.Data_Grid_View, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.Tab_Control.SuspendLayout()
         Me.Tab_Page_1.SuspendLayout()
@@ -54,11 +55,11 @@ Partial Class Table_Form
         Me.Data_Grid_View.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
         Me.Data_Grid_View.Columns.AddRange(New System.Windows.Forms.DataGridViewColumn() {Me.KeyNum, Me.MoveToFolder})
         Me.Data_Grid_View.Location = New System.Drawing.Point(0, 0)
-        Me.Data_Grid_View.Margin = New System.Windows.Forms.Padding(4, 5, 4, 5)
+        Me.Data_Grid_View.Margin = New System.Windows.Forms.Padding(5, 6, 5, 6)
         Me.Data_Grid_View.MultiSelect = False
         Me.Data_Grid_View.Name = "Data_Grid_View"
         Me.Data_Grid_View.RowHeadersWidth = 62
-        Me.Data_Grid_View.Size = New System.Drawing.Size(664, 406)
+        Me.Data_Grid_View.Size = New System.Drawing.Size(885, 508)
         Me.Data_Grid_View.TabIndex = 3
         '
         'KeyNum
@@ -80,20 +81,20 @@ Partial Class Table_Form
         '
         Me.SetOnTop.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(204, Byte))
         Me.SetOnTop.ForeColor = System.Drawing.SystemColors.ActiveCaption
-        Me.SetOnTop.Location = New System.Drawing.Point(382, 3)
-        Me.SetOnTop.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
+        Me.SetOnTop.Location = New System.Drawing.Point(509, 4)
+        Me.SetOnTop.Margin = New System.Windows.Forms.Padding(5, 0, 5, 0)
         Me.SetOnTop.Name = "SetOnTop"
-        Me.SetOnTop.Size = New System.Drawing.Size(282, 26)
+        Me.SetOnTop.Size = New System.Drawing.Size(376, 32)
         Me.SetOnTop.TabIndex = 4
         Me.SetOnTop.Text = "set this table ontop"
         '
         'chkbox_Copy_Mode
         '
         Me.chkbox_Copy_Mode.AutoSize = True
-        Me.chkbox_Copy_Mode.Location = New System.Drawing.Point(4, 18)
-        Me.chkbox_Copy_Mode.Margin = New System.Windows.Forms.Padding(4, 5, 4, 5)
+        Me.chkbox_Copy_Mode.Location = New System.Drawing.Point(5, 22)
+        Me.chkbox_Copy_Mode.Margin = New System.Windows.Forms.Padding(5, 6, 5, 6)
         Me.chkbox_Copy_Mode.Name = "chkbox_Copy_Mode"
-        Me.chkbox_Copy_Mode.Size = New System.Drawing.Size(111, 24)
+        Me.chkbox_Copy_Mode.Size = New System.Drawing.Size(153, 29)
         Me.chkbox_Copy_Mode.TabIndex = 5
         Me.chkbox_Copy_Mode.Text = "Copy mode"
         Me.chkbox_Copy_Mode.UseVisualStyleBackColor = True
@@ -101,9 +102,10 @@ Partial Class Table_Form
         'chkbox_Independent_Thread_For_File_Operation
         '
         Me.chkbox_Independent_Thread_For_File_Operation.AutoSize = True
-        Me.chkbox_Independent_Thread_For_File_Operation.Location = New System.Drawing.Point(4, 44)
+        Me.chkbox_Independent_Thread_For_File_Operation.Location = New System.Drawing.Point(5, 55)
+        Me.chkbox_Independent_Thread_For_File_Operation.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
         Me.chkbox_Independent_Thread_For_File_Operation.Name = "chkbox_Independent_Thread_For_File_Operation"
-        Me.chkbox_Independent_Thread_For_File_Operation.Size = New System.Drawing.Size(369, 24)
+        Me.chkbox_Independent_Thread_For_File_Operation.Size = New System.Drawing.Size(501, 29)
         Me.chkbox_Independent_Thread_For_File_Operation.TabIndex = 6
         Me.chkbox_Independent_Thread_For_File_Operation.Text = "Use independent thread for operations with files"
         Me.chkbox_Independent_Thread_For_File_Operation.UseVisualStyleBackColor = True
@@ -111,27 +113,29 @@ Partial Class Table_Form
         'cmbox_color_schema
         '
         Me.cmbox_color_schema.FormattingEnabled = True
-        Me.cmbox_color_schema.Location = New System.Drawing.Point(140, 109)
+        Me.cmbox_color_schema.Location = New System.Drawing.Point(187, 136)
+        Me.cmbox_color_schema.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
         Me.cmbox_color_schema.Name = "cmbox_color_schema"
-        Me.cmbox_color_schema.Size = New System.Drawing.Size(145, 28)
+        Me.cmbox_color_schema.Size = New System.Drawing.Size(192, 33)
         Me.cmbox_color_schema.TabIndex = 7
         '
         'lbl_Color
         '
         Me.lbl_Color.AutoSize = True
-        Me.lbl_Color.Location = New System.Drawing.Point(0, 112)
+        Me.lbl_Color.Location = New System.Drawing.Point(0, 140)
+        Me.lbl_Color.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
         Me.lbl_Color.Name = "lbl_Color"
-        Me.lbl_Color.Size = New System.Drawing.Size(46, 20)
+        Me.lbl_Color.Size = New System.Drawing.Size(63, 25)
         Me.lbl_Color.TabIndex = 8
         Me.lbl_Color.Text = "Color"
         '
         'chb_perspectiva
         '
         Me.chb_perspectiva.AutoSize = True
-        Me.chb_perspectiva.Location = New System.Drawing.Point(4, 145)
-        Me.chb_perspectiva.Margin = New System.Windows.Forms.Padding(4, 5, 4, 5)
+        Me.chb_perspectiva.Location = New System.Drawing.Point(5, 181)
+        Me.chb_perspectiva.Margin = New System.Windows.Forms.Padding(5, 6, 5, 6)
         Me.chb_perspectiva.Name = "chb_perspectiva"
-        Me.chb_perspectiva.Size = New System.Drawing.Size(151, 24)
+        Me.chb_perspectiva.Size = New System.Drawing.Size(207, 29)
         Me.chb_perspectiva.TabIndex = 9
         Me.chb_perspectiva.Text = "Show pespective"
         Me.chb_perspectiva.TextAlign = System.Drawing.ContentAlignment.MiddleRight
@@ -141,25 +145,28 @@ Partial Class Table_Form
         '
         Me.Tab_Control.Controls.Add(Me.Tab_Page_1)
         Me.Tab_Control.Controls.Add(Me.Tab_Page_2)
-        Me.Tab_Control.Location = New System.Drawing.Point(0, 3)
+        Me.Tab_Control.Location = New System.Drawing.Point(0, 4)
+        Me.Tab_Control.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
         Me.Tab_Control.Name = "Tab_Control"
         Me.Tab_Control.SelectedIndex = 0
-        Me.Tab_Control.Size = New System.Drawing.Size(664, 435)
+        Me.Tab_Control.Size = New System.Drawing.Size(885, 544)
         Me.Tab_Control.TabIndex = 10
         '
         'Tab_Page_1
         '
         Me.Tab_Page_1.Controls.Add(Me.Data_Grid_View)
-        Me.Tab_Page_1.Location = New System.Drawing.Point(4, 29)
+        Me.Tab_Page_1.Location = New System.Drawing.Point(8, 39)
+        Me.Tab_Page_1.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
         Me.Tab_Page_1.Name = "Tab_Page_1"
-        Me.Tab_Page_1.Padding = New System.Windows.Forms.Padding(3)
-        Me.Tab_Page_1.Size = New System.Drawing.Size(656, 402)
+        Me.Tab_Page_1.Padding = New System.Windows.Forms.Padding(4, 4, 4, 4)
+        Me.Tab_Page_1.Size = New System.Drawing.Size(869, 497)
         Me.Tab_Page_1.TabIndex = 0
         Me.Tab_Page_1.Text = "Directional keys"
         Me.Tab_Page_1.UseVisualStyleBackColor = True
         '
         'Tab_Page_2
         '
+        Me.Tab_Page_2.Controls.Add(Me.btn_Language)
         Me.Tab_Page_2.Controls.Add(Me.cmb_Picture_Size)
         Me.Tab_Page_2.Controls.Add(Me.lbl_Picture_at_Panel_Size)
         Me.Tab_Page_2.Controls.Add(Me.chkb_no_request_before_file_operation)
@@ -171,10 +178,11 @@ Partial Class Table_Form
         Me.Tab_Page_2.Controls.Add(Me.chb_perspectiva)
         Me.Tab_Page_2.Controls.Add(Me.chkbox_Independent_Thread_For_File_Operation)
         Me.Tab_Page_2.Controls.Add(Me.lbl_Color)
-        Me.Tab_Page_2.Location = New System.Drawing.Point(4, 29)
+        Me.Tab_Page_2.Location = New System.Drawing.Point(8, 39)
+        Me.Tab_Page_2.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
         Me.Tab_Page_2.Name = "Tab_Page_2"
-        Me.Tab_Page_2.Padding = New System.Windows.Forms.Padding(3)
-        Me.Tab_Page_2.Size = New System.Drawing.Size(656, 402)
+        Me.Tab_Page_2.Padding = New System.Windows.Forms.Padding(4, 4, 4, 4)
+        Me.Tab_Page_2.Size = New System.Drawing.Size(869, 497)
         Me.Tab_Page_2.TabIndex = 1
         Me.Tab_Page_2.Text = "Options"
         Me.Tab_Page_2.UseVisualStyleBackColor = True
@@ -182,26 +190,29 @@ Partial Class Table_Form
         'cmb_Picture_Size
         '
         Me.cmb_Picture_Size.FormattingEnabled = True
-        Me.cmb_Picture_Size.Location = New System.Drawing.Point(487, 18)
+        Me.cmb_Picture_Size.Location = New System.Drawing.Point(649, 22)
+        Me.cmb_Picture_Size.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
         Me.cmb_Picture_Size.Name = "cmb_Picture_Size"
-        Me.cmb_Picture_Size.Size = New System.Drawing.Size(150, 28)
+        Me.cmb_Picture_Size.Size = New System.Drawing.Size(199, 33)
         Me.cmb_Picture_Size.TabIndex = 15
         '
         'lbl_Picture_at_Panel_Size
         '
         Me.lbl_Picture_at_Panel_Size.AutoSize = True
-        Me.lbl_Picture_at_Panel_Size.Location = New System.Drawing.Point(321, 18)
+        Me.lbl_Picture_at_Panel_Size.Location = New System.Drawing.Point(428, 22)
+        Me.lbl_Picture_at_Panel_Size.Margin = New System.Windows.Forms.Padding(4, 0, 4, 0)
         Me.lbl_Picture_at_Panel_Size.Name = "lbl_Picture_at_Panel_Size"
-        Me.lbl_Picture_at_Panel_Size.Size = New System.Drawing.Size(156, 20)
+        Me.lbl_Picture_at_Panel_Size.Size = New System.Drawing.Size(215, 25)
         Me.lbl_Picture_at_Panel_Size.TabIndex = 14
         Me.lbl_Picture_at_Panel_Size.Text = "Picture at Panel size:"
         '
         'chkb_no_request_before_file_operation
         '
         Me.chkb_no_request_before_file_operation.AutoSize = True
-        Me.chkb_no_request_before_file_operation.Location = New System.Drawing.Point(4, 71)
+        Me.chkb_no_request_before_file_operation.Location = New System.Drawing.Point(5, 89)
+        Me.chkb_no_request_before_file_operation.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
         Me.chkb_no_request_before_file_operation.Name = "chkb_no_request_before_file_operation"
-        Me.chkb_no_request_before_file_operation.Size = New System.Drawing.Size(325, 24)
+        Me.chkb_no_request_before_file_operation.Size = New System.Drawing.Size(441, 29)
         Me.chkb_no_request_before_file_operation.TabIndex = 13
         Me.chkb_no_request_before_file_operation.Text = "Do not request user before file operations"
         Me.chkb_no_request_before_file_operation.UseVisualStyleBackColor = True
@@ -209,9 +220,10 @@ Partial Class Table_Form
         'chkb_show_file_size
         '
         Me.chkb_show_file_size.AutoSize = True
-        Me.chkb_show_file_size.Location = New System.Drawing.Point(4, 240)
+        Me.chkb_show_file_size.Location = New System.Drawing.Point(5, 300)
+        Me.chkb_show_file_size.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
         Me.chkb_show_file_size.Name = "chkb_show_file_size"
-        Me.chkb_show_file_size.Size = New System.Drawing.Size(127, 24)
+        Me.chkb_show_file_size.Size = New System.Drawing.Size(176, 29)
         Me.chkb_show_file_size.TabIndex = 12
         Me.chkb_show_file_size.Text = "Show file size"
         Me.chkb_show_file_size.UseVisualStyleBackColor = True
@@ -219,9 +231,10 @@ Partial Class Table_Form
         'chkb_is_to_show_file_datetime
         '
         Me.chkb_is_to_show_file_datetime.AutoSize = True
-        Me.chkb_is_to_show_file_datetime.Location = New System.Drawing.Point(4, 209)
+        Me.chkb_is_to_show_file_datetime.Location = New System.Drawing.Point(5, 261)
+        Me.chkb_is_to_show_file_datetime.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
         Me.chkb_is_to_show_file_datetime.Name = "chkb_is_to_show_file_datetime"
-        Me.chkb_is_to_show_file_datetime.Size = New System.Drawing.Size(137, 24)
+        Me.chkb_is_to_show_file_datetime.Size = New System.Drawing.Size(185, 29)
         Me.chkb_is_to_show_file_datetime.TabIndex = 11
         Me.chkb_is_to_show_file_datetime.Text = "Show datetime"
         Me.chkb_is_to_show_file_datetime.UseVisualStyleBackColor = True
@@ -229,22 +242,34 @@ Partial Class Table_Form
         'chkb_show_pic_size
         '
         Me.chkb_show_pic_size.AutoSize = True
-        Me.chkb_show_pic_size.Location = New System.Drawing.Point(4, 178)
+        Me.chkb_show_pic_size.Location = New System.Drawing.Point(5, 222)
+        Me.chkb_show_pic_size.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
         Me.chkb_show_pic_size.Name = "chkb_show_pic_size"
-        Me.chkb_show_pic_size.Size = New System.Drawing.Size(155, 24)
+        Me.chkb_show_pic_size.Size = New System.Drawing.Size(213, 29)
         Me.chkb_show_pic_size.TabIndex = 10
         Me.chkb_show_pic_size.Text = "Show picture size"
         Me.chkb_show_pic_size.UseVisualStyleBackColor = True
         '
+        'btn_Language
+        '
+        Me.btn_Language.Font = New System.Drawing.Font("Microsoft Sans Serif", 7.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(204, Byte))
+        Me.btn_Language.Location = New System.Drawing.Point(786, 63)
+        Me.btn_Language.Margin = New System.Windows.Forms.Padding(4)
+        Me.btn_Language.Name = "btn_Language"
+        Me.btn_Language.Size = New System.Drawing.Size(60, 39)
+        Me.btn_Language.TabIndex = 117
+        Me.btn_Language.Text = "RU"
+        Me.btn_Language.UseVisualStyleBackColor = True
+        '
         'Table_Form
         '
-        Me.AutoScaleDimensions = New System.Drawing.SizeF(9.0!, 20.0!)
+        Me.AutoScaleDimensions = New System.Drawing.SizeF(12.0!, 25.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(664, 441)
+        Me.ClientSize = New System.Drawing.Size(885, 551)
         Me.Controls.Add(Me.SetOnTop)
         Me.Controls.Add(Me.Tab_Control)
         Me.KeyPreview = True
-        Me.Margin = New System.Windows.Forms.Padding(4, 5, 4, 5)
+        Me.Margin = New System.Windows.Forms.Padding(5, 6, 5, 6)
         Me.MaximizeBox = False
         Me.MinimizeBox = False
         Me.Name = "Table_Form"
@@ -277,4 +302,5 @@ Partial Class Table_Form
     Friend WithEvents chkb_no_request_before_file_operation As CheckBox
     Friend WithEvents lbl_Picture_at_Panel_Size As Label
     Friend WithEvents cmb_Picture_Size As ComboBox
+    Friend WithEvents btn_Language As Button
 End Class

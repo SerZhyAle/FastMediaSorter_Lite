@@ -11,6 +11,7 @@
 'sza250617 
 'sza250721 choose file
 'sza250723 LITE
+'sza250808 zoom_Scale 
 
 Option Strict On
 
@@ -67,6 +68,7 @@ Public Class Main_Form
     Private video_File_Extensions As New HashSet(Of String) From {".webm", ".ogg", ".3g2", ".mkv", ".3gp", ".mp4", ".m4v", ".m4a", ".mov", ".mp3", ".avi", ".wmv", ".asf", ".mpg", ".mpeg", ".flv", ".wav", ".wma"}
     Private web_specific_image_extensions As New HashSet(Of String) From {".webp", ".heic", ".avif", ".svg"}
 
+
     Public Current_Folder_Path As String = ""
     Public Is_slide_show_mode As Boolean = False
     Public Is_to_show_picture_sizes As Boolean = False
@@ -76,6 +78,24 @@ Public Class Main_Form
     Private recent_Media_File_List As New List(Of String)
     Private Image_Panel_Form As Image_Panel_Form
     Private toolTip As ToolTip
+    Private zoom_Scale As Single = 1.0F
+
+    ' Add these missing variable declarations near the top of the class:
+    'Private Current_File_Name As String = ""
+    'Private Current_Image_Path As String = ""
+    'Private App_name As String = "FastMediaSorter"
+    'Private Second_App_Name As String = "Settings"
+    'Private Form_Color_Scheme As Integer = 1
+    'Private Is_Russian_Language As Boolean = False
+    'Private Is_No_Background_Tasks As Boolean = False
+    'Private Is_Copying_not_Moving As Boolean = False
+    'Private Is_no_request_before_file_operation As Boolean = False
+    'Private Is_Pespective As Boolean = True
+    'Private Picture_Box_Width_At_Panel As Integer = 80
+    'Private Picture_Box_Height_At_Panel As Integer = 80
+    'Private Hardkeys_to_move_mediafile(10) As String
+    'Private Choosen_Picture_From_Panel As String = ""
+    Private Table_Form As Table_Form
 
     Private is_form_shown As Boolean = False
     Private last_Perspective_Draw_Time As DateTime
@@ -111,6 +131,14 @@ Public Class Main_Form
     Private files_Array As String() = Nothing
     Private is_Files_Array_Active As Boolean = False
 
+    Private is_Dragging As Boolean = False
+    Private drag_Start_Point As Point
+    Private last_Drag_Update_Time As DateTime = DateTime.MinValue
+    Private Const DRAG_UPDATE_INTERVAL_MS As Integer = 16
+    ' Add these variables near other Private variable declarations
+    Private original_PictureBox_Left As Integer
+    Private original_PictureBox_Top As Integer
+
     Private is_Table_Form_Open As Boolean
     Private last_Action_Time As DateTime
     Private is_Full_Screen_Mode As Boolean
@@ -124,6 +152,7 @@ Public Class Main_Form
     Private last_Loaded_Uri As String = ""
     Private is_Folder_Read_Required As Boolean = False
     Private total_Files_Count_Text As String = "0"
+    Private mouse_Down_Start_Point As Point
 
     Private video_Volume_Level As Double = 1
     Private is_TextBox_Editing As Boolean = False
@@ -373,7 +402,14 @@ Public Class Main_Form
     End Sub
 
     Public Sub InitNew()
+
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0001: init new")
+
+        ' Initialize Table_Form if not already done
+        If Table_Form Is Nothing Then
+            Table_Form = New Table_Form()
+        End If
+
         ResizeDebounceTimer.Interval = 200
         ResizeDebounceTimer.Enabled = False
 
@@ -717,6 +753,7 @@ Public Class Main_Form
                 End If
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0290: File is set from arg: " & argument_For_Path)
+
                 Current_Folder_Path = argument_Folder_Path
                 Current_Image_Path = argument_For_Path
                 Current_File_Name = argument_For_Path
@@ -727,6 +764,7 @@ Public Class Main_Form
                 was_External_Input_Previously = True
                 current_File_Index = 0
                 total_File_Count = 1
+                files_List = New List(Of String) From {Current_Image_Path}
 
                 ReadShowMediaFile("ReadFolderAndKnownFile")
             End If
@@ -794,11 +832,17 @@ Public Class Main_Form
 
             If Not cmbox_Media_Folder.Text = Current_Folder_Path Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0370: folder combo list is updated")
-                If recent_Folder_List.LastOrDefault() <> Current_Folder_Path Then
+
+                ' Move current folder to first position if it's not already there
+                If recent_Folder_List.Count = 0 OrElse recent_Folder_List(0) <> Current_Folder_Path Then
+                    ' Remove if exists elsewhere in the list
                     recent_Folder_List.Remove(Current_Folder_Path)
-                    recent_Folder_List.Add(Current_Folder_Path)
+                    ' Insert at the beginning (first position)
+                    recent_Folder_List.Insert(0, Current_Folder_Path)
+
+                    ' Remove excess folders from the end if we exceed the limit
                     If recent_Folder_List.Count > max_Namber_of_Recent_Folders Then
-                        recent_Folder_List.RemoveAt(0)
+                        recent_Folder_List.RemoveAt(recent_Folder_List.Count - 1)
                     End If
                 End If
 
@@ -808,14 +852,14 @@ Public Class Main_Form
                                                   For Each folder In recent_Folder_List
                                                       cmbox_Media_Folder.Items.Add(folder)
                                                   Next
-                                                  cmbox_Media_Folder.SelectedIndex = recent_Folder_List.Count - 1
+                                                  cmbox_Media_Folder.SelectedIndex = 0 ' Select the first item (current folder)
                                               End Sub)
                 Else
                     cmbox_Media_Folder.Items.Clear()
                     For Each folder In recent_Folder_List
                         cmbox_Media_Folder.Items.Add(folder)
                     Next
-                    cmbox_Media_Folder.SelectedIndex = recent_Folder_List.Count - 1
+                    cmbox_Media_Folder.SelectedIndex = 0 ' Select the first item (current folder)
                 End If
             End If
             is_TextBox_Editing = False
@@ -857,6 +901,12 @@ Public Class Main_Form
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0440: case SetFile")
 
             Case "InSlideShow" '0
+                If total_File_Count <= 1 Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0455: case InSlideShow but total_File_Count is 0")
+                    SlideShowStop()
+                    Return False
+                End If
+
                 If is_Slide_Show_Random_Mode Then
                     current_File_Index = CInt(Math.Floor(Rnd() * total_File_Count))
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0460: case RND InSlideShow")
@@ -864,7 +914,7 @@ Public Class Main_Form
                     current_File_Index += 1
                     If current_File_Index < 0 Then current_File_Index = 0
                     If current_File_Index > total_File_Count - 1 Then current_File_Index = total_File_Count - 1
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0460: case InSlideShow")
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0461: case InSlideShow")
                 End If
 
 
@@ -1418,7 +1468,7 @@ Public Class Main_Form
                     ReadShowMediaFile("ReadNextFile")
                     Return
                 Catch ex As Exception
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0905: Error loading image: " & ex.Message & " File: " & Current_File_Name)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0911: Error loading image: " & ex.Message & " File: " & Current_File_Name)
                     lbl_Status.Text = If(Is_Russian_Language, "Ошибка загрузки: " & Path.GetFileName(Current_File_Name), "Loading error: " & Path.GetFileName(Current_File_Name))
 
                     ' Skip to next file if any other error occurs
@@ -1450,26 +1500,24 @@ Public Class Main_Form
         Web_Browser.Visible = is_WebBrowser_Visible
 
         If (is_PictureBox1_Visible OrElse
-            is_PictureBox2_Visible) AndAlso
-            (Not Is_slide_show_mode Or
-            SlideShowTimer.Interval > slideshow_limit_to_change_color) Then
+        is_PictureBox2_Visible) AndAlso
+        (Not Is_slide_show_mode Or
+        SlideShowTimer.Interval > slideshow_limit_to_change_color) Then
 
             Web_Browser.Visible = False
 
             Dim pic_to_Display As Int16 = 0
 
             If is_PictureBox1_Visible AndAlso
-                    Picture_Box_1.Image IsNot Nothing AndAlso
-                    TypeOf Picture_Box_1.Image Is Bitmap Then
+                Picture_Box_1.Image IsNot Nothing AndAlso
+                TypeOf Picture_Box_1.Image Is Bitmap Then
 
-                Picture_Box_1.BringToFront()
                 pic_to_Display = 1
 
             ElseIf is_PictureBox2_Visible AndAlso
-                    Picture_Box_2.Image IsNot Nothing AndAlso
-                    TypeOf Picture_Box_2.Image Is Bitmap Then
+                Picture_Box_2.Image IsNot Nothing AndAlso
+                TypeOf Picture_Box_2.Image Is Bitmap Then
 
-                Picture_Box_2.BringToFront()
                 pic_to_Display = 2
             End If
 
@@ -1489,24 +1537,32 @@ Public Class Main_Form
 
                 If active_Bitmap IsNot Nothing Then
                     If 1 < active_Bitmap.Width AndAlso
-                        1 < active_Bitmap.Height Then
+                    1 < active_Bitmap.Height Then
 
                         If active_Bitmap.Width > second_Color_X AndAlso
-                            active_Bitmap.Height > second_Color_Y Then
+                        active_Bitmap.Height > second_Color_Y Then
 
                             Dim first_Color_Pixel = active_Bitmap.GetPixel(first_Color_X, first_Color_Y)
                             Dim second_Color_Pixel = active_Bitmap.GetPixel(second_Color_X, second_Color_Y)
 
+                            ' Fix: Remove alpha channel to prevent transparent background colors
+                            first_Color_Pixel = Color.FromArgb(255, first_Color_Pixel.R, first_Color_Pixel.G, first_Color_Pixel.B)
+                            second_Color_Pixel = Color.FromArgb(255, second_Color_Pixel.R, second_Color_Pixel.G, second_Color_Pixel.B)
+
                             Dim dif As Long = CLng(Math.Abs(CInt(second_Color_Pixel.R) - CInt(first_Color_Pixel.R))) +
-                                                  CLng(Math.Abs(CInt(second_Color_Pixel.G) - CInt(first_Color_Pixel.G))) +
-                                                  CLng(Math.Abs(CInt(second_Color_Pixel.B) - CInt(first_Color_Pixel.B)))
+                                              CLng(Math.Abs(CInt(second_Color_Pixel.G) - CInt(first_Color_Pixel.G))) +
+                                              CLng(Math.Abs(CInt(second_Color_Pixel.B) - CInt(first_Color_Pixel.B)))
                             If dif < percent_of_color_deviation Then
                                 back_Color = first_Color_Pixel
                             Else
-                                back_Color = active_Bitmap.GetPixel(CInt(active_Bitmap.Width / percent_of_second_Color_Point), CInt(active_Bitmap.Height / percent_of_second_Color_Point))
+                                Dim corner_Pixel = active_Bitmap.GetPixel(CInt(active_Bitmap.Width / percent_of_second_Color_Point), CInt(active_Bitmap.Height / percent_of_second_Color_Point))
+                                ' Fix: Remove alpha channel
+                                back_Color = Color.FromArgb(255, corner_Pixel.R, corner_Pixel.G, corner_Pixel.B)
                             End If
                         Else
-                            back_Color = active_Bitmap.GetPixel(CInt(active_Bitmap.Width / percent_of_second_Color_Point), CInt(active_Bitmap.Height / percent_of_second_Color_Point))
+                            Dim corner_Pixel = active_Bitmap.GetPixel(CInt(active_Bitmap.Width / percent_of_second_Color_Point), CInt(active_Bitmap.Height / percent_of_second_Color_Point))
+                            ' Fix: Remove alpha channel
+                            back_Color = Color.FromArgb(255, corner_Pixel.R, corner_Pixel.G, corner_Pixel.B)
                         End If
 
                     End If
@@ -1520,8 +1576,8 @@ Public Class Main_Form
                 End If
 
                 If active_Bitmap IsNot Nothing AndAlso
-                     1 < active_Bitmap.Width AndAlso
-                        1 < active_Bitmap.Height Then
+                 1 < active_Bitmap.Width AndAlso
+                    1 < active_Bitmap.Height Then
 
                     Dim side_Pixel_Color As System.Drawing.Color
                     Dim difR, difG, difB As Long
@@ -1534,7 +1590,8 @@ Public Class Main_Form
                         c += 1
                     Next
 
-                    back_Color = System.Drawing.Color.FromArgb(CInt(difR / c), CInt(difG / c), CInt(difB / c))
+                    ' Fix: Ensure the resulting color is fully opaque
+                    back_Color = Color.FromArgb(255, CInt(difR / c), CInt(difG / c), CInt(difB / c))
                 End If
 
             ElseIf Form_Color_Scheme = 4 Then 'by top
@@ -1546,8 +1603,8 @@ Public Class Main_Form
                 End If
 
                 If active_Bitmap IsNot Nothing AndAlso
-                     1 < active_Bitmap.Width AndAlso
-                        1 < active_Bitmap.Height Then
+                 1 < active_Bitmap.Width AndAlso
+                    1 < active_Bitmap.Height Then
 
                     Dim top_Pixel_Color As System.Drawing.Color
                     Dim difR, difG, difB As Long
@@ -1560,7 +1617,8 @@ Public Class Main_Form
                         c += 1
                     Next
 
-                    back_Color = System.Drawing.Color.FromArgb(CInt(difR / c), CInt(difG / c), CInt(difB / c))
+                    ' Fix: Ensure the resulting color is fully opaque
+                    back_Color = Color.FromArgb(255, CInt(difR / c), CInt(difG / c), CInt(difB / c))
                 End If
             ElseIf Form_Color_Scheme = 5 Then 'by buttom
 
@@ -1571,8 +1629,8 @@ Public Class Main_Form
                 End If
 
                 If active_Bitmap IsNot Nothing AndAlso
-                     1 < active_Bitmap.Width AndAlso
-                        1 < active_Bitmap.Height Then
+                 1 < active_Bitmap.Width AndAlso
+                    1 < active_Bitmap.Height Then
 
                     Dim bottom_Pixel_Color As System.Drawing.Color
                     Dim difR, difG, difB As Long
@@ -1585,7 +1643,8 @@ Public Class Main_Form
                         c += 1
                     Next
 
-                    back_Color = System.Drawing.Color.FromArgb(CInt(difR / c), CInt(difG / c), CInt(difB / c))
+                    ' Fix: Ensure the resulting color is fully opaque
+                    back_Color = Color.FromArgb(255, CInt(difR / c), CInt(difG / c), CInt(difB / c))
                 End If
             End If
 
@@ -1638,23 +1697,49 @@ Public Class Main_Form
         Current_File_Name = ""
         current_Loaded_File_Name = "" ' Clear this to force reload
 
-        If total_File_Count <> 0 Then
+        ' Check if file collections are properly initialized
+        If files_List Is Nothing And files_Array Is Nothing Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0385: Both files_List and files_Array are Nothing")
+            lbl_Status.Text = If(Is_Russian_Language, "! Нет списка файлов", "! No file list available")
+            Return
+        End If
+
+        If total_File_Count > 0 Then
+            If current_File_Index < 0 Then current_File_Index = 0
+            If current_File_Index >= total_File_Count Then
+                current_File_Index = Math.Max(0, total_File_Count - 1)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0388: current_File_Index was too high, adjusted")
+            End If
+
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0960: isFileFound = " & is_File_Found.ToString)
             If is_File_Found Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0970: currentFileIndex = " & current_File_Index.ToString)
 
-                Current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
-                If Not File.Exists(Current_File_Name) Then
+                Try
+                    Current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0970: currentFileIndex = " & current_File_Index.ToString & ", fileName = " & Current_File_Name)
+                Catch ex As Exception
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0971: Error getting current file name: " & ex.Message)
+                    lbl_Status.Text = If(Is_Russian_Language, "Ошибка получения имени файла", "Error getting file name")
+                    Return
+                End Try
+
+                If Not String.IsNullOrEmpty(Current_File_Name) AndAlso Not File.Exists(Current_File_Name) Then
+
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0975: New current file does not exist: " & Current_File_Name)
                     lbl_Status.Text = If(Is_Russian_Language, "Файл не найден, переход к следующему", "File not found, moving to next")
 
                     ' Remove the invalid file from the list and try the next one
-                    If is_Files_Array_Active Then
-                        files_Array = RemoveAt(files_Array, current_File_Index)
-                    Else
-                        files_List.RemoveAt(current_File_Index)
-                    End If
-                    total_File_Count -= 1
+                    Try
+                        If is_Files_Array_Active Then
+                            files_Array = RemoveAt(files_Array, current_File_Index)
+                        Else
+                            files_List.RemoveAt(current_File_Index)
+                        End If
+                        total_File_Count -= 1
+                    Catch ex As Exception
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0976: Error removing invalid file: " & ex.Message)
+                    End Try
 
                     ' Adjust index if necessary
                     If current_File_Index >= total_File_Count Then
@@ -1892,6 +1977,7 @@ Public Class Main_Form
         End If
 
         If is_form_shown Then Draw_Perspective()
+        SkipZoom()
 
     End Sub
     Private Sub SetViewSizes()
@@ -1985,6 +2071,7 @@ Public Class Main_Form
 
         btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
         LngCh()
+        Table_Form.LngCh()
 
         lbl_Help_Info.Visible = GetSetting(App_name, Second_App_Name, "FirstRun", "1") = "1"
 
@@ -2024,6 +2111,9 @@ Public Class Main_Form
         If Table_Form.chkbox_Independent_Thread_For_File_Operation IsNot Nothing Then
             Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked = GetSetting(App_name, Second_App_Name, "UseIndependentThreadForOperationsWithFiles", "0") = "1"
         End If
+
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0025: Command line args count: " & My.Application.CommandLineArgs.Count.ToString)
+
 
         If My.Application.CommandLineArgs.Count > 0 Then
             Dim fullCommandLine As String = String.Join(" ", My.Application.CommandLineArgs.ToArray())
@@ -2499,8 +2589,113 @@ Public Class Main_Form
     End Sub
 
     Private Sub HandlePictureBoxMouseDown(sender As Object, e As MouseEventArgs)
+        ' Store the initial mouse position for drag detection
+        mouse_Down_Start_Point = e.Location
+
+        ' Check for Shift+Left Click to jump +10 files
+        If e.Button = MouseButtons.Left AndAlso (Control.ModifierKeys And Keys.Shift) = Keys.Shift Then
+            ' Only jump if there are more than current_index + 10 files in the list
+            If total_File_Count > current_File_Index + 10 Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Shift+LeftClick - jumping +10 files")
+                SlideShowStop()
+                current_File_Index += 10
+                ReadShowMediaFile("SetFile")
+                lbl_Status.Text = If(Is_Russian_Language, "+10 файлов", "+10 files")
+                Return ' Exit early to prevent normal click behavior
+            Else
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1152: Shift+LeftClick - not enough files remaining for +10 jump")
+                lbl_Status.Text = If(Is_Russian_Language, "Недостаточно файлов для перехода на +10", "Not enough files for +10 jump")
+                Return ' Exit early to prevent normal click behavior
+            End If
+        End If
+
+        ' Check for Shift+Right Click to jump -10 files
+        If e.Button = MouseButtons.Right AndAlso (Control.ModifierKeys And Keys.Shift) = Keys.Shift Then
+            ' Only jump if current index is greater than 10
+            If current_File_Index >= 10 Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Shift+RightClick - jumping -10 files")
+                SlideShowStop()
+                current_File_Index -= 10
+                ReadShowMediaFile("SetFile")
+                lbl_Status.Text = If(Is_Russian_Language, "-10 файлов", "-10 files")
+                Return ' Exit early to prevent normal click behavior
+            Else
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1154: Shift+RightClick - current index too low for -10 jump")
+                lbl_Status.Text = If(Is_Russian_Language, "Текущий индекс слишком мал для перехода на -10", "Current index too low for -10 jump")
+                Return ' Exit early to prevent normal click behavior
+            End If
+        End If
+
+        ' Check for Ctrl+Left Click to jump +100 files
+        If e.Button = MouseButtons.Left AndAlso (Control.ModifierKeys And Keys.Control) = Keys.Control Then
+            ' Only jump if there are more than current_index + 100 files in the list
+            If total_File_Count > current_File_Index + 100 Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Ctrl+LeftClick - jumping +100 files")
+                SlideShowStop()
+                current_File_Index += 100
+                ReadShowMediaFile("SetFile")
+                lbl_Status.Text = If(Is_Russian_Language, "+100 файлов", "+100 files")
+                Return ' Exit early to prevent normal click behavior
+            Else
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1152: Ctrl+LeftClick - not enough files remaining for +100 jump")
+                lbl_Status.Text = If(Is_Russian_Language, "Недостаточно файлов для перехода на +100", "Not enough files for +100 jump")
+                Return ' Exit early to prevent normal click behavior
+            End If
+        End If
+
+        ' Check for Ctrl+Right Click to jump -100 files
+        If e.Button = MouseButtons.Right AndAlso (Control.ModifierKeys And Keys.Control) = Keys.Control Then
+            ' Only jump if current index is greater than 100
+            If current_File_Index >= 100 Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Ctrl+RightClick - jumping -100 files")
+                SlideShowStop()
+                current_File_Index -= 100
+                ReadShowMediaFile("SetFile")
+                lbl_Status.Text = If(Is_Russian_Language, "-100 файлов", "-100 files")
+                Return ' Exit early to prevent normal click behavior
+            Else
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1154: Ctrl+RightClick - current index too low for -100 jump")
+                lbl_Status.Text = If(Is_Russian_Language, "Текущий индекс слишком мал для перехода на -100", "Current index too low for -100 jump")
+                Return ' Exit early to prevent normal click behavior
+            End If
+        End If
+
+        ' Check for Alt+Left Click to jump +1000 files
+        If e.Button = MouseButtons.Left AndAlso (Control.ModifierKeys And Keys.Alt) = Keys.Alt Then
+            ' Only jump if there are more than current_index + 1000 files in the list
+            If total_File_Count > current_File_Index + 1000 Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Alt+LeftClick - jumping +1000 files")
+                SlideShowStop()
+                current_File_Index += 1000
+                ReadShowMediaFile("SetFile")
+                lbl_Status.Text = If(Is_Russian_Language, "+1000 файлов", "+1000 files")
+                Return ' Exit early to prevent normal click behavior
+            Else
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1152: Alt+LeftClick - not enough files remaining for +1000 jump")
+                lbl_Status.Text = If(Is_Russian_Language, "Недостаточно файлов для перехода на +1000", "Not enough files for +1000 jump")
+                Return ' Exit early to prevent normal click behavior
+            End If
+        End If
+
+        ' Check for Alt+Right Click to jump -1000 files
+        If e.Button = MouseButtons.Right AndAlso (Control.ModifierKeys And Keys.Alt) = Keys.Alt Then
+            ' Only jump if current index is greater than 1000
+            If current_File_Index >= 1000 Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Alt+RightClick - jumping -1000 files")
+                SlideShowStop()
+                current_File_Index -= 1000
+                ReadShowMediaFile("SetFile")
+                lbl_Status.Text = If(Is_Russian_Language, "-1000 файлов", "-1000 files")
+                Return ' Exit early to prevent normal click behavior
+            Else
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1154: Ctrl+RightClick - current index too low for -1000 jump")
+                lbl_Status.Text = If(Is_Russian_Language, "Текущий индекс слишком мал для перехода на -100", "Current index too low for -1000 jump")
+                Return ' Exit early to prevent normal click behavior
+            End If
+        End If
+
         If is_Full_Screen_Mode AndAlso
-            (e.Button = MouseButtons.Left OrElse e.Button = MouseButtons.Middle) Then
+        (e.Button = MouseButtons.Left OrElse e.Button = MouseButtons.Middle) Then
 
             Dim current_Click_Time As DateTime = DateTime.Now
 
@@ -2524,7 +2719,11 @@ Public Class Main_Form
             last_Media_Area_Click_Button = MouseButtons.None
         End If
 
-        MouseUse(e)
+        ' Only call MouseUse if not in zoom mode or not left button
+        ' This prevents immediate file navigation when starting a potential drag
+        If zoom_Scale = 1 OrElse e.Button <> MouseButtons.Left Then
+            MouseUse(e)
+        End If
     End Sub
 
     Private Sub PictureBox1_MouseDown(sender As Object, e As MouseEventArgs) Handles Picture_Box_1.MouseDown
@@ -2535,23 +2734,75 @@ Public Class Main_Form
         HandlePictureBoxMouseDown(sender, e)
     End Sub
 
+    Private Sub SkipZoom()
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1172: zoom reset")
+
+        Dim top_first_row = lbl_Status.Top + lbl_Status.Height
+
+        Picture_Box_1.Top = top_first_row
+        Picture_Box_1.Left = left_first_column
+        Picture_Box_1.Width = Me.Width
+        Picture_Box_1.Height = Me.Height - top_first_row
+
+        Picture_Box_2.Size = Picture_Box_1.Size
+        Picture_Box_2.Location = Picture_Box_1.Location
+
+        zoom_Scale = 1.0F
+        lbl_Zoom.Text = ""
+
+    End Sub
+
     Private Sub MouseUse(ByVal e As MouseEventArgs)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1170: MouseUse Delta: " & e.Delta.ToString)
 
         SlideShowStop()
 
         If (Control.ModifierKeys And Keys.Alt) = Keys.Alt Then
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1172: zoom reset")
+            SkipZoom()
 
-            Dim top_first_row = lbl_Status.Top + lbl_Status.Height
+        ElseIf e.Delta <> 0 AndAlso (is_PictureBox1_Visible OrElse is_PictureBox2_Visible) AndAlso (Control.ModifierKeys And Keys.Shift) = Keys.Shift Then
+            ' SHIFT + Scroll: Set to original 1:1 resolution
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1174: zoom to original 1:1 resolution")
 
-            Picture_Box_1.Top = top_first_row
-            Picture_Box_1.Left = left_first_column
-            Picture_Box_1.Width = Me.Width
-            Picture_Box_1.Height = Me.Height - top_first_row
+            Dim active_Image As Image = Nothing
+            If is_PictureBox1_Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
+                active_Image = Picture_Box_1.Image
+            ElseIf is_PictureBox2_Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
+                active_Image = Picture_Box_2.Image
+            End If
 
-            Picture_Box_2.Size = Picture_Box_1.Size
-            Picture_Box_2.Location = Picture_Box_1.Location
+            If active_Image IsNot Nothing Then
+                ' Calculate position to center the image at original size
+                Dim top_first_row = lbl_Status.Top + lbl_Status.Height
+                Dim available_Width = Me.Width
+                Dim available_Height = Me.Height - top_first_row
+
+                ' Set to original image dimensions
+                Dim new_Width As Integer = active_Image.Width
+                Dim new_Height As Integer = active_Image.Height
+
+                ' Center the image in the available space
+                Dim new_Left As Integer = (available_Width - new_Width) \ 2
+                Dim new_Top As Integer = top_first_row + (available_Height - new_Height) \ 2
+
+                ' Ensure the image is not positioned off-screen
+                new_Left = Math.Max(new_Left, -new_Width + 100) ' Allow some off-screen but keep 100px visible
+                new_Top = Math.Max(new_Top, top_first_row)
+
+                Picture_Box_1.Width = new_Width
+                Picture_Box_1.Height = new_Height
+                Picture_Box_1.Left = new_Left
+                Picture_Box_1.Top = new_Top
+
+                Picture_Box_2.Size = Picture_Box_1.Size
+                Picture_Box_2.Location = Picture_Box_1.Location
+
+                ' Set zoom_Scale to 0 as flag for 1:1 mode
+                zoom_Scale = 0.0F
+                lbl_Zoom.Text = "1:1"
+
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1175: 1:1 resolution set: " & new_Width.ToString & "x" & new_Height.ToString & " at " & new_Left.ToString & "," & new_Top.ToString)
+            End If
 
         ElseIf e.Delta <> 0 AndAlso (is_PictureBox1_Visible OrElse is_PictureBox2_Visible) AndAlso (Control.ModifierKeys And Keys.Control) = Keys.Control Then
             Dim zoom_Scale_Factor As Single = If(e.Delta > 0, 1.1F, 0.9F)
@@ -2582,6 +2833,9 @@ Public Class Main_Form
 
             Picture_Box_2.Size = Picture_Box_1.Size
             Picture_Box_2.Location = Picture_Box_1.Location
+
+            zoom_Scale = If(zoom_Scale = 0, 1, zoom_Scale) * zoom_Scale_Factor
+            lbl_Zoom.Text = "" & zoom_Scale.ToString("F2")
         Else
             Select Case e.Delta
                 Case Is < 0
@@ -3128,7 +3382,7 @@ Public Class Main_Form
         lbl_Help_Info.Hide()
     End Sub
 
-    Private Sub LngCh()
+    Public Sub LngCh()
         If lbl_Status.Text = "status" Then lbl_Status.Text = ""
 
         If Is_Russian_Language Then
@@ -3179,6 +3433,8 @@ Public Class Main_Form
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0040: English is set")
         End If
+
+
     End Sub
 
     Private Sub ButI_Click(sender As Object, e As EventArgs) Handles btn_Review.Click
@@ -3346,6 +3602,14 @@ Public Class Main_Form
             .Font = the_Font_For_Fullscreen
             .Visible = True
         End With
+        With lbl_Zoom
+            .Top = top_first_line
+            .Left = btn_Slideshow.Left + btn_Slideshow.Width + 2
+            .Width = the_Width_For_buttons
+            .Height = the_Height_For_buttons
+            .Font = the_Font_For_Fullscreen
+            .Visible = True
+        End With
         With btn_Rename
             .Top = lbl_Status.Top + lbl_Status.Height + 30
             .Left = left_first_column
@@ -3464,6 +3728,14 @@ Public Class Main_Form
                 .Width = the_Width_For_buttons * 2
                 .Height = the_Height_For_buttons
                 .Font = the_font_for_normal
+                ' .Visible = True
+            End With
+            With lbl_Zoom
+                .Top = top_first_line
+                .Left = btn_Language.Left + btn_Language.Width + 2
+                .Width = the_Width_For_buttons
+                .Height = the_Height_For_buttons
+                .Font = the_font_for_normal
                 .Visible = True
             End With
             'second line
@@ -3540,12 +3812,14 @@ Public Class Main_Form
 
             btn_RecentFiles.Left = left_first_column
             btn_RecentFiles.Top = btn_Prev_File.Top + btn_Prev_File.Height + 2
+            btn_RecentFiles.Width = the_Width_For_buttons
+            btn_RecentFiles.Height = the_Height_For_buttons
 
             lbl_Current_File.Left = btn_RecentFiles.Left + btn_RecentFiles.Width + 2
             lbl_Current_File.Top = btn_RecentFiles.Top
 
             lbl_Status.Left = left_first_column
-            lbl_Status.Top = lbl_Current_File.Top + lbl_Current_File.Height + 2
+            lbl_Status.Top = btn_RecentFiles.Top + btn_RecentFiles.Height + 2
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1920: buttons resized to normal screen")
         End If
@@ -3570,6 +3844,13 @@ Public Class Main_Form
     Private Sub Button5_Click(sender As Object, e As EventArgs) Handles btn_Move_Table.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1960: btn_MoveTable")
         SlideShowStop()
+
+        ' Check if Table_Form is disposed and recreate it if necessary
+        If Table_Form Is Nothing OrElse Table_Form.IsDisposed Then
+            Table_Form = New Table_Form()
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1961: Table_Form recreated")
+        End If
+
         Table_Form.PrepareForDisplay()
         Table_Form.Show(Me)
     End Sub
@@ -3625,6 +3906,7 @@ Public Class Main_Form
         Is_Russian_Language = Not Is_Russian_Language
         btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
         LngCh()
+        Table_Form.LngCh()
         'ReadShowMediaFile("SetFile")
     End Sub
 
@@ -4008,4 +4290,91 @@ Public Class Main_Form
             MessageBox.Show("Invalid file number.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End If
     End Sub
+
+    Private Sub lbl_Zoom_MouseDown(sender As Object, e As MouseEventArgs) Handles lbl_Zoom.MouseDown
+        SkipZoom()
+    End Sub
+
+    Private Sub Picture_Box_1_MouseMove(sender As Object, e As MouseEventArgs) Handles Picture_Box_1.MouseMove
+        Pic_MouseMove(sender, e)
+    End Sub
+
+    Private Sub Picture_Box_2_MouseMove(sender As Object, e As MouseEventArgs) Handles Picture_Box_2.MouseMove
+        Pic_MouseMove(sender, e)
+    End Sub
+
+    Private Sub Pic_MouseMove(sender As Object, e As MouseEventArgs)
+        If e.Button = MouseButtons.Left Then
+            If Not is_PictureBox1_Visible AndAlso Not is_PictureBox2_Visible Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2470: pic_MouseMove - no picture box visible")
+                Exit Sub
+            End If
+
+            ' Add drag functionality when zoomed
+            If zoom_Scale = 0 OrElse zoom_Scale > 1 Then
+                If Not is_Dragging Then
+                    ' Check if mouse has moved enough to be considered a drag
+                    Dim drag_Threshold As Integer = 5 ' Increased threshold
+                    Dim distance_Moved As Double = Math.Sqrt((e.X - mouse_Down_Start_Point.X) ^ 2 + (e.Y - mouse_Down_Start_Point.Y) ^ 2)
+
+                    If distance_Moved >= drag_Threshold Then
+                        ' Start dragging - store the original PictureBox position
+                        is_Dragging = True
+                        original_PictureBox_Left = Picture_Box_1.Left
+                        original_PictureBox_Top = Picture_Box_1.Top
+                        drag_Start_Point = e.Location ' Use current mouse position as start point
+                        last_Drag_Update_Time = DateTime.Now ' Initialize the timer
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2475: pic_MouseMove - drag started at " & drag_Start_Point.ToString())
+                    End If
+                End If
+
+                If is_Dragging Then
+                    ' Check if enough time has passed since last update
+                    Dim current_Time As DateTime = DateTime.Now
+                    If (current_Time - last_Drag_Update_Time).TotalMilliseconds >= DRAG_UPDATE_INTERVAL_MS Then
+
+                        ' Calculate movement delta from the original mouse down position
+                        Dim delta_X As Integer = e.X - mouse_Down_Start_Point.X
+                        Dim delta_Y As Integer = e.Y - mouse_Down_Start_Point.Y
+
+                        ' Only move if there's actual movement to avoid unnecessary updates
+                        If delta_X <> 0 OrElse delta_Y <> 0 Then
+                            ' Calculate new position based on original position plus total movement
+                            Dim new_Left As Integer = original_PictureBox_Left + delta_X
+                            Dim new_Top As Integer = original_PictureBox_Top + delta_Y
+
+                            ' Apply the new position to both picture boxes
+                            Picture_Box_1.Left = new_Left
+                            Picture_Box_1.Top = new_Top
+                            Picture_Box_2.Left = new_Left
+                            Picture_Box_2.Top = new_Top
+
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2476: pic_MouseMove - dragging to " & new_Left.ToString() & "," & new_Top.ToString())
+                        End If
+
+                        ' Update the last update time
+                        last_Drag_Update_Time = current_Time
+
+                        ' Set focus to the active picture box
+                        If sender Is Picture_Box_1 Then
+                            Picture_Box_1.Focus()
+                        ElseIf sender Is Picture_Box_2 Then
+                            Picture_Box_2.Focus()
+                        End If
+                    End If
+                    ' If not enough time has passed, we simply ignore this mouse move event for dragging
+                End If
+            End If
+
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2480: pic_MouseMove - mouse moved in " & sender.ToString())
+        Else
+            ' Reset dragging when mouse button is released
+            If is_Dragging Then
+                is_Dragging = False
+                last_Drag_Update_Time = DateTime.MinValue ' Reset the timer
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2477: pic_MouseMove - drag ended")
+            End If
+        End If
+    End Sub
+
 End Class
