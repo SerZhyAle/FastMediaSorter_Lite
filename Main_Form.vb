@@ -12,6 +12,7 @@
 'sza250721 choose file
 'sza250723 LITE
 'sza250808 zoom_Scale 
+'sza251009 is_Super_Full_Screen_Mode
 
 Option Strict On
 
@@ -97,6 +98,32 @@ Public Class Main_Form
     'Private Choosen_Picture_From_Panel As String = ""
     Private Table_Form As Table_Form
 
+    ' Remove this line (line 84):
+    ' Private pending_Single_Click_Timer As New System.Windows.Forms.Timer()
+
+    ' Keep these lines:
+    Private pending_Single_Click_Event As MouseEventArgs = Nothing
+    Private WithEvents pending_Single_Click_Timer As New System.Windows.Forms.Timer()
+    Private is_Programmatic_Resize As Boolean = False
+
+    ' Add this timer tick handler:
+    Private Sub Pending_Single_Click_Timer_Tick(sender As Object, e As EventArgs) Handles pending_Single_Click_Timer.Tick
+        pending_Single_Click_Timer.Stop()
+
+        If pending_Single_Click_Event IsNot Nothing Then
+            ' Execute the delayed single-click action
+            Dim delayed_Event As MouseEventArgs = pending_Single_Click_Event
+            pending_Single_Click_Event = Nothing
+
+            ' Only call MouseUse if not in zoom mode or not left button
+            If zoom_Scale = 1 OrElse delayed_Event.Button <> MouseButtons.Left Then
+                MouseUse(delayed_Event)
+            End If
+
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1149: Delayed single-click executed")
+        End If
+    End Sub
+
     Private is_form_shown As Boolean = False
     Private last_Perspective_Draw_Time As DateTime
     Private Shared mutex As Mutex
@@ -142,6 +169,7 @@ Public Class Main_Form
     Private is_Table_Form_Open As Boolean
     Private last_Action_Time As DateTime
     Private is_Full_Screen_Mode As Boolean
+    Private is_Super_Full_Screen_Mode As Boolean
     Private is_External_Input_Received As Boolean = False
     Private was_External_Input_Previously As Boolean
     Private WithEvents SlideShowTimer As New System.Windows.Forms.Timer()
@@ -404,6 +432,9 @@ Public Class Main_Form
     Public Sub InitNew()
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0001: init new")
+
+        pending_Single_Click_Timer.Interval = SystemInformation.DoubleClickTime
+        pending_Single_Click_Timer.Enabled = False
 
         ' Initialize Table_Form if not already done
         If Table_Form Is Nothing Then
@@ -1229,6 +1260,7 @@ Public Class Main_Form
         Else
             If is_Full_Screen_Mode Then
                 is_Full_Screen_Mode = False
+                is_Super_Full_Screen_Mode = False
                 SetViewSizes()
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0842: HandleWebBrowserDoubleClick: (WebBrowser)")
             End If
@@ -1949,7 +1981,12 @@ Public Class Main_Form
     Private Sub ISizeChanged()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1935: ISizeChanged")
 
-        If is_Full_Screen_Mode <> is_Last_Full_Screen_State Then
+        ' Set flag to prevent resize event from triggering debounce timer
+        is_Programmatic_Resize = True
+
+        Dim needs_Form_State_Change As Boolean = (is_Full_Screen_Mode <> is_Last_Full_Screen_State)
+
+        If needs_Form_State_Change Then
             If is_Full_Screen_Mode Then
                 FormBorderStyle = FormBorderStyle.None
                 WindowState = FormWindowState.Maximized
@@ -1958,6 +1995,10 @@ Public Class Main_Form
                 WindowState = FormWindowState.Normal
             End If
             is_Last_Full_Screen_State = is_Full_Screen_Mode
+
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1936: Form state changed, border/window updated")
+        Else
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1937: Form state unchanged, skipping border/window update")
         End If
 
         If is_Full_Screen_Mode Then
@@ -1979,6 +2020,8 @@ Public Class Main_Form
         If is_form_shown Then Draw_Perspective()
         SkipZoom()
 
+        ' Reset flag after layout is complete
+        is_Programmatic_Resize = False
     End Sub
     Private Sub SetViewSizes()
         ISizeChanged()
@@ -2181,9 +2224,14 @@ Public Class Main_Form
     End Sub
 
     Private Sub Form1_Resize(sender As Object, e As EventArgs) Handles Me.Resize
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1126: Form Resize")
-        ResizeDebounceTimer.Stop()
-        ResizeDebounceTimer.Start()
+        ' Don't start debounce timer if this is a programmatic resize
+        If Not is_Programmatic_Resize Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1126: Form Resize (user-initiated)")
+            ResizeDebounceTimer.Stop()
+            ResizeDebounceTimer.Start()
+        Else
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1127: Form Resize (programmatic - ignored)")
+        End If
     End Sub
 
     Private Sub ResizeDebounceTimer_Tick(sender As Object, e As EventArgs) Handles ResizeDebounceTimer.Tick
@@ -2592,118 +2640,109 @@ Public Class Main_Form
         ' Store the initial mouse position for drag detection
         mouse_Down_Start_Point = e.Location
 
-        ' Check for Shift+Left Click to jump +10 files
-        If e.Button = MouseButtons.Left AndAlso (Control.ModifierKeys And Keys.Shift) = Keys.Shift Then
-            ' Only jump if there are more than current_index + 10 files in the list
-            If total_File_Count > current_File_Index + 10 Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Shift+LeftClick - jumping +10 files")
-                SlideShowStop()
-                current_File_Index += 10
-                ReadShowMediaFile("SetFile")
-                lbl_Status.Text = If(Is_Russian_Language, "+10 файлов", "+10 files")
-                Return ' Exit early to prevent normal click behavior
-            Else
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1152: Shift+LeftClick - not enough files remaining for +10 jump")
-                lbl_Status.Text = If(Is_Russian_Language, "Недостаточно файлов для перехода на +10", "Not enough files for +10 jump")
-                Return ' Exit early to prevent normal click behavior
+        ' PRIORITY 1: Check modifier keys FIRST (these execute immediately without delay)
+        If (Control.ModifierKeys And Keys.Shift) = Keys.Shift Then
+            pending_Single_Click_Timer.Stop()
+            pending_Single_Click_Event = Nothing
+
+            If e.Button = MouseButtons.Left Then
+                If total_File_Count > current_File_Index + 10 Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Shift+LeftClick - jumping +10 files")
+                    SlideShowStop()
+                    current_File_Index += 10
+                    ReadShowMediaFile("SetFile")
+                    lbl_Status.Text = If(Is_Russian_Language, "+10 файлов", "+10 files")
+                Else
+                    lbl_Status.Text = If(Is_Russian_Language, "Недостаточно файлов для перехода на +10", "Not enough files for +10 jump")
+                End If
+                Return
+            ElseIf e.Button = MouseButtons.Right Then
+                If current_File_Index >= 10 Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Shift+RightClick - jumping -10 files")
+                    SlideShowStop()
+                    current_File_Index -= 10
+                    ReadShowMediaFile("SetFile")
+                    lbl_Status.Text = If(Is_Russian_Language, "-10 файлов", "-10 files")
+                Else
+                    lbl_Status.Text = If(Is_Russian_Language, "Текущий индекс слишком мал для перехода на -10", "Current index too low for -10 jump")
+                End If
+                Return
             End If
         End If
 
-        ' Check for Shift+Right Click to jump -10 files
-        If e.Button = MouseButtons.Right AndAlso (Control.ModifierKeys And Keys.Shift) = Keys.Shift Then
-            ' Only jump if current index is greater than 10
-            If current_File_Index >= 10 Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Shift+RightClick - jumping -10 files")
-                SlideShowStop()
-                current_File_Index -= 10
-                ReadShowMediaFile("SetFile")
-                lbl_Status.Text = If(Is_Russian_Language, "-10 файлов", "-10 files")
-                Return ' Exit early to prevent normal click behavior
-            Else
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1154: Shift+RightClick - current index too low for -10 jump")
-                lbl_Status.Text = If(Is_Russian_Language, "Текущий индекс слишком мал для перехода на -10", "Current index too low for -10 jump")
-                Return ' Exit early to prevent normal click behavior
+        If (Control.ModifierKeys And Keys.Control) = Keys.Control Then
+            pending_Single_Click_Timer.Stop()
+            pending_Single_Click_Event = Nothing
+
+            If e.Button = MouseButtons.Left Then
+                If total_File_Count > current_File_Index + 100 Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Ctrl+LeftClick - jumping +100 files")
+                    SlideShowStop()
+                    current_File_Index += 100
+                    ReadShowMediaFile("SetFile")
+                    lbl_Status.Text = If(Is_Russian_Language, "+100 файлов", "+100 files")
+                Else
+                    lbl_Status.Text = If(Is_Russian_Language, "Недостаточно файлов для перехода на +100", "Not enough files for +100 jump")
+                End If
+                Return
+            ElseIf e.Button = MouseButtons.Right Then
+                If current_File_Index >= 100 Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Ctrl+RightClick - jumping -100 files")
+                    SlideShowStop()
+                    current_File_Index -= 100
+                    ReadShowMediaFile("SetFile")
+                    lbl_Status.Text = If(Is_Russian_Language, "-100 файлов", "-100 files")
+                Else
+                    lbl_Status.Text = If(Is_Russian_Language, "Текущий индекс слишком мал для перехода на -100", "Current index too low for -100 jump")
+                End If
+                Return
             End If
         End If
 
-        ' Check for Ctrl+Left Click to jump +100 files
-        If e.Button = MouseButtons.Left AndAlso (Control.ModifierKeys And Keys.Control) = Keys.Control Then
-            ' Only jump if there are more than current_index + 100 files in the list
-            If total_File_Count > current_File_Index + 100 Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Ctrl+LeftClick - jumping +100 files")
-                SlideShowStop()
-                current_File_Index += 100
-                ReadShowMediaFile("SetFile")
-                lbl_Status.Text = If(Is_Russian_Language, "+100 файлов", "+100 files")
-                Return ' Exit early to prevent normal click behavior
-            Else
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1152: Ctrl+LeftClick - not enough files remaining for +100 jump")
-                lbl_Status.Text = If(Is_Russian_Language, "Недостаточно файлов для перехода на +100", "Not enough files for +100 jump")
-                Return ' Exit early to prevent normal click behavior
+        If (Control.ModifierKeys And Keys.Alt) = Keys.Alt Then
+            pending_Single_Click_Timer.Stop()
+            pending_Single_Click_Event = Nothing
+
+            If e.Button = MouseButtons.Left Then
+                If total_File_Count > current_File_Index + 1000 Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Alt+LeftClick - jumping +1000 files")
+                    SlideShowStop()
+                    current_File_Index += 1000
+                    ReadShowMediaFile("SetFile")
+                    lbl_Status.Text = If(Is_Russian_Language, "+1000 файлов", "+1000 files")
+                Else
+                    lbl_Status.Text = If(Is_Russian_Language, "Недостаточно файлов для перехода на +1000", "Not enough files for +1000 jump")
+                End If
+                Return
+            ElseIf e.Button = MouseButtons.Right Then
+                If current_File_Index >= 1000 Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Alt+RightClick - jumping -1000 files")
+                    SlideShowStop()
+                    current_File_Index -= 1000
+                    ReadShowMediaFile("SetFile")
+                    lbl_Status.Text = If(Is_Russian_Language, "-1000 файлов", "-1000 files")
+                Else
+                    lbl_Status.Text = If(Is_Russian_Language, "Текущий индекс слишком мал для перехода на -1000", "Current index too low for -1000 jump")
+                End If
+                Return
             End If
         End If
 
-        ' Check for Ctrl+Right Click to jump -100 files
-        If e.Button = MouseButtons.Right AndAlso (Control.ModifierKeys And Keys.Control) = Keys.Control Then
-            ' Only jump if current index is greater than 100
-            If current_File_Index >= 100 Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Ctrl+RightClick - jumping -100 files")
-                SlideShowStop()
-                current_File_Index -= 100
-                ReadShowMediaFile("SetFile")
-                lbl_Status.Text = If(Is_Russian_Language, "-100 файлов", "-100 files")
-                Return ' Exit early to prevent normal click behavior
-            Else
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1154: Ctrl+RightClick - current index too low for -100 jump")
-                lbl_Status.Text = If(Is_Russian_Language, "Текущий индекс слишком мал для перехода на -100", "Current index too low for -100 jump")
-                Return ' Exit early to prevent normal click behavior
-            End If
-        End If
-
-        ' Check for Alt+Left Click to jump +1000 files
-        If e.Button = MouseButtons.Left AndAlso (Control.ModifierKeys And Keys.Alt) = Keys.Alt Then
-            ' Only jump if there are more than current_index + 1000 files in the list
-            If total_File_Count > current_File_Index + 1000 Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Alt+LeftClick - jumping +1000 files")
-                SlideShowStop()
-                current_File_Index += 1000
-                ReadShowMediaFile("SetFile")
-                lbl_Status.Text = If(Is_Russian_Language, "+1000 файлов", "+1000 files")
-                Return ' Exit early to prevent normal click behavior
-            Else
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1152: Alt+LeftClick - not enough files remaining for +1000 jump")
-                lbl_Status.Text = If(Is_Russian_Language, "Недостаточно файлов для перехода на +1000", "Not enough files for +1000 jump")
-                Return ' Exit early to prevent normal click behavior
-            End If
-        End If
-
-        ' Check for Alt+Right Click to jump -1000 files
-        If e.Button = MouseButtons.Right AndAlso (Control.ModifierKeys And Keys.Alt) = Keys.Alt Then
-            ' Only jump if current index is greater than 1000
-            If current_File_Index >= 1000 Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Alt+RightClick - jumping -1000 files")
-                SlideShowStop()
-                current_File_Index -= 1000
-                ReadShowMediaFile("SetFile")
-                lbl_Status.Text = If(Is_Russian_Language, "-1000 файлов", "-1000 files")
-                Return ' Exit early to prevent normal click behavior
-            Else
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1154: Ctrl+RightClick - current index too low for -1000 jump")
-                lbl_Status.Text = If(Is_Russian_Language, "Текущий индекс слишком мал для перехода на -100", "Current index too low for -1000 jump")
-                Return ' Exit early to prevent normal click behavior
-            End If
-        End If
-
-        If is_Full_Screen_Mode AndAlso
-        (e.Button = MouseButtons.Left OrElse e.Button = MouseButtons.Middle) Then
-
+        ' PRIORITY 2: DOUBLE-CLICK DETECTION (only in fullscreen, for left/middle buttons)
+        If is_Full_Screen_Mode AndAlso (e.Button = MouseButtons.Left OrElse e.Button = MouseButtons.Middle) Then
             Dim current_Click_Time As DateTime = DateTime.Now
+            Dim time_Since_Last_Click As Double = (current_Click_Time - last_Media_Area_Click_Time).TotalMilliseconds
 
-            If (current_Click_Time - last_Media_Area_Click_Time).TotalMilliseconds < DoubleClickTimeThreshold Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1147: Fullscreen click, time since last: " & time_Since_Last_Click.ToString("F0") & "ms (threshold: " & DoubleClickTimeThreshold.ToString() & "ms)")
+
+            If time_Since_Last_Click < DoubleClickTimeThreshold AndAlso time_Since_Last_Click > 0 Then
+                ' DOUBLE-CLICK DETECTED!
+                pending_Single_Click_Timer.Stop()
+                pending_Single_Click_Event = Nothing
 
                 is_Full_Screen_Mode = False
                 SetViewSizes()
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1150: MediaArea Manual DoubleClick (" & e.Button.ToString & ")")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1150: DOUBLE-CLICK DETECTED - Exiting fullscreen")
 
                 last_Media_Area_Click_Time = DateTime.MinValue
                 last_Media_Area_Click_Button = MouseButtons.None
@@ -2712,17 +2751,34 @@ Public Class Main_Form
                 Return
             End If
 
+            ' Single click - update timestamp
             last_Media_Area_Click_Time = current_Click_Time
             last_Media_Area_Click_Button = e.Button
         ElseIf (e.Button = MouseButtons.Left OrElse e.Button = MouseButtons.Middle) Then
+            ' Reset tracking when not in fullscreen
             last_Media_Area_Click_Time = DateTime.MinValue
             last_Media_Area_Click_Button = MouseButtons.None
         End If
 
-        ' Only call MouseUse if not in zoom mode or not left button
-        ' This prevents immediate file navigation when starting a potential drag
-        If zoom_Scale = 1 OrElse e.Button <> MouseButtons.Left Then
-            MouseUse(e)
+        ' PRIORITY 3: DELAY LEFT-CLICK or execute immediately
+        If e.Button = MouseButtons.Left AndAlso zoom_Scale = 1 Then
+            ' Only delay if we're in fullscreen (to detect double-click)
+            ' OR if we need to detect dragging when zoomed
+            If is_Full_Screen_Mode Then
+                ' Delay to allow double-click detection
+                pending_Single_Click_Timer.Stop()
+                pending_Single_Click_Event = e
+                pending_Single_Click_Timer.Start()
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1148: Left-click delayed for double-click detection")
+            Else
+                ' Not in fullscreen, execute immediately
+                MouseUse(e)
+            End If
+        Else
+            ' Right-click, middle-click, or zoomed - execute immediately
+            If zoom_Scale = 1 OrElse e.Button <> MouseButtons.Left Then
+                MouseUse(e)
+            End If
         End If
     End Sub
 
@@ -2737,15 +2793,27 @@ Public Class Main_Form
     Private Sub SkipZoom()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1172: zoom reset")
 
+
         Dim top_first_row = lbl_Status.Top + lbl_Status.Height
 
-        Picture_Box_1.Top = top_first_row
-        Picture_Box_1.Left = left_first_column
-        Picture_Box_1.Width = Me.Width
-        Picture_Box_1.Height = Me.Height - top_first_row
+        If is_Full_Screen_Mode Then
+            Picture_Box_1.Top = 0
+            Picture_Box_1.Left = 0
+            Picture_Box_1.Width = Me.Width
+            Picture_Box_1.Height = Me.Height
 
-        Picture_Box_2.Size = Picture_Box_1.Size
-        Picture_Box_2.Location = Picture_Box_1.Location
+            Picture_Box_2.Size = Picture_Box_1.Size
+            Picture_Box_2.Location = Picture_Box_1.Location
+        Else
+
+            Picture_Box_1.Top = top_first_row
+            Picture_Box_1.Left = left_first_column
+            Picture_Box_1.Width = Me.Width
+            Picture_Box_1.Height = Me.Height - top_first_row
+
+            Picture_Box_2.Size = Picture_Box_1.Size
+            Picture_Box_2.Location = Picture_Box_1.Location
+        End If
 
         zoom_Scale = 1.0F
         lbl_Zoom.Text = ""
@@ -2773,38 +2841,43 @@ Public Class Main_Form
 
             If active_Image IsNot Nothing Then
                 ' Calculate position to center the image at original size
-                Dim top_first_row = lbl_Status.Top + lbl_Status.Height
+                Dim top_first_row = 0
+
+                If Not is_Super_Full_Screen_Mode Then
+                    top_first_row = lbl_Status.Top + lbl_Status.Height
+                End If
+
                 Dim available_Width = Me.Width
                 Dim available_Height = Me.Height - top_first_row
 
-                ' Set to original image dimensions
-                Dim new_Width As Integer = active_Image.Width
-                Dim new_Height As Integer = active_Image.Height
+                    ' Set to original image dimensions
+                    Dim new_Width As Integer = active_Image.Width
+                    Dim new_Height As Integer = active_Image.Height
 
-                ' Center the image in the available space
-                Dim new_Left As Integer = (available_Width - new_Width) \ 2
-                Dim new_Top As Integer = top_first_row + (available_Height - new_Height) \ 2
+                    ' Center the image in the available space
+                    Dim new_Left As Integer = (available_Width - new_Width) \ 2
+                    Dim new_Top As Integer = top_first_row + (available_Height - new_Height) \ 2
 
-                ' Ensure the image is not positioned off-screen
-                new_Left = Math.Max(new_Left, -new_Width + 100) ' Allow some off-screen but keep 100px visible
-                new_Top = Math.Max(new_Top, top_first_row)
+                    ' Ensure the image is not positioned off-screen
+                    new_Left = Math.Max(new_Left, -new_Width + 100) ' Allow some off-screen but keep 100px visible
+                    new_Top = Math.Max(new_Top, top_first_row)
 
-                Picture_Box_1.Width = new_Width
-                Picture_Box_1.Height = new_Height
-                Picture_Box_1.Left = new_Left
-                Picture_Box_1.Top = new_Top
+                    Picture_Box_1.Width = new_Width
+                    Picture_Box_1.Height = new_Height
+                    Picture_Box_1.Left = new_Left
+                    Picture_Box_1.Top = new_Top
 
-                Picture_Box_2.Size = Picture_Box_1.Size
-                Picture_Box_2.Location = Picture_Box_1.Location
+                    Picture_Box_2.Size = Picture_Box_1.Size
+                    Picture_Box_2.Location = Picture_Box_1.Location
 
-                ' Set zoom_Scale to 0 as flag for 1:1 mode
-                zoom_Scale = 0.0F
-                lbl_Zoom.Text = "1:1"
+                    ' Set zoom_Scale to 0 as flag for 1:1 mode
+                    zoom_Scale = 0.0F
+                    lbl_Zoom.Text = "1:1"
 
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1175: 1:1 resolution set: " & new_Width.ToString & "x" & new_Height.ToString & " at " & new_Left.ToString & "," & new_Top.ToString)
-            End If
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1175: 1:1 resolution set: " & new_Width.ToString & "x" & new_Height.ToString & " at " & new_Left.ToString & "," & new_Top.ToString)
+                End If
 
-        ElseIf e.Delta <> 0 AndAlso (is_PictureBox1_Visible OrElse is_PictureBox2_Visible) AndAlso (Control.ModifierKeys And Keys.Control) = Keys.Control Then
+            ElseIf e.Delta <> 0 AndAlso (is_PictureBox1_Visible OrElse is_PictureBox2_Visible) AndAlso (Control.ModifierKeys And Keys.Control) = Keys.Control Then
             Dim zoom_Scale_Factor As Single = If(e.Delta > 0, 1.1F, 0.9F)
 
             Dim old_Width As Integer = Picture_Box_1.Width
@@ -3004,7 +3077,7 @@ Public Class Main_Form
         SlideShowStop()
         is_Slide_Show_Random_Mode = False
 
-        If Me.cmbox_Media_Folder.Focused Then
+        If cmbox_Media_Folder.Visible AndAlso Me.cmbox_Media_Folder.Focused Then
             If e.KeyCode = Keys.Enter AndAlso cmbox_Media_Folder.Text <> "" Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1300: Enter pressed")
                 Current_Folder_Path = cmbox_Media_Folder.Text
@@ -3048,6 +3121,19 @@ Public Class Main_Form
                         lbl_Status.Text = If(Is_Russian_Language, "! Нет файла для переименования", "! No file to rename")
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1350: No file to rename")
                     End If
+
+                Case Keys.F7
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1645: F7 - Toggle fullscreen")
+                    is_Full_Screen_Mode = Not is_Full_Screen_Mode
+
+                    SetViewSizes()
+
+                Case Keys.F11
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1645: F11 - Toggle super fullscreen")
+                    is_Full_Screen_Mode = Not is_Full_Screen_Mode
+                    is_Super_Full_Screen_Mode = Not is_Super_Full_Screen_Mode
+                    SetViewSizes()
+
                 Case Keys.I, Keys.F5
                     SetRandomSlideShow()
                 Case Keys.Home, Keys.H, Keys.BrowserHome
@@ -3505,14 +3591,26 @@ Public Class Main_Form
     End Sub
 
     Private Sub Buttons_to_fullscreen()
-        Picture_Box_1.Top = 0
-        Picture_Box_1.Left = 0
-        Picture_Box_1.Width = Me.Width
-        Picture_Box_1.Height = Me.Height
+        Me.Focus()
+
+        If is_Super_Full_Screen_Mode Then
+            Dim screen_Bounds As Rectangle = Screen.FromControl(Me).Bounds
+
+            Picture_Box_1.Top = 0
+            Picture_Box_1.Left = 0
+            Picture_Box_1.Width = screen_Bounds.Width
+            Picture_Box_1.Height = screen_Bounds.Height
+        Else
+            Dim pic_Top As Integer = If(is_Super_Full_Screen_Mode, 0, lbl_Status.Top + lbl_Status.Height)
+
+            Picture_Box_1.Top = pic_Top
+            Picture_Box_1.Left = 0
+            Picture_Box_1.Width = Me.ClientSize.Width
+            Picture_Box_1.Height = Me.ClientSize.Height - pic_Top
+        End If
 
         Picture_Box_2.Size = Picture_Box_1.Size
         Picture_Box_2.Location = Picture_Box_1.Location
-
 
         Web_Browser.Size = Picture_Box_1.Size
         Web_Browser.Location = Picture_Box_1.Location
@@ -3521,121 +3619,177 @@ Public Class Main_Form
         btn_Move_Table.Visible = False
 
         cmbox_Sort.Visible = False
-        Dim the_Font_For_Fullscreen = New Font("Arial", 6, FontStyle.Regular)
 
-        With chkbox_Top_Most
-            .Top = top_first_line - 4
-            .Left = left_first_column - 4
-            .Width = the_Width_For_buttons * 2
-            .Height = btn_Select_Folder.Height
-            .Font = the_Font_For_Fullscreen
-            .Visible = True
-        End With
-        With btn_choose_file
-            .Top = chkbox_Top_Most.Left + chkbox_Top_Most.Width + 2
-            .Width = the_Width_For_buttons * 2
-            .Height = the_Height_For_buttons
-            .Font = the_Font_For_Fullscreen
-            .Visible = True
-        End With
-        With btn_Select_Folder
-            .Top = top_first_line
-            .Left = btn_choose_file.Left + btn_choose_file.Width + 2
-            .Width = the_Width_For_buttons * 2
-            .Height = the_Height_For_buttons
-            .Font = the_Font_For_Fullscreen
-            .Visible = True
-        End With
-        With btn_Review
-            .Top = top_first_line
-            .Left = btn_Select_Folder.Left + btn_Select_Folder.Width + 10
-            .Width = the_Width_For_buttons * 2
-            .Height = the_Height_For_buttons
-            .Font = the_Font_For_Fullscreen
-            .Visible = True
-        End With
-        With btn_Panel
-            .Top = top_first_line
-            .Left = btn_Review.Left + btn_Review.Width + 20
-            .Width = the_Width_For_buttons * 2
-            .Height = the_Height_For_buttons
-            .Font = the_Font_For_Fullscreen
-            .Visible = True
-        End With
-        With btn_Prev_File
-            .Top = top_first_line
-            .Left = btn_Panel.Left + btn_Panel.Width + 20
-            .Width = the_Width_For_buttons * 2
-            .Height = the_Height_For_buttons
-            .Font = the_Font_For_Fullscreen
-            .Visible = True
-        End With
-        With btn_Next_File
-            .Top = top_first_line
-            .Left = btn_Prev_File.Left + btn_Prev_File.Width + 2
-            .Width = the_Width_For_buttons * 3
-            .Height = the_Height_For_buttons
-            .Font = the_Font_For_Fullscreen
-            .Visible = True
-        End With
-        With btn_Next_Random
-            .Top = top_first_line
-            .Left = btn_Next_File.Left + btn_Next_File.Width + 2
-            .Width = the_Width_For_buttons * 2
-            .Height = the_Height_For_buttons
-            .Font = the_Font_For_Fullscreen
-            .Visible = True
-        End With
-        With btn_Random_Slideshow
-            .Top = top_first_line
-            .Left = btn_Next_Random.Left + btn_Next_Random.Width + 20
-            .Width = the_Width_For_buttons * 2
-            .Height = the_Height_For_buttons
-            .Font = the_Font_For_Fullscreen
-            .Visible = True
-        End With
-        With btn_Slideshow
-            .Top = top_first_line
-            .Left = btn_Random_Slideshow.Left + btn_Random_Slideshow.Width + 2
-            .Width = the_Width_For_buttons * 2
-            .Height = the_Height_For_buttons
-            .Font = the_Font_For_Fullscreen
-            .Visible = True
-        End With
-        With lbl_Zoom
-            .Top = top_first_line
-            .Left = btn_Slideshow.Left + btn_Slideshow.Width + 2
-            .Width = the_Width_For_buttons
-            .Height = the_Height_For_buttons
-            .Font = the_Font_For_Fullscreen
-            .Visible = True
-        End With
-        With btn_Rename
-            .Top = lbl_Status.Top + lbl_Status.Height + 30
-            .Left = left_first_column
-            .Width = the_Width_For_buttons * 2
-            .Height = the_Height_For_buttons
-            .Font = the_Font_For_Fullscreen
-            .Visible = True
-        End With
-        With bt_Delete
-            .Top = btn_Rename.Top + btn_Rename.Height + 30
-            .Left = 0
-            .Width = the_Width_For_buttons * 3
-            .Height = the_Height_For_buttons
-            .Font = the_Font_For_Fullscreen
-            .Visible = True
-        End With
+        If is_Super_Full_Screen_Mode Then
+            chkbox_Top_Most.Visible = False
+            btn_choose_file.Visible = False
+            btn_Select_Folder.Visible = False
+            btn_Review.Visible = False
+            btn_Panel.Visible = False
+            btn_Prev_File.Visible = False
+            btn_Next_File.Visible = False
+            btn_Next_Random.Visible = False
+            btn_Random_Slideshow.Visible = False
+            btn_Slideshow.Visible = False
+            lbl_Zoom.Visible = False
+            btn_Rename.Visible = False
+            bt_Delete.Visible = False
+            lbl_Current_File.Visible = False
+            btn_Full_Screen.Visible = False
+            btn_RecentFiles.Visible = False
+            cmbox_Media_Folder.Visible = False
+            lbl_File_Number.Visible = False
+            lbl_Status.Visible = False
+            lbl_Slideshow_Time.Visible = False
+
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1912: super fullscreen - all controls hidden, picture at 0,0")
+
+        Else
+            lbl_Status.Visible = True
+            Dim the_Font_For_Fullscreen = New Font("Arial", 6, FontStyle.Regular)
+
+            With chkbox_Top_Most
+                .Top = top_first_line - 4
+                .Left = left_first_column - 4
+                .Width = the_Width_For_buttons * 2
+                .Height = btn_Select_Folder.Height
+                .Font = the_Font_For_Fullscreen
+                .Visible = True
+            End With
+            With btn_choose_file
+                .Top = top_first_line
+                .Left = chkbox_Top_Most.Left + chkbox_Top_Most.Width + 2
+                .Width = the_Width_For_buttons * 2
+                .Height = the_Height_For_buttons
+                .Font = the_Font_For_Fullscreen
+                .Visible = True
+            End With
+            With btn_Select_Folder
+                .Top = top_first_line
+                .Left = btn_choose_file.Left + btn_choose_file.Width + 2
+                .Width = the_Width_For_buttons * 2
+                .Height = the_Height_For_buttons
+                .Font = the_Font_For_Fullscreen
+                .Visible = True
+            End With
+            With btn_Review
+                .Top = top_first_line
+                .Left = btn_Select_Folder.Left + btn_Select_Folder.Width + 10
+                .Width = the_Width_For_buttons * 2
+                .Height = the_Height_For_buttons
+                .Font = the_Font_For_Fullscreen
+                .Visible = True
+            End With
+            With btn_Panel
+                .Top = top_first_line
+                .Left = btn_Review.Left + btn_Review.Width + 20
+                .Width = the_Width_For_buttons * 2
+                .Height = the_Height_For_buttons
+                .Font = the_Font_For_Fullscreen
+                .Visible = True
+            End With
+            With btn_Prev_File
+                .Top = top_first_line
+                .Left = btn_Panel.Left + btn_Panel.Width + 20
+                .Width = the_Width_For_buttons * 2
+                .Height = the_Height_For_buttons
+                .Font = the_Font_For_Fullscreen
+                .Visible = True
+            End With
+            With btn_Next_File
+                .Top = top_first_line
+                .Left = btn_Prev_File.Left + btn_Prev_File.Width + 2
+                .Width = the_Width_For_buttons * 3
+                .Height = the_Height_For_buttons
+                .Font = the_Font_For_Fullscreen
+                .Visible = True
+            End With
+            With btn_Next_Random
+                .Top = top_first_line
+                .Left = btn_Next_File.Left + btn_Next_File.Width + 2
+                .Width = the_Width_For_buttons * 2
+                .Height = the_Height_For_buttons
+                .Font = the_Font_For_Fullscreen
+                .Visible = True
+            End With
+            With btn_Random_Slideshow
+                .Top = top_first_line
+                .Left = btn_Next_Random.Left + btn_Next_Random.Width + 20
+                .Width = the_Width_For_buttons * 2
+                .Height = the_Height_For_buttons
+                .Font = the_Font_For_Fullscreen
+                .Visible = True
+            End With
+            With btn_Slideshow
+                .Top = top_first_line
+                .Left = btn_Random_Slideshow.Left + btn_Random_Slideshow.Width + 2
+                .Width = the_Width_For_buttons * 2
+                .Height = the_Height_For_buttons
+                .Font = the_Font_For_Fullscreen
+                .Visible = True
+            End With
+            With lbl_Zoom
+                .Top = top_first_line
+                .Left = btn_Slideshow.Left + btn_Slideshow.Width + 2
+                .Width = the_Width_For_buttons
+                .Height = the_Height_For_buttons
+                .Font = the_Font_For_Fullscreen
+                .Visible = True
+            End With
+            With btn_Rename
+                .Top = lbl_Status.Top + the_Height_For_buttons + 4
+                .Left = left_first_column
+                .Width = the_Width_For_buttons * 2
+                .Height = the_Height_For_buttons
+                .Font = the_Font_For_Fullscreen
+                .Visible = True
+            End With
+            With bt_Delete
+                .Top = btn_Rename.Top + the_Height_For_buttons + 4
+                .Left = 0
+                .Width = the_Width_For_buttons * 3
+                .Height = the_Height_For_buttons
+                .Font = the_Font_For_Fullscreen
+                .Visible = True
+            End With
+        End If
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1910: buttons resaized to full screeen")
     End Sub
 
     Private Sub Buttons_to_normal()
+        Me.Focus()
 
         Dim top_offset_normal = lbl_Status.Top + lbl_Status.Height
+        is_Super_Full_Screen_Mode = False
 
+        lbl_Status.Visible = True
         lbl_Folder.Visible = True
         btn_Move_Table.Visible = True
+
+        If Not is_Super_Full_Screen_Mode Then
+            chkbox_Top_Most.Visible = True
+            btn_choose_file.Visible = True
+            btn_Select_Folder.Visible = True
+            btn_Review.Visible = True
+            btn_Panel.Visible = True
+            btn_Prev_File.Visible = True
+            btn_Next_File.Visible = True
+            btn_Next_Random.Visible = True
+            btn_Random_Slideshow.Visible = True
+            btn_Slideshow.Visible = True
+            lbl_Zoom.Visible = True
+            btn_Rename.Visible = True
+            bt_Delete.Visible = True
+
+            lbl_Current_File.Visible = True
+            btn_Full_Screen.Visible = True
+            btn_RecentFiles.Visible = True
+            cmbox_Media_Folder.Visible = True
+            btn_Full_Screen.Visible = True
+            lbl_File_Number.Visible = True
+
+        End If
 
         If Not Picture_Box_1.Top = top_offset_normal OrElse
             Not Picture_Box_1.Width = Me.Width OrElse
