@@ -101,7 +101,6 @@ Public Class Main_Form
     ' Remove this line (line 84):
     ' Private pending_Single_Click_Timer As New System.Windows.Forms.Timer()
 
-    ' Keep these lines:
     Private pending_Single_Click_Event As MouseEventArgs = Nothing
     Private WithEvents pending_Single_Click_Timer As New System.Windows.Forms.Timer()
     Private is_Programmatic_Resize As Boolean = False
