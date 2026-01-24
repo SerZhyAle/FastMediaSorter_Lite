@@ -10,6 +10,20 @@ FastMediaSorter LITE is a Windows Forms application for quickly sorting, viewing
 - Customizable keyboard shortcuts for efficient workflow
 - Multi-language support (English/Russian)
 
+## Mobile Version 📱
+
+Looking for a mobile solution? Check out **FastMediaSorter v2** - a powerful Android application with support for local files, network drives (SMB, SFTP, FTP), and cloud storage (Google Drive, OneDrive, Dropbox):
+
+🔗 **[FastMediaSorter v2 for Android](https://github.com/SerZhyAle/FastMediaSorter_mob_v2)**
+
+Features include:
+- Unified interface for all file sources (local, network, cloud)
+- Built-in media player and EPUB e-book reader
+- Image editing (rotate, flip, filters, adjustments)
+- Auto-translation with OCR support
+- Favorites system and PIN protection
+- Advanced gestures and keyboard navigation
+
 ## Usage
 
 1. Select a folder containing your media files.
