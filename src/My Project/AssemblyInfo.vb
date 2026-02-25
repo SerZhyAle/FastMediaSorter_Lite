@@ -28,10 +28,7 @@ Imports System.Runtime.InteropServices
 '      Номер построения
 '      Редакция
 '
-' Можно задать все значения или принять номер построения и номер редакции по умолчанию, 
-' используя "*", как показано ниже:
-' <Assembly: AssemblyVersion("1.0.*")> 
+' Версия теперь генерируется автоматически в формате YY.M.D.HHmm
+' и определяется в файле проекта FastMediaSorter.vbproj
 
-<Assembly: AssemblyVersion("25.09.04")>
-<Assembly: AssemblyFileVersion("25.08.14")>
 <Assembly: NeutralResourcesLanguage("EN")>

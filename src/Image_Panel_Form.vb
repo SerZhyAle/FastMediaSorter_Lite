@@ -377,6 +377,9 @@ Public Class Image_Panel_Form
 
     Private Sub InitializeState()
         ClearSelection()
+        For Each pb As PictureBox In imagePanel.Controls.OfType(Of PictureBox)()
+            pb.Image?.Dispose()
+        Next
         imagePanel.Controls.Clear()
         allImageFiles.Clear()
         currently_Loaded_Index = 0

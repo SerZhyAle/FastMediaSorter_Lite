@@ -17,6 +17,13 @@
     <TargetFrameworkProfile />
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <VersionYear>$([System.DateTime]::Now.ToString("yy"))</VersionYear>
+    <VersionMonth>$([System.DateTime]::Now.Month)</VersionMonth>
+    <VersionDay>$([System.DateTime]::Now.Day)</VersionDay>
+    <VersionHourMinute>$([System.DateTime]::Now.ToString("HHmm"))</VersionHourMinute>
+    <Version>$(VersionYear).$(VersionMonth).$(VersionDay).$(VersionHourMinute)</Version>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
     <PublishUrl>FastMediaSorter\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -29,7 +36,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>25.09.04.%2a</ApplicationVersion>
+    <ApplicationVersion>$(Version)</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
@@ -138,6 +145,7 @@
     </Compile>
     <Compile Include="Common_Module.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
+    <Compile Include="My Project\VersionInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>
       <DependentUpon>Application.myapp</DependentUpon>
@@ -213,6 +221,17 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Microsoft.Web.WebView2.1.0.3240.44\build\Microsoft.Web.WebView2.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Web.WebView2.1.0.3240.44\build\Microsoft.Web.WebView2.targets'))" />
     <Error Condition="!Exists('..\packages\ILMerge.3.0.41\build\ILMerge.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ILMerge.3.0.41\build\ILMerge.props'))" />
+  </Target>
+  <Target Name="UpdateVersion" BeforeTargets="BeforeCompile">
+    <PropertyGroup>
+      <VersionYear>$([System.DateTime]::Now.ToString("yy"))</VersionYear>
+      <VersionMonth>$([System.DateTime]::Now.Month)</VersionMonth>
+      <VersionDay>$([System.DateTime]::Now.Day)</VersionDay>
+      <VersionHourMinute>$([System.DateTime]::Now.ToString("HHmm"))</VersionHourMinute>
+      <AutoVersion>$(VersionYear).$(VersionMonth).$(VersionDay).$(VersionHourMinute)</AutoVersion>
+    </PropertyGroup>
+    <Message Text="Auto-generating version: $(AutoVersion)" Importance="high" />
+    <WriteLinesToFile File="$(ProjectDir)My Project\VersionInfo.vb" Lines="' Auto-generated version file - DO NOT EDIT MANUALLY%0D%0A' Generated at build time in format YY.M.D.HHmm%0D%0AImports System.Reflection%0D%0A%0D%0A&lt;Assembly: AssemblyVersion(&quot;$(AutoVersion)&quot;)&gt;%0D%0A&lt;Assembly: AssemblyFileVersion(&quot;$(AutoVersion)&quot;)&gt;" Overwrite="true" Encoding="utf-8" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -2065,6 +2065,8 @@ Public Class Main_Form
                                          End If
                                      End Sub
 
+        AddHandler menu.Closed, Sub(s, args) DirectCast(s, ContextMenuStrip).Dispose()
+
         menu.Show(btn_RecentFiles, New Point(0, btn_RecentFiles.Height))
     End Sub
 
@@ -2321,15 +2323,15 @@ Public Class Main_Form
 
                 'Try
 
-                Dim bitmap_proportion = bW / bH
-                Dim pictureBox_proportion = w / h
+                Dim bitmap_proportion = (bW + 1.0) / (bH + 1.0)
+                Dim pictureBox_proportion = (w + 1.0) / (h + 1.0)
 
 
                 If Not Math.Round(bitmap_proportion, 2) = Math.Round(pictureBox_proportion, 2) Then
 
 
-                    Dim proportionalScale_H = h / bH
-                    Dim proportionalScale_W = w / bW
+                    Dim proportionalScale_H = (h + 1.0) / (bH + 1.0)
+                    Dim proportionalScale_W = (w + 1.0) / (bW + 1.0)
                     Dim Perspective_Bitmap As New Bitmap(w + 1, h + 1)
 
                     Dim brush_wide = 1
@@ -2349,7 +2351,7 @@ Public Class Main_Form
                     If bitmap_proportion < pictureBox_proportion Then
                         'left
                         For y As Integer = 0 To h Step step_size_while_color_Search
-                            list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
+                            list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH)))
                             color_Sample_Count += 1
                         Next
 
@@ -2385,7 +2387,7 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For y As Integer = 0 To h Step brush_wide
-                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(y / proportionalScale_H), bH)))
+                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH)))
                                 Next
 
                                 middle_point = CInt(w / 2)
@@ -2409,7 +2411,7 @@ Public Class Main_Form
 
                         'right
                         For y As Integer = 0 To h Step step_size_while_color_Search
-                            list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
+                            list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH)))
                             color_Sample_Count += 1
                         Next
 
@@ -2445,7 +2447,7 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For y As Integer = 0 To h Step brush_wide
-                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(y / proportionalScale_H), bH)))
+                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH)))
                                 Next
 
                                 middle_point = CInt(w / 2)
@@ -2468,7 +2470,7 @@ Public Class Main_Form
                     Else
                         'top
                         For x As Integer = 0 To w Step step_size_while_color_Search
-                            list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
+                            list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), 0))
                             color_Sample_Count += 1
                         Next
 
@@ -2504,7 +2506,7 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For x As Integer = 0 To w Step brush_wide
-                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), 0))
+                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), 0))
                                 Next
 
                                 middle_point = CInt(h / 2)
@@ -2528,7 +2530,7 @@ Public Class Main_Form
 
                         'buttom
                         For x As Integer = 0 To w Step step_size_while_color_Search
-                            list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
+                            list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), bH))
                             color_Sample_Count += 1
                         Next
 
@@ -2564,7 +2566,7 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For x As Integer = 0 To w Step brush_wide
-                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(x / proportionalScale_W), bW), bH))
+                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), bH))
                                 Next
 
                                 middle_point = CInt(h / 2)
@@ -2587,10 +2589,14 @@ Public Class Main_Form
 
                     If is_perspective_drown Then
                         If active_PictureBox_Index = 1 Then
+                            Picture_Box_1.BackgroundImage?.Dispose()
                             Picture_Box_1.BackgroundImage = Perspective_Bitmap
                         ElseIf active_PictureBox_Index = 2 Then
+                            Picture_Box_2.BackgroundImage?.Dispose()
                             Picture_Box_2.BackgroundImage = Perspective_Bitmap
                         End If
+                    Else
+                        Perspective_Bitmap.Dispose()
                     End If
                 End If
                 ' Catch ex As Exception
@@ -2603,12 +2609,16 @@ Public Class Main_Form
                         If active_PictureBox_Index = 1 AndAlso
                                 Picture_Box_1.BackgroundImage IsNot Nothing Then
 
+                            Dim oldBg1 As Image = Picture_Box_1.BackgroundImage
                             Picture_Box_1.BackgroundImage = Nothing
+                            oldBg1.Dispose()
 
                         ElseIf active_PictureBox_Index = 2 AndAlso
                                 Picture_Box_2.BackgroundImage IsNot Nothing Then
 
+                            Dim oldBg2 As Image = Picture_Box_2.BackgroundImage
                             Picture_Box_2.BackgroundImage = Nothing
+                            oldBg2.Dispose()
                         End If
                     End If
                 Catch ex As Exception
@@ -2849,34 +2859,34 @@ Public Class Main_Form
                 Dim available_Width = Me.Width
                 Dim available_Height = Me.Height - top_first_row
 
-                    ' Set to original image dimensions
-                    Dim new_Width As Integer = active_Image.Width
-                    Dim new_Height As Integer = active_Image.Height
+                ' Set to original image dimensions
+                Dim new_Width As Integer = active_Image.Width
+                Dim new_Height As Integer = active_Image.Height
 
-                    ' Center the image in the available space
-                    Dim new_Left As Integer = (available_Width - new_Width) \ 2
-                    Dim new_Top As Integer = top_first_row + (available_Height - new_Height) \ 2
+                ' Center the image in the available space
+                Dim new_Left As Integer = (available_Width - new_Width) \ 2
+                Dim new_Top As Integer = top_first_row + (available_Height - new_Height) \ 2
 
-                    ' Ensure the image is not positioned off-screen
-                    new_Left = Math.Max(new_Left, -new_Width + 100) ' Allow some off-screen but keep 100px visible
-                    new_Top = Math.Max(new_Top, top_first_row)
+                ' Ensure the image is not positioned off-screen
+                new_Left = Math.Max(new_Left, -new_Width + 100) ' Allow some off-screen but keep 100px visible
+                new_Top = Math.Max(new_Top, top_first_row)
 
-                    Picture_Box_1.Width = new_Width
-                    Picture_Box_1.Height = new_Height
-                    Picture_Box_1.Left = new_Left
-                    Picture_Box_1.Top = new_Top
+                Picture_Box_1.Width = new_Width
+                Picture_Box_1.Height = new_Height
+                Picture_Box_1.Left = new_Left
+                Picture_Box_1.Top = new_Top
 
-                    Picture_Box_2.Size = Picture_Box_1.Size
-                    Picture_Box_2.Location = Picture_Box_1.Location
+                Picture_Box_2.Size = Picture_Box_1.Size
+                Picture_Box_2.Location = Picture_Box_1.Location
 
-                    ' Set zoom_Scale to 0 as flag for 1:1 mode
-                    zoom_Scale = 0.0F
-                    lbl_Zoom.Text = "1:1"
+                ' Set zoom_Scale to 0 as flag for 1:1 mode
+                zoom_Scale = 0.0F
+                lbl_Zoom.Text = "1:1"
 
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1175: 1:1 resolution set: " & new_Width.ToString & "x" & new_Height.ToString & " at " & new_Left.ToString & "," & new_Top.ToString)
-                End If
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1175: 1:1 resolution set: " & new_Width.ToString & "x" & new_Height.ToString & " at " & new_Left.ToString & "," & new_Top.ToString)
+            End If
 
-            ElseIf e.Delta <> 0 AndAlso (is_PictureBox1_Visible OrElse is_PictureBox2_Visible) AndAlso (Control.ModifierKeys And Keys.Control) = Keys.Control Then
+        ElseIf e.Delta <> 0 AndAlso (is_PictureBox1_Visible OrElse is_PictureBox2_Visible) AndAlso (Control.ModifierKeys And Keys.Control) = Keys.Control Then
             Dim zoom_Scale_Factor As Single = If(e.Delta > 0, 1.1F, 0.9F)
 
             Dim old_Width As Integer = Picture_Box_1.Width
@@ -3014,7 +3024,11 @@ Public Class Main_Form
         End If
 
         If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
+        If Picture_Box_1.BackgroundImage IsNot Nothing Then Picture_Box_1.BackgroundImage?.Dispose()
         If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
+        If Picture_Box_2.BackgroundImage IsNot Nothing Then Picture_Box_2.BackgroundImage?.Dispose()
+        If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
+        If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1230: form is closed")
     End Sub
@@ -4360,10 +4374,6 @@ Public Class Main_Form
     End Sub
 
     Private Sub Main_Form_Deactivate(sender As Object, e As EventArgs) Handles Me.Deactivate
-        If toolTip IsNot Nothing Then
-            toolTip.Dispose()
-            toolTip = Nothing
-        End If
     End Sub
 
     Private Sub btn_choose_file_Click(sender As Object, e As EventArgs) Handles btn_choose_file.Click
