@@ -40,6 +40,7 @@ Public Class Table_Form
         toolTip.SetToolTip(chkb_show_pic_size, If(Is_Russian_Language, "Показывать размеры изображения (ширина x высота).", "Show the dimensions (width x height) of the image."))
         toolTip.SetToolTip(chkb_is_to_show_file_datetime, If(Is_Russian_Language, "Показывать дату и время последнего изменения файла.", "Show the last modified date and time of the file."))
         toolTip.SetToolTip(chkb_show_file_size, If(Is_Russian_Language, "Показывать размер файла.", "Show the size of the file."))
+        toolTip.SetToolTip(chkb_video_loop, If(Is_Russian_Language, "Демонстрировать видео зациклено.", "Loop video playback."))
         toolTip.SetToolTip(chkb_no_request_before_file_operation, If(Is_Russian_Language, "Если отмечено, приложение не будет запрашивать подтверждение перед операциями с файлами.", "If checked, the application will not ask for confirmation before file operations."))
         toolTip.SetToolTip(cmb_Picture_Size, If(Is_Russian_Language, "Выберите размер карточки для формы панели изображений", "Choose the size of the card for the image panel"))
 
@@ -128,6 +129,7 @@ Public Class Table_Form
         chkb_show_pic_size.Checked = Main_Form.Is_to_show_picture_sizes
         chkb_is_to_show_file_datetime.Checked = Main_Form.Is_to_show_file_datetime
         chkb_show_file_size.Checked = Main_Form.Is_to_show_file_sizes
+        chkb_video_loop.Checked = Is_Video_Loop
         chkb_no_request_before_file_operation.Checked = Is_no_request_before_file_operation
 
         chb_perspectiva.Text = If(Is_Russian_Language, "Перспектива", "Perspective")
@@ -157,8 +159,10 @@ Public Class Table_Form
             lbl_Color.Text = "Цвет фона:"
             chkb_show_pic_size.Text = "Показывать размер изображений"
             chkb_show_file_size.Text = "Показывать размер файлов"
+            chkb_video_loop.Text = "Демонстрировать видео зациклено"
             chkb_is_to_show_file_datetime.Text = "Показывать дату и время файла"
             chkb_no_request_before_file_operation.Text = "Не запрашивать подтверждение перед операцией с файлом"
+            btn_Set_As_Default.Text = "Зарегистрировать как программу просмотра изображений по умолчанию"
         Else
             Me.Text = "Table of dest folder for moving/copy"
             Data_Grid_View.Columns(0).HeaderText = "KEY"
@@ -170,8 +174,10 @@ Public Class Table_Form
             lbl_Color.Text = "Background color:"
             chkb_show_pic_size.Text = "Show picture sizes"
             chkb_show_file_size.Text = "Show file sizes"
+            chkb_video_loop.Text = "Loop video playback"
             chkb_is_to_show_file_datetime.Text = "Show file datetime"
             chkb_no_request_before_file_operation.Text = "No request before file operation"
+            btn_Set_As_Default.Text = "Register as default image viewer"
         End If
 
         Dim SetOnTopS As String = GetSetting(App_name, Second_App_Name, "SetOnTop", "1")
@@ -180,6 +186,7 @@ Public Class Table_Form
         chb_perspectiva.Checked = Is_Pespective
 
         TopOrNot()
+        LinkLabel1.Text = Application.ProductVersion & " sza@ukr.net"
     End Sub
 
     Private Sub DataGridView1_CellMouseDoubleClick(sender As Object, e As DataGridViewCellMouseEventArgs) Handles Data_Grid_View.CellMouseDoubleClick
@@ -267,6 +274,10 @@ Public Class Table_Form
         Main_Form.Is_to_show_file_sizes = chkb_show_file_size.Checked
     End Sub
 
+    Private Sub Chkb_video_loop_CheckedChanged(sender As Object, e As EventArgs) Handles chkb_video_loop.CheckedChanged
+        Is_Video_Loop = chkb_video_loop.Checked
+    End Sub
+
     Private Sub Chkb_no_request_before_file_operation_CheckedChanged(sender As Object, e As EventArgs) Handles chkb_no_request_before_file_operation.CheckedChanged
         Is_no_request_before_file_operation = chkb_no_request_before_file_operation.Checked
     End Sub
@@ -295,5 +306,13 @@ Public Class Table_Form
         PrepareForDisplay()
         InitializeTooltips()
 
+    End Sub
+
+    Private Sub Btn_Set_As_Default_Click(sender As Object, e As EventArgs) Handles btn_Set_As_Default.Click
+        Main_Form.AssociateAllImageFormatsWithThisApp()
+    End Sub
+
+    Private Sub LinkLabel1_LinkClicked(sender As Object, e As System.Windows.Forms.LinkLabelLinkClickedEventArgs) Handles LinkLabel1.LinkClicked
+        System.Diagnostics.Process.Start("mailto:sza@ukr.net?subject=FastMediaSorter for Win:")
     End Sub
 End Class

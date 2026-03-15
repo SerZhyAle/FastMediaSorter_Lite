@@ -80,6 +80,7 @@ Public Class Main_Form
     Private Image_Panel_Form As Image_Panel_Form
     Private toolTip As ToolTip
     Private zoom_Scale As Single = 1.0F
+    Private smoothIndex As Double = 0.0006
 
     ' Add these missing variable declarations near the top of the class:
     'Private Current_File_Name As String = ""
@@ -204,6 +205,10 @@ Public Class Main_Form
     Private WithEvents ResizeDebounceTimer As New System.Windows.Forms.Timer()
     Private is_Last_Full_Screen_State As Boolean = False
 
+    Private WithEvents gif_Restart_Timer As New System.Windows.Forms.Timer()
+    Private gif_Total_Duration_Ms As Integer = 0
+    Private gif_Restart_Image_Ref As Image = Nothing
+
     <DllImport("user32.dll")>
     Private Shared Function ShowWindow(hWnd As IntPtr, nCmdShow As Integer) As Boolean
     End Function
@@ -255,6 +260,10 @@ Public Class Main_Form
     <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode)>
     Public Shared Function StrCmpLogicalW(psz1 As String, psz2 As String) As Integer
     End Function
+
+    <DllImport("shell32.dll")>
+    Private Shared Sub SHChangeNotify(wEventId As Integer, uFlags As Integer, dwItem1 As IntPtr, dwItem2 As IntPtr)
+    End Sub
 
     Public Class NaturalFilenameComparer
         Implements IComparer(Of String)
@@ -1311,6 +1320,7 @@ Public Class Main_Form
 
     Private Sub LoadVideoInWebBrowser(video_File_Path As String)
         Try
+            StopGifLoopPlayback()
             is_WebBrowser_Visible = False
             is_PictureBox1_Visible = False
             is_PictureBox2_Visible = False
@@ -1318,7 +1328,9 @@ Public Class Main_Form
             Dim video_File_As_Uri As New Uri(video_File_Path)
             Dim video_File_Absolute_Uri As String = video_File_As_Uri.AbsoluteUri
 
-            Dim video_Html_Content As String = "<video id='videoPlayer' controls autoplay style='width:100%;height:calc(100% - " & height_For_instruments_on_WebPanel & "px);object-fit:fill;'>" &
+            Dim loop_Attribute As String = If(Is_Video_Loop, " loop", "")
+
+            Dim video_Html_Content As String = "<video id='videoPlayer' controls autoplay" & loop_Attribute & " style='width:100%;height:calc(100% - " & height_For_instruments_on_WebPanel & "px);object-fit:fill;'>" &
                             "<source src='" & video_File_Absolute_Uri & "'>" &
                             "<track kind='captions' default>" &
                             "<p style='color: " &
@@ -1402,6 +1414,7 @@ Public Class Main_Form
                     is_PictureBox2_Visible = True
                     UpdateControlVisibility() ' Update visibility immediately
                     is_PictureBox1_Visible = False
+                    StartGifLoopPlayback(Picture_Box_2.Image)
 
                     bgWorker_Result = "USED P2"
                     is_Second_PictureBox_Active = True
@@ -1411,6 +1424,7 @@ Public Class Main_Form
                     is_PictureBox1_Visible = True
                     UpdateControlVisibility() ' Update visibility immediately
                     is_PictureBox2_Visible = False
+                    StartGifLoopPlayback(Picture_Box_1.Image)
 
                     bgWorker_Result = "USED P1"
                     is_Second_PictureBox_Active = False
@@ -1453,6 +1467,7 @@ Public Class Main_Form
                             If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
                             Picture_Box_2.Image = loaded_Image
                             pictureBox2_Stream = loaded_Image_Stream
+                            StartGifLoopPlayback(Picture_Box_2.Image)
 
                             ' Now update visibility - show P2 first, then hide P1
                             is_PictureBox2_Visible = True
@@ -1466,6 +1481,7 @@ Public Class Main_Form
                             If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
                             Picture_Box_1.Image = loaded_Image
                             pictureBox1_Stream = loaded_Image_Stream
+                            StartGifLoopPlayback(Picture_Box_1.Image)
 
                             ' Now update visibility - show P1 first, then hide P2
                             is_PictureBox1_Visible = True
@@ -1888,6 +1904,7 @@ Public Class Main_Form
             End Try
 
         Else
+            StopGifLoopPlayback()
             If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
             If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
             current_Loaded_File_Name = ""
@@ -2065,7 +2082,10 @@ Public Class Main_Form
                                          End If
                                      End Sub
 
-        AddHandler menu.Closed, Sub(s, args) DirectCast(s, ContextMenuStrip).Dispose()
+        AddHandler menu.Closed, Sub(s, args)
+                                    Dim m = DirectCast(s, ContextMenuStrip)
+                                    Me.BeginInvoke(New Action(Sub() m.Dispose()))
+                                End Sub
 
         menu.Show(btn_RecentFiles, New Point(0, btn_RecentFiles.Height))
     End Sub
@@ -2103,6 +2123,7 @@ Public Class Main_Form
         Is_to_show_picture_sizes = GetSetting(App_name, Second_App_Name, "ShowPictureSizes", "1") = "1"
         Is_to_show_file_sizes = GetSetting(App_name, Second_App_Name, "ShowFileSizes", "1") = "1"
         Is_to_show_file_datetime = GetSetting(App_name, Second_App_Name, "ShowFileDates", "1") = "1"
+        Is_Video_Loop = GetSetting(App_name, Second_App_Name, "IsVideoLoop", "0") = "1"
 
         Dim sort_Direction_Index = 0
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "SortDir", "0"), sort_Direction_Index)
@@ -2115,6 +2136,7 @@ Public Class Main_Form
 
         btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
         LngCh()
+        lbl_Info.Text = Application.ProductVersion & " sza@ukr.net"
         Table_Form.LngCh()
 
         lbl_Help_Info.Visible = GetSetting(App_name, Second_App_Name, "FirstRun", "1") = "1"
@@ -2282,6 +2304,24 @@ Public Class Main_Form
 
     End Function
 
+    Private Function SmoothColorList(colors As List(Of Color), radius As Integer) As List(Of Color)
+        If radius < 1 OrElse colors.Count < 3 Then Return colors
+        Dim result As New List(Of Color)(colors.Count)
+        For i As Integer = 0 To colors.Count - 1
+            Dim r_sum As Integer = 0, g_sum As Integer = 0, b_sum As Integer = 0
+            Dim j_start As Integer = Math.Max(0, i - radius)
+            Dim j_end As Integer = Math.Min(colors.Count - 1, i + radius)
+            For j As Integer = j_start To j_end
+                r_sum += colors(j).R
+                g_sum += colors(j).G
+                b_sum += colors(j).B
+            Next
+            Dim count As Integer = j_end - j_start + 1
+            result.Add(Color.FromArgb(255, r_sum \ count, g_sum \ count, b_sum \ count))
+        Next
+        Return result
+    End Function
+
     Private Sub Draw_Perspective()
 
         '  Dim sw As New Stopwatch()
@@ -2365,6 +2405,7 @@ Public Class Main_Form
                                 brush_size_line = h + 1
 
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
                                     If color_Sample_Count > 0 Then
                                         Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
                                         Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
@@ -2376,8 +2417,8 @@ Public Class Main_Form
 
                                         is_perspective_drown = True
 
-                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
-                                            g.DrawLine(customPen, begin_point, end_point)
+                                        Using brush As New SolidBrush(Color.FromArgb(255, avgR, avgG, avgB))
+                                            g.FillRectangle(brush, 0, 0, CInt(w / 2), h + 1)
                                         End Using
                                     End If
                                 End Using
@@ -2387,19 +2428,18 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For y As Integer = 0 To h Step brush_wide
-                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH)))
+                                    Dim pxL = active_Bitmap.GetPixel(0, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH))
+                                    list_of_corner_colors.Add(Color.FromArgb(255, pxL.R, pxL.G, pxL.B))
                                 Next
 
+                                list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(h * smoothIndex) + 1)
                                 middle_point = CInt(w / 2)
 
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
                                     For y As Integer = 0 To h Step brush_wide
-
-                                        begin_point = New Point(0, y)
-                                        end_point = New Point(middle_point, y)
-
-                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(y), brush_size_H)
-                                            g.DrawLine(customPen, begin_point, end_point)
+                                        Using brush As New SolidBrush(list_of_corner_colors(y))
+                                            g.FillRectangle(brush, 0, y, middle_point, 1)
                                         End Using
                                     Next
                                 End Using
@@ -2425,6 +2465,7 @@ Public Class Main_Form
                                 brush_size_line = h
 
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
                                     If color_Sample_Count > 0 Then
                                         Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
                                         Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
@@ -2436,8 +2477,8 @@ Public Class Main_Form
 
                                         is_perspective_drown = True
 
-                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
-                                            g.DrawLine(customPen, begin_point, end_point)
+                                        Using brush As New SolidBrush(Color.FromArgb(255, avgR, avgG, avgB))
+                                            g.FillRectangle(brush, CInt(w / 2), 0, w - CInt(w / 2) + 1, h + 1)
                                         End Using
                                     End If
                                 End Using
@@ -2447,19 +2488,18 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For y As Integer = 0 To h Step brush_wide
-                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH)))
+                                    Dim pxR = active_Bitmap.GetPixel(bW, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH))
+                                    list_of_corner_colors.Add(Color.FromArgb(255, pxR.R, pxR.G, pxR.B))
                                 Next
 
+                                list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(h * smoothIndex) + 1)
                                 middle_point = CInt(w / 2)
 
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
                                     For y As Integer = 0 To h Step brush_wide
-
-                                        begin_point = New Point(middle_point, y)
-                                        end_point = New Point(w, y)
-
-                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(y), brush_size_H)
-                                            g.DrawLine(customPen, begin_point, end_point)
+                                        Using brush As New SolidBrush(list_of_corner_colors(y))
+                                            g.FillRectangle(brush, middle_point, y, w - middle_point + 1, 1)
                                         End Using
                                     Next
                                 End Using
@@ -2484,6 +2524,7 @@ Public Class Main_Form
                                 brush_size_line = w
 
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
                                     If color_Sample_Count > 0 Then
                                         Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
                                         Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
@@ -2495,8 +2536,8 @@ Public Class Main_Form
 
                                         is_perspective_drown = True
 
-                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
-                                            g.DrawLine(customPen, begin_point, end_point)
+                                        Using brush As New SolidBrush(Color.FromArgb(255, avgR, avgG, avgB))
+                                            g.FillRectangle(brush, 0, 0, w + 1, CInt(h / 2))
                                         End Using
                                     End If
                                 End Using
@@ -2506,19 +2547,18 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For x As Integer = 0 To w Step brush_wide
-                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), 0))
+                                    Dim pxT = active_Bitmap.GetPixel(Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), 0)
+                                    list_of_corner_colors.Add(Color.FromArgb(255, pxT.R, pxT.G, pxT.B))
                                 Next
 
+                                list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(w * smoothIndex) + 1)
                                 middle_point = CInt(h / 2)
 
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
                                     For x As Integer = 0 To w Step brush_wide
-
-                                        begin_point = New Point(x, middle_point)
-                                        end_point = New Point(x, 0)
-
-                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(x), brush_size_W)
-                                            g.DrawLine(customPen, begin_point, end_point)
+                                        Using brush As New SolidBrush(list_of_corner_colors(x))
+                                            g.FillRectangle(brush, x, 0, 1, middle_point)
                                         End Using
                                     Next
                                 End Using
@@ -2544,6 +2584,7 @@ Public Class Main_Form
                                 brush_size_line = w
 
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
                                     If color_Sample_Count > 0 Then
                                         Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
                                         Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
@@ -2555,8 +2596,8 @@ Public Class Main_Form
 
                                         is_perspective_drown = True
 
-                                        Using customPen As New System.Drawing.Pen(System.Drawing.Color.FromArgb(avgR, avgG, avgB), brush_size_line)
-                                            g.DrawLine(customPen, begin_point, end_point)
+                                        Using brush As New SolidBrush(Color.FromArgb(255, avgR, avgG, avgB))
+                                            g.FillRectangle(brush, 0, CInt(h / 2), w + 1, h - CInt(h / 2) + 1)
                                         End Using
                                     End If
                                 End Using
@@ -2566,19 +2607,18 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For x As Integer = 0 To w Step brush_wide
-                                    list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), bH))
+                                    Dim pxB = active_Bitmap.GetPixel(Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), bH)
+                                    list_of_corner_colors.Add(Color.FromArgb(255, pxB.R, pxB.G, pxB.B))
                                 Next
 
+                                list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(h * smoothIndex) + 1)
                                 middle_point = CInt(h / 2)
 
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
                                     For x As Integer = 0 To w Step brush_wide
-
-                                        begin_point = New Point(x, middle_point)
-                                        end_point = New Point(x, h)
-
-                                        Using customPen As New System.Drawing.Pen(list_of_corner_colors(x), brush_size_W)
-                                            g.DrawLine(customPen, begin_point, end_point)
+                                        Using brush As New SolidBrush(list_of_corner_colors(x))
+                                            g.FillRectangle(brush, x, middle_point, 1, h - middle_point + 1)
                                         End Using
                                     Next
                                 End Using
@@ -2737,21 +2777,22 @@ Public Class Main_Form
             End If
         End If
 
-        ' PRIORITY 2: DOUBLE-CLICK DETECTION (only in fullscreen, for left/middle buttons)
-        If is_Full_Screen_Mode AndAlso (e.Button = MouseButtons.Left OrElse e.Button = MouseButtons.Middle) Then
+        ' PRIORITY 2: DOUBLE-CLICK DETECTION (always active for left/middle buttons)
+        If e.Button = MouseButtons.Left OrElse e.Button = MouseButtons.Middle Then
             Dim current_Click_Time As DateTime = DateTime.Now
             Dim time_Since_Last_Click As Double = (current_Click_Time - last_Media_Area_Click_Time).TotalMilliseconds
 
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1147: Fullscreen click, time since last: " & time_Since_Last_Click.ToString("F0") & "ms (threshold: " & DoubleClickTimeThreshold.ToString() & "ms)")
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1147: Click, time since last: " & time_Since_Last_Click.ToString("F0") & "ms (threshold: " & DoubleClickTimeThreshold.ToString() & "ms)")
 
             If time_Since_Last_Click < DoubleClickTimeThreshold AndAlso time_Since_Last_Click > 0 Then
-                ' DOUBLE-CLICK DETECTED!
+                ' DOUBLE-CLICK DETECTED - toggle fullscreen
                 pending_Single_Click_Timer.Stop()
                 pending_Single_Click_Event = Nothing
 
-                is_Full_Screen_Mode = False
+                is_Full_Screen_Mode = Not is_Full_Screen_Mode
+                If Not is_Full_Screen_Mode Then is_Super_Full_Screen_Mode = False
                 SetViewSizes()
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1150: DOUBLE-CLICK DETECTED - Exiting fullscreen")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1150: DOUBLE-CLICK - fullscreen toggled to: " & is_Full_Screen_Mode.ToString())
 
                 last_Media_Area_Click_Time = DateTime.MinValue
                 last_Media_Area_Click_Button = MouseButtons.None
@@ -2760,29 +2801,18 @@ Public Class Main_Form
                 Return
             End If
 
-            ' Single click - update timestamp
+            ' Single click - store timestamp for double-click detection
             last_Media_Area_Click_Time = current_Click_Time
             last_Media_Area_Click_Button = e.Button
-        ElseIf (e.Button = MouseButtons.Left OrElse e.Button = MouseButtons.Middle) Then
-            ' Reset tracking when not in fullscreen
-            last_Media_Area_Click_Time = DateTime.MinValue
-            last_Media_Area_Click_Button = MouseButtons.None
         End If
 
-        ' PRIORITY 3: DELAY LEFT-CLICK or execute immediately
+        ' PRIORITY 3: DELAY LEFT-CLICK to allow double-click detection
         If e.Button = MouseButtons.Left AndAlso zoom_Scale = 1 Then
-            ' Only delay if we're in fullscreen (to detect double-click)
-            ' OR if we need to detect dragging when zoomed
-            If is_Full_Screen_Mode Then
-                ' Delay to allow double-click detection
-                pending_Single_Click_Timer.Stop()
-                pending_Single_Click_Event = e
-                pending_Single_Click_Timer.Start()
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1148: Left-click delayed for double-click detection")
-            Else
-                ' Not in fullscreen, execute immediately
-                MouseUse(e)
-            End If
+            ' Always delay to allow double-click detection (enter/exit fullscreen)
+            pending_Single_Click_Timer.Stop()
+            pending_Single_Click_Event = e
+            pending_Single_Click_Timer.Start()
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1148: Left-click delayed for double-click detection")
         Else
             ' Right-click, middle-click, or zoomed - execute immediately
             If zoom_Scale = 1 OrElse e.Button <> MouseButtons.Left Then
@@ -2974,6 +3004,7 @@ Public Class Main_Form
             SaveSetting(App_name, Second_App_Name, "ShowPictureSizes", If(Is_to_show_picture_sizes, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "ShowFileSizes", If(Is_to_show_file_sizes, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "ShowFileDates", If(Is_to_show_file_datetime, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "IsVideoLoop", If(Is_Video_Loop, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "NoRequestBeforeFileOperation", If(Is_no_request_before_file_operation, "1", "0"))
 
             SaveSetting(App_name, Second_App_Name, "Picture_Box_Width_At_Panel", Picture_Box_Width_At_Panel.ToString)
@@ -3016,6 +3047,8 @@ Public Class Main_Form
 
         SlideShowStop()
         SlideShowTimer.Dispose()
+        StopGifLoopPlayback()
+        gif_Restart_Timer.Dispose()
         If toolTip IsNot Nothing Then toolTip.Dispose()
 
         If Web_Browser IsNot Nothing Then
@@ -3481,6 +3514,10 @@ Public Class Main_Form
         lbl_Help_Info.Hide()
     End Sub
 
+    Private Sub lbl_Info_LinkClicked(sender As Object, e As System.Windows.Forms.LinkLabelLinkClickedEventArgs) Handles lbl_Info.LinkClicked
+        System.Diagnostics.Process.Start("mailto:sza@ukr.net?subject=FastMediaSorter for Win:")
+    End Sub
+
     Public Sub LngCh()
         If lbl_Status.Text = "status" Then lbl_Status.Text = ""
 
@@ -3653,6 +3690,7 @@ Public Class Main_Form
             cmbox_Media_Folder.Visible = False
             lbl_File_Number.Visible = False
             lbl_Status.Visible = False
+            lbl_Info.Visible = False
             lbl_Slideshow_Time.Visible = False
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1912: super fullscreen - all controls hidden, picture at 0,0")
@@ -3777,6 +3815,7 @@ Public Class Main_Form
         is_Super_Full_Screen_Mode = False
 
         lbl_Status.Visible = True
+        lbl_Info.Visible = True
         lbl_Folder.Visible = True
         btn_Move_Table.Visible = True
 
@@ -3891,15 +3930,22 @@ Public Class Main_Form
             End With
             With btn_Language
                 .Top = top_first_line
-                .Left = btn_Full_Screen.Left + btn_Full_Screen.Width + 20 + the_Width_For_buttons * 4
+                .Left = lbl_Slideshow_Time.Left + lbl_Slideshow_Time.Width + 4
                 .Width = the_Width_For_buttons * 2
                 .Height = the_Height_For_buttons
                 .Font = the_font_for_normal
-                ' .Visible = True
+                .Visible = True
+            End With
+            With lbl_Info
+                .Top = top_first_line
+                .Left = btn_Language.Left + btn_Language.Width + 4
+                .Height = the_Height_For_buttons
+                .Font = the_font_for_normal
+                .Visible = True
             End With
             With lbl_Zoom
                 .Top = top_first_line
-                .Left = btn_Language.Left + btn_Language.Width + 2
+                .Left = lbl_Info.Left + lbl_Info.Width + 2
                 .Width = the_Width_For_buttons
                 .Height = the_Height_For_buttons
                 .Font = the_font_for_normal
@@ -4359,6 +4405,70 @@ Public Class Main_Form
         End If
     End Sub
 
+    Public Sub AssociateAllImageFormatsWithThisApp()
+        Dim all_Image_Extensions() As String = {
+            ".jpg", ".jpeg", ".gif", ".png", ".bmp", ".tiff",
+            ".ico", ".wmf", ".emf", ".exif",
+            ".webp", ".heic", ".avif", ".svg"
+        }
+
+        Dim failed As New List(Of String)
+        Dim exe_Path As String = Application.ExecutablePath
+
+        For Each ext In all_Image_Extensions
+            Try
+                Dim clean As String = ext.TrimStart("."c)
+                Dim prog_Id As String = "FastMediaSorter." & clean
+                Dim description As String = clean.ToUpper() & " Image - FastMediaSorter"
+
+                ' HKCU\Software\Classes — не требует прав администратора, работает для текущего пользователя
+                Using classes_Key = Registry.CurrentUser.OpenSubKey("Software\Classes", True)
+                    Using prog_Key = classes_Key.CreateSubKey(prog_Id)
+                        prog_Key.SetValue("", description)
+                        Using shell_Key = prog_Key.CreateSubKey("shell\open\command")
+                            shell_Key.SetValue("", """" & exe_Path & """ ""%1""")
+                        End Using
+                        Using icon_Key = prog_Key.CreateSubKey("DefaultIcon")
+                            icon_Key.SetValue("", """" & exe_Path & """,0")
+                        End Using
+                    End Using
+                    Using ext_Key = classes_Key.CreateSubKey(ext)
+                        ext_Key.SetValue("", prog_Id)
+                    End Using
+                End Using
+            Catch ex As Exception
+                failed.Add(ext)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2501: Error registering " & ext & ": " & ex.Message)
+            End Try
+        Next
+
+        ' Уведомить shell об изменении ассоциаций
+        SHChangeNotify(&H8000000, &H1000, IntPtr.Zero, IntPtr.Zero)
+
+        Dim registered_Count As Integer = all_Image_Extensions.Length - failed.Count
+        If failed.Count = 0 Then
+            MessageBox.Show(
+                If(Is_Russian_Language,
+                   "Успешно зарегистрировано " & registered_Count.ToString() & " форматов:" & vbCrLf &
+                   String.Join("  ", all_Image_Extensions) & vbCrLf & vbCrLf &
+                   "Изменения применены для текущего пользователя.",
+                   registered_Count.ToString() & " formats registered:" & vbCrLf &
+                   String.Join("  ", all_Image_Extensions) & vbCrLf & vbCrLf &
+                   "Changes applied for current user."),
+                If(Is_Russian_Language, "Регистрация завершена", "Registration complete"),
+                MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Else
+            MessageBox.Show(
+                If(Is_Russian_Language,
+                   "Зарегистрировано: " & registered_Count.ToString() & vbCrLf &
+                   "Ошибок: " & failed.Count.ToString() & " (" & String.Join(", ", failed) & ")",
+                   "Registered: " & registered_Count.ToString() & vbCrLf &
+                   "Errors: " & failed.Count.ToString() & " (" & String.Join(", ", failed) & ")"),
+                If(Is_Russian_Language, "Регистрация", "Registration"),
+                MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End If
+    End Sub
+
     Private Sub Btn_Panel_Click(sender As Object, e As EventArgs) Handles btn_Panel.Click
         SlideShowStop()
         ShowImagePanelForm()
@@ -4452,6 +4562,71 @@ Public Class Main_Form
         Else
             MessageBox.Show("Invalid file number.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End If
+    End Sub
+
+    Private Sub StartGifLoopPlayback(image As Image)
+        StopGifLoopPlayback()
+
+        If image Is Nothing Then Return
+
+        Try
+            If Not image.RawFormat.Equals(System.Drawing.Imaging.ImageFormat.Gif) Then Return
+
+            Dim frameDimension As New System.Drawing.Imaging.FrameDimension(image.FrameDimensionsList(0))
+            Dim frameCount As Integer = image.GetFrameCount(frameDimension)
+            If frameCount <= 1 Then Return
+
+            Dim durationMs As Integer = 0
+            Try
+                Dim item As System.Drawing.Imaging.PropertyItem = image.GetPropertyItem(&H5100)
+                If item IsNot Nothing AndAlso item.Value IsNot Nothing AndAlso item.Len >= frameCount * 4 Then
+                    For i As Integer = 0 To frameCount - 1
+                        Dim delay As Integer = BitConverter.ToInt32(item.Value, i * 4)
+                        If delay <= 0 Then delay = 10
+                        durationMs += delay * 10
+                    Next
+                End If
+            Catch
+                durationMs = 0
+            End Try
+
+            If durationMs <= 0 Then durationMs = 1000
+
+            gif_Restart_Image_Ref = image
+            gif_Total_Duration_Ms = durationMs
+            gif_Restart_Timer.Interval = Math.Max(100, gif_Total_Duration_Ms)
+            gif_Restart_Timer.Start()
+        Catch
+            StopGifLoopPlayback()
+        End Try
+    End Sub
+
+    Private Sub StopGifLoopPlayback()
+        gif_Restart_Timer.Stop()
+        gif_Total_Duration_Ms = 0
+        gif_Restart_Image_Ref = Nothing
+    End Sub
+
+    Private Sub Gif_Restart_Timer_Tick(sender As Object, e As EventArgs) Handles gif_Restart_Timer.Tick
+        If gif_Restart_Image_Ref Is Nothing Then
+            StopGifLoopPlayback()
+            Return
+        End If
+
+        Try
+            Dim frameDimension As New System.Drawing.Imaging.FrameDimension(gif_Restart_Image_Ref.FrameDimensionsList(0))
+            gif_Restart_Image_Ref.SelectActiveFrame(frameDimension, 0)
+
+            If is_PictureBox1_Visible AndAlso Object.ReferenceEquals(Picture_Box_1.Image, gif_Restart_Image_Ref) Then
+                Picture_Box_1.Invalidate()
+            ElseIf is_PictureBox2_Visible AndAlso Object.ReferenceEquals(Picture_Box_2.Image, gif_Restart_Image_Ref) Then
+                Picture_Box_2.Invalidate()
+            Else
+                StopGifLoopPlayback()
+            End If
+        Catch
+            StopGifLoopPlayback()
+        End Try
     End Sub
 
     Private Sub lbl_Zoom_MouseDown(sender As Object, e As MouseEventArgs) Handles lbl_Zoom.MouseDown
