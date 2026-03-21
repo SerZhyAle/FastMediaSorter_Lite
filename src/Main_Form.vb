@@ -1568,7 +1568,7 @@ Public Class Main_Form
                 pic_to_Display = 2
             End If
 
-            Dim back_Color As System.Drawing.Color = System.Drawing.Color.Black
+            Dim back_Color As System.Drawing.Color = Me.BackColor
 
             Dim active_Bitmap As Bitmap = Nothing
 
