@@ -1,0 +1,103 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v26.4.27.1200)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version from tag
+        id: ver
+        run: |
+          $tag = if ($env:GITHUB_REF -like 'refs/tags/*') { $env:GITHUB_REF -replace '^refs/tags/','' } else { '${{ inputs.tag }}' }
+          $version = $tag -replace '^v',''
+          "tag=$tag"          | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "version=$version"  | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Tag=$tag  Version=$version"
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - uses: NuGet/setup-nuget@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore FastMediaSorter.sln
+
+      - name: Build Release
+        run: msbuild FastMediaSorter.sln /p:Configuration=Release /p:Platform="Any CPU" /t:Rebuild /v:minimal /nologo
+
+      - name: Stage release files
+        id: stage
+        run: |
+          $version = '${{ steps.ver.outputs.version }}'
+          $stage = "stage/FastMediaSorter-$version-windows-x64"
+          New-Item -ItemType Directory -Path $stage -Force | Out-Null
+
+          $release = "bin/Release"
+          if (-not (Test-Path $release)) { throw "Build output not found at $release" }
+
+          # Copy everything except debug/doc artefacts
+          Get-ChildItem $release -Recurse -File |
+            Where-Object { $_.Extension -notin '.pdb','.xml' } |
+            ForEach-Object {
+              $rel  = Resolve-Path -Relative -Path $_.FullName -RelativeBasePath (Resolve-Path $release).Path
+              $dest = Join-Path $stage $rel
+              New-Item -ItemType Directory -Path (Split-Path $dest -Parent) -Force | Out-Null
+              Copy-Item $_.FullName $dest
+            }
+
+          if (Test-Path README.md) { Copy-Item README.md $stage }
+          if (Test-Path LICENSE)   { Copy-Item LICENSE   $stage }
+
+          "stage=$stage" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Get-ChildItem $stage -Recurse | Format-Table -AutoSize
+
+      - name: Create zip + SHA256
+        id: pkg
+        run: |
+          $version = '${{ steps.ver.outputs.version }}'
+          $stage   = '${{ steps.stage.outputs.stage }}'
+          $name    = "FastMediaSorter-$version-windows-x64.zip"
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          $zipPath = "dist/$name"
+
+          Compress-Archive -Path "$stage/*" -DestinationPath $zipPath -Force
+
+          $hash = (Get-FileHash -Algorithm SHA256 $zipPath).Hash
+          "$hash  $name" | Out-File -FilePath "$zipPath.sha256" -Encoding ascii
+
+          "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "sha256=$hash" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Package: $name"
+          Write-Host "SHA256:  $hash"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: FastMediaSorter ${{ steps.ver.outputs.version }}
+          files: |
+            dist/${{ steps.pkg.outputs.name }}
+            dist/${{ steps.pkg.outputs.name }}.sha256
+          body: |
+            FastMediaSorter LITE ${{ steps.ver.outputs.version }}
+
+            **SHA256:** `${{ steps.pkg.outputs.sha256 }}`
+
+            Install via winget once accepted:
+            ```
+            winget install SerZhyAle.FastMediaSorter
+            ```

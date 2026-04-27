@@ -36,5 +36,19 @@ Features include:
 - Windows 7/10/11
 - .NET Framework 4.8
 
+## Installation
+
+### winget (recommended, once accepted into the Microsoft store)
+
+```powershell
+winget install SerZhyAle.FastMediaSorter
+```
+
+### Manual
+
+Download the latest `FastMediaSorter-<version>-windows-x64.zip` from the
+[Releases page](https://github.com/SerZhyAle/FastMediaSorter_Lite/releases),
+extract anywhere, and run `FastMediaSorter_LITE.exe`.
+
 ## License
-This project is provided as-is for personal use.
+MIT — see [LICENSE](LICENSE).
