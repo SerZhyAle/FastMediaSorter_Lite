@@ -6,3 +6,6 @@ obj/
 
 # Auto-generated version file
 src/My Project/VersionInfo.vb
+
+# Claude Code internal state
+.claude/

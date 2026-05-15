@@ -85,19 +85,56 @@ jobs:
           Write-Host "Package: $name"
           Write-Host "SHA256:  $hash"
 
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer
+        id: setup
+        run: |
+          $version = '${{ steps.ver.outputs.version }}'
+          $stage   = '${{ steps.stage.outputs.stage }}'
+          $iscc    = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found at $iscc" }
+
+          $stageAbs = (Resolve-Path $stage).Path
+          $distAbs  = (Resolve-Path dist).Path
+
+          & $iscc "/DVersion=$version" "/DSourceDir=$stageAbs" "/O$distAbs" installer\FastMediaSorter.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed (exit $LASTEXITCODE)" }
+
+          $setupName = "FastMediaSorter-$version-windows-x64-setup.exe"
+          $setupPath = "dist/$setupName"
+          if (-not (Test-Path $setupPath)) { throw "Installer not produced at $setupPath" }
+
+          $hash = (Get-FileHash -Algorithm SHA256 $setupPath).Hash
+          "$hash  $setupName" | Out-File -FilePath "$setupPath.sha256" -Encoding ascii
+
+          "name=$setupName"   | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "sha256=$hash"      | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Installer: $setupName"
+          Write-Host "SHA256:    $hash"
+
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
           name: FastMediaSorter ${{ steps.ver.outputs.version }}
           files: |
+            dist/${{ steps.setup.outputs.name }}
+            dist/${{ steps.setup.outputs.name }}.sha256
             dist/${{ steps.pkg.outputs.name }}
             dist/${{ steps.pkg.outputs.name }}.sha256
           body: |
             FastMediaSorter LITE ${{ steps.ver.outputs.version }}
 
-            **SHA256:** `${{ steps.pkg.outputs.sha256 }}`
+            ## Install
 
-            Install via winget once accepted:
+            **Installer (recommended):** `${{ steps.setup.outputs.name }}`
+            SHA256: `${{ steps.setup.outputs.sha256 }}`
+
+            **Portable ZIP:** `${{ steps.pkg.outputs.name }}`
+            SHA256: `${{ steps.pkg.outputs.sha256 }}`
+
+            **winget** (once accepted):
             ```
             winget install SerZhyAle.FastMediaSorter
             ```

@@ -2373,6 +2373,9 @@ Public Class Main_Form
                     Dim proportionalScale_H = (h + 1.0) / (bH + 1.0)
                     Dim proportionalScale_W = (w + 1.0) / (bW + 1.0)
                     Dim Perspective_Bitmap As New Bitmap(w + 1, h + 1)
+                    Using g_bg As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                        g_bg.Clear(Color.FromArgb(255, Me.BackColor.R, Me.BackColor.G, Me.BackColor.B))
+                    End Using
 
                     Dim brush_wide = 1
                     Dim brush_size_H = CInt(proportionalScale_H * brush_wide + 1)
