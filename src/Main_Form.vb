@@ -185,6 +185,13 @@ Public Class Main_Form
     Private video_Volume_Level As Double = 1
     Private is_TextBox_Editing As Boolean = False
 
+    ' LibVLC fallback player (for formats the IE WebBrowser cannot decode: ZMBV/AVI, VP9, etc.)
+    Private libVlc As LibVLCSharp.Shared.LibVLC = Nothing
+    Private vlc_Video_View As LibVLCSharp.WinForms.VideoView = Nothing
+    Private vlc_Media_Player As LibVLCSharp.Shared.MediaPlayer = Nothing
+    Private is_Vlc_Init_Attempted As Boolean = False
+    Private is_Vlc_Playing As Boolean = False
+
     Dim history_Source_File_Name As String = ""
     Dim history_Destination_File_Name As String = ""
     Private WithEvents BgWorker As New BackgroundWorker()
@@ -1260,6 +1267,12 @@ Public Class Main_Form
 
     Public Sub SetVolume(volume As Double)
         video_Volume_Level = Math.Max(0.0, Math.Min(1.0, volume))
+        If vlc_Media_Player IsNot Nothing AndAlso is_Vlc_Playing Then
+            Try
+                vlc_Media_Player.Volume = CInt(Math.Round(video_Volume_Level * 100))
+            Catch
+            End Try
+        End If
     End Sub
 
     Public Sub HandleWebBrowserDoubleClick()
@@ -1284,7 +1297,9 @@ Public Class Main_Form
 
             ' Check if it's an unsupported video error
             If errorMessage.Contains("Unsupported video type") OrElse errorMessage.Contains("invalid file path") Then
-                TryOpenVideoWithDefaultPlayer()
+                ' The IE WebBrowser can only decode H.264/MP4. For everything else
+                ' (ZMBV/AVI, VP9, mkv, wmv, ...) fall back to the embedded LibVLC player.
+                PlayVideoWithVlc(Current_File_Name)
             End If
         End If
     End Sub
@@ -1318,6 +1333,118 @@ Public Class Main_Form
         End Try
     End Sub
 
+    ' === Embedded LibVLC fallback player ==========================================
+    ' Lazily creates the LibVLC engine and a hosting VideoView. Returns False if the
+    ' native libvlc could not be initialised (callers then fall back to an external player).
+    Private Function EnsureVlcInitialized() As Boolean
+        If is_Vlc_Init_Attempted Then Return (libVlc IsNot Nothing AndAlso vlc_Media_Player IsNot Nothing)
+        is_Vlc_Init_Attempted = True
+        Try
+            LibVLCSharp.Shared.Core.Initialize()
+            libVlc = New LibVLCSharp.Shared.LibVLC("--no-video-title-show", "--no-osd", "--quiet")
+            vlc_Media_Player = New LibVLCSharp.Shared.MediaPlayer(libVlc) With {
+                .EnableMouseInput = False,
+                .EnableKeyInput = False
+            }
+            vlc_Video_View = New LibVLCSharp.WinForms.VideoView() With {
+                .MediaPlayer = vlc_Media_Player,
+                .Visible = False,
+                .BackColor = System.Drawing.Color.Black,
+                .Location = Picture_Box_1.Location,
+                .Size = Picture_Box_1.Size
+            }
+            AddHandler vlc_Video_View.MouseDoubleClick, AddressOf Vlc_Video_View_MouseDoubleClick
+            AddHandler vlc_Video_View.MouseClick, AddressOf Vlc_Video_View_MouseClick
+            Me.Controls.Add(vlc_Video_View)
+            vlc_Video_View.BringToFront()
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0868: LibVLC initialized")
+            Return True
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0869: LibVLC init failed: " & ex.Message)
+            libVlc = Nothing
+            vlc_Media_Player = Nothing
+            vlc_Video_View = Nothing
+            Return False
+        End Try
+    End Function
+
+    Private Sub PlayVideoWithVlc(file_Path As String)
+        If String.IsNullOrEmpty(file_Path) OrElse Not File.Exists(file_Path) Then Return
+
+        If Not EnsureVlcInitialized() Then
+            ' No native libvlc available - last resort: open in the external default player.
+            TryOpenVideoWithDefaultPlayer()
+            Return
+        End If
+
+        Try
+            StopGifLoopPlayback()
+
+            ' Hide every other display surface and clear the failed browser content.
+            is_WebBrowser_Visible = False
+            is_PictureBox1_Visible = False
+            is_PictureBox2_Visible = False
+            Web_Browser.Visible = False
+            Picture_Box_1.Visible = False
+            Picture_Box_2.Visible = False
+            If Not Web_Browser.DocumentText = "" Then Web_Browser.DocumentText = ""
+
+            vlc_Video_View.Location = Picture_Box_1.Location
+            vlc_Video_View.Size = Picture_Box_1.Size
+            vlc_Video_View.Visible = True
+            vlc_Video_View.BringToFront()
+
+            Dim media As New LibVLCSharp.Shared.Media(libVlc, New Uri(file_Path))
+            If Is_Video_Loop Then media.AddOption(":input-repeat=65535")
+            vlc_Media_Player.Play(media)
+            media.Dispose()
+            vlc_Media_Player.Volume = CInt(Math.Round(video_Volume_Level * 100))
+
+            is_Vlc_Playing = True
+            current_Loaded_File_Name = file_Path
+            lbl_Status.Text = If(Is_Russian_Language,
+                                 "Видео воспроизводится через VLC: " & Path.GetFileName(file_Path),
+                                 "Playing via VLC: " & Path.GetFileName(file_Path))
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0871: Playing via LibVLC: " & file_Path)
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0872: LibVLC play failed: " & ex.Message)
+            StopVlcPlayback()
+            TryOpenVideoWithDefaultPlayer()
+        End Try
+    End Sub
+
+    Private Sub StopVlcPlayback()
+        If vlc_Media_Player IsNot Nothing AndAlso is_Vlc_Playing Then
+            Try
+                vlc_Media_Player.Stop()
+                vlc_Media_Player.Media = Nothing
+            Catch ex As Exception
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0873: LibVLC stop error: " & ex.Message)
+            End Try
+        End If
+        is_Vlc_Playing = False
+        If vlc_Video_View IsNot Nothing Then vlc_Video_View.Visible = False
+    End Sub
+
+    Private Sub Vlc_Video_View_MouseDoubleClick(sender As Object, e As MouseEventArgs)
+        ' Same behaviour as a double-click in the browser video: leave full-screen.
+        HandleWebBrowserDoubleClick()
+    End Sub
+
+    Private Sub Vlc_Video_View_MouseClick(sender As Object, e As MouseEventArgs)
+        ' Right-click toggles pause/play, mirroring the browser player's context handler.
+        If e.Button = Windows.Forms.MouseButtons.Right AndAlso vlc_Media_Player IsNot Nothing Then
+            Try
+                If vlc_Media_Player.IsPlaying Then
+                    vlc_Media_Player.Pause()
+                Else
+                    vlc_Media_Player.Play()
+                End If
+            Catch
+            End Try
+        End If
+    End Sub
+
     Private Sub LoadVideoInWebBrowser(video_File_Path As String)
         Try
             StopGifLoopPlayback()
@@ -1330,12 +1457,13 @@ Public Class Main_Form
 
             Dim loop_Attribute As String = If(Is_Video_Loop, " loop", "")
 
-            Dim video_Html_Content As String = "<video id='videoPlayer' controls autoplay" & loop_Attribute & " style='width:100%;height:calc(100% - " & height_For_instruments_on_WebPanel & "px);object-fit:fill;'>" &
-                            "<source src='" & video_File_Absolute_Uri & "'>" &
+            Dim text_Color As String = If(Form_Color_Scheme = 0, "white", "black")
+
+            Dim video_Html_Content As String = "<video id='videoPlayer' controls autoplay" & loop_Attribute & " style='width:100%;height:calc(100% - " & height_For_instruments_on_WebPanel & "px);object-fit:fill;'" &
+                            " onerror=""fmsReportVideoError('Error: Unsupported video type (video element error)');"">" &
+                            "<source src='" & video_File_Absolute_Uri & "' onerror=""fmsReportVideoError('Error: Unsupported video type (source failed to load)');"">" &
                             "<track kind='captions' default>" &
-                            "<p style='color: " &
-                            If(Form_Color_Scheme = 0, "black", "white") &
-                            "; text-align: center;'>" &
+                            "<p style='color: " & text_Color & "; text-align: center;'>" &
                             If(Is_Russian_Language, "Ваш браузер не поддерживает видео.", "Your browser does not support video.") & "</p>" &
                             "</video>"
 
@@ -1344,36 +1472,41 @@ Public Class Main_Form
                      "body { margin: 0; overflow: hidden; background: " &
                             If(Form_Color_Scheme = 0, "black", "white") & "; }" &
                      "video { width: 100%; height: calc(100% - " & height_For_instruments_on_WebPanel & "px); object-fit: fill; position: absolute; top: 0; left: 0; }" &
-                     "</style></head>" &
+                     "</style>" &
+                     "<script>" &
+                     "var fmsErrorReported = false;" &
+                     "function fmsReportVideoError(msg) {" &
+                     "  if (fmsErrorReported) return;" &
+                     "  fmsErrorReported = true;" &
+                     "  try { window.external.HandleVideoError(msg); }" &
+                     "  catch(e) {" &
+                     "    try {" &
+                     "      var v = document.getElementById('videoPlayer');" &
+                     "      var p = document.createElement('p');" &
+                     "      p.style.color='" & text_Color & "'; p.style.textAlign='center';" &
+                     "      p.innerText = msg;" &
+                     "      if (v && v.parentNode) v.parentNode.insertBefore(p, v.nextSibling);" &
+                     "    } catch(e2) {}" &
+                     "  }" &
+                     "}" &
+                     "function handlePageDoubleClick() { try { window.external.HandleWebBrowserDoubleClick(); } catch(e) {} }" &
+                     "</script>" &
+                     "</head>" &
                      "<body oncontextmenu='return false;' ondblclick='handlePageDoubleClick();'>" & video_Html_Content &
                      "<script>" &
                      "var player = document.getElementById('videoPlayer');" &
-                     "var errorDetected = false;" &
                      "player.volume = " & video_Volume_Level.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) & ";" &
                      "player.oncontextmenu = function(e) { e.preventDefault(); if (this.paused) this.play(); else this.pause(); return false; };" &
                      "player.onvolumechange = function() { try { window.external.SetVolume(this.volume); } catch(e) { } };" &
-                     "function handlePageDoubleClick() { try { window.external.HandleWebBrowserDoubleClick(); } catch(e) { console.error('Error calling HandleWebBrowserDoubleClick: ' + e.message); } }" &
-                     "document.addEventListener('DOMContentLoaded', function() { " &
-                     "  var video = document.getElementById('videoPlayer'); " &
-                     "  video.onerror = function() { " &
-                     "    if (!errorDetected) { " &
-                     "      errorDetected = true; " &
-                     "      var errorMsg = 'Error: Unsupported video type or invalid file path. Source: ' + (video.querySelector('source') ? video.querySelector('source').src : 'not found'); " &
-                     "      console.error(errorMsg); " &
-                     "      try { " &
-                     "        window.external.HandleVideoError(errorMsg); " &
-                     "      } catch(e) { " &
-                     "        console.error('Error calling HandleVideoError: ' + e.message); " &
-                     "        var p = document.createElement('p'); " &
-                     "        p.style.color='" & If(Form_Color_Scheme = 0, "black", "white") & "'; " &
-                     "        p.style.textAlign='center'; " &
-                     "        p.innerText = errorMsg; " &
-                     "        video.parentNode.insertBefore(p, video.nextSibling); " &
-                     "      } " &
-                     "    } " &
-                     "  }; " &
-                     "  video.addEventListener('loadstart', function() { errorDetected = false; }); " &
-                     "});" &
+                     "player.addEventListener('error', function() { fmsReportVideoError('Error: Unsupported video type (media error)'); });" &
+                     "player.addEventListener('stalled', function() { setTimeout(fmsWatchdog, 100); });" &
+                     "function fmsWatchdog() {" &
+                     "  if (fmsErrorReported) return;" &
+                     "  if (player.error || player.networkState === 3 || (player.readyState < 1 && player.networkState !== 2)) {" &
+                     "    fmsReportVideoError('Error: Unsupported video type or no playable data. Source: ' + (player.currentSrc || 'not found'));" &
+                     "  }" &
+                     "}" &
+                     "setTimeout(fmsWatchdog, 2500);" &
                      "</script></body></html>"
 
             last_Loaded_Uri = ""
@@ -1541,6 +1674,11 @@ Public Class Main_Form
     End Sub
 
     Private Sub UpdateControlVisibility()
+
+        ' Any navigation to an image or a browser-played video supersedes VLC fallback playback.
+        If is_Vlc_Playing AndAlso (is_PictureBox1_Visible OrElse is_PictureBox2_Visible OrElse is_WebBrowser_Visible) Then
+            StopVlcPlayback()
+        End If
 
         Picture_Box_1.Visible = is_PictureBox1_Visible
         Picture_Box_2.Visible = is_PictureBox2_Visible
@@ -2025,6 +2163,10 @@ Public Class Main_Form
 
         Web_Browser.Size = Picture_Box_1.Size
         Web_Browser.Location = Picture_Box_1.Location
+        If vlc_Video_View IsNot Nothing Then
+            vlc_Video_View.Size = Picture_Box_1.Size
+            vlc_Video_View.Location = Picture_Box_1.Location
+        End If
         If Picture_Box_1.Left >= 0 Then
             lbl_Help_Info.Location = Picture_Box_1.Location
             lbl_Help_Info.Size = Picture_Box_1.Size
@@ -2322,6 +2464,73 @@ Public Class Main_Form
         Return result
     End Function
 
+    Private Function GetEdgeSampleDepth(scale As Double, sourceSize As Integer) As Integer
+        Dim safeScale As Double = Math.Max(scale, 0.0001)
+        Dim scaledSampleDepth As Integer = CInt(Math.Ceiling(1.0 / safeScale))
+        Dim maxDepth As Integer = Math.Min(sourceSize, 8)
+        Return Math.Min(Math.Max(scaledSampleDepth, 2), maxDepth)
+    End Function
+
+    Private Function SampleVerticalEdgeColor(sourceBitmap As Bitmap, isLeftEdge As Boolean, sourceY As Integer, sampleDepth As Integer) As Color
+        Dim clampedY As Integer = Math.Max(0, Math.Min(sourceY, sourceBitmap.Height - 1))
+        Dim effectiveDepth As Integer = Math.Max(1, Math.Min(sampleDepth, sourceBitmap.Width))
+        Dim startX As Integer = If(isLeftEdge, 0, sourceBitmap.Width - effectiveDepth)
+        Dim sumR As Integer = 0
+        Dim sumG As Integer = 0
+        Dim sumB As Integer = 0
+
+        For x As Integer = startX To startX + effectiveDepth - 1
+            Dim px = sourceBitmap.GetPixel(x, clampedY)
+            sumR += CInt(px.R)
+            sumG += CInt(px.G)
+            sumB += CInt(px.B)
+        Next
+
+        Return Color.FromArgb(255, sumR \ effectiveDepth, sumG \ effectiveDepth, sumB \ effectiveDepth)
+    End Function
+
+    Private Function SampleHorizontalEdgeColor(sourceBitmap As Bitmap, isTopEdge As Boolean, sourceX As Integer, sampleDepth As Integer) As Color
+        Dim clampedX As Integer = Math.Max(0, Math.Min(sourceX, sourceBitmap.Width - 1))
+        Dim effectiveDepth As Integer = Math.Max(1, Math.Min(sampleDepth, sourceBitmap.Height))
+        Dim startY As Integer = If(isTopEdge, 0, sourceBitmap.Height - effectiveDepth)
+        Dim sumR As Integer = 0
+        Dim sumG As Integer = 0
+        Dim sumB As Integer = 0
+
+        For y As Integer = startY To startY + effectiveDepth - 1
+            Dim px = sourceBitmap.GetPixel(clampedX, y)
+            sumR += CInt(px.R)
+            sumG += CInt(px.G)
+            sumB += CInt(px.B)
+        Next
+
+        Return Color.FromArgb(255, sumR \ effectiveDepth, sumG \ effectiveDepth, sumB \ effectiveDepth)
+    End Function
+
+    Private Function GetTrimmedChannelAverage(channelValues As IEnumerable(Of Integer)) As Integer
+        Dim sortedValues = channelValues.OrderBy(Function(v) v).ToList()
+        If sortedValues.Count = 0 Then Return 0
+
+        Dim trimCount As Integer = CInt(Math.Floor(sortedValues.Count * percent_of_color_smooth_To_Remove / 100.0))
+        Dim maxAllowedTrim As Integer = Math.Max(0, (sortedValues.Count - 1) \ 2)
+        trimCount = Math.Min(trimCount, maxAllowedTrim)
+
+        Dim trimmedValues = sortedValues.Skip(trimCount).Take(sortedValues.Count - 2 * trimCount).ToList()
+        If trimmedValues.Count = 0 Then trimmedValues = sortedValues
+
+        Return CInt(Math.Round(trimmedValues.Average()))
+    End Function
+
+    Private Function GetTrimmedAverageColor(colors As List(Of Color)) As Color
+        If colors.Count = 0 Then Return Color.Black
+
+        Dim avgR As Integer = GetTrimmedChannelAverage(colors.Select(Function(c) CInt(c.R)))
+        Dim avgG As Integer = GetTrimmedChannelAverage(colors.Select(Function(c) CInt(c.G)))
+        Dim avgB As Integer = GetTrimmedChannelAverage(colors.Select(Function(c) CInt(c.B)))
+
+        Return Color.FromArgb(255, avgR, avgG, avgB)
+    End Function
+
     Private Sub Draw_Perspective()
 
         '  Dim sw As New Stopwatch()
@@ -2372,6 +2581,8 @@ Public Class Main_Form
 
                     Dim proportionalScale_H = (h + 1.0) / (bH + 1.0)
                     Dim proportionalScale_W = (w + 1.0) / (bW + 1.0)
+                    Dim verticalEdgeSampleDepth As Integer = GetEdgeSampleDepth(proportionalScale_W, bW + 1)
+                    Dim horizontalEdgeSampleDepth As Integer = GetEdgeSampleDepth(proportionalScale_H, bH + 1)
                     Dim Perspective_Bitmap As New Bitmap(w + 1, h + 1)
                     Using g_bg As Graphics = Graphics.FromImage(Perspective_Bitmap)
                         g_bg.Clear(Color.FromArgb(255, Me.BackColor.R, Me.BackColor.G, Me.BackColor.B))
@@ -2394,7 +2605,7 @@ Public Class Main_Form
                     If bitmap_proportion < pictureBox_proportion Then
                         'left
                         For y As Integer = 0 To h Step step_size_while_color_Search
-                            list_of_corner_colors.Add(active_Bitmap.GetPixel(0, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH)))
+                            list_of_corner_colors.Add(SampleVerticalEdgeColor(active_Bitmap, True, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH), verticalEdgeSampleDepth))
                             color_Sample_Count += 1
                         Next
 
@@ -2410,17 +2621,11 @@ Public Class Main_Form
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
                                     g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
                                     If color_Sample_Count > 0 Then
-                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
-                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
-                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
-
-                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
-                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
-                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
+                                        Dim avgColor As Color = GetTrimmedAverageColor(list_of_corner_colors)
 
                                         is_perspective_drown = True
 
-                                        Using brush As New SolidBrush(Color.FromArgb(255, avgR, avgG, avgB))
+                                        Using brush As New SolidBrush(avgColor)
                                             g.FillRectangle(brush, 0, 0, CInt(w / 2), h + 1)
                                         End Using
                                     End If
@@ -2431,8 +2636,7 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For y As Integer = 0 To h Step brush_wide
-                                    Dim pxL = active_Bitmap.GetPixel(0, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH))
-                                    list_of_corner_colors.Add(Color.FromArgb(255, pxL.R, pxL.G, pxL.B))
+                                    list_of_corner_colors.Add(SampleVerticalEdgeColor(active_Bitmap, True, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH), verticalEdgeSampleDepth))
                                 Next
 
                                 list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(h * smoothIndex) + 1)
@@ -2454,7 +2658,7 @@ Public Class Main_Form
 
                         'right
                         For y As Integer = 0 To h Step step_size_while_color_Search
-                            list_of_corner_colors.Add(active_Bitmap.GetPixel(bW, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH)))
+                            list_of_corner_colors.Add(SampleVerticalEdgeColor(active_Bitmap, False, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH), verticalEdgeSampleDepth))
                             color_Sample_Count += 1
                         Next
 
@@ -2470,17 +2674,11 @@ Public Class Main_Form
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
                                     g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
                                     If color_Sample_Count > 0 Then
-                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
-                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
-                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
-
-                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
-                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
-                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
+                                        Dim avgColor As Color = GetTrimmedAverageColor(list_of_corner_colors)
 
                                         is_perspective_drown = True
 
-                                        Using brush As New SolidBrush(Color.FromArgb(255, avgR, avgG, avgB))
+                                        Using brush As New SolidBrush(avgColor)
                                             g.FillRectangle(brush, CInt(w / 2), 0, w - CInt(w / 2) + 1, h + 1)
                                         End Using
                                     End If
@@ -2491,8 +2689,7 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For y As Integer = 0 To h Step brush_wide
-                                    Dim pxR = active_Bitmap.GetPixel(bW, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH))
-                                    list_of_corner_colors.Add(Color.FromArgb(255, pxR.R, pxR.G, pxR.B))
+                                    list_of_corner_colors.Add(SampleVerticalEdgeColor(active_Bitmap, False, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH), verticalEdgeSampleDepth))
                                 Next
 
                                 list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(h * smoothIndex) + 1)
@@ -2513,7 +2710,7 @@ Public Class Main_Form
                     Else
                         'top
                         For x As Integer = 0 To w Step step_size_while_color_Search
-                            list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), 0))
+                            list_of_corner_colors.Add(SampleHorizontalEdgeColor(active_Bitmap, True, Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), horizontalEdgeSampleDepth))
                             color_Sample_Count += 1
                         Next
 
@@ -2529,17 +2726,11 @@ Public Class Main_Form
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
                                     g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
                                     If color_Sample_Count > 0 Then
-                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
-                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
-                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
-
-                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
-                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
-                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
+                                        Dim avgColor As Color = GetTrimmedAverageColor(list_of_corner_colors)
 
                                         is_perspective_drown = True
 
-                                        Using brush As New SolidBrush(Color.FromArgb(255, avgR, avgG, avgB))
+                                        Using brush As New SolidBrush(avgColor)
                                             g.FillRectangle(brush, 0, 0, w + 1, CInt(h / 2))
                                         End Using
                                     End If
@@ -2550,8 +2741,7 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For x As Integer = 0 To w Step brush_wide
-                                    Dim pxT = active_Bitmap.GetPixel(Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), 0)
-                                    list_of_corner_colors.Add(Color.FromArgb(255, pxT.R, pxT.G, pxT.B))
+                                    list_of_corner_colors.Add(SampleHorizontalEdgeColor(active_Bitmap, True, Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), horizontalEdgeSampleDepth))
                                 Next
 
                                 list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(w * smoothIndex) + 1)
@@ -2573,7 +2763,7 @@ Public Class Main_Form
 
                         'buttom
                         For x As Integer = 0 To w Step step_size_while_color_Search
-                            list_of_corner_colors.Add(active_Bitmap.GetPixel(Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), bH))
+                            list_of_corner_colors.Add(SampleHorizontalEdgeColor(active_Bitmap, False, Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), horizontalEdgeSampleDepth))
                             color_Sample_Count += 1
                         Next
 
@@ -2589,17 +2779,11 @@ Public Class Main_Form
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
                                     g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
                                     If color_Sample_Count > 0 Then
-                                        Dim avgR As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.R)) / color_Sample_Count)
-                                        Dim avgG As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.G)) / color_Sample_Count)
-                                        Dim avgB As Integer = CInt(list_of_corner_colors.Sum(Function(c) CInt(c.B)) / color_Sample_Count)
-
-                                        avgR = Math.Min(Math.Max(avgR, 0), 255)
-                                        avgG = Math.Min(Math.Max(avgG, 0), 255)
-                                        avgB = Math.Min(Math.Max(avgB, 0), 255)
+                                        Dim avgColor As Color = GetTrimmedAverageColor(list_of_corner_colors)
 
                                         is_perspective_drown = True
 
-                                        Using brush As New SolidBrush(Color.FromArgb(255, avgR, avgG, avgB))
+                                        Using brush As New SolidBrush(avgColor)
                                             g.FillRectangle(brush, 0, CInt(h / 2), w + 1, h - CInt(h / 2) + 1)
                                         End Using
                                     End If
@@ -2610,11 +2794,10 @@ Public Class Main_Form
                                 is_perspective_drown = True
 
                                 For x As Integer = 0 To w Step brush_wide
-                                    Dim pxB = active_Bitmap.GetPixel(Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), bH)
-                                    list_of_corner_colors.Add(Color.FromArgb(255, pxB.R, pxB.G, pxB.B))
+                                    list_of_corner_colors.Add(SampleHorizontalEdgeColor(active_Bitmap, False, Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), horizontalEdgeSampleDepth))
                                 Next
 
-                                list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(h * smoothIndex) + 1)
+                                list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(w * smoothIndex) + 1)
                                 middle_point = CInt(h / 2)
 
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
@@ -3057,6 +3240,29 @@ Public Class Main_Form
         If Web_Browser IsNot Nothing Then
             Web_Browser.DocumentText = ""
             Web_Browser.Dispose()
+        End If
+
+        StopVlcPlayback()
+        If vlc_Media_Player IsNot Nothing Then
+            Try
+                vlc_Media_Player.Dispose()
+            Catch
+            End Try
+            vlc_Media_Player = Nothing
+        End If
+        If vlc_Video_View IsNot Nothing Then
+            Try
+                vlc_Video_View.Dispose()
+            Catch
+            End Try
+            vlc_Video_View = Nothing
+        End If
+        If libVlc IsNot Nothing Then
+            Try
+                libVlc.Dispose()
+            Catch
+            End Try
+            libVlc = Nothing
         End If
 
         If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
@@ -3667,6 +3873,10 @@ Public Class Main_Form
 
         Web_Browser.Size = Picture_Box_1.Size
         Web_Browser.Location = Picture_Box_1.Location
+        If vlc_Video_View IsNot Nothing Then
+            vlc_Video_View.Size = Picture_Box_1.Size
+            vlc_Video_View.Location = Picture_Box_1.Location
+        End If
 
         lbl_Folder.Visible = False
         btn_Move_Table.Visible = False
@@ -4043,6 +4253,10 @@ Public Class Main_Form
 
         Web_Browser.Size = Picture_Box_1.Size
         Web_Browser.Location = Picture_Box_1.Location
+        If vlc_Video_View IsNot Nothing Then
+            vlc_Video_View.Size = Picture_Box_1.Size
+            vlc_Video_View.Location = Picture_Box_1.Location
+        End If
     End Sub
 
     Private Sub Form1_ResizeEnd(sender As Object, e As EventArgs) Handles Me.ResizeEnd

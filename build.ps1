@@ -2,7 +2,10 @@ $SolutionDir = $PSScriptRoot
 $SolutionFile = Join-Path $SolutionDir "FastMediaSorter.sln"
 $OutputDir    = Join-Path $SolutionDir "bin\Release"
 $ExeName      = "FastMediaSorter_LITE.exe"
-$Destination  = "C:\GD\tc\SZA\_APP\"
+$Destinations = @(
+    "C:\GD\i\",
+    "C:\GD\tc\SZA\_APP\"
+)
 
 # Find MSBuild
 $msbuild = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
@@ -34,9 +37,27 @@ if (-not (Test-Path $ExePath)) {
     exit 1
 }
 
-if (-not (Test-Path $Destination)) {
-    New-Item -ItemType Directory -Path $Destination -Force | Out-Null
-}
+# The app now ships with native LibVLC (libvlc\win-x64|win-x86) and the managed
+# LibVLCSharp assemblies, so the whole output tree must be deployed - not just the exe.
+# Skip debug/doc artefacts (.pdb/.xml), mirroring the CI release staging.
+$OutputRoot = (Resolve-Path $OutputDir).Path
+$DeployFiles = Get-ChildItem $OutputRoot -Recurse -File |
+    Where-Object { $_.Extension -notin '.pdb', '.xml' }
 
-Copy-Item -Path $ExePath -Destination $Destination -Force
-Write-Host "Copied $ExeName -> $Destination"
+foreach ($Destination in $Destinations) {
+    if (-not (Test-Path $Destination)) {
+        New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+    }
+
+    foreach ($File in $DeployFiles) {
+        $Relative = $File.FullName.Substring($OutputRoot.Length).TrimStart('\')
+        $Target   = Join-Path $Destination $Relative
+        $TargetDir = Split-Path $Target -Parent
+        if (-not (Test-Path $TargetDir)) {
+            New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
+        }
+        Copy-Item -Path $File.FullName -Destination $Target -Force
+    }
+
+    Write-Host "Deployed $($DeployFiles.Count) files -> $Destination"
+}
