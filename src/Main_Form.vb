@@ -2472,11 +2472,16 @@ Public Class Main_Form
     End Function
 
     Private Function GetEdgeSampleDepth(scale As Double, sourceSize As Integer) As Integer
-        ' Sample only the literal edge pixel. Averaging several pixels inward (the old
-        ' behaviour, up to 8) pulled darker interior content into the bar colour, which
-        ' made the perspective background bars read darker than the image edge. Depth 1
-        ' makes the bars match the edge brightness exactly.
-        Return 1
+        ' Average several source pixels inward from the edge. The window is 1/scale, i.e.
+        ' how many source pixels the PictureBox (Zoom) collapses into one displayed pixel.
+        ' This makes the sampled bar colour match the DISPLAYED (downscaled, interpolated)
+        ' image edge. Sampling only the literal edge pixel looked darker, because many
+        ' photos have a 1-2px dark border that the downscaling averages away in the
+        ' visible image but a 1px sample would reproduce at full strength.
+        Dim safeScale As Double = Math.Max(scale, 0.0001)
+        Dim scaledSampleDepth As Integer = CInt(Math.Ceiling(1.0 / safeScale))
+        Dim maxDepth As Integer = Math.Min(sourceSize, 8)
+        Return Math.Min(Math.Max(scaledSampleDepth, 2), maxDepth)
     End Function
 
     Private Function SampleVerticalEdgeColor(sourceBitmap As Bitmap, isLeftEdge As Boolean, sourceY As Integer, sampleDepth As Integer) As Color
