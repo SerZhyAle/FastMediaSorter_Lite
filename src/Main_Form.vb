@@ -2608,7 +2608,13 @@ Public Class Main_Form
                     Dim diffSum As Long = 0
 
                     Dim list_of_corner_colors As New List(Of System.Drawing.Color)
-                    Dim color_deviation_threshold = (percent_of_color_deviation / 100) * 255 * 3
+                    ' The bars must be a true continuation of the image, painted in the exact
+                    ' colour of each edge row. The "uniform fill" path (diffSum < threshold)
+                    ' collapses the whole edge into one trimmed-average colour, which reads
+                    ' darker than the local edge and is NOT a continuation. Force the per-row
+                    ' edge-continuation path for every side by making the threshold unreachable
+                    ' (diffSum is always >= 0).
+                    Dim color_deviation_threshold As Double = -1
 
                     If bitmap_proportion < pictureBox_proportion Then
                         'left
