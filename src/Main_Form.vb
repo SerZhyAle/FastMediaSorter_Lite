@@ -2385,6 +2385,13 @@ Public Class Main_Form
 
         is_form_shown = True
 
+        ' Draw the perspective background for the image that was already shown during Load
+        ' (e.g. a file passed on the command line). Until now is_form_shown was False, so the
+        ' Draw_Perspective() calls inside UpdateControlVisibility/ISizeChanged were skipped and
+        ' the letterbox bars fell back to the darker dynamic Picture_Box.BackColor. Running it
+        ' here makes the command-line case use the same edge-color algorithm as normal browsing.
+        Draw_Perspective()
+
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1120: Form Loaded")
     End Sub
 
