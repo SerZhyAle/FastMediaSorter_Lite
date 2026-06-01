@@ -2471,6 +2471,57 @@ Public Class Main_Form
         Return result
     End Function
 
+    ' Read the literal edge column x (all rows 0..count-1) as fully opaque colours.
+    ' Spec section 6: rawEdge[y] = source.getPixel(x, y). LockBits to Format32bppArgb
+    ' gives identical pixel values to GetPixel but is fast on huge source images.
+    Private Function ReadEdgeColumn(bmp As Bitmap, x As Integer, count As Integer) As List(Of Color)
+        Dim result As New List(Of Color)(count)
+        Try
+            Dim data As Imaging.BitmapData = bmp.LockBits(New Rectangle(0, 0, bmp.Width, bmp.Height), Imaging.ImageLockMode.ReadOnly, Imaging.PixelFormat.Format32bppArgb)
+            Try
+                Dim stride As Integer = data.Stride
+                For y As Integer = 0 To count - 1
+                    Dim argb As Integer = Marshal.ReadInt32(data.Scan0, y * stride + x * 4)
+                    result.Add(Color.FromArgb(255, (argb >> 16) And &HFF, (argb >> 8) And &HFF, argb And &HFF))
+                Next
+            Finally
+                bmp.UnlockBits(data)
+            End Try
+        Catch
+            result.Clear()
+            For y As Integer = 0 To count - 1
+                Dim p As Color = bmp.GetPixel(x, y)
+                result.Add(Color.FromArgb(255, p.R, p.G, p.B))
+            Next
+        End Try
+        Return result
+    End Function
+
+    ' Read the literal edge row y (all columns 0..count-1) as fully opaque colours.
+    Private Function ReadEdgeRow(bmp As Bitmap, y As Integer, count As Integer) As List(Of Color)
+        Dim result As New List(Of Color)(count)
+        Try
+            Dim data As Imaging.BitmapData = bmp.LockBits(New Rectangle(0, 0, bmp.Width, bmp.Height), Imaging.ImageLockMode.ReadOnly, Imaging.PixelFormat.Format32bppArgb)
+            Try
+                Dim stride As Integer = data.Stride
+                Dim rowOffset As Integer = y * stride
+                For x As Integer = 0 To count - 1
+                    Dim argb As Integer = Marshal.ReadInt32(data.Scan0, rowOffset + x * 4)
+                    result.Add(Color.FromArgb(255, (argb >> 16) And &HFF, (argb >> 8) And &HFF, argb And &HFF))
+                Next
+            Finally
+                bmp.UnlockBits(data)
+            End Try
+        Catch
+            result.Clear()
+            For x As Integer = 0 To count - 1
+                Dim p As Color = bmp.GetPixel(x, y)
+                result.Add(Color.FromArgb(255, p.R, p.G, p.B))
+            Next
+        End Try
+        Return result
+    End Function
+
     Private Function GetEdgeSampleDepth(scale As Double, sourceSize As Integer) As Integer
         ' Average several source pixels inward from the edge. The window is 1/scale, i.e.
         ' how many source pixels the PictureBox (Zoom) collapses into one displayed pixel.
@@ -2592,245 +2643,76 @@ Public Class Main_Form
                 If Not Math.Round(bitmap_proportion, 2) = Math.Round(pictureBox_proportion, 2) Then
 
 
-                    Dim proportionalScale_H = (h + 1.0) / (bH + 1.0)
-                    Dim proportionalScale_W = (w + 1.0) / (bW + 1.0)
-                    Dim verticalEdgeSampleDepth As Integer = GetEdgeSampleDepth(proportionalScale_W, bW + 1)
-                    Dim horizontalEdgeSampleDepth As Integer = GetEdgeSampleDepth(proportionalScale_H, bH + 1)
-                    Dim Perspective_Bitmap As New Bitmap(w + 1, h + 1)
+                    ' ===== Dynamic Background Extension (Ambilight) - per spec sections 5-8 =====
+                    ' Each empty field row/column is painted with the colour of the nearest
+                    ' edge pixel of the source image, so the bars are a true continuation of
+                    ' the picture (no flat-average fill, no inward darkening).
+                    Dim sw As Integer = w + 1          ' view (Perspective_Bitmap) width
+                    Dim sh As Integer = h + 1          ' view (Perspective_Bitmap) height
+                    Dim srcW As Integer = bW + 1
+                    Dim srcH As Integer = bH + 1
+
+                    ' Spec section 5: geometry of the letterbox/pillarbox fields.
+                    Dim scaleFit As Double = Math.Min(sw / CDbl(srcW), sh / CDbl(srcH))
+                    Dim displayedW As Integer = CInt(Math.Round(srcW * scaleFit))
+                    Dim displayedH As Integer = CInt(Math.Round(srcH * scaleFit))
+                    Dim imgLeft As Integer = Math.Max(0, (sw - displayedW) \ 2)
+                    Dim imgTop As Integer = Math.Max(0, (sh - displayedH) \ 2)
+                    Dim imgBottom As Integer = imgTop + displayedH
+
+                    Dim Perspective_Bitmap As New Bitmap(sw, sh)
                     Using g_bg As Graphics = Graphics.FromImage(Perspective_Bitmap)
                         g_bg.Clear(Color.FromArgb(255, Me.BackColor.R, Me.BackColor.G, Me.BackColor.B))
                     End Using
 
-                    Dim brush_wide = 1
-                    Dim brush_size_H = CInt(proportionalScale_H * brush_wide + 1)
-                    Dim brush_size_W = CInt(proportionalScale_W * brush_wide + 1)
-                    Dim brush_size_line = 0
-                    Dim middle_point = 0
-                    Dim color_Sample_Count = 0
-                    Dim begin_point As New Point(0, 0)
-                    Dim end_point As New Point(0, 0)
-                    Dim to_draw_the_wide As Boolean = False
-                    Dim diffSum As Long = 0
+                    ' Spec section 7: 1D box-blur radius derived from the SOURCE size.
+                    Dim radiusH As Integer = Math.Max(1, CInt(Math.Round(srcH * smoothIndex)))
+                    Dim radiusW As Integer = Math.Max(1, CInt(Math.Round(srcW * smoothIndex)))
 
-                    Dim list_of_corner_colors As New List(Of System.Drawing.Color)
-                    ' The bars must be a true continuation of the image, painted in the exact
-                    ' colour of each edge row. The "uniform fill" path (diffSum < threshold)
-                    ' collapses the whole edge into one trimmed-average colour, which reads
-                    ' darker than the local edge and is NOT a continuation. Force the per-row
-                    ' edge-continuation path for every side by making the threshold unreachable
-                    ' (diffSum is always >= 0).
-                    Dim color_deviation_threshold As Double = -1
+                    Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                        g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
+                        g.SmoothingMode = Drawing2D.SmoothingMode.None
 
-                    If bitmap_proportion < pictureBox_proportion Then
-                        'left
-                        For y As Integer = 0 To h Step step_size_while_color_Search
-                            list_of_corner_colors.Add(SampleVerticalEdgeColor(active_Bitmap, True, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH), verticalEdgeSampleDepth))
-                            color_Sample_Count += 1
-                        Next
-
-                        If list_of_corner_colors.Count > 0 Then
-
-                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
-
-                            If diffSum < color_deviation_threshold Then
-                                begin_point = New Point(0, CInt(h / 2))
-                                end_point = New Point(CInt(w / 2), CInt(h / 2))
-                                brush_size_line = h + 1
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    If color_Sample_Count > 0 Then
-                                        Dim avgColor As Color = GetTrimmedAverageColor(list_of_corner_colors)
-
-                                        is_perspective_drown = True
-
-                                        Using brush As New SolidBrush(avgColor)
-                                            g.FillRectangle(brush, 0, 0, CInt(w / 2), h + 1)
-                                        End Using
-                                    End If
+                        If imgLeft > 0 Then
+                            ' Pillarbox (spec section 8): one horizontal line per screen row,
+                            ' split at the middle. Left half continues the left edge of that
+                            ' row, right half the right edge; the centre is covered by the image.
+                            Dim leftEdge As List(Of Color) = SmoothColorList(ReadEdgeColumn(active_Bitmap, 0, srcH), radiusH)
+                            Dim rightEdge As List(Of Color) = SmoothColorList(ReadEdgeColumn(active_Bitmap, srcW - 1, srcH), radiusH)
+                            Dim midX As Integer = sw \ 2
+                            For vpY As Integer = 0 To sh - 1
+                                Dim localY As Integer = Math.Max(0, Math.Min(vpY - imgTop, displayedH - 1))
+                                Dim srcY As Integer = Math.Max(0, Math.Min(CInt(Math.Floor(localY * CDbl(srcH) / displayedH)), srcH - 1))
+                                Using bL As New SolidBrush(leftEdge(srcY))
+                                    g.FillRectangle(bL, 0, vpY, midX, 1)
                                 End Using
-
-                            Else
-                                list_of_corner_colors.Clear()
-                                is_perspective_drown = True
-
-                                For y As Integer = 0 To h Step brush_wide
-                                    list_of_corner_colors.Add(SampleVerticalEdgeColor(active_Bitmap, True, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH), verticalEdgeSampleDepth))
-                                Next
-
-                                list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(h * smoothIndex) + 1)
-                                middle_point = CInt(w / 2)
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    For y As Integer = 0 To h Step brush_wide
-                                        Using brush As New SolidBrush(list_of_corner_colors(y))
-                                            g.FillRectangle(brush, 0, y, middle_point, 1)
-                                        End Using
-                                    Next
+                                Using bR As New SolidBrush(rightEdge(srcY))
+                                    g.FillRectangle(bR, midX, vpY, sw - midX, 1)
                                 End Using
-                            End If
+                            Next
+                            is_perspective_drown = True
                         End If
 
-                        color_Sample_Count = 0
-                        list_of_corner_colors.Clear()
-
-                        'right
-                        For y As Integer = 0 To h Step step_size_while_color_Search
-                            list_of_corner_colors.Add(SampleVerticalEdgeColor(active_Bitmap, False, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH), verticalEdgeSampleDepth))
-                            color_Sample_Count += 1
-                        Next
-
-                        If list_of_corner_colors.Count > 0 Then
-
-                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
-
-                            If diffSum < color_deviation_threshold Then
-                                begin_point = New Point(CInt(w / 2), CInt(h / 2))
-                                end_point = New Point(w, CInt(h / 2))
-                                brush_size_line = h
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    If color_Sample_Count > 0 Then
-                                        Dim avgColor As Color = GetTrimmedAverageColor(list_of_corner_colors)
-
-                                        is_perspective_drown = True
-
-                                        Using brush As New SolidBrush(avgColor)
-                                            g.FillRectangle(brush, CInt(w / 2), 0, w - CInt(w / 2) + 1, h + 1)
-                                        End Using
-                                    End If
+                        If imgTop > 0 Then
+                            ' Letterbox (spec section 8): one vertical line per screen column;
+                            ' top field continues the top edge, bottom field the bottom edge.
+                            Dim topEdge As List(Of Color) = SmoothColorList(ReadEdgeRow(active_Bitmap, 0, srcW), radiusW)
+                            Dim bottomEdge As List(Of Color) = SmoothColorList(ReadEdgeRow(active_Bitmap, srcH - 1, srcW), radiusW)
+                            For vpX As Integer = 0 To sw - 1
+                                Dim localX As Integer = Math.Max(0, Math.Min(vpX - imgLeft, displayedW - 1))
+                                Dim srcX As Integer = Math.Max(0, Math.Min(CInt(Math.Floor(localX * CDbl(srcW) / displayedW)), srcW - 1))
+                                Using bT As New SolidBrush(topEdge(srcX))
+                                    g.FillRectangle(bT, vpX, 0, 1, imgTop)
                                 End Using
-
-                            Else
-                                list_of_corner_colors.Clear()
-                                is_perspective_drown = True
-
-                                For y As Integer = 0 To h Step brush_wide
-                                    list_of_corner_colors.Add(SampleVerticalEdgeColor(active_Bitmap, False, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH), verticalEdgeSampleDepth))
-                                Next
-
-                                list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(h * smoothIndex) + 1)
-                                middle_point = CInt(w / 2)
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    For y As Integer = 0 To h Step brush_wide
-                                        Using brush As New SolidBrush(list_of_corner_colors(y))
-                                            g.FillRectangle(brush, middle_point, y, w - middle_point + 1, 1)
-                                        End Using
-                                    Next
-                                End Using
-
-                            End If
+                                If imgBottom < sh Then
+                                    Using bB As New SolidBrush(bottomEdge(srcX))
+                                        g.FillRectangle(bB, vpX, imgBottom, 1, sh - imgBottom)
+                                    End Using
+                                End If
+                            Next
+                            is_perspective_drown = True
                         End If
-
-                    Else
-                        'top
-                        For x As Integer = 0 To w Step step_size_while_color_Search
-                            list_of_corner_colors.Add(SampleHorizontalEdgeColor(active_Bitmap, True, Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), horizontalEdgeSampleDepth))
-                            color_Sample_Count += 1
-                        Next
-
-                        If list_of_corner_colors.Count > 0 Then
-
-                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
-
-                            If diffSum < color_deviation_threshold Then
-                                begin_point = New Point(CInt(w / 2), 0)
-                                end_point = New Point(CInt(w / 2), CInt(h / 2))
-                                brush_size_line = w
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    If color_Sample_Count > 0 Then
-                                        Dim avgColor As Color = GetTrimmedAverageColor(list_of_corner_colors)
-
-                                        is_perspective_drown = True
-
-                                        Using brush As New SolidBrush(avgColor)
-                                            g.FillRectangle(brush, 0, 0, w + 1, CInt(h / 2))
-                                        End Using
-                                    End If
-                                End Using
-
-                            Else
-                                list_of_corner_colors.Clear()
-                                is_perspective_drown = True
-
-                                For x As Integer = 0 To w Step brush_wide
-                                    list_of_corner_colors.Add(SampleHorizontalEdgeColor(active_Bitmap, True, Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), horizontalEdgeSampleDepth))
-                                Next
-
-                                list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(w * smoothIndex) + 1)
-                                middle_point = CInt(h / 2)
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    For x As Integer = 0 To w Step brush_wide
-                                        Using brush As New SolidBrush(list_of_corner_colors(x))
-                                            g.FillRectangle(brush, x, 0, 1, middle_point)
-                                        End Using
-                                    Next
-                                End Using
-                            End If
-                        End If
-
-                        color_Sample_Count = 0
-                        list_of_corner_colors.Clear()
-
-                        'buttom
-                        For x As Integer = 0 To w Step step_size_while_color_Search
-                            list_of_corner_colors.Add(SampleHorizontalEdgeColor(active_Bitmap, False, Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), horizontalEdgeSampleDepth))
-                            color_Sample_Count += 1
-                        Next
-
-                        If list_of_corner_colors.Count > 0 Then
-
-                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
-
-                            If diffSum < color_deviation_threshold Then
-                                begin_point = New Point(CInt(w / 2), CInt(h / 2))
-                                end_point = New Point(CInt(w / 2), h)
-                                brush_size_line = w
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    If color_Sample_Count > 0 Then
-                                        Dim avgColor As Color = GetTrimmedAverageColor(list_of_corner_colors)
-
-                                        is_perspective_drown = True
-
-                                        Using brush As New SolidBrush(avgColor)
-                                            g.FillRectangle(brush, 0, CInt(h / 2), w + 1, h - CInt(h / 2) + 1)
-                                        End Using
-                                    End If
-                                End Using
-
-                            Else
-                                list_of_corner_colors.Clear()
-                                is_perspective_drown = True
-
-                                For x As Integer = 0 To w Step brush_wide
-                                    list_of_corner_colors.Add(SampleHorizontalEdgeColor(active_Bitmap, False, Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), horizontalEdgeSampleDepth))
-                                Next
-
-                                list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(w * smoothIndex) + 1)
-                                middle_point = CInt(h / 2)
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    For x As Integer = 0 To w Step brush_wide
-                                        Using brush As New SolidBrush(list_of_corner_colors(x))
-                                            g.FillRectangle(brush, x, middle_point, 1, h - middle_point + 1)
-                                        End Using
-                                    Next
-                                End Using
-
-                            End If
-                        End If
-                    End If
+                    End Using
 
                     If is_perspective_drown Then
                         If active_PictureBox_Index = 1 Then
