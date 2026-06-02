@@ -183,6 +183,7 @@ Public Class Main_Form
     Private mouse_Down_Start_Point As Point
 
     Private video_Volume_Level As Double = 1
+    Private is_Video_Muted As Boolean = False
     Private is_TextBox_Editing As Boolean = False
 
     ' LibVLC fallback player (for formats the IE WebBrowser cannot decode: ZMBV/AVI, VP9, etc.)
@@ -1265,14 +1266,40 @@ Public Class Main_Form
         End Try
     End Function
 
-    Public Sub SetVolume(volume As Double)
-        video_Volume_Level = Math.Max(0.0, Math.Min(1.0, volume))
-        If vlc_Media_Player IsNot Nothing AndAlso is_Vlc_Playing Then
-            Try
-                vlc_Media_Player.Volume = CInt(Math.Round(video_Volume_Level * 100))
-            Catch
-            End Try
+    Private Function ClampVideoVolume(volume As Double) As Double
+        Return Math.Max(0.0, Math.Min(1.0, volume))
+    End Function
+
+    Private Function ParseVideoVolumeSetting(value As String, fallback As Double) As Double
+        Dim parsed_Value As Double
+
+        If Double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, parsed_Value) OrElse
+            Double.TryParse(value, parsed_Value) Then
+
+            Return ClampVideoVolume(parsed_Value)
         End If
+
+        Return ClampVideoVolume(fallback)
+    End Function
+
+    Private Sub ApplyVideoAudioStateToVlc()
+        If vlc_Media_Player Is Nothing Then Return
+
+        Try
+            vlc_Media_Player.Volume = CInt(Math.Round(video_Volume_Level * 100))
+            vlc_Media_Player.Mute = is_Video_Muted
+        Catch
+        End Try
+    End Sub
+
+    Public Sub SetVolume(volume As Double)
+        SetVideoAudioState(volume, is_Video_Muted)
+    End Sub
+
+    Public Sub SetVideoAudioState(volume As Double, muted As Boolean)
+        video_Volume_Level = ClampVideoVolume(volume)
+        is_Video_Muted = muted
+        ApplyVideoAudioStateToVlc()
     End Sub
 
     Public Sub HandleWebBrowserDoubleClick()
@@ -1346,6 +1373,7 @@ Public Class Main_Form
                 .EnableMouseInput = False,
                 .EnableKeyInput = False
             }
+            AddHandler vlc_Media_Player.Playing, AddressOf Vlc_Media_Player_Playing
             vlc_Video_View = New LibVLCSharp.WinForms.VideoView() With {
                 .MediaPlayer = vlc_Media_Player,
                 .Visible = False,
@@ -1398,7 +1426,7 @@ Public Class Main_Form
             If Is_Video_Loop Then media.AddOption(":input-repeat=65535")
             vlc_Media_Player.Play(media)
             media.Dispose()
-            vlc_Media_Player.Volume = CInt(Math.Round(video_Volume_Level * 100))
+            ApplyVideoAudioStateToVlc()
 
             is_Vlc_Playing = True
             current_Loaded_File_Name = file_Path
@@ -1431,6 +1459,10 @@ Public Class Main_Form
         HandleWebBrowserDoubleClick()
     End Sub
 
+    Private Sub Vlc_Media_Player_Playing(sender As Object, e As EventArgs)
+        ApplyVideoAudioStateToVlc()
+    End Sub
+
     Private Sub Vlc_Video_View_MouseClick(sender As Object, e As MouseEventArgs)
         ' Right-click toggles pause/play, mirroring the browser player's context handler.
         If e.Button = Windows.Forms.MouseButtons.Right AndAlso vlc_Media_Player IsNot Nothing Then
@@ -1456,10 +1488,12 @@ Public Class Main_Form
             Dim video_File_Absolute_Uri As String = video_File_As_Uri.AbsoluteUri
 
             Dim loop_Attribute As String = If(Is_Video_Loop, " loop", "")
+            Dim muted_Attribute As String = If(is_Video_Muted, " muted", "")
+            Dim muted_Script_Value As String = If(is_Video_Muted, "true", "false")
 
             Dim text_Color As String = If(Form_Color_Scheme = 0, "white", "black")
 
-            Dim video_Html_Content As String = "<video id='videoPlayer' controls autoplay" & loop_Attribute & " style='width:100%;height:calc(100% - " & height_For_instruments_on_WebPanel & "px);object-fit:fill;'" &
+            Dim video_Html_Content As String = "<video id='videoPlayer' controls autoplay" & loop_Attribute & muted_Attribute & " style='width:100%;height:calc(100% - " & height_For_instruments_on_WebPanel & "px);object-fit:fill;'" &
                             " onerror=""fmsReportVideoError('Error: Unsupported video type (video element error)');"">" &
                             "<source src='" & video_File_Absolute_Uri & "' onerror=""fmsReportVideoError('Error: Unsupported video type (source failed to load)');"">" &
                             "<track kind='captions' default>" &
@@ -1496,8 +1530,9 @@ Public Class Main_Form
                      "<script>" &
                      "var player = document.getElementById('videoPlayer');" &
                      "player.volume = " & video_Volume_Level.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) & ";" &
+                     "player.muted = " & muted_Script_Value & ";" &
                      "player.oncontextmenu = function(e) { e.preventDefault(); if (this.paused) this.play(); else this.pause(); return false; };" &
-                     "player.onvolumechange = function() { try { window.external.SetVolume(this.volume); } catch(e) { } };" &
+                     "player.onvolumechange = function() { try { window.external.SetVideoAudioState(this.volume, this.muted); } catch(e) { } };" &
                      "player.addEventListener('error', function() { fmsReportVideoError('Error: Unsupported video type (media error)'); });" &
                      "player.addEventListener('stalled', function() { setTimeout(fmsWatchdog, 100); });" &
                      "function fmsWatchdog() {" &
@@ -2288,7 +2323,8 @@ Public Class Main_Form
         is_Table_Form_Open = GetSetting(App_name, Second_App_Name, "TableOpened", "0") = "1"
 
         Dim video_Volume_String = GetSetting(App_name, Second_App_Name, "VideoVolume", "1.0")
-        Double.TryParse(video_Volume_String, video_Volume_Level)
+        video_Volume_Level = ParseVideoVolumeSetting(video_Volume_String, video_Volume_Level)
+        is_Video_Muted = GetSetting(App_name, Second_App_Name, "VideoMuted", "0") = "1"
 
         For z = 0 To 9
             Hardkeys_to_move_mediafile(z) = GetSetting(App_name, Second_App_Name, "MoveOn" & z.ToString, "")
@@ -2405,459 +2441,6 @@ Public Class Main_Form
         ISizeChanged()
     End Sub
 
-    Private Function CheckCornerColorsAndSetBeginPoint(list_of_corner_colors As List(Of System.Drawing.Color)) As Long
-
-        Dim corner_colors_Count As Integer = list_of_corner_colors.Count
-        If corner_colors_Count > percent_of_color_smooth_To_Remove Then
-            Dim color_Trim_Count As Integer = CInt(Math.Floor(corner_colors_Count * percent_of_color_smooth_To_Remove / 100))
-
-            ' Prepare sorted lists for each channel
-            Dim sorted_R = list_of_corner_colors.Select(Function(c) CInt(c.R)).OrderBy(Function(v) v).ToList()
-            Dim sorted_G = list_of_corner_colors.Select(Function(c) CInt(c.G)).OrderBy(Function(v) v).ToList()
-            Dim sorted_B = list_of_corner_colors.Select(Function(c) CInt(c.B)).OrderBy(Function(v) v).ToList()
-
-            ' Remove bottom and top 10%
-            sorted_R = sorted_R.Skip(color_Trim_Count).Take(sorted_R.Count - 2 * color_Trim_Count).ToList()
-            sorted_G = sorted_G.Skip(color_Trim_Count).Take(sorted_G.Count - 2 * color_Trim_Count).ToList()
-            sorted_B = sorted_B.Skip(color_Trim_Count).Take(sorted_B.Count - 2 * color_Trim_Count).ToList()
-
-            ' Calculate min, max, and diffSum on trimmed lists
-            Dim maxR As Integer = sorted_R.Max()
-            Dim minR As Integer = sorted_R.Min()
-            Dim maxG As Integer = sorted_G.Max()
-            Dim minG As Integer = sorted_G.Min()
-            Dim maxB As Integer = sorted_B.Max()
-            Dim minB As Integer = sorted_B.Min()
-
-            Return (maxR - minR) + (maxG - minG) + (maxB - minB)
-
-        Else
-            ' Fallback to original logic if not enough data
-            Dim maxR As Integer = list_of_corner_colors.Max(Function(c) CInt(c.R))
-            Dim maxG As Integer = list_of_corner_colors.Max(Function(c) CInt(c.G))
-            Dim maxB As Integer = list_of_corner_colors.Max(Function(c) CInt(c.B))
-
-            Dim minR As Integer = list_of_corner_colors.Min(Function(c) CInt(c.R))
-            Dim minG As Integer = list_of_corner_colors.Min(Function(c) CInt(c.G))
-            Dim minB As Integer = list_of_corner_colors.Min(Function(c) CInt(c.B))
-
-            Return (maxR - minR) + (maxG - minG) + (maxB - minB)
-        End If
-
-    End Function
-
-    Private Function SmoothColorList(colors As List(Of Color), radius As Integer) As List(Of Color)
-        If radius < 1 OrElse colors.Count < 3 Then Return colors
-        Dim result As New List(Of Color)(colors.Count)
-        For i As Integer = 0 To colors.Count - 1
-            Dim r_sum As Integer = 0, g_sum As Integer = 0, b_sum As Integer = 0
-            Dim j_start As Integer = Math.Max(0, i - radius)
-            Dim j_end As Integer = Math.Min(colors.Count - 1, i + radius)
-            For j As Integer = j_start To j_end
-                r_sum += colors(j).R
-                g_sum += colors(j).G
-                b_sum += colors(j).B
-            Next
-            Dim count As Integer = j_end - j_start + 1
-            result.Add(Color.FromArgb(255, r_sum \ count, g_sum \ count, b_sum \ count))
-        Next
-        Return result
-    End Function
-
-    Private Function GetEdgeSampleDepth(scale As Double, sourceSize As Integer) As Integer
-        Dim safeScale As Double = Math.Max(scale, 0.0001)
-        Dim scaledSampleDepth As Integer = CInt(Math.Ceiling(1.0 / safeScale))
-        Dim maxDepth As Integer = Math.Min(sourceSize, 8)
-        Return Math.Min(Math.Max(scaledSampleDepth, 2), maxDepth)
-    End Function
-
-    Private Function SampleVerticalEdgeColor(sourceBitmap As Bitmap, isLeftEdge As Boolean, sourceY As Integer, sampleDepth As Integer) As Color
-        Dim clampedY As Integer = Math.Max(0, Math.Min(sourceY, sourceBitmap.Height - 1))
-        Dim effectiveDepth As Integer = Math.Max(1, Math.Min(sampleDepth, sourceBitmap.Width))
-        Dim startX As Integer = If(isLeftEdge, 0, sourceBitmap.Width - effectiveDepth)
-        Dim sumR As Integer = 0
-        Dim sumG As Integer = 0
-        Dim sumB As Integer = 0
-
-        For x As Integer = startX To startX + effectiveDepth - 1
-            Dim px = sourceBitmap.GetPixel(x, clampedY)
-            sumR += CInt(px.R)
-            sumG += CInt(px.G)
-            sumB += CInt(px.B)
-        Next
-
-        Return Color.FromArgb(255, sumR \ effectiveDepth, sumG \ effectiveDepth, sumB \ effectiveDepth)
-    End Function
-
-    Private Function SampleHorizontalEdgeColor(sourceBitmap As Bitmap, isTopEdge As Boolean, sourceX As Integer, sampleDepth As Integer) As Color
-        Dim clampedX As Integer = Math.Max(0, Math.Min(sourceX, sourceBitmap.Width - 1))
-        Dim effectiveDepth As Integer = Math.Max(1, Math.Min(sampleDepth, sourceBitmap.Height))
-        Dim startY As Integer = If(isTopEdge, 0, sourceBitmap.Height - effectiveDepth)
-        Dim sumR As Integer = 0
-        Dim sumG As Integer = 0
-        Dim sumB As Integer = 0
-
-        For y As Integer = startY To startY + effectiveDepth - 1
-            Dim px = sourceBitmap.GetPixel(clampedX, y)
-            sumR += CInt(px.R)
-            sumG += CInt(px.G)
-            sumB += CInt(px.B)
-        Next
-
-        Return Color.FromArgb(255, sumR \ effectiveDepth, sumG \ effectiveDepth, sumB \ effectiveDepth)
-    End Function
-
-    Private Function GetTrimmedChannelAverage(channelValues As IEnumerable(Of Integer)) As Integer
-        Dim sortedValues = channelValues.OrderBy(Function(v) v).ToList()
-        If sortedValues.Count = 0 Then Return 0
-
-        Dim trimCount As Integer = CInt(Math.Floor(sortedValues.Count * percent_of_color_smooth_To_Remove / 100.0))
-        Dim maxAllowedTrim As Integer = Math.Max(0, (sortedValues.Count - 1) \ 2)
-        trimCount = Math.Min(trimCount, maxAllowedTrim)
-
-        Dim trimmedValues = sortedValues.Skip(trimCount).Take(sortedValues.Count - 2 * trimCount).ToList()
-        If trimmedValues.Count = 0 Then trimmedValues = sortedValues
-
-        Return CInt(Math.Round(trimmedValues.Average()))
-    End Function
-
-    Private Function GetTrimmedAverageColor(colors As List(Of Color)) As Color
-        If colors.Count = 0 Then Return Color.Black
-
-        Dim avgR As Integer = GetTrimmedChannelAverage(colors.Select(Function(c) CInt(c.R)))
-        Dim avgG As Integer = GetTrimmedChannelAverage(colors.Select(Function(c) CInt(c.G)))
-        Dim avgB As Integer = GetTrimmedChannelAverage(colors.Select(Function(c) CInt(c.B)))
-
-        Return Color.FromArgb(255, avgR, avgG, avgB)
-    End Function
-
-    Private Sub Draw_Perspective()
-
-        '  Dim sw As New Stopwatch()
-        '   sw.Start()
-
-        If Is_Pespective AndAlso
-            (is_PictureBox1_Visible OrElse
-            is_PictureBox2_Visible) AndAlso
-            (Not Is_slide_show_mode Or
-            SlideShowTimer.Interval > slideshow_limit_to_change_color) AndAlso
-            last_Perspective_Draw_Time < DateTime.Now.Subtract(TimeSpan.FromMilliseconds(how_long_wait_before_draw_perspective)) Then
-
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1129: corners redrawn")
-            last_Perspective_Draw_Time = DateTime.Now()
-
-            Dim active_Bitmap As Bitmap = Nothing
-            Dim active_PictureBox_Index As Int16 = 0
-            Dim is_perspective_drown As Boolean = False
-
-            If is_PictureBox1_Visible Then
-                active_Bitmap = CType(Picture_Box_1.Image, Bitmap)
-                active_PictureBox_Index = 1
-            ElseIf is_PictureBox2_Visible Then
-                active_Bitmap = CType(Picture_Box_2.Image, Bitmap)
-                active_PictureBox_Index = 2
-            End If
-
-            Dim w = Picture_Box_1.Width - 1
-            Dim h = Picture_Box_1.Height - 1
-
-            If active_Bitmap IsNot Nothing AndAlso
-                    active_Bitmap.Width > 1 AndAlso
-                    active_Bitmap.Height > 1 AndAlso
-            w > 1 AndAlso
-                h > 1 Then
-
-                Dim bH = active_Bitmap.Height - 1
-                Dim bW = active_Bitmap.Width - 1
-
-                'Try
-
-                Dim bitmap_proportion = (bW + 1.0) / (bH + 1.0)
-                Dim pictureBox_proportion = (w + 1.0) / (h + 1.0)
-
-
-                If Not Math.Round(bitmap_proportion, 2) = Math.Round(pictureBox_proportion, 2) Then
-
-
-                    Dim proportionalScale_H = (h + 1.0) / (bH + 1.0)
-                    Dim proportionalScale_W = (w + 1.0) / (bW + 1.0)
-                    Dim verticalEdgeSampleDepth As Integer = GetEdgeSampleDepth(proportionalScale_W, bW + 1)
-                    Dim horizontalEdgeSampleDepth As Integer = GetEdgeSampleDepth(proportionalScale_H, bH + 1)
-                    Dim Perspective_Bitmap As New Bitmap(w + 1, h + 1)
-                    Using g_bg As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                        g_bg.Clear(Color.FromArgb(255, Me.BackColor.R, Me.BackColor.G, Me.BackColor.B))
-                    End Using
-
-                    Dim brush_wide = 1
-                    Dim brush_size_H = CInt(proportionalScale_H * brush_wide + 1)
-                    Dim brush_size_W = CInt(proportionalScale_W * brush_wide + 1)
-                    Dim brush_size_line = 0
-                    Dim middle_point = 0
-                    Dim color_Sample_Count = 0
-                    Dim begin_point As New Point(0, 0)
-                    Dim end_point As New Point(0, 0)
-                    Dim to_draw_the_wide As Boolean = False
-                    Dim diffSum As Long = 0
-
-                    Dim list_of_corner_colors As New List(Of System.Drawing.Color)
-                    Dim color_deviation_threshold = (percent_of_color_deviation / 100) * 255 * 3
-
-                    If bitmap_proportion < pictureBox_proportion Then
-                        'left
-                        For y As Integer = 0 To h Step step_size_while_color_Search
-                            list_of_corner_colors.Add(SampleVerticalEdgeColor(active_Bitmap, True, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH), verticalEdgeSampleDepth))
-                            color_Sample_Count += 1
-                        Next
-
-                        If list_of_corner_colors.Count > 0 Then
-
-                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
-
-                            If diffSum < color_deviation_threshold Then
-                                begin_point = New Point(0, CInt(h / 2))
-                                end_point = New Point(CInt(w / 2), CInt(h / 2))
-                                brush_size_line = h + 1
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    If color_Sample_Count > 0 Then
-                                        Dim avgColor As Color = GetTrimmedAverageColor(list_of_corner_colors)
-
-                                        is_perspective_drown = True
-
-                                        Using brush As New SolidBrush(avgColor)
-                                            g.FillRectangle(brush, 0, 0, CInt(w / 2), h + 1)
-                                        End Using
-                                    End If
-                                End Using
-
-                            Else
-                                list_of_corner_colors.Clear()
-                                is_perspective_drown = True
-
-                                For y As Integer = 0 To h Step brush_wide
-                                    list_of_corner_colors.Add(SampleVerticalEdgeColor(active_Bitmap, True, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH), verticalEdgeSampleDepth))
-                                Next
-
-                                list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(h * smoothIndex) + 1)
-                                middle_point = CInt(w / 2)
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    For y As Integer = 0 To h Step brush_wide
-                                        Using brush As New SolidBrush(list_of_corner_colors(y))
-                                            g.FillRectangle(brush, 0, y, middle_point, 1)
-                                        End Using
-                                    Next
-                                End Using
-                            End If
-                        End If
-
-                        color_Sample_Count = 0
-                        list_of_corner_colors.Clear()
-
-                        'right
-                        For y As Integer = 0 To h Step step_size_while_color_Search
-                            list_of_corner_colors.Add(SampleVerticalEdgeColor(active_Bitmap, False, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH), verticalEdgeSampleDepth))
-                            color_Sample_Count += 1
-                        Next
-
-                        If list_of_corner_colors.Count > 0 Then
-
-                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
-
-                            If diffSum < color_deviation_threshold Then
-                                begin_point = New Point(CInt(w / 2), CInt(h / 2))
-                                end_point = New Point(w, CInt(h / 2))
-                                brush_size_line = h
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    If color_Sample_Count > 0 Then
-                                        Dim avgColor As Color = GetTrimmedAverageColor(list_of_corner_colors)
-
-                                        is_perspective_drown = True
-
-                                        Using brush As New SolidBrush(avgColor)
-                                            g.FillRectangle(brush, CInt(w / 2), 0, w - CInt(w / 2) + 1, h + 1)
-                                        End Using
-                                    End If
-                                End Using
-
-                            Else
-                                list_of_corner_colors.Clear()
-                                is_perspective_drown = True
-
-                                For y As Integer = 0 To h Step brush_wide
-                                    list_of_corner_colors.Add(SampleVerticalEdgeColor(active_Bitmap, False, Math.Min(CInt(Math.Floor(y / proportionalScale_H)), bH), verticalEdgeSampleDepth))
-                                Next
-
-                                list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(h * smoothIndex) + 1)
-                                middle_point = CInt(w / 2)
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    For y As Integer = 0 To h Step brush_wide
-                                        Using brush As New SolidBrush(list_of_corner_colors(y))
-                                            g.FillRectangle(brush, middle_point, y, w - middle_point + 1, 1)
-                                        End Using
-                                    Next
-                                End Using
-
-                            End If
-                        End If
-
-                    Else
-                        'top
-                        For x As Integer = 0 To w Step step_size_while_color_Search
-                            list_of_corner_colors.Add(SampleHorizontalEdgeColor(active_Bitmap, True, Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), horizontalEdgeSampleDepth))
-                            color_Sample_Count += 1
-                        Next
-
-                        If list_of_corner_colors.Count > 0 Then
-
-                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
-
-                            If diffSum < color_deviation_threshold Then
-                                begin_point = New Point(CInt(w / 2), 0)
-                                end_point = New Point(CInt(w / 2), CInt(h / 2))
-                                brush_size_line = w
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    If color_Sample_Count > 0 Then
-                                        Dim avgColor As Color = GetTrimmedAverageColor(list_of_corner_colors)
-
-                                        is_perspective_drown = True
-
-                                        Using brush As New SolidBrush(avgColor)
-                                            g.FillRectangle(brush, 0, 0, w + 1, CInt(h / 2))
-                                        End Using
-                                    End If
-                                End Using
-
-                            Else
-                                list_of_corner_colors.Clear()
-                                is_perspective_drown = True
-
-                                For x As Integer = 0 To w Step brush_wide
-                                    list_of_corner_colors.Add(SampleHorizontalEdgeColor(active_Bitmap, True, Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), horizontalEdgeSampleDepth))
-                                Next
-
-                                list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(w * smoothIndex) + 1)
-                                middle_point = CInt(h / 2)
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    For x As Integer = 0 To w Step brush_wide
-                                        Using brush As New SolidBrush(list_of_corner_colors(x))
-                                            g.FillRectangle(brush, x, 0, 1, middle_point)
-                                        End Using
-                                    Next
-                                End Using
-                            End If
-                        End If
-
-                        color_Sample_Count = 0
-                        list_of_corner_colors.Clear()
-
-                        'buttom
-                        For x As Integer = 0 To w Step step_size_while_color_Search
-                            list_of_corner_colors.Add(SampleHorizontalEdgeColor(active_Bitmap, False, Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), horizontalEdgeSampleDepth))
-                            color_Sample_Count += 1
-                        Next
-
-                        If list_of_corner_colors.Count > 0 Then
-
-                            diffSum = CheckCornerColorsAndSetBeginPoint(list_of_corner_colors)
-
-                            If diffSum < color_deviation_threshold Then
-                                begin_point = New Point(CInt(w / 2), CInt(h / 2))
-                                end_point = New Point(CInt(w / 2), h)
-                                brush_size_line = w
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    If color_Sample_Count > 0 Then
-                                        Dim avgColor As Color = GetTrimmedAverageColor(list_of_corner_colors)
-
-                                        is_perspective_drown = True
-
-                                        Using brush As New SolidBrush(avgColor)
-                                            g.FillRectangle(brush, 0, CInt(h / 2), w + 1, h - CInt(h / 2) + 1)
-                                        End Using
-                                    End If
-                                End Using
-
-                            Else
-                                list_of_corner_colors.Clear()
-                                is_perspective_drown = True
-
-                                For x As Integer = 0 To w Step brush_wide
-                                    list_of_corner_colors.Add(SampleHorizontalEdgeColor(active_Bitmap, False, Math.Min(CInt(Math.Floor(x / proportionalScale_W)), bW), horizontalEdgeSampleDepth))
-                                Next
-
-                                list_of_corner_colors = SmoothColorList(list_of_corner_colors, CInt(w * smoothIndex) + 1)
-                                middle_point = CInt(h / 2)
-
-                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-                                    For x As Integer = 0 To w Step brush_wide
-                                        Using brush As New SolidBrush(list_of_corner_colors(x))
-                                            g.FillRectangle(brush, x, middle_point, 1, h - middle_point + 1)
-                                        End Using
-                                    Next
-                                End Using
-
-                            End If
-                        End If
-                    End If
-
-                    If is_perspective_drown Then
-                        If active_PictureBox_Index = 1 Then
-                            Picture_Box_1.BackgroundImage?.Dispose()
-                            Picture_Box_1.BackgroundImage = Perspective_Bitmap
-                        ElseIf active_PictureBox_Index = 2 Then
-                            Picture_Box_2.BackgroundImage?.Dispose()
-                            Picture_Box_2.BackgroundImage = Perspective_Bitmap
-                        End If
-                    Else
-                        Perspective_Bitmap.Dispose()
-                    End If
-                End If
-                ' Catch ex As Exception
-                '   MsgBox("E104 " & ex.Message)
-                '     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w3050: E104 " & ex.Message)
-                ' End Try
-
-                Try
-                    If Not is_perspective_drown Then
-                        If active_PictureBox_Index = 1 AndAlso
-                                Picture_Box_1.BackgroundImage IsNot Nothing Then
-
-                            Dim oldBg1 As Image = Picture_Box_1.BackgroundImage
-                            Picture_Box_1.BackgroundImage = Nothing
-                            oldBg1.Dispose()
-
-                        ElseIf active_PictureBox_Index = 2 AndAlso
-                                Picture_Box_2.BackgroundImage IsNot Nothing Then
-
-                            Dim oldBg2 As Image = Picture_Box_2.BackgroundImage
-                            Picture_Box_2.BackgroundImage = Nothing
-                            oldBg2.Dispose()
-                        End If
-                    End If
-                Catch ex As Exception
-                    MsgBox("E105 " & ex.Message)
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w3070: E105 " & ex.Message)
-                End Try
-            End If
-        End If
-
-        '  sw.Stop()
-        ' Debug.WriteLine("Draw_Perspective elapsed: " & sw.ElapsedMilliseconds & " ms")
-
-    End Sub
 
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles btn_Prev_File.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1130: btn_Prev_File")
@@ -3201,7 +2784,8 @@ Public Class Main_Form
             If Me.Height >= main_form_position_Limit_Width_Low Then SaveSetting(App_name, Second_App_Name, "AppHeight", Me.Height.ToString)
             If Me.Width >= main_form_position_Limit_Height_Low Then SaveSetting(App_name, Second_App_Name, "AppWidth", Me.Width.ToString)
 
-            SaveSetting(App_name, Second_App_Name, "VideoVolume", video_Volume_Level.ToString("F2"))
+            SaveSetting(App_name, Second_App_Name, "VideoVolume", video_Volume_Level.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))
+            SaveSetting(App_name, Second_App_Name, "VideoMuted", If(is_Video_Muted, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "RecentFolders", String.Join("|", recent_Folder_List))
 
             SaveSetting(App_name, Second_App_Name, "UseIndependentThreadForOperationsWithFiles", If(Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked, "1", "0"))

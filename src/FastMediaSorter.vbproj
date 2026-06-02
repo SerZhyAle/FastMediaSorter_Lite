@@ -143,6 +143,9 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.PerspectiveBackground.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+    </Compile>
     <Compile Include="Table_Form.Designer.vb">
       <DependentUpon>Table_Form.vb</DependentUpon>
     </Compile>
