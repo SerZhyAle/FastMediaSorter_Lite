@@ -205,6 +205,45 @@ Partial Public Class Main_Form
                 flow_Toolbar.BringToFront()
             End If
         End If
+
+        ApplyToolbarRegion(overlay)
+    End Sub
+
+    ''' <summary>
+    ''' Clips the toolbar window to just the button/combo rectangles so the gaps
+    ''' between them are genuinely cut out — the full-screen image shows straight
+    ''' through (WinForms "transparent" backgrounds only reveal the parent's
+    ''' fill, never a sibling control, so a Region with holes is the real fix).
+    ''' Passing False removes the clip (windowed mode = normal solid bar).
+    ''' </summary>
+    Friend Sub ApplyToolbarRegion(useHoles As Boolean)
+        If flow_Toolbar Is Nothing Then Return
+
+        Dim previous As Region = flow_Toolbar.Region
+
+        If Not useHoles Then
+            If previous IsNot Nothing Then
+                flow_Toolbar.Region = Nothing
+                previous.Dispose()
+            End If
+            Return
+        End If
+
+        ' Lay the toolbar out at its current width first so child bounds are final.
+        flow_Toolbar.PerformLayout()
+
+        Dim holes As New Region()
+        holes.MakeEmpty()
+        For Each c As Control In flow_Toolbar.Controls
+            If c.Visible Then
+                Dim r As Rectangle = c.Bounds
+                r.Inflate(1, 1)   ' 1px halo: avoids edge-clipping but keeps the gap see-through
+                holes.Union(r)
+            End If
+        Next
+
+        flow_Toolbar.Region = holes
+        If previous IsNot Nothing Then previous.Dispose()
     End Sub
 
     ''' <summary>

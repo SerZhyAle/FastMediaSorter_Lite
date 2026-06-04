@@ -52,6 +52,12 @@ Partial Public Class Main_Form
 
         SyncMediaSurface()
 
+        ' Re-cut the overlay toolbar's holes now the panel has its final size.
+        If is_Full_Screen_Mode AndAlso Not is_Super_Full_Screen_Mode Then
+            flow_Toolbar.Width = panel_Media.ClientSize.Width
+            ApplyToolbarRegion(True)
+        End If
+
         If is_form_shown Then Draw_Perspective()
         SkipZoom()
 
