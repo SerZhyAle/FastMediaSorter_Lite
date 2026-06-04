@@ -94,7 +94,6 @@
     <SignManifests>false</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
-    
   </PropertyGroup>
   <PropertyGroup>
     <TargetZone>LocalIntranet</TargetZone>
@@ -145,18 +144,63 @@
     </Compile>
     <Compile Include="Main_Form.PerspectiveBackground.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Main_Form.VideoPlayer.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Main_Form.FileOperations.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Main_Form.UILayout.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Main_Form.ModernLayout.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.FileAssociation.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.NativeMethods.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.GifPlayback.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.Slideshow.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.Localization.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.MediaLoading.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.FileScanning.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.MouseInput.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.KeyboardInput.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.Lifecycle.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Table_Form.Designer.vb">
       <DependentUpon>Table_Form.vb</DependentUpon>

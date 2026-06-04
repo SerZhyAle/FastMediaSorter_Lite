@@ -153,7 +153,15 @@ Partial Public Class Main_Form
 
         Using g As Graphics = Graphics.FromImage(displayedBitmap)
             g.Clear(Color.FromArgb(255, backgroundColor.R, backgroundColor.G, backgroundColor.B))
-            g.DrawImage(sourceImage, 0, 0, displaySize.Width, displaySize.Height)
+            ' Wrap mode TileFlipXY prevents GDI+ from blending the outermost row/column
+            ' with the off-image (cleared background) area during downscaling. Without it,
+            ' the sampled edge column is pulled toward the dark BackColor, so the perspective
+            ' bars start darker than the real image edge and the seam becomes visible.
+            Dim destRect As New Rectangle(0, 0, displaySize.Width, displaySize.Height)
+            Using attr As New System.Drawing.Imaging.ImageAttributes()
+                attr.SetWrapMode(Drawing2D.WrapMode.TileFlipXY)
+                g.DrawImage(sourceImage, destRect, 0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attr)
+            End Using
         End Using
 
         Return displayedBitmap

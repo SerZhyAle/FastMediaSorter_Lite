@@ -11,7 +11,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Prerequisites
 - .NET Framework 4.8
 - Visual Studio 2022 (or MSBuild CLI)
-- NuGet packages auto-restore via FastMediaSorter.vbproj
+- NuGet packages auto-restore via [src/FastMediaSorter.vbproj](src/FastMediaSorter.vbproj) (the project file lives in `src/`; the solution `FastMediaSorter.sln` is at the repo root)
+- Project identity: `RootNamespace = fmsl`, `AssemblyName = FastMediaSorter_LITE`, startup object `fmsl.My.MyApplication`
+- ILMerge (3.0.41) is referenced to bundle dependencies into the single output exe
 
 ### Build Commands
 
@@ -35,17 +37,30 @@ Or open in Visual Studio and press F5 to debug.
 ### Version Auto-Generation
 The build system automatically generates version numbers in format `YY.M.D.HHmm` (e.g., `26.6.2.0124`) at build time via the `UpdateVersion` target in the .vbproj file. This updates `My Project\VersionInfo.vb` before compilation.
 
+### Release Pipeline (CI)
+Releases are cut by **pushing a `vYY.M.D.HHmm` tag** (or running the `Release` workflow manually with a tag input). [.github/workflows/release.yml](.github/workflows/release.yml) runs on `windows-latest` and:
+1. Restores NuGet, then `msbuild ... /t:Rebuild` in Release.
+2. Stages everything in `bin/Release` **except `.pdb`/`.xml`** (plus `README.md`, `LICENSE`) into `stage/FastMediaSorter-<version>-windows-x64/`.
+3. Packages two assets from that staged tree: a **portable ZIP** and an **Inno Setup installer EXE** (compiled via [installer/FastMediaSorter.iss](installer/FastMediaSorter.iss); Inno Setup installed on the runner with `choco install innosetup`). Each gets a `.sha256` sidecar.
+4. Publishes a GitHub Release with all four files attached.
+
+The version in the tag is authoritative for asset names but is independent of the build-time `UpdateVersion` stamp — keep them consistent. See [SPECIFICATION_GITHUB_STORE.md](SPECIFICATION_GITHUB_STORE.md) for the rationale behind shipping an EXE installer (GitHub-Store discoverability; a ZIP-only release is invisible to that marketplace).
+
 ## Architecture
 
 ### Core Components
 
-**[Main_Form.vb](src/Main_Form.vb)** — Primary UI window
-- Handles file browsing, slideshow, keyboard shortcuts, drag-drop
-- Manages image/video display with perspective background effect (Ambilight-like)
-- Tracks recent files and folders (~100 max)
-- Keyboard-driven workflow with configurable hotkeys
-- Multi-language support (English/Russian via `Is_Russian_Language` flag)
-- ~3500 LOC; uses WinForms controls: PictureBox, WebBrowser (for videos), Label, Button, Timer
+**Main_Form** — Primary UI window, split across one `partial class` per concern (all `Partial Class Main_Form`; edit the relevant file, not just the main one):
+- **[Main_Form.vb](src/Main_Form.vb)** (~3350 LOC) — core: file browsing, slideshow, keyboard shortcuts, drag-drop, recent files/folders (~100 max), English/Russian switching via `Is_Russian_Language`. Hosts the `COPYDATASTRUCT` declaration and `ProcessArgument()` entry point used for cross-instance arg forwarding (see Application_Events below).
+- **[Main_Form.UILayout.vb](src/Main_Form.UILayout.vb)** — control sizing/positioning and responsive layout
+- **[Main_Form.FileOperations.vb](src/Main_Form.FileOperations.vb)** — copy/move/rename/delete wiring from UI events to `FileManager`
+- **[Main_Form.VideoPlayer.vb](src/Main_Form.VideoPlayer.vb)** — WebBrowser (H.264) + LibVLC fallback playback control
+- **[Main_Form.PerspectiveBackground.vb](src/Main_Form.PerspectiveBackground.vb)** — Ambilight-like background fill (see below)
+- Uses WinForms controls: PictureBox, WebBrowser (for videos), Label, Button, Timer
+
+**[Application_Events.vb](src/Application_Events.vb)** — `My.MyApplication` startup hooks for single-instance behavior
+- On `Startup`: a path-independent named mutex (`FastMediaSorterSingleInstanceMutex`) detects an already-running instance (VB's built-in `IsSingleInstance` only matches same exe path, so debug/release/renamed copies would each start their own). If found, the new process forwards its command-line file path to the running window via `WM_COPYDATA` and cancels (`e.Cancel = True`).
+- On `StartupNextInstance`: the running instance receives the new args, calls `Main_Form.ProcessArgument()`, and deliberately avoids stealing focus (restores the previously-foreground window).
 
 **[FileManager.vb](src/FileManager.vb)** — File I/O module
 - `LoadImageWithStream()` — Load image + keep MemoryStream open (prevents file-lock issues)
@@ -99,6 +114,8 @@ Option Infer On       ' Allow type inference where possible
 - `.vb` files are code-behind; `.Designer.vb` files are auto-generated (don't edit manually)
 - Form classes inherit from `System.Windows.Forms.Form`
 - Modules are for shared utilities and P/Invoke declarations
+- `Main_Form` is one logical class spread across multiple `Partial Class Main_Form` files (`Main_Form.*.vb`). Fields/methods are shared across all of them — put a change in the file matching its concern, and watch for name collisions across partials.
+- Build treats a fixed set of VB warnings as errors (`WarningsAsErrors` in the .vbproj: 41999, 42016–42022, 42032, 42036 — mostly implicit-conversion and unused/return-path warnings), so these will fail the build, not just warn.
 
 **Keyboard Shortcuts** — Most features driven by hotkeys, not menus:
 - Stored in app settings (persisted to registry/config)

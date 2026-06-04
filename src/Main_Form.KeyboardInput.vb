@@ -1,0 +1,230 @@
+﻿Option Strict On
+
+Imports System.Collections.ObjectModel
+Imports System.ComponentModel
+Imports System.IO
+Imports System.Runtime.InteropServices
+Imports System.Security.Principal
+Imports System.Text
+Imports System.Text.RegularExpressions
+Imports System.Threading
+Imports Microsoft.Win32
+Imports System.Diagnostics
+
+Partial Public Class Main_Form
+
+    Private Sub Form1_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1240: keyb: " & e.KeyCode.ToString)
+        KeybUse(e, GetWas_slideshow())
+    End Sub
+
+    Public Function GetWas_slideshow() As Boolean
+        Return Is_slide_show_mode
+    End Function
+
+    Public Sub KeybUse(e As KeyEventArgs, was_Slide_Show_Mode As Boolean)
+        SlideShowStop()
+        is_Slide_Show_Random_Mode = False
+
+        If cmbox_Media_Folder.Visible AndAlso Me.cmbox_Media_Folder.Focused Then
+            If e.KeyCode = Keys.Enter AndAlso cmbox_Media_Folder.Text <> "" Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1300: Enter pressed")
+                Current_Folder_Path = cmbox_Media_Folder.Text
+                ReadShowMediaFile("ReadFolderAndFile")
+            Else
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1302: key skip - in editing")
+            End If
+            Exit Sub
+        End If
+
+        If e.Shift Then
+            Select Case e.KeyCode
+                Case Keys.PageDown
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1600: +100")
+                    current_File_Index += 100
+                    ReadShowMediaFile("SetFile")
+                    lbl_Status.Text = If(Is_Russian_Language, "+100 файлов", "+100 files")
+                Case Keys.PageUp
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1610: -100")
+                    current_File_Index -= 100
+                    ReadShowMediaFile("SetFile")
+                    lbl_Status.Text = If(Is_Russian_Language, "-100 файлов", "-100 files")
+            End Select
+        Else
+            Select Case e.KeyCode
+                Case Keys.N, Keys.Space, Keys.Right, Keys.BrowserForward, Keys.Next, Keys.PageDown
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1310: to next file")
+                    ReadShowMediaFile("ReadNextFile")
+                Case Keys.P, Keys.Left, Keys.B, Keys.BrowserBack, Keys.Back, Keys.PageUp
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1320: to prev file")
+                    ReadShowMediaFile("ReadPrevFile")
+                Case Keys.Y
+                    ReadShowMediaFile("ReadForRandom")
+                Case Keys.S
+                    SetSlideShow()
+                Case Keys.F6
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1340: to rename")
+                    If Not String.IsNullOrEmpty(Current_File_Name) Then
+                        RenameCurrentFile()
+                    Else
+                        lbl_Status.Text = If(Is_Russian_Language, "! Нет файла для переименования", "! No file to rename")
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1350: No file to rename")
+                    End If
+
+                Case Keys.F7
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1645: F7 - Toggle fullscreen")
+                    is_Full_Screen_Mode = Not is_Full_Screen_Mode
+
+                    SetViewSizes()
+
+                Case Keys.F11
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1645: F11 - Toggle super fullscreen")
+                    is_Full_Screen_Mode = Not is_Full_Screen_Mode
+                    is_Super_Full_Screen_Mode = Not is_Super_Full_Screen_Mode
+                    SetViewSizes()
+
+                Case Keys.I, Keys.F5
+                    SetRandomSlideShow()
+                Case Keys.Home, Keys.H, Keys.BrowserHome
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1370: to first file")
+                    current_File_Index = 0
+                    ReadShowMediaFile("SetFile")
+                    lbl_Status.Text = If(Is_Russian_Language, "первый файл", "first file")
+                Case Keys.End, Keys.E, Keys.L, Keys.BrowserStop
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1380: to last file")
+                    current_File_Index = total_File_Count - 1
+                    ReadShowMediaFile("SetFile")
+                    lbl_Status.Text = If(Is_Russian_Language, "последний файл", "last file")
+                Case Keys.F, Keys.F4
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1385: choose file")
+                    Choose_file()
+                Case Keys.N
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1386: jump to number")
+                    Jump_To_file_Number()
+                Case Keys.D, Keys.Delete
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1390: to delete")
+                    ReadShowMediaFile("DeleteFile")
+                Case Keys.D1, Keys.NumPad1
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1400: 01")
+                    PoMove(1)
+                Case Keys.D2, Keys.NumPad2
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1410: 02")
+                    PoMove(2)
+                Case Keys.D3, Keys.NumPad3
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1420: 03")
+                    PoMove(3)
+                Case Keys.D4, Keys.NumPad4
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1430: 04")
+                    PoMove(4)
+                Case Keys.D5, Keys.NumPad5
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1440: 05")
+                    PoMove(5)
+                Case Keys.D6, Keys.NumPad6
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1450: 06")
+                    PoMove(6)
+                Case Keys.D7, Keys.NumPad7
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1460: 07")
+                    PoMove(7)
+                Case Keys.D8, Keys.NumPad8
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1470: 08")
+                    PoMove(8)
+                Case Keys.D9, Keys.NumPad9
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1480: 09")
+                    PoMove(9)
+                Case Keys.D0, Keys.NumPad0
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1490: 0")
+                    PoMove(10)
+                Case Keys.R
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1500: Rotate")
+                    Try
+                        If is_Second_PictureBox_Active Then
+                            If is_PictureBox2_Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
+                                Picture_Box_2.Image.RotateFlip(RotateFlipType.Rotate90FlipNone)
+                                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1510: P2 Rotated")
+                            End If
+                        Else
+                            If is_PictureBox1_Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
+                                Picture_Box_1.Image.RotateFlip(RotateFlipType.Rotate90FlipNone)
+                                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1520: P1 Rotated")
+                            End If
+                        End If
+                    Catch ex As Exception
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1530: ERR: " & ex.Message)
+                        MsgBox("E012 " & ex.Message)
+                    End Try
+                Case Keys.T
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1540: Rev Rotate")
+                    Try
+                        If is_Second_PictureBox_Active Then
+                            If is_PictureBox2_Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
+                                Picture_Box_2.Image.RotateFlip(RotateFlipType.Rotate270FlipNone)
+                                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1530: P2 Rotated")
+                            End If
+                        Else
+                            If is_PictureBox1_Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
+                                Picture_Box_1.Image.RotateFlip(RotateFlipType.Rotate270FlipNone)
+                                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1540: P1 Rotated")
+                            End If
+                        End If
+                    Catch ex As Exception
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1570: ERR: " & ex.Message)
+                        MsgBox("E013 " & ex.Message)
+                    End Try
+                Case Keys.Up
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1580: -10")
+                    current_File_Index -= 10
+                    ReadShowMediaFile("SetFile")
+                    lbl_Status.Text = If(Is_Russian_Language, "-10 файлов", "-10 files")
+                Case Keys.Down
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1590: +10")
+                    current_File_Index += 10
+                    ReadShowMediaFile("SetFile")
+                    lbl_Status.Text = If(Is_Russian_Language, "+10 файлов", "+10 files")
+                Case Keys.F1
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1620: F1 help")
+                    lbl_Help_Info.Visible = True
+                    lbl_Help_Info.BringToFront()
+                Case Keys.F2
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1630: F2")
+                    Table_Form.PrepareForDisplay()
+                    Table_Form.ShowDialog(Me)
+                Case Keys.F3
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1630: F5")
+                    ShowImagePanelForm()
+                Case Keys.U
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1640: UnDo")
+                    Undo()
+                Case Keys.Escape, Keys.X, Keys.Q
+                    If is_Full_Screen_Mode Then
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1641: ESC to normal")
+                        is_Full_Screen_Mode = False
+                        SetViewSizes()
+                    Else
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1642: ESC to close")
+                        Me.Close()
+                    End If
+            End Select
+        End If
+    End Sub
+
+    Public Sub DoKey(ByVal keyIndex As Integer)
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1860: DoKey")
+
+        If keyIndex = 0 Then
+            ReadShowMediaFile("DeleteFile")
+        Else
+            PoMove(keyIndex + 1)
+        End If
+    End Sub
+
+    Private Sub Picture_Box_1_KeyDown(sender As Object, e As KeyEventArgs) Handles Picture_Box_1.KeyDown
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1248: keyb on P1: " & e.KeyCode.ToString)
+        KeybUse(e, GetWas_slideshow())
+    End Sub
+
+    Private Sub Picture_Box_2_KeyDown(sender As Object, e As KeyEventArgs) Handles Picture_Box_2.KeyDown
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1249: keyb on P2: " & e.KeyCode.ToString)
+        KeybUse(e, GetWas_slideshow())
+    End Sub
+
+End Class
