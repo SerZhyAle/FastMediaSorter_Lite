@@ -39,11 +39,13 @@ Partial Public Class Main_Form
         ' Leaving full-screen always clears super-full-screen.
         If Not is_Full_Screen_Mode Then is_Super_Full_Screen_Mode = False
 
-        ' Super-full-screen hides all chrome; the Dock=Fill media panel then
-        ' expands to the whole form automatically.
-        Dim show_Chrome As Boolean = Not is_Super_Full_Screen_Mode
-        flow_Toolbar.Visible = show_Chrome
-        panel_Status.Visible = show_Chrome
+        ' Chrome per mode:
+        '   windowed          -> toolbar docked at top, status bar at bottom
+        '   full-screen       -> image fills the screen, toolbar floats over it
+        '   super-full-screen -> no chrome at all
+        panel_Status.Visible = Not is_Full_Screen_Mode
+        flow_Toolbar.Visible = Not is_Super_Full_Screen_Mode
+        SetToolbarOverlay(is_Full_Screen_Mode AndAlso Not is_Super_Full_Screen_Mode)
 
         Me.Focus()
         Me.PerformLayout()

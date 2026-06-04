@@ -113,46 +113,98 @@ Partial Public Class Main_Form
     ''' </summary>
     Private Sub ApplyModernStyling()
         Dim ui_Font As New Font("Segoe UI", 9.0F, FontStyle.Regular)
-        Dim glyph_Font As New Font("Segoe UI Symbol", 11.0F, FontStyle.Regular)
+        Dim glyph_Font As New Font("Segoe UI Symbol", 10.0F, FontStyle.Regular)
+
+        ' Transparent so the toolbar can float over the full-screen image; in
+        ' windowed mode it shows the form's themed background between buttons.
+        flow_Toolbar.BackColor = Color.Transparent
+
+        ' Folder combo gets room for paths; sort combo stays compact.
+        cmbox_Media_Folder.Font = ui_Font
+        cmbox_Media_Folder.Width = 320
+        cmbox_Sort.Font = ui_Font
+        cmbox_Sort.Width = 70
+
+        ' One uniform row height so every button/combo lines up — no vertical
+        ' "jumping" from glyph-vs-text font metrics.
+        Dim row_H As Integer = Math.Max(cmbox_Media_Folder.PreferredHeight, 24)
 
         For Each c As Control In flow_Toolbar.Controls
-            c.Margin = New Padding(2)
             Dim b As Button = TryCast(c, Button)
             If b IsNot Nothing Then
                 b.Font = ui_Font
                 b.FlatStyle = FlatStyle.Flat
                 b.FlatAppearance.BorderSize = 0
+                b.UseVisualStyleBackColor = False
+                b.TextAlign = ContentAlignment.MiddleCenter
+                b.ImageAlign = ContentAlignment.MiddleCenter
                 b.AutoSize = True
                 b.AutoSizeMode = AutoSizeMode.GrowAndShrink
-                b.Padding = New Padding(6, 2, 6, 2)
-                b.UseVisualStyleBackColor = False
-                Continue For
-            End If
-            If TypeOf c Is ComboBox OrElse TypeOf c Is Label OrElse TypeOf c Is CheckBox Then
+                ' Lock the height to row_H (width still auto-fits the caption).
+                b.MinimumSize = New Size(0, row_H)
+                b.MaximumSize = New Size(0, row_H)
+                b.Margin = New Padding(2, 1, 2, 1)
+            ElseIf TypeOf c Is ComboBox Then
                 c.Font = ui_Font
+                c.Margin = New Padding(2, 1, 2, 1)
+            ElseIf TypeOf c Is Label Then
+                c.Font = ui_Font
+                ' Vertically centre the (shorter) label text within the row.
+                c.Margin = New Padding(4, Math.Max(1, (row_H - c.PreferredSize.Height) \ 2), 4, 0)
+            ElseIf TypeOf c Is CheckBox Then
+                c.Font = ui_Font
+                c.Margin = New Padding(2, 2, 6, 2)   ' always-on-top: pinned top-left
             End If
+        Next
+
+        ' Clearer glyphs for the formerly-cryptic buttons (height already fixed
+        ' above, so the larger glyph font doesn't change the row).
+        btn_Review.Text = "⟳"
+        btn_Panel.Text = "▦"
+        btn_Full_Screen.Text = "⛶"
+        btn_Slideshow.Text = "▶▶"
+        btn_Random_Slideshow.Text = "⤮▶"
+        btn_Next_Random.Text = "⚄"
+        btn_Rename.Text = "✎"
+        btn_RecentFiles.Text = "▾"
+        For Each gb As Button In New Button() {btn_Review, btn_Panel, btn_Full_Screen,
+                                               btn_Slideshow, btn_Random_Slideshow,
+                                               btn_Next_Random, btn_Rename, btn_RecentFiles}
+            gb.Font = glyph_Font
         Next
 
         For Each c As Control In panel_Status.Controls
             c.Font = ui_Font
             c.Margin = New Padding(6, 1, 6, 1)
         Next
+    End Sub
 
-        ' Give the folder combo room for paths; keep the sort combo compact.
-        cmbox_Media_Folder.Width = 320
-        cmbox_Media_Folder.Font = ui_Font
-        cmbox_Sort.Width = 70
-        cmbox_Sort.Font = ui_Font
+    ''' <summary>
+    ''' Full-screen overlay mode: hosts the toolbar inside panel_Media, floated
+    ''' over the (full-screen) image with a see-through background. In windowed
+    ''' mode the toolbar is docked at the top of the form instead.
+    ''' </summary>
+    Friend Sub SetToolbarOverlay(overlay As Boolean)
+        If flow_Toolbar Is Nothing OrElse panel_Media Is Nothing Then Return
 
-        ' Clearer glyphs for the formerly-cryptic symbolic buttons.
-        btn_Review.Font = glyph_Font : btn_Review.Text = "⟳"
-        btn_Panel.Font = glyph_Font : btn_Panel.Text = "▦"
-        btn_Full_Screen.Font = glyph_Font : btn_Full_Screen.Text = "⛶"
-        btn_Slideshow.Font = glyph_Font : btn_Slideshow.Text = "▶▶"
-        btn_Random_Slideshow.Font = glyph_Font : btn_Random_Slideshow.Text = "⤮▶"
-        btn_Next_Random.Font = glyph_Font : btn_Next_Random.Text = "⚄"
-        btn_Rename.Font = glyph_Font : btn_Rename.Text = "✎"
-        btn_RecentFiles.Font = glyph_Font : btn_RecentFiles.Text = "▾"
+        If overlay Then
+            If flow_Toolbar.Parent IsNot panel_Media Then
+                If flow_Toolbar.Parent IsNot Nothing Then flow_Toolbar.Parent.Controls.Remove(flow_Toolbar)
+                flow_Toolbar.Dock = DockStyle.None
+                flow_Toolbar.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
+                panel_Media.Controls.Add(flow_Toolbar)
+            End If
+            flow_Toolbar.Location = Point.Empty
+            flow_Toolbar.Width = panel_Media.ClientSize.Width
+            flow_Toolbar.BringToFront()
+        Else
+            If flow_Toolbar.Parent IsNot Me Then
+                If flow_Toolbar.Parent IsNot Nothing Then flow_Toolbar.Parent.Controls.Remove(flow_Toolbar)
+                flow_Toolbar.Dock = DockStyle.Top
+                Me.Controls.Add(flow_Toolbar)
+                flow_Toolbar.BringToFront()
+            End If
+        End If
     End Sub
 
     ''' <summary>
@@ -165,7 +217,10 @@ Partial Public Class Main_Form
 
         Dim hover_Color As Color = BlendColor(back_Color, opposite_Color, 0.18F)
 
-        flow_Toolbar.BackColor = back_Color
+        ' Toolbar stays transparent (floats over the image in full-screen and
+        ' shows the form's themed background when docked); only the buttons are
+        ' opaque. The status bar is an opaque bottom strip.
+        flow_Toolbar.BackColor = Color.Transparent
         panel_Status.BackColor = back_Color
 
         RecolorContainer(flow_Toolbar, back_Color, opposite_Color, hover_Color)
