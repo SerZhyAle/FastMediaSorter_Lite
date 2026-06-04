@@ -1570,26 +1570,8 @@ Public Class Main_Form
                 Me.BackColor = back_Color
 
                 Dim OppositeColor = GetOppositeColor(back_Color)
-                For Each ctrl As Control In Me.Controls
-                    If ctrl.Visible Then
-                        If TypeOf ctrl Is Label Then
-                            Dim lbl As Label = CType(ctrl, Label)
-                            lbl.ForeColor = OppositeColor
-                            lbl.BackColor = System.Drawing.Color.Transparent
-                        ElseIf TypeOf ctrl Is Button Then
-                            Dim btn As Button = CType(ctrl, Button)
-                            btn.ForeColor = OppositeColor
-                        ElseIf TypeOf ctrl Is ComboBox Then
-                            Dim cmb As ComboBox = CType(ctrl, ComboBox)
-                            cmb.BackColor = back_Color
-                            cmb.ForeColor = OppositeColor
-                        ElseIf TypeOf ctrl Is CheckBox Then
-                            Dim chb As CheckBox = CType(ctrl, CheckBox)
-                            chb.BackColor = back_Color
-                            chb.ForeColor = OppositeColor
-                        End If
-                    End If
-                Next
+                If panel_Media IsNot Nothing Then panel_Media.BackColor = back_Color
+                RecolorChrome(back_Color, OppositeColor)
 
                 If is_PictureBox1_Visible Then
                     Picture_Box_1.BackColor = back_Color
@@ -1915,6 +1897,10 @@ Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0000: Form started")
         Me.AllowDrop = True
 
+        ' Build the modern docked layout (reparents the Designer controls into
+        ' flow_Toolbar / panel_Status / panel_Media) before anything lays out.
+        BuildModernLayout()
+
         InitNew()
         CheckAndOfferImageAssociations()
 
@@ -1929,6 +1915,20 @@ Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0021: media Viewed: " & media_View_Count.ToString)
 
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "color_scheme", "1"), Form_Color_Scheme)
+
+        ' Initial native title-bar theme; refined per-image by RecolorChrome.
+        ApplyTitleBarTheme(Form_Color_Scheme <> 2)
+
+        ' Paint the chrome immediately for the fixed schemes so an empty startup
+        ' window isn't shown with unstyled buttons (dynamic schemes recolour on
+        ' the first image via UpdateControlVisibility -> RecolorChrome).
+        If Form_Color_Scheme = 1 Then
+            Me.BackColor = Color.Black
+            RecolorChrome(Color.Black, GetOppositeColor(Color.Black))
+        ElseIf Form_Color_Scheme = 2 Then
+            Me.BackColor = Color.White
+            RecolorChrome(Color.White, GetOppositeColor(Color.White))
+        End If
 
         Is_Russian_Language = GetSetting(App_name, Second_App_Name, "Is_Russian_Language", "1") = "1"
         InitializeTooltips()
@@ -2242,15 +2242,12 @@ Public Class Main_Form
             End If
 
             If active_Image IsNot Nothing Then
-                ' Calculate position to center the image at original size
+                ' Calculate position to center the image at original size.
+                ' Picture-box coordinates are relative to panel_Media, so the
+                ' top offset is 0 and the available space is the panel client.
                 Dim top_first_row = 0
-
-                If Not is_Super_Full_Screen_Mode Then
-                    top_first_row = lbl_Status.Top + lbl_Status.Height
-                End If
-
-                Dim available_Width = Me.Width
-                Dim available_Height = Me.Height - top_first_row
+                Dim available_Width = panel_Media.ClientSize.Width
+                Dim available_Height = panel_Media.ClientSize.Height
 
                 ' Set to original image dimensions
                 Dim new_Width As Integer = active_Image.Width
@@ -2290,8 +2287,12 @@ Public Class Main_Form
             Dim new_Width As Integer = CInt(old_Width * zoom_Scale_Factor)
             Dim new_Height As Integer = CInt(old_Height * zoom_Scale_Factor)
 
-            Dim mouse_X As Integer = e.X - old_Left
-            Dim mouse_Y As Integer = e.Y - old_Top
+            ' The wheel event is raised on the form, so its coordinates are in
+            ' form-client space. Translate into panel_Media space to match the
+            ' picture box's (panel-relative) Left/Top for cursor-centred zoom.
+            Dim cursor_On_Panel As Point = panel_Media.PointToClient(Me.PointToScreen(e.Location))
+            Dim mouse_X As Integer = cursor_On_Panel.X - old_Left
+            Dim mouse_Y As Integer = cursor_On_Panel.Y - old_Top
 
             Dim relative_X As Single = CSng(mouse_X / old_Width)
             Dim relative_Y As Single = CSng(mouse_Y / old_Height)

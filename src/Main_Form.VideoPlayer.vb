@@ -113,7 +113,13 @@ Partial Public Class Main_Form
             }
             AddHandler vlc_Video_View.MouseDoubleClick, AddressOf Vlc_Video_View_MouseDoubleClick
             AddHandler vlc_Video_View.MouseClick, AddressOf Vlc_Video_View_MouseClick
-            Me.Controls.Add(vlc_Video_View)
+            ' Host the VLC surface inside the media panel so it shares the same
+            ' (panel-relative) coordinate space as the picture boxes.
+            If panel_Media IsNot Nothing Then
+                panel_Media.Controls.Add(vlc_Video_View)
+            Else
+                Me.Controls.Add(vlc_Video_View)
+            End If
             vlc_Video_View.BringToFront()
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0868: LibVLC initialized")
             Return True
