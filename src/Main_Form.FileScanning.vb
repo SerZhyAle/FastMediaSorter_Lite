@@ -69,15 +69,19 @@ Partial Public Class Main_Form
                     If Is_to_show_picture_sizes Then
                         Dim fileExtension As String = current_File_Info.Extension.ToLower()
                         If Image_File_Extensions.Contains(fileExtension) Then
-                            Try
-                                Using img As Image = Image.FromFile(Current_File_Name)
-                                    file_Meta_State("imageWidth") = img.Width.ToString()
-                                    file_Meta_State("imageHeight") = img.Height.ToString()
-                                End Using
-                            Catch ex As Exception
+                            ' Header-only read (no GDI+) on the worker-local file. Using
+                            ' Image.FromFile(Current_File_Name) here was a double bug: it
+                            ' read the shared global instead of this worker's file, and it
+                            ' decoded via GDI+ on a background thread concurrently with the
+                            ' UI thread's GetPixel, corrupting GDI+ state on slow shares.
+                            Dim dims As Size = GetImageDimensions(current_File_Name_in_worker)
+                            If Not dims.IsEmpty Then
+                                file_Meta_State("imageWidth") = dims.Width.ToString()
+                                file_Meta_State("imageHeight") = dims.Height.ToString()
+                            Else
                                 file_Meta_State("imageWidth") = "?"
                                 file_Meta_State("imageHeight") = "?"
-                            End Try
+                            End If
                         End If
                     End If
                 End If

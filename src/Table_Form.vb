@@ -8,6 +8,35 @@ Public Class Table_Form
     Private set_This_Form_Top_Most As Boolean = False
     Private toolTip As ToolTip
 
+    ' Created in code (not the Designer) and hosted on the Settings tab.
+    Friend WithEvents btn_OcrTranslate As Button
+
+    ''' <summary>
+    ''' Adds the "OCR &amp; Translation" button to the Settings tab once. Positioned
+    ''' relative to btn_Set_As_Default's actual bounds (not hard-coded pixels) so
+    ''' it lands correctly regardless of the form's Font auto-scaling.
+    ''' </summary>
+    Private Sub EnsureOcrButton()
+        If btn_OcrTranslate IsNot Nothing Then Return
+        Dim anchor As Button = btn_Set_As_Default
+        btn_OcrTranslate = New Button With {
+            .Name = "btn_OcrTranslate",
+            .Left = anchor.Left,
+            .Top = anchor.Bottom + 6,
+            .Width = anchor.Width,
+            .Height = anchor.Height,
+            .UseVisualStyleBackColor = True,
+            .Font = New System.Drawing.Font(anchor.Font, System.Drawing.FontStyle.Bold),
+            .Text = If(Is_Russian_Language, "OCR и перевод", "OCR & Translate")
+        }
+        Tab_Page_2.Controls.Add(btn_OcrTranslate)
+        btn_OcrTranslate.BringToFront()
+    End Sub
+
+    Private Sub btn_OcrTranslate_Click(sender As Object, e As EventArgs) Handles btn_OcrTranslate.Click
+        Main_Form.ShowOcrTranslateSettings()
+    End Sub
+
     Private Sub Form2_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
         SaveSetting(App_name, Second_App_Name, "SetOnTop", If(set_This_Form_Top_Most, "1", "0"))
         If toolTip IsNot Nothing Then
@@ -46,6 +75,12 @@ Public Class Table_Form
 
         toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык интерфейса на английский", "Switch interface language to English"))
 
+        If btn_OcrTranslate IsNot Nothing Then
+            toolTip.SetToolTip(btn_OcrTranslate, If(Is_Russian_Language,
+                "Открыть параметры OCR и перевода (язык распознавания, язык перевода, переводчик)",
+                "Open OCR & translation settings (recognition language, target language, translator)"))
+        End If
+
     End Sub
 
     Private Sub Form2_Load(sender As Object, e As EventArgs) Handles MyBase.Load
@@ -54,6 +89,7 @@ Public Class Table_Form
     Public Sub PrepareForDisplay()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-2: the_Table_Form_Load")
 
+        EnsureOcrButton()
         InitializeTooltips()
 
         ' Initialize DataGridView columns BEFORE adding rows
@@ -163,6 +199,7 @@ Public Class Table_Form
             chkb_is_to_show_file_datetime.Text = "Показывать дату и время файла"
             chkb_no_request_before_file_operation.Text = "Не запрашивать подтверждение перед операцией с файлом"
             btn_Set_As_Default.Text = "Зарегистрировать как программу просмотра изображений по умолчанию"
+            btn_OcrTranslate.Text = "OCR и перевод"
         Else
             Me.Text = "Table of dest folder for moving/copy"
             Data_Grid_View.Columns(0).HeaderText = "KEY"
@@ -178,6 +215,7 @@ Public Class Table_Form
             chkb_is_to_show_file_datetime.Text = "Show file datetime"
             chkb_no_request_before_file_operation.Text = "No request before file operation"
             btn_Set_As_Default.Text = "Register as default image viewer"
+            btn_OcrTranslate.Text = "OCR & Translate"
         End If
 
         Dim SetOnTopS As String = GetSetting(App_name, Second_App_Name, "SetOnTop", "1")

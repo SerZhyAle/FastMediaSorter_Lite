@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Tesseract</id>
+    <version>5.2.0</version>
+    <authors>Charles Weld</authors>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <projectUrl>https://github.com/charlesw/tesseract/</projectUrl>
+    <description>Tesseract 5 adds a new neural net (LSTM) based OCR engine which is focused on line recognition, but also still supports the legacy Tesseract OCR engine of Tesseract 3 which works by recognizing character patterns. Compatibility with Tesseract 3 is enabled by using the Legacy OCR Engine mode (--oem 0). It also needs traineddata files which support the legacy engine, for example those from the tessdata repository.</description>
+    <releaseNotes>https://github.com/charlesw/tesseract/blob/master/ChangeLog.md</releaseNotes>
+    <copyright>Copyright 2012-2020 Charles Weld</copyright>
+    <tags>Tesseract Ocr</tags>
+    <repository url="https://github.com/charlesw/tesseract/" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.7" />
+      <group targetFramework=".NETFramework4.8" />
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="System.Reflection.Emit" version="4.7.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

@@ -56,11 +56,20 @@ The version in the tag is authoritative for asset names but is independent of th
 - **[Main_Form.FileOperations.vb](src/Main_Form.FileOperations.vb)** — copy/move/rename/delete wiring from UI events to `FileManager`
 - **[Main_Form.VideoPlayer.vb](src/Main_Form.VideoPlayer.vb)** — WebBrowser (H.264) + LibVLC fallback playback control
 - **[Main_Form.PerspectiveBackground.vb](src/Main_Form.PerspectiveBackground.vb)** — Ambilight-like background fill (see below)
+- **[Main_Form.OcrOverlay.vb](src/Main_Form.OcrOverlay.vb)** / **[Main_Form.OcrTranslate.vb](src/Main_Form.OcrTranslate.vb)** — OCR + on-image translation overlay pipeline (see "OCR + On-Image Translation" below)
+- Other concern-specific partials: `Main_Form.MediaLoading.vb`, `.Lifecycle.vb`, `.FileScanning.vb`, `.KeyboardInput.vb`, `.MouseInput.vb`, `.Slideshow.vb`, `.GifPlayback.vb`, `.FileAssociation.vb`, `.NativeMethods.vb`, `.ModernLayout.vb`, `.Localization.vb` — edit the file matching the concern.
 - Uses WinForms controls: PictureBox, WebBrowser (for videos), Label, Button, Timer
+
+**Display resilience** (these never let a transient failure drop the image):
+- `UpdateControlVisibility()`'s dynamic-background colour analysis and `Draw_Perspective()` both run their GDI+ pixel work inside a `Try/Catch`. GDI+ can transiently throw (`OverflowException`, `"Parameter is not valid"`) — e.g. while the background worker decodes on a slow network share — and the image is already on the PictureBox, so the analysis failure is swallowed and the frame keeps the previous tint/bars instead of aborting the load.
+- `Draw_Perspective()` debounces with a trailing-edge timer: a redraw skipped by the `how_long_wait_before_draw_perspective` throttle is retried once scrolling stops, so the image you settle on always gets its bars.
+- The background worker reads image dimensions via `Utils.GetImageDimensions()` (header parse, no GDI+) instead of `Image.FromFile`, so it never decodes the current image concurrently with the UI thread's `GetPixel`.
 
 **[Application_Events.vb](src/Application_Events.vb)** — `My.MyApplication` startup hooks for single-instance behavior
 - On `Startup`: a path-independent named mutex (`FastMediaSorterSingleInstanceMutex`) detects an already-running instance (VB's built-in `IsSingleInstance` only matches same exe path, so debug/release/renamed copies would each start their own). If found, the new process forwards its command-line file path to the running window via `WM_COPYDATA` and cancels (`e.Cancel = True`).
 - On `StartupNextInstance`: the running instance receives the new args, calls `Main_Form.ProcessArgument()`, and deliberately avoids stealing focus (restores the previously-foreground window).
+- `WM_COPYDATA` payload is **UTF-8** on both send and receive (the receiver in `Main_Form.vb` decodes the bytes as UTF-8, not `PtrToStringAnsi`, so non-ASCII filenames survive).
+- `ProcessArgument()` doesn't trust a single `File.Exists` for a `\\server` path: it probes with `File.GetAttributes` to tell a genuinely-missing file (fail fast) from a network hiccup (retry for the SMB session to recover) from an access-denied **lock** (the file is still being written/downloaded). A locked file is watched on a timer and **opens automatically once it unlocks**, instead of being silently dropped.
 
 **[FileManager.vb](src/FileManager.vb)** — File I/O module
 - `LoadImageWithStream()` — Load image + keep MemoryStream open (prevents file-lock issues)
@@ -82,11 +91,19 @@ The version in the tag is authoritative for asset names but is independent of th
 - Spreadsheet-like grid of files in current folder
 - Columns: name, size, date (configurable visibility)
 
-**[Utils.vb](src/Utils.vb)** — Helper functions (details TBD; inspect directly)
+**[Utils.vb](src/Utils.vb)** — Helper functions: array insert/remove, opposite-colour & luminance, clipboard, and **`GetImageDimensions()`** — reads JPEG/PNG/GIF/BMP pixel size straight from the file header (no GDI+), used by the background worker to avoid concurrent GDI+ decoding.
+
+**OCR / Translation components** (see "OCR + On-Image Translation" below):
+- **[OCR_Translate_Form.vb](src/OCR_Translate_Form.vb)** — settings dialog for the OCR/translate feature
+- **[OcrTranslateSettings.vb](src/OcrTranslateSettings.vb)** — persisted settings (provider, endpoint, model, languages, opacity, disk-cache); API keys are encrypted via [src/Security/DpapiSecrets.vb](src/Security/DpapiSecrets.vb) (Windows DPAPI)
+- **[OcrLanguageCatalog.vb](src/OcrLanguageCatalog.vb)** — language list + flag glyphs ([assets/flags/](assets/flags/))
+- **[src/Ocr/](src/Ocr/)** — `IOcrEngine`, `TesseractOcrEngine` (Tesseract via `Pix.LoadFromMemory`, runtime tessdata download), `OcrBlockBuilder`, `OcrModels`
+- **[src/Translate/](src/Translate/)** — `ITranslator`, `OllamaTranslator` (default, local LLM), `LibreTranslateTranslator`, `OllamaManager`, `TranslationCache` (memory + disk), and the shared `TranslateHttp` module
 
 ### Key Dependencies
 - **LibVLCSharp** (3.9.3) — Video codec fallback (LibVLC binaries included in release)
 - **WebView2** (1.0.3240) — HTML renderer (legacy; mostly unused)
+- **Tesseract** (5.2.0) — OCR engine; `tessdata` language packs are downloaded at runtime
 - **System.Drawing** — Image rendering
 - **System.Windows.Forms** — UI framework
 - **VideoLAN.LibVLC.Windows** (3.0.21) — Native LibVLC binaries bundled at build time
@@ -99,6 +116,13 @@ See [SPECIFICATION_BACKGROUND_EFFECT.md](SPECIFICATION_BACKGROUND_EFFECT.md) for
   - **Perspective**: Edge is complex → extend each edge row/column into the bar
 - Triggered on image load/resize; runs async to avoid UI lag
 - Constants in Main_Form.vb (e.g., `percent_of_color_deviation = 4`, `step_size_while_color_Search = 100`)
+
+### OCR + On-Image Translation
+See [DONE/SPECIFICATION_OCR_TRANSLATION_OVERLAY.md](DONE/SPECIFICATION_OCR_TRANSLATION_OVERLAY.md) for the full design. Summary:
+- **Hotkeys**: `T` runs OCR + translate (or toggles the overlay) when the feature is enabled; `Shift+T` toggles auto-OCR mode. When the feature is off, `T`/`Shift+R` keep their legacy rotate meaning. The **Перевод / Translate** toolbar button triggers the same pipeline.
+- **Pipeline** ([Main_Form.OcrTranslate.vb](src/Main_Form.OcrTranslate.vb), `RunOcrPipeline`): OCR the image → `OcrBlockBuilder` groups lines into blocks → translate all blocks in one batch → render the translated text as an overlay over each block ([Main_Form.OcrOverlay.vb](src/Main_Form.OcrOverlay.vb)). Results are cached in memory and (optionally) on disk by `TranslationCache`, keyed on file path + write-time + engine + provider + languages.
+- **OCR engine**: Tesseract (`TesseractOcrEngine`), loading images via `Pix.LoadFromMemory`; `tessdata` packs download on demand.
+- **Translators** (`CreateTranslator()` picks by `ocr_Settings.Provider`): `OllamaTranslator` (default — local LLM at `localhost:11434`, batches blocks, retries once when the model echoes the source) and `LibreTranslateTranslator`. Both parse JSON arrays through `TranslateHttp.JsonItemToString`, which pulls the real string out of a wrapped object (`{"translation":"…"}`) — a raw `Convert.ToString` on such a `Dictionary` would otherwise leak `System.Collections.Generic.Dictionary\`2[…]` into the overlay.
 
 ## Code Style & Constraints
 

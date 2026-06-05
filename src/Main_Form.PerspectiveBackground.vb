@@ -4,6 +4,23 @@ Imports System.Drawing
 
 Partial Public Class Main_Form
 
+    ' One-shot timer that retries a perspective redraw the throttle dropped, so the
+    ' image we finally land on after fast scrolling still gets its bars. Without it a
+    ' draw skipped inside the throttle window was never retried.
+    Private WithEvents perspective_Trailing_Timer As New System.Windows.Forms.Timer() With {.Interval = how_long_wait_before_draw_perspective}
+
+    Private Sub ArmTrailingPerspectiveRedraw()
+        ' Restart on every skipped request so only the last one survives, firing once
+        ' the throttle window has elapsed (i.e. shortly after scrolling stops).
+        perspective_Trailing_Timer.Stop()
+        perspective_Trailing_Timer.Start()
+    End Sub
+
+    Private Sub Perspective_Trailing_Timer_Tick(sender As Object, e As EventArgs) Handles perspective_Trailing_Timer.Tick
+        perspective_Trailing_Timer.Stop()
+        Draw_Perspective()
+    End Sub
+
     Private Function CheckCornerColorsAndSetBeginPoint(list_of_corner_colors As List(Of System.Drawing.Color)) As Long
 
         Dim corner_colors_Count As Integer = list_of_corner_colors.Count
@@ -269,15 +286,31 @@ Partial Public Class Main_Form
         '  Dim sw As New Stopwatch()
         '   sw.Start()
 
-        If Is_Pespective AndAlso
+        Dim perspective_Applies As Boolean =
+            Is_Pespective AndAlso
             (is_PictureBox1_Visible OrElse
             is_PictureBox2_Visible) AndAlso
             (Not Is_slide_show_mode Or
-            SlideShowTimer.Interval > slideshow_limit_to_change_color) AndAlso
-            last_Perspective_Draw_Time < DateTime.Now.Subtract(TimeSpan.FromMilliseconds(how_long_wait_before_draw_perspective)) Then
+            SlideShowTimer.Interval > slideshow_limit_to_change_color)
+
+        Dim throttle_Elapsed As Boolean =
+            last_Perspective_Draw_Time < DateTime.Now.Subtract(TimeSpan.FromMilliseconds(how_long_wait_before_draw_perspective))
+
+        ' A redraw is wanted but came too soon after the last one: defer it instead
+        ' of dropping it. (Fast scrolling otherwise lost the draw for the image we
+        ' settled on, so it showed no perspective bars until the next resize/reload.)
+        If perspective_Applies AndAlso Not throttle_Elapsed Then
+            ArmTrailingPerspectiveRedraw()
+        End If
+
+        If perspective_Applies AndAlso throttle_Elapsed Then
+
+            perspective_Trailing_Timer.Stop()
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1129: corners redrawn")
             last_Perspective_Draw_Time = DateTime.Now()
+
+            Try
 
             Dim active_Bitmap As Bitmap = Nothing
             Dim active_PictureBox_Index As Int16 = 0
@@ -307,35 +340,6 @@ Partial Public Class Main_Form
 
                 Dim bitmap_proportion = (bW + 1.0) / (bH + 1.0)
                 Dim pictureBox_proportion = (w + 1.0) / (h + 1.0)
-
-                ' ===== DIAG (temporary) - compare scroll vs external-open paths. Remove later. =====
-                Try
-                    Dim diagPath As String = IO.Path.Combine(IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "perspective_diag.log")
-                    Dim pf As String = active_Bitmap.PixelFormat.ToString()
-                    Dim cTL = active_Bitmap.GetPixel(0, 0)
-                    Dim cBL = active_Bitmap.GetPixel(0, bH)
-                    Dim cTR = active_Bitmap.GetPixel(bW, 0)
-                    Dim midY As Integer = bH \ 2
-                    Dim cLmid = active_Bitmap.GetPixel(0, midY)
-                    Dim cRmid = active_Bitmap.GetPixel(bW, midY)
-                    Dim line As String =
-                        Now().ToString("HH:mm:ss.fff") &
-                        " ext=" & is_File_Reseived_From_Outside.ToString() &
-                        " extPrev=" & was_External_Input_Previously.ToString() &
-                        " noBack=" & Is_No_Background_Tasks.ToString() &
-                        " pIdx=" & active_PictureBox_Index.ToString() &
-                        " pb=" & (w + 1).ToString() & "x" & (h + 1).ToString() &
-                        " bmp=" & (bW + 1).ToString() & "x" & (bH + 1).ToString() &
-                        " fmt=" & pf &
-                        " BackColor=" & Me.BackColor.R.ToString() & "," & Me.BackColor.G.ToString() & "," & Me.BackColor.B.ToString() &
-                        " TL=" & cTL.A.ToString() & ":" & cTL.R.ToString() & "," & cTL.G.ToString() & "," & cTL.B.ToString() &
-                        " Lmid=" & cLmid.R.ToString() & "," & cLmid.G.ToString() & "," & cLmid.B.ToString() &
-                        " Rmid=" & cRmid.R.ToString() & "," & cRmid.G.ToString() & "," & cRmid.B.ToString() &
-                        " file=" & IO.Path.GetFileName(If(Current_File_Name, ""))
-                    IO.File.AppendAllText(diagPath, line & Environment.NewLine)
-                Catch
-                End Try
-                ' ===== END DIAG =====
 
                 If Not Math.Round(bitmap_proportion, 2) = Math.Round(pictureBox_proportion, 2) Then
 
@@ -421,6 +425,13 @@ Partial Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w3070: E105 " & ex.Message)
                 End Try
             End If
+
+            Catch ex As Exception
+                ' Perspective bars are non-essential cosmetics; never let a GDI+
+                ' failure here abort the (already-shown) image. It'll be retried on
+                ' the next navigation/resize, or by the trailing-redraw timer.
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1131: perspective draw skipped: [" & ex.GetType().Name & "] " & ex.Message)
+            End Try
         End If
 
         '  sw.Stop()

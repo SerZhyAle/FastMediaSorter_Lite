@@ -554,7 +554,7 @@ Partial Public Class Main_Form
                     ReadShowMediaFile("ReadNextFile")
                     Return
                 Catch ex As Exception
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0911: Error loading image: " & ex.Message & " File: " & Current_File_Name)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0911: Error loading image: [" & ex.GetType().Name & "] " & ex.Message & " File: " & Current_File_Name)
                     lbl_Status.Text = If(Is_Russian_Language, "Ошибка загрузки: " & Path.GetFileName(Current_File_Name), "Loading error: " & Path.GetFileName(Current_File_Name))
 
                     ' Skip to next file if any other error occurs
@@ -615,6 +615,14 @@ Partial Public Class Main_Form
             Dim back_Color As System.Drawing.Color = Me.BackColor
 
             Dim active_Bitmap As Bitmap = Nothing
+
+            ' The dynamic-background analysis below pokes the freshly-loaded bitmap
+            ' with GetPixel/.Width. GDI+ can transiently fail there (e.g. while the
+            ' background worker is concurrently decoding on a slow network share),
+            ' throwing OverflowException / "Parameter is not valid". That must NOT
+            ' abort the display: the image is already on the PictureBox. Swallow the
+            ' analysis failure and keep the previous background colour for this frame.
+            Try
 
             If Form_Color_Scheme = 2 Then
                 back_Color = System.Drawing.Color.White
@@ -756,6 +764,11 @@ Partial Public Class Main_Form
                 End If
 
             End If
+
+            Catch ex As Exception
+                ' Keep the image visible; just skip recoloring this frame.
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0946: background analysis skipped: [" & ex.GetType().Name & "] " & ex.Message)
+            End Try
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0945: picture box sizes: " & If(is_PictureBox1_Visible, "P1: ", "P2: ") & If(is_PictureBox1_Visible, Picture_Box_1.Width.ToString, Picture_Box_2.Width.ToString) & "x" & If(is_PictureBox1_Visible, Picture_Box_1.Height.ToString, Picture_Box_2.Height.ToString))
         End If
@@ -901,7 +914,7 @@ Partial Public Class Main_Form
 
             Catch ex As Exception
                 If Not is_After_Undo_Operation Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1070: E005 " & ex.Message & " File: " & Current_File_Name)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1070: E005 [" & ex.GetType().Name & "] " & ex.Message & " File: " & Current_File_Name)
 
                     ' Instead of showing error, try to skip to next file
                     lbl_Status.Text = If(Is_Russian_Language, "Ошибка файла, переход к следующему: " & Path.GetFileName(Current_File_Name), "File error, moving to next: " & Path.GetFileName(Current_File_Name))
@@ -946,6 +959,10 @@ Partial Public Class Main_Form
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1090: No files in folder, all wiped")
         End If
+
+        ' New media is on screen: clear/cancel any stale overlay and (in auto
+        ' mode) schedule OCR for the freshly-shown image.
+        OnMediaDisplayed()
     End Sub
 
 End Class

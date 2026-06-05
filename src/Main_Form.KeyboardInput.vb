@@ -49,6 +49,14 @@ Partial Public Class Main_Form
                     current_File_Index -= 100
                     ReadShowMediaFile("SetFile")
                     lbl_Status.Text = If(Is_Russian_Language, "-100 файлов", "-100 files")
+                Case Keys.R
+                    ' Counter-clockwise rotate (stable binding, independent of OCR).
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1615: Shift+R rotate CCW")
+                    RotateActiveImage(False)
+                Case Keys.T
+                    ' Toggle OCR auto-mode (enables the feature if it was off).
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1616: Shift+T toggle auto OCR")
+                    If ocr_Settings IsNot Nothing Then ToggleOcrAutoMode()
             End Select
         Else
             Select Case e.KeyCode
@@ -135,41 +143,19 @@ Partial Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1490: 0")
                     PoMove(10)
                 Case Keys.R
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1500: Rotate")
-                    Try
-                        If is_Second_PictureBox_Active Then
-                            If is_PictureBox2_Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
-                                Picture_Box_2.Image.RotateFlip(RotateFlipType.Rotate90FlipNone)
-                                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1510: P2 Rotated")
-                            End If
-                        Else
-                            If is_PictureBox1_Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
-                                Picture_Box_1.Image.RotateFlip(RotateFlipType.Rotate90FlipNone)
-                                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1520: P1 Rotated")
-                            End If
-                        End If
-                    Catch ex As Exception
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1530: ERR: " & ex.Message)
-                        MsgBox("E012 " & ex.Message)
-                    End Try
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1500: Rotate CW")
+                    RotateActiveImage(True)
                 Case Keys.T
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1540: Rev Rotate")
-                    Try
-                        If is_Second_PictureBox_Active Then
-                            If is_PictureBox2_Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
-                                Picture_Box_2.Image.RotateFlip(RotateFlipType.Rotate270FlipNone)
-                                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1530: P2 Rotated")
-                            End If
-                        Else
-                            If is_PictureBox1_Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
-                                Picture_Box_1.Image.RotateFlip(RotateFlipType.Rotate270FlipNone)
-                                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1540: P1 Rotated")
-                            End If
-                        End If
-                    Catch ex As Exception
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1570: ERR: " & ex.Message)
-                        MsgBox("E013 " & ex.Message)
-                    End Try
+                    ' When the OCR feature is on, T runs OCR/translate (or toggles
+                    ' the overlay). When it is off, T keeps its legacy meaning of
+                    ' counter-clockwise rotate (also always available on Shift+R).
+                    If ocr_Settings IsNot Nothing AndAlso ocr_Settings.Enabled Then
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1540: T -> OCR/translate")
+                        TriggerOcrHotkey()
+                    Else
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1540: T -> Rev Rotate (OCR off)")
+                        RotateActiveImage(False)
+                    End If
                 Case Keys.Up
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1580: -10")
                     current_File_Index -= 10
@@ -205,6 +191,30 @@ Partial Public Class Main_Form
                     End If
             End Select
         End If
+    End Sub
+
+    ''' <summary>Rotates the active picture 90°; clears any OCR overlay (the
+    ''' pixel grid changed, so cached boxes no longer align).</summary>
+    Private Sub RotateActiveImage(clockwise As Boolean)
+        Dim rot As RotateFlipType = If(clockwise, RotateFlipType.Rotate90FlipNone, RotateFlipType.Rotate270FlipNone)
+        Try
+            If is_Second_PictureBox_Active Then
+                If is_PictureBox2_Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
+                    Picture_Box_2.Image.RotateFlip(rot)
+                    Picture_Box_2.Invalidate()
+                End If
+            Else
+                If is_PictureBox1_Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
+                    Picture_Box_1.Image.RotateFlip(rot)
+                    Picture_Box_1.Invalidate()
+                End If
+            End If
+            current_Overlay_Document = Nothing
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1505: rotated " & If(clockwise, "CW", "CCW"))
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1530: ERR: " & ex.Message)
+            MsgBox("E012 " & ex.Message)
+        End Try
     End Sub
 
     Public Sub DoKey(ByVal keyIndex As Integer)

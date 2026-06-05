@@ -39,7 +39,7 @@ Partial Public Class Main_Form
         toolTip.SetToolTip(btn_Next_Random, If(Is_Russian_Language, "Случайный файл (Y)", "Random file (Y)"))
         toolTip.SetToolTip(btn_Random_Slideshow, If(Is_Russian_Language, "Случайное слайд-шоу (I, F5)", "Random slideshow (I, F5)"))
         toolTip.SetToolTip(btn_Slideshow, If(Is_Russian_Language, "Слайд-шоу (S)", "Slideshow (S)"))
-        toolTip.SetToolTip(btn_Move_Table, If(Is_Russian_Language, "Открыть таблицу папок-получателей и насчтройки (F2)", "Open the destination folders table and Options (F2)"))
+        toolTip.SetToolTip(btn_Move_Table, If(Is_Russian_Language, "Настройки: папки-получатели, OCR и перевод (F2)", "Settings: destination folders, OCR & translation (F2)"))
         toolTip.SetToolTip(btn_Rename, If(Is_Russian_Language, "Переименовать файл (F6)", "Rename file (F6)"))
         toolTip.SetToolTip(bt_Delete, If(Is_Russian_Language, "Удалить файл (Del)", "Delete file (Del)"))
         toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык на английский", "Switch language to Russian"))
@@ -154,6 +154,43 @@ Partial Public Class Main_Form
         InitializeFileOperationWorker()
     End Sub
 
+    ' When a requested file is locked by a writer (still downloading), we don't give
+    ' up -- we poll until it unlocks (or the deadline passes) and then open it, so a
+    ' freshly-downloaded file appears on its own once it's ready.
+    Private pending_Unlock_Path As String = Nothing
+    Private pending_Unlock_Deadline As DateTime
+    Private WithEvents pending_Unlock_Timer As New System.Windows.Forms.Timer() With {.Interval = 800}
+
+    Private Sub Pending_Unlock_Timer_Tick(sender As Object, e As EventArgs) Handles pending_Unlock_Timer.Tick
+        If String.IsNullOrEmpty(pending_Unlock_Path) Then
+            pending_Unlock_Timer.Stop()
+            Return
+        End If
+
+        If DateTime.Now > pending_Unlock_Deadline Then
+            pending_Unlock_Timer.Stop()
+            Dim given_Up As String = pending_Unlock_Path
+            pending_Unlock_Path = Nothing
+            lbl_Status.Text = If(Is_Russian_Language, "Файл всё ещё занят: " & Path.GetFileName(given_Up), "File still locked: " & Path.GetFileName(given_Up))
+            Return
+        End If
+
+        ' GetAttributes keeps throwing while a writer holds the file; once it succeeds
+        ' the writer has released it (download finished) and we can open it.
+        Try
+            File.GetAttributes(pending_Unlock_Path)
+        Catch
+            Return ' still locked -- wait for the next tick
+        End Try
+
+        pending_Unlock_Timer.Stop()
+        Dim ready_Path As String = pending_Unlock_Path
+        pending_Unlock_Path = Nothing
+        is_External_Input_Received = True
+        is_File_Reseived_From_Outside = True
+        ProcessArgument(ready_Path)
+    End Sub
+
     Public Sub ProcessArgument(argument_Raw_Text As String)
         Dim argument_For_Path As String = argument_Raw_Text.Trim()
         Dim argument_For_Flags As String = argument_Raw_Text.ToLowerInvariant()
@@ -201,8 +238,58 @@ Partial Public Class Main_Form
 
                 ReadShowMediaFile("ReadFolderAndFile")
             Else
-                If Not File.Exists(argument_For_Path) Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0280: file of argument is NOT exists: " & argument_For_Path)
+                ' File.Exists returns False for several different reasons and swallows
+                ' them all. GetAttributes throws the REAL one so we can react correctly:
+                '   * FileNotFound/DirNotFound -> the file is genuinely gone: fail fast.
+                '   * UnauthorizedAccess       -> "access denied": almost always a
+                '       sharing violation because the file is still being written by a
+                '       downloader (these are fresh \output\* downloads). A real lock
+                '       clears in a moment, so a few quick retries; an ACL/elevation
+                '       issue won't clear, so don't freeze the UI on it.
+                '   * IOException etc.         -> share dropped/busy: retry longer to
+                '       let the SMB session re-establish.
+                Dim arg_File_Exists As Boolean = File.Exists(argument_For_Path)
+                Dim arg_Missing As Boolean = False
+                Dim arg_Denied As Boolean = False
+                Dim arg_Last_Error As String = ""
+                Dim arg_Denied_Tries As Integer = 0
+                Dim arg_Net_Tries As Integer = 0
+                Do While Not arg_File_Exists
+                    Try
+                        File.GetAttributes(argument_For_Path)
+                        arg_File_Exists = True
+                    Catch ex As FileNotFoundException
+                        arg_Missing = True : arg_Last_Error = ex.Message : Exit Do
+                    Catch ex As DirectoryNotFoundException
+                        arg_Missing = True : arg_Last_Error = ex.Message : Exit Do
+                    Catch ex As UnauthorizedAccessException
+                        arg_Denied = True : arg_Last_Error = ex.Message
+                        arg_Denied_Tries += 1
+                        If arg_Denied_Tries >= 3 Then Exit Do
+                        Threading.Thread.Sleep(250)
+                    Catch ex As Exception
+                        arg_Last_Error = "[" & ex.GetType().Name & "] " & ex.Message
+                        arg_Net_Tries += 1
+                        If arg_Net_Tries >= 8 Then Exit Do
+                        Threading.Thread.Sleep(250)
+                    End Try
+                Loop
+
+                If Not arg_File_Exists Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0280: arg not reachable (missing=" & arg_Missing.ToString() & " denied=" & arg_Denied.ToString() & "): [" & argument_For_Path & "] reason=" & arg_Last_Error)
+                    If arg_Denied Then
+                        ' Locked by a writer (downloading). Watch for it to unlock and
+                        ' open it automatically rather than making the user retry.
+                        pending_Unlock_Path = argument_For_Path
+                        pending_Unlock_Deadline = DateTime.Now.AddSeconds(45)
+                        pending_Unlock_Timer.Stop()
+                        pending_Unlock_Timer.Start()
+                        lbl_Status.Text = If(Is_Russian_Language, "Файл занят, ждём разблокировки (качается?): " & Path.GetFileName(argument_For_Path), "File locked, waiting to open (downloading?): " & Path.GetFileName(argument_For_Path))
+                    ElseIf arg_Missing Then
+                        lbl_Status.Text = If(Is_Russian_Language, "Файл не найден: " & Path.GetFileName(argument_For_Path), "File not found: " & Path.GetFileName(argument_For_Path))
+                    Else
+                        lbl_Status.Text = If(Is_Russian_Language, "Сетевой ресурс недоступен, повторите: " & Path.GetFileName(argument_For_Path), "Share unreachable, retry: " & Path.GetFileName(argument_For_Path))
+                    End If
                     Return
                 End If
 
@@ -282,6 +369,7 @@ Partial Public Class Main_Form
 
         Is_Russian_Language = GetSetting(App_name, Second_App_Name, "Is_Russian_Language", "1") = "1"
         InitializeTooltips()
+        InitializeOcrTranslate()
 
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Width_At_Panel", "80"), Picture_Box_Width_At_Panel)
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Height_At_Panel", "80"), Picture_Box_Height_At_Panel)
@@ -463,6 +551,8 @@ Partial Public Class Main_Form
 
             SaveSetting(App_name, Second_App_Name, "UseIndependentThreadForOperationsWithFiles", If(Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked, "1", "0"))
 
+            SaveOcrSettings()
+
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1190: settings are saved")
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1200: ERR: " & ex.Message)
@@ -493,6 +583,8 @@ Partial Public Class Main_Form
         StopGifLoopPlayback()
         gif_Restart_Timer.Dispose()
         If toolTip IsNot Nothing Then toolTip.Dispose()
+
+        ShutdownOcrTranslate()
 
         If Web_Browser IsNot Nothing Then
             Web_Browser.DocumentText = ""

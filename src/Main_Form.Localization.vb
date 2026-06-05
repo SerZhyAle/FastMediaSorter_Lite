@@ -21,7 +21,7 @@ Partial Public Class Main_Form
             btn_Prev_File.Text = "<< пред(PgUp)"
             btn_Next_File.Text = "след(PgDn) >>"
             bt_Delete.Text = "удалить (del)"
-            btn_Move_Table.Text = "таблица получателей"
+            btn_Move_Table.Text = "Настройки"
             lbl_Help_Info.Text = " Програма для быстрого переноса/копирования изображений по папкам." & Chr(10) & Chr(10) &
                 "Сначала заполните таблицу каталогов-получателей по клавишам 1,2,3.. - 0. " & Chr(10) &
                 "Затем укажите каталог-источник для сортировки. " & Chr(10) &
@@ -46,7 +46,7 @@ Partial Public Class Main_Form
             btn_Prev_File.Text = "<< (P)rev"
             btn_Next_File.Text = "(N)ext >>"
             bt_Delete.Text = "(D)elete"
-            btn_Move_Table.Text = "dest folders table"
+            btn_Move_Table.Text = "Settings"
             lbl_Help_Info.Text = " Program for fast image sorting." & Chr(10) & Chr(10) &
                 "First fill dest folders table for keys: 1,2.. - 0. " & Chr(10) &
                 "After set folder with you unsorted files. " & Chr(10) &

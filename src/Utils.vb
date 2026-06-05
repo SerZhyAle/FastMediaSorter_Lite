@@ -53,4 +53,83 @@ Module Utils
         End If
     End Sub
 
+    ''' <summary>
+    ''' Reads image pixel dimensions straight from the file header (JPEG/PNG/GIF/BMP)
+    ''' without decoding via GDI+. This is deliberately NOT Image.FromFile/FromStream:
+    ''' the background worker calls this while the UI thread may be running GetPixel on
+    ''' the same image, and concurrent GDI+ decoding corrupts shared state (throwing
+    ''' OverflowException / "Parameter is not valid"). Header parsing touches no GDI+.
+    ''' Returns Size.Empty when the format/size can't be determined.
+    ''' </summary>
+    Public Function GetImageDimensions(filePath As String) As Size
+        Try
+            Using fs As New IO.FileStream(filePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+                Dim head(31) As Byte
+                Dim n As Integer = fs.Read(head, 0, head.Length)
+
+                ' PNG: 8-byte signature, then IHDR with big-endian width/height at 16/20.
+                If n >= 24 AndAlso head(0) = &H89 AndAlso head(1) = &H50 AndAlso head(2) = &H4E AndAlso head(3) = &H47 Then
+                    Dim w As Integer = (CInt(head(16)) << 24) Or (CInt(head(17)) << 16) Or (CInt(head(18)) << 8) Or CInt(head(19))
+                    Dim h As Integer = (CInt(head(20)) << 24) Or (CInt(head(21)) << 16) Or (CInt(head(22)) << 8) Or CInt(head(23))
+                    Return New Size(w, h)
+                End If
+
+                ' GIF: "GIF", then little-endian logical screen width/height at 6/8.
+                If n >= 10 AndAlso head(0) = &H47 AndAlso head(1) = &H49 AndAlso head(2) = &H46 Then
+                    Return New Size(CInt(head(6)) Or (CInt(head(7)) << 8), CInt(head(8)) Or (CInt(head(9)) << 8))
+                End If
+
+                ' BMP: "BM", then 4-byte little-endian width/height at 18/22.
+                If n >= 26 AndAlso head(0) = &H42 AndAlso head(1) = &H4D Then
+                    Return New Size(BitConverter.ToInt32(head, 18), Math.Abs(BitConverter.ToInt32(head, 22)))
+                End If
+
+                ' JPEG: walk the marker segments to the SOF frame header.
+                If n >= 2 AndAlso head(0) = &HFF AndAlso head(1) = &HD8 Then
+                    fs.Seek(2, IO.SeekOrigin.Begin)
+                    Return ReadJpegSize(fs)
+                End If
+            End Using
+        Catch
+        End Try
+        Return Size.Empty
+    End Function
+
+    Private Function ReadJpegSize(fs As IO.Stream) As Size
+        Do
+            Dim b As Integer = fs.ReadByte()
+            If b < 0 Then Exit Do
+            If b <> &HFF Then Continue Do
+
+            ' Skip any fill 0xFF bytes; next non-FF byte is the marker.
+            Dim marker As Integer = fs.ReadByte()
+            Do While marker = &HFF
+                marker = fs.ReadByte()
+            Loop
+            If marker < 0 Then Exit Do
+
+            ' Standalone markers (no length payload): RSTn (D0-D7), SOI/EOI (D8/D9), TEM (01).
+            If (marker >= &HD0 AndAlso marker <= &HD9) OrElse marker = &H1 Then Continue Do
+
+            Dim len1 As Integer = fs.ReadByte()
+            Dim len2 As Integer = fs.ReadByte()
+            If len1 < 0 OrElse len2 < 0 Then Exit Do
+            Dim segLen As Integer = (len1 << 8) Or len2
+
+            ' SOF0..SOF15 carry the frame size, except the DHT/JPG/DAC markers (C4/C8/CC).
+            Dim isSof As Boolean = marker >= &HC0 AndAlso marker <= &HCF AndAlso marker <> &HC4 AndAlso marker <> &HC8 AndAlso marker <> &HCC
+            If isSof Then
+                fs.ReadByte() ' sample precision
+                Dim h1 As Integer = fs.ReadByte() : Dim h2 As Integer = fs.ReadByte()
+                Dim w1 As Integer = fs.ReadByte() : Dim w2 As Integer = fs.ReadByte()
+                If w2 < 0 Then Exit Do
+                Return New Size((w1 << 8) Or w2, (h1 << 8) Or h2)
+            End If
+
+            If segLen < 2 Then Exit Do
+            fs.Seek(segLen - 2, IO.SeekOrigin.Current)
+        Loop
+        Return Size.Empty
+    End Function
+
 End Module

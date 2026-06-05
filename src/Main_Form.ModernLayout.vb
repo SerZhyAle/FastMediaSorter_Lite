@@ -86,6 +86,10 @@ Partial Public Class Main_Form
         ' Status line at the bottom.
         ReparentInto(panel_Status, {CType(lbl_Current_File, Control), lbl_Status})
 
+        ' OCR + Translation toolbar button (created in code, not the Designer);
+        ' added here so the styling/recolour passes below pick it up uniformly.
+        BuildOcrToolbarControls(flow_Toolbar)
+
         ' Add Fill first (back of z-order) so the docked strips reserve their
         ' space and the media panel takes the remainder.
         Me.Controls.Add(panel_Media)
@@ -295,9 +299,18 @@ Partial Public Class Main_Form
 
     Private Shared Function BlendColor(a As Color, b As Color, t As Single) As Color
         Return Color.FromArgb(
-            CInt(a.R + (b.R - a.R) * t),
-            CInt(a.G + (b.G - a.G) * t),
-            CInt(a.B + (b.B - a.B) * t))
+            ClampByte(a.R + (b.R - a.R) * t),
+            ClampByte(a.G + (b.G - a.G) * t),
+            ClampByte(a.B + (b.B - a.B) * t))
+    End Function
+
+    ''' <summary>Rounds to an Integer and clamps to 0..255 so Color.FromArgb can
+    ''' never throw and CInt can never overflow on a stray/NaN input.</summary>
+    Private Shared Function ClampByte(value As Single) As Integer
+        If Single.IsNaN(value) Then Return 0
+        If value <= 0F Then Return 0
+        If value >= 255F Then Return 255
+        Return CInt(value)
     End Function
 
     Private Shared Function IsDarkColor(c As Color) As Boolean

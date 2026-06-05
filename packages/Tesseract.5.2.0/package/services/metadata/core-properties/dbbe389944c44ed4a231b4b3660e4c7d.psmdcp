@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<coreProperties xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
+  <dc:creator>Charles Weld</dc:creator>
+  <dc:description>Tesseract 5 adds a new neural net (LSTM) based OCR engine which is focused on line recognition, but also still supports the legacy Tesseract OCR engine of Tesseract 3 which works by recognizing character patterns. Compatibility with Tesseract 3 is enabled by using the Legacy OCR Engine mode (--oem 0). It also needs traineddata files which support the legacy engine, for example those from the tessdata repository.</dc:description>
+  <dc:identifier>Tesseract</dc:identifier>
+  <version>5.2.0</version>
+  <keywords>Tesseract Ocr</keywords>
+  <lastModifiedBy>NuGet.Build.Tasks.Pack, Version=6.3.1.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35;Microsoft Windows NT 10.0.19044.0;.NET Framework 4.7.2</lastModifiedBy>
+</coreProperties>

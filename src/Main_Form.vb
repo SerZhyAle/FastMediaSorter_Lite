@@ -292,7 +292,15 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0888: WM_COPYDATA")
             Try
                 Dim cds As COPYDATASTRUCT = CType(Marshal.PtrToStructure(m.LParam, GetType(COPYDATASTRUCT)), COPYDATASTRUCT)
-                Dim received_Data As String = Marshal.PtrToStringAnsi(cds.lpData, cds.cbData)
+                ' The sender (Application_Events) encodes the path as UTF-8. Decode it the
+                ' same way: PtrToStringAnsi uses the system code page and silently mangles
+                ' any non-ASCII filename, which then fails File.Exists ("file not found").
+                Dim received_Data As String = ""
+                If cds.cbData > 0 AndAlso cds.lpData <> IntPtr.Zero Then
+                    Dim received_Bytes(cds.cbData - 1) As Byte
+                    Marshal.Copy(cds.lpData, received_Bytes, 0, cds.cbData)
+                    received_Data = Encoding.UTF8.GetString(received_Bytes)
+                End If
                 If String.IsNullOrEmpty(received_Data) Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0000: Error processing WM_COPYDATA - received data is null or empty")
                     Return

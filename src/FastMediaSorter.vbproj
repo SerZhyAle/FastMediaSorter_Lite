@@ -79,6 +79,10 @@
     <OptionInfer>On</OptionInfer>
   </PropertyGroup>
   <PropertyGroup>
+    <!-- Force legacy .NET Framework resource writer to avoid System.Resources.Extensions dependency at runtime on net48. -->
+    <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
+  </PropertyGroup>
+  <PropertyGroup>
     <ApplicationIcon>..\assets\icons\Fast_Media_Sorter.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
@@ -109,6 +113,12 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Security" />
+    <Reference Include="Tesseract">
+      <HintPath>..\packages\Tesseract.5.2.0\lib\net48\Tesseract.dll</HintPath>
+    </Reference>
     <Reference Include="LibVLCSharp">
       <HintPath>..\packages\LibVLCSharp.3.9.3\lib\net471\LibVLCSharp.dll</HintPath>
     </Reference>
@@ -202,6 +212,29 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.OcrTranslate.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.OcrOverlay.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="OcrTranslateSettings.vb" />
+    <Compile Include="Ocr\OcrModels.vb" />
+    <Compile Include="Ocr\IOcrEngine.vb" />
+    <Compile Include="Ocr\OcrBlockBuilder.vb" />
+    <Compile Include="Ocr\TesseractOcrEngine.vb" />
+    <Compile Include="Translate\ITranslator.vb" />
+    <Compile Include="Translate\OllamaTranslator.vb" />
+    <Compile Include="Translate\OllamaManager.vb" />
+    <Compile Include="Translate\LibreTranslateTranslator.vb" />
+    <Compile Include="Translate\TranslationCache.vb" />
+    <Compile Include="Security\DpapiSecrets.vb" />
+    <Compile Include="OcrLanguageCatalog.vb" />
+    <Compile Include="OCR_Translate_Form.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Table_Form.Designer.vb">
       <DependentUpon>Table_Form.vb</DependentUpon>
     </Compile>
@@ -277,10 +310,15 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\assets\icons\Fast_Media_Sorter.ico" />
+    <Content Include="..\assets\flags\*.png">
+      <Link>flags\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <Import Project="..\packages\Microsoft.Web.WebView2.1.0.3240.44\build\Microsoft.Web.WebView2.targets" Condition="Exists('..\packages\Microsoft.Web.WebView2.1.0.3240.44\build\Microsoft.Web.WebView2.targets')" />
   <Import Project="..\packages\VideoLAN.LibVLC.Windows.3.0.21\build\VideoLAN.LibVLC.Windows.targets" Condition="Exists('..\packages\VideoLAN.LibVLC.Windows.3.0.21\build\VideoLAN.LibVLC.Windows.targets')" />
+  <Import Project="..\packages\Tesseract.5.2.0\build\Tesseract.targets" Condition="Exists('..\packages\Tesseract.5.2.0\build\Tesseract.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
