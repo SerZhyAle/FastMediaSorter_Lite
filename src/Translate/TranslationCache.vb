@@ -78,6 +78,26 @@ Public Class TranslationCache
         End SyncLock
     End Sub
 
+    ''' <summary>Drops every cached result (memory + disk). Called when the OCR/
+    ''' translation settings window opens so stale results are never reused.</summary>
+    Public Sub Clear()
+        SyncLock sync
+            memory.Clear()
+        End SyncLock
+        Try
+            Dim dir As String = OcrPaths.OcrCacheDir()
+            If Directory.Exists(dir) Then
+                For Each f As String In Directory.GetFiles(dir, "*.json")
+                    Try
+                        File.Delete(f)
+                    Catch
+                    End Try
+                Next
+            End If
+        Catch
+        End Try
+    End Sub
+
     Public Function TryLoadFromDisk(key As String) As OcrOverlayDocument
         Try
             Dim cacheFile As String = DiskPath(key)

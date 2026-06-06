@@ -31,7 +31,7 @@ Partial Public Class Main_Form
         Public FileWriteTicks As Long
         Public Bitmap As Bitmap
         Public ImageSize As Size
-        Public OcrLanguages As String
+        Public OcrSourceHint As String
         Public SourceLang As String
         Public TargetLang As String
     End Class
@@ -57,6 +57,7 @@ Partial Public Class Main_Form
         ocr_Overlay_Visible = ocr_Settings.OverlayVisible
         ocr_Engine = New TesseractOcrEngine()
         ocr_Cache = New TranslationCache()
+        ApplyEngineOptions()
         ocr_Auto_Timer.Interval = 350
         ocr_Auto_Timer.Stop()
         UpdateOcrButtonVisual()
@@ -69,6 +70,14 @@ Partial Public Class Main_Form
 
     Friend Sub SaveOcrSettings()
         If ocr_Settings IsNot Nothing Then ocr_Settings.Save()
+    End Sub
+
+    ''' <summary>Pushes the OCR model(quality)/mode settings onto the engine.</summary>
+    Private Sub ApplyEngineOptions()
+        Dim te As TesseractOcrEngine = TryCast(ocr_Engine, TesseractOcrEngine)
+        If te Is Nothing OrElse ocr_Settings Is Nothing Then Return
+        te.PreferBest = String.Equals(ocr_Settings.OcrModelQuality, "best", StringComparison.OrdinalIgnoreCase)
+        te.ForcedPageMode = ocr_Settings.OcrPageMode
     End Sub
 
     Friend Sub ShutdownOcrTranslate()
@@ -188,7 +197,7 @@ Partial Public Class Main_Form
             .FileWriteTicks = ticks,
             .Bitmap = snapshot,
             .ImageSize = New Size(snapshot.Width, snapshot.Height),
-            .OcrLanguages = ocr_Settings.OcrLanguages(),
+            .OcrSourceHint = ocr_Settings.OcrSourceHint(),
             .SourceLang = ocr_Settings.SourceLang,
             .TargetLang = ocr_Settings.TargetLang
         }
@@ -203,8 +212,10 @@ Partial Public Class Main_Form
 
     Private Async Function RunOcrPipeline(job As OcrJob, token As CancellationToken) As Task
         Try
-            Dim provider As String = ocr_Settings.Provider
-            Dim engineName As String = ocr_Engine.Name
+            ' Engine/translator identity in the cache key includes the model,
+            ' OCR quality and OCR mode, so changing any of them invalidates results.
+            Dim engineName As String = ocr_Engine.Name & "|" & ocr_Settings.OcrModelQuality & "|" & ocr_Settings.OcrPageMode
+            Dim provider As String = ocr_Settings.Provider & "|" & ocr_Settings.OllamaModel
             Dim key As String = TranslationCache.BuildKey(job.FilePath, job.FileWriteTicks, engineName, provider, job.SourceLang, job.TargetLang)
 
             ' Cache (memory, then disk).
@@ -221,7 +232,7 @@ Partial Public Class Main_Form
             token.ThrowIfCancellationRequested()
 
             ' OCR off the UI thread.
-            Dim ocrResult As OcrResult = Await Task.Run(Function() ocr_Engine.Recognize(job.Bitmap, job.OcrLanguages), token).ConfigureAwait(False)
+            Dim ocrResult As OcrResult = Await Task.Run(Function() ocr_Engine.Recognize(job.Bitmap, job.OcrSourceHint), token).ConfigureAwait(False)
             token.ThrowIfCancellationRequested()
 
             Select Case ocrResult.Status
@@ -235,10 +246,7 @@ Partial Public Class Main_Form
 
             Dim blocks As List(Of OcrBlock) = OcrBlockBuilder.BuildBlocks(ocrResult.Lines)
             If blocks.Count = 0 Then
-                Dim emptyDoc As OcrOverlayDocument = BuildDoc(job, engineName, provider, blocks)
-                ocr_Cache.PutMemory(key, emptyDoc)
-                If ocr_Settings.DiskCache Then ocr_Cache.SaveToDisk(key, emptyDoc)
-                ApplyOnUi(emptyDoc, If(Is_Russian_Language, "Текст не найден", "No text found"), token)
+                SetStatusOnUi(If(Is_Russian_Language, "Текст не найден", "No text found"))
                 Return
             End If
 
@@ -404,9 +412,17 @@ Partial Public Class Main_Form
             ocr_Settings.Load(If(Is_Russian_Language, "ru", "en"))
         End If
 
+        ' Opening the settings invalidates cached OCR/translation results so any
+        ' parameter change takes effect on the next run.
+        If ocr_Cache IsNot Nothing Then ocr_Cache.Clear()
+        CancelOcrJob()
+        current_Overlay_Document = Nothing
+        InvalidateOverlay()
+
         Using f As New OCR_Translate_Form(ocr_Settings)
             If f.ShowDialog(Me) = DialogResult.OK Then
                 ocr_Settings.Save()
+                ApplyEngineOptions()
                 ocr_Overlay_Visible = ocr_Settings.OverlayVisible
                 UpdateOcrButtonVisual()
                 InvalidateOverlay()

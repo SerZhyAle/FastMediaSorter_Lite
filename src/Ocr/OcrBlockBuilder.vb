@@ -42,7 +42,22 @@ Public Module OcrBlockBuilder
         Next
         If current.Count > 0 Then blocks.Add(MakeBlock(current))
 
-        Return blocks
+        ' Drop isolated tiny blocks (single stray short word from texture noise);
+        ' real speech blocks have several characters or multiple lines.
+        Dim kept As New List(Of OcrBlock)
+        For Each b As OcrBlock In blocks
+            If BlockHasEnoughText(b) Then kept.Add(b)
+        Next
+        Return kept
+    End Function
+
+    Private Function BlockHasEnoughText(b As OcrBlock) As Boolean
+        Dim useful As Integer = 0
+        For Each ch As Char In b.SourceText
+            If Char.IsLetterOrDigit(ch) Then useful += 1
+        Next
+        If b.Lines.Count >= 2 Then Return useful >= 4
+        Return useful >= 5
     End Function
 
     Private Function MakeBlock(lines As List(Of OcrLine)) As OcrBlock

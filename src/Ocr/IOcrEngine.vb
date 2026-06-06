@@ -35,6 +35,6 @@ Public Interface IOcrEngine
     ReadOnly Property Name As String
 
     ''' <param name="source">A private bitmap snapshot the engine may read freely.</param>
-    ''' <param name="languages">Tesseract-style code list, e.g. "eng+rus+ukr".</param>
+    ''' <param name="languages">Normalized source hint such as "auto", "rus" or "eng".</param>
     Function Recognize(source As Bitmap, languages As String) As OcrResult
 End Interface

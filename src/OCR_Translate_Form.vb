@@ -31,6 +31,8 @@ Public Class OCR_Translate_Form
     Private btnPullModel As Button
     Private txtApi As TextBox
     Private cmbSource As ComboBox
+    Private cmbOcrModel As ComboBox
+    Private cmbOcrMode As ComboBox
     Private cmbTarget As ComboBox
     Private btnDownloadOcr As Button
     Private trkOpacity As TrackBar
@@ -80,7 +82,7 @@ Public Class OCR_Translate_Form
         Me.MinimizeBox = False
         Me.MaximizeBox = False
         Me.ShowInTaskbar = False
-        Me.ClientSize = New Size(470, 600)
+        Me.ClientSize = New Size(470, 664)
         Me.Font = New Font("Segoe UI", 9.0F)
 
         Dim labelW As Integer = 150
@@ -129,17 +131,38 @@ Public Class OCR_Translate_Form
         Me.Controls.Add(txtApi)
         y += 36
 
-        AddSection(If(_rus, "Языки", "Languages"), y) : y += 26
+        AddSection(If(_rus, "Распознавание (OCR)", "Recognition (OCR)"), y) : y += 26
 
         AddLabel(If(_rus, "Язык распознавания:", "Recognition (source):"), 12, y, labelW)
         cmbSource = BuildLanguageCombo(ctlX, y, ctlW, OcrLanguageCatalog.SourceLanguages())
         y += 34
 
+        AddLabel(If(_rus, "Модель OCR:", "OCR model:"), 12, y, labelW)
+        cmbOcrModel = New ComboBox With {.Left = ctlX, .Top = y, .Width = ctlW, .DropDownStyle = ComboBoxStyle.DropDownList}
+        cmbOcrModel.Items.AddRange(New Object() {
+            If(_rus, "Быстрая (fast)", "Fast"),
+            If(_rus, "Лучшая (best, медленнее)", "Best (more accurate, slower)")})
+        Me.Controls.Add(cmbOcrModel)
+        y += 30
+
+        AddLabel(If(_rus, "Режим OCR:", "OCR mode:"), 12, y, labelW)
+        cmbOcrMode = New ComboBox With {.Left = ctlX, .Top = y, .Width = ctlW, .DropDownStyle = ComboBoxStyle.DropDownList}
+        cmbOcrMode.Items.AddRange(New Object() {
+            If(_rus, "Авто (рекомендуется)", "Auto (recommended)"),
+            If(_rus, "Один блок", "Single block"),
+            If(_rus, "Разреженный текст", "Sparse text"),
+            If(_rus, "Одна строка", "Single line"),
+            If(_rus, "Вертикальный текст", "Vertical text")})
+        Me.Controls.Add(cmbOcrMode)
+        y += 32
+
         btnDownloadOcr = New Button With {.Left = ctlX, .Top = y, .Width = ctlW, .Height = 27,
             .Text = If(_rus, "Скачать пакет распознавания", "Download recognition language pack")}
         AddHandler btnDownloadOcr.Click, AddressOf OnDownloadOcr
         Me.Controls.Add(btnDownloadOcr)
-        y += 34
+        y += 38
+
+        AddSection(If(_rus, "Язык перевода", "Translation language"), y) : y += 26
 
         AddLabel(If(_rus, "Язык перевода:", "Translate to (target):"), 12, y, labelW)
         cmbTarget = BuildLanguageCombo(ctlX, y, ctlW, OcrLanguageCatalog.TargetLanguages())
@@ -240,6 +263,9 @@ Public Class OCR_Translate_Form
         txtApi.Text = _settings.ApiKey
         SelectLanguage(cmbSource, _settings.SourceLang, "auto")
         SelectLanguage(cmbTarget, _settings.TargetLang, "en")
+        cmbOcrModel.SelectedIndex = If(String.Equals(_settings.OcrModelQuality, "best", StringComparison.OrdinalIgnoreCase), 1, 0)
+        Dim modeIndex As Integer = Array.IndexOf(OcrModeCodes, If(_settings.OcrPageMode, "auto").Trim().ToLowerInvariant())
+        cmbOcrMode.SelectedIndex = If(modeIndex >= 0, modeIndex, 0)
         trkOpacity.Value = OcrTranslateSettings.ClampOpacity(_settings.OverlayOpacity)
         lblOpacityVal.Text = trkOpacity.Value.ToString()
         chkDisk.Checked = _settings.DiskCache
@@ -255,6 +281,9 @@ Public Class OCR_Translate_Form
         _settings.ApiKey = txtApi.Text
         _settings.SourceLang = SelectedCode(cmbSource, "auto")
         _settings.TargetLang = SelectedCode(cmbTarget, "en")
+        _settings.OcrModelQuality = If(cmbOcrModel.SelectedIndex = 1, "best", "fast")
+        Dim modeIdx As Integer = cmbOcrMode.SelectedIndex
+        _settings.OcrPageMode = If(modeIdx >= 0 AndAlso modeIdx < OcrModeCodes.Length, OcrModeCodes(modeIdx), "auto")
         _settings.OverlayOpacity = trkOpacity.Value
         _settings.DiskCache = chkDisk.Checked
     End Sub
@@ -290,6 +319,9 @@ Public Class OCR_Translate_Form
         "qwen2.5:3b", "gemma2:2b", "qwen2.5:1.5b", "llama3.2:3b",
         "qwen2.5", "qwen2.5:7b", "llama3.2", "gemma2", "aya", "mistral", "phi3.5"
     }
+
+    ' OCR page-mode codes, aligned with the cmbOcrMode item order.
+    Private Shared ReadOnly OcrModeCodes As String() = {"auto", "block", "sparse", "line", "vertical"}
 
     ''' <summary>
     ''' Fills the model dropdown: installed models first, then recommended models
@@ -430,11 +462,12 @@ Public Class OCR_Translate_Form
         Dim srcCode As String = SelectedCode(cmbSource, "auto")
         Dim tessLangs As String = OcrTranslateSettings.TessLanguages(srcCode)
 
+        Dim preferBest As Boolean = (cmbOcrModel.SelectedIndex = 1)
         SetBusy(True)
         lblStatus.Text = If(_rus, "Скачивание языкового пакета: ", "Downloading language pack: ") & tessLangs
         Dim ok As Boolean = False
         Try
-            ok = Await Task.Run(Function() TesseractOcrEngine.EnsureLanguagesPublic(tessLangs))
+            ok = Await Task.Run(Function() TesseractOcrEngine.EnsureLanguagesPublic(tessLangs, preferBest))
         Catch ex As Exception
             lblStatus.Text = ex.Message
         End Try

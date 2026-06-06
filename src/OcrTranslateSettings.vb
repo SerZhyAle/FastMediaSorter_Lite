@@ -19,6 +19,8 @@ Public Class OcrTranslateSettings
     Public Property OverlayOpacity As Integer = 210      ' OverlayOpacity (alpha 0-255)
     Public Property DiskCache As Boolean = True          ' OcrDiskCache
     Public Property OllamaModel As String = "qwen2.5:3b" ' OllamaModel ("" = auto-detect)
+    Public Property OcrModelQuality As String = "fast"   ' OcrModelQuality (fast/best)
+    Public Property OcrPageMode As String = "auto"       ' OcrPageMode (auto/block/sparse/line/vertical)
 
     Public Sub Load(defaultTargetLang As String)
         Enabled = ReadBool("OcrEnabled", False)
@@ -33,6 +35,8 @@ Public Class OcrTranslateSettings
         OverlayOpacity = ClampOpacity(ReadInt("OverlayOpacity", 210))
         DiskCache = ReadBool("OcrDiskCache", True)
         OllamaModel = ReadString("OllamaModel", "qwen2.5:3b")
+        OcrModelQuality = ReadString("OcrModelQuality", "fast")
+        OcrPageMode = ReadString("OcrPageMode", "auto")
     End Sub
 
     Public Sub Save()
@@ -48,18 +52,88 @@ Public Class OcrTranslateSettings
         WriteString("OverlayOpacity", ClampOpacity(OverlayOpacity).ToString())
         WriteBool("OcrDiskCache", DiskCache)
         WriteString("OllamaModel", OllamaModel)
+        WriteString("OcrModelQuality", OcrModelQuality)
+        WriteString("OcrPageMode", OcrPageMode)
     End Sub
 
-    ''' <summary>Tesseract language string for the configured source language.</summary>
-    Public Function OcrLanguages() As String
+    ''' <summary>
+    ''' Runtime OCR source hint. This is a single normalized code (for example
+    ''' "auto", "rus", "ukr", "eng"), not a mixed-language list.
+    ''' </summary>
+    Public Function OcrSourceHint() As String
+        Return NormalizeOcrSourceCode(SourceLang)
+    End Function
+
+    ''' <summary>
+    ''' Ordered OCR attempt list for the configured source language. "auto"
+    ''' intentionally prefers single-language passes before any broader fallback.
+    ''' </summary>
+    Public Function OcrLanguageAttempts() As List(Of String)
+        Return OcrAttemptCodes(SourceLang)
+    End Function
+
+    ''' <summary>
+    ''' Tesseract language string used for pre-downloading required language data.
+    ''' This is for installation UX, not the runtime OCR attempt strategy.
+    ''' </summary>
+    Public Function OcrDownloadLanguages() As String
         Return TessLanguages(SourceLang)
     End Function
 
-    ''' <summary>Maps an app/source language code to the tesseract code list.</summary>
+    Public Shared Function OcrAttemptCodes(sourceCode As String) As List(Of String)
+        Dim attempts As New List(Of String)
+        Dim primary As String = NormalizeOcrSourceCode(sourceCode)
+        If primary <> "auto" Then AddUnique(attempts, primary)
+
+        Select Case primary
+            Case "auto"
+                AddUnique(attempts, "rus")
+                AddUnique(attempts, "ukr")
+                AddUnique(attempts, "eng")
+            Case "rus"
+                AddUnique(attempts, "ukr")
+                AddUnique(attempts, "eng")
+            Case "ukr"
+                AddUnique(attempts, "rus")
+                AddUnique(attempts, "eng")
+            Case "bel", "bul", "mkd"
+                AddUnique(attempts, "rus")
+                AddUnique(attempts, "eng")
+            Case "eng"
+                ' English-only by default.
+            Case Else
+                AddUnique(attempts, "eng")
+        End Select
+
+        Return attempts
+    End Function
+
+    Public Shared Function NormalizeOcrSourceCode(sourceCode As String) As String
+        Dim s As String = If(sourceCode, "").Trim().ToLowerInvariant()
+        If s.Length = 0 OrElse s = "auto" Then Return "auto"
+        If s.IndexOf("+"c) >= 0 Then
+            For Each part As String In s.Split("+"c)
+                Dim normalizedPart As String = NormalizeOcrSourceCode(part)
+                If normalizedPart <> "auto" Then Return normalizedPart
+            Next
+            Return "auto"
+        End If
+        Return TessSingleLanguage(s)
+    End Function
+
+    ''' <summary>Maps an app/source language code to the tesseract download list.</summary>
     Public Shared Function TessLanguages(sourceCode As String) As String
+        Dim ordered As New List(Of String)
+        For Each code As String In OcrAttemptCodes(sourceCode)
+            If code <> "auto" Then AddUnique(ordered, code)
+        Next
+        If ordered.Count = 0 Then ordered.Add("eng")
+        Return String.Join("+", ordered.ToArray())
+    End Function
+
+    Private Shared Function TessSingleLanguage(sourceCode As String) As String
         Dim s As String = If(sourceCode, "").Trim().ToLowerInvariant()
         Select Case s
-            Case "", "auto" : Return "eng+rus+ukr"
             Case "en", "eng" : Return "eng"
             Case "ru", "rus" : Return "rus"
             Case "uk", "ukr" : Return "ukr"
@@ -96,6 +170,12 @@ Public Class OcrTranslateSettings
             Case Else : Return s
         End Select
     End Function
+
+    Private Shared Sub AddUnique(items As List(Of String), value As String)
+        If String.IsNullOrWhiteSpace(value) Then Return
+        If items.Contains(value) Then Return
+        items.Add(value)
+    End Sub
 
     Public Shared Function ClampOpacity(value As Integer) As Integer
         If value < 40 Then Return 40

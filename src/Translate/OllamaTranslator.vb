@@ -73,6 +73,11 @@ Public Class OllamaTranslator
     Private ReadOnly baseUrl As String
     Private model As String
 
+    Private Const SystemPrompt As String =
+        "You are a precise translation engine. Output text ONLY in the requested target language, " &
+        "using that language's native script. Never switch to another language and never use Chinese " &
+        "characters unless Chinese is explicitly the requested target."
+
     Public Sub New(endpoint As String, model As String)
         Me.baseUrl = NormalizeBase(endpoint)
         Me.model = If(model, "").Trim()
@@ -118,10 +123,10 @@ Public Class OllamaTranslator
         ' 1) Try a single batched request.
         Dim batched As List(Of String) = Await TryTranslateBatchAsync(texts, langName, ct).ConfigureAwait(False)
         If batched IsNot Nothing AndAlso batched.Count = texts.Count Then
-            ' Repair any echoed segments individually.
+            ' Repair echoed OR wrong-script (e.g. Chinese-drift) segments individually.
             For i As Integer = 0 To texts.Count - 1
-                If LooksLikeEcho(texts(i), batched(i)) Then
-                    batched(i) = Await TranslateOneAsync(texts(i), langName, ct).ConfigureAwait(False)
+                If LooksLikeEcho(texts(i), batched(i)) OrElse LooksWrongScript(batched(i), targetLang) Then
+                    batched(i) = Await TranslateOneAsync(texts(i), langName, targetLang, ct).ConfigureAwait(False)
                 End If
             Next
             Return batched
@@ -131,7 +136,7 @@ Public Class OllamaTranslator
         Dim outList As New List(Of String)(texts.Count)
         For i As Integer = 0 To texts.Count - 1
             ct.ThrowIfCancellationRequested()
-            outList.Add(Await TranslateOneAsync(texts(i), langName, ct).ConfigureAwait(False))
+            outList.Add(Await TranslateOneAsync(texts(i), langName, targetLang, ct).ConfigureAwait(False))
         Next
         Return outList
     End Function
@@ -141,8 +146,10 @@ Public Class OllamaTranslator
             Dim serializer As JavaScriptSerializer = TranslateHttp.NewSerializer()
             Dim inputJson As String = serializer.Serialize(texts)
             Dim prompt As String =
-                "You are a professional translator. Translate each input segment into " & langName & "." & vbLf &
-                "Keep it natural and concise. Do not add notes, explanations or quotation marks." & vbLf &
+                "Translate each input segment into " & langName & "." & vbLf &
+                "Write every translation ENTIRELY in " & langName & " using its native alphabet. " &
+                "Do NOT use Chinese characters or any language other than " & langName & "." & vbLf &
+                "Keep it natural and concise; no notes, no quotation marks." & vbLf &
                 "Return ONLY a JSON object of the form {""translations"":[...]} containing exactly " &
                 texts.Count.ToString() & " strings, in the same order as the input." & vbLf &
                 "Input segments: " & inputJson
@@ -171,27 +178,36 @@ Public Class OllamaTranslator
         End Try
     End Function
 
-    Private Async Function TranslateOneAsync(text As String, langName As String, ct As CancellationToken) As Task(Of String)
+    Private Async Function TranslateOneAsync(text As String, langName As String, targetLang As String, ct As CancellationToken) As Task(Of String)
         If String.IsNullOrWhiteSpace(text) Then Return text
 
         Dim prompt As String =
-            "Translate the following text into " & langName & ". Output only the translation, with no notes or quotes." & vbLf &
+            "Translate the following text into " & langName & "." & vbLf &
+            "Write the translation ENTIRELY in " & langName & " using its native alphabet; do NOT use " &
+            "Chinese characters or any other language. Output only the translation, no notes or quotes." & vbLf &
             "Text: " & text
 
         Dim first As String = Await GenerateAsync(prompt, False, ct).ConfigureAwait(False)
         first = If(first, "").Trim()
 
-        If first.Length = 0 OrElse LooksLikeEcho(text, first) Then
+        Dim firstBad As Boolean = first.Length = 0 OrElse LooksLikeEcho(text, first) OrElse LooksWrongScript(first, targetLang)
+        If firstBad Then
             Dim retryPrompt As String =
-                "Translate this text into " & langName & ". It is currently in another language; produce a genuine " &
-                langName & " translation, not a copy. Output only the translation." & vbLf &
+                "Translate this text into " & langName & " ONLY. The output must be written entirely in " &
+                langName & "'s native alphabet. Absolutely no Chinese characters and no other language. " &
+                "Produce a genuine translation, not a copy. Output only the translation." & vbLf &
                 "Text: " & text
             Dim second As String = Await GenerateAsync(retryPrompt, False, ct).ConfigureAwait(False)
             second = If(second, "").Trim()
-            If second.Length > 0 Then Return second
+            If second.Length > 0 AndAlso Not LooksWrongScript(second, targetLang) AndAlso Not LooksLikeEcho(text, second) Then Return second
+            ' Prefer a usable first result over a bad retry.
+            If first.Length > 0 AndAlso Not LooksWrongScript(first, targetLang) Then Return first
+            If second.Length > 0 AndAlso Not LooksWrongScript(second, targetLang) Then Return second
+            ' Everything drifted to the wrong script -> show the source, not gibberish.
+            Return text
         End If
 
-        Return If(first.Length > 0, first, text)
+        Return first
     End Function
 
     ''' <summary>POST /api/generate (stream=false); returns the "response" field.</summary>
@@ -200,6 +216,7 @@ Public Class OllamaTranslator
         Dim body As New Dictionary(Of String, Object) From {
             {"model", model},
             {"prompt", prompt},
+            {"system", SystemPrompt},
             {"stream", False},
             {"keep_alive", "5m"},
             {"options", New Dictionary(Of String, Object) From {{"temperature", 0}}}
@@ -350,6 +367,39 @@ Public Class OllamaTranslator
             Next
         Next
         Return names(0)
+    End Function
+
+    ''' <summary>True when a non-CJK target's translation drifted into Chinese/
+    ''' Japanese/Korean script (a common failure of Chinese-origin models).</summary>
+    Private Shared Function LooksWrongScript(text As String, targetLang As String) As Boolean
+        If String.IsNullOrWhiteSpace(text) Then Return False
+        If IsCjkLanguage(targetLang) Then Return False
+
+        Dim letters As Integer = 0
+        Dim cjk As Integer = 0
+        For Each ch As Char In text
+            If Char.IsLetter(ch) Then letters += 1
+            If IsCjkChar(ch) Then cjk += 1
+        Next
+        If letters = 0 Then Return False
+        ' More than ~15% CJK among letters means the model switched language.
+        Return (cjk * 100) \ letters > 15
+    End Function
+
+    Private Shared Function IsCjkChar(ch As Char) As Boolean
+        Dim code As Integer = Convert.ToInt32(ch)
+        Return (code >= &H3040 AndAlso code <= &H30FF) OrElse   ' Hiragana + Katakana
+               (code >= &H3400 AndAlso code <= &H9FFF) OrElse   ' CJK Unified (Ext A + main)
+               (code >= &HAC00 AndAlso code <= &HD7A3) OrElse   ' Hangul syllables
+               (code >= &HF900 AndAlso code <= &HFAFF)          ' CJK compatibility
+    End Function
+
+    Private Shared Function IsCjkLanguage(targetLang As String) As Boolean
+        Dim c As String = If(targetLang, "").Trim().ToLowerInvariant()
+        Return c.StartsWith("zh", StringComparison.Ordinal) OrElse
+               c.StartsWith("ja", StringComparison.Ordinal) OrElse c = "jpn" OrElse
+               c.StartsWith("ko", StringComparison.Ordinal) OrElse c = "kor" OrElse
+               c.StartsWith("chi", StringComparison.Ordinal)
     End Function
 
     Private Shared Function LooksLikeEcho(source As String, candidate As String) As Boolean
