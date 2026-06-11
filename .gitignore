@@ -16,3 +16,4 @@ tools/
 # Local runtime diagnostics
 current.log
 temp/
+manifests/

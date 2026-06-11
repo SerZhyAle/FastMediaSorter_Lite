@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
 
 PackageIdentifier: SerZhyAle.FastMediaSorter
-PackageVersion: "26.4.27.1200"
+PackageVersion: "26.6.12.0031"
 PackageLocale: en-US
 Publisher: SZA
 PublisherUrl: https://github.com/SerZhyAle
@@ -35,6 +35,9 @@ Tags:
 - videos
 - viewer
 - winforms
-ReleaseNotesUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.4.27.1200
+ReleaseNotesUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.6.12.0031
+Documentations:
+- DocumentLabel: Wiki
+  DocumentUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/wiki
 ManifestType: defaultLocale
 ManifestVersion: 1.12.0
