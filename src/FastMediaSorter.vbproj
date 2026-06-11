@@ -116,6 +116,24 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Security" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Buffers">
+      <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Memory">
+      <HintPath>..\packages\System.Memory.4.5.4\lib\net461\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics.Vectors">
+      <HintPath>..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.5.0.0\lib\net45\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="SixLabors.ImageSharp">
+      <HintPath>..\packages\SixLabors.ImageSharp.2.1.8\lib\net472\SixLabors.ImageSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="WindowsBase" />
     <Reference Include="Tesseract">
       <HintPath>..\packages\Tesseract.5.2.0\lib\net48\Tesseract.dll</HintPath>
     </Reference>
@@ -141,6 +159,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application_Events.vb" />
+    <Compile Include="AppFileLogger.vb" />
     <Compile Include="FileManager.vb" />
     <Compile Include="Image_Panel_Form.vb">
       <SubType>Form</SubType>
@@ -235,6 +254,8 @@
     <Compile Include="OCR_Translate_Form.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="OptionalRuntimeManager.vb" />
+    <Compile Include="RuntimeBootstrap.vb" />
     <Compile Include="Table_Form.Designer.vb">
       <DependentUpon>Table_Form.vb</DependentUpon>
     </Compile>
@@ -315,6 +336,35 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\packages\LibVLCSharp.3.9.3\lib\net471\LibVLCSharp.dll">
+      <LogicalName>FmsPayloadmanaged/LibVLCSharp.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\packages\LibVLCSharp.WinForms.3.9.3\lib\net40\LibVLCSharp.WinForms.dll">
+      <LogicalName>FmsPayloadmanaged/LibVLCSharp.WinForms.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\packages\Tesseract.5.2.0\lib\net48\Tesseract.dll">
+      <LogicalName>FmsPayloadmanaged/Tesseract.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\packages\SixLabors.ImageSharp.2.1.8\lib\net472\SixLabors.ImageSharp.dll">
+      <LogicalName>FmsPayloadmanaged/SixLabors.ImageSharp.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll">
+      <LogicalName>FmsPayloadmanaged/System.Buffers.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\packages\System.Memory.4.5.4\lib\net461\System.Memory.dll">
+      <LogicalName>FmsPayloadmanaged/System.Memory.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll">
+      <LogicalName>FmsPayloadmanaged/System.Numerics.Vectors.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\packages\System.Runtime.CompilerServices.Unsafe.5.0.0\lib\net45\System.Runtime.CompilerServices.Unsafe.dll">
+      <LogicalName>FmsPayloadmanaged/System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\assets\flags\*.png">
+      <LogicalName>FmsPayloadflags/%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <Import Project="..\packages\Microsoft.Web.WebView2.1.0.3240.44\build\Microsoft.Web.WebView2.targets" Condition="Exists('..\packages\Microsoft.Web.WebView2.1.0.3240.44\build\Microsoft.Web.WebView2.targets')" />
   <Import Project="..\packages\VideoLAN.LibVLC.Windows.3.0.21\build\VideoLAN.LibVLC.Windows.targets" Condition="Exists('..\packages\VideoLAN.LibVLC.Windows.3.0.21\build\VideoLAN.LibVLC.Windows.targets')" />
@@ -328,11 +378,12 @@
   </Target>
   <Target Name="UpdateVersion" BeforeTargets="BeforeCompile">
     <PropertyGroup>
-      <VersionYear>$([System.DateTime]::Now.ToString("yy"))</VersionYear>
-      <VersionMonth>$([System.DateTime]::Now.Month)</VersionMonth>
-      <VersionDay>$([System.DateTime]::Now.Day)</VersionDay>
-      <VersionHourMinute>$([System.DateTime]::Now.ToString("HHmm"))</VersionHourMinute>
-      <AutoVersion>$(VersionYear).$(VersionMonth).$(VersionDay).$(VersionHourMinute)</AutoVersion>
+      <AutoVersion Condition="'$(ReleaseVersion)' != ''">$(ReleaseVersion)</AutoVersion>
+      <VersionYear Condition="'$(AutoVersion)' == ''">$([System.DateTime]::Now.ToString("yy"))</VersionYear>
+      <VersionMonth Condition="'$(AutoVersion)' == ''">$([System.DateTime]::Now.Month)</VersionMonth>
+      <VersionDay Condition="'$(AutoVersion)' == ''">$([System.DateTime]::Now.Day)</VersionDay>
+      <VersionHourMinute Condition="'$(AutoVersion)' == ''">$([System.DateTime]::Now.ToString("HHmm"))</VersionHourMinute>
+      <AutoVersion Condition="'$(AutoVersion)' == ''">$(VersionYear).$(VersionMonth).$(VersionDay).$(VersionHourMinute)</AutoVersion>
     </PropertyGroup>
     <Message Text="Auto-generating version: $(AutoVersion)" Importance="high" />
     <WriteLinesToFile File="$(ProjectDir)My Project\VersionInfo.vb" Lines="' Auto-generated version file - DO NOT EDIT MANUALLY%0D%0A' Generated at build time in format YY.M.D.HHmm%0D%0AImports System.Reflection%0D%0A%0D%0A&lt;Assembly: AssemblyVersion(&quot;$(AutoVersion)&quot;)&gt;%0D%0A&lt;Assembly: AssemblyFileVersion(&quot;$(AutoVersion)&quot;)&gt;" Overwrite="true" Encoding="utf-8" />

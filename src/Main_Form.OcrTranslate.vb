@@ -160,11 +160,24 @@ Partial Public Class Main_Form
 
     ' --- pipeline -------------------------------------------------------------
 
-    Friend Sub TranslateCurrentImage(isAuto As Boolean)
+    Friend Async Sub TranslateCurrentImage(isAuto As Boolean)
         If ocr_Settings Is Nothing Then Return
         If Not ocr_Settings.Enabled Then
             ocr_Settings.Enabled = True
             UpdateOcrButtonVisual()
+        End If
+
+        Dim runtimeReason As String = ""
+        If Not OptionalRuntimeManager.TryPrepareOcrRuntime(runtimeReason) Then
+            If isAuto Then
+                SetOcrStatus(OptionalRuntimeManager.GetOcrUnavailableStatusText(Is_Russian_Language))
+                Return
+            End If
+
+            If Not Await OptionalRuntimeManager.EnsureOcrRuntimeInteractiveAsync(Me, Is_Russian_Language) Then
+                SetOcrStatus(OptionalRuntimeManager.GetOcrUnavailableStatusText(Is_Russian_Language))
+                Return
+            End If
         End If
 
         If Not IsCurrentFileEligibleImage() Then
@@ -207,7 +220,7 @@ Partial Public Class Main_Form
         SetOcrStatus(If(Is_Russian_Language, "Распознавание…", "OCR…"))
 
         ' Fire-and-forget; RunOcrPipeline never throws (it catches internally).
-        RunOcrPipeline(job, ocr_Job_Cts.Token)
+        Forget(RunOcrPipeline(job, ocr_Job_Cts.Token))
     End Sub
 
     Private Async Function RunOcrPipeline(job As OcrJob, token As CancellationToken) As Task
@@ -245,6 +258,9 @@ Partial Public Class Main_Form
             End Select
 
             Dim blocks As List(Of OcrBlock) = OcrBlockBuilder.BuildBlocks(ocrResult.Lines)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
+                            " ocr: blocks=" & blocks.Count.ToString() &
+                            " srcUseful=" & String.Join(",", blocks.Select(Function(b) CountUsefulDebugChars(b.SourceText)).ToArray()))
             If blocks.Count = 0 Then
                 SetStatusOnUi(If(Is_Russian_Language, "Текст не найден", "No text found"))
                 Return
@@ -272,6 +288,9 @@ Partial Public Class Main_Form
             Dim sources As List(Of String) = blocks.Select(Function(b) b.SourceText).ToList()
             Dim translations As List(Of String) = Await translator.TranslateAsync(sources, job.SourceLang, job.TargetLang, token).ConfigureAwait(False)
             token.ThrowIfCancellationRequested()
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
+                            " ocr: translations=" & translations.Count.ToString() &
+                            " dstUseful=" & String.Join(",", translations.Select(Function(t) CountUsefulDebugChars(t)).ToArray()))
 
             For i As Integer = 0 To blocks.Count - 1
                 blocks(i).TranslatedText = If(i < translations.Count AndAlso Not String.IsNullOrWhiteSpace(translations(i)), translations(i), blocks(i).SourceText)
@@ -401,6 +420,14 @@ Partial Public Class Main_Form
         btn_Translate.Text = caption
         btn_Translate.Font = New Font(btn_Translate.Font, If(ocr_Settings.Enabled, FontStyle.Bold, FontStyle.Regular))
     End Sub
+
+    Private Shared Function CountUsefulDebugChars(text As String) As Integer
+        Dim count As Integer = 0
+        For Each ch As Char In If(text, "")
+            If Char.IsLetterOrDigit(ch) Then count += 1
+        Next
+        Return count
+    End Function
 
     ' --- settings window ------------------------------------------------------
 

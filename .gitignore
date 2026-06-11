@@ -12,3 +12,7 @@ src/My Project/VersionInfo.vb
 
 # Locally downloaded build tools (nuget.exe)
 tools/
+
+# Local runtime diagnostics
+current.log
+temp/

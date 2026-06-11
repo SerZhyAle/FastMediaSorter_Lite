@@ -7,6 +7,11 @@ Imports System.Diagnostics
 Namespace My
     Partial Friend Class MyApplication
 
+        Shared Sub New()
+            RuntimeBootstrap.Initialize()
+            AppFileLogger.Initialize()
+        End Sub
+
         Private Const WM_COPYDATA_LOCAL As Integer = &H4A
 
         <DllImport("user32.dll", CharSet:=CharSet.Auto)>
@@ -94,7 +99,9 @@ Namespace My
                 End If
 
                 e.Cancel = True
+                Return
             End If
+
         End Sub
     End Class
 End Namespace

@@ -90,7 +90,7 @@ Partial Public Class Main_Form
     End Function
 
     ' Overlay text size bounds (px). Floor raised so translations stay readable.
-    Private Const MinOverlayFont As Single = 11.0F
+    Private Const MinOverlayFont As Single = 8.0F
     Private Const MaxOverlayFont As Single = 32.0F
 
     ''' <summary>Largest font (down to the floor) whose wrapped text fits the box.</summary>

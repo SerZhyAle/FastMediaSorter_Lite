@@ -67,3 +67,148 @@ Public Module TranslateLang
     End Function
 
 End Module
+
+Friend Enum TextScriptFamily
+    Unknown = 0
+    Latin
+    Cyrillic
+    Greek
+    Arabic
+    Hebrew
+    Devanagari
+    Thai
+    Cjk
+End Enum
+
+Friend Module TextScriptHeuristics
+
+    Friend Function ExpectedScriptForLanguage(code As String) As TextScriptFamily
+        Select Case If(code, "").Trim().ToLowerInvariant()
+            Case "en", "eng",
+                 "de", "deu", "ger",
+                 "fr", "fra", "fre",
+                 "es", "spa",
+                 "it", "ita",
+                 "pt", "por",
+                 "nl", "nld",
+                 "pl", "pol",
+                 "cs", "ces",
+                 "sk", "slk",
+                 "sv", "swe",
+                 "no", "nor",
+                 "da", "dan",
+                 "fi", "fin",
+                 "tr", "tur",
+                 "ro", "ron",
+                 "hu", "hun",
+                 "id", "ind",
+                 "vi", "vie"
+                    Return TextScriptFamily.Latin
+            Case "ru", "rus",
+                 "uk", "ukr",
+                 "be", "bel",
+                 "bg", "bul",
+                 "mk", "mkd"
+                    Return TextScriptFamily.Cyrillic
+            Case "el", "ell"
+                Return TextScriptFamily.Greek
+            Case "ar", "ara", "fa", "fas"
+                Return TextScriptFamily.Arabic
+            Case "he", "heb"
+                Return TextScriptFamily.Hebrew
+            Case "hi", "hin"
+                Return TextScriptFamily.Devanagari
+            Case "th", "tha"
+                Return TextScriptFamily.Thai
+            Case "zh", "zh-cn", "zh-tw", "chi_sim", "chi-sim", "chi_tra", "chi-tra",
+                 "ja", "jpn",
+                 "ko", "kor"
+                Return TextScriptFamily.Cjk
+            Case Else
+                Return TextScriptFamily.Unknown
+        End Select
+    End Function
+
+    Friend Function TryGetDominantScript(text As String,
+                                         ByRef dominant As TextScriptFamily,
+                                         ByRef dominantShare As Double,
+                                         ByRef letterCount As Integer,
+                                         ByRef mixedLetters As Integer) As Boolean
+        Dim counts As New Dictionary(Of TextScriptFamily, Integer)
+        letterCount = 0
+        mixedLetters = 0
+        dominant = TextScriptFamily.Unknown
+        dominantShare = 0.0
+
+        For Each ch As Char In If(text, "")
+            If Not Char.IsLetter(ch) Then Continue For
+            letterCount += 1
+            Dim script As TextScriptFamily = ClassifyScript(ch)
+            If script = TextScriptFamily.Unknown Then Continue For
+            If Not counts.ContainsKey(script) Then counts(script) = 0
+            counts(script) += 1
+        Next
+
+        If letterCount = 0 OrElse counts.Count = 0 Then Return False
+
+        Dim bestCount As Integer = 0
+        For Each kv As KeyValuePair(Of TextScriptFamily, Integer) In counts
+            If kv.Value > bestCount Then
+                bestCount = kv.Value
+                dominant = kv.Key
+            End If
+        Next
+
+        mixedLetters = Math.Max(0, letterCount - bestCount)
+        dominantShare = bestCount / CDbl(letterCount)
+        Return True
+    End Function
+
+    Friend Function SymbolRatio(text As String) As Double
+        Dim nonWhitespace As Integer = 0
+        Dim noisy As Integer = 0
+
+        For Each ch As Char In If(text, "")
+            If Char.IsWhiteSpace(ch) Then Continue For
+            nonWhitespace += 1
+            If Char.IsLetterOrDigit(ch) Then Continue For
+            If ".,!?;:'""-()[]{}«»“”„".IndexOf(ch) >= 0 Then Continue For
+            noisy += 1
+        Next
+
+        If nonWhitespace = 0 Then Return 0.0
+        Return noisy / CDbl(nonWhitespace)
+    End Function
+
+    Private Function ClassifyScript(ch As Char) As TextScriptFamily
+        Dim code As Integer = Convert.ToInt32(ch)
+
+        If (code >= &H41 AndAlso code <= &H5A) OrElse
+           (code >= &H61 AndAlso code <= &H7A) OrElse
+           (code >= &HC0 AndAlso code <= &H24F) Then
+            Return TextScriptFamily.Latin
+        End If
+
+        If (code >= &H400 AndAlso code <= &H52F) OrElse
+           (code >= &H2DE0 AndAlso code <= &H2DFF) OrElse
+           (code >= &HA640 AndAlso code <= &HA69F) Then
+            Return TextScriptFamily.Cyrillic
+        End If
+
+        If code >= &H370 AndAlso code <= &H3FF Then Return TextScriptFamily.Greek
+        If (code >= &H600 AndAlso code <= &H6FF) OrElse (code >= &H750 AndAlso code <= &H77F) Then Return TextScriptFamily.Arabic
+        If code >= &H590 AndAlso code <= &H5FF Then Return TextScriptFamily.Hebrew
+        If code >= &H900 AndAlso code <= &H97F Then Return TextScriptFamily.Devanagari
+        If code >= &HE00 AndAlso code <= &HE7F Then Return TextScriptFamily.Thai
+
+        If (code >= &H3040 AndAlso code <= &H30FF) OrElse
+           (code >= &H3400 AndAlso code <= &H9FFF) OrElse
+           (code >= &HAC00 AndAlso code <= &HD7A3) OrElse
+           (code >= &HF900 AndAlso code <= &HFAFF) Then
+            Return TextScriptFamily.Cjk
+        End If
+
+        Return TextScriptFamily.Unknown
+    End Function
+
+End Module

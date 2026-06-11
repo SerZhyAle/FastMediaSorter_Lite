@@ -117,6 +117,12 @@ Public Class TesseractOcrEngine
     Public Function Recognize(source As Bitmap, languages As String) As OcrResult Implements IOcrEngine.Recognize
         If source Is Nothing Then Return OcrResult.FromError("no image")
 
+        Dim runtimeReason As String = ""
+        If Not OptionalRuntimeManager.TryPrepareOcrRuntime(runtimeReason) Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: runtime unavailable: " & runtimeReason)
+            Return OcrResult.Runtime(runtimeReason)
+        End If
+
         Dim languageAttempts As List(Of String) = BuildLanguageAttempts(languages)
         Dim includeInverted As Boolean = ShouldTryInverted(source)
         Dim forcedPsm As PageSegMode
@@ -571,14 +577,59 @@ Public Class TesseractOcrEngine
         Dim totalChars As Integer = 0
         Dim usefulChars As Integer = 0
         Dim goodLines As Integer = 0
+        Dim naturalLines As Integer = 0
+        Dim suspiciousLines As Integer = 0
+        Dim mixedScriptLines As Integer = 0
+        Dim mixedLettersTotal As Integer = 0
+        Dim expectedMismatchLines As Integer = 0
         Dim confSum As Double = 0.0
         Dim confCount As Integer = 0
+        Dim expectedScript As TextScriptFamily = ExpectedScriptForLanguage(profile.Language)
 
         For Each line As OcrLine In result.Lines
             totalChars += line.Text.Length
             Dim lineUseful As Integer = CountUsefulCharacters(line.Text)
             usefulChars += lineUseful
             If lineUseful >= 3 Then goodLines += 1
+
+            Dim letters As Integer = 0
+            Dim dominantShare As Double = 0.0
+            Dim mixedLetters As Integer = 0
+            Dim dominantScript As TextScriptFamily = TextScriptFamily.Unknown
+            Dim hasDominantScript As Boolean = TryGetDominantScript(line.Text, dominantScript, dominantShare, letters, mixedLetters)
+            Dim usefulRatio As Double = lineUseful / CDbl(Math.Max(1, line.Text.Length))
+            Dim symbolNoise As Double = SymbolRatio(line.Text)
+            Dim digitNoise As Double = DigitRatio(line.Text)
+            Dim longestRun As Integer = LongestLetterRun(line.Text)
+
+            Dim looksNatural As Boolean =
+                lineUseful >= 4 AndAlso
+                usefulRatio >= 0.55 AndAlso
+                longestRun >= 3 AndAlso
+                symbolNoise <= 0.18 AndAlso
+                digitNoise <= 0.3 AndAlso
+                (Not hasDominantScript OrElse dominantShare >= 0.72)
+
+            If looksNatural Then naturalLines += 1
+
+            Dim looksSuspicious As Boolean =
+                (lineUseful >= 4 AndAlso Not looksNatural) OrElse
+                (hasDominantScript AndAlso letters >= 4 AndAlso dominantShare < 0.55) OrElse
+                (line.Text.Length >= 8 AndAlso symbolNoise >= 0.28)
+
+            If looksSuspicious Then suspiciousLines += 1
+            If hasDominantScript AndAlso letters >= 4 AndAlso dominantShare < 0.72 Then mixedScriptLines += 1
+            mixedLettersTotal += mixedLetters
+
+            If expectedScript <> TextScriptFamily.Unknown AndAlso
+               hasDominantScript AndAlso
+               letters >= 4 AndAlso
+               dominantScript <> TextScriptFamily.Unknown AndAlso
+               dominantScript <> expectedScript AndAlso
+               dominantShare >= 0.7 Then
+                expectedMismatchLines += 1
+            End If
+
             For Each word As OcrWord In line.Words
                 confSum += word.Confidence
                 confCount += 1
@@ -586,14 +637,23 @@ Public Class TesseractOcrEngine
         Next
 
         Dim avgConfidence As Double = If(confCount > 0, confSum / confCount, 0.0)
-        Dim score As Double = (goodLines * 120.0) + (usefulChars * 3.0) + totalChars + (avgConfidence * 40.0)
+        Dim score As Double =
+            (goodLines * 90.0) +
+            (naturalLines * 170.0) +
+            (usefulChars * 2.5) +
+            totalChars +
+            (avgConfidence * 40.0) -
+            (suspiciousLines * 110.0) -
+            (mixedScriptLines * 70.0) -
+            (mixedLettersTotal * 3.0) -
+            (expectedMismatchLines * 80.0)
         If profile.Preprocess = OcrPreprocessMode.Normal Then score += 5.0
         If profile.Segmentation = PageSegMode.Auto Then score += 2.0
 
         Dim isStrong As Boolean =
-            (goodLines >= 2 AndAlso usefulChars >= 10) OrElse
-            (goodLines >= 1 AndAlso usefulChars >= 20) OrElse
-            (avgConfidence >= 0.75 AndAlso usefulChars >= 8)
+            (naturalLines >= 2 AndAlso usefulChars >= 12 AndAlso suspiciousLines = 0 AndAlso mixedScriptLines = 0 AndAlso expectedMismatchLines = 0) OrElse
+            (naturalLines >= 3 AndAlso usefulChars >= 18 AndAlso suspiciousLines <= 1 AndAlso expectedMismatchLines = 0) OrElse
+            (avgConfidence >= 0.8 AndAlso naturalLines >= 1 AndAlso usefulChars >= 12 AndAlso suspiciousLines = 0 AndAlso expectedMismatchLines = 0)
 
         Return New OcrAttemptScore With {
             .Profile = profile,
@@ -601,6 +661,19 @@ Public Class TesseractOcrEngine
             .Score = score,
             .IsStrong = isStrong
         }
+    End Function
+
+    Private Shared Function DigitRatio(text As String) As Double
+        If String.IsNullOrEmpty(text) Then Return 0.0
+        Dim digits As Integer = 0
+        Dim nonWhitespace As Integer = 0
+        For Each ch As Char In text
+            If Char.IsWhiteSpace(ch) Then Continue For
+            nonWhitespace += 1
+            If Char.IsDigit(ch) Then digits += 1
+        Next
+        If nonWhitespace = 0 Then Return 0.0
+        Return digits / CDbl(nonWhitespace)
     End Function
 
     ''' <summary>

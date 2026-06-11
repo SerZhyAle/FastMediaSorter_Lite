@@ -109,9 +109,16 @@ Public Module FlagImages
         End If
 
         Try
+            Using bundled As Stream = RuntimeBootstrap.OpenBundledAsset("flags/" & code & ".png")
+                If bundled IsNot Nothing Then
+                    Using fromStream As Image = Image.FromStream(bundled)
+                        Return New Bitmap(fromStream)
+                    End Using
+                End If
+            End Using
+
             Dim flagPath As String = Path.Combine(FlagsDir(), code & ".png")
             If File.Exists(flagPath) Then
-                ' Copy into an independent bitmap so the file handle is released.
                 Using fromFile As Image = Image.FromFile(flagPath)
                     Return New Bitmap(fromFile)
                 End Using

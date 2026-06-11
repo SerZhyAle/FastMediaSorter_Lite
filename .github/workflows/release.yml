@@ -38,17 +38,21 @@ jobs:
         run: nuget restore FastMediaSorter.sln
 
       - name: Build Release
-        run: msbuild FastMediaSorter.sln /p:Configuration=Release /p:Platform="Any CPU" /t:Rebuild /v:minimal /nologo
+        run: msbuild FastMediaSorter.sln /p:Configuration=Release /p:Platform="Any CPU" /p:ReleaseVersion=${{ steps.ver.outputs.version }} /t:Rebuild /v:minimal /nologo
 
       - name: Stage release files
         id: stage
         run: |
           $version = '${{ steps.ver.outputs.version }}'
           $stage = "stage/FastMediaSorter-$version-windows-x64"
+          $single = "stage/FastMediaSorter-$version-single"
           New-Item -ItemType Directory -Path $stage -Force | Out-Null
+          New-Item -ItemType Directory -Path $single -Force | Out-Null
 
           $release = "bin/Release"
           if (-not (Test-Path $release)) { throw "Build output not found at $release" }
+          $exe = Join-Path $release "FastMediaSorter_LITE.exe"
+          if (-not (Test-Path $exe)) { throw "Single-file exe not found at $exe" }
 
           # Copy everything except debug/doc artefacts
           Get-ChildItem $release -Recurse -File |
@@ -60,18 +64,20 @@ jobs:
               Copy-Item $_.FullName $dest
             }
 
+          Copy-Item $exe $single
           if (Test-Path README.md) { Copy-Item README.md $stage }
           if (Test-Path LICENSE)   { Copy-Item LICENSE   $stage }
 
           "stage=$stage" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "single=$single" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Get-ChildItem $stage -Recurse | Format-Table -AutoSize
 
       - name: Create zip + SHA256
         id: pkg
         run: |
           $version = '${{ steps.ver.outputs.version }}'
-          $stage   = '${{ steps.stage.outputs.stage }}'
-          $name    = "FastMediaSorter-$version-windows-x64.zip"
+          $stage   = '${{ steps.stage.outputs.single }}'
+          $name    = "FastMediaSorter-$version-single-exe.zip"
           New-Item -ItemType Directory -Path dist -Force | Out-Null
           $zipPath = "dist/$name"
 
@@ -131,7 +137,7 @@ jobs:
             **Installer (recommended):** `${{ steps.setup.outputs.name }}`
             SHA256: `${{ steps.setup.outputs.sha256 }}`
 
-            **Portable ZIP:** `${{ steps.pkg.outputs.name }}`
+            **Single-file portable ZIP:** `${{ steps.pkg.outputs.name }}`
             SHA256: `${{ steps.pkg.outputs.sha256 }}`
 
             **winget** (once accepted):

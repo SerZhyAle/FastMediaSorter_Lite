@@ -1,6 +1,7 @@
 $SolutionDir = $PSScriptRoot
 $SolutionFile = Join-Path $SolutionDir "FastMediaSorter.sln"
 $OutputDir    = Join-Path $SolutionDir "bin\Release"
+$SingleFileDir = Join-Path $SolutionDir "bin\SingleFile"
 $ExeName      = "FastMediaSorter_LITE.exe"
 $Destinations = @(
     "C:\GD\i\",
@@ -56,27 +57,21 @@ if (-not (Test-Path $ExePath)) {
     exit 1
 }
 
-# The app now ships with native LibVLC (libvlc\win-x64|win-x86) and the managed
-# LibVLCSharp assemblies, so the whole output tree must be deployed - not just the exe.
-# Skip debug/doc artefacts (.pdb/.xml), mirroring the CI release staging.
-$OutputRoot = (Resolve-Path $OutputDir).Path
-$DeployFiles = Get-ChildItem $OutputRoot -Recurse -File |
-    Where-Object { $_.Extension -notin '.pdb', '.xml' }
+# The release output still contains the expanded runtime tree for local debugging,
+# but the distributable build is now the exe alone: it contains the managed
+# assemblies and unpacks the native runtime to %LOCALAPPDATA% on first start.
+New-Item -ItemType Directory -Path $SingleFileDir -Force | Out-Null
+$SingleFileExe = Join-Path $SingleFileDir $ExeName
+Copy-Item -Path $ExePath -Destination $SingleFileExe -Force
+Write-Host "Single-file build staged at: $SingleFileExe"
 
 foreach ($Destination in $Destinations) {
     if (-not (Test-Path $Destination)) {
         New-Item -ItemType Directory -Path $Destination -Force | Out-Null
     }
 
-    foreach ($File in $DeployFiles) {
-        $Relative = $File.FullName.Substring($OutputRoot.Length).TrimStart('\')
-        $Target   = Join-Path $Destination $Relative
-        $TargetDir = Split-Path $Target -Parent
-        if (-not (Test-Path $TargetDir)) {
-            New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
-        }
-        Copy-Item -Path $File.FullName -Destination $Target -Force
-    }
+    $Target = Join-Path $Destination $ExeName
+    Copy-Item -Path $SingleFileExe -Destination $Target -Force
 
-    Write-Host "Deployed $($DeployFiles.Count) files -> $Destination"
+    Write-Host "Deployed single-file exe -> $Target"
 }

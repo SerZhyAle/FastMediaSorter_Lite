@@ -65,9 +65,9 @@ Public Class Main_Form
     Private Const how_long_wait_before_draw_perspective = 50
     Private Const max_Number_Of_Recent_Media_Files As Integer = 50
 
-    Public Image_File_Extensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tiff", ".ico", ".wmf", ".emf", ".exif"}
+    Public Image_File_Extensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tiff", ".ico", ".wmf", ".emf", ".exif", ".webp"}
     Private video_File_Extensions As New HashSet(Of String) From {".webm", ".ogg", ".3g2", ".mkv", ".3gp", ".mp4", ".m4v", ".m4a", ".mov", ".mp3", ".avi", ".wmv", ".asf", ".mpg", ".mpeg", ".flv", ".wav", ".wma"}
-    Private web_specific_image_extensions As New HashSet(Of String) From {".webp", ".heic", ".avif", ".svg"}
+    Private web_specific_image_extensions As New HashSet(Of String) From {".heic", ".avif", ".svg"}
 
 
     Public Current_Folder_Path As String = ""

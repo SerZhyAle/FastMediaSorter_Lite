@@ -281,6 +281,34 @@ Partial Public Class Main_Form
         Return True
     End Function
 
+    Private Sub PaintVerticalSeamBand(g As Graphics, edgeColors As List(Of Color), targetHeight As Integer, startX As Integer, bandWidth As Integer)
+        Dim safeBandWidth As Integer = Math.Max(0, bandWidth)
+        If safeBandWidth <= 0 OrElse edgeColors.Count = 0 Then
+            Return
+        End If
+
+        For y As Integer = 0 To targetHeight - 1
+            Dim colorIndex As Integer = Math.Max(0, Math.Min(y, edgeColors.Count - 1))
+            Using brush As New SolidBrush(edgeColors(colorIndex))
+                g.FillRectangle(brush, startX, y, safeBandWidth, 1)
+            End Using
+        Next
+    End Sub
+
+    Private Sub PaintHorizontalSeamBand(g As Graphics, edgeColors As List(Of Color), targetWidth As Integer, startY As Integer, bandHeight As Integer)
+        Dim safeBandHeight As Integer = Math.Max(0, bandHeight)
+        If safeBandHeight <= 0 OrElse edgeColors.Count = 0 Then
+            Return
+        End If
+
+        For x As Integer = 0 To targetWidth - 1
+            Dim colorIndex As Integer = Math.Max(0, Math.Min(x, edgeColors.Count - 1))
+            Using brush As New SolidBrush(edgeColors(colorIndex))
+                g.FillRectangle(brush, x, startY, 1, safeBandHeight)
+            End Using
+        Next
+    End Sub
+
     Private Sub Draw_Perspective()
 
         '  Dim sw As New Stopwatch()
@@ -370,6 +398,17 @@ Partial Public Class Main_Form
 
                                     Dim didDrawLeft As Boolean = PaintVerticalPerspectiveBackground(g, leftColors, leftRect, color_deviation_threshold)
                                     Dim didDrawRight As Boolean = PaintVerticalPerspectiveBackground(g, rightColors, rightRect, color_deviation_threshold)
+
+                                    Dim leftSeamWidth As Integer = Math.Min(edgeOverlap, imageRect.Left)
+                                    If leftSeamWidth > 0 Then
+                                        PaintVerticalSeamBand(g, leftColors, targetHeight, imageRect.Left - leftSeamWidth, leftSeamWidth)
+                                    End If
+
+                                    Dim rightSeamWidth As Integer = Math.Min(edgeOverlap, targetWidth - imageRect.Right)
+                                    If rightSeamWidth > 0 Then
+                                        PaintVerticalSeamBand(g, rightColors, targetHeight, imageRect.Right, rightSeamWidth)
+                                    End If
+
                                     is_perspective_drown = didDrawLeft OrElse didDrawRight
                                 Else
                                     Dim topColors As List(Of Color) = GetDisplayedHorizontalEdgeColors(displayedBitmap, targetWidth, imageRect, True)
@@ -380,6 +419,17 @@ Partial Public Class Main_Form
 
                                     Dim didDrawTop As Boolean = PaintHorizontalPerspectiveBackground(g, topColors, topRect, color_deviation_threshold)
                                     Dim didDrawBottom As Boolean = PaintHorizontalPerspectiveBackground(g, bottomColors, bottomRect, color_deviation_threshold)
+
+                                    Dim topSeamHeight As Integer = Math.Min(edgeOverlap, imageRect.Top)
+                                    If topSeamHeight > 0 Then
+                                        PaintHorizontalSeamBand(g, topColors, targetWidth, imageRect.Top - topSeamHeight, topSeamHeight)
+                                    End If
+
+                                    Dim bottomSeamHeight As Integer = Math.Min(edgeOverlap, targetHeight - imageRect.Bottom)
+                                    If bottomSeamHeight > 0 Then
+                                        PaintHorizontalSeamBand(g, bottomColors, targetWidth, imageRect.Bottom, bottomSeamHeight)
+                                    End If
+
                                     is_perspective_drown = didDrawTop OrElse didDrawBottom
                                 End If
                             End Using

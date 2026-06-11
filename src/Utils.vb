@@ -1,5 +1,7 @@
 Imports System.Drawing
+Imports System.Threading.Tasks
 Imports System.Windows.Forms
+Imports System.Windows.Media.Imaging
 
 Module Utils
 
@@ -54,7 +56,23 @@ Module Utils
     End Sub
 
     ''' <summary>
-    ''' Reads image pixel dimensions straight from the file header (JPEG/PNG/GIF/BMP)
+    ''' Explicitly detaches a task while still observing faults for debugging.
+    ''' </summary>
+    Public Sub Forget(task As Task)
+        If task Is Nothing Then Return
+
+        task.ContinueWith(
+            Sub(t)
+                Try
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " async: " & t.Exception.GetBaseException().Message)
+                Catch
+                End Try
+            End Sub,
+            TaskContinuationOptions.OnlyOnFaulted)
+    End Sub
+
+    ''' <summary>
+    ''' Reads image pixel dimensions straight from the file header (JPEG/PNG/GIF/BMP/WEBP)
     ''' without decoding via GDI+. This is deliberately NOT Image.FromFile/FromStream:
     ''' the background worker calls this while the UI thread may be running GetPixel on
     ''' the same image, and concurrent GDI+ decoding corrupts shared state (throwing
@@ -88,6 +106,12 @@ Module Utils
                 If n >= 2 AndAlso head(0) = &HFF AndAlso head(1) = &HD8 Then
                     fs.Seek(2, IO.SeekOrigin.Begin)
                     Return ReadJpegSize(fs)
+                End If
+
+                ' WEBP: let WIC read the dimensions so we stay off GDI+.
+                If String.Equals(IO.Path.GetExtension(filePath), ".webp", StringComparison.OrdinalIgnoreCase) Then
+                    fs.Seek(0, IO.SeekOrigin.Begin)
+                    Return ReadBitmapSourceSize(fs)
                 End If
             End Using
         Catch
@@ -130,6 +154,16 @@ Module Utils
             fs.Seek(segLen - 2, IO.SeekOrigin.Current)
         Loop
         Return Size.Empty
+    End Function
+
+    Private Function ReadBitmapSourceSize(stream As IO.Stream) As Size
+        Dim decoder As BitmapDecoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None)
+        If decoder.Frames.Count = 0 Then Return Size.Empty
+
+        Dim frame = decoder.Frames(0)
+        If frame Is Nothing OrElse frame.PixelWidth <= 0 OrElse frame.PixelHeight <= 0 Then Return Size.Empty
+
+        Return New Size(frame.PixelWidth, frame.PixelHeight)
     End Function
 
 End Module

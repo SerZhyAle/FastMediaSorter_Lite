@@ -49,8 +49,6 @@ Public Class OCR_Translate_Form
         _rus = Is_Russian_Language
         BuildUi()
         LoadFromSettings()
-        AddHandler Me.Shown, AddressOf OnShown
-        AddHandler Me.FormClosed, AddressOf OnFormClosed
     End Sub
 
     ''' <summary>
@@ -67,12 +65,13 @@ Public Class OCR_Translate_Form
         End If
     End Sub
 
-    Private Sub OnFormClosed(sender As Object, e As FormClosedEventArgs)
+    Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)
         If _restoreOwnerTopMost Then
             Dim owner As Form = TryCast(Me.Owner, Form)
             If owner IsNot Nothing Then owner.TopMost = True
             _restoreOwnerTopMost = False
         End If
+        MyBase.OnFormClosed(e)
     End Sub
 
     Private Sub BuildUi()
@@ -290,7 +289,8 @@ Public Class OCR_Translate_Form
 
     ' --- model install handlers ----------------------------------------------
 
-    Private Sub OnShown(sender As Object, e As EventArgs)
+    Protected Overrides Sub OnShown(e As EventArgs)
+        MyBase.OnShown(e)
         UpdateOllamaStateHint()
         RefreshInstalledModels()
     End Sub
@@ -463,6 +463,11 @@ Public Class OCR_Translate_Form
         Dim tessLangs As String = OcrTranslateSettings.TessLanguages(srcCode)
 
         Dim preferBest As Boolean = (cmbOcrModel.SelectedIndex = 1)
+        If Not Await OptionalRuntimeManager.EnsureOcrRuntimeInteractiveAsync(Me, _rus) Then
+            lblStatus.Text = If(_rus, "OCR-движок не установлен.", "OCR runtime is not installed.")
+            Return
+        End If
+
         SetBusy(True)
         lblStatus.Text = If(_rus, "Скачивание языкового пакета: ", "Downloading language pack: ") & tessLangs
         Dim ok As Boolean = False

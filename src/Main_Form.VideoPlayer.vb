@@ -94,10 +94,19 @@ Partial Public Class Main_Form
     End Sub
 
     Private Function EnsureVlcInitialized() As Boolean
-        If is_Vlc_Init_Attempted Then Return (libVlc IsNot Nothing AndAlso vlc_Media_Player IsNot Nothing)
+        If libVlc IsNot Nothing AndAlso vlc_Media_Player IsNot Nothing Then Return True
         is_Vlc_Init_Attempted = True
+
+        If Not OptionalRuntimeManager.EnsureVlcRuntimeInteractive(Me, Is_Russian_Language) Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0868: LibVLC runtime unavailable")
+            Return False
+        End If
+
         Try
-            LibVLCSharp.Shared.Core.Initialize()
+            Dim vlcDir As String = OptionalRuntimeManager.GetVlcRuntimeDir()
+            If vlcDir.Length = 0 Then Return False
+
+            LibVLCSharp.Shared.Core.Initialize(vlcDir)
             libVlc = New LibVLCSharp.Shared.LibVLC("--no-video-title-show", "--no-osd", "--quiet")
             vlc_Media_Player = New LibVLCSharp.Shared.MediaPlayer(libVlc) With {
                 .EnableMouseInput = False,
@@ -136,6 +145,7 @@ Partial Public Class Main_Form
         If String.IsNullOrEmpty(file_Path) OrElse Not File.Exists(file_Path) Then Return
 
         If Not EnsureVlcInitialized() Then
+            lbl_Status.Text = OptionalRuntimeManager.GetVlcUnavailableStatusText(Is_Russian_Language)
             TryOpenVideoWithDefaultPlayer()
             Return
         End If

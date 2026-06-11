@@ -123,9 +123,15 @@ Public Class OllamaTranslator
         ' 1) Try a single batched request.
         Dim batched As List(Of String) = Await TryTranslateBatchAsync(texts, langName, ct).ConfigureAwait(False)
         If batched IsNot Nothing AndAlso batched.Count = texts.Count Then
-            ' Repair echoed OR wrong-script (e.g. Chinese-drift) segments individually.
+            ' Repair echoed, wrong-script, refusal or noisy segments individually.
             For i As Integer = 0 To texts.Count - 1
-                If LooksLikeEcho(texts(i), batched(i)) OrElse LooksWrongScript(batched(i), targetLang) Then
+                Dim reason As String = GetBadTranslationReason(texts(i), batched(i), targetLang)
+                If reason.Length > 0 Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
+                                    " ollama: retry segment " & i.ToString() &
+                                    " because " & reason &
+                                    " src=" & CountUsefulCharacters(texts(i)).ToString() &
+                                    " dst=" & CountUsefulCharacters(batched(i)).ToString())
                     batched(i) = Await TranslateOneAsync(texts(i), langName, targetLang, ct).ConfigureAwait(False)
                 End If
             Next
@@ -146,7 +152,9 @@ Public Class OllamaTranslator
             Dim serializer As JavaScriptSerializer = TranslateHttp.NewSerializer()
             Dim inputJson As String = serializer.Serialize(texts)
             Dim prompt As String =
-                "Translate each input segment into " & langName & "." & vbLf &
+                "Translate each FULL input segment into " & langName & "." & vbLf &
+                "Translate the complete content faithfully. Do not summarize, shorten, or omit any sentence, clause, or detail." & vbLf &
+                "Preserve sentence boundaries and paragraph structure when possible." & vbLf &
                 "Write every translation ENTIRELY in " & langName & " using its native alphabet. " &
                 "Do NOT use Chinese characters or any language other than " & langName & "." & vbLf &
                 "Keep it natural and concise; no notes, no quotation marks." & vbLf &
@@ -182,7 +190,8 @@ Public Class OllamaTranslator
         If String.IsNullOrWhiteSpace(text) Then Return text
 
         Dim prompt As String =
-            "Translate the following text into " & langName & "." & vbLf &
+            "Translate the FULL following text into " & langName & "." & vbLf &
+            "Translate every sentence and detail faithfully; do not summarize, shorten, or omit anything." & vbLf &
             "Write the translation ENTIRELY in " & langName & " using its native alphabet; do NOT use " &
             "Chinese characters or any other language. Output only the translation, no notes or quotes." & vbLf &
             "Text: " & text
@@ -190,19 +199,34 @@ Public Class OllamaTranslator
         Dim first As String = Await GenerateAsync(prompt, False, ct).ConfigureAwait(False)
         first = If(first, "").Trim()
 
-        Dim firstBad As Boolean = first.Length = 0 OrElse LooksLikeEcho(text, first) OrElse LooksWrongScript(first, targetLang)
+        Dim firstReason As String = GetBadTranslationReason(text, first, targetLang)
+        Dim firstBad As Boolean = first.Length = 0 OrElse firstReason.Length > 0
         If firstBad Then
             Dim retryPrompt As String =
-                "Translate this text into " & langName & " ONLY. The output must be written entirely in " &
+                "Translate this ENTIRE text into " & langName & " ONLY. Translate every sentence and detail; do not summarize, shorten, or omit anything. " &
+                "Preserve the full meaning. The output must be written entirely in " &
                 langName & "'s native alphabet. Absolutely no Chinese characters and no other language. " &
                 "Produce a genuine translation, not a copy. Output only the translation." & vbLf &
                 "Text: " & text
             Dim second As String = Await GenerateAsync(retryPrompt, False, ct).ConfigureAwait(False)
             second = If(second, "").Trim()
-            If second.Length > 0 AndAlso Not LooksWrongScript(second, targetLang) AndAlso Not LooksLikeEcho(text, second) Then Return second
+            Dim secondReason As String = GetBadTranslationReason(text, second, targetLang)
+            If second.Length > 0 AndAlso secondReason.Length = 0 Then Return second
             ' Prefer a usable first result over a bad retry.
-            If first.Length > 0 AndAlso Not LooksWrongScript(first, targetLang) Then Return first
-            If second.Length > 0 AndAlso Not LooksWrongScript(second, targetLang) Then Return second
+            If first.Length > 0 AndAlso firstReason.Length = 0 Then Return first
+            If second.Length > 0 AndAlso secondReason.Length = 0 Then Return second
+            If firstReason.Length > 0 Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
+                                " ollama: rejected first translation because " & firstReason &
+                                " src=" & CountUsefulCharacters(text).ToString() &
+                                " dst=" & CountUsefulCharacters(first).ToString())
+            End If
+            If secondReason.Length > 0 Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
+                                " ollama: rejected retry translation because " & secondReason &
+                                " src=" & CountUsefulCharacters(text).ToString() &
+                                " dst=" & CountUsefulCharacters(second).ToString())
+            End If
             ' Everything drifted to the wrong script -> show the source, not gibberish.
             Return text
         End If
@@ -369,37 +393,37 @@ Public Class OllamaTranslator
         Return names(0)
     End Function
 
-    ''' <summary>True when a non-CJK target's translation drifted into Chinese/
-    ''' Japanese/Korean script (a common failure of Chinese-origin models).</summary>
+    Private Shared Function IsBadTranslation(source As String, candidate As String, targetLang As String) As Boolean
+        Return GetBadTranslationReason(source, candidate, targetLang).Length > 0
+    End Function
+
+    Private Shared Function GetBadTranslationReason(source As String, candidate As String, targetLang As String) As String
+        If String.IsNullOrWhiteSpace(candidate) Then Return "empty"
+        If LooksLikeEcho(source, candidate) Then Return "echo"
+        If LooksWrongScript(candidate, targetLang) Then Return "wrong-script"
+        If LooksLikeRefusal(candidate) Then Return "refusal"
+        If LooksNoisy(candidate) Then Return "noisy"
+        If LooksTruncated(source, candidate, targetLang) Then Return "truncated"
+        Return ""
+    End Function
+
     Private Shared Function LooksWrongScript(text As String, targetLang As String) As Boolean
         If String.IsNullOrWhiteSpace(text) Then Return False
-        If IsCjkLanguage(targetLang) Then Return False
+        Dim expected As TextScriptFamily = ExpectedScriptForLanguage(targetLang)
+        If expected = TextScriptFamily.Unknown Then Return False
 
+        Dim dominant As TextScriptFamily = TextScriptFamily.Unknown
+        Dim share As Double = 0.0
         Dim letters As Integer = 0
-        Dim cjk As Integer = 0
-        For Each ch As Char In text
-            If Char.IsLetter(ch) Then letters += 1
-            If IsCjkChar(ch) Then cjk += 1
-        Next
-        If letters = 0 Then Return False
-        ' More than ~15% CJK among letters means the model switched language.
-        Return (cjk * 100) \ letters > 15
-    End Function
+        Dim mixedLetters As Integer = 0
+        If Not TryGetDominantScript(text, dominant, share, letters, mixedLetters) Then Return False
 
-    Private Shared Function IsCjkChar(ch As Char) As Boolean
-        Dim code As Integer = Convert.ToInt32(ch)
-        Return (code >= &H3040 AndAlso code <= &H30FF) OrElse   ' Hiragana + Katakana
-               (code >= &H3400 AndAlso code <= &H9FFF) OrElse   ' CJK Unified (Ext A + main)
-               (code >= &HAC00 AndAlso code <= &HD7A3) OrElse   ' Hangul syllables
-               (code >= &HF900 AndAlso code <= &HFAFF)          ' CJK compatibility
-    End Function
+        If expected = TextScriptFamily.Cjk Then
+            Return dominant <> TextScriptFamily.Cjk AndAlso letters >= 2 AndAlso share >= 0.6
+        End If
 
-    Private Shared Function IsCjkLanguage(targetLang As String) As Boolean
-        Dim c As String = If(targetLang, "").Trim().ToLowerInvariant()
-        Return c.StartsWith("zh", StringComparison.Ordinal) OrElse
-               c.StartsWith("ja", StringComparison.Ordinal) OrElse c = "jpn" OrElse
-               c.StartsWith("ko", StringComparison.Ordinal) OrElse c = "kor" OrElse
-               c.StartsWith("chi", StringComparison.Ordinal)
+        If dominant = TextScriptFamily.Cjk AndAlso letters >= 2 AndAlso share >= 0.15 Then Return True
+        Return letters >= 4 AndAlso dominant <> TextScriptFamily.Unknown AndAlso dominant <> expected AndAlso share >= 0.6
     End Function
 
     Private Shared Function LooksLikeEcho(source As String, candidate As String) As Boolean
@@ -408,6 +432,93 @@ Public Class OllamaTranslator
         Dim b As String = candidate.Trim()
         If a.Length < 3 Then Return False
         Return String.Equals(a, b, StringComparison.OrdinalIgnoreCase)
+    End Function
+
+    Private Shared Function LooksLikeRefusal(text As String) As Boolean
+        Dim s As String = If(text, "").Trim().ToLowerInvariant()
+        If s.Length = 0 Then Return False
+
+        Dim phrases As String() = {
+            "i cannot", "i can't", "sorry", "unable to", "cannot fulfill", "can't fulfill",
+            "please make sure", "unrecognized symbols", "use the correct alphabet",
+            "translation request", "output only", "json object",
+            "не могу", "не могу выполнить", "не распознаю", "пожалуйста", "алфавит", "язык для перевода"
+        }
+
+        For Each phrase As String In phrases
+            If s.IndexOf(phrase, StringComparison.Ordinal) >= 0 Then Return True
+        Next
+
+        Return False
+    End Function
+
+    Private Shared Function LooksNoisy(text As String) As Boolean
+        Dim symbolNoise As Double = SymbolRatio(text)
+        If text.Length >= 10 AndAlso symbolNoise >= 0.22 Then Return True
+
+        Dim digits As Integer = 0
+        Dim nonWhitespace As Integer = 0
+        For Each ch As Char In text
+            If Char.IsWhiteSpace(ch) Then Continue For
+            nonWhitespace += 1
+            If Char.IsDigit(ch) Then digits += 1
+        Next
+        If nonWhitespace >= 10 AndAlso digits / CDbl(nonWhitespace) >= 0.35 Then Return True
+
+        Dim dominant As TextScriptFamily = TextScriptFamily.Unknown
+        Dim share As Double = 0.0
+        Dim letters As Integer = 0
+        Dim mixedLetters As Integer = 0
+        If TryGetDominantScript(text, dominant, share, letters, mixedLetters) AndAlso
+           letters >= 8 AndAlso share < 0.55 Then
+            Return True
+        End If
+
+        Return False
+    End Function
+
+    Private Shared Function LooksTruncated(source As String, candidate As String, targetLang As String) As Boolean
+        Dim sourceUseful As Integer = CountUsefulCharacters(source)
+        If sourceUseful < 45 Then Return False
+
+        Dim candidateUseful As Integer = CountUsefulCharacters(candidate)
+        Dim minRatio As Double = If(ExpectedScriptForLanguage(targetLang) = TextScriptFamily.Cjk, 0.22, 0.42)
+
+        If sourceUseful >= 120 AndAlso candidateUseful < CInt(Math.Floor(sourceUseful * 0.35)) Then
+            Return True
+        End If
+
+        Dim sourceSentences As Integer = CountSentenceMarkers(source)
+        Dim candidateSentences As Integer = CountSentenceMarkers(candidate)
+
+        If sourceSentences >= 2 AndAlso
+           candidateSentences + 1 < sourceSentences AndAlso
+           candidateUseful < CInt(Math.Floor(sourceUseful * 0.7)) Then
+            Return True
+        End If
+
+        If (sourceSentences >= 2 OrElse sourceUseful >= 90) AndAlso
+           candidateUseful < Math.Max(18, CInt(Math.Floor(sourceUseful * minRatio))) Then
+            Return True
+        End If
+
+        Return False
+    End Function
+
+    Private Shared Function CountUsefulCharacters(text As String) As Integer
+        Dim count As Integer = 0
+        For Each ch As Char In If(text, "")
+            If Char.IsLetterOrDigit(ch) Then count += 1
+        Next
+        Return count
+    End Function
+
+    Private Shared Function CountSentenceMarkers(text As String) As Integer
+        Dim count As Integer = 0
+        For Each ch As Char In If(text, "")
+            If ch = "."c OrElse ch = "!"c OrElse ch = "?"c Then count += 1
+        Next
+        Return count
     End Function
 
     Private Shared Function LinkedTimeout(ct As CancellationToken, ms As Integer) As CancellationTokenSource
