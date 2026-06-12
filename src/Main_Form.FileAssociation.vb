@@ -125,18 +125,10 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub CheckAndOfferImageAssociations()
-        If GetSetting(App_name, Second_App_Name, "UserAlreadyAskedForAssociations", "0") = "0" AndAlso
-            IsRunningAsAdministrator() AndAlso
-            Not AreImageTypesAssociatedWithThisApp() Then
-
-            Dim msg = If(Is_Russian_Language, "Ассоциировать .JPG, .PNG, .GIF файлы с этой программой?", "Associate .JPG, .PNG, .GIF files with this application?")
-            If MessageBox.Show(msg, "Association", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
-                AssociateImageTypesWithThisApp()
-            End If
-
-            SaveSetting(App_name, Second_App_Name, "UserAlreadyAskedForAssociations", "1")
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2440: asked for association")
-        End If
+        ' First-run startup must stay non-blocking for packaged installs and
+        ' validation environments. File associations remain available through the
+        ' explicit settings action instead of an automatic prompt.
+        SaveSetting(App_name, Second_App_Name, "UserAlreadyAskedForAssociations", "1")
     End Sub
 
     Public Sub AssociateAllImageFormatsWithThisApp()
