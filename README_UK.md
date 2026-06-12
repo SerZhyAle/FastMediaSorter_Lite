@@ -40,5 +40,27 @@ FastMediaSorter LITE - це застосунок Windows Forms для швидк
 - Windows 7/10/11
 - .NET Framework 4.8
 
+## Встановлення
+
+### Реліз з GitHub
+
+Завантажте актуальні файли зі
+[сторінки релізів](https://github.com/SerZhyAle/FastMediaSorter_Lite/releases):
+
+- `FastMediaSorter-<version>-windows-x64-setup.exe` для найпростішого встановлення
+- `FastMediaSorter-<version>-windows-x64.zip` як portable offline-пакет
+
+Обидва GitHub-релізи offline-ready: усередині вже є VLC runtime і OCR мовні
+пакети, тому для відтворення медіа та OCR не потрібне перше дозавантаження з
+мережі.
+
+Примітка: машинний переклад усе ще залежить від вибраного провайдера. Наприклад,
+для Ollama потрібне окреме локальне встановлення моделі, а хмарним сервісам
+потрібен доступ до мережі.
+
+## Автор
+- Сайт: [sza.od.ua](https://sza.od.ua)
+- Email: [sza@ukr.net](mailto:sza@ukr.net)
+
 ## Ліцензія
 Цей проект надається як є для особистого використання.

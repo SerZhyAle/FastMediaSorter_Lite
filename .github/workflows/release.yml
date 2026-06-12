@@ -45,14 +45,12 @@ jobs:
         run: |
           $version = '${{ steps.ver.outputs.version }}'
           $stage = "stage/FastMediaSorter-$version-windows-x64"
-          $single = "stage/FastMediaSorter-$version-single"
           New-Item -ItemType Directory -Path $stage -Force | Out-Null
-          New-Item -ItemType Directory -Path $single -Force | Out-Null
 
           $release = "bin/Release"
           if (-not (Test-Path $release)) { throw "Build output not found at $release" }
           $exe = Join-Path $release "FastMediaSorter_LITE.exe"
-          if (-not (Test-Path $exe)) { throw "Single-file exe not found at $exe" }
+          if (-not (Test-Path $exe)) { throw "Release executable not found at $exe" }
 
           # Copy everything except debug/doc artefacts
           Get-ChildItem $release -Recurse -File |
@@ -64,20 +62,24 @@ jobs:
               Copy-Item $_.FullName $dest
             }
 
-          Copy-Item $exe $single
           if (Test-Path README.md) { Copy-Item README.md $stage }
           if (Test-Path LICENSE)   { Copy-Item LICENSE   $stage }
 
           "stage=$stage" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          "single=$single" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Get-ChildItem $stage -Recurse | Format-Table -AutoSize
+
+      - name: Add offline OCR payload
+        run: .\tools\Prepare-OcrOfflinePayload.ps1 -StageDir '${{ steps.stage.outputs.stage }}' -IncludeBest
+      
+      - name: Show staged layout
+        run: Get-ChildItem '${{ steps.stage.outputs.stage }}' -Recurse | Format-Table -AutoSize
 
       - name: Create zip + SHA256
         id: pkg
         run: |
           $version = '${{ steps.ver.outputs.version }}'
-          $stage   = '${{ steps.stage.outputs.single }}'
-          $name    = "FastMediaSorter-$version-single-exe.zip"
+          $stage   = '${{ steps.stage.outputs.stage }}'
+          $name    = "FastMediaSorter-$version-windows-x64.zip"
           New-Item -ItemType Directory -Path dist -Force | Out-Null
           $zipPath = "dist/$name"
 
@@ -137,8 +139,12 @@ jobs:
             **Installer (recommended):** `${{ steps.setup.outputs.name }}`
             SHA256: `${{ steps.setup.outputs.sha256 }}`
 
-            **Single-file portable ZIP:** `${{ steps.pkg.outputs.name }}`
+            **Portable offline ZIP:** `${{ steps.pkg.outputs.name }}`
             SHA256: `${{ steps.pkg.outputs.sha256 }}`
+
+            Both release assets bundle VLC runtimes and OCR language packs, so they are ready to launch offline after install/extract.
+
+            OCR recognition works offline from the release package. Machine translation still depends on the provider you configure (for example a local Ollama install or an online API).
 
             **winget** (once accepted):
             ```

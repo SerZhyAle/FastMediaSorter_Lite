@@ -41,8 +41,15 @@ The build system automatically generates version numbers in format `YY.M.D.HHmm`
 Releases are cut by **pushing a `vYY.M.D.HHmm` tag** (or running the `Release` workflow manually with a tag input). [.github/workflows/release.yml](.github/workflows/release.yml) runs on `windows-latest` and:
 1. Restores NuGet, then `msbuild ... /t:Rebuild` in Release.
 2. Stages everything in `bin/Release` **except `.pdb`/`.xml`** (plus `README.md`, `LICENSE`) into `stage/FastMediaSorter-<version>-windows-x64/`.
-3. Packages two assets from that staged tree: a **portable ZIP** and an **Inno Setup installer EXE** (compiled via [installer/FastMediaSorter.iss](installer/FastMediaSorter.iss); Inno Setup installed on the runner with `choco install innosetup`). Each gets a `.sha256` sidecar.
-4. Publishes a GitHub Release with all four files attached.
+3. Runs [tools/Prepare-OcrOfflinePayload.ps1](tools/Prepare-OcrOfflinePayload.ps1), which trims x86-only runtime trees from the x64 release and downloads all OCR `tessdata_fast` languages shown in the UI plus their `tessdata_best` counterparts into `tessdata/` and `tessdata-best/`.
+4. Packages two **offline-ready** assets from that staged tree: a **portable ZIP** and an **Inno Setup installer EXE** (compiled via [installer/FastMediaSorter.iss](installer/FastMediaSorter.iss); Inno Setup installed on the runner with `choco install innosetup`). Each gets a `.sha256` sidecar.
+5. Publishes a GitHub Release with all four files attached.
+
+For a local release-style build, run:
+```powershell
+.\tools\Build-OfflineRelease.ps1
+```
+This mirrors the CI packaging flow and emits offline-ready artifacts in `dist/`.
 
 The version in the tag is authoritative for asset names but is independent of the build-time `UpdateVersion` stamp — keep them consistent. See [SPECIFICATION_GITHUB_STORE.md](SPECIFICATION_GITHUB_STORE.md) for the rationale behind shipping an EXE installer (GitHub-Store discoverability; a ZIP-only release is invisible to that marketplace).
 
@@ -104,6 +111,7 @@ The version in the tag is authoritative for asset names but is independent of th
 - **LibVLCSharp** (3.9.3) — Video codec fallback (LibVLC binaries included in release)
 - **WebView2** (1.0.3240) — HTML renderer (legacy; mostly unused)
 - **Tesseract** (5.2.0) — OCR engine; `tessdata` language packs are downloaded at runtime
+- **Tesseract** (5.2.0) — OCR engine; GitHub release assets bundle the supported `tessdata` packs for offline use, while dev builds still download missing packs on demand
 - **System.Drawing** — Image rendering
 - **System.Windows.Forms** — UI framework
 - **VideoLAN.LibVLC.Windows** (3.0.21) — Native LibVLC binaries bundled at build time

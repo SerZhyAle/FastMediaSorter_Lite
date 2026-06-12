@@ -47,11 +47,25 @@ Features include:
 winget install SerZhyAle.FastMediaSorter
 ```
 
-### Manual
+### Manual release
 
-Download the latest `FastMediaSorter-<version>-windows-x64.zip` from the
-[Releases page](https://github.com/SerZhyAle/FastMediaSorter_Lite/releases),
-extract anywhere, and run `FastMediaSorter_LITE.exe`.
+Download the latest assets from the
+[Releases page](https://github.com/SerZhyAle/FastMediaSorter_Lite/releases):
+
+- `FastMediaSorter-<version>-windows-x64-setup.exe` for the easiest install
+- `FastMediaSorter-<version>-windows-x64.zip` for a portable offline bundle
+
+Both GitHub release assets are offline-ready: they already include VLC runtimes
+and OCR language packs, so no first-run download is needed for media playback or
+OCR recognition.
+
+Note: machine translation still depends on the provider you configure. For
+example, Ollama requires a separate local install/model, while cloud providers
+need network access.
+
+## Author
+- Website: [sza.od.ua](https://sza.od.ua)
+- Email: [sza@ukr.net](mailto:sza@ukr.net)
 
 ## License
 MIT — see [LICENSE](LICENSE).

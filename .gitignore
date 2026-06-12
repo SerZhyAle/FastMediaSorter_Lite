@@ -3,6 +3,8 @@
 # Build output folders
 bin/
 obj/
+dist/
+stage/
 
 # Auto-generated version file
 src/My Project/VersionInfo.vb
@@ -10,8 +12,8 @@ src/My Project/VersionInfo.vb
 # Claude Code internal state
 .claude/
 
-# Locally downloaded build tools (nuget.exe)
-tools/
+# Locally downloaded build tools
+tools/nuget.exe
 
 # Local runtime diagnostics
 current.log
