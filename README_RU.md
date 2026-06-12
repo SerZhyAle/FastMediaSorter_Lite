@@ -42,6 +42,15 @@ FastMediaSorter LITE - это приложение Windows Forms для быст
 
 ## Установка
 
+### winget
+
+```powershell
+winget install --id SerZhyAle.FastMediaSorter
+```
+
+Пакет winget использует Inno Setup installer в тихом per-user режиме, поэтому
+во время установки не показывает диалоги.
+
 ### Релиз с GitHub
 
 Скачайте свежие файлы со
@@ -50,6 +59,10 @@ FastMediaSorter LITE - это приложение Windows Forms для быст
 - `FastMediaSorter-<version>-windows-x64-setup.exe` для самой простой установки
 - `FastMediaSorter-<version>-windows-x64.zip` как portable offline-пакет
 
+В обычном интерактивном setup можно сразу зарегистрировать FastMediaSorter LITE
+для распространенных форматов изображений. На Windows 10/11 система может еще
+раз попросить подтвердить выбор в разделе приложений по умолчанию.
+
 Оба GitHub-релиза offline-ready: внутри уже есть VLC runtime и OCR языковые
 пакеты, поэтому для воспроизведения медиа и OCR не нужен первый запуск с
 дозагрузкой из сети.
@@ -57,6 +70,17 @@ FastMediaSorter LITE - это приложение Windows Forms для быст
 Примечание: машинный перевод всё ещё зависит от выбранного провайдера. Например,
 для Ollama нужна отдельная локальная установка модели, а облачным сервисам нужен
 доступ в сеть.
+
+## Companion-проект
+
+Для EPUB, PDF, FB2, MOBI, TXT, Markdown и HTML-документов используйте
+companion-проект **doc-html-translate**:
+
+```powershell
+winget install SerZhyAle.DocHtmlTranslate
+```
+
+Страница проекта: [doc-html-translate](https://github.com/SerZhyAle/doc-html-translate)
 
 ## Автор
 - Сайт: [sza.od.ua](https://sza.od.ua)

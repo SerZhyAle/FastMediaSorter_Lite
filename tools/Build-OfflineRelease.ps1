@@ -49,6 +49,7 @@ function Resolve-Iscc {
     }
 
     $candidates = @(
+        (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 6\ISCC.exe"),
         "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
         "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
     )
@@ -60,6 +61,21 @@ function Resolve-Iscc {
     }
 
     return ""
+}
+
+function Get-RelativePath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$BasePath,
+        [Parameter(Mandatory = $true)]
+        [string]$TargetPath
+    )
+
+    $baseResolved = (Resolve-Path $BasePath).Path.TrimEnd('\') + '\'
+    $targetResolved = (Resolve-Path $TargetPath).Path
+    $baseUri = New-Object System.Uri($baseResolved)
+    $targetUri = New-Object System.Uri($targetResolved)
+    return [System.Uri]::UnescapeDataString($baseUri.MakeRelativeUri($targetUri).ToString().Replace('/', '\'))
 }
 
 $msbuild = Resolve-MsBuild
@@ -91,7 +107,7 @@ New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 Get-ChildItem $releaseDir -Recurse -File |
     Where-Object { $_.Extension -notin ".pdb", ".xml" } |
     ForEach-Object {
-        $relative = Resolve-Path -Relative -Path $_.FullName -RelativeBasePath (Resolve-Path $releaseDir).Path
+        $relative = Get-RelativePath -BasePath $releaseDir -TargetPath $_.FullName
         $destination = Join-Path $stageDir $relative
         New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null
         Copy-Item $_.FullName $destination -Force

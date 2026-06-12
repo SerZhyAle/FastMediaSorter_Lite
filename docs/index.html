@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FastMediaSorter Help</title>
+    <title>FastMediaSorter Help and Installation</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -59,6 +59,13 @@
             border-radius: 4px;
             font-family: "Courier New", Courier, monospace;
         }
+        .callout {
+            background: #f7fbff;
+            border-left: 4px solid #007bff;
+            padding: 12px 14px;
+            border-radius: 6px;
+            margin: 18px 0;
+        }
         .hidden {
             display: none;
         }
@@ -73,6 +80,22 @@
 
         <div id="content-en">
             <h1>Welcome to FastMediaSorter!</h1>
+
+            <h2>Installation</h2>
+            <div class="callout">
+                <p><strong>winget:</strong> <code>winget install --id SerZhyAle.FastMediaSorter</code></p>
+                <p>The winget package uses a silent per-user installer, so it does not show dialogs during setup.</p>
+                <p><strong>Manual setup:</strong> download <code>FastMediaSorter-&lt;version&gt;-windows-x64-setup.exe</code> from the Releases page if you want the normal interactive installer.</p>
+                <p>The interactive installer can ask whether FastMediaSorter LITE should register for common image formats. On Windows 10/11, you may still need to confirm the choice once in Default Apps.</p>
+            </div>
+
+            <h2>Recommended Companion App</h2>
+            <div class="callout">
+                <p>Need to convert EPUB, PDF, FB2, MOBI, TXT, Markdown, or HTML documents into clean local HTML?</p>
+                <p>Install <strong>doc-html-translate</strong>:</p>
+                <p><code>winget install SerZhyAle.DocHtmlTranslate</code></p>
+                <p><a href="https://github.com/SerZhyAle/doc-html-translate">Open project page</a></p>
+            </div>
 
             <h2>1. Application Goals</h2>
             <p>FastMediaSorter is designed for rapid sorting and management of large collections of photos and videos. The primary goal is to provide a highly efficient workflow for users who need to organize media files into different folders quickly, using extensive keyboard shortcuts to minimize mouse usage.</p>
@@ -119,7 +142,8 @@
             <ol>
                 <li><strong>Initial Setup</strong>:
                     <ul>
-                        <li>Run the application. If prompted, allow it to associate with common image file types for easier access.</li>
+                        <li>Install the app with winget for a silent setup, or use the normal setup executable if you want to review installer options.</li>
+                        <li>If you used the interactive installer, you can choose image-format registration there. The application itself no longer interrupts first launch with an association dialog.</li>
                         <li>Press <code>F2</code> to open the 'Destination Folders Table'.</li>
                         <li>In this table, click 'Choose folder' for each key (0-9) and select a destination folder where you want to sort your files.</li>
                         <li>You can also set other options here, like running file operations in the background or changing the default action from 'Move' to 'Copy'.</li>
@@ -151,6 +175,22 @@
 
         <div id="content-ru" class="hidden">
             <h1>Добро пожаловать в FastMediaSorter!</h1>
+
+            <h2>Установка</h2>
+            <div class="callout">
+                <p><strong>winget:</strong> <code>winget install --id SerZhyAle.FastMediaSorter</code></p>
+                <p>Пакет winget использует тихий per-user installer, поэтому во время установки не показывает диалоги.</p>
+                <p><strong>Обычный setup:</strong> скачайте <code>FastMediaSorter-&lt;version&gt;-windows-x64-setup.exe</code> со страницы релизов, если нужен интерактивный установщик.</p>
+                <p>Интерактивный setup может спросить, нужно ли зарегистрировать FastMediaSorter LITE для распространенных форматов изображений. На Windows 10/11 система может еще раз попросить подтвердить выбор в приложениях по умолчанию.</p>
+            </div>
+
+            <h2>Рекомендуемый companion-проект</h2>
+            <div class="callout">
+                <p>Нужно переводить EPUB, PDF, FB2, MOBI, TXT, Markdown или HTML-документы в локальный HTML?</p>
+                <p>Установите <strong>doc-html-translate</strong>:</p>
+                <p><code>winget install SerZhyAle.DocHtmlTranslate</code></p>
+                <p><a href="https://github.com/SerZhyAle/doc-html-translate">Открыть страницу проекта</a></p>
+            </div>
 
             <h2>1. Цели приложения</h2>
             <p>FastMediaSorter предназначен для быстрой сортировки и управления большими коллекциями фотографий и видео. Основная цель — предоставить высокоэффективный рабочий процесс для пользователей, которым необходимо быстро организовывать медиафайлы по разным папкам, используя обширные сочетания клавиш для минимизации использования мыши.</p>
@@ -197,7 +237,8 @@
             <ol>
                 <li><strong>Начальная настройка</strong>:
                     <ul>
-                        <li>Запустите приложение. Если будет предложено, разрешите ему ассоциироваться с распространенными типами файлов изображений для более удобного доступа.</li>
+                        <li>Установите приложение через winget для тихой установки или используйте обычный setup.exe, если хотите увидеть параметры установщика.</li>
+                        <li>Если использовался интерактивный установщик, регистрацию форматов изображений можно выбрать прямо там. Само приложение больше не прерывает первый запуск диалогом ассоциаций.</li>
                         <li>Нажмите <code>F2</code>, чтобы открыть 'Таблицу папок-получателей'.</li>
                         <li>В этой таблице нажмите 'Выбрать папку' для каждой клавиши (0-9) и выберите папку назначения, куда вы хотите сортировать файлы.</li>
                         <li>Здесь же можно настроить другие параметры, например, выполнение файловых операций в фоновом режиме или изменение действия по умолчанию с 'Переместить' на 'Копировать'.</li>

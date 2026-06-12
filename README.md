@@ -41,11 +41,14 @@ Features include:
 
 ## Installation
 
-### winget (recommended, once accepted into the Microsoft store)
+### winget
 
 ```powershell
-winget install SerZhyAle.FastMediaSorter
+winget install --id SerZhyAle.FastMediaSorter
 ```
+
+The winget package uses the Inno Setup installer in silent per-user mode, so it
+does not show dialogs during installation.
 
 ### Manual release
 
@@ -55,6 +58,10 @@ Download the latest assets from the
 - `FastMediaSorter-<version>-windows-x64-setup.exe` for the easiest install
 - `FastMediaSorter-<version>-windows-x64.zip` for a portable offline bundle
 
+The interactive setup can optionally register FastMediaSorter LITE for common
+image formats. On Windows 10/11, the system may still ask you to confirm the
+choice once in Default Apps.
+
 Both GitHub release assets are offline-ready: they already include VLC runtimes
 and OCR language packs, so no first-run download is needed for media playback or
 OCR recognition.
@@ -62,6 +69,17 @@ OCR recognition.
 Note: machine translation still depends on the provider you configure. For
 example, Ollama requires a separate local install/model, while cloud providers
 need network access.
+
+## Companion App
+
+For EPUB, PDF, FB2, MOBI, TXT, Markdown, and HTML document conversion, use the
+companion project **doc-html-translate**:
+
+```powershell
+winget install SerZhyAle.DocHtmlTranslate
+```
+
+Project page: [doc-html-translate](https://github.com/SerZhyAle/doc-html-translate)
 
 ## Author
 - Website: [sza.od.ua](https://sza.od.ua)

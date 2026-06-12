@@ -47,6 +47,19 @@ jobs:
           $stage = "stage/FastMediaSorter-$version-windows-x64"
           New-Item -ItemType Directory -Path $stage -Force | Out-Null
 
+          function Get-RelativePath {
+            param(
+              [Parameter(Mandatory = $true)][string]$BasePath,
+              [Parameter(Mandatory = $true)][string]$TargetPath
+            )
+
+            $baseResolved = (Resolve-Path $BasePath).Path.TrimEnd('\') + '\'
+            $targetResolved = (Resolve-Path $TargetPath).Path
+            $baseUri = New-Object System.Uri($baseResolved)
+            $targetUri = New-Object System.Uri($targetResolved)
+            [System.Uri]::UnescapeDataString($baseUri.MakeRelativeUri($targetUri).ToString().Replace('/', '\'))
+          }
+
           $release = "bin/Release"
           if (-not (Test-Path $release)) { throw "Build output not found at $release" }
           $exe = Join-Path $release "FastMediaSorter_LITE.exe"
@@ -56,7 +69,7 @@ jobs:
           Get-ChildItem $release -Recurse -File |
             Where-Object { $_.Extension -notin '.pdb','.xml' } |
             ForEach-Object {
-              $rel  = Resolve-Path -Relative -Path $_.FullName -RelativeBasePath (Resolve-Path $release).Path
+              $rel  = Get-RelativePath -BasePath $release -TargetPath $_.FullName
               $dest = Join-Path $stage $rel
               New-Item -ItemType Directory -Path (Split-Path $dest -Parent) -Force | Out-Null
               Copy-Item $_.FullName $dest
@@ -146,7 +159,15 @@ jobs:
 
             OCR recognition works offline from the release package. Machine translation still depends on the provider you configure (for example a local Ollama install or an online API).
 
-            **winget** (once accepted):
+            **winget**:
             ```
-            winget install SerZhyAle.FastMediaSorter
+            winget install --id SerZhyAle.FastMediaSorter
+            ```
+
+            The winget package uses the Inno Setup installer in silent per-user mode.
+            The interactive setup can optionally register FastMediaSorter LITE for common image formats.
+
+            **Companion app for books/documents:**
+            ```
+            winget install SerZhyAle.DocHtmlTranslate
             ```

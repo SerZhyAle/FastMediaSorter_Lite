@@ -53,6 +53,15 @@ This mirrors the CI packaging flow and emits offline-ready artifacts in `dist/`.
 
 The version in the tag is authoritative for asset names but is independent of the build-time `UpdateVersion` stamp — keep them consistent. See [SPECIFICATION_GITHUB_STORE.md](SPECIFICATION_GITHUB_STORE.md) for the rationale behind shipping an EXE installer (GitHub-Store discoverability; a ZIP-only release is invisible to that marketplace).
 
+### Publishing to winget — read before touching the manifest
+**The winget manifest must point at the Inno `setup.exe` directly (`InstallerType: inno`) with NO declared dependencies.** This was learned the hard way (see [SPECIFICATION_WINGET_PUBLISHING.md](SPECIFICATION_WINGET_PUBLISHING.md)). Quick rules:
+- **Never** point winget at `single-exe.zip` — Defender ML flags the self-extracting bootstrap as `Program:Script/Wacapew.A!ml` (persistent false positive). It's a GitHub-only convenience download.
+- **Don't** use the portable `windows-x64.zip` shape — the ~99 MB payload aborts the install with `0x80004004` after extraction.
+- **Don't** declare the `Microsoft.VCRedist.2015+.x64` dependency — it sends winget into a resolution loop and aborts with `0x8A150044`; the app installs fine without it (validation never launches the app).
+- **Don't** add `Scope: user` — it forces the harness into a non-elevated `--scope user` flow and the install fails with `0x8A150044` ("no suitable installer found for --scope user"). Omit `Scope` so validation runs elevated/machine.
+- The "Missing `NestedInstallerType` / fewer `Tags`" inconsistency note is a non-blocking `Validation-Guide`, not a failure.
+- Get the *real* failure reason from the build's `InstallationVerificationLogs` artifact, not the generic GitHub bot comments — the doc has a copy-paste snippet.
+
 ## Architecture
 
 ### Core Components
