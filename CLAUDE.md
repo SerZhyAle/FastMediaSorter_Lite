@@ -62,6 +62,14 @@ The version in the tag is authoritative for asset names but is independent of th
 - The "Missing `NestedInstallerType` / fewer `Tags`" inconsistency note is a non-blocking `Validation-Guide`, not a failure.
 - Get the *real* failure reason from the build's `InstallationVerificationLogs` artifact, not the generic GitHub bot comments — the doc has a copy-paste snippet.
 
+### Publishing to the Microsoft Store (MSIX) — see [STORE_PUBLISHING.md](STORE_PUBLISHING.md)
+The Store path (Path A: MSIX) is **additive** — it does not change the GitHub release or winget flows. Full playbook + filled listing copy (description, features, runFullTrust justification, privacy text) is in [STORE_PUBLISHING.md](STORE_PUBLISHING.md); packaging detail in [msix/README.md](msix/README.md). Key facts:
+- **No app code change is needed** — the app is already MSIX-safe: everything mutable goes to `%LOCALAPPDATA%\SZA\FastMediaSorter` (OCR downloads/cache via `OcrPaths`) or the registry, both writable inside the package container; bundled `tessdata` next to the exe is only ever read (the install dir is read-only under MSIX).
+- Build with [msix/build-msix.ps1](msix/build-msix.ps1): MSBuild Release → stage the **offline payload** (same `bin/Release` tree minus `*.pdb`/`*.xml`, run through [tools/Prepare-OcrOfflinePayload.ps1](tools/Prepare-OcrOfflinePayload.ps1)) → generate logos from [assets/icons/store-icon-256.png](assets/icons/store-icon-256.png) → fill manifest → `makeappx pack`. `-SelfSign` makes a sideload-testable build; **no `-SelfSign` for the Store** (Microsoft re-signs on certification — no paid cert needed).
+- [msix/AppxManifest.xml](msix/AppxManifest.xml) wraps the exe as a **full-trust** desktop app (`rescap:runFullTrust` keeps IE WebBrowser/LibVLC/GDI+/file-access/local-HTTP working) and declares image **file associations** (the manifest equivalent of the Inno per-user registry writes). Identity (`Name`/`Publisher`/`PublisherDisplayName`) is `__PLACEHOLDER__` filled at pack time from Partner Center (Product ▸ Product identity) via `-IdentityName`/`-Publisher`/`-PublisherDisplayName` — must match **exactly** or upload is rejected.
+- **Version remap (Store requires revision = 0):** the script maps the exe's `YY.M.D.HHmm` stamp to `YY.(M*100+D).HHmm.0` (each part ≤ 65535). Don't hand-edit it.
+- Needs the Windows SDK for `makeappx.exe`/`signtool.exe` (`winget install Microsoft.WindowsSDK`); they live under `C:\Program Files (x86)\Windows Kits\10\bin\*\x64\`.
+
 ## Architecture
 
 ### Core Components

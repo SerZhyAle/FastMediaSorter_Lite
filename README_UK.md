@@ -82,6 +82,12 @@ winget install SerZhyAle.DocHtmlTranslate
 
 Сторінка проєкту: [doc-html-translate](https://github.com/SerZhyAle/doc-html-translate)
 
+## Universal Agent Kit
+
+Зручний набір пресетів та інструментів для AI-агентів від того ж автора:
+
+🔗 **[Universal Agent Kit](https://serzhyale.github.io/universal-agent-kit/)**
+
 ## Автор
 - Сайт: [sza.od.ua](https://sza.od.ua)
 - Email: [sza@ukr.net](mailto:sza@ukr.net)

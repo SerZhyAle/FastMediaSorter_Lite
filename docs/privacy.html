@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastMediaSorter LITE — Privacy Policy</title>
+    <meta name="description" content="FastMediaSorter LITE privacy policy: runs on your device, collects no personal data, no telemetry. Network is used only for the optional translation feature you configure.">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 24px 28px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 { color: #0056b3; }
+        h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .note { color: #777; font-size: 0.9em; }
+        ul { padding-left: 18px; }
+        li { margin-bottom: 8px; }
+        code { background: #eee; padding: 2px 4px; border-radius: 4px; font-family: "Courier New", Courier, monospace; }
+        a { color: #007bff; }
+        footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid #eee; color: #777; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p><a href="./">&larr; FastMediaSorter LITE</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a></p>
+        <h1>Privacy Policy</h1>
+        <p class="note">Last updated: 14 June 2026</p>
+
+        <p><strong>FastMediaSorter LITE collects no personal data.</strong> It has no user accounts, no
+        advertising, and no telemetry or analytics. It runs entirely on your own device, and the developer
+        receives no data about you or your use of the app.</p>
+
+        <h2>What the app accesses, and why</h2>
+        <ul>
+            <li><strong>Your media files.</strong> The app reads, displays, copies, moves, renames and
+            deletes the image and video files in the folders you open — that is its core purpose. It only
+            ever touches files and folders you point it at (including network shares you browse to).</li>
+
+            <li><strong>Network — optional, only for translation.</strong> The on-image translation feature
+            is off until you enable and configure it. When you use it, the app sends the recognized text to
+            the translation endpoint <em>you</em> choose — a local <a href="https://ollama.com">Ollama</a>
+            model on your own machine, or a <a href="https://libretranslate.com">LibreTranslate</a> server
+            you specify — to receive the translated text. <strong>OCR (text recognition) runs fully offline.</strong>
+            If you never use translation, the app makes no network requests, except optionally downloading
+            additional OCR language packs on demand from the public Tesseract data repository.</li>
+
+            <li><strong>API keys (if you set one).</strong> If a translation provider you configure needs an
+            API key, it is stored encrypted on your device using Windows DPAPI and is sent only to that
+            provider's endpoint when translating.</li>
+        </ul>
+
+        <h2>Local files the app writes</h2>
+        <ul>
+            <li><strong>Settings.</strong> Preferences and hotkeys are stored in the Windows registry (in the
+            Microsoft Store build these live inside the app's package container).</li>
+            <li><strong>OCR data and cache.</strong> Downloaded Tesseract language packs and the translation
+            cache are stored under <code>%LOCALAPPDATA%\SZA\FastMediaSorter</code>. These contain no personal
+            data and never leave your device.</li>
+        </ul>
+
+        <h2>Data sharing</h2>
+        <p>None. The app does not share any data with the developer or third parties. The only data ever sent
+        off your device is the text you choose to translate, sent to the translation endpoint you yourself
+        configured.</p>
+
+        <h2>Children's privacy</h2>
+        <p>The app collects no data from anyone, including children.</p>
+
+        <h2>Open source</h2>
+        <p>FastMediaSorter LITE is open source — you can review exactly what it does at
+        <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">github.com/SerZhyAle/FastMediaSorter_Lite</a>.</p>
+
+        <h2>Changes to this policy</h2>
+        <p>If this policy changes, the updated version will be posted on this page with a new
+        "Last updated" date.</p>
+
+        <h2>Contact</h2>
+        <p>Questions about this policy: <a href="mailto:serzhyale@gmail.com">serzhyale@gmail.com</a>.</p>
+
+        <footer>
+            MIT licensed &middot; &copy; 2026 <a href="https://github.com/SerZhyAle">SerZhyAle</a> &middot;
+            <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">Source on GitHub</a>
+        </footer>
+    </div>
+</body>
+</html>

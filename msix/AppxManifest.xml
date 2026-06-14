@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  MSIX package manifest for FastMediaSorter LITE (Microsoft Store / sideload).
+
+  This wraps the plain net48 FastMediaSorter_LITE.exe (plus its offline payload: LibVLC, Tesseract
+  tessdata, flag assets) as a FULL-TRUST desktop app. Every Win32 API the app uses keeps working —
+  the IE WebBrowser control, native LibVLC playback, System.Drawing/GDI+, arbitrary file-system
+  access for sorting media (including \\server shares), and the optional local HTTP calls to an
+  Ollama / LibreTranslate endpoint — all guarded by the single `runFullTrust` restricted capability.
+
+  Under MSIX the install dir is READ-ONLY, but FastMediaSorter already writes everything mutable
+  (downloaded tessdata, OCR cache, settings) under %LOCALAPPDATA%\SZA\FastMediaSorter (see
+  src/Ocr/TesseractOcrEngine.vb OcrPaths) and the registry, both of which are virtualized and
+  writable per-package — so no app code change is needed.
+
+  The __PLACEHOLDERS__ are filled in by msix\build-msix.ps1 at pack time:
+    __IDENTITY_NAME__     Package identity Name — MUST match the value reserved for you in
+                          Partner Center (Product > Product identity > "Package/Identity/Name").
+    __PUBLISHER__         Publisher — MUST match exactly (Partner Center "Package/Identity/Publisher",
+                          e.g. CN=ABCD1234-...). For local self-signed testing it must instead match
+                          the test certificate's subject (build-msix.ps1 -SelfSign keeps them equal).
+    __PUBLISHER_DISPLAY__ Human-readable publisher name (Partner Center "Package/Properties/PublisherDisplayName").
+    __VERSION__           4-part version with the 4th part = 0 (the Store reserves the revision).
+                          build-msix.ps1 derives it from the exe's YY.M.D.HHmm stamp.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap rescap">
+
+  <Identity
+    Name="__IDENTITY_NAME__"
+    Publisher="__PUBLISHER__"
+    Version="__VERSION__"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>FastMediaSorter LITE</DisplayName>
+    <PublisherDisplayName>__PUBLISHER_DISPLAY__</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <!-- 10.0.17763 (1809) is a safe Store floor for desktop MSIX. -->
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application Id="FastMediaSorterLITE" Executable="FastMediaSorter_LITE.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="FastMediaSorter LITE"
+        Description="Fast image and video viewer/sorter for Windows: slideshow, panel navigation, one-key move/copy/rename/delete, plus on-image OCR translation."
+        BackgroundColor="#171B26"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Square71x71Logo="Assets\Square71x71Logo.png" />
+      </uap:VisualElements>
+
+      <Extensions>
+        <!-- Let users set FastMediaSorter as a handler / default for common image formats.
+             Mirrors the per-user associations the Inno installer registers. -->
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="fastmediasorterimages">
+            <uap:Logo>Assets\Square44x44Logo.png</uap:Logo>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.jpg</uap:FileType>
+              <uap:FileType>.jpeg</uap:FileType>
+              <uap:FileType>.png</uap:FileType>
+              <uap:FileType>.gif</uap:FileType>
+              <uap:FileType>.bmp</uap:FileType>
+              <uap:FileType>.tif</uap:FileType>
+              <uap:FileType>.tiff</uap:FileType>
+              <uap:FileType>.ico</uap:FileType>
+              <uap:FileType>.webp</uap:FileType>
+              <uap:FileType>.heic</uap:FileType>
+              <uap:FileType>.heif</uap:FileType>
+              <uap:FileType>.avif</uap:FileType>
+              <uap:FileType>.svg</uap:FileType>
+              <uap:FileType>.wmf</uap:FileType>
+              <uap:FileType>.emf</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <!-- Full-trust desktop app: keeps the IE WebBrowser control, native LibVLC playback, GDI+,
+         user-level file access for media sorting, and optional local translation HTTP calls. -->
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>
