@@ -1,307 +1,730 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-lang="en" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FastMediaSorter Help and Installation</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        .lang-switcher {
-            text-align: right;
-            margin-bottom: 20px;
-        }
-        .lang-switcher button {
-            padding: 5px 10px;
-            border: 1px solid #ddd;
-            background: #f0f0f0;
-            cursor: pointer;
-        }
-        .lang-switcher button.active {
-            background: #007bff;
-            color: white;
-            border-color: #007bff;
-        }
-        h1, h2, h3 {
-            color: #0056b3;
-        }
-        h1 {
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
-        }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        li {
-            background: #eef;
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 4px;
-        }
-        code {
-            background: #eee;
-            padding: 2px 4px;
-            border-radius: 4px;
-            font-family: "Courier New", Courier, monospace;
-        }
-        .callout {
-            background: #f7fbff;
-            border-left: 4px solid #007bff;
-            padding: 12px 14px;
-            border-radius: 6px;
-            margin: 18px 0;
-        }
-        .hidden {
-            display: none;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FastMediaSorter LITE - fast image &amp; video sorter for Windows</title>
+<meta name="description" content="A fast image and video sorter for Windows: slideshow, one-key move / copy / rename / delete, broad video playback, Ambilight background and OCR translation. Free and open-source. Page in English, Russian and Ukrainian.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/">
+<meta name="theme-color" content="#0f1115">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FastMediaSorter LITE">
+<meta property="og:title" content="FastMediaSorter LITE - fast image &amp; video sorter for Windows">
+<meta property="og:description" content="Browse huge folders of photos and videos at speed, then move, copy, rename or delete each file with a single key. Free and open-source.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FastMediaSorter LITE">
+<meta name="twitter:description" content="Fast image and video sorting for Windows with one-key actions, slideshow, LibVLC playback and OCR translation.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/og-image.png">
+
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="assets/logo.png">
+
+<script>
+(function(){
+  var l, t;
+  try{ l = localStorage.getItem('fmsl-lang'); t = localStorage.getItem('fmsl-theme'); }catch(e){}
+  if(!l){
+    var nav = (navigator.language || 'en').toLowerCase();
+    l = nav.indexOf('ru') === 0 ? 'ru' : (nav.indexOf('uk') === 0 ? 'uk' : 'en');
+  }
+  if(!t){
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  var d = document.documentElement;
+  d.setAttribute('data-lang', l);
+  d.setAttribute('lang', l);
+  d.setAttribute('data-theme', t);
+})();
+</script>
+
+<style>
+  :root{
+    --wide: 1160px;
+    --bg:#0f1115; --bg2:#161922; --bg3:#1d2230; --fg:#e6e8ee; --muted:#9aa3b2;
+    --acc:#7aa2ff; --acc2:#9d7bff; --line:#272d3a; --code:#0b0d12; --pill:#222838;
+    --shadow:0 6px 24px rgba(0,0,0,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f7f8fa; --bg2:#ffffff; --bg3:#eef1f6; --fg:#1b2230; --muted:#5b6675;
+    --acc:#2f5fe0; --acc2:#6a40d8; --line:#e2e6ee; --code:#0e1117; --pill:#e9edf5;
+    --shadow:0 6px 24px rgba(20,30,60,.10);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--fg);
+    font:16px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--acc); text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,kbd,pre{font-family:"SFMono-Regular",ui-monospace,"Cascadia Code",Consolas,Menlo,monospace}
+  code{background:var(--bg3); padding:.08em .38em; border-radius:5px; font-size:.88em}
+
+  header.top{
+    position:sticky; top:0; z-index:20; backdrop-filter:saturate(140%) blur(8px);
+    background:color-mix(in srgb, var(--bg) 82%, transparent);
+    border-bottom:1px solid var(--line);
+  }
+  .top .wrap{
+    max-width:var(--wide); margin:0 auto; padding:10px 22px;
+    display:flex; align-items:center; gap:12px;
+  }
+  .brand{
+    display:inline-flex; align-items:center; gap:9px;
+    font-weight:700; letter-spacing:.2px; margin-right:auto; font-size:15px;
+  }
+  .brand img{width:24px; height:24px; border-radius:6px}
+  .brand .dot{color:var(--acc2)}
+  .btn{
+    border:1px solid var(--line); background:var(--bg2); color:var(--fg);
+    padding:8px 13px; border-radius:8px; font-size:13px; cursor:pointer; line-height:1.1;
+    display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:38px;
+  }
+  .btn:hover{border-color:var(--acc); text-decoration:none}
+  .btn.primary{
+    background:linear-gradient(180deg,var(--acc),var(--acc2));
+    border:none; color:#fff; font-weight:600;
+  }
+  .seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden}
+  .seg button{
+    border:none; background:var(--bg2); color:var(--muted); padding:8px 12px;
+    cursor:pointer; font-size:13px; min-height:38px; display:inline-flex; align-items:center;
+  }
+  .seg button[aria-pressed="true"]{background:var(--acc); color:#fff}
+
+  main{max-width:var(--wide); margin:0 auto; padding:0 22px 80px}
+
+  .hero{padding:30px 0 18px; border-bottom:1px solid var(--line); margin-bottom:4px}
+  .hero h1{font-size:34px; line-height:1.14; margin:0 0 10px; letter-spacing:-.5px}
+  .hero p.lead{font-size:17px; color:var(--muted); margin:0 0 20px; max-width:840px}
+  .hero .cta{display:flex; gap:10px; flex-wrap:wrap}
+  .kicker{font-size:13px; color:var(--muted); font-weight:600; margin:0 0 12px; letter-spacing:.01em}
+  .kicker b{color:var(--acc2); font-weight:700}
+  .pills{display:flex; flex-wrap:wrap; gap:7px; margin:14px 0 20px}
+  .pill{
+    background:var(--pill); border:1px solid var(--line); border-radius:999px;
+    padding:4px 11px; font-size:12.5px; color:var(--muted);
+  }
+  .pill b{color:var(--fg); font-weight:600}
+
+  .sections{
+    display:grid; grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:14px; align-items:start; margin-top:24px;
+  }
+  @media(max-width:760px){ .sections{grid-template-columns:1fr} }
+
+  .sec{
+    background:var(--bg2); border:1px solid var(--line); border-radius:12px;
+    overflow:hidden; scroll-margin-top:66px;
+  }
+  .sec:nth-child(4n+2), .sec:nth-child(4n+3){background:color-mix(in srgb, var(--acc) 7%, var(--bg2))}
+  @media(max-width:760px){
+    .sec:nth-child(4n+2), .sec:nth-child(4n+3){background:var(--bg2)}
+    .sec:nth-child(even){background:color-mix(in srgb, var(--acc) 7%, var(--bg2))}
+  }
+  .sec[open]{
+    grid-column:1 / -1; background:var(--bg2);
+    border-color:color-mix(in srgb, var(--acc) 38%, var(--line));
+    box-shadow:var(--shadow);
+  }
+  .sec > summary{
+    cursor:pointer; list-style:none; display:flex; align-items:flex-start; gap:11px;
+    padding:13px 16px;
+  }
+  .sec > summary::-webkit-details-marker{display:none}
+  .sec > summary::before{content:"▸"; color:var(--acc2); font-size:11px; line-height:1.7; flex:none}
+  .sec[open] > summary::before{content:"▾"}
+  .sec > summary:hover .sectitle{color:var(--acc)}
+  .secnum{
+    color:var(--acc); font-weight:700; font-variant-numeric:tabular-nums;
+    font-size:13px; line-height:1.5; flex:none; min-width:2ch;
+  }
+  .sechead{display:flex; flex-direction:column; gap:2px; min-width:0}
+  .sectitle{margin:0; font-size:15.5px; font-weight:600; letter-spacing:-.1px; line-height:1.35}
+  .secteaser{color:var(--muted); font-size:13px; line-height:1.42}
+  .sec[open] .secteaser{display:none}
+  .secbody{padding:4px 18px 20px}
+  .sec[open] .secbody{border-top:1px solid var(--line); margin-top:2px; padding-top:14px}
+
+  h3{font-size:17px; margin:22px 0 4px}
+  p{margin:12px 0}
+  ul,ol{margin:12px 0; padding-left:22px}
+  li{margin:6px 0}
+  strong{color:var(--fg)}
+  .muted{color:var(--muted)}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); gap:12px; margin:16px 0}
+  .card{background:var(--bg3); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .card h3{margin:0 0 4px; font-size:15px}
+  .card p{margin:4px 0 0; font-size:14px; color:var(--muted)}
+  .card .num{font-size:12px; font-weight:700; color:var(--acc); letter-spacing:.1em}
+
+  .note{
+    border-left:3px solid var(--acc2); background:var(--bg3); border-radius:0 10px 10px 0;
+    padding:12px 16px; margin:18px 0; font-size:14.5px;
+  }
+  .note .tag{font-size:11px; text-transform:uppercase; letter-spacing:.14em; color:var(--acc2); font-weight:700}
+  .note p{margin:.4em 0 0}
+
+  .copybox{display:flex; gap:8px; align-items:stretch; flex-wrap:wrap; margin:12px 0}
+  .copybox code{
+    flex:1; min-width:260px; background:var(--code); color:#cdd6f4;
+    border:1px solid var(--line); border-radius:9px; padding:12px 14px;
+    font-size:13.5px; overflow:auto; display:flex; align-items:center;
+  }
+  .copybox code .pr{color:var(--acc); margin-right:8px; user-select:none}
+
+  figure{margin:16px 0}
+  .shot{
+    max-width:100%; height:auto; display:block; border:1px solid var(--line);
+    border-radius:10px; box-shadow:var(--shadow); background:var(--bg3);
+  }
+  figcaption{color:var(--muted); font-size:13px; margin-top:7px}
+  .hero-shot{margin-top:18px}
+  .shot-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(250px,1fr)); gap:14px; margin:16px 0}
+  .step-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:12px; margin:16px 0}
+
+  .keys-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:16px 28px; margin:14px 0}
+  .keys-grid h4{margin:6px 0 8px; font-size:13px; text-transform:uppercase; letter-spacing:.12em; color:var(--acc2)}
+  .krow{display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px dashed var(--line)}
+  .krow:last-child{border-bottom:none}
+  .krow .d{color:var(--muted); font-size:14px}
+  .kk{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; flex:none}
+  kbd{
+    font-size:12px; background:var(--bg3); border:1px solid var(--line);
+    border-bottom-width:2px; border-radius:6px; padding:.12em .5em;
+    color:var(--fg); white-space:nowrap;
+  }
+
+  footer{
+    max-width:var(--wide); margin:0 auto; padding:26px 22px 60px;
+    border-top:1px solid var(--line); color:var(--muted); font-size:14px;
+  }
+  footer .cta{display:flex; gap:10px; flex-wrap:wrap; margin:14px 0}
+  .author{margin:22px 0 0; padding-top:14px; border-top:1px solid var(--line); font-size:13px; color:var(--muted)}
+
+  summary:focus-visible, button:focus-visible, a:focus-visible, code:focus-visible{
+    outline:2px solid var(--acc); outline-offset:2px;
+  }
+  .seg button:focus-visible{outline-offset:-2px}
+  @media(max-width:480px){ header.top .btn.primary{display:none} }
+  @media(pointer:coarse){ .btn, .seg button{min-height:44px; min-width:44px} }
+
+  html[data-lang="ru"] [data-l="en"], html[data-lang="ru"] [data-l="uk"]{display:none}
+  html[data-lang="en"] [data-l="ru"], html[data-lang="en"] [data-l="uk"]{display:none}
+  html[data-lang="uk"] [data-l="ru"], html[data-lang="uk"] [data-l="en"]{display:none}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="lang-switcher">
-            <button id="lang-en" class="active">English</button>
-            <button id="lang-ru">Русский</button>
-        </div>
 
-        <div id="content-en">
-            <h1>Welcome to FastMediaSorter!</h1>
+<header class="top">
+  <div class="wrap">
+    <span class="brand"><img src="assets/logo.png" alt="">FastMediaSorter&nbsp;LITE<span class="dot">.</span></span>
+    <span class="seg" role="group" aria-label="Language" id="langGroup">
+      <button id="lng-ru" type="button" onclick="setLang('ru')" aria-pressed="false" aria-label="Русский">RU</button>
+      <button id="lng-en" type="button" onclick="setLang('en')" aria-pressed="true" aria-label="English">EN</button>
+      <button id="lng-uk" type="button" onclick="setLang('uk')" aria-pressed="false" aria-label="Українська">UK</button>
+    </span>
+    <button class="btn" id="themeBtn" type="button" onclick="toggleTheme()" title="Theme" aria-label="Theme" aria-pressed="false">◐</button>
+    <a class="btn primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest" target="_blank" rel="noopener">
+      <span data-l="ru">Скачать</span><span data-l="en">Download</span><span data-l="uk">Завантажити</span>
+    </a>
+  </div>
+</header>
 
-            <h2>Installation</h2>
-            <div class="callout">
-                <p><strong>winget:</strong> <code>winget install --id SerZhyAle.FastMediaSorter</code></p>
-                <p>The winget package uses a silent per-user installer, so it does not show dialogs during setup.</p>
-                <p><strong>Manual setup:</strong> download <code>FastMediaSorter-&lt;version&gt;-windows-x64-setup.exe</code> from the Releases page if you want the normal interactive installer.</p>
-                <p>The interactive installer can ask whether FastMediaSorter LITE should register for common image formats. On Windows 10/11, you may still need to confirm the choice once in Default Apps.</p>
-            </div>
-
-            <h2>Recommended Companion App</h2>
-            <div class="callout">
-                <p>Need to convert EPUB, PDF, FB2, MOBI, TXT, Markdown, or HTML documents into clean local HTML?</p>
-                <p>Install <strong>doc-html-translate</strong>:</p>
-                <p><code>winget install SerZhyAle.DocHtmlTranslate</code></p>
-                <p><a href="https://github.com/SerZhyAle/doc-html-translate">Open project page</a></p>
-            </div>
-
-            <h2>Universal Agent Kit</h2>
-            <div class="callout">
-                <p>A handy collection of AI-agent presets and tooling by the same author.</p>
-                <p><a href="https://serzhyale.github.io/universal-agent-kit/">Open Universal Agent Kit</a></p>
-            </div>
-
-            <h2>1. Application Goals</h2>
-            <p>FastMediaSorter is designed for rapid sorting and management of large collections of photos and videos. The primary goal is to provide a highly efficient workflow for users who need to organize media files into different folders quickly, using extensive keyboard shortcuts to minimize mouse usage.</p>
-
-            <h2>2. Full List of Functionality</h2>
-            <h3>File Viewing & Navigation</h3>
-            <ul>
-                <li><strong>Next/Previous File</strong>: Navigate with <code>&rarr;</code>/<code>&larr;</code> arrows, <code>PgDn</code>/<code>PgUp</code>, <code>N</code>/<code>P</code> keys, mouse wheel, or left/right mouse clicks.</li>
-                <li><strong>Jump Navigation</strong>: Use <code>&uarr;</code>/<code>&darr;</code> arrows to jump 10 files at a time, or <code>Shift+PgDn/PgUp</code> to jump 100 files.</li>
-                <li><strong>Go to First/Last</strong>: Press <code>Home</code> or <code>End</code>.</li>
-                <li><strong>Random File</strong>: Press <code>Y</code> to view a random file from the current folder.</li>
-                <li><strong>Drag and Drop</strong>: Drop a file or folder onto the application window to open it.</li>
-            </ul>
-
-            <h3>Display Modes</h3>
-            <ul>
-                <li><strong>Fullscreen</strong>: Toggle with the 'Fullscreen' button or by pressing <code>F11</code>. Double-click the media to exit fullscreen.</li>
-                <li><strong>Slideshow</strong>: Press <code>S</code> for a sequential slideshow. Press again to speed it up.</li>
-                <li><strong>Random Slideshow</strong>: Press <code>I</code> or <code>F5</code> for a random slideshow.</li>
-                <li><strong>Image Panel</strong>: Press <code>F3</code> to see a thumbnail panel of all images in the folder for quick selection.</li>
-                <li><strong>Always on Top</strong>: Use the checkbox to keep the window above all others.</li>
-            </ul>
-
-            <h3>File Operations</h3>
-            <ul>
-                <li><strong>Move/Copy</strong>: Press number keys <code>0</code>-<code>9</code> to move (or copy) the current file to a pre-configured destination folder.</li>
-                <li><strong>Rename</strong>: Press <code>F6</code> or middle-click the media to rename it.</li>
-                <li><strong>Delete</strong>: Press <code>Delete</code> to permanently delete the current file (a confirmation can be enabled/disabled).</li>
-                <li><strong>Undo</strong>: Press <code>U</code> to undo the last move or copy operation.</li>
-            </ul>
-
-            <h3>Interface and Other Features</h3>
-            <ul>
-                <li><strong>Folder Selection</strong>: Choose a folder using the 'Select Folder' button or by pasting a path into the folder dropdown and pressing <code>Enter</code>.</li>
-                <li><strong>Recent Files/Folders</strong>: Quickly access recent folders from the main dropdown, or recent files from the '▼' button next to the current file name.</li>
-                <li><strong>Configuration Table</strong>: Press <code>F2</code> to open the settings table where you can assign destination folders to number keys (<code>0</code>-<code>9</code>) and configure other options.</li>
-                <li><strong>Copy Paths</strong>: Click on the folder path or file path labels to copy them to the clipboard.</li>
-                <li><strong>Image Manipulation</strong>: Press <code>R</code> to rotate an image clockwise, and <code>T</code> to rotate counter-clockwise.</li>
-                <li><strong>Zoom</strong>: Use <code>Ctrl + Mouse Wheel</code> to zoom in and out on images. Use <code>Alt + Mouse Wheel</code> to reset zoom.</li>
-                <li><strong>Multi-language</strong>: Switch between English and Russian interface.</li>
-            </ul>
-
-            <h2>3. Step-by-Step Usage Guide</h2>
-            <ol>
-                <li><strong>Initial Setup</strong>:
-                    <ul>
-                        <li>Install the app with winget for a silent setup, or use the normal setup executable if you want to review installer options.</li>
-                        <li>If you used the interactive installer, you can choose image-format registration there. The application itself no longer interrupts first launch with an association dialog.</li>
-                        <li>Press <code>F2</code> to open the 'Destination Folders Table'.</li>
-                        <li>In this table, click 'Choose folder' for each key (0-9) and select a destination folder where you want to sort your files.</li>
-                        <li>You can also set other options here, like running file operations in the background or changing the default action from 'Move' to 'Copy'.</li>
-                    </ul>
-                </li>
-                <li><strong>Open Your Media</strong>:
-                    <ul>
-                        <li>Click the 'Select Folder' button to browse for the folder containing the media you want to sort.</li>
-                        <li>Alternatively, drag and drop a folder or a single media file directly onto the application window.</li>
-                    </ul>
-                </li>
-                <li><strong>Sort Your Files</strong>:
-                    <ul>
-                        <li>Use the navigation controls (keyboard arrows, mouse clicks/wheel) to browse through your files.</li>
-                        <li>When you find a file you want to sort, press the number key (<code>0</code>-<code>9</code>) corresponding to the destination folder you configured. The file will be moved or copied instantly.</li>
-                        <li>If you make a mistake, press <code>U</code> to undo the last action.</li>
-                        <li>To delete a file, press the <code>Delete</code> key.</li>
-                    </ul>
-                </li>
-                <li><strong>Explore and View</strong>:
-                    <ul>
-                        <li>Use the slideshow modes (<code>S</code>, <code>I</code>, <code>F5</code>) for hands-free viewing.</li>
-                        <li>Press <code>F3</code> to get a quick visual overview of the entire folder in the Image Panel.</li>
-                        <li>Use zoom and rotate functions as needed for better viewing.</li>
-                    </ul>
-                </li>
-            </ol>
-        </div>
-
-        <div id="content-ru" class="hidden">
-            <h1>Добро пожаловать в FastMediaSorter!</h1>
-
-            <h2>Установка</h2>
-            <div class="callout">
-                <p><strong>winget:</strong> <code>winget install --id SerZhyAle.FastMediaSorter</code></p>
-                <p>Пакет winget использует тихий per-user installer, поэтому во время установки не показывает диалоги.</p>
-                <p><strong>Обычный setup:</strong> скачайте <code>FastMediaSorter-&lt;version&gt;-windows-x64-setup.exe</code> со страницы релизов, если нужен интерактивный установщик.</p>
-                <p>Интерактивный setup может спросить, нужно ли зарегистрировать FastMediaSorter LITE для распространённых форматов изображений. На Windows 10/11 система может ещё раз попросить подтвердить выбор в приложениях по умолчанию.</p>
-            </div>
-
-            <h2>Рекомендуемый companion-проект</h2>
-            <div class="callout">
-                <p>Нужно переводить EPUB, PDF, FB2, MOBI, TXT, Markdown или HTML-документы в локальный HTML?</p>
-                <p>Установите <strong>doc-html-translate</strong>:</p>
-                <p><code>winget install SerZhyAle.DocHtmlTranslate</code></p>
-                <p><a href="https://github.com/SerZhyAle/doc-html-translate">Открыть страницу проекта</a></p>
-            </div>
-
-            <h2>Universal Agent Kit</h2>
-            <div class="callout">
-                <p>Удобный набор пресетов и инструментов для AI-агентов от того же автора.</p>
-                <p><a href="https://serzhyale.github.io/universal-agent-kit/">Открыть Universal Agent Kit</a></p>
-            </div>
-
-            <h2>1. Цели приложения</h2>
-            <p>FastMediaSorter предназначен для быстрой сортировки и управления большими коллекциями фотографий и видео. Основная цель - предоставить высокоэффективный рабочий процесс для пользователей, которым необходимо быстро организовывать медиафайлы по разным папкам, используя обширные сочетания клавиш для минимизации использования мыши.</p>
-
-            <h2>2. Полный список функциональности</h2>
-            <h3>Просмотр и навигация по файлам</h3>
-            <ul>
-                <li><strong>Следующий/Предыдущий файл</strong>: Перемещайтесь с помощью стрелок <code>&rarr;</code>/<code>&larr;</code>, клавиш <code>PgDn</code>/<code>PgUp</code>, <code>N</code>/<code>P</code>, колеса мыши или кликов левой/правой кнопкой мыши.</li>
-                <li><strong>Быстрый переход</strong>: Используйте стрелки <code>&uarr;</code>/<code>&darr;</code> для перехода на 10 файлов вперёд/назад или <code>Shift+PgDn/PgUp</code> для перехода на 100 файлов.</li>
-                <li><strong>Перейти к первому/последнему</strong>: Нажмите <code>Home</code> или <code>End</code>.</li>
-                <li><strong>Случайный файл</strong>: Нажмите <code>Y</code> для просмотра случайного файла из текущей папки.</li>
-                <li><strong>Перетаскивание</strong>: Перетащите файл или папку в окно приложения, чтобы открыть их.</li>
-            </ul>
-
-            <h3>Режимы отображения</h3>
-            <ul>
-                <li><strong>Полноэкранный режим</strong>: Переключите с помощью кнопки 'Fullscreen' или нажатием <code>F11</code>. Дважды щёлкните по медиа, чтобы выйти из полноэкранного режима.</li>
-                <li><strong>Слайд-шоу</strong>: Нажмите <code>S</code> для последовательного слайд-шоу. Нажмите ещё раз, чтобы ускорить.</li>
-                <li><strong>Случайное слайд-шоу</strong>: Нажмите <code>I</code> или <code>F5</code> для случайного слайд-шоу.</li>
-                <li><strong>Панель изображений</strong>: Нажмите <code>F3</code>, чтобы увидеть панель с миниатюрами всех изображений в папке для быстрого выбора.</li>
-                <li><strong>Поверх всех окон</strong>: Используйте флажок, чтобы держать окно поверх всех остальных.</li>
-            </ul>
-
-            <h3>Операции с файлами</h3>
-            <ul>
-                <li><strong>Перемещение/Копирование</strong>: Нажимайте цифровые клавиши <code>0</code>-<code>9</code>, чтобы переместить (или скопировать) текущий файл в предварительно настроенную папку назначения.</li>
-                <li><strong>Переименовать</strong>: Нажмите <code>F6</code> или среднюю кнопку мыши на медиа, чтобы переименовать его.</li>
-                <li><strong>Удалить</strong>: Нажмите <code>Delete</code>, чтобы безвозвратно удалить текущий файл (подтверждение можно включить/отключить).</li>
-                <li><strong>Отменить</strong>: Нажмите <code>U</code>, чтобы отменить последнюю операцию перемещения или копирования.</li>
-            </ul>
-
-            <h3>Интерфейс и другие возможности</h3>
-            <ul>
-                <li><strong>Выбор папки</strong>: Выберите папку с помощью кнопки 'Выбрать папку' или вставив путь в выпадающий список папок и нажав <code>Enter</code>.</li>
-                <li><strong>Недавние файлы/папки</strong>: Быстрый доступ к недавним папкам из основного выпадающего списка или к недавним файлам с помощью кнопки '▼' рядом с именем текущего файла.</li>
-                <li><strong>Таблица настроек</strong>: Нажмите <code>F2</code>, чтобы открыть таблицу настроек, где вы можете назначить папки назначения цифровым клавишам (<code>0</code>-<code>9</code>) и настроить другие параметры.</li>
-                <li><strong>Копировать пути</strong>: Щёлкните по меткам пути к папке или файлу, чтобы скопировать их в буфер обмена.</li>
-                <li><strong>Манипуляции с изображением</strong>: Нажмите <code>R</code> для поворота изображения по часовой стрелке и <code>T</code> для поворота против часовой стрелки.</li>
-                <li><strong>Масштабирование</strong>: Используйте <code>Ctrl + Колесо мыши</code> для увеличения и уменьшения масштаба изображений. Используйте <code>Alt + Колесо мыши</code> для сброса масштаба.</li>
-                <li><strong>Многоязычность</strong>: Переключение между английским и русским интерфейсом.</li>
-            </ul>
-
-            <h2>3. Пошаговое руководство по использованию</h2>
-            <ol>
-                <li><strong>Начальная настройка</strong>:
-                    <ul>
-                        <li>Установите приложение через winget для тихой установки или используйте обычный setup.exe, если хотите увидеть параметры установщика.</li>
-                        <li>Если использовался интерактивный установщик, регистрацию форматов изображений можно выбрать прямо там. Само приложение больше не прерывает первый запуск диалогом ассоциаций.</li>
-                        <li>Нажмите <code>F2</code>, чтобы открыть 'Таблицу папок-получателей'.</li>
-                        <li>В этой таблице нажмите 'Выбрать папку' для каждой клавиши (0-9) и выберите папку назначения, куда вы хотите сортировать файлы.</li>
-                        <li>Здесь же можно настроить другие параметры, например, выполнение файловых операций в фоновом режиме или изменение действия по умолчанию с 'Переместить' на 'Копировать'.</li>
-                    </ul>
-                </li>
-                <li><strong>Откройте ваши медиафайлы</strong>:
-                    <ul>
-                        <li>Нажмите кнопку 'Выбрать папку', чтобы найти папку с медиафайлами, которые вы хотите отсортировать.</li>
-                        <li>Или перетащите папку или один медиафайл прямо в окно приложения.</li>
-                    </ul>
-                </li>
-                <li><strong>Сортируйте ваши файлы</strong>:
-                    <ul>
-                        <li>Используйте элементы управления навигацией (клавиши со стрелками, клики/колесо мыши) для просмотра файлов.</li>
-                        <li>Когда вы найдёте файл, который хотите отсортировать, нажмите цифровую клавишу (<code>0</code>-<code>9</code>), соответствующую настроенной вами папке назначения. Файл будет мгновенно перемещён или скопирован.</li>
-                        <li>Если вы ошиблись, нажмите <code>U</code>, чтобы отменить последнее действие.</li>
-                        <li>Чтобы удалить файл, нажмите клавишу <code>Delete</code>.</li>
-                    </ul>
-                </li>
-                <li><strong>Исследуйте и просматривайте</strong>:
-                    <ul>
-                        <li>Используйте режимы слайд-шоу (<code>S</code>, <code>I</code>, <code>F5</code>) для просмотра без помощи рук.</li>
-                        <li>Нажмите <code>F3</code>, чтобы получить быстрый визуальный обзор всей папки на Панели изображений.</li>
-                        <li>Используйте функции масштабирования и поворота по мере необходимости для лучшего просмотра.</li>
-                    </ul>
-                </li>
-            </ol>
-        </div>
+<main>
+  <section class="hero">
+    <div class="kicker">
+      <span data-l="ru"><b>Для Windows 7 / 10 / 11</b> · .NET Framework 4.8 · бесплатно и открытый код (MIT)</span>
+      <span data-l="en"><b>For Windows 7 / 10 / 11</b> · .NET Framework 4.8 · free &amp; open-source (MIT)</span>
+      <span data-l="uk"><b>Для Windows 7 / 10 / 11</b> · .NET Framework 4.8 · безкоштовно та відкритий код (MIT)</span>
     </div>
+    <h1>
+      <span data-l="ru">Быстрый сортировщик фото и видео для Windows</span>
+      <span data-l="en">Fast image &amp; video sorter for Windows</span>
+      <span data-l="uk">Швидкий сортувальник фото та відео для Windows</span>
+    </h1>
+    <p class="lead">
+      <span data-l="ru">Листайте огромные папки с фото и видео на скорости, а затем перемещайте, копируйте, переименовывайте или удаляйте каждый файл одной клавишей. Бесплатно, открытый код, работает офлайн.</span>
+      <span data-l="en">Browse huge folders of photos and videos at speed, then move, copy, rename or delete each file with a single key. Free, open-source, and offline-ready.</span>
+      <span data-l="uk">Гортайте величезні папки з фото та відео на швидкості, а потім переміщуйте, копіюйте, перейменовуйте чи видаляйте кожен файл однією клавішею. Безкоштовно, відкритий код, працює офлайн.</span>
+    </p>
+    <div class="pills">
+      <span class="pill"><b data-l="ru">Слайд-шоу</b><b data-l="en">Slideshow</b><b data-l="uk">Слайд-шоу</b></span>
+      <span class="pill"><b data-l="ru">Сортировка одной клавишей</b><b data-l="en">One-key sorting</b><b data-l="uk">Сортування однією клавішею</b></span>
+      <span class="pill"><b data-l="ru">Панель эскизов</b><b data-l="en">Thumbnail panel</b><b data-l="uk">Панель ескізів</b></span>
+      <span class="pill"><b data-l="ru">LibVLC fallback</b><b data-l="en">LibVLC fallback</b><b data-l="uk">LibVLC fallback</b></span>
+      <span class="pill"><b data-l="ru">OCR + перевод</b><b data-l="en">OCR + translation</b><b data-l="uk">OCR + переклад</b></span>
+    </div>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest" target="_blank" rel="noopener">
+        <span data-l="ru">⤓ Скачать для Windows</span><span data-l="en">⤓ Download for Windows</span><span data-l="uk">⤓ Завантажити для Windows</span>
+      </a>
+      <a class="btn" href="#install">
+        <span data-l="ru">Установка</span><span data-l="en">Install</span><span data-l="uk">Встановлення</span>
+      </a>
+      <a class="btn" href="#usage">
+        <span data-l="ru">Как пользоваться</span><span data-l="en">How to use it</span><span data-l="uk">Як користуватися</span>
+      </a>
+      <a class="btn" href="https://github.com/SerZhyAle/FastMediaSorter_Lite" target="_blank" rel="noopener">
+        <span data-l="ru">Открыть на GitHub</span><span data-l="en">Browse on GitHub</span><span data-l="uk">Відкрити на GitHub</span>
+      </a>
+      <button class="btn" type="button" onclick="setAll(true)">
+        <span data-l="ru">Развернуть всё</span><span data-l="en">Expand all</span><span data-l="uk">Розгорнути все</span>
+      </button>
+      <button class="btn" type="button" onclick="setAll(false)">
+        <span data-l="ru">Свернуть всё</span><span data-l="en">Collapse all</span><span data-l="uk">Згорнути все</span>
+      </button>
+    </div>
+  </section>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const btnEn = document.getElementById('lang-en');
-            const btnRu = document.getElementById('lang-ru');
-            const contentEn = document.getElementById('content-en');
-            const contentRu = document.getElementById('content-ru');
+  <div class="sections">
+    <details class="sec" open id="overview">
+      <summary><span class="secnum" aria-hidden="true">00</span><span class="sechead">
+        <h2 class="sectitle"><span data-l="ru">Что это за программа</span><span data-l="en">What this app is for</span><span data-l="uk">Для чого ця програма</span></h2>
+        <span class="secteaser"><span data-l="ru">Быстрый просмотр, сортировка и cleanup больших медиа-папок</span><span data-l="en">Fast browsing, sorting and cleanup for large media folders</span><span data-l="uk">Швидкий перегляд, сортування та cleanup великих медіапапок</span></span>
+      </span></summary>
+      <div class="secbody">
+        <p>
+          <span data-l="ru">FastMediaSorter LITE нужен для случаев, когда у вас есть большая папка с фото, видео, мемами, сканами или клипами, и её нужно быстро разобрать без тяжёлых каталогизаторов и без десятка лишних кликов на каждый файл.</span>
+          <span data-l="en">FastMediaSorter LITE is for the moments when you have a huge folder full of photos, videos, memes, scans or clips and want to triage it quickly without heavy catalog apps and without spending half a dozen clicks per file.</span>
+          <span data-l="uk">FastMediaSorter LITE потрібен у тих випадках, коли у вас є велика папка з фото, відео, мемами, сканами чи кліпами, і її треба швидко розібрати без важких каталогізаторів і без десятка зайвих кліків на кожен файл.</span>
+        </p>
 
-            btnEn.addEventListener('click', function() {
-                contentEn.classList.remove('hidden');
-                contentRu.classList.add('hidden');
-                btnEn.classList.add('active');
-                btnRu.classList.remove('active');
-            });
+        <div class="grid">
+          <div class="card">
+            <div class="num">01</div>
+            <h3><span data-l="ru">Быстрый пролистыватель</span><span data-l="en">Fast folder browser</span><span data-l="uk">Швидкий переглядач папок</span></h3>
+            <p><span data-l="ru">Стрелки, пробел, прыжки на 10 и 100, случайный выбор, слайд-шоу и быстрый переход по панели эскизов.</span><span data-l="en">Arrow keys, space, jumps by 10 and 100, random pick, slideshow and quick jumps through a thumbnail panel.</span><span data-l="uk">Стрілки, пробіл, стрибки на 10 і 100, випадковий вибір, слайд-шоу та швидкі переходи через панель ескізів.</span></p>
+          </div>
+          <div class="card">
+            <div class="num">02</div>
+            <h3><span data-l="ru">Сортировка одной клавишей</span><span data-l="en">One-key sorting</span><span data-l="uk">Сортування однією клавішею</span></h3>
+            <p><span data-l="ru">Назначьте папки на клавиши 0-9 и отправляйте текущий файл туда мгновенно: move или copy.</span><span data-l="en">Bind folders to keys 0-9 and send the current file there instantly: move or copy.</span><span data-l="uk">Прив'яжіть папки до клавіш 0-9 і миттєво надсилайте туди поточний файл: move або copy.</span></p>
+          </div>
+          <div class="card">
+            <div class="num">03</div>
+            <h3><span data-l="ru">Видео без возни с кодеками</span><span data-l="en">Video without codec hunting</span><span data-l="uk">Відео без полювання на кодеки</span></h3>
+            <p><span data-l="ru">Обычный H.264/MP4 играет прямо в окне, а всё, что встроенный плеер Windows не берет, подхватывает встроенный LibVLC.</span><span data-l="en">Regular H.264/MP4 plays in-window, and whatever the Windows player cannot decode falls back to a bundled LibVLC engine.</span><span data-l="uk">Звичайний H.264/MP4 грає просто у вікні, а все, що вбудований плеєр Windows не бере, підхоплює вбудований LibVLC.</span></p>
+          </div>
+          <div class="card">
+            <div class="num">04</div>
+            <h3><span data-l="ru">OCR и перевод поверх картинки</span><span data-l="en">OCR and image overlay translation</span><span data-l="uk">OCR і переклад поверх зображення</span></h3>
+            <p><span data-l="ru">Удобно для скриншотов, манги, комиксов и сканов на другом языке: распознать текст и наложить перевод прямо на изображение.</span><span data-l="en">Useful for screenshots, manga, comics and foreign-language scans: recognize text and overlay a translation directly on top of the image.</span><span data-l="uk">Зручно для скриншотів, манги, коміксів і сканів іншою мовою: розпізнати текст і накласти переклад просто на зображення.</span></p>
+          </div>
+        </div>
 
-            btnRu.addEventListener('click', function() {
-                contentRu.classList.remove('hidden');
-                contentEn.classList.add('hidden');
-                btnRu.classList.add('active');
-                btnEn.classList.remove('active');
-            });
-        });
-    </script>
+        <figure class="hero-shot">
+          <img class="shot" src="assets/hero.png" alt="FastMediaSorter LITE preview" loading="eager">
+          <figcaption>
+            <span data-l="ru">Коротко о сути: slideshow, панель эскизов, move/copy/rename/delete одной клавишей, LibVLC для сложного видео, Ambilight-фон и OCR-перевод.</span>
+            <span data-l="en">In one frame: slideshow, thumbnail panel, one-key move/copy/rename/delete, LibVLC for tricky video, Ambilight background and OCR translation.</span>
+            <span data-l="uk">В одному кадрі: slideshow, панель ескізів, move/copy/rename/delete однією клавішею, LibVLC для складного відео, Ambilight-фон і OCR-переклад.</span>
+          </figcaption>
+        </figure>
+
+        <div class="note">
+          <div class="tag"><span data-l="ru">Local-first</span><span data-l="en">Local-first</span><span data-l="uk">Local-first</span></div>
+          <p><span data-l="ru">Сама сортировка и просмотр работают локально. GitHub-релизы уже включают видеодвижки и OCR-языковые пакеты, поэтому при первом запуске ничего не подкачивается из сети.</span><span data-l="en">Sorting and browsing work locally. GitHub release builds already include the video runtimes and OCR language packs, so nothing extra is fetched on first launch.</span><span data-l="uk">Сортування та перегляд працюють локально. GitHub-релізи вже містять відеорушії та OCR-мовні пакети, тож під час першого запуску нічого не докачується з мережі.</span></p>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec" id="install">
+      <summary><span class="secnum" aria-hidden="true">01</span><span class="sechead">
+        <h2 class="sectitle"><span data-l="ru">Установка и загрузка</span><span data-l="en">Install and download</span><span data-l="uk">Встановлення та завантаження</span></h2>
+        <span class="secteaser"><span data-l="ru">winget, GitHub release, portable ZIP и Microsoft Store</span><span data-l="en">winget, GitHub release, portable ZIP and Microsoft Store</span><span data-l="uk">winget, GitHub release, portable ZIP і Microsoft Store</span></span>
+      </span></summary>
+      <div class="secbody">
+        <p>
+          <span data-l="ru">Самый быстрый путь на Windows 10/11 - через <code>winget</code>. Откройте Windows Terminal или PowerShell и выполните:</span>
+          <span data-l="en">The fastest route on Windows 10/11 is <code>winget</code>. Open Windows Terminal or PowerShell and run:</span>
+          <span data-l="uk">Найшвидший шлях на Windows 10/11 - через <code>winget</code>. Відкрийте Windows Terminal або PowerShell і виконайте:</span>
+        </p>
+
+        <div class="copybox">
+          <code><span class="pr">&gt;</span><span id="winget-cmd">winget install --id SerZhyAle.FastMediaSorter</span></code>
+          <button class="btn" type="button" onclick="copyCmd(this)" aria-label="Copy command">
+            <span data-l="ru">Копировать</span><span data-l="en">Copy</span><span data-l="uk">Копіювати</span>
+          </button>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <h3><span data-l="ru">winget</span><span data-l="en">winget</span><span data-l="uk">winget</span></h3>
+            <p><span data-l="ru">Тихая установка в per-user режиме. Без лишних диалогов во время инсталляции.</span><span data-l="en">Silent per-user install. No extra dialogs during setup.</span><span data-l="uk">Тиха установка в per-user режимі. Без зайвих діалогів під час інсталяції.</span></p>
+          </div>
+          <div class="card">
+            <h3><span data-l="ru">GitHub Releases</span><span data-l="en">GitHub Releases</span><span data-l="uk">GitHub Releases</span></h3>
+            <p><span data-l="ru"><code>setup.exe</code> для обычной установки и <code>.zip</code> для portable/offline-запуска. Оба варианта уже содержат VLC runtimes и OCR packs.</span><span data-l="en"><code>setup.exe</code> for the regular install and <code>.zip</code> for a portable/offline bundle. Both already contain VLC runtimes and OCR packs.</span><span data-l="uk"><code>setup.exe</code> для звичайного встановлення та <code>.zip</code> для portable/offline-пакета. Обидва варіанти вже містять VLC runtimes і OCR packs.</span></p>
+          </div>
+          <div class="card">
+            <h3>Microsoft Store</h3>
+            <p><span data-l="ru">Альтернативный канал для тех, кто предпочитает магазин и автообновления.</span><span data-l="en">An alternative channel for people who prefer the Store and automatic updates.</span><span data-l="uk">Альтернативний канал для тих, хто віддає перевагу Store та автооновленням.</span></p>
+          </div>
+        </div>
+
+        <div class="cta">
+          <a class="btn primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest" target="_blank" rel="noopener">
+            <span data-l="ru">Открыть релизы</span><span data-l="en">Open releases</span><span data-l="uk">Відкрити релізи</span>
+          </a>
+          <a class="btn" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest" target="_blank" rel="noopener">
+            <span data-l="ru">Скачать setup / zip</span><span data-l="en">Download setup / zip</span><span data-l="uk">Завантажити setup / zip</span>
+          </a>
+          <a class="btn" href="https://apps.microsoft.com/search?query=FastMediaSorter" target="_blank" rel="noopener">Microsoft Store</a>
+        </div>
+
+        <ul>
+          <li><span data-l="ru">В интерактивном setup можно сразу зарегистрировать программу для распространённых форматов изображений.</span><span data-l="en">The interactive setup can optionally register the app for common image formats.</span><span data-l="uk">В інтерактивному setup можна одразу зареєструвати програму для поширених форматів зображень.</span></li>
+          <li><span data-l="ru">На Windows 10/11 система может ещё раз попросить подтвердить выбор в Default Apps.</span><span data-l="en">On Windows 10/11 the system may still ask you to confirm the choice in Default Apps.</span><span data-l="uk">На Windows 10/11 система може ще раз попросити підтвердити вибір у Default Apps.</span></li>
+          <li><span data-l="ru">Машинный перевод зависит от выбранного провайдера: локальный Ollama требует свою установку и модель, облачные сервисы требуют сеть.</span><span data-l="en">Machine translation still depends on the provider you configure: local Ollama needs its own install and model, while cloud services need network access.</span><span data-l="uk">Машинний переклад залежить від вибраного провайдера: локальний Ollama потребує власної інсталяції та моделі, а хмарним сервісам потрібна мережа.</span></li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="sec">
+      <summary><span class="secnum" aria-hidden="true">02</span><span class="sechead">
+        <h2 class="sectitle"><span data-l="ru">Ключевые возможности</span><span data-l="en">Core features</span><span data-l="uk">Ключові можливості</span></h2>
+        <span class="secteaser"><span data-l="ru">Всё, что нужно для быстрой сортировки и просмотра медиа</span><span data-l="en">Everything you need for fast media sorting and browsing</span><span data-l="uk">Усе, що потрібно для швидкого сортування та перегляду медіа</span></span>
+      </span></summary>
+      <div class="secbody">
+        <div class="grid">
+          <div class="card"><h3><span data-l="ru">Быстрая навигация</span><span data-l="en">Fast navigation</span><span data-l="uk">Швидка навігація</span></h3><p><span data-l="ru">Листание тысяч файлов с клавиатуры, мышью и экранными кнопками. Прыжки на 10/100, к началу, концу и случайному файлу.</span><span data-l="en">Browse thousands of files from the keyboard, mouse or on-screen buttons. Jump by 10/100, to the start, the end or a random file.</span><span data-l="uk">Гортання тисяч файлів з клавіатури, миші та екранних кнопок. Стрибки на 10/100, до початку, кінця або випадкового файлу.</span></p></div>
+          <div class="card"><h3><span data-l="ru">Слайд-шоу</span><span data-l="en">Slideshow modes</span><span data-l="uk">Слайд-шоу</span></h3><p><span data-l="ru">Автоматический просмотр по порядку или вперемешку, включая ускорение повторным нажатием.</span><span data-l="en">Automatic playback in order or shuffled, including faster speed on repeated key presses.</span><span data-l="uk">Автоматичний перегляд за порядком або впереміш, включно з прискоренням повторним натисканням.</span></p></div>
+          <div class="card"><h3><span data-l="ru">Папки на 0-9</span><span data-l="en">Folder shortcuts on 0-9</span><span data-l="uk">Папки на 0-9</span></h3><p><span data-l="ru">Привязываете до 10 папок и дальше сортируете текущий файл одним нажатием.</span><span data-l="en">Bind up to 10 destination folders and sort the current file with a single press.</span><span data-l="uk">Прив'язуєте до 10 папок призначення і далі сортуєте поточний файл одним натисканням.</span></p></div>
+          <div class="card"><h3><span data-l="ru">Переименование, удаление, undo</span><span data-l="en">Rename, delete, undo</span><span data-l="uk">Перейменування, видалення, undo</span></h3><p><span data-l="ru">Переименовать по <kbd>F6</kbd>, удалить по <kbd>D</kbd>/<kbd>Del</kbd>, отменить последнее действие по <kbd>U</kbd>.</span><span data-l="en">Rename with <kbd>F6</kbd>, delete with <kbd>D</kbd>/<kbd>Del</kbd>, undo the last file operation with <kbd>U</kbd>.</span><span data-l="uk">Перейменувати через <kbd>F6</kbd>, видалити через <kbd>D</kbd>/<kbd>Del</kbd>, скасувати останню файлову операцію через <kbd>U</kbd>.</span></p></div>
+          <div class="card"><h3><span data-l="ru">Панель эскизов и таблица</span><span data-l="en">Thumbnail panel and table view</span><span data-l="uk">Панель ескізів і таблиця</span></h3><p><span data-l="ru">Быстрый визуальный обзор текущей папки и отдельная таблица для папок назначения и настроек.</span><span data-l="en">A quick visual overview of the current folder and a dedicated table for destination folders and settings.</span><span data-l="uk">Швидкий візуальний огляд поточної папки та окрема таблиця для папок призначення і налаштувань.</span></p></div>
+          <div class="card"><h3><span data-l="ru">Широкая поддержка видео</span><span data-l="en">Broad video support</span><span data-l="uk">Широка підтримка відео</span></h3><p><span data-l="ru">Если встроенный путь не справляется, приложение автоматически переключается на LibVLC.</span><span data-l="en">If the built-in path cannot handle a clip, the app automatically falls back to LibVLC.</span><span data-l="uk">Якщо вбудований шлях не справляється з роликом, застосунок автоматично перемикається на LibVLC.</span></p></div>
+          <div class="card"><h3><span data-l="ru">Ambilight-фон</span><span data-l="en">Ambilight-style background</span><span data-l="uk">Ambilight-фон</span></h3><p><span data-l="ru">Боковые поля могут не быть просто чёрными: можно включить цветовое или перспективное продолжение изображения.</span><span data-l="en">Side bars do not have to stay flat black: you can enable color or perspective continuation from the image itself.</span><span data-l="uk">Бокові поля не обов'язково лишаються просто чорними: можна ввімкнути кольорове чи перспективне продовження зображення.</span></p></div>
+          <div class="card"><h3><span data-l="ru">OCR + перевод</span><span data-l="en">OCR + translation</span><span data-l="uk">OCR + переклад</span></h3><p><span data-l="ru">Распознавание текста через Tesseract и наложение перевода прямо на изображение.</span><span data-l="en">Text recognition through Tesseract and translation overlay directly on the image.</span><span data-l="uk">Розпізнавання тексту через Tesseract і накладання перекладу просто на зображення.</span></p></div>
+          <div class="card"><h3><span data-l="ru">Сохранение настроек</span><span data-l="en">Saved preferences</span><span data-l="uk">Збереження налаштувань</span></h3><p><span data-l="ru">Недавние папки, режим copy/move, язык интерфейса и другие рабочие настройки сохраняются между сессиями.</span><span data-l="en">Recent folders, copy/move mode, the UI language and other working preferences persist between sessions.</span><span data-l="uk">Нещодавні папки, режим copy/move, мова інтерфейсу та інші робочі налаштування зберігаються між сесіями.</span></p></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec" id="usage">
+      <summary><span class="secnum" aria-hidden="true">03</span><span class="sechead">
+        <h2 class="sectitle"><span data-l="ru">Как пользоваться</span><span data-l="en">How to use it</span><span data-l="uk">Як користуватися</span></h2>
+        <span class="secteaser"><span data-l="ru">От первой папки до быстрой сортировки за несколько шагов</span><span data-l="en">From the first folder to fast triage in a few steps</span><span data-l="uk">Від першої папки до швидкого сортування за кілька кроків</span></span>
+      </span></summary>
+      <div class="secbody">
+        <div class="step-grid">
+          <div class="card"><div class="num">01</div><h3><span data-l="ru">Откройте папку</span><span data-l="en">Open a folder</span><span data-l="uk">Відкрийте папку</span></h3><p><span data-l="ru">Запустите программу и выберите папку с фото и видео, либо откройте любой медиафайл прямо из Проводника.</span><span data-l="en">Launch the app and pick a folder with photos and videos, or open any media file straight from Explorer.</span><span data-l="uk">Запустіть програму та виберіть папку з фото й відео, або відкрийте будь-який медіафайл просто з Провідника.</span></p></div>
+          <div class="card"><div class="num">02</div><h3><span data-l="ru">Назначьте папки на цифры</span><span data-l="en">Assign folders to digits</span><span data-l="uk">Призначте папки на цифри</span></h3><p><span data-l="ru">Откройте таблицу папок назначения, привяжите целевые папки к клавишам 0-9 и выберите, перемещать файлы или копировать.</span><span data-l="en">Open the destination-folder table, bind target folders to keys 0-9 and choose whether files are moved or copied.</span><span data-l="uk">Відкрийте таблицю папок призначення, прив'яжіть цільові папки до клавіш 0-9 і виберіть, переміщувати файли чи копіювати.</span></p></div>
+          <div class="card"><div class="num">03</div><h3><span data-l="ru">Просматривайте файлы</span><span data-l="en">Browse files</span><span data-l="uk">Переглядайте файли</span></h3><p><span data-l="ru">Листайте стрелками, пробелом или запускайте slideshow, если хотите просто быстро пройти всю папку.</span><span data-l="en">Step through with the arrows or space, or start a slideshow if you simply want to sweep through the whole folder quickly.</span><span data-l="uk">Гортайте стрілками, пробілом або запускайте slideshow, якщо хочете просто швидко пройти всю папку.</span></p></div>
+          <div class="card"><div class="num">04</div><h3><span data-l="ru">Сортируйте одной клавишей</span><span data-l="en">Sort with one key</span><span data-l="uk">Сортуйте однією клавішею</span></h3><p><span data-l="ru">Нажмите цифру, чтобы отправить файл в нужную папку. Для удаления есть <kbd>D</kbd>, для rename - <kbd>F6</kbd>, для undo - <kbd>U</kbd>.</span><span data-l="en">Press a digit to send the file to its target folder. Use <kbd>D</kbd> to delete, <kbd>F6</kbd> to rename and <kbd>U</kbd> to undo.</span><span data-l="uk">Натисніть цифру, щоб відправити файл у потрібну папку. Для видалення є <kbd>D</kbd>, для rename - <kbd>F6</kbd>, для undo - <kbd>U</kbd>.</span></p></div>
+          <div class="card"><div class="num">05</div><h3><span data-l="ru">Подключайте дополнительные режимы</span><span data-l="en">Use the extra modes</span><span data-l="uk">Підключайте додаткові режими</span></h3><p><span data-l="ru">Когда нужно, открывайте панель эскизов, включайте полноэкранный режим, вращайте изображения или запускайте OCR + перевод.</span><span data-l="en">When needed, open the thumbnail panel, go fullscreen, rotate images or launch OCR + translation.</span><span data-l="uk">Коли потрібно, відкривайте панель ескізів, вмикайте повноекранний режим, обертайте зображення або запускайте OCR + переклад.</span></p></div>
+        </div>
+
+        <figure>
+          <img class="shot" src="images/instruct01.png" alt="Main window overview" loading="lazy">
+          <figcaption>
+            <span data-l="ru">Главное окно: выбор папки, недавние директории, навигация, статус операции, slideshow и быстрые кнопки доступа.</span>
+            <span data-l="en">The main window: folder picker, recent directories, navigation, operation status, slideshow controls and quick action buttons.</span>
+            <span data-l="uk">Головне вікно: вибір папки, недавні директорії, навігація, статус операції, slideshow і кнопки швидкого доступу.</span>
+          </figcaption>
+        </figure>
+      </div>
+    </details>
+
+    <details class="sec" id="shortcuts">
+      <summary><span class="secnum" aria-hidden="true">04</span><span class="sechead">
+        <h2 class="sectitle"><span data-l="ru">Горячие клавиши</span><span data-l="en">Keyboard shortcuts</span><span data-l="uk">Гарячі клавіші</span></h2>
+        <span class="secteaser"><span data-l="ru">Программа строится вокруг клавиатуры; шпаргалка есть и внутри по F1</span><span data-l="en">The app is keyboard-first; the built-in cheat sheet is also available on F1</span><span data-l="uk">Застосунок побудований навколо клавіатури; вбудована шпаргалка також доступна по F1</span></span>
+      </span></summary>
+      <div class="secbody">
+        <div class="keys-grid">
+          <div>
+            <h4><span data-l="ru">Навигация</span><span data-l="en">Navigation</span><span data-l="uk">Навігація</span></h4>
+            <div class="krow"><span class="d"><span data-l="ru">Следующий файл</span><span data-l="en">Next file</span><span data-l="uk">Наступний файл</span></span><span class="kk"><kbd>Right</kbd><kbd>Space</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Предыдущий файл</span><span data-l="en">Previous file</span><span data-l="uk">Попередній файл</span></span><span class="kk"><kbd>Left</kbd><kbd>Backspace</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Прыжок на 10</span><span data-l="en">Jump by 10</span><span data-l="uk">Стрибок на 10</span></span><span class="kk"><kbd>PgUp</kbd><kbd>PgDn</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Прыжок на 100</span><span data-l="en">Jump by 100</span><span data-l="uk">Стрибок на 100</span></span><span class="kk"><kbd>Shift</kbd>+<kbd>PgUp</kbd>/<kbd>PgDn</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Первый / последний</span><span data-l="en">First / last</span><span data-l="uk">Перший / останній</span></span><span class="kk"><kbd>Home</kbd><kbd>End</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Случайный файл</span><span data-l="en">Random file</span><span data-l="uk">Випадковий файл</span></span><span class="kk"><kbd>Y</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Открыть / выбрать файл</span><span data-l="en">Open / choose file</span><span data-l="uk">Відкрити / вибрати файл</span></span><span class="kk"><kbd>F</kbd><kbd>F4</kbd></span></div>
+          </div>
+          <div>
+            <h4><span data-l="ru">Файловые операции</span><span data-l="en">File operations</span><span data-l="uk">Файлові операції</span></h4>
+            <div class="krow"><span class="d"><span data-l="ru">Переместить / копировать в папку</span><span data-l="en">Move / copy to folder</span><span data-l="uk">Перемістити / копіювати в папку</span></span><span class="kk"><kbd>1</kbd>..<kbd>9</kbd><kbd>0</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Удалить файл</span><span data-l="en">Delete file</span><span data-l="uk">Видалити файл</span></span><span class="kk"><kbd>D</kbd><kbd>Del</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Переименовать</span><span data-l="en">Rename file</span><span data-l="uk">Перейменувати</span></span><span class="kk"><kbd>F6</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Отменить действие</span><span data-l="en">Undo last action</span><span data-l="uk">Скасувати дію</span></span><span class="kk"><kbd>U</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Масштаб / сброс</span><span data-l="en">Zoom / reset zoom</span><span data-l="uk">Масштаб / скидання</span></span><span class="kk"><kbd>Ctrl</kbd>+<span style="margin:0 2px">wheel</span><kbd>Alt</kbd>+<span style="margin-left:2px">wheel</span></span></div>
+          </div>
+          <div>
+            <h4><span data-l="ru">Просмотр</span><span data-l="en">View</span><span data-l="uk">Перегляд</span></h4>
+            <div class="krow"><span class="d"><span data-l="ru">Слайд-шоу</span><span data-l="en">Slideshow</span><span data-l="uk">Слайд-шоу</span></span><span class="kk"><kbd>S</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Случайное слайд-шоу</span><span data-l="en">Random slideshow</span><span data-l="uk">Випадкове слайд-шоу</span></span><span class="kk"><kbd>I</kbd><kbd>F5</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Полный / максимальный экран</span><span data-l="en">Fullscreen / max</span><span data-l="uk">Повний / макс. екран</span></span><span class="kk"><kbd>F7</kbd><kbd>F11</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Поворот по / против часовой</span><span data-l="en">Rotate CW / CCW</span><span data-l="uk">Поворот за / проти годинникової</span></span><span class="kk"><kbd>R</kbd><kbd>Shift</kbd>+<kbd>R</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Выход / закрыть</span><span data-l="en">Exit / close</span><span data-l="uk">Вийти / закрити</span></span><span class="kk"><kbd>Esc</kbd><kbd>X</kbd><kbd>Q</kbd></span></div>
+          </div>
+          <div>
+            <h4><span data-l="ru">Инструменты</span><span data-l="en">Tools</span><span data-l="uk">Інструменти</span></h4>
+            <div class="krow"><span class="d"><span data-l="ru">Подсказка</span><span data-l="en">Help overlay</span><span data-l="uk">Підказка</span></span><span class="kk"><kbd>F1</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Таблица файлов / папок</span><span data-l="en">Table view / folders</span><span data-l="uk">Таблиця файлів / папок</span></span><span class="kk"><kbd>F2</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Панель эскизов</span><span data-l="en">Thumbnail panel</span><span data-l="uk">Панель ескізів</span></span><span class="kk"><kbd>F3</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">OCR + перевод</span><span data-l="en">OCR + translate</span><span data-l="uk">OCR + переклад</span></span><span class="kk"><kbd>T</kbd></span></div>
+            <div class="krow"><span class="d"><span data-l="ru">Авто-OCR</span><span data-l="en">Toggle auto-OCR</span><span data-l="uk">Авто-OCR</span></span><span class="kk"><kbd>Shift</kbd>+<kbd>T</kbd></span></div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec">
+      <summary><span class="secnum" aria-hidden="true">05</span><span class="sechead">
+        <h2 class="sectitle"><span data-l="ru">Интерфейс на реальных скриншотах</span><span data-l="en">The interface on real screenshots</span><span data-l="uk">Інтерфейс на реальних скриншотах</span></h2>
+        <span class="secteaser"><span data-l="ru">Где что находится в окне программы и таблицах настроек</span><span data-l="en">Where the controls live in the main window and settings tables</span><span data-l="uk">Де що знаходиться у головному вікні та таблицях налаштувань</span></span>
+      </span></summary>
+      <div class="secbody">
+        <div class="shot-grid">
+          <figure>
+            <img class="shot" src="images/instruct01.png" alt="Main window map" loading="lazy">
+            <figcaption><span data-l="ru">Главная панель: folder chooser, recent folders, prev/next, slideshow и статус операций.</span><span data-l="en">Main toolbar: folder chooser, recent folders, prev/next, slideshow and operation status.</span><span data-l="uk">Головна панель: folder chooser, recent folders, prev/next, slideshow і статус операцій.</span></figcaption>
+          </figure>
+          <figure>
+            <img class="shot" src="images/instruct02.png" alt="Quick actions map" loading="lazy">
+            <figcaption><span data-l="ru">Быстрые действия: выбор папки, reload, панель эскизов, rename, delete и смена языка.</span><span data-l="en">Quick actions: choose folder, reload, thumbnail panel, rename, delete and language switch.</span><span data-l="uk">Швидкі дії: вибір папки, reload, панель ескізів, rename, delete і перемикання мови.</span></figcaption>
+          </figure>
+          <figure>
+            <img class="shot" src="images/instruct03.png" alt="Destination folders table" loading="lazy">
+            <figcaption><span data-l="ru">Таблица папок назначения: до 10 быстрых пунктов для move/copy на клавишах 0-9.</span><span data-l="en">Destination-folder table: up to 10 quick targets for move/copy on keys 0-9.</span><span data-l="uk">Таблиця папок призначення: до 10 швидких цілей для move/copy на клавішах 0-9.</span></figcaption>
+          </figure>
+          <figure>
+            <img class="shot" src="images/instruct04.png" alt="Settings tab" loading="lazy">
+            <figcaption><span data-l="ru">Таблица настроек: copy mode, фоновая обработка, Ambilight и параметры панели изображений.</span><span data-l="en">Settings table: copy mode, background file operations, Ambilight and image-panel settings.</span><span data-l="uk">Таблиця налаштувань: copy mode, фонова обробка файлів, Ambilight і параметри панелі зображень.</span></figcaption>
+          </figure>
+          <figure>
+            <img class="shot" src="images/instruct05.png" alt="Thumbnail panel" loading="lazy">
+            <figcaption><span data-l="ru">Панель эскизов: визуальный обзор папки и быстрый прыжок к нужному файлу.</span><span data-l="en">Thumbnail panel: a visual overview of the folder and a quick jump to the file you need.</span><span data-l="uk">Панель ескізів: візуальний огляд папки та швидкий перехід до потрібного файлу.</span></figcaption>
+          </figure>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec" id="examples">
+      <summary><span class="secnum" aria-hidden="true">06</span><span class="sechead">
+        <h2 class="sectitle"><span data-l="ru">Примеры использования</span><span data-l="en">Usage examples</span><span data-l="uk">Приклади використання</span></h2>
+        <span class="secteaser"><span data-l="ru">Сценарии, где программа реально экономит время</span><span data-l="en">Workflows where it saves real time</span><span data-l="uk">Сценарії, де програма реально економить час</span></span>
+      </span></summary>
+      <div class="secbody">
+        <div class="grid">
+          <div class="card">
+            <h3><span data-l="ru">Разбор фотосвалки</span><span data-l="en">Cull a photo dump</span><span data-l="uk">Розбір фотозвалища</span></h3>
+            <p><span data-l="ru">Откройте импорт с карты памяти, привяжите папки «Оставить», «Правка» и «Корзина» к клавишам 1-3 и пролетайте стрелками: одно нажатие на фото.</span><span data-l="en">Point it at a memory-card import, bind "Keep", "Edit" and "Trash" folders to keys 1-3, then fly through with the arrows: one keypress per photo.</span><span data-l="uk">Відкрийте імпорт з карти пам'яті, прив'яжіть папки «Залишити», «Правка» та «Кошик» до клавіш 1-3 і пролітайте стрілками: одне натискання на фото.</span></p>
+          </div>
+          <div class="card">
+            <h3><span data-l="ru">Порядок в видеоколлекции</span><span data-l="en">Tidy a video collection</span><span data-l="uk">Лад у відеоколекції</span></h3>
+            <p><span data-l="ru">Просматривайте клипы любого кодека прямо в окне, затем раскладывайте их по папкам. LibVLC берет форматы, которые не тянет системный плеер.</span><span data-l="en">Preview clips of any codec right in the app window, then distribute them into folders. LibVLC covers the formats your system player cannot handle.</span><span data-l="uk">Переглядайте кліпи будь-якого кодека просто у вікні програми, а потім розкладайте їх по папках. LibVLC бере формати, які не тягне системний плеєр.</span></p>
+          </div>
+          <div class="card">
+            <h3><span data-l="ru">Чтение картинок на другом языке</span><span data-l="en">Read foreign-language images</span><span data-l="uk">Читання зображень іншою мовою</span></h3>
+            <p><span data-l="ru">Откройте скриншот, страницу манги или скан, нажмите <kbd>T</kbd> и читайте перевод, наложенный прямо на изображение.</span><span data-l="en">Open a screenshot, manga page or scan, press <kbd>T</kbd>, and read the translated text overlaid directly on top of the picture.</span><span data-l="uk">Відкрийте скриншот, сторінку манги чи скан, натисніть <kbd>T</kbd> і читайте переклад, накладений просто поверх зображення.</span></p>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec">
+      <summary><span class="secnum" aria-hidden="true">07</span><span class="sechead">
+        <h2 class="sectitle"><span data-l="ru">Видео, OCR и offline-пакет</span><span data-l="en">Video, OCR and the offline bundle</span><span data-l="uk">Відео, OCR та offline-пакет</span></h2>
+        <span class="secteaser"><span data-l="ru">Почему программа не упирается в системный плеер и что уже есть в релизах</span><span data-l="en">Why it does not stop at the system player and what is already included in the releases</span><span data-l="uk">Чому програма не впирається в системний плеєр і що вже є в релізах</span></span>
+      </span></summary>
+      <div class="secbody">
+        <p><span data-l="ru">FastMediaSorter сначала пытается использовать обычный путь воспроизведения Windows для простых файлов, а для более капризных форматов автоматически переключается на встроенный LibVLC. Это особенно полезно на старых архивах, экзотических кодеках и сборных видеопапках, где системный плеер ведёт себя непредсказуемо.</span><span data-l="en">FastMediaSorter first uses the regular Windows playback path for simple files and then automatically falls back to a bundled LibVLC engine for trickier formats. That matters most on old archives, odd codecs and mixed video folders where the system player behaves inconsistently.</span><span data-l="uk">FastMediaSorter спершу використовує звичайний шлях відтворення Windows для простих файлів, а для більш вибагливих форматів автоматично перемикається на вбудований LibVLC. Це особливо корисно на старих архівах, екзотичних кодеках і змішаних відеопапках, де системний плеєр поводиться непередбачувано.</span></p>
+
+        <div class="note">
+          <div class="tag">OCR</div>
+          <p><span data-l="ru">В GitHub-сборках уже лежат OCR language packs, поэтому локальное распознавание работает без дополнительной догрузки. Но сам машинный перевод зависит от того, какой backend вы настроите: локальный или облачный.</span><span data-l="en">The GitHub builds already ship OCR language packs, so local recognition works without an extra download. The translation step itself still depends on whichever backend you configure: local or cloud.</span><span data-l="uk">У GitHub-збірках уже є OCR language packs, тому локальне розпізнавання працює без додаткового завантаження. Сам переклад усе ще залежить від того, який backend ви налаштуєте: локальний чи хмарний.</span></p>
+        </div>
+
+        <ul>
+          <li><span data-l="ru">Обычные <code>setup.exe</code> и portable <code>.zip</code> уже offline-ready.</span><span data-l="en">Both the regular <code>setup.exe</code> and the portable <code>.zip</code> are already offline-ready.</span><span data-l="uk">І звичайний <code>setup.exe</code>, і portable <code>.zip</code> уже offline-ready.</span></li>
+          <li><span data-l="ru">Для OCR используется Tesseract; для сложного видео - LibVLC.</span><span data-l="en">Tesseract handles OCR; LibVLC handles difficult video formats.</span><span data-l="uk">За OCR відповідає Tesseract; за складні відеоформати - LibVLC.</span></li>
+          <li><span data-l="ru">Если вам нужен privacy-friendly режим, основные действия сортировки и просмотра можно делать вообще без облака.</span><span data-l="en">If you want a privacy-friendly workflow, the core sorting and browsing features can be used without any cloud service at all.</span><span data-l="uk">Якщо вам потрібен privacy-friendly режим, основні дії сортування й перегляду можна робити взагалі без хмари.</span></li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="sec">
+      <summary><span class="secnum" aria-hidden="true">08</span><span class="sechead">
+        <h2 class="sectitle"><span data-l="ru">Мобильная и сопутствующие программы</span><span data-l="en">Mobile and companion apps</span><span data-l="uk">Мобільна та супутні програми</span></h2>
+        <span class="secteaser"><span data-l="ru">Android-версия и другие инструменты того же автора</span><span data-l="en">The Android version and other tools by the same author</span><span data-l="uk">Android-версія та інші інструменти того ж автора</span></span>
+      </span></summary>
+      <div class="secbody">
+        <div class="note">
+          <div class="tag">Android</div>
+          <p><strong>FastMediaSorter v2</strong> <span data-l="ru">- та же идея сортировки в дороге: локальные файлы, сетевые диски (SMB, SFTP, FTP) и облака (Google Drive, OneDrive, Dropbox), встроенный плеер, EPUB-читалка и перевод по OCR.</span><span data-l="en">- the same sorting idea on the go: local files, network drives (SMB, SFTP, FTP) and cloud storage (Google Drive, OneDrive, Dropbox), a built-in player, EPUB reader and OCR translation.</span><span data-l="uk">- та сама ідея сортування в дорозі: локальні файли, мережеві диски (SMB, SFTP, FTP) та хмари (Google Drive, OneDrive, Dropbox), вбудований плеєр, EPUB-читалка й переклад через OCR.</span> <a href="https://github.com/SerZhyAle/FastMediaSorter_mob_v2" target="_blank" rel="noopener">GitHub →</a></p>
+        </div>
+
+        <ul>
+          <li><strong>doc-html-translate</strong> <span data-l="ru">- конвертер EPUB / PDF / FB2 / MOBI / TXT / Markdown / HTML в локальный HTML с опциональным переводом.</span><span data-l="en">- converts EPUB / PDF / FB2 / MOBI / TXT / Markdown / HTML to local HTML with optional translation.</span><span data-l="uk">- конвертує EPUB / PDF / FB2 / MOBI / TXT / Markdown / HTML у локальний HTML з опційним перекладом.</span> <a href="https://github.com/SerZhyAle/doc-html-translate" target="_blank" rel="noopener">GitHub →</a> · <code>winget install SerZhyAle.DocHtmlTranslate</code></li>
+          <li><strong>Universal Agent Kit</strong> <span data-l="ru">- набор пресетов и инструментов для ИИ-агентов.</span><span data-l="en">- a portable set of presets and tooling for AI agents.</span><span data-l="uk">- набір пресетів та інструментів для ШІ-агентів.</span> <a href="https://serzhyale.github.io/universal-agent-kit/" target="_blank" rel="noopener">serzhyale.github.io/universal-agent-kit →</a></li>
+        </ul>
+      </div>
+    </details>
+  </div>
+</main>
+
+<footer>
+  <div data-l="ru">
+    <strong>FastMediaSorter LITE</strong> - быстрый сортировщик фото и видео для Windows. Бесплатно, открытый код, сделано одним разработчиком. Звёзды, issue и pull request всегда приветствуются.
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest" target="_blank" rel="noopener">⤓ Скачать для Windows</a>
+      <a class="btn" href="https://github.com/SerZhyAle/FastMediaSorter_Lite" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn" href="privacy.html">Конфиденциальность</a>
+    </div>
+    <p class="muted">Лицензия MIT · видеодвижок LibVLC · OCR на Tesseract.</p>
+  </div>
+  <div data-l="en">
+    <strong>FastMediaSorter LITE</strong> - a fast image &amp; video sorter for Windows. Free, open-source and built by a single developer. Stars, issues and pull requests are always welcome.
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest" target="_blank" rel="noopener">⤓ Download for Windows</a>
+      <a class="btn" href="https://github.com/SerZhyAle/FastMediaSorter_Lite" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn" href="privacy.html">Privacy</a>
+    </div>
+    <p class="muted">MIT License · LibVLC playback engine · Tesseract OCR.</p>
+  </div>
+  <div data-l="uk">
+    <strong>FastMediaSorter LITE</strong> - швидкий сортувальник фото та відео для Windows. Безкоштовно, відкритий код, зроблено одним розробником. Зірки, issue та pull request завжди вітаються.
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest" target="_blank" rel="noopener">⤓ Завантажити для Windows</a>
+      <a class="btn" href="https://github.com/SerZhyAle/FastMediaSorter_Lite" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn" href="privacy.html">Конфіденційність</a>
+    </div>
+    <p class="muted">Ліцензія MIT · відеорушій LibVLC · OCR на Tesseract.</p>
+  </div>
+  <p class="author">
+    <span data-l="ru">Автор</span><span data-l="en">Author</span><span data-l="uk">Автор</span>:
+    <a href="https://sza.od.ua" target="_blank" rel="noopener">SZA.od.ua</a> ·
+    <a href="mailto:sza@ukr.net">sza@ukr.net</a> ·
+    <a href="https://github.com/SerZhyAle" target="_blank" rel="noopener">github.com/SerZhyAle</a>
+  </p>
+</footer>
+
+<script>
+  var I18N = {
+    ru:{
+      title:'FastMediaSorter LITE - быстрый сортировщик фото и видео для Windows',
+      desc:'Быстрый сортировщик изображений и видео для Windows: слайд-шоу, перемещение / копирование / переименование / удаление одной клавишей, широкая поддержка видео, фон Ambilight и перевод по OCR. Бесплатно и с открытым кодом.',
+      langGroup:'Язык', theme:'Тема', toLight:'Включить светлую тему', toDark:'Включить тёмную тему', copied:'Скопировано'
+    },
+    en:{
+      title:'FastMediaSorter LITE - fast image & video sorter for Windows',
+      desc:'A fast image and video sorter for Windows: slideshow, one-key move / copy / rename / delete, broad video playback, Ambilight background and OCR translation. Free and open-source.',
+      langGroup:'Language', theme:'Theme', toLight:'Switch to light theme', toDark:'Switch to dark theme', copied:'Copied'
+    },
+    uk:{
+      title:'FastMediaSorter LITE - швидкий сортувальник фото та відео для Windows',
+      desc:'Швидкий сортувальник зображень і відео для Windows: слайд-шоу, переміщення / копіювання / перейменування / видалення однією клавішею, широка підтримка відео, фон Ambilight і переклад через OCR. Безкоштовно та з відкритим кодом.',
+      langGroup:'Мова', theme:'Тема', toLight:'Увімкнути світлу тему', toDark:'Увімкнути темну тему', copied:'Скопійовано'
+    }
+  };
+  function metaSet(sel, val){
+    var m = document.querySelector(sel);
+    if(m) m.setAttribute('content', val);
+  }
+  function applyThemeLabel(){
+    var d = document.documentElement;
+    var l = d.getAttribute('data-lang') || 'en';
+    var m = I18N[l] || I18N.en;
+    var dark = d.getAttribute('data-theme') !== 'light';
+    var b = document.getElementById('themeBtn');
+    if(b){
+      b.setAttribute('aria-label', dark ? m.toLight : m.toDark);
+      b.setAttribute('title', m.theme);
+      b.setAttribute('aria-pressed', String(!dark));
+    }
+    metaSet('meta[name="theme-color"]', dark ? '#0f1115' : '#f7f8fa');
+  }
+  function applyLang(l){
+    var d = document.documentElement;
+    var m = I18N[l] || I18N.en;
+    d.setAttribute('data-lang', l);
+    d.setAttribute('lang', l);
+    document.title = m.title;
+    metaSet('meta[name="description"]', m.desc);
+    metaSet('meta[property="og:title"]', m.title);
+    metaSet('meta[property="og:description"]', m.desc);
+    ['ru','en','uk'].forEach(function(code){
+      var btn = document.getElementById('lng-' + code);
+      if(btn) btn.setAttribute('aria-pressed', String(l === code));
+    });
+    var g = document.getElementById('langGroup');
+    if(g) g.setAttribute('aria-label', m.langGroup);
+    applyThemeLabel();
+  }
+  function setLang(l){
+    applyLang(l);
+    try{ localStorage.setItem('fmsl-lang', l); }catch(e){}
+  }
+  function toggleTheme(){
+    var d = document.documentElement;
+    var t = d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    d.setAttribute('data-theme', t);
+    try{ localStorage.setItem('fmsl-theme', t); }catch(e){}
+    applyThemeLabel();
+  }
+  function setAll(open){
+    var s = document.querySelectorAll('details.sec');
+    for(var i = 0; i < s.length; i++){
+      if(open) s[i].setAttribute('open', '');
+      else s[i].removeAttribute('open');
+    }
+  }
+  function openFromHash(){
+    var h = location.hash ? location.hash.slice(1) : '';
+    if(!h) return;
+    var el = document.getElementById(h);
+    if(!el) return;
+    var sec = el.closest ? el.closest('details.sec') : null;
+    if(sec) sec.setAttribute('open', '');
+    el.scrollIntoView({block:'start'});
+  }
+  function copyCmd(btn){
+    var txt = document.getElementById('winget-cmd').textContent;
+    var l = document.documentElement.getAttribute('data-lang') || 'en';
+    var m = I18N[l] || I18N.en;
+    function done(){
+      if(btn.dataset.orig === undefined) btn.dataset.orig = btn.innerHTML;
+      btn.innerHTML = '✓ ' + m.copied;
+      btn.setAttribute('disabled', '');
+      setTimeout(function(){
+        btn.innerHTML = btn.dataset.orig;
+        btn.removeAttribute('disabled');
+      }, 1600);
+    }
+    function fallback(){
+      try{
+        var ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }catch(e){}
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, function(){ fallback(); done(); });
+    } else {
+      fallback();
+      done();
+    }
+  }
+  window.addEventListener('hashchange', openFromHash);
+  (function init(){
+    applyLang(document.documentElement.getAttribute('data-lang') || 'en');
+    openFromHash();
+  })();
+</script>
 </body>
 </html>
