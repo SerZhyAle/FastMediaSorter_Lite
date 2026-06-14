@@ -3,7 +3,7 @@
 ## 1. Objective
 
 Make `FastMediaSorter_Lite` automatically discoverable and installable through
-[GitHub-Store](https://github.com/OpenHub-Store/GitHub-Store) — a cross-platform
+[GitHub-Store](https://github.com/OpenHub-Store/GitHub-Store) - a cross-platform
 app marketplace that indexes public GitHub repositories whose latest release
 contains a recognized installable asset.
 
@@ -15,7 +15,7 @@ A repository surfaces automatically when all of the following are true:
 | Requirement | Source | Current state |
 |---|---|---|
 | Public GitHub repository | GitHub Search API discovery | OK |
-| Latest release contains at least one installable asset of a supported type | Asset extension filter | **FAIL** — only ships `.zip` |
+| Latest release contains at least one installable asset of a supported type | Asset extension filter | **FAIL** - only ships `.zip` |
 | GitHub auto-generated source archives are **ignored** | Explicit in store README | n/a |
 | Topics / language / description used for ranking | Store README | Topics likely empty |
 | Stars influence Trending / Hot Release / Most Popular sections | Store README | Existing stars carry over |
@@ -49,7 +49,7 @@ attachments.
 
 Recommendation: **Inno Setup EXE** as the primary store asset
 (simplest, single-file, matches a portable WinForms app). Optionally add an
-MSI later for winget parity — the existing winget submission already uses the
+MSI later for winget parity - the existing winget submission already uses the
 ZIP, but a real MSI would simplify the manifest.
 
 ### 2.3 Discoverability inputs
@@ -123,7 +123,7 @@ Add steps after the existing build, **before** the `softprops/action-gh-release`
      dist/FastMediaSorter-${{ steps.ver.outputs.version }}-windows-x64-setup.exe
      dist/FastMediaSorter-${{ steps.ver.outputs.version }}-windows-x64-setup.exe.sha256
    ```
-5. Keep the existing ZIP — useful for portable users and the current winget manifest.
+5. Keep the existing ZIP - useful for portable users and the current winget manifest.
 
 ### 3.3 Set repo metadata (one-time, on GitHub.com)
 
@@ -142,7 +142,7 @@ GitHub-Store renders release-note Markdown verbatim, so structure matters.
 ### 3.5 (Optional) Code signing
 
 Out of scope for first listing. SmartScreen warnings will still appear for
-unsigned installers — note this in README if user friction matters. A future
+unsigned installers - note this in README if user friction matters. A future
 EV cert would also unlock GitHub-Store's signing-fingerprint auto-update
 path on Windows (behaviour undocumented but likely mirrors APK signing).
 

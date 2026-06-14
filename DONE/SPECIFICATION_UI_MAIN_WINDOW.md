@@ -1,4 +1,4 @@
-# Technical Specification: Main Window UI — Current State & Modernization
+# Technical Specification: Main Window UI - Current State & Modernization
 
 > Scope: the chrome of `Main_Form` (toolbar buttons, combos, labels, status).
 > The media surface itself (`Picture_Box_1/2`, `Web_Browser`, LibVLC view) and the
@@ -7,7 +7,7 @@
 
 ---
 
-## Part 1 — How the current UI is built
+## Part 1 - How the current UI is built
 
 ### 1.1 Controls are static, not generated
 
@@ -15,7 +15,7 @@
 checkbox is declared once in [src/Main_Form.Designer.vb](src/Main_Form.Designer.vb)
 inside `InitializeComponent()` and added to `Me.Controls` there. There is **no
 loop, factory, or data-driven button generation** anywhere. "How are the buttons
-generated" therefore has a precise answer: *they aren't generated — they are
+generated" therefore has a precise answer: *they aren't generated - they are
 hand-placed Designer controls that get repositioned by code on every resize.*
 
 The only runtime-created UI elements are:
@@ -34,7 +34,7 @@ All declared in the Designer; `Friend WithEvents` fields at the bottom of the fi
 | `chkbox_Top_Most` | CheckBox | (none) | Always-on-top toggle |
 | `cmbox_Sort` | ComboBox (DropDownList) | `abc/xyz/rnd/>size/<size/<time/>time/<0123/>3210` | Sort order |
 | `lbl_Folder` | Label | `Folder:` | Static caption (click copies path) |
-| `cmbox_Media_Folder` | ComboBox | — | Current folder path; type + Enter to navigate |
+| `cmbox_Media_Folder` | ComboBox | - | Current folder path; type + Enter to navigate |
 | `btn_choose_file` | Button | `file` | Open file picker |
 | `btn_Select_Folder` | Button | `...` | Open folder picker |
 | `btn_Review` | Button | `RE` | Reload current folder |
@@ -57,7 +57,7 @@ All declared in the Designer; `Friend WithEvents` fields at the bottom of the fi
 | `lbl_Current_File` | Label | `current file` | Current file name (click copies path) |
 | `lbl_Status` | Label | `status` | Operation status |
 | `lbl_Help_Info` | Label | (help text) | First-run overlay help (F1 toggles) |
-| `Picture_Box_1/2`, `Web_Browser` | — | — | Media surface |
+| `Picture_Box_1/2`, `Web_Browser` | - | - | Media surface |
 
 > Note: the **folder-shortcut keys 1–0** (`Hardkeys_to_move_mediafile`) are *not*
 > buttons on the main window. They are keyboard shortcuts; their clickable
@@ -80,28 +80,28 @@ Resize ──debounced 200 ms──▶ ISizeChanged()
 
 Key mechanics:
 
-- **Resize debounce** — `Form1_Resize` restarts `ResizeDebounceTimer` (200 ms);
+- **Resize debounce** - `Form1_Resize` restarts `ResizeDebounceTimer` (200 ms);
   only on tick does `ISizeChanged()` run. A `is_Programmatic_Resize` guard flag
   prevents the layout's own size changes from re-triggering the debounce
   ([Main_Form.UILayout.vb:63](src/Main_Form.UILayout.vb#L63)).
-- **Chained absolute positioning** — every control sets
+- **Chained absolute positioning** - every control sets
   `.Left = previousControl.Left + previousControl.Width + gap` and an explicit
   `.Top`. Widths/heights are integer multiples of two constants:
   - `the_Width_For_buttons = 15`, `the_Height_For_buttons = 20`
     ([Main_Form.vb:59-60](src/Main_Form.vb#L59)).
   - So `.Width = the_Width_For_buttons * 6` means 90 px, etc.
-- **Lazy relayout** — `Buttons_to_normal()` only re-runs the positioning block if
+- **Lazy relayout** - `Buttons_to_normal()` only re-runs the positioning block if
   `Picture_Box_1` geometry actually changed (`If Not Picture_Box_1.Top = … OrElse …`),
   otherwise it just toggles visibility.
 
-### 1.4 Order & conditions — normal (windowed) mode
+### 1.4 Order & conditions - normal (windowed) mode
 
 `Buttons_to_normal()` lays out **three rows**, left to right, each control anchored
 to the previous one:
 
 **Row 1** (`Top = top_first_line = 0`):
 `chkbox_Top_Most` → `cmbox_Sort` → `lbl_Folder` → *(`cmbox_Media_Folder` stays at
-its Designer position 198,2 — it is **not** repositioned here)* → `btn_choose_file`
+its Designer position 198,2 - it is **not** repositioned here)* → `btn_choose_file`
 → `btn_Select_Folder` → `btn_Review` (+10 gap) → `btn_Panel` (+10) →
 `btn_Full_Screen` (+10) → `lbl_Slideshow_Time` (+10, **only if `Is_slide_show_mode`**)
 → `btn_Language` → `lbl_Info` → `lbl_Zoom`.
@@ -117,7 +117,7 @@ its Designer position 198,2 — it is **not** repositioned here)* → `btn_choos
 Below `lbl_Status`, `Picture_Box_1/2` (+ `Web_Browser` / VLC view, kept in sync)
 fill the remaining client area.
 
-### 1.5 Order & conditions — fullscreen & super-fullscreen
+### 1.5 Order & conditions - fullscreen & super-fullscreen
 
 `Buttons_to_fullscreen()` has two sub-modes driven by `is_Super_Full_Screen_Mode`:
 
@@ -168,28 +168,28 @@ discoverability layer) are set once in `InitializeTooltips()`
 1. **~240 lines of duplicated manual layout** across two methods that must be kept
    in sync; adding/moving one control means editing a chain of `.Left = prev…`.
 2. **Magic-number geometry** (`the_Width_For_buttons * N`) with no relation to text
-   width — captions can clip at different fonts/DPI.
+   width - captions can clip at different fonts/DPI.
 3. **`cmbox_Media_Folder` is not repositioned** in `Buttons_to_normal()`; it relies
    on a hard-coded Designer position and can overlap neighbors at non-default DPI.
-4. **Cryptic captions** (`RE`, `^^`, `R>`, `█`, `VVV`, `RN`) — discoverability
+4. **Cryptic captions** (`RE`, `^^`, `R>`, `█`, `VVV`, `RN`) - discoverability
    depends entirely on tooltips; no icons.
-5. **No overflow handling** — a narrow window pushes row-2 buttons off-screen
+5. **No overflow handling** - a narrow window pushes row-2 buttons off-screen
    instead of wrapping or showing an overflow chevron.
 6. **DPI**: only `AutoScaleMode = Font`; absolute coordinates make Per-Monitor DPI
    fragile.
-7. **Inconsistent fullscreen** — a third hand-maintained layout with its own font.
+7. **Inconsistent fullscreen** - a third hand-maintained layout with its own font.
 
 ---
 
-## Part 2 — Modernization options (no functionality lost)
+## Part 2 - Modernization options (no functionality lost)
 
 The hard constraint is **.NET Framework 4.8 + WinForms** (per
 [CLAUDE.md](CLAUDE.md)). Every option below keeps **all** existing controls,
-event handlers, hotkeys, localization, theming, and the media surface intact —
+event handlers, hotkeys, localization, theming, and the media surface intact -
 only the *layout/presentation* changes. Naming the same `Friend WithEvents`
 fields means every `Handles …` clause keeps working.
 
-### Option A — Container-based responsive layout (lowest risk)
+### Option A - Container-based responsive layout (lowest risk)
 Wrap the toolbar in docked `TableLayoutPanel` / `FlowLayoutPanel` panels:
 a top `FlowLayoutPanel` (row 1), a second `FlowLayoutPanel` (row 2), a
 `StatusStrip`-like bottom, and the media surface `Dock = Fill` in the center.
@@ -199,14 +199,14 @@ a top `FlowLayoutPanel` (row 1), a second `FlowLayoutPanel` (row 2), a
 - **Cons:** still plain buttons with cryptic captions; flow panels wrap rather
   than overflow-chevron.
 
-### Option B — `ToolStrip` + `StatusStrip` (recommended)
+### Option B - `ToolStrip` + `StatusStrip` (recommended)
 Replace the two button rows with a docked **`ToolStrip`** (or two) and the status
 labels with a **`StatusStrip`**. Each `Button` becomes a `ToolStripButton` that
 calls the *same* handler; combos become `ToolStripComboBox`.
 
 - **Pros:** native modern look; **automatic overflow chevron** on narrow windows;
   built-in icon+text+tooltip per item; consistent theming; renderer is
-  swappable (flat/system/custom) — a single place to restyle everything;
+  swappable (flat/system/custom) - a single place to restyle everything;
   `StatusStrip` gives a proper bottom status bar with `lbl_Status`,
   `lbl_File_Number`, `lbl_Zoom` as spring/auto items.
 - **Cons:** handlers must be repointed from `Button.Click` to
@@ -216,14 +216,14 @@ calls the *same* handler; combos become `ToolStripComboBox`.
   small embedded icon set) so `RE`→⟳, `^^`→⛶, `>>`→▶, `█`→▦, `VVV`→🕘, etc.,
   with the existing tooltips retained.
 
-### Option C — Visual refresh on top of A/B (cosmetic)
+### Option C - Visual refresh on top of A/B (cosmetic)
 Layer modern cosmetics without structural change:
 - Dark title bar via `DwmSetWindowAttribute(DWMWA_USE_IMMERSIVE_DARK_MODE)`.
 - A custom `ToolStripRenderer` / `FlatStyle.Flat` palette tied to the existing
   `Form_Color_Scheme` so theming stays one code path.
 - Per-Monitor-V2 DPI awareness via `app.manifest` (`<dpiAwareness>PerMonitorV2`).
 
-### Option D — Framework migration (largest, optional, future)
+### Option D - Framework migration (largest, optional, future)
 Port to **.NET 8 WinForms** (modern HighDPI PerMonitorV2, official dark-mode
 preview, faster runtime) or to **WPF/WinUI** for a fully fluent UI. High effort,
 touches build/ILMerge/release pipeline; out of scope for a "no behavior change"
@@ -233,15 +233,15 @@ pass but the natural long-term destination.
 **B + C on .NET Framework 4.8**, done in phases so each step is shippable and
 behavior-verifiable:
 
-1. **Phase 1 — containers (Option A).** Move existing buttons into docked
+1. **Phase 1 - containers (Option A).** Move existing buttons into docked
    `FlowLayoutPanel`s; delete the pixel math in `Buttons_to_*`. Verify every
    feature still works (checklist below). *Pure refactor, no UX change.*
-2. **Phase 2 — ToolStrip/StatusStrip (Option B).** Swap panels for a `ToolStrip`
+2. **Phase 2 - ToolStrip/StatusStrip (Option B).** Swap panels for a `ToolStrip`
    + `StatusStrip`; repoint handlers; fullscreen = `ToolStrip.Visible` toggle.
-3. **Phase 3 — glyphs + theming + DPI (Option C).** Icon font captions (tooltips
+3. **Phase 3 - glyphs + theming + DPI (Option C).** Icon font captions (tooltips
    kept), `Form_Color_Scheme`-driven renderer, dark title bar, Per-Monitor-V2
    manifest.
-4. **Phase 4 (optional, later) — .NET 8 WinForms** migration (Option D).
+4. **Phase 4 (optional, later) - .NET 8 WinForms** migration (Option D).
 
 ### Functionality-preservation checklist (must all still pass after each phase)
 - [ ] All hotkeys (P/N/Y/S/I/R/T/Del/F1/F2/F3/F5/F6, 1–0 folder moves, U undo).

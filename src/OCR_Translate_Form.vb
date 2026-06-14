@@ -360,9 +360,9 @@ Public Class OCR_Translate_Form
     Private Sub UpdateOllamaStateHint()
         If Not IsOllama() Then Return
         If Not OllamaManager.IsInstalled() Then
-            lblStatus.Text = If(_rus, "Ollama не установлен — нажмите «Установить Ollama».", "Ollama not installed — press Install Ollama.")
+            lblStatus.Text = If(_rus, "Ollama не установлен - нажмите «Установить Ollama».", "Ollama not installed - press Install Ollama.")
         ElseIf Not OllamaManager.IsProcessRunning() Then
-            lblStatus.Text = If(_rus, "Ollama не запущен — нажмите «Запустить Ollama».", "Ollama not running — press Start Ollama.")
+            lblStatus.Text = If(_rus, "Ollama не запущен - нажмите «Запустить Ollama».", "Ollama not running - press Start Ollama.")
         End If
     End Sub
 
@@ -379,7 +379,7 @@ Public Class OCR_Translate_Form
         If MessageBox.Show(Me, confirm, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
 
         SetBusy(True)
-        lblStatus.Text = If(_rus, "Скачивание Ollama…", "Downloading Ollama…")
+        lblStatus.Text = If(_rus, "Скачивание Ollama..", "Downloading Ollama..")
         Dim installerPath As String = ""
         Try
             Dim prog As New Progress(Of String)(Sub(s) lblStatus.Text = (If(_rus, "Скачивание Ollama: ", "Downloading Ollama: ")) & s)
@@ -393,10 +393,10 @@ Public Class OCR_Translate_Form
         SuspendAlwaysOnTopForExternal()
 
         If installerPath.Length > 0 AndAlso IO.File.Exists(installerPath) Then
-            lblStatus.Text = If(_rus, "Запуск установщика Ollama…", "Launching Ollama installer…")
+            lblStatus.Text = If(_rus, "Запуск установщика Ollama..", "Launching Ollama installer..")
             OllamaManager.RunInstaller(installerPath)
         Else
-            lblStatus.Text = If(_rus, "Не удалось скачать. Открываю сайт Ollama…", "Download failed. Opening Ollama website…")
+            lblStatus.Text = If(_rus, "Не удалось скачать. Открываю сайт Ollama..", "Download failed. Opening Ollama website..")
             OllamaManager.OpenWebPage()
         End If
     End Sub
@@ -404,12 +404,12 @@ Public Class OCR_Translate_Form
     Private Async Sub OnStartOllama(sender As Object, e As EventArgs)
         If busy Then Return
         If Not OllamaManager.IsInstalled() Then
-            lblStatus.Text = If(_rus, "Ollama не установлен — нажмите «Установить Ollama».", "Ollama not installed — press Install Ollama.")
+            lblStatus.Text = If(_rus, "Ollama не установлен - нажмите «Установить Ollama».", "Ollama not installed - press Install Ollama.")
             Return
         End If
 
         SetBusy(True)
-        lblStatus.Text = If(_rus, "Запуск Ollama…", "Starting Ollama…")
+        lblStatus.Text = If(_rus, "Запуск Ollama..", "Starting Ollama..")
         OllamaManager.StartServer()
 
         Dim up As Boolean = False

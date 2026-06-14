@@ -163,7 +163,7 @@ Partial Public Class Main_Form
                             End If
                             total_File_Count -= 1
                             If current_File_Index > (total_File_Count - 1) Then current_File_Index = total_File_Count - 1
-                            lbl_Status.Text = If(Is_Russian_Language, "файл перенесен (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "file moved (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
+                            lbl_Status.Text = If(Is_Russian_Language, "файл перенесён (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "file moved (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
 
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1729: file is moved to " & destination_Folder_Full_Path)
 
@@ -195,7 +195,7 @@ Partial Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1760: undo copied deletion")
                     Try
                         DeleteFile(history_Destination_File_Name)
-                        lbl_Status.Text = If(Is_Russian_Language, "файл удален в каталоге " & history_Destination_File_Name, "file deleted in " & history_Destination_File_Name)
+                        lbl_Status.Text = If(Is_Russian_Language, "файл удалён в каталоге " & history_Destination_File_Name, "file deleted in " & history_Destination_File_Name)
                         history_Destination_File_Name = ""
                         history_Source_File_Name = ""
                     Catch ex As Exception
@@ -231,7 +231,7 @@ Partial Public Class Main_Form
                             files_List.Insert(current_File_Index, history_Source_File_Name)
                         End If
                         total_File_Count += 1
-                        lbl_Status.Text = If(Is_Russian_Language, "файл возвращен в каталог " & history_Source_File_Name, "file back to " & history_Source_File_Name)
+                        lbl_Status.Text = If(Is_Russian_Language, "файл возвращён в каталог " & history_Source_File_Name, "file back to " & history_Source_File_Name)
                         ReadShowMediaFile("AfterUndo")
                         history_Destination_File_Name = ""
                         history_Source_File_Name = ""
@@ -333,17 +333,17 @@ Partial Public Class Main_Form
                     Dim args As String() = DirectCast(current_File_Operation_Args, String())
                     Dim textKey As String = args(2)
                     Dim destFile As String = args(1)
-                    lbl_Status.Text = If(Is_Russian_Language, "файл перенесен (" & textKey & ") в каталог " & destFile, "file moved (" & textKey & ") to " & destFile)
+                    lbl_Status.Text = If(Is_Russian_Language, "файл перенесён (" & textKey & ") в каталог " & destFile, "file moved (" & textKey & ") to " & destFile)
 
                 Case "Delete"
 
                 Case "DeleteUndo"
-                    lbl_Status.Text = If(Is_Russian_Language, "файл удален в каталоге " & history_Destination_File_Name, "file deleted in " & history_Destination_File_Name)
+                    lbl_Status.Text = If(Is_Russian_Language, "файл удалён в каталоге " & history_Destination_File_Name, "file deleted in " & history_Destination_File_Name)
                     history_Destination_File_Name = ""
                     history_Source_File_Name = ""
 
                 Case "MoveUndo"
-                    lbl_Status.Text = If(Is_Russian_Language, "файл возвращен в каталог " & history_Source_File_Name, "file back to " & history_Source_File_Name)
+                    lbl_Status.Text = If(Is_Russian_Language, "файл возвращён в каталог " & history_Source_File_Name, "file back to " & history_Source_File_Name)
                     history_Destination_File_Name = ""
                     history_Source_File_Name = ""
             End Select

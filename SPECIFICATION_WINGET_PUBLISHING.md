@@ -1,8 +1,8 @@
-# winget Publishing — Hard-Won Gotchas
+# winget Publishing - Hard-Won Gotchas
 
 Lessons captured from PR [microsoft/winget-pkgs#386820](https://github.com/microsoft/winget-pkgs/pull/386820)
 (version `26.6.12.0031`), where ~12 hours were lost flip-flopping between
-installer formats. **The root causes were never the manifest *shape* — they
+installer formats. **The root causes were never the manifest *shape* - they
 were the payload and the dependency declaration.** This document exists so we
 don't repeat that.
 
@@ -13,13 +13,13 @@ build 341141: `Installation Validation` succeeded) only after the manifest was
 reduced to a plain direct Inno installer with **no `Scope` and no `Dependencies`**.
 The winning manifest is mirrored in
 [winget/SerZhyAle.FastMediaSorter.installer.yaml](winget/SerZhyAle.FastMediaSorter.installer.yaml)
-— start the next release from that shape, not from a `wingetcreate` default that
+- start the next release from that shape, not from a `wingetcreate` default that
 re-adds `Scope`/`Dependencies`. After the pipeline passed, the only remaining gate
 was manual moderator approval (normal for community PRs), and the
 `Manifest-Metadata-Consistency` / `Validation-Guide` note about
 `NestedInstallerType` is cosmetic, not a failure.
 
-## TL;DR — the manifest that works
+## TL;DR - the manifest that works
 
 Point the manifest at the **Inno Setup `setup.exe` directly**, with **no
 declared dependencies** and **no `Scope` field**:
@@ -44,7 +44,7 @@ Why this passes:
 - No dependency → **no dependency-resolution churn**.
 - `installer/FastMediaSorter.iss` sets `AppVersion={#Version}`, so the Inno
   installer registers an **ARP entry whose `DisplayVersion` equals
-  `PackageVersion`** — exactly what the "Installation Validation" step matches on.
+  `PackageVersion`** - exactly what the "Installation Validation" step matches on.
 - `PrivilegesRequired=lowest` → installs per-user without elevation.
 
 ## The three traps (one per format we tried)
@@ -59,12 +59,12 @@ error codes come from the **`InstallationVerificationLogs`** build artifact
 | **`single-exe.zip`** (single-file runtime bootstrap) | Defender ML flags it as `Program:Script/Wacapew.A!ml`. This is a **persistent false positive** on the self-extracting bootstrap exe (a different binary from the normal ILMerged exe). **Never point winget at `single-exe.zip`.** Keep it only as a convenience download on GitHub. |
 | **Portable `windows-x64.zip`** (`InstallerType: zip` + `NestedInstallerType: portable`) | Archive scan passes, but extracting the ~99 MB payload takes ~2 min and the install then aborts with **`0x80004004` (E_ABORT)** while placing files. The payload is too heavy for the portable flow even though the published `26.4.27.1200` used the same shape with a smaller payload. |
 | **Inno + `Microsoft.VCRedist.2015+.x64` dependency** | winget enters a long dependency-resolution loop, VCRedist returns `0x8A150010` (not applicable / already present), and the package install aborts with **`0x8A150044`**. The app does not need VCRedist *declared* to install (validation never launches it), and the published version declared no dependencies. **Don't declare VCRedist.** |
-| **Inno + `Scope: user`** | Declaring `Scope: user` makes the harness run the whole flow with `--scope user` and `Elevation: False`. The package install then returns **`0x8A150044`** ("no suitable installer found for `--scope user`"), and the user-scope VCRedist baseline step also has no user installer. **Omit `Scope` entirely** — the published version had none. With no `Scope`, validation runs elevated/machine and the Inno installer registers its ARP entry normally. |
+| **Inno + `Scope: user`** | Declaring `Scope: user` makes the harness run the whole flow with `--scope user` and `Elevation: False`. The package install then returns **`0x8A150044`** ("no suitable installer found for `--scope user`"), and the user-scope VCRedist baseline step also has no user installer. **Omit `Scope` entirely** - the published version had none. With no `Scope`, validation runs elevated/machine and the Inno installer registers its ARP entry normally. |
 
 ## Non-blocking noise to ignore
 
 - **"Inconsistencies detected … Missing property `NestedInstallerType` /
-  `NestedInstallerFiles` / Sequence `Tags` contains fewer items"** — this is a
+  `NestedInstallerFiles` / Sequence `Tags` contains fewer items"** - this is a
   `Validation-Guide` (informational) note, **not** a failure. It fires whenever
   the installer shape differs from the previously published version (the old one
   was a portable zip). Moderators routinely approve installer-type changes
@@ -72,14 +72,14 @@ error codes come from the **`InstallationVerificationLogs`** build artifact
   the Tags part; the NestedInstaller part is unavoidable with a direct installer
   and is harmless.
 - **"Signature Update failed / Inconclusive Signature update"** in the install
-  log — that's the validation VM failing to update Defender signatures; it is
+  log - that's the validation VM failing to update Defender signatures; it is
   environmental, not our package.
 
 ## Process discipline
 
 - **Pick one shape and stop changing it.** Every push/`@wingetbot run` cancels
   the in-flight run and re-queues from scratch. The PR sat in `REVIEW_REQUIRED`
-  waiting for a human moderator, not because of an error — thrashing only reset
+  waiting for a human moderator, not because of an error - thrashing only reset
   the queue. Wait for a result before changing anything.
 - **Verify locally before pushing**, with real checks (not "it worked on my
   machine"):

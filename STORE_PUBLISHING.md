@@ -6,24 +6,24 @@ The concrete, app-specific playbook for this repo. Adapted from the reusable Cyr
 ## Why this path (Path A: MSIX)
 
 - **Developer account is free** (individuals since late 2025, companies since May 2026).
-- **Microsoft re-signs the MSIX during certification** — no paid code-signing certificate needed.
+- **Microsoft re-signs the MSIX during certification** - no paid code-signing certificate needed.
   (The alternative "unpackaged exe/MSI" path *does* require a paid cert chaining to a Microsoft-trusted root.)
 - Store-signed + Store-distributed also defuses antivirus heuristic false positives better than anything else.
 
-This is **in addition to** the existing distribution channels (GitHub release EXE/ZIP and winget) —
+This is **in addition to** the existing distribution channels (GitHub release EXE/ZIP and winget) -
 nothing here changes those. See [SPECIFICATION_WINGET_PUBLISHING.md](SPECIFICATION_WINGET_PUBLISHING.md)
 and [SPECIFICATION_GITHUB_STORE.md](SPECIFICATION_GITHUB_STORE.md) for those paths.
 
 ---
 
-## Phase 1 — Make the app MSIX-ready (code)
+## Phase 1 - Make the app MSIX-ready (code)
 
-**Already done — no code change required.** MSIX runs the desktop app in a light container with
+**Already done - no code change required.** MSIX runs the desktop app in a light container with
 file/registry virtualization and a **read-only install dir**. FastMediaSorter already plays nicely:
 
 | Concern | Why it could break under MSIX | Status in this app |
 | --- | --- | --- |
-| Writing downloaded `tessdata` / OCR cache | a write next to the exe (install dir) fails — it's read-only | Already writes to `%LOCALAPPDATA%\SZA\FastMediaSorter` (`OcrPaths`, `src/Ocr/TesseractOcrEngine.vb`). OK. |
+| Writing downloaded `tessdata` / OCR cache | a write next to the exe (install dir) fails - it's read-only | Already writes to `%LOCALAPPDATA%\SZA\FastMediaSorter` (`OcrPaths`, `src/Ocr/TesseractOcrEngine.vb`). OK. |
 | Settings persistence | `HKCU` is virtualized | App stores settings in the registry; per-package virtualization is fine (settings just live with the package). OK. |
 | Bundled `tessdata` next to exe | read-only install dir | Only **read**, never written. OK. |
 | File associations | a packaged `HKCU\Software\Classes` write is virtualized/ignored | Declared in the manifest as `windows.fileTypeAssociation` instead of registry writes. OK. |
@@ -34,7 +34,7 @@ visible *outside* the package, would need an MSIX-aware path. FastMediaSorter ha
 
 ---
 
-## Phase 2 — Packaging artifacts (in this repo)
+## Phase 2 - Packaging artifacts (in this repo)
 
 | File | Role |
 | --- | --- |
@@ -47,7 +47,7 @@ visible *outside* the package, would need an MSIX-aware path. FastMediaSorter ha
 
 **Version gotcha (important):** the Store requires a 4-part version with the **revision = 0**
 (`Major.Minor.Build.0`), each part ≤ 65535. `build-msix.ps1` remaps the app's `YY.M.D.HHmm` stamp to
-`YY.(M*100+D).HHmm.0` — monotonic over time, unique per minute. (e.g. `26.6.13.0016` → `26.613.16.0`.)
+`YY.(M*100+D).HHmm.0` - monotonic over time, unique per minute. (e.g. `26.6.13.0016` → `26.613.16.0`.)
 
 Tooling: the Windows SDK (provides `makeappx.exe` + `signtool.exe`) and MSBuild:
 ```powershell
@@ -56,7 +56,7 @@ winget install Microsoft.WindowsSDK.10.0.26100
 
 ---
 
-## Phase 3 — Verify locally before uploading
+## Phase 3 - Verify locally before uploading
 
 ```powershell
 cd msix
@@ -68,17 +68,17 @@ slideshow, play an MP4 (IE path) and an AVI/MKV (LibVLC path), run OCR translate
 as a default image handler from *Settings ▸ Apps ▸ Default apps*.
 
 Pitfalls hit in practice:
-- `Square310x310Logo` requires a paired `Wide310x150Logo` — this manifest ships only the small/medium
+- `Square310x310Logo` requires a paired `Wide310x150Logo` - this manifest ships only the small/medium
   tiles (44/71/150) + StoreLogo, so it sidesteps that.
-- `Add-AppxPackage` **installs but does not launch** — start it from the Start menu.
+- `Add-AppxPackage` **installs but does not launch** - start it from the Start menu.
 - The path-independent single-instance mutex makes the packaged copy exit if a dev/Release copy is
   already running. Close other copies when testing.
 
 ---
 
-## Phase 4 — Partner Center: account + identity
+## Phase 4 - Partner Center: account + identity
 
-1. **Account settings → Programs → Windows → Get started** (NOT "Windows Desktop Applications" — that
+1. **Account settings → Programs → Windows → Get started** (NOT "Windows Desktop Applications" - that
    one is telemetry for EV-signed Win32 apps). Registration is free.
 2. **Create a new product → MSIX or PWA app** → reserve the app name **FastMediaSorter LITE**.
 3. **Product ▸ Product identity** → copy three values into the build command:
@@ -93,7 +93,7 @@ Pitfalls hit in practice:
 
 ---
 
-## Phase 5 — Listing materials
+## Phase 5 - Listing materials
 
 | Item | Requirement / gotcha | This app |
 | --- | --- | --- |
@@ -102,13 +102,13 @@ Pitfalls hit in practice:
 | **Store logos** | Optional (Store falls back to package logos) | package tiles are generated from `assets/icons/store-icon-256.png` |
 | **Description** | Required | template below |
 | **Product features** | Bullet list, each ≤ 200 chars | template below |
-| **Pricing** | "Free" = pick it in the **Retail price** dropdown | — |
+| **Pricing** | "Free" = pick it in the **Retail price** dropdown | - |
 | **runFullTrust justification** | Required for every desktop MSIX; **~1000-char limit** | template below |
 | **Age rating** | Short questionnaire | fill it in (General) |
 
 ---
 
-## Phase 6 — Submit → certification (~ a few business days)
+## Phase 6 - Submit → certification (~ a few business days)
 
 The optional translation feature makes outbound HTTP calls to a *user-configured* local/remote
 endpoint (Ollama / LibreTranslate). Declaring this plainly in the description + privacy policy
@@ -124,13 +124,13 @@ FastMediaSorter LITE is a fast, keyboard-driven viewer and sorter for images and
 
 Open a folder and fly through it: full-screen slideshow, quick panel navigation, and one-key Move /
 Copy / Rename / Delete to sort large photo and video collections in minutes. Assign folders to hotkeys
-and file each item with a single press. It plays a broad range of formats — H.264/MP4 via the built-in
-player with an automatic LibVLC fallback for AVI, MKV, VP9, ZMBV and more — and fills letterbox/pillarbox
+and file each item with a single press. It plays a broad range of formats - H.264/MP4 via the built-in
+player with an automatic LibVLC fallback for AVI, MKV, VP9, ZMBV and more - and fills letterbox/pillarbox
 bars with a matching "ambilight" background.
 
 It also includes optional on-image OCR translation: recognize text in a picture (fully offline,
 Tesseract) and overlay a translation. Translation is performed by a provider you choose and configure
-yourself — a local Ollama model or a LibreTranslate endpoint; OCR works without any network connection.
+yourself - a local Ollama model or a LibreTranslate endpoint; OCR works without any network connection.
 
 Runs on .NET Framework 4.8. No account, no ads, no telemetry. Open source:
 https://github.com/SerZhyAle/FastMediaSorter_Lite
@@ -153,7 +153,7 @@ FastMediaSorter LITE is a full-trust Win32 desktop app (.NET Framework 4.8 / Win
 so runFullTrust is required to run as a normal desktop process and to use the Win32 APIs its core
 features depend on:
 - File system access: it reads, copies, moves, renames and deletes the user's image/video files across
-  arbitrary folders and network shares — that is the app's entire purpose, performed only on files and
+  arbitrary folders and network shares - that is the app's entire purpose, performed only on files and
   folders the user opens.
 - Media playback: it hosts the system WebBrowser control (H.264/MP4) and the native LibVLC libraries
   (AVI/MKV/VP9/etc.) and uses GDI+ for image rendering.

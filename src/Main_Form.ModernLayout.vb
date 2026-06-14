@@ -129,7 +129,7 @@ Partial Public Class Main_Form
         cmbox_Sort.Font = ui_Font
         cmbox_Sort.Width = 70
 
-        ' One uniform row height so every button/combo lines up — no vertical
+        ' One uniform row height so every button/combo lines up - no vertical
         ' "jumping" from glyph-vs-text font metrics.
         Dim row_H As Integer = Math.Max(cmbox_Media_Folder.PreferredHeight, 24)
 
@@ -215,7 +215,7 @@ Partial Public Class Main_Form
 
     ''' <summary>
     ''' Clips the toolbar window to just the button/combo rectangles so the gaps
-    ''' between them are genuinely cut out — the full-screen image shows straight
+    ''' between them are genuinely cut out - the full-screen image shows straight
     ''' through (WinForms "transparent" backgrounds only reveal the parent's
     ''' fill, never a sibling control, so a Region with holes is the real fix).
     ''' Passing False removes the clip (windowed mode = normal solid bar).

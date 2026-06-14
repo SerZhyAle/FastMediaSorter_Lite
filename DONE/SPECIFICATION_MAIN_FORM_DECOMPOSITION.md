@@ -7,7 +7,7 @@
 > **Outcome:** all 10 partials extracted; `Main_Form.vb` reduced from 3,356 → **653 LOC**.
 > Release build green with **0 errors and 0 new warnings** (the 3 pre-existing
 > `Image_Panel_Form.vb` warnings are unchanged). Line-anchor numbers in the tables
-> below reflect the *pre-split* file and are kept for historical traceability —
+> below reflect the *pre-split* file and are kept for historical traceability -
 > locate members by name in the new partials.
 
 ---
@@ -19,7 +19,7 @@
 Split the monolithic [src/Main_Form.vb](src/Main_Form.vb) (**3,356 LOC**) into a set
 of focused `Partial Class Main_Form` files, continuing the pattern already
 established by the existing partials. The result must be **byte-for-byte equivalent
-behavior** — this is a pure code-organization change, not a refactor.
+behavior** - this is a pure code-organization change, not a refactor.
 
 ### 1.2 What this is *not*
 
@@ -35,7 +35,7 @@ work in §9.
 After each extraction step:
 - `msbuild FastMediaSorter.sln /p:Configuration=Release /p:Platform="Any CPU"`
   completes with **zero errors and zero new warnings**.
-- No method body is altered — only relocated (and re-anchored at the top of the
+- No method body is altered - only relocated (and re-anchored at the top of the
   destination partial).
 - `Main_Form.vb` shrinks toward a ~400–500 LOC "shell" (constants, field
   declarations, small click handlers, designer-bound glue).
@@ -52,7 +52,7 @@ Main_Form`, all listed in the project with `<DependentUpon>Main_Form.vb</Depende
 | File | LOC | Concern |
 |---|---|---|
 | [src/Main_Form.vb](src/Main_Form.vb) | 3,356 | Core / shell (this spec drains it) |
-| [src/Main_Form.Designer.vb](src/Main_Form.Designer.vb) | 461 | Auto-generated — **never hand-edit** |
+| [src/Main_Form.Designer.vb](src/Main_Form.Designer.vb) | 461 | Auto-generated - **never hand-edit** |
 | [src/Main_Form.PerspectiveBackground.vb](src/Main_Form.PerspectiveBackground.vb) | 431 | Ambilight background fill |
 | [src/Main_Form.FileOperations.vb](src/Main_Form.FileOperations.vb) | 356 | Copy/move/rename/delete wiring |
 | [src/Main_Form.ModernLayout.vb](src/Main_Form.ModernLayout.vb) | 318 | Modern toolbar layout/styling |
@@ -67,7 +67,7 @@ Main_Form`, all listed in the project with `<DependentUpon>Main_Form.vb</Depende
 - **Option statements are project-wide**, set in [src/FastMediaSorter.vbproj](src/FastMediaSorter.vbproj):
   `OptionExplicit=On`, `OptionStrict=On`, `OptionCompare=Binary`, `OptionInfer=On`.
   A per-file `Option Strict On` line is therefore redundant but is the **established
-  convention** (the existing partials repeat it) — match it.
+  convention** (the existing partials repeat it) - match it.
 - **No glob auto-include.** Every source file has an explicit `<Compile Include>`
   entry. A new `.vb` file that is not registered **will not compile** (and worse,
   may silently appear to "work" in the editor while being absent from the build).
@@ -122,7 +122,7 @@ compiler but required for consistency and IDE grouping.
 1. **No behavior change.** Method bodies are copied verbatim. No renames, no
    signature changes, no reordering of statements within a method.
 2. **`Handles` clauses stay intact.** They bind by control-field name and work
-   across partials — a moved `Private Sub Button6_Click(...) Handles btn_Slideshow.Click`
+   across partials - a moved `Private Sub Button6_Click(...) Handles btn_Slideshow.Click`
    keeps firing. Do not strip the `Handles` clause.
 3. **Each field/const/type declared exactly once.** Moving a method that *uses* a
    field is fine (fields are shared); moving a *declaration* requires that no other
@@ -142,7 +142,7 @@ For each target file `Main_Form.<Concern>.vb`:
 1. **Create** the file with the §2.3 header.
 2. **Register** it in the `.vbproj` per §2.4.
 3. **Cut** each listed method/type from `Main_Form.vb` (locate by **name**, not by
-   the line numbers below — they drift as edits land). Take the full span from the
+   the line numbers below - they drift as edits land). Take the full span from the
    declaration line through its matching `End Sub` / `End Function` / `End Structure`
    / `End Class`, **including the leading comment block and attributes** attached to
    that member.
@@ -160,7 +160,7 @@ For each target file `Main_Form.<Concern>.vb`:
 
 ---
 
-## 5. Tier 1 — Clean, self-contained extractions (do first)
+## 5. Tier 1 - Clean, self-contained extractions (do first)
 
 ### 5.1 `Main_Form.FileAssociation.vb`  ·  risk: **very low**
 
@@ -183,12 +183,12 @@ coupling. Methods form a near-contiguous block at the tail of the file.
 **Imports needed:** `Microsoft.Win32`, `System.Security.Principal`, `System.IO`.
 **Cross-partial dependency:** `AssociateAllImageFormatsWithThisApp` calls
 `SHChangeNotify` ([Main_Form.vb:3084](src/Main_Form.vb#L3084)), which lives in the
-NativeMethods group — fine post-split.
+NativeMethods group - fine post-split.
 
 ### 5.2 `Main_Form.NativeMethods.vb`  ·  risk: **very low**, but **scattered**
 
 Pure P/Invoke + comparer declarations. ⚠️ This region is **interleaved** with
-unrelated consts and a couple of small methods — cherry-pick the items below and
+unrelated consts and a couple of small methods - cherry-pick the items below and
 leave the rest in place.
 
 | Item | Anchor | Kind |
@@ -220,7 +220,7 @@ leave the rest in place.
 `FILE_MAP_READ`), 262 (`minimum_time_before_next_media_file`), and the methods
 `InitializeExtensionLists` (236) and `Image_Panel_Form_FormClosed` (281). These
 belong to other concerns (Lifecycle / shell). *Optionally* the message-map consts
-may travel with NativeMethods if it reads cleaner — decide during the move, but
+may travel with NativeMethods if it reads cleaner - decide during the move, but
 keep each const declared exactly once.
 
 ### 5.3 `Main_Form.GifPlayback.vb`  ·  risk: **low** (contiguous)
@@ -234,7 +234,7 @@ keep each const declared exactly once.
 ### 5.4 `Main_Form.Slideshow.vb`  ·  risk: **low**, **scattered**
 
 ⚠️ Interleaved with `Form1_ResizeEnd`, `Button5_Click`, `Label1_MouseClick`,
-`StatusL_MouseClick` — extract by name only.
+`StatusL_MouseClick` - extract by name only.
 
 | Method | Anchor |
 |---|---|
@@ -256,9 +256,9 @@ keep each const declared exactly once.
 
 ---
 
-## 6. Tier 2 — Larger, cohesive groupings
+## 6. Tier 2 - Larger, cohesive groupings
 
-### 6.1 `Main_Form.MediaLoading.vb`  ·  risk: **medium** — biggest single win
+### 6.1 `Main_Form.MediaLoading.vb`  ·  risk: **medium** - biggest single win
 
 The central load/display pipeline: high-traffic but cohesive.
 
@@ -272,7 +272,7 @@ The central load/display pipeline: high-traffic but cohesive.
 | `LoadStandardImageInPictureBox` | [Main_Form.vb:1265](src/Main_Form.vb#L1265) |
 | `UpdateCurrentFileAndDisplay` | [Main_Form.vb:1590](src/Main_Form.vb#L1590) |
 
-**Decision required — `UpdateControlVisibility`** ([Main_Form.vb:1406](src/Main_Form.vb#L1406))
+**Decision required - `UpdateControlVisibility`** ([Main_Form.vb:1406](src/Main_Form.vb#L1406))
 sits **between** `LoadStandardImageInPictureBox` and `UpdateCurrentFileAndDisplay`.
 The plan omits it. It is tightly called by the display path; recommend moving it
 **with** MediaLoading (it is display-state plumbing). If it turns out to be shared
@@ -337,7 +337,7 @@ Startup/shutdown, init, and cross-instance argument intake.
 | `Form1_FormClosing` *(`Handles MyBase.FormClosing`)* | [Main_Form.vb:2341](src/Main_Form.vb#L2341) |
 
 > `ProcessArgument` is the documented cross-instance entry point (`WM_COPYDATA`
-> forwarding from `Application_Events`). It is `Public` and called externally —
+> forwarding from `Application_Events`). It is `Public` and called externally -
 > moving it between partials does not change its accessibility or signature, so the
 > single-instance path keeps working. Verify after the move by launching a second
 > instance with a file argument.
@@ -348,7 +348,7 @@ Startup/shutdown, init, and cross-instance argument intake.
 
 ### 7.1 Residue in `Main_Form.vb`
 
-After all extractions, `Main_Form.vb` should hold the natural shell — the class
+After all extractions, `Main_Form.vb` should hold the natural shell - the class
 header + `<ComVisible(True)>` attribute, the constant block
 ([Main_Form.vb:34-66](src/Main_Form.vb#L34-L66)), field declarations, and the small
 button/label click handlers not claimed by a concern above (e.g. `Button1_Click`,
@@ -358,10 +358,10 @@ button/label click handlers not claimed by a concern above (e.g. `Button1_Click`
 
 ### 7.2 Recommended order (each step gated on a green Release build)
 
-1. `Main_Form.FileAssociation.vb` + `Main_Form.NativeMethods.vb` — near-zero risk;
+1. `Main_Form.FileAssociation.vb` + `Main_Form.NativeMethods.vb` - near-zero risk;
    proves the build/registration loop works.
-2. `Main_Form.GifPlayback.vb`, `Main_Form.Slideshow.vb`, `Main_Form.Localization.vb` — quick wins.
-3. `Main_Form.MediaLoading.vb` — biggest payoff, do once the loop is trusted.
+2. `Main_Form.GifPlayback.vb`, `Main_Form.Slideshow.vb`, `Main_Form.Localization.vb` - quick wins.
+3. `Main_Form.MediaLoading.vb` - biggest payoff, do once the loop is trusted.
 4. `Main_Form.FileScanning.vb`, `Main_Form.MouseInput.vb`,
    `Main_Form.KeyboardInput.vb`, `Main_Form.Lifecycle.vb`.
 
@@ -374,17 +374,17 @@ One commit per file. Do not batch.
 Each of these must remain declared **exactly once** across all partials. When moving
 a declaration (not just a method that uses it), confirm no sibling partial re-declares it:
 
-- Type `COPYDATASTRUCT` (struct) — moves to NativeMethods.
-- Type `NaturalFilenameComparer` (class) — moves to NativeMethods.
-- Type `FileEntry` (struct) — moves to FileScanning.
-- P/Invoke fns `ShowWindow`/`SetForegroundWindow`/`GetForegroundWindow` — the
+- Type `COPYDATASTRUCT` (struct) - moves to NativeMethods.
+- Type `NaturalFilenameComparer` (class) - moves to NativeMethods.
+- Type `FileEntry` (struct) - moves to FileScanning.
+- P/Invoke fns `ShowWindow`/`SetForegroundWindow`/`GetForegroundWindow` - the
   `Main_Form` copies move to NativeMethods; the **`Common_Module` copies are
   separate** and stay.
 - Message-map consts (`WM_COPYDATA`, `WM_USER`, `MY_CUSTOM_MESSAGE`, `FILE_MAP_READ`,
-  `WmCopyData`) — pick **one** home (shell or NativeMethods) and do not duplicate.
+  `WmCopyData`) - pick **one** home (shell or NativeMethods) and do not duplicate.
 
 If a build error like *"'X' is already declared"* appears, a declaration was copied
-instead of moved — delete the source copy.
+instead of moved - delete the source copy.
 
 ---
 

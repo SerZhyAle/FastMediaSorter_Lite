@@ -229,7 +229,7 @@ Partial Public Class Main_Form
                             End If
                             total_File_Count -= 1
                             If current_File_Index > total_File_Count - 1 Then current_File_Index = total_File_Count - 1
-                            lbl_Status.Text = If(Is_Russian_Language, "удален: ", "file deleted: ") & Current_File_Name
+                            lbl_Status.Text = If(Is_Russian_Language, "удалён: ", "file deleted: ") & Current_File_Name
                         Else
                             DeleteFile(Current_File_Name)
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0560: file deleted: " & Current_File_Name)
@@ -240,7 +240,7 @@ Partial Public Class Main_Form
                             End If
                             total_File_Count -= 1
                             If current_File_Index > total_File_Count - 1 Then current_File_Index = total_File_Count - 1
-                            lbl_Status.Text = If(Is_Russian_Language, "удален: ", "file deleted: ") & Current_File_Name
+                            lbl_Status.Text = If(Is_Russian_Language, "удалён: ", "file deleted: ") & Current_File_Name
                         End If
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0570: case DeleteFile")
                     Else

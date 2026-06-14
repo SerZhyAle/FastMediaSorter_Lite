@@ -10,7 +10,7 @@ Imports System.Windows.Forms
 ' The overlay is NEVER baked into the bitmap; it is painted in the PictureBox
 ' Paint handlers, on top of the image. Because the app expresses zoom/pan by
 ' resizing/moving the PictureBox itself (SizeMode = Zoom), the displayed image
-' rectangle is exactly GetZoomedImageRectangle(image, pb.ClientSize) — so the
+' rectangle is exactly GetZoomedImageRectangle(image, pb.ClientSize) - so the
 ' overlay re-derives its geometry from the live ClientSize on every paint and
 ' therefore stays aligned through fullscreen, super-fullscreen, Ctrl+wheel zoom,
 ' Shift+wheel 1:1, drag and resize, with no separate pan model.
@@ -64,7 +64,7 @@ Partial Public Class Main_Form
                         Dim r As Rectangle = MapBoxToClient(block.Box, fit, scale)
                         If r.Width < 4 OrElse r.Height < 4 Then Continue For
 
-                        ' Filled box only — no border, so the overlay reads as clean text.
+                        ' Filled box only - no border, so the overlay reads as clean text.
                         g.FillRectangle(fillBrush, r)
 
                         ' Give very short source boxes a minimum text height (centred

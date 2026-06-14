@@ -10,8 +10,8 @@ FastMediaSorter LITE is a Windows Forms application for quickly sorting, viewing
 - Customizable keyboard shortcuts for efficient workflow
 - Multi-language support (English/Russian)
 - Broad video format support: common H.264/MP4 plays in-window, and anything the
-  built-in player can't decode (AVI, ZMBV, VP9, MKV, WMV, …) automatically falls
-  back to a bundled **LibVLC** engine — no external codecs or players required
+  built-in player can't decode (AVI, ZMBV, VP9, MKV, WMV, ..) automatically falls
+  back to a bundled **LibVLC** engine - no external codecs or players required
 
 ## Mobile Version 📱
 
@@ -92,4 +92,4 @@ A handy collection of AI-agent presets and tooling by the same author:
 - Email: [sza@ukr.net](mailto:sza@ukr.net)
 
 ## License
-MIT — see [LICENSE](LICENSE).
+MIT - see [LICENSE](LICENSE).

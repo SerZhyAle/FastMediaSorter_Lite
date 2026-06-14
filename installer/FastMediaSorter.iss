@@ -1,4 +1,4 @@
-; FastMediaSorter LITE — Inno Setup script
+; FastMediaSorter LITE - Inno Setup script
 ; Built by CI; invoke with:
 ;   ISCC.exe /DVersion=<x.y.z.w> /DSourceDir=<staged-tree> /O<output-dir> FastMediaSorter.iss
 

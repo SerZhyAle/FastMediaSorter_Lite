@@ -147,7 +147,7 @@ Partial Public Class Main_Form
                 Dim prog_Id As String = "FastMediaSorter." & clean
                 Dim description As String = clean.ToUpper() & " Image - FastMediaSorter"
 
-                ' HKCU\Software\Classes — не требует прав администратора, работает для текущего пользователя
+                ' HKCU\Software\Classes - не требует прав администратора, работает для текущего пользователя
                 Using classes_Key = Registry.CurrentUser.OpenSubKey("Software\Classes", True)
                     Using prog_Key = classes_Key.CreateSubKey(prog_Id)
                         prog_Key.SetValue("", description)

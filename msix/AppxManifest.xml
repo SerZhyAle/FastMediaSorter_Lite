@@ -3,20 +3,20 @@
   MSIX package manifest for FastMediaSorter LITE (Microsoft Store / sideload).
 
   This wraps the plain net48 FastMediaSorter_LITE.exe (plus its offline payload: LibVLC, Tesseract
-  tessdata, flag assets) as a FULL-TRUST desktop app. Every Win32 API the app uses keeps working —
+  tessdata, flag assets) as a FULL-TRUST desktop app. Every Win32 API the app uses keeps working -
   the IE WebBrowser control, native LibVLC playback, System.Drawing/GDI+, arbitrary file-system
   access for sorting media (including \\server shares), and the optional local HTTP calls to an
-  Ollama / LibreTranslate endpoint — all guarded by the single `runFullTrust` restricted capability.
+  Ollama / LibreTranslate endpoint - all guarded by the single `runFullTrust` restricted capability.
 
   Under MSIX the install dir is READ-ONLY, but FastMediaSorter already writes everything mutable
   (downloaded tessdata, OCR cache, settings) under %LOCALAPPDATA%\SZA\FastMediaSorter (see
   src/Ocr/TesseractOcrEngine.vb OcrPaths) and the registry, both of which are virtualized and
-  writable per-package — so no app code change is needed.
+  writable per-package - so no app code change is needed.
 
   The __PLACEHOLDERS__ are filled in by msix\build-msix.ps1 at pack time:
-    __IDENTITY_NAME__     Package identity Name — MUST match the value reserved for you in
+    __IDENTITY_NAME__     Package identity Name - MUST match the value reserved for you in
                           Partner Center (Product > Product identity > "Package/Identity/Name").
-    __PUBLISHER__         Publisher — MUST match exactly (Partner Center "Package/Identity/Publisher",
+    __PUBLISHER__         Publisher - MUST match exactly (Partner Center "Package/Identity/Publisher",
                           e.g. CN=ABCD1234-...). For local self-signed testing it must instead match
                           the test certificate's subject (build-msix.ps1 -SelfSign keeps them equal).
     __PUBLISHER_DISPLAY__ Human-readable publisher name (Partner Center "Package/Properties/PublisherDisplayName").

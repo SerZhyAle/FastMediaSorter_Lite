@@ -1,5 +1,5 @@
 <#
-    Generates a Microsoft Store listing screenshot (1366x768 PNG — the Store minimum) by composing
+    Generates a Microsoft Store listing screenshot (1366x768 PNG - the Store minimum) by composing
     the committed brand assets (social preview banner) on a dark canvas matching the app's palette.
     Output: assets/store/screenshot-1366x768.png
 
@@ -27,7 +27,7 @@ $g.PixelOffsetMode   = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
 $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::ClearTypeGridFit
 
 try {
-    # Background — vertical gradient matching the social preview's dark navy palette.
+    # Background - vertical gradient matching the social preview's dark navy palette.
     $top  = [System.Drawing.Color]::FromArgb(23, 27, 38)   # #171b26
     $bot  = [System.Drawing.Color]::FromArgb(13, 16, 23)   # #0d1017
     $rect = New-Object System.Drawing.Rectangle(0, 0, $W, $H)

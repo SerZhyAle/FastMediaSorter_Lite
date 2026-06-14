@@ -7,7 +7,7 @@ Imports System.Threading.Tasks
 ''' Pluggable translation backend. Implementations must:
 '''   * be awaitable / non-blocking (OCR + HTTP run off the UI thread);
 '''   * honour the CancellationToken (navigation cancels stale work);
-'''   * never throw for an unreachable backend — Probe returns False instead.
+'''   * never throw for an unreachable backend - Probe returns False instead.
 ''' </summary>
 Public Interface ITranslator
     ReadOnly Property Name As String

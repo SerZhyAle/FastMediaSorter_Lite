@@ -9,13 +9,13 @@
       4. Fills the AppxManifest.xml placeholders (Identity Name / Publisher / display name / version).
       5. Packs it into msix\dist\FastMediaSorter_LITE-<version>-x64.msix with makeappx.
 
-    For the STORE you submit the UNSIGNED .msix — Microsoft re-signs it during certification, so you
+    For the STORE you submit the UNSIGNED .msix - Microsoft re-signs it during certification, so you
     don't need a paid code-signing certificate. Set -IdentityName / -Publisher / -PublisherDisplayName
     to the exact values reserved for you in Partner Center (Product > Product identity).
 
     For LOCAL testing add -SelfSign: it creates a self-signed cert whose subject equals -Publisher,
     signs the package, and prints how to trust + install it. (Self-signing requires the manifest
-    Publisher to match the cert subject — keep them equal.)
+    Publisher to match the cert subject - keep them equal.)
 
     Examples:
       # Store-ready package (fill these from Partner Center):

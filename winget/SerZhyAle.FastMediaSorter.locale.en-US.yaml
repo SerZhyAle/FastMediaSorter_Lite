@@ -16,7 +16,7 @@ ShortDescription: Lightweight Windows utility for fast sorting of images and vid
 Description: |-
   FastMediaSorter LITE is a Windows Forms application for quickly sorting, viewing, and managing
   image and video files. It supports a wide range of media formats, slideshow and random viewing
-  modes, recent files tracking, and fast move/copy/rename/delete operations bound to hotkeys —
+  modes, recent files tracking, and fast move/copy/rename/delete operations bound to hotkeys -
   designed for photographers and content creators who triage large folders of media efficiently.
 Moniker: fastmediasorter
 Tags:

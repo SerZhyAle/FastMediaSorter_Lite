@@ -57,7 +57,7 @@ Public Class Table_Form
 
         ' --- TabPage 1: Destination Folders ---
         toolTip.SetToolTip(Data_Grid_View, If(Is_Russian_Language,
-        "Двойной клик по номеру клавиши для выполнения действия." & vbCrLf & "Двойной клик по пути к папке для ее изменения.",
+        "Двойной клик по номеру клавиши для выполнения действия." & vbCrLf & "Двойной клик по пути к папке для её изменения.",
         "Double-click a key number to perform the action." & vbCrLf & "Double-click a folder path to change it."))
         toolTip.SetToolTip(SetOnTop, If(Is_Russian_Language, "Держать это окно поверх всех остальных окон.", "Keep this window always on top of other windows."))
         toolTip.SetToolTip(chkbox_Copy_Mode, If(Is_Russian_Language, "Если отмечено, файлы будут копироваться, а не перемещаться.", "If checked, files will be copied instead of moved."))
@@ -117,7 +117,7 @@ Public Class Table_Form
 
         cmbox_color_schema.Items.Clear()
         cmbox_color_schema.Items.Add(If(Is_Russian_Language, "По углу", "By corner")) '0
-        cmbox_color_schema.Items.Add(If(Is_Russian_Language, "Черный", "Black")) '1
+        cmbox_color_schema.Items.Add(If(Is_Russian_Language, "Чёрный", "Black")) '1
         cmbox_color_schema.Items.Add(If(Is_Russian_Language, "Белый", "White")) '2
         cmbox_color_schema.Items.Add(If(Is_Russian_Language, "По краю", "By side")) '3
         cmbox_color_schema.Items.Add(If(Is_Russian_Language, "По верху", "By top")) '4

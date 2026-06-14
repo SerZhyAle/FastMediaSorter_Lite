@@ -15,7 +15,7 @@ pages, signs, memes), the user wants to:
 1. **OCR** the text in its original language (manually via a button, or automatically as
    each image is shown).
 2. **Translate** it into a chosen destination language.
-3. **Replace the text in place** — draw the translated text back over the original text
+3. **Replace the text in place** - draw the translated text back over the original text
    regions on the image, *Google-Lens style*.
 
 **Everything must be optional**: OCR off by default, manual vs. automatic mode, choice of
@@ -34,25 +34,25 @@ OCR engine, choice of translation backend, overlay on/off, source/target languag
 ## 2. What the `EPUB_2_HTML` reference actually gives us
 
 The reference at `P:\WINDOWS\EPUB_2_HTML` is a **Go** project. Important finding:
-**it has no OCR** (it explicitly punts on scanned PDFs — see `internal/pdf/extract.go`:
+**it has no OCR** (it explicitly punts on scanned PDFs - see `internal/pdf/extract.go`:
 *"OCR for scanned/image PDFs is a future TODO"*). So OCR is genuinely new ground here.
 
 What it *does* give us is a **battle-tested translation layer design** we should port 1:1
 in spirit:
 
 - **Pluggable `Client` interface** with two implementations:
-  - **Google Translate v2** (`internal/translator/translator.go`) — REST, API key in a file
+  - **Google Translate v2** (`internal/translator/translator.go`) - REST, API key in a file
     next to the exe, 5000-char batching, 3× retry with exponential backoff on 429/5xx,
     30 s timeout.
-  - **Ollama local LLM** (`internal/translator/ollama.go`) — `http://localhost:11434/api/generate`,
+  - **Ollama local LLM** (`internal/translator/ollama.go`) - `http://localhost:11434/api/generate`,
     default model `gemma3:12b`, numbered-list batch prompts (20/batch), **echo-back
     detection + single-item retry**, concurrency via semaphore, `keep_alive: 0` to unload
     from VRAM on exit.
-- **Transparent caching wrapper** (`internal/translator/cache.go`) — keyed by
+- **Transparent caching wrapper** (`internal/translator/cache.go`) - keyed by
   `"srcLang:dstLang:text"`, dedupes repeated strings within a run. **We will key by
   `engine:src:dst:textHash` and persist per-image.**
 - **Progress reporting interface** for live UI feedback.
-- **Graceful degradation** — missing API key ⇒ warn + skip, never crash.
+- **Graceful degradation** - missing API key ⇒ warn + skip, never crash.
 - **Cost warning** before paid cloud calls (Google).
 
 **Lesson applied:** the translation side is a solved problem we transcribe into VB.NET.
@@ -70,14 +70,14 @@ All references verified against the working tree.
 - **.NET Framework 4.8**, `AnyCPU`, `WinExe`, `RootNamespace = fmsl`
   ([FastMediaSorter.vbproj:15](src/FastMediaSorter.vbproj#L15)).
 - **`Option Strict On` / `Explicit On` / `Infer On`**, and a set of warnings are treated as
-  **errors** ([FastMediaSorter.vbproj:55](src/FastMediaSorter.vbproj#L55)) — new code must be
+  **errors** ([FastMediaSorter.vbproj:55](src/FastMediaSorter.vbproj#L55)) - new code must be
   fully typed, no implicit conversions, no unused-return paths.
 - **ILMerge bundles everything into a single exe**
   ([FastMediaSorter.vbproj:3](src/FastMediaSorter.vbproj#L3)). ⚠️ **ILMerge only merges
   *managed* assemblies.** Engines with **native** DLLs (Tesseract+Leptonica, PaddleOCR) need
   their `.dll`s copied next to the exe and excluded from merge. **Windows.Media.Ocr ships no
   DLLs at all** (it lives in the OS) → ILMerge-clean. This is a major point in its favour.
-- **Single logical class across partials** — add a new `Partial Class Main_Form` file rather
+- **Single logical class across partials** - add a new `Partial Class Main_Form` file rather
   than bloating `Main_Form.vb`. Existing partials:
   `Main_Form.UILayout.vb`, `Main_Form.FileOperations.vb`, `Main_Form.VideoPlayer.vb`,
   `Main_Form.PerspectiveBackground.vb`, `Main_Form.ModernLayout.vb`.
@@ -107,7 +107,7 @@ All references verified against the working tree.
 
 | Engine | License / cost | Offline | Bounding boxes | Languages (our set) | Native DLLs? (ILMerge) | Notes |
 |---|---|---|---|---|---|---|
-| **Windows.Media.Ocr** (WinRT) | Free, built into Win10/11 | ✅ | ✅ per-**word** `BoundingRect` + per-line | EN, RU, UK, DE, FR, ES, IT, **zh/ja/ko** — all via free OS **OCR language packs** | **None** (in OS) ✅ | **Chosen primary.** No key, no network, no DLL bloat, fast, decent quality. Each `OcrWord` has `Text` + `Rect` in image px. Works from **unpackaged** Win32/.NET-FW apps (PowerToys Text Extractor proves it). |
+| **Windows.Media.Ocr** (WinRT) | Free, built into Win10/11 | ✅ | ✅ per-**word** `BoundingRect` + per-line | EN, RU, UK, DE, FR, ES, IT, **zh/ja/ko** - all via free OS **OCR language packs** | **None** (in OS) ✅ | **Chosen primary.** No key, no network, no DLL bloat, fast, decent quality. Each `OcrWord` has `Text` + `Rect` in image px. Works from **unpackaged** Win32/.NET-FW apps (PowerToys Text Extractor proves it). |
 | **Tesseract** (`charlesw`, NuGet `Tesseract` 5.2.x) / fork `TesseractOCR` 5.5.x | Apache-2.0, free | ✅ | ✅ via `ResultIterator.TryGetBoundingBox` + `PageIteratorLevel` (block/line/word/symbol) | All our languages via `tessdata` files (~10–15 MB/lang) | **Yes** (native `tesseract*.dll`+`leptonica`, x86/x64) ⚠️ | **Chosen fallback / portability option.** Heavier setup; must ship `tessdata` + per-arch natives next to exe, exclude from ILMerge, ship both x86/x64 or pin platform. |
 | **PaddleOCRSharp** (PP-OCRv4/v5) | Apache-2.0, free | ✅ | ✅ (detection polygons → boxes) | Best-in-class **CJK** + Latin; great on multi-column / stylized layouts | **Yes** (native paddle DLLs + models, large) ⚠️ | **Optional "CJK/quality" engine.** Largest footprint; offer as a downloadable add-on rather than bundling. |
 | Cloud Vision (Google) / Azure Computer Vision / AWS Textract | Paid, per-image | ❌ | ✅ | All | None (REST) | **Optional** for users who want max accuracy and accept network + cost. Same pluggable interface. |
@@ -157,7 +157,7 @@ bounding box by centers and adapt color/typography."*
   size/orientation so it blends in. Higher effort + edge-case risk (gradients, textured
   backgrounds, rotated text). The Phase-1 region/color machinery is reused.
 
-The overlay is a **non-destructive layer** drawn on top of the displayed image — the
+The overlay is a **non-destructive layer** drawn on top of the displayed image - the
 original file is never modified. A toggle (key/long-press) flips between *show translation*
 and *show original*.
 
@@ -176,7 +176,7 @@ src/
     TesseractOcrEngine.vb    ' optional fallback (Phase 3)
   Translate/
     ITranslator.vb           ' interface: Translate(texts(), src, dst) -> String()
-    OllamaTranslator.vb      ' default (offline) — port of ollama.go
+    OllamaTranslator.vb      ' default (offline) - port of ollama.go
     LibreTranslateTranslator.vb
     DeepLTranslator.vb       ' optional cloud (Phase 3)
     GoogleV2Translator.vb    ' optional cloud (Phase 3)
@@ -193,7 +193,7 @@ src/
 ### 5.2 Data model
 
 ```vb
-' OcrModels.vb — coordinates are ORIGINAL IMAGE PIXELS
+' OcrModels.vb - coordinates are ORIGINAL IMAGE PIXELS
 Public Class OcrWord
     Public Property Text As String
     Public Property Box As Rectangle        ' image-pixel space
@@ -206,7 +206,7 @@ Public Class OcrLine
     Public Property Box As Rectangle        ' union of word boxes
 End Class
 
-Public Class OcrBlock                        ' paragraph / bubble — translation unit
+Public Class OcrBlock                        ' paragraph / bubble - translation unit
     Public Property Lines As List(Of OcrLine)
     Public Property Text As String
     Public Property Box As Rectangle
@@ -257,14 +257,14 @@ Function ImageToControl(b As Rectangle) As Rectangle
 End Function
 ```
 
-⚠️ **Also account for manual zoom/pan** (`zoom_Scale`, Ctrl+Wheel) if a zoom is active —
+⚠️ **Also account for manual zoom/pan** (`zoom_Scale`, Ctrl+Wheel) if a zoom is active -
 multiply by `zoom_Scale` and add the pan offset before drawing. The overlay must invalidate
 and recompute on `PictureBox.Resize`, window resize, fullscreen toggle, and zoom change.
 
 ### 5.5 Rendering (Phase-1 translucent boxes)
 
 Draw in the visible PictureBox's `Paint` handler (or a transparent child control sized to the
-box) — **not** baked into the image bitmap, so toggling is instant and lossless:
+box) - **not** baked into the image bitmap, so toggling is instant and lossless:
 
 ```vb
 Private Sub Picture_Box_1_Paint(sender As Object, e As PaintEventArgs) Handles Picture_Box_1.Paint
@@ -318,12 +318,12 @@ End Function
 ### 5.7 Threading, debounce, cancellation
 
 - Single **serial worker** (dedicated `Task` loop or `BackgroundWorker`) consuming a
-  1-deep "latest job wins" slot — when the user scrolls fast, stale jobs are dropped.
+  1-deep "latest job wins" slot - when the user scrolls fast, stale jobs are dropped.
 - **Debounce** ~300–400 ms after an image settles before starting OCR (matches existing
   preload feel; avoids hammering Ollama while flipping pages).
 - A `CancellationTokenSource` per job; cancel when `Current_File_Name` changes.
 - All UI mutation via `Me.BeginInvoke` (existing `InvokeRequired` pattern).
-- Respect `Is_No_Background_Tasks` — when set, only manual (button/hotkey) OCR runs.
+- Respect `Is_No_Background_Tasks` - when set, only manual (button/hotkey) OCR runs.
 
 ### 5.8 Caching
 
@@ -356,10 +356,10 @@ Loaded in `Main_Form_Load`, saved in `Form1_FormClosing`, alongside existing set
 ### 5.10 UI
 
 - **Toolbar toggle** in the modern toolbar (`Main_Form.ModernLayout.vb`): a "Translate"
-  button — click = OCR+translate current image; the button's pressed state = overlay
+  button - click = OCR+translate current image; the button's pressed state = overlay
   visible. Right-click / long-press = open OCR settings.
 - **Hotkeys** (added to `KeybUse()` `Select Case`): **`T`** = translate current image /
-  toggle overlay; **`Shift+T`** = toggle auto-mode. (Confirm `T` is unused — quick grep of
+  toggle overlay; **`Shift+T`** = toggle auto-mode. (Confirm `T` is unused - quick grep of
   `KeybUse` before claiming it.)
 - **Settings dialog / panel**: engine picker, provider picker + endpoint/key/model, source
   (auto + list) and target language, overlay mode + opacity, "detect installed OCR
@@ -368,7 +368,7 @@ Loaded in `Main_Form_Load`, saved in `Form1_FormClosing`, alongside existing set
   dockable panel (reuses zero coordinate math; good accessibility option).
 - **Copy/export**: copy translated (or original) text to clipboard.
 - **Status/progress**: reuse the existing progress-reporting affordance for "OCR…",
-  "Translating 3/8…", and a clear "No OCR language pack for X — install or switch engine"
+  "Translating 3/8…", and a clear "No OCR language pack for X - install or switch engine"
   message.
 
 ---
@@ -394,14 +394,14 @@ End Interface
 ```
 
 `CachingTranslator` decorates any `ITranslator`. A small factory builds the configured
-engine/translator from settings, so the pipeline never hard-codes a backend — satisfying
+engine/translator from settings, so the pipeline never hard-codes a backend - satisfying
 "everything optional / pluggable."
 
 ---
 
 ## 7. Implementation phases
 
-### Phase 0 — Scaffolding & decoupled engines (no UI)
+### Phase 0 - Scaffolding & decoupled engines (no UI)
 - [ ] Add `Ocr/` + `Translate/` files, models, interfaces.
 - [ ] `WindowsMediaOcrEngine` working end-to-end on a test bitmap (csproj WinRT wiring).
 - [ ] `OllamaTranslator` + `CachingTranslator` ported from `ollama.go` (batch, echo-back
@@ -410,7 +410,7 @@ engine/translator from settings, so the pipeline never hard-codes a backend — 
 - **Exit criteria:** OCR boxes + translated strings logged for a sample image; build passes
   with `WarningsAsErrors`.
 
-### Phase 1 — Manual overlay in the app (the chosen v1)
+### Phase 1 - Manual overlay in the app (the chosen v1)
 - [ ] `Main_Form.OcrTranslate.vb` orchestration + serial worker + cancellation.
 - [ ] `Main_Form.OcrOverlay.vb` coordinate mapping (reuse `GetZoomedImageRectangle`) +
       translucent-box rendering + auto-fit text + show/hide toggle.
@@ -419,7 +419,7 @@ engine/translator from settings, so the pipeline never hard-codes a backend — 
 - **Exit criteria:** press `T` on a text image → translated translucent boxes appear over the
   right regions; toggle hides them; navigating away clears them.
 
-### Phase 2 — Auto mode, caching, settings UI
+### Phase 2 - Auto mode, caching, settings UI
 - [ ] Auto-OCR hook in `UpdateCurrentFileAndDisplay` with debounce + "latest wins".
 - [ ] Memory + disk sidecar cache.
 - [ ] Settings dialog (engine/provider/langs/opacity/cache, install-pack guidance).
@@ -427,14 +427,14 @@ engine/translator from settings, so the pipeline never hard-codes a backend — 
 - **Exit criteria:** scrolling a folder auto-translates without UI stutter; revisits are
   instant; all toggles work and persist.
 
-### Phase 3 — More backends (optional, pluggable)
-- [ ] `DeepLTranslator`, `GoogleV2Translator` (+ cost warning), Azure — behind settings.
+### Phase 3 - More backends (optional, pluggable)
+- [ ] `DeepLTranslator`, `GoogleV2Translator` (+ cost warning), Azure - behind settings.
 - [ ] `TesseractOcrEngine` fallback (ship `tessdata` + per-arch natives, exclude from
       ILMerge; document the packaging).
 - **Exit criteria:** user can switch engine/provider in settings; cloud paths degrade
   gracefully without keys.
 
-### Phase 4 — Lens-grade blend (stretch)
+### Phase 4 - Lens-grade blend (stretch)
 - [ ] Inpaint original text (background sampling/clone) + matched-color/size translated text.
 - [ ] `PaddleOCRSharp` optional add-on for premium CJK.
 - **Exit criteria:** translated text blends into the image; opt-in, off by default.
@@ -447,7 +447,7 @@ engine/translator from settings, so the pipeline never hard-codes a backend — 
   ILMerge step tolerates the `Microsoft.Windows.SDK.Contracts` reference (reference-only;
   should not be merged). Test the **single merged exe** actually runs OCR on a clean machine.
 - **Tesseract/Paddle (Phase 3/4):** native DLLs + data files must be copied to output and
-  **excluded from ILMerge**; decide x86 vs x64 vs both (project is `AnyCPU` — pin or ship
+  **excluded from ILMerge**; decide x86 vs x64 vs both (project is `AnyCPU` - pin or ship
   both). Likely a **separate optional download** rather than bundling (keeps the LITE exe
   small).
 - **Release pipeline** (`.github/workflows/release.yml`) stages everything in `bin/Release`
@@ -476,9 +476,9 @@ engine/translator from settings, so the pipeline never hard-codes a backend — 
 
 ## 10. Open questions (non-blocking; sensible defaults chosen)
 
-1. **Default target language** — follow the app's UI language (RU when `Is_Russian_Language`,
+1. **Default target language** - follow the app's UI language (RU when `Is_Russian_Language`,
    else EN), or a fixed user choice? *(Plan assumes: follow UI, overridable in settings.)*
-2. **Translation unit** — per text-block/bubble (better context, fewer calls) vs per-line
+2. **Translation unit** - per text-block/bubble (better context, fewer calls) vs per-line
    (tighter boxes). *(Plan assumes: per-block, with line boxes kept for rendering.)*
 3. **Bundle a Tesseract `tessdata` starter set**, or always rely on Windows packs + optional
    download? *(Plan assumes: Windows primary, Tesseract as optional download in Phase 3.)*
@@ -504,13 +504,13 @@ on-image translucent overlay, manual and auto). Phases 3–4 are optional polish
 
 ## 12. Sources
 
-- [Windows.Media.Ocr Namespace — Microsoft Learn](https://learn.microsoft.com/en-us/uwp/api/windows.media.ocr)
-- [OcrEngine.AvailableRecognizerLanguages — Microsoft Learn](https://learn.microsoft.com/en-us/uwp/api/windows.media.ocr.ocrengine.availablerecognizerlanguages)
-- [Call Windows Runtime APIs in desktop apps — Microsoft Learn](https://learn.microsoft.com/en-us/windows/apps/desktop/modernize/winrt-apis-desktop-apps)
-- [xulihang/WinRTOCR — WinRT OCR from a desktop console app](https://github.com/xulihang/WinRTOCR)
+- [Windows.Media.Ocr Namespace - Microsoft Learn](https://learn.microsoft.com/en-us/uwp/api/windows.media.ocr)
+- [OcrEngine.AvailableRecognizerLanguages - Microsoft Learn](https://learn.microsoft.com/en-us/uwp/api/windows.media.ocr.ocrengine.availablerecognizerlanguages)
+- [Call Windows Runtime APIs in desktop apps - Microsoft Learn](https://learn.microsoft.com/en-us/windows/apps/desktop/modernize/winrt-apis-desktop-apps)
+- [xulihang/WinRTOCR - WinRT OCR from a desktop console app](https://github.com/xulihang/WinRTOCR)
 - [PowerToys Text Extractor (uses Windows.Media.Ocr unpackaged)](https://learn.microsoft.com/en-us/windows/powertoys/text-extractor)
-- [charlesw/tesseract — .NET wrapper](https://github.com/charlesw/tesseract) · [NuGet TesseractOCR 5.5.2](https://www.nuget.org/packages/TesseractOCR)
-- [tesseract-ocr/tessdata_fast — language data](https://github.com/tesseract-ocr/tessdata_fast)
+- [charlesw/tesseract - .NET wrapper](https://github.com/charlesw/tesseract) · [NuGet TesseractOCR 5.5.2](https://www.nuget.org/packages/TesseractOCR)
+- [tesseract-ocr/tessdata_fast - language data](https://github.com/tesseract-ocr/tessdata_fast)
 - [PaddleOCR vs Tesseract comparison (IronOCR)](https://ironsoftware.com/csharp/ocr/blog/compare-to-other-components/paddle-ocr-vs-tesseract/) · [CodeSOTA 2026 OCR benchmark](https://www.codesota.com/ocr/paddleocr-vs-tesseract)
 - [DeepL vs Google Translate API pricing (Jun 2026)](https://www.buildmvpfast.com/api-costs/translation)
-- Reference implementation: `P:\WINDOWS\EPUB_2_HTML` — `internal/translator/{translator.go, ollama.go, cache.go}` (Google v2 + Ollama + caching patterns)
+- Reference implementation: `P:\WINDOWS\EPUB_2_HTML` - `internal/translator/{translator.go, ollama.go, cache.go}` (Google v2 + Ollama + caching patterns)

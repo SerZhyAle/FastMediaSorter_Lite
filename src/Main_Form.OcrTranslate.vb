@@ -6,7 +6,7 @@ Imports System.Threading
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
-' OCR + Translation overlay — pipeline, toolbar control, hotkey entry points and
+' OCR + Translation overlay - pipeline, toolbar control, hotkey entry points and
 ' the settings dialog. Overlay PAINTING lives in Main_Form.OcrOverlay.vb.
 '
 ' Threading model (spec 6.6): a separate, serialized Task pipeline with
@@ -63,7 +63,7 @@ Partial Public Class Main_Form
         UpdateOcrButtonVisual()
         If toolTip IsNot Nothing AndAlso btn_Translate IsNot Nothing Then
             toolTip.SetToolTip(btn_Translate, If(Is_Russian_Language,
-                "OCR + перевод текущего изображения (T). ПКМ — настройки. Shift+T — авто-режим.",
+                "OCR + перевод текущего изображения (T). ПКМ - настройки. Shift+T - авто-режим.",
                 "OCR + translate the current image (T). Right-click for settings. Shift+T = auto mode."))
         End If
     End Sub
@@ -217,7 +217,7 @@ Partial Public Class Main_Form
 
         CancelOcrJob()
         ocr_Job_Cts = New CancellationTokenSource()
-        SetOcrStatus(If(Is_Russian_Language, "Распознавание…", "OCR…"))
+        SetOcrStatus(If(Is_Russian_Language, "Распознавание..", "OCR.."))
 
         ' Fire-and-forget; RunOcrPipeline never throws (it catches internally).
         Forget(RunOcrPipeline(job, ocr_Job_Cts.Token))
@@ -267,7 +267,7 @@ Partial Public Class Main_Form
             End If
 
             ' Translate.
-            SetStatusOnUi(If(Is_Russian_Language, "Перевод…", "Translating…"))
+            SetStatusOnUi(If(Is_Russian_Language, "Перевод..", "Translating.."))
             Dim translator As ITranslator = CreateTranslator()
             Dim available As Boolean = False
             If translator IsNot Nothing Then
@@ -302,7 +302,7 @@ Partial Public Class Main_Form
             ApplyOnUi(finalDoc, "", token)
 
         Catch ex As OperationCanceledException
-            ' Navigated away — discard silently.
+            ' Navigated away - discard silently.
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: pipeline error: " & ex.Message)
             SetStatusOnUi(If(Is_Russian_Language, "Ошибка OCR", "OCR error"))
