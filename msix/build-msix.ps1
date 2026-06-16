@@ -19,7 +19,7 @@
 
     Examples:
       # Store-ready package (fill these from Partner Center):
-      .\build-msix.ps1 -IdentityName "1234SerZhyAle.FastMediaSorterLITE" -Publisher "CN=ABCD1234-..." -PublisherDisplayName "SerZhyAle"
+      .\build-msix.ps1 -IdentityName "SZA.FastMediaSorterLITE" -Publisher "CN=F98ACEDB-1E22-4C39-AF63-F9FCFE807DCD" -PublisherDisplayName "SZA"
 
       # Local sideload test (self-signed), reusing an existing Release build:
       .\build-msix.ps1 -SelfSign -NoBuild
@@ -31,9 +31,9 @@
 #>
 [CmdletBinding()]
 param(
-    [string] $IdentityName         = 'SerZhyAle.FastMediaSorterLITE',
-    [string] $Publisher            = 'CN=SerZhyAle',
-    [string] $PublisherDisplayName = 'SerZhyAle',
+    [string] $IdentityName         = 'SZA.FastMediaSorterLITE',
+    [string] $Publisher            = 'CN=F98ACEDB-1E22-4C39-AF63-F9FCFE807DCD',
+    [string] $PublisherDisplayName = 'SZA',
     [string] $Configuration        = 'Release',
     [switch] $NoBuild,
     [switch] $SelfSign,
