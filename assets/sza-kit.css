@@ -1,0 +1,205 @@
+/* ============================================================
+   SZA WEB KIT  —  sza-kit.css
+   One design system for all SZA web properties (present & future).
+   Palette: "Pine + Gold" (dark-green primary, gold secondary accent).
+   Drop-in: <link rel="stylesheet" href="sza-kit.css"> OR paste into <style>.
+   Fonts:  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+   ============================================================ */
+
+/* ---------- TOKENS : DARK (default) ---------- */
+:root{
+  /* surfaces */
+  --bg:#0a0f0a;            /* page background, green-black */
+  --bg-2:#0f1610;          /* elevated: header, inputs */
+  --bg-3:#131c14;          /* deeper elevation */
+  --card:rgba(255,255,255,.035);
+  --card-hover:rgba(255,255,255,.06);
+  --border:rgba(255,255,255,.08);
+  --border-hover:rgba(63,185,80,.35);
+  /* text */
+  --text:#f1f5ee;
+  --text-2:#c3ccbc;
+  --muted:#94a08c;
+  /* accents */
+  --acc:#3fb950;           /* primary = green */
+  --acc-strong:#56d364;    /* hover / links */
+  --acc-ink:#04130c;       /* text on green fills */
+  --gold:#e3b341;          /* secondary accent = gold */
+  --gold-strong:#f0c862;
+  --gold-ink:#1c1403;
+  /* code */
+  --code-bg:#070f08;
+  --code-ink:#d6e2cf;
+  /* semantic */
+  --ok:#3fb950; --warn:#e3b341; --danger:#e5534b;
+  /* effects */
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  --glow:0 0 26px rgba(63,185,80,.28);
+  --blob-1:#3fb950; --blob-2:#e3b341; --blob-3:#1f7a33;
+  /* type */
+  --font-heading:'Outfit',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-body:'Plus Jakarta Sans',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-mono:ui-monospace,"Cascadia Code","SFMono-Regular",Consolas,Menlo,monospace;
+  /* metrics */
+  --wide:1100px; --radius:16px; --radius-sm:10px; --radius-pill:30px;
+  --step:clamp(.9rem,2.2vw,1rem);
+}
+
+/* ---------- TOKENS : LIGHT ---------- */
+html[data-theme="light"]{
+  --bg:#eef3ea; --bg-2:#ffffff; --bg-3:#e4ecdf;
+  --card:rgba(255,255,255,.70); --card-hover:rgba(255,255,255,.92);
+  --border:rgba(16,40,20,.12); --border-hover:rgba(47,143,58,.40);
+  --text:#16210f; --text-2:#384534; --muted:#5f6b54;
+  --acc:#2f8f3a; --acc-strong:#267a30; --acc-ink:#ffffff;
+  --gold:#9a6a13; --gold-strong:#7e560f; --gold-ink:#ffffff;
+  --code-bg:#0e1411; --code-ink:#d6e2cf;          /* code stays dark in light mode */
+  --shadow:0 6px 24px rgba(20,40,20,.10);
+  --glow:0 0 26px rgba(47,143,58,.18);
+}
+
+/* ---------- RESET / BASE ---------- */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.62;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;position:relative}
+a{color:var(--acc-strong);text-decoration:none}
+a:hover{color:var(--acc)}
+h1,h2,h3,h4{font-family:var(--font-heading);letter-spacing:-.02em;line-height:1.2}
+code,kbd,pre{font-family:var(--font-mono)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
+img{max-width:100%;height:auto}
+
+/* ---------- DECORATIVE BLOBS (subtle) ---------- */
+.bg-blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.blob{position:absolute;border-radius:50%;filter:blur(120px);opacity:.14}
+.blob-1{top:-90px;left:-60px;width:420px;height:420px;background:radial-gradient(circle,var(--blob-1),transparent 70%);animation:drift 22s infinite alternate ease-in-out}
+.blob-2{top:32%;right:-110px;width:460px;height:460px;background:radial-gradient(circle,var(--blob-2),transparent 70%);animation:drift 28s infinite alternate-reverse ease-in-out}
+.blob-3{bottom:-120px;left:12%;width:380px;height:380px;background:radial-gradient(circle,var(--blob-3),transparent 70%)}
+@keyframes drift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(36px,28px) scale(1.08)}}
+
+/* ---------- LAYOUT ---------- */
+.container{max-width:var(--wide);margin:0 auto;padding:0 20px;position:relative;z-index:1}
+.section{padding:2rem 0}
+
+/* ---------- STICKY GLASS HEADER ---------- */
+.site-header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;
+  padding:10px 16px;margin:14px auto;max-width:var(--wide);
+  border:1px solid var(--border);border-radius:14px;
+  background:color-mix(in srgb,var(--bg-2) 78%,transparent);backdrop-filter:saturate(140%) blur(10px)}
+.brand{font-family:var(--font-heading);font-weight:800;font-size:15px;letter-spacing:.2px;margin-right:auto;color:var(--text)}
+.brand .dot{color:var(--acc)}
+
+/* language switcher (RU · EN · UA — no flags) + theme toggle share .seg look */
+.seg{display:flex;gap:2px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:20px;padding:3px}
+html[data-theme="light"] .seg{background:rgba(16,40,20,.05)}
+.seg button{font-family:var(--font-heading);font-size:11px;font-weight:700;letter-spacing:.04em;
+  padding:5px 10px;border:none;border-radius:14px;background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"],.seg button.on{background:var(--acc);color:var(--acc-ink)}
+.theme-btn{width:32px;height:32px;border:1px solid var(--border);border-radius:50%;background:transparent;
+  color:var(--muted);cursor:pointer;display:grid;place-items:center;font-size:14px}
+.theme-btn:hover{color:var(--text);border-color:var(--border-hover)}
+
+/* ---------- BUTTONS ---------- */
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-family:var(--font-body);font-weight:600;
+  font-size:.92rem;padding:.7rem 1.3rem;border-radius:var(--radius-pill);border:1px solid transparent;
+  cursor:pointer;text-decoration:none;transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s,background .25s,border-color .25s}
+.btn:hover{transform:translateY(-2px)}
+.btn-primary{background:var(--acc);color:var(--acc-ink);box-shadow:var(--glow)}
+.btn-primary:hover{background:var(--acc-strong);color:var(--acc-ink)}
+.btn-gold{background:var(--gold);color:var(--gold-ink)}
+.btn-gold:hover{background:var(--gold-strong);color:var(--gold-ink)}
+.btn-ghost{background:rgba(255,255,255,.03);color:var(--text);border-color:var(--border)}
+html[data-theme="light"] .btn-ghost{background:rgba(16,40,20,.03)}
+.btn-ghost:hover{border-color:var(--border-hover);color:var(--text)}
+.btn-sm{padding:.5rem 1rem;font-size:.8rem;border-radius:var(--radius-sm)}
+
+/* ---------- HERO ---------- */
+.hero{text-align:center;padding:2rem 1rem 1.5rem}
+.hero .kicker{font-family:var(--font-heading);text-transform:uppercase;letter-spacing:.15em;
+  font-size:.72rem;font-weight:700;color:var(--acc);margin-bottom:.8rem}
+.hero h1{font-size:clamp(2rem,5vw,2.9rem);font-weight:800;margin-bottom:.5rem}
+.hero .lead{color:var(--muted);max-width:600px;margin:0 auto 1.2rem;font-size:1.02rem}
+
+/* ---------- "GET IT" / DISTRIBUTION BLOCK (required above the fold on app sites) ---------- */
+.get{display:grid;gap:1rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  backdrop-filter:blur(16px);padding:1.4rem 1.5rem;margin:1rem auto 2rem;max-width:760px}
+.get .whatfor{color:var(--text-2);font-size:.98rem}
+.get .channels{display:flex;flex-wrap:wrap;gap:.6rem}
+.quickstart{counter-reset:qs;display:grid;gap:.5rem;margin-top:.4rem}
+.quickstart li{list-style:none;position:relative;padding-left:2rem;color:var(--text-2);font-size:.92rem}
+.quickstart li::before{counter-increment:qs;content:counter(qs);position:absolute;left:0;top:0;
+  width:1.35rem;height:1.35rem;border-radius:50%;background:color-mix(in srgb,var(--acc) 18%,transparent);
+  color:var(--acc);font-family:var(--font-heading);font-weight:800;font-size:.72rem;display:grid;place-items:center}
+
+/* ---------- GLASS CARDS / GRID ---------- */
+.grid{display:grid;grid-template-columns:1fr;gap:1.25rem}
+@media(min-width:640px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:960px){.grid{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  backdrop-filter:blur(16px);padding:1.6rem;transition:transform .3s,border-color .3s,background .3s}
+.card:hover{transform:translateY(-4px);border-color:var(--border-hover);background:var(--card-hover)}
+
+/* ---------- NUMBERED COLLAPSIBLE SECTIONS (TOC-as-content) ---------- */
+details.sec{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  backdrop-filter:blur(12px);padding:0 1.3rem;margin-bottom:1rem;scroll-margin-top:80px}
+details.sec[open]{border-color:var(--border-hover)}
+details.sec>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:.8rem;padding:1.1rem 0;font-family:var(--font-heading);font-weight:700;font-size:1.05rem}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::after{content:"▸";margin-left:auto;color:var(--muted);transition:transform .2s}
+details.sec[open]>summary::after{transform:rotate(90deg)}
+.secnum{font-family:var(--font-heading);font-weight:800;font-size:.8rem;color:var(--acc);font-variant-numeric:tabular-nums;min-width:2ch}
+details.sec>*:not(summary){margin-bottom:1.1rem}
+
+/* ---------- COPY-TO-CLIPBOARD BOX (commands; contact info on hub) ---------- */
+.copybox{position:relative;background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:.85rem 1rem;padding-right:5rem;font-family:var(--font-mono);font-size:.86rem;color:var(--code-ink);
+  overflow-x:auto;white-space:nowrap}
+.copybox .tok{color:var(--acc-strong)}
+.copybox .copy{position:absolute;top:.5rem;right:.5rem;font-family:var(--font-body);font-size:.72rem;font-weight:600;
+  padding:.35rem .7rem;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);cursor:pointer}
+.copybox .copy:hover{color:var(--text);border-color:var(--border-hover)}
+.copybox .copy.done{color:var(--acc);border-color:var(--acc)}
+
+/* ---------- CALLOUT / NOTE ---------- */
+.note{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);
+  border-radius:var(--radius-sm);padding:.9rem 1.1rem;margin:1rem 0}
+.note .tag{font-family:var(--font-heading);font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:var(--gold)}
+.note p{color:var(--text-2);font-size:.9rem;margin-top:.3rem}
+
+/* ---------- KBD / PILLS / BADGES ---------- */
+kbd{font-size:.8em;padding:.12em .45em;border-radius:5px;background:var(--bg-3);border:1px solid var(--border);border-bottom-width:2px;color:var(--text)}
+.pills{display:flex;flex-wrap:wrap;gap:.45rem}
+.pill{font-family:var(--font-heading);font-size:.68rem;font-weight:700;letter-spacing:.04em;padding:.25rem .7rem;
+  border-radius:var(--radius-pill);background:color-mix(in srgb,var(--acc) 12%,transparent);
+  color:var(--acc);border:1px solid color-mix(in srgb,var(--acc) 22%,transparent)}
+.pill.gold{background:color-mix(in srgb,var(--gold) 14%,transparent);color:var(--gold);border-color:color-mix(in srgb,var(--gold) 26%,transparent)}
+
+/* ---------- INLINE DEMO STRIP ---------- */
+.demo{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;background:var(--code-bg);
+  border:1px solid var(--border);border-radius:var(--radius-sm);padding:.8rem 1rem;font-family:var(--font-mono);font-size:.86rem}
+.demo code{color:var(--text)}
+.demo .arrow{color:var(--acc);font-weight:700;font-family:var(--font-body);font-size:.8rem}
+.demo .out{color:var(--gold)}
+
+/* ---------- FOOTER : "MORE TOOLS BY SZA" + CONTACT ---------- */
+.site-footer{border-top:1px solid var(--border);margin-top:3rem;padding:2rem 0}
+.tools-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;margin-bottom:1.5rem}
+@media(min-width:760px){.tools-grid{grid-template-columns:repeat(3,1fr)}}
+.tools-grid a{display:block;padding:.7rem .9rem;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--card);color:var(--text);font-size:.85rem}
+.tools-grid a:hover{border-color:var(--border-hover);background:var(--card-hover)}
+.tools-grid a b{font-family:var(--font-heading)}
+.tools-grid a span{display:block;color:var(--muted);font-size:.74rem;margin-top:.15rem}
+.footer-bottom{display:flex;flex-direction:column;gap:.6rem;align-items:center;color:var(--muted);font-size:.82rem}
+@media(min-width:640px){.footer-bottom{flex-direction:row;justify-content:space-between}}
+
+/* ---------- BACK TO TOP ---------- */
+.to-top{position:fixed;right:18px;bottom:18px;width:42px;height:42px;border-radius:50%;z-index:40;
+  background:var(--acc);color:var(--acc-ink);border:none;cursor:pointer;display:none;place-items:center;box-shadow:var(--shadow)}
+.to-top.show{display:grid}
+
+/* ---------- RESPONSIVE / A11Y ---------- */
+@media(max-width:480px){.site-header .btn{display:none}}
+@media(pointer:coarse){.btn,.seg button,.theme-btn{min-height:44px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

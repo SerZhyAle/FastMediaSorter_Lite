@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- pre-paint: resolve theme + language before CSS so nothing flashes -->
+<script>
+(function(){try{
+  var t=localStorage.getItem('sza-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('sza-lang');
+  if(!l){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+}catch(e){}})();
+</script>
+
+<title>FastMediaSorter LITE - fast image &amp; video sorter for Windows</title>
+<meta name="description" content="A keyboard-first Windows image and video sorter: fast folder navigation, slideshow, one-key move / copy / rename / delete, broad video playback with a bundled LibVLC fallback. Free and open-source.">
+<meta name="theme-color" content="#0a0f0a">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FastMediaSorter LITE">
+<meta property="og:title" content="FastMediaSorter LITE - fast image &amp; video sorter for Windows">
+<meta property="og:description" content="Sort huge photo and video folders at speed - one key moves, copies, renames or deletes each file. Free and open-source.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FastMediaSorter LITE">
+<meta name="twitter:description" content="Fast image and video sorting for Windows with one-key actions, slideshow and a bundled LibVLC fallback.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png">
+
+<link rel="icon" href="assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="apple-touch-icon" href="assets/icons/store-icon-256.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/sza-kit.css">
+<style>
+  /* pure-CSS language toggle (Style Guide §6) */
+  html[data-lang="ru"] [data-l]:not([data-l="ru"]){display:none}
+  html[data-lang="en"] [data-l]:not([data-l="en"]){display:none}
+  html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
+  /* page-local helpers */
+  .lead-narrow{max-width:680px}
+  .shot{max-width:880px;margin:0 auto 2rem}
+  .shot img{border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);display:block;width:100%}
+  .shot figcaption{color:var(--muted);font-size:.8rem;text-align:center;margin-top:.6rem}
+  .sec-head{text-align:center;max-width:680px;margin:0 auto 1.4rem}
+  .sec-head h2{font-size:clamp(1.4rem,3.4vw,1.9rem)}
+  .sec-head p{color:var(--muted);font-size:.95rem;margin-top:.35rem}
+  .card h3{font-family:var(--font-heading);font-size:1.08rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}
+  .card p{color:var(--text-2);font-size:.92rem}
+  .card .kbds{margin-top:.7rem;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+  .dl-row{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
+  .dl-meta{color:var(--muted);font-size:.78rem;width:100%}
+  .xlinks{display:grid;gap:.5rem}
+  .xlinks a{font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="bg-blobs" aria-hidden="true">
+  <div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div>
+</div>
+
+<header class="site-header">
+  <span class="brand">FastMediaSorter LITE<span class="dot">.</span></span>
+  <div class="seg" role="group" aria-label="Language">
+    <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
+  </div>
+  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
+  <a class="btn btn-primary btn-sm" href="#get"><span data-l="en">Download</span><span data-l="ru">Скачать</span><span data-l="ua">Завантажити</span></a>
+</header>
+
+<main class="container">
+
+  <section class="hero">
+    <div class="kicker">
+      <span data-l="en">Windows · image &amp; video sorter</span>
+      <span data-l="ru">Windows · сортировщик фото и видео</span>
+      <span data-l="ua">Windows · сортувальник фото та відео</span>
+    </div>
+    <h1>FastMediaSorter LITE</h1>
+    <p class="lead lead-narrow">
+      <span data-l="en">Sort huge photo and video folders at speed - one key moves, copies, renames or deletes each file.</span>
+      <span data-l="ru">Быстрая сортировка больших папок с фото и видео - одна клавиша перемещает, копирует, переименовывает или удаляет файл.</span>
+      <span data-l="ua">Швидке сортування великих папок з фото та відео - одна клавіша переміщує, копіює, перейменовує або видаляє файл.</span>
+    </p>
+    <div class="pills" style="justify-content:center">
+      <span class="pill">JPG</span><span class="pill">PNG</span><span class="pill">GIF</span><span class="pill">WEBP</span>
+      <span class="pill gold">MP4</span><span class="pill gold">MKV</span><span class="pill gold">AVI</span><span class="pill gold">WEBM</span>
+    </div>
+  </section>
+
+  <!-- GET IT (above the fold) -->
+  <section class="get" id="get">
+    <p class="whatfor">
+      <span data-l="en"><b>What it is &amp; who it's for.</b> A keyboard-first Windows app (WinForms / .NET 4.8) for people who sort large photo and video folders. Browse fast, preview everything, act with a single key. H.264/MP4 plays in-window; anything else falls back to a bundled LibVLC engine - no external codecs.</span>
+      <span data-l="ru"><b>Что это и для кого.</b> Приложение для Windows (WinForms / .NET 4.8) с управлением с клавиатуры - для тех, кто сортирует большие папки с фото и видео. Быстрый просмотр, предпросмотр всего, действие одной клавишей. H.264/MP4 играет во встроенном окне; остальное берёт на себя встроенный движок LibVLC - без внешних кодеков.</span>
+      <span data-l="ua"><b>Що це і для кого.</b> Застосунок для Windows (WinForms / .NET 4.8) з керуванням з клавіатури - для тих, хто сортує великі папки з фото та відео. Швидкий перегляд, прев'ю всього, дія однією клавішею. H.264/MP4 грає у вбудованому вікні; решту бере на себе вбудований рушій LibVLC - без зовнішніх кодеків.</span>
+    </p>
+
+    <div>
+      <div class="copybox"><span class="tok">winget</span> install --id SerZhyAle.FastMediaSorter
+        <button class="copy" data-copy="winget install --id SerZhyAle.FastMediaSorter">Copy</button></div>
+    </div>
+
+    <div class="dl-row" id="dlRow">
+      <a class="btn btn-primary" id="dl-setup" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">
+        <span data-l="en">Installer (.exe)</span><span data-l="ru">Установщик (.exe)</span><span data-l="ua">Інсталятор (.exe)</span>
+      </a>
+      <a class="btn btn-ghost" id="dl-zip" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">
+        <span data-l="en">Portable (.zip)</span><span data-l="ru">Портативная (.zip)</span><span data-l="ua">Портативна (.zip)</span>
+      </a>
+      <a class="btn btn-ghost btn-sm" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">
+        <span data-l="en">All releases ⤓</span><span data-l="ru">Все релизы ⤓</span><span data-l="ua">Усі релізи ⤓</span>
+      </a>
+      <span class="dl-meta" id="dlMeta">
+        <span data-l="en">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 7/10/11.</span>
+        <span data-l="ru">Готовы к работе офлайн - библиотеки VLC и пакеты OCR уже внутри. Windows 7/10/11.</span>
+        <span data-l="ua">Готові до роботи офлайн - бібліотеки VLC та пакети OCR уже всередині. Windows 7/10/11.</span>
+      </span>
+    </div>
+
+    <ol class="quickstart">
+      <li><span data-l="en">Install via winget or the installer above.</span><span data-l="ru">Установите через winget или установщиком выше.</span><span data-l="ua">Встановіть через winget або інсталятором вище.</span></li>
+      <li><span data-l="en">Open the app and pick a folder of photos or videos.</span><span data-l="ru">Откройте приложение и выберите папку с фото или видео.</span><span data-l="ua">Відкрийте застосунок і виберіть папку з фото чи відео.</span></li>
+      <li><span data-l="en">Sort with keys - move, copy, rename or delete each file in one press.</span><span data-l="ru">Сортируйте клавишами - перемещайте, копируйте, переименовывайте или удаляйте файл одним нажатием.</span><span data-l="ua">Сортуйте клавішами - переміщуйте, копіюйте, перейменовуйте чи видаляйте файл одним натисканням.</span></li>
+    </ol>
+  </section>
+
+  <!-- contextual cross-links -->
+  <div class="note">
+    <span class="tag">Related tools</span>
+    <div class="xlinks" style="margin-top:.4rem">
+      <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/">
+        <span data-l="en">Need mobile? → FastMediaSorter v2 (Android)</span>
+        <span data-l="ru">Нужно на телефон? → FastMediaSorter v2 (Android)</span>
+        <span data-l="ua">Потрібно на телефон? → FastMediaSorter v2 (Android)</span>
+      </a>
+      <a href="https://serzhyale.github.io/doc-html-translate/">
+        <span data-l="en">Convert ebooks? → doc-html-translate (companion)</span>
+        <span data-l="ru">Конвертировать книги? → doc-html-translate (спутник)</span>
+        <span data-l="ua">Конвертувати книги? → doc-html-translate (компаньйон)</span>
+      </a>
+      <a href="https://serzhyale.github.io/FileDO/">
+        <span data-l="en">Check storage for fakes or duplicates? → FileDO</span>
+        <span data-l="ru">Проверить накопитель на подделку или дубликаты? → FileDO</span>
+        <span data-l="ua">Перевірити носій на підробку чи дублікати? → FileDO</span>
+      </a>
+    </div>
+  </div>
+
+  <figure class="shot">
+    <img data-l="en" src="assets/store/screenshot-EN-1366x768.png" alt="FastMediaSorter LITE main window" loading="lazy" width="1366" height="768">
+    <img data-l="ru" src="assets/store/screenshot-RU-1366x768.png" alt="Главное окно FastMediaSorter LITE" loading="lazy" width="1366" height="768">
+    <img data-l="ua" src="assets/store/screenshot-EN-1366x768.png" alt="Головне вікно FastMediaSorter LITE" loading="lazy" width="1366" height="768">
+    <figcaption>
+      <span data-l="en">One window: viewer, file actions and folder shortcuts.</span>
+      <span data-l="ru">Одно окно: просмотр, действия с файлами и ярлыки папок.</span>
+      <span data-l="ua">Одне вікно: перегляд, дії з файлами та ярлики папок.</span>
+    </figcaption>
+  </figure>
+
+  <!-- FEATURES -->
+  <section class="section">
+    <div class="sec-head">
+      <h2><span data-l="en">Features</span><span data-l="ru">Возможности</span><span data-l="ua">Можливості</span></h2>
+      <p>
+        <span data-l="en">Built for speed and the keyboard. No clutter, no cloud accounts.</span>
+        <span data-l="ru">Сделано ради скорости и клавиатуры. Без лишнего и без облачных аккаунтов.</span>
+        <span data-l="ua">Зроблено заради швидкості та клавіатури. Без зайвого та без хмарних акаунтів.</span>
+      </p>
+    </div>
+
+    <div class="grid">
+      <article class="card">
+        <h3><span data-l="en">Navigation &amp; slideshow</span><span data-l="ru">Навигация и слайд-шоу</span><span data-l="ua">Навігація та слайд-шоу</span></h3>
+        <p>
+          <span data-l="en">Step through huge folders instantly. Slideshow and random-view modes, recent files and folders, plus a thumbnail image panel for quick jumps.</span>
+          <span data-l="ru">Мгновенный переход по большим папкам. Режимы слайд-шоу и случайного показа, недавние файлы и папки, плюс панель миниатюр для быстрых переходов.</span>
+          <span data-l="ua">Миттєвий перехід великими папками. Режими слайд-шоу та випадкового показу, недавні файли й папки, а також панель мініатюр для швидких переходів.</span>
+        </p>
+      </article>
+
+      <article class="card">
+        <h3><span data-l="en">File operations</span><span data-l="ru">Операции с файлами</span><span data-l="ua">Операції з файлами</span></h3>
+        <p>
+          <span data-l="en">Move, copy, rename and delete without leaving the keyboard. Assign folders to keys and file each item where it belongs in a single press.</span>
+          <span data-l="ru">Перемещение, копирование, переименование и удаление - не отрываясь от клавиатуры. Назначьте папки на клавиши и раскладывайте файлы одним нажатием.</span>
+          <span data-l="ua">Переміщення, копіювання, перейменування та видалення - не відриваючись від клавіатури. Призначте папки на клавіші й розкладайте файли одним натисканням.</span>
+        </p>
+      </article>
+
+      <article class="card">
+        <h3><span data-l="en">Video / LibVLC fallback</span><span data-l="ru">Видео / резерв LibVLC</span><span data-l="ua">Відео / резерв LibVLC</span></h3>
+        <p>
+          <span data-l="en">H.264/MP4 plays in-window. Anything the built-in player can't decode - AVI, ZMBV, VP9, MKV, WMV - automatically falls back to a bundled LibVLC engine. No external codecs.</span>
+          <span data-l="ru">H.264/MP4 играет во встроенном окне. Всё, что встроенный плеер не декодирует - AVI, ZMBV, VP9, MKV, WMV - автоматически берёт на себя встроенный движок LibVLC. Без внешних кодеков.</span>
+          <span data-l="ua">H.264/MP4 грає у вбудованому вікні. Усе, що вбудований плеєр не декодує - AVI, ZMBV, VP9, MKV, WMV - автоматично бере на себе вбудований рушій LibVLC. Без зовнішніх кодеків.</span>
+        </p>
+      </article>
+
+      <article class="card">
+        <h3><span data-l="en">Offline bundles &amp; OCR</span><span data-l="ru">Офлайн-сборки и OCR</span><span data-l="ua">Офлайн-збірки та OCR</span></h3>
+        <p>
+          <span data-l="en">Release downloads are offline-ready: VLC runtimes and OCR language packs are already inside. On-image OCR translation overlays text right over the picture (translator of your choice).</span>
+          <span data-l="ru">Сборки в релизах готовы к офлайн-работе: библиотеки VLC и языковые пакеты OCR уже внутри. OCR-перевод накладывает текст прямо поверх изображения (переводчик на ваш выбор).</span>
+          <span data-l="ua">Збірки в релізах готові до офлайн-роботи: бібліотеки VLC та мовні пакети OCR уже всередині. OCR-переклад накладає текст просто поверх зображення (перекладач на ваш вибір).</span>
+        </p>
+        <div class="pills"><span class="pill gold">OCR</span><span class="pill gold">LibVLC</span><span class="pill">offline</span></div>
+      </article>
+
+      <article class="card">
+        <h3><span data-l="en">Shortcuts</span><span data-l="ru">Горячие клавиши</span><span data-l="ua">Гарячі клавіші</span></h3>
+        <p>
+          <span data-l="en">Almost everything is a hotkey, and folder shortcuts are customizable. Switch the whole UI between English and Russian on the fly.</span>
+          <span data-l="ru">Почти всё - на горячих клавишах, а ярлыки папок настраиваются. Переключайте весь интерфейс между английским и русским на лету.</span>
+          <span data-l="ua">Майже все - на гарячих клавішах, а ярлики папок налаштовуються. Перемикайте весь інтерфейс між англійською та російською на льоту.</span>
+        </p>
+        <div class="kbds">
+          <kbd>←</kbd><kbd>→</kbd>
+          <span style="color:var(--muted);font-size:.8rem" data-l="en">browse</span><span style="color:var(--muted);font-size:.8rem" data-l="ru">просмотр</span><span style="color:var(--muted);font-size:.8rem" data-l="ua">перегляд</span>
+          <kbd>0</kbd>–<kbd>9</kbd>
+          <span style="color:var(--muted);font-size:.8rem" data-l="en">move to folder</span><span style="color:var(--muted);font-size:.8rem" data-l="ru">в папку</span><span style="color:var(--muted);font-size:.8rem" data-l="ua">у папку</span>
+          <kbd>T</kbd>
+          <span style="color:var(--muted);font-size:.8rem" data-l="en">OCR translate</span><span style="color:var(--muted);font-size:.8rem" data-l="ru">OCR-перевод</span><span style="color:var(--muted);font-size:.8rem" data-l="ua">OCR-переклад</span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer"><div class="container">
+  <h2 class="sec-head" style="margin-bottom:1rem;font-size:1.1rem">
+    <span data-l="en">More tools by SZA</span><span data-l="ru">Другие инструменты SZA</span><span data-l="ua">Інші інструменти SZA</span>
+  </h2>
+  <div class="tools-grid">
+    <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/"><b>FastMediaSorter v2</b><span data-l="en">Android media sorter</span><span data-l="ru">Сортировщик медиа для Android</span><span data-l="ua">Сортувальник медіа для Android</span></a>
+    <a href="https://serzhyale.github.io/doc-html-translate/"><b>doc-html-translate</b><span data-l="en">Windows ebook converter</span><span data-l="ru">Конвертер книг для Windows</span><span data-l="ua">Конвертер книг для Windows</span></a>
+    <a href="https://serzhyale.github.io/CyrFlip/"><b>CyrFlip</b><span data-l="en">Windows layout fixer</span><span data-l="ru">Исправление раскладки Windows</span><span data-l="ua">Виправлення розкладки Windows</span></a>
+    <a href="https://serzhyale.github.io/FileDO/"><b>FileDO</b><span data-l="en">Windows storage CLI</span><span data-l="ru">CLI для проверки накопителей</span><span data-l="ua">CLI для перевірки носіїв</span></a>
+    <a href="https://serzhyale.github.io/universal-agent-kit/"><b>Universal Agent Kit</b><span data-l="en">AI-dev methodology</span><span data-l="ru">Методология AI-разработки</span><span data-l="ua">Методологія AI-розробки</span></a>
+    <a href="https://sza.od.ua"><b>SZA</b><span data-l="en">Portfolio hub</span><span data-l="ru">Портфолио</span><span data-l="ua">Портфоліо</span></a>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Serhii Zhyhunenko</span>
+    <span><a href="https://sza.od.ua">sza.od.ua</a> · <a href="https://github.com/SerZhyAle">GitHub</a> · <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
+  </div>
+</div></footer>
+
+<button class="to-top" id="toTop" aria-label="Back to top">↑</button>
+
+<script>
+(function(){
+  var doc=document.documentElement;
+
+  // ---- i18n ----
+  var META={
+    en:{title:"FastMediaSorter LITE - fast image & video sorter for Windows",
+        desc:"A keyboard-first Windows image and video sorter: fast folder navigation, slideshow, one-key move / copy / rename / delete, broad video playback with a bundled LibVLC fallback."},
+    ru:{title:"FastMediaSorter LITE - быстрый сортировщик фото и видео для Windows",
+        desc:"Сортировщик фото и видео для Windows с управлением с клавиатуры: быстрая навигация, слайд-шоу, перемещение / копирование / переименование / удаление одной клавишей и резервный движок LibVLC."},
+    ua:{title:"FastMediaSorter LITE - швидкий сортувальник фото та відео для Windows",
+        desc:"Сортувальник фото та відео для Windows з керуванням з клавіатури: швидка навігація, слайд-шоу, переміщення / копіювання / перейменування / видалення однією клавішею та резервний рушій LibVLC."}
+  };
+  function setLang(l){
+    if(!META[l]) l='en';
+    doc.setAttribute('data-lang',l);
+    doc.setAttribute('lang', l==='ua'?'uk':l);
+    try{localStorage.setItem('sza-lang',l);}catch(e){}
+    document.querySelectorAll('.seg [data-setlang]').forEach(function(b){
+      b.setAttribute('aria-pressed', b.getAttribute('data-setlang')===l ? 'true':'false');
+    });
+    document.title=META[l].title;
+    var d=document.querySelector('meta[name="description"]'); if(d) d.setAttribute('content',META[l].desc);
+    var ot=document.querySelector('meta[property="og:title"]'); if(ot) ot.setAttribute('content',META[l].title);
+    var od=document.querySelector('meta[property="og:description"]'); if(od) od.setAttribute('content',META[l].desc);
+  }
+  document.querySelectorAll('.seg [data-setlang]').forEach(function(b){
+    b.addEventListener('click',function(){setLang(b.getAttribute('data-setlang'));});
+  });
+  setLang(doc.getAttribute('data-lang')||'en');
+
+  // ---- theme ----
+  function setTheme(t){
+    doc.setAttribute('data-theme',t);
+    try{localStorage.setItem('sza-theme',t);}catch(e){}
+    var m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', t==='light'?'#eef3ea':'#0a0f0a');
+    var b=document.getElementById('themeBtn'); if(b) b.setAttribute('aria-label', t==='light'?'Switch to dark theme':'Switch to light theme');
+  }
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    setTheme(doc.getAttribute('data-theme')==='light'?'dark':'light');
+  });
+  setTheme(doc.getAttribute('data-theme')||'dark');
+
+  // ---- copy buttons ----
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var txt=btn.getAttribute('data-copy')||'';
+      var done=function(){var o=btn.textContent;btn.textContent='✓ Copied';btn.classList.add('done');
+        setTimeout(function(){btn.textContent=o;btn.classList.remove('done');},1600);};
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(txt).then(done,function(){fallback(txt);done();});
+      }else{fallback(txt);done();}
+    });
+  });
+  function fallback(txt){try{var ta=document.createElement('textarea');ta.value=txt;
+    ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);}catch(e){}}
+
+  // ---- dynamic GitHub release ----
+  (function(){
+    fetch('https://api.github.com/repos/SerZhyAle/FastMediaSorter_Lite/releases/latest')
+      .then(function(r){return r.ok?r.json():Promise.reject();})
+      .then(function(rel){
+        var assets=rel.assets||[];
+        function find(re){for(var i=0;i<assets.length;i++){if(re.test(assets[i].name))return assets[i];}return null;}
+        var setup=find(/windows-x64-setup\.exe$/);
+        var zip=find(/windows-x64\.zip$/);
+        var tag=rel.tag_name||'';
+        var s=document.getElementById('dl-setup'), z=document.getElementById('dl-zip');
+        if(setup&&s) s.href=setup.browser_download_url;
+        if(zip&&z) z.href=zip.browser_download_url;
+        if(tag){
+          var meta=document.getElementById('dlMeta');
+          if(meta){var b=document.createElement('span');b.style.color='var(--acc)';b.style.fontWeight='600';
+            b.textContent=' '+tag;meta.querySelectorAll('[data-l]').forEach(function(sp){sp.appendChild(b.cloneNode(true));});}
+        }
+      })
+      .catch(function(){/* keep static /releases/latest fallback hrefs */});
+  })();
+
+  // ---- back to top ----
+  var toTop=document.getElementById('toTop');
+  function onScroll(){ if(window.scrollY>600) toTop.classList.add('show'); else toTop.classList.remove('show'); }
+  window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
+  toTop.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});
+})();
+</script>
+</body>
+</html>
