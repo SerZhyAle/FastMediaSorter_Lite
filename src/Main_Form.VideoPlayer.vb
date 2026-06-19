@@ -36,6 +36,20 @@ Partial Public Class Main_Form
         SetVideoAudioState(volume, is_Video_Muted)
     End Sub
 
+    ''' <summary>Current default video volume as a 0..100 percent (settings UI).</summary>
+    Public ReadOnly Property CurrentVideoVolumePercent As Integer
+        Get
+            Return CInt(Math.Round(video_Volume_Level * 100))
+        End Get
+    End Property
+
+    ''' <summary>Whether video starts muted by default (settings UI).</summary>
+    Public ReadOnly Property CurrentVideoMuted As Boolean
+        Get
+            Return is_Video_Muted
+        End Get
+    End Property
+
     Public Sub SetVideoAudioState(volume As Double, muted As Boolean)
         video_Volume_Level = ClampVideoVolume(volume)
         is_Video_Muted = muted

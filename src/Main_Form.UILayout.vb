@@ -128,4 +128,12 @@ Partial Public Class Main_Form
         SetViewSizes()
     End Sub
 
+    ''' <summary>Repaints the media surface so a just-changed viewer option (the
+    ''' high-quality scaling or the on-image info overlay) shows immediately,
+    ''' without waiting for the next navigation.</summary>
+    Friend Sub RepaintMedia()
+        If Picture_Box_1 IsNot Nothing Then Picture_Box_1.Invalidate()
+        If Picture_Box_2 IsNot Nothing Then Picture_Box_2.Invalidate()
+    End Sub
+
 End Class

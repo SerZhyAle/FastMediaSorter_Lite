@@ -40,8 +40,8 @@ Partial Class Main_Form
         Me.btn_Rename = New System.Windows.Forms.Button()
         Me.cmbox_Media_Folder = New System.Windows.Forms.ComboBox()
         Me.cmbox_Sort = New System.Windows.Forms.ComboBox()
-        Me.Picture_Box_2 = New System.Windows.Forms.PictureBox()
-        Me.Picture_Box_1 = New System.Windows.Forms.PictureBox()
+        Me.Picture_Box_2 = New HqPictureBox()
+        Me.Picture_Box_1 = New HqPictureBox()
         Me.btn_Panel = New System.Windows.Forms.Button()
         Me.btn_RecentFiles = New System.Windows.Forms.Button()
         Me.btn_choose_file = New System.Windows.Forms.Button()
@@ -453,8 +453,8 @@ Partial Class Main_Form
     Friend WithEvents btn_Rename As Button
     Friend WithEvents cmbox_Media_Folder As ComboBox
     Friend WithEvents cmbox_Sort As ComboBox
-    Friend WithEvents Picture_Box_2 As PictureBox
-    Friend WithEvents Picture_Box_1 As PictureBox
+    Friend WithEvents Picture_Box_2 As HqPictureBox
+    Friend WithEvents Picture_Box_1 As HqPictureBox
     Friend WithEvents btn_Panel As Button
     Friend WithEvents btn_choose_file As Button
     Friend WithEvents lbl_Zoom As Label

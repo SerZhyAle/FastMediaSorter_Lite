@@ -44,6 +44,11 @@ Public Module FileManager
                     'lbl_Status.Text = If(is_Russian_Language, "Ошибка чтения GIF: " & ex.Message, "Error reading GIF: " & ex.Message)
                     Return Nothing
                 End Try
+            ElseIf Is_Exif_AutoRotate Then
+                ' Orient JPEG/TIFF photos by their EXIF Orientation tag (phones and
+                ' cameras store landscape pixels + a rotation flag). Skipped for GIF
+                ' (animation) and harmless when the tag is absent.
+                ApplyExifOrientation(nextImage)
             End If
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0040: LoadImage end ")
@@ -55,6 +60,40 @@ Public Module FileManager
             Return Nothing
         End Try
     End Function
+
+    ''' <summary>
+    ''' Rotates/flips the image in place to match its EXIF Orientation tag (0x0112)
+    ''' and then strips the tag, so the displayed pixels are upright. No-op when the
+    ''' tag is missing or already normal. Failures are swallowed - a bad tag must
+    ''' never stop the image from loading.
+    ''' </summary>
+    Private Sub ApplyExifOrientation(img As Image)
+        Const OrientationId As Integer = &H112
+        Try
+            If img Is Nothing Then Return
+            If Array.IndexOf(img.PropertyIdList, OrientationId) < 0 Then Return
+
+            Dim orient As Integer = CInt(img.GetPropertyItem(OrientationId).Value(0))
+            Dim rot As RotateFlipType
+            Select Case orient
+                Case 2 : rot = RotateFlipType.RotateNoneFlipX
+                Case 3 : rot = RotateFlipType.Rotate180FlipNone
+                Case 4 : rot = RotateFlipType.Rotate180FlipX
+                Case 5 : rot = RotateFlipType.Rotate90FlipX
+                Case 6 : rot = RotateFlipType.Rotate90FlipNone
+                Case 7 : rot = RotateFlipType.Rotate270FlipX
+                Case 8 : rot = RotateFlipType.Rotate270FlipNone
+                Case Else : rot = RotateFlipType.RotateNoneFlipNone ' 1 or unknown
+            End Select
+
+            If rot <> RotateFlipType.RotateNoneFlipNone Then
+                img.RotateFlip(rot)
+                img.RemovePropertyItem(OrientationId)
+            End If
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0903: EXIF orient skipped: " & ex.Message)
+        End Try
+    End Sub
 
     Private Function LoadBitmapPortable(stream As IO.MemoryStream) As Bitmap
         Try

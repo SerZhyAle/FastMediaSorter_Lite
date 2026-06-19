@@ -201,7 +201,13 @@ Partial Public Class Main_Form
 
     Private Function GetDisplayedVerticalEdgeColors(displayedBitmap As Bitmap, targetHeight As Integer, imageRect As Rectangle, isLeftEdge As Boolean) As List(Of Color)
         Dim edgeColors As New List(Of Color)(targetHeight)
-        Dim sourceX As Integer = If(isLeftEdge, 0, displayedBitmap.Width - 1)
+        ' Sample one pixel in from the very edge. The outermost downscaled column folds
+        ' in the image's darkest border/vignette pixels and comes out a few levels darker
+        ' than what the PictureBox (SizeMode = Zoom) actually paints for the photo's edge,
+        ' which left a faint dark vertical seam between the photo and the bar. The second
+        ' column equals the displayed photo edge, so the bar now joins it seamlessly.
+        Dim edgeInset As Integer = If(displayedBitmap.Width >= 3, 1, 0)
+        Dim sourceX As Integer = If(isLeftEdge, edgeInset, displayedBitmap.Width - 1 - edgeInset)
 
         For targetY As Integer = 0 To targetHeight - 1
             Dim sourceY As Integer = Math.Max(0, Math.Min(targetY - imageRect.Top, displayedBitmap.Height - 1))
@@ -214,7 +220,10 @@ Partial Public Class Main_Form
 
     Private Function GetDisplayedHorizontalEdgeColors(displayedBitmap As Bitmap, targetWidth As Integer, imageRect As Rectangle, isTopEdge As Boolean) As List(Of Color)
         Dim edgeColors As New List(Of Color)(targetWidth)
-        Dim sourceY As Integer = If(isTopEdge, 0, displayedBitmap.Height - 1)
+        ' One pixel in from the very edge - see GetDisplayedVerticalEdgeColors for why
+        ' the outermost downscaled row darkens the seam.
+        Dim edgeInset As Integer = If(displayedBitmap.Height >= 3, 1, 0)
+        Dim sourceY As Integer = If(isTopEdge, edgeInset, displayedBitmap.Height - 1 - edgeInset)
 
         For targetX As Integer = 0 To targetWidth - 1
             Dim sourceX As Integer = Math.Max(0, Math.Min(targetX - imageRect.Left, displayedBitmap.Width - 1))

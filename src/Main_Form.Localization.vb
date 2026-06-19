@@ -68,6 +68,31 @@ Partial Public Class Main_Form
 
     End Sub
 
+    ''' <summary>
+    ''' First-run UI language: follow the Windows display language. The app only
+    ''' ships Russian and English, so the system counts as Russian only when its
+    ''' display language is Russian; every other language falls back to English.
+    ''' Once the user toggles the language (saved under the "Is_Russian_Language"
+    ''' registry value) this probe is no longer consulted.
+    ''' </summary>
+    Friend Shared Function SystemDefaultIsRussian() As Boolean
+        Try
+            ' CurrentUICulture is the user-chosen Windows display language. Fall
+            ' back to the OS-installed UI culture only when it is unusable (the
+            ' invariant culture has an empty name).
+            Dim ui = System.Globalization.CultureInfo.CurrentUICulture
+            If ui Is Nothing OrElse ui.Name.Length = 0 Then
+                ui = System.Globalization.CultureInfo.InstalledUICulture
+            End If
+
+            Return ui IsNot Nothing AndAlso
+                   String.Equals(ui.TwoLetterISOLanguageName, "ru", StringComparison.OrdinalIgnoreCase)
+        Catch
+            ' If culture probing fails, default to English (the broader audience).
+            Return False
+        End Try
+    End Function
+
     Private Sub ButtonLNG_Click(sender As Object, e As EventArgs) Handles btn_Language.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2020: btn_Language")
 

@@ -8,29 +8,8 @@ Public Class Table_Form
     Private set_This_Form_Top_Most As Boolean = False
     Private toolTip As ToolTip
 
-    ' Created in code (not the Designer) and hosted on the Settings tab.
-    Friend WithEvents btn_OcrTranslate As Button
-
-    ''' <summary>
-    ''' Adds the "OCR &amp; Translation" button to the Settings tab once. Positioned
-    ''' relative to btn_Set_As_Default's actual bounds (not hard-coded pixels) so
-    ''' it lands correctly regardless of the form's Font auto-scaling.
-    ''' </summary>
-    Private Sub EnsureOcrButton()
-        If btn_OcrTranslate IsNot Nothing Then Return
-        Dim anchor As Button = btn_Set_As_Default
-        btn_OcrTranslate = New Button With {
-            .Name = "btn_OcrTranslate",
-            .Left = anchor.Left,
-            .Top = anchor.Bottom + 6,
-            .Width = anchor.Width,
-            .Height = anchor.Height,
-            .UseVisualStyleBackColor = True,
-            .Font = New System.Drawing.Font(anchor.Font, System.Drawing.FontStyle.Bold),
-            .Text = If(Is_Russian_Language, "OCR и перевод", "OCR & Translate")
-        }
-        Tab_Page_2.Controls.Add(btn_OcrTranslate)
-        btn_OcrTranslate.BringToFront()
+    Private Sub btn_Set_As_Default_Video_Click(sender As Object, e As EventArgs) Handles btn_Set_As_Default_Video.Click
+        Main_Form.AssociateAllVideoFormatsWithThisApp()
     End Sub
 
     Private Sub btn_OcrTranslate_Click(sender As Object, e As EventArgs) Handles btn_OcrTranslate.Click
@@ -59,7 +38,6 @@ Public Class Table_Form
         toolTip.SetToolTip(Data_Grid_View, If(Is_Russian_Language,
         "Двойной клик по номеру клавиши для выполнения действия." & vbCrLf & "Двойной клик по пути к папке для её изменения.",
         "Double-click a key number to perform the action." & vbCrLf & "Double-click a folder path to change it."))
-        toolTip.SetToolTip(SetOnTop, If(Is_Russian_Language, "Держать это окно поверх всех остальных окон.", "Keep this window always on top of other windows."))
         toolTip.SetToolTip(chkbox_Copy_Mode, If(Is_Russian_Language, "Если отмечено, файлы будут копироваться, а не перемещаться.", "If checked, files will be copied instead of moved."))
         toolTip.SetToolTip(chkbox_Independent_Thread_For_File_Operation, If(Is_Russian_Language, "Если отмечено, файловые операции будут выполняться в фоновом режиме.", "If checked, file operations will run in the background."))
 
@@ -73,7 +51,21 @@ Public Class Table_Form
         toolTip.SetToolTip(chkb_no_request_before_file_operation, If(Is_Russian_Language, "Если отмечено, приложение не будет запрашивать подтверждение перед операциями с файлами.", "If checked, the application will not ask for confirmation before file operations."))
         toolTip.SetToolTip(cmb_Picture_Size, If(Is_Russian_Language, "Выберите размер карточки для формы панели изображений", "Choose the size of the card for the image panel"))
 
+        toolTip.SetToolTip(chk_Exif_AutoRotate, If(Is_Russian_Language, "Автоматически поворачивать фото по тегу EXIF Orientation (снимки с телефонов/камер).", "Auto-rotate photos by their EXIF Orientation tag (photos from phones/cameras)."))
+        toolTip.SetToolTip(chk_Hq_Scaling, If(Is_Russian_Language, "Качественное (бикубическое) масштабирование - резче при уменьшении крупных изображений.", "High-quality (bicubic) scaling - sharper when downscaling large images."))
+        toolTip.SetToolTip(chk_Show_Info_Overlay, If(Is_Russian_Language, "Показывать имя файла и позицию (N/всего) поверх изображения. Удобно в полноэкранном режиме.", "Show the file name and position (N/total) over the image. Useful in full-screen."))
+        toolTip.SetToolTip(num_Slideshow_Interval, If(Is_Russian_Language, "Базовый интервал слайдшоу в секундах (повторный запуск ускоряет показ вдвое).", "Base slideshow interval in seconds (starting again halves it)."))
+        toolTip.SetToolTip(chk_Video_Mute, If(Is_Russian_Language, "Запускать видео без звука по умолчанию.", "Start videos muted by default."))
+        toolTip.SetToolTip(num_Video_Volume, If(Is_Russian_Language, "Громкость видео по умолчанию (0-100%).", "Default video volume (0-100%)."))
+        toolTip.SetToolTip(SetOnTop, If(Is_Russian_Language, "Держать это окно поверх всех остальных окон.", "Keep this window always on top of other windows."))
+
         toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык интерфейса на английский", "Switch interface language to English"))
+
+        If btn_Set_As_Default_Video IsNot Nothing Then
+            toolTip.SetToolTip(btn_Set_As_Default_Video, If(Is_Russian_Language,
+                "Сделать эту программу видеопроигрывателем по умолчанию для текущего пользователя.",
+                "Make this application the default video player for the current user."))
+        End If
 
         If btn_OcrTranslate IsNot Nothing Then
             toolTip.SetToolTip(btn_OcrTranslate, If(Is_Russian_Language,
@@ -89,7 +81,6 @@ Public Class Table_Form
     Public Sub PrepareForDisplay()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-2: the_Table_Form_Load")
 
-        EnsureOcrButton()
         InitializeTooltips()
 
         ' Initialize DataGridView columns BEFORE adding rows
@@ -168,6 +159,23 @@ Public Class Table_Form
         chkb_video_loop.Checked = Is_Video_Loop
         chkb_no_request_before_file_operation.Checked = Is_no_request_before_file_operation
 
+        chk_Exif_AutoRotate.Checked = Is_Exif_AutoRotate
+        chk_Hq_Scaling.Checked = Is_HighQuality_Scaling
+        chk_Show_Info_Overlay.Checked = Is_Show_Info_Overlay
+
+        Dim slideshow_Seconds As Integer = CInt(Slideshow_Base_Interval_Ms / 1000)
+        If slideshow_Seconds < CInt(num_Slideshow_Interval.Minimum) Then slideshow_Seconds = CInt(num_Slideshow_Interval.Minimum)
+        If slideshow_Seconds > CInt(num_Slideshow_Interval.Maximum) Then slideshow_Seconds = CInt(num_Slideshow_Interval.Maximum)
+        num_Slideshow_Interval.Value = slideshow_Seconds
+
+        ' Video audio defaults live in Main_Form (private fields); read via its
+        ' accessors. Set mute first so the volume ValueChanged applies the pair.
+        chk_Video_Mute.Checked = Main_Form.CurrentVideoMuted
+        Dim video_Volume_Percent As Integer = Main_Form.CurrentVideoVolumePercent
+        If video_Volume_Percent < CInt(num_Video_Volume.Minimum) Then video_Volume_Percent = CInt(num_Video_Volume.Minimum)
+        If video_Volume_Percent > CInt(num_Video_Volume.Maximum) Then video_Volume_Percent = CInt(num_Video_Volume.Maximum)
+        num_Video_Volume.Value = video_Volume_Percent
+
         chb_perspectiva.Text = If(Is_Russian_Language, "Перспектива", "Perspective")
         btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
 
@@ -184,46 +192,113 @@ Public Class Table_Form
         Next
 
         Data_Grid_View.Item(0, 10).Value = "0"
+
+        ' There are only 11 destination keys (DEL + 0..9), so shrink the grid to
+        ' exactly those rows instead of stretching it down the whole tab (which
+        ' left a large empty area below the last key).
+        Dim grid_Height As Integer = Data_Grid_View.ColumnHeadersHeight + 3
+        For Each grid_Row As DataGridViewRow In Data_Grid_View.Rows
+            grid_Height += grid_Row.Height
+        Next
+        Data_Grid_View.Height = grid_Height
+        lbl_Grid_Hint.Top = Data_Grid_View.Bottom + 10
+        lbl_Grid_Hint.Text = If(Is_Russian_Language,
+            "Двойной клик по номеру клавиши - выполнить действие. Двойной клик по пути - выбрать папку.",
+            "Double-click a key number to run the action. Double-click a path to pick a folder.")
+
         If Is_Russian_Language Then
-            Me.Text = "Таблица каталогов-получателей переноса/копирования"
+            Me.Text = "Настройки"
             Data_Grid_View.Columns(0).HeaderText = "клавиша"
             Data_Grid_View.Columns(1).HeaderText = "каталог-получатель"
-            chkbox_Copy_Mode.Text = "Режим копирования файлов (не перенос)"
-            chkbox_Independent_Thread_For_File_Operation.Text = "Использовать независимые потоки для операций с файлами"
+
             Tab_Page_1.Text = "Каталоги-получатели"
-            Tab_Page_2.Text = "Настройки"
+            Tab_Page_2.Text = "Просмотр"
+            Tab_Page_3.Text = "Видео и качество"
+            Tab_Page_4.Text = "Файлы и система"
+
+            grp_Background.Text = "Фон"
+            grp_OnScreen.Text = "Информация на экране"
+            grp_Slideshow.Text = "Слайдшоу"
+            grp_Panel.Text = "Панель миниатюр"
+            grp_Quality.Text = "Качество изображения"
+            grp_Video.Text = "Видео"
+            grp_FileOps.Text = "Операции с файлами"
+            grp_Integration.Text = "Ассоциации и интеграция"
+            grp_Window.Text = "Окно"
+            grp_Language.Text = "Язык"
+
             lbl_Color.Text = "Цвет фона:"
             chkb_show_pic_size.Text = "Показывать размер изображений"
             chkb_show_file_size.Text = "Показывать размер файлов"
-            chkb_video_loop.Text = "Демонстрировать видео зациклено"
             chkb_is_to_show_file_datetime.Text = "Показывать дату и время файла"
+            chk_Show_Info_Overlay.Text = "Имя файла и позиция поверх изображения"
+            chk_Exif_AutoRotate.Text = "Авто-поворот по EXIF"
+            chk_Hq_Scaling.Text = "Качественное масштабирование"
+            chkb_video_loop.Text = "Демонстрировать видео зациклено"
+            chk_Video_Mute.Text = "Без звука по умолчанию"
+            lbl_Video_Volume.Text = "Громкость по умолчанию (%):"
+            lbl_Slideshow_Interval.Text = "Интервал слайдшоу (с):"
+            lbl_Picture_at_Panel_Size.Text = "Размер карточки панели:"
+
+            chkbox_Copy_Mode.Text = "Режим копирования файлов (не перенос)"
+            chkbox_Independent_Thread_For_File_Operation.Text = "Использовать независимые потоки для операций с файлами"
             chkb_no_request_before_file_operation.Text = "Не запрашивать подтверждение перед операцией с файлом"
+
             btn_Set_As_Default.Text = "Зарегистрировать как программу просмотра изображений по умолчанию"
+            btn_Set_As_Default_Video.Text = "Зарегистрировать как видеопроигрыватель по умолчанию"
             btn_OcrTranslate.Text = "OCR и перевод"
+            SetOnTop.Text = "Держать это окно поверх остальных"
         Else
-            Me.Text = "Table of dest folder for moving/copy"
+            Me.Text = "Settings"
             Data_Grid_View.Columns(0).HeaderText = "KEY"
-            Data_Grid_View.Columns(1).HeaderText = "destanation folder"
-            chkbox_Copy_Mode.Text = "COPY mode (files are not moving)"
-            chkbox_Independent_Thread_For_File_Operation.Text = "Use independent thread for operations with files"
-            Tab_Page_1.Text = "Dest folders"
-            Tab_Page_2.Text = "Settings"
+            Data_Grid_View.Columns(1).HeaderText = "destination folder"
+
+            Tab_Page_1.Text = "Destination folders"
+            Tab_Page_2.Text = "Viewing"
+            Tab_Page_3.Text = "Video and quality"
+            Tab_Page_4.Text = "Files and system"
+
+            grp_Background.Text = "Background"
+            grp_OnScreen.Text = "On-screen info"
+            grp_Slideshow.Text = "Slideshow"
+            grp_Panel.Text = "Thumbnail panel"
+            grp_Quality.Text = "Image quality"
+            grp_Video.Text = "Video"
+            grp_FileOps.Text = "File operations"
+            grp_Integration.Text = "Associations and integration"
+            grp_Window.Text = "Window"
+            grp_Language.Text = "Language"
+
             lbl_Color.Text = "Background color:"
             chkb_show_pic_size.Text = "Show picture sizes"
             chkb_show_file_size.Text = "Show file sizes"
-            chkb_video_loop.Text = "Loop video playback"
             chkb_is_to_show_file_datetime.Text = "Show file datetime"
+            chk_Show_Info_Overlay.Text = "File name and position over the image"
+            chk_Exif_AutoRotate.Text = "Auto-rotate by EXIF"
+            chk_Hq_Scaling.Text = "High-quality scaling"
+            chkb_video_loop.Text = "Loop video playback"
+            chk_Video_Mute.Text = "Muted by default"
+            lbl_Video_Volume.Text = "Default volume (%):"
+            lbl_Slideshow_Interval.Text = "Slideshow interval (s):"
+            lbl_Picture_at_Panel_Size.Text = "Panel card size:"
+
+            chkbox_Copy_Mode.Text = "COPY mode (files are not moving)"
+            chkbox_Independent_Thread_For_File_Operation.Text = "Use independent thread for operations with files"
             chkb_no_request_before_file_operation.Text = "No request before file operation"
+
             btn_Set_As_Default.Text = "Register as default image viewer"
+            btn_Set_As_Default_Video.Text = "Register as default video player"
             btn_OcrTranslate.Text = "OCR & Translate"
+            SetOnTop.Text = "Keep this window on top of others"
         End If
 
         Dim SetOnTopS As String = GetSetting(App_name, Second_App_Name, "SetOnTop", "1")
         set_This_Form_Top_Most = SetOnTopS = "1"
+        SetOnTop.Checked = set_This_Form_Top_Most
+        Me.TopMost = set_This_Form_Top_Most
 
         chb_perspectiva.Checked = Is_Pespective
 
-        TopOrNot()
         LinkLabel1.Text = Application.ProductVersion & " sza@ukr.net"
     End Sub
 
@@ -254,18 +329,35 @@ Public Class Table_Form
         End If
     End Sub
 
-    Private Sub SetOnTop_Click(sender As Object, e As EventArgs) Handles SetOnTop.Click
-        set_This_Form_Top_Most = Not set_This_Form_Top_Most
-        TopOrNot()
+    Private Sub SetOnTop_CheckedChanged(sender As Object, e As EventArgs) Handles SetOnTop.CheckedChanged
+        set_This_Form_Top_Most = SetOnTop.Checked
+        Me.TopMost = set_This_Form_Top_Most
     End Sub
 
-    Private Sub TopOrNot()
-        Me.TopMost = set_This_Form_Top_Most
-        If set_This_Form_Top_Most Then
-            SetOnTop.Text = If(Is_Russian_Language, "отключить поверх окон", "set OFF top this table")
-        Else
-            SetOnTop.Text = If(Is_Russian_Language, "держать поверх окон", "set ON Top this table")
-        End If
+    Private Sub Chk_Exif_AutoRotate_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Exif_AutoRotate.CheckedChanged
+        Is_Exif_AutoRotate = chk_Exif_AutoRotate.Checked
+    End Sub
+
+    Private Sub Chk_Hq_Scaling_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Hq_Scaling.CheckedChanged
+        Is_HighQuality_Scaling = chk_Hq_Scaling.Checked
+        Main_Form.RepaintMedia()
+    End Sub
+
+    Private Sub Chk_Show_Info_Overlay_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Show_Info_Overlay.CheckedChanged
+        Is_Show_Info_Overlay = chk_Show_Info_Overlay.Checked
+        Main_Form.RepaintMedia()
+    End Sub
+
+    Private Sub Num_Slideshow_Interval_ValueChanged(sender As Object, e As EventArgs) Handles num_Slideshow_Interval.ValueChanged
+        Slideshow_Base_Interval_Ms = CInt(num_Slideshow_Interval.Value) * 1000
+    End Sub
+
+    Private Sub Num_Video_Volume_ValueChanged(sender As Object, e As EventArgs) Handles num_Video_Volume.ValueChanged
+        Main_Form.SetVideoAudioState(CDbl(num_Video_Volume.Value) / 100.0, chk_Video_Mute.Checked)
+    End Sub
+
+    Private Sub Chk_Video_Mute_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Video_Mute.CheckedChanged
+        Main_Form.SetVideoAudioState(CDbl(num_Video_Volume.Value) / 100.0, chk_Video_Mute.Checked)
     End Sub
 
     Private Sub Form2_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown

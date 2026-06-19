@@ -18,10 +18,43 @@ Partial Public Class Main_Form
 
     Private Sub Picture_Box_1_Paint(sender As Object, e As PaintEventArgs) Handles Picture_Box_1.Paint
         PaintOcrOverlay(Picture_Box_1, e)
+        PaintInfoOverlay(Picture_Box_1, e)
     End Sub
 
     Private Sub Picture_Box_2_Paint(sender As Object, e As PaintEventArgs) Handles Picture_Box_2.Paint
         PaintOcrOverlay(Picture_Box_2, e)
+        PaintInfoOverlay(Picture_Box_2, e)
+    End Sub
+
+    ''' <summary>
+    ''' Optional HUD in the top-left of the media surface: the current file name
+    ''' and its position (N/total). Painted in the PictureBox Paint handler (never
+    ''' baked into the bitmap), so it costs nothing when the option is off and is
+    ''' especially useful in full-screen where the status bar is hidden.
+    ''' </summary>
+    Private Sub PaintInfoOverlay(pb As PictureBox, e As PaintEventArgs)
+        If Not Is_Show_Info_Overlay Then Return
+        If pb.Image Is Nothing Then Return
+        If String.IsNullOrEmpty(Current_File_Name) Then Return
+
+        Dim caption As String = IO.Path.GetFileName(Current_File_Name) & "    " &
+                                (current_File_Index + 1).ToString() & "/" & total_File_Count.ToString()
+
+        Dim g As Graphics = e.Graphics
+        g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit
+
+        Using fnt As New Font("Segoe UI", 11.0F, FontStyle.Regular)
+            Dim sz As SizeF = g.MeasureString(caption, fnt)
+            Dim padX As Integer = 8
+            Dim padY As Integer = 4
+            Dim box As New Rectangle(8, 8, CInt(Math.Ceiling(sz.Width)) + padX * 2, CInt(Math.Ceiling(sz.Height)) + padY * 2)
+            Using bg As New SolidBrush(Color.FromArgb(160, 0, 0, 0))
+                g.FillRectangle(bg, box)
+            End Using
+            Using tb As New SolidBrush(Color.White)
+                g.DrawString(caption, fnt, tb, box.X + padX, box.Y + padY)
+            End Using
+        End Using
     End Sub
 
     Private Sub PaintOcrOverlay(pb As PictureBox, e As PaintEventArgs)
@@ -67,12 +100,18 @@ Partial Public Class Main_Form
                         ' Filled box only - no border, so the overlay reads as clean text.
                         g.FillRectangle(fillBrush, r)
 
+                        ' Anchor the overlay font to the ORIGINAL text size: the median
+                        ' source line height (image px) scaled to display px. This makes
+                        ' the translation read at roughly the same size as the text it
+                        ' replaced, instead of being squeezed to a tiny capped font.
+                        Dim origLineH As Single = CSng(MedianBlockLineHeight(block) * scale)
+
                         ' Give very short source boxes a minimum text height (centred
                         ' on the box) so the larger font isn't clipped to nothing.
                         Dim textH As Single = Math.Max(CSng(r.Height), 18.0F)
                         Dim textY As Single = r.Y + (CSng(r.Height) - textH) / 2.0F
                         Dim padded As New RectangleF(r.X + 1, textY, Math.Max(1, r.Width - 2), textH)
-                        Using fnt As Font = FitFont(g, text, padded, sf)
+                        Using fnt As Font = FitFont(g, text, padded, sf, origLineH)
                             g.DrawString(text, fnt, textBrush, padded, sf)
                         End Using
                     Next
@@ -89,13 +128,32 @@ Partial Public Class Main_Form
         Return New Rectangle(x, y, w, h)
     End Function
 
-    ' Overlay text size bounds (px). Floor raised so translations stay readable.
+    ' Overlay text size bounds (px). Floor raised so translations stay readable;
+    ' ceiling raised so large headings/paragraphs render near their original size
+    ' instead of being clamped to a tiny font.
     Private Const MinOverlayFont As Single = 8.0F
-    Private Const MaxOverlayFont As Single = 32.0F
+    Private Const MaxOverlayFont As Single = 200.0F
 
-    ''' <summary>Largest font (down to the floor) whose wrapped text fits the box.</summary>
-    Private Shared Function FitFont(g As Graphics, text As String, rect As RectangleF, sf As StringFormat) As Font
-        Dim maxSize As Single = Math.Max(MinOverlayFont, Math.Min(CSng(rect.Height), MaxOverlayFont))
+    ''' <summary>Median glyph (line) height of a block's source lines, in image px.</summary>
+    Private Shared Function MedianBlockLineHeight(block As OcrBlock) As Integer
+        If block.Lines Is Nothing OrElse block.Lines.Count = 0 Then Return block.Box.Height
+        Dim heights As List(Of Integer) = block.Lines.
+            Select(Function(l) l.Box.Height).
+            Where(Function(h) h > 0).
+            OrderBy(Function(h) h).ToList()
+        If heights.Count = 0 Then Return block.Box.Height
+        Return heights(heights.Count \ 2)
+    End Function
+
+    ''' <summary>
+    ''' Largest font (down to the floor) whose wrapped text fits the box, but never
+    ''' larger than <paramref name="targetPx"/> - the original text size. We start
+    ''' from the original size so the translation matches the text it replaced, and
+    ''' only shrink when a longer translation would overflow the block.
+    ''' </summary>
+    Private Shared Function FitFont(g As Graphics, text As String, rect As RectangleF, sf As StringFormat, targetPx As Single) As Font
+        Dim cap As Single = If(targetPx > 0, targetPx, CSng(rect.Height))
+        Dim maxSize As Single = Math.Max(MinOverlayFont, Math.Min(cap, MaxOverlayFont))
         Dim size As Single = maxSize
         While size > MinOverlayFont
             Using probe As New Font("Segoe UI", size, FontStyle.Regular, GraphicsUnit.Pixel)

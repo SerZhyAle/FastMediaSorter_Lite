@@ -75,19 +75,22 @@ The Store path (Path A: MSIX) is **additive** - it does not change the GitHub re
 ### Core Components
 
 **Main_Form** - Primary UI window, split across one `partial class` per concern (all `Partial Class Main_Form`; edit the relevant file, not just the main one):
-- **[Main_Form.vb](src/Main_Form.vb)** (~3350 LOC) - core: file browsing, slideshow, keyboard shortcuts, drag-drop, recent files/folders (~100 max), English/Russian switching via `Is_Russian_Language`. Hosts the `COPYDATASTRUCT` declaration and `ProcessArgument()` entry point used for cross-instance arg forwarding (see Application_Events below).
+- **[Main_Form.vb](src/Main_Form.vb)** (~3350 LOC) - core: file browsing, slideshow, keyboard shortcuts, drag-drop, recent files/folders (~100 max), English/Russian switching via `Is_Russian_Language`. **First-run UI language follows the Windows display language** (`SystemDefaultIsRussian()` in [Main_Form.Localization.vb](src/Main_Form.Localization.vb): Russian display language → Russian, everything else → English); once the user toggles it, the saved `Is_Russian_Language` registry value wins. Hosts the `COPYDATASTRUCT` declaration and `ProcessArgument()` entry point used for cross-instance arg forwarding (see Application_Events below).
 - **[Main_Form.UILayout.vb](src/Main_Form.UILayout.vb)** - control sizing/positioning and responsive layout
 - **[Main_Form.FileOperations.vb](src/Main_Form.FileOperations.vb)** - copy/move/rename/delete wiring from UI events to `FileManager`
 - **[Main_Form.VideoPlayer.vb](src/Main_Form.VideoPlayer.vb)** - WebBrowser (H.264) + LibVLC fallback playback control
 - **[Main_Form.PerspectiveBackground.vb](src/Main_Form.PerspectiveBackground.vb)** - Ambilight-like background fill (see below)
-- **[Main_Form.OcrOverlay.vb](src/Main_Form.OcrOverlay.vb)** / **[Main_Form.OcrTranslate.vb](src/Main_Form.OcrTranslate.vb)** - OCR + on-image translation overlay pipeline (see "OCR + On-Image Translation" below)
-- Other concern-specific partials: `Main_Form.MediaLoading.vb`, `.Lifecycle.vb`, `.FileScanning.vb`, `.KeyboardInput.vb`, `.MouseInput.vb`, `.Slideshow.vb`, `.GifPlayback.vb`, `.FileAssociation.vb`, `.NativeMethods.vb`, `.ModernLayout.vb`, `.Localization.vb` - edit the file matching the concern.
-- Uses WinForms controls: PictureBox, WebBrowser (for videos), Label, Button, Timer
+- **[Main_Form.OcrOverlay.vb](src/Main_Form.OcrOverlay.vb)** / **[Main_Form.OcrTranslate.vb](src/Main_Form.OcrTranslate.vb)** - OCR + on-image translation overlay pipeline (see "OCR + On-Image Translation" below). `OcrOverlay.vb` also hosts `PaintInfoOverlay()` - the optional top-left HUD (file name + `N/total`) drawn in the PictureBox `Paint` handler when `Is_Show_Info_Overlay` is on (never baked into the bitmap; useful in full-screen where the status bar is hidden).
+- **[Main_Form.FileAssociation.vb](src/Main_Form.FileAssociation.vb)** - registers the app as default handler for image (`AssociateAllImageFormatsWithThisApp`) and video/audio (`AssociateAllVideoFormatsWithThisApp`) formats by writing per-user `HKCU\Software\Classes` (no admin rights), then `SHChangeNotify`
+- Other concern-specific partials: `Main_Form.MediaLoading.vb`, `.Lifecycle.vb`, `.FileScanning.vb`, `.KeyboardInput.vb`, `.MouseInput.vb`, `.Slideshow.vb`, `.GifPlayback.vb`, `.NativeMethods.vb`, `.ModernLayout.vb`, `.Localization.vb` - edit the file matching the concern.
+- Uses WinForms controls: `HqPictureBox` (the two media surfaces, see below), WebBrowser (for videos), Label, Button, Timer
 
 **Display resilience** (these never let a transient failure drop the image):
 - `UpdateControlVisibility()`'s dynamic-background colour analysis and `Draw_Perspective()` both run their GDI+ pixel work inside a `Try/Catch`. GDI+ can transiently throw (`OverflowException`, `"Parameter is not valid"`) - e.g. while the background worker decodes on a slow network share - and the image is already on the PictureBox, so the analysis failure is swallowed and the frame keeps the previous tint/bars instead of aborting the load.
 - `Draw_Perspective()` debounces with a trailing-edge timer: a redraw skipped by the `how_long_wait_before_draw_perspective` throttle is retried once scrolling stops, so the image you settle on always gets its bars.
 - The background worker reads image dimensions via `Utils.GetImageDimensions()` (header parse, no GDI+) instead of `Image.FromFile`, so it never decodes the current image concurrently with the UI thread's `GetPixel`.
+- **First media gets its bars too**: the first image at startup (a command-line file/the restored last folder) loads inside `Form1_Load` while `is_form_shown` is still `False`, so every `Draw_Perspective()` in that path is gated off. `Main_Form_Shown` redraws once (the form is now at its final size and `is_form_shown = True`); `Draw_Perspective` self-gates if no picture box is visible or perspective is off.
+- **Seam fix**: `GetDisplayedVerticalEdgeColors`/`GetDisplayedHorizontalEdgeColors` sample one pixel **in** from the very edge (`edgeInset`). The outermost downscaled row/column folds in the darkest border/vignette pixels and comes out a few levels darker than what the `Zoom` PictureBox actually paints, leaving a faint dark seam between photo and bar; the second row/column matches the displayed edge, so the bar joins seamlessly.
 
 **[Application_Events.vb](src/Application_Events.vb)** - `My.MyApplication` startup hooks for single-instance behavior
 - On `Startup`: a path-independent named mutex (`FastMediaSorterSingleInstanceMutex`) detects an already-running instance (VB's built-in `IsSingleInstance` only matches same exe path, so debug/release/renamed copies would each start their own). If found, the new process forwards its command-line file path to the running window via `WM_COPYDATA` and cancels (`e.Cancel = True`).
@@ -99,21 +102,28 @@ The Store path (Path A: MSIX) is **additive** - it does not change the GitHub re
 - `LoadImageWithStream()` - Load image + keep MemoryStream open (prevents file-lock issues)
 - `RenameFile()`, `CopyFile()`, `MoveFile()`, `DeleteFile()` - Standard file operations
 - GIF frame-count detection (catches corrupt GIFs early)
+- **EXIF auto-orientation**: when `Is_Exif_AutoRotate` is on, `LoadImage` runs `ApplyExifOrientation()` on non-GIF images - it reads the `Orientation` tag (0x0112), `RotateFlip`s the pixels upright, then strips the tag. No-op when the tag is absent and failures are swallowed (a bad tag must never stop the load).
 
 **[Common_Module.vb](src/Common_Module.vb)** - Global state & P/Invoke
 - Public flags: `Is_Russian_Language`, `Is_Copying_not_Moving`, `Is_Pespective` (perspective background), `Is_No_Background_Tasks`
+- **Viewer options** (the "Просмотр"/"Видео и качество" tabs of the Settings window; loaded/saved in `Main_Form.Lifecycle.vb`): `Is_Exif_AutoRotate`, `Is_HighQuality_Scaling` (bicubic downscaling, see `HqPictureBox`), `Is_Show_Info_Overlay` (on-image file name + position HUD), `Slideshow_Base_Interval_Ms` (base slideshow interval; repeated start halves it down to `slide_show_limit`)
 - Color scheme selector: `Form_Color_Scheme` (0=dynamic, 1=black, 2=white, 3=most-frequent)
 - WinAPI calls: `ShowWindow`, `SetForegroundWindow`, `GetForegroundWindow` (for single-instance enforcement)
 - Hotkey storage: `Hardkeys_to_move_mediafile(10)` - Maps keyboard keys to folder shortcuts
 - Current media state: `Current_File_Name`, `Current_Image_Path`
 
+**[HqPictureBox.vb](src/HqPictureBox.vb)** - `PictureBox` subclass used for the two media surfaces (`Picture_Box_1`/`Picture_Box_2`). When `Is_HighQuality_Scaling` is on it sets `HighQualityBicubic` interpolation on the `Graphics` **inside `OnPaint` before `MyBase.OnPaint`** - the base draws the zoomed image there, so the control `Paint` event (which fires after) is too late. The existing OCR/info overlay `Paint` handlers still run afterwards.
+
 **[Image_Panel_Form.vb](src/Image_Panel_Form.vb)** - Quick-access thumbnail panel
 - Small window of file thumbnails
 - Double-click to load, drag-drop to the main window
 
-**[Table_Form.vb](src/Table_Form.vb)** - File list table view
-- Spreadsheet-like grid of files in current folder
-- Columns: name, size, date (configurable visibility)
+**[Table_Form.vb](src/Table_Form.vb)** - **Settings window** ("Настройки" / "Settings"), four tabs:
+- **Каталоги-получатели / Destination folders** - the `Data_Grid_View` mapping each move/copy hotkey (DEL + 0..9) to a destination folder; grid is sized to exactly its 11 rows (no stretched empty area below).
+- **Просмотр / Viewing** - background scheme (`grp_Background`), on-screen info overlay (`chk_Show_Info_Overlay`), slideshow interval (`num_Slideshow_Interval`), EXIF auto-rotate (`chk_Exif_AutoRotate`).
+- **Видео и качество / Video and quality** - HQ scaling (`chk_Hq_Scaling`), video loop, default mute (`chk_Video_Mute`) and default volume (`num_Video_Volume`) - the audio defaults live as private fields in `Main_Form` and are read via `CurrentVideoMuted`/`CurrentVideoVolumePercent` and written via `SetVideoAudioState`.
+- **Файлы и система / Files and system** - copy-vs-move, background file ops, no-confirm, register as default **image** viewer (`btn_Set_As_Default`) **and** default **video** player (`btn_Set_As_Default_Video` → `Main_Form.AssociateAllVideoFormatsWithThisApp`), the **OCR & Translate** settings button, "keep on top", and language toggle.
+- Option toggles write straight to the `Common_Module` flags; the two that change painting (`chk_Hq_Scaling`, `chk_Show_Info_Overlay`) call `Main_Form.RepaintMedia()` so the change shows immediately.
 
 **[Utils.vb](src/Utils.vb)** - Helper functions: array insert/remove, opposite-colour & luminance, clipboard, and **`GetImageDimensions()`** - reads JPEG/PNG/GIF/BMP pixel size straight from the file header (no GDI+), used by the background worker to avoid concurrent GDI+ decoding.
 
@@ -145,7 +155,7 @@ See [SPECIFICATION_BACKGROUND_EFFECT.md](SPECIFICATION_BACKGROUND_EFFECT.md) for
 ### OCR + On-Image Translation
 See [DONE/SPECIFICATION_OCR_TRANSLATION_OVERLAY.md](DONE/SPECIFICATION_OCR_TRANSLATION_OVERLAY.md) for the full design. Summary:
 - **Hotkeys**: `T` runs OCR + translate (or toggles the overlay) when the feature is enabled; `Shift+T` toggles auto-OCR mode. When the feature is off, `T`/`Shift+R` keep their legacy rotate meaning. The **Перевод / Translate** toolbar button triggers the same pipeline.
-- **Pipeline** ([Main_Form.OcrTranslate.vb](src/Main_Form.OcrTranslate.vb), `RunOcrPipeline`): OCR the image → `OcrBlockBuilder` groups lines into blocks (and drops isolated tiny blocks that are texture noise) → translate all blocks in one batch → render the translated text as an overlay over each block ([Main_Form.OcrOverlay.vb](src/Main_Form.OcrOverlay.vb)). Results are cached in memory and (optionally) on disk by `TranslationCache`, keyed on file path + write-time + engine + provider + languages - where the **engine** key folds in OCR model quality and page mode and the **provider** key folds in the Ollama model, so changing any of them invalidates cached results. **Empty (`No text found`) results are no longer cached**, so a bad first pass doesn't poison later runs; opening the settings dialog also clears the cache.
+- **Pipeline** ([Main_Form.OcrTranslate.vb](src/Main_Form.OcrTranslate.vb), `RunOcrPipeline`): OCR the image → `OcrBlockBuilder` groups lines into blocks (and drops isolated tiny blocks that are texture noise) → translate all blocks in one batch → render the translated text as an overlay over each block ([Main_Form.OcrOverlay.vb](src/Main_Form.OcrOverlay.vb)). Overlay text is sized to the **original** text, not a tiny capped font: `FitFont` starts from the source block's median line height (`MedianBlockLineHeight × scale`) and only shrinks when a longer translation would overflow (bounds `MinOverlayFont = 8`, `MaxOverlayFont = 200` px), so headings stay big. Results are cached in memory and (optionally) on disk by `TranslationCache`, keyed on file path + write-time + engine + provider + languages - where the **engine** key folds in OCR model quality and page mode and the **provider** key folds in the Ollama model, so changing any of them invalidates cached results. **Empty (`No text found`) results are no longer cached**, so a bad first pass doesn't poison later runs; opening the settings dialog also clears the cache.
 - **OCR engine**: multi-pass Tesseract (`TesseractOcrEngine`), loading images via `Pix.LoadFromMemory`. Instead of one `PageSegMode.Auto` pass it runs several scored attempts - single-language passes (in `OcrAttemptCodes` order, e.g. `rus → ukr → eng` for `auto`) across page-segmentation modes and light preprocessing (grayscale / inverted), upscaling small images - and keeps the highest-scoring result. `fast` (`tessdata`) or `best` (`tessdata_best`) packs download on demand; the **OCR mode** setting can force a specific `PageSegMode` (auto/block/sparse/line/vertical).
 - **Translators** (`CreateTranslator()` picks by `ocr_Settings.Provider`): `OllamaTranslator` (default - local LLM at `localhost:11434`, batches blocks, retries once when the model echoes the source) and `LibreTranslateTranslator`. Both parse JSON arrays through `TranslateHttp.JsonItemToString`, which pulls the real string out of a wrapped object (`{"translation":"…"}`) - a raw `Convert.ToString` on such a `Dictionary` would otherwise leak `System.Collections.Generic.Dictionary\`2[…]` into the overlay.
 

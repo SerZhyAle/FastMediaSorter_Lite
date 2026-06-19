@@ -195,4 +195,67 @@ Partial Public Class Main_Form
         End If
     End Sub
 
+    ' Mirrors AssociateAllImageFormatsWithThisApp for the video/audio formats the
+    ' app can play (the same set the player accepts via WebBrowser/LibVLC). Writes
+    ' to HKCU\Software\Classes so no admin rights are needed.
+    Public Sub AssociateAllVideoFormatsWithThisApp()
+        Dim all_Video_Extensions() As String = video_File_Extensions.ToArray()
+
+        Dim failed As New List(Of String)
+        Dim exe_Path As String = Application.ExecutablePath
+
+        For Each ext In all_Video_Extensions
+            Try
+                Dim clean As String = ext.TrimStart("."c)
+                Dim prog_Id As String = "FastMediaSorter." & clean
+                Dim description As String = clean.ToUpper() & " Video - FastMediaSorter"
+
+                ' HKCU\Software\Classes - не требует прав администратора, работает для текущего пользователя
+                Using classes_Key = Registry.CurrentUser.OpenSubKey("Software\Classes", True)
+                    Using prog_Key = classes_Key.CreateSubKey(prog_Id)
+                        prog_Key.SetValue("", description)
+                        Using shell_Key = prog_Key.CreateSubKey("shell\open\command")
+                            shell_Key.SetValue("", """" & exe_Path & """ ""%1""")
+                        End Using
+                        Using icon_Key = prog_Key.CreateSubKey("DefaultIcon")
+                            icon_Key.SetValue("", """" & exe_Path & """,0")
+                        End Using
+                    End Using
+                    Using ext_Key = classes_Key.CreateSubKey(ext)
+                        ext_Key.SetValue("", prog_Id)
+                    End Using
+                End Using
+            Catch ex As Exception
+                failed.Add(ext)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2502: Error registering " & ext & ": " & ex.Message)
+            End Try
+        Next
+
+        ' Уведомить shell об изменении ассоциаций
+        SHChangeNotify(&H8000000, &H1000, IntPtr.Zero, IntPtr.Zero)
+
+        Dim registered_Count As Integer = all_Video_Extensions.Length - failed.Count
+        If failed.Count = 0 Then
+            MessageBox.Show(
+                If(Is_Russian_Language,
+                   "Успешно зарегистрировано " & registered_Count.ToString() & " форматов:" & vbCrLf &
+                   String.Join("  ", all_Video_Extensions) & vbCrLf & vbCrLf &
+                   "Изменения применены для текущего пользователя.",
+                   registered_Count.ToString() & " formats registered:" & vbCrLf &
+                   String.Join("  ", all_Video_Extensions) & vbCrLf & vbCrLf &
+                   "Changes applied for current user."),
+                If(Is_Russian_Language, "Регистрация завершена", "Registration complete"),
+                MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Else
+            MessageBox.Show(
+                If(Is_Russian_Language,
+                   "Зарегистрировано: " & registered_Count.ToString() & vbCrLf &
+                   "Ошибок: " & failed.Count.ToString() & " (" & String.Join(", ", failed) & ")",
+                   "Registered: " & registered_Count.ToString() & vbCrLf &
+                   "Errors: " & failed.Count.ToString() & " (" & String.Join(", ", failed) & ")"),
+                If(Is_Russian_Language, "Регистрация", "Registration"),
+                MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End If
+    End Sub
+
 End Class

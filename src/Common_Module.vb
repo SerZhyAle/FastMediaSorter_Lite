@@ -17,6 +17,16 @@ Module Common_Module
     Public Picture_Box_Width_At_Panel As Integer = 80
     Public Picture_Box_Height_At_Panel As Integer = 80
 
+    ' --- Viewer options (settings window "Просмотр" tab) ---
+    ' Auto-rotate photos by their EXIF Orientation tag on load.
+    Public Is_Exif_AutoRotate As Boolean = True
+    ' High-quality (bicubic) downscaling in the media picture boxes.
+    Public Is_HighQuality_Scaling As Boolean = True
+    ' On-image overlay showing the file name + position (N/total).
+    Public Is_Show_Info_Overlay As Boolean = False
+    ' Base slideshow interval (ms); repeated start halves it down to the limit.
+    Public Slideshow_Base_Interval_Ms As Integer = 10000
+
     ' --- WinAPI Declarations ---
     <DllImport("user32.dll")>
     Public Function ShowWindow(hWnd As IntPtr, nCmdShow As Integer) As Boolean

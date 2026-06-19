@@ -161,6 +161,7 @@
     <Compile Include="Application_Events.vb" />
     <Compile Include="AppFileLogger.vb" />
     <Compile Include="FileManager.vb" />
+    <Compile Include="HqPictureBox.vb" />
     <Compile Include="Image_Panel_Form.vb">
       <SubType>Form</SubType>
     </Compile>

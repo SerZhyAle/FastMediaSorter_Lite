@@ -367,7 +367,9 @@ Partial Public Class Main_Form
             RecolorChrome(Color.White, GetOppositeColor(Color.White))
         End If
 
-        Is_Russian_Language = GetSetting(App_name, Second_App_Name, "Is_Russian_Language", "1") = "1"
+        ' First run (no saved value) follows the Windows display language; after
+        ' that the user's saved choice wins.
+        Is_Russian_Language = GetSetting(App_name, Second_App_Name, "Is_Russian_Language", If(SystemDefaultIsRussian(), "1", "0")) = "1"
         InitializeTooltips()
         InitializeOcrTranslate()
 
@@ -381,6 +383,16 @@ Partial Public Class Main_Form
         Is_to_show_file_sizes = GetSetting(App_name, Second_App_Name, "ShowFileSizes", "1") = "1"
         Is_to_show_file_datetime = GetSetting(App_name, Second_App_Name, "ShowFileDates", "1") = "1"
         Is_Video_Loop = GetSetting(App_name, Second_App_Name, "IsVideoLoop", "0") = "1"
+
+        ' Viewer options (see the "Просмотр" tab of the settings window).
+        Is_Exif_AutoRotate = GetSetting(App_name, Second_App_Name, "ExifAutoRotate", "1") = "1"
+        Is_HighQuality_Scaling = GetSetting(App_name, Second_App_Name, "HighQualityScaling", "1") = "1"
+        Is_Show_Info_Overlay = GetSetting(App_name, Second_App_Name, "ShowInfoOverlay", "0") = "1"
+        Dim slideshow_Seconds As Integer = 10
+        Integer.TryParse(GetSetting(App_name, Second_App_Name, "SlideshowIntervalSec", "10"), slideshow_Seconds)
+        If slideshow_Seconds < 1 Then slideshow_Seconds = 1
+        If slideshow_Seconds > 120 Then slideshow_Seconds = 120
+        Slideshow_Base_Interval_Ms = slideshow_Seconds * 1000
 
         Dim sort_Direction_Index = 0
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "SortDir", "0"), sort_Direction_Index)
@@ -504,6 +516,21 @@ Partial Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1120: Form Loaded")
     End Sub
 
+    ' The first media at startup - a command-line file/folder (the external-open
+    ' case), or the restored last folder - is loaded inside Form1_Load while
+    ' is_form_shown is still False, so every Draw_Perspective() call in the load
+    ' path is gated off and never runs. The image then shows only the flat scheme
+    ' background colour in its pill/letterbox area instead of the perspective bars,
+    ' with a visible seam (scrolling looked perfect because navigation always runs
+    ' with is_form_shown = True). By the Shown event the form is at its final size
+    ' and is_form_shown is True, so draw the bars once here. Draw_Perspective
+    ' self-gates (no-op when no picture box is visible or perspective is off).
+    Private Sub Main_Form_Shown(sender As Object, e As EventArgs) Handles MyBase.Shown
+        If is_PictureBox1_Visible OrElse is_PictureBox2_Visible Then
+            Draw_Perspective()
+        End If
+    End Sub
+
     Private Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
         Try
             If Current_Folder_Path IsNot Nothing Then SaveSetting(App_name, Second_App_Name, "ImageFolder", Current_Folder_Path)
@@ -535,6 +562,11 @@ Partial Public Class Main_Form
             SaveSetting(App_name, Second_App_Name, "ShowFileSizes", If(Is_to_show_file_sizes, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "ShowFileDates", If(Is_to_show_file_datetime, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "IsVideoLoop", If(Is_Video_Loop, "1", "0"))
+
+            SaveSetting(App_name, Second_App_Name, "ExifAutoRotate", If(Is_Exif_AutoRotate, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "HighQualityScaling", If(Is_HighQuality_Scaling, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "ShowInfoOverlay", If(Is_Show_Info_Overlay, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "SlideshowIntervalSec", CInt(Slideshow_Base_Interval_Ms / 1000).ToString())
             SaveSetting(App_name, Second_App_Name, "NoRequestBeforeFileOperation", If(Is_no_request_before_file_operation, "1", "0"))
 
             SaveSetting(App_name, Second_App_Name, "Picture_Box_Width_At_Panel", Picture_Box_Width_At_Panel.ToString)

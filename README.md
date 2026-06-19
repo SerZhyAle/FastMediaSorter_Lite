@@ -7,8 +7,14 @@ FastMediaSorter LITE is a Windows Forms application for quickly sorting, viewing
 - Recent files and folders tracking
 - File operations: move, copy, rename, and delete
 - Image panel for quick visual navigation
+- Automatic EXIF orientation correction for photos from phones and cameras
+- High-quality (bicubic) scaling for sharp downscaling of large images
+- Optional on-image overlay with the file name and position (handy in full-screen)
+- Configurable slideshow interval
+- Register the app as the default image viewer and/or video player (per-user, no admin needed)
+- OCR + on-image translation overlay (local Ollama / LibreTranslate)
 - Customizable keyboard shortcuts for efficient workflow
-- Multi-language support (English/Russian)
+- Multi-language support (English/Russian; first run follows the Windows display language)
 - Broad video format support: common H.264/MP4 plays in-window, and anything the
   built-in player can't decode (AVI, ZMBV, VP9, MKV, WMV, ..) automatically falls
   back to a bundled **LibVLC** engine - no external codecs or players required

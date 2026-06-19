@@ -414,7 +414,7 @@ static const char psz_thanks[] =
 "Opus - Copyright 2001-2013 Xiph.Org, Skype Limited, Octasic, Jean-Marc Valin,\n"
 "   Timothy B. Terriberry, CSIRO, Gregory Maxwell, Mark Borgerding,\n"
 "   Erik de Castro Lopo - Xiph.org BSD License\n"
-"Sparkle — Andy Matuschak et al. - MIT License\n"
+"Sparkle - Andy Matuschak et al. - MIT License\n"
 "Speex, Speexdsp - Copyright (c) 1992-2015 Xiph.org Foundation, Jean-Marc Valin,\n"
 "   Analog Devices Inc. Commonwealth Scientific and Industrial Research\n"
 "   Organisation, David Row, Jutta Degener, Carsten Bormann - 3-clause BSD\n"
