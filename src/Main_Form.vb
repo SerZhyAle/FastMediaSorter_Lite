@@ -441,9 +441,9 @@ Public Class Main_Form
             ReadShowMediaFile("ReadFolderAndFile")
         Else
             If Is_Russian_Language Then
-                MsgBox("Укажите каталог с медиа файлами..")
+                MsgBox("Сначала укажите каталог с медиафайлами.. Программа хороша, но не телепат.")
             Else
-                MsgBox("Select folder with media files..")
+                MsgBox("First point me at a folder with media files.. Great app, but not a mind reader.")
             End If
         End If
     End Sub

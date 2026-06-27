@@ -31,28 +31,28 @@ Partial Public Class Main_Form
 
         ' --- Buttons and Checkboxes ---
         toolTip.SetToolTip(btn_Select_Folder, If(Is_Russian_Language, "Выбрать папку с медиафайлами", "Select a folder with media files"))
-        toolTip.SetToolTip(btn_Review, If(Is_Russian_Language, "Перечитать текущую папку", "Reload the current folder"))
+        toolTip.SetToolTip(btn_Review, If(Is_Russian_Language, "Перечитать текущую папку - вдруг там что-то поменялось за вашей спиной.", "Reload the current folder - in case something changed behind your back."))
         toolTip.SetToolTip(btn_Panel, If(Is_Russian_Language, "Показать панель изображений (F3)", "Show the image panel (F3)"))
-        toolTip.SetToolTip(btn_Full_Screen, If(Is_Russian_Language, "Полноэкранный режим", "Toggle fullscreen mode"))
+        toolTip.SetToolTip(btn_Full_Screen, If(Is_Russian_Language, "Полноэкранный режим - картинка во весь экран и ничего лишнего.", "Toggle fullscreen mode - the image, the whole image, and nothing but the image."))
         toolTip.SetToolTip(btn_Prev_File, If(Is_Russian_Language, "Предыдущий файл (Стрелка влево, PgUp)", "Previous file (Left Arrow, PgUp)"))
         toolTip.SetToolTip(btn_Next_File, If(Is_Russian_Language, "Следующий файл (Стрелка вправо, PgDn)", "Next file (Right Arrow, PgDn)"))
-        toolTip.SetToolTip(btn_Next_Random, If(Is_Russian_Language, "Случайный файл (Y)", "Random file (Y)"))
+        toolTip.SetToolTip(btn_Next_Random, If(Is_Russian_Language, "Случайный файл (Y) - пусть судьба выбирает за вас.", "Random file (Y) - let fate pick for you."))
         toolTip.SetToolTip(btn_Random_Slideshow, If(Is_Russian_Language, "Случайное слайд-шоу (I, F5)", "Random slideshow (I, F5)"))
         toolTip.SetToolTip(btn_Slideshow, If(Is_Russian_Language, "Слайд-шоу (S)", "Slideshow (S)"))
         toolTip.SetToolTip(btn_Move_Table, If(Is_Russian_Language, "Настройки: папки-получатели, OCR и перевод (F2)", "Settings: destination folders, OCR & translation (F2)"))
         toolTip.SetToolTip(btn_Rename, If(Is_Russian_Language, "Переименовать файл (F6)", "Rename file (F6)"))
-        toolTip.SetToolTip(bt_Delete, If(Is_Russian_Language, "Удалить файл (Del)", "Delete file (Del)"))
+        toolTip.SetToolTip(bt_Delete, If(Is_Russian_Language, "Удалить файл (Del) - пути назад почти нет, так что прицеливайтесь.", "Delete the file (Del) - there's almost no going back, so aim carefully."))
         toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык на английский", "Switch language to Russian"))
-        toolTip.SetToolTip(chkbox_Top_Most, If(Is_Russian_Language, "Поверх всех окон", "Always on top"))
+        toolTip.SetToolTip(chkbox_Top_Most, If(Is_Russian_Language, "Поверх всех окон - чтобы ничто не смело его заслонить.", "Always on top - so nothing dares cover it."))
         toolTip.SetToolTip(btn_choose_file, If(Is_Russian_Language, "Выбрать файл..", "Choose file.."))
 
         ' --- ComboBoxes and Labels ---
         toolTip.SetToolTip(cmbox_Sort, If(Is_Russian_Language, "Порядок сортировки файлов", "File sort order"))
         toolTip.SetToolTip(cmbox_Media_Folder, If(Is_Russian_Language, "Текущая папка. Введите путь и нажмите Enter для перехода.", "Current folder. Type a path and press Enter to navigate."))
-        toolTip.SetToolTip(lbl_Folder, If(Is_Russian_Language, "Нажмите, чтобы скопировать путь к папке", "Click to copy the folder path"))
+        toolTip.SetToolTip(lbl_Folder, If(Is_Russian_Language, "Нажмите, чтобы скопировать путь к папке (вдруг пригодится).", "Click to copy the folder path (just in case)."))
         toolTip.SetToolTip(lbl_Current_File, If(Is_Russian_Language, "Нажмите, чтобы скопировать путь к файлу", "Click to copy the file path"))
         toolTip.SetToolTip(lbl_Status, If(Is_Russian_Language, "Статус текущей операции", "Status of the current operation"))
-        toolTip.SetToolTip(lbl_File_Number, If(Is_Russian_Language, "Номер текущего файла и общее количество", "Current file number and total count"))
+        toolTip.SetToolTip(lbl_File_Number, If(Is_Russian_Language, "Номер текущего файла и сколько их всего - чтобы оценить масштаб предстоящего.", "Current file number and the total - so you can grasp the scale of what's ahead."))
 
         toolTip.SetToolTip(btn_RecentFiles, If(Is_Russian_Language, "Недавние файлы", "Recent files"))
 

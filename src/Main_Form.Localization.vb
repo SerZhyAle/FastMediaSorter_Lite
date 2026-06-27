@@ -22,20 +22,20 @@ Partial Public Class Main_Form
             btn_Next_File.Text = "след(PgDn) >>"
             bt_Delete.Text = "удалить (del)"
             btn_Move_Table.Text = "Настройки"
-            lbl_Help_Info.Text = " Програма для быстрого переноса/копирования изображений по папкам." & Chr(10) & Chr(10) &
+            lbl_Help_Info.Text = " Программа для быстрого переноса/копирования изображений по папкам. Да, та самая, которой вам не хватало." & Chr(10) & Chr(10) &
                 "Сначала заполните таблицу каталогов-получателей по клавишам 1,2,3.. - 0. " & Chr(10) &
-                "Затем укажите каталог-источник для сортировки. " & Chr(10) &
+                "Затем укажите каталог-источник для сортировки (тот самый, где творится беспорядок). " & Chr(10) &
                 "Продвигайтесь по файлам с помощью стрелок, P/N (PgDn/PgUp) или кликов/скролла мыши. " & Chr(10) &
                 "Стрелки вверх-вниз: +10-10 и Shift+ PgDn/PgUp: + 100/ - 100 файлов" & Chr(10) &
                 "Y- случайно, S- случайное слайдшоу, I- слайдшоу. " & Chr(10) &
-                "R/T для поворота картинки. " & Chr(10) &
-                "F3 для просмотра пагнли изображений папки. " & Chr(10) &
+                "R/T для поворота картинки, если фотограф держал камеру боком. " & Chr(10) &
+                "F3 для просмотра панели изображений папки. " & Chr(10) &
                 "F6 для переименования файла. " & Chr(10) &
-                "Или за счёт переноса/копирования по папкам клавишами (1,2,3.. - 0). " & Chr(10) &
-                "Или за счёт удаления текущего файла (del). " & Chr(10) &
+                "Или раскидайте файлы по папкам клавишами (1,2,3.. - 0) - по одному нажатию на файл. " & Chr(10) &
+                "Или удалите текущий файл (del), если он того заслужил. " & Chr(10) &
                 "Окно таблицы можно закрепить и щёлкать мышью по колонке с цифрой. " & Chr(10) &
-                "(U) -вернуть последный перенесённый файл (удалить скопированный). " & Chr(10) & Chr(10) &
-                " Щёлкните на этот текст (F1) для того, чтобы он исчез."
+                "(U) - вернуть последний перенесённый файл (на случай, если рука дрогнула). " & Chr(10) & Chr(10) &
+                " Щёлкните на этот текст (F1), чтобы он деликатно исчез."
             btn_Language.Text = "EN"
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0030: Russian is set")
@@ -47,20 +47,20 @@ Partial Public Class Main_Form
             btn_Next_File.Text = "(N)ext >>"
             bt_Delete.Text = "(D)elete"
             btn_Move_Table.Text = "Settings"
-            lbl_Help_Info.Text = " Program for fast image sorting." & Chr(10) & Chr(10) &
-                "First fill dest folders table for keys: 1,2.. - 0. " & Chr(10) &
-                "After set folder with you unsorted files. " & Chr(10) &
-                "Go with files by P/N (PgDn/PgUp) keys or mouse clicks/scroll. " & Chr(10) &
+            lbl_Help_Info.Text = " Program for fast image sorting. Yes, the one you've been missing." & Chr(10) & Chr(10) &
+                "First fill the destination-folders table for keys: 1,2.. - 0. " & Chr(10) &
+                "Then point it at the folder with your unsorted files (you know the one). " & Chr(10) &
+                "Move through files with P/N (PgDn/PgUp) keys or mouse clicks/scroll. " & Chr(10) &
                 "Up/Down- +10-10 and Shift+ PgDn/PgUp- + 100/ - 100 files" & Chr(10) &
                 "Y- random, S- random slide, I- slide. " & Chr(10) &
-                "Or move/copy files into dest folders by keys (1,2.. - 0). " & Chr(10) &
-                "Or by deleting files (del key). " & Chr(10) &
-                "R/T to rotate the image. " & Chr(10) &
+                "Or move/copy files into dest folders by keys (1,2.. - 0) - one keypress per file. " & Chr(10) &
+                "Or delete files (del key), if they had it coming. " & Chr(10) &
+                "R/T to rotate the image, for when the photographer held the camera sideways. " & Chr(10) &
                 "F3 to see the panel of folder's images. " & Chr(10) &
                 "F6 to rename the file. " & Chr(10) &
-                "You can lock Window with folders table and click on key numbers. " & Chr(10) &
-                "(U)ndo last moved action (delete copying file). " & Chr(10) & Chr(10) &
-                " Click on this text (F1) for hide it."
+                "You can pin the folders-table window and click on the key numbers. " & Chr(10) &
+                "(U)ndo the last move (for when your hand slipped). " & Chr(10) & Chr(10) &
+                " Click on this text (F1) to make it tactfully disappear."
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0040: English is set")
         End If

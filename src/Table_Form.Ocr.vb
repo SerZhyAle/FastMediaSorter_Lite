@@ -1,0 +1,732 @@
+Option Strict On
+
+Imports System.Drawing
+Imports System.Threading
+Imports System.Threading.Tasks
+Imports System.Windows.Forms
+
+''' <summary>
+''' "OCR и перевод" / "OCR &amp; translation" tab of the Settings window. This
+''' replaces the former standalone OCR_Translate_Form: every OCR/translation
+''' parameter now lives on the fifth tab (<see cref="Tab_Page_5"/>) of
+''' <see cref="Table_Form"/>. The bulk of the parameters are split across an inner
+''' two-page TabControl - "Перевод" (translation) and "Распознавание (OCR)"
+''' (recognition) - to save vertical space; the global toggles, overlay opacity,
+''' disk-cache and status line sit outside the inner tabs.
+'''
+''' The controls edit the live <see cref="OcrTranslateSettings"/> object owned by
+''' Main_Form (obtained via Main_Form.EnsureOcrSettings): each change is applied
+''' immediately, mirroring how the rest of this Settings window works.
+''' </summary>
+Partial Public Class Table_Form
+
+    ' OCR page-mode codes, aligned with the cmbOcrMode item order.
+    Private Shared ReadOnly OcrModeCodes As String() = {"auto", "block", "sparse", "line", "vertical"}
+
+    ' Popular, translation-capable Ollama models offered when none are installed.
+    Private Shared ReadOnly OcrRecommendedModels As String() = {
+        "qwen2.5:3b", "gemma2:2b", "qwen2.5:1.5b", "llama3.2:3b",
+        "qwen2.5", "qwen2.5:7b", "llama3.2", "gemma2", "aya", "mistral", "phi3.5"
+    }
+
+    Private _ocrBuilt As Boolean
+    Private _ocrLoading As Boolean
+    Private _ocrBusy As Boolean
+    Private _ocrDroppedTopMost As Boolean
+    Private _ocrDroppedMainTopMost As Boolean
+    Private _ocrMainWasTopMost As Boolean
+    Private _ocrSettings As OcrTranslateSettings
+
+    Private ocrInner As TabControl
+    Private ocrTabTranslate As TabPage
+    Private ocrTabRecognition As TabPage
+
+    Private chkOcrEnabled As CheckBox
+    Private chkOcrAuto As CheckBox
+
+    ' Translation page
+    Private lblOcrTranslator As Label
+    Private cmbOcrProvider As ComboBox
+    Private lblOcrEndpoint As Label
+    Private txtOcrEndpoint As TextBox
+    Private lblOcrServer As Label
+    Private btnOcrInstallOllama As Button
+    Private btnOcrStartOllama As Button
+    Private lblOcrModel As Label
+    Private cmbOcrModelName As ComboBox
+    Private btnOcrPullModel As Button
+    Private lblOcrApi As Label
+    Private txtOcrApi As TextBox
+    Private lblOcrTarget As Label
+    Private cmbOcrTarget As ComboBox
+
+    ' Recognition page
+    Private lblOcrSource As Label
+    Private cmbOcrSource As ComboBox
+    Private lblOcrQuality As Label
+    Private cmbOcrQuality As ComboBox
+    Private lblOcrMode As Label
+    Private cmbOcrMode As ComboBox
+    Private btnOcrDownload As Button
+
+    ' Footer (shared)
+    Private lblOcrOpacity As Label
+    Private trkOcrOpacity As TrackBar
+    Private lblOcrOpacityVal As Label
+    Private chkOcrDisk As CheckBox
+    Private lblOcrStatus As Label
+
+    ' --- public hooks called by Table_Form / Main_Form ------------------------
+
+    ''' <summary>Builds (once), re-localizes and reloads the OCR tab from the live
+    ''' settings. Called from PrepareForDisplay.</summary>
+    Private Sub PrepareOcrTabForDisplay()
+        BuildOcrTabIfNeeded()
+        LocalizeOcrTab()
+        LoadOcrFromSettings()
+    End Sub
+
+    ''' <summary>Switches the Settings window to the OCR tab (used by the toolbar
+    ''' Translate button's right-click).</summary>
+    Friend Sub SelectOcrTab()
+        BuildOcrTabIfNeeded()
+        If Tab_Page_5 Is Nothing Then Return
+        If Tab_Control.SelectedTab Is Tab_Page_5 Then
+            OnEnterOcrTab()
+        Else
+            Tab_Control.SelectedTab = Tab_Page_5 ' fires SelectedIndexChanged -> OnEnterOcrTab
+        End If
+    End Sub
+
+    Private Sub Tab_Control_SelectedIndexChanged(sender As Object, e As EventArgs) Handles Tab_Control.SelectedIndexChanged
+        If Tab_Control.SelectedTab Is Tab_Page_5 Then OnEnterOcrTab()
+    End Sub
+
+    ''' <summary>Runs whenever the OCR tab becomes active: drops stale cached
+    ''' results (so edits take effect on the next run), refreshes the control
+    ''' values and probes Ollama for installed models / state.</summary>
+    Private Sub OnEnterOcrTab()
+        If Not _ocrBuilt Then Return
+        Main_Form.ClearOcrResultCache()
+        LoadOcrFromSettings()
+        UpdateOllamaStateHint()
+        RefreshInstalledOcrModels()
+    End Sub
+
+    Private Sub OcrTab_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
+        ' Persist the OCR settings as soon as the Settings window closes (the rest
+        ' are also saved when the app exits).
+        Main_Form.SaveOcrSettings()
+    End Sub
+
+    ''' <summary>Restores the always-on-top state we dropped to let an external
+    ''' window (Ollama installer / download page) show in front of us.</summary>
+    Private Sub OcrTab_Activated(sender As Object, e As EventArgs) Handles Me.Activated
+        If _ocrDroppedTopMost Then
+            Me.TopMost = set_This_Form_Top_Most
+            _ocrDroppedTopMost = False
+        End If
+        If _ocrDroppedMainTopMost Then
+            Main_Form.TopMost = _ocrMainWasTopMost
+            _ocrDroppedMainTopMost = False
+        End If
+    End Sub
+
+    ' --- build ----------------------------------------------------------------
+
+    Private Sub BuildOcrTabIfNeeded()
+        If _ocrBuilt Then Return
+        If Tab_Page_5 Is Nothing Then Return
+        _ocrBuilt = True
+
+        Dim prev As Boolean = _ocrLoading
+        _ocrLoading = True
+        Tab_Page_5.SuspendLayout()
+
+        Const labelW As Integer = 160
+        Const ctlX As Integer = 180
+        Const ctlW As Integer = 420
+
+        ' Global toggles (above the inner tabs).
+        chkOcrEnabled = New CheckBox With {.Left = 14, .Top = 10, .Width = 640, .AutoSize = True}
+        chkOcrAuto = New CheckBox With {.Left = 14, .Top = 36, .Width = 640, .AutoSize = True}
+        Tab_Page_5.Controls.Add(chkOcrEnabled)
+        Tab_Page_5.Controls.Add(chkOcrAuto)
+        AddHandler chkOcrEnabled.CheckedChanged, AddressOf OcrEnabled_CheckedChanged
+        AddHandler chkOcrAuto.CheckedChanged, AddressOf OcrAuto_CheckedChanged
+
+        ' Inner two-page tab control.
+        ' Fixed height, anchored Top|Left|Right (NOT Bottom): the inner pages must
+        ' never shrink below their content (no scrollbar), so they keep their size
+        ' when the window is resized; the bottom-anchored footer still pins below.
+        ocrInner = New TabControl With {.Left = 8, .Top = 64, .Width = 652, .Height = 236,
+            .Anchor = CType(AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right, AnchorStyles)}
+        ocrTabTranslate = New TabPage With {.Padding = New Padding(4), .UseVisualStyleBackColor = True}
+        ocrTabRecognition = New TabPage With {.Padding = New Padding(4), .UseVisualStyleBackColor = True}
+        ocrInner.Controls.Add(ocrTabTranslate)
+        ocrInner.Controls.Add(ocrTabRecognition)
+        Tab_Page_5.Controls.Add(ocrInner)
+
+        ' ---- Translation page ----
+        Dim y As Integer = 10
+        lblOcrTranslator = MakeOcrLabel(14, y, labelW)
+        ocrTabTranslate.Controls.Add(lblOcrTranslator)
+        cmbOcrProvider = New ComboBox With {.Left = ctlX, .Top = y, .Width = ctlW, .DropDownStyle = ComboBoxStyle.DropDownList}
+        cmbOcrProvider.Items.AddRange(New Object() {"ollama", "libretranslate"})
+        AddHandler cmbOcrProvider.SelectedIndexChanged, AddressOf OcrProvider_Changed
+        ocrTabTranslate.Controls.Add(cmbOcrProvider)
+        y += 32
+
+        lblOcrEndpoint = MakeOcrLabel(14, y, labelW)
+        ocrTabTranslate.Controls.Add(lblOcrEndpoint)
+        txtOcrEndpoint = New TextBox With {.Left = ctlX, .Top = y, .Width = ctlW}
+        AddHandler txtOcrEndpoint.TextChanged, AddressOf OcrEndpoint_TextChanged
+        ocrTabTranslate.Controls.Add(txtOcrEndpoint)
+        y += 32
+
+        lblOcrServer = MakeOcrLabel(14, y, labelW)
+        ocrTabTranslate.Controls.Add(lblOcrServer)
+        btnOcrInstallOllama = New Button With {.Left = ctlX, .Top = y - 1, .Width = 205, .Height = 25}
+        btnOcrStartOllama = New Button With {.Left = ctlX + 211, .Top = y - 1, .Width = 205, .Height = 25}
+        AddHandler btnOcrInstallOllama.Click, AddressOf OnInstallOllama
+        AddHandler btnOcrStartOllama.Click, AddressOf OnStartOllama
+        ocrTabTranslate.Controls.Add(btnOcrInstallOllama)
+        ocrTabTranslate.Controls.Add(btnOcrStartOllama)
+        y += 32
+
+        lblOcrModel = MakeOcrLabel(14, y, labelW)
+        ocrTabTranslate.Controls.Add(lblOcrModel)
+        cmbOcrModelName = New ComboBox With {.Left = ctlX, .Top = y, .Width = 330, .DropDownStyle = ComboBoxStyle.DropDown}
+        btnOcrPullModel = New Button With {.Left = ctlX + ctlW - 84, .Top = y - 1, .Width = 84, .Height = 25}
+        AddHandler cmbOcrModelName.TextChanged, AddressOf OcrModelName_TextChanged
+        AddHandler btnOcrPullModel.Click, AddressOf OnPullModel
+        ocrTabTranslate.Controls.Add(cmbOcrModelName)
+        ocrTabTranslate.Controls.Add(btnOcrPullModel)
+        y += 32
+
+        lblOcrApi = MakeOcrLabel(14, y, labelW)
+        ocrTabTranslate.Controls.Add(lblOcrApi)
+        txtOcrApi = New TextBox With {.Left = ctlX, .Top = y, .Width = ctlW, .UseSystemPasswordChar = True}
+        AddHandler txtOcrApi.TextChanged, AddressOf OcrApi_TextChanged
+        ocrTabTranslate.Controls.Add(txtOcrApi)
+        y += 32
+
+        lblOcrTarget = MakeOcrLabel(14, y, labelW)
+        ocrTabTranslate.Controls.Add(lblOcrTarget)
+        cmbOcrTarget = BuildOcrLanguageCombo(ocrTabTranslate, ctlX, y, ctlW, OcrLanguageCatalog.TargetLanguages())
+        AddHandler cmbOcrTarget.SelectedIndexChanged, AddressOf OcrTarget_Changed
+
+        ' ---- Recognition page ----
+        y = 10
+        lblOcrSource = MakeOcrLabel(14, y, labelW)
+        ocrTabRecognition.Controls.Add(lblOcrSource)
+        cmbOcrSource = BuildOcrLanguageCombo(ocrTabRecognition, ctlX, y, ctlW, OcrLanguageCatalog.SourceLanguages())
+        AddHandler cmbOcrSource.SelectedIndexChanged, AddressOf OcrSource_Changed
+        y += 34
+
+        lblOcrQuality = MakeOcrLabel(14, y, labelW)
+        ocrTabRecognition.Controls.Add(lblOcrQuality)
+        cmbOcrQuality = New ComboBox With {.Left = ctlX, .Top = y, .Width = ctlW, .DropDownStyle = ComboBoxStyle.DropDownList}
+        AddHandler cmbOcrQuality.SelectedIndexChanged, AddressOf OcrQuality_Changed
+        ocrTabRecognition.Controls.Add(cmbOcrQuality)
+        y += 32
+
+        lblOcrMode = MakeOcrLabel(14, y, labelW)
+        ocrTabRecognition.Controls.Add(lblOcrMode)
+        cmbOcrMode = New ComboBox With {.Left = ctlX, .Top = y, .Width = ctlW, .DropDownStyle = ComboBoxStyle.DropDownList}
+        AddHandler cmbOcrMode.SelectedIndexChanged, AddressOf OcrMode_Changed
+        ocrTabRecognition.Controls.Add(cmbOcrMode)
+        y += 36
+
+        btnOcrDownload = New Button With {.Left = ctlX, .Top = y, .Width = ctlW, .Height = 27}
+        AddHandler btnOcrDownload.Click, AddressOf OnDownloadOcr
+        ocrTabRecognition.Controls.Add(btnOcrDownload)
+
+        ' ---- Footer (shared, below the inner tabs) ----
+        Dim botAnchor As AnchorStyles = CType(AnchorStyles.Bottom Or AnchorStyles.Left, AnchorStyles)
+        lblOcrOpacity = New Label With {.Left = 14, .Top = 306, .Width = labelW, .Height = 20,
+            .TextAlign = ContentAlignment.MiddleLeft, .Anchor = botAnchor}
+        trkOcrOpacity = New TrackBar With {.Left = ctlX, .Top = 302, .Width = 380, .Minimum = 40, .Maximum = 255, .TickFrequency = 32,
+            .Anchor = CType(AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right, AnchorStyles)}
+        lblOcrOpacityVal = New Label With {.Left = ctlX + 386, .Top = 310, .Width = 60, .Height = 20, .Text = "210",
+            .Anchor = CType(AnchorStyles.Bottom Or AnchorStyles.Right, AnchorStyles)}
+        AddHandler trkOcrOpacity.ValueChanged, AddressOf OcrOpacity_Changed
+        Tab_Page_5.Controls.Add(lblOcrOpacity)
+        Tab_Page_5.Controls.Add(trkOcrOpacity)
+        Tab_Page_5.Controls.Add(lblOcrOpacityVal)
+
+        chkOcrDisk = New CheckBox With {.Left = 14, .Top = 350, .Width = 400, .AutoSize = True, .Anchor = botAnchor}
+        AddHandler chkOcrDisk.CheckedChanged, AddressOf OcrDisk_CheckedChanged
+        Tab_Page_5.Controls.Add(chkOcrDisk)
+
+        lblOcrStatus = New Label With {.Left = 14, .Top = 372, .Width = 640, .Height = 18, .ForeColor = Color.DimGray, .AutoEllipsis = True,
+            .Anchor = CType(AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right, AnchorStyles)}
+        Tab_Page_5.Controls.Add(lblOcrStatus)
+
+        Tab_Page_5.ResumeLayout(False)
+        Tab_Page_5.PerformLayout()
+        _ocrLoading = prev
+    End Sub
+
+    Private Function MakeOcrLabel(left As Integer, top As Integer, width As Integer) As Label
+        Return New Label With {.Left = left, .Top = top + 4, .Width = width, .Height = 20,
+            .AutoSize = False, .TextAlign = ContentAlignment.MiddleLeft}
+    End Function
+
+    Private Function BuildOcrLanguageCombo(parent As Control, left As Integer, top As Integer, width As Integer, entries As LanguageEntry()) As ComboBox
+        Dim combo As New ComboBox With {
+            .Left = left, .Top = top, .Width = width,
+            .DropDownStyle = ComboBoxStyle.DropDownList,
+            .DrawMode = DrawMode.OwnerDrawFixed,
+            .ItemHeight = 24,
+            .MaxDropDownItems = 16}
+        For Each entry As LanguageEntry In entries
+            combo.Items.Add(entry)
+        Next
+        AddHandler combo.DrawItem, AddressOf OcrLangCombo_DrawItem
+        parent.Controls.Add(combo)
+        Return combo
+    End Function
+
+    Private Sub OcrLangCombo_DrawItem(sender As Object, e As DrawItemEventArgs)
+        e.DrawBackground()
+        If e.Index < 0 Then Return
+
+        Dim combo As ComboBox = CType(sender, ComboBox)
+        Dim entry As LanguageEntry = TryCast(combo.Items(e.Index), LanguageEntry)
+        If entry Is Nothing Then Return
+
+        Dim fw As Integer = 22
+        Dim fh As Integer = 16
+        Dim iy As Integer = e.Bounds.Top + (e.Bounds.Height - fh) \ 2
+        Try
+            Dim img As Image = FlagImages.Get(entry.Code)
+            If img IsNot Nothing Then e.Graphics.DrawImage(img, e.Bounds.Left + 4, iy, fw, fh)
+        Catch
+        End Try
+
+        Using b As New SolidBrush(e.ForeColor)
+            Using sf As New StringFormat()
+                sf.LineAlignment = StringAlignment.Center
+                sf.Trimming = StringTrimming.EllipsisCharacter
+                sf.FormatFlags = StringFormatFlags.NoWrap
+                Dim tr As New Rectangle(e.Bounds.Left + 4 + fw + 6, e.Bounds.Top, e.Bounds.Width - (fw + 16), e.Bounds.Height)
+                e.Graphics.DrawString(entry.DisplayName(Is_Russian_Language), combo.Font, b, tr, sf)
+            End Using
+        End Using
+
+        e.DrawFocusRectangle()
+    End Sub
+
+    ' --- localization ---------------------------------------------------------
+
+    Private Sub LocalizeOcrTab()
+        If Not _ocrBuilt Then Return
+        Dim rus As Boolean = Is_Russian_Language
+        Dim prev As Boolean = _ocrLoading
+        _ocrLoading = True
+
+        ocrTabTranslate.Text = If(rus, "Перевод", "Translation")
+        ocrTabRecognition.Text = If(rus, "Распознавание (OCR)", "Recognition (OCR)")
+
+        chkOcrEnabled.Text = If(rus, "Включить OCR и перевод", "Enable OCR & translation")
+        chkOcrAuto.Text = If(rus, "Авто-режим (после показа изображения)", "Auto mode (after each image settles)")
+
+        lblOcrTranslator.Text = If(rus, "Переводчик:", "Translator:")
+        lblOcrEndpoint.Text = If(rus, "Адрес (endpoint):", "Endpoint URL:")
+        lblOcrServer.Text = If(rus, "Сервер Ollama:", "Ollama server:")
+        btnOcrInstallOllama.Text = If(rus, "Установить Ollama", "Install Ollama")
+        btnOcrStartOllama.Text = If(rus, "Запустить Ollama", "Start Ollama")
+        lblOcrModel.Text = If(rus, "Модель Ollama:", "Ollama model:")
+        btnOcrPullModel.Text = If(rus, "Загрузить", "Pull")
+        lblOcrApi.Text = If(rus, "API-ключ:", "API key:")
+        lblOcrTarget.Text = If(rus, "Язык перевода:", "Translate to (target):")
+
+        lblOcrSource.Text = If(rus, "Язык распознавания:", "Recognition (source):")
+        lblOcrQuality.Text = If(rus, "Модель OCR:", "OCR model:")
+        lblOcrMode.Text = If(rus, "Режим OCR:", "OCR mode:")
+        btnOcrDownload.Text = If(rus, "Скачать пакет распознавания", "Download recognition language pack")
+
+        lblOcrOpacity.Text = If(rus, "Прозрачность:", "Opacity:")
+        chkOcrDisk.Text = If(rus, "Дисковый кэш результатов", "Cache results on disk")
+
+        PopulateOcrQualityItems(rus)
+        PopulateOcrModeItems(rus)
+
+        ' Owner-drawn language combos redraw with the active language.
+        cmbOcrSource.Invalidate()
+        cmbOcrTarget.Invalidate()
+
+        _ocrLoading = prev
+    End Sub
+
+    Private Sub PopulateOcrQualityItems(rus As Boolean)
+        Dim idx As Integer = cmbOcrQuality.SelectedIndex
+        cmbOcrQuality.Items.Clear()
+        cmbOcrQuality.Items.AddRange(New Object() {
+            If(rus, "Быстрая (fast)", "Fast"),
+            If(rus, "Лучшая (best, медленнее)", "Best (more accurate, slower)")})
+        If idx >= 0 AndAlso idx < cmbOcrQuality.Items.Count Then cmbOcrQuality.SelectedIndex = idx
+    End Sub
+
+    Private Sub PopulateOcrModeItems(rus As Boolean)
+        Dim idx As Integer = cmbOcrMode.SelectedIndex
+        cmbOcrMode.Items.Clear()
+        cmbOcrMode.Items.AddRange(New Object() {
+            If(rus, "Авто (рекомендуется)", "Auto (recommended)"),
+            If(rus, "Один блок", "Single block"),
+            If(rus, "Разреженный текст", "Sparse text"),
+            If(rus, "Одна строка", "Single line"),
+            If(rus, "Вертикальный текст", "Vertical text")})
+        If idx >= 0 AndAlso idx < cmbOcrMode.Items.Count Then cmbOcrMode.SelectedIndex = idx
+    End Sub
+
+    Private Sub InitializeOcrTooltips()
+        BuildOcrTabIfNeeded()
+        If toolTip Is Nothing OrElse Not _ocrBuilt Then Return
+        Dim rus As Boolean = Is_Russian_Language
+        toolTip.SetToolTip(chkOcrEnabled, If(rus, "Включить распознавание текста и перевод на изображениях - для картинок, что упорно говорят на чужом языке.", "Enable on-image text recognition and translation - for pictures that stubbornly speak another language."))
+        toolTip.SetToolTip(chkOcrAuto, If(rus, "Распознавать и переводить автоматически после каждого изображения - вы только смотрите, программа отдувается.", "Recognize and translate automatically after each image - you just look, the app does the heavy lifting."))
+        toolTip.SetToolTip(cmbOcrProvider, If(rus, "Сервис перевода: локальный Ollama или LibreTranslate.", "Translation service: local Ollama or LibreTranslate."))
+        toolTip.SetToolTip(txtOcrEndpoint, If(rus, "Адрес сервера перевода (оставьте пустым для значения по умолчанию).", "Translation server URL (leave empty for the default)."))
+        toolTip.SetToolTip(btnOcrInstallOllama, If(rus, "Скачать и установить Ollama - местного полиглота, который поселится на вашем компьютере.", "Download and install Ollama - a local polyglot that moves into your machine."))
+        toolTip.SetToolTip(btnOcrStartOllama, If(rus, "Запустить локальный сервер Ollama.", "Start the local Ollama server."))
+        toolTip.SetToolTip(cmbOcrModelName, If(rus, "Имя модели Ollama для перевода.", "Ollama model name used for translation."))
+        toolTip.SetToolTip(btnOcrPullModel, If(rus, "Загрузить выбранную модель в Ollama.", "Pull the selected model into Ollama."))
+        toolTip.SetToolTip(txtOcrApi, If(rus, "Ключ API (для облачных переводчиков). Храним зашифрованным, честное слово.", "API key (for cloud translators). We keep it encrypted, scout's honor."))
+        toolTip.SetToolTip(cmbOcrTarget, If(rus, "Язык, на который переводить текст.", "Language to translate the text into."))
+        toolTip.SetToolTip(cmbOcrSource, If(rus, "Язык исходного текста на изображении (или автоопределение).", "Language of the source text on the image (or auto-detect)."))
+        toolTip.SetToolTip(cmbOcrQuality, If(rus, "Качество распознавания: быстрое или лучшее (то есть медленнее). Вечный выбор между скоростью и совестью.", "Recognition quality: fast or best (read: slower). The eternal trade-off between speed and conscience."))
+        toolTip.SetToolTip(cmbOcrMode, If(rus, "Режим разбора страницы Tesseract.", "Tesseract page segmentation mode."))
+        toolTip.SetToolTip(btnOcrDownload, If(rus, "Скачать языковой пакет распознавания для выбранного языка.", "Download the recognition language pack for the chosen language."))
+        toolTip.SetToolTip(trkOcrOpacity, If(rus, "Непрозрачность наложения перевода - от еле заметного до полностью закрывающего оригинал.", "Opacity of the translation overlay - from barely there to fully hiding the original."))
+        toolTip.SetToolTip(chkOcrDisk, If(rus, "Кэшировать результаты на диск, чтобы не распознавать одно и то же дважды.", "Cache results on disk, so the same image isn't recognized twice for nothing."))
+    End Sub
+
+    ' --- load / apply ---------------------------------------------------------
+
+    Private Sub LoadOcrFromSettings()
+        If Not _ocrBuilt Then Return
+        Dim prev As Boolean = _ocrLoading
+        _ocrLoading = True
+
+        _ocrSettings = Main_Form.EnsureOcrSettings()
+        Dim s As OcrTranslateSettings = _ocrSettings
+
+        chkOcrEnabled.Checked = s.Enabled
+        chkOcrAuto.Checked = s.AutoMode
+        cmbOcrProvider.SelectedIndex = If(String.Equals(s.Provider, "libretranslate", StringComparison.OrdinalIgnoreCase), 1, 0)
+        txtOcrEndpoint.Text = s.Endpoint
+        cmbOcrModelName.Text = s.OllamaModel
+        txtOcrApi.Text = s.ApiKey
+        SelectLanguageInCombo(cmbOcrSource, s.SourceLang, "auto")
+        SelectLanguageInCombo(cmbOcrTarget, s.TargetLang, "en")
+        cmbOcrQuality.SelectedIndex = If(String.Equals(s.OcrModelQuality, "best", StringComparison.OrdinalIgnoreCase), 1, 0)
+        Dim modeIndex As Integer = Array.IndexOf(OcrModeCodes, If(s.OcrPageMode, "auto").Trim().ToLowerInvariant())
+        cmbOcrMode.SelectedIndex = If(modeIndex >= 0, modeIndex, 0)
+        trkOcrOpacity.Value = OcrTranslateSettings.ClampOpacity(s.OverlayOpacity)
+        lblOcrOpacityVal.Text = trkOcrOpacity.Value.ToString()
+        chkOcrDisk.Checked = s.DiskCache
+
+        UpdateOcrProviderControls()
+        _ocrLoading = prev
+    End Sub
+
+    ' --- control event handlers (write straight to the live settings) ---------
+
+    Private Sub OcrEnabled_CheckedChanged(sender As Object, e As EventArgs)
+        If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+        _ocrSettings.Enabled = chkOcrEnabled.Checked
+        Main_Form.OnOcrSettingsEditedFromSettingsWindow(False, True)
+    End Sub
+
+    Private Sub OcrAuto_CheckedChanged(sender As Object, e As EventArgs)
+        If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+        _ocrSettings.AutoMode = chkOcrAuto.Checked
+        Main_Form.OnOcrSettingsEditedFromSettingsWindow(False, True)
+    End Sub
+
+    Private Sub OcrProvider_Changed(sender As Object, e As EventArgs)
+        UpdateOcrProviderControls()
+        If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+        _ocrSettings.Provider = Convert.ToString(cmbOcrProvider.SelectedItem)
+        RefreshInstalledOcrModels()
+        Main_Form.OnOcrSettingsEditedFromSettingsWindow(False, True)
+    End Sub
+
+    Private Sub OcrEndpoint_TextChanged(sender As Object, e As EventArgs)
+        If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+        _ocrSettings.Endpoint = txtOcrEndpoint.Text.Trim()
+    End Sub
+
+    Private Sub OcrModelName_TextChanged(sender As Object, e As EventArgs)
+        If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+        _ocrSettings.OllamaModel = cmbOcrModelName.Text.Trim()
+    End Sub
+
+    Private Sub OcrApi_TextChanged(sender As Object, e As EventArgs)
+        If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+        _ocrSettings.ApiKey = txtOcrApi.Text
+    End Sub
+
+    Private Sub OcrSource_Changed(sender As Object, e As EventArgs)
+        If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+        _ocrSettings.SourceLang = SelectedLangCode(cmbOcrSource, "auto")
+        Main_Form.OnOcrSettingsEditedFromSettingsWindow(False, True)
+    End Sub
+
+    Private Sub OcrQuality_Changed(sender As Object, e As EventArgs)
+        If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+        _ocrSettings.OcrModelQuality = If(cmbOcrQuality.SelectedIndex = 1, "best", "fast")
+        Main_Form.OnOcrSettingsEditedFromSettingsWindow(True, True)
+    End Sub
+
+    Private Sub OcrMode_Changed(sender As Object, e As EventArgs)
+        If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+        Dim idx As Integer = cmbOcrMode.SelectedIndex
+        _ocrSettings.OcrPageMode = If(idx >= 0 AndAlso idx < OcrModeCodes.Length, OcrModeCodes(idx), "auto")
+        Main_Form.OnOcrSettingsEditedFromSettingsWindow(True, True)
+    End Sub
+
+    Private Sub OcrTarget_Changed(sender As Object, e As EventArgs)
+        If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+        _ocrSettings.TargetLang = SelectedLangCode(cmbOcrTarget, "en")
+        Main_Form.OnOcrSettingsEditedFromSettingsWindow(False, True)
+    End Sub
+
+    Private Sub OcrOpacity_Changed(sender As Object, e As EventArgs)
+        lblOcrOpacityVal.Text = trkOcrOpacity.Value.ToString()
+        If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+        _ocrSettings.OverlayOpacity = trkOcrOpacity.Value
+        Main_Form.OnOcrSettingsEditedFromSettingsWindow(False, False)
+    End Sub
+
+    Private Sub OcrDisk_CheckedChanged(sender As Object, e As EventArgs)
+        If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+        _ocrSettings.DiskCache = chkOcrDisk.Checked
+    End Sub
+
+    ' --- provider / model state ----------------------------------------------
+
+    Private Function IsOllamaProvider() As Boolean
+        Return String.Equals(Convert.ToString(cmbOcrProvider.SelectedItem), "ollama", StringComparison.OrdinalIgnoreCase)
+    End Function
+
+    Private Sub UpdateOcrProviderControls()
+        Dim ollama As Boolean = IsOllamaProvider()
+        cmbOcrModelName.Enabled = ollama
+        btnOcrPullModel.Enabled = ollama AndAlso Not _ocrBusy
+        btnOcrInstallOllama.Enabled = ollama AndAlso Not _ocrBusy
+        btnOcrStartOllama.Enabled = ollama AndAlso Not _ocrBusy
+    End Sub
+
+    Private Sub UpdateOllamaStateHint()
+        If Not IsOllamaProvider() Then Return
+        If Not OllamaManager.IsInstalled() Then
+            lblOcrStatus.Text = If(Is_Russian_Language, "Ollama не установлен - нажмите «Установить Ollama».", "Ollama not installed - press Install Ollama.")
+        ElseIf Not OllamaManager.IsProcessRunning() Then
+            lblOcrStatus.Text = If(Is_Russian_Language, "Ollama не запущен - нажмите «Запустить Ollama».", "Ollama not running - press Start Ollama.")
+        End If
+    End Sub
+
+    ''' <summary>Fills the model dropdown: installed models first, then recommended
+    ''' downloads. Stays populated even when Ollama is unreachable.</summary>
+    Private Async Sub RefreshInstalledOcrModels()
+        If Not IsOllamaProvider() Then Return
+
+        Dim installed As New List(Of String)
+        Try
+            Dim tr As New OllamaTranslator(txtOcrEndpoint.Text.Trim(), "")
+            installed = Await tr.ListModelsAsync(CancellationToken.None)
+        Catch
+        End Try
+
+        Dim merged As New List(Of String)
+        For Each m As String In installed
+            merged.Add(m)
+        Next
+        For Each m As String In OcrRecommendedModels
+            If Not merged.Exists(Function(x) x.Equals(m, StringComparison.OrdinalIgnoreCase)) Then merged.Add(m)
+        Next
+
+        If cmbOcrModelName Is Nothing OrElse cmbOcrModelName.IsDisposed Then Return
+        Dim prev As Boolean = _ocrLoading
+        _ocrLoading = True
+        Dim current As String = cmbOcrModelName.Text
+        cmbOcrModelName.BeginUpdate()
+        cmbOcrModelName.Items.Clear()
+        For Each m As String In merged
+            cmbOcrModelName.Items.Add(m)
+        Next
+        cmbOcrModelName.EndUpdate()
+        cmbOcrModelName.Text = current
+        _ocrLoading = prev
+    End Sub
+
+    Private Sub SetOcrBusy(value As Boolean)
+        _ocrBusy = value
+        btnOcrDownload.Enabled = Not value
+        btnOcrPullModel.Enabled = Not value AndAlso IsOllamaProvider()
+        btnOcrInstallOllama.Enabled = Not value AndAlso IsOllamaProvider()
+        btnOcrStartOllama.Enabled = Not value AndAlso IsOllamaProvider()
+        Me.UseWaitCursor = value
+        If value Then Application.DoEvents()
+    End Sub
+
+    ''' <summary>Drops our always-on-top so an external window (installer / browser)
+    ''' is not hidden behind the Settings window. Restored on re-activation.</summary>
+    Private Sub DropTopMostForExternal()
+        If Me.TopMost Then
+            Me.TopMost = False
+            _ocrDroppedTopMost = True
+        End If
+        ' The main window can be pinned always-on-top (persisted "keep on top");
+        ' drop it too so a launched installer / browser is not hidden behind it.
+        If Main_Form.TopMost Then
+            _ocrMainWasTopMost = True
+            Main_Form.TopMost = False
+            _ocrDroppedMainTopMost = True
+        End If
+    End Sub
+
+    ' --- install / pull / download handlers -----------------------------------
+
+    Private Async Sub OnInstallOllama(sender As Object, e As EventArgs)
+        If _ocrBusy Then Return
+        If OllamaManager.IsInstalled() Then
+            lblOcrStatus.Text = If(Is_Russian_Language, "Ollama уже установлен. Нажмите «Запустить Ollama».", "Ollama is already installed. Press Start Ollama.")
+            Return
+        End If
+
+        Dim confirm As String = If(Is_Russian_Language,
+            "Скачать и установить Ollama? Это несколько сотен МБ, загрузка может занять время.",
+            "Download and install Ollama? This is several hundred MB and may take a while.")
+        If MessageBox.Show(Me, confirm, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+
+        SetOcrBusy(True)
+        lblOcrStatus.Text = If(Is_Russian_Language, "Скачивание Ollama..", "Downloading Ollama..")
+        Dim installerPath As String = ""
+        Try
+            Dim prog As New Progress(Of String)(Sub(s) lblOcrStatus.Text = (If(Is_Russian_Language, "Скачивание Ollama: ", "Downloading Ollama: ")) & s)
+            installerPath = Await OllamaManager.DownloadInstallerAsync(prog, CancellationToken.None)
+        Catch ex As Exception
+            lblOcrStatus.Text = ex.Message
+        End Try
+        SetOcrBusy(False)
+
+        DropTopMostForExternal()
+
+        If installerPath.Length > 0 AndAlso IO.File.Exists(installerPath) Then
+            lblOcrStatus.Text = If(Is_Russian_Language, "Запуск установщика Ollama..", "Launching Ollama installer..")
+            OllamaManager.RunInstaller(installerPath)
+        Else
+            lblOcrStatus.Text = If(Is_Russian_Language, "Не удалось скачать. Открываю сайт Ollama..", "Download failed. Opening Ollama website..")
+            OllamaManager.OpenWebPage()
+        End If
+    End Sub
+
+    Private Async Sub OnStartOllama(sender As Object, e As EventArgs)
+        If _ocrBusy Then Return
+        If Not OllamaManager.IsInstalled() Then
+            lblOcrStatus.Text = If(Is_Russian_Language, "Ollama не установлен - нажмите «Установить Ollama».", "Ollama not installed - press Install Ollama.")
+            Return
+        End If
+
+        SetOcrBusy(True)
+        lblOcrStatus.Text = If(Is_Russian_Language, "Запуск Ollama..", "Starting Ollama..")
+        OllamaManager.StartServer()
+
+        Dim up As Boolean = False
+        Dim tr As New OllamaTranslator(txtOcrEndpoint.Text.Trim(), "")
+        For i As Integer = 0 To 20
+            If Await tr.ProbeAsync(CancellationToken.None) Then
+                up = True
+                Exit For
+            End If
+            Await Task.Delay(500)
+        Next
+        SetOcrBusy(False)
+
+        If up Then
+            lblOcrStatus.Text = If(Is_Russian_Language, "Ollama запущен.", "Ollama is running.")
+            RefreshInstalledOcrModels()
+        Else
+            lblOcrStatus.Text = If(Is_Russian_Language, "Не удалось запустить Ollama.", "Could not start Ollama.")
+        End If
+    End Sub
+
+    Private Async Sub OnPullModel(sender As Object, e As EventArgs)
+        If _ocrBusy Then Return
+        Dim modelName As String = cmbOcrModelName.Text.Trim()
+        If modelName.Length = 0 Then
+            lblOcrStatus.Text = If(Is_Russian_Language, "Укажите имя модели (например, llama3.2)", "Enter a model name (e.g. llama3.2)")
+            Return
+        End If
+
+        SetOcrBusy(True)
+        Dim endpoint As String = txtOcrEndpoint.Text.Trim()
+        Dim ok As Boolean = False
+        Try
+            Dim tr As New OllamaTranslator(endpoint, modelName)
+            Dim prog As New Progress(Of String)(Sub(s) lblOcrStatus.Text = (If(Is_Russian_Language, "Загрузка: ", "Pulling: ")) & s)
+            ok = Await tr.PullModelAsync(modelName, prog, CancellationToken.None)
+        Catch ex As Exception
+            lblOcrStatus.Text = ex.Message
+        End Try
+        SetOcrBusy(False)
+
+        lblOcrStatus.Text = If(ok,
+            If(Is_Russian_Language, "Модель установлена: ", "Model installed: ") & modelName,
+            If(Is_Russian_Language, "Не удалось загрузить модель (Ollama запущен?)", "Pull failed (is Ollama running?)"))
+        If ok Then RefreshInstalledOcrModels()
+    End Sub
+
+    Private Async Sub OnDownloadOcr(sender As Object, e As EventArgs)
+        If _ocrBusy Then Return
+        Dim srcCode As String = SelectedLangCode(cmbOcrSource, "auto")
+        Dim tessLangs As String = OcrTranslateSettings.TessLanguages(srcCode)
+
+        Dim preferBest As Boolean = (cmbOcrQuality.SelectedIndex = 1)
+        If Not Await OptionalRuntimeManager.EnsureOcrRuntimeInteractiveAsync(Me, Is_Russian_Language) Then
+            lblOcrStatus.Text = If(Is_Russian_Language, "OCR-движок не установлен.", "OCR runtime is not installed.")
+            Return
+        End If
+
+        SetOcrBusy(True)
+        lblOcrStatus.Text = If(Is_Russian_Language, "Скачивание языкового пакета: ", "Downloading language pack: ") & tessLangs
+        Dim ok As Boolean = False
+        Try
+            ok = Await Task.Run(Function() TesseractOcrEngine.EnsureLanguagesPublic(tessLangs, preferBest))
+        Catch ex As Exception
+            lblOcrStatus.Text = ex.Message
+        End Try
+        SetOcrBusy(False)
+
+        lblOcrStatus.Text = If(ok,
+            If(Is_Russian_Language, "Готово: пакет ", "Ready: pack ") & tessLangs,
+            If(Is_Russian_Language, "Не удалось скачать (нет сети?)", "Download failed (no network?)"))
+    End Sub
+
+    ' --- language combo helpers ----------------------------------------------
+
+    Private Shared Sub SelectLanguageInCombo(combo As ComboBox, code As String, fallback As String)
+        Dim c As String = If(code, "").Trim()
+        Dim fallbackIndex As Integer = 0
+        For i As Integer = 0 To combo.Items.Count - 1
+            Dim entry As LanguageEntry = CType(combo.Items(i), LanguageEntry)
+            If String.Equals(entry.Code, c, StringComparison.OrdinalIgnoreCase) Then
+                combo.SelectedIndex = i
+                Return
+            End If
+            If String.Equals(entry.Code, fallback, StringComparison.OrdinalIgnoreCase) Then fallbackIndex = i
+        Next
+        If combo.Items.Count > 0 Then combo.SelectedIndex = fallbackIndex
+    End Sub
+
+    Private Shared Function SelectedLangCode(combo As ComboBox, fallback As String) As String
+        Dim entry As LanguageEntry = TryCast(combo.SelectedItem, LanguageEntry)
+        If entry IsNot Nothing Then Return entry.Code
+        Return fallback
+    End Function
+
+End Class

@@ -339,15 +339,15 @@ Public Class Image_Panel_Form
     "ЛКМ: Выбрать изображение" & vbCrLf &
     "Ctrl+ЛКМ: Добавить/убрать из выделения" & vbCrLf &
     "Двойной клик: Открыть изображение в главном окне" & vbCrLf &
-    "Del: Удалить выделенные файлы" & vbCrLf &
+    "Del: Удалить выделенные файлы (без лишних церемоний)" & vbCrLf &
     "Цифры (0-9): Переместить/копировать выделенные файлы" & vbCrLf &
-    "Esc: Закрыть эту панель",
+    "Esc: Закрыть эту панель и сделать вид, что её не было",
     "Left-Click: Select image" & vbCrLf &
     "Ctrl+Click: Add/remove from selection" & vbCrLf &
     "Double-Click: Open image in main window" & vbCrLf &
-    "Del: Delete selected file(s)" & vbCrLf &
+    "Del: Delete selected file(s) - no ceremony" & vbCrLf &
     "Number Keys (0-9): Move/copy selected file(s)" & vbCrLf &
-    "Esc: Close this panel")
+    "Esc: Close this panel and pretend it was never here")
 
         toolTip.SetToolTip(imagePanel, panelTooltipText)
     End Sub

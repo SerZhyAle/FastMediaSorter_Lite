@@ -12,10 +12,6 @@ Public Class Table_Form
         Main_Form.AssociateAllVideoFormatsWithThisApp()
     End Sub
 
-    Private Sub btn_OcrTranslate_Click(sender As Object, e As EventArgs) Handles btn_OcrTranslate.Click
-        Main_Form.ShowOcrTranslateSettings()
-    End Sub
-
     Private Sub Form2_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
         SaveSetting(App_name, Second_App_Name, "SetOnTop", If(set_This_Form_Top_Most, "1", "0"))
         If toolTip IsNot Nothing Then
@@ -36,42 +32,38 @@ Public Class Table_Form
 
         ' --- TabPage 1: Destination Folders ---
         toolTip.SetToolTip(Data_Grid_View, If(Is_Russian_Language,
-        "Двойной клик по номеру клавиши для выполнения действия." & vbCrLf & "Двойной клик по пути к папке для её изменения.",
-        "Double-click a key number to perform the action." & vbCrLf & "Double-click a folder path to change it."))
-        toolTip.SetToolTip(chkbox_Copy_Mode, If(Is_Russian_Language, "Если отмечено, файлы будут копироваться, а не перемещаться.", "If checked, files will be copied instead of moved."))
-        toolTip.SetToolTip(chkbox_Independent_Thread_For_File_Operation, If(Is_Russian_Language, "Если отмечено, файловые операции будут выполняться в фоновом режиме.", "If checked, file operations will run in the background."))
+        "Двойной клик по номеру клавиши - выполнить действие." & vbCrLf & "Двойной клик по пути к папке - сменить её (одинарный клик она вежливо проигнорирует).",
+        "Double-click a key number to run the action." & vbCrLf & "Double-click a folder path to change it (single clicks are politely ignored)."))
+        toolTip.SetToolTip(chkbox_Copy_Mode, If(Is_Russian_Language, "Если отмечено, файлы копируются, а не перемещаются - оригиналы никуда не денутся, что бы вы ни нажали дальше.", "If checked, files are copied instead of moved - the originals survive whatever you press next."))
+        toolTip.SetToolTip(chkbox_Independent_Thread_For_File_Operation, If(Is_Russian_Language, "Если отмечено, файловые операции уходят в фоновый поток, чтобы не заставлять вас смотреть на них.", "If checked, file operations run in the background, so you don't have to watch them happen."))
 
         ' --- TabPage 2: Settings ---
         toolTip.SetToolTip(cmbox_color_schema, If(Is_Russian_Language, "Выберите цветовую схему фона для просмотра изображений.", "Select the background color scheme for the image viewer."))
-        toolTip.SetToolTip(chb_perspectiva, If(Is_Russian_Language, "Включить эффект фоновой перспективы для изображений.", "Enable the perspective background effect for images."))
+        toolTip.SetToolTip(chb_perspectiva, If(Is_Russian_Language, "Включить перспективный фон: чёрные поля по краям превращаются в продолжение картинки. Чисто для красоты.", "Enable the perspective background: the black bars become a continuation of the image. Purely for the vibes."))
         toolTip.SetToolTip(chkb_show_pic_size, If(Is_Russian_Language, "Показывать размеры изображения (ширина x высота).", "Show the dimensions (width x height) of the image."))
         toolTip.SetToolTip(chkb_is_to_show_file_datetime, If(Is_Russian_Language, "Показывать дату и время последнего изменения файла.", "Show the last modified date and time of the file."))
         toolTip.SetToolTip(chkb_show_file_size, If(Is_Russian_Language, "Показывать размер файла.", "Show the size of the file."))
-        toolTip.SetToolTip(chkb_video_loop, If(Is_Russian_Language, "Демонстрировать видео зациклено.", "Loop video playback."))
-        toolTip.SetToolTip(chkb_no_request_before_file_operation, If(Is_Russian_Language, "Если отмечено, приложение не будет запрашивать подтверждение перед операциями с файлами.", "If checked, the application will not ask for confirmation before file operations."))
+        toolTip.SetToolTip(chkb_video_loop, If(Is_Russian_Language, "Крутить видео по кругу - пока вам не надоест или не кончится терпение.", "Loop the video - until you get bored or your patience runs out."))
+        toolTip.SetToolTip(chkb_no_request_before_file_operation, If(Is_Russian_Language, "Отключить подтверждения перед файловыми операциями. Программа поверит, что вы знаете, что делаете - смелое допущение.", "Skip confirmations before file operations. The app will trust that you know what you're doing - a bold assumption."))
         toolTip.SetToolTip(cmb_Picture_Size, If(Is_Russian_Language, "Выберите размер карточки для формы панели изображений", "Choose the size of the card for the image panel"))
 
         toolTip.SetToolTip(chk_Exif_AutoRotate, If(Is_Russian_Language, "Автоматически поворачивать фото по тегу EXIF Orientation (снимки с телефонов/камер).", "Auto-rotate photos by their EXIF Orientation tag (photos from phones/cameras)."))
         toolTip.SetToolTip(chk_Hq_Scaling, If(Is_Russian_Language, "Качественное (бикубическое) масштабирование - резче при уменьшении крупных изображений.", "High-quality (bicubic) scaling - sharper when downscaling large images."))
-        toolTip.SetToolTip(chk_Show_Info_Overlay, If(Is_Russian_Language, "Показывать имя файла и позицию (N/всего) поверх изображения. Удобно в полноэкранном режиме.", "Show the file name and position (N/total) over the image. Useful in full-screen."))
-        toolTip.SetToolTip(num_Slideshow_Interval, If(Is_Russian_Language, "Базовый интервал слайдшоу в секундах (повторный запуск ускоряет показ вдвое).", "Base slideshow interval in seconds (starting again halves it)."))
-        toolTip.SetToolTip(chk_Video_Mute, If(Is_Russian_Language, "Запускать видео без звука по умолчанию.", "Start videos muted by default."))
+        toolTip.SetToolTip(chk_Show_Info_Overlay, If(Is_Russian_Language, "Показывать имя файла и позицию (N/всего) поверх изображения. Удобно в полноэкранном режиме, где статусбар стыдливо прячется.", "Show the file name and position (N/total) over the image. Handy in full-screen, where the status bar shyly hides."))
+        toolTip.SetToolTip(num_Slideshow_Interval, If(Is_Russian_Language, "Базовый интервал слайдшоу в секундах. Запустите слайдшоу ещё раз - и оно ускорится вдвое, будто куда-то опаздывает.", "Base slideshow interval in seconds. Start the slideshow again and it halves the delay, as if it's late for something."))
+        toolTip.SetToolTip(chk_Video_Mute, If(Is_Russian_Language, "Запускать видео без звука - для просмотра в приличном обществе.", "Start videos muted - for viewing in polite company."))
         toolTip.SetToolTip(num_Video_Volume, If(Is_Russian_Language, "Громкость видео по умолчанию (0-100%).", "Default video volume (0-100%)."))
-        toolTip.SetToolTip(SetOnTop, If(Is_Russian_Language, "Держать это окно поверх всех остальных окон.", "Keep this window always on top of other windows."))
+        toolTip.SetToolTip(SetOnTop, If(Is_Russian_Language, "Держать это окно поверх всех остальных - оно не любит, когда его задвигают.", "Keep this window on top of everything else - it doesn't enjoy being shoved behind."))
 
         toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык интерфейса на английский", "Switch interface language to English"))
 
         If btn_Set_As_Default_Video IsNot Nothing Then
             toolTip.SetToolTip(btn_Set_As_Default_Video, If(Is_Russian_Language,
-                "Сделать эту программу видеопроигрывателем по умолчанию для текущего пользователя.",
-                "Make this application the default video player for the current user."))
+                "Сделать эту программу видеоплеером по умолчанию - для текущего пользователя, без танцев с правами администратора.",
+                "Make this app the default video player - per-user, no admin-rights ritual required."))
         End If
 
-        If btn_OcrTranslate IsNot Nothing Then
-            toolTip.SetToolTip(btn_OcrTranslate, If(Is_Russian_Language,
-                "Открыть параметры OCR и перевода (язык распознавания, язык перевода, переводчик)",
-                "Open OCR & translation settings (recognition language, target language, translator)"))
-        End If
+        InitializeOcrTooltips()
 
     End Sub
 
@@ -215,6 +207,7 @@ Public Class Table_Form
             Tab_Page_2.Text = "Просмотр"
             Tab_Page_3.Text = "Видео и качество"
             Tab_Page_4.Text = "Файлы и система"
+            Tab_Page_5.Text = "OCR и перевод"
 
             grp_Background.Text = "Фон"
             grp_OnScreen.Text = "Информация на экране"
@@ -246,7 +239,6 @@ Public Class Table_Form
 
             btn_Set_As_Default.Text = "Зарегистрировать как программу просмотра изображений по умолчанию"
             btn_Set_As_Default_Video.Text = "Зарегистрировать как видеопроигрыватель по умолчанию"
-            btn_OcrTranslate.Text = "OCR и перевод"
             SetOnTop.Text = "Держать это окно поверх остальных"
         Else
             Me.Text = "Settings"
@@ -257,6 +249,7 @@ Public Class Table_Form
             Tab_Page_2.Text = "Viewing"
             Tab_Page_3.Text = "Video and quality"
             Tab_Page_4.Text = "Files and system"
+            Tab_Page_5.Text = "OCR & translation"
 
             grp_Background.Text = "Background"
             grp_OnScreen.Text = "On-screen info"
@@ -288,9 +281,10 @@ Public Class Table_Form
 
             btn_Set_As_Default.Text = "Register as default image viewer"
             btn_Set_As_Default_Video.Text = "Register as default video player"
-            btn_OcrTranslate.Text = "OCR & Translate"
             SetOnTop.Text = "Keep this window on top of others"
         End If
+
+        PrepareOcrTabForDisplay()
 
         Dim SetOnTopS As String = GetSetting(App_name, Second_App_Name, "SetOnTop", "1")
         set_This_Form_Top_Most = SetOnTopS = "1"

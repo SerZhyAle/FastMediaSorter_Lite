@@ -36,6 +36,7 @@ Partial Class Table_Form
         Me.Tab_Page_2 = New System.Windows.Forms.TabPage()
         Me.Tab_Page_3 = New System.Windows.Forms.TabPage()
         Me.Tab_Page_4 = New System.Windows.Forms.TabPage()
+        Me.Tab_Page_5 = New System.Windows.Forms.TabPage()
         Me.grp_Background = New System.Windows.Forms.GroupBox()
         Me.grp_OnScreen = New System.Windows.Forms.GroupBox()
         Me.grp_Slideshow = New System.Windows.Forms.GroupBox()
@@ -66,13 +67,13 @@ Partial Class Table_Form
         Me.LinkLabel1 = New System.Windows.Forms.LinkLabel()
         Me.btn_Set_As_Default = New System.Windows.Forms.Button()
         Me.btn_Set_As_Default_Video = New System.Windows.Forms.Button()
-        Me.btn_OcrTranslate = New System.Windows.Forms.Button()
         CType(Me.Data_Grid_View, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.Tab_Control.SuspendLayout()
         Me.Tab_Page_1.SuspendLayout()
         Me.Tab_Page_2.SuspendLayout()
         Me.Tab_Page_3.SuspendLayout()
         Me.Tab_Page_4.SuspendLayout()
+        Me.Tab_Page_5.SuspendLayout()
         Me.grp_Background.SuspendLayout()
         Me.grp_OnScreen.SuspendLayout()
         Me.grp_Slideshow.SuspendLayout()
@@ -139,6 +140,7 @@ Partial Class Table_Form
         Me.Tab_Control.Controls.Add(Me.Tab_Page_2)
         Me.Tab_Control.Controls.Add(Me.Tab_Page_3)
         Me.Tab_Control.Controls.Add(Me.Tab_Page_4)
+        Me.Tab_Control.Controls.Add(Me.Tab_Page_5)
         Me.Tab_Control.Location = New System.Drawing.Point(8, 8)
         Me.Tab_Control.Name = "Tab_Control"
         Me.Tab_Control.SelectedIndex = 0
@@ -196,6 +198,16 @@ Partial Class Table_Form
         Me.Tab_Page_4.TabIndex = 3
         Me.Tab_Page_4.Text = "Files and system"
         Me.Tab_Page_4.UseVisualStyleBackColor = True
+        '
+        'Tab_Page_5
+        '
+        Me.Tab_Page_5.Location = New System.Drawing.Point(4, 29)
+        Me.Tab_Page_5.Name = "Tab_Page_5"
+        Me.Tab_Page_5.Padding = New System.Windows.Forms.Padding(4)
+        Me.Tab_Page_5.Size = New System.Drawing.Size(676, 391)
+        Me.Tab_Page_5.TabIndex = 4
+        Me.Tab_Page_5.Text = "OCR & translation"
+        Me.Tab_Page_5.UseVisualStyleBackColor = True
         '
         'grp_Background
         '
@@ -284,10 +296,9 @@ Partial Class Table_Form
         '
         Me.grp_Integration.Controls.Add(Me.btn_Set_As_Default)
         Me.grp_Integration.Controls.Add(Me.btn_Set_As_Default_Video)
-        Me.grp_Integration.Controls.Add(Me.btn_OcrTranslate)
         Me.grp_Integration.Location = New System.Drawing.Point(8, 148)
         Me.grp_Integration.Name = "grp_Integration"
-        Me.grp_Integration.Size = New System.Drawing.Size(656, 152)
+        Me.grp_Integration.Size = New System.Drawing.Size(656, 112)
         Me.grp_Integration.TabIndex = 1
         Me.grp_Integration.TabStop = False
         Me.grp_Integration.Text = "Associations and integration"
@@ -523,16 +534,6 @@ Partial Class Table_Form
         Me.btn_Set_As_Default_Video.Text = "Register as default video player"
         Me.btn_Set_As_Default_Video.UseVisualStyleBackColor = True
         '
-        'btn_OcrTranslate
-        '
-        Me.btn_OcrTranslate.Font = New System.Drawing.Font("Segoe UI", 9.0!, System.Drawing.FontStyle.Bold)
-        Me.btn_OcrTranslate.Location = New System.Drawing.Point(16, 108)
-        Me.btn_OcrTranslate.Name = "btn_OcrTranslate"
-        Me.btn_OcrTranslate.Size = New System.Drawing.Size(624, 34)
-        Me.btn_OcrTranslate.TabIndex = 2
-        Me.btn_OcrTranslate.Text = "OCR & Translate"
-        Me.btn_OcrTranslate.UseVisualStyleBackColor = True
-        '
         'SetOnTop
         '
         Me.SetOnTop.AutoSize = True
@@ -587,6 +588,7 @@ Partial Class Table_Form
         Me.Tab_Page_2.ResumeLayout(False)
         Me.Tab_Page_3.ResumeLayout(False)
         Me.Tab_Page_4.ResumeLayout(False)
+        Me.Tab_Page_5.ResumeLayout(False)
         Me.grp_Background.ResumeLayout(False)
         Me.grp_Background.PerformLayout()
         Me.grp_OnScreen.ResumeLayout(False)
@@ -626,6 +628,7 @@ Partial Class Table_Form
     Friend WithEvents Tab_Page_2 As TabPage
     Friend WithEvents Tab_Page_3 As TabPage
     Friend WithEvents Tab_Page_4 As TabPage
+    Friend WithEvents Tab_Page_5 As TabPage
     Friend WithEvents grp_Background As GroupBox
     Friend WithEvents grp_OnScreen As GroupBox
     Friend WithEvents grp_Slideshow As GroupBox
@@ -655,5 +658,4 @@ Partial Class Table_Form
     Friend WithEvents LinkLabel1 As LinkLabel
     Friend WithEvents btn_Set_As_Default As Button
     Friend WithEvents btn_Set_As_Default_Video As Button
-    Friend WithEvents btn_OcrTranslate As Button
 End Class

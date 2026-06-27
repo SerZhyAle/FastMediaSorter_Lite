@@ -15,6 +15,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Project identity: `RootNamespace = fmsl`, `AssemblyName = FastMediaSorter_LITE`, startup object `fmsl.My.MyApplication`
 - ILMerge (3.0.41) is referenced to bundle dependencies into the single output exe
 
+### "Сборка" vs "Релиз" - two distinct flows (see [BUILD_AND_RELEASE.md](BUILD_AND_RELEASE.md))
+
+- **Сборка / build** = LOCAL only: `.\build.ps1` (MSBuild Rebuild + deploy the single-file exe to the user's work folders). Test by hand, then commit/push. **Never creates or pushes a `v*` tag.** Pushing to a branch is free - GitHub Actions does NOT run on branch pushes.
+- **Релиз / release** = GitHub build + winget + Microsoft Store: `.\tools\Release.ps1 -Push` (runs a free local check-build first, then creates and pushes the `vYY.M.D.HHmm` tag). The release `workflow` ([.github/workflows/release.yml](.github/workflows/release.yml)) is triggered **ONLY by pushing a `v*` tag** - that tag push is the single billable operation.
+- **When the user asks for a "сборка"/"build"/"собери", run the LOCAL flow only and do NOT create or push a tag.** A tag (= paid GitHub run) requires an explicit "релиз"/"release" instruction. `tools/Release.ps1` defaults to a dry-run (no push) for safety; it pushes only with `-Push`.
+
 ### Build Commands
 
 Build debug:
@@ -118,17 +124,18 @@ The Store path (Path A: MSIX) is **additive** - it does not change the GitHub re
 - Small window of file thumbnails
 - Double-click to load, drag-drop to the main window
 
-**[Table_Form.vb](src/Table_Form.vb)** - **Settings window** ("Настройки" / "Settings"), four tabs:
+**[Table_Form.vb](src/Table_Form.vb)** - **Settings window** ("Настройки" / "Settings"), five tabs:
 - **Каталоги-получатели / Destination folders** - the `Data_Grid_View` mapping each move/copy hotkey (DEL + 0..9) to a destination folder; grid is sized to exactly its 11 rows (no stretched empty area below).
 - **Просмотр / Viewing** - background scheme (`grp_Background`), on-screen info overlay (`chk_Show_Info_Overlay`), slideshow interval (`num_Slideshow_Interval`), EXIF auto-rotate (`chk_Exif_AutoRotate`).
 - **Видео и качество / Video and quality** - HQ scaling (`chk_Hq_Scaling`), video loop, default mute (`chk_Video_Mute`) and default volume (`num_Video_Volume`) - the audio defaults live as private fields in `Main_Form` and are read via `CurrentVideoMuted`/`CurrentVideoVolumePercent` and written via `SetVideoAudioState`.
-- **Файлы и система / Files and system** - copy-vs-move, background file ops, no-confirm, register as default **image** viewer (`btn_Set_As_Default`) **and** default **video** player (`btn_Set_As_Default_Video` → `Main_Form.AssociateAllVideoFormatsWithThisApp`), the **OCR & Translate** settings button, "keep on top", and language toggle.
+- **Файлы и система / Files and system** - copy-vs-move, background file ops, no-confirm, register as default **image** viewer (`btn_Set_As_Default`) **and** default **video** player (`btn_Set_As_Default_Video` → `Main_Form.AssociateAllVideoFormatsWithThisApp`), "keep on top", and language toggle.
+- **OCR и перевод / OCR & translation** (`Tab_Page_5`, built entirely in code in [Table_Form.Ocr.vb](src/Table_Form.Ocr.vb)) - the former standalone `OCR_Translate_Form` dialog folded into a tab. Global toggles (enable, auto), an inner two-page `TabControl` splitting **Перевод**/Translation (provider, endpoint, install/start Ollama, Ollama model + pull, API key, target language) from **Распознавание (OCR)**/Recognition (source language, `fast`/`best` model, page mode, download pack), then a shared footer (overlay opacity, disk cache, status). Unlike the rest of the form it builds once (`_ocrBuilt`) and edits the **live** `Main_Form` `OcrTranslateSettings` object directly via `Main_Form.EnsureOcrSettings()`/`OnOcrSettingsEditedFromSettingsWindow()`; `_ocrLoading` guards suppress handler side-effects during populate. Entering the tab clears the result cache (`Main_Form.ClearOcrResultCache()`); the toolbar Translate button's right-click opens the window on this tab via `Main_Form.ShowOcrTranslateSettings()` → `Table_Form.SelectOcrTab()`.
 - Option toggles write straight to the `Common_Module` flags; the two that change painting (`chk_Hq_Scaling`, `chk_Show_Info_Overlay`) call `Main_Form.RepaintMedia()` so the change shows immediately.
 
 **[Utils.vb](src/Utils.vb)** - Helper functions: array insert/remove, opposite-colour & luminance, clipboard, and **`GetImageDimensions()`** - reads JPEG/PNG/GIF/BMP pixel size straight from the file header (no GDI+), used by the background worker to avoid concurrent GDI+ decoding.
 
 **OCR / Translation components** (see "OCR + On-Image Translation" below):
-- **[OCR_Translate_Form.vb](src/OCR_Translate_Form.vb)** - settings dialog for the OCR/translate feature
+- **[Table_Form.Ocr.vb](src/Table_Form.Ocr.vb)** - the OCR/translate settings UI, now a tab of the Settings window (`Tab_Page_5`); see the Table_Form entry above. (Replaces the former standalone `OCR_Translate_Form`.)
 - **[OcrTranslateSettings.vb](src/OcrTranslateSettings.vb)** - persisted settings (provider, endpoint, model, languages, opacity, disk-cache, OCR model quality `fast`/`best`, OCR page mode); API keys are encrypted via [src/Security/DpapiSecrets.vb](src/Security/DpapiSecrets.vb) (Windows DPAPI). Source language is resolved to an ordered single-language **attempt list** (`OcrAttemptCodes`), not a combined `eng+rus+ukr` string.
 - **[OcrLanguageCatalog.vb](src/OcrLanguageCatalog.vb)** - language list + flag glyphs ([assets/flags/](assets/flags/))
 - **[src/Ocr/](src/Ocr/)** - `IOcrEngine`, `TesseractOcrEngine` (multi-pass Tesseract via `Pix.LoadFromMemory`: scores several language × page-segmentation × preprocess attempts and keeps the strongest; `fast` or `best`/`tessdata_best` models downloaded at runtime), `OcrBlockBuilder`, `OcrModels`

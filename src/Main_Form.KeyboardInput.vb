@@ -172,8 +172,16 @@ Partial Public Class Main_Form
                     lbl_Help_Info.BringToFront()
                 Case Keys.F2
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1630: F2")
-                    Table_Form.PrepareForDisplay()
-                    Table_Form.ShowDialog(Me)
+                    ' Recreate if a previous modeless Show(Me) (toolbar / btn_Move_Table)
+                    ' disposed the cached instance, and never ShowDialog an already-visible
+                    ' one (it would throw) - just bring it to the front instead.
+                    If Table_Form Is Nothing OrElse Table_Form.IsDisposed Then Table_Form = New Table_Form()
+                    If Table_Form.Visible Then
+                        Table_Form.Activate()
+                    Else
+                        Table_Form.PrepareForDisplay()
+                        Table_Form.ShowDialog(Me)
+                    End If
                 Case Keys.F3
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1630: F5")
                     ShowImagePanelForm()

@@ -12,9 +12,16 @@ on:
 permissions:
   contents: write
 
+# Сериализуем релизы по тегу. cancel-in-progress: false - публикацию релиза
+# нельзя обрывать на середине (иначе полурелиз / битые ассеты).
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
-    runs-on: windows-latest
+    runs-on: windows-latest          # обязателен: MSBuild/.NET FW 4.8/WinForms/Inno/choco - на Linux не собрать
+    timeout-minutes: 60              # страховка от зависания (choco / Invoke-WebRequest / ISCC)
     defaults:
       run:
         shell: pwsh
@@ -33,6 +40,15 @@ jobs:
       - uses: microsoft/setup-msbuild@v3
 
       - uses: NuGet/setup-nuget@v4
+
+      # Кэш NuGet-пакетов. Эффект небольшой (packages/ вендорится в репо),
+      # но шаг дешёвый и страхует restore от обращений к сети.
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.config', '**/*.vbproj') }}
+          restore-keys: nuget-${{ runner.os }}-
 
       - name: Restore NuGet packages
         run: nuget restore FastMediaSorter.sln
@@ -81,6 +97,18 @@ jobs:
           "stage=$stage" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Get-ChildItem $stage -Recurse | Format-Table -AutoSize
 
+      # ГЛАВНАЯ ЭКОНОМИЯ: кэш скачанных tessdata-моделей (fast + best, 33 языка).
+      # Восстанавливаем прямо в каталоги stage; скрипт ниже видит готовые файлы
+      # ("Keeping existing model") и пропускает сотни МБ загрузок с GitHub.
+      # Ключ привязан к языковому списку в скрипте - изменишь языки, кэш сам обновится.
+      - name: Cache OCR tessdata
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.stage.outputs.stage }}/tessdata
+            ${{ steps.stage.outputs.stage }}/tessdata-best
+          key: tessdata-${{ hashFiles('tools/Prepare-OcrOfflinePayload.ps1') }}-v1
+
       - name: Add offline OCR payload
         run: .\tools\Prepare-OcrOfflinePayload.ps1 -StageDir '${{ steps.stage.outputs.stage }}' -IncludeBest
       
@@ -105,6 +133,13 @@ jobs:
           "sha256=$hash" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Write-Host "Package: $name"
           Write-Host "SHA256:  $hash"
+
+      # Кэшируем папку Chocolatey, чтобы не тянуть Inno Setup из сети каждый релиз.
+      - name: Cache Chocolatey (Inno Setup)
+        uses: actions/cache@v4
+        with:
+          path: C:\ProgramData\chocolatey\lib
+          key: choco-innosetup-v1
 
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y

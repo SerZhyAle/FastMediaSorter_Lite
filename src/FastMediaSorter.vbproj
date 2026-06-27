@@ -252,15 +252,16 @@
     <Compile Include="Translate\TranslationCache.vb" />
     <Compile Include="Security\DpapiSecrets.vb" />
     <Compile Include="OcrLanguageCatalog.vb" />
-    <Compile Include="OCR_Translate_Form.vb">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Include="OptionalRuntimeManager.vb" />
     <Compile Include="RuntimeBootstrap.vb" />
     <Compile Include="Table_Form.Designer.vb">
       <DependentUpon>Table_Form.vb</DependentUpon>
     </Compile>
     <Compile Include="Table_Form.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Table_Form.Ocr.vb">
+      <DependentUpon>Table_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Common_Module.vb" />

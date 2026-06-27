@@ -63,8 +63,8 @@ Partial Public Class Main_Form
         UpdateOcrButtonVisual()
         If toolTip IsNot Nothing AndAlso btn_Translate IsNot Nothing Then
             toolTip.SetToolTip(btn_Translate, If(Is_Russian_Language,
-                "OCR + перевод текущего изображения (T). ПКМ - настройки. Shift+T - авто-режим.",
-                "OCR + translate the current image (T). Right-click for settings. Shift+T = auto mode."))
+                "OCR + перевод текущего изображения (T) - притворимся, что понимаем эту мангу. ПКМ - настройки. Shift+T - авто-режим.",
+                "OCR + translate the current image (T) - let's pretend we understand this manga. Right-click for settings. Shift+T = auto mode."))
         End If
     End Sub
 
@@ -431,33 +431,51 @@ Partial Public Class Main_Form
 
     ' --- settings window ------------------------------------------------------
 
-    ''' <summary>Opens the dedicated "OCR и перевод" settings form and applies it.
-    ''' Public-ish (Friend) so the Settings window (Table_Form) can open it too.</summary>
-    Friend Sub ShowOcrTranslateSettings()
+    ''' <summary>Ensures the OCR/translate settings object exists (loaded from the
+    ''' registry). The Settings window (Table_Form) edits this same live object via
+    ''' its "OCR и перевод" tab.</summary>
+    Friend Function EnsureOcrSettings() As OcrTranslateSettings
         If ocr_Settings Is Nothing Then
             ocr_Settings = New OcrTranslateSettings()
             ocr_Settings.Load(If(Is_Russian_Language, "ru", "en"))
         End If
+        Return ocr_Settings
+    End Function
 
-        ' Opening the settings invalidates cached OCR/translation results so any
-        ' parameter change takes effect on the next run.
+    ''' <summary>Drops every cached OCR/translation result and clears the current
+    ''' overlay. Called when the OCR tab of the Settings window is opened so a
+    ''' parameter change can't reuse a stale result.</summary>
+    Friend Sub ClearOcrResultCache()
         If ocr_Cache IsNot Nothing Then ocr_Cache.Clear()
         CancelOcrJob()
         current_Overlay_Document = Nothing
         InvalidateOverlay()
+    End Sub
 
-        Using f As New OCR_Translate_Form(ocr_Settings)
-            If f.ShowDialog(Me) = DialogResult.OK Then
-                ocr_Settings.Save()
-                ApplyEngineOptions()
-                ocr_Overlay_Visible = ocr_Settings.OverlayVisible
-                UpdateOcrButtonVisual()
-                InvalidateOverlay()
-                If ocr_Settings.Enabled AndAlso ocr_Settings.AutoMode AndAlso IsCurrentFileEligibleImage() Then
-                    TranslateCurrentImage(True)
-                End If
-            End If
-        End Using
+    ''' <summary>Applies a live edit made on the Settings window's OCR tab: pushes
+    ''' OCR model/page-mode onto the engine (when <paramref name="rebuildEngine"/>),
+    ''' refreshes the toolbar button and overlay, and optionally re-runs auto-mode.</summary>
+    Friend Sub OnOcrSettingsEditedFromSettingsWindow(rebuildEngine As Boolean, maybeAutoRun As Boolean)
+        If ocr_Settings Is Nothing Then Return
+        If rebuildEngine Then ApplyEngineOptions()
+        UpdateOcrButtonVisual()
+        InvalidateOverlay()
+        If maybeAutoRun AndAlso ocr_Settings.Enabled AndAlso ocr_Settings.AutoMode AndAlso IsCurrentFileEligibleImage() Then
+            TranslateCurrentImage(True)
+        End If
+    End Sub
+
+    ''' <summary>Opens the unified Settings window on its "OCR и перевод" tab.
+    ''' Public-ish (Friend) so the toolbar Translate button's right-click can call it.</summary>
+    Friend Sub ShowOcrTranslateSettings()
+        EnsureOcrSettings()
+        If Table_Form Is Nothing OrElse Table_Form.IsDisposed Then
+            Table_Form = New Table_Form()
+        End If
+        Table_Form.PrepareForDisplay()
+        Table_Form.SelectOcrTab()
+        Table_Form.Show(Me)
+        Table_Form.Activate()
     End Sub
 
 End Class

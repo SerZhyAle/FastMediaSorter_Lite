@@ -195,7 +195,7 @@ Partial Public Class Main_Form
                     Return False
                 End If
 
-                Dim confirmMsg = If(Is_Russian_Language, $"Вы уверены, что хотите безвозвратно удалить файл '{Path.GetFileName(Current_File_Name)}'?", $"Are you sure you want to permanently delete the file '{Path.GetFileName(Current_File_Name)}'?")
+                Dim confirmMsg = If(Is_Russian_Language, $"Вы уверены, что хотите безвозвратно удалить файл '{Path.GetFileName(Current_File_Name)}'? Обратно его уже не уговорить.", $"Are you sure you want to permanently delete the file '{Path.GetFileName(Current_File_Name)}'? There's no talking it back afterwards.")
 
                 If Not Is_no_request_before_file_operation AndAlso
                     MessageBox.Show(confirmMsg, If(Is_Russian_Language, "Подтверждение удаления", "Deletion Confirmation"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then

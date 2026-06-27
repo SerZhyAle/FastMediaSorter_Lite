@@ -1,27 +1,27 @@
 # FastMediaSorter LITE
 
-FastMediaSorter LITE is a Windows Forms application for quickly sorting, viewing, and managing image and video files. It supports a wide range of media formats and provides features such as:
+FastMediaSorter LITE is a Windows Forms application for quickly sorting, viewing, and managing image and video files - because that folder full of 4000 photos is not going to triage itself. It supports a wide range of media formats and provides features such as:
 
-- Fast navigation through large folders of images and videos
+- Fast navigation through large folders of images and videos (even the embarrassingly large ones)
 - Slideshow and random file viewing modes
-- Recent files and folders tracking
+- Recent files and folders tracking, so you don't have to remember where you left off
 - File operations: move, copy, rename, and delete
 - Image panel for quick visual navigation
-- Automatic EXIF orientation correction for photos from phones and cameras
+- Automatic EXIF orientation correction, for when the camera was held sideways
 - High-quality (bicubic) scaling for sharp downscaling of large images
 - Optional on-image overlay with the file name and position (handy in full-screen)
 - Configurable slideshow interval
-- Register the app as the default image viewer and/or video player (per-user, no admin needed)
-- OCR + on-image translation overlay (local Ollama / LibreTranslate)
-- Customizable keyboard shortcuts for efficient workflow
+- Register the app as the default image viewer and/or video player (per-user, no admin rituals)
+- OCR + on-image translation overlay (local Ollama / LibreTranslate) - for pictures that insist on speaking another language
+- Customizable keyboard shortcuts, because reaching for the mouse is so last decade
 - Multi-language support (English/Russian; first run follows the Windows display language)
 - Broad video format support: common H.264/MP4 plays in-window, and anything the
   built-in player can't decode (AVI, ZMBV, VP9, MKV, WMV, ..) automatically falls
-  back to a bundled **LibVLC** engine - no external codecs or players required
+  back to a bundled **LibVLC** engine - no external codecs, no plugin scavenger hunt
 
 ## Mobile Version 📱
 
-Looking for a mobile solution? Check out **FastMediaSorter v2** - a powerful Android application with support for local files, network drives (SMB, SFTP, FTP), and cloud storage (Google Drive, OneDrive, Dropbox):
+Want to sort media from the comfort of the couch? Check out **FastMediaSorter v2** - a powerful Android application with support for local files, network drives (SMB, SFTP, FTP), and cloud storage (Google Drive, OneDrive, Dropbox):
 
 🔗 **[FastMediaSorter v2 for Android](https://github.com/SerZhyAle/FastMediaSorter_mob_v2)**
 
@@ -35,11 +35,11 @@ Features include:
 
 ## Usage
 
-1. Select a folder containing your media files.
-2. Navigate files using keyboard, mouse, or on-screen buttons.
+1. Select a folder containing your media files (yes, that one).
+2. Navigate files using keyboard, mouse, or on-screen buttons - whatever your hands prefer.
 3. Use the panel and recent files features for quick access.
-4. Move, copy, or delete files as needed.
-5. Enjoy fast and efficient media sorting!
+4. Move, copy, or delete files as needed. Press a digit, watch the chaos shrink.
+5. Enjoy fast and efficient media sorting, and maybe finally reclaim that disk space.
 
 ## Requirements
 - Windows 7/10/11
@@ -54,7 +54,7 @@ winget install --id SerZhyAle.FastMediaSorter
 ```
 
 The winget package uses the Inno Setup installer in silent per-user mode, so it
-does not show dialogs during installation.
+does not show dialogs during installation - it just quietly gets on with it.
 
 ### Manual release
 
@@ -72,9 +72,9 @@ Both GitHub release assets are offline-ready: they already include VLC runtimes
 and OCR language packs, so no first-run download is needed for media playback or
 OCR recognition.
 
-Note: machine translation still depends on the provider you configure. For
-example, Ollama requires a separate local install/model, while cloud providers
-need network access.
+Note: machine translation still depends on the provider you configure - the app
+is generous, but it won't translate by sheer willpower. Ollama requires a
+separate local install/model, while cloud providers need network access.
 
 ## Companion App
 
