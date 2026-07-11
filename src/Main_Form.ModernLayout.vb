@@ -90,6 +90,9 @@ Partial Public Class Main_Form
         ' added here so the styling/recolour passes below pick it up uniformly.
         BuildOcrToolbarControls(flow_Toolbar)
 
+        ' Android-share "Share" toolbar button - same in-code, pre-styling slot.
+        BuildShareToolbarControls(flow_Toolbar)
+
         ' Add Fill first (back of z-order) so the docked strips reserve their
         ' space and the media panel takes the remainder.
         Me.Controls.Add(panel_Media)

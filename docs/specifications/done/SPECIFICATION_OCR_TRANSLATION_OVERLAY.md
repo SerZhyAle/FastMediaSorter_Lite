@@ -44,29 +44,29 @@ The feature must plug into the current app structure instead of fighting it.
 
 ### 3.1 Relevant code that already exists
 
-- Image loading: [`src/FileManager.vb`](src/FileManager.vb)
+- Image loading: [`src/FileManager.vb`](../../../src/FileManager.vb)
   - `LoadImageWithStream(filePath As String)` returns `Tuple(Of Image, MemoryStream)`.
-- Main navigation and file switching: [`src/Main_Form.vb`](src/Main_Form.vb)
+- Main navigation and file switching: [`src/Main_Form.vb`](../../../src/Main_Form.vb)
   - `ReadShowMediaFile(...)`
   - `UpdateCurrentFileAndDisplay(...)`
-- Global current-file state: [`src/Common_Module.vb`](src/Common_Module.vb)
+- Global current-file state: [`src/Common_Module.vb`](../../../src/Common_Module.vb)
   - `Current_File_Name`
   - `Current_Image_Path`
   - `Is_No_Background_Tasks`
-- Overlay geometry helper already available: [`src/Main_Form.PerspectiveBackground.vb`](src/Main_Form.PerspectiveBackground.vb)
+- Overlay geometry helper already available: [`src/Main_Form.PerspectiveBackground.vb`](../../../src/Main_Form.PerspectiveBackground.vb)
   - `GetZoomedImageRectangle(...)`
-- Current zoom/fullscreen/media layout: [`src/Main_Form.UILayout.vb`](src/Main_Form.UILayout.vb)
+- Current zoom/fullscreen/media layout: [`src/Main_Form.UILayout.vb`](../../../src/Main_Form.UILayout.vb)
   - `SyncMediaSurface()`
   - `SkipZoom()`
   - fullscreen / super-fullscreen handling
-- Mouse zoom/pan behavior: [`src/Main_Form.vb`](src/Main_Form.vb)
+- Mouse zoom/pan behavior: [`src/Main_Form.vb`](../../../src/Main_Form.vb)
   - `MouseUse(...)`
-- Settings load/save: [`src/Main_Form.vb`](src/Main_Form.vb)
+- Settings load/save: [`src/Main_Form.vb`](../../../src/Main_Form.vb)
   - load in `Main_Form_Load`
   - save in `Form1_FormClosing`
-- Keyboard integration: [`src/Main_Form.vb`](src/Main_Form.vb)
+- Keyboard integration: [`src/Main_Form.vb`](../../../src/Main_Form.vb)
   - `KeybUse(...)`
-- Modern toolbar host: [`src/Main_Form.ModernLayout.vb`](src/Main_Form.ModernLayout.vb)
+- Modern toolbar host: [`src/Main_Form.ModernLayout.vb`](../../../src/Main_Form.ModernLayout.vb)
 
 ### 3.2 Constraints from the current app
 
@@ -410,8 +410,8 @@ Before final implementation the team must validate:
 
 Expected additions:
 
-- new `Compile Include=...` entries in [`src/FastMediaSorter.vbproj`](src/FastMediaSorter.vbproj)
-- new NuGet references in [`src/packages.config`](src/packages.config)
+- new `Compile Include=...` entries in [`src/FastMediaSorter.vbproj`](../../../src/FastMediaSorter.vbproj)
+- new NuGet references in [`src/packages.config`](../../../src/packages.config)
 
 ## 8. UX requirements
 

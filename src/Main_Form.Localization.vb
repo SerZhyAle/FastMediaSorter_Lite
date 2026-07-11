@@ -65,6 +65,7 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0040: English is set")
         End If
 
+        LocalizeShareEntryPoints()
 
     End Sub
 

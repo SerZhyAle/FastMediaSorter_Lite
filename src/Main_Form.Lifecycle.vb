@@ -338,6 +338,9 @@ Partial Public Class Main_Form
         ' flow_Toolbar / panel_Status / panel_Media) before anything lays out.
         BuildModernLayout()
 
+        ' Accept dropped media files on the picture/video surfaces, not just the form.
+        WireSurfaceDragDrop()
+
         InitNew()
         CheckAndOfferImageAssociations()
 
@@ -372,6 +375,7 @@ Partial Public Class Main_Form
         Is_Russian_Language = GetSetting(App_name, Second_App_Name, "Is_Russian_Language", If(SystemDefaultIsRussian(), "1", "0")) = "1"
         InitializeTooltips()
         InitializeOcrTranslate()
+        InitializeShareEntryPoints()
 
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Width_At_Panel", "80"), Picture_Box_Width_At_Panel)
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Height_At_Panel", "80"), Picture_Box_Height_At_Panel)

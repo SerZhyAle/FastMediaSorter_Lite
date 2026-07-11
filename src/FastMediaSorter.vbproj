@@ -137,6 +137,9 @@
     <Reference Include="Tesseract">
       <HintPath>..\packages\Tesseract.5.2.0\lib\net48\Tesseract.dll</HintPath>
     </Reference>
+    <Reference Include="QRCoder">
+      <HintPath>..\packages\QRCoder.1.4.3\lib\net40\QRCoder.dll</HintPath>
+    </Reference>
     <Reference Include="LibVLCSharp">
       <HintPath>..\packages\LibVLCSharp.3.9.3\lib\net471\LibVLCSharp.dll</HintPath>
     </Reference>
@@ -177,6 +180,10 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Main_Form.VideoPlayer.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.DragDrop.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
@@ -236,6 +243,10 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.ShareWizard.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Main_Form.OcrOverlay.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
@@ -254,6 +265,20 @@
     <Compile Include="OcrLanguageCatalog.vb" />
     <Compile Include="OptionalRuntimeManager.vb" />
     <Compile Include="RuntimeBootstrap.vb" />
+    <Compile Include="Companion\WorkerIpc.vb" />
+    <Compile Include="Companion\WorkerProcess.vb" />
+    <Compile Include="Companion\AutostartManager.vb" />
+    <Compile Include="Companion\ShareController.vb" />
+    <Compile Include="Companion\NetworkInfo.vb" />
+    <Compile Include="Companion\ShareText.vb" />
+    <Compile Include="Companion\ShareConfigBuilder.vb" />
+    <Compile Include="Companion\ShareGuide.vb" />
+    <Compile Include="Companion\RouterInfo.vb" />
+    <Compile Include="Companion\MailSender.vb" />
+    <Compile Include="ShareSettings.vb" />
+    <Compile Include="Share_Wizard_Form.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Table_Form.Designer.vb">
       <DependentUpon>Table_Form.vb</DependentUpon>
     </Compile>
@@ -261,6 +286,10 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Table_Form.Ocr.vb">
+      <DependentUpon>Table_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Table_Form.Share.vb">
       <DependentUpon>Table_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
@@ -348,6 +377,9 @@
     <EmbeddedResource Include="..\packages\Tesseract.5.2.0\lib\net48\Tesseract.dll">
       <LogicalName>FmsPayloadmanaged/Tesseract.dll</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\packages\QRCoder.1.4.3\lib\net40\QRCoder.dll">
+      <LogicalName>FmsPayloadmanaged/QRCoder.dll</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\packages\SixLabors.ImageSharp.2.1.8\lib\net472\SixLabors.ImageSharp.dll">
       <LogicalName>FmsPayloadmanaged/SixLabors.ImageSharp.dll</LogicalName>
     </EmbeddedResource>
@@ -365,6 +397,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="..\assets\flags\*.png">
       <LogicalName>FmsPayloadflags/%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\assets\help\port-forward.html">
+      <LogicalName>FmsPayloadhelp/port-forward.html</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />

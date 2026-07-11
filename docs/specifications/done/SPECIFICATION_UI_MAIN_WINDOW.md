@@ -12,7 +12,7 @@
 ### 1.1 Controls are static, not generated
 
 **No toolbar control is created at runtime.** Every button, combo, label and
-checkbox is declared once in [src/Main_Form.Designer.vb](src/Main_Form.Designer.vb)
+checkbox is declared once in [src/Main_Form.Designer.vb](../../../src/Main_Form.Designer.vb)
 inside `InitializeComponent()` and added to `Me.Controls` there. There is **no
 loop, factory, or data-driven button generation** anywhere. "How are the buttons
 generated" therefore has a precise answer: *they aren't generated - they are
@@ -22,8 +22,8 @@ The only runtime-created UI elements are:
 
 | Element | Where created | Purpose |
 |---|---|---|
-| `ContextMenuStrip` of recent files | [Main_Form.vb:1891](src/Main_Form.vb#L1891) (`btn_RecentFiles_Click`) | One menu item per entry in `recent_Media_File_List`, reversed (newest first); item `.Tag` holds the path; disposed on close. |
-| `vlc_Video_View` (LibVLC surface) | [Main_Form.VideoPlayer.vb](src/Main_Form.VideoPlayer.vb) | Video fallback surface, sized to track `Picture_Box_1`. |
+| `ContextMenuStrip` of recent files | [Main_Form.vb:1891](../../../src/Main_Form.vb#L1891) (`btn_RecentFiles_Click`) | One menu item per entry in `recent_Media_File_List`, reversed (newest first); item `.Tag` holds the path; disposed on close. |
+| `vlc_Video_View` (LibVLC surface) | [Main_Form.VideoPlayer.vb](../../../src/Main_Form.VideoPlayer.vb) | Video fallback surface, sized to track `Picture_Box_1`. |
 
 ### 1.2 The full control inventory (toolbar/chrome)
 
@@ -66,7 +66,7 @@ All declared in the Designer; `Friend WithEvents` fields at the bottom of the fi
 ### 1.3 The layout engine: manual pixel math, run on resize
 
 There is no `TableLayoutPanel`/`FlowLayoutPanel`/`ToolStrip`. Layout is computed
-imperatively in [src/Main_Form.UILayout.vb](src/Main_Form.UILayout.vb) by two
+imperatively in [src/Main_Form.UILayout.vb](../../../src/Main_Form.UILayout.vb) by two
 sibling methods, selected by mode:
 
 ```
@@ -83,12 +83,12 @@ Key mechanics:
 - **Resize debounce** - `Form1_Resize` restarts `ResizeDebounceTimer` (200 ms);
   only on tick does `ISizeChanged()` run. A `is_Programmatic_Resize` guard flag
   prevents the layout's own size changes from re-triggering the debounce
-  ([Main_Form.UILayout.vb:63](src/Main_Form.UILayout.vb#L63)).
+  ([Main_Form.UILayout.vb:63](../../../src/Main_Form.UILayout.vb#L63)).
 - **Chained absolute positioning** - every control sets
   `.Left = previousControl.Left + previousControl.Width + gap` and an explicit
   `.Top`. Widths/heights are integer multiples of two constants:
   - `the_Width_For_buttons = 15`, `the_Height_For_buttons = 20`
-    ([Main_Form.vb:59-60](src/Main_Form.vb#L59)).
+    ([Main_Form.vb:59-60](../../../src/Main_Form.vb#L59)).
   - So `.Width = the_Width_For_buttons * 6` means 90 px, etc.
 - **Lazy relayout** - `Buttons_to_normal()` only re-runs the positioning block if
   `Picture_Box_1` geometry actually changed (`If Not Picture_Box_1.Top = … OrElse …`),
@@ -147,20 +147,20 @@ fill the remaining client area.
 
 ### 1.7 Localization
 
-`LngCh()` ([Main_Form.vb:2670](src/Main_Form.vb#L2670)) swaps the `.Text` of a
+`LngCh()` ([Main_Form.vb:2670](../../../src/Main_Form.vb#L2670)) swaps the `.Text` of a
 **subset** of controls between Russian and English (`btn_Prev_File`,
 `btn_Next_File`, `bt_Delete`, `btn_Move_Table`, `lbl_Folder`, `btn_Language`,
 `lbl_Help_Info`). The symbolic buttons (`RE`, `^^`, `>>`, `R>`, `█`, `VVV`, `RN`,
 `(Y)Rnd>`) are **never** localized and stay cryptic. Tooltips (the real
 discoverability layer) are set once in `InitializeTooltips()`
-([Main_Form.vb:288](src/Main_Form.vb#L288)) with full RU/EN strings.
+([Main_Form.vb:288](../../../src/Main_Form.vb#L288)) with full RU/EN strings.
 
 ### 1.8 Theming / color scheme
 
 `Form_Color_Scheme` (0 = dynamic from the image's bottom row, 1 = black,
 2 = white, 3 = most-frequent). When the background color changes, code loops over
 `Me.Controls` and sets `ForeColor` (and `BackColor` for combos/checkbox) to the
-"opposite" color ([Main_Form.vb:1573](src/Main_Form.vb#L1573)). Buttons keep
+"opposite" color ([Main_Form.vb:1573](../../../src/Main_Form.vb#L1573)). Buttons keep
 `UseVisualStyleBackColor`, so only their text color flips.
 
 ### 1.9 Pain points (the case for change)
@@ -184,7 +184,7 @@ discoverability layer) are set once in `InitializeTooltips()`
 ## Part 2 - Modernization options (no functionality lost)
 
 The hard constraint is **.NET Framework 4.8 + WinForms** (per
-[CLAUDE.md](CLAUDE.md)). Every option below keeps **all** existing controls,
+[CLAUDE.md](../../../CLAUDE.md)). Every option below keeps **all** existing controls,
 event handlers, hotkeys, localization, theming, and the media surface intact -
 only the *layout/presentation* changes. Naming the same `Friend WithEvents`
 fields means every `Handles …` clause keeps working.

@@ -3,10 +3,28 @@ $SolutionFile = Join-Path $SolutionDir "FastMediaSorter.sln"
 $OutputDir    = Join-Path $SolutionDir "bin\Release"
 $SingleFileDir = Join-Path $SolutionDir "bin\SingleFile"
 $ExeName      = "FastMediaSorter_LITE.exe"
+# Android-share sidecar payload (docs/specifications/SPECIFICATION_ANDROID_FOLDER_SHARE.md). The
+# worker exe must ship in a "companion\" subfolder next to every deployed exe,
+# or the Share tab / wizard finds nothing (WorkerProcess.IsAvailable() = False).
+$PayloadCompanionDir = Join-Path $SolutionDir "payload\companion"
 $Destinations = @(
     "C:\GD\i\",
     "C:\GD\tc\SZA\_APP\"
 )
+
+# Mirror payload\companion\ into <targetDir>\companion\. No-op (with a warning)
+# when the payload is absent, so a checkout without the vendored worker still
+# builds - it just ships without the Share feature.
+function Deploy-Companion([string]$TargetDir) {
+    if (-not (Test-Path $PayloadCompanionDir)) {
+        Write-Warning "Companion payload not found ($PayloadCompanionDir) - Share feature will be unavailable in: $TargetDir"
+        return
+    }
+    $dest = Join-Path $TargetDir "companion"
+    New-Item -ItemType Directory -Path $dest -Force | Out-Null
+    Copy-Item -Path (Join-Path $PayloadCompanionDir "*") -Destination $dest -Recurse -Force
+    Write-Host "Deployed companion payload -> $dest"
+}
 
 # Find MSBuild
 $msbuild = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
@@ -65,6 +83,11 @@ $SingleFileExe = Join-Path $SingleFileDir $ExeName
 Copy-Item -Path $ExePath -Destination $SingleFileExe -Force
 Write-Host "Single-file build staged at: $SingleFileExe"
 
+# Keep the worker beside the staging outputs too: MSBuild Rebuild does not touch
+# the companion\ subfolder, but a fresh checkout has none - self-heal both.
+Deploy-Companion $OutputDir
+Deploy-Companion $SingleFileDir
+
 foreach ($Destination in $Destinations) {
     if (-not (Test-Path $Destination)) {
         New-Item -ItemType Directory -Path $Destination -Force | Out-Null
@@ -74,4 +97,5 @@ foreach ($Destination in $Destinations) {
     Copy-Item -Path $SingleFileExe -Destination $Target -Force
 
     Write-Host "Deployed single-file exe -> $Target"
+    Deploy-Companion $Destination
 }

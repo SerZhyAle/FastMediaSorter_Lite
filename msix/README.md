@@ -69,7 +69,7 @@ download on demand). Add `-IncludeBestOcr` to also bundle `tessdata_best`, or `-
 a quick build that downloads packs on first use.
 
 Then in Partner Center: create a submission, upload the `.msix`, fill the listing (reuse the copy in
-[../STORE_PUBLISHING.md](../STORE_PUBLISHING.md)), add a privacy-policy URL
+[../STORE_PUBLISHING.md](../docs/guides/STORE_PUBLISHING.md)), add a privacy-policy URL
 ([docs/privacy.html](../docs/privacy.html) on GitHub Pages), add a screenshot (`tools/store/make-screenshot.ps1`),
 set the age rating, and submit. Certification typically takes a few business days.
 

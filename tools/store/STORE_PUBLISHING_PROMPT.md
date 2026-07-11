@@ -147,5 +147,5 @@ cd msix; .\build-msix.ps1 -SelfSign   (можно -NoBuild для текущей
 ## Откуда взяты значения (для самопроверки)
 
 - `-Publisher` / `-PublisherDisplayName` по умолчанию - из [../../msix/build-msix.ps1](../../msix/build-msix.ps1) (параметры `$Publisher`, `$PublisherDisplayName`).
-- IARC Global Rating ID - из [../../STORE_PUBLISHING.md](../../STORE_PUBLISHING.md) (раздел "Age rating (IARC)").
-- Полный исходный плейбук этого проекта - [../../STORE_PUBLISHING.md](../../STORE_PUBLISHING.md) и [../../msix/README.md](../../msix/README.md).
+- IARC Global Rating ID - из [../../STORE_PUBLISHING.md](../../docs/guides/STORE_PUBLISHING.md) (раздел "Age rating (IARC)").
+- Полный исходный плейбук этого проекта - [../../STORE_PUBLISHING.md](../../docs/guides/STORE_PUBLISHING.md) и [../../msix/README.md](../../msix/README.md).

@@ -12,7 +12,7 @@ PR #386820 **passed validation** (`Azure-Pipeline-Passed` + `Validation-Complete
 build 341141: `Installation Validation` succeeded) only after the manifest was
 reduced to a plain direct Inno installer with **no `Scope` and no `Dependencies`**.
 The winning manifest is mirrored in
-[winget/SerZhyAle.FastMediaSorter.installer.yaml](winget/SerZhyAle.FastMediaSorter.installer.yaml)
+[winget/SerZhyAle.FastMediaSorter.installer.yaml](../../winget/SerZhyAle.FastMediaSorter.installer.yaml)
 - start the next release from that shape, not from a `wingetcreate` default that
 re-adds `Scope`/`Dependencies`. After the pipeline passed, the only remaining gate
 was manual moderator approval (normal for community PRs), and the

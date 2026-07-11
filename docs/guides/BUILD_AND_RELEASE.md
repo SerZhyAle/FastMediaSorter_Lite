@@ -6,7 +6,7 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 
 ## Золотое правило биллинга
 
-> GitHub Actions ([.github/workflows/release.yml](.github/workflows/release.yml)) запускается
+> GitHub Actions ([.github/workflows/release.yml](../../.github/workflows/release.yml)) запускается
 > **только при push тега `v*`**. Больше ничто (push в `main`, в любую ветку, правки доков) его не триггерит.
 
 Следствие: пока не запушен тег `vYY.M.D.HHmm`, на GitHub **не тратится ни одной платной минуты**.
@@ -19,7 +19,7 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 
 **Что это:** собрать exe, проверить вручную, при удаче - закоммитить. Всё на своей машине.
 
-**Чем делается:** [build.ps1](build.ps1)
+**Чем делается:** [build.ps1](../../build.ps1)
 
 ```powershell
 .\build.ps1
@@ -48,7 +48,7 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 
 **Что это:** обновить документацию и сайт, собрать на GitHub, опубликовать в winget и Microsoft Store.
 
-**Оркестратор:** [tools/Release.ps1](tools/Release.ps1) - делает локальную контрольную сборку
+**Оркестратор:** [tools/Release.ps1](../../tools/Release.ps1) - делает локальную контрольную сборку
 (чтобы НЕ платить за заведомо падающий CI), создаёт и пушит тег, печатает чек-лист публикаций.
 
 ```powershell
@@ -63,7 +63,7 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 
 **A. Документация и сайт (до тега):**
 - [ ] Обновлены `README.md`, `README_RU.md`, `README_UK.md` если менялись фичи.
-- [ ] Обновлён сайт [docs/index.html](docs/index.html) / [docs/privacy.html](docs/privacy.html) по контенту.
+- [ ] Обновлён сайт [docs/index.html](../index.html) / [docs/privacy.html](../privacy.html) по контенту.
       Версию править НЕ нужно - кнопки ведут на `/releases/latest` и на winget id, без захардкоженного номера.
 - [ ] `CLAUDE.md` отражает изменения архитектуры (если были).
 - [ ] Всё закоммичено и запушено в `main` (бесплатно).
@@ -75,14 +75,14 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 
 **C. winget (после того как GitHub release готов):**
 - [ ] Манифест указывает на Inno **`setup.exe`** напрямую (`InstallerType: inno`), без зависимостей,
-      без `Scope`. Подробности и грабли - [SPECIFICATION_WINGET_PUBLISHING.md](SPECIFICATION_WINGET_PUBLISHING.md).
+      без `Scope`. Подробности и грабли - [SPECIFICATION_WINGET_PUBLISHING.md](../specifications/SPECIFICATION_WINGET_PUBLISHING.md).
 - [ ] PR в `microsoft/winget-pkgs` для `SerZhyAle.FastMediaSorter` обновлён на новую версию + SHA256.
 
 **D. Microsoft Store (MSIX, опционально, не блокирует A-C):**
 - [ ] `cd msix; .\build-msix.ps1 -IdentityName "<имя из Partner Center>"` (БЕЗ `-SelfSign` для Store).
 - [ ] Загрузить unsigned `.msix` в Partner Center (Microsoft подпишет сам).
-- [ ] Полный плейбук: [STORE_PUBLISHING.md](STORE_PUBLISHING.md), [msix/README.md](msix/README.md),
-      промпт-памятка [tools/store/STORE_PUBLISHING_PROMPT.md](tools/store/STORE_PUBLISHING_PROMPT.md).
+- [ ] Полный плейбук: [STORE_PUBLISHING.md](STORE_PUBLISHING.md), [msix/README.md](../../msix/README.md),
+      промпт-памятка [tools/store/STORE_PUBLISHING_PROMPT.md](../../tools/store/STORE_PUBLISHING_PROMPT.md).
 
 ---
 

@@ -1,7 +1,7 @@
 # Technical Specification: `Main_Form.vb` Decomposition
 
 > Status: **implemented** · Created 2026-06-04 · Branch `ui-modernization`
-> Derived from [PLAN/Main_Form_Decomposition.md](PLAN/Main_Form_Decomposition.md).
+> Derived from [PLAN/Main_Form_Decomposition.md](Main_Form_Decomposition.md).
 > Code anchors verified against `src/Main_Form.vb` as of 2026-06-04 (was 3,356 LOC).
 >
 > **Outcome:** all 10 partials extracted; `Main_Form.vb` reduced from 3,356 → **653 LOC**.
@@ -16,7 +16,7 @@
 
 ### 1.1 Goal
 
-Split the monolithic [src/Main_Form.vb](src/Main_Form.vb) (**3,356 LOC**) into a set
+Split the monolithic [src/Main_Form.vb](../../../src/Main_Form.vb) (**3,356 LOC**) into a set
 of focused `Partial Class Main_Form` files, continuing the pattern already
 established by the existing partials. The result must be **byte-for-byte equivalent
 behavior** - this is a pure code-organization change, not a refactor.
@@ -51,20 +51,20 @@ Main_Form`, all listed in the project with `<DependentUpon>Main_Form.vb</Depende
 
 | File | LOC | Concern |
 |---|---|---|
-| [src/Main_Form.vb](src/Main_Form.vb) | 3,356 | Core / shell (this spec drains it) |
-| [src/Main_Form.Designer.vb](src/Main_Form.Designer.vb) | 461 | Auto-generated - **never hand-edit** |
-| [src/Main_Form.PerspectiveBackground.vb](src/Main_Form.PerspectiveBackground.vb) | 431 | Ambilight background fill |
-| [src/Main_Form.FileOperations.vb](src/Main_Form.FileOperations.vb) | 356 | Copy/move/rename/delete wiring |
-| [src/Main_Form.ModernLayout.vb](src/Main_Form.ModernLayout.vb) | 318 | Modern toolbar layout/styling |
-| [src/Main_Form.VideoPlayer.vb](src/Main_Form.VideoPlayer.vb) | 302 | WebBrowser + LibVLC playback |
-| [src/Main_Form.UILayout.vb](src/Main_Form.UILayout.vb) | 131 | Responsive control sizing |
+| [src/Main_Form.vb](../../../src/Main_Form.vb) | 3,356 | Core / shell (this spec drains it) |
+| [src/Main_Form.Designer.vb](../../../src/Main_Form.Designer.vb) | 461 | Auto-generated - **never hand-edit** |
+| [src/Main_Form.PerspectiveBackground.vb](../../../src/Main_Form.PerspectiveBackground.vb) | 431 | Ambilight background fill |
+| [src/Main_Form.FileOperations.vb](../../../src/Main_Form.FileOperations.vb) | 356 | Copy/move/rename/delete wiring |
+| [src/Main_Form.ModernLayout.vb](../../../src/Main_Form.ModernLayout.vb) | 318 | Modern toolbar layout/styling |
+| [src/Main_Form.VideoPlayer.vb](../../../src/Main_Form.VideoPlayer.vb) | 302 | WebBrowser + LibVLC playback |
+| [src/Main_Form.UILayout.vb](../../../src/Main_Form.UILayout.vb) | 131 | Responsive control sizing |
 
 > Note: the plan predates `Main_Form.ModernLayout.vb`; it lists only four prior
 > partials. The decomposition pattern is unchanged regardless.
 
 ### 2.2 Build configuration facts that govern this work
 
-- **Option statements are project-wide**, set in [src/FastMediaSorter.vbproj](src/FastMediaSorter.vbproj):
+- **Option statements are project-wide**, set in [src/FastMediaSorter.vbproj](../../../src/FastMediaSorter.vbproj):
   `OptionExplicit=On`, `OptionStrict=On`, `OptionCompare=Binary`, `OptionInfer=On`.
   A per-file `Option Strict On` line is therefore redundant but is the **established
   convention** (the existing partials repeat it) - match it.
@@ -77,7 +77,7 @@ Main_Form`, all listed in the project with `<DependentUpon>Main_Form.vb</Depende
 
 ### 2.3 File header template for every new partial
 
-Match [src/Main_Form.FileOperations.vb](src/Main_Form.FileOperations.vb#L1-L8):
+Match [src/Main_Form.FileOperations.vb](../../../src/Main_Form.FileOperations.vb#L1-L8):
 
 ```vb
 Option Strict On
@@ -94,14 +94,14 @@ End Class
 ```
 
 Imports are **per-file** in VB.NET; copy from `Main_Form.vb`'s import block
-([src/Main_Form.vb:19-28](src/Main_Form.vb#L19-L28)) only the namespaces the moved
+([src/Main_Form.vb:19-28](../../../src/Main_Form.vb#L19-L28)) only the namespaces the moved
 methods actually reference. Unused imports are warnings, not errors, but keep them
 tight.
 
 ### 2.4 Required `.vbproj` entry per new file
 
 Insert into the `<ItemGroup>` that holds the other `Main_Form.*` partials
-([src/FastMediaSorter.vbproj:138-164](src/FastMediaSorter.vbproj#L138-L164)),
+([src/FastMediaSorter.vbproj:138-164](../../../src/FastMediaSorter.vbproj#L138-L164)),
 following the exact existing shape:
 
 ```xml
@@ -169,20 +169,20 @@ coupling. Methods form a near-contiguous block at the tail of the file.
 
 | Method | Anchor (current) |
 |---|---|
-| `IsRunningAsAdministrator` | [Main_Form.vb:2920](src/Main_Form.vb#L2920) |
-| `IsJpgAssociatedWithThisApp` | [Main_Form.vb:2927](src/Main_Form.vb#L2927) |
-| `AssociateJpgWithThisApp` | [Main_Form.vb:2947](src/Main_Form.vb#L2947) |
-| `CheckAndOfferJpgAssociation` | [Main_Form.vb:2969](src/Main_Form.vb#L2969) |
-| `AreImageTypesAssociatedWithThisApp` | [Main_Form.vb:2978](src/Main_Form.vb#L2978) |
-| `IsExtensionAssociatedWithThisApp` | [Main_Form.vb:2984](src/Main_Form.vb#L2984) |
-| `AssociateImageTypesWithThisApp` | [Main_Form.vb:3004](src/Main_Form.vb#L3004) |
-| `AssociateExtensionWithThisApp` | [Main_Form.vb:3012](src/Main_Form.vb#L3012) |
-| `CheckAndOfferImageAssociations` | [Main_Form.vb:3031](src/Main_Form.vb#L3031) |
-| `AssociateAllImageFormatsWithThisApp` | [Main_Form.vb:3046](src/Main_Form.vb#L3046) |
+| `IsRunningAsAdministrator` | [Main_Form.vb:2920](../../../src/Main_Form.vb#L2920) |
+| `IsJpgAssociatedWithThisApp` | [Main_Form.vb:2927](../../../src/Main_Form.vb#L2927) |
+| `AssociateJpgWithThisApp` | [Main_Form.vb:2947](../../../src/Main_Form.vb#L2947) |
+| `CheckAndOfferJpgAssociation` | [Main_Form.vb:2969](../../../src/Main_Form.vb#L2969) |
+| `AreImageTypesAssociatedWithThisApp` | [Main_Form.vb:2978](../../../src/Main_Form.vb#L2978) |
+| `IsExtensionAssociatedWithThisApp` | [Main_Form.vb:2984](../../../src/Main_Form.vb#L2984) |
+| `AssociateImageTypesWithThisApp` | [Main_Form.vb:3004](../../../src/Main_Form.vb#L3004) |
+| `AssociateExtensionWithThisApp` | [Main_Form.vb:3012](../../../src/Main_Form.vb#L3012) |
+| `CheckAndOfferImageAssociations` | [Main_Form.vb:3031](../../../src/Main_Form.vb#L3031) |
+| `AssociateAllImageFormatsWithThisApp` | [Main_Form.vb:3046](../../../src/Main_Form.vb#L3046) |
 
 **Imports needed:** `Microsoft.Win32`, `System.Security.Principal`, `System.IO`.
 **Cross-partial dependency:** `AssociateAllImageFormatsWithThisApp` calls
-`SHChangeNotify` ([Main_Form.vb:3084](src/Main_Form.vb#L3084)), which lives in the
+`SHChangeNotify` ([Main_Form.vb:3084](../../../src/Main_Form.vb#L3084)), which lives in the
 NativeMethods group - fine post-split.
 
 ### 5.2 `Main_Form.NativeMethods.vb`  ·  risk: **very low**, but **scattered**
@@ -193,25 +193,25 @@ leave the rest in place.
 
 | Item | Anchor | Kind |
 |---|---|---|
-| `ShowWindow` | [Main_Form.vb:221](src/Main_Form.vb#L221) | `Declare`/`DllImport` shared fn |
-| `SetForegroundWindow` | [Main_Form.vb:225](src/Main_Form.vb#L225) | shared fn |
-| `GetForegroundWindow` | [Main_Form.vb:229](src/Main_Form.vb#L229) | shared fn |
-| `COPYDATASTRUCT` | [Main_Form.vb:245](src/Main_Form.vb#L245) | `Public Structure` |
-| `SendMessage` | [Main_Form.vb:251](src/Main_Form.vb#L251) | `<DllImport>` shared fn (takes `ByRef COPYDATASTRUCT`) |
-| `MapViewOfFile` / `UnmapViewOfFile` / `CloseHandle` | [Main_Form.vb:255-257](src/Main_Form.vb#L255-L257) | `Declare` fns |
-| `StrCmpLogicalW` | [Main_Form.vb:265](src/Main_Form.vb#L265) | shared fn |
-| `SHChangeNotify` | [Main_Form.vb:269](src/Main_Form.vb#L269) | shared sub |
-| `NaturalFilenameComparer` | [Main_Form.vb:272](src/Main_Form.vb#L272) | `Public Class` (uses `StrCmpLogicalW`) |
+| `ShowWindow` | [Main_Form.vb:221](../../../src/Main_Form.vb#L221) | `Declare`/`DllImport` shared fn |
+| `SetForegroundWindow` | [Main_Form.vb:225](../../../src/Main_Form.vb#L225) | shared fn |
+| `GetForegroundWindow` | [Main_Form.vb:229](../../../src/Main_Form.vb#L229) | shared fn |
+| `COPYDATASTRUCT` | [Main_Form.vb:245](../../../src/Main_Form.vb#L245) | `Public Structure` |
+| `SendMessage` | [Main_Form.vb:251](../../../src/Main_Form.vb#L251) | `<DllImport>` shared fn (takes `ByRef COPYDATASTRUCT`) |
+| `MapViewOfFile` / `UnmapViewOfFile` / `CloseHandle` | [Main_Form.vb:255-257](../../../src/Main_Form.vb#L255-L257) | `Declare` fns |
+| `StrCmpLogicalW` | [Main_Form.vb:265](../../../src/Main_Form.vb#L265) | shared fn |
+| `SHChangeNotify` | [Main_Form.vb:269](../../../src/Main_Form.vb#L269) | shared sub |
+| `NaturalFilenameComparer` | [Main_Form.vb:272](../../../src/Main_Form.vb#L272) | `Public Class` (uses `StrCmpLogicalW`) |
 
 **Corrections vs. the plan:**
 - The comparer is named **`NaturalFilenameComparer`**, not `NaturalStringComparer`.
-- `SendMessage` **is** present at [Main_Form.vb:251](src/Main_Form.vb#L251) (declared
+- `SendMessage` **is** present at [Main_Form.vb:251](../../../src/Main_Form.vb#L251) (declared
   via `<DllImport("user32.dll", CharSet:=CharSet.Auto)>`, not `Declare`), so the
   plan is correct to list it. It takes a `ByRef COPYDATASTRUCT`, so it must travel
   with the struct.
 - `ShowWindow`/`SetForegroundWindow`/`GetForegroundWindow` are **duplicated**: the
   `Main_Form` copies (private, lines 221–229) are distinct from the `Public`
-  copies in [Common_Module.vb:22-30](src/Common_Module.vb#L22-L30) used by
+  copies in [Common_Module.vb:22-30](../../../src/Common_Module.vb#L22-L30) used by
   `Application_Events`. Move **only** the `Main_Form` copies; leave `Common_Module`
   untouched. (Deduplicating these two sets is future cleanup, not this task.)
 
@@ -227,9 +227,9 @@ keep each const declared exactly once.
 
 | Method | Anchor |
 |---|---|
-| `StartGifLoopPlayback` | [Main_Form.vb:3205](src/Main_Form.vb#L3205) |
-| `StopGifLoopPlayback` | [Main_Form.vb:3242](src/Main_Form.vb#L3242) |
-| `Gif_Restart_Timer_Tick` *(`Handles gif_Restart_Timer.Tick`)* | [Main_Form.vb:3248](src/Main_Form.vb#L3248) |
+| `StartGifLoopPlayback` | [Main_Form.vb:3205](../../../src/Main_Form.vb#L3205) |
+| `StopGifLoopPlayback` | [Main_Form.vb:3242](../../../src/Main_Form.vb#L3242) |
+| `Gif_Restart_Timer_Tick` *(`Handles gif_Restart_Timer.Tick`)* | [Main_Form.vb:3248](../../../src/Main_Form.vb#L3248) |
 
 ### 5.4 `Main_Form.Slideshow.vb`  ·  risk: **low**, **scattered**
 
@@ -238,21 +238,21 @@ keep each const declared exactly once.
 
 | Method | Anchor |
 |---|---|
-| `Button6_Click` *(`Handles btn_Slideshow.Click`)* | [Main_Form.vb:2763](src/Main_Form.vb#L2763) |
-| `SetSlideShow` | [Main_Form.vb:2768](src/Main_Form.vb#L2768) |
-| `SlideShow_Elapsed` *(`Handles SlideShowTimer.Tick`)* | [Main_Form.vb:2782](src/Main_Form.vb#L2782) |
-| `SlideShowStop` | [Main_Form.vb:2793](src/Main_Form.vb#L2793) |
-| `Button8_Click` *(`Handles btn_Next_Random.Click`)* | [Main_Form.vb:2823](src/Main_Form.vb#L2823) |
-| `Button9_Click` *(`Handles btn_Random_Slideshow.Click`)* | [Main_Form.vb:2829](src/Main_Form.vb#L2829) |
-| `SlideShowStart` | [Main_Form.vb:2833](src/Main_Form.vb#L2833) |
-| `SetRandomSlideShow` | [Main_Form.vb:2839](src/Main_Form.vb#L2839) |
+| `Button6_Click` *(`Handles btn_Slideshow.Click`)* | [Main_Form.vb:2763](../../../src/Main_Form.vb#L2763) |
+| `SetSlideShow` | [Main_Form.vb:2768](../../../src/Main_Form.vb#L2768) |
+| `SlideShow_Elapsed` *(`Handles SlideShowTimer.Tick`)* | [Main_Form.vb:2782](../../../src/Main_Form.vb#L2782) |
+| `SlideShowStop` | [Main_Form.vb:2793](../../../src/Main_Form.vb#L2793) |
+| `Button8_Click` *(`Handles btn_Next_Random.Click`)* | [Main_Form.vb:2823](../../../src/Main_Form.vb#L2823) |
+| `Button9_Click` *(`Handles btn_Random_Slideshow.Click`)* | [Main_Form.vb:2829](../../../src/Main_Form.vb#L2829) |
+| `SlideShowStart` | [Main_Form.vb:2833](../../../src/Main_Form.vb#L2833) |
+| `SetRandomSlideShow` | [Main_Form.vb:2839](../../../src/Main_Form.vb#L2839) |
 
 ### 5.5 `Main_Form.Localization.vb`  ·  risk: **low**, two locations
 
 | Method | Anchor |
 |---|---|
-| `LngCh` | [Main_Form.vb:2671](src/Main_Form.vb#L2671) |
-| `ButtonLNG_Click` *(`Handles btn_Language.Click`)* | [Main_Form.vb:2858](src/Main_Form.vb#L2858) |
+| `LngCh` | [Main_Form.vb:2671](../../../src/Main_Form.vb#L2671) |
+| `ButtonLNG_Click` *(`Handles btn_Language.Click`)* | [Main_Form.vb:2858](../../../src/Main_Form.vb#L2858) |
 
 ---
 
@@ -264,15 +264,15 @@ The central load/display pipeline: high-traffic but cohesive.
 
 | Method | Anchor |
 |---|---|
-| `ReadShowMediaFile` | [Main_Form.vb:840](src/Main_Form.vb#L840) |
-| `UpdateFileIndexAndList` | [Main_Form.vb:917](src/Main_Form.vb#L917) |
-| `LoadFilesForRandomOrSlideshow` | [Main_Form.vb:1100](src/Main_Form.vb#L1100) |
-| `LoadFilesForExternalInput` | [Main_Form.vb:1164](src/Main_Form.vb#L1164) |
-| `LoadFiles` | [Main_Form.vb:1224](src/Main_Form.vb#L1224) |
-| `LoadStandardImageInPictureBox` | [Main_Form.vb:1265](src/Main_Form.vb#L1265) |
-| `UpdateCurrentFileAndDisplay` | [Main_Form.vb:1590](src/Main_Form.vb#L1590) |
+| `ReadShowMediaFile` | [Main_Form.vb:840](../../../src/Main_Form.vb#L840) |
+| `UpdateFileIndexAndList` | [Main_Form.vb:917](../../../src/Main_Form.vb#L917) |
+| `LoadFilesForRandomOrSlideshow` | [Main_Form.vb:1100](../../../src/Main_Form.vb#L1100) |
+| `LoadFilesForExternalInput` | [Main_Form.vb:1164](../../../src/Main_Form.vb#L1164) |
+| `LoadFiles` | [Main_Form.vb:1224](../../../src/Main_Form.vb#L1224) |
+| `LoadStandardImageInPictureBox` | [Main_Form.vb:1265](../../../src/Main_Form.vb#L1265) |
+| `UpdateCurrentFileAndDisplay` | [Main_Form.vb:1590](../../../src/Main_Form.vb#L1590) |
 
-**Decision required - `UpdateControlVisibility`** ([Main_Form.vb:1406](src/Main_Form.vb#L1406))
+**Decision required - `UpdateControlVisibility`** ([Main_Form.vb:1406](../../../src/Main_Form.vb#L1406))
 sits **between** `LoadStandardImageInPictureBox` and `UpdateCurrentFileAndDisplay`.
 The plan omits it. It is tightly called by the display path; recommend moving it
 **with** MediaLoading (it is display-state plumbing). If it turns out to be shared
@@ -285,11 +285,11 @@ Background folder enumeration + its data type.
 
 | Item | Anchor | Kind |
 |---|---|---|
-| `BgWorker_DoWork` *(`Handles BgWorker.DoWork`)* | [Main_Form.vb:483](src/Main_Form.vb#L483) | sub |
-| `BgWorker_ProgressChanged` *(`Handles BgWorker.ProgressChanged`)* | [Main_Form.vb:599](src/Main_Form.vb#L599) | sub |
-| `BgWorker_RunWorkerCompleted` *(`Handles BgWorker.RunWorkerCompleted`)* | [Main_Form.vb:665](src/Main_Form.vb#L665) | sub |
-| `FileEntry` | [Main_Form.vb:1775](src/Main_Form.vb#L1775) | `Private Structure` |
-| `GetFiles` | [Main_Form.vb:1782](src/Main_Form.vb#L1782) | function |
+| `BgWorker_DoWork` *(`Handles BgWorker.DoWork`)* | [Main_Form.vb:483](../../../src/Main_Form.vb#L483) | sub |
+| `BgWorker_ProgressChanged` *(`Handles BgWorker.ProgressChanged`)* | [Main_Form.vb:599](../../../src/Main_Form.vb#L599) | sub |
+| `BgWorker_RunWorkerCompleted` *(`Handles BgWorker.RunWorkerCompleted`)* | [Main_Form.vb:665](../../../src/Main_Form.vb#L665) | sub |
+| `FileEntry` | [Main_Form.vb:1775](../../../src/Main_Form.vb#L1775) | `Private Structure` |
+| `GetFiles` | [Main_Form.vb:1782](../../../src/Main_Form.vb#L1782) | function |
 
 **Correction vs. the plan:** the helper type is a **`Structure FileEntry`**, not a
 `FileInfo` class. (`FileInfo` is a BCL type; don't confuse the two.) Move the
@@ -299,27 +299,27 @@ structure with this group since `GetFiles`/`BgWorker_DoWork` are its only users.
 
 | Method | Anchor |
 |---|---|
-| `HandlePictureBoxMouseDown` | [Main_Form.vb:2081](src/Main_Form.vb#L2081) |
-| `PictureBox1_MouseDown` *(`Handles Picture_Box_1.MouseDown`)* | [Main_Form.vb:2217](src/Main_Form.vb#L2217) |
-| `PictureBox2_MouseDown` *(`Handles Picture_Box_2.MouseDown`)* | [Main_Form.vb:2221](src/Main_Form.vb#L2221) |
-| `MouseUse` | [Main_Form.vb:2225](src/Main_Form.vb#L2225) |
-| `Form1_MouseDown` *(`Handles MyBase.MouseDown`)* | [Main_Form.vb:2651](src/Main_Form.vb#L2651) |
-| `Form1_MouseWheel` *(`Handles Me.MouseWheel`)* | [Main_Form.vb:2656](src/Main_Form.vb#L2656) |
-| `lbl_Zoom_MouseDown` *(`Handles lbl_Zoom.MouseDown`)* | [Main_Form.vb:3270](src/Main_Form.vb#L3270) |
-| `Picture_Box_1_MouseMove` *(`Handles Picture_Box_1.MouseMove`)* | [Main_Form.vb:3274](src/Main_Form.vb#L3274) |
-| `Picture_Box_2_MouseMove` *(`Handles Picture_Box_2.MouseMove`)* | [Main_Form.vb:3278](src/Main_Form.vb#L3278) |
-| `Pic_MouseMove` | [Main_Form.vb:3282](src/Main_Form.vb#L3282) |
+| `HandlePictureBoxMouseDown` | [Main_Form.vb:2081](../../../src/Main_Form.vb#L2081) |
+| `PictureBox1_MouseDown` *(`Handles Picture_Box_1.MouseDown`)* | [Main_Form.vb:2217](../../../src/Main_Form.vb#L2217) |
+| `PictureBox2_MouseDown` *(`Handles Picture_Box_2.MouseDown`)* | [Main_Form.vb:2221](../../../src/Main_Form.vb#L2221) |
+| `MouseUse` | [Main_Form.vb:2225](../../../src/Main_Form.vb#L2225) |
+| `Form1_MouseDown` *(`Handles MyBase.MouseDown`)* | [Main_Form.vb:2651](../../../src/Main_Form.vb#L2651) |
+| `Form1_MouseWheel` *(`Handles Me.MouseWheel`)* | [Main_Form.vb:2656](../../../src/Main_Form.vb#L2656) |
+| `lbl_Zoom_MouseDown` *(`Handles lbl_Zoom.MouseDown`)* | [Main_Form.vb:3270](../../../src/Main_Form.vb#L3270) |
+| `Picture_Box_1_MouseMove` *(`Handles Picture_Box_1.MouseMove`)* | [Main_Form.vb:3274](../../../src/Main_Form.vb#L3274) |
+| `Picture_Box_2_MouseMove` *(`Handles Picture_Box_2.MouseMove`)* | [Main_Form.vb:3278](../../../src/Main_Form.vb#L3278) |
+| `Pic_MouseMove` | [Main_Form.vb:3282](../../../src/Main_Form.vb#L3282) |
 
 ### 6.4 `Main_Form.KeyboardInput.vb`  ·  risk: **low–medium**, scattered
 
 | Method | Anchor |
 |---|---|
-| `Form1_KeyDown` *(`Handles MyBase.KeyDown`)* | [Main_Form.vb:2457](src/Main_Form.vb#L2457) |
-| `GetWas_slideshow` | [Main_Form.vb:2462](src/Main_Form.vb#L2462) |
-| `KeybUse` | [Main_Form.vb:2466](src/Main_Form.vb#L2466) |
-| `DoKey` | [Main_Form.vb:2744](src/Main_Form.vb#L2744) |
-| `Picture_Box_1_KeyDown` *(`Handles Picture_Box_1.KeyDown`)* | [Main_Form.vb:2910](src/Main_Form.vb#L2910) |
-| `Picture_Box_2_KeyDown` *(`Handles Picture_Box_2.KeyDown`)* | [Main_Form.vb:2915](src/Main_Form.vb#L2915) |
+| `Form1_KeyDown` *(`Handles MyBase.KeyDown`)* | [Main_Form.vb:2457](../../../src/Main_Form.vb#L2457) |
+| `GetWas_slideshow` | [Main_Form.vb:2462](../../../src/Main_Form.vb#L2462) |
+| `KeybUse` | [Main_Form.vb:2466](../../../src/Main_Form.vb#L2466) |
+| `DoKey` | [Main_Form.vb:2744](../../../src/Main_Form.vb#L2744) |
+| `Picture_Box_1_KeyDown` *(`Handles Picture_Box_1.KeyDown`)* | [Main_Form.vb:2910](../../../src/Main_Form.vb#L2910) |
+| `Picture_Box_2_KeyDown` *(`Handles Picture_Box_2.KeyDown`)* | [Main_Form.vb:2915](../../../src/Main_Form.vb#L2915) |
 
 ### 6.5 `Main_Form.Lifecycle.vb`  ·  risk: **medium**, scattered across whole file
 
@@ -327,14 +327,14 @@ Startup/shutdown, init, and cross-instance argument intake.
 
 | Method | Anchor |
 |---|---|
-| `InitializeExtensionLists` | [Main_Form.vb:236](src/Main_Form.vb#L236) |
-| `InitializeTooltips` | [Main_Form.vb:288](src/Main_Form.vb#L288) |
-| `External_message` | [Main_Form.vb:395](src/Main_Form.vb#L395) |
-| `SetWebBrowserCompatibilityMode` | [Main_Form.vb:428](src/Main_Form.vb#L428) |
-| `InitNew` | [Main_Form.vb:444](src/Main_Form.vb#L444) |
-| `ProcessArgument` | [Main_Form.vb:737](src/Main_Form.vb#L737) |
-| `Form1_Load` *(`Handles MyBase.Load`)* | [Main_Form.vb:1894](src/Main_Form.vb#L1894) |
-| `Form1_FormClosing` *(`Handles MyBase.FormClosing`)* | [Main_Form.vb:2341](src/Main_Form.vb#L2341) |
+| `InitializeExtensionLists` | [Main_Form.vb:236](../../../src/Main_Form.vb#L236) |
+| `InitializeTooltips` | [Main_Form.vb:288](../../../src/Main_Form.vb#L288) |
+| `External_message` | [Main_Form.vb:395](../../../src/Main_Form.vb#L395) |
+| `SetWebBrowserCompatibilityMode` | [Main_Form.vb:428](../../../src/Main_Form.vb#L428) |
+| `InitNew` | [Main_Form.vb:444](../../../src/Main_Form.vb#L444) |
+| `ProcessArgument` | [Main_Form.vb:737](../../../src/Main_Form.vb#L737) |
+| `Form1_Load` *(`Handles MyBase.Load`)* | [Main_Form.vb:1894](../../../src/Main_Form.vb#L1894) |
+| `Form1_FormClosing` *(`Handles MyBase.FormClosing`)* | [Main_Form.vb:2341](../../../src/Main_Form.vb#L2341) |
 
 > `ProcessArgument` is the documented cross-instance entry point (`WM_COPYDATA`
 > forwarding from `Application_Events`). It is `Public` and called externally -
@@ -350,7 +350,7 @@ Startup/shutdown, init, and cross-instance argument intake.
 
 After all extractions, `Main_Form.vb` should hold the natural shell - the class
 header + `<ComVisible(True)>` attribute, the constant block
-([Main_Form.vb:34-66](src/Main_Form.vb#L34-L66)), field declarations, and the small
+([Main_Form.vb:34-66](../../../src/Main_Form.vb#L34-L66)), field declarations, and the small
 button/label click handlers not claimed by a concern above (e.g. `Button1_Click`,
 `Button2_Click`, `Button3_Click`, `ButI_Click`, `ChkTopMost_CheckedChanged`,
 `SortComboBox_SelectedIndexChanged`, `Choose_file`, `Jump_To_file_Number`,

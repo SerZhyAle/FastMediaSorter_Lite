@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Project identity: `RootNamespace = fmsl`, `AssemblyName = FastMediaSorter_LITE`, startup object `fmsl.My.MyApplication`
 - ILMerge (3.0.41) is referenced to bundle dependencies into the single output exe
 
-### "Сборка" vs "Релиз" - two distinct flows (see [BUILD_AND_RELEASE.md](BUILD_AND_RELEASE.md))
+### "Сборка" vs "Релиз" - two distinct flows (see [BUILD_AND_RELEASE.md](docs/guides/BUILD_AND_RELEASE.md))
 
 - **Сборка / build** = LOCAL only: `.\build.ps1` (MSBuild Rebuild + deploy the single-file exe to the user's work folders). Test by hand, then commit/push. **Never creates or pushes a `v*` tag.** Pushing to a branch is free - GitHub Actions does NOT run on branch pushes.
 - **Релиз / release** = GitHub build + winget + Microsoft Store: `.\tools\Release.ps1 -Push` (runs a free local check-build first, then creates and pushes the `vYY.M.D.HHmm` tag). The release `workflow` ([.github/workflows/release.yml](.github/workflows/release.yml)) is triggered **ONLY by pushing a `v*` tag** - that tag push is the single billable operation.
@@ -57,10 +57,10 @@ For a local release-style build, run:
 ```
 This mirrors the CI packaging flow and emits offline-ready artifacts in `dist/`.
 
-The version in the tag is authoritative for asset names but is independent of the build-time `UpdateVersion` stamp - keep them consistent. See [SPECIFICATION_GITHUB_STORE.md](SPECIFICATION_GITHUB_STORE.md) for the rationale behind shipping an EXE installer (GitHub-Store discoverability; a ZIP-only release is invisible to that marketplace).
+The version in the tag is authoritative for asset names but is independent of the build-time `UpdateVersion` stamp - keep them consistent. See [SPECIFICATION_GITHUB_STORE.md](docs/specifications/SPECIFICATION_GITHUB_STORE.md) for the rationale behind shipping an EXE installer (GitHub-Store discoverability; a ZIP-only release is invisible to that marketplace).
 
 ### Publishing to winget - read before touching the manifest
-**The winget manifest must point at the Inno `setup.exe` directly (`InstallerType: inno`) with NO declared dependencies.** This was learned the hard way (see [SPECIFICATION_WINGET_PUBLISHING.md](SPECIFICATION_WINGET_PUBLISHING.md)). Quick rules:
+**The winget manifest must point at the Inno `setup.exe` directly (`InstallerType: inno`) with NO declared dependencies.** This was learned the hard way (see [SPECIFICATION_WINGET_PUBLISHING.md](docs/specifications/SPECIFICATION_WINGET_PUBLISHING.md)). Quick rules:
 - **Never** point winget at `single-exe.zip` - Defender ML flags the self-extracting bootstrap as `Program:Script/Wacapew.A!ml` (persistent false positive). It's a GitHub-only convenience download.
 - **Don't** use the portable `windows-x64.zip` shape - the ~99 MB payload aborts the install with `0x80004004` after extraction.
 - **Don't** declare the `Microsoft.VCRedist.2015+.x64` dependency - it sends winget into a resolution loop and aborts with `0x8A150044`; the app installs fine without it (validation never launches the app).
@@ -68,8 +68,8 @@ The version in the tag is authoritative for asset names but is independent of th
 - The "Missing `NestedInstallerType` / fewer `Tags`" inconsistency note is a non-blocking `Validation-Guide`, not a failure.
 - Get the *real* failure reason from the build's `InstallationVerificationLogs` artifact, not the generic GitHub bot comments - the doc has a copy-paste snippet.
 
-### Publishing to the Microsoft Store (MSIX) - see [STORE_PUBLISHING.md](STORE_PUBLISHING.md)
-The Store path (Path A: MSIX) is **additive** - it does not change the GitHub release or winget flows. Full playbook + filled listing copy (description, features, runFullTrust justification, privacy text) is in [STORE_PUBLISHING.md](STORE_PUBLISHING.md); packaging detail in [msix/README.md](msix/README.md). Key facts:
+### Publishing to the Microsoft Store (MSIX) - see [STORE_PUBLISHING.md](docs/guides/STORE_PUBLISHING.md)
+The Store path (Path A: MSIX) is **additive** - it does not change the GitHub release or winget flows. Full playbook + filled listing copy (description, features, runFullTrust justification, privacy text) is in [STORE_PUBLISHING.md](docs/guides/STORE_PUBLISHING.md); packaging detail in [msix/README.md](msix/README.md). Key facts:
 - **No app code change is needed** - the app is already MSIX-safe: everything mutable goes to `%LOCALAPPDATA%\SZA\FastMediaSorter` (OCR downloads/cache via `OcrPaths`) or the registry, both writable inside the package container; bundled `tessdata` next to the exe is only ever read (the install dir is read-only under MSIX).
 - Build with [msix/build-msix.ps1](msix/build-msix.ps1): MSBuild Release → stage the **offline payload** (same `bin/Release` tree minus `*.pdb`/`*.xml`, run through [tools/Prepare-OcrOfflinePayload.ps1](tools/Prepare-OcrOfflinePayload.ps1)) → generate logos from [assets/icons/store-icon-256.png](assets/icons/store-icon-256.png) → fill manifest → `makeappx pack`. `-SelfSign` makes a sideload-testable build; **no `-SelfSign` for the Store** (Microsoft re-signs on certification - no paid cert needed).
 - [msix/AppxManifest.xml](msix/AppxManifest.xml) wraps the exe as a **full-trust** desktop app (`rescap:runFullTrust` keeps IE WebBrowser/LibVLC/GDI+/file-access/local-HTTP working) and declares image **file associations** (the manifest equivalent of the Inno per-user registry writes). Identity (`Name`/`Publisher`/`PublisherDisplayName`) is `__PLACEHOLDER__` filled at pack time from Partner Center (Product ▸ Product identity) via `-IdentityName`/`-Publisher`/`-PublisherDisplayName` - must match **exactly** or upload is rejected.
@@ -88,6 +88,7 @@ The Store path (Path A: MSIX) is **additive** - it does not change the GitHub re
 - **[Main_Form.PerspectiveBackground.vb](src/Main_Form.PerspectiveBackground.vb)** - Ambilight-like background fill (see below)
 - **[Main_Form.OcrOverlay.vb](src/Main_Form.OcrOverlay.vb)** / **[Main_Form.OcrTranslate.vb](src/Main_Form.OcrTranslate.vb)** - OCR + on-image translation overlay pipeline (see "OCR + On-Image Translation" below). `OcrOverlay.vb` also hosts `PaintInfoOverlay()` - the optional top-left HUD (file name + `N/total`) drawn in the PictureBox `Paint` handler when `Is_Show_Info_Overlay` is on (never baked into the bitmap; useful in full-screen where the status bar is hidden).
 - **[Main_Form.FileAssociation.vb](src/Main_Form.FileAssociation.vb)** - registers the app as default handler for image (`AssociateAllImageFormatsWithThisApp`) and video/audio (`AssociateAllVideoFormatsWithThisApp`) formats by writing per-user `HKCU\Software\Classes` (no admin rights), then `SHChangeNotify`
+- **[Main_Form.DragDrop.vb](src/Main_Form.DragDrop.vb)** - lets a media file be dropped onto the **media surfaces** (both picture boxes, the `panel_Media` container, the help label, the video WebBrowser and the LibVLC view), not just the form. `WireSurfaceDragDrop()` (called from `Form1_Load`) sets `AllowDrop` + the shared `Form1_DragEnter`/`Form1_DragDrop` handlers on each surface; the OLE drop registration does NOT bubble to the parent, so a drop over a child without its own registration shows the "no-drop" cursor - hence every surface is wired explicitly. The WebBrowser ActiveX host never raises managed drag events, so instead `AllowWebBrowserDrop = True` lets IE accept the file and we cancel its `Navigating` to the dropped `file://` URL and route the path through `ProcessArgument()`. `WireVlcSurfaceDragDrop()` wires the LibVLC view when it is lazily created. **UIPI**: `ChangeWindowMessageFilter` whitelists `WM_DROPFILES`/`WM_COPYDATA`/`WM_COPYGLOBALDATA` so a drop from a normal-IL Explorer is accepted even when the app runs elevated (e.g. launched from an admin file manager); no-op otherwise. Every path ends in `ProcessArgument()` - open the file, switch to its folder, start playback.
 - Other concern-specific partials: `Main_Form.MediaLoading.vb`, `.Lifecycle.vb`, `.FileScanning.vb`, `.KeyboardInput.vb`, `.MouseInput.vb`, `.Slideshow.vb`, `.GifPlayback.vb`, `.NativeMethods.vb`, `.ModernLayout.vb`, `.Localization.vb` - edit the file matching the concern.
 - Uses WinForms controls: `HqPictureBox` (the two media surfaces, see below), WebBrowser (for videos), Label, Button, Timer
 
@@ -137,9 +138,9 @@ The Store path (Path A: MSIX) is **additive** - it does not change the GitHub re
 **OCR / Translation components** (see "OCR + On-Image Translation" below):
 - **[Table_Form.Ocr.vb](src/Table_Form.Ocr.vb)** - the OCR/translate settings UI, now a tab of the Settings window (`Tab_Page_5`); see the Table_Form entry above. (Replaces the former standalone `OCR_Translate_Form`.)
 - **[OcrTranslateSettings.vb](src/OcrTranslateSettings.vb)** - persisted settings (provider, endpoint, model, languages, opacity, disk-cache, OCR model quality `fast`/`best`, OCR page mode); API keys are encrypted via [src/Security/DpapiSecrets.vb](src/Security/DpapiSecrets.vb) (Windows DPAPI). Source language is resolved to an ordered single-language **attempt list** (`OcrAttemptCodes`), not a combined `eng+rus+ukr` string.
-- **[OcrLanguageCatalog.vb](src/OcrLanguageCatalog.vb)** - language list + flag glyphs ([assets/flags/](assets/flags/))
-- **[src/Ocr/](src/Ocr/)** - `IOcrEngine`, `TesseractOcrEngine` (multi-pass Tesseract via `Pix.LoadFromMemory`: scores several language × page-segmentation × preprocess attempts and keeps the strongest; `fast` or `best`/`tessdata_best` models downloaded at runtime), `OcrBlockBuilder`, `OcrModels`
-- **[src/Translate/](src/Translate/)** - `ITranslator`, `OllamaTranslator` (default, local LLM), `LibreTranslateTranslator`, `OllamaManager`, `TranslationCache` (memory + disk), and the shared `TranslateHttp` module
+- **[OcrLanguageCatalog.vb](src/OcrLanguageCatalog.vb)** - language list + flag glyphs ([assets/flags/](assets/flags))
+- **[src/Ocr/](src/Ocr)** - `IOcrEngine`, `TesseractOcrEngine` (multi-pass Tesseract via `Pix.LoadFromMemory`: scores several language × page-segmentation × preprocess attempts and keeps the strongest; `fast` or `best`/`tessdata_best` models downloaded at runtime), `OcrBlockBuilder`, `OcrModels`
+- **[src/Translate/](src/Translate)** - `ITranslator`, `OllamaTranslator` (default, local LLM), `LibreTranslateTranslator`, `OllamaManager`, `TranslationCache` (memory + disk), and the shared `TranslateHttp` module
 
 ### Key Dependencies
 - **LibVLCSharp** (3.9.3) - Video codec fallback (LibVLC binaries included in release)
@@ -151,7 +152,7 @@ The Store path (Path A: MSIX) is **additive** - it does not change the GitHub re
 - **VideoLAN.LibVLC.Windows** (3.0.21) - Native LibVLC binaries bundled at build time
 
 ### Perspective Background Effect
-See [SPECIFICATION_BACKGROUND_EFFECT.md](SPECIFICATION_BACKGROUND_EFFECT.md) for the full algorithm. Summary:
+See [SPECIFICATION_BACKGROUND_EFFECT.md](docs/specifications/done/SPECIFICATION_BACKGROUND_EFFECT.md) for the full algorithm. Summary:
 - Fills "black bars" (pillarbox/letterbox) when image aspect ratio ≠ viewport aspect ratio
 - Two modes:
   - **Uniform**: Edge is solid color → fill with average color
@@ -160,7 +161,7 @@ See [SPECIFICATION_BACKGROUND_EFFECT.md](SPECIFICATION_BACKGROUND_EFFECT.md) for
 - Constants in Main_Form.vb (e.g., `percent_of_color_deviation = 4`, `step_size_while_color_Search = 100`)
 
 ### OCR + On-Image Translation
-See [DONE/SPECIFICATION_OCR_TRANSLATION_OVERLAY.md](DONE/SPECIFICATION_OCR_TRANSLATION_OVERLAY.md) for the full design. Summary:
+See [SPECIFICATION_OCR_TRANSLATION_OVERLAY.md](docs/specifications/done/SPECIFICATION_OCR_TRANSLATION_OVERLAY.md) for the full design. Summary:
 - **Hotkeys**: `T` runs OCR + translate (or toggles the overlay) when the feature is enabled; `Shift+T` toggles auto-OCR mode. When the feature is off, `T`/`Shift+R` keep their legacy rotate meaning. The **Перевод / Translate** toolbar button triggers the same pipeline.
 - **Pipeline** ([Main_Form.OcrTranslate.vb](src/Main_Form.OcrTranslate.vb), `RunOcrPipeline`): OCR the image → `OcrBlockBuilder` groups lines into blocks (and drops isolated tiny blocks that are texture noise) → translate all blocks in one batch → render the translated text as an overlay over each block ([Main_Form.OcrOverlay.vb](src/Main_Form.OcrOverlay.vb)). Overlay text is sized to the **original** text, not a tiny capped font: `FitFont` starts from the source block's median line height (`MedianBlockLineHeight × scale`) and only shrinks when a longer translation would overflow (bounds `MinOverlayFont = 8`, `MaxOverlayFont = 200` px), so headings stay big. Results are cached in memory and (optionally) on disk by `TranslationCache`, keyed on file path + write-time + engine + provider + languages - where the **engine** key folds in OCR model quality and page mode and the **provider** key folds in the Ollama model, so changing any of them invalidates cached results. **Empty (`No text found`) results are no longer cached**, so a bad first pass doesn't poison later runs; opening the settings dialog also clears the cache.
 - **OCR engine**: multi-pass Tesseract (`TesseractOcrEngine`), loading images via `Pix.LoadFromMemory`. Instead of one `PageSegMode.Auto` pass it runs several scored attempts - single-language passes (in `OcrAttemptCodes` order, e.g. `rus → ukr → eng` for `auto`) across page-segmentation modes and light preprocessing (grayscale / inverted), upscaling small images - and keeps the highest-scoring result. `fast` (`tessdata`) or `best` (`tessdata_best`) packs download on demand; the **OCR mode** setting can force a specific `PageSegMode` (auto/block/sparse/line/vertical).

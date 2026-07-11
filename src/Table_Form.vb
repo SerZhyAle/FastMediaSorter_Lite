@@ -285,6 +285,7 @@ Public Class Table_Form
         End If
 
         PrepareOcrTabForDisplay()
+        PrepareShareTabForDisplay()
 
         Dim SetOnTopS As String = GetSetting(App_name, Second_App_Name, "SetOnTop", "1")
         set_This_Form_Top_Most = SetOnTopS = "1"

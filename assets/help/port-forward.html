@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Port forwarding - FastMediaSorter</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --ink:#1b1f24; --muted:#5b636e; --line:#e2e6eb;
+    --accent:#2f6f4f; --accent-ink:#ffffff; --rule-bg:#eef6f1; --rule-line:#bfe0cd;
+    --warn-bg:#fff4e5; --warn-line:#f2c98a; --code:#eef0f3;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14171b; --card:#1c2127; --ink:#e6e9ee; --muted:#9aa4b0; --line:#2b323b;
+      --accent:#4fae7f; --accent-ink:#0c1512; --rule-bg:#16241d; --rule-line:#28503b;
+      --warn-bg:#2a2113; --warn-line:#5c4a1f; --code:#222831;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font:15px/1.55 "Segoe UI",system-ui,Arial,sans-serif;padding:clamp(16px,3vw,48px)}
+  .wrap{max-width:none;margin:0 auto}
+  header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+  h1{font-size:23px;margin:0}
+  h2{font-size:17px;margin:26px 0 8px}
+  .langs{display:flex;gap:6px}
+  .langs button{cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);
+    border-radius:8px;padding:6px 12px;font:600 13px "Segoe UI",system-ui,sans-serif}
+  .langs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
+  .cols{display:grid;grid-template-columns:1fr;gap:16px}
+  @media (min-width:900px){ .cols{grid-template-columns:1fr 1fr} }
+  .rule{background:var(--rule-bg);border:1px solid var(--rule-line);border-radius:12px;padding:16px 20px;margin:0}
+  .rule table{border-collapse:collapse;width:100%;margin-top:6px}
+  .rule td{padding:6px 8px;border-bottom:1px solid var(--rule-line);vertical-align:top}
+  .rule td:first-child{color:var(--muted);white-space:nowrap;width:1%;padding-right:18px}
+  .rule b, code{font-family:"Cascadia Code",Consolas,monospace}
+  code{background:var(--code);border-radius:6px;padding:1px 7px}
+  ol{padding-left:22px} ol li{margin:7px 0}
+  .muted{color:var(--muted)}
+  .warn{background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:12px;padding:14px 18px;margin:14px 0}
+  .tbl{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .tbl th,.tbl td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);font-size:14px}
+  .tbl th{background:var(--code);font-weight:600}
+  .tbl tr:last-child td{border-bottom:0}
+  .scroll{overflow-x:auto}
+  a{color:var(--accent)}
+  [data-lang]{display:none}
+  [data-lang].on{display:block}
+  footer{color:var(--muted);font-size:13px;margin-top:28px;border-top:1px solid var(--line);padding-top:14px}
+  footer a{margin-right:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>FastMediaSorter</h1>
+    <div class="langs">
+      <button data-set="en" aria-pressed="true">English</button>
+      <button data-set="ru" aria-pressed="false">Русский</button>
+      <button data-set="uk" aria-pressed="false">Українська</button>
+    </div>
+  </header>
+
+  <!-- Top row: the exact rule + the detected router (side by side on wide screens) -->
+  <div class="cols">
+    <div class="rule">
+      <strong data-i18n="ruleTitle">Create this port-forwarding rule in your router</strong>
+      <table>
+        <tr><td data-i18n="ruleExt">External port</td><td><b>__EXT_PORT__</b> <span class="muted">TCP</span></td></tr>
+        <tr><td data-i18n="ruleIp">Internal IP (this PC)</td><td><b>__LAN_IP__</b></td></tr>
+        <tr><td data-i18n="ruleInt">Internal port</td><td><b>__PORT__</b></td></tr>
+        <tr><td data-i18n="ruleProto">Protocol</td><td><b>TCP</b></td></tr>
+        <tr><td data-i18n="ruleRouter">Router admin page</td><td><a href="__ROUTER_URL__">__ROUTER_URL__</a></td></tr>
+      </table>
+    </div>
+    <div class="card" id="detected" style="display:none">
+      <div><span data-i18n="detectedLabel">Detected router</span>: <b id="routerModel">__ROUTER_MODEL__</b></div>
+      <p style="margin:10px 0 0"><a id="routerSearch" href="__ROUTER_SEARCH_URL__" data-i18n="searchLink">Search the web: how to forward a port on this router</a></p>
+      <p class="muted" style="margin:8px 0 0" data-i18n="detectedNote">The exact steps differ per model - the search above finds a guide for yours.</p>
+    </div>
+  </div>
+
+  <!-- ENGLISH -->
+  <section data-lang="en" class="on">
+    <div class="card">
+      <p class="muted">Router admin screens are almost always in English - the terms below are what you look for, whatever your router brand.</p>
+      <h2>Step by step</h2>
+      <ol>
+        <li>Open your router's admin page: <a href="__ROUTER_URL__">__ROUTER_URL__</a> in a browser. If it does not open, the address may be printed on a sticker under the router.</li>
+        <li>Sign in. The username/password are usually on that sticker (common defaults: <code>admin</code> / <code>admin</code>, or <code>admin</code> / <code>password</code>).</li>
+        <li>Find the section called <b>Port Forwarding</b> - it may also be named <b>Virtual Server</b>, <b>NAT Forwarding</b>, <b>NAT</b>, <b>Applications &amp; Gaming</b>, or <b>WAN &rarr; Virtual Server</b>.</li>
+        <li>Add a new rule with the values from the box above: external port <b>__EXT_PORT__</b>, internal IP <b>__LAN_IP__</b>, internal port <b>__PORT__</b>, protocol <b>TCP</b>. Give it any name (e.g. "FastMediaSorter").</li>
+        <li><b>Enable</b> the rule and click <b>Save</b> / <b>Apply</b>. Reboot the router if it asks.</li>
+        <li>Back in FastMediaSorter, re-scan the QR code (or save the .fmscfg again) on the phone. The external address is already in the code - it starts working once the rule is active.</li>
+      </ol>
+    </div>
+    <div class="warn">
+      <b>Not working?</b>
+      <ol>
+        <li><b>External IP changes:</b> most home providers rotate the public address. If remote access stops, open this window again to see the new address, or set up a free Dynamic DNS (DDNS) name in your router.</li>
+        <li><b>CGNAT:</b> if FastMediaSorter said your provider uses CGNAT, port forwarding cannot help - ask the provider for a public/"white" IP, or use the local network only.</li>
+        <li><b>Windows Firewall:</b> the first time sharing runs, allow it through the Windows Defender Firewall prompt (Private + Public). Otherwise incoming connections are blocked.</li>
+        <li><b>Double router:</b> if you have two routers (e.g. ISP box + your own), forward the port on <i>both</i>, or put your router in bridge mode.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- RUSSIAN -->
+  <section data-lang="ru">
+    <div class="card">
+      <p class="muted">Интерфейс роутера почти всегда на английском - ниже указано, какие пункты искать, независимо от марки роутера.</p>
+      <h2>Пошагово</h2>
+      <ol>
+        <li>Откройте страницу настроек роутера: <a href="__ROUTER_URL__">__ROUTER_URL__</a> в браузере. Если не открывается, адрес обычно есть на наклейке снизу роутера.</li>
+        <li>Войдите. Логин и пароль тоже обычно на наклейке (частые по умолчанию: <code>admin</code> / <code>admin</code> или <code>admin</code> / <code>password</code>).</li>
+        <li>Найдите раздел <b>Port Forwarding</b> (проброс портов). Он же может называться <b>Virtual Server</b>, <b>NAT Forwarding</b>, <b>NAT</b>, <b>Applications &amp; Gaming</b> или <b>WAN &rarr; Virtual Server</b>.</li>
+        <li>Добавьте новое правило со значениями из рамки выше: внешний порт <b>__EXT_PORT__</b>, внутренний IP <b>__LAN_IP__</b>, внутренний порт <b>__PORT__</b>, протокол <b>TCP</b>. Имя - любое (например, "FastMediaSorter").</li>
+        <li><b>Включите</b> правило и нажмите <b>Save</b> / <b>Apply</b> (Сохранить / Применить). Перезагрузите роутер, если он попросит.</li>
+        <li>Вернитесь в FastMediaSorter и заново отсканируйте QR-код (или сохраните .fmscfg) на телефоне. Внешний адрес уже в коде - он заработает, как только правило станет активным.</li>
+      </ol>
+    </div>
+    <div class="warn">
+      <b>Не работает?</b>
+      <ol>
+        <li><b>Внешний IP меняется:</b> у большинства домашних провайдеров публичный адрес непостоянный. Если доступ пропал - откройте это окно снова и посмотрите новый адрес, либо настройте бесплатный Dynamic DNS (DDNS) в роутере.</li>
+        <li><b>CGNAT:</b> если FastMediaSorter написал про CGNAT у провайдера - проброс портов не поможет. Попросите у провайдера публичный ("белый") IP или пользуйтесь только локальной сетью.</li>
+        <li><b>Брандмауэр Windows:</b> при первом запуске общего доступа разрешите его в окне брандмауэра Windows (Частная + Публичная сеть). Иначе входящие подключения блокируются.</li>
+        <li><b>Два роутера:</b> если роутеров два (например, коробка провайдера + ваш) - пробросьте порт на <i>обоих</i>, либо переведите свой роутер в режим моста (bridge).</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- UKRAINIAN -->
+  <section data-lang="uk">
+    <div class="card">
+      <p class="muted">Інтерфейс роутера майже завжди англійською - нижче вказано, які пункти шукати, незалежно від марки роутера.</p>
+      <h2>Покроково</h2>
+      <ol>
+        <li>Відкрийте сторінку налаштувань роутера: <a href="__ROUTER_URL__">__ROUTER_URL__</a> у браузері. Якщо не відкривається, адреса зазвичай є на наклейці знизу роутера.</li>
+        <li>Увійдіть. Логін і пароль теж зазвичай на наклейці (типові за замовчуванням: <code>admin</code> / <code>admin</code> або <code>admin</code> / <code>password</code>).</li>
+        <li>Знайдіть розділ <b>Port Forwarding</b> (проброс портів). Він також може називатися <b>Virtual Server</b>, <b>NAT Forwarding</b>, <b>NAT</b>, <b>Applications &amp; Gaming</b> або <b>WAN &rarr; Virtual Server</b>.</li>
+        <li>Додайте нове правило зі значеннями з рамки вище: зовнішній порт <b>__EXT_PORT__</b>, внутрішній IP <b>__LAN_IP__</b>, внутрішній порт <b>__PORT__</b>, протокол <b>TCP</b>. Назва - будь-яка (наприклад, "FastMediaSorter").</li>
+        <li><b>Увімкніть</b> правило та натисніть <b>Save</b> / <b>Apply</b> (Зберегти / Застосувати). Перезавантажте роутер, якщо він попросить.</li>
+        <li>Поверніться у FastMediaSorter і заново відскануйте QR-код (або збережіть .fmscfg) на телефоні. Зовнішня адреса вже у коді - вона запрацює, щойно правило стане активним.</li>
+      </ol>
+    </div>
+    <div class="warn">
+      <b>Не працює?</b>
+      <ol>
+        <li><b>Зовнішній IP змінюється:</b> у більшості домашніх провайдерів публічна адреса непостійна. Якщо доступ зник - відкрийте це вікно знову й подивіться нову адресу, або налаштуйте безкоштовний Dynamic DNS (DDNS) у роутері.</li>
+        <li><b>CGNAT:</b> якщо FastMediaSorter написав про CGNAT у провайдера - проброс портів не допоможе. Попросіть у провайдера публічну ("білу") IP або користуйтеся лише локальною мережею.</li>
+        <li><b>Брандмауер Windows:</b> під час першого запуску спільного доступу дозвольте його у вікні брандмауера Windows (Приватна + Публічна мережа). Інакше вхідні з'єднання блокуються.</li>
+        <li><b>Два роутери:</b> якщо роутерів два (наприклад, коробка провайдера + ваш) - пробросьте порт на <i>обох</i>, або переведіть свій роутер у режим мосту (bridge).</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Shared vendor table (language-neutral: brand link + English menu path) -->
+  <h2 data-i18n="vendorsTitle">Where it is on common routers - and manufacturer support</h2>
+  <p class="muted" data-i18n="vendorsNote">Per-model, step-by-step guides for almost every router: <a href="https://portforward.com/router.htm" target="_blank" rel="noopener">portforward.com</a>.</p>
+  <div class="scroll"><table class="tbl">
+    <tr><th data-i18n="colBrand">Brand (support)</th><th data-i18n="colPath">Menu path (English UI)</th></tr>
+    <tr><td><a href="https://www.tp-link.com/support/" target="_blank" rel="noopener">TP-Link</a></td><td>Advanced &rarr; NAT Forwarding &rarr; Virtual Servers &rarr; Add</td></tr>
+    <tr><td><a href="https://www.mercusys.com/support/" target="_blank" rel="noopener">Mercusys</a></td><td>Advanced &rarr; NAT Forwarding &rarr; Virtual Server</td></tr>
+    <tr><td><a href="https://www.asus.com/support/" target="_blank" rel="noopener">ASUS</a></td><td>WAN &rarr; Virtual Server / Port Forwarding &rarr; Add profile</td></tr>
+    <tr><td><a href="https://help.keenetic.com/" target="_blank" rel="noopener">Keenetic</a></td><td>Network Rules &rarr; Port Forwarding &rarr; Add rule</td></tr>
+    <tr><td><a href="https://support.dlink.com/" target="_blank" rel="noopener">D-Link</a></td><td>Features &rarr; Port Forwarding (or Advanced &rarr; Port Forwarding)</td></tr>
+    <tr><td><a href="https://www.netgear.com/support/" target="_blank" rel="noopener">NETGEAR</a></td><td>Advanced &rarr; Advanced Setup &rarr; Port Forwarding / Port Triggering</td></tr>
+    <tr><td><a href="https://consumer.huawei.com/en/support/" target="_blank" rel="noopener">Huawei</a></td><td>More Functions &rarr; Security Settings &rarr; Port Mapping</td></tr>
+    <tr><td><a href="https://www.mi.com/global/service/" target="_blank" rel="noopener">Xiaomi / Mi</a></td><td>Advanced &rarr; Port Forwarding &rarr; Add rule</td></tr>
+    <tr><td><a href="https://www.zyxel.com/support/" target="_blank" rel="noopener">Zyxel</a></td><td>Configuration &rarr; Network &rarr; NAT &rarr; Add</td></tr>
+    <tr><td><a href="https://www.tendacn.com/service/" target="_blank" rel="noopener">Tenda</a></td><td>Advanced Settings &rarr; Virtual Server</td></tr>
+    <tr><td><a href="https://www.linksys.com/support/" target="_blank" rel="noopener">Linksys</a></td><td>Security / Apps and Gaming &rarr; Single Port Forwarding</td></tr>
+    <tr><td><a href="https://help.mikrotik.com/" target="_blank" rel="noopener">MikroTik</a></td><td>IP &rarr; Firewall &rarr; NAT &rarr; Add (dstnat, to-addresses __LAN_IP__, to-ports __PORT__)</td></tr>
+  </table></div>
+
+  <footer>
+    <a href="__SITE_GUIDE_URL__" target="_blank" rel="noopener" data-i18n="siteGuide">Full guide: how to publish folders for Android</a>
+    <a id="androidApp" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/" target="_blank" rel="noopener" data-i18n="androidApp">FastMediaSorter for Android</a>
+    <a href="__SITE_URL__" target="_blank" rel="noopener">FastMediaSorter for Windows</a>
+    <a href="https://sza.od.ua" target="_blank" rel="noopener">SZA.od.ua</a>
+    <div style="margin-top:8px" data-i18n="footer">The QR code and .fmscfg file contain your password - do not share them publicly. Turn off internet access when you are done.</div>
+  </footer>
+</div>
+
+<script>
+  var I18N = {
+    en:{ruleTitle:"Create this port-forwarding rule in your router",ruleExt:"External port",ruleIp:"Internal IP (this PC)",ruleInt:"Internal port",ruleProto:"Protocol",ruleRouter:"Router admin page",detectedLabel:"Detected router",searchLink:"Search the web: how to forward a port on this router",detectedNote:"The exact steps differ per model - the search above finds a guide for yours.",vendorsTitle:"Where it is on common routers - and manufacturer support",vendorsNote:'Per-model, step-by-step guides for almost every router: <a href="https://portforward.com/router.htm" target="_blank" rel="noopener">portforward.com</a>.',colBrand:"Brand (support)",colPath:"Menu path (English UI)",siteGuide:"Full guide: how to publish folders for Android",androidApp:"FastMediaSorter for Android",footer:"The QR code and .fmscfg file contain your password - do not share them publicly. Turn off internet access when you are done."},
+    ru:{ruleTitle:"Создайте это правило проброса порта в роутере",ruleExt:"Внешний порт",ruleIp:"Внутренний IP (этот ПК)",ruleInt:"Внутренний порт",ruleProto:"Протокол",ruleRouter:"Страница роутера",detectedLabel:"Определён роутер",searchLink:"Найти в интернете: как пробросить порт на этом роутере",detectedNote:"Точные шаги отличаются у разных моделей - поиск выше найдёт инструкцию для вашей.",vendorsTitle:"Где это в популярных роутерах - и поддержка производителей",vendorsNote:'Пошаговые инструкции почти для каждого роутера: <a href="https://portforward.com/router.htm" target="_blank" rel="noopener">portforward.com</a>.',colBrand:"Марка (поддержка)",colPath:"Путь в меню (английский интерфейс)",siteGuide:"Полная инструкция: как публиковать папки для Android",androidApp:"FastMediaSorter для Android",footer:"QR-код и файл .fmscfg содержат ваш пароль - не публикуйте их. Выключайте доступ из интернета, когда закончили."},
+    uk:{ruleTitle:"Створіть це правило проброса порту в роутері",ruleExt:"Зовнішній порт",ruleIp:"Внутрішній IP (цей ПК)",ruleInt:"Внутрішній порт",ruleProto:"Протокол",ruleRouter:"Сторінка роутера",detectedLabel:"Визначено роутер",searchLink:"Знайти в інтернеті: як пробросити порт на цьому роутері",detectedNote:"Точні кроки відрізняються у різних моделей - пошук вище знайде інструкцію для вашої.",vendorsTitle:"Де це в популярних роутерах - і підтримка виробників",vendorsNote:'Покрокові інструкції майже для кожного роутера: <a href="https://portforward.com/router.htm" target="_blank" rel="noopener">portforward.com</a>.',colBrand:"Марка (підтримка)",colPath:"Шлях у меню (англійський інтерфейс)",siteGuide:"Повна інструкція: як публікувати папки для Android",androidApp:"FastMediaSorter для Android",footer:"QR-код і файл .fmscfg містять ваш пароль - не публікуйте їх. Вимикайте доступ з інтернету, коли закінчили."}
+  };
+  var ANDROID_SITE = { en:"https://serzhyale.github.io/FastMediaSorter_mob_v2/", ru:"https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html", uk:"https://serzhyale.github.io/FastMediaSorter_mob_v2/index-uk.html" };
+  (function showDetected(){
+    var m = document.getElementById('routerModel'); var box = document.getElementById('detected');
+    var txt = m ? m.textContent.trim() : '';
+    if (box && txt && txt.indexOf('__ROUTER_') !== 0) box.style.display = '';
+  })();
+  function setLang(code){
+    var langs=['en','ru','uk']; if(langs.indexOf(code)<0) code='en';
+    document.documentElement.lang=code;
+    document.querySelectorAll('section[data-lang]').forEach(function(s){ s.classList.toggle('on', s.getAttribute('data-lang')===code); });
+    document.querySelectorAll('.langs button').forEach(function(b){ b.setAttribute('aria-pressed', String(b.getAttribute('data-set')===code)); });
+    var dict=I18N[code]||I18N.en;
+    document.querySelectorAll('[data-i18n]').forEach(function(el){ var k=el.getAttribute('data-i18n'); if(dict[k]!=null){ if(k==='vendorsNote') el.innerHTML=dict[k]; else el.textContent=dict[k]; } });
+    var androidA=document.getElementById('androidApp'); if(androidA) androidA.href = ANDROID_SITE[code]||ANDROID_SITE.en;
+    document.title = (code==='ru'?'Проброс порта':(code==='uk'?'Проброс порту':'Port forwarding')) + ' - FastMediaSorter';
+  }
+  document.querySelectorAll('.langs button').forEach(function(b){ b.addEventListener('click', function(){ setLang(b.getAttribute('data-set')); }); });
+  setLang('__LANG__');
+</script>
+</body>
+</html>

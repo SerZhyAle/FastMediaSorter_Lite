@@ -144,6 +144,7 @@ Partial Public Class Main_Form
                 Me.Controls.Add(vlc_Video_View)
             End If
             vlc_Video_View.BringToFront()
+            WireVlcSurfaceDragDrop()
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0868: LibVLC initialized")
             Return True
         Catch ex As Exception

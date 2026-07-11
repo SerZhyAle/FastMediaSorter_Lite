@@ -24,7 +24,9 @@ FastMediaSorter LITE - це застосунок Windows Forms для швидк
 
 Хочете сортувати медіа, не встаючи з дивана? Спробуйте **FastMediaSorter v2** - потужний Android-додаток з підтримкою локальних файлів, мережевих дисків (SMB, SFTP, FTP) та хмарних сховищ (Google Drive, OneDrive, Dropbox):
 
-🔗 **[FastMediaSorter v2 для Android](https://github.com/SerZhyAle/FastMediaSorter_mob_v2)**
+🔗 **[Сайт FastMediaSorter для Android](https://serzhyale.github.io/FastMediaSorter_mob_v2/index-uk.html)** · **[GitHub](https://github.com/SerZhyAle/FastMediaSorter_mob_v2)**
+
+Встановити: **[Google Play](https://play.google.com/store/apps/details?id=com.sza.fastmediasorter)**, **[IzzyOnDroid](https://apt.izzysoft.de/fdroid/index/apk/com.sza.fastmediasorter)** або прямий **[APK зі сторінки релізів GitHub](https://github.com/SerZhyAle/FastMediaSorter_mob_v2/releases)**.
 
 Можливості включають:
 - Єдиний інтерфейс для всіх джерел файлів (локальні, мережеві, хмарні)

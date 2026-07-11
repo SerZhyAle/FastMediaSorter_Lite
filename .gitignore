@@ -5,6 +5,7 @@ bin/
 obj/
 dist/
 stage/
+payload/
 
 # Auto-generated version file
 src/My Project/VersionInfo.vb

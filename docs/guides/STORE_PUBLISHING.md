@@ -5,7 +5,7 @@ The concrete, app-specific playbook for this repo. Adapted from the reusable Cyr
 
 > **Already published?** This doc is the **first** publish. To ship a change to the live listing
 > (new screenshots, search terms, or a new build), follow
-> [SPECIFICATION_STORE_UPDATE.md](SPECIFICATION_STORE_UPDATE.md) instead.
+> [SPECIFICATION_STORE_UPDATE.md](../specifications/SPECIFICATION_STORE_UPDATE.md) instead.
 
 ## Why this path (Path A: MSIX)
 
@@ -15,8 +15,8 @@ The concrete, app-specific playbook for this repo. Adapted from the reusable Cyr
 - Store-signed + Store-distributed also defuses antivirus heuristic false positives better than anything else.
 
 This is **in addition to** the existing distribution channels (GitHub release EXE/ZIP and winget) -
-nothing here changes those. See [SPECIFICATION_WINGET_PUBLISHING.md](SPECIFICATION_WINGET_PUBLISHING.md)
-and [SPECIFICATION_GITHUB_STORE.md](SPECIFICATION_GITHUB_STORE.md) for those paths.
+nothing here changes those. See [SPECIFICATION_WINGET_PUBLISHING.md](../specifications/SPECIFICATION_WINGET_PUBLISHING.md)
+and [SPECIFICATION_GITHUB_STORE.md](../specifications/SPECIFICATION_GITHUB_STORE.md) for those paths.
 
 ---
 
@@ -42,12 +42,12 @@ visible *outside* the package, would need an MSIX-aware path. FastMediaSorter ha
 
 | File | Role |
 | --- | --- |
-| [msix/AppxManifest.xml](msix/AppxManifest.xml) | Manifest: Identity placeholders, `runFullTrust`, image file associations, visual assets. |
-| [msix/build-msix.ps1](msix/build-msix.ps1) | MSBuild → version remap → stage offline payload → generate logos → fill manifest → `makeappx pack` → optional self-sign. |
-| [msix/README.md](msix/README.md) | Build/submit instructions. |
-| [assets/icons/store-icon-256.png](assets/icons/store-icon-256.png) | 256px logo master the build script scales into Store tiles. |
-| [tools/store/make-screenshot.ps1](tools/store/make-screenshot.ps1) | Produces a ≥1366×768 Store screenshot. |
-| [docs/privacy.html](docs/privacy.html) | Privacy-policy page (host on GitHub Pages → URL for the listing). |
+| [msix/AppxManifest.xml](../../msix/AppxManifest.xml) | Manifest: Identity placeholders, `runFullTrust`, image file associations, visual assets. |
+| [msix/build-msix.ps1](../../msix/build-msix.ps1) | MSBuild → version remap → stage offline payload → generate logos → fill manifest → `makeappx pack` → optional self-sign. |
+| [msix/README.md](../../msix/README.md) | Build/submit instructions. |
+| [assets/icons/store-icon-256.png](../../assets/icons/store-icon-256.png) | 256px logo master the build script scales into Store tiles. |
+| [tools/store/make-screenshot.ps1](../../tools/store/make-screenshot.ps1) | Produces a ≥1366×768 Store screenshot. |
+| [docs/privacy.html](../privacy.html) | Privacy-policy page (host on GitHub Pages → URL for the listing). |
 
 **Version gotcha (important):** the Store requires a 4-part version with the **revision = 0**
 (`Major.Minor.Build.0`), each part ≤ 65535. `build-msix.ps1` remaps the app's `YY.M.D.HHmm` stamp to
@@ -101,7 +101,7 @@ Pitfalls hit in practice:
 
 | Item | Requirement / gotcha | This app |
 | --- | --- | --- |
-| **Privacy policy** | Required (app reads local files, and can make optional network calls) | [docs/privacy.html](docs/privacy.html) on GitHub Pages → URL |
+| **Privacy policy** | Required (app reads local files, and can make optional network calls) | [docs/privacy.html](../privacy.html) on GitHub Pages → URL |
 | **Screenshots** | At least 1, PNG **≥ 1366×768** | `tools/store/make-screenshot.ps1`, or use the real app screenshots in `docs/images/` |
 | **Store logos** | Optional (Store falls back to package logos) | package tiles are generated from `assets/icons/store-icon-256.png` |
 | **Description** | Required | template below |
@@ -212,5 +212,5 @@ Data sharing: none. Open source: https://github.com/SerZhyAle/FastMediaSorter_Li
 
 ---
 
-_See [msix/README.md](msix/README.md) for packaging detail and [docs/privacy.html](docs/privacy.html)
+_See [msix/README.md](../../msix/README.md) for packaging detail and [docs/privacy.html](../privacy.html)
 for the live privacy-policy page._

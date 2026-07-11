@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to publish your folders for Android - FastMediaSorter</title>
+<meta name="description" content="Share your PC folders with the FastMediaSorter Android app over your local network - or the internet. Step-by-step guide.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html">
+<style>
+  :root{
+    --bg:#080b11; --card:rgba(13,20,35,.55); --card2:rgba(17,27,49,.6);
+    --fg:#f3f4f6; --muted:#9ca3af; --line:rgba(255,255,255,.09);
+    --acc:#818cf8; --acc2:#c084fc; --code:#05080f; --pill:rgba(99,102,241,.12);
+    --grad:linear-gradient(135deg,#6366f1 0%,#a855f7 100%);
+    --warn-bg:rgba(90,74,31,.35); --warn-line:rgba(242,201,138,.4);
+  }
+  @media (prefers-color-scheme:light){
+    :root{ --bg:#eef1f7; --card:rgba(255,255,255,.72); --card2:rgba(255,255,255,.85);
+      --fg:#1b2230; --muted:#52607a; --line:rgba(20,30,60,.12); --acc:#5b54e6; --acc2:#8b3fd8;
+      --code:#0e1117; --pill:rgba(99,102,241,.10); --warn-bg:#fff4e5; --warn-line:#f2c98a; }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--fg);font:16px/1.62 'Plus Jakarta Sans',-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background-image:radial-gradient(60vw 60vw at 85% -10%,rgba(168,85,247,.14),transparent 60%),radial-gradient(50vw 50vw at -10% 10%,rgba(99,102,241,.14),transparent 60%);
+    background-attachment:fixed;}
+  .wrap{max-width:1080px;margin:0 auto;padding:clamp(18px,3.5vw,44px)}
+  header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .brand{font-weight:800;font-size:20px;letter-spacing:.2px}
+  .brand a{color:var(--fg);text-decoration:none}
+  .langs{display:flex;gap:6px}
+  .langs button{cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--fg);
+    border-radius:9px;padding:7px 13px;font:600 13px inherit;backdrop-filter:blur(10px)}
+  .langs button[aria-pressed="true"]{background:var(--grad);color:#fff;border-color:transparent}
+  h1{font-size:clamp(26px,4vw,38px);line-height:1.15;margin:18px 0 6px;
+     background:linear-gradient(135deg,var(--fg) 30%,var(--acc) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  h2{font-size:20px;margin:30px 0 10px}
+  .lead{color:var(--muted);font-size:18px;margin:0 0 8px;max-width:70ch}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:16px 0;backdrop-filter:blur(14px)}
+  .steps{counter-reset:s;list-style:none;padding:0;margin:0}
+  .steps li{position:relative;padding:12px 0 12px 46px;border-bottom:1px solid var(--line)}
+  .steps li:last-child{border-bottom:0}
+  .steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:12px;width:30px;height:30px;
+    display:grid;place-items:center;border-radius:50%;background:var(--grad);color:#fff;font-weight:700;font-size:14px}
+  .grid{display:grid;grid-template-columns:1fr;gap:16px}
+  @media (min-width:820px){ .grid{grid-template-columns:1fr 1fr} }
+  code{background:var(--pill);border-radius:6px;padding:.08em .45em;font-family:"Cascadia Code",Consolas,monospace;font-size:.9em}
+  .pill{display:inline-block;background:var(--pill);border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:13px;color:var(--muted);margin:0 6px 6px 0}
+  .warn{background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:14px;padding:14px 18px}
+  a{color:var(--acc)}
+  ul{padding-left:20px} li{margin:6px 0}
+  footer{margin-top:34px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:14px}
+  footer a{margin-right:16px}
+  [data-l]{display:none}
+  html[data-lang="en"] [data-l="en"],html[data-lang="ru"] [data-l="ru"],html[data-lang="uk"] [data-l="uk"]{display:revert}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><a href="./">FastMediaSorter <span style="opacity:.6">LITE</span></a></div>
+    <div class="langs">
+      <button data-set="en" aria-pressed="true">English</button>
+      <button data-set="ru" aria-pressed="false">Русский</button>
+      <button data-set="uk" aria-pressed="false">Українська</button>
+    </div>
+  </header>
+
+  <h1>
+    <span data-l="en">How to publish your folders for Android</span>
+    <span data-l="ru">Как публиковать свои папки для Android</span>
+    <span data-l="uk">Як публікувати свої папки для Android</span>
+  </h1>
+  <p class="lead">
+    <span data-l="en">Share folders from this PC with the FastMediaSorter app on your Android phone - over your home network, or over the internet. No cloud, no accounts: the phone connects straight to your PC over an encrypted SFTP connection.</span>
+    <span data-l="ru">Делитесь папками этого ПК с приложением FastMediaSorter на телефоне Android - по домашней сети или через интернет. Без облака и аккаунтов: телефон подключается прямо к вашему ПК по зашифрованному соединению SFTP.</span>
+    <span data-l="uk">Діліться папками цього ПК з застосунком FastMediaSorter на телефоні Android - домашньою мережею або через інтернет. Без хмари й акаунтів: телефон підключається прямо до вашого ПК зашифрованим з'єднанням SFTP.</span>
+  </p>
+
+  <div>
+    <span class="pill" data-l="en">Windows PC + Android phone</span><span class="pill" data-l="ru">ПК Windows + телефон Android</span><span class="pill" data-l="uk">ПК Windows + телефон Android</span>
+    <span class="pill" data-l="en">Same Wi-Fi = instant</span><span class="pill" data-l="ru">Одна Wi-Fi = сразу</span><span class="pill" data-l="uk">Одна Wi-Fi = одразу</span>
+    <span class="pill" data-l="en">Read-only, private</span><span class="pill" data-l="ru">Только чтение, приватно</span><span class="pill" data-l="uk">Лише читання, приватно</span>
+  </div>
+
+  <!-- Android app CTA -->
+  <div class="card" style="display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between">
+    <div>
+      <b>📱 <span data-l="en">Need the phone app?</span><span data-l="ru">Нужно приложение для телефона?</span><span data-l="uk">Потрібен застосунок для телефона?</span></b>
+      <span class="muted">
+        <span data-l="en">FastMediaSorter for Android is a free viewer/sorter that imports these shares.</span>
+        <span data-l="ru">FastMediaSorter для Android - бесплатный просмотрщик/сортировщик, который импортирует эти папки.</span>
+        <span data-l="uk">FastMediaSorter для Android - безкоштовний переглядач/сортувальник, що імпортує ці папки.</span>
+      </span>
+    </div>
+    <div>
+      <a class="pill" style="color:var(--acc)" data-l="en" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/" target="_blank" rel="noopener">FastMediaSorter for Android →</a>
+      <a class="pill" style="color:var(--acc)" data-l="ru" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html" target="_blank" rel="noopener">FastMediaSorter для Android →</a>
+      <a class="pill" style="color:var(--acc)" data-l="uk" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-uk.html" target="_blank" rel="noopener">FastMediaSorter для Android →</a>
+      <a class="pill" href="https://play.google.com/store/apps/details?id=com.sza.fastmediasorter" target="_blank" rel="noopener">Google Play</a>
+    </div>
+  </div>
+
+  <!-- STEPS -->
+  <h2><span data-l="en">Step by step</span><span data-l="ru">Пошагово</span><span data-l="uk">Покроково</span></h2>
+  <div class="card">
+    <ol class="steps">
+      <li>
+        <span data-l="en">In FastMediaSorter, click <b>Share</b> on the toolbar (or press <code>Shift+S</code>, or right-click the folder box). You can also open <b>Settings (F2) &rarr; Share</b>.</span>
+        <span data-l="ru">В FastMediaSorter нажмите <b>Поделиться</b> на панели (или клавиши <code>Shift+S</code>, или правый клик по строке каталога). Также можно открыть <b>Настройки (F2) &rarr; Поделиться</b>.</span>
+        <span data-l="uk">У FastMediaSorter натисніть <b>Поділитися</b> на панелі (або клавіші <code>Shift+S</code>, або правий клік по рядку каталогу). Також можна відкрити <b>Налаштування (F2) &rarr; Поділитися</b>.</span>
+      </li>
+      <li>
+        <span data-l="en">Add the folders to share (the current folder is offered first). Tick the ones you want visible on the phone.</span>
+        <span data-l="ru">Добавьте папки для общего доступа (текущая предлагается первой). Отметьте галочками те, что должны быть видны на телефоне.</span>
+        <span data-l="uk">Додайте папки для спільного доступу (поточна пропонується першою). Позначте галочками ті, що мають бути видимі на телефоні.</span>
+      </li>
+      <li>
+        <span data-l="en">Press <b>Start sharing</b>. FastMediaSorter shows the PC's address, a <b>QR code</b> and a <b>Save .fmscfg</b> button.</span>
+        <span data-l="ru">Нажмите <b>Начать общий доступ</b>. FastMediaSorter покажет адрес ПК, <b>QR-код</b> и кнопку <b>Сохранить .fmscfg</b>.</span>
+        <span data-l="uk">Натисніть <b>Почати спільний доступ</b>. FastMediaSorter покаже адресу ПК, <b>QR-код</b> і кнопку <b>Зберегти .fmscfg</b>.</span>
+      </li>
+      <li>
+        <span data-l="en">On the phone, open FastMediaSorter &rarr; <b>Add resource</b> &rarr; <b>SFTP/FTP</b> &rarr; <b>Import from companion</b>, then scan the QR code (or open the saved <code>.fmscfg</code> file).</span>
+        <span data-l="ru">На телефоне откройте FastMediaSorter &rarr; <b>Добавить ресурс</b> &rarr; <b>SFTP/FTP</b> &rarr; <b>Импорт из компаньона</b>, затем отсканируйте QR-код (или откройте сохранённый файл <code>.fmscfg</code>).</span>
+        <span data-l="uk">На телефоні відкрийте FastMediaSorter &rarr; <b>Додати ресурс</b> &rarr; <b>SFTP/FTP</b> &rarr; <b>Імпорт із компаньйона</b>, потім відскануйте QR-код (або відкрийте збережений файл <code>.fmscfg</code>).</span>
+      </li>
+      <li>
+        <span data-l="en">Done - the shared folders open on the phone. Sharing keeps running even after you close FastMediaSorter.</span>
+        <span data-l="ru">Готово - общие папки открываются на телефоне. Доступ продолжает работать, даже когда FastMediaSorter закрыт.</span>
+        <span data-l="uk">Готово - спільні папки відкриваються на телефоні. Доступ працює далі, навіть коли FastMediaSorter закрито.</span>
+      </li>
+    </ol>
+  </div>
+
+  <!-- LAN vs INTERNET -->
+  <h2><span data-l="en">Local network vs internet</span><span data-l="ru">Локальная сеть или интернет</span><span data-l="uk">Локальна мережа чи інтернет</span></h2>
+  <div class="grid">
+    <div class="card">
+      <h3 style="margin-top:0">🏠 <span data-l="en">Local network</span><span data-l="ru">Локальная сеть</span><span data-l="uk">Локальна мережа</span></h3>
+      <p><span data-l="en">When the phone is on the same Wi-Fi as the PC, it just works - nothing to configure. This is the default and the most private option.</span>
+         <span data-l="ru">Когда телефон в той же Wi-Fi, что и ПК, всё работает сразу - настраивать нечего. Это вариант по умолчанию и самый приватный.</span>
+         <span data-l="uk">Коли телефон у тій самій Wi-Fi, що й ПК, усе працює одразу - налаштовувати нічого. Це варіант за замовчуванням і найприватніший.</span></p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">🌍 <span data-l="en">Internet</span><span data-l="ru">Интернет</span><span data-l="uk">Інтернет</span></h3>
+      <p><span data-l="en">To reach the folders when away from home, turn on <b>Open internet access</b>. FastMediaSorter tries to open the port automatically (UPnP); if your router does not allow that, forward one port manually.</span>
+         <span data-l="ru">Чтобы попасть к папкам вне дома, включите <b>Открыть доступ из интернета</b>. FastMediaSorter попробует открыть порт автоматически (UPnP); если роутер не разрешает - пробросьте один порт вручную.</span>
+         <span data-l="uk">Щоб потрапити до папок поза домом, увімкніть <b>Відкрити доступ з інтернету</b>. FastMediaSorter спробує відкрити порт автоматично (UPnP); якщо роутер не дозволяє - пробросьте один порт вручну.</span></p>
+      <p style="margin-bottom:0"><span data-l="en">Per-model, step-by-step port-forwarding guides: </span><span data-l="ru">Пошаговые инструкции проброса портов по моделям: </span><span data-l="uk">Покрокові інструкції проброса портів за моделями: </span>
+        <a href="https://portforward.com/router.htm" target="_blank" rel="noopener">portforward.com</a>.</p>
+    </div>
+  </div>
+  <p class="lead" style="font-size:15px">
+    <span data-l="en">Manufacturer support:</span><span data-l="ru">Поддержка производителей:</span><span data-l="uk">Підтримка виробників:</span>
+    <a href="https://www.tp-link.com/support/" target="_blank" rel="noopener">TP-Link</a> ·
+    <a href="https://www.asus.com/support/" target="_blank" rel="noopener">ASUS</a> ·
+    <a href="https://help.keenetic.com/" target="_blank" rel="noopener">Keenetic</a> ·
+    <a href="https://support.dlink.com/" target="_blank" rel="noopener">D-Link</a> ·
+    <a href="https://www.netgear.com/support/" target="_blank" rel="noopener">NETGEAR</a> ·
+    <a href="https://consumer.huawei.com/en/support/" target="_blank" rel="noopener">Huawei</a> ·
+    <a href="https://www.mi.com/global/service/" target="_blank" rel="noopener">Xiaomi</a> ·
+    <a href="https://help.mikrotik.com/" target="_blank" rel="noopener">MikroTik</a>
+  </p>
+
+  <!-- SECURITY -->
+  <h2><span data-l="en">Keep it safe</span><span data-l="ru">Безопасность</span><span data-l="uk">Безпека</span></h2>
+  <div class="warn">
+    <ul style="margin:0">
+      <li><span data-l="en">The QR code and the <code>.fmscfg</code> file contain the auto-generated password. Treat them as secrets - do not post them publicly.</span>
+          <span data-l="ru">QR-код и файл <code>.fmscfg</code> содержат автоматически созданный пароль. Считайте их секретом - не публикуйте.</span>
+          <span data-l="uk">QR-код і файл <code>.fmscfg</code> містять автоматично створений пароль. Вважайте їх секретом - не публікуйте.</span></li>
+      <li><span data-l="en">Turn off internet access when you no longer need it.</span>
+          <span data-l="ru">Выключайте доступ из интернета, когда он больше не нужен.</span>
+          <span data-l="uk">Вимикайте доступ з інтернету, коли він більше не потрібен.</span></li>
+      <li><span data-l="en">The connection is encrypted and the phone pins your PC's key on first use - a later "key changed" warning is meaningful.</span>
+          <span data-l="ru">Соединение шифруется, а телефон запоминает ключ вашего ПК при первом подключении - позднее предупреждение "ключ изменился" важно.</span>
+          <span data-l="uk">З'єднання шифрується, а телефон запам'ятовує ключ вашого ПК під час першого підключення - пізніше попередження "ключ змінився" важливе.</span></li>
+    </ul>
+  </div>
+
+  <!-- TROUBLESHOOT -->
+  <h2><span data-l="en">If the phone can't connect</span><span data-l="ru">Если телефон не подключается</span><span data-l="uk">Якщо телефон не підключається</span></h2>
+  <div class="card">
+    <ul style="margin:0">
+      <li><span data-l="en"><b>Same network?</b> The LAN path only works when the phone is on the same Wi-Fi as the PC.</span>
+          <span data-l="ru"><b>Одна сеть?</b> Локальный путь работает только когда телефон в той же Wi-Fi, что и ПК.</span>
+          <span data-l="uk"><b>Одна мережа?</b> Локальний шлях працює лише коли телефон у тій самій Wi-Fi, що й ПК.</span></li>
+      <li><span data-l="en"><b>Firewall:</b> allow FastMediaSorter through the Windows Defender Firewall prompt the first time.</span>
+          <span data-l="ru"><b>Брандмауэр:</b> при первом запуске разрешите FastMediaSorter в окне брандмауэра Windows.</span>
+          <span data-l="uk"><b>Брандмауер:</b> під час першого запуску дозвольте FastMediaSorter у вікні брандмауера Windows.</span></li>
+      <li><span data-l="en"><b>CGNAT:</b> some providers share one public address between many customers - port forwarding cannot help; use the local network, or ask for a public "white" IP.</span>
+          <span data-l="ru"><b>CGNAT:</b> некоторые провайдеры делят один публичный адрес между многими - проброс портов не поможет; пользуйтесь локальной сетью или попросите публичный "белый" IP.</span>
+          <span data-l="uk"><b>CGNAT:</b> деякі провайдери ділять одну публічну адресу між багатьма - проброс портів не допоможе; користуйтеся локальною мережею або попросіть публічну "білу" IP.</span></li>
+      <li><span data-l="en"><b>IP changed:</b> home IPs rotate - reopen the share window to see the current address, or set up Dynamic DNS on the router.</span>
+          <span data-l="ru"><b>IP сменился:</b> домашние адреса меняются - откройте окно общего доступа снова, чтобы увидеть текущий адрес, или настройте Dynamic DNS на роутере.</span>
+          <span data-l="uk"><b>IP змінився:</b> домашні адреси змінюються - відкрийте вікно спільного доступу знову, щоб побачити поточну адресу, або налаштуйте Dynamic DNS на роутері.</span></li>
+    </ul>
+  </div>
+
+  <footer>
+    <a href="./">FastMediaSorter LITE</a>
+    <a data-l="en" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/" target="_blank" rel="noopener">FastMediaSorter for Android</a>
+    <a data-l="ru" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html" target="_blank" rel="noopener">FastMediaSorter для Android</a>
+    <a data-l="uk" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-uk.html" target="_blank" rel="noopener">FastMediaSorter для Android</a>
+    <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://sza.od.ua" target="_blank" rel="noopener">SZA.od.ua</a>
+    <div style="margin-top:8px">© FastMediaSorter LITE - SZA</div>
+  </footer>
+</div>
+
+<script>
+  function setLang(code){
+    var langs=['en','ru','uk']; if(langs.indexOf(code)<0) code='en';
+    document.documentElement.setAttribute('data-lang', code);
+    document.documentElement.lang = code;
+    document.querySelectorAll('.langs button').forEach(function(b){ b.setAttribute('aria-pressed', String(b.getAttribute('data-set')===code)); });
+    try{ localStorage.setItem('fms_lang', code); }catch(e){}
+  }
+  document.querySelectorAll('.langs button').forEach(function(b){ b.addEventListener('click', function(){ setLang(b.getAttribute('data-set')); }); });
+  var saved='en'; try{ saved=localStorage.getItem('fms_lang')||(navigator.language||'en').slice(0,2); }catch(e){}
+  setLang(['en','ru','uk'].indexOf(saved)>=0?saved:'en');
+</script>
+</body>
+</html>

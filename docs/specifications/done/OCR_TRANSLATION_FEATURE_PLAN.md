@@ -68,12 +68,12 @@ All references verified against the working tree.
 ### 3.1 Project facts that constrain the design
 
 - **.NET Framework 4.8**, `AnyCPU`, `WinExe`, `RootNamespace = fmsl`
-  ([FastMediaSorter.vbproj:15](src/FastMediaSorter.vbproj#L15)).
+  ([FastMediaSorter.vbproj:15](../../../src/FastMediaSorter.vbproj#L15)).
 - **`Option Strict On` / `Explicit On` / `Infer On`**, and a set of warnings are treated as
-  **errors** ([FastMediaSorter.vbproj:55](src/FastMediaSorter.vbproj#L55)) - new code must be
+  **errors** ([FastMediaSorter.vbproj:55](../../../src/FastMediaSorter.vbproj#L55)) - new code must be
   fully typed, no implicit conversions, no unused-return paths.
 - **ILMerge bundles everything into a single exe**
-  ([FastMediaSorter.vbproj:3](src/FastMediaSorter.vbproj#L3)). ⚠️ **ILMerge only merges
+  ([FastMediaSorter.vbproj:3](../../../src/FastMediaSorter.vbproj#L3)). ⚠️ **ILMerge only merges
   *managed* assemblies.** Engines with **native** DLLs (Tesseract+Leptonica, PaddleOCR) need
   their `.dll`s copied next to the exe and excluded from merge. **Windows.Media.Ocr ships no
   DLLs at all** (it lives in the OS) → ILMerge-clean. This is a major point in its favour.
@@ -86,18 +86,18 @@ All references verified against the working tree.
 
 | Concern | Location | Use |
 |---|---|---|
-| Image display | `Picture_Box_1` / `Picture_Box_2`, **`SizeMode = Zoom`** ([Main_Form.Designer.vb](src/Main_Form.Designer.vb)) | Dual-buffered display. Overlay must follow whichever box is currently visible. |
-| Image load | `LoadImageWithStream()` ([FileManager.vb:9](src/FileManager.vb#L9)) | Returns `Tuple(Of Image, MemoryStream)`. The `Image` is our OCR input. |
-| Navigation / "show file" | `ReadShowMediaFile(read_Mode_Type As String)` ([Main_Form.vb](src/Main_Form.vb)) modes `ReadNextFile`/`ReadPrevFile`/`ReadFolderAndFile`/`InSlideShow` | Fired on every nav. **Auto-OCR debounces off this.** |
-| Image actually assigned | `UpdateCurrentFileAndDisplay()` ([Main_Form.vb](src/Main_Form.vb)) | After the new `Image` is assigned to the visible PictureBox → enqueue OCR job here. |
-| Current state | `Current_File_Name`, `Current_Image_Path` ([Common_Module.vb:13-14](src/Common_Module.vb#L13)) | Cache key + "is this still the current image?" guard. |
-| Image extensions | `Image_File_Extensions` ([Main_Form.vb](src/Main_Form.vb)) | Only run OCR for these (skip video). |
-| **Coordinate mapping** | `GetZoomedImageRectangle(srcW, srcH, tgtW, tgtH)` ([Main_Form.PerspectiveBackground.vb:133](src/Main_Form.PerspectiveBackground.vb#L133)) | **Exact math we need** to map image-pixel boxes → on-screen control rect. Currently `Private`; promote/duplicate for overlay use. |
-| Edge-color sampling | `GetTrimmedAverageColor(...)` & edge sampling ([Main_Form.PerspectiveBackground.vb](src/Main_Form.PerspectiveBackground.vb)) | Reuse to pick a box fill / contrast color for overlay (and later, inpaint). |
-| Background work | `BackgroundWorker` (`BgWorker_DoWork` / `RunWorkerCompleted`) + `InvokeRequired` pattern ([Main_Form.vb](src/Main_Form.vb)) | Model for the OCR/translate worker. `System.Threading.Tasks` is already imported. |
-| Settings persistence | `GetSetting/SaveSetting(App_name, Second_App_Name, key, default)` → registry `HKCU\Software\VB and VBA Program Settings\SZA\FastMediaSorter` ([Common_Module.vb:7-8](src/Common_Module.vb#L7)) | Add OCR/translation keys here; load in `Main_Form_Load`, save in `Form1_FormClosing`. |
+| Image display | `Picture_Box_1` / `Picture_Box_2`, **`SizeMode = Zoom`** ([Main_Form.Designer.vb](../../../src/Main_Form.Designer.vb)) | Dual-buffered display. Overlay must follow whichever box is currently visible. |
+| Image load | `LoadImageWithStream()` ([FileManager.vb:9](../../../src/FileManager.vb#L9)) | Returns `Tuple(Of Image, MemoryStream)`. The `Image` is our OCR input. |
+| Navigation / "show file" | `ReadShowMediaFile(read_Mode_Type As String)` ([Main_Form.vb](../../../src/Main_Form.vb)) modes `ReadNextFile`/`ReadPrevFile`/`ReadFolderAndFile`/`InSlideShow` | Fired on every nav. **Auto-OCR debounces off this.** |
+| Image actually assigned | `UpdateCurrentFileAndDisplay()` ([Main_Form.vb](../../../src/Main_Form.vb)) | After the new `Image` is assigned to the visible PictureBox → enqueue OCR job here. |
+| Current state | `Current_File_Name`, `Current_Image_Path` ([Common_Module.vb:13-14](../../../src/Common_Module.vb#L13)) | Cache key + "is this still the current image?" guard. |
+| Image extensions | `Image_File_Extensions` ([Main_Form.vb](../../../src/Main_Form.vb)) | Only run OCR for these (skip video). |
+| **Coordinate mapping** | `GetZoomedImageRectangle(srcW, srcH, tgtW, tgtH)` ([Main_Form.PerspectiveBackground.vb:133](../../../src/Main_Form.PerspectiveBackground.vb#L133)) | **Exact math we need** to map image-pixel boxes → on-screen control rect. Currently `Private`; promote/duplicate for overlay use. |
+| Edge-color sampling | `GetTrimmedAverageColor(...)` & edge sampling ([Main_Form.PerspectiveBackground.vb](../../../src/Main_Form.PerspectiveBackground.vb)) | Reuse to pick a box fill / contrast color for overlay (and later, inpaint). |
+| Background work | `BackgroundWorker` (`BgWorker_DoWork` / `RunWorkerCompleted`) + `InvokeRequired` pattern ([Main_Form.vb](../../../src/Main_Form.vb)) | Model for the OCR/translate worker. `System.Threading.Tasks` is already imported. |
+| Settings persistence | `GetSetting/SaveSetting(App_name, Second_App_Name, key, default)` → registry `HKCU\Software\VB and VBA Program Settings\SZA\FastMediaSorter` ([Common_Module.vb:7-8](../../../src/Common_Module.vb#L7)) | Add OCR/translation keys here; load in `Main_Form_Load`, save in `Form1_FormClosing`. |
 | Global flags | `Common_Module.vb` (`Is_Russian_Language`, `Is_Pespective`, `Form_Color_Scheme`, …) | Add OCR/translation flags alongside. |
-| Buttons + hotkeys | `KeybUse()` `Select Case e.KeyCode` ([Main_Form.vb](src/Main_Form.vb)); modern toolbar in `Main_Form.ModernLayout.vb` | Add an OCR toggle button + a hotkey (proposed **`T`** = translate, **`Shift+T`** = toggle auto). |
+| Buttons + hotkeys | `KeybUse()` `Select Case e.KeyCode` ([Main_Form.vb](../../../src/Main_Form.vb)); modern toolbar in `Main_Form.ModernLayout.vb` | Add an OCR toggle button + a hotkey (proposed **`T`** = translate, **`Shift+T`** = toggle auto). |
 
 ---
 
@@ -240,7 +240,7 @@ End Class
 
 `PictureBox.SizeMode = Zoom` letterboxes the image. To place an image-pixel box on screen,
 reuse the exact logic from
-[Main_Form.PerspectiveBackground.vb:133](src/Main_Form.PerspectiveBackground.vb#L133):
+[Main_Form.PerspectiveBackground.vb:133](../../../src/Main_Form.PerspectiveBackground.vb#L133):
 
 ```vb
 ' scale + offset that Zoom applies:

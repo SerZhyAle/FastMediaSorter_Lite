@@ -57,6 +57,11 @@ Partial Public Class Main_Form
                     ' Toggle OCR auto-mode (enables the feature if it was off).
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1616: Shift+T toggle auto OCR")
                     If ocr_Settings IsNot Nothing Then ToggleOcrAutoMode()
+                Case Keys.S
+                    ' Share the current folder with an Android phone (S = slideshow,
+                    ' Shift+S = Share).
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1617: Shift+S share folder")
+                    OpenShareWizard()
             End Select
         Else
             Select Case e.KeyCode
