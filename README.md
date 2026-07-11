@@ -12,6 +12,7 @@ Fast Media Sorter for Windows (formerly FastMediaSorter LITE - it is still publi
 - Optional on-image overlay with the file name and position (handy in full-screen)
 - Configurable slideshow interval
 - Register the app as the default image viewer and/or video player (per-user, no admin rituals)
+- Android Folder Share: turn this PC into an SFTP server for your own media and file folders and open them from the Android app - over your home LAN or across the internet, paired by scanning a QR code (a built-in copilot for the mobile version)
 - OCR + on-image translation overlay (local Ollama / LibreTranslate) - for pictures that insist on speaking another language
 - Customizable keyboard shortcuts, because reaching for the mouse is so last decade
 - Multi-language support (English/Russian; first run follows the Windows display language)
@@ -34,6 +35,8 @@ Features include:
 - Auto-translation with OCR support
 - Favorites system and PIN protection
 - Advanced gestures and keyboard navigation
+
+**Desktop as copilot:** Fast Media Sorter for Windows can act as the mobile app's server. Its **Android Folder Share** feature runs a built-in SFTP server for your own media and file folders, so the Android app browses this PC directly - on your home network or over the internet - after a one-time QR pairing. See the step-by-step [guide to publishing your folders for Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html).
 
 ## Usage
 
