@@ -278,13 +278,21 @@
     <Compile Include="Companion\AutostartManager.vb" />
     <Compile Include="Companion\ShareController.vb" />
     <Compile Include="Companion\NetworkInfo.vb" />
+    <Compile Include="Companion\SftpProbe.vb" />
     <Compile Include="Companion\ShareText.vb" />
     <Compile Include="Companion\ShareConfigBuilder.vb" />
+    <Compile Include="Companion\ShareRootParams.vb" />
     <Compile Include="Companion\ShareGuide.vb" />
     <Compile Include="Companion\RouterInfo.vb" />
     <Compile Include="Companion\MailSender.vb" />
     <Compile Include="ShareSettings.vb" />
     <Compile Include="Share_Wizard_Form.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Share_Root_Params_Form.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Qr_Zoom_Form.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Table_Form.Designer.vb">

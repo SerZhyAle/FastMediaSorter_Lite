@@ -33,6 +33,10 @@ Public Class Main_Form
     Private Const slide_show_limit As Integer = 30
     Private Const max_Namber_of_Recent_Folders As Integer = 100
     Private Const app_Mutex_Name As String = "FastMediaSorterSingleInstanceMutex"
+    ' Sent over WM_COPYDATA instead of a file path when a bare second launch (no
+    ' arguments) finds this instance already running: "bring your window back".
+    ' Colons make it impossible to collide with a real path.
+    Friend Const Show_Window_Command As String = "::fms-show-window::"
     Private Const max_Number_Of_Files_For_List As Integer = 100000 'after - the array without sorting
     Private Const height_For_instruments_on_WebPanel As String = "45"
     Private Const percent_of_second_Color_Point = 20

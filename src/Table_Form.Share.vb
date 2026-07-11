@@ -35,6 +35,8 @@ Partial Public Class Table_Form
     Private _shareBuilt As Boolean
     Private _shareLoading As Boolean
     Private _shareBusy As Boolean
+    Private _shareTesting As Boolean
+    Private _shareReachPollGen As Integer
     Private _shareSettings As ShareSettings
     Private _shareListPopulated As Boolean
 
@@ -42,6 +44,11 @@ Partial Public Class Table_Form
     Private _cfgLan As ShareConfigResult
     Private _cfgNet As ShareConfigResult
     Private _shareRouter As RouterIdentity
+    ''' <summary>Set on the second MouseDown of a row double-click so ItemCheck can
+    ''' cancel the checkbox toggle the native ListView performs on NM_DBLCLK -
+    ''' otherwise double-click (advertised as "resource options") would silently
+    ''' unshare the folder and the busy guard would eat the dialog.</summary>
+    Private _shareSuppressCheck As Boolean
 
     ' Common (left column)
     Private lblShareIntro As Label
@@ -50,10 +57,11 @@ Partial Public Class Table_Form
     Private btnShareAddCurrent As Button
     Private btnShareAdd As Button
     Private btnShareRemove As Button
+    Private btnShareParams As Button
     Private btnShareToggle As Button
     Private lblShareState As Label
     Private chkShareAutostart As CheckBox
-    Private lblShareAutostartNote As Label
+    Private chkShareNoPassword As CheckBox
     Private lnkShareAndroid As LinkLabel
 
     ' Inner TabControl (right column)
@@ -64,6 +72,7 @@ Partial Public Class Table_Form
     ' LAN inner tab
     Private picShareQrLan As PictureBox
     Private lblShareLanAddr As Label
+    Private btnShareTestLan As Button
     Private btnShareCopyLan As Button
     Private lblShareFinger As Label
     Private btnShareSaveLan As Button
@@ -72,6 +81,7 @@ Partial Public Class Table_Form
 
     ' Internet inner tab
     Private lblShareNet As Label
+    Private btnShareTestNet As Button
     Private picShareQrNet As PictureBox
     Private btnShareSaveNet As Button
     Private btnShareEmailNet As Button
@@ -142,18 +152,24 @@ Partial Public Class Table_Form
             .View = View.Details, .FullRowSelect = True, .HideSelection = False, .MultiSelect = False, .CheckBoxes = True}
         lvShareFolders.Columns.Add("", 150)
         lvShareFolders.Columns.Add("", 178)
+        AddHandler lvShareFolders.MouseDown, AddressOf OnShareListMouseDown
+        AddHandler lvShareFolders.ItemCheck, AddressOf OnShareItemCheck
         AddHandler lvShareFolders.ItemChecked, AddressOf OnShareItemChecked
+        AddHandler lvShareFolders.DoubleClick, AddressOf OnShareConfigureFolder
         Tab_Page_6.Controls.Add(lvShareFolders)
 
-        btnShareAddCurrent = New Button With {.Left = 12, .Top = 212, .Width = 150, .Height = 27}
-        btnShareAdd = New Button With {.Left = 166, .Top = 212, .Width = 78, .Height = 27}
-        btnShareRemove = New Button With {.Left = 248, .Top = 212, .Width = 100, .Height = 27}
+        btnShareAddCurrent = New Button With {.Left = 12, .Top = 212, .Width = 104, .Height = 27}
+        btnShareAdd = New Button With {.Left = 120, .Top = 212, .Width = 64, .Height = 27}
+        btnShareRemove = New Button With {.Left = 188, .Top = 212, .Width = 68, .Height = 27}
+        btnShareParams = New Button With {.Left = 260, .Top = 212, .Width = 88, .Height = 27}
         AddHandler btnShareAddCurrent.Click, AddressOf OnShareAddCurrentFolder
         AddHandler btnShareAdd.Click, AddressOf OnShareAddFolder
         AddHandler btnShareRemove.Click, AddressOf OnShareRemoveFolder
+        AddHandler btnShareParams.Click, AddressOf OnShareConfigureFolder
         Tab_Page_6.Controls.Add(btnShareAddCurrent)
         Tab_Page_6.Controls.Add(btnShareAdd)
         Tab_Page_6.Controls.Add(btnShareRemove)
+        Tab_Page_6.Controls.Add(btnShareParams)
 
         btnShareToggle = New Button With {.Left = 12, .Top = 246, .Width = 336, .Height = 34, .Font = New Font(Me.Font, FontStyle.Bold)}
         AddHandler btnShareToggle.Click, AddressOf OnShareToggle
@@ -166,8 +182,9 @@ Partial Public Class Table_Form
         AddHandler chkShareAutostart.CheckedChanged, AddressOf OnShareAutostartChanged
         Tab_Page_6.Controls.Add(chkShareAutostart)
 
-        lblShareAutostartNote = New Label With {.Left = 28, .Top = 344, .Width = 320, .Height = 16, .ForeColor = Color.DimGray, .AutoEllipsis = True, .Visible = False}
-        Tab_Page_6.Controls.Add(lblShareAutostartNote)
+        chkShareNoPassword = New CheckBox With {.Left = 12, .Top = 344, .Width = 336, .Height = 20, .AutoSize = False}
+        AddHandler chkShareNoPassword.CheckedChanged, AddressOf OnShareNoPasswordChanged
+        Tab_Page_6.Controls.Add(chkShareNoPassword)
 
         lnkShareAndroid = New LinkLabel With {.Left = 12, .Top = 368, .Width = 336, .Height = 18}
         AddHandler lnkShareAndroid.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareGuide.AndroidSite(Is_Russian_Language))
@@ -185,19 +202,23 @@ Partial Public Class Table_Form
         ' LAN inner tab
         picShareQrLan = New PictureBox With {.Left = 66, .Top = 8, .Width = 164, .Height = 164,
             .BorderStyle = BorderStyle.FixedSingle, .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Color.White}
-        lblShareLanAddr = New Label With {.Left = 8, .Top = 178, .Width = 284, .Height = 18, .AutoEllipsis = True, .Font = New Font(Me.Font, FontStyle.Bold)}
+        lblShareLanAddr = New Label With {.Left = 8, .Top = 178, .Width = 216, .Height = 18, .AutoEllipsis = True, .Font = New Font(Me.Font, FontStyle.Bold)}
+        btnShareTestLan = New Button With {.Left = 228, .Top = 176, .Width = 64, .Height = 22, .Enabled = False}
         btnShareCopyLan = New Button With {.Left = 8, .Top = 200, .Width = 150, .Height = 26, .Enabled = False}
         lblShareFinger = New Label With {.Left = 8, .Top = 230, .Width = 284, .Height = 30, .ForeColor = Color.DimGray, .AutoEllipsis = True}
         btnShareSaveLan = New Button With {.Left = 8, .Top = 264, .Width = 140, .Height = 28, .Enabled = False}
         btnShareEmailLan = New Button With {.Left = 152, .Top = 264, .Width = 140, .Height = 28, .Enabled = False}
         lblShareLanHint = New Label With {.Left = 8, .Top = 296, .Width = 284, .Height = 30, .ForeColor = Color.DimGray, .AutoEllipsis = True}
+        AddHandler picShareQrLan.Click, Sub() Qr_Zoom_Form.ShowZoomed(Me, picShareQrLan)
+        AddHandler btnShareTestLan.Click, AddressOf OnShareTestLan
         AddHandler btnShareCopyLan.Click, AddressOf OnShareCopyLan
         AddHandler btnShareSaveLan.Click, Sub() SaveShareConfig(If(_cfgLan, Nothing))
         AddHandler btnShareEmailLan.Click, Sub() EmailShareConfig(If(_cfgLan, Nothing))
-        tpShareLan.Controls.AddRange(New Control() {picShareQrLan, lblShareLanAddr, btnShareCopyLan, lblShareFinger, btnShareSaveLan, btnShareEmailLan, lblShareLanHint})
+        tpShareLan.Controls.AddRange(New Control() {picShareQrLan, lblShareLanAddr, btnShareTestLan, btnShareCopyLan, lblShareFinger, btnShareSaveLan, btnShareEmailLan, lblShareLanHint})
 
         ' Internet inner tab
-        lblShareNet = New Label With {.Left = 8, .Top = 6, .Width = 288, .Height = 32, .AutoSize = False, .AutoEllipsis = True}
+        lblShareNet = New Label With {.Left = 8, .Top = 6, .Width = 220, .Height = 32, .AutoSize = False, .AutoEllipsis = True}
+        btnShareTestNet = New Button With {.Left = 230, .Top = 6, .Width = 64, .Height = 22, .Enabled = False}
         picShareQrNet = New PictureBox With {.Left = 8, .Top = 42, .Width = 120, .Height = 120,
             .BorderStyle = BorderStyle.FixedSingle, .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Color.White}
         btnShareSaveNet = New Button With {.Left = 136, .Top = 42, .Width = 158, .Height = 26, .Enabled = False}
@@ -210,13 +231,15 @@ Partial Public Class Table_Form
         txtShareForward = New TextBox With {.Left = 8, .Top = 188, .Width = 286, .Height = 118,
             .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical, .BorderStyle = BorderStyle.None,
             .BackColor = tpShareNet.BackColor, .TabStop = False}
+        AddHandler picShareQrNet.Click, Sub() Qr_Zoom_Form.ShowZoomed(Me, picShareQrNet)
+        AddHandler btnShareTestNet.Click, AddressOf OnShareTestNet
         AddHandler btnShareSaveNet.Click, Sub() SaveShareConfig(If(_cfgNet, Nothing))
         AddHandler btnShareEmailNet.Click, Sub() EmailShareConfig(If(_cfgNet, Nothing))
         AddHandler btnShareOpenRouter.Click, AddressOf OnShareOpenRouter
         AddHandler lnkShareGuide.LinkClicked, AddressOf OnShareOpenGuide
         AddHandler lnkShareRouterSearch.LinkClicked, AddressOf OnShareOpenRouterSearch
         AddHandler lnkShareWebGuide.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl)
-        tpShareNet.Controls.AddRange(New Control() {lblShareNet, picShareQrNet, btnShareSaveNet, btnShareEmailNet,
+        tpShareNet.Controls.AddRange(New Control() {lblShareNet, btnShareTestNet, picShareQrNet, btnShareSaveNet, btnShareEmailNet,
             btnShareOpenRouter, lblShareRouterUrl, lnkShareGuide, lnkShareRouterSearch, lnkShareWebGuide, txtShareForward})
 
         Tab_Page_6.ResumeLayout(False)
@@ -237,19 +260,22 @@ Partial Public Class Table_Form
         lblShareFolders.Text = If(rus, "Папки (галочка = видна в сети):", "Folders (checked = visible on the network):")
         lvShareFolders.Columns(0).Text = If(rus, "Папка", "Folder")
         lvShareFolders.Columns(1).Text = If(rus, "Путь", "Path")
-        btnShareAddCurrent.Text = If(rus, "+ Текущая папка", "+ Current folder")
-        btnShareAdd.Text = If(rus, "Другую..", "Other..")
+        btnShareAddCurrent.Text = If(rus, "+ Текущая", "+ Current")
+        btnShareAdd.Text = If(rus, "Ещё..", "More..")
         btnShareRemove.Text = If(rus, "Убрать", "Remove")
+        btnShareParams.Text = If(rus, "Настроить..", "Options..")
         chkShareAutostart.Text = If(rus, "Запускать общий доступ при входе в систему", "Start sharing at logon")
-        lblShareAutostartNote.Text = If(rus, "Управляется Windows: Параметры > Приложения > Автозагрузка", "Managed by Windows: Settings > Apps > Startup")
+        chkShareNoPassword.Text = ShareText.NoPasswordText(rus)
         lnkShareAndroid.Text = If(rus, "Приложение FastMediaSorter для Android ->", "FastMediaSorter app for Android ->")
 
         tpShareLan.Text = If(rus, "Локальная сеть", "Local network")
         tpShareNet.Text = If(rus, "Из интернета", "Internet")
+        btnShareTestLan.Text = If(rus, "Тест", "Test")
+        btnShareTestNet.Text = If(rus, "Тест", "Test")
         btnShareCopyLan.Text = If(rus, "Скопировать адрес", "Copy address")
         btnShareSaveLan.Text = If(rus, "Сохранить .fmscfg..", "Save .fmscfg..")
         btnShareEmailLan.Text = If(rus, "По почте..", "Email..")
-        lblShareLanHint.Text = If(rus, "Работает на телефоне в той же сети Wi-Fi. Ничего настраивать не нужно.", "Works on a phone on the same Wi-Fi. Nothing to configure.")
+        lblShareLanHint.Text = ShareText.LanHintText(rus)
         btnShareSaveNet.Text = If(rus, "Сохранить .fmscfg..", "Save .fmscfg..")
         btnShareEmailNet.Text = If(rus, "По почте..", "Email..")
         btnShareOpenRouter.Text = If(rus, "Открыть роутер", "Open router")
@@ -267,11 +293,20 @@ Partial Public Class Table_Form
     Private Sub InitializeShareTooltips()
         If toolTip Is Nothing OrElse Not _shareBuilt Then Return
         Dim rus As Boolean = Is_Russian_Language
-        toolTip.SetToolTip(lvShareFolders, If(rus, "Галочка = папка видна на телефоне (только чтение). Снимите галочку, чтобы скрыть.", "Checked = folder visible on the phone (read-only). Uncheck to hide it."))
+        toolTip.SetToolTip(lvShareFolders, If(rus, "Галочка = папка видна на телефоне. Двойной щелчок - параметры ресурса.", "Checked = folder visible on the phone. Double-click for the resource options."))
         toolTip.SetToolTip(btnShareAddCurrent, If(rus, "Добавить папку, открытую сейчас в программе.", "Share the folder currently open in the app."))
+        toolTip.SetToolTip(btnShareParams, If(rus, "Название, тип (аудиотека, фото..), PIN и другие параметры выбранной папки на телефоне.", "Name, type (audio library, photos..), PIN and other options of the selected folder on the phone."))
+        toolTip.SetToolTip(chkShareNoPassword, If(rus, "Файл/QR выйдет без пароля - на телефоне его придётся ввести вручную. Пароль показывается в строке состояния, пока галочка включена.", "The file/QR goes out without the password - the phone will ask for it at import. The password is shown in the status line while this is on."))
+        Dim autostartTip As String = If(rus, "Запускать общий доступ автоматически при входе в Windows.", "Start folder sharing automatically at Windows logon.")
+        If AutostartManager.IsPackaged() Then
+            autostartTip &= If(rus, " Управляется Windows: Параметры > Приложения > Автозагрузка.", " Managed by Windows: Settings > Apps > Startup.")
+        End If
+        toolTip.SetToolTip(chkShareAutostart, autostartTip)
         toolTip.SetToolTip(btnShareToggle, If(rus, "Запустить или остановить SFTP-сервер для отмеченных папок.", "Start or stop the SFTP server for the ticked folders."))
-        toolTip.SetToolTip(picShareQrLan, If(rus, "Отсканируйте в приложении на телефоне (доступ по локальной сети).", "Scan in the phone app (local-network access)."))
-        toolTip.SetToolTip(picShareQrNet, If(rus, "Отсканируйте в приложении на телефоне (локальный + внешний адрес).", "Scan in the phone app (local + internet address)."))
+        toolTip.SetToolTip(picShareQrLan, If(rus, "Отсканируйте в приложении на телефоне (доступ по локальной сети). Клик - открыть крупно.", "Scan in the phone app (local-network access). Click to enlarge."))
+        toolTip.SetToolTip(picShareQrNet, If(rus, "Отсканируйте в приложении на телефоне (локальный + внешний адрес). Клик - открыть крупно.", "Scan in the phone app (local + internet address). Click to enlarge."))
+        toolTip.SetToolTip(btnShareTestLan, If(rus, "Проверить, что SFTP-сервер отвечает по локальному адресу.", "Check that the SFTP server answers on the local address."))
+        toolTip.SetToolTip(btnShareTestNet, If(rus, "Проверить внешний адрес с этого ПК. Точный тест - с телефона по мобильной сети.", "Check the internet address from this PC. The definitive test is from the phone on mobile data."))
         toolTip.SetToolTip(btnShareEmailLan, If(rus, "Прикрепить файл .fmscfg к новому письму (почтовый клиент по умолчанию).", "Attach the .fmscfg file to a new email (default mail client)."))
         toolTip.SetToolTip(btnShareEmailNet, If(rus, "Прикрепить файл .fmscfg к новому письму (почтовый клиент по умолчанию).", "Attach the .fmscfg file to a new email (default mail client)."))
         toolTip.SetToolTip(btnShareOpenRouter, If(rus, "Открыть страницу настроек роутера в браузере.", "Open the router settings page in the browser."))
@@ -291,7 +326,7 @@ Partial Public Class Table_Form
         Dim packaged As Boolean = AutostartManager.IsPackaged()
         chkShareAutostart.Checked = AutostartManager.IsEnabled()
         chkShareAutostart.Enabled = Not packaged
-        lblShareAutostartNote.Visible = packaged
+        chkShareNoPassword.Checked = _shareSettings.ExcludePasswordFromExport
         _shareLoading = prev
     End Sub
 
@@ -333,6 +368,39 @@ Partial Public Class Table_Form
         Else
             SetShareHint(If(rus, "Отметьте папку и нажмите «Начать общий доступ».", "Tick a folder and press Start sharing."))
         End If
+
+        ' The worker computes reachability (LAN IP + UPnP/external address) on a
+        ' background probe, so the first status right after a (re)start still has
+        ' Reachability = Nothing and every address reads "-". Keep polling until it
+        ' lands, so the address/QR/Test controls fill in on their own instead of the
+        ' user having to leave and re-open the tab.
+        If st.Running AndAlso st.Reachability Is Nothing Then
+            Await PollReachabilityAsync()
+        End If
+    End Sub
+
+    ''' <summary>Polls worker status until the async reachability probe finishes (or a
+    ''' bound elapses / a newer tab-enter or server op supersedes this poll), applying
+    ''' each snapshot so the addresses appear as soon as they are known.</summary>
+    Private Async Function PollReachabilityAsync() As Task
+        _shareReachPollGen += 1
+        Dim myGen As Integer = _shareReachPollGen
+        For i As Integer = 1 To 20
+            Await Task.Delay(1000)
+            If myGen <> _shareReachPollGen OrElse Me.IsDisposed Then Return
+            Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+            If myGen <> _shareReachPollGen OrElse Me.IsDisposed Then Return
+            If st Is Nothing Then Continue For
+            _shareStatus = st
+            ApplyStatusToUi()
+            If Not st.Running OrElse st.Reachability IsNot Nothing Then Return ' resolved (or server stopped)
+        Next
+    End Function
+
+    ''' <summary>Supersedes any in-flight reachability poll so a start/stop/re-enter does
+    ''' not get clobbered by a late poll snapshot.</summary>
+    Private Sub CancelReachabilityPoll()
+        _shareReachPollGen += 1
     End Sub
 
     ' --- folder add / remove / check -------------------------------------------
@@ -366,8 +434,82 @@ Partial Public Class Table_Form
     Private Async Sub OnShareRemoveFolder(sender As Object, e As EventArgs)
         If _shareBusy Then Return
         If lvShareFolders.SelectedItems.Count = 0 Then Return
-        lvShareFolders.Items.Remove(lvShareFolders.SelectedItems(0))
+        Dim removed As ListViewItem = lvShareFolders.SelectedItems(0)
+        ShareRootParamsStore.RemoveFor(Convert.ToString(removed.Tag))
+        lvShareFolders.Items.Remove(removed)
         Await ApplySharedFoldersAsync()
+    End Sub
+
+    ''' <summary>"Настроить.." / double-click a folder row: edit the per-root
+    ''' resource params the schema v2 export carries to the phone (S1002 §9).
+    ''' The destination flag flips the share's writability, so it needs a
+    ''' re-share; everything else only changes the exported config.</summary>
+    Private Async Sub OnShareConfigureFolder(sender As Object, e As EventArgs)
+        If _shareBusy Then Return
+        If lvShareFolders.SelectedItems.Count = 0 Then
+            SetShareHint(If(Is_Russian_Language, "Сначала выберите папку в списке.", "Select a folder in the list first."))
+            Return
+        End If
+        Dim it As ListViewItem = lvShareFolders.SelectedItems(0)
+        Dim hostPath As String = Convert.ToString(it.Tag)
+        If String.IsNullOrEmpty(hostPath) Then Return
+        Dim before As ShareRootParams = ShareRootParamsStore.GetFor(hostPath)
+        Using dlg As New Share_Root_Params_Form(it.Text, before)
+            If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
+            Dim after As ShareRootParams = dlg.Result
+            ShareRootParamsStore.SetFor(hostPath, after)
+            If after.IsDestination <> before.IsDestination AndAlso it.Checked Then
+                ' Only a LIVE server needs the re-share (the flag is read fresh from
+                ' the store at the next start anyway) - never cold-start the server
+                ' from a settings dialog after the user explicitly stopped sharing.
+                Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+                If st IsNot Nothing AndAlso st.Running Then
+                    Await ApplySharedFoldersAsync()
+                Else
+                    ApplyStatusToUi()
+                End If
+            Else
+                ApplyStatusToUi()
+            End If
+        End Using
+    End Sub
+
+    ''' <summary>The §6 "exclude password" export safeguard: rebuilds both configs
+    ''' without (or again with) the embedded password and, while active, surfaces
+    ''' the real password in the status line so the sender can pass it on.</summary>
+    Private Sub OnShareNoPasswordChanged(sender As Object, e As EventArgs)
+        If _shareLoading Then Return
+        If _shareSettings IsNot Nothing Then
+            _shareSettings.ExcludePasswordFromExport = chkShareNoPassword.Checked
+            _shareSettings.Save()
+        End If
+        ApplyStatusToUi()
+        If chkShareNoPassword.Checked Then
+            Dim pw As String = If(_shareStatus IsNot Nothing, If(_shareStatus.Password, ""), "")
+            SetShareHint(ShareText.NoPasswordHint(Is_Russian_Language, pw))
+        Else
+            SetShareHint("")
+        End If
+    End Sub
+
+    ''' <summary>MouseDown precedes the native NM_DBLCLK, so the second click of a
+    ''' row double-click can be flagged here; ItemCheck then cancels the toggle the
+    ''' ListView would otherwise perform. Double-click on the checkbox itself keeps
+    ''' the default toggle behavior; a single click always resets the flag.</summary>
+    Private Sub OnShareListMouseDown(sender As Object, e As MouseEventArgs)
+        Dim onCheckbox As Boolean = False
+        Try
+            onCheckbox = lvShareFolders.HitTest(e.Location).Location = ListViewHitTestLocations.StateImage
+        Catch
+        End Try
+        _shareSuppressCheck = e.Clicks = 2 AndAlso Not onCheckbox
+    End Sub
+
+    Private Sub OnShareItemCheck(sender As Object, e As ItemCheckEventArgs)
+        If _shareSuppressCheck Then
+            e.NewValue = e.CurrentValue
+            _shareSuppressCheck = False
+        End If
     End Sub
 
     Private Async Sub OnShareItemChecked(sender As Object, e As ItemCheckedEventArgs)
@@ -391,6 +533,7 @@ Partial Public Class Table_Form
     End Function
 
     Private Async Function ApplySharedFoldersAsync() As Task
+        CancelReachabilityPoll()
         SetShareBusy(True)
         Dim folders As List(Of ShareFolder) = CurrentShareFolders()
         If folders.Count = 0 Then
@@ -411,6 +554,7 @@ Partial Public Class Table_Form
 
     Private Async Sub OnShareToggle(sender As Object, e As EventArgs)
         If _shareBusy Then Return
+        CancelReachabilityPoll()
         Dim rus As Boolean = Is_Russian_Language
         SetShareBusy(True)
         Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
@@ -484,6 +628,95 @@ Partial Public Class Table_Form
         End Try
     End Sub
 
+    ' --- reachability test -----------------------------------------------------
+
+    ''' <summary>"Тест" next to the LAN address: probe the SFTP server on the local
+    ''' IP:port. A green result here is authoritative (same subnet, no NAT).</summary>
+    Private Async Sub OnShareTestLan(sender As Object, e As EventArgs)
+        Dim st As WorkerStatus = _shareStatus
+        Dim reach As WorkerReachability = If(st IsNot Nothing, st.Reachability, Nothing)
+        Dim host As String = If(reach IsNot Nothing, If(reach.LanAddress, ""), "")
+        Dim port As Integer = If(st IsNot Nothing, st.ListenPort, 0)
+        Await RunShareProbe(host, port, internet:=False)
+    End Sub
+
+    ''' <summary>"Тест" next to the internet address: probe the external host:port from
+    ''' this PC. A failure is reported as inconclusive (a router without NAT loopback
+    ''' can refuse its own public address from inside) - the real test is the phone on
+    ''' mobile data.</summary>
+    Private Async Sub OnShareTestNet(sender As Object, e As EventArgs)
+        Dim st As WorkerStatus = _shareStatus
+        Dim reach As WorkerReachability = If(st IsNot Nothing, st.Reachability, Nothing)
+        Dim host As String = If(reach IsNot Nothing, If(reach.ExternalHost, ""), "")
+        Dim port As Integer = 0
+        If reach IsNot Nothing Then
+            port = If(reach.ExternalPort > 0, reach.ExternalPort, If(st IsNot Nothing, st.ListenPort, 0))
+        End If
+        Await RunShareProbe(host, port, internet:=True)
+    End Sub
+
+    Private Async Function RunShareProbe(host As String, port As Integer, internet As Boolean) As Task
+        If _shareTesting Then Return
+        Dim rus As Boolean = Is_Russian_Language
+        If String.IsNullOrEmpty(host) OrElse port <= 0 Then
+            SetShareHint(If(rus, "Адрес ещё не определён.", "No address yet."))
+            Return
+        End If
+
+        _shareTesting = True
+        RefreshTestButtons() ' disable both "Тест" buttons while a probe is in flight
+        SetShareHint((If(rus, "Проверка ", "Testing ")) & host & ":" & port.ToString() & " ..")
+        Try
+            Dim res As SftpProbe.ProbeResult = Await SftpProbe.ProbeAsync(host, port)
+            SetShareHint(DescribeProbe(res, host, port, internet, rus))
+        Catch
+            SetShareHint(If(rus, "Не удалось выполнить проверку.", "Could not run the test."))
+        Finally
+            _shareTesting = False
+            RefreshTestButtons()
+        End Try
+    End Function
+
+    Private Shared Function DescribeProbe(res As SftpProbe.ProbeResult, host As String, port As Integer,
+                                          internet As Boolean, rus As Boolean) As String
+        Dim ep As String = host & ":" & port.ToString()
+        Select Case res
+            Case SftpProbe.ProbeResult.SshOk
+                Return (If(rus, "✓ SFTP-сервер доступен: ", "✓ SFTP server reachable: ")) & ep
+            Case SftpProbe.ProbeResult.PortOpen
+                Return (If(rus, "Порт открыт, но SFTP не ответил: ", "Port open, but no SFTP reply: ")) & ep
+            Case SftpProbe.ProbeResult.Timeout, SftpProbe.ProbeResult.Refused
+                If internet Then
+                    Return If(rus,
+                        "✗ С этого ПК не отвечает (" & ep & "). Роутер может не пускать на свой внешний адрес изнутри - проверьте с телефона по мобильной сети.",
+                        "✗ No answer from this PC (" & ep & "). Your router may block reaching its own external address from inside - test from the phone on mobile data.")
+                End If
+                Return (If(rus, "✗ Недоступно: ", "✗ Unreachable: ")) & ep &
+                    If(rus, ". Проверьте, что общий доступ включён и брандмауэр разрешает порт.",
+                            ". Check sharing is on and the firewall allows the port.")
+            Case Else
+                Return If(rus, "Адрес некорректен.", "Invalid address.")
+        End Select
+    End Function
+
+    ''' <summary>Whether the internet "Тест" has a real external host:port to probe
+    ''' (server running, not behind CGNAT, external host known).</summary>
+    Private Function CanTestInternet() As Boolean
+        Dim st As WorkerStatus = _shareStatus
+        If st Is Nothing OrElse Not st.Running OrElse st.Reachability Is Nothing Then Return False
+        If st.Reachability.IsCgnat Then Return False
+        Return Not String.IsNullOrEmpty(st.Reachability.ExternalHost)
+    End Function
+
+    ''' <summary>Re-evaluates the enabled state of both "Тест" buttons from the current
+    ''' status (single source of truth, so ApplyStatusToUi / SetShareBusy / a finishing
+    ''' probe all agree).</summary>
+    Private Sub RefreshTestButtons()
+        If Not _shareBuilt Then Return
+        btnShareTestLan.Enabled = Not _shareBusy AndAlso Not _shareTesting AndAlso CurrentLanAddress().Length > 0
+        btnShareTestNet.Enabled = Not _shareBusy AndAlso Not _shareTesting AndAlso CanTestInternet()
+    End Sub
+
     Private Sub OnShareOpenRouter(sender As Object, e As EventArgs)
         Dim url As String = NetworkInfo.DefaultGatewayUrl()
         If url.Length = 0 Then
@@ -549,7 +782,10 @@ Partial Public Class Table_Form
             If Not it.Checked Then Continue For
             Dim hostPath As String = Convert.ToString(it.Tag)
             If Not String.IsNullOrEmpty(hostPath) Then
-                list.Add(New ShareFolder With {.name = it.Text, .hostPath = hostPath, .readOnly = True})
+                ' A destination root (v2 isDestination, §5) must accept writes -
+                ' serve it writable; everything else stays read-only.
+                Dim writable As Boolean = ShareRootParamsStore.GetFor(hostPath).IsDestination
+                list.Add(New ShareFolder With {.name = it.Text, .hostPath = hostPath, .readOnly = Not writable})
             End If
         Next
         Return list
@@ -584,8 +820,9 @@ Partial Public Class Table_Form
         End If
 
         ' Build both configs (LAN-only + LAN+internet) from the one status.
-        _cfgLan = If(running, ShareConfigBuilder.Build(st, False), Nothing)
-        _cfgNet = If(running, ShareConfigBuilder.Build(st, True), Nothing)
+        Dim incPw As Boolean = _shareSettings Is Nothing OrElse Not _shareSettings.ExcludePasswordFromExport
+        _cfgLan = If(running, ShareConfigBuilder.Build(st, False, incPw), Nothing)
+        _cfgNet = If(running, ShareConfigBuilder.Build(st, True, incPw), Nothing)
 
         ' LAN tab
         Dim addr As String = CurrentLanAddress()
@@ -594,6 +831,10 @@ Partial Public Class Table_Form
         Dim fp As String = If(st IsNot Nothing, If(st.Fingerprint, ""), "")
         lblShareFinger.Text = (If(rus, "Ключ узла: ", "Host key: ")) & If(fp.Length > 0, fp, "-")
         ShowQr(picShareQrLan, _cfgLan)
+        ' §7: a config too big for a QR code falls back to the file - say so
+        ' instead of showing an empty QR box silently.
+        lblShareLanHint.Text = If(_cfgLan IsNot Nothing AndAlso _cfgLan.QrOverflow,
+            ShareText.QrOverflowText(rus), ShareText.LanHintText(rus))
         btnShareSaveLan.Enabled = _cfgLan IsNot Nothing AndAlso Not _shareBusy
         btnShareEmailLan.Enabled = _cfgLan IsNot Nothing AndAlso Not _shareBusy
 
@@ -603,6 +844,7 @@ Partial Public Class Table_Form
         btnShareSaveNet.Enabled = hasNet AndAlso Not _shareBusy
         btnShareEmailNet.Enabled = hasNet AndAlso Not _shareBusy
         UpdateInternetUi()
+        RefreshTestButtons()
 
         SetShareServerControlsEnabled(WorkerProcess.IsAvailable())
 
@@ -645,6 +887,9 @@ Partial Public Class Table_Form
         Dim lanText As String = If(lanIp.Length > 0, lanIp, If(rus, "IP этого ПК", "this PC's IP"))
 
         Dim sb As New StringBuilder()
+        If _cfgNet IsNot Nothing AndAlso _cfgNet.QrOverflow Then
+            sb.AppendLine(ShareText.QrOverflowText(rus)).AppendLine()
+        End If
         sb.AppendLine(ShareText.SecurityText(rus)).AppendLine()
         If isCgnat Then
             lblShareNet.Text = If(rus, "За CGNAT - извне недоступно.", "Behind CGNAT - not reachable from outside.")
@@ -688,6 +933,7 @@ Partial Public Class Table_Form
         Dim old As Image = box.Image
         box.Image = newImg
         If old IsNot Nothing Then old.Dispose()
+        box.Cursor = If(newImg IsNot Nothing, Cursors.Hand, Cursors.Default) ' click = zoom window
     End Sub
 
     Private Sub SetShareHint(text As String)
@@ -701,12 +947,14 @@ Partial Public Class Table_Form
         btnShareAddCurrent.Enabled = Not value AndAlso avail
         btnShareAdd.Enabled = Not value AndAlso avail
         btnShareRemove.Enabled = Not value AndAlso avail
+        btnShareParams.Enabled = Not value AndAlso avail
         lvShareFolders.Enabled = Not value AndAlso avail
         btnShareCopyLan.Enabled = Not value AndAlso CurrentLanAddress().Length > 0
         btnShareSaveLan.Enabled = Not value AndAlso _cfgLan IsNot Nothing
         btnShareEmailLan.Enabled = Not value AndAlso _cfgLan IsNot Nothing
         btnShareSaveNet.Enabled = Not value AndAlso _cfgNet IsNot Nothing AndAlso _cfgNet.HasExternal
         btnShareEmailNet.Enabled = Not value AndAlso _cfgNet IsNot Nothing AndAlso _cfgNet.HasExternal
+        RefreshTestButtons()
         Me.UseWaitCursor = value
     End Sub
 
@@ -715,6 +963,7 @@ Partial Public Class Table_Form
         btnShareAddCurrent.Enabled = enabled AndAlso Not _shareBusy
         btnShareAdd.Enabled = enabled AndAlso Not _shareBusy
         btnShareRemove.Enabled = enabled AndAlso Not _shareBusy
+        btnShareParams.Enabled = enabled AndAlso Not _shareBusy
         lvShareFolders.Enabled = enabled AndAlso Not _shareBusy
     End Sub
 

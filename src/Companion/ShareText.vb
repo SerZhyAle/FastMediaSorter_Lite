@@ -3,7 +3,7 @@ Option Strict On
 ''' <summary>
 ''' Shared RU/EN copy for the internet-access half of the Share feature, used by
 ''' both the Settings Share tab and the quick-share wizard. House prose style:
-''' plain hyphen (never em-dash), the letter "ё" where correct, ".." not "..".
+''' plain hyphen (never em-dash), the letter "ё" where correct, ".." not "...".
 ''' </summary>
 Public Module ShareText
 
@@ -13,6 +13,35 @@ Public Module ShareText
         Return If(rus,
             "Внимание: вы открываете SFTP-сервер в интернет. Доступ ко всем общим папкам получит любой, кто узнает адрес, логин и пароль. Не публикуйте QR-код и файл .fmscfg. Выключайте доступ, когда закончили.",
             "Warning: you are exposing an SFTP server to the internet. Anyone who learns the address, username and password can reach every shared folder. Do not publish the QR code or the .fmscfg file. Switch it off when you are done.")
+    End Function
+
+    ''' <summary>Default LAN-tab hint under the QR code.</summary>
+    Public Function LanHintText(rus As Boolean) As String
+        Return If(rus,
+            "Работает на телефоне в той же сети Wi-Fi. Ничего настраивать не нужно.",
+            "Works on a phone on the same Wi-Fi. Nothing to configure.")
+    End Function
+
+    ''' <summary>Label of the §6 "exclude password" export safeguard.</summary>
+    Public Function NoPasswordText(rus As Boolean) As String
+        Return If(rus, "Не включать пароль в файл/QR", "Keep the password out of the file/QR")
+    End Function
+
+    ''' <summary>Hint shown while the password is excluded: the recipient will have
+    ''' to type it, so the sender needs to see and pass it on out-of-band.</summary>
+    Public Function NoPasswordHint(rus As Boolean, password As String) As String
+        Dim pw As String = If(String.IsNullOrEmpty(password), "-", password)
+        Return If(rus,
+            "Пароль не попадёт в файл/QR. Сообщите его получателю отдельно: " & pw,
+            "The password stays out of the file/QR. Pass it on separately: " & pw)
+    End Function
+
+    ''' <summary>Contract §7: the config no longer fits a QR code (too many
+    ''' per-folder settings) - never truncate, point the user at the file.</summary>
+    Public Function QrOverflowText(rus As Boolean) As String
+        Return If(rus,
+            "Слишком много настроек для QR-кода - сохраните файл .fmscfg и отправьте его на телефон.",
+            "Too many settings for a QR code - save the .fmscfg file and send it to the phone instead.")
     End Function
 
     ''' <summary>Honest CGNAT explanation - forwarding cannot help.</summary>

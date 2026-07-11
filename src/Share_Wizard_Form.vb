@@ -45,6 +45,7 @@ Public Class Share_Wizard_Form
     Private lblScan As Label
     Private btnSaveConfig As Button
     Private btnEmail As Button
+    Private chkNoPassword As CheckBox
 
     ' Internet group (full width, bottom) + footer.
     Private grpNet As GroupBox
@@ -128,21 +129,30 @@ Public Class Share_Wizard_Form
         ' ---- right column ----
         picQr = New PictureBox With {.Left = 324, .Top = 70, .Width = 190, .Height = 190,
             .BorderStyle = BorderStyle.FixedSingle, .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Color.White}
+        AddHandler picQr.Click, Sub() Qr_Zoom_Form.ShowZoomed(Me, picQr)
         Controls.Add(picQr)
 
-        lblScan = New Label With {.Left = 324, .Top = 264, .Width = 304, .Height = 18, .ForeColor = Color.DimGray,
+        ' Two lines + ellipsis: this label also carries the QR-overflow message
+        ' ("share the file instead"), which does not fit one 304 px line.
+        lblScan = New Label With {.Left = 324, .Top = 262, .Width = 304, .Height = 32, .ForeColor = Color.DimGray,
+            .AutoEllipsis = True,
             .Text = If(rus, "Отсканируйте код в приложении на телефоне.", "Scan the code in the phone app.")}
         Controls.Add(lblScan)
 
-        btnSaveConfig = New Button With {.Left = 324, .Top = 288, .Width = 190, .Height = 28, .Enabled = False,
+        btnSaveConfig = New Button With {.Left = 324, .Top = 298, .Width = 190, .Height = 28, .Enabled = False,
             .Text = If(rus, "Сохранить .fmscfg..", "Save .fmscfg..")}
         AddHandler btnSaveConfig.Click, AddressOf OnSaveConfig
         Controls.Add(btnSaveConfig)
 
-        btnEmail = New Button With {.Left = 324, .Top = 320, .Width = 190, .Height = 28, .Enabled = False,
+        btnEmail = New Button With {.Left = 324, .Top = 330, .Width = 190, .Height = 28, .Enabled = False,
             .Text = If(rus, "Отправить по почте..", "Send by email..")}
         AddHandler btnEmail.Click, AddressOf OnEmail
         Controls.Add(btnEmail)
+
+        chkNoPassword = New CheckBox With {.Left = 324, .Top = 360, .Width = 304, .Height = 20,
+            .Text = ShareText.NoPasswordText(rus), .Checked = _settings.ExcludePasswordFromExport}
+        AddHandler chkNoPassword.CheckedChanged, AddressOf OnNoPasswordToggled
+        Controls.Add(chkNoPassword)
 
         ' ---- internet group ----
         grpNet = New GroupBox With {.Left = 12, .Top = 384, .Width = 616, .Height = 184,
@@ -376,6 +386,21 @@ Public Class Share_Wizard_Form
         Render()  ' rebuild config/QR (add or drop the internet path) + net UI
     End Sub
 
+    ''' <summary>The §6 "exclude password" export safeguard (same setting as the
+    ''' Share tab): rebuild the config/QR and, while on, show the real password so
+    ''' the sender can pass it on out-of-band.</summary>
+    Private Sub OnNoPasswordToggled(sender As Object, e As EventArgs)
+        If _settings IsNot Nothing Then
+            _settings.ExcludePasswordFromExport = chkNoPassword.Checked
+            _settings.Save()
+        End If
+        Render()
+        If chkNoPassword.Checked Then
+            Dim pw As String = If(_status IsNot Nothing, If(_status.Password, ""), "")
+            lblPhoneHint.Text = ShareText.NoPasswordHint(Is_Russian_Language, pw)
+        End If
+    End Sub
+
     Private Sub OnOpenSettings(sender As Object, e As LinkLabelLinkClickedEventArgs)
         Dim mf As Main_Form = TryCast(Me.Owner, Main_Form)
         Me.Close()
@@ -439,7 +464,8 @@ Public Class Share_Wizard_Form
         lblFinger.Text = (If(rus, "Ключ узла: ", "Host key: ")) & If(fp.Length > 0, fp, "-")
 
         If _status IsNot Nothing AndAlso _status.Running Then
-            _config = ShareConfigBuilder.Build(_status, chkExternal.Checked)
+            Dim incPw As Boolean = _settings Is Nothing OrElse Not _settings.ExcludePasswordFromExport
+            _config = ShareConfigBuilder.Build(_status, chkExternal.Checked, incPw)
         Else
             _config = Nothing
         End If
@@ -516,7 +542,10 @@ Public Class Share_Wizard_Form
         For Each it As ListViewItem In lvFolders.Items
             Dim hostPath As String = Convert.ToString(it.Tag)
             If Not String.IsNullOrEmpty(hostPath) Then
-                list.Add(New ShareFolder With {.name = it.Text, .hostPath = hostPath, .readOnly = True})
+                ' Same rule as the Share tab: a destination root (v2 isDestination,
+                ' configured there) must accept writes; everything else read-only.
+                Dim writable As Boolean = ShareRootParamsStore.GetFor(hostPath).IsDestination
+                list.Add(New ShareFolder With {.name = it.Text, .hostPath = hostPath, .readOnly = Not writable})
             End If
         Next
         Return list
@@ -546,26 +575,34 @@ Public Class Share_Wizard_Form
             Dim old0 As Image = picQr.Image
             picQr.Image = Nothing
             If old0 IsNot Nothing Then old0.Dispose()
+            picQr.Cursor = Cursors.Default
+            lblScan.Text = If(Is_Russian_Language, "Отсканируйте код в приложении на телефоне.", "Scan the code in the phone app.")
             _lastConfigJson = ""
             btnSaveConfig.Enabled = False
             btnEmail.Enabled = False
             Return
         End If
 
+        ' Always replace the image: a config whose QR overflowed (QrPng = Nothing)
+        ' must not keep showing the previous, now-stale code.
+        Dim newImg As Image = Nothing
         Try
             If cfg.QrPng IsNot Nothing AndAlso cfg.QrPng.Length > 0 Then
-                Dim img As Image
                 Using ms As New MemoryStream(cfg.QrPng)
                     Using tmp As Image = Image.FromStream(ms)
-                        img = New Bitmap(tmp)
+                        newImg = New Bitmap(tmp)
                     End Using
                 End Using
-                Dim old As Image = picQr.Image
-                picQr.Image = img
-                If old IsNot Nothing Then old.Dispose()
             End If
         Catch
+            newImg = Nothing
         End Try
+        Dim old As Image = picQr.Image
+        picQr.Image = newImg
+        If old IsNot Nothing Then old.Dispose()
+        picQr.Cursor = If(newImg IsNot Nothing, Cursors.Hand, Cursors.Default) ' click = zoom window
+        lblScan.Text = If(cfg.QrOverflow, ShareText.QrOverflowText(Is_Russian_Language),
+            If(Is_Russian_Language, "Отсканируйте код в приложении на телефоне.", "Scan the code in the phone app."))
         _lastConfigJson = If(cfg.ConfigJson, "")
         btnSaveConfig.Enabled = _lastConfigJson.Length > 0 AndAlso Not _busy
         btnEmail.Enabled = _lastConfigJson.Length > 0 AndAlso Not _busy

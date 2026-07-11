@@ -62,7 +62,7 @@ Store-policy hard facts (verified against learn.microsoft.com, 2026-07-10):
 - Worker owns and persists (in `%LOCALAPPDATA%\FastMediaSorterCompanion\`, or `--datadir <dir>` override): ed25519 host key (`hostkey`, TOFU-pinned by Android - NEVER regenerate), generated credential (`credential.json`), shared folders (`shares.json`), stable listen port (`settings.json`). Port caveat: if the persisted port is occupied at start, the worker falls back to a fresh OS-assigned port and re-persists it - previously exported configs must be re-exported (the tab always shows the current port).
 - Worker behavior on start: restores persisted shares and (if any) starts the SFTP server on the persisted port, announces `_sftp-fms._tcp` on mDNS, attempts UPnP-IGD/NAT-PMP port mapping with lease renewal, computes reachability (LAN address, external address, CGNAT detection) asynchronously.
 - Control channel: named pipe `\\.\pipe\fms-companion`, one JSON request/response per connection, schema-versioned. Full protocol: Appendix A. Working PowerShell reference client (same .NET APIs VB will use - verified live 2026-07-10, full cycle incl. QR PNG export): Appendix A.3.
-- The exported config (`ExportConfig` request) returns the exact `.fmscfg` JSON and a rendered QR PNG (base64) - the VB side needs NO QR library and NO knowledge of the config schema. Contract summary: Appendix B.
+- The worker exposes an `ExportConfig` request (returns the `.fmscfg` JSON + a rendered QR PNG), but LITE does NOT use it: the config and QR are built on the LITE side by `ShareConfigBuilder` (QRCoder) from the worker's live Status, because `ExportConfig` cannot advertise a manual port forward or the schema v2 per-root params. Contract summary: Appendix B.
 
 ### 2.4 The Android side (context only - nothing to do)
 
@@ -150,7 +150,7 @@ Strictly 1 -> 2 -> 3 -> 4. Within Phase 3, 3.1-3.2 before 3.3-3.4 (staging feeds
 ## 7. Out of scope / future work
 
 - Level B "connect by ID" P2P mode (rendezvous server) - separate future spec.
-- QR-scan pairing from the LITE side, multi-user/service mode, write-enabled shares (worker serves read-only in MVP).
+- QR-scan pairing from the LITE side, multi-user/service mode. (Write-enabled shares shipped with schema v2: destination roots (`isDestination`) are served writable - see Appendix B.)
 - Signing the GitHub/winget binaries; Linux companion.
 - Localizing the worker's own strings (hints arrive EN from the worker; the VB layer may translate the two known hint kinds by pattern later).
 
@@ -232,13 +232,15 @@ $pipe.Write($bytes, 0, $bytes.Length); $pipe.Flush()
 
 ## Appendix B - `.fmscfg` contract (FROZEN - do not touch)
 
-Authoritative doc: `P:\windows\fms_companion\docs\CONFIG_FORMAT.md`. The Android parser ships against the canonical vector below (byte-identical fixture in the Android repo, `app_v2/src/test/resources/companion/canonical_vector.json`; Go serializer test `TestCanonicalVector`). LITE never builds or parses this JSON - the worker emits it - but any schema change is a cross-repo breaking change and needs a `schemaVersion` bump on BOTH ends:
+Authoritative doc: `P:\windows\fms_companion\docs\CONFIG_FORMAT.md`. The Android parser ships against the canonical vector below (byte-identical fixture in the Android repo, `app_v2/src/test/resources/companion/canonical_vector.json`; Go serializer test `TestCanonicalVector`). The exported config is built on the LITE side by `ShareConfigBuilder` (the worker's own `ExportConfig` is unused - it cannot advertise a manual port forward); any schema change is still a cross-repo breaking change and needs a `schemaVersion` bump on BOTH ends:
 
 ```json
 {"schemaVersion":1,"resourceName":"Home PC","protocol":"sftp","accessPaths":[{"kind":"lan","host":"192.168.1.23","port":2022},{"kind":"portforward","host":"203.0.113.7","port":2022}],"username":"fms","password":"k7PmQ2wXr9TzS4vGnHb3JdLe","hostKeyFingerprintSha256":"SHA256:8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk","roots":[{"virtualPath":"/Photos","label":"Photos"},{"virtualPath":"/Music","label":"Music"}],"createdAt":"2026-07-10T12:00:00Z"}
 ```
 
-The QR payload variant is plain JSON when small, else `FMSCFG1:` + base64(gzip(json)) - handled by the worker and the Android parser; LITE treats it as opaque.
+The QR payload variant is plain JSON when small, else `FMSCFG1:` + base64(gzip(json)); when even the compressed payload exceeds QR capacity, LITE shows "share the .fmscfg file instead" and never truncates.
+
+**Schema v2 (S1002, 2026-07):** each `roots[]` entry may additionally carry the target resource's configuration - `profile` (e.g. `audio_library`), `mediaTypes`, scan conditions (`scanSubdirectories`, `showSubfoldersAsItems`, `showHiddenFiles`, `allFiles`), `isDestination` (+ optional `destinationColor`; the folder is then shared writable), `comment`, `accessPin`, `slideshowInterval`. Per-root params are edited via "Настроить.." on the Share tab (`Share_Root_Params_Form`, stored per host path by `ShareRootParamsStore` in the registry) and emitted by `ShareConfigBuilder` only when they differ from the Android import defaults. `schemaVersion` is adaptive: `2` only when at least one v2 field is present, else `1` (old Android apps keep importing unconfigured shares; a real v2 file makes them ask for an app update). Frozen v2 canonical vector: `TestCanonicalVectorV2` in the Go repo + Android fixture `canonical_vector_v2.json`; the Android-side contract is `P:\ANDROID\FastMediaSorter_mob_v2\PLAN\S1002_companion-config-v2-resource-params\COMPANION_EXPORT_SPEC.md`.
 
 ## Appendix C - Rebuilding the worker
 
@@ -252,4 +254,4 @@ Copy-Item build\bin\fms-share-worker.exe P:\WINDOWS\FastMediaSorter_Lite\payload
 Get-FileHash P:\WINDOWS\FastMediaSorter_Lite\payload\companion\fms-share-worker.exe -Algorithm SHA256   # update the .sha256 sidecar
 ```
 
-Never change the pipe name, the IPC schema (without bumping `IPCSchemaVersion` on both sides), or anything under `internal/config` (frozen contract).
+Never change the pipe name, the IPC schema (without bumping `IPCSchemaVersion` on both sides), or anything under `internal/config` (frozen contract; v2 additions are optional-field-only and covered by `TestCanonicalVectorV2`).

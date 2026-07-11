@@ -74,6 +74,15 @@ Partial Public Class Main_Form
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0010: received from new instance: " & argument)
 
+        ' A bare second launch (no file) forwarded by the mutex path: the user just
+        ' wants the window back. Restore it with its current content - nothing to load,
+        ' and unlike a file open we DO take focus (the launch had no other purpose).
+        If String.Equals(argument, Show_Window_Command, StringComparison.OrdinalIgnoreCase) Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0013: bare relaunch - restoring window")
+            RestoreMainWindow()
+            Return
+        End If
+
         Dim is_Form_Minimized As Boolean = (Me.WindowState = FormWindowState.Minimized)
         Dim prev_Foreground_Window_Handle As IntPtr = IntPtr.Zero
 

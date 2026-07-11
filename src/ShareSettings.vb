@@ -21,16 +21,23 @@ Public Class ShareSettings
     ''' knob), so this drives the guidance + security warning, not enforcement.</summary>
     Public Property ExternalAccessIntent As Boolean = False ' Share_ExternalAccessIntent
 
+    ''' <summary>The §6 "exclude password" safeguard: export .fmscfg/QR with an
+    ''' empty password so the recipient types it at import; the sender passes the
+    ''' real password out-of-band (shown in the hint while the toggle is on).</summary>
+    Public Property ExcludePasswordFromExport As Boolean = False ' Share_ExcludePassword
+
     Public Sub Load()
         AutostartEnabled = ReadBool("Share_AutostartEnabled", False)
         WorkerEverStarted = ReadBool("Share_WorkerEverStarted", False)
         ExternalAccessIntent = ReadBool("Share_ExternalAccessIntent", False)
+        ExcludePasswordFromExport = ReadBool("Share_ExcludePassword", False)
     End Sub
 
     Public Sub Save()
         WriteBool("Share_AutostartEnabled", AutostartEnabled)
         WriteBool("Share_WorkerEverStarted", WorkerEverStarted)
         WriteBool("Share_ExternalAccessIntent", ExternalAccessIntent)
+        WriteBool("Share_ExcludePassword", ExcludePasswordFromExport)
     End Sub
 
     ' --- registry helpers (SZA\FastMediaSorter) -------------------------------

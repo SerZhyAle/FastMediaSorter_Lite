@@ -22,6 +22,9 @@
     __PUBLISHER_DISPLAY__ Human-readable publisher name (Partner Center "Package/Properties/PublisherDisplayName").
     __VERSION__           4-part version with the 4th part = 0 (the Store reserves the revision).
                           build-msix.ps1 derives it from the exe's YY.M.D.HHmm stamp.
+  The DisplayName below stays "FastMediaSorter LITE" (the reserved Store name) - do NOT
+  rename it or the submission is rejected. Only the Partner Center listing DESCRIPTION text
+  is refreshed with the new brand name; see docs/guides/STORE_PUBLISHING.md.
 -->
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"

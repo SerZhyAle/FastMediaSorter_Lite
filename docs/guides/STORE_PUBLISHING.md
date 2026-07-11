@@ -149,9 +149,15 @@ email (1-3 business days).
 
 ## Text templates
 
-### Description
+> **Rebrand note (2026-07):** the product **title stays "FastMediaSorter LITE"** in Partner Center
+> (frozen reserved name = the update anchor - do NOT change it). Only the **Description** text below is
+> refreshed to lead with the new brand name "Fast Media Sorter for Windows". Paste the EN block into the
+> listing's Description at the next submission; the RU block is optional copy for a Russian-market listing.
+
+### Description (EN)
 ```
-FastMediaSorter LITE is a fast, keyboard-driven viewer and sorter for images and video on Windows.
+Fast Media Sorter for Windows (published on the Microsoft Store as "FastMediaSorter LITE") is a fast,
+keyboard-driven viewer and sorter for images and video on Windows.
 
 Open a folder and fly through it: full-screen slideshow, quick panel navigation, and one-key Move /
 Copy / Rename / Delete to sort large photo and video collections in minutes. Assign folders to hotkeys
@@ -164,6 +170,26 @@ Tesseract) and overlay a translation. Translation is performed by a provider you
 yourself - a local Ollama model or a LibreTranslate endpoint; OCR works without any network connection.
 
 Runs on .NET Framework 4.8. No account, no ads, no telemetry. Open source:
+https://github.com/SerZhyAle/FastMediaSorter_Lite
+```
+
+### Description (RU - optional Russian-market listing)
+```
+Fast Media Sorter for Windows (в Microsoft Store публикуется как "FastMediaSorter LITE") - быстрый
+просмотрщик и сортировщик изображений и видео для Windows, управляемый с клавиатуры.
+
+Откройте папку и листайте её мгновенно: полноэкранное слайд-шоу, быстрая навигация по панели и
+перемещение / копирование / переименование / удаление одной клавишей - чтобы разобрать большие
+коллекции фото и видео за минуты. Назначьте папки на горячие клавиши и раскладывайте файлы одним
+нажатием. Поддерживается широкий набор форматов - H.264/MP4 встроенным плеером с автоматическим
+переходом на LibVLC для AVI, MKV, VP9, ZMBV и других - а поля по краям кадра заполняются фоном в
+стиле "ambilight" под цвет изображения.
+
+Есть необязательный перевод текста прямо на картинке: распознавание (полностью офлайн, Tesseract) и
+наложение перевода. Перевод выполняет выбранный вами провайдер - локальная модель Ollama или сервер
+LibreTranslate; распознавание работает без интернета.
+
+Работает на .NET Framework 4.8. Без аккаунта, без рекламы, без телеметрии. Открытый исходный код:
 https://github.com/SerZhyAle/FastMediaSorter_Lite
 ```
 

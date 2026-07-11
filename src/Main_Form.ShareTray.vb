@@ -208,9 +208,13 @@ Partial Public Class Main_Form
         _trayMiExit.Text = If(rus, "Выход", "Quit")
     End Sub
 
-    ''' <summary>Menu "Открыть" / double-click: restore and focus the main window
-    ''' (leaving tray-resident mode).</summary>
-    Private Sub TrayOpen()
+    ''' <summary>Brings the main window back on screen with its current content -
+    ''' leaves tray-resident mode, unminimizes and focuses it. The last shown
+    ''' media stays on the picture box/player (the form was only hidden, never
+    ''' torn down), so the window always reappears with content, not empty.
+    ''' Shared by the tray menu and a bare second launch (the user re-ran the
+    ''' exe with no file just to get the window back).</summary>
+    Friend Sub RestoreMainWindow()
         Try
             _residentInTray = False
             Me.Show()
@@ -221,15 +225,15 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
+    ''' <summary>Menu "Открыть" / double-click: restore and focus the main window
+    ''' (leaving tray-resident mode).</summary>
+    Private Sub TrayOpen()
+        RestoreMainWindow()
+    End Sub
+
     ''' <summary>Menu "Настроить": bring LITE forward, open Settings on the Share tab.</summary>
     Private Sub TrayConfigure()
-        Try
-            _residentInTray = False
-            If Me.WindowState = FormWindowState.Minimized Then Me.WindowState = FormWindowState.Normal
-            Me.Show()
-            Me.Activate()
-        Catch
-        End Try
+        RestoreMainWindow()
         Try
             ShowShareSettings()
         Catch

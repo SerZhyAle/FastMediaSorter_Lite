@@ -14,51 +14,53 @@ Imports System.Web.Script.Serialization
 ''' internet access" toggle advertise the external path (LAN + port-forward) in a
 ''' single scannable QR / one .fmscfg, so sharing works by one scan either way.
 '''
-''' The .fmscfg schema (frozen contract, v1 - see the companion CONFIG_FORMAT.md)
-''' and the QR payload rule (plain JSON when small, else "FMSCFG1:" + base64(gzip))
-''' are reproduced faithfully so the shipped Android importer accepts it.
+''' The .fmscfg schema (frozen contract - see the companion CONFIG_FORMAT.md and
+''' the Android-side COMPANION_EXPORT_SPEC, S1002) and the QR payload rule (plain
+''' JSON when small, else "FMSCFG1:" + base64(gzip)) are reproduced faithfully so
+''' the shipped Android importer accepts it.
+'''
+''' Schema v2 (resource params): each root can carry the target resource's
+''' configuration (profile, media types, scan conditions, destination flag,
+''' comment, PIN, slideshow interval) from ShareRootParamsStore. Fields are
+''' emitted ONLY when they differ from the Android import defaults (keeps the QR
+''' payload small), and schemaVersion is adaptive: 2 only when at least one v2
+''' field is present, otherwise 1 - so an unconfigured share stays importable by
+''' Android apps that predate v2. JSON is assembled by hand (ordered, omitting
+''' defaults); JavaScriptSerializer cannot omit properties.
 ''' </summary>
 Public NotInheritable Class ShareConfigResult
     Public Property ConfigJson As String = ""
     Public Property QrPng As Byte()
     Public Property HasExternal As Boolean
     Public Property LanDisplay As String = ""   ' "host:port" for copy/display
+    ''' <summary>The payload does not fit a QR code (contract §7) - the UI must
+    ''' tell the user to share the .fmscfg file instead. Never silently truncate.</summary>
+    Public Property QrOverflow As Boolean
 End Class
 
 Public Module ShareConfigBuilder
 
     Private Const QrPrefix As String = "FMSCFG1:"
     Private Const QrComfortLimit As Integer = 900   ' bytes; denser QR scans poorly
+    ''' <summary>Hard QR capacity: version 40, ECC M, byte mode = 2331 bytes. A
+    ''' payload above this cannot be encoded at all - fall back to the file.</summary>
+    Private Const QrHardLimit As Integer = 2331
 
-    ' DTOs - property names ARE the on-the-wire JSON field names (schema v1).
-    Private Class CfgRoot
-        Public Property virtualPath As String
-        Public Property label As String
-    End Class
-    Private Class CfgPath
-        Public Property kind As String
-        Public Property host As String
-        Public Property port As Integer
-    End Class
-    Private Class Cfg
-        Public Property schemaVersion As Integer = 1
-        Public Property resourceName As String
-        Public Property protocol As String = "sftp"
-        Public Property accessPaths As List(Of CfgPath)
-        Public Property username As String
-        Public Property password As String
-        Public Property hostKeyFingerprintSha256 As String
-        Public Property roots As List(Of CfgRoot)
-        Public Property createdAt As String
-    End Class
+    ' UI thread only (Build is called from the Share tab / wizard handlers).
+    Private ReadOnly Ser As New JavaScriptSerializer()
 
     ''' <summary>
     ''' Builds the config + QR from a running worker status. Always advertises the
     ''' LAN path; adds the internet (port-forward) path when <paramref name="includeExternal"/>
     ''' is on and reachability found a usable non-CGNAT external host. Returns
     ''' Nothing when there is nothing to serve (not running / no address / no roots).
+    ''' <paramref name="includePassword"/> off = the §6 "exclude password" safeguard:
+    ''' the password key stays present with an empty value (spec §2 - "passwordless
+    ''' share, recipient types it at import") and the sender must pass the real
+    ''' password out-of-band.
     ''' </summary>
-    Public Function Build(status As WorkerStatus, includeExternal As Boolean) As ShareConfigResult
+    Public Function Build(status As WorkerStatus, includeExternal As Boolean,
+                          Optional includePassword As Boolean = True) As ShareConfigResult
         If status Is Nothing OrElse Not status.Running Then Return Nothing
         Dim reach As WorkerReachability = status.Reachability
         Dim port As Integer = status.ListenPort
@@ -67,48 +69,127 @@ Public Module ShareConfigBuilder
         Dim lan As String = If(reach IsNot Nothing, If(reach.LanAddress, ""), "")
         If lan.Length = 0 Then lan = NetworkInfo.LocalIPv4()
 
-        Dim paths As New List(Of CfgPath)
-        If lan.Length > 0 Then paths.Add(New CfgPath With {.kind = "lan", .host = lan, .port = port})
+        Dim paths As New StringBuilder()
+        If lan.Length > 0 Then AppendAccessPath(paths, "lan", lan, port)
 
         Dim hasExt As Boolean = False
         If includeExternal AndAlso reach IsNot Nothing AndAlso Not reach.IsCgnat AndAlso Not String.IsNullOrEmpty(reach.ExternalHost) Then
             Dim extPort As Integer = If(reach.ExternalPort > 0, reach.ExternalPort, port)
-            paths.Add(New CfgPath With {.kind = "portforward", .host = reach.ExternalHost, .port = extPort})
+            AppendAccessPath(paths, "portforward", reach.ExternalHost, extPort)
             hasExt = True
         End If
-        If paths.Count = 0 Then Return Nothing
+        If paths.Length = 0 Then Return Nothing
 
-        Dim roots As New List(Of CfgRoot)
+        Dim anyV2 As Boolean = False
+        Dim roots As New StringBuilder()
         If status.Roots IsNot Nothing Then
             For Each r As ShareFolder In status.Roots
                 Dim nm As String = If(r.name, "")
                 If nm.Length = 0 Then Continue For
-                roots.Add(New CfgRoot With {.virtualPath = "/" & nm, .label = nm})
+                If roots.Length > 0 Then roots.Append(","c)
+                roots.Append(RootJson(nm, ShareRootParamsStore.GetFor(r.hostPath), anyV2))
             Next
         End If
 
-        Dim cfg As New Cfg With {
-            .resourceName = "FastMediaSorter Companion on " & SafeMachineName(),
-            .accessPaths = paths,
-            .username = If(status.Username, ""),
-            .password = If(status.Password, ""),
-            .hostKeyFingerprintSha256 = If(status.Fingerprint, ""),
-            .roots = roots,
-            .createdAt = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss'Z'", CultureInfo.InvariantCulture)
-        }
+        ' Field order is the frozen contract order (canonical vector in the
+        ' companion CONFIG_FORMAT.md / Android fixture).
+        Dim sb As New StringBuilder()
+        sb.Append("{""schemaVersion"":").Append(If(anyV2, "2", "1"))
+        sb.Append(",""resourceName"":").Append(J("FastMediaSorter Companion on " & SafeMachineName()))
+        sb.Append(",""protocol"":""sftp""")
+        sb.Append(",""accessPaths"":[").Append(paths).Append("]"c)
+        sb.Append(",""username"":").Append(J(If(status.Username, "")))
+        sb.Append(",""password"":").Append(J(If(includePassword, If(status.Password, ""), "")))
+        sb.Append(",""hostKeyFingerprintSha256"":").Append(J(If(status.Fingerprint, "")))
+        sb.Append(",""roots"":[").Append(roots).Append("]"c)
+        sb.Append(",""createdAt"":").Append(J(DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss'Z'", CultureInfo.InvariantCulture)))
+        sb.Append("}"c)
+        Dim json As String = sb.ToString()
 
-        Dim json As String = New JavaScriptSerializer().Serialize(cfg)
         Dim result As New ShareConfigResult With {
             .ConfigJson = json,
             .HasExternal = hasExt,
             .LanDisplay = If(lan.Length > 0, lan & ":" & port.ToString(), "")
         }
-        Try
-            result.QrPng = RenderQr(QrPayload(json))
-        Catch
-            result.QrPng = Nothing
-        End Try
+
+        Dim payload As String = QrPayload(json)
+        If Encoding.UTF8.GetByteCount(payload) > QrHardLimit Then
+            result.QrOverflow = True   ' §7: fall back to the file, tell the user
+        Else
+            Try
+                result.QrPng = RenderQr(payload)
+            Catch
+                result.QrPng = Nothing
+                result.QrOverflow = True
+            End Try
+        End If
         Return result
+    End Function
+
+    ''' <summary>One roots[] entry. v1 fields (virtualPath, label) always present;
+    ''' every v2 field only when it differs from the Android import default (§3).
+    ''' Sets <paramref name="anyV2"/> when at least one v2 field was emitted.</summary>
+    Private Function RootJson(name As String, p As ShareRootParams, ByRef anyV2 As Boolean) As String
+        Dim label As String = name
+        If p IsNot Nothing AndAlso p.Label IsNot Nothing AndAlso p.Label.Trim().Length > 0 Then label = p.Label.Trim()
+
+        Dim sb As New StringBuilder()
+        sb.Append("{""virtualPath"":").Append(J("/" & name))
+        sb.Append(",""label"":").Append(J(label))
+
+        If p IsNot Nothing Then
+            Dim v2 As New StringBuilder()
+            If Not String.IsNullOrEmpty(p.Profile) AndAlso p.Profile <> "none" Then
+                v2.Append(",""profile"":").Append(J(p.Profile))
+            End If
+            If p.MediaTypes IsNot Nothing AndAlso p.MediaTypes.Count > 0 Then
+                v2.Append(",""mediaTypes"":[")
+                For i As Integer = 0 To p.MediaTypes.Count - 1
+                    If i > 0 Then v2.Append(","c)
+                    v2.Append(J(p.MediaTypes(i)))
+                Next
+                v2.Append("]"c)
+            End If
+            If Not p.ScanSubdirectories Then v2.Append(",""scanSubdirectories"":false")
+            If p.ShowSubfoldersAsItems Then v2.Append(",""showSubfoldersAsItems"":true")
+            If p.ShowHiddenFiles Then v2.Append(",""showHiddenFiles"":true")
+            If p.AllFiles Then v2.Append(",""allFiles"":true")
+            If p.IsDestination Then
+                v2.Append(",""isDestination"":true")
+                If p.HasDestinationColor Then
+                    v2.Append(",""destinationColor"":").Append(p.DestinationColorArgb.ToString(CultureInfo.InvariantCulture))
+                End If
+            End If
+            If p.Comment IsNot Nothing AndAlso p.Comment.Trim().Length > 0 Then
+                v2.Append(",""comment"":").Append(J(p.Comment.Trim()))
+            End If
+            If Not String.IsNullOrEmpty(p.AccessPin) AndAlso Not p.ExcludePinOnExport Then
+                v2.Append(",""accessPin"":").Append(J(p.AccessPin))
+            End If
+            If p.SlideshowInterval > 0 AndAlso p.SlideshowInterval <> 10 Then
+                v2.Append(",""slideshowInterval"":").Append(p.SlideshowInterval.ToString(CultureInfo.InvariantCulture))
+            End If
+            If v2.Length > 0 Then
+                anyV2 = True
+                sb.Append(v2)
+            End If
+        End If
+
+        sb.Append("}"c)
+        Return sb.ToString()
+    End Function
+
+    Private Sub AppendAccessPath(sb As StringBuilder, kind As String, host As String, port As Integer)
+        If sb.Length > 0 Then sb.Append(","c)
+        sb.Append("{""kind"":").Append(J(kind)).
+           Append(",""host"":").Append(J(host)).
+           Append(",""port"":").Append(port.ToString(CultureInfo.InvariantCulture)).
+           Append("}"c)
+    End Sub
+
+    ''' <summary>JSON string literal (quoted + escaped).</summary>
+    Private Function J(s As String) As String
+        Return Ser.Serialize(If(s, ""))
     End Function
 
     ''' <summary>Plain JSON when small enough, else "FMSCFG1:" + base64(gzip(json))

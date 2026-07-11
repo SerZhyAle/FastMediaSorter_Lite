@@ -10,7 +10,15 @@
   #error SourceDir must be defined (path to the staged build output)
 #endif
 
-#define AppName       "FastMediaSorter LITE"
+; Display name shown throughout the wizard screens, Start-menu shortcuts and the
+; setup.exe file properties. The channel/identity name below is kept separate on
+; purpose (light rebrand - see SPECIFICATION_RENAME_FAST_MEDIA_SORTER_FOR_WINDOWS.md).
+#define AppName       "Fast Media Sorter for Windows"
+; FROZEN identity name for the "Add/Remove Programs" (ARP) entry. winget and the
+; Store correlate the installed app to their manifests by this ARP DisplayName,
+; so it must stay "FastMediaSorter LITE" even though the wizard now shows the new
+; display name. Pinned via UninstallDisplayName below - NEVER change it.
+#define AppNameArp    "FastMediaSorter LITE"
 #define AppPublisher  "SerZhyAle"
 #define AppExeName    "FastMediaSorter_LITE.exe"
 #define AppURL        "https://github.com/SerZhyAle/FastMediaSorter_Lite"
@@ -20,6 +28,10 @@ AppId={{7371E7F1-B8A8-4786-8173-5F5B2B6E6AC9}
 AppName={#AppName}
 AppVersion={#Version}
 AppVerName={#AppName} {#Version}
+; Pin the ARP DisplayName to the frozen channel name (byte-identical to the value
+; AppVerName produced before this rename) so winget-upgrade correlation and the
+; Store listing stay intact while every wizard screen shows the new display name.
+UninstallDisplayName={#AppNameArp} {#Version}
 AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}/issues
@@ -55,6 +67,13 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+
+[InstallDelete]
+; The Start-menu group used to be named "FastMediaSorter LITE"; it is now the new
+; display name. Remove the stale folder on upgrade so a user is not left with two
+; Start-menu folders. The install dir, exe, AppId and ARP name are unchanged, so
+; this leftover shortcut folder is the only thing to clean.
+Type: filesandordirs; Name: "{autoprograms}\FastMediaSorter LITE"
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"
@@ -101,21 +120,21 @@ end;
 function OptionsPageDescriptionText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Выберите, нужно ли зарегистрировать FastMediaSorter LITE для изображений и обратите внимание на рекомендуемый companion-проект.'
+    Result := 'Выберите, нужно ли зарегистрировать {#AppName} для изображений и обратите внимание на рекомендуемый companion-проект.'
   else if IsLanguage('ukrainian') then
-    Result := 'Виберіть, чи потрібно зареєструвати FastMediaSorter LITE для зображень, і зверніть увагу на рекомендований companion-проєкт.'
+    Result := 'Виберіть, чи потрібно зареєструвати {#AppName} для зображень, і зверніть увагу на рекомендований companion-проєкт.'
   else
-    Result := 'Choose whether FastMediaSorter LITE should register for image files, and see the recommended companion project.';
+    Result := 'Choose whether {#AppName} should register for image files, and see the recommended companion project.';
 end;
 
 function DefaultViewerPromptText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Сделать FastMediaSorter LITE просмотрщиком изображений по умолчанию?'
+    Result := 'Сделать {#AppName} просмотрщиком изображений по умолчанию?'
   else if IsLanguage('ukrainian') then
-    Result := 'Зробити FastMediaSorter LITE типовим переглядачем зображень?'
+    Result := 'Зробити {#AppName} типовим переглядачем зображень?'
   else
-    Result := 'Make FastMediaSorter LITE the default viewer for common image formats?';
+    Result := 'Make {#AppName} the default viewer for common image formats?';
 end;
 
 function RegisterAssociationsText: String;
@@ -171,11 +190,11 @@ end;
 function AssociationWriteErrorText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Не удалось полностью зарегистрировать FastMediaSorter LITE для всех форматов изображений.'
+    Result := 'Не удалось полностью зарегистрировать {#AppName} для всех форматов изображений.'
   else if IsLanguage('ukrainian') then
-    Result := 'Не вдалося повністю зареєструвати FastMediaSorter LITE для всіх форматів зображень.'
+    Result := 'Не вдалося повністю зареєструвати {#AppName} для всіх форматів зображень.'
   else
-    Result := 'FastMediaSorter LITE could not be fully registered for all image formats.';
+    Result := '{#AppName} could not be fully registered for all image formats.';
 end;
 
 function BuildAppCommand: String;
