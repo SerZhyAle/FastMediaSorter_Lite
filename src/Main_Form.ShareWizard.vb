@@ -21,7 +21,7 @@ Partial Public Class Main_Form
 
     ''' <summary>Creates the toolbar "Share" button. Called from BuildModernLayout
     ''' right after the Translate button so it inherits the uniform chrome.</summary>
-    Friend Sub BuildShareToolbarControls(host As FlowLayoutPanel)
+    Friend Sub BuildShareToolbarControls(host As Panel)
         If btn_Share IsNot Nothing OrElse host Is Nothing Then Return
         btn_Share = New Button With {
             .Name = "btn_Share",
@@ -60,6 +60,7 @@ Partial Public Class Main_Form
                 "Поделиться текущей папкой с телефоном Android по локальной сети (Shift+S). ПКМ по каталогу - тоже.",
                 "Share the current folder with an Android phone over the local network (Shift+S). Right-click the folder box too."))
         End If
+        LocalizeShareTray()
     End Sub
 
     Private Sub btn_Share_Click(sender As Object, e As EventArgs) Handles btn_Share.Click

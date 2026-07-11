@@ -8,7 +8,9 @@ Imports System.Windows.Forms
 '
 ' The original UI hand-placed every toolbar control with absolute pixel math
 ' (see Main_Form.UILayout.vb history). This partial replaces that model:
-'   * flow_Toolbar  (FlowLayoutPanel, Dock=Top)    - all chrome, auto-wraps
+'   * flow_Toolbar  (Panel,          Dock=Top)    - all chrome, two rows, each
+'                                                    with a right-edge overflow
+'                                                    menu (Main_Form.ToolbarOverflow.vb)
 '   * panel_Status  (FlowLayoutPanel, Dock=Bottom) - status / current-file
 '   * panel_Media   (Panel,          Dock=Fill)    - the media surface
 '
@@ -20,7 +22,11 @@ Imports System.Windows.Forms
 Partial Public Class Main_Form
 
     Friend WithEvents panel_Media As Panel
-    Friend WithEvents flow_Toolbar As FlowLayoutPanel
+    ' Named flow_Toolbar for history, but since the overflow rework it is a plain
+    ' Panel laid out by hand (see Main_Form.ToolbarOverflow.vb): two rows, each
+    ' collapsing controls that don't fit into a right-edge "more" dropdown instead
+    ' of wrapping onto extra rows (which used to push down over the image).
+    Friend WithEvents flow_Toolbar As Panel
     Friend WithEvents panel_Status As FlowLayoutPanel
 
     Private modern_Layout_Built As Boolean = False
@@ -48,12 +54,9 @@ Partial Public Class Main_Form
             .Dock = DockStyle.Fill,
             .Margin = New Padding(0)
         }
-        flow_Toolbar = New FlowLayoutPanel With {
+        flow_Toolbar = New Panel With {
             .Name = "flow_Toolbar",
             .Dock = DockStyle.Top,
-            .AutoSize = True,
-            .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .WrapContents = True,
             .Padding = New Padding(2),
             .Margin = New Padding(0)
         }
@@ -71,8 +74,10 @@ Partial Public Class Main_Form
         ' Picture_Box_1 frontmost, then Picture_Box_2, Web_Browser, help label).
         ReparentInto(panel_Media, {CType(lbl_Help_Info, Control), Web_Browser, Picture_Box_2, Picture_Box_1})
 
-        ' Toolbar, left-to-right reading order. Row 2 (navigation/actions) is
-        ' forced onto a new line at wide widths via a flow break after lbl_Info.
+        ' Toolbar, left-to-right reading order. The first four are the "priority"
+        ' core that stays visible and lets the folder box shrink; everything after
+        ' collapses into the right-edge overflow menu when it doesn't fit (see
+        ' Main_Form.ToolbarOverflow.vb / LayoutToolbar).
         Dim toolbar_Order As Control() = {
             chkbox_Top_Most, cmbox_Sort, lbl_Folder, cmbox_Media_Folder,
             btn_choose_file, btn_Select_Folder, btn_Review, btn_Panel,
@@ -81,7 +86,6 @@ Partial Public Class Main_Form
             btn_Next_Random, btn_Random_Slideshow, btn_Slideshow,
             btn_Move_Table, btn_Rename, bt_Delete, lbl_Zoom}
         ReparentInto(flow_Toolbar, toolbar_Order)
-        flow_Toolbar.SetFlowBreak(lbl_Info, True)
 
         ' Status line at the bottom.
         ReparentInto(panel_Status, {CType(lbl_Current_File, Control), lbl_Status})
@@ -93,6 +97,12 @@ Partial Public Class Main_Form
         ' Android-share "Share" toolbar button - same in-code, pre-styling slot.
         BuildShareToolbarControls(flow_Toolbar)
 
+        ' Right-edge "more" button + the priority/overflow partitioning that
+        ' LayoutToolbar() uses. Built after the OCR/Share buttons so they are part
+        ' of the overflow set. Must precede ApplyModernStyling so the button is
+        ' styled with the rest of the chrome.
+        BuildToolbarOverflow(flow_Toolbar)
+
         ' Add Fill first (back of z-order) so the docked strips reserve their
         ' space and the media panel takes the remainder.
         Me.Controls.Add(panel_Media)
@@ -102,6 +112,9 @@ Partial Public Class Main_Form
         ApplyModernStyling()
 
         Me.ResumeLayout(True)
+
+        ' First manual layout (also fixes the panel height to a single row).
+        LayoutToolbar()
     End Sub
 
     Private Sub ReparentInto(target As Control, controls As Control())
@@ -135,6 +148,7 @@ Partial Public Class Main_Form
         ' One uniform row height so every button/combo lines up - no vertical
         ' "jumping" from glyph-vs-text font metrics.
         Dim row_H As Integer = Math.Max(cmbox_Media_Folder.PreferredHeight, 24)
+        toolbar_Row_Height = row_H
 
         For Each c As Control In flow_Toolbar.Controls
             Dim b As Button = TryCast(c, Button)
@@ -176,8 +190,9 @@ Partial Public Class Main_Form
         btn_RecentFiles.Text = "▾"
         For Each gb As Button In New Button() {btn_Review, btn_Panel, btn_Full_Screen,
                                                btn_Slideshow, btn_Random_Slideshow,
-                                               btn_Next_Random, btn_Rename, btn_RecentFiles}
-            gb.Font = glyph_Font
+                                               btn_Next_Random, btn_Rename, btn_RecentFiles,
+                                               btn_Overflow, btn_Overflow_2}
+            If gb IsNot Nothing Then gb.Font = glyph_Font
         Next
 
         For Each c As Control In panel_Status.Controls
@@ -271,6 +286,14 @@ Partial Public Class Main_Form
 
         RecolorContainer(flow_Toolbar, back_Color, opposite_Color, hover_Color)
         RecolorContainer(panel_Status, back_Color, opposite_Color, hover_Color)
+
+        ' Overflow dropdowns match the chrome.
+        For Each m As ContextMenuStrip In New ContextMenuStrip() {overflow_Menu, overflow_Menu_2}
+            If m IsNot Nothing Then
+                m.BackColor = back_Color
+                m.ForeColor = opposite_Color
+            End If
+        Next
 
         ApplyTitleBarTheme(IsDarkColor(back_Color))
     End Sub

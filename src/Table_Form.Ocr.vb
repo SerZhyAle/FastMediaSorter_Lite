@@ -347,7 +347,7 @@ Partial Public Class Table_Form
         lblOcrMode.Text = If(rus, "Режим OCR:", "OCR mode:")
         btnOcrDownload.Text = If(rus, "Скачать пакет распознавания", "Download recognition language pack")
 
-        lblOcrOpacity.Text = If(rus, "Прозрачность:", "Opacity:")
+        lblOcrOpacity.Text = If(rus, "Непрозрачность:", "Opacity:")
         chkOcrDisk.Text = If(rus, "Дисковый кэш результатов", "Cache results on disk")
 
         PopulateOcrQualityItems(rus)

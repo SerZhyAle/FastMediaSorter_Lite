@@ -15,7 +15,7 @@ Public Module ShareGuide
 
     Private Const AssetPath As String = "help/port-forward.html"
 
-    ''' <summary>FastMediaSorter LITE website (GitHub Pages).</summary>
+    ''' <summary>Fast Media Sorter for Windows website (GitHub Pages).</summary>
     Public Const SiteUrl As String = "https://serzhyale.github.io/FastMediaSorter_Lite/"
 
     ''' <summary>Online trilingual "How to publish your folders for Android" page.</summary>

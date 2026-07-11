@@ -425,7 +425,7 @@ Public Class Main_Form
     End Sub
 
     Private Sub lbl_Info_LinkClicked(sender As Object, e As System.Windows.Forms.LinkLabelLinkClickedEventArgs) Handles lbl_Info.LinkClicked
-        System.Diagnostics.Process.Start("mailto:sza@ukr.net?subject=FastMediaSorter for Win:")
+        System.Diagnostics.Process.Start("mailto:sza@ukr.net?subject=Fast Media Sorter for Windows:")
     End Sub
 
 
@@ -481,10 +481,11 @@ Public Class Main_Form
         Table_Form.Show(Me)
     End Sub
 
-    Private Sub Label1_MouseClick(sender As Object, e As MouseEventArgs) Handles lbl_Folder.MouseClick
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1970: lbl_Folder MouseClick")
-        CopyFilePathToClipboard()
-    End Sub
+    ' lbl_Folder.MouseClick used to also run CopyFilePathToClipboard() here, which
+    ' fired after Label1_Click and overwrote the clipboard with the FILE path - so a
+    ' click on "Каталог:" copied the file, contradicting the "copy the folder path"
+    ' tooltip. The file-path copy already lives on lbl_Current_File / lbl_Status; the
+    ' folder label keeps only Label1_Click (folder path).
 
     Private Sub StatusL_MouseClick(sender As Object, e As MouseEventArgs) Handles lbl_Status.MouseClick
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1980: lbl_Status MouseClick")

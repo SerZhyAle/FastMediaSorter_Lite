@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Оркестратор РЕЛИЗА FastMediaSorter LITE. См. ../docs/guides/BUILD_AND_RELEASE.md.
+    Оркестратор РЕЛИЗА Fast Media Sorter for Windows. См. ../docs/guides/BUILD_AND_RELEASE.md.
 
 .DESCRIPTION
     "Релиз" = собрать на GitHub + опубликовать. GitHub Actions (release.yml) запускается
@@ -51,7 +51,7 @@ $tag = "v$Version"
 function Say([string]$msg, [string]$color = "Cyan") { Write-Host $msg -ForegroundColor $color }
 function Step([string]$msg) { Write-Host ""; Write-Host "==> $msg" -ForegroundColor Yellow }
 
-Say "FastMediaSorter LITE - RELEASE" "Green"
+Say "Fast Media Sorter for Windows - RELEASE" "Green"
 Say "Version : $Version"
 Say "Tag     : $tag"
 Say ("Mode    : " + $(if ($Push) { "PUSH (запустит платный GitHub Actions)" } else { "DRY-RUN (ничего не пушится)" })) `
@@ -112,7 +112,7 @@ if (-not $Push) {
 Step "Создание и push тега $tag (запускает GitHub Actions)"
 Push-Location $repoRoot
 try {
-    git tag -a $tag -m "FastMediaSorter LITE $Version"
+    git tag -a $tag -m "Fast Media Sorter for Windows $Version"
     if ($LASTEXITCODE -ne 0) { Write-Error "Не удалось создать тег $tag." }
 
     git push origin $tag

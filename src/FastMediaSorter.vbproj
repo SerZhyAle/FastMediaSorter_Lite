@@ -247,6 +247,14 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.ShareTray.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.ToolbarOverflow.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Main_Form.OcrOverlay.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>

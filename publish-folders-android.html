@@ -24,7 +24,7 @@
   body{background:var(--bg);color:var(--fg);font:16px/1.62 'Plus Jakarta Sans',-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
     background-image:radial-gradient(60vw 60vw at 85% -10%,rgba(168,85,247,.14),transparent 60%),radial-gradient(50vw 50vw at -10% 10%,rgba(99,102,241,.14),transparent 60%);
     background-attachment:fixed;}
-  .wrap{max-width:1080px;margin:0 auto;padding:clamp(18px,3.5vw,44px)}
+  .wrap{margin:0 auto;padding:clamp(16px,3vw,52px)}
   header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin-bottom:6px}
   .brand{font-weight:800;font-size:20px;letter-spacing:.2px}
   .brand a{color:var(--fg);text-decoration:none}
@@ -37,13 +37,20 @@
   h2{font-size:20px;margin:30px 0 10px}
   .lead{color:var(--muted);font-size:18px;margin:0 0 8px;max-width:70ch}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:16px 0;backdrop-filter:blur(14px)}
-  .steps{counter-reset:s;list-style:none;padding:0;margin:0}
+  .steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr;gap:0 44px}
+  @media (min-width:760px){ .steps{grid-template-columns:1fr 1fr} }
+  @media (min-width:1200px){ .steps{grid-template-columns:repeat(3,1fr)} }
   .steps li{position:relative;padding:12px 0 12px 46px;border-bottom:1px solid var(--line)}
   .steps li:last-child{border-bottom:0}
   .steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:12px;width:30px;height:30px;
     display:grid;place-items:center;border-radius:50%;background:var(--grad);color:#fff;font-weight:700;font-size:14px}
   .grid{display:grid;grid-template-columns:1fr;gap:16px}
   @media (min-width:820px){ .grid{grid-template-columns:1fr 1fr} }
+  @media (min-width:1000px){
+    .warn ul,.card>ul{column-count:2;column-gap:46px}
+    .warn li,.card>ul li{break-inside:avoid}
+  }
+  @media (min-width:1500px){ .warn ul,.card>ul{column-count:3} }
   code{background:var(--pill);border-radius:6px;padding:.08em .45em;font-family:"Cascadia Code",Consolas,monospace;font-size:.9em}
   .pill{display:inline-block;background:var(--pill);border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:13px;color:var(--muted);margin:0 6px 6px 0}
   .warn{background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:14px;padding:14px 18px}
@@ -199,13 +206,13 @@
   </div>
 
   <footer>
-    <a href="./">FastMediaSorter LITE</a>
+    <a href="./">Fast Media Sorter for Windows</a>
     <a data-l="en" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/" target="_blank" rel="noopener">FastMediaSorter for Android</a>
     <a data-l="ru" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html" target="_blank" rel="noopener">FastMediaSorter для Android</a>
     <a data-l="uk" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-uk.html" target="_blank" rel="noopener">FastMediaSorter для Android</a>
     <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite" target="_blank" rel="noopener">GitHub</a>
     <a href="https://sza.od.ua" target="_blank" rel="noopener">SZA.od.ua</a>
-    <div style="margin-top:8px">© FastMediaSorter LITE - SZA</div>
+    <div style="margin-top:8px">© Fast Media Sorter for Windows - SZA</div>
   </footer>
 </div>
 

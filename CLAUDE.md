@@ -4,7 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**FastMediaSorter LITE** is a Windows Forms application for viewing and managing image and video files. It runs on .NET Framework 4.8 and supports a broad range of media formats through native IE WebBrowser playback (H.264/MP4) with LibVLC fallback for unsupported codecs (AVI, ZMBV, VP9, MKV, etc.).
+**Fast Media Sorter for Windows** (formerly **FastMediaSorter LITE**) is a Windows Forms application for viewing and managing image and video files. It runs on .NET Framework 4.8 and supports a broad range of media formats through native IE WebBrowser playback (H.264/MP4) with LibVLC fallback for unsupported codecs (AVI, ZMBV, VP9, MKV, etc.).
+
+### Naming rule (light rebrand, 2026-07)
+The display name is **Fast Media Sorter for Windows**, but the Microsoft Store listing, the winget manifests and the Inno installer keep publishing the app as **FastMediaSorter LITE** - deliberately. `installer/FastMediaSorter.iss` `AppName` feeds the ARP entry that winget correlates with `PackageName`, so **never rename anything inside `installer/`, `winget/` or `msix/`** (only winget `ShortDescription`/`Description` may be refreshed with the next release). Technical identifiers are frozen too: exe `FastMediaSorter_LITE.exe`, mutex `FastMediaSorterSingleInstanceMutex`, registry `SZA\FastMediaSorter`, ProgIDs `FastMediaSorter.*`, release asset names `FastMediaSorter-*`. See [SPECIFICATION_RENAME_FAST_MEDIA_SORTER_FOR_WINDOWS.md](docs/specifications/SPECIFICATION_RENAME_FAST_MEDIA_SORTER_FOR_WINDOWS.md).
 
 ## Build & Run
 

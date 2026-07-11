@@ -55,7 +55,7 @@ Public Class Table_Form
         toolTip.SetToolTip(num_Video_Volume, If(Is_Russian_Language, "Громкость видео по умолчанию (0-100%).", "Default video volume (0-100%)."))
         toolTip.SetToolTip(SetOnTop, If(Is_Russian_Language, "Держать это окно поверх всех остальных - оно не любит, когда его задвигают.", "Keep this window on top of everything else - it doesn't enjoy being shoved behind."))
 
-        toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык интерфейса на английский", "Switch interface language to English"))
+        toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык интерфейса на английский", "Switch interface language to Russian"))
 
         If btn_Set_As_Default_Video IsNot Nothing Then
             toolTip.SetToolTip(btn_Set_As_Default_Video, If(Is_Russian_Language,
@@ -438,6 +438,6 @@ Public Class Table_Form
     End Sub
 
     Private Sub LinkLabel1_LinkClicked(sender As Object, e As System.Windows.Forms.LinkLabelLinkClickedEventArgs) Handles LinkLabel1.LinkClicked
-        System.Diagnostics.Process.Start("mailto:sza@ukr.net?subject=FastMediaSorter for Win:")
+        System.Diagnostics.Process.Start("mailto:sza@ukr.net?subject=Fast Media Sorter for Windows:")
     End Sub
 End Class

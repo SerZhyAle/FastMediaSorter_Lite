@@ -47,7 +47,7 @@ Partial Public Class Main_Form
             Dim progId = "FastMediaSorter.jpg"
             ' Set ProgID
             Using progKey = Registry.ClassesRoot.CreateSubKey(progId)
-                progKey.SetValue("", "JPEG Image - FastMediaSorter")
+                progKey.SetValue("", "JPEG Image - Fast Media Sorter")
                 Using shellKey = progKey.CreateSubKey("shell\open\command")
                     shellKey.SetValue("", """" & exePath & """ ""%1""")
                 End Using
@@ -98,9 +98,9 @@ Partial Public Class Main_Form
     End Function
 
     Private Sub AssociateImageTypesWithThisApp()
-        AssociateExtensionWithThisApp(".jpg", "FastMediaSorter.jpg", "JPEG Image - FastMediaSorter")
-        AssociateExtensionWithThisApp(".png", "FastMediaSorter.png", "PNG Image - FastMediaSorter")
-        AssociateExtensionWithThisApp(".gif", "FastMediaSorter.gif", "GIF Image - FastMediaSorter")
+        AssociateExtensionWithThisApp(".jpg", "FastMediaSorter.jpg", "JPEG Image - Fast Media Sorter")
+        AssociateExtensionWithThisApp(".png", "FastMediaSorter.png", "PNG Image - Fast Media Sorter")
+        AssociateExtensionWithThisApp(".gif", "FastMediaSorter.gif", "GIF Image - Fast Media Sorter")
 
         MessageBox.Show(If(Is_Russian_Language, "Ассоциации установлены. Возможно потребуется перезапустить Проводник или Windows.", "Associations set. You may need to restart Explorer or Windows for changes to take effect."), "Association", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
@@ -145,7 +145,7 @@ Partial Public Class Main_Form
             Try
                 Dim clean As String = ext.TrimStart("."c)
                 Dim prog_Id As String = "FastMediaSorter." & clean
-                Dim description As String = clean.ToUpper() & " Image - FastMediaSorter"
+                Dim description As String = clean.ToUpper() & " Image - Fast Media Sorter"
 
                 ' HKCU\Software\Classes - не требует прав администратора, работает для текущего пользователя
                 Using classes_Key = Registry.CurrentUser.OpenSubKey("Software\Classes", True)
@@ -208,7 +208,7 @@ Partial Public Class Main_Form
             Try
                 Dim clean As String = ext.TrimStart("."c)
                 Dim prog_Id As String = "FastMediaSorter." & clean
-                Dim description As String = clean.ToUpper() & " Video - FastMediaSorter"
+                Dim description As String = clean.ToUpper() & " Video - Fast Media Sorter"
 
                 ' HKCU\Software\Classes - не требует прав администратора, работает для текущего пользователя
                 Using classes_Key = Registry.CurrentUser.OpenSubKey("Software\Classes", True)

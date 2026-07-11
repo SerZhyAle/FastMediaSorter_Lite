@@ -2,13 +2,13 @@
 
 > Audience: the Android FastMediaSorter app developer implementing "Add resource -> import from companion".
 > Status: implementation spec. The wire contract below is **frozen at schemaVersion 1** and is identical on both ends.
-> Source of truth (Windows side): `ShareConfigBuilder.vb` in FastMediaSorter LITE, byte-faithful to the companion contract `docs/CONFIG_FORMAT.md` + `internal/config/schema.go`.
+> Source of truth (Windows side): `ShareConfigBuilder.vb` in Fast Media Sorter for Windows, byte-faithful to the companion contract `docs/CONFIG_FORMAT.md` + `internal/config/schema.go`.
 
 ---
 
 ## 0. What this is, and what changed
 
-The Windows app (FastMediaSorter LITE) can share PC folders with the phone over SFTP. It exports a **CompanionResourceConfig** - a small JSON document that carries everything the phone needs to add a working, read-only SFTP resource in one action: address(es), credentials, the server host-key fingerprint to pin, and the list of shared folders.
+The Windows app (Fast Media Sorter for Windows) can share PC folders with the phone over SFTP. It exports a **CompanionResourceConfig** - a small JSON document that carries everything the phone needs to add a working, read-only SFTP resource in one action: address(es), credentials, the server host-key fingerprint to pin, and the list of shared folders.
 
 The phone receives it in one of two ways:
 

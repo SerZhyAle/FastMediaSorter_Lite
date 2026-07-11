@@ -87,8 +87,8 @@ Public Class Share_Wizard_Form
 
         lblIntro = New Label With {.Left = 12, .Top = 10, .Width = 616, .Height = 34,
             .Text = If(rus,
-                "Эта папка станет видна на телефоне Android по локальной сети. Нажмите «Начать», отсканируйте QR-код в приложении FastMediaSorter или сохраните файл .fmscfg.",
-                "This folder becomes visible on your Android phone over the local network. Press Start, then scan the QR in the FastMediaSorter app or save the .fmscfg file.")}
+                "Эта папка станет видна на телефоне Android по локальной сети. Отсканируйте QR-код в приложении FastMediaSorter или сохраните файл .fmscfg.",
+                "This folder becomes visible on your Android phone over the local network. Scan the QR in the FastMediaSorter app or save the .fmscfg file.")}
         Controls.Add(lblIntro)
 
         ' ---- left column ----
@@ -445,6 +445,9 @@ Public Class Share_Wizard_Form
         End If
         ShowConfig(_config)
         UpdateInternetUi()
+
+        ' Keep the tray indicator in step with the server state right away.
+        Try : Main_Form.RefreshShareTray() : Catch : End Try
     End Sub
 
     Private Sub UpdateInternetUi()

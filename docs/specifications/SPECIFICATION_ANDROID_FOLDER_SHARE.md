@@ -3,13 +3,13 @@
 > Status: draft for implementation
 > Date: 2026-07-10
 > Branch context: main
-> Derived from: FastMediaSorter Android project spec S0421 (Level A) and its reference implementation `P:\windows\fms_companion` (Go, tests green, e2e-proven against the shipped Android importer on 2026-07-10). The standalone companion product is discontinued; this spec ports its full functionality into FastMediaSorter LITE.
+> Derived from: FastMediaSorter Android project spec S0421 (Level A) and its reference implementation `P:\windows\fms_companion` (Go, tests green, e2e-proven against the shipped Android importer on 2026-07-10). The standalone companion product is discontinued; this spec ports its full functionality into Fast Media Sorter for Windows.
 
 ---
 
 ## 1. Goal
 
-Add a "Share folders with your Android" feature to FastMediaSorter LITE: the user picks folder(s) on this PC, LITE runs a secure SFTP server for them in the background (surviving app close and, optionally, reboot), and exports a QR code / `.fmscfg` file that the FastMediaSorter Android app imports in one action (Add resource -> SFTP/FTP -> Import from companion). The Android side is ALREADY SHIPPED and device-verified - this spec is only the Windows half.
+Add a "Share folders with your Android" feature to Fast Media Sorter for Windows: the user picks folder(s) on this PC, the app runs a secure SFTP server for them in the background (surviving app close and, optionally, reboot), and exports a QR code / `.fmscfg` file that the FastMediaSorter Android app imports in one action (Add resource -> SFTP/FTP -> Import from companion). The Android side is ALREADY SHIPPED and device-verified - this spec is only the Windows half.
 
 **Architecture in one sentence:** LITE does NOT implement SFTP in VB. It drives a bundled headless sidecar, `fms-share-worker.exe` (Go, prebuilt, vendored in `payload/companion/`), over a named-pipe JSON control channel; the worker owns the SFTP server, keys, credentials, folder confinement, mDNS announce, UPnP/NAT-PMP port mapping, reachability and QR/config rendering.
 

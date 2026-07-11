@@ -26,9 +26,9 @@ Partial Public Class Main_Form
                 "Сначала заполните таблицу каталогов-получателей по клавишам 1,2,3.. - 0. " & Chr(10) &
                 "Затем укажите каталог-источник для сортировки (тот самый, где творится беспорядок). " & Chr(10) &
                 "Продвигайтесь по файлам с помощью стрелок, P/N (PgDn/PgUp) или кликов/скролла мыши. " & Chr(10) &
-                "Стрелки вверх-вниз: +10-10 и Shift+ PgDn/PgUp: + 100/ - 100 файлов" & Chr(10) &
-                "Y- случайно, S- случайное слайдшоу, I- слайдшоу. " & Chr(10) &
-                "R/T для поворота картинки, если фотограф держал камеру боком. " & Chr(10) &
+                "Стрелки вверх/вниз: -10/+10 и Shift+ PgDn/PgUp: +100/-100 файлов" & Chr(10) &
+                "Y- случайно, S- слайдшоу, I- случайное слайдшоу. " & Chr(10) &
+                "R/Shift+R для поворота картинки, если фотограф держал камеру боком (T тоже, пока не включён OCR-перевод). " & Chr(10) &
                 "F3 для просмотра панели изображений папки. " & Chr(10) &
                 "F6 для переименования файла. " & Chr(10) &
                 "Или раскидайте файлы по папкам клавишами (1,2,3.. - 0) - по одному нажатию на файл. " & Chr(10) &
@@ -51,11 +51,11 @@ Partial Public Class Main_Form
                 "First fill the destination-folders table for keys: 1,2.. - 0. " & Chr(10) &
                 "Then point it at the folder with your unsorted files (you know the one). " & Chr(10) &
                 "Move through files with P/N (PgDn/PgUp) keys or mouse clicks/scroll. " & Chr(10) &
-                "Up/Down- +10-10 and Shift+ PgDn/PgUp- + 100/ - 100 files" & Chr(10) &
-                "Y- random, S- random slide, I- slide. " & Chr(10) &
+                "Up/Down: -10/+10 and Shift+ PgDn/PgUp: +100/-100 files" & Chr(10) &
+                "Y- random, S- slide, I- random slide. " & Chr(10) &
                 "Or move/copy files into dest folders by keys (1,2.. - 0) - one keypress per file. " & Chr(10) &
                 "Or delete files (del key), if they had it coming. " & Chr(10) &
-                "R/T to rotate the image, for when the photographer held the camera sideways. " & Chr(10) &
+                "R/Shift+R to rotate the image, for when the photographer held the camera sideways (T too, unless OCR translation is on). " & Chr(10) &
                 "F3 to see the panel of folder's images. " & Chr(10) &
                 "F6 to rename the file. " & Chr(10) &
                 "You can pin the folders-table window and click on the key numbers. " & Chr(10) &
@@ -66,6 +66,10 @@ Partial Public Class Main_Form
         End If
 
         LocalizeShareEntryPoints()
+        LocalizeToolbarOverflow()
+
+        ' Button captions just changed width - re-flow the single-row toolbar.
+        LayoutToolbar()
 
     End Sub
 

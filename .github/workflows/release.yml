@@ -173,14 +173,14 @@ jobs:
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
-          name: FastMediaSorter ${{ steps.ver.outputs.version }}
+          name: Fast Media Sorter for Windows ${{ steps.ver.outputs.version }}
           files: |
             dist/${{ steps.setup.outputs.name }}
             dist/${{ steps.setup.outputs.name }}.sha256
             dist/${{ steps.pkg.outputs.name }}
             dist/${{ steps.pkg.outputs.name }}.sha256
           body: |
-            FastMediaSorter LITE ${{ steps.ver.outputs.version }}
+            Fast Media Sorter for Windows ${{ steps.ver.outputs.version }}
 
             ## Install
 
@@ -200,7 +200,7 @@ jobs:
             ```
 
             The winget package uses the Inno Setup installer in silent per-user mode.
-            The interactive setup can optionally register FastMediaSorter LITE for common image formats.
+            The interactive setup can optionally register the app for common image formats.
 
             **Companion app for books/documents:**
             ```

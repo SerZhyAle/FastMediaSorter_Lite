@@ -232,8 +232,8 @@ Partial Public Class Table_Form
 
         Tab_Page_6.Text = If(rus, "Поделиться", "Share")
         lblShareIntro.Text = If(rus,
-            "Делитесь папками этого ПК с телефоном Android. Отметьте папки, нажмите «Начать», затем на вкладке справа отсканируйте QR-код или сохраните файл .fmscfg.",
-            "Share this PC's folders with your Android phone. Tick the folders, press Start, then on the right tab scan the QR code or save the .fmscfg file.")
+            "Делитесь папками этого ПК с телефоном Android. Отметьте папки - общий доступ включится сразу, затем на вкладке справа отсканируйте QR-код или сохраните файл .fmscfg.",
+            "Share this PC's folders with your Android phone. Tick the folders and sharing starts automatically, then on the right tab scan the QR code or save the .fmscfg file.")
         lblShareFolders.Text = If(rus, "Папки (галочка = видна в сети):", "Folders (checked = visible on the network):")
         lvShareFolders.Columns(0).Text = If(rus, "Папка", "Folder")
         lvShareFolders.Columns(1).Text = If(rus, "Путь", "Path")
@@ -277,7 +277,7 @@ Partial Public Class Table_Form
         toolTip.SetToolTip(btnShareOpenRouter, If(rus, "Открыть страницу настроек роутера в браузере.", "Open the router settings page in the browser."))
         toolTip.SetToolTip(lnkShareGuide, If(rus, "Пошаговая инструкция по пробросу порта (офлайн, в браузере).", "Step-by-step port-forward guide (offline, in the browser)."))
         toolTip.SetToolTip(lnkShareRouterSearch, If(rus, "Определить модель роутера и открыть поиск инструкции для неё.", "Detect the router model and search a how-to for it."))
-        toolTip.SetToolTip(lnkShareWebGuide, If(rus, "Полная инструкция на сайте FastMediaSorter.", "Full guide on the FastMediaSorter website."))
+        toolTip.SetToolTip(lnkShareWebGuide, If(rus, "Полная инструкция на сайте Fast Media Sorter.", "Full guide on the Fast Media Sorter website."))
     End Sub
 
     ' --- local state -----------------------------------------------------------
@@ -398,7 +398,7 @@ Partial Public Class Table_Form
             _shareStatus = Await ShareController.GetStatusAsync()
             ApplyStatusToUi()
             SetShareBusy(False)
-            SetShareHint(If(Is_Russian_Language, "Отметьте папку и нажмите «Начать».", "Tick a folder and press Start."))
+            SetShareHint(If(Is_Russian_Language, "Отметьте хотя бы одну папку - общий доступ включится сразу.", "Tick a folder to start sharing."))
             Return
         End If
         Dim r As ShareController.ShareResult = Await ShareController.ShareFoldersAsync(folders)
@@ -605,6 +605,10 @@ Partial Public Class Table_Form
         UpdateInternetUi()
 
         SetShareServerControlsEnabled(WorkerProcess.IsAvailable())
+
+        ' Nudge the tray indicator to match the new server state at once (the poll
+        ' would catch it within a few seconds anyway).
+        Try : Main_Form.RefreshShareTray() : Catch : End Try
     End Sub
 
     Private Sub UpdateInternetUi()

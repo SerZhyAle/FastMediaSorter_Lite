@@ -40,7 +40,7 @@ Partial Public Class Main_Form
 
     ''' <summary>Creates the toolbar "Translate" button. Called from
     ''' BuildModernLayout BEFORE styling so it inherits the uniform chrome.</summary>
-    Friend Sub BuildOcrToolbarControls(host As FlowLayoutPanel)
+    Friend Sub BuildOcrToolbarControls(host As Panel)
         If btn_Translate IsNot Nothing OrElse host Is Nothing Then Return
         btn_Translate = New Button With {
             .Name = "btn_Translate",
@@ -419,6 +419,8 @@ Partial Public Class Main_Form
         If ocr_Settings.AutoMode Then caption &= " ⟳"
         btn_Translate.Text = caption
         btn_Translate.Font = New Font(btn_Translate.Font, If(ocr_Settings.Enabled, FontStyle.Bold, FontStyle.Regular))
+        ' The caption/weight change resizes the button - re-flow the toolbar.
+        LayoutToolbar()
     End Sub
 
     Private Shared Function CountUsefulDebugChars(text As String) As Integer

@@ -107,7 +107,7 @@ Friend Module OptionalRuntimeManager
 
         If Not IsRuntimeInstalled(kind) Then
             Dim confirmText As String = GetInstallPrompt(kind, isRussian)
-            If MessageBox.Show(owner, confirmText, "FastMediaSorter", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
+            If MessageBox.Show(owner, confirmText, "Fast Media Sorter", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
                 Return False
             End If
 
@@ -123,7 +123,7 @@ Friend Module OptionalRuntimeManager
 
         If LooksLikeVcRuntimeMissing(reason) Then
             Dim vcPrompt As String = GetVcPrompt(kind, isRussian)
-            If MessageBox.Show(owner, vcPrompt, "FastMediaSorter", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
+            If MessageBox.Show(owner, vcPrompt, "Fast Media Sorter", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
                 Return False
             End If
 
@@ -411,7 +411,7 @@ Friend Module OptionalRuntimeManager
 
         MessageBox.Show(owner,
                         prefix & Environment.NewLine & Environment.NewLine & details,
-                        "FastMediaSorter",
+                        "Fast Media Sorter",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning)
     End Sub

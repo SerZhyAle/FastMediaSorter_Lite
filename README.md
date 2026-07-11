@@ -1,6 +1,6 @@
-# FastMediaSorter LITE
+# Fast Media Sorter for Windows
 
-FastMediaSorter LITE is a Windows Forms application for quickly sorting, viewing, and managing image and video files - because that folder full of 4000 photos is not going to triage itself. It supports a wide range of media formats and provides features such as:
+Fast Media Sorter for Windows (formerly FastMediaSorter LITE - it is still published under that name in the Microsoft Store and winget) is a Windows Forms application for quickly sorting, viewing, and managing image and video files - because that folder full of 4000 photos is not going to triage itself. It supports a wide range of media formats and provides features such as:
 
 - Fast navigation through large folders of images and videos (even the embarrassingly large ones)
 - Slideshow and random file viewing modes
@@ -66,7 +66,7 @@ Download the latest assets from the
 - `FastMediaSorter-<version>-windows-x64-setup.exe` for the easiest install
 - `FastMediaSorter-<version>-windows-x64.zip` for a portable offline bundle
 
-The interactive setup can optionally register FastMediaSorter LITE for common
+The interactive setup can optionally register the app for common
 image formats. On Windows 10/11, the system may still ask you to confirm the
 choice once in Default Apps.
 
