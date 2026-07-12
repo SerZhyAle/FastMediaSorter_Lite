@@ -7,8 +7,8 @@ Imports System.Windows.Forms
 ''' "Параметры ресурса" / "Resource options" - the per-shared-root settings the
 ''' .fmscfg schema v2 export carries to the phone (Android contract S1002,
 ''' COMPANION_EXPORT_SPEC §9): resource name, type/profile, exact media set,
-''' scan conditions, destination flag + color, comment, PIN (with the "keep the
-''' PIN out of the export" safeguard, §6) and slideshow interval. Opened from the
+''' scan conditions, destination flag + color, comment, PIN and slideshow
+''' interval. Opened from the
 ''' Share tab ("Настроить.." / double-click a folder row). Built fully in code;
 ''' modal. Edits a copy - the caller persists <see cref="Result"/> on OK only.
 ''' Everything left at its default is simply not exported (the file stays v1).
@@ -41,7 +41,6 @@ Public Class Share_Root_Params_Form
     Private lnkColorReset As LinkLabel
     Private txtComment As TextBox
     Private txtPin As TextBox
-    Private chkExcludePin As CheckBox
     Private numSlide As NumericUpDown
     Private btnOk As Button
     Private btnCancel As Button
@@ -155,11 +154,7 @@ Public Class Share_Root_Params_Form
         Controls.Add(New Label With {.Left = 12, .Top = 366, .Width = 180, .Height = 16,
             .Text = If(rus, "PIN для ресурса:", "Resource PIN:")})
         txtPin = New TextBox With {.Left = 196, .Top = 362, .Width = 100}
-        chkExcludePin = New CheckBox With {.Left = 196, .Top = 388, .Width = 222, .Height = 20,
-            .Text = If(rus, "Не включать PIN в файл/QR", "Keep the PIN out of the file/QR")}
-        AddHandler txtPin.TextChanged, Sub() chkExcludePin.Enabled = txtPin.Text.Length > 0
         Controls.Add(txtPin)
-        Controls.Add(chkExcludePin)
         tip.SetToolTip(txtPin, If(rus, "PIN хранится в файле и QR-коде открытым текстом - его увидит любой получатель файла.",
                                       "The PIN travels in the file and QR code in plaintext - anyone who gets the file sees it."))
 
@@ -206,8 +201,6 @@ Public Class Share_Root_Params_Form
 
         txtComment.Text = _params.Comment
         txtPin.Text = _params.AccessPin
-        chkExcludePin.Checked = _params.ExcludePinOnExport
-        chkExcludePin.Enabled = txtPin.Text.Length > 0
 
         If _params.SlideshowInterval >= numSlide.Minimum AndAlso _params.SlideshowInterval <= numSlide.Maximum Then
             numSlide.Value = _params.SlideshowInterval
@@ -241,7 +234,6 @@ Public Class Share_Root_Params_Form
 
         _params.Comment = txtComment.Text.Trim()
         _params.AccessPin = txtPin.Text.Trim()
-        _params.ExcludePinOnExport = chkExcludePin.Checked AndAlso _params.AccessPin.Length > 0
         _params.SlideshowInterval = CInt(numSlide.Value)
 
         Me.DialogResult = DialogResult.OK

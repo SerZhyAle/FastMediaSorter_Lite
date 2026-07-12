@@ -70,6 +70,28 @@ Partial Public Class Main_Form
         RefreshShareTray()
     End Sub
 
+    ''' <summary>Resumes Android Folder Share on launch if the user has used the
+    ''' feature before - without this, the worker (and its SFTP server) only ever
+    ''' started once the user opened Settings -> Share or the wizard, even though
+    ''' the worker itself auto-restores any previously-shared folders and their
+    ''' server the moment it is spawned. Called once from Form1_Load, right after
+    ''' InitializeShareTray (so the poll timer is already running and will pick up
+    ''' the resumed state on its next tick). Best-effort and fire-and-forget: a
+    ''' failure here just leaves sharing off, exactly as it was before this ran.</summary>
+    Friend Sub ResumeShareIfEnabled()
+        Dim settings As New ShareSettings()
+        settings.Load()
+        If Not settings.WorkerEverStarted Then Return
+        ResumeShareAsync()
+    End Sub
+
+    Private Async Sub ResumeShareAsync()
+        Try
+            Await ShareController.EnsureRunningAsync()
+        Catch
+        End Try
+    End Sub
+
     ''' <summary>Re-checks the worker and updates the tray icon at once. Safe to call
     ''' from the Share tab / wizard after a start/stop for an instant update; also
     ''' called on the poll timer. No-op re-entrancy while a probe is in flight.</summary>

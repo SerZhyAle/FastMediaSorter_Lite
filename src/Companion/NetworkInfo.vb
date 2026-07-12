@@ -94,11 +94,25 @@ Public Module NetworkInfo
         Return ""
     End Function
 
-    ''' <summary>Enumerates adapters for the same "real LAN adapter" signature
-    ''' DefaultGatewayIp uses (Up, not loopback/tunnel, a real IPv4 gateway AND a
-    ''' bound IPv4) and returns that adapter's own address. Unlike the outbound-
-    ''' route trick, this needs no default route - only the adapter's own config.</summary>
+    ''' <summary>Enumerates adapters and returns the best LAN IPv4 when the
+    ''' outbound-route trick found nothing. Unlike the earlier scan it does NOT
+    ''' require a detectable IPv4 gateway: a real Wi-Fi/Ethernet NIC whose default
+    ''' gateway only surfaced over IPv6 (a dual-stack DHCP state seen in the field,
+    ''' 2026-07) still owns a perfectly reachable private IPv4, and dropping it left
+    ''' the exported .fmscfg with no "lan" access path at all - so the phone had
+    ''' only the WAN entry and could not reach the PC on the home Wi-Fi (S1006).
+    ''' Every candidate is scored so a genuinely present LAN adapter is never
+    ''' silently dropped, yet a virtual/VPN adapter can never outrank it: owning an
+    ''' IPv4 gateway is the strongest "true LAN interface" signal, a private
+    ''' (RFC1918) address and a physical NIC type raise the score, and a
+    ''' virtual/VPN adapter (name/description match) lowers it - so a VMware /
+    ''' Hyper-V / VirtualBox host-only 192.168.x never wins over the real LAN.
+    ''' APIPA (169.254) and loopback addresses are never returned, and a public
+    ''' address is only taken when its NIC actually has an IPv4 gateway (a rare
+    ''' no-NAT PC), never a stray public IP bound to some virtual adapter.</summary>
     Private Function LocalIPv4ViaAdapterScan() As String
+        Dim best As String = ""
+        Dim bestScore As Integer = Integer.MinValue
         Try
             For Each nic As NetworkInterface In NetworkInterface.GetAllNetworkInterfaces()
                 If nic.OperationalStatus <> OperationalStatus.Up Then Continue For
@@ -110,27 +124,118 @@ Public Module NetworkInfo
                 Dim props As IPInterfaceProperties = nic.GetIPProperties()
                 If props Is Nothing Then Continue For
 
-                Dim hasGateway As Boolean = False
-                For Each gw As GatewayIPAddressInformation In props.GatewayAddresses
-                    If gw Is Nothing OrElse gw.Address Is Nothing Then Continue For
-                    If gw.Address.AddressFamily <> AddressFamily.InterNetwork Then Continue For
-                    Dim s As String = gw.Address.ToString()
-                    If String.IsNullOrEmpty(s) OrElse s = "0.0.0.0" Then Continue For
-                    hasGateway = True
-                    Exit For
-                Next
-                If Not hasGateway Then Continue For
+                Dim hasIpv4Gateway As Boolean = NicHasIpv4Gateway(props)
+                Dim physical As Boolean = IsPhysicalNic(nic)
+                Dim virtualNic As Boolean = LooksVirtualNic(nic)
 
                 For Each ua As UnicastIPAddressInformation In props.UnicastAddresses
-                    If ua.Address IsNot Nothing AndAlso ua.Address.AddressFamily = AddressFamily.InterNetwork Then
-                        Return ua.Address.ToString()
+                    Dim addr As IPAddress = If(ua Is Nothing, Nothing, ua.Address)
+                    If addr Is Nothing OrElse addr.AddressFamily <> AddressFamily.InterNetwork Then Continue For
+                    If IsApipaOrLoopback(addr) Then Continue For
+                    Dim priv As Boolean = IsPrivateIPv4(addr)
+                    ' Only ever hand back a private IPv4, or a public one on a NIC
+                    ' that has a real IPv4 gateway (a no-NAT box) - never a stray
+                    ' public address parked on a virtual adapter.
+                    If Not priv AndAlso Not hasIpv4Gateway Then Continue For
+
+                    Dim score As Integer = 0
+                    If hasIpv4Gateway Then score += 1000
+                    If priv Then score += 400
+                    If physical Then score += 200
+                    If virtualNic Then score -= 800
+                    ' Tie-break among gateway-less candidates (the dual-stack field
+                    ' bug: the real LAN NIC's IPv4 gateway wasn't visible) toward a
+                    ' typical home/corp subnet. Hyper-V's Default Switch, WSL and
+                    ' Docker NAT adapters cluster in 172.16/12 with no gateway, while
+                    ' real LANs are overwhelmingly 192.168/16 or 10/8 - nudge those up
+                    ' without ever overriding the gateway signal above.
+                    score += HomeLanBonus(addr)
+
+                    If score > bestScore Then
+                        bestScore = score
+                        best = addr.ToString()
                     End If
                 Next
             Next
         Catch
         End Try
-        Return ""
+        Return best
     End Function
+
+    ''' <summary>True if the adapter carries a real (non 0.0.0.0) IPv4 default
+    ''' gateway - the strongest signal it is the true LAN interface.</summary>
+    Private Function NicHasIpv4Gateway(props As IPInterfaceProperties) As Boolean
+        For Each gw As GatewayIPAddressInformation In props.GatewayAddresses
+            If gw Is Nothing OrElse gw.Address Is Nothing Then Continue For
+            If gw.Address.AddressFamily <> AddressFamily.InterNetwork Then Continue For
+            Dim s As String = gw.Address.ToString()
+            If String.IsNullOrEmpty(s) OrElse s = "0.0.0.0" Then Continue For
+            Return True
+        Next
+        Return False
+    End Function
+
+    ''' <summary>Small preference for the subnets a real home/corp LAN almost
+    ''' always uses (192.168/16, then 10/8) over 172.16/12, where Windows parks its
+    ''' gateway-less virtual NAT switches. Only ever breaks ties between candidates
+    ''' that scored equally on the stronger signals (gateway, private, physical).</summary>
+    Private Function HomeLanBonus(addr As IPAddress) As Integer
+        Dim b As Byte() = addr.GetAddressBytes()
+        If b.Length <> 4 Then Return 0
+        If b(0) = 192 AndAlso b(1) = 168 Then Return 50
+        If b(0) = 10 Then Return 30
+        Return 0
+    End Function
+
+    ''' <summary>RFC1918 private IPv4 (10/8, 172.16/12, 192.168/16).</summary>
+    Private Function IsPrivateIPv4(addr As IPAddress) As Boolean
+        Dim b As Byte() = addr.GetAddressBytes()
+        If b.Length <> 4 Then Return False
+        If b(0) = 10 Then Return True
+        If b(0) = 172 AndAlso b(1) >= 16 AndAlso b(1) <= 31 Then Return True
+        If b(0) = 192 AndAlso b(1) = 168 Then Return True
+        Return False
+    End Function
+
+    ''' <summary>127/8 loopback or 169.254/16 APIPA link-local - never a usable
+    ''' address to advertise to the phone.</summary>
+    Private Function IsApipaOrLoopback(addr As IPAddress) As Boolean
+        Dim b As Byte() = addr.GetAddressBytes()
+        If b.Length <> 4 Then Return True
+        If b(0) = 127 Then Return True
+        If b(0) = 169 AndAlso b(1) = 254 Then Return True
+        Return False
+    End Function
+
+    ''' <summary>A real physical NIC type (wired or Wi-Fi), as opposed to a
+    ''' software adapter that also reports as Ethernet.</summary>
+    Private Function IsPhysicalNic(nic As NetworkInterface) As Boolean
+        Select Case nic.NetworkInterfaceType
+            Case NetworkInterfaceType.Ethernet, NetworkInterfaceType.GigabitEthernet,
+                 NetworkInterfaceType.FastEthernetT, NetworkInterfaceType.FastEthernetFx,
+                 NetworkInterfaceType.Wireless80211
+                Return True
+        End Select
+        Return False
+    End Function
+
+    ''' <summary>Heuristic for a virtual/VPN adapter that reports as Ethernet (so
+    ''' NetworkInterfaceType alone cannot tell it apart from the real LAN) - matched
+    ''' on the adapter name/description. Used only to lower its score, never to hard-
+    ''' exclude it, so it can still be a last-resort address if nothing better exists.</summary>
+    Private Function LooksVirtualNic(nic As NetworkInterface) As Boolean
+        Dim hay As String = ((If(nic.Name, "")) & " " & (If(nic.Description, ""))).ToLowerInvariant()
+        For Each h As String In VirtualNicHints
+            If hay.IndexOf(h, StringComparison.Ordinal) >= 0 Then Return True
+        Next
+        Return False
+    End Function
+
+    Private ReadOnly VirtualNicHints As String() = {
+        "virtual", "vmware", "virtualbox", "vbox", "hyper-v", "vethernet",
+        "tap-", "tap adapter", "vpn", "tailscale", "wireguard", "zerotier",
+        "pseudo", "wan miniport", "bluetooth", "docker", "hamachi", "loopback"
+    }
 
     ''' <summary>Opens a URL in the default browser. Falls back through explorer.exe
     ''' (normal integrity) when the app runs elevated - a high-integrity

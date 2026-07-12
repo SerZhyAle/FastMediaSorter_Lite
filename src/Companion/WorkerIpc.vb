@@ -119,6 +119,17 @@ Public Class WorkerReachability
     ''' the port is reachable from outside. See the worker's ExternalAddress.</summary>
     Public Property ExternalVerified As Boolean
     Public Property ManualForwardHint As String
+    ''' <summary>A globally-routable IPv6 of this PC, dialed on ListenPort (the
+    ''' server binds dual-stack). Bypasses NAT/CGNAT, so it is often the only way a
+    ''' remote phone on cellular reaches a home PC. "" when none.</summary>
+    Public Property Ipv6Address As String
+    ''' <summary>ExternalPortChecked/Open carry the worker's honest external
+    ''' connect-back result for the port-forward path: an outside vantage actually
+    ''' tried ExternalHost:ExternalPort. Checked=False = the probe could not run
+    ''' (treat as unconfirmed, NOT dead); Checked=True &amp; Open=False = the
+    ''' forwarded port is genuinely unreachable from the internet.</summary>
+    Public Property ExternalPortChecked As Boolean
+    Public Property ExternalPortOpen As Boolean
 End Class
 
 Public Class WorkerExport

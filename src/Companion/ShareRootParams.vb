@@ -40,11 +40,10 @@ Public Class ShareRootParams
     Public Property Comment As String = ""
 
     ''' <summary>PIN locking the resource in the app. Travels in the file/QR in
-    ''' plaintext (§6) unless <see cref="ExcludePinOnExport"/> is on.</summary>
+    ''' plaintext (§6) whenever set - it only pre-configures the phone's own
+    ''' per-resource lock, so there is no separate "keep it out of the export"
+    ''' opt-out: leave it blank here and set it on the phone instead.</summary>
     Public Property AccessPin As String = ""
-    ''' <summary>LITE-side safeguard (§6): keep the PIN out of the exported file/QR.
-    ''' Never exported itself.</summary>
-    Public Property ExcludePinOnExport As Boolean = False
 
     ''' <summary>Seconds between slideshow images; 10 = the app default (omitted on export).</summary>
     Public Property SlideshowInterval As Integer = 10
@@ -63,7 +62,6 @@ Public Class ShareRootParams
                Not HasDestinationColor AndAlso
                Comment.Trim().Length = 0 AndAlso
                AccessPin.Length = 0 AndAlso
-               Not ExcludePinOnExport AndAlso
                (SlideshowInterval <= 0 OrElse SlideshowInterval = 10)
     End Function
 
@@ -84,7 +82,6 @@ Public Class ShareRootParams
             .DestinationColorArgb = DestinationColorArgb,
             .Comment = If(Comment, ""),
             .AccessPin = If(AccessPin, ""),
-            .ExcludePinOnExport = ExcludePinOnExport,
             .SlideshowInterval = SlideshowInterval
         }
     End Function

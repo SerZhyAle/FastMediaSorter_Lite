@@ -80,17 +80,18 @@ The decoded JSON is a single object:
 | `schemaVersion` | int | yes | Contract version. **Reject if greater than you support** (see 5.1). |
 | `resourceName` | string | yes | Human-readable name to prefill for the created resource. User may rename. |
 | `protocol` | string | yes | Always `"sftp"` in this version. **Reject any other value.** |
-| `accessPaths` | array | yes, non-empty | Ordered ways to reach the server. Try in order (LAN first). See 3. |
-| `accessPaths[].kind` | string | yes | `"lan"` or `"portforward"`. Treat unknown kinds as "try it anyway, lowest priority" (forward-compat), but current exporter only emits these two. |
-| `accessPaths[].host` | string | yes | IPv4/hostname to dial. |
-| `accessPaths[].port` | int | yes | TCP port (1..65535). |
+| `accessPaths` | array | yes, non-empty | Ways to reach the server. **Race all** and use whichever connects, preferring LAN (S1006). See 3. |
+| `accessPaths[].kind` | string | yes | `"lan"`, `"ipv6"` or `"portforward"`. Treat unknown kinds as "try it anyway, lowest priority" (forward-compat). `"ipv6"` was added additively (still schemaVersion 1). |
+| `accessPaths[].host` | string | yes | Host to dial. IPv4/hostname for `lan`/`portforward`; a **bare IPv6** literal (no `[]`) for `ipv6` - add brackets yourself when building a URI. |
+| `accessPaths[].port` | int | yes | TCP port (1..65535). The `ipv6` entry uses the same port as `lan`. |
 | `username` | string | yes | SFTP username (currently always `fms`, but do not hardcode). |
 | `password` | string | yes | SFTP password, high-entropy, embedded by design. Store encrypted at rest. |
-| `hostKeyFingerprintSha256` | string | yes | `SHA256:<base64>` of the server host key. **Pin on first connect (TOFU); refuse if it ever changes.** See 4. |
+| `hostKeyFingerprintSha256` | string | yes | `SHA256:<base64>` of the server host key. **Pin on first connect (TOFU); refuse if it ever changes.** See 4. Also the mDNS match key (section 3.1). |
 | `roots` | array | yes, non-empty | Shared folders as the client sees them. |
 | `roots[].virtualPath` | string | yes | Absolute virtual path on the server, e.g. `/MOV`. Always starts with `/`. |
 | `roots[].label` | string | yes | Display label for the folder. |
 | `createdAt` | string | yes | RFC 3339 UTC timestamp of the export. Informational (freshness / dedupe). |
+| `accessNote` | string | no (optional) | Short human-readable reachability note (state + next step, e.g. "Reachable only on the same Wi-Fi.."). Added additively (still schemaVersion 1). **Show it verbatim when no access path connects** (S1014). Absent when the exporter had nothing to say. |
 
 **Field order in the JSON is fixed** by the exporter (as shown), but **parse order-independently** by field name - do not rely on positional parsing.
 
@@ -108,9 +109,10 @@ data class CompanionConfig(
     val password: String,
     val hostKeyFingerprintSha256: String,
     val roots: List<ConfigRoot>,
-    val createdAt: String
+    val createdAt: String,
+    val accessNote: String? = null            // optional; show on connection failure (S1014)
 )
-data class AccessPath(val kind: String, val host: String, val port: Int)
+data class AccessPath(val kind: String, val host: String, val port: Int) // kind: lan | ipv6 | portforward
 data class ConfigRoot(val virtualPath: String, val label: String)
 ```
 
@@ -118,18 +120,27 @@ data class ConfigRoot(val virtualPath: String, val label: String)
 
 ## 3. Access paths - connection strategy
 
-`accessPaths` is **ordered by preference**: `lan` first, then `portforward`. The list is "the set of addresses that currently point at the same one SFTP server". All entries share the **same** username, password and host-key fingerprint - only host/port differ.
+`accessPaths` is **ordered by preference**: `lan` first, then `ipv6`, then `portforward`. The list is "the set of addresses that currently point at the same one SFTP server". All entries share the **same** username, password and host-key fingerprint - only host/port differ.
 
-Recommended connect strategy when opening the resource:
+Recommended connect strategy when opening the resource (S1006 - "race, don't trust `[0]`"):
 
-1. Try entries **in listed order**. LAN first so nearby devices never round-trip the internet.
-2. For each entry: open a TCP/SFTP connection to `host:port`, verify the host key (section 4), authenticate (section 5.2). First success wins - remember which entry worked for this session; on the next open, you may retry the last-good entry first, then fall back to the full list.
-3. If all entries fail, surface a clear error (unreachable / wrong network / port not forwarded).
+1. **Race all entries** and use whichever connects first, biased to LAN (start LAN immediately, stagger the others by a few hundred ms so a reachable LAN wins even when a WAN/IPv6 path would also connect). Do **not** trust `accessPaths[0]` alone - the field failure this fixes was a config whose only entry was a dead WAN address, leaving the phone with no LAN fallback.
+2. For each entry: open TCP/SFTP to `host:port`, verify the host key (section 4), authenticate (section 5.2). Remember which entry worked for this session; on the next open you may retry the last-good entry first, then fall back to racing the full list. **Re-race on every network change** (Wi-Fi <-> cellular).
+3. If all entries fail, surface a clear error - and if the config carries `accessNote`, show it **verbatim** (it explains the state and the fix, e.g. "forward port X" / "CGNAT - use IPv6/VPN"; S1014).
 
 Notes:
-- `lan` only works when the phone is on the **same network** as the PC. Off-network it will fail fast - fall through to `portforward`.
-- A `portforward` entry may be present but **not yet reachable** if the user has not finished forwarding the port on their router. Treat a connection failure on one entry as "try the next", not a fatal import error - the resource is still valid and will work once the port is open.
-- Do **not** assume exactly two entries. There may be one (LAN only) or more in future.
+- `lan` only works on the **same network** as the PC. Off-network it fails fast - the race falls through to `ipv6`/`portforward`.
+- `ipv6` is a globally-routable address that **bypasses NAT/CGNAT** - often the only way to reach a home PC remotely. It only connects when *both* the phone's current network and the PC have working IPv6; otherwise it fails fast and the race moves on. Wrap the bare literal in `[]` when forming a URI.
+- A `portforward` entry may be present but **not yet reachable** (user hasn't finished the router forward, or it's dead). Treat a per-entry failure as "try the next", never a fatal import error - the resource stays valid and works once the path is up.
+- Do **not** assume a fixed count. There may be one (LAN only) up to three (`lan`+`ipv6`+`portforward`).
+
+### 3.1 LAN rediscovery by fingerprint (mDNS / DNS-SD) - S1013
+
+The PC also announces itself on the local network, so a phone on the same Wi-Fi can find it **even when the imported LAN address is stale or absent** (DHCP change, Wi-Fi reconnect, or a WAN-only config).
+
+- Browse **`_sftp-fms._tcp`** (domain `local.`) via `NsdManager`.
+- Read the service TXT record **`fp`** (value `SHA256:<base64>`). When it **equals** a pinned resource's `hostKeyFingerprintSha256`, the discovered `host:port` is a live LAN candidate for that resource - add it to the race (highest priority, it's LAN). Other TXT keys: `name` (display), `v=1` (schema), `app=fms-companion`.
+- The announced port is the SFTP LAN listen port (same as the `lan` access path). The host key still gets pinned/verified on connect - the `fp` match only selects *which* resource a discovered endpoint belongs to.
 
 ---
 

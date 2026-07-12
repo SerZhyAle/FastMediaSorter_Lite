@@ -47,6 +47,7 @@ Public Module ShareController
         If ensured Is Nothing Then Return r
         r.Reachable = True
         r.Status = ensured.Status
+        MarkShareEverStarted()
 
         Await SendAsync(New WorkerRequest With {.type = "SetSharedFolders", .folders = folders}, 5000)
         Await SendAsync(New WorkerRequest With {.type = "StartServer"}, 6000)
@@ -84,6 +85,19 @@ Public Module ShareController
     Public Async Function StopServerAsync() As Task
         Await SendAsync(New WorkerRequest With {.type = "StopServer"}, 4000)
     End Function
+
+    ''' <summary>Persists the "the user has shared at least once" hint the first
+    ''' time a share actually reaches the worker with folders to serve. Read back
+    ''' by Main_Form.ResumeShareIfEnabled() on the next app launch, so sharing
+    ''' resumes automatically instead of staying off until Settings -> Share (or
+    ''' the wizard) is opened again.</summary>
+    Private Sub MarkShareEverStarted()
+        Dim s As New ShareSettings()
+        s.Load()
+        If s.WorkerEverStarted Then Return
+        s.WorkerEverStarted = True
+        s.Save()
+    End Sub
 
     Private Async Function SendAsync(req As WorkerRequest, timeoutMs As Integer) As Task(Of WorkerResponse)
         Return Await Task.Run(Function()

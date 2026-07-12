@@ -32,7 +32,14 @@ Public NotInheritable Class ShareConfigResult
     Public Property ConfigJson As String = ""
     Public Property QrPng As Byte()
     Public Property HasExternal As Boolean
+    ''' <summary>The exported config carries an IPv6 access path - a direct,
+    ''' NAT/CGNAT-bypassing route the phone can dial from other networks.</summary>
+    Public Property HasIpv6 As Boolean
     Public Property LanDisplay As String = ""   ' "host:port" for copy/display
+    ''' <summary>Localized short reachability line, also embedded in the .fmscfg as
+    ''' the optional "accessNote" (Android S1014 shows it on connection failure)
+    ''' and surfaced in the Share tab hint. "" when there is nothing to say.</summary>
+    Public Property AccessNote As String = ""
     ''' <summary>The payload does not fit a QR code (contract §7) - the UI must
     ''' tell the user to share the .fmscfg file instead. Never silently truncate.</summary>
     Public Property QrOverflow As Boolean
@@ -72,6 +79,17 @@ Public Module ShareConfigBuilder
         Dim paths As New StringBuilder()
         If lan.Length > 0 Then AppendAccessPath(paths, "lan", lan, port)
 
+        ' Order LAN -> IPv6 -> port-forward (S1006). IPv6 is a direct, globally-
+        ' routable address on the same listen port that bypasses NAT/CGNAT, so it
+        ' is included even behind CGNAT (the escape hatch) - but only in the
+        ' internet-enabled export, since it is externally routable (the LAN-only
+        ' privacy toggle must not embed any address reachable from outside).
+        Dim hasIpv6 As Boolean = False
+        If includeExternal AndAlso reach IsNot Nothing AndAlso Not String.IsNullOrEmpty(reach.Ipv6Address) Then
+            AppendAccessPath(paths, "ipv6", reach.Ipv6Address, port)
+            hasIpv6 = True
+        End If
+
         Dim hasExt As Boolean = False
         If includeExternal AndAlso reach IsNot Nothing AndAlso Not reach.IsCgnat AndAlso Not String.IsNullOrEmpty(reach.ExternalHost) Then
             Dim extPort As Integer = If(reach.ExternalPort > 0, reach.ExternalPort, port)
@@ -91,8 +109,14 @@ Public Module ShareConfigBuilder
             Next
         End If
 
-        ' Field order is the frozen contract order (canonical vector in the
-        ' companion CONFIG_FORMAT.md / Android fixture).
+        ' The short, localized reachability line the phone shows on connection
+        ' failure (Android S1014) and the Share tab surfaces. Built from the same
+        ' reach facts; emitted as an optional top-level field (old parsers ignore
+        ' it, so it never bumps schemaVersion).
+        Dim note As String = ShareText.AccessNote(Is_Russian_Language, reach, port, includeExternal)
+
+        ' Field order mirrors the companion CONFIG_FORMAT.md / Android fixture;
+        ' accessNote is the optional trailing field.
         Dim sb As New StringBuilder()
         sb.Append("{""schemaVersion"":").Append(If(anyV2, "2", "1"))
         sb.Append(",""resourceName"":").Append(J("FastMediaSorter Companion on " & SafeMachineName()))
@@ -103,12 +127,15 @@ Public Module ShareConfigBuilder
         sb.Append(",""hostKeyFingerprintSha256"":").Append(J(If(status.Fingerprint, "")))
         sb.Append(",""roots"":[").Append(roots).Append("]"c)
         sb.Append(",""createdAt"":").Append(J(DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss'Z'", CultureInfo.InvariantCulture)))
+        If note.Length > 0 Then sb.Append(",""accessNote"":").Append(J(note))
         sb.Append("}"c)
         Dim json As String = sb.ToString()
 
         Dim result As New ShareConfigResult With {
             .ConfigJson = json,
             .HasExternal = hasExt,
+            .HasIpv6 = hasIpv6,
+            .AccessNote = note,
             .LanDisplay = If(lan.Length > 0, lan & ":" & port.ToString(), "")
         }
 
@@ -163,7 +190,7 @@ Public Module ShareConfigBuilder
             If p.Comment IsNot Nothing AndAlso p.Comment.Trim().Length > 0 Then
                 v2.Append(",""comment"":").Append(J(p.Comment.Trim()))
             End If
-            If Not String.IsNullOrEmpty(p.AccessPin) AndAlso Not p.ExcludePinOnExport Then
+            If Not String.IsNullOrEmpty(p.AccessPin) Then
                 v2.Append(",""accessPin"":").Append(J(p.AccessPin))
             End If
             If p.SlideshowInterval > 0 AndAlso p.SlideshowInterval <> 10 Then

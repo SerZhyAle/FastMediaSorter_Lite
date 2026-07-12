@@ -81,6 +81,59 @@ Public Module ShareText
             "Your ISP uses CGNAT (a shared public address). Port forwarding will not help - this PC cannot be reached from outside. Local-network sharing works as usual.")
     End Function
 
+    ''' <summary>Short (&lt;=~200 char) reachability line embedded in the .fmscfg as
+    ''' the optional "accessNote" and shown on the phone (Android S1014) when no
+    ''' access path connects, plus surfaced in the Share tab. Describes the current
+    ''' state and the concrete next step, worst-actionable-case first: dead forward
+    ''' -&gt; CGNAT -&gt; IPv6-only -&gt; unconfirmed forward -&gt; confirmed -&gt; LAN-only.
+    ''' Emitted in the PC UI language (the sharer's audience). "" when nothing to
+    ''' say (no address at all). <paramref name="includeExternal"/> off = the
+    ''' LAN-only export: the note must describe ONLY the LAN path, never the
+    ''' internet reachability the config deliberately left out.</summary>
+    Public Function AccessNote(rus As Boolean, reach As WorkerReachability, port As Integer,
+                               Optional includeExternal As Boolean = True) As String
+        If reach Is Nothing Then Return ""
+        Dim lan As String = If(reach.LanAddress, "")
+        Dim ext As String = If(reach.ExternalHost, "")
+        Dim ipv6 As String = If(reach.Ipv6Address, "")
+        If Not includeExternal Then
+            ' LAN-only export: no internet/IPv6 address was embedded, so describe
+            ' only the local path (never claim internet reachability the config omits).
+            If lan.Length > 0 Then
+                Return If(rus,
+                    "Работает в той же сети Wi-Fi (интернет-адрес намеренно не включён).",
+                    "Reachable on the same Wi-Fi as this PC (internet address intentionally left out).")
+            End If
+            Return ""
+        End If
+        If reach.ExternalPortChecked AndAlso reach.ExternalPortOpen Then
+            Return If(rus,
+                "Работает по Wi-Fi и из интернета - проброшенный порт ответил на внешнюю проверку.",
+                "Reachable on your Wi-Fi and over the internet - the forwarded port passed an external test.")
+        ElseIf reach.ExternalPortChecked AndAlso Not reach.ExternalPortOpen Then
+            Return If(rus,
+                "Работает только в той же сети Wi-Fi. Интернет-порт " & port.ToString() & " не ответил на внешнюю проверку - проверьте проброс порта на роутере или включите UPnP.",
+                "Reachable only on the same Wi-Fi. Internet port " & port.ToString() & " did not answer an external test - re-check the router forward or enable UPnP.")
+        ElseIf reach.IsCgnat Then
+            Return If(rus,
+                "Работает только в той же сети Wi-Fi. Провайдер использует CGNAT - проброс порта не сработает; используйте адрес IPv6 (если показан) или VPN.",
+                "Reachable only on the same Wi-Fi. Your ISP uses CGNAT, so a forwarded port cannot work - use the IPv6 address if shown, or a VPN/relay.")
+        ElseIf ipv6.Length > 0 AndAlso ext.Length = 0 Then
+            Return If(rus,
+                "Работает по Wi-Fi и по IPv6 из сетей, где он поддерживается. Обычный проброс порта на этом подключении недоступен.",
+                "Reachable on your Wi-Fi, and over IPv6 from networks that support it. A plain port-forward is not available on this connection.")
+        ElseIf ext.Length > 0 AndAlso reach.ExternalPort > 0 Then
+            Return If(rus,
+                "Работает по Wi-Fi и, если проброс/UPnP держится, из интернета - проверьте с телефона по мобильной сети.",
+                "Reachable on your Wi-Fi and, if the router forward/UPnP holds, over the internet - confirm from the phone on mobile data.")
+        ElseIf lan.Length > 0 Then
+            Return If(rus,
+                "Работает в той же сети Wi-Fi. Для доступа из других сетей пробросьте TCP-порт " & port.ToString() & " на " & lan & " в роутере или включите UPnP.",
+                "Reachable on the same Wi-Fi as this PC. For other networks, forward TCP port " & port.ToString() & " to " & lan & " on your router, or enable UPnP.")
+        End If
+        Return ""
+    End Function
+
     ''' <summary>Step-by-step router port-forward instructions with the concrete
     ''' values filled in. The external address is already embedded in the QR /
     ''' .fmscfg (ShareConfigBuilder), so the closing line just tells the user to

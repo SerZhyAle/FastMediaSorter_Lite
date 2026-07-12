@@ -400,6 +400,7 @@ Partial Public Class Main_Form
         InitializeOcrTranslate()
         InitializeShareEntryPoints()
         InitializeShareTray()
+        ResumeShareIfEnabled()
 
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Width_At_Panel", "80"), Picture_Box_Width_At_Panel)
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Height_At_Panel", "80"), Picture_Box_Height_At_Panel)

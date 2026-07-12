@@ -84,6 +84,7 @@ Partial Public Class Table_Form
     Private lblShareLanAddr As Label
     Private btnShareTestLan As Button
     Private btnShareCopyLan As Button
+    Private btnShareCopyCredentials As Button
     Private lblShareFinger As Label
     Private chkShareLanOnly As CheckBox
     Private btnShareSaveLan As Button
@@ -227,7 +228,7 @@ Partial Public Class Table_Form
         AddHandler chkShareNoPassword.CheckedChanged, AddressOf OnShareNoPasswordChanged
         Tab_Page_6.Controls.Add(chkShareNoPassword)
 
-        lnkShareAndroid = New LinkLabel With {.Left = LU(12), .Top = LU(368), .Width = LU(336), .Height = LU(18)}
+        lnkShareAndroid = New LinkLabel With {.Left = LU(12), .Top = LU(368), .Width = LU(336), .Height = LU(30), .Font = New Font(Me.Font.FontFamily, Me.Font.Size * 0.9F)}
         AddHandler lnkShareAndroid.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareGuide.AndroidSite(Is_Russian_Language))
         Tab_Page_6.Controls.Add(lnkShareAndroid)
 
@@ -246,21 +247,24 @@ Partial Public Class Table_Form
         ' click-to-zoom covers the denser combined-config code).
         picShareQrLan = New PictureBox With {.Left = LU(74), .Top = LU(8), .Width = LU(148), .Height = LU(148),
             .BorderStyle = BorderStyle.FixedSingle, .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Color.White}
-        lblShareLanAddr = New Label With {.Left = LU(8), .Top = LU(160), .Width = LU(216), .Height = LU(18), .AutoEllipsis = True, .Font = New Font(Me.Font, FontStyle.Bold)}
+        lblShareLanAddr = New Label With {.Left = LU(8), .Top = LU(160), .Width = LU(216), .Height = LU(18), .AutoEllipsis = True, .Font = New Font(Me.Font.FontFamily, Me.Font.Size * 0.8F, FontStyle.Bold)}
         btnShareTestLan = New Button With {.Left = LU(228), .Top = LU(158), .Width = LU(64), .Height = LU(22), .Enabled = False}
         btnShareCopyLan = New Button With {.Left = LU(8), .Top = LU(182), .Width = LU(150), .Height = LU(24), .Enabled = False}
+        btnShareCopyCredentials = New Button With {.Left = LU(162), .Top = LU(182), .Width = LU(130), .Height = LU(24), .Enabled = False}
         lblShareFinger = New Label With {.Left = LU(8), .Top = LU(210), .Width = LU(284), .Height = LU(28), .ForeColor = Color.DimGray, .AutoEllipsis = True}
         chkShareLanOnly = New CheckBox With {.Left = LU(8), .Top = LU(240), .Width = LU(284), .Height = LU(20), .AutoSize = False}
         btnShareSaveLan = New Button With {.Left = LU(8), .Top = LU(264), .Width = LU(140), .Height = LU(26), .Enabled = False}
         btnShareEmailLan = New Button With {.Left = LU(152), .Top = LU(264), .Width = LU(140), .Height = LU(26), .Enabled = False}
-        lblShareLanHint = New Label With {.Left = LU(8), .Top = LU(294), .Width = LU(284), .Height = LU(32), .ForeColor = Color.DimGray, .AutoEllipsis = True}
+        lblShareLanHint = New Label With {.Left = LU(8), .Top = LU(294), .Width = LU(292), .Height = LU(36), .ForeColor = Color.DimGray, .AutoEllipsis = True,
+            .Font = New Font(Me.Font.FontFamily, Me.Font.Size * 0.78F)}
         AddHandler picShareQrLan.Click, Sub() Qr_Zoom_Form.ShowZoomed(Me, picShareQrLan)
         AddHandler btnShareTestLan.Click, AddressOf OnShareTestLan
         AddHandler btnShareCopyLan.Click, AddressOf OnShareCopyLan
+        AddHandler btnShareCopyCredentials.Click, AddressOf OnShareCopyCredentials
         AddHandler chkShareLanOnly.CheckedChanged, AddressOf OnShareLanOnlyChanged
         AddHandler btnShareSaveLan.Click, Sub() SaveShareConfig(If(_cfgPrimary, Nothing))
         AddHandler btnShareEmailLan.Click, Sub() EmailShareConfig(If(_cfgPrimary, Nothing))
-        tpShareLan.Controls.AddRange(New Control() {picShareQrLan, lblShareLanAddr, btnShareTestLan, btnShareCopyLan, lblShareFinger, chkShareLanOnly, btnShareSaveLan, btnShareEmailLan, lblShareLanHint})
+        tpShareLan.Controls.AddRange(New Control() {picShareQrLan, lblShareLanAddr, btnShareTestLan, btnShareCopyLan, btnShareCopyCredentials, lblShareFinger, chkShareLanOnly, btnShareSaveLan, btnShareEmailLan, lblShareLanHint})
 
         ' Internet-setup guidance tab: no QR / Save / Email (the primary tab owns
         ' the export). Just the reachability status, router links and the
@@ -307,14 +311,15 @@ Partial Public Class Table_Form
         btnShareParams.Text = If(rus, "Настроить..", "Options..")
         chkShareAutostart.Text = If(rus, "Запускать общий доступ при входе в систему", "Start sharing at logon")
         chkShareNoPassword.Text = ShareText.NoPasswordText(rus)
-        lnkShareAndroid.Text = If(rus, "Приложение FastMediaSorter для Android ->", "FastMediaSorter app for Android ->")
+        lnkShareAndroid.Text = If(rus, "FastMediaSorter для Android ->", "FastMediaSorter for Android ->")
 
         tpShareLan.Text = If(rus, "Код для телефона", "QR for phone")
         tpShareNet.Text = If(rus, "Доступ из интернета", "Internet access")
         btnShareTestLan.Text = If(rus, "Тест", "Test")
         btnShareTestNet.Text = If(rus, "Тест", "Test")
         btnShareCopyLan.Text = If(rus, "Скопировать адрес", "Copy address")
-        chkShareLanOnly.Text = If(rus, "Только локальная сеть (без интернет-адреса)", "LAN only (no internet address)")
+        btnShareCopyCredentials.Text = If(rus, "Логин/пароль", "Login/pass")
+        chkShareLanOnly.Text = If(rus, "Только локальная сеть", "LAN only")
         btnShareSaveLan.Text = If(rus, "Сохранить .fmscfg..", "Save .fmscfg..")
         btnShareEmailLan.Text = If(rus, "По почте..", "Email..")
         btnShareOpenRouter.Text = If(rus, "Открыть роутер", "Open router")
@@ -345,6 +350,7 @@ Partial Public Class Table_Form
         toolTip.SetToolTip(picShareQrLan, If(rus, "Один код для дома и интернета - телефон сам выберет доступный адрес. Клик - открыть крупно.", "One code for home and internet - the phone picks whichever address is reachable. Click to enlarge."))
         toolTip.SetToolTip(chkShareLanOnly, If(rus, "Не включать внешний (интернет) адрес в код и файл - только локальная сеть. Для тех, кто не открывает доступ из интернета.", "Keep the external (internet) address out of the code and file - LAN only. For users who never open internet access."))
         toolTip.SetToolTip(btnShareTestLan, If(rus, "Проверить, что SFTP-сервер отвечает по локальному адресу.", "Check that the SFTP server answers on the local address."))
+        toolTip.SetToolTip(btnShareCopyCredentials, If(rus, "Скопировать логин и пароль SFTP в буфер обмена - чтобы передать их отдельно от файла/QR.", "Copy the SFTP login and password to the clipboard - to pass them on separately from the file/QR."))
         toolTip.SetToolTip(btnShareTestNet, If(rus, "Проверить внешний адрес с этого ПК. Точный тест - с телефона по мобильной сети.", "Check the internet address from this PC. The definitive test is from the phone on mobile data."))
         toolTip.SetToolTip(btnShareEmailLan, If(rus, "Прикрепить файл .fmscfg к новому письму (почтовый клиент по умолчанию).", "Attach the .fmscfg file to a new email (default mail client)."))
         toolTip.SetToolTip(btnShareOpenRouter, If(rus, "Открыть страницу настроек роутера в браузере.", "Open the router settings page in the browser."))
@@ -680,6 +686,24 @@ Partial Public Class Table_Form
         End Try
     End Sub
 
+    ''' <summary>Always-available way to get the real SFTP login/password out of the
+    ''' app - independent of the "exclude password from file/QR" checkbox above,
+    ''' which only ever surfaced the password in the same status label that every
+    ''' other status update immediately overwrites. Copies both fields so the
+    ''' sender can pass them on out-of-band (chat, voice call, ..).</summary>
+    Private Sub OnShareCopyCredentials(sender As Object, e As EventArgs)
+        If _shareStatus Is Nothing OrElse String.IsNullOrEmpty(_shareStatus.Password) Then Return
+        Dim rus As Boolean = Is_Russian_Language
+        Dim login As String = If(String.IsNullOrEmpty(_shareStatus.Username), "fms", _shareStatus.Username)
+        Dim text As String = (If(rus, "Логин: ", "Login: ")) & login & Environment.NewLine &
+            (If(rus, "Пароль: ", "Password: ")) & _shareStatus.Password
+        Try
+            Clipboard.SetText(text)
+            SetShareHint(If(rus, "Скопировано: логин и пароль", "Copied: login and password"))
+        Catch
+        End Try
+    End Sub
+
     ' --- reachability test -----------------------------------------------------
 
     ''' <summary>"Тест" next to the LAN address: probe the SFTP server on the local
@@ -868,6 +892,9 @@ Partial Public Class Table_Form
         If cfg Is Nothing Then Return ShareText.LanHintText(rus)
         If cfg.QrOverflow Then Return ShareText.QrOverflowText(rus)
         If cfg.LanDisplay.Length = 0 Then Return ShareText.LanUnknownText(rus)
+        ' The worker's honest reachability line (dead forward / CGNAT / IPv6-only /
+        ' confirmed / LAN-only) is the most actionable hint - prefer it once known.
+        If Not String.IsNullOrEmpty(cfg.AccessNote) Then Return cfg.AccessNote
         If cfg.HasExternal Then Return ShareText.CombinedHintText(rus)
         Return ShareText.LanHintText(rus)
     End Function
@@ -897,6 +924,7 @@ Partial Public Class Table_Form
         Dim addr As String = CurrentLanAddress()
         lblShareLanAddr.Text = (If(rus, "Адрес: ", "Address: ")) & If(addr.Length > 0, addr, "-")
         btnShareCopyLan.Enabled = addr.Length > 0 AndAlso Not _shareBusy
+        btnShareCopyCredentials.Enabled = running AndAlso st IsNot Nothing AndAlso Not String.IsNullOrEmpty(st.Password) AndAlso Not _shareBusy
         Dim fp As String = If(st IsNot Nothing, If(st.Fingerprint, ""), "")
         lblShareFinger.Text = (If(rus, "Ключ узла: ", "Host key: ")) & If(fp.Length > 0, fp, "-")
         ShowQr(picShareQrLan, _cfgPrimary)
@@ -905,6 +933,10 @@ Partial Public Class Table_Form
         ' next to an empty QR box (the exact confusion a user reported).
         lblShareLanHint.Text = If(running, PrimaryHintText(_cfgPrimary, rus),
             If(rus, "Нажмите «Начать общий доступ», чтобы получить QR-код.", "Press 'Start sharing' to get the QR code."))
+        ' The box is too small for the longer hints (e.g. CombinedHintText's
+        ' security nudge) even at the smaller hint font - AutoEllipsis keeps the
+        ' box tidy, but the full text stays one hover away.
+        toolTip.SetToolTip(lblShareLanHint, lblShareLanHint.Text)
         btnShareSaveLan.Enabled = _cfgPrimary IsNot Nothing AndAlso Not _shareBusy
         btnShareEmailLan.Enabled = _cfgPrimary IsNot Nothing AndAlso Not _shareBusy
 

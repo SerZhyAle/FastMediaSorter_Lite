@@ -38,6 +38,7 @@ Public Class Share_Wizard_Form
     Private lblState As Label
     Private lblLan As Label
     Private btnCopyLan As Button
+    Private btnCopyCredentials As Button
     Private lblFinger As Label
 
     ' Right column: QR + save.
@@ -124,11 +125,16 @@ Public Class Share_Wizard_Form
             .Font = New Font(Me.Font, FontStyle.Bold), .AutoEllipsis = True, .Text = If(rus, "Остановлено", "Stopped")}
         lblLan = New Label With {.Left = 12, .Top = 290, .Width = 300, .Height = 18, .AutoEllipsis = True, .Text = If(rus, "Адрес: -", "Address: -")}
         btnCopyLan = New Button With {.Left = 12, .Top = 312, .Width = 150, .Height = 26, .Enabled = False, .Text = If(rus, "Скопировать адрес", "Copy address")}
+        btnCopyCredentials = New Button With {.Left = 174, .Top = 312, .Width = 138, .Height = 26, .Enabled = False, .Text = If(rus, "Логин/пароль", "Login/pass")}
         lblFinger = New Label With {.Left = 12, .Top = 344, .Width = 300, .Height = 30, .ForeColor = Color.DimGray, .AutoEllipsis = True, .Text = If(rus, "Ключ узла: -", "Host key: -")}
         AddHandler btnCopyLan.Click, AddressOf OnCopyLan
+        AddHandler btnCopyCredentials.Click, AddressOf OnCopyCredentials
+        Dim tipCredentials As New ToolTip()
+        tipCredentials.SetToolTip(btnCopyCredentials, If(rus, "Скопировать логин и пароль SFTP в буфер обмена - чтобы передать их отдельно от файла/QR.", "Copy the SFTP login and password to the clipboard - to pass them on separately from the file/QR."))
         Controls.Add(lblState)
         Controls.Add(lblLan)
         Controls.Add(btnCopyLan)
+        Controls.Add(btnCopyCredentials)
         Controls.Add(lblFinger)
 
         ' ---- right column ----
@@ -372,6 +378,23 @@ Public Class Share_Wizard_Form
         End Try
     End Sub
 
+    ''' <summary>Always-available way to get the real SFTP login/password out of the
+    ''' app - independent of the "exclude password from file/QR" checkbox below,
+    ''' which only ever surfaced the password in lblPhoneHint, the same label every
+    ''' other status update immediately overwrites.</summary>
+    Private Sub OnCopyCredentials(sender As Object, e As EventArgs)
+        If _status Is Nothing OrElse String.IsNullOrEmpty(_status.Password) Then Return
+        Dim rus As Boolean = Is_Russian_Language
+        Dim login As String = If(String.IsNullOrEmpty(_status.Username), "fms", _status.Username)
+        Dim text As String = (If(rus, "Логин: ", "Login: ")) & login & Environment.NewLine &
+            (If(rus, "Пароль: ", "Password: ")) & _status.Password
+        Try
+            Clipboard.SetText(text)
+            lblPhoneHint.Text = If(rus, "Скопировано: логин и пароль", "Copied: login and password")
+        Catch
+        End Try
+    End Sub
+
     Private Sub OnOpenRouter(sender As Object, e As EventArgs)
         Dim url As String = NetworkInfo.DefaultGatewayUrl()
         If url.Length = 0 Then
@@ -489,6 +512,7 @@ Public Class Share_Wizard_Form
         Dim addr As String = CurrentLanAddress()
         lblLan.Text = (If(rus, "Адрес: ", "Address: ")) & If(addr.Length > 0, addr, "-")
         btnCopyLan.Enabled = addr.Length > 0 AndAlso Not _busy
+        btnCopyCredentials.Enabled = running AndAlso Not String.IsNullOrEmpty(_status.Password) AndAlso Not _busy
 
         Dim fp As String = If(_status IsNot Nothing, If(_status.Fingerprint, ""), "")
         lblFinger.Text = (If(rus, "Ключ узла: ", "Host key: ")) & If(fp.Length > 0, fp, "-")
@@ -638,8 +662,12 @@ Public Class Share_Wizard_Form
         picQr.Image = newImg
         If old IsNot Nothing Then old.Dispose()
         picQr.Cursor = If(newImg IsNot Nothing, Cursors.Hand, Cursors.Default) ' click = zoom window
-        lblScan.Text = If(cfg.QrOverflow, ShareText.QrOverflowText(Is_Russian_Language),
+        ' Prefer the worker's honest reachability line (dead forward / CGNAT /
+        ' IPv6-only / confirmed / LAN-only) under the QR; fall back to the plain
+        ' "scan the code" prompt.
+        Dim scanText As String = If(Not String.IsNullOrEmpty(cfg.AccessNote), cfg.AccessNote,
             If(Is_Russian_Language, "Отсканируйте код в приложении на телефоне.", "Scan the code in the phone app."))
+        lblScan.Text = If(cfg.QrOverflow, ShareText.QrOverflowText(Is_Russian_Language), scanText)
         _lastConfigJson = If(cfg.ConfigJson, "")
         btnSaveConfig.Enabled = _lastConfigJson.Length > 0 AndAlso Not _busy
         btnEmail.Enabled = _lastConfigJson.Length > 0 AndAlso Not _busy
@@ -654,6 +682,7 @@ Public Class Share_Wizard_Form
         btnSaveConfig.Enabled = Not value AndAlso _lastConfigJson.Length > 0
         btnEmail.Enabled = Not value AndAlso _lastConfigJson.Length > 0
         btnCopyLan.Enabled = Not value AndAlso CurrentLanAddress().Length > 0
+        btnCopyCredentials.Enabled = Not value AndAlso _status IsNot Nothing AndAlso Not String.IsNullOrEmpty(_status.Password)
         Me.UseWaitCursor = value
     End Sub
 
