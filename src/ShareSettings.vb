@@ -36,12 +36,20 @@ Public Class ShareSettings
     ''' real password out-of-band (shown in the hint while the toggle is on).</summary>
     Public Property ExcludePasswordFromExport As Boolean = False ' Share_ExcludePassword
 
+    ''' <summary>Read-only mirror of the server-features consent flag (HKCU
+    ''' Share_ServerFeaturesEnabled), the deferred opt-in gate. OWNED and written by
+    ''' <see cref="ServerFeatures"/>; loaded here only for convenience and
+    ''' deliberately NOT persisted by <see cref="Save"/>, so a stale POCO can never
+    ''' clobber a consent the runtime opt-in just recorded.</summary>
+    Public Property ServerFeaturesEnabled As Boolean = False ' Share_ServerFeaturesEnabled (read-only mirror)
+
     Public Sub Load()
         AutostartEnabled = ReadBool("Share_AutostartEnabled", False)
         WorkerEverStarted = ReadBool("Share_WorkerEverStarted", False)
         ExternalAccessIntent = ReadBool("Share_ExternalAccessIntent", True)
         LanOnlyExport = ReadBool("Share_LanOnlyExport", False)
         ExcludePasswordFromExport = ReadBool("Share_ExcludePassword", False)
+        ServerFeaturesEnabled = ReadBool(ServerFeatures.EnabledRegValue, False)
     End Sub
 
     Public Sub Save()
@@ -50,6 +58,8 @@ Public Class ShareSettings
         WriteBool("Share_ExternalAccessIntent", ExternalAccessIntent)
         WriteBool("Share_LanOnlyExport", LanOnlyExport)
         WriteBool("Share_ExcludePassword", ExcludePasswordFromExport)
+        ' ServerFeaturesEnabled is intentionally NOT written here - ServerFeatures
+        ' owns that flag (see the property remark).
     End Sub
 
     ' --- registry helpers (SZA\FastMediaSorter) -------------------------------

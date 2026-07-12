@@ -88,6 +88,10 @@ Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdi
 ; normal installed file (Uninstall only has access to already-installed files).
 Source: "stop-companion.ps1"; DestDir: "{tmp}"; Flags: dontcopy
 Source: "stop-companion.ps1"; DestDir: "{app}"; Flags: ignoreversion
+; Elevated helper for the deferred, in-app "enable server features" opt-in (adds /
+; removes the SFTP firewall rule via one UAC prompt). Installed next to the exe so
+; ServerFeatures.EnableViaElevation prefers it over a direct netsh fallback.
+Source: "enable-share-server.ps1"; DestDir: "{app}"; Flags: ignoreversion
 
 [InstallDelete]
 ; The Start-menu group used to be named "FastMediaSorter LITE"; it is now the new
@@ -106,21 +110,31 @@ Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{localappdata}\FastMediaSorter_LITE"
+; The server-features consent marker is written post-install (not tracked by
+; [Files]), so remove it explicitly. The firewall rule itself is deleted in
+; CurUninstallStepChanged below.
+Type: files; Name: "{app}\companion\server-features.enabled"
 
 [Code]
 const
   CompanionProjectUrl = 'https://github.com/SerZhyAle/doc-html-translate';
-  CompanionWingetId = 'SerZhyAle.DocHtmlTranslate';
-  CompanionWingetCommand = 'winget install ' + CompanionWingetId;
+  CompanionSiteUrl = 'https://serzhyale.github.io/doc-html-translate/';
+  AndroidGuideUrl = 'https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html';
+  AndroidAppBaseUrl = 'https://serzhyale.github.io/FastMediaSorter_mob_v2/';
 
 var
   InstallOptionsPage: TWizardPage;
   DefaultViewerPromptLabel: TNewStaticText;
   RegisterAssociationsCheckBox: TNewCheckBox;
   AssociationsHintLabel: TNewStaticText;
+  ServerFeaturesTitleLabel: TNewStaticText;
+  ServerFeaturesCheckBox: TNewCheckBox;
+  ServerFeaturesHintLabel: TNewStaticText;
+  ShareGuideLinkLabel: TNewStaticText;
+  ShareAppLinkLabel: TNewStaticText;
   CompanionTitleLabel: TNewStaticText;
   CompanionBodyLabel: TNewStaticText;
-  CompanionCommandLabel: TNewStaticText;
+  CompanionSiteLinkLabel: TNewStaticText;
   CompanionProjectButton: TNewButton;
 
 function IsLanguage(const Lang: String): Boolean;
@@ -171,11 +185,97 @@ end;
 function AssociationsHintText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'На Windows 10/11 система может дополнительно попросить подтвердить выбор в разделе "Приложения по умолчанию". Тихая установка winget этот шаг пропускает.'
+    Result := 'Windows 10/11 может дополнительно попросить подтвердить выбор в "Приложениях по умолчанию".'
   else if IsLanguage('ukrainian') then
-    Result := 'На Windows 10/11 система може додатково попросити підтвердити вибір у розділі "Типові програми". Тиха установка winget цей крок пропускає.'
+    Result := 'Windows 10/11 може додатково попросити підтвердити вибір у "Типових програмах".'
   else
-    Result := 'Windows 10/11 may still ask you to confirm the choice once in Default Apps. Silent winget installs skip this step.';
+    Result := 'Windows 10/11 may still ask you to confirm this once in Default Apps.';
+end;
+
+function ServerFeaturesTitleText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'Общий доступ к папкам для Android (SFTP-сервер)'
+  else if IsLanguage('ukrainian') then
+    Result := 'Спільний доступ до папок для Android (SFTP-сервер)'
+  else
+    Result := 'Folder sharing for Android (SFTP server)';
+end;
+
+function ServerFeaturesCheckboxText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'Установить функции сервера общего доступа к папкам'
+  else if IsLanguage('ukrainian') then
+    Result := 'Встановити функції сервера спільного доступу до папок'
+  else
+    Result := 'Install folder-sharing server features';
+end;
+
+function ServerFeaturesHintText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'Позволяет телефону Android просматривать папки этого ПК по сети (только чтение, SFTP). Добавляет разрешение в брандмауэр, поэтому нужны права администратора. Можно включить и позже в "Настройки > Поделиться".'
+  else if IsLanguage('ukrainian') then
+    Result := 'Дозволяє телефону Android переглядати папки цього ПК по мережі (лише читання, SFTP). Додає дозвіл у брандмауер, тож потрібні права адміністратора. Можна ввімкнути й пізніше в "Налаштування > Поділитися".'
+  else
+    Result := 'Lets an Android phone browse this PC''s folders over the network (read-only, SFTP). Adds a firewall exception, so setup needs administrator rights. Can also be enabled later in Settings > Share.';
+end;
+
+function ServerFeaturesAdminHintText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'Недоступно: установка выполняется без прав администратора. Включить общий доступ можно позже в программе (Настройки > Поделиться).'
+  else if IsLanguage('ukrainian') then
+    Result := 'Недоступно: встановлення виконується без прав адміністратора. Увімкнути спільний доступ можна пізніше в програмі (Налаштування > Поділитися).'
+  else
+    Result := 'Unavailable: setup is running without administrator rights. You can enable sharing later inside the app (Settings > Share).';
+end;
+
+function ShareGuideUrl: String;
+begin
+  { The guide page reads a ?lang= query param (added alongside this feature) that
+    overrides its default browser/localStorage language detection, so the link can
+    land the reader on the section matching the installer's own language. }
+  if IsLanguage('russian') then
+    Result := AndroidGuideUrl + '?lang=ru'
+  else if IsLanguage('ukrainian') then
+    Result := AndroidGuideUrl + '?lang=uk'
+  else
+    Result := AndroidGuideUrl;
+end;
+
+function ShareAppUrl: String;
+begin
+  { Mirrors the language-specific pages the guide page itself links to in its
+    footer (index-ru.html / index-uk.html) - no query-param support needed here,
+    the Android app's own site already ships per-language pages. }
+  if IsLanguage('russian') then
+    Result := AndroidAppBaseUrl + 'index-ru.html'
+  else if IsLanguage('ukrainian') then
+    Result := AndroidAppBaseUrl + 'index-uk.html'
+  else
+    Result := AndroidAppBaseUrl;
+end;
+
+function ShareGuideLinkText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'Инструкция: как открыть папки для Android-телефона'
+  else if IsLanguage('ukrainian') then
+    Result := 'Інструкція: як відкрити папки для Android-телефону'
+  else
+    Result := 'Guide: how to share folders with an Android phone';
+end;
+
+function ShareAppLinkText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'Скачать приложение FastMediaSorter для Android'
+  else if IsLanguage('ukrainian') then
+    Result := 'Завантажити застосунок FastMediaSorter для Android'
+  else
+    Result := 'Get the FastMediaSorter Android app';
 end;
 
 function CompanionTitleText: String;
@@ -191,11 +291,11 @@ end;
 function CompanionBodyText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Если вам нужно переводить EPUB, PDF, FB2, MOBI, TXT или HTML в локальный HTML для чтения, установите companion-проект через winget или откройте страницу проекта.'
+    Result := 'Преобразует EPUB, PDF, FB2, MOBI, TXT или HTML в локальный HTML для чтения. Доступен через winget - подробности и загрузка:'
   else if IsLanguage('ukrainian') then
-    Result := 'Якщо вам потрібно переводити EPUB, PDF, FB2, MOBI, TXT або HTML у локальний HTML для читання, встановіть companion-проєкт через winget або відкрийте сторінку проєкту.'
+    Result := 'Перетворює EPUB, PDF, FB2, MOBI, TXT або HTML у локальний HTML для читання. Доступний через winget - докладніше та завантаження:'
   else
-    Result := 'If you need to convert EPUB, PDF, FB2, MOBI, TXT, or HTML documents into clean local HTML for reading, install the companion project via winget or open its project page.';
+    Result := 'Converts EPUB, PDF, FB2, MOBI, TXT, or HTML into clean local HTML for reading. Available via winget - learn more and download here:';
 end;
 
 function OpenProjectButtonText: String;
@@ -249,9 +349,70 @@ begin
   ShellExec('open', CompanionProjectUrl, '', '', SW_SHOWNORMAL, ewNoWait, ResultCode);
 end;
 
+procedure OpenCompanionSite(Sender: TObject);
+var
+  ResultCode: Integer;
+begin
+  ShellExec('open', CompanionSiteUrl, '', '', SW_SHOWNORMAL, ewNoWait, ResultCode);
+end;
+
+procedure OpenShareGuide(Sender: TObject);
+var
+  ResultCode: Integer;
+begin
+  ShellExec('open', ShareGuideUrl, '', '', SW_SHOWNORMAL, ewNoWait, ResultCode);
+end;
+
+procedure OpenShareApp(Sender: TObject);
+var
+  ResultCode: Integer;
+begin
+  ShellExec('open', ShareAppUrl, '', '', SW_SHOWNORMAL, ewNoWait, ResultCode);
+end;
+
 function ShouldRegisterAssociations: Boolean;
 begin
   Result := (RegisterAssociationsCheckBox <> nil) and RegisterAssociationsCheckBox.Checked;
+end;
+
+function ShouldInstallServerFeatures: Boolean;
+begin
+  { Only when explicitly ticked AND Setup is elevated - the firewall step needs
+    admin. In silent/winget installs the page is never shown, so Checked stays
+    False and this is a no-op (viewer-only). }
+  Result := (ServerFeaturesCheckBox <> nil) and ServerFeaturesCheckBox.Checked and IsAdminInstallMode;
+end;
+
+procedure AddServerFirewallRule;
+var
+  ResultCode: Integer;
+  Exe: String;
+begin
+  Exe := ExpandConstant('{app}\companion\fms-share-worker.exe');
+  { Idempotent: drop any stale rule of this name, then add a program-scoped inbound
+    allow (survives the worker's dynamic listen port). profile=domain,private,public
+    so a dedicated server on a Public network is covered. }
+  Exec('netsh', 'advfirewall firewall delete rule name="FastMediaSorter Companion SFTP"',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('netsh', 'advfirewall firewall add rule name="FastMediaSorter Companion SFTP" dir=in action=allow program="' + Exe + '" protocol=TCP profile=domain,private,public enable=yes',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+procedure WriteServerFeaturesMarker;
+begin
+  { Machine-side consent record (hive-safe): the non-elevated app reads this as the
+    server-features gate. An install-time HKCU write would land in the elevating
+    admin's hive, so a marker file is used instead. Removed via [UninstallDelete]. }
+  SaveStringToFile(ExpandConstant('{app}\companion\server-features.enabled'),
+    'enabled ' + GetDateTimeString('yyyy/mm/dd hh:nn:ss', '-', ':') + #13#10, False);
+end;
+
+procedure RemoveServerFirewallRule;
+var
+  ResultCode: Integer;
+begin
+  Exec('netsh', 'advfirewall firewall delete rule name="FastMediaSorter Companion SFTP"',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 
 procedure RegisterOpenWithSupport(const Ext: String);
@@ -324,9 +485,9 @@ begin
   RegisterAssociationsCheckBox := TNewCheckBox.Create(WizardForm);
   RegisterAssociationsCheckBox.Parent := InstallOptionsPage.Surface;
   RegisterAssociationsCheckBox.Left := 0;
-  RegisterAssociationsCheckBox.Top := DefaultViewerPromptLabel.Top + DefaultViewerPromptLabel.Height + ScaleY(6);
+  RegisterAssociationsCheckBox.Top := DefaultViewerPromptLabel.Top + DefaultViewerPromptLabel.Height + ScaleY(4);
   RegisterAssociationsCheckBox.Width := InstallOptionsPage.SurfaceWidth;
-  RegisterAssociationsCheckBox.Height := ScaleY(32);
+  RegisterAssociationsCheckBox.Height := ScaleY(22);
   RegisterAssociationsCheckBox.Checked := False;
   RegisterAssociationsCheckBox.Caption := RegisterAssociationsText;
 
@@ -338,10 +499,66 @@ begin
     False
   );
 
+  { Opt-in "SFTP server features" - the one privileged step (firewall rule) is
+    only performed when this is ticked AND Setup is elevated
+    (SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md §3.5). Default OFF; skipped in
+    silent/winget installs (the page is not shown, so Checked stays False). }
+  ServerFeaturesTitleLabel := TNewStaticText.Create(WizardForm);
+  ConfigureWrappedLabel(
+    ServerFeaturesTitleLabel,
+    AssociationsHintLabel.Top + AssociationsHintLabel.Height + ScaleY(12),
+    ServerFeaturesTitleText,
+    True
+  );
+
+  ServerFeaturesCheckBox := TNewCheckBox.Create(WizardForm);
+  ServerFeaturesCheckBox.Parent := InstallOptionsPage.Surface;
+  ServerFeaturesCheckBox.Left := 0;
+  ServerFeaturesCheckBox.Top := ServerFeaturesTitleLabel.Top + ServerFeaturesTitleLabel.Height + ScaleY(4);
+  ServerFeaturesCheckBox.Width := InstallOptionsPage.SurfaceWidth;
+  ServerFeaturesCheckBox.Height := ScaleY(20);
+  ServerFeaturesCheckBox.Checked := False;
+  ServerFeaturesCheckBox.Caption := ServerFeaturesCheckboxText;
+
+  ServerFeaturesHintLabel := TNewStaticText.Create(WizardForm);
+  ConfigureWrappedLabel(
+    ServerFeaturesHintLabel,
+    ServerFeaturesCheckBox.Top + ServerFeaturesCheckBox.Height + ScaleY(4),
+    ServerFeaturesHintText,
+    False
+  );
+
+  { Companion links for the Android side of folder sharing: the step-by-step guide
+    (language-matched via ?lang=) and the Android app's own site (its per-language
+    pages, same as the guide page links to in its footer). }
+  ShareGuideLinkLabel := TNewStaticText.Create(WizardForm);
+  ConfigureWrappedLabel(
+    ShareGuideLinkLabel,
+    ServerFeaturesHintLabel.Top + ServerFeaturesHintLabel.Height + ScaleY(6),
+    ShareGuideLinkText,
+    False
+  );
+  ShareGuideLinkLabel.Cursor := crHand;
+  ShareGuideLinkLabel.Font.Style := [fsUnderline];
+  ShareGuideLinkLabel.Font.Color := clBlue;
+  ShareGuideLinkLabel.OnClick := @OpenShareGuide;
+
+  ShareAppLinkLabel := TNewStaticText.Create(WizardForm);
+  ConfigureWrappedLabel(
+    ShareAppLinkLabel,
+    ShareGuideLinkLabel.Top + ShareGuideLinkLabel.Height + ScaleY(4),
+    ShareAppLinkText,
+    False
+  );
+  ShareAppLinkLabel.Cursor := crHand;
+  ShareAppLinkLabel.Font.Style := [fsUnderline];
+  ShareAppLinkLabel.Font.Color := clBlue;
+  ShareAppLinkLabel.OnClick := @OpenShareApp;
+
   CompanionTitleLabel := TNewStaticText.Create(WizardForm);
   ConfigureWrappedLabel(
     CompanionTitleLabel,
-    AssociationsHintLabel.Top + AssociationsHintLabel.Height + ScaleY(18),
+    ShareAppLinkLabel.Top + ShareAppLinkLabel.Height + ScaleY(12),
     CompanionTitleText,
     True
   );
@@ -354,19 +571,24 @@ begin
     False
   );
 
-  CompanionCommandLabel := TNewStaticText.Create(WizardForm);
-  ConfigureWrappedLabel(
-    CompanionCommandLabel,
-    CompanionBodyLabel.Top + CompanionBodyLabel.Height + ScaleY(8),
-    CompanionWingetCommand,
-    True
-  );
-  CompanionCommandLabel.Font.Name := 'Consolas';
+  { Clickable hyperlink to the companion site - a static label styled as a link.
+    Replaces the old non-selectable winget command line, which could not be
+    copied out of the wizard. }
+  CompanionSiteLinkLabel := TNewStaticText.Create(WizardForm);
+  CompanionSiteLinkLabel.Parent := InstallOptionsPage.Surface;
+  CompanionSiteLinkLabel.Left := 0;
+  CompanionSiteLinkLabel.Top := CompanionBodyLabel.Top + CompanionBodyLabel.Height + ScaleY(6);
+  CompanionSiteLinkLabel.AutoSize := True;
+  CompanionSiteLinkLabel.Caption := CompanionSiteUrl;
+  CompanionSiteLinkLabel.Cursor := crHand;
+  CompanionSiteLinkLabel.Font.Style := [fsUnderline];
+  CompanionSiteLinkLabel.Font.Color := clBlue;
+  CompanionSiteLinkLabel.OnClick := @OpenCompanionSite;
 
   CompanionProjectButton := TNewButton.Create(WizardForm);
   CompanionProjectButton.Parent := InstallOptionsPage.Surface;
   CompanionProjectButton.Left := 0;
-  CompanionProjectButton.Top := CompanionCommandLabel.Top + CompanionCommandLabel.Height + ScaleY(10);
+  CompanionProjectButton.Top := CompanionSiteLinkLabel.Top + CompanionSiteLinkLabel.Height + ScaleY(8);
   CompanionProjectButton.Width := ScaleX(180);
   CompanionProjectButton.Height := ScaleY(26);
   CompanionProjectButton.Caption := OpenProjectButtonText;
@@ -396,10 +618,38 @@ begin
   StopCompanionWorker(ExpandConstant('{tmp}\stop-companion.ps1'));
 end;
 
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  { Decision B: the firewall rule needs elevation. On a per-user (non-admin)
+    install, grey the checkbox and explain the deferred in-app path instead. }
+  if (InstallOptionsPage <> nil) and (CurPageID = InstallOptionsPage.ID) then
+  begin
+    if ServerFeaturesCheckBox <> nil then
+    begin
+      ServerFeaturesCheckBox.Enabled := IsAdminInstallMode;
+      if not IsAdminInstallMode then
+        ServerFeaturesCheckBox.Checked := False;
+    end;
+    if ServerFeaturesHintLabel <> nil then
+    begin
+      if IsAdminInstallMode then
+        ServerFeaturesHintLabel.Caption := ServerFeaturesHintText
+      else
+        ServerFeaturesHintLabel.Caption := ServerFeaturesAdminHintText;
+      WizardForm.AdjustLabelHeight(ServerFeaturesHintLabel);
+    end;
+  end;
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if (CurStep = ssPostInstall) and ShouldRegisterAssociations then
     RegisterRequestedImageAssociations;
+  if (CurStep = ssPostInstall) and ShouldInstallServerFeatures then
+  begin
+    AddServerFirewallRule;
+    WriteServerFeaturesMarker;
+  end;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
@@ -408,6 +658,10 @@ begin
     exit;
 
   StopCompanionWorker(ExpandConstant('{app}\stop-companion.ps1'));
+
+  { Remove the SFTP firewall rule this app may have added (no-op if absent). The
+    consent marker is removed by the [UninstallDelete] entry. }
+  RemoveServerFirewallRule;
 
   RemoveImageAssociation('.jpg', 'FastMediaSorter.jpg');
   RemoveImageAssociation('.jpeg', 'FastMediaSorter.jpeg');

@@ -59,9 +59,10 @@ Partial Public Class Main_Form
                     If ocr_Settings IsNot Nothing Then ToggleOcrAutoMode()
                 Case Keys.S
                     ' Share the current folder with an Android phone (S = slideshow,
-                    ' Shift+S = Share).
+                    ' Shift+S = Share). Gated: offers the one-time enable flow first
+                    ' when server features are not yet consented to.
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1617: Shift+S share folder")
-                    OpenShareWizard()
+                    ActivateShareEntryPoint()
             End Select
         Else
             Select Case e.KeyCode

@@ -72,6 +72,15 @@ Partial Public Class Table_Form
     Private chkShareNoPassword As CheckBox
     Private lnkShareAndroid As LinkLabel
 
+    ' Opt-in enablement overlay (shown instead of the full UI when server features
+    ' are not consented to - SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md §3.3). Covers
+    ' the whole tab so nothing behind it can spawn the worker.
+    Private pnlShareEnable As Panel
+    Private lblShareEnableTitle As Label
+    Private lblShareEnableIntro As Label
+    Private btnShareEnableServer As Button
+    Private lblShareEnableStatus As Label
+
     ' Inner TabControl (right column). Reframed by ROLE (S1006), not by network:
     '   tab 1 (tpShareLan) = the ONE primary QR that works home + away
     '   tab 2 (tpShareNet) = internet-access setup guidance only (no duplicate QR)
@@ -81,6 +90,7 @@ Partial Public Class Table_Form
 
     ' Primary QR tab (tpShareLan)
     Private picShareQrLan As PictureBox
+    Private btnShareShowQr As Button
     Private lblShareLanAddr As Label
     Private btnShareTestLan As Button
     Private btnShareCopyLan As Button
@@ -109,6 +119,7 @@ Partial Public Class Table_Form
         LocalizeShareTab()
         InitializeShareTooltips()
         LoadShareLocalState()
+        ApplyServerGate()
     End Sub
 
     Private Sub Tab_Control_SelectedIndexChanged_Share(sender As Object, e As EventArgs) Handles Tab_Control.SelectedIndexChanged
@@ -242,29 +253,33 @@ Partial Public Class Table_Form
         shareInnerTabs.TabPages.Add(tpShareNet)
 
         ' Primary QR tab: the ONE combined config (LAN + internet) by default.
-        ' Positions are packed to fit the ~332px inner-tab client height (the QR
-        ' is a touch smaller than before to make room for the "LAN only" toggle;
-        ' click-to-zoom covers the denser combined-config code).
-        picShareQrLan = New PictureBox With {.Left = LU(74), .Top = LU(8), .Width = LU(148), .Height = LU(148),
-            .BorderStyle = BorderStyle.FixedSingle, .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Color.White}
-        lblShareLanAddr = New Label With {.Left = LU(8), .Top = LU(160), .Width = LU(216), .Height = LU(18), .AutoEllipsis = True, .Font = New Font(Me.Font.FontFamily, Me.Font.Size * 0.8F, FontStyle.Bold)}
-        btnShareTestLan = New Button With {.Left = LU(228), .Top = LU(158), .Width = LU(64), .Height = LU(22), .Enabled = False}
-        btnShareCopyLan = New Button With {.Left = LU(8), .Top = LU(182), .Width = LU(150), .Height = LU(24), .Enabled = False}
-        btnShareCopyCredentials = New Button With {.Left = LU(162), .Top = LU(182), .Width = LU(130), .Height = LU(24), .Enabled = False}
-        lblShareFinger = New Label With {.Left = LU(8), .Top = LU(210), .Width = LU(284), .Height = LU(28), .ForeColor = Color.DimGray, .AutoEllipsis = True}
-        chkShareLanOnly = New CheckBox With {.Left = LU(8), .Top = LU(240), .Width = LU(284), .Height = LU(20), .AutoSize = False}
-        btnShareSaveLan = New Button With {.Left = LU(8), .Top = LU(264), .Width = LU(140), .Height = LU(26), .Enabled = False}
-        btnShareEmailLan = New Button With {.Left = LU(152), .Top = LU(264), .Width = LU(140), .Height = LU(26), .Enabled = False}
-        lblShareLanHint = New Label With {.Left = LU(8), .Top = LU(294), .Width = LU(292), .Height = LU(36), .ForeColor = Color.DimGray, .AutoEllipsis = True,
+        ' Positions are packed to fit the ~332px inner-tab client height. The
+        ' combined config makes for a dense QR that is unreadable shrunk into a
+        ' small on-tab box, so no QR is drawn inline: picShareQrLan stays an
+        ' invisible image holder (still sized so Qr_Zoom_Form.ShowZoomed's 4x-of-box
+        ' sizing works) and a big button opens it full-size instead.
+        picShareQrLan = New PictureBox With {.Left = LU(8), .Top = LU(8), .Width = LU(148), .Height = LU(148),
+            .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Color.White, .Visible = False}
+        btnShareShowQr = New Button With {.Left = LU(8), .Top = LU(8), .Width = LU(284), .Height = LU(56),
+            .Enabled = False, .Font = New Font(Me.Font.FontFamily, Me.Font.Size * 1.1F, FontStyle.Bold)}
+        lblShareLanAddr = New Label With {.Left = LU(8), .Top = LU(74), .Width = LU(216), .Height = LU(18), .AutoEllipsis = True, .Font = New Font(Me.Font.FontFamily, Me.Font.Size * 0.8F, FontStyle.Bold)}
+        btnShareTestLan = New Button With {.Left = LU(228), .Top = LU(72), .Width = LU(64), .Height = LU(22), .Enabled = False}
+        btnShareCopyLan = New Button With {.Left = LU(8), .Top = LU(98), .Width = LU(150), .Height = LU(24), .Enabled = False}
+        btnShareCopyCredentials = New Button With {.Left = LU(162), .Top = LU(98), .Width = LU(130), .Height = LU(24), .Enabled = False}
+        lblShareFinger = New Label With {.Left = LU(8), .Top = LU(126), .Width = LU(284), .Height = LU(28), .ForeColor = Color.DimGray, .AutoEllipsis = True}
+        chkShareLanOnly = New CheckBox With {.Left = LU(8), .Top = LU(156), .Width = LU(284), .Height = LU(20), .AutoSize = False}
+        btnShareSaveLan = New Button With {.Left = LU(8), .Top = LU(180), .Width = LU(140), .Height = LU(26), .Enabled = False}
+        btnShareEmailLan = New Button With {.Left = LU(152), .Top = LU(180), .Width = LU(140), .Height = LU(26), .Enabled = False}
+        lblShareLanHint = New Label With {.Left = LU(8), .Top = LU(210), .Width = LU(292), .Height = LU(120), .ForeColor = Color.DimGray, .AutoEllipsis = True,
             .Font = New Font(Me.Font.FontFamily, Me.Font.Size * 0.78F)}
-        AddHandler picShareQrLan.Click, Sub() Qr_Zoom_Form.ShowZoomed(Me, picShareQrLan)
+        AddHandler btnShareShowQr.Click, Sub() Qr_Zoom_Form.ShowZoomed(Me, picShareQrLan)
         AddHandler btnShareTestLan.Click, AddressOf OnShareTestLan
         AddHandler btnShareCopyLan.Click, AddressOf OnShareCopyLan
         AddHandler btnShareCopyCredentials.Click, AddressOf OnShareCopyCredentials
         AddHandler chkShareLanOnly.CheckedChanged, AddressOf OnShareLanOnlyChanged
         AddHandler btnShareSaveLan.Click, Sub() SaveShareConfig(If(_cfgPrimary, Nothing))
         AddHandler btnShareEmailLan.Click, Sub() EmailShareConfig(If(_cfgPrimary, Nothing))
-        tpShareLan.Controls.AddRange(New Control() {picShareQrLan, lblShareLanAddr, btnShareTestLan, btnShareCopyLan, btnShareCopyCredentials, lblShareFinger, chkShareLanOnly, btnShareSaveLan, btnShareEmailLan, lblShareLanHint})
+        tpShareLan.Controls.AddRange(New Control() {picShareQrLan, btnShareShowQr, lblShareLanAddr, btnShareTestLan, btnShareCopyLan, btnShareCopyCredentials, lblShareFinger, chkShareLanOnly, btnShareSaveLan, btnShareEmailLan, lblShareLanHint})
 
         ' Internet-setup guidance tab: no QR / Save / Email (the primary tab owns
         ' the export). Just the reachability status, router links and the
@@ -287,9 +302,66 @@ Partial Public Class Table_Form
         tpShareNet.Controls.AddRange(New Control() {lblShareNet, btnShareTestNet,
             btnShareOpenRouter, lblShareRouterUrl, lnkShareGuide, lnkShareRouterSearch, lnkShareWebGuide, txtShareForward})
 
+        ' ---- opt-in enablement overlay (Dock.Fill = covers the whole tab regardless
+        ' of DPI-scaled size, so the worker-driving controls behind it are unreachable
+        ' until the user consents). Added LAST so it sits on top in the z-order.
+        pnlShareEnable = New Panel With {.Dock = DockStyle.Fill, .BackColor = Tab_Page_6.BackColor, .Visible = False}
+        lblShareEnableTitle = New Label With {.Left = LU(16), .Top = LU(18), .Width = LU(620), .Height = LU(26), .AutoSize = False,
+            .Font = New Font(Me.Font.FontFamily, Me.Font.Size * 1.15F, FontStyle.Bold)}
+        lblShareEnableIntro = New Label With {.Left = LU(16), .Top = LU(50), .Width = LU(620), .Height = LU(120), .AutoSize = False}
+        btnShareEnableServer = New Button With {.Left = LU(16), .Top = LU(178), .Width = LU(240), .Height = LU(32),
+            .Font = New Font(Me.Font, FontStyle.Bold)}
+        lblShareEnableStatus = New Label With {.Left = LU(16), .Top = LU(218), .Width = LU(620), .Height = LU(40), .AutoSize = False, .ForeColor = Color.DimGray}
+        AddHandler btnShareEnableServer.Click, AddressOf OnShareEnableServer
+        pnlShareEnable.Controls.AddRange(New Control() {lblShareEnableTitle, lblShareEnableIntro, btnShareEnableServer, lblShareEnableStatus})
+        Tab_Page_6.Controls.Add(pnlShareEnable)
+
         Tab_Page_6.ResumeLayout(False)
         Tab_Page_6.PerformLayout()
         _shareLoading = prev
+    End Sub
+
+    ''' <summary>Shows the enablement overlay (viewer-only) or the full sharing UI,
+    ''' by the server-features gate. Called on tab prepare + after a runtime enable.</summary>
+    Private Sub ApplyServerGate()
+        If Not _shareBuilt OrElse pnlShareEnable Is Nothing Then Return
+        Dim enabled As Boolean = ServerFeatures.IsEnabled()
+        pnlShareEnable.Visible = Not enabled
+        If Not enabled Then pnlShareEnable.BringToFront()
+    End Sub
+
+    ''' <summary>Panel "Установить функции сервера.." click: run the one elevated
+    ''' firewall step, then reveal the real UI live and start the worker on success.</summary>
+    Private Sub OnShareEnableServer(sender As Object, e As EventArgs)
+        Dim rus As Boolean = Is_Russian_Language
+        If Not ServerFeatures.CanEnable() Then
+            lblShareEnableStatus.ForeColor = Color.Firebrick
+            lblShareEnableStatus.Text = ShareText.ServerEnableUnavailable(rus)
+            Return
+        End If
+        btnShareEnableServer.Enabled = False
+        lblShareEnableStatus.ForeColor = Color.DimGray
+        lblShareEnableStatus.Text = ShareText.ServerEnableWorking(rus)
+        lblShareEnableStatus.Refresh()
+
+        Dim res As ServerFeatures.EnableResult = ServerFeatures.EnableViaElevation()
+        btnShareEnableServer.Enabled = True
+
+        Select Case res
+            Case ServerFeatures.EnableResult.Enabled
+                Try : Main_Form.OnServerFeaturesEnabledLive() : Catch : End Try
+                ApplyServerGate()
+                OnEnterShareTab() ' now passes the gate -> starts the worker + populates
+            Case ServerFeatures.EnableResult.Declined
+                lblShareEnableStatus.ForeColor = Color.Firebrick
+                lblShareEnableStatus.Text = ShareText.ServerEnableDeclined(rus)
+            Case ServerFeatures.EnableResult.Unavailable
+                lblShareEnableStatus.ForeColor = Color.Firebrick
+                lblShareEnableStatus.Text = ShareText.ServerEnableUnavailable(rus)
+            Case Else
+                lblShareEnableStatus.ForeColor = Color.Firebrick
+                lblShareEnableStatus.Text = ShareText.ServerEnableFailed(rus)
+        End Select
     End Sub
 
     ' --- localization ----------------------------------------------------------
@@ -315,6 +387,7 @@ Partial Public Class Table_Form
 
         tpShareLan.Text = If(rus, "Код для телефона", "QR for phone")
         tpShareNet.Text = If(rus, "Доступ из интернета", "Internet access")
+        btnShareShowQr.Text = If(rus, "Показать QR-код", "Show QR code")
         btnShareTestLan.Text = If(rus, "Тест", "Test")
         btnShareTestNet.Text = If(rus, "Тест", "Test")
         btnShareCopyLan.Text = If(rus, "Скопировать адрес", "Copy address")
@@ -332,6 +405,11 @@ Partial Public Class Table_Form
         If lblShareLanAddr.Text.Length = 0 Then lblShareLanAddr.Text = If(rus, "Адрес: -", "Address: -")
         If lblShareFinger.Text.Length = 0 Then lblShareFinger.Text = If(rus, "Ключ узла: -", "Host key: -")
         If lblShareNet.Text.Length = 0 Then lblShareNet.Text = If(rus, "Внешний доступ: -", "Internet: -")
+
+        ' Enablement overlay (viewer-only state)
+        If lblShareEnableTitle IsNot Nothing Then lblShareEnableTitle.Text = ShareText.ServerEnableTitle(rus)
+        If lblShareEnableIntro IsNot Nothing Then lblShareEnableIntro.Text = ShareText.ServerEnablePanelIntro(rus)
+        If btnShareEnableServer IsNot Nothing Then btnShareEnableServer.Text = ShareText.ServerEnableButton(rus)
     End Sub
 
     Private Sub InitializeShareTooltips()
@@ -347,7 +425,7 @@ Partial Public Class Table_Form
         End If
         toolTip.SetToolTip(chkShareAutostart, autostartTip)
         toolTip.SetToolTip(btnShareToggle, If(rus, "Запустить или остановить SFTP-сервер для отмеченных папок.", "Start or stop the SFTP server for the ticked folders."))
-        toolTip.SetToolTip(picShareQrLan, If(rus, "Один код для дома и интернета - телефон сам выберет доступный адрес. Клик - открыть крупно.", "One code for home and internet - the phone picks whichever address is reachable. Click to enlarge."))
+        toolTip.SetToolTip(btnShareShowQr, If(rus, "Один код для дома и интернета - телефон сам выберет доступный адрес. Код слишком плотный для маленького окна - открывается крупно, во весь экран.", "One code for home and internet - the phone picks whichever address is reachable. The code is too dense for a small box, so it opens full-size."))
         toolTip.SetToolTip(chkShareLanOnly, If(rus, "Не включать внешний (интернет) адрес в код и файл - только локальная сеть. Для тех, кто не открывает доступ из интернета.", "Keep the external (internet) address out of the code and file - LAN only. For users who never open internet access."))
         toolTip.SetToolTip(btnShareTestLan, If(rus, "Проверить, что SFTP-сервер отвечает по локальному адресу.", "Check that the SFTP server answers on the local address."))
         toolTip.SetToolTip(btnShareCopyCredentials, If(rus, "Скопировать логин и пароль SFTP в буфер обмена - чтобы передать их отдельно от файла/QR.", "Copy the SFTP login and password to the clipboard - to pass them on separately from the file/QR."))
@@ -381,6 +459,14 @@ Partial Public Class Table_Form
         If Not _shareBuilt Then Return
         LoadShareLocalState()
         Dim rus As Boolean = Is_Russian_Language
+
+        ' Viewer-only until the user opts in: show the enablement overlay and do NOT
+        ' start the worker (that is the whole point of the gate - §3.3).
+        If Not ServerFeatures.IsEnabled() Then
+            ApplyServerGate()
+            Return
+        End If
+        ApplyServerGate()
 
         If Not WorkerProcess.IsAvailable() Then
             lblShareState.Text = If(rus, "Компаньон не найден", "Companion not found")
@@ -503,7 +589,12 @@ Partial Public Class Table_Form
             If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
             Dim after As ShareRootParams = dlg.Result
             ShareRootParamsStore.SetFor(hostPath, after)
-            If after.IsDestination <> before.IsDestination AndAlso it.Checked Then
+            ' Re-share only when the effective WRITABILITY changed (read-only flag or
+            ' destination flag). Both feed the served readOnly, so either flip needs a
+            ' live re-share; the other params are read fresh at the next start.
+            Dim writableBefore As Boolean = (Not before.IsReadOnly) OrElse before.IsDestination
+            Dim writableAfter As Boolean = (Not after.IsReadOnly) OrElse after.IsDestination
+            If writableBefore <> writableAfter AndAlso it.Checked Then
                 ' Only a LIVE server needs the re-share (the flag is read fresh from
                 ' the store at the next start anyway) - never cold-start the server
                 ' from a settings dialog after the user explicitly stopped sharing.
@@ -858,9 +949,11 @@ Partial Public Class Table_Form
             If Not it.Checked Then Continue For
             Dim hostPath As String = Convert.ToString(it.Tag)
             If Not String.IsNullOrEmpty(hostPath) Then
-                ' A destination root (v2 isDestination, §5) must accept writes -
-                ' serve it writable; everything else stays read-only.
-                Dim writable As Boolean = ShareRootParamsStore.GetFor(hostPath).IsDestination
+                ' Writable when the root is explicitly not read-only, OR it is a
+                ' destination (which must accept writes, §5). Everything else - the
+                ' default - stays read-only.
+                Dim p As ShareRootParams = ShareRootParamsStore.GetFor(hostPath)
+                Dim writable As Boolean = (Not p.IsReadOnly) OrElse p.IsDestination
                 list.Add(New ShareFolder With {.name = it.Text, .hostPath = hostPath, .readOnly = Not writable})
             End If
         Next
@@ -928,14 +1021,16 @@ Partial Public Class Table_Form
         Dim fp As String = If(st IsNot Nothing, If(st.Fingerprint, ""), "")
         lblShareFinger.Text = (If(rus, "Ключ узла: ", "Host key: ")) & If(fp.Length > 0, fp, "-")
         ShowQr(picShareQrLan, _cfgPrimary)
+        ' picShareQrLan.Image is Nothing when there's no config yet AND when the
+        ' combined config overflows the QR's data capacity (cfg.QrOverflow) - in
+        ' both cases there's nothing to show full-size, so gate the button on the
+        ' actual decoded image rather than on _cfgPrimary alone.
+        btnShareShowQr.Enabled = picShareQrLan.Image IsNot Nothing AndAlso Not _shareBusy
         ' Stopped = no config/QR yet. Say "press Start" plainly instead of the
         ' "works on Wi-Fi, nothing to configure" hint, which reads as "ready"
         ' next to an empty QR box (the exact confusion a user reported).
         lblShareLanHint.Text = If(running, PrimaryHintText(_cfgPrimary, rus),
             If(rus, "Нажмите «Начать общий доступ», чтобы получить QR-код.", "Press 'Start sharing' to get the QR code."))
-        ' The box is too small for the longer hints (e.g. CombinedHintText's
-        ' security nudge) even at the smaller hint font - AutoEllipsis keeps the
-        ' box tidy, but the full text stays one hover away.
         toolTip.SetToolTip(lblShareLanHint, lblShareLanHint.Text)
         btnShareSaveLan.Enabled = _cfgPrimary IsNot Nothing AndAlso Not _shareBusy
         btnShareEmailLan.Enabled = _cfgPrimary IsNot Nothing AndAlso Not _shareBusy
@@ -1053,6 +1148,7 @@ Partial Public Class Table_Form
         btnShareCopyLan.Enabled = Not value AndAlso CurrentLanAddress().Length > 0
         btnShareSaveLan.Enabled = Not value AndAlso _cfgPrimary IsNot Nothing
         btnShareEmailLan.Enabled = Not value AndAlso _cfgPrimary IsNot Nothing
+        btnShareShowQr.Enabled = Not value AndAlso picShareQrLan.Image IsNot Nothing
         RefreshTestButtons()
         Me.UseWaitCursor = value
     End Sub

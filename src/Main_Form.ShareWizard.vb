@@ -38,7 +38,7 @@ Partial Public Class Main_Form
         If shareFolderMenu Is Nothing Then
             shareFolderMenu = New ContextMenuStrip()
             shareMenuItem = New ToolStripMenuItem()
-            AddHandler shareMenuItem.Click, Sub() OpenShareWizard()
+            AddHandler shareMenuItem.Click, Sub() ActivateShareEntryPoint()
             shareFolderMenu.Items.Add(shareMenuItem)
 
             ' Right-click on the media surfaces is already file navigation; attach
@@ -50,26 +50,69 @@ Partial Public Class Main_Form
         LocalizeShareEntryPoints()
     End Sub
 
-    ''' <summary>Re-localizes the Share button + menu (called from LngCh).</summary>
+    ''' <summary>Re-localizes the Share button + menu (called from LngCh). The button
+    ''' stays visible whether or not server features are enabled (it is the "диалог
+    ''' кнопки поделиться" opt-in entry point); its tooltip reflects the state.</summary>
     Friend Sub LocalizeShareEntryPoints()
         Dim rus As Boolean = Is_Russian_Language
+        Dim enabled As Boolean = ServerFeatures.IsEnabled()
         If btn_Share IsNot Nothing Then btn_Share.Text = If(rus, "Поделиться", "Share")
         If shareMenuItem IsNot Nothing Then shareMenuItem.Text = If(rus, "Поделиться этой папкой с телефоном..", "Share this folder with phone..")
         If toolTip IsNot Nothing AndAlso btn_Share IsNot Nothing Then
-            toolTip.SetToolTip(btn_Share, If(rus,
-                "Поделиться текущей папкой с телефоном Android по локальной сети (Shift+S). ПКМ по каталогу - тоже.",
-                "Share the current folder with an Android phone over the local network (Shift+S). Right-click the folder box too."))
+            toolTip.SetToolTip(btn_Share, If(enabled,
+                If(rus,
+                    "Поделиться текущей папкой с телефоном Android по локальной сети (Shift+S). ПКМ по каталогу - тоже.",
+                    "Share the current folder with an Android phone over the local network (Shift+S). Right-click the folder box too."),
+                ShareText.ServerDisabledButtonHint(rus)))
         End If
         LocalizeShareTray()
     End Sub
 
     Private Sub btn_Share_Click(sender As Object, e As EventArgs) Handles btn_Share.Click
-        OpenShareWizard()
+        ActivateShareEntryPoint()
+    End Sub
+
+    ''' <summary>The shared entry-point action for the toolbar button, the folder-box
+    ''' right-click item and Shift+S. When server features are enabled it opens the
+    ''' share wizard; otherwise it offers the one-time enable flow first, then opens
+    ''' the wizard on success (SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md §3.3-3.4).</summary>
+    Friend Sub ActivateShareEntryPoint()
+        If ServerFeatures.IsEnabled() Then
+            OpenShareWizard()
+        Else
+            PromptEnableServerFeatures(thenOpenWizard:=True)
+        End If
+    End Sub
+
+    ''' <summary>Shows the deferred opt-in dialog. On a successful enable, reveals the
+    ''' Share UI live (no restart) and optionally opens the wizard right away.</summary>
+    Friend Sub PromptEnableServerFeatures(Optional thenOpenWizard As Boolean = False)
+        If Not ServerFeatures.CanEnable() Then
+            MessageBox.Show(Me, ShareText.ServerEnableUnavailable(Is_Russian_Language),
+                            ShareText.ServerEnableTitle(Is_Russian_Language), MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+        Using f As New Share_Enable_Form(Is_Russian_Language)
+            If f.ShowDialog(Me) = DialogResult.OK Then
+                OnServerFeaturesEnabledLive()
+                If thenOpenWizard Then OpenShareWizard()
+            End If
+        End Using
+    End Sub
+
+    ''' <summary>Called once after server features are enabled at runtime: refresh the
+    ''' gate-dependent chrome (button tooltip, tray) so the feature appears without a
+    ''' restart. The Settings window, if open, swaps its own Share tab body.</summary>
+    Friend Sub OnServerFeaturesEnabledLive()
+        ServerFeatures.Refresh()
+        Try : LocalizeShareEntryPoints() : Catch : End Try
+        Try : RefreshShareTray() : Catch : End Try
     End Sub
 
     ''' <summary>Opens the one-window share wizard for the folder being viewed.
     ''' Resolves the folder from Current_Folder_Path, falling back to the folder
-    ''' of the current media file.</summary>
+    ''' of the current media file. Assumes the gate is already satisfied (callers go
+    ''' through <see cref="ActivateShareEntryPoint"/>).</summary>
     Friend Sub OpenShareWizard()
         Dim folder As String = ResolveCurrentFolder()
         Using w As New Share_Wizard_Form(folder)

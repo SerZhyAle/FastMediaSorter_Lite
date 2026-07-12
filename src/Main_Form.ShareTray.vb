@@ -79,6 +79,9 @@ Partial Public Class Main_Form
     ''' the resumed state on its next tick). Best-effort and fire-and-forget: a
     ''' failure here just leaves sharing off, exactly as it was before this ran.</summary>
     Friend Sub ResumeShareIfEnabled()
+        ' Never spawn the worker when server features are not consented to - the app
+        ' must stay a pure viewer/sorter until the user opts in (§3.3).
+        If Not ServerFeatures.IsEnabled() Then Return
         Dim settings As New ShareSettings()
         settings.Load()
         If Not settings.WorkerEverStarted Then Return
@@ -120,6 +123,9 @@ Partial Public Class Main_Form
     Private Shared Function ProbeSharing() As ShareTrayState
         Dim s As New ShareTrayState()
         Try
+            ' Viewer-only mode: the worker is never spawned, so there is nothing to
+            ' probe and no tray icon should ever appear.
+            If Not ServerFeatures.IsEnabled() Then Return s
             If Not WorkerProcess.IsAvailable() Then Return s
 
             Dim procs As Process() = Process.GetProcessesByName(WorkerProcess.ProcessName)

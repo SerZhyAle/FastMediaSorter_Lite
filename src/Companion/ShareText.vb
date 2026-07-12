@@ -134,6 +134,70 @@ Public Module ShareText
         Return ""
     End Function
 
+    ' --- opt-in server-features enablement (SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL) ---
+
+    ''' <summary>Heading of the enable-sharing dialog / Settings-tab panel.</summary>
+    Public Function ServerEnableTitle(rus As Boolean) As String
+        Return If(rus, "Включить общий доступ к папкам", "Enable folder sharing")
+    End Function
+
+    ''' <summary>What/why body shown before the one UAC prompt. States the network
+    ''' exposure honestly and that it needs administrator rights once.</summary>
+    Public Function ServerEnableBody(rus As Boolean) As String
+        Return If(rus,
+            "Чтобы делиться папками с телефоном Android, нужен небольшой фоновый SFTP-сервер и разрешение в брандмауэре Windows. Это один раз потребует прав администратора. После включения выбранные вами папки станут доступны для чтения по сети. Продолжить?",
+            "To share folders with an Android phone, a small background SFTP server and a Windows Firewall exception are needed. This asks for administrator rights once. After it is on, the folders you pick become readable over the network. Continue?")
+    End Function
+
+    ''' <summary>Shorter intro for the Settings tab's enablement panel (the primary,
+    ''' always-discoverable opt-in home).</summary>
+    Public Function ServerEnablePanelIntro(rus As Boolean) As String
+        Return If(rus,
+            "Общий доступ к папкам для телефона Android пока не включён. Он добавляет небольшой фоновый SFTP-сервер и одно разрешение в брандмауэре Windows (нужны права администратора один раз). Пока он выключен, программа работает как просмотрщик и сортировщик медиафайлов.",
+            "Folder sharing for an Android phone is not enabled yet. It adds a small background SFTP server and one Windows Firewall exception (administrator rights are needed once). While it is off, the app works as a plain image/video viewer and sorter.")
+    End Function
+
+    ''' <summary>The primary action button label (both dialog and panel).</summary>
+    Public Function ServerEnableButton(rus As Boolean) As String
+        Return If(rus, "Установить функции сервера..", "Install server features..")
+    End Function
+
+    Public Function ServerEnableCancel(rus As Boolean) As String
+        Return If(rus, "Отмена", "Cancel")
+    End Function
+
+    Public Function ServerEnableWorking(rus As Boolean) As String
+        Return If(rus, "Настройка.. подтвердите запрос прав администратора.", "Setting up.. confirm the administrator prompt.")
+    End Function
+
+    Public Function ServerEnableSuccess(rus As Boolean) As String
+        Return If(rus, "Готово. Общий доступ включён.", "Done. Folder sharing is enabled.")
+    End Function
+
+    Public Function ServerEnableDeclined(rus As Boolean) As String
+        Return If(rus, "Общий доступ не включён - не получены права администратора.", "Sharing not enabled - administrator rights were not granted.")
+    End Function
+
+    Public Function ServerEnableFailed(rus As Boolean) As String
+        Return If(rus, "Не удалось настроить брандмауэр. Попробуйте ещё раз.", "Could not configure the firewall. Please try again.")
+    End Function
+
+    ''' <summary>Worker payload missing - nothing to enable (a fresh clone / a build
+    ''' without the sidecar). Reinstall to get the Share feature.</summary>
+    Public Function ServerEnableUnavailable(rus As Boolean) As String
+        Return If(rus,
+            "Компонент сервера не найден рядом с программой - переустановите приложение, чтобы включить общий доступ.",
+            "The server component was not found next to the app - reinstall the application to enable sharing.")
+    End Function
+
+    ''' <summary>Tooltip / hint on the still-visible Share button while the feature
+    ''' is disabled (clicking it opens the enable dialog rather than the wizard).</summary>
+    Public Function ServerDisabledButtonHint(rus As Boolean) As String
+        Return If(rus,
+            "Общий доступ к папкам для телефона Android. Нажмите, чтобы включить (нужны права администратора один раз).",
+            "Folder sharing for an Android phone. Click to enable it (administrator rights are needed once).")
+    End Function
+
     ''' <summary>Step-by-step router port-forward instructions with the concrete
     ''' values filled in. The external address is already embedded in the QR /
     ''' .fmscfg (ShareConfigBuilder), so the closing line just tells the user to

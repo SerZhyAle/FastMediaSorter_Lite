@@ -69,7 +69,7 @@ The decoded JSON is a single object:
   "password": "ucDphzKZ4PMHr3G9nLzm5UPZ",   // string - SFTP password (embedded by design)
   "hostKeyFingerprintSha256": "SHA256:mOdVHW8J8EXU4qE+NR0NvQKR+j00xj8Db3LqcgMiKeI", // pin this (TOFU)
   "roots": [                                // array - shared folders
-    { "virtualPath": "/MOV", "label": "MOV" }
+    { "virtualPath": "/MOV", "label": "MOV", "readOnly": true }  // readOnly: true=browse-only (default), false=writable
   ],
   "createdAt": "2026-07-11T01:00:00Z"       // string - RFC 3339 UTC
 }
@@ -90,6 +90,8 @@ The decoded JSON is a single object:
 | `roots` | array | yes, non-empty | Shared folders as the client sees them. |
 | `roots[].virtualPath` | string | yes | Absolute virtual path on the server, e.g. `/MOV`. Always starts with `/`. |
 | `roots[].label` | string | yes | Display label for the folder. |
+| `roots[].readOnly` | bool | no (optional) | **Whether this folder is read-only** for the phone (browse/download only - no upload, rename, delete or move-into). **Added additively (still schemaVersion 1); default `true` when absent** (so pre-existing exports stay read-only, unchanged). Current exporters emit it on every root. A writable folder sends `false`. The server enforces it too, but honor it in the UI (lock write actions when `true`). See also `roots[].isDestination` below. |
+| `roots[].isDestination` | bool | no (optional, v2) | The folder is also a copy/move **destination** (a sort target on the phone). Implies writable, so a destination always ships `readOnly:false`. Part of the schemaVersion-2 resource-params set (COMPANION_EXPORT_SPEC / S1002); absent = not a destination. **Writability rule for robustness across exporter versions: a root is writable iff `readOnly == false` OR `isDestination == true`; otherwise read-only.** |
 | `createdAt` | string | yes | RFC 3339 UTC timestamp of the export. Informational (freshness / dedupe). |
 | `accessNote` | string | no (optional) | Short human-readable reachability note (state + next step, e.g. "Reachable only on the same Wi-Fi.."). Added additively (still schemaVersion 1). **Show it verbatim when no access path connects** (S1014). Absent when the exporter had nothing to say. |
 
@@ -113,7 +115,13 @@ data class CompanionConfig(
     val accessNote: String? = null            // optional; show on connection failure (S1014)
 )
 data class AccessPath(val kind: String, val host: String, val port: Int) // kind: lan | ipv6 | portforward
-data class ConfigRoot(val virtualPath: String, val label: String)
+data class ConfigRoot(
+    val virtualPath: String,
+    val label: String,
+    val readOnly: Boolean = true,             // optional; default read-only. false = writable
+    val isDestination: Boolean = false        // optional (v2); a copy/move destination (implies writable)
+)
+// Writable folder = (!readOnly) || isDestination. Otherwise read-only.
 ```
 
 ---
@@ -191,13 +199,13 @@ If you verify the fingerprint yourself instead: compute `SHA-256` over the serve
 
 - Transport: **SSH2 / SFTP subsystem** (standard). Open one `session` channel, request subsystem `sftp`.
 - Auth method: **password only** (`username` + `password` from the config). The server accepts exactly one credential pair and rejects everything else. Do **not** attempt public-key or keyboard-interactive.
-- The server is **read-only**: treat all roots as read-only. Do not offer upload/delete/rename in the UI for these resources (writes will fail server-side anyway).
+- **Writability is per root**, from `roots[].readOnly` (default `true`): a `readOnly:true` (or absent) root is browse-only - do not offer upload/delete/rename for it (writes fail server-side too). A `readOnly:false` root (or one with `isDestination:true`) accepts writes; enable the write UI for it. Rule: writable iff `readOnly == false` OR `isDestination == true`.
 
 ### 5.3 Roots -> resources
 
 The SFTP server exposes **all** shared folders under a single virtual root `/`, each as a top-level directory named by its `virtualPath` (e.g. `/MOV`, `/Photos`). Recommended mapping (matches the shipped behavior):
 
-- Create **one read-only resource per `roots[]` entry**, each rooted at its `virtualPath`, labelled with `roots[].label`, all sharing the same connection (host list + credentials + pinned key).
+- Create **one resource per `roots[]` entry**, each rooted at its `virtualPath`, labelled with `roots[].label`, with write access gated by the writability rule above, all sharing the same connection (host list + credentials + pinned key).
 - Alternatively a single resource rooted at `/` that lists every shared folder - your product choice. Either way, `virtualPath` tells you where each folder lives.
 
 ---
@@ -218,7 +226,7 @@ The SFTP server exposes **all** shared folders under a single virtual root `/`, 
 Plain-JSON QR / file content:
 
 ```json
-{"schemaVersion":1,"resourceName":"Home PC","protocol":"sftp","accessPaths":[{"kind":"lan","host":"192.168.1.23","port":2022},{"kind":"portforward","host":"203.0.113.7","port":2022}],"username":"fms","password":"k7PmQ2wXr9TzS4vGnHb3JdLe","hostKeyFingerprintSha256":"SHA256:8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk","roots":[{"virtualPath":"/Photos","label":"Photos"},{"virtualPath":"/Music","label":"Music"}],"createdAt":"2026-07-10T12:00:00Z"}
+{"schemaVersion":1,"resourceName":"Home PC","protocol":"sftp","accessPaths":[{"kind":"lan","host":"192.168.1.23","port":2022},{"kind":"portforward","host":"203.0.113.7","port":2022}],"username":"fms","password":"k7PmQ2wXr9TzS4vGnHb3JdLe","hostKeyFingerprintSha256":"SHA256:8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk","roots":[{"virtualPath":"/Photos","label":"Photos","readOnly":true},{"virtualPath":"/Music","label":"Music","readOnly":true}],"createdAt":"2026-07-10T12:00:00Z"}
 ```
 
 Keep this as a parser fixture and assert every field decodes as in the table above.
@@ -228,7 +236,7 @@ Keep this as a parser fixture and assert every field decodes as in the table abo
 Produced live by `ShareConfigBuilder.Build(status, includeExternal:=True)`:
 
 ```json
-{"schemaVersion":1,"resourceName":"FastMediaSorter Companion on MARK","protocol":"sftp","accessPaths":[{"kind":"lan","host":"192.168.1.100","port":55259},{"kind":"portforward","host":"46.54.0.135","port":55259}],"username":"fms","password":"ucDphzKZ4PMHr3G9nLzm5UPZ","hostKeyFingerprintSha256":"SHA256:mOdVHW8J8EXU4qE+NR0NvQKR+j00xj8Db3LqcgMiKeI","roots":[{"virtualPath":"/MOV","label":"MOV"}],"createdAt":"2026-07-11T01:00:00Z"}
+{"schemaVersion":1,"resourceName":"FastMediaSorter Companion on MARK","protocol":"sftp","accessPaths":[{"kind":"lan","host":"192.168.1.100","port":55259},{"kind":"portforward","host":"46.54.0.135","port":55259}],"username":"fms","password":"ucDphzKZ4PMHr3G9nLzm5UPZ","hostKeyFingerprintSha256":"SHA256:mOdVHW8J8EXU4qE+NR0NvQKR+j00xj8Db3LqcgMiKeI","roots":[{"virtualPath":"/MOV","label":"MOV","readOnly":true}],"createdAt":"2026-07-11T01:00:00Z"}
 ```
 
 ### 7.3 Real LITE output - external OFF (LAN only)
@@ -236,7 +244,15 @@ Produced live by `ShareConfigBuilder.Build(status, includeExternal:=True)`:
 Same, with the `portforward` entry absent (the external toggle drops it):
 
 ```json
-{"schemaVersion":1,"resourceName":"FastMediaSorter Companion on MARK","protocol":"sftp","accessPaths":[{"kind":"lan","host":"192.168.1.100","port":55259}],"username":"fms","password":"ucDphzKZ4PMHr3G9nLzm5UPZ","hostKeyFingerprintSha256":"SHA256:mOdVHW8J8EXU4qE+NR0NvQKR+j00xj8Db3LqcgMiKeI","roots":[{"virtualPath":"/MOV","label":"MOV"}],"createdAt":"2026-07-11T01:00:00Z"}
+{"schemaVersion":1,"resourceName":"FastMediaSorter Companion on MARK","protocol":"sftp","accessPaths":[{"kind":"lan","host":"192.168.1.100","port":55259}],"username":"fms","password":"ucDphzKZ4PMHr3G9nLzm5UPZ","hostKeyFingerprintSha256":"SHA256:mOdVHW8J8EXU4qE+NR0NvQKR+j00xj8Db3LqcgMiKeI","roots":[{"virtualPath":"/MOV","label":"MOV","readOnly":true}],"createdAt":"2026-07-11T01:00:00Z"}
+```
+
+### 7.3b Writable + destination roots (readOnly)
+
+A read-only folder (`/MOV`), a plain writable folder (`/Inbox`, `readOnly:false`) and a writable destination (`/Sorted`, `isDestination:true` -> bumps `schemaVersion` to 2). Assert: `/MOV` writable=false; `/Inbox` and `/Sorted` writable=true; `/Sorted` is a destination.
+
+```json
+{"schemaVersion":2,"resourceName":"Home PC","protocol":"sftp","accessPaths":[{"kind":"lan","host":"192.168.1.100","port":55259}],"username":"fms","password":"ucDphzKZ4PMHr3G9nLzm5UPZ","hostKeyFingerprintSha256":"SHA256:mOdVHW8J8EXU4qE+NR0NvQKR+j00xj8Db3LqcgMiKeI","roots":[{"virtualPath":"/MOV","label":"MOV","readOnly":true},{"virtualPath":"/Inbox","label":"Inbox","readOnly":false},{"virtualPath":"/Sorted","label":"Sorted","readOnly":false,"isDestination":true}],"createdAt":"2026-07-11T01:00:00Z"}
 ```
 
 ### 7.4 Compressed variant

@@ -113,9 +113,9 @@
   <div class="card">
     <ol class="steps">
       <li>
-        <span data-l="en">In Fast Media Sorter for Windows, click <b>Share</b> on the toolbar (or press <code>Shift+S</code>, or right-click the folder box). You can also open <b>Settings (F2) &rarr; Share</b>.</span>
-        <span data-l="ru">В Fast Media Sorter for Windows нажмите <b>Поделиться</b> на панели (или клавиши <code>Shift+S</code>, или правый клик по строке каталога). Также можно открыть <b>Настройки (F2) &rarr; Поделиться</b>.</span>
-        <span data-l="uk">У Fast Media Sorter for Windows натисніть <b>Поділитися</b> на панелі (або клавіші <code>Shift+S</code>, або правий клік по рядку каталогу). Також можна відкрити <b>Налаштування (F2) &rarr; Поділитися</b>.</span>
+        <span data-l="en">In Fast Media Sorter for Windows, click <b>Share</b> on the toolbar (or press <code>Shift+S</code>, or right-click the folder box). You can also open <b>Settings (F2) &rarr; Share</b>. The first time, confirm the one-time <b>Install server features</b> prompt - it needs administrator rights once and adds a Windows Firewall rule (you can also tick this during installation). Until then the app is just a viewer/sorter.</span>
+        <span data-l="ru">В Fast Media Sorter for Windows нажмите <b>Поделиться</b> на панели (или клавиши <code>Shift+S</code>, или правый клик по строке каталога). Также можно открыть <b>Настройки (F2) &rarr; Поделиться</b>. В первый раз подтвердите разовую установку <b>функций сервера</b> - нужны права администратора один раз, добавляется правило брандмауэра Windows (это же можно включить галочкой во время установки). До этого программа работает только как просмотрщик/сортировщик.</span>
+        <span data-l="uk">У Fast Media Sorter for Windows натисніть <b>Поділитися</b> на панелі (або клавіші <code>Shift+S</code>, або правий клік по рядку каталогу). Також можна відкрити <b>Налаштування (F2) &rarr; Поділитися</b>. Уперше підтвердіть разове встановлення <b>функцій сервера</b> - потрібні права адміністратора один раз, додається правило брандмауера Windows (це ж можна ввімкнути галочкою під час встановлення). До того застосунок працює лише як переглядач/сортувальник.</span>
       </li>
       <li>
         <span data-l="en">Add the folders to share (the current folder is offered first). Tick the ones you want visible on the phone.</span>
@@ -204,9 +204,9 @@
       <li><span data-l="en"><b>Same network?</b> The LAN path only works when the phone is on the same Wi-Fi as the PC.</span>
           <span data-l="ru"><b>Одна сеть?</b> Локальный путь работает только когда телефон в той же Wi-Fi, что и ПК.</span>
           <span data-l="uk"><b>Одна мережа?</b> Локальний шлях працює лише коли телефон у тій самій Wi-Fi, що й ПК.</span></li>
-      <li><span data-l="en"><b>Firewall:</b> allow Fast Media Sorter for Windows through the Windows Defender Firewall prompt the first time.</span>
-          <span data-l="ru"><b>Брандмауэр:</b> при первом запуске разрешите Fast Media Sorter for Windows в окне брандмауэра Windows.</span>
-          <span data-l="uk"><b>Брандмауер:</b> під час першого запуску дозвольте Fast Media Sorter for Windows у вікні брандмауера Windows.</span></li>
+      <li><span data-l="en"><b>Firewall:</b> the SFTP port must be allowed through Windows Firewall. Enabling <b>server features</b> - the installer checkbox, or the one-time <b>Install server features</b> button in Settings &rarr; Share - adds that rule for you.</span>
+          <span data-l="ru"><b>Брандмауэр:</b> порт SFTP должен быть разрешён в брандмауэре Windows. Включение <b>функций сервера</b> - галочкой в установщике или кнопкой <b>Установить функции сервера</b> в разделе Настройки &rarr; Поделиться - добавляет это правило автоматически.</span>
+          <span data-l="uk"><b>Брандмауер:</b> порт SFTP має бути дозволений у брандмауері Windows. Увімкнення <b>функцій сервера</b> - галочкою в інсталяторі або кнопкою <b>Встановити функції сервера</b> в розділі Налаштування &rarr; Поділитися - додає це правило автоматично.</span></li>
       <li><span data-l="en"><b>CGNAT:</b> some providers share one public address between many customers - port forwarding cannot help. Use the local network, the <b>IPv6</b> address (if both sides have IPv6), a VPN/relay, or ask for a public "white" IP.</span>
           <span data-l="ru"><b>CGNAT:</b> некоторые провайдеры делят один публичный адрес между многими - проброс портов не поможет. Пользуйтесь локальной сетью, адресом <b>IPv6</b> (если он есть с обеих сторон), VPN/ретранслятором или попросите публичный "белый" IP.</span>
           <span data-l="uk"><b>CGNAT:</b> деякі провайдери ділять одну публічну адресу між багатьма - проброс портів не допоможе. Користуйтеся локальною мережею, адресою <b>IPv6</b> (якщо вона є з обох боків), VPN/ретранслятором або попросіть публічну "білу" IP.</span></li>
@@ -236,8 +236,9 @@
     try{ localStorage.setItem('fms_lang', code); }catch(e){}
   }
   document.querySelectorAll('.langs button').forEach(function(b){ b.addEventListener('click', function(){ setLang(b.getAttribute('data-set')); }); });
+  var qsLang=''; try{ qsLang=(new URLSearchParams(location.search).get('lang')||'').slice(0,2); }catch(e){}
   var saved='en'; try{ saved=localStorage.getItem('fms_lang')||(navigator.language||'en').slice(0,2); }catch(e){}
-  setLang(['en','ru','uk'].indexOf(saved)>=0?saved:'en');
+  setLang(['en','ru','uk'].indexOf(qsLang)>=0?qsLang:(['en','ru','uk'].indexOf(saved)>=0?saved:'en'));
 </script>
 </body>
 </html>

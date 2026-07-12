@@ -2,6 +2,7 @@ Option Strict On
 
 Imports System.Diagnostics
 Imports System.IO
+Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 Partial Public Class Main_Form
@@ -76,7 +77,7 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0865: Video error detected: " & errorMessage)
 
             If errorMessage.Contains("Unsupported video type") OrElse errorMessage.Contains("invalid file path") Then
-                PlayVideoWithVlc(Current_File_Name)
+                PlayVideoWithVlcAsync(Current_File_Name)
             End If
         End If
     End Sub
@@ -107,11 +108,19 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
-    Private Function EnsureVlcInitialized() As Boolean
+    ''' <summary>Async so a first-run VLC download runs with the UI thread free to
+    ''' pump messages (window stays responsive, repaints, isn't "Not Responding")
+    ''' instead of blocking synchronously for the whole download - see w0868 fix
+    ''' notes: the old sync wrapper deadlocked outright rather than just looking slow.</summary>
+    Private Async Function EnsureVlcInitializedAsync() As Task(Of Boolean)
         If libVlc IsNot Nothing AndAlso vlc_Media_Player IsNot Nothing Then Return True
         is_Vlc_Init_Attempted = True
 
-        If Not OptionalRuntimeManager.EnsureVlcRuntimeInteractive(Me, Is_Russian_Language) Then
+        If Not OptionalRuntimeManager.HasVlcRuntime() Then
+            lbl_Status.Text = If(Is_Russian_Language, "Установка поддержки VLC..", "Installing VLC support..")
+        End If
+
+        If Not Await OptionalRuntimeManager.EnsureVlcRuntimeInteractiveAsync(Me, Is_Russian_Language) Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0868: LibVLC runtime unavailable")
             Return False
         End If
@@ -156,10 +165,10 @@ Partial Public Class Main_Form
         End Try
     End Function
 
-    Private Sub PlayVideoWithVlc(file_Path As String)
+    Private Async Sub PlayVideoWithVlcAsync(file_Path As String)
         If String.IsNullOrEmpty(file_Path) OrElse Not File.Exists(file_Path) Then Return
 
-        If Not EnsureVlcInitialized() Then
+        If Not Await EnsureVlcInitializedAsync() Then
             lbl_Status.Text = OptionalRuntimeManager.GetVlcUnavailableStatusText(Is_Russian_Language)
             TryOpenVideoWithDefaultPlayer()
             Return

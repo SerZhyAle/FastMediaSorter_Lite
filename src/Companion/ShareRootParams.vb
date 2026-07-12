@@ -28,8 +28,18 @@ Public Class ShareRootParams
     Public Property ShowHiddenFiles As Boolean = False
     Public Property AllFiles As Boolean = False
 
+    ''' <summary>Read-only access for the phone (browse/download only, no upload,
+    ''' rename, delete or move-into). Default False - a newly shared folder is
+    ''' writable so the phone can sort/copy into it out of the box; the user ticks
+    ''' "read-only" in the resource dialog to lock a folder to browsing. Exported as
+    ''' the explicit per-root <c>readOnly</c> field and enforced by the SFTP server.
+    ''' A destination (<see cref="IsDestination"/>) is inherently writable, so it
+    ''' also forces this off.</summary>
+    Public Property IsReadOnly As Boolean = False
+
     ''' <summary>Register as a copy/move destination on the phone. Also flips the
-    ''' SFTP share to writable (§5) - the destination must accept writes.</summary>
+    ''' SFTP share to writable (§5) - the destination must accept writes, so it
+    ''' overrides <see cref="IsReadOnly"/>.</summary>
     Public Property IsDestination As Boolean = False
 
     ''' <summary>Whether the user picked an explicit destination chip color.</summary>
@@ -58,6 +68,7 @@ Public Class ShareRootParams
                Not ShowSubfoldersAsItems AndAlso
                Not ShowHiddenFiles AndAlso
                Not AllFiles AndAlso
+               Not IsReadOnly AndAlso
                Not IsDestination AndAlso
                Not HasDestinationColor AndAlso
                Comment.Trim().Length = 0 AndAlso
@@ -77,6 +88,7 @@ Public Class ShareRootParams
             .ShowSubfoldersAsItems = ShowSubfoldersAsItems,
             .ShowHiddenFiles = ShowHiddenFiles,
             .AllFiles = AllFiles,
+            .IsReadOnly = IsReadOnly,
             .IsDestination = IsDestination,
             .HasDestinationColor = HasDestinationColor,
             .DestinationColorArgb = DestinationColorArgb,

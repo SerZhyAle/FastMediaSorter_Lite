@@ -34,8 +34,14 @@ Public Class Share_Root_Params_Form
     Private chkSubItems As CheckBox
     Private chkHidden As CheckBox
     Private chkAllFiles As CheckBox
+    Private chkReadOnly As CheckBox
     Private chkDestination As CheckBox
     Private lblDestNote As Label
+
+    ''' <summary>Guards the two-way sync between "read-only" and "destination"
+    ''' (a destination is inherently writable, so the two are mutually exclusive) so
+    ''' setting one checkbox's state from the other's handler does not recurse.</summary>
+    Private _syncingWritability As Boolean
     Private btnColor As Button
     Private pnlColor As Panel
     Private lnkColorReset As LinkLabel
@@ -68,7 +74,7 @@ Public Class Share_Root_Params_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(432, 506)
+        Me.ClientSize = New Size(432, 532)
         Me.Font = New Font("Segoe UI", 9.0F)
 
         Dim tip As New ToolTip()
@@ -126,16 +132,26 @@ Public Class Share_Root_Params_Form
         AddHandler chkScanSub.CheckedChanged, Sub() chkSubItems.Enabled = chkScanSub.Checked
         Controls.AddRange(New Control() {chkScanSub, chkSubItems, chkHidden, chkAllFiles})
 
-        ' 5. Destination (+ optional chip color).
-        chkDestination = New CheckBox With {.Left = 12, .Top = 258, .Width = 406, .Height = 20,
+        ' 5a. Read-only (writability). Default off - new shares are writable; ticking
+        ' this locks the folder to browsing, and a destination forces it off.
+        chkReadOnly = New CheckBox With {.Left = 12, .Top = 256, .Width = 406, .Height = 20,
+            .Text = If(rus, "Только для чтения (телефон не сможет менять файлы)",
+                           "Read-only (the phone cannot change files)"), .Checked = False}
+        AddHandler chkReadOnly.CheckedChanged, AddressOf OnReadOnlyToggled
+        Controls.Add(chkReadOnly)
+        tip.SetToolTip(chkReadOnly, If(rus, "Снимите галочку, чтобы разрешить телефону загружать, переименовывать и удалять файлы в этой папке. Папка-получатель всегда доступна на запись.",
+                                            "Uncheck to let the phone upload, rename and delete files in this folder. A destination folder is always writable."))
+
+        ' 5b. Destination (+ optional chip color).
+        chkDestination = New CheckBox With {.Left = 12, .Top = 284, .Width = 406, .Height = 20,
             .Text = If(rus, "Папка-получатель (копирование и перемещение с телефона)",
                            "Destination folder (copy and move from the phone)")}
-        lblDestNote = New Label With {.Left = 30, .Top = 280, .Width = 388, .Height = 16, .ForeColor = Color.DimGray,
+        lblDestNote = New Label With {.Left = 30, .Top = 306, .Width = 388, .Height = 16, .ForeColor = Color.DimGray,
             .Text = If(rus, "Общая папка станет доступна на запись.", "The shared folder becomes writable.")}
-        btnColor = New Button With {.Left = 30, .Top = 300, .Width = 110, .Height = 24,
+        btnColor = New Button With {.Left = 30, .Top = 326, .Width = 110, .Height = 24,
             .Text = If(rus, "Цвет метки..", "Chip color..")}
-        pnlColor = New Panel With {.Left = 146, .Top = 302, .Width = 40, .Height = 20, .BorderStyle = BorderStyle.FixedSingle}
-        lnkColorReset = New LinkLabel With {.Left = 194, .Top = 304, .Width = 160, .Height = 16,
+        pnlColor = New Panel With {.Left = 146, .Top = 328, .Width = 40, .Height = 20, .BorderStyle = BorderStyle.FixedSingle}
+        lnkColorReset = New LinkLabel With {.Left = 194, .Top = 330, .Width = 160, .Height = 16,
             .Text = If(rus, "авто (задаст приложение)", "auto (app decides)")}
         AddHandler chkDestination.CheckedChanged, AddressOf OnDestinationToggled
         AddHandler btnColor.Click, AddressOf OnPickColor
@@ -145,28 +161,28 @@ Public Class Share_Root_Params_Form
                                               "The resource is registered as a copy/move destination. The chip color is best-effort: the app may assign its own."))
 
         ' 6. Comment.
-        Controls.Add(New Label With {.Left = 12, .Top = 336, .Width = 180, .Height = 16,
+        Controls.Add(New Label With {.Left = 12, .Top = 362, .Width = 180, .Height = 16,
             .Text = If(rus, "Комментарий:", "Comment:")})
-        txtComment = New TextBox With {.Left = 196, .Top = 332, .Width = 222}
+        txtComment = New TextBox With {.Left = 196, .Top = 358, .Width = 222}
         Controls.Add(txtComment)
 
         ' 7. PIN + the §6 safeguard.
-        Controls.Add(New Label With {.Left = 12, .Top = 366, .Width = 180, .Height = 16,
+        Controls.Add(New Label With {.Left = 12, .Top = 392, .Width = 180, .Height = 16,
             .Text = If(rus, "PIN для ресурса:", "Resource PIN:")})
-        txtPin = New TextBox With {.Left = 196, .Top = 362, .Width = 100}
+        txtPin = New TextBox With {.Left = 196, .Top = 388, .Width = 100}
         Controls.Add(txtPin)
         tip.SetToolTip(txtPin, If(rus, "PIN хранится в файле и QR-коде открытым текстом - его увидит любой получатель файла.",
                                       "The PIN travels in the file and QR code in plaintext - anyone who gets the file sees it."))
 
         ' 8. Slideshow interval.
-        Controls.Add(New Label With {.Left = 12, .Top = 420, .Width = 180, .Height = 16,
+        Controls.Add(New Label With {.Left = 12, .Top = 446, .Width = 180, .Height = 16,
             .Text = If(rus, "Слайд-шоу, секунд:", "Slideshow, seconds:")})
-        numSlide = New NumericUpDown With {.Left = 196, .Top = 416, .Width = 70, .Minimum = 1, .Maximum = 3600, .Value = 10}
+        numSlide = New NumericUpDown With {.Left = 196, .Top = 442, .Width = 70, .Minimum = 1, .Maximum = 3600, .Value = 10}
         Controls.Add(numSlide)
 
         ' OK / Cancel.
-        btnOk = New Button With {.Left = 248, .Top = 462, .Width = 82, .Height = 28, .Text = "OK"}
-        btnCancel = New Button With {.Left = 336, .Top = 462, .Width = 82, .Height = 28,
+        btnOk = New Button With {.Left = 248, .Top = 488, .Width = 82, .Height = 28, .Text = "OK"}
+        btnCancel = New Button With {.Left = 336, .Top = 488, .Width = 82, .Height = 28,
             .Text = If(rus, "Отмена", "Cancel"), .DialogResult = DialogResult.Cancel}
         AddHandler btnOk.Click, AddressOf OnOk
         Controls.Add(btnOk)
@@ -196,7 +212,13 @@ Public Class Share_Root_Params_Form
         chkHidden.Checked = _params.ShowHiddenFiles
         chkAllFiles.Checked = _params.AllFiles
 
+        ' Effective writability: read-only unless explicitly writable or a destination
+        ' (the latter also normalizes a legacy destination whose IsReadOnly stayed True).
+        Dim writable As Boolean = (Not _params.IsReadOnly) OrElse _params.IsDestination
+        _syncingWritability = True
+        chkReadOnly.Checked = Not writable
         chkDestination.Checked = _params.IsDestination
+        _syncingWritability = False
         UpdateColorUi()
 
         txtComment.Text = _params.Comment
@@ -205,7 +227,7 @@ Public Class Share_Root_Params_Form
         If _params.SlideshowInterval >= numSlide.Minimum AndAlso _params.SlideshowInterval <= numSlide.Maximum Then
             numSlide.Value = _params.SlideshowInterval
         End If
-        OnDestinationToggled(Nothing, EventArgs.Empty)
+        UpdateDestinationEnabled()
     End Sub
 
     Private Sub OnOk(sender As Object, e As EventArgs)
@@ -227,6 +249,7 @@ Public Class Share_Root_Params_Form
         _params.ShowSubfoldersAsItems = chkSubItems.Checked
         _params.ShowHiddenFiles = chkHidden.Checked
         _params.AllFiles = chkAllFiles.Checked
+        _params.IsReadOnly = chkReadOnly.Checked
         _params.IsDestination = chkDestination.Checked
         ' HasDestinationColor / DestinationColorArgb are maintained by the color
         ' picker handlers; a non-destination root drops the color entirely.
@@ -242,7 +265,28 @@ Public Class Share_Root_Params_Form
 
     ' --- destination color -------------------------------------------------------
 
+    ''' <summary>Read-only and destination are mutually exclusive (a destination is
+    ''' writable). Checking read-only clears the destination.</summary>
+    Private Sub OnReadOnlyToggled(sender As Object, e As EventArgs)
+        If _syncingWritability Then Return
+        _syncingWritability = True
+        If chkReadOnly.Checked Then chkDestination.Checked = False
+        _syncingWritability = False
+        UpdateDestinationEnabled()
+    End Sub
+
+    ''' <summary>Enabling a destination clears read-only (the folder must accept
+    ''' writes) and enables the chip-color controls.</summary>
     Private Sub OnDestinationToggled(sender As Object, e As EventArgs)
+        If Not _syncingWritability Then
+            _syncingWritability = True
+            If chkDestination.Checked Then chkReadOnly.Checked = False
+            _syncingWritability = False
+        End If
+        UpdateDestinationEnabled()
+    End Sub
+
+    Private Sub UpdateDestinationEnabled()
         Dim dest As Boolean = chkDestination.Checked
         lblDestNote.Enabled = dest
         btnColor.Enabled = dest

@@ -73,8 +73,21 @@ Public Module ShareConfigBuilder
         Dim port As Integer = status.ListenPort
         If port <= 0 Then Return Nothing
 
-        Dim lan As String = If(reach IsNot Nothing, If(reach.LanAddress, ""), "")
-        If lan.Length = 0 Then lan = NetworkInfo.LocalIPv4()
+        Dim lanFromReach As String = If(reach IsNot Nothing, If(reach.LanAddress, ""), "")
+        Dim lanFallback As String = NetworkInfo.LocalIPv4()
+        Dim lan As String = If(lanFromReach.Length > 0, lanFromReach, lanFallback)
+        If lan.Length = 0 Then
+            ' Diagnostic for the 2026-07 "no lan accessPath in the real export"
+            ' field failure - both LAN sources (worker reachability AND this
+            ' process's own NetworkInfo.LocalIPv4() scan) came back empty at the
+            ' same moment; log so a repeat is diagnosable instead of guessed at.
+            Try
+                AppFileLogger.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") &
+                    " ShareConfigBuilder.Build: no LAN address available (reach Is Nothing=" &
+                    (reach Is Nothing).ToString() & "; reach.LanAddress and NetworkInfo.LocalIPv4() both empty)")
+            Catch
+            End Try
+        End If
 
         Dim paths As New StringBuilder()
         If lan.Length > 0 Then AppendAccessPath(paths, "lan", lan, port)
@@ -131,6 +144,16 @@ Public Module ShareConfigBuilder
         sb.Append("}"c)
         Dim json As String = sb.ToString()
 
+        If lan.Length = 0 Then
+            ' Same diagnostic as above, one level deeper: the actual accessPaths
+            ' shipped when the lan entry is missing. Password redacted - this is
+            ' a log file, not a secrets store.
+            Try
+                AppFileLogger.WriteLine("ShareConfigBuilder.Build: exported JSON (password redacted): " & RedactPassword(json))
+            Catch
+            End Try
+        End If
+
         Dim result As New ShareConfigResult With {
             .ConfigJson = json,
             .HasExternal = hasExt,
@@ -163,6 +186,14 @@ Public Module ShareConfigBuilder
         Dim sb As New StringBuilder()
         sb.Append("{""virtualPath"":").Append(J("/" & name))
         sb.Append(",""label"":").Append(J(label))
+
+        ' readOnly: explicit per-root writability, ALWAYS emitted (additive field,
+        ' like accessNote/ipv6 - does NOT by itself bump schemaVersion, and an old
+        ' Android parser ignores the unknown key and treats the root as read-only,
+        ' its existing default). true = browse/download only; false = the phone may
+        ' write. A destination is inherently writable, so it forces readOnly:false.
+        Dim writable As Boolean = p IsNot Nothing AndAlso ((Not p.IsReadOnly) OrElse p.IsDestination)
+        sb.Append(",""readOnly"":").Append(If(writable, "false", "true"))
 
         If p IsNot Nothing Then
             Dim v2 As New StringBuilder()
@@ -217,6 +248,19 @@ Public Module ShareConfigBuilder
     ''' <summary>JSON string literal (quoted + escaped).</summary>
     Private Function J(s As String) As String
         Return Ser.Serialize(If(s, ""))
+    End Function
+
+    ''' <summary>Blanks out the "password" field's value for diagnostic logging -
+    ''' the export JSON carries a live SFTP credential by design (contract §6),
+    ''' which must never land in a plaintext log file.</summary>
+    Private Function RedactPassword(json As String) As String
+        Const marker As String = """password"":"""
+        Dim idx As Integer = json.IndexOf(marker, StringComparison.Ordinal)
+        If idx < 0 Then Return json
+        Dim valueStart As Integer = idx + marker.Length
+        Dim valueEnd As Integer = json.IndexOf(""""c, valueStart)
+        If valueEnd < 0 Then Return json
+        Return json.Substring(0, valueStart) & "***" & json.Substring(valueEnd)
     End Function
 
     ''' <summary>Plain JSON when small enough, else "FMSCFG1:" + base64(gzip(json))

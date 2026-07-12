@@ -78,8 +78,35 @@ Public Module NetworkInfo
     ''' external port forever (Android trusts accessPaths[0] with no fallback).</summary>
     Public Function LocalIPv4() As String
         Dim viaRoute As String = LocalIPv4ViaOutboundRoute()
-        If viaRoute.Length > 0 Then Return viaRoute
-        Return LocalIPv4ViaAdapterScan()
+        ' A VPN/tunnel adapter that wins the default route makes the outbound-
+        ' route trick succeed with ITS address, not the real LAN's - the scored
+        ' adapter scan below already knows to exclude such adapters, so also
+        ' apply that check here instead of trusting the trick's result verbatim.
+        ' Mirrors the identical fix in the Go worker's netaccess/localip.go.
+        If viaRoute.Length > 0 AndAlso Not IsVirtualAdapterAddress(viaRoute) Then Return viaRoute
+        Dim viaScan As String = LocalIPv4ViaAdapterScan()
+        If viaScan.Length > 0 Then Return viaScan
+        ' Last resort: even a VPN/tunnel address beats nothing when no real LAN
+        ' NIC exists at all.
+        Return viaRoute
+    End Function
+
+    ''' <summary>True if <paramref name="ipText"/> is bound to an adapter whose
+    ''' name matches a known virtual/VPN pattern (see <see cref="VirtualNicHints"/>).</summary>
+    Private Function IsVirtualAdapterAddress(ipText As String) As Boolean
+        Try
+            For Each nic As NetworkInterface In NetworkInterface.GetAllNetworkInterfaces()
+                Dim props As IPInterfaceProperties = nic.GetIPProperties()
+                If props Is Nothing Then Continue For
+                For Each ua As UnicastIPAddressInformation In props.UnicastAddresses
+                    If ua.Address IsNot Nothing AndAlso ua.Address.ToString() = ipText Then
+                        Return LooksVirtualNic(nic)
+                    End If
+                Next
+            Next
+        Catch
+        End Try
+        Return False
     End Function
 
     Private Function LocalIPv4ViaOutboundRoute() As String

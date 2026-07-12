@@ -87,8 +87,13 @@ Friend Module OptionalRuntimeManager
         Return Await EnsureRuntimeInteractiveAsync(OptionalRuntimeKind.Ocr, owner, isRussian).ConfigureAwait(True)
     End Function
 
-    Public Function EnsureVlcRuntimeInteractive(owner As IWin32Window, isRussian As Boolean) As Boolean
-        Return EnsureRuntimeInteractiveAsync(OptionalRuntimeKind.Vlc, owner, isRussian).GetAwaiter().GetResult()
+    ''' <summary>Was a synchronous `.GetAwaiter().GetResult()` wrapper - deadlocked the
+    ''' UI thread the moment a download actually happened, because the awaited chain
+    ''' needs that same (blocked) thread to run its continuation on. Now a plain async
+    ''' passthrough, mirroring <see cref="EnsureOcrRuntimeInteractiveAsync"/>; callers
+    ''' must Await it instead of blocking on it.</summary>
+    Public Async Function EnsureVlcRuntimeInteractiveAsync(owner As IWin32Window, isRussian As Boolean) As Task(Of Boolean)
+        Return Await EnsureRuntimeInteractiveAsync(OptionalRuntimeKind.Vlc, owner, isRussian).ConfigureAwait(True)
     End Function
 
     Public Function GetOcrUnavailableStatusText(isRussian As Boolean) As String

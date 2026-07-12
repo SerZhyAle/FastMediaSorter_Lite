@@ -43,6 +43,7 @@ Public Class Share_Wizard_Form
 
     ' Right column: QR + save.
     Private picQr As PictureBox
+    Private btnShowQr As Button
     Private lblScan As Label
     Private btnSaveConfig As Button
     Private btnEmail As Button
@@ -62,6 +63,17 @@ Public Class Share_Wizard_Form
     Private lnkWebGuide As LinkLabel
     Private lnkAndroid As LinkLabel
     Private btnClose As Button
+
+    ''' <summary>Scales a design-time (96-dpi) pixel value to the current display DPI.
+    ''' This wizard is built entirely in code with literal pixel coordinates and no
+    ''' Designer-recorded AutoScaleDimensions baseline, so nothing here auto-scales
+    ''' on its own - point-based fonts still render larger at higher DPI (that part
+    ''' *is* automatic), which overflowed the fixed-size, un-scaled boxes. Wrapping
+    ''' every literal in LU() keeps the boxes matched to the fonts, same fix as
+    ''' Table_Form's Share/OCR tabs (see its LU()). Identity at 96 DPI.</summary>
+    Private Function LU(px As Integer) As Integer
+        Return LogicalToDeviceUnits(px)
+    End Function
 
     Public Sub New(initialFolder As String)
         _initialFolder = If(initialFolder, "").Trim()
@@ -84,24 +96,26 @@ Public Class Share_Wizard_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(640, 648)
-        Me.Font = New Font("Segoe UI", 9.0F)
+        Me.Font = New Font("Segoe UI", 8.5F)
+        Me.ClientSize = New Size(LU(640), LU(648))
+        Dim smallFont As New Font(Me.Font.FontFamily, Me.Font.Size * 0.85F)
+        Dim linkFont As New Font(Me.Font.FontFamily, Me.Font.Size * 0.9F)
 
-        lblIntro = New Label With {.Left = 12, .Top = 10, .Width = 616, .Height = 34,
+        lblIntro = New Label With {.Left = LU(12), .Top = LU(10), .Width = LU(616), .Height = LU(34),
             .Text = If(rus,
                 "Эта папка станет видна на телефоне Android по локальной сети. Отсканируйте QR-код в приложении FastMediaSorter или сохраните файл .fmscfg.",
                 "This folder becomes visible on your Android phone over the local network. Scan the QR in the FastMediaSorter app or save the .fmscfg file.")}
         Controls.Add(lblIntro)
 
         ' ---- left column ----
-        lblFolders = New Label With {.Left = 12, .Top = 50, .Width = 300, .Height = 18,
+        lblFolders = New Label With {.Left = LU(12), .Top = LU(50), .Width = LU(300), .Height = LU(18),
             .Text = If(rus, "Папки в общем доступе:", "Shared folders:")}
         Controls.Add(lblFolders)
 
-        lvFolders = New ListView With {.Left = 12, .Top = 70, .Width = 300, .Height = 118,
+        lvFolders = New ListView With {.Left = LU(12), .Top = LU(70), .Width = LU(300), .Height = LU(118),
             .View = View.Details, .FullRowSelect = True, .HideSelection = False, .MultiSelect = False}
-        lvFolders.Columns.Add(If(rus, "Имя", "Name"), 112)
-        lvFolders.Columns.Add(If(rus, "Путь", "Path"), 168)
+        lvFolders.Columns.Add(If(rus, "Имя", "Name"), LU(112))
+        lvFolders.Columns.Add(If(rus, "Путь", "Path"), LU(168))
         AddHandler lvFolders.DoubleClick, AddressOf OnConfigureFolder
         Controls.Add(lvFolders)
         Dim tipFolders As New ToolTip()
@@ -109,24 +123,25 @@ Public Class Share_Wizard_Form
             "Двойной клик по папке - параметры ресурса (тип, например видеотека, PIN, папка-получатель..)",
             "Double-click a folder - resource options (type, e.g. video library, PIN, destination..)"))
 
-        btnAdd = New Button With {.Left = 12, .Top = 194, .Width = 145, .Height = 28, .Text = If(rus, "Добавить папку..", "Add folder..")}
-        btnRemove = New Button With {.Left = 163, .Top = 194, .Width = 149, .Height = 28, .Text = If(rus, "Убрать", "Remove")}
+        btnAdd = New Button With {.Left = LU(12), .Top = LU(194), .Width = LU(145), .Height = LU(28), .Text = If(rus, "Добавить папку..", "Add folder..")}
+        btnRemove = New Button With {.Left = LU(163), .Top = LU(194), .Width = LU(149), .Height = LU(28), .Text = If(rus, "Убрать", "Remove")}
         AddHandler btnAdd.Click, AddressOf OnAddFolder
         AddHandler btnRemove.Click, AddressOf OnRemoveFolder
         Controls.Add(btnAdd)
         Controls.Add(btnRemove)
 
-        btnToggle = New Button With {.Left = 12, .Top = 228, .Width = 300, .Height = 34,
+        btnToggle = New Button With {.Left = LU(12), .Top = LU(228), .Width = LU(300), .Height = LU(34),
             .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(rus, "Начать общий доступ", "Start sharing")}
         AddHandler btnToggle.Click, AddressOf OnToggle
         Controls.Add(btnToggle)
 
-        lblState = New Label With {.Left = 12, .Top = 268, .Width = 300, .Height = 18,
+        lblState = New Label With {.Left = LU(12), .Top = LU(268), .Width = LU(300), .Height = LU(18),
             .Font = New Font(Me.Font, FontStyle.Bold), .AutoEllipsis = True, .Text = If(rus, "Остановлено", "Stopped")}
-        lblLan = New Label With {.Left = 12, .Top = 290, .Width = 300, .Height = 18, .AutoEllipsis = True, .Text = If(rus, "Адрес: -", "Address: -")}
-        btnCopyLan = New Button With {.Left = 12, .Top = 312, .Width = 150, .Height = 26, .Enabled = False, .Text = If(rus, "Скопировать адрес", "Copy address")}
-        btnCopyCredentials = New Button With {.Left = 174, .Top = 312, .Width = 138, .Height = 26, .Enabled = False, .Text = If(rus, "Логин/пароль", "Login/pass")}
-        lblFinger = New Label With {.Left = 12, .Top = 344, .Width = 300, .Height = 30, .ForeColor = Color.DimGray, .AutoEllipsis = True, .Text = If(rus, "Ключ узла: -", "Host key: -")}
+        lblLan = New Label With {.Left = LU(12), .Top = LU(290), .Width = LU(300), .Height = LU(18), .AutoEllipsis = True, .Text = If(rus, "Адрес: -", "Address: -")}
+        btnCopyLan = New Button With {.Left = LU(12), .Top = LU(312), .Width = LU(150), .Height = LU(26), .Enabled = False, .Text = If(rus, "Скопировать адрес", "Copy address")}
+        btnCopyCredentials = New Button With {.Left = LU(174), .Top = LU(312), .Width = LU(138), .Height = LU(26), .Enabled = False, .Text = If(rus, "Логин/пароль", "Login/pass")}
+        lblFinger = New Label With {.Left = LU(12), .Top = LU(344), .Width = LU(300), .Height = LU(30), .ForeColor = Color.DimGray, .AutoEllipsis = True,
+            .Font = smallFont, .Text = If(rus, "Ключ узла: -", "Host key: -")}
         AddHandler btnCopyLan.Click, AddressOf OnCopyLan
         AddHandler btnCopyCredentials.Click, AddressOf OnCopyCredentials
         Dim tipCredentials As New ToolTip()
@@ -138,50 +153,61 @@ Public Class Share_Wizard_Form
         Controls.Add(lblFinger)
 
         ' ---- right column ----
-        picQr = New PictureBox With {.Left = 324, .Top = 70, .Width = 190, .Height = 190,
-            .BorderStyle = BorderStyle.FixedSingle, .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Color.White}
-        AddHandler picQr.Click, Sub() Qr_Zoom_Form.ShowZoomed(Me, picQr)
+        ' The QR is too dense/unreadable shrunk into a small on-dialog box (same
+        ' problem as the Settings > Share tab) - picQr stays an invisible image
+        ' holder (still sized so Qr_Zoom_Form.ShowZoomed's 4x-of-box sizing works)
+        ' and a big button opens it full-size instead.
+        picQr = New PictureBox With {.Left = LU(324), .Top = LU(70), .Width = LU(190), .Height = LU(190),
+            .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Color.White, .Visible = False}
         Controls.Add(picQr)
 
-        ' Two lines + ellipsis: this label also carries the QR-overflow message
-        ' ("share the file instead"), which does not fit one 304 px line.
-        lblScan = New Label With {.Left = 324, .Top = 262, .Width = 304, .Height = 32, .ForeColor = Color.DimGray,
-            .AutoEllipsis = True,
+        btnShowQr = New Button With {.Left = LU(324), .Top = LU(70), .Width = LU(304), .Height = LU(90), .Enabled = False,
+            .Font = New Font(Me.Font.FontFamily, Me.Font.Size * 1.1F, FontStyle.Bold), .Text = If(rus, "Показать QR-код", "Show QR code")}
+        AddHandler btnShowQr.Click, Sub() Qr_Zoom_Form.ShowZoomed(Me, picQr)
+        Controls.Add(btnShowQr)
+
+        ' Extra room now that the QR box is gone: this label also carries the
+        ' QR-overflow message ("share the file instead"), which needs more than
+        ' one short line.
+        lblScan = New Label With {.Left = LU(324), .Top = LU(168), .Width = LU(304), .Height = LU(56), .ForeColor = Color.DimGray,
+            .AutoEllipsis = True, .Font = smallFont,
             .Text = If(rus, "Отсканируйте код в приложении на телефоне.", "Scan the code in the phone app.")}
         Controls.Add(lblScan)
 
-        btnSaveConfig = New Button With {.Left = 324, .Top = 298, .Width = 190, .Height = 28, .Enabled = False,
+        btnSaveConfig = New Button With {.Left = LU(324), .Top = LU(230), .Width = LU(190), .Height = LU(28), .Enabled = False,
             .Text = If(rus, "Сохранить .fmscfg..", "Save .fmscfg..")}
         AddHandler btnSaveConfig.Click, AddressOf OnSaveConfig
         Controls.Add(btnSaveConfig)
 
-        btnEmail = New Button With {.Left = 324, .Top = 330, .Width = 190, .Height = 28, .Enabled = False,
+        btnEmail = New Button With {.Left = LU(324), .Top = LU(262), .Width = LU(190), .Height = LU(28), .Enabled = False,
             .Text = If(rus, "Отправить по почте..", "Send by email..")}
         AddHandler btnEmail.Click, AddressOf OnEmail
         Controls.Add(btnEmail)
 
-        chkNoPassword = New CheckBox With {.Left = 324, .Top = 360, .Width = 304, .Height = 20,
-            .Text = ShareText.NoPasswordText(rus), .Checked = _settings.ExcludePasswordFromExport}
+        chkNoPassword = New CheckBox With {.Left = LU(324), .Top = LU(296), .Width = LU(304), .Height = LU(28),
+            .Font = smallFont, .Text = ShareText.NoPasswordText(rus), .Checked = _settings.ExcludePasswordFromExport}
         AddHandler chkNoPassword.CheckedChanged, AddressOf OnNoPasswordToggled
         Controls.Add(chkNoPassword)
 
         ' ---- internet group ----
-        grpNet = New GroupBox With {.Left = 12, .Top = 384, .Width = 616, .Height = 184,
+        grpNet = New GroupBox With {.Left = LU(12), .Top = LU(384), .Width = LU(616), .Height = LU(184),
             .Text = If(rus, "Из интернета (для всех папок сразу)", "From the internet (all folders at once)")}
         Controls.Add(grpNet)
 
-        chkExternal = New CheckBox With {.Left = 12, .Top = 20, .Width = 590, .Height = 20,
+        chkExternal = New CheckBox With {.Left = LU(12), .Top = LU(20), .Width = LU(590), .Height = LU(20),
             .Text = If(rus, "Открыть доступ из интернета", "Open internet access"), .Checked = _settings.ExternalAccessIntent}
-        lblNet = New Label With {.Left = 12, .Top = 44, .Width = 590, .Height = 18, .AutoEllipsis = True, .Text = If(rus, "Внешний доступ: -", "Internet: -")}
-        btnOpenRouter = New Button With {.Left = 12, .Top = 66, .Width = 150, .Height = 26, .Enabled = False, .Text = If(rus, "Открыть роутер", "Open router")}
-        lblRouterUrl = New Label With {.Left = 170, .Top = 70, .Width = 430, .Height = 18, .ForeColor = Color.DimGray, .AutoEllipsis = True}
-        lnkGuide = New LinkLabel With {.Left = 12, .Top = 98, .Width = 280, .Height = 18, .Enabled = False,
-            .Text = If(rus, "Инструкция по пробросу (офлайн)..", "Port-forward guide (offline)..")}
-        lnkRouterSearch = New LinkLabel With {.Left = 300, .Top = 98, .Width = 300, .Height = 18, .Enabled = False,
-            .Text = If(rus, "Гайд для моего роутера (определить модель)..", "Guide for my router (detect model)..")}
-        txtForward = New TextBox With {.Left = 12, .Top = 124, .Width = 592, .Height = 50,
+        lblNet = New Label With {.Left = LU(12), .Top = LU(44), .Width = LU(590), .Height = LU(18), .AutoEllipsis = True,
+            .Font = smallFont, .Text = If(rus, "Внешний доступ: -", "Internet: -")}
+        btnOpenRouter = New Button With {.Left = LU(12), .Top = LU(66), .Width = LU(150), .Height = LU(26), .Enabled = False, .Text = If(rus, "Открыть роутер", "Open router")}
+        lblRouterUrl = New Label With {.Left = LU(170), .Top = LU(70), .Width = LU(430), .Height = LU(18), .ForeColor = Color.DimGray, .AutoEllipsis = True,
+            .Font = smallFont}
+        lnkGuide = New LinkLabel With {.Left = LU(12), .Top = LU(98), .Width = LU(280), .Height = LU(18), .Enabled = False,
+            .Font = smallFont, .Text = If(rus, "Инструкция по пробросу (офлайн)..", "Port-forward guide (offline)..")}
+        lnkRouterSearch = New LinkLabel With {.Left = LU(300), .Top = LU(98), .Width = LU(300), .Height = LU(18), .Enabled = False,
+            .Font = smallFont, .Text = If(rus, "Гайд для моего роутера (определить модель)..", "Guide for my router (detect model)..")}
+        txtForward = New TextBox With {.Left = LU(12), .Top = LU(124), .Width = LU(592), .Height = LU(50),
             .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical, .BorderStyle = BorderStyle.None,
-            .BackColor = grpNet.BackColor, .TabStop = False}
+            .BackColor = grpNet.BackColor, .TabStop = False, .Font = smallFont}
         AddHandler chkExternal.CheckedChanged, AddressOf OnExternalToggled
         AddHandler btnOpenRouter.Click, AddressOf OnOpenRouter
         AddHandler lnkGuide.LinkClicked, AddressOf OnOpenGuide
@@ -195,28 +221,28 @@ Public Class Share_Wizard_Form
         grpNet.Controls.Add(txtForward)
 
         ' ---- footer ----
-        lblPhoneHint = New Label With {.Left = 12, .Top = 576, .Width = 616, .Height = 18, .ForeColor = Color.DimGray,
-            .AutoEllipsis = True, .Text = If(rus,
+        lblPhoneHint = New Label With {.Left = LU(12), .Top = LU(576), .Width = LU(616), .Height = LU(18), .ForeColor = Color.DimGray,
+            .AutoEllipsis = True, .Font = smallFont, .Text = If(rus,
                 "На телефоне: FastMediaSorter -> Добавить ресурс -> SFTP/FTP -> Импорт из компаньона.",
                 "On the phone: FastMediaSorter -> Add resource -> SFTP/FTP -> Import from companion.")}
         Controls.Add(lblPhoneHint)
 
-        lnkSettings = New LinkLabel With {.Left = 12, .Top = 596, .Width = 150, .Height = 20,
-            .Text = If(rus, "Настройки доступа", "Sharing settings")}
+        lnkSettings = New LinkLabel With {.Left = LU(12), .Top = LU(596), .Width = LU(150), .Height = LU(20),
+            .Font = linkFont, .Text = If(rus, "Настройки доступа", "Sharing settings")}
         AddHandler lnkSettings.LinkClicked, AddressOf OnOpenSettings
         Controls.Add(lnkSettings)
 
-        lnkWebGuide = New LinkLabel With {.Left = 170, .Top = 596, .Width = 360, .Height = 20,
-            .Text = If(rus, "Как публиковать папки (на сайте)..", "How to publish folders (website)..")}
+        lnkWebGuide = New LinkLabel With {.Left = LU(170), .Top = LU(596), .Width = LU(360), .Height = LU(20),
+            .Font = linkFont, .Text = If(rus, "Как публиковать папки (на сайте)..", "How to publish folders (website)..")}
         AddHandler lnkWebGuide.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl)
         Controls.Add(lnkWebGuide)
 
-        lnkAndroid = New LinkLabel With {.Left = 12, .Top = 620, .Width = 400, .Height = 20,
-            .Text = If(rus, "Приложение FastMediaSorter для Android ->", "FastMediaSorter app for Android ->")}
+        lnkAndroid = New LinkLabel With {.Left = LU(12), .Top = LU(620), .Width = LU(400), .Height = LU(20),
+            .Font = linkFont, .Text = If(rus, "Приложение FastMediaSorter для Android ->", "FastMediaSorter app for Android ->")}
         AddHandler lnkAndroid.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareGuide.AndroidSite(Is_Russian_Language))
         Controls.Add(lnkAndroid)
 
-        btnClose = New Button With {.Left = 538, .Top = 618, .Width = 90, .Height = 28, .Text = If(rus, "Закрыть", "Close")}
+        btnClose = New Button With {.Left = LU(538), .Top = LU(618), .Width = LU(90), .Height = LU(28), .Text = If(rus, "Закрыть", "Close")}
         AddHandler btnClose.Click, Sub() Me.Close()
         Controls.Add(btnClose)
         Me.CancelButton = btnClose
@@ -637,6 +663,7 @@ Public Class Share_Wizard_Form
             picQr.Image = Nothing
             If old0 IsNot Nothing Then old0.Dispose()
             picQr.Cursor = Cursors.Default
+            btnShowQr.Enabled = False
             lblScan.Text = If(Is_Russian_Language, "Отсканируйте код в приложении на телефоне.", "Scan the code in the phone app.")
             _lastConfigJson = ""
             btnSaveConfig.Enabled = False
@@ -662,6 +689,7 @@ Public Class Share_Wizard_Form
         picQr.Image = newImg
         If old IsNot Nothing Then old.Dispose()
         picQr.Cursor = If(newImg IsNot Nothing, Cursors.Hand, Cursors.Default) ' click = zoom window
+        btnShowQr.Enabled = newImg IsNot Nothing AndAlso Not _busy
         ' Prefer the worker's honest reachability line (dead forward / CGNAT /
         ' IPv6-only / confirmed / LAN-only) under the QR; fall back to the plain
         ' "scan the code" prompt.
@@ -683,6 +711,7 @@ Public Class Share_Wizard_Form
         btnEmail.Enabled = Not value AndAlso _lastConfigJson.Length > 0
         btnCopyLan.Enabled = Not value AndAlso CurrentLanAddress().Length > 0
         btnCopyCredentials.Enabled = Not value AndAlso _status IsNot Nothing AndAlso Not String.IsNullOrEmpty(_status.Password)
+        btnShowQr.Enabled = Not value AndAlso picQr.Image IsNot Nothing
         Me.UseWaitCursor = value
     End Sub
 
