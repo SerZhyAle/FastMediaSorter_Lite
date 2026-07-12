@@ -15,11 +15,22 @@ Public Module ShareText
             "Warning: you are exposing an SFTP server to the internet. Anyone who learns the address, username and password can reach every shared folder. Do not publish the QR code or the .fmscfg file. Switch it off when you are done.")
     End Function
 
-    ''' <summary>Default LAN-tab hint under the QR code.</summary>
+    ''' <summary>Default hint under the primary QR when it is LAN-only (either the
+    ''' user ticked "LAN only" or no usable internet path exists).</summary>
     Public Function LanHintText(rus As Boolean) As String
         Return If(rus,
             "Работает на телефоне в той же сети Wi-Fi. Ничего настраивать не нужно.",
             "Works on a phone on the same Wi-Fi. Nothing to configure.")
+    End Function
+
+    ''' <summary>Hint under the primary QR when it carries BOTH addresses
+    ''' (LAN + internet) - the S1006 default. The phone picks whichever is
+    ''' reachable, so one scan works home and away; brief security nudge +
+    ''' pointer to the internet-setup tab.</summary>
+    Public Function CombinedHintText(rus As Boolean) As String
+        Return If(rus,
+            "Один код на дом и на улицу - телефон сам выберет доступный адрес. В коде есть и интернет-адрес: не публикуйте его, выключайте доступ, когда закончили. Настройка и проверка - на вкладке «Доступ из интернета».",
+            "One code for home and away - the phone picks whichever address is reachable. It also carries your internet address: do not publish it, and switch sharing off when done. Setup and testing are on the 'Internet access' tab.")
     End Function
 
     ''' <summary>Label of the §6 "exclude password" export safeguard.</summary>
@@ -42,6 +53,25 @@ Public Module ShareText
         Return If(rus,
             "Слишком много настроек для QR-кода - сохраните файл .fmscfg и отправьте его на телефон.",
             "Too many settings for a QR code - save the .fmscfg file and send it to the phone instead.")
+    End Function
+
+    ''' <summary>Shown on the Internet tab/wizard when a portforward path was found
+    ''' but this PC's own LAN address could not be - the QR still works, just not
+    ''' the fast local hop, and detection only re-runs on a fresh start/stop.</summary>
+    Public Function LanUnknownText(rus As Boolean) As String
+        Return If(rus,
+            "Не удалось определить адрес этого ПК в локальной сети (проверьте, не включён ли VPN). Если телефон рядом, в той же сети, остановите и снова начните общий доступ, чтобы попробовать ещё раз - сейчас в QR-коде есть только адрес из интернета.",
+            "Could not determine this PC's local-network address (check whether a VPN is active). If the phone is nearby on the same network, stop and start sharing again to retry - for now, only the internet address is in the QR code.")
+    End Function
+
+    ''' <summary>Shown instead of the plain UPnP-success text when the worker
+    ''' could not independently cross-check that the connection is not behind a
+    ''' hidden ISP-side NAT (the IP-echo query failed) - stronger than the
+    ''' always-shown UPnP caveat, since here we genuinely do not know either way.</summary>
+    Public Function ExternalUnverifiedText(rus As Boolean) As String
+        Return If(rus,
+            "Порт открыт автоматически (UPnP), но проверить, что провайдер не использует скрытый NAT, не удалось (не ответил внешний сервис проверки IP). Адрес может не работать извне - обязательно проверьте с телефона по мобильной сети.",
+            "The port was opened automatically (UPnP), but checking whether your provider uses a hidden NAT failed (the external IP-check service did not respond). This address may not work from outside - be sure to test it from the phone on mobile data.")
     End Function
 
     ''' <summary>Honest CGNAT explanation - forwarding cannot help.</summary>

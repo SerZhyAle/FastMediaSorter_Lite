@@ -148,8 +148,8 @@ Partial Public Class Table_Form
         Const ctlW As Integer = 420
 
         ' Global toggles (above the inner tabs).
-        chkOcrEnabled = New CheckBox With {.Left = 14, .Top = 10, .Width = 640, .AutoSize = True}
-        chkOcrAuto = New CheckBox With {.Left = 14, .Top = 36, .Width = 640, .AutoSize = True}
+        chkOcrEnabled = New CheckBox With {.Left = LU(14), .Top = LU(10), .Width = LU(640), .AutoSize = True}
+        chkOcrAuto = New CheckBox With {.Left = LU(14), .Top = LU(36), .Width = LU(640), .AutoSize = True}
         Tab_Page_5.Controls.Add(chkOcrEnabled)
         Tab_Page_5.Controls.Add(chkOcrAuto)
         AddHandler chkOcrEnabled.CheckedChanged, AddressOf OcrEnabled_CheckedChanged
@@ -159,7 +159,7 @@ Partial Public Class Table_Form
         ' Fixed height, anchored Top|Left|Right (NOT Bottom): the inner pages must
         ' never shrink below their content (no scrollbar), so they keep their size
         ' when the window is resized; the bottom-anchored footer still pins below.
-        ocrInner = New TabControl With {.Left = 8, .Top = 64, .Width = 652, .Height = 236,
+        ocrInner = New TabControl With {.Left = LU(8), .Top = LU(64), .Width = LU(652), .Height = LU(236),
             .Anchor = CType(AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right, AnchorStyles)}
         ocrTabTranslate = New TabPage With {.Padding = New Padding(4), .UseVisualStyleBackColor = True}
         ocrTabRecognition = New TabPage With {.Padding = New Padding(4), .UseVisualStyleBackColor = True}
@@ -171,7 +171,7 @@ Partial Public Class Table_Form
         Dim y As Integer = 10
         lblOcrTranslator = MakeOcrLabel(14, y, labelW)
         ocrTabTranslate.Controls.Add(lblOcrTranslator)
-        cmbOcrProvider = New ComboBox With {.Left = ctlX, .Top = y, .Width = ctlW, .DropDownStyle = ComboBoxStyle.DropDownList}
+        cmbOcrProvider = New ComboBox With {.Left = LU(ctlX), .Top = LU(y), .Width = LU(ctlW), .DropDownStyle = ComboBoxStyle.DropDownList}
         cmbOcrProvider.Items.AddRange(New Object() {"ollama", "libretranslate"})
         AddHandler cmbOcrProvider.SelectedIndexChanged, AddressOf OcrProvider_Changed
         ocrTabTranslate.Controls.Add(cmbOcrProvider)
@@ -179,15 +179,15 @@ Partial Public Class Table_Form
 
         lblOcrEndpoint = MakeOcrLabel(14, y, labelW)
         ocrTabTranslate.Controls.Add(lblOcrEndpoint)
-        txtOcrEndpoint = New TextBox With {.Left = ctlX, .Top = y, .Width = ctlW}
+        txtOcrEndpoint = New TextBox With {.Left = LU(ctlX), .Top = LU(y), .Width = LU(ctlW)}
         AddHandler txtOcrEndpoint.TextChanged, AddressOf OcrEndpoint_TextChanged
         ocrTabTranslate.Controls.Add(txtOcrEndpoint)
         y += 32
 
         lblOcrServer = MakeOcrLabel(14, y, labelW)
         ocrTabTranslate.Controls.Add(lblOcrServer)
-        btnOcrInstallOllama = New Button With {.Left = ctlX, .Top = y - 1, .Width = 205, .Height = 25}
-        btnOcrStartOllama = New Button With {.Left = ctlX + 211, .Top = y - 1, .Width = 205, .Height = 25}
+        btnOcrInstallOllama = New Button With {.Left = LU(ctlX), .Top = LU(y - 1), .Width = LU(205), .Height = LU(25)}
+        btnOcrStartOllama = New Button With {.Left = LU(ctlX + 211), .Top = LU(y - 1), .Width = LU(205), .Height = LU(25)}
         AddHandler btnOcrInstallOllama.Click, AddressOf OnInstallOllama
         AddHandler btnOcrStartOllama.Click, AddressOf OnStartOllama
         ocrTabTranslate.Controls.Add(btnOcrInstallOllama)
@@ -196,8 +196,8 @@ Partial Public Class Table_Form
 
         lblOcrModel = MakeOcrLabel(14, y, labelW)
         ocrTabTranslate.Controls.Add(lblOcrModel)
-        cmbOcrModelName = New ComboBox With {.Left = ctlX, .Top = y, .Width = 330, .DropDownStyle = ComboBoxStyle.DropDown}
-        btnOcrPullModel = New Button With {.Left = ctlX + ctlW - 84, .Top = y - 1, .Width = 84, .Height = 25}
+        cmbOcrModelName = New ComboBox With {.Left = LU(ctlX), .Top = LU(y), .Width = LU(330), .DropDownStyle = ComboBoxStyle.DropDown}
+        btnOcrPullModel = New Button With {.Left = LU(ctlX + ctlW - 84), .Top = LU(y - 1), .Width = LU(84), .Height = LU(25)}
         AddHandler cmbOcrModelName.TextChanged, AddressOf OcrModelName_TextChanged
         AddHandler btnOcrPullModel.Click, AddressOf OnPullModel
         ocrTabTranslate.Controls.Add(cmbOcrModelName)
@@ -206,7 +206,7 @@ Partial Public Class Table_Form
 
         lblOcrApi = MakeOcrLabel(14, y, labelW)
         ocrTabTranslate.Controls.Add(lblOcrApi)
-        txtOcrApi = New TextBox With {.Left = ctlX, .Top = y, .Width = ctlW, .UseSystemPasswordChar = True}
+        txtOcrApi = New TextBox With {.Left = LU(ctlX), .Top = LU(y), .Width = LU(ctlW), .UseSystemPasswordChar = True}
         AddHandler txtOcrApi.TextChanged, AddressOf OcrApi_TextChanged
         ocrTabTranslate.Controls.Add(txtOcrApi)
         y += 32
@@ -226,40 +226,40 @@ Partial Public Class Table_Form
 
         lblOcrQuality = MakeOcrLabel(14, y, labelW)
         ocrTabRecognition.Controls.Add(lblOcrQuality)
-        cmbOcrQuality = New ComboBox With {.Left = ctlX, .Top = y, .Width = ctlW, .DropDownStyle = ComboBoxStyle.DropDownList}
+        cmbOcrQuality = New ComboBox With {.Left = LU(ctlX), .Top = LU(y), .Width = LU(ctlW), .DropDownStyle = ComboBoxStyle.DropDownList}
         AddHandler cmbOcrQuality.SelectedIndexChanged, AddressOf OcrQuality_Changed
         ocrTabRecognition.Controls.Add(cmbOcrQuality)
         y += 32
 
         lblOcrMode = MakeOcrLabel(14, y, labelW)
         ocrTabRecognition.Controls.Add(lblOcrMode)
-        cmbOcrMode = New ComboBox With {.Left = ctlX, .Top = y, .Width = ctlW, .DropDownStyle = ComboBoxStyle.DropDownList}
+        cmbOcrMode = New ComboBox With {.Left = LU(ctlX), .Top = LU(y), .Width = LU(ctlW), .DropDownStyle = ComboBoxStyle.DropDownList}
         AddHandler cmbOcrMode.SelectedIndexChanged, AddressOf OcrMode_Changed
         ocrTabRecognition.Controls.Add(cmbOcrMode)
         y += 36
 
-        btnOcrDownload = New Button With {.Left = ctlX, .Top = y, .Width = ctlW, .Height = 27}
+        btnOcrDownload = New Button With {.Left = LU(ctlX), .Top = LU(y), .Width = LU(ctlW), .Height = LU(27)}
         AddHandler btnOcrDownload.Click, AddressOf OnDownloadOcr
         ocrTabRecognition.Controls.Add(btnOcrDownload)
 
         ' ---- Footer (shared, below the inner tabs) ----
         Dim botAnchor As AnchorStyles = CType(AnchorStyles.Bottom Or AnchorStyles.Left, AnchorStyles)
-        lblOcrOpacity = New Label With {.Left = 14, .Top = 306, .Width = labelW, .Height = 20,
+        lblOcrOpacity = New Label With {.Left = LU(14), .Top = LU(306), .Width = LU(labelW), .Height = LU(20),
             .TextAlign = ContentAlignment.MiddleLeft, .Anchor = botAnchor}
-        trkOcrOpacity = New TrackBar With {.Left = ctlX, .Top = 302, .Width = 380, .Minimum = 40, .Maximum = 255, .TickFrequency = 32,
+        trkOcrOpacity = New TrackBar With {.Left = LU(ctlX), .Top = LU(302), .Width = LU(380), .Minimum = 40, .Maximum = 255, .TickFrequency = 32,
             .Anchor = CType(AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right, AnchorStyles)}
-        lblOcrOpacityVal = New Label With {.Left = ctlX + 386, .Top = 310, .Width = 60, .Height = 20, .Text = "210",
+        lblOcrOpacityVal = New Label With {.Left = LU(ctlX + 386), .Top = LU(310), .Width = LU(60), .Height = LU(20), .Text = "210",
             .Anchor = CType(AnchorStyles.Bottom Or AnchorStyles.Right, AnchorStyles)}
         AddHandler trkOcrOpacity.ValueChanged, AddressOf OcrOpacity_Changed
         Tab_Page_5.Controls.Add(lblOcrOpacity)
         Tab_Page_5.Controls.Add(trkOcrOpacity)
         Tab_Page_5.Controls.Add(lblOcrOpacityVal)
 
-        chkOcrDisk = New CheckBox With {.Left = 14, .Top = 350, .Width = 400, .AutoSize = True, .Anchor = botAnchor}
+        chkOcrDisk = New CheckBox With {.Left = LU(14), .Top = LU(350), .Width = LU(400), .AutoSize = True, .Anchor = botAnchor}
         AddHandler chkOcrDisk.CheckedChanged, AddressOf OcrDisk_CheckedChanged
         Tab_Page_5.Controls.Add(chkOcrDisk)
 
-        lblOcrStatus = New Label With {.Left = 14, .Top = 372, .Width = 640, .Height = 18, .ForeColor = Color.DimGray, .AutoEllipsis = True,
+        lblOcrStatus = New Label With {.Left = LU(14), .Top = LU(372), .Width = LU(640), .Height = LU(18), .ForeColor = Color.DimGray, .AutoEllipsis = True,
             .Anchor = CType(AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right, AnchorStyles)}
         Tab_Page_5.Controls.Add(lblOcrStatus)
 
@@ -269,16 +269,16 @@ Partial Public Class Table_Form
     End Sub
 
     Private Function MakeOcrLabel(left As Integer, top As Integer, width As Integer) As Label
-        Return New Label With {.Left = left, .Top = top + 4, .Width = width, .Height = 20,
+        Return New Label With {.Left = LU(left), .Top = LU(top + 4), .Width = LU(width), .Height = LU(20),
             .AutoSize = False, .TextAlign = ContentAlignment.MiddleLeft}
     End Function
 
     Private Function BuildOcrLanguageCombo(parent As Control, left As Integer, top As Integer, width As Integer, entries As LanguageEntry()) As ComboBox
         Dim combo As New ComboBox With {
-            .Left = left, .Top = top, .Width = width,
+            .Left = LU(left), .Top = LU(top), .Width = LU(width),
             .DropDownStyle = ComboBoxStyle.DropDownList,
             .DrawMode = DrawMode.OwnerDrawFixed,
-            .ItemHeight = 24,
+            .ItemHeight = LU(24),
             .MaxDropDownItems = 16}
         For Each entry As LanguageEntry In entries
             combo.Items.Add(entry)
@@ -296,12 +296,12 @@ Partial Public Class Table_Form
         Dim entry As LanguageEntry = TryCast(combo.Items(e.Index), LanguageEntry)
         If entry Is Nothing Then Return
 
-        Dim fw As Integer = 22
-        Dim fh As Integer = 16
+        Dim fw As Integer = LU(22)
+        Dim fh As Integer = LU(16)
         Dim iy As Integer = e.Bounds.Top + (e.Bounds.Height - fh) \ 2
         Try
             Dim img As Image = FlagImages.Get(entry.Code)
-            If img IsNot Nothing Then e.Graphics.DrawImage(img, e.Bounds.Left + 4, iy, fw, fh)
+            If img IsNot Nothing Then e.Graphics.DrawImage(img, e.Bounds.Left + LU(4), iy, fw, fh)
         Catch
         End Try
 
@@ -310,7 +310,7 @@ Partial Public Class Table_Form
                 sf.LineAlignment = StringAlignment.Center
                 sf.Trimming = StringTrimming.EllipsisCharacter
                 sf.FormatFlags = StringFormatFlags.NoWrap
-                Dim tr As New Rectangle(e.Bounds.Left + 4 + fw + 6, e.Bounds.Top, e.Bounds.Width - (fw + 16), e.Bounds.Height)
+                Dim tr As New Rectangle(e.Bounds.Left + LU(4) + fw + LU(6), e.Bounds.Top, e.Bounds.Width - (fw + LU(16)), e.Bounds.Height)
                 e.Graphics.DrawString(entry.DisplayName(Is_Russian_Language), combo.Font, b, tr, sf)
             End Using
         End Using

@@ -101,7 +101,12 @@ Public Class Share_Wizard_Form
             .View = View.Details, .FullRowSelect = True, .HideSelection = False, .MultiSelect = False}
         lvFolders.Columns.Add(If(rus, "Имя", "Name"), 112)
         lvFolders.Columns.Add(If(rus, "Путь", "Path"), 168)
+        AddHandler lvFolders.DoubleClick, AddressOf OnConfigureFolder
         Controls.Add(lvFolders)
+        Dim tipFolders As New ToolTip()
+        tipFolders.SetToolTip(lvFolders, If(rus,
+            "Двойной клик по папке - параметры ресурса (тип, например видеотека, PIN, папка-получатель..)",
+            "Double-click a folder - resource options (type, e.g. video library, PIN, destination..)"))
 
         btnAdd = New Button With {.Left = 12, .Top = 194, .Width = 145, .Height = 28, .Text = If(rus, "Добавить папку..", "Add folder..")}
         btnRemove = New Button With {.Left = 163, .Top = 194, .Width = 149, .Height = 28, .Text = If(rus, "Убрать", "Remove")}
@@ -294,6 +299,31 @@ Public Class Share_Wizard_Form
             Return
         End If
         Await RunShareAsync()
+    End Sub
+
+    ''' <summary>Double-click a folder row: edit the per-root resource params the
+    ''' schema v2 export carries to the phone (S1002 §9) - same dialog and rules as
+    ''' the Share tab's "Настроить..". The destination flag flips the share's
+    ''' writability (worker-side), so only that change needs a re-share; everything
+    ''' else (label/profile/media set/comment/PIN/slideshow) is LITE-side export
+    ''' metadata that Render() picks up straight from the store.</summary>
+    Private Async Sub OnConfigureFolder(sender As Object, e As EventArgs)
+        If _busy Then Return
+        If lvFolders.SelectedItems.Count = 0 Then Return
+        Dim it As ListViewItem = lvFolders.SelectedItems(0)
+        Dim hostPath As String = Convert.ToString(it.Tag)
+        If String.IsNullOrEmpty(hostPath) Then Return
+        Dim before As ShareRootParams = ShareRootParamsStore.GetFor(hostPath)
+        Using dlg As New Share_Root_Params_Form(it.Text, before)
+            If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
+            Dim after As ShareRootParams = dlg.Result
+            ShareRootParamsStore.SetFor(hostPath, after)
+            If after.IsDestination <> before.IsDestination AndAlso _status IsNot Nothing AndAlso _status.Running Then
+                Await RunShareAsync()
+            Else
+                Render()
+            End If
+        End Using
     End Sub
 
     Private Sub OnSaveConfig(sender As Object, e As EventArgs)
@@ -514,6 +544,9 @@ Public Class Share_Wizard_Form
         Dim lanText As String = If(lanIp.Length > 0, lanIp, If(rus, "IP этого ПК", "this PC's IP"))
 
         Dim sb As New StringBuilder()
+        If _config IsNot Nothing AndAlso _config.LanDisplay.Length = 0 Then
+            sb.AppendLine(ShareText.LanUnknownText(rus)).AppendLine()
+        End If
         sb.AppendLine(ShareText.SecurityText(rus)).AppendLine()
 
         If isCgnat Then
@@ -521,9 +554,13 @@ Public Class Share_Wizard_Form
             sb.Append(ShareText.CgnatText(rus))
         ElseIf mapped Then
             lblNet.Text = (If(rus, "Доступно из интернета: ", "Reachable from internet: ")) & extHost & ":" & (If(extPort > 0, extPort, port)).ToString()
-            sb.Append(If(rus,
-                "Порт открыт автоматически (UPnP) - настраивать роутер не нужно. Адрес уже в QR-коде и файле .fmscfg.",
-                "The port was opened automatically (UPnP) - no router setup needed. The address is already in the QR code and .fmscfg file."))
+            If reach.ExternalVerified Then
+                sb.Append(If(rus,
+                    "Порт открыт автоматически (UPnP) - настраивать роутер не нужно. Адрес уже в QR-коде и файле .fmscfg. Учтите: это не подтверждает работу извне - точный тест только с телефона по мобильной сети. При долгой работе общего доступа проверка может устареть; если телефон не подключается, отключите и снова включите общий доступ.",
+                    "The port was opened automatically (UPnP) - no router setup needed. The address is already in the QR code and .fmscfg file. Note: this does not confirm it actually works from outside - the definitive test is from the phone on mobile data. Long-running sessions can go stale; if the phone can't connect, turn sharing off and back on."))
+            Else
+                sb.Append(ShareText.ExternalUnverifiedText(rus))
+            End If
         ElseIf extHost.Length > 0 Then
             lblNet.Text = (If(rus, "Внешний адрес: ", "External address: ")) & extHost & ":" & port.ToString() & If(rus, " (нужен проброс порта)", " (needs port forwarding)")
             sb.Append(ShareText.PortForwardText(rus, routerText, port, lanText, port))

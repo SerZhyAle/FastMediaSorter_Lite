@@ -43,13 +43,28 @@ LicenseFile={#SourceDir}\LICENSE
 OutputBaseFilename=FastMediaSorter-{#Version}-windows-x64-setup
 SetupIconFile=..\assets\icons\Fast_Media_Sorter.ico
 UninstallDisplayIcon={app}\{#AppExeName}
+; Published artifacts use max ratio (lzma2/ultra). Local convenience builds can
+; pass /DFastCompression for a much faster compile at the cost of a larger file -
+; only the compression setting changes, every install-identity anchor is untouched.
+#ifdef FastCompression
+Compression=lzma2/fast
+SolidCompression=no
+#else
 Compression=lzma2/ultra
 SolidCompression=yes
+#endif
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog commandline
+; Installing/uninstalling is at minimum a version replacement - an already-running
+; instance (possibly tray-resident, so its window may be hidden) must not be left
+; holding the old exe open. Setup/Uninstall detect it via this single-instance
+; mutex (Main_Form.vb) and close it before touching files (see also
+; StopCompanionWorker in [Code] for the separate companion worker process, which
+; this mutex cannot see).
+AppMutex=FastMediaSorterSingleInstanceMutex
 ChangesAssociations=yes
 MinVersion=6.1
 VersionInfoVersion={#Version}
@@ -67,6 +82,12 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+; Helper Setup/Uninstall use to gracefully stop a running companion worker (see
+; StopCompanionWorker in [Code]). Kept both as a dontcopy temp extract (Setup runs
+; this before any app files exist yet, so it cannot read one from {app}) and as a
+; normal installed file (Uninstall only has access to already-installed files).
+Source: "stop-companion.ps1"; DestDir: "{tmp}"; Flags: dontcopy
+Source: "stop-companion.ps1"; DestDir: "{app}"; Flags: ignoreversion
 
 [InstallDelete]
 ; The Start-menu group used to be named "FastMediaSorter LITE"; it is now the new
@@ -352,6 +373,29 @@ begin
   CompanionProjectButton.OnClick := @OpenCompanionProject;
 end;
 
+{ Stops a running companion worker (fms-share-worker.exe) before Setup/Uninstall
+  touch its exe - it is a separate background process (survives the main app
+  closing by design) that the AppMutex check above cannot see. Runs the bundled
+  helper script, which asks the worker to stop over its control pipe (releases
+  the SFTP server + UPnP port mapping cleanly) before force-killing any
+  survivor. Best-effort: a missing or failing script must never abort Setup. }
+procedure StopCompanionWorker(const ScriptPath: String);
+var
+  ResultCode: Integer;
+begin
+  if not FileExists(ScriptPath) then
+    exit;
+  Exec('powershell.exe', '-NoProfile -ExecutionPolicy Bypass -File "' + ScriptPath + '"',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  Result := '';
+  ExtractTemporaryFile('stop-companion.ps1');
+  StopCompanionWorker(ExpandConstant('{tmp}\stop-companion.ps1'));
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if (CurStep = ssPostInstall) and ShouldRegisterAssociations then
@@ -362,6 +406,8 @@ procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep <> usUninstall then
     exit;
+
+  StopCompanionWorker(ExpandConstant('{app}\stop-companion.ps1'));
 
   RemoveImageAssociation('.jpg', 'FastMediaSorter.jpg');
   RemoveImageAssociation('.jpeg', 'FastMediaSorter.jpeg');

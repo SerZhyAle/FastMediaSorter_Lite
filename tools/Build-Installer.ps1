@@ -39,6 +39,17 @@
     Reuse the existing bin\Release output instead of rebuilding (faster when you
     are only re-packaging). Fails if bin\Release has no exe yet.
 
+.PARAMETER MaxCompress
+    Use the published-release compression (lzma2/ultra, solid) - smallest file
+    but several minutes slower. Off by default: a local installer uses the much
+    faster lzma2/fast so repeat builds finish quickly (only the file size grows;
+    every install-identity anchor is unchanged).
+
+.PARAMETER NoClean
+    Skip the pre-build housekeeping (tools\Clean-Build.ps1). By default the build
+    first prunes superseded stage\ trees, old dist\ artifacts and temp files so
+    they do not pile up; this keeps them.
+
 .PARAMETER Open
     Reveal the finished installer in Explorer when done.
 
@@ -59,6 +70,8 @@ param(
     [switch]$IncludeBest,
     [switch]$SkipOcr,
     [switch]$SkipBuild,
+    [switch]$MaxCompress,
+    [switch]$NoClean,
     [switch]$Open
 )
 
@@ -139,6 +152,13 @@ Write-Host "MSBuild:     $msbuild"
 Write-Host "Inno Setup:  $iscc"
 Write-Host "Version:     $Version"
 
+# --- housekeeping: drop superseded builds + temp files before we start ------
+# Keeps this run's version so an in-place re-run is not self-sabotaging; leaves
+# bin\Release / obj alone so -SkipBuild still finds the compiled output.
+if (-not $NoClean) {
+    & (Join-Path $PSScriptRoot "Clean-Build.ps1") -Stage -Dist -Temp -KeepVersion $Version
+}
+
 # --- build ------------------------------------------------------------------
 if ($SkipBuild) {
     Write-Host "Skipping build - reusing existing bin\Release."
@@ -204,7 +224,14 @@ if ($SkipOcr) {
 # --- compile installer ------------------------------------------------------
 $stageAbs = (Resolve-Path $stageDir).Path
 $distAbs  = (Resolve-Path $distDir).Path
-& $iscc "/DVersion=$Version" "/DSourceDir=$stageAbs" "/O$distAbs" $issFile
+$isccArgs = @("/DVersion=$Version", "/DSourceDir=$stageAbs", "/O$distAbs")
+if (-not $MaxCompress) {
+    $isccArgs += "/DFastCompression"
+    Write-Host "Compression: lzma2/fast (local build - pass -MaxCompress for the smaller ultra build)"
+} else {
+    Write-Host "Compression: lzma2/ultra (max ratio)"
+}
+& $iscc @isccArgs $issFile
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE." }
 
 $setupName = "FastMediaSorter-$Version-windows-x64-setup.exe"

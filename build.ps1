@@ -1,3 +1,9 @@
+param(
+    # Skip the pre-build housekeeping (tools\Clean-Build.ps1) that prunes
+    # superseded stage\ trees, orphaned bin\ folders and temp files.
+    [switch]$NoClean
+)
+
 $SolutionDir = $PSScriptRoot
 $SolutionFile = Join-Path $SolutionDir "FastMediaSorter.sln"
 $OutputDir    = Join-Path $SolutionDir "bin\Release"
@@ -63,6 +69,13 @@ if (-not $msbuild -or -not (Test-Path $msbuild)) {
 }
 
 Write-Host "Using MSBuild: $msbuild"
+
+# Housekeeping: drop superseded stage\ trees, orphaned bin\ experiment folders
+# and temp scratch so they do not accumulate. Leaves dist\ alone (a local build
+# does not produce installers - the installer scripts prune their own dist\).
+if (-not $NoClean) {
+    & (Join-Path $SolutionDir "tools\Clean-Build.ps1") -Stage -Bin -Temp
+}
 
 # Restore NuGet packages (packages.config). Needed for a fresh clone; a no-op when
 # packages are already present. Downloads nuget.exe to tools\ if it isn't on PATH.

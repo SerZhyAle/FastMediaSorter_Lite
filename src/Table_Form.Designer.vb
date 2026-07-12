@@ -572,10 +572,10 @@ Partial Class Table_Form
         Me.ClientSize = New System.Drawing.Size(700, 466)
         Me.Controls.Add(Me.LinkLabel1)
         Me.Controls.Add(Me.Tab_Control)
+        Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog
         Me.KeyPreview = True
         Me.MaximizeBox = False
         Me.MinimizeBox = False
-        Me.MinimumSize = New System.Drawing.Size(560, 420)
         Me.Name = "Table_Form"
         Me.ShowIcon = False
         Me.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide

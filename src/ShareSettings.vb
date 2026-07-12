@@ -16,10 +16,20 @@ Public Class ShareSettings
     Public Property WorkerEverStarted As Boolean = False  ' Share_WorkerEverStarted
 
     ''' <summary>The user wants the internet-access section shown / intends to
-    ''' expose the share to the internet. Default off = LAN only. This is a UI
-    ''' intent flag: the worker still auto-attempts UPnP regardless (it has no
-    ''' knob), so this drives the guidance + security warning, not enforcement.</summary>
-    Public Property ExternalAccessIntent As Boolean = False ' Share_ExternalAccessIntent
+    ''' expose the share to the internet. Default ON since S1006: the phone now
+    ''' races all accessPaths and prefers LAN, so the combined [lan, portforward]
+    ''' config is the sensible default ("one scan works home and away") and the
+    ''' WAN entry is only actually emitted when a usable non-CGNAT path exists.
+    ''' The worker still auto-attempts UPnP regardless (it has no knob), so this
+    ''' drives the guidance + security warning, not enforcement.</summary>
+    Public Property ExternalAccessIntent As Boolean = True ' Share_ExternalAccessIntent
+
+    ''' <summary>The deliberate privacy opt-out for the Share tab's primary export:
+    ''' when ON, the exported QR/.fmscfg carries ONLY the LAN accessPath (the WAN
+    ''' address is never embedded, even when a port-forward is available). Default
+    ''' OFF = the combined [lan, portforward] config (S1006). Distinct from
+    ''' ExternalAccessIntent, which is the wizard's show-internet-section flag.</summary>
+    Public Property LanOnlyExport As Boolean = False ' Share_LanOnlyExport
 
     ''' <summary>The §6 "exclude password" safeguard: export .fmscfg/QR with an
     ''' empty password so the recipient types it at import; the sender passes the
@@ -29,7 +39,8 @@ Public Class ShareSettings
     Public Sub Load()
         AutostartEnabled = ReadBool("Share_AutostartEnabled", False)
         WorkerEverStarted = ReadBool("Share_WorkerEverStarted", False)
-        ExternalAccessIntent = ReadBool("Share_ExternalAccessIntent", False)
+        ExternalAccessIntent = ReadBool("Share_ExternalAccessIntent", True)
+        LanOnlyExport = ReadBool("Share_LanOnlyExport", False)
         ExcludePasswordFromExport = ReadBool("Share_ExcludePassword", False)
     End Sub
 
@@ -37,6 +48,7 @@ Public Class ShareSettings
         WriteBool("Share_AutostartEnabled", AutostartEnabled)
         WriteBool("Share_WorkerEverStarted", WorkerEverStarted)
         WriteBool("Share_ExternalAccessIntent", ExternalAccessIntent)
+        WriteBool("Share_LanOnlyExport", LanOnlyExport)
         WriteBool("Share_ExcludePassword", ExcludePasswordFromExport)
     End Sub
 

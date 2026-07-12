@@ -15,6 +15,7 @@ src/My Project/VersionInfo.vb
 
 # Locally downloaded build tools
 tools/nuget.exe
+tools/ocr-cache/
 
 # Local runtime diagnostics
 current.log

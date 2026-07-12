@@ -66,4 +66,35 @@ Public Class Qr_Zoom_Form
         End Using
     End Sub
 
+    ''' <summary>Opens a QR image directly (no source PictureBox) - used by the tray
+    ''' "Показать штрихкод" item, which builds the code on demand. Sized to a large
+    ''' share of the owner's screen so a phone camera grabs it easily. The image is
+    ''' cloned; the caller keeps ownership of the one it passes in.</summary>
+    Public Shared Sub ShowImage(owner As Form, img As Image)
+        If img Is Nothing Then Return
+        Dim clone As Image
+        Try
+            clone = New Bitmap(img)
+        Catch
+            Return
+        End Try
+
+        Dim side As Integer = 560
+        Try
+            Dim wa As Rectangle = If(owner IsNot Nothing AndAlso owner.IsHandleCreated,
+                                     Screen.FromControl(owner).WorkingArea, Screen.PrimaryScreen.WorkingArea)
+            side = Math.Min(Math.Min(wa.Width, wa.Height) - 80, 720)
+        Catch
+        End Try
+        If side < 200 Then side = 200
+
+        Using dlg As New Qr_Zoom_Form(clone, side)
+            If owner IsNot Nothing AndAlso owner.Visible AndAlso owner.IsHandleCreated Then
+                dlg.ShowDialog(owner)
+            Else
+                dlg.ShowDialog()   ' owner hidden (tray-resident) - stand-alone modal
+            End If
+        End Using
+    End Sub
+
 End Class

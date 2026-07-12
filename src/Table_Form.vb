@@ -8,6 +8,17 @@ Public Class Table_Form
     Private set_This_Form_Top_Most As Boolean = False
     Private toolTip As ToolTip
 
+    ''' <summary>Scales a design-time (96-dpi) pixel value to the current display DPI.
+    ''' The Share and OCR tabs are built entirely in code with literal pixel
+    ''' coordinates; unlike the Designer controls (auto-scaled via AutoScaleMode.Font)
+    ''' they keep their 96-dpi size, yet their point-based fonts render ~1.75x larger
+    ''' at 168 DPI - so text overflowed its box. Wrapping the literals in LU() sizes the
+    ''' boxes to match the fonts. Identity at 96 DPI, so it is a no-op on standard
+    ''' displays.</summary>
+    Friend Function LU(px As Integer) As Integer
+        Return LogicalToDeviceUnits(px)
+    End Function
+
     Private Sub btn_Set_As_Default_Video_Click(sender As Object, e As EventArgs) Handles btn_Set_As_Default_Video.Click
         Main_Form.AssociateAllVideoFormatsWithThisApp()
     End Sub

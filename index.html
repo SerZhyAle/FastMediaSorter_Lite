@@ -46,15 +46,15 @@
   html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
   /* page-local helpers */
   .lead-narrow{max-width:680px}
-  .shot{max-width:880px;margin:0 auto 2rem}
+  .shot{max-width:1040px;margin:0 auto 1.2rem}
   .shot img{border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);display:block;width:100%}
   .shot figcaption{color:var(--muted);font-size:.8rem;text-align:center;margin-top:.6rem}
-  .sec-head{text-align:center;max-width:680px;margin:0 auto 1.4rem}
+  .sec-head{text-align:center;max-width:680px;margin:0 auto 1rem}
   .sec-head h2{font-size:clamp(1.4rem,3.4vw,1.9rem)}
   .sec-head p{color:var(--muted);font-size:.95rem;margin-top:.35rem}
-  .card h3{font-family:var(--font-heading);font-size:1.08rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}
+  .card h3{font-family:var(--font-heading);font-size:1.08rem;margin-bottom:.4rem;display:flex;align-items:center;gap:.5rem}
   .card p{color:var(--text-2);font-size:.92rem}
-  .card .kbds{margin-top:.7rem;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+  .card .kbds{margin-top:.6rem;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
   .dl-row{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
   .dl-meta{color:var(--muted);font-size:.78rem;width:100%}
   .xlinks{display:grid;gap:.5rem}
@@ -68,7 +68,10 @@
 </div>
 
 <header class="site-header">
-  <span class="brand">Fast Media Sorter for Windows<span class="dot">.</span></span>
+  <div class="brand-mark">
+    <img src="assets/icons/store-icon-256.png" alt="Fast Media Sorter for Windows" width="28" height="28">
+    <span class="brand">Fast Media Sorter for Windows<span class="dot">.</span></span>
+  </div>
   <div class="seg" role="group" aria-label="Language">
     <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
   </div>
@@ -79,6 +82,7 @@
 <main class="container">
 
   <section class="hero">
+    <img class="hero-logo" src="assets/icons/store-icon-256.png" alt="" width="60" height="60">
     <div class="kicker">
       <span data-l="en">Windows · image &amp; video sorter</span>
       <span data-l="ru">Windows · сортировщик фото и видео</span>
@@ -180,7 +184,7 @@
 
     <div class="grid">
       <article class="card">
-        <h3><span data-l="en">Navigation &amp; slideshow</span><span data-l="ru">Навигация и слайд-шоу</span><span data-l="ua">Навігація та слайд-шоу</span></h3>
+        <h3><img src="assets/icons/slideshow.svg" alt="" width="22" height="22"><span data-l="en">Navigation &amp; slideshow</span><span data-l="ru">Навигация и слайд-шоу</span><span data-l="ua">Навігація та слайд-шоу</span></h3>
         <p>
           <span data-l="en">Step through huge folders instantly. Slideshow and random-view modes, recent files and folders, plus a thumbnail image panel for quick jumps.</span>
           <span data-l="ru">Мгновенный переход по большим папкам. Режимы слайд-шоу и случайного показа, недавние файлы и папки, плюс панель миниатюр для быстрых переходов.</span>
@@ -189,7 +193,7 @@
       </article>
 
       <article class="card">
-        <h3><span data-l="en">File operations</span><span data-l="ru">Операции с файлами</span><span data-l="ua">Операції з файлами</span></h3>
+        <h3><img src="assets/icons/transfer.svg" alt="" width="22" height="22"><span data-l="en">File operations</span><span data-l="ru">Операции с файлами</span><span data-l="ua">Операції з файлами</span></h3>
         <p>
           <span data-l="en">Move, copy, rename and delete without leaving the keyboard. Assign folders to keys and file each item where it belongs in a single press.</span>
           <span data-l="ru">Перемещение, копирование, переименование и удаление - не отрываясь от клавиатуры. Назначьте папки на клавиши и раскладывайте файлы одним нажатием.</span>
@@ -198,7 +202,7 @@
       </article>
 
       <article class="card">
-        <h3><span data-l="en">Video / LibVLC fallback</span><span data-l="ru">Видео / резерв LibVLC</span><span data-l="ua">Відео / резерв LibVLC</span></h3>
+        <h3><img src="assets/icons/screen.svg" alt="" width="22" height="22"><span data-l="en">Video / LibVLC fallback</span><span data-l="ru">Видео / резерв LibVLC</span><span data-l="ua">Відео / резерв LibVLC</span></h3>
         <p>
           <span data-l="en">H.264/MP4 plays in-window. Anything the built-in player can't decode - AVI, ZMBV, VP9, MKV, WMV - automatically falls back to a bundled LibVLC engine. No external codecs.</span>
           <span data-l="ru">H.264/MP4 играет во встроенном окне. Всё, что встроенный плеер не декодирует - AVI, ZMBV, VP9, MKV, WMV - автоматически берёт на себя встроенный движок LibVLC. Без внешних кодеков.</span>
@@ -207,7 +211,7 @@
       </article>
 
       <article class="card">
-        <h3><span data-l="en">Offline bundles &amp; OCR</span><span data-l="ru">Офлайн-сборки и OCR</span><span data-l="ua">Офлайн-збірки та OCR</span></h3>
+        <h3><img src="assets/icons/folder.svg" alt="" width="22" height="22"><span data-l="en">Offline bundles &amp; OCR</span><span data-l="ru">Офлайн-сборки и OCR</span><span data-l="ua">Офлайн-збірки та OCR</span></h3>
         <p>
           <span data-l="en">Release downloads are offline-ready: VLC runtimes and OCR language packs are already inside. On-image OCR translation overlays text right over the picture (translator of your choice).</span>
           <span data-l="ru">Сборки в релизах готовы к офлайн-работе: библиотеки VLC и языковые пакеты OCR уже внутри. OCR-перевод накладывает текст прямо поверх изображения (переводчик на ваш выбор).</span>
@@ -217,7 +221,7 @@
       </article>
 
       <article class="card">
-        <h3><span data-l="en">Image quality &amp; viewing</span><span data-l="ru">Качество и просмотр</span><span data-l="ua">Якість та перегляд</span></h3>
+        <h3><img src="assets/icons/fullscreen24.svg" alt="" width="22" height="22"><span data-l="en">Image quality &amp; viewing</span><span data-l="ru">Качество и просмотр</span><span data-l="ua">Якість та перегляд</span></h3>
         <p>
           <span data-l="en">Photos auto-rotate by their EXIF tag, large images downscale with high-quality bicubic scaling, and an optional on-image overlay shows the file name and position - handy in full-screen. Slideshow interval is configurable.</span>
           <span data-l="ru">Фото авто-поворачиваются по тегу EXIF, крупные изображения уменьшаются качественным бикубическим масштабированием, а необязательная подпись поверх кадра показывает имя файла и позицию - удобно в полноэкранном режиме. Интервал слайд-шоу настраивается.</span>
@@ -227,7 +231,7 @@
       </article>
 
       <article class="card">
-        <h3><span data-l="en">Default viewer &amp; player</span><span data-l="ru">Просмотрщик и плеер по умолчанию</span><span data-l="ua">Переглядач та плеєр за замовчуванням</span></h3>
+        <h3><img src="assets/icons/screen.svg" alt="" width="22" height="22"><span data-l="en">Default viewer &amp; player</span><span data-l="ru">Просмотрщик и плеер по умолчанию</span><span data-l="ua">Переглядач та плеєр за замовчуванням</span></h3>
         <p>
           <span data-l="en">Register the app as your default image viewer and/or video player in one click - per-user, no admin rights needed.</span>
           <span data-l="ru">Назначьте приложение программой просмотра изображений и/или видеоплеером по умолчанию одним кликом - для текущего пользователя, без прав администратора.</span>
@@ -236,7 +240,7 @@
       </article>
 
       <article class="card">
-        <h3><span data-l="en">Android Folder Share</span><span data-l="ru">Общий доступ для Android</span><span data-l="ua">Спільний доступ для Android</span></h3>
+        <h3><img src="assets/icons/folder.svg" alt="" width="22" height="22"><span data-l="en">Android Folder Share</span><span data-l="ru">Общий доступ для Android</span><span data-l="ua">Спільний доступ для Android</span></h3>
         <p>
           <span data-l="en">Turn this PC into a copilot for the mobile app: a built-in SFTP server publishes your own media and file folders to FastMediaSorter for Android - over your home LAN or across the internet - after a one-time QR pairing. <a href="publish-folders-android.html">How to publish your folders →</a></span>
           <span data-l="ru">Превратите этот ПК в копилот для мобильного приложения: встроенный SFTP-сервер публикует ваши собственные папки с медиа и файлами в FastMediaSorter для Android - в домашней сети или через интернет - после однократного подключения по QR-коду. <a href="publish-folders-android.html">Как опубликовать папки →</a></span>
@@ -246,7 +250,7 @@
       </article>
 
       <article class="card">
-        <h3><span data-l="en">Shortcuts</span><span data-l="ru">Горячие клавиши</span><span data-l="ua">Гарячі клавіші</span></h3>
+        <h3><img src="assets/icons/random.svg" alt="" width="22" height="22"><span data-l="en">Shortcuts</span><span data-l="ru">Горячие клавиши</span><span data-l="ua">Гарячі клавіші</span></h3>
         <p>
           <span data-l="en">Almost everything is a hotkey, and folder shortcuts are customizable. Switch the whole UI between English and Russian on the fly - the first run follows your Windows display language.</span>
           <span data-l="ru">Почти всё - на горячих клавишах, а ярлыки папок настраиваются. Переключайте весь интерфейс между английским и русским на лету - при первом запуске берётся язык интерфейса Windows.</span>

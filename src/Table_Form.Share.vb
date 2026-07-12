@@ -25,9 +25,12 @@ Imports System.Windows.Forms
 ' server property (a router port maps the whole port), so it is a mode (the
 ' Internet inner tab), not a per-folder switch. The worker always auto-attempts
 ' UPnP on start - the tabs decide only which addresses each exported config
-' advertises. Controls use Top|Left anchoring (absolute) so nothing drifts when
-' the sizable Settings window is widened. This TabPage is created fully in code
-' (Tab_Page_6). (Class-level XML doc lives on Table_Form.Ocr.vb.)
+' advertises. This TabPage is created fully in code (Tab_Page_6): every literal
+' coordinate is a logical (96-dpi) pixel scaled through Table_Form.LU() so text
+' never overflows its box at high DPI. The Settings window is fixed-size
+' (FormBorderStyle.FixedDialog), so controls use plain absolute placement with NO
+' Anchor - anchors previously drove the bottom-anchored left column off-screen at
+' high DPI, blanking the tab. (Class-level XML doc lives on Table_Form.Ocr.vb.)
 Partial Public Class Table_Form
 
     Private Tab_Page_6 As TabPage
@@ -43,6 +46,11 @@ Partial Public Class Table_Form
     Private _shareStatus As WorkerStatus
     Private _cfgLan As ShareConfigResult
     Private _cfgNet As ShareConfigResult
+    ''' <summary>The config the primary QR / Save / Email act on: the combined
+    ''' [lan, portforward] build by default (S1006 - one scan works home and
+    ''' away), or the LAN-only build when the user ticks "LAN only". Points at
+    ''' _cfgNet or _cfgLan; never a third build.</summary>
+    Private _cfgPrimary As ShareConfigResult
     Private _shareRouter As RouterIdentity
     ''' <summary>Set on the second MouseDown of a row double-click so ItemCheck can
     ''' cancel the checkbox toggle the native ListView performs on NM_DBLCLK -
@@ -64,27 +72,28 @@ Partial Public Class Table_Form
     Private chkShareNoPassword As CheckBox
     Private lnkShareAndroid As LinkLabel
 
-    ' Inner TabControl (right column)
+    ' Inner TabControl (right column). Reframed by ROLE (S1006), not by network:
+    '   tab 1 (tpShareLan) = the ONE primary QR that works home + away
+    '   tab 2 (tpShareNet) = internet-access setup guidance only (no duplicate QR)
     Private shareInnerTabs As TabControl
     Private tpShareLan As TabPage
     Private tpShareNet As TabPage
 
-    ' LAN inner tab
+    ' Primary QR tab (tpShareLan)
     Private picShareQrLan As PictureBox
     Private lblShareLanAddr As Label
     Private btnShareTestLan As Button
     Private btnShareCopyLan As Button
     Private lblShareFinger As Label
+    Private chkShareLanOnly As CheckBox
     Private btnShareSaveLan As Button
     Private btnShareEmailLan As Button
     Private lblShareLanHint As Label
 
-    ' Internet inner tab
+    ' Internet-setup guidance tab (tpShareNet) - no QR / Save / Email of its own;
+    ' the combined config is exported from the primary tab.
     Private lblShareNet As Label
     Private btnShareTestNet As Button
-    Private picShareQrNet As PictureBox
-    Private btnShareSaveNet As Button
-    Private btnShareEmailNet As Button
     Private btnShareOpenRouter As Button
     Private lblShareRouterUrl As Label
     Private lnkShareGuide As LinkLabel
@@ -127,6 +136,30 @@ Partial Public Class Table_Form
         End Try
     End Sub
 
+    Private _shareDpiSized As Boolean
+
+    ''' <summary>High-DPI safety net. The Share/OCR tabs position their code-created
+    ''' controls with LU()-scaled (device-pixel) coordinates, but this FixedDialog
+    ''' Settings form (AutoScaleMode.Font, PerMonitorV2 manifest on .NET Framework)
+    ''' does not reliably grow to the full DPI-scaled size at fractional scaling
+    ''' (e.g. 175%), so the inner-tab content - the QR box and the Test/Email buttons -
+    ''' was clipped past the right edge (a user at 175% saw no QR and missing buttons).
+    ''' Once the form is shown (after its auto-scale pass), grow it to the LU-scaled
+    ''' design size so the scaled layout always has room. No-op at 100% DPI and
+    ''' whenever the form already fits.</summary>
+    Private Sub ShareTab_Shown(sender As Object, e As EventArgs) Handles Me.Shown
+        If _shareDpiSized Then Return
+        _shareDpiSized = True
+        Try
+            Dim needW As Integer = LU(700)
+            Dim needH As Integer = LU(466)
+            If Me.ClientSize.Width < needW OrElse Me.ClientSize.Height < needH Then
+                Me.ClientSize = New Size(Math.Max(Me.ClientSize.Width, needW), Math.Max(Me.ClientSize.Height, needH))
+            End If
+        Catch
+        End Try
+    End Sub
+
     ' --- build -----------------------------------------------------------------
 
     Private Sub BuildShareTabIfNeeded()
@@ -141,27 +174,35 @@ Partial Public Class Table_Form
         Tab_Control.Controls.Add(Tab_Page_6)
         Tab_Page_6.SuspendLayout()
 
-        lblShareIntro = New Label With {.Left = 12, .Top = 6, .Width = 650, .Height = 30, .AutoSize = False}
+        ' Fixed-size Settings window (Table_Form = FormBorderStyle.FixedDialog): the
+        ' Share tab uses plain absolute placement. Every literal is a logical (96-dpi)
+        ' pixel scaled through LU() for high DPI, and NO Anchor is set (controls keep
+        ' the default Top+Left). Anchors here previously pushed the bottom-anchored
+        ' left column to a negative Y (off the top of the page) when the tab was laid
+        ' out at the DPI-scaled size, so every element vanished; absolute coordinates
+        ' keep each control exactly where it is placed.
+
+        lblShareIntro = New Label With {.Left = LU(12), .Top = LU(6), .Width = LU(650), .Height = LU(30), .AutoSize = False}
         Tab_Page_6.Controls.Add(lblShareIntro)
 
         ' ---- left column: folders + server control (x=12, w=336) ----
-        lblShareFolders = New Label With {.Left = 12, .Top = 40, .Width = 336, .Height = 16, .AutoSize = False, .TextAlign = ContentAlignment.MiddleLeft}
+        lblShareFolders = New Label With {.Left = LU(12), .Top = LU(40), .Width = LU(336), .Height = LU(16), .AutoSize = False, .TextAlign = ContentAlignment.MiddleLeft}
         Tab_Page_6.Controls.Add(lblShareFolders)
 
-        lvShareFolders = New ListView With {.Left = 12, .Top = 58, .Width = 336, .Height = 150,
+        lvShareFolders = New ListView With {.Left = LU(12), .Top = LU(58), .Width = LU(336), .Height = LU(150),
             .View = View.Details, .FullRowSelect = True, .HideSelection = False, .MultiSelect = False, .CheckBoxes = True}
-        lvShareFolders.Columns.Add("", 150)
-        lvShareFolders.Columns.Add("", 178)
+        lvShareFolders.Columns.Add("", LU(150))
+        lvShareFolders.Columns.Add("", LU(178))
         AddHandler lvShareFolders.MouseDown, AddressOf OnShareListMouseDown
         AddHandler lvShareFolders.ItemCheck, AddressOf OnShareItemCheck
         AddHandler lvShareFolders.ItemChecked, AddressOf OnShareItemChecked
         AddHandler lvShareFolders.DoubleClick, AddressOf OnShareConfigureFolder
         Tab_Page_6.Controls.Add(lvShareFolders)
 
-        btnShareAddCurrent = New Button With {.Left = 12, .Top = 212, .Width = 104, .Height = 27}
-        btnShareAdd = New Button With {.Left = 120, .Top = 212, .Width = 64, .Height = 27}
-        btnShareRemove = New Button With {.Left = 188, .Top = 212, .Width = 68, .Height = 27}
-        btnShareParams = New Button With {.Left = 260, .Top = 212, .Width = 88, .Height = 27}
+        btnShareAddCurrent = New Button With {.Left = LU(12), .Top = LU(212), .Width = LU(104), .Height = LU(27)}
+        btnShareAdd = New Button With {.Left = LU(120), .Top = LU(212), .Width = LU(64), .Height = LU(27)}
+        btnShareRemove = New Button With {.Left = LU(188), .Top = LU(212), .Width = LU(68), .Height = LU(27)}
+        btnShareParams = New Button With {.Left = LU(260), .Top = LU(212), .Width = LU(88), .Height = LU(27)}
         AddHandler btnShareAddCurrent.Click, AddressOf OnShareAddCurrentFolder
         AddHandler btnShareAdd.Click, AddressOf OnShareAddFolder
         AddHandler btnShareRemove.Click, AddressOf OnShareRemoveFolder
@@ -171,27 +212,27 @@ Partial Public Class Table_Form
         Tab_Page_6.Controls.Add(btnShareRemove)
         Tab_Page_6.Controls.Add(btnShareParams)
 
-        btnShareToggle = New Button With {.Left = 12, .Top = 246, .Width = 336, .Height = 34, .Font = New Font(Me.Font, FontStyle.Bold)}
+        btnShareToggle = New Button With {.Left = LU(12), .Top = LU(246), .Width = LU(336), .Height = LU(34), .Font = New Font(Me.Font, FontStyle.Bold)}
         AddHandler btnShareToggle.Click, AddressOf OnShareToggle
         Tab_Page_6.Controls.Add(btnShareToggle)
 
-        lblShareState = New Label With {.Left = 12, .Top = 284, .Width = 336, .Height = 34, .AutoSize = False}
+        lblShareState = New Label With {.Left = LU(12), .Top = LU(284), .Width = LU(336), .Height = LU(34), .AutoSize = False}
         Tab_Page_6.Controls.Add(lblShareState)
 
-        chkShareAutostart = New CheckBox With {.Left = 12, .Top = 322, .Width = 336, .Height = 20, .AutoSize = False}
+        chkShareAutostart = New CheckBox With {.Left = LU(12), .Top = LU(322), .Width = LU(336), .Height = LU(20), .AutoSize = False}
         AddHandler chkShareAutostart.CheckedChanged, AddressOf OnShareAutostartChanged
         Tab_Page_6.Controls.Add(chkShareAutostart)
 
-        chkShareNoPassword = New CheckBox With {.Left = 12, .Top = 344, .Width = 336, .Height = 20, .AutoSize = False}
+        chkShareNoPassword = New CheckBox With {.Left = LU(12), .Top = LU(344), .Width = LU(336), .Height = LU(20), .AutoSize = False}
         AddHandler chkShareNoPassword.CheckedChanged, AddressOf OnShareNoPasswordChanged
         Tab_Page_6.Controls.Add(chkShareNoPassword)
 
-        lnkShareAndroid = New LinkLabel With {.Left = 12, .Top = 368, .Width = 336, .Height = 18}
+        lnkShareAndroid = New LinkLabel With {.Left = LU(12), .Top = LU(368), .Width = LU(336), .Height = LU(18)}
         AddHandler lnkShareAndroid.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareGuide.AndroidSite(Is_Russian_Language))
         Tab_Page_6.Controls.Add(lnkShareAndroid)
 
         ' ---- right column: inner TabControl (x=356, w=312) ----
-        shareInnerTabs = New TabControl With {.Left = 356, .Top = 34, .Width = 312, .Height = 356}
+        shareInnerTabs = New TabControl With {.Left = LU(356), .Top = LU(34), .Width = LU(312), .Height = LU(356)}
         Tab_Page_6.Controls.Add(shareInnerTabs)
 
         tpShareLan = New TabPage With {.UseVisualStyleBackColor = True, .Padding = New Padding(6)}
@@ -199,47 +240,47 @@ Partial Public Class Table_Form
         shareInnerTabs.TabPages.Add(tpShareLan)
         shareInnerTabs.TabPages.Add(tpShareNet)
 
-        ' LAN inner tab
-        picShareQrLan = New PictureBox With {.Left = 66, .Top = 8, .Width = 164, .Height = 164,
+        ' Primary QR tab: the ONE combined config (LAN + internet) by default.
+        ' Positions are packed to fit the ~332px inner-tab client height (the QR
+        ' is a touch smaller than before to make room for the "LAN only" toggle;
+        ' click-to-zoom covers the denser combined-config code).
+        picShareQrLan = New PictureBox With {.Left = LU(74), .Top = LU(8), .Width = LU(148), .Height = LU(148),
             .BorderStyle = BorderStyle.FixedSingle, .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Color.White}
-        lblShareLanAddr = New Label With {.Left = 8, .Top = 178, .Width = 216, .Height = 18, .AutoEllipsis = True, .Font = New Font(Me.Font, FontStyle.Bold)}
-        btnShareTestLan = New Button With {.Left = 228, .Top = 176, .Width = 64, .Height = 22, .Enabled = False}
-        btnShareCopyLan = New Button With {.Left = 8, .Top = 200, .Width = 150, .Height = 26, .Enabled = False}
-        lblShareFinger = New Label With {.Left = 8, .Top = 230, .Width = 284, .Height = 30, .ForeColor = Color.DimGray, .AutoEllipsis = True}
-        btnShareSaveLan = New Button With {.Left = 8, .Top = 264, .Width = 140, .Height = 28, .Enabled = False}
-        btnShareEmailLan = New Button With {.Left = 152, .Top = 264, .Width = 140, .Height = 28, .Enabled = False}
-        lblShareLanHint = New Label With {.Left = 8, .Top = 296, .Width = 284, .Height = 30, .ForeColor = Color.DimGray, .AutoEllipsis = True}
+        lblShareLanAddr = New Label With {.Left = LU(8), .Top = LU(160), .Width = LU(216), .Height = LU(18), .AutoEllipsis = True, .Font = New Font(Me.Font, FontStyle.Bold)}
+        btnShareTestLan = New Button With {.Left = LU(228), .Top = LU(158), .Width = LU(64), .Height = LU(22), .Enabled = False}
+        btnShareCopyLan = New Button With {.Left = LU(8), .Top = LU(182), .Width = LU(150), .Height = LU(24), .Enabled = False}
+        lblShareFinger = New Label With {.Left = LU(8), .Top = LU(210), .Width = LU(284), .Height = LU(28), .ForeColor = Color.DimGray, .AutoEllipsis = True}
+        chkShareLanOnly = New CheckBox With {.Left = LU(8), .Top = LU(240), .Width = LU(284), .Height = LU(20), .AutoSize = False}
+        btnShareSaveLan = New Button With {.Left = LU(8), .Top = LU(264), .Width = LU(140), .Height = LU(26), .Enabled = False}
+        btnShareEmailLan = New Button With {.Left = LU(152), .Top = LU(264), .Width = LU(140), .Height = LU(26), .Enabled = False}
+        lblShareLanHint = New Label With {.Left = LU(8), .Top = LU(294), .Width = LU(284), .Height = LU(32), .ForeColor = Color.DimGray, .AutoEllipsis = True}
         AddHandler picShareQrLan.Click, Sub() Qr_Zoom_Form.ShowZoomed(Me, picShareQrLan)
         AddHandler btnShareTestLan.Click, AddressOf OnShareTestLan
         AddHandler btnShareCopyLan.Click, AddressOf OnShareCopyLan
-        AddHandler btnShareSaveLan.Click, Sub() SaveShareConfig(If(_cfgLan, Nothing))
-        AddHandler btnShareEmailLan.Click, Sub() EmailShareConfig(If(_cfgLan, Nothing))
-        tpShareLan.Controls.AddRange(New Control() {picShareQrLan, lblShareLanAddr, btnShareTestLan, btnShareCopyLan, lblShareFinger, btnShareSaveLan, btnShareEmailLan, lblShareLanHint})
+        AddHandler chkShareLanOnly.CheckedChanged, AddressOf OnShareLanOnlyChanged
+        AddHandler btnShareSaveLan.Click, Sub() SaveShareConfig(If(_cfgPrimary, Nothing))
+        AddHandler btnShareEmailLan.Click, Sub() EmailShareConfig(If(_cfgPrimary, Nothing))
+        tpShareLan.Controls.AddRange(New Control() {picShareQrLan, lblShareLanAddr, btnShareTestLan, btnShareCopyLan, lblShareFinger, chkShareLanOnly, btnShareSaveLan, btnShareEmailLan, lblShareLanHint})
 
-        ' Internet inner tab
-        lblShareNet = New Label With {.Left = 8, .Top = 6, .Width = 220, .Height = 32, .AutoSize = False, .AutoEllipsis = True}
-        btnShareTestNet = New Button With {.Left = 230, .Top = 6, .Width = 64, .Height = 22, .Enabled = False}
-        picShareQrNet = New PictureBox With {.Left = 8, .Top = 42, .Width = 120, .Height = 120,
-            .BorderStyle = BorderStyle.FixedSingle, .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Color.White}
-        btnShareSaveNet = New Button With {.Left = 136, .Top = 42, .Width = 158, .Height = 26, .Enabled = False}
-        btnShareEmailNet = New Button With {.Left = 136, .Top = 72, .Width = 158, .Height = 26, .Enabled = False}
-        btnShareOpenRouter = New Button With {.Left = 136, .Top = 102, .Width = 158, .Height = 26, .Enabled = False}
-        lblShareRouterUrl = New Label With {.Left = 136, .Top = 132, .Width = 158, .Height = 16, .ForeColor = Color.DimGray, .AutoEllipsis = True}
-        lnkShareGuide = New LinkLabel With {.Left = 8, .Top = 168, .Width = 96, .Height = 16, .Enabled = False}
-        lnkShareRouterSearch = New LinkLabel With {.Left = 108, .Top = 168, .Width = 108, .Height = 16, .Enabled = False}
-        lnkShareWebGuide = New LinkLabel With {.Left = 220, .Top = 168, .Width = 74, .Height = 16}
-        txtShareForward = New TextBox With {.Left = 8, .Top = 188, .Width = 286, .Height = 118,
+        ' Internet-setup guidance tab: no QR / Save / Email (the primary tab owns
+        ' the export). Just the reachability status, router links and the
+        ' step-by-step port-forward instructions.
+        lblShareNet = New Label With {.Left = LU(8), .Top = LU(6), .Width = LU(220), .Height = LU(32), .AutoSize = False, .AutoEllipsis = True}
+        btnShareTestNet = New Button With {.Left = LU(230), .Top = LU(6), .Width = LU(64), .Height = LU(22), .Enabled = False}
+        btnShareOpenRouter = New Button With {.Left = LU(8), .Top = LU(44), .Width = LU(158), .Height = LU(26), .Enabled = False}
+        lblShareRouterUrl = New Label With {.Left = LU(172), .Top = LU(48), .Width = LU(122), .Height = LU(16), .ForeColor = Color.DimGray, .AutoEllipsis = True}
+        lnkShareGuide = New LinkLabel With {.Left = LU(8), .Top = LU(76), .Width = LU(96), .Height = LU(16), .Enabled = False}
+        lnkShareRouterSearch = New LinkLabel With {.Left = LU(108), .Top = LU(76), .Width = LU(108), .Height = LU(16), .Enabled = False}
+        lnkShareWebGuide = New LinkLabel With {.Left = LU(220), .Top = LU(76), .Width = LU(74), .Height = LU(16)}
+        txtShareForward = New TextBox With {.Left = LU(8), .Top = LU(100), .Width = LU(286), .Height = LU(206),
             .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical, .BorderStyle = BorderStyle.None,
             .BackColor = tpShareNet.BackColor, .TabStop = False}
-        AddHandler picShareQrNet.Click, Sub() Qr_Zoom_Form.ShowZoomed(Me, picShareQrNet)
         AddHandler btnShareTestNet.Click, AddressOf OnShareTestNet
-        AddHandler btnShareSaveNet.Click, Sub() SaveShareConfig(If(_cfgNet, Nothing))
-        AddHandler btnShareEmailNet.Click, Sub() EmailShareConfig(If(_cfgNet, Nothing))
         AddHandler btnShareOpenRouter.Click, AddressOf OnShareOpenRouter
         AddHandler lnkShareGuide.LinkClicked, AddressOf OnShareOpenGuide
         AddHandler lnkShareRouterSearch.LinkClicked, AddressOf OnShareOpenRouterSearch
         AddHandler lnkShareWebGuide.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl)
-        tpShareNet.Controls.AddRange(New Control() {lblShareNet, btnShareTestNet, picShareQrNet, btnShareSaveNet, btnShareEmailNet,
+        tpShareNet.Controls.AddRange(New Control() {lblShareNet, btnShareTestNet,
             btnShareOpenRouter, lblShareRouterUrl, lnkShareGuide, lnkShareRouterSearch, lnkShareWebGuide, txtShareForward})
 
         Tab_Page_6.ResumeLayout(False)
@@ -255,8 +296,8 @@ Partial Public Class Table_Form
 
         Tab_Page_6.Text = If(rus, "Поделиться", "Share")
         lblShareIntro.Text = If(rus,
-            "Делитесь папками этого ПК с телефоном Android. Отметьте папки - общий доступ включится сразу, затем на вкладке справа отсканируйте QR-код или сохраните файл .fmscfg.",
-            "Share this PC's folders with your Android phone. Tick the folders and sharing starts automatically, then on the right tab scan the QR code or save the .fmscfg file.")
+            "Делитесь папками этого ПК с телефоном Android. Отметьте папки - общий доступ включится сразу, затем справа отсканируйте один QR-код: он работает и дома, и из интернета.",
+            "Share this PC's folders with your Android phone. Tick the folders and sharing starts automatically, then on the right scan the single QR code - it works both at home and from the internet.")
         lblShareFolders.Text = If(rus, "Папки (галочка = видна в сети):", "Folders (checked = visible on the network):")
         lvShareFolders.Columns(0).Text = If(rus, "Папка", "Folder")
         lvShareFolders.Columns(1).Text = If(rus, "Путь", "Path")
@@ -268,16 +309,14 @@ Partial Public Class Table_Form
         chkShareNoPassword.Text = ShareText.NoPasswordText(rus)
         lnkShareAndroid.Text = If(rus, "Приложение FastMediaSorter для Android ->", "FastMediaSorter app for Android ->")
 
-        tpShareLan.Text = If(rus, "Локальная сеть", "Local network")
-        tpShareNet.Text = If(rus, "Из интернета", "Internet")
+        tpShareLan.Text = If(rus, "Код для телефона", "QR for phone")
+        tpShareNet.Text = If(rus, "Доступ из интернета", "Internet access")
         btnShareTestLan.Text = If(rus, "Тест", "Test")
         btnShareTestNet.Text = If(rus, "Тест", "Test")
         btnShareCopyLan.Text = If(rus, "Скопировать адрес", "Copy address")
+        chkShareLanOnly.Text = If(rus, "Только локальная сеть (без интернет-адреса)", "LAN only (no internet address)")
         btnShareSaveLan.Text = If(rus, "Сохранить .fmscfg..", "Save .fmscfg..")
         btnShareEmailLan.Text = If(rus, "По почте..", "Email..")
-        lblShareLanHint.Text = ShareText.LanHintText(rus)
-        btnShareSaveNet.Text = If(rus, "Сохранить .fmscfg..", "Save .fmscfg..")
-        btnShareEmailNet.Text = If(rus, "По почте..", "Email..")
         btnShareOpenRouter.Text = If(rus, "Открыть роутер", "Open router")
         lnkShareGuide.Text = If(rus, "Инструкция..", "Guide..")
         lnkShareRouterSearch.Text = If(rus, "Для роутера..", "My router..")
@@ -303,12 +342,11 @@ Partial Public Class Table_Form
         End If
         toolTip.SetToolTip(chkShareAutostart, autostartTip)
         toolTip.SetToolTip(btnShareToggle, If(rus, "Запустить или остановить SFTP-сервер для отмеченных папок.", "Start or stop the SFTP server for the ticked folders."))
-        toolTip.SetToolTip(picShareQrLan, If(rus, "Отсканируйте в приложении на телефоне (доступ по локальной сети). Клик - открыть крупно.", "Scan in the phone app (local-network access). Click to enlarge."))
-        toolTip.SetToolTip(picShareQrNet, If(rus, "Отсканируйте в приложении на телефоне (локальный + внешний адрес). Клик - открыть крупно.", "Scan in the phone app (local + internet address). Click to enlarge."))
+        toolTip.SetToolTip(picShareQrLan, If(rus, "Один код для дома и интернета - телефон сам выберет доступный адрес. Клик - открыть крупно.", "One code for home and internet - the phone picks whichever address is reachable. Click to enlarge."))
+        toolTip.SetToolTip(chkShareLanOnly, If(rus, "Не включать внешний (интернет) адрес в код и файл - только локальная сеть. Для тех, кто не открывает доступ из интернета.", "Keep the external (internet) address out of the code and file - LAN only. For users who never open internet access."))
         toolTip.SetToolTip(btnShareTestLan, If(rus, "Проверить, что SFTP-сервер отвечает по локальному адресу.", "Check that the SFTP server answers on the local address."))
         toolTip.SetToolTip(btnShareTestNet, If(rus, "Проверить внешний адрес с этого ПК. Точный тест - с телефона по мобильной сети.", "Check the internet address from this PC. The definitive test is from the phone on mobile data."))
         toolTip.SetToolTip(btnShareEmailLan, If(rus, "Прикрепить файл .fmscfg к новому письму (почтовый клиент по умолчанию).", "Attach the .fmscfg file to a new email (default mail client)."))
-        toolTip.SetToolTip(btnShareEmailNet, If(rus, "Прикрепить файл .fmscfg к новому письму (почтовый клиент по умолчанию).", "Attach the .fmscfg file to a new email (default mail client)."))
         toolTip.SetToolTip(btnShareOpenRouter, If(rus, "Открыть страницу настроек роутера в браузере.", "Open the router settings page in the browser."))
         toolTip.SetToolTip(lnkShareGuide, If(rus, "Пошаговая инструкция по пробросу порта (офлайн, в браузере).", "Step-by-step port-forward guide (offline, in the browser)."))
         toolTip.SetToolTip(lnkShareRouterSearch, If(rus, "Определить модель роутера и открыть поиск инструкции для неё.", "Detect the router model and search a how-to for it."))
@@ -327,6 +365,7 @@ Partial Public Class Table_Form
         chkShareAutostart.Checked = AutostartManager.IsEnabled()
         chkShareAutostart.Enabled = Not packaged
         chkShareNoPassword.Checked = _shareSettings.ExcludePasswordFromExport
+        chkShareLanOnly.Checked = _shareSettings.LanOnlyExport
         _shareLoading = prev
     End Sub
 
@@ -490,6 +529,19 @@ Partial Public Class Table_Form
         Else
             SetShareHint("")
         End If
+    End Sub
+
+    ''' <summary>"Только локальная сеть" - the deliberate privacy opt-out (S1006):
+    ''' rebuild the primary QR/.fmscfg from the LAN-only config so the WAN address
+    ''' is never embedded. Off (default) = the combined config that works home and
+    ''' away.</summary>
+    Private Sub OnShareLanOnlyChanged(sender As Object, e As EventArgs)
+        If _shareLoading Then Return
+        If _shareSettings IsNot Nothing Then
+            _shareSettings.LanOnlyExport = chkShareLanOnly.Checked
+            _shareSettings.Save()
+        End If
+        ApplyStatusToUi()
     End Sub
 
     ''' <summary>MouseDown precedes the native NM_DBLCLK, so the second click of a
@@ -808,6 +860,18 @@ Partial Public Class Table_Form
         _shareLoading = prev
     End Sub
 
+    ''' <summary>The hint under the primary QR, in priority: too big for a QR ->
+    ''' file; LAN address genuinely not found -> the honest VPN/retry note; the
+    ''' config carries the WAN address too -> the combined "works home and away"
+    ''' note (+ security nudge); otherwise the plain LAN-only hint.</summary>
+    Private Shared Function PrimaryHintText(cfg As ShareConfigResult, rus As Boolean) As String
+        If cfg Is Nothing Then Return ShareText.LanHintText(rus)
+        If cfg.QrOverflow Then Return ShareText.QrOverflowText(rus)
+        If cfg.LanDisplay.Length = 0 Then Return ShareText.LanUnknownText(rus)
+        If cfg.HasExternal Then Return ShareText.CombinedHintText(rus)
+        Return ShareText.LanHintText(rus)
+    End Function
+
     Private Sub ApplyStatusToUi()
         Dim rus As Boolean = Is_Russian_Language
         Dim st As WorkerStatus = _shareStatus
@@ -819,30 +883,32 @@ Partial Public Class Table_Form
             btnShareToggle.Text = If(rus, "Начать общий доступ", "Start sharing")
         End If
 
-        ' Build both configs (LAN-only + LAN+internet) from the one status.
+        ' Build both configs (LAN-only + combined LAN+internet) from the one
+        ' status. The primary export is the combined build unless the user ticked
+        ' "LAN only" (S1006 - the phone races the paths, so one scan works home
+        ' and away; the WAN entry is only present when a usable path exists).
         Dim incPw As Boolean = _shareSettings Is Nothing OrElse Not _shareSettings.ExcludePasswordFromExport
         _cfgLan = If(running, ShareConfigBuilder.Build(st, False, incPw), Nothing)
         _cfgNet = If(running, ShareConfigBuilder.Build(st, True, incPw), Nothing)
+        Dim lanOnly As Boolean = chkShareLanOnly IsNot Nothing AndAlso chkShareLanOnly.Checked
+        _cfgPrimary = If(lanOnly, _cfgLan, _cfgNet)
 
-        ' LAN tab
+        ' Primary QR tab
         Dim addr As String = CurrentLanAddress()
         lblShareLanAddr.Text = (If(rus, "Адрес: ", "Address: ")) & If(addr.Length > 0, addr, "-")
         btnShareCopyLan.Enabled = addr.Length > 0 AndAlso Not _shareBusy
         Dim fp As String = If(st IsNot Nothing, If(st.Fingerprint, ""), "")
         lblShareFinger.Text = (If(rus, "Ключ узла: ", "Host key: ")) & If(fp.Length > 0, fp, "-")
-        ShowQr(picShareQrLan, _cfgLan)
-        ' §7: a config too big for a QR code falls back to the file - say so
-        ' instead of showing an empty QR box silently.
-        lblShareLanHint.Text = If(_cfgLan IsNot Nothing AndAlso _cfgLan.QrOverflow,
-            ShareText.QrOverflowText(rus), ShareText.LanHintText(rus))
-        btnShareSaveLan.Enabled = _cfgLan IsNot Nothing AndAlso Not _shareBusy
-        btnShareEmailLan.Enabled = _cfgLan IsNot Nothing AndAlso Not _shareBusy
+        ShowQr(picShareQrLan, _cfgPrimary)
+        ' Stopped = no config/QR yet. Say "press Start" plainly instead of the
+        ' "works on Wi-Fi, nothing to configure" hint, which reads as "ready"
+        ' next to an empty QR box (the exact confusion a user reported).
+        lblShareLanHint.Text = If(running, PrimaryHintText(_cfgPrimary, rus),
+            If(rus, "Нажмите «Начать общий доступ», чтобы получить QR-код.", "Press 'Start sharing' to get the QR code."))
+        btnShareSaveLan.Enabled = _cfgPrimary IsNot Nothing AndAlso Not _shareBusy
+        btnShareEmailLan.Enabled = _cfgPrimary IsNot Nothing AndAlso Not _shareBusy
 
-        ' Internet tab
-        ShowQr(picShareQrNet, _cfgNet)
-        Dim hasNet As Boolean = _cfgNet IsNot Nothing AndAlso _cfgNet.HasExternal
-        btnShareSaveNet.Enabled = hasNet AndAlso Not _shareBusy
-        btnShareEmailNet.Enabled = hasNet AndAlso Not _shareBusy
+        ' Internet-setup guidance tab (owns no QR/Save/Email now)
         UpdateInternetUi()
         RefreshTestButtons()
 
@@ -886,19 +952,22 @@ Partial Public Class Table_Form
         Dim routerText As String = If(router.Length > 0, "http://" & router, If(rus, "адрес роутера", "the router address"))
         Dim lanText As String = If(lanIp.Length > 0, lanIp, If(rus, "IP этого ПК", "this PC's IP"))
 
+        ' The QR-overflow / LAN-missing notes belong to the primary QR tab's hint
+        ' (PrimaryHintText) now; this guidance tab leads with the security warning.
         Dim sb As New StringBuilder()
-        If _cfgNet IsNot Nothing AndAlso _cfgNet.QrOverflow Then
-            sb.AppendLine(ShareText.QrOverflowText(rus)).AppendLine()
-        End If
         sb.AppendLine(ShareText.SecurityText(rus)).AppendLine()
         If isCgnat Then
             lblShareNet.Text = If(rus, "За CGNAT - извне недоступно.", "Behind CGNAT - not reachable from outside.")
             sb.Append(ShareText.CgnatText(rus))
         ElseIf mapped Then
             lblShareNet.Text = (If(rus, "Доступно из интернета: ", "Reachable from internet: ")) & extHost & ":" & (If(extPort > 0, extPort, port)).ToString()
-            sb.Append(If(rus,
-                "Порт открыт автоматически (UPnP) - настраивать роутер не нужно. Адрес уже в QR-коде и файле .fmscfg.",
-                "The port was opened automatically (UPnP) - no router setup needed. The address is already in the QR code and .fmscfg file."))
+            If reach.ExternalVerified Then
+                sb.Append(If(rus,
+                    "Порт открыт автоматически (UPnP) - настраивать роутер не нужно. Адрес уже в QR-коде и файле .fmscfg. Учтите: это не подтверждает работу извне - точный тест только с телефона по мобильной сети. При долгой работе общего доступа проверка может устареть; если телефон не подключается, отключите и снова включите общий доступ.",
+                    "The port was opened automatically (UPnP) - no router setup needed. The address is already in the QR code and .fmscfg file. Note: this does not confirm it actually works from outside - the definitive test is from the phone on mobile data. Long-running sessions can go stale; if the phone can't connect, turn sharing off and back on."))
+            Else
+                sb.Append(ShareText.ExternalUnverifiedText(rus))
+            End If
         ElseIf extHost.Length > 0 Then
             lblShareNet.Text = (If(rus, "Внешний адрес: ", "External address: ")) & extHost & ":" & port.ToString() & If(rus, " (нужен проброс порта)", " (needs port forwarding)")
             sb.Append(ShareText.PortForwardText(rus, routerText, port, lanText, port))
@@ -950,10 +1019,8 @@ Partial Public Class Table_Form
         btnShareParams.Enabled = Not value AndAlso avail
         lvShareFolders.Enabled = Not value AndAlso avail
         btnShareCopyLan.Enabled = Not value AndAlso CurrentLanAddress().Length > 0
-        btnShareSaveLan.Enabled = Not value AndAlso _cfgLan IsNot Nothing
-        btnShareEmailLan.Enabled = Not value AndAlso _cfgLan IsNot Nothing
-        btnShareSaveNet.Enabled = Not value AndAlso _cfgNet IsNot Nothing AndAlso _cfgNet.HasExternal
-        btnShareEmailNet.Enabled = Not value AndAlso _cfgNet IsNot Nothing AndAlso _cfgNet.HasExternal
+        btnShareSaveLan.Enabled = Not value AndAlso _cfgPrimary IsNot Nothing
+        btnShareEmailLan.Enabled = Not value AndAlso _cfgPrimary IsNot Nothing
         RefreshTestButtons()
         Me.UseWaitCursor = value
     End Sub

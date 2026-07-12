@@ -1,5 +1,6 @@
 param(
-    [string]$Version = (Get-Date -Format "yy.M.d.HHmm")
+    [string]$Version = (Get-Date -Format "yy.M.d.HHmm"),
+    [switch]$NoClean
 )
 
 $ErrorActionPreference = "Stop"
@@ -85,6 +86,12 @@ $iscc = Resolve-Iscc
 Write-Host "Using MSBuild: $msbuild"
 Write-Host "Using NuGet:   $nuget"
 Write-Host "Version:       $Version"
+
+# Housekeeping: prune superseded stage\ trees, old dist\ artifacts and temp
+# files before packaging (keeps this run's version). Leaves bin\Release / obj.
+if (-not $NoClean) {
+    & (Join-Path $PSScriptRoot "Clean-Build.ps1") -Stage -Dist -Temp -KeepVersion $Version
+}
 
 & $nuget restore $solutionFile -NonInteractive
 if ($LASTEXITCODE -ne 0) {

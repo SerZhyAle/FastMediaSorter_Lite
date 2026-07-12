@@ -1,6 +1,7 @@
 Option Strict On
 
 Imports System.Drawing.Drawing2D
+Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
@@ -32,6 +33,7 @@ Partial Public Class Main_Form
     Private _shareTrayHIcon As IntPtr = IntPtr.Zero
     Private _trayMenu As ContextMenuStrip
     Private _trayMiOpen As ToolStripMenuItem
+    Private _trayMiQr As ToolStripMenuItem
     Private _trayMiDesc As ToolStripMenuItem
     Private _trayMiConfig As ToolStripMenuItem
     Private _trayMiStop As ToolStripMenuItem
@@ -164,16 +166,19 @@ Partial Public Class Main_Form
 
         _trayMenu = New ContextMenuStrip()
         _trayMiOpen = New ToolStripMenuItem()
+        _trayMiQr = New ToolStripMenuItem()
         _trayMiDesc = New ToolStripMenuItem()
         _trayMiConfig = New ToolStripMenuItem()
         _trayMiStop = New ToolStripMenuItem()
         _trayMiExit = New ToolStripMenuItem()
         AddHandler _trayMiOpen.Click, Sub() TrayOpen()
+        AddHandler _trayMiQr.Click, Sub() TrayShowQr()
         AddHandler _trayMiDesc.Click, Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl)
         AddHandler _trayMiConfig.Click, Sub() TrayConfigure()
         AddHandler _trayMiStop.Click, Sub() TrayStop()
         AddHandler _trayMiExit.Click, Sub() TrayExit()
         _trayMenu.Items.Add(_trayMiOpen)
+        _trayMenu.Items.Add(_trayMiQr)
         _trayMenu.Items.Add(_trayMiDesc)
         _trayMenu.Items.Add(_trayMiConfig)
         _trayMenu.Items.Add(_trayMiStop)
@@ -202,6 +207,7 @@ Partial Public Class Main_Form
         If _trayMenu Is Nothing Then Return
         Dim rus As Boolean = Is_Russian_Language
         _trayMiOpen.Text = If(rus, "Открыть Fast Media Sorter", "Open Fast Media Sorter")
+        _trayMiQr.Text = If(rus, "Показать штрихкод..", "Show QR code..")
         _trayMiDesc.Text = If(rus, "Описание..", "Description..")
         _trayMiConfig.Text = If(rus, "Настроить..", "Configure..")
         _trayMiStop.Text = If(rus, "Выключить общий доступ", "Turn off sharing")
@@ -236,6 +242,38 @@ Partial Public Class Main_Form
         RestoreMainWindow()
         Try
             ShowShareSettings()
+        Catch
+        End Try
+    End Sub
+
+    ''' <summary>Menu "Показать штрихкод": build the current share QR (the combined
+    ''' [lan, portforward] config, S1006) from the live worker status and show it big
+    ''' via <see cref="Qr_Zoom_Form"/> so a phone can scan it straight from the tray -
+    ''' no need to open the full window. Falls back to the LAN-only config if the
+    ''' combined one is too dense for a QR.</summary>
+    Private Async Sub TrayShowQr()
+        Dim rus As Boolean = Is_Russian_Language
+        Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+        If st Is Nothing OrElse Not st.Running Then
+            Try : _shareTrayIcon?.ShowBalloonTip(2500, "Fast Media Sorter", If(rus, "Общий доступ не запущен.", "Sharing is not running."), ToolTipIcon.Info) : Catch : End Try
+            Return
+        End If
+
+        Dim cfg As ShareConfigResult = ShareConfigBuilder.Build(st, True)
+        If cfg Is Nothing OrElse cfg.QrPng Is Nothing OrElse cfg.QrPng.Length = 0 OrElse cfg.QrOverflow Then
+            cfg = ShareConfigBuilder.Build(st, False)   ' LAN-only fallback (smaller QR)
+        End If
+        If cfg Is Nothing OrElse cfg.QrPng Is Nothing OrElse cfg.QrPng.Length = 0 Then
+            Try : _shareTrayIcon?.ShowBalloonTip(3000, "Fast Media Sorter", If(rus, "Код слишком большой - сохраните файл .fmscfg в настройках.", "Code too large - save the .fmscfg file in settings."), ToolTipIcon.Warning) : Catch : End Try
+            Return
+        End If
+
+        Try
+            Using ms As New MemoryStream(cfg.QrPng)
+                Using img As Image = Image.FromStream(ms)
+                    Qr_Zoom_Form.ShowImage(Me, img)
+                End Using
+            End Using
         Catch
         End Try
     End Sub

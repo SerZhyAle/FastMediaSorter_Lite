@@ -113,6 +113,11 @@ Public Class WorkerReachability
     Public Property ExternalHost As String
     Public Property ExternalPort As Integer
     Public Property IsCgnat As Boolean
+    ''' <summary>False when IsCgnat=False could not be independently cross-checked
+    ''' against the worker's IP-echo view (the echo query itself failed) - only
+    ''' means "the router's request was accepted", not a confirmed guarantee that
+    ''' the port is reachable from outside. See the worker's ExternalAddress.</summary>
+    Public Property ExternalVerified As Boolean
     Public Property ManualForwardHint As String
 End Class
 
