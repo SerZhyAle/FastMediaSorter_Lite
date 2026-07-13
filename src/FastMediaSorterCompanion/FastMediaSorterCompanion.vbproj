@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Fast Media Sorter: Share Manager - the Android Folder Share controller,
+    split out of the LITE viewer (SPECIFICATION_SHARE_COMPANION_APP.md).
+    Public name "Share Manager" rides on the frozen technical anchor
+    FastMediaSorterCompanion.exe (CLAUDE.md light-rebrand rule). Written on
+    .NET 10 from the start - no intermediate net48 variant.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>FastMediaSorterCompanion</RootNamespace>
+    <AssemblyName>FastMediaSorterCompanion</AssemblyName>
+    <StartupObject>FastMediaSorterCompanion.Program</StartupObject>
+
+    <!-- Custom Sub Main (mutex + WM_COPYDATA handshake), not the VB Application
+         Framework - so MyType is disabled. -->
+    <MyType>Empty</MyType>
+
+    <!-- Repo-wide VB strictness (CLAUDE.md "Code Style & Constraints"). -->
+    <OptionExplicit>On</OptionExplicit>
+    <OptionStrict>On</OptionStrict>
+    <OptionInfer>On</OptionInfer>
+    <OptionCompare>Binary</OptionCompare>
+
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Product>Fast Media Sorter: Share Manager</Product>
+    <AssemblyTitle>Fast Media Sorter: Share Manager</AssemblyTitle>
+    <Company>SerZhyAle</Company>
+    <NeutralLanguage>en</NeutralLanguage>
+  </PropertyGroup>
+
+  <!-- Publish model: self-contained single file (SPECIFICATION_SHARE_COMPANION_APP.md
+       §7.2). Only applied when publishing with -r win-x64; a plain build ignores it. -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+
+</Project>
