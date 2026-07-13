@@ -40,11 +40,16 @@ Public NotInheritable Class MainWindow
     Private lblState As Label
     Private lblAddr As Label
     Private lblFinger As Label
+    Private lblExternal As Label
+    Private lblIpv6 As Label
+    Private btnInternet As Button
     Private chkAutostart As CheckBox
     Private btnShare As Button
     Private btnOpenViewer As Button
+    Private lnkAndroid As LinkLabel
     Private lblHint As Label
     Private toolTip As ToolTip
+    Private _iconHandle As IntPtr
 
     ' All real content lives under this panel so the enable-gate overlay can hide
     ' the WHOLE UI at once (a Dock.Fill overlay alone would not cover edge-docked
@@ -87,6 +92,7 @@ Public NotInheritable Class MainWindow
         Me.ClientSize = New Size(760, 560)
         Me.Font = New Font("Segoe UI", 9.0F)
         Me.AutoScaleMode = AutoScaleMode.Font
+        Me.Icon = ShareIcons.CreateIcon(_iconHandle)   ' recognizable blue four-way-arrow glyph
         toolTip = New ToolTip()
 
         lblIntro = New Label With {
@@ -100,9 +106,12 @@ Public NotInheritable Class MainWindow
         lblHint = New Label With {.Dock = DockStyle.Top, .Height = 34, .ForeColor = Color.DimGray, .AutoEllipsis = True}
         Dim pnlButtons As New Panel With {.Dock = DockStyle.Fill}
         chkAutostart = New CheckBox With {
-            .AutoSize = True, .Left = 0, .Top = 8,
+            .AutoSize = True, .Left = 0, .Top = 6,
             .Text = If(Rus, "Запускать при входе в Windows", "Start at Windows logon")}
         AddHandler chkAutostart.CheckedChanged, AddressOf OnAutostartChanged
+        lnkAndroid = New LinkLabel With {.AutoSize = True, .Left = 0, .Top = 30,
+            .Text = If(Rus, "FastMediaSorter для Android ->", "FastMediaSorter for Android ->")}
+        AddHandler lnkAndroid.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareGuide.AndroidSite(Rus))
         btnShare = New Button With {
             .Width = 190, .Height = 32, .Anchor = AnchorStyles.Top Or AnchorStyles.Right,
             .Font = New Font(Me.Font, FontStyle.Bold),
@@ -112,7 +121,7 @@ Public NotInheritable Class MainWindow
             .Text = If(Rus, "Открыть Fast Media Sorter", "Open Fast Media Sorter")}
         AddHandler btnShare.Click, AddressOf OnShareClicked
         AddHandler btnOpenViewer.Click, AddressOf OnOpenViewerClicked
-        pnlButtons.Controls.AddRange(New Control() {chkAutostart, btnShare, btnOpenViewer})
+        pnlButtons.Controls.AddRange(New Control() {chkAutostart, lnkAndroid, btnShare, btnOpenViewer})
         AddHandler pnlButtons.Resize, Sub()
                                           btnShare.Left = pnlButtons.ClientSize.Width - btnShare.Width
                                           btnShare.Top = 8
@@ -131,7 +140,11 @@ Public NotInheritable Class MainWindow
         lblFinger = New Label With {.Left = 14, .Top = 78, .Width = 250, .Height = 34, .AutoEllipsis = True, .ForeColor = Color.DimGray, .Font = New Font(Me.Font.FontFamily, Me.Font.Size - 0.5F)}
         btnToggle = New Button With {.Left = 14, .Top = 120, .Width = 250, .Height = 34, .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(Rus, "Запустить", "Start")}
         AddHandler btnToggle.Click, AddressOf OnToggle
-        grpServer.Controls.AddRange(New Control() {lblState, lblAddr, lblFinger, btnToggle})
+        lblExternal = New Label With {.Left = 14, .Top = 166, .Width = 250, .Height = 34, .AutoEllipsis = True, .ForeColor = Color.DimGray}
+        lblIpv6 = New Label With {.Left = 14, .Top = 200, .Width = 250, .Height = 20, .AutoEllipsis = True, .ForeColor = Color.DimGray, .Font = New Font(Me.Font.FontFamily, Me.Font.Size - 0.5F)}
+        btnInternet = New Button With {.Left = 14, .Top = 226, .Width = 250, .Height = 30, .Text = If(Rus, "Доступ из интернета..", "Internet access..")}
+        AddHandler btnInternet.Click, AddressOf OnInternetAccess
+        grpServer.Controls.AddRange(New Control() {lblState, lblAddr, lblFinger, btnToggle, lblExternal, lblIpv6, btnInternet})
 
         ' --- center: shared-folder list ----------------------------------------
         Dim grpShares As New GroupBox With {
@@ -141,8 +154,10 @@ Public NotInheritable Class MainWindow
             .Dock = DockStyle.Fill, .View = View.Details, .CheckBoxes = True,
             .FullRowSelect = True, .HideSelection = False, .MultiSelect = False}
         lvFolders.Columns.Add(If(Rus, "Название", "Name"), 150)
-        lvFolders.Columns.Add(If(Rus, "Папка", "Folder"), 300)
-        lvFolders.Columns.Add(If(Rus, "Доступ", "Access"), 90)
+        lvFolders.Columns.Add(If(Rus, "Папка", "Folder"), 290)
+        ' RO = "✓" when the share is read-only (the phone cannot change files);
+        ' blank for writable / destination folders. Set "Настроить.." for the rest.
+        lvFolders.Columns.Add("RO", 44, HorizontalAlignment.Center)
         AddHandler lvFolders.MouseDown, AddressOf OnListMouseDown
         AddHandler lvFolders.ItemCheck, AddressOf OnItemCheck
         AddHandler lvFolders.ItemChecked, AddressOf OnItemChecked
@@ -214,6 +229,7 @@ Public NotInheritable Class MainWindow
             _settings.Save()
         Catch
         End Try
+        ShareIcons.FreeIcon(Me.Icon, _iconHandle)
     End Sub
 
     Private Sub ApplyGate()
@@ -337,7 +353,7 @@ Public NotInheritable Class MainWindow
             If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
             Dim after As ShareRootParams = dlg.Result
             ShareRootParamsStore.SetFor(host, after)
-            it.SubItems(2).Text = AccessLabel(after)
+            it.SubItems(2).Text = RoLabel(after)
             ' Re-share only when effective writability flipped on a live, checked row.
             If before.IsWritable() <> after.IsWritable() AndAlso it.Checked AndAlso _status IsNot Nothing AndAlso _status.Running Then
                 Await ApplySharedFoldersAsync()
@@ -375,7 +391,7 @@ Public NotInheritable Class MainWindow
         Try
             Dim it As New ListViewItem(ShareFolderDisplayName(path)) With {.Checked = True, .Tag = path}
             it.SubItems.Add(path)
-            it.SubItems.Add(AccessLabel(ShareRootParamsStore.GetFor(path)))
+            it.SubItems.Add(RoLabel(ShareRootParamsStore.GetFor(path)))
             lvFolders.Items.Add(it)
         Finally
             _loading = prev
@@ -395,7 +411,7 @@ Public NotInheritable Class MainWindow
                 If host.Length = 0 Then Continue For
                 Dim it As New ListViewItem(If(String.IsNullOrEmpty(r.name), ShareFolderDisplayName(host), r.name)) With {.Checked = True, .Tag = host}
                 it.SubItems.Add(host)
-                it.SubItems.Add(AccessLabel(ShareRootParamsStore.GetFor(host)))
+                it.SubItems.Add(RoLabel(ShareRootParamsStore.GetFor(host)))
                 lvFolders.Items.Add(it)
             Next
         Finally
@@ -477,8 +493,35 @@ Public NotInheritable Class MainWindow
         lblAddr.Text = If(Rus, "Адрес: ", "Address: ") & If(CurrentLanAddress().Length > 0, CurrentLanAddress(), "-")
         lblFinger.Text = If(_status IsNot Nothing AndAlso Not String.IsNullOrEmpty(_status.Fingerprint),
                             (If(Rus, "Ключ узла: ", "Host key: ") & _status.Fingerprint), "")
+        lblExternal.Text = ExternalSummary(running)
+        Dim reach As WorkerReachability = If(_status IsNot Nothing, _status.Reachability, Nothing)
+        lblIpv6.Text = If(reach IsNot Nothing AndAlso Not String.IsNullOrEmpty(reach.Ipv6Address),
+                          (If(Rus, "IPv6: ", "IPv6: ") & reach.Ipv6Address), "")
+        btnInternet.Enabled = running AndAlso Not _busy
         btnShare.Enabled = running AndAlso Not _busy
         RaiseEvent ServerStateChanged(running)
+    End Sub
+
+    ''' <summary>Short internet-reachability line for the server panel (full detail +
+    ''' router guidance is behind the "Доступ из интернета.." button).</summary>
+    Private Function ExternalSummary(running As Boolean) As String
+        If Not running Then Return ""
+        Dim reach As WorkerReachability = If(_status IsNot Nothing, _status.Reachability, Nothing)
+        If reach Is Nothing Then Return If(Rus, "Интернет: определяется..", "Internet: detecting..")
+        If reach.IsCgnat Then Return If(Rus, "Интернет: за CGNAT (недоступно)", "Internet: behind CGNAT (unreachable)")
+        Dim host As String = If(reach.ExternalHost, "")
+        Dim port As Integer = If(reach.ExternalPort > 0, reach.ExternalPort, If(_status IsNot Nothing, _status.ListenPort, 0))
+        If host.Length = 0 Then Return If(Rus, "Интернет: адрес неизвестен", "Internet: address unknown")
+        Dim mapped As Boolean = Not String.IsNullOrEmpty(reach.PortMapMethod)
+        Dim addr As String = host & ":" & port.ToString()
+        If mapped Then Return (If(Rus, "Из интернета: ", "From internet: ")) & addr
+        Return (If(Rus, "Внешний: ", "External: ")) & addr & If(Rus, " (нужен проброс)", " (needs forwarding)")
+    End Function
+
+    Private Sub OnInternetAccess(sender As Object, e As EventArgs)
+        Using dlg As New InternetAccessForm(_status)
+            dlg.ShowDialog(Me)
+        End Using
     End Sub
 
     Private Function CurrentLanAddress() As String
@@ -550,10 +593,10 @@ Public NotInheritable Class MainWindow
 
     ' --- small helpers ----------------------------------------------------------
 
-    Private Shared Function AccessLabel(p As ShareRootParams) As String
-        If p Is Nothing Then Return If(Rus, "чтение", "read")
-        If p.IsDestination Then Return If(Rus, "получатель", "target")
-        Return If(p.IsWritable(), If(Rus, "запись", "write"), If(Rus, "чтение", "read"))
+    ''' <summary>RO-column cell: "✓" when the share is read-only, blank otherwise
+    ''' (writable folders and destinations accept writes).</summary>
+    Private Shared Function RoLabel(p As ShareRootParams) As String
+        Return If(p IsNot Nothing AndAlso Not p.IsWritable(), "✓", "")
     End Function
 
     Private Shared Function ShareFolderDisplayName(path As String) As String
@@ -584,7 +627,9 @@ Public NotInheritable Class MainWindow
         btnRemove.Enabled = Not value AndAlso avail
         btnParams.Enabled = Not value AndAlso avail
         lvFolders.Enabled = Not value AndAlso avail
-        btnShare.Enabled = Not value AndAlso avail AndAlso _status IsNot Nothing AndAlso _status.Running
+        Dim running As Boolean = _status IsNot Nothing AndAlso _status.Running
+        btnShare.Enabled = Not value AndAlso avail AndAlso running
+        btnInternet.Enabled = Not value AndAlso avail AndAlso running
         Me.UseWaitCursor = value
     End Sub
 

@@ -17,11 +17,12 @@ Friend NotInheritable Class TrayContext
     Private ReadOnly _notifyIcon As NotifyIcon
     Private ReadOnly _messageWindow As MessageWindow
     Private ReadOnly _trayIcon As Icon
+    Private _trayHIcon As IntPtr
     Private _mainWindow As MainWindow
     Private _disposed As Boolean
 
     Friend Sub New(initialFolder As String, Optional showWindowOnStart As Boolean = True)
-        _trayIcon = BuildTrayIcon()
+        _trayIcon = ShareIcons.CreateIcon(_trayHIcon)
 
         _notifyIcon = New NotifyIcon() With {
             .Icon = _trayIcon,
@@ -50,25 +51,82 @@ Friend NotInheritable Class TrayContext
     End Sub
 
     Private Function BuildMenu() As ContextMenuStrip
+        Dim rus As Boolean = Is_Russian_Language
         Dim menu As New ContextMenuStrip()
 
-        Dim miOpen As New ToolStripMenuItem(If(Is_Russian_Language, "Открыть менеджер общего доступа", "Open Share Manager"))
+        ' Primary action (bold) - open the Share Manager window.
+        Dim miOpen As New ToolStripMenuItem(If(rus, "Открыть менеджер общего доступа", "Open Share Manager"))
         miOpen.Font = New Font(menu.Font, FontStyle.Bold)
         AddHandler miOpen.Click, Sub() ShowMainWindow(Nothing)
         menu.Items.Add(miOpen)
 
-        Dim miViewer As New ToolStripMenuItem(If(Is_Russian_Language, "Открыть Fast Media Sorter", "Open Fast Media Sorter"))
-        AddHandler miViewer.Click, Sub() LaunchViewer()
-        menu.Items.Add(miViewer)
+        ' Show the current share's QR big, straight from the tray (no window needed).
+        Dim miQr As New ToolStripMenuItem(If(rus, "Показать штрихкод..", "Show QR code.."))
+        AddHandler miQr.Click, Sub() TrayShowQr()
+        menu.Items.Add(miQr)
+
+        ' Online "publish your folders for Android" guide.
+        Dim miDesc As New ToolStripMenuItem(If(rus, "Описание..", "Description.."))
+        AddHandler miDesc.Click, Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl)
+        menu.Items.Add(miDesc)
+
+        ' Stop the SFTP server (worker process keeps running).
+        Dim miStop As New ToolStripMenuItem(If(rus, "Выключить общий доступ", "Turn off sharing"))
+        AddHandler miStop.Click, Sub() TrayStop()
+        menu.Items.Add(miStop)
 
         menu.Items.Add(New ToolStripSeparator())
 
-        Dim miExit As New ToolStripMenuItem(If(Is_Russian_Language, "Выход", "Exit"))
+        ' Suite cross-link: open the LITE viewer.
+        Dim miViewer As New ToolStripMenuItem(If(rus, "Открыть Fast Media Sorter", "Open Fast Media Sorter"))
+        AddHandler miViewer.Click, Sub() LaunchViewer()
+        menu.Items.Add(miViewer)
+
+        Dim miExit As New ToolStripMenuItem(If(rus, "Выход", "Exit"))
         AddHandler miExit.Click, Sub() ExitApplication()
         menu.Items.Add(miExit)
 
         Return menu
     End Function
+
+    ''' <summary>Tray "Показать штрихкод": build the current share's combined QR from the
+    ''' live worker status and show it big via Qr_Zoom_Form (LAN-only fallback when the
+    ''' combined code is too dense). Ported from LITE's Main_Form.ShareTray.TrayShowQr.</summary>
+    Private Async Sub TrayShowQr()
+        Dim rus As Boolean = Is_Russian_Language
+        Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+        If st Is Nothing OrElse Not st.Running Then
+            Try : _notifyIcon.ShowBalloonTip(2500, "Fast Media Sorter", If(rus, "Общий доступ не запущен.", "Sharing is not running."), ToolTipIcon.Info) : Catch : End Try
+            Return
+        End If
+
+        Dim cfg As ShareConfigResult = ShareConfigBuilder.Build(st, True)
+        If cfg Is Nothing OrElse cfg.QrPng Is Nothing OrElse cfg.QrPng.Length = 0 OrElse cfg.QrOverflow Then
+            cfg = ShareConfigBuilder.Build(st, False)   ' LAN-only fallback (smaller QR)
+        End If
+        If cfg Is Nothing OrElse cfg.QrPng Is Nothing OrElse cfg.QrPng.Length = 0 Then
+            Try : _notifyIcon.ShowBalloonTip(3000, "Fast Media Sorter", If(rus, "Код слишком большой - сохраните файл .fmscfg в окне.", "Code too large - save the .fmscfg file in the window."), ToolTipIcon.Warning) : Catch : End Try
+            Return
+        End If
+
+        Try
+            Using ms As New IO.MemoryStream(cfg.QrPng)
+                Using img As Image = Image.FromStream(ms)
+                    Qr_Zoom_Form.ShowImage(Nothing, img)
+                End Using
+            End Using
+        Catch
+        End Try
+    End Sub
+
+    ''' <summary>Tray "Выключить общий доступ": stop the SFTP server, then refresh the tray.</summary>
+    Private Async Sub TrayStop()
+        Try
+            Await ShareController.StopServerAsync()
+        Catch
+        End Try
+        RefreshTrayState(False)
+    End Sub
 
     ''' <summary>Shows (creating/reusing) the main window and brings it to front. A
     ''' non-empty <paramref name="initialFolder"/> requests the "share this folder"
@@ -163,50 +221,12 @@ Friend NotInheritable Class TrayContext
                 _messageWindow.DestroyHandle()
             Catch
             End Try
-            Try
-                ' _trayIcon is a Clone that owns its own handle - Dispose frees it.
-                ' (No manual DestroyIcon: the raw GetHicon handle was already freed
-                ' in BuildTrayIcon, and destroying the clone's handle here would be a
-                ' double-free.)
-                If _trayIcon IsNot Nothing Then _trayIcon.Dispose()
-            Catch
-            End Try
+            ' Icon.FromHandle does not own the HICON - dispose the Icon AND free the
+            ' handle (ShareIcons.FreeIcon does both).
+            ShareIcons.FreeIcon(_trayIcon, _trayHIcon)
         End If
         MyBase.Dispose(disposing)
     End Sub
-
-    ''' <summary>Blue four-way-arrow "share" glyph (placeholder; the exact LITE drawn
-    ''' icon is ported in Ф3).</summary>
-    Private Shared Function BuildTrayIcon() As Icon
-        Using bmp As New Bitmap(32, 32)
-            Using g As Graphics = Graphics.FromImage(bmp)
-                g.SmoothingMode = Drawing2D.SmoothingMode.AntiAlias
-                g.Clear(Color.Transparent)
-                Using b As New SolidBrush(Color.FromArgb(30, 120, 220))
-                    g.FillEllipse(b, 2, 2, 27, 27)
-                End Using
-                Using p As New Pen(Color.White, 3)
-                    g.DrawLine(p, 16, 6, 16, 26)
-                    g.DrawLine(p, 6, 16, 26, 16)
-                End Using
-            End Using
-            Dim hIcon As IntPtr = bmp.GetHicon()
-            Try
-                ' Icon.FromHandle does NOT own hIcon; the Clone gets its own handle,
-                ' so free the raw GetHicon handle here to avoid leaking one GDI icon
-                ' handle per launch.
-                Using tmp As Icon = Icon.FromHandle(hIcon)
-                    Return CType(tmp.Clone(), Icon)
-                End Using
-            Finally
-                DestroyIcon(hIcon)
-            End Try
-        End Using
-    End Function
-
-    <DllImport("user32.dll", SetLastError:=True)>
-    Private Shared Function DestroyIcon(hIcon As IntPtr) As Boolean
-    End Function
 
     ''' <summary>
     ''' Hidden top-level window that receives WM_COPYDATA from a second instance /
