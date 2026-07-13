@@ -46,6 +46,17 @@ Public NotInheritable Class ShareConfigResult
     Public Property QrOverflow As Boolean
 End Class
 
+''' <summary>Per-package (per-recipient) overrides the "Поделиться" wizard applies to
+''' THIS access code only - PIN, slideshow interval and a soft read-only hint (§4.5.3).
+''' Left off = each share's own defaults are used.</summary>
+Public NotInheritable Class ShareExportOverrides
+    Public Property HasPin As Boolean
+    Public Property Pin As String = ""
+    Public Property HasSlideshow As Boolean
+    Public Property SlideshowInterval As Integer = 10
+    Public Property ForceSoftReadOnly As Boolean
+End Class
+
 Public Module ShareConfigBuilder
 
     Private Const QrPrefix As String = "FMSCFG1:"
@@ -71,7 +82,8 @@ Public Module ShareConfigBuilder
     ''' password out-of-band.
     ''' </summary>
     Public Function Build(status As WorkerStatus, includeExternal As Boolean,
-                          Optional includePassword As Boolean = True) As ShareConfigResult
+                          Optional includePassword As Boolean = True,
+                          Optional exportOverrides As ShareExportOverrides = Nothing) As ShareConfigResult
         If status Is Nothing OrElse Not status.Running Then Return Nothing
         Dim reach As WorkerReachability = status.Reachability
         Dim port As Integer = status.ListenPort
@@ -122,7 +134,7 @@ Public Module ShareConfigBuilder
                 Dim nm As String = If(r.name, "")
                 If nm.Length = 0 Then Continue For
                 If roots.Length > 0 Then roots.Append(","c)
-                roots.Append(RootJson(nm, ShareRootParamsStore.GetFor(r.hostPath), anyV2))
+                roots.Append(RootJson(nm, ApplyOverrides(ShareRootParamsStore.GetFor(r.hostPath), exportOverrides), anyV2))
             Next
         End If
 
@@ -178,6 +190,19 @@ Public Module ShareConfigBuilder
             End Try
         End If
         Return result
+    End Function
+
+    ''' <summary>Applies the per-package (per-recipient) overrides on top of the share's
+    ''' own params, on a COPY so the persisted share defaults are never touched. Only PIN,
+    ''' slideshow interval and the soft read-only hint are overridable at package level
+    ''' (§4.5.3); name/type/hard-RO stay the share's.</summary>
+    Private Function ApplyOverrides(p As ShareRootParams, o As ShareExportOverrides) As ShareRootParams
+        If o Is Nothing OrElse p Is Nothing Then Return p
+        Dim c As ShareRootParams = p.Clone()
+        If o.HasPin Then c.AccessPin = If(o.Pin, "")
+        If o.HasSlideshow Then c.SlideshowInterval = o.SlideshowInterval
+        If o.ForceSoftReadOnly Then c.SoftReadOnly = True
+        Return c
     End Function
 
     ''' <summary>One roots[] entry. v1 fields (virtualPath, label) always present;

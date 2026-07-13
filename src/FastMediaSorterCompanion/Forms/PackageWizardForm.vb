@@ -7,14 +7,13 @@ Imports System.Text
 Imports System.Windows.Forms
 
 ''' <summary>
-''' Companion package wizard - LEVEL 2 of the two-wizard model (§4.5): a ONE-SHOT
-''' act of giving a specific recipient access. The user picks a SUBSET of the
-''' already-served shares, optionally restricts to LAN / drops the password, and
-''' gets a QR + savable/mailable .fmscfg for exactly those roots. Nothing here is
-''' persisted (§4.5.3). Share-level params (name/type/hard-RO/PIN/slideshow) are
-''' inherited from each share via ShareRootParamsStore inside ShareConfigBuilder.
-''' The .fmscfg for a subset is produced by handing ShareConfigBuilder a status
-''' snapshot whose Roots are filtered to the checked shares - no contract change.
+''' Companion package wizard - LEVEL 2 of the two-wizard model (§4.5): a ONE-SHOT act
+''' of giving a specific recipient access. The user picks a SUBSET of the served shares
+''' and sets the PER-RECIPIENT parameters for THIS access code (PIN, slideshow interval,
+''' publish-as-read-only), optionally restricts to LAN / drops the password, and gets a
+''' QR + savable/mailable .fmscfg. Nothing here is persisted (§4.5.3); the overrides ride
+''' only in this export, never touching the share's own defaults. Built with layout
+''' panels (AutoSize) so it scales at any display scaling.
 ''' </summary>
 Public NotInheritable Class PackageWizardForm
     Inherits Form
@@ -23,12 +22,16 @@ Public NotInheritable Class PackageWizardForm
     Private ReadOnly _settings As New ShareSettings()
     Private _status As WorkerStatus
     Private _config As ShareConfigResult
-    Private _busy As Boolean
     Private _loading As Boolean
 
     Private clbShares As CheckedListBox
     Private chkLanOnly As CheckBox
     Private chkNoPassword As CheckBox
+    Private chkPin As CheckBox
+    Private txtPin As TextBox
+    Private chkSlide As CheckBox
+    Private numSlide As NumericUpDown
+    Private chkSoftRo As CheckBox
     Private picQr As PictureBox
     Private btnShowQr As Button
     Private lblAddr As Label
@@ -62,54 +65,95 @@ Public NotInheritable Class PackageWizardForm
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(560, 452)
         Me.AutoScaleMode = AutoScaleMode.Font
+        Me.AutoSize = True
+        Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
         toolTip = New ToolTip()
 
-        ' Left: which shares go into this access code.
-        Controls.Add(New Label With {.Left = 12, .Top = 12, .Width = 300, .Height = 18,
-            .Text = If(Rus, "Папки в этом коде доступа:", "Folders in this access code:")})
-        clbShares = New CheckedListBox With {.Left = 12, .Top = 34, .Width = 300, .Height = 300, .CheckOnClick = True, .IntegralHeight = False}
+        Dim root As New TableLayoutPanel With {.Dock = DockStyle.Fill, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .ColumnCount = 2, .Padding = New Padding(16, 14, 16, 12)}
+        root.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
+        root.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
+
+        ' --- left column: which shares + per-recipient parameters --------------
+        Dim left As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .FlowDirection = FlowDirection.TopDown, .WrapContents = False, .Margin = New Padding(0, 0, 24, 0)}
+        left.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 4), .Text = If(Rus, "Папки в этом коде доступа:", "Folders in this access code:")})
+        clbShares = New CheckedListBox With {.Width = 340, .Height = 170, .CheckOnClick = True, .IntegralHeight = False, .Margin = New Padding(0, 0, 0, 12)}
         AddHandler clbShares.ItemCheck, AddressOf OnSharesItemCheck
-        Controls.Add(clbShares)
+        left.Controls.Add(clbShares)
 
-        chkLanOnly = New CheckBox With {.Left = 12, .Top = 342, .Width = 300, .Height = 20,
-            .Text = If(Rus, "Только локальная сеть (без адреса из интернета)", "LAN only (no internet address)")}
-        chkNoPassword = New CheckBox With {.Left = 12, .Top = 366, .Width = 300, .Height = 20,
-            .Text = If(Rus, "Не включать пароль в файл/QR", "Do not include the password in the file/QR")}
-        AddHandler chkLanOnly.CheckedChanged, AddressOf OnLanOnlyChanged
-        AddHandler chkNoPassword.CheckedChanged, AddressOf OnNoPasswordChanged
-        Controls.AddRange(New Control() {chkLanOnly, chkNoPassword})
-        toolTip.SetToolTip(chkNoPassword, If(Rus, "Пароль не попадёт в файл/QR - телефон запросит его при импорте; передайте пароль отдельно (он показан ниже).",
-                                                 "The password stays out of the file/QR - the phone asks for it at import; pass it separately (shown below)."))
+        left.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 4, 0, 4), .Font = New Font(Me.Font, FontStyle.Bold),
+            .Text = If(Rus, "Параметры этого кода доступа:", "Parameters for this access code:")})
 
-        ' Right: QR + export actions.
-        btnShowQr = New Button With {.Left = 324, .Top = 34, .Width = 224, .Height = 200, .Font = New Font(Me.Font, FontStyle.Bold),
+        chkLanOnly = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = If(Rus, "Только локальная сеть (без адреса из интернета)", "LAN only (no internet address)")}
+        chkNoPassword = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = If(Rus, "Не включать пароль в файл/QR", "Do not include the password in the file/QR")}
+        AddHandler chkLanOnly.CheckedChanged, AddressOf OnRebuildToggle
+        AddHandler chkNoPassword.CheckedChanged, AddressOf OnRebuildToggle
+        toolTip.SetToolTip(chkNoPassword, If(Rus, "Пароль не попадёт в файл/QR - телефон запросит его при импорте; передайте пароль отдельно.",
+                                                 "The password stays out of the file/QR - the phone asks for it at import; pass it separately."))
+        left.Controls.AddRange(New Control() {chkLanOnly, chkNoPassword})
+
+        ' Per-recipient overrides (leave off = each share's own defaults).
+        Dim pinRow As New FlowLayoutPanel With {.AutoSize = True, .WrapContents = False, .Margin = New Padding(0, 4, 0, 0)}
+        chkPin = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 4, 6, 0), .Text = If(Rus, "Задать PIN для этого доступа:", "Set a PIN for this access:")}
+        txtPin = New TextBox With {.Width = 120, .Enabled = False}
+        AddHandler chkPin.CheckedChanged, AddressOf OnPinToggle
+        AddHandler txtPin.TextChanged, AddressOf OnRebuildToggle
+        pinRow.Controls.Add(chkPin) : pinRow.Controls.Add(txtPin)
+
+        Dim slideRow As New FlowLayoutPanel With {.AutoSize = True, .WrapContents = False, .Margin = New Padding(0, 2, 0, 0)}
+        chkSlide = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 4, 6, 0), .Text = If(Rus, "Свой интервал слайд-шоу:", "Custom slideshow interval:")}
+        numSlide = New NumericUpDown With {.Width = 70, .Minimum = 1, .Maximum = 3600, .Value = 10, .Enabled = False}
+        AddHandler chkSlide.CheckedChanged, AddressOf OnSlideToggle
+        AddHandler numSlide.ValueChanged, AddressOf OnRebuildToggle
+        slideRow.Controls.Add(chkSlide) : slideRow.Controls.Add(numSlide)
+        slideRow.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(6, 5, 0, 0), .ForeColor = Color.DimGray, .Text = If(Rus, "сек", "sec")})
+
+        chkSoftRo = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 4, 0, 0), .Text = If(Rus, "Опубликовать как «только чтение» (для этого получателя)", "Publish as read-only (for this recipient)")}
+        AddHandler chkSoftRo.CheckedChanged, AddressOf OnRebuildToggle
+        toolTip.SetToolTip(chkSoftRo, If(Rus, "Телефону этого получателя ресурсы покажутся только для чтения (подсказка приложению). Настоящий запрет задаётся у самой папки.",
+                                              "This recipient's phone shows the resources read-only (a hint). A real lock is set on the folder itself."))
+        left.Controls.AddRange(New Control() {pinRow, slideRow, chkSoftRo})
+
+        ' --- right column: QR + export -----------------------------------------
+        Dim right As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .FlowDirection = FlowDirection.TopDown, .WrapContents = False, .Margin = New Padding(0)}
+        btnShowQr = New Button With {.Width = 250, .Height = 210, .Font = New Font(Me.Font, FontStyle.Bold), .Margin = New Padding(0, 0, 0, 6),
             .Text = If(Rus, "Показать QR-код", "Show QR code"), .Enabled = False}
         AddHandler btnShowQr.Click, Sub() Qr_Zoom_Form.ShowZoomed(Me, picQr)
-        picQr = New PictureBox With {.Left = 324, .Top = 34, .Width = 224, .Height = 200, .Visible = False, .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Color.White}
-        Controls.Add(btnShowQr)
-        Controls.Add(picQr)
-
-        lblAddr = New Label With {.Left = 324, .Top = 242, .Width = 224, .Height = 20, .AutoEllipsis = True, .ForeColor = Color.DimGray}
-        lblFinger = New Label With {.Left = 324, .Top = 262, .Width = 224, .Height = 34, .AutoEllipsis = True, .ForeColor = Color.DimGray, .Font = New Font(Me.Font.FontFamily, Me.Font.Size - 0.5F)}
-        Controls.AddRange(New Control() {lblAddr, lblFinger})
-
-        btnCopyLogin = New Button With {.Left = 324, .Top = 300, .Width = 224, .Height = 28, .Text = If(Rus, "Скопировать логин/пароль", "Copy login/password"), .Enabled = False}
-        btnSave = New Button With {.Left = 324, .Top = 332, .Width = 224, .Height = 28, .Text = If(Rus, "Сохранить файл .fmscfg..", "Save .fmscfg file.."), .Enabled = False}
-        btnEmail = New Button With {.Left = 324, .Top = 364, .Width = 224, .Height = 28, .Text = If(Rus, "Отправить по почте..", "Send by email.."), .Enabled = False}
+        right.Controls.Add(btnShowQr)
+        lblAddr = New Label With {.AutoSize = True, .MaximumSize = New Size(250, 0), .ForeColor = Color.DimGray, .Margin = New Padding(0, 0, 0, 2)}
+        lblFinger = New Label With {.AutoSize = True, .MaximumSize = New Size(250, 0), .ForeColor = Color.DimGray, .Margin = New Padding(0, 0, 0, 8)}
+        right.Controls.AddRange(New Control() {lblAddr, lblFinger})
+        btnCopyLogin = New Button With {.Width = 250, .Height = 30, .Margin = New Padding(0, 2, 0, 2), .Text = If(Rus, "Скопировать логин/пароль", "Copy login/password"), .Enabled = False}
+        btnSave = New Button With {.Width = 250, .Height = 30, .Margin = New Padding(0, 2, 0, 2), .Text = If(Rus, "Сохранить файл .fmscfg..", "Save .fmscfg file.."), .Enabled = False}
+        btnEmail = New Button With {.Width = 250, .Height = 30, .Margin = New Padding(0, 2, 0, 2), .Text = If(Rus, "Отправить по почте..", "Send by email.."), .Enabled = False}
         AddHandler btnCopyLogin.Click, AddressOf OnCopyLogin
         AddHandler btnSave.Click, AddressOf OnSaveConfig
         AddHandler btnEmail.Click, AddressOf OnEmail
-        Controls.AddRange(New Control() {btnCopyLogin, btnSave, btnEmail})
+        right.Controls.AddRange(New Control() {btnCopyLogin, btnSave, btnEmail})
 
-        lblHint = New Label With {.Left = 12, .Top = 396, .Width = 440, .Height = 48, .ForeColor = Color.DimGray, .AutoEllipsis = True}
-        btnClose = New Button With {.Left = 466, .Top = 414, .Width = 82, .Height = 28, .Text = If(Rus, "Закрыть", "Close"), .DialogResult = DialogResult.Cancel}
-        Controls.Add(lblHint)
-        Controls.Add(btnClose)
+        ' Hidden holder for the QR image (source for the zoom window).
+        picQr = New PictureBox With {.Width = 250, .Height = 210, .Visible = False, .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Color.White}
+
+        root.Controls.Add(left, 0, 0)
+        root.Controls.Add(right, 1, 0)
+
+        lblHint = New Label With {.AutoSize = True, .MaximumSize = New Size(600, 0), .ForeColor = Color.DimGray, .Margin = New Padding(0, 10, 0, 0)}
+        root.Controls.Add(lblHint, 0, 1)
+        root.SetColumnSpan(lblHint, 2)
+
+        Dim btnRow As New FlowLayoutPanel With {.AutoSize = True, .Anchor = AnchorStyles.Right, .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False, .Margin = New Padding(0, 8, 0, 0)}
+        btnClose = New Button With {.Width = 96, .Height = 30, .Text = If(Rus, "Закрыть", "Close"), .DialogResult = DialogResult.Cancel}
+        btnRow.Controls.Add(btnClose)
+        root.Controls.Add(btnRow, 0, 2)
+        root.SetColumnSpan(btnRow, 2)
+
+        Me.Controls.Add(root)
+        Me.Controls.Add(picQr)
         Me.CancelButton = btnClose
 
-        ' Reflect saved prefs into the toggles (without firing a rebuild).
         _loading = True
         chkLanOnly.Checked = _settings.LanOnlyExport
         chkNoPassword.Checked = _settings.ExcludePasswordFromExport
@@ -148,9 +192,23 @@ Public NotInheritable Class PackageWizardForm
         End Try
     End Sub
 
-    ''' <summary>Rebuilds the .fmscfg + QR for the CHECKED subset of shares.</summary>
+    Private Function BuildOverrides() As ShareExportOverrides
+        Dim o As New ShareExportOverrides()
+        If chkPin.Checked Then
+            o.HasPin = True
+            o.Pin = txtPin.Text.Trim()
+        End If
+        If chkSlide.Checked Then
+            o.HasSlideshow = True
+            o.SlideshowInterval = CInt(numSlide.Value)
+        End If
+        o.ForceSoftReadOnly = chkSoftRo.Checked
+        Return o
+    End Function
+
+    ''' <summary>Rebuilds the .fmscfg + QR for the CHECKED subset, with this recipient's overrides.</summary>
     Private Sub Rebuild()
-        If _busy OrElse _status Is Nothing Then Return
+        If _status Is Nothing Then Return
         Dim selected As New List(Of ShareFolder)()
         If _status.Roots IsNot Nothing Then
             For i As Integer = 0 To clbShares.Items.Count - 1
@@ -171,21 +229,18 @@ Public NotInheritable Class PackageWizardForm
             ShowQr(Nothing)
             EnableExport(False)
             SetHint(If(Rus, "Отметьте хотя бы одну папку.", "Check at least one folder."))
-            lblAddr.Text = ""
-            lblFinger.Text = ""
+            lblAddr.Text = "" : lblFinger.Text = ""
             Return
         End If
 
-        ' Hand the builder a status snapshot filtered to the selected roots.
         Dim snapshot As New WorkerStatus With {
             .Running = _status.Running, .ListenPort = _status.ListenPort,
             .Username = _status.Username, .Password = _status.Password,
             .Fingerprint = _status.Fingerprint, .Reachability = _status.Reachability,
             .Roots = selected}
 
-        Dim includeExternal As Boolean = Not chkLanOnly.Checked
-        Dim includePassword As Boolean = Not chkNoPassword.Checked
-        _config = ShareConfigBuilder.Build(snapshot, includeExternal, includePassword)
+        _config = ShareConfigBuilder.Build(snapshot, includeExternal:=Not chkLanOnly.Checked,
+                                           includePassword:=Not chkNoPassword.Checked, exportOverrides:=BuildOverrides())
 
         If _config Is Nothing Then
             ShowQr(Nothing)
@@ -201,8 +256,7 @@ Public NotInheritable Class PackageWizardForm
         btnCopyLogin.Enabled = Not String.IsNullOrEmpty(_status.Password)
 
         If _config.QrOverflow Then
-            SetHint(If(Rus, "Код слишком большой для QR - сохраните файл .fmscfg и передайте его.",
-                            "Too large for a QR - save the .fmscfg file and share that instead."))
+            SetHint(If(Rus, "Код слишком большой для QR - сохраните файл .fmscfg и передайте его.", "Too large for a QR - save the .fmscfg file and share that instead."))
         ElseIf chkNoPassword.Checked AndAlso Not String.IsNullOrEmpty(_status.Password) Then
             SetHint((If(Rus, "Пароль (передайте отдельно): ", "Password (pass separately): ")) & _status.Password)
         Else
@@ -212,19 +266,23 @@ Public NotInheritable Class PackageWizardForm
 
     Private Sub OnSharesItemCheck(sender As Object, e As ItemCheckEventArgs)
         If _loading Then Return
-        ' ItemCheck fires BEFORE the state flips; defer the rebuild so GetItemChecked is current.
         BeginInvoke(New MethodInvoker(AddressOf Rebuild))
     End Sub
 
-    Private Sub OnLanOnlyChanged(sender As Object, e As EventArgs)
-        If _loading Then Return
-        _settings.LanOnlyExport = chkLanOnly.Checked
-        Try : _settings.Save() : Catch : End Try
-        Rebuild()
+    Private Sub OnPinToggle(sender As Object, e As EventArgs)
+        txtPin.Enabled = chkPin.Checked
+        OnRebuildToggle(sender, e)
     End Sub
 
-    Private Sub OnNoPasswordChanged(sender As Object, e As EventArgs)
+    Private Sub OnSlideToggle(sender As Object, e As EventArgs)
+        numSlide.Enabled = chkSlide.Checked
+        OnRebuildToggle(sender, e)
+    End Sub
+
+    Private Sub OnRebuildToggle(sender As Object, e As EventArgs)
         If _loading Then Return
+        ' Persist the two saved prefs; the per-recipient overrides are one-shot (not saved).
+        _settings.LanOnlyExport = chkLanOnly.Checked
         _settings.ExcludePasswordFromExport = chkNoPassword.Checked
         Try : _settings.Save() : Catch : End Try
         Rebuild()
@@ -234,8 +292,7 @@ Public NotInheritable Class PackageWizardForm
         If _status Is Nothing OrElse String.IsNullOrEmpty(_status.Password) Then Return
         Try
             Dim user As String = If(String.IsNullOrEmpty(_status.Username), "fms", _status.Username)
-            Clipboard.SetText((If(Rus, "Логин: ", "Login: ") & user & Environment.NewLine) &
-                              (If(Rus, "Пароль: ", "Password: ") & _status.Password))
+            Clipboard.SetText((If(Rus, "Логин: ", "Login: ") & user & Environment.NewLine) & (If(Rus, "Пароль: ", "Password: ") & _status.Password))
             SetHint(If(Rus, "Логин и пароль скопированы.", "Login and password copied."))
         Catch
         End Try
@@ -306,7 +363,6 @@ Public NotInheritable Class PackageWizardForm
         If old IsNot Nothing Then old.Dispose()
     End Sub
 
-    ''' <summary>CheckedListBox item wrapping a share (host path + display name).</summary>
     Private NotInheritable Class ShareItem
         Public ReadOnly HostPath As String
         Private ReadOnly _display As String

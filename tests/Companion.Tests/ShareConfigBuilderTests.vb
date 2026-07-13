@@ -101,6 +101,22 @@ Public Class ShareConfigBuilderTests
     End Sub
 
     <Fact>
+    Public Sub Build_AppliesPerRecipientOverrides()
+        ' The package wizard's per-recipient overrides (PIN / slideshow / soft-RO) must
+        ' ride in THIS export's roots (§4.5.3), on top of the share's own defaults.
+        Dim ov As New ShareExportOverrides With {.HasPin = True, .Pin = "4321", .HasSlideshow = True, .SlideshowInterval = 7, .ForceSoftReadOnly = True}
+        Dim res = ShareConfigBuilder.Build(RunningStatus(), includeExternal:=False, includePassword:=True, exportOverrides:=ov)
+        Assert.NotNull(res)
+        Using doc = JsonDocument.Parse(res.ConfigJson)
+            Dim r0 = doc.RootElement.GetProperty("roots")(0)
+            Assert.True(r0.GetProperty("readOnly").GetBoolean())          ' soft RO -> advertised read-only
+            Assert.Equal("4321", r0.GetProperty("accessPin").GetString()) ' PIN override
+            Assert.Equal(7, r0.GetProperty("slideshowInterval").GetInt32()) ' slideshow override
+            Assert.Equal(2, doc.RootElement.GetProperty("schemaVersion").GetInt32()) ' v2 fields present
+        End Using
+    End Sub
+
+    <Fact>
     Public Sub Build_LanOnlyToggle_OmitsExternalAddresses()
         ' includeExternal:=False must not leak any externally-routable address (privacy).
         Dim reach As New WorkerReachability With {
