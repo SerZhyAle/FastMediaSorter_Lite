@@ -58,18 +58,24 @@ Companion (этапы 1-3), затем релиз** (этап 10). Т.е. рел
 
 Источник: [SPECIFICATION_SHARE_COMPANION_APP.md](SPECIFICATION_SHARE_COMPANION_APP.md), разделы 4, 6, 11 (Ф0-Ф3, Ф5).
 
-- [ ] Закрыть открытые вопросы спецификации, от которых зависит старт: **O-1** публичное
+- [x] Закрыть открытые вопросы спецификации, от которых зависит старт: **O-1** публичное
       имя программы, **O-4** структура главного окна (мастер + настройки в одном окне),
       **O-5** язык реализации (VB.NET - рекомендовано), **O-6** один `.sln`/репозиторий -
-      подтверждено.
-- [ ] **Ф0.** Скелет `src/FastMediaSorterCompanion/FastMediaSorterCompanion.vbproj`
+      подтверждено. *(+O-2/O-3/O-7 закрыты, см. «Текущее состояние»; 2026-07-13)*
+- [x] **Ф0.** Скелет `src/FastMediaSorterCompanion/FastMediaSorterCompanion.vbproj`
       (`net10.0-windows`, WinForms), добавлен в `FastMediaSorter.sln`; мьютекс
       single-instance `FastMediaSorterCompanionSingleInstanceMutex`; пустой `NotifyIcon`.
-- [ ] **Ф1.** Перенос всех 13 файлов `src/Companion/*.vb` без UI-зависимостей + правки:
-      `System.Text.Json` вместо `JavaScriptSerializer` (`WorkerIpc.vb`, с
-      `PropertyNameCaseInsensitive=true`), пакет `Microsoft.Win32.Registry` для реестра.
+      *(commit `d040c57`; single-instance + WM_COPYDATA проверены в рантайме)*
+- [x] **Ф1.** Перенос всех 14 файлов (`src/Companion/*.vb` + `ShareSettings.vb`) без
+      UI-зависимостей + правки: `System.Text.Json` вместо `JavaScriptSerializer` (все 3
+      JSON-места, `PropertyNameCaseInsensitive=true` + `WhenWritingNull`). Реестр остаётся
+      на VB `GetSetting`/`SaveSetting` (доступны на .NET 10, тот же путь - миграция не
+      нужна). *(commit `66387a1`; провалидировано вживую против реального воркера)*
 - [ ] **Ф2.** Перенос форм `Share_Wizard_Form`, `Share_Root_Params_Form`, `Qr_Zoom_Form`,
-      `Share_Enable_Form` - копия + снятие зависимостей от `Main_Form`.
+      `Share_Enable_Form` - копия + снятие зависимостей от `Main_Form`. *(в работе; все 4
+      формы построены кодом (нет Designer/resx), зависимость только `Is_Russian_Language`
+      (уже есть в `CompanionGlobals`) + 1 вызов `Main_Form.`; UI - новая двух-визардная
+      модель §4.5, распределение параметров §4.5.3 закрыто)*
 - [ ] **Ф3.** Перенос трея - `Main_Form.ShareTray.vb` в собственный класс Companion, БЕЗ
       close-to-tray логики (Companion трей-резидентен всегда, это не костыль). Тихий
       запуск в трей при пустом аргументе + автозапуск воркера
@@ -87,11 +93,14 @@ Companion (этапы 1-3), затем релиз** (этап 10). Т.е. рел
 
 Источник: [SPECIFICATION_SHARE_COMPANION_APP.md](SPECIFICATION_SHARE_COMPANION_APP.md) §11 (Ф1 smoke, Ф7), §14 (чеклист приёмки).
 
-- [ ] Собрать (локально) + smoke-тест + закоммитить незакоммиченный **фикс контракта
+- [x] Собрать (локально) + smoke-тест + закоммитить незакоммиченный **фикс контракта
       readOnly** (9 файлов, см. «Текущее состояние» выше) - предпосылка для честного
       переноса в этап 1 (мигрируем проверенную версию). Opt-in-гейт уже закоммичен ранее.
-- [ ] Смоук без формы: `EnsureRunning()`/`GetStatus`/`SetSharedFolders` из консольного
-      теста Companion против реального воркера (после Ф1).
+      *(commit `b9294a5`; сборка + launch-smoke зелёные)*
+- [x] Смоук без формы: `EnsureRunning()`/`GetStatus`/`SetSharedFolders` из консольного
+      теста Companion против реального воркера (после Ф1). *(Ф1-аудит: request-shape,
+      response-deserialize, live EnsureRunning/GetStatus, реальный `.fmscfg`+QR - всё OK;
+      формализуется в авто-тесты, см. раздел «Автотесты» ниже)*
 - [ ] Формы после переноса (Ф2) открываются и работают идентично сегодняшнему поведению
       в LITE (мастер «Поделиться», диалог параметров ресурса, окно QR, диалог opt-in).
 - [ ] Трей Companion (Ф3) - работает независимо, без открытого LITE.
@@ -102,6 +111,26 @@ Companion (этапы 1-3), затем релиз** (этап 10). Т.е. рел
       старым Share внутри LITE) поверх новой - настройки на месте, пара с телефоном жива
       (host key не тронут), автозапуск переехал на Companion, LITE закрывается
       мгновенно даже во время активной раздачи.
+
+---
+
+## Автотесты (заведено 2026-07-13) - см. [docs/guides/TESTING.md](../guides/TESTING.md)
+
+Заведена система автотестов для всех трёх программ пакета + оркестратор
+`tools/Run-AllTests.ps1` (одна команда, ненулевой exit при любом падении):
+- [x] **Сортировщик (LITE, net48)** - `tests/Lite.Tests` (xUnit): `Utils` -
+      массивы, контраст-цвет, header-парсер `GetImageDimensions` (PNG/GIF/BMP/JPEG).
+      **12 тестов зелёные.**
+- [x] **Share Manager (net10)** - `tests/Companion.Tests` (xUnit): `ShareRootParams`
+      (таблица readOnly/IsDefault/Clone), `WorkerIpc` (замороженный JSON-протокол),
+      `ShareConfigBuilder` (замороженный контракт `.fmscfg` + QR), `ShareText`/
+      `NetworkInfo`/`ServerFeatures`. **25 тестов зелёные.**
+- [x] **SFTP-воркер (Go)** - `go test ./...` в `P:\windows\fms_companion`: config/
+      ipc/netaccess/sftpserver. **4 пакета зелёные.** Пробел: `internal/app`/
+      `internal/service`/`cmd/*` без тестов (follow-up).
+- [x] **Живой протокол (интеграция)** - `tests/Integration/WorkerRoundTrip.ps1`
+      (`-Integration`): read-only GetStatus по пайпу к запущенному воркеру.
+      Проверено вживую (PASS).
 
 ---
 

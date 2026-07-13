@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Unit tests for LITE-unique pure logic (net48). The Share subsystem is covered
+       by Companion.Tests (same ported code); this project targets code that lives
+       ONLY in LITE - currently Utils (array ops, contrast colour, and the header-only
+       GetImageDimensions parser the background worker relies on). Source files are
+       LINKED (not project-referenced) so the tests don't drag in the whole ILMerge/
+       LibVLC/Tesseract LITE assembly. RootNamespace matches LITE (fmsl) so the linked
+       modules resolve by their real names. -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>fmsl</RootNamespace>
+    <OptionExplicit>On</OptionExplicit>
+    <OptionStrict>On</OptionStrict>
+    <OptionInfer>On</OptionInfer>
+    <OptionCompare>Binary</OptionCompare>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Link the production source directly (same assembly => Friend members visible). -->
+    <Compile Include="..\..\src\Utils.vb">
+      <Link>Linked\Utils.vb</Link>
+    </Compile>
+  </ItemGroup>
+
+</Project>
