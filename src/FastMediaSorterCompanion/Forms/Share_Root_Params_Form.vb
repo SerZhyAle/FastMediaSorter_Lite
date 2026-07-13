@@ -75,23 +75,26 @@ Public Class Share_Root_Params_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(432, 560)
-        Me.Font = New Font("Segoe UI", 9.0F)
+        Me.ClientSize = New Size(564, 636)
+        Me.Font = New Font("Segoe UI", 10.0F)
 
         Dim tip As New ToolTip()
+        Const lx As Integer = 18      ' label column
+        Const ix As Integer = 240     ' input column
+        Const iw As Integer = 300     ' input width
 
         ' 1. Resource name (highest priority, §9).
-        Controls.Add(New Label With {.Left = 12, .Top = 16, .Width = 180, .Height = 16,
+        Controls.Add(New Label With {.Left = lx, .Top = 24, .Width = 214, .Height = 20,
             .Text = If(rus, "Название на телефоне:", "Name on the phone:")})
-        txtLabel = New TextBox With {.Left = 196, .Top = 12, .Width = 222}
+        txtLabel = New TextBox With {.Left = ix, .Top = 20, .Width = iw}
         Controls.Add(txtLabel)
         tip.SetToolTip(txtLabel, If(rus, "Наименование ресурса в приложении. Пусто = имя папки.",
                                         "Resource name in the app. Empty = the folder name."))
 
-        ' 2. Type / profile (highest priority, §9).
-        Controls.Add(New Label With {.Left = 12, .Top = 46, .Width = 180, .Height = 16,
+        ' 2. Type / profile.
+        Controls.Add(New Label With {.Left = lx, .Top = 62, .Width = 214, .Height = 20,
             .Text = If(rus, "Тип ресурса:", "Resource type:")})
-        cmbProfile = New ComboBox With {.Left = 196, .Top = 42, .Width = 222, .DropDownStyle = ComboBoxStyle.DropDownList}
+        cmbProfile = New ComboBox With {.Left = ix, .Top = 58, .Width = iw, .DropDownStyle = ComboBoxStyle.DropDownList}
         If rus Then
             cmbProfile.Items.AddRange(New Object() {"Обычная папка (по умолчанию)", "Аудиотека", "Видеотека",
                 "Фотохранилище", "Документы", "Все файлы"})
@@ -103,15 +106,13 @@ Public Class Share_Root_Params_Form
         tip.SetToolTip(cmbProfile, If(rus, "Готовый набор типов медиа и настроек (например, аудиотека).",
                                           "A preset of media types and settings (e.g. audio library)."))
 
-        ' 3. Exact media set (advanced override of the profile).
-        Controls.Add(New Label With {.Left = 12, .Top = 74, .Width = 180, .Height = 16,
+        ' 3. Exact media set (optional override of the profile).
+        Controls.Add(New Label With {.Left = lx, .Top = 100, .Width = 214, .Height = 20,
             .Text = If(rus, "Точный набор типов:", "Exact media set:")})
-        Controls.Add(New Label With {.Left = 12, .Top = 92, .Width = 180, .Height = 44, .ForeColor = Color.DimGray,
+        Controls.Add(New Label With {.Left = lx, .Top = 122, .Width = 214, .Height = 50, .ForeColor = Color.DimGray,
             .Text = If(rus, "Необязательно. Пусто = решает тип ресурса.", "Optional. Empty = the type decides.")})
-        ' 4 rows tall so the 8 tokens fit in two 106 px columns with NO horizontal
-        ' scrollbar (a shorter box hides half the tokens behind a tiny scrollbar).
-        clbMedia = New CheckedListBox With {.Left = 196, .Top = 72, .Width = 222, .Height = 80,
-            .MultiColumn = True, .ColumnWidth = 106, .CheckOnClick = True, .IntegralHeight = False}
+        clbMedia = New CheckedListBox With {.Left = ix, .Top = 98, .Width = iw, .Height = 96,
+            .MultiColumn = True, .ColumnWidth = 150, .CheckOnClick = True, .IntegralHeight = False}
         If rus Then
             clbMedia.Items.AddRange(New Object() {"Изображения", "Видео", "Аудио", "GIF", "Текст", "PDF", "EPUB", "Office"})
         Else
@@ -120,79 +121,75 @@ Public Class Share_Root_Params_Form
         Controls.Add(clbMedia)
 
         ' 4. Scan conditions.
-        Controls.Add(New Label With {.Left = 12, .Top = 166, .Width = 180, .Height = 16,
+        Controls.Add(New Label With {.Left = lx, .Top = 206, .Width = 214, .Height = 20,
             .Text = If(rus, "Условия сканирования:", "Scan conditions:")})
-        chkScanSub = New CheckBox With {.Left = 196, .Top = 162, .Width = 222, .Height = 20,
+        chkScanSub = New CheckBox With {.Left = ix, .Top = 204, .Width = iw, .Height = 22,
             .Text = If(rus, "Сканировать подпапки", "Scan subfolders"), .Checked = True}
-        chkSubItems = New CheckBox With {.Left = 196, .Top = 184, .Width = 222, .Height = 20,
+        chkSubItems = New CheckBox With {.Left = ix, .Top = 228, .Width = iw, .Height = 22,
             .Text = If(rus, "Подпапки как элементы", "Subfolders as items")}
-        chkHidden = New CheckBox With {.Left = 196, .Top = 206, .Width = 222, .Height = 20,
+        chkHidden = New CheckBox With {.Left = ix, .Top = 252, .Width = iw, .Height = 22,
             .Text = If(rus, "Показывать скрытые файлы", "Show hidden files")}
-        chkAllFiles = New CheckBox With {.Left = 196, .Top = 228, .Width = 222, .Height = 20,
+        chkAllFiles = New CheckBox With {.Left = ix, .Top = 276, .Width = iw, .Height = 22,
             .Text = If(rus, "Все файлы (не только медиа)", "All files (not only media)")}
         AddHandler chkScanSub.CheckedChanged, Sub() chkSubItems.Enabled = chkScanSub.Checked
         Controls.AddRange(New Control() {chkScanSub, chkSubItems, chkHidden, chkAllFiles})
 
-        ' 5a. HARD read-only - the SFTP SERVER blocks writes (§4.5.4 п.1). Default off;
-        ' a destination forces it off. Enforced, not just advertised.
-        chkReadOnly = New CheckBox With {.Left = 12, .Top = 254, .Width = 406, .Height = 20,
-            .Text = If(rus, "Недоступно для записи на уровне сервера",
-                           "Not writable at the server level"), .Checked = False}
+        ' 5. Access section (full-width, clearly grouped).
+        Controls.Add(New Label With {.Left = lx, .Top = 314, .Width = 528, .Height = 20,
+            .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(rus, "Доступ:", "Access:")})
+        chkReadOnly = New CheckBox With {.Left = lx, .Top = 338, .Width = 528, .Height = 22,
+            .Text = If(rus, "Недоступно для записи на уровне сервера (сервер запрещает изменения)",
+                           "Not writable at the server level (server blocks changes)"), .Checked = False}
         AddHandler chkReadOnly.CheckedChanged, AddressOf OnReadOnlyToggled
         Controls.Add(chkReadOnly)
         tip.SetToolTip(chkReadOnly, If(rus, "Сервер физически запрещает телефону менять файлы в этой папке (загрузка, переименование, удаление). Папка-получатель всегда доступна на запись.",
-                                            "The server physically blocks the phone from changing files here (upload, rename, delete). A destination folder is always writable."))
+                                            "The server physically blocks the phone from changing files here. A destination folder is always writable."))
 
-        ' 5b. SOFT read-only - a CLIENT HINT only (§4.5.4 п.2): the phone shows the
-        ' resource read-only, but the server is not locked (safe direction).
-        chkSoftReadOnly = New CheckBox With {.Left = 12, .Top = 276, .Width = 406, .Height = 20,
-            .Text = If(rus, "Публиковать в режиме «только чтение» (подсказка приложению)",
-                           "Publish as read-only (client hint)")}
+        chkSoftReadOnly = New CheckBox With {.Left = lx, .Top = 364, .Width = 528, .Height = 22,
+            .Text = If(rus, "Публиковать как «только чтение» (подсказка приложению, сервер не блокирует)",
+                           "Publish as read-only (client hint; server not locked)")}
         Controls.Add(chkSoftReadOnly)
-        tip.SetToolTip(chkSoftReadOnly, If(rus, "Телефону сообщается, что ресурс только для чтения, но сам сервер запись не блокирует. Полезно, чтобы приложение не показывало кнопки изменения. Для настоящего запрета включите «Недоступно для записи на уровне сервера».",
-                                                "The phone is told the resource is read-only, but the server itself does not block writes. Handy so the app hides edit actions. For a real lock, tick 'Not writable at the server level'."))
+        tip.SetToolTip(chkSoftReadOnly, If(rus, "Телефону сообщается, что ресурс только для чтения, но сам сервер запись не блокирует. Для настоящего запрета включите пункт выше.",
+                                                "The phone is told the resource is read-only, but the server itself does not block writes. For a real lock, tick the option above."))
 
-        ' 5c. Destination (+ optional chip color).
-        chkDestination = New CheckBox With {.Left = 12, .Top = 300, .Width = 406, .Height = 20,
+        chkDestination = New CheckBox With {.Left = lx, .Top = 390, .Width = 528, .Height = 22,
             .Text = If(rus, "Папка-получатель (копирование и перемещение с телефона)",
                            "Destination folder (copy and move from the phone)")}
-        lblDestNote = New Label With {.Left = 30, .Top = 322, .Width = 388, .Height = 16, .ForeColor = Color.DimGray,
+        lblDestNote = New Label With {.Left = lx + 22, .Top = 414, .Width = 506, .Height = 18, .ForeColor = Color.DimGray,
             .Text = If(rus, "Общая папка станет доступна на запись.", "The shared folder becomes writable.")}
-        btnColor = New Button With {.Left = 30, .Top = 342, .Width = 110, .Height = 24,
+        btnColor = New Button With {.Left = lx + 22, .Top = 434, .Width = 130, .Height = 28,
             .Text = If(rus, "Цвет метки..", "Chip color..")}
-        pnlColor = New Panel With {.Left = 146, .Top = 344, .Width = 40, .Height = 20, .BorderStyle = BorderStyle.FixedSingle}
-        lnkColorReset = New LinkLabel With {.Left = 194, .Top = 346, .Width = 160, .Height = 16,
+        pnlColor = New Panel With {.Left = lx + 160, .Top = 436, .Width = 46, .Height = 24, .BorderStyle = BorderStyle.FixedSingle}
+        lnkColorReset = New LinkLabel With {.Left = lx + 214, .Top = 438, .Width = 260, .Height = 18,
             .Text = If(rus, "авто (задаст приложение)", "auto (app decides)")}
         AddHandler chkDestination.CheckedChanged, AddressOf OnDestinationToggled
         AddHandler btnColor.Click, AddressOf OnPickColor
         AddHandler lnkColorReset.LinkClicked, AddressOf OnResetColor
         Controls.AddRange(New Control() {chkDestination, lblDestNote, btnColor, pnlColor, lnkColorReset})
         tip.SetToolTip(chkDestination, If(rus, "Ресурс попадёт в получатели копирования/перемещения. Цвет метки - как пожелание: приложение может назначить свой.",
-                                              "The resource is registered as a copy/move destination. The chip color is best-effort: the app may assign its own."))
+                                              "The resource is registered as a copy/move destination. The chip color is best-effort."))
 
-        ' 6. Comment.
-        Controls.Add(New Label With {.Left = 12, .Top = 378, .Width = 180, .Height = 16,
+        ' 6. Comment / PIN / slideshow.
+        Controls.Add(New Label With {.Left = lx, .Top = 478, .Width = 214, .Height = 20,
             .Text = If(rus, "Комментарий:", "Comment:")})
-        txtComment = New TextBox With {.Left = 196, .Top = 374, .Width = 222}
+        txtComment = New TextBox With {.Left = ix, .Top = 474, .Width = iw}
         Controls.Add(txtComment)
 
-        ' 7. PIN + the §6 safeguard.
-        Controls.Add(New Label With {.Left = 12, .Top = 408, .Width = 180, .Height = 16,
+        Controls.Add(New Label With {.Left = lx, .Top = 512, .Width = 214, .Height = 20,
             .Text = If(rus, "PIN для ресурса:", "Resource PIN:")})
-        txtPin = New TextBox With {.Left = 196, .Top = 404, .Width = 100}
+        txtPin = New TextBox With {.Left = ix, .Top = 508, .Width = 140}
         Controls.Add(txtPin)
         tip.SetToolTip(txtPin, If(rus, "PIN хранится в файле и QR-коде открытым текстом - его увидит любой получатель файла.",
                                       "The PIN travels in the file and QR code in plaintext - anyone who gets the file sees it."))
 
-        ' 8. Slideshow interval.
-        Controls.Add(New Label With {.Left = 12, .Top = 462, .Width = 180, .Height = 16,
+        Controls.Add(New Label With {.Left = lx, .Top = 546, .Width = 214, .Height = 20,
             .Text = If(rus, "Слайд-шоу, секунд:", "Slideshow, seconds:")})
-        numSlide = New NumericUpDown With {.Left = 196, .Top = 458, .Width = 70, .Minimum = 1, .Maximum = 3600, .Value = 10}
+        numSlide = New NumericUpDown With {.Left = ix, .Top = 542, .Width = 90, .Minimum = 1, .Maximum = 3600, .Value = 10}
         Controls.Add(numSlide)
 
         ' OK / Cancel.
-        btnOk = New Button With {.Left = 248, .Top = 514, .Width = 82, .Height = 28, .Text = "OK"}
-        btnCancel = New Button With {.Left = 336, .Top = 514, .Width = 82, .Height = 28,
+        btnOk = New Button With {.Left = 372, .Top = 592, .Width = 86, .Height = 32, .Text = "OK"}
+        btnCancel = New Button With {.Left = 466, .Top = 592, .Width = 86, .Height = 32,
             .Text = If(rus, "Отмена", "Cancel"), .DialogResult = DialogResult.Cancel}
         AddHandler btnOk.Click, AddressOf OnOk
         Controls.Add(btnOk)

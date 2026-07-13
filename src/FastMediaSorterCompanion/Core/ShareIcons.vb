@@ -21,15 +21,24 @@ Public Module ShareIcons
     ''' <summary>Creates a fresh share Icon. Icon.FromHandle does NOT own the HICON,
     ''' so the caller must pair this with <see cref="FreeIcon"/> (dispose + DestroyIcon).</summary>
     Public Function CreateIcon(ByRef hIcon As IntPtr) As Icon
-        Const sz As Integer = 32
-        Const c As Single = 16.0F     ' center
-        Const tp As Single = 14.0F    ' center -> arrow tip
-        Const hb As Single = 8.0F     ' center -> arrowhead base
-        Const hw As Single = 5.5F     ' arrowhead half-width (barbs)
-        Const sw As Single = 2.5F     ' shaft half-width
+        Dim handle As IntPtr = IntPtr.Zero
+        Using bmp As Bitmap = CreateGlyphBitmap(32)
+            handle = bmp.GetHicon()
+        End Using
+        hIcon = handle
+        Return Icon.FromHandle(handle)
+    End Function
 
-        ' One arm (pointing up), clockwise, 7 points; rotated 90° three times fills
-        ' all four arms. The (±sw, -sw) corners are where neighbouring arms join.
+    ''' <summary>Draws the blue four-way-arrow glyph into a transparent Bitmap of the
+    ''' given size - for a Button.Image (the tray/window use the Icon overload above).</summary>
+    Public Function CreateGlyphBitmap(size As Integer) As Bitmap
+        Dim s As Single = size / 32.0F
+        Dim c As Single = 16.0F * s     ' center
+        Dim tp As Single = 14.0F * s    ' center -> arrow tip
+        Dim hb As Single = 8.0F * s     ' center -> arrowhead base
+        Dim hw As Single = 5.5F * s     ' arrowhead half-width (barbs)
+        Dim sw As Single = 2.5F * s     ' shaft half-width
+
         Dim arm As PointF() = {
             New PointF(-sw, -sw), New PointF(-sw, -hb), New PointF(-hw, -hb),
             New PointF(0, -tp), New PointF(hw, -hb), New PointF(sw, -hb), New PointF(sw, -sw)}
@@ -48,30 +57,24 @@ Public Module ShareIcons
         Next
         Dim poly As PointF() = pts.ToArray()
 
-        Dim handle As IntPtr = IntPtr.Zero
-        Using bmp As New Bitmap(sz, sz)
-            Using g As Graphics = Graphics.FromImage(bmp)
-                g.SmoothingMode = SmoothingMode.AntiAlias
-                g.PixelOffsetMode = PixelOffsetMode.HighQuality
-                g.Clear(Color.Transparent)
-
-                Using halo As New Pen(Color.FromArgb(235, 255, 255, 255), 2.4F)
-                    halo.LineJoin = LineJoin.Round
-                    g.DrawPolygon(halo, poly)
-                End Using
-                Using fill As New SolidBrush(Color.FromArgb(30, 120, 220))
-                    g.FillPolygon(fill, poly)
-                End Using
-                Using edge As New Pen(Color.FromArgb(18, 78, 150), 1.0F)
-                    edge.LineJoin = LineJoin.Round
-                    g.DrawPolygon(edge, poly)
-                End Using
+        Dim bmp As New Bitmap(size, size)
+        Using g As Graphics = Graphics.FromImage(bmp)
+            g.SmoothingMode = SmoothingMode.AntiAlias
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality
+            g.Clear(Color.Transparent)
+            Using halo As New Pen(Color.FromArgb(235, 255, 255, 255), 2.4F * s)
+                halo.LineJoin = LineJoin.Round
+                g.DrawPolygon(halo, poly)
             End Using
-            handle = bmp.GetHicon()
+            Using fill As New SolidBrush(Color.FromArgb(30, 120, 220))
+                g.FillPolygon(fill, poly)
+            End Using
+            Using edge As New Pen(Color.FromArgb(18, 78, 150), 1.0F * s)
+                edge.LineJoin = LineJoin.Round
+                g.DrawPolygon(edge, poly)
+            End Using
         End Using
-
-        hIcon = handle
-        Return Icon.FromHandle(handle)
+        Return bmp
     End Function
 
     ''' <summary>Disposes the Icon and frees its GDI handle (FromHandle doesn't own it).</summary>
