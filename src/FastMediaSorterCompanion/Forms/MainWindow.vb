@@ -240,7 +240,10 @@ Public NotInheritable Class MainWindow
     Private Function BuildInfoRow(ByRef lbl As Label, ByRef copyBtn As Button, provider As Func(Of String)) As FlowLayoutPanel
         Dim row As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .WrapContents = False, .FlowDirection = FlowDirection.LeftToRight, .Margin = New Padding(0, 2, 0, 2), .Padding = New Padding(0)}
-        lbl = New Label With {.AutoSize = True, .Margin = New Padding(0, 5, 4, 0), .ForeColor = Color.DimGray}
+        ' Cap the value width so long values (host key, login/password) wrap instead of
+        ' pushing the copy button off the right edge - nobody retypes them anyway, they
+        ' copy. Short addresses size to content, so the button sits right after them.
+        lbl = New Label With {.AutoSize = True, .MaximumSize = New Size(300, 0), .Margin = New Padding(0, 5, 4, 0), .ForeColor = Color.DimGray}
         Dim btn As New Button With {.Width = 26, .Height = 24, .Margin = New Padding(0, 2, 0, 0), .Image = _copyGlyph,
             .ImageAlign = ContentAlignment.MiddleCenter, .FlatStyle = FlatStyle.System, .TabStop = False, .Tag = provider}
         toolTip.SetToolTip(btn, If(Rus, "Копировать в буфер", "Copy to clipboard"))
@@ -676,7 +679,7 @@ Public NotInheritable Class MainWindow
         lblState.Text = If(running, If(Rus, "Папки видны на телефоне", "Folders are visible on the phone"), If(Rus, "Раздача выключена", "Sharing is off"))
         lblState.ForeColor = If(running, Color.ForestGreen, Color.DimGray)
 
-        lblInternet.Text = (If(Rus, "Вне дома (интернет): ", "Away (internet): ")) & InternetStatusText(running, reach)
+        lblInternet.Text = (If(Rus, "Через интернет: ", "Via internet: ")) & InternetStatusText(running, reach)
         lblLan.Text = (If(Rus, "Дома (Wi-Fi): ", "Home (Wi-Fi): ")) & If(CurrentLanAddress().Length > 0, CurrentLanAddress(), "-")
         lblIpv6.Text = (If(Rus, "IPv6: ", "IPv6: ")) & Ipv6Value()
         lblFinger.Text = (If(Rus, "Ключ узла: ", "Host key: ")) & FingerprintValue()
@@ -716,7 +719,8 @@ Public NotInheritable Class MainWindow
         Dim st As WorkerStatus = _status
         If st Is Nothing OrElse String.IsNullOrEmpty(st.Password) Then Return ""
         Dim user As String = If(String.IsNullOrEmpty(st.Username), "fms", st.Username)
-        Return (If(Rus, "Логин: ", "Login: ")) & user & "   " & (If(Rus, "Пароль: ", "Password: ")) & st.Password
+        ' Two lines so the (long) password fits the capped-width label + keeps the copy button visible.
+        Return (If(Rus, "Логин: ", "Login: ")) & user & Environment.NewLine & (If(Rus, "Пароль: ", "Password: ")) & st.Password
     End Function
 
     ' --- package wizard + viewer launch ----------------------------------------
