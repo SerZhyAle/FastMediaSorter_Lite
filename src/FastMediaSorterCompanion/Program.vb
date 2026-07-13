@@ -45,6 +45,11 @@ Friend Module Program
             ' Companion matches LITE's language (invariant 9).
             CompanionGlobals.LoadLanguage()
 
+            ' Upgrade migration (spec §9.3): if logon autostart still points at the
+            ' bare worker (old LITE behavior), repoint it at Companion.exe so the
+            ' tray icon appears at logon. No-op otherwise.
+            AutostartManager.MigrateRunTargetIfNeeded()
+
             Application.EnableVisualStyles()
             Application.SetCompatibleTextRenderingDefault(False)
             Try

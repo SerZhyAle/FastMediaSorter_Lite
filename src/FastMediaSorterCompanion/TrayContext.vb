@@ -97,22 +97,21 @@ Friend NotInheritable Class TrayContext
     End Sub
 
     Private Async Function ResumeAsync() As Task
+        Dim running As Boolean = False
         Try
-            Await ShareController.EnsureRunningReconciledAsync()
+            Dim st As WorkerStatus = Await ShareController.EnsureRunningReconciledAsync()
+            running = st IsNot Nothing AndAlso st.Running
         Catch
         End Try
-        RefreshTrayState()
+        RefreshTrayState(running)
     End Function
 
-    Private Sub RefreshTrayState()
+    ''' <summary>Updates the tray tooltip to the current server state. Takes the
+    ''' running flag directly (never re-fetches on the UI thread - a blocking
+    ''' await there can deadlock).</summary>
+    Private Sub RefreshTrayState(running As Boolean)
         Try
             If _notifyIcon Is Nothing Then Return
-            Dim st As WorkerStatus = Nothing
-            Try
-                st = ShareController.GetStatusAsync().GetAwaiter().GetResult()
-            Catch
-            End Try
-            Dim running As Boolean = st IsNot Nothing AndAlso st.Running
             _notifyIcon.Text = If(running,
                 If(Is_Russian_Language, "Общий доступ включён", "Sharing on"),
                 "Fast Media Sorter: Share Manager")

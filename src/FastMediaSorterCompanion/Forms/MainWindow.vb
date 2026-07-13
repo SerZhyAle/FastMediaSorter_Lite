@@ -53,8 +53,10 @@ Public NotInheritable Class MainWindow
     Private btnEnable As Button
 
     ''' <summary>Raised whenever server state changes so the tray host can refresh its
-    ''' icon/menu (Companion analogue of the LITE Main_Form.RefreshShareTray call).</summary>
-    Public Event ServerStateChanged()
+    ''' icon/menu (Companion analogue of the LITE Main_Form.RefreshShareTray call).
+    ''' Carries the running flag so the tray never has to re-fetch (which would block
+    ''' the UI thread on an async call and can deadlock).</summary>
+    Public Event ServerStateChanged(running As Boolean)
 
     Public Sub New(Optional initialFolder As String = Nothing)
         _initialFolder = If(initialFolder, "")
@@ -457,7 +459,7 @@ Public NotInheritable Class MainWindow
         lblFinger.Text = If(_status IsNot Nothing AndAlso Not String.IsNullOrEmpty(_status.Fingerprint),
                             (If(Rus, "Ключ узла: ", "Host key: ") & _status.Fingerprint), "")
         btnShare.Enabled = running AndAlso Not _busy
-        RaiseEvent ServerStateChanged()
+        RaiseEvent ServerStateChanged(running)
     End Sub
 
     Private Function CurrentLanAddress() As String
