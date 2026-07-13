@@ -159,11 +159,11 @@ Friend NotInheritable Class TrayContext
             Catch
             End Try
             Try
-                If _trayIcon IsNot Nothing Then
-                    Dim h As IntPtr = _trayIcon.Handle
-                    _trayIcon.Dispose()
-                    If h <> IntPtr.Zero Then DestroyIcon(h)
-                End If
+                ' _trayIcon is a Clone that owns its own handle - Dispose frees it.
+                ' (No manual DestroyIcon: the raw GetHicon handle was already freed
+                ' in BuildTrayIcon, and destroying the clone's handle here would be a
+                ' double-free.)
+                If _trayIcon IsNot Nothing Then _trayIcon.Dispose()
             Catch
             End Try
         End If
@@ -186,9 +186,16 @@ Friend NotInheritable Class TrayContext
                 End Using
             End Using
             Dim hIcon As IntPtr = bmp.GetHicon()
-            Using tmp As Icon = Icon.FromHandle(hIcon)
-                Return CType(tmp.Clone(), Icon)
-            End Using
+            Try
+                ' Icon.FromHandle does NOT own hIcon; the Clone gets its own handle,
+                ' so free the raw GetHicon handle here to avoid leaking one GDI icon
+                ' handle per launch.
+                Using tmp As Icon = Icon.FromHandle(hIcon)
+                    Return CType(tmp.Clone(), Icon)
+                End Using
+            Finally
+                DestroyIcon(hIcon)
+            End Try
         End Using
     End Function
 

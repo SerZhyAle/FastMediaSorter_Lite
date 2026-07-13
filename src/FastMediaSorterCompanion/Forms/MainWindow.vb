@@ -46,6 +46,11 @@ Public NotInheritable Class MainWindow
     Private lblHint As Label
     Private toolTip As ToolTip
 
+    ' All real content lives under this panel so the enable-gate overlay can hide
+    ' the WHOLE UI at once (a Dock.Fill overlay alone would not cover edge-docked
+    ' siblings like the server panel / bottom bar).
+    Private pnlContent As Panel
+
     ' Enable-gate overlay (shown when server features are not consented).
     Private pnlEnable As Panel
     Private lblEnableTitle As Label
@@ -171,10 +176,16 @@ Public NotInheritable Class MainWindow
         pnlEnable.Controls.Add(lblEnableIntro)
         pnlEnable.Controls.Add(lblEnableTitle)
 
-        Me.Controls.Add(grpShares)
-        Me.Controls.Add(grpServer)
-        Me.Controls.Add(lblIntro)
-        Me.Controls.Add(pnlBottom)
+        ' All content under one panel; the gate overlay is a sibling Fill panel and
+        ' only one of the two is Visible at a time, so the visible one covers the
+        ' whole client area (a hidden Dock.Fill reserves no space).
+        pnlContent = New Panel With {.Dock = DockStyle.Fill}
+        pnlContent.Controls.Add(grpShares)
+        pnlContent.Controls.Add(grpServer)
+        pnlContent.Controls.Add(lblIntro)
+        pnlContent.Controls.Add(pnlBottom)
+
+        Me.Controls.Add(pnlContent)
         Me.Controls.Add(pnlEnable)
         pnlEnable.BringToFront()
 
@@ -207,8 +218,16 @@ Public NotInheritable Class MainWindow
 
     Private Sub ApplyGate()
         Dim enabled As Boolean = ServerFeatures.IsEnabled()
+        ' Hide the ENTIRE content (server panel, bottom bar, list) behind the gate,
+        ' not just the centre - otherwise Start/Share/autostart stay clickable and a
+        ' user could drive the worker or write the autostart value while gated off.
+        pnlContent.Visible = enabled
         pnlEnable.Visible = Not enabled
-        If Not enabled Then pnlEnable.BringToFront()
+        If enabled Then
+            pnlContent.BringToFront()
+        Else
+            pnlEnable.BringToFront()
+        End If
     End Sub
 
     Private Async Function EnterAsync() As Task
