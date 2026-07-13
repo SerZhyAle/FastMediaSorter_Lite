@@ -5,11 +5,11 @@ Imports System.Windows.Forms
 
 ''' <summary>
 ''' Tray-resident application host. Companion is ALWAYS tray-resident (its normal
-''' state, not the close-to-tray crutch LITE needed) - so there is no visible main
-''' window at startup, just the notify icon and a hidden receiver window for the
-''' LITE -&gt; Companion wake handshake (WM_COPYDATA).
-''' Ф0 skeleton: a placeholder icon + Open/Exit menu; received payloads surface as
-''' a balloon. The real tray menu, wizards and worker control arrive in Ф2/Ф3.
+''' state, not the close-to-tray crutch LITE needed) - so a bare launch shows no
+''' window, just the notify icon and a hidden receiver window for the
+''' LITE -&gt; Companion wake handshake (WM_COPYDATA). Owns the single reusable
+''' MainWindow and, on launch, silently resumes sharing if the user ever shared
+''' before (ResumeShareIfEnabled analogue).
 ''' </summary>
 Friend NotInheritable Class TrayContext
     Inherits ApplicationContext
@@ -17,10 +17,11 @@ Friend NotInheritable Class TrayContext
     Private ReadOnly _notifyIcon As NotifyIcon
     Private ReadOnly _messageWindow As MessageWindow
     Private ReadOnly _trayIcon As Icon
+    Private _mainWindow As MainWindow
     Private _disposed As Boolean
 
     Friend Sub New(initialFolder As String)
-        _trayIcon = BuildPlaceholderIcon()
+        _trayIcon = BuildTrayIcon()
 
         _notifyIcon = New NotifyIcon() With {
             .Icon = _trayIcon,
@@ -28,49 +29,112 @@ Friend NotInheritable Class TrayContext
             .Visible = True
         }
         _notifyIcon.ContextMenuStrip = BuildMenu()
-        AddHandler _notifyIcon.DoubleClick, Sub() ShowPlaceholder("Open the Share Manager window (Ф2).")
+        AddHandler _notifyIcon.DoubleClick, Sub() ShowMainWindow(Nothing)
 
         _messageWindow = New MessageWindow()
         AddHandler _messageWindow.PayloadReceived, AddressOf OnPayloadReceived
 
-        If Not String.IsNullOrEmpty(initialFolder) Then
-            ' Ф2 will open the "share this folder" wizard prefilled; Ф0 just proves the arg arrived.
-            ShowPlaceholder("Initial folder: " & initialFolder)
-        End If
+        ' Resume sharing silently if it was ever started - covers the "dedicated
+        ' server" scenario where Companion autostarts into the tray with no window.
+        ResumeShareIfEnabled()
+
+        ' A launch with a folder argument is the explicit "share this folder"
+        ' gesture: open the window (which jumps to the package wizard). A bare
+        ' launch stays silently in the tray.
+        If Not String.IsNullOrEmpty(initialFolder) Then ShowMainWindow(initialFolder)
     End Sub
 
     Private Function BuildMenu() As ContextMenuStrip
         Dim menu As New ContextMenuStrip()
 
-        Dim miOpen As New ToolStripMenuItem("Open Fast Media Sorter: Share Manager")
+        Dim miOpen As New ToolStripMenuItem(If(Is_Russian_Language, "Открыть менеджер общего доступа", "Open Share Manager"))
         miOpen.Font = New Font(menu.Font, FontStyle.Bold)
-        AddHandler miOpen.Click, Sub() ShowPlaceholder("Open the Share Manager window (Ф2).")
+        AddHandler miOpen.Click, Sub() ShowMainWindow(Nothing)
         menu.Items.Add(miOpen)
+
+        Dim miViewer As New ToolStripMenuItem(If(Is_Russian_Language, "Открыть Fast Media Sorter", "Open Fast Media Sorter"))
+        AddHandler miViewer.Click, Sub() LaunchViewer()
+        menu.Items.Add(miViewer)
 
         menu.Items.Add(New ToolStripSeparator())
 
-        Dim miExit As New ToolStripMenuItem("Exit")
+        Dim miExit As New ToolStripMenuItem(If(Is_Russian_Language, "Выход", "Exit"))
         AddHandler miExit.Click, Sub() ExitApplication()
         menu.Items.Add(miExit)
 
         Return menu
     End Function
 
+    ''' <summary>Shows (creating/reusing) the main window and brings it to front. A
+    ''' non-empty <paramref name="initialFolder"/> requests the "share this folder"
+    ''' flow; when a window already exists it is just activated (folder routing is
+    ''' refined with the wake protocol in Ф4).</summary>
+    Private Sub ShowMainWindow(initialFolder As String)
+        Try
+            If _mainWindow Is Nothing OrElse _mainWindow.IsDisposed Then
+                _mainWindow = New MainWindow(initialFolder)
+                AddHandler _mainWindow.ServerStateChanged, AddressOf RefreshTrayState
+            End If
+            If Not _mainWindow.Visible Then _mainWindow.Show()
+            If _mainWindow.WindowState = FormWindowState.Minimized Then _mainWindow.WindowState = FormWindowState.Normal
+            _mainWindow.Activate()
+            _mainWindow.BringToFront()
+        Catch
+        End Try
+    End Sub
+
+    Private Sub ResumeShareIfEnabled()
+        If Not ServerFeatures.IsEnabled() OrElse Not WorkerProcess.IsAvailable() Then Return
+        Dim s As New ShareSettings()
+        Try
+            s.Load()
+        Catch
+        End Try
+        If Not s.WorkerEverStarted Then Return
+        ' Fire-and-forget: bring the worker up and reconcile its enforced readOnly
+        ' with what the .fmscfg advertises, then refresh the tray.
+        Dim t As Task = ResumeAsync()
+    End Sub
+
+    Private Async Function ResumeAsync() As Task
+        Try
+            Await ShareController.EnsureRunningReconciledAsync()
+        Catch
+        End Try
+        RefreshTrayState()
+    End Function
+
+    Private Sub RefreshTrayState()
+        Try
+            If _notifyIcon Is Nothing Then Return
+            Dim st As WorkerStatus = Nothing
+            Try
+                st = ShareController.GetStatusAsync().GetAwaiter().GetResult()
+            Catch
+            End Try
+            Dim running As Boolean = st IsNot Nothing AndAlso st.Running
+            _notifyIcon.Text = If(running,
+                If(Is_Russian_Language, "Общий доступ включён", "Sharing on"),
+                "Fast Media Sorter: Share Manager")
+        Catch
+        End Try
+    End Sub
+
     Private Sub OnPayloadReceived(payload As String)
-        ' Marshal onto the UI thread - WndProc already runs there, but keep the
-        ' contract explicit for when Ф2 does real work here.
         If String.Equals(payload, Program.ShowWindowCommand, StringComparison.Ordinal) Then
-            ShowPlaceholder("Show window request received.")
+            ShowMainWindow(Nothing)
         Else
-            ShowPlaceholder("Share folder request: " & payload)
+            ShowMainWindow(payload)
         End If
     End Sub
 
-    Private Sub ShowPlaceholder(message As String)
+    Private Sub LaunchViewer()
         Try
-            _notifyIcon.BalloonTipTitle = "Share Manager"
-            _notifyIcon.BalloonTipText = message
-            _notifyIcon.ShowBalloonTip(3000)
+            Dim dir As String = IO.Path.GetDirectoryName(Application.ExecutablePath)
+            Dim exe As String = IO.Path.Combine(dir, "FastMediaSorter_LITE.exe")
+            If IO.File.Exists(exe) Then
+                Process.Start(New ProcessStartInfo(exe) With {.UseShellExecute = True})
+            End If
         Catch
         End Try
     End Sub
@@ -82,6 +146,10 @@ Friend NotInheritable Class TrayContext
     Protected Overrides Sub Dispose(disposing As Boolean)
         If disposing AndAlso Not _disposed Then
             _disposed = True
+            Try
+                If _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed Then _mainWindow.Dispose()
+            Catch
+            End Try
             Try
                 _notifyIcon.Visible = False
                 _notifyIcon.Dispose()
@@ -103,8 +171,9 @@ Friend NotInheritable Class TrayContext
         MyBase.Dispose(disposing)
     End Sub
 
-    ''' <summary>Placeholder blue "share" glyph until the real drawn icon is ported in Ф3.</summary>
-    Private Shared Function BuildPlaceholderIcon() As Icon
+    ''' <summary>Blue four-way-arrow "share" glyph (placeholder; the exact LITE drawn
+    ''' icon is ported in Ф3).</summary>
+    Private Shared Function BuildTrayIcon() As Icon
         Using bmp As New Bitmap(32, 32)
             Using g As Graphics = Graphics.FromImage(bmp)
                 g.SmoothingMode = Drawing2D.SmoothingMode.AntiAlias
@@ -113,14 +182,11 @@ Friend NotInheritable Class TrayContext
                     g.FillEllipse(b, 2, 2, 27, 27)
                 End Using
                 Using p As New Pen(Color.White, 3)
-                    ' A crude four-way arrow suggestion.
                     g.DrawLine(p, 16, 6, 16, 26)
                     g.DrawLine(p, 6, 16, 26, 16)
                 End Using
             End Using
             Dim hIcon As IntPtr = bmp.GetHicon()
-            ' Clone so the returned Icon owns managed data independent of hIcon;
-            ' hIcon is destroyed by the caller in Dispose.
             Using tmp As Icon = Icon.FromHandle(hIcon)
                 Return CType(tmp.Clone(), Icon)
             End Using
