@@ -20,7 +20,7 @@ Friend NotInheritable Class TrayContext
     Private _mainWindow As MainWindow
     Private _disposed As Boolean
 
-    Friend Sub New(initialFolder As String)
+    Friend Sub New(initialFolder As String, Optional showWindowOnStart As Boolean = True)
         _trayIcon = BuildTrayIcon()
 
         _notifyIcon = New NotifyIcon() With {
@@ -38,10 +38,15 @@ Friend NotInheritable Class TrayContext
         ' server" scenario where Companion autostarts into the tray with no window.
         ResumeShareIfEnabled()
 
-        ' A launch with a folder argument is the explicit "share this folder"
-        ' gesture: open the window (which jumps to the package wizard). A bare
-        ' launch stays silently in the tray.
-        If Not String.IsNullOrEmpty(initialFolder) Then ShowMainWindow(initialFolder)
+        ' A folder argument is the explicit "share this folder" gesture: open the
+        ' window (which jumps to the package wizard). Otherwise a manual launch
+        ' (showWindowOnStart=True) opens the main window, while a silent autostart
+        ' (--tray) stays in the tray with no window (spec §4.5.1 / §4.3).
+        If Not String.IsNullOrEmpty(initialFolder) Then
+            ShowMainWindow(initialFolder)
+        ElseIf showWindowOnStart Then
+            ShowMainWindow(Nothing)
+        End If
     End Sub
 
     Private Function BuildMenu() As ContextMenuStrip

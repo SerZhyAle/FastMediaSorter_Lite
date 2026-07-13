@@ -79,7 +79,7 @@ Public Module AutostartManager
             Using k As RegistryKey = Registry.CurrentUser.CreateSubKey(RunKeyPath)
                 If k Is Nothing Then Return False
                 If enabled Then
-                    k.SetValue(RunValueName, """" & exe & """", RegistryValueKind.String)
+                    k.SetValue(RunValueName, RunCommand(exe), RegistryValueKind.String)
                 ElseIf k.GetValue(RunValueName) IsNot Nothing Then
                     k.DeleteValue(RunValueName, throwOnMissingValue:=False)
                 End If
@@ -108,13 +108,22 @@ Public Module AutostartManager
                 If String.IsNullOrEmpty(current) Then Return   ' autostart not enabled - nothing to migrate
                 Dim companion As String = CompanionExePath()
                 If companion.Length = 0 Then Return
-                If Not PathMatches(current, companion) Then
-                    k.SetValue(RunValueName, """" & companion & """", RegistryValueKind.String)
+                ' Rewrite when the exe target OR the silent-tray flag is missing (an
+                ' old value points at the worker, or a value without --tray would pop
+                ' the window at every logon).
+                If Not String.Equals(current, RunCommand(companion), StringComparison.OrdinalIgnoreCase) Then
+                    k.SetValue(RunValueName, RunCommand(companion), RegistryValueKind.String)
                 End If
             End Using
         Catch
         End Try
     End Sub
+
+    ''' <summary>The HKCU Run command: quoted Companion path + the silent-tray flag,
+    ''' so a logon launch goes straight to the tray (spec §4.5.1).</summary>
+    Private Function RunCommand(exe As String) As String
+        Return """" & exe & """ " & Program.TrayFlag
+    End Function
 
     ''' <summary>Companion's own exe path - the autostart target.</summary>
     Private Function CompanionExePath() As String
@@ -123,12 +132,6 @@ Public Module AutostartManager
         Catch
             Return ""
         End Try
-    End Function
-
-    ''' <summary>True when the (possibly quoted) Run value already points at <paramref name="exe"/>.</summary>
-    Private Function PathMatches(runValue As String, exe As String) As Boolean
-        Dim v As String = runValue.Trim().Trim(""""c).Trim()
-        Return String.Equals(v, exe, StringComparison.OrdinalIgnoreCase)
     End Function
 
 End Module

@@ -21,10 +21,28 @@ Friend Module Program
     ''' <summary>Title of the hidden receiver window, used by a second instance to find the first.</summary>
     Friend Const MessageWindowTitle As String = "FastMediaSorterCompanionMessageWindow_{2f6a1c94}"
 
+    ''' <summary>Autostart passes this so a logon launch stays silently in the tray;
+    ''' a manual double-click (no flag) opens the window (spec §4.5.1).</summary>
+    Public Const TrayFlag As String = "--tray"
+
     <STAThread>
     Friend Sub Main(args As String())
-        Dim payload As String = If(args IsNot Nothing AndAlso args.Length > 0 AndAlso Not String.IsNullOrWhiteSpace(args(0)),
-                                   args(0), ShowWindowCommand)
+        ' Separate the silent-tray flag from an optional folder argument.
+        Dim silentTray As Boolean = False
+        Dim folder As String = Nothing
+        If args IsNot Nothing Then
+            For Each a As String In args
+                If String.Equals(a, TrayFlag, StringComparison.OrdinalIgnoreCase) OrElse
+                   String.Equals(a, "/tray", StringComparison.OrdinalIgnoreCase) Then
+                    silentTray = True
+                ElseIf folder Is Nothing AndAlso Not String.IsNullOrWhiteSpace(a) AndAlso Not a.StartsWith("-", StringComparison.Ordinal) Then
+                    folder = a
+                End If
+            Next
+        End If
+
+        ' What a second instance forwards to the first: the folder, else show-window.
+        Dim payload As String = If(Not String.IsNullOrEmpty(folder), folder, ShowWindowCommand)
 
         Dim createdNew As Boolean
         Dim mtx As Mutex = Nothing
@@ -58,10 +76,10 @@ Friend Module Program
                 ' Older shells may reject PerMonitorV2 at runtime - the manifest still covers it.
             End Try
 
-            ' A bare launch (double-click / autostart / tray) passes the show-window
-            ' marker, which TrayContext treats as "no initial folder".
-            Dim initialFolder As String = If(String.Equals(payload, ShowWindowCommand, StringComparison.Ordinal), Nothing, payload)
-            Using ctx As New TrayContext(initialFolder)
+            ' Manual double-click (no --tray) opens the window; autostart (--tray)
+            ' stays silently in the tray. A folder argument always opens (and jumps
+            ' to the share-this-folder wizard).
+            Using ctx As New TrayContext(folder, showWindowOnStart:=Not silentTray)
                 Application.Run(ctx)
             End Using
         Finally
