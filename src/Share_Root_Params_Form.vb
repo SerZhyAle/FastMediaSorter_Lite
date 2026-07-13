@@ -214,7 +214,7 @@ Public Class Share_Root_Params_Form
 
         ' Effective writability: read-only unless explicitly writable or a destination
         ' (the latter also normalizes a legacy destination whose IsReadOnly stayed True).
-        Dim writable As Boolean = (Not _params.IsReadOnly) OrElse _params.IsDestination
+        Dim writable As Boolean = _params.IsWritable()
         _syncingWritability = True
         chkReadOnly.Checked = Not writable
         chkDestination.Checked = _params.IsDestination

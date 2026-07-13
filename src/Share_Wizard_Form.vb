@@ -629,9 +629,12 @@ Public Class Share_Wizard_Form
         For Each it As ListViewItem In lvFolders.Items
             Dim hostPath As String = Convert.ToString(it.Tag)
             If Not String.IsNullOrEmpty(hostPath) Then
-                ' Same rule as the Share tab: a destination root (v2 isDestination,
-                ' configured there) must accept writes; everything else read-only.
-                Dim writable As Boolean = ShareRootParamsStore.GetFor(hostPath).IsDestination
+                ' Same rule as the Share tab and the .fmscfg export: writable unless
+                ' explicitly read-only, OR a destination (which forces writes). Was
+                ' IsDestination-only here, so a normal folder shared via the wizard
+                ' went to the worker read-only while its .fmscfg advertised writable -
+                ' the phone then showed Move/Delete but the SFTP rm was denied.
+                Dim writable As Boolean = ShareRootParamsStore.GetFor(hostPath).IsWritable()
                 list.Add(New ShareFolder With {.name = it.Text, .hostPath = hostPath, .readOnly = Not writable})
             End If
         Next

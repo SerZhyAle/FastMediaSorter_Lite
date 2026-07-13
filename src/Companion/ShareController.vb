@@ -74,6 +74,46 @@ Public Module ShareController
         Return If(resp IsNot Nothing, resp.Status, Nothing)
     End Function
 
+    ''' <summary>
+    ''' Ensures the worker is up AND reconciles what it ENFORCES with what LITE
+    ''' ADVERTISES. The worker autostarts its SFTP server from its own persisted
+    ''' shares.json (per-root readOnly frozen at the last SetSharedFolders push),
+    ''' while the .fmscfg readOnly is recomputed live from ShareRootParams. A bare
+    ''' relaunch never re-pushes the list, so a folder the phone is told is writable
+    ''' (readOnly:false) can still be served read-only - the phone shows Move/Delete
+    ''' but the SFTP rm is denied. Here, after the worker is up, we recompute each
+    ''' root's readOnly from ShareRootParams (the same IsWritable() the export uses)
+    ''' and, only when a root drifted, re-push the corrected list so the SFTP server
+    ''' matches the contract. Never throws; a transport failure just leaves it as-is.
+    ''' Returns the (possibly refreshed) status, or Nothing if unreachable.
+    ''' </summary>
+    Public Async Function EnsureRunningReconciledAsync() As Task(Of WorkerStatus)
+        If Not WorkerProcess.IsAvailable() Then Return Nothing
+        Dim resp As WorkerResponse = Await Task.Run(Function() WorkerProcess.EnsureRunning(6000))
+        If resp Is Nothing Then Return Nothing
+        Dim status As WorkerStatus = resp.Status
+        If status Is Nothing OrElse status.Roots Is Nothing OrElse status.Roots.Count = 0 Then Return status
+
+        Dim corrected As New List(Of ShareFolder)()
+        Dim drift As Boolean = False
+        For Each r As ShareFolder In status.Roots
+            Dim host As String = If(r.hostPath, "")
+            Dim desiredReadOnly As Boolean = Not ShareRootParamsStore.GetFor(host).IsWritable()
+            If desiredReadOnly <> r.readOnly Then drift = True
+            corrected.Add(New ShareFolder With {.name = r.name, .hostPath = host, .readOnly = desiredReadOnly})
+        Next
+        If Not drift Then Return status
+
+        ' SetSharedFolders replaces the list (hot-restarts the server if it was
+        ' already running); StartServer then covers the case where autostart had not
+        ' brought it up. Both best-effort.
+        Await SendAsync(New WorkerRequest With {.type = "SetSharedFolders", .folders = corrected}, 5000)
+        Await SendAsync(New WorkerRequest With {.type = "StartServer"}, 6000)
+
+        Dim after As WorkerResponse = Await Task.Run(Function() WorkerProcess.TryGetStatus(2000))
+        Return If(after IsNot Nothing AndAlso after.Status IsNot Nothing, after.Status, status)
+    End Function
+
     ''' <summary>Fetches the current worker status, or Nothing if unreachable.</summary>
     Public Async Function GetStatusAsync() As Task(Of WorkerStatus)
         If Not WorkerProcess.IsAvailable() Then Return Nothing

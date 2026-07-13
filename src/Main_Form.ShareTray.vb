@@ -90,7 +90,11 @@ Partial Public Class Main_Form
 
     Private Async Sub ResumeShareAsync()
         Try
-            Await ShareController.EnsureRunningAsync()
+            ' Reconcile: the worker autostarts its SFTP server from its own
+            ' shares.json, whose per-root readOnly can lag behind what the .fmscfg
+            ' now advertises (writable-by-default). Re-sync it at launch so the phone
+            ' is never told a folder is writable while the server serves it read-only.
+            Await ShareController.EnsureRunningReconciledAsync()
         Catch
         End Try
     End Sub

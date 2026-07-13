@@ -80,7 +80,13 @@ End Class
 Public Class ShareFolder
     Public Property name As String = ""
     Public Property hostPath As String = ""
-    Public Property [readOnly] As Boolean = True
+    ''' <summary>Default False (writable) mirrors the product default
+    ''' (ShareRootParams.IsReadOnly = False - a freshly shared folder accepts the
+    ''' phone's Move/copy out of the box). Every send path sets this explicitly from
+    ''' ShareRootParams.IsWritable(); the default only guards against a future caller
+    ''' that forgets. It used to default True, which silently served folders
+    ''' read-only while the .fmscfg advertised them writable.</summary>
+    Public Property [readOnly] As Boolean = False
 End Class
 
 ' --- response DTOs (Appendix A.2) ---------------------------------------------

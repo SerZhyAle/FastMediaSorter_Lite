@@ -479,7 +479,10 @@ Partial Public Class Table_Form
 
         SetShareBusy(True)
         SetShareHint(If(rus, "Запуск компаньона..", "Starting companion.."))
-        Dim st As WorkerStatus = Await ShareController.EnsureRunningAsync()
+        ' Reconcile the worker's enforced per-root readOnly (shares.json) with what
+        ' the .fmscfg advertises (ShareRootParams) so opening the tab also heals a
+        ' folder served read-only while shown as writable.
+        Dim st As WorkerStatus = Await ShareController.EnsureRunningReconciledAsync()
         If st Is Nothing Then
             SetShareHint(If(rus, "Не удалось связаться с компаньоном.", "Could not reach the companion worker."))
             SetShareBusy(False)
@@ -592,8 +595,8 @@ Partial Public Class Table_Form
             ' Re-share only when the effective WRITABILITY changed (read-only flag or
             ' destination flag). Both feed the served readOnly, so either flip needs a
             ' live re-share; the other params are read fresh at the next start.
-            Dim writableBefore As Boolean = (Not before.IsReadOnly) OrElse before.IsDestination
-            Dim writableAfter As Boolean = (Not after.IsReadOnly) OrElse after.IsDestination
+            Dim writableBefore As Boolean = before.IsWritable()
+            Dim writableAfter As Boolean = after.IsWritable()
             If writableBefore <> writableAfter AndAlso it.Checked Then
                 ' Only a LIVE server needs the re-share (the flag is read fresh from
                 ' the store at the next start anyway) - never cold-start the server
@@ -950,10 +953,10 @@ Partial Public Class Table_Form
             Dim hostPath As String = Convert.ToString(it.Tag)
             If Not String.IsNullOrEmpty(hostPath) Then
                 ' Writable when the root is explicitly not read-only, OR it is a
-                ' destination (which must accept writes, §5). Everything else - the
-                ' default - stays read-only.
-                Dim p As ShareRootParams = ShareRootParamsStore.GetFor(hostPath)
-                Dim writable As Boolean = (Not p.IsReadOnly) OrElse p.IsDestination
+                ' destination (which must accept writes, §5). Same IsWritable() the
+                ' .fmscfg export uses, so the worker's enforced readOnly matches what
+                ' the phone is told.
+                Dim writable As Boolean = ShareRootParamsStore.GetFor(hostPath).IsWritable()
                 list.Add(New ShareFolder With {.name = it.Text, .hostPath = hostPath, .readOnly = Not writable})
             End If
         Next

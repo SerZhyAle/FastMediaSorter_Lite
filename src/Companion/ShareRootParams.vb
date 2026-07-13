@@ -58,6 +58,18 @@ Public Class ShareRootParams
     ''' <summary>Seconds between slideshow images; 10 = the app default (omitted on export).</summary>
     Public Property SlideshowInterval As Integer = 10
 
+    ''' <summary>Effective SFTP writability of this root: writable when it is not
+    ''' explicitly read-only, OR it is a destination (which must accept writes and so
+    ''' overrides <see cref="IsReadOnly"/>). This is the SINGLE definition of the
+    ''' per-root writable flag - the exported <c>readOnly</c> (ShareConfigBuilder),
+    ''' the worker SetSharedFolders push (both the Share tab and the quick wizard) and
+    ''' the resume reconciliation all derive readOnly from it, so what the .fmscfg
+    ''' tells the phone can never disagree with the SFTP server's real permissions
+    ''' (the "Move deletes the original -&gt; rm permission denied" contract bug).</summary>
+    Public Function IsWritable() As Boolean
+        Return (Not IsReadOnly) OrElse IsDestination
+    End Function
+
     ''' <summary>True when every field is at the Android import default - nothing to
     ''' emit, the root stays pure v1.</summary>
     Public Function IsDefault() As Boolean

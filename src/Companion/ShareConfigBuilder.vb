@@ -192,7 +192,9 @@ Public Module ShareConfigBuilder
         ' Android parser ignores the unknown key and treats the root as read-only,
         ' its existing default). true = browse/download only; false = the phone may
         ' write. A destination is inherently writable, so it forces readOnly:false.
-        Dim writable As Boolean = p IsNot Nothing AndAlso ((Not p.IsReadOnly) OrElse p.IsDestination)
+        ' Same ShareRootParams.IsWritable() the worker push uses (S1016) - the phone
+        ' contract and the SFTP server's real permissions must never disagree.
+        Dim writable As Boolean = p IsNot Nothing AndAlso p.IsWritable()
         sb.Append(",""readOnly"":").Append(If(writable, "false", "true"))
 
         If p IsNot Nothing Then
