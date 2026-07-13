@@ -9,10 +9,10 @@ Imports System.Windows.Forms
 
 ''' <summary>
 ''' Companion main window - LEVEL 1 of the two-wizard model (§4.5): manage the shared
-''' folders, see the phone-access status (internet FIRST, then home Wi-Fi, IPv6, host
-''' key, login/password, router - copyable), Start/Stop, autostart. The big "Поделиться"
-''' action (top-right) opens the one-shot Package wizard. This runs on a PC, so the
-''' layout is roomy - not the tiny controls the FMS viewer uses to save content space.
+''' folders and see phone-access status. The server panel is a borderless 3-column
+''' grid (caption | value | copy button) built with a TableLayoutPanel so it scales
+''' cleanly at any display scaling (125/150/175%) - no absolute pixel coordinates. The
+''' big "Поделиться" action (top-right) opens the one-shot Package wizard.
 ''' </summary>
 Public NotInheritable Class MainWindow
     Inherits Form
@@ -24,6 +24,7 @@ Public NotInheritable Class MainWindow
     Private _entered As Boolean
     Private _listPopulated As Boolean
     Private _reachPollGen As Integer
+    Private _testing As Boolean
     Private ReadOnly _settings As New ShareSettings()
     Private _status As WorkerStatus
     Private _suppressCheck As Boolean
@@ -45,27 +46,17 @@ Public NotInheritable Class MainWindow
     Private btnToggle As Button
     Private btnShare As Button
     Private btnGuide As Button
+    Private btnTest As Button
     Private chkAutostart As CheckBox
     Private lblState As Label
-    Private lblInternet As Label
-    Private lblLan As Label
-    Private lblIpv6 As Label
-    Private lblFinger As Label
-    Private lblCreds As Label
     Private lnkRouter As LinkLabel
-    Private rowInternet As FlowLayoutPanel
-    Private rowLan As FlowLayoutPanel
-    Private rowIpv6 As FlowLayoutPanel
-    Private rowFinger As FlowLayoutPanel
-    Private rowCreds As FlowLayoutPanel
-    Private btnCopyInternet As Button
-    Private btnCopyLan As Button
     Private lblHint As Label
     Private lnkAndroid As LinkLabel
     Private lnkSiteGuide As LinkLabel
     Private lnkRouterSearch As LinkLabel
     Private lnkOpenViewer As LinkLabel
     Private toolTip As ToolTip
+    Private ReadOnly _serverRows As New List(Of ServerRow)()
 
     Private pnlEnable As Panel
     Private btnEnable As Button
@@ -87,14 +78,27 @@ Public NotInheritable Class MainWindow
         End Get
     End Property
 
+    ''' <summary>One caption|value|copy row of the server grid + how to fill it.</summary>
+    Private NotInheritable Class ServerRow
+        Public ReadOnly Cap As Label
+        Public ReadOnly Value As Label
+        Public ReadOnly Copy As Button
+        Public ReadOnly ValueFunc As Func(Of String)
+        Public ReadOnly CopyFunc As Func(Of String)
+        Public ReadOnly AlwaysShow As Boolean
+        Public Sub New(cap As Label, value As Label, copy As Button, valueFunc As Func(Of String), copyFunc As Func(Of String), alwaysShow As Boolean)
+            Me.Cap = cap : Me.Value = value : Me.Copy = copy
+            Me.ValueFunc = valueFunc : Me.CopyFunc = copyFunc : Me.AlwaysShow = alwaysShow
+        End Sub
+    End Class
+
     ' --- UI construction --------------------------------------------------------
 
     Private Sub BuildUi()
         Me.Text = "Fast Media Sorter: Share Manager"
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.MinimumSize = New Size(860, 620)
-        Me.ClientSize = New Size(920, 680)
-        Me.Font = New Font("Segoe UI", 10.0F)
+        Me.MinimumSize = New Size(880, 620)
+        Me.ClientSize = New Size(940, 680)
         Me.AutoScaleMode = AutoScaleMode.Font
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
         _shareGlyph = ShareIcons.CreateGlyphBitmap(22)
@@ -103,8 +107,8 @@ Public NotInheritable Class MainWindow
         ' --- top strip: neutral one-liner + big Share button --------------------
         Dim pnlTop As New Panel With {.Dock = DockStyle.Top, .Height = 66, .Padding = New Padding(16, 14, 16, 8)}
         Dim lblIntro As New Label With {.Dock = DockStyle.Fill, .Text = If(Rus,
-            "Откройте папки этого ПК на телефоне по SFTP - дома по Wi-Fi или из интернета.",
-            "Open this PC's folders on your phone over SFTP - on home Wi-Fi or from the internet.")}
+            "Откройте папки этого ПК на телефоне по SFTP - дома по Wi-Fi или через интернет.",
+            "Open this PC's folders on your phone over SFTP - on home Wi-Fi or via the internet.")}
         btnShare = New Button With {.Dock = DockStyle.Right, .Width = 240,
             .Font = New Font(Me.Font.FontFamily, Me.Font.Size + 2.0F, FontStyle.Bold),
             .Text = If(Rus, "Поделиться", "Share"), .Image = _shareGlyph,
@@ -126,46 +130,57 @@ Public NotInheritable Class MainWindow
         pnlBottom.Controls.Add(flow)
         pnlBottom.Controls.Add(lblHint)
 
-        ' --- right column: phone access (roomy, everything copyable) -----------
-        Dim grpServer As New GroupBox With {.Dock = DockStyle.Right, .Width = 420, .Padding = New Padding(14, 8, 14, 12),
+        ' --- right column: phone access -----------------------------------------
+        Dim grpServer As New GroupBox With {.Dock = DockStyle.Right, .Width = 470, .Padding = New Padding(14, 8, 14, 12),
             .Text = If(Rus, "Доступ с телефона", "Phone access")}
-        Dim info As New FlowLayoutPanel With {.Dock = DockStyle.Fill, .FlowDirection = FlowDirection.TopDown,
+        Dim stack As New FlowLayoutPanel With {.Dock = DockStyle.Fill, .FlowDirection = FlowDirection.TopDown,
             .WrapContents = False, .AutoScroll = True, .Padding = New Padding(0, 6, 0, 0)}
 
         lblState = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 8), .Font = New Font(Me.Font, FontStyle.Bold)}
 
-        rowInternet = BuildInfoRow(lblInternet, btnCopyInternet, AddressOf InternetAddressValue)
-        rowLan = BuildInfoRow(lblLan, btnCopyLan, AddressOf CurrentLanAddress)
-        Dim dummy As Button = Nothing
-        rowIpv6 = BuildInfoRow(lblIpv6, dummy, AddressOf Ipv6Value)
-        rowFinger = BuildInfoRow(lblFinger, dummy, AddressOf FingerprintValue)
-        rowCreds = BuildInfoRow(lblCreds, dummy, AddressOf CredentialsValue)
+        ' Borderless 3-column grid: caption | value | copy button.
+        Dim grid As New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .ColumnCount = 3, .Margin = New Padding(0, 0, 0, 4)}
+        grid.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
+        grid.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
+        grid.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
+
+        btnTest = New Button With {.AutoSize = True, .Margin = New Padding(8, 1, 0, 0), .Text = If(Rus, "Тест", "Test"), .Visible = False}
+        AddHandler btnTest.Click, AddressOf OnTestClicked
+        toolTip.SetToolTip(btnTest, If(Rus, "Проверить доступ из интернета с этого ПК (окончательно - только с телефона по мобильной сети).",
+                                            "Probe the internet address from this PC (definitive test is from the phone on mobile data)."))
+
+        AddServerRow(grid, If(Rus, "Через интернет:", "Via internet:"), AddressOf InternetStatusDisplay, AddressOf InternetAddressValue, True, btnTest)
+        AddServerRow(grid, If(Rus, "Дома (Wi-Fi):", "Home (Wi-Fi):"), AddressOf LanDisplay, AddressOf CurrentLanAddress, True)
+        AddServerRow(grid, If(Rus, "IPv6:", "IPv6:"), AddressOf Ipv6Value, AddressOf Ipv6Value, False)
+        AddServerRow(grid, If(Rus, "Ключ узла:", "Host key:"), AddressOf FingerprintValue, AddressOf FingerprintValue, False)
+        AddServerRow(grid, If(Rus, "Логин:", "Login:"), AddressOf LoginValue, AddressOf LoginValue, False)
+        AddServerRow(grid, If(Rus, "Пароль:", "Password:"), AddressOf PasswordValue, AddressOf PasswordValue, False)
 
         lnkRouter = New LinkLabel With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 8)}
         AddHandler lnkRouter.LinkClicked, Sub() OnOpenRouter(Me, EventArgs.Empty)
 
-        btnGuide = New Button With {.Width = 386, .Height = 32, .Margin = New Padding(0, 4, 0, 4), .Text = If(Rus, "Настроить доступ вне дома..", "Set up away access..")}
+        btnGuide = New Button With {.Width = 436, .Height = 32, .Margin = New Padding(0, 4, 0, 4), .Text = If(Rus, "Как настроить доступ через интернет", "How to set up internet access")}
         AddHandler btnGuide.Click, AddressOf OnInternetAccess
-        btnToggle = New Button With {.Width = 386, .Height = 40, .Margin = New Padding(0, 4, 0, 6), .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(Rus, "Начать раздачу", "Start sharing")}
+        btnToggle = New Button With {.Width = 436, .Height = 40, .Margin = New Padding(0, 4, 0, 6), .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(Rus, "Начать раздачу", "Start sharing")}
         AddHandler btnToggle.Click, AddressOf OnToggle
-        chkAutostart = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 0),
-            .Text = If(Rus, "Запускать при входе в Windows", "Start at Windows logon")}
+        chkAutostart = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 0), .Text = If(Rus, "Запускать при входе в Windows", "Start at Windows logon")}
         AddHandler chkAutostart.CheckedChanged, AddressOf OnAutostartChanged
 
-        info.Controls.AddRange(New Control() {lblState, rowInternet, rowLan, rowIpv6, rowFinger, rowCreds, lnkRouter, btnGuide, btnToggle, chkAutostart})
-        grpServer.Controls.Add(info)
+        stack.Controls.AddRange(New Control() {lblState, grid, lnkRouter, btnGuide, btnToggle, chkAutostart})
+        grpServer.Controls.Add(stack)
 
         ' --- center: shared-folder list, buttons ABOVE the table ---------------
         Dim grpShares As New GroupBox With {.Dock = DockStyle.Fill, .Padding = New Padding(14, 8, 14, 12),
             .Text = If(Rus, "Общие папки", "Shared folders")}
 
         Dim pnlListButtons As New FlowLayoutPanel With {.Dock = DockStyle.Top, .Height = 46, .Padding = New Padding(0, 6, 0, 6)}
-        btnAdd = New Button With {.Width = 190, .Height = 34, .Text = If(Rus, "Добавить папку..", "Add folder.."),
+        btnAdd = New Button With {.Width = 170, .Height = 34, .Text = If(Rus, "Добавить папку..", "Add folder.."),
             .Image = _addGlyph, .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
             .TextAlign = ContentAlignment.MiddleCenter, .Font = New Font(Me.Font, FontStyle.Bold)}
-        btnAddCurrent = New Button With {.Width = 160, .Height = 34, .Text = If(Rus, "+ Текущая папка", "+ Current folder"), .Visible = _initialFolder.Length > 0}
-        btnRemove = New Button With {.Width = 110, .Height = 34, .Text = If(Rus, "Убрать", "Remove")}
-        btnParams = New Button With {.Width = 130, .Height = 34, .Text = If(Rus, "Настроить..", "Options..")}
+        btnAddCurrent = New Button With {.Width = 150, .Height = 34, .Text = If(Rus, "+ Текущая", "+ Current"), .Visible = _initialFolder.Length > 0}
+        btnRemove = New Button With {.Width = 96, .Height = 34, .Text = If(Rus, "Убрать", "Remove")}
+        btnParams = New Button With {.Width = 116, .Height = 34, .Text = If(Rus, "Настроить..", "Options..")}
         AddHandler btnAdd.Click, AddressOf OnAddFolder
         AddHandler btnAddCurrent.Click, AddressOf OnAddCurrentFolder
         AddHandler btnRemove.Click, AddressOf OnRemoveFolder
@@ -182,8 +197,8 @@ Public NotInheritable Class MainWindow
         AddHandler lvFolders.ItemChecked, AddressOf OnItemChecked
         AddHandler lvFolders.DoubleClick, AddressOf OnConfigureFolder
 
-        grpShares.Controls.Add(lvFolders)      ' Fill
-        grpShares.Controls.Add(pnlListButtons) ' Top
+        grpShares.Controls.Add(lvFolders)
+        grpShares.Controls.Add(pnlListButtons)
 
         ' --- content panel + enable-gate overlay -------------------------------
         pnlContent = New Panel With {.Dock = DockStyle.Fill}
@@ -234,25 +249,34 @@ Public NotInheritable Class MainWindow
         Return New Label With {.AutoSize = True, .Margin = New Padding(0, 4, 10, 0), .ForeColor = Color.Silver, .Text = "|"}
     End Function
 
-    ''' <summary>Builds an info row: a value label + a copy button pressed right against
-    ''' it (Windows-style clipboard glyph). The button is hidden when there is nothing to
-    ''' copy; the whole row is hidden by the caller when the value is empty.</summary>
-    Private Function BuildInfoRow(ByRef lbl As Label, ByRef copyBtn As Button, provider As Func(Of String)) As FlowLayoutPanel
-        Dim row As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .WrapContents = False, .FlowDirection = FlowDirection.LeftToRight, .Margin = New Padding(0, 2, 0, 2), .Padding = New Padding(0)}
-        ' Cap the value width so long values (host key, login/password) wrap instead of
-        ' pushing the copy button off the right edge - nobody retypes them anyway, they
-        ' copy. Short addresses size to content, so the button sits right after them.
-        lbl = New Label With {.AutoSize = True, .MaximumSize = New Size(300, 0), .Margin = New Padding(0, 5, 4, 0), .ForeColor = Color.DimGray}
-        Dim btn As New Button With {.Width = 26, .Height = 24, .Margin = New Padding(0, 2, 0, 0), .Image = _copyGlyph,
-            .ImageAlign = ContentAlignment.MiddleCenter, .FlatStyle = FlatStyle.System, .TabStop = False, .Tag = provider}
-        toolTip.SetToolTip(btn, If(Rus, "Копировать в буфер", "Copy to clipboard"))
-        AddHandler btn.Click, AddressOf OnCopyClick
-        row.Controls.Add(lbl)
-        row.Controls.Add(btn)
-        copyBtn = btn
-        Return row
-    End Function
+    ''' <summary>Adds a caption|value|copy row to the server grid (no visible borders).
+    ''' The value label width is capped so long values (host key, password) wrap and the
+    ''' copy column stays aligned. <paramref name="extra"/> (the Test button) rides in the
+    ''' value cell next to the value.</summary>
+    Private Sub AddServerRow(grid As TableLayoutPanel, caption As String, valueFunc As Func(Of String), copyFunc As Func(Of String), alwaysShow As Boolean, Optional extra As Control = Nothing)
+        Dim row As Integer = grid.RowCount
+        grid.RowCount = row + 1
+        grid.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+
+        Dim cap As New Label With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 5, 12, 5), .ForeColor = Color.DimGray, .Text = caption}
+        Dim val As New Label With {.AutoSize = True, .MaximumSize = New Size(250, 0), .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 5, 8, 5)}
+        Dim copy As New Button With {.Width = 26, .Height = 24, .Margin = New Padding(0, 3, 0, 3), .Image = _copyGlyph,
+            .ImageAlign = ContentAlignment.MiddleCenter, .FlatStyle = FlatStyle.System, .TabStop = False, .Anchor = AnchorStyles.Left, .Tag = copyFunc}
+        toolTip.SetToolTip(copy, If(Rus, "Копировать в буфер", "Copy to clipboard"))
+        AddHandler copy.Click, AddressOf OnCopyClick
+
+        grid.Controls.Add(cap, 0, row)
+        If extra Is Nothing Then
+            grid.Controls.Add(val, 1, row)
+        Else
+            Dim vp As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = False, .Margin = New Padding(0), .Padding = New Padding(0)}
+            vp.Controls.Add(val)
+            vp.Controls.Add(extra)
+            grid.Controls.Add(vp, 1, row)
+        End If
+        grid.Controls.Add(copy, 2, row)
+        _serverRows.Add(New ServerRow(cap, val, copy, valueFunc, copyFunc, alwaysShow))
+    End Sub
 
     Private Sub OnCopyClick(sender As Object, e As EventArgs)
         Dim btn As Button = TryCast(sender, Button)
@@ -276,15 +300,14 @@ Public NotInheritable Class MainWindow
             g.Clear(Color.Transparent)
             Using back As New SolidBrush(Color.FromArgb(250, 250, 250)) : g.FillRectangle(back, 3, 2, 7, 9) : End Using
             Using p As New Pen(Color.FromArgb(110, 110, 110), 1.2F)
-                g.DrawRectangle(p, 3, 2, 7, 9)                       ' back page
+                g.DrawRectangle(p, 3, 2, 7, 9)
                 Using b As New SolidBrush(Color.White) : g.FillRectangle(b, 6, 5, 7, 9) : End Using
-                g.DrawRectangle(p, 6, 5, 7, 9)                       ' front page
+                g.DrawRectangle(p, 6, 5, 7, 9)
             End Using
         End Using
         Return bmp
     End Function
 
-    ''' <summary>Green round "+" for the primary Add-folder button.</summary>
     Private Shared Function BuildAddGlyph() As Bitmap
         Dim bmp As New Bitmap(18, 18)
         Using g As Graphics = Graphics.FromImage(bmp)
@@ -299,7 +322,7 @@ Public NotInheritable Class MainWindow
         Return bmp
     End Function
 
-    ' --- copyable value providers ----------------------------------------------
+    ' --- value providers (raw values for copy; display shown in the value cell) -
 
     Private Function InternetAddressValue() As String
         Dim st As WorkerStatus = _status
@@ -310,12 +333,27 @@ Public NotInheritable Class MainWindow
         Return r.ExternalHost & ":" & port.ToString()
     End Function
 
+    Private Function InternetStatusDisplay() As String
+        Dim running As Boolean = _status IsNot Nothing AndAlso _status.Running
+        Dim reach As WorkerReachability = If(_status IsNot Nothing, _status.Reachability, Nothing)
+        If Not running Then Return "-"
+        If reach Is Nothing Then Return If(Rus, "определяется..", "detecting..")
+        If reach.IsCgnat Then Return If(Rus, "за CGNAT (недоступно)", "behind CGNAT (unreachable)")
+        Dim addr As String = InternetAddressValue()
+        Return If(addr.Length > 0, addr, If(Rus, "адрес неизвестен", "address unknown"))
+    End Function
+
     Private Function CurrentLanAddress() As String
         Dim st As WorkerStatus = _status
         If st Is Nothing OrElse Not st.Running OrElse st.Reachability Is Nothing Then Return ""
         Dim lan As String = If(st.Reachability.LanAddress, "")
         If lan.Length = 0 OrElse st.ListenPort <= 0 Then Return ""
         Return lan & ":" & st.ListenPort.ToString()
+    End Function
+
+    Private Function LanDisplay() As String
+        Dim addr As String = CurrentLanAddress()
+        Return If(addr.Length > 0, addr, "-")
     End Function
 
     Private Function Ipv6Value() As String
@@ -328,12 +366,14 @@ Public NotInheritable Class MainWindow
         Return If(_status IsNot Nothing, If(_status.Fingerprint, ""), "")
     End Function
 
-    Private Function CredentialsValue() As String
+    Private Function LoginValue() As String
         Dim st As WorkerStatus = _status
-        If st Is Nothing OrElse String.IsNullOrEmpty(st.Password) Then Return ""
-        Dim user As String = If(String.IsNullOrEmpty(st.Username), "fms", st.Username)
-        Return (If(Rus, "Логин: ", "Login: ") & user & Environment.NewLine) &
-               (If(Rus, "Пароль: ", "Password: ") & st.Password)
+        If st Is Nothing OrElse Not st.Running Then Return ""
+        Return If(String.IsNullOrEmpty(st.Username), "fms", st.Username)
+    End Function
+
+    Private Function PasswordValue() As String
+        Return If(_status IsNot Nothing, If(_status.Password, ""), "")
     End Function
 
     ' --- lifecycle --------------------------------------------------------------
@@ -425,13 +465,8 @@ Public NotInheritable Class MainWindow
 
     Private Sub SetRouterLink()
         Dim model As String = If(_router IsNot Nothing, _router.DisplayName(), "")
-        If model.Length > 0 Then
-            lnkRouter.Text = (If(Rus, "Роутер: ", "Router: ")) & model
-            lnkRouter.Enabled = True
-        Else
-            lnkRouter.Text = (If(Rus, "Роутер: не определён", "Router: unknown"))
-            lnkRouter.Enabled = True   ' still lets the user open the gateway URL
-        End If
+        lnkRouter.Text = If(model.Length > 0, (If(Rus, "Роутер: ", "Router: ")) & model, (If(Rus, "Роутер: не определён", "Router: unknown")))
+        lnkRouter.Enabled = True
     End Sub
 
     Private Async Function GetRouterAsync() As Task(Of RouterIdentity)
@@ -454,6 +489,57 @@ Public NotInheritable Class MainWindow
         NetworkInfo.OpenInBrowser(RouterInfo.SearchUrl(rt))
         SetHint(If(rt.DisplayName().Length > 0, (If(Rus, "Роутер: ", "Router: ")) & rt.DisplayName(),
             If(Rus, "Модель не определена - открыт общий поиск.", "Model unknown - opened a general search.")))
+    End Sub
+
+    ' --- internet test ----------------------------------------------------------
+
+    Private Async Sub OnTestClicked(sender As Object, e As EventArgs)
+        If _testing Then Return
+        Dim st As WorkerStatus = _status
+        Dim reach As WorkerReachability = If(st IsNot Nothing, st.Reachability, Nothing)
+        Dim host As String = If(reach IsNot Nothing, If(reach.ExternalHost, ""), "")
+        Dim port As Integer = 0
+        If reach IsNot Nothing Then port = If(reach.ExternalPort > 0, reach.ExternalPort, If(st IsNot Nothing, st.ListenPort, 0))
+        If String.IsNullOrEmpty(host) OrElse port <= 0 Then
+            SetHint(If(Rus, "Адрес из интернета ещё не определён.", "No internet address yet."))
+            Return
+        End If
+        _testing = True
+        btnTest.Enabled = False
+        SetHint((If(Rus, "Проверка ", "Testing ")) & host & ":" & port.ToString() & " ..")
+        Try
+            Dim res As SftpProbe.ProbeResult = Await SftpProbe.ProbeAsync(host, port)
+            SetHint(DescribeProbe(res, host, port))
+        Catch
+            SetHint(If(Rus, "Не удалось выполнить проверку.", "Could not run the test."))
+        Finally
+            _testing = False
+            RefreshTestButton()
+        End Try
+    End Sub
+
+    Private Shared Function DescribeProbe(res As SftpProbe.ProbeResult, host As String, port As Integer) As String
+        Dim ep As String = host & ":" & port.ToString()
+        Select Case res
+            Case SftpProbe.ProbeResult.SshOk
+                Return (If(Rus, "✓ Доступ из интернета работает: ", "✓ Internet access works: ")) & ep
+            Case SftpProbe.ProbeResult.PortOpen
+                Return (If(Rus, "Порт открыт, но SFTP не ответил: ", "Port open, but no SFTP reply: ")) & ep
+            Case SftpProbe.ProbeResult.Timeout, SftpProbe.ProbeResult.Refused
+                Return If(Rus,
+                    "✗ С этого ПК не отвечает. Роутер может не пускать на свой адрес изнутри - проверьте с телефона по мобильной сети.",
+                    "✗ No answer from this PC. Your router may block its own address from inside - test from the phone on mobile data.")
+            Case Else
+                Return If(Rus, "Адрес некорректен.", "Invalid address.")
+        End Select
+    End Function
+
+    Private Sub RefreshTestButton()
+        Dim st As WorkerStatus = _status
+        Dim can As Boolean = st IsNot Nothing AndAlso st.Running AndAlso st.Reachability IsNot Nothing AndAlso
+                             Not st.Reachability.IsCgnat AndAlso Not String.IsNullOrEmpty(st.Reachability.ExternalHost)
+        btnTest.Visible = can
+        btnTest.Enabled = can AndAlso Not _testing AndAlso Not _busy
     End Sub
 
     ' --- reachability polling ---------------------------------------------------
@@ -673,27 +759,21 @@ Public NotInheritable Class MainWindow
 
     Private Sub ApplyStatusToUi()
         Dim running As Boolean = _status IsNot Nothing AndAlso _status.Running
-        Dim reach As WorkerReachability = If(_status IsNot Nothing, _status.Reachability, Nothing)
 
         btnToggle.Text = If(running, If(Rus, "Остановить раздачу", "Stop sharing"), If(Rus, "Начать раздачу", "Start sharing"))
-        lblState.Text = If(running, If(Rus, "Папки видны на телефоне", "Folders are visible on the phone"), If(Rus, "Раздача выключена", "Sharing is off"))
+        lblState.Text = If(running, If(Rus, "Раздача с этого ПК работает", "Sharing from this PC is on"), If(Rus, "Раздача выключена", "Sharing is off"))
         lblState.ForeColor = If(running, Color.ForestGreen, Color.DimGray)
 
-        lblInternet.Text = (If(Rus, "Через интернет: ", "Via internet: ")) & InternetStatusText(running, reach)
-        lblLan.Text = (If(Rus, "Дома (Wi-Fi): ", "Home (Wi-Fi): ")) & If(CurrentLanAddress().Length > 0, CurrentLanAddress(), "-")
-        lblIpv6.Text = (If(Rus, "IPv6: ", "IPv6: ")) & Ipv6Value()
-        lblFinger.Text = (If(Rus, "Ключ узла: ", "Host key: ")) & FingerprintValue()
-        lblCreds.Text = CredsDisplay()
+        For Each sr As ServerRow In _serverRows
+            Dim disp As String = sr.ValueFunc()
+            Dim show As Boolean = running AndAlso (sr.AlwaysShow OrElse Not String.IsNullOrEmpty(disp))
+            sr.Cap.Visible = show
+            sr.Value.Visible = show
+            sr.Value.Text = disp
+            sr.Copy.Visible = show AndAlso Not String.IsNullOrEmpty(sr.CopyFunc())
+        Next
 
-        ' Rows: internet + Wi-Fi always shown when running; the rest only when they
-        ' carry a value. Copy button only when there is something to copy.
-        rowInternet.Visible = running
-        rowLan.Visible = running
-        rowIpv6.Visible = running AndAlso Ipv6Value().Length > 0
-        rowFinger.Visible = running AndAlso FingerprintValue().Length > 0
-        rowCreds.Visible = running AndAlso CredentialsValue().Length > 0
-        btnCopyInternet.Visible = InternetAddressValue().Length > 0
-        btnCopyLan.Visible = CurrentLanAddress().Length > 0
+        RefreshTestButton()
         lnkRouter.Visible = running
         If running Then SetRouterLink()
 
@@ -705,23 +785,6 @@ Public NotInheritable Class MainWindow
 
         RaiseEvent ServerStateChanged(running)
     End Sub
-
-    Private Function InternetStatusText(running As Boolean, reach As WorkerReachability) As String
-        If Not running Then Return "-"
-        If reach Is Nothing Then Return If(Rus, "определяется..", "detecting..")
-        If reach.IsCgnat Then Return If(Rus, "за CGNAT (недоступно)", "behind CGNAT (unreachable)")
-        Dim addr As String = InternetAddressValue()
-        If addr.Length = 0 Then Return If(Rus, "адрес неизвестен", "address unknown")
-        Return addr
-    End Function
-
-    Private Function CredsDisplay() As String
-        Dim st As WorkerStatus = _status
-        If st Is Nothing OrElse String.IsNullOrEmpty(st.Password) Then Return ""
-        Dim user As String = If(String.IsNullOrEmpty(st.Username), "fms", st.Username)
-        ' Two lines so the (long) password fits the capped-width label + keeps the copy button visible.
-        Return (If(Rus, "Логин: ", "Login: ")) & user & Environment.NewLine & (If(Rus, "Пароль: ", "Password: ")) & st.Password
-    End Function
 
     ' --- package wizard + viewer launch ----------------------------------------
 

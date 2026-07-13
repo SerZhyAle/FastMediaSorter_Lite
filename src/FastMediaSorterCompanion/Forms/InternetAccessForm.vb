@@ -47,7 +47,6 @@ Public NotInheritable Class InternetAccessForm
         Me.StartPosition = FormStartPosition.CenterParent
         Me.ClientSize = New Size(600, 460)
         Me.MinimumSize = New Size(520, 400)
-        Me.Font = New Font("Segoe UI", 9.0F)
         Me.AutoScaleMode = AutoScaleMode.Font
 
         Dim tip As New ToolTip()

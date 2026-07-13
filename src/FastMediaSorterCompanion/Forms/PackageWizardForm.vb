@@ -63,7 +63,6 @@ Public NotInheritable Class PackageWizardForm
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
         Me.ClientSize = New Size(560, 452)
-        Me.Font = New Font("Segoe UI", 9.0F)
         Me.AutoScaleMode = AutoScaleMode.Font
         toolTip = New ToolTip()
 

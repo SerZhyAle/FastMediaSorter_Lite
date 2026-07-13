@@ -1,3 +1,4 @@
+Imports System.Drawing
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
@@ -74,6 +75,13 @@ Friend Module Program
                 Application.SetHighDpiMode(HighDpiMode.PerMonitorV2)
             Catch
                 ' Older shells may reject PerMonitorV2 at runtime - the manifest still covers it.
+            End Try
+            ' Set the UI font ONCE, app-wide. Doing this (instead of Me.Font on each form)
+            ' keeps the AutoScaleMode.Font baseline consistent, so forms scale correctly at
+            ' 125/150/175% DPI instead of shrinking (the fixed-ClientSize-came-out-small bug).
+            Try
+                Application.SetDefaultFont(New Font("Segoe UI", 10.0F))
+            Catch
             End Try
 
             ' Manual double-click (no --tray) opens the window; autostart (--tray)
