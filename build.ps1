@@ -1,7 +1,10 @@
 param(
     # Skip the pre-build housekeeping (tools\Clean-Build.ps1) that prunes
     # superseded stage\ trees, orphaned bin\ folders and temp files.
-    [switch]$NoClean
+    [switch]$NoClean,
+    # Skip building the .NET 10 Companion (Fast Media Sorter: Share Manager). By
+    # default this script now builds BOTH exes so you can build everything locally.
+    [switch]$SkipCompanion
 )
 
 $SolutionDir = $PSScriptRoot
@@ -13,6 +16,12 @@ $ExeName      = "FastMediaSorter_LITE.exe"
 # worker exe must ship in a "companion\" subfolder next to every deployed exe,
 # or the Share tab / wizard finds nothing (WorkerProcess.IsAvailable() = False).
 $PayloadCompanionDir = Join-Path $SolutionDir "payload\companion"
+# The .NET 10 Companion (Share Manager) - built with `dotnet publish` as a
+# self-contained single-file exe and deployed next to FastMediaSorter_LITE.exe.
+$CompanionProj       = Join-Path $SolutionDir "src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj"
+$CompanionExeName    = "FastMediaSorterCompanion.exe"
+$CompanionPublishDir = Join-Path $SolutionDir "bin\CompanionPublish"
+$CompanionExe        = Join-Path $CompanionPublishDir $CompanionExeName
 $Destinations = @(
     "C:\GD\i\",
     "C:\GD\tc\SZA\_APP\"
@@ -52,6 +61,30 @@ function Stop-ShareWorker {
         try { $p.Kill(); $p.WaitForExit(3000) } catch { }
     }
     Start-Sleep -Milliseconds 300
+}
+
+# A running Companion (Share Manager) locks its own 100+ MB single-file exe, so
+# Copy-Item over it fails. Stop it before deploying (it is only a tray/UI process -
+# the worker it controls keeps running independently).
+function Stop-Companion {
+    if (-not (Get-Process -Name "FastMediaSorterCompanion" -ErrorAction SilentlyContinue)) { return }
+    Write-Host "Stopping running FastMediaSorterCompanion so its exe can be replaced.."
+    foreach ($p in (Get-Process -Name "FastMediaSorterCompanion" -ErrorAction SilentlyContinue)) {
+        try { $p.Kill(); $p.WaitForExit(3000) } catch { }
+    }
+    Start-Sleep -Milliseconds 300
+}
+
+# Copy the published Companion exe next to FastMediaSorter_LITE.exe. No-op (with a
+# warning) when it wasn't built (e.g. -SkipCompanion), so LITE still deploys.
+function Deploy-CompanionExe([string]$TargetDir) {
+    if (-not (Test-Path $CompanionExe)) {
+        Write-Warning "Companion exe not built ($CompanionExe) - skipping for: $TargetDir"
+        return
+    }
+    $dest = Join-Path $TargetDir $CompanionExeName
+    Copy-Item -Path $CompanionExe -Destination $dest -Force
+    Write-Host "Deployed Companion exe -> $dest"
 }
 
 # Find MSBuild
@@ -118,14 +151,41 @@ $SingleFileExe = Join-Path $SingleFileDir $ExeName
 Copy-Item -Path $ExePath -Destination $SingleFileExe -Force
 Write-Host "Single-file build staged at: $SingleFileExe"
 
-# Free the worker exe (it may be running from a deploy target and locking itself)
-# before mirroring the payload anywhere.
+# Build the .NET 10 Companion (Share Manager) as a self-contained single-file exe
+# (needs the .NET 10 SDK; the win-x64 self-contained/single-file props live in the
+# .vbproj). This is what lets you build the WHOLE package locally in one command.
+if (-not $SkipCompanion) {
+    $dotnet = (Get-Command dotnet.exe -ErrorAction SilentlyContinue).Source
+    if (-not $dotnet) { $dotnet = "dotnet" }
+    Write-Host "Publishing Companion (net10, self-contained single-file).."
+    Stop-Companion   # release a lock on the previous exe under bin\CompanionPublish
+    Remove-Item $CompanionPublishDir -Recurse -Force -ErrorAction SilentlyContinue
+    & $dotnet publish $CompanionProj -c Release -r win-x64 -o $CompanionPublishDir -v minimal --nologo
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Companion publish failed (exit code $LASTEXITCODE)."
+        exit $LASTEXITCODE
+    }
+    if (-not (Test-Path $CompanionExe)) {
+        Write-Error "Companion exe not found after publish: $CompanionExe"
+        exit 1
+    }
+    Write-Host "Companion published at: $CompanionExe"
+} else {
+    Write-Host "Skipping Companion build (-SkipCompanion)."
+}
+
+# Free the worker + Companion exes (they may be running from a deploy target and
+# locking themselves) before mirroring anything.
 Stop-ShareWorker
+Stop-Companion
 
 # Keep the worker beside the staging outputs too: MSBuild Rebuild does not touch
-# the companion\ subfolder, but a fresh checkout has none - self-heal both.
+# the companion\ subfolder, but a fresh checkout has none - self-heal both. Also
+# drop the Companion exe alongside so bin\Release / bin\SingleFile are runnable.
 Deploy-Companion $OutputDir
 Deploy-Companion $SingleFileDir
+Deploy-CompanionExe $OutputDir
+Deploy-CompanionExe $SingleFileDir
 
 foreach ($Destination in $Destinations) {
     if (-not (Test-Path $Destination)) {
@@ -136,5 +196,6 @@ foreach ($Destination in $Destinations) {
     Copy-Item -Path $SingleFileExe -Destination $Target -Force
 
     Write-Host "Deployed single-file exe -> $Target"
-    Deploy-Companion $Destination
+    Deploy-Companion $Destination      # worker payload -> <dest>\companion\
+    Deploy-CompanionExe $Destination   # FastMediaSorterCompanion.exe -> <dest>\
 }
