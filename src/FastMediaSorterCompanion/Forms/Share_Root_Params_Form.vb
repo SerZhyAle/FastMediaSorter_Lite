@@ -4,23 +4,22 @@ Imports System.Drawing
 Imports System.Windows.Forms
 
 ''' <summary>
-''' "Параметры ресурса" / "Resource options" - the per-shared-root settings the
-''' .fmscfg schema v2 export carries to the phone (Android contract S1002,
-''' COMPANION_EXPORT_SPEC §9): resource name, type/profile, exact media set,
-''' scan conditions, destination flag + color, comment, PIN and slideshow
-''' interval. Opened from the
-''' Share tab ("Настроить.." / double-click a folder row). Built fully in code;
-''' modal. Edits a copy - the caller persists <see cref="Result"/> on OK only.
-''' Everything left at its default is simply not exported (the file stays v1).
+''' "Параметры ресурса" - the per-shared-root settings the .fmscfg schema v2 export
+''' carries to the phone: resource name, type/profile, exact media set, scan
+''' conditions, the two read-only meanings (hard = server-enforced, soft = client
+''' hint), destination flag, comment, PIN and slideshow interval. Opened right after
+''' a folder is added, and from "Настроить.." / double-click. Modal; edits a copy -
+''' the caller persists <see cref="Result"/> on OK only. Everything at its default is
+''' not exported (the file stays v1). Each option carries a short "what it does" note.
+''' The destination CHIP COLOUR is intentionally NOT offered here - the Android app
+''' decides the colour, so a picker on our side only misleads.
 ''' </summary>
 Public Class Share_Root_Params_Form
     Inherits Form
 
-    ''' <summary>§3.1 profile tokens, index-aligned with the combo items.</summary>
     Private Shared ReadOnly ProfileTokens As String() =
         {"none", "audio_library", "video_library", "photo_storage", "documents", "all_files"}
 
-    ''' <summary>§3.2 media-type tokens, index-aligned with the checked list items.</summary>
     Private Shared ReadOnly MediaTokens As String() =
         {"image", "video", "audio", "gif", "text", "pdf", "epub", "office"}
 
@@ -38,14 +37,7 @@ Public Class Share_Root_Params_Form
     Private chkSoftReadOnly As CheckBox
     Private chkDestination As CheckBox
     Private lblDestNote As Label
-
-    ''' <summary>Guards the two-way sync between "read-only" and "destination"
-    ''' (a destination is inherently writable, so the two are mutually exclusive) so
-    ''' setting one checkbox's state from the other's handler does not recurse.</summary>
     Private _syncingWritability As Boolean
-    Private btnColor As Button
-    Private pnlColor As Panel
-    Private lnkColorReset As LinkLabel
     Private txtComment As TextBox
     Private txtPin As TextBox
     Private numSlide As NumericUpDown
@@ -66,6 +58,10 @@ Public Class Share_Root_Params_Form
         LoadParams()
     End Sub
 
+    Private Function Hint(x As Integer, y As Integer, w As Integer, text As String) As Label
+        Return New Label With {.Left = x, .Top = y, .Width = w, .Height = 32, .ForeColor = Color.DimGray, .Text = text}
+    End Function
+
     Private Sub BuildUi()
         Dim rus As Boolean = Is_Russian_Language
 
@@ -75,26 +71,26 @@ Public Class Share_Root_Params_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(564, 636)
+        Me.ClientSize = New Size(572, 646)
         Me.Font = New Font("Segoe UI", 10.0F)
 
         Dim tip As New ToolTip()
-        Const lx As Integer = 18      ' label column
-        Const ix As Integer = 240     ' input column
-        Const iw As Integer = 300     ' input width
+        Const lx As Integer = 18
+        Const ix As Integer = 240
+        Const iw As Integer = 314
 
-        ' 1. Resource name (highest priority, §9).
-        Controls.Add(New Label With {.Left = lx, .Top = 24, .Width = 214, .Height = 20,
+        ' 1. Resource name.
+        Controls.Add(New Label With {.Left = lx, .Top = 22, .Width = 214, .Height = 20,
             .Text = If(rus, "Название на телефоне:", "Name on the phone:")})
-        txtLabel = New TextBox With {.Left = ix, .Top = 20, .Width = iw}
+        txtLabel = New TextBox With {.Left = ix, .Top = 18, .Width = iw}
         Controls.Add(txtLabel)
-        tip.SetToolTip(txtLabel, If(rus, "Наименование ресурса в приложении. Пусто = имя папки.",
-                                        "Resource name in the app. Empty = the folder name."))
+        Controls.Add(Hint(ix, 44, iw, If(rus, "Как ресурс называется в приложении. Пусто = имя папки.",
+                                              "The resource name in the app. Empty = the folder name.")))
 
         ' 2. Type / profile.
-        Controls.Add(New Label With {.Left = lx, .Top = 62, .Width = 214, .Height = 20,
+        Controls.Add(New Label With {.Left = lx, .Top = 76, .Width = 214, .Height = 20,
             .Text = If(rus, "Тип ресурса:", "Resource type:")})
-        cmbProfile = New ComboBox With {.Left = ix, .Top = 58, .Width = iw, .DropDownStyle = ComboBoxStyle.DropDownList}
+        cmbProfile = New ComboBox With {.Left = ix, .Top = 72, .Width = iw, .DropDownStyle = ComboBoxStyle.DropDownList}
         If rus Then
             cmbProfile.Items.AddRange(New Object() {"Обычная папка (по умолчанию)", "Аудиотека", "Видеотека",
                 "Фотохранилище", "Документы", "Все файлы"})
@@ -103,16 +99,16 @@ Public Class Share_Root_Params_Form
                 "Photo storage", "Documents", "All files"})
         End If
         Controls.Add(cmbProfile)
-        tip.SetToolTip(cmbProfile, If(rus, "Готовый набор типов медиа и настроек (например, аудиотека).",
-                                          "A preset of media types and settings (e.g. audio library)."))
+        Controls.Add(Hint(ix, 98, iw, If(rus, "Как приложение покажет папку и какие файлы возьмёт (напр. «Видеотека» - только видео).",
+                                              "How the app shows the folder and which files it takes (e.g. Video library - videos only).")))
 
-        ' 3. Exact media set (optional override of the profile).
-        Controls.Add(New Label With {.Left = lx, .Top = 100, .Width = 214, .Height = 20,
+        ' 3. Exact media set.
+        Controls.Add(New Label With {.Left = lx, .Top = 132, .Width = 214, .Height = 20,
             .Text = If(rus, "Точный набор типов:", "Exact media set:")})
-        Controls.Add(New Label With {.Left = lx, .Top = 122, .Width = 214, .Height = 50, .ForeColor = Color.DimGray,
-            .Text = If(rus, "Необязательно. Пусто = решает тип ресурса.", "Optional. Empty = the type decides.")})
-        clbMedia = New CheckedListBox With {.Left = ix, .Top = 98, .Width = iw, .Height = 96,
-            .MultiColumn = True, .ColumnWidth = 150, .CheckOnClick = True, .IntegralHeight = False}
+        Controls.Add(Hint(lx, 154, 214, If(rus, "Необязательно. Переопределяет тип. Пусто = решает тип.",
+                                                 "Optional. Overrides the type. Empty = the type decides.")))
+        clbMedia = New CheckedListBox With {.Left = ix, .Top = 130, .Width = iw, .Height = 96,
+            .MultiColumn = True, .ColumnWidth = 157, .CheckOnClick = True, .IntegralHeight = False}
         If rus Then
             clbMedia.Items.AddRange(New Object() {"Изображения", "Видео", "Аудио", "GIF", "Текст", "PDF", "EPUB", "Office"})
         Else
@@ -121,75 +117,71 @@ Public Class Share_Root_Params_Form
         Controls.Add(clbMedia)
 
         ' 4. Scan conditions.
-        Controls.Add(New Label With {.Left = lx, .Top = 206, .Width = 214, .Height = 20,
+        Controls.Add(New Label With {.Left = lx, .Top = 238, .Width = 214, .Height = 20,
             .Text = If(rus, "Условия сканирования:", "Scan conditions:")})
-        chkScanSub = New CheckBox With {.Left = ix, .Top = 204, .Width = iw, .Height = 22,
+        chkScanSub = New CheckBox With {.Left = ix, .Top = 236, .Width = iw, .Height = 22,
             .Text = If(rus, "Сканировать подпапки", "Scan subfolders"), .Checked = True}
-        chkSubItems = New CheckBox With {.Left = ix, .Top = 228, .Width = iw, .Height = 22,
-            .Text = If(rus, "Подпапки как элементы", "Subfolders as items")}
-        chkHidden = New CheckBox With {.Left = ix, .Top = 252, .Width = iw, .Height = 22,
+        chkSubItems = New CheckBox With {.Left = ix, .Top = 260, .Width = iw, .Height = 22,
+            .Text = If(rus, "Показывать подпапки как элементы", "Show subfolders as items")}
+        chkHidden = New CheckBox With {.Left = ix, .Top = 284, .Width = iw, .Height = 22,
             .Text = If(rus, "Показывать скрытые файлы", "Show hidden files")}
-        chkAllFiles = New CheckBox With {.Left = ix, .Top = 276, .Width = iw, .Height = 22,
+        chkAllFiles = New CheckBox With {.Left = ix, .Top = 308, .Width = iw, .Height = 22,
             .Text = If(rus, "Все файлы (не только медиа)", "All files (not only media)")}
         AddHandler chkScanSub.CheckedChanged, Sub() chkSubItems.Enabled = chkScanSub.Checked
         Controls.AddRange(New Control() {chkScanSub, chkSubItems, chkHidden, chkAllFiles})
 
-        ' 5. Access section (full-width, clearly grouped).
-        Controls.Add(New Label With {.Left = lx, .Top = 314, .Width = 528, .Height = 20,
+        ' 5. Access section.
+        Controls.Add(New Label With {.Left = lx, .Top = 346, .Width = 534, .Height = 20,
             .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(rus, "Доступ:", "Access:")})
-        chkReadOnly = New CheckBox With {.Left = lx, .Top = 338, .Width = 528, .Height = 22,
-            .Text = If(rus, "Недоступно для записи на уровне сервера (сервер запрещает изменения)",
-                           "Not writable at the server level (server blocks changes)"), .Checked = False}
+        Controls.Add(Hint(lx, 368, 536, If(rus, "По умолчанию телефон может добавлять, переименовывать и удалять файлы в папке.",
+                                                 "By default the phone can add, rename and delete files in the folder.")))
+        chkReadOnly = New CheckBox With {.Left = lx, .Top = 396, .Width = 534, .Height = 22,
+            .Text = If(rus, "Недоступно для записи на уровне сервера - сервер запрещает изменения",
+                           "Not writable at the server level - the server blocks changes"), .Checked = False}
         AddHandler chkReadOnly.CheckedChanged, AddressOf OnReadOnlyToggled
         Controls.Add(chkReadOnly)
-        tip.SetToolTip(chkReadOnly, If(rus, "Сервер физически запрещает телефону менять файлы в этой папке (загрузка, переименование, удаление). Папка-получатель всегда доступна на запись.",
-                                            "The server physically blocks the phone from changing files here. A destination folder is always writable."))
+        tip.SetToolTip(chkReadOnly, If(rus, "Настоящий запрет: сервер физически не даёт телефону менять файлы (загрузка, переименование, удаление).",
+                                            "A real lock: the server physically prevents the phone from changing files (upload, rename, delete)."))
 
-        chkSoftReadOnly = New CheckBox With {.Left = lx, .Top = 364, .Width = 528, .Height = 22,
-            .Text = If(rus, "Публиковать как «только чтение» (подсказка приложению, сервер не блокирует)",
-                           "Publish as read-only (client hint; server not locked)")}
+        chkSoftReadOnly = New CheckBox With {.Left = lx, .Top = 420, .Width = 534, .Height = 22,
+            .Text = If(rus, "Публиковать как «только чтение» - подсказка приложению (сервер не блокирует)",
+                           "Publish as read-only - a hint to the app (the server does not block)")}
         Controls.Add(chkSoftReadOnly)
-        tip.SetToolTip(chkSoftReadOnly, If(rus, "Телефону сообщается, что ресурс только для чтения, но сам сервер запись не блокирует. Для настоящего запрета включите пункт выше.",
-                                                "The phone is told the resource is read-only, but the server itself does not block writes. For a real lock, tick the option above."))
+        tip.SetToolTip(chkSoftReadOnly, If(rus, "Приложение спрячет кнопки изменения, но сам сервер запись не запрещает. Для настоящего запрета включите пункт выше.",
+                                                "The app hides edit buttons, but the server itself does not block writes. For a real lock, tick the option above."))
 
-        chkDestination = New CheckBox With {.Left = lx, .Top = 390, .Width = 528, .Height = 22,
-            .Text = If(rus, "Папка-получатель (копирование и перемещение с телефона)",
-                           "Destination folder (copy and move from the phone)")}
-        lblDestNote = New Label With {.Left = lx + 22, .Top = 414, .Width = 506, .Height = 18, .ForeColor = Color.DimGray,
-            .Text = If(rus, "Общая папка станет доступна на запись.", "The shared folder becomes writable.")}
-        btnColor = New Button With {.Left = lx + 22, .Top = 434, .Width = 130, .Height = 28,
-            .Text = If(rus, "Цвет метки..", "Chip color..")}
-        pnlColor = New Panel With {.Left = lx + 160, .Top = 436, .Width = 46, .Height = 24, .BorderStyle = BorderStyle.FixedSingle}
-        lnkColorReset = New LinkLabel With {.Left = lx + 214, .Top = 438, .Width = 260, .Height = 18,
-            .Text = If(rus, "авто (задаст приложение)", "auto (app decides)")}
+        chkDestination = New CheckBox With {.Left = lx, .Top = 444, .Width = 534, .Height = 22,
+            .Text = If(rus, "Папка-получатель - в неё можно копировать и переносить с телефона",
+                           "Destination folder - the phone can copy and move files into it")}
+        lblDestNote = New Label With {.Left = lx + 22, .Top = 468, .Width = 512, .Height = 18, .ForeColor = Color.DimGray,
+            .Text = If(rus, "Ресурс попадёт в список получателей; папка станет доступна на запись. Цвет метки выберет приложение.",
+                            "The resource joins the destinations list; the folder becomes writable. The app picks the chip colour.")}
         AddHandler chkDestination.CheckedChanged, AddressOf OnDestinationToggled
-        AddHandler btnColor.Click, AddressOf OnPickColor
-        AddHandler lnkColorReset.LinkClicked, AddressOf OnResetColor
-        Controls.AddRange(New Control() {chkDestination, lblDestNote, btnColor, pnlColor, lnkColorReset})
-        tip.SetToolTip(chkDestination, If(rus, "Ресурс попадёт в получатели копирования/перемещения. Цвет метки - как пожелание: приложение может назначить свой.",
-                                              "The resource is registered as a copy/move destination. The chip color is best-effort."))
+        Controls.AddRange(New Control() {chkDestination, lblDestNote})
 
         ' 6. Comment / PIN / slideshow.
-        Controls.Add(New Label With {.Left = lx, .Top = 478, .Width = 214, .Height = 20,
+        Controls.Add(New Label With {.Left = lx, .Top = 500, .Width = 214, .Height = 20,
             .Text = If(rus, "Комментарий:", "Comment:")})
-        txtComment = New TextBox With {.Left = ix, .Top = 474, .Width = iw}
+        txtComment = New TextBox With {.Left = ix, .Top = 496, .Width = iw}
         Controls.Add(txtComment)
 
-        Controls.Add(New Label With {.Left = lx, .Top = 512, .Width = 214, .Height = 20,
+        Controls.Add(New Label With {.Left = lx, .Top = 534, .Width = 214, .Height = 20,
             .Text = If(rus, "PIN для ресурса:", "Resource PIN:")})
-        txtPin = New TextBox With {.Left = ix, .Top = 508, .Width = 140}
+        txtPin = New TextBox With {.Left = ix, .Top = 530, .Width = 140}
         Controls.Add(txtPin)
-        tip.SetToolTip(txtPin, If(rus, "PIN хранится в файле и QR-коде открытым текстом - его увидит любой получатель файла.",
-                                      "The PIN travels in the file and QR code in plaintext - anyone who gets the file sees it."))
+        Controls.Add(New Label With {.Left = ix + 150, .Top = 534, .Width = iw - 150, .Height = 32, .ForeColor = Color.DimGray,
+            .Text = If(rus, "Если задан - приложение попросит его при открытии.", "If set - the app asks for it on open.")})
 
-        Controls.Add(New Label With {.Left = lx, .Top = 546, .Width = 214, .Height = 20,
+        Controls.Add(New Label With {.Left = lx, .Top = 574, .Width = 214, .Height = 20,
             .Text = If(rus, "Слайд-шоу, секунд:", "Slideshow, seconds:")})
-        numSlide = New NumericUpDown With {.Left = ix, .Top = 542, .Width = 90, .Minimum = 1, .Maximum = 3600, .Value = 10}
+        numSlide = New NumericUpDown With {.Left = ix, .Top = 570, .Width = 90, .Minimum = 1, .Maximum = 3600, .Value = 10}
         Controls.Add(numSlide)
+        Controls.Add(New Label With {.Left = ix + 100, .Top = 574, .Width = iw - 100, .Height = 20, .ForeColor = Color.DimGray,
+            .Text = If(rus, "как часто листать фото", "how often to advance photos")})
 
         ' OK / Cancel.
-        btnOk = New Button With {.Left = 372, .Top = 592, .Width = 86, .Height = 32, .Text = "OK"}
-        btnCancel = New Button With {.Left = 466, .Top = 592, .Width = 86, .Height = 32,
+        btnOk = New Button With {.Left = 380, .Top = 606, .Width = 86, .Height = 32, .Text = "OK"}
+        btnCancel = New Button With {.Left = 474, .Top = 606, .Width = 86, .Height = 32,
             .Text = If(rus, "Отмена", "Cancel"), .DialogResult = DialogResult.Cancel}
         AddHandler btnOk.Click, AddressOf OnOk
         Controls.Add(btnOk)
@@ -219,15 +211,12 @@ Public Class Share_Root_Params_Form
         chkHidden.Checked = _params.ShowHiddenFiles
         chkAllFiles.Checked = _params.AllFiles
 
-        ' Effective writability: read-only unless explicitly writable or a destination
-        ' (the latter also normalizes a legacy destination whose IsReadOnly stayed True).
         Dim writable As Boolean = _params.IsWritable()
         _syncingWritability = True
         chkReadOnly.Checked = Not writable
         chkDestination.Checked = _params.IsDestination
         _syncingWritability = False
         chkSoftReadOnly.Checked = _params.SoftReadOnly
-        UpdateColorUi()
 
         txtComment.Text = _params.Comment
         txtPin.Text = _params.AccessPin
@@ -239,8 +228,6 @@ Public Class Share_Root_Params_Form
     End Sub
 
     Private Sub OnOk(sender As Object, e As EventArgs)
-        ' "" when the name was left as the folder name, so a later folder rename
-        ' is not shadowed by a stale stored label.
         Dim label As String = txtLabel.Text.Trim()
         _params.Label = If(label.Length = 0 OrElse label = _folderName, "", label)
 
@@ -260,9 +247,8 @@ Public Class Share_Root_Params_Form
         _params.IsReadOnly = chkReadOnly.Checked
         _params.SoftReadOnly = chkSoftReadOnly.Checked
         _params.IsDestination = chkDestination.Checked
-        ' HasDestinationColor / DestinationColorArgb are maintained by the color
-        ' picker handlers; a non-destination root drops the color entirely.
-        If Not _params.IsDestination Then _params.HasDestinationColor = False
+        ' Chip colour is decided by the Android app (no picker here), so never export one.
+        _params.HasDestinationColor = False
 
         _params.Comment = txtComment.Text.Trim()
         _params.AccessPin = txtPin.Text.Trim()
@@ -272,10 +258,10 @@ Public Class Share_Root_Params_Form
         Me.Close()
     End Sub
 
-    ' --- destination color -------------------------------------------------------
+    ' --- read-only <-> destination mutual exclusion -----------------------------
 
-    ''' <summary>Read-only and destination are mutually exclusive (a destination is
-    ''' writable). Checking read-only clears the destination.</summary>
+    ''' <summary>Hard read-only and destination are mutually exclusive (a destination is
+    ''' writable). Ticking hard read-only clears the destination.</summary>
     Private Sub OnReadOnlyToggled(sender As Object, e As EventArgs)
         If _syncingWritability Then Return
         _syncingWritability = True
@@ -284,8 +270,7 @@ Public Class Share_Root_Params_Form
         UpdateDestinationEnabled()
     End Sub
 
-    ''' <summary>Enabling a destination clears read-only (the folder must accept
-    ''' writes) and enables the chip-color controls.</summary>
+    ''' <summary>Enabling a destination clears hard read-only (the folder must accept writes).</summary>
     Private Sub OnDestinationToggled(sender As Object, e As EventArgs)
         If Not _syncingWritability Then
             _syncingWritability = True
@@ -296,39 +281,7 @@ Public Class Share_Root_Params_Form
     End Sub
 
     Private Sub UpdateDestinationEnabled()
-        Dim dest As Boolean = chkDestination.Checked
-        lblDestNote.Enabled = dest
-        btnColor.Enabled = dest
-        pnlColor.Enabled = dest
-        lnkColorReset.Enabled = dest AndAlso _params.HasDestinationColor
-    End Sub
-
-    Private Sub OnPickColor(sender As Object, e As EventArgs)
-        Using dlg As New ColorDialog()
-            If _params.HasDestinationColor Then dlg.Color = Color.FromArgb(_params.DestinationColorArgb)
-            If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
-            ' Force full alpha: the contract expects an opaque ARGB chip color.
-            _params.DestinationColorArgb = Color.FromArgb(255, dlg.Color).ToArgb()
-            _params.HasDestinationColor = True
-        End Using
-        UpdateColorUi()
-    End Sub
-
-    Private Sub OnResetColor(sender As Object, e As LinkLabelLinkClickedEventArgs)
-        _params.HasDestinationColor = False
-        UpdateColorUi()
-    End Sub
-
-    Private Sub UpdateColorUi()
-        Dim rus As Boolean = Is_Russian_Language
-        If _params.HasDestinationColor Then
-            pnlColor.BackColor = Color.FromArgb(_params.DestinationColorArgb)
-            lnkColorReset.Text = If(rus, "сбросить (авто)", "reset (auto)")
-        Else
-            pnlColor.BackColor = SystemColors.Control
-            lnkColorReset.Text = If(rus, "авто (задаст приложение)", "auto (app decides)")
-        End If
-        lnkColorReset.Enabled = chkDestination.Checked AndAlso _params.HasDestinationColor
+        lblDestNote.Visible = chkDestination.Checked
     End Sub
 
 End Class
