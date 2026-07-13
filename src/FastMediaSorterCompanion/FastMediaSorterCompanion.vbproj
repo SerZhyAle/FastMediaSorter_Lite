@@ -40,4 +40,17 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- QR rendering for the .fmscfg export (ShareConfigBuilder), same version as LITE. -->
+    <PackageReference Include="QRCoder" Version="1.4.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Offline trilingual port-forward guide, opened by ShareGuide. Keyed by the
+         same relative path ShareGuide passes (help/port-forward.html). -->
+    <EmbeddedResource Include="..\..\assets\help\port-forward.html">
+      <LogicalName>help/port-forward.html</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

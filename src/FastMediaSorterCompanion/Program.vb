@@ -41,6 +41,10 @@ Friend Module Program
                 Return
             End If
 
+            ' Read the shared UI-language flag before any Share text is built, so
+            ' Companion matches LITE's language (invariant 9).
+            CompanionGlobals.LoadLanguage()
+
             Application.EnableVisualStyles()
             Application.SetCompatibleTextRenderingDefault(False)
             Try
