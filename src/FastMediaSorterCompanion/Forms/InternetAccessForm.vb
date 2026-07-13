@@ -5,13 +5,13 @@ Imports System.Text
 Imports System.Windows.Forms
 
 ''' <summary>
-''' "Доступ из интернета" - all the internet-reachability guidance that used to live
-''' on the LITE Share tab's "Из интернета" page: external address / IPv6, honest
-''' reachability status (UPnP-mapped / needs-forward / CGNAT / unverified), a self
-''' SFTP probe ("Тест"), open-router, detect-router-model + web-search, the offline
-''' port-forward guide, and the security note. Opened from the main window's server
-''' panel; read-only informational + helper links (the actual QR/export is the
-''' package wizard). Ported near-verbatim from Table_Form.Share.vb §internet.
+''' "Инструкция по пробросу порта" - the port-forward setup guidance, opened by a
+''' button from the main window's server panel. The addresses/IPv6/router/credentials
+''' now live (copyable) in the server panel and the useful links along the main
+''' window's bottom; THIS dialog keeps only the instruction itself: the honest
+''' reachability status, the step-by-step text (security note + how to forward the
+''' port, or the UPnP/CGNAT explanation), a self SFTP probe ("Тест"), and a link to
+''' the richer offline HTML guide (prefilled with your values + detected router).
 ''' </summary>
 Public NotInheritable Class InternetAccessForm
     Inherits Form
@@ -21,16 +21,9 @@ Public NotInheritable Class InternetAccessForm
     Private _testing As Boolean
 
     Private lblNet As Label
-    Private lblExtAddr As Label
-    Private lblIpv6 As Label
-    Private lblRouterUrl As Label
-    Private lblRouterModel As Label
     Private btnTestNet As Button
-    Private btnOpenRouter As Button
     Private btnRefresh As Button
     Private lnkGuide As LinkLabel
-    Private lnkRouterSearch As LinkLabel
-    Private lnkWebGuide As LinkLabel
     Private txtForward As TextBox
     Private lblHint As Label
     Private btnClose As Button
@@ -47,65 +40,46 @@ Public NotInheritable Class InternetAccessForm
     End Property
 
     Private Sub BuildUi()
-        Me.Text = If(Rus, "Доступ из интернета", "Internet access")
+        Me.Text = If(Rus, "Инструкция по пробросу порта", "Port-forward guide")
         Me.FormBorderStyle = FormBorderStyle.Sizable
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(620, 520)
-        Me.MinimumSize = New Size(560, 460)
+        Me.ClientSize = New Size(600, 460)
+        Me.MinimumSize = New Size(520, 400)
         Me.Font = New Font("Segoe UI", 9.0F)
         Me.AutoScaleMode = AutoScaleMode.Font
 
         Dim tip As New ToolTip()
 
-        lblNet = New Label With {.Left = 12, .Top = 12, .Width = 596, .Height = 22, .AutoEllipsis = True,
-            .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right,
-            .Font = New Font(Me.Font, FontStyle.Bold)}
-        lblExtAddr = New Label With {.Left = 12, .Top = 38, .Width = 400, .Height = 20, .AutoEllipsis = True, .ForeColor = Color.DimGray}
-        lblIpv6 = New Label With {.Left = 12, .Top = 60, .Width = 596, .Height = 20, .AutoEllipsis = True, .ForeColor = Color.DimGray,
-            .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right}
-
-        btnTestNet = New Button With {.Left = 420, .Top = 36, .Width = 90, .Height = 26, .Text = If(Rus, "Тест", "Test"),
+        lblNet = New Label With {.Left = 12, .Top = 12, .Width = 400, .Height = 22, .AutoEllipsis = True,
+            .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right, .Font = New Font(Me.Font, FontStyle.Bold)}
+        btnTestNet = New Button With {.Left = 400, .Top = 10, .Width = 90, .Height = 26, .Text = If(Rus, "Тест", "Test"),
             .Anchor = AnchorStyles.Top Or AnchorStyles.Right}
-        btnRefresh = New Button With {.Left = 516, .Top = 36, .Width = 92, .Height = 26, .Text = If(Rus, "Обновить", "Refresh"),
+        btnRefresh = New Button With {.Left = 498, .Top = 10, .Width = 90, .Height = 26, .Text = If(Rus, "Обновить", "Refresh"),
             .Anchor = AnchorStyles.Top Or AnchorStyles.Right}
         AddHandler btnTestNet.Click, AddressOf OnTestNet
         AddHandler btnRefresh.Click, AddressOf OnRefresh
         tip.SetToolTip(btnTestNet, If(Rus, "Проверить внешний адрес с этого ПК (не окончательно - роутер может не пускать на свой адрес изнутри).",
                                           "Probe the external address from this PC (inconclusive - a router may refuse its own address from inside)."))
 
-        Dim lblRouterCap As New Label With {.Left = 12, .Top = 90, .Width = 60, .Height = 20, .Text = If(Rus, "Роутер:", "Router:")}
-        lblRouterModel = New Label With {.Left = 74, .Top = 90, .Width = 318, .Height = 20, .AutoEllipsis = True,
-            .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(Rus, "определяется..", "detecting..")}
-        lblRouterUrl = New Label With {.Left = 74, .Top = 110, .Width = 318, .Height = 20, .AutoEllipsis = True, .ForeColor = Color.DimGray}
-        btnOpenRouter = New Button With {.Left = 420, .Top = 90, .Width = 188, .Height = 26, .Text = If(Rus, "Открыть роутер", "Open router"),
-            .Anchor = AnchorStyles.Top Or AnchorStyles.Right}
-        AddHandler btnOpenRouter.Click, AddressOf OnOpenRouter
-
-        lnkGuide = New LinkLabel With {.Left = 12, .Top = 140, .Width = 300, .Height = 20,
-            .Text = If(Rus, "Инструкция по пробросу порта..", "Port-forward guide..")}
-        lnkRouterSearch = New LinkLabel With {.Left = 320, .Top = 140, .Width = 288, .Height = 20,
-            .Anchor = AnchorStyles.Top Or AnchorStyles.Right,
-            .Text = If(Rus, "Найти инструкцию для моей модели..", "Find a guide for my model..")}
-        lnkWebGuide = New LinkLabel With {.Left = 12, .Top = 162, .Width = 596, .Height = 20,
+        lnkGuide = New LinkLabel With {.Left = 12, .Top = 42, .Width = 576, .Height = 20,
             .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right,
-            .Text = If(Rus, "Как публиковать папки для Android (на сайте)..", "How to publish folders for Android (website)..")}
+            .Text = If(Rus, "Открыть подробную инструкцию (HTML, с вашими значениями и моделью роутера)..",
+                            "Open the detailed guide (HTML, prefilled with your values + router model)..")}
         AddHandler lnkGuide.LinkClicked, AddressOf OnOpenGuide
-        AddHandler lnkRouterSearch.LinkClicked, AddressOf OnOpenRouterSearch
-        AddHandler lnkWebGuide.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl)
 
-        txtForward = New TextBox With {.Left = 12, .Top = 190, .Width = 596, .Height = 280,
+        txtForward = New TextBox With {.Left = 12, .Top = 68, .Width = 576, .Height = 344,
             .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical, .BorderStyle = BorderStyle.FixedSingle,
-            .BackColor = SystemColors.Window, .Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right}
+            .BackColor = SystemColors.Window,
+            .Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right}
 
-        lblHint = New Label With {.Left = 12, .Top = 478, .Width = 480, .Height = 32, .ForeColor = Color.DimGray, .AutoEllipsis = True,
+        lblHint = New Label With {.Left = 12, .Top = 420, .Width = 470, .Height = 30, .ForeColor = Color.DimGray, .AutoEllipsis = True,
             .Anchor = AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right}
-        btnClose = New Button With {.Left = 526, .Top = 484, .Width = 82, .Height = 28, .Text = If(Rus, "Закрыть", "Close"),
+        btnClose = New Button With {.Left = 506, .Top = 424, .Width = 82, .Height = 28, .Text = If(Rus, "Закрыть", "Close"),
             .Anchor = AnchorStyles.Bottom Or AnchorStyles.Right, .DialogResult = DialogResult.OK}
 
-        Me.Controls.AddRange(New Control() {lblNet, lblExtAddr, lblIpv6, btnTestNet, btnRefresh,
-            lblRouterCap, lblRouterModel, lblRouterUrl, btnOpenRouter, lnkGuide, lnkRouterSearch, lnkWebGuide, txtForward, lblHint, btnClose})
+        Me.Controls.AddRange(New Control() {lblNet, btnTestNet, btnRefresh, lnkGuide, txtForward, lblHint, btnClose})
         Me.CancelButton = btnClose
 
         AddHandler Me.Shown, AddressOf OnShownFirst
@@ -113,24 +87,8 @@ Public NotInheritable Class InternetAccessForm
     End Sub
 
     Private Async Sub OnShownFirst(sender As Object, e As EventArgs)
-        ' Detect the router model (UPnP, slow) in the background - the "TP-Link Archer
-        ' BE550"-style line from the original LITE Share tab.
-        Dim rtTask As Task = DetectRouterAsync()
-        ' Fetch a fresh snapshot so the external address is current, then poll a few
-        ' times if the worker's reachability probe hasn't finished yet.
         Await RefreshStatusAsync(poll:=True)
     End Sub
-
-    Private Async Function DetectRouterAsync() As Task
-        Try
-            Dim rt As RouterIdentity = Await GetRouterAsync()
-            If Me.IsDisposed Then Return
-            Dim model As String = rt.DisplayName()
-            lblRouterModel.Text = If(model.Length > 0, model, If(Rus, "модель не определена", "model unknown"))
-        Catch
-            If Not Me.IsDisposed Then lblRouterModel.Text = If(Rus, "модель не определена", "model unknown")
-        End Try
-    End Function
 
     Private Async Sub OnRefresh(sender As Object, e As EventArgs)
         Await RefreshStatusAsync(poll:=True)
@@ -154,38 +112,29 @@ Public NotInheritable Class InternetAccessForm
         SetHint("")
     End Function
 
-    ''' <summary>Fills the whole form from the current status - the InternetAccessForm
-    ''' analogue of the LITE UpdateInternetUi (same branching: CGNAT / UPnP-mapped /
-    ''' needs-forward / unknown).</summary>
+    ''' <summary>Fills the status line + guidance text (CGNAT / UPnP-mapped / needs-forward
+    ''' / unknown), mirroring the LITE UpdateInternetUi.</summary>
     Private Sub Render()
         Dim st As WorkerStatus = _status
         Dim running As Boolean = st IsNot Nothing AndAlso st.Running
         Dim reach As WorkerReachability = If(st IsNot Nothing, st.Reachability, Nothing)
-
-        Dim routerIp As String = NetworkInfo.DefaultGatewayIp()
-        lblRouterUrl.Text = If(routerIp.Length > 0, "http://" & routerIp, "-")
-        btnOpenRouter.Enabled = running AndAlso routerIp.Length > 0
         lnkGuide.Enabled = running
-        lnkRouterSearch.Enabled = running
-        lblIpv6.Text = If(reach IsNot Nothing AndAlso Not String.IsNullOrEmpty(reach.Ipv6Address),
-                          (If(Rus, "IPv6 (в обход NAT): ", "IPv6 (bypasses NAT): ")) & reach.Ipv6Address & ":" & If(st IsNot Nothing, st.ListenPort, 0).ToString(), "")
 
         If Not running Then
             lblNet.Text = If(Rus, "Запустите общий доступ, чтобы настроить интернет.", "Start sharing to set up internet access.")
-            lblExtAddr.Text = ""
             txtForward.Text = ""
             RefreshTestButton()
             Return
         End If
         If reach Is Nothing Then
             lblNet.Text = If(Rus, "Определяем внешний адрес..", "Detecting the external address..")
-            lblExtAddr.Text = ""
             txtForward.Text = ""
             RefreshTestButton()
             Return
         End If
 
         Dim port As Integer = st.ListenPort
+        Dim routerIp As String = NetworkInfo.DefaultGatewayIp()
         Dim lanIp As String = If(Not String.IsNullOrEmpty(reach.LanAddress), reach.LanAddress, NetworkInfo.LocalIPv4())
         Dim extHost As String = If(reach.ExternalHost, "")
         Dim extPort As Integer = reach.ExternalPort
@@ -193,8 +142,6 @@ Public NotInheritable Class InternetAccessForm
         Dim mapped As Boolean = Not String.IsNullOrEmpty(reach.PortMapMethod)
         Dim routerText As String = If(routerIp.Length > 0, "http://" & routerIp, If(Rus, "адрес роутера", "the router address"))
         Dim lanText As String = If(lanIp.Length > 0, lanIp, If(Rus, "IP этого ПК", "this PC's IP"))
-
-        lblExtAddr.Text = If(extHost.Length > 0, (If(Rus, "Внешний адрес: ", "External address: ")) & extHost & ":" & (If(extPort > 0, extPort, port)).ToString(), "")
 
         Dim sb As New StringBuilder()
         sb.AppendLine(ShareText.SecurityText(Rus)).AppendLine()
@@ -271,16 +218,7 @@ Public NotInheritable Class InternetAccessForm
         End Select
     End Function
 
-    ' --- router helpers ---------------------------------------------------------
-
-    Private Sub OnOpenRouter(sender As Object, e As EventArgs)
-        Dim url As String = NetworkInfo.DefaultGatewayUrl()
-        If url.Length = 0 Then
-            SetHint(If(Rus, "Не удалось определить адрес роутера.", "Could not determine the router address."))
-            Return
-        End If
-        NetworkInfo.OpenInBrowser(url)
-    End Sub
+    ' --- offline HTML guide -----------------------------------------------------
 
     Private Async Sub OnOpenGuide(sender As Object, e As LinkLabelLinkClickedEventArgs)
         Dim port As Integer = If(_status IsNot Nothing, _status.ListenPort, 0)
@@ -294,14 +232,6 @@ Public NotInheritable Class InternetAccessForm
         Else
             SetHint(If(model.Length > 0, (If(Rus, "Роутер: ", "Router: ")) & model, ""))
         End If
-    End Sub
-
-    Private Async Sub OnOpenRouterSearch(sender As Object, e As LinkLabelLinkClickedEventArgs)
-        SetHint(If(Rus, "Определяем роутер..", "Detecting router.."))
-        Dim rt As RouterIdentity = Await GetRouterAsync()
-        NetworkInfo.OpenInBrowser(RouterInfo.SearchUrl(rt))
-        SetHint(If(rt.DisplayName().Length > 0, (If(Rus, "Роутер: ", "Router: ")) & rt.DisplayName(),
-            If(Rus, "Модель не определена - открыт общий поиск.", "Model unknown - opened a general search.")))
     End Sub
 
     Private Async Function GetRouterAsync() As Task(Of RouterIdentity)

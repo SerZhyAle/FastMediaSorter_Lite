@@ -42,6 +42,15 @@ Public Class ShareRootParams
     ''' overrides <see cref="IsReadOnly"/>.</summary>
     Public Property IsDestination As Boolean = False
 
+    ''' <summary>SOFT read-only (§4.5.4 п.2): a client HINT only - the exported
+    ''' <c>readOnly</c> is set true so the phone shows the resource as read-only, but
+    ''' the SFTP server is NOT locked (writes stay allowed unless <see cref="IsReadOnly"/>
+    ''' is also set). This is distinct from HARD read-only (<see cref="IsReadOnly"/>,
+    ''' which the server enforces). The divergence is always in the SAFE direction -
+    ''' advertised RO can be STRICTER than the server, never looser - so the phone
+    ''' never shows a write action the server would then refuse.</summary>
+    Public Property SoftReadOnly As Boolean = False
+
     ''' <summary>Whether the user picked an explicit destination chip color.</summary>
     Public Property HasDestinationColor As Boolean = False
     ''' <summary>Signed 32-bit ARGB (e.g. -14575885 = 0xFF2196F3); best-effort (§5).</summary>
@@ -70,6 +79,14 @@ Public Class ShareRootParams
         Return (Not IsReadOnly) OrElse IsDestination
     End Function
 
+    ''' <summary>The value of the exported <c>readOnly</c> field the phone is told:
+    ''' true when the server enforces read-only (<see cref="IsWritable"/> = false) OR
+    ''' the user asked for the soft client-hint (<see cref="SoftReadOnly"/>). Always
+    ''' &gt;= the server's real restriction (never advertises writable-when-locked).</summary>
+    Public Function AdvertisedReadOnly() As Boolean
+        Return (Not IsWritable()) OrElse SoftReadOnly
+    End Function
+
     ''' <summary>True when every field is at the Android import default - nothing to
     ''' emit, the root stays pure v1.</summary>
     Public Function IsDefault() As Boolean
@@ -81,6 +98,7 @@ Public Class ShareRootParams
                Not ShowHiddenFiles AndAlso
                Not AllFiles AndAlso
                Not IsReadOnly AndAlso
+               Not SoftReadOnly AndAlso
                Not IsDestination AndAlso
                Not HasDestinationColor AndAlso
                Comment.Trim().Length = 0 AndAlso
@@ -101,6 +119,7 @@ Public Class ShareRootParams
             .ShowHiddenFiles = ShowHiddenFiles,
             .AllFiles = AllFiles,
             .IsReadOnly = IsReadOnly,
+            .SoftReadOnly = SoftReadOnly,
             .IsDestination = IsDestination,
             .HasDestinationColor = HasDestinationColor,
             .DestinationColorArgb = DestinationColorArgb,

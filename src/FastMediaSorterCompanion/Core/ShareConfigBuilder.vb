@@ -191,15 +191,15 @@ Public Module ShareConfigBuilder
         sb.Append("{""virtualPath"":").Append(J("/" & name))
         sb.Append(",""label"":").Append(J(label))
 
-        ' readOnly: explicit per-root writability, ALWAYS emitted (additive field,
-        ' like accessNote/ipv6 - does NOT by itself bump schemaVersion, and an old
-        ' Android parser ignores the unknown key and treats the root as read-only,
-        ' its existing default). true = browse/download only; false = the phone may
-        ' write. A destination is inherently writable, so it forces readOnly:false.
-        ' Same ShareRootParams.IsWritable() the worker push uses (S1016) - the phone
-        ' contract and the SFTP server's real permissions must never disagree.
-        Dim writable As Boolean = p IsNot Nothing AndAlso p.IsWritable()
-        sb.Append(",""readOnly"":").Append(If(writable, "false", "true"))
+        ' readOnly: what the phone is TOLD. It is the ADVERTISED read-only
+        ' (ShareRootParams.AdvertisedReadOnly) = the server-enforced restriction
+        ' (Not IsWritable, hard RO) OR the soft client-hint (SoftReadOnly). This is
+        ' always >= the SFTP server's real restriction (never advertises writable when
+        ' the server would deny it - the "Move deletes original -> rm denied" bug), but
+        ' MAY be stricter (soft RO: server writable, phone shown read-only). A
+        ' destination is inherently writable and (unless soft RO) exports readOnly:false.
+        Dim advertisedRo As Boolean = p IsNot Nothing AndAlso p.AdvertisedReadOnly()
+        sb.Append(",""readOnly"":").Append(If(advertisedRo, "true", "false"))
 
         If p IsNot Nothing Then
             Dim v2 As New StringBuilder()

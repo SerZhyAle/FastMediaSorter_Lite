@@ -29,6 +29,37 @@ Public Class ShareRootParamsTests
         Assert.Equal(expectedWritable, p.IsWritable())
     End Sub
 
+    <Theory>
+    <InlineData(False, False, False, False)>  ' normal writable -> advertised writable
+    <InlineData(True, False, False, True)>    ' hard RO -> advertised RO
+    <InlineData(False, True, False, True)>    ' soft RO -> advertised RO (server still writable)
+    <InlineData(False, False, True, False)>   ' destination writable -> advertised writable
+    <InlineData(True, False, True, False)>    ' hard RO + destination: destination forces writable -> advertised writable
+    <InlineData(False, True, True, True)>     ' destination writable but soft RO hint -> advertised RO
+    Public Sub AdvertisedReadOnly_TruthTable(hardRo As Boolean, softRo As Boolean, destination As Boolean, expectedAdvertisedRo As Boolean)
+        Dim p As New ShareRootParams With {.IsReadOnly = hardRo, .SoftReadOnly = softRo, .IsDestination = destination}
+        Assert.Equal(expectedAdvertisedRo, p.AdvertisedReadOnly())
+    End Sub
+
+    <Fact>
+    Public Sub AdvertisedReadOnly_NeverLooserThanServer()
+        ' Whenever the SERVER blocks writes (Not IsWritable), the phone must be told
+        ' read-only too - advertised RO is always >= the server restriction.
+        For Each hardRo In {True, False}
+            For Each softRo In {True, False}
+                For Each dest In {True, False}
+                    Dim p As New ShareRootParams With {.IsReadOnly = hardRo, .SoftReadOnly = softRo, .IsDestination = dest}
+                    If Not p.IsWritable() Then Assert.True(p.AdvertisedReadOnly(), "server locked but advertised writable")
+                Next
+            Next
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub IsDefault_False_WhenSoftReadOnly()
+        Assert.False(New ShareRootParams With {.SoftReadOnly = True}.IsDefault())
+    End Sub
+
     <Fact>
     Public Sub IsDefault_False_WhenAnyFieldSet()
         Assert.False(New ShareRootParams With {.Label = "Photos"}.IsDefault())
