@@ -36,7 +36,7 @@ Features include:
 - Favorites system and PIN protection
 - Advanced gestures and keyboard navigation
 
-**Desktop as copilot:** Fast Media Sorter for Windows can act as the mobile app's server. Its **Android Folder Share** feature runs a built-in SFTP server for your own media and file folders, so the Android app browses this PC directly - on your home network or over the internet - after a one-time QR pairing. Sharing is an explicit opt-in: enable the **server features** (a checkbox during installation, or a one-time "Install server features" button in Settings &rarr; Share) to add the Windows Firewall rule - until then the app is a pure viewer/sorter. See the step-by-step [guide to publishing your folders for Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html).
+**Desktop as copilot:** Fast Media Sorter for Windows can act as the mobile app's server. Its **Android Folder Share** feature runs a built-in SFTP server for your own media and file folders, so the Android app browses this PC directly - on your home network or over the internet - after a one-time QR pairing. Folder sharing is managed by a bundled tray companion, **Fast Media Sorter: Share Manager** (opened from the viewer's folder right-click or from Settings &rarr; Files and system). Sharing is an explicit opt-in: enable the **server features** (a checkbox during installation, or a one-time button in Share Manager) to add the Windows Firewall rule - until then the app is a pure viewer/sorter. See the step-by-step [guide to publishing your folders for Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html).
 
 ## Usage
 
@@ -76,6 +76,24 @@ choice once in Default Apps.
 Both GitHub release assets are offline-ready: they already include VLC runtimes
 and OCR language packs, so no first-run download is needed for media playback or
 OCR recognition.
+
+### What's in the package (and why it's large)
+
+The viewer itself is small (a few MB). Almost all of the download is optional,
+**offline-ready** payload, bundled so the app works with no first-run download:
+
+- **Video codecs (VLC)** (~100 MB) - offline playback of AVI, MKV, VP9 and other
+  formats the built-in Windows player can't decode.
+- **OCR & translation models** (~45 MB) - on-image text recognition without a
+  network round-trip.
+- **Android Folder Share companion** (~120 MB) - a self-contained .NET app that
+  carries its own runtime (Windows does not ship the modern .NET it needs), used
+  to share folders to your phone.
+
+The interactive installer exposes these as **selectable components** and shows each
+one's size: uncheck what you don't need and those parts download later on demand,
+or the feature is simply left out. A viewer-only ("Compact") install is a small
+fraction of the full package. (Silent/winget installs always take the full set.)
 
 Note: machine translation still depends on the provider you configure - the app
 is generous, but it won't translate by sheer willpower. Ollama requires a

@@ -2,10 +2,10 @@
 
 Статус: роадмап (сборка невыполненных задач из существующих спецификаций, реализация не начата)
 Дата: 2026-07-13 (аудит пересмотрен 2026-07-13 под цель «релиз с готовым SFTP-воркером одновременно с Android-клиентом»)
-Источники: [SPECIFICATION_SHARE_COMPANION_APP.md](SPECIFICATION_SHARE_COMPANION_APP.md),
-[SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md](SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md),
-[SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md),
-[SPECIFICATION_ANDROID_FOLDER_SHARE.md](SPECIFICATION_ANDROID_FOLDER_SHARE.md)
+Источники: [SPECIFICATION_SHARE_COMPANION_APP.md](done/SPECIFICATION_SHARE_COMPANION_APP.md),
+[SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md](done/SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md),
+[SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](done/SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md),
+[SPECIFICATION_ANDROID_FOLDER_SHARE.md](done/SPECIFICATION_ANDROID_FOLDER_SHARE.md)
 
 Структура и порядок этапов - как видит владелец проекта; ниже каждый этап развёрнут в
 конкретные задачи из уже написанных спецификаций (ссылки на разделы даны при каждом
@@ -56,7 +56,7 @@ Companion (этапы 1-3), затем релиз** (этап 10). Т.е. рел
 
 ## 1. Создание нового приложения и перемещение туда готового кода
 
-Источник: [SPECIFICATION_SHARE_COMPANION_APP.md](SPECIFICATION_SHARE_COMPANION_APP.md), разделы 4, 6, 11 (Ф0-Ф3, Ф5).
+Источник: [SPECIFICATION_SHARE_COMPANION_APP.md](done/SPECIFICATION_SHARE_COMPANION_APP.md), разделы 4, 6, 11 (Ф0-Ф3, Ф5).
 
 - [x] Закрыть открытые вопросы спецификации, от которых зависит старт: **O-1** публичное
       имя программы, **O-4** структура главного окна (мастер + настройки в одном окне),
@@ -91,7 +91,7 @@ Companion (этапы 1-3), затем релиз** (этап 10). Т.е. рел
 
 ## 2. Тестирование прямо здесь (в процессе разработки, до упаковки)
 
-Источник: [SPECIFICATION_SHARE_COMPANION_APP.md](SPECIFICATION_SHARE_COMPANION_APP.md) §11 (Ф1 smoke, Ф7), §14 (чеклист приёмки).
+Источник: [SPECIFICATION_SHARE_COMPANION_APP.md](done/SPECIFICATION_SHARE_COMPANION_APP.md) §11 (Ф1 smoke, Ф7), §14 (чеклист приёмки).
 
 - [x] Собрать (локально) + smoke-тест + закоммитить незакоммиченный **фикс контракта
       readOnly** (9 файлов, см. «Текущее состояние» выше) - предпосылка для честного
@@ -136,7 +136,7 @@ Companion (этапы 1-3), затем релиз** (этап 10). Т.е. рел
 
 ## 3. Удаление ненужного кода из старого приложения (основного, LITE)
 
-Источник: [SPECIFICATION_SHARE_COMPANION_APP.md](SPECIFICATION_SHARE_COMPANION_APP.md) §3.1, §4.2, §12, инвариант 8 (§10).
+Источник: [SPECIFICATION_SHARE_COMPANION_APP.md](done/SPECIFICATION_SHARE_COMPANION_APP.md) §3.1, §4.2, §12, инвариант 8 (§10).
 
 - [ ] Удалить из LITE все 13 `src/Companion/*.vb`.
 - [ ] Удалить `Share_Wizard_Form.vb`, `Share_Root_Params_Form.vb`, `Qr_Zoom_Form.vb`,
@@ -159,7 +159,7 @@ Companion (этапы 1-3), затем релиз** (этап 10). Т.е. рел
 
 ## 4. Изменения в статистике, трее (новый функционал, код)
 
-Источник: [SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md](SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md), разделы 3, 5.
+Источник: [SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md](done/SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md), разделы 3, 5.
 
 - [ ] Закрыть открытые вопросы: **O-1** когда делать взаимный запуск (рекомендация -
       вместе с этапом 1), **O-2** форма окна статуса (отдельное окошко - рекомендовано),
@@ -183,7 +183,7 @@ Companion (этапы 1-3), затем релиз** (этап 10). Т.е. рел
 
 ## 5. Тестирование SFTP
 
-Источник: [SPECIFICATION_ANDROID_FOLDER_SHARE.md](SPECIFICATION_ANDROID_FOLDER_SHARE.md) §8, [SPECIFICATION_SHARE_COMPANION_APP.md](SPECIFICATION_SHARE_COMPANION_APP.md) §14, [SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md](SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md) §7.
+Источник: [SPECIFICATION_ANDROID_FOLDER_SHARE.md](done/SPECIFICATION_ANDROID_FOLDER_SHARE.md) §8, [SPECIFICATION_SHARE_COMPANION_APP.md](done/SPECIFICATION_SHARE_COMPANION_APP.md) §14, [SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md](done/SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md) §7.
 
 - [ ] Телефонный смоук (решающий тест): FastMediaSorter Android -> Add resource ->
       SFTP/FTP -> Import from companion -> ресурс открывается, файлы просматриваются,
@@ -203,7 +203,7 @@ Companion (этапы 1-3), затем релиз** (этап 10). Т.е. рел
 
 ## 6. Сборки, инсталляционные пакеты, их тестирование
 
-Источник: [SPECIFICATION_SHARE_COMPANION_APP.md](SPECIFICATION_SHARE_COMPANION_APP.md) §8, §14.
+Источник: [SPECIFICATION_SHARE_COMPANION_APP.md](done/SPECIFICATION_SHARE_COMPANION_APP.md) §8, §14.
 
 - [ ] `build.ps1`/`tools/Build-OfflineRelease.ps1` кладут `FastMediaSorterCompanion.exe`
       рядом с `FastMediaSorter_LITE.exe`.
@@ -212,7 +212,7 @@ Companion (этапы 1-3), затем релиз** (этап 10). Т.е. рел
       ответственности Companion (но остаются в том же `.iss`); `stop-companion.ps1`
       останавливает ОБА процесса при удалении/обновлении.
 - [ ] winget: манифест концептуально не меняется (`InstallerType: inno`, без
-      зависимостей/Scope - см. [SPECIFICATION_WINGET_PUBLISHING.md](SPECIFICATION_WINGET_PUBLISHING.md)); описание пакета
+      зависимостей/Scope - см. [SPECIFICATION_WINGET_PUBLISHING.md](done/SPECIFICATION_WINGET_PUBLISHING.md)); описание пакета
       дополнить упоминанием Companion.
 - [ ] MSIX: второй `<Application>` в манифесте, `uap5:StartupTask` меняет цель на
       `FastMediaSorterCompanion.exe` - требует полного цикла сертификации Store заново
@@ -232,7 +232,7 @@ Companion (этапы 1-3), затем релиз** (этап 10). Т.е. рел
 
 - [ ] `CLAUDE.md`: раздел «Android Folder Share (Companion sidecar)» переписан под новую
       архитектуру (два процесса), ссылки на актуальные файлы вместо удалённых.
-      Учесть [SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md](SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md) как часть описания трея.
+      Учесть [SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md](done/SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md) как часть описания трея.
 - [ ] `CHANGELOG.md` `[Unreleased]`: записи по каждому крупному этапу (перенос в
       Companion, статистика, трей-хаб) по мере реализации.
 - [ ] `README.md`/`README_RU.md`/`README_UK.md`: формулировки «в Настройках» ->
@@ -244,9 +244,9 @@ Companion (этапы 1-3), затем релиз** (этап 10). Т.е. рел
       (`docs/publish-folders-android.html`, `publish-folders-android.html`) - сверить
       актуальность после переноса функционала в Companion.
 - [ ] После реализации и приёмки - переместить в `done/` с пометкой `> Outcome:`:
-      [SPECIFICATION_SHARE_COMPANION_APP.md](SPECIFICATION_SHARE_COMPANION_APP.md),
-      [SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md](SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md),
-      [SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md)
+      [SPECIFICATION_SHARE_COMPANION_APP.md](done/SPECIFICATION_SHARE_COMPANION_APP.md),
+      [SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md](done/SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md),
+      [SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](done/SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md)
       (последний - как только некоммиченный код из «Текущего состояния» протестирован и
       закоммичен).
 - [ ] Этот роадмап-файл тоже закрыть/архивировать, когда все этапы выполнены.
@@ -259,7 +259,7 @@ Companion (этапы 1-3), затем релиз** (этап 10). Т.е. рел
       Share в отдельную программу + новых возможностей трея/статистики.
 - [ ] Тексты листинга Microsoft Store: описание, `runFullTrust`-обоснование, privacy
       policy (упомянуть локальный SFTP-сервер, локальные счётчики статистики - НЕ
-      телеметрия, см. инвариант 1 [SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md](SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md) §4),
+      телеметрия, см. инвариант 1 [SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md](done/SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md) §4),
       повторная проверка IARC.
 - [ ] winget: описание пакета дополнено упоминанием Companion (короткое и полное
       `ShortDescription`/`Description`).

@@ -1,8 +1,19 @@
 # Спецификация: вынос Android Folder Share в отдельную программу-компаньон на .NET 10
 
-Статус: план (не начато)
+Статус: **выполнено** (2026-07-14)
 Дата: 2026-07-12, ревизия 1
-Связано: [SPECIFICATION_ANDROID_FOLDER_SHARE.md](SPECIFICATION_ANDROID_FOLDER_SHARE.md), [SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md), [SPECIFICATION_QR_IMPORT_ANDROID.md](SPECIFICATION_QR_IMPORT_ANDROID.md), [SPECIFICATION_DOTNET10_MODERN_BUILD.md](SPECIFICATION_DOTNET10_MODERN_BUILD.md) (независимый, более крупный план переноса ВСЕГО приложения на .NET 10 - см. раздел 7.4, чем это отличается).
+
+> Outcome (2026-07-14): реализовано. Отдельный проект `src/FastMediaSorterCompanion/`
+> (`net10.0-windows`) в `FastMediaSorter.sln`; весь Share-функционал (`Core/*`,
+> `Forms/Share_*`, `TrayContext.vb`, `MainWindow.vb`) переехал туда. Из LITE
+> удалены `src/Companion/*.vb`, `Share_Wizard_Form/Share_Root_Params_Form/
+> Qr_Zoom_Form/Share_Enable_Form/Table_Form.Share/Main_Form.ShareTray/ShareSettings`
+> и close-to-tray-логика; единственная точка входа - `Main_Form.ShareLauncher.vb`
+> / `Table_Form.ShareLauncher.vb` (хендшейк раздела 5, мьютекс + `WM_COPYDATA`).
+> Осталось (вне кода): CLAUDE.md всё ещё описывает старую in-LITE-архитектуру
+> раздела «Android Folder Share (Companion sidecar)» - обновить под сплит; и
+> ручная приёмка каналов/апгрейда (чек-лист раздела 14) - за владельцем.
+Связано: [SPECIFICATION_ANDROID_FOLDER_SHARE.md](SPECIFICATION_ANDROID_FOLDER_SHARE.md), [SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md), [SPECIFICATION_QR_IMPORT_ANDROID.md](SPECIFICATION_QR_IMPORT_ANDROID.md), [SPECIFICATION_DOTNET10_MODERN_BUILD.md](../SPECIFICATION_DOTNET10_MODERN_BUILD.md) (независимый, более крупный план переноса ВСЕГО приложения на .NET 10 - см. раздел 7.4, чем это отличается).
 
 ---
 
@@ -18,7 +29,7 @@
    §0.2), ему всё равно приходится держать открытым Main_Form.
 2. **Просмотрщик не может нормально закрыться, пока идёт раздача.** Отсюда вся
    логика close-to-tray (`_residentInTray`, `EnterTrayResidentMode`,
-   `_lastKnownSharing`, `DoRealExit` в [Main_Form.ShareTray.vb](../../src/Main_Form.ShareTray.vb))
+   `_lastKnownSharing`, `DoRealExit` в [Main_Form.ShareTray.vb](../../../src/Main_Form.ShareTray.vb))
    - фактически трей-резидентный процесс, притворяющийся просмотрщиком картинок.
 3. **Смешение ответственности усложняет обе части.** Main_Form одновременно решает
    задачи «показать фото» и «быть систем-треем сервера общего доступа» - это две
@@ -58,7 +69,7 @@ Companion"** (см. открытый вопрос O-1 про имя) - напи�
 
 **Вне рамок:**
 - Перенос **самого LITE-просмотрщика** на .NET 10 - это отдельный, гораздо более
-  крупный и рискованный план в [SPECIFICATION_DOTNET10_MODERN_BUILD.md](SPECIFICATION_DOTNET10_MODERN_BUILD.md)
+  крупный и рискованный план в [SPECIFICATION_DOTNET10_MODERN_BUILD.md](../SPECIFICATION_DOTNET10_MODERN_BUILD.md)
   (статус: план, не начато). Эта спецификация от него **не зависит** и может
   реализовываться первой или второй в любом порядке - Companion получает
   собственный современный TFM независимо от того, на чём собран LITE (раздел 7.4).
@@ -540,7 +551,7 @@ single-instance LITE (`Application_Events.vb`, `Main_Form.vb` -
 пары настроек из `Common_Module`. У них минимальные внешние зависимости
 (`System.IO.Pipes`, `System.Web.Script.Serialization.JavaScriptSerializer`,
 `Microsoft.Win32.Registry`, QRCoder) - все они, согласно уже проверенному
-разделу 4 [SPECIFICATION_DOTNET10_MODERN_BUILD.md](SPECIFICATION_DOTNET10_MODERN_BUILD.md#4-что-переносится-на-net-10-без-изменений-или-почти),
+разделу 4 [SPECIFICATION_DOTNET10_MODERN_BUILD.md](../SPECIFICATION_DOTNET10_MODERN_BUILD.md#4-что-переносится-на-net-10-без-изменений-или-почти),
 доступны на .NET 10 (именованные пайпы - в BCL; `JavaScriptSerializer` живёт в
 `System.Web.Extensions`, который **таргетит net48, не .NET 10** - нужна замена,
 см. раздел 6.2; `Microsoft.Win32.Registry` - NuGet-пакет на .NET; QRCoder
@@ -563,7 +574,7 @@ close-to-tray подсистемы (раздел 4.2 - она больше не 
 | Что | Сегодня (net48/LITE) | В Companion (.NET 10) |
 |---|---|---|
 | JSON-сериализация IPC (`WorkerIpc.vb`) | `System.Web.Script.Serialization.JavaScriptSerializer` (уже подключён как ссылка в LITE, недоступен на .NET 10) | `System.Text.Json` (в BCL с .NET 10) - переписать (де)сериализацию DTO; проверить регистр свойств (сегодняшняя нечувствительность к регистру у `JavaScriptSerializer` - `System.Text.Json` по умолчанию чувствителен, нужен `PropertyNameCaseInsensitive=true` в `JsonSerializerOptions`) |
-| Реестр (`ShareSettings.vb`, `ShareRootParams.vb`, `ServerFeatures.vb`, `AutostartManager.vb`) | `Microsoft.VisualBasic` `GetSetting`/`SaveSetting` (VB `My`-обёртка) или прямой `Microsoft.Win32.Registry` | Добавить пакет `Microsoft.Win32.Registry` (в .NET он вынесен из BCL, как уже отмечено в [SPECIFICATION_DOTNET10_MODERN_BUILD.md §4](SPECIFICATION_DOTNET10_MODERN_BUILD.md)); `GetSetting`/`SaveSetting` из `Microsoft.VisualBasic` тоже доступны на .NET (пакет `Microsoft.VisualBasic.Core`), можно оставить как есть при VB-проекте |
+| Реестр (`ShareSettings.vb`, `ShareRootParams.vb`, `ServerFeatures.vb`, `AutostartManager.vb`) | `Microsoft.VisualBasic` `GetSetting`/`SaveSetting` (VB `My`-обёртка) или прямой `Microsoft.Win32.Registry` | Добавить пакет `Microsoft.Win32.Registry` (в .NET он вынесен из BCL, как уже отмечено в [SPECIFICATION_DOTNET10_MODERN_BUILD.md §4](../SPECIFICATION_DOTNET10_MODERN_BUILD.md)); `GetSetting`/`SaveSetting` из `Microsoft.VisualBasic` тоже доступны на .NET (пакет `Microsoft.VisualBasic.Core`), можно оставить как есть при VB-проекте |
 | DPAPI (если ключи/пароли шифруются - сверить, использует ли Share-код `DpapiSecrets.vb`) | `System.Security.Cryptography.ProtectedData` (net48 ссылка) | Тот же пакет доступен на .NET через NuGet `System.Security.Cryptography.ProtectedData` |
 | Единый exe (ILMerge) | Не актуально для Companion - он никогда не использовал ILMerge | `PublishSingleFile=true` при публикации (раздел 7.2) |
 | Simple MAPI (`MailSender.vb`) | P/Invoke `MAPISendMail` из `MAPI32.dll` | Тот же P/Invoke работает на .NET (Windows-only API, не зависит от TFM) |
@@ -589,7 +600,7 @@ close-to-tray подсистемы (раздел 4.2 - она больше не 
   On. Перенос в VB.NET - это в основном copy+adjust; переписывание на C# удвоило
   бы объём работы без функциональной выгоды.
 - WinForms полностью поддерживается на .NET 10 (то же заключение, что и в
-  [SPECIFICATION_DOTNET10_MODERN_BUILD.md §2/§11](SPECIFICATION_DOTNET10_MODERN_BUILD.md)),
+  [SPECIFICATION_DOTNET10_MODERN_BUILD.md §2/§11](../SPECIFICATION_DOTNET10_MODERN_BUILD.md)),
   включая `NotifyIcon`, `ContextMenuStrip`, P/Invoke, `ListView`,
   `FolderBrowserDialog` - все контролы, которые реально использует Share-код.
 - Проект новый (SDK-style с рождения) - не нужно сосуществовать с legacy net48,
@@ -600,10 +611,10 @@ close-to-tray подсистемы (раздел 4.2 - она больше не 
 
 **Self-contained single-file** (`PublishSingleFile=true`, `SelfContained=true`,
 `RuntimeIdentifier=win-x64`) - та же модель, что запланирована для modern-сборки
-LITE ([SPECIFICATION_DOTNET10_MODERN_BUILD.md §8.1](SPECIFICATION_DOTNET10_MODERN_BUILD.md)),
+LITE ([SPECIFICATION_DOTNET10_MODERN_BUILD.md §8.1](../SPECIFICATION_DOTNET10_MODERN_BUILD.md)),
 по тем же причинам: офлайн-принцип проекта, отсутствие требования «поставь ещё
 и .NET Desktop Runtime», нет риска повторить winget VCRedist-петлю
-([CLAUDE.md](../../CLAUDE.md) про `Microsoft.VCRedist.2015+.x64`). Вес exe
+([CLAUDE.md](../../../CLAUDE.md) про `Microsoft.VCRedist.2015+.x64`). Вес exe
 несущественен относительно уже присутствующего в дистрибутиве LibVLC/Tesseract
 (Companion не тянет ни то, ни другое).
 
@@ -713,7 +724,7 @@ worker.exe`.
 
 ### 8.5 Автономная установка (Build-Installer.ps1)
 
-[tools/Build-Installer.ps1](../../tools/Build-Installer.ps1) уже явно
+[tools/Build-Installer.ps1](../../../tools/Build-Installer.ps1) уже явно
 подмешивает Android-share worker в `companion/` (см. CLAUDE.md) - расширяется
 аналогично для `FastMediaSorterCompanion.exe`.
 

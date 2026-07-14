@@ -5,7 +5,7 @@ The concrete, app-specific playbook for this repo. Adapted from the reusable Cyr
 
 > **Already published?** This doc is the **first** publish. To ship a change to the live listing
 > (new screenshots, search terms, or a new build), follow
-> [SPECIFICATION_STORE_UPDATE.md](../specifications/SPECIFICATION_STORE_UPDATE.md) instead.
+> [SPECIFICATION_STORE_UPDATE.md](../specifications/done/SPECIFICATION_STORE_UPDATE.md) instead.
 
 ## Why this path (Path A: MSIX)
 
@@ -15,8 +15,8 @@ The concrete, app-specific playbook for this repo. Adapted from the reusable Cyr
 - Store-signed + Store-distributed also defuses antivirus heuristic false positives better than anything else.
 
 This is **in addition to** the existing distribution channels (GitHub release EXE/ZIP and winget) -
-nothing here changes those. See [SPECIFICATION_WINGET_PUBLISHING.md](../specifications/SPECIFICATION_WINGET_PUBLISHING.md)
-and [SPECIFICATION_GITHUB_STORE.md](../specifications/SPECIFICATION_GITHUB_STORE.md) for those paths.
+nothing here changes those. See [SPECIFICATION_WINGET_PUBLISHING.md](../specifications/done/SPECIFICATION_WINGET_PUBLISHING.md)
+and [SPECIFICATION_GITHUB_STORE.md](../specifications/done/SPECIFICATION_GITHUB_STORE.md) for those paths.
 
 ---
 

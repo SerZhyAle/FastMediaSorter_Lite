@@ -1,7 +1,16 @@
 # Спецификация: статистика подключений SFTP-воркера и трей-хаб (запуск программ, текущее состояние)
 
-Статус: план (не начато)
+Статус: **выполнено** (2026-07-14)
 Дата: 2026-07-13, ревизия 1
+
+> Outcome (2026-07-14): реализовано в Companion. `WorkerStats` + поле
+> `WorkerStatus.Stats` в `Core/WorkerIpc.vb` (старый воркер без поля читается как
+> `Nothing`); окно «Текущее состояние» - `Forms/Share_Status_Form.vb` (+ блок в
+> `MainWindow.vb`); симметричные кросс-ссылки трея «Открыть Fast Media Sorter» /
+> из LITE в Companion через существующий мьютекс + `WM_COPYDATA`
+> (`TrayContext.vb`, `ShareLauncher`). Счётчики только в `stats.json` на ПК,
+> телеметрии нет. Go-сторона (`fms_companion/internal/ipc/protocol.go`): `Stats`
+> + `ResetStats`. Осталось: запись в CHANGELOG `[Unreleased]`.
 Связано: [SPECIFICATION_SHARE_COMPANION_APP.md](SPECIFICATION_SHARE_COMPANION_APP.md) (после его реализации трей и есть тот самый «хаб», описанный здесь), [SPECIFICATION_ANDROID_FOLDER_SHARE.md](SPECIFICATION_ANDROID_FOLDER_SHARE.md) (Appendix A - IPC-протокол воркера, который эта спецификация аддитивно расширяет), [SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md) (opt-in гейт, за которым живёт весь трей и сам воркер)
 
 ---
@@ -14,9 +23,9 @@
 (б) запустить основную программу-просмотрщик и (в) посмотреть текущее состояние раздачи -
 последнее подключение, количество обработанных файлов, дату последнего подключения и т.д.
 
-Сегодня ([src/Main_Form.ShareTray.vb](../../src/Main_Form.ShareTray.vb)) трей показывает
+Сегодня ([src/Main_Form.ShareTray.vb](../../../src/Main_Form.ShareTray.vb)) трей показывает
 только МГНОВЕННОЕ состояние (запущено/нет, LAN-адрес) через `GetStatus` -
-[src/Companion/WorkerIpc.vb](../../src/Companion/WorkerIpc.vb) `WorkerStatus` не содержит ни
+[src/Companion/WorkerIpc.vb](../../../src/Companion/WorkerIpc.vb) `WorkerStatus` не содержит ни
 счётчика подключений, ни времени последнего подключения, ни счётчика файлов; воркер это
 нигде не копит. Меню трея сегодня: Открыть / Показать штрихкод / Описание / Настроить /
 Выключить / Выход - пункта «открыть другую программу» и пункта «текущее состояние» нет.
@@ -55,7 +64,7 @@
 - `GetStatus` уже существует ([SPECIFICATION_ANDROID_FOLDER_SHARE.md](SPECIFICATION_ANDROID_FOLDER_SHARE.md)
   Appendix A.2) и возвращает `status.running/listenPort/fingerprint/roots/lastError/reachability` -
   ничего временного/накопительного.
-- DTO на стороне LITE - [src/Companion/WorkerIpc.vb](../../src/Companion/WorkerIpc.vb):
+- DTO на стороне LITE - [src/Companion/WorkerIpc.vb](../../../src/Companion/WorkerIpc.vb):
   `WorkerStatus` (строки 97-107), `WorkerReachability` (109-133). Прецедент аддитивного
   расширения без бампа схемы уже есть и задокументирован - Appendix B
   `SPECIFICATION_ANDROID_FOLDER_SHARE.md` («Multi-path export .. additive, still
@@ -73,7 +82,7 @@
 
 ### 2.2 Трей
 
-- [src/Main_Form.ShareTray.vb](../../src/Main_Form.ShareTray.vb) - трей сегодня живёт
+- [src/Main_Form.ShareTray.vb](../../../src/Main_Form.ShareTray.vb) - трей сегодня живёт
   ВНУТРИ LITE (`Partial Class Main_Form`), т.к. `SPECIFICATION_SHARE_COMPANION_APP.md`
   ещё не реализован (статус «план», раздел 0 того файла).
 - Меню строится в `EnsureTrayIcon()` (строки 192-230): Открыть (`_trayMiOpen`, жирным,
@@ -163,7 +172,7 @@
 Правила: поле `stats` отсутствует у СТАРОГО (ещё не обновлённого) воркера - клиент
 (LITE/Companion) трактует `Nothing`/`null` как «данных пока нет», не как ошибку (тот же
 принцип, что уже применяется к отсутствующим полям `Reachability`). На стороне клиента -
-новый класс `WorkerStats` в [src/Companion/WorkerIpc.vb](../../src/Companion/WorkerIpc.vb),
+новый класс `WorkerStats` в [src/Companion/WorkerIpc.vb](../../../src/Companion/WorkerIpc.vb),
 `WorkerStatus.Stats As WorkerStats` - зеркалит структуру таблицы 3.1, десериализуется тем
 же `JavaScriptSerializer` (регистронезависимо, как и весь остальной DTO сегодня).
 
@@ -258,7 +267,7 @@ Companion, не завязано на Settings-окно, которого в Com
   запрос `ResetStats` (O-4). 18 существующих Go-тестов остаются зелёными + новые тесты на
   счётчики/персист/конкурентный доступ.
 - **Ф1. Клиентский DTO здесь.** `WorkerStats` в
-  [src/Companion/WorkerIpc.vb](../../src/Companion/WorkerIpc.vb), проброс в `WorkerStatus`.
+  [src/Companion/WorkerIpc.vb](../../../src/Companion/WorkerIpc.vb), проброс в `WorkerStatus`.
 - **Ф2. Окно «Текущее состояние».** Новая форма (раздел 3.4), пункт меню трея, вызывающий
   её поверх уже опрошенного статуса.
 - **Ф3. Взаимный запуск программ.** Зависит от готовности

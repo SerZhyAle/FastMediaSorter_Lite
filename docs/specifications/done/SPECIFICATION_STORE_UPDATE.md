@@ -1,7 +1,7 @@
 # Publishing an UPDATE to the Microsoft Store
 
 How to ship a change to the **already-published** FastMediaSorter LITE Store listing. The first
-publish is covered by [STORE_PUBLISHING.md](../guides/STORE_PUBLISHING.md); this doc is for every submission
+publish is covered by [STORE_PUBLISHING.md](../../guides/STORE_PUBLISHING.md); this doc is for every submission
 after that.
 
 Every Store change - whether it is just new screenshots or a whole new build - goes out as a new
@@ -76,22 +76,22 @@ search results and at the top of the listing. The old live hero is the gray star
 Recommended order (assets already prepared in the repo unless noted):
 
 1. **Hero** - real app on a photo with the "ambilight" perspective background:
-   [assets/store/screenshot-EN-1366x768.png](../../assets/store/screenshot-EN-1366x768.png)
-2-5. Settings tabs: [settings_t1_dest.png](../../settings_t1_dest.png),
-   [settings_t2_viewing.png](../../settings_t2_viewing.png), [settings_t3_video.png](../../settings_t3_video.png),
-   [settings_t4_files.png](../../settings_t4_files.png)
+   [assets/store/screenshot-EN-1366x768.png](../../../assets/store/screenshot-EN-1366x768.png)
+2-5. Settings tabs: [settings_t1_dest.png](../../../settings_t1_dest.png),
+   [settings_t2_viewing.png](../../../settings_t2_viewing.png), [settings_t3_video.png](../../../settings_t3_video.png),
+   [settings_t4_files.png](../../../settings_t4_files.png)
 6. (recommended, capture if missing) the OCR on-image **translation overlay** - it is the one
    feature no competing viewer shows.
 
 To regenerate a real screenshot from the running app at the right size, use
-[tools/store/capture-app.ps1](../../tools/store/capture-app.ps1) (launches `bin\Release`, sizes the window,
-captures via `PrintWindow`); [tools/store/make-screenshot.ps1](../../tools/store/make-screenshot.ps1)
+[tools/store/capture-app.ps1](../../../tools/store/capture-app.ps1) (launches `bin\Release`, sizes the window,
+captures via `PrintWindow`); [tools/store/make-screenshot.ps1](../../../tools/store/make-screenshot.ps1)
 produces a generic >= 1366x768 frame.
 
 ### 1c. Other listing fields (optional, same submission)
 
 Description / Product features / privacy URL / support contact - source copy lives in
-[STORE_PUBLISHING.md](../guides/STORE_PUBLISHING.md) ("Text templates"). Edit there too if you change them, so
+[STORE_PUBLISHING.md](../../guides/STORE_PUBLISHING.md) ("Text templates"). Edit there too if you change them, so
 the repo stays the source of truth.
 
 ### 1d. Submit
@@ -116,13 +116,13 @@ cd msix
   -PublisherDisplayName "<PublisherDisplayName>"
 ```
 
-The defaults baked into [msix/build-msix.ps1](../../msix/build-msix.ps1) already match this product
+The defaults baked into [msix/build-msix.ps1](../../../msix/build-msix.ps1) already match this product
 (`SZA.FastMediaSorterLITE` / `CN=F98ACEDB-...` / `SZA`), so a bare `.\build-msix.ps1` also works -
 but confirm against **Product ▸ Product identity** before every upload; a mismatch is rejected.
 
 Output: `msix/dist/FastMediaSorter_LITE-<version>-x64.msix`, **unsigned** - upload as-is, Microsoft
 re-signs on certification. Do **not** `-SelfSign` the Store package (`-SelfSign` is local sideload
-testing only). See [msix/README.md](../../msix/README.md) for build prerequisites and the OCR-payload flags
+testing only). See [msix/README.md](../../../msix/README.md) for build prerequisites and the OCR-payload flags
 (`-IncludeBestOcr` / `-SkipOcrPayload`).
 
 ### 2b. Version must increase (Store rule)
@@ -159,7 +159,7 @@ These are one-time and carry across all updates - touching them is almost always
   ads, in-app purchases, accounts, or user-to-user sharing). The current feature set (local viewer /
   sorter, optional user-configured OCR translation, no ads/accounts/UGC) does not. Global Rating ID
   `7d9b315a-f211-8505-80d0-3f4bee633770` is portable to other IARC storefronts. See
-  [STORE_PUBLISHING.md](../guides/STORE_PUBLISHING.md) "Age rating (IARC)".
+  [STORE_PUBLISHING.md](../../guides/STORE_PUBLISHING.md) "Age rating (IARC)".
 
 ---
 
@@ -195,6 +195,6 @@ These are one-time and carry across all updates - touching them is almost always
 
 ---
 
-_Related: [STORE_PUBLISHING.md](../guides/STORE_PUBLISHING.md) (first publish + listing copy),
-[msix/README.md](../../msix/README.md) (packaging detail), [docs/privacy.html](../privacy.html) (live
+_Related: [STORE_PUBLISHING.md](../../guides/STORE_PUBLISHING.md) (first publish + listing copy),
+[msix/README.md](../../../msix/README.md) (packaging detail), [docs/privacy.html](../../privacy.html) (live
 privacy page)._
