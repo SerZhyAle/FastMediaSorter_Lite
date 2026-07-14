@@ -129,6 +129,26 @@ foreach ($extra in 'README.md', 'LICENSE') {
     if (Test-Path $src) { Copy-Item $src $Stage -Force }
 }
 
+# Android Folder Share payload: the Companion app (Share Manager, net10) published
+# self-contained next to the LITE exe, plus the committed Go SFTP worker under
+# companion\. The manifest declares both as <Application> nodes; these are their files.
+$companionProj = Join-Path $RepoRoot 'src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj'
+$companionPub  = Join-Path $MsixDir 'companion-publish-tmp'
+Write-Host 'Publishing Companion (Share Manager, net10 self-contained)...'
+& dotnet publish $companionProj -c Release -r win-x64 -o $companionPub -v minimal --nologo
+if ($LASTEXITCODE -ne 0) { throw "dotnet publish (Companion) failed (exit $LASTEXITCODE)." }
+$companionExe = Join-Path $companionPub 'FastMediaSorterCompanion.exe'
+if (-not (Test-Path $companionExe)) { throw "Companion exe not found at $companionExe after publish." }
+Copy-Item $companionExe $Stage -Force
+Remove-Item $companionPub -Recurse -Force
+
+$workerSrc = Join-Path $RepoRoot 'payload\companion'
+if (-not (Test-Path (Join-Path $workerSrc 'fms-share-worker.exe'))) { throw "SFTP worker missing at $workerSrc (should be committed in the repo)." }
+$stageCompanion = Join-Path $Stage 'companion'
+New-Item -ItemType Directory -Path $stageCompanion -Force | Out-Null
+Copy-Item (Join-Path $workerSrc '*') $stageCompanion -Recurse -Force
+Write-Host 'Staged Companion exe + SFTP worker.'
+
 # Trim x86-only trees and bundle offline tessdata (same tool the GitHub release uses).
 if (-not $SkipOcrPayload) {
     if (-not (Test-Path $OcrPayload)) { throw "OCR payload tool not found: $OcrPayload" }

@@ -29,8 +29,10 @@
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
+  xmlns:desktop2="http://schemas.microsoft.com/appx/manifest/desktop/windows10/2"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap rescap">
+  IgnorableNamespaces="uap uap5 desktop2 rescap">
 
   <Identity
     Name="__IDENTITY_NAME__"
@@ -89,6 +91,40 @@
             </uap:SupportedFileTypes>
           </uap:FileTypeAssociation>
         </uap:Extension>
+      </Extensions>
+    </Application>
+
+    <!-- Second app in the SAME package: the Android Folder Share companion
+         ("Fast Media Sorter: Share Manager", net10 self-contained exe). One MSIX,
+         one Store product, two Start-menu tiles. The bundled Go SFTP worker
+         (companion\fms-share-worker.exe) is just a payload file this app launches. -->
+    <Application Id="FastMediaSorterShareManager" Executable="FastMediaSorterCompanion.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="Fast Media Sorter: Share Manager"
+        Description="Share your PC folders with the Fast Media Sorter Android app over a local SFTP server, paired by scanning a QR code."
+        BackgroundColor="#171B26"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Square71x71Logo="Assets\Square71x71Logo.png" />
+      </uap:VisualElements>
+
+      <Extensions>
+        <!-- Optional logon autostart, disabled by default (opt-in). Inside an MSIX
+             container an HKCU\Run write is virtualized away, so autostart must be a
+             manifest StartupTask; the user enables it in Settings > Startup apps. -->
+        <uap5:Extension Category="windows.startupTask" Executable="FastMediaSorterCompanion.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap5:StartupTask TaskId="FastMediaSorterShareManagerAutostart" Enabled="false" DisplayName="Fast Media Sorter: Share Manager" />
+        </uap5:Extension>
+
+        <!-- Inbound firewall allow for the bundled SFTP worker, so LAN / internet
+             peers can reach a share. This is the MSIX equivalent of the Inno
+             installer's netsh step (an HKCU/netsh change can't be made from inside
+             the container). Still gated by the app's own opt-in before a share runs. -->
+        <desktop2:Extension Category="windows.firewallRules">
+          <desktop2:FirewallRules Executable="companion\fms-share-worker.exe">
+            <desktop2:Rule Direction="in" IPProtocol="TCP" Profile="all" />
+          </desktop2:FirewallRules>
+        </desktop2:Extension>
       </Extensions>
     </Application>
   </Applications>
