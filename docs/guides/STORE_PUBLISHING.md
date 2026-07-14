@@ -165,12 +165,17 @@ and file each item with a single press. It plays a broad range of formats - H.26
 player with an automatic LibVLC fallback for AVI, MKV, VP9, ZMBV and more - and fills letterbox/pillarbox
 bars with a matching "ambilight" background.
 
+Share folders with your phone: the package includes a companion tray app, "Fast Media Sorter: Share
+Manager", that turns this PC into a private SFTP server for folders you pick, so the Fast Media Sorter
+Android app can browse them - on your home Wi-Fi or over the internet - after a one-time QR pairing. It
+keeps simple local connection statistics. Sharing is strictly opt-in and stays between your own devices;
+nothing is uploaded to any third party.
+
 It also includes optional on-image OCR translation: recognize text in a picture (fully offline,
 Tesseract) and overlay a translation. Translation is performed by a provider you choose and configure
 yourself - a local Ollama model or a LibreTranslate endpoint; OCR works without any network connection.
 
-Runs on .NET Framework 4.8. No account, no ads, no telemetry. Open source:
-https://github.com/SerZhyAle/FastMediaSorter_Lite
+No account, no ads, no telemetry. Open source: https://github.com/SerZhyAle/FastMediaSorter_Lite
 ```
 
 ### Description (RU - optional Russian-market listing)
@@ -185,11 +190,17 @@ Fast Media Sorter for Windows (в Microsoft Store публикуется как 
 переходом на LibVLC для AVI, MKV, VP9, ZMBV и других - а поля по краям кадра заполняются фоном в
 стиле "ambilight" под цвет изображения.
 
+Раздавайте папки на телефон: в комплекте идёт программа в трее "Fast Media Sorter: Share Manager" -
+она превращает этот ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение Fast
+Media Sorter открывало их - в домашней сети Wi-Fi или через интернет - после однократного подключения
+по QR-коду. Ведётся простая локальная статистика подключений. Раздача включается только по вашему
+желанию и остаётся между вашими устройствами; никуда на сторону ничего не выгружается.
+
 Есть необязательный перевод текста прямо на картинке: распознавание (полностью офлайн, Tesseract) и
 наложение перевода. Перевод выполняет выбранный вами провайдер - локальная модель Ollama или сервер
 LibreTranslate; распознавание работает без интернета.
 
-Работает на .NET Framework 4.8. Без аккаунта, без рекламы, без телеметрии. Открытый исходный код:
+Без аккаунта, без рекламы, без телеметрии. Открытый исходный код:
 https://github.com/SerZhyAle/FastMediaSorter_Lite
 ```
 
@@ -199,6 +210,7 @@ Fast keyboard-driven sorting: one-key Move / Copy / Rename / Delete with hotkey-
 Full-screen slideshow and quick panel/thumbnail navigation for large image and video collections
 Plays H.264/MP4 natively with an automatic LibVLC fallback for AVI, MKV, VP9, ZMBV and more
 "Ambilight" perspective background fills letterbox/pillarbox bars to match the image
+Share folders to your phone: a bundled tray companion runs a private, opt-in SFTP server paired by QR (Wi-Fi or internet)
 Optional on-image OCR translation: offline Tesseract OCR + a translator you configure (Ollama / LibreTranslate)
 Set it as your default image viewer for JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, AVIF and SVG
 Open source, no account, no ads, no telemetry
@@ -206,18 +218,18 @@ Open source, no account, no ads, no telemetry
 
 ### runFullTrust justification (keep under ~1000 chars)
 ```
-FastMediaSorter LITE is a full-trust Win32 desktop app (.NET Framework 4.8 / WinForms), not a UWP app,
-so runFullTrust is required to run as a normal desktop process and to use the Win32 APIs its core
-features depend on:
-- File system access: it reads, copies, moves, renames and deletes the user's image/video files across
-  arbitrary folders and network shares - that is the app's entire purpose, performed only on files and
-  folders the user opens.
-- Media playback: it hosts the system WebBrowser control (H.264/MP4) and the native LibVLC libraries
-  (AVI/MKV/VP9/etc.) and uses GDI+ for image rendering.
-- Optional local OCR/translation: it may call a user-configured translation endpoint (e.g. a local
-  Ollama instance); OCR itself runs locally with bundled Tesseract data.
-These APIs are available only to full-trust desktop apps. The app collects no user data and contains no
-telemetry. Open source: https://github.com/SerZhyAle/FastMediaSorter_Lite
+FastMediaSorter LITE is a full-trust Win32 desktop package (a WinForms viewer plus a .NET companion),
+not a UWP app, so runFullTrust is required to run as normal desktop processes and use the Win32 APIs
+its core features depend on:
+- File access: read/copy/move/rename/delete the user's own image/video files across arbitrary folders
+  and network shares - the app's entire purpose, only on files and folders the user opens.
+- Media playback: hosts the system WebBrowser control (H.264/MP4) and native LibVLC (AVI/MKV/VP9/etc.)
+  and uses GDI+ for image rendering.
+- Optional folder sharing: a bundled companion runs a local SFTP server for folders the user chooses,
+  reachable from the user's own phone (opt-in; an inbound firewall rule is added only when enabled).
+- Optional OCR/translation: may call a user-configured translation endpoint (e.g. a local Ollama
+  instance); OCR runs locally with bundled Tesseract data.
+No user data is collected; no telemetry. Open source: https://github.com/SerZhyAle/FastMediaSorter_Lite
 ```
 
 ### Privacy policy (hosted as docs/privacy.html; key points)
@@ -227,12 +239,18 @@ It runs entirely on your device.
 
 What it accesses and why:
 - Your media files: read/copy/move/rename/delete only the files and folders you open, to sort them.
-- Network (optional): only if you enable the on-image translation feature, the app sends the recognized
-  text to the translation endpoint YOU configure (a local Ollama model or a LibreTranslate server) to get
-  a translation. OCR runs fully offline. If you never use translation, the app makes no network requests
-  except optionally downloading additional OCR language packs on demand.
-Local files it writes: settings (registry) and OCR language data/cache under
-%LOCALAPPDATA%\SZA\FastMediaSorter. These never leave your device.
+- Folder sharing (optional, opt-in): if you enable it, the bundled Share Manager companion runs a local
+  SFTP server so your own phone can browse the folders you choose, over your local network or the
+  internet. Access credentials and the server host key are generated and stored only on your PC; the
+  files are served directly between your own devices and are never sent to us or any third party. It
+  keeps local-only connection counters (number/time of connections, files served) on your PC - this is
+  not telemetry and never leaves the machine. Enabling it adds a Windows Firewall rule for the worker.
+- Network for translation (optional): only if you enable on-image translation, the app sends the
+  recognized text to the translation endpoint YOU configure (a local Ollama model or a LibreTranslate
+  server). OCR runs fully offline. Otherwise the app makes no network requests except optionally
+  downloading OCR language packs on demand.
+Local files it writes: settings (registry), OCR language data/cache, and sharing configuration/stats
+under %LOCALAPPDATA%. These never leave your device.
 Data sharing: none. Open source: https://github.com/SerZhyAle/FastMediaSorter_Lite. Contact: serzhyale@gmail.com
 ```
 
