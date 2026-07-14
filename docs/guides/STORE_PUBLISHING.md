@@ -149,6 +149,11 @@ email (1-3 business days).
 
 ## Text templates
 
+> **Status (2026-07-14):** the copy below (Share Manager companion + stronger truncation-proof lead) is
+> **prepared for the NEXT submission** - it is NOT yet on the live listing. The 26.7.14.1801 Store
+> submission (Submission 2) passed certification with the *previous, shorter* description; apply these
+> blocks at the next Store update, not retroactively.
+>
 > **Rebrand note (2026-07):** the product **title stays "FastMediaSorter LITE"** in Partner Center
 > (frozen reserved name = the update anchor - do NOT change it). Only the **Description** text below is
 > refreshed to lead with the new brand name "Fast Media Sorter for Windows". Paste the EN block into the
