@@ -155,53 +155,56 @@ email (1-3 business days).
 > listing's Description at the next submission; the RU block is optional copy for a Russian-market listing.
 
 ### Description (EN)
+> First sentence must be a short, self-contained hook - the Store card truncates the description to
+> its opening. Do NOT start with the "(published as ...)" parenthetical; it buries the lead.
 ```
-Fast Media Sorter for Windows (published on the Microsoft Store as "FastMediaSorter LITE") is a fast,
-keyboard-driven viewer and sorter for images and video on Windows.
+Sort thousands of photos and videos in minutes. Fast Media Sorter is a fast, keyboard-driven viewer
+and sorter for images and video on Windows.
 
 Open a folder and fly through it: full-screen slideshow, quick panel navigation, and one-key Move /
-Copy / Rename / Delete to sort large photo and video collections in minutes. Assign folders to hotkeys
-and file each item with a single press. It plays a broad range of formats - H.264/MP4 via the built-in
-player with an automatic LibVLC fallback for AVI, MKV, VP9, ZMBV and more - and fills letterbox/pillarbox
-bars with a matching "ambilight" background.
+Copy / Rename / Delete. Assign folders to hotkeys and file each item with a single press. It plays a
+broad range of formats - H.264/MP4 via the built-in player with an automatic LibVLC fallback for AVI,
+MKV, VP9, ZMBV and more - and fills letterbox/pillarbox bars with a matching "ambilight" background.
 
-Share folders with your phone: the package includes a companion tray app, "Fast Media Sorter: Share
-Manager", that turns this PC into a private SFTP server for folders you pick, so the Fast Media Sorter
-Android app can browse them - on your home Wi-Fi or over the internet - after a one-time QR pairing. It
-keeps simple local connection statistics. Sharing is strictly opt-in and stays between your own devices;
-nothing is uploaded to any third party.
+Share folders with your phone: the bundled companion "Fast Media Sorter: Share Manager" turns this PC
+into a private SFTP server for folders you pick, so the Fast Media Sorter Android app can browse them -
+on your home Wi-Fi or over the internet - after a one-time QR pairing. Sharing is strictly opt-in and
+stays between your own devices; nothing is uploaded to any third party.
 
-It also includes optional on-image OCR translation: recognize text in a picture (fully offline,
-Tesseract) and overlay a translation. Translation is performed by a provider you choose and configure
-yourself - a local Ollama model or a LibreTranslate endpoint; OCR works without any network connection.
+Optional on-image OCR translation recognizes text in a picture (fully offline, Tesseract) and overlays
+a translation using a provider you configure yourself - a local Ollama model or a LibreTranslate
+endpoint. OCR works without any network connection.
 
 No account, no ads, no telemetry. Open source: https://github.com/SerZhyAle/FastMediaSorter_Lite
+
+On the Microsoft Store this app is published as "FastMediaSorter LITE".
 ```
 
 ### Description (RU - optional Russian-market listing)
 ```
-Fast Media Sorter for Windows (в Microsoft Store публикуется как "FastMediaSorter LITE") - быстрый
-просмотрщик и сортировщик изображений и видео для Windows, управляемый с клавиатуры.
+Разберите тысячи фото и видео за минуты. Fast Media Sorter - быстрый просмотрщик и сортировщик
+изображений и видео для Windows, управляемый с клавиатуры.
 
 Откройте папку и листайте её мгновенно: полноэкранное слайд-шоу, быстрая навигация по панели и
-перемещение / копирование / переименование / удаление одной клавишей - чтобы разобрать большие
-коллекции фото и видео за минуты. Назначьте папки на горячие клавиши и раскладывайте файлы одним
-нажатием. Поддерживается широкий набор форматов - H.264/MP4 встроенным плеером с автоматическим
-переходом на LibVLC для AVI, MKV, VP9, ZMBV и других - а поля по краям кадра заполняются фоном в
-стиле "ambilight" под цвет изображения.
+перемещение / копирование / переименование / удаление одной клавишей. Назначьте папки на горячие
+клавиши и раскладывайте файлы одним нажатием. Поддерживается широкий набор форматов - H.264/MP4
+встроенным плеером с автоматическим переходом на LibVLC для AVI, MKV, VP9, ZMBV и других - а поля по
+краям кадра заполняются фоном в стиле "ambilight" под цвет изображения.
 
-Раздавайте папки на телефон: в комплекте идёт программа в трее "Fast Media Sorter: Share Manager" -
-она превращает этот ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение Fast
-Media Sorter открывало их - в домашней сети Wi-Fi или через интернет - после однократного подключения
-по QR-коду. Ведётся простая локальная статистика подключений. Раздача включается только по вашему
-желанию и остаётся между вашими устройствами; никуда на сторону ничего не выгружается.
+Раздавайте папки на телефон: программа-компаньон "Fast Media Sorter: Share Manager" превращает этот
+ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение Fast Media Sorter
+открывало их - в домашней сети Wi-Fi или через интернет - после однократного подключения по QR-коду.
+Раздача включается только по вашему желанию и остаётся между вашими устройствами; никуда на сторону
+ничего не выгружается.
 
-Есть необязательный перевод текста прямо на картинке: распознавание (полностью офлайн, Tesseract) и
-наложение перевода. Перевод выполняет выбранный вами провайдер - локальная модель Ollama или сервер
-LibreTranslate; распознавание работает без интернета.
+Необязательный перевод текста прямо на картинке: распознавание полностью офлайн (Tesseract) и
+наложение перевода через выбранного вами провайдера - локальную модель Ollama или сервер
+LibreTranslate. Распознавание работает без интернета.
 
 Без аккаунта, без рекламы, без телеметрии. Открытый исходный код:
 https://github.com/SerZhyAle/FastMediaSorter_Lite
+
+В Microsoft Store приложение публикуется как "FastMediaSorter LITE".
 ```
 
 ### Product features (one per line, ≤200 chars each)
