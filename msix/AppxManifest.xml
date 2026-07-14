@@ -115,19 +115,22 @@
         <uap5:Extension Category="windows.startupTask" Executable="FastMediaSorterCompanion.exe" EntryPoint="Windows.FullTrustApplication">
           <uap5:StartupTask TaskId="FastMediaSorterShareManagerAutostart" Enabled="false" DisplayName="Fast Media Sorter: Share Manager" />
         </uap5:Extension>
-
-        <!-- Inbound firewall allow for the bundled SFTP worker, so LAN / internet
-             peers can reach a share. This is the MSIX equivalent of the Inno
-             installer's netsh step (an HKCU/netsh change can't be made from inside
-             the container). Still gated by the app's own opt-in before a share runs. -->
-        <desktop2:Extension Category="windows.firewallRules">
-          <desktop2:FirewallRules Executable="companion\fms-share-worker.exe">
-            <desktop2:Rule Direction="in" IPProtocol="TCP" Profile="all" />
-          </desktop2:FirewallRules>
-        </desktop2:Extension>
       </Extensions>
     </Application>
   </Applications>
+
+  <!-- Package-level extensions. Inbound firewall allow for the bundled SFTP worker
+       so LAN / internet peers can reach a share - the MSIX equivalent of the Inno
+       installer's netsh step (a netsh/HKCU change can't be made from inside the
+       container). windows.firewallRules MUST be declared here, under <Package>, not
+       under an <Application>. Still gated by the app's own opt-in before a share runs. -->
+  <Extensions>
+    <desktop2:Extension Category="windows.firewallRules">
+      <desktop2:FirewallRules Executable="companion\fms-share-worker.exe">
+        <desktop2:Rule Direction="in" IPProtocol="TCP" Profile="all" />
+      </desktop2:FirewallRules>
+    </desktop2:Extension>
+  </Extensions>
 
   <Capabilities>
     <!-- Full-trust desktop app: keeps the IE WebBrowser control, native LibVLC playback, GDI+,
