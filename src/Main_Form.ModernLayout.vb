@@ -94,13 +94,14 @@ Partial Public Class Main_Form
         ' added here so the styling/recolour passes below pick it up uniformly.
         BuildOcrToolbarControls(flow_Toolbar)
 
-        ' Android-share "Share" toolbar button - same in-code, pre-styling slot.
-        BuildShareToolbarControls(flow_Toolbar)
+        ' "Translate in browser" companion button (doc-html-translate), right after
+        ' the OCR button so it joins the overflow set and the uniform styling.
+        BuildBrowserTranslateToolbarControls(flow_Toolbar)
 
         ' Right-edge "more" button + the priority/overflow partitioning that
-        ' LayoutToolbar() uses. Built after the OCR/Share buttons so they are part
-        ' of the overflow set. Must precede ApplyModernStyling so the button is
-        ' styled with the rest of the chrome.
+        ' LayoutToolbar() uses. Built after the OCR button so it is part of the
+        ' overflow set. Must precede ApplyModernStyling so the button is styled
+        ' with the rest of the chrome.
         BuildToolbarOverflow(flow_Toolbar)
 
         ' Add Fill first (back of z-order) so the docked strips reserve their

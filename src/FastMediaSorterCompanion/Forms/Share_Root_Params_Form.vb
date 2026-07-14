@@ -23,6 +23,7 @@ Public Class Share_Root_Params_Form
 
     Private ReadOnly _folderName As String
     Private ReadOnly _params As ShareRootParams
+    Private _iconHandle As IntPtr
 
     Private txtLabel As TextBox
     Private cmbProfile As ComboBox
@@ -41,6 +42,9 @@ Public Class Share_Root_Params_Form
     Private numSlide As NumericUpDown
     Private btnOk As Button
     Private btnCancel As Button
+    Private _content As TableLayoutPanel   ' the scrollable settings grid
+    Private _scrollHost As Panel           ' AutoScroll wrapper around _content
+    Private _buttonBar As TableLayoutPanel ' pinned OK/Cancel bar (Dock=Bottom)
     Private ReadOnly _rus As Boolean = Is_Russian_Language
 
     Public ReadOnly Property Result As ShareRootParams
@@ -69,20 +73,25 @@ Public Class Share_Root_Params_Form
 
     Private Sub BuildUi()
         Me.Text = (If(_rus, "Параметры ресурса - ", "Resource options - ")) & _folderName
+        Me.Icon = ShareIcons.CreateIcon(_iconHandle)
+        AddHandler Me.FormClosed, Sub() ShareIcons.FreeIcon(Me.Icon, _iconHandle)
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
         Me.AutoScaleMode = AutoScaleMode.Font
-        Me.AutoSize = True
-        Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        ' Fallback size; OnLoad measures the real content and caps it to the screen.
+        Me.ClientSize = New Size(500, 620)
 
         Dim tip As New ToolTip()
 
+        ' Not docked/AutoSize-Fill: it must be free to grow taller than the window so the
+        ' AutoScroll host below can scroll it. Anchored top-left, sized to its content.
         Dim tlp As New TableLayoutPanel With {
-            .Dock = DockStyle.Fill, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Anchor = AnchorStyles.Top Or AnchorStyles.Left,
             .ColumnCount = 2, .Padding = New Padding(18, 16, 18, 12), .GrowStyle = TableLayoutPanelGrowStyle.AddRows}
+        _content = tlp
         tlp.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
         tlp.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
 
@@ -182,19 +191,55 @@ Public Class Share_Root_Params_Form
         tlp.Controls.Add(Cap(If(_rus, "Слайд-шоу, секунд:", "Slideshow, seconds:")), 0, r)
         tlp.Controls.Add(slideFlow, 1, r) : r += 1
 
-        ' Buttons.
-        Dim btnFlow As New FlowLayoutPanel With {.AutoSize = True, .Anchor = AnchorStyles.Right, .Margin = New Padding(0, 16, 0, 0),
+        ' Buttons live in a PINNED bottom bar (Dock=Bottom) - always visible, so they can
+        ' never scroll off the bottom of the screen when the content is tall at high DPI.
+        Dim btnFlow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .Anchor = AnchorStyles.Right, .Margin = New Padding(0),
             .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False}
         btnOk = New Button With {.Width = 96, .Height = 34, .Text = "OK", .Margin = New Padding(0, 0, 8, 0)}
         btnCancel = New Button With {.Width = 96, .Height = 34, .Text = If(_rus, "Отмена", "Cancel"), .DialogResult = DialogResult.Cancel}
         AddHandler btnOk.Click, AddressOf OnOk
         btnFlow.Controls.Add(btnOk)
         btnFlow.Controls.Add(btnCancel)
-        AddFullRow(tlp, btnFlow, r) : r += 1
 
-        Me.Controls.Add(tlp)
+        _buttonBar = New TableLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .ColumnCount = 1, .Padding = New Padding(18, 8, 18, 12)}
+        _buttonBar.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
+        _buttonBar.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+        _buttonBar.Controls.Add(btnFlow, 0, 0)
+
+        ' Scrollable host: fills the space above the button bar and shows a vertical scrollbar
+        ' when the settings are taller than the window (small screens / high display scaling).
+        _scrollHost = New Panel With {.Dock = DockStyle.Fill, .AutoScroll = True}
+        _scrollHost.Controls.Add(tlp)
+
+        ' Fill host first, docked bar last, so the host takes the leftover above the bar.
+        Me.Controls.Add(_scrollHost)
+        Me.Controls.Add(_buttonBar)
         Me.AcceptButton = btnOk
         Me.CancelButton = btnCancel
+    End Sub
+
+    ''' <summary>Sizes the window to its content but never larger than the monitor working area
+    ''' (adding room for the scrollbar when the content must scroll), then re-centers on the
+    ''' owner. Runs after MyBase.OnLoad so the measurements are already at the final DPI.</summary>
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        Try
+            Dim wa As Rectangle = DpiLayout.WorkingAreaFor(Me)
+            Dim chromeW As Integer = Me.Width - Me.ClientSize.Width
+            Dim chromeH As Integer = Me.Height - Me.ClientSize.Height
+            Dim content As Size = _content.PreferredSize
+            Dim barH As Integer = _buttonBar.PreferredSize.Height
+            Dim desiredClientH As Integer = content.Height + barH
+            Dim clientH As Integer = Math.Min(desiredClientH, wa.Height - chromeH)
+            Dim needVScroll As Boolean = clientH < desiredClientH
+            Dim clientW As Integer = content.Width + If(needVScroll, SystemInformation.VerticalScrollBarWidth, 0)
+            clientW = Math.Min(clientW, wa.Width - chromeW)
+            Me.ClientSize = New Size(clientW, clientH)
+            DpiLayout.CenterOnOwner(Me)
+        Catch
+        End Try
     End Sub
 
     ''' <summary>Adds a control spanning both columns of the layout.</summary>

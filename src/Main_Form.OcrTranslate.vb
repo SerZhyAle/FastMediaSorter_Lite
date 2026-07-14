@@ -102,6 +102,11 @@ Partial Public Class Main_Form
         InvalidateOverlay()
         UpdateOcrButtonVisual()
 
+        ' Both translate buttons are visible only for a still image (browser
+        ' companion additionally needs doc-html-translate installed). This is the
+        ' single, final recompute point - see SPECIFICATION_DOC_HTML_TRANSLATE_INTEGRATION.md §4.3.
+        ApplyTranslateButtonsVisibility()
+
         ocr_Auto_Timer.Stop()
         If ocr_Settings.Enabled AndAlso ocr_Settings.AutoMode AndAlso IsCurrentFileEligibleImage() Then
             ocr_Auto_Timer.Start() ' debounce; tick runs the job
@@ -155,7 +160,9 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub btn_Translate_MouseUp(sender As Object, e As MouseEventArgs) Handles btn_Translate.MouseUp
-        If e.Button = MouseButtons.Right Then ShowOcrTranslateSettings()
+        ' Right-click opens OCR settings; when the browser companion isn't installed
+        ' it instead shows a small menu offering to install it (spec §7).
+        If e.Button = MouseButtons.Right Then HandleTranslateRightClick(TryCast(sender, Control))
     End Sub
 
     ' --- pipeline -------------------------------------------------------------

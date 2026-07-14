@@ -129,7 +129,7 @@ Step "Дальше вручную (см. docs/guides/BUILD_AND_RELEASE.md)"
 1) GitHub: дождаться сборки и 4 ассетов (setup.exe + zip + два .sha256)
    https://github.com/SerZhyAle/FastMediaSorter_Lite/actions
 2) winget: PR в microsoft/winget-pkgs для SerZhyAle.FastMediaSorter
-   (Inno setup.exe напрямую, без зависимостей, без Scope) -> docs/specifications/SPECIFICATION_WINGET_PUBLISHING.md
+   (Inno setup.exe напрямую, без зависимостей, без Scope) -> docs/specifications/done/SPECIFICATION_WINGET_PUBLISHING.md
 3) Microsoft Store (опц.): cd msix; .\build-msix.ps1 -IdentityName "<имя>" (БЕЗ -SelfSign),
    загрузить unsigned .msix в Partner Center -> docs/guides/STORE_PUBLISHING.md
 "@ | Write-Host -ForegroundColor Cyan

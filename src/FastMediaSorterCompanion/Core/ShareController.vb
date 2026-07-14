@@ -126,6 +126,14 @@ Public Module ShareController
         Await SendAsync(New WorkerRequest With {.type = "StopServer"}, 4000)
     End Function
 
+    ''' <summary>Resets the worker's local usage counters (stats.json) and returns the
+    ''' fresh status, or Nothing if unreachable. Best-effort - an older worker replies
+    ''' with a benign "unsupported request type" (soft failure), so nothing breaks.</summary>
+    Public Async Function ResetStatsAsync() As Task(Of WorkerStatus)
+        Dim resp As WorkerResponse = Await SendAsync(New WorkerRequest With {.type = "ResetStats"}, 4000)
+        Return If(resp IsNot Nothing, resp.Status, Nothing)
+    End Function
+
     ''' <summary>Persists the "the user has shared at least once" hint the first
     ''' time a share actually reaches the worker with folders to serve. Read back by
     ''' Companion's resume-on-launch (the tray host's ResumeShareIfEnabled analogue)

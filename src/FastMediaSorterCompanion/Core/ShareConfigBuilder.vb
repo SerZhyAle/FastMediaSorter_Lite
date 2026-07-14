@@ -1,5 +1,6 @@
 Option Strict On
 
+Imports System.Collections.Generic
 Imports System.Globalization
 Imports System.IO
 Imports System.IO.Compression
@@ -81,9 +82,20 @@ Public Module ShareConfigBuilder
     ''' share, recipient types it at import") and the sender must pass the real
     ''' password out-of-band.
     ''' </summary>
+    ''' <param name="exportOverrides">Shared overrides applied to EVERY root (the legacy
+    ''' uniform path - kept for callers/tests that set one PIN/RO/slideshow for the whole code).</param>
+    ''' <param name="perRootOverrides">Per-root 3-field overrides keyed by <c>ShareFolder.hostPath</c>.
+    ''' When a root has an entry it wins over <paramref name="exportOverrides"/>; no entry falls back to
+    ''' the shared object, and with neither it uses the share's own stored defaults.</param>
+    ''' <param name="perRootParams">FULL per-root params keyed by <c>ShareFolder.hostPath</c> (the package
+    ''' wizard's editable grid - §4.5.3). When a root has an entry, that complete ShareRootParams is used
+    ''' AS-IS for this export (highest precedence), so a recipient can get any per-folder configuration.
+    ''' The frozen .fmscfg wire shape is unchanged - RootJson emits the same roots[] fields.</param>
     Public Function Build(status As WorkerStatus, includeExternal As Boolean,
                           Optional includePassword As Boolean = True,
-                          Optional exportOverrides As ShareExportOverrides = Nothing) As ShareConfigResult
+                          Optional exportOverrides As ShareExportOverrides = Nothing,
+                          Optional perRootOverrides As Dictionary(Of String, ShareExportOverrides) = Nothing,
+                          Optional perRootParams As Dictionary(Of String, ShareRootParams) = Nothing) As ShareConfigResult
         If status Is Nothing OrElse Not status.Running Then Return Nothing
         Dim reach As WorkerReachability = status.Reachability
         Dim port As Integer = status.ListenPort
@@ -134,7 +146,19 @@ Public Module ShareConfigBuilder
                 Dim nm As String = If(r.name, "")
                 If nm.Length = 0 Then Continue For
                 If roots.Length > 0 Then roots.Append(","c)
-                roots.Append(RootJson(nm, ApplyOverrides(ShareRootParamsStore.GetFor(r.hostPath), exportOverrides), anyV2))
+                ' Precedence: a FULL per-root params entry (the wizard's editable grid) is used
+                ' as-is; else the per-root/shared 3-field overrides applied on the stored defaults.
+                Dim p As ShareRootParams = Nothing
+                If perRootParams IsNot Nothing Then perRootParams.TryGetValue(If(r.hostPath, ""), p)
+                If p Is Nothing Then
+                    Dim ov As ShareExportOverrides = exportOverrides
+                    If perRootOverrides IsNot Nothing Then
+                        Dim hit As ShareExportOverrides = Nothing
+                        If perRootOverrides.TryGetValue(If(r.hostPath, ""), hit) Then ov = hit
+                    End If
+                    p = ApplyOverrides(ShareRootParamsStore.GetFor(r.hostPath), ov)
+                End If
+                roots.Append(RootJson(nm, p, anyV2))
             Next
         End If
 

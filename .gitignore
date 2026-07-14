@@ -5,7 +5,13 @@ bin/
 obj/
 dist/
 stage/
-payload/
+# payload/ is generated/vendored and ignored, EXCEPT the committed SFTP worker
+# (release CI has no way to build it - it comes from the separate fms_companion repo).
+payload/*
+!payload/companion/
+payload/companion/*
+!payload/companion/fms-share-worker.exe
+!payload/companion/fms-share-worker.exe.sha256
 
 # Auto-generated version file
 src/My Project/VersionInfo.vb

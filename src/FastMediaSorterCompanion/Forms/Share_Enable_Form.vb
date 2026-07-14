@@ -21,6 +21,7 @@ Public Class Share_Enable_Form
     Private _status As Label
     Private _btnEnable As Button
     Private _btnCancel As Button
+    Private _iconHandle As IntPtr
 
     Public Sub New(rus As Boolean)
         _rus = rus
@@ -29,38 +30,50 @@ Public Class Share_Enable_Form
 
     Private Sub BuildUi()
         Me.Text = ShareText.ServerEnableTitle(_rus)
+        Me.Icon = ShareIcons.CreateIcon(_iconHandle)
+        AddHandler Me.FormClosed, Sub() ShareIcons.FreeIcon(Me.Icon, _iconHandle)
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
         Me.AutoScaleMode = AutoScaleMode.Font
-        Me.ClientSize = New Size(452, 268)
+        ' AutoSize + a TableLayoutPanel (no absolute Left/Top/Width/Height): the labels wrap at
+        ' a fixed content width and the whole dialog grows to fit at any display scaling, instead
+        ' of clipping the body text or overlapping the buttons in fixed-height boxes.
+        Me.AutoSize = True
+        Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
 
-        _title = New Label With {
-            .Left = 16, .Top = 16, .Width = 420, .Height = 24, .AutoSize = False,
+        Const contentWidth As Integer = 440   ' text wrap width in design units (scaled by the font)
+
+        Dim tlp As New TableLayoutPanel With {.Dock = DockStyle.Fill, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .ColumnCount = 1, .Padding = New Padding(16, 16, 16, 12), .GrowStyle = TableLayoutPanelGrowStyle.AddRows}
+        tlp.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
+
+        _title = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 8), .MaximumSize = New Size(contentWidth, 0),
             .Font = New Font(Me.Font.FontFamily, Me.Font.Size * 1.15F, FontStyle.Bold),
             .Text = ShareText.ServerEnableTitle(_rus)}
-        _body = New Label With {
-            .Left = 16, .Top = 48, .Width = 420, .Height = 128, .AutoSize = False,
+        _body = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 8), .MaximumSize = New Size(contentWidth, 0),
             .Text = ShareText.ServerEnableBody(_rus)}
-        _status = New Label With {
-            .Left = 16, .Top = 182, .Width = 420, .Height = 36, .AutoSize = False,
-            .ForeColor = Color.DimGray, .Text = ""}
+        _status = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 4), .MaximumSize = New Size(contentWidth, 0),
+            .MinimumSize = New Size(contentWidth, 0), .ForeColor = Color.DimGray, .Text = ""}
 
-        _btnEnable = New Button With {
-            .Top = 226, .Height = 30, .Width = 200, .AutoSize = False,
-            .Text = ShareText.ServerEnableButton(_rus)}
-        _btnCancel = New Button With {
-            .Top = 226, .Height = 30, .Width = 110, .AutoSize = False,
-            .Text = ShareText.ServerEnableCancel(_rus), .DialogResult = DialogResult.Cancel}
-        ' Right-align the pair inside the 452px client.
-        _btnCancel.Left = Me.ClientSize.Width - 16 - _btnCancel.Width
-        _btnEnable.Left = _btnCancel.Left - 8 - _btnEnable.Width
-
+        Dim btnFlow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Anchor = AnchorStyles.Right,
+            .Margin = New Padding(0, 8, 0, 0), .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False}
+        _btnEnable = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 6, 12, 6),
+            .Margin = New Padding(0, 0, 8, 0), .Text = ShareText.ServerEnableButton(_rus)}
+        _btnCancel = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 6, 12, 6),
+            .Margin = New Padding(0), .Text = ShareText.ServerEnableCancel(_rus), .DialogResult = DialogResult.Cancel}
         AddHandler _btnEnable.Click, AddressOf OnEnableClicked
+        btnFlow.Controls.Add(_btnEnable)
+        btnFlow.Controls.Add(_btnCancel)
 
-        Me.Controls.AddRange(New Control() {_title, _body, _status, _btnEnable, _btnCancel})
+        tlp.Controls.Add(_title)
+        tlp.Controls.Add(_body)
+        tlp.Controls.Add(_status)
+        tlp.Controls.Add(btnFlow)
+
+        Me.Controls.Add(tlp)
         Me.AcceptButton = _btnEnable
         Me.CancelButton = _btnCancel
 

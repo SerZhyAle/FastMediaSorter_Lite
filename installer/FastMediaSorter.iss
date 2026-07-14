@@ -77,11 +77,82 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 Name: "ukrainian"; MessagesFile: "compiler:Languages\Ukrainian.isl"
 
+; Setup type + component labels (see [Types]/[Components]). The wizard appends each
+; component's on-disk size after the text automatically, so the package weight is
+; shown per part - the "what & why" is the description itself.
+[CustomMessages]
+english.TypeFull=Full - everything offline-ready (recommended)
+english.TypeCompact=Compact - viewer only (codecs & models download on demand)
+english.TypeCustom=Custom
+english.CompCore=Core - image & video viewer and sorter (required)
+english.CompCodecs=Video codecs (VLC) - offline playback of AVI, MKV, VP9 and other formats
+english.CompOcr=OCR & translation models - offline on-image text recognition
+english.CompShare=Android Folder Share companion - share folders to your phone (bundles its own .NET runtime)
+
+russian.TypeFull=Полная - всё для работы без интернета (рекомендуется)
+russian.TypeCompact=Компактная - только просмотрщик (кодеки и модели скачаются по мере надобности)
+russian.TypeCustom=Выборочная
+russian.CompCore=Ядро - просмотр и сортировка изображений и видео (обязательно)
+russian.CompCodecs=Видео-кодеки (VLC) - оффлайн-воспроизведение AVI, MKV, VP9 и других форматов
+russian.CompOcr=Модели OCR и перевода - распознавание текста на изображении без интернета
+russian.CompShare=Компаньон Android Folder Share - раздача папок на телефон (включает свой рантайм .NET)
+
+ukrainian.TypeFull=Повна - усе для роботи без інтернету (рекомендовано)
+ukrainian.TypeCompact=Компактна - лише переглядач (кодеки та моделі завантажаться за потреби)
+ukrainian.TypeCustom=Вибіркова
+ukrainian.CompCore=Ядро - перегляд і сортування зображень та відео (обов'язково)
+ukrainian.CompCodecs=Відео-кодеки (VLC) - офлайн-відтворення AVI, MKV, VP9 та інших форматів
+ukrainian.CompOcr=Моделі OCR та перекладу - розпізнавання тексту на зображенні без інтернету
+ukrainian.CompShare=Компаньйон Android Folder Share - роздача тек на телефон (містить власний рантайм .NET)
+
+; Prepend an honest one-liner to the component-selection page: the viewer is light,
+; the weight is optional offline payload the user can trim.
+[Messages]
+english.SelectComponentsLabel2=The viewer itself is small - most of the size is optional, offline-ready payload. Keep everything for full offline use, or clear what you don't need (it can download later on demand). Click Next when you are ready to continue.
+russian.SelectComponentsLabel2=Сам просмотрщик весит мало - основной объём это опциональная оффлайн-начинка. Оставьте всё для полной работы без интернета или снимите ненужное (при необходимости оно скачается позже). Нажмите "Далее", когда будете готовы продолжить.
+ukrainian.SelectComponentsLabel2=Сам переглядач важить мало - основний обсяг це опційна офлайн-начинка. Залиште все для повної роботи без інтернету або зніміть непотрібне (за потреби воно завантажиться пізніше). Натисніть "Далі", коли будете готові продовжити.
+
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
+; The viewer itself is tiny; almost all of the package weight is optional,
+; offline-ready payload (VLC codecs, OCR models, the Share companion). Exposing it
+; as selectable components lets the wizard show each part's size + purpose and lets
+; the user leave out what they do not need (those parts then download on demand, or
+; the feature is simply absent). Silent installs (winget / Store) pick the first
+; type = "full", so unattended flows are unchanged.
+[Types]
+Name: "full";    Description: "{cm:TypeFull}"
+Name: "compact"; Description: "{cm:TypeCompact}"
+Name: "custom";  Description: "{cm:TypeCustom}"; Flags: iscustom
+
+[Components]
+Name: "core";   Description: "{cm:CompCore}";   Types: full compact custom; Flags: fixed
+Name: "codecs"; Description: "{cm:CompCodecs}"; Types: full
+Name: "ocr";    Description: "{cm:CompOcr}";    Types: full
+Name: "share";  Description: "{cm:CompShare}";  Types: full
+
 [Files]
-Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+; Core (always installed): the LITE viewer, its bundled managed payload and the
+; native Tesseract/OCR engine. Excludes the big optional subtrees below so an
+; unchecked component is genuinely not written to disk.
+Source: "{#SourceDir}\*"; DestDir: "{app}"; Excludes: "libvlc\*,tessdata\*,tessdata-best\*,companion\*,FastMediaSorterCompanion.exe"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: core
+; Video codecs (LibVLC) - offline playback of AVI/MKV/VP9/etc. Absent = those
+; formats fall back to on-demand runtime download (OptionalRuntimeManager).
+; This is the x64-only mainline package (ArchitecturesAllowed=x64compatible); the
+; AnyCPU app runs 64-bit here, so the win-x86 plugin tree is never loaded. It is
+; already trimmed upstream by Prepare-OcrOfflinePayload.ps1; excluded here too as a
+; belt-and-suspenders guarantee now that 32-bit support is a separate standalone
+; product (see SPECIFICATION_DOTNET10_MODERN_BUILD.md, legacy x86 viewer).
+Source: "{#SourceDir}\libvlc\*"; DestDir: "{app}\libvlc"; Excludes: "win-x86\*"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: codecs
+; OCR/translation language models (fast + best). Absent = packs download on first
+; OCR use instead of shipping in the installer.
+Source: "{#SourceDir}\tessdata\*"; DestDir: "{app}\tessdata"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: ocr
+Source: "{#SourceDir}\tessdata-best\*"; DestDir: "{app}\tessdata-best"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: ocr
+; Android Folder Share - the self-contained .NET companion app + its SFTP worker.
+; The companion carries its own .NET runtime, which is the bulk of this component.
+Source: "{#SourceDir}\FastMediaSorterCompanion.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: share
+Source: "{#SourceDir}\companion\*"; DestDir: "{app}\companion"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: share
 ; Helper Setup/Uninstall use to gracefully stop a running companion worker (see
 ; StopCompanionWorker in [Code]). Kept both as a dontcopy temp extract (Setup runs
 ; this before any app files exist yet, so it cannot read one from {app}) and as a
@@ -91,7 +162,7 @@ Source: "stop-companion.ps1"; DestDir: "{app}"; Flags: ignoreversion
 ; Elevated helper for the deferred, in-app "enable server features" opt-in (adds /
 ; removes the SFTP firewall rule via one UAC prompt). Installed next to the exe so
 ; ServerFeatures.EnableViaElevation prefers it over a direct netsh fallback.
-Source: "enable-share-server.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "enable-share-server.ps1"; DestDir: "{app}"; Flags: ignoreversion; Components: share
 
 [InstallDelete]
 ; The Start-menu group used to be named "FastMediaSorter LITE"; it is now the new
@@ -379,8 +450,9 @@ function ShouldInstallServerFeatures: Boolean;
 begin
   { Only when explicitly ticked AND Setup is elevated - the firewall step needs
     admin. In silent/winget installs the page is never shown, so Checked stays
-    False and this is a no-op (viewer-only). }
-  Result := (ServerFeaturesCheckBox <> nil) and ServerFeaturesCheckBox.Checked and IsAdminInstallMode;
+    False and this is a no-op (viewer-only). Also require the Share component to be
+    installed - there is no worker exe to allow through the firewall otherwise. }
+  Result := (ServerFeaturesCheckBox <> nil) and ServerFeaturesCheckBox.Checked and IsAdminInstallMode and WizardIsComponentSelected('share');
 end;
 
 procedure AddServerFirewallRule;

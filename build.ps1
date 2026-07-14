@@ -12,7 +12,7 @@ $SolutionFile = Join-Path $SolutionDir "FastMediaSorter.sln"
 $OutputDir    = Join-Path $SolutionDir "bin\Release"
 $SingleFileDir = Join-Path $SolutionDir "bin\SingleFile"
 $ExeName      = "FastMediaSorter_LITE.exe"
-# Android-share sidecar payload (docs/specifications/SPECIFICATION_ANDROID_FOLDER_SHARE.md). The
+# Android-share sidecar payload (docs/specifications/done/SPECIFICATION_ANDROID_FOLDER_SHARE.md). The
 # worker exe must ship in a "companion\" subfolder next to every deployed exe,
 # or the Share tab / wizard finds nothing (WorkerProcess.IsAvailable() = False).
 $PayloadCompanionDir = Join-Path $SolutionDir "payload\companion"

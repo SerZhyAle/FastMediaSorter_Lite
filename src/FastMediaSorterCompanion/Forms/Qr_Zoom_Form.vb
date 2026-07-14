@@ -15,9 +15,11 @@ Public Class Qr_Zoom_Form
     Inherits Form
 
     Private ReadOnly _pic As PictureBox
+    Private _iconHandle As IntPtr
 
     Private Sub New(img As Image, clientSide As Integer)
         Me.Text = If(Is_Russian_Language, "QR-код", "QR code")
+        Me.Icon = ShareIcons.CreateIcon(_iconHandle)
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
         Me.MinimizeBox = False
@@ -39,6 +41,7 @@ Public Class Qr_Zoom_Form
                                       Dim old As Image = _pic.Image
                                       _pic.Image = Nothing
                                       If old IsNot Nothing Then old.Dispose()
+                                      ShareIcons.FreeIcon(Me.Icon, _iconHandle)
                                   End Sub
     End Sub
 

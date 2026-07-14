@@ -65,8 +65,9 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0040: English is set")
         End If
 
-        LocalizeShareEntryPoints()
+        LocalizeShareEntryPoint()
         LocalizeToolbarOverflow()
+        LocalizeBrowserTranslate()
 
         ' Button captions just changed width - re-flow the single-row toolbar.
         LayoutToolbar()

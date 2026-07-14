@@ -15,9 +15,7 @@ Imports System.Windows.Forms
 '   * Row 1 - always-on-top / sort / "Folder:" / folder box, then file & folder
 '     actions. The folder box shrinks proportionally to make room.
 '   * Row 2 - navigation and file actions (recent, prev/next, slideshow, rename,
-'     delete, translate, share).
-'
-' The Share button is hidden entirely while no folder/file is loaded.
+'     delete, translate).
 Partial Public Class Main_Form
 
     Private WithEvents btn_Overflow As Button      ' row 1
@@ -33,6 +31,13 @@ Partial Public Class Main_Form
     ' reading order. Built by BuildToolbarOverflow.
     Private toolbar_Row1_Tail As Control()
     Private toolbar_Row2_Items As Control()
+
+    ' Toolbar items intentionally collapsed out of the layout entirely (kept hidden,
+    ' excluded from both the row and its overflow menu). PlaceControl force-shows any
+    ' laid-out control, so a plain c.Visible = False would be undone on the next
+    ' LayoutToolbar - callers hide via SetToolbarItemHidden instead. Used by the
+    ' translate buttons, which are shown only for still images.
+    Private ReadOnly toolbar_Hidden_Items As New HashSet(Of Control)()
 
     ' Folder box width bounds (px). Preferred matches ApplyModernStyling's 320.
     Private Const Folder_Box_Pref_Width As Integer = 320
@@ -63,12 +68,13 @@ Partial Public Class Main_Form
             btn_choose_file, btn_Select_Folder, btn_Review, btn_Panel,
             btn_Full_Screen, lbl_Slideshow_Time, btn_Language, lbl_Info}
 
-        ' Row 2 (navigation + file actions). Translate and Share sit at the end.
+        ' Row 2 (navigation + file actions). The two translate buttons sit at the
+        ' end - our OCR overlay, then the "in browser" companion (doc-html-translate).
         toolbar_Row2_Items = New Control() {
             btn_RecentFiles, lbl_File_Number, btn_Prev_File, btn_Next_File,
             btn_Next_Random, btn_Random_Slideshow, btn_Slideshow,
             btn_Move_Table, btn_Rename, bt_Delete, lbl_Zoom,
-            btn_Translate, btn_Share}
+            btn_Translate, btn_TranslateBrowser}
     End Sub
 
     ''' <summary>Localizes the overflow button tooltips. Called from
@@ -81,15 +87,6 @@ Partial Public Class Main_Form
         If btn_Overflow IsNot Nothing Then toolTip.SetToolTip(btn_Overflow, tip)
         If btn_Overflow_2 IsNot Nothing Then toolTip.SetToolTip(btn_Overflow_2, tip)
     End Sub
-
-    ''' <summary>True when there is a folder/file to share (drives whether the
-    ''' Share button is shown at all).</summary>
-    Private Function IsShareAvailable() As Boolean
-        If Not String.IsNullOrWhiteSpace(If(Current_Folder_Path, "")) Then Return True
-        If Not String.IsNullOrEmpty(If(Current_Image_Path, "")) Then Return True
-        If cmbox_Media_Folder IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(cmbox_Media_Folder.Text) Then Return True
-        Return False
-    End Function
 
     Private Function EffWidth(c As Control) As Integer
         If c Is cmbox_Media_Folder Then Return c.Width
@@ -134,17 +131,13 @@ Partial Public Class Main_Form
             Dim desiredHeight As Integer = pad.Top + rowH + Toolbar_Row_Gap + rowH + pad.Bottom
             If flow_Toolbar.Height <> desiredHeight Then flow_Toolbar.Height = desiredHeight
 
-            ' Share button only exists while something is loaded.
-            Dim shareAvail As Boolean = IsShareAvailable()
-            If btn_Share IsNot Nothing Then btn_Share.Visible = shareAvail
-
             Dim innerLeft As Integer = pad.Left
             Dim innerRight As Integer = flow_Toolbar.ClientSize.Width - pad.Right
             Dim rowTop1 As Integer = pad.Top
             Dim rowTop2 As Integer = pad.Top + rowH + Toolbar_Row_Gap
 
             RebuildOverflowMenu(overflow_Menu, LayoutRow1(rowTop1, rowH, innerLeft, innerRight))
-            RebuildOverflowMenu(overflow_Menu_2, LayoutRow2(rowTop2, rowH, innerLeft, innerRight, shareAvail))
+            RebuildOverflowMenu(overflow_Menu_2, LayoutRow2(rowTop2, rowH, innerLeft, innerRight))
         Finally
             laying_Out_Toolbar = False
         End Try
@@ -164,7 +157,11 @@ Partial Public Class Main_Form
 
         Dim ovf As New List(Of Control)()
         For Each c As Control In toolbar_Row1_Tail
-            If c IsNot Nothing Then ovf.Add(c)
+            If c Is Nothing Then Continue For
+            If toolbar_Hidden_Items.Contains(c) Then
+                c.Visible = False : Continue For
+            End If
+            ovf.Add(c)
         Next
         Dim ovfTotal As Integer = 0
         For Each c As Control In ovf : ovfTotal += SlotWidth(c) : Next
@@ -212,13 +209,15 @@ Partial Public Class Main_Form
     End Function
 
     ''' <summary>Row 2: navigation + file actions, overflowing from the end.</summary>
-    Private Function LayoutRow2(rowTop As Integer, rowH As Integer, innerLeft As Integer, innerRight As Integer, shareAvail As Boolean) As List(Of Control)
+    Private Function LayoutRow2(rowTop As Integer, rowH As Integer, innerLeft As Integer, innerRight As Integer) As List(Of Control)
         Dim x As Integer = innerLeft
 
         Dim ovf As New List(Of Control)()
         For Each c As Control In toolbar_Row2_Items
             If c Is Nothing Then Continue For
-            If c Is btn_Share AndAlso Not shareAvail Then Continue For
+            If toolbar_Hidden_Items.Contains(c) Then
+                c.Visible = False : Continue For
+            End If
             ovf.Add(c)
         Next
         Dim total As Integer = 0
@@ -247,6 +246,19 @@ Partial Public Class Main_Form
         If showOverflow Then PinOverflowButton(btn_Overflow_2, rowTop, rowH, innerRight)
         Return menu
     End Function
+
+    ''' <summary>Collapses a toolbar item out of the layout entirely (or restores
+    ''' it). Hidden items are skipped by LayoutRow1/LayoutRow2 and never re-shown by
+    ''' PlaceControl. Call LayoutToolbar afterwards to re-flow.</summary>
+    Friend Sub SetToolbarItemHidden(c As Control, hidden As Boolean)
+        If c Is Nothing Then Return
+        If hidden Then
+            toolbar_Hidden_Items.Add(c)
+            c.Visible = False
+        Else
+            toolbar_Hidden_Items.Remove(c)
+        End If
+    End Sub
 
     Private Sub PinOverflowButton(b As Button, rowTop As Integer, rowH As Integer, innerRight As Integer)
         b.Left = innerRight - EffWidth(b) - b.Margin.Right
@@ -295,7 +307,7 @@ Partial Public Class Main_Form
             Case "btn_Rename" : Return If(rus, "Переименовать", "Rename")
             Case "bt_Delete" : Return If(rus, "Удалить", "Delete")
             Case "btn_Translate" : Return If(rus, "Перевод", "Translate")
-            Case "btn_Share" : Return If(rus, "Поделиться", "Share")
+            Case "btn_TranslateBrowser" : Return If(rus, "Перевод в браузере", "Translate in browser")
             Case Else : Return b.Text
         End Select
     End Function

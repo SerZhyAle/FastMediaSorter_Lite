@@ -9,8 +9,8 @@ Public Class Table_Form
     Private toolTip As ToolTip
 
     ''' <summary>Scales a design-time (96-dpi) pixel value to the current display DPI.
-    ''' The Share and OCR tabs are built entirely in code with literal pixel
-    ''' coordinates; unlike the Designer controls (auto-scaled via AutoScaleMode.Font)
+    ''' The OCR tab is built entirely in code with literal pixel coordinates; unlike
+    ''' the Designer controls (auto-scaled via AutoScaleMode.Font)
     ''' they keep their 96-dpi size, yet their point-based fonts render ~1.75x larger
     ''' at 168 DPI - so text overflowed its box. Wrapping the literals in LU() sizes the
     ''' boxes to match the fonts. Identity at 96 DPI, so it is a no-op on standard
@@ -296,7 +296,8 @@ Public Class Table_Form
         End If
 
         PrepareOcrTabForDisplay()
-        PrepareShareTabForDisplay()
+        BuildShareLauncherButtonIfNeeded()
+        LocalizeShareLauncherButton()
 
         Dim SetOnTopS As String = GetSetting(App_name, Second_App_Name, "SetOnTop", "1")
         set_This_Form_Top_Most = SetOnTopS = "1"

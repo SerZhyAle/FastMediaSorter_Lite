@@ -80,7 +80,7 @@ Friend Module Program
             ' keeps the AutoScaleMode.Font baseline consistent, so forms scale correctly at
             ' 125/150/175% DPI instead of shrinking (the fixed-ClientSize-came-out-small bug).
             Try
-                Application.SetDefaultFont(New Font("Segoe UI", 10.0F))
+                Application.SetDefaultFont(New Font("Segoe UI", 9.0F))
             Catch
             End Try
 

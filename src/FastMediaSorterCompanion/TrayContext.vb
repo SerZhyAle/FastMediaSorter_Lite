@@ -20,6 +20,7 @@ Friend NotInheritable Class TrayContext
     Private _trayHIcon As IntPtr
     Private _mainWindow As MainWindow
     Private _disposed As Boolean
+    Private ReadOnly _statsTimer As Timer   ' keeps the tooltip's usage counters reasonably fresh while serving
 
     Friend Sub New(initialFolder As String, Optional showWindowOnStart As Boolean = True)
         _trayIcon = ShareIcons.CreateIcon(_trayHIcon)
@@ -34,6 +35,9 @@ Friend NotInheritable Class TrayContext
 
         _messageWindow = New MessageWindow()
         AddHandler _messageWindow.PayloadReceived, AddressOf OnPayloadReceived
+
+        _statsTimer = New Timer With {.Interval = 30000}
+        AddHandler _statsTimer.Tick, AddressOf OnStatsTimerTick
 
         ' Resume sharing silently if it was ever started - covers the "dedicated
         ' server" scenario where Companion autostarts into the tray with no window.
@@ -60,10 +64,16 @@ Friend NotInheritable Class TrayContext
         AddHandler miOpen.Click, Sub() ShowMainWindow(Nothing)
         menu.Items.Add(miOpen)
 
-        ' Show the current share's QR big, straight from the tray (no window needed).
-        Dim miQr As New ToolStripMenuItem(If(rus, "Показать штрихкод..", "Show QR code.."))
-        AddHandler miQr.Click, Sub() TrayShowQr()
-        menu.Items.Add(miQr)
+        ' "Share..": open the package wizard so the user first picks WHAT to share and
+        ' with WHICH settings, then gets the QR - instead of dumping one fixed QR.
+        Dim miShare As New ToolStripMenuItem(If(rus, "Поделиться..", "Share.."))
+        AddHandler miShare.Click, Sub() TrayShare()
+        menu.Items.Add(miShare)
+
+        ' Current state + local usage counters (last connection, totals, files served).
+        Dim miStatus As New ToolStripMenuItem(If(rus, "Текущее состояние..", "Status.."))
+        AddHandler miStatus.Click, Sub() TrayStatus()
+        menu.Items.Add(miStatus)
 
         ' Online "publish your folders for Android" guide.
         Dim miDesc As New ToolStripMenuItem(If(rus, "Описание..", "Description.."))
@@ -89,35 +99,64 @@ Friend NotInheritable Class TrayContext
         Return menu
     End Function
 
-    ''' <summary>Tray "Показать штрихкод": build the current share's combined QR from the
-    ''' live worker status and show it big via Qr_Zoom_Form (LAN-only fallback when the
-    ''' combined code is too dense). Ported from LITE's Main_Form.ShareTray.TrayShowQr.</summary>
-    Private Async Sub TrayShowQr()
-        Dim rus As Boolean = Is_Russian_Language
-        Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
-        If st Is Nothing OrElse Not st.Running Then
-            Try : _notifyIcon.ShowBalloonTip(2500, "Fast Media Sorter", If(rus, "Общий доступ не запущен.", "Sharing is not running."), ToolTipIcon.Info) : Catch : End Try
-            Return
-        End If
-
-        Dim cfg As ShareConfigResult = ShareConfigBuilder.Build(st, True)
-        If cfg Is Nothing OrElse cfg.QrPng Is Nothing OrElse cfg.QrPng.Length = 0 OrElse cfg.QrOverflow Then
-            cfg = ShareConfigBuilder.Build(st, False)   ' LAN-only fallback (smaller QR)
-        End If
-        If cfg Is Nothing OrElse cfg.QrPng Is Nothing OrElse cfg.QrPng.Length = 0 Then
-            Try : _notifyIcon.ShowBalloonTip(3000, "Fast Media Sorter", If(rus, "Код слишком большой - сохраните файл .fmscfg в окне.", "Code too large - save the .fmscfg file in the window."), ToolTipIcon.Warning) : Catch : End Try
-            Return
-        End If
-
+    ''' <summary>Tray "Поделиться..": open the Share Manager window and route straight
+    ''' into the package wizard, where the user chooses which folders + per-folder
+    ''' settings to publish and then gets the QR. The window owns the running-server
+    ''' check and folder list, so the wizard opens only once status is ready.</summary>
+    Private Sub TrayShare()
+        ShowMainWindow(Nothing)
         Try
-            Using ms As New IO.MemoryStream(cfg.QrPng)
-                Using img As Image = Image.FromStream(ms)
-                    Qr_Zoom_Form.ShowImage(Nothing, img)
-                End Using
+            If _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed Then _mainWindow.OpenShareWizardFromTray()
+        Catch
+        End Try
+    End Sub
+
+    ''' <summary>Tray "Текущее состояние..": open the status window with the local usage
+    ''' counters (last connection, totals, files served). Fetches a fresh status first.</summary>
+    Private Async Sub TrayStatus()
+        Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+        Try
+            Using dlg As New Share_Status_Form(st)
+                If _mainWindow IsNot Nothing AndAlso _mainWindow.Visible AndAlso Not _mainWindow.IsDisposed Then
+                    dlg.ShowDialog(_mainWindow)
+                Else
+                    dlg.ShowDialog()
+                End If
             End Using
         Catch
         End Try
     End Sub
+
+    Private Sub OnStatsTimerTick(sender As Object, e As EventArgs)
+        Dim t As Task = UpdateTooltipStatsAsync()
+    End Sub
+
+    ''' <summary>Enriches the tray tooltip with a concise usage line while serving
+    ''' (NotifyIcon.Text is capped ~63 chars). Fire-and-forget; never blocks the UI.</summary>
+    Private Async Function UpdateTooltipStatsAsync() As Task
+        Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+        If _disposed OrElse _notifyIcon Is Nothing Then Return
+        ' If sharing was turned off while this fetch was in flight, RefreshTrayState(False)
+        ' already stopped the poll timer and set the idle tooltip - don't clobber it back.
+        If Not _statsTimer.Enabled Then Return
+        Dim rus As Boolean = Is_Russian_Language
+        Dim txt As String
+        If st IsNot Nothing AndAlso st.Running Then
+            txt = If(rus, "Общий доступ включён", "Sharing on")
+            If st.Stats IsNot Nothing Then
+                txt &= (If(rus, " · подключений: ", " · conns: ")) & st.Stats.TotalConnections.ToString()
+                Dim last As String = Share_Status_Form.ShortTime(st.Stats.LastConnectionAt)
+                If last.Length > 0 Then txt &= (If(rus, " · посл.: ", " · last: ")) & last
+            End If
+        Else
+            txt = "Fast Media Sorter: Share Manager"
+        End If
+        If txt.Length > 63 Then txt = txt.Substring(0, 63)
+        Try
+            _notifyIcon.Text = txt
+        Catch
+        End Try
+    End Function
 
     ''' <summary>Tray "Выключить общий доступ": stop the SFTP server, then refresh the tray.</summary>
     Private Async Sub TrayStop()
@@ -142,6 +181,33 @@ Friend NotInheritable Class TrayContext
             If _mainWindow.WindowState = FormWindowState.Minimized Then _mainWindow.WindowState = FormWindowState.Normal
             _mainWindow.Activate()
             _mainWindow.BringToFront()
+            ForceToForeground(_mainWindow)
+        Catch
+        End Try
+    End Sub
+
+    <DllImport("user32.dll")>
+    Private Shared Function SetForegroundWindow(hWnd As IntPtr) As Boolean
+    End Function
+
+    <DllImport("user32.dll")>
+    Private Shared Function GetForegroundWindow() As IntPtr
+    End Function
+
+    ''' <summary>Pulls a just-shown window truly in front. Companion is a background
+    ''' (tray) process, so <c>Show</c>/<c>Activate</c> alone often lands the window
+    ''' BEHIND whoever woke us (LITE). LITE grants us the foreground right
+    ''' (AllowSetForegroundWindow) right before the wake, so SetForegroundWindow now
+    ''' succeeds; the brief TopMost toggle is a belt-and-suspenders fallback for when
+    ''' that grant window was missed.</summary>
+    Private Shared Sub ForceToForeground(f As Form)
+        Try
+            SetForegroundWindow(f.Handle)
+            If GetForegroundWindow() <> f.Handle Then
+                f.TopMost = True
+                f.TopMost = False
+                f.Activate()
+            End If
         Catch
         End Try
     End Sub
@@ -180,6 +246,16 @@ Friend NotInheritable Class TrayContext
                 "Fast Media Sorter: Share Manager")
         Catch
         End Try
+        ' While serving, keep the tooltip's usage counters fresh (immediate + every 30s).
+        Try
+            If running Then
+                Dim t As Task = UpdateTooltipStatsAsync()
+                _statsTimer.Start()
+            Else
+                _statsTimer.Stop()
+            End If
+        Catch
+        End Try
     End Sub
 
     Private Sub OnPayloadReceived(payload As String)
@@ -208,6 +284,11 @@ Friend NotInheritable Class TrayContext
     Protected Overrides Sub Dispose(disposing As Boolean)
         If disposing AndAlso Not _disposed Then
             _disposed = True
+            Try
+                _statsTimer.Stop()
+                _statsTimer.Dispose()
+            Catch
+            End Try
             Try
                 If _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed Then _mainWindow.Dispose()
             Catch

@@ -127,6 +127,33 @@ foreach ($extra in @("README.md", "LICENSE")) {
     }
 }
 
+# Android Folder Share payload (mirror of release.yml): publish the Companion app
+# (Share Manager, net10) as a self-contained single-file exe next to the LITE exe,
+# and stage the committed Go worker under companion\. Both feed the installer's
+# `share` component and the portable ZIP.
+$companionProj = Join-Path $solutionDir "src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj"
+$companionOut  = Join-Path $stageDir "companion-publish-tmp"
+Write-Host "Publishing Companion (Share Manager, net10 self-contained).."
+& dotnet publish $companionProj -c Release -r win-x64 -o $companionOut -v minimal --nologo
+if ($LASTEXITCODE -ne 0) {
+    throw "dotnet publish (Companion) failed with exit code $LASTEXITCODE."
+}
+$companionExe = Join-Path $companionOut "FastMediaSorterCompanion.exe"
+if (-not (Test-Path $companionExe)) {
+    throw "Companion exe not found at $companionExe after publish."
+}
+Copy-Item $companionExe $stageDir -Force
+Remove-Item -LiteralPath $companionOut -Recurse -Force -ErrorAction SilentlyContinue
+
+$workerSrc = Join-Path $solutionDir "payload\companion"
+$worker    = Join-Path $workerSrc "fms-share-worker.exe"
+if (-not (Test-Path $worker)) {
+    throw "SFTP worker not found at $worker (should be committed in the repo)."
+}
+$stageCompanion = Join-Path $stageDir "companion"
+New-Item -ItemType Directory -Path $stageCompanion -Force | Out-Null
+Copy-Item (Join-Path $workerSrc "*") $stageCompanion -Recurse -Force
+
 & (Join-Path $PSScriptRoot "Prepare-OcrOfflinePayload.ps1") -StageDir $stageDir -IncludeBest
 
 $zipName = "FastMediaSorter-$Version-windows-x64.zip"

@@ -110,6 +110,22 @@ Partial Public Class Main_Form
         End If
     End Sub
 
+    ''' <summary>Brings the main window back on screen and focuses it - unminimizes if
+    ''' needed. Generic single-instance relaunch UX (not share-specific): shared by
+    ''' Application_Events.vb's bare-second-launch handling and the Show_Window_Command
+    ''' handling above. The window is never hidden to a tray by LITE itself (that
+    ''' close-to-tray behavior moved to Share Manager with the share feature), so this
+    ''' is just "unminimize + focus", not a tray-restore.</summary>
+    Friend Sub RestoreMainWindow()
+        Try
+            Me.Show()
+            If Me.WindowState = FormWindowState.Minimized Then Me.WindowState = FormWindowState.Normal
+            Me.Activate()
+            Me.BringToFront()
+        Catch
+        End Try
+    End Sub
+
     Private Sub SetWebBrowserCompatibilityMode()
         Try
             Using key = Registry.CurrentUser.OpenSubKey("Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BROWSER_EMULATION", True)
@@ -203,18 +219,6 @@ Partial Public Class Main_Form
     End Sub
 
     Public Sub ProcessArgument(argument_Raw_Text As String)
-        ' If LITE is hidden in the tray (share running, window closed) and a file/folder
-        ' arrives - a fresh launch forwarded here, or an external open - bring the window
-        ' back. Guarded on _residentInTray so it never fires during first-run load.
-        If _residentInTray Then
-            Try
-                _residentInTray = False
-                Me.Show()
-                If Me.WindowState = FormWindowState.Minimized Then Me.WindowState = FormWindowState.Normal
-            Catch
-            End Try
-        End If
-
         Dim argument_For_Path As String = argument_Raw_Text.Trim()
         Dim argument_For_Flags As String = argument_Raw_Text.ToLowerInvariant()
         Dim is_No_Back_Flag_In_This_Call As Boolean = argument_For_Flags.Contains("-noback")
@@ -398,9 +402,8 @@ Partial Public Class Main_Form
         Is_Russian_Language = GetSetting(App_name, Second_App_Name, "Is_Russian_Language", If(SystemDefaultIsRussian(), "1", "0")) = "1"
         InitializeTooltips()
         InitializeOcrTranslate()
-        InitializeShareEntryPoints()
-        InitializeShareTray()
-        ResumeShareIfEnabled()
+        InitializeBrowserTranslate()
+        InitializeShareEntryPoint()
 
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Width_At_Panel", "80"), Picture_Box_Width_At_Panel)
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Height_At_Panel", "80"), Picture_Box_Height_At_Panel)
@@ -561,22 +564,9 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
-        ' While the SFTP share is active, a user-initiated window close sends LITE to
-        ' the tray (keeps the worker serving + controllable) instead of quitting. The
-        ' app really exits on an explicit tray "Выход" (which sets _forceExit), when the
-        ' share is stopped, or on a system close (Windows shutdown, Application.Exit,
-        ' Task Manager). "UserClosing" is the X button / Alt+F4; "None" is a programmatic
-        ' Me.Close() (the Escape/Q/X hotkey) or a raw WM_CLOSE - both are the user asking
-        ' to close the window, so both go to the tray. See Main_Form.ShareTray.vb.
-        Dim isUserClose As Boolean = (e.CloseReason = CloseReason.UserClosing OrElse e.CloseReason = CloseReason.None)
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " tray: FormClosing reason=" & e.CloseReason.ToString() &
-                        " userClose=" & isUserClose.ToString() & " sharing=" & _lastKnownSharing.ToString() & " forceExit=" & _forceExit.ToString())
-        If isUserClose AndAlso Not _forceExit AndAlso _lastKnownSharing Then
-            e.Cancel = True
-            EnterTrayResidentMode()
-            Return
-        End If
-
+        ' LITE closes like a normal viewer - no close-to-tray. Sharing (if any) is
+        ' owned entirely by Fast Media Sorter: Share Manager, which keeps
+        ' running independently; closing LITE never touches it.
         Try
             If Current_Folder_Path IsNot Nothing Then SaveSetting(App_name, Second_App_Name, "ImageFolder", Current_Folder_Path)
             If Not current_File_Index = 0 Then SaveSetting(App_name, Second_App_Name, "LastCounter", current_File_Index.ToString)
@@ -660,8 +650,6 @@ Partial Public Class Main_Form
         StopGifLoopPlayback()
         gif_Restart_Timer.Dispose()
         If toolTip IsNot Nothing Then toolTip.Dispose()
-
-        ShutdownShareTray()
 
         ShutdownOcrTranslate()
 

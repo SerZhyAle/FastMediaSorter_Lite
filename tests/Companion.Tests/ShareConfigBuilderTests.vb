@@ -117,6 +117,73 @@ Public Class ShareConfigBuilderTests
     End Sub
 
     <Fact>
+    Public Sub Build_PerRootOverrides_AreIndependent()
+        ' Each folder in ONE access code can carry its OWN PIN / read-only / slideshow
+        ' (§4.5.3, the wizard's per-folder table), keyed by hostPath. A root with no map
+        ' entry keeps its stored defaults - the two roots diverge in the same export.
+        Dim hostA As String = "C:\__fms_test__" & Guid.NewGuid().ToString("N")
+        Dim hostB As String = "C:\__fms_test__" & Guid.NewGuid().ToString("N")
+        Dim st As New WorkerStatus With {
+            .Running = True, .ListenPort = 2222, .Username = "fms", .Password = "secret", .Fingerprint = "SHA256:abc123",
+            .Roots = New List(Of ShareFolder) From {
+                New ShareFolder With {.name = "Alpha", .hostPath = hostA, .readOnly = False},
+                New ShareFolder With {.name = "Bravo", .hostPath = hostB, .readOnly = False}
+            },
+            .Reachability = New WorkerReachability With {.LanAddress = "192.168.1.50"}
+        }
+        Dim perRoot As New Dictionary(Of String, ShareExportOverrides)(StringComparer.OrdinalIgnoreCase) From {
+            {hostA, New ShareExportOverrides With {.HasPin = True, .Pin = "1111", .ForceSoftReadOnly = True}}
+        }
+        Dim res = ShareConfigBuilder.Build(st, includeExternal:=False, includePassword:=True, perRootOverrides:=perRoot)
+        Assert.NotNull(res)
+        Using doc = JsonDocument.Parse(res.ConfigJson)
+            Dim roots = doc.RootElement.GetProperty("roots")
+            Assert.Equal(2, roots.GetArrayLength())
+            ' Root A (has override): PIN present + advertised read-only.
+            Assert.Equal("1111", roots(0).GetProperty("accessPin").GetString())
+            Assert.True(roots(0).GetProperty("readOnly").GetBoolean())
+            ' Root B (no override): writable, no PIN emitted.
+            Assert.False(roots(1).GetProperty("readOnly").GetBoolean())
+            Dim pinB As JsonElement = Nothing
+            Assert.False(roots(1).TryGetProperty("accessPin", pinB))
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub Build_PerRootParams_UsedAsIs()
+        ' The wizard's editable grid hands the builder a FULL ShareRootParams per folder
+        ' (perRootParams). That complete object is emitted as-is (highest precedence), so a
+        ' recipient gets exactly the per-folder configuration the grid shows.
+        Dim hostA As String = "C:\__fms_test__" & Guid.NewGuid().ToString("N")
+        Dim hostB As String = "C:\__fms_test__" & Guid.NewGuid().ToString("N")
+        Dim st As New WorkerStatus With {
+            .Running = True, .ListenPort = 2222, .Username = "fms", .Password = "secret", .Fingerprint = "SHA256:abc123",
+            .Roots = New List(Of ShareFolder) From {
+                New ShareFolder With {.name = "Alpha", .hostPath = hostA, .readOnly = False},
+                New ShareFolder With {.name = "Bravo", .hostPath = hostB, .readOnly = False}
+            },
+            .Reachability = New WorkerReachability With {.LanAddress = "192.168.1.50"}
+        }
+        Dim perRoot As New Dictionary(Of String, ShareRootParams)(StringComparer.OrdinalIgnoreCase) From {
+            {hostA, New ShareRootParams With {.IsReadOnly = True, .AccessPin = "9999", .Profile = "photo_storage", .Label = "Отпуск"}}
+        }
+        Dim res = ShareConfigBuilder.Build(st, includeExternal:=False, includePassword:=True, perRootParams:=perRoot)
+        Assert.NotNull(res)
+        Using doc = JsonDocument.Parse(res.ConfigJson)
+            Dim roots = doc.RootElement.GetProperty("roots")
+            Assert.Equal(2, roots.GetArrayLength())
+            ' Root A: full params applied verbatim.
+            Assert.Equal("Отпуск", roots(0).GetProperty("label").GetString())
+            Assert.True(roots(0).GetProperty("readOnly").GetBoolean())
+            Assert.Equal("9999", roots(0).GetProperty("accessPin").GetString())
+            Assert.Equal("photo_storage", roots(0).GetProperty("profile").GetString())
+            ' Root B: no grid entry -> stored defaults (writable, no PIN, folder-name label).
+            Assert.Equal("Bravo", roots(1).GetProperty("label").GetString())
+            Assert.False(roots(1).GetProperty("readOnly").GetBoolean())
+        End Using
+    End Sub
+
+    <Fact>
     Public Sub Build_LanOnlyToggle_OmitsExternalAddresses()
         ' includeExternal:=False must not leak any externally-routable address (privacy).
         Dim reach As New WorkerReachability With {

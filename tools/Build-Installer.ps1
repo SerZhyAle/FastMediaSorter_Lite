@@ -196,7 +196,7 @@ foreach ($extra in @("README.md", "LICENSE")) {
 }
 
 # The Android-share worker must ship in companion\ next to the exe or the Share
-# tab/wizard find nothing at runtime. MSBuild does not stage it - mirror the
+# Manager finds nothing at runtime. MSBuild does not stage it - mirror the
 # vendored payload in explicitly (same rule as build.ps1's Deploy-Companion).
 if (Test-Path $payloadDir) {
     $companionDest = Join-Path $stageDir "companion"
@@ -205,6 +205,23 @@ if (Test-Path $payloadDir) {
     Write-Host "Bundled companion worker -> companion\"
 } else {
     Write-Warning "Companion payload not found ($payloadDir) - the installer will ship without the Android Share worker."
+}
+
+# The Companion app itself (Share Manager, net10) - published self-contained next
+# to the LITE exe, so the installer's `share` component can ship it.
+$companionProj = Join-Path $solutionDir "src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj"
+if (Test-Path $companionProj) {
+    $companionPub = Join-Path $stageDir "companion-publish-tmp"
+    Write-Host "Publishing Companion (Share Manager, net10 self-contained).."
+    & dotnet publish $companionProj -c Release -r win-x64 -o $companionPub -v minimal --nologo
+    if ($LASTEXITCODE -ne 0) { throw "dotnet publish (Companion) failed with exit code $LASTEXITCODE." }
+    $companionExe = Join-Path $companionPub "FastMediaSorterCompanion.exe"
+    if (-not (Test-Path $companionExe)) { throw "Companion exe not found at $companionExe after publish." }
+    Copy-Item $companionExe $stageDir -Force
+    Remove-Item -LiteralPath $companionPub -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Host "Bundled Companion exe -> FastMediaSorterCompanion.exe"
+} else {
+    Write-Warning "Companion project not found ($companionProj) - the installer will ship without the Share Manager app."
 }
 
 # --- OCR offline payload ----------------------------------------------------

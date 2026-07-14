@@ -25,6 +25,8 @@ Public NotInheritable Class MainWindow
     Private _listPopulated As Boolean
     Private _reachPollGen As Integer
     Private _testing As Boolean
+    Private _openShareWhenReady As Boolean
+    Private _wizardOpen As Boolean
     Private ReadOnly _settings As New ShareSettings()
     Private _status As WorkerStatus
     Private _suppressCheck As Boolean
@@ -51,6 +53,11 @@ Public NotInheritable Class MainWindow
     Private lblState As Label
     Private lnkRouter As LinkLabel
     Private lblHint As Label
+    Private pnlStats As TableLayoutPanel
+    Private lblStatLast As Label
+    Private lblStatConns As Label
+    Private lblStatFiles As Label
+    Private _statsTimer As Timer   ' periodic status refresh so the usage block stays live while the window is open
     Private lnkAndroid As LinkLabel
     Private lnkSiteGuide As LinkLabel
     Private lnkRouterSearch As LinkLabel
@@ -97,19 +104,22 @@ Public NotInheritable Class MainWindow
     Private Sub BuildUi()
         Me.Text = "Fast Media Sorter: Share Manager"
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.MinimumSize = New Size(880, 620)
-        Me.ClientSize = New Size(940, 680)
+        Me.MinimumSize = New Size(980, 700)
+        Me.ClientSize = New Size(1320, 880)
         Me.AutoScaleMode = AutoScaleMode.Font
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
         _shareGlyph = ShareIcons.CreateGlyphBitmap(22)
         toolTip = New ToolTip()
+        _statsTimer = New Timer With {.Interval = 10000}
+        AddHandler _statsTimer.Tick, AddressOf OnStatsTick
 
         ' --- top strip: neutral one-liner + big Share button --------------------
         Dim pnlTop As New Panel With {.Dock = DockStyle.Top, .Height = 66, .Padding = New Padding(16, 14, 16, 8)}
-        Dim lblIntro As New Label With {.Dock = DockStyle.Fill, .Text = If(Rus,
-            "Откройте папки этого ПК на телефоне по SFTP - дома по Wi-Fi или через интернет.",
-            "Open this PC's folders on your phone over SFTP - on home Wi-Fi or via the internet.")}
-        btnShare = New Button With {.Dock = DockStyle.Right, .Width = 240,
+        Dim lblIntro As New Label With {.Dock = DockStyle.Fill, .AutoEllipsis = True, .TextAlign = ContentAlignment.MiddleLeft, .Text = If(Rus,
+            "Откройте папки этого ПК на телефоне - по Wi-Fi или через интернет.",
+            "Open this PC's folders on your phone - over Wi-Fi or the internet.")}
+        btnShare = New Button With {.Dock = DockStyle.Right, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .Padding = New Padding(18, 6, 18, 6),
             .Font = New Font(Me.Font.FontFamily, Me.Font.Size + 2.0F, FontStyle.Bold),
             .Text = If(Rus, "Поделиться", "Share"), .Image = _shareGlyph,
             .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
@@ -130,57 +140,79 @@ Public NotInheritable Class MainWindow
         pnlBottom.Controls.Add(flow)
         pnlBottom.Controls.Add(lblHint)
 
-        ' --- right column: phone access -----------------------------------------
-        Dim grpServer As New GroupBox With {.Dock = DockStyle.Right, .Width = 470, .Padding = New Padding(14, 8, 14, 12),
+        ' --- right column: phone access. Structure that survives any DPI + scrollbar:
+        '   outer = single-column (Percent 100) TableLayoutPanel, AutoScroll vertical
+        '     - lblState
+        '     - addr sub-grid (caption | value | copy) - AutoSize, left-packed, never spans
+        '     - full-width action buttons (Dock=Fill) one per row
+        ' The address rows and the wide buttons live in DIFFERENT panels, so a long button
+        ' can never widen the address columns and a vertical scrollbar (single Percent
+        ' column) can never trigger a horizontal one. -----------------------------------
+        Dim grpServer As New GroupBox With {.Dock = DockStyle.Right, .Width = 500, .Padding = New Padding(14, 8, 14, 12),
             .Text = If(Rus, "Доступ с телефона", "Phone access")}
-        Dim stack As New FlowLayoutPanel With {.Dock = DockStyle.Fill, .FlowDirection = FlowDirection.TopDown,
-            .WrapContents = False, .AutoScroll = True, .Padding = New Padding(0, 6, 0, 0)}
+        Dim outer As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .AutoScroll = True}
+        outer.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
-        lblState = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 8), .Font = New Font(Me.Font, FontStyle.Bold)}
+        lblState = New Label With {.AutoSize = True, .Margin = New Padding(0, 4, 0, 10), .Font = New Font(Me.Font, FontStyle.Bold)}
+        AddRow(outer, lblState)
 
-        ' Borderless 3-column grid: caption | value | copy button.
-        Dim grid As New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .ColumnCount = 3, .Margin = New Padding(0, 0, 0, 4)}
+        Dim grid As New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 3, .Margin = New Padding(0)}
         grid.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
         grid.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
         grid.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
-
-        btnTest = New Button With {.AutoSize = True, .Margin = New Padding(8, 1, 0, 0), .Text = If(Rus, "Тест", "Test"), .Visible = False}
-        AddHandler btnTest.Click, AddressOf OnTestClicked
-        toolTip.SetToolTip(btnTest, If(Rus, "Проверить доступ из интернета с этого ПК (окончательно - только с телефона по мобильной сети).",
-                                            "Probe the internet address from this PC (definitive test is from the phone on mobile data)."))
-
-        AddServerRow(grid, If(Rus, "Через интернет:", "Via internet:"), AddressOf InternetStatusDisplay, AddressOf InternetAddressValue, True, btnTest)
+        AddServerRow(grid, If(Rus, "Через интернет:", "Via internet:"), AddressOf InternetStatusDisplay, AddressOf InternetAddressValue, True)
         AddServerRow(grid, If(Rus, "Дома (Wi-Fi):", "Home (Wi-Fi):"), AddressOf LanDisplay, AddressOf CurrentLanAddress, True)
         AddServerRow(grid, If(Rus, "IPv6:", "IPv6:"), AddressOf Ipv6Value, AddressOf Ipv6Value, False)
         AddServerRow(grid, If(Rus, "Ключ узла:", "Host key:"), AddressOf FingerprintValue, AddressOf FingerprintValue, False)
         AddServerRow(grid, If(Rus, "Логин:", "Login:"), AddressOf LoginValue, AddressOf LoginValue, False)
         AddServerRow(grid, If(Rus, "Пароль:", "Password:"), AddressOf PasswordValue, AddressOf PasswordValue, False)
+        AddRow(outer, grid)
+
+        btnTest = New Button With {.Dock = DockStyle.Fill, .Height = 34, .Margin = New Padding(0, 8, 0, 2),
+            .Text = If(Rus, "Проверить доступ из интернета", "Test internet access"), .Visible = False}
+        AddHandler btnTest.Click, AddressOf OnTestClicked
+        AddRow(outer, btnTest)
 
         lnkRouter = New LinkLabel With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 8)}
         AddHandler lnkRouter.LinkClicked, Sub() OnOpenRouter(Me, EventArgs.Empty)
+        AddRow(outer, lnkRouter)
 
-        btnGuide = New Button With {.Width = 436, .Height = 32, .Margin = New Padding(0, 4, 0, 4), .Text = If(Rus, "Как настроить доступ через интернет", "How to set up internet access")}
+        btnGuide = New Button With {.Dock = DockStyle.Fill, .Height = 34, .Margin = New Padding(0, 4, 0, 4), .Text = If(Rus, "Как настроить доступ через интернет", "How to set up internet access")}
         AddHandler btnGuide.Click, AddressOf OnInternetAccess
-        btnToggle = New Button With {.Width = 436, .Height = 40, .Margin = New Padding(0, 4, 0, 6), .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(Rus, "Начать раздачу", "Start sharing")}
+        AddRow(outer, btnGuide)
+        btnToggle = New Button With {.Dock = DockStyle.Fill, .Height = 42, .Margin = New Padding(0, 4, 0, 6), .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(Rus, "Начать раздачу", "Start sharing")}
         AddHandler btnToggle.Click, AddressOf OnToggle
+        AddRow(outer, btnToggle)
         chkAutostart = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 0), .Text = If(Rus, "Запускать при входе в Windows", "Start at Windows logon")}
         AddHandler chkAutostart.CheckedChanged, AddressOf OnAutostartChanged
+        AddRow(outer, chkAutostart)
 
-        stack.Controls.AddRange(New Control() {lblState, grid, lnkRouter, btnGuide, btnToggle, chkAutostart})
-        grpServer.Controls.Add(stack)
+        ' --- usage stats block (only shown while serving; live-refreshed by _statsTimer) ---
+        pnlStats = New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 2, .Margin = New Padding(0, 18, 0, 0), .Visible = False}
+        pnlStats.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
+        pnlStats.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
+        Dim statsHead As New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 6), .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(Rus, "Статистика раздачи", "Usage")}
+        pnlStats.Controls.Add(statsHead, 0, 0) : pnlStats.SetColumnSpan(statsHead, 2)
+        lblStatLast = AddStatRow(pnlStats, If(Rus, "Последнее подключение:", "Last connection:"), 1)
+        lblStatConns = AddStatRow(pnlStats, If(Rus, "Подключений:", "Connections:"), 2)
+        lblStatFiles = AddStatRow(pnlStats, If(Rus, "Файлов отдано:", "Files served:"), 3)
+        toolTip.SetToolTip(lblStatConns, If(Rus, "Считается каждый сеанс связи. Один телефон может подключаться несколько раз (проверка доступа, просмотр файла, переподключение).",
+                                                 "Counts each connection session. One phone can connect several times (reachability check, opening a file, reconnects)."))
+        AddRow(outer, pnlStats)
+
+        grpServer.Controls.Add(outer)
 
         ' --- center: shared-folder list, buttons ABOVE the table ---------------
         Dim grpShares As New GroupBox With {.Dock = DockStyle.Fill, .Padding = New Padding(14, 8, 14, 12),
             .Text = If(Rus, "Общие папки", "Shared folders")}
 
-        Dim pnlListButtons As New FlowLayoutPanel With {.Dock = DockStyle.Top, .Height = 46, .Padding = New Padding(0, 6, 0, 6)}
-        btnAdd = New Button With {.Width = 170, .Height = 34, .Text = If(Rus, "Добавить папку..", "Add folder.."),
+        Dim pnlListButtons As New FlowLayoutPanel With {.Dock = DockStyle.Top, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(0, 6, 0, 6)}
+        btnAdd = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 6, 12, 6), .Text = If(Rus, "Добавить папку..", "Add folder.."),
             .Image = _addGlyph, .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
             .TextAlign = ContentAlignment.MiddleCenter, .Font = New Font(Me.Font, FontStyle.Bold)}
-        btnAddCurrent = New Button With {.Width = 150, .Height = 34, .Text = If(Rus, "+ Текущая", "+ Current"), .Visible = _initialFolder.Length > 0}
-        btnRemove = New Button With {.Width = 96, .Height = 34, .Text = If(Rus, "Убрать", "Remove")}
-        btnParams = New Button With {.Width = 116, .Height = 34, .Text = If(Rus, "Настроить..", "Options..")}
+        btnAddCurrent = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(8, 6, 8, 6), .Text = If(Rus, "+ Текущая", "+ Current"), .Visible = _initialFolder.Length > 0}
+        btnRemove = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 6, 10, 6), .Text = If(Rus, "Убрать", "Remove")}
+        btnParams = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 6, 10, 6), .Text = If(Rus, "Настроить..", "Options..")}
         AddHandler btnAdd.Click, AddressOf OnAddFolder
         AddHandler btnAddCurrent.Click, AddressOf OnAddCurrentFolder
         AddHandler btnRemove.Click, AddressOf OnRemoveFolder
@@ -253,29 +285,81 @@ Public NotInheritable Class MainWindow
     ''' The value label width is capped so long values (host key, password) wrap and the
     ''' copy column stays aligned. <paramref name="extra"/> (the Test button) rides in the
     ''' value cell next to the value.</summary>
-    Private Sub AddServerRow(grid As TableLayoutPanel, caption As String, valueFunc As Func(Of String), copyFunc As Func(Of String), alwaysShow As Boolean, Optional extra As Control = Nothing)
+    Private Sub AddServerRow(grid As TableLayoutPanel, caption As String, valueFunc As Func(Of String), copyFunc As Func(Of String), alwaysShow As Boolean)
         Dim row As Integer = grid.RowCount
         grid.RowCount = row + 1
         grid.RowStyles.Add(New RowStyle(SizeType.AutoSize))
 
-        Dim cap As New Label With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 5, 12, 5), .ForeColor = Color.DimGray, .Text = caption}
-        Dim val As New Label With {.AutoSize = True, .MaximumSize = New Size(250, 0), .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 5, 8, 5)}
-        Dim copy As New Button With {.Width = 26, .Height = 24, .Margin = New Padding(0, 3, 0, 3), .Image = _copyGlyph,
-            .ImageAlign = ContentAlignment.MiddleCenter, .FlatStyle = FlatStyle.System, .TabStop = False, .Anchor = AnchorStyles.Left, .Tag = copyFunc}
+        Dim cap As New Label With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 6, 12, 6), .ForeColor = Color.DimGray, .Text = caption}
+        ' Fixed-width single-line value cell with ellipsis: a long fingerprint/IPv6 is
+        ' truncated (user copies it with the button) instead of wrapping to 3 lines or
+        ' pushing the copy button off the edge. Scales with AutoScaleMode.Font.
+        Dim val As New Label With {.AutoSize = False, .Height = 24, .Width = 190, .Anchor = AnchorStyles.Left,
+            .AutoEllipsis = True, .TextAlign = ContentAlignment.MiddleLeft, .Margin = New Padding(0, 4, 8, 4)}
+        ' NB: default (Standard) FlatStyle - a System-styled button is OS-drawn and ignores
+        ' the managed Image, so the copy glyph would not appear.
+        Dim copy As New Button With {.Width = 28, .Height = 26, .Margin = New Padding(2, 3, 0, 3), .Image = _copyGlyph,
+            .ImageAlign = ContentAlignment.MiddleCenter, .TabStop = False, .Anchor = AnchorStyles.Left, .Tag = copyFunc}
         toolTip.SetToolTip(copy, If(Rus, "Копировать в буфер", "Copy to clipboard"))
         AddHandler copy.Click, AddressOf OnCopyClick
 
         grid.Controls.Add(cap, 0, row)
-        If extra Is Nothing Then
-            grid.Controls.Add(val, 1, row)
-        Else
-            Dim vp As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = False, .Margin = New Padding(0), .Padding = New Padding(0)}
-            vp.Controls.Add(val)
-            vp.Controls.Add(extra)
-            grid.Controls.Add(vp, 1, row)
-        End If
+        grid.Controls.Add(val, 1, row)
         grid.Controls.Add(copy, 2, row)
         _serverRows.Add(New ServerRow(cap, val, copy, valueFunc, copyFunc, alwaysShow))
+    End Sub
+
+    ''' <summary>Caption (col0) + value label (col1) for the usage-stats block.</summary>
+    Private Shared Function AddStatRow(tlp As TableLayoutPanel, caption As String, row As Integer) As Label
+        tlp.Controls.Add(New Label With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 3, 12, 1), .ForeColor = Color.DimGray, .Text = caption}, 0, row)
+        Dim val As New Label With {.AutoSize = True, .MaximumSize = New Size(300, 0), .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 3, 0, 1), .Text = "-"}
+        tlp.Controls.Add(val, 1, row)
+        Return val
+    End Function
+
+    ''' <summary>Fills the usage-stats block from the current Status.Stats. Hidden when the
+    ''' server is off or the (older) worker sends no stats.</summary>
+    Private Sub UpdateStatsBlock()
+        Dim running As Boolean = _status IsNot Nothing AndAlso _status.Running
+        Dim s As WorkerStats = If(_status IsNot Nothing, _status.Stats, Nothing)
+        If Not running OrElse s Is Nothing Then
+            pnlStats.Visible = False
+            Return
+        End If
+        pnlStats.Visible = True
+        Dim never As String = If(Rus, "ещё не было", "never")
+        Dim lastAt As String = Share_Status_Form.FormatTime(s.LastConnectionAt)
+        If lastAt.Length = 0 Then
+            lblStatLast.Text = never
+        ElseIf String.IsNullOrEmpty(s.LastConnectionAddress) Then
+            lblStatLast.Text = lastAt
+        Else
+            lblStatLast.Text = lastAt & "  -  " & s.LastConnectionAddress
+        End If
+        lblStatConns.Text = String.Format(If(Rus, "всего {0} (с запуска {1})", "{0} total ({1} since start)"), s.TotalConnections, s.ConnectionsSinceStart)
+        lblStatFiles.Text = String.Format(If(Rus, "всего {0} (с запуска {1})", "{0} total ({1} since start)"), s.FilesServedTotal, s.FilesServedSinceStart)
+    End Sub
+
+    Private Sub OnStatsTick(sender As Object, e As EventArgs)
+        Dim t As Task = RefreshStatsAsync()
+    End Sub
+
+    ''' <summary>Re-fetches status just for the usage block (light - does not run the full
+    ''' ApplyStatusToUi, so it never fights the user's in-flight actions).</summary>
+    Private Async Function RefreshStatsAsync() As Task
+        If _busy OrElse Not Me.Visible Then Return
+        Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+        If IsDisposed OrElse st Is Nothing Then Return
+        _status = st
+        UpdateStatsBlock()
+    End Function
+
+    ''' <summary>Appends a control on a new auto-height row in a single-column panel.</summary>
+    Private Shared Sub AddRow(tlp As TableLayoutPanel, c As Control)
+        Dim row As Integer = tlp.RowCount
+        tlp.RowCount = row + 1
+        tlp.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+        tlp.Controls.Add(c, 0, row)
     End Sub
 
     Private Sub OnCopyClick(sender As Object, e As EventArgs)
@@ -298,8 +382,9 @@ Public NotInheritable Class MainWindow
         Using g As Graphics = Graphics.FromImage(bmp)
             g.SmoothingMode = SmoothingMode.AntiAlias
             g.Clear(Color.Transparent)
-            Using back As New SolidBrush(Color.FromArgb(250, 250, 250)) : g.FillRectangle(back, 3, 2, 7, 9) : End Using
-            Using p As New Pen(Color.FromArgb(110, 110, 110), 1.2F)
+            ' Back page (offset), then front page over it - clear two-document "copy" mark.
+            Using back As New SolidBrush(Color.FromArgb(214, 224, 238)) : g.FillRectangle(back, 3, 2, 7, 9) : End Using
+            Using p As New Pen(Color.FromArgb(64, 92, 140), 1.3F)
                 g.DrawRectangle(p, 3, 2, 7, 9)
                 Using b As New SolidBrush(Color.White) : g.FillRectangle(b, 6, 5, 7, 9) : End Using
                 g.DrawRectangle(p, 6, 5, 7, 9)
@@ -378,12 +463,29 @@ Public NotInheritable Class MainWindow
 
     ' --- lifecycle --------------------------------------------------------------
 
+    ''' <summary>Cap the window to the monitor working area and relax an over-large minimum.
+    ''' AutoScaleMode.Font multiplies the fixed ClientSize/MinimumSize by the DPI factor, so at
+    ''' 125-200% scaling the *minimum* can grow taller than a laptop screen - the window then
+    ''' can't fit (and can't be shrunk), and the Start/Stop button + autostart row fall off the
+    ''' bottom. The right-hand panel already AutoScrolls and the folder list flexes, so a capped
+    ''' window degrades cleanly.</summary>
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        DpiLayout.ClampToWorkingArea(Me)
+    End Sub
+
     Private Async Sub OnShownFirst(sender As Object, e As EventArgs)
         If _entered Then Return
         _entered = True
         Await EnterAsync()
+        _statsTimer.Start()   ' keep the usage-stats block live while the window is open
         If _initialFolder.Length > 0 AndAlso ServerFeatures.IsEnabled() AndAlso WorkerProcess.IsAvailable() Then
             If Directory.Exists(_initialFolder) AndAlso AddShareRow(_initialFolder) Then Await ApplySharedFoldersAsync()
+            OnShareClicked(Me, EventArgs.Empty)
+        ElseIf _openShareWhenReady Then
+            ' Deferred tray "Поделиться.." - status is loaded now; open the wizard if the
+            ' server came up, otherwise OnShareClicked will hint to start it.
+            _openShareWhenReady = False
             OnShareClicked(Me, EventArgs.Empty)
         End If
     End Sub
@@ -393,6 +495,7 @@ Public NotInheritable Class MainWindow
             _settings.Save()
         Catch
         End Try
+        Try : _statsTimer.Stop() : _statsTimer.Dispose() : Catch : End Try
         ShareIcons.FreeIcon(Me.Icon, _iconHandle)
     End Sub
 
@@ -783,12 +886,30 @@ Public NotInheritable Class MainWindow
 
         If running AndAlso Not _routerRequested Then Dim t As Task = DetectRouterAsync()
 
+        UpdateStatsBlock()
         RaiseEvent ServerStateChanged(running)
     End Sub
 
     ' --- package wizard + viewer launch ----------------------------------------
 
+    ''' <summary>Tray "Поделиться.." entry point: open the package wizard now if the
+    ''' server is already up, else defer until the first status load finishes (the tray
+    ''' can call this before OnShownFirst/EnterAsync has populated _status).</summary>
+    Friend Sub OpenShareWizardFromTray()
+        If _status Is Nothing Then
+            ' Fresh window - status not loaded yet. Defer ONLY here: OnShownFirst consumes
+            ' the flag once EnterAsync finishes. (Deferring in any other state leaves the
+            ' flag dead, since OnShownFirst runs exactly once - the review's dead-flag bug.)
+            _openShareWhenReady = True
+        Else
+            ' Window was already open (status loaded). Open now; OnShareClicked shows the
+            ' "start the server first" hint when the server is not running.
+            OnShareClicked(Me, EventArgs.Empty)
+        End If
+    End Sub
+
     Private Sub OnShareClicked(sender As Object, e As EventArgs)
+        If _wizardOpen Then Return   ' guard tray re-entry while the modal wizard is already up
         If _status Is Nothing OrElse Not _status.Running Then
             SetHint(If(Rus, "Сначала запустите сервер.", "Start the server first."))
             Return
@@ -797,9 +918,14 @@ Public NotInheritable Class MainWindow
         For Each it As ListViewItem In lvFolders.Items
             If it.Checked Then preselect.Add(Convert.ToString(it.Tag))
         Next
-        Using dlg As New PackageWizardForm(preselect)
-            dlg.ShowDialog(Me)
-        End Using
+        _wizardOpen = True
+        Try
+            Using dlg As New PackageWizardForm(preselect)
+                dlg.ShowDialog(Me)
+            End Using
+        Finally
+            _wizardOpen = False
+        End Try
     End Sub
 
     Private Sub OnInternetAccess(sender As Object, e As EventArgs)

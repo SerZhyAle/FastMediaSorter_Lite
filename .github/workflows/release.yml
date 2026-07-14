@@ -39,6 +39,13 @@ jobs:
 
       - uses: microsoft/setup-msbuild@v3
 
+      # .NET 10 SDK - required to build the Companion app (Share Manager,
+      # src/FastMediaSorterCompanion, net10.0-windows). Without it the .sln build
+      # (which now includes that project) fails and the Companion never ships.
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
       - uses: NuGet/setup-nuget@v4
 
       # Кэш NuGet-пакетов. Эффект небольшой (packages/ вендорится в репо),
@@ -53,8 +60,18 @@ jobs:
       - name: Restore NuGet packages
         run: nuget restore FastMediaSorter.sln
 
+      # Build the whole solution (LITE net48 + Companion net10). The bare
+      # FastMediaSorter.vbproj is old-style and only resolves its Release|AnyCPU
+      # OutputPath through the .sln, so build the solution, not the project.
+      # setup-dotnet (above) supplies the net10 SDK the Companion project needs.
       - name: Build Release
         run: msbuild FastMediaSorter.sln /p:Configuration=Release /p:Platform="Any CPU" /p:ReleaseVersion=${{ steps.ver.outputs.version }} /t:Rebuild /v:minimal /nologo
+
+      # Companion app (Share Manager, net10) - self-contained single-file exe so
+      # users without the .NET 10 runtime can still run it. Output goes to
+      # companion-publish/FastMediaSorterCompanion.exe, staged below.
+      - name: Publish Companion (Share Manager, net10 self-contained)
+        run: dotnet publish src/FastMediaSorterCompanion/FastMediaSorterCompanion.vbproj -c Release -r win-x64 -o companion-publish -v minimal --nologo
 
       - name: Stage release files
         id: stage
@@ -93,6 +110,19 @@ jobs:
 
           if (Test-Path README.md) { Copy-Item README.md $stage }
           if (Test-Path LICENSE)   { Copy-Item LICENSE   $stage }
+
+          # Android Folder Share payload: the Companion exe (published above) next
+          # to the LITE exe, and the committed Go worker under companion\. Both are
+          # picked up by the installer's `share` component and shipped in the ZIP.
+          $companionExe = "companion-publish/FastMediaSorterCompanion.exe"
+          if (-not (Test-Path $companionExe)) { throw "Companion exe not found at $companionExe (dotnet publish step failed?)" }
+          Copy-Item $companionExe $stage
+
+          $worker = "payload/companion/fms-share-worker.exe"
+          if (-not (Test-Path $worker)) { throw "SFTP worker not found at $worker (should be committed in the repo)" }
+          $stageCompanion = Join-Path $stage "companion"
+          New-Item -ItemType Directory -Path $stageCompanion -Force | Out-Null
+          Copy-Item "payload/companion/*" $stageCompanion -Recurse -Force
 
           "stage=$stage" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Get-ChildItem $stage -Recurse | Format-Table -AutoSize

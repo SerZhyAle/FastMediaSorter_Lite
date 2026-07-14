@@ -482,7 +482,15 @@ Public Class Main_Form
         End If
 
         Table_Form.PrepareForDisplay()
-        Table_Form.Show(Me)
+        ' Show() on an already-visible form throws ("Form that is already visible
+        ' cannot be displayed as a modal dialog box.") and, unhandled, kills the app -
+        ' so a second click on "Настройки" while the window is open just re-surfaces it.
+        If Table_Form.Visible Then
+            If Table_Form.WindowState = FormWindowState.Minimized Then Table_Form.WindowState = FormWindowState.Normal
+            Table_Form.Activate()
+        Else
+            Table_Form.Show(Me)
+        End If
     End Sub
 
     ' lbl_Folder.MouseClick used to also run CopyFilePathToClipboard() here, which

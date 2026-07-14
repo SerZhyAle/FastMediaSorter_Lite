@@ -12,6 +12,10 @@ Imports System.Windows.Forms
 ''' reachability status, the step-by-step text (security note + how to forward the
 ''' port, or the UPnP/CGNAT explanation), a self SFTP probe ("Тест"), and a link to
 ''' the richer offline HTML guide (prefilled with your values + detected router).
+''' Built with a TableLayoutPanel + AutoSize controls (NOT absolute pixel Left/Top/
+''' Width) so the Test/Refresh/Close buttons and the guide link never get clipped
+''' at high display scaling - the row heights/widths follow actual control content
+''' instead of a fixed pixel layout computed for 96 DPI.
 ''' </summary>
 Public NotInheritable Class InternetAccessForm
     Inherits Form
@@ -19,6 +23,7 @@ Public NotInheritable Class InternetAccessForm
     Private _status As WorkerStatus
     Private _router As RouterIdentity
     Private _testing As Boolean
+    Private _iconHandle As IntPtr
 
     Private lblNet As Label
     Private btnTestNet As Button
@@ -41,48 +46,91 @@ Public NotInheritable Class InternetAccessForm
 
     Private Sub BuildUi()
         Me.Text = If(Rus, "Инструкция по пробросу порта", "Port-forward guide")
+        Me.Icon = ShareIcons.CreateIcon(_iconHandle)
+        AddHandler Me.FormClosed, Sub() ShareIcons.FreeIcon(Me.Icon, _iconHandle)
         Me.FormBorderStyle = FormBorderStyle.Sizable
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(600, 460)
-        Me.MinimumSize = New Size(520, 400)
         Me.AutoScaleMode = AutoScaleMode.Font
+        Me.MinimumSize = New Size(560, 420)
+        Me.ClientSize = New Size(680, 520)
 
         Dim tip As New ToolTip()
 
-        lblNet = New Label With {.Left = 12, .Top = 12, .Width = 400, .Height = 22, .AutoEllipsis = True,
-            .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right, .Font = New Font(Me.Font, FontStyle.Bold)}
-        btnTestNet = New Button With {.Left = 400, .Top = 10, .Width = 90, .Height = 26, .Text = If(Rus, "Тест", "Test"),
-            .Anchor = AnchorStyles.Top Or AnchorStyles.Right}
-        btnRefresh = New Button With {.Left = 498, .Top = 10, .Width = 90, .Height = 26, .Text = If(Rus, "Обновить", "Refresh"),
-            .Anchor = AnchorStyles.Top Or AnchorStyles.Right}
+        ' Single root TableLayoutPanel, one column, explicit rows - no Dock-stacking
+        ' order to guess at. Header/footer rows are AutoSize (sized to the actual
+        ' button/label content); the guide link gets a fixed roomy row so its
+        ' two-dot sentence can wrap to two lines instead of being clipped; the
+        ' instructions text box is the only row that stretches (Percent 100).
+        Dim root As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .RowCount = 4, .Padding = New Padding(12)}
+        root.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
+        root.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+        root.RowStyles.Add(New RowStyle(SizeType.Absolute, 44.0F))
+        root.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
+        root.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+
+        ' --- row 0: status line + Test/Refresh (buttons AutoSize -> never clipped) --
+        Dim header As New TableLayoutPanel With {.Dock = DockStyle.Fill, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .ColumnCount = 2, .Margin = New Padding(0, 0, 0, 10)}
+        header.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
+        header.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
+        lblNet = New Label With {.Dock = DockStyle.Fill, .AutoEllipsis = True, .TextAlign = ContentAlignment.MiddleLeft,
+            .Font = New Font(Me.Font, FontStyle.Bold), .Margin = New Padding(0, 6, 12, 0)}
+        Dim btnFlow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .WrapContents = False, .Margin = New Padding(0)}
+        btnTestNet = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
+            .Margin = New Padding(0, 0, 8, 0), .Text = If(Rus, "Тест", "Test")}
+        btnRefresh = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
+            .Margin = New Padding(0), .Text = If(Rus, "Обновить", "Refresh")}
         AddHandler btnTestNet.Click, AddressOf OnTestNet
         AddHandler btnRefresh.Click, AddressOf OnRefresh
         tip.SetToolTip(btnTestNet, If(Rus, "Проверить внешний адрес с этого ПК (не окончательно - роутер может не пускать на свой адрес изнутри).",
                                           "Probe the external address from this PC (inconclusive - a router may refuse its own address from inside)."))
+        btnFlow.Controls.Add(btnTestNet)
+        btnFlow.Controls.Add(btnRefresh)
+        header.Controls.Add(lblNet, 0, 0)
+        header.Controls.Add(btnFlow, 1, 0)
+        root.Controls.Add(header, 0, 0)
 
-        lnkGuide = New LinkLabel With {.Left = 12, .Top = 42, .Width = 576, .Height = 20,
-            .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right,
+        ' --- row 1: link to the detailed offline guide (wraps within its own row) --
+        lnkGuide = New LinkLabel With {.Dock = DockStyle.Fill, .AutoSize = False, .Margin = New Padding(0, 0, 0, 10),
             .Text = If(Rus, "Открыть подробную инструкцию (HTML, с вашими значениями и моделью роутера)..",
                             "Open the detailed guide (HTML, prefilled with your values + router model)..")}
         AddHandler lnkGuide.LinkClicked, AddressOf OnOpenGuide
+        root.Controls.Add(lnkGuide, 0, 1)
 
-        txtForward = New TextBox With {.Left = 12, .Top = 68, .Width = 576, .Height = 344,
+        ' --- row 2: the instructions themselves, the only part that stretches ------
+        txtForward = New TextBox With {.Dock = DockStyle.Fill, .Margin = New Padding(0, 0, 0, 10),
             .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical, .BorderStyle = BorderStyle.FixedSingle,
-            .BackColor = SystemColors.Window,
-            .Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right}
+            .BackColor = SystemColors.Window}
+        root.Controls.Add(txtForward, 0, 2)
 
-        lblHint = New Label With {.Left = 12, .Top = 420, .Width = 470, .Height = 30, .ForeColor = Color.DimGray, .AutoEllipsis = True,
-            .Anchor = AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right}
-        btnClose = New Button With {.Left = 506, .Top = 424, .Width = 82, .Height = 28, .Text = If(Rus, "Закрыть", "Close"),
-            .Anchor = AnchorStyles.Bottom Or AnchorStyles.Right, .DialogResult = DialogResult.OK}
+        ' --- row 3: hint + Close ----------------------------------------------------
+        Dim footer As New TableLayoutPanel With {.Dock = DockStyle.Fill, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .ColumnCount = 2, .Margin = New Padding(0)}
+        footer.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
+        footer.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
+        lblHint = New Label With {.Dock = DockStyle.Fill, .AutoEllipsis = True, .ForeColor = Color.DimGray,
+            .TextAlign = ContentAlignment.MiddleLeft, .Margin = New Padding(0, 6, 12, 0)}
+        btnClose = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(16, 4, 16, 4),
+            .Margin = New Padding(0), .Text = If(Rus, "Закрыть", "Close"), .DialogResult = DialogResult.OK}
+        footer.Controls.Add(lblHint, 0, 0)
+        footer.Controls.Add(btnClose, 1, 0)
+        root.Controls.Add(footer, 0, 3)
 
-        Me.Controls.AddRange(New Control() {lblNet, btnTestNet, btnRefresh, lnkGuide, txtForward, lblHint, btnClose})
+        Me.Controls.Add(root)
         Me.CancelButton = btnClose
 
         AddHandler Me.Shown, AddressOf OnShownFirst
         Render()
+    End Sub
+
+    ''' <summary>Keep the (font-scaled) window within the monitor working area at high DPI. It is
+    ''' Sizable with a stretchy instructions box, so a capped size just shortens that box.</summary>
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        DpiLayout.ClampToWorkingArea(Me)
     End Sub
 
     Private Async Sub OnShownFirst(sender As Object, e As EventArgs)

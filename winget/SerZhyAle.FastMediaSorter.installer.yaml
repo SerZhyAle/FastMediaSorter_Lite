@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json
 # NOTE: This is the shape that PASSED validation in PR microsoft/winget-pkgs#386820.
 # Do NOT add `Scope`, `Dependencies`, or `NestedInstallerType` here - each one
-# fails winget validation. See docs/specifications/SPECIFICATION_WINGET_PUBLISHING.md before editing.
+# fails winget validation. See docs/specifications/done/SPECIFICATION_WINGET_PUBLISHING.md before editing.
 
 PackageIdentifier: SerZhyAle.FastMediaSorter
 PackageVersion: "26.6.12.0031"

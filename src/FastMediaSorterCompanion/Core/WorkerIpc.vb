@@ -123,6 +123,30 @@ Public Class WorkerStatus
     ''' <summary>Always present (may be empty). Last server-side error text.</summary>
     Public Property LastError As String
     Public Property Reachability As WorkerReachability
+    ''' <summary>Local usage counters (SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md §3.2).
+    ''' Additive field - absent from an older worker, in which case it stays Nothing and is
+    ''' treated as "no data yet", never an error (same rule as <see cref="Reachability"/>).</summary>
+    Public Property Stats As WorkerStats
+End Class
+
+''' <summary>Local-only SFTP usage counters kept by the worker in <c>stats.json</c> and
+''' surfaced via GetStatus (SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md §3.1). NOT telemetry -
+''' these never leave the PC (invariant 1). Timestamps are UTC ISO8601 strings ("" = never).</summary>
+Public Class WorkerStats
+    ''' <summary>SFTP connections over all time (persists across worker restarts).</summary>
+    Public Property TotalConnections As Long
+    ''' <summary>SFTP connections since the current worker start (resets on restart).</summary>
+    Public Property ConnectionsSinceStart As Long
+    ''' <summary>UTC ISO8601 of the first-ever connection; "" if never.</summary>
+    Public Property FirstConnectionAt As String
+    ''' <summary>UTC ISO8601 of the most recent connection; "" if never.</summary>
+    Public Property LastConnectionAt As String
+    ''' <summary>Best-effort client address of the last connection; "" when unavailable.</summary>
+    Public Property LastConnectionAddress As String
+    ''' <summary>File-read operations served over all time (a file open for read; not listings).</summary>
+    Public Property FilesServedTotal As Long
+    ''' <summary>File-read operations served since the current worker start.</summary>
+    Public Property FilesServedSinceStart As Long
 End Class
 
 Public Class WorkerReachability
