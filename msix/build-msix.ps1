@@ -117,7 +117,7 @@ New-Item -ItemType Directory -Path (Join-Path $Stage 'Assets') -Force | Out-Null
 
 Write-Host 'Staging release payload (excluding *.pdb / *.xml)...'
 Get-ChildItem $ReleaseDir -Recurse -File |
-    Where-Object { $_.Extension -notin '.pdb', '.xml' } |
+    Where-Object { $_.Extension -notin '.pdb', '.xml', '.log' } |
     ForEach-Object {
         $rel  = Get-RelativePath $ReleaseDir $_.FullName
         $dest = Join-Path $Stage $rel
