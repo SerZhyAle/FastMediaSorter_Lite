@@ -16,11 +16,24 @@ Public Module ShareText
     End Function
 
     ''' <summary>Default hint under the primary QR when it is LAN-only (either the
-    ''' user ticked "LAN only" or no usable internet path exists).</summary>
+    ''' user ticked "LAN only" or no usable internet path exists). Carries the
+    ''' bearer-token caution (decision A, 2026-07-15): the QR/file IS the key, so a
+    ''' light "don't show it to others" rides even on the reassuring LAN copy.</summary>
     Public Function LanHintText(rus As Boolean) As String
         Return If(rus,
-            "Работает на телефоне в той же сети Wi-Fi. Ничего настраивать не нужно.",
-            "Works on a phone on the same Wi-Fi. Nothing to configure.")
+            "Работает на телефоне в той же сети Wi-Fi. Ничего настраивать не нужно. Любой, у кого есть этот код или файл, получит доступ к папкам - не показывайте его посторонним.",
+            "Works on a phone on the same Wi-Fi. Nothing to configure. Anyone who has this code or file can open the folders - do not show it to others.")
+    End Function
+
+    ''' <summary>Factual note (decision F, 2026-07-15): while a share runs, other
+    ''' devices on the CURRENT network - including a public Wi-Fi - can reach this PC
+    ''' on the share port, protected by the password. Deliberately calm, not a scare:
+    ''' same-network access (home, office Wi-Fi) is an intended capability. Surfaced
+    ''' near the share toggle and mirrored in the docs.</summary>
+    Public Function NetworkReachNote(rus As Boolean) As String
+        Return If(rus,
+            "Пока раздача включена, устройства в вашей текущей сети (в том числе в публичном Wi-Fi) могут подключиться к этому ПК по паролю. Выключайте раздачу, когда она не нужна.",
+            "While sharing is on, devices on your current network (including public Wi-Fi) can reach this PC using the password. Switch sharing off when you don't need it.")
     End Function
 
     ''' <summary>Hint under the primary QR when it carries BOTH addresses

@@ -24,6 +24,10 @@ Module Common_Module
     Public Is_HighQuality_Scaling As Boolean = True
     ' On-image overlay showing the file name + position (N/total).
     Public Is_Show_Info_Overlay As Boolean = False
+    ' Floating list of destination folders (recipients) shown top-left over the
+    ' media, so the current file can be sorted by clicking. Off by default (fresh
+    ' install / reinstall) - see SPECIFICATION_RECIPIENTS_OVERLAY_DOTNET48.md.
+    Public Is_Show_Recipients_Overlay As Boolean = False
     ' Base slideshow interval (ms); repeated start halves it down to the limit.
     Public Slideshow_Base_Interval_Ms As Integer = 10000
 

@@ -50,6 +50,7 @@ Public NotInheritable Class MainWindow
     Private btnGuide As Button
     Private btnTest As Button
     Private chkAutostart As CheckBox
+    Private numMaxConns As NumericUpDown
     Private lblState As Label
     Private lnkRouter As LinkLabel
     Private lblHint As Label
@@ -149,7 +150,7 @@ Public NotInheritable Class MainWindow
         ' can never widen the address columns and a vertical scrollbar (single Percent
         ' column) can never trigger a horizontal one. -----------------------------------
         Dim grpServer As New GroupBox With {.Dock = DockStyle.Right, .Width = 500, .Padding = New Padding(14, 8, 14, 12),
-            .Text = If(Rus, "Доступ с телефона", "Phone access")}
+            .Text = If(Rus, "Доступ с Android", "Android access")}
         Dim outer As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .AutoScroll = True}
         outer.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
@@ -187,6 +188,30 @@ Public NotInheritable Class MainWindow
         AddHandler chkAutostart.CheckedChanged, AddressOf OnAutostartChanged
         AddRow(outer, chkAutostart)
 
+        ' Max simultaneous connections - the DoS-resilience knob (2026-07-15 review).
+        ' Default 10; the user may set 1..99999 (their server, their call).
+        Dim pnlConns As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = False, .Margin = New Padding(0, 6, 0, 0)}
+        Dim lblConns As New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 6, 0),
+            .Text = If(Rus, "Макс. одновременных подключений:", "Max simultaneous connections:")}
+        numMaxConns = New NumericUpDown With {.Minimum = ShareSettings.MinMaxConnections, .Maximum = ShareSettings.MaxMaxConnections,
+            .Value = ShareSettings.DefaultMaxConnections, .Width = 84, .Margin = New Padding(0, 2, 0, 0)}
+        AddHandler numMaxConns.ValueChanged, AddressOf OnMaxConnsChanged
+        AddHandler numMaxConns.Leave, AddressOf OnMaxConnsCommit
+        pnlConns.Controls.Add(lblConns)
+        pnlConns.Controls.Add(numMaxConns)
+        AddRow(outer, pnlConns)
+        toolTip.SetToolTip(numMaxConns, If(Rus,
+            "Сколько устройств могут быть подключены одновременно. По умолчанию 10; можно от 1 до 99999. Значение меньше 2 может кратко отклонять переподключение телефона.",
+            "How many devices may be connected at once. Default 10; anything from 1 to 99999. Below 2 can briefly refuse a phone's reconnect."))
+
+        ' Calm, factual reachability note (decision F): same-network devices can reach
+        ' the share while it runs. Not a scare - an intended capability, surfaced here
+        ' and in the docs rather than gated behind a toggle the mobile user must flip.
+        Dim lblNetNote As New Label With {.AutoSize = True, .MaximumSize = New Size(340, 0),
+            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 8, 0, 0),
+            .Text = ShareText.NetworkReachNote(Rus)}
+        AddRow(outer, lblNetNote)
+
         ' --- usage stats block (only shown while serving; live-refreshed by _statsTimer) ---
         pnlStats = New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 2, .Margin = New Padding(0, 18, 0, 0), .Visible = False}
         pnlStats.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
@@ -222,7 +247,8 @@ Public NotInheritable Class MainWindow
         lvFolders = New ListView With {.Dock = DockStyle.Fill, .View = View.Details, .CheckBoxes = True,
             .FullRowSelect = True, .HideSelection = False, .MultiSelect = False}
         lvFolders.Columns.Add(If(Rus, "Название", "Name"), 170)
-        lvFolders.Columns.Add(If(Rus, "Папка", "Folder"), 320)
+        lvFolders.Columns.Add(If(Rus, "Тип", "Type"), 130)
+        lvFolders.Columns.Add(If(Rus, "Папка", "Folder"), 300)
         lvFolders.Columns.Add("RO", 50, HorizontalAlignment.Center)
         AddHandler lvFolders.MouseDown, AddressOf OnListMouseDown
         AddHandler lvFolders.ItemCheck, AddressOf OnItemCheck
@@ -547,6 +573,7 @@ Public NotInheritable Class MainWindow
             If AutostartManager.IsPackaged() Then
                 toolTip.SetToolTip(chkAutostart, If(Rus, "Автозапуском управляет Windows (пакет из Store).", "Autostart is managed by Windows (Store package)."))
             End If
+            numMaxConns.Value = ShareSettings.ClampConnections(_settings.MaxConnections)
         Catch
         Finally
             _loading = prev
@@ -700,7 +727,8 @@ Public NotInheritable Class MainWindow
                     If String.Equals(Convert.ToString(it.Tag), path, StringComparison.OrdinalIgnoreCase) Then
                         Dim lbl As String = If(dlg.Result.Label, "").Trim()
                         If lbl.Length > 0 Then it.Text = lbl
-                        it.SubItems(2).Text = RoLabel(dlg.Result)
+                        it.SubItems(1).Text = ProfileLabel(dlg.Result)
+                        it.SubItems(3).Text = RoLabel(dlg.Result)
                         Exit For
                     End If
                 Next
@@ -729,7 +757,8 @@ Public NotInheritable Class MainWindow
             If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
             Dim after As ShareRootParams = dlg.Result
             ShareRootParamsStore.SetFor(host, after)
-            it.SubItems(2).Text = RoLabel(after)
+            it.SubItems(1).Text = ProfileLabel(after)
+            it.SubItems(3).Text = RoLabel(after)
             If before.IsWritable() <> after.IsWritable() AndAlso it.Checked AndAlso _status IsNot Nothing AndAlso _status.Running Then
                 Await ApplySharedFoldersAsync()
             End If
@@ -761,12 +790,23 @@ Public NotInheritable Class MainWindow
         For Each existing As ListViewItem In lvFolders.Items
             If String.Equals(Convert.ToString(existing.Tag), path, StringComparison.OrdinalIgnoreCase) Then Return False
         Next
+        ' A freshly added folder defaults to the "Все файлы"/all_files profile (owner
+        ' request) unless it already carries saved params. Persist it so the column, the
+        ' resource dialog and the .fmscfg export all start from all_files. The class
+        ' default stays "none" (Android import default / v1-purity invariant); only a
+        ' new add in this app opts into all_files.
+        Dim prm As ShareRootParams = ShareRootParamsStore.GetFor(path)
+        If prm.IsDefault() Then
+            prm.Profile = "all_files"
+            ShareRootParamsStore.SetFor(path, prm)
+        End If
         Dim prev As Boolean = _loading
         _loading = True
         Try
             Dim it As New ListViewItem(ShareFolderDisplayName(path)) With {.Checked = True, .Tag = path}
+            it.SubItems.Add(ProfileLabel(prm))
             it.SubItems.Add(path)
-            it.SubItems.Add(RoLabel(ShareRootParamsStore.GetFor(path)))
+            it.SubItems.Add(RoLabel(prm))
             lvFolders.Items.Add(it)
         Finally
             _loading = prev
@@ -785,9 +825,11 @@ Public NotInheritable Class MainWindow
             For Each r As ShareFolder In roots
                 Dim host As String = If(r.hostPath, "")
                 If host.Length = 0 Then Continue For
+                Dim prm As ShareRootParams = ShareRootParamsStore.GetFor(host)
                 Dim it As New ListViewItem(If(String.IsNullOrEmpty(r.name), ShareFolderDisplayName(host), r.name)) With {.Checked = True, .Tag = host}
+                it.SubItems.Add(ProfileLabel(prm))
                 it.SubItems.Add(host)
-                it.SubItems.Add(RoLabel(ShareRootParamsStore.GetFor(host)))
+                it.SubItems.Add(RoLabel(prm))
                 lvFolders.Items.Add(it)
             Next
             RestripeList()
@@ -960,6 +1002,31 @@ Public NotInheritable Class MainWindow
         End Using
     End Sub
 
+    ' Persist the connection cap on every change (cheap, local); the live push to the
+    ' worker happens on Leave (OnMaxConnsCommit) so holding the spinner does not
+    ' restart the running server on each intermediate value.
+    Private Sub OnMaxConnsChanged(sender As Object, e As EventArgs)
+        If _loading Then Return
+        Try
+            _settings.MaxConnections = ShareSettings.ClampConnections(CInt(numMaxConns.Value))
+            _settings.Save()
+        Catch
+        End Try
+    End Sub
+
+    Private Async Sub OnMaxConnsCommit(sender As Object, e As EventArgs)
+        If _loading Then Return
+        Try
+            _settings.MaxConnections = ShareSettings.ClampConnections(CInt(numMaxConns.Value))
+            _settings.Save()
+        Catch
+        End Try
+        Try
+            Await ShareController.PushNetworkPolicyAsync()
+        Catch
+        End Try
+    End Sub
+
     Private Sub OnAutostartChanged(sender As Object, e As EventArgs)
         If _loading Then Return
         If AutostartManager.IsPackaged() Then Return
@@ -984,6 +1051,21 @@ Public NotInheritable Class MainWindow
         If Not p.IsWritable() Then Return "✓"
         If p.SoftReadOnly Then Return "~"
         Return ""
+    End Function
+
+    ''' <summary>"Тип" column: the folder's export profile in the same words the
+    ''' resource dialog's "Тип ресурса" combo uses. A plain (none) folder shows
+    ''' blank - like the RO column, the cell is empty at the default.</summary>
+    Private Shared Function ProfileLabel(p As ShareRootParams) As String
+        Dim token As String = If(p Is Nothing OrElse String.IsNullOrEmpty(p.Profile), "none", p.Profile)
+        Select Case token
+            Case "audio_library" : Return If(Rus, "Аудиотека", "Audio library")
+            Case "video_library" : Return If(Rus, "Видеотека", "Video library")
+            Case "photo_storage" : Return If(Rus, "Фотохранилище", "Photo storage")
+            Case "documents" : Return If(Rus, "Документы", "Documents")
+            Case "all_files" : Return If(Rus, "Все файлы", "All files")
+            Case Else : Return ""   ' none / regular folder - keep the cell clean
+        End Select
     End Function
 
     Private Shared Function ShareFolderDisplayName(path As String) As String

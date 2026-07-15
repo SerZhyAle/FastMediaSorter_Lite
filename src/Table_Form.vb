@@ -5,7 +5,6 @@ Imports System.ComponentModel
 Imports System.Diagnostics.Eventing.Reader
 
 Public Class Table_Form
-    Private set_This_Form_Top_Most As Boolean = False
     Private toolTip As ToolTip
 
     ''' <summary>Scales a design-time (96-dpi) pixel value to the current display DPI.
@@ -24,7 +23,10 @@ Public Class Table_Form
     End Sub
 
     Private Sub Form2_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
-        SaveSetting(App_name, Second_App_Name, "SetOnTop", If(set_This_Form_Top_Most, "1", "0"))
+        ' Destination folders may have been edited on the grid - rebuild the
+        ' recipients overlay so it reflects the current set (the show/hide flag is
+        ' persisted by Main_Form, not here anymore).
+        Main_Form.ApplyRecipientsOverlay()
         If toolTip IsNot Nothing Then
             toolTip.Dispose()
             toolTip = Nothing ' Устанавливаем переменную в Nothing после уничтожения
@@ -64,7 +66,7 @@ Public Class Table_Form
         toolTip.SetToolTip(num_Slideshow_Interval, If(Is_Russian_Language, "Базовый интервал слайдшоу в секундах. Запустите слайдшоу ещё раз - и оно ускорится вдвое, будто куда-то опаздывает.", "Base slideshow interval in seconds. Start the slideshow again and it halves the delay, as if it's late for something."))
         toolTip.SetToolTip(chk_Video_Mute, If(Is_Russian_Language, "Запускать видео без звука - для просмотра в приличном обществе.", "Start videos muted - for viewing in polite company."))
         toolTip.SetToolTip(num_Video_Volume, If(Is_Russian_Language, "Громкость видео по умолчанию (0-100%).", "Default video volume (0-100%)."))
-        toolTip.SetToolTip(SetOnTop, If(Is_Russian_Language, "Держать это окно поверх всех остальных - оно не любит, когда его задвигают.", "Keep this window on top of everything else - it doesn't enjoy being shoved behind."))
+        toolTip.SetToolTip(SetOnTop, If(Is_Russian_Language, "Плавающий список каталогов-получателей в левом верхнем углу поверх изображения/видео. Клик по строке - перенести/скопировать текущий файл в эту папку (или удалить). По умолчанию выключено.", "Floating list of destination folders, top-left over the image/video. Click a row to move/copy the current file there (or delete it). Off by default."))
 
         toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык интерфейса на английский", "Switch interface language to Russian"))
 
@@ -250,7 +252,7 @@ Public Class Table_Form
 
             btn_Set_As_Default.Text = "Зарегистрировать как программу просмотра изображений по умолчанию"
             btn_Set_As_Default_Video.Text = "Зарегистрировать как видеопроигрыватель по умолчанию"
-            SetOnTop.Text = "Держать это окно поверх остальных"
+            SetOnTop.Text = "Показывать таблицу получателей поверх медиафайла"
         Else
             Me.Text = "Settings"
             Data_Grid_View.Columns(0).HeaderText = "KEY"
@@ -292,17 +294,16 @@ Public Class Table_Form
 
             btn_Set_As_Default.Text = "Register as default image viewer"
             btn_Set_As_Default_Video.Text = "Register as default video player"
-            SetOnTop.Text = "Keep this window on top of others"
+            SetOnTop.Text = "Show recipients table over the media file"
         End If
 
         PrepareOcrTabForDisplay()
         BuildShareLauncherButtonIfNeeded()
         LocalizeShareLauncherButton()
 
-        Dim SetOnTopS As String = GetSetting(App_name, Second_App_Name, "SetOnTop", "1")
-        set_This_Form_Top_Most = SetOnTopS = "1"
-        SetOnTop.Checked = set_This_Form_Top_Most
-        Me.TopMost = set_This_Form_Top_Most
+        ' The checkbox now toggles the recipients overlay on the main window (see its
+        ' rename above), not this window's TopMost. State lives in Main_Form.
+        SetOnTop.Checked = Is_Show_Recipients_Overlay
 
         chb_perspectiva.Checked = Is_Pespective
 
@@ -337,8 +338,8 @@ Public Class Table_Form
     End Sub
 
     Private Sub SetOnTop_CheckedChanged(sender As Object, e As EventArgs) Handles SetOnTop.CheckedChanged
-        set_This_Form_Top_Most = SetOnTop.Checked
-        Me.TopMost = set_This_Form_Top_Most
+        Is_Show_Recipients_Overlay = SetOnTop.Checked
+        Main_Form.ApplyRecipientsOverlay()
     End Sub
 
     Private Sub Chk_Exif_AutoRotate_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Exif_AutoRotate.CheckedChanged

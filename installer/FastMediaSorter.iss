@@ -59,11 +59,12 @@ ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog commandline
 ; Installing/uninstalling is at minimum a version replacement - an already-running
-; instance (possibly tray-resident, so its window may be hidden) must not be left
-; holding the old exe open. Setup/Uninstall detect it via this single-instance
-; mutex (Main_Form.vb) and close it before touching files (see also
-; StopCompanionWorker in [Code] for the separate companion worker process, which
-; this mutex cannot see).
+; LITE instance must not be left holding the old exe open. Setup/Uninstall detect it
+; via this single-instance mutex (Main_Form.vb) and close it gracefully before
+; touching files. The tray-resident Companion app AND its worker are invisible to
+; this mutex (and cannot be closed by the Restart Manager - the Companion autostarts
+; to the tray and never exits on a window-close); StopCompanionWorker in [Code]
+; terminates both of those explicitly.
 AppMutex=FastMediaSorterSingleInstanceMutex
 ChangesAssociations=yes
 MinVersion=6.1
@@ -112,6 +113,21 @@ english.SelectComponentsLabel2=The viewer itself is small - most of the size is 
 russian.SelectComponentsLabel2=Сам просмотрщик весит мало - основной объём это опциональная оффлайн-начинка. Оставьте всё для полной работы без интернета или снимите ненужное (при необходимости оно скачается позже). Нажмите "Далее", когда будете готовы продолжить.
 ukrainian.SelectComponentsLabel2=Сам переглядач важить мало - основний обсяг це опційна офлайн-начинка. Залиште все для повної роботи без інтернету або зніміть непотрібне (за потреби воно завантажиться пізніше). Натисніть "Далі", коли будете готові продовжити.
 
+; Explain the admin choice at the exact spot it is made (the built-in "Select Setup
+; Install Mode" screen shown by PrivilegesRequiredOverridesAllowed=dialog), so the user
+; can weigh it and decide before any UAC prompt: admin (all users) unlocks the offline
+; codecs, OCR models and Android folder-sharing (which needs a firewall rule); without
+; admin (you only) they get just the lightweight viewer, which is a perfectly fine
+; choice. %1 = application name, %n = line break. Text1 is shown when "all users" is the
+; default and Text2 when "you only" is (our default is lowest -> Text2), so both carry
+; the same explanation.
+english.PrivilegesRequiredOverrideText1=%1 can be installed for all users of this computer (requires administrator rights) or for you only (no administrator rights).%n%nInstalling for all users additionally sets up the offline video codecs (VLC), the OCR / translation models and Android folder-sharing over SFTP (which adds a Windows Firewall rule). Installing for you only keeps it lightweight - just the image and video viewer.
+english.PrivilegesRequiredOverrideText2=%1 can be installed for you only (no administrator rights) or for all users of this computer (requires administrator rights).%n%nFor you only keeps it lightweight - just the image and video viewer. For all users additionally sets up the offline video codecs (VLC), the OCR / translation models and Android folder-sharing over SFTP (which adds a Windows Firewall rule).
+russian.PrivilegesRequiredOverrideText1=%1 можно установить для всех пользователей этого компьютера (нужны права администратора) или только для вас (без прав администратора).%n%nУстановка для всех пользователей дополнительно ставит оффлайн видео-кодеки (VLC), модели OCR и перевода, а также раздачу папок на Android по SFTP (для этого добавляется правило брандмауэра Windows). Установка только для вас оставляет всё лёгким - только просмотрщик изображений и видео.
+russian.PrivilegesRequiredOverrideText2=%1 можно установить только для вас (без прав администратора) или для всех пользователей этого компьютера (нужны права администратора).%n%nТолько для вас - оставляет всё лёгким, ставится только просмотрщик изображений и видео. Для всех пользователей - дополнительно ставит оффлайн видео-кодеки (VLC), модели OCR и перевода, а также раздачу папок на Android по SFTP (для этого добавляется правило брандмауэра Windows).
+ukrainian.PrivilegesRequiredOverrideText1=%1 можна встановити для всіх користувачів цього комп'ютера (потрібні права адміністратора) або лише для вас (без прав адміністратора).%n%nВстановлення для всіх користувачів додатково ставить офлайн відео-кодеки (VLC), моделі OCR і перекладу та роздачу тек на Android через SFTP (для цього додається правило брандмауера Windows). Встановлення лише для вас залишає все легким - тільки переглядач зображень та відео.
+ukrainian.PrivilegesRequiredOverrideText2=%1 можна встановити лише для вас (без прав адміністратора) або для всіх користувачів цього комп'ютера (потрібні права адміністратора).%n%nЛише для вас - залишає все легким, ставиться тільки переглядач зображень та відео. Для всіх користувачів - додатково ставить офлайн відео-кодеки (VLC), моделі OCR і перекладу та роздачу тек на Android через SFTP (для цього додається правило брандмауера Windows).
+
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
@@ -144,16 +160,16 @@ Source: "{#SourceDir}\*"; DestDir: "{app}"; Excludes: "libvlc\*,tessdata\*,tessd
 ; already trimmed upstream by Prepare-OcrOfflinePayload.ps1; excluded here too as a
 ; belt-and-suspenders guarantee now that 32-bit support is a separate standalone
 ; product (see SPECIFICATION_DOTNET10_MODERN_BUILD.md, legacy x86 viewer).
-Source: "{#SourceDir}\libvlc\*"; DestDir: "{app}\libvlc"; Excludes: "win-x86\*"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: codecs
+Source: "{#SourceDir}\libvlc\*"; DestDir: "{app}\libvlc"; Excludes: "win-x86\*"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: codecs; Check: OptionalPayloadAllowed
 ; OCR/translation language models (fast + best). Absent = packs download on first
 ; OCR use instead of shipping in the installer.
-Source: "{#SourceDir}\tessdata\*"; DestDir: "{app}\tessdata"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: ocr
-Source: "{#SourceDir}\tessdata-best\*"; DestDir: "{app}\tessdata-best"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: ocr
+Source: "{#SourceDir}\tessdata\*"; DestDir: "{app}\tessdata"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: ocr; Check: OptionalPayloadAllowed
+Source: "{#SourceDir}\tessdata-best\*"; DestDir: "{app}\tessdata-best"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: ocr; Check: OptionalPayloadAllowed
 ; Android Folder Share - the self-contained .NET companion app + its SFTP worker.
 ; The companion carries its own .NET runtime, which is the bulk of this component.
-Source: "{#SourceDir}\FastMediaSorterCompanion.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: share
-Source: "{#SourceDir}\companion\*"; DestDir: "{app}\companion"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: share
-; Helper Setup/Uninstall use to gracefully stop a running companion worker (see
+Source: "{#SourceDir}\FastMediaSorterCompanion.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: share; Check: OptionalPayloadAllowed
+Source: "{#SourceDir}\companion\*"; DestDir: "{app}\companion"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: share; Check: OptionalPayloadAllowed
+; Helper Setup/Uninstall use to stop the running Companion app and its worker (see
 ; StopCompanionWorker in [Code]). Kept both as a dontcopy temp extract (Setup runs
 ; this before any app files exist yet, so it cannot read one from {app}) and as a
 ; normal installed file (Uninstall only has access to already-installed files).
@@ -162,7 +178,7 @@ Source: "stop-companion.ps1"; DestDir: "{app}"; Flags: ignoreversion
 ; Elevated helper for the deferred, in-app "enable server features" opt-in (adds /
 ; removes the SFTP firewall rule via one UAC prompt). Installed next to the exe so
 ; ServerFeatures.EnableViaElevation prefers it over a direct netsh fallback.
-Source: "enable-share-server.ps1"; DestDir: "{app}"; Flags: ignoreversion; Components: share
+Source: "enable-share-server.ps1"; DestDir: "{app}"; Flags: ignoreversion; Components: share; Check: OptionalPayloadAllowed
 
 [InstallDelete]
 ; The Start-menu group used to be named "FastMediaSorter LITE"; it is now the new
@@ -188,7 +204,6 @@ Type: files; Name: "{app}\companion\server-features.enabled"
 
 [Code]
 const
-  CompanionProjectUrl = 'https://github.com/SerZhyAle/doc-html-translate';
   CompanionSiteUrl = 'https://serzhyale.github.io/doc-html-translate/';
   AndroidGuideUrl = 'https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html';
   AndroidAppBaseUrl = 'https://serzhyale.github.io/FastMediaSorter_mob_v2/';
@@ -206,7 +221,6 @@ var
   CompanionTitleLabel: TNewStaticText;
   CompanionBodyLabel: TNewStaticText;
   CompanionSiteLinkLabel: TNewStaticText;
-  CompanionProjectButton: TNewButton;
 
 function IsLanguage(const Lang: String): Boolean;
 begin
@@ -276,21 +290,21 @@ end;
 function ServerFeaturesCheckboxText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Установить функции сервера общего доступа к папкам'
+    Result := 'Включить общий доступ и открыть Менеджер общего доступа сразу после установки'
   else if IsLanguage('ukrainian') then
-    Result := 'Встановити функції сервера спільного доступу до папок'
+    Result := 'Увімкнути спільний доступ і відкрити Менеджер спільного доступу одразу після встановлення'
   else
-    Result := 'Install folder-sharing server features';
+    Result := 'Turn on folder sharing and open the Share Manager right after installation';
 end;
 
 function ServerFeaturesHintText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Позволяет телефону Android просматривать папки этого ПК по сети (только чтение, SFTP). Добавляет разрешение в брандмауэр, поэтому нужны права администратора. Можно включить и позже в "Настройки > Поделиться".'
+    Result := 'Позволяет телефону Android просматривать папки этого ПК по сети (только чтение, SFTP). Добавляет разрешение в брандмауэр, поэтому нужны права администратора. Менеджер общего доступа откроется по завершении установки, чтобы вы выбрали папку и запустили сервер. Можно включить и позже в "Настройки > Поделиться".'
   else if IsLanguage('ukrainian') then
-    Result := 'Дозволяє телефону Android переглядати папки цього ПК по мережі (лише читання, SFTP). Додає дозвіл у брандмауер, тож потрібні права адміністратора. Можна ввімкнути й пізніше в "Налаштування > Поділитися".'
+    Result := 'Дозволяє телефону Android переглядати папки цього ПК по мережі (лише читання, SFTP). Додає дозвіл у брандмауер, тож потрібні права адміністратора. Менеджер спільного доступу відкриється після завершення встановлення, щоб ви вибрали теку й запустили сервер. Можна ввімкнути й пізніше в "Налаштування > Поділитися".'
   else
-    Result := 'Lets an Android phone browse this PC''s folders over the network (read-only, SFTP). Adds a firewall exception, so setup needs administrator rights. Can also be enabled later in Settings > Share.';
+    Result := 'Lets an Android phone browse this PC''s folders over the network (read-only, SFTP). Adds a firewall exception, so setup needs administrator rights. The Share Manager opens when setup finishes so you can pick a folder and start the server. Can also be enabled later in Settings > Share.';
 end;
 
 function ServerFeaturesAdminHintText: String;
@@ -301,6 +315,16 @@ begin
     Result := 'Недоступно: встановлення виконується без прав адміністратора. Увімкнути спільний доступ можна пізніше в програмі (Налаштування > Поділитися).'
   else
     Result := 'Unavailable: setup is running without administrator rights. You can enable sharing later inside the app (Settings > Share).';
+end;
+
+function ServerFeaturesNeedsShareHintText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'Недоступно: компонент "Компаньон Android Folder Share" не выбран на странице компонентов. Выберите его там, чтобы включить эту опцию.'
+  else if IsLanguage('ukrainian') then
+    Result := 'Недоступно: компонент "Компаньйон Android Folder Share" не вибрано на сторінці компонентів. Виберіть його там, щоб увімкнути цю опцію.'
+  else
+    Result := 'Unavailable: the Android Folder Share companion is not selected on the components page. Select it there to enable this option.';
 end;
 
 function ShareGuideUrl: String;
@@ -352,31 +376,21 @@ end;
 function CompanionTitleText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Рекомендуемый проект: doc-html-translate'
+    Result := 'Перевод текста на картинках: doc-html-translate'
   else if IsLanguage('ukrainian') then
-    Result := 'Рекомендований проєкт: doc-html-translate'
+    Result := 'Переклад тексту на зображеннях: doc-html-translate'
   else
-    Result := 'Recommended companion app: doc-html-translate';
+    Result := 'Translate text in images: doc-html-translate';
 end;
 
 function CompanionBodyText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Преобразует EPUB, PDF, FB2, MOBI, TXT или HTML в локальный HTML для чтения. Доступен через winget - подробности и загрузка:'
+    Result := 'Распознаёт и переводит текст на изображениях и фотографиях. Также умеет конвертировать документы (EPUB, PDF и другие) в локальный HTML. Доступно через winget:'
   else if IsLanguage('ukrainian') then
-    Result := 'Перетворює EPUB, PDF, FB2, MOBI, TXT або HTML у локальний HTML для читання. Доступний через winget - докладніше та завантаження:'
+    Result := 'Розпізнає та перекладає текст на зображеннях і фотографіях. Також може конвертувати документи (EPUB, PDF та інші) у локальний HTML. Доступно через winget:'
   else
-    Result := 'Converts EPUB, PDF, FB2, MOBI, TXT, or HTML into clean local HTML for reading. Available via winget - learn more and download here:';
-end;
-
-function OpenProjectButtonText: String;
-begin
-  if IsLanguage('russian') then
-    Result := 'Открыть страницу проекта'
-  else if IsLanguage('ukrainian') then
-    Result := 'Відкрити сторінку проєкту'
-  else
-    Result := 'Open project page';
+    Result := 'Recognizes and translates the text inside images and photos. It can also convert documents (EPUB, PDF and more) into clean local HTML. Available via winget:';
 end;
 
 function AssociationWriteErrorText: String;
@@ -413,13 +427,6 @@ begin
   WizardForm.AdjustLabelHeight(LabelControl);
 end;
 
-procedure OpenCompanionProject(Sender: TObject);
-var
-  ResultCode: Integer;
-begin
-  ShellExec('open', CompanionProjectUrl, '', '', SW_SHOWNORMAL, ewNoWait, ResultCode);
-end;
-
 procedure OpenCompanionSite(Sender: TObject);
 var
   ResultCode: Integer;
@@ -439,6 +446,16 @@ var
   ResultCode: Integer;
 begin
   ShellExec('open', ShareAppUrl, '', '', SW_SHOWNORMAL, ewNoWait, ResultCode);
+end;
+
+function OptionalPayloadAllowed: Boolean;
+begin
+  { Codecs, OCR models and the Share companion are offered ONLY in an all-users
+    (elevated) install - a per-user install without admin is the lightweight viewer
+    alone (owner decision). Used as the [Files] Check on those components so they are
+    never written without elevation, in EVERY path - including silent installs where
+    the components page (which also greys them out) is never shown. }
+  Result := IsAdminInstallMode;
 end;
 
 function ShouldRegisterAssociations: Boolean;
@@ -485,6 +502,21 @@ var
 begin
   Exec('netsh', 'advfirewall firewall delete rule name="FastMediaSorter Companion SFTP"',
     '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+{ Opt-in "run the SFTP server right after installation": launch the Share Manager
+  (Companion) so the user can pick a folder and start serving. On a fresh install
+  nothing is shared yet, so this opens the window rather than the silent --tray
+  autostart (which would sit idle). Best-effort - a missing exe is a no-op. }
+procedure LaunchShareManager;
+var
+  ResultCode: Integer;
+  Exe: String;
+begin
+  Exe := ExpandConstant('{app}\FastMediaSorterCompanion.exe');
+  if not FileExists(Exe) then
+    exit;
+  ShellExec('open', Exe, '', ExpandConstant('{app}'), SW_SHOWNORMAL, ewNoWait, ResultCode);
 end;
 
 procedure RegisterOpenWithSupport(const Ext: String);
@@ -656,23 +688,17 @@ begin
   CompanionSiteLinkLabel.Font.Style := [fsUnderline];
   CompanionSiteLinkLabel.Font.Color := clBlue;
   CompanionSiteLinkLabel.OnClick := @OpenCompanionSite;
-
-  CompanionProjectButton := TNewButton.Create(WizardForm);
-  CompanionProjectButton.Parent := InstallOptionsPage.Surface;
-  CompanionProjectButton.Left := 0;
-  CompanionProjectButton.Top := CompanionSiteLinkLabel.Top + CompanionSiteLinkLabel.Height + ScaleY(8);
-  CompanionProjectButton.Width := ScaleX(180);
-  CompanionProjectButton.Height := ScaleY(26);
-  CompanionProjectButton.Caption := OpenProjectButtonText;
-  CompanionProjectButton.OnClick := @OpenCompanionProject;
 end;
 
-{ Stops a running companion worker (fms-share-worker.exe) before Setup/Uninstall
-  touch its exe - it is a separate background process (survives the main app
-  closing by design) that the AppMutex check above cannot see. Runs the bundled
-  helper script, which asks the worker to stop over its control pipe (releases
-  the SFTP server + UPnP port mapping cleanly) before force-killing any
-  survivor. Best-effort: a missing or failing script must never abort Setup. }
+{ Stops the tray-resident Companion app (FastMediaSorterCompanion.exe) AND its
+  headless worker (fms-share-worker.exe) before Setup/Uninstall touch their files.
+  Both are invisible to the AppMutex check above and cannot be closed by the Restart
+  Manager - the Companion autostarts to the tray and never exits on a window-close,
+  and the worker is windowless - so the file replace fails unless they are killed
+  here. Runs the bundled helper script, which asks the worker to stop over its
+  control pipe (clean SFTP + UPnP teardown), then terminates the Companion, then
+  force-kills any surviving worker. Best-effort: a missing or failing script must
+  never abort Setup. }
 procedure StopCompanionWorker(const ScriptPath: String);
 var
   ResultCode: Integer;
@@ -691,23 +717,57 @@ begin
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
+var
+  ShareSelected: Boolean;
+  i: Integer;
 begin
-  { Decision B: the firewall rule needs elevation. On a per-user (non-admin)
-    install, grey the checkbox and explain the deferred in-app path instead. }
+  { Per-user (no-admin) install = the lightweight viewer only. The offline codecs,
+    OCR models and the Share companion are offered ONLY in an all-users (elevated)
+    install: without the firewall rule (admin) the SFTP worker cannot accept a single
+    connection, so shipping it would be pointless (owner decision). So grey those rows
+    out and force viewer-only here; the [Files] Check (OptionalPayloadAllowed) is the
+    hard guarantee that also covers silent installs where this page never shows. The
+    all-users vs me-only choice was made (and explained) on the install-mode screen. }
+  if (CurPageID = wpSelectComponents) and (not IsAdminInstallMode) then
+  begin
+    if WizardForm.TypesCombo <> nil then
+    begin
+      WizardForm.TypesCombo.ItemIndex := 1;   { [Types]: 0 full, 1 compact (viewer only), 2 custom }
+      WizardForm.TypesCombo.Enabled := False;
+    end;
+    { [Components] order: 0 core (fixed), 1 codecs, 2 ocr, 3 share - lock every
+      optional row off. }
+    for i := 1 to WizardForm.ComponentsList.Items.Count - 1 do
+    begin
+      WizardForm.ComponentsList.Checked[i] := False;
+      WizardForm.ComponentsList.ItemEnabled[i] := False;
+    end;
+  end;
+
+  { The "run the SFTP server after install" opt-in requires two things: the Share
+    component must be installed (screen 1 - otherwise there is no worker exe to run)
+    AND setup must be elevated (the firewall rule needs admin). Grey the checkbox
+    and explain the relevant reason when either is missing. }
   if (InstallOptionsPage <> nil) and (CurPageID = InstallOptionsPage.ID) then
   begin
+    ShareSelected := WizardIsComponentSelected('share');
     if ServerFeaturesCheckBox <> nil then
     begin
-      ServerFeaturesCheckBox.Enabled := IsAdminInstallMode;
-      if not IsAdminInstallMode then
+      ServerFeaturesCheckBox.Enabled := ShareSelected and IsAdminInstallMode;
+      if not ServerFeaturesCheckBox.Enabled then
         ServerFeaturesCheckBox.Checked := False;
     end;
     if ServerFeaturesHintLabel <> nil then
     begin
-      if IsAdminInstallMode then
-        ServerFeaturesHintLabel.Caption := ServerFeaturesHintText
+      { Admin first: without elevation the whole Share feature (and its component) is
+        unavailable, so the "enable it later in the app" note is the honest one - never
+        tell the user to tick a Share component they cannot select without admin. }
+      if not IsAdminInstallMode then
+        ServerFeaturesHintLabel.Caption := ServerFeaturesAdminHintText
+      else if not ShareSelected then
+        ServerFeaturesHintLabel.Caption := ServerFeaturesNeedsShareHintText
       else
-        ServerFeaturesHintLabel.Caption := ServerFeaturesAdminHintText;
+        ServerFeaturesHintLabel.Caption := ServerFeaturesHintText;
       WizardForm.AdjustLabelHeight(ServerFeaturesHintLabel);
     end;
   end;
@@ -722,6 +782,12 @@ begin
     AddServerFirewallRule;
     WriteServerFeaturesMarker;
   end;
+  { Launch the Share Manager once the install is fully done (after the Finished
+    page), so the user lands in the UI to pick a folder and start the server -
+    the "run it right after installation" opt-in. Guarded to interactive installs
+    (silent/winget never show the page, so ShouldInstallServerFeatures is False). }
+  if (CurStep = ssDone) and ShouldInstallServerFeatures and (not WizardSilent) then
+    LaunchShareManager;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

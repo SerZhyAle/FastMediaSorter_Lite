@@ -88,6 +88,10 @@ Partial Public Class Main_Form
 
         lbl_Help_Info.Location = Point.Empty
         lbl_Help_Info.Size = full
+
+        ' Re-anchor the recipients overlay (its full-screen top offset and z-order
+        ' can change with the layout/mode).
+        KeepRecipientsOverlayOnTop()
     End Sub
 
     Private Sub SetViewSizes()

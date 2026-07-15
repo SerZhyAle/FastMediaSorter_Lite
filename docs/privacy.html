@@ -49,6 +49,19 @@
             ever touches files and folders you point it at (including network shares you browse to). It has
             seen your meme folder and judged nothing.</li>
 
+            <li><strong>Folder sharing - optional, opt-in.</strong> If you enable it, the bundled Share
+            Manager companion runs a local SFTP server so your own phone can browse the folders you choose.
+            The access password and the server host key are generated and kept only on your PC, and files
+            are served directly between your own devices - never through us or any third party. While a
+            share is on, any device on your current network (home, office, or a public Wi-Fi) can reach the
+            PC on the share port; access needs the password embedded in the QR/config you share, so treat
+            that code as a key and do not post it publicly. A <em>LAN only</em> switch keeps the share off
+            the internet; idle connections close after a few hours, and you can cap how many devices connect
+            at once. If you turn on internet access, the app asks the public service
+            <a href="https://check-host.net">check-host.net</a> to confirm your forwarded port is reachable,
+            which reveals your public address and port to that service for the check. The app keeps
+            local-only connection counters (this is not telemetry and never leaves your PC).</li>
+
             <li><strong>Network - optional, only for translation.</strong> The on-image translation feature
             is off until you enable and configure it. When you use it, the app sends the recognized text to
             the translation endpoint <em>you</em> choose - a local <a href="https://ollama.com">Ollama</a>
@@ -72,9 +85,11 @@
         </ul>
 
         <h2>Data sharing</h2>
-        <p>None. The kind of "none" that is actually none. The app does not share any data with the developer
-        or third parties. The only data ever sent off your device is the text you choose to translate, sent to
-        the translation endpoint you yourself configured.</p>
+        <p>None with the developer - the kind of "none" that is actually none, and no telemetry or analytics
+        ever. The only things that leave your device do so at your explicit choice and go where you direct them,
+        not to us: the text you translate goes to the translation endpoint you configured; shared files go
+        directly to your own phone over SFTP; and, if you enable internet access, your public address and port
+        are shown to check-host.net solely to test reachability.</p>
 
         <h2>Children's privacy</h2>
         <p>The app collects no data from anyone, including children.</p>

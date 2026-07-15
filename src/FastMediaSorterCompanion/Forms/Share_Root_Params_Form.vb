@@ -229,7 +229,14 @@ Public Class Share_Root_Params_Form
             Dim wa As Rectangle = DpiLayout.WorkingAreaFor(Me)
             Dim chromeW As Integer = Me.Width - Me.ClientSize.Width
             Dim chromeH As Integer = Me.Height - Me.ClientSize.Height
+            ' Measure the TALLEST state: the destination note is shown/hidden at runtime,
+            ' so reserve its height upfront. That way toggling the "destination" checkbox
+            ' never grows the content past the window and no scrollbar ever appears (the
+            ' fixed dialog cannot resize afterwards).
+            Dim noteWasVisible As Boolean = lblDestNote.Visible
+            lblDestNote.Visible = True
             Dim content As Size = _content.PreferredSize
+            lblDestNote.Visible = noteWasVisible
             Dim barH As Integer = _buttonBar.PreferredSize.Height
             Dim desiredClientH As Integer = content.Height + barH
             Dim clientH As Integer = Math.Min(desiredClientH, wa.Height - chromeH)

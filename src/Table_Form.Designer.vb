@@ -541,7 +541,7 @@ Partial Class Table_Form
         Me.SetOnTop.Name = "SetOnTop"
         Me.SetOnTop.Size = New System.Drawing.Size(140, 19)
         Me.SetOnTop.TabIndex = 0
-        Me.SetOnTop.Text = "Keep this window on top"
+        Me.SetOnTop.Text = "Show recipients table over the media file"
         Me.SetOnTop.UseVisualStyleBackColor = True
         '
         'btn_Language

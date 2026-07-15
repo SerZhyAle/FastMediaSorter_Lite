@@ -774,6 +774,10 @@ Partial Public Class Main_Form
         End If
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0950: Visibility set: " & If(is_PictureBox1_Visible, "P1-YES ", "P1-NO ") & If(is_PictureBox2_Visible, "P2-YES ", "P2-NO ") & If(is_WebBrowser_Visible, "WB-YES ", "WB-NO "))
+
+        ' A media-surface change may have re-ordered z (video BringToFront) - keep
+        ' the recipients overlay clickable on top.
+        KeepRecipientsOverlayOnTop()
     End Sub
 
     Private Sub UpdateCurrentFileAndDisplay(is_File_Found As Boolean, is_After_Undo_Operation As Boolean)

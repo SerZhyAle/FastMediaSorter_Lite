@@ -149,10 +149,11 @@ email (1-3 business days).
 
 ## Text templates
 
-> **Status (2026-07-14):** the copy below (Share Manager companion + stronger truncation-proof lead) is
-> **prepared for the NEXT submission** - it is NOT yet on the live listing. The 26.7.14.1801 Store
-> submission (Submission 2) passed certification with the *previous, shorter* description; apply these
-> blocks at the next Store update, not retroactively.
+> **Status (2026-07-15):** the copy below (Share Manager companion + stronger truncation-proof lead +
+> the recipients panel line) is **prepared for the 26.7.15 submission** - it is NOT yet on the live
+> listing. The 26.7.14.1801 Store submission (Submission 2) passed certification with the *previous,
+> shorter* description; apply these blocks (Description + Product features) and paste the "What's new"
+> block below at the next Store update, not retroactively.
 >
 > **Rebrand note (2026-07):** the product **title stays "FastMediaSorter LITE"** in Partner Center
 > (frozen reserved name = the update anchor - do NOT change it). Only the **Description** text below is
@@ -167,9 +168,11 @@ Sort thousands of photos and videos in minutes. Fast Media Sorter is a fast, key
 and sorter for images and video on Windows.
 
 Open a folder and fly through it: full-screen slideshow, quick panel navigation, and one-key Move /
-Copy / Rename / Delete. Assign folders to hotkeys and file each item with a single press. It plays a
-broad range of formats - H.264/MP4 via the built-in player with an automatic LibVLC fallback for AVI,
-MKV, VP9, ZMBV and more - and fills letterbox/pillarbox bars with a matching "ambilight" background.
+Copy / Rename / Delete. Assign folders to hotkeys and file each item with a single press - or turn on
+the recipients panel to click those destination folders right over the image and sort one-handed with
+the mouse. It plays a broad range of formats - H.264/MP4 via the built-in player with an automatic
+LibVLC fallback for AVI, MKV, VP9, ZMBV and more - and fills letterbox/pillarbox bars with a matching
+"ambilight" background.
 
 Share folders with your phone: the bundled companion "Fast Media Sorter: Share Manager" turns this PC
 into a private SFTP server for folders you pick, so the Fast Media Sorter Android app can browse them -
@@ -192,9 +195,10 @@ On the Microsoft Store this app is published as "FastMediaSorter LITE".
 
 Откройте папку и листайте её мгновенно: полноэкранное слайд-шоу, быстрая навигация по панели и
 перемещение / копирование / переименование / удаление одной клавишей. Назначьте папки на горячие
-клавиши и раскладывайте файлы одним нажатием. Поддерживается широкий набор форматов - H.264/MP4
-встроенным плеером с автоматическим переходом на LibVLC для AVI, MKV, VP9, ZMBV и других - а поля по
-краям кадра заполняются фоном в стиле "ambilight" под цвет изображения.
+клавиши и раскладывайте файлы одним нажатием - или включите панель получателей и кликайте по этим
+папкам прямо поверх изображения, сортируя одной рукой мышью. Поддерживается широкий набор форматов -
+H.264/MP4 встроенным плеером с автоматическим переходом на LibVLC для AVI, MKV, VP9, ZMBV и других - а
+поля по краям кадра заполняются фоном в стиле "ambilight" под цвет изображения.
 
 Раздавайте папки на телефон: программа-компаньон "Fast Media Sorter: Share Manager" превращает этот
 ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение Fast Media Sorter
@@ -215,6 +219,7 @@ https://github.com/SerZhyAle/FastMediaSorter_Lite
 ### Product features (one per line, ≤200 chars each)
 ```
 Fast keyboard-driven sorting: one-key Move / Copy / Rename / Delete with hotkey-assigned folders
+Optional recipients panel over the media: click destination folders on the image to sort one-handed with the mouse
 Full-screen slideshow and quick panel/thumbnail navigation for large image and video collections
 Plays H.264/MP4 natively with an automatic LibVLC fallback for AVI, MKV, VP9, ZMBV and more
 "Ambilight" perspective background fills letterbox/pillarbox bars to match the image
@@ -222,6 +227,28 @@ Share folders to your phone: a bundled tray companion runs a private, opt-in SFT
 Optional on-image OCR translation: offline Tesseract OCR + a translator you configure (Ollama / LibreTranslate)
 Set it as your default image viewer for JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, AVIF and SVG
 Open source, no account, no ads, no telemetry
+```
+
+### What's new in this version (Store "release notes" field) - 26.7.15
+
+> Paste this into the submission's **"What's new in this version"** box (Partner Center does not accept
+> this remotely - it is a per-submission field). EN is the primary; RU is optional for the RU listing.
+> Keep it short - the Store shows only the first lines on the product page.
+
+**EN**
+```
+- New: a recipients panel over the image/video - click your destination folders right on the media to sort one-handed with the mouse (off by default; enable in Settings).
+- Folder sharing is safer by default: "LAN only" now truly keeps the share off the internet, idle and stalled connections are dropped, failed logins are logged, and you can cap how many devices connect at once.
+- The Share Manager shows a "Type" column for each folder, and an install option can start sharing right after setup.
+- Fixes: the "0" hotkey folder is remembered again, router detection no longer mistakes a smart-TV for the router, and the sharing dialogs no longer overflow on high-DPI displays.
+```
+
+**RU**
+```
+- Новое: панель получателей поверх изображения/видео - кликайте по папкам назначения прямо на медиа и сортируйте одной рукой мышью (по умолчанию выключено; включается в настройках).
+- Общий доступ безопаснее по умолчанию: режим "только локальная сеть" теперь действительно не выпускает раздачу в интернет, простаивающие и зависшие подключения сбрасываются, неудачные входы записываются в журнал, а число одновременных подключений можно ограничить.
+- В Share Manager появился столбец "Тип" для каждой папки, а при установке можно сразу запустить раздачу.
+- Исправления: папка на клавише "0" снова запоминается, определение роутера больше не путает smart-TV с роутером, а окна общего доступа не выходят за край на экранах с высоким DPI.
 ```
 
 ### runFullTrust justification (keep under ~1000 chars)
@@ -235,6 +262,10 @@ its core features depend on:
   and uses GDI+ for image rendering.
 - Optional folder sharing: a bundled companion runs a local SFTP server for folders the user chooses,
   reachable from the user's own phone (opt-in; an inbound firewall rule is added only when enabled).
+  While a share runs, devices on the current network (including public Wi-Fi) can reach the PC on the
+  share port, protected by a per-install password; a "LAN only" switch keeps it off the internet, and
+  the number of simultaneous connections is user-limited (default 10). Idle connections are closed after
+  a few hours.
 - Optional OCR/translation: may call a user-configured translation endpoint (e.g. a local Ollama
   instance); OCR runs locally with bundled Tesseract data.
 No user data is collected; no telemetry. Open source: https://github.com/SerZhyAle/FastMediaSorter_Lite
@@ -253,6 +284,12 @@ What it accesses and why:
   files are served directly between your own devices and are never sent to us or any third party. It
   keeps local-only connection counters (number/time of connections, files served) on your PC - this is
   not telemetry and never leaves the machine. Enabling it adds a Windows Firewall rule for the worker.
+  While the share is on, any device on your current network (home, office, or a public Wi-Fi) can reach
+  the PC on the share port; access requires the password embedded in the QR/config you share, so treat
+  that code as a key. Turn "LAN only" on to keep the share off the internet entirely; turn sharing off
+  when you are done. The password does not expire. When you enable internet access, the app asks the
+  public service check-host.net to confirm the forwarded port is actually reachable, which discloses your
+  public address and port to that service for the check.
 - Network for translation (optional): only if you enable on-image translation, the app sends the
   recognized text to the translation endpoint YOU configure (a local Ollama model or a LibreTranslate
   server). OCR runs fully offline. Otherwise the app makes no network requests except optionally

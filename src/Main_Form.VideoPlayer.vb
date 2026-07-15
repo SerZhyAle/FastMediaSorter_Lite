@@ -189,6 +189,8 @@ Partial Public Class Main_Form
             vlc_Video_View.Size = Picture_Box_1.Size
             vlc_Video_View.Visible = True
             vlc_Video_View.BringToFront()
+            ' VLC just took the top of the z-order - reassert the recipients overlay.
+            KeepRecipientsOverlayOnTop()
 
             Dim media As New LibVLCSharp.Shared.Media(libVlc, New Uri(file_Path))
             If Is_Video_Loop Then media.AddOption(":input-repeat=65535")

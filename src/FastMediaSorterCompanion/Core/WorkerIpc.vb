@@ -87,6 +87,14 @@ Public Class WorkerRequest
     Public Property [type] As String = ""
     ''' <summary>Only sent for SetSharedFolders; replaces the whole list.</summary>
     Public Property folders As List(Of ShareFolder) = Nothing
+    ''' <summary>SetNetworkPolicy payload. Nullable so an unset knob is OMITTED from
+    ''' the JSON (JsonOpts WhenWritingNull) rather than sent as an explicit 0/false -
+    ''' the worker leaves an absent field unchanged. maxConnections is clamped to
+    ''' [1, 99999] by the worker; lanOnly enforces the LAN-only switch (no UPnP, no
+    ''' WAN path). Additive - an older worker replies with a benign
+    ''' "unsupported request type", so nothing breaks.</summary>
+    Public Property maxConnections As Integer?
+    Public Property lanOnly As Boolean?
 End Class
 
 ''' <summary>A shared root. Used both in requests (folders) and status (roots).</summary>

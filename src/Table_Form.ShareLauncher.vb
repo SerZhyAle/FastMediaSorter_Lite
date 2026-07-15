@@ -37,8 +37,11 @@ Partial Public Class Table_Form
 
     Private Sub OnShareManagerClick(sender As Object, e As EventArgs)
         Try
-            Main_Form.ActivateShareEntryPoint()
-        Catch
+            ' Management entry point - open the Share Manager's own window, not the
+            ' share-this-folder wizard (see OpenShareManagerWindow).
+            Main_Form.OpenShareManagerWindow()
+        Catch ex As Exception
+            AppFileLogger.LogException("Table_Form share-manager click", ex)
         End Try
     End Sub
 

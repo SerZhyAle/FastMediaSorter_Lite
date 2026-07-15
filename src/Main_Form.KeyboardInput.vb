@@ -225,13 +225,17 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
+    ' Called only from the settings grid double-click, where row z is bound to slot
+    ' z (row 0 = DEL, row 10 = key "0"). Dispatch by the same rule as the keyboard:
+    ' PoMove(row) directly - the former PoMove(row+1) hit the wrong slot and row 10
+    ' ran PoMove(11), past the array's upper bound.
     Public Sub DoKey(ByVal keyIndex As Integer)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1860: DoKey")
 
         If keyIndex = 0 Then
             ReadShowMediaFile("DeleteFile")
         Else
-            PoMove(keyIndex + 1)
+            PoMove(keyIndex)
         End If
     End Sub
 

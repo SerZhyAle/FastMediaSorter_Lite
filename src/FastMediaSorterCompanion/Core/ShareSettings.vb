@@ -36,6 +36,16 @@ Public Class ShareSettings
     ''' real password out-of-band (shown in the hint while the toggle is on).</summary>
     Public Property ExcludePasswordFromExport As Boolean = False ' Share_ExcludePassword
 
+    ''' <summary>Maximum simultaneous SFTP connections the worker accepts. Default 10;
+    ''' the user may set anything from 1 to 99999 (their server, their call). Pushed to
+    ''' the worker via SetNetworkPolicy; the worker clamps and enforces it. See the
+    ''' 2026-07-15 security hardening spec (DoS resilience).</summary>
+    Public Property MaxConnections As Integer = DefaultMaxConnections ' Share_MaxConnections
+
+    Public Const DefaultMaxConnections As Integer = 10
+    Public Const MinMaxConnections As Integer = 1
+    Public Const MaxMaxConnections As Integer = 99999
+
     ''' <summary>Read-only mirror of the server-features consent flag (HKCU
     ''' Share_ServerFeaturesEnabled), the deferred opt-in gate. OWNED and written by
     ''' <see cref="ServerFeatures"/>; loaded here only for convenience and
@@ -49,6 +59,7 @@ Public Class ShareSettings
         ExternalAccessIntent = ReadBool("Share_ExternalAccessIntent", True)
         LanOnlyExport = ReadBool("Share_LanOnlyExport", False)
         ExcludePasswordFromExport = ReadBool("Share_ExcludePassword", False)
+        MaxConnections = ClampConnections(ReadInt("Share_MaxConnections", DefaultMaxConnections))
         ServerFeaturesEnabled = ReadBool(ServerFeatures.EnabledRegValue, False)
     End Sub
 
@@ -58,9 +69,19 @@ Public Class ShareSettings
         WriteBool("Share_ExternalAccessIntent", ExternalAccessIntent)
         WriteBool("Share_LanOnlyExport", LanOnlyExport)
         WriteBool("Share_ExcludePassword", ExcludePasswordFromExport)
+        WriteInt("Share_MaxConnections", ClampConnections(MaxConnections))
         ' ServerFeaturesEnabled is intentionally NOT written here - ServerFeatures
         ' owns that flag (see the property remark).
     End Sub
+
+    ''' <summary>Clamps a connection-limit value into the accepted [1, 99999] range;
+    ''' a stored 0 (never set) degrades to the default.</summary>
+    Public Shared Function ClampConnections(value As Integer) As Integer
+        If value <= 0 Then Return DefaultMaxConnections
+        If value < MinMaxConnections Then Return MinMaxConnections
+        If value > MaxMaxConnections Then Return MaxMaxConnections
+        Return value
+    End Function
 
     ' --- registry helpers (SZA\FastMediaSorter) -------------------------------
 
@@ -70,6 +91,19 @@ Public Class ShareSettings
 
     Private Shared Sub WriteBool(key As String, value As Boolean)
         SaveSetting(App_name, Second_App_Name, key, If(value, "1", "0"))
+    End Sub
+
+    Private Shared Function ReadInt(key As String, def As Integer) As Integer
+        Dim raw As String = GetSetting(App_name, Second_App_Name, key, def.ToString(Globalization.CultureInfo.InvariantCulture))
+        Dim parsed As Integer
+        If Integer.TryParse(raw, Globalization.NumberStyles.Integer, Globalization.CultureInfo.InvariantCulture, parsed) Then
+            Return parsed
+        End If
+        Return def
+    End Function
+
+    Private Shared Sub WriteInt(key As String, value As Integer)
+        SaveSetting(App_name, Second_App_Name, key, value.ToString(Globalization.CultureInfo.InvariantCulture))
     End Sub
 
 End Class

@@ -49,6 +49,9 @@ Public Module ShareController
         r.Status = ensured.Status
         MarkShareEverStarted()
 
+        ' Push the network policy BEFORE the server starts so the first reachability
+        ' pass already honors LAN-only (no UPnP) and the connection cap.
+        Await PushNetworkPolicyAsync()
         Await SendAsync(New WorkerRequest With {.type = "SetSharedFolders", .folders = folders}, 5000)
         Await SendAsync(New WorkerRequest With {.type = "StartServer"}, 6000)
 
@@ -91,6 +94,10 @@ Public Module ShareController
         If Not WorkerProcess.IsAvailable() Then Return Nothing
         Dim resp As WorkerResponse = Await Task.Run(Function() WorkerProcess.EnsureRunning(6000))
         If resp Is Nothing Then Return Nothing
+        ' A resume/reconcile must re-assert the network policy too, so LAN-only and
+        ' the connection cap survive an autostart that brought the server up from
+        ' shares.json before any UI ran.
+        Await PushNetworkPolicyAsync()
         Dim status As WorkerStatus = resp.Status
         If status Is Nothing OrElse status.Roots Is Nothing OrElse status.Roots.Count = 0 Then Return status
 
@@ -124,6 +131,25 @@ Public Module ShareController
     ''' <summary>Stops the SFTP server (leaves the worker process running).</summary>
     Public Async Function StopServerAsync() As Task
         Await SendAsync(New WorkerRequest With {.type = "StopServer"}, 4000)
+    End Function
+
+    ''' <summary>
+    ''' Pushes the network policy (max simultaneous connections + LAN-only switch)
+    ''' from ShareSettings to the worker via SetNetworkPolicy. This is the ENFORCING
+    ''' side of "LAN only": it stops the worker opening any UPnP/NAT-PMP hole and
+    ''' advertising a WAN path, not just stripping the exported config. Best-effort -
+    ''' an older worker soft-fails on the unknown request type and keeps its
+    ''' persisted/default policy. Call whenever these settings change while a share is
+    ''' live, and it is already folded into the share-start and resume flows.
+    ''' </summary>
+    Public Async Function PushNetworkPolicyAsync() As Task
+        Dim s As New ShareSettings()
+        s.Load()
+        Await SendAsync(New WorkerRequest With {
+            .type = "SetNetworkPolicy",
+            .maxConnections = ShareSettings.ClampConnections(s.MaxConnections),
+            .lanOnly = s.LanOnlyExport
+        }, 5000)
     End Function
 
     ''' <summary>Resets the worker's local usage counters (stats.json) and returns the

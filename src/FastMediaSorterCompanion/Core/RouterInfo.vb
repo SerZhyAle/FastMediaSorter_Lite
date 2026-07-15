@@ -69,6 +69,12 @@ Public Module RouterInfo
             If String.IsNullOrEmpty(location) Then Return Nothing
             Dim xml As String = HttpGet(location, 1500)
             If String.IsNullOrEmpty(xml) Then Return Nothing
+            ' Final guard: the description we fetched must actually be an Internet
+            ' Gateway Device. A misbehaving media box (e.g. a Vestel smart-TV) that
+            ' echoed our IGD search target in its SSDP reply still serves a
+            ' MediaRenderer/MediaServer XML - reject it so its manufacturer is never
+            ' mistaken for the router.
+            If xml.IndexOf("InternetGatewayDevice", StringComparison.OrdinalIgnoreCase) < 0 Then Return Nothing
             Dim id As RouterIdentity = ParseDeviceXml(xml)
             If id IsNot Nothing AndAlso id.IsKnown() Then id.Source = "upnp"
             Return id
@@ -81,6 +87,14 @@ Public Module RouterInfo
         Dim targets As String() = {
             "urn:schemas-upnp-org:device:InternetGatewayDevice:2",
             "urn:schemas-upnp-org:device:InternetGatewayDevice:1"}
+        ' The router's IGD description is served from the default gateway itself, so
+        ' the responder whose LOCATION host == the gateway IP is authoritatively the
+        ' router. A chatty smart-TV / DLNA box (e.g. Vestel) answers every M-SEARCH
+        ' with its own root device and would otherwise win the race - so we prefer
+        ' the gateway, and only ever fall back to a responder that actually claims to
+        ' be an InternetGatewayDevice (ST/USN), never just "the first thing to reply".
+        Dim gatewayIp As String = NetworkInfo.DefaultGatewayIp()
+        Dim igdFallback As String = ""
         Try
             Dim localIp As String = NetworkInfo.LocalIPv4()
             Dim bind As IPEndPoint = If(String.IsNullOrEmpty(localIp), New IPEndPoint(IPAddress.Any, 0), New IPEndPoint(IPAddress.Parse(localIp), 0))
@@ -104,9 +118,17 @@ Public Module RouterInfo
                         Dim from As IPEndPoint = Nothing
                         Dim data As Byte() = udp.Receive(from)
                         Dim resp As String = Encoding.ASCII.GetString(data)
-                        ' We only M-SEARCHed IGD targets, so any answer is a gateway.
                         Dim loc As String = ExtractHeader(resp, "LOCATION")
-                        If Not String.IsNullOrEmpty(loc) Then Return loc
+                        If String.IsNullOrEmpty(loc) Then Continue Do
+                        ' Responder IS the gateway -> it is the router, take it now.
+                        If gatewayIp.Length > 0 AndAlso String.Equals(UriHost(loc), gatewayIp, StringComparison.OrdinalIgnoreCase) Then
+                            Return loc
+                        End If
+                        ' Otherwise keep it only if it self-identifies as an IGD.
+                        If igdFallback.Length = 0 Then
+                            Dim tag As String = ExtractHeader(resp, "ST") & " " & ExtractHeader(resp, "USN")
+                            If tag.IndexOf("InternetGatewayDevice", StringComparison.OrdinalIgnoreCase) >= 0 Then igdFallback = loc
+                        End If
                     Catch
                         Exit Do ' receive timeout / socket closed
                     End Try
@@ -114,7 +136,16 @@ Public Module RouterInfo
             End Using
         Catch
         End Try
-        Return ""
+        Return igdFallback
+    End Function
+
+    ''' <summary>Host of a URL (IP or name), or "" if it will not parse.</summary>
+    Private Function UriHost(url As String) As String
+        Try
+            Return New Uri(url).Host
+        Catch
+            Return ""
+        End Try
     End Function
 
     Private Function ParseDeviceXml(xml As String) As RouterIdentity

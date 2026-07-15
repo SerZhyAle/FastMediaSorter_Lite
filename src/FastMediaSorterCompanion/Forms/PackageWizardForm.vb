@@ -13,8 +13,9 @@ Imports System.Windows.Forms
 ''' cell to change it (checkbox / dropdown / media-set popup / text / number). Cells start
 ''' from each folder's stored defaults; edits are PER-RECIPIENT and one-shot (§4.5.3) - they
 ''' ride only in this export (perRootParams) and never touch the folder's own defaults. Below
-''' the grid: common per-export settings, address/host-key, QR and the action buttons.
-''' AutoScaleMode.Font + app-wide default font (never Me.Font=) so it scales at any DPI.
+''' the grid: common per-export settings, then a single action-button row led by "Show QR code"
+''' (which opens the code full-size in its own window - there is no inline preview, it was too
+''' small for a phone camera). AutoScaleMode.Font + app-wide default font so it scales at any DPI.
 ''' </summary>
 Public NotInheritable Class PackageWizardForm
     Inherits Form
@@ -41,7 +42,6 @@ Public NotInheritable Class PackageWizardForm
     ' the resource grid
     Private dgv As DataGridView
     ' output surfaces
-    Private picQr As PictureBox
     Private btnShowQr As Button
     Private btnCopyLogin As Button
     Private btnSave As Button
@@ -50,6 +50,7 @@ Public NotInheritable Class PackageWizardForm
     Private lblHint As Label
     Private toolTip As ToolTip
     Private _qrGlyph As Image
+    Private _qrImage As Image   ' the current QR bitmap - opened enlarged on demand (no inline preview)
     ' Accent colours for the "Show QR" button - match the app's blue share glyph (ShareIcons).
     Private Shared ReadOnly QrAccent As Color = Color.FromArgb(30, 120, 220)
     Private Shared ReadOnly QrAccentDark As Color = Color.FromArgb(18, 78, 150)
@@ -121,12 +122,8 @@ Public NotInheritable Class PackageWizardForm
         ' The resource grid (fill).
         BuildGrid()
 
-        ' Below the grid: common settings + address/key (left) | QR (right), then action buttons.
-        Dim below As New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 2, .Margin = New Padding(0)}
-        below.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
-        below.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
-
-        Dim leftCol As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.TopDown, .WrapContents = False, .Margin = New Padding(0, 0, 24, 0)}
+        ' Below the grid: common per-export settings (full width), then ONE action-button row.
+        Dim leftCol As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.TopDown, .WrapContents = False, .Margin = New Padding(0)}
         leftCol.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 4), .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(Rus, "Общие настройки передачи:", "Common transfer settings:")})
         chkLanOnly = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = If(Rus, "Только локальная сеть (без адреса из интернета)", "LAN only (no internet address)")}
         chkNoPassword = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 6), .Text = If(Rus, "Не включать пароль в файл/QR", "Do not include the password in the file/QR")}
@@ -140,35 +137,23 @@ Public NotInheritable Class PackageWizardForm
         ' address misleads the user into thinking the code is local-only; those details already
         ' live (copyable) in the main window's server panel.
 
-        ' Right: a compact LIVE QR preview (click to enlarge) + a bright accent button - NOT the
-        ' old 190x190 empty square. The preview shows the actual code so the user sees it at a
-        ' glance; the button is the obvious, brightly-coloured tap target that opens it big for a
-        ' phone camera. Both open the same zoom window.
+        lblHint = New Label With {.AutoSize = True, .MaximumSize = New Size(980, 0), .ForeColor = Color.DimGray, .Margin = New Padding(0, 8, 0, 4)}
+
+        ' Single action row: the bright "Show QR code" button leads (there is no inline preview -
+        ' it was far too small for a phone camera; the code opens big in its own window on click),
+        ' then the export/close actions - all on one line. It sits to the RIGHT of the common
+        ' settings (see bottomBar), filling that otherwise-empty band. Anchored Left+Right so it
+        ' spans the right column (and can wrap when the window is narrow) while staying vertically
+        ' centred against the taller settings block.
         _qrGlyph = BuildQrGlyph()
-        Dim rightCol As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .FlowDirection = FlowDirection.TopDown, .WrapContents = False, .Margin = New Padding(0), .Anchor = AnchorStyles.Top}
-        picQr = New PictureBox With {.Size = New Size(128, 128), .SizeMode = PictureBoxSizeMode.Zoom,
-            .BackColor = Color.White, .BorderStyle = BorderStyle.FixedSingle, .Margin = New Padding(0, 0, 0, 6)}
-        AddHandler picQr.Click, AddressOf OnShowQr
-        AddHandler picQr.Paint, AddressOf OnQrPreviewPaint
-        toolTip.SetToolTip(picQr, If(Rus, "Нажмите, чтобы увеличить", "Click to enlarge"))
+        Dim btnRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Anchor = AnchorStyles.Left Or AnchorStyles.Right, .FlowDirection = FlowDirection.LeftToRight, .WrapContents = True, .Margin = New Padding(0, 4, 0, 0)}
         btnShowQr = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Font = New Font(Me.Font, FontStyle.Bold), .Margin = New Padding(0), .Padding = New Padding(10, 6, 12, 6),
+            .Font = New Font(Me.Font, FontStyle.Bold), .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 12, 5),
             .Text = If(Rus, "Показать QR-код", "Show QR code"), .MinimumSize = New Size(128, 0),
             .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
             .TextAlign = ContentAlignment.MiddleCenter, .FlatStyle = FlatStyle.Flat}
         btnShowQr.FlatAppearance.BorderSize = 1
         AddHandler btnShowQr.Click, AddressOf OnShowQr
-        rightCol.Controls.Add(picQr)
-        rightCol.Controls.Add(btnShowQr)
-        SetQrAvailable(False)
-
-        below.Controls.Add(leftCol, 0, 0)
-        below.Controls.Add(rightCol, 1, 0)
-
-        lblHint = New Label With {.AutoSize = True, .MaximumSize = New Size(980, 0), .ForeColor = Color.DimGray, .Margin = New Padding(0, 8, 0, 4)}
-
-        Dim btnRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Dock = DockStyle.Fill, .FlowDirection = FlowDirection.LeftToRight, .WrapContents = True, .Margin = New Padding(0, 4, 0, 0)}
         btnCopyLogin = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = If(Rus, "Скопировать логин/пароль", "Copy login/password"), .Enabled = False}
         btnSave = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = If(Rus, "Сохранить файл .fmscfg..", "Save .fmscfg file.."), .Enabled = False}
         btnEmail = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = If(Rus, "Отправить по почте..", "Send by email.."), .Enabled = False}
@@ -176,13 +161,21 @@ Public NotInheritable Class PackageWizardForm
         AddHandler btnCopyLogin.Click, AddressOf OnCopyLogin
         AddHandler btnSave.Click, AddressOf OnSaveConfig
         AddHandler btnEmail.Click, AddressOf OnEmail
-        btnRow.Controls.AddRange(New Control() {btnCopyLogin, btnSave, btnEmail, btnClose})
+        btnRow.Controls.AddRange(New Control() {btnShowQr, btnCopyLogin, btnSave, btnEmail, btnClose})
+        SetQrAvailable(False)
 
-        Dim bottomBar As New TableLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 1, .Padding = New Padding(16, 6, 16, 12)}
-        bottomBar.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
-        AddStackRow(bottomBar, below)
-        AddStackRow(bottomBar, lblHint)
-        AddStackRow(bottomBar, btnRow)
+        ' Bottom band: common per-export settings on the LEFT, the action-button row filling the
+        ' empty space to their RIGHT (instead of a separate full-width row underneath - that saves
+        ' vertical space and gives the grid more room). The status line spans below both columns.
+        Dim bottomBar As New TableLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 2, .RowCount = 2, .Padding = New Padding(16, 6, 16, 12)}
+        bottomBar.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))          ' left: common settings (sizes to content)
+        bottomBar.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))   ' right: action buttons fill the rest
+        bottomBar.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+        bottomBar.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+        bottomBar.Controls.Add(leftCol, 0, 0)
+        bottomBar.Controls.Add(btnRow, 1, 0)
+        bottomBar.Controls.Add(lblHint, 0, 1)
+        bottomBar.SetColumnSpan(lblHint, 2)
 
         ' Add Fill FIRST (docked last => fills the leftover), then the edges.
         Me.Controls.Add(dgv)
@@ -240,13 +233,6 @@ Public NotInheritable Class PackageWizardForm
             Me.Location = New Point(x, y)
         Catch
         End Try
-    End Sub
-
-    Private Shared Sub AddStackRow(tlp As TableLayoutPanel, c As Control)
-        Dim r As Integer = tlp.RowCount
-        tlp.RowCount = r + 1
-        tlp.RowStyles.Add(New RowStyle(SizeType.AutoSize))
-        tlp.Controls.Add(c, 0, r)
     End Sub
 
     ' --- grid construction ------------------------------------------------------
@@ -587,7 +573,7 @@ Public NotInheritable Class PackageWizardForm
 
     Private Sub OnShowQr(sender As Object, e As EventArgs)
         FlushPendingRebuild()
-        Qr_Zoom_Form.ShowZoomed(Me, picQr)
+        Qr_Zoom_Form.ShowImage(Me, _qrImage)
     End Sub
 
     Private Sub OnSaveConfig(sender As Object, e As EventArgs)
@@ -624,7 +610,7 @@ Public NotInheritable Class PackageWizardForm
     End Sub
 
     Private Sub ShowQr(cfg As ShareConfigResult)
-        Dim old As Image = picQr.Image
+        Dim old As Image = _qrImage
         Dim newImg As Image = Nothing
         Try
             If cfg IsNot Nothing AndAlso cfg.QrPng IsNot Nothing Then
@@ -637,9 +623,8 @@ Public NotInheritable Class PackageWizardForm
         Catch
             newImg = Nothing
         End Try
-        picQr.Image = newImg
+        _qrImage = newImg
         If old IsNot Nothing Then old.Dispose()
-        picQr.Invalidate()   ' repaint the placeholder when the code was cleared
         SetQrAvailable(newImg IsNot Nothing)
     End Sub
 
@@ -647,7 +632,6 @@ Public NotInheritable Class PackageWizardForm
     ''' muted disabled look (no code built yet / no usable address).</summary>
     Private Sub SetQrAvailable(available As Boolean)
         btnShowQr.Enabled = available
-        picQr.Cursor = If(available, Cursors.Hand, Cursors.Default)
         btnShowQr.Image = If(available, _qrGlyph, Nothing)
         If available Then
             btnShowQr.BackColor = QrAccent
@@ -658,14 +642,6 @@ Public NotInheritable Class PackageWizardForm
             btnShowQr.ForeColor = SystemColors.GrayText
             btnShowQr.FlatAppearance.BorderColor = SystemColors.ControlDark
         End If
-    End Sub
-
-    ''' <summary>Placeholder text drawn in the QR preview box until a code has been built.</summary>
-    Private Sub OnQrPreviewPaint(sender As Object, e As PaintEventArgs)
-        If picQr.Image IsNot Nothing Then Return
-        Dim txt As String = If(Rus, "QR-код" & Environment.NewLine & "появится здесь", "QR code" & Environment.NewLine & "appears here")
-        TextRenderer.DrawText(e.Graphics, txt, Me.Font, picQr.ClientRectangle, Color.Silver,
-            TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or TextFormatFlags.WordBreak)
     End Sub
 
     ''' <summary>A tiny QR glyph (three finder squares + a few modules) for the Show-QR button,
@@ -703,8 +679,8 @@ Public NotInheritable Class PackageWizardForm
     End Sub
 
     Private Sub HandleFormClosed(sender As Object, e As FormClosedEventArgs)
-        Dim old As Image = picQr.Image
-        picQr.Image = Nothing
+        Dim old As Image = _qrImage
+        _qrImage = Nothing
         If old IsNot Nothing Then old.Dispose()
         Try : _rebuildTimer.Stop() : _rebuildTimer.Dispose() : Catch : End Try
         Try : toolTip.Dispose() : Catch : End Try

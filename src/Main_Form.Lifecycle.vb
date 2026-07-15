@@ -445,12 +445,17 @@ Partial Public Class Main_Form
         Is_Copying_not_Moving = GetSetting(App_name, Second_App_Name, "CopyMode", "0") = "1"
         chkbox_Top_Most.Checked = GetSetting(App_name, Second_App_Name, "chkTopMost", "0") = "1"
         is_Table_Form_Open = GetSetting(App_name, Second_App_Name, "TableOpened", "0") = "1"
+        ' New key (not the abandoned "SetOnTop"), default off - so a fresh install or
+        ' reinstall starts with the recipients overlay hidden. Applied in Main_Form_Shown.
+        Is_Show_Recipients_Overlay = GetSetting(App_name, Second_App_Name, "ShowRecipientsOverlay", "0") = "1"
 
         Dim video_Volume_String = GetSetting(App_name, Second_App_Name, "VideoVolume", "1.0")
         video_Volume_Level = ParseVideoVolumeSetting(video_Volume_String, video_Volume_Level)
         is_Video_Muted = GetSetting(App_name, Second_App_Name, "VideoMuted", "0") = "1"
 
-        For z = 0 To 9
+        ' Keys 1..9 -> slots 1..9; key "0" -> slot 10 (from MoveOn0). Slot 0 is not a
+        ' runtime destination, so it is left unset (see the save side below).
+        For z = 1 To 9
             Hardkeys_to_move_mediafile(z) = GetSetting(App_name, Second_App_Name, "MoveOn" & z.ToString, "")
         Next
         Hardkeys_to_move_mediafile(10) = GetSetting(App_name, Second_App_Name, "MoveOn0", "")
@@ -561,6 +566,9 @@ Partial Public Class Main_Form
         If is_PictureBox1_Visible OrElse is_PictureBox2_Visible Then
             Draw_Perspective()
         End If
+        ' Now the form is at its final size and panel_Media exists - build the
+        ' recipients overlay if the user left it on.
+        ApplyRecipientsOverlay()
     End Sub
 
     Private Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
@@ -572,15 +580,26 @@ Partial Public Class Main_Form
             If Not current_File_Index = 0 Then SaveSetting(App_name, Second_App_Name, "LastCounter", current_File_Index.ToString)
 
             SaveSetting(App_name, Second_App_Name, "chkTopMost", If(chkbox_Top_Most.Checked, "1", "0"))
-            For z = 0 To 9
+            SaveSetting(App_name, Second_App_Name, "ShowRecipientsOverlay", If(Is_Show_Recipients_Overlay, "1", "0"))
+            ' Keys 1..9 -> MoveOn1..MoveOn9. Key "0" is runtime slot 10 and must be
+            ' saved into MoveOn0 (previously only slots 0..9 were saved, so the "0"
+            ' destination was lost on restart). If(...,"") avoids a null .ToString.
+            For z = 1 To 9
                 Try
-                    SaveSetting(App_name, Second_App_Name, "MoveOn" & z.ToString, Hardkeys_to_move_mediafile(z).ToString)
+                    SaveSetting(App_name, Second_App_Name, "MoveOn" & z.ToString, If(Hardkeys_to_move_mediafile(z), ""))
                 Catch ex As Exception
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1180: ERR: " & ex.Message)
                 Finally
                     Hardkeys_to_move_mediafile(z) = Nothing
                 End Try
             Next
+            Try
+                SaveSetting(App_name, Second_App_Name, "MoveOn0", If(Hardkeys_to_move_mediafile(10), ""))
+            Catch ex As Exception
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1181: ERR: " & ex.Message)
+            Finally
+                Hardkeys_to_move_mediafile(10) = Nothing
+            End Try
 
             SaveSetting(App_name, Second_App_Name, "Is_Russian_Language", If(Is_Russian_Language, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "FirstRun", "0")

@@ -6,6 +6,7 @@ Fast Media Sorter for Windows (formerly FastMediaSorter LITE - it is still publi
 - Slideshow and random file viewing modes
 - Recent files and folders tracking, so you don't have to remember where you left off
 - File operations: move, copy, rename, and delete
+- Recipients panel over the media: a floating list of your hotkey destination folders - click a row to move/copy the current file there (or delete it), so you can sort one-handed with the mouse (off by default; toggle in Settings)
 - Image panel for quick visual navigation
 - Automatic EXIF orientation correction, for when the camera was held sideways
 - High-quality (bicubic) scaling for sharp downscaling of large images

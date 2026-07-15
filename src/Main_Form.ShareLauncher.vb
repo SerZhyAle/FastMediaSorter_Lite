@@ -90,15 +90,29 @@ Partial Public Class Main_Form
         End If
     End Sub
 
+    ''' <summary>Settings window "Manage the SFTP server.." button: open the Share
+    ''' Manager's OWN window (a management entry point), never routed into the
+    ''' share-this-folder wizard. Forwarding the currently-viewed folder (as the
+    ''' folder-box right-click does) pushes a tray-resident Companion straight into
+    ''' the package wizard for that folder - not what "Manage.." asks for - so this
+    ''' path deliberately passes no folder and just raises the manager window, which
+    ''' is also the most robust wake (show-window, no wizard construction to fail).</summary>
+    Friend Sub OpenShareManagerWindow()
+        ActivateShareEntryPoint(managerOnly:=True)
+    End Sub
+
     ''' <summary>The one action LITE knows about sharing: find/wake Fast Media
-    ''' Sorter: Share Manager with the folder currently being viewed. Not found
-    ''' next to this exe -&gt; a clear message, never a silent no-op (graceful
-    ''' degradation - the app never fails silently when an optional companion
-    ''' component is missing).</summary>
-    Friend Sub ActivateShareEntryPoint()
-        Dim folder As String = ResolveCurrentFolder()
+    ''' Sorter: Share Manager. When <paramref name="managerOnly"/> is False (the
+    ''' folder-box right-click) it forwards the folder currently being viewed so
+    ''' Companion jumps to "share this folder"; when True (the Settings button) it
+    ''' forwards nothing and just raises the manager window. Not found next to this
+    ''' exe -&gt; a clear message, never a silent no-op (graceful degradation - the
+    ''' app never fails silently when an optional companion component is missing).</summary>
+    Friend Sub ActivateShareEntryPoint(Optional managerOnly As Boolean = False)
+        Dim folder As String = If(managerOnly, "", ResolveCurrentFolder())
         Dim exePath As String = CompanionExePath()
         If String.IsNullOrEmpty(exePath) OrElse Not File.Exists(exePath) Then
+            AppFileLogger.WriteLine("ShareLauncher: Companion exe not found at '" & If(exePath, "") & "'")
             MessageBox.Show(Me,
                 If(Is_Russian_Language,
                     "Fast Media Sorter: Share Manager не найден рядом. Переустановите приложение.",
@@ -111,6 +125,8 @@ Partial Public Class Main_Form
         Dim existingMutex As Mutex = Nothing
         If Mutex.TryOpenExisting(CompanionMutexName, existingMutex) Then
             existingMutex.Close()
+            AppFileLogger.WriteLine("ShareLauncher: Companion running - forwarding " &
+                                    If(folder.Length > 0, "folder", "show-window"))
             ForwardFolderToCompanion(folder)
         Else
             Try
@@ -119,8 +135,16 @@ Partial Public Class Main_Form
                 Try : AllowSetForegroundWindow(ASFW_ANY) : Catch : End Try
                 Dim psi As New ProcessStartInfo(exePath) With {.UseShellExecute = True}
                 If folder.Length > 0 Then psi.Arguments = """" & folder & """"
+                AppFileLogger.WriteLine("ShareLauncher: cold-starting Companion '" & exePath & "'")
                 Process.Start(psi)
-            Catch
+            Catch ex As Exception
+                AppFileLogger.LogException("ShareLauncher cold-start", ex)
+                MessageBox.Show(Me,
+                    If(Is_Russian_Language,
+                        "Не удалось запустить Fast Media Sorter: Share Manager." & vbCrLf & ex.Message,
+                        "Could not start Fast Media Sorter: Share Manager." & vbCrLf & ex.Message),
+                    If(Is_Russian_Language, "Общий доступ", "Folder sharing"),
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning)
             End Try
         End If
     End Sub
