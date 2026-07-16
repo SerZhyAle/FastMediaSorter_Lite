@@ -70,11 +70,19 @@ Partial Public Class Main_Form
 
         ' Row 2 (navigation + file actions). The two translate buttons sit at the
         ' end - our OCR overlay, then the "in browser" companion (doc-html-translate).
-        toolbar_Row2_Items = New Control() {
+        ' A List, not an array literal, because the modern build has one more item and
+        ' two copies of this list would drift apart on the first edit.
+        Dim row2 As New List(Of Control) From {
             btn_RecentFiles, lbl_File_Number, btn_Prev_File, btn_Next_File,
             btn_Next_Random, btn_Random_Slideshow, btn_Slideshow,
             btn_Move_Table, btn_Rename, bt_Delete, lbl_Zoom,
             btn_Translate, btn_TranslateBrowser}
+#If Not NETFRAMEWORK Then
+        ' Video-only, and mutually exclusive with the image-only translate buttons -
+        ' whichever media is up, only one of them is ever in the row.
+        row2.Add(btn_Tracks)
+#End If
+        toolbar_Row2_Items = row2.ToArray()
     End Sub
 
     ''' <summary>Localizes the overflow button tooltips. Called from

@@ -46,6 +46,15 @@ Partial Public Class Main_Form
             e.Handled = True
             Exit Sub
         End If
+
+        ' Modern: A / V cycle the audio / subtitle track (O-ISO-7). Both only fire
+        ' while VLC is playing a file that HAS a choice - TryHandleTrackKey returns
+        ' False otherwise, so neither letter is stolen from a future binding, and on
+        ' an image they do nothing at all.
+        If TryHandleTrackKey(e) Then
+            e.Handled = True
+            Exit Sub
+        End If
 #End If
 
         If e.Shift Then

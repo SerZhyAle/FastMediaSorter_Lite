@@ -275,6 +275,20 @@ Partial Public Class Main_Form
 
     Private Sub Vlc_Media_Player_Playing(sender As Object, e As EventArgs)
         ApplyVideoAudioStateToVlc()
+#If Not NETFRAMEWORK Then
+        ' Track lists do not exist until VLC is actually playing - this event is the
+        ' first moment they can be read. It arrives on a VLC thread, so hop to the UI
+        ' one before touching the toolbar.
+        Try
+            If Me.IsDisposed Then Return
+            Me.BeginInvoke(Sub()
+                               ApplyPreferredTracks()
+                               ApplyVideoTracksButtonVisibility()
+                           End Sub)
+        Catch
+            ' The form can go away between the check and the post - nothing to do.
+        End Try
+#End If
     End Sub
 
     Private Sub Vlc_Video_View_MouseClick(sender As Object, e As MouseEventArgs)

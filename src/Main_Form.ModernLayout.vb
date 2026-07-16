@@ -98,6 +98,12 @@ Partial Public Class Main_Form
         ' the OCR button so it joins the overflow set and the uniform styling.
         BuildBrowserTranslateToolbarControls(flow_Toolbar)
 
+#If Not NETFRAMEWORK Then
+        ' Audio/subtitle track picker - collapsed out of the row unless the playing
+        ' video actually offers a choice (O-ISO-7).
+        BuildVideoTracksToolbarControls(flow_Toolbar)
+#End If
+
         ' Right-edge "more" button + the priority/overflow partitioning that
         ' LayoutToolbar() uses. Built after the OCR button so it is part of the
         ' overflow set. Must precede ApplyModernStyling so the button is styled

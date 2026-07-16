@@ -70,6 +70,7 @@ Partial Public Class Main_Form
         LocalizeShareEntryPoint()
 #If Not NETFRAMEWORK Then
         LocalizeOpenUrlEntryPoint()
+        LocalizeVideoTracks()
 #End If
         LocalizeToolbarOverflow()
         LocalizeBrowserTranslate()
@@ -91,9 +92,11 @@ Partial Public Class Main_Form
         Return ""
 #Else
         If Is_Russian_Language Then
-            Return "Масштаб: серый + и - (от курсора), серый / - вписать, серый * - 100 %; колесо можно переключить на масштаб в настройках. " & Chr(10)
+            Return "Масштаб: серый + и - (от курсора), серый / - вписать, серый * - 100 %; колесо можно переключить на масштаб в настройках. " & Chr(10) &
+                   "У видео: A - следующая звуковая дорожка, V - следующие субтитры (и кнопка ""Дорожки"", когда есть из чего выбрать). " & Chr(10)
         End If
-        Return "Zoom: grey + and - (at the cursor), grey / to fit, grey * for 100 %; the wheel can be switched to zoom in Settings. " & Chr(10)
+        Return "Zoom: grey + and - (at the cursor), grey / to fit, grey * for 100 %; the wheel can be switched to zoom in Settings. " & Chr(10) &
+               "For video: A - next audio track, V - next subtitles (and a ""Tracks"" button when there is a choice). " & Chr(10)
 #End If
     End Function
 

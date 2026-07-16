@@ -288,6 +288,9 @@
     <Compile Include="Main_Form.OpenUrl.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.VideoTracks.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Imaging\ImageDecoder.vb" />
     <Compile Include="Imaging\LegacyWicImageDecoder.vb" />
     <Compile Include="Imaging\ModernImageSharpDecoder.vb" />
