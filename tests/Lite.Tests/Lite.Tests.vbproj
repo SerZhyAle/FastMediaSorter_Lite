@@ -57,6 +57,12 @@
     <Compile Include="..\..\src\Imaging\ModernImageSharpDecoder.vb">
       <Link>Linked\Imaging\ModernImageSharpDecoder.vb</Link>
     </Compile>
+    <!-- The zoom geometry of the .NET 10 viewer. Whole-file "#If Not NETFRAMEWORK",
+         so on the net48 leg this - and ZoomMathTests - compile to nothing, which is
+         the honest shape: the classic zoom model does not exist in the x86 viewer. -->
+    <Compile Include="..\..\src\ZoomMath.vb">
+      <Link>Linked\ZoomMath.vb</Link>
+    </Compile>
     <!-- Tail of that dependency: the legacy decoder logs a failed WEBP decode (this
          is the log line the Server 2025 bug was diagnosed from - worth keeping), and
          the logger reads two name constants from Common_Module. Both are small leaf

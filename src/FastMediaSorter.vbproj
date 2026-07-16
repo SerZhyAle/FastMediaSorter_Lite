@@ -283,6 +283,7 @@
     </Compile>
     <Compile Include="OcrTranslateSettings.vb" />
     <Compile Include="DocHtmlTranslateLauncher.vb" />
+    <Compile Include="ZoomMath.vb" />
     <Compile Include="Imaging\ImageDecoder.vb" />
     <Compile Include="Imaging\LegacyWicImageDecoder.vb" />
     <Compile Include="Imaging\ModernImageSharpDecoder.vb" />

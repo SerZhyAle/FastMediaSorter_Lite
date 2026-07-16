@@ -23,14 +23,11 @@ Imports System.Windows.Forms
 ' and the real scale lives in zoom_Factor. That also fixes a historical bug: the old
 ' Ctrl+wheel wrote the raw product into zoom_Scale, so zooming OUT (0.9, 0.81..)
 ' landed below 1 and silently killed panning and click-delegation.
+'
+' The arithmetic itself (fit / clamp / snap / step / anchor) lives in ZoomMath.vb as
+' pure functions so it can be tested; what stays here is the WinForms glue that reads
+' panel_Media and moves the boxes.
 Partial Public Class Main_Form
-
-    ' --- tuning (spec 4.1, defaults O-Z-6 / O-Z-7) ---
-    Private Const Zoom_Step_Normal As Double = 1.25      ' one wheel notch / NumPad +-
-    Private Const Zoom_Step_Fast As Double = 1.5         ' Ctrl + wheel
-    Private Const Zoom_Factor_Max As Double = 40.0       ' 4000 %
-    Private Const Zoom_Factor_Floor As Double = 0.05     ' 5 %, unless Fit is smaller
-    Private Const Zoom_Snap_Tolerance As Double = 0.03   ' +-3 % pull onto Fit / 100 %
 
     ''' <summary>Live scale relative to the image's native pixels (1.0 = 100 %).
     ''' Only meaningful while zoom_Scale = 0 (free zoom); at Fit the effective scale
@@ -48,16 +45,10 @@ Partial Public Class Main_Form
         Return ActiveMediaImage() IsNot Nothing
     End Function
 
-    ''' <summary>
-    ''' Scale the image would have at Fit: it is letterboxed inside the panel, so the
-    ''' smaller of the two ratios wins. This is what "Fit" means numerically.
-    ''' </summary>
+    ''' <summary>Scale the image would have at Fit, for the panel it is shown in.</summary>
     Private Function FitFactorFor(img As Image) As Double
-        If img Is Nothing OrElse img.Width <= 0 OrElse img.Height <= 0 Then Return 1.0
-        If panel_Media Is Nothing Then Return 1.0
-        Dim panelSize As Size = panel_Media.ClientSize
-        If panelSize.Width <= 0 OrElse panelSize.Height <= 0 Then Return 1.0
-        Return Math.Min(panelSize.Width / CDbl(img.Width), panelSize.Height / CDbl(img.Height))
+        If img Is Nothing OrElse panel_Media Is Nothing Then Return 1.0
+        Return ZoomMath.FitFactor(img.Width, img.Height, panel_Media.ClientSize.Width, panel_Media.ClientSize.Height)
     End Function
 
     ''' <summary>Scale the user is actually looking at right now.</summary>
@@ -66,25 +57,6 @@ Partial Public Class Main_Form
         If img Is Nothing Then Return 1.0
         If zoom_Scale = 1 Then Return FitFactorFor(img)   ' at Fit the panel decides
         Return zoom_Factor
-    End Function
-
-    Private Function ClampZoomFactor(value As Double, img As Image) As Double
-        ' Never force the user above 4000 %, and never below 5 % - except when Fit
-        ' itself is smaller than 5 % (a huge image in a small window), where Fit is
-        ' the honest floor.
-        Dim floor As Double = Math.Min(Zoom_Factor_Floor, FitFactorFor(img))
-        Return Math.Max(floor, Math.Min(Zoom_Factor_Max, value))
-    End Function
-
-    ''' <summary>
-    ''' Pull a nearly-Fit / nearly-100 % scale exactly onto that anchor, so scrolling
-    ''' past them actually lands on them (spec 4.1, O-Z-6).
-    ''' </summary>
-    Private Function SnapZoomFactor(value As Double, img As Image) As Double
-        Dim fit As Double = FitFactorFor(img)
-        If fit > 0 AndAlso Math.Abs(value - fit) / fit <= Zoom_Snap_Tolerance Then Return fit
-        If Math.Abs(value - 1.0) <= Zoom_Snap_Tolerance Then Return 1.0
-        Return value
     End Function
 
     ''' <summary>Anchor for a keyboard zoom: the mouse if it is over the media, else
@@ -114,41 +86,24 @@ Partial Public Class Main_Form
         Dim img As Image = ActiveMediaImage()
         If img Is Nothing OrElse panel_Media Is Nothing Then Return
 
-        Dim target As Double = ClampZoomFactor(SnapZoomFactor(factor, img), img)
+        Dim fit As Double = FitFactorFor(img)
+        Dim target As Double = ZoomMath.Clamp(ZoomMath.Snap(factor, fit), fit)
 
         ' Landing back on Fit is Fit - not a free zoom that merely looks like it.
-        If Math.Abs(target - FitFactorFor(img)) < 0.0000001 Then
+        If Math.Abs(target - fit) < 0.0000001 Then
             ZoomToFit()
             Return
         End If
 
-        ' Where the anchor sits inside the image right now, as a 0..1 fraction. Taken
-        ' from the DISPLAYED rectangle, so it is correct both at Fit (image letterboxed
-        ' inside a panel-sized box) and while zoomed (box == image rect).
-        Dim shown As Rectangle = DisplayedImageRectangleOnPanel(img)
-        Dim relX As Double = 0.5
-        Dim relY As Double = 0.5
-        If shown.Width > 0 AndAlso shown.Height > 0 Then
-            relX = (anchorOnPanel.X - shown.X) / CDbl(shown.Width)
-            relY = (anchorOnPanel.Y - shown.Y) / CDbl(shown.Height)
-            ' Anchor outside the image (on a perspective bar) - fall back to its centre.
-            If relX < 0 OrElse relX > 1 Then relX = 0.5
-            If relY < 0 OrElse relY > 1 Then relY = 0.5
-        End If
+        ' The anchor's place inside the image is read from the DISPLAYED rectangle, so
+        ' it is correct both at Fit (image letterboxed inside a panel-sized box) and
+        ' while zoomed (box == image rect).
+        Dim fraction As PointF = ZoomMath.AnchorFraction(anchorOnPanel, DisplayedImageRectangleOnPanel(img))
+        Dim bounds As Rectangle = ZoomMath.AnchoredBounds(img.Width, img.Height, target,
+                                                          anchorOnPanel, fraction, panel_Media.ClientSize)
 
-        Dim newWidth As Integer = Math.Max(1, CInt(Math.Round(img.Width * target)))
-        Dim newHeight As Integer = Math.Max(1, CInt(Math.Round(img.Height * target)))
-        Dim newLeft As Integer = CInt(Math.Round(anchorOnPanel.X - relX * newWidth))
-        Dim newTop As Integer = CInt(Math.Round(anchorOnPanel.Y - relY * newHeight))
-
-        ' Keep a grabbable strip on screen (the historical guard, kept until the
-        ' viewport model makes it unnecessary).
-        Const keepVisible As Integer = 100
-        newLeft = Math.Max(Math.Min(newLeft, panel_Media.ClientSize.Width - keepVisible), -newWidth + keepVisible)
-        newTop = Math.Max(Math.Min(newTop, panel_Media.ClientSize.Height - keepVisible), -newHeight + keepVisible)
-
-        Picture_Box_1.Bounds = New Rectangle(newLeft, newTop, newWidth, newHeight)
-        Picture_Box_2.Bounds = Picture_Box_1.Bounds
+        Picture_Box_1.Bounds = bounds
+        Picture_Box_2.Bounds = bounds
 
         zoom_Factor = target
         zoom_Scale = 0.0F   ' "not fit" - enables panning, stops click-navigation
@@ -186,10 +141,7 @@ Partial Public Class Main_Form
     ''' <summary>One zoom notch about an anchor point.</summary>
     Friend Sub ZoomStepAt(zoomIn As Boolean, fast As Boolean, anchorOnPanel As Point)
         If Not IsZoomableMediaShown() Then Return
-        Dim step_Multiplier As Double = If(fast, Zoom_Step_Fast, Zoom_Step_Normal)
-        Dim current As Double = CurrentZoomFactor()
-        Dim target As Double = If(zoomIn, current * step_Multiplier, current / step_Multiplier)
-        ApplyZoomFactor(target, anchorOnPanel)
+        ApplyZoomFactor(ZoomMath.StepFrom(CurrentZoomFactor(), zoomIn, fast), anchorOnPanel)
     End Sub
 
     ''' <summary>Percent readout (spec 4.1): "Fit 38 %" / "100 %" / "250 %".</summary>

@@ -29,6 +29,7 @@ Partial Public Class Main_Form
                 "Стрелки вверх/вниз: -10/+10 и Shift+ PgDn/PgUp: +100/-100 файлов" & Chr(10) &
                 "Y- случайно, S- слайдшоу, I- случайное слайдшоу. " & Chr(10) &
                 "R/Shift+R для поворота картинки, если фотограф держал камеру боком (T тоже, пока не включён OCR-перевод). " & Chr(10) &
+                ZoomHelpLine() &
                 "F3 для просмотра панели изображений папки. " & Chr(10) &
                 "F6 для переименования файла. " & Chr(10) &
                 "Или раскидайте файлы по папкам клавишами (1,2,3.. - 0) - по одному нажатию на файл. " & Chr(10) &
@@ -56,6 +57,7 @@ Partial Public Class Main_Form
                 "Or move/copy files into dest folders by keys (1,2.. - 0) - one keypress per file. " & Chr(10) &
                 "Or delete files (del key), if they had it coming. " & Chr(10) &
                 "R/Shift+R to rotate the image, for when the photographer held the camera sideways (T too, unless OCR translation is on). " & Chr(10) &
+                ZoomHelpLine() &
                 "F3 to see the panel of folder's images. " & Chr(10) &
                 "F6 to rename the file. " & Chr(10) &
                 "You can pin the folders-table window and click on the key numbers. " & Chr(10) &
@@ -73,6 +75,24 @@ Partial Public Class Main_Form
         LayoutToolbar()
 
     End Sub
+
+    ''' <summary>
+    ''' The zoom line of the first-run help, or "" where there is nothing to promise.
+    ''' The classic zoom model is modern-only (the x86 viewer keeps the historical
+    ''' mechanics - SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md), so the x86 help must
+    ''' not advertise keys that do nothing there. Ends with its own newline so the
+    ''' surrounding text closes up when it is empty.
+    ''' </summary>
+    Private Function ZoomHelpLine() As String
+#If NETFRAMEWORK Then
+        Return ""
+#Else
+        If Is_Russian_Language Then
+            Return "Масштаб: серый + и - (от курсора), серый / - вписать, серый * - 100 %; колесо можно переключить на масштаб в настройках. " & Chr(10)
+        End If
+        Return "Zoom: grey + and - (at the cursor), grey / to fit, grey * for 100 %; the wheel can be switched to zoom in Settings. " & Chr(10)
+#End If
+    End Function
 
     ''' <summary>
     ''' First-run UI language: follow the Windows display language. The app only

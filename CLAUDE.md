@@ -181,6 +181,8 @@ The Store path (Path A: MSIX) is **additive** - it does not change the GitHub re
 
 **[HqPictureBox.vb](src/HqPictureBox.vb)** - `PictureBox` subclass used for the two media surfaces (`Picture_Box_1`/`Picture_Box_2`). When `Is_HighQuality_Scaling` is on it sets `HighQualityBicubic` interpolation on the `Graphics` **inside `OnPaint` before `MyBase.OnPaint`** - the base draws the zoomed image there, so the control `Paint` event (which fires after) is too late. The existing OCR/info overlay `Paint` handlers still run afterwards.
 
+**[Main_Form.Zoom.vb](src/Main_Form.Zoom.vb) + [ZoomMath.vb](src/ZoomMath.vb)** - the classic zoom model, **modern build only** (both files are whole-file `#If Not NETFRAMEWORK`; the x86 viewer keeps the historical mechanics). `ZoomMath` is pure geometry (fit / clamp / snap / step / anchor) and is unit-tested; the partial is the WinForms glue. Zoom is still *expressed* the historical way - resizing the picture boxes, `SizeMode = Zoom` scaling the image inside - because `Draw_Perspective` and the OCR overlay both re-derive their geometry from that box rectangle and stay aligned for free. `zoom_Scale` carries exactly two meanings here (**1 = fit**, **0 = zoomed**, which is what the shared code tests for) while the real scale lives in `zoom_Factor`. The wheel keeps flipping files by default; zoom-on-wheel is opt-in (`Zoom_Wheel_Zooms`, registry `WheelZooms`).
+
 **[Image_Panel_Form.vb](src/Image_Panel_Form.vb)** - Quick-access thumbnail panel
 - Small window of file thumbnails
 - Double-click to load, drag-drop to the main window
@@ -272,6 +274,7 @@ Option Infer On       ' Allow type inference where possible
 - Stored in app settings (persisted to registry/config)
 - Hardcoded hotkey array in Common_Module for folder shortcuts
 - Inspect Main_Form keyboard event handlers for the full mapping
+- **Zoom keys are the modern build only** (`Main_Form.Zoom.vb` + `ZoomMath.vb` are whole-file `#If Not NETFRAMEWORK`): the **grey** NumPad block - `+`/`-` zoom at the cursor, `/` fits, `*` is 100 %. Only the grey block, because every `Ctrl` combo is already taken and NumPad `0..9` are the sort hotkeys. The first-run help gets its zoom line from `ZoomHelpLine()`, which returns `""` on net48 so the x86 viewer never advertises keys it does not have.
 
 **UI Threading**:
 - Image/video loading happens on background threads to avoid UI freeze
