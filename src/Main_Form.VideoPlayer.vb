@@ -170,8 +170,37 @@ Partial Public Class Main_Form
         End Try
     End Function
 
+    ''' <summary>
+    ''' Can VLC be expected to reach this media? For anything on disk (including a UNC
+    ''' share, which Windows resolves) File.Exists is the honest answer. A remote MRL
+    ''' has no file to stat - only VLC's access plugins can say - so asking File.Exists
+    ''' would answer False and drop the request silently. Modern only: the x86 viewer
+    ''' has no way to enter a URL (see Main_Form.OpenUrl.vb).
+    ''' </summary>
+    Private Function CanVlcReachMedia(file_Path As String) As Boolean
+        If String.IsNullOrEmpty(file_Path) Then Return False
+#If Not NETFRAMEWORK Then
+        If IsRemoteMediaUrl(file_Path) Then Return True
+#End If
+        Return File.Exists(file_Path)
+    End Function
+
+    ''' <summary>
+    ''' Wraps the media for VLC. A local path becomes file:// via Uri; a remote MRL must
+    ''' be passed as a STRING with FromType.FromLocation - New Uri would mangle it and
+    ''' strip the very scheme that picks the access plugin.
+    ''' </summary>
+    Private Function CreateVlcMedia(file_Path As String) As LibVLCSharp.Shared.Media
+#If Not NETFRAMEWORK Then
+        If IsRemoteMediaUrl(file_Path) Then
+            Return New LibVLCSharp.Shared.Media(libVlc, file_Path, LibVLCSharp.Shared.FromType.FromLocation)
+        End If
+#End If
+        Return New LibVLCSharp.Shared.Media(libVlc, New Uri(file_Path))
+    End Function
+
     Private Async Sub PlayVideoWithVlcAsync(file_Path As String)
-        If String.IsNullOrEmpty(file_Path) OrElse Not File.Exists(file_Path) Then Return
+        If Not CanVlcReachMedia(file_Path) Then Return
 
         If Not Await EnsureVlcInitializedAsync() Then
             lbl_Status.Text = OptionalRuntimeManager.GetVlcUnavailableStatusText(Is_Russian_Language)
@@ -202,7 +231,7 @@ Partial Public Class Main_Form
             ' VLC just took the top of the z-order - reassert the recipients overlay.
             KeepRecipientsOverlayOnTop()
 
-            Dim media As New LibVLCSharp.Shared.Media(libVlc, New Uri(file_Path))
+            Dim media As LibVLCSharp.Shared.Media = CreateVlcMedia(file_Path)
             If Is_Video_Loop Then media.AddOption(":input-repeat=65535")
             vlc_Media_Player.Play(media)
             media.Dispose()
@@ -210,9 +239,15 @@ Partial Public Class Main_Form
 
             is_Vlc_Playing = True
             current_Loaded_File_Name = file_Path
+            Dim shown_Name As String = Path.GetFileName(file_Path)
+#If Not NETFRAMEWORK Then
+            ' Path.GetFileName on an MRL drags the query string in and returns nothing
+            ' at all for an address ending in "/".
+            If IsRemoteMediaUrl(file_Path) Then shown_Name = DisplayNameForMrl(file_Path)
+#End If
             lbl_Status.Text = If(Is_Russian_Language,
-                                 "Видео воспроизводится через VLC: " & Path.GetFileName(file_Path),
-                                 "Playing via VLC: " & Path.GetFileName(file_Path))
+                                 "Видео воспроизводится через VLC: " & shown_Name,
+                                 "Playing via VLC: " & shown_Name)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0871: Playing via LibVLC: " & file_Path)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0872: LibVLC play failed: " & ex.Message)

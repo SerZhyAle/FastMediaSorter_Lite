@@ -44,7 +44,13 @@ Partial Public Class Main_Form
         toolTip.SetToolTip(bt_Delete, If(Is_Russian_Language, "Удалить файл (Del) - пути назад почти нет, так что прицеливайтесь.", "Delete the file (Del) - there's almost no going back, so aim carefully."))
         toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык на английский", "Switch language to Russian"))
         toolTip.SetToolTip(chkbox_Top_Most, If(Is_Russian_Language, "Поверх всех окон - чтобы ничто не смело его заслонить.", "Always on top - so nothing dares cover it."))
+#If NETFRAMEWORK Then
         toolTip.SetToolTip(btn_choose_file, If(Is_Russian_Language, "Выбрать файл..", "Choose file.."))
+#Else
+        ' Modern hangs "Open URL.." off this button's right-click - the tooltip is the
+        ' only thing that tells anyone it is there.
+        toolTip.SetToolTip(btn_choose_file, ChooseFileTooltipText())
+#End If
 
         ' --- ComboBoxes and Labels ---
         toolTip.SetToolTip(cmbox_Sort, If(Is_Russian_Language, "Порядок сортировки файлов", "File sort order"))
@@ -412,6 +418,9 @@ Partial Public Class Main_Form
         InitializeOcrTranslate()
         InitializeBrowserTranslate()
         InitializeShareEntryPoint()
+#If Not NETFRAMEWORK Then
+        InitializeOpenUrlEntryPoint()
+#End If
 
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Width_At_Panel", "80"), Picture_Box_Width_At_Panel)
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Height_At_Panel", "80"), Picture_Box_Height_At_Panel)

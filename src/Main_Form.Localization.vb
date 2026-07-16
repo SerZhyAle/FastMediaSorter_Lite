@@ -68,6 +68,9 @@ Partial Public Class Main_Form
         End If
 
         LocalizeShareEntryPoint()
+#If Not NETFRAMEWORK Then
+        LocalizeOpenUrlEntryPoint()
+#End If
         LocalizeToolbarOverflow()
         LocalizeBrowserTranslate()
 

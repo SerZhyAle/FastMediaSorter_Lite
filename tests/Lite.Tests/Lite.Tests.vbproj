@@ -63,6 +63,10 @@
     <Compile Include="..\..\src\ZoomMath.vb">
       <Link>Linked\ZoomMath.vb</Link>
     </Compile>
+    <!-- "Open URL.." address handling - modern-only for the same reason. -->
+    <Compile Include="..\..\src\MediaUrl.vb">
+      <Link>Linked\MediaUrl.vb</Link>
+    </Compile>
     <!-- Tail of that dependency: the legacy decoder logs a failed WEBP decode (this
          is the log line the Server 2025 bug was diagnosed from - worth keeping), and
          the logger reads two name constants from Common_Module. Both are small leaf
