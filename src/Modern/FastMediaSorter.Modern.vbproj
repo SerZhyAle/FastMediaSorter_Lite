@@ -30,7 +30,12 @@
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
 
     <ApplicationIcon>..\..\assets\icons\Fast_Media_Sorter.ico</ApplicationIcon>
-    <ApplicationManifest>..\My Project\app.manifest</ApplicationManifest>
+    <!-- No ApplicationManifest on purpose: the shipped net48 exe never embedded
+         app.manifest either (it is only a <None> item there), so the reference
+         behavior is DPI-unaware - pinned in ApplyApplicationDefaults. Embedding
+         the manifest here would force PerMonitorV2 and shift the pixel-tuned
+         layout on >100% scaling (audit 2026-07-16). -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 
     <!-- Everything is included explicitly below: the sources live OUTSIDE this
          project folder, and default globs would double-include local files. -->
@@ -41,10 +46,19 @@
     <Product>Fast Media Sorter for Windows</Product>
     <AssemblyTitle>Fast Media Sorter for Windows</AssemblyTitle>
     <Company>SZA</Company>
-    <Copyright>Copyright © 2013-2026</Copyright>
+    <!-- Verbatim from the legacy AssemblyInfo.vb - keep the two exes' metadata
+         identical (bump both together when the owner decides). -->
+    <Copyright>Copyright © 2013-2025</Copyright>
     <Description>sza@ukr.net</Description>
     <NeutralLanguage>en</NeutralLanguage>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Culture behavior parity: .NET 5+ sorts strings with ICU while net48 uses
+         NLS - the "abc"/"xyz" file sorts would order punctuated/diacritic names
+         differently between the builds. Force NLS so both sort identically. -->
+    <RuntimeHostConfigurationOption Include="System.Globalization.UseNls" Value="true" />
+  </ItemGroup>
 
   <!-- Same YY.M.D.HHmm auto-version as the net48 UpdateVersion target; a release
        build can override it with -p:ReleaseVersion=... exactly like legacy. -->
@@ -138,5 +152,11 @@
     <!-- DPAPI (DpapiSecrets): ProtectedData is inbox on net10.0-windows
          (NU1510 flags the explicit package as redundant) - no PackageReference. -->
   </ItemGroup>
+
+  <!-- The Tesseract package's .targets copies BOTH arch folders; the x86 pair is
+       dead weight in this x64-only publish (VLC has its own opt-out property). -->
+  <Target Name="TrimX86NativesFromPublish" AfterTargets="Publish">
+    <RemoveDir Directories="$(PublishDir)x86" />
+  </Target>
 
 </Project>

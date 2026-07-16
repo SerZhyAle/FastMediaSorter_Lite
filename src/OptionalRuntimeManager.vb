@@ -63,6 +63,19 @@ Friend Module OptionalRuntimeManager
             Return False
         End If
 
+#If Not NETFRAMEWORK Then
+        ' Single-file publish: Tesseract.dll is bundled into the apphost, so its
+        ' InteropDotNet loader sees Assembly.Location = "" and dies computing its
+        ' probe paths (ArgumentNullException) even with the natives on disk.
+        ' CustomSearchPath is probed FIRST and expects the x64\ subfolder under it -
+        ' point it at the parent of whichever runtime dir won (exe-adjacent bundle
+        ' or the downloaded %LOCALAPPDATA% tree).
+        Try
+            InteropDotNet.LibraryLoader.Instance.CustomSearchPath = Path.GetDirectoryName(dir)
+        Catch
+        End Try
+#End If
+
         PrependToPath(dir)
         Return ProbeDll(dir, "tesseract50.dll", reason)
     End Function

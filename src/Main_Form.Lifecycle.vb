@@ -681,7 +681,11 @@ Partial Public Class Main_Form
         ShutdownOcrTranslate()
 
         If Web_Browser IsNot Nothing Then
+#If NETFRAMEWORK Then
+            ' Touching DocumentText would instantiate the never-used IE ActiveX on
+            ' the modern build; disposing a handle-less control is safe on both.
             Web_Browser.DocumentText = ""
+#End If
             Web_Browser.Dispose()
         End If
 

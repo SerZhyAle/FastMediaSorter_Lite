@@ -204,6 +204,7 @@ Partial Public Class Main_Form
                 End If
 
                 Try
+#If NETFRAMEWORK Then
                     If is_WebBrowser_Visible Then
                         Web_Browser.DocumentText = ""
                     Else
@@ -213,6 +214,16 @@ Partial Public Class Main_Form
                             If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
                         End If
                     End If
+#Else
+                    ' Modern: LibVLC holds the playing file open - release it before
+                    ' DeleteFile (net48 released via the WebBrowser branch above).
+                    If is_Vlc_Playing Then StopVlcPlayback()
+                    If is_PictureBox1_Visible Then
+                        If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
+                    Else
+                        If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
+                    End If
+#End If
 
                     current_Loaded_File_Name = ""
 
@@ -572,10 +583,15 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0920: file is a same, pic set is skipped")
         End If
 
+#If NETFRAMEWORK Then
+        ' net48 only: even READING DocumentText forces the IE ActiveX host into
+        ' existence, so the modern build must never touch it (video there never
+        ' renders in the WebBrowser to begin with).
         If Not Web_Browser.DocumentText = "" Then
             Web_Browser.DocumentText = ""
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0940: WB blank")
         End If
+#End If
 
     End Sub
 
@@ -961,7 +977,11 @@ Partial Public Class Main_Form
             If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
             If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
             current_Loaded_File_Name = ""
+#If NETFRAMEWORK Then
             Web_Browser.DocumentText = ""
+#Else
+            If is_Vlc_Playing Then StopVlcPlayback()
+#End If
 
             lbl_File_Number.Text = ""
             lbl_Status.Text = If(Is_Russian_Language, "! Нет файлов в папке", "! No files in folder")

@@ -320,6 +320,10 @@ Public Class Table_Form
                 Dim textKey As String = e.RowIndex.ToString
                 If textKey = "10" Then textKey = "0"
                 folderBrowse.Description = If(Is_Russian_Language, "Укажите каталог переноса/копирования для клавиши " + textKey, "Select dest folder for key " + textKey)
+#If Not NETFRAMEWORK Then
+                ' The Vista-style dialog .NET uses shows Description only as the title.
+                folderBrowse.UseDescriptionForTitle = True
+#End If
                 If folderBrowse.ShowDialog() = System.Windows.Forms.DialogResult.OK Then
                     Hardkeys_to_move_mediafile(e.RowIndex) = folderBrowse.SelectedPath
                     Data_Grid_View.Item(1, e.RowIndex).Value = Hardkeys_to_move_mediafile(e.RowIndex)
@@ -451,6 +455,8 @@ Public Class Table_Form
     End Sub
 
     Private Sub LinkLabel1_LinkClicked(sender As Object, e As System.Windows.Forms.LinkLabelLinkClickedEventArgs) Handles LinkLabel1.LinkClicked
-        System.Diagnostics.Process.Start("mailto:sza@ukr.net?subject=Fast Media Sorter for Windows:")
+        ' Explicit UseShellExecute: mailto needs the shell; net48 defaulted to True,
+        ' .NET defaults to False (would throw Win32Exception on the modern build).
+        System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo("mailto:sza@ukr.net?subject=Fast Media Sorter for Windows:") With {.UseShellExecute = True})
     End Sub
 End Class

@@ -14,13 +14,16 @@ Namespace My
 
 #If Not NETFRAMEWORK Then
         ''' <summary>
-        ''' .NET WinForms ignores the manifest DPI block (WFO0003) and defaults to
-        ''' Segoe UI 9pt - both would shift the pixel-tuned net48 layout. Pin the
-        ''' net48 metrics: PerMonitorV2 (same as the manifest gave net48) and the
-        ''' classic default font all Designer coordinates were laid out against.
+        ''' Pin the net48 rendering metrics (audit 2026-07-16). The SHIPPED net48
+        ''' exe never embedded app.manifest (byte-scan proven), so its reference
+        ''' behavior is DPI-UNAWARE - Windows bitmap-scales the whole window and
+        ''' the pixel-tuned Designer layout never sees a scale factor. Match it
+        ''' exactly; flipping to PerMonitorV2 is a deliberate future step (needs
+        ''' the layout re-tested at 125/150%). Font: .NET defaults to Segoe UI
+        ''' 9pt - pin the classic font all Designer coordinates assume.
         ''' </summary>
         Private Sub MyApplication_ApplyApplicationDefaults(sender As Object, e As ApplyApplicationDefaultsEventArgs) Handles Me.ApplyApplicationDefaults
-            e.HighDpiMode = System.Windows.Forms.HighDpiMode.PerMonitorV2
+            e.HighDpiMode = System.Windows.Forms.HighDpiMode.DpiUnaware
             e.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25F)
         End Sub
 #End If

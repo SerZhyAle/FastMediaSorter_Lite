@@ -46,6 +46,58 @@
 5. Этап 10: legacy x86 LITE-урезка (FEATURE_FULL, PlatformTarget=x86, standalone).
 6. Этап 11: каналы (winget/Store на modern) + вся документация (CLAUDE.md и пр.).
 
+## АУДИТ КОДА 2026-07-16 (три агента: паритет проектов / полный дифф от dcc066e / .NET-ловушки)
+
+**Вердикты:** структурный паритет ПОЛНЫЙ (все 56 общих Compile-итемов, ресурсы,
+resx-имена побайтово); **[LEGACY-CHANGED]: none** - net48-ветки эквивалентны
+dcc066e; найдено и **ИСПРАВЛЕНО** (коммит см. журнал):
+
+- P1 **OCR был мёртв под single-file**: InteropDotNet-загрузчик Tesseract видит
+  Assembly.Location="" -> ArgumentNullException (эмпирически воспроизведено
+  стендом). Фикс: `InteropDotNet.LibraryLoader.Instance.CustomSearchPath =
+  parent(GetOcrRuntimeDir())` в TryPrepareOcrRuntime (#If Not NETFRAMEWORK).
+- P1 **Process.Start ×3** (mailto в Main_Form/Table_Form, внешний плеер в
+  VideoPlayer): на .NET UseShellExecute по умолчанию False -> Win32Exception.
+  Фикс: явный ProcessStartInfo UseShellExecute=True (портируемо, без #If).
+- P1 **Move/Delete играющего видео падал** (VLC держит файл; net48 отпускал через
+  очистку WebBrowser). Фикс: `StopVlcPlayback()` в modern-ветках всех 4 файловых
+  точек (FileOperations ×3, MediaLoading delete/empty-folder).
+- P2 **6 незагейченных касаний Web_Browser.DocumentText** будили IE ActiveX в
+  modern (в т.ч. на КАЖДОЙ картинке; на IE-less системах = краш) + строка
+  `AllowWebBrowserDrop=False` в Designer инстанцировала ActiveX прямо в ctor
+  (эмпирически доказано). Фикс: #If-гейты всех 6 точек; строка из Designer
+  удалена (net48 переустанавливает True в WireSurfaceDragDrop; окно без
+  контента между ctor и Load - поведенчески ноль).
+- P2 **Сортировка abc/xyz расходилась** (net48 NLS vs .NET ICU). Фикс: 
+  `RuntimeHostConfigurationOption System.Globalization.UseNls=true` в modern
+  vbproj - обе сборки сортируют идентично, общий код не тронут.
+- P2 **DPI**: шипованный net48 exe НИКОГДА не встраивал app.manifest (байт-скан) =
+  DPI-unaware. Фикс паритета: у modern убран ApplicationManifest,
+  ApplyApplicationDefaults -> **DpiUnaware** (было PerMonitorV2). **PerMonitorV2 =
+  осознанный будущий шаг** (владелец решает; тест вёрстки на 125/150%).
+- P2 **FolderBrowserDialog.Description** невидим на .NET -> UseDescriptionForTitle
+  (#If Not NETFRAMEWORK, 2 места).
+- P2 **STJ эскейпил кириллицу в промпт Ollama** -> Encoder=UnsafeRelaxedJsonEscaping.
+- P2 **Пустой 200-ответ Ollama ронял перевод** -> JsonDeserializeObject("") =
+  Nothing как у JavaScriptSerializer.
+- P3 Copyright выровнен (2013-2025 как в legacy), AssemblyTrademark("sza")
+  добавлен, +git-sha убран из InformationalVersion, x86-тримминг publish
+  (AfterTargets), мёртвые x86-нативы больше не едут.
+
+**Осознанно отложено (НЕ баги паритета, задокументировано):**
+- **Перемотки видео в modern нет** - у net48 сикбар давал IE `<video controls>`
+  (только для H.264-мейнстрима; VLC-fallback и в net48 не умел перемотку). Все
+  очевидные клавиши заняты замороженной картой хоткеев -> дизайн транспорта
+  (полоска-оверлей на VLC-вью / клавиши) - отдельная задача этапа 8, решает
+  владелец.
+- Инфо-страница «видео открыто во внешнем плеере» (net48 рисовал её в WB) - в
+  modern только статус-строка. Минорно; вернуть оверлеем при желании.
+- Form.Closing (WFDEV004, 2 места) - работает, предупреждение; мигрировать на
+  FormClosing при случае. ServicePointManager TLS-пин - no-op на .NET, загрузки
+  работают на системных дефолтах TLS 1.2/1.3.
+- CLAUDE.md «msbuild alone builds only LITE» устарел (sln теперь собирает и
+  Modern) - поправить в этапе 11.
+
 **Ручная проверка владельцем (набралось за Ф0-Ф4):**
 - [ ] Анимированный webp: КАЧЕСТВО и скорость анимации (GIF-транскод, 256 цветов;
       тайминги скопированы из webp FrameDelay мс -> gif cs - проверить глазами).

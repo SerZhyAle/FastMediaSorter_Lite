@@ -105,7 +105,13 @@ Partial Public Class Main_Form
                                 End If
                             End If
 
+#If NETFRAMEWORK Then
                             Web_Browser.DocumentText = ""
+#Else
+                            ' Modern: LibVLC (the single video engine) holds the playing
+                            ' file open - net48 released it by blanking the WebBrowser.
+                            If is_Vlc_Playing Then StopVlcPlayback()
+#End If
 
                             lbl_Status.Text = If(Is_Russian_Language, "!Ждите.. Файл переносится (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "!Wait.. File moving (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
 
@@ -150,7 +156,13 @@ Partial Public Class Main_Form
                                 End If
                             End If
 
+#If NETFRAMEWORK Then
                             Web_Browser.DocumentText = ""
+#Else
+                            ' Modern: release LibVLC's lock on the playing file before
+                            ' the synchronous move (net48 blanked the WebBrowser here).
+                            If is_Vlc_Playing Then StopVlcPlayback()
+#End If
 
                             lbl_Status.Text = If(Is_Russian_Language, "!Ждите.. Файл переносится (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "!Wait.. File moving (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
 
@@ -241,7 +253,11 @@ Partial Public Class Main_Form
                     End Try
                 End If
             End If
+#If NETFRAMEWORK Then
             Web_Browser.DocumentText = ""
+#Else
+            If is_Vlc_Playing Then StopVlcPlayback()
+#End If
 
         Else
             lbl_Status.Text = If(Is_Russian_Language, "! Нет истории о переносе", "! No history about moved files")

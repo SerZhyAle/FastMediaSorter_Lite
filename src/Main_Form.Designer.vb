@@ -203,7 +203,9 @@ Partial Class Main_Form
         '
         'Web_Browser
         '
-        Me.Web_Browser.AllowWebBrowserDrop = False
+        'AllowWebBrowserDrop deliberately NOT set here: on .NET the setter alone
+        'instantiates the IE ActiveX host in the constructor, defeating the modern
+        'build's dormant-WebBrowser design. net48 re-sets it in WireSurfaceDragDrop.
         Me.Web_Browser.Location = New System.Drawing.Point(0, 155)
         Me.Web_Browser.Margin = New System.Windows.Forms.Padding(4)
         Me.Web_Browser.Name = "Web_Browser"

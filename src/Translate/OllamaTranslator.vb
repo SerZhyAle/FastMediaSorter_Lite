@@ -34,9 +34,13 @@ Friend Module TranslateHttp
     End Function
 #Else
     ' Case-insensitive binding mirrors JavaScriptSerializer, so OCR disk-cache
-    ' files written by the net48 build load unchanged after an upgrade.
+    ' files written by the net48 build load unchanged after an upgrade. The relaxed
+    ' encoder keeps non-ASCII text raw like JavaScriptSerializer did - the batch
+    ' JSON is embedded into the LLM prompt, and \u-escaped Cyrillic would degrade
+    ' translation quality (bodies go to localhost over HTTP; no HTML context).
     Private ReadOnly stj_Options As New System.Text.Json.JsonSerializerOptions With {
-        .PropertyNameCaseInsensitive = True
+        .PropertyNameCaseInsensitive = True,
+        .Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     }
 #End If
 
@@ -67,6 +71,10 @@ Friend Module TranslateHttp
 #If NETFRAMEWORK Then
         Return NewSerializer().DeserializeObject(json)
 #Else
+        ' JavaScriptSerializer returns Nothing for empty input (callers rely on it
+        ' to degrade gracefully, e.g. an empty 200 body from Ollama); malformed
+        ' JSON throws in both builds and is caught by the same call-site handlers.
+        If String.IsNullOrWhiteSpace(json) Then Return Nothing
         Using doc As System.Text.Json.JsonDocument = System.Text.Json.JsonDocument.Parse(json)
             Return JsonElementToClr(doc.RootElement)
         End Using

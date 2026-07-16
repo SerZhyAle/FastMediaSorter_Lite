@@ -343,6 +343,10 @@ Public Class Main_Form
         folder_Browser_Dialog.SelectedPath = Current_Folder_Path
 
         folder_Browser_Dialog.Description = If(Is_Russian_Language, "Выберите папку с медиафайлами..", "Set folder of media files..")
+#If Not NETFRAMEWORK Then
+        ' The Vista-style dialog .NET uses shows Description only as the title.
+        folder_Browser_Dialog.UseDescriptionForTitle = True
+#End If
 
         If folder_Browser_Dialog.ShowDialog() = System.Windows.Forms.DialogResult.OK Then
             Current_Folder_Path = folder_Browser_Dialog.SelectedPath
@@ -440,7 +444,9 @@ Public Class Main_Form
     End Sub
 
     Private Sub lbl_Info_LinkClicked(sender As Object, e As System.Windows.Forms.LinkLabelLinkClickedEventArgs) Handles lbl_Info.LinkClicked
-        System.Diagnostics.Process.Start("mailto:sza@ukr.net?subject=Fast Media Sorter for Windows:")
+        ' Explicit UseShellExecute: mailto needs the shell; net48 defaulted to True,
+        ' .NET defaults to False (would throw Win32Exception on the modern build).
+        System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo("mailto:sza@ukr.net?subject=Fast Media Sorter for Windows:") With {.UseShellExecute = True})
     End Sub
 
 

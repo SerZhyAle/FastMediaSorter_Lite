@@ -99,7 +99,10 @@ Partial Public Class Main_Form
                                         "</p></body></html>"
 #End If
 
-                Process.Start(Current_File_Name)
+                ' Explicit UseShellExecute: opening a document needs the shell; net48
+                ' defaulted to True, .NET defaults to False. On the modern build this
+                ' is the ONLY video fallback when LibVLC is unavailable.
+                Process.Start(New ProcessStartInfo(Current_File_Name) With {.UseShellExecute = True})
 
                 lbl_Status.Text = If(Is_Russian_Language, "Видео открыто во внешнем плеере: " & Path.GetFileName(Current_File_Name), "Video opened in external player: " & Path.GetFileName(Current_File_Name))
 
