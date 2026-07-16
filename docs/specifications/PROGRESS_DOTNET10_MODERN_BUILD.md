@@ -18,25 +18,43 @@
 ## ТЕКУЩЕЕ СОСТОЯНИЕ (обновлять при каждом коммите!)
 
 - Ветка: `feature/dotnet10-modern` (создана от main @ dcc066e + доки-коммит)
-- Стадия: **Ф0 ГОТОВА** (швы в общем коде, legacy собран и смоук-запущен зелёным:
-  окно открылось, версия 26.7.16.1113, лог пишется). Все `#If`-точки из «Карты
-  точек» ниже сделаны.
-- Следующая стадия: **Ф1** - modern-проект.
+- Стадия: **Ф0-Ф4 ГОТОВЫ И ПРОВЕРЕНЫ.** Modern-приложение СУЩЕСТВУЕТ и работает:
+  - `dotnet build` зелёный; `dotnet publish -c Release -r win-x64` -> один exe
+    ~113 МБ + рассыпной `libvlc\win-x64` (плагины обязаны лежать на диске) +
+    `flags\` + tesseract-нативы; итого ~226 МБ publish-папка.
+  - Смоук published-exe: окно с правильным заголовком, лог у exe (фикс
+    AppContext.BaseDirectory работает), 64-битный процесс, настоящая версия ОС
+    (NT 10.0.26200 - net48 видел 6.2 из-за манифест-шима).
+  - **Статический И анимированный webp открываются без ошибок** (ImageSharp 3;
+    анимированный - тот самый триггер-баг Server 2025). Тестовые webp
+    генерятся скриптом в скратчпаде `webpgen` (мини net10-проект).
+  - Single-instance форвардинг между процессами (WM_COPYDATA) работает на .NET 10.
+  - Legacy net48 пересобран и смоук-запущен зелёным после ВСЕХ правок общих файлов.
+- Следующая стадия: **Ф5 упаковка** (build.ps1 -Modern), затем этапы 8-11.
 
 ## СЛЕДУЮЩИЙ ШАГ
 
-1. Ф1: создать `src/Modern/FastMediaSorter.Modern.vbproj` (SDK-style,
-   net10.0-windows, x64) по решению 6 ниже: линк `..\**\*.vb` с Exclude
-   (`..\Modern\**`, `..\FastMediaSorterCompanion\**`, `..\obj\**`, `..\bin\**`,
-   `..\My Project\AssemblyInfo.vb`, `..\My Project\VersionInfo.vb`), линк resx
-   (Main_Form, Table_Form, My Project\Resources), embed FmsPayload-ассетов
-   (flags/help/icons - те же LogicalName), Content flags\*.png, app.manifest,
-   иконка, свойства Option*/WarningsAsErrors, версия YY.M.D.HHmm в свойствах.
-2. Пакеты: SixLabors.ImageSharp 3.1.x, LibVLCSharp(+WinForms) 3.9.3,
-   VideoLAN.LibVLC.Windows 3.0.21, Tesseract 5.2.0,
-   System.Security.Cryptography.ProtectedData.
-3. `dotnet build src/Modern/... -c Release` итеративно до зелени; добавить в sln.
-4. Дальше Ф4 publish + смоук (Ф2/Ф3 уже реализованы в Ф0-швах!).
+1. Ф5: `build.ps1` - добавить publish modern (параметр/этап), НЕ ломая текущий
+   флоу; `tools/Build-OfflineRelease.ps1`/`Build-Installer.ps1` - на следующей
+   итерации (staging modern-дерева вместо bin/Release; `Prepare-OcrOfflinePayload.ps1`
+   уже умеет тримить x86 и качать tessdata - переиспользовать).
+2. ВАЖНО для CI (когда дойдём до Ф6): `.github/workflows/release.yml` собирает
+   sln msbuild'ом - modern-проект в sln требует restore (nuget restore на sln
+   восстанавливает PackageReference-проекты; проверить на runner'е .NET 10 SDK).
+3. Этап 8: зум/панорама (Ф-Z1..Z5 по SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md).
+4. Этап 9: MKV/ISO (Ф-A..Ф-G по SPECIFICATION_MKV_ISO_PLAYBACK_DOTNET10.md).
+5. Этап 10: legacy x86 LITE-урезка (FEATURE_FULL, PlatformTarget=x86, standalone).
+6. Этап 11: каналы (winget/Store на modern) + вся документация (CLAUDE.md и пр.).
+
+**Ручная проверка владельцем (набралось за Ф0-Ф4):**
+- [ ] Анимированный webp: КАЧЕСТВО и скорость анимации (GIF-транскод, 256 цветов;
+      тайминги скопированы из webp FrameDelay мс -> gif cs - проверить глазами).
+- [ ] Видео в modern: VLC-путь (WebBrowser выключен навсегда), звук/громкость/луп.
+- [ ] Вёрстка форм: шрифт зафиксирован MS Sans Serif 8.25 + PerMonitorV2 через
+      ApplyApplicationDefaults - сверить с net48 на 100%/150% DPI.
+- [ ] OCR/перевод end-to-end (Tesseract native загрузка на .NET 10, Ollama JSON
+      через System.Text.Json-фасад).
+- [ ] Ассоциации файлов/реестр: modern пишет те же ключи (общие с net48).
 
 ---
 
@@ -58,12 +76,12 @@
 
 ## Порядок работ (сводный план, отметки прогресса)
 
-Этап 1 - **Ф0 швы** (в общем коде, legacy зелёный): [ ]
-Этап 2 - **Ф1 modern-проект компилируется** (`dotnet build`): [ ]
-Этап 3 - **Ф2 изображения** (ImageSharp 3.x, анимированный webp): [ ]
-Этап 4 - **Ф3 видео LibVLC-only** (WebBrowser дремлет, диспетчер мимо него): [ ]
-Этап 5 - **Ф4 publish** (self-contained single-file, libvlc рядом): [ ]
-Этап 6 - **смоук** (запуск exe, лог, картинка/видео вручную владельцем): [ ]
+Этап 1 - **Ф0 швы** (в общем коде, legacy зелёный): [x] (коммит 9410829)
+Этап 2 - **Ф1 modern-проект компилируется** (`dotnet build`): [x] (коммит 4191315)
+Этап 3 - **Ф2 изображения** (ImageSharp 3.x, анимированный webp): [x] (в Ф0-швах; смоук OK)
+Этап 4 - **Ф3 видео LibVLC-only** (WebBrowser дремлет, диспетчер мимо него): [x] (в Ф0-швах; видео-смоук - владелец)
+Этап 5 - **Ф4 publish** (self-contained single-file, libvlc рядом): [x] (vbproj-условие RuntimeIdentifier=win-x64)
+Этап 6 - **смоук** (запуск exe, лог, webp статик+аним): [x] (визуальная приёмка - владелец)
 Этап 7 - **Ф5 упаковка** (build.ps1 -Modern, Build-OfflineRelease, .iss): [ ]
 Этап 8 - **зум/панорама Ф-Z1..Ф-Z5** (по спеке, только modern): [ ]
 Этап 9 - **MKV/ISO Ф-A..Ф-G** (по спеке, только modern): [ ]
@@ -167,4 +185,18 @@
 - Прочитаны все 3 спеки; разведка legacy vbproj/Application_Events/RuntimeBootstrap/
   FileManager/VideoPlayer/MediaLoading/DragDrop/app.manifest; решения зафиксированы.
 - Создана ветка `feature/dotnet10-modern`, заведён этот файл.
-- (обновлять по ходу..)
+- Ф0 (коммит `9410829`): IImageDecoder-шов + все #If-гейты + NETFRAMEWORK=True в
+  legacy vbproj; legacy собран и смоук-запущен.
+- Ф1 (коммит `4191315`): `src/Modern/FastMediaSorter.Modern.vbproj` компилируется;
+  JSON-фасад (JavaScriptSerializer/System.Text.Json) в TranslateHttp; фиксы
+  портируемости (Trace.Listeners, AppContext.BaseDirectory, System.Windows.Forms-
+  квалификация, ImageSharp GetFormatMetadata/FrameDelay); ApplyApplicationDefaults
+  (PerMonitorV2 + MS Sans Serif 8.25); проект в sln.
+- Ф4: publish отработал (113 МБ exe + libvlc-дерево); published-смоук зелёный;
+  webp статик+аним открылись без ошибок; single-instance форвардинг работает.
+- Грабли, добавленные в этой сессии: SDK-VB не имеет WinForms в implicit-Imports
+  (нужны Import-итемы System.Drawing/System.Windows.Forms/System.Data); WFO1000
+  (error-severity) стреляет на WithEvents-полях -> NoWarn; ProtectedData на
+  net10.0-windows inbox (NU1510); на net10 корневой namespace `Windows.` затенён -
+  писать `System.Windows.Forms.`; `Debug.Listeners` нет на .NET -> Trace.Listeners;
+  WebpFrameMetadata.FrameDelay (мс, uint) vs GifFrameMetadata.FrameDelay (сс, int).
