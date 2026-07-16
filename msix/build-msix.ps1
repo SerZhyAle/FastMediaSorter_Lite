@@ -98,8 +98,19 @@ if (-not $NoBuild) {
     & $msbuild $Solution /p:Configuration=$Configuration /p:Platform="Any CPU" /t:Rebuild /v:minimal /nologo
     if ($LASTEXITCODE -ne 0) { throw "MSBuild failed (exit $LASTEXITCODE)." }
 }
-$Exe = Join-Path $ReleaseDir 'FastMediaSorter_LITE.exe'
-if (-not (Test-Path $Exe)) { throw "FastMediaSorter_LITE.exe not found at $Exe (build first, or drop -NoBuild)." }
+# The viewer ships as two exes, but the Store package carries only the x64
+# mainline: the manifest declares FastMediaSorter_LITE.exe, the Store gates by
+# architecture anyway, and the net48 x86 sibling exists for machines that cannot
+# get the package at all. msbuild only builds that sibling, so publish the
+# mainline here (self-contained single file) and package that.
+$ModernProj    = Join-Path $RepoRoot 'src\Modern\FastMediaSorter.Modern.vbproj'
+$ModernPublish = Join-Path $MsixDir 'modern-publish-tmp'
+Write-Host 'Publishing the .NET 10 x64 viewer (self-contained single-file)...' -ForegroundColor Cyan
+if (Test-Path $ModernPublish) { Remove-Item $ModernPublish -Recurse -Force }
+& dotnet publish $ModernProj -c Release -r win-x64 -o $ModernPublish -v minimal --nologo
+if ($LASTEXITCODE -ne 0) { throw "dotnet publish (modern viewer) failed (exit $LASTEXITCODE)." }
+$Exe = Join-Path $ModernPublish 'FastMediaSorter_LITE.exe'
+if (-not (Test-Path $Exe)) { throw "FastMediaSorter_LITE.exe not found at $Exe (modern publish failed?)." }
 
 # --- 2. Store-legal version (revision must be 0) ---------------------------
 # Exe is stamped YY.M.D.HHmm. Map to Major.Minor.Build.0 within the 0..65535 per-part limit:
@@ -118,12 +129,18 @@ New-Item -ItemType Directory -Path (Join-Path $Stage 'Assets') -Force | Out-Null
 Write-Host 'Staging release payload (excluding *.pdb / *.xml)...'
 Get-ChildItem $ReleaseDir -Recurse -File |
     Where-Object { $_.Extension -notin '.pdb', '.xml', '.log' } |
+    Where-Object { $_.Name -ne 'FastMediaSorter_x86.exe' } |   # x64-only package
     ForEach-Object {
         $rel  = Get-RelativePath $ReleaseDir $_.FullName
         $dest = Join-Path $Stage $rel
         New-Item -ItemType Directory -Path (Split-Path $dest -Parent) -Force | Out-Null
         Copy-Item $_.FullName $dest -Force
     }
+
+# The mainline exe (published above, not an msbuild output) - the one the manifest
+# points at. Its support trees came from the staged bin\Release tree above.
+Copy-Item $Exe $Stage -Force
+Remove-Item $ModernPublish -Recurse -Force -ErrorAction SilentlyContinue
 foreach ($extra in 'README.md', 'LICENSE') {
     $src = Join-Path $RepoRoot $extra
     if (Test-Path $src) { Copy-Item $src $Stage -Force }

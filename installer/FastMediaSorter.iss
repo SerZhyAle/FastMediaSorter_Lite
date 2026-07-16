@@ -20,7 +20,15 @@
 ; display name. Pinned via UninstallDisplayName below - NEVER change it.
 #define AppNameArp    "FastMediaSorter LITE"
 #define AppPublisher  "SerZhyAle"
+; The viewer ships as TWO exes in one folder (CLAUDE.md "Project identity"):
+;   AppExeName    - the .NET 10 x64 mainline. FROZEN name: it replaces the exe of
+;                   an existing installation in place. Needs Windows 10 1607+.
+;   AppExeNameX86 - the lean net48 32-bit sibling, for Windows 7/8.1 where the
+;                   mainline's runtime cannot run at all.
+; Shortcuts, the post-install launch and the file associations are wired to
+; whichever of the two can actually run on THIS machine - see UseModernExe below.
 #define AppExeName    "FastMediaSorter_LITE.exe"
+#define AppExeNameX86 "FastMediaSorter_x86.exe"
 #define AppURL        "https://github.com/SerZhyAle/FastMediaSorter_Lite"
 
 [Setup]
@@ -149,18 +157,19 @@ Name: "ocr";    Description: "{cm:CompOcr}";    Types: full
 Name: "share";  Description: "{cm:CompShare}";  Types: full
 
 [Files]
-; Core (always installed): the LITE viewer, its bundled managed payload and the
-; native Tesseract/OCR engine. Excludes the big optional subtrees below so an
-; unchecked component is genuinely not written to disk.
+; Core (always installed): BOTH viewer exes - the .NET 10 x64 mainline
+; (FastMediaSorter_LITE.exe) and its lean net48 sibling (FastMediaSorter_x86.exe)
+; for machines the mainline cannot run on - plus the native Tesseract/OCR engine.
+; They are picked up by this one wildcard; the big optional subtrees below are
+; excluded so an unchecked component is genuinely not written to disk.
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Excludes: "libvlc\*,tessdata\*,tessdata-best\*,companion\*,FastMediaSorterCompanion.exe"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: core
 ; Video codecs (LibVLC) - offline playback of AVI/MKV/VP9/etc. Absent = those
 ; formats fall back to on-demand runtime download (OptionalRuntimeManager).
-; This is the x64-only mainline package (ArchitecturesAllowed=x64compatible); the
-; AnyCPU app runs 64-bit here, so the win-x86 plugin tree is never loaded. It is
-; already trimmed upstream by Prepare-OcrOfflinePayload.ps1; excluded here too as a
-; belt-and-suspenders guarantee now that 32-bit support is a separate standalone
-; product (see SPECIFICATION_DOTNET10_MODERN_BUILD.md, legacy x86 viewer).
-Source: "{#SourceDir}\libvlc\*"; DestDir: "{app}\libvlc"; Excludes: "win-x86\*"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: codecs; Check: OptionalPayloadAllowed
+; Whatever arch trees the staged payload holds are shipped as-is: the decision of
+; which to carry lives in ONE place, Prepare-OcrOfflinePayload.ps1 (-KeepX86). By
+; default it trims win-x86, so this x64 package ships win-x64 only and the x86
+; viewer downloads its 32-bit codecs on first use.
+Source: "{#SourceDir}\libvlc\*"; DestDir: "{app}\libvlc"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: codecs; Check: OptionalPayloadAllowed
 ; OCR/translation language models (fast + best). Absent = packs download on first
 ; OCR use instead of shipping in the installer.
 Source: "{#SourceDir}\tessdata\*"; DestDir: "{app}\tessdata"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: ocr; Check: OptionalPayloadAllowed
@@ -187,13 +196,18 @@ Source: "enable-share-server.ps1"; DestDir: "{app}"; Flags: ignoreversion; Compo
 ; this leftover shortcut folder is the only thing to clean.
 Type: filesandordirs; Name: "{autoprograms}\FastMediaSorter LITE"
 
+; Shortcuts point at the exe that RUNS on this machine: the x64 mainline on
+; Windows 10 1607+, the 32-bit sibling on Windows 7/8.1 (both are installed).
 [Icons]
-Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"
+Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Check: UseModernExe
+Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeNameX86}"; Check: UseLegacyExe
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon; Check: UseModernExe
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeNameX86}"; Tasks: desktopicon; Check: UseLegacyExe
 
 [Run]
-Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent; Check: UseModernExe
+Filename: "{app}\{#AppExeNameX86}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent; Check: UseLegacyExe
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{localappdata}\FastMediaSorter_LITE"
@@ -225,6 +239,39 @@ var
 function IsLanguage(const Lang: String): Boolean;
 begin
   Result := CompareText(ActiveLanguage, Lang) = 0;
+end;
+
+{ Can the x64 mainline actually run here? Its bundled .NET 10 runtime requires
+  Windows 10 1607 (build 14393) or newer, while this installer still accepts
+  Windows 7 (MinVersion=6.1). On anything older the 32-bit net48 sibling is the
+  working viewer, so shortcuts, the post-install launch and the file associations
+  are pointed at it instead. Both exes are always installed. Windows 11 reports
+  Major=10 with a higher build, so the >= 14393 test covers it. }
+function UseModernExe: Boolean;
+var
+  Version: TWindowsVersion;
+begin
+  GetWindowsVersionEx(Version);
+  Result := (Version.Major > 10) or ((Version.Major = 10) and (Version.Build >= 14393));
+end;
+
+function UseLegacyExe: Boolean;
+begin
+  Result := not UseModernExe;
+end;
+
+{ Name of the viewer exe this machine should actually launch. }
+function PrimaryExeName: String;
+begin
+  if UseModernExe then
+    Result := '{#AppExeName}'
+  else
+    Result := '{#AppExeNameX86}';
+end;
+
+function PrimaryExePath: String;
+begin
+  Result := ExpandConstant('{app}\') + PrimaryExeName;
 end;
 
 function OptionsPageTitleText: String;
@@ -405,12 +452,12 @@ end;
 
 function BuildAppCommand: String;
 begin
-  Result := AddQuotes(ExpandConstant('{app}\{#AppExeName}')) + ' "%1"';
+  Result := AddQuotes(PrimaryExePath) + ' "%1"';
 end;
 
 function BuildAppIcon: String;
 begin
-  Result := AddQuotes(ExpandConstant('{app}\{#AppExeName}')) + ',0';
+  Result := AddQuotes(PrimaryExePath) + ',0';
 end;
 
 procedure ConfigureWrappedLabel(LabelControl: TNewStaticText; ATop: Integer; const ACaption: String; ABold: Boolean);
@@ -520,11 +567,16 @@ begin
 end;
 
 procedure RegisterOpenWithSupport(const Ext: String);
+var
+  AppKey: String;
 begin
-  RegWriteStringValue(HKCU, 'Software\Classes\Applications\{#AppExeName}', 'FriendlyAppName', '{#AppName}');
-  RegWriteStringValue(HKCU, 'Software\Classes\Applications\{#AppExeName}\DefaultIcon', '', BuildAppIcon);
-  RegWriteStringValue(HKCU, 'Software\Classes\Applications\{#AppExeName}\shell\open\command', '', BuildAppCommand);
-  RegWriteStringValue(HKCU, 'Software\Classes\Applications\{#AppExeName}\SupportedTypes', Ext, '');
+  { Keyed by the exe that runs here, so Explorer's "Open with" offers a working
+    program on Windows 7/8.1 too (see UseModernExe). }
+  AppKey := 'Software\Classes\Applications\' + PrimaryExeName;
+  RegWriteStringValue(HKCU, AppKey, 'FriendlyAppName', '{#AppName}');
+  RegWriteStringValue(HKCU, AppKey + '\DefaultIcon', '', BuildAppIcon);
+  RegWriteStringValue(HKCU, AppKey + '\shell\open\command', '', BuildAppCommand);
+  RegWriteStringValue(HKCU, AppKey + '\SupportedTypes', Ext, '');
   RegWriteStringValue(HKCU, 'Software\Classes\' + Ext + '\OpenWithProgids', 'FastMediaSorter.' + Copy(Ext, 2, MaxInt), '');
 end;
 
@@ -815,5 +867,7 @@ begin
   RemoveImageAssociation('.heic', 'FastMediaSorter.heic');
   RemoveImageAssociation('.avif', 'FastMediaSorter.avif');
   RemoveImageAssociation('.svg', 'FastMediaSorter.svg');
+  { Both names: which one was registered depends on the OS this was installed on. }
   RegDeleteKeyIncludingSubkeys(HKCU, 'Software\Classes\Applications\{#AppExeName}');
+  RegDeleteKeyIncludingSubkeys(HKCU, 'Software\Classes\Applications\{#AppExeNameX86}');
 end;

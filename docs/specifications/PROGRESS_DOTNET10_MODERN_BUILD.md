@@ -37,31 +37,53 @@
   - Legacy net48 пересобран и смоук-запущен зелёным после ВСЕХ правок общих файлов.
 - Следующая стадия: **Ф5 упаковка** (build.ps1 -Modern), затем этапы 8-11.
 
-## СЛЕДУЮЩИЙ ШАГ - УПАКОВКА (сейчас РЕЛИЗ СЛОМАН, тегать нельзя!)
+## УПАКОВКА - СДЕЛАНА И ПРОВЕРЕНА (2026-07-16)
 
-Переименование сменило владельца имени `FastMediaSorter_LITE.exe`, и вся упаковка
-про это не знает. Каждый из этих скриптов делает СВОЙ msbuild и потом ищет
-`bin\Release\FastMediaSorter_LITE.exe` - теперь msbuild выдаёт там только
-`FastMediaSorter_x86.exe`, а LITE приезжает лишь из `dotnet publish` (это делает
-build.ps1). Падают громко (не тихо), но релиз по тегу упадёт:
+Вся упаковка переведена на два exe. **Правило:** msbuild даёт только
+`FastMediaSorter_x86.exe`; `FastMediaSorter_LITE.exe` рождается ТОЛЬКО из
+`dotnet publish src/Modern/...` - каждый упаковщик теперь делает этот publish сам
+и кладёт в стейдж только exe (деревья поддержки уже пришли из `bin\Release`).
 
-1. `.github/workflows/release.yml:98` - собирает sln + ищет LITE.exe. Нужен шаг
-   `dotnet publish` modern + стейджинг ОБОИХ exe. Плюс .NET 10 SDK на раннере.
-2. `tools/Build-OfflineRelease.ps1:106`, `tools/Build-Installer.ps1:87`,
-   `msix/build-msix.ps1:101` - то же самое.
-3. `installer/FastMediaSorter.iss:23` - `AppExeName` остаётся корректным (это
-   modern), но `[Files]` должен нести ОБА exe; сейчас .iss явно ИСКЛЮЧАЕТ
-   `libvlc\win-x86`, а `Prepare-OcrOfflinePayload.ps1` ТРИМИТ x86-деревья - для
-   x86-вьювера они снова нужны (иначе у него не будет видео/OCR). Решить: везти
-   x86-либы (+вес) или x86-вьювер живёт с докачкой в %LOCALAPPDATA%.
-4. `msix/AppxManifest.xml` - Store-пакет x64-only: x86-exe туда, скорее всего, не
-   едет (решение владельца).
-5. `reinstall.ps1` (личный скрипт владельца) - `Stop-Quiet 'FastMediaSorter_LITE'`
-   стоит дополнить `FastMediaSorter_x86`.
+- `tools/Build-Installer.ps1`, `tools/Build-OfflineRelease.ps1` - publish modern +
+  оба exe в стейдж; проверка наличия перевешена на x86-exe.
+- `.github/workflows/release.yml` - шаг «Publish viewer (.NET 10 x64
+  self-contained)» -> `modern-publish/`, стейджится рядом с x86. `-p:ReleaseVersion`
+  прокинут (версия единая для обоих). .NET 10 SDK на раннере уже был (Companion).
+- `msix/build-msix.ps1` - Store-пакет **x64-only**: publish modern -> из него
+  берётся exe И версия для remap; `FastMediaSorter_x86.exe` из стейджа
+  **исключён** (в манифесте один `<Application>`, Store сам гейтит по арх.).
+- `installer/FastMediaSorter.iss`:
+  - `[Files]` - оба exe едут одним wildcard'ом (правки не потребовалось).
+  - **Ярлык/автозапуск/ассоциации выбираются по версии ОС** (`UseModernExe`:
+    Win10 build >= 14393). На Win7/8.1 (installer MinVersion=6.1!) x64-мейнлайн
+    физически не запустится - там всё ведёт на `FastMediaSorter_x86.exe`. Оба exe
+    ставятся всегда. **Решение владельца 2026-07-16.**
+  - Исключение `win-x86` из компонента кодеков убрано: решение о payload теперь
+    живёт в ОДНОМ месте - `Prepare-OcrOfflinePayload.ps1`.
+- `tools/Prepare-OcrOfflinePayload.ps1` - трим x86 стал ключом **`-KeepX86`**
+  (по умолчанию ТРИМИТ). **Решение владельца:** x86-либы (~100 МБ) в пакет НЕ
+  везём - x86-вьювер докачивает кодеки/OCR в `%LOCALAPPDATA%` при первом
+  использовании (`OptionalRuntimeManager`). `-KeepX86` - для будущего
+  standalone-x86-артефакта (сайт/GitHub, спека §8.3).
+- `reinstall.ps1` - `Stop-Quiet 'FastMediaSorter_x86'` добавлен.
 
-Дальше по плану: этап 8 (зум/панорама), этап 9 (MKV/ISO), этап 10 (урезка x86 по
-FEATURE_FULL - **имя и разрядность уже сделаны**, осталось отсечение фич), этап 11
-(каналы winget/Store + документация).
+**Проверено сквозняком:** `Build-Installer.ps1 -SkipOcr` -> setup.exe 124.5 МБ
+собрался; silent-инсталл (`/VERYSILENT /DIR=..`) exit 0 -> **оба exe на месте**;
+установленный x64-вьювер запускается. Стейдж: 346 МБ, `libvlc\win-x64` есть,
+`win-x86`/`x86`/`runtimes\win-x86` вычищены. (В silent-инсталле без прав админа
+компоненты codecs/ocr/share пропускаются - это ДЕЙСТВУЮЩИЙ дизайн с 26.7.15.2200
+«per-user = только лёгкий вьювер», а не регрессия.)
+
+## СЛЕДУЮЩИЙ ШАГ
+
+Этап 8 (зум/панорама Ф-Z1..Z5), этап 9 (MKV/ISO Ф-A..Ф-G), этап 10 (урезка x86 по
+`FEATURE_FULL` - **имя и разрядность уже сделаны**, осталось отсечение
+OCR/Translate/Share из x86-сборки), этап 11 (winget/Store-манифесты + сайт +
+документация).
+
+**Не проверено (нужен реальный прогон/машина):** элевированный инсталл (компоненты
+codecs/ocr/share); Win7/8.1-ветка `UseModernExe` (нет такой машины - логика прямая,
+но глазами не видел); релиз по тегу в CI.
 
 ## АУДИТ КОДА 2026-07-16 (три агента: паритет проектов / полный дифф от dcc066e / .NET-ловушки)
 

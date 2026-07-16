@@ -67,6 +67,14 @@ jobs:
       - name: Build Release
         run: msbuild FastMediaSorter.sln /p:Configuration=Release /p:Platform="Any CPU" /p:ReleaseVersion=${{ steps.ver.outputs.version }} /t:Rebuild /v:minimal /nologo
 
+      # The .NET 10 x64 mainline viewer. msbuild above only produced its net48 x86
+      # sibling (FastMediaSorter_x86.exe); this publish yields the exe carrying the
+      # frozen FastMediaSorter_LITE.exe name, self-contained so no runtime install
+      # is needed. Only the exe is staged below - the support trees it needs
+      # (libvlc\win-x64, x64\ tesseract natives, flags\) come from bin/Release.
+      - name: Publish viewer (.NET 10 x64 self-contained)
+        run: dotnet publish src/Modern/FastMediaSorter.Modern.vbproj -c Release -r win-x64 -p:ReleaseVersion=${{ steps.ver.outputs.version }} -o modern-publish -v minimal --nologo
+
       # Companion app (Share Manager, net10) - self-contained single-file exe so
       # users without the .NET 10 runtime can still run it. Output goes to
       # companion-publish/FastMediaSorterCompanion.exe, staged below.
@@ -95,7 +103,9 @@ jobs:
 
           $release = "bin/Release"
           if (-not (Test-Path $release)) { throw "Build output not found at $release" }
-          $exe = Join-Path $release "FastMediaSorter_LITE.exe"
+          # msbuild yields the net48 x86 viewer; the x64 mainline is staged from
+          # modern-publish below (see CLAUDE.md "Project identity" - two exes).
+          $exe = Join-Path $release "FastMediaSorter_x86.exe"
           if (-not (Test-Path $exe)) { throw "Release executable not found at $exe" }
 
           # Copy everything except debug/doc artefacts
@@ -110,6 +120,12 @@ jobs:
 
           if (Test-Path README.md) { Copy-Item README.md $stage }
           if (Test-Path LICENSE)   { Copy-Item LICENSE   $stage }
+
+          # The x64 mainline viewer next to its x86 sibling: two exes, one set of
+          # adjacent libraries (each picks its own by process bitness at runtime).
+          $modernExe = "modern-publish/FastMediaSorter_LITE.exe"
+          if (-not (Test-Path $modernExe)) { throw "Modern viewer exe not found at $modernExe (dotnet publish step failed?)" }
+          Copy-Item $modernExe $stage
 
           # Android Folder Share payload: the Companion exe (published above) next
           # to the LITE exe, and the committed Go worker under companion\. Both are

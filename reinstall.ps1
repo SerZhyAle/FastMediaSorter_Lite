@@ -75,6 +75,7 @@ function Stop-Quiet([string]$procName) {
 
 Write-Host "Stopping running instances (LITE, Share Manager, worker).." -ForegroundColor Cyan
 Stop-Quiet 'FastMediaSorter_LITE'
+Stop-Quiet 'FastMediaSorter_x86'
 Stop-Quiet 'FastMediaSorterCompanion'
 Stop-Quiet 'fms-share-worker'
 Start-Sleep -Milliseconds 300

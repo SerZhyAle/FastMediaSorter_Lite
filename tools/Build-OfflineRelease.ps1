@@ -103,7 +103,10 @@ if ($LASTEXITCODE -ne 0) {
     throw "MSBuild failed with exit code $LASTEXITCODE."
 }
 
-if (-not (Test-Path (Join-Path $releaseDir "FastMediaSorter_LITE.exe"))) {
+# The viewer ships as two exes (see CLAUDE.md "Project identity"): msbuild yields
+# the net48 FastMediaSorter_x86.exe here; the .NET 10 mainline
+# FastMediaSorter_LITE.exe comes from the dotnet publish staged further down.
+if (-not (Test-Path (Join-Path $releaseDir "FastMediaSorter_x86.exe"))) {
     throw "Release executable not found in $releaseDir"
 }
 
@@ -126,6 +129,25 @@ foreach ($extra in @("README.md", "LICENSE")) {
         Copy-Item $source $stageDir -Force
     }
 }
+
+# The .NET 10 x64 mainline viewer (mirror of release.yml). msbuild above only
+# produced the net48 x86 sibling; this is the exe that carries the frozen name and
+# replaces the installed one. Self-contained single-file, so no runtime install.
+# Only the exe is staged - the support trees it needs (libvlc\win-x64, x64\
+# tesseract natives, flags\) are already in the staged bin\Release tree.
+$modernProj = Join-Path $solutionDir "src\Modern\FastMediaSorter.Modern.vbproj"
+$modernOut  = Join-Path $stageDir "modern-publish-tmp"
+Write-Host "Publishing the .NET 10 x64 viewer (self-contained single-file).."
+& dotnet publish $modernProj -c Release -r win-x64 -p:ReleaseVersion=$Version -o $modernOut -v minimal --nologo
+if ($LASTEXITCODE -ne 0) {
+    throw "dotnet publish (modern viewer) failed with exit code $LASTEXITCODE."
+}
+$modernExe = Join-Path $modernOut "FastMediaSorter_LITE.exe"
+if (-not (Test-Path $modernExe)) {
+    throw "Modern viewer exe not found at $modernExe after publish."
+}
+Copy-Item $modernExe $stageDir -Force
+Remove-Item -LiteralPath $modernOut -Recurse -Force -ErrorAction SilentlyContinue
 
 # Android Folder Share payload (mirror of release.yml): publish the Companion app
 # (Share Manager, net10) as a self-contained single-file exe next to the LITE exe,
