@@ -18,6 +18,11 @@
     <OptionCompare>Binary</OptionCompare>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <!-- Same reason as the net48 viewer project: SDK-style projects targeting net48
+         do NOT define NETFRAMEWORK implicitly, and the linked sources are full of
+         "#If NETFRAMEWORK" seams (see CLAUDE.md "Two builds, one source tree").
+         Without it the linked Imaging seam would compile its .NET 10 branch here. -->
+    <DefineConstants>NETFRAMEWORK=True</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,6 +36,36 @@
     <Compile Include="..\..\src\Utils.vb">
       <Link>Linked\Utils.vb</Link>
     </Compile>
+    <!-- Utils.GetImageDimensions probes WEBP through the IImageDecoder seam, so the
+         seam has to come along. The modern decoder file compiles to nothing here
+         (its whole body is "#If Not NETFRAMEWORK"), and the legacy one is the WIC +
+         ImageSharp 2 path the net48 viewer really uses. -->
+    <Compile Include="..\..\src\Imaging\ImageDecoder.vb">
+      <Link>Linked\Imaging\ImageDecoder.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\LegacyWicImageDecoder.vb">
+      <Link>Linked\Imaging\LegacyWicImageDecoder.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\ModernImageSharpDecoder.vb">
+      <Link>Linked\Imaging\ModernImageSharpDecoder.vb</Link>
+    </Compile>
+    <!-- Tail of that dependency: the legacy decoder logs a failed WEBP decode (this
+         is the log line the Server 2025 bug was diagnosed from - worth keeping), and
+         the logger reads two name constants from Common_Module. Both are small leaf
+         modules - declarations and P/Invoke - so this still does not drag in the
+         LibVLC/Tesseract/ILMerge machinery the project comment warns about. -->
+    <Compile Include="..\..\src\AppFileLogger.vb">
+      <Link>Linked\AppFileLogger.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Common_Module.vb">
+      <Link>Linked\Common_Module.vb</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Pulled in by LegacyWicImageDecoder (its WEBP fallback). Same version the
+         net48 viewer vendors via packages.config. -->
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.8" />
   </ItemGroup>
 
 </Project>
