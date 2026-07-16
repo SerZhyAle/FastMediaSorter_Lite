@@ -1,3 +1,4 @@
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.IO
@@ -5,6 +6,18 @@ Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
 Imports System.Windows.Forms
+
+' NOT IN THE x86 VIEWER (owner decision, 2026-07-16; epic §1.1 / O-7). The Share
+' feature CANNOT work there, and never could: the Companion app it wakes is
+' net10.0-windows x64, so it does not start on Windows 7/8.1 or on 32-bit Windows -
+' precisely the machines the x86 exe exists for. Shipping the entry point there is
+' a button that leads nowhere, so it is compiled out rather than left to fail.
+'
+' The gate is "#If Not NETFRAMEWORK" and not a new FEATURE_FULL constant on purpose:
+' there is exactly ONE net48 build and it IS the x86 fallback, so NETFRAMEWORK already
+' names the thing being cut precisely. A second constant plus a build configuration
+' (the mechanism O-7 asked about) would add a way for the two to disagree and buy
+' nothing. OCR and translation stay in x86 - unlike Share, they work there.
 
 ''' <summary>
 ''' LITE's entire remaining surface for the Android Folder Share feature after the
@@ -228,3 +241,4 @@ Partial Public Class Main_Form
     End Function
 
 End Class
+#End If

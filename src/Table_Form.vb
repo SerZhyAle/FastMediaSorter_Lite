@@ -308,8 +308,13 @@ Public Class Table_Form
         End If
 
         PrepareOcrTabForDisplay()
+#If Not NETFRAMEWORK Then
+        ' The x86 viewer has no Share button - the Companion it opens cannot run on
+        ' the OSes that exe serves. The Integration group simply keeps its original
+        ' height there, with nothing missing to see.
         BuildShareLauncherButtonIfNeeded()
         LocalizeShareLauncherButton()
+#End If
 
         ' The checkbox now toggles the recipients overlay on the main window (see its
         ' rename above), not this window's TopMost. State lives in Main_Form.

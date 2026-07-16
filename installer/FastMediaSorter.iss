@@ -154,7 +154,15 @@ Name: "custom";  Description: "{cm:TypeCustom}"; Flags: iscustom
 Name: "core";   Description: "{cm:CompCore}";   Types: full compact custom; Flags: fixed
 Name: "codecs"; Description: "{cm:CompCodecs}"; Types: full
 Name: "ocr";    Description: "{cm:CompOcr}";    Types: full
-Name: "share";  Description: "{cm:CompShare}";  Types: full
+; Share is offered ONLY where it can actually run. The Share Manager companion is
+; .NET 10 x64, so on Windows 7/8.1 - which the setup-wide MinVersion=6.1 still lets
+; Setup run on - it cannot start at all, and installing it there would put a button in
+; the viewer leading to an exe the machine refuses to launch.
+; 10.0.14393 is the same floor as the UseModernExe function below (keep the two in
+; step). It is spelled as MinVersion and NOT as "Check: UseModernExe" because Check is
+; not among the parameters [Components] accepts - only Name/Description/Types/
+; ExtraDiskSpaceRequired/Flags plus the common Languages/MinVersion/OnlyBelowVersion.
+Name: "share";  Description: "{cm:CompShare}";  Types: full; MinVersion: 10.0.14393
 
 [Files]
 ; Core (always installed): BOTH viewer exes - the .NET 10 x64 mainline

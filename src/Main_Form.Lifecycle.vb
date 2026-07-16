@@ -417,8 +417,9 @@ Partial Public Class Main_Form
         InitializeTooltips()
         InitializeOcrTranslate()
         InitializeBrowserTranslate()
-        InitializeShareEntryPoint()
 #If Not NETFRAMEWORK Then
+        ' Share and "Open URL.." are both modern-only - the x86 viewer has neither.
+        InitializeShareEntryPoint()
         InitializeOpenUrlEntryPoint()
 #End If
 
