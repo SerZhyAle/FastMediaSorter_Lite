@@ -153,10 +153,4 @@
          (NU1510 flags the explicit package as redundant) - no PackageReference. -->
   </ItemGroup>
 
-  <!-- The Tesseract package's .targets copies BOTH arch folders; the x86 pair is
-       dead weight in this x64-only publish (VLC has its own opt-out property). -->
-  <Target Name="TrimX86NativesFromPublish" AfterTargets="Publish">
-    <RemoveDir Directories="$(PublishDir)x86" />
-  </Target>
-
 </Project>

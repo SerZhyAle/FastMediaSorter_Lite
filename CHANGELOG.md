@@ -9,7 +9,11 @@ Categories: `Added`, `Changed`, `Fixed`, `Removed`.
 ## [Unreleased]
 
 ### Added
-- **A modern .NET 10 build of the viewer (64-bit)** now exists alongside the classic one, built from the same sources - the future mainline. What it already fixes over the classic build: **animated WEBP opens everywhere** (decoded by the app itself - no longer depends on the Windows "WebP Image Extensions" codec, which server editions of Windows don't have), and **video always plays through the built-in VLC engine** - the retired Internet Explorer component is no longer used, so playback works the same on systems where IE is gone. Same settings, same hotkeys, same look; it picks up your existing configuration as is. The classic build remains the shipped default for now; the local build script stages the new one next to it (in a `modern` subfolder) for side-by-side testing.
+- **The viewer now comes as two programs in one folder**, so it runs well on both new and old machines:
+  - **Fast Media Sorter (`FastMediaSorter_LITE.exe`)** - the new 64-bit build on .NET 10. It replaces the previous program in place and keeps all your settings. What it fixes right away: **animated WEBP images open everywhere** (the app decodes them itself, instead of relying on the Windows "WebP Image Extensions" codec that server editions of Windows don't have), and **video always plays through the built-in VLC engine** - the retired Internet Explorer component is gone, so playback behaves the same on systems that no longer ship it. Nothing to install: the .NET runtime is inside the program.
+  - **`FastMediaSorter_x86.exe`** - the same viewer as a lean 32-bit build, for older and 32-bit versions of Windows that the new one cannot run on.
+  
+  Both are built from the same sources, look and behave identically, and share one set of settings and one set of adjacent libraries (codecs, OCR and translation models, folder sharing) - each automatically picks the right ones for its own bitness. They are one application: starting one while the other is open just brings the open window forward with your file, instead of opening a second window.
 
 ## [26.7.15.2200] - 2026-07-15
 

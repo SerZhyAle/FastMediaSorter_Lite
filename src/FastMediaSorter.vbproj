@@ -9,7 +9,11 @@
     <OutputType>WinExe</OutputType>
     <StartupObject>fmsl.My.MyApplication</StartupObject>
     <RootNamespace>fmsl</RootNamespace>
-    <AssemblyName>FastMediaSorter_LITE</AssemblyName>
+    <!-- The net48 build is now the LEAN x86 VIEWER shipped alongside the .NET 10
+         mainline (SPECIFICATION_DOTNET10_MODERN_BUILD §1.1/§8.3). The frozen
+         FastMediaSorter_LITE.exe name moved to the modern build, which replaces
+         the installed exe in place; this one gets its own artifact name. -->
+    <AssemblyName>FastMediaSorter_x86</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>WindowsForms</MyType>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
@@ -42,7 +46,11 @@
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <!-- x86 so it runs on 32-bit Windows AND as a 32-bit process on x64 (spec
+         §1.1). It also makes Environment.Is64BitProcess False, so the shared
+         runtime resolution picks libvlc\win-x86 + x86\tesseract50.dll from the
+         same folder the x64 sibling reads its win-x64/x64 trees from. -->
+    <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <DefineDebug>true</DefineDebug>
@@ -53,21 +61,21 @@
          the WRONG branch here. Keep in sync with the Release group below. -->
     <DefineConstants>NETFRAMEWORK=True</DefineConstants>
     <OutputPath>..\bin\Debug\</OutputPath>
-    <DocumentationFile>FastMediaSorter_LITE.xml</DocumentationFile>
+    <DocumentationFile>FastMediaSorter_x86.xml</DocumentationFile>
     <NoWarn>
     </NoWarn>
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <WarningsAsErrors>41999,42016,42017,42018,42019,42020,42021,42022,42032,42036</WarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <DefineDebug>false</DefineDebug>
     <DefineTrace>true</DefineTrace>
     <DefineConstants>NETFRAMEWORK=True</DefineConstants>
     <Optimize>true</Optimize>
     <OutputPath>..\bin\Release\</OutputPath>
-    <DocumentationFile>FastMediaSorter_LITE.xml</DocumentationFile>
+    <DocumentationFile>FastMediaSorter_x86.xml</DocumentationFile>
     <NoWarn>
     </NoWarn>
     <WarningsAsErrors>41999,42016,42017,42018,42019,42020,42021,42022,42032,42036</WarningsAsErrors>

@@ -30,6 +30,33 @@ Namespace My
 
         Private Const WM_COPYDATA_LOCAL As Integer = &H4A
 
+        ''' <summary>
+        ''' The viewer ships as TWO exes side by side - FastMediaSorter_LITE.exe
+        ''' (the .NET 10 x64 mainline) and FastMediaSorter_x86.exe (the lean net48
+        ''' viewer for old/32-bit Windows). They share one mutex and one settings
+        ''' hive, i.e. they are ONE app: whichever is launched second forwards its
+        ''' file to the running window instead of opening a rival one (which would
+        ''' also race on saving settings at exit).
+        ''' Process.GetProcessesByName matches on the exe name alone, so the
+        ''' forwarding target must be searched under BOTH names - looking only for
+        ''' our own name would find nothing when the sibling is the one running,
+        ''' and the launch would cancel silently with no window and no file opened.
+        ''' </summary>
+        Private Shared ReadOnly Viewer_Process_Names As String() = {"FastMediaSorter_LITE", "FastMediaSorter_x86"}
+
+        Private Shared Function GetRunningViewerProcesses(current_Id As Integer) As List(Of Process)
+            Dim found As New List(Of Process)
+            For Each viewer_Name As String In Viewer_Process_Names
+                Try
+                    For Each proc As Process In Process.GetProcessesByName(viewer_Name)
+                        If proc.Id <> current_Id Then found.Add(proc)
+                    Next
+                Catch
+                End Try
+            Next
+            Return found
+        End Function
+
         <DllImport("user32.dll", CharSet:=CharSet.Auto)>
         Private Shared Function SendMessageCopyData(hWnd As IntPtr, msg As Integer, wParam As IntPtr, ByRef lParam As Main_Form.COPYDATASTRUCT) As Integer
         End Function
@@ -130,11 +157,8 @@ Namespace My
                 End If
 
                 Dim current_Id As Integer = Process.GetCurrentProcess().Id
-                Dim current_Name As String = Process.GetCurrentProcess().ProcessName
 
-                For Each proc As Process In Process.GetProcessesByName(current_Name)
-                    If proc.Id = current_Id Then Continue For
-
+                For Each proc As Process In GetRunningViewerProcesses(current_Id)
                     ' A tray-resident instance hides its window, so MainWindowHandle
                     ' is IntPtr.Zero - fall back to enumerating the process's
                     ' top-level windows. Sending to all of them is safe: only
