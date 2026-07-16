@@ -80,7 +80,7 @@
        the real decoder pair: net48 = WIC + ImageSharp 2 fallback, net10 = ImageSharp 3
        (the one that decodes animated WEBP with no OS codec). -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
-    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.8" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.13" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'net48'">
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />

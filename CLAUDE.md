@@ -222,7 +222,7 @@ Both viewer projects (versions match unless noted):
 Modern only: **SixLabors.ImageSharp 3.1.12** (primary decoder, see the Imaging seam). **Not** referenced there - and don't re-add them: **QRCoder** (unused in the viewer), **WebView2**, **ImageSharp 2**, the `System.*` shims and **ProtectedData** (all inbox on `net10.0-windows`; NU1510 flags them as redundant), **ILMerge** (single-file publish instead).
 
 x86/net48 only:
-- **SixLabors.ImageSharp** (2.1.8) - WEBP decode fallback when WIC can't handle a variant
+- **SixLabors.ImageSharp** (2.1.13) - WEBP decode fallback when WIC can't handle a variant. Pinned to the 2.1 line because 3.x does not target net48; **stay on 2.1.13 or newer** - 2.1.8 carried four published advisories. Note 2.x cannot decode **animated** WEBP (a 3.x feature), so on Windows 7/8.1 - where WIC has no WebP codec - animated WEBP does not open in the x86 viewer
 - **WebView2** (1.0.3240) - HTML renderer (legacy; mostly unused)
 - **QRCoder** (1.4.3) - renders the Android Folder Share QR codes (`ShareConfigBuilder` lives in the **Companion** project via its own `PackageReference`; the net48 viewer still embeds a vestigial copy in `FmsPayloadmanaged/` that has been unused since the migration)
 

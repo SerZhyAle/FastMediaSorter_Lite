@@ -147,6 +147,55 @@ Public Class ImageDecoderSeamTests
 
 #End If
 
+#If NETFRAMEWORK Then
+    ''' <summary>
+    ''' The x86 viewer's WEBP fallback library, exercised head-on.
+    '''
+    ''' WHY IT CALLS ImageSharp DIRECTLY INSTEAD OF GOING THROUGH THE SEAM: the seam
+    ''' only reaches ImageSharp when WIC THROWS (LegacyWicImageDecoder.DecodeToImage).
+    ''' On a dev box with the WebP Image Extensions installed WIC succeeds, so a
+    ''' seam-level test would pass no matter how broken the bundled ImageSharp is and
+    ''' would prove nothing about the version we actually ship. On the Windows 7/8.1
+    ''' machines the x86 exe exists for, WIC has NO WebP codec at all and this library
+    ''' is the ONLY thing that decodes WEBP - it deserves a test of its own.
+    '''
+    ''' Note the placement: this block must stay OUTSIDE the "#If Not NETFRAMEWORK"
+    ''' region above. Nested inside it the condition is unsatisfiable, and VB compiles
+    ''' the tests to nothing while the run stays green - the exact silent-seam trap
+    ''' CLAUDE.md warns about.
+    ''' </summary>
+    <Fact>
+    Public Sub BundledImageSharp_DecodesWebp_TheOnlyWebpPathOnLegacyWindows()
+        Using source As New MemoryStream(StaticWebp)
+            Using decoded = SixLabors.ImageSharp.Image.Load(Of SixLabors.ImageSharp.PixelFormats.Bgra32)(source)
+                Assert.Equal(120, decoded.Width)
+                Assert.Equal(90, decoded.Height)
+            End Using
+        End Using
+    End Sub
+
+    ''' <summary>
+    ''' Pins a REAL, PRE-EXISTING GAP rather than a wish: ImageSharp 2.x cannot decode
+    ''' animated WEBP at all ("Animated webp are not yet supported" - the feature only
+    ''' arrived in 3.x, which is exactly why the modern viewer runs ImageSharp 3 and has
+    ''' ModernDecoder_DecodesAnimatedWebp_WithoutAnOsCodec passing).
+    '''
+    ''' Consequence, stated plainly: on Windows 7/8.1 - where WIC has no WebP codec at
+    ''' all - the x86 viewer CANNOT open an animated WEBP, and never could. On Windows
+    ''' 10/11 it still opens, because WIC handles it before the fallback is reached.
+    ''' This is not a regression from the 2.1.8 -> 2.1.13 security bump: 2.1.x never had
+    ''' the feature. Asserting the throw keeps the limitation visible; if the x86 leg
+    ''' ever moves to a library that supports animation, this test fails and says so.
+    ''' </summary>
+    <Fact>
+    Public Sub BundledImageSharp_CannotDecodeAnimatedWebp_KnownLegacyGap()
+        Using source As New MemoryStream(AnimatedWebp)
+            Assert.Throws(Of NotSupportedException)(
+                Function() SixLabors.ImageSharp.Image.Load(Of SixLabors.ImageSharp.PixelFormats.Bgra32)(source))
+        End Using
+    End Sub
+#End If
+
     ''' <summary>
     ''' Garbage must degrade to Size.Empty on BOTH runtimes rather than throw out of
     ''' GetImageDimensions - the background worker calls this on whatever is in the

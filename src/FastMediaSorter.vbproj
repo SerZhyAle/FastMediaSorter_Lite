@@ -145,7 +145,7 @@
       <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.5.0.0\lib\net45\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
     <Reference Include="SixLabors.ImageSharp">
-      <HintPath>..\packages\SixLabors.ImageSharp.2.1.8\lib\net472\SixLabors.ImageSharp.dll</HintPath>
+      <HintPath>..\packages\SixLabors.ImageSharp.2.1.13\lib\net472\SixLabors.ImageSharp.dll</HintPath>
     </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="Tesseract">
@@ -401,7 +401,7 @@
     <EmbeddedResource Include="..\packages\QRCoder.1.4.3\lib\net40\QRCoder.dll">
       <LogicalName>FmsPayloadmanaged/QRCoder.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\packages\SixLabors.ImageSharp.2.1.8\lib\net472\SixLabors.ImageSharp.dll">
+    <EmbeddedResource Include="..\packages\SixLabors.ImageSharp.2.1.13\lib\net472\SixLabors.ImageSharp.dll">
       <LogicalName>FmsPayloadmanaged/SixLabors.ImageSharp.dll</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll">
