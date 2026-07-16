@@ -2,11 +2,17 @@
 <!--
   MSIX package manifest for FastMediaSorter LITE (Microsoft Store / sideload).
 
-  This wraps the plain net48 FastMediaSorter_LITE.exe (plus its offline payload: LibVLC, Tesseract
-  tessdata, flag assets) as a FULL-TRUST desktop app. Every Win32 API the app uses keeps working -
-  the IE WebBrowser control, native LibVLC playback, System.Drawing/GDI+, arbitrary file-system
-  access for sorting media (including \\server shares), and the optional local HTTP calls to an
-  Ollama / LibreTranslate endpoint - all guarded by the single `runFullTrust` restricted capability.
+  This wraps FastMediaSorter_LITE.exe - the .NET 10 x64 mainline viewer, published self-contained
+  (the runtime is inside the exe) - plus its offline payload (LibVLC, Tesseract tessdata, flag
+  assets) as a FULL-TRUST desktop app. The package is x64-only and carries the mainline ALONE: the
+  net48 FastMediaSorter_x86.exe sibling that ships next to it in the GitHub/winget package exists
+  for Windows 7/8.1 and 32-bit machines, which cannot get an MSIX from the Store anyway -
+  msix\build-msix.ps1 excludes it from the stage.
+  Every Win32 API the app uses keeps working - native LibVLC playback (the mainline's only video
+  engine; the retired IE WebBrowser control is not hosted at all), System.Drawing/GDI+, arbitrary
+  file-system access for sorting media (including \\server shares), and the optional local HTTP
+  calls to an Ollama / LibreTranslate endpoint - all guarded by the single `runFullTrust`
+  restricted capability.
 
   Under MSIX the install dir is READ-ONLY, but FastMediaSorter already writes everything mutable
   (downloaded tessdata, OCR cache, settings) under %LOCALAPPDATA%\SZA\FastMediaSorter (see

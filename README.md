@@ -17,9 +17,10 @@ Fast Media Sorter for Windows (formerly FastMediaSorter LITE - it is still publi
 - OCR + on-image translation overlay (local Ollama / LibreTranslate) - for pictures that insist on speaking another language
 - Customizable keyboard shortcuts, because reaching for the mouse is so last decade
 - Multi-language support (English/Russian; first run follows the Windows display language)
-- Broad video format support: common H.264/MP4 plays in-window, and anything the
-  built-in player can't decode (AVI, ZMBV, VP9, MKV, WMV, ..) automatically falls
-  back to a bundled **LibVLC** engine - no external codecs, no plugin scavenger hunt
+- Broad video format support: everything (H.264/MP4, AVI, ZMBV, VP9, MKV, WMV, ..)
+  plays in-window through the bundled **LibVLC** engine - no external codecs, no
+  plugin scavenger hunt, and nothing that depends on Internet Explorer still being
+  installed
 
 ## Mobile Version 📱
 
@@ -47,9 +48,46 @@ Features include:
 4. Move, copy, or delete files as needed. Press a digit, watch the chaos shrink.
 5. Enjoy fast and efficient media sorting, and maybe finally reclaim that disk space.
 
+## Two programs, one app
+
+The package ships **two viewers side by side in the same folder**, and the installer
+sets up both. You never have to choose: the shortcut and file associations
+automatically point at the one that actually runs on your machine.
+
+- **`FastMediaSorter_LITE.exe`** - the main program, now 64-bit and built on
+  .NET 10. It replaces the previous version in place and keeps all your settings.
+  **Nothing to install** - the .NET runtime lives inside the program itself, so the
+  old ".NET Framework 4.8 required" line is gone for good. Needs Windows 10 version
+  1607 or newer, Windows 11, or Windows Server 2016+.
+- **`FastMediaSorter_x86.exe`** - the same viewer as a small 32-bit program (~3 MB)
+  for Windows 7/8.1 and 32-bit Windows, where the modern runtime simply cannot run.
+  It needs .NET Framework 4.8, which those Windows versions either already have or
+  can get. It is not a cut-down edition - OCR, translation and folder sharing are
+  all still in there.
+
+They are **one application**, not two rivals: one set of settings, one window. Start
+one while the other is open and it just brings the open window forward with your
+file - no second window, no squabbling over whose settings get saved. Both also
+share the same adjacent libraries (codecs, OCR/translation models, folder sharing),
+each automatically picking the ones matching its own bitness.
+
+### What the 64-bit program fixes
+
+- **Animated WEBP now opens everywhere.** The app decodes WEBP itself instead of
+  depending on the Windows "WebP Image Extensions" codec, which server editions of
+  Windows don't ship - animated WEBP used to simply fail there.
+- **Video always plays through the built-in VLC engine.** The retired Internet
+  Explorer component is no longer used, so playback works the same on systems where
+  IE has been shown the door. (The 32-bit program keeps the classic path.)
+
 ## Requirements
-- Windows 7/10/11
-- .NET Framework 4.8
+
+Short version: the installer works this out for you (see above). Long version:
+
+| | `FastMediaSorter_LITE.exe` (main, 64-bit) | `FastMediaSorter_x86.exe` (32-bit) |
+|---|---|---|
+| **Windows** | 10 version 1607+, 11, Server 2016+ | 7, 8.1, 10, 11 - including 32-bit |
+| **Runtime** | none - it is inside the program | .NET Framework 4.8 |
 
 ## Installation
 
@@ -70,6 +108,8 @@ Download the latest assets from the
 - `FastMediaSorter-<version>-windows-x64-setup.exe` for the easiest install
 - `FastMediaSorter-<version>-windows-x64.zip` for a portable offline bundle
 
+Both assets contain **both programs** - the asset names have not changed.
+
 The interactive setup can optionally register the app for common
 image formats. On Windows 10/11, the system may still ask you to confirm the
 choice once in Default Apps.
@@ -80,8 +120,11 @@ OCR recognition.
 
 ### What's in the package (and why it's large)
 
-The viewer itself is small (a few MB). Almost all of the download is optional,
-**offline-ready** payload, bundled so the app works with no first-run download:
+The main program is a single ~110 MB exe because it carries its own .NET runtime -
+that heft is exactly why there is nothing to install: the runtime comes along for
+the ride instead of being demanded from your machine. (The 32-bit program beside it
+is ~3 MB.) Most of the rest of the download is optional, **offline-ready** payload,
+bundled so the app works with no first-run download:
 
 - **Video codecs (VLC)** (~100 MB) - offline playback of AVI, MKV, VP9 and other
   formats the built-in Windows player can't decode.
@@ -91,10 +134,13 @@ The viewer itself is small (a few MB). Almost all of the download is optional,
   carries its own runtime (Windows does not ship the modern .NET it needs), used
   to share folders to your phone.
 
+The bundled libraries are the 64-bit ones, for the main program. The 32-bit program
+downloads the pieces it needs on first use.
+
 The interactive installer exposes these as **selectable components** and shows each
 one's size: uncheck what you don't need and those parts download later on demand,
-or the feature is simply left out. A viewer-only ("Compact") install is a small
-fraction of the full package. (Silent/winget installs always take the full set.)
+or the feature is simply left out. A viewer-only ("Compact") install is a fraction
+of the full package. (Silent/winget installs always take the full set.)
 
 Note: machine translation still depends on the provider you configure - the app
 is generous, but it won't translate by sheer willpower. Ollama requires a
