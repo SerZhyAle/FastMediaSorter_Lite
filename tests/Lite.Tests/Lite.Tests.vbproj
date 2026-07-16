@@ -8,9 +8,12 @@
        LibVLC/Tesseract LITE assembly. RootNamespace matches LITE (fmsl) so the linked
        modules resolve by their real names. -->
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
+    <!-- Multi-targeted ON PURPOSE. The linked sources compile into BOTH shipped
+         viewers (net48 x86 + the .NET 10 x64 mainline), so the same logic must be
+         proven under BOTH runtimes - a net48-only run would have said nothing about
+         the exe most users get. `dotnet test` runs every TFM listed here. -->
+    <TargetFrameworks>net48;net10.0-windows</TargetFrameworks>
     <UseWindowsForms>true</UseWindowsForms>
-    <UseWPF>true</UseWPF>
     <RootNamespace>fmsl</RootNamespace>
     <OptionExplicit>On</OptionExplicit>
     <OptionStrict>On</OptionStrict>
@@ -18,11 +21,16 @@
     <OptionCompare>Binary</OptionCompare>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <!-- Same reason as the net48 viewer project: SDK-style projects targeting net48
-         do NOT define NETFRAMEWORK implicitly, and the linked sources are full of
-         "#If NETFRAMEWORK" seams (see CLAUDE.md "Two builds, one source tree").
-         Without it the linked Imaging seam would compile its .NET 10 branch here. -->
+  </PropertyGroup>
+
+  <!-- net48 leg: mirrors src/FastMediaSorter.vbproj. SDK-style projects targeting
+       net48 do NOT define NETFRAMEWORK implicitly, and the linked sources are full
+       of "#If NETFRAMEWORK" seams (CLAUDE.md "Two builds, one source tree") - without
+       this the seam would compile its .NET 10 branch into a net48 run. WPF is only
+       here because the legacy decoder reads WEBP through WIC. -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net48'">
     <DefineConstants>NETFRAMEWORK=True</DefineConstants>
+    <UseWPF>true</UseWPF>
   </PropertyGroup>
 
   <ItemGroup>
@@ -62,10 +70,14 @@
     </Compile>
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- Pulled in by LegacyWicImageDecoder (its WEBP fallback). Same version the
-         net48 viewer vendors via packages.config. -->
+  <!-- Each leg gets the SAME ImageSharp its viewer ships with, so the tests exercise
+       the real decoder pair: net48 = WIC + ImageSharp 2 fallback, net10 = ImageSharp 3
+       (the one that decodes animated WEBP with no OS codec). -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <PackageReference Include="SixLabors.ImageSharp" Version="2.1.8" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'net48'">
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
   </ItemGroup>
 
 </Project>
