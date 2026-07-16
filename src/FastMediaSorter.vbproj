@@ -47,6 +47,11 @@
     <DebugType>full</DebugType>
     <DefineDebug>true</DefineDebug>
     <DefineTrace>true</DefineTrace>
+    <!-- Old-style projects do NOT get the implicit NETFRAMEWORK constant the SDK
+         defines - without this, every "#If NETFRAMEWORK" seam shared with the
+         .NET 10 build (SPECIFICATION_DOTNET10_MODERN_BUILD §3) silently compiles
+         the WRONG branch here. Keep in sync with the Release group below. -->
+    <DefineConstants>NETFRAMEWORK=True</DefineConstants>
     <OutputPath>..\bin\Debug\</OutputPath>
     <DocumentationFile>FastMediaSorter_LITE.xml</DocumentationFile>
     <NoWarn>
@@ -59,6 +64,7 @@
     <DebugType>pdbonly</DebugType>
     <DefineDebug>false</DefineDebug>
     <DefineTrace>true</DefineTrace>
+    <DefineConstants>NETFRAMEWORK=True</DefineConstants>
     <Optimize>true</Optimize>
     <OutputPath>..\bin\Release\</OutputPath>
     <DocumentationFile>FastMediaSorter_LITE.xml</DocumentationFile>
@@ -265,6 +271,9 @@
     </Compile>
     <Compile Include="OcrTranslateSettings.vb" />
     <Compile Include="DocHtmlTranslateLauncher.vb" />
+    <Compile Include="Imaging\ImageDecoder.vb" />
+    <Compile Include="Imaging\LegacyWicImageDecoder.vb" />
+    <Compile Include="Imaging\ModernImageSharpDecoder.vb" />
     <Compile Include="Ocr\OcrModels.vb" />
     <Compile Include="Ocr\IOcrEngine.vb" />
     <Compile Include="Ocr\OcrBlockBuilder.vb" />

@@ -18,23 +18,25 @@
 ## ТЕКУЩЕЕ СОСТОЯНИЕ (обновлять при каждом коммите!)
 
 - Ветка: `feature/dotnet10-modern` (создана от main @ dcc066e + доки-коммит)
-- Стадия: **Ф0 в работе** - швы в общем коде, legacy остаётся зелёным.
-- Следующий шаг: см. «Следующий шаг» ниже.
+- Стадия: **Ф0 ГОТОВА** (швы в общем коде, legacy собран и смоук-запущен зелёным:
+  окно открылось, версия 26.7.16.1113, лог пишется). Все `#If`-точки из «Карты
+  точек» ниже сделаны.
+- Следующая стадия: **Ф1** - modern-проект.
 
 ## СЛЕДУЮЩИЙ ШАГ
 
-1. Ф0: добавить `NETFRAMEWORK=True` в DefineConstants обеих конфигураций
-   `src/FastMediaSorter.vbproj` (old-style проект НЕ определяет NETFRAMEWORK сам -
-   без этого `#If NETFRAMEWORK` в общих файлах в legacy = False = катастрофа).
-2. Ф0: создать `src/Imaging/` - `ImageDecoder.vb` (IImageDecoder + провайдер с `#If`),
-   `LegacyWicDecoder.vb` (весь файл в `#If NETFRAMEWORK`; код переносится из
-   FileManager.LoadBitmapViaWic/ViaImageSharp), `ModernImageDecoder.vb` (весь файл в
-   `#If Not NETFRAMEWORK`; ImageSharp 3.x). FileManager/Utils переключить на шов.
-3. Ф0: `#If NETFRAMEWORK` вокруг WebBrowser-веток (точки ниже) и RuntimeBootstrap
-   AssemblyResolve.
-4. Проверить legacy: msbuild Release зелёный (реальный VS MSBuild через vswhere,
-   НЕ `dotnet msbuild` - см. память local-build-toolchain). Коммит.
-5. Ф1: `src/Modern/FastMediaSorter.Modern.vbproj` - см. заготовку решений ниже.
+1. Ф1: создать `src/Modern/FastMediaSorter.Modern.vbproj` (SDK-style,
+   net10.0-windows, x64) по решению 6 ниже: линк `..\**\*.vb` с Exclude
+   (`..\Modern\**`, `..\FastMediaSorterCompanion\**`, `..\obj\**`, `..\bin\**`,
+   `..\My Project\AssemblyInfo.vb`, `..\My Project\VersionInfo.vb`), линк resx
+   (Main_Form, Table_Form, My Project\Resources), embed FmsPayload-ассетов
+   (flags/help/icons - те же LogicalName), Content flags\*.png, app.manifest,
+   иконка, свойства Option*/WarningsAsErrors, версия YY.M.D.HHmm в свойствах.
+2. Пакеты: SixLabors.ImageSharp 3.1.x, LibVLCSharp(+WinForms) 3.9.3,
+   VideoLAN.LibVLC.Windows 3.0.21, Tesseract 5.2.0,
+   System.Security.Cryptography.ProtectedData.
+3. `dotnet build src/Modern/... -c Release` итеративно до зелени; добавить в sln.
+4. Дальше Ф4 publish + смоук (Ф2/Ф3 уже реализованы в Ф0-швах!).
 
 ---
 
@@ -123,15 +125,24 @@
 
 | Файл | Что | Статус |
 |---|---|---|
-| `src/FileManager.vb` | Imports WPF + LoadBitmapPortable/ViaWic/ViaImageSharp -> уходят в шов | [ ] |
-| `src/Utils.vb` | Imports WPF + ReadBitmapSourceSize -> в шов (TryGetPixelSize) | [ ] |
-| `src/Main_Form.MediaLoading.vb:880-883` | диспетчер видео: WB (net48) vs VLC напрямую (modern) | [ ] |
-| `src/Main_Form.VideoPlayer.vb` | LoadVideoInWebBrowser + TryOpenVideoWithDefaultPlayer(HTML) под `#If NETFRAMEWORK`; HandleVideoError-фолбэк | [ ] |
-| `src/Main_Form.Lifecycle.vb:129-141,177-178` | SetWebBrowserCompatibilityMode + вызов | [ ] |
-| `src/Main_Form.DragDrop.vb:48-70` | AllowWebBrowserDrop wiring + Web_Browser_Navigating | [ ] |
-| `src/Main_Form.vb` (ctor) | modern: Web_Browser.Visible=False после InitializeComponent | [ ] |
-| `src/RuntimeBootstrap.vb` | AssemblyResolve только net48 | [ ] |
-| `src/OptionalRuntimeManager.vb` | оставить как есть (страховка slim); проверить компиляцию | [ ] |
+| `src/FileManager.vb` | Imports WPF + LoadBitmapPortable/ViaWic/ViaImageSharp -> уходят в шов | [x] |
+| `src/Utils.vb` | Imports WPF + ReadBitmapSourceSize -> в шов (TryGetPixelSize) | [x] |
+| `src/Main_Form.MediaLoading.vb` (~880) | диспетчер видео: WB (net48) vs `PlayVideoWithVlcAsync(Current_File_Name)` (modern) | [x] |
+| `src/Main_Form.VideoPlayer.vb` | LoadVideoInWebBrowser целиком + DocumentText-очистка в PlayVideoWithVlcAsync + HTML в TryOpenVideoWithDefaultPlayer | [x] |
+| `src/Main_Form.Lifecycle.vb` | SetWebBrowserCompatibilityMode + вызов + `Web_Browser.ObjectForScripting = Me` | [x] |
+| `src/Main_Form.DragDrop.vb` | AllowWebBrowserDrop wiring + Web_Browser_Navigating целиком | [x] |
+| `src/Main_Form.vb` | добавлен явный `Sub New`: InitializeComponent + (modern) Web_Browser.Visible=False | [x] |
+| `src/RuntimeBootstrap.vb` | AssemblyResolve только net48 | [x] |
+| `src/OptionalRuntimeManager.vb` | оставлен как есть (страховка slim) | [x] |
+| `src/FastMediaSorter.vbproj` | DefineConstants NETFRAMEWORK=True (Debug+Release) + 3 Imaging-файла | [x] |
+
+Новые файлы Ф0: `src/Imaging/ImageDecoder.vb` (IImageDecoder + ImageDecoderProvider),
+`src/Imaging/LegacyWicImageDecoder.vb` (#If NETFRAMEWORK), 
+`src/Imaging/ModernImageSharpDecoder.vb` (#If Not NETFRAMEWORK; ImageSharp 3:
+статика -> PNG -> Bitmap; анимация -> GIF-транскод с копированием webp-таймингов
+кадров; TryGetPixelSize через Image.Identify). Проверить при смоуке: скорость
+анимации webp (маппинг GetWebpMetadata/FrameDuration - названия API по памяти,
+компиляция подтвердит).
 
 ## Грабли/находки (пополнять!)
 

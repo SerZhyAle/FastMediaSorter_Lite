@@ -87,6 +87,7 @@ Partial Public Class Main_Form
             If Not String.IsNullOrEmpty(Current_File_Name) AndAlso File.Exists(Current_File_Name) Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0866: Opening video with default player: " & Current_File_Name)
 
+#If NETFRAMEWORK Then
                 Web_Browser.DocumentText = "<html><body style='background:" &
                                         If(Form_Color_Scheme = 0, "black", "white") &
                                         "; color:" & If(Form_Color_Scheme = 0, "white", "black") &
@@ -96,6 +97,7 @@ Partial Public Class Main_Form
                                         "<p style='font-size:12px; color:gray;'>" &
                                         If(Is_Russian_Language, "Нажмите стрелки для перехода к следующему файлу", "Use arrow keys to navigate to next file") &
                                         "</p></body></html>"
+#End If
 
                 Process.Start(Current_File_Name)
 
@@ -183,7 +185,12 @@ Partial Public Class Main_Form
             Web_Browser.Visible = False
             Picture_Box_1.Visible = False
             Picture_Box_2.Visible = False
+#If NETFRAMEWORK Then
+            ' Clear leftover WebBrowser content when VLC takes over. Modern never
+            ' navigates the dormant WebBrowser, and even reading DocumentText
+            ' would force its IE ActiveX host into existence - so net48 only.
             If Not Web_Browser.DocumentText = "" Then Web_Browser.DocumentText = ""
+#End If
 
             vlc_Video_View.Location = Picture_Box_1.Location
             vlc_Video_View.Size = Picture_Box_1.Size
@@ -245,6 +252,9 @@ Partial Public Class Main_Form
         End If
     End Sub
 
+#If NETFRAMEWORK Then
+    ' net48 only: the modern build has a single video engine (LibVLC) and its
+    ' dispatcher never routes here (SPECIFICATION_DOTNET10_MODERN_BUILD §6.2).
     Private Sub LoadVideoInWebBrowser(video_File_Path As String)
         Try
             StopGifLoopPlayback()
@@ -334,5 +344,6 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0860: Error loading video: " & ex.Message)
         End Try
     End Sub
+#End If
 
 End Class

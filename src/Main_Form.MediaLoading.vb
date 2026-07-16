@@ -878,9 +878,19 @@ Partial Public Class Main_Form
                     LoadStandardImageInPictureBox()
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1040: Picture box is set")
                 ElseIf video_File_Extensions.Contains(current_File_Extension) Then
+#If NETFRAMEWORK Then
+                    ' net48: try the IE WebBrowser first (H.264/MP4), LibVLC picks
+                    ' up unsupported codecs via HandleVideoError.
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1010: WB to load")
                     LoadVideoInWebBrowser(current_File_Uri)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: WB is set")
+#Else
+                    ' Modern (.NET 10): single video engine - straight to LibVLC,
+                    ' no WebBrowser round-trip (SPECIFICATION_DOTNET10_MODERN_BUILD §6.2).
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1010: VLC to load")
+                    PlayVideoWithVlcAsync(Current_File_Name)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: VLC is set")
+#End If
                 Else
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1045: No selected control to show!?")
                 End If

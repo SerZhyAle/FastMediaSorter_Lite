@@ -30,6 +30,17 @@ Imports System.Diagnostics ' Add this line with other imports
 <ComVisible(True)>
 Public Class Main_Form
 
+    ' Explicit constructor (same body the VB compiler used to synthesize) so the
+    ' modern build can neutralize the IE WebBrowser right after InitializeComponent:
+    ' an invisible control never gets a Win32 handle, so its ActiveX host is never
+    ' instantiated - safe on IE-less systems (SPECIFICATION_DOTNET10_MODERN_BUILD §6.2).
+    Public Sub New()
+        InitializeComponent()
+#If Not NETFRAMEWORK Then
+        Web_Browser.Visible = False
+#End If
+    End Sub
+
     Private Const slide_show_limit As Integer = 30
     Private Const max_Namber_of_Recent_Folders As Integer = 100
     Private Const app_Mutex_Name As String = "FastMediaSorterSingleInstanceMutex"

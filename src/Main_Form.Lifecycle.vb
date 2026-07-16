@@ -126,6 +126,9 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
+#If NETFRAMEWORK Then
+    ' net48 only: IE11 emulation for the video WebBrowser. The modern build
+    ' never instantiates the WebBrowser, so the registry knob is pointless there.
     Private Sub SetWebBrowserCompatibilityMode()
         Try
             Using key = Registry.CurrentUser.OpenSubKey("Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BROWSER_EMULATION", True)
@@ -141,6 +144,7 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0030: Error to set WebBrowser mode")
         End Try
     End Sub
+#End If
 
     Public Sub InitNew()
 
@@ -170,12 +174,16 @@ Partial Public Class Main_Form
 
         BgWorker.WorkerReportsProgress = True
         BgWorker.WorkerSupportsCancellation = True
+#If NETFRAMEWORK Then
         Web_Browser.ObjectForScripting = Me
+#End If
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0003: InitializeExtensionLists")
         InitializeExtensionLists()
+#If NETFRAMEWORK Then
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0004: SetWebBrowserCompatibilityMode")
         SetWebBrowserCompatibilityMode()
+#End If
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0009: InitializeFileOperationWorker")
         InitializeFileOperationWorker()
