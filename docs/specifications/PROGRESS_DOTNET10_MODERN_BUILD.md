@@ -82,7 +82,10 @@
 Этап 4 - **Ф3 видео LibVLC-only** (WebBrowser дремлет, диспетчер мимо него): [x] (в Ф0-швах; видео-смоук - владелец)
 Этап 5 - **Ф4 publish** (self-contained single-file, libvlc рядом): [x] (vbproj-условие RuntimeIdentifier=win-x64)
 Этап 6 - **смоук** (запуск exe, лог, webp статик+аним): [x] (визуальная приёмка - владелец)
-Этап 7 - **Ф5 упаковка** (build.ps1 -Modern, Build-OfflineRelease, .iss): [ ]
+Этап 7 - **Ф5 упаковка**: build.ps1 [x] (publish в bin\ModernPublish + деплой в
+        `<цель>\modern\`, exe всегда/статичные деревья при отсутствии; полный
+        прогон зелёный, задеплоенная копия запускается); Build-OfflineRelease/
+        Build-Installer/.iss/CI - [ ] (следующая итерация): [~]
 Этап 8 - **зум/панорама Ф-Z1..Ф-Z5** (по спеке, только modern): [ ]
 Этап 9 - **MKV/ISO Ф-A..Ф-G** (по спеке, только modern): [ ]
 Этап 10 - **Legacy x86 LITE** (FEATURE_FULL-урезка, PlatformTarget=x86, standalone zip): [ ]

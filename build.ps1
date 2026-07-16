@@ -4,7 +4,11 @@ param(
     [switch]$NoClean,
     # Skip building the .NET 10 Companion (Fast Media Sorter: Share Manager). By
     # default this script now builds BOTH exes so you can build everything locally.
-    [switch]$SkipCompanion
+    [switch]$SkipCompanion,
+    # Skip publishing the .NET 10 modern viewer (SPECIFICATION_DOTNET10_MODERN_BUILD).
+    # By default it is published to bin\ModernPublish and mirrored into a "modern\"
+    # subfolder of each deploy target for side-by-side testing with the net48 exe.
+    [switch]$SkipModern
 )
 
 $SolutionDir = $PSScriptRoot
@@ -22,6 +26,12 @@ $CompanionProj       = Join-Path $SolutionDir "src\FastMediaSorterCompanion\Fast
 $CompanionExeName    = "FastMediaSorterCompanion.exe"
 $CompanionPublishDir = Join-Path $SolutionDir "bin\CompanionPublish"
 $CompanionExe        = Join-Path $CompanionPublishDir $CompanionExeName
+# The .NET 10 modern viewer (same frozen exe name as net48; a publish is the exe
+# plus a REQUIRED loose libvlc\win-x64 plugin tree, flags\ and tesseract natives -
+# deploy the whole folder, never the exe alone).
+$ModernProj       = Join-Path $SolutionDir "src\Modern\FastMediaSorter.Modern.vbproj"
+$ModernPublishDir = Join-Path $SolutionDir "bin\ModernPublish"
+$ModernExe        = Join-Path $ModernPublishDir $ExeName
 $Destinations = @(
     "C:\GD\i\",
     "C:\GD\tc\SZA\_APP\"
@@ -174,6 +184,49 @@ if (-not $SkipCompanion) {
     Write-Host "Skipping Companion build (-SkipCompanion)."
 }
 
+# Publish the .NET 10 modern viewer (self-contained single-file + loose libvlc
+# tree). Same publish pattern as the Companion; the win-x64 publish props live in
+# src\Modern\FastMediaSorter.Modern.vbproj.
+if (-not $SkipModern) {
+    $dotnet = (Get-Command dotnet.exe -ErrorAction SilentlyContinue).Source
+    if (-not $dotnet) { $dotnet = "dotnet" }
+    Write-Host "Publishing modern viewer (net10 x64, self-contained single-file).."
+    Remove-Item $ModernPublishDir -Recurse -Force -ErrorAction SilentlyContinue
+    & $dotnet publish $ModernProj -c Release -r win-x64 -o $ModernPublishDir -v minimal --nologo
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Modern publish failed (exit code $LASTEXITCODE)."
+        exit $LASTEXITCODE
+    }
+    if (-not (Test-Path $ModernExe)) {
+        Write-Error "Modern exe not found after publish: $ModernExe"
+        exit 1
+    }
+    Write-Host "Modern viewer published at: $ModernExe"
+} else {
+    Write-Host "Skipping modern viewer publish (-SkipModern)."
+}
+
+# Mirror the modern publish tree into <targetDir>\modern\ for side-by-side
+# testing (the net48 exe stays the daily default until the owner flips the
+# mainline). Note both builds share the single-instance mutex - close one
+# before starting the other. The exe changes every build and is copied always;
+# the big static support trees (libvlc plugins, tesseract natives, flags) are
+# version-stable, so they are only copied when missing - deploy targets are
+# sync folders and re-uploading ~100 MB of unchanged files per build hurts.
+function Deploy-Modern([string]$TargetDir) {
+    if ($SkipModern -or -not (Test-Path $ModernExe)) { return }
+    $dest = Join-Path $TargetDir "modern"
+    New-Item -ItemType Directory -Path $dest -Force | Out-Null
+    Copy-Item -Path $ModernExe -Destination (Join-Path $dest $ExeName) -Force
+    foreach ($support in @("libvlc", "x64", "flags")) {
+        $src = Join-Path $ModernPublishDir $support
+        if ((Test-Path $src) -and -not (Test-Path (Join-Path $dest $support))) {
+            Copy-Item -Path $src -Destination (Join-Path $dest $support) -Recurse -Force
+        }
+    }
+    Write-Host "Deployed modern viewer -> $dest"
+}
+
 # Free the worker + Companion exes (they may be running from a deploy target and
 # locking themselves) before mirroring anything.
 Stop-ShareWorker
@@ -198,4 +251,5 @@ foreach ($Destination in $Destinations) {
     Write-Host "Deployed single-file exe -> $Target"
     Deploy-Companion $Destination      # worker payload -> <dest>\companion\
     Deploy-CompanionExe $Destination   # FastMediaSorterCompanion.exe -> <dest>\
+    Deploy-Modern $Destination         # net10 viewer tree -> <dest>\modern\
 }
