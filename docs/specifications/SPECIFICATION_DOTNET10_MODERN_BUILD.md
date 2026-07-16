@@ -34,7 +34,7 @@
 - **WIC** (`FileManager.LoadBitmapViaWic`, через WPF `BitmapDecoder`): `0x88982F8B`
   «не найден компонент обработки изображений». На Server 2025 нет WIC-кодека WebP
   (на клиентских Windows он приезжает Store-компонентом «WebP Image Extensions»).
-- **ImageSharp 2.1.8** fallback (`LoadBitmapViaImageSharp`):
+- **ImageSharp 2.1.13** fallback (`LoadBitmapViaImageSharp`):
   `NotSupportedException: Animated webp are not yet supported`.
 
 Статические WEBP на сервере открывались бы (их тянет ImageSharp 2.x без кодека ОС);
@@ -192,7 +192,7 @@ Solution `FastMediaSorter.sln` в корне получает оба проек�
 
 | Задача | Legacy (net48) | Modern (.NET 10) |
 |--------|----------------|------------------|
-| Основной декодер | WIC → ImageSharp 2.1.8 | **ImageSharp 3.x** |
+| Основной декодер | WIC → ImageSharp 2.1.13 | **ImageSharp 3.x** |
 | Анимированный WEBP | нет (баг) | **да, нативно** |
 | Анимированный PNG (APNG) | нет | да |
 | GIF-анимация | GDI+ | ImageSharp 3.x / GDI+ |
