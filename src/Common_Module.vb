@@ -24,6 +24,12 @@ Module Common_Module
     Public Is_HighQuality_Scaling As Boolean = True
     ' On-image overlay showing the file name + position (N/total).
     Public Is_Show_Info_Overlay As Boolean = False
+    ' Mouse-wheel action over an image: False (default) = flip through files, exactly
+    ' as it has always worked; True = zoom in/out under the cursor (the "classic
+    ' viewer" behaviour), opt-in only. Ctrl/Shift/Alt+wheel keep their meaning in both
+    ' modes, and the wheel over video always flips. Modern build only - the x86 viewer
+    ' keeps the historical mechanics (SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md 4.4).
+    Public Zoom_Wheel_Zooms As Boolean = False
     ' Floating list of destination folders (recipients) shown top-left over the
     ' media, so the current file can be sorted by clicking. Off by default (fresh
     ' install / reinstall) - see SPECIFICATION_RECIPIENTS_OVERLAY_DOTNET48.md.

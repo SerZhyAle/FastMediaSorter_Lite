@@ -37,6 +37,17 @@ Partial Public Class Main_Form
             Exit Sub
         End If
 
+#If Not NETFRAMEWORK Then
+        ' Modern: NumPad +/-/*// zoom (spec 4.3). Checked before the maps below and
+        ' independent of Shift, and it only claims those four grey keys - NumPad 0..9
+        ' stay with sorting, the arrows stay navigation. Returns False for anything
+        ' else, so every historical binding falls through untouched.
+        If TryHandleZoomKey(e) Then
+            e.Handled = True
+            Exit Sub
+        End If
+#End If
+
         If e.Shift Then
             Select Case e.KeyCode
                 Case Keys.PageDown

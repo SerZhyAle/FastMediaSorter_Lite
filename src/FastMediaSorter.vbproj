@@ -249,6 +249,10 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.Zoom.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Main_Form.KeyboardInput.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>

@@ -63,6 +63,7 @@ Public Class Table_Form
         toolTip.SetToolTip(chk_Exif_AutoRotate, If(Is_Russian_Language, "Автоматически поворачивать фото по тегу EXIF Orientation (снимки с телефонов/камер).", "Auto-rotate photos by their EXIF Orientation tag (photos from phones/cameras)."))
         toolTip.SetToolTip(chk_Hq_Scaling, If(Is_Russian_Language, "Качественное (бикубическое) масштабирование - резче при уменьшении крупных изображений.", "High-quality (bicubic) scaling - sharper when downscaling large images."))
         toolTip.SetToolTip(chk_Show_Info_Overlay, If(Is_Russian_Language, "Показывать имя файла и позицию (N/всего) поверх изображения. Удобно в полноэкранном режиме, где статусбар стыдливо прячется.", "Show the file name and position (N/total) over the image. Handy in full-screen, where the status bar shyly hides."))
+        toolTip.SetToolTip(chk_Wheel_Zooms, If(Is_Russian_Language, "Как в привычных просмотрщиках: колесо приближает и отдаляет под курсором. Выключено - колесо листает файлы, как было всегда. В любом случае Ctrl+колесо приближает, Shift+колесо даёт 100 %, Alt+колесо вписывает, а над видео колесо всегда листает. С клавиатуры: серые +/- приближают от курсора, / вписывает, * даёт 100 %.", "Like the viewers you are used to: the wheel zooms in and out under the cursor. Off - the wheel flips through files, exactly as it always has. Either way Ctrl+wheel zooms, Shift+wheel gives 100 %, Alt+wheel fits, and over video the wheel always flips. From the keyboard: NumPad +/- zoom at the cursor, / fits, * gives 100 %."))
         toolTip.SetToolTip(num_Slideshow_Interval, If(Is_Russian_Language, "Базовый интервал слайдшоу в секундах. Запустите слайдшоу ещё раз - и оно ускорится вдвое, будто куда-то опаздывает.", "Base slideshow interval in seconds. Start the slideshow again and it halves the delay, as if it's late for something."))
         toolTip.SetToolTip(chk_Video_Mute, If(Is_Russian_Language, "Запускать видео без звука - для просмотра в приличном обществе.", "Start videos muted - for viewing in polite company."))
         toolTip.SetToolTip(num_Video_Volume, If(Is_Russian_Language, "Громкость видео по умолчанию (0-100%).", "Default video volume (0-100%)."))
@@ -167,6 +168,13 @@ Public Class Table_Form
         chk_Exif_AutoRotate.Checked = Is_Exif_AutoRotate
         chk_Hq_Scaling.Checked = Is_HighQuality_Scaling
         chk_Show_Info_Overlay.Checked = Is_Show_Info_Overlay
+#If NETFRAMEWORK Then
+        ' The classic zoom model ships in the .NET 10 viewer only (the x86 build keeps
+        ' the historical mechanics), so do not offer a switch that does nothing here.
+        chk_Wheel_Zooms.Visible = False
+#Else
+        chk_Wheel_Zooms.Checked = Zoom_Wheel_Zooms
+#End If
 
         Dim slideshow_Seconds As Integer = CInt(Slideshow_Base_Interval_Ms / 1000)
         If slideshow_Seconds < CInt(num_Slideshow_Interval.Minimum) Then slideshow_Seconds = CInt(num_Slideshow_Interval.Minimum)
@@ -238,6 +246,7 @@ Public Class Table_Form
             chkb_show_file_size.Text = "Показывать размер файлов"
             chkb_is_to_show_file_datetime.Text = "Показывать дату и время файла"
             chk_Show_Info_Overlay.Text = "Имя файла и позиция поверх изображения"
+            chk_Wheel_Zooms.Text = "Колесо мыши приближает (иначе листает)"
             chk_Exif_AutoRotate.Text = "Авто-поворот по EXIF"
             chk_Hq_Scaling.Text = "Качественное масштабирование"
             chkb_video_loop.Text = "Демонстрировать видео зациклено"
@@ -280,6 +289,7 @@ Public Class Table_Form
             chkb_show_file_size.Text = "Show file sizes"
             chkb_is_to_show_file_datetime.Text = "Show file datetime"
             chk_Show_Info_Overlay.Text = "File name and position over the image"
+            chk_Wheel_Zooms.Text = "Mouse wheel zooms (otherwise it flips files)"
             chk_Exif_AutoRotate.Text = "Auto-rotate by EXIF"
             chk_Hq_Scaling.Text = "High-quality scaling"
             chkb_video_loop.Text = "Loop video playback"
@@ -353,6 +363,12 @@ Public Class Table_Form
     Private Sub Chk_Hq_Scaling_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Hq_Scaling.CheckedChanged
         Is_HighQuality_Scaling = chk_Hq_Scaling.Checked
         Main_Form.RepaintMedia()
+    End Sub
+
+    Private Sub Chk_Wheel_Zooms_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Wheel_Zooms.CheckedChanged
+#If Not NETFRAMEWORK Then
+        Zoom_Wheel_Zooms = chk_Wheel_Zooms.Checked
+#End If
     End Sub
 
     Private Sub Chk_Show_Info_Overlay_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Show_Info_Overlay.CheckedChanged

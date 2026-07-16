@@ -162,6 +162,14 @@ Partial Public Class Main_Form
 
         SlideShowStop()
 
+#If Not NETFRAMEWORK Then
+        ' Modern: one place decides what the wheel means (zoom vs flip) - see
+        ' Main_Form.Zoom.vb. It consumes the event only when it actually zoomed, so
+        ' everything below (including the historical modifier handling) still runs
+        ' untouched when it declines.
+        If TryHandleWheelZoom(e) Then Return
+#End If
+
         If (Control.ModifierKeys And Keys.Alt) = Keys.Alt Then
             SkipZoom()
 

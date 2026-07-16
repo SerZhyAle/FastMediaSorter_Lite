@@ -63,6 +63,7 @@ Partial Class Table_Form
         Me.chk_Exif_AutoRotate = New System.Windows.Forms.CheckBox()
         Me.chk_Hq_Scaling = New System.Windows.Forms.CheckBox()
         Me.chk_Show_Info_Overlay = New System.Windows.Forms.CheckBox()
+        Me.chk_Wheel_Zooms = New System.Windows.Forms.CheckBox()
         Me.SetOnTop = New System.Windows.Forms.CheckBox()
         Me.LinkLabel1 = New System.Windows.Forms.LinkLabel()
         Me.btn_Set_As_Default = New System.Windows.Forms.Button()
@@ -227,6 +228,7 @@ Partial Class Table_Form
         Me.grp_OnScreen.Controls.Add(Me.chkb_is_to_show_file_datetime)
         Me.grp_OnScreen.Controls.Add(Me.chkb_show_file_size)
         Me.grp_OnScreen.Controls.Add(Me.chk_Show_Info_Overlay)
+        Me.grp_OnScreen.Controls.Add(Me.chk_Wheel_Zooms)
         Me.grp_OnScreen.Location = New System.Drawing.Point(8, 108)
         Me.grp_OnScreen.Name = "grp_OnScreen"
         Me.grp_OnScreen.Size = New System.Drawing.Size(656, 104)
@@ -390,6 +392,16 @@ Partial Class Table_Form
         Me.chk_Show_Info_Overlay.TabIndex = 3
         Me.chk_Show_Info_Overlay.Text = "Overlay name + position on image"
         Me.chk_Show_Info_Overlay.UseVisualStyleBackColor = True
+        '
+        'chk_Wheel_Zooms
+        '
+        Me.chk_Wheel_Zooms.AutoSize = True
+        Me.chk_Wheel_Zooms.Location = New System.Drawing.Point(340, 82)
+        Me.chk_Wheel_Zooms.Name = "chk_Wheel_Zooms"
+        Me.chk_Wheel_Zooms.Size = New System.Drawing.Size(180, 19)
+        Me.chk_Wheel_Zooms.TabIndex = 4
+        Me.chk_Wheel_Zooms.Text = "Mouse wheel zooms"
+        Me.chk_Wheel_Zooms.UseVisualStyleBackColor = True
         '
         'lbl_Slideshow_Interval
         '
@@ -647,6 +659,7 @@ Partial Class Table_Form
     Friend WithEvents chk_Exif_AutoRotate As CheckBox
     Friend WithEvents chk_Hq_Scaling As CheckBox
     Friend WithEvents chk_Show_Info_Overlay As CheckBox
+    Friend WithEvents chk_Wheel_Zooms As CheckBox
     Friend WithEvents chk_Video_Mute As CheckBox
     Friend WithEvents lbl_Picture_at_Panel_Size As Label
     Friend WithEvents cmb_Picture_Size As ComboBox

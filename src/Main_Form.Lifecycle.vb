@@ -456,6 +456,9 @@ Partial Public Class Main_Form
         ' New key (not the abandoned "SetOnTop"), default off - so a fresh install or
         ' reinstall starts with the recipients overlay hidden. Applied in Main_Form_Shown.
         Is_Show_Recipients_Overlay = GetSetting(App_name, Second_App_Name, "ShowRecipientsOverlay", "0") = "1"
+        ' Default "0" = the wheel flips through files, i.e. a fresh install and an
+        ' upgrade both behave exactly as before (spec 4.4 / O-Z-2).
+        Zoom_Wheel_Zooms = GetSetting(App_name, Second_App_Name, "WheelZooms", "0") = "1"
 
         Dim video_Volume_String = GetSetting(App_name, Second_App_Name, "VideoVolume", "1.0")
         video_Volume_Level = ParseVideoVolumeSetting(video_Volume_String, video_Volume_Level)
@@ -589,6 +592,7 @@ Partial Public Class Main_Form
 
             SaveSetting(App_name, Second_App_Name, "chkTopMost", If(chkbox_Top_Most.Checked, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "ShowRecipientsOverlay", If(Is_Show_Recipients_Overlay, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "WheelZooms", If(Zoom_Wheel_Zooms, "1", "0"))
             ' Keys 1..9 -> MoveOn1..MoveOn9. Key "0" is runtime slot 10 and must be
             ' saved into MoveOn0 (previously only slots 0..9 were saved, so the "0"
             ' destination was lost on restart). If(...,"") avoids a null .ToString.
