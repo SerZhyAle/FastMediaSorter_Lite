@@ -1,9 +1,16 @@
 # Спецификация: плавающая панель получателей поверх медиафайла (.NET Framework 4.8)
 
-Статус: реализовано в net48 (ожидает ручной проверки владельцем)
+Статус: **выполнено** (net48, 2026-07-15)
 Дата: 2026-07-15, ревизия 1
 Область: основной вьювер на .NET Framework 4.8 (`src/*.vb`). Раздел 11 - дорожная
 карта для .NET 10, реализовывать сейчас не нужно.
+
+> Outcome (2026-07-15): реализовано и отгружено в релизе 26.7.15.2200 (коммит
+> dcc066e). Плавающая панель получателей поверх медиа (`Main_Form.RecipientsOverlay.vb`,
+> флаг `Is_Show_Recipients_Overlay`, ключ реестра `ShowRecipientsOverlay`),
+> переименованная галочка настроек и фиксы двух исторических багов адресации
+> DEL/0..9 - всё в net48. Раздел 11 (.NET 10: клавиша/тулбар/слоёный layered-оверлей)
+> остаётся дорожной картой на будущее.
 
 > Реализуется в текущей net48-сборке. Изменение чисто UI + мелкая правка двух
 > исторических багов адресации каталогов-получателей; декодеры, видео, OCR и Share
@@ -32,15 +39,15 @@
 
 ### 1.1 Галочка `SetOnTop`
 
-- Контрол `SetOnTop` живёт в [src/Table_Form.Designer.vb](../../src/Table_Form.Designer.vb),
+- Контрол `SetOnTop` живёт в [src/Table_Form.Designer.vb](../../../src/Table_Form.Designer.vb),
   вкладка «Файлы и система», группа «Окно».
 - Тексты: RU «Держать это окно поверх остальных», EN «Keep this window on top of others»
-  ([Table_Form.vb:253](../../src/Table_Form.vb#L253), [:295](../../src/Table_Form.vb#L295)).
-- Поведение ([Table_Form.vb:339-342](../../src/Table_Form.vb#L339-L342)):
+  ([Table_Form.vb:253](../../../src/Table_Form.vb#L253), [:295](../../../src/Table_Form.vb#L295)).
+- Поведение ([Table_Form.vb:339-342](../../../src/Table_Form.vb#L339-L342)):
   `set_This_Form_Top_Most = SetOnTop.Checked : Me.TopMost = set_This_Form_Top_Most`.
 - Персистентность: значение реестра **`SetOnTop`**, **по умолчанию `"1"` (включено)**
-  ([Table_Form.vb:302-305](../../src/Table_Form.vb#L302-L305), сохранение в
-  [FormClosing:27](../../src/Table_Form.vb#L27)).
+  ([Table_Form.vb:302-305](../../../src/Table_Form.vb#L302-L305), сохранение в
+  [FormClosing:27](../../../src/Table_Form.vb#L27)).
 - Итог: галочка управляет только `TopMost` самого окна настроек и по умолчанию
   включена. К картинке отношения не имеет.
 
@@ -50,11 +57,11 @@
 ### 1.2 Модель каталогов-получателей
 
 Хранилище: `Public Hardkeys_to_move_mediafile(10) As String`
-([Common_Module.vb:4](../../src/Common_Module.vb#L4)) - массив на 11 элементов
+([Common_Module.vb:4](../../../src/Common_Module.vb#L4)) - массив на 11 элементов
 (индексы 0..10).
 
 **Рантайм-конвенция (авторитетная, задаётся клавиатурой)**
-([Main_Form.KeyboardInput.vb:115-144](../../src/Main_Form.KeyboardInput.vb#L115-L144)):
+([Main_Form.KeyboardInput.vb:115-144](../../../src/Main_Form.KeyboardInput.vb#L115-L144)):
 
 | Клавиша | Вызов | Слот |
 |---------|-------|------|
@@ -62,20 +69,20 @@
 | `0` | `PoMove(10)` | **10** |
 | `D`/`Delete` | `ReadShowMediaFile("DeleteFile")` | - (удаление) |
 
-`PoMove(slot)` ([Main_Form.FileOperations.vb:64](../../src/Main_Form.FileOperations.vb#L64))
+`PoMove(slot)` ([Main_Form.FileOperations.vb:64](../../../src/Main_Form.FileOperations.vb#L64))
 читает `Hardkeys_to_move_mediafile(slot)`, пустой путь = «нет каталога для клавиши»,
 иначе переносит/копирует текущий файл (учёт `Is_Copying_not_Moving` и
 `chkbox_Independent_Thread_For_File_Operation`). Слот `0` в рантайме не используется.
 
 `Image_Panel_Form` адресует так же: `Hardkeys_to_move_mediafile(If(idx=0, 10, idx))`
-([Image_Panel_Form.vb:516](../../src/Image_Panel_Form.vb#L516)) - т.е. `0 -> слот 10`.
+([Image_Panel_Form.vb:516](../../../src/Image_Panel_Form.vb#L516)) - т.е. `0 -> слот 10`.
 
 ### 1.3 Два исторических бага адресации (важно для корректности панели)
 
 **Баг A - двойной клик по сетке настроек уводит на +1 слот.**
 `DataGridView1_CellMouseDoubleClick` по колонке-клавише зовёт `Main_Form.DoKey(e.RowIndex)`
-([Table_Form.vb:312-314](../../src/Table_Form.vb#L312-L314)), а
-`DoKey` ([KeyboardInput.vb:228-236](../../src/Main_Form.KeyboardInput.vb#L228-L236)):
+([Table_Form.vb:312-314](../../../src/Table_Form.vb#L312-L314)), а
+`DoKey` ([KeyboardInput.vb:228-236](../../../src/Main_Form.KeyboardInput.vb#L228-L236)):
 
 ```vb
 If keyIndex = 0 Then ReadShowMediaFile("DeleteFile") Else PoMove(keyIndex + 1)
@@ -88,14 +95,14 @@ If keyIndex = 0 Then ReadShowMediaFile("DeleteFile") Else PoMove(keyIndex + 1)
 использует.
 
 **Баг B - каталог клавиши «0» не сохраняется.**
-Загрузка ([Lifecycle.vb:453-456](../../src/Main_Form.Lifecycle.vb#L453-L456)):
+Загрузка ([Lifecycle.vb:453-456](../../../src/Main_Form.Lifecycle.vb#L453-L456)):
 
 ```vb
 For z = 0 To 9 : Hardkeys_to_move_mediafile(z) = GetSetting(.., "MoveOn" & z, "") : Next
 Hardkeys_to_move_mediafile(10) = GetSetting(.., "MoveOn0", "")   ' слот 10 <- MoveOn0
 ```
 
-Сохранение ([Lifecycle.vb:575-583](../../src/Main_Form.Lifecycle.vb#L575-L583)):
+Сохранение ([Lifecycle.vb:575-583](../../../src/Main_Form.Lifecycle.vb#L575-L583)):
 
 ```vb
 For z = 0 To 9 : SaveSetting(.., "MoveOn" & z, Hardkeys_to_move_mediafile(z)) : Next
@@ -111,19 +118,19 @@ For z = 0 To 9 : SaveSetting(.., "MoveOn" & z, Hardkeys_to_move_mediafile(z)) : 
 ### 1.4 Медиа-поверхность
 
 `panel_Media` (`Panel`, `Dock=Fill`, создаётся в
-[Main_Form.ModernLayout.vb:52](../../src/Main_Form.ModernLayout.vb#L52)) содержит как
+[Main_Form.ModernLayout.vb:52](../../../src/Main_Form.ModernLayout.vb#L52)) содержит как
 дочерние, растянутые на весь клиент: `Picture_Box_1/2`, `Web_Browser` (ActiveX IE),
 `vlc_Video_View` (нативный LibVLC), `lbl_Help_Info`
-([Main_Form.UILayout.vb:71-91](../../src/Main_Form.UILayout.vb#L71-L91)).
+([Main_Form.UILayout.vb:71-91](../../../src/Main_Form.UILayout.vb#L71-L91)).
 
 Прецедент плавающего дочернего контрола поверх медиа **уже есть**: в полноэкранном
 режиме `flow_Toolbar` перевешивается в `panel_Media`, `BringToFront()` и над ним
-режется region ([Main_Form.ModernLayout.vb:210-233](../../src/Main_Form.ModernLayout.vb#L210-L233)).
+режется region ([Main_Form.ModernLayout.vb:210-233](../../../src/Main_Form.ModernLayout.vb#L210-L233)).
 Значит дочерний оверлей-контрол в `panel_Media` - рабочий, кодо-совместимый путь.
 
 Проигрыватели после старта делают свой `BringToFront()`
-([Main_Form.VideoPlayer.vb:155](../../src/Main_Form.VideoPlayer.vb#L155),
-[:191](../../src/Main_Form.VideoPlayer.vb#L191)) - оверлей придётся поднимать
+([Main_Form.VideoPlayer.vb:155](../../../src/Main_Form.VideoPlayer.vb#L155),
+[:191](../../../src/Main_Form.VideoPlayer.vb#L191)) - оверлей придётся поднимать
 поверх повторно (раздел 4.6).
 
 ## 2. Целевое поведение (to-be, обзор)
@@ -148,7 +155,7 @@ For z = 0 To 9 : SaveSetting(.., "MoveOn" & z, Hardkeys_to_move_mediafile(z)) : 
 
 ### 3.1 Новый флаг и ключ реестра
 
-- В [Common_Module.vb](../../src/Common_Module.vb) добавить
+- В [Common_Module.vb](../../../src/Common_Module.vb) добавить
   `Public Is_Show_Recipients_Overlay As Boolean = False` (в ряд к прочим viewer-флагам
   вроде `Is_Show_Info_Overlay`).
 - Ключ реестра - **новый**: `ShowRecipientsOverlay` (строка `"0"`/`"1"`),
@@ -160,11 +167,11 @@ For z = 0 To 9 : SaveSetting(.., "MoveOn" & z, Hardkeys_to_move_mediafile(z)) : 
 
 ### 3.2 Загрузка / сохранение (Main_Form.Lifecycle.vb)
 
-- В загрузке ([Lifecycle.vb](../../src/Main_Form.Lifecycle.vb), рядом с чтением
+- В загрузке ([Lifecycle.vb](../../../src/Main_Form.Lifecycle.vb), рядом с чтением
   прочих флагов ~строка 446):
   `Is_Show_Recipients_Overlay = GetSetting(App_name, Second_App_Name, "ShowRecipientsOverlay", "0") = "1"`,
   затем после построения макета вызвать `ApplyRecipientsOverlay()` (раздел 4).
-- В `FormClosing` ([Lifecycle.vb](../../src/Main_Form.Lifecycle.vb) ~строка 574):
+- В `FormClosing` ([Lifecycle.vb](../../../src/Main_Form.Lifecycle.vb) ~строка 574):
   `SaveSetting(App_name, Second_App_Name, "ShowRecipientsOverlay", If(Is_Show_Recipients_Overlay, "1", "0"))`.
 
 ### 3.3 Окно настроек (Table_Form.vb)
@@ -175,21 +182,21 @@ For z = 0 To 9 : SaveSetting(.., "MoveOn" & z, Hardkeys_to_move_mediafile(z)) : 
 - `PrepareForDisplay`: `SetOnTop.Checked = Is_Show_Recipients_Overlay` (вместо чтения
   ключа `SetOnTop`); убрать строку `Me.TopMost = set_This_Form_Top_Most`.
 - `SetOnTop_CheckedChanged`
-  ([Table_Form.vb:339-342](../../src/Table_Form.vb#L339-L342)) заменить на:
+  ([Table_Form.vb:339-342](../../../src/Table_Form.vb#L339-L342)) заменить на:
   ```vb
   Is_Show_Recipients_Overlay = SetOnTop.Checked
   Main_Form.ApplyRecipientsOverlay()
   ```
   Убрать `Me.TopMost = ..`.
-- `FormClosing` ([Table_Form.vb:27](../../src/Table_Form.vb#L27)): убрать
+- `FormClosing` ([Table_Form.vb:27](../../../src/Table_Form.vb#L27)): убрать
   `SaveSetting(.., "SetOnTop", ..)` (теперь сохраняет Main_Form). Поле
   `set_This_Form_Top_Most` и его использования удалить.
-- Обновить tooltip `SetOnTop` ([Table_Form.vb:67](../../src/Table_Form.vb#L67)):
+- Обновить tooltip `SetOnTop` ([Table_Form.vb:67](../../../src/Table_Form.vb#L67)):
   RU «Плавающий список каталогов-получателей в левом верхнем углу поверх
   изображения/видео. Клик по строке - перенести/скопировать текущий файл в эту папку
   (или удалить). По умолчанию выключено.»; EN аналогично.
 - Значение `SetOnTop.Text` по умолчанию в
-  [Table_Form.Designer.vb:544](../../src/Table_Form.Designer.vb#L544) можно
+  [Table_Form.Designer.vb:544](../../../src/Table_Form.Designer.vb#L544) можно
   синхронизировать (не критично - `PrepareForDisplay` перезаписывает).
 
 > Модальность окна настроек: при открытом модальном `Table_Form` главное окно
@@ -236,7 +243,7 @@ Class Main_Form`), чтобы напрямую видеть `PoMove`, `panel_Med
   (нет пустого места снизу).
 - **Позиция**: левый верхний угол `panel_Media` с отступом `LU(8)` сверху и слева.
 - Все размеры/отступы через `LogicalToDeviceUnits`/`LU()` (DPI-безопасность, ср.
-  [Table_Form.vb:18](../../src/Table_Form.vb#L18)).
+  [Table_Form.vb:18](../../../src/Table_Form.vb#L18)).
 - В полноэкранном режиме верхний край `panel_Media` занят плавающим `flow_Toolbar`;
   чтобы не перекрывать его кнопки, при активном оверлей-тулбаре добавлять к верхнему
   отступу `flow_Toolbar.Height`. В супер-полноэкранном (тулбара нет) - базовый отступ.
@@ -270,7 +277,7 @@ Class Main_Form`), чтобы напрямую видеть `PoMove`, `panel_Med
     `Main_Form` после `ShowDialog`/в обработчике закрытия;
   - при смене языка (`LngCh`) - перестроить подпись «Удалить»;
   - при ресайзе/смене режима: из `SyncMediaSurface`/`ISizeChanged`
-    ([Main_Form.UILayout.vb](../../src/Main_Form.UILayout.vb)) - только
+    ([Main_Form.UILayout.vb](../../../src/Main_Form.UILayout.vb)) - только
     репозиционировать (не пересобирать строки).
 
 ### 4.6 Взаимодействие (клик)
@@ -296,9 +303,9 @@ Class Main_Form`), чтобы напрямую видеть `PoMove`, `panel_Med
   окна `panel_Media`; топовый по Z-порядку сосед клиппует их в зоне перекрытия
   (тот же механизм, что у `flow_Toolbar` в fullscreen). После старта воспроизведения
   проигрыватель зовёт свой `BringToFront()` - поэтому в точках старта плеера
-  ([VideoPlayer.vb:155](../../src/Main_Form.VideoPlayer.vb#L155),
-  [:191](../../src/Main_Form.VideoPlayer.vb#L191)) и при показе нового файла
-  ([Main_Form.MediaLoading.vb](../../src/Main_Form.MediaLoading.vb)) добавить
+  ([VideoPlayer.vb:155](../../../src/Main_Form.VideoPlayer.vb#L155),
+  [:191](../../../src/Main_Form.VideoPlayer.vb#L191)) и при показе нового файла
+  ([Main_Form.MediaLoading.vb](../../../src/Main_Form.MediaLoading.vb)) добавить
   повторный `recipients_Overlay.BringToFront()` (если включён).
 - **Вариант B (запасной)**, если поверх ActiveX/LibVLC дочерний оверлей окажется
   ненадёжен: отдельное безрамочное top-level окно, `WS_EX_NOACTIVATE` +
@@ -315,14 +322,14 @@ Class Main_Form`), чтобы напрямую видеть `PoMove`, `panel_Med
 Сделать `MoveOn0` постоянным домом клавиши «0» (слот 10); слот 0 в рантайме не
 используется.
 
-- Загрузка ([Lifecycle.vb:453-456](../../src/Main_Form.Lifecycle.vb#L453-L456)):
+- Загрузка ([Lifecycle.vb:453-456](../../../src/Main_Form.Lifecycle.vb#L453-L456)):
   ```vb
   For z = 1 To 9
       Hardkeys_to_move_mediafile(z) = GetSetting(App_name, Second_App_Name, "MoveOn" & z.ToString, "")
   Next
   Hardkeys_to_move_mediafile(10) = GetSetting(App_name, Second_App_Name, "MoveOn0", "")
   ```
-- Сохранение ([Lifecycle.vb:575-583](../../src/Main_Form.Lifecycle.vb#L575-L583)):
+- Сохранение ([Lifecycle.vb:575-583](../../../src/Main_Form.Lifecycle.vb#L575-L583)):
   ```vb
   For z = 1 To 9
       SaveSetting(App_name, Second_App_Name, "MoveOn" & z.ToString, If(Hardkeys_to_move_mediafile(z), ""))
@@ -335,7 +342,7 @@ Class Main_Form`), чтобы напрямую видеть `PoMove`, `panel_Med
 ### 5.2 Баг A - двойной клик по сетке настроек
 
 `DoKey` вызывается только из сетки, где row `z` привязан к слоту `z`. Убрать `+1`
-([KeyboardInput.vb:228-236](../../src/Main_Form.KeyboardInput.vb#L228-L236)):
+([KeyboardInput.vb:228-236](../../../src/Main_Form.KeyboardInput.vb#L228-L236)):
 
 ```vb
 Public Sub DoKey(ByVal keyIndex As Integer)
@@ -374,19 +381,19 @@ End Sub
 
 - **`src/Main_Form.RecipientsOverlay.vb`** (новый партиал) - весь оверлей: построение,
   показ/скрытие, позиционирование, диспетчеризация клика, `ApplyRecipientsOverlay`.
-- [src/Common_Module.vb](../../src/Common_Module.vb) - флаг `Is_Show_Recipients_Overlay`.
-- [src/Main_Form.Lifecycle.vb](../../src/Main_Form.Lifecycle.vb) - load/save нового
+- [src/Common_Module.vb](../../../src/Common_Module.vb) - флаг `Is_Show_Recipients_Overlay`.
+- [src/Main_Form.Lifecycle.vb](../../../src/Main_Form.Lifecycle.vb) - load/save нового
   флага; вызов `ApplyRecipientsOverlay()`; фикс load/save каталогов (5.1).
-- [src/Main_Form.KeyboardInput.vb](../../src/Main_Form.KeyboardInput.vb) - фикс `DoKey` (5.2).
-- [src/Main_Form.UILayout.vb](../../src/Main_Form.UILayout.vb) - репозиция оверлея из
+- [src/Main_Form.KeyboardInput.vb](../../../src/Main_Form.KeyboardInput.vb) - фикс `DoKey` (5.2).
+- [src/Main_Form.UILayout.vb](../../../src/Main_Form.UILayout.vb) - репозиция оверлея из
   `SyncMediaSurface`/`ISizeChanged`.
-- [src/Main_Form.VideoPlayer.vb](../../src/Main_Form.VideoPlayer.vb),
-  [src/Main_Form.MediaLoading.vb](../../src/Main_Form.MediaLoading.vb) - повторный
+- [src/Main_Form.VideoPlayer.vb](../../../src/Main_Form.VideoPlayer.vb),
+  [src/Main_Form.MediaLoading.vb](../../../src/Main_Form.MediaLoading.vb) - повторный
   `BringToFront()` оверлея после старта плеера/показа файла.
-- [src/Table_Form.vb](../../src/Table_Form.vb) - переименование галочки, отвязка от
+- [src/Table_Form.vb](../../../src/Table_Form.vb) - переименование галочки, отвязка от
   `TopMost`, `CheckedChanged` -> флаг + `ApplyRecipientsOverlay`, tooltip, убрать
   сохранение `SetOnTop`.
-- [src/Table_Form.Designer.vb](../../src/Table_Form.Designer.vb) - (опц.) дефолтный
+- [src/Table_Form.Designer.vb](../../../src/Table_Form.Designer.vb) - (опц.) дефолтный
   `SetOnTop.Text`.
 
 ## 9. Крайние случаи
@@ -431,7 +438,7 @@ End Sub
 - **кнопка на тулбаре** главного окна (в ряд к прочим);
 - (опц.) истинно полупрозрачный layered-оверлей (вариант B, 4.7), перетаскивание и
   запоминание позиции, интеграция с новой моделью зума/панорамы
-  ([SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md](SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md)).
+  ([SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md](../SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md)).
 
 Ключ реестра `ShowRecipientsOverlay`, флаг `Is_Show_Recipients_Overlay` и `PoMove`-
 диспетчеризация переносятся в .NET 10 как есть - там лишь добавляются точки

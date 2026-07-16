@@ -1,8 +1,9 @@
 # Specification - Android Folder Share: SFTP security & DoS hardening
 
-> Status: **implemented** (2026-07-15) in source. Worker `go test ./... && go vet ./...` green (incl. new handshake/cap/idle/symlink/policy tests); Companion `dotnet build -c Release` -> 0 errors. **Pending, out of this repo's reach:** (1) rebuild the worker binary in its own repo and re-vendor it to `payload/companion/fms-share-worker.exe`; (2) the Android client side of the reconnect contract ([CONTRACT_ANDROID_RECONNECT.md](CONTRACT_ANDROID_RECONNECT.md)).
+> Outcome (2026-07-15): **shipped** in Release 26.7.15.2200 (commit dcc066e) - Companion `SetNetworkPolicy` wiring (LAN-only export, max-connections cap) plus the re-vendored hardened worker binary (`payload/companion/fms-share-worker.exe`). Worker-side §3.1/3.4/3.5/3.6 landed in the separate `P:\windows\fms_companion` repo and rode in via that re-vendored binary.
+> Status: **implemented** (2026-07-15) in source. Worker `go test ./... && go vet ./...` green (incl. new handshake/cap/idle/symlink/policy tests); Companion `dotnet build -c Release` -> 0 errors. **Still out of this repo's reach:** the Android client side of the reconnect contract ([CONTRACT_ANDROID_RECONNECT.md](../CONTRACT_ANDROID_RECONNECT.md)).
 > Scope split across two repos: the Go worker (`P:\windows\fms_companion`, build there - never from this repo) and the LITE/Companion side (`src/FastMediaSorterCompanion/`).
-> Related: [SPECIFICATION_ANDROID_FOLDER_SHARE.md](done/SPECIFICATION_ANDROID_FOLDER_SHARE.md), [SPECIFICATION_QR_IMPORT_ANDROID.md](done/SPECIFICATION_QR_IMPORT_ANDROID.md), [SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](done/SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md), [SPECIFICATION_SHARE_COMPANION_APP.md](done/SPECIFICATION_SHARE_COMPANION_APP.md).
+> Related: [SPECIFICATION_ANDROID_FOLDER_SHARE.md](SPECIFICATION_ANDROID_FOLDER_SHARE.md), [SPECIFICATION_QR_IMPORT_ANDROID.md](SPECIFICATION_QR_IMPORT_ANDROID.md), [SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md), [SPECIFICATION_SHARE_COMPANION_APP.md](SPECIFICATION_SHARE_COMPANION_APP.md).
 
 ---
 
@@ -147,7 +148,7 @@ func (c *idleChannel) Write(p []byte) (int, error) { c.reset(); return c.Channel
 
 #### 3.4.1 Android client reconnect contract (liftable - hand this to the client side)
 
-> This subsection is written to be lifted verbatim into the Android/client contract (companion of [SPECIFICATION_QR_IMPORT_ANDROID.md](done/SPECIFICATION_QR_IMPORT_ANDROID.md)). It is a behavioral contract, implementation-agnostic.
+> This subsection is written to be lifted verbatim into the Android/client contract (companion of [SPECIFICATION_QR_IMPORT_ANDROID.md](SPECIFICATION_QR_IMPORT_ANDROID.md)). It is a behavioral contract, implementation-agnostic.
 
 **Server guarantees**
 
@@ -208,7 +209,7 @@ At the moment the user produces a QR or saves a `.fmscfg`, show a clear one-time
 
 Because the firewall stays open on all profiles, the following must state the behavior plainly (no code enforcement, per owner):
 
-- **[docs/guides/STORE_PUBLISHING.md](../guides/STORE_PUBLISHING.md) privacy/description copy** and the site: the Share server, once enabled, is reachable by any device on the **same network** (including public Wi-Fi), protected by the exported password; it is not exposed to the internet unless a port-forward path exists (and never when LAN-only is on).
+- **[docs/guides/STORE_PUBLISHING.md](../../guides/STORE_PUBLISHING.md) privacy/description copy** and the site: the Share server, once enabled, is reachable by any device on the **same network** (including public Wi-Fi), protected by the exported password; it is not exposed to the internet unless a port-forward path exists (and never when LAN-only is on).
 - **Companion Share UI**: a short standing note near the enable/opt-in surface - "While sharing, devices on your current network can reach this PC on the share port (password-protected). Turn the share off when you don't need it." Pairs with the existing `ServerFeatures` opt-in gate.
 - **LAN-only toggle help**: now truthfully "no internet exposure" (enforced, 3.3), not just "omitted from the QR".
 

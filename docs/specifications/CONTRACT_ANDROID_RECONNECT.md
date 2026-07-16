@@ -1,7 +1,7 @@
 # Contract - Android client reconnect after idle-session close
 
 > Audience: the Android/client team (the app that imports the QR / `.fmscfg` and connects to a Fast Media Sorter Share over SFTP).
-> Version: 1.0 (2026-07-15). Pairs with [SPECIFICATION_QR_IMPORT_ANDROID.md](done/SPECIFICATION_QR_IMPORT_ANDROID.md) (frozen wire contract) and [SPECIFICATION_SHARE_SECURITY_HARDENING.md](SPECIFICATION_SHARE_SECURITY_HARDENING.md) §3.4 (server side).
+> Version: 1.0 (2026-07-15). Pairs with [SPECIFICATION_QR_IMPORT_ANDROID.md](done/SPECIFICATION_QR_IMPORT_ANDROID.md) (frozen wire contract) and [SPECIFICATION_SHARE_SECURITY_HARDENING.md](done/SPECIFICATION_SHARE_SECURITY_HARDENING.md) §3.4 (server side).
 > Status: server side to be implemented in the worker (`fms-share-worker`); client side is this document.
 
 ---
