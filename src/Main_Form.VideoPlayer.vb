@@ -240,7 +240,7 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub Vlc_Video_View_MouseClick(sender As Object, e As MouseEventArgs)
-        If e.Button = Windows.Forms.MouseButtons.Right AndAlso vlc_Media_Player IsNot Nothing Then
+        If e.Button = System.Windows.Forms.MouseButtons.Right AndAlso vlc_Media_Player IsNot Nothing Then
             Try
                 If vlc_Media_Player.IsPlaying Then
                     vlc_Media_Player.Pause()

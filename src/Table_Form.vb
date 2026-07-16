@@ -320,7 +320,7 @@ Public Class Table_Form
                 Dim textKey As String = e.RowIndex.ToString
                 If textKey = "10" Then textKey = "0"
                 folderBrowse.Description = If(Is_Russian_Language, "Укажите каталог переноса/копирования для клавиши " + textKey, "Select dest folder for key " + textKey)
-                If folderBrowse.ShowDialog() = Windows.Forms.DialogResult.OK Then
+                If folderBrowse.ShowDialog() = System.Windows.Forms.DialogResult.OK Then
                     Hardkeys_to_move_mediafile(e.RowIndex) = folderBrowse.SelectedPath
                     Data_Grid_View.Item(1, e.RowIndex).Value = Hardkeys_to_move_mediafile(e.RowIndex)
                     Data_Grid_View.Refresh()

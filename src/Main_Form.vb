@@ -344,7 +344,7 @@ Public Class Main_Form
 
         folder_Browser_Dialog.Description = If(Is_Russian_Language, "Выберите папку с медиафайлами..", "Set folder of media files..")
 
-        If folder_Browser_Dialog.ShowDialog() = Windows.Forms.DialogResult.OK Then
+        If folder_Browser_Dialog.ShowDialog() = System.Windows.Forms.DialogResult.OK Then
             Current_Folder_Path = folder_Browser_Dialog.SelectedPath
             lbl_Status.Text = If(Is_Russian_Language, "выбрана папка", "folder selected") & ": " & Current_Folder_Path
             Is_No_Background_Tasks = False

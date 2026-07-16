@@ -1,0 +1,142 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Fast Media Sorter for Windows - the .NET 10 x64 mainline
+    (SPECIFICATION_DOTNET10_MODERN_BUILD.md). Compiles the SAME sources as the
+    frozen net48 project one directory up (two projects, one tree - epic §3);
+    divergent subsystems switch on #If NETFRAMEWORK seams. Lives in its own
+    folder so its SDK-style obj/ never collides with the old-style project's.
+    Frozen anchors ride along unchanged: exe name, mutex, registry, ProgIDs.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <PlatformTarget>x64</PlatformTarget>
+    <RootNamespace>fmsl</RootNamespace>
+    <AssemblyName>FastMediaSorter_LITE</AssemblyName>
+    <StartupObject>fmsl.My.MyApplication</StartupObject>
+    <MyType>WindowsForms</MyType>
+
+    <!-- Repo-wide VB strictness (CLAUDE.md "Code Style & Constraints"). -->
+    <OptionExplicit>On</OptionExplicit>
+    <OptionStrict>On</OptionStrict>
+    <OptionInfer>On</OptionInfer>
+    <OptionCompare>Binary</OptionCompare>
+    <WarningsAsErrors>41999,42016,42017,42018,42019,42020,42021,42022,42032,42036</WarningsAsErrors>
+    <!-- WFO1000 (designer-serialization hints) fires on VB WithEvents fields,
+         which compile to properties; these forms are runtime-built, never
+         designer-serialized, so the diagnostic is noise here. -->
+    <NoWarn>$(NoWarn);WFO1000</NoWarn>
+
+    <ApplicationIcon>..\..\assets\icons\Fast_Media_Sorter.ico</ApplicationIcon>
+    <ApplicationManifest>..\My Project\app.manifest</ApplicationManifest>
+
+    <!-- Everything is included explicitly below: the sources live OUTSIDE this
+         project folder, and default globs would double-include local files. -->
+    <EnableDefaultItems>false</EnableDefaultItems>
+
+    <!-- Assembly metadata (the net48 project reads these from AssemblyInfo.vb,
+         which is deliberately NOT linked here - the SDK generates the attributes). -->
+    <Product>Fast Media Sorter for Windows</Product>
+    <AssemblyTitle>Fast Media Sorter for Windows</AssemblyTitle>
+    <Company>SZA</Company>
+    <Copyright>Copyright © 2013-2026</Copyright>
+    <Description>sza@ukr.net</Description>
+    <NeutralLanguage>en</NeutralLanguage>
+  </PropertyGroup>
+
+  <!-- Same YY.M.D.HHmm auto-version as the net48 UpdateVersion target; a release
+       build can override it with -p:ReleaseVersion=... exactly like legacy. -->
+  <PropertyGroup>
+    <AutoVersion Condition="'$(ReleaseVersion)' != ''">$(ReleaseVersion)</AutoVersion>
+    <AutoVersion Condition="'$(AutoVersion)' == ''">$([System.DateTime]::Now.ToString("yy")).$([System.DateTime]::Now.Month).$([System.DateTime]::Now.Day).$([System.DateTime]::Now.ToString("HHmm"))</AutoVersion>
+    <Version>$(AutoVersion)</Version>
+    <AssemblyVersion>$(AutoVersion)</AssemblyVersion>
+    <FileVersion>$(AutoVersion)</FileVersion>
+  </PropertyGroup>
+
+  <!-- Publish model: self-contained single-file x64 (epic §8.1). Native payload
+       (libvlc plugin tree, tesseract) must stay as loose files next to the exe -
+       LibVLC discovers plugins on disk - hence no self-extract bundling. -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+
+  <!-- x64-only build: skip the win-x86 half of the LibVLC payload. -->
+  <PropertyGroup>
+    <VlcWindowsX86Enabled>false</VlcWindowsX86Enabled>
+    <VlcWindowsX64Enabled>true</VlcWindowsX64Enabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Project-level VB imports the shared sources rely on. The SDK's implicit
+         VB import list does NOT cover the WinForms namespaces the old-style
+         project imported explicitly - mirror those here. -->
+    <Import Include="System.Data" />
+    <Import Include="System.Drawing" />
+    <Import Include="System.Windows.Forms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The shared tree (one directory up). Divergent files compile to nothing
+         here via whole-file #If NETFRAMEWORK blocks, so no per-file excludes
+         beyond the sibling projects and the attribute files the SDK replaces. -->
+    <Compile Include="..\**\*.vb"
+             Exclude="..\Modern\**;..\FastMediaSorterCompanion\**;..\obj\**;..\bin\**;..\My Project\AssemblyInfo.vb;..\My Project\VersionInfo.vb" />
+    <Compile Include="ModernAssemblyInfo.vb" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- VB manifest resource naming is RootNamespace.FileName (folder-agnostic),
+         so linked resx land under the exact names the net48 build produces. -->
+    <EmbeddedResource Include="..\Main_Form.resx" />
+    <EmbeddedResource Include="..\Table_Form.resx" />
+    <EmbeddedResource Include="..\My Project\Resources.resx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Bundled UI assets served by RuntimeBootstrap.OpenBundledAsset - the
+         LogicalName values are the frozen lookup keys, same as net48. The
+         FmsPayloadmanaged/* assembly payload is net48-only (ILMerge era) and is
+         deliberately absent here: publish lays managed deps down natively. -->
+    <EmbeddedResource Include="..\..\assets\flags\*.png">
+      <LogicalName>FmsPayloadflags/%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\assets\help\port-forward.html">
+      <LogicalName>FmsPayloadhelp/port-forward.html</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\assets\icons\doc-html-translate.png">
+      <LogicalName>FmsPayloadicons/doc-html-translate.png</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Loose flag files next to the exe (same as the net48 Content items). -->
+    <Content Include="..\..\assets\flags\*.png">
+      <Link>flags\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Modern image stack (epic §6.1): ImageSharp 3.x is the primary decoder
+         (animated WEBP/APNG without OS codecs). Magick.NET (HEIC/AVIF/JXL) is a
+         deliberate later addition behind the same IImageDecoder seam (O-3). -->
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+
+    <!-- Single video engine (epic §6.2) - same versions the net48 build vendors. -->
+    <PackageReference Include="LibVLCSharp" Version="3.9.3" />
+    <PackageReference Include="LibVLCSharp.WinForms" Version="3.9.3" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
+
+    <!-- OCR engine, unchanged (epic §4). -->
+    <PackageReference Include="Tesseract" Version="5.2.0" />
+
+    <!-- DPAPI (DpapiSecrets): ProtectedData is inbox on net10.0-windows
+         (NU1510 flags the explicit package as redundant) - no PackageReference. -->
+  </ItemGroup>
+
+</Project>

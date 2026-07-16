@@ -12,6 +12,19 @@ Namespace My
             AppFileLogger.Initialize()
         End Sub
 
+#If Not NETFRAMEWORK Then
+        ''' <summary>
+        ''' .NET WinForms ignores the manifest DPI block (WFO0003) and defaults to
+        ''' Segoe UI 9pt - both would shift the pixel-tuned net48 layout. Pin the
+        ''' net48 metrics: PerMonitorV2 (same as the manifest gave net48) and the
+        ''' classic default font all Designer coordinates were laid out against.
+        ''' </summary>
+        Private Sub MyApplication_ApplyApplicationDefaults(sender As Object, e As ApplyApplicationDefaultsEventArgs) Handles Me.ApplyApplicationDefaults
+            e.HighDpiMode = System.Windows.Forms.HighDpiMode.PerMonitorV2
+            e.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25F)
+        End Sub
+#End If
+
         Private Const WM_COPYDATA_LOCAL As Integer = &H4A
 
         <DllImport("user32.dll", CharSet:=CharSet.Auto)>

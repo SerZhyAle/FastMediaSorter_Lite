@@ -60,11 +60,12 @@ Friend NotInheritable Class ModernImageSharpDecoder
     Private Sub CopyWebpFrameDelaysToGif(sharpImage As SixLabors.ImageSharp.Image)
         Try
             For Each frame In sharpImage.Frames
-                Dim webpMeta = frame.Metadata.GetWebpMetadata()
-                If webpMeta Is Nothing Then Continue For
+                Dim webpMeta = frame.Metadata.GetFormatMetadata(SixLabors.ImageSharp.Formats.Webp.WebpFormat.Instance)
+                If webpMeta Is Nothing OrElse webpMeta.FrameDelay = 0 Then Continue For
 
-                Dim delayCentiseconds As Integer = CInt(Math.Max(1L, CLng(webpMeta.FrameDuration) \ 10L))
-                frame.Metadata.GetGifMetadata().FrameDelay = delayCentiseconds
+                ' Webp FrameDelay is in milliseconds, GIF FrameDelay in centiseconds.
+                Dim delayCentiseconds As Integer = CInt(Math.Max(1L, CLng(webpMeta.FrameDelay) \ 10L))
+                frame.Metadata.GetFormatMetadata(SixLabors.ImageSharp.Formats.Gif.GifFormat.Instance).FrameDelay = delayCentiseconds
             Next
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0039: webp->gif frame timing copy skipped: " & ex.Message)

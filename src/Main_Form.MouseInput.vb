@@ -261,11 +261,11 @@ Partial Public Class Main_Form
                             If Not is_WebBrowser_Visible Then
                                 ReadShowMediaFile("ReadPrevFile")
                             End If
-                        Case Windows.Forms.MouseButtons.Middle
+                        Case System.Windows.Forms.MouseButtons.Middle
                             RenameCurrentFile()
-                        Case Windows.Forms.MouseButtons.XButton1
+                        Case System.Windows.Forms.MouseButtons.XButton1
                             ReadShowMediaFile("ReadNextFile")
-                        Case Windows.Forms.MouseButtons.XButton2
+                        Case System.Windows.Forms.MouseButtons.XButton2
                             ReadShowMediaFile("ReadPrevFile")
                     End Select
             End Select
