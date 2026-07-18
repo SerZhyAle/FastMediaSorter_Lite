@@ -1,7 +1,7 @@
 # Specification - Android Folder Share: SFTP security & DoS hardening
 
 > Outcome (2026-07-15): **shipped** in Release 26.7.15.2200 (commit dcc066e) - Companion `SetNetworkPolicy` wiring (LAN-only export, max-connections cap) plus the re-vendored hardened worker binary (`payload/companion/fms-share-worker.exe`). Worker-side §3.1/3.4/3.5/3.6 landed in the separate `P:\windows\fms_companion` repo and rode in via that re-vendored binary.
-> Status: **implemented** (2026-07-15) in source. Worker `go test ./... && go vet ./...` green (incl. new handshake/cap/idle/symlink/policy tests); Companion `dotnet build -c Release` -> 0 errors. **Still out of this repo's reach:** the Android client side of the reconnect contract ([CONTRACT_ANDROID_RECONNECT.md](../CONTRACT_ANDROID_RECONNECT.md)).
+> Status: **implemented** (2026-07-15) in source. Worker `go test ./... && go vet ./...` green (incl. new handshake/cap/idle/symlink/policy tests); Companion `dotnet build -c Release` -> 0 errors. **Still out of this repo's reach:** the Android client side of the reconnect contract ([CONTRACT_ANDROID_RECONNECT.md](../../contracts/CONTRACT_ANDROID_RECONNECT.md)).
 > Scope split across two repos: the Go worker (`P:\windows\fms_companion`, build there - never from this repo) and the LITE/Companion side (`src/FastMediaSorterCompanion/`).
 > Related: [SPECIFICATION_ANDROID_FOLDER_SHARE.md](SPECIFICATION_ANDROID_FOLDER_SHARE.md), [SPECIFICATION_QR_IMPORT_ANDROID.md](SPECIFICATION_QR_IMPORT_ANDROID.md), [SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md), [SPECIFICATION_SHARE_COMPANION_APP.md](SPECIFICATION_SHARE_COMPANION_APP.md).
 

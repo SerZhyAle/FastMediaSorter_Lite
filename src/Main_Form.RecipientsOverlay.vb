@@ -16,7 +16,7 @@ Imports System.Windows.Forms
 ' overlay), narrow-but-tall, sized to the number of *registered* destination
 ' folders + a Delete row. A click is exactly equivalent to pressing the matching
 ' key: recipients go through PoMove(slot), Delete through
-' ReadShowMediaFile("DeleteFile") - identical behaviour, no new file logic.
+' ReadShowMediaFile(Mode_Delete) - identical behaviour, no new file logic.
 Partial Public Class Main_Form
 
     Private recipients_Overlay As Panel
@@ -160,7 +160,7 @@ Partial Public Class Main_Form
         ' Match the keyboard path: it stops the slideshow first (KeybUse).
         SlideShowStop()
         If slot = -1 Then
-            ReadShowMediaFile("DeleteFile")
+            ReadShowMediaFile(Mode_Delete)
         Else
             PoMove(slot)
         End If

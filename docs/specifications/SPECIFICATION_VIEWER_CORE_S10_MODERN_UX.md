@@ -1,9 +1,11 @@
 # Тактическая спецификация С10 (modern): видео в слайдшоу, отзывчивость, панорама
 
-Статус: план (не начато)
+Статус: план. Утверждённая владельцем часть вынесена в
+[С11](SPECIFICATION_VIEWER_CORE_S11_MODERN_ASYNC.md) и там реализована 2026-07-16
+(У-11); остаток ниже - по-прежнему план
 Дата: 2026-07-16, ревизия 1
-Родитель: [SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md](SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md)
-Предшественники: [С4](SPECIFICATION_VIEWER_CORE_S4_PLAYBACK.md) (`media_Generation`, единая инициализация VLC), [С5](SPECIFICATION_VIEWER_CORE_S5_ZOOM.md) (панорама)
+Родитель: [SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md](done/SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md)
+Предшественники: [С4](done/SPECIFICATION_VIEWER_CORE_S4_PLAYBACK.md) (`media_Generation`, единая инициализация VLC), [С5](done/SPECIFICATION_VIEWER_CORE_S5_ZOOM.md) (панорама)
 Сборки: **только .NET 10 mainline**
 Объём: У-09, У-10, У-11, У-14 - завершающая стадия
 
@@ -71,7 +73,7 @@ End Sub
 (различает «нет файла» / «занят» / «сеть моргнула»), блокировка - нет: до 8 ретраев
 по сетевому таймауту SMB **на UI-потоке**, между ними `Thread.Sleep(250)`. Для
 уснувшей шары окно висит «не отвечает» минутами; вдобавок зависает процесс-отправитель
-(`SendMessage` синхронен - см. Б-38 в [С6](SPECIFICATION_VIEWER_CORE_S6_LIFECYCLE.md)).
+(`SendMessage` синхронен - см. Б-38 в [С6](done/SPECIFICATION_VIEWER_CORE_S6_LIFECYCLE.md)).
 
 - Классификацию исключений и число попыток **сохранить один в один**; заменить
   только исполнение:
@@ -121,7 +123,7 @@ End Function
 ```
 
 - Навигация (видео → изображение): звать без `await` - показ не ждёт остановки.
-- `ReleaseActiveMedia` ([С2](SPECIFICATION_VIEWER_CORE_S2_FILEOPS.md)) в modern:
+- `ReleaseActiveMedia` ([С2](done/SPECIFICATION_VIEWER_CORE_S2_FILEOPS.md)) в modern:
   `Await StopVlcPlaybackAsync()` **до** `File.Move`/`Delete` - иначе вернётся
   «файл занят». Это делает `ReleaseActiveMedia` асинхронным в modern-ветке - учесть
   при переводе `PoMove`/`Undo`/DEL на очередь (С8): остановка становится частью

@@ -33,6 +33,14 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <!-- The same project-level imports both viewer vbprojs declare. The linked sources
+       are written against them (FileManager.vb says "Image", not
+       "System.Drawing.Image"), so without these they do not compile here. -->
+  <ItemGroup>
+    <Import Include="System.Drawing" />
+    <Import Include="System.Windows.Forms" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
@@ -66,6 +74,14 @@
     <!-- "Open URL.." address handling - modern-only for the same reason. -->
     <Compile Include="..\..\src\MediaUrl.vb">
       <Link>Linked\MediaUrl.vb</Link>
+    </Compile>
+    <!-- File operations. RenameFile is where "photo2.jpg" once landed on disk as
+         "photo2.jpg.jpg" while the viewer recorded the name it had asked for - the
+         file then dropped out of the list, so this contract is worth pinning down.
+         It brings no new dependencies: the decoder seam, the logger and
+         Common_Module are all here already. -->
+    <Compile Include="..\..\src\FileManager.vb">
+      <Link>Linked\FileManager.vb</Link>
     </Compile>
     <!-- Tail of that dependency: the legacy decoder logs a failed WEBP decode (this
          is the log line the Server 2025 bug was diagnosed from - worth keeping), and

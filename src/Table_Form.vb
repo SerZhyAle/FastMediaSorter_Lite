@@ -53,6 +53,8 @@ Public Class Table_Form
         ' --- TabPage 2: Settings ---
         toolTip.SetToolTip(cmbox_color_schema, If(Is_Russian_Language, "Выберите цветовую схему фона для просмотра изображений.", "Select the background color scheme for the image viewer."))
         toolTip.SetToolTip(chb_perspectiva, If(Is_Russian_Language, "Включить перспективный фон: чёрные поля по краям превращаются в продолжение картинки. Чисто для красоты.", "Enable the perspective background: the black bars become a continuation of the image. Purely for the vibes."))
+        toolTip.SetToolTip(chk_Dynamic_Perspective, If(Is_Russian_Language, "Полосы гаснут к цвету фона по мере удаления от фото - получается ореол, а не сплошная полоса. Применяется со следующего фото.", "The bars fade into the background colour the further they get from the photo - a halo rather than a solid bar. Applies from the next photo on."))
+        toolTip.SetToolTip(chk_Animated_Perspective, If(Is_Russian_Language, "Ореол не появляется сразу, а вырастает от края фото к краю экрана - примерно за треть секунды. Снимите галку, и он будет просто нарисован мгновенно. В покое кадр в обоих случаях одинаковый. Растёт только на новом фото: ресайз окна и зум перерисовывают фон сразу.", "The halo grows from the edge of the photo out to the edge of the screen - about a third of a second - instead of just being there. Uncheck it and it is simply drawn at once. The resting frame is the same either way. Only a new photo grows it: resizing the window or zooming redraws the background instantly."))
         toolTip.SetToolTip(chkb_show_pic_size, If(Is_Russian_Language, "Показывать размеры изображения (ширина x высота).", "Show the dimensions (width x height) of the image."))
         toolTip.SetToolTip(chkb_is_to_show_file_datetime, If(Is_Russian_Language, "Показывать дату и время последнего изменения файла.", "Show the last modified date and time of the file."))
         toolTip.SetToolTip(chkb_show_file_size, If(Is_Russian_Language, "Показывать размер файла.", "Show the size of the file."))
@@ -190,6 +192,8 @@ Public Class Table_Form
         num_Video_Volume.Value = video_Volume_Percent
 
         chb_perspectiva.Text = If(Is_Russian_Language, "Перспектива", "Perspective")
+        chk_Dynamic_Perspective.Text = If(Is_Russian_Language, "Динамическая перспектива", "Dynamic perspective")
+        chk_Animated_Perspective.Text = If(Is_Russian_Language, "Анимированная", "Animated")
         btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
 
         chkbox_Copy_Mode.Checked = Is_Copying_not_Moving
@@ -321,6 +325,18 @@ Public Class Table_Form
         SetOnTop.Checked = Is_Show_Recipients_Overlay
 
         chb_perspectiva.Checked = Is_Pespective
+#If NETFRAMEWORK Then
+        ' The halo ships in the .NET 10 viewer only (the x86 fallback keeps the flat
+        ' bars), so do not offer a switch that does nothing here - same as chk_Wheel_Zooms.
+        chk_Dynamic_Perspective.Visible = False
+        chk_Animated_Perspective.Visible = False
+#Else
+        chk_Dynamic_Perspective.Checked = Is_Dynamic_Perspective
+        chk_Animated_Perspective.Checked = Is_Animated_Perspective
+#End If
+        ' Checked above only raises CheckedChanged when the value actually changed, so
+        ' the greying cannot rely on that handler alone having run.
+        SyncDynamicPerspectiveEnabled()
 
         LinkLabel1.Text = Application.ProductVersion & " sza@ukr.net"
     End Sub
@@ -423,6 +439,28 @@ Public Class Table_Form
 
     Private Sub Chb_perspectiva_CheckedChanged(sender As Object, e As EventArgs) Handles chb_perspectiva.CheckedChanged
         Is_Pespective = chb_perspectiva.Checked
+        SyncDynamicPerspectiveEnabled()
+    End Sub
+
+    ''' <summary>Greys the chain down: with no perspective there are no bars to fade, and
+    ''' with no halo there is nothing to animate. Better than letting either read as a
+    ''' setting that is doing something.</summary>
+    Private Sub SyncDynamicPerspectiveEnabled()
+        chk_Dynamic_Perspective.Enabled = chb_perspectiva.Checked
+        chk_Animated_Perspective.Enabled = chb_perspectiva.Checked AndAlso chk_Dynamic_Perspective.Checked
+    End Sub
+
+    Private Sub Chk_Dynamic_Perspective_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Dynamic_Perspective.CheckedChanged
+#If Not NETFRAMEWORK Then
+        Is_Dynamic_Perspective = chk_Dynamic_Perspective.Checked
+#End If
+        SyncDynamicPerspectiveEnabled()
+    End Sub
+
+    Private Sub Chk_Animated_Perspective_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Animated_Perspective.CheckedChanged
+#If Not NETFRAMEWORK Then
+        Is_Animated_Perspective = chk_Animated_Perspective.Checked
+#End If
     End Sub
 
     Private Sub Chkb_show_pic_size_CheckedChanged(sender As Object, e As EventArgs) Handles chkb_show_pic_size.CheckedChanged

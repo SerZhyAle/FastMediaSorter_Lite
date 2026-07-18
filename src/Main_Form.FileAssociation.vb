@@ -132,11 +132,24 @@ Partial Public Class Main_Form
     End Sub
 
     Public Sub AssociateAllImageFormatsWithThisApp()
+        ' Only formats this app can actually DISPLAY. The modern build claims
+        ' avif/heic/heif too (Magick.NET decodes them, epic O-3); on x86 they stay
+        ' unclaimed - no decoder there, so becoming their default handler would
+        ' mean a double-click opens a blank window. svg is claimed by neither.
+        ' Unclaimed formats stay scannable/sortable inside a folder
+        ' (see web_specific_image_extensions) - we just don't claim them.
+#If NETFRAMEWORK Then
         Dim all_Image_Extensions() As String = {
             ".jpg", ".jpeg", ".gif", ".png", ".bmp", ".tiff",
-            ".ico", ".wmf", ".emf", ".exif",
-            ".webp", ".heic", ".avif", ".svg"
+            ".ico", ".wmf", ".emf", ".exif", ".webp"
         }
+#Else
+        Dim all_Image_Extensions() As String = {
+            ".jpg", ".jpeg", ".gif", ".png", ".bmp", ".tiff",
+            ".ico", ".wmf", ".emf", ".exif", ".webp",
+            ".avif", ".heic", ".heif"
+        }
+#End If
 
         Dim failed As New List(Of String)
         Dim exe_Path As String = Application.ExecutablePath

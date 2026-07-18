@@ -105,6 +105,11 @@ Partial Public Class Main_Form
         Picture_Box_1.Bounds = bounds
         Picture_Box_2.Bounds = bounds
 
+        ' The wheel can turn while the left button is still held: re-anchor the pan, or
+        ' the next mouse move hauls the box back to the geometry the pan started from
+        ' and this anchored position is lost.
+        RebasePan(bounds.Location)
+
         zoom_Factor = target
         zoom_Scale = 0.0F   ' "not fit" - enables panning, stops click-navigation
         UpdateZoomLabel()

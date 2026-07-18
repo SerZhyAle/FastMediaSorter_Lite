@@ -1,4 +1,4 @@
-﻿'sza130806lite
+'sza130806lite
 'sza240823 eto pizdec
 'sza250411 random, filters, etc
 'sza250502 refactor
@@ -43,7 +43,10 @@ Public Class Main_Form
 
     Private Const slide_show_limit As Integer = 30
     Private Const max_Namber_of_Recent_Folders As Integer = 100
-    Private Const app_Mutex_Name As String = "FastMediaSorterSingleInstanceMutex"
+    ' FROZEN name - one mutex for both exes (see CLAUDE.md). Friend so that
+    ' Application_Events can create it at Startup, which is the only moment early
+    ' enough to close the window in which two launches can both become instances.
+    Friend Const app_Mutex_Name As String = "FastMediaSorterSingleInstanceMutex"
     ' Sent over WM_COPYDATA instead of a file path when a bare second launch (no
     ' arguments) finds this instance already running: "bring your window back".
     ' Colons make it impossible to collide with a real path.
@@ -64,8 +67,8 @@ Public Class Main_Form
     Private Const first_run_left = 50
     Private Const first_run_width = 800
     Private Const first_run_height = 600
-    Private Const main_form_position_Limit_Top = 720
-    Private Const main_form_position_Limit_Left = 1000
+    ' No Top/Left ceilings any more: a saved position is validated against
+    ' SystemInformation.VirtualScreen, i.e. the desktop the user actually has.
     Private Const main_form_position_Limit_Width = 3000
     Private Const main_form_position_Limit_Width_Low = 320
     Private Const main_form_position_Limit_Height = 3000
@@ -79,9 +82,20 @@ Public Class Main_Form
     Private Const how_long_wait_before_draw_perspective = 50
     Private Const max_Number_Of_Recent_Media_Files As Integer = 50
 
+#If NETFRAMEWORK Then
+    ' x86/net48: no AVIF/HEIC decoder exists on its target OSes (Win 7/8.1 WIC has
+    ' no HEIF codec), so those stay in web_specific_image_extensions - scanned and
+    ' sortable with an honest "unsupported" status, never claimed as displayable.
     Public Image_File_Extensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tiff", ".ico", ".wmf", ".emf", ".exif", ".webp"}
+    Private web_specific_image_extensions As New HashSet(Of String) From {".heic", ".heif", ".avif", ".svg"}
+#Else
+    ' Modern: AVIF/HEIC/HEIF decode via Magick.NET behind the IImageDecoder seam
+    ' (epic O-3), so they are first-class displayable formats here. Both builds
+    ' scan the same file set - the x86 exe keeps them in the web-specific list.
+    Public Image_File_Extensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tiff", ".ico", ".wmf", ".emf", ".exif", ".webp", ".avif", ".heic", ".heif"}
+    Private web_specific_image_extensions As New HashSet(Of String) From {".svg"}
+#End If
     Private video_File_Extensions As New HashSet(Of String) From {".webm", ".ogg", ".3g2", ".mkv", ".3gp", ".mp4", ".m4v", ".m4a", ".mov", ".mp3", ".avi", ".wmv", ".asf", ".mpg", ".mpeg", ".flv", ".wav", ".wma"}
-    Private web_specific_image_extensions As New HashSet(Of String) From {".heic", ".avif", ".svg"}
 
 
     Public Current_Folder_Path As String = ""
@@ -140,12 +154,13 @@ Public Class Main_Form
 
     Private is_form_shown As Boolean = False
     Private last_Perspective_Draw_Time As DateTime
-    Private Shared mutex As Mutex
+    ''' <summary>Held for the process lifetime; created in MyApplication_Startup.</summary>
+    Friend Shared Single_Instance_Mutex As Mutex
     Private app_Run_Count As Integer
     Private media_View_Count As Integer
     Private is_Combo_Set_Auto As Boolean = False
 
-    Private bgWorker_Pending_Args As Tuple(Of String, String) = Nothing
+    Private bgWorker_Pending_Args As PrefetchRequest = Nothing
     Private bgWorker_Has_Pending_Operation As Boolean = False
 
     Private is_File_Reseived_From_Outside As Boolean = False
@@ -171,14 +186,18 @@ Public Class Main_Form
     Private files_List As List(Of String) = Nothing
     Private files_Array As String() = Nothing
     Private is_Files_Array_Active As Boolean = False
+    ''' <summary>The folder the list in memory was read from - the honest answer to "is
+    ''' the list loaded?", which used to be guessed from current_File_Index = 0.</summary>
+    Private folder_List_Loaded_For As String = ""
 
     Private is_Dragging As Boolean = False
-    Private drag_Start_Point As Point
     Private last_Drag_Update_Time As DateTime = DateTime.MinValue
     Private Const DRAG_UPDATE_INTERVAL_MS As Integer = 16
-    ' Add these variables near other Private variable declarations
-    Private original_PictureBox_Left As Integer
-    Private original_PictureBox_Top As Integer
+    ''' <summary>Where inside the box the pan grabbed it, in panel_Media coordinates.
+    ''' Replaces the old "box position at drag start + delta" pair: the delta was
+    ''' measured in the moving box's own client coordinates, which made the picture
+    ''' follow the hand at half speed.</summary>
+    Private drag_Grab_Offset As Size
 
     Private is_Table_Form_Open As Boolean
     Private last_Action_Time As DateTime
@@ -188,6 +207,11 @@ Public Class Main_Form
     Private was_External_Input_Previously As Boolean
     Private WithEvents SlideShowTimer As New System.Windows.Forms.Timer()
     Private is_Slide_Show_Random_Mode As Boolean
+    ' One generator for the whole random feature. VB's Rnd() without a Randomize() call
+    ' starts from the same seed in every process: the "random" slideshow replayed the
+    ' same files in the same order every session (and the first file came from a second,
+    ' time-seeded generator - two different sources for one feature).
+    Private ReadOnly slideshow_Rng As New Random()
     Private is_WebBrowser_Visible As Boolean
     Private is_PictureBox1_Visible As Boolean
     Private is_PictureBox2_Visible As Boolean
@@ -204,13 +228,33 @@ Public Class Main_Form
     Private libVlc As LibVLCSharp.Shared.LibVLC = Nothing
     Private vlc_Video_View As LibVLCSharp.WinForms.VideoView = Nothing
     Private vlc_Media_Player As LibVLCSharp.Shared.MediaPlayer = Nothing
-    Private is_Vlc_Init_Attempted As Boolean = False
+    ''' <summary>The one initialisation, shared by every caller (see EnsureVlcInitializedAsync).</summary>
+    Private vlc_Init_Task As System.Threading.Tasks.Task(Of Boolean) = Nothing
     Private is_Vlc_Playing As Boolean = False
+
+    ''' <summary>Bumped for every new media shown. Work started asynchronously in one
+    ''' generation must fold quietly if the generation has moved on by the time it
+    ''' resumes - nothing cancels it, so it has to check.</summary>
+    Private media_Generation As Integer = 0
 
     Dim history_Source_File_Name As String = ""
     Dim history_Destination_File_Name As String = ""
+    ' What the recorded operation actually WAS. Undo used to branch on the current
+    ' Is_Copying_not_Moving instead: flip the mode to "copy" after moving a file and U
+    ' deleted it at the destination - the only copy left - instead of moving it back.
+    Private history_Was_Copy As Boolean
     Private WithEvents BgWorker As New BackgroundWorker()
     Private is_BgWorker_Online As Boolean
+
+    ''' <summary>Signalled when the worker's DoWork actually leaves.
+    '''
+    ''' Why not BackgroundWorker.IsBusy: it is cleared by a completion callback posted
+    ''' to the UI thread - and FormClosing IS the UI thread, spinning in Thread.Sleep
+    ''' with no message pump. The callback could never arrive, so both waits burned
+    ''' their whole timeout (1 s + 5 s) every time and then freed VLC, the picture boxes
+    ''' and the streams under a worker that was still running.</summary>
+    Private ReadOnly bgworker_Done As New ManualResetEventSlim(True)
+    Private ReadOnly fileop_Done As New ManualResetEventSlim(True)
 
     Private bgWorker_Result As String = "EMPTY"
     Private pictureBox1_Stream As IO.MemoryStream
@@ -221,8 +265,10 @@ Public Class Main_Form
     Private recent_Folder_List As New List(Of String)
 
     Private WithEvents FileOperationWorker As New BackgroundWorker
-    Private current_File_Operation As String
-    Private current_File_Operation_Args As Object
+    ' The operation currently handed to FileOperationWorker. Written and read on the UI
+    ' thread only (the worker gets its own copy through e.Argument), so its completion
+    ' handler always knows what it was - even on the error path, where e.Result throws.
+    Private current_File_Op As FileOp
 
     Private WithEvents ResizeDebounceTimer As New System.Windows.Forms.Timer()
     Private is_Last_Full_Screen_State As Boolean = False
@@ -339,22 +385,30 @@ Public Class Main_Form
 
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles btn_Select_Folder.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0305: btn_Select_Folder")
-        Dim folder_Browser_Dialog As New FolderBrowserDialog()
-        folder_Browser_Dialog.SelectedPath = Current_Folder_Path
+        SelectFolderViaDialog()
+    End Sub
 
-        folder_Browser_Dialog.Description = If(Is_Russian_Language, "Выберите папку с медиафайлами..", "Set folder of media files..")
+    ''' <summary>Asks for a folder and opens it. Shared by the toolbar button and the
+    ''' folder box's right-click menu (Main_Form.FolderMenu.vb) - one behaviour, one
+    ''' place.</summary>
+    Friend Sub SelectFolderViaDialog()
+        Using folder_Browser_Dialog As New FolderBrowserDialog()
+            folder_Browser_Dialog.SelectedPath = Current_Folder_Path
+
+            folder_Browser_Dialog.Description = If(Is_Russian_Language, "Выберите папку с медиафайлами..", "Set folder of media files..")
 #If Not NETFRAMEWORK Then
-        ' The Vista-style dialog .NET uses shows Description only as the title.
-        folder_Browser_Dialog.UseDescriptionForTitle = True
+            ' The Vista-style dialog .NET uses shows Description only as the title.
+            folder_Browser_Dialog.UseDescriptionForTitle = True
 #End If
 
-        If folder_Browser_Dialog.ShowDialog() = System.Windows.Forms.DialogResult.OK Then
-            Current_Folder_Path = folder_Browser_Dialog.SelectedPath
-            lbl_Status.Text = If(Is_Russian_Language, "выбрана папка", "folder selected") & ": " & Current_Folder_Path
-            Is_No_Background_Tasks = False
-            ReadShowMediaFile("ReadFolderAndFile")
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0310: Folder read")
-        End If
+            If folder_Browser_Dialog.ShowDialog() = System.Windows.Forms.DialogResult.OK Then
+                Current_Folder_Path = folder_Browser_Dialog.SelectedPath
+                lbl_Status.Text = If(Is_Russian_Language, "выбрана папка", "folder selected") & ": " & Current_Folder_Path
+                Is_No_Background_Tasks = False
+                ReadShowMediaFile(Mode_FolderAndFile)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0310: Folder read")
+            End If
+        End Using
     End Sub
 
 
@@ -418,13 +472,13 @@ Public Class Main_Form
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles btn_Prev_File.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1130: btn_Prev_File")
         SlideShowStop()
-        ReadShowMediaFile("ReadPrevFile")
+        ReadShowMediaFile(Mode_Prev)
     End Sub
 
     Private Sub Button3_Click(sender As Object, e As EventArgs) Handles btn_Next_File.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1140: btn_Next_File")
         SlideShowStop()
-        ReadShowMediaFile("ReadNextFile")
+        ReadShowMediaFile(Mode_Next)
     End Sub
 
 
@@ -458,7 +512,7 @@ Public Class Main_Form
     Private Sub FolderSelected()
         Is_No_Background_Tasks = False
         If Current_Folder_Path <> "" Then
-            ReadShowMediaFile("ReadFolderAndFile")
+            ReadShowMediaFile(Mode_FolderAndFile)
         Else
             If Is_Russian_Language Then
                 MsgBox("Сначала укажите каталог с медиафайлами.. Программа хороша, но не телепат.")
@@ -545,7 +599,7 @@ Public Class Main_Form
                 Current_Folder_Path = cmbox_Media_Folder.SelectedItem.ToString()
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2140: currentFolderPath = " & Current_Folder_Path)
-                ReadShowMediaFile("ReadFolderAndFile")
+                ReadShowMediaFile(Mode_FolderAndFile)
             End If
 
             btn_Next_File.Focus()
@@ -557,7 +611,7 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2150: cmbox_Sort SelectedIndexChanged")
 
             If Not String.IsNullOrEmpty(Current_Folder_Path) Then
-                ReadShowMediaFile("ReadFolderAndFile")
+                ReadShowMediaFile(Mode_FolderAndFile)
             End If
         End If
     End Sub
@@ -612,12 +666,12 @@ Public Class Main_Form
         Using openFileDialog As New OpenFileDialog()
             ' Build video extensions string for filter
             Dim videoExtensions As String = String.Join(";", video_File_Extensions.Select(Function(ext) "*" & ext))
-            Dim imageExtensions As String = "*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.avif;*.svg"
+            Dim imageExtensions As String = "*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.heif;*.avif;*.svg"
 
             openFileDialog.Filter = "All Supported Files|" & imageExtensions & ";" & videoExtensions &
                                "|Image Files|" & imageExtensions &
                                "|Video Files|" & videoExtensions &
-                               "|JPEG Files|*.jpg;*.jpeg|PNG Files|*.png|GIF Files|*.gif|BMP Files|*.bmp|WebP Files|*.webp|HEIC Files|*.heic|AVIF Files|*.avif|SVG Files|*.svg"
+                               "|JPEG Files|*.jpg;*.jpeg|PNG Files|*.png|GIF Files|*.gif|BMP Files|*.bmp|WebP Files|*.webp|HEIC Files|*.heic;*.heif|AVIF Files|*.avif|SVG Files|*.svg"
             openFileDialog.InitialDirectory = If(String.IsNullOrEmpty(Current_Folder_Path), Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), Current_Folder_Path)
             openFileDialog.Title = If(Is_Russian_Language, "Выберите медиафайл", "Select a media file")
             If openFileDialog.ShowDialog() = DialogResult.OK Then
@@ -642,7 +696,7 @@ Public Class Main_Form
                 current_File_Index = 0
                 total_File_Count = 1
 
-                ReadShowMediaFile("ReadFolderAndKnownFile")
+                ReadShowMediaFile(Mode_FolderAndKnownFile)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2455: File chosen - " & selected_File_Path)
             End If
         End Using
@@ -663,20 +717,27 @@ Public Class Main_Form
 
         take_number = InputBox(If(Is_Russian_Language, "Введите номер файла:", "Enter file number:"), If(Is_Russian_Language, "Перейти к файлу", "Jump To File Number"), (current_File_Index + 1).ToString, 1, total_File_Count)
 
+        ' Cancel / Esc gives back an empty string - that is someone changing their mind,
+        ' not an error worth a modal box saying "Invalid file number".
+        If String.IsNullOrEmpty(take_number) Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2464: jump to file cancelled")
+            Return
+        End If
+
         If Integer.TryParse(take_number, fileNumber) Then
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2465: Jumping to file number " & fileNumber.ToString())
 
             If fileNumber > 0 AndAlso fileNumber <= total_File_Count Then
-                ' Adjust for zero-based index
-                current_File_Index = fileNumber - 1
-                ReadShowMediaFile("ReadForJumpToFile")
+                ' Mode_JumpTo, not the "ReadForJumpToFile" that had no branch at all -
+                ' it only ever worked because the index was moved here beforehand.
+                JumpTo(fileNumber - 1)
             Else
                 MessageBox.Show(If(Is_Russian_Language, "Номер файла вне диапазона.", "File number out of range."), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End If
 
         Else
-            MessageBox.Show("Invalid file number.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show(If(Is_Russian_Language, "Неверный номер файла.", "Invalid file number."), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End If
     End Sub
 

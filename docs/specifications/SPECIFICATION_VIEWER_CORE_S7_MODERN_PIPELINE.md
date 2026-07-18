@@ -1,9 +1,11 @@
 # Тактическая спецификация С7 (modern): конвейер декодирования
 
-Статус: план (не начато)
+Статус: план. Утверждённая владельцем часть улучшений вынесена в
+[С11](SPECIFICATION_VIEWER_CORE_S11_MODERN_ASYNC.md) и там частично реализована (2026-07-16).
+У-01 по итогам замеров на рабочей шаре переоценён - см. §0.1 С11 перед тем, как брать этот план в работу
 Дата: 2026-07-16, ревизия 1
-Родитель: [SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md](SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md)
-Предшественники: [С3](SPECIFICATION_VIEWER_CORE_S3_NAVIGATION.md) (транзакционный префетч), [С4](SPECIFICATION_VIEWER_CORE_S4_PLAYBACK.md) (`media_Generation`)
+Родитель: [SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md](done/SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md)
+Предшественники: [С3](done/SPECIFICATION_VIEWER_CORE_S3_NAVIGATION.md) (транзакционный префетч), [С4](done/SPECIFICATION_VIEWER_CORE_S4_PLAYBACK.md) (`media_Generation`)
 Сборки: **только .NET 10 mainline** (за швом `#If Not NETFRAMEWORK`; net48 остаётся на `BackgroundWorker`)
 Объём: У-01, У-13, У-15 - первая архитектурная стадия
 
@@ -101,7 +103,7 @@ End Function
 
 - `SwapMediaSurface` **не диспозит** предыдущий `Picture_Box_X.Image` (его вытеснит
   LRU) - вместо этого перед вытеснением кэш проверяет, что образ не показан;
-- пути файловых операций (`ReleaseActiveMedia` из [С2](SPECIFICATION_VIEWER_CORE_S2_FILEOPS.md))
+- пути файловых операций (`ReleaseActiveMedia` из [С2](done/SPECIFICATION_VIEWER_CORE_S2_FILEOPS.md))
   в modern зовут `media_Cache.Evict(path)` вместо прямого `Dispose` - иначе
   удаляемый/переносимый файл останется залоченным своим потоком.
 

@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.ObjectModel
 Imports System.ComponentModel
@@ -68,9 +68,10 @@ Partial Public Class Main_Form
         End If
 
 #If Not NETFRAMEWORK Then
-        LocalizeShareEntryPoint()
+        LocalizeFolderMenu()
         LocalizeOpenUrlEntryPoint()
         LocalizeVideoTracks()
+        LocalizeVideoControls()
 #End If
         LocalizeToolbarOverflow()
         LocalizeBrowserTranslate()
@@ -93,10 +94,14 @@ Partial Public Class Main_Form
 #Else
         If Is_Russian_Language Then
             Return "Масштаб: серый + и - (от курсора), серый / - вписать, серый * - 100 %; колесо можно переключить на масштаб в настройках. " & Chr(10) &
-                   "У видео: A - следующая звуковая дорожка, V - следующие субтитры (и кнопка ""Дорожки"", когда есть из чего выбрать). " & Chr(10)
+                   "Средняя кнопка мыши по картинке - меню со всеми действиями над ней (поворот, масштаб, переименовать, переместить, удалить). " & Chr(10) &
+                   "У видео: клик по картинке - пауза/продолжить, правая кнопка - меню со всеми действиями над видео. " & Chr(10) &
+                   "A - следующая звуковая дорожка, V - следующие субтитры (и кнопка ""Дорожки"", когда есть из чего выбрать). " & Chr(10)
         End If
         Return "Zoom: grey + and - (at the cursor), grey / to fit, grey * for 100 %; the wheel can be switched to zoom in Settings. " & Chr(10) &
-               "For video: A - next audio track, V - next subtitles (and a ""Tracks"" button when there is a choice). " & Chr(10)
+               "The middle mouse button on a picture opens a menu with everything you can do to it (rotate, zoom, rename, move, delete). " & Chr(10) &
+               "For video: a click on the picture pauses/resumes, right-click opens a menu with everything you can do to it. " & Chr(10) &
+               "A - next audio track, V - next subtitles (and a ""Tracks"" button when there is a choice). " & Chr(10)
 #End If
     End Function
 
@@ -132,7 +137,7 @@ Partial Public Class Main_Form
         btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
         LngCh()
         Table_Form.LngCh()
-        'ReadShowMediaFile("SetFile")
+        'ReadShowMediaFile(Mode_SetFile)
     End Sub
 
 End Class

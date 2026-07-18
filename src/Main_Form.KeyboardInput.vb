@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.ObjectModel
 Imports System.ComponentModel
@@ -30,7 +30,7 @@ Partial Public Class Main_Form
             If e.KeyCode = Keys.Enter AndAlso cmbox_Media_Folder.Text <> "" Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1300: Enter pressed")
                 Current_Folder_Path = cmbox_Media_Folder.Text
-                ReadShowMediaFile("ReadFolderAndFile")
+                ReadShowMediaFile(Mode_FolderAndFile)
             Else
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1302: key skip - in editing")
             End If
@@ -57,18 +57,18 @@ Partial Public Class Main_Form
         End If
 #End If
 
+        ' Set for every key this method claims; the suppression at the bottom depends on
+        ' it (see there for why).
+        Dim key_Handled As Boolean = True
+
         If e.Shift Then
             Select Case e.KeyCode
                 Case Keys.PageDown
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1600: +100")
-                    current_File_Index += 100
-                    ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(Is_Russian_Language, "+100 файлов", "+100 files")
+                    JumpBy(100, "+100 файлов", "+100 files")
                 Case Keys.PageUp
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1610: -100")
-                    current_File_Index -= 100
-                    ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(Is_Russian_Language, "-100 файлов", "-100 files")
+                    JumpBy(-100, "-100 файлов", "-100 files")
                 Case Keys.R
                     ' Counter-clockwise rotate (stable binding, independent of OCR).
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1615: Shift+R rotate CCW")
@@ -77,19 +77,25 @@ Partial Public Class Main_Form
                     ' Toggle OCR auto-mode (enables the feature if it was off).
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1616: Shift+T toggle auto OCR")
                     If ocr_Settings IsNot Nothing Then ToggleOcrAutoMode()
+                Case Else
+                    key_Handled = False
             End Select
         Else
             Select Case e.KeyCode
-                Case Keys.N, Keys.Space, Keys.Right, Keys.BrowserForward, Keys.Next, Keys.PageDown
+                ' Keys.N is deliberately NOT here: it used to be, and since the first
+                ' matching Case wins, its own branch below ("jump to file number") was
+                ' unreachable. Space/Right/PageDown already cover "next file".
+                Case Keys.Space, Keys.Right, Keys.BrowserForward, Keys.Next, Keys.PageDown
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1310: to next file")
-                    ReadShowMediaFile("ReadNextFile")
+                    ReadShowMediaFile(Mode_Next)
                 Case Keys.P, Keys.Left, Keys.B, Keys.BrowserBack, Keys.Back, Keys.PageUp
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1320: to prev file")
-                    ReadShowMediaFile("ReadPrevFile")
+                    ReadShowMediaFile(Mode_Prev)
                 Case Keys.Y
-                    ReadShowMediaFile("ReadForRandom")
+                    ReadShowMediaFile(Mode_ForRandom)
                 Case Keys.S
-                    SetSlideShow()
+                    ' Pass what the slideshow state was BEFORE this method stopped it.
+                    SetSlideShow(was_Slide_Show_Mode)
                 Case Keys.F6
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1340: to rename")
                     If Not String.IsNullOrEmpty(Current_File_Name) Then
@@ -101,28 +107,20 @@ Partial Public Class Main_Form
 
                 Case Keys.F7
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1645: F7 - Toggle fullscreen")
-                    is_Full_Screen_Mode = Not is_Full_Screen_Mode
-
-                    SetViewSizes()
+                    ToggleFullScreenMode()
 
                 Case Keys.F11
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1645: F11 - Toggle super fullscreen")
-                    is_Full_Screen_Mode = Not is_Full_Screen_Mode
-                    is_Super_Full_Screen_Mode = Not is_Super_Full_Screen_Mode
-                    SetViewSizes()
+                    ToggleSuperFullScreenMode()
 
                 Case Keys.I, Keys.F5
-                    SetRandomSlideShow()
+                    SetRandomSlideShow(was_Slide_Show_Mode)
                 Case Keys.Home, Keys.H, Keys.BrowserHome
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1370: to first file")
-                    current_File_Index = 0
-                    ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(Is_Russian_Language, "первый файл", "first file")
+                    JumpTo(0, "первый файл", "first file")
                 Case Keys.End, Keys.E, Keys.L, Keys.BrowserStop
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1380: to last file")
-                    current_File_Index = total_File_Count - 1
-                    ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(Is_Russian_Language, "последний файл", "last file")
+                    JumpTo(total_File_Count - 1, "последний файл", "last file")
                 Case Keys.F, Keys.F4
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1385: choose file")
                     Choose_file()
@@ -131,7 +129,7 @@ Partial Public Class Main_Form
                     Jump_To_file_Number()
                 Case Keys.D, Keys.Delete
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1390: to delete")
-                    ReadShowMediaFile("DeleteFile")
+                    ReadShowMediaFile(Mode_Delete)
                 Case Keys.D1, Keys.NumPad1
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1400: 01")
                     PoMove(1)
@@ -178,14 +176,10 @@ Partial Public Class Main_Form
                     End If
                 Case Keys.Up
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1580: -10")
-                    current_File_Index -= 10
-                    ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(Is_Russian_Language, "-10 файлов", "-10 files")
+                    JumpBy(-10, "-10 файлов", "-10 files")
                 Case Keys.Down
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1590: +10")
-                    current_File_Index += 10
-                    ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(Is_Russian_Language, "+10 файлов", "+10 files")
+                    JumpBy(10, "+10 файлов", "+10 files")
                 Case Keys.F1
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1620: F1 help")
                     lbl_Help_Info.Visible = True
@@ -217,8 +211,34 @@ Partial Public Class Main_Form
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1642: ESC to close")
                         Me.Close()
                     End If
+                Case Else
+                    key_Handled = False
             End Select
         End If
+
+        ' KeyPreview only lets the form see the key FIRST - without this it travels on
+        ' to the focused control as well. Toolbar buttons keep focus after a click, so
+        ' Space used to flip the file here and then fire the button's Click: two actions
+        ' from one press (with btn_Slideshow: stop, flip, start again).
+        If key_Handled Then
+            e.Handled = True
+            e.SuppressKeyPress = True
+        End If
+    End Sub
+
+    ''' <summary>F7 - the window fills the screen. Friend, and a method rather than two
+    ''' lines repeated: the video's right-click menu offers the same thing, and the pair
+    ''' must not drift apart.</summary>
+    Friend Sub ToggleFullScreenMode()
+        is_Full_Screen_Mode = Not is_Full_Screen_Mode
+        SetViewSizes()
+    End Sub
+
+    ''' <summary>F11 - full screen with the panels gone too.</summary>
+    Friend Sub ToggleSuperFullScreenMode()
+        is_Full_Screen_Mode = Not is_Full_Screen_Mode
+        is_Super_Full_Screen_Mode = Not is_Super_Full_Screen_Mode
+        SetViewSizes()
     End Sub
 
     ''' <summary>Rotates the active picture 90°; clears any OCR overlay (the
@@ -253,7 +273,7 @@ Partial Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1860: DoKey")
 
         If keyIndex = 0 Then
-            ReadShowMediaFile("DeleteFile")
+            ReadShowMediaFile(Mode_Delete)
         Else
             PoMove(keyIndex)
         End If

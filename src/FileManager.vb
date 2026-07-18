@@ -20,7 +20,7 @@ Public Module FileManager
             Dim ms As New IO.MemoryStream(imageBytes)
             Dim nextImage As Image
 
-            If extension = ".webp" Then
+            If ImageDecoderProvider.Decoder_Backed_Extensions.Contains(extension) Then
                 nextImage = ImageDecoderProvider.Current.DecodeToImage(ms)
             Else
                 nextImage = Image.FromStream(ms)
@@ -93,13 +93,18 @@ Public Module FileManager
     End Sub
 
     ''' <summary>
-    ''' Renames a file and returns the new full path.
+    ''' Renames a file and returns the path it actually created.
+    ''' newFileNameWithExtension is the FINISHED file name, extension included -
+    ''' nothing is appended to it. It used to append the source extension a second
+    ''' time (the caller already passes one), so "photo2.jpg" landed on disk as
+    ''' "photo2.jpg.jpg" while the caller recorded "photo2.jpg" and promptly lost the
+    ''' file from the list.
     ''' </summary>
-    Public Function RenameFile(currentFileName As String, newFileName As String) As String
+    Public Function RenameFile(currentFileName As String, newFileNameWithExtension As String) As String
         Dim directory As String = Path.GetDirectoryName(currentFileName)
-        Dim fileExtension As String = Path.GetExtension(currentFileName)
-        Dim newFullPath As String = Path.Combine(directory, newFileName & fileExtension)
-        If newFullPath = currentFileName Then Return currentFileName
+        Dim newFullPath As String = Path.Combine(directory, newFileNameWithExtension)
+        ' Ordinal on purpose: a case-only rename (photo -> Photo) is a real rename.
+        If String.Equals(newFullPath, currentFileName, StringComparison.Ordinal) Then Return currentFileName
         File.Move(currentFileName, newFullPath)
         Return newFullPath
     End Function

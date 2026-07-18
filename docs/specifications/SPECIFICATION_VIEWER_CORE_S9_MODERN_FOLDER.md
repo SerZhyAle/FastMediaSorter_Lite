@@ -1,9 +1,11 @@
 # Тактическая спецификация С9 (modern): каталог - фоновый скан и живой список
 
-Статус: план (не начато)
+Статус: план. Утверждённая владельцем часть вынесена в
+[С11](SPECIFICATION_VIEWER_CORE_S11_MODERN_ASYNC.md) и там реализована 2026-07-16
+(У-03(б), У-12); пункт (а) отменён замерами, У-03(в) - см. §0.1 С11; остаток ниже - план
 Дата: 2026-07-16, ревизия 1
-Родитель: [SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md](SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md)
-Предшественник: [С3](SPECIFICATION_VIEWER_CORE_S3_NAVIGATION.md) (фильтр счёта, режимы)
+Родитель: [SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md](done/SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md)
+Предшественник: [С3](done/SPECIFICATION_VIEWER_CORE_S3_NAVIGATION.md) (фильтр счёта, режимы)
 Сборки: **только .NET 10 mainline** (net48 сохраняет синхронный `GetFiles`)
 Объём: У-03, У-04, У-05, У-12
 

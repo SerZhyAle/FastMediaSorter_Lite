@@ -2,7 +2,7 @@
 
 Статус: план (не начато)
 Дата: 2026-07-15, ревизия 1
-Родитель: дополнение к эпику [SPECIFICATION_DOTNET10_MODERN_BUILD.md](SPECIFICATION_DOTNET10_MODERN_BUILD.md)
+Родитель: дополнение к эпику [SPECIFICATION_DOTNET10_MODERN_BUILD.md](done/SPECIFICATION_DOTNET10_MODERN_BUILD.md)
 
 > Это дополнение к эпику современной сборки на .NET 10. Оно касается только
 > подсистемы взаимодействия при просмотре **изображений и анимаций** (зум,

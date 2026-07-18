@@ -35,6 +35,18 @@ Public Module ImageDecoderProvider
 
     Private ReadOnly platform_Decoder As IImageDecoder = CreateDecoder()
 
+    ''' <summary>
+    ''' Extensions GDI+ cannot open natively, routed through the platform decoder
+    ''' instead of Image.FromStream. The modern build adds the Magick.NET-backed
+    ''' formats (epic O-3); the x86 build keeps WEBP only - AVIF/HEIC stay
+    ''' "unsupported" there (Win 7/8.1 WIC has no HEIF codec).
+    ''' </summary>
+#If NETFRAMEWORK Then
+    Public ReadOnly Decoder_Backed_Extensions As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {".webp"}
+#Else
+    Public ReadOnly Decoder_Backed_Extensions As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {".webp", ".avif", ".heic", ".heif"}
+#End If
+
     Public ReadOnly Property Current As IImageDecoder
         Get
             Return platform_Decoder

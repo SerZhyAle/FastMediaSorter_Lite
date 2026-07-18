@@ -1,9 +1,11 @@
 # Тактическая спецификация С8 (modern): очередь файловых операций и обратимость
 
-Статус: план (не начато)
+Статус: план. Утверждённая владельцем часть вынесена в
+[С11](SPECIFICATION_VIEWER_CORE_S11_MODERN_ASYNC.md) и там реализована 2026-07-16
+(У-02 - очередь операций, У-07); остаток ниже - по-прежнему план
 Дата: 2026-07-16, ревизия 1
-Родитель: [SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md](SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md)
-Предшественник: [С2](SPECIFICATION_VIEWER_CORE_S2_FILEOPS.md) (тип `FileOp`, хелперы списка)
+Родитель: [SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md](done/SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md)
+Предшественник: [С2](done/SPECIFICATION_VIEWER_CORE_S2_FILEOPS.md) (тип `FileOp`, хелперы списка)
 Сборки: **только .NET 10 mainline** (net48 остаётся на `BackgroundWorker` + `TryQueueFileOp`)
 Объём: У-02, У-06, У-07, У-08
 
@@ -23,7 +25,7 @@
 
 ## 1. У-02: очередь
 
-`FileOp` уже введён в [С2](SPECIFICATION_VIEWER_CORE_S2_FILEOPS.md) и несёт всё
+`FileOp` уже введён в [С2](done/SPECIFICATION_VIEWER_CORE_S2_FILEOPS.md) и несёт всё
 нужное (тип, source, destination, слот, снимок индекса) - в modern меняется только
 **транспорт**: понятие «воркер занят» исчезает.
 

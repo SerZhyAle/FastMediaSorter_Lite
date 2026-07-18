@@ -193,13 +193,52 @@ Partial Public Class Main_Form
         tracks_Menu.Items.Add(caption)
         If tracks Is Nothing Then Return
 
+        AddTrackItems(tracks_Menu.Items, tracks, current_Id, apply)
+    End Sub
+
+    ''' <summary>The track list as menu items, into whatever collection asked for them -
+    ''' the button's flat menu here, a submenu of the video's right-click menu there.</summary>
+    Private Shared Sub AddTrackItems(target As ToolStripItemCollection,
+                                     tracks As LibVLCSharp.Shared.Structures.TrackDescription(),
+                                     current_Id As Integer,
+                                     apply As Action(Of Integer))
         For Each track In tracks
             Dim id As Integer = track.Id
             Dim item As New ToolStripMenuItem(TrackLabel(track)) With {.Checked = (id = current_Id)}
             AddHandler item.Click, Sub() apply(id)
-            tracks_Menu.Items.Add(item)
+            target.Add(item)
         Next
     End Sub
+
+    ''' <summary>
+    ''' The same track list the toolbar button shows, packaged as one submenu for the
+    ''' video's right-click menu (Main_Form.VideoMenu.vb). Nothing when there is nothing to
+    ''' pick - by the same rule HasTrackChoice uses for the button, so the two surfaces
+    ''' never disagree about whether this file offers a choice.
+    ''' </summary>
+    Friend Function CreateTrackSubmenu(audio As Boolean) As ToolStripMenuItem
+        If vlc_Media_Player Is Nothing OrElse Not is_Vlc_Playing Then Return Nothing
+
+        Try
+            Dim tracks = If(audio, vlc_Media_Player.AudioTrackDescription, vlc_Media_Player.SpuDescription)
+            Dim real_Count As Integer = RealTrackCount(tracks)
+            ' One audio track is not a choice; one subtitle track is (on or off).
+            If If(audio, real_Count < 2, real_Count < 1) Then Return Nothing
+
+            Dim apply As Action(Of Integer)
+            If audio Then apply = Sub(id) SetAudioTrack(id) Else apply = Sub(id) SetSubtitleTrack(id)
+
+            Dim root As New ToolStripMenuItem(If(audio,
+                                                 If(Is_Russian_Language, "Звуковая дорожка (A)", "Audio track (A)"),
+                                                 If(Is_Russian_Language, "Субтитры (V)", "Subtitles (V)")))
+            AddTrackItems(root.DropDownItems, tracks,
+                          If(audio, vlc_Media_Player.AudioTrack, vlc_Media_Player.Spu), apply)
+            Return root
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2477: track submenu failed: " & ex.Message)
+            Return Nothing
+        End Try
+    End Function
 
     ''' <summary>
     ''' What to call a track in the menu. VLC hands back its own composite name

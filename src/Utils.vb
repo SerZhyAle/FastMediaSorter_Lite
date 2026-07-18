@@ -107,8 +107,9 @@ Module Utils
                     Return ReadJpegSize(fs)
                 End If
 
-                ' WEBP: let the platform decoder read the dimensions so we stay off GDI+.
-                If String.Equals(IO.Path.GetExtension(filePath), ".webp", StringComparison.OrdinalIgnoreCase) Then
+                ' WEBP (and AVIF/HEIC/HEIF on modern): let the platform decoder read
+                ' the dimensions so we stay off GDI+.
+                If ImageDecoderProvider.Decoder_Backed_Extensions.Contains(IO.Path.GetExtension(filePath)) Then
                     fs.Seek(0, IO.SeekOrigin.Begin)
                     Return ImageDecoderProvider.Current.TryGetPixelSize(fs)
                 End If

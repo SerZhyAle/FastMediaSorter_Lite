@@ -61,6 +61,19 @@ Namespace My
         Private Shared Function SendMessageCopyData(hWnd As IntPtr, msg As Integer, wParam As IntPtr, ByRef lParam As Main_Form.COPYDATASTRUCT) As Integer
         End Function
 
+        ''' <summary>SendMessage with a deadline. A plain SendMessage is synchronous and
+        ''' has none: one hung viewer window and the NEW process hung with it, for ever,
+        ''' showing nothing.</summary>
+        <DllImport("user32.dll", CharSet:=CharSet.Auto)>
+        Private Shared Function SendMessageTimeout(hWnd As IntPtr, msg As Integer, wParam As IntPtr,
+                                                   ByRef lParam As Main_Form.COPYDATASTRUCT,
+                                                   flags As Integer, timeout As Integer,
+                                                   ByRef result As IntPtr) As IntPtr
+        End Function
+
+        Private Const SMTO_ABORTIFHUNG As Integer = &H2
+        Private Const Copy_Data_Send_Timeout_Ms As Integer = 3000
+
         Private Delegate Function EnumWindowsProc(hWnd As IntPtr, lParam As IntPtr) As Boolean
 
         <DllImport("user32.dll", SetLastError:=True)>
@@ -140,11 +153,19 @@ Namespace My
         Private Sub MyApplication_Startup(sender As Object, e As StartupEventArgs) Handles Me.Startup
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-1: MyApplication_Startup")
 
-            ' VB's IsSingleInstance only works for same exe-path launches.
-            ' Use the named mutex for a path-independent check (catches debug vs release, XFile, etc.)
-            Dim existing_Mutex As Mutex = Nothing
-            If Mutex.TryOpenExisting("FastMediaSorterSingleInstanceMutex", existing_Mutex) Then
-                existing_Mutex.Close()
+            ' VB's IsSingleInstance only works for same exe-path launches. The named
+            ' mutex is path-independent (catches debug vs release, a renamed copy, and
+            ' the LITE/x86 pair).
+            '
+            ' Created HERE, as the first thing the process does. It used to be created
+            ' in Form1_Load instead, and the check below only opened an existing one: in
+            ' the hundreds of milliseconds a self-contained .NET 10 exe needs to reach
+            ' its form, a second launch found nothing and became a second full instance.
+            ' Both then wrote the same registry hive at exit, whoever was last winning.
+            Dim created_New As Boolean = False
+            Main_Form.Single_Instance_Mutex = New Mutex(True, Main_Form.app_Mutex_Name, created_New)
+
+            If Not created_New Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-2: Another instance detected via mutex, forwarding args")
 
                 Dim file_Path As String = String.Join(" ", e.CommandLine.ToArray()).Trim()
@@ -157,6 +178,7 @@ Namespace My
                 End If
 
                 Dim current_Id As Integer = Process.GetCurrentProcess().Id
+                Dim delivered As Boolean = False
 
                 For Each proc As Process In GetRunningViewerProcesses(current_Id)
                     ' A tray-resident instance hides its window, so MainWindowHandle
@@ -183,19 +205,32 @@ Namespace My
                         cds.lpData = ptr
 
                         For Each target_Handle As IntPtr In target_Handles
-                            SendMessageCopyData(target_Handle, WM_COPYDATA_LOCAL, IntPtr.Zero, cds)
+                            Dim send_Result As IntPtr = IntPtr.Zero
+                            If SendMessageTimeout(target_Handle, WM_COPYDATA_LOCAL, IntPtr.Zero, cds,
+                                                  SMTO_ABORTIFHUNG, Copy_Data_Send_Timeout_Ms, send_Result) <> IntPtr.Zero Then
+                                delivered = True
+                            End If
                         Next
                         Marshal.FreeHGlobal(ptr)
 
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-3: Args sent via WM_COPYDATA to PID " & proc.Id.ToString() & " (" & target_Handles.Count.ToString() & " window(s))")
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-3: Args sent via WM_COPYDATA to PID " & proc.Id.ToString() & " (" & target_Handles.Count.ToString() & " window(s)), delivered=" & delivered.ToString())
                     Catch ex As Exception
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-4: Error sending to existing instance: " & ex.Message)
                     End Try
-                    Exit For
+                    If delivered Then Exit For
                 Next
 
-                e.Cancel = True
-                Return
+                ' Cancel ONLY if the argument really reached someone. It used to be
+                ' unconditional, so a renamed exe (no process under either known name),
+                ' a first instance whose window did not exist yet, or a hung receiver
+                ' all ended the same way: no window, no file, no message. If nobody took
+                ' it, carry on and open it ourselves.
+                If delivered Then
+                    e.Cancel = True
+                    Return
+                End If
+
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-5: nobody took the argument - starting normally")
             End If
 
         End Sub

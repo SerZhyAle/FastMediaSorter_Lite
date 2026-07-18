@@ -9,6 +9,15 @@ Partial Public Class Main_Form
     ' draw skipped inside the throttle window was never retried.
     Private WithEvents perspective_Trailing_Timer As New System.Windows.Forms.Timer() With {.Interval = how_long_wait_before_draw_perspective}
 
+    ''' <summary>A draw was asked for by a NEW photo (rather than a resize/zoom), so the
+    ''' dynamic-perspective halo should grow rather than just appear.
+    '''
+    ''' It is a field and not only the Draw_Perspective argument because the throttle can
+    ''' drop that call and hand it to the trailing timer, which knows nothing about what
+    ''' asked for it - without this the photo you scrolled to would land with its halo
+    ''' already fully grown.</summary>
+    Private perspective_Animate_Pending As Boolean = False
+
     Private Sub ArmTrailingPerspectiveRedraw()
         ' Restart on every skipped request so only the last one survives, firing once
         ' the throttle window has elapsed (i.e. shortly after scrolling stops).
@@ -19,6 +28,42 @@ Partial Public Class Main_Form
     Private Sub Perspective_Trailing_Timer_Tick(sender As Object, e As EventArgs) Handles perspective_Trailing_Timer.Tick
         perspective_Trailing_Timer.Stop()
         Draw_Perspective()
+    End Sub
+
+    ''' <summary>Takes the perspective bars off both picture boxes.
+    '''
+    ''' Draw_Perspective only ever drops a stale BackgroundImage from INSIDE its
+    ''' "there is a bitmap to analyse" branch, so a surface blanked WITHOUT a new image
+    ''' (an unsupported format, an emptied folder) kept the previous file's
+    ''' bars painted - and since the bitmap is box-sized and its middle is cleared to
+    ''' the old BackColor, what the user got was the previous photo's bars framing a
+    ''' black rectangle, with no image behind any of it.</summary>
+    Private Sub ClearPerspectiveBackground()
+        ' A redraw still queued for the media we just dropped has nothing left to draw.
+        perspective_Trailing_Timer.Stop()
+        perspective_Animate_Pending = False
+#If Not NETFRAMEWORK Then
+        ' Same for a halo still growing around it - and it must let go of the surface
+        ' before we dispose the bitmap it is painting into.
+        StopPerspectiveHalo()
+#End If
+
+        Try
+            If Picture_Box_1.BackgroundImage IsNot Nothing Then
+                Dim old_Bg_1 As Image = Picture_Box_1.BackgroundImage
+                Picture_Box_1.BackgroundImage = Nothing
+                old_Bg_1.Dispose()
+            End If
+
+            If Picture_Box_2.BackgroundImage IsNot Nothing Then
+                Dim old_Bg_2 As Image = Picture_Box_2.BackgroundImage
+                Picture_Box_2.BackgroundImage = Nothing
+                old_Bg_2.Dispose()
+            End If
+        Catch ex As Exception
+            ' Cosmetics: never let this abort the caller's blanking of the surface.
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1132: perspective clear skipped: [" & ex.GetType().Name & "] " & ex.Message)
+        End Try
     End Sub
 
     Private Function CheckCornerColorsAndSetBeginPoint(list_of_corner_colors As List(Of System.Drawing.Color)) As Long
@@ -318,10 +363,16 @@ Partial Public Class Main_Form
         Next
     End Sub
 
-    Private Sub Draw_Perspective()
+    ''' <param name="animate">True when a NEW photo asked for this draw. Only matters to
+    ''' dynamic perspective (modern build), where it decides whether the halo grows out
+    ''' of the photo or is simply already there - a resize or zoom redraw must not
+    ''' re-run the animation, or dragging the window frame would pulse.</param>
+    Private Sub Draw_Perspective(Optional animate As Boolean = False)
 
         '  Dim sw As New Stopwatch()
         '   sw.Start()
+
+        If animate Then perspective_Animate_Pending = True
 
         Dim perspective_Applies As Boolean =
             Is_Pespective AndAlso
@@ -332,6 +383,11 @@ Partial Public Class Main_Form
 
         Dim throttle_Elapsed As Boolean =
             last_Perspective_Draw_Time < DateTime.Now.Subtract(TimeSpan.FromMilliseconds(how_long_wait_before_draw_perspective))
+
+        ' Nothing is going to be drawn, so drop the intent too - otherwise it would sit
+        ' here and make some later resize animate a photo that has been on screen for
+        ' minutes.
+        If Not perspective_Applies Then perspective_Animate_Pending = False
 
         ' A redraw is wanted but came too soon after the last one: defer it instead
         ' of dropping it. (Fast scrolling otherwise lost the draw for the image we
@@ -346,6 +402,9 @@ Partial Public Class Main_Form
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1129: corners redrawn")
             last_Perspective_Draw_Time = DateTime.Now()
+
+            Dim animate_This_Draw As Boolean = perspective_Animate_Pending
+            perspective_Animate_Pending = False
 
             Try
 
@@ -445,12 +504,27 @@ Partial Public Class Main_Form
                         End Using
 
                         If is_perspective_drown Then
-                            If active_PictureBox_Index = 1 Then
-                                Picture_Box_1.BackgroundImage?.Dispose()
-                                Picture_Box_1.BackgroundImage = Perspective_Bitmap
-                            ElseIf active_PictureBox_Index = 2 Then
-                                Picture_Box_2.BackgroundImage?.Dispose()
-                                Picture_Box_2.BackgroundImage = Perspective_Bitmap
+                            ' Dynamic perspective (modern build): the halo layer fades these
+                            ' bars into the background colour and, on a new photo, grows that
+                            ' fade out from the photo edge. It takes ownership of the bitmap
+                            ' when it takes over; when it declines, the bars go up flat as
+                            ' they always have.
+                            Dim halo_Took_Over As Boolean = False
+#If Not NETFRAMEWORK Then
+                            halo_Took_Over = TryStartPerspectiveHalo(Perspective_Bitmap,
+                                                                    imageRect,
+                                                                    active_PictureBox_Index,
+                                                                    bitmap_proportion < pictureBox_proportion,
+                                                                    animate_This_Draw)
+#End If
+                            If Not halo_Took_Over Then
+                                If active_PictureBox_Index = 1 Then
+                                    Picture_Box_1.BackgroundImage?.Dispose()
+                                    Picture_Box_1.BackgroundImage = Perspective_Bitmap
+                                ElseIf active_PictureBox_Index = 2 Then
+                                    Picture_Box_2.BackgroundImage?.Dispose()
+                                    Picture_Box_2.BackgroundImage = Perspective_Bitmap
+                                End If
                             End If
                         Else
                             Perspective_Bitmap.Dispose()

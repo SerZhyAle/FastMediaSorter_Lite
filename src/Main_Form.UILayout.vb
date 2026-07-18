@@ -92,6 +92,11 @@ Partial Public Class Main_Form
         ' Re-anchor the recipients overlay (its full-screen top offset and z-order
         ' can change with the layout/mode).
         KeepRecipientsOverlayOnTop()
+
+#If Not NETFRAMEWORK Then
+        ' The video control bar is pinned to the bottom of the same panel.
+        PositionVideoControls()
+#End If
     End Sub
 
     Private Sub SetViewSizes()

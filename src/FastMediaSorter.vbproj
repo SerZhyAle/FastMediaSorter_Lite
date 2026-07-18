@@ -237,6 +237,10 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.LoadingIndicator.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Main_Form.MediaLoading.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
@@ -291,6 +295,22 @@
     <Compile Include="Main_Form.VideoTracks.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.VideoControls.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.VideoMenu.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.MediaMenu.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.ImageMenu.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.FolderMenu.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FileOpQueue.vb" />
     <Compile Include="Imaging\ImageDecoder.vb" />
     <Compile Include="Imaging\LegacyWicImageDecoder.vb" />
     <Compile Include="Imaging\ModernImageSharpDecoder.vb" />

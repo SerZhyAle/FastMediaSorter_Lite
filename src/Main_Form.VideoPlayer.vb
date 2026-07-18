@@ -82,10 +82,13 @@ Partial Public Class Main_Form
         End If
     End Sub
 
-    Private Sub TryOpenVideoWithDefaultPlayer()
+    ''' <summary>Hands the file to whatever Windows plays it with. Takes the path as an
+    ''' argument: it used to read Current_File_Name, which by the time a slow VLC init
+    ''' gave up could be a completely different file.</summary>
+    Private Sub TryOpenVideoWithDefaultPlayer(video_File_Path As String)
         Try
-            If Not String.IsNullOrEmpty(Current_File_Name) AndAlso File.Exists(Current_File_Name) Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0866: Opening video with default player: " & Current_File_Name)
+            If Not String.IsNullOrEmpty(video_File_Path) AndAlso File.Exists(video_File_Path) Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0866: Opening video with default player: " & video_File_Path)
 
 #If NETFRAMEWORK Then
                 Web_Browser.DocumentText = "<html><body style='background:" &
@@ -93,7 +96,7 @@ Partial Public Class Main_Form
                                         "; color:" & If(Form_Color_Scheme = 0, "white", "black") &
                                         "; text-align:center; font-family:Arial;'>" &
                                         "<h3>" & If(Is_Russian_Language, "Видео открыто во внешнем плеере", "Video opened in external player") & "</h3>" &
-                                        "<p>" & Path.GetFileName(Current_File_Name) & "</p>" &
+                                        "<p>" & Path.GetFileName(video_File_Path) & "</p>" &
                                         "<p style='font-size:12px; color:gray;'>" &
                                         If(Is_Russian_Language, "Нажмите стрелки для перехода к следующему файлу", "Use arrow keys to navigate to next file") &
                                         "</p></body></html>"
@@ -102,9 +105,9 @@ Partial Public Class Main_Form
                 ' Explicit UseShellExecute: opening a document needs the shell; net48
                 ' defaulted to True, .NET defaults to False. On the modern build this
                 ' is the ONLY video fallback when LibVLC is unavailable.
-                Process.Start(New ProcessStartInfo(Current_File_Name) With {.UseShellExecute = True})
+                Process.Start(New ProcessStartInfo(video_File_Path) With {.UseShellExecute = True})
 
-                lbl_Status.Text = If(Is_Russian_Language, "Видео открыто во внешнем плеере: " & Path.GetFileName(Current_File_Name), "Video opened in external player: " & Path.GetFileName(Current_File_Name))
+                lbl_Status.Text = If(Is_Russian_Language, "Видео открыто во внешнем плеере: " & Path.GetFileName(video_File_Path), "Video opened in external player: " & Path.GetFileName(video_File_Path))
 
             End If
         Catch ex As Exception
@@ -113,14 +116,32 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
+    ''' <summary>
+    ''' The single entry point to initialisation: everyone awaits the SAME task.
+    '''
+    ''' Handing out a fresh task per call was a race with a long fuse - while the first
+    ''' call sat in the runtime download, libVlc was still Nothing, so a flip to another
+    ''' video walked straight past the guard below and built a second LibVLC and a second
+    ''' MediaPlayer. The first pair was then unreachable but alive: native resources
+    ''' leaked, its file stayed locked (so Delete/Move on it failed), an orphaned
+    ''' VideoView sat in panel_Media for ever, and both players played.
+    ''' </summary>
+    Private Function EnsureVlcInitializedAsync() As Task(Of Boolean)
+        If libVlc IsNot Nothing AndAlso vlc_Media_Player IsNot Nothing Then Return Task.FromResult(True)
+
+        ' Called on the UI thread only, so this needs no lock. A failed attempt is not
+        ' cached - the user may install the runtime and try again.
+        If vlc_Init_Task Is Nothing OrElse (vlc_Init_Task.IsCompleted AndAlso Not vlc_Init_Task.Result) Then
+            vlc_Init_Task = InitializeVlcCoreAsync()
+        End If
+        Return vlc_Init_Task
+    End Function
+
     ''' <summary>Async so a first-run VLC download runs with the UI thread free to
     ''' pump messages (window stays responsive, repaints, isn't "Not Responding")
     ''' instead of blocking synchronously for the whole download - see w0868 fix
     ''' notes: the old sync wrapper deadlocked outright rather than just looking slow.</summary>
-    Private Async Function EnsureVlcInitializedAsync() As Task(Of Boolean)
-        If libVlc IsNot Nothing AndAlso vlc_Media_Player IsNot Nothing Then Return True
-        is_Vlc_Init_Attempted = True
-
+    Private Async Function InitializeVlcCoreAsync() As Task(Of Boolean)
         If Not OptionalRuntimeManager.HasVlcRuntime() Then
             lbl_Status.Text = If(Is_Russian_Language, "Установка поддержки VLC..", "Installing VLC support..")
         End If
@@ -150,6 +171,11 @@ Partial Public Class Main_Form
             }
             AddHandler vlc_Video_View.MouseDoubleClick, AddressOf Vlc_Video_View_MouseDoubleClick
             AddHandler vlc_Video_View.MouseClick, AddressOf Vlc_Video_View_MouseClick
+#If Not NETFRAMEWORK Then
+            ' Moving the mouse over the picture summons the control bar - the modern
+            ' build's stand-in for the transport IE used to draw around a video.
+            AddHandler vlc_Video_View.MouseMove, AddressOf Vlc_Video_View_MouseMove
+#End If
             ' Host the VLC surface inside the media panel so it shares the same
             ' (panel-relative) coordinate space as the picture boxes.
             If panel_Media IsNot Nothing Then
@@ -202,9 +228,25 @@ Partial Public Class Main_Form
     Private Async Sub PlayVideoWithVlcAsync(file_Path As String)
         If Not CanVlcReachMedia(file_Path) Then Return
 
+        ' Fire-and-forget async: nothing cancels this once it is running, so it has to
+        ' notice for itself that it is no longer wanted. Initialising VLC takes a second
+        ' (minutes if the runtime has to be downloaded), and the user goes on flipping.
+        Dim generation As Integer = media_Generation
+
         If Not Await EnsureVlcInitializedAsync() Then
+            If generation <> media_Generation Then Return
             lbl_Status.Text = OptionalRuntimeManager.GetVlcUnavailableStatusText(Is_Russian_Language)
-            TryOpenVideoWithDefaultPlayer()
+            ' By path, not by the global: the user may be on a picture by now, and the
+            ' external player would have opened THAT.
+            TryOpenVideoWithDefaultPlayer(file_Path)
+            Return
+        End If
+
+        ' Too late: an image (or another video) is on screen. Carrying on would raise the
+        ' VideoView over it, play the old file, and leave current_Loaded_File_Name naming
+        ' this video - so coming back to it later would be skipped as "already loaded".
+        If generation <> media_Generation Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0870: stale video play dropped: " & file_Path)
             Return
         End If
 
@@ -231,6 +273,11 @@ Partial Public Class Main_Form
             ' VLC just took the top of the z-order - reassert the recipients overlay.
             KeepRecipientsOverlayOnTop()
 
+#If Not NETFRAMEWORK Then
+            ' A different file starts here: whatever restore the previous one was still
+            ' owed must not land on this one.
+            ClearPendingVideoPosition()
+#End If
             Dim media As LibVLCSharp.Shared.Media = CreateVlcMedia(file_Path)
             If Is_Video_Loop Then media.AddOption(":input-repeat=65535")
             vlc_Media_Player.Play(media)
@@ -239,6 +286,12 @@ Partial Public Class Main_Form
 
             is_Vlc_Playing = True
             current_Loaded_File_Name = file_Path
+#If Not NETFRAMEWORK Then
+            ' Up front, then it fades out on its own - so a new video announces that it
+            ' HAS a transport, instead of leaving the user to discover it by waving the
+            ' mouse about.
+            ShowVideoControls()
+#End If
             Dim shown_Name As String = Path.GetFileName(file_Path)
 #If Not NETFRAMEWORK Then
             ' Path.GetFileName on an MRL drags the query string in and returns nothing
@@ -252,7 +305,7 @@ Partial Public Class Main_Form
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0872: LibVLC play failed: " & ex.Message)
             StopVlcPlayback()
-            TryOpenVideoWithDefaultPlayer()
+            TryOpenVideoWithDefaultPlayer(file_Path)
         End Try
     End Sub
 
@@ -267,32 +320,51 @@ Partial Public Class Main_Form
         End If
         is_Vlc_Playing = False
         If vlc_Video_View IsNot Nothing Then vlc_Video_View.Visible = False
+#If Not NETFRAMEWORK Then
+        ' No video, no transport: it must not linger over the next image.
+        HideVideoControls()
+#End If
     End Sub
 
     Private Sub Vlc_Video_View_MouseDoubleClick(sender As Object, e As MouseEventArgs)
+#If Not NETFRAMEWORK Then
+        ' The first click of the pair has already flipped playback - WinForms raises
+        ' MouseClick once, then MouseDoubleClick - and a double-click means "full screen",
+        ' not "full screen, and also pause". Put it back.
+        If e.Button = MouseButtons.Left Then RevertClickPlayPause()
+#End If
         HandleWebBrowserDoubleClick()
     End Sub
 
     Private Sub Vlc_Media_Player_Playing(sender As Object, e As EventArgs)
-        ApplyVideoAudioStateToVlc()
-#If Not NETFRAMEWORK Then
-        ' Track lists do not exist until VLC is actually playing - this event is the
-        ' first moment they can be read. It arrives on a VLC thread, so hop to the UI
-        ' one before touching the toolbar.
+        ' This event arrives on a libvlc thread. Calling the player's own methods from
+        ' inside its callback risks a deadlock in the native layer (all the more so when
+        ' the UI thread is doing Stop() at that moment during a fast flip), and
+        ' video_Volume_Level / is_Video_Muted are read here as well. BeginInvoke, never
+        ' Invoke: waiting for the UI thread from a VLC callback is the deadlock itself.
         Try
-            If Me.IsDisposed Then Return
+            If Me.IsDisposed OrElse Not Me.IsHandleCreated Then Return
             Me.BeginInvoke(Sub()
+                               ApplyVideoAudioStateToVlc()
+#If Not NETFRAMEWORK Then
+                               ' A video reopened to apply Repeat owes the user the second
+                               ' it was at - and this is the first moment it will seek.
+                               ApplyPendingVideoPosition()
+                               ' Track lists do not exist until VLC is actually playing -
+                               ' this event is the first moment they can be read.
                                ApplyPreferredTracks()
                                ApplyVideoTracksButtonVisibility()
+#End If
                            End Sub)
         Catch
             ' The form can go away between the check and the post - nothing to do.
         End Try
-#End If
     End Sub
 
     Private Sub Vlc_Video_View_MouseClick(sender As Object, e As MouseEventArgs)
-        If e.Button = System.Windows.Forms.MouseButtons.Right AndAlso vlc_Media_Player IsNot Nothing Then
+        If vlc_Media_Player Is Nothing Then Return
+#If NETFRAMEWORK Then
+        If e.Button = System.Windows.Forms.MouseButtons.Right Then
             Try
                 If vlc_Media_Player.IsPlaying Then
                     vlc_Media_Player.Pause()
@@ -302,6 +374,20 @@ Partial Public Class Main_Form
             Catch
             End Try
         End If
+#Else
+        Select Case e.Button
+            Case System.Windows.Forms.MouseButtons.Left
+                ' Play/pause moved to the left button - where every video player has put
+                ' it. It was on the right until now, and the right button has a menu to
+                ' open (Main_Form.VideoMenu.vb). Remember which way it went: a double-click
+                ' has to undo it (see Vlc_Video_View_MouseDoubleClick).
+                video_Click_Paused = TogglePlayPause()
+                RefreshVideoControlsState()
+                ShowVideoControls()
+            Case System.Windows.Forms.MouseButtons.Right
+                ShowVideoContextMenu(vlc_Video_View.PointToScreen(e.Location))
+        End Select
+#End If
     End Sub
 
 #If NETFRAMEWORK Then
