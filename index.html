@@ -66,13 +66,23 @@
   .dl-meta{color:var(--muted);font-size:.78rem;width:100%}
   .xlinks{display:grid;gap:.5rem}
   .xlinks a{font-weight:600}
-  main.container{display:flex;flex-direction:column}
-  main.container>.hero{order:1}
-  #features{order:2}
-  .get{max-width:none;margin:.4rem 0 1.5rem;order:3}
-  main.container>.note{order:4}
+  .get{max-width:none;margin:.4rem 0 1.5rem}
+  .scenarios{margin:0 0 1.25rem}
+  .scenarios .card{padding:1.2rem}
+  .scenarios .card h3{font-size:1rem}
+  .scenarios .card p{font-size:.9rem}
+  #features details.sec{margin-top:1rem}
   .site-footer .container{max-width:min(1760px,94vw)}
   @media(max-width:560px){.hero-id{align-items:flex-start}}
+  @media(max-width:480px){
+    .container{width:100%!important;max-width:100%!important}
+    .site-header{max-width:calc(100% - 24px);min-width:0;padding:8px 10px;gap:6px}
+    .brand-mark{flex:1 1 0;gap:6px;min-width:0}
+    .brand-mark img{width:24px;height:24px}
+    .brand{min-width:0;font-size:13px;line-height:1.2;white-space:normal}
+    .seg button{padding:5px 8px}
+    .hero .lead,.sec-head p,.scenarios .card p{overflow-wrap:anywhere}
+  }
 </style>
 </head>
 <body>
@@ -90,7 +100,7 @@
     <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
   </div>
   <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
-  <a class="btn btn-primary btn-sm" href="#get"><span data-l="en">Download</span><span data-l="ru">Скачать</span><span data-l="ua">Завантажити</span></a>
+  <a class="btn btn-primary btn-sm" href="#get"><span data-l="en">Install</span><span data-l="ru">Установить</span><span data-l="ua">Встановити</span></a>
 </header>
 
 <main class="container">
@@ -115,18 +125,18 @@
       <span data-l="ru">Fast Media Sorter - локальное приложение для Windows: разобрать съёмку, очистить папку «Загрузки» или разложить большой медиа-архив по понятным папкам. Просматривайте следующий файл и одним нажатием перемещайте, копируйте, переименовывайте или удаляйте его - без бесконечного drag-and-drop.</span>
       <span data-l="ua">Fast Media Sorter - локальний застосунок для Windows: розібрати зйомку, очистити папку «Завантаження» або розкласти великий медіа-архів по зрозумілих папках. Переглядайте наступний файл і одним натисканням переміщуйте, копіюйте, перейменовуйте чи видаляйте його - без нескінченного drag-and-drop.</span>
     </p>
-    <p class="hero-sftp">
-      <span data-l="en"><b>Android SFTP Folder Share:</b> the 64-bit Windows app can securely publish the folders you choose to FastMediaSorter for Android. Pair once with a QR code, then browse your PC files from the phone over the home network or the internet.</span>
-      <span data-l="ru"><b>Общий доступ по SFTP для Android:</b> 64-битная программа Windows может безопасно открыть выбранные вами папки приложению FastMediaSorter для Android. Один раз подключитесь по QR-коду, затем просматривайте файлы ПК с телефона в домашней сети или через интернет.</span>
-      <span data-l="ua"><b>Спільний доступ SFTP для Android:</b> 64-бітна програма Windows може безпечно відкрити вибрані вами папки застосунку FastMediaSorter для Android. Один раз підключіться за QR-кодом, а потім переглядайте файли ПК з телефона в домашній мережі або через інтернет.</span>
-    </p>
-    <div class="pills">
-      <span class="pill">JPG</span><span class="pill">PNG</span><span class="pill">GIF</span><span class="pill">WEBP</span>
-      <span class="pill gold">MP4</span><span class="pill gold">MKV</span><span class="pill gold">AVI</span><span class="pill gold">WEBM</span>
+  </section>
+
+  <section class="section scenarios" aria-labelledby="scenarios-title">
+    <div class="sec-head">
+      <h2 id="scenarios-title"><span data-l="en">Start with the situation you have</span><span data-l="ru">Начните со своей ситуации</span><span data-l="ua">Почніть зі своєї ситуації</span></h2>
+      <p><span data-l="en">Look through the folder first; use copy or move while deciding. Deletion is available later, but it is not the first step.</span><span data-l="ru">Сначала просмотрите папку; пока решаете, используйте копирование или перемещение. Удаление доступно позже, но это не первый шаг.</span><span data-l="ua">Спочатку перегляньте папку; поки вирішуєте, використовуйте копіювання або переміщення. Видалення доступне пізніше, але це не перший крок.</span></p>
     </div>
-    <div class="hero-actions">
-      <a class="btn btn-primary" href="#get"><span data-l="en">Download for Windows</span><span data-l="ru">Скачать для Windows</span><span data-l="ua">Завантажити для Windows</span></a>
-      <a class="btn btn-ghost" href="#android-sftp"><span data-l="en">SFTP for Android</span><span data-l="ru">SFTP для Android</span><span data-l="ua">SFTP для Android</span></a>
+    <div class="grid">
+      <article class="card"><h3><img src="assets/icons/slideshow.svg" alt="" width="22" height="22"><span data-l="en">Review a large shoot</span><span data-l="ru">Разобрать большую съёмку</span><span data-l="ua">Розібрати велику зйомку</span></h3><p><span data-l="en">Open one folder and step through photos and clips without opening a new window for every file.</span><span data-l="ru">Откройте одну папку и листайте фото и видео, не открывая отдельное окно для каждого файла.</span><span data-l="ua">Відкрийте одну папку й гортайте фото та відео без окремого вікна для кожного файлу.</span></p></article>
+      <article class="card"><h3><img src="assets/icons/transfer.svg" alt="" width="22" height="22"><span data-l="en">File keepers into folders</span><span data-l="ru">Разложить нужное по папкам</span><span data-l="ua">Розкласти потрібне по папках</span></h3><p><span data-l="en">Assign destination folders, then move or copy the current file with a key or the recipients panel.</span><span data-l="ru">Назначьте папки-получатели, затем перемещайте или копируйте текущий файл клавишей либо через панель получателей.</span><span data-l="ua">Призначте папки-отримувачі, а потім переміщуйте чи копіюйте поточний файл клавішею або через панель отримувачів.</span></p></article>
+      <article class="card"><h3><img src="assets/icons/screen.svg" alt="" width="22" height="22"><span data-l="en">Watch mixed media locally</span><span data-l="ru">Просмотреть смешанные медиа локально</span><span data-l="ua">Переглянути змішані медіа локально</span></h3><p><span data-l="en">Browse images and play video in the same local workflow; release bundles include the LibVLC runtime.</span><span data-l="ru">Смотрите изображения и видео в одном локальном процессе; в сборки релизов входит LibVLC.</span><span data-l="ua">Переглядайте зображення й відео в одному локальному процесі; до збірок релізів входить LibVLC.</span></p></article>
+      <article class="card"><h3><img src="assets/icons/folder.svg" alt="" width="22" height="22"><span data-l="en">Open selected PC folders on Android</span><span data-l="ru">Открыть выбранные папки ПК на Android</span><span data-l="ua">Відкрити вибрані папки ПК на Android</span></h3><p><span data-l="en">With the 64-bit app, explicitly enable Folder Share, pair once by QR code, and browse only the folders you publish.</span><span data-l="ru">В 64-битной версии явно включите Folder Share, один раз подключитесь по QR-коду и просматривайте только опубликованные папки.</span><span data-l="ua">У 64-бітній версії явно ввімкніть Folder Share, один раз підключіться QR-кодом і переглядайте лише опубліковані папки.</span></p></article>
     </div>
   </section>
 
@@ -145,7 +155,7 @@
 
     <div class="dl-row" id="dlRow">
       <a class="btn btn-primary" id="dl-setup" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">
-        <span data-l="en">Installer (.exe)</span><span data-l="ru">Установщик (.exe)</span><span data-l="ua">Інсталятор (.exe)</span>
+        <span data-l="en">Install with setup (.exe)</span><span data-l="ru">Установить через setup (.exe)</span><span data-l="ua">Встановити через setup (.exe)</span>
       </a>
       <a class="btn btn-ghost" id="dl-zip" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">
         <span data-l="en">Portable (.zip)</span><span data-l="ru">Портативная (.zip)</span><span data-l="ua">Портативна (.zip)</span>
@@ -160,21 +170,19 @@
       </span>
     </div>
 
-    <div class="note" style="margin:0">
-      <span class="tag">
-        <span data-l="en">What's in the download</span><span data-l="ru">Что внутри загрузки</span><span data-l="ua">Що всередині завантаження</span>
-      </span>
+    <details class="sec" id="editions">
+      <summary><span class="secnum">01</span><span data-l="en">Compatibility and editions</span><span data-l="ru">Совместимость и варианты</span><span data-l="ua">Сумісність і варіанти</span></summary>
       <p>
         <span data-l="en">One download, both programs. <b>FastMediaSorter_LITE.exe</b> is the main 64-bit app - the .NET runtime is inside it, so there is nothing to install; it needs <b>Windows 10 1607+, Windows 11 or Server 2016+</b>. <b>FastMediaSorter_x86.exe</b> is a small 32-bit build for <b>Windows 7/8.1 and 32-bit Windows</b>, and needs .NET Framework 4.8. It views and sorts the same files and keeps OCR and translation, but it has no Android Folder Share - the Share Manager that feature opens is itself a 64-bit program, so it could not start on those machines - and a few newer viewing features are 64-bit only (marked below). The installer sets up both and points the shortcut and file associations at whichever one runs on your PC - you never have to choose. It stays one application: one set of settings, and starting one while the other is open simply brings that window to the front.</span>
         <span data-l="ru">Одна загрузка - обе программы. <b>FastMediaSorter_LITE.exe</b> - основная 64-битная программа: среда .NET уже внутри неё, устанавливать ничего не нужно; требуется <b>Windows 10 1607+, Windows 11 или Server 2016+</b>. <b>FastMediaSorter_x86.exe</b> - небольшая 32-битная сборка для <b>Windows 7/8.1 и 32-битной Windows</b>, ей нужен .NET Framework 4.8. Она показывает и сортирует те же файлы и сохраняет OCR и перевод, но в ней нет общего доступа для Android: Share Manager, который открывает эта функция, сам является 64-битной программой и не запустился бы на таких машинах. Часть новых возможностей просмотра тоже только для 64-битной сборки (отмечено ниже). Установщик ставит обе и направляет ярлык и привязки файлов на ту, которая работает на вашем ПК, - выбирать не придётся. Это по-прежнему одно приложение: одни настройки, а запуск одной программы при открытой другой просто выводит её окно вперёд.</span>
         <span data-l="ua">Одне завантаження - обидві програми. <b>FastMediaSorter_LITE.exe</b> - основна 64-бітна програма: середовище .NET уже всередині неї, встановлювати нічого не потрібно; потрібна <b>Windows 10 1607+, Windows 11 або Server 2016+</b>. <b>FastMediaSorter_x86.exe</b> - невелика 32-бітна збірка для <b>Windows 7/8.1 та 32-бітної Windows</b>, їй потрібен .NET Framework 4.8. Вона показує та сортує ті самі файли і зберігає OCR та переклад, але в ній немає спільного доступу для Android: Share Manager, який відкриває ця функція, сам є 64-бітною програмою і не запустився б на таких машинах. Частина нових можливостей перегляду теж лише для 64-бітної збірки (позначено нижче). Інсталятор ставить обидві та спрямовує ярлик і прив'язки файлів на ту, що працює на вашому ПК, - обирати не доведеться. Це й далі один застосунок: одні налаштування, а запуск однієї програми при відкритій іншій просто виводить її вікно вперед.</span>
       </p>
-    </div>
+    </details>
 
     <ol class="quickstart">
       <li><span data-l="en">Install via winget or the installer above.</span><span data-l="ru">Установите через winget или установщиком выше.</span><span data-l="ua">Встановіть через winget або інсталятором вище.</span></li>
       <li><span data-l="en">Open the app and pick a folder of photos or videos.</span><span data-l="ru">Откройте приложение и выберите папку с фото или видео.</span><span data-l="ua">Відкрийте застосунок і виберіть папку з фото чи відео.</span></li>
-      <li><span data-l="en">Sort with keys - move, copy, rename or delete each file in one press.</span><span data-l="ru">Сортируйте клавишами - перемещайте, копируйте, переименовывайте или удаляйте файл одним нажатием.</span><span data-l="ua">Сортуйте клавішами - переміщуйте, копіюйте, перейменовуйте чи видаляйте файл одним натисканням.</span></li>
+      <li><span data-l="en">Set destination folders and first move or copy the files you have reviewed. Delete only after you have checked the selection: deletion is irreversible.</span><span data-l="ru">Настройте папки-получатели и сначала перемещайте или копируйте просмотренные файлы. Удаляйте только после проверки выбора: удаление необратимо.</span><span data-l="ua">Налаштуйте папки-отримувачі й спершу переміщуйте або копіюйте переглянуті файли. Видаляйте лише після перевірки вибору: видалення незворотне.</span></li>
     </ol>
   </section>
 
@@ -204,7 +212,7 @@
   <!-- FEATURES -->
   <section class="section" id="features">
     <div class="sec-head">
-      <h2><span data-l="en">Features</span><span data-l="ru">Возможности</span><span data-l="ua">Можливості</span></h2>
+      <h2><span data-l="en">More ways to work</span><span data-l="ru">Другие возможности</span><span data-l="ua">Інші можливості</span></h2>
       <p>
         <span data-l="en">Built for speed and the keyboard. No clutter, no cloud accounts.</span>
         <span data-l="ru">Сделано ради скорости и клавиатуры. Без лишнего и без облачных аккаунтов.</span>
@@ -212,6 +220,8 @@
       </p>
     </div>
 
+    <details class="sec" id="all-features">
+      <summary><span class="secnum">02</span><span data-l="en">Full feature list</span><span data-l="ru">Полный список возможностей</span><span data-l="ua">Повний список можливостей</span></summary>
     <div class="grid">
       <article class="card">
         <h3><img src="assets/icons/slideshow.svg" alt="" width="22" height="22"><span data-l="en">Navigation &amp; slideshow</span><span data-l="ru">Навигация и слайд-шоу</span><span data-l="ua">Навігація та слайд-шоу</span></h3>
@@ -340,6 +350,7 @@
         </div>
       </article>
     </div>
+    </details>
   </section>
 
 </main>
@@ -354,6 +365,7 @@
     <a href="https://serzhyale.github.io/CyrFlip/"><b>CyrFlip</b><span data-l="en">Windows layout fixer</span><span data-l="ru">Исправление раскладки Windows</span><span data-l="ua">Виправлення розкладки Windows</span></a>
     <a href="https://serzhyale.github.io/FileDO/"><b>FileDO</b><span data-l="en">Windows storage CLI</span><span data-l="ru">CLI для проверки накопителей</span><span data-l="ua">CLI для перевірки носіїв</span></a>
     <a href="https://serzhyale.github.io/universal-agent-kit/"><b>Universal Agent Kit</b><span data-l="en">AI-dev methodology</span><span data-l="ru">Методология AI-разработки</span><span data-l="ua">Методологія AI-розробки</span></a>
+    <a href="https://github.com/SerZhyAle/OneClickRunner"><b>OneClickRunner</b><span data-l="en">Windows tray launcher</span><span data-l="ru">Лаунчер Windows в трее</span><span data-l="ua">Лаунчер Windows у треї</span></a>
     <a href="https://sza.od.ua"><b>SZA</b><span data-l="en">Portfolio hub</span><span data-l="ru">Портфолио</span><span data-l="ua">Портфоліо</span></a>
   </div>
   <div class="footer-bottom">
@@ -394,6 +406,18 @@
     b.addEventListener('click',function(){setLang(b.getAttribute('data-setlang'));});
   });
   setLang(doc.getAttribute('data-lang')||'en');
+
+  // ---- deep links to disclosure sections ----
+  function openFromHash(){
+    var id=decodeURIComponent(location.hash.slice(1));
+    var target=id&&document.getElementById(id);
+    if(target&&target.tagName==='DETAILS'){
+      target.open=true;
+      setTimeout(function(){target.scrollIntoView({block:'start'});},0);
+    }
+  }
+  window.addEventListener('hashchange',openFromHash);
+  openFromHash();
 
   // ---- theme ----
   function setTheme(t){
