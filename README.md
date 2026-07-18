@@ -13,13 +13,18 @@ Fast Media Sorter for Windows (formerly FastMediaSorter LITE - it is still publi
 - Optional on-image overlay with the file name and position (handy in full-screen)
 - Configurable slideshow interval
 - Register the app as the default image viewer and/or video player (per-user, no admin rituals)
-- Android Folder Share: turn this PC into an SFTP server for your own media and file folders and open them from the Android app - over your home LAN or across the internet, paired by scanning a QR code (a built-in copilot for the mobile version)
+- Android Folder Share: turn this PC into an SFTP server for your own media and file folders and open them from the Android app - over your home LAN or across the internet, paired by scanning a QR code (a built-in copilot for the mobile version). 64-bit program only
 - OCR + on-image translation overlay (local Ollama / LibreTranslate) - for pictures that insist on speaking another language
+- Perspective ("Ambilight-style") background: the bars beside a photo are filled with colour drawn from its own edges, so it sits in its own light instead of on black. Optionally as a halo that fades out into the background (64-bit program)
+- Zoom at the mouse cursor on the grey NumPad keys, with drag-to-pan (64-bit program)
+- A video control bar - seek, time, mute, volume - plus audio-track and subtitle picking remembered by language, and "Open URL.." to play a video straight off `smb://`, `sftp://`, `http(s)://` and friends (64-bit program)
+- Menus right on the media: middle-click a picture, right-click a video (64-bit program)
 - Customizable keyboard shortcuts, because reaching for the mouse is so last decade
 - Multi-language support (English/Russian; first run follows the Windows display language)
-- Broad video format support: common H.264/MP4 plays in-window, and anything the
-  built-in player can't decode (AVI, ZMBV, VP9, MKV, WMV, ..) automatically falls
-  back to a bundled **LibVLC** engine - no external codecs, no plugin scavenger hunt
+- Broad video format support: everything (H.264/MP4, AVI, ZMBV, VP9, MKV, WMV, ..)
+  plays in-window through the bundled **LibVLC** engine - no external codecs, no
+  plugin scavenger hunt, and nothing that depends on Internet Explorer still being
+  installed
 
 ## Mobile Version 📱
 
@@ -47,9 +52,77 @@ Features include:
 4. Move, copy, or delete files as needed. Press a digit, watch the chaos shrink.
 5. Enjoy fast and efficient media sorting, and maybe finally reclaim that disk space.
 
+## Two programs, one app
+
+The package ships **two viewers side by side in the same folder**, and the installer
+sets up both. You never have to choose: the shortcut and file associations
+automatically point at the one that actually runs on your machine.
+
+- **`FastMediaSorter_LITE.exe`** - the main program, now 64-bit and built on
+  .NET 10. It replaces the previous version in place and keeps all your settings.
+  **Nothing to install** - the .NET runtime lives inside the program itself, so the
+  old ".NET Framework 4.8 required" line is gone for good. Needs Windows 10 version
+  1607 or newer, Windows 11, or Windows Server 2016+.
+- **`FastMediaSorter_x86.exe`** - the sorter as a small 32-bit program (~3 MB)
+  for Windows 7/8.1 and 32-bit Windows, where the modern runtime simply cannot run.
+  It needs .NET Framework 4.8, which those Windows versions either already have or
+  can get. Sorting, browsing, OCR and translation are all still in there; what it
+  does not have is Android folder sharing (see the table below) and the extras the
+  modern runtime made possible - zoom on the grey keys, the video control bar,
+  audio/subtitle track picking, "Open URL..", the picture and video menus and the
+  perspective halo.
+
+They are **one application**, not two rivals: one set of settings, one window. Start
+one while the other is open and it just brings the open window forward with your
+file - no second window, no squabbling over whose settings get saved. Both also
+share the same adjacent libraries (codecs, OCR/translation models), each
+automatically picking the ones matching its own bitness.
+
+### What the 64-bit program adds
+
+- **Animated WEBP now opens everywhere.** The app decodes WEBP itself instead of
+  depending on the Windows "WebP Image Extensions" codec, which server editions of
+  Windows don't ship - animated WEBP used to simply fail there.
+- **HEIC, HEIF and AVIF open too** - the formats iPhones save by default and the web
+  increasingly serves. Decoded by the app itself, so no Store extensions and no paid
+  "HEVC Video Extensions" codec are needed; sideways phone shots come up the right
+  way round.
+- **Video always plays through the built-in VLC engine.** The retired Internet
+  Explorer component is no longer used, so playback works the same on systems where
+  IE has been shown the door. (The 32-bit program keeps the classic path.)
+- **A video control bar**: play/pause, seek, running time, mute and volume, along the
+  bottom of the picture. It appears on mouse-over and slips away a couple of seconds
+  later, and stays put while the video is paused. (The 32-bit program's video runs
+  through the IE component, which draws its own controls.)
+- **Zoom on the grey keys**: grey `+`/`-` zoom at the mouse cursor, grey `/` fits,
+  grey `*` is actual size. Drag to pan. The wheel still flips through files unless
+  you switch it to zoom in Settings.
+- **Audio track and subtitle picking**: `A` cycles audio, `V` subtitles, and a
+  "Tracks" button appears only when the file offers a choice. Your pick is remembered
+  by language, so the next episode comes up the same way.
+- **"Open URL.."** - play a video straight off `smb://`, `sftp://`, `ftp://`,
+  `http(s)://`, `nfs://` or `rtsp://` without downloading it first.
+- **Menus on the media**: middle-click a picture for everything you can do to it,
+  right-click a video for everything you can do to that. Click a video to
+  pause/resume.
+- **A halo instead of bars** - "Dynamic perspective", a sub-option of the perspective
+  background, fades the bars into the background the further they get from the photo.
+
 ## Requirements
-- Windows 7/10/11
-- .NET Framework 4.8
+
+Short version: the installer works this out for you (see above). Long version:
+
+| | `FastMediaSorter_LITE.exe` (main, 64-bit) | `FastMediaSorter_x86.exe` (32-bit) |
+|---|---|---|
+| **Windows** | 10 version 1607+, 11, Server 2016+ | 7, 8.1, 10, 11 - including 32-bit |
+| **Runtime** | none - it is inside the program | .NET Framework 4.8 |
+| **Sorting, browsing, slideshow** | yes | yes |
+| **OCR + on-image translation** | yes | yes |
+| **Recipients panel** | yes | yes |
+| **Video** | LibVLC, with a control bar | IE component (H.264) + LibVLC fallback |
+| **HEIC / HEIF / AVIF** | yes | no - Windows 7/8.1 have no codecs for them |
+| **Zoom keys, track picking, "Open URL..", media menus, perspective halo** | yes | no |
+| **Android folder sharing** | yes | no - the Share Manager is itself a 64-bit program, so it cannot start on the Windows versions this build is for |
 
 ## Installation
 
@@ -70,6 +143,8 @@ Download the latest assets from the
 - `FastMediaSorter-<version>-windows-x64-setup.exe` for the easiest install
 - `FastMediaSorter-<version>-windows-x64.zip` for a portable offline bundle
 
+Both assets contain **both programs** - the asset names have not changed.
+
 The interactive setup can optionally register the app for common
 image formats. On Windows 10/11, the system may still ask you to confirm the
 choice once in Default Apps.
@@ -80,8 +155,11 @@ OCR recognition.
 
 ### What's in the package (and why it's large)
 
-The viewer itself is small (a few MB). Almost all of the download is optional,
-**offline-ready** payload, bundled so the app works with no first-run download:
+The main program is a single ~110 MB exe because it carries its own .NET runtime -
+that heft is exactly why there is nothing to install: the runtime comes along for
+the ride instead of being demanded from your machine. (The 32-bit program beside it
+is ~3 MB.) Most of the rest of the download is optional, **offline-ready** payload,
+bundled so the app works with no first-run download:
 
 - **Video codecs (VLC)** (~100 MB) - offline playback of AVI, MKV, VP9 and other
   formats the built-in Windows player can't decode.
@@ -89,12 +167,16 @@ The viewer itself is small (a few MB). Almost all of the download is optional,
   network round-trip.
 - **Android Folder Share companion** (~120 MB) - a self-contained .NET app that
   carries its own runtime (Windows does not ship the modern .NET it needs), used
-  to share folders to your phone.
+  to share folders to your phone. Being a 64-bit .NET 10 app itself, it is what
+  makes folder sharing a 64-bit-only feature, and setup skips it on Windows 7/8.1.
+
+The bundled libraries are the 64-bit ones, for the main program. The 32-bit program
+downloads the 32-bit codec and OCR pieces it needs on first use.
 
 The interactive installer exposes these as **selectable components** and shows each
 one's size: uncheck what you don't need and those parts download later on demand,
-or the feature is simply left out. A viewer-only ("Compact") install is a small
-fraction of the full package. (Silent/winget installs always take the full set.)
+or the feature is simply left out. A viewer-only ("Compact") install is a fraction
+of the full package. (Silent/winget installs always take the full set.)
 
 Note: machine translation still depends on the provider you configure - the app
 is generous, but it won't translate by sheer willpower. Ollama requires a

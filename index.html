@@ -15,20 +15,20 @@
 }catch(e){}})();
 </script>
 
-<title>Fast Media Sorter for Windows - image &amp; video sorter with hotkeys</title>
-<meta name="description" content="A keyboard-first Windows image and video sorter: fast folder navigation, slideshow, one-key move / copy / rename / delete, broad video playback with a bundled LibVLC fallback. Free and open-source.">
+<title>Fast photo &amp; video sorting for Windows | Fast Media Sorter</title>
+<meta name="description" content="A local Windows app for reviewing and sorting large photo and video folders with one-key actions, offline video playback and optional SFTP folder sharing for FastMediaSorter on Android.">
 <meta name="theme-color" content="#0a0f0a">
 <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Fast Media Sorter for Windows">
-<meta property="og:title" content="Fast Media Sorter for Windows - image &amp; video sorter with hotkeys">
-<meta property="og:description" content="Sort huge photo and video folders at speed - one key moves, copies, renames or deletes each file. Free and open-source.">
+<meta property="og:title" content="Fast photo &amp; video sorting for Windows | Fast Media Sorter">
+<meta property="og:description" content="Review and sort large media folders locally with one-key actions, offline playback and SFTP folder sharing for Android.">
 <meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/">
 <meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Fast Media Sorter for Windows">
-<meta name="twitter:description" content="Fast image and video sorting for Windows with one-key actions, slideshow and a bundled LibVLC fallback.">
+<meta name="twitter:title" content="Fast photo &amp; video sorting for Windows | Fast Media Sorter">
+<meta name="twitter:description" content="Review and sort large media folders locally with one-key actions, offline playback and SFTP folder sharing for Android.">
 <meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png">
 
 <link rel="icon" href="assets/icons/Fast_Media_Sorter.ico" sizes="any">
@@ -45,11 +45,22 @@
   html[data-lang="en"] [data-l]:not([data-l="en"]){display:none}
   html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
   /* page-local helpers */
-  .lead-narrow{max-width:680px}
-  .shot{max-width:1040px;margin:0 auto 1.2rem}
+  /* Match the wide, left-led composition used on sza.od.ua. */
+  .container,.site-header{max-width:min(1760px,94vw)}
+  .hero{text-align:left;padding:1.2rem 0 1.4rem}
+  .hero-id{display:flex;align-items:center;gap:1rem;margin-bottom:.9rem}
+  .hero .hero-logo{width:60px;height:60px;margin:0;flex:none}
+  .hero h1{margin:0;font-size:clamp(1.7rem,4vw,2.45rem);line-height:1.1}
+  .hero .kicker{margin:.2rem 0 0}
+  .hero .lead{max-width:820px;margin:0 0 .8rem}
+  .hero-sftp{max-width:900px;color:var(--text-2);font-size:.94rem;margin-bottom:.9rem}
+  .hero-actions{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:.9rem}
+  .hero .pills{justify-content:flex-start}
+  .lead-narrow{max-width:820px}
+  .shot{max-width:none;margin:0 0 1.5rem}
   .shot img{border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);display:block;width:100%}
-  .shot figcaption{color:var(--muted);font-size:.8rem;text-align:center;margin-top:.6rem}
-  .sec-head{text-align:center;max-width:680px;margin:0 auto 1rem}
+  .shot figcaption{color:var(--muted);font-size:.8rem;text-align:left;margin-top:.6rem}
+  .sec-head{text-align:left;max-width:820px;margin:0 0 1rem}
   .sec-head h2{font-size:clamp(1.4rem,3.4vw,1.9rem)}
   .sec-head p{color:var(--muted);font-size:.95rem;margin-top:.35rem}
   .card h3{font-family:var(--font-heading);font-size:1.08rem;margin-bottom:.4rem;display:flex;align-items:center;gap:.5rem}
@@ -59,6 +70,9 @@
   .dl-meta{color:var(--muted);font-size:.78rem;width:100%}
   .xlinks{display:grid;gap:.5rem}
   .xlinks a{font-weight:600}
+  .get{max-width:none;margin:.4rem 0 1.5rem}
+  .site-footer .container{max-width:min(1760px,94vw)}
+  @media(max-width:560px){.hero-id{align-items:flex-start}.hero .hero-logo{width:52px;height:52px}}
 </style>
 </head>
 <body>
@@ -82,30 +96,47 @@
 <main class="container">
 
   <section class="hero">
-    <img class="hero-logo" src="assets/icons/store-icon-256.png" alt="" width="60" height="60">
-    <div class="kicker">
-      <span data-l="en">Windows · image &amp; video sorter</span>
-      <span data-l="ru">Windows · сортировщик фото и видео</span>
-      <span data-l="ua">Windows · сортувальник фото та відео</span>
+    <div class="hero-id">
+      <img class="hero-logo" src="assets/icons/store-icon-256.png" alt="" width="60" height="60">
+      <div>
+        <div class="kicker">
+          <span data-l="en">Windows desktop · free &amp; open-source</span>
+          <span data-l="ru">Windows desktop · бесплатно и с открытым кодом</span>
+          <span data-l="ua">Windows desktop · безкоштовно та з відкритим кодом</span>
+        </div>
+        <h1>
+          <span data-l="en">Fast photo &amp; video sorting for Windows</span>
+          <span data-l="ru">Быстрая сортировка фото и видео для Windows</span>
+          <span data-l="ua">Швидке сортування фото та відео для Windows</span>
+        </h1>
+      </div>
     </div>
-    <h1>Fast Media Sorter for Windows</h1>
     <p class="lead lead-narrow">
-      <span data-l="en">Sort huge photo and video folders at speed - one key moves, copies, renames or deletes each file.</span>
-      <span data-l="ru">Быстрая сортировка больших папок с фото и видео - одна клавиша перемещает, копирует, переименовывает или удаляет файл.</span>
-      <span data-l="ua">Швидке сортування великих папок з фото та відео - одна клавіша переміщує, копіює, перейменовує або видаляє файл.</span>
+      <span data-l="en">Fast Media Sorter is a local Windows app for reviewing a shoot, cleaning a Downloads folder, or breaking a large media archive into useful folders. Preview the next file, then move, copy, rename or delete it with one key instead of dragging files around all day.</span>
+      <span data-l="ru">Fast Media Sorter - локальное приложение для Windows: разобрать съёмку, очистить папку «Загрузки» или разложить большой медиа-архив по понятным папкам. Просматривайте следующий файл и одним нажатием перемещайте, копируйте, переименовывайте или удаляйте его - без бесконечного drag-and-drop.</span>
+      <span data-l="ua">Fast Media Sorter - локальний застосунок для Windows: розібрати зйомку, очистити папку «Завантаження» або розкласти великий медіа-архів по зрозумілих папках. Переглядайте наступний файл і одним натисканням переміщуйте, копіюйте, перейменовуйте чи видаляйте його - без нескінченного drag-and-drop.</span>
     </p>
-    <div class="pills" style="justify-content:center">
+    <p class="hero-sftp">
+      <span data-l="en"><b>Android SFTP Folder Share:</b> the 64-bit Windows app can securely publish the folders you choose to FastMediaSorter for Android. Pair once with a QR code, then browse your PC files from the phone over the home network or the internet.</span>
+      <span data-l="ru"><b>Общий доступ по SFTP для Android:</b> 64-битная программа Windows может безопасно открыть выбранные вами папки приложению FastMediaSorter для Android. Один раз подключитесь по QR-коду, затем просматривайте файлы ПК с телефона в домашней сети или через интернет.</span>
+      <span data-l="ua"><b>Спільний доступ SFTP для Android:</b> 64-бітна програма Windows може безпечно відкрити вибрані вами папки застосунку FastMediaSorter для Android. Один раз підключіться за QR-кодом, а потім переглядайте файли ПК з телефона в домашній мережі або через інтернет.</span>
+    </p>
+    <div class="pills">
       <span class="pill">JPG</span><span class="pill">PNG</span><span class="pill">GIF</span><span class="pill">WEBP</span>
       <span class="pill gold">MP4</span><span class="pill gold">MKV</span><span class="pill gold">AVI</span><span class="pill gold">WEBM</span>
+    </div>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#get"><span data-l="en">Download for Windows</span><span data-l="ru">Скачать для Windows</span><span data-l="ua">Завантажити для Windows</span></a>
+      <a class="btn btn-ghost" href="#android-sftp"><span data-l="en">SFTP for Android</span><span data-l="ru">SFTP для Android</span><span data-l="ua">SFTP для Android</span></a>
     </div>
   </section>
 
   <!-- GET IT (above the fold) -->
   <section class="get" id="get">
     <p class="whatfor">
-      <span data-l="en"><b>What it is &amp; who it's for.</b> A keyboard-first Windows app (WinForms / .NET 4.8) for people who sort large photo and video folders. Browse fast, preview everything, act with a single key. H.264/MP4 plays in-window; anything else falls back to a bundled LibVLC engine - no external codecs.</span>
-      <span data-l="ru"><b>Что это и для кого.</b> Приложение для Windows (WinForms / .NET 4.8) с управлением с клавиатуры - для тех, кто сортирует большие папки с фото и видео. Быстрый просмотр, предпросмотр всего, действие одной клавишей. H.264/MP4 играет во встроенном окне; остальное берёт на себя встроенный движок LibVLC - без внешних кодеков.</span>
-      <span data-l="ua"><b>Що це і для кого.</b> Застосунок для Windows (WinForms / .NET 4.8) з керуванням з клавіатури - для тих, хто сортує великі папки з фото та відео. Швидкий перегляд, прев'ю всього, дія однією клавішею. H.264/MP4 грає у вбудованому вікні; решту бере на себе вбудований рушій LibVLC - без зовнішніх кодеків.</span>
+      <span data-l="en"><b>Made for a real sorting pass.</b> Open a folder, keep your eyes on the media, and send each good, bad or unfinished file where it belongs. The app is keyboard-first but does not lock you out of the mouse; it keeps the work local, remembers your destination folders, and plays video through its bundled LibVLC engine without external codecs.</span>
+      <span data-l="ru"><b>Сделано для настоящей разборки файлов.</b> Откройте папку, смотрите на медиа и сразу отправляйте удачные, лишние или неразобранные файлы туда, где им место. Приложение прежде всего управляется клавиатурой, но не заставляет отказываться от мыши; всё остаётся локально, папки-получатели запоминаются, а видео проигрывается встроенным LibVLC без внешних кодеков.</span>
+      <span data-l="ua"><b>Зроблено для справжнього розбору файлів.</b> Відкрийте папку, дивіться на медіа й одразу надсилайте вдалі, зайві чи нерозібрані файли туди, де їм місце. Застосунок передусім керується клавіатурою, але не змушує відмовлятися від миші; усе лишається локально, папки-отримувачі запам'ятовуються, а відео відтворюється вбудованим LibVLC без зовнішніх кодеків.</span>
     </p>
 
     <div>
@@ -124,10 +155,21 @@
         <span data-l="en">All releases ⤓</span><span data-l="ru">Все релизы ⤓</span><span data-l="ua">Усі релізи ⤓</span>
       </a>
       <span class="dl-meta" id="dlMeta">
-        <span data-l="en">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 7/10/11.</span>
-        <span data-l="ru">Готовы к работе офлайн - библиотеки VLC и пакеты OCR уже внутри. Windows 7/10/11.</span>
-        <span data-l="ua">Готові до роботи офлайн - бібліотеки VLC та пакети OCR уже всередині. Windows 7/10/11.</span>
+        <span data-l="en">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
+        <span data-l="ru">Готовы к работе офлайн - библиотеки VLC и пакеты OCR уже внутри. Windows 10 1607+ / 11; 32-битная сборка для Windows 7/8.1 - в том же файле.</span>
+        <span data-l="ua">Готові до роботи офлайн - бібліотеки VLC та пакети OCR уже всередині. Windows 10 1607+ / 11; 32-бітна збірка для Windows 7/8.1 - у тому ж файлі.</span>
       </span>
+    </div>
+
+    <div class="note" style="margin:0">
+      <span class="tag">
+        <span data-l="en">What's in the download</span><span data-l="ru">Что внутри загрузки</span><span data-l="ua">Що всередині завантаження</span>
+      </span>
+      <p>
+        <span data-l="en">One download, both programs. <b>FastMediaSorter_LITE.exe</b> is the main 64-bit app - the .NET runtime is inside it, so there is nothing to install; it needs <b>Windows 10 1607+, Windows 11 or Server 2016+</b>. <b>FastMediaSorter_x86.exe</b> is a small 32-bit build for <b>Windows 7/8.1 and 32-bit Windows</b>, and needs .NET Framework 4.8. It views and sorts the same files and keeps OCR and translation, but it has no Android Folder Share - the Share Manager that feature opens is itself a 64-bit program, so it could not start on those machines - and a few newer viewing features are 64-bit only (marked below). The installer sets up both and points the shortcut and file associations at whichever one runs on your PC - you never have to choose. It stays one application: one set of settings, and starting one while the other is open simply brings that window to the front.</span>
+        <span data-l="ru">Одна загрузка - обе программы. <b>FastMediaSorter_LITE.exe</b> - основная 64-битная программа: среда .NET уже внутри неё, устанавливать ничего не нужно; требуется <b>Windows 10 1607+, Windows 11 или Server 2016+</b>. <b>FastMediaSorter_x86.exe</b> - небольшая 32-битная сборка для <b>Windows 7/8.1 и 32-битной Windows</b>, ей нужен .NET Framework 4.8. Она показывает и сортирует те же файлы и сохраняет OCR и перевод, но в ней нет общего доступа для Android: Share Manager, который открывает эта функция, сам является 64-битной программой и не запустился бы на таких машинах. Часть новых возможностей просмотра тоже только для 64-битной сборки (отмечено ниже). Установщик ставит обе и направляет ярлык и привязки файлов на ту, которая работает на вашем ПК, - выбирать не придётся. Это по-прежнему одно приложение: одни настройки, а запуск одной программы при открытой другой просто выводит её окно вперёд.</span>
+        <span data-l="ua">Одне завантаження - обидві програми. <b>FastMediaSorter_LITE.exe</b> - основна 64-бітна програма: середовище .NET уже всередині неї, встановлювати нічого не потрібно; потрібна <b>Windows 10 1607+, Windows 11 або Server 2016+</b>. <b>FastMediaSorter_x86.exe</b> - невелика 32-бітна збірка для <b>Windows 7/8.1 та 32-бітної Windows</b>, їй потрібен .NET Framework 4.8. Вона показує та сортує ті самі файли і зберігає OCR та переклад, але в ній немає спільного доступу для Android: Share Manager, який відкриває ця функція, сам є 64-бітною програмою і не запустився б на таких машинах. Частина нових можливостей перегляду теж лише для 64-бітної збірки (позначено нижче). Інсталятор ставить обидві та спрямовує ярлик і прив'язки файлів на ту, що працює на вашому ПК, - обирати не доведеться. Це й далі один застосунок: одні налаштування, а запуск однієї програми при відкритій іншій просто виводить її вікно вперед.</span>
+      </p>
     </div>
 
     <ol class="quickstart">
@@ -202,12 +244,50 @@
       </article>
 
       <article class="card">
-        <h3><img src="assets/icons/screen.svg" alt="" width="22" height="22"><span data-l="en">Video / LibVLC fallback</span><span data-l="ru">Видео / резерв LibVLC</span><span data-l="ua">Відео / резерв LibVLC</span></h3>
+        <h3><img src="assets/icons/folder.svg" alt="" width="22" height="22"><span data-l="en">Recipients panel</span><span data-l="ru">Панель получателей</span><span data-l="ua">Панель отримувачів</span></h3>
         <p>
-          <span data-l="en">H.264/MP4 plays in-window. Anything the built-in player can't decode - AVI, ZMBV, VP9, MKV, WMV - automatically falls back to a bundled LibVLC engine. No external codecs.</span>
-          <span data-l="ru">H.264/MP4 играет во встроенном окне. Всё, что встроенный плеер не декодирует - AVI, ZMBV, VP9, MKV, WMV - автоматически берёт на себя встроенный движок LibVLC. Без внешних кодеков.</span>
-          <span data-l="ua">H.264/MP4 грає у вбудованому вікні. Усе, що вбудований плеєр не декодує - AVI, ZMBV, VP9, MKV, WMV - автоматично бере на себе вбудований рушій LibVLC. Без зовнішніх кодеків.</span>
+          <span data-l="en">A narrow floating list of your destination folders over the picture: click a row to move or copy the current file there, and the bottom row deletes it. The same actions as the DEL and 0-9 keys, for when your hand is on the mouse. Off by default; switch it on in Settings > Files and system.</span>
+          <span data-l="ru">Узкий плавающий список каталогов-получателей поверх изображения: клик по строке перемещает или копирует туда текущий файл, нижняя строка его удаляет. Те же действия, что и клавиши DEL и 0-9, - на случай, когда рука на мыши. По умолчанию выключена; включается в Настройках > Файлы и система.</span>
+          <span data-l="ua">Вузький плаваючий список каталогів-отримувачів поверх зображення: клік по рядку переміщує або копіює туди поточний файл, нижній рядок його видаляє. Ті самі дії, що й клавіші DEL та 0-9, - на випадок, коли рука на миші. За замовчуванням вимкнена; вмикається в Налаштуваннях > Файли та система.</span>
         </p>
+      </article>
+
+      <article class="card">
+        <h3><img src="assets/icons/fullscreen24.svg" alt="" width="22" height="22"><span data-l="en">Zoom &amp; pan</span><span data-l="ru">Масштаб и перетаскивание</span><span data-l="ua">Масштаб і перетягування</span></h3>
+        <p>
+          <span data-l="en">The grey NumPad block does the zooming: + and - zoom at the mouse cursor, / fits the window, * shows actual size (100 %). Ctrl+wheel zooms, Shift+wheel jumps to 100 %, Alt+wheel fits. The plain wheel keeps browsing files - a "Wheel zooms" checkbox in Settings > Viewing switches it to zoom instead. Drag a zoomed picture with the left button to pan around it.</span>
+          <span data-l="ru">Масштабом управляет серый блок NumPad: + и - меняют масштаб от курсора мыши, / вписывает в окно, * показывает реальный размер (100 %). Ctrl+колесо - масштаб, Shift+колесо - сразу 100 %, Alt+колесо - вписать. Обычное колесо по-прежнему листает файлы - галочка "Колесо масштабирует" в Настройках > Просмотр переключает его на масштаб. Увеличенное изображение можно таскать левой кнопкой.</span>
+          <span data-l="ua">Масштабом керує сірий блок NumPad: + і - змінюють масштаб від курсора миші, / вписує у вікно, * показує реальний розмір (100 %). Ctrl+колесо - масштаб, Shift+колесо - одразу 100 %, Alt+колесо - вписати. Звичайне колесо, як і раніше, гортає файли - галочка "Колесо масштабує" в Налаштуваннях > Перегляд перемикає його на масштаб. Збільшене зображення можна тягнути лівою кнопкою.</span>
+        </p>
+        <div class="pills"><span class="pill gold"><span data-l="en">64-bit build only</span><span data-l="ru">только 64-битная сборка</span><span data-l="ua">тільки 64-бітна збірка</span></span></div>
+      </article>
+
+      <article class="card">
+        <h3><img src="assets/icons/screen.svg" alt="" width="22" height="22"><span data-l="en">Perspective background</span><span data-l="ru">Перспективный фон</span><span data-l="ua">Перспективний фон</span></h3>
+        <p>
+          <span data-l="en">When a photo doesn't match the shape of the window, the bars beside it are filled with colour taken from the photo's own edges instead of black - a plain average for a flat edge, or each edge row extended outwards for a detailed one. The picture ends up sitting in its own light, the way an Ambilight TV does. On the 64-bit build the "Dynamic perspective" sub-option fades those bars into the background colour the further they get from the photo, so the picture sits in a glow rather than between two solid slabs; its own "Animated" sub-option (on by default) grows that glow out of the photo edge when a new photo opens, over about a third of a second. Dynamic perspective is off by default and needs Perspective on.</span>
+          <span data-l="ru">Когда фото не совпадает по форме с окном, полосы по бокам заполняются цветом из краёв самого фото, а не чёрным: ровный край - средний цвет, сложный - каждый ряд пикселей края продолжается наружу. Снимок оказывается в собственном свете, как у телевизора с Ambilight. В 64-битной сборке подпункт "Динамическая перспектива" растворяет эти полосы в цвете фона по мере удаления от фото, и снимок сидит в свечении, а не между двумя сплошными плитами; его собственный подпункт "Анимировать" (включён по умолчанию) выращивает это свечение от края фото при открытии нового снимка примерно за треть секунды. Динамическая перспектива по умолчанию выключена и требует включённой перспективы.</span>
+          <span data-l="ua">Коли фото не збігається формою з вікном, смуги обабіч заповнюються кольором з країв самого фото, а не чорним: рівний край - середній колір, складний - кожен ряд пікселів краю продовжується назовні. Знімок опиняється у власному світлі, як у телевізора з Ambilight. У 64-бітній збірці підпункт "Динамічна перспектива" розчиняє ці смуги в кольорі тла в міру віддалення від фото, і знімок сидить у сяйві, а не між двома суцільними плитами; його власний підпункт "Анімувати" (увімкнений за замовчуванням) вирощує це сяйво від краю фото при відкритті нового знімка приблизно за третину секунди. Динамічна перспектива за замовчуванням вимкнена й потребує увімкненої перспективи.</span>
+        </p>
+      </article>
+
+      <article class="card">
+        <h3><img src="assets/icons/screen.svg" alt="" width="22" height="22"><span data-l="en">Video / LibVLC engine</span><span data-l="ru">Видео / движок LibVLC</span><span data-l="ua">Відео / рушій LibVLC</span></h3>
+        <p>
+          <span data-l="en">Every clip plays through the bundled LibVLC engine - AVI, ZMBV, VP9, MKV, WMV and the rest. No external codecs, and no reliance on the retired Internet Explorer component, so video behaves the same even where Windows no longer ships it. The 64-bit build adds a control bar along the bottom - play/pause, seek bar, running time, mute and a volume slider; it appears on mouse-over, slips away after a couple of seconds and stays put while paused. A and V step through audio tracks and subtitles, and a "Tracks" button shows up only when the file really offers a choice - your pick is remembered by language, so the next episode keeps it. Right-click the file-selection button and paste an address to play video over smb://, sftp://, ftp://, http(s)://, nfs:// or rtsp:// without downloading it first. Those three extras are 64-bit only; ordinary \\server\share paths work in both builds.</span>
+          <span data-l="ru">Любой ролик играет через встроенный движок LibVLC - AVI, ZMBV, VP9, MKV, WMV и остальное. Без внешних кодеков и без опоры на снятый с поддержки компонент Internet Explorer, поэтому видео ведёт себя одинаково даже там, где его в Windows уже нет. В 64-битной сборке снизу добавляется панель управления - пуск/пауза, полоса перемотки, время, отключение звука и регулятор громкости; она появляется при наведении мыши, уходит через пару секунд и остаётся на месте на паузе. Клавиши A и V перебирают звуковые дорожки и субтитры, а кнопка "Дорожки" появляется, только когда в файле действительно есть из чего выбрать, - выбор запоминается по языку, поэтому следующая серия его сохраняет. Правый клик по кнопке выбора файла позволяет вставить адрес и играть видео по smb://, sftp://, ftp://, http(s)://, nfs:// или rtsp:// без предварительной загрузки. Эти три дополнения - только для 64-битной сборки; обычные пути \\сервер\папка работают в обеих.</span>
+          <span data-l="ua">Будь-який ролик грає через вбудований рушій LibVLC - AVI, ZMBV, VP9, MKV, WMV та решту. Без зовнішніх кодеків і без опори на знятий з підтримки компонент Internet Explorer, тому відео поводиться однаково навіть там, де його у Windows уже немає. У 64-бітній збірці знизу додається панель керування - пуск/пауза, смуга перемотування, час, вимкнення звуку та регулятор гучності; вона з'являється при наведенні миші, зникає через пару секунд і лишається на місці на паузі. Клавіші A та V перебирають звукові доріжки та субтитри, а кнопка "Доріжки" з'являється лише тоді, коли у файлі справді є з чого вибрати, - вибір запам'ятовується за мовою, тому наступна серія його зберігає. Правий клік по кнопці вибору файлу дозволяє вставити адресу і грати відео через smb://, sftp://, ftp://, http(s)://, nfs:// чи rtsp:// без попереднього завантаження. Ці три доповнення - лише для 64-бітної збірки; звичайні шляхи \\сервер\папка працюють в обох.</span>
+        </p>
+      </article>
+
+      <article class="card">
+        <h3><img src="assets/icons/random.svg" alt="" width="22" height="22"><span data-l="en">Mouse menus</span><span data-l="ru">Меню мыши</span><span data-l="ua">Меню миші</span></h3>
+        <p>
+          <span data-l="en">The middle button on a picture opens everything you can do to it: rotate either way, fit to window, actual size, translate the text on it (when OCR translation is on), full screen, next or previous file, rename, move to a destination folder, delete, copy the file path. The right button on a picture is unchanged - it still steps to the previous file. On a video, a click pauses and resumes it (double-click still leaves full screen), and the right button opens pause/resume, mute, repeat, audio track, subtitles, full screen, next or previous file, rename, move to folder, delete, open in the default player and "Open URL..". Items that don't apply are simply absent.</span>
+          <span data-l="ru">Средняя кнопка на изображении открывает всё, что с ним можно сделать: поворот в любую сторону, вписать в окно, реальный размер, перевод текста на нём (когда включён OCR-перевод), полный экран, следующий или предыдущий файл, переименование, перемещение в каталог-получатель, удаление, копирование пути к файлу. Правая кнопка на изображении не изменилась - она по-прежнему переходит к предыдущему файлу. На видео клик ставит на паузу и снимает с неё (двойной клик по-прежнему выходит из полного экрана), а правая кнопка открывает: пауза/продолжить, отключение звука, повтор, звуковая дорожка, субтитры, полный экран, следующий или предыдущий файл, переименование, перемещение в папку, удаление, открыть в плеере по умолчанию и "Открыть URL..". Неприменимые пункты просто отсутствуют.</span>
+          <span data-l="ua">Середня кнопка на зображенні відкриває все, що з ним можна зробити: поворот у будь-який бік, вписати у вікно, реальний розмір, переклад тексту на ньому (коли увімкнено OCR-переклад), повний екран, наступний або попередній файл, перейменування, переміщення в каталог-отримувач, видалення, копіювання шляху до файлу. Права кнопка на зображенні не змінилася - вона й далі переходить до попереднього файлу. На відео клік ставить на паузу і знімає з неї (подвійний клік і далі виходить з повного екрана), а права кнопка відкриває: пауза/продовжити, вимкнення звуку, повтор, звукова доріжка, субтитри, повний екран, наступний або попередній файл, перейменування, переміщення в папку, видалення, відкрити у плеєрі за замовчуванням та "Відкрити URL..". Незастосовні пункти просто відсутні.</span>
+        </p>
+        <div class="pills"><span class="pill gold"><span data-l="en">64-bit build only</span><span data-l="ru">только 64-битная сборка</span><span data-l="ua">тільки 64-бітна збірка</span></span></div>
       </article>
 
       <article class="card">
@@ -221,11 +301,11 @@
       </article>
 
       <article class="card">
-        <h3><img src="assets/icons/fullscreen24.svg" alt="" width="22" height="22"><span data-l="en">Image quality &amp; viewing</span><span data-l="ru">Качество и просмотр</span><span data-l="ua">Якість та перегляд</span></h3>
+        <h3><img src="assets/icons/refresh.svg" alt="" width="22" height="22"><span data-l="en">Image quality &amp; viewing</span><span data-l="ru">Качество и просмотр</span><span data-l="ua">Якість та перегляд</span></h3>
         <p>
-          <span data-l="en">Photos auto-rotate by their EXIF tag, large images downscale with high-quality bicubic scaling, and an optional on-image overlay shows the file name and position - handy in full-screen. Slideshow interval is configurable.</span>
-          <span data-l="ru">Фото авто-поворачиваются по тегу EXIF, крупные изображения уменьшаются качественным бикубическим масштабированием, а необязательная подпись поверх кадра показывает имя файла и позицию - удобно в полноэкранном режиме. Интервал слайд-шоу настраивается.</span>
-          <span data-l="ua">Фото авто-повертаються за тегом EXIF, великі зображення зменшуються якісним бікубічним масштабуванням, а необов'язковий напис поверх кадру показує ім'я файлу та позицію - зручно в повноекранному режимі. Інтервал слайд-шоу налаштовується.</span>
+          <span data-l="en">Photos auto-rotate by their EXIF tag, large images downscale with high-quality bicubic scaling, and an optional on-image overlay shows the file name and position - handy in full-screen. Animated WEBP is decoded by the app itself, so it opens even where the Windows WebP codec isn't installed. Slideshow interval is configurable.</span>
+          <span data-l="ru">Фото авто-поворачиваются по тегу EXIF, крупные изображения уменьшаются качественным бикубическим масштабированием, а необязательная подпись поверх кадра показывает имя файла и позицию - удобно в полноэкранном режиме. Анимированные WEBP приложение декодирует само, поэтому они открываются даже там, где кодек WebP для Windows не установлен. Интервал слайд-шоу настраивается.</span>
+          <span data-l="ua">Фото авто-повертаються за тегом EXIF, великі зображення зменшуються якісним бікубічним масштабуванням, а необов'язковий напис поверх кадру показує ім'я файлу та позицію - зручно в повноекранному режимі. Анімовані WEBP застосунок декодує сам, тому вони відкриваються навіть там, де кодек WebP для Windows не встановлено. Інтервал слайд-шоу налаштовується.</span>
         </p>
         <div class="pills"><span class="pill">EXIF</span><span class="pill">bicubic</span></div>
       </article>
@@ -239,12 +319,12 @@
         </p>
       </article>
 
-      <article class="card">
-        <h3><img src="assets/icons/folder.svg" alt="" width="22" height="22"><span data-l="en">Android Folder Share</span><span data-l="ru">Общий доступ для Android</span><span data-l="ua">Спільний доступ для Android</span></h3>
+      <article class="card" id="android-sftp">
+        <h3><img src="assets/icons/folder.svg" alt="" width="22" height="22"><span data-l="en">Android SFTP Folder Share</span><span data-l="ru">Общий доступ по SFTP для Android</span><span data-l="ua">Спільний доступ SFTP для Android</span></h3>
         <p>
-          <span data-l="en">Turn this PC into a copilot for the mobile app: a built-in SFTP server publishes your own media and file folders to FastMediaSorter for Android - over your home LAN or across the internet - after a one-time QR pairing. <a href="publish-folders-android.html">How to publish your folders →</a></span>
-          <span data-l="ru">Превратите этот ПК в копилот для мобильного приложения: встроенный SFTP-сервер публикует ваши собственные папки с медиа и файлами в FastMediaSorter для Android - в домашней сети или через интернет - после однократного подключения по QR-коду. <a href="publish-folders-android.html">Как опубликовать папки →</a></span>
-          <span data-l="ua">Перетворіть цей ПК на копілот для мобільного застосунку: вбудований SFTP-сервер публікує ваші власні папки з медіа та файлами у FastMediaSorter для Android - у домашній мережі або через інтернет - після одноразового підключення за QR-кодом. <a href="publish-folders-android.html">Як опублікувати папки →</a></span>
+          <span data-l="en">Turn this PC into a copilot for the mobile app: a built-in SFTP server publishes your own media and file folders to FastMediaSorter for Android - over your home LAN or across the internet - after a one-time QR pairing. Needs the 64-bit program: the Share Manager that runs it does not exist in the 32-bit build. <a href="publish-folders-android.html">How to publish your folders →</a></span>
+          <span data-l="ru">Превратите этот ПК в копилот для мобильного приложения: встроенный SFTP-сервер публикует ваши собственные папки с медиа и файлами в FastMediaSorter для Android - в домашней сети или через интернет - после однократного подключения по QR-коду. Нужна 64-битная программа: Share Manager, который этим управляет, в 32-битной сборке отсутствует. <a href="publish-folders-android.html">Как опубликовать папки →</a></span>
+          <span data-l="ua">Перетворіть цей ПК на копілот для мобільного застосунку: вбудований SFTP-сервер публікує ваші власні папки з медіа та файлами у FastMediaSorter для Android - у домашній мережі або через інтернет - після одноразового підключення за QR-кодом. Потрібна 64-бітна програма: Share Manager, який цим керує, у 32-бітній збірці відсутній. <a href="publish-folders-android.html">Як опублікувати папки →</a></span>
         </p>
         <div class="pills"><span class="pill gold">SFTP</span><span class="pill">LAN</span><span class="pill">QR</span></div>
       </article>
@@ -252,9 +332,9 @@
       <article class="card">
         <h3><img src="assets/icons/random.svg" alt="" width="22" height="22"><span data-l="en">Shortcuts</span><span data-l="ru">Горячие клавиши</span><span data-l="ua">Гарячі клавіші</span></h3>
         <p>
-          <span data-l="en">Almost everything is a hotkey, and folder shortcuts are customizable. Switch the whole UI between English and Russian on the fly - the first run follows your Windows display language.</span>
-          <span data-l="ru">Почти всё - на горячих клавишах, а ярлыки папок настраиваются. Переключайте весь интерфейс между английским и русским на лету - при первом запуске берётся язык интерфейса Windows.</span>
-          <span data-l="ua">Майже все - на гарячих клавішах, а ярлики папок налаштовуються. Перемикайте весь інтерфейс між англійською та російською на льоту - при першому запуску береться мова інтерфейсу Windows.</span>
+          <span data-l="en">Almost everything is a hotkey, and folder shortcuts are customizable. Switch the whole UI between English and Russian on the fly - the first run follows your Windows display language. The grey NumPad zoom keys and the track keys below are 64-bit only.</span>
+          <span data-l="ru">Почти всё - на горячих клавишах, а ярлыки папок настраиваются. Переключайте весь интерфейс между английским и русским на лету - при первом запуске берётся язык интерфейса Windows. Клавиши масштаба на сером блоке NumPad и клавиши дорожек ниже есть только в 64-битной сборке.</span>
+          <span data-l="ua">Майже все - на гарячих клавішах, а ярлики папок налаштовуються. Перемикайте весь інтерфейс між англійською та російською на льоту - при першому запуску береться мова інтерфейсу Windows. Клавіші масштабу на сірому блоці NumPad та клавіші доріжок нижче є лише в 64-бітній збірці.</span>
         </p>
         <div class="kbds">
           <kbd>←</kbd><kbd>→</kbd>
@@ -263,6 +343,12 @@
           <span style="color:var(--muted);font-size:.8rem" data-l="en">move to folder</span><span style="color:var(--muted);font-size:.8rem" data-l="ru">в папку</span><span style="color:var(--muted);font-size:.8rem" data-l="ua">у папку</span>
           <kbd>T</kbd>
           <span style="color:var(--muted);font-size:.8rem" data-l="en">OCR translate</span><span style="color:var(--muted);font-size:.8rem" data-l="ru">OCR-перевод</span><span style="color:var(--muted);font-size:.8rem" data-l="ua">OCR-переклад</span>
+          <kbd>NumPad +</kbd><kbd>-</kbd>
+          <span style="color:var(--muted);font-size:.8rem" data-l="en">zoom</span><span style="color:var(--muted);font-size:.8rem" data-l="ru">масштаб</span><span style="color:var(--muted);font-size:.8rem" data-l="ua">масштаб</span>
+          <kbd>NumPad /</kbd><kbd>*</kbd>
+          <span style="color:var(--muted);font-size:.8rem" data-l="en">fit / 100 %</span><span style="color:var(--muted);font-size:.8rem" data-l="ru">вписать / 100 %</span><span style="color:var(--muted);font-size:.8rem" data-l="ua">вписати / 100 %</span>
+          <kbd>A</kbd><kbd>V</kbd>
+          <span style="color:var(--muted);font-size:.8rem" data-l="en">audio / subtitles</span><span style="color:var(--muted);font-size:.8rem" data-l="ru">дорожка / субтитры</span><span style="color:var(--muted);font-size:.8rem" data-l="ua">доріжка / субтитри</span>
         </div>
       </article>
     </div>
@@ -296,12 +382,12 @@
 
   // ---- i18n ----
   var META={
-    en:{title:"Fast Media Sorter for Windows - image & video sorter with hotkeys",
-        desc:"A keyboard-first Windows image and video sorter: fast folder navigation, slideshow, one-key move / copy / rename / delete, broad video playback with a bundled LibVLC fallback."},
-    ru:{title:"Fast Media Sorter for Windows - быстрый сортировщик фото и видео",
-        desc:"Сортировщик фото и видео для Windows с управлением с клавиатуры: быстрая навигация, слайд-шоу, перемещение / копирование / переименование / удаление одной клавишей и резервный движок LibVLC."},
-    ua:{title:"Fast Media Sorter for Windows - швидкий сортувальник фото та відео",
-        desc:"Сортувальник фото та відео для Windows з керуванням з клавіатури: швидка навігація, слайд-шоу, переміщення / копіювання / перейменування / видалення однією клавішею та резервний рушій LibVLC."}
+    en:{title:"Fast photo & video sorting for Windows | Fast Media Sorter",
+        desc:"A local Windows app for reviewing and sorting large photo and video folders with one-key actions, offline playback and SFTP folder sharing for Android."},
+    ru:{title:"Быстрая сортировка фото и видео для Windows | Fast Media Sorter",
+        desc:"Локальное приложение Windows для разбора больших папок с фото и видео: действия одной клавишей, офлайн-воспроизведение и общий доступ к папкам по SFTP для Android."},
+    ua:{title:"Швидке сортування фото та відео для Windows | Fast Media Sorter",
+        desc:"Локальний застосунок Windows для розбору великих папок з фото й відео: дії однією клавішею, офлайн-відтворення та спільний доступ до папок через SFTP для Android."}
   };
   function setLang(l){
     if(!META[l]) l='en';

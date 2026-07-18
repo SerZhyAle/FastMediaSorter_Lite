@@ -2,7 +2,15 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$StageDir,
 
-    [switch]$IncludeBest
+    [switch]$IncludeBest,
+
+    # Keep the 32-bit native trees (libvlc\win-x86, x86\tesseract) in the stage.
+    # Off by default: the x64 package's mainline is FastMediaSorter_LITE.exe (x64),
+    # and its FastMediaSorter_x86.exe sibling is only an escape hatch there - it
+    # downloads the 32-bit codecs/OCR it needs into %LOCALAPPDATA% on first use
+    # (OptionalRuntimeManager), so bundling ~100 MB of x86 natives for every user
+    # is not worth it. Switch it on for a genuinely 32-bit, offline-first artifact.
+    [switch]$KeepX86
 )
 
 $ErrorActionPreference = "Stop"
@@ -63,9 +71,13 @@ function Sync-LanguageSet {
     Write-Host "$Label models: $downloaded downloaded, $fromCache from cache -> $TargetDir"
 }
 
-Remove-IfExists (Join-Path $stageRoot "x86")
-Remove-IfExists (Join-Path $stageRoot "libvlc\win-x86")
-Remove-IfExists (Join-Path $stageRoot "runtimes\win-x86")
+if ($KeepX86) {
+    Write-Host "Keeping the 32-bit native trees (-KeepX86): FastMediaSorter_x86.exe runs offline."
+} else {
+    Remove-IfExists (Join-Path $stageRoot "x86")
+    Remove-IfExists (Join-Path $stageRoot "libvlc\win-x86")
+    Remove-IfExists (Join-Path $stageRoot "runtimes\win-x86")
+}
 
 Sync-LanguageSet -BaseUrl $fastBaseUrl -CacheDir (Join-Path $cacheRoot "fast") -TargetDir (Join-Path $stageRoot "tessdata") -Label "fast"
 

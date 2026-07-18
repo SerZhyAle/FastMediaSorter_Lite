@@ -1,7 +1,14 @@
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Drawing
 Imports System.Windows.Forms
+
+' NOT IN THE x86 VIEWER (owner decision, 2026-07-16). Share cannot work there at all:
+' the Companion app this button opens is net10.0-windows x64 and does not start on
+' Windows 7/8.1 or 32-bit Windows - the very machines the x86 exe serves. See the
+' header of Main_Form.ShareLauncher.vb for why the gate is NETFRAMEWORK rather than a
+' separate FEATURE_FULL constant.
 
 ' The single remaining Share entry point inside the Settings window after the
 ' Stage 3 migration to the standalone Fast Media Sorter: Share Manager app (§4.2/
@@ -55,3 +62,4 @@ Partial Public Class Table_Form
     End Sub
 
 End Class
+#End If

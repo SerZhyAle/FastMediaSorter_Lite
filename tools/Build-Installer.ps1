@@ -84,7 +84,10 @@ $payloadDir   = Join-Path $solutionDir "payload\companion"
 $stageDir     = Join-Path $solutionDir ("stage\FastMediaSorter-" + $Version + "-windows-x64")
 $distDir      = Join-Path $solutionDir "dist"
 $issFile      = Join-Path $solutionDir "installer\FastMediaSorter.iss"
+# The viewer ships as two exes (CLAUDE.md "Project identity"): msbuild yields the
+# net48 x86 sibling, the frozen-name x64 mainline comes from a dotnet publish.
 $exeName      = "FastMediaSorter_LITE.exe"
+$legacyExeName = "FastMediaSorter_x86.exe"
 
 function Resolve-MsBuild {
     $fromVsWhere = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
@@ -172,7 +175,7 @@ if ($SkipBuild) {
     if ($LASTEXITCODE -ne 0) { throw "MSBuild failed with exit code $LASTEXITCODE." }
 }
 
-if (-not (Test-Path (Join-Path $releaseDir $exeName))) {
+if (-not (Test-Path (Join-Path $releaseDir $legacyExeName))) {
     throw "Release executable not found in $releaseDir. Run without -SkipBuild first."
 }
 
@@ -205,6 +208,25 @@ if (Test-Path $payloadDir) {
     Write-Host "Bundled companion worker -> companion\"
 } else {
     Write-Warning "Companion payload not found ($payloadDir) - the installer will ship without the Android Share worker."
+}
+
+# The .NET 10 x64 mainline viewer - the exe that carries the frozen name and
+# replaces the installed one. msbuild above only built its net48 x86 sibling.
+# Only the exe is staged: the support trees it needs (libvlc\win-x64, x64\
+# tesseract natives, flags\) already came from the staged bin\Release tree.
+$modernProj = Join-Path $solutionDir "src\Modern\FastMediaSorter.Modern.vbproj"
+if (Test-Path $modernProj) {
+    $modernPub = Join-Path $stageDir "modern-publish-tmp"
+    Write-Host "Publishing the .NET 10 x64 viewer (self-contained single-file).."
+    & dotnet publish $modernProj -c Release -r win-x64 -p:ReleaseVersion=$Version -o $modernPub -v minimal --nologo
+    if ($LASTEXITCODE -ne 0) { throw "dotnet publish (modern viewer) failed with exit code $LASTEXITCODE." }
+    $modernExe = Join-Path $modernPub $exeName
+    if (-not (Test-Path $modernExe)) { throw "Modern viewer exe not found at $modernExe after publish." }
+    Copy-Item $modernExe $stageDir -Force
+    Remove-Item -LiteralPath $modernPub -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Host "Bundled the x64 mainline viewer -> $exeName"
+} else {
+    throw "Modern viewer project not found ($modernProj) - the package would ship without its mainline exe."
 }
 
 # The Companion app itself (Share Manager, net10) - published self-contained next

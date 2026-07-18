@@ -17,7 +17,9 @@ Imports Tesseract
 Friend Module OcrPaths
 
     Public Function ExeDir() As String
-        Return Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
+        ' AppContext.BaseDirectory: same as the exe dir on net48 and still correct
+        ' in the .NET 10 single-file publish (Assembly.Location is empty there).
+        Return AppContext.BaseDirectory
     End Function
 
     ''' <summary>%LOCALAPPDATA%\SZA\FastMediaSorter</summary>

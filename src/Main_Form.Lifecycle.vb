@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.ObjectModel
 Imports System.ComponentModel
@@ -44,7 +44,13 @@ Partial Public Class Main_Form
         toolTip.SetToolTip(bt_Delete, If(Is_Russian_Language, "Удалить файл (Del) - пути назад почти нет, так что прицеливайтесь.", "Delete the file (Del) - there's almost no going back, so aim carefully."))
         toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык на английский", "Switch language to Russian"))
         toolTip.SetToolTip(chkbox_Top_Most, If(Is_Russian_Language, "Поверх всех окон - чтобы ничто не смело его заслонить.", "Always on top - so nothing dares cover it."))
+#If NETFRAMEWORK Then
         toolTip.SetToolTip(btn_choose_file, If(Is_Russian_Language, "Выбрать файл..", "Choose file.."))
+#Else
+        ' Modern hangs "Open URL.." off this button's right-click - the tooltip is the
+        ' only thing that tells anyone it is there.
+        toolTip.SetToolTip(btn_choose_file, ChooseFileTooltipText())
+#End If
 
         ' --- ComboBoxes and Labels ---
         toolTip.SetToolTip(cmbox_Sort, If(Is_Russian_Language, "Порядок сортировки файлов", "File sort order"))
@@ -126,6 +132,9 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
+#If NETFRAMEWORK Then
+    ' net48 only: IE11 emulation for the video WebBrowser. The modern build
+    ' never instantiates the WebBrowser, so the registry knob is pointless there.
     Private Sub SetWebBrowserCompatibilityMode()
         Try
             Using key = Registry.CurrentUser.OpenSubKey("Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BROWSER_EMULATION", True)
@@ -141,6 +150,7 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0030: Error to set WebBrowser mode")
         End Try
     End Sub
+#End If
 
     Public Sub InitNew()
 
@@ -157,8 +167,10 @@ Partial Public Class Main_Form
         ResizeDebounceTimer.Interval = 200
         ResizeDebounceTimer.Enabled = False
 
-        Dim is_New_Instance_Created As Boolean
-        mutex = New Mutex(True, app_Mutex_Name, is_New_Instance_Created)
+        ' The mutex is created in MyApplication_Startup now. Creating it here - only
+        ' once the form loaded, hundreds of milliseconds into a self-contained .NET 10
+        ' start - left a window in which a second launch saw no mutex and became a
+        ' second full instance; the two then raced over one registry hive at exit.
 
         is_TextBox_Editing = True
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0002: Initialize")
@@ -170,12 +182,16 @@ Partial Public Class Main_Form
 
         BgWorker.WorkerReportsProgress = True
         BgWorker.WorkerSupportsCancellation = True
+#If NETFRAMEWORK Then
         Web_Browser.ObjectForScripting = Me
+#End If
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0003: InitializeExtensionLists")
         InitializeExtensionLists()
+#If NETFRAMEWORK Then
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0004: SetWebBrowserCompatibilityMode")
         SetWebBrowserCompatibilityMode()
+#End If
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0009: InitializeFileOperationWorker")
         InitializeFileOperationWorker()
@@ -188,6 +204,18 @@ Partial Public Class Main_Form
     Private pending_Unlock_Deadline As DateTime
     Private WithEvents pending_Unlock_Timer As New System.Windows.Forms.Timer() With {.Interval = 800}
 
+    ''' <summary>Gives up waiting for the file to unlock. Called by any explicit change
+    ''' of file or folder too: the wait used to survive everything, and up to 45 seconds
+    ''' later the tick would yank the view onto that file while the user was long since
+    ''' working in another folder.</summary>
+    Private Sub CancelPendingUnlock(status_Text As String)
+        pending_Unlock_Timer.Stop()
+        If String.IsNullOrEmpty(pending_Unlock_Path) Then Return
+        Dim dropped As String = pending_Unlock_Path
+        pending_Unlock_Path = Nothing
+        If status_Text <> "" Then lbl_Status.Text = status_Text & Path.GetFileName(dropped)
+    End Sub
+
     Private Sub Pending_Unlock_Timer_Tick(sender As Object, e As EventArgs) Handles pending_Unlock_Timer.Tick
         If String.IsNullOrEmpty(pending_Unlock_Path) Then
             pending_Unlock_Timer.Stop()
@@ -195,10 +223,7 @@ Partial Public Class Main_Form
         End If
 
         If DateTime.Now > pending_Unlock_Deadline Then
-            pending_Unlock_Timer.Stop()
-            Dim given_Up As String = pending_Unlock_Path
-            pending_Unlock_Path = Nothing
-            lbl_Status.Text = If(Is_Russian_Language, "Файл всё ещё занят: " & Path.GetFileName(given_Up), "File still locked: " & Path.GetFileName(given_Up))
+            CancelPendingUnlock(If(Is_Russian_Language, "Файл всё ещё занят: ", "File still locked: "))
             Return
         End If
 
@@ -206,6 +231,14 @@ Partial Public Class Main_Form
         ' the writer has released it (download finished) and we can open it.
         Try
             File.GetAttributes(pending_Unlock_Path)
+        Catch ex As FileNotFoundException
+            ' Gone, not busy. The bare Catch read this as "still locked" and kept polling
+            ' to the deadline, then lied: "file still locked".
+            CancelPendingUnlock(If(Is_Russian_Language, "Файл удалён: ", "File deleted: "))
+            Return
+        Catch ex As DirectoryNotFoundException
+            CancelPendingUnlock(If(Is_Russian_Language, "Папка недоступна: ", "Folder is gone: "))
+            Return
         Catch
             Return ' still locked -- wait for the next tick
         End Try
@@ -218,14 +251,105 @@ Partial Public Class Main_Form
         ProcessArgument(ready_Path)
     End Sub
 
+    Private Const No_Back_Flag As String = "-noback"
+
+    ''' <summary>Strips the -noback flag when it is a TOKEN of its own - leading,
+    ''' trailing, or the entire argument. It used to be searched for as a substring
+    ''' anywhere in the line and cut out with a regex, so opening
+    ''' C:\pics\photo-noback.jpg silently switched background tasks off for the session
+    ''' and turned the path into C:\pics\photo.jpg - "file not found". Such a file could
+    ''' not be opened with this app at all.</summary>
+    Private Function StripNoBackFlag(ByRef argument_For_Path As String) As Boolean
+        Dim found As Boolean = False
+
+        If String.Equals(argument_For_Path, No_Back_Flag, StringComparison.OrdinalIgnoreCase) Then
+            argument_For_Path = ""
+            Return True
+        End If
+
+        If argument_For_Path.StartsWith(No_Back_Flag & " ", StringComparison.OrdinalIgnoreCase) Then
+            argument_For_Path = argument_For_Path.Substring(No_Back_Flag.Length + 1).Trim()
+            found = True
+        End If
+
+        If argument_For_Path.EndsWith(" " & No_Back_Flag, StringComparison.OrdinalIgnoreCase) Then
+            argument_For_Path = argument_For_Path.Substring(0, argument_For_Path.Length - No_Back_Flag.Length - 1).Trim()
+            found = True
+        End If
+
+        Return found
+    End Function
+
+    ''' <summary>What the filesystem said about an argument. Filled on a worker thread
+    ''' (modern) or inline (net48) - see ProbeArgument.</summary>
+    Private NotInheritable Class ArgumentProbe
+        Public Property IsDirectory As Boolean
+        Public Property Exists As Boolean
+        Public Property Missing As Boolean
+        Public Property Denied As Boolean
+        Public Property LastError As String = ""
+    End Class
+
+    ''' <summary>
+    ''' Asks the filesystem about the argument, with the retry policy this app has always
+    ''' had - unchanged, deliberately:
+    '''   * FileNotFound/DirNotFound -> genuinely gone: fail fast.
+    '''   * UnauthorizedAccess       -> "access denied": almost always a sharing violation
+    '''       because the file is still being written by a downloader. A real lock clears
+    '''       in a moment: a few quick retries. An ACL problem will not clear.
+    '''   * IOException etc.         -> share dropped/busy: retry longer, let the SMB
+    '''       session re-establish.
+    '''
+    ''' Every call here can block for an SMB timeout - which is why on modern this whole
+    ''' function runs on a worker thread (see ProcessArgument). It touches no form state.
+    ''' </summary>
+    Private Shared Function ProbeArgument(path As String) As ArgumentProbe
+        Dim probe As New ArgumentProbe()
+
+        Try
+            If Directory.Exists(path) Then
+                probe.IsDirectory = True
+                probe.Exists = True
+                Return probe
+            End If
+        Catch ex As Exception
+            probe.LastError = "[" & ex.GetType().Name & "] " & ex.Message
+        End Try
+
+        probe.Exists = File.Exists(path)
+        Dim denied_Tries As Integer = 0
+        Dim net_Tries As Integer = 0
+
+        Do While Not probe.Exists
+            Try
+                File.GetAttributes(path)
+                probe.Exists = True
+            Catch ex As FileNotFoundException
+                probe.Missing = True : probe.LastError = ex.Message : Exit Do
+            Catch ex As DirectoryNotFoundException
+                probe.Missing = True : probe.LastError = ex.Message : Exit Do
+            Catch ex As UnauthorizedAccessException
+                probe.Denied = True : probe.LastError = ex.Message
+                denied_Tries += 1
+                If denied_Tries >= 3 Then Exit Do
+                Threading.Thread.Sleep(250)
+            Catch ex As Exception
+                probe.LastError = "[" & ex.GetType().Name & "] " & ex.Message
+                net_Tries += 1
+                If net_Tries >= 8 Then Exit Do
+                Threading.Thread.Sleep(250)
+            End Try
+        Loop
+
+        Return probe
+    End Function
+
     Public Sub ProcessArgument(argument_Raw_Text As String)
         Dim argument_For_Path As String = argument_Raw_Text.Trim()
-        Dim argument_For_Flags As String = argument_Raw_Text.ToLowerInvariant()
-        Dim is_No_Back_Flag_In_This_Call As Boolean = argument_For_Flags.Contains("-noback")
+        Dim is_No_Back_Flag_In_This_Call As Boolean = StripNoBackFlag(argument_For_Path)
 
         If is_No_Back_Flag_In_This_Call Then
             Is_No_Background_Tasks = True
-            argument_For_Path = System.Text.RegularExpressions.Regex.Replace(argument_For_Path, "-noback", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim()
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0232: ProcessArgument: -NoBack")
         End If
 
@@ -239,9 +363,48 @@ Partial Public Class Main_Form
             Return
         End If
 
+#If Not NETFRAMEWORK Then
+        ' Modern: probe off the UI thread. Every one of those Exists/GetAttributes calls
+        ' blocks for a full SMB timeout when the server is asleep, and with the retries
+        ' that is minutes of a dead window - on a machine whose working folder IS a
+        ' share. The classification and the retry counts are unchanged; only the thread
+        ' they run on is.
+        ProcessArgumentAsync(argument_For_Path, is_No_Back_Flag_In_This_Call)
+#Else
+        ApplyArgument(argument_For_Path, is_No_Back_Flag_In_This_Call, ProbeArgument(argument_For_Path))
+#End If
+    End Sub
+
+#If Not NETFRAMEWORK Then
+    Private Async Sub ProcessArgumentAsync(argument_For_Path As String, is_No_Back_Flag_In_This_Call As Boolean)
+        Dim generation As Integer = media_Generation
+        lbl_Status.Text = If(Is_Russian_Language,
+                             "Проверяю доступность: " & Path.GetFileName(argument_For_Path),
+                             "Checking availability: " & Path.GetFileName(argument_For_Path))
+
+        Dim probe As ArgumentProbe
         Try
-            Dim is_Directory As Boolean = Directory.Exists(argument_For_Path)
-            If is_Directory Then
+            probe = Await Task.Run(Function() ProbeArgument(argument_For_Path))
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0281: probe failed: " & ex.Message)
+            Return
+        End Try
+
+        ' The user may have opened something else while we waited on a dead share.
+        If generation <> media_Generation Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0282: probe result dropped - user moved on")
+            Return
+        End If
+        If Me.IsDisposed Then Return
+
+        ApplyArgument(argument_For_Path, is_No_Back_Flag_In_This_Call, probe)
+    End Sub
+#End If
+
+    ''' <summary>Acts on what the probe found. UI thread, both builds.</summary>
+    Private Sub ApplyArgument(argument_For_Path As String, is_No_Back_Flag_In_This_Call As Boolean, probe As ArgumentProbe)
+        Try
+            If probe.IsDirectory Then
                 If Not is_No_Back_Flag_In_This_Call Then
                     Is_No_Background_Tasks = False
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0278: ProcessArgument: folder without -NoBack. mode -NoBack is off")
@@ -263,48 +426,11 @@ Partial Public Class Main_Form
                     current_File_Index = 0
                 End If
 
-                ReadShowMediaFile("ReadFolderAndFile")
+                ReadShowMediaFile(Mode_FolderAndFile)
             Else
-                ' File.Exists returns False for several different reasons and swallows
-                ' them all. GetAttributes throws the REAL one so we can react correctly:
-                '   * FileNotFound/DirNotFound -> the file is genuinely gone: fail fast.
-                '   * UnauthorizedAccess       -> "access denied": almost always a
-                '       sharing violation because the file is still being written by a
-                '       downloader (these are fresh \output\* downloads). A real lock
-                '       clears in a moment, so a few quick retries; an ACL/elevation
-                '       issue won't clear, so don't freeze the UI on it.
-                '   * IOException etc.         -> share dropped/busy: retry longer to
-                '       let the SMB session re-establish.
-                Dim arg_File_Exists As Boolean = File.Exists(argument_For_Path)
-                Dim arg_Missing As Boolean = False
-                Dim arg_Denied As Boolean = False
-                Dim arg_Last_Error As String = ""
-                Dim arg_Denied_Tries As Integer = 0
-                Dim arg_Net_Tries As Integer = 0
-                Do While Not arg_File_Exists
-                    Try
-                        File.GetAttributes(argument_For_Path)
-                        arg_File_Exists = True
-                    Catch ex As FileNotFoundException
-                        arg_Missing = True : arg_Last_Error = ex.Message : Exit Do
-                    Catch ex As DirectoryNotFoundException
-                        arg_Missing = True : arg_Last_Error = ex.Message : Exit Do
-                    Catch ex As UnauthorizedAccessException
-                        arg_Denied = True : arg_Last_Error = ex.Message
-                        arg_Denied_Tries += 1
-                        If arg_Denied_Tries >= 3 Then Exit Do
-                        Threading.Thread.Sleep(250)
-                    Catch ex As Exception
-                        arg_Last_Error = "[" & ex.GetType().Name & "] " & ex.Message
-                        arg_Net_Tries += 1
-                        If arg_Net_Tries >= 8 Then Exit Do
-                        Threading.Thread.Sleep(250)
-                    End Try
-                Loop
-
-                If Not arg_File_Exists Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0280: arg not reachable (missing=" & arg_Missing.ToString() & " denied=" & arg_Denied.ToString() & "): [" & argument_For_Path & "] reason=" & arg_Last_Error)
-                    If arg_Denied Then
+                If Not probe.Exists Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0280: arg not reachable (missing=" & probe.Missing.ToString() & " denied=" & probe.Denied.ToString() & "): [" & argument_For_Path & "] reason=" & probe.LastError)
+                    If probe.Denied Then
                         ' Locked by a writer (downloading). Watch for it to unlock and
                         ' open it automatically rather than making the user retry.
                         pending_Unlock_Path = argument_For_Path
@@ -312,7 +438,7 @@ Partial Public Class Main_Form
                         pending_Unlock_Timer.Stop()
                         pending_Unlock_Timer.Start()
                         lbl_Status.Text = If(Is_Russian_Language, "Файл занят, ждём разблокировки (качается?): " & Path.GetFileName(argument_For_Path), "File locked, waiting to open (downloading?): " & Path.GetFileName(argument_For_Path))
-                    ElseIf arg_Missing Then
+                    ElseIf probe.Missing Then
                         lbl_Status.Text = If(Is_Russian_Language, "Файл не найден: " & Path.GetFileName(argument_For_Path), "File not found: " & Path.GetFileName(argument_For_Path))
                     Else
                         lbl_Status.Text = If(Is_Russian_Language, "Сетевой ресурс недоступен, повторите: " & Path.GetFileName(argument_For_Path), "Share unreachable, retry: " & Path.GetFileName(argument_For_Path))
@@ -343,15 +469,18 @@ Partial Public Class Main_Form
                 total_File_Count = 1
                 files_List = New List(Of String) From {Current_Image_Path}
 
-                ReadShowMediaFile("ReadFolderAndKnownFile")
+                ReadShowMediaFile(Mode_FolderAndKnownFile)
             End If
         Catch ex As Exception
+            ' Say what went wrong and leave the session alone. Wiping Current_Folder_Path
+            ' and the combo box here killed navigation outright - ReadShowMediaFile
+            ' quietly returns on an empty folder path - over an argument that was bad
+            ' (an over-long path arriving by drag-drop, say) while a perfectly good
+            ' folder was open on screen.
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0300: Error processing argument: " & ex.Message)
-            Current_Folder_Path = ""
-            is_TextBox_Editing = True
-            cmbox_Media_Folder.Text = ""
-            is_TextBox_Editing = False
-            Is_No_Background_Tasks = False
+            lbl_Status.Text = If(Is_Russian_Language,
+                                 "Не удалось открыть: " & argument_For_Path,
+                                 "Could not open: " & argument_For_Path)
         End Try
     End Sub
 
@@ -403,12 +532,23 @@ Partial Public Class Main_Form
         InitializeTooltips()
         InitializeOcrTranslate()
         InitializeBrowserTranslate()
-        InitializeShareEntryPoint()
+#If Not NETFRAMEWORK Then
+        ' The folder-box menu (Select folder.. / Share this folder..) and "Open URL.."
+        ' are both modern-only - the x86 viewer has neither.
+        InitializeFolderMenu()
+        InitializeOpenUrlEntryPoint()
+#End If
 
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Width_At_Panel", "80"), Picture_Box_Width_At_Panel)
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Height_At_Panel", "80"), Picture_Box_Height_At_Panel)
 
         Is_Pespective = GetSetting(App_name, Second_App_Name, "isPerspective", "1") = "1"
+        ' Default "0" = the bars look exactly as they always have, so an upgrade does not
+        ' silently restyle the background (same stance as WheelZooms below).
+        Is_Dynamic_Perspective = GetSetting(App_name, Second_App_Name, "DynamicPerspective", "0") = "1"
+        ' Default "1", unlike its neighbours: this one only bites once DynamicPerspective
+        ' has been switched on by hand, and the growth is what that switch is for.
+        Is_Animated_Perspective = GetSetting(App_name, Second_App_Name, "AnimatedPerspective", "1") = "1"
         Is_no_request_before_file_operation = GetSetting(App_name, Second_App_Name, "NoRequestBeforeFileOperation", "0") = "1"
 
         Is_to_show_picture_sizes = GetSetting(App_name, Second_App_Name, "ShowPictureSizes", "1") = "1"
@@ -429,7 +569,12 @@ Partial Public Class Main_Form
         Dim sort_Direction_Index = 0
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "SortDir", "0"), sort_Direction_Index)
 
-        If sort_Direction_Index < 0 Then
+        ' Both ends. Only the lower one was checked, so a SortDir of 9+ in the registry
+        ' (an older build after a newer one, a hand edit, corruption) threw
+        ' ArgumentOutOfRange right here inside Form1_Load: a crash on every start for
+        ' the x64 exe, and on x86 - where WOW64 swallows exceptions in Load - the rest
+        ' of the initialisation was silently skipped and the window came up half-empty.
+        If sort_Direction_Index < 0 OrElse sort_Direction_Index >= cmbox_Sort.Items.Count Then
             sort_Direction_Index = 0
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1138: cmbox_Sort is set to 0")
         End If
@@ -448,6 +593,9 @@ Partial Public Class Main_Form
         ' New key (not the abandoned "SetOnTop"), default off - so a fresh install or
         ' reinstall starts with the recipients overlay hidden. Applied in Main_Form_Shown.
         Is_Show_Recipients_Overlay = GetSetting(App_name, Second_App_Name, "ShowRecipientsOverlay", "0") = "1"
+        ' Default "0" = the wheel flips through files, i.e. a fresh install and an
+        ' upgrade both behave exactly as before (spec 4.4 / O-Z-2).
+        Zoom_Wheel_Zooms = GetSetting(App_name, Second_App_Name, "WheelZooms", "0") = "1"
 
         Dim video_Volume_String = GetSetting(App_name, Second_App_Name, "VideoVolume", "1.0")
         video_Volume_Level = ParseVideoVolumeSetting(video_Volume_String, video_Volume_Level)
@@ -494,28 +642,18 @@ Partial Public Class Main_Form
         Else
             Current_Folder_Path = GetSetting(App_name, Second_App_Name, "ImageFolder", "")
             If Not Current_Folder_Path = "" Then
-                total_File_Count = 0
-                Try
-                    total_File_Count = My.Computer.FileSystem.GetDirectoryInfo(Current_Folder_Path).EnumerateFiles.Count
-                Catch ex As Exception
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1139: ERR: " & ex.Message)
-                End Try
-
+                ' Straight to the read. There used to be a full EnumerateFiles.Count of
+                ' the folder first - just to sanity-check the saved index, and against
+                ' the count of ALL files rather than the media ones at that. On a cold
+                ' network folder that is a second of frozen window spent to learn
+                ' nothing: Mode_Files re-reads the folder immediately afterwards and
+                ' clamps the index itself, and LoadFiles reports an empty or unreadable
+                ' folder on its own. (Measured on \\p7\_i\output\C, 15 779 files: 1.1 s
+                ' per pass - so this deletion halves the cold start.)
                 Integer.TryParse(GetSetting(App_name, Second_App_Name, "LastCounter"), current_File_Index)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0040: folder from savings: " & Current_Folder_Path & " - index " & current_File_Index.ToString)
 
-                If Not total_File_Count = 0 AndAlso
-                current_File_Index > 0 AndAlso
-                current_File_Index < total_File_Count Then
-
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0040: folder and file found in savings: " & Current_Folder_Path & " - " & current_File_Index.ToString)
-
-                    ReadShowMediaFile("ReadFiles")
-                Else
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1157: folder set from savings, but saved file is not found: " & Current_Folder_Path & " - " & current_File_Index.ToString)
-                    current_File_Index = 1
-
-                    If Not total_File_Count = 0 Then ReadShowMediaFile("ReadFolderAndFile")
-                End If
+                ReadShowMediaFile(Mode_Files)
             Else
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1158: no folder saved")
             End If
@@ -536,10 +674,21 @@ Partial Public Class Main_Form
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "AppWidth"), app_Width_Int)
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "AppHeight"), app_Height_Int)
 
-        app_Top_Int = If(app_Top_Int < 0 OrElse app_Top_Int > main_form_position_Limit_Top, first_run_top, app_Top_Int)
-        app_Left_Int = If(app_Left_Int < 0 OrElse app_Left_Int > main_form_position_Limit_Left, first_run_left, app_Left_Int)
-        app_Width_Int = If(app_Width_Int < main_form_position_Limit_Width_Low OrElse app_Width_Int > main_form_position_Limit_Width, first_run_width, app_Width_Int)
-        app_Height_Int = If(app_Height_Int < main_form_position_Limit_Height_Low OrElse app_Height_Int > main_form_position_Limit_Height, first_run_height, app_Height_Int)
+        ' Size still gets sanity limits, but the POSITION is judged by the desktop that
+        ' actually exists: a saved rectangle is good if any part of it lands on the
+        ' virtual screen. The old fixed ceilings (Top <= 720, Left <= 1000) came from a
+        ' 1366x768 world and threw away every position on a wider monitor, and
+        ' "must not be negative" threw away every monitor placed left of or above the
+        ' primary one.
+        If app_Width_Int < main_form_position_Limit_Width_Low OrElse app_Width_Int > main_form_position_Limit_Width Then app_Width_Int = first_run_width
+        If app_Height_Int < main_form_position_Limit_Height_Low OrElse app_Height_Int > main_form_position_Limit_Height Then app_Height_Int = first_run_height
+
+        Dim saved_Bounds As New Rectangle(app_Left_Int, app_Top_Int, app_Width_Int, app_Height_Int)
+        If Not SystemInformation.VirtualScreen.IntersectsWith(saved_Bounds) Then
+            app_Left_Int = first_run_left
+            app_Top_Int = first_run_top
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1949: saved window position is off-screen, using defaults")
+        End If
 
         Me.SetBounds(app_Left_Int, app_Top_Int, app_Width_Int, app_Height_Int)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1950: Form_Sizes: " & app_Left_Int.ToString & " - " & app_Top_Int.ToString & " " & app_Width_Int.ToString & " - " & app_Height_Int.ToString)
@@ -564,23 +713,50 @@ Partial Public Class Main_Form
     ' self-gates (no-op when no picture box is visible or perspective is off).
     Private Sub Main_Form_Shown(sender As Object, e As EventArgs) Handles MyBase.Shown
         If is_PictureBox1_Visible OrElse is_PictureBox2_Visible Then
-            Draw_Perspective()
+            ' This IS the first photo appearing, so it gets the dynamic-perspective halo
+            ' growth like any other new photo - the load path just could not draw it yet.
+            Draw_Perspective(animate:=True)
         End If
         ' Now the form is at its final size and panel_Media exists - build the
         ' recipients overlay if the user left it on.
         ApplyRecipientsOverlay()
     End Sub
 
-    Private Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
+#If Not NETFRAMEWORK Then
+    ''' <summary>Set while we let the file-operation queue finish before closing, so the
+    ''' second (real) close does not try to drain again.</summary>
+    Private is_Closing_After_Drain As Boolean = False
+#End If
+
+    Private Async Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
         ' LITE closes like a normal viewer - no close-to-tray. Sharing (if any) is
         ' owned entirely by Fast Media Sorter: Share Manager, which keeps
         ' running independently; closing LITE never touches it.
+
+#If Not NETFRAMEWORK Then
+        ' A queued move is a file being COPIED across shares - killing the process
+        ' mid-transfer leaves a half file in the destination. Give the queue its moment,
+        ' without freezing the window while it finishes.
+        If Not is_Closing_After_Drain AndAlso file_Op_Queue IsNot Nothing AndAlso file_Op_Queue.PendingCount > 0 Then
+            e.Cancel = True
+            is_Closing_After_Drain = True
+            lbl_Status.Text = If(Is_Russian_Language, "завершаются файловые операции..", "finishing file operations..")
+            Await file_Op_Queue.DrainAsync(TimeSpan.FromSeconds(15))
+            Me.Close()
+            Return
+        End If
+#End If
+
         Try
             If Current_Folder_Path IsNot Nothing Then SaveSetting(App_name, Second_App_Name, "ImageFolder", Current_Folder_Path)
-            If Not current_File_Index = 0 Then SaveSetting(App_name, Second_App_Name, "LastCounter", current_File_Index.ToString)
+            ' Always - zero is as valid a position as any. Skipping it left the previous
+            ' folder's counter in place: close folder B on its first file and the next
+            ' start opened B at file 51, remembered from folder A.
+            SaveSetting(App_name, Second_App_Name, "LastCounter", current_File_Index.ToString)
 
             SaveSetting(App_name, Second_App_Name, "chkTopMost", If(chkbox_Top_Most.Checked, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "ShowRecipientsOverlay", If(Is_Show_Recipients_Overlay, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "WheelZooms", If(Zoom_Wheel_Zooms, "1", "0"))
             ' Keys 1..9 -> MoveOn1..MoveOn9. Key "0" is runtime slot 10 and must be
             ' saved into MoveOn0 (previously only slots 0..9 were saved, so the "0"
             ' destination was lost on restart). If(...,"") avoids a null .ToString.
@@ -605,6 +781,8 @@ Partial Public Class Main_Form
             SaveSetting(App_name, Second_App_Name, "FirstRun", "0")
             SaveSetting(App_name, Second_App_Name, "CopyMode", If(Is_Copying_not_Moving, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "isPerspective", If(Is_Pespective, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "DynamicPerspective", If(Is_Dynamic_Perspective, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "AnimatedPerspective", If(Is_Animated_Perspective, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "TableOpened", If(Table_Form.Visible, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "RunsCount", (app_Run_Count + 1).ToString)
             SaveSetting(App_name, Second_App_Name, "mediaViewedCount", (media_View_Count).ToString)
@@ -626,10 +804,14 @@ Partial Public Class Main_Form
             SaveSetting(App_name, Second_App_Name, "Picture_Box_Width_At_Panel", Picture_Box_Width_At_Panel.ToString)
             SaveSetting(App_name, Second_App_Name, "Picture_Box_Height_At_Panel", Picture_Box_Height_At_Panel.ToString)
 
-            If Me.Top >= 0 Then SaveSetting(App_name, Second_App_Name, "AppTop", Me.Top.ToString)
-            If Me.Left >= 0 Then SaveSetting(App_name, Second_App_Name, "AppLeft", Me.Left.ToString)
-            If Me.Height >= main_form_position_Limit_Width_Low Then SaveSetting(App_name, Second_App_Name, "AppHeight", Me.Height.ToString)
-            If Me.Width >= main_form_position_Limit_Height_Low Then SaveSetting(App_name, Second_App_Name, "AppWidth", Me.Width.ToString)
+            ' Negative coordinates are legal - that is simply a monitor to the left of,
+            ' or above, the primary one; refusing to save them lost the position on
+            ' every restart there. The size guards had their limits swapped: height was
+            ' checked against the WIDTH floor and width against the HEIGHT one.
+            SaveSetting(App_name, Second_App_Name, "AppTop", Me.Top.ToString)
+            SaveSetting(App_name, Second_App_Name, "AppLeft", Me.Left.ToString)
+            If Me.Height >= main_form_position_Limit_Height_Low Then SaveSetting(App_name, Second_App_Name, "AppHeight", Me.Height.ToString)
+            If Me.Width >= main_form_position_Limit_Width_Low Then SaveSetting(App_name, Second_App_Name, "AppWidth", Me.Width.ToString)
 
             SaveSetting(App_name, Second_App_Name, "VideoVolume", video_Volume_Level.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))
             SaveSetting(App_name, Second_App_Name, "VideoMuted", If(is_Video_Muted, "1", "0"))
@@ -644,24 +826,24 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1200: ERR: " & ex.Message)
         End Try
 
+        ' Wait on the workers' own signals, not on IsBusy: IsBusy is cleared by a
+        ' callback posted to THIS thread, which is busy waiting - so the old loops could
+        ' never see it drop and always sat out the full 1 s + 5 s before releasing VLC,
+        ' the images and the streams under a worker that was still using them.
         If BgWorker.IsBusy Then
             BgWorker.CancelAsync()
-            Dim bgworker_Cancel_Timeout As Integer = 1000
-            Dim bgworker_Cancel_StartTime As DateTime = DateTime.Now
-            While BgWorker.IsBusy AndAlso (DateTime.Now - bgworker_Cancel_StartTime).TotalMilliseconds < bgworker_Cancel_Timeout
-                Thread.Sleep(10)
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1210: BgWorker try to CancelAsync")
-            End While
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1210: BgWorker try to CancelAsync")
+            If Not bgworker_Done.Wait(1000) Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1211: BgWorker did not finish in time")
+            End If
         End If
 
         If FileOperationWorker.IsBusy Then
             FileOperationWorker.CancelAsync()
-            Dim file_operation_cancel_timeout As Integer = 5000
-            Dim file_operation_cancel_start_time As DateTime = DateTime.Now
-            While FileOperationWorker.IsBusy AndAlso (DateTime.Now - file_operation_cancel_start_time).TotalMilliseconds < file_operation_cancel_timeout
-                Thread.Sleep(10)
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1220: FileOperationWorker try to CancelAsync")
-            End While
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1220: FileOperationWorker try to CancelAsync")
+            If Not fileop_Done.Wait(5000) Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1221: FileOperationWorker did not finish in time")
+            End If
         End If
 
         SlideShowStop()
@@ -673,7 +855,11 @@ Partial Public Class Main_Form
         ShutdownOcrTranslate()
 
         If Web_Browser IsNot Nothing Then
+#If NETFRAMEWORK Then
+            ' Touching DocumentText would instantiate the never-used IE ActiveX on
+            ' the modern build; disposing a handle-less control is safe on both.
             Web_Browser.DocumentText = ""
+#End If
             Web_Browser.Dispose()
         End If
 

@@ -53,6 +53,8 @@ Public Class Table_Form
         ' --- TabPage 2: Settings ---
         toolTip.SetToolTip(cmbox_color_schema, If(Is_Russian_Language, "Выберите цветовую схему фона для просмотра изображений.", "Select the background color scheme for the image viewer."))
         toolTip.SetToolTip(chb_perspectiva, If(Is_Russian_Language, "Включить перспективный фон: чёрные поля по краям превращаются в продолжение картинки. Чисто для красоты.", "Enable the perspective background: the black bars become a continuation of the image. Purely for the vibes."))
+        toolTip.SetToolTip(chk_Dynamic_Perspective, If(Is_Russian_Language, "Полосы гаснут к цвету фона по мере удаления от фото - получается ореол, а не сплошная полоса. Применяется со следующего фото.", "The bars fade into the background colour the further they get from the photo - a halo rather than a solid bar. Applies from the next photo on."))
+        toolTip.SetToolTip(chk_Animated_Perspective, If(Is_Russian_Language, "Ореол не появляется сразу, а вырастает от края фото к краю экрана - примерно за треть секунды. Снимите галку, и он будет просто нарисован мгновенно. В покое кадр в обоих случаях одинаковый. Растёт только на новом фото: ресайз окна и зум перерисовывают фон сразу.", "The halo grows from the edge of the photo out to the edge of the screen - about a third of a second - instead of just being there. Uncheck it and it is simply drawn at once. The resting frame is the same either way. Only a new photo grows it: resizing the window or zooming redraws the background instantly."))
         toolTip.SetToolTip(chkb_show_pic_size, If(Is_Russian_Language, "Показывать размеры изображения (ширина x высота).", "Show the dimensions (width x height) of the image."))
         toolTip.SetToolTip(chkb_is_to_show_file_datetime, If(Is_Russian_Language, "Показывать дату и время последнего изменения файла.", "Show the last modified date and time of the file."))
         toolTip.SetToolTip(chkb_show_file_size, If(Is_Russian_Language, "Показывать размер файла.", "Show the size of the file."))
@@ -63,6 +65,7 @@ Public Class Table_Form
         toolTip.SetToolTip(chk_Exif_AutoRotate, If(Is_Russian_Language, "Автоматически поворачивать фото по тегу EXIF Orientation (снимки с телефонов/камер).", "Auto-rotate photos by their EXIF Orientation tag (photos from phones/cameras)."))
         toolTip.SetToolTip(chk_Hq_Scaling, If(Is_Russian_Language, "Качественное (бикубическое) масштабирование - резче при уменьшении крупных изображений.", "High-quality (bicubic) scaling - sharper when downscaling large images."))
         toolTip.SetToolTip(chk_Show_Info_Overlay, If(Is_Russian_Language, "Показывать имя файла и позицию (N/всего) поверх изображения. Удобно в полноэкранном режиме, где статусбар стыдливо прячется.", "Show the file name and position (N/total) over the image. Handy in full-screen, where the status bar shyly hides."))
+        toolTip.SetToolTip(chk_Wheel_Zooms, If(Is_Russian_Language, "Как в привычных просмотрщиках: колесо приближает и отдаляет под курсором. Выключено - колесо листает файлы, как было всегда. В любом случае Ctrl+колесо приближает, Shift+колесо даёт 100 %, Alt+колесо вписывает, а над видео колесо всегда листает. С клавиатуры: серые +/- приближают от курсора, / вписывает, * даёт 100 %.", "Like the viewers you are used to: the wheel zooms in and out under the cursor. Off - the wheel flips through files, exactly as it always has. Either way Ctrl+wheel zooms, Shift+wheel gives 100 %, Alt+wheel fits, and over video the wheel always flips. From the keyboard: NumPad +/- zoom at the cursor, / fits, * gives 100 %."))
         toolTip.SetToolTip(num_Slideshow_Interval, If(Is_Russian_Language, "Базовый интервал слайдшоу в секундах. Запустите слайдшоу ещё раз - и оно ускорится вдвое, будто куда-то опаздывает.", "Base slideshow interval in seconds. Start the slideshow again and it halves the delay, as if it's late for something."))
         toolTip.SetToolTip(chk_Video_Mute, If(Is_Russian_Language, "Запускать видео без звука - для просмотра в приличном обществе.", "Start videos muted - for viewing in polite company."))
         toolTip.SetToolTip(num_Video_Volume, If(Is_Russian_Language, "Громкость видео по умолчанию (0-100%).", "Default video volume (0-100%)."))
@@ -167,6 +170,13 @@ Public Class Table_Form
         chk_Exif_AutoRotate.Checked = Is_Exif_AutoRotate
         chk_Hq_Scaling.Checked = Is_HighQuality_Scaling
         chk_Show_Info_Overlay.Checked = Is_Show_Info_Overlay
+#If NETFRAMEWORK Then
+        ' The classic zoom model ships in the .NET 10 viewer only (the x86 build keeps
+        ' the historical mechanics), so do not offer a switch that does nothing here.
+        chk_Wheel_Zooms.Visible = False
+#Else
+        chk_Wheel_Zooms.Checked = Zoom_Wheel_Zooms
+#End If
 
         Dim slideshow_Seconds As Integer = CInt(Slideshow_Base_Interval_Ms / 1000)
         If slideshow_Seconds < CInt(num_Slideshow_Interval.Minimum) Then slideshow_Seconds = CInt(num_Slideshow_Interval.Minimum)
@@ -182,6 +192,8 @@ Public Class Table_Form
         num_Video_Volume.Value = video_Volume_Percent
 
         chb_perspectiva.Text = If(Is_Russian_Language, "Перспектива", "Perspective")
+        chk_Dynamic_Perspective.Text = If(Is_Russian_Language, "Динамическая перспектива", "Dynamic perspective")
+        chk_Animated_Perspective.Text = If(Is_Russian_Language, "Анимированная", "Animated")
         btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
 
         chkbox_Copy_Mode.Checked = Is_Copying_not_Moving
@@ -238,6 +250,7 @@ Public Class Table_Form
             chkb_show_file_size.Text = "Показывать размер файлов"
             chkb_is_to_show_file_datetime.Text = "Показывать дату и время файла"
             chk_Show_Info_Overlay.Text = "Имя файла и позиция поверх изображения"
+            chk_Wheel_Zooms.Text = "Колесо мыши приближает (иначе листает)"
             chk_Exif_AutoRotate.Text = "Авто-поворот по EXIF"
             chk_Hq_Scaling.Text = "Качественное масштабирование"
             chkb_video_loop.Text = "Демонстрировать видео зациклено"
@@ -280,6 +293,7 @@ Public Class Table_Form
             chkb_show_file_size.Text = "Show file sizes"
             chkb_is_to_show_file_datetime.Text = "Show file datetime"
             chk_Show_Info_Overlay.Text = "File name and position over the image"
+            chk_Wheel_Zooms.Text = "Mouse wheel zooms (otherwise it flips files)"
             chk_Exif_AutoRotate.Text = "Auto-rotate by EXIF"
             chk_Hq_Scaling.Text = "High-quality scaling"
             chkb_video_loop.Text = "Loop video playback"
@@ -298,14 +312,31 @@ Public Class Table_Form
         End If
 
         PrepareOcrTabForDisplay()
+#If Not NETFRAMEWORK Then
+        ' The x86 viewer has no Share button - the Companion it opens cannot run on
+        ' the OSes that exe serves. The Integration group simply keeps its original
+        ' height there, with nothing missing to see.
         BuildShareLauncherButtonIfNeeded()
         LocalizeShareLauncherButton()
+#End If
 
         ' The checkbox now toggles the recipients overlay on the main window (see its
         ' rename above), not this window's TopMost. State lives in Main_Form.
         SetOnTop.Checked = Is_Show_Recipients_Overlay
 
         chb_perspectiva.Checked = Is_Pespective
+#If NETFRAMEWORK Then
+        ' The halo ships in the .NET 10 viewer only (the x86 fallback keeps the flat
+        ' bars), so do not offer a switch that does nothing here - same as chk_Wheel_Zooms.
+        chk_Dynamic_Perspective.Visible = False
+        chk_Animated_Perspective.Visible = False
+#Else
+        chk_Dynamic_Perspective.Checked = Is_Dynamic_Perspective
+        chk_Animated_Perspective.Checked = Is_Animated_Perspective
+#End If
+        ' Checked above only raises CheckedChanged when the value actually changed, so
+        ' the greying cannot rely on that handler alone having run.
+        SyncDynamicPerspectiveEnabled()
 
         LinkLabel1.Text = Application.ProductVersion & " sza@ukr.net"
     End Sub
@@ -320,7 +351,11 @@ Public Class Table_Form
                 Dim textKey As String = e.RowIndex.ToString
                 If textKey = "10" Then textKey = "0"
                 folderBrowse.Description = If(Is_Russian_Language, "Укажите каталог переноса/копирования для клавиши " + textKey, "Select dest folder for key " + textKey)
-                If folderBrowse.ShowDialog() = Windows.Forms.DialogResult.OK Then
+#If Not NETFRAMEWORK Then
+                ' The Vista-style dialog .NET uses shows Description only as the title.
+                folderBrowse.UseDescriptionForTitle = True
+#End If
+                If folderBrowse.ShowDialog() = System.Windows.Forms.DialogResult.OK Then
                     Hardkeys_to_move_mediafile(e.RowIndex) = folderBrowse.SelectedPath
                     Data_Grid_View.Item(1, e.RowIndex).Value = Hardkeys_to_move_mediafile(e.RowIndex)
                     Data_Grid_View.Refresh()
@@ -349,6 +384,12 @@ Public Class Table_Form
     Private Sub Chk_Hq_Scaling_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Hq_Scaling.CheckedChanged
         Is_HighQuality_Scaling = chk_Hq_Scaling.Checked
         Main_Form.RepaintMedia()
+    End Sub
+
+    Private Sub Chk_Wheel_Zooms_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Wheel_Zooms.CheckedChanged
+#If Not NETFRAMEWORK Then
+        Zoom_Wheel_Zooms = chk_Wheel_Zooms.Checked
+#End If
     End Sub
 
     Private Sub Chk_Show_Info_Overlay_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Show_Info_Overlay.CheckedChanged
@@ -398,6 +439,28 @@ Public Class Table_Form
 
     Private Sub Chb_perspectiva_CheckedChanged(sender As Object, e As EventArgs) Handles chb_perspectiva.CheckedChanged
         Is_Pespective = chb_perspectiva.Checked
+        SyncDynamicPerspectiveEnabled()
+    End Sub
+
+    ''' <summary>Greys the chain down: with no perspective there are no bars to fade, and
+    ''' with no halo there is nothing to animate. Better than letting either read as a
+    ''' setting that is doing something.</summary>
+    Private Sub SyncDynamicPerspectiveEnabled()
+        chk_Dynamic_Perspective.Enabled = chb_perspectiva.Checked
+        chk_Animated_Perspective.Enabled = chb_perspectiva.Checked AndAlso chk_Dynamic_Perspective.Checked
+    End Sub
+
+    Private Sub Chk_Dynamic_Perspective_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Dynamic_Perspective.CheckedChanged
+#If Not NETFRAMEWORK Then
+        Is_Dynamic_Perspective = chk_Dynamic_Perspective.Checked
+#End If
+        SyncDynamicPerspectiveEnabled()
+    End Sub
+
+    Private Sub Chk_Animated_Perspective_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Animated_Perspective.CheckedChanged
+#If Not NETFRAMEWORK Then
+        Is_Animated_Perspective = chk_Animated_Perspective.Checked
+#End If
     End Sub
 
     Private Sub Chkb_show_pic_size_CheckedChanged(sender As Object, e As EventArgs) Handles chkb_show_pic_size.CheckedChanged
@@ -451,6 +514,8 @@ Public Class Table_Form
     End Sub
 
     Private Sub LinkLabel1_LinkClicked(sender As Object, e As System.Windows.Forms.LinkLabelLinkClickedEventArgs) Handles LinkLabel1.LinkClicked
-        System.Diagnostics.Process.Start("mailto:sza@ukr.net?subject=Fast Media Sorter for Windows:")
+        ' Explicit UseShellExecute: mailto needs the shell; net48 defaulted to True,
+        ' .NET defaults to False (would throw Win32Exception on the modern build).
+        System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo("mailto:sza@ukr.net?subject=Fast Media Sorter for Windows:") With {.UseShellExecute = True})
     End Sub
 End Class

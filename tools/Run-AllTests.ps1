@@ -39,14 +39,30 @@ function Invoke-DotnetTest([string]$name, [string]$proj) {
     if (-not (Test-Path $proj)) { Add-Result $name $false "project not found"; return }
     $log = & dotnet test $proj -v minimal --nologo 2>&1
     $log | ForEach-Object { Write-Host $_ }
-    $line = ($log | Select-String -Pattern 'Passed!|Failed!' | Select-Object -First 1)
     $ok = ($LASTEXITCODE -eq 0)
-    $detail = if ($line) { ($line.ToString() -replace '.*(Failed:.*Total:\s*\d+).*', '$1') } else { "exit $LASTEXITCODE" }
+
+    # A multi-targeted project (Lite.Tests runs under BOTH net48 and net10) prints one
+    # result line PER framework. Summarize every one of them - taking just the first
+    # would silently drop a whole runtime's numbers from the summary.
+    $lines = @($log | Select-String -Pattern 'Passed!|Failed!')
+    if ($lines.Count -gt 0) {
+        $parts = foreach ($l in $lines) {
+            $text = $l.ToString()
+            $counts = if ($text -match '(Failed:\s*\d+,\s*Passed:\s*\d+,\s*Skipped:\s*\d+,\s*Total:\s*\d+)') { $Matches[1] } else { $text.Trim() }
+            $tfm = if ($text -match '\(([^)]+)\)\s*$') { $Matches[1] } else { '' }
+            if ($tfm) { "[$tfm] $counts" } else { $counts }
+        }
+        $detail = ($parts -join '  |  ')
+    } else {
+        $detail = "exit $LASTEXITCODE"
+    }
     Add-Result $name $ok $detail
 }
 
 # --- 1 & 2: .NET suites -------------------------------------------------------
-Invoke-DotnetTest "Sorter (LITE net48)"      (Join-Path $root 'tests\Lite.Tests\Lite.Tests.vbproj')
+# The viewer suite is multi-targeted: the same linked sources are tested under BOTH
+# shipped runtimes (net48 = FastMediaSorter_x86.exe, net10 = the x64 mainline).
+Invoke-DotnetTest "Viewer (net48 + net10)"   (Join-Path $root 'tests\Lite.Tests\Lite.Tests.vbproj')
 Invoke-DotnetTest "Share Manager (net10)"    (Join-Path $root 'tests\Companion.Tests\Companion.Tests.vbproj')
 
 # --- 3: Go worker suite -------------------------------------------------------

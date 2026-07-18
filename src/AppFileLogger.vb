@@ -34,7 +34,13 @@ Friend Module AppFileLogger
                 logWriter = New StreamWriter(fileStream)
                 logWriter.AutoFlush = True
                 logListener = New TextWriterTraceListener(logWriter)
+#If NETFRAMEWORK Then
                 Debug.Listeners.Add(logListener)
+#Else
+                ' .NET has no Debug.Listeners; Debug.WriteLine routes through the
+                ' shared Trace listener collection instead.
+                Trace.Listeners.Add(logListener)
+#End If
                 Trace.AutoFlush = True
 
                 AddHandler Application.ThreadException, AddressOf OnThreadException
@@ -47,7 +53,9 @@ Friend Module AppFileLogger
                 WriteLine("============================================================")
                 WriteLine("Session started: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"))
                 WriteLine("Log file: " & logPathValue)
-                WriteLine("Executable: " & Assembly.GetExecutingAssembly().Location)
+                ' Process.MainModule, not Assembly.Location: the latter is an empty
+                ' string in a single-file publish (.NET 10 build).
+                WriteLine("Executable: " & Process.GetCurrentProcess().MainModule.FileName)
                 WriteLine("Version: " & Assembly.GetExecutingAssembly().GetName().Version.ToString())
                 WriteLine("OS: " & Environment.OSVersion.ToString())
                 WriteLine("64-bit OS: " & Environment.Is64BitOperatingSystem.ToString() & "; 64-bit process: " & Environment.Is64BitProcess.ToString())
@@ -87,8 +95,9 @@ Friend Module AppFileLogger
     End Sub
 
     Private Function ResolveLogPath() As String
-        Dim exePath As String = Assembly.GetExecutingAssembly().Location
-        Dim exeDir As String = Path.GetDirectoryName(exePath)
+        ' AppContext.BaseDirectory = exe directory on net48 AND in a .NET 10
+        ' single-file publish (where Assembly.Location is empty).
+        Dim exeDir As String = AppContext.BaseDirectory
 
         If Not String.IsNullOrEmpty(exeDir) Then
             Try
@@ -139,7 +148,11 @@ Friend Module AppFileLogger
             End Try
 
             Try
+#If NETFRAMEWORK Then
                 If logListener IsNot Nothing Then Debug.Listeners.Remove(logListener)
+#Else
+                If logListener IsNot Nothing Then Trace.Listeners.Remove(logListener)
+#End If
             Catch
             End Try
 

@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.ObjectModel
 Imports System.ComponentModel
@@ -18,31 +18,26 @@ Partial Public Class Main_Form
         mouse_Down_Start_Point = e.Location
 
         ' PRIORITY 1: Check modifier keys FIRST (these execute immediately without delay)
+        '
+        ' All three jumps go through JumpBy: the index moves inside the pipeline, after
+        ' the checks that can still refuse the call. Doing it here first meant a refused
+        ' call (throttle, busy worker) left the index moved and the screen not - and the
+        ' next delete then took out whatever the index now pointed at. The "not enough
+        ' files" guards are gone with it: the pipeline clamps, exactly as Home/End
+        ' always have.
         If (Control.ModifierKeys And Keys.Shift) = Keys.Shift Then
             pending_Single_Click_Timer.Stop()
             pending_Single_Click_Event = Nothing
 
             If e.Button = MouseButtons.Left Then
-                If total_File_Count > current_File_Index + 10 Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Shift+LeftClick - jumping +10 files")
-                    SlideShowStop()
-                    current_File_Index += 10
-                    ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(Is_Russian_Language, "+10 файлов", "+10 files")
-                Else
-                    lbl_Status.Text = If(Is_Russian_Language, "Недостаточно файлов для перехода на +10", "Not enough files for +10 jump")
-                End If
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Shift+LeftClick - jumping +10 files")
+                SlideShowStop()
+                JumpBy(10, "+10 файлов", "+10 files")
                 Return
             ElseIf e.Button = MouseButtons.Right Then
-                If current_File_Index >= 10 Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Shift+RightClick - jumping -10 files")
-                    SlideShowStop()
-                    current_File_Index -= 10
-                    ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(Is_Russian_Language, "-10 файлов", "-10 files")
-                Else
-                    lbl_Status.Text = If(Is_Russian_Language, "Текущий индекс слишком мал для перехода на -10", "Current index too low for -10 jump")
-                End If
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Shift+RightClick - jumping -10 files")
+                SlideShowStop()
+                JumpBy(-10, "-10 файлов", "-10 files")
                 Return
             End If
         End If
@@ -52,26 +47,14 @@ Partial Public Class Main_Form
             pending_Single_Click_Event = Nothing
 
             If e.Button = MouseButtons.Left Then
-                If total_File_Count > current_File_Index + 100 Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Ctrl+LeftClick - jumping +100 files")
-                    SlideShowStop()
-                    current_File_Index += 100
-                    ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(Is_Russian_Language, "+100 файлов", "+100 files")
-                Else
-                    lbl_Status.Text = If(Is_Russian_Language, "Недостаточно файлов для перехода на +100", "Not enough files for +100 jump")
-                End If
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Ctrl+LeftClick - jumping +100 files")
+                SlideShowStop()
+                JumpBy(100, "+100 файлов", "+100 files")
                 Return
             ElseIf e.Button = MouseButtons.Right Then
-                If current_File_Index >= 100 Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Ctrl+RightClick - jumping -100 files")
-                    SlideShowStop()
-                    current_File_Index -= 100
-                    ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(Is_Russian_Language, "-100 файлов", "-100 files")
-                Else
-                    lbl_Status.Text = If(Is_Russian_Language, "Текущий индекс слишком мал для перехода на -100", "Current index too low for -100 jump")
-                End If
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Ctrl+RightClick - jumping -100 files")
+                SlideShowStop()
+                JumpBy(-100, "-100 файлов", "-100 files")
                 Return
             End If
         End If
@@ -81,26 +64,14 @@ Partial Public Class Main_Form
             pending_Single_Click_Event = Nothing
 
             If e.Button = MouseButtons.Left Then
-                If total_File_Count > current_File_Index + 1000 Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Alt+LeftClick - jumping +1000 files")
-                    SlideShowStop()
-                    current_File_Index += 1000
-                    ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(Is_Russian_Language, "+1000 файлов", "+1000 files")
-                Else
-                    lbl_Status.Text = If(Is_Russian_Language, "Недостаточно файлов для перехода на +1000", "Not enough files for +1000 jump")
-                End If
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Alt+LeftClick - jumping +1000 files")
+                SlideShowStop()
+                JumpBy(1000, "+1000 файлов", "+1000 files")
                 Return
             ElseIf e.Button = MouseButtons.Right Then
-                If current_File_Index >= 1000 Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Alt+RightClick - jumping -1000 files")
-                    SlideShowStop()
-                    current_File_Index -= 1000
-                    ReadShowMediaFile("SetFile")
-                    lbl_Status.Text = If(Is_Russian_Language, "-1000 файлов", "-1000 files")
-                Else
-                    lbl_Status.Text = If(Is_Russian_Language, "Текущий индекс слишком мал для перехода на -1000", "Current index too low for -1000 jump")
-                End If
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Alt+RightClick - jumping -1000 files")
+                SlideShowStop()
+                JumpBy(-1000, "-1000 файлов", "-1000 files")
                 Return
             End If
         End If
@@ -162,6 +133,14 @@ Partial Public Class Main_Form
 
         SlideShowStop()
 
+#If Not NETFRAMEWORK Then
+        ' Modern: one place decides what the wheel means (zoom vs flip) - see
+        ' Main_Form.Zoom.vb. It consumes the event only when it actually zoomed, so
+        ' everything below (including the historical modifier handling) still runs
+        ' untouched when it declines.
+        If TryHandleWheelZoom(e) Then Return
+#End If
+
         If (Control.ModifierKeys And Keys.Alt) = Keys.Alt Then
             SkipZoom()
 
@@ -204,6 +183,9 @@ Partial Public Class Main_Form
                 Picture_Box_2.Size = Picture_Box_1.Size
                 Picture_Box_2.Location = Picture_Box_1.Location
 
+                ' The box moved under a possibly-still-held button - re-anchor the pan.
+                RebasePan(Picture_Box_1.Location)
+
                 ' Set zoom_Scale to 0 as flag for 1:1 mode
                 zoom_Scale = 0.0F
                 lbl_Zoom.Text = "1:1"
@@ -245,28 +227,40 @@ Partial Public Class Main_Form
             Picture_Box_2.Size = Picture_Box_1.Size
             Picture_Box_2.Location = Picture_Box_1.Location
 
+            ' The box moved under a possibly-still-held button - re-anchor the pan.
+            RebasePan(Picture_Box_1.Location)
+
             zoom_Scale = If(zoom_Scale = 0, 1, zoom_Scale) * zoom_Scale_Factor
             lbl_Zoom.Text = "" & zoom_Scale.ToString("F2")
         Else
             Select Case e.Delta
                 Case Is < 0
-                    ReadShowMediaFile("ReadNextFile")
+                    ReadShowMediaFile(Mode_Next)
                 Case Is > 0
-                    ReadShowMediaFile("ReadPrevFile")
+                    ReadShowMediaFile(Mode_Prev)
                 Case 0
                     Select Case e.Button
                         Case MouseButtons.Left
-                            ReadShowMediaFile("ReadNextFile") ' next
+                            ReadShowMediaFile(Mode_Next) ' next
                         Case MouseButtons.Right
                             If Not is_WebBrowser_Visible Then
-                                ReadShowMediaFile("ReadPrevFile")
+                                ReadShowMediaFile(Mode_Prev)
                             End If
-                        Case Windows.Forms.MouseButtons.Middle
+                        Case System.Windows.Forms.MouseButtons.Middle
+#If NETFRAMEWORK Then
                             RenameCurrentFile()
-                        Case Windows.Forms.MouseButtons.XButton1
-                            ReadShowMediaFile("ReadNextFile")
-                        Case Windows.Forms.MouseButtons.XButton2
-                            ReadShowMediaFile("ReadPrevFile")
+#Else
+                            ' Modern: the middle button opens the picture menu - rename is
+                            ' one of its items, so the historical command is still here,
+                            ' next to everything else that can be done to the picture. It
+                            ' declines when there is no picture on screen (a playing video,
+                            ' an empty window), and then the old rename stands.
+                            If Not TryShowImageContextMenu() Then RenameCurrentFile()
+#End If
+                        Case System.Windows.Forms.MouseButtons.XButton1
+                            ReadShowMediaFile(Mode_Next)
+                        Case System.Windows.Forms.MouseButtons.XButton2
+                            ReadShowMediaFile(Mode_Prev)
                     End Select
             End Select
         End If
@@ -295,12 +289,49 @@ Partial Public Class Main_Form
         Pic_MouseMove(sender, e)
     End Sub
 
+    ''' <summary>Starts panning: remembers WHERE INSIDE the box the user grabbed it, in
+    ''' panel coordinates (the panel does not move; the box does).</summary>
+    Private Sub BeginPan()
+        If panel_Media Is Nothing Then Return
+        is_Dragging = True
+        Dim cursor_On_Panel As Point = panel_Media.PointToClient(Cursor.Position)
+        drag_Grab_Offset = New Size(cursor_On_Panel.X - Picture_Box_1.Left, cursor_On_Panel.Y - Picture_Box_1.Top)
+        last_Drag_Update_Time = DateTime.Now
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2475: pic_MouseMove - drag started, grab offset " & drag_Grab_Offset.ToString())
+    End Sub
+
+    ''' <summary>Re-takes the grab offset after something OTHER than the drag moved the
+    ''' box - a zoom step while the button is still held. Without it the next mouse move
+    ''' hauls the box back to the pan's starting geometry and throws the zoom anchor
+    ''' away.</summary>
+    Private Sub RebasePan(box_Location As Point)
+        If panel_Media Is Nothing OrElse Not is_Dragging Then Return
+        Dim cursor_On_Panel As Point = panel_Media.PointToClient(Cursor.Position)
+        drag_Grab_Offset = New Size(cursor_On_Panel.X - box_Location.X, cursor_On_Panel.Y - box_Location.Y)
+    End Sub
+
+    Private Sub EndPan()
+        If Not is_Dragging Then Return
+        is_Dragging = False
+        last_Drag_Update_Time = DateTime.MinValue
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2477: pic_MouseMove - drag ended")
+    End Sub
+
+    ''' <summary>The drag ends when the button is released - even if the mouse never
+    ''' moves again. That used to be noticed only lazily, by the next move without a
+    ''' button: release without moving, press again, and the stale base teleported the
+    ''' box back to where the previous drag had begun.</summary>
+    Private Sub Picture_Box_MouseUp(sender As Object, e As MouseEventArgs) Handles Picture_Box_1.MouseUp, Picture_Box_2.MouseUp
+        EndPan()
+    End Sub
+
     Private Sub Pic_MouseMove(sender As Object, e As MouseEventArgs)
         If e.Button = MouseButtons.Left Then
             If Not is_PictureBox1_Visible AndAlso Not is_PictureBox2_Visible Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2470: pic_MouseMove - no picture box visible")
                 Exit Sub
             End If
+            If panel_Media Is Nothing Then Exit Sub
 
             ' Add drag functionality when zoomed
             If zoom_Scale = 0 OrElse zoom_Scale > 1 Then
@@ -309,15 +340,7 @@ Partial Public Class Main_Form
                     Dim drag_Threshold As Integer = 5 ' Increased threshold
                     Dim distance_Moved As Double = Math.Sqrt((e.X - mouse_Down_Start_Point.X) ^ 2 + (e.Y - mouse_Down_Start_Point.Y) ^ 2)
 
-                    If distance_Moved >= drag_Threshold Then
-                        ' Start dragging - store the original PictureBox position
-                        is_Dragging = True
-                        original_PictureBox_Left = Picture_Box_1.Left
-                        original_PictureBox_Top = Picture_Box_1.Top
-                        drag_Start_Point = e.Location ' Use current mouse position as start point
-                        last_Drag_Update_Time = DateTime.Now ' Initialize the timer
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2475: pic_MouseMove - drag started at " & drag_Start_Point.ToString())
-                    End If
+                    If distance_Moved >= drag_Threshold Then BeginPan()
                 End If
 
                 If is_Dragging Then
@@ -325,21 +348,19 @@ Partial Public Class Main_Form
                     Dim current_Time As DateTime = DateTime.Now
                     If (current_Time - last_Drag_Update_Time).TotalMilliseconds >= DRAG_UPDATE_INTERVAL_MS Then
 
-                        ' Calculate movement delta from the original mouse down position
-                        Dim delta_X As Integer = e.X - mouse_Down_Start_Point.X
-                        Dim delta_Y As Integer = e.Y - mouse_Down_Start_Point.Y
+                        ' Measured against panel_Media, which stands still. e.X/e.Y are
+                        ' client coordinates OF THE VERY BOX BEING MOVED, so the frame of
+                        ' reference travelled with the object: the applied offset followed
+                        ' a(n) = D(n) - a(n-1), i.e. the picture crawled after the hand at
+                        ' half speed, every second event moved it not at all (the stutter),
+                        ' and the grab point slid out from under the cursor.
+                        Dim cursor_On_Panel As Point = panel_Media.PointToClient(Cursor.Position)
+                        Dim new_Left As Integer = cursor_On_Panel.X - drag_Grab_Offset.Width
+                        Dim new_Top As Integer = cursor_On_Panel.Y - drag_Grab_Offset.Height
 
-                        ' Only move if there's actual movement to avoid unnecessary updates
-                        If delta_X <> 0 OrElse delta_Y <> 0 Then
-                            ' Calculate new position based on original position plus total movement
-                            Dim new_Left As Integer = original_PictureBox_Left + delta_X
-                            Dim new_Top As Integer = original_PictureBox_Top + delta_Y
-
-                            ' Apply the new position to both picture boxes
-                            Picture_Box_1.Left = new_Left
-                            Picture_Box_1.Top = new_Top
-                            Picture_Box_2.Left = new_Left
-                            Picture_Box_2.Top = new_Top
+                        If new_Left <> Picture_Box_1.Left OrElse new_Top <> Picture_Box_1.Top Then
+                            Picture_Box_1.Location = New Point(new_Left, new_Top)
+                            Picture_Box_2.Location = Picture_Box_1.Location
 
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2476: pic_MouseMove - dragging to " & new_Left.ToString() & "," & new_Top.ToString())
                         End If
@@ -357,15 +378,9 @@ Partial Public Class Main_Form
                     ' If not enough time has passed, we simply ignore this mouse move event for dragging
                 End If
             End If
-
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2480: pic_MouseMove - mouse moved in " & sender.ToString())
         Else
-            ' Reset dragging when mouse button is released
-            If is_Dragging Then
-                is_Dragging = False
-                last_Drag_Update_Time = DateTime.MinValue ' Reset the timer
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2477: pic_MouseMove - drag ended")
-            End If
+            ' Safety net - MouseUp is the real end of the drag.
+            EndPan()
         End If
     End Sub
 

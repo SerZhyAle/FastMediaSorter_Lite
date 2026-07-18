@@ -5,7 +5,9 @@ Imports System.Net.Http
 Imports System.Text
 Imports System.Threading
 Imports System.Threading.Tasks
+#If NETFRAMEWORK Then
 Imports System.Web.Script.Serialization
+#End If
 
 ''' <summary>Shared HttpClient for the translation backends (one socket pool).</summary>
 Friend Module TranslateHttp
@@ -24,11 +26,94 @@ Friend Module TranslateHttp
         End Get
     End Property
 
-    Public Function NewSerializer() As JavaScriptSerializer
+#If NETFRAMEWORK Then
+    Private Function NewSerializer() As JavaScriptSerializer
         Dim s As New JavaScriptSerializer()
         s.MaxJsonLength = Integer.MaxValue
         Return s
     End Function
+#Else
+    ' Case-insensitive binding mirrors JavaScriptSerializer, so OCR disk-cache
+    ' files written by the net48 build load unchanged after an upgrade. The relaxed
+    ' encoder keeps non-ASCII text raw like JavaScriptSerializer did - the batch
+    ' JSON is embedded into the LLM prompt, and \u-escaped Cyrillic would degrade
+    ' translation quality (bodies go to localhost over HTTP; no HTML context).
+    Private ReadOnly stj_Options As New System.Text.Json.JsonSerializerOptions With {
+        .PropertyNameCaseInsensitive = True,
+        .Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    }
+#End If
+
+    ''' <summary>
+    ''' Portable JSON facade (SPECIFICATION_DOTNET10_MODERN_BUILD §3 seams):
+    ''' net48 keeps JavaScriptSerializer, the .NET 10 build uses System.Text.Json
+    ''' shaped to the SAME untyped graph - objects become
+    ''' Dictionary(Of String, Object), arrays become Object(), numbers become
+    ''' Integer/Long/Double - so every consumer keeps its TryCast logic.
+    ''' </summary>
+    Public Function JsonSerialize(value As Object) As String
+#If NETFRAMEWORK Then
+        Return NewSerializer().Serialize(value)
+#Else
+        Return System.Text.Json.JsonSerializer.Serialize(value, stj_Options)
+#End If
+    End Function
+
+    Public Function JsonDeserialize(Of T)(json As String) As T
+#If NETFRAMEWORK Then
+        Return NewSerializer().Deserialize(Of T)(json)
+#Else
+        Return System.Text.Json.JsonSerializer.Deserialize(Of T)(json, stj_Options)
+#End If
+    End Function
+
+    Public Function JsonDeserializeObject(json As String) As Object
+#If NETFRAMEWORK Then
+        Return NewSerializer().DeserializeObject(json)
+#Else
+        ' JavaScriptSerializer returns Nothing for empty input (callers rely on it
+        ' to degrade gracefully, e.g. an empty 200 body from Ollama); malformed
+        ' JSON throws in both builds and is caught by the same call-site handlers.
+        If String.IsNullOrWhiteSpace(json) Then Return Nothing
+        Using doc As System.Text.Json.JsonDocument = System.Text.Json.JsonDocument.Parse(json)
+            Return JsonElementToClr(doc.RootElement)
+        End Using
+#End If
+    End Function
+
+#If Not NETFRAMEWORK Then
+    Private Function JsonElementToClr(element As System.Text.Json.JsonElement) As Object
+        Select Case element.ValueKind
+            Case System.Text.Json.JsonValueKind.Object
+                Dim map As New Dictionary(Of String, Object)()
+                For Each prop As System.Text.Json.JsonProperty In element.EnumerateObject()
+                    map(prop.Name) = JsonElementToClr(prop.Value)
+                Next
+                Return map
+            Case System.Text.Json.JsonValueKind.Array
+                Dim items As New List(Of Object)()
+                For Each child As System.Text.Json.JsonElement In element.EnumerateArray()
+                    items.Add(JsonElementToClr(child))
+                Next
+                Return items.ToArray()
+            Case System.Text.Json.JsonValueKind.String
+                Return element.GetString()
+            Case System.Text.Json.JsonValueKind.Number
+                Dim asLong As Long
+                If element.TryGetInt64(asLong) Then
+                    If asLong >= Integer.MinValue AndAlso asLong <= Integer.MaxValue Then Return CInt(asLong)
+                    Return asLong
+                End If
+                Return element.GetDouble()
+            Case System.Text.Json.JsonValueKind.True
+                Return True
+            Case System.Text.Json.JsonValueKind.False
+                Return False
+            Case Else
+                Return Nothing
+        End Select
+    End Function
+#End If
 
     ''' <summary>
     ''' Coerces one element of a translated-text array to a string. Backends are asked
@@ -149,8 +234,7 @@ Public Class OllamaTranslator
 
     Private Async Function TryTranslateBatchAsync(texts As List(Of String), langName As String, ct As CancellationToken) As Task(Of List(Of String))
         Try
-            Dim serializer As JavaScriptSerializer = TranslateHttp.NewSerializer()
-            Dim inputJson As String = serializer.Serialize(texts)
+            Dim inputJson As String = TranslateHttp.JsonSerialize(texts)
             Dim prompt As String =
                 "Translate each FULL input segment into " & langName & "." & vbLf &
                 "Translate the complete content faithfully. Do not summarize, shorten, or omit any sentence, clause, or detail." & vbLf &
@@ -165,7 +249,7 @@ Public Class OllamaTranslator
             Dim response As String = Await GenerateAsync(prompt, True, ct).ConfigureAwait(False)
             If String.IsNullOrWhiteSpace(response) Then Return Nothing
 
-            Dim root As Dictionary(Of String, Object) = TryCast(serializer.DeserializeObject(response), Dictionary(Of String, Object))
+            Dim root As Dictionary(Of String, Object) = TryCast(TranslateHttp.JsonDeserializeObject(response), Dictionary(Of String, Object))
             If root Is Nothing Then Return Nothing
 
             Dim tObj As Object = Nothing
@@ -236,7 +320,6 @@ Public Class OllamaTranslator
 
     ''' <summary>POST /api/generate (stream=false); returns the "response" field.</summary>
     Private Async Function GenerateAsync(prompt As String, asJson As Boolean, ct As CancellationToken) As Task(Of String)
-        Dim serializer As JavaScriptSerializer = TranslateHttp.NewSerializer()
         Dim body As New Dictionary(Of String, Object) From {
             {"model", model},
             {"prompt", prompt},
@@ -247,12 +330,12 @@ Public Class OllamaTranslator
         }
         If asJson Then body("format") = "json"
 
-        Dim payload As String = serializer.Serialize(body)
+        Dim payload As String = TranslateHttp.JsonSerialize(body)
         Using content As New StringContent(payload, Encoding.UTF8, "application/json")
             Dim resp As HttpResponseMessage = Await TranslateHttp.Client.PostAsync(baseUrl & "/api/generate", content, ct).ConfigureAwait(False)
             If Not resp.IsSuccessStatusCode Then Return ""
             Dim json As String = Await resp.Content.ReadAsStringAsync().ConfigureAwait(False)
-            Dim root As Dictionary(Of String, Object) = TryCast(serializer.DeserializeObject(json), Dictionary(Of String, Object))
+            Dim root As Dictionary(Of String, Object) = TryCast(TranslateHttp.JsonDeserializeObject(json), Dictionary(Of String, Object))
             If root Is Nothing Then Return ""
             Dim r As Object = Nothing
             root.TryGetValue("response", r)
@@ -290,12 +373,11 @@ Public Class OllamaTranslator
     Public Async Function ListModelsAsync(ct As CancellationToken) As Task(Of List(Of String))
         Dim names As New List(Of String)
         Try
-            Dim serializer As JavaScriptSerializer = TranslateHttp.NewSerializer()
             Using linked As CancellationTokenSource = LinkedTimeout(ct, 4000)
                 Dim resp As HttpResponseMessage = Await TranslateHttp.Client.GetAsync(baseUrl & "/api/tags", linked.Token).ConfigureAwait(False)
                 If Not resp.IsSuccessStatusCode Then Return names
                 Dim json As String = Await resp.Content.ReadAsStringAsync().ConfigureAwait(False)
-                Dim root As Dictionary(Of String, Object) = TryCast(serializer.DeserializeObject(json), Dictionary(Of String, Object))
+                Dim root As Dictionary(Of String, Object) = TryCast(TranslateHttp.JsonDeserializeObject(json), Dictionary(Of String, Object))
                 If root Is Nothing Then Return names
                 Dim modelsObj As Object = Nothing
                 root.TryGetValue("models", modelsObj)
@@ -323,8 +405,7 @@ Public Class OllamaTranslator
     ''' </summary>
     Public Async Function PullModelAsync(modelName As String, progress As IProgress(Of String), ct As CancellationToken) As Task(Of Boolean)
         If String.IsNullOrWhiteSpace(modelName) Then Return False
-        Dim serializer As JavaScriptSerializer = TranslateHttp.NewSerializer()
-        Dim body As String = serializer.Serialize(New Dictionary(Of String, Object) From {
+        Dim body As String = TranslateHttp.JsonSerialize(New Dictionary(Of String, Object) From {
             {"name", modelName.Trim()}, {"stream", True}})
 
         Try
@@ -341,7 +422,7 @@ Public Class OllamaTranslator
                                         ct.ThrowIfCancellationRequested()
                                         Dim line As String = Await reader.ReadLineAsync().ConfigureAwait(False)
                                         If String.IsNullOrWhiteSpace(line) Then Continue While
-                                        Dim obj As Dictionary(Of String, Object) = TryCast(serializer.DeserializeObject(line), Dictionary(Of String, Object))
+                                        Dim obj As Dictionary(Of String, Object) = TryCast(TranslateHttp.JsonDeserializeObject(line), Dictionary(Of String, Object))
                                         If obj Is Nothing Then Continue While
 
                                         Dim st As Object = Nothing

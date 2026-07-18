@@ -22,7 +22,13 @@ Friend NotInheritable Class RuntimeBootstrap
         SyncLock sync
             If isInitialized Then Return
             isInitialized = True
+#If NETFRAMEWORK Then
+            ' net48 single-exe only: ILMerge leaves a few managed deps embedded as
+            ' FmsPayloadmanaged/*.dll resources. The .NET 10 build ships/publishes
+            ' its managed dependencies natively, so no resolver is needed there
+            ' (OpenBundledAsset below still serves the shared UI assets).
             AddHandler AppDomain.CurrentDomain.AssemblyResolve, AddressOf ResolveManagedAssembly
+#End If
         End SyncLock
     End Sub
 

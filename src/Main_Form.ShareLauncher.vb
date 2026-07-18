@@ -1,3 +1,4 @@
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.IO
@@ -5,6 +6,18 @@ Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
 Imports System.Windows.Forms
+
+' NOT IN THE x86 VIEWER (owner decision, 2026-07-16; epic §1.1 / O-7). The Share
+' feature CANNOT work there, and never could: the Companion app it wakes is
+' net10.0-windows x64, so it does not start on Windows 7/8.1 or on 32-bit Windows -
+' precisely the machines the x86 exe exists for. Shipping the entry point there is
+' a button that leads nowhere, so it is compiled out rather than left to fail.
+'
+' The gate is "#If Not NETFRAMEWORK" and not a new FEATURE_FULL constant on purpose:
+' there is exactly ONE net48 build and it IS the x86 fallback, so NETFRAMEWORK already
+' names the thing being cut precisely. A second constant plus a build configuration
+' (the mechanism O-7 asked about) would add a way for the two to disagree and buy
+' nothing. OCR and translation stay in x86 - unlike Share, they work there.
 
 ''' <summary>
 ''' LITE's entire remaining surface for the Android Folder Share feature after the
@@ -23,9 +36,6 @@ Imports System.Windows.Forms
 ''' single-instance argument forwarding.
 ''' </summary>
 Partial Public Class Main_Form
-
-    Private shareFolderMenu As ContextMenuStrip
-    Private shareMenuItem As ToolStripMenuItem
 
     Private Const CompanionMutexName As String = "FastMediaSorterCompanionSingleInstanceMutex"
     Private Const CompanionProcessName As String = "FastMediaSorterCompanion"
@@ -68,27 +78,11 @@ Partial Public Class Main_Form
     ''' before a cold Process.Start, when we don't yet have the child's PID).</summary>
     Private Const ASFW_ANY As Integer = -1
 
-    ''' <summary>Wires the folder-box right-click "Share this folder.." item. Called
-    ''' once from Form1_Load. Right-click on the media surfaces is already file
-    ''' navigation, so this attaches to the folder box + its label instead.</summary>
-    Friend Sub InitializeShareEntryPoint()
-        If shareFolderMenu Is Nothing Then
-            shareFolderMenu = New ContextMenuStrip()
-            shareMenuItem = New ToolStripMenuItem()
-            AddHandler shareMenuItem.Click, Sub() ActivateShareEntryPoint()
-            shareFolderMenu.Items.Add(shareMenuItem)
-            If cmbox_Media_Folder IsNot Nothing Then cmbox_Media_Folder.ContextMenuStrip = shareFolderMenu
-            If lbl_Folder IsNot Nothing Then lbl_Folder.ContextMenuStrip = shareFolderMenu
-        End If
-        LocalizeShareEntryPoint()
-    End Sub
-
-    ''' <summary>Re-localizes the folder context-menu item. Called from LngCh.</summary>
-    Friend Sub LocalizeShareEntryPoint()
-        If shareMenuItem IsNot Nothing Then
-            shareMenuItem.Text = If(Is_Russian_Language, "Поделиться этой папкой с телефоном..", "Share this folder with phone..")
-        End If
-    End Sub
+    ' The right-click item that leads here now lives in Main_Form.FolderMenu.vb, next to
+    ' "Select folder..": the menu belongs to the folder box, not to the Share feature.
+    ' It moved for a reason - the plain "cmbox_Media_Folder.ContextMenuStrip = .."
+    ' that used to be here never appeared on an editable ComboBox, so the command was
+    ' effectively unreachable. See that file.
 
     ''' <summary>Settings window "Manage the SFTP server.." button: open the Share
     ''' Manager's OWN window (a management entry point), never routed into the
@@ -228,3 +222,4 @@ Partial Public Class Main_Form
     End Function
 
 End Class
+#End If

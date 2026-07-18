@@ -1,7 +1,6 @@
 Imports System.Drawing
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
-Imports System.Windows.Media.Imaging
 
 Module Utils
 
@@ -108,10 +107,11 @@ Module Utils
                     Return ReadJpegSize(fs)
                 End If
 
-                ' WEBP: let WIC read the dimensions so we stay off GDI+.
-                If String.Equals(IO.Path.GetExtension(filePath), ".webp", StringComparison.OrdinalIgnoreCase) Then
+                ' WEBP (and AVIF/HEIC/HEIF on modern): let the platform decoder read
+                ' the dimensions so we stay off GDI+.
+                If ImageDecoderProvider.Decoder_Backed_Extensions.Contains(IO.Path.GetExtension(filePath)) Then
                     fs.Seek(0, IO.SeekOrigin.Begin)
-                    Return ReadBitmapSourceSize(fs)
+                    Return ImageDecoderProvider.Current.TryGetPixelSize(fs)
                 End If
             End Using
         Catch
@@ -154,16 +154,6 @@ Module Utils
             fs.Seek(segLen - 2, IO.SeekOrigin.Current)
         Loop
         Return Size.Empty
-    End Function
-
-    Private Function ReadBitmapSourceSize(stream As IO.Stream) As Size
-        Dim decoder As BitmapDecoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None)
-        If decoder.Frames.Count = 0 Then Return Size.Empty
-
-        Dim frame = decoder.Frames(0)
-        If frame Is Nothing OrElse frame.PixelWidth <= 0 OrElse frame.PixelHeight <= 0 Then Return Size.Empty
-
-        Return New Size(frame.PixelWidth, frame.PixelHeight)
     End Function
 
 End Module

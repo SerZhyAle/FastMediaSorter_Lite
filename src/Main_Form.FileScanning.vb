@@ -13,16 +13,39 @@ Imports System.Diagnostics
 
 Partial Public Class Main_Form
 
+    ''' <summary>Everything the prefetch worker needs, as a snapshot taken on the UI
+    ''' thread. The worker used to read live fields instead (which folder, which picture
+    ''' box) and write shared ones back, so a flip in mid-decode could land the finished
+    ''' image in the box the user was looking at.</summary>
+    Private NotInheritable Class PrefetchRequest
+        Public Property CurrentFile As String = ""
+        Public Property NextFile As String = ""
+        Public Property FolderPath As String = ""
+        ''' <summary>Which box this decode is FOR, decided when the job was queued.</summary>
+        Public Property TargetIsBox1 As Boolean
+        Public Property CountFolder As Boolean
+        Public Property IsRandomMode As Boolean
+    End Class
+
+    ''' <summary>What the worker decoded, and what it was decoded for.</summary>
+    Private NotInheritable Class PrefetchResult
+        Public Property NextFile As String = ""
+        Public Property TargetIsBox1 As Boolean
+        Public Property Picture As Image
+        Public Property Data As IO.MemoryStream
+    End Class
+
     Private Sub BgWorker_DoWork(sender As Object, e As DoWorkEventArgs) Handles BgWorker.DoWork
         Dim worker As BackgroundWorker = DirectCast(sender, BackgroundWorker)
 
-        Dim file_Names_Pair As Tuple(Of String, String) = TryCast(e.Argument, Tuple(Of String, String))
-        Dim current_File_Name_in_worker As String = Nothing
-        Dim next_File_After_Current_in_worker As String = Nothing
-        If file_Names_Pair IsNot Nothing Then
-            current_File_Name_in_worker = file_Names_Pair.Item1
-            next_File_After_Current_in_worker = file_Names_Pair.Item2
+        Dim request As PrefetchRequest = TryCast(e.Argument, PrefetchRequest)
+        If request Is Nothing Then
+            e.Cancel = True
+            bgworker_Done.Set()
+            Return
         End If
+        Dim current_File_Name_in_worker As String = request.CurrentFile
+        Dim next_File_After_Current_in_worker As String = request.NextFile
 
         Try
             If Is_No_Background_Tasks OrElse
@@ -30,12 +53,20 @@ Partial Public Class Main_Form
 
                 e.Cancel = True
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0050: BgWorker got cancellation")
+                ' Actually stop. Setting the flag and carrying on regardless meant a
+                ' cancelled worker kept pulling an image off a slow share, and the
+                ' shutdown path waited for it in vain.
+                Return
             End If
 
             If current_File_Name_in_worker = "" OrElse
                 Not My.Computer.FileSystem.FileExists(current_File_Name_in_worker) Then
 
-                lbl_Current_File.Text = ""
+                ' Through ReportProgress: touching the label straight from the pool
+                ' thread threw InvalidOperationException, the catch-all below swallowed
+                ' it, and the whole prefetch went down with it - on exactly the path
+                ' (the file vanished from under us) where it is needed most.
+                worker.ReportProgress(0, New Dictionary(Of String, String) From {{"clearCurrentFile", "1"}})
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0060: File is lost for BgWorker size calculation")
             Else
                 Dim file_Meta_State As New Dictionary(Of String, String)
@@ -51,12 +82,15 @@ Partial Public Class Main_Form
                         Dim current_File_Size = current_File_Info.Length
                         Dim current_File_Size_Text As String
 
-                        If current_File_Size < 1000 Then
+                        ' KiB/MiB are powers of 1024 by definition; the maths divided by
+                        ' 1000, so a 10 MiB file read "10.5MiB" - number and unit from
+                        ' two different systems, matching neither Explorer nor decimal MB.
+                        If current_File_Size < 1024 Then
                             current_File_Size_Text = current_File_Size.ToString & "B"
-                        ElseIf current_File_Size / 1000 > 1000 Then
-                            current_File_Size_Text = (current_File_Size / 1000000).ToString("F1") + "MiB"
+                        ElseIf current_File_Size >= 1024L * 1024L Then
+                            current_File_Size_Text = (current_File_Size / (1024.0 * 1024.0)).ToString("F1") + "MiB"
                         Else
-                            current_File_Size_Text = (current_File_Size / 1000).ToString("F1") + "KiB"
+                            current_File_Size_Text = (current_File_Size / 1024.0).ToString("F1") + "KiB"
                         End If
 
                         file_Meta_State("fileSizeText") = current_File_Size_Text
@@ -91,19 +125,23 @@ Partial Public Class Main_Form
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0070: BgWorker reported file info")
             End If
 
-            If was_External_Input_Previously Then
+            If request.CountFolder Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0080: folder files going be counted on background..")
-                Dim background_Total_File_Count As Integer = My.Computer.FileSystem.GetDirectoryInfo(Current_Folder_Path).EnumerateFiles.Count
+                ' Same filter GetFiles uses. A raw EnumerateFiles.Count counts the txt
+                ' and zip files too, and that number was then written over
+                ' total_File_Count - so "1 из 150" became "2 из 100" on the next flip,
+                ' and End walked off the end of the real list.
+                Dim background_Total_File_Count As Integer = My.Computer.FileSystem.GetDirectoryInfo(request.FolderPath).
+                    EnumerateFiles().Count(Function(f) all_Supported_Extensions.Contains(f.Extension.ToLower()))
 
                 Dim folder_File_Count_State As New Dictionary(Of String, String)
                 folder_File_Count_State("totalFilesCountText") = background_Total_File_Count.ToString
-                folder_File_Count_State("updateTotalFileCount") = background_Total_File_Count.ToString
                 DirectCast(sender, BackgroundWorker).ReportProgress(0, folder_File_Count_State)
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0090: folder files: " & background_Total_File_Count)
             End If
 
-            If Not is_Slide_Show_Random_Mode AndAlso
+            If Not request.IsRandomMode AndAlso
                 Not next_File_After_Current_in_worker = "" AndAlso
                 Not next_File_After_Current_in_worker = current_File_Name_in_worker Then
 
@@ -113,8 +151,16 @@ Partial Public Class Main_Form
                     ' sza250609 - GIF fix
                     Dim next_Image_Data As Tuple(Of Image, IO.MemoryStream) = LoadImageWithStream(next_File_After_Current_in_worker)
                     If next_Image_Data IsNot Nothing Then
-                        current_Second_File_Name = next_File_After_Current_in_worker
-                        e.Result = New Tuple(Of Image, IO.MemoryStream, Boolean)(next_Image_Data.Item1, next_Image_Data.Item2, is_First_Picture_Box_Need_To_Be_Cached)
+                        ' Everything the completion needs travels in the result - the
+                        ' worker no longer writes current_Second_File_Name (read by the
+                        ' UI thread to decide "prefetch ready") nor reads the live
+                        ' target-box flag, which by now could mean the visible box.
+                        e.Result = New PrefetchResult With {
+                            .NextFile = next_File_After_Current_in_worker,
+                            .TargetIsBox1 = request.TargetIsBox1,
+                            .Picture = next_Image_Data.Item1,
+                            .Data = next_Image_Data.Item2
+                        }
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0100: BgWorker loaded image into memory: " & next_File_After_Current_in_worker.ToString)
                     Else
                         e.Cancel = True
@@ -124,19 +170,24 @@ Partial Public Class Main_Form
                     e.Cancel = True
                 End If
             Else
-                current_Second_File_Name = ""
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0120: No needs for the Next file, backload is cancelled; isSlideShowRandom " & is_Slide_Show_Random_Mode.ToString & " nextAfterCurrentFileName = " & next_File_After_Current_in_worker)
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0120: No needs for the Next file, backload is cancelled; isSlideShowRandom " & request.IsRandomMode.ToString & " nextAfterCurrentFileName = " & next_File_After_Current_in_worker)
                 e.Cancel = True
             End If
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0041: ERR BCK! " & ex.Message)
+        Finally
+            ' Whoever is waiting to close needs to know we have actually left.
+            bgworker_Done.Set()
         End Try
     End Sub
 
     Private Sub BgWorker_ProgressChanged(sender As Object, e As ProgressChangedEventArgs) Handles BgWorker.ProgressChanged
         Dim file_Meta_State As Dictionary(Of String, String) = DirectCast(e.UserState, Dictionary(Of String, String))
 
-        If file_Meta_State.ContainsKey("fileName") Then
+        If file_Meta_State.ContainsKey("clearCurrentFile") Then
+            lbl_Current_File.Text = ""
+
+        ElseIf file_Meta_State.ContainsKey("fileName") Then
 
             Dim current_File_Display_Text = file_Meta_State("fileName")
 
@@ -177,21 +228,19 @@ Partial Public Class Main_Form
             total_Files_Count_Text = file_Meta_State("totalFilesCountText")
 
             If Not total_Files_Count_Text = Nothing Then
-                lbl_File_Number.Text = If(Is_Russian_Language, "1 из " & total_Files_Count_Text, "1 from " & total_Files_Count_Text)
+                ' The real position, not a hard-coded "1". And the LABEL only: writing
+                ' this count into total_File_Count left the counter describing a folder
+                ' while files_List still held the single externally-opened file - End
+                ' then indexed past the list and DEL emptied it outright. The real list
+                ' arrives on the next flip, through LoadFilesForExternalInput.
+                Dim shown_Number As Integer = current_File_Index + 1
+                lbl_File_Number.Text = If(Is_Russian_Language,
+                                          shown_Number.ToString() & " из " & total_Files_Count_Text,
+                                          shown_Number.ToString() & " from " & total_Files_Count_Text)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0175: BgWorker files count calculated: " & total_Files_Count_Text)
             Else
                 lbl_File_Number.Text = "0 "
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0180: BgWorker files count calculated: " & total_Files_Count_Text)
-            End If
-
-            ' Update total_File_Count on UI thread if provided
-            If file_Meta_State.ContainsKey("updateTotalFileCount") Then
-                Dim newTotalCount As String = file_Meta_State("updateTotalFileCount")
-                Dim newCount As Integer
-                If Integer.TryParse(newTotalCount, newCount) Then
-                    total_File_Count = newCount
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0185: total_File_Count updated on UI thread: " & total_File_Count)
-                End If
             End If
         Else
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0190: BgWorker reported wrong progress!")
@@ -205,64 +254,73 @@ Partial Public Class Main_Form
         ' Check for cancellation or error BEFORE accessing e.Result
         If e.Cancelled Then
             bgWorker_Result = "CANCELLED"
+            current_Second_File_Name = ""
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0201: BgWorker cancelled")
         ElseIf e.Error IsNot Nothing Then
             bgWorker_Result = "ERR: " & e.Error.Message
+            current_Second_File_Name = ""
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0205: BgWorker error: " & e.Error.Message)
         ElseIf e.Result IsNot Nothing Then
             ' Only access e.Result if operation completed successfully
             Try
-                Dim result As Tuple(Of Image, IO.MemoryStream, Boolean) = DirectCast(e.Result, Tuple(Of Image, IO.MemoryStream, Boolean))
+                Dim result As PrefetchResult = DirectCast(e.Result, PrefetchResult)
 
-                If current_Second_File_Name = "" Then
-                    ' No second file - dispose resources
-                    result.Item1?.Dispose()
-                    result.Item2?.Dispose()
+                ' The one decision, made here on the UI thread against the position the
+                ' user is at NOW. While we decoded, they may have flipped on: such a
+                ' result describes a file that is no longer "the next one", and taking
+                ' it used to mean writing the image into whichever box the live flags
+                ' pointed at - occasionally the visible one, swapping the picture under
+                ' the user's eyes while the name and counter said something else.
+                If Not String.Equals(result.NextFile, next_File_After_Current, StringComparison.OrdinalIgnoreCase) Then
+                    result.Picture?.Dispose()
+                    result.Data?.Dispose()
                     bgWorker_Result = "SKIPED"
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0207: BgWorker skipped - resources disposed")
+                    current_Second_File_Name = ""
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0206: stale prefetch dropped: " & result.NextFile)
                 Else
                     ' Success - transfer ownership to UI controls
-                    Dim next_Image_To_Display As Image = result.Item1
-                    Dim next_Image_Stream As IO.MemoryStream = result.Item2
-                    Dim is_PictureBox1_Active As Boolean = result.Item3
-
-                    If is_PictureBox1_Active Then
+                    If result.TargetIsBox1 Then
                         If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
                         If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
-                        Picture_Box_1.Image = next_Image_To_Display
-                        pictureBox1_Stream = next_Image_Stream
+                        Picture_Box_1.Image = result.Picture
+                        pictureBox1_Stream = result.Data
 
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0210: bgWorker: P1 is loaded")
                     Else
                         If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
                         If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
-                        Picture_Box_2.Image = next_Image_To_Display
-                        pictureBox2_Stream = next_Image_Stream
+                        Picture_Box_2.Image = result.Picture
+                        pictureBox2_Stream = result.Data
 
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0220: bgWorker: P2 is loaded")
                     End If
 
+                    ' Both halves of the verdict are set together, on this thread.
+                    current_Second_File_Name = result.NextFile
                     bgWorker_Result = "LOADED"
                 End If
             Catch ex As Exception
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0203: Error handling BgWorker result: " & ex.Message)
                 bgWorker_Result = "ERR: " & ex.Message
+                current_Second_File_Name = ""
             End Try
         Else
             ' Completed successfully but no result
             bgWorker_Result = "SKIPED"
+            current_Second_File_Name = ""
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0208: BgWorker completed with no result")
         End If
 
         ' Check if there's a pending operation to start
         If bgWorker_Has_Pending_Operation AndAlso bgWorker_Pending_Args IsNot Nothing Then
             bgWorker_Has_Pending_Operation = False
-            Dim pending_Args As Tuple(Of String, String) = bgWorker_Pending_Args
+            Dim pending_Args As PrefetchRequest = bgWorker_Pending_Args
             bgWorker_Pending_Args = Nothing
 
             ' Start the pending operation
             If Not Is_No_Background_Tasks Then
                 is_BgWorker_Online = True
+                bgworker_Done.Reset()
                 BgWorker.RunWorkerAsync(pending_Args)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0235: BgWorker started pending operation")
             End If
@@ -278,8 +336,14 @@ Partial Public Class Main_Form
         Public Property FileDate As Date
     End Structure
 
-    Private Function GetFiles() As Object
+    ''' <summary>Reads the folder. Returns Nothing both when the folder is EMPTY and
+    ''' when it could not be read - is_Read_Error tells the two apart, because the
+    ''' callers used to treat an empty folder as a failure and wipe Current_Folder_Path
+    ''' and the combo box, i.e. throw the session away over a perfectly valid folder
+    ''' the user had just finished sorting.</summary>
+    Private Function GetFiles(ByRef is_Read_Error As Boolean) As Object
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1095: GetFiles..")
+        is_Read_Error = False
 
         Try
             Dim current_Directory_Info As DirectoryInfo = My.Computer.FileSystem.GetDirectoryInfo(Current_Folder_Path)
@@ -337,6 +401,7 @@ Partial Public Class Main_Form
             End If
 
         Catch ex As Exception
+            is_Read_Error = True
             lbl_Status.Text = If(Is_Russian_Language, "! Ошибка чтения файлов", "! Error reading files")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1110: Error reading files: " & ex.Message)
             Return Nothing

@@ -4,7 +4,6 @@ Imports System.Drawing
 Imports System.IO
 Imports System.Security.Cryptography
 Imports System.Text
-Imports System.Web.Script.Serialization
 
 ' --- Disk DTOs ----------------------------------------------------------------
 ' The in-memory model uses System.Drawing.Rectangle, which JavaScriptSerializer
@@ -103,8 +102,7 @@ Public Class TranslationCache
             Dim cacheFile As String = DiskPath(key)
             If Not File.Exists(cacheFile) Then Return Nothing
             Dim json As String = File.ReadAllText(cacheFile, Encoding.UTF8)
-            Dim serializer As JavaScriptSerializer = TranslateHttp.NewSerializer()
-            Dim dto As OcrCacheDoc = serializer.Deserialize(Of OcrCacheDoc)(json)
+            Dim dto As OcrCacheDoc = TranslateHttp.JsonDeserialize(Of OcrCacheDoc)(json)
             If dto Is Nothing Then Return Nothing
             Return FromDto(dto)
         Catch ex As Exception
@@ -117,8 +115,7 @@ Public Class TranslationCache
         Try
             Dim dir As String = OcrPaths.OcrCacheDir()
             Directory.CreateDirectory(dir)
-            Dim serializer As JavaScriptSerializer = TranslateHttp.NewSerializer()
-            Dim json As String = serializer.Serialize(ToDto(doc))
+            Dim json As String = TranslateHttp.JsonSerialize(ToDto(doc))
             File.WriteAllText(DiskPath(key), json, Encoding.UTF8)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr-cache: save failed: " & ex.Message)

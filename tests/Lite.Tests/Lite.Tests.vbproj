@@ -8,9 +8,12 @@
        LibVLC/Tesseract LITE assembly. RootNamespace matches LITE (fmsl) so the linked
        modules resolve by their real names. -->
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
+    <!-- Multi-targeted ON PURPOSE. The linked sources compile into BOTH shipped
+         viewers (net48 x86 + the .NET 10 x64 mainline), so the same logic must be
+         proven under BOTH runtimes - a net48-only run would have said nothing about
+         the exe most users get. `dotnet test` runs every TFM listed here. -->
+    <TargetFrameworks>net48;net10.0-windows</TargetFrameworks>
     <UseWindowsForms>true</UseWindowsForms>
-    <UseWPF>true</UseWPF>
     <RootNamespace>fmsl</RootNamespace>
     <OptionExplicit>On</OptionExplicit>
     <OptionStrict>On</OptionStrict>
@@ -19,6 +22,24 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
+
+  <!-- net48 leg: mirrors src/FastMediaSorter.vbproj. SDK-style projects targeting
+       net48 do NOT define NETFRAMEWORK implicitly, and the linked sources are full
+       of "#If NETFRAMEWORK" seams (CLAUDE.md "Two builds, one source tree") - without
+       this the seam would compile its .NET 10 branch into a net48 run. WPF is only
+       here because the legacy decoder reads WEBP through WIC. -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net48'">
+    <DefineConstants>NETFRAMEWORK=True</DefineConstants>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <!-- The same project-level imports both viewer vbprojs declare. The linked sources
+       are written against them (FileManager.vb says "Image", not
+       "System.Drawing.Image"), so without these they do not compile here. -->
+  <ItemGroup>
+    <Import Include="System.Drawing" />
+    <Import Include="System.Windows.Forms" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
@@ -31,6 +52,60 @@
     <Compile Include="..\..\src\Utils.vb">
       <Link>Linked\Utils.vb</Link>
     </Compile>
+    <!-- Utils.GetImageDimensions probes WEBP through the IImageDecoder seam, so the
+         seam has to come along. The modern decoder file compiles to nothing here
+         (its whole body is "#If Not NETFRAMEWORK"), and the legacy one is the WIC +
+         ImageSharp 2 path the net48 viewer really uses. -->
+    <Compile Include="..\..\src\Imaging\ImageDecoder.vb">
+      <Link>Linked\Imaging\ImageDecoder.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\LegacyWicImageDecoder.vb">
+      <Link>Linked\Imaging\LegacyWicImageDecoder.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\ModernImageSharpDecoder.vb">
+      <Link>Linked\Imaging\ModernImageSharpDecoder.vb</Link>
+    </Compile>
+    <!-- The zoom geometry of the .NET 10 viewer. Whole-file "#If Not NETFRAMEWORK",
+         so on the net48 leg this - and ZoomMathTests - compile to nothing, which is
+         the honest shape: the classic zoom model does not exist in the x86 viewer. -->
+    <Compile Include="..\..\src\ZoomMath.vb">
+      <Link>Linked\ZoomMath.vb</Link>
+    </Compile>
+    <!-- "Open URL.." address handling - modern-only for the same reason. -->
+    <Compile Include="..\..\src\MediaUrl.vb">
+      <Link>Linked\MediaUrl.vb</Link>
+    </Compile>
+    <!-- File operations. RenameFile is where "photo2.jpg" once landed on disk as
+         "photo2.jpg.jpg" while the viewer recorded the name it had asked for - the
+         file then dropped out of the list, so this contract is worth pinning down.
+         It brings no new dependencies: the decoder seam, the logger and
+         Common_Module are all here already. -->
+    <Compile Include="..\..\src\FileManager.vb">
+      <Link>Linked\FileManager.vb</Link>
+    </Compile>
+    <!-- Tail of that dependency: the legacy decoder logs a failed WEBP decode (this
+         is the log line the Server 2025 bug was diagnosed from - worth keeping), and
+         the logger reads two name constants from Common_Module. Both are small leaf
+         modules - declarations and P/Invoke - so this still does not drag in the
+         LibVLC/Tesseract/ILMerge machinery the project comment warns about. -->
+    <Compile Include="..\..\src\AppFileLogger.vb">
+      <Link>Linked\AppFileLogger.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Common_Module.vb">
+      <Link>Linked\Common_Module.vb</Link>
+    </Compile>
+  </ItemGroup>
+
+  <!-- Each leg gets the SAME ImageSharp its viewer ships with, so the tests exercise
+       the real decoder pair: net48 = WIC + ImageSharp 2 fallback, net10 = ImageSharp 3
+       (the one that decodes animated WEBP with no OS codec). -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.13" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'net48'">
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <!-- ModernImageSharpDecoder uses Magick.NET for AVIF/HEIC/HEIF fallback. -->
+    <PackageReference Include="Magick.NET-Q8-x64" Version="14.15.0" />
   </ItemGroup>
 
 </Project>

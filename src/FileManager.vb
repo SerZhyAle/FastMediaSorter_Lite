@@ -1,8 +1,5 @@
 Imports System.Drawing.Imaging
 Imports System.IO
-Imports System.Runtime.InteropServices
-Imports System.Windows.Media
-Imports System.Windows.Media.Imaging
 
 Public Module FileManager
 
@@ -23,8 +20,8 @@ Public Module FileManager
             Dim ms As New IO.MemoryStream(imageBytes)
             Dim nextImage As Image
 
-            If extension = ".webp" Then
-                nextImage = LoadBitmapPortable(ms)
+            If ImageDecoderProvider.Decoder_Backed_Extensions.Contains(extension) Then
+                nextImage = ImageDecoderProvider.Current.DecodeToImage(ms)
             Else
                 nextImage = Image.FromStream(ms)
             End If
@@ -95,77 +92,19 @@ Public Module FileManager
         End Try
     End Sub
 
-    Private Function LoadBitmapPortable(stream As IO.MemoryStream) As Bitmap
-        Try
-            Return LoadBitmapViaWic(stream)
-        Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0038: WEBP via WIC failed, fallback to ImageSharp: " & ex.Message)
-            AppFileLogger.LogException("WEBP via WIC failed; trying ImageSharp fallback", ex)
-            Return LoadBitmapViaImageSharp(stream)
-        End Try
-    End Function
-
-    Private Function LoadBitmapViaWic(stream As IO.MemoryStream) As Bitmap
-        stream.Position = 0
-
-        Dim decoder As BitmapDecoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad)
-        If decoder.Frames.Count = 0 Then Return Nothing
-
-        Dim frame As BitmapSource = decoder.Frames(0)
-        Dim bitmapSource As BitmapSource = frame
-        If bitmapSource.Format <> PixelFormats.Bgra32 Then
-            bitmapSource = New FormatConvertedBitmap(frame, PixelFormats.Bgra32, Nothing, 0)
-        End If
-
-        Dim width As Integer = bitmapSource.PixelWidth
-        Dim height As Integer = bitmapSource.PixelHeight
-        If width <= 0 OrElse height <= 0 Then Return Nothing
-
-        Dim stride As Integer = width * 4
-        Dim pixels(stride * height - 1) As Byte
-        bitmapSource.CopyPixels(pixels, stride, 0)
-
-        Dim bitmap As New Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
-        Dim dpiX As Single = If(CSng(bitmapSource.DpiX) > 0, CSng(bitmapSource.DpiX), 96.0F)
-        Dim dpiY As Single = If(CSng(bitmapSource.DpiY) > 0, CSng(bitmapSource.DpiY), 96.0F)
-        bitmap.SetResolution(dpiX, dpiY)
-
-        Dim rect As New Rectangle(0, 0, width, height)
-        Dim data As BitmapData = bitmap.LockBits(rect, ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
-        Try
-            Marshal.Copy(pixels, 0, data.Scan0, pixels.Length)
-        Finally
-            bitmap.UnlockBits(data)
-        End Try
-
-        Return bitmap
-    End Function
-
-    Private Function LoadBitmapViaImageSharp(stream As IO.MemoryStream) As Bitmap
-        stream.Position = 0
-
-        Using imageSharpBitmap As SixLabors.ImageSharp.Image(Of SixLabors.ImageSharp.PixelFormats.Bgra32) =
-            SixLabors.ImageSharp.Image.Load(Of SixLabors.ImageSharp.PixelFormats.Bgra32)(stream)
-
-            Using pngStream As New IO.MemoryStream()
-                SixLabors.ImageSharp.ImageExtensions.SaveAsPng(imageSharpBitmap, pngStream)
-                pngStream.Position = 0
-
-                Using pngImage As Image = Image.FromStream(pngStream)
-                    Return New Bitmap(pngImage)
-                End Using
-            End Using
-        End Using
-    End Function
-
     ''' <summary>
-    ''' Renames a file and returns the new full path.
+    ''' Renames a file and returns the path it actually created.
+    ''' newFileNameWithExtension is the FINISHED file name, extension included -
+    ''' nothing is appended to it. It used to append the source extension a second
+    ''' time (the caller already passes one), so "photo2.jpg" landed on disk as
+    ''' "photo2.jpg.jpg" while the caller recorded "photo2.jpg" and promptly lost the
+    ''' file from the list.
     ''' </summary>
-    Public Function RenameFile(currentFileName As String, newFileName As String) As String
+    Public Function RenameFile(currentFileName As String, newFileNameWithExtension As String) As String
         Dim directory As String = Path.GetDirectoryName(currentFileName)
-        Dim fileExtension As String = Path.GetExtension(currentFileName)
-        Dim newFullPath As String = Path.Combine(directory, newFileName & fileExtension)
-        If newFullPath = currentFileName Then Return currentFileName
+        Dim newFullPath As String = Path.Combine(directory, newFileNameWithExtension)
+        ' Ordinal on purpose: a case-only rename (photo -> Photo) is a real rename.
+        If String.Equals(newFullPath, currentFileName, StringComparison.Ordinal) Then Return currentFileName
         File.Move(currentFileName, newFullPath)
         Return newFullPath
     End Function

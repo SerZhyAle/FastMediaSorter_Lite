@@ -232,7 +232,9 @@ Public Module DocHtmlTranslate
 
     Private Function AppDirectory() As String
         Try
-            Return Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
+            ' AppContext.BaseDirectory, not Assembly.Location: identical on net48
+            ' and still correct in the .NET 10 single-file publish.
+            Return AppContext.BaseDirectory
         Catch
             Return ""
         End Try

@@ -2,7 +2,7 @@
 
 > Status: **in development / design** (2026-07-15). No code yet. This spec proposes a second way to run the Share server - as a real Windows service registered with the SCM - and an install-time choice between it and today's user-session model, with the trade-offs that make each the right pick.
 > Scope split across two repos: the Go worker (`P:\windows\fms_companion`, build there - never from this repo) grows an SCM-aware entry point; the LITE/Companion side (`src/FastMediaSorterCompanion/`, `installer/`) grows the install-time choice, the gate state, and the management-console behavior.
-> Related: [SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](done/SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md) (the opt-in gate this extends), [SPECIFICATION_SHARE_SECURITY_HARDENING.md](SPECIFICATION_SHARE_SECURITY_HARDENING.md), [SPECIFICATION_SHARE_COMPANION_APP.md](done/SPECIFICATION_SHARE_COMPANION_APP.md), [SPECIFICATION_ANDROID_FOLDER_SHARE.md](done/SPECIFICATION_ANDROID_FOLDER_SHARE.md), [CONTRACT_ANDROID_RECONNECT.md](CONTRACT_ANDROID_RECONNECT.md).
+> Related: [SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](done/SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md) (the opt-in gate this extends), [SPECIFICATION_SHARE_SECURITY_HARDENING.md](done/SPECIFICATION_SHARE_SECURITY_HARDENING.md), [SPECIFICATION_SHARE_COMPANION_APP.md](done/SPECIFICATION_SHARE_COMPANION_APP.md), [SPECIFICATION_ANDROID_FOLDER_SHARE.md](done/SPECIFICATION_ANDROID_FOLDER_SHARE.md), [CONTRACT_ANDROID_RECONNECT.md](../contracts/CONTRACT_ANDROID_RECONNECT.md).
 
 ---
 

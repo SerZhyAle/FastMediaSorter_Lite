@@ -4,7 +4,6 @@ Imports System.Net.Http
 Imports System.Text
 Imports System.Threading
 Imports System.Threading.Tasks
-Imports System.Web.Script.Serialization
 
 ''' <summary>
 ''' Secondary translator: an external or self-hosted LibreTranslate HTTP API.
@@ -51,7 +50,6 @@ Public Class LibreTranslateTranslator
     Public Async Function TranslateAsync(texts As List(Of String), sourceLang As String, targetLang As String, ct As CancellationToken) As Task(Of List(Of String)) Implements ITranslator.TranslateAsync
         If texts.Count = 0 Then Return New List(Of String)()
         Try
-            Dim serializer As JavaScriptSerializer = TranslateHttp.NewSerializer()
             Dim body As New Dictionary(Of String, Object) From {
                 {"q", texts.ToArray()},
                 {"source", NormalizeLang(sourceLang)},
@@ -60,12 +58,12 @@ Public Class LibreTranslateTranslator
             }
             If apiKey.Length > 0 Then body("api_key") = apiKey
 
-            Dim payload As String = serializer.Serialize(body)
+            Dim payload As String = TranslateHttp.JsonSerialize(body)
             Using content As New StringContent(payload, Encoding.UTF8, "application/json")
                 Dim resp As HttpResponseMessage = Await TranslateHttp.Client.PostAsync(baseUrl & "/translate", content, ct).ConfigureAwait(False)
                 If Not resp.IsSuccessStatusCode Then Return New List(Of String)(texts)
                 Dim json As String = Await resp.Content.ReadAsStringAsync().ConfigureAwait(False)
-                Return ParseTranslated(serializer, json, texts)
+                Return ParseTranslated(json, texts)
             End Using
         Catch ex As OperationCanceledException
             Throw
@@ -75,8 +73,8 @@ Public Class LibreTranslateTranslator
         End Try
     End Function
 
-    Private Shared Function ParseTranslated(serializer As JavaScriptSerializer, json As String, fallback As List(Of String)) As List(Of String)
-        Dim root As Dictionary(Of String, Object) = TryCast(serializer.DeserializeObject(json), Dictionary(Of String, Object))
+    Private Shared Function ParseTranslated(json As String, fallback As List(Of String)) As List(Of String)
+        Dim root As Dictionary(Of String, Object) = TryCast(TranslateHttp.JsonDeserializeObject(json), Dictionary(Of String, Object))
         If root Is Nothing Then Return New List(Of String)(fallback)
 
         Dim tObj As Object = Nothing

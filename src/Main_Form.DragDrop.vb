@@ -45,14 +45,18 @@ Partial Public Class Main_Form
             AddHandler surface.DragDrop, AddressOf Form1_DragDrop
         Next
 
+#If NETFRAMEWORK Then
         ' The WebBrowser ActiveX host never raises managed DragEnter/DragDrop, so
         ' instead we let IE accept the file with its built-in "drop to open"
         ' behaviour (AllowWebBrowserDrop). That fires Navigating with the dropped
         ' file's URL, which we intercept below - giving us the full path for free.
+        ' Modern: video always plays in the LibVLC view (wired above/lazily), the
+        ' dormant WebBrowser never shows - touching it would only wake its ActiveX.
         If Web_Browser IsNot Nothing Then
             Web_Browser.AllowWebBrowserDrop = True
             AddHandler Web_Browser.Navigating, AddressOf Web_Browser_Navigating
         End If
+#End If
     End Sub
 
     ' Called once the LibVLC surface has been created (it is built lazily for the
@@ -64,6 +68,7 @@ Partial Public Class Main_Form
         AddHandler vlc_Video_View.DragDrop, AddressOf Form1_DragDrop
     End Sub
 
+#If NETFRAMEWORK Then
     Private Sub Web_Browser_Navigating(sender As Object, e As WebBrowserNavigatingEventArgs)
         ' We only ever load video via DocumentText (which navigates to about:blank)
         ' and never navigate the browser to a file ourselves. So a file:// URL here
@@ -81,5 +86,6 @@ Partial Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0233: drop on video surface: " & dropped_Path)
         Me.BeginInvoke(New Action(Sub() ProcessArgument(dropped_Path)))
     End Sub
+#End If
 
 End Class

@@ -130,7 +130,9 @@ Public Module FlagImages
     End Function
 
     Private Function FlagsDir() As String
-        Return Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "flags")
+        ' AppContext.BaseDirectory: same as the exe dir on net48 and still correct
+        ' in the .NET 10 single-file publish (Assembly.Location is empty there).
+        Return Path.Combine(AppContext.BaseDirectory, "flags")
     End Function
 
     Private Function DrawAuto() As Image

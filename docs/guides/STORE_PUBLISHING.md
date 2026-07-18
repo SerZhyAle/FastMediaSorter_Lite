@@ -31,10 +31,20 @@ file/registry virtualization and a **read-only install dir**. FastMediaSorter al
 | Settings persistence | `HKCU` is virtualized | App stores settings in the registry; per-package virtualization is fine (settings just live with the package). OK. |
 | Bundled `tessdata` next to exe | read-only install dir | Only **read**, never written. OK. |
 | File associations | a packaged `HKCU\Software\Classes` write is virtualized/ignored | Declared in the manifest as `windows.fileTypeAssociation` instead of registry writes. OK. |
-| Win32 APIs (IE WebBrowser, LibVLC, GDI+, file access, local HTTP) | restricted in a pure UWP container | `runFullTrust` keeps them all working. OK. |
+| Win32 APIs (LibVLC, GDI+, file access, local HTTP) | restricted in a pure UWP container | `runFullTrust` keeps them all working. OK. |
+| .NET runtime on the machine | a packaged app cannot run an installer for a prerequisite | The packaged viewer is **self-contained .NET 10** - the runtime rides inside the package, nothing to install. OK. |
 
 **Rule of thumb:** anything that writes to the install dir, or to `%LOCALAPPDATA%`/`HKCU` and must be
 visible *outside* the package, would need an MSIX-aware path. FastMediaSorter has none of those cases.
+
+**What the Store package contains (since the .NET 10 build):** the viewer ships as **two exes side by
+side** in the GitHub/winget channels - `FastMediaSorter_LITE.exe` (x64, .NET 10, the mainline) and
+`FastMediaSorter_x86.exe` (32-bit net48, for Windows 7/8.1 and 32-bit machines). The **MSIX is x64-only
+and carries the mainline alone**: the manifest declares one viewer `<Application>`, the Store gates by
+architecture, and every machine that can install from the Store can run the mainline. `build-msix.ps1`
+excludes the x86 sibling from the staged payload. The package's second `<Application>` is the
+unrelated Share Manager companion. The mainline no longer hosts the IE WebBrowser control at all
+(video is LibVLC-only), which removes a dependency on a Windows component that is being retired.
 
 ---
 
@@ -43,19 +53,28 @@ visible *outside* the package, would need an MSIX-aware path. FastMediaSorter ha
 | File | Role |
 | --- | --- |
 | [msix/AppxManifest.xml](../../msix/AppxManifest.xml) | Manifest: Identity placeholders, `runFullTrust`, image file associations, visual assets. |
-| [msix/build-msix.ps1](../../msix/build-msix.ps1) | MSBuild → version remap → stage offline payload → generate logos → fill manifest → `makeappx pack` → optional self-sign. |
+| [msix/build-msix.ps1](../../msix/build-msix.ps1) | MSBuild → **`dotnet publish` the .NET 10 viewer** → version remap → stage offline payload (x86 sibling excluded) → generate logos → fill manifest → `makeappx pack` → optional self-sign. |
 | [msix/README.md](../../msix/README.md) | Build/submit instructions. |
 | [assets/icons/store-icon-256.png](../../assets/icons/store-icon-256.png) | 256px logo master the build script scales into Store tiles. |
 | [tools/store/make-screenshot.ps1](../../tools/store/make-screenshot.ps1) | Produces a ≥1366×768 Store screenshot. |
 | [docs/privacy.html](../privacy.html) | Privacy-policy page (host on GitHub Pages → URL for the listing). |
 
+**Build gotcha (important, since the .NET 10 build):** **`msbuild` alone no longer produces
+`FastMediaSorter_LITE.exe`** - it builds only the net48 x86 sibling (`FastMediaSorter_x86.exe`). The
+mainline exe is born **only** from `dotnet publish src\Modern\FastMediaSorter.Modern.vbproj -c Release
+-r win-x64` (self-contained, single-file). `build-msix.ps1` runs that publish itself, then takes both
+the exe **and the version to remap** from the published output - so `-NoBuild` still skips only the
+MSBuild step (which supplies the shared support trees: LibVLC, tessdata, flags), never the publish.
+
 **Version gotcha (important):** the Store requires a 4-part version with the **revision = 0**
 (`Major.Minor.Build.0`), each part ≤ 65535. `build-msix.ps1` remaps the app's `YY.M.D.HHmm` stamp to
 `YY.(M*100+D).HHmm.0` - monotonic over time, unique per minute. (e.g. `26.6.13.0016` → `26.613.16.0`.)
 
-Tooling: the Windows SDK (provides `makeappx.exe` + `signtool.exe`) and MSBuild:
+Tooling: the Windows SDK (provides `makeappx.exe` + `signtool.exe`), MSBuild, and the **.NET 10 SDK**
+(the mainline viewer and the Companion are both published with `dotnet publish`):
 ```powershell
 winget install Microsoft.WindowsSDK.10.0.26100
+winget install Microsoft.DotNet.SDK.10
 ```
 
 ---
@@ -64,12 +83,13 @@ winget install Microsoft.WindowsSDK.10.0.26100
 
 ```powershell
 cd msix
-.\build-msix.ps1 -SelfSign            # add -NoBuild to reuse the current bin\Release build
+.\build-msix.ps1 -SelfSign            # -NoBuild reuses the current bin\Release; the dotnet publish still runs
 # prints two commands: Import-Certificate (run as admin) + Add-AppxPackage
 ```
 Then trust the printed cert and `Add-AppxPackage` the `.msix`. Test: open a folder of media, navigate,
-slideshow, play an MP4 (IE path) and an AVI/MKV (LibVLC path), run OCR translate (`T`), and set the app
-as a default image handler from *Settings ▸ Apps ▸ Default apps*.
+slideshow, play an MP4 **and** an AVI/MKV (both go through LibVLC now - there is no IE path left), open
+a **static and an animated `.webp`** (ImageSharp decodes them in-process; no Windows codec involved),
+run OCR translate (`T`), and set the app as a default image handler from *Settings ▸ Apps ▸ Default apps*.
 
 Pitfalls hit in practice:
 - `Square310x310Logo` requires a paired `Wide310x150Logo` - this manifest ships only the small/medium
@@ -109,6 +129,7 @@ Pitfalls hit in practice:
 | **Pricing** | "Free" = pick it in the **Retail price** dropdown | - |
 | **runFullTrust justification** | Required for every desktop MSIX; **~1000-char limit** | template below |
 | **Age rating** | Short questionnaire | Done - IARC rating is live (General audience). See "Age rating (IARC)" below. |
+| **System requirements** | Not free text - the Store derives the minimum OS from the manifest's `TargetDeviceFamily MinVersion` | **No change needed.** The manifest floor is `10.0.17763` (1809), already *above* the .NET 10 runtime floor of `10.0.14393` (Win10 1607), so the packaged mainline runs on every machine the Store offers it to. Do not lower it below 14393. |
 
 ---
 
@@ -149,20 +170,28 @@ email (1-3 business days).
 
 ## Text templates
 
-> **Status (2026-07-15):** the copy below (Share Manager companion + stronger truncation-proof lead +
-> the recipients panel line) is **prepared for the 26.7.15 submission** - it is NOT yet on the live
-> listing. The 26.7.14.1801 Store submission (Submission 2) passed certification with the *previous,
-> shorter* description; apply these blocks (Description + Product features) and paste the "What's new"
-> block below at the next Store update, not retroactively.
+> **Status (2026-07-16):** the copy below is **still queued for the NEXT submission** - none of it is on
+> the live listing yet. The last submission to pass certification is **26.7.14.1801 (Submission 2)**,
+> which used the *previous, shorter* description. The 26.7.15 copy (Share Manager companion +
+> truncation-proof lead + recipients panel) was queued but never submitted, so the .NET 10 facts below
+> were **added to that same queued copy** rather than replacing it: the next submission carries both.
+> For the same reason the "What's new" block covers **26.7.15 + the .NET 10 build together** - Store
+> users last saw 26.7.14.1801, so those are all "new" to them. Apply the blocks (Description + Product
+> features + What's new) at the next Store update, not retroactively.
 >
 > **Rebrand note (2026-07):** the product **title stays "FastMediaSorter LITE"** in Partner Center
 > (frozen reserved name = the update anchor - do NOT change it). Only the **Description** text below is
 > refreshed to lead with the new brand name "Fast Media Sorter for Windows". Paste the EN block into the
 > listing's Description at the next submission; the RU block is optional copy for a Russian-market listing.
+>
+> **Scope note (.NET 10):** the Store package is **x64-only and contains the mainline viewer alone**.
+> Do NOT mention the 32-bit `FastMediaSorter_x86.exe` sibling in the Store listing - it exists only in
+> the installer/winget/GitHub channels. Store copy describes the new build's *user-visible* wins
+> (animated WEBP, VLC-only playback, no .NET Framework prerequisite), not the packaging split.
 
 ### Description (EN)
 > First sentence must be a short, self-contained hook - the Store card truncates the description to
-> its opening. Do NOT start with the "(published as ...)" parenthetical; it buries the lead.
+> its opening. Do NOT start with the "(published as ..)" parenthetical; it buries the lead.
 ```
 Sort thousands of photos and videos in minutes. Fast Media Sorter is a fast, keyboard-driven viewer
 and sorter for images and video on Windows.
@@ -170,9 +199,14 @@ and sorter for images and video on Windows.
 Open a folder and fly through it: full-screen slideshow, quick panel navigation, and one-key Move /
 Copy / Rename / Delete. Assign folders to hotkeys and file each item with a single press - or turn on
 the recipients panel to click those destination folders right over the image and sort one-handed with
-the mouse. It plays a broad range of formats - H.264/MP4 via the built-in player with an automatic
-LibVLC fallback for AVI, MKV, VP9, ZMBV and more - and fills letterbox/pillarbox bars with a matching
-"ambilight" background.
+the mouse. It plays a broad range of video through its built-in VLC engine - H.264/MP4, AVI, MKV, VP9,
+ZMBV and more - and fills letterbox/pillarbox bars with a matching "ambilight" background.
+
+Rebuilt as a modern 64-bit app that carries its own runtime: there is nothing extra to install and no
+.NET Framework prerequisite. Static and animated WEBP images open everywhere, because the app decodes
+them itself instead of needing the Windows "WebP Image Extensions" codec that some editions of Windows
+lack. Video always runs through the built-in VLC engine, so it plays the same on systems where the
+retired Internet Explorer component is no longer present.
 
 Share folders with your phone: the bundled companion "Fast Media Sorter: Share Manager" turns this PC
 into a private SFTP server for folders you pick, so the Fast Media Sorter Android app can browse them -
@@ -196,9 +230,16 @@ On the Microsoft Store this app is published as "FastMediaSorter LITE".
 Откройте папку и листайте её мгновенно: полноэкранное слайд-шоу, быстрая навигация по панели и
 перемещение / копирование / переименование / удаление одной клавишей. Назначьте папки на горячие
 клавиши и раскладывайте файлы одним нажатием - или включите панель получателей и кликайте по этим
-папкам прямо поверх изображения, сортируя одной рукой мышью. Поддерживается широкий набор форматов -
-H.264/MP4 встроенным плеером с автоматическим переходом на LibVLC для AVI, MKV, VP9, ZMBV и других - а
-поля по краям кадра заполняются фоном в стиле "ambilight" под цвет изображения.
+папкам прямо поверх изображения, сортируя одной рукой мышью. Видео воспроизводится встроенным
+движком VLC - H.264/MP4, AVI, MKV, VP9, ZMBV и другие - а поля по краям кадра заполняются фоном в
+стиле "ambilight" под цвет изображения.
+
+Программа пересобрана как современное 64-битное приложение со своей средой выполнения: ничего
+доустанавливать не нужно, .NET Framework больше не требуется. Статические и анимированные
+WEBP-изображения открываются везде - приложение декодирует их само, без кодека Windows "WebP Image
+Extensions", которого нет в некоторых редакциях Windows. Видео всегда идёт через встроенный движок
+VLC, поэтому оно одинаково воспроизводится и на системах, где компонента Internet Explorer больше
+нет.
 
 Раздавайте папки на телефон: программа-компаньон "Fast Media Sorter: Share Manager" превращает этот
 ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение Fast Media Sorter
@@ -221,7 +262,9 @@ https://github.com/SerZhyAle/FastMediaSorter_Lite
 Fast keyboard-driven sorting: one-key Move / Copy / Rename / Delete with hotkey-assigned folders
 Optional recipients panel over the media: click destination folders on the image to sort one-handed with the mouse
 Full-screen slideshow and quick panel/thumbnail navigation for large image and video collections
-Plays H.264/MP4 natively with an automatic LibVLC fallback for AVI, MKV, VP9, ZMBV and more
+Plays video through a built-in VLC engine: H.264/MP4, AVI, MKV, VP9, ZMBV and more, with no extra codec packs
+Opens static and animated WEBP on its own - no Windows "WebP Image Extensions" codec required
+Modern 64-bit build with its own runtime: nothing extra to install, no .NET Framework prerequisite
 "Ambilight" perspective background fills letterbox/pillarbox bars to match the image
 Share folders to your phone: a bundled tray companion runs a private, opt-in SFTP server paired by QR (Wi-Fi or internet)
 Optional on-image OCR translation: offline Tesseract OCR + a translator you configure (Ollama / LibreTranslate)
@@ -229,14 +272,21 @@ Set it as your default image viewer for JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, AV
 Open source, no account, no ads, no telemetry
 ```
 
-### What's new in this version (Store "release notes" field) - 26.7.15
+### What's new in this version (Store "release notes" field) - next submission (.NET 10 build)
 
 > Paste this into the submission's **"What's new in this version"** box (Partner Center does not accept
 > this remotely - it is a per-submission field). EN is the primary; RU is optional for the RU listing.
 > Keep it short - the Store shows only the first lines on the product page.
+>
+> **Covers two releases.** Store users last received 26.7.14.1801, so the 26.7.15 items (recipients
+> panel, share hardening) never reached them and stay in this block, with the .NET 10 build's items on
+> top - biggest change first, since the Store truncates.
 
 **EN**
 ```
+- The app is rebuilt as a modern 64-bit program that brings its own runtime: nothing extra to install, and no .NET Framework needed. Your settings carry over.
+- Animated WEBP images now open everywhere, without the Windows "WebP Image Extensions" codec that some editions of Windows do not have.
+- Video now always plays through the built-in VLC engine, so it works the same on systems where the retired Internet Explorer component is gone.
 - New: a recipients panel over the image/video - click your destination folders right on the media to sort one-handed with the mouse (off by default; enable in Settings).
 - Folder sharing is safer by default: "LAN only" now truly keeps the share off the internet, idle and stalled connections are dropped, failed logins are logged, and you can cap how many devices connect at once.
 - The Share Manager shows a "Type" column for each folder, and an install option can start sharing right after setup.
@@ -245,6 +295,9 @@ Open source, no account, no ads, no telemetry
 
 **RU**
 ```
+- Приложение пересобрано как современная 64-битная программа со своей средой выполнения: ничего доустанавливать не нужно, .NET Framework больше не требуется. Настройки сохраняются.
+- Анимированные WEBP-изображения теперь открываются везде - без кодека Windows "WebP Image Extensions", которого нет в некоторых редакциях Windows.
+- Видео теперь всегда воспроизводится встроенным движком VLC, поэтому оно одинаково работает и на системах, где компонента Internet Explorer больше нет.
 - Новое: панель получателей поверх изображения/видео - кликайте по папкам назначения прямо на медиа и сортируйте одной рукой мышью (по умолчанию выключено; включается в настройках).
 - Общий доступ безопаснее по умолчанию: режим "только локальная сеть" теперь действительно не выпускает раздачу в интернет, простаивающие и зависшие подключения сбрасываются, неудачные входы записываются в журнал, а число одновременных подключений можно ограничить.
 - В Share Manager появился столбец "Тип" для каждой папки, а при установке можно сразу запустить раздачу.
@@ -252,14 +305,22 @@ Open source, no account, no ads, no telemetry
 ```
 
 ### runFullTrust justification (keep under ~1000 chars)
+
+> **Over budget - decide before pasting (pre-existing, not new).** This block is **~1340 chars** vs the
+> ~1000 stated above. It grew with the 26.7.15 Share-hardening copy, which was never submitted, so the
+> length has never actually been tested against the Partner Center field - the live listing still has
+> the older, shorter text. If the field rejects or truncates it, cut the security detail in the
+> "folder sharing" bullet (the per-install password, "LAN only", connection cap and idle timeout are
+> all restated in the privacy policy below and in the Store description); keep all four bullets and
+> the "no telemetry" line, which are what the capability review actually asks for.
 ```
 FastMediaSorter LITE is a full-trust Win32 desktop package (a WinForms viewer plus a .NET companion),
 not a UWP app, so runFullTrust is required to run as normal desktop processes and use the Win32 APIs
 its core features depend on:
 - File access: read/copy/move/rename/delete the user's own image/video files across arbitrary folders
   and network shares - the app's entire purpose, only on files and folders the user opens.
-- Media playback: hosts the system WebBrowser control (H.264/MP4) and native LibVLC (AVI/MKV/VP9/etc.)
-  and uses GDI+ for image rendering.
+- Media playback: hosts native LibVLC (H.264/MP4, AVI, MKV, VP9, etc.), bundled in the package, and
+  uses GDI+ for image rendering.
 - Optional folder sharing: a bundled companion runs a local SFTP server for folders the user chooses,
   reachable from the user's own phone (opt-in; an inbound firewall rule is added only when enabled).
   While a share runs, devices on the current network (including public Wi-Fi) can reach the PC on the

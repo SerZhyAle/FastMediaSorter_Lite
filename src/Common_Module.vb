@@ -24,6 +24,23 @@ Module Common_Module
     Public Is_HighQuality_Scaling As Boolean = True
     ' On-image overlay showing the file name + position (N/total).
     Public Is_Show_Info_Overlay As Boolean = False
+    ' Sub-option of Is_Pespective: the bars fade into the background colour the further
+    ' they get from the photo - a halo, not a flat bar. Off by default, so an upgrade
+    ' keeps the bars it has always had. Modern build only - the x86 viewer hides the
+    ' checkbox (see Main_Form.PerspectiveHalo.vb).
+    Public Is_Dynamic_Perspective As Boolean = False
+    ' Sub-option of Is_Dynamic_Perspective: grow the halo out from the photo edge on each
+    ' new photo instead of just having it there. Purely HOW the halo arrives - the resting
+    ' frame is identical either way. On by default: unlike the two flags above it cannot
+    ' surprise anyone on upgrade, since its parent is off until deliberately switched on,
+    ' and the growth is the point of the effect.
+    Public Is_Animated_Perspective As Boolean = True
+    ' Mouse-wheel action over an image: False (default) = flip through files, exactly
+    ' as it has always worked; True = zoom in/out under the cursor (the "classic
+    ' viewer" behaviour), opt-in only. Ctrl/Shift/Alt+wheel keep their meaning in both
+    ' modes, and the wheel over video always flips. Modern build only - the x86 viewer
+    ' keeps the historical mechanics (SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md 4.4).
+    Public Zoom_Wheel_Zooms As Boolean = False
     ' Floating list of destination folders (recipients) shown top-left over the
     ' media, so the current file can be sorted by clicking. Off by default (fresh
     ' install / reinstall) - see SPECIFICATION_RECIPIENTS_OVERLAY_DOTNET48.md.

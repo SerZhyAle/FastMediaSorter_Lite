@@ -31,6 +31,8 @@ Partial Class Table_Form
         Me.cmbox_color_schema = New System.Windows.Forms.ComboBox()
         Me.lbl_Color = New System.Windows.Forms.Label()
         Me.chb_perspectiva = New System.Windows.Forms.CheckBox()
+        Me.chk_Dynamic_Perspective = New System.Windows.Forms.CheckBox()
+        Me.chk_Animated_Perspective = New System.Windows.Forms.CheckBox()
         Me.Tab_Control = New System.Windows.Forms.TabControl()
         Me.Tab_Page_1 = New System.Windows.Forms.TabPage()
         Me.Tab_Page_2 = New System.Windows.Forms.TabPage()
@@ -63,6 +65,7 @@ Partial Class Table_Form
         Me.chk_Exif_AutoRotate = New System.Windows.Forms.CheckBox()
         Me.chk_Hq_Scaling = New System.Windows.Forms.CheckBox()
         Me.chk_Show_Info_Overlay = New System.Windows.Forms.CheckBox()
+        Me.chk_Wheel_Zooms = New System.Windows.Forms.CheckBox()
         Me.SetOnTop = New System.Windows.Forms.CheckBox()
         Me.LinkLabel1 = New System.Windows.Forms.LinkLabel()
         Me.btn_Set_As_Default = New System.Windows.Forms.Button()
@@ -214,9 +217,11 @@ Partial Class Table_Form
         Me.grp_Background.Controls.Add(Me.lbl_Color)
         Me.grp_Background.Controls.Add(Me.cmbox_color_schema)
         Me.grp_Background.Controls.Add(Me.chb_perspectiva)
+        Me.grp_Background.Controls.Add(Me.chk_Dynamic_Perspective)
+        Me.grp_Background.Controls.Add(Me.chk_Animated_Perspective)
         Me.grp_Background.Location = New System.Drawing.Point(8, 8)
         Me.grp_Background.Name = "grp_Background"
-        Me.grp_Background.Size = New System.Drawing.Size(656, 92)
+        Me.grp_Background.Size = New System.Drawing.Size(656, 132)
         Me.grp_Background.TabIndex = 0
         Me.grp_Background.TabStop = False
         Me.grp_Background.Text = "Background"
@@ -227,7 +232,8 @@ Partial Class Table_Form
         Me.grp_OnScreen.Controls.Add(Me.chkb_is_to_show_file_datetime)
         Me.grp_OnScreen.Controls.Add(Me.chkb_show_file_size)
         Me.grp_OnScreen.Controls.Add(Me.chk_Show_Info_Overlay)
-        Me.grp_OnScreen.Location = New System.Drawing.Point(8, 108)
+        Me.grp_OnScreen.Controls.Add(Me.chk_Wheel_Zooms)
+        Me.grp_OnScreen.Location = New System.Drawing.Point(8, 148)
         Me.grp_OnScreen.Name = "grp_OnScreen"
         Me.grp_OnScreen.Size = New System.Drawing.Size(656, 104)
         Me.grp_OnScreen.TabIndex = 1
@@ -238,7 +244,7 @@ Partial Class Table_Form
         '
         Me.grp_Slideshow.Controls.Add(Me.lbl_Slideshow_Interval)
         Me.grp_Slideshow.Controls.Add(Me.num_Slideshow_Interval)
-        Me.grp_Slideshow.Location = New System.Drawing.Point(8, 220)
+        Me.grp_Slideshow.Location = New System.Drawing.Point(8, 260)
         Me.grp_Slideshow.Name = "grp_Slideshow"
         Me.grp_Slideshow.Size = New System.Drawing.Size(656, 62)
         Me.grp_Slideshow.TabIndex = 2
@@ -249,7 +255,7 @@ Partial Class Table_Form
         '
         Me.grp_Panel.Controls.Add(Me.lbl_Picture_at_Panel_Size)
         Me.grp_Panel.Controls.Add(Me.cmb_Picture_Size)
-        Me.grp_Panel.Location = New System.Drawing.Point(8, 290)
+        Me.grp_Panel.Location = New System.Drawing.Point(8, 330)
         Me.grp_Panel.Name = "grp_Panel"
         Me.grp_Panel.Size = New System.Drawing.Size(656, 58)
         Me.grp_Panel.TabIndex = 3
@@ -351,6 +357,26 @@ Partial Class Table_Form
         Me.chb_perspectiva.Text = "Show pespective"
         Me.chb_perspectiva.UseVisualStyleBackColor = True
         '
+        'chk_Dynamic_Perspective
+        '
+        Me.chk_Dynamic_Perspective.AutoSize = True
+        Me.chk_Dynamic_Perspective.Location = New System.Drawing.Point(32, 84)
+        Me.chk_Dynamic_Perspective.Name = "chk_Dynamic_Perspective"
+        Me.chk_Dynamic_Perspective.Size = New System.Drawing.Size(140, 19)
+        Me.chk_Dynamic_Perspective.TabIndex = 3
+        Me.chk_Dynamic_Perspective.Text = "Dynamic perspective"
+        Me.chk_Dynamic_Perspective.UseVisualStyleBackColor = True
+        '
+        'chk_Animated_Perspective
+        '
+        Me.chk_Animated_Perspective.AutoSize = True
+        Me.chk_Animated_Perspective.Location = New System.Drawing.Point(48, 106)
+        Me.chk_Animated_Perspective.Name = "chk_Animated_Perspective"
+        Me.chk_Animated_Perspective.Size = New System.Drawing.Size(90, 19)
+        Me.chk_Animated_Perspective.TabIndex = 4
+        Me.chk_Animated_Perspective.Text = "Animated"
+        Me.chk_Animated_Perspective.UseVisualStyleBackColor = True
+        '
         'chkb_show_pic_size
         '
         Me.chkb_show_pic_size.AutoSize = True
@@ -390,6 +416,16 @@ Partial Class Table_Form
         Me.chk_Show_Info_Overlay.TabIndex = 3
         Me.chk_Show_Info_Overlay.Text = "Overlay name + position on image"
         Me.chk_Show_Info_Overlay.UseVisualStyleBackColor = True
+        '
+        'chk_Wheel_Zooms
+        '
+        Me.chk_Wheel_Zooms.AutoSize = True
+        Me.chk_Wheel_Zooms.Location = New System.Drawing.Point(340, 82)
+        Me.chk_Wheel_Zooms.Name = "chk_Wheel_Zooms"
+        Me.chk_Wheel_Zooms.Size = New System.Drawing.Size(180, 19)
+        Me.chk_Wheel_Zooms.TabIndex = 4
+        Me.chk_Wheel_Zooms.Text = "Mouse wheel zooms"
+        Me.chk_Wheel_Zooms.UseVisualStyleBackColor = True
         '
         'lbl_Slideshow_Interval
         '
@@ -623,6 +659,8 @@ Partial Class Table_Form
     Friend WithEvents cmbox_color_schema As ComboBox
     Friend WithEvents lbl_Color As Label
     Friend WithEvents chb_perspectiva As CheckBox
+    Friend WithEvents chk_Dynamic_Perspective As CheckBox
+    Friend WithEvents chk_Animated_Perspective As CheckBox
     Friend WithEvents Tab_Control As TabControl
     Friend WithEvents Tab_Page_1 As TabPage
     Friend WithEvents Tab_Page_2 As TabPage
@@ -647,6 +685,7 @@ Partial Class Table_Form
     Friend WithEvents chk_Exif_AutoRotate As CheckBox
     Friend WithEvents chk_Hq_Scaling As CheckBox
     Friend WithEvents chk_Show_Info_Overlay As CheckBox
+    Friend WithEvents chk_Wheel_Zooms As CheckBox
     Friend WithEvents chk_Video_Mute As CheckBox
     Friend WithEvents lbl_Picture_at_Panel_Size As Label
     Friend WithEvents cmb_Picture_Size As ComboBox

@@ -9,7 +9,11 @@
     <OutputType>WinExe</OutputType>
     <StartupObject>fmsl.My.MyApplication</StartupObject>
     <RootNamespace>fmsl</RootNamespace>
-    <AssemblyName>FastMediaSorter_LITE</AssemblyName>
+    <!-- The net48 build is now the LEAN x86 VIEWER shipped alongside the .NET 10
+         mainline (SPECIFICATION_DOTNET10_MODERN_BUILD §1.1/§8.3). The frozen
+         FastMediaSorter_LITE.exe name moved to the modern build, which replaces
+         the installed exe in place; this one gets its own artifact name. -->
+    <AssemblyName>FastMediaSorter_x86</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>WindowsForms</MyType>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
@@ -42,26 +46,36 @@
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <!-- x86 so it runs on 32-bit Windows AND as a 32-bit process on x64 (spec
+         §1.1). It also makes Environment.Is64BitProcess False, so the shared
+         runtime resolution picks libvlc\win-x86 + x86\tesseract50.dll from the
+         same folder the x64 sibling reads its win-x64/x64 trees from. -->
+    <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <DefineDebug>true</DefineDebug>
     <DefineTrace>true</DefineTrace>
+    <!-- Old-style projects do NOT get the implicit NETFRAMEWORK constant the SDK
+         defines - without this, every "#If NETFRAMEWORK" seam shared with the
+         .NET 10 build (SPECIFICATION_DOTNET10_MODERN_BUILD §3) silently compiles
+         the WRONG branch here. Keep in sync with the Release group below. -->
+    <DefineConstants>NETFRAMEWORK=True</DefineConstants>
     <OutputPath>..\bin\Debug\</OutputPath>
-    <DocumentationFile>FastMediaSorter_LITE.xml</DocumentationFile>
+    <DocumentationFile>FastMediaSorter_x86.xml</DocumentationFile>
     <NoWarn>
     </NoWarn>
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <WarningsAsErrors>41999,42016,42017,42018,42019,42020,42021,42022,42032,42036</WarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <DefineDebug>false</DefineDebug>
     <DefineTrace>true</DefineTrace>
+    <DefineConstants>NETFRAMEWORK=True</DefineConstants>
     <Optimize>true</Optimize>
     <OutputPath>..\bin\Release\</OutputPath>
-    <DocumentationFile>FastMediaSorter_LITE.xml</DocumentationFile>
+    <DocumentationFile>FastMediaSorter_x86.xml</DocumentationFile>
     <NoWarn>
     </NoWarn>
     <WarningsAsErrors>41999,42016,42017,42018,42019,42020,42021,42022,42032,42036</WarningsAsErrors>
@@ -131,7 +145,7 @@
       <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.5.0.0\lib\net45\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
     <Reference Include="SixLabors.ImageSharp">
-      <HintPath>..\packages\SixLabors.ImageSharp.2.1.8\lib\net472\SixLabors.ImageSharp.dll</HintPath>
+      <HintPath>..\packages\SixLabors.ImageSharp.2.1.13\lib\net472\SixLabors.ImageSharp.dll</HintPath>
     </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="Tesseract">
@@ -223,6 +237,10 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.LoadingIndicator.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Main_Form.MediaLoading.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
@@ -232,6 +250,10 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Main_Form.MouseInput.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.Zoom.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
@@ -265,6 +287,33 @@
     </Compile>
     <Compile Include="OcrTranslateSettings.vb" />
     <Compile Include="DocHtmlTranslateLauncher.vb" />
+    <Compile Include="ZoomMath.vb" />
+    <Compile Include="MediaUrl.vb" />
+    <Compile Include="Main_Form.OpenUrl.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.VideoTracks.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.VideoControls.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.VideoMenu.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.MediaMenu.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.ImageMenu.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.FolderMenu.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FileOpQueue.vb" />
+    <Compile Include="Imaging\ImageDecoder.vb" />
+    <Compile Include="Imaging\LegacyWicImageDecoder.vb" />
+    <Compile Include="Imaging\ModernImageSharpDecoder.vb" />
     <Compile Include="Ocr\OcrModels.vb" />
     <Compile Include="Ocr\IOcrEngine.vb" />
     <Compile Include="Ocr\OcrBlockBuilder.vb" />
@@ -379,7 +428,7 @@
     <EmbeddedResource Include="..\packages\QRCoder.1.4.3\lib\net40\QRCoder.dll">
       <LogicalName>FmsPayloadmanaged/QRCoder.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\packages\SixLabors.ImageSharp.2.1.8\lib\net472\SixLabors.ImageSharp.dll">
+    <EmbeddedResource Include="..\packages\SixLabors.ImageSharp.2.1.13\lib\net472\SixLabors.ImageSharp.dll">
       <LogicalName>FmsPayloadmanaged/SixLabors.ImageSharp.dll</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll">
