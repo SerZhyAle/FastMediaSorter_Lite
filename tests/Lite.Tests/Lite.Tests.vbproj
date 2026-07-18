@@ -104,6 +104,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'net48'">
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <!-- ModernImageSharpDecoder uses Magick.NET for AVIF/HEIC/HEIF fallback. -->
+    <PackageReference Include="Magick.NET-Q8-x64" Version="14.15.0" />
   </ItemGroup>
 
 </Project>
