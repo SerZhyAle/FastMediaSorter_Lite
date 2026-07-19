@@ -83,7 +83,7 @@ Partial Public Class Main_Form
 
         If recipients_ToolTip Is Nothing Then recipients_ToolTip = New ToolTip()
 
-        Dim ui_Font As Font = Me.Font
+        Dim ui_Font As New Font(Me.Font.FontFamily, RecipientsOverlayFontSize(), Me.Font.Style)
         Dim rowH As Integer = ui_Font.Height + LogicalToDeviceUnits(10)
 
         ' Width from the widest caption, capped so it never eats more than half the
@@ -93,19 +93,22 @@ Partial Public Class Main_Form
             Dim w As Integer = TextRenderer.MeasureText(r.Item2, ui_Font).Width
             If w > maxTextW Then maxTextW = w
         Next
-        Dim desiredW As Integer = maxTextW + LogicalToDeviceUnits(24)
+        Dim desiredW As Integer = LogicalToDeviceUnits(RecipientsOverlayWidth())
         Dim capW As Integer = Math.Min(LogicalToDeviceUnits(480), CInt(panel_Media.ClientSize.Width * 0.5))
         If capW < LogicalToDeviceUnits(120) Then capW = LogicalToDeviceUnits(120)   ' usable floor on tiny windows
         Dim panelW As Integer = Math.Min(desiredW, capW)
 
         Dim overlay As New Panel With {
             .Name = "recipients_Overlay",
-            .BackColor = Color.FromArgb(32, 32, 32),
+            .BackColor = Color.FromArgb(RecipientsOverlayAlpha(), 32, 32, 32),
             .Padding = New Padding(0),
             .Margin = New Padding(0)
         }
 
         Dim y As Integer = 0
+        Dim visibleRows As Integer = RecipientsOverlayVisibleRows()
+        Dim scrollRows As Boolean = rows.Count > visibleRows
+        overlay.AutoScroll = scrollRows
         For Each r In rows
             Dim isDelete As Boolean = (r.Item1 = -1)
             Dim b As New NonFocusButton() With {
@@ -121,7 +124,7 @@ Partial Public Class Main_Form
                 .Location = New Point(0, y),
                 .Size = New Size(panelW, rowH),
                 .ForeColor = If(isDelete, Color.White, Color.Gainsboro),
-                .BackColor = If(isDelete, Color.FromArgb(96, 32, 32), Color.FromArgb(52, 52, 52))
+                .BackColor = If(isDelete, Color.FromArgb(RecipientsOverlayAlpha(), 96, 32, 32), Color.FromArgb(RecipientsOverlayAlpha(), 52, 52, 52))
             }
             b.FlatAppearance.BorderSize = 0
             b.FlatAppearance.MouseOverBackColor = If(isDelete, Color.FromArgb(140, 44, 44), Color.FromArgb(72, 72, 72))
@@ -133,7 +136,7 @@ Partial Public Class Main_Form
             y += rowH
         Next
 
-        overlay.Size = New Size(panelW, y)
+        overlay.Size = New Size(panelW, If(scrollRows, rowH * visibleRows, y))
         recipients_Overlay = overlay
     End Sub
 
@@ -147,7 +150,18 @@ Partial Public Class Main_Form
            flow_Toolbar IsNot Nothing AndAlso flow_Toolbar.Parent Is panel_Media Then
             topOffset = flow_Toolbar.Height + margin
         End If
-        recipients_Overlay.Location = New Point(margin, topOffset)
+        Dim x As Integer = margin
+        Dim y As Integer = topOffset
+        Select Case RecipientsOverlayPosition()
+            Case "topRight"
+                x = Math.Max(margin, panel_Media.ClientSize.Width - recipients_Overlay.Width - margin)
+            Case "bottomLeft"
+                y = Math.Max(margin, panel_Media.ClientSize.Height - recipients_Overlay.Height - margin)
+            Case "bottomRight"
+                x = Math.Max(margin, panel_Media.ClientSize.Width - recipients_Overlay.Width - margin)
+                y = Math.Max(margin, panel_Media.ClientSize.Height - recipients_Overlay.Height - margin)
+        End Select
+        recipients_Overlay.Location = New Point(x, y)
     End Sub
 
     ''' <summary>A click on a recipient row is exactly the matching key press.</summary>

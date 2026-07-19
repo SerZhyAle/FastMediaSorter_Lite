@@ -231,6 +231,11 @@ Public Class Main_Form
     ''' <summary>The one initialisation, shared by every caller (see EnsureVlcInitializedAsync).</summary>
     Private vlc_Init_Task As System.Threading.Tasks.Task(Of Boolean) = Nothing
     Private is_Vlc_Playing As Boolean = False
+#If Not NETFRAMEWORK Then
+    ''' <summary>Set before Play for the optional "open paused" behaviour; consumed
+    ''' on VLC's Playing callback, where pausing is safe.</summary>
+    Private pause_New_Video_When_Ready As Boolean
+#End If
 
     ''' <summary>Bumped for every new media shown. Work started asynchronously in one
     ''' generation must fold quietly if the generation has moved on by the time it
@@ -263,6 +268,11 @@ Public Class Main_Form
 
     Private all_Supported_Extensions As New HashSet(Of String)()
     Private recent_Folder_List As New List(Of String)
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>Additive .NET 10 preferences from the expanded Settings contract.</summary>
+    Private modern_Preferences As ModernViewerPreferences
+#End If
 
     Private WithEvents FileOperationWorker As New BackgroundWorker
     ' The operation currently handed to FileOperationWorker. Written and read on the UI

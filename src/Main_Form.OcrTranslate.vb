@@ -143,8 +143,14 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub ToggleOverlayVisibility()
-        ocr_Overlay_Visible = Not ocr_Overlay_Visible
-        ocr_Settings.OverlayVisible = ocr_Overlay_Visible
+        SetOcrOverlayVisibility(Not ocr_Overlay_Visible)
+    End Sub
+
+    ''' <summary>Changes overlay visibility from the viewer or the Settings window.</summary>
+    Friend Sub SetOcrOverlayVisibility(visible As Boolean)
+        If ocr_Settings Is Nothing Then Return
+        ocr_Overlay_Visible = visible
+        ocr_Settings.OverlayVisible = visible
         InvalidateOverlay()
         SetOcrStatus(If(Is_Russian_Language,
             If(ocr_Overlay_Visible, "Наложение показано", "Наложение скрыто"),

@@ -171,7 +171,7 @@ Partial Public Class Main_Form
                     recent_Folder_List.Insert(0, Current_Folder_Path)
 
                     ' Remove excess folders from the end if we exceed the limit
-                    If recent_Folder_List.Count > max_Namber_of_Recent_Folders Then
+                    If recent_Folder_List.Count > RecentFoldersLimit() Then
                         recent_Folder_List.RemoveAt(recent_Folder_List.Count - 1)
                     End If
                 End If
@@ -456,10 +456,21 @@ Partial Public Class Main_Form
                 lbl_Status.Text = ""
                 total_File_Count = If(is_Files_Array_Active, files_Array.Length, files_List.Count)
                 MarkFolderListLoaded()
+ #If Not NETFRAMEWORK Then
+                ResetShuffleCycle()
+ #End If
                 current_File_Index = 0
                 If total_File_Count <> 0 Then
                     If is_Random_File_Mode Then
+#If Not NETFRAMEWORK Then
+                        If modern_Preferences IsNot Nothing AndAlso modern_Preferences.SlideshowRandomOrder = "shuffleCycle" Then
+                            current_File_Index = NextShuffleCycleIndex(total_File_Count, -1)
+                        Else
+#End If
                         current_File_Index = slideshow_Rng.Next(0, total_File_Count)
+#If Not NETFRAMEWORK Then
+                        End If
+#End If
                         is_File_Found = True
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0660: New random file set currentFileIndex=" & current_File_Index.ToString)
                     Else
@@ -473,7 +484,15 @@ Partial Public Class Main_Form
             Else
                 lbl_Status.Text = ""
                 If is_Random_File_Mode Then
+#If Not NETFRAMEWORK Then
+                    If modern_Preferences IsNot Nothing AndAlso modern_Preferences.SlideshowRandomOrder = "shuffleCycle" Then
+                        current_File_Index = NextShuffleCycleIndex(total_File_Count, current_File_Index)
+                    Else
+#End If
                     current_File_Index = slideshow_Rng.Next(0, total_File_Count)
+#If Not NETFRAMEWORK Then
+                    End If
+#End If
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0690: random file set")
                 Else
                     ' Wrap, like every other "next file" path: the bare increment here
@@ -1155,7 +1174,7 @@ Partial Public Class Main_Form
 
                 recent_Media_File_List.Remove(Current_File_Name)
                 recent_Media_File_List.Add(Current_File_Name)
-                If recent_Media_File_List.Count > max_Number_Of_Recent_Media_Files Then
+                If recent_Media_File_List.Count > RecentFilesLimit() Then
                     recent_Media_File_List.RemoveAt(0)
                 End If
             End If

@@ -14,9 +14,13 @@ Imports System.Diagnostics
 Partial Public Class Main_Form
 
     Private Sub InitializeExtensionLists()
+        all_Supported_Extensions.Clear()
         all_Supported_Extensions.UnionWith(Image_File_Extensions)
         all_Supported_Extensions.UnionWith(video_File_Extensions)
         all_Supported_Extensions.UnionWith(web_specific_image_extensions)
+#If Not NETFRAMEWORK Then
+        ApplyConfiguredExtensionFilter()
+#End If
     End Sub
 
     Private Sub InitializeTooltips()
@@ -182,6 +186,9 @@ Partial Public Class Main_Form
 
         BgWorker.WorkerReportsProgress = True
         BgWorker.WorkerSupportsCancellation = True
+#If Not NETFRAMEWORK Then
+        modern_Preferences = ModernViewerPreferences.Load()
+#End If
 #If NETFRAMEWORK Then
         Web_Browser.ObjectForScripting = Me
 #End If
@@ -529,6 +536,11 @@ Partial Public Class Main_Form
         ' First run (no saved value) follows the Windows display language; after
         ' that the user's saved choice wins.
         Is_Russian_Language = GetSetting(App_name, Second_App_Name, "Is_Russian_Language", If(SystemDefaultIsRussian(), "1", "0")) = "1"
+#If Not NETFRAMEWORK Then
+        If modern_Preferences Is Nothing Then modern_Preferences = ModernViewerPreferences.Load()
+        preferred_Audio_Language = modern_Preferences.PreferredAudioLanguage
+        preferred_Subtitle_Language = modern_Preferences.PreferredSubtitleLanguage
+#End If
         InitializeTooltips()
         InitializeOcrTranslate()
         InitializeBrowserTranslate()
@@ -614,7 +626,7 @@ Partial Public Class Main_Form
             recent_Folder_List.RemoveAll(Function(x) String.IsNullOrEmpty(x))
 
             For Each folder In recent_Folder_List
-                If cmbox_Media_Folder.Items.Count < max_Namber_of_Recent_Folders Then
+                If cmbox_Media_Folder.Items.Count < RecentFoldersLimit() Then
                     cmbox_Media_Folder.Items.Add(folder)
                 End If
             Next
@@ -624,8 +636,8 @@ Partial Public Class Main_Form
         If Not String.IsNullOrEmpty(recent_Media_Files_Data) Then
             recent_Media_File_List = recent_Media_Files_Data.Split("|"c).ToList()
             recent_Media_File_List.RemoveAll(Function(x) String.IsNullOrEmpty(x))
-            If recent_Media_File_List.Count > max_Number_Of_Recent_Media_Files Then
-                recent_Media_File_List = recent_Media_File_List.Skip(recent_Media_File_List.Count - max_Number_Of_Recent_Media_Files).ToList()
+            If recent_Media_File_List.Count > RecentFilesLimit() Then
+                recent_Media_File_List = recent_Media_File_List.Skip(recent_Media_File_List.Count - RecentFilesLimit()).ToList()
             End If
         End If
 
@@ -639,7 +651,7 @@ Partial Public Class Main_Form
         If My.Application.CommandLineArgs.Count > 0 Then
             Dim fullCommandLine As String = String.Join(" ", My.Application.CommandLineArgs.ToArray())
             ProcessArgument(fullCommandLine)
-        Else
+        ElseIf StartupOpenMode() <> "home" Then
             Current_Folder_Path = GetSetting(App_name, Second_App_Name, "ImageFolder", "")
             If Not Current_Folder_Path = "" Then
                 ' Straight to the read. There used to be a full EnumerateFiles.Count of
@@ -820,6 +832,13 @@ Partial Public Class Main_Form
             SaveSetting(App_name, Second_App_Name, "UseIndependentThreadForOperationsWithFiles", If(Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked, "1", "0"))
 
             SaveOcrSettings()
+#If Not NETFRAMEWORK Then
+            If modern_Preferences IsNot Nothing Then
+                modern_Preferences.PreferredAudioLanguage = preferred_Audio_Language
+                modern_Preferences.PreferredSubtitleLanguage = preferred_Subtitle_Language
+                modern_Preferences.Save()
+            End If
+#End If
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1190: settings are saved")
         Catch ex As Exception

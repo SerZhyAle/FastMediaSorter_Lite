@@ -227,6 +227,7 @@ Partial Public Class Main_Form
 
         video_Controls_Timer.Start()
         video_Controls_Hide_Timer.Stop()
+        video_Controls_Hide_Timer.Interval = VideoControlsHideDelayMilliseconds()
         video_Controls_Hide_Timer.Start()
     End Sub
 
@@ -251,7 +252,7 @@ Partial Public Class Main_Form
             video_Controls_Hide_Timer.Start()
             Return
         End If
-        If Not IsVlcActuallyPlaying() Then
+        If KeepVideoControlsVisibleWhilePaused() AndAlso Not IsVlcActuallyPlaying() Then
             video_Controls_Hide_Timer.Start()
             Return
         End If

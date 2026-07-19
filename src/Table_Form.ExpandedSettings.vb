@@ -1,0 +1,129 @@
+#If Not NETFRAMEWORK Then
+Option Strict On
+
+Imports System.Windows.Forms
+Imports System.Linq
+
+Partial Public Class Table_Form
+
+    Private NotInheritable Class PreferenceChoice
+        Public Sub New(value As String, text As String)
+            Me.Value = value
+            Me.Text = text
+        End Sub
+        Public ReadOnly Value As String
+        Public ReadOnly Text As String
+        Public Overrides Function ToString() As String
+            Return Text
+        End Function
+    End Class
+
+    Private Sub AddExpandedSettingsRows(destinations As FlowLayoutPanel, viewing As FlowLayoutPanel,
+                                        video As FlowLayoutPanel, files As FlowLayoutPanel,
+                                        ocr As FlowLayoutPanel)
+        Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
+
+        AddSectionHeader(destinations, "section_overlay_layout")
+        AddPreferenceChoice(destinations, "recipients_position", p.RecipientsOverlayPosition,
+                            {Choice("topLeft", "Вверху слева"), Choice("topRight", "Вверху справа"), Choice("bottomLeft", "Внизу слева"), Choice("bottomRight", "Внизу справа")},
+                            Sub(v) p.RecipientsOverlayPosition = v)
+        AddPreferenceNumber(destinations, "recipients_width", p.RecipientsOverlayWidth, 180, 520, Sub(v) p.RecipientsOverlayWidth = v)
+        AddPreferenceNumber(destinations, "recipients_font", p.RecipientsOverlayFontSize, 9, 18, Sub(v) p.RecipientsOverlayFontSize = v)
+        AddPreferenceNumber(destinations, "recipients_opacity", p.RecipientsOverlayOpacity, 40, 100, Sub(v) p.RecipientsOverlayOpacity = v)
+        AddPreferenceNumber(destinations, "recipients_rows", p.RecipientsOverlayVisibleRows, 3, 11, Sub(v) p.RecipientsOverlayVisibleRows = v)
+
+        AddSectionHeader(viewing, "section_accessibility")
+        AddPreferenceChoice(viewing, "new_image_scale", p.NewImageScaleMode,
+                            {Choice("fit", "Вписать"), Choice("actual", "100 %"), Choice("perFolder", "Запоминать для папки")},
+                            Sub(v) p.NewImageScaleMode = v)
+        AddPreferenceCheck(viewing, "reduce_motion", p.ReduceMotion, Sub(v) p.ReduceMotion = v)
+        AddSectionHeader(viewing, "section_slideshow_behavior")
+        AddPreferenceChoice(viewing, "slideshow_random_order", p.SlideshowRandomOrder,
+                            {Choice("natural", "Обычный порядок"), Choice("random", "Случайный"), Choice("shuffleCycle", "Без повторов до конца цикла")},
+                            Sub(v) p.SlideshowRandomOrder = v)
+        AddPreferenceCheck(viewing, "stop_slideshow_manual", p.StopSlideshowOnManualNavigation, Sub(v) p.StopSlideshowOnManualNavigation = v)
+        AddPreferenceChoice(viewing, "slideshow_ui", p.SlideshowUiMode,
+                            {Choice("none", "Не скрывать"), Choice("toolbar", "Скрывать панель инструментов"), Choice("toolbarAndStatus", "Скрывать панель и статус")},
+                            Sub(v) p.SlideshowUiMode = v)
+
+        AddSectionHeader(video, "section_video_behavior")
+        AddPreferenceCheck(video, "video_autoplay", p.VideoAutoplay, Sub(v) p.VideoAutoplay = v)
+        AddPreferenceNumber(video, "video_controls_delay", p.VideoControlsHideDelaySec, 1, 15, Sub(v) p.VideoControlsHideDelaySec = v)
+        AddPreferenceCheck(video, "video_controls_paused", p.ShowVideoControlsWhenPaused, Sub(v) p.ShowVideoControlsWhenPaused = v)
+        AddPreferenceChoice(video, "video_click_action", p.VideoSingleClickAction,
+                            {Choice("pauseResume", "Пауза / продолжить"), Choice("nextFile", "Следующий файл")}, Sub(v) p.VideoSingleClickAction = v)
+        AddPreferenceChoice(video, "video_end_action", p.VideoEndAction,
+                            {Choice("stay", "Оставить последний кадр"), Choice("nextFile", "Следующий файл"), Choice("repeat", "Повторить")}, Sub(v) p.VideoEndAction = v)
+        AddPreferenceText(video, "preferred_audio_language", p.PreferredAudioLanguage, Sub(v) p.PreferredAudioLanguage = v)
+        AddPreferenceText(video, "preferred_subtitle_language", p.PreferredSubtitleLanguage, Sub(v) p.PreferredSubtitleLanguage = v)
+
+        AddSectionHeader(files, "section_file_behavior")
+        AddPreferenceChoice(files, "name_collision", p.NameCollisionPolicy,
+                            {Choice("ask", "Спрашивать"), Choice("skip", "Пропустить"), Choice("rename", "Сохранить оба"), Choice("replace", "Заменить")}, Sub(v) p.NameCollisionPolicy = v)
+        AddPreferenceChoice(files, "after_file_operation", p.AfterFileOperation,
+                            {Choice("next", "Следующий файл"), Choice("stay", "Остаться на текущем"), Choice("closeIfEmpty", "Закрыть, если файлов не осталось")}, Sub(v) p.AfterFileOperation = v)
+        AddPreferenceCheck(files, "include_subfolders", p.IncludeSubfolders, Sub(v) p.IncludeSubfolders = v)
+        AddPreferenceText(files, "included_extensions", p.IncludedExtensions, Sub(v) p.IncludedExtensions = v)
+        AddPreferenceNumber(files, "recent_files_limit", p.RecentFilesLimit, 0, 200, Sub(v) p.RecentFilesLimit = v)
+        AddPreferenceNumber(files, "recent_folders_limit", p.RecentFoldersLimit, 0, 200, Sub(v) p.RecentFoldersLimit = v)
+        AddPreferenceChoice(files, "startup_open", p.StartupOpenMode,
+                            {Choice("home", "Стартовую страницу"), Choice("lastFolder", "Последнюю папку"), Choice("lastFile", "Последний файл")}, Sub(v) p.StartupOpenMode = v)
+
+        AddPreferenceNumber(ocr, "ocr_cache_limit", p.OcrDiskCacheMaxMb, 0, 1024, Sub(v) p.OcrDiskCacheMaxMb = v)
+    End Sub
+
+    Private Shared Function Choice(value As String, text As String) As PreferenceChoice
+        Return New PreferenceChoice(value, text)
+    End Function
+
+    Private Sub AddPreferenceCheck(flow As FlowLayoutPanel, key As String, value As Boolean, apply As Action(Of Boolean))
+        Dim check As New CheckBox With {.Checked = value, .AutoSize = True}
+        AddHandler check.CheckedChanged,
+            Sub()
+                apply(check.Checked)
+                ApplyExpandedPreferences()
+            End Sub
+        AddSettingRow(flow, key, check, 34, True)
+    End Sub
+
+    Private Sub AddPreferenceChoice(flow As FlowLayoutPanel, key As String, value As String,
+                                    choices As PreferenceChoice(), apply As Action(Of String))
+        Dim combo As New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList}
+        combo.Items.AddRange(choices)
+        Dim selected As PreferenceChoice = choices.FirstOrDefault(Function(item) item.Value = value)
+        combo.SelectedItem = If(selected, choices(0))
+        AddHandler combo.SelectedIndexChanged,
+            Sub()
+                Dim choice As PreferenceChoice = TryCast(combo.SelectedItem, PreferenceChoice)
+                If choice Is Nothing Then Return
+                apply(choice.Value)
+                ApplyExpandedPreferences()
+            End Sub
+        AddSettingRow(flow, key, combo, 230, True)
+    End Sub
+
+    Private Sub AddPreferenceNumber(flow As FlowLayoutPanel, key As String, value As Integer, minimum As Integer, maximum As Integer, apply As Action(Of Integer))
+        Dim number As New NumericUpDown With {.Minimum = minimum, .Maximum = maximum, .Value = Math.Max(minimum, Math.Min(maximum, value))}
+        AddHandler number.ValueChanged,
+            Sub()
+                apply(CInt(number.Value))
+                ApplyExpandedPreferences()
+            End Sub
+        AddSettingRow(flow, key, number, 100, True)
+    End Sub
+
+    Private Sub AddPreferenceText(flow As FlowLayoutPanel, key As String, value As String, apply As Action(Of String))
+        Dim textBox As New TextBox With {.Text = value}
+        AddHandler textBox.TextChanged,
+            Sub()
+                apply(textBox.Text.Trim())
+                ApplyExpandedPreferences()
+            End Sub
+        AddSettingRow(flow, key, textBox, 260, True)
+    End Sub
+
+    Private Sub ApplyExpandedPreferences()
+        Main_Form.ApplyModernPreferencesFromSettings()
+    End Sub
+End Class
+#End If

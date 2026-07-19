@@ -73,11 +73,27 @@ Public Class Table_Form
 
         toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык интерфейса на английский", "Switch interface language to Russian"))
 
+        toolTip.SetToolTip(btn_Set_As_Default, If(Is_Russian_Language,
+            "Открыть параметры Windows для назначения программы просмотра изображений по умолчанию.",
+            "Open Windows settings to set the default image viewer."))
+
         If btn_Set_As_Default_Video IsNot Nothing Then
             toolTip.SetToolTip(btn_Set_As_Default_Video, If(Is_Russian_Language,
                 "Сделать эту программу видеоплеером по умолчанию - для текущего пользователя, без танцев с правами администратора.",
                 "Make this app the default video player - per-user, no admin-rights ritual required."))
         End If
+
+#If Not NETFRAMEWORK Then
+        If btn_Share_Manager IsNot Nothing Then
+            toolTip.SetToolTip(btn_Share_Manager, If(Is_Russian_Language,
+                "Открыть отдельное приложение управления SFTP-сервером и опубликованными папками.",
+                "Open the separate app for managing the SFTP server and published folders."))
+        End If
+#End If
+
+        toolTip.SetToolTip(LinkLabel1, If(Is_Russian_Language,
+            "Версия программы и адрес автора.",
+            "Application version and the author's email address."))
 
         InitializeOcrTooltips()
 
@@ -202,6 +218,7 @@ Public Class Table_Form
         Data_Grid_View.Item(0, 0).Value = "DEL"
         Data_Grid_View.Item(0, 0).ReadOnly = True
         Data_Grid_View.Item(1, 0).Value = If(Is_Russian_Language, "Удаление файла", "Delete file")
+        Data_Grid_View.Item(1, 0).ReadOnly = True
         For z As Integer = 1 To 10
             Data_Grid_View.Rows.Add()
             Data_Grid_View.Item(0, z).Value = z.ToString()
@@ -242,7 +259,6 @@ Public Class Table_Form
             grp_Video.Text = "Видео"
             grp_FileOps.Text = "Операции с файлами"
             grp_Integration.Text = "Ассоциации и интеграция"
-            grp_Window.Text = "Окно"
             grp_Language.Text = "Язык"
 
             lbl_Color.Text = "Цвет фона:"
@@ -285,7 +301,6 @@ Public Class Table_Form
             grp_Video.Text = "Video"
             grp_FileOps.Text = "File operations"
             grp_Integration.Text = "Associations and integration"
-            grp_Window.Text = "Window"
             grp_Language.Text = "Language"
 
             lbl_Color.Text = "Background color:"
@@ -339,6 +354,14 @@ Public Class Table_Form
         SyncDynamicPerspectiveEnabled()
 
         LinkLabel1.Text = Application.ProductVersion & " sza@ukr.net"
+
+#If Not NETFRAMEWORK Then
+        ' Keep the old controls and bindings, but host them in the .NET 10 shell
+        ' built by Table_Form.ModernLayout.vb.  Calling this after localization
+        ' gives the navigation/header the same RU/EN wording as the page content.
+        BuildModernSettingsLayout()
+        LocalizeModernSettingsLayout()
+#End If
     End Sub
 
     Private Sub DataGridView1_CellMouseDoubleClick(sender As Object, e As DataGridViewCellMouseEventArgs) Handles Data_Grid_View.CellMouseDoubleClick

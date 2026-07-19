@@ -162,6 +162,9 @@ Partial Public Class Main_Form
                 .EnableKeyInput = False
             }
             AddHandler vlc_Media_Player.Playing, AddressOf Vlc_Media_Player_Playing
+#If Not NETFRAMEWORK Then
+            AddHandler vlc_Media_Player.EndReached, AddressOf Vlc_Media_Player_EndReached
+#End If
             vlc_Video_View = New LibVLCSharp.WinForms.VideoView() With {
                 .MediaPlayer = vlc_Media_Player,
                 .Visible = False,
@@ -279,7 +282,10 @@ Partial Public Class Main_Form
             ClearPendingVideoPosition()
 #End If
             Dim media As LibVLCSharp.Shared.Media = CreateVlcMedia(file_Path)
-            If Is_Video_Loop Then media.AddOption(":input-repeat=65535")
+            If Is_Video_Loop OrElse VideoEndAction() = "repeat" Then media.AddOption(":input-repeat=65535")
+#If Not NETFRAMEWORK Then
+            pause_New_Video_When_Ready = Not VideoShouldAutoplay()
+#End If
             vlc_Media_Player.Play(media)
             media.Dispose()
             ApplyVideoAudioStateToVlc()
@@ -323,6 +329,11 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
         ' No video, no transport: it must not linger over the next image.
         HideVideoControls()
+        ' The track list belongs to the video that just stopped.  Explicitly run
+        ' the same visibility rule here (rather than waiting for a future VLC
+        ' Playing event), otherwise "Дорожки" remains in the toolbar over the
+        ' image that follows it.
+        ApplyVideoTracksButtonVisibility()
 #End If
     End Sub
 
@@ -354,12 +365,30 @@ Partial Public Class Main_Form
                                ' this event is the first moment they can be read.
                                ApplyPreferredTracks()
                                ApplyVideoTracksButtonVisibility()
+                               If pause_New_Video_When_Ready Then
+                                   pause_New_Video_When_Ready = False
+                                   vlc_Media_Player.Pause()
+                                   ShowVideoControls()
+                               End If
 #End If
                            End Sub)
         Catch
             ' The form can go away between the check and the post - nothing to do.
         End Try
     End Sub
+
+#If Not NETFRAMEWORK Then
+    Private Sub Vlc_Media_Player_EndReached(sender As Object, e As EventArgs)
+        If VideoEndAction() <> "nextFile" Then Return
+        Try
+            If Me.IsDisposed OrElse Not Me.IsHandleCreated Then Return
+            Me.BeginInvoke(Sub()
+                               If is_Vlc_Playing Then ReadShowMediaFile(Mode_Next)
+                           End Sub)
+        Catch
+        End Try
+    End Sub
+#End If
 
     Private Sub Vlc_Video_View_MouseClick(sender As Object, e As MouseEventArgs)
         If vlc_Media_Player Is Nothing Then Return
@@ -381,12 +410,16 @@ Partial Public Class Main_Form
                 ' it. It was on the right until now, and the right button has a menu to
                 ' open (Main_Form.VideoMenu.vb). Remember which way it went: a double-click
                 ' has to undo it (see Vlc_Video_View_MouseDoubleClick).
-                video_Click_Paused = TogglePlayPause()
-                RefreshVideoControlsState()
-                ShowVideoControls()
+                If VideoClickMovesToNextFile() Then
+                    ReadShowMediaFile(Mode_Next)
+                Else
+                    video_Click_Paused = TogglePlayPause()
+                    RefreshVideoControlsState()
+                    ShowVideoControls()
+                End If
             Case System.Windows.Forms.MouseButtons.Right
                 ShowVideoContextMenu(vlc_Video_View.PointToScreen(e.Location))
-        End Select
+            End Select
 #End If
     End Sub
 

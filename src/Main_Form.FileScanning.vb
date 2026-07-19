@@ -132,7 +132,7 @@ Partial Public Class Main_Form
                 ' total_File_Count - so "1 из 150" became "2 из 100" on the next flip,
                 ' and End walked off the end of the real list.
                 Dim background_Total_File_Count As Integer = My.Computer.FileSystem.GetDirectoryInfo(request.FolderPath).
-                    EnumerateFiles().Count(Function(f) all_Supported_Extensions.Contains(f.Extension.ToLower()))
+                    EnumerateFiles("*", GetConfiguredSearchOption()).Count(Function(f) all_Supported_Extensions.Contains(f.Extension.ToLower()))
 
                 Dim folder_File_Count_State As New Dictionary(Of String, String)
                 folder_File_Count_State("totalFilesCountText") = background_Total_File_Count.ToString
@@ -347,7 +347,7 @@ Partial Public Class Main_Form
 
         Try
             Dim current_Directory_Info As DirectoryInfo = My.Computer.FileSystem.GetDirectoryInfo(Current_Folder_Path)
-            Dim file_Entry_List As List(Of FileEntry) = current_Directory_Info.EnumerateFiles() _
+            Dim file_Entry_List As List(Of FileEntry) = current_Directory_Info.EnumerateFiles("*", GetConfiguredSearchOption()) _
             .Where(Function(f) all_Supported_Extensions.Contains(f.Extension.ToLower())) _
             .Select(Function(f) New FileEntry With {
                 .FilePath = f.FullName,

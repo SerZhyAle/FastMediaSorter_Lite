@@ -26,7 +26,11 @@ Partial Public Class Main_Form
     ''' was_Slide_Show_Mode parameter was added for.)</summary>
     Private Sub SetSlideShow(Optional was_Running As Boolean = False)
 
+#If Not NETFRAMEWORK Then
+        is_Slide_Show_Random_Mode = modern_Preferences IsNot Nothing AndAlso modern_Preferences.SlideshowRandomOrder <> "natural"
+#Else
         is_Slide_Show_Random_Mode = False
+#End If
         Dim slide_show_new_interval = Slideshow_Base_Interval_Ms
         If Is_slide_show_mode OrElse was_Running Then
             slide_show_new_interval = CInt(SlideShowTimer.Interval / 2)

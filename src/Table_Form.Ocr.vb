@@ -72,6 +72,7 @@ Partial Public Class Table_Form
     Private lblOcrOpacity As Label
     Private trkOcrOpacity As TrackBar
     Private lblOcrOpacityVal As Label
+    Private chkOcrOverlayVisible As CheckBox
     Private chkOcrDisk As CheckBox
     Private lblOcrStatus As Label
 
@@ -241,20 +242,27 @@ Partial Public Class Table_Form
         Dim botAnchor As AnchorStyles = CType(AnchorStyles.Bottom Or AnchorStyles.Left, AnchorStyles)
         lblOcrOpacity = New Label With {.Left = LU(14), .Top = LU(306), .Width = LU(labelW), .Height = LU(20),
             .TextAlign = ContentAlignment.MiddleLeft, .Anchor = botAnchor}
-        trkOcrOpacity = New TrackBar With {.Left = LU(ctlX), .Top = LU(302), .Width = LU(380), .Minimum = 40, .Maximum = 255, .TickFrequency = 32,
+        ' The persisted setting remains an alpha byte (0..255) for compatibility,
+        ' but people reason about opacity as a percentage. The Settings UI exposes
+        ' the useful 30..100 % range and converts at the boundary.
+        trkOcrOpacity = New TrackBar With {.Left = LU(ctlX), .Top = LU(302), .Width = LU(380), .Minimum = 30, .Maximum = 100, .TickFrequency = 10,
             .Anchor = CType(AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right, AnchorStyles)}
-        lblOcrOpacityVal = New Label With {.Left = LU(ctlX + 386), .Top = LU(310), .Width = LU(60), .Height = LU(20), .Text = "210",
+        lblOcrOpacityVal = New Label With {.Left = LU(ctlX + 386), .Top = LU(310), .Width = LU(60), .Height = LU(20), .Text = "82 %",
             .Anchor = CType(AnchorStyles.Bottom Or AnchorStyles.Right, AnchorStyles)}
         AddHandler trkOcrOpacity.ValueChanged, AddressOf OcrOpacity_Changed
         Tab_Page_5.Controls.Add(lblOcrOpacity)
         Tab_Page_5.Controls.Add(trkOcrOpacity)
         Tab_Page_5.Controls.Add(lblOcrOpacityVal)
 
-        chkOcrDisk = New CheckBox With {.Left = LU(14), .Top = LU(350), .Width = LU(400), .AutoSize = True, .Anchor = botAnchor}
+        chkOcrOverlayVisible = New CheckBox With {.Left = LU(14), .Top = LU(350), .Width = LU(400), .AutoSize = True, .Anchor = botAnchor}
+        AddHandler chkOcrOverlayVisible.CheckedChanged, AddressOf OcrOverlayVisible_CheckedChanged
+        Tab_Page_5.Controls.Add(chkOcrOverlayVisible)
+
+        chkOcrDisk = New CheckBox With {.Left = LU(14), .Top = LU(374), .Width = LU(400), .AutoSize = True, .Anchor = botAnchor}
         AddHandler chkOcrDisk.CheckedChanged, AddressOf OcrDisk_CheckedChanged
         Tab_Page_5.Controls.Add(chkOcrDisk)
 
-        lblOcrStatus = New Label With {.Left = LU(14), .Top = LU(372), .Width = LU(640), .Height = LU(18), .ForeColor = Color.DimGray, .AutoEllipsis = True,
+        lblOcrStatus = New Label With {.Left = LU(14), .Top = LU(398), .Width = LU(640), .Height = LU(18), .ForeColor = Color.DimGray, .AutoEllipsis = True,
             .Anchor = CType(AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right, AnchorStyles)}
         Tab_Page_5.Controls.Add(lblOcrStatus)
 
@@ -343,6 +351,7 @@ Partial Public Class Table_Form
         btnOcrDownload.Text = If(rus, "Скачать пакет распознавания", "Download recognition language pack")
 
         lblOcrOpacity.Text = If(rus, "Непрозрачность:", "Opacity:")
+        chkOcrOverlayVisible.Text = If(rus, "Показывать панель перевода", "Show translation overlay")
         chkOcrDisk.Text = If(rus, "Дисковый кэш результатов", "Cache results on disk")
 
         PopulateOcrQualityItems(rus)
@@ -395,6 +404,7 @@ Partial Public Class Table_Form
         toolTip.SetToolTip(cmbOcrMode, If(rus, "Режим разбора страницы Tesseract.", "Tesseract page segmentation mode."))
         toolTip.SetToolTip(btnOcrDownload, If(rus, "Скачать языковой пакет распознавания для выбранного языка.", "Download the recognition language pack for the chosen language."))
         toolTip.SetToolTip(trkOcrOpacity, If(rus, "Непрозрачность наложения перевода - от еле заметного до полностью закрывающего оригинал.", "Opacity of the translation overlay - from barely there to fully hiding the original."))
+        toolTip.SetToolTip(chkOcrOverlayVisible, If(rus, "Показывать или скрывать уже распознанный перевод поверх изображения.", "Show or hide the already recognized translation over the image."))
         toolTip.SetToolTip(chkOcrDisk, If(rus, "Кэшировать результаты на диск, чтобы не распознавать одно и то же дважды.", "Cache results on disk, so the same image isn't recognized twice for nothing."))
     End Sub
 
@@ -410,6 +420,7 @@ Partial Public Class Table_Form
 
         chkOcrEnabled.Checked = s.Enabled
         chkOcrAuto.Checked = s.AutoMode
+        chkOcrOverlayVisible.Checked = s.OverlayVisible
         cmbOcrProvider.SelectedIndex = If(String.Equals(s.Provider, "libretranslate", StringComparison.OrdinalIgnoreCase), 1, 0)
         txtOcrEndpoint.Text = s.Endpoint
         cmbOcrModelName.Text = s.OllamaModel
@@ -419,8 +430,8 @@ Partial Public Class Table_Form
         cmbOcrQuality.SelectedIndex = If(String.Equals(s.OcrModelQuality, "best", StringComparison.OrdinalIgnoreCase), 1, 0)
         Dim modeIndex As Integer = Array.IndexOf(OcrModeCodes, If(s.OcrPageMode, "auto").Trim().ToLowerInvariant())
         cmbOcrMode.SelectedIndex = If(modeIndex >= 0, modeIndex, 0)
-        trkOcrOpacity.Value = OcrTranslateSettings.ClampOpacity(s.OverlayOpacity)
-        lblOcrOpacityVal.Text = trkOcrOpacity.Value.ToString()
+        trkOcrOpacity.Value = AlphaToOpacityPercent(s.OverlayOpacity)
+        lblOcrOpacityVal.Text = trkOcrOpacity.Value.ToString() & " %"
         chkOcrDisk.Checked = s.DiskCache
 
         UpdateOcrProviderControls()
@@ -441,6 +452,11 @@ Partial Public Class Table_Form
         Main_Form.OnOcrSettingsEditedFromSettingsWindow(False, True)
     End Sub
 
+    Private Sub OcrOverlayVisible_CheckedChanged(sender As Object, e As EventArgs)
+        If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+        Main_Form.SetOcrOverlayVisibility(chkOcrOverlayVisible.Checked)
+    End Sub
+
     Private Sub OcrProvider_Changed(sender As Object, e As EventArgs)
         UpdateOcrProviderControls()
         If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
@@ -451,7 +467,10 @@ Partial Public Class Table_Form
 
     Private Sub OcrEndpoint_TextChanged(sender As Object, e As EventArgs)
         If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
-        _ocrSettings.Endpoint = txtOcrEndpoint.Text.Trim()
+        Dim endpoint As String = txtOcrEndpoint.Text.Trim()
+        If String.Equals(_ocrSettings.Endpoint, endpoint, StringComparison.Ordinal) Then Return
+        _ocrSettings.Endpoint = endpoint
+        Main_Form.ClearOcrResultCache()
     End Sub
 
     Private Sub OcrModelName_TextChanged(sender As Object, e As EventArgs)
@@ -461,7 +480,9 @@ Partial Public Class Table_Form
 
     Private Sub OcrApi_TextChanged(sender As Object, e As EventArgs)
         If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+        If String.Equals(_ocrSettings.ApiKey, txtOcrApi.Text, StringComparison.Ordinal) Then Return
         _ocrSettings.ApiKey = txtOcrApi.Text
+        Main_Form.ClearOcrResultCache()
     End Sub
 
     Private Sub OcrSource_Changed(sender As Object, e As EventArgs)
@@ -490,11 +511,21 @@ Partial Public Class Table_Form
     End Sub
 
     Private Sub OcrOpacity_Changed(sender As Object, e As EventArgs)
-        lblOcrOpacityVal.Text = trkOcrOpacity.Value.ToString()
+        lblOcrOpacityVal.Text = trkOcrOpacity.Value.ToString() & " %"
         If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
-        _ocrSettings.OverlayOpacity = trkOcrOpacity.Value
+        _ocrSettings.OverlayOpacity = OpacityPercentToAlpha(trkOcrOpacity.Value)
         Main_Form.OnOcrSettingsEditedFromSettingsWindow(False, False)
     End Sub
+
+    Private Shared Function AlphaToOpacityPercent(alpha As Integer) As Integer
+        Dim percent As Integer = CInt(Math.Round(OcrTranslateSettings.ClampOpacity(alpha) * 100.0 / 255.0))
+        Return Math.Max(30, Math.Min(100, percent))
+    End Function
+
+    Private Shared Function OpacityPercentToAlpha(percent As Integer) As Integer
+        Dim clamped As Integer = Math.Max(30, Math.Min(100, percent))
+        Return OcrTranslateSettings.ClampOpacity(CInt(Math.Round(clamped * 255.0 / 100.0)))
+    End Function
 
     Private Sub OcrDisk_CheckedChanged(sender As Object, e As EventArgs)
         If _ocrLoading OrElse _ocrSettings Is Nothing Then Return

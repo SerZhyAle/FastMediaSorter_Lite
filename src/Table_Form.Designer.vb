@@ -47,7 +47,6 @@ Partial Class Table_Form
         Me.grp_Video = New System.Windows.Forms.GroupBox()
         Me.grp_FileOps = New System.Windows.Forms.GroupBox()
         Me.grp_Integration = New System.Windows.Forms.GroupBox()
-        Me.grp_Window = New System.Windows.Forms.GroupBox()
         Me.grp_Language = New System.Windows.Forms.GroupBox()
         Me.btn_Language = New System.Windows.Forms.Button()
         Me.cmb_Picture_Size = New System.Windows.Forms.ComboBox()
@@ -85,7 +84,6 @@ Partial Class Table_Form
         Me.grp_Video.SuspendLayout()
         Me.grp_FileOps.SuspendLayout()
         Me.grp_Integration.SuspendLayout()
-        Me.grp_Window.SuspendLayout()
         Me.grp_Language.SuspendLayout()
         CType(Me.num_Slideshow_Interval, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.num_Video_Volume, System.ComponentModel.ISupportInitialize).BeginInit()
@@ -152,6 +150,7 @@ Partial Class Table_Form
         '
         'Tab_Page_1
         '
+        Me.Tab_Page_1.Controls.Add(Me.SetOnTop)
         Me.Tab_Page_1.Controls.Add(Me.lbl_Grid_Hint)
         Me.Tab_Page_1.Controls.Add(Me.Data_Grid_View)
         Me.Tab_Page_1.Location = New System.Drawing.Point(4, 29)
@@ -191,7 +190,6 @@ Partial Class Table_Form
         'Tab_Page_4
         '
         Me.Tab_Page_4.Controls.Add(Me.grp_Language)
-        Me.Tab_Page_4.Controls.Add(Me.grp_Window)
         Me.Tab_Page_4.Controls.Add(Me.grp_Integration)
         Me.Tab_Page_4.Controls.Add(Me.grp_FileOps)
         Me.Tab_Page_4.Location = New System.Drawing.Point(4, 29)
@@ -308,16 +306,6 @@ Partial Class Table_Form
         Me.grp_Integration.TabIndex = 1
         Me.grp_Integration.TabStop = False
         Me.grp_Integration.Text = "Associations and integration"
-        '
-        'grp_Window
-        '
-        Me.grp_Window.Controls.Add(Me.SetOnTop)
-        Me.grp_Window.Location = New System.Drawing.Point(8, 308)
-        Me.grp_Window.Name = "grp_Window"
-        Me.grp_Window.Size = New System.Drawing.Size(320, 70)
-        Me.grp_Window.TabIndex = 2
-        Me.grp_Window.TabStop = False
-        Me.grp_Window.Text = "Window"
         '
         'grp_Language
         '
@@ -573,10 +561,10 @@ Partial Class Table_Form
         'SetOnTop
         '
         Me.SetOnTop.AutoSize = True
-        Me.SetOnTop.Location = New System.Drawing.Point(16, 30)
+        Me.SetOnTop.Location = New System.Drawing.Point(8, 348)
         Me.SetOnTop.Name = "SetOnTop"
         Me.SetOnTop.Size = New System.Drawing.Size(140, 19)
-        Me.SetOnTop.TabIndex = 0
+        Me.SetOnTop.TabIndex = 2
         Me.SetOnTop.Text = "Show recipients table over the media file"
         Me.SetOnTop.UseVisualStyleBackColor = True
         '
@@ -640,8 +628,6 @@ Partial Class Table_Form
         Me.grp_FileOps.ResumeLayout(False)
         Me.grp_FileOps.PerformLayout()
         Me.grp_Integration.ResumeLayout(False)
-        Me.grp_Window.ResumeLayout(False)
-        Me.grp_Window.PerformLayout()
         Me.grp_Language.ResumeLayout(False)
         CType(Me.num_Slideshow_Interval, System.ComponentModel.ISupportInitialize).EndInit()
         CType(Me.num_Video_Volume, System.ComponentModel.ISupportInitialize).EndInit()
@@ -675,7 +661,6 @@ Partial Class Table_Form
     Friend WithEvents grp_Video As GroupBox
     Friend WithEvents grp_FileOps As GroupBox
     Friend WithEvents grp_Integration As GroupBox
-    Friend WithEvents grp_Window As GroupBox
     Friend WithEvents grp_Language As GroupBox
     Friend WithEvents chkb_show_pic_size As CheckBox
     Friend WithEvents chkb_is_to_show_file_datetime As CheckBox

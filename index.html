@@ -44,36 +44,55 @@
   html[data-lang="ru"] [data-l]:not([data-l="ru"]){display:none}
   html[data-lang="en"] [data-l]:not([data-l="en"]){display:none}
   html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
-  /* page-local helpers */
-  /* Match the wide, left-led composition used on sza.od.ua. */
+  /* Page composition follows the SZA portfolio hub. */
   .container,.site-header{max-width:min(1760px,94vw)}
-  .hero{text-align:left;padding:1.2rem 0 1.4rem}
-  .hero-id{display:flex;align-items:center;gap:1rem;margin-bottom:.9rem}
-  .hero h1{margin:0;font-size:clamp(1.7rem,4vw,2.45rem);line-height:1.1}
-  .hero .kicker{margin:.2rem 0 0}
-  .hero .lead{max-width:none;margin:0 0 .8rem}
+  .site-header>.brand{margin-right:auto}
+  .hero{text-align:left;padding:1.2rem 0}
+  .hero-id{display:flex;align-items:center;gap:1rem;margin-bottom:1rem}
+  .hero-avatar{position:relative;width:60px;height:60px;margin:0;flex:none;border-radius:50%;
+    background:var(--bg-2);border:1px solid var(--border);animation:logoIn .7s cubic-bezier(.34,1.2,.4,1) both,glow 3s 1s infinite alternate}
+  .hero-avatar img{position:relative;width:100%;height:100%;border-radius:50%;object-fit:contain;padding:10%}
+  .hero-copy{min-width:0}
+  .hero .eyebrow{display:block;color:var(--muted);font-family:var(--font-heading);font-size:.76rem;
+    font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0 0 .55rem}
+  .hero h1{margin:0;font-size:clamp(1.7rem,4vw,2.3rem);line-height:1.1}
+  .hero .kicker{display:block;margin:.35rem 0 0}
+  .hero .lead{max-width:none;margin:0 0 .9rem}
+  .button-group{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:.7rem;margin-top:.2rem}
+  @keyframes glow{from{box-shadow:0 0 9px rgba(63,185,80,.22)}to{box-shadow:0 0 22px rgba(63,185,80,.5)}}
+  @keyframes logoIn{from{opacity:0;transform:scale(.7) translateY(4px)}to{opacity:1;transform:scale(1) translateY(0)}}
   .hero-sftp{max-width:none;color:var(--text-2);font-size:.94rem;margin-bottom:.9rem}
   .hero-actions{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:.9rem}
   .hero .pills{justify-content:flex-start}
   .lead-narrow{max-width:none}
-  .sec-head{text-align:left;max-width:none;margin:0 0 1rem}
-  .sec-head h2{font-size:clamp(1.4rem,3.4vw,1.9rem)}
-  .sec-head p{color:var(--muted);font-size:.95rem;margin-top:.35rem}
+  .sec-head{text-align:left;max-width:none;margin:0 0 1.6rem}
+  .section-title{display:flex;align-items:center;gap:.7rem;font-family:var(--font-heading);
+    font-size:clamp(1.4rem,3.4vw,1.6rem);font-weight:700;margin-bottom:.4rem}
+  .section-title .hash{color:var(--acc)}
+  .section-title::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
+  .section-desc{color:var(--muted);max-width:none;font-size:.95rem}
   .card h3{font-family:var(--font-heading);font-size:1.08rem;margin-bottom:.4rem;display:flex;align-items:center;gap:.5rem}
   .card p{color:var(--text-2);font-size:.92rem}
   .card .kbds{margin-top:.6rem;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+  .scenario-card{display:flex;flex-direction:column;min-height:240px}
+  .scenario-head{display:flex;gap:.9rem;align-items:center;margin-bottom:1rem}
+  .scenario-icon{width:46px;height:46px;flex:none;display:grid;place-items:center;border-radius:10px;
+    background:rgba(255,255,255,.03);border:1px solid var(--border)}
+  .scenario-icon img{width:28px;height:28px}
+  .scenario-card h3{font-size:1.05rem;line-height:1.25;margin:0 0 .35rem}
+  .scenario-card p{flex-grow:1;margin:0 0 1.1rem}
+  .scenario-foot{display:flex;gap:.6rem;margin-top:auto;flex-wrap:wrap}
+  .download-section{padding-top:1.7rem}
+  .download-section .get{margin:0;max-width:none}
   .dl-row{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
   .dl-meta{color:var(--muted);font-size:.78rem;width:100%}
   .xlinks{display:grid;gap:.5rem}
   .xlinks a{font-weight:600}
   .get{max-width:none;margin:.4rem 0 1.5rem}
-  .scenarios{margin:0 0 1.25rem}
-  .scenarios .card{padding:1.2rem}
-  .scenarios .card h3{font-size:1rem}
-  .scenarios .card p{font-size:.9rem}
+  .scenarios{margin:0 0 .2rem}
   #features details.sec{margin-top:1rem}
   .site-footer .container{max-width:min(1760px,94vw)}
-  @media(max-width:560px){.hero-id{align-items:flex-start}}
+  @media(max-width:560px){.hero-id{align-items:flex-start}.hero-avatar{width:52px;height:52px}}
   @media(max-width:480px){
     .container{width:100%!important;max-width:100%!important}
     .site-header{max-width:calc(100% - 24px);min-width:0;padding:8px 10px;gap:6px}
@@ -92,10 +111,7 @@
 </div>
 
 <header class="site-header">
-  <div class="brand-mark">
-    <img src="assets/icons/store-icon-256.png" alt="Fast Media Sorter for Windows" width="28" height="28">
-    <span class="brand">Fast Media Sorter for Windows<span class="dot">.</span></span>
-  </div>
+  <a class="brand" href="#top" aria-label="Fast Media Sorter">FMS<span class="dot">.</span></a>
   <div class="seg" role="group" aria-label="Language">
     <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
   </div>
@@ -103,21 +119,23 @@
   <a class="btn btn-primary btn-sm" href="#get"><span data-l="en">Install</span><span data-l="ru">Установить</span><span data-l="ua">Встановити</span></a>
 </header>
 
-<main class="container">
+<main class="container" id="top">
 
   <section class="hero">
     <div class="hero-id">
-      <div>
-        <div class="kicker">
-          <span data-l="en">Windows desktop · free &amp; open-source</span>
-          <span data-l="ru">Windows desktop · бесплатно и с открытым кодом</span>
-          <span data-l="ua">Windows desktop · безкоштовно та з відкритим кодом</span>
-        </div>
+      <div class="hero-avatar"><img src="assets/icons/store-icon-256.png" alt="Fast Media Sorter icon" width="60" height="60"></div>
+      <div class="hero-copy">
+        <span class="eyebrow">Fast Media Sorter · Windows</span>
         <h1>
           <span data-l="en">Fast photo &amp; video sorting for Windows</span>
           <span data-l="ru">Быстрая сортировка фото и видео для Windows</span>
           <span data-l="ua">Швидке сортування фото та відео для Windows</span>
         </h1>
+        <span class="kicker">
+          <span data-l="en">Windows desktop · free &amp; open-source</span>
+          <span data-l="ru">Windows desktop · бесплатно и с открытым кодом</span>
+          <span data-l="ua">Windows desktop · безкоштовно та з відкритим кодом</span>
+        </span>
       </div>
     </div>
     <p class="lead lead-narrow">
@@ -125,23 +143,33 @@
       <span data-l="ru">Fast Media Sorter - локальное приложение для Windows: разобрать съёмку, очистить папку «Загрузки» или разложить большой медиа-архив по понятным папкам. Просматривайте следующий файл и одним нажатием перемещайте, копируйте, переименовывайте или удаляйте его - без бесконечного drag-and-drop.</span>
       <span data-l="ua">Fast Media Sorter - локальний застосунок для Windows: розібрати зйомку, очистити папку «Завантаження» або розкласти великий медіа-архів по зрозумілих папках. Переглядайте наступний файл і одним натисканням переміщуйте, копіюйте, перейменовуйте чи видаляйте його - без нескінченного drag-and-drop.</span>
     </p>
+    <div class="button-group">
+      <a class="btn btn-primary" href="#get"><span data-l="en">Download for Windows</span><span data-l="ru">Скачать для Windows</span><span data-l="ua">Завантажити для Windows</span></a>
+      <a class="btn btn-gold" href="#features"><span data-l="en">Explore features</span><span data-l="ru">Посмотреть возможности</span><span data-l="ua">Переглянути можливості</span></a>
+      <a class="btn btn-ghost" href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a>
+    </div>
   </section>
 
   <section class="section scenarios" aria-labelledby="scenarios-title">
     <div class="sec-head">
-      <h2 id="scenarios-title"><span data-l="en">Start with the situation you have</span><span data-l="ru">Начните со своей ситуации</span><span data-l="ua">Почніть зі своєї ситуації</span></h2>
-      <p><span data-l="en">Look through the folder first; use copy or move while deciding. Deletion is available later, but it is not the first step.</span><span data-l="ru">Сначала просмотрите папку; пока решаете, используйте копирование или перемещение. Удаление доступно позже, но это не первый шаг.</span><span data-l="ua">Спочатку перегляньте папку; поки вирішуєте, використовуйте копіювання або переміщення. Видалення доступне пізніше, але це не перший крок.</span></p>
+      <h2 class="section-title" id="scenarios-title"><span class="hash">#</span><span data-l="en">Start with the situation you have</span><span data-l="ru">Начните со своей ситуации</span><span data-l="ua">Почніть зі своєї ситуації</span></h2>
+      <p class="section-desc"><span data-l="en">Four everyday workflows where Fast Media Sorter removes repeated dragging, opening and closing.</span><span data-l="ru">Четыре повседневных сценария, где Fast Media Sorter убирает постоянное перетаскивание, открытие и закрытие файлов.</span><span data-l="ua">Чотири щоденні сценарії, де Fast Media Sorter прибирає постійне перетягування, відкривання та закривання файлів.</span></p>
     </div>
     <div class="grid">
-      <article class="card"><h3><img src="assets/icons/slideshow.svg" alt="" width="22" height="22"><span data-l="en">Review a large shoot</span><span data-l="ru">Разобрать большую съёмку</span><span data-l="ua">Розібрати велику зйомку</span></h3><p><span data-l="en">Open one folder and step through photos and clips without opening a new window for every file.</span><span data-l="ru">Откройте одну папку и листайте фото и видео, не открывая отдельное окно для каждого файла.</span><span data-l="ua">Відкрийте одну папку й гортайте фото та відео без окремого вікна для кожного файлу.</span></p></article>
-      <article class="card"><h3><img src="assets/icons/transfer.svg" alt="" width="22" height="22"><span data-l="en">File keepers into folders</span><span data-l="ru">Разложить нужное по папкам</span><span data-l="ua">Розкласти потрібне по папках</span></h3><p><span data-l="en">Assign destination folders, then move or copy the current file with a key or the recipients panel.</span><span data-l="ru">Назначьте папки-получатели, затем перемещайте или копируйте текущий файл клавишей либо через панель получателей.</span><span data-l="ua">Призначте папки-отримувачі, а потім переміщуйте чи копіюйте поточний файл клавішею або через панель отримувачів.</span></p></article>
-      <article class="card"><h3><img src="assets/icons/screen.svg" alt="" width="22" height="22"><span data-l="en">Watch mixed media locally</span><span data-l="ru">Просмотреть смешанные медиа локально</span><span data-l="ua">Переглянути змішані медіа локально</span></h3><p><span data-l="en">Browse images and play video in the same local workflow; release bundles include the LibVLC runtime.</span><span data-l="ru">Смотрите изображения и видео в одном локальном процессе; в сборки релизов входит LibVLC.</span><span data-l="ua">Переглядайте зображення й відео в одному локальному процесі; до збірок релізів входить LibVLC.</span></p></article>
-      <article class="card"><h3><img src="assets/icons/folder.svg" alt="" width="22" height="22"><span data-l="en">Open selected PC folders on Android</span><span data-l="ru">Открыть выбранные папки ПК на Android</span><span data-l="ua">Відкрити вибрані папки ПК на Android</span></h3><p><span data-l="en">With the 64-bit app, explicitly enable Folder Share, pair once by QR code, and browse only the folders you publish.</span><span data-l="ru">В 64-битной версии явно включите Folder Share, один раз подключитесь по QR-коду и просматривайте только опубликованные папки.</span><span data-l="ua">У 64-бітній версії явно ввімкніть Folder Share, один раз підключіться QR-кодом і переглядайте лише опубліковані папки.</span></p></article>
+      <article class="card scenario-card"><div class="scenario-head"><span class="scenario-icon"><img src="assets/icons/slideshow.svg" alt=""></span><div><h3><span data-l="en">Review a large shoot</span><span data-l="ru">Разобрать большую съёмку</span><span data-l="ua">Розібрати велику зйомку</span></h3><span class="pill"><span data-l="en">Photo workflow</span><span data-l="ru">Работа с фото</span><span data-l="ua">Робота з фото</span></span></div></div><p><span data-l="en">Open one folder and step through photos and clips without opening a new window for every file.</span><span data-l="ru">Откройте одну папку и листайте фото и видео, не открывая отдельное окно для каждого файла.</span><span data-l="ua">Відкрийте одну папку й гортайте фото та відео без окремого вікна для кожного файлу.</span></p><div class="scenario-foot"><a class="btn btn-primary btn-sm" href="#get"><span data-l="en">Get the app</span><span data-l="ru">Скачать</span><span data-l="ua">Завантажити</span></a></div></article>
+      <article class="card scenario-card"><div class="scenario-head"><span class="scenario-icon"><img src="assets/icons/transfer.svg" alt=""></span><div><h3><span data-l="en">File keepers into folders</span><span data-l="ru">Разложить нужное по папкам</span><span data-l="ua">Розкласти потрібне по папках</span></h3><span class="pill"><span data-l="en">One-key actions</span><span data-l="ru">Одной клавишей</span><span data-l="ua">Однією клавішею</span></span></div></div><p><span data-l="en">Assign destination folders, then move or copy the current file with a key or the recipients panel.</span><span data-l="ru">Назначьте папки-получатели, затем перемещайте или копируйте текущий файл клавишей либо через панель получателей.</span><span data-l="ua">Призначте папки-отримувачі, а потім переміщуйте чи копіюйте поточний файл клавішею або через панель отримувачів.</span></p><div class="scenario-foot"><a class="btn btn-primary btn-sm" href="#features"><span data-l="en">Features</span><span data-l="ru">Возможности</span><span data-l="ua">Можливості</span></a></div></article>
+      <article class="card scenario-card"><div class="scenario-head"><span class="scenario-icon"><img src="assets/icons/screen.svg" alt=""></span><div><h3><span data-l="en">Watch mixed media locally</span><span data-l="ru">Просмотреть смешанные медиа</span><span data-l="ua">Переглянути змішані медіа</span></h3><span class="pill"><span data-l="en">Offline playback</span><span data-l="ru">Офлайн-плеер</span><span data-l="ua">Офлайн-плеєр</span></span></div></div><p><span data-l="en">Browse images and play video in the same local workflow; release bundles include the LibVLC runtime.</span><span data-l="ru">Смотрите изображения и видео в одном локальном процессе; в сборки релизов входит LibVLC.</span><span data-l="ua">Переглядайте зображення й відео в одному локальному процесі; до збірок релізів входить LibVLC.</span></p><div class="scenario-foot"><a class="btn btn-primary btn-sm" href="#features"><span data-l="en">Features</span><span data-l="ru">Возможности</span><span data-l="ua">Можливості</span></a></div></article>
+      <article class="card scenario-card"><div class="scenario-head"><span class="scenario-icon"><img src="assets/icons/folder.svg" alt=""></span><div><h3><span data-l="en">Open PC folders on Android</span><span data-l="ru">Открыть папки ПК на Android</span><span data-l="ua">Відкрити папки ПК на Android</span></h3><span class="pill"><span data-l="en">Secure SFTP</span><span data-l="ru">Безопасный SFTP</span><span data-l="ua">Безпечний SFTP</span></span></div></div><p><span data-l="en">Enable Folder Share in the 64-bit app, pair once by QR code, and browse only the folders you publish.</span><span data-l="ru">Включите Folder Share в 64-битной версии, подключитесь по QR-коду и просматривайте только опубликованные папки.</span><span data-l="ua">Увімкніть Folder Share у 64-бітній версії, підключіться QR-кодом і переглядайте лише опубліковані папки.</span></p><div class="scenario-foot"><a class="btn btn-primary btn-sm" href="publish-folders-android.html"><span data-l="en">Open guide</span><span data-l="ru">Открыть инструкцию</span><span data-l="ua">Відкрити інструкцію</span></a></div></article>
     </div>
   </section>
 
   <!-- GET IT (above the fold) -->
-  <section class="get" id="get">
+  <section class="section download-section" id="get">
+    <div class="sec-head">
+      <h2 class="section-title"><span class="hash">#</span><span data-l="en">Download and start</span><span data-l="ru">Скачать и начать</span><span data-l="ua">Завантажити й почати</span></h2>
+      <p class="section-desc"><span data-l="en">Install once, then keep the entire sorting workflow local on your Windows PC.</span><span data-l="ru">Установите один раз и оставьте весь процесс сортировки локально на своём ПК.</span><span data-l="ua">Встановіть один раз і залиште весь процес сортування локально на своєму ПК.</span></p>
+    </div>
+    <div class="get">
     <p class="whatfor">
       <span data-l="en"><b>Made for a real sorting pass.</b> Open a folder, keep your eyes on the media, and send each good, bad or unfinished file where it belongs. The app is keyboard-first but does not lock you out of the mouse; it keeps the work local, remembers your destination folders, and plays video through its bundled LibVLC engine without external codecs.</span>
       <span data-l="ru"><b>Сделано для настоящей разборки файлов.</b> Откройте папку, смотрите на медиа и сразу отправляйте удачные, лишние или неразобранные файлы туда, где им место. Приложение прежде всего управляется клавиатурой, но не заставляет отказываться от мыши; всё остаётся локально, папки-получатели запоминаются, а видео проигрывается встроенным LibVLC без внешних кодеков.</span>
@@ -184,6 +212,7 @@
       <li><span data-l="en">Open the app and pick a folder of photos or videos.</span><span data-l="ru">Откройте приложение и выберите папку с фото или видео.</span><span data-l="ua">Відкрийте застосунок і виберіть папку з фото чи відео.</span></li>
       <li><span data-l="en">Set destination folders and first move or copy the files you have reviewed. Delete only after you have checked the selection: deletion is irreversible.</span><span data-l="ru">Настройте папки-получатели и сначала перемещайте или копируйте просмотренные файлы. Удаляйте только после проверки выбора: удаление необратимо.</span><span data-l="ua">Налаштуйте папки-отримувачі й спершу переміщуйте або копіюйте переглянуті файли. Видаляйте лише після перевірки вибору: видалення незворотне.</span></li>
     </ol>
+    </div>
   </section>
 
   <!-- contextual cross-links -->
@@ -212,8 +241,8 @@
   <!-- FEATURES -->
   <section class="section" id="features">
     <div class="sec-head">
-      <h2><span data-l="en">More ways to work</span><span data-l="ru">Другие возможности</span><span data-l="ua">Інші можливості</span></h2>
-      <p>
+      <h2 class="section-title"><span class="hash">#</span><span data-l="en">More ways to work</span><span data-l="ru">Другие возможности</span><span data-l="ua">Інші можливості</span></h2>
+      <p class="section-desc">
         <span data-l="en">Built for speed and the keyboard. No clutter, no cloud accounts.</span>
         <span data-l="ru">Сделано ради скорости и клавиатуры. Без лишнего и без облачных аккаунтов.</span>
         <span data-l="ua">Зроблено заради швидкості та клавіатури. Без зайвого та без хмарних акаунтів.</span>
