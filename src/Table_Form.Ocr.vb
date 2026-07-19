@@ -10,8 +10,9 @@ Imports System.Windows.Forms
 ''' replaces the former standalone OCR_Translate_Form: every OCR/translation
 ''' parameter now lives on the fifth tab (<see cref="Tab_Page_5"/>) of
 ''' <see cref="Table_Form"/>. The bulk of the parameters are split across an inner
-''' two-page TabControl - "Перевод" (translation) and "Распознавание (OCR)"
-''' (recognition) - to save vertical space; the global toggles, overlay opacity,
+''' two-page TabControl. "Распознавание (OCR)" (recognition) precedes
+''' "Перевод" (translation), matching the processing order. The global toggles,
+''' overlay opacity,
 ''' disk-cache and status line sit outside the inner tabs.
 '''
 ''' The controls edit the live <see cref="OcrTranslateSettings"/> object owned by
@@ -159,8 +160,9 @@ Partial Public Class Table_Form
             .Anchor = CType(AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right, AnchorStyles)}
         ocrTabTranslate = New TabPage With {.Padding = New Padding(4), .UseVisualStyleBackColor = True}
         ocrTabRecognition = New TabPage With {.Padding = New Padding(4), .UseVisualStyleBackColor = True}
-        ocrInner.Controls.Add(ocrTabTranslate)
+        ' OCR precedes translation in the pipeline.
         ocrInner.Controls.Add(ocrTabRecognition)
+        ocrInner.Controls.Add(ocrTabTranslate)
         Tab_Page_5.Controls.Add(ocrInner)
 
         ' ---- Translation page ----

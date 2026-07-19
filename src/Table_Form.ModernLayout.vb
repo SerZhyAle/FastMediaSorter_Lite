@@ -48,6 +48,7 @@ Partial Public Class Table_Form
     Private modernSidebarSectionLabel As Label
     Private modernProductLabel As Label
     Private modernDataLayoutBuilt As Boolean
+    Private modernTranslationPage As TabPage
     Private modernSftpPage As TabPage
     Private modernAboutPage As TabPage
     Private ReadOnly modernSettingsRows As New List(Of ModernSettingRow)()
@@ -181,7 +182,7 @@ Partial Public Class Table_Form
         Tab_Control.Multiline = True
         Tab_Control.BackColor = SettingsCanvas
 
-        For Each page As TabPage In New TabPage() {Tab_Page_1, Tab_Page_2, Tab_Page_3, Tab_Page_4, Tab_Page_5, modernSftpPage, modernAboutPage}
+        For Each page As TabPage In New TabPage() {Tab_Page_1, Tab_Page_2, Tab_Page_3, Tab_Page_4, Tab_Page_5, modernTranslationPage, modernSftpPage, modernAboutPage}
             page.BackColor = SettingsCanvas
             page.UseVisualStyleBackColor = False
             page.Padding = New Padding(0)
@@ -214,7 +215,7 @@ Partial Public Class Table_Form
     Private Sub BuildModernSettingsNavigation()
         Dim top As Integer = 70
         Dim navLabels As String() = {"Destination folders", "Viewing", "Video and quality", "Files and system",
-                                     "OCR & translation", "Android / SFTP", "About"}
+                                     "OCR", "Translation", "Android / SFTP", "About"}
         modernSettingsNavButtons = New Button(navLabels.Length - 1) {}
 
         For index As Integer = 0 To navLabels.Length - 1
@@ -244,8 +245,10 @@ Partial Public Class Table_Form
     End Sub
 
     Private Sub BuildExtraModernSettingsPages()
+        modernTranslationPage = New TabPage With {.Name = "Tab_Page_Translation", .Text = "Translation"}
         modernSftpPage = New TabPage With {.Name = "Tab_Page_Sftp", .Text = "Android / SFTP"}
         modernAboutPage = New TabPage With {.Name = "Tab_Page_About", .Text = "About"}
+        Tab_Control.TabPages.Add(modernTranslationPage)
         Tab_Control.TabPages.Add(modernSftpPage)
         Tab_Control.TabPages.Add(modernAboutPage)
     End Sub
@@ -258,6 +261,7 @@ Partial Public Class Table_Form
     End Sub
 
     Private Sub ModernSettingsTabChanged(sender As Object, e As EventArgs)
+        If Tab_Control.SelectedTab Is modernTranslationPage Then OnEnterOcrTab()
         RefreshModernSettingsHeader()
     End Sub
 
@@ -271,8 +275,8 @@ Partial Public Class Table_Form
 
         Dim ru As Boolean = Is_Russian_Language
         Dim navLabels As String() = If(ru,
-            {"Получатели", "Просмотр", "Видео", "Файлы", "OCR и перевод", "Android / SFTP", "О программе"},
-            {"Destinations", "Viewing", "Video", "Files", "OCR & translation", "Android / SFTP", "About"})
+            {"Получатели", "Просмотр", "Видео", "Файлы", "OCR", "Перевод", "Android / SFTP", "О программе"},
+            {"Destinations", "Viewing", "Video", "Files", "OCR", "Translation", "Android / SFTP", "About"})
         For index As Integer = 0 To modernSettingsNavButtons.Length - 1
             modernSettingsNavButtons(index).Text = navLabels(index)
         Next
@@ -288,21 +292,23 @@ Partial Public Class Table_Form
         Dim ru As Boolean = Is_Russian_Language
         Dim index As Integer = Math.Max(0, Tab_Control.SelectedIndex)
         Dim titles As String() = If(ru,
-            {"Каталоги-получатели", "Просмотр", "Видео и качество", "Файлы и система", "OCR и перевод", "Android и SFTP", "О программе"},
-            {"Destination folders", "Viewing", "Video and quality", "Files and system", "OCR & translation", "Android & SFTP", "About"})
+            {"Каталоги-получатели", "Просмотр", "Видео и качество", "Файлы и система", "OCR", "Перевод", "Android и SFTP", "О программе"},
+            {"Destination folders", "Viewing", "Video and quality", "Files and system", "OCR", "Translation", "Android & SFTP", "About"})
         Dim subtitles As String() = If(ru,
             {"Назначьте папки для быстрого перемещения и копирования.",
              "Настройте фон, информацию на экране и слайдшоу.",
              "Качество изображения и привычное поведение видео.",
              "Операции с файлами, интеграция и язык интерфейса.",
-             "Распознавайте текст на изображениях и переводите его.",
+             "Распознавание текста на изображениях и параметры OCR.",
+             "Сервис и параметры перевода распознанного текста.",
              "SFTP-сервер и мобильное приложение Android.",
              "Версия приложения, документация и ссылки проекта."},
             {"Assign folders for quick moving and copying.",
              "Tune the background, on-screen information and slideshow.",
              "Image quality and familiar video behaviour.",
              "File operations, integration and interface language.",
-             "Recognize text on images and translate it.",
+             "Text recognition on images and OCR options.",
+             "Service and options for translating recognized text.",
              "SFTP server and the Android mobile app.",
              "Application version, documentation and project links."})
 
@@ -606,26 +612,28 @@ Partial Public Class Table_Form
         AddSettingRow(files, "interface_language", btn_Language, 100, True)
 
         Dim ocr As FlowLayoutPanel = CreateModernPageFlow(Tab_Page_5)
+        Dim translation As FlowLayoutPanel = CreateModernPageFlow(modernTranslationPage)
         ocrInner.Visible = False
         AddSettingRow(ocr, "ocr_enabled", chkOcrEnabled, 34, True)
         AddSettingRow(ocr, "ocr_auto", chkOcrAuto, 34, True)
-        AddSectionHeader(ocr, "section_translation")
-        AddSettingRow(ocr, "ocr_provider", cmbOcrProvider, 260, True)
-        AddSettingRow(ocr, "ocr_endpoint", txtOcrEndpoint, 300, True)
-        AddSettingRow(ocr, "ocr_server", MakeModernControlStrip({btnOcrInstallOllama, btnOcrStartOllama}, 310), 310, True)
-        AddSettingRow(ocr, "ocr_model", MakeModernControlStrip({cmbOcrModelName, btnOcrPullModel}, 310), 310, True)
-        AddSettingRow(ocr, "ocr_api", txtOcrApi, 300, True)
-        AddSettingRow(ocr, "ocr_target", cmbOcrTarget, 300, True)
         AddSectionHeader(ocr, "section_recognition")
         AddSettingRow(ocr, "ocr_source", cmbOcrSource, 300, True)
         AddSettingRow(ocr, "ocr_quality", cmbOcrQuality, 300, True)
         AddSettingRow(ocr, "ocr_mode", cmbOcrMode, 300, True)
         AddSettingRow(ocr, "ocr_download", btnOcrDownload, 300, True)
-        AddSectionHeader(ocr, "section_overlay")
-        AddSettingRow(ocr, "ocr_opacity", MakeModernOpacityStrip(), 330, True)
-        AddSettingRow(ocr, "ocr_overlay_visible", chkOcrOverlayVisible, 34, True)
-        AddSettingRow(ocr, "ocr_disk_cache", chkOcrDisk, 34, True)
-        ReparentModernSettingsControl(lblOcrStatus, ocr)
+
+        AddSectionHeader(translation, "section_translation")
+        AddSettingRow(translation, "ocr_provider", cmbOcrProvider, 260, True)
+        AddSettingRow(translation, "ocr_endpoint", txtOcrEndpoint, 300, True)
+        AddSettingRow(translation, "ocr_server", MakeModernControlStrip({btnOcrInstallOllama, btnOcrStartOllama}, 310), 310, True)
+        AddSettingRow(translation, "ocr_model", MakeModernControlStrip({cmbOcrModelName, btnOcrPullModel}, 310), 310, True)
+        AddSettingRow(translation, "ocr_api", txtOcrApi, 300, True)
+        AddSettingRow(translation, "ocr_target", cmbOcrTarget, 300, True)
+        AddSectionHeader(translation, "section_overlay")
+        AddSettingRow(translation, "ocr_opacity", MakeModernOpacityStrip(), 330, True)
+        AddSettingRow(translation, "ocr_overlay_visible", chkOcrOverlayVisible, 34, True)
+        AddSettingRow(translation, "ocr_disk_cache", chkOcrDisk, 34, True)
+        ReparentModernSettingsControl(lblOcrStatus, translation)
         lblOcrStatus.AutoSize = False
         lblOcrStatus.Height = 34
         lblOcrStatus.Margin = New Padding(8, 4, 8, 8)
@@ -1109,6 +1117,7 @@ Partial Public Class Table_Form
         StyleModernSettingsControlTree(Tab_Page_3)
         StyleModernSettingsControlTree(Tab_Page_4)
         StyleModernSettingsControlTree(Tab_Page_5)
+        StyleModernSettingsControlTree(modernTranslationPage)
         StyleModernSettingsControlTree(modernSftpPage)
         StyleModernSettingsControlTree(modernAboutPage)
 
