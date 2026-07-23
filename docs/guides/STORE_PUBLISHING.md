@@ -170,14 +170,15 @@ email (1-3 business days).
 
 ## Text templates
 
-> **Status (2026-07-16):** the copy below is **still queued for the NEXT submission** - none of it is on
+> **Status (2026-07-23):** the copy below is **still queued for the NEXT submission** - none of it is on
 > the live listing yet. The last submission to pass certification is **26.7.14.1801 (Submission 2)**,
-> which used the *previous, shorter* description. The 26.7.15 copy (Share Manager companion +
-> truncation-proof lead + recipients panel) was queued but never submitted, so the .NET 10 facts below
-> were **added to that same queued copy** rather than replacing it: the next submission carries both.
-> For the same reason the "What's new" block covers **26.7.15 + the .NET 10 build together** - Store
-> users last saw 26.7.14.1801, so those are all "new" to them. Apply the blocks (Description + Product
-> features + What's new) at the next Store update, not retroactively.
+> which used the *previous, shorter* description. Everything since then (26.7.15 Share Manager hardening
+> + recipients panel, and the whole 26.7.23.1127 .NET 10 rewrite - zoom, HEIC/AVIF, audio/subtitle
+> tracks, Open URL, video controls, background file ops, media context menus, and the viewer-core fix
+> pass) has queued up in this same unsubmitted copy. The "What's new" block below covers **the full span
+> from 26.7.14.1801 to 26.7.23.1127** - Store users last saw 26.7.14.1801, so all of it is "new" to them.
+> Apply the blocks (Description + Product features + What's new) at the next Store submission, not
+> retroactively.
 >
 > **Rebrand note (2026-07):** the product **title stays "FastMediaSorter LITE"** in Partner Center
 > (frozen reserved name = the update anchor - do NOT change it). Only the **Description** text below is
@@ -205,8 +206,12 @@ ZMBV and more - and fills letterbox/pillarbox bars with a matching "ambilight" b
 Rebuilt as a modern 64-bit app that carries its own runtime: there is nothing extra to install and no
 .NET Framework prerequisite. Static and animated WEBP images open everywhere, because the app decodes
 them itself instead of needing the Windows "WebP Image Extensions" codec that some editions of Windows
-lack. Video always runs through the built-in VLC engine, so it plays the same on systems where the
-retired Internet Explorer component is no longer present.
+lack, and so do HEIC/HEIF and AVIF - the formats iPhones and modern cameras produce - with no paid codec
+required. Video always runs through the built-in VLC engine, so it plays the same on systems where the
+retired Internet Explorer component is no longer present, now with a full control bar (seek, volume,
+audio track and subtitle picking) and "Open URL.." to play straight off a network address. Zoom at the
+mouse cursor with drag-to-pan, and right-click/middle-click menus put every action right on the picture
+or video.
 
 Share folders with your phone: the bundled companion "Fast Media Sorter: Share Manager" turns this PC
 into a private SFTP server for folders you pick, so the Fast Media Sorter Android app can browse them -
@@ -237,9 +242,13 @@ On the Microsoft Store this app is published as "FastMediaSorter LITE".
 Программа пересобрана как современное 64-битное приложение со своей средой выполнения: ничего
 доустанавливать не нужно, .NET Framework больше не требуется. Статические и анимированные
 WEBP-изображения открываются везде - приложение декодирует их само, без кодека Windows "WebP Image
-Extensions", которого нет в некоторых редакциях Windows. Видео всегда идёт через встроенный движок
-VLC, поэтому оно одинаково воспроизводится и на системах, где компонента Internet Explorer больше
-нет.
+Extensions", которого нет в некоторых редакциях Windows, а также HEIC/HEIF и AVIF - форматы,
+которые снимают iPhone и современные камеры - без каких-либо платных кодеков. Видео всегда идёт
+через встроенный движок VLC, поэтому оно одинаково воспроизводится и на системах, где компонента
+Internet Explorer больше нет, и теперь с полноценной панелью управления (перемотка, громкость,
+выбор аудиодорожки и субтитров) и командой "Открыть по адресу.." для воспроизведения прямо по
+сетевому пути. Масштабирование под курсором мыши с перетаскиванием, а меню по правому/среднему
+клику выносят все действия прямо на изображение или видео.
 
 Раздавайте папки на телефон: программа-компаньон "Fast Media Sorter: Share Manager" превращает этот
 ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение Fast Media Sorter
@@ -264,7 +273,11 @@ Optional recipients panel over the media: click destination folders on the image
 Full-screen slideshow and quick panel/thumbnail navigation for large image and video collections
 Plays video through a built-in VLC engine: H.264/MP4, AVI, MKV, VP9, ZMBV and more, with no extra codec packs
 Opens static and animated WEBP on its own - no Windows "WebP Image Extensions" codec required
+Opens HEIC, HEIF and AVIF too - the formats iPhones and modern cameras produce - with no paid codec needed
 Modern 64-bit build with its own runtime: nothing extra to install, no .NET Framework prerequisite
+Zoom at the mouse cursor with drag-to-pan, plus audio-track and subtitle picking remembered by language
+A video control bar (seek, time, mute, volume) and "Open URL.." to play straight off a network address
+Right-click/middle-click menus put every action - rotate, translate, move, delete, and more - right on the picture or video
 "Ambilight" perspective background fills letterbox/pillarbox bars to match the image
 Share folders to your phone: a bundled tray companion runs a private, opt-in SFTP server paired by QR (Wi-Fi or internet)
 Optional on-image OCR translation: offline Tesseract OCR + a translator you configure (Ollama / LibreTranslate)
@@ -272,36 +285,42 @@ Set it as your default image viewer for JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, AV
 Open source, no account, no ads, no telemetry
 ```
 
-### What's new in this version (Store "release notes" field) - next submission (.NET 10 build)
+### What's new in this version (Store "release notes" field) - next submission (26.7.14.1801 -> 26.7.23.1127)
 
 > Paste this into the submission's **"What's new in this version"** box (Partner Center does not accept
 > this remotely - it is a per-submission field). EN is the primary; RU is optional for the RU listing.
 > Keep it short - the Store shows only the first lines on the product page.
 >
-> **Covers two releases.** Store users last received 26.7.14.1801, so the 26.7.15 items (recipients
-> panel, share hardening) never reached them and stay in this block, with the .NET 10 build's items on
-> top - biggest change first, since the Store truncates.
+> **Covers everything since the last live submission (26.7.14.1801).** That includes the 26.7.15 items
+> (recipients panel, share hardening) and the full 26.7.23.1127 .NET 10 rewrite. Biggest/most visible
+> changes first, since the Store truncates; the long viewer-core fix pass is summarized, not itemized.
 
 **EN**
 ```
 - The app is rebuilt as a modern 64-bit program that brings its own runtime: nothing extra to install, and no .NET Framework needed. Your settings carry over.
-- Animated WEBP images now open everywhere, without the Windows "WebP Image Extensions" codec that some editions of Windows do not have.
-- Video now always plays through the built-in VLC engine, so it works the same on systems where the retired Internet Explorer component is gone.
+- iPhone/camera photos now open natively: HEIC, HEIF and AVIF, with no paid codec required. Animated WEBP also opens everywhere now, without the Windows "WebP Image Extensions" codec some editions of Windows lack.
+- Video always plays through the built-in VLC engine, now with a full control bar (seek, time, mute, volume), audio-track and subtitle picking remembered by language, and "Open URL.." to play straight off a network address.
+- Zoom at the mouse cursor on the numeric keypad's grey keys, with drag-to-pan.
+- Right-click a video or middle-click a picture for a menu with everything you can do to it - rotate, translate, move, delete, and more.
+- File moves/copies now happen in the background so the next file appears instantly, even over a slow network share; moving onto an existing name saves as "name (2)" instead of failing.
 - New: a recipients panel over the image/video - click your destination folders right on the media to sort one-handed with the mouse (off by default; enable in Settings).
+- A "Dynamic perspective" option fades the Ambilight-style background bars into a soft halo around the photo.
 - Folder sharing is safer by default: "LAN only" now truly keeps the share off the internet, idle and stalled connections are dropped, failed logins are logged, and you can cap how many devices connect at once.
-- The Share Manager shows a "Type" column for each folder, and an install option can start sharing right after setup.
-- Fixes: the "0" hotkey folder is remembered again, router detection no longer mistakes a smart-TV for the router, and the sharing dialogs no longer overflow on high-DPI displays.
+- A large pass of fixes across browsing, file operations, slideshow, video and window state - see the full changelog on GitHub.
 ```
 
 **RU**
 ```
 - Приложение пересобрано как современная 64-битная программа со своей средой выполнения: ничего доустанавливать не нужно, .NET Framework больше не требуется. Настройки сохраняются.
-- Анимированные WEBP-изображения теперь открываются везде - без кодека Windows "WebP Image Extensions", которого нет в некоторых редакциях Windows.
-- Видео теперь всегда воспроизводится встроенным движком VLC, поэтому оно одинаково работает и на системах, где компонента Internet Explorer больше нет.
+- Фото с iPhone и камер теперь открываются напрямую: HEIC, HEIF и AVIF, без платных кодеков. Анимированные WEBP тоже открываются везде - без кодека Windows "WebP Image Extensions", которого нет в некоторых редакциях Windows.
+- Видео всегда воспроизводится встроенным движком VLC, теперь с полноценной панелью управления (перемотка, время, звук, громкость), выбором аудиодорожки и субтитров по языку и командой "Открыть по адресу.." для воспроизведения прямо по сетевому пути.
+- Масштабирование под курсором мыши на серых клавишах цифрового блока, с перетаскиванием.
+- Правый клик по видео или средний клик по картинке открывает меню со всеми действиями - поворот, перевод, перемещение, удаление и другое.
+- Перемещение/копирование файлов теперь идёт в фоне, следующий файл появляется мгновенно даже по медленной сети; перемещение на существующее имя сохраняется как "имя (2)" вместо ошибки.
 - Новое: панель получателей поверх изображения/видео - кликайте по папкам назначения прямо на медиа и сортируйте одной рукой мышью (по умолчанию выключено; включается в настройках).
+- Опция "Динамическая перспектива" превращает полосы фона в стиле ambilight в мягкий ореол вокруг фото.
 - Общий доступ безопаснее по умолчанию: режим "только локальная сеть" теперь действительно не выпускает раздачу в интернет, простаивающие и зависшие подключения сбрасываются, неудачные входы записываются в журнал, а число одновременных подключений можно ограничить.
-- В Share Manager появился столбец "Тип" для каждой папки, а при установке можно сразу запустить раздачу.
-- Исправления: папка на клавише "0" снова запоминается, определение роутера больше не путает smart-TV с роутером, а окна общего доступа не выходят за край на экранах с высоким DPI.
+- Большой пакет исправлений в просмотре, файловых операциях, слайд-шоу, видео и состоянии окна - полный список изменений на GitHub.
 ```
 
 ### runFullTrust justification (keep under ~1000 chars)
