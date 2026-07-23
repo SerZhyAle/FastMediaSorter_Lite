@@ -39,6 +39,8 @@ Categories: `Added`, `Changed`, `Fixed`, `Removed`.
 
 ### Fixed
 
+- **The perspective background and dynamic colour no longer flicker during a fast slideshow.** They switched off below a 2-second interval, which was still fast enough for the per-photo GDI+ work to visibly lag behind the flips; the cutoff is now 5 seconds, and an interval exactly at the cutoff is now included instead of falling just short of it.
+
 A pass over the viewer's core - browsing, file operations, slideshow, video and window state. All of these apply to **both** programs.
 
 - **Starting up reads the folder once, not twice.** Restoring the last folder walked the whole directory just to check the saved position, then read it again properly. On a big folder over the network that was a second of frozen window spent to learn nothing.

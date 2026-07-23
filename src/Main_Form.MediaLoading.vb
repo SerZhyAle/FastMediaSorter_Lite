@@ -892,7 +892,7 @@ Partial Public Class Main_Form
         If (is_PictureBox1_Visible OrElse
         is_PictureBox2_Visible) AndAlso
         (Not Is_slide_show_mode Or
-        SlideShowTimer.Interval > slideshow_limit_to_change_color) Then
+        SlideShowTimer.Interval >= slideshow_limit_to_change_color) Then
 
             Web_Browser.Visible = False
 

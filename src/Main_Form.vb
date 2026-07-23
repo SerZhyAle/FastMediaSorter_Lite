@@ -78,7 +78,10 @@ Public Class Main_Form
     Private Const top_first_line = 0
     Private Const left_first_column = 0
     Private Const biggest_slide_show_interval = 10000
-    Private Const slideshow_limit_to_change_color = 2000
+    ' At or above this slideshow interval the background drawing (perspective bars +
+    ' dynamic-colour analysis) is allowed; below it the flips come too fast to be worth
+    ' the GDI+ pixel work, so it is forced off. Owner rule: works at 5 s and slower.
+    Private Const slideshow_limit_to_change_color = 5000
     Private Const how_long_wait_before_draw_perspective = 50
     Private Const max_Number_Of_Recent_Media_Files As Integer = 50
 

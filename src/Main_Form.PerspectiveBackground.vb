@@ -379,7 +379,7 @@ Partial Public Class Main_Form
             (is_PictureBox1_Visible OrElse
             is_PictureBox2_Visible) AndAlso
             (Not Is_slide_show_mode Or
-            SlideShowTimer.Interval > slideshow_limit_to_change_color)
+            SlideShowTimer.Interval >= slideshow_limit_to_change_color)
 
         Dim throttle_Elapsed As Boolean =
             last_Perspective_Draw_Time < DateTime.Now.Subtract(TimeSpan.FromMilliseconds(how_long_wait_before_draw_perspective))
