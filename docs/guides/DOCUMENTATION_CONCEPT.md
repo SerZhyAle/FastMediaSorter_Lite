@@ -1,3 +1,5 @@
+<!-- Downstream mirror of Unified_Rules @ ed69f27 on 2026-07-23. Source of truth: P:\WEB\sites.google.comsiteszaodua\Unified_Rules\DOCUMENTATION_CONCEPT.md - this repo's Overlay A core was extracted from this very file, so the canonical copy is now authoritative and may have moved ahead. Edit the canonical copy, not this; re-sync here. -->
+
 # Documentation Concept - how a product presents, indexes, and supports itself
 
 The companion strategy to [REPOSITORY_LAYOUT.md](REPOSITORY_LAYOUT.md). Layout says *where files

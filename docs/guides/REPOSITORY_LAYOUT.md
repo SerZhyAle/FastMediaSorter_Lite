@@ -1,3 +1,5 @@
+<!-- Downstream mirror of Unified_Rules @ ed69f27 on 2026-07-23. Source of truth: P:\WEB\sites.google.comsiteszaodua\Unified_Rules\REPOSITORY_LAYOUT.md - this repo's Overlay A core was extracted from this very file, so the canonical copy is now authoritative and may have moved ahead. Edit the canonical copy, not this; re-sync here. -->
+
 # Repository Layout - the reusable convention
 
 A portable structure for a **desktop app distributed through GitHub Releases + winget + Microsoft
