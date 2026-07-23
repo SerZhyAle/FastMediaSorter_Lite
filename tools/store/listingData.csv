@@ -87,7 +87,7 @@ Title,4,Text,,FastMediaSorter LITE,FastMediaSorter LITE
 ShortTitle,5,Text,,,
 SortTitle,6,Text,,,
 VoiceTitle,7,Text,,,
-ShortDescription,8,Text,,"Fast, keyboard-driven photo and video sorter for Windows - modern 64-bit build, no .NET Framework.",
+ShortDescription,8,Text,,"Fast, keyboard-driven photo and video sorter for Windows - modern 64-bit build, no .NET Framework.","Быстрый сортировщик фото и видео для Windows с управлением с клавиатуры - современная 64-битная сборка, без .NET Framework."
 DevStudio,9,Text,,,
 CopyrightTrademarkInformation,12,Text,,,
 AdditionalLicenseTerms,13,Text,,,
@@ -385,7 +385,7 @@ XboxFeaturedPromo1080x1080,610,Relative path (or URL to file in Partner Center),
 OptionalPromo358x358,611,Relative path (or URL to file in Partner Center),,,
 OptionalPromo1000x800,612,Relative path (or URL to file in Partner Center),,,
 OptionalPromo414x180,613,Relative path (or URL to file in Partner Center),,,
-Feature1,700,Text,,"Fast keyboard-driven sorting: one-key Move / Copy / Rename / Delete with hotkey-assigned folders",
+Feature1,700,Text,,"Fast keyboard-driven sorting: one-key Move / Copy / Rename / Delete with hotkey-assigned folders","Быстрая сортировка с клавиатуры: перемещение / копирование / переименование / удаление одной клавишей с папками на горячих клавишах"
 Feature2,701,Text,,"Optional recipients panel over the media: click destination folders on the image to sort one-handed with the mouse",
 Feature3,702,Text,,"Full-screen slideshow and quick panel/thumbnail navigation for large image and video collections",
 Feature4,703,Text,,"Plays video through a built-in VLC engine: H.264/MP4, AVI, MKV, VP9, ZMBV and more, with no extra codec packs",
