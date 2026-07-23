@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Partner Center's own CSV export: CRLF between rows, but bare LF for embedded
+# newlines inside quoted multi-line cells. text=auto would rewrite those embedded
+# LFs to CRLF on checkout and corrupt the format Partner Center expects on import.
+tools/store/listingData.csv -text

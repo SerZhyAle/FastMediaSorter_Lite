@@ -170,6 +170,18 @@ email (1-3 business days).
 
 ## Text templates
 
+> **Bulk-import CSV:** [tools/store/listingData.csv](../../tools/store/listingData.csv) is Partner
+> Center's own "Import listing data" CSV format (`Field,ID,Type,default,en-us,ru`), kept in the repo so
+> each release can update it in place instead of rebuilding it from scratch. It carries the same copy as
+> the templates below - Description, ReleaseNotes ("What's new"), ShortDescription, Feature1-15,
+> SearchTerm1-7 - plus every screenshot/logo asset URL and blank field from the last export, untouched.
+> At release time: update Description/ReleaseNotes/features in this doc first, then mirror the exact
+> same text into the CSV's `en-us`/`ru` columns for the same `Field` rows (respect the file's own CSV
+> quoting - double any literal `"` inside a quoted cell, keep embedded line breaks as bare `\n` inside the
+> quotes). Re-export from Partner Center after any manual edit there and diff before overwriting this
+> file, so asset URLs never go stale. Import it in Partner Center via the submission's listing page →
+> "Import listing data".
+
 > **Status (2026-07-23):** the copy below is **still queued for the NEXT submission** - none of it is on
 > the live listing yet. The last submission to pass certification is **26.7.14.1801 (Submission 2)**,
 > which used the *previous, shorter* description. Everything since then (26.7.15 Share Manager hardening
@@ -288,39 +300,41 @@ Open source, no account, no ads, no telemetry
 ### What's new in this version (Store "release notes" field) - next submission (26.7.14.1801 -> 26.7.23.1127)
 
 > Paste this into the submission's **"What's new in this version"** box (Partner Center does not accept
-> this remotely - it is a per-submission field). EN is the primary; RU is optional for the RU listing.
-> Keep it short - the Store shows only the first lines on the product page.
+> this remotely - it is a per-submission field, **capped at 1500 characters**). EN is the primary; RU is
+> optional for the RU listing. Keep it short - the Store shows only the first lines on the product page.
 >
 > **Covers everything since the last live submission (26.7.14.1801).** That includes the 26.7.15 items
 > (recipients panel, share hardening) and the full 26.7.23.1127 .NET 10 rewrite. Biggest/most visible
 > changes first, since the Store truncates; the long viewer-core fix pass is summarized, not itemized.
+> Both blocks below are pre-trimmed to fit the 1500-char cap (EN ~1295, RU ~1420) - don't add detail back
+> without re-checking the length.
 
 **EN**
 ```
-- The app is rebuilt as a modern 64-bit program that brings its own runtime: nothing extra to install, and no .NET Framework needed. Your settings carry over.
-- iPhone/camera photos now open natively: HEIC, HEIF and AVIF, with no paid codec required. Animated WEBP also opens everywhere now, without the Windows "WebP Image Extensions" codec some editions of Windows lack.
-- Video always plays through the built-in VLC engine, now with a full control bar (seek, time, mute, volume), audio-track and subtitle picking remembered by language, and "Open URL.." to play straight off a network address.
+- Rebuilt as a modern 64-bit program with its own runtime: nothing extra to install, no .NET Framework needed. Your settings carry over.
+- HEIC, HEIF and AVIF (iPhone/camera photos) and animated WEBP now open everywhere, with no extra codec required.
+- Video always plays through the built-in VLC engine, now with a full control bar (seek, mute, volume), audio/subtitle track picking remembered by language, and "Open URL.." for network video.
 - Zoom at the mouse cursor on the numeric keypad's grey keys, with drag-to-pan.
 - Right-click a video or middle-click a picture for a menu with everything you can do to it - rotate, translate, move, delete, and more.
-- File moves/copies now happen in the background so the next file appears instantly, even over a slow network share; moving onto an existing name saves as "name (2)" instead of failing.
-- New: a recipients panel over the image/video - click your destination folders right on the media to sort one-handed with the mouse (off by default; enable in Settings).
-- A "Dynamic perspective" option fades the Ambilight-style background bars into a soft halo around the photo.
-- Folder sharing is safer by default: "LAN only" now truly keeps the share off the internet, idle and stalled connections are dropped, failed logins are logged, and you can cap how many devices connect at once.
-- A large pass of fixes across browsing, file operations, slideshow, video and window state - see the full changelog on GitHub.
+- File moves/copies now run in the background so the next file appears instantly; moving onto an existing name saves as "name (2)" instead of failing.
+- New: a recipients panel over the media - click destination folders right on the image to sort one-handed with the mouse.
+- "Dynamic perspective" fades the Ambilight-style background bars into a soft halo around the photo.
+- Folder sharing is safer by default: "LAN only" truly blocks internet access, idle/stalled connections drop, failed logins are logged, and connections can be capped.
+- A large pass of fixes across browsing, file operations, slideshow, video and window state.
 ```
 
 **RU**
 ```
-- Приложение пересобрано как современная 64-битная программа со своей средой выполнения: ничего доустанавливать не нужно, .NET Framework больше не требуется. Настройки сохраняются.
-- Фото с iPhone и камер теперь открываются напрямую: HEIC, HEIF и AVIF, без платных кодеков. Анимированные WEBP тоже открываются везде - без кодека Windows "WebP Image Extensions", которого нет в некоторых редакциях Windows.
-- Видео всегда воспроизводится встроенным движком VLC, теперь с полноценной панелью управления (перемотка, время, звук, громкость), выбором аудиодорожки и субтитров по языку и командой "Открыть по адресу.." для воспроизведения прямо по сетевому пути.
+- Пересобрано как современная 64-битная программа со своей средой выполнения: ничего доустанавливать не нужно, .NET Framework больше не требуется. Настройки сохраняются.
+- HEIC, HEIF и AVIF (фото с iPhone и камер) и анимированные WEBP теперь открываются везде, без дополнительных кодеков.
+- Видео всегда воспроизводится встроенным движком VLC, теперь с панелью управления (перемотка, звук, громкость), выбором аудиодорожки и субтитров по языку и командой "Открыть по адресу.." для сетевого видео.
 - Масштабирование под курсором мыши на серых клавишах цифрового блока, с перетаскиванием.
-- Правый клик по видео или средний клик по картинке открывает меню со всеми действиями - поворот, перевод, перемещение, удаление и другое.
-- Перемещение/копирование файлов теперь идёт в фоне, следующий файл появляется мгновенно даже по медленной сети; перемещение на существующее имя сохраняется как "имя (2)" вместо ошибки.
-- Новое: панель получателей поверх изображения/видео - кликайте по папкам назначения прямо на медиа и сортируйте одной рукой мышью (по умолчанию выключено; включается в настройках).
-- Опция "Динамическая перспектива" превращает полосы фона в стиле ambilight в мягкий ореол вокруг фото.
-- Общий доступ безопаснее по умолчанию: режим "только локальная сеть" теперь действительно не выпускает раздачу в интернет, простаивающие и зависшие подключения сбрасываются, неудачные входы записываются в журнал, а число одновременных подключений можно ограничить.
-- Большой пакет исправлений в просмотре, файловых операциях, слайд-шоу, видео и состоянии окна - полный список изменений на GitHub.
+- Правый клик по видео или средний клик по картинке - меню со всеми действиями: поворот, перевод, перемещение, удаление и другое.
+- Перемещение/копирование файлов теперь идёт в фоне, следующий файл появляется мгновенно; перемещение на существующее имя сохраняется как "имя (2)" вместо ошибки.
+- Новое: панель получателей поверх медиа - кликайте по папкам назначения прямо на изображении и сортируйте одной рукой мышью.
+- "Динамическая перспектива" превращает полосы фона в стиле ambilight в мягкий ореол вокруг фото.
+- Общий доступ безопаснее по умолчанию: режим "только локальная сеть" действительно блокирует интернет, простаивающие подключения сбрасываются, неудачные входы записываются в журнал, а число подключений можно ограничить.
+- Большой пакет исправлений в просмотре, файловых операциях, слайд-шоу, видео и состоянии окна.
 ```
 
 ### runFullTrust justification (keep under ~1000 chars)
