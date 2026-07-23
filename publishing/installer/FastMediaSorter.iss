@@ -49,7 +49,8 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 LicenseFile={#SourceDir}\LICENSE
 OutputBaseFilename=FastMediaSorter-{#Version}-windows-x64-setup
-SetupIconFile=..\assets\icons\Fast_Media_Sorter.ico
+; This .iss lives at <repo>\publishing\installer, so the repo-root assets tree is two levels up.
+SetupIconFile=..\..\assets\icons\Fast_Media_Sorter.ico
 UninstallDisplayIcon={app}\{#AppExeName}
 ; Published artifacts use max ratio (lzma2/ultra). Local convenience builds can
 ; pass /DFastCompression for a much faster compile at the cost of a larger file -

@@ -109,7 +109,7 @@ moving part, and the script handles it.
 ### 2a. Build the new MSIX
 
 ```powershell
-cd msix
+cd publishing\msix
 .\build-msix.ps1 `
   -IdentityName         "<Package/Identity/Name from Partner Center>" `
   -Publisher            "<Package/Identity/Publisher, CN=... >" `

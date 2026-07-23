@@ -192,7 +192,7 @@ Write-Host "SHA256: $zipHash"
 if (Test-Path $iscc) {
     $stageAbs = (Resolve-Path $stageDir).Path
     $distAbs = (Resolve-Path $distDir).Path
-    & $iscc "/DVersion=$Version" "/DSourceDir=$stageAbs" "/O$distAbs" (Join-Path $solutionDir "installer\FastMediaSorter.iss")
+    & $iscc "/DVersion=$Version" "/DSourceDir=$stageAbs" "/O$distAbs" (Join-Path $solutionDir "publishing\installer\FastMediaSorter.iss")
     if ($LASTEXITCODE -ne 0) {
         throw "Inno Setup failed with exit code $LASTEXITCODE."
     }

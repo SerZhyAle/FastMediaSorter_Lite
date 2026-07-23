@@ -9,10 +9,10 @@
 
         dist\FastMediaSorter-<version>-windows-x64-setup.exe (+ .sha256)
 
-    It reuses the frozen installer definition (installer\FastMediaSorter.iss) and
-    the OCR offline-payload helper - nothing under installer\ / winget\ / msix\ is
-    modified, and every technical identifier (AppId, exe name, ProgIDs) stays as
-    published, so this installer coexists with the winget/Store channels.
+    It reuses the frozen installer definition (publishing\installer\FastMediaSorter.iss)
+    and the OCR offline-payload helper - nothing under publishing\ (installer\ / winget\ /
+    msix\ / store\) is modified, and every technical identifier (AppId, exe name, ProgIDs)
+    stays as published, so this installer coexists with the winget/Store channels.
 
     The installer is per-user by default (PrivilegesRequired=lowest) - it installs
     without admin rights, so a plain copy-and-double-click works on any machine.
@@ -83,7 +83,7 @@ $releaseDir   = Join-Path $solutionDir "bin\Release"
 $payloadDir   = Join-Path $solutionDir "payload\companion"
 $stageDir     = Join-Path $solutionDir ("stage\FastMediaSorter-" + $Version + "-windows-x64")
 $distDir      = Join-Path $solutionDir "dist"
-$issFile      = Join-Path $solutionDir "installer\FastMediaSorter.iss"
+$issFile      = Join-Path $solutionDir "publishing\installer\FastMediaSorter.iss"
 # The viewer ships as two exes (CLAUDE.md "Project identity"): msbuild yields the
 # net48 x86 sibling, the frozen-name x64 mainline comes from a dotnet publish.
 $exeName      = "FastMediaSorter_LITE.exe"

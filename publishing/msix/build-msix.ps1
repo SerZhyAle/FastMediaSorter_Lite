@@ -43,7 +43,8 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $MsixDir    = $PSScriptRoot
-$RepoRoot   = Split-Path $MsixDir -Parent
+# msix lives at <repo>\publishing\msix, so the repo root is two levels up.
+$RepoRoot   = Split-Path (Split-Path $MsixDir -Parent) -Parent
 $Solution   = Join-Path $RepoRoot 'FastMediaSorter.sln'
 $ReleaseDir = Join-Path $RepoRoot ("bin\" + $Configuration)
 $IconPng    = Join-Path $RepoRoot 'assets\icons\store-icon-256.png'

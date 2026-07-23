@@ -45,12 +45,12 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 > Поэтому каждый упаковщик ([build.ps1](../../build.ps1),
 > [tools/Build-Installer.ps1](../../tools/Build-Installer.ps1),
 > [tools/Build-OfflineRelease.ps1](../../tools/Build-OfflineRelease.ps1),
-> [release.yml](../../.github/workflows/release.yml), [msix/build-msix.ps1](../../msix/build-msix.ps1))
+> [release.yml](../../.github/workflows/release.yml), [publishing/msix/build-msix.ps1](../../publishing/msix/build-msix.ps1))
 > делает **свой** `dotnet publish` модерн-проекта и кладёт в пакет **оба** exe.
 
 **Нужно локально и на CI-раннере:** .NET 10 SDK (он уже стоял ради Companion) + MSBuild (VS 2022).
 
-**Инсталлятор** ([installer/FastMediaSorter.iss](../../installer/FastMediaSorter.iss)) ставит **оба** exe,
+**Инсталлятор** ([publishing/installer/FastMediaSorter.iss](../../publishing/installer/FastMediaSorter.iss)) ставит **оба** exe,
 а ярлык, запуск после установки и файловые ассоциации наводит на тот, который **реально пойдёт**
 на этой машине (`UseModernExe`: Windows 10 build >= 14393 -> мейнлайн, иначе x86-собрат).
 `MinVersion` инсталлятора по-прежнему `6.1` (Win7).
@@ -159,12 +159,12 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 - [ ] PR в `microsoft/winget-pkgs` для `SerZhyAle.FastMediaSorter` обновлён на новую версию + SHA256.
 
 **D. Microsoft Store (MSIX, опционально, не блокирует A-C):**
-- [ ] `cd msix; .\build-msix.ps1 -IdentityName "<имя из Partner Center>"` (БЕЗ `-SelfSign` для Store).
+- [ ] `cd publishing\msix; .\build-msix.ps1 -IdentityName "<имя из Partner Center>"` (БЕЗ `-SelfSign` для Store).
       Пакет **только x64 и только мейнлайн**: скрипт сам публикует модерн-проект, а
       `FastMediaSorter_x86.exe` из стейджа исключается.
 - [ ] Загрузить unsigned `.msix` в Partner Center (Microsoft подпишет сам).
-- [ ] Полный плейбук: [STORE_PUBLISHING.md](STORE_PUBLISHING.md), [msix/README.md](../../msix/README.md),
-      промпт-памятка [tools/store/STORE_PUBLISHING_PROMPT.md](../../tools/store/STORE_PUBLISHING_PROMPT.md).
+- [ ] Полный плейбук: [STORE_PUBLISHING.md](STORE_PUBLISHING.md), [publishing/msix/README.md](../../publishing/msix/README.md),
+      промпт-памятка [publishing/store/STORE_PUBLISHING_PROMPT.md](../../publishing/store/STORE_PUBLISHING_PROMPT.md).
 
 ### Чего ещё никто не проверял (честно)
 

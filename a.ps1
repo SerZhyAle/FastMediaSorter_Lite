@@ -18,7 +18,7 @@
       bi   - Build the copy-anywhere offline installer setup.exe (tools\Build-Installer.ps1)
       bib  - ..plus the heavy tessdata_best OCR models (Build-Installer -IncludeBest)
       off  - Mirror the CI packaging flow -> portable ZIP + installer (tools\Build-OfflineRelease.ps1)
-      msix - Build the Microsoft Store MSIX package (msix\build-msix.ps1)
+      msix - Build the Microsoft Store MSIX package (publishing\msix\build-msix.ps1)
       mss  - Build a sideload-testable self-signed MSIX (build-msix.ps1 -SelfSign)
 
     Release (PAID - pushes a v* tag -> billable GitHub Actions):
@@ -72,8 +72,8 @@ $scripts = @{
     'bi'   = @{ Path = 'tools\Build-Installer.ps1'; Args = @{} }
     'bib'  = @{ Path = 'tools\Build-Installer.ps1'; Args = @{ IncludeBest = $true } }
     'off'  = @{ Path = 'tools\Build-OfflineRelease.ps1'; Args = @{} }
-    'msix' = @{ Path = 'msix\build-msix.ps1'; Args = @{} }
-    'mss'  = @{ Path = 'msix\build-msix.ps1'; Args = @{ SelfSign = $true } }
+    'msix' = @{ Path = 'publishing\msix\build-msix.ps1'; Args = @{} }
+    'mss'  = @{ Path = 'publishing\msix\build-msix.ps1'; Args = @{ SelfSign = $true } }
     'rel'  = @{ Path = 'tools\Release.ps1'; Args = @{} }
     'relp' = @{ Path = 'tools\Release.ps1'; Args = @{ Push = $true } }
     't'    = @{ Path = 'tools\Run-AllTests.ps1'; Args = @{} }

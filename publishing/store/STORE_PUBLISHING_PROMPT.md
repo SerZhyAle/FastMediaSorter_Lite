@@ -55,7 +55,7 @@ MSIX запускает desktop-приложение в лёгком конте�
 
 === ФАЗА 2. Артефакты упаковки (создать в репозитории) ===
 Создай каталог msix/ со следующим:
-1) msix/AppxManifest.xml - манифест с плейсхолдерами __IDENTITY_NAME__, __PUBLISHER__,
+1) publishing/msix/AppxManifest.xml - манифест с плейсхолдерами __IDENTITY_NAME__, __PUBLISHER__,
    __PUBLISHER_DISPLAY__, __VERSION__. Ключевое:
    - <Identity Name Publisher Version ProcessorArchitecture="x64">
    - <Properties>: DisplayName, PublisherDisplayName, Logo=Assets\StoreLogo.png
@@ -67,12 +67,12 @@ MSIX запускает desktop-приложение в лёгком конте�
    - Namespaces: foundation/windows10, uap, rescap; IgnorableNamespaces="uap rescap"
    ВАЖНО: не добавляй Square310x310Logo без парного Wide310x150Logo (иначе ошибка).
    Достаточно плиток 44/71/150 + StoreLogo(50).
-2) msix/build-msix.ps1 - скрипт, который:
+2) publishing/msix/build-msix.ps1 - скрипт, который:
    a) Собирает Release через MSBuild (vswhere для поиска MSBuild; -NoBuild чтобы переиспользовать).
    b) Версия: Store требует 4-значную с РЕВИЗИЕЙ=0 (Major.Minor.Build.0), каждая часть <= 65535.
       Если exe штампуется как YY.M.D.HHmm -> ремап в YY.(M*100+D).HHmm.0 (монотонно, уникально по минутам).
       НЕ редактировать вручную.
-   c) Стейджит оффлайн-payload (exe + все рантайм-зависимости, БЕЗ *.pdb/*.xml) в msix/stage.
+   c) Стейджит оффлайн-payload (exe + все рантайм-зависимости, БЕЗ *.pdb/*.xml) в publishing/msix/stage.
    d) Генерирует логотипы из мастера assets/icons/store-icon-256.png (HighQualityBicubic):
       Square44x44Logo(44), StoreLogo(50), Square71x71Logo(71), Square150x150Logo(150) -> stage/Assets.
    e) Подставляет плейсхолдеры в AppxManifest.xml, кладёт его в КОРЕНЬ stage.
@@ -86,16 +86,16 @@ MSIX запускает desktop-приложение в лёгком конте�
       Export-Certificate, и ВЫВЕСТИ команды: Import-Certificate (как админ, в
       Cert:\LocalMachine\TrustedPeople) + Add-AppxPackage.
    Поиск SDK-тулзов: makeappx.exe/signtool.exe в "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\".
-3) msix/README.md - инструкции сборки/сабмита.
+3) publishing/msix/README.md - инструкции сборки/сабмита.
 4) assets/icons/store-icon-256.png - мастер-логотип 256px.
-5) tools/store/make-screenshot.ps1 - скриншот >= 1366x768 PNG.
+5) publishing/store/make-screenshot.ps1 - скриншот >= 1366x768 PNG.
 6) docs/privacy.html - страница политики приватности (хостить на GitHub Pages -> URL для листинга).
-7) Добавь msix/stage и msix/dist в .gitignore.
+7) Добавь publishing/msix/stage и publishing/msix/dist в .gitignore.
 
 Инструменты: winget install Microsoft.WindowsSDK (makeappx+signtool) и Visual Studio 2022 / MSBuild.
 
 === ФАЗА 3. Локальная проверка ДО загрузки ===
-cd msix; .\build-msix.ps1 -SelfSign   (можно -NoBuild для текущей сборки)
+cd publishing\msix; .\build-msix.ps1 -SelfSign   (можно -NoBuild для текущей сборки)
 Затем: доверить выведенный сертификат (как админ) и Add-AppxPackage <msix>.
 Прогнать ключевые сценарии приложения; проверить установку "по умолчанию" в
 Параметры > Приложения > Приложения по умолчанию (если есть file-associations).
@@ -146,6 +146,6 @@ cd msix; .\build-msix.ps1 -SelfSign   (можно -NoBuild для текущей
 
 ## Откуда взяты значения (для самопроверки)
 
-- `-Publisher` / `-PublisherDisplayName` по умолчанию - из [../../msix/build-msix.ps1](../../msix/build-msix.ps1) (параметры `$Publisher`, `$PublisherDisplayName`).
+- `-Publisher` / `-PublisherDisplayName` по умолчанию - из [../../publishing/msix/build-msix.ps1](../../publishing/msix/build-msix.ps1) (параметры `$Publisher`, `$PublisherDisplayName`).
 - IARC Global Rating ID - из [../../STORE_PUBLISHING.md](../../docs/guides/STORE_PUBLISHING.md) (раздел "Age rating (IARC)").
-- Полный исходный плейбук этого проекта - [../../STORE_PUBLISHING.md](../../docs/guides/STORE_PUBLISHING.md) и [../../msix/README.md](../../msix/README.md).
+- Полный исходный плейбук этого проекта - [../../STORE_PUBLISHING.md](../../docs/guides/STORE_PUBLISHING.md) и [../../publishing/msix/README.md](../../publishing/msix/README.md).

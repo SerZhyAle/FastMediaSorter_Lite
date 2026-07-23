@@ -201,7 +201,7 @@ jobs:
           $stageAbs = (Resolve-Path $stage).Path
           $distAbs  = (Resolve-Path dist).Path
 
-          & $iscc "/DVersion=$version" "/DSourceDir=$stageAbs" "/O$distAbs" installer\FastMediaSorter.iss
+          & $iscc "/DVersion=$version" "/DSourceDir=$stageAbs" "/O$distAbs" publishing\installer\FastMediaSorter.iss
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed (exit $LASTEXITCODE)" }
 
           $setupName = "FastMediaSorter-$version-windows-x64-setup.exe"

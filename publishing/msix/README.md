@@ -68,7 +68,7 @@ the Companion are `dotnet publish` outputs, not MSBuild ones.
   -PublisherDisplayName "<PublisherDisplayName from Partner Center>"
 ```
 
-What the script packages (order matters - see [BUILD_AND_RELEASE.md](../docs/guides/BUILD_AND_RELEASE.md)):
+What the script packages (order matters - see [BUILD_AND_RELEASE.md](../../docs/guides/BUILD_AND_RELEASE.md)):
 
 1. MSBuild Release, whose `bin\Release` tree supplies the **support payload** (LibVLC, `tessdata`,
    flags). Its `FastMediaSorter_x86.exe` output is filtered out of the stage.
@@ -78,7 +78,7 @@ What the script packages (order matters - see [BUILD_AND_RELEASE.md](../docs/gui
 3. `dotnet publish` of the Companion, plus the committed Go SFTP worker into `companion\`.
 4. `Prepare-OcrOfflinePayload.ps1` (trims the x86-only native trees), logos, manifest, `makeappx`.
 
-Output: `msix/dist/FastMediaSorter_LITE-<version>-x64.msix`, **unsigned** - that's correct, upload it
+Output: `publishing/msix/dist/FastMediaSorter_LITE-<version>-x64.msix`, **unsigned** - that's correct, upload it
 as-is. The package version is read from **the published mainline exe** (not the MSBuild output): its
 `YY.M.D.HHmm` stamp is remapped to a Store-legal `Major.Minor.Build.0` (`YY.(M*100+D).HHmm.0`; the
 revision must be 0 - the script does this automatically).
@@ -88,8 +88,8 @@ download on demand). Add `-IncludeBestOcr` to also bundle `tessdata_best`, or `-
 a quick build that downloads packs on first use.
 
 Then in Partner Center: create a submission, upload the `.msix`, fill the listing (reuse the copy in
-[../STORE_PUBLISHING.md](../docs/guides/STORE_PUBLISHING.md)), add a privacy-policy URL
-([docs/privacy.html](../docs/privacy.html) on GitHub Pages), add a screenshot (`tools/store/make-screenshot.ps1`),
+[STORE_PUBLISHING.md](../../docs/guides/STORE_PUBLISHING.md)), add a privacy-policy URL
+([docs/privacy.html](../../docs/privacy.html) on GitHub Pages), add a screenshot (`publishing/store/make-screenshot.ps1`),
 set the age rating, and submit. Certification typically takes a few business days.
 
 ## Test locally before submitting (self-signed)

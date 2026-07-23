@@ -52,11 +52,11 @@ unrelated Share Manager companion. The mainline no longer hosts the IE WebBrowse
 
 | File | Role |
 | --- | --- |
-| [msix/AppxManifest.xml](../../msix/AppxManifest.xml) | Manifest: Identity placeholders, `runFullTrust`, image file associations, visual assets. |
-| [msix/build-msix.ps1](../../msix/build-msix.ps1) | MSBuild → **`dotnet publish` the .NET 10 viewer** → version remap → stage offline payload (x86 sibling excluded) → generate logos → fill manifest → `makeappx pack` → optional self-sign. |
-| [msix/README.md](../../msix/README.md) | Build/submit instructions. |
+| [publishing/msix/AppxManifest.xml](../../publishing/msix/AppxManifest.xml) | Manifest: Identity placeholders, `runFullTrust`, image file associations, visual assets. |
+| [publishing/msix/build-msix.ps1](../../publishing/msix/build-msix.ps1) | MSBuild → **`dotnet publish` the .NET 10 viewer** → version remap → stage offline payload (x86 sibling excluded) → generate logos → fill manifest → `makeappx pack` → optional self-sign. |
+| [publishing/msix/README.md](../../publishing/msix/README.md) | Build/submit instructions. |
 | [assets/icons/store-icon-256.png](../../assets/icons/store-icon-256.png) | 256px logo master the build script scales into Store tiles. |
-| [tools/store/make-screenshot.ps1](../../tools/store/make-screenshot.ps1) | Produces a ≥1366×768 Store screenshot. |
+| [publishing/store/make-screenshot.ps1](../../publishing/store/make-screenshot.ps1) | Produces a ≥1366×768 Store screenshot. |
 | [docs/privacy.html](../privacy.html) | Privacy-policy page (host on GitHub Pages → URL for the listing). |
 
 **Build gotcha (important, since the .NET 10 build):** **`msbuild` alone no longer produces
@@ -82,7 +82,7 @@ winget install Microsoft.DotNet.SDK.10
 ## Phase 3 - Verify locally before uploading
 
 ```powershell
-cd msix
+cd publishing\msix
 .\build-msix.ps1 -SelfSign            # -NoBuild reuses the current bin\Release; the dotnet publish still runs
 # prints two commands: Import-Certificate (run as admin) + Add-AppxPackage
 ```
@@ -111,7 +111,7 @@ Pitfalls hit in practice:
    - `Package/Properties/PublisherDisplayName` → `-PublisherDisplayName`
 4. Build the Store package (no `-SelfSign`) and upload the **unsigned** `.msix`:
    ```powershell
-   cd msix
+   cd publishing\msix
    .\build-msix.ps1 -IdentityName "<Name>" -Publisher "<CN=…>" -PublisherDisplayName "<…>"
    ```
 
@@ -122,7 +122,7 @@ Pitfalls hit in practice:
 | Item | Requirement / gotcha | This app |
 | --- | --- | --- |
 | **Privacy policy** | Required (app reads local files, and can make optional network calls) | [docs/privacy.html](../privacy.html) on GitHub Pages → URL |
-| **Screenshots** | At least 1, PNG **≥ 1366×768** | `tools/store/make-screenshot.ps1`, or use the real app screenshots in `docs/images/` |
+| **Screenshots** | At least 1, PNG **≥ 1366×768** | `publishing/store/make-screenshot.ps1`, or use the real app screenshots in `docs/images/` |
 | **Store logos** | Optional (Store falls back to package logos) | package tiles are generated from `assets/icons/store-icon-256.png` |
 | **Description** | Required | template below |
 | **Product features** | Bullet list, each ≤ 200 chars | template below |
@@ -170,7 +170,7 @@ email (1-3 business days).
 
 ## Text templates
 
-> **Bulk-import CSV:** [tools/store/listingData.csv](../../tools/store/listingData.csv) is Partner
+> **Bulk-import CSV:** [publishing/store/listingData.csv](../../publishing/store/listingData.csv) is Partner
 > Center's own "Import listing data" CSV format (`Field,ID,Type,default,en-us,ru`), kept in the repo so
 > each release can update it in place instead of rebuilding it from scratch. It carries the same copy as
 > the templates below - Description, ReleaseNotes ("What's new"), ShortDescription, Feature1-15,
@@ -395,5 +395,5 @@ Data sharing: none. Open source: https://github.com/SerZhyAle/FastMediaSorter_Li
 
 ---
 
-_See [msix/README.md](../../msix/README.md) for packaging detail and [docs/privacy.html](../privacy.html)
+_See [publishing/msix/README.md](../../publishing/msix/README.md) for packaging detail and [docs/privacy.html](../privacy.html)
 for the live privacy-policy page._
