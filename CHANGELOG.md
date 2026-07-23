@@ -8,6 +8,8 @@ Categories: `Added`, `Changed`, `Fixed`, `Removed`.
 
 ## [Unreleased]
 
+## [26.7.23.1127] - 2026-07-23
+
 ### Added
 - **The viewer now comes as two programs in one folder**, so it runs well on both new and old machines:
   - **Fast Media Sorter (`FastMediaSorter_LITE.exe`)** - the new 64-bit build on .NET 10. It replaces the previous program in place and keeps all your settings. What it fixes right away: **animated WEBP images open everywhere** (the app decodes them itself, instead of relying on the Windows "WebP Image Extensions" codec that server editions of Windows don't have), and **video always plays through the built-in VLC engine** - the retired Internet Explorer component is gone, so playback behaves the same on systems that no longer ship it. Nothing to install: the .NET runtime is inside the program.
