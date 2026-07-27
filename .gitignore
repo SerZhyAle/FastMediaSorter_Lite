@@ -27,3 +27,12 @@ tools/ocr-cache/
 current.log
 temp/
 manifests/
+
+# Secrets and signing material - pre-empt the leak, never catch it afterwards.
+*.pfx
+*.snk
+*.jks
+*.keystore
+.env
+*token*
+*secret*

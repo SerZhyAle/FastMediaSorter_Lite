@@ -1,0 +1,43 @@
+{
+  "$comment": "site.root is '.' because Pages serves this repo from the root, NOT from docs/. The larger docs/index.html is an unpublished staging copy - do not assume the two are meant to match.",
+
+  "canon": {
+    "version": "2026.07.27",
+    "coreDigest": "sha256:dae220bfd389416d775986ac24913efdf8b0a8b9e881608157c41e5371d23663",
+    "adoptedOn": "2026-07-27",
+    "model": "reference",
+    "contribRecord": "contrib/fastmediasorter_lite.md"
+  },
+
+  "role": "product",
+
+  "overlay": ["A"],
+  "shapes": ["dual-runtime-build-variant", "co-shipped-companion"],
+  "editions": [],
+
+  "versionShape": {
+    "tagRegex": "^v\\d{2}\\.\\d{1,2}\\.\\d{1,2}\\.\\d{4}$",
+    "editionTagPrefixes": []
+  },
+
+  "ledgerShape": 1,
+  "ledgerFile": null,
+
+  "channels": ["github", "winget", "msstore", "installer"],
+
+  "site": {
+    "kind": "product",
+    "root": ".",
+    "pages": ["index.html"]
+  },
+
+  "privacy": {
+    "page": "docs/privacy.html",
+    "carveOut": null,
+    "sensitiveAccess": false
+  },
+
+  "byteIdenticalPairs": [],
+  "vendorAllow": ["packages/*"],
+  "exemptions": []
+}
