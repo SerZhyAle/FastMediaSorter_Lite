@@ -46,11 +46,33 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The localization parity test reads Localization.All, which is Friend on purpose
+         (the table is an implementation detail, not API). The viewer's test project sees
+         it by linking the sources; this one project-references, so it needs the grant. -->
+    <InternalsVisibleTo Include="Companion.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Offline trilingual port-forward guide, opened by ShareGuide. Keyed by the
          same relative path ShareGuide passes (help/port-forward.html). -->
     <EmbeddedResource Include="..\..\assets\help\port-forward.html">
       <LogicalName>help/port-forward.html</LogicalName>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The localization ENGINE is shared with the viewer, verbatim - same dictionary
+      shape, same Russian-source keys, same registry value, so a language chosen in
+      either program shows in the other (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md
+      block A'). Only the string TABLES differ: Companion supplies its own
+      RegisterStrings() in Localization\Localization.Registry.vb, which is why the
+      engine's shared constructor can call an implementation this project owns.
+
+      Linked, not copied: a fix to T/TF/TC must not need doing twice.
+    -->
+    <Compile Include="..\Localization\Localization.vb" Link="Localization\Localization.vb" />
+    <Compile Include="..\Localization\Localization.Persistence.vb" Link="Localization\Localization.Persistence.vb" />
   </ItemGroup>
 
 </Project>

@@ -95,10 +95,10 @@ Partial Public Class Main_Form
                                         If(Form_Color_Scheme = 0, "black", "white") &
                                         "; color:" & If(Form_Color_Scheme = 0, "white", "black") &
                                         "; text-align:center; font-family:Arial;'>" &
-                                        "<h3>" & If(Is_Russian_Language, "Видео открыто во внешнем плеере", "Video opened in external player") & "</h3>" &
+                                        "<h3>" & Localization.T("Видео открыто во внешнем плеере") & "</h3>" &
                                         "<p>" & Path.GetFileName(video_File_Path) & "</p>" &
                                         "<p style='font-size:12px; color:gray;'>" &
-                                        If(Is_Russian_Language, "Нажмите стрелки для перехода к следующему файлу", "Use arrow keys to navigate to next file") &
+                                        Localization.T("Нажмите стрелки для перехода к следующему файлу") &
                                         "</p></body></html>"
 #End If
 
@@ -107,12 +107,12 @@ Partial Public Class Main_Form
                 ' is the ONLY video fallback when LibVLC is unavailable.
                 Process.Start(New ProcessStartInfo(video_File_Path) With {.UseShellExecute = True})
 
-                lbl_Status.Text = If(Is_Russian_Language, "Видео открыто во внешнем плеере: " & Path.GetFileName(video_File_Path), "Video opened in external player: " & Path.GetFileName(video_File_Path))
+                lbl_Status.Text = Localization.TF("Видео открыто во внешнем плеере: {0}", Path.GetFileName(video_File_Path))
 
             End If
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0867: Error opening video with default player: " & ex.Message)
-            lbl_Status.Text = If(Is_Russian_Language, "Ошибка запуска внешнего плеера: " & ex.Message, "Error launching external player: " & ex.Message)
+            lbl_Status.Text = Localization.TF("Ошибка запуска внешнего плеера: {0}", ex.Message)
         End Try
     End Sub
 
@@ -143,10 +143,10 @@ Partial Public Class Main_Form
     ''' notes: the old sync wrapper deadlocked outright rather than just looking slow.</summary>
     Private Async Function InitializeVlcCoreAsync() As Task(Of Boolean)
         If Not OptionalRuntimeManager.HasVlcRuntime() Then
-            lbl_Status.Text = If(Is_Russian_Language, "Установка поддержки VLC..", "Installing VLC support..")
+            lbl_Status.Text = Localization.T("Установка поддержки VLC..")
         End If
 
-        If Not Await OptionalRuntimeManager.EnsureVlcRuntimeInteractiveAsync(Me, Is_Russian_Language) Then
+        If Not Await OptionalRuntimeManager.EnsureVlcRuntimeInteractiveAsync(Me) Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0868: LibVLC runtime unavailable")
             Return False
         End If
@@ -238,7 +238,7 @@ Partial Public Class Main_Form
 
         If Not Await EnsureVlcInitializedAsync() Then
             If generation <> media_Generation Then Return
-            lbl_Status.Text = OptionalRuntimeManager.GetVlcUnavailableStatusText(Is_Russian_Language)
+            lbl_Status.Text = OptionalRuntimeManager.GetVlcUnavailableStatusText()
             ' By path, not by the global: the user may be on a picture by now, and the
             ' external player would have opened THAT.
             TryOpenVideoWithDefaultPlayer(file_Path)
@@ -304,9 +304,7 @@ Partial Public Class Main_Form
             ' at all for an address ending in "/".
             If IsRemoteMediaUrl(file_Path) Then shown_Name = DisplayNameForMrl(file_Path)
 #End If
-            lbl_Status.Text = If(Is_Russian_Language,
-                                 "Видео воспроизводится через VLC: " & shown_Name,
-                                 "Playing via VLC: " & shown_Name)
+            lbl_Status.Text = Localization.TF("Видео воспроизводится через VLC: {0}", shown_Name)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0871: Playing via LibVLC: " & file_Path)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0872: LibVLC play failed: " & ex.Message)
@@ -447,7 +445,7 @@ Partial Public Class Main_Form
                             "<source src='" & video_File_Absolute_Uri & "' onerror=""fmsReportVideoError('Error: Unsupported video type (source failed to load)');"">" &
                             "<track kind='captions' default>" &
                             "<p style='color: " & text_Color & "; text-align: center;'>" &
-                            If(Is_Russian_Language, "Ваш браузер не поддерживает видео.", "Your browser does not support video.") & "</p>" &
+                            Localization.T("Ваш браузер не поддерживает видео.") & "</p>" &
                             "</video>"
 
             Dim html As String = "<html><head><meta http-equiv='X-UA-Compatible' content='IE=edge'>" &
@@ -511,7 +509,7 @@ Partial Public Class Main_Form
             is_WebBrowser_Visible = False
 
             UpdateControlVisibility()
-            lbl_Status.Text = If(Is_Russian_Language, "Ошибка загрузки видео: " & ex.Message, "Error loading video: " & ex.Message)
+            lbl_Status.Text = Localization.TF("Ошибка загрузки видео: {0}", ex.Message)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0860: Error loading video: " & ex.Message)
         End Try
     End Sub

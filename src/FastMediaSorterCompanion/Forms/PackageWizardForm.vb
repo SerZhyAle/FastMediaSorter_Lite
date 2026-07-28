@@ -64,12 +64,6 @@ Public NotInheritable Class PackageWizardForm
         BuildUi()
     End Sub
 
-    Private Shared ReadOnly Property Rus As Boolean
-        Get
-            Return Is_Russian_Language
-        End Get
-    End Property
-
     ''' <summary>Per-row working state stored in DataGridViewRow.Tag: the folder identity plus a
     ''' live ShareRootParams (clone of the folder's defaults) edited by this recipient's cells.</summary>
     Private NotInheritable Class RowState
@@ -82,25 +76,28 @@ Public NotInheritable Class PackageWizardForm
     End Class
 
     Private Shared Function ProfileDisplays() As String()
-        Return If(Rus,
-            New String() {"Обычная папка", "Аудиотека", "Видеотека", "Фотохранилище", "Документы", "Все файлы"},
-            New String() {"Regular folder", "Audio library", "Video library", "Photo storage", "Documents", "All files"})
+        Return New String() {
+            Localization.T("Обычная папка"), Localization.T("Аудиотека"), Localization.T("Видеотека"),
+            Localization.T("Фотохранилище"), Localization.T("Документы"), Localization.T("Все файлы")}
     End Function
 
     Private Shared Function MediaDisplays() As String()
-        Return If(Rus,
-            New String() {"Изображения", "Видео", "Аудио", "GIF", "Текст", "PDF", "EPUB", "Office"},
-            New String() {"Images", "Video", "Audio", "GIF", "Text", "PDF", "EPUB", "Office"})
+        ' GIF/PDF/EPUB/Office are the same token everywhere - nothing to translate.
+        Return New String() {
+            Localization.T("Изображения"), Localization.T("Видео"), Localization.T("Аудио"), "GIF",
+            Localization.T("Текст"), "PDF", "EPUB", "Office"}
     End Function
 
     Private Sub BuildUi()
-        Me.Text = If(Rus, "Поделиться - код доступа", "Share - access code")
+        ' Script font + text direction for the active language, before any control
+        ' exists - children inherit both (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
+        UiLanguage.ApplyTo(Me)
+        Me.Text = Localization.T("Поделиться - код доступа")
         Me.FormBorderStyle = FormBorderStyle.Sizable
         Me.MaximizeBox = True
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.AutoScaleMode = AutoScaleMode.Font
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
         ' Fit-to-content, not maximized: FitToGrid (after the columns are populated) widens the
         ' window to exactly show ALL columns without horizontal scroll, capped to the screen.
@@ -114,23 +111,21 @@ Public NotInheritable Class PackageWizardForm
         Dim topBar As New FlowLayoutPanel With {.Dock = DockStyle.Top, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .FlowDirection = FlowDirection.TopDown, .WrapContents = False, .Padding = New Padding(16, 12, 16, 6)}
         topBar.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0), .Font = New Font(Me.Font, FontStyle.Bold),
-            .Text = If(Rus, "Папки и параметры этого кода доступа", "Folders and settings for this access code")})
+            .Text = Localization.T("Папки и параметры этого кода доступа")})
         topBar.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 0), .ForeColor = Color.DimGray,
-            .Text = If(Rus, "Нажмите на любую ячейку, чтобы изменить значение. Значения взяты из настроек папки; правки - только для этого кода.",
-                            "Click any cell to change a value. Values come from each folder's settings; edits apply only to this code.")})
+            .Text = Localization.T("Нажмите на любую ячейку, чтобы изменить значение. Значения взяты из настроек папки; правки - только для этого кода.")})
 
         ' The resource grid (fill).
         BuildGrid()
 
         ' Below the grid: common per-export settings (full width), then ONE action-button row.
         Dim leftCol As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.TopDown, .WrapContents = False, .Margin = New Padding(0)}
-        leftCol.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 4), .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(Rus, "Общие настройки передачи:", "Common transfer settings:")})
-        chkLanOnly = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = If(Rus, "Только локальная сеть (без адреса из интернета)", "LAN only (no internet address)")}
-        chkNoPassword = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 6), .Text = If(Rus, "Не включать пароль в файл/QR", "Do not include the password in the file/QR")}
+        leftCol.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 4), .Font = New Font(Me.Font, FontStyle.Bold), .Text = Localization.T("Общие настройки передачи:")})
+        chkLanOnly = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = Localization.T("Только локальная сеть (без адреса из интернета)")}
+        chkNoPassword = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 6), .Text = Localization.T("Не включать пароль в файл/QR")}
         AddHandler chkLanOnly.CheckedChanged, AddressOf OnRebuildToggle
         AddHandler chkNoPassword.CheckedChanged, AddressOf OnRebuildToggle
-        toolTip.SetToolTip(chkNoPassword, If(Rus, "Пароль не попадёт в файл/QR - телефон запросит его при импорте; передайте пароль отдельно.",
-                                                 "The password stays out of the file/QR - the phone asks for it at import; pass it separately."))
+        toolTip.SetToolTip(chkNoPassword, Localization.T("Пароль не попадёт в файл/QR - телефон запросит его при импорте; передайте пароль отдельно."))
         leftCol.Controls.AddRange(New Control() {chkLanOnly, chkNoPassword})
         ' NB: the LAN address + host-key fingerprint are deliberately NOT shown here. The
         ' package embeds ALL access paths (LAN + IPv6 + internet), so showing only the LAN
@@ -145,19 +140,19 @@ Public NotInheritable Class PackageWizardForm
         ' settings (see bottomBar), filling that otherwise-empty band. Anchored Left+Right so it
         ' spans the right column (and can wrap when the window is narrow) while staying vertically
         ' centred against the taller settings block.
-        _qrGlyph = BuildQrGlyph()
+        _qrGlyph = BuildQrGlyph(LogicalToDeviceUnits(16))
         Dim btnRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Anchor = AnchorStyles.Left Or AnchorStyles.Right, .FlowDirection = FlowDirection.LeftToRight, .WrapContents = True, .Margin = New Padding(0, 4, 0, 0)}
         btnShowQr = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Font = New Font(Me.Font, FontStyle.Bold), .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 12, 5),
-            .Text = If(Rus, "Показать QR-код", "Show QR code"), .MinimumSize = New Size(128, 0),
+            .Text = Localization.T("Показать QR-код"), .MinimumSize = New Size(128, 0),
             .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
             .TextAlign = ContentAlignment.MiddleCenter, .FlatStyle = FlatStyle.Flat}
         btnShowQr.FlatAppearance.BorderSize = 1
         AddHandler btnShowQr.Click, AddressOf OnShowQr
-        btnCopyLogin = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = If(Rus, "Скопировать логин/пароль", "Copy login/password"), .Enabled = False}
-        btnSave = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = If(Rus, "Сохранить файл .fmscfg..", "Save .fmscfg file.."), .Enabled = False}
-        btnEmail = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = If(Rus, "Отправить по почте..", "Send by email.."), .Enabled = False}
-        btnClose = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 0, 2), .Padding = New Padding(16, 5, 16, 5), .Text = If(Rus, "Закрыть", "Close"), .DialogResult = DialogResult.Cancel}
+        btnCopyLogin = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Скопировать логин/пароль"), .Enabled = False}
+        btnSave = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Сохранить файл .fmscfg.."), .Enabled = False}
+        btnEmail = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Отправить по почте.."), .Enabled = False}
+        btnClose = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 0, 2), .Padding = New Padding(16, 5, 16, 5), .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.Cancel}
         AddHandler btnCopyLogin.Click, AddressOf OnCopyLogin
         AddHandler btnSave.Click, AddressOf OnSaveConfig
         AddHandler btnEmail.Click, AddressOf OnEmail
@@ -182,6 +177,7 @@ Public NotInheritable Class PackageWizardForm
         Me.Controls.Add(topBar)
         Me.Controls.Add(bottomBar)
         Me.CancelButton = btnClose
+        DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
 
         _loading = True
         chkLanOnly.Checked = _settings.LanOnlyExport
@@ -254,33 +250,33 @@ Public NotInheritable Class PackageWizardForm
             .Margin = New Padding(16, 0, 16, 0)
         }
 
-        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "inc", .HeaderText = If(Rus, "Вкл", "On")})
-        dgv.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "folder", .HeaderText = If(Rus, "Папка", "Folder"), .[ReadOnly] = True, .MinimumWidth = 120})
-        dgv.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "label", .HeaderText = If(Rus, "Имя на телефоне", "Name on phone"), .MinimumWidth = 130})
+        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "inc", .HeaderText = Localization.T("Вкл")})
+        dgv.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "folder", .HeaderText = Localization.T("Папка"), .[ReadOnly] = True, .MinimumWidth = 120})
+        dgv.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "label", .HeaderText = Localization.T("Имя на телефоне"), .MinimumWidth = 130})
 
-        Dim colProfile As New DataGridViewComboBoxColumn With {.Name = "profile", .HeaderText = If(Rus, "Тип", "Type"), .FlatStyle = FlatStyle.Flat, .MinimumWidth = 130}
+        Dim colProfile As New DataGridViewComboBoxColumn With {.Name = "profile", .HeaderText = Localization.T("Тип"), .FlatStyle = FlatStyle.Flat, .MinimumWidth = 130}
         colProfile.Items.AddRange(DirectCast(ProfileDisplays(), Object()))
         dgv.Columns.Add(colProfile)
 
-        dgv.Columns.Add(New DataGridViewButtonColumn With {.Name = "media", .HeaderText = If(Rus, "Типы медиа", "Media types"), .UseColumnTextForButtonValue = False, .FlatStyle = FlatStyle.Standard, .MinimumWidth = 120})
+        dgv.Columns.Add(New DataGridViewButtonColumn With {.Name = "media", .HeaderText = Localization.T("Типы медиа"), .UseColumnTextForButtonValue = False, .FlatStyle = FlatStyle.Standard, .MinimumWidth = 120})
 
-        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "scan", .HeaderText = If(Rus, "Скан подпапок", "Scan subfolders")})
-        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "subitems", .HeaderText = If(Rus, "Подпапки как элементы", "Subfolders as items")})
-        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "hidden", .HeaderText = If(Rus, "Скрытые", "Hidden")})
-        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "allfiles", .HeaderText = If(Rus, "Все файлы", "All files")})
-        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "ro", .HeaderText = If(Rus, "Только чтение", "Read-only")})
-        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "softro", .HeaderText = If(Rus, "RO-подсказка", "RO hint")})
-        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "dest", .HeaderText = If(Rus, "Приёмник", "Destination")})
+        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "scan", .HeaderText = Localization.T("Скан подпапок")})
+        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "subitems", .HeaderText = Localization.T("Подпапки как элементы")})
+        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "hidden", .HeaderText = Localization.T("Скрытые")})
+        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "allfiles", .HeaderText = Localization.T("Все файлы")})
+        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "ro", .HeaderText = Localization.T("Только чтение")})
+        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "softro", .HeaderText = Localization.T("RO-подсказка")})
+        dgv.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "dest", .HeaderText = Localization.T("Приёмник")})
 
-        dgv.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "comment", .HeaderText = If(Rus, "Комментарий", "Comment"), .MinimumWidth = 140})
+        dgv.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "comment", .HeaderText = Localization.T("Комментарий"), .MinimumWidth = 140})
         dgv.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "pin", .HeaderText = "PIN", .MinimumWidth = 70})
-        dgv.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "slide", .HeaderText = If(Rus, "Слайд-шоу, сек", "Slideshow, sec"), .MinimumWidth = 80})
+        dgv.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "slide", .HeaderText = Localization.T("Слайд-шоу, сек"), .MinimumWidth = 80})
 
         ' Header tooltips for the less-obvious columns.
-        dgv.Columns("ro").ToolTipText = If(Rus, "Сервер запрещает изменения (настоящий запрет).", "The server blocks changes (a real lock).")
-        dgv.Columns("softro").ToolTipText = If(Rus, "Приложение спрячет кнопки изменения, но сервер запись не запрещает.", "The app hides edit buttons, but the server does not block writes.")
-        dgv.Columns("dest").ToolTipText = If(Rus, "Папка-получатель: в неё можно копировать/переносить с телефона (делает папку доступной на запись).", "Destination folder: the phone can copy/move into it (makes the folder writable).")
-        dgv.Columns("media").ToolTipText = If(Rus, "Нажмите, чтобы выбрать точный набор типов. Пусто = решает тип.", "Click to pick the exact media set. Empty = the type decides.")
+        dgv.Columns("ro").ToolTipText = Localization.T("Сервер запрещает изменения (настоящий запрет).")
+        dgv.Columns("softro").ToolTipText = Localization.T("Приложение спрячет кнопки изменения, но сервер запись не запрещает.")
+        dgv.Columns("dest").ToolTipText = Localization.T("Папка-получатель: в неё можно копировать/переносить с телефона (делает папку доступной на запись).")
+        dgv.Columns("media").ToolTipText = Localization.T("Нажмите, чтобы выбрать точный набор типов. Пусто = решает тип.")
 
         AddHandler dgv.CurrentCellDirtyStateChanged, AddressOf OnGridDirty
         AddHandler dgv.CellValueChanged, AddressOf OnCellValueChanged
@@ -294,13 +290,13 @@ Public NotInheritable Class PackageWizardForm
     End Sub
 
     Private Async Sub OnShownFirst(sender As Object, e As EventArgs)
-        SetHint(If(Rus, "Получение состояния..", "Fetching state.."))
+        SetHint(Localization.T("Получение состояния.."))
         _status = Await ShareController.GetStatusAsync()
         ' The user may have closed the modal wizard during the pipe round-trip - the form
         ' (and its grid/timer) is then disposed, so bail before touching any control.
         If IsDisposed OrElse Disposing Then Return
         If _status Is Nothing OrElse Not _status.Running Then
-            SetHint(If(Rus, "Сервер не запущен.", "The server is not running."))
+            SetHint(Localization.T("Сервер не запущен."))
             Return
         End If
         PopulateGrid()
@@ -352,14 +348,14 @@ Public NotInheritable Class PackageWizardForm
     End Sub
 
     Private Shared Function MediaSummary(tokens As List(Of String)) As String
-        If tokens Is Nothing OrElse tokens.Count = 0 Then Return If(Rus, "по типу", "by type")
+        If tokens Is Nothing OrElse tokens.Count = 0 Then Return Localization.T("по типу")
         Dim disp As String() = MediaDisplays()
         Dim parts As New List(Of String)()
         For Each t As String In tokens
             Dim i As Integer = Array.IndexOf(MediaTokens, t)
             If i >= 0 Then parts.Add(disp(i))
         Next
-        Return If(parts.Count > 0, String.Join(", ", parts), If(Rus, "по типу", "by type"))
+        Return If(parts.Count > 0, String.Join(", ", parts), Localization.T("по типу"))
     End Function
 
     ' --- cell edits -> row params ----------------------------------------------
@@ -520,7 +516,7 @@ Public NotInheritable Class PackageWizardForm
             _config = Nothing
             ShowQr(Nothing)
             EnableExport(False)
-            SetHint(If(Rus, "Отметьте хотя бы одну папку.", "Check at least one folder."))
+            SetHint(Localization.T("Отметьте хотя бы одну папку."))
             Return
         End If
 
@@ -536,7 +532,7 @@ Public NotInheritable Class PackageWizardForm
         If _config Is Nothing Then
             ShowQr(Nothing)
             EnableExport(False)
-            SetHint(If(Rus, "Нет доступного адреса для раздачи.", "No usable address to share."))
+            SetHint(Localization.T("Нет доступного адреса для раздачи."))
             Return
         End If
 
@@ -545,9 +541,9 @@ Public NotInheritable Class PackageWizardForm
         btnCopyLogin.Enabled = Not String.IsNullOrEmpty(_status.Password)
 
         If _config.QrOverflow Then
-            SetHint(If(Rus, "Код слишком большой для QR - сохраните файл .fmscfg и передайте его.", "Too large for a QR - save the .fmscfg file and share that instead."))
+            SetHint(Localization.T("Код слишком большой для QR - сохраните файл .fmscfg и передайте его."))
         ElseIf chkNoPassword.Checked AndAlso Not String.IsNullOrEmpty(_status.Password) Then
-            SetHint((If(Rus, "Пароль (передайте отдельно): ", "Password (pass separately): ")) & _status.Password)
+            SetHint(Localization.TF("Пароль (передайте отдельно): {0}", _status.Password))
         Else
             SetHint("")
         End If
@@ -565,8 +561,8 @@ Public NotInheritable Class PackageWizardForm
         If _status Is Nothing OrElse String.IsNullOrEmpty(_status.Password) Then Return
         Try
             Dim user As String = If(String.IsNullOrEmpty(_status.Username), "fms", _status.Username)
-            Clipboard.SetText((If(Rus, "Логин: ", "Login: ") & user & Environment.NewLine) & (If(Rus, "Пароль: ", "Password: ") & _status.Password))
-            SetHint(If(Rus, "Логин и пароль скопированы.", "Login and password copied."))
+            Clipboard.SetText(Localization.TF("Логин: {0}", user) & Environment.NewLine & Localization.TF("Пароль: {0}", _status.Password))
+            SetHint(Localization.T("Логин и пароль скопированы."))
         Catch
         End Try
     End Sub
@@ -583,9 +579,9 @@ Public NotInheritable Class PackageWizardForm
             If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
             Try
                 File.WriteAllText(dlg.FileName, _config.ConfigJson, New UTF8Encoding(False))
-                SetHint(If(Rus, "Файл сохранён.", "File saved."))
+                SetHint(Localization.T("Файл сохранён."))
             Catch
-                SetHint(If(Rus, "Не удалось сохранить файл.", "Could not save the file."))
+                SetHint(Localization.T("Не удалось сохранить файл."))
             End Try
         End Using
     End Sub
@@ -598,14 +594,13 @@ Public NotInheritable Class PackageWizardForm
             Directory.CreateDirectory(dir)
             Dim cfgFile As String = Path.Combine(dir, "FastMediaSorter.fmscfg")
             File.WriteAllText(cfgFile, _config.ConfigJson, New UTF8Encoding(False))
-            Dim subject As String = If(Rus, "Доступ к папкам Fast Media Sorter", "Fast Media Sorter folder access")
-            Dim body As String = If(Rus, "Импортируйте вложенный файл .fmscfg в приложении FastMediaSorter на Android.",
-                                         "Import the attached .fmscfg file in the FastMediaSorter Android app.")
+            Dim subject As String = Localization.T("Доступ к папкам Fast Media Sorter")
+            Dim body As String = Localization.T("Импортируйте вложенный файл .fmscfg в приложении FastMediaSorter на Android.")
             If Not MailSender.SendFile(cfgFile, subject, body) Then
-                SetHint(If(Rus, "Не удалось открыть почтовый клиент.", "Could not open the mail client."))
+                SetHint(Localization.T("Не удалось открыть почтовый клиент."))
             End If
         Catch
-            SetHint(If(Rus, "Не удалось отправить письмо.", "Could not send the email."))
+            SetHint(Localization.T("Не удалось отправить письмо."))
         End Try
     End Sub
 
@@ -645,12 +640,15 @@ Public NotInheritable Class PackageWizardForm
     End Sub
 
     ''' <summary>A tiny QR glyph (three finder squares + a few modules) for the Show-QR button,
-    ''' drawn white to sit on the blue accent - matches the app's other in-code glyphs.</summary>
-    Private Shared Function BuildQrGlyph() As Bitmap
-        Dim bmp As New Bitmap(16, 16)
+    ''' drawn white to sit on the blue accent - matches the app's other in-code glyphs. Drawn at
+    ''' <paramref name="size"/> px (artwork authored for 16 px), since the form's auto-scaling
+    ''' grows the button but never the image inside it.</summary>
+    Private Shared Function BuildQrGlyph(size As Integer) As Bitmap
+        Dim bmp As New Bitmap(size, size)
         Using g As Graphics = Graphics.FromImage(bmp)
             g.SmoothingMode = Drawing2D.SmoothingMode.None
             g.Clear(Color.Transparent)
+            g.ScaleTransform(size / 16.0F, size / 16.0F)
             Using pen As New Pen(Color.White, 1.0F), b As New SolidBrush(Color.White)
                 DrawQrFinder(g, pen, b, 0, 0)
                 DrawQrFinder(g, pen, b, 9, 0)

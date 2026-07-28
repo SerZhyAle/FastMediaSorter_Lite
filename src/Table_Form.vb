@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 'sza130806
 'sza250617
 Imports System.ComponentModel
@@ -44,56 +44,46 @@ Public Class Table_Form
         End If
 
         ' --- TabPage 1: Destination Folders ---
-        toolTip.SetToolTip(Data_Grid_View, If(Is_Russian_Language,
-        "Двойной клик по номеру клавиши - выполнить действие." & vbCrLf & "Двойной клик по пути к папке - сменить её (одинарный клик она вежливо проигнорирует).",
-        "Double-click a key number to run the action." & vbCrLf & "Double-click a folder path to change it (single clicks are politely ignored)."))
-        toolTip.SetToolTip(chkbox_Copy_Mode, If(Is_Russian_Language, "Если отмечено, файлы копируются, а не перемещаются - оригиналы никуда не денутся, что бы вы ни нажали дальше.", "If checked, files are copied instead of moved - the originals survive whatever you press next."))
-        toolTip.SetToolTip(chkbox_Independent_Thread_For_File_Operation, If(Is_Russian_Language, "Если отмечено, файловые операции уходят в фоновый поток, чтобы не заставлять вас смотреть на них.", "If checked, file operations run in the background, so you don't have to watch them happen."))
+        toolTip.SetToolTip(Data_Grid_View, Localization.T("Двойной клик по номеру клавиши - выполнить действие." & vbCrLf & "Двойной клик по пути к папке - сменить её (одинарный клик она вежливо проигнорирует)."))
+        toolTip.SetToolTip(chkbox_Copy_Mode, Localization.T("Если отмечено, файлы копируются, а не перемещаются - оригиналы никуда не денутся, что бы вы ни нажали дальше."))
+        toolTip.SetToolTip(chkbox_Independent_Thread_For_File_Operation, Localization.T("Если отмечено, файловые операции уходят в фоновый поток, чтобы не заставлять вас смотреть на них."))
 
         ' --- TabPage 2: Settings ---
-        toolTip.SetToolTip(cmbox_color_schema, If(Is_Russian_Language, "Выберите цветовую схему фона для просмотра изображений.", "Select the background color scheme for the image viewer."))
-        toolTip.SetToolTip(chb_perspectiva, If(Is_Russian_Language, "Включить перспективный фон: чёрные поля по краям превращаются в продолжение картинки. Чисто для красоты.", "Enable the perspective background: the black bars become a continuation of the image. Purely for the vibes."))
-        toolTip.SetToolTip(chk_Dynamic_Perspective, If(Is_Russian_Language, "Полосы гаснут к цвету фона по мере удаления от фото - получается ореол, а не сплошная полоса. Применяется со следующего фото.", "The bars fade into the background colour the further they get from the photo - a halo rather than a solid bar. Applies from the next photo on."))
-        toolTip.SetToolTip(chk_Animated_Perspective, If(Is_Russian_Language, "Ореол не появляется сразу, а вырастает от края фото к краю экрана - примерно за треть секунды. Снимите галку, и он будет просто нарисован мгновенно. В покое кадр в обоих случаях одинаковый. Растёт только на новом фото: ресайз окна и зум перерисовывают фон сразу.", "The halo grows from the edge of the photo out to the edge of the screen - about a third of a second - instead of just being there. Uncheck it and it is simply drawn at once. The resting frame is the same either way. Only a new photo grows it: resizing the window or zooming redraws the background instantly."))
-        toolTip.SetToolTip(chkb_show_pic_size, If(Is_Russian_Language, "Показывать размеры изображения (ширина x высота).", "Show the dimensions (width x height) of the image."))
-        toolTip.SetToolTip(chkb_is_to_show_file_datetime, If(Is_Russian_Language, "Показывать дату и время последнего изменения файла.", "Show the last modified date and time of the file."))
-        toolTip.SetToolTip(chkb_show_file_size, If(Is_Russian_Language, "Показывать размер файла.", "Show the size of the file."))
-        toolTip.SetToolTip(chkb_video_loop, If(Is_Russian_Language, "Крутить видео по кругу - пока вам не надоест или не кончится терпение.", "Loop the video - until you get bored or your patience runs out."))
-        toolTip.SetToolTip(chkb_no_request_before_file_operation, If(Is_Russian_Language, "Отключить подтверждения перед файловыми операциями. Программа поверит, что вы знаете, что делаете - смелое допущение.", "Skip confirmations before file operations. The app will trust that you know what you're doing - a bold assumption."))
-        toolTip.SetToolTip(cmb_Picture_Size, If(Is_Russian_Language, "Выберите размер карточки для формы панели изображений", "Choose the size of the card for the image panel"))
+        toolTip.SetToolTip(cmbox_color_schema, Localization.T("Выберите цветовую схему фона для просмотра изображений."))
+        toolTip.SetToolTip(chb_perspectiva, Localization.T("Включить перспективный фон: чёрные поля по краям превращаются в продолжение картинки. Чисто для красоты."))
+        toolTip.SetToolTip(chk_Dynamic_Perspective, Localization.T("Полосы гаснут к цвету фона по мере удаления от фото - получается ореол, а не сплошная полоса. Применяется со следующего фото."))
+        toolTip.SetToolTip(chk_Animated_Perspective, Localization.T("Ореол не появляется сразу, а вырастает от края фото к краю экрана - примерно за треть секунды. Снимите галку, и он будет просто нарисован мгновенно. В покое кадр в обоих случаях одинаковый. Растёт только на новом фото: ресайз окна и зум перерисовывают фон сразу."))
+        toolTip.SetToolTip(chkb_show_pic_size, Localization.T("Показывать размеры изображения (ширина x высота)."))
+        toolTip.SetToolTip(chkb_is_to_show_file_datetime, Localization.T("Показывать дату и время последнего изменения файла."))
+        toolTip.SetToolTip(chkb_show_file_size, Localization.T("Показывать размер файла."))
+        toolTip.SetToolTip(chkb_video_loop, Localization.T("Крутить видео по кругу - пока вам не надоест или не кончится терпение."))
+        toolTip.SetToolTip(chkb_no_request_before_file_operation, Localization.T("Отключить подтверждения перед файловыми операциями. Программа поверит, что вы знаете, что делаете - смелое допущение."))
+        toolTip.SetToolTip(cmb_Picture_Size, Localization.T("Выберите размер карточки для формы панели изображений"))
 
-        toolTip.SetToolTip(chk_Exif_AutoRotate, If(Is_Russian_Language, "Автоматически поворачивать фото по тегу EXIF Orientation (снимки с телефонов/камер).", "Auto-rotate photos by their EXIF Orientation tag (photos from phones/cameras)."))
-        toolTip.SetToolTip(chk_Hq_Scaling, If(Is_Russian_Language, "Качественное (бикубическое) масштабирование - резче при уменьшении крупных изображений.", "High-quality (bicubic) scaling - sharper when downscaling large images."))
-        toolTip.SetToolTip(chk_Show_Info_Overlay, If(Is_Russian_Language, "Показывать имя файла и позицию (N/всего) поверх изображения. Удобно в полноэкранном режиме, где статусбар стыдливо прячется.", "Show the file name and position (N/total) over the image. Handy in full-screen, where the status bar shyly hides."))
-        toolTip.SetToolTip(chk_Wheel_Zooms, If(Is_Russian_Language, "Как в привычных просмотрщиках: колесо приближает и отдаляет под курсором. Выключено - колесо листает файлы, как было всегда. В любом случае Ctrl+колесо приближает, Shift+колесо даёт 100 %, Alt+колесо вписывает, а над видео колесо всегда листает. С клавиатуры: серые +/- приближают от курсора, / вписывает, * даёт 100 %.", "Like the viewers you are used to: the wheel zooms in and out under the cursor. Off - the wheel flips through files, exactly as it always has. Either way Ctrl+wheel zooms, Shift+wheel gives 100 %, Alt+wheel fits, and over video the wheel always flips. From the keyboard: NumPad +/- zoom at the cursor, / fits, * gives 100 %."))
-        toolTip.SetToolTip(num_Slideshow_Interval, If(Is_Russian_Language, "Базовый интервал слайдшоу в секундах. Запустите слайдшоу ещё раз - и оно ускорится вдвое, будто куда-то опаздывает.", "Base slideshow interval in seconds. Start the slideshow again and it halves the delay, as if it's late for something."))
-        toolTip.SetToolTip(chk_Video_Mute, If(Is_Russian_Language, "Запускать видео без звука - для просмотра в приличном обществе.", "Start videos muted - for viewing in polite company."))
-        toolTip.SetToolTip(num_Video_Volume, If(Is_Russian_Language, "Громкость видео по умолчанию (0-100%).", "Default video volume (0-100%)."))
-        toolTip.SetToolTip(SetOnTop, If(Is_Russian_Language, "Плавающий список каталогов-получателей в левом верхнем углу поверх изображения/видео. Клик по строке - перенести/скопировать текущий файл в эту папку (или удалить). По умолчанию выключено.", "Floating list of destination folders, top-left over the image/video. Click a row to move/copy the current file there (or delete it). Off by default."))
+        toolTip.SetToolTip(chk_Exif_AutoRotate, Localization.T("Автоматически поворачивать фото по тегу EXIF Orientation (снимки с телефонов/камер)."))
+        toolTip.SetToolTip(chk_Hq_Scaling, Localization.T("Качественное (бикубическое) масштабирование - резче при уменьшении крупных изображений."))
+        toolTip.SetToolTip(chk_Show_Info_Overlay, Localization.T("Показывать имя файла и позицию (N/всего) поверх изображения. Удобно в полноэкранном режиме, где статусбар стыдливо прячется."))
+        toolTip.SetToolTip(chk_Wheel_Zooms, Localization.T("Как в привычных просмотрщиках: колесо приближает и отдаляет под курсором. Выключено - колесо листает файлы, как было всегда. В любом случае Ctrl+колесо приближает, Shift+колесо даёт 100 %, Alt+колесо вписывает, а над видео колесо всегда листает. С клавиатуры: серые +/- приближают от курсора, / вписывает, * даёт 100 %."))
+        toolTip.SetToolTip(num_Slideshow_Interval, Localization.T("Базовый интервал слайдшоу в секундах. Запустите слайдшоу ещё раз - и оно ускорится вдвое, будто куда-то опаздывает."))
+        toolTip.SetToolTip(chk_Video_Mute, Localization.T("Запускать видео без звука - для просмотра в приличном обществе."))
+        toolTip.SetToolTip(num_Video_Volume, Localization.T("Громкость видео по умолчанию (0-100%)."))
+        toolTip.SetToolTip(SetOnTop, Localization.T("Плавающий список каталогов-получателей в левом верхнем углу поверх изображения/видео. Клик по строке - перенести/скопировать текущий файл в эту папку (или удалить). По умолчанию выключено."))
 
-        toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык интерфейса на английский", "Switch interface language to Russian"))
+        toolTip.SetToolTip(btn_Language, Localization.T("Язык интерфейса"))
 
-        toolTip.SetToolTip(btn_Set_As_Default, If(Is_Russian_Language,
-            "Открыть параметры Windows для назначения программы просмотра изображений по умолчанию.",
-            "Open Windows settings to set the default image viewer."))
+        toolTip.SetToolTip(btn_Set_As_Default, Localization.T("Открыть параметры Windows для назначения программы просмотра изображений по умолчанию."))
 
         If btn_Set_As_Default_Video IsNot Nothing Then
-            toolTip.SetToolTip(btn_Set_As_Default_Video, If(Is_Russian_Language,
-                "Сделать эту программу видеоплеером по умолчанию - для текущего пользователя, без танцев с правами администратора.",
-                "Make this app the default video player - per-user, no admin-rights ritual required."))
+            toolTip.SetToolTip(btn_Set_As_Default_Video, Localization.T("Сделать эту программу видеоплеером по умолчанию - для текущего пользователя, без танцев с правами администратора."))
         End If
 
 #If Not NETFRAMEWORK Then
         If btn_Share_Manager IsNot Nothing Then
-            toolTip.SetToolTip(btn_Share_Manager, If(Is_Russian_Language,
-                "Открыть отдельное приложение управления SFTP-сервером и опубликованными папками.",
-                "Open the separate app for managing the SFTP server and published folders."))
+            toolTip.SetToolTip(btn_Share_Manager, Localization.T("Открыть отдельное приложение управления SFTP-сервером и опубликованными папками."))
         End If
 #End If
 
-        toolTip.SetToolTip(LinkLabel1, If(Is_Russian_Language,
-            "Версия программы и адрес автора.",
-            "Application version and the author's email address."))
+        toolTip.SetToolTip(LinkLabel1, Localization.T("Версия программы и адрес автора."))
 
         InitializeOcrTooltips()
 
@@ -131,12 +121,12 @@ Public Class Table_Form
         End If
 
         cmbox_color_schema.Items.Clear()
-        cmbox_color_schema.Items.Add(If(Is_Russian_Language, "По углу", "By corner")) '0
-        cmbox_color_schema.Items.Add(If(Is_Russian_Language, "Чёрный", "Black")) '1
-        cmbox_color_schema.Items.Add(If(Is_Russian_Language, "Белый", "White")) '2
-        cmbox_color_schema.Items.Add(If(Is_Russian_Language, "По краю", "By side")) '3
-        cmbox_color_schema.Items.Add(If(Is_Russian_Language, "По верху", "By top")) '4
-        cmbox_color_schema.Items.Add(If(Is_Russian_Language, "По низу", "By buttom")) '5
+        cmbox_color_schema.Items.Add(Localization.T("По углу")) '0
+        cmbox_color_schema.Items.Add(Localization.T("Чёрный")) '1
+        cmbox_color_schema.Items.Add(Localization.T("Белый")) '2
+        cmbox_color_schema.Items.Add(Localization.T("По краю")) '3
+        cmbox_color_schema.Items.Add(Localization.T("По верху")) '4
+        cmbox_color_schema.Items.Add(Localization.T("По низу")) '5
         cmbox_color_schema.SelectedIndex = Form_Color_Scheme
 
         cmb_Picture_Size.Items.Clear()
@@ -207,17 +197,17 @@ Public Class Table_Form
         If video_Volume_Percent > CInt(num_Video_Volume.Maximum) Then video_Volume_Percent = CInt(num_Video_Volume.Maximum)
         num_Video_Volume.Value = video_Volume_Percent
 
-        chb_perspectiva.Text = If(Is_Russian_Language, "Перспектива", "Perspective")
-        chk_Dynamic_Perspective.Text = If(Is_Russian_Language, "Динамическая перспектива", "Dynamic perspective")
-        chk_Animated_Perspective.Text = If(Is_Russian_Language, "Анимированная", "Animated")
-        btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
+        chb_perspectiva.Text = Localization.T("Перспектива")
+        chk_Dynamic_Perspective.Text = Localization.T("Динамическая перспектива")
+        chk_Animated_Perspective.Text = Localization.T("Анимированная")
+        btn_Language.Text = Localization.CurrentCode.ToUpperInvariant()
 
         chkbox_Copy_Mode.Checked = Is_Copying_not_Moving
         Data_Grid_View.Rows.Clear()
         Data_Grid_View.Rows.Add()
         Data_Grid_View.Item(0, 0).Value = "DEL"
         Data_Grid_View.Item(0, 0).ReadOnly = True
-        Data_Grid_View.Item(1, 0).Value = If(Is_Russian_Language, "Удаление файла", "Delete file")
+        Data_Grid_View.Item(1, 0).Value = Localization.T("Удаление файла")
         Data_Grid_View.Item(1, 0).ReadOnly = True
         For z As Integer = 1 To 10
             Data_Grid_View.Rows.Add()
@@ -236,95 +226,50 @@ Public Class Table_Form
         Next
         Data_Grid_View.Height = grid_Height
         lbl_Grid_Hint.Top = Data_Grid_View.Bottom + 10
-        lbl_Grid_Hint.Text = If(Is_Russian_Language,
-            "Двойной клик по номеру клавиши - выполнить действие. Двойной клик по пути - выбрать папку.",
-            "Double-click a key number to run the action. Double-click a path to pick a folder.")
+        lbl_Grid_Hint.Text = Localization.T("Двойной клик по номеру клавиши - выполнить действие. Двойной клик по пути - выбрать папку.")
 
-        If Is_Russian_Language Then
-            Me.Text = "Настройки"
-            Data_Grid_View.Columns(0).HeaderText = "клавиша"
-            Data_Grid_View.Columns(1).HeaderText = "каталог-получатель"
+        ' One set of assignments for all 13 languages - the Russian text is the key.
+            Me.Text = Localization.T("Настройки")
+            Data_Grid_View.Columns(0).HeaderText = Localization.T("клавиша")
+            Data_Grid_View.Columns(1).HeaderText = Localization.T("каталог-получатель")
 
-            Tab_Page_1.Text = "Каталоги-получатели"
-            Tab_Page_2.Text = "Просмотр"
-            Tab_Page_3.Text = "Видео и качество"
-            Tab_Page_4.Text = "Файлы и система"
-            Tab_Page_5.Text = "OCR и перевод"
+            Tab_Page_1.Text = Localization.T("Каталоги-получатели")
+            Tab_Page_2.Text = Localization.T("Просмотр")
+            Tab_Page_3.Text = Localization.T("Видео и качество")
+            Tab_Page_4.Text = Localization.T("Файлы и система")
+            Tab_Page_5.Text = Localization.T("OCR и перевод")
 
-            grp_Background.Text = "Фон"
-            grp_OnScreen.Text = "Информация на экране"
-            grp_Slideshow.Text = "Слайдшоу"
-            grp_Panel.Text = "Панель миниатюр"
-            grp_Quality.Text = "Качество изображения"
-            grp_Video.Text = "Видео"
-            grp_FileOps.Text = "Операции с файлами"
-            grp_Integration.Text = "Ассоциации и интеграция"
-            grp_Language.Text = "Язык"
+            grp_Background.Text = Localization.T("Фон")
+            grp_OnScreen.Text = Localization.T("Информация на экране")
+            grp_Slideshow.Text = Localization.T("Слайдшоу")
+            grp_Panel.Text = Localization.T("Панель миниатюр")
+            grp_Quality.Text = Localization.T("Качество изображения")
+            grp_Video.Text = Localization.T("Видео")
+            grp_FileOps.Text = Localization.T("Операции с файлами")
+            grp_Integration.Text = Localization.T("Ассоциации и интеграция")
+            grp_Language.Text = Localization.T("Язык")
 
-            lbl_Color.Text = "Цвет фона:"
-            chkb_show_pic_size.Text = "Показывать размер изображений"
-            chkb_show_file_size.Text = "Показывать размер файлов"
-            chkb_is_to_show_file_datetime.Text = "Показывать дату и время файла"
-            chk_Show_Info_Overlay.Text = "Имя файла и позиция поверх изображения"
-            chk_Wheel_Zooms.Text = "Колесо мыши приближает (иначе листает)"
-            chk_Exif_AutoRotate.Text = "Авто-поворот по EXIF"
-            chk_Hq_Scaling.Text = "Качественное масштабирование"
-            chkb_video_loop.Text = "Демонстрировать видео зациклено"
-            chk_Video_Mute.Text = "Без звука по умолчанию"
-            lbl_Video_Volume.Text = "Громкость по умолчанию (%):"
-            lbl_Slideshow_Interval.Text = "Интервал слайдшоу (с):"
-            lbl_Picture_at_Panel_Size.Text = "Размер карточки панели:"
+            lbl_Color.Text = Localization.T("Цвет фона:")
+            chkb_show_pic_size.Text = Localization.T("Показывать размер изображений")
+            chkb_show_file_size.Text = Localization.T("Показывать размер файлов")
+            chkb_is_to_show_file_datetime.Text = Localization.T("Показывать дату и время файла")
+            chk_Show_Info_Overlay.Text = Localization.T("Имя файла и позиция поверх изображения")
+            chk_Wheel_Zooms.Text = Localization.T("Колесо мыши приближает (иначе листает)")
+            chk_Exif_AutoRotate.Text = Localization.T("Авто-поворот по EXIF")
+            chk_Hq_Scaling.Text = Localization.T("Качественное масштабирование")
+            chkb_video_loop.Text = Localization.T("Демонстрировать видео зациклено")
+            chk_Video_Mute.Text = Localization.T("Без звука по умолчанию")
+            lbl_Video_Volume.Text = Localization.T("Громкость по умолчанию (%):")
+            lbl_Slideshow_Interval.Text = Localization.T("Интервал слайдшоу (с):")
+            lbl_Picture_at_Panel_Size.Text = Localization.T("Размер карточки панели:")
 
-            chkbox_Copy_Mode.Text = "Режим копирования файлов (не перенос)"
-            chkbox_Independent_Thread_For_File_Operation.Text = "Использовать независимые потоки для операций с файлами"
-            chkb_no_request_before_file_operation.Text = "Не запрашивать подтверждение перед операцией с файлом"
+            chkbox_Copy_Mode.Text = Localization.T("Режим копирования файлов (не перенос)")
+            chkbox_Independent_Thread_For_File_Operation.Text = Localization.T("Использовать независимые потоки для операций с файлами")
+            chkb_no_request_before_file_operation.Text = Localization.T("Не запрашивать подтверждение перед операцией с файлом")
 
-            btn_Set_As_Default.Text = "Зарегистрировать как программу просмотра изображений по умолчанию"
-            btn_Set_As_Default_Video.Text = "Зарегистрировать как видеопроигрыватель по умолчанию"
-            SetOnTop.Text = "Показывать таблицу получателей поверх медиафайла"
-        Else
-            Me.Text = "Settings"
-            Data_Grid_View.Columns(0).HeaderText = "KEY"
-            Data_Grid_View.Columns(1).HeaderText = "destination folder"
-
-            Tab_Page_1.Text = "Destination folders"
-            Tab_Page_2.Text = "Viewing"
-            Tab_Page_3.Text = "Video and quality"
-            Tab_Page_4.Text = "Files and system"
-            Tab_Page_5.Text = "OCR & translation"
-
-            grp_Background.Text = "Background"
-            grp_OnScreen.Text = "On-screen info"
-            grp_Slideshow.Text = "Slideshow"
-            grp_Panel.Text = "Thumbnail panel"
-            grp_Quality.Text = "Image quality"
-            grp_Video.Text = "Video"
-            grp_FileOps.Text = "File operations"
-            grp_Integration.Text = "Associations and integration"
-            grp_Language.Text = "Language"
-
-            lbl_Color.Text = "Background color:"
-            chkb_show_pic_size.Text = "Show picture sizes"
-            chkb_show_file_size.Text = "Show file sizes"
-            chkb_is_to_show_file_datetime.Text = "Show file datetime"
-            chk_Show_Info_Overlay.Text = "File name and position over the image"
-            chk_Wheel_Zooms.Text = "Mouse wheel zooms (otherwise it flips files)"
-            chk_Exif_AutoRotate.Text = "Auto-rotate by EXIF"
-            chk_Hq_Scaling.Text = "High-quality scaling"
-            chkb_video_loop.Text = "Loop video playback"
-            chk_Video_Mute.Text = "Muted by default"
-            lbl_Video_Volume.Text = "Default volume (%):"
-            lbl_Slideshow_Interval.Text = "Slideshow interval (s):"
-            lbl_Picture_at_Panel_Size.Text = "Panel card size:"
-
-            chkbox_Copy_Mode.Text = "COPY mode (files are not moving)"
-            chkbox_Independent_Thread_For_File_Operation.Text = "Use independent thread for operations with files"
-            chkb_no_request_before_file_operation.Text = "No request before file operation"
-
-            btn_Set_As_Default.Text = "Register as default image viewer"
-            btn_Set_As_Default_Video.Text = "Register as default video player"
-            SetOnTop.Text = "Show recipients table over the media file"
-        End If
+            btn_Set_As_Default.Text = Localization.T("Зарегистрировать как программу просмотра изображений по умолчанию")
+            btn_Set_As_Default_Video.Text = Localization.T("Зарегистрировать как видеопроигрыватель по умолчанию")
+            SetOnTop.Text = Localization.T("Показывать таблицу получателей поверх медиафайла")
 
         PrepareOcrTabForDisplay()
 #If Not NETFRAMEWORK Then
@@ -373,7 +318,7 @@ Public Class Table_Form
                 folderBrowse.SelectedPath = Hardkeys_to_move_mediafile(e.RowIndex)
                 Dim textKey As String = e.RowIndex.ToString
                 If textKey = "10" Then textKey = "0"
-                folderBrowse.Description = If(Is_Russian_Language, "Укажите каталог переноса/копирования для клавиши " + textKey, "Select dest folder for key " + textKey)
+                folderBrowse.Description = Localization.TF("Укажите каталог переноса/копирования для клавиши {0}", textKey)
 #If Not NETFRAMEWORK Then
                 ' The Vista-style dialog .NET uses shows Description only as the title.
                 folderBrowse.UseDescriptionForTitle = True
@@ -515,14 +460,30 @@ Public Class Table_Form
         Picture_Box_Height_At_Panel = CInt(cmb_Picture_Size.SelectedItem.ToString().Split("x"c)(1))
     End Sub
 
+    ''' <summary>
+    ''' The settings-window language button drops the same 13-language list as the main
+    ''' toolbar (two entries on the x86 build). Both surfaces write one setting, so they
+    ''' cannot disagree; Main_Form.SetUiLanguage does the applying and the saving.
+    ''' </summary>
     Private Sub btn_Language_Click(sender As Object, e As EventArgs) Handles btn_Language.Click
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2021: btn_Language")
 
-        Is_Russian_Language = Not Is_Russian_Language
-        btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
-        LngCh()
-        Main_Form.LngCh()
-
+        Dim menu As New ContextMenuStrip()
+        menu.ShowImageMargin = True
+        For i = 0 To Localization.Codes.Length - 1
+            Dim code = Localization.Codes(i)
+            Dim item As New ToolStripMenuItem(Localization.Names(i))
+            item.Checked = (code = Localization.CurrentCode)
+            item.Image = FlagImages.Get(code)
+            item.Tag = code
+            AddHandler item.Click,
+                Sub(s2, e2)
+                    Main_Form.SetUiLanguage(CStr(DirectCast(s2, ToolStripMenuItem).Tag))
+                    LngCh()
+                End Sub
+            menu.Items.Add(item)
+        Next
+        menu.Show(btn_Language, New Point(0, btn_Language.Height))
     End Sub
 
     Public Sub LngCh()

@@ -72,8 +72,16 @@ Partial Public Class Table_Form
         AddPreferenceNumber(ocr, "ocr_cache_limit", p.OcrDiskCacheMaxMb, 0, 1024, Sub(v) p.OcrDiskCacheMaxMb = v)
     End Sub
 
+    ''' <summary>
+    ''' One drop-down option. <paramref name="text"/> is the Russian source string, i.e.
+    ''' the dictionary key - translation happens HERE rather than at each of the two
+    ''' dozen call sites, which keeps them readable as plain text.
+    '''
+    ''' Until this went through the layer the options were not even bilingual: the
+    ''' shipped build showed Russian to every user (see Localization.Choices.vb).
+    ''' </summary>
     Private Shared Function Choice(value As String, text As String) As PreferenceChoice
-        Return New PreferenceChoice(value, text)
+        Return New PreferenceChoice(value, Localization.T(text))
     End Function
 
     Private Sub AddPreferenceCheck(flow As FlowLayoutPanel, key As String, value As Boolean, apply As Action(Of Boolean))

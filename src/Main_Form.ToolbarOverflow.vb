@@ -89,9 +89,7 @@ Partial Public Class Main_Form
     ''' InitializeTooltips and LngCh.</summary>
     Friend Sub LocalizeToolbarOverflow()
         If toolTip Is Nothing Then Return
-        Dim tip As String = If(Is_Russian_Language,
-            "Ещё - кнопки, не поместившиеся в строку.",
-            "More - buttons that didn't fit on the row.")
+        Dim tip As String = Localization.T("Ещё - кнопки, не поместившиеся в строку.")
         If btn_Overflow IsNot Nothing Then toolTip.SetToolTip(btn_Overflow, tip)
         If btn_Overflow_2 IsNot Nothing Then toolTip.SetToolTip(btn_Overflow_2, tip)
     End Sub
@@ -299,23 +297,23 @@ Partial Public Class Main_Form
     Private Function OverflowText(b As Button) As String
         Dim rus As Boolean = Is_Russian_Language
         Select Case b.Name
-            Case "btn_choose_file" : Return If(rus, "Выбрать файл..", "Choose file..")
-            Case "btn_Select_Folder" : Return If(rus, "Выбрать папку..", "Select folder..")
-            Case "btn_Review" : Return If(rus, "Обновить папку", "Reload folder")
-            Case "btn_Panel" : Return If(rus, "Панель изображений", "Image panel")
-            Case "btn_Full_Screen" : Return If(rus, "Полный экран", "Fullscreen")
-            Case "btn_Language" : Return If(rus, "Язык / Language", "Language / Язык")
-            Case "btn_RecentFiles" : Return If(rus, "Недавние файлы", "Recent files")
-            Case "btn_Prev_File" : Return If(rus, "Предыдущий файл", "Previous file")
-            Case "btn_Next_File" : Return If(rus, "Следующий файл", "Next file")
-            Case "btn_Next_Random" : Return If(rus, "Случайный файл", "Random file")
-            Case "btn_Random_Slideshow" : Return If(rus, "Случайное слайд-шоу", "Random slideshow")
-            Case "btn_Slideshow" : Return If(rus, "Слайд-шоу", "Slideshow")
-            Case "btn_Move_Table" : Return If(rus, "Настройки..", "Settings..")
-            Case "btn_Rename" : Return If(rus, "Переименовать", "Rename")
-            Case "bt_Delete" : Return If(rus, "Удалить", "Delete")
-            Case "btn_Translate" : Return If(rus, "Перевод", "Translate")
-            Case "btn_TranslateBrowser" : Return If(rus, "Перевод в браузере", "Translate in browser")
+            Case "btn_choose_file" : Return Localization.T("Выбрать файл..")
+            Case "btn_Select_Folder" : Return Localization.T("Выбрать папку..")
+            Case "btn_Review" : Return Localization.T("Обновить папку")
+            Case "btn_Panel" : Return Localization.T("Панель изображений")
+            Case "btn_Full_Screen" : Return Localization.T("Полный экран")
+            Case "btn_Language" : Return Localization.T("Язык интерфейса")
+            Case "btn_RecentFiles" : Return Localization.T("Недавние файлы")
+            Case "btn_Prev_File" : Return Localization.T("Предыдущий файл")
+            Case "btn_Next_File" : Return Localization.T("Следующий файл")
+            Case "btn_Next_Random" : Return Localization.T("Случайный файл")
+            Case "btn_Random_Slideshow" : Return Localization.T("Случайное слайд-шоу")
+            Case "btn_Slideshow" : Return Localization.T("Слайд-шоу")
+            Case "btn_Move_Table" : Return Localization.T("Настройки..")
+            Case "btn_Rename" : Return Localization.T("Переименовать")
+            Case "bt_Delete" : Return Localization.T("Удалить")
+            Case "btn_Translate" : Return Localization.T("Перевод")
+            Case "btn_TranslateBrowser" : Return Localization.T("Перевод в браузере")
             Case Else : Return b.Text
         End Select
     End Function

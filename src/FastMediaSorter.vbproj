@@ -346,6 +346,28 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Common_Module.vb" />
+    <!-- The 13-language localization layer (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md).
+         The modern project picks these up through its ..\**\*.vb glob; this old-style
+         project needs them BY HAND - a missing entry fails on the first reference with
+         BC30451, which is the good case. Codes/Names are cut to RU+EN here by an
+         #If NETFRAMEWORK seam inside Localization.vb; the string tables are shared. -->
+    <Compile Include="Localization\Localization.vb" />
+    <Compile Include="Localization\Localization.Persistence.vb" />
+    <Compile Include="Localization\Localization.Registry.vb" />
+    <Compile Include="Localization\Localization.Chrome.vb" />
+    <Compile Include="Localization\Localization.Runtime.vb" />
+    <Compile Include="Localization\Localization.Main.vb" />
+    <Compile Include="Localization\Localization.Media.vb" />
+    <Compile Include="Localization\Localization.Files.vb" />
+    <Compile Include="Localization\Localization.Settings.vb" />
+    <Compile Include="Localization\Localization.SettingsChrome.vb" />
+    <Compile Include="Localization\Localization.Nav.vb" />
+    <Compile Include="Localization\Localization.SettingsHints.vb" />
+    <Compile Include="Localization\Localization.SettingsDesc.vb" />
+    <Compile Include="Localization\Localization.Ocr.vb" />
+    <Compile Include="Localization\Localization.Menus.vb" />
+    <Compile Include="Localization\Localization.OcrTab.vb" />
+    <Compile Include="Localization\Localization.Choices.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\VersionInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">

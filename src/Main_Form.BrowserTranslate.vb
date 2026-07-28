@@ -34,7 +34,7 @@ Partial Public Class Main_Form
         Dim icon As Image = LoadCompanionIcon()
         If icon IsNot Nothing Then btn_TranslateBrowser.Image = icon
         ' No icon -> keep a short text caption so the button is never blank.
-        If icon Is Nothing Then btn_TranslateBrowser.Text = If(Is_Russian_Language, "В браузере", "Browser")
+        If icon Is Nothing Then btn_TranslateBrowser.Text = Localization.T("В браузере")
         host.Controls.Add(btn_TranslateBrowser)
     End Sub
 
@@ -57,13 +57,11 @@ Partial Public Class Main_Form
     ''' LngCh and InitializeBrowserTranslate.</summary>
     Friend Sub LocalizeBrowserTranslate()
         If toolTip IsNot Nothing AndAlso btn_TranslateBrowser IsNot Nothing Then
-            toolTip.SetToolTip(btn_TranslateBrowser, If(Is_Russian_Language,
-                "Открыть картинку в браузере с бесплатным переводом Google (doc-html-translate). ЛКМ - открыть. Shift - заново распознать.",
-                "Open the image in the browser with free Google translation (doc-html-translate). Click to open. Shift = re-OCR."))
+            toolTip.SetToolTip(btn_TranslateBrowser, Localization.T("Открыть картинку в браузере с бесплатным переводом Google (doc-html-translate). ЛКМ - открыть. Shift - заново распознать."))
         End If
         ' The blank-icon fallback caption is language-dependent.
         If btn_TranslateBrowser IsNot Nothing AndAlso btn_TranslateBrowser.Image Is Nothing Then
-            btn_TranslateBrowser.Text = If(Is_Russian_Language, "В браузере", "Browser")
+            btn_TranslateBrowser.Text = Localization.T("В браузере")
         End If
     End Sub
 
@@ -96,26 +94,20 @@ Partial Public Class Main_Form
         Dim imagePath As String = Current_File_Name
         Dim ocrLang As String = BuildOcrLangArgument()
 
-        SetOcrStatus(If(Is_Russian_Language,
-            "Открываю в браузере (doc-html-translate)..",
-            "Opening in the browser (doc-html-translate).."))
+        SetOcrStatus(Localization.T("Открываю в браузере (doc-html-translate).."))
 
         Dim errMsg As String = ""
         Dim ok As Boolean = DocHtmlTranslate.TranslateImage(imagePath, ocrLang, force, errMsg,
             Sub(code As Integer)
                 Try
                     If Me.IsDisposed Then Return
-                    Me.BeginInvoke(Sub() SetOcrStatus(If(Is_Russian_Language,
-                        "Не удалось открыть перевод (код " & code.ToString() & ")",
-                        "Could not open the translation (code " & code.ToString() & ")")))
+                    Me.BeginInvoke(Sub() SetOcrStatus(Localization.TF("Не удалось открыть перевод (код {0})", code.ToString())))
                 Catch
                 End Try
             End Sub)
 
         If Not ok Then
-            SetOcrStatus(If(Is_Russian_Language,
-                "Не удалось запустить doc-html-translate",
-                "Could not launch doc-html-translate"))
+            SetOcrStatus(Localization.T("Не удалось запустить doc-html-translate"))
         End If
     End Sub
 
@@ -155,15 +147,13 @@ Partial Public Class Main_Form
         If translate_Menu Is Nothing Then translate_Menu = New ContextMenuStrip()
         translate_Menu.Items.Clear()
 
-        Dim settingsItem As New ToolStripMenuItem(If(Is_Russian_Language, "Настройки OCR..", "OCR settings.."))
+        Dim settingsItem As New ToolStripMenuItem(Localization.T("Настройки OCR.."))
         AddHandler settingsItem.Click, Sub() ShowOcrTranslateSettings()
         translate_Menu.Items.Add(settingsItem)
 
         translate_Menu.Items.Add(New ToolStripSeparator())
 
-        Dim installItem As New ToolStripMenuItem(If(Is_Russian_Language,
-            "Перевод в браузере - установить doc-html-translate..",
-            "Translate in browser - install doc-html-translate.."))
+        Dim installItem As New ToolStripMenuItem(Localization.T("Перевод в браузере - установить doc-html-translate.."))
         AddHandler installItem.Click, Sub() OfferInstallCompanion()
         translate_Menu.Items.Add(installItem)
 
@@ -175,22 +165,14 @@ Partial Public Class Main_Form
 
     Private Sub OfferInstallCompanion()
         Dim result As DialogResult = MessageBox.Show(Me,
-            If(Is_Russian_Language,
-                "Установить бесплатный перевод изображения в браузере (doc-html-translate)?" & vbCrLf & vbCrLf &
-                "Да - установить через winget." & vbCrLf &
-                "Нет - открыть страницу в магазине приложений.",
-                "Install free in-browser image translation (doc-html-translate)?" & vbCrLf & vbCrLf &
-                "Yes - install via winget." & vbCrLf &
-                "No - open the app store page."),
-            If(Is_Russian_Language, "Перевод в браузере", "Translate in browser"),
+            Localization.T("Установить бесплатный перевод изображения в браузере (doc-html-translate)?" & vbCrLf & "" & vbCrLf & "Да - установить через winget." & vbCrLf & "Нет - открыть страницу в магазине приложений."),
+            Localization.T("Перевод в браузере"),
             MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question)
 
         Select Case result
             Case DialogResult.Yes
                 DocHtmlTranslate.StartWingetInstall()
-                SetOcrStatus(If(Is_Russian_Language,
-                    "Устанавливаю doc-html-translate.. после установки откройте меню снова",
-                    "Installing doc-html-translate.. reopen the menu once it finishes"))
+                SetOcrStatus(Localization.T("Устанавливаю doc-html-translate.. после установки откройте меню снова"))
             Case DialogResult.No
                 DocHtmlTranslate.OpenStorePage()
         End Select

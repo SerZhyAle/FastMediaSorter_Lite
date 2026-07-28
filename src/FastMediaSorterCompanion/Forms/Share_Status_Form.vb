@@ -33,14 +33,12 @@ Public NotInheritable Class Share_Status_Form
         BuildUi()
     End Sub
 
-    Private Shared ReadOnly Property Rus As Boolean
-        Get
-            Return Is_Russian_Language
-        End Get
-    End Property
 
     Private Sub BuildUi()
-        Me.Text = If(Rus, "Текущее состояние раздачи", "Sharing status")
+        ' Script font + text direction for the active language, before any control
+        ' exists - children inherit both (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
+        UiLanguage.ApplyTo(Me)
+        Me.Text = Localization.T("Текущее состояние раздачи")
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
         AddHandler Me.FormClosed, Sub() ShareIcons.FreeIcon(Me.Icon, _iconHandle)
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
@@ -48,7 +46,6 @@ Public NotInheritable Class Share_Status_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.AutoScaleMode = AutoScaleMode.Font
         Me.AutoSize = True
         Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
 
@@ -58,21 +55,20 @@ Public NotInheritable Class Share_Status_Form
         tlp.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
 
         Dim r As Integer = 0
-        lblState = AddRow(tlp, If(Rus, "Раздача:", "Sharing:"), r) : r += 1
-        lblLastConn = AddRow(tlp, If(Rus, "Последнее подключение:", "Last connection:"), r) : r += 1
-        lblConns = AddRow(tlp, If(Rus, "Подключений:", "Connections:"), r) : r += 1
-        lblFiles = AddRow(tlp, If(Rus, "Файлов отдано:", "Files served:"), r) : r += 1
-        lblFirst = AddRow(tlp, If(Rus, "Используется с:", "In use since:"), r) : r += 1
+        lblState = AddRow(tlp, Localization.T("Раздача:"), r) : r += 1
+        lblLastConn = AddRow(tlp, Localization.T("Последнее подключение:"), r) : r += 1
+        lblConns = AddRow(tlp, Localization.T("Подключений:"), r) : r += 1
+        lblFiles = AddRow(tlp, Localization.T("Файлов отдано:"), r) : r += 1
+        lblFirst = AddRow(tlp, Localization.T("Используется с:"), r) : r += 1
 
         Dim lblHint As New Label With {.AutoSize = True, .MaximumSize = New Size(440, 0), .ForeColor = Color.DimGray, .Margin = New Padding(0, 12, 0, 0),
-            .Text = If(Rus, "Счётчики хранятся только на этом ПК и никуда не отправляются.",
-                            "The counters are kept on this PC only and are never sent anywhere.")}
+            .Text = Localization.T("Счётчики хранятся только на этом ПК и никуда не отправляются.")}
         tlp.Controls.Add(lblHint, 0, r) : tlp.SetColumnSpan(lblHint, 2) : r += 1
 
         Dim btnRow As New FlowLayoutPanel With {.AutoSize = True, .Anchor = AnchorStyles.Right, .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False, .Margin = New Padding(0, 16, 0, 0)}
-        btnReset = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5), .Margin = New Padding(0, 0, 8, 0), .Text = If(Rus, "Сбросить счётчики", "Reset counters")}
-        btnRefresh = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5), .Margin = New Padding(0, 0, 8, 0), .Text = If(Rus, "Обновить", "Refresh")}
-        Dim btnClose As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 5, 14, 5), .Text = If(Rus, "Закрыть", "Close"), .DialogResult = DialogResult.Cancel}
+        btnReset = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5), .Margin = New Padding(0, 0, 8, 0), .Text = Localization.T("Сбросить счётчики")}
+        btnRefresh = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5), .Margin = New Padding(0, 0, 8, 0), .Text = Localization.T("Обновить")}
+        Dim btnClose As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 5, 14, 5), .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.Cancel}
         AddHandler btnReset.Click, AddressOf OnReset
         AddHandler btnRefresh.Click, AddressOf OnRefresh
         btnRow.Controls.AddRange(New Control() {btnReset, btnRefresh, btnClose})
@@ -81,6 +77,7 @@ Public NotInheritable Class Share_Status_Form
         Me.Controls.Add(tlp)
         Me.CancelButton = btnClose
         Me.MinimumSize = New Size(380, 0)
+        DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
         AddHandler Me.Shown, AddressOf OnShownFirst
     End Sub
 
@@ -139,20 +136,20 @@ Public NotInheritable Class Share_Status_Form
     Private Sub Populate()
         Dim st As WorkerStatus = _status
         If st Is Nothing Then
-            lblState.Text = If(Rus, "нет связи с сервером", "worker unavailable")
+            lblState.Text = Localization.T("нет связи с сервером")
             lblLastConn.Text = "-" : lblConns.Text = "-" : lblFiles.Text = "-" : lblFirst.Text = "-"
             Return
         End If
-        lblState.Text = If(st.Running, (If(Rus, "работает, порт ", "on, port ") & st.ListenPort.ToString()), If(Rus, "выключена", "off"))
+        lblState.Text = If(st.Running, Localization.TF("работает, порт {0}", st.ListenPort), Localization.T("выключена"))
 
         Dim s As WorkerStats = st.Stats
         If s Is Nothing Then
-            Dim na As String = If(Rus, "нет данных", "no data")
+            Dim na As String = Localization.T("нет данных")
             lblLastConn.Text = na : lblConns.Text = na : lblFiles.Text = na : lblFirst.Text = na
             Return
         End If
 
-        Dim never As String = If(Rus, "ещё не было", "never")
+        Dim never As String = Localization.T("ещё не было")
         Dim lastAt As String = FormatTime(s.LastConnectionAt)
         If lastAt.Length = 0 Then
             lblLastConn.Text = never
@@ -161,8 +158,8 @@ Public NotInheritable Class Share_Status_Form
         Else
             lblLastConn.Text = lastAt & "  -  " & s.LastConnectionAddress
         End If
-        lblConns.Text = String.Format(If(Rus, "всего {0} (с запуска {1})", "{0} total ({1} since start)"), s.TotalConnections, s.ConnectionsSinceStart)
-        lblFiles.Text = String.Format(If(Rus, "всего {0} (с запуска {1})", "{0} total ({1} since start)"), s.FilesServedTotal, s.FilesServedSinceStart)
+        lblConns.Text = String.Format(Localization.T("всего {0} (с запуска {1})"), s.TotalConnections, s.ConnectionsSinceStart)
+        lblFiles.Text = String.Format(Localization.T("всего {0} (с запуска {1})"), s.FilesServedTotal, s.FilesServedSinceStart)
         Dim firstAt As String = FormatTime(s.FirstConnectionAt)
         lblFirst.Text = If(firstAt.Length = 0, never, firstAt)
     End Sub

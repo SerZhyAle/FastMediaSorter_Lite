@@ -316,7 +316,7 @@ Partial Public Class Table_Form
                 sf.Trimming = StringTrimming.EllipsisCharacter
                 sf.FormatFlags = StringFormatFlags.NoWrap
                 Dim tr As New Rectangle(e.Bounds.Left + LU(4) + fw + LU(6), e.Bounds.Top, e.Bounds.Width - (fw + LU(16)), e.Bounds.Height)
-                e.Graphics.DrawString(entry.DisplayName(Is_Russian_Language), combo.Font, b, tr, sf)
+                e.Graphics.DrawString(entry.DisplayName(), combo.Font, b, tr, sf)
             End Using
         End Using
 
@@ -331,30 +331,30 @@ Partial Public Class Table_Form
         Dim prev As Boolean = _ocrLoading
         _ocrLoading = True
 
-        ocrTabTranslate.Text = If(rus, "Перевод", "Translation")
-        ocrTabRecognition.Text = If(rus, "Распознавание (OCR)", "Recognition (OCR)")
+        ocrTabTranslate.Text = Localization.T("Перевод")
+        ocrTabRecognition.Text = Localization.T("Распознавание (OCR)")
 
-        chkOcrEnabled.Text = If(rus, "Включить OCR и перевод", "Enable OCR & translation")
-        chkOcrAuto.Text = If(rus, "Авто-режим (после показа изображения)", "Auto mode (after each image settles)")
+        chkOcrEnabled.Text = Localization.T("Включить OCR и перевод")
+        chkOcrAuto.Text = Localization.T("Авто-режим (после показа изображения)")
 
-        lblOcrTranslator.Text = If(rus, "Переводчик:", "Translator:")
-        lblOcrEndpoint.Text = If(rus, "Адрес (endpoint):", "Endpoint URL:")
-        lblOcrServer.Text = If(rus, "Сервер Ollama:", "Ollama server:")
-        btnOcrInstallOllama.Text = If(rus, "Установить Ollama", "Install Ollama")
-        btnOcrStartOllama.Text = If(rus, "Запустить Ollama", "Start Ollama")
-        lblOcrModel.Text = If(rus, "Модель Ollama:", "Ollama model:")
-        btnOcrPullModel.Text = If(rus, "Загрузить", "Pull")
-        lblOcrApi.Text = If(rus, "API-ключ:", "API key:")
-        lblOcrTarget.Text = If(rus, "Язык перевода:", "Translate to (target):")
+        lblOcrTranslator.Text = Localization.T("Переводчик:")
+        lblOcrEndpoint.Text = Localization.T("Адрес (endpoint):")
+        lblOcrServer.Text = Localization.T("Сервер Ollama:")
+        btnOcrInstallOllama.Text = Localization.T("Установить Ollama")
+        btnOcrStartOllama.Text = Localization.T("Запустить Ollama")
+        lblOcrModel.Text = Localization.T("Модель Ollama:")
+        btnOcrPullModel.Text = Localization.T("Загрузить")
+        lblOcrApi.Text = Localization.T("API-ключ:")
+        lblOcrTarget.Text = Localization.T("Язык перевода:")
 
-        lblOcrSource.Text = If(rus, "Язык распознавания:", "Recognition (source):")
-        lblOcrQuality.Text = If(rus, "Модель OCR:", "OCR model:")
-        lblOcrMode.Text = If(rus, "Режим OCR:", "OCR mode:")
-        btnOcrDownload.Text = If(rus, "Скачать пакет распознавания", "Download recognition language pack")
+        lblOcrSource.Text = Localization.T("Язык распознавания:")
+        lblOcrQuality.Text = Localization.T("Модель OCR:")
+        lblOcrMode.Text = Localization.T("Режим OCR:")
+        btnOcrDownload.Text = Localization.T("Скачать пакет распознавания")
 
-        lblOcrOpacity.Text = If(rus, "Непрозрачность:", "Opacity:")
-        chkOcrOverlayVisible.Text = If(rus, "Показывать панель перевода", "Show translation overlay")
-        chkOcrDisk.Text = If(rus, "Дисковый кэш результатов", "Cache results on disk")
+        lblOcrOpacity.Text = Localization.T("Непрозрачность:")
+        chkOcrOverlayVisible.Text = Localization.T("Показывать панель перевода")
+        chkOcrDisk.Text = Localization.T("Дисковый кэш результатов")
 
         PopulateOcrQualityItems(rus)
         PopulateOcrModeItems(rus)
@@ -370,8 +370,8 @@ Partial Public Class Table_Form
         Dim idx As Integer = cmbOcrQuality.SelectedIndex
         cmbOcrQuality.Items.Clear()
         cmbOcrQuality.Items.AddRange(New Object() {
-            If(rus, "Быстрая (fast)", "Fast"),
-            If(rus, "Лучшая (best, медленнее)", "Best (more accurate, slower)")})
+            Localization.T("Быстрая (fast)"),
+            Localization.T("Лучшая (best, медленнее)")})
         If idx >= 0 AndAlso idx < cmbOcrQuality.Items.Count Then cmbOcrQuality.SelectedIndex = idx
     End Sub
 
@@ -379,11 +379,11 @@ Partial Public Class Table_Form
         Dim idx As Integer = cmbOcrMode.SelectedIndex
         cmbOcrMode.Items.Clear()
         cmbOcrMode.Items.AddRange(New Object() {
-            If(rus, "Авто (рекомендуется)", "Auto (recommended)"),
-            If(rus, "Один блок", "Single block"),
-            If(rus, "Разреженный текст", "Sparse text"),
-            If(rus, "Одна строка", "Single line"),
-            If(rus, "Вертикальный текст", "Vertical text")})
+            Localization.T("Авто (рекомендуется)"),
+            Localization.T("Один блок"),
+            Localization.T("Разреженный текст"),
+            Localization.T("Одна строка"),
+            Localization.T("Вертикальный текст")})
         If idx >= 0 AndAlso idx < cmbOcrMode.Items.Count Then cmbOcrMode.SelectedIndex = idx
     End Sub
 
@@ -391,23 +391,23 @@ Partial Public Class Table_Form
         BuildOcrTabIfNeeded()
         If toolTip Is Nothing OrElse Not _ocrBuilt Then Return
         Dim rus As Boolean = Is_Russian_Language
-        toolTip.SetToolTip(chkOcrEnabled, If(rus, "Включить распознавание текста и перевод на изображениях - для картинок, что упорно говорят на чужом языке.", "Enable on-image text recognition and translation - for pictures that stubbornly speak another language."))
-        toolTip.SetToolTip(chkOcrAuto, If(rus, "Распознавать и переводить автоматически после каждого изображения - вы только смотрите, программа отдувается.", "Recognize and translate automatically after each image - you just look, the app does the heavy lifting."))
-        toolTip.SetToolTip(cmbOcrProvider, If(rus, "Сервис перевода: локальный Ollama или LibreTranslate.", "Translation service: local Ollama or LibreTranslate."))
-        toolTip.SetToolTip(txtOcrEndpoint, If(rus, "Адрес сервера перевода (оставьте пустым для значения по умолчанию).", "Translation server URL (leave empty for the default)."))
-        toolTip.SetToolTip(btnOcrInstallOllama, If(rus, "Скачать и установить Ollama - местного полиглота, который поселится на вашем компьютере.", "Download and install Ollama - a local polyglot that moves into your machine."))
-        toolTip.SetToolTip(btnOcrStartOllama, If(rus, "Запустить локальный сервер Ollama.", "Start the local Ollama server."))
-        toolTip.SetToolTip(cmbOcrModelName, If(rus, "Имя модели Ollama для перевода.", "Ollama model name used for translation."))
-        toolTip.SetToolTip(btnOcrPullModel, If(rus, "Загрузить выбранную модель в Ollama.", "Pull the selected model into Ollama."))
-        toolTip.SetToolTip(txtOcrApi, If(rus, "Ключ API (для облачных переводчиков). Храним зашифрованным, честное слово.", "API key (for cloud translators). We keep it encrypted, scout's honor."))
-        toolTip.SetToolTip(cmbOcrTarget, If(rus, "Язык, на который переводить текст.", "Language to translate the text into."))
-        toolTip.SetToolTip(cmbOcrSource, If(rus, "Язык исходного текста на изображении (или автоопределение).", "Language of the source text on the image (or auto-detect)."))
-        toolTip.SetToolTip(cmbOcrQuality, If(rus, "Качество распознавания: быстрое или лучшее (то есть медленнее). Вечный выбор между скоростью и совестью.", "Recognition quality: fast or best (read: slower). The eternal trade-off between speed and conscience."))
-        toolTip.SetToolTip(cmbOcrMode, If(rus, "Режим разбора страницы Tesseract.", "Tesseract page segmentation mode."))
-        toolTip.SetToolTip(btnOcrDownload, If(rus, "Скачать языковой пакет распознавания для выбранного языка.", "Download the recognition language pack for the chosen language."))
-        toolTip.SetToolTip(trkOcrOpacity, If(rus, "Непрозрачность наложения перевода - от еле заметного до полностью закрывающего оригинал.", "Opacity of the translation overlay - from barely there to fully hiding the original."))
-        toolTip.SetToolTip(chkOcrOverlayVisible, If(rus, "Показывать или скрывать уже распознанный перевод поверх изображения.", "Show or hide the already recognized translation over the image."))
-        toolTip.SetToolTip(chkOcrDisk, If(rus, "Кэшировать результаты на диск, чтобы не распознавать одно и то же дважды.", "Cache results on disk, so the same image isn't recognized twice for nothing."))
+        toolTip.SetToolTip(chkOcrEnabled, Localization.T("Включить распознавание текста и перевод на изображениях - для картинок, что упорно говорят на чужом языке."))
+        toolTip.SetToolTip(chkOcrAuto, Localization.T("Распознавать и переводить автоматически после каждого изображения - вы только смотрите, программа отдувается."))
+        toolTip.SetToolTip(cmbOcrProvider, Localization.T("Сервис перевода: локальный Ollama или LibreTranslate."))
+        toolTip.SetToolTip(txtOcrEndpoint, Localization.T("Адрес сервера перевода (оставьте пустым для значения по умолчанию)."))
+        toolTip.SetToolTip(btnOcrInstallOllama, Localization.T("Скачать и установить Ollama - местного полиглота, который поселится на вашем компьютере."))
+        toolTip.SetToolTip(btnOcrStartOllama, Localization.T("Запустить локальный сервер Ollama."))
+        toolTip.SetToolTip(cmbOcrModelName, Localization.T("Имя модели Ollama для перевода."))
+        toolTip.SetToolTip(btnOcrPullModel, Localization.T("Загрузить выбранную модель в Ollama."))
+        toolTip.SetToolTip(txtOcrApi, Localization.T("Ключ API (для облачных переводчиков). Храним зашифрованным, честное слово."))
+        toolTip.SetToolTip(cmbOcrTarget, Localization.T("Язык, на который переводить текст."))
+        toolTip.SetToolTip(cmbOcrSource, Localization.T("Язык исходного текста на изображении (или автоопределение)."))
+        toolTip.SetToolTip(cmbOcrQuality, Localization.T("Качество распознавания: быстрое или лучшее (то есть медленнее). Вечный выбор между скоростью и совестью."))
+        toolTip.SetToolTip(cmbOcrMode, Localization.T("Режим разбора страницы Tesseract."))
+        toolTip.SetToolTip(btnOcrDownload, Localization.T("Скачать языковой пакет распознавания для выбранного языка."))
+        toolTip.SetToolTip(trkOcrOpacity, Localization.T("Непрозрачность наложения перевода - от еле заметного до полностью закрывающего оригинал."))
+        toolTip.SetToolTip(chkOcrOverlayVisible, Localization.T("Показывать или скрывать уже распознанный перевод поверх изображения."))
+        toolTip.SetToolTip(chkOcrDisk, Localization.T("Кэшировать результаты на диск, чтобы не распознавать одно и то же дважды."))
     End Sub
 
     ' --- load / apply ---------------------------------------------------------
@@ -551,9 +551,9 @@ Partial Public Class Table_Form
     Private Sub UpdateOllamaStateHint()
         If Not IsOllamaProvider() Then Return
         If Not OllamaManager.IsInstalled() Then
-            lblOcrStatus.Text = If(Is_Russian_Language, "Ollama не установлен - нажмите «Установить Ollama».", "Ollama not installed - press Install Ollama.")
+            lblOcrStatus.Text = Localization.T("Ollama не установлен - нажмите «Установить Ollama».")
         ElseIf Not OllamaManager.IsProcessRunning() Then
-            lblOcrStatus.Text = If(Is_Russian_Language, "Ollama не запущен - нажмите «Запустить Ollama».", "Ollama not running - press Start Ollama.")
+            lblOcrStatus.Text = Localization.T("Ollama не запущен - нажмите «Запустить Ollama».")
         End If
     End Sub
 
@@ -618,20 +618,18 @@ Partial Public Class Table_Form
     Private Async Sub OnInstallOllama(sender As Object, e As EventArgs)
         If _ocrBusy Then Return
         If OllamaManager.IsInstalled() Then
-            lblOcrStatus.Text = If(Is_Russian_Language, "Ollama уже установлен. Нажмите «Запустить Ollama».", "Ollama is already installed. Press Start Ollama.")
+            lblOcrStatus.Text = Localization.T("Ollama уже установлен. Нажмите «Запустить Ollama».")
             Return
         End If
 
-        Dim confirm As String = If(Is_Russian_Language,
-            "Скачать и установить Ollama? Это несколько сотен МБ, загрузка может занять время.",
-            "Download and install Ollama? This is several hundred MB and may take a while.")
+        Dim confirm As String = Localization.T("Скачать и установить Ollama? Это несколько сотен МБ, загрузка может занять время.")
         If MessageBox.Show(Me, confirm, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
 
         SetOcrBusy(True)
-        lblOcrStatus.Text = If(Is_Russian_Language, "Скачивание Ollama..", "Downloading Ollama..")
+        lblOcrStatus.Text = Localization.T("Скачивание Ollama..")
         Dim installerPath As String = ""
         Try
-            Dim prog As New Progress(Of String)(Sub(s) lblOcrStatus.Text = (If(Is_Russian_Language, "Скачивание Ollama: ", "Downloading Ollama: ")) & s)
+            Dim prog As New Progress(Of String)(Sub(s) lblOcrStatus.Text = (Localization.T("Скачивание Ollama: ")) & s)
             installerPath = Await OllamaManager.DownloadInstallerAsync(prog, CancellationToken.None)
         Catch ex As Exception
             lblOcrStatus.Text = ex.Message
@@ -641,10 +639,10 @@ Partial Public Class Table_Form
         DropTopMostForExternal()
 
         If installerPath.Length > 0 AndAlso IO.File.Exists(installerPath) Then
-            lblOcrStatus.Text = If(Is_Russian_Language, "Запуск установщика Ollama..", "Launching Ollama installer..")
+            lblOcrStatus.Text = Localization.T("Запуск установщика Ollama..")
             OllamaManager.RunInstaller(installerPath)
         Else
-            lblOcrStatus.Text = If(Is_Russian_Language, "Не удалось скачать. Открываю сайт Ollama..", "Download failed. Opening Ollama website..")
+            lblOcrStatus.Text = Localization.T("Не удалось скачать. Открываю сайт Ollama..")
             OllamaManager.OpenWebPage()
         End If
     End Sub
@@ -652,12 +650,12 @@ Partial Public Class Table_Form
     Private Async Sub OnStartOllama(sender As Object, e As EventArgs)
         If _ocrBusy Then Return
         If Not OllamaManager.IsInstalled() Then
-            lblOcrStatus.Text = If(Is_Russian_Language, "Ollama не установлен - нажмите «Установить Ollama».", "Ollama not installed - press Install Ollama.")
+            lblOcrStatus.Text = Localization.T("Ollama не установлен - нажмите «Установить Ollama».")
             Return
         End If
 
         SetOcrBusy(True)
-        lblOcrStatus.Text = If(Is_Russian_Language, "Запуск Ollama..", "Starting Ollama..")
+        lblOcrStatus.Text = Localization.T("Запуск Ollama..")
         OllamaManager.StartServer()
 
         Dim up As Boolean = False
@@ -672,10 +670,10 @@ Partial Public Class Table_Form
         SetOcrBusy(False)
 
         If up Then
-            lblOcrStatus.Text = If(Is_Russian_Language, "Ollama запущен.", "Ollama is running.")
+            lblOcrStatus.Text = Localization.T("Ollama запущен.")
             RefreshInstalledOcrModels()
         Else
-            lblOcrStatus.Text = If(Is_Russian_Language, "Не удалось запустить Ollama.", "Could not start Ollama.")
+            lblOcrStatus.Text = Localization.T("Не удалось запустить Ollama.")
         End If
     End Sub
 
@@ -683,7 +681,7 @@ Partial Public Class Table_Form
         If _ocrBusy Then Return
         Dim modelName As String = cmbOcrModelName.Text.Trim()
         If modelName.Length = 0 Then
-            lblOcrStatus.Text = If(Is_Russian_Language, "Укажите имя модели (например, llama3.2)", "Enter a model name (e.g. llama3.2)")
+            lblOcrStatus.Text = Localization.T("Укажите имя модели (например, llama3.2)")
             Return
         End If
 
@@ -692,7 +690,7 @@ Partial Public Class Table_Form
         Dim ok As Boolean = False
         Try
             Dim tr As New OllamaTranslator(endpoint, modelName)
-            Dim prog As New Progress(Of String)(Sub(s) lblOcrStatus.Text = (If(Is_Russian_Language, "Загрузка: ", "Pulling: ")) & s)
+            Dim prog As New Progress(Of String)(Sub(s) lblOcrStatus.Text = Localization.TC("ollama", "Загрузка: ") & s)
             ok = Await tr.PullModelAsync(modelName, prog, CancellationToken.None)
         Catch ex As Exception
             lblOcrStatus.Text = ex.Message
@@ -700,8 +698,8 @@ Partial Public Class Table_Form
         SetOcrBusy(False)
 
         lblOcrStatus.Text = If(ok,
-            If(Is_Russian_Language, "Модель установлена: ", "Model installed: ") & modelName,
-            If(Is_Russian_Language, "Не удалось загрузить модель (Ollama запущен?)", "Pull failed (is Ollama running?)"))
+            Localization.T("Модель установлена: ") & modelName,
+            Localization.T("Не удалось загрузить модель (Ollama запущен?)"))
         If ok Then RefreshInstalledOcrModels()
     End Sub
 
@@ -711,13 +709,13 @@ Partial Public Class Table_Form
         Dim tessLangs As String = OcrTranslateSettings.TessLanguages(srcCode)
 
         Dim preferBest As Boolean = (cmbOcrQuality.SelectedIndex = 1)
-        If Not Await OptionalRuntimeManager.EnsureOcrRuntimeInteractiveAsync(Me, Is_Russian_Language) Then
-            lblOcrStatus.Text = If(Is_Russian_Language, "OCR-движок не установлен.", "OCR runtime is not installed.")
+        If Not Await OptionalRuntimeManager.EnsureOcrRuntimeInteractiveAsync(Me) Then
+            lblOcrStatus.Text = Localization.T("OCR-движок не установлен.")
             Return
         End If
 
         SetOcrBusy(True)
-        lblOcrStatus.Text = If(Is_Russian_Language, "Скачивание языкового пакета: ", "Downloading language pack: ") & tessLangs
+        lblOcrStatus.Text = Localization.T("Скачивание языкового пакета: ") & tessLangs
         Dim ok As Boolean = False
         Try
             ok = Await Task.Run(Function() TesseractOcrEngine.EnsureLanguagesPublic(tessLangs, preferBest))
@@ -727,8 +725,8 @@ Partial Public Class Table_Form
         SetOcrBusy(False)
 
         lblOcrStatus.Text = If(ok,
-            If(Is_Russian_Language, "Готово: пакет ", "Ready: pack ") & tessLangs,
-            If(Is_Russian_Language, "Не удалось скачать (нет сети?)", "Download failed (no network?)"))
+            Localization.T("Готово: пакет ") & tessLangs,
+            Localization.T("Не удалось скачать (нет сети?)"))
     End Sub
 
     ' --- language combo helpers ----------------------------------------------

@@ -12,6 +12,14 @@ Public Class ShareSettings
     ''' <summary>Opt-in HKCU Run autostart (unpackaged channels). Default off.</summary>
     Public Property AutostartEnabled As Boolean = False   ' Share_AutostartEnabled
 
+    ''' <summary>Show the Share Manager window on a plain start - the logon autostart, a
+    ''' double-click on the exe, a script - instead of the tray icon alone. Independent of
+    ''' <see cref="AutostartEnabled"/>: that one decides WHETHER the program starts, this one
+    ''' whether it shows itself. Default off, and off means off on every such start; only an
+    ''' explicit request (a folder to share, Program.ShowWindowFlag from LITE's Share buttons,
+    ''' the tray icon) opens the window regardless.</summary>
+    Public Property OpenWindowOnStartup As Boolean = False ' Share_OpenWindowOnStartup
+
     ''' <summary>UX hint: the user has started the worker at least once.</summary>
     Public Property WorkerEverStarted As Boolean = False  ' Share_WorkerEverStarted
 
@@ -55,6 +63,7 @@ Public Class ShareSettings
 
     Public Sub Load()
         AutostartEnabled = ReadBool("Share_AutostartEnabled", False)
+        OpenWindowOnStartup = ReadBool("Share_OpenWindowOnStartup", False)
         WorkerEverStarted = ReadBool("Share_WorkerEverStarted", False)
         ExternalAccessIntent = ReadBool("Share_ExternalAccessIntent", True)
         LanOnlyExport = ReadBool("Share_LanOnlyExport", False)
@@ -65,6 +74,7 @@ Public Class ShareSettings
 
     Public Sub Save()
         WriteBool("Share_AutostartEnabled", AutostartEnabled)
+        WriteBool("Share_OpenWindowOnStartup", OpenWindowOnStartup)
         WriteBool("Share_WorkerEverStarted", WorkerEverStarted)
         WriteBool("Share_ExternalAccessIntent", ExternalAccessIntent)
         WriteBool("Share_LanOnlyExport", LanOnlyExport)

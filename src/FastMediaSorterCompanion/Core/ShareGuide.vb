@@ -26,16 +26,22 @@ Public Module ShareGuide
     Public Const AndroidSiteRu As String = "https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html"
     Public Const AndroidSiteUk As String = "https://serzhyale.github.io/FastMediaSorter_mob_v2/index-uk.html"
 
-    ''' <summary>Android app site URL for the current UI language.</summary>
-    Public Function AndroidSite(rus As Boolean) As String
-        Return If(rus, AndroidSiteRu, AndroidSiteEn)
+    ''' <summary>Android app site URL for the current UI language. Only three landing
+    ''' pages exist, so anything outside ru/uk lands on the English one - same rule as
+    ''' Localization.GuideCode(), which is where that decision lives.</summary>
+    Public Function AndroidSite() As String
+        Select Case Localization.GuideCode()
+            Case "ru" : Return AndroidSiteRu
+            Case "uk" : Return AndroidSiteUk
+            Case Else : Return AndroidSiteEn
+        End Select
     End Function
 
     ''' <summary>Renders the guide with the given values + UI language and opens it.
     ''' <paramref name="routerModel"/>/<paramref name="routerSearchUrl"/> (optional)
     ''' fill the "detected router" block + its web-search link. Returns False if the
     ''' template is missing or the browser could not open.</summary>
-    Public Function OpenPortForwardGuide(routerUrl As String, extPort As Integer, lanIp As String, port As Integer, rus As Boolean,
+    Public Function OpenPortForwardGuide(routerUrl As String, extPort As Integer, lanIp As String, port As Integer,
                                          Optional routerModel As String = "", Optional routerSearchUrl As String = "") As Boolean
         Dim html As String
         Try
@@ -58,7 +64,7 @@ Public Module ShareGuide
             Replace("__ROUTER_SEARCH_URL__", If(String.IsNullOrEmpty(routerSearchUrl), "https://www.google.com/search?q=how+to+set+up+port+forwarding", routerSearchUrl)).
             Replace("__SITE_GUIDE_URL__", SiteGuideUrl).
             Replace("__SITE_URL__", SiteUrl).
-            Replace("__LANG__", If(rus, "ru", "en"))
+            Replace("__LANG__", Localization.GuideCode())
 
         Try
             Dim outDir As String = Path.Combine(Path.GetTempPath(), "FastMediaSorter")

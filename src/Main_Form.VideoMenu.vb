@@ -58,14 +58,14 @@ Partial Public Class Main_Form
 
         ' --- playback
         AddMenuItem(video_Menu.Items,
-                    If(IsVlcActuallyPlaying(), If(rus, "Пауза", "Pause"), If(rus, "Продолжить", "Resume")),
+                    If(IsVlcActuallyPlaying(), Localization.T("Пауза"), Localization.T("Продолжить")),
                     Sub()
                         TogglePlayPause()
                         RefreshVideoControlsState()
                         ShowVideoControls()
                     End Sub)
 
-        AddMenuItem(video_Menu.Items, If(rus, "Без звука", "Mute"),
+        AddMenuItem(video_Menu.Items, Localization.T("Без звука"),
                     Sub()
                         SetVideoAudioState(video_Volume_Level, Not is_Video_Muted)
                         RefreshVideoControlsState()
@@ -73,7 +73,7 @@ Partial Public Class Main_Form
                     End Sub,
                     checked:=is_Video_Muted)
 
-        AddMenuItem(video_Menu.Items, If(rus, "Повторять", "Repeat"), AddressOf ToggleVideoLoop, checked:=Is_Video_Loop)
+        AddMenuItem(video_Menu.Items, Localization.T("Повторять"), AddressOf ToggleVideoLoop, checked:=Is_Video_Loop)
 
         ' --- tracks
         Dim audio_Item As ToolStripMenuItem = CreateTrackSubmenu(audio:=True)
@@ -101,10 +101,10 @@ Partial Public Class Main_Form
         ' --- hand it elsewhere
         video_Menu.Items.Add(New ToolStripSeparator())
         If is_Local_File Then
-            AddMenuItem(video_Menu.Items, If(rus, "Открыть во внешнем плеере", "Open in the default player"),
+            AddMenuItem(video_Menu.Items, Localization.T("Открыть во внешнем плеере"),
                         Sub() TryOpenVideoWithDefaultPlayer(current_Loaded_File_Name))
         End If
-        AddMenuItem(video_Menu.Items, If(rus, "Открыть URL..", "Open URL.."), Sub() ShowOpenUrlPrompt())
+        AddMenuItem(video_Menu.Items, Localization.T("Открыть URL.."), Sub() ShowOpenUrlPrompt())
     End Sub
 
     ''' <summary>
@@ -116,9 +116,7 @@ Partial Public Class Main_Form
     ''' </summary>
     Private Sub ToggleVideoLoop()
         Is_Video_Loop = Not Is_Video_Loop
-        lbl_Status.Text = If(Is_Russian_Language,
-                             If(Is_Video_Loop, "Повтор включён", "Повтор выключен"),
-                             If(Is_Video_Loop, "Repeat on", "Repeat off"))
+        lbl_Status.Text = Localization.T(If(Is_Video_Loop, "Повтор включён", "Повтор выключен"))
         RestartCurrentVideoPreservingPosition()
         ShowVideoControls()
     End Sub

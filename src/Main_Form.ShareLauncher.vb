@@ -108,10 +108,8 @@ Partial Public Class Main_Form
         If String.IsNullOrEmpty(exePath) OrElse Not File.Exists(exePath) Then
             AppFileLogger.WriteLine("ShareLauncher: Companion exe not found at '" & If(exePath, "") & "'")
             MessageBox.Show(Me,
-                If(Is_Russian_Language,
-                    "Fast Media Sorter: Share Manager не найден рядом. Переустановите приложение.",
-                    "Fast Media Sorter: Share Manager was not found alongside this app. Please reinstall."),
-                If(Is_Russian_Language, "Общий доступ", "Folder sharing"),
+                Localization.T("Fast Media Sorter: Share Manager не найден рядом. Переустановите приложение."),
+                Localization.T("Общий доступ"),
                 MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
@@ -128,16 +126,18 @@ Partial Public Class Main_Form
                 ' (we don't have its PID yet, so grant to any process).
                 Try : AllowSetForegroundWindow(ASFW_ANY) : Catch : End Try
                 Dim psi As New ProcessStartInfo(exePath) With {.UseShellExecute = True}
-                If folder.Length > 0 Then psi.Arguments = """" & folder & """"
+                ' With no folder we still have to SAY "show your window": a bare launch
+                ' obeys Companion's own "open the manager window at startup" option (off
+                ' by default), so without the marker this button would cold-start a
+                ' tray-only process and look like it did nothing.
+                psi.Arguments = If(folder.Length > 0, """" & folder & """", CompanionShowWindowCommand)
                 AppFileLogger.WriteLine("ShareLauncher: cold-starting Companion '" & exePath & "'")
                 Process.Start(psi)
             Catch ex As Exception
                 AppFileLogger.LogException("ShareLauncher cold-start", ex)
                 MessageBox.Show(Me,
-                    If(Is_Russian_Language,
-                        "Не удалось запустить Fast Media Sorter: Share Manager." & vbCrLf & ex.Message,
-                        "Could not start Fast Media Sorter: Share Manager." & vbCrLf & ex.Message),
-                    If(Is_Russian_Language, "Общий доступ", "Folder sharing"),
+                    Localization.TF("Не удалось запустить Fast Media Sorter: Share Manager." & vbCrLf & "{0}", ex.Message),
+                    Localization.T("Общий доступ"),
                     MessageBoxButtons.OK, MessageBoxIcon.Warning)
             End Try
         End If

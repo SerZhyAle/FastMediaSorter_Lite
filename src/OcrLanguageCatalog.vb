@@ -5,18 +5,32 @@ Imports System.Drawing.Drawing2D
 Imports System.Drawing.Text
 Imports System.IO
 
-''' <summary>One selectable language with its display names and flag key.</summary>
+''' <summary>
+''' One selectable OCR/translation language with its display name and flag key.
+'''
+''' The name is the language's ENDONYM - what the language calls itself. That was a
+''' pair of NameEn/NameRu fields until SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §2.8:
+''' with thirteen interface languages, naming 33 languages in each of them would be
+''' 429 strings for a list where the endonym is the better answer anyway. A Greek user
+''' recognises "Ελληνικά" in any interface; "Greek" and "Греческий" only help two.
+''' </summary>
 Public Class LanguageEntry
     Public ReadOnly Code As String       ' app/translate code, e.g. "en", "zh-TW", "auto"
-    Public ReadOnly NameEn As String
-    Public ReadOnly NameRu As String
-    Public Sub New(code As String, nameEn As String, nameRu As String)
+    Public ReadOnly Name As String       ' endonym, e.g. "Deutsch", "العربية"
+    Public Sub New(code As String, name As String)
         Me.Code = code
-        Me.NameEn = nameEn
-        Me.NameRu = nameRu
+        Me.Name = name
     End Sub
-    Public Function DisplayName(russian As Boolean) As String
-        Return If(russian, NameRu, NameEn)
+
+    ''' <summary>
+    ''' Text for the picker. Only "auto" is translated - it is a UI instruction, not a
+    ''' language, so it has no endonym to fall back on.
+    ''' </summary>
+    Public Function DisplayName() As String
+        If String.Equals(Code, "auto", StringComparison.OrdinalIgnoreCase) Then
+            Return Localization.T("Автоопределение")
+        End If
+        Return Name
     End Function
 End Class
 
@@ -27,41 +41,43 @@ End Class
 ''' </summary>
 Public Module OcrLanguageCatalog
 
+    ' Endonyms, in the historical order (the picker's order is a product decision, not
+    ' an alphabet). "auto" carries its Russian source string and is translated on display.
     Private ReadOnly _all As LanguageEntry() = {
-        New LanguageEntry("auto", "Auto-detect", "Автоопределение"),
-        New LanguageEntry("en", "English", "Английский"),
-        New LanguageEntry("ru", "Russian", "Русский"),
-        New LanguageEntry("uk", "Ukrainian", "Украинский"),
-        New LanguageEntry("be", "Belarusian", "Белорусский"),
-        New LanguageEntry("de", "German", "Немецкий"),
-        New LanguageEntry("fr", "French", "Французский"),
-        New LanguageEntry("es", "Spanish", "Испанский"),
-        New LanguageEntry("it", "Italian", "Итальянский"),
-        New LanguageEntry("pt", "Portuguese", "Португальский"),
-        New LanguageEntry("nl", "Dutch", "Нидерландский"),
-        New LanguageEntry("pl", "Polish", "Польский"),
-        New LanguageEntry("cs", "Czech", "Чешский"),
-        New LanguageEntry("sk", "Slovak", "Словацкий"),
-        New LanguageEntry("sv", "Swedish", "Шведский"),
-        New LanguageEntry("no", "Norwegian", "Норвежский"),
-        New LanguageEntry("da", "Danish", "Датский"),
-        New LanguageEntry("fi", "Finnish", "Финский"),
-        New LanguageEntry("tr", "Turkish", "Турецкий"),
-        New LanguageEntry("el", "Greek", "Греческий"),
-        New LanguageEntry("bg", "Bulgarian", "Болгарский"),
-        New LanguageEntry("ro", "Romanian", "Румынский"),
-        New LanguageEntry("hu", "Hungarian", "Венгерский"),
-        New LanguageEntry("ja", "Japanese", "Японский"),
-        New LanguageEntry("ko", "Korean", "Корейский"),
-        New LanguageEntry("zh", "Chinese (Simplified)", "Китайский (упр.)"),
-        New LanguageEntry("zh-TW", "Chinese (Traditional)", "Китайский (трад.)"),
-        New LanguageEntry("ar", "Arabic", "Арабский"),
-        New LanguageEntry("he", "Hebrew", "Иврит"),
-        New LanguageEntry("hi", "Hindi", "Хинди"),
-        New LanguageEntry("th", "Thai", "Тайский"),
-        New LanguageEntry("vi", "Vietnamese", "Вьетнамский"),
-        New LanguageEntry("id", "Indonesian", "Индонезийский"),
-        New LanguageEntry("fa", "Persian", "Персидский")
+        New LanguageEntry("auto", "Автоопределение"),
+        New LanguageEntry("en", "English"),
+        New LanguageEntry("ru", "Русский"),
+        New LanguageEntry("uk", "Українська"),
+        New LanguageEntry("be", "Беларуская"),
+        New LanguageEntry("de", "Deutsch"),
+        New LanguageEntry("fr", "Français"),
+        New LanguageEntry("es", "Español"),
+        New LanguageEntry("it", "Italiano"),
+        New LanguageEntry("pt", "Português"),
+        New LanguageEntry("nl", "Nederlands"),
+        New LanguageEntry("pl", "Polski"),
+        New LanguageEntry("cs", "Čeština"),
+        New LanguageEntry("sk", "Slovenčina"),
+        New LanguageEntry("sv", "Svenska"),
+        New LanguageEntry("no", "Norsk"),
+        New LanguageEntry("da", "Dansk"),
+        New LanguageEntry("fi", "Suomi"),
+        New LanguageEntry("tr", "Türkçe"),
+        New LanguageEntry("el", "Ελληνικά"),
+        New LanguageEntry("bg", "Български"),
+        New LanguageEntry("ro", "Română"),
+        New LanguageEntry("hu", "Magyar"),
+        New LanguageEntry("ja", "日本語"),
+        New LanguageEntry("ko", "한국어"),
+        New LanguageEntry("zh", "中文（简体）"),
+        New LanguageEntry("zh-TW", "中文（繁體）"),
+        New LanguageEntry("ar", "العربية"),
+        New LanguageEntry("he", "עברית"),
+        New LanguageEntry("hi", "हिन्दी"),
+        New LanguageEntry("th", "ไทย"),
+        New LanguageEntry("vi", "Tiếng Việt"),
+        New LanguageEntry("id", "Bahasa Indonesia"),
+        New LanguageEntry("fa", "فارسی")
     }
 
     ''' <summary>All entries including "auto" (for the OCR source picker).</summary>

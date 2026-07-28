@@ -55,25 +55,25 @@ Partial Public Class Main_Form
         Dim rus As Boolean = Is_Russian_Language
 
         ' --- the picture itself
-        AddMenuItem(image_Menu.Items, If(rus, "Повернуть по часовой (R)", "Rotate clockwise (R)"),
+        AddMenuItem(image_Menu.Items, Localization.T("Повернуть по часовой (R)"),
                     Sub() RotateActiveImage(True))
-        AddMenuItem(image_Menu.Items, If(rus, "Повернуть против часовой (Shift+R)", "Rotate counter-clockwise (Shift+R)"),
+        AddMenuItem(image_Menu.Items, Localization.T("Повернуть против часовой (Shift+R)"),
                     Sub() RotateActiveImage(False))
 
         ' --- zoom (the grey NumPad block does the same)
         image_Menu.Items.Add(New ToolStripSeparator())
-        AddMenuItem(image_Menu.Items, If(rus, "Вписать в окно (серый /)", "Fit to window (grey /)"),
+        AddMenuItem(image_Menu.Items, Localization.T("Вписать в окно (серый /)"),
                     Sub() ZoomToFit())
-        AddMenuItem(image_Menu.Items, If(rus, "Реальный размер, 100 % (серый *)", "Actual size, 100 % (grey *)"),
+        AddMenuItem(image_Menu.Items, Localization.T("Реальный размер, 100 % (серый *)"),
                     Sub() ZoomToActualSize(image_Menu_Anchor))
 
         ' --- OCR / translation, only when the feature is on: with it off, T is plain
         ' rotate and there is nothing here to offer.
         If ocr_Settings IsNot Nothing AndAlso ocr_Settings.Enabled Then
             image_Menu.Items.Add(New ToolStripSeparator())
-            AddMenuItem(image_Menu.Items, If(rus, "Перевести текст на картинке (T)", "Translate text on the picture (T)"),
+            AddMenuItem(image_Menu.Items, Localization.T("Перевести текст на картинке (T)"),
                         Sub() TriggerOcrHotkey())
-            AddMenuItem(image_Menu.Items, If(rus, "Переводить автоматически (Shift+T)", "Translate automatically (Shift+T)"),
+            AddMenuItem(image_Menu.Items, Localization.T("Переводить автоматически (Shift+T)"),
                         Sub() ToggleOcrAutoMode(), checked:=ocr_Settings.AutoMode)
         End If
 
@@ -91,7 +91,7 @@ Partial Public Class Main_Form
 
         ' --- elsewhere
         image_Menu.Items.Add(New ToolStripSeparator())
-        AddMenuItem(image_Menu.Items, If(rus, "Копировать путь к файлу", "Copy the file path"),
+        AddMenuItem(image_Menu.Items, Localization.T("Копировать путь к файлу"),
                     Sub() CopyFilePathToClipboard())
     End Sub
 

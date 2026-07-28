@@ -1,0 +1,135 @@
+Option Strict On
+
+' <summary>
+' Strings of file operations, folder scanning, file associations and the image
+' panel window. See Localization.vb for the key convention.
+' </summary>
+Partial Public NotInheritable Class Localization
+
+    Private Shared Sub AddFileStrings()
+
+        ' --- Main_Form.FileOperations.vb ---------------------------------------
+        Add("в очереди: ", "in the queue: ", "у черзі: ", "in der Warteschlange: ", "in coda: ",
+            "en la cola: ", "dans la file : ", "na fila: ", "في قائمة الانتظار: ", "कतार में: ",
+            "সারিতে: ", "قطار میں: ", "队列中：")
+        Add("Введите новое имя файла:", "Enter new file name:", "Введіть нове ім'я файлу:",
+            "Neuen Dateinamen eingeben:", "Inserisci il nuovo nome del file:",
+            "Introduzca el nuevo nombre del archivo:", "Saisissez le nouveau nom du fichier :",
+            "Digite o novo nome do arquivo:", "أدخل اسم الملف الجديد:", "नया फ़ाइल नाम दर्ज करें:",
+            "নতুন ফাইলের নাম লিখুন:", "نئی فائل کا نام درج کریں:", "输入新的文件名：")
+        Add("Переименование файла", "Rename File", "Перейменування файлу", "Datei umbenennen",
+            "Rinomina file", "Cambiar nombre de archivo", "Renommer le fichier", "Renomear arquivo",
+            "إعادة تسمية الملف", "फ़ाइल का नाम बदलें", "ফাইলের নাম পরিবর্তন", "فائل کا نام تبدیل کریں",
+            "重命名文件")
+        Add("! Имя не изменено", "! Name not changed", "! Ім'я не змінено", "! Name nicht geändert",
+            "! Nome non modificato", "! El nombre no ha cambiado", "! Nom inchangé",
+            "! Nome não alterado", "! لم يتغير الاسم", "! नाम नहीं बदला", "! নাম বদলায়নি",
+            "! نام تبدیل نہیں ہوا", "! 名称未更改")
+        Add("! Файл с таким именем уже есть", "! A file with that name already exists",
+            "! Файл із таким ім'ям уже є", "! Eine Datei dieses Namens existiert bereits",
+            "! Esiste già un file con questo nome", "! Ya existe un archivo con ese nombre",
+            "! Un fichier portant ce nom existe déjà", "! Já existe um arquivo com esse nome",
+            "! يوجد ملف بهذا الاسم بالفعل", "! इस नाम की फ़ाइल पहले से मौजूद है",
+            "! এই নামে একটি ফাইল আগে থেকেই আছে", "! اس نام کی فائل پہلے سے موجود ہے", "! 已存在同名文件")
+        Add("! Ошибка переименования", "! Rename error", "! Помилка перейменування",
+            "! Fehler beim Umbenennen", "! Errore di rinomina", "! Error al cambiar el nombre",
+            "! Erreur de renommage", "! Erro ao renomear", "! خطأ في إعادة التسمية",
+            "! नाम बदलने में त्रुटि", "! নাম পরিবর্তনে ত্রুটি", "! نام بدلنے میں خرابی", "! 重命名出错")
+        Add("! Нет файла ", "! No file", "! Немає файлу", "! Keine Datei", "! Nessun file",
+            "! No hay archivo", "! Aucun fichier", "! Nenhum arquivo", "! لا يوجد ملف",
+            "! कोई फ़ाइल नहीं", "! কোনো ফাইল নেই", "! کوئی فائل نہیں", "! 没有文件")
+        Add("! Файл уже в этой папке", "! File is already in that folder", "! Файл уже в цій теці",
+            "! Die Datei liegt bereits in diesem Ordner", "! Il file è già in quella cartella",
+            "! El archivo ya está en esa carpeta", "! Le fichier est déjà dans ce dossier",
+            "! O arquivo já está nessa pasta", "! الملف موجود بالفعل في ذلك المجلد",
+            "! फ़ाइल पहले से उस फ़ोल्डर में है", "! ফাইলটি ইতিমধ্যেই সেই ফোল্ডারে আছে",
+            "! فائل پہلے ہی اس فولڈر میں ہے", "! 文件已在该文件夹中")
+        Add("! Нет истории о переносе", "! No history about moved files", "! Немає історії перенесень",
+            "! Kein Verlauf verschobener Dateien", "! Nessuna cronologia dei file spostati",
+            "! No hay historial de archivos movidos", "! Aucun historique de fichiers déplacés",
+            "! Sem histórico de arquivos movidos", "! لا يوجد سجل للملفات المنقولة",
+            "! स्थानांतरित फ़ाइलों का कोई इतिहास नहीं", "! সরানো ফাইলের কোনো ইতিহাস নেই",
+            "! منتقل شدہ فائلوں کی کوئی تاریخ نہیں", "! 没有移动记录")
+        Add("! Нет файла для переименования", "! No file to rename", "! Немає файлу для перейменування",
+            "! Keine Datei zum Umbenennen", "! Nessun file da rinominare",
+            "! No hay archivo para cambiar de nombre", "! Aucun fichier à renommer",
+            "! Nenhum arquivo para renomear", "! لا يوجد ملف لإعادة تسميته",
+            "! नाम बदलने के लिए कोई फ़ाइल नहीं", "! নাম বদলানোর মতো ফাইল নেই",
+            "! نام بدلنے کے لیے کوئی فائل نہیں", "! 没有可重命名的文件")
+        Add("Имя файла скопировано в буфер", "Filename sent to clipboard", "Шлях до файлу скопійовано",
+            "Dateipfad in die Zwischenablage kopiert", "Percorso del file copiato negli appunti",
+            "Ruta del archivo copiada al portapapeles", "Chemin du fichier copié dans le presse-papiers",
+            "Caminho do arquivo copiado", "تم نسخ مسار الملف", "फ़ाइल पथ क्लिपबोर्ड पर कॉपी हुआ",
+            "ফাইল পাথ ক্লিপবোর্ডে কপি হয়েছে", "فائل کا راستہ کلپ بورڈ پر نقل ہوا", "文件路径已复制到剪贴板")
+
+        ' --- Main_Form.FileScanning.vb -------------------------------------------
+        Add("Папка пустая", "Folder is empty", "Тека порожня", "Der Ordner ist leer",
+            "La cartella è vuota", "La carpeta está vacía", "Le dossier est vide",
+            "A pasta está vazia", "المجلد فارغ", "फ़ोल्डर खाली है", "ফোল্ডার খালি",
+            "فولڈر خالی ہے", "文件夹为空")
+
+        ' --- Main_Form.FileAssociation.vb ----------------------------------------
+        Add("Ошибка ассоциации: ", "Failed to set association: ", "Помилка асоціації: ",
+            "Verknüpfung fehlgeschlagen: ", "Impossibile impostare l'associazione: ",
+            "Error al establecer la asociación: ", "Échec de l'association : ",
+            "Falha ao definir a associação: ", "تعذّر ضبط الاقتران: ", "संबद्धता सेट करने में विफल: ",
+            "সংযুক্তি সেট করা যায়নি: ", "ایسوسی ایشن سیٹ کرنے میں ناکامی: ", "关联设置失败：")
+        Add("Ассоциировать .JPG файлы с этой программой?",
+            "Associate .JPG files with this application?", "Асоціювати файли .JPG із цією програмою?",
+            "JPG-Dateien mit dieser Anwendung verknüpfen?",
+            "Associare i file .JPG a questa applicazione?", "¿Asociar los archivos .JPG con esta aplicación?",
+            "Associer les fichiers .JPG à cette application ?", "Associar arquivos .JPG a este aplicativo?",
+            "هل تريد اقتران ملفات ‎.JPG بهذا التطبيق؟", "क्या .JPG फ़ाइलें इस ऐप से संबद्ध करें?",
+            "কি .JPG ফাইল এই অ্যাপের সাথে যুক্ত করবেন?", "کیا ‎.JPG فائلیں اس ایپ سے منسلک کریں؟",
+            "将 .JPG 文件关联到本程序？")
+        Add("Ассоциации установлены. Возможно потребуется перезапустить Проводник или Windows.",
+            "Associations set. You may need to restart Explorer or Windows for changes to take effect.",
+            "Асоціації встановлено. Можливо, знадобиться перезапустити Провідник або Windows.",
+            "Verknüpfungen gesetzt. Möglicherweise müssen Sie Explorer oder Windows neu starten.",
+            "Associazioni impostate. Potrebbe essere necessario riavviare Esplora risorse o Windows.",
+            "Asociaciones establecidas. Puede que deba reiniciar el Explorador o Windows.",
+            "Associations définies. Il peut être nécessaire de redémarrer l'Explorateur ou Windows.",
+            "Associações definidas. Pode ser necessário reiniciar o Explorer ou o Windows.",
+            "تم ضبط الاقترانات. قد تحتاج إلى إعادة تشغيل مستكشف الملفات أو Windows.",
+            "संबद्धताएँ सेट हो गईं। बदलाव के लिए Explorer या Windows पुनः आरंभ करना पड़ सकता है।",
+            "সংযুক্তি সেট হয়েছে। পরিবর্তন কার্যকর করতে Explorer বা Windows পুনরায় চালু করতে হতে পারে।",
+            "ایسوسی ایشنز سیٹ ہو گئیں۔ تبدیلی کے لیے Explorer یا Windows دوبارہ شروع کرنا پڑ سکتا ہے۔",
+            "关联已设置。可能需要重启资源管理器或 Windows 才能生效。")
+        Add("Регистрация завершена", "Registration complete", "Реєстрацію завершено",
+            "Registrierung abgeschlossen", "Registrazione completata", "Registro completado",
+            "Enregistrement terminé", "Registro concluído", "اكتمل التسجيل", "पंजीकरण पूरा हुआ",
+            "নিবন্ধন সম্পন্ন", "رجسٹریشن مکمل", "注册完成")
+        Add("Регистрация", "Registration", "Реєстрація", "Registrierung", "Registrazione",
+            "Registro", "Enregistrement", "Registro", "التسجيل", "पंजीकरण", "নিবন্ধন", "رجسٹریشن", "注册")
+
+        ' --- Image_Panel_Form.vb ---------------------------------------------------
+        Add("Панель изображений", "Image Panel", "Панель зображень", "Bildleiste", "Pannello immagini",
+            "Panel de imágenes", "Panneau d'images", "Painel de imagens", "لوحة الصور",
+            "छवि पैनल", "ছবির প্যানেল", "تصویری پینل", "图片面板")
+        AddC("panel", "Подтверждение удаления",
+            "Deletion..", "Видалення..", "Löschen..", "Eliminazione..", "Eliminación..",
+            "Suppression..", "Exclusão..", "الحذف..", "हटाना..", "মোছা..", "حذف..", "删除..")
+        Add("Не удалось удалить файл: ", "Fail to delete file:", "Не вдалося видалити файл: ",
+            "Datei konnte nicht gelöscht werden: ", "Impossibile eliminare il file: ",
+            "No se pudo eliminar el archivo: ", "Impossible de supprimer le fichier : ",
+            "Falha ao excluir o arquivo: ", "تعذّر حذف الملف: ", "फ़ाइल हटाई नहीं जा सकी: ",
+            "ফাইল মোছা যায়নি: ", "فائل حذف نہ ہو سکی: ", "无法删除文件：")
+        Add("Ошибка", "Error", "Помилка", "Fehler", "Errore", "Error", "Erreur", "Erro",
+            "خطأ", "त्रुटि", "ত্রুটি", "خرابی", "错误")
+        Add("Внимание", "Warning", "Увага", "Achtung", "Attenzione", "Aviso", "Attention",
+            "Atenção", "تنبيه", "चेतावनी", "সতর্কতা", "انتباہ", "警告")
+        Add("копировать", "copy", "копіювати", "kopieren", "copiare", "copiar", "copier",
+            "copiar", "نسخ", "कॉपी", "কপি", "نقل", "复制")
+        Add("переместить", "move", "перемістити", "verschieben", "spostare", "mover", "déplacer",
+            "mover", "نقل", "स्थानांतरित", "সরান", "منتقل", "移动")
+        Add("Подтверждение", "Confirm", "Підтвердження", "Bestätigen", "Conferma", "Confirmar",
+            "Confirmer", "Confirmar", "تأكيد", "पुष्टि", "নিশ্চিত করুন", "تصدیق", "确认")
+        Add("Ошибки:", "Errors:", "Помилки:", "Fehler:", "Errori:", "Errores:", "Erreurs :",
+            "Erros:", "الأخطاء:", "त्रुटियाँ:", "ত্রুটি:", "خرابیاں:", "错误：")
+        Add("Операция завершена", "Operation Complete", "Операцію завершено", "Vorgang abgeschlossen",
+            "Operazione completata", "Operación completada", "Opération terminée",
+            "Operação concluída", "اكتملت العملية", "कार्रवाई पूरी हुई", "কাজ সম্পন্ন",
+            "عمل مکمل", "操作完成")
+    End Sub
+
+End Class

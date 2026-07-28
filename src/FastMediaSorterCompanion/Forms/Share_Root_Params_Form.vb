@@ -45,7 +45,6 @@ Public Class Share_Root_Params_Form
     Private _content As TableLayoutPanel   ' the scrollable settings grid
     Private _scrollHost As Panel           ' AutoScroll wrapper around _content
     Private _buttonBar As TableLayoutPanel ' pinned OK/Cancel bar (Dock=Bottom)
-    Private ReadOnly _rus As Boolean = Is_Russian_Language
 
     Public ReadOnly Property Result As ShareRootParams
         Get
@@ -72,7 +71,10 @@ Public Class Share_Root_Params_Form
     End Function
 
     Private Sub BuildUi()
-        Me.Text = (If(_rus, "Параметры ресурса - ", "Resource options - ")) & _folderName
+        ' Script font + text direction for the active language, before any control
+        ' exists - children inherit both (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
+        UiLanguage.ApplyTo(Me)
+        Me.Text = Localization.TF("Параметры ресурса - {0}", _folderName)
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
         AddHandler Me.FormClosed, Sub() ShareIcons.FreeIcon(Me.Icon, _iconHandle)
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
@@ -80,7 +82,6 @@ Public Class Share_Root_Params_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.AutoScaleMode = AutoScaleMode.Font
         ' Fallback size; OnLoad measures the real content and caps it to the screen.
         Me.ClientSize = New Size(500, 620)
 
@@ -99,96 +100,87 @@ Public Class Share_Root_Params_Form
 
         ' 1. Name.
         txtLabel = New TextBox With {.Width = 420, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 3, 0, 0)}
-        tlp.Controls.Add(Cap(If(_rus, "Название на телефоне:", "Name on the phone:")), 0, r)
+        tlp.Controls.Add(Cap(Localization.T("Название на телефоне:")), 0, r)
         tlp.Controls.Add(txtLabel, 1, r) : r += 1
-        AddFullRow(tlp, Note(If(_rus, "Как ресурс называется в приложении. Пусто = имя папки.",
-                                     "The resource name in the app. Empty = the folder name.")), r) : r += 1
+        AddFullRow(tlp, Note(Localization.T("Как ресурс называется в приложении. Пусто = имя папки.")), r) : r += 1
 
         ' 2. Type / profile.
         cmbProfile = New ComboBox With {.Width = 420, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 3, 0, 0), .DropDownStyle = ComboBoxStyle.DropDownList}
-        If _rus Then
-            cmbProfile.Items.AddRange(New Object() {"Обычная папка (по умолчанию)", "Аудиотека", "Видеотека", "Фотохранилище", "Документы", "Все файлы"})
-        Else
-            cmbProfile.Items.AddRange(New Object() {"Regular folder (default)", "Audio library", "Video library", "Photo storage", "Documents", "All files"})
-        End If
-        tlp.Controls.Add(Cap(If(_rus, "Тип ресурса:", "Resource type:")), 0, r)
+        cmbProfile.Items.AddRange(New Object() {
+            Localization.T("Обычная папка (по умолчанию)"), Localization.T("Аудиотека"), Localization.T("Видеотека"),
+            Localization.T("Фотохранилище"), Localization.T("Документы"), Localization.T("Все файлы")})
+        tlp.Controls.Add(Cap(Localization.T("Тип ресурса:")), 0, r)
         tlp.Controls.Add(cmbProfile, 1, r) : r += 1
-        AddFullRow(tlp, Note(If(_rus, "Как приложение покажет папку и какие файлы возьмёт (напр. «Видеотека» - только видео).",
-                                     "How the app shows the folder and which files it takes (e.g. Video library - videos only).")), r) : r += 1
+        AddFullRow(tlp, Note(Localization.T("Как приложение покажет папку и какие файлы возьмёт (напр. «Видеотека» - только видео).")), r) : r += 1
 
         ' 3. Exact media set - plain check boxes in a wrapping panel (all 8 fit, DPI-safe).
         Dim mediaFlow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 2, 0, 0), .WrapContents = True, .MaximumSize = New Size(440, 0)}
-        Dim names As String() = If(_rus,
-            New String() {"Изображения", "Видео", "Аудио", "GIF", "Текст", "PDF", "EPUB", "Office"},
-            New String() {"Images", "Video", "Audio", "GIF", "Text", "PDF", "EPUB", "Office"})
+        Dim names As String() = {
+            Localization.T("Изображения"), Localization.T("Видео"), Localization.T("Аудио"), "GIF",
+            Localization.T("Текст"), "PDF", "EPUB", "Office"}
         For i As Integer = 0 To MediaTokens.Length - 1
             _mediaChecks(i) = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 18, 2), .Text = names(i)}
             mediaFlow.Controls.Add(_mediaChecks(i))
         Next
         Dim mediaCap As New TableLayoutPanel With {.AutoSize = True, .ColumnCount = 1, .Margin = New Padding(0, 3, 12, 0)}
-        mediaCap.Controls.Add(Cap(If(_rus, "Точный набор типов:", "Exact media set:")))
-        mediaCap.Controls.Add(Note(If(_rus, "Необязательно. Пусто = решает тип.", "Optional. Empty = the type decides.")))
+        mediaCap.Controls.Add(Cap(Localization.T("Точный набор типов:")))
+        mediaCap.Controls.Add(Note(Localization.T("Необязательно. Пусто = решает тип.")))
         tlp.Controls.Add(mediaCap, 0, r)
         tlp.Controls.Add(mediaFlow, 1, r) : r += 1
 
         ' 4. Scan conditions.
         Dim scanFlow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 2, 0, 0), .FlowDirection = FlowDirection.TopDown, .WrapContents = False}
-        chkScanSub = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = If(_rus, "Сканировать подпапки", "Scan subfolders"), .Checked = True}
-        chkSubItems = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = If(_rus, "Показывать подпапки как элементы", "Show subfolders as items")}
-        chkHidden = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = If(_rus, "Показывать скрытые файлы", "Show hidden files")}
-        chkAllFiles = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = If(_rus, "Все файлы (не только медиа)", "All files (not only media)")}
+        chkScanSub = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = Localization.T("Сканировать подпапки"), .Checked = True}
+        chkSubItems = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = Localization.T("Показывать подпапки как элементы")}
+        chkHidden = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = Localization.T("Показывать скрытые файлы")}
+        chkAllFiles = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = Localization.T("Все файлы (не только медиа)")}
         AddHandler chkScanSub.CheckedChanged, Sub() chkSubItems.Enabled = chkScanSub.Checked
         scanFlow.Controls.AddRange(New Control() {chkScanSub, chkSubItems, chkHidden, chkAllFiles})
-        tlp.Controls.Add(Cap(If(_rus, "Условия сканирования:", "Scan conditions:")), 0, r)
+        tlp.Controls.Add(Cap(Localization.T("Условия сканирования:")), 0, r)
         tlp.Controls.Add(scanFlow, 1, r) : r += 1
 
         ' 5. Access section (all full-width, AutoSize -> never clipped).
         AddFullRow(tlp, New Label With {.AutoSize = True, .Margin = New Padding(0, 12, 0, 2),
-            .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(_rus, "Доступ:", "Access:")}, r) : r += 1
-        AddFullRow(tlp, Note(If(_rus, "По умолчанию телефон может добавлять, переименовывать и удалять файлы в папке.",
-                                     "By default the phone can add, rename and delete files in the folder.")), r) : r += 1
+            .Font = New Font(Me.Font, FontStyle.Bold), .Text = Localization.T("Доступ:")}, r) : r += 1
+        AddFullRow(tlp, Note(Localization.T("По умолчанию телефон может добавлять, переименовывать и удалять файлы в папке.")), r) : r += 1
         chkReadOnly = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2),
-            .Text = If(_rus, "Недоступно для записи на уровне сервера - сервер запрещает изменения",
-                            "Not writable at the server level - the server blocks changes")}
+            .Text = Localization.T("Недоступно для записи на уровне сервера - сервер запрещает изменения")}
         AddHandler chkReadOnly.CheckedChanged, AddressOf OnReadOnlyToggled
-        tip.SetToolTip(chkReadOnly, If(_rus, "Настоящий запрет: сервер физически не даёт телефону менять файлы.", "A real lock: the server physically prevents changes."))
+        tip.SetToolTip(chkReadOnly, Localization.T("Настоящий запрет: сервер физически не даёт телефону менять файлы."))
         AddFullRow(tlp, chkReadOnly, r) : r += 1
         chkSoftReadOnly = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2),
-            .Text = If(_rus, "Публиковать как «только чтение» - подсказка приложению (сервер не блокирует)",
-                            "Publish as read-only - a hint to the app (the server does not block)")}
-        tip.SetToolTip(chkSoftReadOnly, If(_rus, "Приложение спрячет кнопки изменения, но сервер запись не запрещает.", "The app hides edit buttons, but the server does not block writes."))
+            .Text = Localization.T("Публиковать как «только чтение» - подсказка приложению (сервер не блокирует)")}
+        tip.SetToolTip(chkSoftReadOnly, Localization.T("Приложение спрячет кнопки изменения, но сервер запись не запрещает."))
         AddFullRow(tlp, chkSoftReadOnly, r) : r += 1
         chkDestination = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 0),
-            .Text = If(_rus, "Папка-получатель - в неё можно копировать и переносить с телефона",
-                            "Destination folder - the phone can copy and move files into it")}
+            .Text = Localization.T("Папка-получатель - в неё можно копировать и переносить с телефона")}
         AddHandler chkDestination.CheckedChanged, AddressOf OnDestinationToggled
         AddFullRow(tlp, chkDestination, r) : r += 1
-        lblDestNote = Note(If(_rus, "Папка станет доступна на запись; ресурс попадёт в список получателей. Цвет метки выберет приложение.",
-                                    "The folder becomes writable; the resource joins the destinations list. The app picks the chip colour."))
+        lblDestNote = Note(Localization.T("Папка станет доступна на запись; ресурс попадёт в список получателей. Цвет метки выберет приложение."))
         lblDestNote.Margin = New Padding(24, 0, 0, 6)
         AddFullRow(tlp, lblDestNote, r) : r += 1
 
         ' 6. Comment / PIN / slideshow.
         txtComment = New TextBox With {.Width = 420, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 8, 0, 0)}
-        tlp.Controls.Add(Cap(If(_rus, "Комментарий:", "Comment:")), 0, r)
+        tlp.Controls.Add(Cap(Localization.T("Комментарий:")), 0, r)
         tlp.Controls.Add(txtComment, 1, r) : r += 1
 
         Dim pinFlow As New FlowLayoutPanel With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 3, 0, 0), .WrapContents = False}
         txtPin = New TextBox With {.Width = 150, .Margin = New Padding(0, 0, 10, 0)}
         pinFlow.Controls.Add(txtPin)
         pinFlow.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 4, 0, 0), .ForeColor = Color.DimGray,
-            .Text = If(_rus, "если задан - приложение попросит его при открытии", "if set - the app asks for it on open")})
-        tlp.Controls.Add(Cap(If(_rus, "PIN для ресурса:", "Resource PIN:")), 0, r)
+            .Text = Localization.T("если задан - приложение попросит его при открытии")})
+        tlp.Controls.Add(Cap(Localization.T("PIN для ресурса:")), 0, r)
         tlp.Controls.Add(pinFlow, 1, r) : r += 1
 
         Dim slideFlow As New FlowLayoutPanel With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 3, 0, 0), .WrapContents = False}
         numSlide = New NumericUpDown With {.Width = 90, .Minimum = 1, .Maximum = 3600, .Value = 10, .Margin = New Padding(0, 0, 10, 0)}
         slideFlow.Controls.Add(numSlide)
         slideFlow.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 5, 0, 0), .ForeColor = Color.DimGray,
-            .Text = If(_rus, "как часто листать фото", "how often to advance photos")})
-        tlp.Controls.Add(Cap(If(_rus, "Слайд-шоу, секунд:", "Slideshow, seconds:")), 0, r)
+            .Text = Localization.T("как часто листать фото")})
+        tlp.Controls.Add(Cap(Localization.T("Слайд-шоу, секунд:")), 0, r)
         tlp.Controls.Add(slideFlow, 1, r) : r += 1
 
         ' Buttons live in a PINNED bottom bar (Dock=Bottom) - always visible, so they can
@@ -197,7 +189,7 @@ Public Class Share_Root_Params_Form
             .Anchor = AnchorStyles.Right, .Margin = New Padding(0),
             .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False}
         btnOk = New Button With {.Width = 96, .Height = 34, .Text = "OK", .Margin = New Padding(0, 0, 8, 0)}
-        btnCancel = New Button With {.Width = 96, .Height = 34, .Text = If(_rus, "Отмена", "Cancel"), .DialogResult = DialogResult.Cancel}
+        btnCancel = New Button With {.Width = 96, .Height = 34, .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
         AddHandler btnOk.Click, AddressOf OnOk
         btnFlow.Controls.Add(btnOk)
         btnFlow.Controls.Add(btnCancel)
@@ -218,6 +210,8 @@ Public Class Share_Root_Params_Form
         Me.Controls.Add(_buttonBar)
         Me.AcceptButton = btnOk
         Me.CancelButton = btnCancel
+
+        DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
     End Sub
 
     ''' <summary>Sizes the window to its content but never larger than the monitor working area

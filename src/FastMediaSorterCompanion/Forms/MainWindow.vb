@@ -33,8 +33,9 @@ Public NotInheritable Class MainWindow
     Private _router As RouterIdentity
     Private _routerRequested As Boolean
     Private _iconHandle As IntPtr
-    Private ReadOnly _copyGlyph As Image = BuildCopyGlyph()
-    Private ReadOnly _addGlyph As Image = BuildAddGlyph()
+    ' Code-drawn button glyphs; built in BuildUi at the display's DPI (see _shareGlyph there).
+    Private _copyGlyph As Image
+    Private _addGlyph As Image
     Private _shareGlyph As Image
 
     ' --- controls ---------------------------------------------------------------
@@ -50,6 +51,7 @@ Public NotInheritable Class MainWindow
     Private btnGuide As Button
     Private btnTest As Button
     Private chkAutostart As CheckBox
+    Private chkOpenOnStart As CheckBox
     Private numMaxConns As NumericUpDown
     Private lblState As Label
     Private lnkRouter As LinkLabel
@@ -63,6 +65,7 @@ Public NotInheritable Class MainWindow
     Private lnkSiteGuide As LinkLabel
     Private lnkRouterSearch As LinkLabel
     Private lnkOpenViewer As LinkLabel
+    Private lnkLanguage As LinkLabel
     Private toolTip As ToolTip
     Private ReadOnly _serverRows As New List(Of ServerRow)()
 
@@ -80,11 +83,6 @@ Public NotInheritable Class MainWindow
         BuildUi()
     End Sub
 
-    Private Shared ReadOnly Property Rus As Boolean
-        Get
-            Return Is_Russian_Language
-        End Get
-    End Property
 
     ''' <summary>One caption|value|copy row of the server grid + how to fill it.</summary>
     Private NotInheritable Class ServerRow
@@ -103,26 +101,30 @@ Public NotInheritable Class MainWindow
     ' --- UI construction --------------------------------------------------------
 
     Private Sub BuildUi()
+        ' Script font + text direction for the active language, before any control
+        ' exists - children inherit both (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
+        UiLanguage.ApplyTo(Me)
         Me.Text = "Fast Media Sorter: Share Manager"
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.MinimumSize = New Size(980, 700)
         Me.ClientSize = New Size(1320, 880)
-        Me.AutoScaleMode = AutoScaleMode.Font
+        ' NB: the AutoScaleMode/AutoScaleDimensions pair is set at the END of this method
+        ' (DpiLayout.ApplyAutoScale) - it only scales the children that already exist.
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
-        _shareGlyph = ShareIcons.CreateGlyphBitmap(22)
+        ' The glyphs are code-drawn bitmaps: auto-scaling grows the buttons around them but
+        ' never the images, so they are drawn at the display's DPI right away.
+        BuildGlyphs()
         toolTip = New ToolTip()
         _statsTimer = New Timer With {.Interval = 10000}
         AddHandler _statsTimer.Tick, AddressOf OnStatsTick
 
         ' --- top strip: neutral one-liner + big Share button --------------------
         Dim pnlTop As New Panel With {.Dock = DockStyle.Top, .Height = 66, .Padding = New Padding(16, 14, 16, 8)}
-        Dim lblIntro As New Label With {.Dock = DockStyle.Fill, .AutoEllipsis = True, .TextAlign = ContentAlignment.MiddleLeft, .Text = If(Rus,
-            "Откройте папки этого ПК на телефоне - по Wi-Fi или через интернет.",
-            "Open this PC's folders on your phone - over Wi-Fi or the internet.")}
+        Dim lblIntro As New Label With {.Dock = DockStyle.Fill, .AutoEllipsis = True, .TextAlign = ContentAlignment.MiddleLeft, .Text = Localization.T("Откройте папки этого ПК на телефоне - по Wi-Fi или через интернет.")}
         btnShare = New Button With {.Dock = DockStyle.Right, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Padding = New Padding(18, 6, 18, 6),
             .Font = New Font(Me.Font.FontFamily, Me.Font.Size + 2.0F, FontStyle.Bold),
-            .Text = If(Rus, "Поделиться", "Share"), .Image = _shareGlyph,
+            .Text = Localization.T("Поделиться"), .Image = _shareGlyph,
             .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
             .TextAlign = ContentAlignment.MiddleCenter}
         AddHandler btnShare.Click, AddressOf OnShareClicked
@@ -133,11 +135,15 @@ Public NotInheritable Class MainWindow
         Dim pnlBottom As New Panel With {.Dock = DockStyle.Bottom, .Height = 66, .Padding = New Padding(16, 4, 16, 10)}
         lblHint = New Label With {.Dock = DockStyle.Top, .Height = 22, .ForeColor = Color.DimGray, .AutoEllipsis = True}
         Dim flow As New FlowLayoutPanel With {.Dock = DockStyle.Fill, .WrapContents = True}
-        lnkAndroid = MakeLink(If(Rus, "FastMediaSorter для Android", "FastMediaSorter for Android"), Sub() NetworkInfo.OpenInBrowser(ShareGuide.AndroidSite(Rus)))
-        lnkSiteGuide = MakeLink(If(Rus, "Как публиковать папки (сайт)", "How to publish folders (website)"), Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl))
-        lnkRouterSearch = MakeLink(If(Rus, "Инструкция для моей модели роутера", "Guide for my router model"), Sub() OnOpenRouterSearch(Me, EventArgs.Empty))
-        lnkOpenViewer = MakeLink(If(Rus, "Открыть Fast Media Sorter", "Open Fast Media Sorter"), Sub() OnOpenViewerClicked(Me, EventArgs.Empty))
-        flow.Controls.AddRange(New Control() {lnkAndroid, Sep(), lnkSiteGuide, Sep(), lnkRouterSearch, Sep(), lnkOpenViewer})
+        lnkAndroid = MakeLink(Localization.T("FastMediaSorter для Android"), Sub() NetworkInfo.OpenInBrowser(ShareGuide.AndroidSite()))
+        lnkSiteGuide = MakeLink(Localization.T("Как публиковать папки (сайт)"), Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl))
+        lnkRouterSearch = MakeLink(Localization.T("Инструкция для моей модели роутера"), Sub() OnOpenRouterSearch(Me, EventArgs.Empty))
+        lnkOpenViewer = MakeLink(Localization.T("Открыть Fast Media Sorter"), Sub() OnOpenViewerClicked(Me, EventArgs.Empty))
+        ' The language picker names the CURRENT language in its own script, so it reads
+        ' as an answer ("Deutsch") rather than a question - and is recognisable to
+        ' someone who cannot read the rest of the window yet.
+        lnkLanguage = MakeLink(Localization.CurrentName, Sub() UiLanguage.ShowLanguageMenu(lnkLanguage))
+        flow.Controls.AddRange(New Control() {lnkAndroid, Sep(), lnkSiteGuide, Sep(), lnkRouterSearch, Sep(), lnkOpenViewer, Sep(), lnkLanguage})
         pnlBottom.Controls.Add(flow)
         pnlBottom.Controls.Add(lblHint)
 
@@ -150,7 +156,7 @@ Public NotInheritable Class MainWindow
         ' can never widen the address columns and a vertical scrollbar (single Percent
         ' column) can never trigger a horizontal one. -----------------------------------
         Dim grpServer As New GroupBox With {.Dock = DockStyle.Right, .Width = 500, .Padding = New Padding(14, 8, 14, 12),
-            .Text = If(Rus, "Доступ с Android", "Android access")}
+            .Text = Localization.T("Доступ с Android")}
         Dim outer As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .AutoScroll = True}
         outer.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
@@ -161,16 +167,16 @@ Public NotInheritable Class MainWindow
         grid.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
         grid.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
         grid.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
-        AddServerRow(grid, If(Rus, "Через интернет:", "Via internet:"), AddressOf InternetStatusDisplay, AddressOf InternetAddressValue, True)
-        AddServerRow(grid, If(Rus, "Дома (Wi-Fi):", "Home (Wi-Fi):"), AddressOf LanDisplay, AddressOf CurrentLanAddress, True)
-        AddServerRow(grid, If(Rus, "IPv6:", "IPv6:"), AddressOf Ipv6Value, AddressOf Ipv6Value, False)
-        AddServerRow(grid, If(Rus, "Ключ узла:", "Host key:"), AddressOf FingerprintValue, AddressOf FingerprintValue, False)
-        AddServerRow(grid, If(Rus, "Логин:", "Login:"), AddressOf LoginValue, AddressOf LoginValue, False)
-        AddServerRow(grid, If(Rus, "Пароль:", "Password:"), AddressOf PasswordValue, AddressOf PasswordValue, False)
+        AddServerRow(grid, Localization.T("Через интернет:"), AddressOf InternetStatusDisplay, AddressOf InternetAddressValue, True)
+        AddServerRow(grid, Localization.T("Дома (Wi-Fi):"), AddressOf LanDisplay, AddressOf CurrentLanAddress, True)
+        AddServerRow(grid, Localization.T("IPv6:"), AddressOf Ipv6Value, AddressOf Ipv6Value, False)
+        AddServerRow(grid, Localization.T("Ключ узла:"), AddressOf FingerprintValue, AddressOf FingerprintValue, False)
+        AddServerRow(grid, Localization.T("Логин:"), AddressOf LoginValue, AddressOf LoginValue, False)
+        AddServerRow(grid, Localization.T("Пароль:"), AddressOf PasswordValue, AddressOf PasswordValue, False)
         AddRow(outer, grid)
 
         btnTest = New Button With {.Dock = DockStyle.Fill, .Height = 34, .Margin = New Padding(0, 8, 0, 2),
-            .Text = If(Rus, "Проверить доступ из интернета", "Test internet access"), .Visible = False}
+            .Text = Localization.T("Проверить доступ из интернета"), .Visible = False}
         AddHandler btnTest.Click, AddressOf OnTestClicked
         AddRow(outer, btnTest)
 
@@ -178,21 +184,32 @@ Public NotInheritable Class MainWindow
         AddHandler lnkRouter.LinkClicked, Sub() OnOpenRouter(Me, EventArgs.Empty)
         AddRow(outer, lnkRouter)
 
-        btnGuide = New Button With {.Dock = DockStyle.Fill, .Height = 34, .Margin = New Padding(0, 4, 0, 4), .Text = If(Rus, "Как настроить доступ через интернет", "How to set up internet access")}
+        btnGuide = New Button With {.Dock = DockStyle.Fill, .Height = 34, .Margin = New Padding(0, 4, 0, 4), .Text = Localization.T("Как настроить доступ через интернет")}
         AddHandler btnGuide.Click, AddressOf OnInternetAccess
         AddRow(outer, btnGuide)
-        btnToggle = New Button With {.Dock = DockStyle.Fill, .Height = 42, .Margin = New Padding(0, 4, 0, 6), .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(Rus, "Начать раздачу", "Start sharing")}
+        btnToggle = New Button With {.Dock = DockStyle.Fill, .Height = 42, .Margin = New Padding(0, 4, 0, 6), .Font = New Font(Me.Font, FontStyle.Bold), .Text = Localization.T("Начать раздачу")}
         AddHandler btnToggle.Click, AddressOf OnToggle
         AddRow(outer, btnToggle)
-        chkAutostart = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 0), .Text = If(Rus, "Запускать при входе в Windows", "Start at Windows logon")}
+        chkAutostart = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 0), .Text = Localization.T("Запускать при входе в Windows")}
         AddHandler chkAutostart.CheckedChanged, AddressOf OnAutostartChanged
         AddRow(outer, chkAutostart)
+
+        ' Independent of the autostart above (they answer different questions: whether the
+        ' program starts, and whether it shows itself when it does). Off by default, and it
+        ' governs EVERY plain start - the logon one, a double-click on the exe, a script -
+        ' so unticked really means "no window" (TrayContext). Only an explicit request still
+        ' opens it: the viewer's Share buttons, the tray icon, a folder to share.
+        chkOpenOnStart = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 0),
+            .Text = Localization.T("Открывать окно менеджера при запуске")}
+        AddHandler chkOpenOnStart.CheckedChanged, AddressOf OnOpenOnStartChanged
+        AddRow(outer, chkOpenOnStart)
+        toolTip.SetToolTip(chkOpenOnStart, Localization.T("Без галочки любой запуск программы оставляет только значок рядом с часами - окно открывается двойным щелчком по нему. С галочкой окно открывается сразу."))
 
         ' Max simultaneous connections - the DoS-resilience knob (2026-07-15 review).
         ' Default 10; the user may set 1..99999 (their server, their call).
         Dim pnlConns As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = False, .Margin = New Padding(0, 6, 0, 0)}
         Dim lblConns As New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 6, 0),
-            .Text = If(Rus, "Макс. одновременных подключений:", "Max simultaneous connections:")}
+            .Text = Localization.T("Макс. одновременных подключений:")}
         numMaxConns = New NumericUpDown With {.Minimum = ShareSettings.MinMaxConnections, .Maximum = ShareSettings.MaxMaxConnections,
             .Value = ShareSettings.DefaultMaxConnections, .Width = 84, .Margin = New Padding(0, 2, 0, 0)}
         AddHandler numMaxConns.ValueChanged, AddressOf OnMaxConnsChanged
@@ -200,44 +217,41 @@ Public NotInheritable Class MainWindow
         pnlConns.Controls.Add(lblConns)
         pnlConns.Controls.Add(numMaxConns)
         AddRow(outer, pnlConns)
-        toolTip.SetToolTip(numMaxConns, If(Rus,
-            "Сколько устройств могут быть подключены одновременно. По умолчанию 10; можно от 1 до 99999. Значение меньше 2 может кратко отклонять переподключение телефона.",
-            "How many devices may be connected at once. Default 10; anything from 1 to 99999. Below 2 can briefly refuse a phone's reconnect."))
+        toolTip.SetToolTip(numMaxConns, Localization.T("Сколько устройств могут быть подключены одновременно. По умолчанию 10; можно от 1 до 99999. Значение меньше 2 может кратко отклонять переподключение телефона."))
 
         ' Calm, factual reachability note (decision F): same-network devices can reach
         ' the share while it runs. Not a scare - an intended capability, surfaced here
         ' and in the docs rather than gated behind a toggle the mobile user must flip.
         Dim lblNetNote As New Label With {.AutoSize = True, .MaximumSize = New Size(340, 0),
             .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 8, 0, 0),
-            .Text = ShareText.NetworkReachNote(Rus)}
+            .Text = ShareText.NetworkReachNote()}
         AddRow(outer, lblNetNote)
 
         ' --- usage stats block (only shown while serving; live-refreshed by _statsTimer) ---
         pnlStats = New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 2, .Margin = New Padding(0, 18, 0, 0), .Visible = False}
         pnlStats.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
         pnlStats.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
-        Dim statsHead As New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 6), .Font = New Font(Me.Font, FontStyle.Bold), .Text = If(Rus, "Статистика раздачи", "Usage")}
+        Dim statsHead As New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 6), .Font = New Font(Me.Font, FontStyle.Bold), .Text = Localization.T("Статистика раздачи")}
         pnlStats.Controls.Add(statsHead, 0, 0) : pnlStats.SetColumnSpan(statsHead, 2)
-        lblStatLast = AddStatRow(pnlStats, If(Rus, "Последнее подключение:", "Last connection:"), 1)
-        lblStatConns = AddStatRow(pnlStats, If(Rus, "Подключений:", "Connections:"), 2)
-        lblStatFiles = AddStatRow(pnlStats, If(Rus, "Файлов отдано:", "Files served:"), 3)
-        toolTip.SetToolTip(lblStatConns, If(Rus, "Считается каждый сеанс связи. Один телефон может подключаться несколько раз (проверка доступа, просмотр файла, переподключение).",
-                                                 "Counts each connection session. One phone can connect several times (reachability check, opening a file, reconnects)."))
+        lblStatLast = AddStatRow(pnlStats, Localization.T("Последнее подключение:"), 1)
+        lblStatConns = AddStatRow(pnlStats, Localization.T("Подключений:"), 2)
+        lblStatFiles = AddStatRow(pnlStats, Localization.T("Файлов отдано:"), 3)
+        toolTip.SetToolTip(lblStatConns, Localization.T("Считается каждый сеанс связи. Один телефон может подключаться несколько раз (проверка доступа, просмотр файла, переподключение)."))
         AddRow(outer, pnlStats)
 
         grpServer.Controls.Add(outer)
 
         ' --- center: shared-folder list, buttons ABOVE the table ---------------
         Dim grpShares As New GroupBox With {.Dock = DockStyle.Fill, .Padding = New Padding(14, 8, 14, 12),
-            .Text = If(Rus, "Общие папки", "Shared folders")}
+            .Text = Localization.T("Общие папки")}
 
         Dim pnlListButtons As New FlowLayoutPanel With {.Dock = DockStyle.Top, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(0, 6, 0, 6)}
-        btnAdd = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 6, 12, 6), .Text = If(Rus, "Добавить папку..", "Add folder.."),
+        btnAdd = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 6, 12, 6), .Text = Localization.T("Добавить папку.."),
             .Image = _addGlyph, .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
             .TextAlign = ContentAlignment.MiddleCenter, .Font = New Font(Me.Font, FontStyle.Bold)}
-        btnAddCurrent = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(8, 6, 8, 6), .Text = If(Rus, "+ Текущая", "+ Current"), .Visible = _initialFolder.Length > 0}
-        btnRemove = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 6, 10, 6), .Text = If(Rus, "Убрать", "Remove")}
-        btnParams = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 6, 10, 6), .Text = If(Rus, "Настроить..", "Options..")}
+        btnAddCurrent = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(8, 6, 8, 6), .Text = Localization.T("+ Текущая"), .Visible = _initialFolder.Length > 0}
+        btnRemove = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 6, 10, 6), .Text = Localization.T("Убрать")}
+        btnParams = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 6, 10, 6), .Text = Localization.T("Настроить..")}
         AddHandler btnAdd.Click, AddressOf OnAddFolder
         AddHandler btnAddCurrent.Click, AddressOf OnAddCurrentFolder
         AddHandler btnRemove.Click, AddressOf OnRemoveFolder
@@ -246,10 +260,14 @@ Public NotInheritable Class MainWindow
 
         lvFolders = New ListView With {.Dock = DockStyle.Fill, .View = View.Details, .CheckBoxes = True,
             .FullRowSelect = True, .HideSelection = False, .MultiSelect = False}
-        lvFolders.Columns.Add(If(Rus, "Название", "Name"), 170)
-        lvFolders.Columns.Add(If(Rus, "Тип", "Type"), 130)
-        lvFolders.Columns.Add(If(Rus, "Папка", "Folder"), 300)
-        lvFolders.Columns.Add("RO", 50, HorizontalAlignment.Center)
+        ' Widths come from ApplyDpiScaledAssets: column widths are the ONE thing the form's
+        ' auto-scaling does not touch (WinForms never scales them), so they are converted from
+        ' 96-DPI design units by hand - otherwise at 175% scaling a 170 px "Name" column holds
+        ' barely a dozen of the now 1.75x taller glyphs.
+        lvFolders.Columns.Add(Localization.T("Название"))
+        lvFolders.Columns.Add(Localization.T("Тип"))
+        lvFolders.Columns.Add(Localization.T("Папка"))
+        lvFolders.Columns.Add("RO", 0, HorizontalAlignment.Center)
         AddHandler lvFolders.MouseDown, AddressOf OnListMouseDown
         AddHandler lvFolders.ItemCheck, AddressOf OnItemCheck
         AddHandler lvFolders.ItemChecked, AddressOf OnItemChecked
@@ -276,6 +294,11 @@ Public NotInheritable Class MainWindow
         pnlEnable.BringToFront()
         progressBar.BringToFront()
 
+        ' LAST, with every child in place: this is what makes the whole layout follow the
+        ' display scaling instead of staying at 96 DPI under a 175% font (see DpiLayout).
+        DpiLayout.ApplyAutoScale(Me)
+        ApplyDpiScaledAssets()
+
         AddHandler Me.Shown, AddressOf OnShownFirst
         AddHandler Me.FormClosing, AddressOf HandleFormClosing
     End Sub
@@ -283,12 +306,10 @@ Public NotInheritable Class MainWindow
     Private Sub BuildEnableOverlay()
         pnlEnable = New Panel With {.Dock = DockStyle.Fill, .BackColor = SystemColors.Control, .Visible = False, .Padding = New Padding(28)}
         Dim lblEnableTitle As New Label With {.Dock = DockStyle.Top, .Height = 36, .Font = New Font(Me.Font.FontFamily, Me.Font.Size * 1.3F, FontStyle.Bold),
-            .Text = If(Rus, "Функции сервера выключены", "Server features are off")}
-        Dim lblEnableIntro As New Label With {.Dock = DockStyle.Top, .Height = 120, .Text = If(Rus,
-            "Общий доступ к папкам поднимает локальный SFTP-сервер и требует одного исключения в брандмауэре Windows (один раз, с правами администратора). Пока это не включено, программа ничего не раздаёт.",
-            "Folder sharing runs a local SFTP server and needs one Windows Firewall exception (once, as administrator). Until enabled, nothing is shared.")}
+            .Text = Localization.T("Функции сервера выключены")}
+        Dim lblEnableIntro As New Label With {.Dock = DockStyle.Top, .Height = 120, .Text = Localization.T("Общий доступ к папкам поднимает локальный SFTP-сервер и требует одного исключения в брандмауэре Windows (один раз, с правами администратора). Пока это не включено, программа ничего не раздаёт.")}
         btnEnable = New Button With {.Top = 168, .Left = 28, .Width = 300, .Height = 38, .Font = New Font(Me.Font, FontStyle.Bold),
-            .Text = If(Rus, "Включить функции сервера..", "Enable server features..")}
+            .Text = Localization.T("Включить функции сервера..")}
         AddHandler btnEnable.Click, AddressOf OnEnableServer
         pnlEnable.Controls.Add(btnEnable)
         pnlEnable.Controls.Add(lblEnableIntro)
@@ -326,7 +347,7 @@ Public NotInheritable Class MainWindow
         ' the managed Image, so the copy glyph would not appear.
         Dim copy As New Button With {.Width = 28, .Height = 26, .Margin = New Padding(2, 3, 0, 3), .Image = _copyGlyph,
             .ImageAlign = ContentAlignment.MiddleCenter, .TabStop = False, .Anchor = AnchorStyles.Left, .Tag = copyFunc}
-        toolTip.SetToolTip(copy, If(Rus, "Копировать в буфер", "Copy to clipboard"))
+        toolTip.SetToolTip(copy, Localization.T("Копировать в буфер"))
         AddHandler copy.Click, AddressOf OnCopyClick
 
         grid.Controls.Add(cap, 0, row)
@@ -353,7 +374,7 @@ Public NotInheritable Class MainWindow
             Return
         End If
         pnlStats.Visible = True
-        Dim never As String = If(Rus, "ещё не было", "never")
+        Dim never As String = Localization.T("ещё не было")
         Dim lastAt As String = Share_Status_Form.FormatTime(s.LastConnectionAt)
         If lastAt.Length = 0 Then
             lblStatLast.Text = never
@@ -362,8 +383,8 @@ Public NotInheritable Class MainWindow
         Else
             lblStatLast.Text = lastAt & "  -  " & s.LastConnectionAddress
         End If
-        lblStatConns.Text = String.Format(If(Rus, "всего {0} (с запуска {1})", "{0} total ({1} since start)"), s.TotalConnections, s.ConnectionsSinceStart)
-        lblStatFiles.Text = String.Format(If(Rus, "всего {0} (с запуска {1})", "{0} total ({1} since start)"), s.FilesServedTotal, s.FilesServedSinceStart)
+        lblStatConns.Text = String.Format(Localization.T("всего {0} (с запуска {1})"), s.TotalConnections, s.ConnectionsSinceStart)
+        lblStatFiles.Text = String.Format(Localization.T("всего {0} (с запуска {1})"), s.FilesServedTotal, s.FilesServedSinceStart)
     End Sub
 
     Private Sub OnStatsTick(sender As Object, e As EventArgs)
@@ -397,17 +418,19 @@ Public NotInheritable Class MainWindow
         If String.IsNullOrEmpty(value) Then Return
         Try
             Clipboard.SetText(value)
-            SetHint(If(Rus, "Скопировано в буфер.", "Copied to clipboard."))
+            SetHint(Localization.T("Скопировано в буфер."))
         Catch
         End Try
     End Sub
 
-    ''' <summary>Windows-style "copy" glyph (two overlapping documents).</summary>
-    Private Shared Function BuildCopyGlyph() As Bitmap
-        Dim bmp As New Bitmap(16, 16)
+    ''' <summary>Windows-style "copy" glyph (two overlapping documents), drawn at
+    ''' <paramref name="size"/> px (the artwork below is authored for 16 px).</summary>
+    Private Shared Function BuildCopyGlyph(size As Integer) As Bitmap
+        Dim bmp As New Bitmap(size, size)
         Using g As Graphics = Graphics.FromImage(bmp)
             g.SmoothingMode = SmoothingMode.AntiAlias
             g.Clear(Color.Transparent)
+            g.ScaleTransform(size / 16.0F, size / 16.0F)
             ' Back page (offset), then front page over it - clear two-document "copy" mark.
             Using back As New SolidBrush(Color.FromArgb(214, 224, 238)) : g.FillRectangle(back, 3, 2, 7, 9) : End Using
             Using p As New Pen(Color.FromArgb(64, 92, 140), 1.3F)
@@ -419,11 +442,14 @@ Public NotInheritable Class MainWindow
         Return bmp
     End Function
 
-    Private Shared Function BuildAddGlyph() As Bitmap
-        Dim bmp As New Bitmap(18, 18)
+    ''' <summary>Green "+" glyph for the Add-folder button, drawn at <paramref name="size"/> px
+    ''' (the artwork below is authored for 18 px).</summary>
+    Private Shared Function BuildAddGlyph(size As Integer) As Bitmap
+        Dim bmp As New Bitmap(size, size)
         Using g As Graphics = Graphics.FromImage(bmp)
             g.SmoothingMode = SmoothingMode.AntiAlias
             g.Clear(Color.Transparent)
+            g.ScaleTransform(size / 18.0F, size / 18.0F)
             Using b As New SolidBrush(Color.FromArgb(46, 160, 67)) : g.FillEllipse(b, 1, 1, 16, 16) : End Using
             Using p As New Pen(Color.White, 2.4F)
                 g.DrawLine(p, 9, 5, 9, 13)
@@ -448,10 +474,10 @@ Public NotInheritable Class MainWindow
         Dim running As Boolean = _status IsNot Nothing AndAlso _status.Running
         Dim reach As WorkerReachability = If(_status IsNot Nothing, _status.Reachability, Nothing)
         If Not running Then Return "-"
-        If reach Is Nothing Then Return If(Rus, "определяется..", "detecting..")
-        If reach.IsCgnat Then Return If(Rus, "за CGNAT (недоступно)", "behind CGNAT (unreachable)")
+        If reach Is Nothing Then Return Localization.T("определяется..")
+        If reach.IsCgnat Then Return Localization.T("за CGNAT (недоступно)")
         Dim addr As String = InternetAddressValue()
-        Return If(addr.Length > 0, addr, If(Rus, "адрес неизвестен", "address unknown"))
+        Return If(addr.Length > 0, addr, Localization.T("адрес неизвестен"))
     End Function
 
     Private Function CurrentLanAddress() As String
@@ -500,6 +526,55 @@ Public NotInheritable Class MainWindow
         DpiLayout.ClampToWorkingArea(Me)
     End Sub
 
+    ''' <summary>Dragged onto a monitor with different scaling: WinForms rescales the bounds,
+    ''' paddings and fonts for us, but not the two things below, so they are re-derived here.</summary>
+    Protected Overrides Sub OnDpiChanged(e As DpiChangedEventArgs)
+        MyBase.OnDpiChanged(e)
+        BuildGlyphs()
+        ApplyDpiScaledAssets()
+    End Sub
+
+    ''' <summary>ListView column widths - the one measurement WinForms never scales, in either
+    ''' the auto-scale or the DPI-change path. Converted from the 96-DPI design units.</summary>
+    Private Sub ApplyDpiScaledAssets()
+        Try
+            If lvFolders Is Nothing OrElse lvFolders.Columns.Count < 4 Then Return
+            lvFolders.Columns(0).Width = LogicalToDeviceUnits(170)
+            lvFolders.Columns(1).Width = LogicalToDeviceUnits(130)
+            lvFolders.Columns(2).Width = LogicalToDeviceUnits(300)
+            lvFolders.Columns(3).Width = LogicalToDeviceUnits(50)
+        Catch
+        End Try
+    End Sub
+
+    ''' <summary>(Re)draws the code-drawn button glyphs at the current display DPI and hands them
+    ''' to the buttons that show them. On the first call (from BuildUi) those buttons do not exist
+    ''' yet and pick the images up as they are created.</summary>
+    Private Sub BuildGlyphs()
+        Dim oldShare As Image = _shareGlyph
+        Dim oldCopy As Image = _copyGlyph
+        Dim oldAdd As Image = _addGlyph
+        _shareGlyph = ShareIcons.CreateGlyphBitmap(LogicalToDeviceUnits(22))
+        _copyGlyph = BuildCopyGlyph(LogicalToDeviceUnits(16))
+        _addGlyph = BuildAddGlyph(LogicalToDeviceUnits(18))
+        If btnShare IsNot Nothing Then btnShare.Image = _shareGlyph
+        If btnAdd IsNot Nothing Then btnAdd.Image = _addGlyph
+        For Each sr As ServerRow In _serverRows
+            sr.Copy.Image = _copyGlyph
+        Next
+        ' Only now that nothing points at them any more.
+        DisposeImage(oldShare)
+        DisposeImage(oldCopy)
+        DisposeImage(oldAdd)
+    End Sub
+
+    Private Shared Sub DisposeImage(img As Image)
+        Try
+            If img IsNot Nothing Then img.Dispose()
+        Catch
+        End Try
+    End Sub
+
     Private Async Sub OnShownFirst(sender As Object, e As EventArgs)
         If _entered Then Return
         _entered = True
@@ -538,15 +613,15 @@ Public NotInheritable Class MainWindow
         If Not ServerFeatures.IsEnabled() Then Return
 
         If Not WorkerProcess.IsAvailable() Then
-            SetHint(If(Rus, "Компонент общего доступа не найден - переустановите приложение.", "The sharing component is missing - reinstall the app."))
+            SetHint(Localization.T("Компонент общего доступа не найден - переустановите приложение."))
             SetServerControlsEnabled(False)
             Return
         End If
 
-        SetBusy(True, If(Rus, "Запуск компаньона..", "Starting companion.."))
+        SetBusy(True, Localization.T("Запуск компаньона.."))
         Dim st As WorkerStatus = Await ShareController.EnsureRunningReconciledAsync()
         If st Is Nothing Then
-            SetHint(If(Rus, "Не удалось связаться с компаньоном.", "Could not reach the companion worker."))
+            SetHint(Localization.T("Не удалось связаться с компаньоном."))
             SetBusy(False)
             Return
         End If
@@ -571,8 +646,9 @@ Public NotInheritable Class MainWindow
             chkAutostart.Checked = AutostartManager.IsEnabled()
             chkAutostart.Enabled = Not AutostartManager.IsPackaged()
             If AutostartManager.IsPackaged() Then
-                toolTip.SetToolTip(chkAutostart, If(Rus, "Автозапуском управляет Windows (пакет из Store).", "Autostart is managed by Windows (Store package)."))
+                toolTip.SetToolTip(chkAutostart, Localization.T("Автозапуском управляет Windows (пакет из Store)."))
             End If
+            chkOpenOnStart.Checked = _settings.OpenWindowOnStartup
             numMaxConns.Value = ShareSettings.ClampConnections(_settings.MaxConnections)
         Catch
         Finally
@@ -595,7 +671,7 @@ Public NotInheritable Class MainWindow
 
     Private Sub SetRouterLink()
         Dim model As String = If(_router IsNot Nothing, _router.DisplayName(), "")
-        lnkRouter.Text = If(model.Length > 0, (If(Rus, "Роутер: ", "Router: ")) & model, (If(Rus, "Роутер: не определён", "Router: unknown")))
+        lnkRouter.Text = If(model.Length > 0, Localization.TF("Роутер: {0}", model), (Localization.T("Роутер: не определён")))
         lnkRouter.Enabled = True
     End Sub
 
@@ -607,18 +683,18 @@ Public NotInheritable Class MainWindow
     Private Sub OnOpenRouter(sender As Object, e As EventArgs)
         Dim url As String = NetworkInfo.DefaultGatewayUrl()
         If url.Length = 0 Then
-            SetHint(If(Rus, "Не удалось определить адрес роутера.", "Could not determine the router address."))
+            SetHint(Localization.T("Не удалось определить адрес роутера."))
             Return
         End If
         NetworkInfo.OpenInBrowser(url)
     End Sub
 
     Private Async Sub OnOpenRouterSearch(sender As Object, e As EventArgs)
-        SetHint(If(Rus, "Определяем роутер..", "Detecting router.."))
+        SetHint(Localization.T("Определяем роутер.."))
         Dim rt As RouterIdentity = Await GetRouterAsync()
         NetworkInfo.OpenInBrowser(RouterInfo.SearchUrl(rt))
-        SetHint(If(rt.DisplayName().Length > 0, (If(Rus, "Роутер: ", "Router: ")) & rt.DisplayName(),
-            If(Rus, "Модель не определена - открыт общий поиск.", "Model unknown - opened a general search.")))
+        SetHint(If(rt.DisplayName().Length > 0, Localization.TF("Роутер: {0}", rt.DisplayName()),
+            Localization.T("Модель не определена - открыт общий поиск.")))
     End Sub
 
     ' --- internet test ----------------------------------------------------------
@@ -631,17 +707,17 @@ Public NotInheritable Class MainWindow
         Dim port As Integer = 0
         If reach IsNot Nothing Then port = If(reach.ExternalPort > 0, reach.ExternalPort, If(st IsNot Nothing, st.ListenPort, 0))
         If String.IsNullOrEmpty(host) OrElse port <= 0 Then
-            SetHint(If(Rus, "Адрес из интернета ещё не определён.", "No internet address yet."))
+            SetHint(Localization.T("Адрес из интернета ещё не определён."))
             Return
         End If
         _testing = True
         btnTest.Enabled = False
-        SetHint((If(Rus, "Проверка ", "Testing ")) & host & ":" & port.ToString() & " ..")
+        SetHint(Localization.TF("Проверка {0} ..", host & ":" & port.ToString()))
         Try
             Dim res As SftpProbe.ProbeResult = Await SftpProbe.ProbeAsync(host, port)
             SetHint(DescribeProbe(res, host, port))
         Catch
-            SetHint(If(Rus, "Не удалось выполнить проверку.", "Could not run the test."))
+            SetHint(Localization.T("Не удалось выполнить проверку."))
         Finally
             _testing = False
             RefreshTestButton()
@@ -652,15 +728,13 @@ Public NotInheritable Class MainWindow
         Dim ep As String = host & ":" & port.ToString()
         Select Case res
             Case SftpProbe.ProbeResult.SshOk
-                Return (If(Rus, "✓ Доступ из интернета работает: ", "✓ Internet access works: ")) & ep
+                Return Localization.TF("✓ Доступ из интернета работает: {0}", ep)
             Case SftpProbe.ProbeResult.PortOpen
-                Return (If(Rus, "Порт открыт, но SFTP не ответил: ", "Port open, but no SFTP reply: ")) & ep
+                Return Localization.TF("Порт открыт, но SFTP не ответил: {0}", ep)
             Case SftpProbe.ProbeResult.Timeout, SftpProbe.ProbeResult.Refused
-                Return If(Rus,
-                    "✗ С этого ПК не отвечает. Роутер может не пускать на свой адрес изнутри - проверьте с телефона по мобильной сети.",
-                    "✗ No answer from this PC. Your router may block its own address from inside - test from the phone on mobile data.")
+                Return Localization.T("✗ С этого ПК не отвечает. Роутер может не пускать на свой адрес изнутри - проверьте с телефона по мобильной сети.")
             Case Else
-                Return If(Rus, "Адрес некорректен.", "Invalid address.")
+                Return Localization.T("Адрес некорректен.")
         End Select
     End Function
 
@@ -698,7 +772,7 @@ Public NotInheritable Class MainWindow
         If _busy Then Return
         Dim picked As String = Nothing
         Using dlg As New FolderBrowserDialog() With {.ShowNewFolderButton = False,
-                .Description = If(Rus, "Выберите папку, которую хотите открыть на телефоне", "Choose the folder to open on the phone")}
+                .Description = Localization.T("Выберите папку, которую хотите открыть на телефоне")}
             If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
             picked = dlg.SelectedPath
         End Using
@@ -716,7 +790,7 @@ Public NotInheritable Class MainWindow
     Private Async Function AddFolderInteractive(path As String) As Task
         If String.IsNullOrWhiteSpace(path) Then Return
         If Not AddShareRow(path) Then
-            SetHint(If(Rus, "Эта папка уже в списке.", "That folder is already in the list."))
+            SetHint(Localization.T("Эта папка уже в списке."))
             Return
         End If
         Dim before As ShareRootParams = ShareRootParamsStore.GetFor(path)
@@ -855,7 +929,7 @@ Public NotInheritable Class MainWindow
 
     Private Async Function ApplySharedFoldersAsync() As Task
         CancelReachabilityPoll()
-        SetBusy(True, If(Rus, "Обновляю список папок..", "Updating the folder list.."))
+        SetBusy(True, Localization.T("Обновляю список папок.."))
         Dim folders As List(Of ShareFolder) = CurrentShareFolders()
         If folders.Count = 0 Then
             Await ShareController.StopServerAsync()
@@ -872,31 +946,31 @@ Public NotInheritable Class MainWindow
     Private Async Sub OnToggle(sender As Object, e As EventArgs)
         If _busy Then Return
         CancelReachabilityPoll()
-        SetBusy(True, If(Rus, "Минутку..", "One moment.."))
+        SetBusy(True, Localization.T("Минутку.."))
         Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
         If st IsNot Nothing AndAlso st.Running Then
-            SetHint(If(Rus, "Останавливаю раздачу..", "Stopping sharing.."))
+            SetHint(Localization.T("Останавливаю раздачу.."))
             Await ShareController.StopServerAsync()
             _status = Await ShareController.GetStatusAsync()
             ApplyStatusToUi()
             SetBusy(False)
-            SetHint(If(Rus, "Раздача остановлена.", "Sharing stopped."))
+            SetHint(Localization.T("Раздача остановлена."))
             Return
         End If
 
         Dim folders As List(Of ShareFolder) = CurrentShareFolders()
         If folders.Count = 0 Then
             SetBusy(False)
-            SetHint(If(Rus, "Сначала добавьте папку и отметьте её галочкой.", "Add a folder and tick it first."))
+            SetHint(Localization.T("Сначала добавьте папку и отметьте её галочкой."))
             Return
         End If
-        SetHint(If(Rus, "Включаю раздачу..", "Starting sharing.."))
+        SetHint(Localization.T("Включаю раздачу.."))
         Dim res As ShareController.ShareResult = Await ShareController.ShareFoldersAsync(folders)
         _status = res.Status
         ApplyStatusToUi()
         SetBusy(False)
-        SetHint(If(res.Served, If(Rus, "Раздача запущена.", "Sharing started."),
-                              If(Rus, "Запущено, адрес не подтверждён - проверьте брандмауэр/сеть.", "Started, address unconfirmed - check firewall/network.")))
+        SetHint(If(res.Served, Localization.T("Раздача запущена."),
+                              Localization.T("Запущено, адрес не подтверждён - проверьте брандмауэр/сеть.")))
         If _status IsNot Nothing AndAlso _status.Running AndAlso _status.Reachability Is Nothing Then Await PollReachabilityAsync()
     End Sub
 
@@ -905,8 +979,8 @@ Public NotInheritable Class MainWindow
     Private Sub ApplyStatusToUi()
         Dim running As Boolean = _status IsNot Nothing AndAlso _status.Running
 
-        btnToggle.Text = If(running, If(Rus, "Остановить раздачу", "Stop sharing"), If(Rus, "Начать раздачу", "Start sharing"))
-        lblState.Text = If(running, If(Rus, "Раздача с этого ПК работает", "Sharing from this PC is on"), If(Rus, "Раздача выключена", "Sharing is off"))
+        btnToggle.Text = If(running, Localization.T("Остановить раздачу"), Localization.T("Начать раздачу"))
+        lblState.Text = If(running, Localization.T("Раздача с этого ПК работает"), Localization.T("Раздача выключена"))
         lblState.ForeColor = If(running, Color.ForestGreen, Color.DimGray)
 
         For Each sr As ServerRow In _serverRows
@@ -953,7 +1027,7 @@ Public NotInheritable Class MainWindow
     Private Sub OnShareClicked(sender As Object, e As EventArgs)
         If _wizardOpen Then Return   ' guard tray re-entry while the modal wizard is already up
         If _status Is Nothing OrElse Not _status.Running Then
-            SetHint(If(Rus, "Сначала запустите сервер.", "Start the server first."))
+            SetHint(Localization.T("Сначала запустите сервер."))
             Return
         End If
         Dim preselect As New List(Of String)()
@@ -983,7 +1057,7 @@ Public NotInheritable Class MainWindow
             If File.Exists(exe) Then
                 Process.Start(New ProcessStartInfo(exe) With {.UseShellExecute = True})
             Else
-                SetHint(If(Rus, "Fast Media Sorter не найден рядом.", "Fast Media Sorter not found alongside."))
+                SetHint(Localization.T("Fast Media Sorter не найден рядом."))
             End If
         Catch
         End Try
@@ -992,7 +1066,7 @@ Public NotInheritable Class MainWindow
     ' --- enable gate + autostart ------------------------------------------------
 
     Private Sub OnEnableServer(sender As Object, e As EventArgs)
-        Using dlg As New Share_Enable_Form(Rus)
+        Using dlg As New Share_Enable_Form()
             If dlg.ShowDialog(Me) = DialogResult.OK Then
                 ApplyGate()
                 _entered = False
@@ -1042,6 +1116,17 @@ Public NotInheritable Class MainWindow
         End Try
     End Sub
 
+    ''' <summary>Persists the "open the window at startup" sub-option. Read back by
+    ''' <see cref="TrayContext"/> on the next silent (--tray) launch.</summary>
+    Private Sub OnOpenOnStartChanged(sender As Object, e As EventArgs)
+        If _loading Then Return
+        Try
+            _settings.OpenWindowOnStartup = chkOpenOnStart.Checked
+            _settings.Save()
+        Catch
+        End Try
+    End Sub
+
     ' --- small helpers ----------------------------------------------------------
 
     ''' <summary>RO-column cell: "✓" = hard read-only (server blocks writes); "~" =
@@ -1059,11 +1144,11 @@ Public NotInheritable Class MainWindow
     Private Shared Function ProfileLabel(p As ShareRootParams) As String
         Dim token As String = If(p Is Nothing OrElse String.IsNullOrEmpty(p.Profile), "none", p.Profile)
         Select Case token
-            Case "audio_library" : Return If(Rus, "Аудиотека", "Audio library")
-            Case "video_library" : Return If(Rus, "Видеотека", "Video library")
-            Case "photo_storage" : Return If(Rus, "Фотохранилище", "Photo storage")
-            Case "documents" : Return If(Rus, "Документы", "Documents")
-            Case "all_files" : Return If(Rus, "Все файлы", "All files")
+            Case "audio_library" : Return Localization.T("Аудиотека")
+            Case "video_library" : Return Localization.T("Видеотека")
+            Case "photo_storage" : Return Localization.T("Фотохранилище")
+            Case "documents" : Return Localization.T("Документы")
+            Case "all_files" : Return Localization.T("Все файлы")
             Case Else : Return ""   ' none / regular folder - keep the cell clean
         End Select
     End Function

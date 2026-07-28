@@ -408,7 +408,7 @@ Public Class Main_Form
         Using folder_Browser_Dialog As New FolderBrowserDialog()
             folder_Browser_Dialog.SelectedPath = Current_Folder_Path
 
-            folder_Browser_Dialog.Description = If(Is_Russian_Language, "Выберите папку с медиафайлами..", "Set folder of media files..")
+            folder_Browser_Dialog.Description = Localization.T("Выберите папку с медиафайлами..")
 #If Not NETFRAMEWORK Then
             ' The Vista-style dialog .NET uses shows Description only as the title.
             folder_Browser_Dialog.UseDescriptionForTitle = True
@@ -416,7 +416,7 @@ Public Class Main_Form
 
             If folder_Browser_Dialog.ShowDialog() = System.Windows.Forms.DialogResult.OK Then
                 Current_Folder_Path = folder_Browser_Dialog.SelectedPath
-                lbl_Status.Text = If(Is_Russian_Language, "выбрана папка", "folder selected") & ": " & Current_Folder_Path
+                lbl_Status.Text = Localization.T("выбрана папка") & ": " & Current_Folder_Path
                 Is_No_Background_Tasks = False
                 ReadShowMediaFile(Mode_FolderAndFile)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0310: Folder read")
@@ -456,7 +456,7 @@ Public Class Main_Form
         If recent_Media_File_List Is Nothing OrElse
             recent_Media_File_List.Count = 0 Then
 
-            '   MessageBox.Show(If(Is_Russian_Language, "Нет недавних файлов.", "No recent files."), "Recent Files", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            '   MessageBox.Show(Localization.T("Нет недавних файлов."), "Recent Files", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
 
@@ -527,11 +527,7 @@ Public Class Main_Form
         If Current_Folder_Path <> "" Then
             ReadShowMediaFile(Mode_FolderAndFile)
         Else
-            If Is_Russian_Language Then
-                MsgBox("Сначала укажите каталог с медиафайлами.. Программа хороша, но не телепат.")
-            Else
-                MsgBox("First point me at a folder with media files.. Great app, but not a mind reader.")
-            End If
+            MsgBox(Localization.T("Сначала укажите каталог с медиафайлами.. Программа хороша, но не телепат."))
         End If
     End Sub
 
@@ -632,7 +628,7 @@ Public Class Main_Form
     Private Sub Label1_Click(sender As Object, e As EventArgs) Handles lbl_Folder.Click
         If Not String.IsNullOrEmpty(cmbox_Media_Folder.Text) Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2240: Folder sent to clipboard")
-            CopyTextToClipboard(cmbox_Media_Folder.Text, lbl_Status, If(Is_Russian_Language, "Имя папки скопировано в буфер", "Folder sent to clipboard"))
+            CopyTextToClipboard(cmbox_Media_Folder.Text, lbl_Status, Localization.T("Имя папки скопировано в буфер"))
         End If
     End Sub
 
@@ -686,7 +682,7 @@ Public Class Main_Form
                                "|Video Files|" & videoExtensions &
                                "|JPEG Files|*.jpg;*.jpeg|PNG Files|*.png|GIF Files|*.gif|BMP Files|*.bmp|WebP Files|*.webp|HEIC Files|*.heic;*.heif|AVIF Files|*.avif|SVG Files|*.svg"
             openFileDialog.InitialDirectory = If(String.IsNullOrEmpty(Current_Folder_Path), Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), Current_Folder_Path)
-            openFileDialog.Title = If(Is_Russian_Language, "Выберите медиафайл", "Select a media file")
+            openFileDialog.Title = Localization.T("Выберите медиафайл")
             If openFileDialog.ShowDialog() = DialogResult.OK Then
                 Dim selected_File_Path As String = openFileDialog.FileName
                 Dim selected_Folder_Path As String = Path.GetDirectoryName(selected_File_Path)
@@ -728,7 +724,7 @@ Public Class Main_Form
         Dim fileNumber As Integer
         Dim take_number As String
 
-        take_number = InputBox(If(Is_Russian_Language, "Введите номер файла:", "Enter file number:"), If(Is_Russian_Language, "Перейти к файлу", "Jump To File Number"), (current_File_Index + 1).ToString, 1, total_File_Count)
+        take_number = InputBox(Localization.T("Введите номер файла:"), Localization.T("Перейти к файлу"), (current_File_Index + 1).ToString, 1, total_File_Count)
 
         ' Cancel / Esc gives back an empty string - that is someone changing their mind,
         ' not an error worth a modal box saying "Invalid file number".
@@ -746,11 +742,11 @@ Public Class Main_Form
                 ' it only ever worked because the index was moved here beforehand.
                 JumpTo(fileNumber - 1)
             Else
-                MessageBox.Show(If(Is_Russian_Language, "Номер файла вне диапазона.", "File number out of range."), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                MessageBox.Show(Localization.T("Номер файла вне диапазона."), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End If
 
         Else
-            MessageBox.Show(If(Is_Russian_Language, "Неверный номер файла.", "Invalid file number."), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show(Localization.T("Неверный номер файла."), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End If
     End Sub
 

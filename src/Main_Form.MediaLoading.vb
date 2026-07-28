@@ -38,22 +38,24 @@ Partial Public Class Main_Form
     ' different file than the one on display.
     Private pending_Jump_Delta As Integer
     Private pending_Jump_Target As Integer
-    Private pending_Jump_Status_Ru As String = ""
-    Private pending_Jump_Status_En As String = ""
+    ''' <summary>
+    ''' Status line to show once the jump lands, held as the Russian SOURCE string - the
+    ''' dictionary key. It used to be two fields, Ru and En, chosen at display time; one
+    ''' key is both shorter and correct in thirteen languages instead of two.
+    ''' </summary>
+    Private pending_Jump_Status As String = ""
 
     ''' <summary>Flip by delta files (Home/End/arrows/PageUp/PageDown, modifier-clicks).</summary>
-    Private Sub JumpBy(delta As Integer, status_Ru As String, status_En As String)
+    Private Sub JumpBy(delta As Integer, status As String)
         pending_Jump_Delta = delta
-        pending_Jump_Status_Ru = status_Ru
-        pending_Jump_Status_En = status_En
+        pending_Jump_Status = status
         ReadShowMediaFile(Mode_JumpBy)
     End Sub
 
     ''' <summary>Go to an absolute position (first/last file, "jump to number").</summary>
-    Private Sub JumpTo(target_Index As Integer, Optional status_Ru As String = "", Optional status_En As String = "")
+    Private Sub JumpTo(target_Index As Integer, Optional status As String = "")
         pending_Jump_Target = target_Index
-        pending_Jump_Status_Ru = status_Ru
-        pending_Jump_Status_En = status_En
+        pending_Jump_Status = status
         ReadShowMediaFile(Mode_JumpTo)
     End Sub
 
@@ -89,8 +91,7 @@ Partial Public Class Main_Form
         If target > total_File_Count - 1 Then target = 0
 
         pending_Jump_Target = target
-        pending_Jump_Status_Ru = ""     ' keep the "could not load X" line on screen
-        pending_Jump_Status_En = ""
+        pending_Jump_Status = ""        ' keep the "could not load X" line on screen
         ReadShowMediaFile(Mode_JumpTo, is_Auto_Skip:=True)
     End Sub
 
@@ -126,7 +127,7 @@ Partial Public Class Main_Form
                 auto_Skip_Chain += 1
                 If auto_Skip_Chain > Math.Max(1, total_File_Count) Then
                     auto_Skip_Chain = 0
-                    lbl_Status.Text = If(Is_Russian_Language, "! Нет читаемых файлов в папке", "! No readable files in this folder")
+                    lbl_Status.Text = Localization.T("! Нет читаемых файлов в папке")
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0335: auto-skip chain exhausted - nothing readable")
                     Exit Sub
                 End If
@@ -135,7 +136,7 @@ Partial Public Class Main_Form
             End If
 
             If FileOperationWorker.IsBusy AndAlso read_Mode_Type = Mode_Delete Then
-                lbl_Status.Text = If(Is_Russian_Language, "!Ждите.. предыдущая операция ещё выполняется", "!Wait.. previous operation still running")
+                lbl_Status.Text = Localization.T("!Ждите.. предыдущая операция ещё выполняется")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0340: DeleteFile skiped while FileOperationWorker")
                 Exit Sub
             End If
@@ -231,7 +232,7 @@ Partial Public Class Main_Form
                 If current_File_Index > total_File_Count - 1 Then current_File_Index = total_File_Count - 1
                 ' The status belongs to the jump that actually happened - the callers
                 ' used to announce "+100 files" even when this call bailed out early.
-                If pending_Jump_Status_Ru <> "" Then lbl_Status.Text = If(Is_Russian_Language, pending_Jump_Status_Ru, pending_Jump_Status_En)
+                If pending_Jump_Status <> "" Then lbl_Status.Text = Localization.T(pending_Jump_Status)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0421: case JumpBy " & pending_Jump_Delta.ToString())
 
             Case Mode_JumpTo
@@ -239,7 +240,7 @@ Partial Public Class Main_Form
                 current_File_Index = pending_Jump_Target
                 If current_File_Index < 0 Then current_File_Index = 0
                 If current_File_Index > total_File_Count - 1 Then current_File_Index = total_File_Count - 1
-                If pending_Jump_Status_Ru <> "" Then lbl_Status.Text = If(Is_Russian_Language, pending_Jump_Status_Ru, pending_Jump_Status_En)
+                If pending_Jump_Status <> "" Then lbl_Status.Text = Localization.T(pending_Jump_Status)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0422: case JumpTo " & pending_Jump_Target.ToString())
 
             Case Mode_Files '80
@@ -276,7 +277,7 @@ Partial Public Class Main_Form
 
 
             Case Mode_FolderAndFile '0
-                lbl_Status.Text = If(Is_Russian_Language, "чтение каталога.. ждите!", "reading files.. wait!")
+                lbl_Status.Text = Localization.T("чтение каталога.. ждите!")
 
                 If Not LoadFiles() Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0450: case ReadFolderAndFile is failed")
@@ -329,15 +330,15 @@ Partial Public Class Main_Form
 
             Case Mode_Delete '3
                 If String.IsNullOrEmpty(Current_File_Name) Then
-                    lbl_Status.Text = If(Is_Russian_Language, "! Нет файла для удаления", "! No file for deleting")
+                    lbl_Status.Text = Localization.T("! Нет файла для удаления")
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0540: case DeleteFile failed")
                     Return False
                 End If
 
-                Dim confirmMsg = If(Is_Russian_Language, $"Вы уверены, что хотите безвозвратно удалить файл '{Path.GetFileName(Current_File_Name)}'? Обратно его уже не уговорить.", $"Are you sure you want to permanently delete the file '{Path.GetFileName(Current_File_Name)}'? There's no talking it back afterwards.")
+                Dim confirmMsg = Localization.TF("Вы уверены, что хотите безвозвратно удалить файл '{0}'? Обратно его уже не уговорить.", Path.GetFileName(Current_File_Name))
 
                 If Not Is_no_request_before_file_operation AndAlso
-                    MessageBox.Show(confirmMsg, If(Is_Russian_Language, "Подтверждение удаления", "Deletion Confirmation"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then
+                    MessageBox.Show(confirmMsg, Localization.T("Подтверждение удаления"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then
 
                     Return False ' User cancelled
                 End If
@@ -366,10 +367,10 @@ Partial Public Class Main_Form
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0560: file deleted: " & doomed_File)
                             RemoveCurrentFileFromList(doomed_File)
                         End If
-                        lbl_Status.Text = If(Is_Russian_Language, "удалён: ", "file deleted: ") & doomed_File
+                        lbl_Status.Text = Localization.T("удалён: ") & doomed_File
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0570: case DeleteFile")
                     Else
-                        lbl_Status.Text = If(Is_Russian_Language, "! Файл не найден", "! File not found")
+                        lbl_Status.Text = Localization.T("! Файл не найден")
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0580: case DeleteFile failed: not found")
                     End If
                 Catch ex As Exception
@@ -426,7 +427,7 @@ Partial Public Class Main_Form
         Try
             If Not IsFolderListLoaded() Then
                 was_External_Input_Previously = False
-                lbl_Status.Text = If(Is_Russian_Language, "чтение каталога.. ждите!", "reading files.. wait!")
+                lbl_Status.Text = Localization.T("чтение каталога.. ждите!")
                 Dim read_Error As Boolean = False
                 Dim files As Object = GetFiles(read_Error)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0642: files got for slideshow")
@@ -517,7 +518,7 @@ Partial Public Class Main_Form
         Try
             If was_External_Input_Previously Then
                 was_External_Input_Previously = False
-                lbl_Status.Text = If(Is_Russian_Language, "чтение каталога.. ждите!", "reading files.. wait!")
+                lbl_Status.Text = Localization.T("чтение каталога.. ждите!")
 
                 Dim read_Error As Boolean = False
                 Dim files As Object = GetFiles(read_Error)
@@ -590,7 +591,7 @@ Partial Public Class Main_Form
                 ' let the caller wipe the media surface. Only a real read error costs
                 ' the session (and even then GetFiles has already said so in the status).
                 If read_Error Then
-                    lbl_Status.Text = If(Is_Russian_Language, "! Ошибка чтения файлов", "! Error reading files")
+                    lbl_Status.Text = Localization.T("! Ошибка чтения файлов")
                     Current_Folder_Path = ""
                     cmbox_Media_Folder.Text = ""
                     files_List = Nothing
@@ -624,7 +625,7 @@ Partial Public Class Main_Form
             Return True
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0800: E004 " & ex.Message)
-            lbl_Status.Text = If(Is_Russian_Language, "! Ошибка чтения файлов", "! Error reading files")
+            lbl_Status.Text = Localization.T("! Ошибка чтения файлов")
             MsgBox("E004 " & ex.Message)
             Current_Folder_Path = ""
             cmbox_Media_Folder.Text = ""
@@ -686,7 +687,7 @@ Partial Public Class Main_Form
                     ' Check if file exists and is accessible
                     If Not File.Exists(Current_File_Name) Then
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0906: File does not exist: " & Current_File_Name)
-                        lbl_Status.Text = If(Is_Russian_Language, "Файл не найден: " & Path.GetFileName(Current_File_Name), "File not found: " & Path.GetFileName(Current_File_Name))
+                        lbl_Status.Text = Localization.TF("Файл не найден: {0}", Path.GetFileName(Current_File_Name))
 
                         SkipUnreadableFile()
                         Return
@@ -696,7 +697,7 @@ Partial Public Class Main_Form
                     Dim fileInfo As New FileInfo(Current_File_Name)
                     If fileInfo.Length = 0 Then
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0907: File is empty: " & Current_File_Name)
-                        lbl_Status.Text = If(Is_Russian_Language, "Файл пуст: " & Path.GetFileName(Current_File_Name), "File is empty: " & Path.GetFileName(Current_File_Name))
+                        lbl_Status.Text = Localization.TF("Файл пуст: {0}", Path.GetFileName(Current_File_Name))
 
                         SkipUnreadableFile()
                         Return
@@ -747,26 +748,26 @@ Partial Public Class Main_Form
                     Else
                         ' Image loading failed - skip to next file
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0908: Image loading failed for: " & Current_File_Name)
-                        lbl_Status.Text = If(Is_Russian_Language, "Не удалось загрузить: " & Path.GetFileName(Current_File_Name), "Failed to load: " & Path.GetFileName(Current_File_Name))
+                        lbl_Status.Text = Localization.TF("Не удалось загрузить: {0}", Path.GetFileName(Current_File_Name))
 
                         SkipUnreadableFile()
                         Return
                     End If
                 Catch ex As ArgumentException
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0905: ArgumentException loading image: " & ex.Message & " File: " & Current_File_Name)
-                    lbl_Status.Text = If(Is_Russian_Language, "Недопустимый файл изображения: " & Path.GetFileName(Current_File_Name), "Invalid image file: " & Path.GetFileName(Current_File_Name))
+                    lbl_Status.Text = Localization.TF("Недопустимый файл изображения: {0}", Path.GetFileName(Current_File_Name))
 
                     SkipUnreadableFile()
                     Return
                 Catch ex As OutOfMemoryException
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0909: OutOfMemoryException loading image: " & ex.Message & " File: " & Current_File_Name)
-                    lbl_Status.Text = If(Is_Russian_Language, "Недостаточно памяти для загрузки: " & Path.GetFileName(Current_File_Name), "Out of memory loading: " & Path.GetFileName(Current_File_Name))
+                    lbl_Status.Text = Localization.TF("Недостаточно памяти для загрузки: {0}", Path.GetFileName(Current_File_Name))
 
                     SkipUnreadableFile()
                     Return
                 Catch ex As Exception
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0911: Error loading image: [" & ex.GetType().Name & "] " & ex.Message & " File: " & Current_File_Name)
-                    lbl_Status.Text = If(Is_Russian_Language, "Ошибка загрузки: " & Path.GetFileName(Current_File_Name), "Loading error: " & Path.GetFileName(Current_File_Name))
+                    lbl_Status.Text = Localization.TF("Ошибка загрузки: {0}", Path.GetFileName(Current_File_Name))
 
                     SkipUnreadableFile()
                     Return
@@ -833,9 +834,7 @@ Partial Public Class Main_Form
         UpdateControlVisibility()
 
         current_Loaded_File_Name = file_Path
-        lbl_Status.Text = If(Is_Russian_Language,
-                             "Формат не поддерживается: " & Path.GetFileName(file_Path),
-                             "Unsupported format: " & Path.GetFileName(file_Path))
+        lbl_Status.Text = Localization.TF("Формат не поддерживается: {0}", Path.GetFileName(file_Path))
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1045: unsupported format, surface blanked: " & file_Path)
     End Sub
 
@@ -1078,7 +1077,7 @@ Partial Public Class Main_Form
         ' Check if file collections are properly initialized
         If files_List Is Nothing And files_Array Is Nothing Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0385: Both files_List and files_Array are Nothing")
-            lbl_Status.Text = If(Is_Russian_Language, "! Нет списка файлов", "! No file list available")
+            lbl_Status.Text = Localization.T("! Нет списка файлов")
             Return
         End If
 
@@ -1098,7 +1097,7 @@ Partial Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0970: currentFileIndex = " & current_File_Index.ToString & ", fileName = " & Current_File_Name)
                 Catch ex As Exception
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0971: Error getting current file name: " & ex.Message)
-                    lbl_Status.Text = If(Is_Russian_Language, "Ошибка получения имени файла", "Error getting file name")
+                    lbl_Status.Text = Localization.T("Ошибка получения имени файла")
                     Return
                 End Try
 
@@ -1109,13 +1108,13 @@ Partial Public Class Main_Form
                     ' alone - dropping it here would undo the undo. The completion
                     ' handler shows it once it has landed.
                     If is_After_Undo_Operation Then
-                        lbl_Status.Text = If(Is_Russian_Language, "Файл " & Current_File_Name & " перемещается назад операционной системой.", "File " & Current_File_Name & " moving back by OS.")
+                        lbl_Status.Text = Localization.TF("Файл {0} перемещается назад операционной системой.", Current_File_Name)
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0974: after undo - file not back yet, list kept")
                         Return
                     End If
 
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0975: New current file does not exist: " & Current_File_Name)
-                    lbl_Status.Text = If(Is_Russian_Language, "Файл не найден, переход к следующему", "File not found, moving to next")
+                    lbl_Status.Text = Localization.T("Файл не найден, переход к следующему")
 
                     ' Remove the invalid file from the list and try the next one
                     Try
@@ -1182,7 +1181,9 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0980: currentFileName = " & Current_File_Name)
 
             Dim current_File_Number As Integer = current_File_Index + 1
-            lbl_File_Number.Text = current_File_Number.ToString() & If(Is_Russian_Language, " из ", " from ") & total_File_Count.ToString()
+            ' One formatted string, not three concatenated pieces: in Arabic and Urdu
+            ' bidi reorders a concatenation into "from 5 1".
+            lbl_File_Number.Text = Localization.TF("{0} из {1}", current_File_Number, total_File_Count)
 
             Try
                 Dim current_File_Extension As String = Path.GetExtension(Current_File_Name).ToLower()
@@ -1261,7 +1262,7 @@ Partial Public Class Main_Form
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1060: BgWorker is run")
                     End If
                 Else
-                    lbl_Current_File.Text = If(Is_Russian_Language, "Текущий: ", "Current: ") & Current_File_Name
+                    lbl_Current_File.Text = Localization.T("Текущий: ") & Current_File_Name
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1065: BgWorker is not run, online=" & is_BgWorker_Online.ToString & " IsBusy=" & BgWorker.IsBusy.ToString)
                 End If
 
@@ -1270,7 +1271,7 @@ Partial Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1070: E005 [" & ex.GetType().Name & "] " & ex.Message & " File: " & Current_File_Name)
 
                     ' Instead of showing error, try to skip to next file
-                    lbl_Status.Text = If(Is_Russian_Language, "Ошибка файла, переход к следующему: " & Path.GetFileName(Current_File_Name), "File error, moving to next: " & Path.GetFileName(Current_File_Name))
+                    lbl_Status.Text = Localization.TF("Ошибка файла, переход к следующему: {0}", Path.GetFileName(Current_File_Name))
 
                     ' Remove the problematic file from the list
                     If is_Files_Array_Active Then
@@ -1290,7 +1291,7 @@ Partial Public Class Main_Form
                         UpdateCurrentFileAndDisplay(True, False)
                     End If
                 Else
-                    lbl_Status.Text = If(Is_Russian_Language, "Файл " & Current_File_Name & " перемещается назад операционной системой.", "File " & Current_File_Name & " moving back by OS.")
+                    lbl_Status.Text = Localization.TF("Файл {0} перемещается назад операционной системой.", Current_File_Name)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1080: UNdo E005 " & ex.Message)
                 End If
             End Try
@@ -1307,7 +1308,7 @@ Partial Public Class Main_Form
 #End If
 
             lbl_File_Number.Text = ""
-            lbl_Status.Text = If(Is_Russian_Language, "! Нет файлов в папке", "! No files in folder")
+            lbl_Status.Text = Localization.T("! Нет файлов в папке")
             is_PictureBox1_Visible = False
             is_PictureBox2_Visible = False
             is_WebBrowser_Visible = False

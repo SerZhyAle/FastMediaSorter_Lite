@@ -65,10 +65,10 @@ Partial Public Class Main_Form
             Select Case e.KeyCode
                 Case Keys.PageDown
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1600: +100")
-                    JumpBy(100, "+100 файлов", "+100 files")
+                    JumpBy(100, "+100 файлов")
                 Case Keys.PageUp
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1610: -100")
-                    JumpBy(-100, "-100 файлов", "-100 files")
+                    JumpBy(-100, "-100 файлов")
                 Case Keys.R
                     ' Counter-clockwise rotate (stable binding, independent of OCR).
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1615: Shift+R rotate CCW")
@@ -101,7 +101,7 @@ Partial Public Class Main_Form
                     If Not String.IsNullOrEmpty(Current_File_Name) Then
                         RenameCurrentFile()
                     Else
-                        lbl_Status.Text = If(Is_Russian_Language, "! Нет файла для переименования", "! No file to rename")
+                        lbl_Status.Text = Localization.T("! Нет файла для переименования")
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1350: No file to rename")
                     End If
 
@@ -117,10 +117,10 @@ Partial Public Class Main_Form
                     SetRandomSlideShow(was_Slide_Show_Mode)
                 Case Keys.Home, Keys.H, Keys.BrowserHome
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1370: to first file")
-                    JumpTo(0, "первый файл", "first file")
+                    JumpTo(0, "первый файл")
                 Case Keys.End, Keys.E, Keys.L, Keys.BrowserStop
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1380: to last file")
-                    JumpTo(total_File_Count - 1, "последний файл", "last file")
+                    JumpTo(total_File_Count - 1, "последний файл")
                 Case Keys.F, Keys.F4
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1385: choose file")
                     Choose_file()
@@ -176,10 +176,10 @@ Partial Public Class Main_Form
                     End If
                 Case Keys.Up
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1580: -10")
-                    JumpBy(-10, "-10 файлов", "-10 files")
+                    JumpBy(-10, "-10 файлов")
                 Case Keys.Down
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1590: +10")
-                    JumpBy(10, "+10 файлов", "+10 files")
+                    JumpBy(10, "+10 файлов")
                 Case Keys.F1
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1620: F1 help")
                     lbl_Help_Info.Visible = True

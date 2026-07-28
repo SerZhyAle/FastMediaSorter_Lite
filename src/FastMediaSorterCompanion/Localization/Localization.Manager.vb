@@ -1,0 +1,547 @@
+Option Strict On
+
+' <summary>
+' The Share Manager main window: header, server grid, options, usage counters,
+' the shared-folders list and every status line it shows.
+' Columns after the Russian key: en, uk, de, it, es, fr, pt, ar, hi, bn, ur, zh.
+' </summary>
+Partial Public NotInheritable Class Localization
+
+    Private Shared Sub AddManagerStrings()
+
+        ' --- header ---------------------------------------------------------------
+
+        Add("Откройте папки этого ПК на телефоне - по Wi-Fi или через интернет.",
+            "Open this PC's folders on your phone - over Wi-Fi or the internet.",
+            "Відкрийте папки цього ПК на телефоні - по Wi-Fi або через інтернет.",
+            "Öffnen Sie die Ordner dieses PCs auf Ihrem Telefon - über WLAN oder das Internet.",
+            "Apri le cartelle di questo PC sul telefono, via Wi-Fi o internet.",
+            "Abre las carpetas de este PC en tu teléfono, por Wi-Fi o por internet.",
+            "Ouvrez les dossiers de ce PC sur votre téléphone - en Wi-Fi ou via internet.",
+            "Abra as pastas deste PC no telemóvel - por Wi-Fi ou pela internet.",
+            "افتح مجلدات هذا الحاسوب على هاتفك - عبر Wi-Fi أو الإنترنت.",
+            "इस पीसी के फ़ोल्डर अपने फ़ोन पर खोलें - Wi-Fi या इंटरनेट के ज़रिए।",
+            "এই পিসির ফোল্ডারগুলি আপনার ফোনে খুলুন - Wi-Fi বা ইন্টারনেটের মাধ্যমে।",
+            "اس پی سی کے فولڈرز اپنے فون پر کھولیں - Wi-Fi یا انٹرنیٹ کے ذریعے۔",
+            "在手机上打开这台电脑的文件夹 - 通过 Wi-Fi 或互联网。")
+
+        Add("Поделиться",
+            "Share", "Поділитися", "Teilen", "Condividi", "Compartir", "Partager", "Partilhar",
+            "مشاركة", "साझा करें", "শেয়ার করুন", "شیئر کریں", "共享")
+
+        Add("FastMediaSorter для Android",
+            "FastMediaSorter for Android", "FastMediaSorter для Android",
+            "FastMediaSorter für Android", "FastMediaSorter per Android",
+            "FastMediaSorter para Android", "FastMediaSorter pour Android",
+            "FastMediaSorter para Android", "FastMediaSorter لنظام Android",
+            "Android के लिए FastMediaSorter", "Android-এর জন্য FastMediaSorter",
+            "Android کے لیے FastMediaSorter", "FastMediaSorter Android 版")
+
+        Add("Как публиковать папки (сайт)",
+            "How to publish folders (website)", "Як публікувати папки (сайт)",
+            "Ordner freigeben - Anleitung (Website)", "Come pubblicare le cartelle (sito)",
+            "Cómo publicar carpetas (sitio web)", "Comment publier des dossiers (site web)",
+            "Como publicar pastas (site)", "كيفية نشر المجلدات (الموقع)",
+            "फ़ोल्डर कैसे प्रकाशित करें (वेबसाइट)", "কীভাবে ফোল্ডার প্রকাশ করবেন (ওয়েবসাইট)",
+            "فولڈرز کیسے شائع کریں (ویب سائٹ)", "如何发布文件夹（网站）")
+
+        Add("Инструкция для моей модели роутера",
+            "Guide for my router model", "Інструкція для моєї моделі роутера",
+            "Anleitung für mein Routermodell", "Guida per il mio modello di router",
+            "Guía para mi modelo de router", "Guide pour mon modèle de routeur",
+            "Guia para o meu modelo de router", "دليل لطراز الموجّه لديّ",
+            "मेरे राउटर मॉडल के लिए मार्गदर्शिका", "আমার রাউটার মডেলের নির্দেশিকা",
+            "میرے روٹر ماڈل کے لیے رہنما", "适用于我的路由器型号的指南")
+
+        ' --- the server grid ------------------------------------------------------
+
+        Add("Доступ с Android",
+            "Android access", "Доступ з Android", "Android-Zugriff", "Accesso da Android",
+            "Acceso desde Android", "Accès depuis Android", "Acesso a partir do Android",
+            "الوصول من Android", "Android से पहुँच", "Android থেকে অ্যাক্সেস",
+            "Android سے رسائی", "Android 访问")
+
+        Add("Через интернет:",
+            "Via internet:", "Через інтернет:", "Über das Internet:", "Via internet:",
+            "Por internet:", "Via internet :", "Pela internet:",
+            "عبر الإنترنت:", "इंटरनेट के ज़रिए:", "ইন্টারনেটের মাধ্যমে:", "انٹرنیٹ کے ذریعے:", "通过互联网：")
+
+        Add("Дома (Wi-Fi):",
+            "Home (Wi-Fi):", "Удома (Wi-Fi):", "Zu Hause (WLAN):", "A casa (Wi-Fi):",
+            "En casa (Wi-Fi):", "À la maison (Wi-Fi) :", "Em casa (Wi-Fi):",
+            "في المنزل (Wi-Fi):", "घर पर (Wi-Fi):", "বাড়িতে (Wi-Fi):", "گھر پر (Wi-Fi):", "在家（Wi-Fi）：")
+
+        Add("IPv6:",
+            "IPv6:", "IPv6:", "IPv6:", "IPv6:", "IPv6:", "IPv6 :", "IPv6:",
+            "IPv6:", "IPv6:", "IPv6:", "IPv6:", "IPv6：")
+
+        Add("Ключ узла:",
+            "Host key:", "Ключ вузла:", "Hostschlüssel:", "Chiave host:", "Clave del host:",
+            "Clé de l'hôte :", "Chave do anfitrião:", "مفتاح المضيف:", "होस्ट कुंजी:",
+            "হোস্ট কী:", "ہوسٹ کی:", "主机密钥：")
+
+        Add("Логин:",
+            "Login:", "Логін:", "Benutzername:", "Utente:", "Usuario:", "Identifiant :",
+            "Utilizador:", "اسم المستخدم:", "लॉगिन:", "লগইন:", "لاگ ان:", "用户名：")
+
+        Add("Пароль:",
+            "Password:", "Пароль:", "Kennwort:", "Password:", "Contraseña:", "Mot de passe :",
+            "Palavra-passe:", "كلمة المرور:", "पासवर्ड:", "পাসওয়ার্ড:", "پاس ورڈ:", "密码：")
+
+        Add("Проверить доступ из интернета",
+            "Test internet access", "Перевірити доступ з інтернету", "Internetzugriff testen",
+            "Verifica l'accesso da internet", "Comprobar el acceso desde internet",
+            "Tester l'accès depuis internet", "Testar o acesso pela internet",
+            "اختبار الوصول من الإنترنت", "इंटरनेट पहुँच जाँचें", "ইন্টারনেট অ্যাক্সেস পরীক্ষা করুন",
+            "انٹرنیٹ رسائی جانچیں", "测试互联网访问")
+
+        Add("Как настроить доступ через интернет",
+            "How to set up internet access", "Як налаштувати доступ через інтернет",
+            "Internetzugriff einrichten", "Come configurare l'accesso da internet",
+            "Cómo configurar el acceso desde internet", "Comment configurer l'accès internet",
+            "Como configurar o acesso pela internet", "كيفية إعداد الوصول من الإنترنت",
+            "इंटरनेट पहुँच कैसे सेट करें", "কীভাবে ইন্টারনেট অ্যাক্সেস সেট করবেন",
+            "انٹرنیٹ رسائی کیسے ترتیب دیں", "如何设置互联网访问")
+
+        ' --- controls -------------------------------------------------------------
+
+        Add("Начать раздачу",
+            "Start sharing", "Почати роздачу", "Freigabe starten", "Avvia la condivisione",
+            "Iniciar el uso compartido", "Démarrer le partage", "Iniciar a partilha",
+            "بدء المشاركة", "साझाकरण शुरू करें", "শেয়ারিং শুরু করুন", "شیئرنگ شروع کریں", "开始共享")
+
+        Add("Остановить раздачу",
+            "Stop sharing", "Зупинити роздачу", "Freigabe stoppen", "Ferma la condivisione",
+            "Detener el uso compartido", "Arrêter le partage", "Parar a partilha",
+            "إيقاف المشاركة", "साझाकरण रोकें", "শেয়ারিং বন্ধ করুন", "شیئرنگ روکیں", "停止共享")
+
+        Add("Запускать при входе в Windows",
+            "Start at Windows logon", "Запускати при вході в Windows",
+            "Beim Windows-Anmelden starten", "Avvia all'accesso a Windows",
+            "Iniciar al iniciar sesión en Windows", "Démarrer à l'ouverture de session Windows",
+            "Iniciar ao iniciar sessão no Windows", "التشغيل عند تسجيل الدخول إلى Windows",
+            "Windows लॉगऑन पर शुरू करें", "Windows লগঅনে চালু করুন",
+            "Windows لاگ اِن پر شروع کریں", "Windows 登录时启动")
+
+        Add("Открывать окно менеджера при запуске",
+            "Open the manager window at startup", "Відкривати вікно менеджера під час запуску",
+            "Managerfenster beim Start öffnen", "Apri la finestra del gestore all'avvio",
+            "Abrir la ventana del gestor al iniciar", "Ouvrir la fenêtre du gestionnaire au démarrage",
+            "Abrir a janela do gestor no arranque", "فتح نافذة المدير عند بدء التشغيل",
+            "स्टार्टअप पर प्रबंधक विंडो खोलें", "চালুর সময় ম্যানেজার উইন্ডো খুলুন",
+            "اسٹارٹ اپ پر مینیجر ونڈو کھولیں", "启动时打开管理器窗口")
+
+        Add("Без галочки любой запуск программы оставляет только значок рядом с часами - окно открывается двойным щелчком по нему. С галочкой окно открывается сразу.",
+            "With this off, any start of the program leaves only the tray icon - double-click it to open the window. With it on, the window opens right away.",
+            "Без галочки будь-який запуск програми залишає лише значок біля годинника - вікно відкривається подвійним клацанням по ньому. З галочкою вікно відкривається одразу.",
+            "Ohne Häkchen hinterlässt jeder Programmstart nur das Symbol im Infobereich - ein Doppelklick öffnet das Fenster. Mit Häkchen öffnet sich das Fenster sofort.",
+            "Se disattivato, ogni avvio del programma lascia solo l'icona nell'area di notifica: doppio clic per aprire la finestra. Se attivo, la finestra si apre subito.",
+            "Si está desactivado, cualquier arranque del programa deja solo el icono de la bandeja: haz doble clic para abrir la ventana. Si está activado, la ventana se abre de inmediato.",
+            "Sans cette case, tout démarrage du programme ne laisse que l'icône dans la zone de notification - double-cliquez pour ouvrir la fenêtre. Avec la case, la fenêtre s'ouvre aussitôt.",
+            "Sem esta opção, qualquer arranque do programa deixa apenas o ícone na área de notificação - faça duplo clique para abrir a janela. Com ela, a janela abre logo.",
+            "بدون هذا الخيار، يترك كل تشغيل للبرنامج أيقونة شريط المهام فقط - انقر عليها نقرًا مزدوجًا لفتح النافذة. ومع تفعيله تُفتح النافذة فورًا.",
+            "यह बंद होने पर कार्यक्रम का कोई भी आरंभ केवल ट्रे आइकन छोड़ता है - विंडो खोलने के लिए उस पर डबल-क्लिक करें। चालू होने पर विंडो तुरंत खुल जाती है।",
+            "এটি বন্ধ থাকলে প্রোগ্রামের যেকোনো সূচনা কেবল ট্রে আইকন রেখে যায় - উইন্ডো খুলতে সেটিতে ডাবল-ক্লিক করুন। চালু থাকলে উইন্ডো সঙ্গে সঙ্গে খোলে।",
+            "یہ بند ہو تو پروگرام کا ہر آغاز صرف ٹرے آئیکن چھوڑتا ہے - ونڈو کھولنے کے لیے اس پر ڈبل کلک کریں۔ آن ہونے پر ونڈو فوراً کھل جاتی ہے۔",
+            "关闭时，程序的任何启动都只会留下托盘图标 - 双击即可打开窗口。开启后窗口会立即打开。")
+
+        Add("Макс. одновременных подключений:",
+            "Max simultaneous connections:", "Макс. одночасних з'єднань:",
+            "Max. gleichzeitige Verbindungen:", "Connessioni simultanee max:",
+            "Máx. de conexiones simultáneas:", "Connexions simultanées max :",
+            "Máx. de ligações simultâneas:", "الحد الأقصى للاتصالات المتزامنة:",
+            "अधिकतम एक साथ कनेक्शन:", "সর্বাধিক একযোগে সংযোগ:",
+            "زیادہ سے زیادہ بیک وقت کنکشنز:", "最大并发连接数：")
+
+        Add("Сколько устройств могут быть подключены одновременно. По умолчанию 10; можно от 1 до 99999. Значение меньше 2 может кратко отклонять переподключение телефона.",
+            "How many devices may be connected at once. Default 10; anything from 1 to 99999. Below 2 can briefly refuse a phone's reconnect.",
+            "Скільки пристроїв можуть бути підключені одночасно. За замовчуванням 10; можна від 1 до 99999. Значення менше 2 може ненадовго відхиляти перепідключення телефона.",
+            "Wie viele Geräte gleichzeitig verbunden sein dürfen. Standard 10; erlaubt sind 1 bis 99999. Unter 2 kann ein erneutes Verbinden des Telefons kurz abgewiesen werden.",
+            "Quanti dispositivi possono essere connessi contemporaneamente. Predefinito 10; da 1 a 99999. Sotto 2 la riconnessione del telefono può essere brevemente rifiutata.",
+            "Cuántos dispositivos pueden estar conectados a la vez. Por defecto 10; de 1 a 99999. Por debajo de 2 puede rechazar brevemente la reconexión del teléfono.",
+            "Combien d'appareils peuvent être connectés en même temps. Par défaut 10 ; de 1 à 99999. En dessous de 2, la reconnexion du téléphone peut être brièvement refusée.",
+            "Quantos dispositivos podem estar ligados ao mesmo tempo. Predefinição 10; de 1 a 99999. Abaixo de 2 a reconexão do telemóvel pode ser recusada por breves instantes.",
+            "عدد الأجهزة التي يمكن أن تتصل في الوقت نفسه. القيمة الافتراضية 10؛ ويسمح بالقيم من 1 إلى 99999. وأقل من 2 قد يرفض إعادة اتصال الهاتف لفترة قصيرة.",
+            "एक साथ कितने उपकरण जुड़े रह सकते हैं। डिफ़ॉल्ट 10; 1 से 99999 तक। 2 से कम होने पर फ़ोन का पुनः कनेक्शन थोड़ी देर के लिए अस्वीकृत हो सकता है।",
+            "একসাথে কতগুলি ডিভাইস সংযুক্ত থাকতে পারে। ডিফল্ট ১০; ১ থেকে ৯৯৯৯৯ পর্যন্ত। ২-এর কম হলে ফোনের পুনঃসংযোগ কিছুক্ষণের জন্য প্রত্যাখ্যাত হতে পারে।",
+            "بیک وقت کتنے آلات جڑے رہ سکتے ہیں۔ پہلے سے طے شدہ 10؛ 1 سے 99999 تک۔ 2 سے کم پر فون کا دوبارہ کنکشن مختصر وقت کے لیے مسترد ہو سکتا ہے۔",
+            "可同时连接的设备数量。默认 10；可设 1 至 99999。小于 2 时，手机重新连接可能被短暂拒绝。")
+
+        ' --- usage counters -------------------------------------------------------
+
+        Add("Статистика раздачи",
+            "Usage", "Статистика роздачі", "Nutzung", "Utilizzo", "Uso", "Utilisation",
+            "Utilização", "الاستخدام", "उपयोग", "ব্যবহার", "استعمال", "使用统计")
+
+        Add("Последнее подключение:",
+            "Last connection:", "Останнє підключення:", "Letzte Verbindung:", "Ultima connessione:",
+            "Última conexión:", "Dernière connexion :", "Última ligação:",
+            "آخر اتصال:", "अंतिम कनेक्शन:", "সর্বশেষ সংযোগ:", "آخری کنکشن:", "最近连接：")
+
+        Add("Подключений:",
+            "Connections:", "З'єднань:", "Verbindungen:", "Connessioni:", "Conexiones:",
+            "Connexions :", "Ligações:", "الاتصالات:", "कनेक्शन:", "সংযোগ:", "کنکشنز:", "连接数：")
+
+        Add("Файлов отдано:",
+            "Files served:", "Файлів віддано:", "Ausgelieferte Dateien:", "File serviti:",
+            "Archivos servidos:", "Fichiers servis :", "Ficheiros servidos:",
+            "الملفات المُقدَّمة:", "भेजी गई फ़ाइलें:", "প্রদত্ত ফাইল:", "بھیجی گئی فائلیں:", "已提供文件数：")
+
+        Add("Считается каждый сеанс связи. Один телефон может подключаться несколько раз (проверка доступа, просмотр файла, переподключение).",
+            "Counts each connection session. One phone can connect several times (reachability check, opening a file, reconnects).",
+            "Рахується кожен сеанс зв'язку. Один телефон може підключатися кілька разів (перевірка доступу, перегляд файлу, перепідключення).",
+            "Gezählt wird jede Verbindungssitzung. Ein Telefon kann sich mehrfach verbinden (Erreichbarkeitsprüfung, Datei öffnen, erneutes Verbinden).",
+            "Viene contata ogni sessione di connessione. Un solo telefono può connettersi più volte (verifica di raggiungibilità, apertura di un file, riconnessioni).",
+            "Se cuenta cada sesión de conexión. Un mismo teléfono puede conectarse varias veces (comprobación de acceso, abrir un archivo, reconexiones).",
+            "Chaque session de connexion est comptée. Un même téléphone peut se connecter plusieurs fois (test d'accessibilité, ouverture d'un fichier, reconnexions).",
+            "Conta-se cada sessão de ligação. Um mesmo telemóvel pode ligar-se várias vezes (verificação de acesso, abertura de um ficheiro, reconexões).",
+            "تُحتسب كل جلسة اتصال. وقد يتصل هاتف واحد عدة مرات (فحص إمكانية الوصول، فتح ملف، إعادة الاتصال).",
+            "हर कनेक्शन सत्र गिना जाता है। एक ही फ़ोन कई बार जुड़ सकता है (पहुँच जाँच, फ़ाइल खोलना, पुनः कनेक्शन)।",
+            "প্রতিটি সংযোগ সেশন গণনা করা হয়। একই ফোন একাধিকবার সংযুক্ত হতে পারে (অ্যাক্সেস যাচাই, ফাইল খোলা, পুনঃসংযোগ)।",
+            "ہر کنکشن سیشن شمار ہوتا ہے۔ ایک ہی فون کئی بار جڑ سکتا ہے (رسائی جانچ، فائل کھولنا، دوبارہ کنکشن)۔",
+            "统计每一次连接会话。同一部手机可能连接多次（可达性检测、打开文件、重新连接）。")
+
+        Add("ещё не было",
+            "never", "ще не було", "noch nie", "mai", "nunca", "jamais", "nunca",
+            "لم يحدث بعد", "अभी तक नहीं", "এখনও হয়নি", "ابھی تک نہیں", "尚未发生")
+
+        Add("всего {0} (с запуска {1})",
+            "{0} total ({1} since start)", "усього {0} (з запуску {1})",
+            "insgesamt {0} ({1} seit dem Start)", "{0} in totale ({1} dall'avvio)",
+            "{0} en total ({1} desde el inicio)", "{0} au total ({1} depuis le démarrage)",
+            "{0} no total ({1} desde o início)", "الإجمالي {0} ({1} منذ البدء)",
+            "कुल {0} (शुरू से {1})", "মোট {0} (শুরু থেকে {1})",
+            "کل {0} (آغاز سے {1})", "共 {0}（启动以来 {1}）")
+
+        ' --- shared folders -------------------------------------------------------
+
+        Add("Общие папки",
+            "Shared folders", "Спільні папки", "Freigegebene Ordner", "Cartelle condivise",
+            "Carpetas compartidas", "Dossiers partagés", "Pastas partilhadas",
+            "المجلدات المشتركة", "साझा फ़ोल्डर", "শেয়ার করা ফোল্ডার", "مشترکہ فولڈرز", "共享文件夹")
+
+        Add("Добавить папку..",
+            "Add folder..", "Додати папку..", "Ordner hinzufügen..", "Aggiungi cartella..",
+            "Añadir carpeta..", "Ajouter un dossier..", "Adicionar pasta..",
+            "إضافة مجلد..", "फ़ोल्डर जोड़ें..", "ফোল্ডার যোগ করুন..", "فولڈر شامل کریں..", "添加文件夹..")
+
+        Add("+ Текущая",
+            "+ Current", "+ Поточна", "+ Aktueller", "+ Corrente", "+ Actual", "+ Actuel",
+            "+ Atual", "+ الحالي", "+ वर्तमान", "+ বর্তমান", "+ موجودہ", "+ 当前")
+
+        Add("Убрать",
+            "Remove", "Прибрати", "Entfernen", "Rimuovi", "Quitar", "Retirer", "Remover",
+            "إزالة", "हटाएँ", "সরান", "ہٹائیں", "移除")
+
+        Add("Настроить..",
+            "Options..", "Налаштувати..", "Optionen..", "Opzioni..", "Opciones..", "Options..",
+            "Opções..", "خيارات..", "विकल्प..", "বিকল্প..", "اختیارات..", "选项..")
+
+        Add("Название",
+            "Name", "Назва", "Name", "Nome", "Nombre", "Nom", "Nome",
+            "الاسم", "नाम", "নাম", "نام", "名称")
+
+        Add("Тип",
+            "Type", "Тип", "Typ", "Tipo", "Tipo", "Type", "Tipo",
+            "النوع", "प्रकार", "ধরন", "قسم", "类型")
+
+        Add("Папка",
+            "Folder", "Папка", "Ordner", "Cartella", "Carpeta", "Dossier", "Pasta",
+            "المجلد", "फ़ोल्डर", "ফোল্ডার", "فولڈر", "文件夹")
+
+        Add("Выберите папку, которую хотите открыть на телефоне",
+            "Choose the folder to open on the phone", "Виберіть папку, яку хочете відкрити на телефоні",
+            "Wählen Sie den Ordner, der auf dem Telefon geöffnet werden soll",
+            "Scegli la cartella da aprire sul telefono", "Elige la carpeta que quieres abrir en el teléfono",
+            "Choisissez le dossier à ouvrir sur le téléphone", "Escolha a pasta a abrir no telemóvel",
+            "اختر المجلد الذي تريد فتحه على الهاتف", "वह फ़ोल्डर चुनें जिसे फ़ोन पर खोलना है",
+            "ফোনে যে ফোল্ডারটি খুলতে চান তা বেছে নিন", "وہ فولڈر منتخب کریں جسے فون پر کھولنا ہے",
+            "选择要在手机上打开的文件夹")
+
+        Add("Эта папка уже в списке.",
+            "That folder is already in the list.", "Ця папка вже в списку.",
+            "Dieser Ordner steht bereits in der Liste.", "Quella cartella è già nell'elenco.",
+            "Esa carpeta ya está en la lista.", "Ce dossier est déjà dans la liste.",
+            "Essa pasta já está na lista.", "هذا المجلد موجود بالفعل في القائمة.",
+            "यह फ़ोल्डर पहले से सूची में है।", "এই ফোল্ডারটি ইতিমধ্যেই তালিকায় আছে।",
+            "یہ فولڈر پہلے ہی فہرست میں ہے۔", "该文件夹已在列表中。")
+
+        ' --- server-features gate -------------------------------------------------
+
+        Add("Функции сервера выключены",
+            "Server features are off", "Функції сервера вимкнено", "Serverfunktionen sind aus",
+            "Le funzioni server sono disattivate", "Las funciones de servidor están desactivadas",
+            "Les fonctions serveur sont désactivées", "As funções de servidor estão desativadas",
+            "وظائف الخادم متوقفة", "सर्वर सुविधाएँ बंद हैं", "সার্ভার বৈশিষ্ট্য বন্ধ",
+            "سرور خصوصیات بند ہیں", "服务器功能已关闭")
+
+        Add("Общий доступ к папкам поднимает локальный SFTP-сервер и требует одного исключения в брандмауэре Windows (один раз, с правами администратора). Пока это не включено, программа ничего не раздаёт.",
+            "Folder sharing runs a local SFTP server and needs one Windows Firewall exception (once, as administrator). Until enabled, nothing is shared.",
+            "Спільний доступ до папок піднімає локальний SFTP-сервер і потребує одного винятку в брандмауері Windows (один раз, з правами адміністратора). Поки це не ввімкнено, програма нічого не роздає.",
+            "Die Ordnerfreigabe startet einen lokalen SFTP-Server und benötigt eine Windows-Firewall-Ausnahme (einmalig, als Administrator). Bis zur Aktivierung wird nichts freigegeben.",
+            "La condivisione delle cartelle avvia un server SFTP locale e richiede un'eccezione nel Windows Firewall (una volta, come amministratore). Finché non è attiva, non viene condiviso nulla.",
+            "El uso compartido de carpetas levanta un servidor SFTP local y necesita una excepción en el Firewall de Windows (una vez, como administrador). Hasta activarlo, no se comparte nada.",
+            "Le partage de dossiers lance un serveur SFTP local et nécessite une exception dans le pare-feu Windows (une seule fois, en tant qu'administrateur). Tant qu'il n'est pas activé, rien n'est partagé.",
+            "A partilha de pastas arranca um servidor SFTP local e precisa de uma exceção na Firewall do Windows (uma vez, como administrador). Até ser ativada, nada é partilhado.",
+            "تشغّل مشاركة المجلدات خادم SFTP محليًا وتحتاج إلى استثناء واحد في جدار حماية Windows (مرة واحدة، بصلاحيات المسؤول). وإلى أن تُفعَّل، لا تتم مشاركة أي شيء.",
+            "फ़ोल्डर साझाकरण एक स्थानीय SFTP सर्वर चलाता है और Windows फ़ायरवॉल में एक अपवाद माँगता है (एक बार, व्यवस्थापक के रूप में)। सक्षम होने तक कुछ भी साझा नहीं होता।",
+            "ফোল্ডার শেয়ারিং একটি স্থানীয় SFTP সার্ভার চালায় এবং Windows ফায়ারওয়ালে একটি ব্যতিক্রম প্রয়োজন (একবার, প্রশাসক হিসেবে)। চালু না হওয়া পর্যন্ত কিছুই শেয়ার হয় না।",
+            "فولڈر شیئرنگ ایک مقامی SFTP سرور چلاتی ہے اور Windows فائر وال میں ایک استثنا مانگتی ہے (ایک بار، ایڈمنسٹریٹر کے طور پر)۔ فعال ہونے تک کچھ بھی شیئر نہیں ہوتا۔",
+            "文件夹共享会运行一个本地 SFTP 服务器，并需要一条 Windows 防火墙例外（仅一次，需管理员权限）。未启用前不会共享任何内容。")
+
+        Add("Включить функции сервера..",
+            "Enable server features..", "Увімкнути функції сервера..", "Serverfunktionen aktivieren..",
+            "Attiva le funzioni server..", "Activar las funciones de servidor..",
+            "Activer les fonctions serveur..", "Ativar as funções de servidor..",
+            "تفعيل وظائف الخادم..", "सर्वर सुविधाएँ सक्षम करें..", "সার্ভার বৈশিষ্ট্য চালু করুন..",
+            "سرور خصوصیات فعال کریں..", "启用服务器功能..")
+
+        ' --- status lines ---------------------------------------------------------
+
+        Add("Копировать в буфер",
+            "Copy to clipboard", "Копіювати в буфер", "In die Zwischenablage kopieren",
+            "Copia negli appunti", "Copiar al portapapeles", "Copier dans le presse-papiers",
+            "Copiar para a área de transferência", "نسخ إلى الحافظة",
+            "क्लिपबोर्ड पर कॉपी करें", "ক্লিপবোর্ডে কপি করুন", "کلپ بورڈ پر کاپی کریں", "复制到剪贴板")
+
+        Add("Скопировано в буфер.",
+            "Copied to clipboard.", "Скопійовано в буфер.", "In die Zwischenablage kopiert.",
+            "Copiato negli appunti.", "Copiado al portapapeles.", "Copié dans le presse-papiers.",
+            "Copiado para a área de transferência.", "تم النسخ إلى الحافظة.",
+            "क्लिपबोर्ड पर कॉपी हो गया।", "ক্লিপবোর্ডে কপি হয়েছে।", "کلپ بورڈ پر کاپی ہو گیا۔", "已复制到剪贴板。")
+
+        Add("определяется..",
+            "detecting..", "визначається..", "wird ermittelt..", "rilevamento..",
+            "detectando..", "détection..", "a detetar..",
+            "جارٍ التحديد..", "पहचाना जा रहा है..", "শনাক্ত করা হচ্ছে..", "معلوم کیا جا رہا ہے..", "检测中..")
+
+        Add("за CGNAT (недоступно)",
+            "behind CGNAT (unreachable)", "за CGNAT (недоступно)", "hinter CGNAT (nicht erreichbar)",
+            "dietro CGNAT (non raggiungibile)", "detrás de CGNAT (inaccesible)",
+            "derrière un CGNAT (injoignable)", "atrás de CGNAT (inalcançável)",
+            "خلف CGNAT (غير متاح)", "CGNAT के पीछे (पहुँच नहीं)", "CGNAT-এর পিছনে (পৌঁছানো যায় না)",
+            "CGNAT کے پیچھے (ناقابلِ رسائی)", "位于 CGNAT 之后（不可达）")
+
+        Add("адрес неизвестен",
+            "address unknown", "адреса невідома", "Adresse unbekannt", "indirizzo sconosciuto",
+            "dirección desconocida", "adresse inconnue", "endereço desconhecido",
+            "العنوان غير معروف", "पता अज्ञात", "ঠিকানা অজানা", "پتہ نامعلوم", "地址未知")
+
+        Add("Компонент общего доступа не найден - переустановите приложение.",
+            "The sharing component is missing - reinstall the app.",
+            "Компонент спільного доступу не знайдено - перевстановіть застосунок.",
+            "Die Freigabekomponente fehlt - installieren Sie die Anwendung neu.",
+            "Il componente di condivisione manca: reinstalla l'applicazione.",
+            "Falta el componente de uso compartido: reinstala la aplicación.",
+            "Le composant de partage est absent - réinstallez l'application.",
+            "Falta o componente de partilha - reinstale a aplicação.",
+            "مكوّن المشاركة مفقود - أعد تثبيت التطبيق.",
+            "साझाकरण घटक अनुपस्थित है - एप्लिकेशन दोबारा स्थापित करें।",
+            "শেয়ারিং উপাদানটি অনুপস্থিত - অ্যাপ্লিকেশনটি পুনরায় ইনস্টল করুন।",
+            "شیئرنگ جزو غائب ہے - ایپلیکیشن دوبارہ انسٹال کریں۔",
+            "缺少共享组件 - 请重新安装应用。")
+
+        Add("Запуск компаньона..",
+            "Starting companion..", "Запуск компаньйона..", "Companion wird gestartet..",
+            "Avvio del componente companion..", "Iniciando el componente complementario..",
+            "Démarrage du composant compagnon..", "A iniciar o componente companion..",
+            "جارٍ تشغيل المكوّن المرافق..", "साथी घटक शुरू हो रहा है..",
+            "সহযোগী উপাদান চালু হচ্ছে..", "معاون جزو شروع ہو رہا ہے..", "正在启动配套组件..")
+
+        Add("Не удалось связаться с компаньоном.",
+            "Could not reach the companion worker.", "Не вдалося зв'язатися з компаньйоном.",
+            "Der Companion-Dienst war nicht erreichbar.", "Impossibile contattare il processo companion.",
+            "No se pudo contactar con el proceso complementario.",
+            "Impossible de joindre le processus compagnon.", "Não foi possível contactar o processo companion.",
+            "تعذّر الوصول إلى العملية المرافقة.", "साथी प्रक्रिया से संपर्क नहीं हो सका।",
+            "সহযোগী প্রক্রিয়ার সাথে যোগাযোগ করা যায়নি।", "معاون عمل سے رابطہ نہ ہو سکا۔",
+            "无法与配套进程通信。")
+
+        Add("Автозапуском управляет Windows (пакет из Store).",
+            "Autostart is managed by Windows (Store package).",
+            "Автозапуском керує Windows (пакет зі Store).",
+            "Der Autostart wird von Windows verwaltet (Store-Paket).",
+            "L'avvio automatico è gestito da Windows (pacchetto dello Store).",
+            "El inicio automático lo gestiona Windows (paquete de la Store).",
+            "Le démarrage automatique est géré par Windows (paquet du Store).",
+            "O arranque automático é gerido pelo Windows (pacote da Store).",
+            "يدير Windows التشغيل التلقائي (حزمة من المتجر).",
+            "स्वतः-प्रारंभ Windows द्वारा नियंत्रित है (Store पैकेज)।",
+            "স্বয়ংক্রিয় সূচনা Windows দ্বারা নিয়ন্ত্রিত (Store প্যাকেজ)।",
+            "خودکار آغاز Windows کے زیرِ انتظام ہے (Store پیکیج)۔",
+            "自动启动由 Windows 管理（应用商店包）。")
+
+        Add("Роутер: не определён",
+            "Router: unknown", "Роутер: не визначено", "Router: unbekannt", "Router: sconosciuto",
+            "Router: desconocido", "Routeur : inconnu", "Router: desconhecido",
+            "الموجّه: غير معروف", "राउटर: अज्ञात", "রাউটার: অজানা", "روٹر: نامعلوم", "路由器：未知")
+
+        Add("Не удалось определить адрес роутера.",
+            "Could not determine the router address.", "Не вдалося визначити адресу роутера.",
+            "Die Router-Adresse konnte nicht ermittelt werden.",
+            "Impossibile determinare l'indirizzo del router.",
+            "No se pudo determinar la dirección del router.",
+            "Impossible de déterminer l'adresse du routeur.",
+            "Não foi possível determinar o endereço do router.",
+            "تعذّر تحديد عنوان الموجّه.", "राउटर का पता निर्धारित नहीं हो सका।",
+            "রাউটারের ঠিকানা নির্ধারণ করা যায়নি।", "روٹر کا پتہ معلوم نہ ہو سکا۔", "无法确定路由器地址。")
+
+        Add("Модель не определена - открыт общий поиск.",
+            "Model unknown - opened a general search.", "Модель не визначено - відкрито загальний пошук.",
+            "Modell unbekannt - eine allgemeine Suche wurde geöffnet.",
+            "Modello sconosciuto: aperta una ricerca generica.",
+            "Modelo desconocido: se abrió una búsqueda general.",
+            "Modèle inconnu - une recherche générale a été ouverte.",
+            "Modelo desconhecido - foi aberta uma pesquisa geral.",
+            "الطراز غير معروف - تم فتح بحث عام.", "मॉडल अज्ञात - सामान्य खोज खोली गई।",
+            "মডেল অজানা - সাধারণ অনুসন্ধান খোলা হয়েছে।", "ماڈل نامعلوم - عام تلاش کھولی گئی۔",
+            "型号未知 - 已打开通用搜索。")
+
+        Add("Адрес из интернета ещё не определён.",
+            "No internet address yet.", "Адресу з інтернету ще не визначено.",
+            "Noch keine Internetadresse.", "Nessun indirizzo internet ancora.",
+            "Aún no hay dirección de internet.", "Pas encore d'adresse internet.",
+            "Ainda sem endereço de internet.", "لا يوجد عنوان إنترنت بعد.",
+            "अभी कोई इंटरनेट पता नहीं।", "এখনও কোনো ইন্টারনেট ঠিকানা নেই।",
+            "ابھی کوئی انٹرنیٹ پتہ نہیں۔", "尚无互联网地址。")
+
+        Add("✓ Доступ из интернета работает: {0}",
+            "✓ Internet access works: {0}", "✓ Доступ з інтернету працює: {0}",
+            "✓ Internetzugriff funktioniert: {0}", "✓ L'accesso da internet funziona: {0}",
+            "✓ El acceso desde internet funciona: {0}", "✓ L'accès depuis internet fonctionne : {0}",
+            "✓ O acesso pela internet funciona: {0}", "✓ الوصول من الإنترنت يعمل: {0}",
+            "✓ इंटरनेट पहुँच काम कर रही है: {0}", "✓ ইন্টারনেট অ্যাক্সেস কাজ করছে: {0}",
+            "✓ انٹرنیٹ رسائی کام کر رہی ہے: {0}", "✓ 互联网访问正常：{0}")
+
+        Add("✗ С этого ПК не отвечает. Роутер может не пускать на свой адрес изнутри - проверьте с телефона по мобильной сети.",
+            "✗ No answer from this PC. Your router may block its own address from inside - test from the phone on mobile data.",
+            "✗ З цього ПК не відповідає. Роутер може не пускати на свою адресу зсередини - перевірте з телефона через мобільну мережу.",
+            "✗ Von diesem PC keine Antwort. Ihr Router lässt seine eigene Adresse von innen möglicherweise nicht zu - testen Sie es vom Telefon über Mobilfunk.",
+            "✗ Nessuna risposta da questo PC. Il router potrebbe bloccare il proprio indirizzo dall'interno: prova dal telefono in rete mobile.",
+            "✗ Sin respuesta desde este PC. El router puede bloquear su propia dirección desde dentro: prueba desde el teléfono con datos móviles.",
+            "✗ Aucune réponse depuis ce PC. Votre routeur peut bloquer sa propre adresse depuis l'intérieur - testez depuis le téléphone en données mobiles.",
+            "✗ Sem resposta a partir deste PC. O router pode bloquear o próprio endereço a partir de dentro - teste com o telemóvel em dados móveis.",
+            "✗ لا استجابة من هذا الحاسوب. قد يمنع الموجّه عنوانه الخاص من الداخل - اختبر من الهاتف عبر بيانات الجوال.",
+            "✗ इस पीसी से कोई उत्तर नहीं। राउटर भीतर से अपने ही पते को रोक सकता है - मोबाइल डेटा पर फ़ोन से जाँचें।",
+            "✗ এই পিসি থেকে কোনো সাড়া নেই। রাউটার ভেতর থেকে নিজের ঠিকানা আটকে দিতে পারে - মোবাইল ডেটায় ফোন থেকে পরীক্ষা করুন।",
+            "✗ اس پی سی سے کوئی جواب نہیں۔ روٹر اندر سے اپنے ہی پتے کو روک سکتا ہے - موبائل ڈیٹا پر فون سے جانچیں۔",
+            "✗ 本机无响应。路由器可能拒绝从内部访问其地址 - 请用手机通过移动数据测试。")
+
+        ' --- share lifecycle ------------------------------------------------------
+
+        Add("Обновляю список папок..",
+            "Updating the folder list..", "Оновлюю список папок..", "Ordnerliste wird aktualisiert..",
+            "Aggiornamento dell'elenco cartelle..", "Actualizando la lista de carpetas..",
+            "Mise à jour de la liste des dossiers..", "A atualizar a lista de pastas..",
+            "جارٍ تحديث قائمة المجلدات..", "फ़ोल्डर सूची अपडेट हो रही है..",
+            "ফোল্ডার তালিকা হালনাগাদ হচ্ছে..", "فولڈر فہرست اپ ڈیٹ ہو رہی ہے..", "正在更新文件夹列表..")
+
+        Add("Минутку..",
+            "One moment..", "Хвилинку..", "Einen Moment..", "Un attimo..", "Un momento..",
+            "Un instant..", "Um momento..", "لحظة من فضلك..", "एक क्षण..",
+            "এক মুহূর্ত..", "ایک لمحہ..", "请稍候..")
+
+        Add("Останавливаю раздачу..",
+            "Stopping sharing..", "Зупиняю роздачу..", "Freigabe wird gestoppt..",
+            "Arresto della condivisione..", "Deteniendo el uso compartido..",
+            "Arrêt du partage..", "A parar a partilha..",
+            "جارٍ إيقاف المشاركة..", "साझाकरण रोका जा रहा है..",
+            "শেয়ারিং বন্ধ করা হচ্ছে..", "شیئرنگ روکی جا رہی ہے..", "正在停止共享..")
+
+        Add("Раздача остановлена.",
+            "Sharing stopped.", "Роздачу зупинено.", "Freigabe gestoppt.", "Condivisione arrestata.",
+            "Uso compartido detenido.", "Partage arrêté.", "Partilha parada.",
+            "تم إيقاف المشاركة.", "साझाकरण रुक गया।", "শেয়ারিং বন্ধ হয়েছে।", "شیئرنگ رک گئی۔", "共享已停止。")
+
+        Add("Сначала добавьте папку и отметьте её галочкой.",
+            "Add a folder and tick it first.", "Спершу додайте папку й позначте її галочкою.",
+            "Fügen Sie zuerst einen Ordner hinzu und setzen Sie das Häkchen.",
+            "Aggiungi prima una cartella e spuntala.", "Primero añade una carpeta y márcala.",
+            "Ajoutez d'abord un dossier et cochez-le.", "Adicione primeiro uma pasta e assinale-a.",
+            "أضف مجلدًا أولاً وحدّده بعلامة.", "पहले एक फ़ोल्डर जोड़ें और उस पर निशान लगाएँ।",
+            "প্রথমে একটি ফোল্ডার যোগ করে তাতে টিক দিন।", "پہلے ایک فولڈر شامل کریں اور اس پر نشان لگائیں۔",
+            "请先添加文件夹并勾选它。")
+
+        Add("Включаю раздачу..",
+            "Starting sharing..", "Вмикаю роздачу..", "Freigabe wird gestartet..",
+            "Avvio della condivisione..", "Iniciando el uso compartido..",
+            "Démarrage du partage..", "A iniciar a partilha..",
+            "جارٍ بدء المشاركة..", "साझाकरण शुरू हो रहा है..",
+            "শেয়ারিং শুরু হচ্ছে..", "شیئرنگ شروع ہو رہی ہے..", "正在开始共享..")
+
+        Add("Раздача запущена.",
+            "Sharing started.", "Роздачу запущено.", "Freigabe gestartet.", "Condivisione avviata.",
+            "Uso compartido iniciado.", "Partage démarré.", "Partilha iniciada.",
+            "بدأت المشاركة.", "साझाकरण शुरू हो गया।", "শেয়ারিং শুরু হয়েছে।", "شیئرنگ شروع ہو گئی۔", "共享已开始。")
+
+        Add("Запущено, адрес не подтверждён - проверьте брандмауэр/сеть.",
+            "Started, address unconfirmed - check firewall/network.",
+            "Запущено, адресу не підтверджено - перевірте брандмауер/мережу.",
+            "Gestartet, Adresse unbestätigt - prüfen Sie Firewall/Netzwerk.",
+            "Avviata, indirizzo non confermato: controlla firewall/rete.",
+            "Iniciado, dirección sin confirmar: revisa el cortafuegos o la red.",
+            "Démarré, adresse non confirmée - vérifiez le pare-feu/le réseau.",
+            "Iniciada, endereço por confirmar - verifique a firewall/rede.",
+            "بدأت، والعنوان غير مؤكَّد - تحقّق من جدار الحماية/الشبكة.",
+            "शुरू हुआ, पता अपुष्ट - फ़ायरवॉल/नेटवर्क जाँचें।",
+            "শুরু হয়েছে, ঠিকানা অনিশ্চিত - ফায়ারওয়াল/নেটওয়ার্ক যাচাই করুন।",
+            "شروع ہو گئی، پتہ غیر مصدقہ - فائر وال/نیٹ ورک جانچیں۔",
+            "已启动，地址未确认 - 请检查防火墙/网络。")
+
+        Add("Раздача с этого ПК работает",
+            "Sharing from this PC is on", "Роздача з цього ПК працює",
+            "Die Freigabe von diesem PC läuft", "La condivisione da questo PC è attiva",
+            "El uso compartido desde este PC está activo", "Le partage depuis ce PC est actif",
+            "A partilha a partir deste PC está ativa", "المشاركة من هذا الحاسوب مفعّلة",
+            "इस पीसी से साझाकरण चालू है", "এই পিসি থেকে শেয়ারিং চালু আছে",
+            "اس پی سی سے شیئرنگ آن ہے", "本机共享已开启")
+
+        Add("Раздача выключена",
+            "Sharing is off", "Роздачу вимкнено", "Die Freigabe ist aus",
+            "La condivisione è disattivata", "El uso compartido está desactivado",
+            "Le partage est désactivé", "A partilha está desativada",
+            "المشاركة متوقفة", "साझाकरण बंद है", "শেয়ারিং বন্ধ", "شیئرنگ بند ہے", "共享已关闭")
+
+        Add("Сначала запустите сервер.",
+            "Start the server first.", "Спершу запустіть сервер.", "Starten Sie zuerst den Server.",
+            "Avvia prima il server.", "Inicia primero el servidor.", "Démarrez d'abord le serveur.",
+            "Inicie primeiro o servidor.", "شغّل الخادم أولاً.", "पहले सर्वर शुरू करें।",
+            "প্রথমে সার্ভার চালু করুন।", "پہلے سرور شروع کریں۔", "请先启动服务器。")
+
+        Add("Fast Media Sorter не найден рядом.",
+            "Fast Media Sorter not found alongside.", "Fast Media Sorter не знайдено поряд.",
+            "Fast Media Sorter wurde nicht daneben gefunden.", "Fast Media Sorter non è stato trovato accanto.",
+            "No se encontró Fast Media Sorter al lado.", "Fast Media Sorter est introuvable à côté.",
+            "O Fast Media Sorter não foi encontrado ao lado.", "لم يُعثر على Fast Media Sorter بجواره.",
+            "Fast Media Sorter पास नहीं मिला।", "পাশে Fast Media Sorter পাওয়া যায়নি।",
+            "Fast Media Sorter ساتھ نہیں ملا۔", "未在旁边找到 Fast Media Sorter。")
+
+        ' --- resource types (also used by the wizard and the per-folder dialog) ----
+
+        Add("Аудиотека",
+            "Audio library", "Аудіотека", "Audiothek", "Libreria audio", "Biblioteca de audio",
+            "Bibliothèque audio", "Biblioteca de áudio", "مكتبة صوتية", "ऑडियो लाइब्रेरी",
+            "অডিও লাইব্রেরি", "آڈیو لائبریری", "音频库")
+
+        Add("Видеотека",
+            "Video library", "Відеотека", "Videothek", "Videoteca", "Videoteca",
+            "Vidéothèque", "Videoteca", "مكتبة فيديو", "वीडियो लाइब्रेरी",
+            "ভিডিও লাইব্রেরি", "ویڈیو لائبریری", "视频库")
+
+        Add("Фотохранилище",
+            "Photo storage", "Фотосховище", "Fotospeicher", "Archivio foto", "Almacén de fotos",
+            "Stockage photo", "Armazenamento de fotos", "مخزن الصور", "फ़ोटो संग्रह",
+            "ফটো সংগ্রহ", "تصاویر کا ذخیرہ", "照片存储")
+
+        Add("Документы",
+            "Documents", "Документи", "Dokumente", "Documenti", "Documentos", "Documents",
+            "Documentos", "المستندات", "दस्तावेज़", "নথি", "دستاویزات", "文档")
+
+        Add("Все файлы",
+            "All files", "Усі файли", "Alle Dateien", "Tutti i file", "Todos los archivos",
+            "Tous les fichiers", "Todos os ficheiros", "كل الملفات", "सभी फ़ाइलें",
+            "সব ফাইল", "تمام فائلیں", "所有文件")
+
+    End Sub
+
+End Class

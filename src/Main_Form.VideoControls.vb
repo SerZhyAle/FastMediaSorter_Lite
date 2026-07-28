@@ -189,10 +189,10 @@ Partial Public Class Main_Form
     Friend Sub LocalizeVideoControls()
         If video_Controls Is Nothing Then Return
 
-        Dim seek_Text As String = If(Is_Russian_Language, "Перемотка", "Seek")
-        Dim volume_Text As String = If(Is_Russian_Language, "Громкость", "Volume")
-        Dim play_Text As String = If(Is_Russian_Language, "Пауза / продолжить (клик по видео - то же самое; правая кнопка - меню)", "Pause / resume (a click on the video does the same; right-click for the menu)")
-        Dim mute_Text As String = If(Is_Russian_Language, "Звук вкл/выкл", "Mute / unmute")
+        Dim seek_Text As String = Localization.T("Перемотка")
+        Dim volume_Text As String = Localization.T("Громкость")
+        Dim play_Text As String = Localization.T("Пауза / продолжить (клик по видео - то же самое; правая кнопка - меню)")
+        Dim mute_Text As String = Localization.T("Звук вкл/выкл")
 
         If toolTip IsNot Nothing Then
             toolTip.SetToolTip(btn_Video_Play, play_Text)
@@ -204,7 +204,7 @@ Partial Public Class Main_Form
         ' The buttons' captions are icon-font glyphs from the private use area - a screen
         ' reader would announce garbage. These names are what it says instead (and what
         ' the UI test finds them by).
-        btn_Video_Play.AccessibleName = If(Is_Russian_Language, "Пауза / продолжить", "Pause / resume")
+        btn_Video_Play.AccessibleName = Localization.T("Пауза / продолжить")
         btn_Video_Mute.AccessibleName = mute_Text
         video_Seek.AccessibleName = seek_Text
         video_Volume.AccessibleName = volume_Text

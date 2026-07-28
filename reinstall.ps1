@@ -30,8 +30,14 @@
     Rebuild + redeploy but do not relaunch anything.
 
 .PARAMETER Tray
-    Launch the Share Manager silently to the tray (--tray) instead of opening its
-    window. Default: open the window so you can test the UI right away.
+    Launch the Share Manager the way Windows does at logon (--tray). Without it the
+    Share Manager is started plainly, so whether its window opens is decided by its
+    own "Open the manager window at startup" option (off by default = tray icon only).
+    Use -Show to force the window open regardless of that option.
+
+.PARAMETER Show
+    Force the Share Manager window open (--show), ignoring its startup option - the
+    same intent as the viewer's "Share Manager.." button.
 
 .EXAMPLE
     .\reinstall.ps1
@@ -42,7 +48,8 @@ param(
     [switch]$NoClean,
     [switch]$SkipCompanion,
     [switch]$NoLaunch,
-    [switch]$Tray
+    [switch]$Tray,
+    [switch]$Show
 )
 
 $ErrorActionPreference = 'Stop'
@@ -112,10 +119,15 @@ if (Test-Path $liteExe) {
 }
 
 if (Test-Path $companionExe) {
-    $mode = if ($Tray) { 'tray' } else { 'window' }
-    Write-Host "Launching Share Manager ($mode): $companionExe" -ForegroundColor Green
+    # Plain launch by default: the Share Manager then honours its own startup option,
+    # which is exactly what a local test loop should reproduce. -Tray mimics logon,
+    # -Show forces the window.
+    $mode = if ($Tray) { 'tray' } elseif ($Show) { 'window (forced)' } else { 'plain (its startup option decides)' }
+    Write-Host "Launching Share Manager - $mode`: $companionExe" -ForegroundColor Green
     if ($Tray) {
         Start-Process -FilePath $companionExe -WorkingDirectory $runDir -ArgumentList '--tray'
+    } elseif ($Show) {
+        Start-Process -FilePath $companionExe -WorkingDirectory $runDir -ArgumentList '--show'
     } else {
         Start-Process -FilePath $companionExe -WorkingDirectory $runDir
     }

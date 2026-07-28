@@ -1,0 +1,336 @@
+{
+  "_comment": [
+    "Source of truth for the per-language first pages of the site.",
+    "tools/Build-SitePages.ps1 renders <lang>/index.html from this - edit THIS file,",
+    "never the generated HTML (canon invariant 16).",
+    "",
+    "Keys are the ISO 639-1 codes of the 13 UI languages. 'dir' is rtl for ar/ur.",
+    "'machine' marks a locale whose copy is a machine translation and says so on the",
+    "page itself - EN/RU/UK are proofread by the author, the other ten are not."
+  ],
+
+  "en": {
+    "dir": "ltr", "machine": false, "name": "English",
+    "title": "Fast Media Sorter for Windows",
+    "tagline": "Browse huge folders of photos and videos at speed, then move, copy, rename or delete each file with a single key.",
+    "features": [
+      ["One key per file", "Assign folders to the keys 1-9, 0 and Del, then sort a folder without ever reaching for the mouse."],
+      ["Slideshow and panel", "Automatic or random slideshow, and a thumbnail panel for jumping straight to a picture."],
+      ["Plays almost anything", "Video runs through the built-in VLC engine - H.264/MP4, MKV, AVI, VP9 and more."],
+      ["Ambilight background", "The empty bars beside a photo take their colour from the photo itself instead of staying black."],
+      ["Offline OCR translation", "Recognize text on an image and lay the translation over it, without sending the picture anywhere."],
+      ["Share a folder with your phone", "Publish a folder over SFTP and browse it from the Android app. Off until you switch it on."]
+    ],
+    "knowTitle": "Worth knowing",
+    "know": [
+      "Free and open-source.",
+      "Two builds ship together: a modern 64-bit one for Windows 10/11 and a 32-bit fallback for Windows 7 and 8.1. The installer picks the right one.",
+      "The interface is available in 13 languages - both the viewer and the Share Manager, which follow the same choice."
+    ],
+    "downloadTitle": "Get it",
+    "dlSetup": "Installer (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "guide": "Full guide (English)",
+    "langLabel": "Language",
+    "machineNote": ""
+  },
+
+  "ru": {
+    "dir": "ltr", "machine": false, "name": "Русский",
+    "title": "Fast Media Sorter для Windows",
+    "tagline": "Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши.",
+    "features": [
+      ["Одна клавиша на файл", "Назначьте папки клавишам 1-9, 0 и Del - и разберите каталог, ни разу не потянувшись к мыши."],
+      ["Слайд-шоу и панель", "Обычное или случайное слайд-шоу и панель миниатюр, чтобы сразу прыгнуть к нужному снимку."],
+      ["Играет почти всё", "Видео идёт через встроенный движок VLC - H.264/MP4, MKV, AVI, VP9 и другие."],
+      ["Фон Ambilight", "Пустые поля рядом с фотографией берут цвет у самой фотографии, а не остаются чёрными."],
+      ["OCR-перевод офлайн", "Распознайте текст на картинке и положите перевод поверх неё, никуда не отправляя изображение."],
+      ["Раздача папки на телефон", "Опубликуйте папку по SFTP и откройте её в приложении для Android. Выключено, пока не включите."]
+    ],
+    "knowTitle": "Что стоит знать",
+    "know": [
+      "Бесплатно, исходный код открыт.",
+      "В комплекте две сборки: современная 64-битная для Windows 10/11 и 32-битная запасная для Windows 7 и 8.1. Инсталлятор выберет нужную сам.",
+      "Интерфейс доступен на 13 языках - и просмотрщик, и «Менеджер общего доступа», которые следуют одному выбору."
+    ],
+    "downloadTitle": "Скачать",
+    "dlSetup": "Установщик (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "guide": "Полное руководство (на английском)",
+    "langLabel": "Язык",
+    "machineNote": ""
+  },
+
+  "uk": {
+    "dir": "ltr", "machine": false, "name": "Українська",
+    "title": "Fast Media Sorter для Windows",
+    "tagline": "Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.",
+    "features": [
+      ["Одна клавіша на файл", "Призначте теки клавішам 1-9, 0 і Del - і розберіть каталог, жодного разу не потягнувшись до миші."],
+      ["Слайд-шоу та панель", "Звичайне або випадкове слайд-шоу і панель мініатюр, щоб одразу перейти до потрібного знімка."],
+      ["Грає майже все", "Відео йде через вбудований рушій VLC - H.264/MP4, MKV, AVI, VP9 та інші."],
+      ["Фон Ambilight", "Порожні поля поруч із фотографією беруть колір у самої фотографії, а не лишаються чорними."],
+      ["OCR-переклад офлайн", "Розпізнайте текст на зображенні й покладіть переклад поверх нього, нікуди не надсилаючи картинку."],
+      ["Роздача теки на телефон", "Опублікуйте теку через SFTP і відкрийте її в застосунку для Android. Вимкнено, доки не увімкнете."]
+    ],
+    "knowTitle": "Що варто знати",
+    "know": [
+      "Безкоштовно, код відкритий.",
+      "У комплекті дві збірки: сучасна 64-бітна для Windows 10/11 і 32-бітна запасна для Windows 7 та 8.1. Інсталятор обере потрібну сам.",
+      "Інтерфейс доступний 13 мовами - і переглядач, і «Менеджер спільного доступу», які дотримуються одного вибору."
+    ],
+    "downloadTitle": "Завантажити",
+    "dlSetup": "Інсталятор (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "guide": "Повний посібник (англійською)",
+    "langLabel": "Мова",
+    "machineNote": ""
+  },
+
+  "de": {
+    "dir": "ltr", "machine": true, "name": "Deutsch",
+    "title": "Fast Media Sorter für Windows",
+    "tagline": "Blättern Sie im Tempo durch riesige Foto- und Videoordner und verschieben, kopieren, benennen oder löschen Sie jede Datei mit einer einzigen Taste.",
+    "features": [
+      ["Eine Taste pro Datei", "Weisen Sie den Tasten 1-9, 0 und Entf Ordner zu und sortieren Sie einen Ordner, ohne je zur Maus zu greifen."],
+      ["Diashow und Leiste", "Automatische oder zufällige Diashow und eine Miniaturleiste, um direkt zu einem Bild zu springen."],
+      ["Spielt fast alles", "Video läuft über die eingebaute VLC-Engine - H.264/MP4, MKV, AVI, VP9 und mehr."],
+      ["Ambilight-Hintergrund", "Die leeren Balken neben einem Foto nehmen ihre Farbe vom Foto selbst, statt schwarz zu bleiben."],
+      ["OCR-Übersetzung offline", "Text auf einem Bild erkennen und die Übersetzung darüberlegen - ohne das Bild irgendwohin zu senden."],
+      ["Ordner ans Telefon freigeben", "Einen Ordner über SFTP veröffentlichen und in der Android-App durchsehen. Aus, bis Sie es einschalten."]
+    ],
+    "knowTitle": "Gut zu wissen",
+    "know": [
+      "Kostenlos und quelloffen.",
+      "Zwei Builds werden zusammen ausgeliefert: ein modernes 64-Bit für Windows 10/11 und ein 32-Bit-Rückfall für Windows 7 und 8.1. Das Setup wählt das richtige.",
+      "Die Oberfläche gibt es in 13 Sprachen - sowohl der Betrachter als auch der Freigabe-Manager, die derselben Wahl folgen."
+    ],
+    "downloadTitle": "Herunterladen",
+    "dlSetup": "Installer (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "guide": "Vollständige Anleitung (auf Englisch)",
+    "langLabel": "Sprache",
+    "machineNote": "Diese Seite und die deutsche Oberfläche sind maschinell übersetzt und nicht lektoriert. Korrekturen sind willkommen."
+  },
+
+  "it": {
+    "dir": "ltr", "machine": true, "name": "Italiano",
+    "title": "Fast Media Sorter per Windows",
+    "tagline": "Sfoglia velocemente cartelle enormi di foto e video e sposta, copia, rinomina o elimina ogni file con un solo tasto.",
+    "features": [
+      ["Un tasto per file", "Assegna cartelle ai tasti 1-9, 0 e Canc e ordina una cartella senza mai toccare il mouse."],
+      ["Presentazione e pannello", "Presentazione automatica o casuale e un pannello di miniature per saltare subito a un'immagine."],
+      ["Riproduce quasi tutto", "Il video passa dal motore VLC integrato - H.264/MP4, MKV, AVI, VP9 e altri."],
+      ["Sfondo Ambilight", "Le bande vuote accanto alla foto prendono il colore dalla foto stessa invece di restare nere."],
+      ["Traduzione OCR offline", "Riconosci il testo di un'immagine e sovrapponi la traduzione, senza inviare la foto da nessuna parte."],
+      ["Condividi una cartella col telefono", "Pubblica una cartella via SFTP e sfogliala dall'app Android. Disattivo finché non lo attivi."]
+    ],
+    "knowTitle": "Da sapere",
+    "know": [
+      "Gratuito e open source.",
+      "Due build viaggiano insieme: una moderna a 64 bit per Windows 10/11 e una di riserva a 32 bit per Windows 7 e 8.1. L'installer sceglie quella giusta.",
+      "L'interfaccia è disponibile in 13 lingue: sia il visualizzatore sia Gestione condivisione, che seguono la stessa scelta."
+    ],
+    "downloadTitle": "Scarica",
+    "dlSetup": "Installer (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "guide": "Guida completa (in inglese)",
+    "langLabel": "Lingua",
+    "machineNote": "Questa pagina e l'interfaccia italiana sono tradotte automaticamente e non revisionate. Le correzioni sono benvenute."
+  },
+
+  "es": {
+    "dir": "ltr", "machine": true, "name": "Español",
+    "title": "Fast Media Sorter para Windows",
+    "tagline": "Recorra a toda velocidad carpetas enormes de fotos y vídeos y mueva, copie, renombre o elimine cada archivo con una sola tecla.",
+    "features": [
+      ["Una tecla por archivo", "Asigne carpetas a las teclas 1-9, 0 y Supr y ordene una carpeta sin tocar el ratón."],
+      ["Pase de diapositivas y panel", "Pase automático o aleatorio y un panel de miniaturas para saltar directamente a una imagen."],
+      ["Reproduce casi todo", "El vídeo pasa por el motor VLC integrado: H.264/MP4, MKV, AVI, VP9 y más."],
+      ["Fondo Ambilight", "Las bandas vacías junto a la foto toman el color de la propia foto en vez de quedarse negras."],
+      ["Traducción OCR sin conexión", "Reconozca el texto de una imagen y superponga la traducción, sin enviar la foto a ninguna parte."],
+      ["Comparta una carpeta con el móvil", "Publique una carpeta por SFTP y ábrala desde la aplicación Android. Desactivado hasta que lo active."]
+    ],
+    "knowTitle": "Conviene saber",
+    "know": [
+      "Gratuito y de código abierto.",
+      "Se entregan dos compilaciones: una moderna de 64 bits para Windows 10/11 y una de reserva de 32 bits para Windows 7 y 8.1. El instalador elige la correcta.",
+      "La interfaz está disponible en 13 idiomas: tanto el visor como el gestor de uso compartido, que siguen la misma elección."
+    ],
+    "downloadTitle": "Descargar",
+    "dlSetup": "Instalador (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "guide": "Guía completa (en inglés)",
+    "langLabel": "Idioma",
+    "machineNote": "Esta página y la interfaz en español son traducciones automáticas sin revisar. Las correcciones son bienvenidas."
+  },
+
+  "fr": {
+    "dir": "ltr", "machine": true, "name": "Français",
+    "title": "Fast Media Sorter pour Windows",
+    "tagline": "Parcourez à toute vitesse d'énormes dossiers de photos et de vidéos, puis déplacez, copiez, renommez ou supprimez chaque fichier d'une seule touche.",
+    "features": [
+      ["Une touche par fichier", "Attribuez des dossiers aux touches 1-9, 0 et Suppr, puis triez un dossier sans jamais toucher la souris."],
+      ["Diaporama et panneau", "Diaporama automatique ou aléatoire, et un panneau de miniatures pour sauter directement à une image."],
+      ["Lit presque tout", "La vidéo passe par le moteur VLC intégré : H.264/MP4, MKV, AVI, VP9 et d'autres."],
+      ["Fond Ambilight", "Les bandes vides à côté d'une photo prennent leur couleur dans la photo elle-même au lieu de rester noires."],
+      ["Traduction OCR hors ligne", "Reconnaissez le texte d'une image et posez la traduction dessus, sans envoyer la photo nulle part."],
+      ["Partagez un dossier avec le téléphone", "Publiez un dossier via SFTP et parcourez-le depuis l'application Android. Désactivé tant que vous ne l'activez pas."]
+    ],
+    "knowTitle": "Bon à savoir",
+    "know": [
+      "Gratuit et open source.",
+      "Deux versions sont livrées ensemble : une moderne 64 bits pour Windows 10/11 et une de secours 32 bits pour Windows 7 et 8.1. L'installateur choisit la bonne.",
+      "L'interface est disponible en 13 langues - la visionneuse comme le gestionnaire de partage, qui suivent le même choix."
+    ],
+    "downloadTitle": "Télécharger",
+    "dlSetup": "Installateur (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "guide": "Guide complet (en anglais)",
+    "langLabel": "Langue",
+    "machineNote": "Cette page et l'interface française sont des traductions automatiques non relues. Les corrections sont les bienvenues."
+  },
+
+  "pt": {
+    "dir": "ltr", "machine": true, "name": "Português",
+    "title": "Fast Media Sorter para Windows",
+    "tagline": "Percorra rapidamente pastas enormes de fotos e vídeos e mova, copie, renomeie ou exclua cada arquivo com uma única tecla.",
+    "features": [
+      ["Uma tecla por arquivo", "Atribua pastas às teclas 1-9, 0 e Del e organize uma pasta sem nunca pegar no mouse."],
+      ["Apresentação e painel", "Apresentação automática ou aleatória e um painel de miniaturas para pular direto para uma imagem."],
+      ["Reproduz quase tudo", "O vídeo passa pelo mecanismo VLC integrado: H.264/MP4, MKV, AVI, VP9 e mais."],
+      ["Fundo Ambilight", "As barras vazias ao lado da foto tiram a cor da própria foto em vez de continuarem pretas."],
+      ["Tradução OCR off-line", "Reconheça o texto de uma imagem e sobreponha a tradução, sem enviar a foto para lugar nenhum."],
+      ["Compartilhe uma pasta com o celular", "Publique uma pasta por SFTP e navegue por ela no app Android. Desligado até você ligar."]
+    ],
+    "knowTitle": "Vale saber",
+    "know": [
+      "Gratuito e de código aberto.",
+      "Duas versões vêm juntas: uma moderna de 64 bits para Windows 10/11 e uma reserva de 32 bits para Windows 7 e 8.1. O instalador escolhe a certa.",
+      "A interface está disponível em 13 idiomas - tanto o visualizador como o gestor de partilha, que seguem a mesma escolha."
+    ],
+    "downloadTitle": "Baixar",
+    "dlSetup": "Instalador (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "guide": "Guia completo (em inglês)",
+    "langLabel": "Idioma",
+    "machineNote": "Esta página e a interface em português são traduções automáticas não revisadas. Correções são bem-vindas."
+  },
+
+  "ar": {
+    "dir": "rtl", "machine": true, "name": "العربية",
+    "title": "Fast Media Sorter لنظام ويندوز",
+    "tagline": "تصفّح مجلدات ضخمة من الصور والفيديو بسرعة، ثم انقل أو انسخ أو أعد تسمية أو احذف كل ملف بمفتاح واحد.",
+    "features": [
+      ["مفتاح واحد لكل ملف", "خصّص مجلدات للمفاتيح 1-9 و0 وDel، ثم رتّب مجلدًا كاملًا دون أن تمسّ الفأرة."],
+      ["عرض شرائح ولوحة", "عرض شرائح تلقائي أو عشوائي، ولوحة مصغّرات للانتقال مباشرة إلى صورة."],
+      ["يشغّل كل شيء تقريبًا", "يمر الفيديو عبر محرك VLC المدمج - H.264/MP4 وMKV وAVI وVP9 وغيرها."],
+      ["خلفية Ambilight", "الأشرطة الفارغة بجانب الصورة تأخذ لونها من الصورة نفسها بدل أن تبقى سوداء."],
+      ["ترجمة OCR دون اتصال", "تعرّف على النص في الصورة وضع الترجمة فوقه، دون إرسال الصورة إلى أي مكان."],
+      ["شارك مجلدًا مع هاتفك", "انشر مجلدًا عبر SFTP وتصفّحه من تطبيق أندرويد. معطّل حتى تفعّله بنفسك."]
+    ],
+    "knowTitle": "جدير بالمعرفة",
+    "know": [
+      "مجاني ومفتوح المصدر.",
+      "تُشحن نسختان معًا: نسخة حديثة 64 بت لويندوز 10/11 ونسخة احتياطية 32 بت لويندوز 7 و8.1. ويختار المثبّت المناسبة.",
+      "الواجهة متوفرة بـ 13 لغة - العارض ومدير المشاركة معًا، وكلاهما يتبع الاختيار نفسه."
+    ],
+    "downloadTitle": "التنزيل",
+    "dlSetup": "المثبّت (GitHub)", "dlWinget": "winget", "dlStore": "متجر Microsoft",
+    "guide": "الدليل الكامل (بالإنجليزية)",
+    "langLabel": "اللغة",
+    "machineNote": "هذه الصفحة والواجهة العربية ترجمة آلية غير مراجعة. التصحيحات مرحّب بها."
+  },
+
+  "hi": {
+    "dir": "ltr", "machine": true, "name": "हिन्दी",
+    "title": "विंडोज़ के लिए Fast Media Sorter",
+    "tagline": "फ़ोटो और वीडियो के विशाल फ़ोल्डर तेज़ी से देखें और हर फ़ाइल को एक ही कुंजी से ले जाएँ, कॉपी करें, नाम बदलें या हटाएँ।",
+    "features": [
+      ["हर फ़ाइल के लिए एक कुंजी", "कुंजियों 1-9, 0 और Del को फ़ोल्डर सौंपें और माउस छुए बिना पूरा फ़ोल्डर छाँट लें।"],
+      ["स्लाइडशो और पैनल", "स्वचालित या यादृच्छिक स्लाइडशो, और सीधे किसी चित्र पर जाने के लिए थंबनेल पैनल।"],
+      ["लगभग सब कुछ चलाता है", "वीडियो अंतर्निहित VLC इंजन से चलता है - H.264/MP4, MKV, AVI, VP9 और अन्य।"],
+      ["Ambilight पृष्ठभूमि", "फ़ोटो के बगल की खाली पट्टियाँ काली रहने के बजाय फ़ोटो से ही रंग लेती हैं।"],
+      ["ऑफ़लाइन OCR अनुवाद", "छवि पर लिखा पाठ पहचानें और अनुवाद उसी पर रखें - चित्र कहीं भेजे बिना।"],
+      ["फ़ोन के साथ फ़ोल्डर साझा करें", "SFTP से फ़ोल्डर प्रकाशित करें और Android ऐप में देखें। जब तक चालू न करें, बंद रहता है।"]
+    ],
+    "knowTitle": "जानने योग्य",
+    "know": [
+      "मुफ़्त और मुक्त स्रोत।",
+      "दो बिल्ड साथ आते हैं: Windows 10/11 के लिए आधुनिक 64-बिट और Windows 7 तथा 8.1 के लिए 32-बिट विकल्प। इंस्टॉलर सही वाला चुन लेता है।",
+      "इंटरफ़ेस 13 भाषाओं में उपलब्ध है - दर्शक और शेयर प्रबंधक दोनों, जो एक ही चयन का पालन करते हैं।"
+    ],
+    "downloadTitle": "डाउनलोड",
+    "dlSetup": "इंस्टॉलर (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "guide": "पूरी गाइड (अंग्रेज़ी में)",
+    "langLabel": "भाषा",
+    "machineNote": "यह पृष्ठ और हिन्दी इंटरफ़ेस मशीनी अनुवाद हैं, इनकी वाचन-जाँच नहीं हुई। सुधार का स्वागत है।"
+  },
+
+  "bn": {
+    "dir": "ltr", "machine": true, "name": "বাংলা",
+    "title": "উইন্ডোজের জন্য Fast Media Sorter",
+    "tagline": "ছবি ও ভিডিওর বিশাল ফোল্ডার দ্রুত ঘুরে দেখুন এবং প্রতিটি ফাইল এক কী চেপেই সরান, কপি করুন, নাম বদলান বা মুছুন।",
+    "features": [
+      ["প্রতি ফাইলে এক কী", "1-9, 0 আর Del কী-তে ফোল্ডার বেঁধে দিন, তারপর মাউস না ছুঁয়েই পুরো ফোল্ডার গুছিয়ে ফেলুন।"],
+      ["স্লাইডশো ও প্যানেল", "স্বয়ংক্রিয় বা এলোমেলো স্লাইডশো, আর সরাসরি কোনো ছবিতে যেতে থাম্বনেইল প্যানেল।"],
+      ["প্রায় সব কিছু চালায়", "ভিডিও চলে অন্তর্নির্মিত VLC ইঞ্জিনে - H.264/MP4, MKV, AVI, VP9 এবং আরও।"],
+      ["Ambilight পটভূমি", "ছবির পাশের ফাঁকা বার কালো না থেকে ছবিরই রঙ নেয়।"],
+      ["অফলাইন OCR অনুবাদ", "ছবির লেখা শনাক্ত করে তার উপরেই অনুবাদ বসান - ছবি কোথাও না পাঠিয়ে।"],
+      ["ফোনের সাথে ফোল্ডার শেয়ার", "SFTP-এ ফোল্ডার প্রকাশ করে Android অ্যাপে দেখুন। না চালানো পর্যন্ত বন্ধ থাকে।"]
+    ],
+    "knowTitle": "জেনে রাখা ভালো",
+    "know": [
+      "বিনামূল্যে ও মুক্ত সোর্স।",
+      "দুটি বিল্ড একসাথে আসে: Windows 10/11-এর জন্য আধুনিক 64-বিট আর Windows 7 ও 8.1-এর জন্য 32-বিট বিকল্প। ইনস্টলার নিজেই ঠিকটা বেছে নেয়।",
+      "ইন্টারফেস 13টি ভাষায় পাওয়া যায় - দর্শক ও শেয়ার ম্যানেজার উভয়ই, যারা একই নির্বাচন অনুসরণ করে।"
+    ],
+    "downloadTitle": "ডাউনলোড",
+    "dlSetup": "ইনস্টলার (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "guide": "পূর্ণ নির্দেশিকা (ইংরেজিতে)",
+    "langLabel": "ভাষা",
+    "machineNote": "এই পাতা ও বাংলা ইন্টারফেস যন্ত্র-অনুবাদ, সম্পাদনা করা হয়নি। সংশোধন স্বাগত।"
+  },
+
+  "ur": {
+    "dir": "rtl", "machine": true, "name": "اردو",
+    "title": "ونڈوز کے لیے Fast Media Sorter",
+    "tagline": "تصاویر اور ویڈیو کے بڑے فولڈرز تیزی سے دیکھیں اور ہر فائل کو ایک ہی کلید سے منتقل، نقل، نام تبدیل یا حذف کریں۔",
+    "features": [
+      ["ہر فائل کے لیے ایک کلید", "کلیدوں 1-9، 0 اور Del کو فولڈر تفویض کریں اور ماؤس کو ہاتھ لگائے بغیر پورا فولڈر ترتیب دیں۔"],
+      ["سلائیڈ شو اور پینل", "خودکار یا بے ترتیب سلائیڈ شو، اور کسی تصویر پر براہِ راست جانے کے لیے تھمب نیل پینل۔"],
+      ["تقریباً سب کچھ چلاتا ہے", "ویڈیو بلٹ اِن VLC انجن سے چلتی ہے - H.264/MP4، MKV، AVI، VP9 اور مزید۔"],
+      ["Ambilight پس منظر", "تصویر کے پہلو کی خالی پٹیاں سیاہ رہنے کے بجائے تصویر ہی سے رنگ لیتی ہیں۔"],
+      ["آف لائن OCR ترجمہ", "تصویر پر لکھا متن پہچانیں اور ترجمہ اسی پر رکھیں - تصویر کہیں بھیجے بغیر۔"],
+      ["فون کے ساتھ فولڈر شیئر کریں", "SFTP سے فولڈر شائع کریں اور Android ایپ میں دیکھیں۔ جب تک آن نہ کریں، بند رہتا ہے۔"]
+    ],
+    "knowTitle": "جاننے کے قابل",
+    "know": [
+      "مفت اور اوپن سورس۔",
+      "دو بلڈ ساتھ آتے ہیں: Windows 10/11 کے لیے جدید 64 بٹ اور Windows 7 و 8.1 کے لیے 32 بٹ متبادل۔ انسٹالر خود درست چن لیتا ہے۔",
+      "انٹرفیس 13 زبانوں میں دستیاب ہے - ویوَر اور شیئر مینیجر دونوں، جو ایک ہی انتخاب کی پیروی کرتے ہیں۔"
+    ],
+    "downloadTitle": "ڈاؤن لوڈ",
+    "dlSetup": "انسٹالر (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "guide": "مکمل رہنما (انگریزی میں)",
+    "langLabel": "زبان",
+    "machineNote": "یہ صفحہ اور اردو انٹرفیس مشینی ترجمہ ہیں، نظرثانی نہیں ہوئی۔ تصحیحات کا خیرمقدم ہے۔"
+  },
+
+  "zh": {
+    "dir": "ltr", "machine": true, "name": "中文",
+    "title": "Windows 上的 Fast Media Sorter",
+    "tagline": "飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。",
+    "features": [
+      ["一个文件一个键", "把文件夹绑定到 1-9、0 和 Del 键，然后全程不碰鼠标就整理完一个文件夹。"],
+      ["幻灯片与面板", "自动或随机幻灯片，还有缩略图面板，直接跳到想看的那张。"],
+      ["几乎什么都能播", "视频走内置的 VLC 引擎 - H.264/MP4、MKV、AVI、VP9 等等。"],
+      ["Ambilight 背景", "照片旁边的空白色块不再是黑的，而是取自照片本身的颜色。"],
+      ["离线 OCR 翻译", "识别图片上的文字并把译文叠在原处 - 图片不会被发到任何地方。"],
+      ["把文件夹分享到手机", "用 SFTP 发布一个文件夹，在 Android 应用里浏览。默认关闭，你不开它就不动。"]
+    ],
+    "knowTitle": "值得一提",
+    "know": [
+      "免费，开源。",
+      "两个版本一起发布：面向 Windows 10/11 的现代 64 位版，以及面向 Windows 7 和 8.1 的 32 位备用版。安装程序会自动选对。",
+      "界面提供 13 种语言 - 查看器与共享管理器均支持，且共用同一设置。"
+    ],
+    "downloadTitle": "下载",
+    "dlSetup": "安装程序（GitHub）", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "guide": "完整指南（英文）",
+    "langLabel": "语言",
+    "machineNote": "本页面与中文界面为机器翻译，未经校对。欢迎指正。"
+  }
+}

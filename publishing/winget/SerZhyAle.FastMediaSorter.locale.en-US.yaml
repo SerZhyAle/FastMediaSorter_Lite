@@ -35,6 +35,13 @@ Description: |-
   The installer picks the right one for your PC automatically and points the shortcut and file
   associations at it, so there is nothing to choose. The 64-bit main program requires Windows 10
   version 1607 or newer, Windows 11, or Windows Server 2016 or newer.
+
+  The interface is available in 13 languages - English, Russian, Ukrainian, German, Italian,
+  Spanish, French, Portuguese, Arabic, Hindi, Bengali, Urdu and Chinese - and picks the one your
+  Windows display language uses on first run; a button on the toolbar switches it at any time.
+  Only English, Russian and Ukrainian are proofread by the author; the rest are machine
+  translations, and corrections are welcome through the issue tracker. The setup wizard itself
+  stays English.
 Moniker: fastmediasorter
 Tags:
 - file-manager

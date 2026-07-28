@@ -31,8 +31,8 @@ Partial Public Class Main_Form
     Private Function CreateRecipientsSubmenu() As ToolStripMenuItem
         Dim rus As Boolean = Is_Russian_Language
         Dim root As New ToolStripMenuItem(If(Is_Copying_not_Moving,
-                                             If(rus, "Копировать в", "Copy to"),
-                                             If(rus, "Переместить в", "Move to")))
+                                             Localization.T("Копировать в"),
+                                             Localization.T("Переместить в")))
 
         ' Runtime convention, the keyboard's and the overlay's: key "k" -> slot k,
         ' key "0" -> slot 10.
@@ -55,28 +55,28 @@ Partial Public Class Main_Form
     Private Sub AddFileOperationItems(target As ToolStripItemCollection)
         Dim rus As Boolean = Is_Russian_Language
 
-        AddMenuItem(target, If(rus, "Переименовать.. (F6)", "Rename.. (F6)"), Sub() RenameCurrentFile())
+        AddMenuItem(target, Localization.T("Переименовать.. (F6)"), Sub() RenameCurrentFile())
 
         Dim recipients_Item As ToolStripMenuItem = CreateRecipientsSubmenu()
         If recipients_Item IsNot Nothing Then target.Add(recipients_Item)
 
-        AddMenuItem(target, If(rus, "Удалить (Del)", "Delete (Del)"), Sub() ReadShowMediaFile(Mode_Delete))
+        AddMenuItem(target, Localization.T("Удалить (Del)"), Sub() ReadShowMediaFile(Mode_Delete))
     End Sub
 
     ''' <summary>Full screen - the same two flips F7 and F11 do.</summary>
     Private Sub AddViewItems(target As ToolStripItemCollection)
         Dim rus As Boolean = Is_Russian_Language
-        AddMenuItem(target, If(rus, "Полный экран (F7)", "Full screen (F7)"),
+        AddMenuItem(target, Localization.T("Полный экран (F7)"),
                     AddressOf ToggleFullScreenMode, checked:=is_Full_Screen_Mode)
-        AddMenuItem(target, If(rus, "Полный экран без панелей (F11)", "Full screen, no panels (F11)"),
+        AddMenuItem(target, Localization.T("Полный экран без панелей (F11)"),
                     AddressOf ToggleSuperFullScreenMode, checked:=is_Super_Full_Screen_Mode)
     End Sub
 
     ''' <summary>Next / previous file.</summary>
     Private Sub AddNavigationItems(target As ToolStripItemCollection)
         Dim rus As Boolean = Is_Russian_Language
-        AddMenuItem(target, If(rus, "Следующий файл (Space)", "Next file (Space)"), Sub() ReadShowMediaFile(Mode_Next))
-        AddMenuItem(target, If(rus, "Предыдущий файл (B)", "Previous file (B)"), Sub() ReadShowMediaFile(Mode_Prev))
+        AddMenuItem(target, Localization.T("Следующий файл (Space)"), Sub() ReadShowMediaFile(Mode_Next))
+        AddMenuItem(target, Localization.T("Предыдущий файл (B)"), Sub() ReadShowMediaFile(Mode_Prev))
     End Sub
 
 End Class

@@ -274,15 +274,20 @@ Partial Public Class Table_Form
         If Not modernSettingsBuilt Then Return
 
         Dim ru As Boolean = Is_Russian_Language
-        Dim navLabels As String() = If(ru,
-            {"Получатели", "Просмотр", "Видео", "Файлы", "OCR", "Перевод", "Android / SFTP", "О программе"},
-            {"Destinations", "Viewing", "Video", "Files", "OCR", "Translation", "Android / SFTP", "About"})
+        Dim navLabels As String() = {Localization.T("Получатели"),
+             Localization.T("Просмотр"),
+             Localization.T("Видео"),
+             Localization.T("Файлы"),
+             Localization.T("OCR"),
+             Localization.TC("settings", "Перевод"),
+             Localization.T("Android / SFTP"),
+             Localization.T("О программе")}
         For index As Integer = 0 To modernSettingsNavButtons.Length - 1
             modernSettingsNavButtons(index).Text = navLabels(index)
         Next
 
         LinkLabel1.Text = ShortSettingsVersion()
-        modernSidebarSectionLabel.Text = If(ru, "Настройки", "Settings")
+        modernSidebarSectionLabel.Text = Localization.T("Настройки")
         LocalizeModernSettingRows()
         RefreshModernSettingsHeader()
     End Sub
@@ -291,26 +296,22 @@ Partial Public Class Table_Form
         If Not modernSettingsBuilt Then Return
         Dim ru As Boolean = Is_Russian_Language
         Dim index As Integer = Math.Max(0, Tab_Control.SelectedIndex)
-        Dim titles As String() = If(ru,
-            {"Каталоги-получатели", "Просмотр", "Видео и качество", "Файлы и система", "OCR", "Перевод", "Android и SFTP", "О программе"},
-            {"Destination folders", "Viewing", "Video and quality", "Files and system", "OCR", "Translation", "Android & SFTP", "About"})
-        Dim subtitles As String() = If(ru,
-            {"Назначьте папки для быстрого перемещения и копирования.",
-             "Настройте фон, информацию на экране и слайдшоу.",
-             "Качество изображения и привычное поведение видео.",
-             "Операции с файлами, интеграция и язык интерфейса.",
-             "Распознавание текста на изображениях и параметры OCR.",
-             "Сервис и параметры перевода распознанного текста.",
-             "SFTP-сервер и мобильное приложение Android.",
-             "Версия приложения, документация и ссылки проекта."},
-            {"Assign folders for quick moving and copying.",
-             "Tune the background, on-screen information and slideshow.",
-             "Image quality and familiar video behaviour.",
-             "File operations, integration and interface language.",
-             "Text recognition on images and OCR options.",
-             "Service and options for translating recognized text.",
-             "SFTP server and the Android mobile app.",
-             "Application version, documentation and project links."})
+        Dim titles As String() = {Localization.T("Каталоги-получатели"),
+             Localization.T("Просмотр"),
+             Localization.T("Видео и качество"),
+             Localization.T("Файлы и система"),
+             Localization.T("OCR"),
+             Localization.TC("settings", "Перевод"),
+             Localization.T("Android и SFTP"),
+             Localization.T("О программе")}
+        Dim subtitles As String() = {Localization.T("Назначьте папки для быстрого перемещения и копирования."),
+             Localization.T("Настройте фон, информацию на экране и слайдшоу."),
+             Localization.T("Качество изображения и привычное поведение видео."),
+             Localization.T("Операции с файлами, интеграция и язык интерфейса."),
+             Localization.T("Распознавание текста на изображениях и параметры OCR."),
+             Localization.T("Сервис и параметры перевода распознанного текста."),
+             Localization.T("SFTP-сервер и мобильное приложение Android."),
+             Localization.T("Версия приложения, документация и ссылки проекта.")}
 
         If index >= titles.Length Then index = 0
         modernSettingsTitle.Text = titles(index)
@@ -337,20 +338,20 @@ Partial Public Class Table_Form
             Select Case row.Key
                 Case "image_associations", "video_associations"
                     Dim button As Button = TryCast(row.Editor, Button)
-                    If button IsNot Nothing Then button.Text = If(ru, "Открыть параметры Windows", "Open Windows settings")
+                    If button IsNot Nothing Then button.Text = Localization.T("Открыть параметры Windows")
                 Case "sftp_manager"
                     Dim button As Button = TryCast(row.Editor, Button)
-                    If button IsNot Nothing Then button.Text = If(ru, "Управление SFTP", "Manage SFTP")
+                    If button IsNot Nothing Then button.Text = Localization.T("Управление SFTP")
                 Case "ocr_server"
                     Dim buttons As List(Of Button) = FindModernControls(Of Button)(row.Host).ToList()
-                    If buttons.Count > 0 Then buttons(0).Text = If(ru, "Установить", "Install")
-                    If buttons.Count > 1 Then buttons(1).Text = If(ru, "Запустить", "Start")
+                    If buttons.Count > 0 Then buttons(0).Text = Localization.T("Установить")
+                    If buttons.Count > 1 Then buttons(1).Text = Localization.T("Запустить")
                 Case "ocr_model"
                     Dim buttons As List(Of Button) = FindModernControls(Of Button)(row.Host).ToList()
-                    If buttons.Count > 0 Then buttons(0).Text = If(ru, "Загрузить", "Download")
+                    If buttons.Count > 0 Then buttons(0).Text = Localization.T("Загрузить")
             End Select
             For Each link As LinkLabel In FindModernControls(Of LinkLabel)(row.Host)
-                If link IsNot row.Title Then link.Text = If(ru, "Открыть", "Open")
+                If link IsNot row.Title Then link.Text = Localization.T("Открыть")
             Next
             If row.Description IsNot Nothing AndAlso toolTip IsNot Nothing Then toolTip.SetToolTip(row.Description, row.Description.Text)
             SizeModernSettingRow(row)
@@ -386,173 +387,168 @@ Partial Public Class Table_Form
 
     Private Function ModernSettingTitle(key As String, ru As Boolean) As String
         Select Case key
-            Case "recipients_overlay" : Return If(ru, "Таблица получателей поверх изображения", "Destination table over the image")
-            Case "section_overlay_layout" : Return If(ru, "Вид таблицы получателей", "Destination table appearance")
-            Case "recipients_position" : Return If(ru, "Положение таблицы", "Table position")
-            Case "recipients_width" : Return If(ru, "Ширина таблицы", "Table width")
-            Case "recipients_font" : Return If(ru, "Размер текста", "Text size")
-            Case "recipients_opacity" : Return If(ru, "Непрозрачность", "Opacity")
-            Case "recipients_rows" : Return If(ru, "Видимые строки", "Visible rows")
-            Case "section_background" : Return If(ru, "Фон изображения", "Image background")
-            Case "background_color" : Return If(ru, "Цвет фона", "Background colour")
-            Case "perspective" : Return If(ru, "Перспективный фон", "Perspective background")
-            Case "dynamic_perspective" : Return If(ru, "Динамический ореол", "Dynamic halo")
-            Case "animated_perspective" : Return If(ru, "Анимация ореола", "Halo animation")
-            Case "section_information" : Return If(ru, "Информация и управление", "Information and controls")
-            Case "show_picture_size" : Return If(ru, "Размеры изображения", "Image dimensions")
-            Case "show_file_size" : Return If(ru, "Размер файла", "File size")
-            Case "show_file_date" : Return If(ru, "Дата изменения файла", "File modification date")
-            Case "show_info_overlay" : Return If(ru, "Информация поверх изображения", "Information over the image")
-            Case "wheel_zooms" : Return If(ru, "Масштабирование колёсиком", "Zoom with the mouse wheel")
-            Case "slideshow_interval" : Return If(ru, "Интервал слайдшоу", "Slideshow interval")
-            Case "thumbnail_size" : Return If(ru, "Размер карточки изображения", "Image card size")
-            Case "section_accessibility" : Return If(ru, "Комфорт просмотра", "Viewing comfort")
-            Case "new_image_scale" : Return If(ru, "Масштаб нового изображения", "New image scale")
-            Case "reduce_motion" : Return If(ru, "Уменьшать анимацию", "Reduce motion")
-            Case "section_slideshow_behavior" : Return If(ru, "Поведение слайд-шоу", "Slideshow behaviour")
-            Case "slideshow_random_order" : Return If(ru, "Порядок показа", "Playback order")
-            Case "stop_slideshow_manual" : Return If(ru, "Останавливать при ручной навигации", "Stop on manual navigation")
-            Case "slideshow_ui" : Return If(ru, "Интерфейс во время слайд-шоу", "UI during slideshow")
-            Case "exif_rotate" : Return If(ru, "Автоповорот по EXIF", "EXIF auto-rotation")
-            Case "hq_scaling" : Return If(ru, "Качественное масштабирование", "High-quality scaling")
-            Case "video_loop" : Return If(ru, "Повторять видео", "Loop video")
-            Case "video_mute" : Return If(ru, "Запускать без звука", "Start muted")
-            Case "video_volume" : Return If(ru, "Громкость видео", "Video volume")
-            Case "section_video_behavior" : Return If(ru, "Поведение видео", "Video behaviour")
-            Case "video_autoplay" : Return If(ru, "Запускать видео автоматически", "Autoplay video")
-            Case "video_controls_delay" : Return If(ru, "Задержка скрытия панели, с", "Controls hide delay, s")
-            Case "video_controls_paused" : Return If(ru, "Показывать панель при паузе", "Show controls while paused")
-            Case "video_click_action" : Return If(ru, "Одиночный клик по видео", "Single click on video")
-            Case "video_end_action" : Return If(ru, "После окончания видео", "After video ends")
-            Case "preferred_audio_language" : Return If(ru, "Предпочтительный язык звука", "Preferred audio language")
-            Case "preferred_subtitle_language" : Return If(ru, "Предпочтительный язык субтитров", "Preferred subtitle language")
-            Case "copy_mode" : Return If(ru, "Копировать вместо перемещения", "Copy instead of moving")
-            Case "no_confirmation" : Return If(ru, "Не запрашивать подтверждение", "Do not ask for confirmation")
-            Case "image_associations" : Return If(ru, "Форматы изображений", "Image file types")
-            Case "video_associations" : Return If(ru, "Форматы видео", "Video file types")
-            Case "interface_language" : Return If(ru, "Язык интерфейса", "Interface language")
-            Case "section_file_behavior" : Return If(ru, "Поведение файлов", "File behaviour")
-            Case "name_collision" : Return If(ru, "Совпадение имён", "Name collision")
-            Case "after_file_operation" : Return If(ru, "После копирования или перемещения", "After copying or moving")
-            Case "include_subfolders" : Return If(ru, "Просматривать вложенные папки", "Include subfolders")
-            Case "included_extensions" : Return If(ru, "Типы файлов", "File types")
-            Case "recent_files_limit" : Return If(ru, "Размер истории файлов", "Recent-files limit")
-            Case "recent_folders_limit" : Return If(ru, "Размер истории папок", "Recent-folders limit")
-            Case "startup_open" : Return If(ru, "При запуске открывать", "Open at startup")
-            Case "ocr_enabled" : Return If(ru, "Включить OCR", "Enable OCR")
-            Case "ocr_auto" : Return If(ru, "Запускать автоматически", "Run automatically")
-            Case "section_translation" : Return If(ru, "Перевод", "Translation")
-            Case "ocr_provider" : Return If(ru, "Сервис перевода", "Translation provider")
-            Case "ocr_endpoint" : Return If(ru, "Адрес сервиса", "Service address")
-            Case "ocr_server" : Return If(ru, "Локальный сервер Ollama", "Local Ollama server")
-            Case "ocr_model" : Return If(ru, "Модель перевода", "Translation model")
-            Case "ocr_api" : Return If(ru, "API-ключ", "API key")
-            Case "ocr_target" : Return If(ru, "Язык перевода", "Translation language")
-            Case "section_recognition" : Return If(ru, "Распознавание текста", "Text recognition")
-            Case "ocr_source" : Return If(ru, "Язык исходного текста", "Source text language")
-            Case "ocr_quality" : Return If(ru, "Качество распознавания", "Recognition quality")
-            Case "ocr_mode" : Return If(ru, "Режим OCR", "OCR mode")
-            Case "ocr_download" : Return If(ru, "Языковые данные", "Language data")
-            Case "section_overlay" : Return If(ru, "Панель перевода", "Translation panel")
-            Case "ocr_opacity" : Return If(ru, "Непрозрачность панели", "Panel opacity")
-            Case "ocr_overlay_visible" : Return If(ru, "Показывать панель перевода", "Show translation overlay")
-            Case "ocr_disk_cache" : Return If(ru, "Кэшировать результаты на диске", "Cache results on disk")
-            Case "ocr_cache_limit" : Return If(ru, "Максимальный размер OCR-кэша, МБ", "Maximum OCR cache size, MB")
-            Case "sftp_intro" : Return If(ru, "Доступ к медиатеке с телефона", "Access your media library from a phone")
-            Case "sftp_manager" : Return If(ru, "Публикация папок по SFTP", "Publish folders over SFTP")
-            Case "sftp_guide" : Return If(ru, "Инструкция по подключению", "Connection guide")
-            Case "android_app" : Return If(ru, "Приложение для Android", "Android application")
+            Case "recipients_overlay" : Return Localization.T("Таблица получателей поверх изображения")
+            Case "section_overlay_layout" : Return Localization.T("Вид таблицы получателей")
+            Case "recipients_position" : Return Localization.T("Положение таблицы")
+            Case "recipients_width" : Return Localization.T("Ширина таблицы")
+            Case "recipients_font" : Return Localization.T("Размер текста")
+            Case "recipients_opacity" : Return Localization.T("Непрозрачность")
+            Case "recipients_rows" : Return Localization.T("Видимые строки")
+            Case "section_background" : Return Localization.T("Фон изображения")
+            Case "background_color" : Return Localization.T("Цвет фона")
+            Case "perspective" : Return Localization.T("Перспективный фон")
+            Case "dynamic_perspective" : Return Localization.T("Динамический ореол")
+            Case "animated_perspective" : Return Localization.T("Анимация ореола")
+            Case "section_information" : Return Localization.T("Информация и управление")
+            Case "show_picture_size" : Return Localization.T("Размеры изображения")
+            Case "show_file_size" : Return Localization.T("Размер файла")
+            Case "show_file_date" : Return Localization.T("Дата изменения файла")
+            Case "show_info_overlay" : Return Localization.T("Информация поверх изображения")
+            Case "wheel_zooms" : Return Localization.T("Масштабирование колёсиком")
+            Case "slideshow_interval" : Return Localization.T("Интервал слайдшоу")
+            Case "thumbnail_size" : Return Localization.T("Размер карточки изображения")
+            Case "section_accessibility" : Return Localization.T("Комфорт просмотра")
+            Case "new_image_scale" : Return Localization.T("Масштаб нового изображения")
+            Case "reduce_motion" : Return Localization.T("Уменьшать анимацию")
+            Case "section_slideshow_behavior" : Return Localization.T("Поведение слайд-шоу")
+            Case "slideshow_random_order" : Return Localization.T("Порядок показа")
+            Case "stop_slideshow_manual" : Return Localization.T("Останавливать при ручной навигации")
+            Case "slideshow_ui" : Return Localization.T("Интерфейс во время слайд-шоу")
+            Case "exif_rotate" : Return Localization.T("Автоповорот по EXIF")
+            Case "hq_scaling" : Return Localization.T("Качественное масштабирование")
+            Case "video_loop" : Return Localization.T("Повторять видео")
+            Case "video_mute" : Return Localization.T("Запускать без звука")
+            Case "video_volume" : Return Localization.T("Громкость видео")
+            Case "section_video_behavior" : Return Localization.T("Поведение видео")
+            Case "video_autoplay" : Return Localization.T("Запускать видео автоматически")
+            Case "video_controls_delay" : Return Localization.T("Задержка скрытия панели, с")
+            Case "video_controls_paused" : Return Localization.T("Показывать панель при паузе")
+            Case "video_click_action" : Return Localization.T("Одиночный клик по видео")
+            Case "video_end_action" : Return Localization.T("После окончания видео")
+            Case "preferred_audio_language" : Return Localization.T("Предпочтительный язык звука")
+            Case "preferred_subtitle_language" : Return Localization.T("Предпочтительный язык субтитров")
+            Case "copy_mode" : Return Localization.T("Копировать вместо перемещения")
+            Case "no_confirmation" : Return Localization.T("Не запрашивать подтверждение")
+            Case "image_associations" : Return Localization.T("Форматы изображений")
+            Case "video_associations" : Return Localization.T("Форматы видео")
+            Case "interface_language" : Return Localization.T("Язык интерфейса")
+            Case "section_file_behavior" : Return Localization.T("Поведение файлов")
+            Case "name_collision" : Return Localization.T("Совпадение имён")
+            Case "after_file_operation" : Return Localization.T("После копирования или перемещения")
+            Case "include_subfolders" : Return Localization.T("Просматривать вложенные папки")
+            Case "included_extensions" : Return Localization.T("Типы файлов")
+            Case "recent_files_limit" : Return Localization.T("Размер истории файлов")
+            Case "recent_folders_limit" : Return Localization.T("Размер истории папок")
+            Case "startup_open" : Return Localization.T("При запуске открывать")
+            Case "ocr_enabled" : Return Localization.T("Включить OCR")
+            Case "ocr_auto" : Return Localization.T("Запускать автоматически")
+            Case "section_translation" : Return Localization.TC("settings", "Перевод")
+            Case "ocr_provider" : Return Localization.T("Сервис перевода")
+            Case "ocr_endpoint" : Return Localization.T("Адрес сервиса")
+            Case "ocr_server" : Return Localization.T("Локальный сервер Ollama")
+            Case "ocr_model" : Return Localization.T("Модель перевода")
+            Case "ocr_api" : Return Localization.T("API-ключ")
+            Case "ocr_target" : Return Localization.T("Язык перевода")
+            Case "section_recognition" : Return Localization.T("Распознавание текста")
+            Case "ocr_source" : Return Localization.T("Язык исходного текста")
+            Case "ocr_quality" : Return Localization.T("Качество распознавания")
+            Case "ocr_mode" : Return Localization.T("Режим OCR")
+            Case "ocr_download" : Return Localization.T("Языковые данные")
+            Case "section_overlay" : Return Localization.T("Панель перевода")
+            Case "ocr_opacity" : Return Localization.T("Непрозрачность панели")
+            Case "ocr_overlay_visible" : Return Localization.T("Показывать панель перевода")
+            Case "ocr_disk_cache" : Return Localization.T("Кэшировать результаты на диске")
+            Case "ocr_cache_limit" : Return Localization.T("Максимальный размер OCR-кэша, МБ")
+            Case "sftp_intro" : Return Localization.T("Доступ к медиатеке с телефона")
+            Case "sftp_manager" : Return Localization.T("Публикация папок по SFTP")
+            Case "sftp_guide" : Return Localization.T("Инструкция по подключению")
+            Case "android_app" : Return Localization.T("Приложение для Android")
             Case "about_intro" : Return "Fast Media Sorter Lite"
             Case "doc_html_intro" : Return "Doc HTML Translate"
-            Case "doc_html_site" : Return If(ru, "Сайт Doc HTML Translate", "Doc HTML Translate website")
-            Case "project_site" : Return If(ru, "Сайт проекта", "Project website")
+            Case "doc_html_site" : Return Localization.T("Сайт Doc HTML Translate")
+            Case "project_site" : Return Localization.T("Сайт проекта")
             Case "project_github" : Return "GitHub"
-            Case "project_releases" : Return If(ru, "Новые версии", "Releases")
-            Case "project_privacy" : Return If(ru, "Политика конфиденциальности", "Privacy policy")
-            Case "project_email" : Return If(ru, "Связаться с автором", "Contact the author")
+            Case "project_releases" : Return Localization.T("Новые версии")
+            Case "project_privacy" : Return Localization.T("Политика конфиденциальности")
+            Case "project_email" : Return Localization.T("Связаться с автором")
             Case Else : Return key
         End Select
     End Function
 
     Private Function ModernSettingDescription(key As String, ru As Boolean) As String
         Select Case key
-            Case "recipients_overlay" : Return If(ru, "Показывает компактный список папок в левом верхнем углу просмотрщика.", "Shows a compact folder list in the viewer's upper-left corner.")
-            Case "recipients_position" : Return If(ru, "Угол области просмотра, в котором будет показана таблица.", "Viewer corner where the table is shown.")
-            Case "recipients_width" : Return If(ru, "Ширина панели в пикселях.", "Panel width in pixels.")
-            Case "recipients_font" : Return If(ru, "Размер текста в пунктах.", "Text size in points.")
-            Case "recipients_opacity" : Return If(ru, "Прозрачность фона таблицы в процентах.", "Table background opacity in percent.")
-            Case "recipients_rows" : Return If(ru, "Лишние строки будут доступны прокруткой.", "Additional rows remain available by scrolling.")
-            Case "background_color" : Return If(ru, "Выберите, как вычислять цвет свободной области вокруг фотографии.", "Choose how the empty area around a photo is coloured.")
-            Case "perspective" : Return If(ru, "Продолжает края фотографии на свободную область экрана.", "Extends the photo edges into the empty screen area.")
-            Case "dynamic_perspective" : Return If(ru, "Плавно смешивает продолжение изображения с выбранным фоном.", "Smoothly blends the extended image into the selected background.")
-            Case "animated_perspective" : Return If(ru, "Проявляет ореол короткой анимацией при открытии следующего файла.", "Reveals the halo with a short animation when the next file opens.")
-            Case "show_picture_size" : Return If(ru, "Показывает ширину и высоту текущего изображения.", "Shows the width and height of the current image.")
-            Case "show_file_size" : Return If(ru, "Добавляет размер текущего файла в информационную строку.", "Adds the current file size to the information line.")
-            Case "show_file_date" : Return If(ru, "Добавляет дату и время последнего изменения файла.", "Adds the file's last modification date and time.")
-            Case "show_info_overlay" : Return If(ru, "Показывает имя файла и позицию в списке прямо на изображении.", "Shows the file name and list position directly over the image.")
-            Case "wheel_zooms" : Return If(ru, "Колесо меняет масштаб; при отключении оно листает файлы.", "The wheel changes zoom; when disabled it navigates between files.")
-            Case "slideshow_interval" : Return If(ru, "Базовая пауза между изображениями, в секундах.", "Base delay between images, in seconds.")
-            Case "thumbnail_size" : Return If(ru, "Размер карточек в панели предварительного просмотра.", "Size of cards in the preview panel.")
-            Case "new_image_scale" : Return If(ru, "Начальный масштаб при открытии следующего изображения.", "Initial scale when opening the next image.")
-            Case "reduce_motion" : Return If(ru, "Отключает декоративные переходы и анимацию ореола.", "Disables decorative transitions and halo animation.")
-            Case "slideshow_random_order" : Return If(ru, "Выберите обычный, случайный или перемешанный порядок.", "Choose normal, random, or shuffled order.")
-            Case "stop_slideshow_manual" : Return If(ru, "Ручной переход останавливает таймер слайд-шоу.", "Manual navigation stops the slideshow timer.")
-            Case "slideshow_ui" : Return If(ru, "Управление и статус можно временно скрывать для просмотра.", "Controls and status can be hidden temporarily while viewing.")
-            Case "exif_rotate" : Return If(ru, "Учитывает ориентацию, записанную камерой или телефоном.", "Uses the orientation stored by the camera or phone.")
-            Case "hq_scaling" : Return If(ru, "Делает уменьшенные изображения резче, используя качественную интерполяцию.", "Makes downscaled images sharper using high-quality interpolation.")
-            Case "video_loop" : Return If(ru, "После окончания видео запускается снова.", "Restarts a video after it reaches the end.")
-            Case "video_mute" : Return If(ru, "Каждое видео начинает воспроизводиться с выключенным звуком.", "Every video starts playing with sound muted.")
-            Case "video_volume" : Return If(ru, "Начальная громкость воспроизведения, от 0 до 100 %.", "Initial playback volume, from 0 to 100%.")
-            Case "video_autoplay" : Return If(ru, "Если выключено, видео открывается на паузе.", "When off, a video opens paused.")
-            Case "video_controls_delay" : Return If(ru, "Через сколько секунд бездействия скрывать панель управления.", "Seconds of inactivity before controls hide.")
-            Case "video_controls_paused" : Return If(ru, "Не скрывает управление, пока видео поставлено на паузу.", "Keeps controls visible while video is paused.")
-            Case "video_click_action" : Return If(ru, "Действие левой кнопки мыши на поверхности видео.", "Left-click action on the video surface.")
-            Case "video_end_action" : Return If(ru, "Что делать, когда воспроизведение достигло конца.", "What to do when playback reaches the end.")
-            Case "preferred_audio_language", "preferred_subtitle_language" : Return If(ru, "Код языка, например ru, en или rus. Оставьте пустым для выбора плеера.", "Language code such as ru, en, or rus. Leave blank for player choice.")
-            Case "copy_mode" : Return If(ru, "Исходные файлы сохраняются, а в папке-получателе создаются копии.", "Keeps source files and creates copies in the destination folder.")
-            Case "no_confirmation" : Return If(ru, "Файловые операции выполняются сразу. Используйте осторожно.", "File operations run immediately. Use with care.")
-            Case "image_associations" : Return If(ru, "Открывает системные параметры приложений по умолчанию для изображений.", "Opens system default-app settings for image formats.")
-            Case "video_associations" : Return If(ru, "Открывает системные параметры приложений по умолчанию для видео.", "Opens system default-app settings for video formats.")
-            Case "interface_language" : Return If(ru, "Переключает интерфейс приложения на английский язык.", "Switches the application interface to Russian.")
-            Case "name_collision" : Return If(ru, "Что делать, если в папке-получателе уже есть файл с тем же именем.", "What to do when the destination already has the same file name.")
-            Case "after_file_operation" : Return If(ru, "Выберите, что показывать после успешной операции.", "Choose what to show after a successful operation.")
-            Case "include_subfolders" : Return If(ru, "Добавляет подходящие файлы из всех вложенных папок.", "Adds matching files from all nested folders.")
-            Case "included_extensions" : Return If(ru, "Расширения через точку с запятой; пустое поле — все поддерживаемые.", "Semicolon-separated extensions; empty means all supported types.")
-            Case "recent_files_limit", "recent_folders_limit" : Return If(ru, "0 отключает сохранение новых записей.", "0 stops storing new entries.")
-            Case "startup_open" : Return If(ru, "Что будет показано при обычном запуске без файла в командной строке.", "What opens on a normal start without a command-line file.")
-            Case "ocr_enabled" : Return If(ru, "Разрешает распознавание текста на открытых изображениях.", "Allows text recognition on open images.")
-            Case "ocr_auto" : Return If(ru, "Распознаёт текст без отдельной команды после открытия изображения.", "Recognizes text without a separate command after an image opens.")
-            Case "ocr_provider" : Return If(ru, "Выберите локальный или сетевой движок, который выполнит перевод.", "Choose the local or online engine that performs translation.")
-            Case "ocr_endpoint" : Return If(ru, "URL API выбранного сервиса перевода.", "API URL of the selected translation service.")
-            Case "ocr_server" : Return If(ru, "Установите или запустите Ollama для локального перевода.", "Install or start Ollama for local translation.")
-            Case "ocr_model" : Return If(ru, "Модель Ollama; отсутствующую модель можно загрузить этой же строкой.", "Ollama model; a missing model can be downloaded from this row.")
-            Case "ocr_api" : Return If(ru, "Ключ доступа нужен только сервисам, которые его требуют.", "An access key is only needed by providers that require one.")
-            Case "ocr_target" : Return If(ru, "Язык, на который будет переведён распознанный текст.", "Language into which recognized text will be translated.")
-            Case "ocr_source" : Return If(ru, "Язык надписей на изображении; автоопределение подходит большинству случаев.", "Language shown in the image; automatic detection suits most cases.")
-            Case "ocr_quality" : Return If(ru, "Баланс между скоростью обработки и точностью результата.", "Balances processing speed against result accuracy.")
-            Case "ocr_mode" : Return If(ru, "Выберите подходящий способ разметки текста на изображении.", "Choose a layout mode suitable for the text in the image.")
-            Case "ocr_download" : Return If(ru, "Загрузите недостающие данные для выбранного языка OCR.", "Downloads missing OCR data for the selected language.")
-            Case "ocr_opacity" : Return If(ru, "Непрозрачность фона перевода: от 30 до 100 %.", "Translation background opacity: from 30 to 100%.")
-            Case "ocr_overlay_visible" : Return If(ru, "Показывает или скрывает уже распознанный перевод поверх изображения.", "Shows or hides the already recognized translation over the image.")
-            Case "ocr_disk_cache" : Return If(ru, "Сохраняет распознанный текст, чтобы повторно не обрабатывать файл.", "Keeps recognized text so the file does not need processing again.")
-            Case "ocr_cache_limit" : Return If(ru, "0 означает без ограничения; очистка по LRU выполняется после записи.", "0 means unlimited; LRU cleanup runs after writing.")
-            Case "sftp_intro" : Return If(ru, "Опубликуйте выбранные папки встроенным SFTP-сервером и открывайте их в мобильном приложении.", "Publish selected folders with the built-in SFTP server and browse them in the mobile app.")
-            Case "sftp_manager" : Return If(ru, "Открывает отдельное приложение управления SFTP-доступом и опубликованными папками.", "Opens the separate app for managing SFTP access and published folders.")
-            Case "sftp_guide" : Return If(ru, "Пошаговая настройка сервера, сети и подключения мобильного клиента.", "Step-by-step setup for the server, network and mobile client.")
-            Case "android_app" : Return If(ru, "Страница мобильного клиента Fast Media Sorter для Android.", "Fast Media Sorter mobile client page for Android.")
-            Case "about_intro" : Return If(ru, "Современный просмотрщик и сортировщик фото и видео." & Environment.NewLine & "Версия " & ShortSettingsVersion(),
-                                                   "A modern photo and video viewer and sorter." & Environment.NewLine & "Version " & ShortSettingsVersion())
-            Case "doc_html_intro" : Return If(ru,
-                                                   "Преобразует EPUB, PDF и другие документы в локальный HTML с оглавлением и переводом в браузере. Для изображений, сканов и комиксов создаёт переводимый OCR-слой.",
-                                                   "Converts EPUB, PDF, and other documents to local HTML with a table of contents and browser translation. For images, scans, and comics it creates a translatable OCR layer.")
-            Case "doc_html_site" : Return If(ru,
-                                                  "Описание возможностей, поддерживаемых форматов, установки и работы с документами и изображениями.",
-                                                  "Features, supported formats, installation, and workflows for documents and images.")
-            Case "project_site" : Return If(ru, "Описание возможностей, инструкции и материалы проекта.", "Features, instructions and project resources.")
-            Case "project_github" : Return If(ru, "Исходный код, задачи и техническая документация.", "Source code, issues and technical documentation.")
-            Case "project_releases" : Return If(ru, "Список опубликованных версий и файлов для установки.", "Published versions and installation downloads.")
-            Case "project_privacy" : Return If(ru, "Как приложение обрабатывает пользовательские данные.", "How the application handles user data.")
-            Case "project_email" : Return If(ru, "Написать автору проекта по электронной почте.", "Send an email to the project author.")
+            Case "recipients_overlay" : Return Localization.T("Показывает компактный список папок в левом верхнем углу просмотрщика.")
+            Case "recipients_position" : Return Localization.T("Угол области просмотра, в котором будет показана таблица.")
+            Case "recipients_width" : Return Localization.T("Ширина панели в пикселях.")
+            Case "recipients_font" : Return Localization.T("Размер текста в пунктах.")
+            Case "recipients_opacity" : Return Localization.T("Прозрачность фона таблицы в процентах.")
+            Case "recipients_rows" : Return Localization.T("Лишние строки будут доступны прокруткой.")
+            Case "background_color" : Return Localization.T("Выберите, как вычислять цвет свободной области вокруг фотографии.")
+            Case "perspective" : Return Localization.T("Продолжает края фотографии на свободную область экрана.")
+            Case "dynamic_perspective" : Return Localization.T("Плавно смешивает продолжение изображения с выбранным фоном.")
+            Case "animated_perspective" : Return Localization.T("Проявляет ореол короткой анимацией при открытии следующего файла.")
+            Case "show_picture_size" : Return Localization.T("Показывает ширину и высоту текущего изображения.")
+            Case "show_file_size" : Return Localization.T("Добавляет размер текущего файла в информационную строку.")
+            Case "show_file_date" : Return Localization.T("Добавляет дату и время последнего изменения файла.")
+            Case "show_info_overlay" : Return Localization.T("Показывает имя файла и позицию в списке прямо на изображении.")
+            Case "wheel_zooms" : Return Localization.T("Колесо меняет масштаб; при отключении оно листает файлы.")
+            Case "slideshow_interval" : Return Localization.T("Базовая пауза между изображениями, в секундах.")
+            Case "thumbnail_size" : Return Localization.T("Размер карточек в панели предварительного просмотра.")
+            Case "new_image_scale" : Return Localization.T("Начальный масштаб при открытии следующего изображения.")
+            Case "reduce_motion" : Return Localization.T("Отключает декоративные переходы и анимацию ореола.")
+            Case "slideshow_random_order" : Return Localization.T("Выберите обычный, случайный или перемешанный порядок.")
+            Case "stop_slideshow_manual" : Return Localization.T("Ручной переход останавливает таймер слайд-шоу.")
+            Case "slideshow_ui" : Return Localization.T("Управление и статус можно временно скрывать для просмотра.")
+            Case "exif_rotate" : Return Localization.T("Учитывает ориентацию, записанную камерой или телефоном.")
+            Case "hq_scaling" : Return Localization.T("Делает уменьшенные изображения резче, используя качественную интерполяцию.")
+            Case "video_loop" : Return Localization.T("После окончания видео запускается снова.")
+            Case "video_mute" : Return Localization.T("Каждое видео начинает воспроизводиться с выключенным звуком.")
+            Case "video_volume" : Return Localization.T("Начальная громкость воспроизведения, от 0 до 100 %.")
+            Case "video_autoplay" : Return Localization.T("Если выключено, видео открывается на паузе.")
+            Case "video_controls_delay" : Return Localization.T("Через сколько секунд бездействия скрывать панель управления.")
+            Case "video_controls_paused" : Return Localization.T("Не скрывает управление, пока видео поставлено на паузу.")
+            Case "video_click_action" : Return Localization.T("Действие левой кнопки мыши на поверхности видео.")
+            Case "video_end_action" : Return Localization.T("Что делать, когда воспроизведение достигло конца.")
+            Case "preferred_audio_language", "preferred_subtitle_language" : Return Localization.T("Код языка, например ru, en или rus. Оставьте пустым для выбора плеера.")
+            Case "copy_mode" : Return Localization.T("Исходные файлы сохраняются, а в папке-получателе создаются копии.")
+            Case "no_confirmation" : Return Localization.T("Файловые операции выполняются сразу. Используйте осторожно.")
+            Case "image_associations" : Return Localization.T("Открывает системные параметры приложений по умолчанию для изображений.")
+            Case "video_associations" : Return Localization.T("Открывает системные параметры приложений по умолчанию для видео.")
+            Case "interface_language" : Return Localization.T("Выберите, на каком языке показывать интерфейс.")
+            Case "name_collision" : Return Localization.T("Что делать, если в папке-получателе уже есть файл с тем же именем.")
+            Case "after_file_operation" : Return Localization.T("Выберите, что показывать после успешной операции.")
+            Case "include_subfolders" : Return Localization.T("Добавляет подходящие файлы из всех вложенных папок.")
+            Case "included_extensions" : Return Localization.T("Расширения через точку с запятой; пустое поле — все поддерживаемые.")
+            Case "recent_files_limit", "recent_folders_limit" : Return Localization.T("0 отключает сохранение новых записей.")
+            Case "startup_open" : Return Localization.T("Что будет показано при обычном запуске без файла в командной строке.")
+            Case "ocr_enabled" : Return Localization.T("Разрешает распознавание текста на открытых изображениях.")
+            Case "ocr_auto" : Return Localization.T("Распознаёт текст без отдельной команды после открытия изображения.")
+            Case "ocr_provider" : Return Localization.T("Выберите локальный или сетевой движок, который выполнит перевод.")
+            Case "ocr_endpoint" : Return Localization.T("URL API выбранного сервиса перевода.")
+            Case "ocr_server" : Return Localization.T("Установите или запустите Ollama для локального перевода.")
+            Case "ocr_model" : Return Localization.T("Модель Ollama; отсутствующую модель можно загрузить этой же строкой.")
+            Case "ocr_api" : Return Localization.T("Ключ доступа нужен только сервисам, которые его требуют.")
+            Case "ocr_target" : Return Localization.T("Язык, на который будет переведён распознанный текст.")
+            Case "ocr_source" : Return Localization.T("Язык надписей на изображении; автоопределение подходит большинству случаев.")
+            Case "ocr_quality" : Return Localization.T("Баланс между скоростью обработки и точностью результата.")
+            Case "ocr_mode" : Return Localization.T("Выберите подходящий способ разметки текста на изображении.")
+            Case "ocr_download" : Return Localization.T("Загрузите недостающие данные для выбранного языка OCR.")
+            Case "ocr_opacity" : Return Localization.T("Непрозрачность фона перевода: от 30 до 100 %.")
+            Case "ocr_overlay_visible" : Return Localization.T("Показывает или скрывает уже распознанный перевод поверх изображения.")
+            Case "ocr_disk_cache" : Return Localization.T("Сохраняет распознанный текст, чтобы повторно не обрабатывать файл.")
+            Case "ocr_cache_limit" : Return Localization.T("0 означает без ограничения; очистка по LRU выполняется после записи.")
+            Case "sftp_intro" : Return Localization.T("Опубликуйте выбранные папки встроенным SFTP-сервером и открывайте их в мобильном приложении.")
+            Case "sftp_manager" : Return Localization.T("Открывает отдельное приложение управления SFTP-доступом и опубликованными папками.")
+            Case "sftp_guide" : Return Localization.T("Пошаговая настройка сервера, сети и подключения мобильного клиента.")
+            Case "android_app" : Return Localization.T("Страница мобильного клиента Fast Media Sorter для Android.")
+            Case "about_intro" : Return Localization.TF("Современный просмотрщик и сортировщик фото и видео." & vbCrLf & "Версия {0}", ShortSettingsVersion())
+            Case "doc_html_intro" : Return Localization.T("Преобразует EPUB, PDF и другие документы в локальный HTML с оглавлением и переводом в браузере. Для изображений, сканов и комиксов создаёт переводимый OCR-слой.")
+            Case "doc_html_site" : Return Localization.T("Описание возможностей, поддерживаемых форматов, установки и работы с документами и изображениями.")
+            Case "project_site" : Return Localization.T("Описание возможностей, инструкции и материалы проекта.")
+            Case "project_github" : Return Localization.T("Исходный код, задачи и техническая документация.")
+            Case "project_releases" : Return Localization.T("Список опубликованных версий и файлов для установки.")
+            Case "project_privacy" : Return Localization.T("Как приложение обрабатывает пользовательские данные.")
+            Case "project_email" : Return Localization.T("Написать автору проекта по электронной почте.")
             Case Else : Return String.Empty
         End Select
     End Function
@@ -842,9 +838,7 @@ Partial Public Class Table_Form
         AddInformationBlock(flow, "sftp_intro")
         If btn_Share_Manager IsNot Nothing Then AddSettingRow(flow, "sftp_manager", btn_Share_Manager, 230, True)
         AddProjectLinkRow(flow, "sftp_guide", "https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html")
-        AddProjectLinkRow(flow, "android_app", If(Is_Russian_Language,
-            "https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html",
-            "https://serzhyale.github.io/FastMediaSorter_mob_v2/"))
+        AddProjectLinkRow(flow, "android_app", Localization.T("https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html"))
     End Sub
 
     Private Sub BuildModernAboutPage()

@@ -34,22 +34,22 @@ Partial Public Class Main_Form
         End If
 
         ' --- Buttons and Checkboxes ---
-        toolTip.SetToolTip(btn_Select_Folder, If(Is_Russian_Language, "Выбрать папку с медиафайлами", "Select a folder with media files"))
-        toolTip.SetToolTip(btn_Review, If(Is_Russian_Language, "Перечитать текущую папку - вдруг там что-то поменялось за вашей спиной.", "Reload the current folder - in case something changed behind your back."))
-        toolTip.SetToolTip(btn_Panel, If(Is_Russian_Language, "Показать панель изображений (F3)", "Show the image panel (F3)"))
-        toolTip.SetToolTip(btn_Full_Screen, If(Is_Russian_Language, "Полноэкранный режим - картинка во весь экран и ничего лишнего.", "Toggle fullscreen mode - the image, the whole image, and nothing but the image."))
-        toolTip.SetToolTip(btn_Prev_File, If(Is_Russian_Language, "Предыдущий файл (Стрелка влево, PgUp)", "Previous file (Left Arrow, PgUp)"))
-        toolTip.SetToolTip(btn_Next_File, If(Is_Russian_Language, "Следующий файл (Стрелка вправо, PgDn)", "Next file (Right Arrow, PgDn)"))
-        toolTip.SetToolTip(btn_Next_Random, If(Is_Russian_Language, "Случайный файл (Y) - пусть судьба выбирает за вас.", "Random file (Y) - let fate pick for you."))
-        toolTip.SetToolTip(btn_Random_Slideshow, If(Is_Russian_Language, "Случайное слайд-шоу (I, F5)", "Random slideshow (I, F5)"))
-        toolTip.SetToolTip(btn_Slideshow, If(Is_Russian_Language, "Слайд-шоу (S)", "Slideshow (S)"))
-        toolTip.SetToolTip(btn_Move_Table, If(Is_Russian_Language, "Настройки: папки-получатели, OCR и перевод (F2)", "Settings: destination folders, OCR & translation (F2)"))
-        toolTip.SetToolTip(btn_Rename, If(Is_Russian_Language, "Переименовать файл (F6)", "Rename file (F6)"))
-        toolTip.SetToolTip(bt_Delete, If(Is_Russian_Language, "Удалить файл (Del) - пути назад почти нет, так что прицеливайтесь.", "Delete the file (Del) - there's almost no going back, so aim carefully."))
-        toolTip.SetToolTip(btn_Language, If(Is_Russian_Language, "Переключить язык на английский", "Switch language to Russian"))
-        toolTip.SetToolTip(chkbox_Top_Most, If(Is_Russian_Language, "Поверх всех окон - чтобы ничто не смело его заслонить.", "Always on top - so nothing dares cover it."))
+        toolTip.SetToolTip(btn_Select_Folder, Localization.T("Выбрать папку с медиафайлами"))
+        toolTip.SetToolTip(btn_Review, Localization.T("Перечитать текущую папку - вдруг там что-то поменялось за вашей спиной."))
+        toolTip.SetToolTip(btn_Panel, Localization.T("Показать панель изображений (F3)"))
+        toolTip.SetToolTip(btn_Full_Screen, Localization.T("Полноэкранный режим - картинка во весь экран и ничего лишнего."))
+        toolTip.SetToolTip(btn_Prev_File, Localization.T("Предыдущий файл (Стрелка влево, PgUp)"))
+        toolTip.SetToolTip(btn_Next_File, Localization.T("Следующий файл (Стрелка вправо, PgDn)"))
+        toolTip.SetToolTip(btn_Next_Random, Localization.T("Случайный файл (Y) - пусть судьба выбирает за вас."))
+        toolTip.SetToolTip(btn_Random_Slideshow, Localization.T("Случайное слайд-шоу (I, F5)"))
+        toolTip.SetToolTip(btn_Slideshow, Localization.T("Слайд-шоу (S)"))
+        toolTip.SetToolTip(btn_Move_Table, Localization.T("Настройки: папки-получатели, OCR и перевод (F2)"))
+        toolTip.SetToolTip(btn_Rename, Localization.T("Переименовать файл (F6)"))
+        toolTip.SetToolTip(bt_Delete, Localization.T("Удалить файл (Del) - пути назад почти нет, так что прицеливайтесь."))
+        toolTip.SetToolTip(btn_Language, Localization.T("Язык интерфейса"))
+        toolTip.SetToolTip(chkbox_Top_Most, Localization.T("Поверх всех окон - чтобы ничто не смело его заслонить."))
 #If NETFRAMEWORK Then
-        toolTip.SetToolTip(btn_choose_file, If(Is_Russian_Language, "Выбрать файл..", "Choose file.."))
+        toolTip.SetToolTip(btn_choose_file, Localization.T("Выбрать файл.."))
 #Else
         ' Modern hangs "Open URL.." off this button's right-click - the tooltip is the
         ' only thing that tells anyone it is there.
@@ -57,14 +57,14 @@ Partial Public Class Main_Form
 #End If
 
         ' --- ComboBoxes and Labels ---
-        toolTip.SetToolTip(cmbox_Sort, If(Is_Russian_Language, "Порядок сортировки файлов", "File sort order"))
-        toolTip.SetToolTip(cmbox_Media_Folder, If(Is_Russian_Language, "Текущая папка. Введите путь и нажмите Enter для перехода.", "Current folder. Type a path and press Enter to navigate."))
-        toolTip.SetToolTip(lbl_Folder, If(Is_Russian_Language, "Нажмите, чтобы скопировать путь к папке (вдруг пригодится).", "Click to copy the folder path (just in case)."))
-        toolTip.SetToolTip(lbl_Current_File, If(Is_Russian_Language, "Нажмите, чтобы скопировать путь к файлу", "Click to copy the file path"))
-        toolTip.SetToolTip(lbl_Status, If(Is_Russian_Language, "Статус текущей операции", "Status of the current operation"))
-        toolTip.SetToolTip(lbl_File_Number, If(Is_Russian_Language, "Номер текущего файла и сколько их всего - чтобы оценить масштаб предстоящего.", "Current file number and the total - so you can grasp the scale of what's ahead."))
+        toolTip.SetToolTip(cmbox_Sort, Localization.T("Порядок сортировки файлов"))
+        toolTip.SetToolTip(cmbox_Media_Folder, Localization.T("Текущая папка. Введите путь и нажмите Enter для перехода."))
+        toolTip.SetToolTip(lbl_Folder, Localization.T("Нажмите, чтобы скопировать путь к папке (вдруг пригодится)."))
+        toolTip.SetToolTip(lbl_Current_File, Localization.T("Нажмите, чтобы скопировать путь к файлу"))
+        toolTip.SetToolTip(lbl_Status, Localization.T("Статус текущей операции"))
+        toolTip.SetToolTip(lbl_File_Number, Localization.T("Номер текущего файла и сколько их всего - чтобы оценить масштаб предстоящего."))
 
-        toolTip.SetToolTip(btn_RecentFiles, If(Is_Russian_Language, "Недавние файлы", "Recent files"))
+        toolTip.SetToolTip(btn_RecentFiles, Localization.T("Недавние файлы"))
 
         LocalizeToolbarOverflow()
 
@@ -230,7 +230,7 @@ Partial Public Class Main_Form
         End If
 
         If DateTime.Now > pending_Unlock_Deadline Then
-            CancelPendingUnlock(If(Is_Russian_Language, "Файл всё ещё занят: ", "File still locked: "))
+            CancelPendingUnlock(Localization.T("Файл всё ещё занят: "))
             Return
         End If
 
@@ -241,10 +241,10 @@ Partial Public Class Main_Form
         Catch ex As FileNotFoundException
             ' Gone, not busy. The bare Catch read this as "still locked" and kept polling
             ' to the deadline, then lied: "file still locked".
-            CancelPendingUnlock(If(Is_Russian_Language, "Файл удалён: ", "File deleted: "))
+            CancelPendingUnlock(Localization.T("Файл удалён: "))
             Return
         Catch ex As DirectoryNotFoundException
-            CancelPendingUnlock(If(Is_Russian_Language, "Папка недоступна: ", "Folder is gone: "))
+            CancelPendingUnlock(Localization.T("Папка недоступна: "))
             Return
         Catch
             Return ' still locked -- wait for the next tick
@@ -362,7 +362,7 @@ Partial Public Class Main_Form
 
         If String.IsNullOrEmpty(argument_For_Path) Then
             If Is_No_Background_Tasks Then
-                lbl_Status.Text = If(Is_Russian_Language, "Режим -NoBack активен. Ожидание файла/папки.", "NoBack mode active. Awaiting file/folder.")
+                lbl_Status.Text = Localization.T("Режим -NoBack активен. Ожидание файла/папки.")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0234: ProcessArgument: -NoBack but no file")
             Else
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0236: ProcessArgument: no file argumented")
@@ -385,9 +385,7 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
     Private Async Sub ProcessArgumentAsync(argument_For_Path As String, is_No_Back_Flag_In_This_Call As Boolean)
         Dim generation As Integer = media_Generation
-        lbl_Status.Text = If(Is_Russian_Language,
-                             "Проверяю доступность: " & Path.GetFileName(argument_For_Path),
-                             "Checking availability: " & Path.GetFileName(argument_For_Path))
+        lbl_Status.Text = Localization.TF("Проверяю доступность: {0}", Path.GetFileName(argument_For_Path))
 
         Dim probe As ArgumentProbe
         Try
@@ -444,11 +442,11 @@ Partial Public Class Main_Form
                         pending_Unlock_Deadline = DateTime.Now.AddSeconds(45)
                         pending_Unlock_Timer.Stop()
                         pending_Unlock_Timer.Start()
-                        lbl_Status.Text = If(Is_Russian_Language, "Файл занят, ждём разблокировки (качается?): " & Path.GetFileName(argument_For_Path), "File locked, waiting to open (downloading?): " & Path.GetFileName(argument_For_Path))
+                        lbl_Status.Text = Localization.TF("Файл занят, ждём разблокировки (качается?): {0}", Path.GetFileName(argument_For_Path))
                     ElseIf probe.Missing Then
-                        lbl_Status.Text = If(Is_Russian_Language, "Файл не найден: " & Path.GetFileName(argument_For_Path), "File not found: " & Path.GetFileName(argument_For_Path))
+                        lbl_Status.Text = Localization.TF("Файл не найден: {0}", Path.GetFileName(argument_For_Path))
                     Else
-                        lbl_Status.Text = If(Is_Russian_Language, "Сетевой ресурс недоступен, повторите: " & Path.GetFileName(argument_For_Path), "Share unreachable, retry: " & Path.GetFileName(argument_For_Path))
+                        lbl_Status.Text = Localization.TF("Сетевой ресурс недоступен, повторите: {0}", Path.GetFileName(argument_For_Path))
                     End If
                     Return
                 End If
@@ -485,9 +483,7 @@ Partial Public Class Main_Form
             ' (an over-long path arriving by drag-drop, say) while a perfectly good
             ' folder was open on screen.
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0300: Error processing argument: " & ex.Message)
-            lbl_Status.Text = If(Is_Russian_Language,
-                                 "Не удалось открыть: " & argument_For_Path,
-                                 "Could not open: " & argument_For_Path)
+            lbl_Status.Text = Localization.TF("Не удалось открыть: {0}", argument_For_Path)
         End Try
     End Sub
 
@@ -533,9 +529,9 @@ Partial Public Class Main_Form
             RecolorChrome(Color.White, GetOppositeColor(Color.White))
         End If
 
-        ' First run (no saved value) follows the Windows display language; after
-        ' that the user's saved choice wins.
-        Is_Russian_Language = GetSetting(App_name, Second_App_Name, "Is_Russian_Language", If(SystemDefaultIsRussian(), "1", "0")) = "1"
+        ' UI language: the saved "UiLanguage" code, else the legacy Is_Russian_Language
+        ' flag of a pre-13-languages install, else the Windows display language.
+        Localization.LoadFromSettings()
 #If Not NETFRAMEWORK Then
         If modern_Preferences Is Nothing Then modern_Preferences = ModernViewerPreferences.Load()
         preferred_Audio_Language = modern_Preferences.PreferredAudioLanguage
@@ -592,7 +588,7 @@ Partial Public Class Main_Form
         End If
         cmbox_Sort.SelectedIndex = sort_Direction_Index
 
-        btn_Language.Text = If(Is_Russian_Language, "EN", "RU")
+        UpdateLanguageButtonCaption()
         LngCh()
         lbl_Info.Text = Application.ProductVersion & " sza@ukr.net"
         Table_Form.LngCh()
@@ -752,7 +748,7 @@ Partial Public Class Main_Form
         If Not is_Closing_After_Drain AndAlso file_Op_Queue IsNot Nothing AndAlso file_Op_Queue.PendingCount > 0 Then
             e.Cancel = True
             is_Closing_After_Drain = True
-            lbl_Status.Text = If(Is_Russian_Language, "завершаются файловые операции..", "finishing file operations..")
+            lbl_Status.Text = Localization.T("завершаются файловые операции..")
             Await file_Op_Queue.DrainAsync(TimeSpan.FromSeconds(15))
             Me.Close()
             Return
@@ -789,7 +785,8 @@ Partial Public Class Main_Form
                 Hardkeys_to_move_mediafile(10) = Nothing
             End Try
 
-            SaveSetting(App_name, Second_App_Name, "Is_Russian_Language", If(Is_Russian_Language, "1", "0"))
+            ' Writes UiLanguage plus the legacy Is_Russian_Language mirror.
+            Localization.SaveToSettings()
             SaveSetting(App_name, Second_App_Name, "FirstRun", "0")
             SaveSetting(App_name, Second_App_Name, "CopyMode", If(Is_Copying_not_Moving, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "isPerspective", If(Is_Pespective, "1", "0"))

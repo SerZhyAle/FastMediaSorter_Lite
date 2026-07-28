@@ -78,7 +78,7 @@ Partial Public Class Main_Form
         If file_Op_Queue Is Nothing Then Return
         Dim n As Integer = file_Op_Queue.PendingCount
         If n > 1 Then
-            lbl_Status.Text = If(Is_Russian_Language, "в очереди: ", "in the queue: ") & n.ToString()
+            lbl_Status.Text = Localization.T("в очереди: ") & n.ToString()
         End If
     End Sub
 #End If
@@ -92,7 +92,7 @@ Partial Public Class Main_Form
         Return False
 #Else
         If Not FileOperationWorker.IsBusy Then Return False
-        lbl_Status.Text = If(Is_Russian_Language, "!Ждите.. предыдущая операция ещё выполняется", "!Wait.. previous operation still running")
+        lbl_Status.Text = Localization.T("!Ждите.. предыдущая операция ещё выполняется")
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2155: file operation refused - worker busy")
         Return True
 #End If
@@ -244,14 +244,14 @@ Partial Public Class Main_Form
     Private Sub RenameCurrentFile()
         Try
             If Not My.Computer.FileSystem.FileExists(Current_File_Name) Then
-                lbl_Status.Text = If(Is_Russian_Language, "! Файл не найден", "! File not found")
+                lbl_Status.Text = Localization.T("! Файл не найден")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1250: file not found")
                 Return
             End If
             Dim current_File_Name_Without_Extension As String = Path.GetFileNameWithoutExtension(Current_File_Name)
             Dim current_File_Extension As String = Path.GetExtension(Current_File_Name)
-            Dim new_File_Name As String = InputBox(If(Is_Russian_Language, "Введите новое имя файла:", "Enter new file name:"),
-                                            If(Is_Russian_Language, "Переименование файла", "Rename File"),
+            Dim new_File_Name As String = InputBox(Localization.T("Введите новое имя файла:"),
+                                            Localization.T("Переименование файла"),
                                             current_File_Name_Without_Extension)
             If String.IsNullOrEmpty(new_File_Name) Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1260: empty new file name - no rename")
@@ -261,7 +261,7 @@ Partial Public Class Main_Form
             Dim current_Directory_Path As String = Path.GetDirectoryName(Current_File_Name)
             Dim new_File_Full_Path As String = Path.Combine(current_Directory_Path, new_File_Name & current_File_Extension)
             If new_File_Full_Path = Current_File_Name Then
-                lbl_Status.Text = If(Is_Russian_Language, "! Имя не изменено", "! Name not changed")
+                lbl_Status.Text = Localization.T("! Имя не изменено")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1270: file is not new")
                 Return
             End If
@@ -269,7 +269,7 @@ Partial Public Class Main_Form
             ' Say it plainly: File.Move onto an existing name throws IOException, which
             ' surfaced as a bare "E011" MsgBox.
             If File.Exists(new_File_Full_Path) Then
-                lbl_Status.Text = If(Is_Russian_Language, "! Файл с таким именем уже есть", "! A file with that name already exists")
+                lbl_Status.Text = Localization.T("! Файл с таким именем уже есть")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1275: rename target already exists")
                 Return
             End If
@@ -299,14 +299,14 @@ Partial Public Class Main_Form
                 current_File_Index = renamed_At
             End If
             Current_File_Name = renamed_Path
-            lbl_Status.Text = If(Is_Russian_Language, "Файл переименован: " & new_File_Name & current_File_Extension, "File renamed: " & new_File_Name & current_File_Extension)
+            lbl_Status.Text = Localization.TF("Файл переименован: {0}{1}", new_File_Name, current_File_Extension)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1280: file is renamed")
 
             ReadShowMediaFile(Mode_SetFile)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1290: ERR: " & ex.Message)
             MsgBox("E011 " & ex.Message)
-            lbl_Status.Text = If(Is_Russian_Language, "! Ошибка переименования", "! Rename error")
+            lbl_Status.Text = Localization.T("! Ошибка переименования")
         End Try
     End Sub
 
@@ -322,13 +322,13 @@ Partial Public Class Main_Form
         If move_Slot_Key = "10" Then move_Slot_Key = "0"
 
         If destination_Folder_Path = "" Then
-            lbl_Status.Text = If(Is_Russian_Language, "! Нет каталога-получателя для клавиши " & move_Slot_Key, "! No dest folder set with key " & move_Slot_Key)
+            lbl_Status.Text = Localization.TF("! Нет каталога-получателя для клавиши {0}", move_Slot_Key)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1680: No dest folder set with key " & move_Slot_Key)
             Return
         End If
 
         If Current_File_Name = "" Then
-            lbl_Status.Text = If(Is_Russian_Language, "! Нет файла ", "! No file")
+            lbl_Status.Text = Localization.T("! Нет файла ")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1740: No file")
             Return
         End If
@@ -342,7 +342,7 @@ Partial Public Class Main_Form
             ' was, and a copy onto itself threw a bare "E014".
             If String.Equals(Path.GetDirectoryName(destination_Folder_Full_Path),
                              Path.GetDirectoryName(Current_File_Name), StringComparison.OrdinalIgnoreCase) Then
-                lbl_Status.Text = If(Is_Russian_Language, "! Файл уже в этой папке", "! File is already in that folder")
+                lbl_Status.Text = Localization.T("! Файл уже в этой папке")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1683: destination equals current folder")
                 Return
             End If
@@ -361,9 +361,7 @@ Partial Public Class Main_Form
             destination_Folder_Full_Path = ResolveDestinationCollision(destination_Folder_Full_Path)
             Dim final_Name As String = Path.GetFileName(destination_Folder_Full_Path)
             If Not String.Equals(intended_Name, final_Name, StringComparison.Ordinal) Then
-                collision_Note = If(Is_Russian_Language,
-                                    " (имя занято, сохранён как " & final_Name & ")",
-                                    " (name taken, saved as " & final_Name & ")")
+                collision_Note = Localization.TF(" (имя занято, сохранён как {0})", final_Name)
             End If
 #End If
 
@@ -381,14 +379,14 @@ Partial Public Class Main_Form
             }
 
             If Is_Copying_not_Moving Then
-                lbl_Status.Text = If(Is_Russian_Language, "!Ждите.. Файл копируется (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "!Wait.. File copying (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
+                lbl_Status.Text = Localization.TF("!Ждите.. Файл копируется ({0}) в каталог {1}", move_Slot_Key, destination_Folder_Full_Path)
 
                 If use_Worker Then
                     QueueFileOp(op)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1690: file is copied ASYNC to " & destination_Folder_Full_Path)
                 Else
                     CopyFile(op.Source, op.Destination)
-                    lbl_Status.Text = If(Is_Russian_Language, "файл скопирован (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "file copied (" & move_Slot_Key & ") to " & destination_Folder_Full_Path) & collision_Note
+                    lbl_Status.Text = Localization.TF("файл скопирован ({0}) в каталог {1}", move_Slot_Key, destination_Folder_Full_Path) & collision_Note
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1715: file is copied to " & destination_Folder_Full_Path)
                 End If
 
@@ -398,7 +396,7 @@ Partial Public Class Main_Form
                 ' Moving needs delete access to the file, so let go of it first.
                 ReleaseActiveMedia()
 
-                lbl_Status.Text = If(Is_Russian_Language, "!Ждите.. Файл переносится (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "!Wait.. File moving (" & move_Slot_Key & ") to " & destination_Folder_Full_Path)
+                lbl_Status.Text = Localization.TF("!Ждите.. Файл переносится ({0}) в каталог {1}", move_Slot_Key, destination_Folder_Full_Path)
 
                 If use_Worker Then
                     QueueFileOp(op)
@@ -410,7 +408,7 @@ Partial Public Class Main_Form
                 Else
                     MoveFile(op.Source, op.Destination)
                     op.ListIndex = RemoveCurrentFileFromList(op.Source)
-                    lbl_Status.Text = If(Is_Russian_Language, "файл перенесён (" & move_Slot_Key & ") в каталог " & destination_Folder_Full_Path, "file moved (" & move_Slot_Key & ") to " & destination_Folder_Full_Path) & collision_Note
+                    lbl_Status.Text = Localization.TF("файл перенесён ({0}) в каталог {1}", move_Slot_Key, destination_Folder_Full_Path) & collision_Note
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1729: file is moved to " & destination_Folder_Full_Path)
                 End If
 
@@ -424,7 +422,7 @@ Partial Public Class Main_Form
 
     Private Sub Undo()
         If history_Destination_File_Name = "" Then
-            lbl_Status.Text = If(Is_Russian_Language, "! Нет истории о переносе", "! No history about moved files")
+            lbl_Status.Text = Localization.T("! Нет истории о переносе")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1810: No history about moved files")
             Return
         End If
@@ -439,7 +437,7 @@ Partial Public Class Main_Form
             ' back.
             If history_Was_Copy Then
                 Dim op As New FileOp With {.Kind = FileOpKind.DeleteUndo, .Source = history_Destination_File_Name}
-                lbl_Status.Text = If(Is_Russian_Language, "!Ждите. Файл удаляется в каталоге " & history_Destination_File_Name, "!Wait. File deleting in " & history_Destination_File_Name)
+                lbl_Status.Text = Localization.TF("!Ждите. Файл удаляется в каталоге {0}", history_Destination_File_Name)
 
                 If use_Worker Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1750: undo copied async deletion")
@@ -447,7 +445,7 @@ Partial Public Class Main_Form
                 Else
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1760: undo copied deletion")
                     DeleteFile(op.Source)
-                    lbl_Status.Text = If(Is_Russian_Language, "файл удалён в каталоге " & history_Destination_File_Name, "file deleted in " & history_Destination_File_Name)
+                    lbl_Status.Text = Localization.TF("файл удалён в каталоге {0}", history_Destination_File_Name)
                     history_Destination_File_Name = ""
                     history_Source_File_Name = ""
                 End If
@@ -458,7 +456,7 @@ Partial Public Class Main_Form
                     .Destination = history_Source_File_Name,
                     .ListIndex = current_File_Index
                 }
-                lbl_Status.Text = If(Is_Russian_Language, "!Ждите. Возвращается в каталог " & history_Source_File_Name, "!Wait. File back to " & history_Source_File_Name)
+                lbl_Status.Text = Localization.TF("!Ждите. Возвращается в каталог {0}", history_Source_File_Name)
                 ReleaseActiveMedia()
 
                 If use_Worker Then
@@ -472,7 +470,7 @@ Partial Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1790: undo move deletion")
                     MoveFile(op.Source, op.Destination)
                     InsertFileIntoList(op.Destination, op.ListIndex)
-                    lbl_Status.Text = If(Is_Russian_Language, "файл возвращён в каталог " & history_Source_File_Name, "file back to " & history_Source_File_Name)
+                    lbl_Status.Text = Localization.TF("файл возвращён в каталог {0}", history_Source_File_Name)
                     ReadShowMediaFile(Mode_AfterUndo)
                     history_Destination_File_Name = ""
                     history_Source_File_Name = ""
@@ -490,14 +488,14 @@ Partial Public Class Main_Form
         If Not String.IsNullOrEmpty(Current_File_Name) Then
             RenameCurrentFile()
         Else
-            lbl_Status.Text = If(Is_Russian_Language, "! Нет файла для переименования", "! No file to rename")
+            lbl_Status.Text = Localization.T("! Нет файла для переименования")
         End If
     End Sub
 
     Private Sub CopyFilePathToClipboard()
         If Not String.IsNullOrEmpty(Current_File_Name) Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2120: Filename sent to clipboard")
-            CopyTextToClipboard(Current_File_Name, lbl_Status, If(Is_Russian_Language, "Имя файла скопировано в буфер", "Filename sent to clipboard"))
+            CopyTextToClipboard(Current_File_Name, lbl_Status, Localization.T("Имя файла скопировано в буфер"))
         End If
     End Sub
 
@@ -573,21 +571,21 @@ Partial Public Class Main_Form
         If failure Is Nothing Then
             Select Case op.Kind
                 Case FileOpKind.Copy
-                    lbl_Status.Text = If(Is_Russian_Language, "файл скопирован (" & op.SlotKey & ") в каталог " & op.Destination, "file copied (" & op.SlotKey & ") to " & op.Destination) & op.StatusNote
+                    lbl_Status.Text = Localization.TF("файл скопирован ({0}) в каталог {1}", op.SlotKey, op.Destination) & op.StatusNote
 
                 Case FileOpKind.Move
-                    lbl_Status.Text = If(Is_Russian_Language, "файл перенесён (" & op.SlotKey & ") в каталог " & op.Destination, "file moved (" & op.SlotKey & ") to " & op.Destination) & op.StatusNote
+                    lbl_Status.Text = Localization.TF("файл перенесён ({0}) в каталог {1}", op.SlotKey, op.Destination) & op.StatusNote
 
                 Case FileOpKind.Delete
                     ' The status line was already written when the delete was queued.
 
                 Case FileOpKind.DeleteUndo
-                    lbl_Status.Text = If(Is_Russian_Language, "файл удалён в каталоге " & history_Destination_File_Name, "file deleted in " & history_Destination_File_Name)
+                    lbl_Status.Text = Localization.TF("файл удалён в каталоге {0}", history_Destination_File_Name)
                     history_Destination_File_Name = ""
                     history_Source_File_Name = ""
 
                 Case FileOpKind.MoveUndo
-                    lbl_Status.Text = If(Is_Russian_Language, "файл возвращён в каталог " & history_Source_File_Name, "file back to " & history_Source_File_Name)
+                    lbl_Status.Text = Localization.TF("файл возвращён в каталог {0}", history_Source_File_Name)
                     history_Destination_File_Name = ""
                     history_Source_File_Name = ""
                     ' The file only arrived back now - show it (the display that ran at
@@ -595,7 +593,7 @@ Partial Public Class Main_Form
                     ReadShowMediaFile(Mode_SetFile)
             End Select
         Else
-            lbl_Status.Text = If(Is_Russian_Language, "Ошибка операции: " & failure.Message, "Operation error: " & failure.Message)
+            lbl_Status.Text = Localization.TF("Ошибка операции: {0}", failure.Message)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2230: file operation ERR " & failure.Message)
 
             ' The operation did not happen, so undo the optimistic list mutation: the

@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.ObjectModel
 Imports System.ComponentModel
@@ -234,9 +234,7 @@ Partial Public Class Main_Form
                 ' then indexed past the list and DEL emptied it outright. The real list
                 ' arrives on the next flip, through LoadFilesForExternalInput.
                 Dim shown_Number As Integer = current_File_Index + 1
-                lbl_File_Number.Text = If(Is_Russian_Language,
-                                          shown_Number.ToString() & " из " & total_Files_Count_Text,
-                                          shown_Number.ToString() & " from " & total_Files_Count_Text)
+                lbl_File_Number.Text = Localization.TF("{0} из {1}", shown_Number, total_Files_Count_Text)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0175: BgWorker files count calculated: " & total_Files_Count_Text)
             Else
                 lbl_File_Number.Text = "0 "
@@ -358,7 +356,7 @@ Partial Public Class Main_Form
 
             If file_Entry_List.Count = 0 Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1096: Files count=0")
-                lbl_Status.Text = If(Is_Russian_Language, "Папка пустая", "Folder is empty")
+                lbl_Status.Text = Localization.T("Папка пустая")
                 Return Nothing
             End If
 
@@ -402,7 +400,7 @@ Partial Public Class Main_Form
 
         Catch ex As Exception
             is_Read_Error = True
-            lbl_Status.Text = If(Is_Russian_Language, "! Ошибка чтения файлов", "! Error reading files")
+            lbl_Status.Text = Localization.T("! Ошибка чтения файлов")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1110: Error reading files: " & ex.Message)
             Return Nothing
         End Try

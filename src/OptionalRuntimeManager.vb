@@ -96,8 +96,8 @@ Friend Module OptionalRuntimeManager
         Return ProbeDll(dir, "libvlc.dll", reason)
     End Function
 
-    Public Async Function EnsureOcrRuntimeInteractiveAsync(owner As IWin32Window, isRussian As Boolean) As Task(Of Boolean)
-        Return Await EnsureRuntimeInteractiveAsync(OptionalRuntimeKind.Ocr, owner, isRussian).ConfigureAwait(True)
+    Public Async Function EnsureOcrRuntimeInteractiveAsync(owner As IWin32Window) As Task(Of Boolean)
+        Return Await EnsureRuntimeInteractiveAsync(OptionalRuntimeKind.Ocr, owner).ConfigureAwait(True)
     End Function
 
     ''' <summary>Was a synchronous `.GetAwaiter().GetResult()` wrapper - deadlocked the
@@ -105,33 +105,31 @@ Friend Module OptionalRuntimeManager
     ''' needs that same (blocked) thread to run its continuation on. Now a plain async
     ''' passthrough, mirroring <see cref="EnsureOcrRuntimeInteractiveAsync"/>; callers
     ''' must Await it instead of blocking on it.</summary>
-    Public Async Function EnsureVlcRuntimeInteractiveAsync(owner As IWin32Window, isRussian As Boolean) As Task(Of Boolean)
-        Return Await EnsureRuntimeInteractiveAsync(OptionalRuntimeKind.Vlc, owner, isRussian).ConfigureAwait(True)
+    Public Async Function EnsureVlcRuntimeInteractiveAsync(owner As IWin32Window) As Task(Of Boolean)
+        Return Await EnsureRuntimeInteractiveAsync(OptionalRuntimeKind.Vlc, owner).ConfigureAwait(True)
     End Function
 
-    Public Function GetOcrUnavailableStatusText(isRussian As Boolean) As String
-        If isRussian Then Return "OCR не установлен"
-        Return "OCR not installed"
+    Public Function GetOcrUnavailableStatusText() As String
+        Return Localization.T("OCR не установлен")
     End Function
 
-    Public Function GetVlcUnavailableStatusText(isRussian As Boolean) As String
-        If isRussian Then Return "VLC не установлен, открываю внешний плеер"
-        Return "VLC not installed, opening external player"
+    Public Function GetVlcUnavailableStatusText() As String
+        Return Localization.T("VLC не установлен, открываю внешний плеер")
     End Function
 
-    Private Async Function EnsureRuntimeInteractiveAsync(kind As OptionalRuntimeKind, owner As IWin32Window, isRussian As Boolean) As Task(Of Boolean)
+    Private Async Function EnsureRuntimeInteractiveAsync(kind As OptionalRuntimeKind, owner As IWin32Window) As Task(Of Boolean)
         Dim reason As String = ""
         If IsRuntimeReady(kind, reason) Then Return True
 
         If Not IsRuntimeInstalled(kind) Then
-            Dim confirmText As String = GetInstallPrompt(kind, isRussian)
+            Dim confirmText As String = GetInstallPrompt(kind)
             If MessageBox.Show(owner, confirmText, "Fast Media Sorter", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
                 Return False
             End If
 
             Dim installError As String = Await InstallRuntimePackageAsync(kind).ConfigureAwait(True)
             If installError.Length > 0 Then
-                ShowRuntimeError(owner, GetRuntimeName(kind), installError, isRussian)
+                ShowRuntimeError(owner, GetRuntimeName(kind), installError)
                 Return False
             End If
         End If
@@ -140,14 +138,14 @@ Friend Module OptionalRuntimeManager
         If IsRuntimeReady(kind, reason) Then Return True
 
         If LooksLikeVcRuntimeMissing(reason) Then
-            Dim vcPrompt As String = GetVcPrompt(kind, isRussian)
+            Dim vcPrompt As String = GetVcPrompt(kind)
             If MessageBox.Show(owner, vcPrompt, "Fast Media Sorter", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
                 Return False
             End If
 
             Dim vcError As String = Await InstallVcRedistAsync().ConfigureAwait(True)
             If vcError.Length > 0 Then
-                ShowRuntimeError(owner, "Microsoft Visual C++ Redistributable", vcError, isRussian)
+                ShowRuntimeError(owner, "Microsoft Visual C++ Redistributable", vcError)
                 Return False
             End If
 
@@ -155,7 +153,7 @@ Friend Module OptionalRuntimeManager
             If IsRuntimeReady(kind, reason) Then Return True
         End If
 
-        ShowRuntimeError(owner, GetRuntimeName(kind), reason, isRussian)
+        ShowRuntimeError(owner, GetRuntimeName(kind), reason)
         Return False
     End Function
 
@@ -322,30 +320,21 @@ Friend Module OptionalRuntimeManager
         End Select
     End Function
 
-    Private Function GetInstallPrompt(kind As OptionalRuntimeKind, isRussian As Boolean) As String
+    Private Function GetInstallPrompt(kind As OptionalRuntimeKind) As String
         Select Case kind
             Case OptionalRuntimeKind.Ocr
-                If isRussian Then
-                    Return "OCR-движок ещё не установлен. Скачать и установить его сейчас?"
-                End If
-                Return "The OCR runtime is not installed yet. Download and install it now?"
+                Return Localization.T("OCR-движок ещё не установлен. Скачать и установить его сейчас?")
 
             Case OptionalRuntimeKind.Vlc
-                If isRussian Then
-                    Return "Поддержка VLC ещё не установлена. Скачать и установить её сейчас?"
-                End If
-                Return "VLC support is not installed yet. Download and install it now?"
+                Return Localization.T("Поддержка VLC ещё не установлена. Скачать и установить её сейчас?")
         End Select
 
         Return ""
     End Function
 
-    Private Function GetVcPrompt(kind As OptionalRuntimeKind, isRussian As Boolean) As String
+    Private Function GetVcPrompt(kind As OptionalRuntimeKind) As String
         Dim feature As String = If(kind = OptionalRuntimeKind.Ocr, "OCR", "VLC")
-        If isRussian Then
-            Return feature & " требует Microsoft Visual C++ Redistributable. Скачать и тихо установить его сейчас?"
-        End If
-        Return feature & " requires the Microsoft Visual C++ Redistributable. Download and silently install it now?"
+        Return Localization.TF("{0} требует Microsoft Visual C++ Redistributable. Скачать и тихо установить его сейчас?", feature)
     End Function
 
     Private Function OcrRuntimeRoot() As String
@@ -419,13 +408,8 @@ Friend Module OptionalRuntimeManager
                reason.IndexOf("specified module could not be found", StringComparison.OrdinalIgnoreCase) >= 0
     End Function
 
-    Private Sub ShowRuntimeError(owner As IWin32Window, title As String, details As String, isRussian As Boolean)
-        Dim prefix As String
-        If isRussian Then
-            prefix = "Не удалось подготовить " & title & "."
-        Else
-            prefix = "Could not prepare " & title & "."
-        End If
+    Private Sub ShowRuntimeError(owner As IWin32Window, title As String, details As String)
+        Dim prefix As String = Localization.TF("Не удалось подготовить {0}.", title)
 
         MessageBox.Show(owner,
                         prefix & Environment.NewLine & Environment.NewLine & details,

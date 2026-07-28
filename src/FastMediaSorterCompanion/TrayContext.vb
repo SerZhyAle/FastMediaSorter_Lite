@@ -22,7 +22,11 @@ Friend NotInheritable Class TrayContext
     Private _disposed As Boolean
     Private ReadOnly _statsTimer As Timer   ' keeps the tooltip's usage counters reasonably fresh while serving
 
-    Friend Sub New(initialFolder As String, Optional showWindowOnStart As Boolean = True)
+    ''' <param name="windowRequested">The launch itself asked for the window (LITE's Share
+    ''' Manager button, --show). Such a request always wins over the startup option.</param>
+    ''' <param name="silentLaunch">The logon autostart (--tray). Suppresses even the
+    ''' "I am in the tray" hint, so a boot stays completely quiet.</param>
+    Friend Sub New(initialFolder As String, Optional windowRequested As Boolean = False, Optional silentLaunch As Boolean = False)
         _trayIcon = ShareIcons.CreateIcon(_trayHIcon)
 
         _notifyIcon = New NotifyIcon() With {
@@ -32,6 +36,7 @@ Friend NotInheritable Class TrayContext
         }
         _notifyIcon.ContextMenuStrip = BuildMenu()
         AddHandler _notifyIcon.DoubleClick, Sub() ShowMainWindow(Nothing)
+        AddHandler UiLanguage.Changed, AddressOf OnLanguageChanged
 
         _messageWindow = New MessageWindow()
         AddHandler _messageWindow.PayloadReceived, AddressOf OnPayloadReceived
@@ -43,61 +48,129 @@ Friend NotInheritable Class TrayContext
         ' server" scenario where Companion autostarts into the tray with no window.
         ResumeShareIfEnabled()
 
-        ' A folder argument is the explicit "share this folder" gesture: open the
-        ' window (which jumps to the package wizard). Otherwise a manual launch
-        ' (showWindowOnStart=True) opens the main window, while a silent autostart
-        ' (--tray) stays in the tray with no window (spec §4.5.1 / §4.3).
+        ' Who gets a window. An EXPLICIT gesture always does: a folder argument ("share
+        ' this folder", jumps to the package wizard) or windowRequested (LITE's Share
+        ' Manager button / --show). Everything else - logon autostart, a double-click on
+        ' the exe, a script - is a plain start and obeys the "Открывать окно менеджера
+        ' при запуске" option, which is OFF by default: the program then lives in the
+        ' tray exactly as it does at logon (spec §4.5.1 / §4.3). A plain start that is
+        ' not the silent logon one leaves a short tray hint instead, so a user who
+        ' double-clicked the exe is not left wondering whether anything started.
         If Not String.IsNullOrEmpty(initialFolder) Then
             ShowMainWindow(initialFolder)
-        ElseIf showWindowOnStart Then
+        ElseIf windowRequested OrElse WantsWindowOnStartup() Then
             ShowMainWindow(Nothing)
+        ElseIf Not silentLaunch Then
+            ShowTrayHint()
         End If
     End Sub
 
+    ''' <summary>The option that decides whether a plain start shows its window. Read fresh
+    ''' from the settings store (the window may have flipped it in an earlier session);
+    ''' any failure degrades to the default, off.</summary>
+    Private Shared Function WantsWindowOnStartup() As Boolean
+        Try
+            Dim s As New ShareSettings()
+            s.Load()
+            Return s.OpenWindowOnStartup
+        Catch
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>"It did start, it is over here" - a brief balloon shown when a hand-made
+    ''' launch keeps its window closed because the startup option is off. Never shown for
+    ''' the logon autostart (that one must stay silent) and best-effort: a shell with
+    ''' notifications suppressed simply drops it.</summary>
+    Private Sub ShowTrayHint()
+        Try
+            _notifyIcon.ShowBalloonTip(4000,
+                "Fast Media Sorter: Share Manager",
+                Localization.T("Менеджер работает в трее. Двойной щелчок по значку открывает окно."),
+                ToolTipIcon.Info)
+        Catch
+        End Try
+    End Sub
+
     Private Function BuildMenu() As ContextMenuStrip
-        Dim rus As Boolean = Is_Russian_Language
         Dim menu As New ContextMenuStrip()
 
         ' Primary action (bold) - open the Share Manager window.
-        Dim miOpen As New ToolStripMenuItem(If(rus, "Открыть менеджер общего доступа", "Open Share Manager"))
+        Dim miOpen As New ToolStripMenuItem(Localization.T("Открыть менеджер общего доступа"))
         miOpen.Font = New Font(menu.Font, FontStyle.Bold)
         AddHandler miOpen.Click, Sub() ShowMainWindow(Nothing)
         menu.Items.Add(miOpen)
 
         ' "Share..": open the package wizard so the user first picks WHAT to share and
         ' with WHICH settings, then gets the QR - instead of dumping one fixed QR.
-        Dim miShare As New ToolStripMenuItem(If(rus, "Поделиться..", "Share.."))
+        Dim miShare As New ToolStripMenuItem(Localization.T("Поделиться.."))
         AddHandler miShare.Click, Sub() TrayShare()
         menu.Items.Add(miShare)
 
         ' Current state + local usage counters (last connection, totals, files served).
-        Dim miStatus As New ToolStripMenuItem(If(rus, "Текущее состояние..", "Status.."))
+        Dim miStatus As New ToolStripMenuItem(Localization.T("Текущее состояние.."))
         AddHandler miStatus.Click, Sub() TrayStatus()
         menu.Items.Add(miStatus)
 
         ' Online "publish your folders for Android" guide.
-        Dim miDesc As New ToolStripMenuItem(If(rus, "Описание..", "Description.."))
+        Dim miDesc As New ToolStripMenuItem(Localization.T("Описание.."))
         AddHandler miDesc.Click, Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl)
         menu.Items.Add(miDesc)
 
         ' Stop the SFTP server (worker process keeps running).
-        Dim miStop As New ToolStripMenuItem(If(rus, "Выключить общий доступ", "Turn off sharing"))
+        Dim miStop As New ToolStripMenuItem(Localization.T("Выключить общий доступ"))
         AddHandler miStop.Click, Sub() TrayStop()
         menu.Items.Add(miStop)
 
         menu.Items.Add(New ToolStripSeparator())
 
+        ' Interface language. It lives in the tray menu as well as in the window because
+        ' Companion is usually tray-resident: someone who cannot read the tray menu must
+        ' still be able to reach the picker without first finding the window.
+        Dim miLang As New ToolStripMenuItem(Localization.T("Язык интерфейса"))
+        UiLanguage.AddLanguageItems(miLang.DropDownItems)
+        menu.Items.Add(miLang)
+
         ' Suite cross-link: open the LITE viewer.
-        Dim miViewer As New ToolStripMenuItem(If(rus, "Открыть Fast Media Sorter", "Open Fast Media Sorter"))
+        Dim miViewer As New ToolStripMenuItem(Localization.T("Открыть Fast Media Sorter"))
         AddHandler miViewer.Click, Sub() LaunchViewer()
         menu.Items.Add(miViewer)
 
-        Dim miExit As New ToolStripMenuItem(If(rus, "Выход", "Exit"))
+        Dim miExit As New ToolStripMenuItem(Localization.T("Выход"))
         AddHandler miExit.Click, Sub() ExitApplication()
         menu.Items.Add(miExit)
 
         Return menu
     End Function
+
+    ''' <summary>
+    ''' The interface language changed. Companion's windows resolve every caption once,
+    ''' at construction, so there is nothing to re-label - the window is rebuilt instead,
+    ''' and only if it was open. The tray menu is rebuilt too: it is created once in the
+    ''' constructor and would otherwise keep the old language until the next start.
+    ''' </summary>
+    Private Sub OnLanguageChanged(sender As Object, e As EventArgs)
+        If _disposed Then Return
+        Try
+            Dim old As ContextMenuStrip = _notifyIcon.ContextMenuStrip
+            _notifyIcon.ContextMenuStrip = BuildMenu()
+            If old IsNot Nothing Then old.Dispose()
+        Catch
+        End Try
+        Try
+            RefreshTrayState(_statsTimer.Enabled)
+        Catch
+        End Try
+        Try
+            If _mainWindow Is Nothing OrElse _mainWindow.IsDisposed Then Return
+            Dim wasVisible As Boolean = _mainWindow.Visible
+            RemoveHandler _mainWindow.ServerStateChanged, AddressOf RefreshTrayState
+            _mainWindow.Dispose()
+            _mainWindow = Nothing
+            If wasVisible Then ShowMainWindow(Nothing)
+        Catch
+        End Try
+    End Sub
 
     ''' <summary>Tray "Поделиться..": open the Share Manager window and route straight
     ''' into the package wizard, where the user chooses which folders + per-folder
@@ -139,14 +212,13 @@ Friend NotInheritable Class TrayContext
         ' If sharing was turned off while this fetch was in flight, RefreshTrayState(False)
         ' already stopped the poll timer and set the idle tooltip - don't clobber it back.
         If Not _statsTimer.Enabled Then Return
-        Dim rus As Boolean = Is_Russian_Language
         Dim txt As String
         If st IsNot Nothing AndAlso st.Running Then
-            txt = If(rus, "Общий доступ включён", "Sharing on")
+            txt = Localization.T("Общий доступ включён")
             If st.Stats IsNot Nothing Then
-                txt &= (If(rus, " · подключений: ", " · conns: ")) & st.Stats.TotalConnections.ToString()
+                txt &= Localization.TF(" · подключений: {0}", st.Stats.TotalConnections)
                 Dim last As String = Share_Status_Form.ShortTime(st.Stats.LastConnectionAt)
-                If last.Length > 0 Then txt &= (If(rus, " · посл.: ", " · last: ")) & last
+                If last.Length > 0 Then txt &= Localization.TF(" · посл.: {0}", last)
             End If
         Else
             txt = "Fast Media Sorter: Share Manager"
@@ -242,7 +314,7 @@ Friend NotInheritable Class TrayContext
         Try
             If _notifyIcon Is Nothing Then Return
             _notifyIcon.Text = If(running,
-                If(Is_Russian_Language, "Общий доступ включён", "Sharing on"),
+                Localization.T("Общий доступ включён"),
                 "Fast Media Sorter: Share Manager")
         Catch
         End Try
@@ -261,6 +333,10 @@ Friend NotInheritable Class TrayContext
     Private Sub OnPayloadReceived(payload As String)
         If String.Equals(payload, Program.ShowWindowCommand, StringComparison.Ordinal) Then
             ShowMainWindow(Nothing)
+        ElseIf String.Equals(payload, Program.PlainStartCommand, StringComparison.Ordinal) Then
+            ' The exe was run again with nothing attached - same rule as a first plain
+            ' start, and the running instance is the only one that can show the hint.
+            If WantsWindowOnStartup() Then ShowMainWindow(Nothing) Else ShowTrayHint()
         Else
             ShowMainWindow(payload)
         End If

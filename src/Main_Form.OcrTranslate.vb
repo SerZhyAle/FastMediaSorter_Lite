@@ -53,7 +53,7 @@ Partial Public Class Main_Form
 
     Friend Sub InitializeOcrTranslate()
         ocr_Settings = New OcrTranslateSettings()
-        ocr_Settings.Load(If(Is_Russian_Language, "ru", "en"))
+        ocr_Settings.Load(Localization.CurrentCode)
         ocr_Overlay_Visible = ocr_Settings.OverlayVisible
         ocr_Engine = New TesseractOcrEngine()
         ocr_Cache = New TranslationCache()
@@ -62,9 +62,7 @@ Partial Public Class Main_Form
         ocr_Auto_Timer.Stop()
         UpdateOcrButtonVisual()
         If toolTip IsNot Nothing AndAlso btn_Translate IsNot Nothing Then
-            toolTip.SetToolTip(btn_Translate, If(Is_Russian_Language,
-                "OCR + перевод текущего изображения (T) - притворимся, что понимаем эту мангу. ПКМ - настройки. Shift+T - авто-режим.",
-                "OCR + translate the current image (T) - let's pretend we understand this manga. Right-click for settings. Shift+T = auto mode."))
+            toolTip.SetToolTip(btn_Translate, Localization.T("OCR + перевод текущего изображения (T) - притворимся, что понимаем эту мангу. ПКМ - настройки. Shift+T - авто-режим."))
         End If
     End Sub
 
@@ -135,9 +133,7 @@ Partial Public Class Main_Form
         If ocr_Settings Is Nothing Then Return
         ocr_Settings.Enabled = True
         ocr_Settings.AutoMode = Not ocr_Settings.AutoMode
-        SetOcrStatus(If(Is_Russian_Language,
-            If(ocr_Settings.AutoMode, "Авто-перевод включён", "Авто-перевод выключен"),
-            If(ocr_Settings.AutoMode, "Auto-translate on", "Auto-translate off")))
+        SetOcrStatus(Localization.T(If(ocr_Settings.AutoMode, "Авто-перевод включён", "Авто-перевод выключен")))
         UpdateOcrButtonVisual()
         If ocr_Settings.AutoMode AndAlso IsCurrentFileEligibleImage() Then TranslateCurrentImage(True)
     End Sub
@@ -152,9 +148,7 @@ Partial Public Class Main_Form
         ocr_Overlay_Visible = visible
         ocr_Settings.OverlayVisible = visible
         InvalidateOverlay()
-        SetOcrStatus(If(Is_Russian_Language,
-            If(ocr_Overlay_Visible, "Наложение показано", "Наложение скрыто"),
-            If(ocr_Overlay_Visible, "Overlay shown", "Overlay hidden")))
+        SetOcrStatus(Localization.T(If(ocr_Overlay_Visible, "Наложение показано", "Наложение скрыто")))
         UpdateOcrButtonVisual()
     End Sub
 
@@ -183,18 +177,18 @@ Partial Public Class Main_Form
         Dim runtimeReason As String = ""
         If Not OptionalRuntimeManager.TryPrepareOcrRuntime(runtimeReason) Then
             If isAuto Then
-                SetOcrStatus(OptionalRuntimeManager.GetOcrUnavailableStatusText(Is_Russian_Language))
+                SetOcrStatus(OptionalRuntimeManager.GetOcrUnavailableStatusText())
                 Return
             End If
 
-            If Not Await OptionalRuntimeManager.EnsureOcrRuntimeInteractiveAsync(Me, Is_Russian_Language) Then
-                SetOcrStatus(OptionalRuntimeManager.GetOcrUnavailableStatusText(Is_Russian_Language))
+            If Not Await OptionalRuntimeManager.EnsureOcrRuntimeInteractiveAsync(Me) Then
+                SetOcrStatus(OptionalRuntimeManager.GetOcrUnavailableStatusText())
                 Return
             End If
         End If
 
         If Not IsCurrentFileEligibleImage() Then
-            If Not isAuto Then SetOcrStatus(If(Is_Russian_Language, "Это не изображение", "Not an image"))
+            If Not isAuto Then SetOcrStatus(Localization.T("Это не изображение"))
             Return
         End If
 
@@ -230,7 +224,7 @@ Partial Public Class Main_Form
 
         CancelOcrJob()
         ocr_Job_Cts = New CancellationTokenSource()
-        SetOcrStatus(If(Is_Russian_Language, "Распознавание..", "OCR.."))
+        SetOcrStatus(Localization.T("Распознавание.."))
 
         ' Fire-and-forget; RunOcrPipeline never throws (it catches internally).
         Forget(RunOcrPipeline(job, ocr_Job_Cts.Token))
@@ -251,7 +245,7 @@ Partial Public Class Main_Form
                 If cached IsNot Nothing Then ocr_Cache.PutMemory(key, cached)
             End If
             If cached IsNot Nothing Then
-                ApplyOnUi(cached, If(Is_Russian_Language, "Из кэша", "Result loaded from cache"), token)
+                ApplyOnUi(cached, Localization.T("Из кэша"), token)
                 Return
             End If
 
@@ -263,10 +257,10 @@ Partial Public Class Main_Form
 
             Select Case ocrResult.Status
                 Case OcrStatus.RuntimeMissing
-                    SetStatusOnUi(If(Is_Russian_Language, "OCR-движок недоступен", "OCR runtime missing"))
+                    SetStatusOnUi(Localization.T("OCR-движок недоступен"))
                     Return
                 Case OcrStatus.Failed
-                    SetStatusOnUi(If(Is_Russian_Language, "Ошибка OCR", "OCR error"))
+                    SetStatusOnUi(Localization.T("Ошибка OCR"))
                     Return
             End Select
 
@@ -275,12 +269,12 @@ Partial Public Class Main_Form
                             " ocr: blocks=" & blocks.Count.ToString() &
                             " srcUseful=" & String.Join(",", blocks.Select(Function(b) CountUsefulDebugChars(b.SourceText)).ToArray()))
             If blocks.Count = 0 Then
-                SetStatusOnUi(If(Is_Russian_Language, "Текст не найден", "No text found"))
+                SetStatusOnUi(Localization.T("Текст не найден"))
                 Return
             End If
 
             ' Translate.
-            SetStatusOnUi(If(Is_Russian_Language, "Перевод..", "Translating.."))
+            SetStatusOnUi(Localization.T("Перевод.."))
             Dim translator As ITranslator = CreateTranslator()
             Dim available As Boolean = False
             If translator IsNot Nothing Then
@@ -294,7 +288,7 @@ Partial Public Class Main_Form
                     b.TranslatedText = b.SourceText
                 Next
                 ApplyOnUi(BuildDoc(job, engineName, provider, blocks),
-                          If(Is_Russian_Language, "Переводчик недоступен", "Translator unavailable"), token)
+                          Localization.T("Переводчик недоступен"), token)
                 Return
             End If
 
@@ -318,7 +312,7 @@ Partial Public Class Main_Form
             ' Navigated away - discard silently.
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: pipeline error: " & ex.Message)
-            SetStatusOnUi(If(Is_Russian_Language, "Ошибка OCR", "OCR error"))
+            SetStatusOnUi(Localization.T("Ошибка OCR"))
         Finally
             Try
                 job.Bitmap.Dispose()
@@ -428,7 +422,7 @@ Partial Public Class Main_Form
 
     Private Sub UpdateOcrButtonVisual()
         If btn_Translate Is Nothing OrElse ocr_Settings Is Nothing Then Return
-        Dim caption As String = If(Is_Russian_Language, "Перевод", "Translate")
+        Dim caption As String = Localization.T("Перевод")
         If ocr_Settings.AutoMode Then caption &= " ⟳"
         btn_Translate.Text = caption
         btn_Translate.Font = New Font(btn_Translate.Font, If(ocr_Settings.Enabled, FontStyle.Bold, FontStyle.Regular))
@@ -452,7 +446,7 @@ Partial Public Class Main_Form
     Friend Function EnsureOcrSettings() As OcrTranslateSettings
         If ocr_Settings Is Nothing Then
             ocr_Settings = New OcrTranslateSettings()
-            ocr_Settings.Load(If(Is_Russian_Language, "ru", "en"))
+            ocr_Settings.Load(Localization.CurrentCode)
         End If
         Return ocr_Settings
     End Function

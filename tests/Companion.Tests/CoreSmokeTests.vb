@@ -11,36 +11,65 @@ Imports Xunit
 ''' </summary>
 Public Class CoreSmokeTests
 
+    ' ShareText no longer takes a "rus" flag - it reads the active UI language
+    ' (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A'), so these drive it by code.
+
     <Theory>
-    <InlineData(True)>
-    <InlineData(False)>
-    Public Sub ShareText_Localized_NeverEmpty(rus As Boolean)
-        Assert.False(String.IsNullOrWhiteSpace(ShareText.SecurityText(rus)))
-        Assert.False(String.IsNullOrWhiteSpace(ShareText.LanHintText(rus)))
-        Assert.False(String.IsNullOrWhiteSpace(ShareText.CombinedHintText(rus)))
-        Assert.False(String.IsNullOrWhiteSpace(ShareText.QrOverflowText(rus)))
-        Assert.False(String.IsNullOrWhiteSpace(ShareText.CgnatText(rus)))
+    <InlineData("ru")>
+    <InlineData("en")>
+    <InlineData("de")>
+    <InlineData("ar")>
+    <InlineData("zh")>
+    Public Sub ShareText_Localized_NeverEmpty(code As String)
+        Dim saved = Localization.CurrentCode
+        Try
+            Localization.CurrentCode = code
+            Assert.False(String.IsNullOrWhiteSpace(ShareText.SecurityText()))
+            Assert.False(String.IsNullOrWhiteSpace(ShareText.LanHintText()))
+            Assert.False(String.IsNullOrWhiteSpace(ShareText.CombinedHintText()))
+            Assert.False(String.IsNullOrWhiteSpace(ShareText.QrOverflowText()))
+            Assert.False(String.IsNullOrWhiteSpace(ShareText.CgnatText()))
+        Finally
+            Localization.CurrentCode = saved
+        End Try
     End Sub
 
     <Fact>
-    Public Sub ShareText_RuAndEn_Differ()
-        ' A crude guard against accidentally returning the same string for both langs.
-        Assert.NotEqual(ShareText.SecurityText(True), ShareText.SecurityText(False))
+    Public Sub ShareText_Differs_Between_Languages()
+        ' A crude guard against a table that returns the same string whatever is chosen.
+        Dim saved = Localization.CurrentCode
+        Try
+            Localization.CurrentCode = "ru"
+            Dim ru = ShareText.SecurityText()
+            Localization.CurrentCode = "en"
+            Dim en = ShareText.SecurityText()
+            Localization.CurrentCode = "de"
+            Dim de = ShareText.SecurityText()
+            Assert.NotEqual(ru, en)
+            Assert.NotEqual(en, de)
+        Finally
+            Localization.CurrentCode = saved
+        End Try
     End Sub
 
     <Fact>
     Public Sub AccessNote_DoesNotThrow_ForNullReach()
-        Dim note As String = ShareText.AccessNote(True, Nothing, 2222, True)
+        Dim note As String = ShareText.AccessNote(Nothing, 2222, True)
         Assert.NotNull(note)  ' "" is fine (nothing to say); must never be Nothing or throw
     End Sub
 
     <Fact>
     Public Sub AccessNote_Cgnat_MentionsSomething()
         Dim reach As New WorkerReachability With {.IsCgnat = True, .LanAddress = "192.168.1.5"}
-        Dim ru As String = ShareText.AccessNote(True, reach, 2222, includeExternal:=True)
-        Dim en As String = ShareText.AccessNote(False, reach, 2222, includeExternal:=True)
-        Assert.False(String.IsNullOrWhiteSpace(ru))
-        Assert.False(String.IsNullOrWhiteSpace(en))
+        Dim saved = Localization.CurrentCode
+        Try
+            Localization.CurrentCode = "ru"
+            Assert.False(String.IsNullOrWhiteSpace(ShareText.AccessNote(reach, 2222, includeExternal:=True)))
+            Localization.CurrentCode = "en"
+            Assert.False(String.IsNullOrWhiteSpace(ShareText.AccessNote(reach, 2222, includeExternal:=True)))
+        Finally
+            Localization.CurrentCode = saved
+        End Try
     End Sub
 
     <Fact>

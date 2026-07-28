@@ -2,7 +2,24 @@
 
 Module Common_Module
     Public Hardkeys_to_move_mediafile(10) As String
-    Public Is_Russian_Language As Boolean
+
+    ''' <summary>
+    ''' Derived from the UI language, not a setting of its own any more: the app ships
+    ''' 13 interface languages and the chosen one lives in Localization.CurrentCode
+    ''' (registry value "UiLanguage" - see SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §2.4).
+    '''
+    ''' It is kept - and kept public - deliberately. Call sites that still ask
+    ''' "is this Russian?" keep compiling and keep behaving sensibly: a German user gets
+    ''' the English branch, never the Russian one. That is what made migrating the
+    ''' strings possible file by file instead of in one 900-string diff. New code should
+    ''' call Localization.T() instead; LocalizationParityTests watches for regressions.
+    ''' </summary>
+    Public ReadOnly Property Is_Russian_Language As Boolean
+        Get
+            Return Localization.CurrentCode = "ru"
+        End Get
+    End Property
+
     Public Is_Copying_not_Moving As Boolean
     Public Second_App_Name As String = "FastMediaSorter"
     Public App_name As String = "SZA"

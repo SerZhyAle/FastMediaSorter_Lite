@@ -106,7 +106,7 @@ Partial Public Class Main_Form
 
         Dim previous_Text As String = lbl_Status.Text
         Try
-            lbl_Status.Text = If(Is_Russian_Language, "Загрузка: ", "Loading: ") & Path.GetFileName(file_Path)
+            lbl_Status.Text = Localization.T("Загрузка: ") & Path.GetFileName(file_Path)
             lbl_Status.Update()
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0913: loading status skipped: " & ex.Message)
@@ -187,8 +187,8 @@ Partial Public Class Main_Form
         Const spinner As String = "|/-\"
         Dim tick As String = spinner.Substring(frame Mod spinner.Length, 1)
 
-        Dim head As String = If(Is_Russian_Language, "Загрузка.. ", "Loading.. ") & tick
-        Dim seconds As String = CInt(Math.Floor(elapsed.TotalSeconds)).ToString() & If(Is_Russian_Language, " с", " s")
+        Dim head As String = Localization.T("Загрузка.. ") & tick
+        Dim seconds As String = CInt(Math.Floor(elapsed.TotalSeconds)).ToString() & Localization.T(" с")
 
         Return head & Environment.NewLine &
                Path.GetFileName(file_Path) & Environment.NewLine &
@@ -200,11 +200,11 @@ Partial Public Class Main_Form
     ''' system.</summary>
     Private Function FormatLoadingSize(size_Bytes As Long) As String
         If size_Bytes >= 1024L * 1024L Then
-            Return (size_Bytes / (1024.0 * 1024.0)).ToString("F1") & If(Is_Russian_Language, " МиБ", " MiB")
+            Return (size_Bytes / (1024.0 * 1024.0)).ToString("F1") & Localization.T(" МиБ")
         ElseIf size_Bytes >= 1024L Then
-            Return (size_Bytes / 1024.0).ToString("F1") & If(Is_Russian_Language, " КиБ", " KiB")
+            Return (size_Bytes / 1024.0).ToString("F1") & Localization.T(" КиБ")
         End If
-        Return size_Bytes.ToString() & If(Is_Russian_Language, " Б", " B")
+        Return size_Bytes.ToString() & Localization.T(" Б")
     End Function
 
 End Class

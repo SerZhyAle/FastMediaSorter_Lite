@@ -8,6 +8,25 @@ Categories: `Added`, `Changed`, `Fixed`, `Removed`.
 
 ## [Unreleased]
 
+### Added
+- **The website now has a page in each of the 13 languages.** Every language gets its own address (`/de/`, `/zh/`, `/ar/` and so on) with its own search-engine metadata, so a search in German finds the German page rather than the English one. The three-language entry page stays where it was and now links to the other ten. Ukrainian is `uk` everywhere - on the site it used to be `ua` while the app and the README already said `uk`; if you had picked Ukrainian on the site before, your choice carries over.
+
+- **The interface now speaks 13 languages.** English, Russian, Ukrainian, German, Italian, Spanish, French, Portuguese, Arabic, Hindi, Bengali, Urdu and Chinese. On a fresh install the program follows the language your Windows interface is in and falls back to English if it has no translation for it; your existing choice is kept and never overridden. The language button on the toolbar stopped being an EN/RU toggle - it now shows the current language code and drops a list of all thirteen with their flags, and the same list is on the Settings window. Arabic and Urdu are written right to left; Hindi, Bengali and Chinese switch to a font that can draw them. Only English, Russian and Ukrainian are proofread by the author - the other ten are machine translations, and corrections through the issue tracker are very welcome. The setup wizard itself stays English. On Windows 7, 8.1 and 32-bit Windows the program keeps English and Russian only: the font Windows needs for Hindi and Bengali does not exist there, and offering a language that renders as empty boxes would be worse than not offering it.
+
+- **The picker for the OCR and translation languages now names each language in its own script** - Deutsch, Ελληνικά, 中文（简体）, العربية - instead of naming all 33 of them in the language the interface happens to be in. A Greek user recognises "Ελληνικά" whichever interface language is selected.
+
+- **The Share Manager speaks the same 13 languages**, and the two programs share one choice: pick a language in either and the other one is in it too the next time it starts. Its picker is in the tray menu ("Interface language") and at the bottom of its window, so it is reachable even when the manager is only a tray icon. Because its windows are built in one pass, switching the language rebuilds the window rather than relabelling it - what is on screen simply reappears in the new language. The step-by-step router port-forwarding guide stays in English, Russian and Ukrainian: it is a long hand-written document, and every other language opens the English version rather than a page that does not exist.
+
+- **Share Manager: "Open the manager window at startup".** Off by default, and it decides for **every** plain start of the program - the one Windows makes at logon, a double-click on the program itself, a start right after installation: unticked you get the tray icon alone (with a short note saying where the program went), ticked the window comes up with it. Opening the manager on purpose is unaffected and always shows the window: the viewer's "Share Manager.." button, "Share this folder with phone..", and the tray icon.
+
+### Changed
+- **Share Manager: the QR code window can now be made bigger.** Each click on the code doubles the window, then fills the screen with it, then returns to the size it opened at - handy when the phone is held across the room or its camera struggles in dim light. The window can also be dragged to any size: it stays square, so the code always fills it, and it is drawn with sharp edges instead of blurred ones at large sizes. Closing it moved to Esc, the close box or a right click on the code, since the left button now zooms.
+
+### Fixed
+- **Eight drop-downs in the settings window were in Russian for everyone.** In the previous release the option lists on the settings pages - where the recipients panel sits, how a new picture is scaled, slideshow order, what a click on a video does, what happens when a video ends, what to do about a name collision, where to go after a file operation, and what to open at startup - had never been given English text at all, so they showed Russian whatever language the rest of the window was in. They are now translated like everything else.
+
+- **Share Manager: text no longer overflows its buttons and boxes at 125-200% display scaling.** The windows were laid out in 96-DPI pixels while Windows rendered the text up to twice as large, so captions were cut off, addresses were shortened to "192.168.1.100:54.." and the "Share" button sliced its own label in half. Every Share Manager window now scales with the display, including the folder list's columns and the drawn button icons - and follows along when the window is dragged to a monitor with different scaling.
+
 ## [26.7.23.1127] - 2026-07-23
 
 ### Added

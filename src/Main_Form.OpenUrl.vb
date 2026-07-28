@@ -56,34 +56,22 @@ Partial Public Class Main_Form
     ''' <summary>Re-localizes the item and the button's tooltip. Called from LngCh.</summary>
     Friend Sub LocalizeOpenUrlEntryPoint()
         If openUrlMenuItem IsNot Nothing Then
-            openUrlMenuItem.Text = If(Is_Russian_Language, "Открыть URL..", "Open URL..")
+            openUrlMenuItem.Text = Localization.T("Открыть URL..")
         End If
     End Sub
 
     ''' <summary>The tooltip for the choose-file button, which has to advertise the
     ''' right-click - a hidden menu nobody finds is the same as no feature.</summary>
     Friend Shared Function ChooseFileTooltipText() As String
-        Return If(Is_Russian_Language,
-                  "Выбрать файл..  (правый клик - открыть URL)",
-                  "Choose file..  (right-click to open a URL)")
+        Return Localization.T("Выбрать файл..  (правый клик - открыть URL)")
     End Function
 
     Private Sub ShowOpenUrlPrompt()
         SlideShowStop()
 
-        Dim prompt As String = If(Is_Russian_Language,
-            "Адрес видеопотока или файла на сервере:" & Chr(10) & Chr(10) &
-            "smb://сервер/шара/фильм.mkv" & Chr(10) &
-            "http://сервер/видео.mp4" & Chr(10) &
-            "sftp://пользователь@сервер/путь/фильм.mkv" & Chr(10) & Chr(10) &
-            "Обычные сетевые папки (\\сервер\шара\..) открываются кнопкой ""Выбрать файл.."" как есть.",
-            "Address of a video stream or a file on a server:" & Chr(10) & Chr(10) &
-            "smb://server/share/movie.mkv" & Chr(10) &
-            "http://server/video.mp4" & Chr(10) &
-            "sftp://user@server/path/movie.mkv" & Chr(10) & Chr(10) &
-            "Ordinary network folders (\\server\share\..) open with ""Choose file.."" as they are.")
+        Dim prompt As String = Localization.T("Адрес видеопотока или файла на сервере:" & vbLf & "" & vbLf & "smb://сервер/шара/фильм.mkv" & vbLf & "http://сервер/видео.mp4" & vbLf & "sftp://пользователь@сервер/путь/фильм.mkv" & vbLf & "" & vbLf & "Обычные сетевые папки (\\сервер\шара\..) открываются кнопкой ""Выбрать файл.."" как есть.")
 
-        Dim title As String = If(Is_Russian_Language, "Открыть URL", "Open URL")
+        Dim title As String = Localization.T("Открыть URL")
         Dim entered As String = Microsoft.VisualBasic.Interaction.InputBox(prompt, title, last_Opened_Url)
         If String.IsNullOrWhiteSpace(entered) Then Return   ' cancelled
 
@@ -93,23 +81,17 @@ Partial Public Class Main_Form
     ''' <summary>Validates an address and hands it to VLC. Friend so a future caller
     ''' (command line, drag-drop of a link) can reuse the same checks.</summary>
     Friend Sub OpenMediaUrl(url As String)
-        Dim title As String = If(Is_Russian_Language, "Открыть URL", "Open URL")
+        Dim title As String = Localization.T("Открыть URL")
 
         If Not MediaUrl.IsRemote(url) Then
             If MediaUrl.LooksLikeLocalPath(url) Then
                 MessageBox.Show(Me,
-                    If(Is_Russian_Language,
-                       "Это обычный путь, а не URL. Откройте его кнопкой ""Выбрать файл.."".",
-                       "That is an ordinary path, not a URL. Open it with ""Choose file.."".") ,
+                    Localization.T("Это обычный путь, а не URL. Откройте его кнопкой ""Выбрать файл.."".") ,
                     title, MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Return
             End If
             MessageBox.Show(Me,
-                If(Is_Russian_Language,
-                   "Не понимаю эту схему адреса. Поддерживаются: " & Chr(10) &
-                   String.Join(", ", MediaUrl.Remote_Media_Schemes),
-                   "That address scheme is not supported. These are: " & Chr(10) &
-                   String.Join(", ", MediaUrl.Remote_Media_Schemes)),
+                Localization.TF("Не понимаю эту схему адреса. Поддерживаются: " & vbLf & "{0}", String.Join(", ", MediaUrl.Remote_Media_Schemes)),
                 title, MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
@@ -119,10 +101,8 @@ Partial Public Class Main_Form
         Dim guessed_Extension As String = MediaUrl.ExtensionOf(url)
         If guessed_Extension.Length > 0 AndAlso Image_File_Extensions.Contains(guessed_Extension) Then
             MessageBox.Show(Me,
-                If(Is_Russian_Language,
-                   "По URL можно открыть только видео. Картинку скачайте и откройте файлом.",
-                   "Only video can be opened by URL. Download a picture and open it as a file."),
-                If(Is_Russian_Language, "Открыть URL", "Open URL"),
+                Localization.T("По URL можно открыть только видео. Картинку скачайте и откройте файлом."),
+                Localization.T("Открыть URL"),
                 MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
@@ -134,7 +114,7 @@ Partial Public Class Main_Form
         ' counter stay on whatever folder is loaded. Next/Prev therefore walk back into
         ' that folder and end the stream - simple and predictable, and the alternative
         ' (a whole parallel "URL mode") buys nothing for a sorter.
-        lbl_Status.Text = If(Is_Russian_Language, "Подключение..", "Connecting..")
+        lbl_Status.Text = Localization.T("Подключение..")
         Application.DoEvents()
 
         PlayVideoWithVlcAsync(url)

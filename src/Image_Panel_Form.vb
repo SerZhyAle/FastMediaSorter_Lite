@@ -93,7 +93,7 @@ Public Class Image_Panel_Form
     End Sub
 
     Public Sub New()
-        Me.Text = If(Is_Russian_Language, "Панель изображений", "Image Panel")
+        Me.Text = Localization.T("Панель изображений")
         Me.KeyPreview = True
 
         imagePanel = New FlowLayoutPanel()
@@ -335,28 +335,16 @@ Public Class Image_Panel_Form
             toolTip.ShowAlways = True   ' Show even if form is not active
         End If
 
-        Dim panelTooltipText As String = If(Is_Russian_Language,
-    "ЛКМ: Выбрать изображение" & vbCrLf &
-    "Ctrl+ЛКМ: Добавить/убрать из выделения" & vbCrLf &
-    "Двойной клик: Открыть изображение в главном окне" & vbCrLf &
-    "Del: Удалить выделенные файлы (без лишних церемоний)" & vbCrLf &
-    "Цифры (0-9): Переместить/копировать выделенные файлы" & vbCrLf &
-    "Esc: Закрыть эту панель и сделать вид, что её не было",
-    "Left-Click: Select image" & vbCrLf &
-    "Ctrl+Click: Add/remove from selection" & vbCrLf &
-    "Double-Click: Open image in main window" & vbCrLf &
-    "Del: Delete selected file(s) - no ceremony" & vbCrLf &
-    "Number Keys (0-9): Move/copy selected file(s)" & vbCrLf &
-    "Esc: Close this panel and pretend it was never here")
+        Dim panelTooltipText As String = Localization.T("ЛКМ: Выбрать изображение" & vbCrLf & "Ctrl+ЛКМ: Добавить/убрать из выделения" & vbCrLf & "Двойной клик: Открыть изображение в главном окне" & vbCrLf & "Del: Удалить выделенные файлы (без лишних церемоний)" & vbCrLf & "Цифры (0-9): Переместить/копировать выделенные файлы" & vbCrLf & "Esc: Закрыть эту панель и сделать вид, что её не было")
 
         toolTip.SetToolTip(imagePanel, panelTooltipText)
     End Sub
 
     Private Sub DeleteSelectedFiles()
         Dim filesToDelete = selectedPictureControls.Select(Function(pb) CStr(pb.Tag)).ToList()
-        Dim confirmMsg = If(Is_Russian_Language, $"Вы уверены, что хотите безвозвратно удалить {filesToDelete.Count} файл(ов)?", $"Are you sure you want to permanently delete {filesToDelete.Count} file(s)?")
+        Dim confirmMsg = Localization.TF("Вы уверены, что хотите безвозвратно удалить {0} файл(ов)?", filesToDelete.Count)
         If Not Is_no_request_before_file_operation AndAlso
-            MessageBox.Show(confirmMsg, If(Is_Russian_Language, "Подтверждение удаления", "Deletion.."), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
+            MessageBox.Show(confirmMsg, Localization.TC("panel", "Подтверждение удаления"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
 
         For Each pbToDelete In selectedPictureControls.ToList() ' Use ToList to create a copy for safe iteration
             If pbToDelete Is initial_Target_PictureBox Then initial_Target_PictureBox = Nothing
@@ -367,7 +355,7 @@ Public Class Image_Panel_Form
                 imagePanel.Controls.Remove(pbToDelete)
                 pbToDelete.Dispose()
             Catch ex As Exception
-                MessageBox.Show(If(Is_Russian_Language, "Не удалось удалить файл: ", "Fail to delete file:") & filePath & vbCrLf & ex.Message, If(Is_Russian_Language, "Ошибка", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error)
+                MessageBox.Show(Localization.T("Не удалось удалить файл: ") & filePath & vbCrLf & ex.Message, Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
         Next
         ClearSelection()
@@ -517,16 +505,16 @@ Public Class Image_Panel_Form
         Dim move_Slot_Key As String = If(move_Slot_index = 0, "0", move_Slot_index.ToString())
 
         If String.IsNullOrEmpty(destination_Folder_Path) Then
-            MessageBox.Show(If(Is_Russian_Language, "! Нет каталога-получателя для клавиши " & move_Slot_Key, "! No destination folder set for key " & move_Slot_Key), If(Is_Russian_Language, "Внимание", "Warning"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            MessageBox.Show(Localization.TF("! Нет каталога-получателя для клавиши {0}", move_Slot_Key), Localization.T("Внимание"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
 
         Dim filesToProcess = selectedPictureControls.Select(Function(pb) CStr(pb.Tag)).ToList()
-        Dim operation_type_string = If(Is_Copying_not_Moving, If(Is_Russian_Language, "копировать", "copy"), If(Is_Russian_Language, "переместить", "move"))
-        Dim confirmMsg = If(Is_Russian_Language, $"Вы уверены, что хотите {operation_type_string} {filesToProcess.Count} файл(ов) в '{destination_Folder_Path}'?", $"Are you sure you want to {operation_type_string} {filesToProcess.Count} file(s) to '{destination_Folder_Path}'?")
+        Dim operation_type_string = If(Is_Copying_not_Moving, Localization.T("копировать"), Localization.T("переместить"))
+        Dim confirmMsg = Localization.TF("Вы уверены, что хотите {0} {1} файл(ов) в '{2}'?", operation_type_string, filesToProcess.Count, destination_Folder_Path)
 
         If Not Is_no_request_before_file_operation AndAlso
-MessageBox.Show(confirmMsg, If(Is_Russian_Language, "Подтверждение", "Confirm"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+MessageBox.Show(confirmMsg, Localization.T("Подтверждение"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
 
         Dim success_count = 0
         Dim error_messages As New System.Text.StringBuilder()
@@ -547,7 +535,7 @@ MessageBox.Show(confirmMsg, If(Is_Russian_Language, "Подтверждение"
                 End If
                 success_count += 1
             Catch ex As Exception
-                error_messages.AppendLine(If(Is_Russian_Language, $"Не удалось обработать {source_file_path}: {ex.Message}", $"Failed to process {source_file_path}: {ex.Message}"))
+                error_messages.AppendLine(Localization.TF("Не удалось обработать {0}: {1}", source_file_path, ex.Message))
             End Try
         Next
 
@@ -555,14 +543,14 @@ MessageBox.Show(confirmMsg, If(Is_Russian_Language, "Подтверждение"
         UpdateSelectionVisuals() ' Refresh the panel
 
         Dim summary_message As New System.Text.StringBuilder()
-        summary_message.AppendLine(If(Is_Russian_Language, $"{success_count} из {filesToProcess.Count} файлов обработано.", $"{success_count} of {filesToProcess.Count} files processed."))
+        summary_message.AppendLine(Localization.TF("{0} из {1} файлов обработано.", success_count, filesToProcess.Count))
         If error_messages.Length > 0 Then
-            summary_message.AppendLine(If(Is_Russian_Language, "Ошибки:", "Errors:"))
+            summary_message.AppendLine(Localization.T("Ошибки:"))
             summary_message.Append(error_messages.ToString())
         End If
 
         If Not Is_no_request_before_file_operation Then
-            MessageBox.Show(summary_message.ToString(), If(Is_Russian_Language, "Операция завершена", "Operation Complete"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+            MessageBox.Show(summary_message.ToString(), Localization.T("Операция завершена"), MessageBoxButtons.OK, MessageBoxIcon.Information)
         End If
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & $" p0085: pics moved/copied. Success: {success_count}, Failed: {filesToProcess.Count - success_count}")

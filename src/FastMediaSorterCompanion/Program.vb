@@ -16,34 +16,67 @@ Friend Module Program
     ''' <summary>Frozen technical anchor (CLAUDE.md light-rebrand rule) - never renamed.</summary>
     Public Const MutexName As String = "FastMediaSorterCompanionSingleInstanceMutex"
 
-    ''' <summary>WM_COPYDATA payload meaning "just show your window" - no folder to share.</summary>
+    ''' <summary>WM_COPYDATA payload meaning "just show your window" - no folder to share.
+    ''' Frozen: LITE sends this exact string (Main_Form.ShareLauncher.vb).</summary>
     Public Const ShowWindowCommand As String = "::fms-show-window::"
+
+    ''' <summary>WM_COPYDATA payload meaning "the exe was run again with no request attached".
+    ''' Companion-internal: re-running a plain launch while an instance is already up is still
+    ''' a plain start, so the running instance applies the same startup option rather than
+    ''' popping its window unconditionally.</summary>
+    Public Const PlainStartCommand As String = "::fms-plain-start::"
 
     ''' <summary>Title of the hidden receiver window, used by a second instance to find the first.</summary>
     Friend Const MessageWindowTitle As String = "FastMediaSorterCompanionMessageWindow_{2f6a1c94}"
 
-    ''' <summary>Autostart passes this so a logon launch stays silently in the tray;
-    ''' a manual double-click (no flag) opens the window (spec §4.5.1).</summary>
+    ''' <summary>Autostart passes this so a logon launch stays silently in the tray
+    ''' (spec §4.5.1). A launch WITHOUT it is no longer "open the window" by itself -
+    ''' see <see cref="ShowWindowFlag"/> and the startup option below.</summary>
     Public Const TrayFlag As String = "--tray"
+
+    ''' <summary>Command line form of <see cref="ShowWindowCommand"/>: "the user asked for the
+    ''' window", so it opens whatever the "Open the manager window at startup" option says.
+    ''' LITE's Share Manager button passes it when it COLD-STARTS us (a running instance gets
+    ''' the same intent over WM_COPYDATA instead).</summary>
+    Public Const ShowWindowFlag As String = "--show"
 
     <STAThread>
     Friend Sub Main(args As String())
-        ' Separate the silent-tray flag from an optional folder argument.
+        ' Sort the arguments into: silent-tray flag, explicit show-window request, folder.
         Dim silentTray As Boolean = False
+        Dim windowRequested As Boolean = False
         Dim folder As String = Nothing
         If args IsNot Nothing Then
             For Each a As String In args
                 If String.Equals(a, TrayFlag, StringComparison.OrdinalIgnoreCase) OrElse
                    String.Equals(a, "/tray", StringComparison.OrdinalIgnoreCase) Then
                     silentTray = True
+                ElseIf String.Equals(a, ShowWindowFlag, StringComparison.OrdinalIgnoreCase) OrElse
+                       String.Equals(a, "/show", StringComparison.OrdinalIgnoreCase) OrElse
+                       String.Equals(a, ShowWindowCommand, StringComparison.Ordinal) Then
+                    ' Checked BEFORE the folder branch: the marker has no leading "-",
+                    ' so it would otherwise be taken for a path to share.
+                    windowRequested = True
                 ElseIf folder Is Nothing AndAlso Not String.IsNullOrWhiteSpace(a) AndAlso Not a.StartsWith("-", StringComparison.Ordinal) Then
                     folder = a
                 End If
             Next
         End If
 
-        ' What a second instance forwards to the first: the folder, else show-window.
-        Dim payload As String = If(Not String.IsNullOrEmpty(folder), folder, ShowWindowCommand)
+        ' What a second instance forwards to the first: the folder, an explicit show-window
+        ' request, or the plain-start marker (which the running instance answers per the
+        ' startup option). A silent logon launch that finds us already up forwards NOTHING -
+        ' there is nothing to do and a boot must stay quiet.
+        Dim payload As String
+        If Not String.IsNullOrEmpty(folder) Then
+            payload = folder
+        ElseIf windowRequested Then
+            payload = ShowWindowCommand
+        ElseIf silentTray Then
+            payload = ""
+        Else
+            payload = PlainStartCommand
+        End If
 
         Dim createdNew As Boolean
         Dim mtx As Mutex = Nothing
@@ -56,7 +89,7 @@ Friend Module Program
         Try
             If Not createdNew Then
                 ' Another instance already owns the tray - forward our intent to it and exit.
-                ForwardToRunningInstance(payload)
+                If payload.Length > 0 Then ForwardToRunningInstance(payload)
                 Return
             End If
 
@@ -84,10 +117,11 @@ Friend Module Program
             Catch
             End Try
 
-            ' Manual double-click (no --tray) opens the window; autostart (--tray)
-            ' stays silently in the tray. A folder argument always opens (and jumps
-            ' to the share-this-folder wizard).
-            Using ctx As New TrayContext(folder, showWindowOnStart:=Not silentTray)
+            ' Who decides whether the window shows: an EXPLICIT request always wins (a
+            ' folder to share, or --show from LITE's Share Manager button), and every
+            ' other launch - logon autostart, a double-click on the exe, a script -
+            ' obeys the "Open the manager window at startup" option, off by default.
+            Using ctx As New TrayContext(folder, windowRequested, silentTray)
                 Application.Run(ctx)
             End Using
         Finally

@@ -14,6 +14,37 @@ Imports System.Windows.Forms
 ''' </summary>
 Friend Module DpiLayout
 
+    ''' <summary>
+    ''' Turns on DPI scaling for a hand-built window. Call it as the LAST statement of the
+    ''' form's UI builder, once every child control has been added.
+    '''
+    ''' Setting <c>AutoScaleMode = Font</c> alone - what the Companion windows used to do - is
+    ''' a NO-OP: <c>AutoScaleFactor</c> returns (1,1) while <c>AutoScaleDimensions</c> is empty,
+    ''' so nothing is ever scaled. The designer writes both lines for a .Designer.vb form; a
+    ''' code-built one must do the same by hand. Without them, at 150-175% display scaling the
+    ''' text renders 1.75x larger over a layout still measured in 96-DPI pixels: captions clip,
+    ''' values ellipsize, and a button cuts its own caption in half (measured at 168 DPI: the
+    ''' main window's "Поделиться" button gets 44 px where its content needs 58).
+    '''
+    ''' Two details are easy to get wrong:
+    ''' - ORDER. Scaling runs on the first layout after the flag is set and only touches the
+    '''   children present at that moment - setting it before the controls are added scales the
+    '''   form and nothing inside it.
+    ''' - MODE. Dpi(96,96), not Font(7,15): these layouts are authored in 96-DPI pixels and the
+    '''   UI font is pinned app-wide (<c>Application.SetDefaultFont</c> in Program.Main), so the
+    '''   honest factor is the DPI ratio. Font mode derives it from GDI font metrics, which round
+    '''   to 2.0x vertically at 168 DPI against a true 1.75x - inflating an already tall window
+    '''   by another 14%.
+    '''
+    ''' A ListView's column widths are NOT part of this (WinForms never scales them) - size those
+    ''' with <see cref="Control.LogicalToDeviceUnits(Integer)"/> instead.
+    ''' </summary>
+    Friend Sub ApplyAutoScale(f As ContainerControl)
+        If f Is Nothing Then Return
+        f.AutoScaleDimensions = New SizeF(96.0F, 96.0F)
+        f.AutoScaleMode = AutoScaleMode.Dpi
+    End Sub
+
     ''' <summary>Working area of the monitor the form sits on (falls back to the primary
     ''' screen, then to a safe default if there is no screen at all).</summary>
     Friend Function WorkingAreaFor(f As Form) As Rectangle

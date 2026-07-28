@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.ObjectModel
 Imports System.ComponentModel
@@ -57,14 +57,14 @@ Partial Public Class Main_Form
                 extKey.SetValue("", progId)
             End Using
         Catch ex As Exception
-            MessageBox.Show(If(Is_Russian_Language, "Ошибка ассоциации: ", "Failed to set association: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show(Localization.T("Ошибка ассоциации: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ERR with JPG associacion.." & ex.Message)
         End Try
     End Sub
 
     Private Sub CheckAndOfferJpgAssociation()
         If IsRunningAsAdministrator() AndAlso Not IsJpgAssociatedWithThisApp() Then
-            Dim msg = If(Is_Russian_Language, "Ассоциировать .JPG файлы с этой программой?", "Associate .JPG files with this application?")
+            Dim msg = Localization.T("Ассоциировать .JPG файлы с этой программой?")
             If MessageBox.Show(msg, "Association", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
                 AssociateJpgWithThisApp()
             End If
@@ -102,7 +102,7 @@ Partial Public Class Main_Form
         AssociateExtensionWithThisApp(".png", "FastMediaSorter.png", "PNG Image - Fast Media Sorter")
         AssociateExtensionWithThisApp(".gif", "FastMediaSorter.gif", "GIF Image - Fast Media Sorter")
 
-        MessageBox.Show(If(Is_Russian_Language, "Ассоциации установлены. Возможно потребуется перезапустить Проводник или Windows.", "Associations set. You may need to restart Explorer or Windows for changes to take effect."), "Association", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        MessageBox.Show(Localization.T("Ассоциации установлены. Возможно потребуется перезапустить Проводник или Windows."), "Association", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
     Private Sub AssociateExtensionWithThisApp(ext As String, progId As String, description As String)
@@ -119,7 +119,7 @@ Partial Public Class Main_Form
                 extKey.SetValue("", progId)
             End Using
         Catch ex As Exception
-            MessageBox.Show(If(Is_Russian_Language, "Ошибка ассоциации: ", "Failed to set association: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show(Localization.T("Ошибка ассоциации: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ERR Ext associaciated: " & ex.Message)
         End Try
     End Sub
@@ -187,23 +187,16 @@ Partial Public Class Main_Form
         Dim registered_Count As Integer = all_Image_Extensions.Length - failed.Count
         If failed.Count = 0 Then
             MessageBox.Show(
-                If(Is_Russian_Language,
-                   "Успешно зарегистрировано " & registered_Count.ToString() & " форматов:" & vbCrLf &
-                   String.Join("  ", all_Image_Extensions) & vbCrLf & vbCrLf &
-                   "Изменения применены для текущего пользователя.",
-                   registered_Count.ToString() & " formats registered:" & vbCrLf &
-                   String.Join("  ", all_Image_Extensions) & vbCrLf & vbCrLf &
-                   "Changes applied for current user."),
-                If(Is_Russian_Language, "Регистрация завершена", "Registration complete"),
+                Localization.TF("Успешно зарегистрировано {0} форматов:" & vbCrLf &
+                                "{1}" & vbCrLf & vbCrLf &
+                                "Изменения применены для текущего пользователя.",
+                                registered_Count, String.Join("  ", all_Image_Extensions)),
+                Localization.T("Регистрация завершена"),
                 MessageBoxButtons.OK, MessageBoxIcon.Information)
         Else
             MessageBox.Show(
-                If(Is_Russian_Language,
-                   "Зарегистрировано: " & registered_Count.ToString() & vbCrLf &
-                   "Ошибок: " & failed.Count.ToString() & " (" & String.Join(", ", failed) & ")",
-                   "Registered: " & registered_Count.ToString() & vbCrLf &
-                   "Errors: " & failed.Count.ToString() & " (" & String.Join(", ", failed) & ")"),
-                If(Is_Russian_Language, "Регистрация", "Registration"),
+                Localization.TF("Зарегистрировано: {0}" & vbCrLf & "Ошибок: {1} ({2})", registered_Count.ToString(), failed.Count.ToString(), String.Join(", ", failed)),
+                Localization.T("Регистрация"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End If
     End Sub
@@ -250,23 +243,16 @@ Partial Public Class Main_Form
         Dim registered_Count As Integer = all_Video_Extensions.Length - failed.Count
         If failed.Count = 0 Then
             MessageBox.Show(
-                If(Is_Russian_Language,
-                   "Успешно зарегистрировано " & registered_Count.ToString() & " форматов:" & vbCrLf &
-                   String.Join("  ", all_Video_Extensions) & vbCrLf & vbCrLf &
-                   "Изменения применены для текущего пользователя.",
-                   registered_Count.ToString() & " formats registered:" & vbCrLf &
-                   String.Join("  ", all_Video_Extensions) & vbCrLf & vbCrLf &
-                   "Changes applied for current user."),
-                If(Is_Russian_Language, "Регистрация завершена", "Registration complete"),
+                Localization.TF("Успешно зарегистрировано {0} форматов:" & vbCrLf &
+                                "{1}" & vbCrLf & vbCrLf &
+                                "Изменения применены для текущего пользователя.",
+                                registered_Count, String.Join("  ", all_Video_Extensions)),
+                Localization.T("Регистрация завершена"),
                 MessageBoxButtons.OK, MessageBoxIcon.Information)
         Else
             MessageBox.Show(
-                If(Is_Russian_Language,
-                   "Зарегистрировано: " & registered_Count.ToString() & vbCrLf &
-                   "Ошибок: " & failed.Count.ToString() & " (" & String.Join(", ", failed) & ")",
-                   "Registered: " & registered_Count.ToString() & vbCrLf &
-                   "Errors: " & failed.Count.ToString() & " (" & String.Join(", ", failed) & ")"),
-                If(Is_Russian_Language, "Регистрация", "Registration"),
+                Localization.TF("Зарегистрировано: {0}" & vbCrLf & "Ошибок: {1} ({2})", registered_Count.ToString(), failed.Count.ToString(), String.Join(", ", failed)),
+                Localization.T("Регистрация"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End If
     End Sub

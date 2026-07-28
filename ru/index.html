@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fast Media Sorter для Windows</title>
+<meta name="description" content="Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/ru/">
+<link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/">
+<link rel="alternate" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/ru/">
+<link rel="alternate" hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/uk/">
+<link rel="alternate" hreflang="de" href="https://serzhyale.github.io/FastMediaSorter_Lite/de/">
+<link rel="alternate" hreflang="it" href="https://serzhyale.github.io/FastMediaSorter_Lite/it/">
+<link rel="alternate" hreflang="es" href="https://serzhyale.github.io/FastMediaSorter_Lite/es/">
+<link rel="alternate" hreflang="fr" href="https://serzhyale.github.io/FastMediaSorter_Lite/fr/">
+<link rel="alternate" hreflang="pt" href="https://serzhyale.github.io/FastMediaSorter_Lite/pt/">
+<link rel="alternate" hreflang="ar" href="https://serzhyale.github.io/FastMediaSorter_Lite/ar/">
+<link rel="alternate" hreflang="hi" href="https://serzhyale.github.io/FastMediaSorter_Lite/hi/">
+<link rel="alternate" hreflang="bn" href="https://serzhyale.github.io/FastMediaSorter_Lite/bn/">
+<link rel="alternate" hreflang="ur" href="https://serzhyale.github.io/FastMediaSorter_Lite/ur/">
+<link rel="alternate" hreflang="zh" href="https://serzhyale.github.io/FastMediaSorter_Lite/zh/">
+<link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Fast Media Sorter для Windows">
+<meta property="og:description" content="Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/ru/">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/og-image.png">
+<meta name="theme-color" content="#0d1017">
+<link rel="icon" href="https://serzhyale.github.io/FastMediaSorter_Lite/assets/favicon.ico" sizes="any">
+<style>
+  :root{--bg:#0d1017;--bg2:#171b26;--fg:#e8ecf4;--muted:#aab2be;--accent:#7aa2ff;--border:rgba(255,255,255,.10)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:16px/1.6 "Segoe UI",system-ui,-apple-system,"Noto Sans","Noto Sans Arabic","Noto Sans Devanagari","Noto Sans Bengali","Microsoft YaHei",sans-serif}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px}
+  header{padding:56px 0 8px}
+  h1{font-size:clamp(28px,5vw,44px);line-height:1.15;margin:0 0 14px}
+  .tagline{font-size:clamp(16px,2.2vw,20px);color:var(--muted);margin:0 0 28px;max-width:62ch}
+  h2{font-size:20px;margin:40px 0 14px}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+  .card h3{margin:0 0 8px;font-size:17px}
+  .card p{margin:0;color:var(--muted);font-size:15px}
+  ul{padding-inline-start:22px;color:var(--muted)}
+  li{margin:6px 0}
+  .btns{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 6px}
+  .btn{display:inline-block;padding:11px 18px;border-radius:10px;text-decoration:none;
+       border:1px solid var(--border);color:var(--fg);background:var(--bg2)}
+  .btn.primary{background:var(--accent);color:#0d1017;border-color:transparent;font-weight:600}
+  .note{margin:22px 0 0;padding:12px 16px;border-inline-start:3px solid var(--accent);
+        background:rgba(122,162,255,.07);border-radius:0 10px 10px 0;color:var(--muted);font-size:14px}
+  .langs{display:flex;flex-wrap:wrap;gap:8px 14px;margin:10px 0 0;font-size:14px}
+  .langs a{color:var(--muted);text-decoration:none}
+  .langs a:hover{color:var(--fg)}
+  .langs a.on{color:var(--accent);font-weight:600}
+  footer{margin:56px 0 40px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:14px}
+  footer a{color:var(--muted)}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Fast Media Sorter для Windows</h1>
+    <p class="tagline">Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши.</p>
+  </header>
+
+  <section>
+    <h2>Что стоит знать</h2>
+    <ul>
+        <li>Бесплатно, исходный код открыт.</li>
+        <li>В комплекте две сборки: современная 64-битная для Windows 10/11 и 32-битная запасная для Windows 7 и 8.1. Инсталлятор выберет нужную сам.</li>
+        <li>Интерфейс доступен на 13 языках - и просмотрщик, и «Менеджер общего доступа», которые следуют одному выбору.</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="grid">
+      <article class="card">
+        <h3>Одна клавиша на файл</h3>
+        <p>Назначьте папки клавишам 1-9, 0 и Del - и разберите каталог, ни разу не потянувшись к мыши.</p>
+      </article>
+      <article class="card">
+        <h3>Слайд-шоу и панель</h3>
+        <p>Обычное или случайное слайд-шоу и панель миниатюр, чтобы сразу прыгнуть к нужному снимку.</p>
+      </article>
+      <article class="card">
+        <h3>Играет почти всё</h3>
+        <p>Видео идёт через встроенный движок VLC - H.264/MP4, MKV, AVI, VP9 и другие.</p>
+      </article>
+      <article class="card">
+        <h3>Фон Ambilight</h3>
+        <p>Пустые поля рядом с фотографией берут цвет у самой фотографии, а не остаются чёрными.</p>
+      </article>
+      <article class="card">
+        <h3>OCR-перевод офлайн</h3>
+        <p>Распознайте текст на картинке и положите перевод поверх неё, никуда не отправляя изображение.</p>
+      </article>
+      <article class="card">
+        <h3>Раздача папки на телефон</h3>
+        <p>Опубликуйте папку по SFTP и откройте её в приложении для Android. Выключено, пока не включите.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="get">
+    <h2>Скачать</h2>
+    <div class="btns">
+      <a class="btn primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Установщик (GitHub)</a>
+      <a class="btn" href="https://github.com/SerZhyAle/FastMediaSorter_Lite#winget">winget</a>
+      <a class="btn" href="https://apps.microsoft.com/search?query=FastMediaSorter">Microsoft Store</a>
+    </div>
+    <p><a href="https://serzhyale.github.io/FastMediaSorter_Lite/how-to-viewer.html">Полное руководство (на английском)</a></p>
+  </section>
+
+  <footer>
+    <p>Язык:</p>
+    <nav class="langs">
+      <a hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/">English</a>
+      <a class="on" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/ru/">Русский</a>
+      <a hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/uk/">Українська</a>
+      <a hreflang="de" href="https://serzhyale.github.io/FastMediaSorter_Lite/de/">Deutsch</a>
+      <a hreflang="it" href="https://serzhyale.github.io/FastMediaSorter_Lite/it/">Italiano</a>
+      <a hreflang="es" href="https://serzhyale.github.io/FastMediaSorter_Lite/es/">Español</a>
+      <a hreflang="fr" href="https://serzhyale.github.io/FastMediaSorter_Lite/fr/">Français</a>
+      <a hreflang="pt" href="https://serzhyale.github.io/FastMediaSorter_Lite/pt/">Português</a>
+      <a hreflang="ar" href="https://serzhyale.github.io/FastMediaSorter_Lite/ar/">العربية</a>
+      <a hreflang="hi" href="https://serzhyale.github.io/FastMediaSorter_Lite/hi/">हिन्दी</a>
+      <a hreflang="bn" href="https://serzhyale.github.io/FastMediaSorter_Lite/bn/">বাংলা</a>
+      <a hreflang="ur" href="https://serzhyale.github.io/FastMediaSorter_Lite/ur/">اردو</a>
+      <a hreflang="zh" href="https://serzhyale.github.io/FastMediaSorter_Lite/zh/">中文</a>
+    </nav>
+    <p><a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a> &middot; <a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">Privacy</a></p>
+  </footer>
+</div>
+</body>
+</html>

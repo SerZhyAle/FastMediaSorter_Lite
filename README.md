@@ -20,7 +20,7 @@ Fast Media Sorter for Windows (formerly FastMediaSorter LITE - it is still publi
 - A video control bar - seek, time, mute, volume - plus audio-track and subtitle picking remembered by language, and "Open URL.." to play a video straight off `smb://`, `sftp://`, `http(s)://` and friends (64-bit program)
 - Menus right on the media: middle-click a picture, right-click a video (64-bit program)
 - Customizable keyboard shortcuts, because reaching for the mouse is so last decade
-- Multi-language support (English/Russian; first run follows the Windows display language)
+- **Interface in 13 languages** - English, Russian, Ukrainian, German, Italian, Spanish, French, Portuguese, Arabic, Hindi, Bengali, Urdu and Chinese. The first run follows your Windows display language; the toolbar button switches it any time, and the Share Manager follows the same choice. Arabic and Urdu are laid out right to left. Only English, Russian and Ukrainian are proofread by the author - **the other ten are machine translations and are not proofread**, so corrections through the [issue tracker](https://github.com/SerZhyAle/FastMediaSorter_Lite/issues) are very welcome. The 32-bit fallback build keeps English and Russian only (Windows 7 has no font for the Indic scripts), and the setup wizard stays English.
 - Broad video format support: everything (H.264/MP4, AVI, ZMBV, VP9, MKV, WMV, ..)
   plays in-window through the bundled **LibVLC** engine - no external codecs, no
   plugin scavenger hunt, and nothing that depends on Internet Explorer still being

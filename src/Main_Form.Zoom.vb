@@ -161,7 +161,7 @@ Partial Public Class Main_Form
         Dim percent As Integer = CInt(Math.Round(CurrentZoomFactor() * 100))
         If zoom_Scale = 1 Then
             ' At Fit the number is informative, not a state the user chose - say so.
-            lbl_Zoom.Text = If(Is_Russian_Language, "Вписать " & percent.ToString() & " %", "Fit " & percent.ToString() & " %")
+            lbl_Zoom.Text = Localization.TF("Вписать {0} %", percent.ToString())
         Else
             lbl_Zoom.Text = percent.ToString() & " %"
         End If

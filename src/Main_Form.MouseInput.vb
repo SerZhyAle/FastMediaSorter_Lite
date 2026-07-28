@@ -32,12 +32,12 @@ Partial Public Class Main_Form
             If e.Button = MouseButtons.Left Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Shift+LeftClick - jumping +10 files")
                 SlideShowStop()
-                JumpBy(10, "+10 файлов", "+10 files")
+                JumpBy(10, "+10 файлов")
                 Return
             ElseIf e.Button = MouseButtons.Right Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Shift+RightClick - jumping -10 files")
                 SlideShowStop()
-                JumpBy(-10, "-10 файлов", "-10 files")
+                JumpBy(-10, "-10 файлов")
                 Return
             End If
         End If
@@ -49,12 +49,12 @@ Partial Public Class Main_Form
             If e.Button = MouseButtons.Left Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Ctrl+LeftClick - jumping +100 files")
                 SlideShowStop()
-                JumpBy(100, "+100 файлов", "+100 files")
+                JumpBy(100, "+100 файлов")
                 Return
             ElseIf e.Button = MouseButtons.Right Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Ctrl+RightClick - jumping -100 files")
                 SlideShowStop()
-                JumpBy(-100, "-100 файлов", "-100 files")
+                JumpBy(-100, "-100 файлов")
                 Return
             End If
         End If
@@ -66,12 +66,12 @@ Partial Public Class Main_Form
             If e.Button = MouseButtons.Left Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Alt+LeftClick - jumping +1000 files")
                 SlideShowStop()
-                JumpBy(1000, "+1000 файлов", "+1000 files")
+                JumpBy(1000, "+1000 файлов")
                 Return
             ElseIf e.Button = MouseButtons.Right Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Alt+RightClick - jumping -1000 files")
                 SlideShowStop()
-                JumpBy(-1000, "-1000 файлов", "-1000 files")
+                JumpBy(-1000, "-1000 файлов")
                 Return
             End If
         End If

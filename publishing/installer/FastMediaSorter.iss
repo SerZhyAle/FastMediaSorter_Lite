@@ -572,7 +572,10 @@ begin
   Exe := ExpandConstant('{app}\FastMediaSorterCompanion.exe');
   if not FileExists(Exe) then
     exit;
-  ShellExec('open', Exe, '', ExpandConstant('{app}'), SW_SHOWNORMAL, ewNoWait, ResultCode);
+  { --show: a bare launch obeys the Share Manager's own "open the manager window at
+    startup" option (off by default) and would stay tray-only - here the user has just
+    ticked "start sharing after installation", so the window is what was asked for. }
+  ShellExec('open', Exe, '--show', ExpandConstant('{app}'), SW_SHOWNORMAL, ewNoWait, ResultCode);
 end;
 
 procedure RegisterOpenWithSupport(const Ext: String);

@@ -166,7 +166,7 @@ Public Module ShareConfigBuilder
         ' failure (Android S1014) and the Share tab surfaces. Built from the same
         ' reach facts; emitted as an optional top-level field (old parsers ignore
         ' it, so it never bumps schemaVersion).
-        Dim note As String = ShareText.AccessNote(Is_Russian_Language, reach, port, includeExternal)
+        Dim note As String = ShareText.AccessNote(reach, port, includeExternal)
 
         ' Field order mirrors the companion CONFIG_FORMAT.md / Android fixture;
         ' accessNote is the optional trailing field.

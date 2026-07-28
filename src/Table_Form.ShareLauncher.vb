@@ -56,9 +56,7 @@ Partial Public Class Table_Form
     ''' LngCh already re-runs on every language switch).</summary>
     Private Sub LocalizeShareLauncherButton()
         If btn_Share_Manager Is Nothing Then Return
-        btn_Share_Manager.Text = If(Is_Russian_Language,
-            "Управление SFTP-сервером для андроид-клиента..",
-            "Manage the SFTP server for the Android client..")
+        btn_Share_Manager.Text = Localization.T("Управление SFTP-сервером для андроид-клиента..")
     End Sub
 
 End Class

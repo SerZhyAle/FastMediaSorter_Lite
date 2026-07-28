@@ -53,7 +53,7 @@ Partial Public Class Main_Form
         If btn_Tracks IsNot Nothing OrElse host Is Nothing Then Return
         btn_Tracks = New Button With {
             .Name = "btn_Tracks",
-            .Text = If(Is_Russian_Language, "Дорожки", "Tracks"),
+            .Text = Localization.T("Дорожки"),
             .AutoSize = True,
             .TabStop = False,
             .Visible = False
@@ -66,11 +66,9 @@ Partial Public Class Main_Form
 
     Friend Sub LocalizeVideoTracks()
         If btn_Tracks IsNot Nothing Then
-            btn_Tracks.Text = If(Is_Russian_Language, "Дорожки", "Tracks")
+            btn_Tracks.Text = Localization.T("Дорожки")
             If toolTip IsNot Nothing Then
-                toolTip.SetToolTip(btn_Tracks, If(Is_Russian_Language,
-                    "Звуковые дорожки и субтитры.  A - следующая звуковая, V - следующие субтитры.",
-                    "Audio tracks and subtitles.  A - next audio, V - next subtitles."))
+                toolTip.SetToolTip(btn_Tracks, Localization.T("Звуковые дорожки и субтитры.  A - следующая звуковая, V - следующие субтитры."))
             End If
         End If
     End Sub
@@ -168,7 +166,7 @@ Partial Public Class Main_Form
         If vlc_Media_Player Is Nothing Then Return
 
         Try
-            AddTrackSection(If(Is_Russian_Language, "Звук", "Audio"),
+            AddTrackSection(Localization.T("Звук"),
                             vlc_Media_Player.AudioTrackDescription,
                             vlc_Media_Player.AudioTrack,
                             Sub(id) SetAudioTrack(id))
@@ -176,7 +174,7 @@ Partial Public Class Main_Form
             Dim spu = vlc_Media_Player.SpuDescription
             If spu IsNot Nothing AndAlso spu.Length > 0 Then
                 tracks_Menu.Items.Add(New ToolStripSeparator())
-                AddTrackSection(If(Is_Russian_Language, "Субтитры", "Subtitles"),
+                AddTrackSection(Localization.T("Субтитры"),
                                 spu, vlc_Media_Player.Spu,
                                 Sub(id) SetSubtitleTrack(id))
             End If
@@ -229,8 +227,8 @@ Partial Public Class Main_Form
             If audio Then apply = Sub(id) SetAudioTrack(id) Else apply = Sub(id) SetSubtitleTrack(id)
 
             Dim root As New ToolStripMenuItem(If(audio,
-                                                 If(Is_Russian_Language, "Звуковая дорожка (A)", "Audio track (A)"),
-                                                 If(Is_Russian_Language, "Субтитры (V)", "Subtitles (V)")))
+                                                 Localization.T("Звуковая дорожка (A)"),
+                                                 Localization.T("Субтитры (V)")))
             AddTrackItems(root.DropDownItems, tracks,
                           If(audio, vlc_Media_Player.AudioTrack, vlc_Media_Player.Spu), apply)
             Return root
@@ -247,7 +245,7 @@ Partial Public Class Main_Form
     ''' A nameless track falls back to its id rather than a blank line.
     ''' </summary>
     Private Shared Function TrackLabel(track As LibVLCSharp.Shared.Structures.TrackDescription) As String
-        If track.Id = Track_Disabled_Id Then Return If(Is_Russian_Language, "Отключить", "Off")
+        If track.Id = Track_Disabled_Id Then Return Localization.T("Отключить")
         If String.IsNullOrWhiteSpace(track.Name) Then Return "#" & track.Id.ToString()
         Return track.Name
     End Function
@@ -258,7 +256,7 @@ Partial Public Class Main_Form
             ' A track with no declared language cannot be remembered - clear the
             ' preference rather than keep a stale one that would fight the next pick.
             If Not applying_Track_Preference Then preferred_Audio_Language = TrackLanguage(id, audio:=True)
-            AnnounceTrack(If(Is_Russian_Language, "Звук", "Audio"), CurrentTrackName(audio:=True))
+            AnnounceTrack(Localization.T("Звук"), CurrentTrackName(audio:=True))
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2471: SetAudioTrack failed: " & ex.Message)
         End Try
@@ -272,7 +270,7 @@ Partial Public Class Main_Form
                 ' off wants them off in the next file too.
                 preferred_Subtitle_Language = If(id = Track_Disabled_Id, Subtitle_Off_Key, TrackLanguage(id, audio:=False))
             End If
-            AnnounceTrack(If(Is_Russian_Language, "Субтитры", "Subtitles"), CurrentTrackName(audio:=False))
+            AnnounceTrack(Localization.T("Субтитры"), CurrentTrackName(audio:=False))
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2472: SetSpu failed: " & ex.Message)
         End Try

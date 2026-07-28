@@ -86,8 +86,8 @@ Partial Public Class Main_Form
 
     Friend Sub LocalizeFolderMenu()
         If folder_Menu_Select_Item IsNot Nothing Then
-            folder_Menu_Select_Item.Text = If(Is_Russian_Language, "Выбрать папку..", "Select folder..")
-            folder_Menu_Select_Item.ToolTipText = If(Is_Russian_Language, "Открыть другую папку с медиафайлами", "Open another folder of media files")
+            folder_Menu_Select_Item.Text = Localization.T("Выбрать папку..")
+            folder_Menu_Select_Item.ToolTipText = Localization.T("Открыть другую папку с медиафайлами")
         End If
 
         If folder_Menu_File_Item IsNot Nothing Then
@@ -95,15 +95,15 @@ Partial Public Class Main_Form
             ' Russian, and in either language the caption alone does not say what the item
             ' does - hence the tooltip, which is the part that has to be plain. Same action
             ' as the toolbar's "file" button and the F / F4 keys.
-            folder_Menu_File_Item.Text = If(Is_Russian_Language, "Выбрать мамку..", "Select file..")
-            folder_Menu_File_Item.ToolTipText = If(Is_Russian_Language, "Выбрать медиафайл (F, F4)", "Choose a media file (F, F4)")
+            folder_Menu_File_Item.Text = Localization.T("Выбрать мамку..")
+            folder_Menu_File_Item.ToolTipText = Localization.T("Выбрать медиафайл (F, F4)")
         End If
 
         If folder_Menu_Share_Item IsNot Nothing Then
             ' "Android", not "phone": the feature IS Android Folder Share - the app on the
             ' other end is the Android one, and a tablet is not a phone.
-            folder_Menu_Share_Item.Text = If(Is_Russian_Language, "Поделиться этой папкой с Android..", "Share this folder with Android..")
-            folder_Menu_Share_Item.ToolTipText = If(Is_Russian_Language, "Открыть Share Manager и раздать эту папку на Android", "Open the Share Manager and serve this folder to Android")
+            folder_Menu_Share_Item.Text = Localization.T("Поделиться этой папкой с Android..")
+            folder_Menu_Share_Item.ToolTipText = Localization.T("Открыть Share Manager и раздать эту папку на Android")
         End If
     End Sub
 

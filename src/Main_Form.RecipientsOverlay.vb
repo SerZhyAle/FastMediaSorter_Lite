@@ -79,7 +79,7 @@ Partial Public Class Main_Form
         Dim zeroPath As String = Hardkeys_to_move_mediafile(10)
         If Not String.IsNullOrEmpty(zeroPath) Then rows.Add(Tuple.Create(10, "0  " & zeroPath))
         ' Delete is always available (a valid sort action even with no folders set).
-        rows.Add(Tuple.Create(-1, ChrW(215) & "  " & If(rus, "Удалить", "Delete")))
+        rows.Add(Tuple.Create(-1, ChrW(215) & "  " & Localization.T("Удалить")))
 
         If recipients_ToolTip Is Nothing Then recipients_ToolTip = New ToolTip()
 

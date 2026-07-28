@@ -38,21 +38,18 @@ Public NotInheritable Class InternetAccessForm
         BuildUi()
     End Sub
 
-    Private Shared ReadOnly Property Rus As Boolean
-        Get
-            Return Is_Russian_Language
-        End Get
-    End Property
 
     Private Sub BuildUi()
-        Me.Text = If(Rus, "Инструкция по пробросу порта", "Port-forward guide")
+        ' Script font + text direction for the active language, before any control
+        ' exists - children inherit both (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
+        UiLanguage.ApplyTo(Me)
+        Me.Text = Localization.T("Инструкция по пробросу порта")
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
         AddHandler Me.FormClosed, Sub() ShareIcons.FreeIcon(Me.Icon, _iconHandle)
         Me.FormBorderStyle = FormBorderStyle.Sizable
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.AutoScaleMode = AutoScaleMode.Font
         Me.MinimumSize = New Size(560, 420)
         Me.ClientSize = New Size(680, 520)
 
@@ -80,13 +77,12 @@ Public NotInheritable Class InternetAccessForm
         Dim btnFlow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .WrapContents = False, .Margin = New Padding(0)}
         btnTestNet = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
-            .Margin = New Padding(0, 0, 8, 0), .Text = If(Rus, "Тест", "Test")}
+            .Margin = New Padding(0, 0, 8, 0), .Text = Localization.T("Тест")}
         btnRefresh = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
-            .Margin = New Padding(0), .Text = If(Rus, "Обновить", "Refresh")}
+            .Margin = New Padding(0), .Text = Localization.T("Обновить")}
         AddHandler btnTestNet.Click, AddressOf OnTestNet
         AddHandler btnRefresh.Click, AddressOf OnRefresh
-        tip.SetToolTip(btnTestNet, If(Rus, "Проверить внешний адрес с этого ПК (не окончательно - роутер может не пускать на свой адрес изнутри).",
-                                          "Probe the external address from this PC (inconclusive - a router may refuse its own address from inside)."))
+        tip.SetToolTip(btnTestNet, Localization.T("Проверить внешний адрес с этого ПК (не окончательно - роутер может не пускать на свой адрес изнутри)."))
         btnFlow.Controls.Add(btnTestNet)
         btnFlow.Controls.Add(btnRefresh)
         header.Controls.Add(lblNet, 0, 0)
@@ -95,8 +91,7 @@ Public NotInheritable Class InternetAccessForm
 
         ' --- row 1: link to the detailed offline guide (wraps within its own row) --
         lnkGuide = New LinkLabel With {.Dock = DockStyle.Fill, .AutoSize = False, .Margin = New Padding(0, 0, 0, 10),
-            .Text = If(Rus, "Открыть подробную инструкцию (HTML, с вашими значениями и моделью роутера)..",
-                            "Open the detailed guide (HTML, prefilled with your values + router model)..")}
+            .Text = Localization.T("Открыть подробную инструкцию (HTML, с вашими значениями и моделью роутера)..")}
         AddHandler lnkGuide.LinkClicked, AddressOf OnOpenGuide
         root.Controls.Add(lnkGuide, 0, 1)
 
@@ -114,13 +109,14 @@ Public NotInheritable Class InternetAccessForm
         lblHint = New Label With {.Dock = DockStyle.Fill, .AutoEllipsis = True, .ForeColor = Color.DimGray,
             .TextAlign = ContentAlignment.MiddleLeft, .Margin = New Padding(0, 6, 12, 0)}
         btnClose = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(16, 4, 16, 4),
-            .Margin = New Padding(0), .Text = If(Rus, "Закрыть", "Close"), .DialogResult = DialogResult.OK}
+            .Margin = New Padding(0), .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.OK}
         footer.Controls.Add(lblHint, 0, 0)
         footer.Controls.Add(btnClose, 1, 0)
         root.Controls.Add(footer, 0, 3)
 
         Me.Controls.Add(root)
         Me.CancelButton = btnClose
+        DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
 
         AddHandler Me.Shown, AddressOf OnShownFirst
         Render()
@@ -142,7 +138,7 @@ Public NotInheritable Class InternetAccessForm
     End Sub
 
     Private Async Function RefreshStatusAsync(poll As Boolean) As Task
-        SetHint(If(Rus, "Обновление..", "Refreshing.."))
+        SetHint(Localization.T("Обновление.."))
         Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
         If st IsNot Nothing Then _status = st
         Render()
@@ -168,13 +164,13 @@ Public NotInheritable Class InternetAccessForm
         lnkGuide.Enabled = running
 
         If Not running Then
-            lblNet.Text = If(Rus, "Запустите общий доступ, чтобы настроить интернет.", "Start sharing to set up internet access.")
+            lblNet.Text = Localization.T("Запустите общий доступ, чтобы настроить интернет.")
             txtForward.Text = ""
             RefreshTestButton()
             Return
         End If
         If reach Is Nothing Then
-            lblNet.Text = If(Rus, "Определяем внешний адрес..", "Detecting the external address..")
+            lblNet.Text = Localization.T("Определяем внешний адрес..")
             txtForward.Text = ""
             RefreshTestButton()
             Return
@@ -187,29 +183,27 @@ Public NotInheritable Class InternetAccessForm
         Dim extPort As Integer = reach.ExternalPort
         Dim isCgnat As Boolean = reach.IsCgnat
         Dim mapped As Boolean = Not String.IsNullOrEmpty(reach.PortMapMethod)
-        Dim routerText As String = If(routerIp.Length > 0, "http://" & routerIp, If(Rus, "адрес роутера", "the router address"))
-        Dim lanText As String = If(lanIp.Length > 0, lanIp, If(Rus, "IP этого ПК", "this PC's IP"))
+        Dim routerText As String = If(routerIp.Length > 0, "http://" & routerIp, Localization.T("адрес роутера"))
+        Dim lanText As String = If(lanIp.Length > 0, lanIp, Localization.T("IP этого ПК"))
 
         Dim sb As New StringBuilder()
-        sb.AppendLine(ShareText.SecurityText(Rus)).AppendLine()
+        sb.AppendLine(ShareText.SecurityText()).AppendLine()
         If isCgnat Then
-            lblNet.Text = If(Rus, "За CGNAT - извне недоступно.", "Behind CGNAT - not reachable from outside.")
-            sb.Append(ShareText.CgnatText(Rus))
+            lblNet.Text = Localization.T("За CGNAT - извне недоступно.")
+            sb.Append(ShareText.CgnatText())
         ElseIf mapped Then
-            lblNet.Text = (If(Rus, "Доступно из интернета: ", "Reachable from internet: ")) & extHost & ":" & (If(extPort > 0, extPort, port)).ToString()
+            lblNet.Text = Localization.TF("Доступно из интернета: {0}", extHost & ":" & (If(extPort > 0, extPort, port)).ToString())
             If reach.ExternalVerified Then
-                sb.Append(If(Rus,
-                    "Порт открыт автоматически (UPnP) - настраивать роутер не нужно. Адрес уже в QR-коде и файле .fmscfg. Учтите: это не подтверждает работу извне - точный тест только с телефона по мобильной сети. При долгой работе общего доступа проверка может устареть; если телефон не подключается, отключите и снова включите общий доступ.",
-                    "The port was opened automatically (UPnP) - no router setup needed. The address is already in the QR code and .fmscfg file. Note: this does not confirm it actually works from outside - the definitive test is from the phone on mobile data. Long-running sessions can go stale; if the phone can't connect, turn sharing off and back on."))
+                sb.Append(Localization.T("Порт открыт автоматически (UPnP) - настраивать роутер не нужно. Адрес уже в QR-коде и файле .fmscfg. Учтите: это не подтверждает работу извне - точный тест только с телефона по мобильной сети. При долгой работе общего доступа проверка может устареть; если телефон не подключается, отключите и снова включите общий доступ."))
             Else
-                sb.Append(ShareText.ExternalUnverifiedText(Rus))
+                sb.Append(ShareText.ExternalUnverifiedText())
             End If
         ElseIf extHost.Length > 0 Then
-            lblNet.Text = (If(Rus, "Внешний адрес: ", "External address: ")) & extHost & ":" & port.ToString() & If(Rus, " (нужен проброс порта)", " (needs port forwarding)")
-            sb.Append(ShareText.PortForwardText(Rus, routerText, port, lanText, port))
+            lblNet.Text = Localization.TF("Внешний адрес: {0} (нужен проброс порта)", extHost & ":" & port.ToString())
+            sb.Append(ShareText.PortForwardText(routerText, port, lanText, port))
         Else
-            lblNet.Text = If(Rus, "Внешний адрес неизвестен - узнайте в роутере.", "External address unknown - check the router.")
-            sb.Append(ShareText.PortForwardText(Rus, routerText, port, lanText, port))
+            lblNet.Text = Localization.T("Внешний адрес неизвестен - узнайте в роутере.")
+            sb.Append(ShareText.PortForwardText(routerText, port, lanText, port))
         End If
         txtForward.Text = sb.ToString()
         RefreshTestButton()
@@ -232,36 +226,35 @@ Public NotInheritable Class InternetAccessForm
         Dim port As Integer = 0
         If reach IsNot Nothing Then port = If(reach.ExternalPort > 0, reach.ExternalPort, If(st IsNot Nothing, st.ListenPort, 0))
         If String.IsNullOrEmpty(host) OrElse port <= 0 Then
-            SetHint(If(Rus, "Адрес ещё не определён.", "No address yet."))
+            SetHint(Localization.T("Адрес ещё не определён."))
             Return
         End If
         _testing = True
         RefreshTestButton()
-        SetHint((If(Rus, "Проверка ", "Testing ")) & host & ":" & port.ToString() & " ..")
+        SetHint(Localization.TF("Проверка {0} ..", host & ":" & port.ToString()))
         Try
             Dim res As SftpProbe.ProbeResult = Await SftpProbe.ProbeAsync(host, port)
-            SetHint(DescribeProbe(res, host, port, Rus))
+            SetHint(DescribeProbe(res, host, port))
         Catch
-            SetHint(If(Rus, "Не удалось выполнить проверку.", "Could not run the test."))
+            SetHint(Localization.T("Не удалось выполнить проверку."))
         Finally
             _testing = False
             RefreshTestButton()
         End Try
     End Sub
 
-    Private Shared Function DescribeProbe(res As SftpProbe.ProbeResult, host As String, port As Integer, rus As Boolean) As String
+    Private Shared Function DescribeProbe(res As SftpProbe.ProbeResult, host As String, port As Integer) As String
         Dim ep As String = host & ":" & port.ToString()
         Select Case res
             Case SftpProbe.ProbeResult.SshOk
-                Return (If(rus, "✓ SFTP-сервер доступен: ", "✓ SFTP server reachable: ")) & ep
+                Return Localization.TF("✓ SFTP-сервер доступен: {0}", ep)
             Case SftpProbe.ProbeResult.PortOpen
-                Return (If(rus, "Порт открыт, но SFTP не ответил: ", "Port open, but no SFTP reply: ")) & ep
+                Return Localization.TF("Порт открыт, но SFTP не ответил: {0}", ep)
             Case SftpProbe.ProbeResult.Timeout, SftpProbe.ProbeResult.Refused
-                Return If(rus,
-                    "✗ С этого ПК не отвечает (" & ep & "). Роутер может не пускать на свой внешний адрес изнутри - проверьте с телефона по мобильной сети.",
-                    "✗ No answer from this PC (" & ep & "). Your router may block reaching its own external address from inside - test from the phone on mobile data.")
+                Return Localization.TF("✗ С этого ПК не отвечает ({0}). Роутер может не пускать на свой внешний адрес изнутри - проверьте с телефона по мобильной сети.", ep)
+
             Case Else
-                Return If(rus, "Адрес некорректен.", "Invalid address.")
+                Return Localization.T("Адрес некорректен.")
         End Select
     End Function
 
@@ -271,13 +264,13 @@ Public NotInheritable Class InternetAccessForm
         Dim port As Integer = If(_status IsNot Nothing, _status.ListenPort, 0)
         Dim reach As WorkerReachability = If(_status IsNot Nothing, _status.Reachability, Nothing)
         Dim lanIp As String = If(reach IsNot Nothing AndAlso Not String.IsNullOrEmpty(reach.LanAddress), reach.LanAddress, NetworkInfo.LocalIPv4())
-        SetHint(If(Rus, "Определяем роутер..", "Detecting router.."))
+        SetHint(Localization.T("Определяем роутер.."))
         Dim rt As RouterIdentity = Await GetRouterAsync()
         Dim model As String = rt.DisplayName()
-        If Not ShareGuide.OpenPortForwardGuide(NetworkInfo.DefaultGatewayUrl(), port, lanIp, port, Rus, model, RouterInfo.SearchUrl(rt)) Then
-            SetHint(If(Rus, "Не удалось открыть инструкцию.", "Could not open the guide."))
+        If Not ShareGuide.OpenPortForwardGuide(NetworkInfo.DefaultGatewayUrl(), port, lanIp, port, model, RouterInfo.SearchUrl(rt)) Then
+            SetHint(Localization.T("Не удалось открыть инструкцию."))
         Else
-            SetHint(If(model.Length > 0, (If(Rus, "Роутер: ", "Router: ")) & model, ""))
+            SetHint(If(model.Length > 0, Localization.TF("Роутер: {0}", model), ""))
         End If
     End Sub
 
