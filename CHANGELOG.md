@@ -8,6 +8,8 @@ Categories: `Added`, `Changed`, `Fixed`, `Removed`.
 
 ## [Unreleased]
 
+## [26.7.29.0137] - 2026-07-29
+
 ### Added
 - **The website now has a page in each of the 13 languages.** Every language gets its own address (`/de/`, `/zh/`, `/ar/` and so on) with its own search-engine metadata, so a search in German finds the German page rather than the English one. The three-language entry page stays where it was and now links to the other ten. Ukrainian is `uk` everywhere - on the site it used to be `ua` while the app and the README already said `uk`; if you had picked Ukrainian on the site before, your choice carries over.
 
