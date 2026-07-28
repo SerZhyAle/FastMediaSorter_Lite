@@ -148,7 +148,7 @@ The Store path (Path A: MSIX) is **additive** - it does not change the GitHub re
 ### Core Components
 
 **Main_Form** - Primary UI window, split across one `partial class` per concern (all `Partial Class Main_Form`; edit the relevant file, not just the main one):
-- **[Main_Form.vb](src/Main_Form.vb)** (~665 LOC - a decomposed "shell"; see [SPECIFICATION_MAIN_FORM_DECOMPOSITION.md](docs/specifications/done/SPECIFICATION_MAIN_FORM_DECOMPOSITION.md), the class was split from one 3,356-LOC file into ~20 partials totaling ~7,700 LOC) - core: file browsing, slideshow, keyboard shortcuts, drag-drop, recent files/folders (~100 max), English/Russian switching via `Is_Russian_Language`. **First-run UI language follows the Windows display language** (`SystemDefaultIsRussian()` in [Main_Form.Localization.vb](src/Main_Form.Localization.vb): Russian display language → Russian, everything else → English); once the user toggles it, the saved `Is_Russian_Language` registry value wins. Hosts the `COPYDATASTRUCT` declaration and `ProcessArgument()` entry point used for cross-instance arg forwarding (see Application_Events below).
+- **[Main_Form.vb](src/Main_Form.vb)** (~665 LOC - a decomposed "shell"; see [SPECIFICATION_MAIN_FORM_DECOMPOSITION.md](docs/specifications/done/SPECIFICATION_MAIN_FORM_DECOMPOSITION.md), the class was split from one 3,356-LOC file into ~20 partials totaling ~7,700 LOC) - core: file browsing, slideshow, keyboard shortcuts, drag-drop, recent files/folders (~100 max), 13-language UI switching via the `Localization` layer. **First-run UI language follows the Windows display language** (`Localization.DefaultCode()`: the display language when this build is translated into it, otherwise English - never Russian, which is only the table's source language); once the user picks one, the saved `UiLanguage` ISO code wins. See "Localization" below. Hosts the `COPYDATASTRUCT` declaration and `ProcessArgument()` entry point used for cross-instance arg forwarding (see Application_Events below).
 - **[Main_Form.UILayout.vb](src/Main_Form.UILayout.vb)** - control sizing/positioning and responsive layout
 - **[Main_Form.FileOperations.vb](src/Main_Form.FileOperations.vb)** - copy/move/rename/delete wiring from UI events to `FileManager`
 - **[Main_Form.VideoPlayer.vb](src/Main_Form.VideoPlayer.vb)** - playback control. **Modern = LibVLC only**: the IE WebBrowser is never instantiated (the Designer's `AllowWebBrowserDrop` line was removed because on .NET that setter *alone* creates the ActiveX in the constructor, and every `Web_Browser.DocumentText` touch is behind `#If NETFRAMEWORK`); the [Main_Form.MediaLoading.vb](src/Main_Form.MediaLoading.vb) dispatcher sends video straight to `PlayVideoWithVlcAsync`. **net48** keeps `LoadVideoInWebBrowser` (H.264) + the LibVLC fallback. Modern also calls `StopVlcPlayback()` before move/delete file ops - VLC locks the playing file, where net48 released it by blanking the WebBrowser.
@@ -192,7 +192,7 @@ The Store path (Path A: MSIX) is **additive** - it does not change the GitHub re
 - **WEBP**: handled by the `IImageDecoder` seam - net48 tries WIC then falls back to ImageSharp 2; modern always decodes with ImageSharp 3 (and animates animated variants). Don't re-add a decoder call here.
 
 **[Common_Module.vb](src/Common_Module.vb)** - Global state & P/Invoke
-- Public flags: `Is_Russian_Language`, `Is_Copying_not_Moving`, `Is_Pespective` (perspective background), `Is_No_Background_Tasks`
+- Public flags: `Is_Copying_not_Moving`, `Is_Pespective` (perspective background), `Is_No_Background_Tasks`
 - **Viewer options** (the "Просмотр"/"Видео и качество" tabs of the Settings window; loaded/saved in `Main_Form.Lifecycle.vb`): `Is_Exif_AutoRotate`, `Is_HighQuality_Scaling` (bicubic downscaling, see `HqPictureBox`), `Is_Show_Info_Overlay` (on-image file name + position HUD), `Slideshow_Base_Interval_Ms` (base slideshow interval; repeated start halves it down to `slide_show_limit`)
 - Color scheme selector: `Form_Color_Scheme` (0=dynamic, 1=black, 2=white, 3=most-frequent)
 - WinAPI calls: `ShowWindow`, `SetForegroundWindow`, `GetForegroundWindow` (for single-instance enforcement)
@@ -271,6 +271,54 @@ Two tiers now: a **standalone .NET 10 Companion app** (`src/FastMediaSorterCompa
 - **Distribution**: both the Companion exe (`<app dir>\FastMediaSorterCompanion.exe`) **and** the worker (`<app dir>\companion\fms-share-worker.exe`) ship as siblings of the LITE exe in every channel - portable ZIP, Inno installer ([FastMediaSorter.iss](publishing/installer/FastMediaSorter.iss) `[Files]`: the Companion exe is a selectable `share` component; [publishing/installer/stop-companion.ps1](publishing/installer/stop-companion.ps1) kills a running worker/Companion before Setup/Uninstall replaces files), and Store MSIX (a second `<Application>` + `uap5:StartupTask` retargeted to Companion + `desktop2:windows.firewallRules`, since an HKCU Run write inside an MSIX container is silently virtualized away). `build.ps1` publishes Companion via `dotnet publish -c Release -r win-x64` (skip with `-SkipCompanion`) and deploys both siblings next to the LITE exe. No Windows service anywhere (blocked by Store policy).
 - **Opt-in server features + firewall** ([ServerFeatures.vb](src/FastMediaSorterCompanion/Core/ServerFeatures.vb), [SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](docs/specifications/done/SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md)): the bundled worker is dormant until the user opts in, because nothing ever opened the Windows Firewall port (the worker's own `AddFirewallRule()` is dead code from the discontinued standalone GUI, never on the `cmd/worker` path) - so an exported public address timed out from outside. Enabling adds a program-scoped inbound firewall allow for the worker exe, either via the installer checkbox (elevated install; hive-safe machine marker file) or the deferred in-app opt-in (one UAC prompt via `enable-share-server.ps1`; HKCU flag). This is the sole **owner-approved scoped exception** to Invariant #4's "no firewall/elevation" rule - never silent. The whole Share UI + the worker spawn (all inside Companion) are gated behind `ServerFeatures.IsEnabled()`.
 - **Tray + close-to-tray lifecycle** ([TrayContext.vb](src/FastMediaSorterCompanion/TrayContext.vb)): the **Companion** is the tray-resident host - closing its window hides it to the tray while a share is active, keeping the worker and its controls reachable, and it only truly exits on explicit Quit or once sharing stops. LITE itself no longer has any close-to-tray behavior (that was removed with the migration); closing LITE during an active share closes LITE immediately, leaving Companion's tray icon running.
+
+## Localization - 13 languages, one layer, two programs
+
+Design + full record: [SPECIFICATION_THIRTEEN_UI_LANGUAGES.md](docs/specifications/SPECIFICATION_THIRTEEN_UI_LANGUAGES.md).
+
+- **The key IS the Russian source string.** `Localization.T("Удалить")` - no resource ids, no
+  `.resx`. Adding a language is one column in a table instead of a ternary in every file. A key with no
+  entry returns the Russian source: visible, never a crash, never `MISSING_KEY_42`.
+- **Engine in [src/Localization/](src/Localization)**, string tables beside it. The **Share Manager
+  links the same two engine files** (`Localization.vb`, `.Persistence.vb`) via `<Compile Include>` and
+  supplies its **own** `RegisterStrings()` + tables under
+  [src/FastMediaSorterCompanion/Localization/](src/FastMediaSorterCompanion/Localization). Linked, not
+  copied - a fix to `T`/`TF`/`TC` must not need doing twice. A project that links the engine and forgets
+  its tables fails with `BC30451`, which is the right failure.
+- **Anything carrying a value uses `TF` with a placeholder**, never concatenation: word order and
+  direction differ per language, so `"Файл занят: " & name` cannot be translated correctly and
+  `TF("Файл занят: {0}", name)` can. `TC(context, key)` disambiguates the handful of Russian words that
+  are genuinely two different things.
+- **Storage**: `UiLanguage` (ISO code) under the same `SZA\FastMediaSorter` hive, with the pre-13
+  `Is_Russian_Language` still written as a mirror so an older exe still lands on a sane language. Both
+  programs read and write it, so a switch in either shows in the other on its next start.
+- **`Is_Russian_Language` is a derived compatibility shim** in `Common_Module` (LITE only - Companion
+  has none). New code must not read it.
+- **Two tests, and the second one is the one that matters.** `LocalizationParityTests` proves every key
+  has all 12 translations, matching placeholder arity, no leaked Cyrillic, and that every `T`/`TF`/`TC`
+  call site is registered. `LocalizationCoverageTests` counts **strings, not flag reads** - the first
+  metric was reads under a budget, and one `Dim rus As Boolean = Is_Russian_Language` at the top of a
+  `Select Case` hid 44 untranslated strings behind a single read. Every Cyrillic literal must reach the
+  layer or be a registered key; the exemptions are listed with reasons in the test.
+- **Never put a smart double quote in a literal, in any language.** The VB compiler treats `“`/`”`
+  (U+201C/U+201D) as string delimiters, so German `„…“` and Chinese `“…”` silently break the file and
+  cascade `BC30035` dozens of lines below. Use `«…»` and `「…」`.
+- **RTL is `RightToLeft = Yes` only, never `RightToLeftLayout`.** The second flag mirrors the whole
+  window device context - Arabic came out as a mirror image, glyphs and Latin title bar alike. In the
+  viewer it would also move the media PictureBox that `Draw_Perspective` and the OCR overlay derive
+  their geometry from.
+- **Script fonts** (`Localization.FontFamily()`): Nirmala UI for hi/bn, Microsoft YaHei UI for zh,
+  Segoe UI for ar/ur - the app is pinned to Microsoft Sans Serif, which has no Arabic at all. In the
+  **viewer** the font goes on individual controls, never the form: that layout is DPI-unaware and
+  pixel-tuned. In the **Companion** it goes on the form, which is safe because those windows scale by
+  `AutoScaleMode.Dpi`, so the font is not the scaling baseline.
+- **The x86/net48 fallback ships RU+EN only** (`#If NETFRAMEWORK` cuts `Codes`), because Nirmala UI
+  arrived in Windows 8 and offering a language that renders as boxes is worse than not offering it. A
+  `UiLanguage` it does not ship falls back to English rather than throwing.
+- **Site**: 12 per-language pages `<lang>/index.html` at the repo root, generated by
+  [tools/Build-SitePages.ps1](tools/Build-SitePages.ps1) from [tools/site-copy.json](tools/site-copy.json).
+  They are render targets - edit the JSON and re-run, never the HTML (canon invariant 16); `-Check`
+  proves the committed pages still match. The root `index.html` stays the hand-authored trilingual entry.
 
 ## Code Style & Constraints
 
