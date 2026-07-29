@@ -114,8 +114,13 @@ Remove-Item -LiteralPath $stageDir -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
+# ".log" is not cosmetic: bin\Release is where the app is RUN from, so AppFileLogger
+# leaves its current.log right here, full of this machine's paths. Shipped, it lands in
+# {app} and the user's own log starts with our sessions - which the new "send the logs
+# to the author" button would then mail back to us. The MSIX packager already filtered
+# it; the ZIP, the installer and release.yml did not.
 Get-ChildItem $releaseDir -Recurse -File |
-    Where-Object { $_.Extension -notin ".pdb", ".xml" } |
+    Where-Object { $_.Extension -notin ".pdb", ".xml", ".log" } |
     ForEach-Object {
         $relative = Get-RelativePath -BasePath $releaseDir -TargetPath $_.FullName
         $destination = Join-Path $stageDir $relative
@@ -133,8 +138,11 @@ foreach ($extra in @("README.md", "LICENSE")) {
 # The .NET 10 x64 mainline viewer (mirror of release.yml). msbuild above only
 # produced the net48 x86 sibling; this is the exe that carries the frozen name and
 # replaces the installed one. Self-contained single-file, so no runtime install.
-# Only the exe is staged - the support trees it needs (libvlc\win-x64, x64\
-# tesseract natives, flags\) are already in the staged bin\Release tree.
+# The support trees it needs (libvlc\win-x64, x64\ tesseract natives, flags\) are
+# already in the staged bin\Release tree - but the publish output itself is NOT just
+# the exe: IncludeNativeLibrariesForSelfExtract is false, so Magick.Native-Q8-x64.dll
+# (the AVIF/HEIC/HEIF decoder) stays loose beside it. Staging the exe by name dropped
+# it, shipping a viewer that could not open the iPhone photos it advertises.
 $modernProj = Join-Path $solutionDir "src\Modern\FastMediaSorter.Modern.vbproj"
 $modernOut  = Join-Path $stageDir "modern-publish-tmp"
 Write-Host "Publishing the .NET 10 x64 viewer (self-contained single-file).."
@@ -146,7 +154,9 @@ $modernExe = Join-Path $modernOut "FastMediaSorter_LITE.exe"
 if (-not (Test-Path $modernExe)) {
     throw "Modern viewer exe not found at $modernExe after publish."
 }
-Copy-Item $modernExe $stageDir -Force
+Get-ChildItem $modernOut -File |
+    Where-Object { $_.Extension -notin ".pdb", ".xml" } |
+    ForEach-Object { Copy-Item $_.FullName (Join-Path $stageDir $_.Name) -Force }
 Remove-Item -LiteralPath $modernOut -Recurse -Force -ErrorAction SilentlyContinue
 
 # Android Folder Share payload (mirror of release.yml): publish the Companion app

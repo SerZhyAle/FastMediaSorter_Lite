@@ -36,9 +36,9 @@ $CompanionPublishDir = Join-Path $SolutionDir "bin\CompanionPublish"
 $CompanionExe        = Join-Path $CompanionPublishDir $CompanionExeName
 # The .NET 10 modern viewer. Its publish is a full standalone tree (exe + the
 # libvlc plugin tree + tesseract natives + flags); bin\Release already carries
-# those support trees from the net48 build, so only the exe is copied next to its
-# x86 sibling there. A lone exe still self-heals: the runtime resolution falls
-# back to downloading codecs/OCR into %LOCALAPPDATA% on first use.
+# those support trees from the net48 build, so only the publish output itself is
+# copied next to the x86 sibling there. A lone exe still self-heals: the runtime
+# resolution falls back to downloading codecs/OCR into %LOCALAPPDATA% on first use.
 $ModernProj       = Join-Path $SolutionDir "src\Modern\FastMediaSorter.Modern.vbproj"
 $ModernPublishDir = Join-Path $SolutionDir "bin\ModernPublish"
 $ModernExe        = Join-Path $ModernPublishDir $ExeName
@@ -46,6 +46,22 @@ $Destinations = @(
     "C:\GD\i\",
     "C:\GD\tc\SZA\_APP\"
 )
+
+# Copy a single-file publish output into a target folder: the exe AND whatever
+# loose files sit beside it, minus debug/doc artefacts. Single-file publish does not
+# mean single file - this project sets IncludeNativeLibrariesForSelfExtract=false, so
+# a native library stays on disk next to the exe (Magick.Native-Q8-x64.dll, which is
+# what decodes AVIF/HEIC/HEIF). Every packager used to copy the exe BY NAME and drop
+# it, so the shipped viewer could not open an iPhone photo it advertised support for.
+function Copy-PublishOutput([string]$PublishDir, [string]$TargetDir) {
+    New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
+    Get-ChildItem $PublishDir -File |
+        Where-Object { $_.Extension -notin ".pdb", ".xml" } |
+        ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination (Join-Path $TargetDir $_.Name) -Force
+            if ($_.Extension -ne ".exe") { Write-Host "  loose publish asset -> $($_.Name)" }
+        }
+}
 
 # Mirror payload\companion\ into <targetDir>\companion\. No-op (with a warning)
 # when the payload is absent, so a checkout without the vendored worker still
@@ -217,20 +233,26 @@ if (-not $SkipModern) {
     # already holds the shared support trees (libvlc win-x64 + win-x86, x64\ + x86\
     # tesseract, flags), so this makes bin\Release the real distribution shape -
     # two exes, one set of adjacent libraries.
-    Copy-Item -Path $ModernExe -Destination (Join-Path $OutputDir $ExeName) -Force
+    #
+    # The publish output is NOT just the exe. IncludeNativeLibrariesForSelfExtract is
+    # false, so a native library stays LOOSE beside it - today Magick.Native-Q8-x64.dll,
+    # the thing that actually decodes AVIF/HEIC/HEIF. Cherry-picking the exe by name
+    # silently shipped a viewer whose iPhone-photo support could not load. Copy the
+    # whole publish output (minus debug/doc artefacts) so any loose native rides along.
+    Copy-PublishOutput -PublishDir $ModernPublishDir -TargetDir $OutputDir
     Write-Host "Modern viewer staged next to the x86 sibling -> $(Join-Path $OutputDir $ExeName)"
 } else {
     Write-Host "Skipping modern viewer publish (-SkipModern)."
 }
 
-# Copy the .NET 10 x64 mainline exe next to the x86 viewer in a deploy target.
+# Copy the .NET 10 x64 mainline exe next to the x86 viewer in a deploy target,
+# together with the loose natives published beside it (see Copy-PublishOutput).
 # No support trees: a lone exe downloads the codecs/OCR it needs into
 # %LOCALAPPDATA% on first use, exactly like the x86 single-file viewer does.
 function Deploy-ModernExe([string]$TargetDir) {
     if ($SkipModern -or -not (Test-Path $ModernExe)) { return }
-    $dest = Join-Path $TargetDir $ExeName
-    Copy-Item -Path $ModernExe -Destination $dest -Force
-    Write-Host "Deployed modern x64 viewer -> $dest"
+    Copy-PublishOutput -PublishDir $ModernPublishDir -TargetDir $TargetDir
+    Write-Host "Deployed modern x64 viewer -> $(Join-Path $TargetDir $ExeName)"
 }
 
 # A running viewer locks its own exe, so replacing it needs it stopped first.

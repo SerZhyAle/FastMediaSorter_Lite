@@ -179,13 +179,15 @@ if (-not (Test-Path (Join-Path $releaseDir $legacyExeName))) {
     throw "Release executable not found in $releaseDir. Run without -SkipBuild first."
 }
 
-# --- stage (bin\Release minus pdb/xml) --------------------------------------
+# --- stage (bin\Release minus pdb/xml/log) ----------------------------------
 Remove-Item -LiteralPath $stageDir -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
+# ".log": bin\Release is where the app is run from, so AppFileLogger's current.log sits
+# here carrying this machine's paths - see the same filter in Build-OfflineRelease.ps1.
 Get-ChildItem $releaseDir -Recurse -File |
-    Where-Object { $_.Extension -notin ".pdb", ".xml" } |
+    Where-Object { $_.Extension -notin ".pdb", ".xml", ".log" } |
     ForEach-Object {
         $relative = Get-RelativePath -BasePath $releaseDir -TargetPath $_.FullName
         $destination = Join-Path $stageDir $relative
@@ -212,8 +214,10 @@ if (Test-Path $payloadDir) {
 
 # The .NET 10 x64 mainline viewer - the exe that carries the frozen name and
 # replaces the installed one. msbuild above only built its net48 x86 sibling.
-# Only the exe is staged: the support trees it needs (libvlc\win-x64, x64\
-# tesseract natives, flags\) already came from the staged bin\Release tree.
+# The support trees it needs (libvlc\win-x64, x64\ tesseract natives, flags\) already
+# came from the staged bin\Release tree - but the whole publish output is staged, not
+# the exe alone: IncludeNativeLibrariesForSelfExtract is false, so the loose
+# Magick.Native-Q8-x64.dll beside it is what decodes AVIF/HEIC/HEIF.
 $modernProj = Join-Path $solutionDir "src\Modern\FastMediaSorter.Modern.vbproj"
 if (Test-Path $modernProj) {
     $modernPub = Join-Path $stageDir "modern-publish-tmp"
@@ -222,7 +226,9 @@ if (Test-Path $modernProj) {
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish (modern viewer) failed with exit code $LASTEXITCODE." }
     $modernExe = Join-Path $modernPub $exeName
     if (-not (Test-Path $modernExe)) { throw "Modern viewer exe not found at $modernExe after publish." }
-    Copy-Item $modernExe $stageDir -Force
+    Get-ChildItem $modernPub -File |
+        Where-Object { $_.Extension -notin ".pdb", ".xml" } |
+        ForEach-Object { Copy-Item $_.FullName (Join-Path $stageDir $_.Name) -Force }
     Remove-Item -LiteralPath $modernPub -Recurse -Force -ErrorAction SilentlyContinue
     Write-Host "Bundled the x64 mainline viewer -> $exeName"
 } else {

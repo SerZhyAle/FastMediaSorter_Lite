@@ -11,6 +11,10 @@ Categories: `Added`, `Changed`, `Fixed`, `Removed`.
 ### Added
 - **"Send the logs to the author" on the Settings -> About tab.** When something misbehaves, one button now packs the program's logs into an archive and opens a new mail with the file already attached, addressed to the author, with a short template to fill in. Before anything happens you are shown what went into the archive - the log, the Share Manager log if there is one, and a report with the version, Windows details and your settings - and you can open the archive and look at it. The program itself never sends anything anywhere: the mail leaves only when you press Send in your own mail program, and if the machine has no mail program that accepts attachments, the archive is copied to the clipboard and shown in its folder so you can attach it by hand. Your translation API key is never written into the report, and a log that has grown for months contributes only its last two megabytes, so the mail stays sendable.
 
+### Fixed
+- **iPhone photos really do open now: HEIC, HEIF and AVIF were announced but did not work in the installed program.** The library that decodes them was built, but it was left behind when the package was assembled - so the feature worked when the program was run from the developer's build folder and failed everywhere else. Nothing about the feature changed; it is simply in the package now. This affected the installer, the portable archive and the Store version alike, from the release that introduced the formats.
+- **The program no longer ships a log file from the machine it was built on.** Every package carried a `current.log` left over from testing, with the build machine's own folder paths inside it, and installed it next to the program - so your own log began with someone else's sessions. It is excluded from all four packages now.
+
 ## [26.7.29.0137] - 2026-07-29
 
 ### Added

@@ -139,8 +139,13 @@ Get-ChildItem $ReleaseDir -Recurse -File |
     }
 
 # The mainline exe (published above, not an msbuild output) - the one the manifest
-# points at. Its support trees came from the staged bin\Release tree above.
-Copy-Item $Exe $Stage -Force
+# points at. Its support trees came from the staged bin\Release tree above, but the
+# publish output itself is more than the exe: IncludeNativeLibrariesForSelfExtract is
+# false, so Magick.Native-Q8-x64.dll stays loose beside it and is what decodes
+# AVIF/HEIC/HEIF. Copy the output, not a single name.
+Get-ChildItem $ModernPublish -File |
+    Where-Object { $_.Extension -notin '.pdb', '.xml' } |
+    ForEach-Object { Copy-Item $_.FullName (Join-Path $Stage $_.Name) -Force }
 Remove-Item $ModernPublish -Recurse -Force -ErrorAction SilentlyContinue
 foreach ($extra in 'README.md', 'LICENSE') {
     $src = Join-Path $RepoRoot $extra

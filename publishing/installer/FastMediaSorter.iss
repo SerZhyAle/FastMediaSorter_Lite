@@ -170,8 +170,11 @@ Name: "share";  Description: "{cm:CompShare}";  Types: full; MinVersion: 10.0.14
 ; (FastMediaSorter_LITE.exe) and its lean net48 sibling (FastMediaSorter_x86.exe)
 ; for machines the mainline cannot run on - plus the native Tesseract/OCR engine.
 ; They are picked up by this one wildcard; the big optional subtrees below are
-; excluded so an unchecked component is genuinely not written to disk.
-Source: "{#SourceDir}\*"; DestDir: "{app}"; Excludes: "libvlc\*,tessdata\*,tessdata-best\*,companion\*,FastMediaSorterCompanion.exe"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: core
+; excluded so an unchecked component is genuinely not written to disk. "*.log" is
+; excluded too: the staging scripts already drop it, but a hand compile against a
+; tree the app has been RUN from would otherwise install our own current.log into
+; {app} and the user's log would start with our sessions and our paths.
+Source: "{#SourceDir}\*"; DestDir: "{app}"; Excludes: "libvlc\*,tessdata\*,tessdata-best\*,companion\*,FastMediaSorterCompanion.exe,*.log"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: core
 ; Video codecs (LibVLC) - offline playback of AVI/MKV/VP9/etc. Absent = those
 ; formats fall back to on-demand runtime download (OptionalRuntimeManager).
 ; Whatever arch trees the staged payload holds are shipped as-is: the decision of

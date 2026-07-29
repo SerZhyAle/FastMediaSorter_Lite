@@ -108,9 +108,12 @@ jobs:
           $exe = Join-Path $release "FastMediaSorter_x86.exe"
           if (-not (Test-Path $exe)) { throw "Release executable not found at $exe" }
 
-          # Copy everything except debug/doc artefacts
+          # Copy everything except debug/doc artefacts and any leftover run-time log
+          # (AppFileLogger writes current.log next to the exe; harmless on a clean
+          # runner, shipped junk if the tree was ever run - same filter as the local
+          # packagers and build-msix.ps1).
           Get-ChildItem $release -Recurse -File |
-            Where-Object { $_.Extension -notin '.pdb','.xml' } |
+            Where-Object { $_.Extension -notin '.pdb','.xml','.log' } |
             ForEach-Object {
               $rel  = Get-RelativePath -BasePath $release -TargetPath $_.FullName
               $dest = Join-Path $stage $rel
@@ -123,9 +126,14 @@ jobs:
 
           # The x64 mainline viewer next to its x86 sibling: two exes, one set of
           # adjacent libraries (each picks its own by process bitness at runtime).
+          # The publish output is not just the exe - IncludeNativeLibrariesForSelfExtract
+          # is false, so Magick.Native-Q8-x64.dll (AVIF/HEIC/HEIF) stays loose beside it
+          # and must ship with it. Copy the output, never a single name.
           $modernExe = "modern-publish/FastMediaSorter_LITE.exe"
           if (-not (Test-Path $modernExe)) { throw "Modern viewer exe not found at $modernExe (dotnet publish step failed?)" }
-          Copy-Item $modernExe $stage
+          Get-ChildItem "modern-publish" -File |
+            Where-Object { $_.Extension -notin '.pdb','.xml' } |
+            ForEach-Object { Copy-Item $_.FullName (Join-Path $stage $_.Name) -Force }
 
           # Android Folder Share payload: the Companion exe (published above) next
           # to the LITE exe, and the committed Go worker under companion\. Both are
