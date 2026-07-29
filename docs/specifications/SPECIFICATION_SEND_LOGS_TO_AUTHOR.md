@@ -307,9 +307,12 @@ Designer-компоновке настроек, то есть в x86-сборк�
       `[settings]`; ключ API - только как `<hidden>`.
 - [x] Секретными считаются `*ApiKey`/`*Password`/`*Token`, обычные ключи - нет.
 - [x] `.\build.ps1` собирает все три программы (x86-виевер, Companion, x64-мейнлайн).
-- [x] `LocalizationParityTests` + `LocalizationCoverageTests` зелёные на .NET 10 (126 тестов);
-      `Companion.Tests` - 51 тест. На net48-леге падают только предсуществующие
-      `LocalizationStartupTests` (там `Codes` = RU+EN by design).
+- [x] `Lite.Tests` зелёные на **обоих** легах: .NET 10 - 127 тестов, net48 - 50;
+      `Companion.Tests` - 51. (В первом прогоне на net48 падали 7
+      `LocalizationStartupTests`: тест был написан под 13 языков, а там `Codes` = RU+EN
+      by design. Тест сделан осведомлённым о шве отдельной правкой:
+      [tests/Lite.Tests/LocalizationStartupTests.vb](../../tests/Lite.Tests/LocalizationStartupTests.vb)
+      берёт ожидание из `Localization.Codes`, а не из зашитых 13 языков.)
 - [x] `pwsh tools/Build-SitePages.ps1 -Check` зелёный после правки `site-copy.json`.
 - [x] Мейнлайн стартует и пишет журнал без исключений.
 

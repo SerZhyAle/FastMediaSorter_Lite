@@ -9,8 +9,22 @@ Imports Xunit
 ''' Windows to hand. Manual check 6 ("first run on a German Windows shows German") is
 ''' exactly MatchCulture plus DefaultCode's order of preference, so it is pinned here
 ''' rather than left to a machine nobody has.
+'''
+''' The whole class runs on BOTH legs, and the two legs ship different language sets:
+''' "#If NETFRAMEWORK" cuts Localization.Codes to RU+EN in the x86 viewer, because the
+''' font Windows needs for Hindi and Bengali arrived in Windows 8. So the expectation
+''' is derived from Codes instead of hardcoded - which makes the seam itself the thing
+''' under test: a language the build carries must be recognised, and one it does not
+''' must match NOTHING so DefaultCode can fall back to English rather than render
+''' boxes. Hardcoding thirteen languages here would fail the net48 leg by design and
+''' leave a permanently red pre-flight (canon invariant 5).
 ''' </summary>
 Public Class LocalizationStartupTests
+
+    ''' <summary>Does THIS build carry that language? RU+EN on net48, all 13 on modern.</summary>
+    Private Shared Function Ships(code As String) As Boolean
+        Return Array.IndexOf(Localization.Codes, code) >= 0
+    End Function
 
     <Theory>
     <InlineData("de-DE", "de")>
@@ -22,7 +36,14 @@ Public Class LocalizationStartupTests
     <InlineData("ru-RU", "ru")>
     <InlineData("en-GB", "en")>
     Public Sub A_shipped_language_is_recognised_from_its_culture(culture As String, expected As String)
-        Assert.Equal(expected, Localization.MatchCulture(New CultureInfo(culture)))
+        Dim matched = Localization.MatchCulture(New CultureInfo(culture))
+        If Ships(expected) Then
+            Assert.Equal(expected, matched)
+        Else
+            ' The x86 leg: not "en" either - MatchCulture reports "no translation" and
+            ' DefaultCode is the one place allowed to decide what happens next.
+            Assert.Null(matched)
+        End If
     End Sub
 
     <Theory>
@@ -46,15 +67,22 @@ Public Class LocalizationStartupTests
     ''' installed an English Windows and then switched the display to German is reading a
     ''' German desktop, and that is what "the OS language" means to them.
     ''' </summary>
-    <Fact>
-    Public Sub The_display_language_decides_the_first_run()
+    <Theory>
+    <InlineData("de-DE", "de")>
+    <InlineData("ar-SA", "ar")>
+    Public Sub The_display_language_decides_the_first_run(culture As String, expected As String)
         Dim savedUi = CultureInfo.CurrentUICulture
         Try
-            CultureInfo.CurrentUICulture = New CultureInfo("de-DE")
-            Assert.Equal("de", Localization.DefaultCode())
-
-            CultureInfo.CurrentUICulture = New CultureInfo("ar-SA")
-            Assert.Equal("ar", Localization.DefaultCode())
+            CultureInfo.CurrentUICulture = New CultureInfo(culture)
+            Dim code = Localization.DefaultCode()
+            If Ships(expected) Then
+                Assert.Equal(expected, code)
+            Else
+                ' The x86 leg does not carry this language, so the display language
+                ' cannot win - but whatever wins is still one this build can draw.
+                Assert.NotEqual(expected, code)
+                Assert.Contains(code, Localization.Codes)
+            End If
         Finally
             CultureInfo.CurrentUICulture = savedUi
         End Try
