@@ -25,7 +25,8 @@
     "know": [
       "Free and open-source.",
       "Two builds ship together: a modern 64-bit one for Windows 10/11 and a 32-bit fallback for Windows 7 and 8.1. The installer picks the right one.",
-      "The interface is available in 13 languages - both the viewer and the Share Manager, which follow the same choice."
+      "The interface is available in 13 languages - both the viewer and the Share Manager, which follow the same choice.",
+      ""
     ],
     "downloadTitle": "Get it",
     "dlSetup": "Installer (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
@@ -50,7 +51,8 @@
     "know": [
       "Бесплатно, исходный код открыт.",
       "В комплекте две сборки: современная 64-битная для Windows 10/11 и 32-битная запасная для Windows 7 и 8.1. Инсталлятор выберет нужную сам.",
-      "Интерфейс доступен на 13 языках - и просмотрщик, и «Менеджер общего доступа», которые следуют одному выбору."
+      "Интерфейс доступен на 13 языках - и просмотрщик, и «Менеджер общего доступа», которые следуют одному выбору.",
+      ""
     ],
     "downloadTitle": "Скачать",
     "dlSetup": "Установщик (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
@@ -75,7 +77,8 @@
     "know": [
       "Безкоштовно, код відкритий.",
       "У комплекті дві збірки: сучасна 64-бітна для Windows 10/11 і 32-бітна запасна для Windows 7 та 8.1. Інсталятор обере потрібну сам.",
-      "Інтерфейс доступний 13 мовами - і переглядач, і «Менеджер спільного доступу», які дотримуються одного вибору."
+      "Інтерфейс доступний 13 мовами - і переглядач, і «Менеджер спільного доступу», які дотримуються одного вибору.",
+      ""
     ],
     "downloadTitle": "Завантажити",
     "dlSetup": "Інсталятор (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
@@ -100,7 +103,8 @@
     "know": [
       "Kostenlos und quelloffen.",
       "Zwei Builds werden zusammen ausgeliefert: ein modernes 64-Bit für Windows 10/11 und ein 32-Bit-Rückfall für Windows 7 und 8.1. Das Setup wählt das richtige.",
-      "Die Oberfläche gibt es in 13 Sprachen - sowohl der Betrachter als auch der Freigabe-Manager, die derselben Wahl folgen."
+      "Die Oberfläche gibt es in 13 Sprachen - sowohl der Betrachter als auch der Freigabe-Manager, die derselben Wahl folgen.",
+      ""
     ],
     "downloadTitle": "Herunterladen",
     "dlSetup": "Installer (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
@@ -125,7 +129,8 @@
     "know": [
       "Gratuito e open source.",
       "Due build viaggiano insieme: una moderna a 64 bit per Windows 10/11 e una di riserva a 32 bit per Windows 7 e 8.1. L'installer sceglie quella giusta.",
-      "L'interfaccia è disponibile in 13 lingue: sia il visualizzatore sia Gestione condivisione, che seguono la stessa scelta."
+      "L'interfaccia è disponibile in 13 lingue: sia il visualizzatore sia Gestione condivisione, che seguono la stessa scelta.",
+      ""
     ],
     "downloadTitle": "Scarica",
     "dlSetup": "Installer (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
@@ -150,7 +155,8 @@
     "know": [
       "Gratuito y de código abierto.",
       "Se entregan dos compilaciones: una moderna de 64 bits para Windows 10/11 y una de reserva de 32 bits para Windows 7 y 8.1. El instalador elige la correcta.",
-      "La interfaz está disponible en 13 idiomas: tanto el visor como el gestor de uso compartido, que siguen la misma elección."
+      "La interfaz está disponible en 13 idiomas: tanto el visor como el gestor de uso compartido, que siguen la misma elección.",
+      ""
     ],
     "downloadTitle": "Descargar",
     "dlSetup": "Instalador (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
@@ -175,7 +181,8 @@
     "know": [
       "Gratuit et open source.",
       "Deux versions sont livrées ensemble : une moderne 64 bits pour Windows 10/11 et une de secours 32 bits pour Windows 7 et 8.1. L'installateur choisit la bonne.",
-      "L'interface est disponible en 13 langues - la visionneuse comme le gestionnaire de partage, qui suivent le même choix."
+      "L'interface est disponible en 13 langues - la visionneuse comme le gestionnaire de partage, qui suivent le même choix.",
+      ""
     ],
     "downloadTitle": "Télécharger",
     "dlSetup": "Installateur (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
@@ -200,7 +207,8 @@
     "know": [
       "Gratuito e de código aberto.",
       "Duas versões vêm juntas: uma moderna de 64 bits para Windows 10/11 e uma reserva de 32 bits para Windows 7 e 8.1. O instalador escolhe a certa.",
-      "A interface está disponível em 13 idiomas - tanto o visualizador como o gestor de partilha, que seguem a mesma escolha."
+      "A interface está disponível em 13 idiomas - tanto o visualizador como o gestor de partilha, que seguem a mesma escolha.",
+      ""
     ],
     "downloadTitle": "Baixar",
     "dlSetup": "Instalador (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
@@ -225,7 +233,8 @@
     "know": [
       "مجاني ومفتوح المصدر.",
       "تُشحن نسختان معًا: نسخة حديثة 64 بت لويندوز 10/11 ونسخة احتياطية 32 بت لويندوز 7 و8.1. ويختار المثبّت المناسبة.",
-      "الواجهة متوفرة بـ 13 لغة - العارض ومدير المشاركة معًا، وكلاهما يتبع الاختيار نفسه."
+      "الواجهة متوفرة بـ 13 لغة - العارض ومدير المشاركة معًا، وكلاهما يتبع الاختيار نفسه.",
+      ""
     ],
     "downloadTitle": "التنزيل",
     "dlSetup": "المثبّت (GitHub)", "dlWinget": "winget", "dlStore": "متجر Microsoft",
@@ -250,7 +259,8 @@
     "know": [
       "मुफ़्त और मुक्त स्रोत।",
       "दो बिल्ड साथ आते हैं: Windows 10/11 के लिए आधुनिक 64-बिट और Windows 7 तथा 8.1 के लिए 32-बिट विकल्प। इंस्टॉलर सही वाला चुन लेता है।",
-      "इंटरफ़ेस 13 भाषाओं में उपलब्ध है - दर्शक और शेयर प्रबंधक दोनों, जो एक ही चयन का पालन करते हैं।"
+      "इंटरफ़ेस 13 भाषाओं में उपलब्ध है - दर्शक और शेयर प्रबंधक दोनों, जो एक ही चयन का पालन करते हैं।",
+      ""
     ],
     "downloadTitle": "डाउनलोड",
     "dlSetup": "इंस्टॉलर (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
@@ -275,7 +285,8 @@
     "know": [
       "বিনামূল্যে ও মুক্ত সোর্স।",
       "দুটি বিল্ড একসাথে আসে: Windows 10/11-এর জন্য আধুনিক 64-বিট আর Windows 7 ও 8.1-এর জন্য 32-বিট বিকল্প। ইনস্টলার নিজেই ঠিকটা বেছে নেয়।",
-      "ইন্টারফেস 13টি ভাষায় পাওয়া যায় - দর্শক ও শেয়ার ম্যানেজার উভয়ই, যারা একই নির্বাচন অনুসরণ করে।"
+      "ইন্টারফেস 13টি ভাষায় পাওয়া যায় - দর্শক ও শেয়ার ম্যানেজার উভয়ই, যারা একই নির্বাচন অনুসরণ করে।",
+      ""
     ],
     "downloadTitle": "ডাউনলোড",
     "dlSetup": "ইনস্টলার (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
@@ -300,7 +311,8 @@
     "know": [
       "مفت اور اوپن سورس۔",
       "دو بلڈ ساتھ آتے ہیں: Windows 10/11 کے لیے جدید 64 بٹ اور Windows 7 و 8.1 کے لیے 32 بٹ متبادل۔ انسٹالر خود درست چن لیتا ہے۔",
-      "انٹرفیس 13 زبانوں میں دستیاب ہے - ویوَر اور شیئر مینیجر دونوں، جو ایک ہی انتخاب کی پیروی کرتے ہیں۔"
+      "انٹرفیس 13 زبانوں میں دستیاب ہے - ویوَر اور شیئر مینیجر دونوں، جو ایک ہی انتخاب کی پیروی کرتے ہیں۔",
+      ""
     ],
     "downloadTitle": "ڈاؤن لوڈ",
     "dlSetup": "انسٹالر (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
@@ -325,7 +337,8 @@
     "know": [
       "免费，开源。",
       "两个版本一起发布：面向 Windows 10/11 的现代 64 位版，以及面向 Windows 7 和 8.1 的 32 位备用版。安装程序会自动选对。",
-      "界面提供 13 种语言 - 查看器与共享管理器均支持，且共用同一设置。"
+      "界面提供 13 种语言 - 查看器与共享管理器均支持，且共用同一设置。",
+      ""
     ],
     "downloadTitle": "下载",
     "dlSetup": "安装程序（GitHub）", "dlWinget": "winget", "dlStore": "Microsoft Store",

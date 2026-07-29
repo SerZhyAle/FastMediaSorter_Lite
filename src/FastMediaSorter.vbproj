@@ -345,6 +345,17 @@
       <DependentUpon>Table_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <!-- "Send the logs to the author" (SPECIFICATION_SEND_LOGS_TO_AUTHOR.md). Both
+         files are whole-file #If Not NETFRAMEWORK, so they compile to nothing here -
+         but they are listed anyway: the rule is that every new .vb joins this list in
+         the same commit, or the next file that references it fails with BC30451.
+         MailSender.vb has no seam - the x86 viewer simply never calls it. -->
+    <Compile Include="Table_Form.SendLogs.vb">
+      <DependentUpon>Table_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Support\LogPackage.vb" />
+    <Compile Include="Support\MailSender.vb" />
     <Compile Include="Common_Module.vb" />
     <!-- The 13-language localization layer (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md).
          The modern project picks these up through its ..\**\*.vb glob; this old-style
@@ -368,6 +379,7 @@
     <Compile Include="Localization\Localization.Menus.vb" />
     <Compile Include="Localization\Localization.OcrTab.vb" />
     <Compile Include="Localization\Localization.Choices.vb" />
+    <Compile Include="Localization\Localization.Support.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\VersionInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">

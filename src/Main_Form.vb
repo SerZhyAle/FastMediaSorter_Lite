@@ -513,7 +513,7 @@ Public Class Main_Form
     Private Sub lbl_Info_LinkClicked(sender As Object, e As System.Windows.Forms.LinkLabelLinkClickedEventArgs) Handles lbl_Info.LinkClicked
         ' Explicit UseShellExecute: mailto needs the shell; net48 defaulted to True,
         ' .NET defaults to False (would throw Win32Exception on the modern build).
-        System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo("mailto:sza@ukr.net?subject=Fast Media Sorter for Windows:") With {.UseShellExecute = True})
+        System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo("mailto:" & Author_Email & "?subject=Fast Media Sorter for Windows:") With {.UseShellExecute = True})
     End Sub
 
 

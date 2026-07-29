@@ -202,6 +202,9 @@ A handy collection of AI-agent presets and tooling by the same author:
 ## Author
 - Website: [sza.od.ua](https://sza.od.ua)
 - Email: [sza@ukr.net](mailto:sza@ukr.net)
+- Something misbehaves? **Settings -> About -> "Send the logs to the author"** packs the program logs
+  into an archive and opens a mail with it already attached. It shows you what is in the archive first,
+  and nothing is sent anywhere until you press Send in your own mail program.
 
 ## License
 MIT - see [LICENSE](LICENSE).

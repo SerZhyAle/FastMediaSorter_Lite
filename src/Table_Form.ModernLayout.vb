@@ -342,6 +342,9 @@ Partial Public Class Table_Form
                 Case "sftp_manager"
                     Dim button As Button = TryCast(row.Editor, Button)
                     If button IsNot Nothing Then button.Text = Localization.T("Управление SFTP")
+                Case "support_send_logs"
+                    Dim button As Button = TryCast(row.Editor, Button)
+                    If button IsNot Nothing Then button.Text = Localization.T("Собрать и отправить")
                 Case "ocr_server"
                     Dim buttons As List(Of Button) = FindModernControls(Of Button)(row.Host).ToList()
                     If buttons.Count > 0 Then buttons(0).Text = Localization.T("Установить")
@@ -464,6 +467,7 @@ Partial Public Class Table_Form
             Case "sftp_guide" : Return Localization.T("Инструкция по подключению")
             Case "android_app" : Return Localization.T("Приложение для Android")
             Case "about_intro" : Return "Fast Media Sorter Lite"
+            Case "support_send_logs" : Return Localization.T("Отправить логи автору")
             Case "doc_html_intro" : Return "Doc HTML Translate"
             Case "doc_html_site" : Return Localization.T("Сайт Doc HTML Translate")
             Case "project_site" : Return Localization.T("Сайт проекта")
@@ -542,6 +546,7 @@ Partial Public Class Table_Form
             Case "sftp_guide" : Return Localization.T("Пошаговая настройка сервера, сети и подключения мобильного клиента.")
             Case "android_app" : Return Localization.T("Страница мобильного клиента Fast Media Sorter для Android.")
             Case "about_intro" : Return Localization.TF("Современный просмотрщик и сортировщик фото и видео." & vbCrLf & "Версия {0}", ShortSettingsVersion())
+            Case "support_send_logs" : Return Localization.T("Соберёт журналы работы программы в архив и создаст письмо автору. Ничего не отправляется без вашего подтверждения.")
             Case "doc_html_intro" : Return Localization.T("Преобразует EPUB, PDF и другие документы в локальный HTML с оглавлением и переводом в браузере. Для изображений, сканов и комиксов создаёт переводимый OCR-слой.")
             Case "doc_html_site" : Return Localization.T("Описание возможностей, поддерживаемых форматов, установки и работы с документами и изображениями.")
             Case "project_site" : Return Localization.T("Описание возможностей, инструкции и материалы проекта.")
@@ -844,13 +849,17 @@ Partial Public Class Table_Form
     Private Sub BuildModernAboutPage()
         Dim flow As FlowLayoutPanel = CreateModernPageFlow(modernAboutPage)
         AddInformationBlock(flow, "about_intro")
+        ' Support first, project links after: this row is looked for in trouble, the
+        ' links out of curiosity (SPECIFICATION_SEND_LOGS_TO_AUTHOR.md §2).
+        EnsureSendLogsButton()
+        AddSettingRow(flow, "support_send_logs", btn_Send_Logs, 230, True)
         AddInformationBlock(flow, "doc_html_intro")
         AddProjectLinkRow(flow, "doc_html_site", "https://serzhyale.github.io/doc-html-translate/")
         AddProjectLinkRow(flow, "project_site", "https://serzhyale.github.io/FastMediaSorter_Lite/")
         AddProjectLinkRow(flow, "project_github", "https://github.com/SerZhyAle/FastMediaSorter_Lite")
         AddProjectLinkRow(flow, "project_releases", "https://github.com/SerZhyAle/FastMediaSorter_Lite/releases")
         AddProjectLinkRow(flow, "project_privacy", "https://serzhyale.github.io/FastMediaSorter_Lite/privacy.html")
-        AddProjectLinkRow(flow, "project_email", "mailto:sza@ukr.net?subject=Fast Media Sorter for Windows")
+        AddProjectLinkRow(flow, "project_email", "mailto:" & Author_Email & "?subject=Fast Media Sorter for Windows")
     End Sub
 
     Private Sub AddInformationBlock(flow As FlowLayoutPanel, key As String)

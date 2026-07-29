@@ -94,6 +94,12 @@
     <Compile Include="..\..\src\Common_Module.vb">
       <Link>Linked\Common_Module.vb</Link>
     </Compile>
+    <!-- The log package behind Settings -> About -> "send the logs to the author".
+         Whole-file "#If Not NETFRAMEWORK", so on the net48 leg this - and
+         LogPackageTests - compile to nothing, matching the shipped shape. -->
+    <Compile Include="..\..\src\Support\LogPackage.vb">
+      <Link>Linked\Support\LogPackage.vb</Link>
+    </Compile>
     <!-- The 13-language localization layer. Linked whole, tables included: the parity
          test's whole job is to look at the real shipped table, and running it on BOTH
          legs also proves the #If NETFRAMEWORK seam cuts Codes to RU+EN on net48 while

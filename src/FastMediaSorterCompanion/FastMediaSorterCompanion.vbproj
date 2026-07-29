@@ -73,6 +73,14 @@
     -->
     <Compile Include="..\Localization\Localization.vb" Link="Localization\Localization.vb" />
     <Compile Include="..\Localization\Localization.Persistence.vb" Link="Localization\Localization.Persistence.vb" />
+
+    <!--
+      Simple MAPI "compose a mail with this file attached" - written here first, for
+      the package wizard, and now shared with the viewer's "send logs to the author"
+      button (SPECIFICATION_SEND_LOGS_TO_AUTHOR.md §5.1). Same reason as above:
+      linked, not copied, so the P/Invoke exists once.
+    -->
+    <Compile Include="..\Support\MailSender.vb" Link="Core\MailSender.vb" />
   </ItemGroup>
 
 </Project>

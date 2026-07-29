@@ -18,6 +18,7 @@ Partial Public NotInheritable Class Localization
         AddMenuStrings()        ' media context menus, toolbar overflow, status hints
         AddOcrTabStrings()      ' the OCR & translation tab of the settings window
         AddChoiceStrings()      ' drop-down options of the expanded (.NET 10) settings
+        AddSupportStrings()     ' "send the logs to the author" row, dialog and mail body
     End Sub
 
 End Class

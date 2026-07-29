@@ -298,7 +298,7 @@ Public Class Table_Form
         ' the greying cannot rely on that handler alone having run.
         SyncDynamicPerspectiveEnabled()
 
-        LinkLabel1.Text = Application.ProductVersion & " sza@ukr.net"
+        LinkLabel1.Text = Application.ProductVersion & " " & Author_Email
 
 #If Not NETFRAMEWORK Then
         ' Keep the old controls and bindings, but host them in the .NET 10 shell
@@ -500,6 +500,6 @@ Public Class Table_Form
     Private Sub LinkLabel1_LinkClicked(sender As Object, e As System.Windows.Forms.LinkLabelLinkClickedEventArgs) Handles LinkLabel1.LinkClicked
         ' Explicit UseShellExecute: mailto needs the shell; net48 defaulted to True,
         ' .NET defaults to False (would throw Win32Exception on the modern build).
-        System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo("mailto:sza@ukr.net?subject=Fast Media Sorter for Windows:") With {.UseShellExecute = True})
+        System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo("mailto:" & Author_Email & "?subject=Fast Media Sorter for Windows:") With {.UseShellExecute = True})
     End Sub
 End Class

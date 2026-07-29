@@ -8,6 +8,9 @@ Categories: `Added`, `Changed`, `Fixed`, `Removed`.
 
 ## [Unreleased]
 
+### Added
+- **"Send the logs to the author" on the Settings -> About tab.** When something misbehaves, one button now packs the program's logs into an archive and opens a new mail with the file already attached, addressed to the author, with a short template to fill in. Before anything happens you are shown what went into the archive - the log, the Share Manager log if there is one, and a report with the version, Windows details and your settings - and you can open the archive and look at it. The program itself never sends anything anywhere: the mail leaves only when you press Send in your own mail program, and if the machine has no mail program that accepts attachments, the archive is copied to the clipboard and shown in its folder so you can attach it by hand. Your translation API key is never written into the report, and a log that has grown for months contributes only its last two megabytes, so the mail stays sendable.
+
 ## [26.7.29.0137] - 2026-07-29
 
 ### Added

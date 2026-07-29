@@ -23,6 +23,13 @@ Module Common_Module
     Public Is_Copying_not_Moving As Boolean
     Public Second_App_Name As String = "FastMediaSorter"
     Public App_name As String = "SZA"
+
+    ''' <summary>
+    ''' The author's address shown in the app and used by every "write to the author"
+    ''' action, including the log package on the About tab. One constant, so the three
+    ''' call sites cannot drift apart.
+    ''' </summary>
+    Public Const Author_Email As String = "sza@ukr.net"
     Public Is_No_Background_Tasks As Boolean = False
     Public Is_Pespective As Boolean = True
     Public Form_Color_Scheme As Integer = 0 ' 0 - dynamic, 1 - black, 2 - white, 3 - most
