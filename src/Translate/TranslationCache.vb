@@ -56,8 +56,33 @@ End Class
 ''' </summary>
 Public Class TranslationCache
 
+    ''' <summary>
+    ''' How many results the in-memory tier keeps. It used to keep every result the process
+    ''' had ever produced: PutMemory only ever added, disk hits were promoted into it too, and
+    ''' the sole eviction was the full Clear() that runs when the OCR settings tab is opened -
+    ''' which a reader has no reason to do. Each entry holds a whole block/line/word tree with
+    ''' a Rectangle per word, so over a day of auto-OCR across thousands of text-heavy images
+    ''' the working set climbed by tens to hundreds of megabytes that only a restart returned.
+    '''
+    ''' 200 is far more than any navigation pattern revisits, and the disk tier catches
+    ''' everything evicted from here.
+    ''' </summary>
+    Private Const Memory_Entry_Limit As Integer = 200
+
+    ''' <summary>Default budget for the JSON cache on disk. Modern overrides it from the user
+    ''' setting (ModernViewerPreferences.OcrDiskCacheMaxMb, which until now was displayed and
+    ''' persisted but enforced by nothing); net48 has no such setting and keeps this.</summary>
+    Friend Const Default_Disk_Budget_Mb As Integer = 250
+
     Private ReadOnly memory As New Dictionary(Of String, OcrOverlayDocument)(StringComparer.Ordinal)
+
+    ''' <summary>Insertion/most-recent-use order for the memory tier, oldest first.</summary>
+    Private ReadOnly memory_Order As New List(Of String)()
+
     Private ReadOnly sync As New Object()
+
+    ''' <summary>Budget for the disk tier, in megabytes. Zero disables trimming.</summary>
+    Friend Property DiskBudgetMb As Integer = Default_Disk_Budget_Mb
 
     Public Shared Function BuildKey(filePath As String, fileWriteTicks As Long, ocrEngine As String, translator As String, srcLang As String, dstLang As String) As String
         Return String.Join("|", filePath, fileWriteTicks.ToString(), ocrEngine, translator, srcLang, dstLang)
@@ -66,14 +91,26 @@ Public Class TranslationCache
     Public Function TryGetMemory(key As String) As OcrOverlayDocument
         SyncLock sync
             Dim doc As OcrOverlayDocument = Nothing
-            memory.TryGetValue(key, doc)
+            If Not memory.TryGetValue(key, doc) Then Return Nothing
+            ' A hit is a use: move it to the young end so the entries the user keeps coming
+            ' back to are not the ones evicted.
+            memory_Order.Remove(key)
+            memory_Order.Add(key)
             Return doc
         End SyncLock
     End Function
 
     Public Sub PutMemory(key As String, doc As OcrOverlayDocument)
         SyncLock sync
+            If memory.ContainsKey(key) Then memory_Order.Remove(key)
+            memory_Order.Add(key)
             memory(key) = doc
+
+            While memory_Order.Count > Memory_Entry_Limit
+                Dim oldest As String = memory_Order(0)
+                memory_Order.RemoveAt(0)
+                memory.Remove(oldest)
+            End While
         End SyncLock
     End Sub
 
@@ -82,6 +119,7 @@ Public Class TranslationCache
     Public Sub Clear()
         SyncLock sync
             memory.Clear()
+            memory_Order.Clear()
         End SyncLock
         Try
             Dim dir As String = OcrPaths.OcrCacheDir()
@@ -117,6 +155,15 @@ Public Class TranslationCache
             Directory.CreateDirectory(dir)
             Dim json As String = TranslateHttp.JsonSerialize(ToDto(doc))
             File.WriteAllText(DiskPath(key), json, Encoding.UTF8)
+
+            ' Enforce the budget right where the directory grows. Nothing used to: the only
+            ' deletion path was the full Clear() on opening the OCR settings tab, so the cache
+            ' grew to gigabytes over months of reading - past a limit the user had set and the
+            ' code never read.
+            Dim removed As Integer = DiskCacheTrim.TrimToBudget(dir, DiskBudgetMb, "*.json")
+            If removed > 0 Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr-cache: trimmed " & removed.ToString() & " old entries")
+            End If
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr-cache: save failed: " & ex.Message)
         End Try

@@ -14,6 +14,11 @@ Public NotInheritable Class ModernViewerPreferences
 
     Public Property NameCollisionPolicy As String = "ask"
     Public Property AfterFileOperation As String = "next"
+    ''' <summary>Show the next file once a copy has been queued. On by default - that is
+    ''' the fast sorting run the number keys are for; off keeps the same file on screen,
+    ''' which is what filing one picture into several folders wants
+    ''' (SPECIFICATION_COPY_ACTIONS_REWORK.md §3.2).</summary>
+    Public Property AdvanceAfterCopy As Boolean = True
     Public Property IncludeSubfolders As Boolean
     Public Property IncludedExtensions As String = ""
     Public Property InterfaceScalePercent As Integer
@@ -49,6 +54,7 @@ Public NotInheritable Class ModernViewerPreferences
         Dim p As New ModernViewerPreferences()
         p.NameCollisionPolicy = ReadChoice("NameCollisionPolicy", p.NameCollisionPolicy, "ask", "skip", "rename", "replace")
         p.AfterFileOperation = ReadChoice("AfterFileOperation", p.AfterFileOperation, "next", "stay", "closeIfEmpty")
+        p.AdvanceAfterCopy = ReadBool("AdvanceAfterCopy", p.AdvanceAfterCopy)
         p.IncludeSubfolders = ReadBool("IncludeSubfolders", p.IncludeSubfolders)
         p.IncludedExtensions = ReadString("IncludedExtensions", p.IncludedExtensions)
         p.InterfaceScalePercent = ReadInt("InterfaceScalePercent", p.InterfaceScalePercent, 0, 150)
@@ -86,6 +92,7 @@ Public NotInheritable Class ModernViewerPreferences
     Public Sub Save()
         WriteString("NameCollisionPolicy", NameCollisionPolicy)
         WriteString("AfterFileOperation", AfterFileOperation)
+        WriteBool("AdvanceAfterCopy", AdvanceAfterCopy)
         WriteBool("IncludeSubfolders", IncludeSubfolders)
         WriteString("IncludedExtensions", IncludedExtensions)
         WriteString("InterfaceScalePercent", InterfaceScalePercent.ToString(CultureInfo.InvariantCulture))

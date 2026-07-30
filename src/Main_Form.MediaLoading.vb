@@ -68,6 +68,12 @@ Partial Public Class Main_Form
     ''' the stop condition for a folder in which nothing decodes at all.</summary>
     Private auto_Skip_Chain As Integer = 0
 
+    ''' <summary>Bumped by every navigation the USER asks for, so a skip continuation that
+    ''' was posted to the message loop and then overtaken by a keypress is dropped instead
+    ''' of yanking the user to the file the skip had picked.</summary>
+    Private auto_Skip_Generation As Integer = 0
+
+
     ''' <summary>Drops the file that would not load and moves on in the direction the
     ''' user was actually going. Auto-skipping a broken file is by design; it simply
     ''' never happened, because the follow-up call landed inside the 40 ms throttle
@@ -92,7 +98,38 @@ Partial Public Class Main_Form
 
         pending_Jump_Target = target
         pending_Jump_Status = ""        ' keep the "could not load X" line on screen
-        ReadShowMediaFile(Mode_JumpTo, is_Auto_Skip:=True)
+        RequestAutoSkipJump()
+    End Sub
+
+    ''' <summary>
+    ''' Asks for the next file in an auto-skip chain, on a FRESH stack.
+    '''
+    ''' Why this is not a plain call: display -&gt; skip -&gt; display is a mutual recursion that
+    ''' never unwinds - roughly five frames per skipped file. The count-based guard in
+    ''' ReadShowMediaFile IS the stack depth, so a folder of thousands of unreachable files
+    ''' (a NAS that dropped its SMB session mid-session is the ordinary way to get one) blew
+    ''' the UI thread's stack long before the counter ran out. StackOverflowException cannot
+    ''' be caught: the process died instantly, taking with it everything Form1_FormClosing
+    ''' would have saved - position, recent lists, every setting changed since launch.
+    '''
+    ''' Posting the follow-up puts each skip on its own stack AND lets the message loop
+    ''' breathe between files, so the window stays alive through the chain. The generation
+    ''' check drops the continuation if the user navigated in the meantime.
+    ''' </summary>
+    Private Sub RequestAutoSkipJump()
+        If Not Me.IsHandleCreated OrElse Me.IsDisposed Then
+            ' No message loop to post to yet - the first file opens inside Form1_Load. The
+            ' chain cannot be deep here, so the direct call is safe.
+            ReadShowMediaFile(Mode_JumpTo, is_Auto_Skip:=True)
+            Return
+        End If
+
+        Dim generation As Integer = auto_Skip_Generation
+        Me.BeginInvoke(New Action(Sub()
+                                      If Me.IsDisposed Then Return
+                                      If auto_Skip_Generation <> generation Then Return
+                                      ReadShowMediaFile(Mode_JumpTo, is_Auto_Skip:=True)
+                                  End Sub))
     End Sub
 
     Private Sub ReadShowMediaFile(ByVal read_Mode_Type As String, Optional is_Auto_Skip As Boolean = False)
@@ -125,7 +162,7 @@ Partial Public Class Main_Form
             ' round for ever and the stack would not.
             If is_Auto_Skip Then
                 auto_Skip_Chain += 1
-                If auto_Skip_Chain > Math.Max(1, total_File_Count) Then
+                If Not AutoSkipPolicy.ShouldContinue(auto_Skip_Chain, total_File_Count) Then
                     auto_Skip_Chain = 0
                     lbl_Status.Text = Localization.T("! Нет читаемых файлов в папке")
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0335: auto-skip chain exhausted - nothing readable")
@@ -133,6 +170,9 @@ Partial Public Class Main_Form
                 End If
             Else
                 auto_Skip_Chain = 0
+                ' The user took over: any skip continuation still sitting in the message
+                ' queue belongs to a decision they have already overridden.
+                auto_Skip_Generation += 1
             End If
 
             If FileOperationWorker.IsBusy AndAlso read_Mode_Type = Mode_Delete Then
@@ -175,6 +215,9 @@ Partial Public Class Main_Form
                     If recent_Folder_List.Count > RecentFoldersLimit() Then
                         recent_Folder_List.RemoveAt(recent_Folder_List.Count - 1)
                     End If
+
+                    ' A new folder in the recent list is worth keeping through a crash.
+                    MarkSettingsDirty()
                 End If
 
                 If cmbox_Media_Folder.InvokeRequired Then
@@ -374,7 +417,7 @@ Partial Public Class Main_Form
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0580: case DeleteFile failed: not found")
                     End If
                 Catch ex As Exception
-                    MsgBox("E001 " & ex.Message)
+                    ReportOperationError("E001", ex)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0590: ERR: " & ex.Message)
                 End Try
 
@@ -506,7 +549,7 @@ Partial Public Class Main_Form
             End If
             Return True
         Catch ex As Exception
-            MsgBox("E002 " & ex.Message)
+            ReportOperationError("E002", ex)
             Current_Folder_Path = ""
             cmbox_Media_Folder.Text = ""
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0710: E002 " & ex.Message)
@@ -570,7 +613,7 @@ Partial Public Class Main_Form
                 Return True
             End If
         Catch ex As Exception
-            MsgBox("E003 " & ex.Message)
+            ReportOperationError("E003", ex)
             Current_Folder_Path = ""
             cmbox_Media_Folder.Text = ""
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0760: E003 " & ex.Message)
@@ -626,7 +669,7 @@ Partial Public Class Main_Form
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0800: E004 " & ex.Message)
             lbl_Status.Text = Localization.T("! Ошибка чтения файлов")
-            MsgBox("E004 " & ex.Message)
+            ReportOperationError("E004", ex)
             Current_Folder_Path = ""
             cmbox_Media_Folder.Text = ""
             total_File_Count = 0
@@ -1176,6 +1219,11 @@ Partial Public Class Main_Form
                 If recent_Media_File_List.Count > RecentFilesLimit() Then
                     recent_Media_File_List.RemoveAt(0)
                 End If
+
+                ' The recent list and the folder position (LastCounter) now exist only in
+                ' memory until something writes them; ask for the trailing-edge flush so an
+                ' ungraceful exit costs at most the last minute instead of the whole session.
+                MarkSettingsDirty()
             End If
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0980: currentFileName = " & Current_File_Name)
@@ -1287,8 +1335,16 @@ Partial Public Class Main_Form
                     End If
 
                     If total_File_Count > 0 Then
-                        ' Recursively try the next file
-                        UpdateCurrentFileAndDisplay(True, False)
+                        ' Try the next file - but through the counted, posted path, not by
+                        ' calling the display straight back. This is the SECOND shape of the
+                        ' recursion fixed in RequestAutoSkipJump: it bypassed the chain guard
+                        ' entirely (that lives in ReadShowMediaFile's is_Auto_Skip branch), so
+                        ' a folder where every file's dispatch throws - VLC natives that will
+                        ' not load, a path New Uri rejects - nested one frame set per file
+                        ' with nothing to stop it.
+                        pending_Jump_Target = current_File_Index
+                        pending_Jump_Status = ""
+                        RequestAutoSkipJump()
                     End If
                 Else
                     lbl_Status.Text = Localization.TF("Файл {0} перемещается назад операционной системой.", Current_File_Name)
@@ -1298,8 +1354,12 @@ Partial Public Class Main_Form
 
         Else
             StopGifLoopPlayback()
-            If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
-            If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
+            ' Both surfaces AND both backing streams: disposing the Image while leaving it
+            ' assigned left a disposed bitmap on the control, and the MemoryStream each
+            ' image was decoded from stayed alive with nothing left to reach it. Emptying
+            ' a folder is not rare - every "move the last file out" ends here.
+            ReleasePictureBoxMedia(1)
+            ReleasePictureBoxMedia(2)
             current_Loaded_File_Name = ""
 #If NETFRAMEWORK Then
             Web_Browser.DocumentText = ""

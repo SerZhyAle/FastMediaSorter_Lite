@@ -290,6 +290,8 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="OcrTranslateSettings.vb" />
+    <Compile Include="AutoSkipPolicy.vb" />
+    <Compile Include="DiskCacheTrim.vb" />
     <Compile Include="DocHtmlTranslateLauncher.vb" />
     <Compile Include="ZoomMath.vb" />
     <Compile Include="MediaUrl.vb" />

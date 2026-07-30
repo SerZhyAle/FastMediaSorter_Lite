@@ -22,6 +22,28 @@ Partial Public Class Main_Form
     Private recipients_Overlay As Panel
     Private recipients_ToolTip As ToolTip
 
+    ''' <summary>The font the current overlay generation was built with. A Font assigned
+    ''' to a control is NOT disposed by Control.Dispose, so without holding it here every
+    ''' rebuild (settings closed, form resized, flag toggled) abandoned one.</summary>
+    Private recipients_Overlay_Font As Font
+
+    ''' <summary>Final teardown for the overlay's own long-lived bits - called from
+    ''' Form1_FormClosing. ApplyRecipientsOverlay handles the per-rebuild half.</summary>
+    Private Sub DisposeRecipientsOverlayResources()
+        Try
+            If recipients_ToolTip IsNot Nothing Then
+                recipients_ToolTip.RemoveAll()
+                recipients_ToolTip.Dispose()
+                recipients_ToolTip = Nothing
+            End If
+            If recipients_Overlay_Font IsNot Nothing Then
+                recipients_Overlay_Font.Dispose()
+                recipients_Overlay_Font = Nothing
+            End If
+        Catch
+        End Try
+    End Sub
+
     ''' <summary>
     ''' Builds/shows the recipients overlay when <c>Is_Show_Recipients_Overlay</c>
     ''' is on, or tears it down when off. Single entry point - call it after the
@@ -32,11 +54,20 @@ Partial Public Class Main_Form
         ' Tear down any existing overlay first (rebuild from current data).
         If recipients_Overlay IsNot Nothing Then
             Try
+                ' RemoveAll BEFORE the panel goes: a ToolTip keeps an entry per control it
+                ' was set on, so without this it held every generation of dead buttons for
+                ' the lifetime of the form.
+                If recipients_ToolTip IsNot Nothing Then recipients_ToolTip.RemoveAll()
                 If recipients_Overlay.Parent IsNot Nothing Then recipients_Overlay.Parent.Controls.Remove(recipients_Overlay)
                 recipients_Overlay.Dispose()
             Catch
             End Try
             recipients_Overlay = Nothing
+        End If
+
+        If recipients_Overlay_Font IsNot Nothing Then
+            recipients_Overlay_Font.Dispose()
+            recipients_Overlay_Font = Nothing
         End If
 
         If Not Is_Show_Recipients_Overlay Then Return
@@ -83,7 +114,9 @@ Partial Public Class Main_Form
 
         If recipients_ToolTip Is Nothing Then recipients_ToolTip = New ToolTip()
 
+        ' Held in a field so the NEXT rebuild can dispose it (see ApplyRecipientsOverlay).
         Dim ui_Font As New Font(Me.Font.FontFamily, RecipientsOverlayFontSize(), Me.Font.Style)
+        recipients_Overlay_Font = ui_Font
         Dim rowH As Integer = ui_Font.Height + LogicalToDeviceUnits(10)
 
         ' Width from the widest caption, capped so it never eats more than half the
@@ -105,12 +138,29 @@ Partial Public Class Main_Form
             .Margin = New Padding(0)
         }
 
+        ' Mainline: every recipient row carries a second, narrow zone that COPIES into the
+        ' same folder - the row itself still moves, so the muscle memory is untouched and
+        ' copying stops being a hidden global mode. The delete row stays one action: a
+        ' deletion has no copy. On net48 the row keeps its single meaning, which the
+        ' global copy-mode checkbox there decides (SPECIFICATION_COPY_ACTIONS_REWORK.md §4.3).
+        Dim copy_Caption As String = ""
+        Dim copyW As Integer = 0
+#If Not NETFRAMEWORK Then
+        copy_Caption = Localization.T("копия")
+        copyW = Math.Max(LogicalToDeviceUnits(38),
+                         TextRenderer.MeasureText(copy_Caption, ui_Font).Width + LogicalToDeviceUnits(14))
+        ' A narrow window must not lose the path to the copy zone: below a usable width the
+        ' row goes back to move-only, and the copy stays reachable by Shift+digit.
+        If copyW > panelW - LogicalToDeviceUnits(80) Then copyW = 0
+#End If
+
         Dim y As Integer = 0
         Dim visibleRows As Integer = RecipientsOverlayVisibleRows()
         Dim scrollRows As Boolean = rows.Count > visibleRows
         overlay.AutoScroll = scrollRows
         For Each r In rows
             Dim isDelete As Boolean = (r.Item1 = -1)
+            Dim showCopy As Boolean = Not isDelete AndAlso copyW > 0
             Dim b As New NonFocusButton() With {
                 .Text = r.Item2,
                 .Tag = r.Item1,
@@ -122,7 +172,7 @@ Partial Public Class Main_Form
                 .TabStop = False,
                 .UseVisualStyleBackColor = False,
                 .Location = New Point(0, y),
-                .Size = New Size(panelW, rowH),
+                .Size = New Size(If(showCopy, panelW - copyW, panelW), rowH),
                 .ForeColor = If(isDelete, Color.White, Color.Gainsboro),
                 .BackColor = If(isDelete, Color.FromArgb(RecipientsOverlayAlpha(), 96, 32, 32), Color.FromArgb(RecipientsOverlayAlpha(), 52, 52, 52))
             }
@@ -130,9 +180,40 @@ Partial Public Class Main_Form
             b.FlatAppearance.MouseOverBackColor = If(isDelete, Color.FromArgb(140, 44, 44), Color.FromArgb(72, 72, 72))
             b.FlatAppearance.MouseDownBackColor = If(isDelete, Color.FromArgb(170, 50, 50), Color.FromArgb(96, 96, 96))
             ' Full path in the tooltip - the caption may be ellipsized.
-            If Not isDelete Then recipients_ToolTip.SetToolTip(b, Hardkeys_to_move_mediafile(r.Item1))
+            If Not isDelete Then
+                recipients_ToolTip.SetToolTip(b, If(showCopy,
+                                                    Localization.TF("Перенести в: {0}", Hardkeys_to_move_mediafile(r.Item1)),
+                                                    Hardkeys_to_move_mediafile(r.Item1)))
+            End If
             AddHandler b.Click, AddressOf RecipientOverlayButton_Click
             overlay.Controls.Add(b)
+
+#If Not NETFRAMEWORK Then
+            If showCopy Then
+                Dim c As New NonFocusButton() With {
+                    .Text = copy_Caption,
+                    .Tag = r.Item1,
+                    .Font = ui_Font,
+                    .FlatStyle = FlatStyle.Flat,
+                    .TextAlign = ContentAlignment.MiddleCenter,
+                    .Padding = New Padding(0),
+                    .AutoEllipsis = True,
+                    .TabStop = False,
+                    .UseVisualStyleBackColor = False,
+                    .Location = New Point(panelW - copyW, y),
+                    .Size = New Size(copyW, rowH),
+                    .ForeColor = Color.Gainsboro,
+                    .BackColor = Color.FromArgb(RecipientsOverlayAlpha(), 38, 62, 38)
+                }
+                c.FlatAppearance.BorderSize = 0
+                c.FlatAppearance.MouseOverBackColor = Color.FromArgb(52, 88, 52)
+                c.FlatAppearance.MouseDownBackColor = Color.FromArgb(66, 112, 66)
+                recipients_ToolTip.SetToolTip(c, Localization.TF("Скопировать в: {0}", Hardkeys_to_move_mediafile(r.Item1)))
+                AddHandler c.Click, AddressOf RecipientOverlayCopyButton_Click
+                overlay.Controls.Add(c)
+            End If
+#End If
+
             y += rowH
         Next
 
@@ -182,6 +263,20 @@ Partial Public Class Main_Form
         ' The media surface may have changed under us - stay clickable on top.
         KeepRecipientsOverlayOnTop()
     End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>A click on a row's copy zone is exactly Shift + that digit.</summary>
+    Private Sub RecipientOverlayCopyButton_Click(sender As Object, e As EventArgs)
+        Dim b As Button = TryCast(sender, Button)
+        If b Is Nothing OrElse b.Tag Is Nothing Then Return
+        Dim slot As Integer = CInt(b.Tag)
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2411: recipients overlay copy click, slot=" & slot.ToString())
+
+        SlideShowStop()
+        ExecuteRecipientAction(slot, RecipientActionKind.Copy)
+        KeepRecipientsOverlayOnTop()
+    End Sub
+#End If
 
     ''' <summary>A flat button that never takes keyboard focus, so clicking a row
     ''' does not steal focus from the media surface (the app is keyboard-driven;

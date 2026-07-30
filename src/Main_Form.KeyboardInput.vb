@@ -77,6 +77,44 @@ Partial Public Class Main_Form
                     ' Toggle OCR auto-mode (enables the feature if it was off).
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1616: Shift+T toggle auto OCR")
                     If ocr_Settings IsNot Nothing Then ToggleOcrAutoMode()
+#If Not NETFRAMEWORK Then
+                ' Shift + digit COPIES into the same slot the bare digit moves into: the
+                ' one thing that used to require a trip to the settings window and back.
+                ' Top row only, deliberately - with NumLock on, Windows drops NumLock
+                ' while Shift is held, so Shift+NumPad1 arrives as Keys.End and
+                ' Shift+NumPad0 as Keys.Insert. Promising numpad here would be a lie, so
+                ' the help says "Shift + a top-row digit".
+                Case Keys.D1
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1401: copy 01")
+                    ExecuteRecipientAction(1, RecipientActionKind.Copy)
+                Case Keys.D2
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1411: copy 02")
+                    ExecuteRecipientAction(2, RecipientActionKind.Copy)
+                Case Keys.D3
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1421: copy 03")
+                    ExecuteRecipientAction(3, RecipientActionKind.Copy)
+                Case Keys.D4
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1431: copy 04")
+                    ExecuteRecipientAction(4, RecipientActionKind.Copy)
+                Case Keys.D5
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1441: copy 05")
+                    ExecuteRecipientAction(5, RecipientActionKind.Copy)
+                Case Keys.D6
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1451: copy 06")
+                    ExecuteRecipientAction(6, RecipientActionKind.Copy)
+                Case Keys.D7
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1461: copy 07")
+                    ExecuteRecipientAction(7, RecipientActionKind.Copy)
+                Case Keys.D8
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1471: copy 08")
+                    ExecuteRecipientAction(8, RecipientActionKind.Copy)
+                Case Keys.D9
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1481: copy 09")
+                    ExecuteRecipientAction(9, RecipientActionKind.Copy)
+                Case Keys.D0
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1491: copy 0")
+                    ExecuteRecipientAction(10, RecipientActionKind.Copy)
+#End If
                 Case Else
                     key_Handled = False
             End Select
@@ -261,7 +299,7 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1505: rotated " & If(clockwise, "CW", "CCW"))
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1530: ERR: " & ex.Message)
-            MsgBox("E012 " & ex.Message)
+            ReportOperationError("E012", ex)
         End Try
     End Sub
 
@@ -278,6 +316,22 @@ Partial Public Class Main_Form
             PoMove(keyIndex)
         End If
     End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>
+    ''' The same grid row, asked to COPY - Shift + double-click on the key number. Row 0
+    ''' is DEL and keeps its single meaning: a deletion has no copy.
+    ''' </summary>
+    Public Sub DoKeyAsCopy(ByVal keyIndex As Integer)
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1861: DoKeyAsCopy")
+
+        If keyIndex = 0 Then
+            ReadShowMediaFile(Mode_Delete)
+        Else
+            ExecuteRecipientAction(keyIndex, RecipientActionKind.Copy)
+        End If
+    End Sub
+#End If
 
     Private Sub Picture_Box_1_KeyDown(sender As Object, e As KeyEventArgs) Handles Picture_Box_1.KeyDown
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1248: keyb on P1: " & e.KeyCode.ToString)

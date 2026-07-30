@@ -81,16 +81,24 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 3. `dotnet publish` Companion -> `bin\CompanionPublish\FastMediaSorterCompanion.exe`.
 4. Копирует **оба** вьюера + Companion + воркер (`companion\`) в рабочие папки
    (`C:\GD\i\`, `C:\GD\tc\SZA\_APP\`).
-5. **Тег НЕ создаётся, на GitHub ничего не уходит.**
+5. Пакует оффлайновый инсталлятор: зовёт [tools/Build-Installer.ps1](../../tools/Build-Installer.ps1)
+   с `-SkipBuild` (пересборки нет - берётся уже собранный `bin\Release`) и с версией,
+   которую только что проставил билд, -> `dist\FastMediaSorter-<версия>-windows-x64-setup.exe` + `.sha256`.
+   Нужен Inno Setup 6; если его нет - шаг падает с подсказкой `winget install JRSoftware.InnoSetup`.
+6. **Тег НЕ создаётся, на GitHub ничего не уходит.**
 
 Флаги: `-SkipModern` (без x64-мейнлайна), `-SkipCompanion` (без Share Manager),
-`-NoClean` (без предварительной уборки).
+`-SkipInstaller` (без упаковки setup.exe - самая долгая часть),
+`-InstallerIncludeBest` / `-InstallerSkipOcr` (что класть в пакет из OCR-моделей:
+по умолчанию - лёгкие `fast`), `-NoClean` (без предварительной уборки).
 
 Что где лежит после сборки:
 - `bin\Release\` - **это и есть форма дистрибутива**: оба exe + общие библиотеки рядом.
 - `bin\SingleFile\` - "тонкий" standalone x86-вьюер (exe сам по себе, нативы тянет
   в `%LOCALAPPDATA%` при первом запуске).
 - `bin\ModernPublish\`, `bin\CompanionPublish\` - сырые выхлопы `dotnet publish`.
+- `dist\` - готовый `setup.exe` под эту сборку (свой `dist\`-прунинг делает сам
+  упаковщик, оставляя текущую версию).
 
 **Флоу:**
 1. `.\build.ps1`
@@ -184,7 +192,7 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 | --- | --- | --- |
 | Где | локально | GitHub + winget + Store |
 | Команда | `.\build.ps1` | `.\tools\Release.ps1 -Push` |
-| Что на выходе | оба вьюера в `bin\Release` + Companion | setup.exe + zip + два `.sha256` в GitHub Release |
+| Что на выходе | оба вьюера в `bin\Release` + Companion + `dist\setup.exe` | setup.exe + zip + два `.sha256` в GitHub Release |
 | Тег `v*` | нет | да (это и есть триггер) |
 | Стоимость Actions | **$0** | платные минуты (~1 Windows-job на тег) |
 | Триггер CI | - | push тега `vYY.M.D.HHmm` |

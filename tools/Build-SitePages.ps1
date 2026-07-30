@@ -1,13 +1,20 @@
 <#
 .SYNOPSIS
-    Renders the per-language first pages of the site - <lang>/index.html at the
-    repository root - from tools/site-copy.json.
+    Renders the per-language first pages of the site - lang/<code>/index.html -
+    from tools/site-copy.json.
 
 .DESCRIPTION
     The site is served from the repository ROOT (see .sza-canon.json: site.root ".").
     The root index.html stays the trilingual EN/RU/UK entry page; every UI language
     additionally gets its own URL with its own `lang`/`dir`, a full set of hreflang
     alternates and a 13-language switcher.
+
+    All 12 translated pages live under ONE root folder, `lang/` - GitHub Pages is
+    branch-based here (source main:/), so a clean per-language URL needs a real
+    directory, and 12 single-file directories in the repository root was noise.
+    `lang/` is the only knob: change $LangDir and every URL, hreflang alternate and
+    output path follows. The root index.html's own switcher is hand-authored and
+    must be kept in step by hand.
 
     See docs/specifications/SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block B.
 
@@ -25,6 +32,7 @@ $ErrorActionPreference = 'Stop'
 $Root     = Split-Path $PSScriptRoot -Parent
 $CopyFile = Join-Path $PSScriptRoot 'site-copy.json'
 $BaseUrl  = 'https://serzhyale.github.io/FastMediaSorter_Lite'
+$LangDir  = 'lang'   # the one root folder that holds every translated page
 $Releases = 'https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest'
 $Repo     = 'https://github.com/SerZhyAle/FastMediaSorter_Lite'
 
@@ -38,7 +46,7 @@ function Esc([string]$s) {
 }
 
 # Absolute paths from the site root: a relative href breaks one directory down.
-function PageUrl([string]$code) { if ($code -eq 'en') { "$BaseUrl/" } else { "$BaseUrl/$code/" } }
+function PageUrl([string]$code) { if ($code -eq 'en') { "$BaseUrl/" } else { "$BaseUrl/$LangDir/$code/" } }
 
 function Render([string]$code) {
     $e = $copy.$code
@@ -159,7 +167,7 @@ foreach ($code in $codes) {
     # English is the root entry page, which is hand-authored and trilingual.
     if ($code -eq 'en') { continue }
 
-    $dir  = Join-Path $Root $code
+    $dir  = Join-Path (Join-Path $Root $LangDir) $code
     $path = Join-Path $dir 'index.html'
     $html = (Render $code) -replace "`r`n", "`n"
 
@@ -172,10 +180,18 @@ foreach ($code in $codes) {
 
     New-Item -ItemType Directory -Path $dir -Force | Out-Null
     [IO.File]::WriteAllText($path, $html, (New-Object Text.UTF8Encoding $false))
-    $written += "$code/index.html"
+    $written += "$LangDir/$code/index.html"
 }
 
 if ($Check) {
+    # The pages used to live one per folder in the repository root. A leftover there
+    # would still be served by Pages and would silently outrank the real page.
+    $orphans = $codes | Where-Object { $_ -ne 'en' -and (Test-Path (Join-Path $Root "$_/index.html")) }
+    if ($orphans.Count -gt 0) {
+        Write-Warning "Legacy per-language folders left in the repository root: $($orphans -join ', ')"
+        Write-Host "Delete them - the pages live under $LangDir/ now."
+        exit 1
+    }
     if ($stale.Count -gt 0) {
         Write-Warning "Pages out of date with site-copy.json: $($stale -join ', ')"
         Write-Host "Run .\tools\Build-SitePages.ps1 to regenerate."

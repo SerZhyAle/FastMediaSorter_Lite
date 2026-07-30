@@ -59,14 +59,37 @@ Friend NotInheritable Class FileOpQueue(Of T)
         End Get
     End Property
 
-    ''' <summary>Hands an operation to the queue. Never blocks, never refuses.</summary>
-    Friend Sub Enqueue(op As T)
+    ''' <summary>
+    ''' Hands an operation to the queue. Never blocks. Returns False when the queue has
+    ''' already been completed (DrainAsync ran) and the operation will NOT be executed.
+    '''
+    ''' That refusal used to be silent: the writer was completed first thing by DrainAsync,
+    ''' the window stayed interactive for up to 15 s while the tail finished, and any hotkey
+    ''' pressed in that window landed here, decremented the counter and returned. The caller
+    ''' had already removed the file from the list and printed "moved"/"deleted", so the user
+    ''' was told about work that never happened. It is now the caller's job to roll that back
+    ''' - the same rollback a genuine operation failure gets.
+    ''' </summary>
+    Friend Function Enqueue(op As T) As Boolean
         Interlocked.Increment(_pending)
         If Not _channel.Writer.TryWrite(op) Then
             ' Unbounded and not completed - the only way here is after Shutdown.
             Interlocked.Decrement(_pending)
+            Return False
         End If
-    End Sub
+        Return True
+    End Function
+
+    ''' <summary>True once DrainAsync has closed the queue: no further operation will run.
+    ''' Callers use it to refuse an action up front instead of accepting a keypress they
+    ''' cannot honour.</summary>
+    Friend ReadOnly Property IsClosed As Boolean
+        Get
+            Return Volatile.Read(_closed)
+        End Get
+    End Property
+
+    Private _closed As Boolean = False
 
     Private Async Function ConsumeAsync() As Task
         Try
@@ -103,6 +126,7 @@ Friend NotInheritable Class FileOpQueue(Of T)
     ''' <summary>Waits for the queue to run dry - for shutdown. Returns False on timeout,
     ''' and the caller closes anyway rather than hold the window hostage.</summary>
     Friend Async Function DrainAsync(timeout As TimeSpan) As Task(Of Boolean)
+        Volatile.Write(_closed, True)
         _channel.Writer.TryComplete()
         Dim finished As Task = Await Task.WhenAny(_consumer, Task.Delay(timeout))
         Return finished Is _consumer

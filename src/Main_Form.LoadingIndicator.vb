@@ -42,6 +42,19 @@ Partial Public Class Main_Form
     ''' wait - also the granularity with which we notice the decode has landed.</summary>
     Private Const loading_Badge_Frame_Ms As Integer = 120
 
+    ''' <summary>
+    ''' How long a single decode may hold the window before we give up on it.
+    '''
+    ''' The wait deliberately does not pump messages (see the file header - pumping would let
+    ''' a keypress reenter the load of the file being displayed), so with no ceiling the
+    ''' window was hostage to the decode: a synchronous read on a dead SMB session blocks for
+    ''' the redirector timeout PER BLOCK, which on a multi-megabyte file is minutes of a
+    ''' window that takes no keys, no mouse and no close button. Past this the file is
+    ''' reported unreadable - the same path a corrupt file takes, which auto-skips and carries
+    ''' on - and the abandoned decode's result is released if it ever arrives.
+    ''' </summary>
+    Private Const loading_Decode_Deadline_Ms As Integer = 20000
+
     Private loading_Badge As Label
 
     ''' <summary>
@@ -64,12 +77,25 @@ Partial Public Class Main_Form
 
         Dim saved_Status As String = ShowLoadingStatus(file_Path)
         Dim result As Tuple(Of Image, IO.MemoryStream)
+        Dim gave_Up As Boolean = False
         Try
             Dim frame As Integer = 0
             Do
                 ShowLoadingBadge(file_Path, file_Size_Bytes, watch.Elapsed, frame)
                 frame += 1
+                If watch.ElapsedMilliseconds >= loading_Decode_Deadline_Ms Then
+                    gave_Up = True
+                    Exit Do
+                End If
             Loop Until decode.Wait(loading_Badge_Frame_Ms)
+
+            If gave_Up Then
+                ' Nothing can cancel a blocking file read, so the task is abandoned rather
+                ' than waited on - with a continuation that releases whatever it eventually
+                ' produces, or the Image and its MemoryStream would leak.
+                AbandonDecode(decode, file_Path, watch.ElapsedMilliseconds)
+                Return Nothing
+            End If
 
             ' GetResult, not .Result: it rethrows what the decode actually threw
             ' instead of an AggregateException wrapping it, so the caller's
@@ -83,6 +109,24 @@ Partial Public Class Main_Form
         End Try
         Return result
     End Function
+
+    ''' <summary>Lets go of a decode that outran its deadline, releasing its result whenever
+    ''' (if ever) it lands.</summary>
+    Private Shared Sub AbandonDecode(decode As System.Threading.Tasks.Task(Of Tuple(Of Image, IO.MemoryStream)),
+                                     file_Path As String,
+                                     waited_Ms As Long)
+        AppFileLogger.WriteLine("Decode abandoned after " & waited_Ms.ToString() & " ms: " & file_Path)
+        decode.ContinueWith(Sub(finished)
+                                Try
+                                    If finished.Status <> System.Threading.Tasks.TaskStatus.RanToCompletion Then Return
+                                    Dim late As Tuple(Of Image, IO.MemoryStream) = finished.Result
+                                    If late Is Nothing Then Return
+                                    late.Item1?.Dispose()
+                                    late.Item2?.Dispose()
+                                Catch
+                                End Try
+                            End Sub, System.Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously)
+    End Sub
 
     ''' <summary>True when it is safe to touch controls from here at all. The badge is
     ''' a courtesy - if the form has no handle yet (the first file opens inside

@@ -303,9 +303,6 @@ Public Class Main_Form
 
 
 
-    Const WM_USER As Integer = &H400
-    Const MY_CUSTOM_MESSAGE As Integer = WM_USER + 1
-    Const FILE_MAP_READ As Integer = &H4
     Private Const minimum_time_before_next_media_file As Double = 0.04
 
 
@@ -321,44 +318,12 @@ Public Class Main_Form
     End Sub
 
 
+    ' Removed with the long-run stability sweep: a WM_USER+1 receiver that mapped a shared
+    ' section handed to it in WParam and then called CloseHandle on it. Nothing in the
+    ' package has ever sent that message - cross-instance forwarding is WM_COPYDATA, in
+    ' Application_Events.vb - so it was a live handle-closing path driven entirely by
+    ' whatever else might post WM_USER+1 to our window.
     Protected Overrides Sub WndProc(ByRef m As Message)
-
-        If m.Msg = MY_CUSTOM_MESSAGE Then
-            Dim hMap As IntPtr = m.WParam
-            If hMap <> IntPtr.Zero Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0777: MESSAGE")
-                Try
-                    Dim pBuf As IntPtr = MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0)
-                    If pBuf <> IntPtr.Zero Then
-                        Try
-                            Dim length As Integer = 0
-                            While Marshal.ReadByte(pBuf, length) <> 0
-                                length += 1
-                            End While
-
-                            Dim bytes(length - 1) As Byte
-                            Marshal.Copy(pBuf, bytes, 0, length)
-                            Dim receivedString As String = Encoding.UTF8.GetString(bytes)
-                            If Not String.IsNullOrEmpty(receivedString) Then
-                                External_message(receivedString)
-                            Else
-                                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0778: Error processing MY_CUSTOM_MESSAGE - received empty")
-                            End If
-                        Finally
-                            UnmapViewOfFile(pBuf)
-                        End Try
-                    Else
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0776: Error processing MY_CUSTOM_MESSAGE: " & Marshal.GetLastWin32Error())
-                    End If
-                Catch ex As Exception
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0779: Error processing MY_CUSTOM_MESSAGE: " & ex.Message)
-                Finally
-                    CloseHandle(hMap)
-                End Try
-            Else
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0779: Error processing MY_CUSTOM_MESSAGE - received NULL")
-            End If
-        End If
 
         If m.Msg = WM_COPYDATA Then
 
@@ -648,6 +613,26 @@ Public Class Main_Form
 
 
 
+    ''' <summary>
+    ''' Reports a caught operation failure without stopping the app.
+    '''
+    ''' Nine catch-alls in the navigation, file-operation and background-drawing paths used to
+    ''' end in a MODAL MsgBox. In long use the causes of those catches repeat - a share that
+    ''' stopped answering, a transient GDI+ error - and on a held-down navigation key the
+    ''' dialogs arrived one per file, each one halting everything until it was dismissed. The
+    ''' status line plus the log says the same thing and keeps the diagnostic code (E001..E105)
+    ''' the user can quote, without taking the app hostage.
+    ''' </summary>
+    Private Sub ReportOperationError(diagnostic_Code As String, ex As Exception)
+        Dim detail As String = diagnostic_Code & " " & If(ex Is Nothing, "", ex.Message)
+        Try
+            lbl_Status.Text = Localization.TF("Ошибка операции: {0}", detail)
+        Catch
+        End Try
+        AppFileLogger.LogException("Operation failed (" & diagnostic_Code & ")", ex)
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " " & detail)
+    End Sub
+
     Private Sub Btn_Panel_Click(sender As Object, e As EventArgs) Handles btn_Panel.Click
         SlideShowStop()
         ShowImagePanelForm()
@@ -660,6 +645,11 @@ Public Class Main_Form
         End If
         Image_Panel_Form.PrepareForDisplay()
         Image_Panel_Form.ShowDialog(Me)
+        ' A modally-closed form is NOT disposed, and this one is held in a field - so without
+        ' this the last session's thumbnails (hundreds of MB on a big folder at a large card
+        ' size) stayed resident behind a closed window for the rest of the viewer's run.
+        ' PrepareForDisplay rebuilds everything from scratch, so there is nothing to keep.
+        Image_Panel_Form.ReleaseAllCards()
     End Sub
 
     Private Sub Main_Form_Deactivate(sender As Object, e As EventArgs) Handles Me.Deactivate

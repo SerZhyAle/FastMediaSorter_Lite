@@ -223,7 +223,19 @@ Partial Public Class Main_Form
         If status_Text <> "" Then lbl_Status.Text = status_Text & Path.GetFileName(dropped)
     End Sub
 
-    Private Sub Pending_Unlock_Timer_Tick(sender As Object, e As EventArgs) Handles pending_Unlock_Timer.Tick
+    ''' <summary>Set while a probe of pending_Unlock_Path is in flight on a worker thread, so
+    ''' ticks do not stack up behind a probe that is waiting out a network timeout.</summary>
+    Private pending_Unlock_Probe_Running As Boolean = False
+
+    ''' <summary>How a single probe of the locked file came out.</summary>
+    Private Enum Unlock_Probe_Result
+        Still_Locked = 0
+        Ready = 1
+        Missing = 2
+        Folder_Unreachable = 3
+    End Enum
+
+    Private Async Sub Pending_Unlock_Timer_Tick(sender As Object, e As EventArgs) Handles pending_Unlock_Timer.Tick
         If String.IsNullOrEmpty(pending_Unlock_Path) Then
             pending_Unlock_Timer.Stop()
             Return
@@ -234,21 +246,37 @@ Partial Public Class Main_Form
             Return
         End If
 
-        ' GetAttributes keeps throwing while a writer holds the file; once it succeeds
-        ' the writer has released it (download finished) and we can open it.
+        If pending_Unlock_Probe_Running Then Return
+
+        ' Off the UI thread. The probe is a single File.GetAttributes, which is cheap on a
+        ' local disk but costs a FULL network timeout on a share that stopped answering - and
+        ' this tick fires every 800 ms, so the window used to take that stall over and over.
+        Dim probed_Path As String = pending_Unlock_Path
+        pending_Unlock_Probe_Running = True
+        Dim outcome As Unlock_Probe_Result
         Try
-            File.GetAttributes(pending_Unlock_Path)
-        Catch ex As FileNotFoundException
-            ' Gone, not busy. The bare Catch read this as "still locked" and kept polling
-            ' to the deadline, then lied: "file still locked".
-            CancelPendingUnlock(Localization.T("Файл удалён: "))
-            Return
-        Catch ex As DirectoryNotFoundException
-            CancelPendingUnlock(Localization.T("Папка недоступна: "))
-            Return
-        Catch
-            Return ' still locked -- wait for the next tick
+            outcome = Await Task.Run(Function() ProbePendingUnlock(probed_Path))
+        Finally
+            pending_Unlock_Probe_Running = False
         End Try
+
+        ' The world may have moved on while the probe was out: a different file requested, or
+        ' the wait cancelled outright.
+        If Me.IsDisposed Then Return
+        If Not String.Equals(pending_Unlock_Path, probed_Path, StringComparison.Ordinal) Then Return
+
+        Select Case outcome
+            Case Unlock_Probe_Result.Missing
+                ' Gone, not busy. The bare Catch read this as "still locked" and kept polling
+                ' to the deadline, then lied: "file still locked".
+                CancelPendingUnlock(Localization.T("Файл удалён: "))
+                Return
+            Case Unlock_Probe_Result.Folder_Unreachable
+                CancelPendingUnlock(Localization.T("Папка недоступна: "))
+                Return
+            Case Unlock_Probe_Result.Still_Locked
+                Return ' wait for the next tick
+        End Select
 
         pending_Unlock_Timer.Stop()
         Dim ready_Path As String = pending_Unlock_Path
@@ -257,6 +285,22 @@ Partial Public Class Main_Form
         is_File_Reseived_From_Outside = True
         ProcessArgument(ready_Path)
     End Sub
+
+    ''' <summary>GetAttributes keeps throwing while a writer holds the file; once it succeeds
+    ''' the writer has released it (download finished) and we can open it. Runs on a worker
+    ''' thread - it must touch nothing but its argument.</summary>
+    Private Shared Function ProbePendingUnlock(file_Path As String) As Unlock_Probe_Result
+        Try
+            File.GetAttributes(file_Path)
+            Return Unlock_Probe_Result.Ready
+        Catch ex As FileNotFoundException
+            Return Unlock_Probe_Result.Missing
+        Catch ex As DirectoryNotFoundException
+            Return Unlock_Probe_Result.Folder_Unreachable
+        Catch
+            Return Unlock_Probe_Result.Still_Locked
+        End Try
+    End Function
 
     Private Const No_Back_Flag As String = "-noback"
 
@@ -370,19 +414,20 @@ Partial Public Class Main_Form
             Return
         End If
 
-#If Not NETFRAMEWORK Then
-        ' Modern: probe off the UI thread. Every one of those Exists/GetAttributes calls
-        ' blocks for a full SMB timeout when the server is asleep, and with the retries
-        ' that is minutes of a dead window - on a machine whose working folder IS a
-        ' share. The classification and the retry counts are unchanged; only the thread
-        ' they run on is.
+        ' Probe off the UI thread. Every one of those Exists/GetAttributes calls blocks for a
+        ' full SMB timeout when the server is asleep, and with the retries that is minutes of
+        ' a dead window - on a machine whose working folder IS a share. The classification and
+        ' the retry counts are unchanged; only the thread they run on is.
+        '
+        ' This used to be modern-only, and the net48 #Else called ProbeArgument inline. That
+        ' is a genuine bug rather than a missing refinement, and it is worse on the fallback
+        ' build: the path is reached from Form1_Load, from drag-drop AND from the WM_COPYDATA
+        ' receiver, so a second launch carrying a network path froze the ALREADY RUNNING
+        ' viewer for up to 8 x (30 s timeout + 250 ms) - about four minutes with no way to
+        ' interrupt. Async/Await needs nothing net48 lacks.
         ProcessArgumentAsync(argument_For_Path, is_No_Back_Flag_In_This_Call)
-#Else
-        ApplyArgument(argument_For_Path, is_No_Back_Flag_In_This_Call, ProbeArgument(argument_For_Path))
-#End If
     End Sub
 
-#If Not NETFRAMEWORK Then
     Private Async Sub ProcessArgumentAsync(argument_For_Path As String, is_No_Back_Flag_In_This_Call As Boolean)
         Dim generation As Integer = media_Generation
         lbl_Status.Text = Localization.TF("Проверяю доступность: {0}", Path.GetFileName(argument_For_Path))
@@ -404,7 +449,6 @@ Partial Public Class Main_Form
 
         ApplyArgument(argument_For_Path, is_No_Back_Flag_In_This_Call, probe)
     End Sub
-#End If
 
     ''' <summary>Acts on what the probe found. UI thread, both builds.</summary>
     Private Sub ApplyArgument(argument_For_Path As String, is_No_Back_Flag_In_This_Call As Boolean, probe As ArgumentProbe)
@@ -749,12 +793,192 @@ Partial Public Class Main_Form
             e.Cancel = True
             is_Closing_After_Drain = True
             lbl_Status.Text = Localization.T("завершаются файловые операции..")
-            Await file_Op_Queue.DrainAsync(TimeSpan.FromSeconds(15))
-            Me.Close()
+
+            ' The 15 s is a hint, not a verdict. A tail of two or three 100-200 MB moves over
+            ' SMB routinely runs longer, and closing anyway kills the consumer thread wherever
+            ' it happens to be - so ask instead of deciding for the user. (What it cannot
+            ' corrupt any more is the destination file: FileManager.MoveFile now stages the
+            ' copy under a temporary name.)
+            Dim drained As Boolean = Await file_Op_Queue.DrainAsync(TimeSpan.FromSeconds(15))
+            While Not drained AndAlso Not Me.IsDisposed
+                Dim still_Pending As Integer = file_Op_Queue.PendingCount
+                If still_Pending <= 0 Then Exit While
+
+                Dim answer As DialogResult = MessageBox.Show(
+                    Me,
+                    Localization.TF("Файловые операции ещё выполняются: {0}." & vbCrLf &
+                                    "Подождать ещё? «Нет» закроет программу, и незавершённые операции не выполнятся.",
+                                    still_Pending),
+                    Localization.T("Закрытие программы"),
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1)
+                If answer <> DialogResult.Yes Then Exit While
+
+                drained = Await file_Op_Queue.DrainAsync(TimeSpan.FromSeconds(15))
+            End While
+
+            If Not Me.IsDisposed Then Me.Close()
             Return
         End If
 #End If
 
+        ' The whole settings block moved into PersistSettings so it is no longer reachable
+        ' ONLY from here - see B-1 in SPECIFICATION_LONG_RUN_STABILITY.md. final_Save:=True
+        ' adds the teardown half (clearing the destination-slot array).
+        PersistSettings(final_Save:=True)
+
+
+        ' Wait on the workers' own signals, not on IsBusy: IsBusy is cleared by a
+        ' callback posted to THIS thread, which is busy waiting - so the old loops could
+        ' never see it drop and always sat out the full 1 s + 5 s before releasing VLC,
+        ' the images and the streams under a worker that was still using them.
+        If BgWorker.IsBusy Then
+            BgWorker.CancelAsync()
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1210: BgWorker try to CancelAsync")
+            If Not bgworker_Done.Wait(1000) Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1211: BgWorker did not finish in time")
+            End If
+        End If
+
+        If FileOperationWorker.IsBusy Then
+            FileOperationWorker.CancelAsync()
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1220: FileOperationWorker try to CancelAsync")
+            If Not fileop_Done.Wait(5000) Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1221: FileOperationWorker did not finish in time")
+            End If
+        End If
+
+        SlideShowStop()
+        SlideShowTimer.Dispose()
+        StopGifLoopPlayback()
+        gif_Restart_Timer.Dispose()
+        If settings_Flush_Timer IsNot Nothing Then
+            settings_Flush_Timer.Stop()
+            settings_Flush_Timer.Dispose()
+            settings_Flush_Timer = Nothing
+        End If
+        If toolTip IsNot Nothing Then toolTip.Dispose()
+
+        ShutdownOcrTranslate()
+
+        If Web_Browser IsNot Nothing Then
+#If NETFRAMEWORK Then
+            ' Touching DocumentText would instantiate the never-used IE ActiveX on
+            ' the modern build; disposing a handle-less control is safe on both.
+            Web_Browser.DocumentText = ""
+#End If
+            Web_Browser.Dispose()
+        End If
+
+        StopVlcPlayback()
+        If vlc_Media_Player IsNot Nothing Then
+            Try
+                vlc_Media_Player.Dispose()
+            Catch
+            End Try
+            vlc_Media_Player = Nothing
+        End If
+        If vlc_Video_View IsNot Nothing Then
+            Try
+                vlc_Video_View.Dispose()
+            Catch
+            End Try
+            vlc_Video_View = Nothing
+        End If
+        If libVlc IsNot Nothing Then
+            Try
+                libVlc.Dispose()
+            Catch
+            End Try
+            libVlc = Nothing
+        End If
+
+        If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
+        If Picture_Box_1.BackgroundImage IsNot Nothing Then Picture_Box_1.BackgroundImage?.Dispose()
+        If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
+        If Picture_Box_2.BackgroundImage IsNot Nothing Then Picture_Box_2.BackgroundImage?.Dispose()
+        If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
+        If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
+
+        DisposeRecipientsOverlayResources()
+        If ocr_Button_Font_Bold IsNot Nothing Then ocr_Button_Font_Bold.Dispose()
+        If ocr_Button_Font_Regular IsNot Nothing Then ocr_Button_Font_Regular.Dispose()
+
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1230: form is closed")
+    End Sub
+
+    ''' <summary>True when something worth keeping changed since the last write.</summary>
+    Private settings_Dirty As Boolean = False
+
+    ''' <summary>
+    ''' Debounce for the lazy save: the flush happens this long after the LAST change, so
+    ''' listing files (which moves LastCounter on every flip) does not write the registry
+    ''' thousands of times a session.
+    ''' </summary>
+    Private Const Settings_Flush_Delay_Ms As Integer = 60000
+
+    Private settings_Flush_Timer As System.Windows.Forms.Timer
+
+    ''' <summary>Flushes the settings block right now - for changes that are deliberate
+    ''' configuration rather than a side effect of browsing (a destination folder edited in
+    ''' the settings window). Cancels any pending lazy flush.</summary>
+    Friend Sub SaveSettingsNow()
+        If settings_Flush_Timer IsNot Nothing Then settings_Flush_Timer.Stop()
+        PersistSettings()
+    End Sub
+
+    ''' <summary>
+    ''' Records that state worth keeping has changed, and schedules a flush. Call it from
+    ''' anywhere a loss would cost the user real work - a destination folder edited, a recent
+    ''' entry added, the folder position moved.
+    '''
+    ''' Trailing-edge, not immediate: the registry is not a place to write on every keypress,
+    ''' and one flush a minute turns "everything since the last clean exit" into "at most the
+    ''' last minute" on a crash.
+    ''' </summary>
+    Friend Sub MarkSettingsDirty()
+        settings_Dirty = True
+        If Me.IsDisposed Then Return
+
+        ' Some callers (the folder-combo refresh) run on the scanning thread, and a WinForms
+        ' Timer may only be touched from the UI thread.
+        If Me.IsHandleCreated AndAlso Me.InvokeRequired Then
+            Try
+                Me.BeginInvoke(New Action(AddressOf MarkSettingsDirty))
+            Catch
+            End Try
+            Return
+        End If
+
+        If settings_Flush_Timer Is Nothing Then
+            settings_Flush_Timer = New System.Windows.Forms.Timer() With {.Interval = Settings_Flush_Delay_Ms}
+            AddHandler settings_Flush_Timer.Tick, AddressOf Settings_Flush_Timer_Tick
+        End If
+        ' Restart, so the delay is measured from the last change.
+        settings_Flush_Timer.Stop()
+        settings_Flush_Timer.Start()
+    End Sub
+
+    Private Sub Settings_Flush_Timer_Tick(sender As Object, e As EventArgs)
+        settings_Flush_Timer.Stop()
+        If Me.IsDisposed OrElse Not settings_Dirty Then Return
+        PersistSettings()
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1191: settings flushed on idle")
+    End Sub
+
+    ''' <summary>
+    ''' Writes the whole settings block to the registry.
+    '''
+    ''' It used to live inside Form1_FormClosing and nowhere else, which meant every
+    ''' destination-folder mapping, both recent lists, the folder position and every
+    ''' toggle existed only in memory until the app was closed GRACEFULLY. Any exit that
+    ''' skips FormClosing - a native LibVLC crash, a GPU driver reset, taskkill, power
+    ''' loss - silently reverted days of changes to the values from the previous clean
+    ''' exit. Now the same block also runs when a change worth keeping happens, and after
+    ''' an idle pause (see MarkSettingsDirty).
+    ''' </summary>
+    ''' <param name="final_Save">True only from the closing path: it additionally clears
+    ''' the destination-slot array, which is teardown and must not happen mid-session.</param>
+    Private Sub PersistSettings(Optional final_Save As Boolean = False)
         Try
             If Current_Folder_Path IsNot Nothing Then SaveSetting(App_name, Second_App_Name, "ImageFolder", Current_Folder_Path)
             ' Always - zero is as valid a position as any. Skipping it left the previous
@@ -774,7 +998,9 @@ Partial Public Class Main_Form
                 Catch ex As Exception
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1180: ERR: " & ex.Message)
                 Finally
-                    Hardkeys_to_move_mediafile(z) = Nothing
+                    ' Clearing the slot is TEARDOWN, not part of saving - doing it on an
+                    ' eager save would wipe the user's destinations mid-session.
+                    If final_Save Then Hardkeys_to_move_mediafile(z) = Nothing
                 End Try
             Next
             Try
@@ -782,7 +1008,7 @@ Partial Public Class Main_Form
             Catch ex As Exception
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1181: ERR: " & ex.Message)
             Finally
-                Hardkeys_to_move_mediafile(10) = Nothing
+                If final_Save Then Hardkeys_to_move_mediafile(10) = Nothing
             End Try
 
             ' Writes UiLanguage plus the legacy Is_Russian_Language mirror.
@@ -842,74 +1068,7 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1200: ERR: " & ex.Message)
         End Try
 
-        ' Wait on the workers' own signals, not on IsBusy: IsBusy is cleared by a
-        ' callback posted to THIS thread, which is busy waiting - so the old loops could
-        ' never see it drop and always sat out the full 1 s + 5 s before releasing VLC,
-        ' the images and the streams under a worker that was still using them.
-        If BgWorker.IsBusy Then
-            BgWorker.CancelAsync()
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1210: BgWorker try to CancelAsync")
-            If Not bgworker_Done.Wait(1000) Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1211: BgWorker did not finish in time")
-            End If
-        End If
-
-        If FileOperationWorker.IsBusy Then
-            FileOperationWorker.CancelAsync()
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1220: FileOperationWorker try to CancelAsync")
-            If Not fileop_Done.Wait(5000) Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1221: FileOperationWorker did not finish in time")
-            End If
-        End If
-
-        SlideShowStop()
-        SlideShowTimer.Dispose()
-        StopGifLoopPlayback()
-        gif_Restart_Timer.Dispose()
-        If toolTip IsNot Nothing Then toolTip.Dispose()
-
-        ShutdownOcrTranslate()
-
-        If Web_Browser IsNot Nothing Then
-#If NETFRAMEWORK Then
-            ' Touching DocumentText would instantiate the never-used IE ActiveX on
-            ' the modern build; disposing a handle-less control is safe on both.
-            Web_Browser.DocumentText = ""
-#End If
-            Web_Browser.Dispose()
-        End If
-
-        StopVlcPlayback()
-        If vlc_Media_Player IsNot Nothing Then
-            Try
-                vlc_Media_Player.Dispose()
-            Catch
-            End Try
-            vlc_Media_Player = Nothing
-        End If
-        If vlc_Video_View IsNot Nothing Then
-            Try
-                vlc_Video_View.Dispose()
-            Catch
-            End Try
-            vlc_Video_View = Nothing
-        End If
-        If libVlc IsNot Nothing Then
-            Try
-                libVlc.Dispose()
-            Catch
-            End Try
-            libVlc = Nothing
-        End If
-
-        If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
-        If Picture_Box_1.BackgroundImage IsNot Nothing Then Picture_Box_1.BackgroundImage?.Dispose()
-        If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
-        If Picture_Box_2.BackgroundImage IsNot Nothing Then Picture_Box_2.BackgroundImage?.Dispose()
-        If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
-        If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
-
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1230: form is closed")
+        settings_Dirty = False
     End Sub
 
 End Class

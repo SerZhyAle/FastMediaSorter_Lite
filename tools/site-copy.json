@@ -1,8 +1,9 @@
 {
   "_comment": [
     "Source of truth for the per-language first pages of the site.",
-    "tools/Build-SitePages.ps1 renders <lang>/index.html from this - edit THIS file,",
-    "never the generated HTML (canon invariant 16).",
+    "tools/Build-SitePages.ps1 renders lang/<code>/index.html from this - edit THIS",
+    "file, never the generated HTML (canon invariant 16). All twelve translated pages",
+    "sit under the single root folder lang/; the script's $LangDir is the only knob.",
     "",
     "Keys are the ISO 639-1 codes of the 13 UI languages. 'dir' is rtl for ar/ur.",
     "'machine' marks a locale whose copy is a machine translation and says so on the",
@@ -14,7 +15,7 @@
     "title": "Fast Media Sorter for Windows",
     "tagline": "Browse huge folders of photos and videos at speed, then move, copy, rename or delete each file with a single key.",
     "features": [
-      ["One key per file", "Assign folders to the keys 1-9, 0 and Del, then sort a folder without ever reaching for the mouse."],
+      ["One key per file", "Assign folders to the keys 1-9, 0 and Del, then sort a folder without ever reaching for the mouse. Hold Shift and the file is copied instead of moved."],
       ["Slideshow and panel", "Automatic or random slideshow, and a thumbnail panel for jumping straight to a picture."],
       ["Plays almost anything", "Video runs through the built-in VLC engine - H.264/MP4, MKV, AVI, VP9 and more."],
       ["Ambilight background", "The empty bars beside a photo take their colour from the photo itself instead of staying black."],
@@ -40,7 +41,7 @@
     "title": "Fast Media Sorter для Windows",
     "tagline": "Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши.",
     "features": [
-      ["Одна клавиша на файл", "Назначьте папки клавишам 1-9, 0 и Del - и разберите каталог, ни разу не потянувшись к мыши."],
+      ["Одна клавиша на файл", "Назначьте папки клавишам 1-9, 0 и Del - и разберите каталог, ни разу не потянувшись к мыши. С Shift тот же файл копируется, а не переносится."],
       ["Слайд-шоу и панель", "Обычное или случайное слайд-шоу и панель миниатюр, чтобы сразу прыгнуть к нужному снимку."],
       ["Играет почти всё", "Видео идёт через встроенный движок VLC - H.264/MP4, MKV, AVI, VP9 и другие."],
       ["Фон Ambilight", "Пустые поля рядом с фотографией берут цвет у самой фотографии, а не остаются чёрными."],
@@ -66,7 +67,7 @@
     "title": "Fast Media Sorter для Windows",
     "tagline": "Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.",
     "features": [
-      ["Одна клавіша на файл", "Призначте теки клавішам 1-9, 0 і Del - і розберіть каталог, жодного разу не потягнувшись до миші."],
+      ["Одна клавіша на файл", "Призначте теки клавішам 1-9, 0 і Del - і розберіть каталог, жодного разу не потягнувшись до миші. З Shift той самий файл копіюється, а не переноситься."],
       ["Слайд-шоу та панель", "Звичайне або випадкове слайд-шоу і панель мініатюр, щоб одразу перейти до потрібного знімка."],
       ["Грає майже все", "Відео йде через вбудований рушій VLC - H.264/MP4, MKV, AVI, VP9 та інші."],
       ["Фон Ambilight", "Порожні поля поруч із фотографією беруть колір у самої фотографії, а не лишаються чорними."],
@@ -92,7 +93,7 @@
     "title": "Fast Media Sorter für Windows",
     "tagline": "Blättern Sie im Tempo durch riesige Foto- und Videoordner und verschieben, kopieren, benennen oder löschen Sie jede Datei mit einer einzigen Taste.",
     "features": [
-      ["Eine Taste pro Datei", "Weisen Sie den Tasten 1-9, 0 und Entf Ordner zu und sortieren Sie einen Ordner, ohne je zur Maus zu greifen."],
+      ["Eine Taste pro Datei", "Weisen Sie den Tasten 1-9, 0 und Entf Ordner zu und sortieren Sie einen Ordner, ohne je zur Maus zu greifen. Mit Shift wird die Datei kopiert statt verschoben."],
       ["Diashow und Leiste", "Automatische oder zufällige Diashow und eine Miniaturleiste, um direkt zu einem Bild zu springen."],
       ["Spielt fast alles", "Video läuft über die eingebaute VLC-Engine - H.264/MP4, MKV, AVI, VP9 und mehr."],
       ["Ambilight-Hintergrund", "Die leeren Balken neben einem Foto nehmen ihre Farbe vom Foto selbst, statt schwarz zu bleiben."],
@@ -118,7 +119,7 @@
     "title": "Fast Media Sorter per Windows",
     "tagline": "Sfoglia velocemente cartelle enormi di foto e video e sposta, copia, rinomina o elimina ogni file con un solo tasto.",
     "features": [
-      ["Un tasto per file", "Assegna cartelle ai tasti 1-9, 0 e Canc e ordina una cartella senza mai toccare il mouse."],
+      ["Un tasto per file", "Assegna cartelle ai tasti 1-9, 0 e Canc e ordina una cartella senza mai toccare il mouse. Con Shift il file viene copiato invece che spostato."],
       ["Presentazione e pannello", "Presentazione automatica o casuale e un pannello di miniature per saltare subito a un'immagine."],
       ["Riproduce quasi tutto", "Il video passa dal motore VLC integrato - H.264/MP4, MKV, AVI, VP9 e altri."],
       ["Sfondo Ambilight", "Le bande vuote accanto alla foto prendono il colore dalla foto stessa invece di restare nere."],
@@ -144,7 +145,7 @@
     "title": "Fast Media Sorter para Windows",
     "tagline": "Recorra a toda velocidad carpetas enormes de fotos y vídeos y mueva, copie, renombre o elimine cada archivo con una sola tecla.",
     "features": [
-      ["Una tecla por archivo", "Asigne carpetas a las teclas 1-9, 0 y Supr y ordene una carpeta sin tocar el ratón."],
+      ["Una tecla por archivo", "Asigne carpetas a las teclas 1-9, 0 y Supr y ordene una carpeta sin tocar el ratón. Con Shift el archivo se copia en vez de moverse."],
       ["Pase de diapositivas y panel", "Pase automático o aleatorio y un panel de miniaturas para saltar directamente a una imagen."],
       ["Reproduce casi todo", "El vídeo pasa por el motor VLC integrado: H.264/MP4, MKV, AVI, VP9 y más."],
       ["Fondo Ambilight", "Las bandas vacías junto a la foto toman el color de la propia foto en vez de quedarse negras."],
@@ -170,7 +171,7 @@
     "title": "Fast Media Sorter pour Windows",
     "tagline": "Parcourez à toute vitesse d'énormes dossiers de photos et de vidéos, puis déplacez, copiez, renommez ou supprimez chaque fichier d'une seule touche.",
     "features": [
-      ["Une touche par fichier", "Attribuez des dossiers aux touches 1-9, 0 et Suppr, puis triez un dossier sans jamais toucher la souris."],
+      ["Une touche par fichier", "Attribuez des dossiers aux touches 1-9, 0 et Suppr, puis triez un dossier sans jamais toucher la souris. Avec Shift, le fichier est copié au lieu d'être déplacé."],
       ["Diaporama et panneau", "Diaporama automatique ou aléatoire, et un panneau de miniatures pour sauter directement à une image."],
       ["Lit presque tout", "La vidéo passe par le moteur VLC intégré : H.264/MP4, MKV, AVI, VP9 et d'autres."],
       ["Fond Ambilight", "Les bandes vides à côté d'une photo prennent leur couleur dans la photo elle-même au lieu de rester noires."],
@@ -196,7 +197,7 @@
     "title": "Fast Media Sorter para Windows",
     "tagline": "Percorra rapidamente pastas enormes de fotos e vídeos e mova, copie, renomeie ou exclua cada arquivo com uma única tecla.",
     "features": [
-      ["Uma tecla por arquivo", "Atribua pastas às teclas 1-9, 0 e Del e organize uma pasta sem nunca pegar no mouse."],
+      ["Uma tecla por arquivo", "Atribua pastas às teclas 1-9, 0 e Del e organize uma pasta sem nunca pegar no mouse. Com Shift o arquivo é copiado em vez de movido."],
       ["Apresentação e painel", "Apresentação automática ou aleatória e um painel de miniaturas para pular direto para uma imagem."],
       ["Reproduz quase tudo", "O vídeo passa pelo mecanismo VLC integrado: H.264/MP4, MKV, AVI, VP9 e mais."],
       ["Fundo Ambilight", "As barras vazias ao lado da foto tiram a cor da própria foto em vez de continuarem pretas."],
@@ -222,7 +223,7 @@
     "title": "Fast Media Sorter لنظام ويندوز",
     "tagline": "تصفّح مجلدات ضخمة من الصور والفيديو بسرعة، ثم انقل أو انسخ أو أعد تسمية أو احذف كل ملف بمفتاح واحد.",
     "features": [
-      ["مفتاح واحد لكل ملف", "خصّص مجلدات للمفاتيح 1-9 و0 وDel، ثم رتّب مجلدًا كاملًا دون أن تمسّ الفأرة."],
+      ["مفتاح واحد لكل ملف", "خصّص مجلدات للمفاتيح 1-9 و0 وDel، ثم رتّب مجلدًا كاملًا دون أن تمسّ الفأرة. وبالضغط على Shift يُنسخ الملف بدل نقله."],
       ["عرض شرائح ولوحة", "عرض شرائح تلقائي أو عشوائي، ولوحة مصغّرات للانتقال مباشرة إلى صورة."],
       ["يشغّل كل شيء تقريبًا", "يمر الفيديو عبر محرك VLC المدمج - H.264/MP4 وMKV وAVI وVP9 وغيرها."],
       ["خلفية Ambilight", "الأشرطة الفارغة بجانب الصورة تأخذ لونها من الصورة نفسها بدل أن تبقى سوداء."],
@@ -248,7 +249,7 @@
     "title": "विंडोज़ के लिए Fast Media Sorter",
     "tagline": "फ़ोटो और वीडियो के विशाल फ़ोल्डर तेज़ी से देखें और हर फ़ाइल को एक ही कुंजी से ले जाएँ, कॉपी करें, नाम बदलें या हटाएँ।",
     "features": [
-      ["हर फ़ाइल के लिए एक कुंजी", "कुंजियों 1-9, 0 और Del को फ़ोल्डर सौंपें और माउस छुए बिना पूरा फ़ोल्डर छाँट लें।"],
+      ["हर फ़ाइल के लिए एक कुंजी", "कुंजियों 1-9, 0 और Del को फ़ोल्डर सौंपें और माउस छुए बिना पूरा फ़ोल्डर छाँट लें। Shift दबाकर वही फ़ाइल स्थानांतरित होने के बजाय कॉपी होती है।"],
       ["स्लाइडशो और पैनल", "स्वचालित या यादृच्छिक स्लाइडशो, और सीधे किसी चित्र पर जाने के लिए थंबनेल पैनल।"],
       ["लगभग सब कुछ चलाता है", "वीडियो अंतर्निहित VLC इंजन से चलता है - H.264/MP4, MKV, AVI, VP9 और अन्य।"],
       ["Ambilight पृष्ठभूमि", "फ़ोटो के बगल की खाली पट्टियाँ काली रहने के बजाय फ़ोटो से ही रंग लेती हैं।"],
@@ -274,7 +275,7 @@
     "title": "উইন্ডোজের জন্য Fast Media Sorter",
     "tagline": "ছবি ও ভিডিওর বিশাল ফোল্ডার দ্রুত ঘুরে দেখুন এবং প্রতিটি ফাইল এক কী চেপেই সরান, কপি করুন, নাম বদলান বা মুছুন।",
     "features": [
-      ["প্রতি ফাইলে এক কী", "1-9, 0 আর Del কী-তে ফোল্ডার বেঁধে দিন, তারপর মাউস না ছুঁয়েই পুরো ফোল্ডার গুছিয়ে ফেলুন।"],
+      ["প্রতি ফাইলে এক কী", "1-9, 0 আর Del কী-তে ফোল্ডার বেঁধে দিন, তারপর মাউস না ছুঁয়েই পুরো ফোল্ডার গুছিয়ে ফেলুন। Shift ধরে রাখলে ফাইলটি সরানোর বদলে কপি হয়।"],
       ["স্লাইডশো ও প্যানেল", "স্বয়ংক্রিয় বা এলোমেলো স্লাইডশো, আর সরাসরি কোনো ছবিতে যেতে থাম্বনেইল প্যানেল।"],
       ["প্রায় সব কিছু চালায়", "ভিডিও চলে অন্তর্নির্মিত VLC ইঞ্জিনে - H.264/MP4, MKV, AVI, VP9 এবং আরও।"],
       ["Ambilight পটভূমি", "ছবির পাশের ফাঁকা বার কালো না থেকে ছবিরই রঙ নেয়।"],
@@ -300,7 +301,7 @@
     "title": "ونڈوز کے لیے Fast Media Sorter",
     "tagline": "تصاویر اور ویڈیو کے بڑے فولڈرز تیزی سے دیکھیں اور ہر فائل کو ایک ہی کلید سے منتقل، نقل، نام تبدیل یا حذف کریں۔",
     "features": [
-      ["ہر فائل کے لیے ایک کلید", "کلیدوں 1-9، 0 اور Del کو فولڈر تفویض کریں اور ماؤس کو ہاتھ لگائے بغیر پورا فولڈر ترتیب دیں۔"],
+      ["ہر فائل کے لیے ایک کلید", "کلیدوں 1-9، 0 اور Del کو فولڈر تفویض کریں اور ماؤس کو ہاتھ لگائے بغیر پورا فولڈر ترتیب دیں۔ Shift دبانے پر وہی فائل منتقل ہونے کے بجائے نقل ہوتی ہے۔"],
       ["سلائیڈ شو اور پینل", "خودکار یا بے ترتیب سلائیڈ شو، اور کسی تصویر پر براہِ راست جانے کے لیے تھمب نیل پینل۔"],
       ["تقریباً سب کچھ چلاتا ہے", "ویڈیو بلٹ اِن VLC انجن سے چلتی ہے - H.264/MP4، MKV، AVI، VP9 اور مزید۔"],
       ["Ambilight پس منظر", "تصویر کے پہلو کی خالی پٹیاں سیاہ رہنے کے بجائے تصویر ہی سے رنگ لیتی ہیں۔"],
@@ -326,7 +327,7 @@
     "title": "Windows 上的 Fast Media Sorter",
     "tagline": "飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。",
     "features": [
-      ["一个文件一个键", "把文件夹绑定到 1-9、0 和 Del 键，然后全程不碰鼠标就整理完一个文件夹。"],
+      ["一个文件一个键", "把文件夹绑定到 1-9、0 和 Del 键，然后全程不碰鼠标就整理完一个文件夹。按住 Shift 则是复制而不是移动。"],
       ["幻灯片与面板", "自动或随机幻灯片，还有缩略图面板，直接跳到想看的那张。"],
       ["几乎什么都能播", "视频走内置的 VLC 引擎 - H.264/MP4、MKV、AVI、VP9 等等。"],
       ["Ambilight 背景", "照片旁边的空白色块不再是黑的，而是取自照片本身的颜色。"],

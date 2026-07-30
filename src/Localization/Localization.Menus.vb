@@ -79,6 +79,24 @@ Partial Public NotInheritable Class Localization
             "Move to", "Перемістити до", "Verschieben nach", "Sposta in", "Mover a", "Déplacer vers",
             "Mover para", "نقل إلى", "यहाँ ले जाएँ", "এখানে সরান", "یہاں منتقل کریں", "移动到")
 
+        ' --- recipients overlay: the row moves, the narrow zone beside it copies ----
+
+        ' A button caption in a column a few dozen pixels wide - one short noun, never a
+        ' sentence. The full action and folder are in the tooltip below.
+        Add("копия",
+            "copy", "копія", "Kopie", "copia", "copia", "copie",
+            "cópia", "نسخة", "कॉपी", "কপি", "نقل", "复制")
+
+        Add("Перенести в: {0}",
+            "Move to: {0}", "Перенести до: {0}", "Verschieben nach: {0}", "Sposta in: {0}",
+            "Mover a: {0}", "Déplacer vers : {0}", "Mover para: {0}", "نقل إلى: {0}",
+            "यहाँ ले जाएँ: {0}", "এখানে সরান: {0}", "یہاں منتقل کریں: {0}", "移动到：{0}")
+
+        Add("Скопировать в: {0}",
+            "Copy to: {0}", "Скопіювати до: {0}", "Kopieren nach: {0}", "Copia in: {0}",
+            "Copiar a: {0}", "Copier vers : {0}", "Copiar para: {0}", "نسخ إلى: {0}",
+            "यहाँ कॉपी करें: {0}", "এখানে কপি করুন: {0}", "یہاں نقل کریں: {0}", "复制到：{0}")
+
         Add("Переименовать.. (F6)",
             "Rename.. (F6)", "Перейменувати.. (F6)", "Umbenennen.. (F6)", "Rinomina.. (F6)",
             "Renombrar.. (F6)", "Renommer.. (F6)", "Mudar o nome.. (F6)",

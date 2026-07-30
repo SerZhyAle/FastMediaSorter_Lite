@@ -145,7 +145,7 @@ Partial Public Class Main_Form
             End Sub)
 
         If translate_Menu Is Nothing Then translate_Menu = New ContextMenuStrip()
-        translate_Menu.Items.Clear()
+        ClearAndDisposeItems(translate_Menu.Items)
 
         Dim settingsItem As New ToolStripMenuItem(Localization.T("Настройки OCR.."))
         AddHandler settingsItem.Click, Sub() ShowOcrTranslateSettings()

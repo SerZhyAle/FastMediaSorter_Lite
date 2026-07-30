@@ -6,7 +6,8 @@ Fast Media Sorter for Windows (formerly FastMediaSorter LITE - it is still publi
 - Slideshow and random file viewing modes
 - Recent files and folders tracking, so you don't have to remember where you left off
 - File operations: move, copy, rename, and delete
-- Recipients panel over the media: a floating list of your hotkey destination folders - click a row to move/copy the current file there (or delete it), so you can sort one-handed with the mouse (off by default; toggle in Settings)
+- Move or copy, decided as you go: a digit `1..9`/`0` moves the current file into that folder, **Shift + the same top-row digit copies it there** - no mode to switch on beforehand and forget about. The same pair is on the recipients panel, in both media menus, and in the recipients table (Shift + double-click). Whether a copy then jumps to the next file is one checkbox in Settings, on by default (64-bit program)
+- Recipients panel over the media: a floating list of your hotkey destination folders - click a row to move the current file there, the narrow zone beside it to copy it (or delete it), so you can sort one-handed with the mouse (off by default; toggle in Settings)
 - Image panel for quick visual navigation
 - Automatic EXIF orientation correction, for when the camera was held sideways
 - High-quality (bicubic) scaling for sharp downscaling of large images

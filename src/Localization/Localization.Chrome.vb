@@ -187,6 +187,21 @@ Partial Public NotInheritable Class Localization
             " اس متن پر کلک کریں (F1) تاکہ یہ شائستگی سے غائب ہو جائے۔",
             " 点击这段文字（F1），它就会体面地消失。")
 
+        ' --- mainline-only help block (registered in both builds) -----------------
+        Add("Shift + цифра верхнего ряда - скопировать файл в ту же папку, куда цифра его переносит. ",
+            "Shift + a top-row digit copies the file into the same folder the digit moves it to. ",
+            "Shift + цифра верхнього ряду - скопіювати файл до тієї ж теки, куди цифра його переносить. ",
+            "Shift + Zifferntaste der oberen Reihe kopiert die Datei in denselben Ordner, in den die Ziffer sie verschiebt. ",
+            "Shift + una cifra della fila superiore copia il file nella stessa cartella in cui la cifra lo sposta. ",
+            "Shift + un dígito de la fila superior copia el archivo a la misma carpeta a la que el dígito lo mueve. ",
+            "Shift + un chiffre de la rangée du haut copie le fichier dans le dossier où le chiffre le déplace. ",
+            "Shift + um dígito da fila de cima copia o arquivo para a mesma pasta em que o dígito o move. ",
+            "Shift + رقم من الصف العلوي ينسخ الملف إلى المجلد نفسه الذي ينقله إليه الرقم. ",
+            "Shift + ऊपरी पंक्ति का अंक फ़ाइल को उसी फ़ोल्डर में कॉपी करता है जहाँ अंक उसे ले जाता है। ",
+            "Shift + উপরের সারির অঙ্ক ফাইলটিকে সেই ফোল্ডারেই কপি করে যেখানে অঙ্কটি তাকে সরায়। ",
+            "Shift + اوپری قطار کا ہندسہ فائل کو اسی فولڈر میں نقل کرتا ہے جہاں ہندسہ اسے منتقل کرتا ہے۔ ",
+            "Shift + 主键盘数字会把文件复制到该数字移动它的那个文件夹。 ")
+
         ' --- zoom block (modern build only, but registered in both) ---------------
         Add("Масштаб: серый + и - (от курсора), серый / - вписать, серый * - 100 %; колесо можно переключить на масштаб в настройках. ",
             "Zoom: grey + and - (at the cursor), grey / to fit, grey * for 100 %; the wheel can be switched to zoom in Settings. ",

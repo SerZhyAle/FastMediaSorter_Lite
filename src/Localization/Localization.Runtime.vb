@@ -87,6 +87,67 @@ Partial Public NotInheritable Class Localization
             "Erreur d'opération : {0}", "Erro na operação: {0}", "خطأ في العملية: {0}",
             "कार्रवाई में त्रुटि: {0}", "কাজে ত্রুটি: {0}", "عمل میں خرابی: {0}", "操作出错：{0}")
 
+        ' --- bulk progress in the thumbnail panel --------------------------------
+        ' "<what is happening>: N of M". One key for all three operations: {0} is itself a
+        ' translated caption, so no language has to live with a fixed word order.
+        Add("{0}: {1} из {2}", "{0}: {1} of {2}", "{0}: {1} з {2}", "{0}: {1} von {2}",
+            "{0}: {1} di {2}", "{0}: {1} de {2}", "{0} : {1} sur {2}", "{0}: {1} de {2}",
+            "{0}: {1} من {2}", "{0}: {1} / {2}", "{0}: {1} / {2}", "{0}: {1} از {2}", "{0}：{1} / {2}")
+        Add("Удаление..", "Deleting..", "Видалення..", "Löschen..", "Eliminazione..", "Eliminando..",
+            "Suppression..", "Excluindo..", "جارٍ الحذف..", "हटाया जा रहा है..", "মুছে ফেলা হচ্ছে..",
+            "حذف کیا جا رہا ہے..", "正在删除..")
+        Add("Копирование..", "Copying..", "Копіювання..", "Kopieren..", "Copia..", "Copiando..",
+            "Copie..", "Copiando..", "جارٍ النسخ..", "कॉपी किया जा रहा है..", "কপি করা হচ্ছে..",
+            "کاپی کیا جا رہا ہے..", "正在复制..")
+        Add("Перенос..", "Moving..", "Перенесення..", "Verschieben..", "Spostamento..", "Moviendo..",
+            "Déplacement..", "Movendo..", "جارٍ النقل..", "स्थानांतरित किया जा रहा है..",
+            "সরানো হচ্ছে..", "منتقل کیا جا رہا ہے..", "正在移动..")
+
+        ' --- shutdown while file operations are still queued ---------------------
+        Add("!Ждите.. завершаются файловые операции, программа закрывается",
+            "!Wait.. finishing file operations, the app is closing",
+            "!Зачекайте.. завершуються файлові операції, програма закривається",
+            "!Warten.. Dateivorgänge werden abgeschlossen, die App wird geschlossen",
+            "!Attendi.. operazioni sui file in chiusura, l'app si sta chiudendo",
+            "!Espere.. finalizando operaciones de archivo, la app se está cerrando",
+            "!Patientez.. opérations sur les fichiers en cours d'achèvement, l'application se ferme",
+            "!Aguarde.. finalizando operações de arquivo, o app está fechando",
+            "!انتظر.. جارٍ إنهاء عمليات الملفات، التطبيق يُغلق",
+            "!प्रतीक्षा करें.. फ़ाइल कार्रवाइयाँ पूरी हो रही हैं, ऐप बंद हो रहा है",
+            "!অপেক্ষা করুন.. ফাইল অপারেশন শেষ হচ্ছে, অ্যাপ বন্ধ হচ্ছে",
+            "!انتظار کریں.. فائل آپریشنز مکمل ہو رہے ہیں، ایپ بند ہو رہی ہے",
+            "!请稍候..正在完成文件操作，程序即将关闭")
+        Add("Закрытие программы", "Closing the app", "Закриття програми", "Programm wird geschlossen",
+            "Chiusura dell'app", "Cierre de la aplicación", "Fermeture de l'application",
+            "Fechando o app", "إغلاق التطبيق", "ऐप बंद करना", "অ্যাপ বন্ধ করা",
+            "ایپ بند کرنا", "关闭程序")
+        Add("Файловые операции ещё выполняются: {0}." & vbCrLf &
+            "Подождать ещё? «Нет» закроет программу, и незавершённые операции не выполнятся.",
+            "File operations are still running: {0}." & vbCrLf &
+            "Wait longer? «No» closes the app, and the unfinished operations will not run.",
+            "Файлові операції ще виконуються: {0}." & vbCrLf &
+            "Почекати ще? «Ні» закриє програму, і незавершені операції не виконаються.",
+            "Dateivorgänge laufen noch: {0}." & vbCrLf &
+            "Länger warten? «Nein» schließt die App, und die offenen Vorgänge werden nicht ausgeführt.",
+            "Operazioni sui file ancora in corso: {0}." & vbCrLf &
+            "Attendere ancora? «No» chiude l'app e le operazioni non concluse non verranno eseguite.",
+            "Las operaciones de archivo siguen en curso: {0}." & vbCrLf &
+            "¿Esperar más? «No» cierra la aplicación y las operaciones pendientes no se ejecutarán.",
+            "Des opérations sur les fichiers sont encore en cours : {0}." & vbCrLf &
+            "Attendre encore ? «Non» ferme l'application et les opérations inachevées ne seront pas exécutées.",
+            "As operações de arquivo ainda estão em andamento: {0}." & vbCrLf &
+            "Aguardar mais? «Não» fecha o app e as operações inacabadas não serão executadas.",
+            "لا تزال عمليات الملفات جارية: {0}." & vbCrLf &
+            "الانتظار أكثر؟ «لا» يغلق التطبيق ولن تُنفَّذ العمليات غير المكتملة.",
+            "फ़ाइल कार्रवाइयाँ अभी चल रही हैं: {0}." & vbCrLf &
+            "और प्रतीक्षा करें? «नहीं» ऐप बंद कर देगा, और अपूर्ण कार्रवाइयाँ नहीं चलेंगी।",
+            "ফাইল অপারেশন এখনও চলছে: {0}." & vbCrLf &
+            "আরও অপেক্ষা করবেন? «না» অ্যাপ বন্ধ করবে, এবং অসমাপ্ত অপারেশনগুলি চলবে না।",
+            "فائل آپریشنز ابھی بھی جاری ہیں: {0}." & vbCrLf &
+            "مزید انتظار کریں؟ «نہیں» ایپ بند کر دے گا، اور نامکمل آپریشنز نہیں چلیں گے۔",
+            "文件操作仍在进行：{0}。" & vbCrLf &
+            "继续等待吗？选择「否」将关闭程序，未完成的操作不会执行。")
+
         ' --- file / media loading ------------------------------------------------
         Add("Файл не найден: {0}", "File not found: {0}", "Файл не знайдено: {0}",
             "Datei nicht gefunden: {0}", "File non trovato: {0}", "Archivo no encontrado: {0}",
@@ -250,6 +311,21 @@ Partial Public NotInheritable Class Localization
             "কাজ চালাতে কী নম্বরে ডাবল-ক্লিক করুন।" & vbCrLf & "ফোল্ডার পাথ বদলাতে তাতে ডাবল-ক্লিক করুন (একক ক্লিক ভদ্রভাবে উপেক্ষা করা হয়)।",
             "عمل چلانے کے لیے کلید نمبر پر ڈبل کلک کریں۔" & vbCrLf & "فولڈر کا راستہ بدلنے کے لیے اس پر ڈبل کلک کریں (واحد کلک شائستگی سے نظرانداز ہوتا ہے)۔",
             "双击键号执行操作。" & vbCrLf & "双击文件夹路径可更换它（单击会被礼貌地忽略）。")
+        ' Mainline variant of the same tooltip - it names both actions, because there is no
+        ' longer a global mode deciding which one a double-click performs.
+        Add("Двойной клик по номеру клавиши - перенести файл, Shift + двойной клик - скопировать." & vbCrLf & "Двойной клик по пути к папке - сменить её (одинарный клик она вежливо проигнорирует).",
+            "Double-click a key number to move the file, Shift + double-click to copy it." & vbCrLf & "Double-click a folder path to change it (single clicks are politely ignored).",
+            "Подвійний клік по номеру клавіші - перенести файл, Shift + подвійний клік - скопіювати." & vbCrLf & "Подвійний клік по шляху до теки - змінити її (одинарний клік вона ввічливо проігнорує).",
+            "Doppelklick auf eine Tastennummer verschiebt die Datei, Shift + Doppelklick kopiert sie." & vbCrLf & "Doppelklick auf einen Ordnerpfad ändert ihn (Einfachklicks werden höflich ignoriert).",
+            "Doppio clic su un numero di tasto per spostare il file, Shift + doppio clic per copiarlo." & vbCrLf & "Doppio clic su un percorso per cambiarlo (i clic singoli vengono garbatamente ignorati).",
+            "Doble clic en un número de tecla para mover el archivo, Shift + doble clic para copiarlo." & vbCrLf & "Doble clic en una ruta para cambiarla (los clics simples se ignoran cortésmente).",
+            "Double-cliquez sur un numéro de touche pour déplacer le fichier, Shift + double clic pour le copier." & vbCrLf & "Double-cliquez sur un chemin pour le changer (les simples clics sont poliment ignorés).",
+            "Clique duas vezes num número de tecla para mover o arquivo, Shift + clique duplo para copiá-lo." & vbCrLf & "Clique duas vezes num caminho para trocá-lo (cliques simples são educadamente ignorados).",
+            "انقر نقرًا مزدوجًا على رقم المفتاح لنقل الملف، وShift + نقر مزدوج لنسخه." & vbCrLf & "وانقر نقرًا مزدوجًا على مسار المجلد لتغييره (النقرة المفردة تُتجاهل بلطف).",
+            "फ़ाइल ले जाने के लिए कुंजी संख्या पर डबल-क्लिक करें, कॉपी के लिए Shift + डबल-क्लिक।" & vbCrLf & "फ़ोल्डर पथ बदलने के लिए उस पर डबल-क्लिक करें (एकल क्लिक शालीनता से अनदेखा किया जाता है)।",
+            "ফাইল সরাতে কী নম্বরে ডাবল-ক্লিক করুন, কপি করতে Shift + ডাবল-ক্লিক।" & vbCrLf & "ফোল্ডার পাথ বদলাতে তাতে ডাবল-ক্লিক করুন (একক ক্লিক ভদ্রভাবে উপেক্ষা করা হয়)।",
+            "فائل منتقل کرنے کے لیے کلید نمبر پر ڈبل کلک کریں، نقل کے لیے Shift + ڈبل کلک۔" & vbCrLf & "فولڈر کا راستہ بدلنے کے لیے اس پر ڈبل کلک کریں (واحد کلک شائستگی سے نظرانداز ہوتا ہے)۔",
+            "双击键号移动文件，Shift + 双击复制。" & vbCrLf & "双击文件夹路径可更换它（单击会被礼貌地忽略）。")
         Add("ЛКМ: Выбрать изображение" & vbCrLf & "Ctrl+ЛКМ: Добавить/убрать из выделения" & vbCrLf & "Двойной клик: Открыть изображение в главном окне" & vbCrLf & "Del: Удалить выделенные файлы (без лишних церемоний)" & vbCrLf & "Цифры (0-9): Переместить/копировать выделенные файлы" & vbCrLf & "Esc: Закрыть эту панель и сделать вид, что её не было",
             "Left click: select an image" & vbCrLf & "Ctrl+click: add to / remove from the selection" & vbCrLf & "Double click: open the image in the main window" & vbCrLf & "Del: delete the selected files (no ceremony)" & vbCrLf & "Digits (0-9): move/copy the selected files" & vbCrLf & "Esc: close this panel and pretend it was never here",
             "ЛКМ: вибрати зображення" & vbCrLf & "Ctrl+клік: додати/прибрати з виділення" & vbCrLf & "Подвійний клік: відкрити зображення в головному вікні" & vbCrLf & "Del: видалити виділені файли (без зайвих церемоній)" & vbCrLf & "Цифри (0-9): перемістити/копіювати виділені файли" & vbCrLf & "Esc: закрити цю панель і вдати, що її не було",
@@ -263,6 +339,20 @@ Partial Public NotInheritable Class Localization
             "বাঁ ক্লিক: ছবি নির্বাচন" & vbCrLf & "Ctrl+ক্লিক: নির্বাচনে যোগ/বাদ" & vbCrLf & "ডাবল ক্লিক: মূল উইন্ডোতে ছবি খুলুন" & vbCrLf & "Del: নির্বাচিত ফাইল মুছুন (কোনো আনুষ্ঠানিকতা ছাড়াই)" & vbCrLf & "সংখ্যা (0-9): নির্বাচিত ফাইল সরান/কপি করুন" & vbCrLf & "Esc: এই প্যানেল বন্ধ করুন, যেন ছিলই না",
             "بایاں کلک: تصویر منتخب کریں" & vbCrLf & "Ctrl+کلک: انتخاب میں شامل/خارج کریں" & vbCrLf & "ڈبل کلک: تصویر مرکزی ونڈو میں کھولیں" & vbCrLf & "Del: منتخب فائلیں حذف کریں (بغیر تکلف)" & vbCrLf & "ہندسے (0-9): منتخب فائلیں منتقل/نقل کریں" & vbCrLf & "Esc: یہ پینل بند کریں اور بھول جائیں کہ تھا",
             "左键：选择图片" & vbCrLf & "Ctrl+点击：加入/移出选区" & vbCrLf & "双击：在主窗口打开图片" & vbCrLf & "Del：删除选中的文件（干脆利落）" & vbCrLf & "数字 (0-9)：移动/复制选中的文件" & vbCrLf & "Esc：关掉这个面板，就当它没来过")
+        ' Appended to the tooltip above on the mainline, where a digit alone always moves.
+        Add("Shift + цифра верхнего ряда: скопировать выделенные файлы (без Shift - перенести)",
+            "Shift + a top-row digit: copy the selected files (without Shift they are moved)",
+            "Shift + цифра верхнього ряду: скопіювати виділені файли (без Shift - перенести)",
+            "Shift + Zifferntaste der oberen Reihe: die ausgewählten Dateien kopieren (ohne Shift werden sie verschoben)",
+            "Shift + una cifra della fila superiore: copia i file selezionati (senza Shift vengono spostati)",
+            "Shift + un dígito de la fila superior: copiar los archivos seleccionados (sin Shift se mueven)",
+            "Shift + un chiffre de la rangée du haut : copier les fichiers sélectionnés (sans Shift ils sont déplacés)",
+            "Shift + um dígito da fila de cima: copiar os arquivos selecionados (sem Shift eles são movidos)",
+            "Shift + رقم من الصف العلوي: نسخ الملفات المحددة (بدون Shift تُنقل)",
+            "Shift + ऊपरी पंक्ति का अंक: चुनी हुई फ़ाइलें कॉपी करें (Shift बिना वे स्थानांतरित होती हैं)",
+            "Shift + উপরের সারির অঙ্ক: নির্বাচিত ফাইল কপি করুন (Shift ছাড়া সরানো হয়)",
+            "Shift + اوپری قطار کا ہندسہ: منتخب فائلیں نقل کریں (Shift کے بغیر منتقل ہوتی ہیں)",
+            "Shift + 主键盘数字：复制选中的文件（不按 Shift 则是移动）")
         Add("Установить бесплатный перевод изображения в браузере (doc-html-translate)?" & vbCrLf & "" & vbCrLf & "Да - установить через winget." & vbCrLf & "Нет - открыть страницу в магазине приложений.",
             "Install free in-browser image translation (doc-html-translate)?" & vbCrLf & "" & vbCrLf & "Yes - install it with winget." & vbCrLf & "No - open its page in the app store.",
             "Встановити безкоштовний переклад зображення в браузері (doc-html-translate)?" & vbCrLf & "" & vbCrLf & "Так - встановити через winget." & vbCrLf & "Ні - відкрити сторінку в магазині застосунків.",

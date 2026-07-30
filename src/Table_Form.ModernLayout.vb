@@ -430,7 +430,7 @@ Partial Public Class Table_Form
             Case "video_end_action" : Return Localization.T("После окончания видео")
             Case "preferred_audio_language" : Return Localization.T("Предпочтительный язык звука")
             Case "preferred_subtitle_language" : Return Localization.T("Предпочтительный язык субтитров")
-            Case "copy_mode" : Return Localization.T("Копировать вместо перемещения")
+            Case "advance_after_copy" : Return Localization.T("Переходить к следующему файлу после копирования")
             Case "no_confirmation" : Return Localization.T("Не запрашивать подтверждение")
             Case "image_associations" : Return Localization.T("Форматы изображений")
             Case "video_associations" : Return Localization.T("Форматы видео")
@@ -514,7 +514,7 @@ Partial Public Class Table_Form
             Case "video_click_action" : Return Localization.T("Действие левой кнопки мыши на поверхности видео.")
             Case "video_end_action" : Return Localization.T("Что делать, когда воспроизведение достигло конца.")
             Case "preferred_audio_language", "preferred_subtitle_language" : Return Localization.T("Код языка, например ru, en или rus. Оставьте пустым для выбора плеера.")
-            Case "copy_mode" : Return Localization.T("Исходные файлы сохраняются, а в папке-получателе создаются копии.")
+            Case "advance_after_copy" : Return Localization.T("После копирования сразу показывается следующий файл. Снимите галочку, чтобы остаться на текущем.")
             Case "no_confirmation" : Return Localization.T("Файловые операции выполняются сразу. Используйте осторожно.")
             Case "image_associations" : Return Localization.T("Открывает системные параметры приложений по умолчанию для изображений.")
             Case "video_associations" : Return Localization.T("Открывает системные параметры приложений по умолчанию для видео.")
@@ -568,10 +568,12 @@ Partial Public Class Table_Form
 
         Dim destinations As FlowLayoutPanel = CreateModernPageFlow(Tab_Page_1)
         AddSettingRow(destinations, "recipients_overlay", SetOnTop, 34)
-        Dim gridHost As New Panel With {.Height = 382, .BackColor = SettingsSurface, .Padding = New Padding(12)}
+        Dim gridHost As New Panel With {.Height = 398, .BackColor = SettingsSurface, .Padding = New Padding(12)}
         ReparentModernSettingsControl(lbl_Grid_Hint, gridHost)
         lbl_Grid_Hint.Dock = DockStyle.Bottom
-        lbl_Grid_Hint.Height = 34
+        ' Two lines' worth: the hint names both actions now (move on a double-click, copy on
+        ' Shift + double-click) and at 34 px the wrapped second line was simply cut off.
+        lbl_Grid_Hint.Height = 50
         lbl_Grid_Hint.AutoSize = False
         lbl_Grid_Hint.Padding = New Padding(2, 8, 2, 0)
         ReparentModernSettingsControl(Data_Grid_View, gridHost)
@@ -602,7 +604,14 @@ Partial Public Class Table_Form
         AddSettingRow(video, "video_volume", num_Video_Volume, 100, True)
 
         Dim files As FlowLayoutPanel = CreateModernPageFlow(Tab_Page_4)
-        AddSettingRow(files, "copy_mode", chkbox_Copy_Mode, 34, True)
+        ' The global "copy mode" is gone from this window: copying is now asked for at the
+        ' moment of the action (Shift+digit, the recipients overlay, both media menus,
+        ' Shift+double-click in the grid), not switched on beforehand and forgotten about.
+        ' The control itself stays hidden here for net48 persistence compatibility, exactly
+        ' like the independent-thread checkbox below.
+        ' SPECIFICATION_COPY_ACTIONS_REWORK.md §4.1.
+        chkbox_Copy_Mode.Visible = False
+        AddAdvanceAfterCopyRow(files)
         ' .NET 10 always uses the background file-operation queue. Do not expose a
         ' switch that cannot change anything; the hidden control remains for net48
         ' persistence compatibility.

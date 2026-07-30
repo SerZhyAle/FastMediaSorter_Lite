@@ -10,8 +10,8 @@ Partial Public Class Main_Form
     ''' <summary>
     ''' The first-run help, one registered string per line. Lines rather than one big
     ''' block because a paragraph is far harder to translate consistently across 13
-    ''' languages than a sentence, and because the zoom block (modern-only) has to be
-    ''' spliced into the middle - see ZoomHelpLine.
+    ''' languages than a sentence, and because the mainline-only block has to be spliced
+    ''' into the middle - see ModernHelpLines.
     ''' </summary>
     Private Shared ReadOnly Help_Lines_Before_Zoom As String() = {
         " Программа для быстрого переноса/копирования изображений по папкам. Да, та самая, которой вам не хватало.",
@@ -52,7 +52,7 @@ Partial Public Class Main_Form
         For Each line In Help_Lines_Before_Zoom
             help.AppendLine(Localization.T(line))
         Next
-        help.Append(ZoomHelpLine())
+        help.Append(ModernHelpLines())
         For Each line In Help_Lines_After_Zoom
             help.AppendLine(Localization.T(line))
         Next
@@ -78,17 +78,18 @@ Partial Public Class Main_Form
     End Sub
 
     ''' <summary>
-    ''' The zoom lines of the first-run help, or "" where there is nothing to promise.
-    ''' The classic zoom model is modern-only (the x86 viewer keeps the historical
-    ''' mechanics - SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md), so the x86 help must
-    ''' not advertise keys that do nothing there. Ends with its own newline so the
-    ''' surrounding text closes up when it is empty.
+    ''' The mainline-only lines of the first-run help, or "" where there is nothing to
+    ''' promise. Zoom, the media menus, the video keys and the Shift+digit copy all ship
+    ''' in the .NET 10 viewer only (the x86 one keeps the historical mechanics), so the
+    ''' x86 help must not advertise keys that do nothing there. Ends with its own newline
+    ''' so the surrounding text closes up when it is empty.
     ''' </summary>
-    Private Function ZoomHelpLine() As String
+    Private Function ModernHelpLines() As String
 #If NETFRAMEWORK Then
         Return ""
 #Else
         Dim sb As New StringBuilder()
+        sb.AppendLine(Localization.T("Shift + цифра верхнего ряда - скопировать файл в ту же папку, куда цифра его переносит. "))
         sb.AppendLine(Localization.T("Масштаб: серый + и - (от курсора), серый / - вписать, серый * - 100 %; колесо можно переключить на масштаб в настройках. "))
         sb.AppendLine(Localization.T("Средняя кнопка мыши по картинке - меню со всеми действиями над ней (поворот, масштаб, переименовать, переместить, удалить). "))
         sb.AppendLine(Localization.T("У видео: клик по картинке - пауза/продолжить, правая кнопка - меню со всеми действиями над видео. "))
@@ -194,6 +195,14 @@ Partial Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2020: btn_Language")
 
         Dim menu As New ContextMenuStrip()
+        ' A menu built per click has to be released per click, or every language switch
+        ' leaks its strip plus 13 items. Disposing from inside Closed would pull the
+        ' object out from under the notification, hence the BeginInvoke - the same
+        ' pattern the recent-files menu already uses (Main_Form.vb, btn_RecentFiles).
+        AddHandler menu.Closed, Sub(s, args)
+                                    Dim m = DirectCast(s, ContextMenuStrip)
+                                    Me.BeginInvoke(New Action(Sub() m.Dispose()))
+                                End Sub
         menu.ShowImageMargin = True
         For i = 0 To Localization.Codes.Length - 1
             Dim code = Localization.Codes(i)

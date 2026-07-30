@@ -6,6 +6,7 @@ Imports System.Drawing.Imaging
 Imports System.IO
 Imports System.Net
 Imports System.Runtime.InteropServices
+Imports System.Threading
 Imports Tesseract
 
 ''' <summary>
@@ -116,8 +117,9 @@ Public Class TesseractOcrEngine
     ''' "vertical"); empty or "auto" keeps the multi-mode auto strategy.</summary>
     Public Property ForcedPageMode As String = ""
 
-    Public Function Recognize(source As Bitmap, languages As String) As OcrResult Implements IOcrEngine.Recognize
+    Public Function Recognize(source As Bitmap, languages As String, ct As CancellationToken) As OcrResult Implements IOcrEngine.Recognize
         If source Is Nothing Then Return OcrResult.FromError("no image")
+        If ct.IsCancellationRequested Then Return OcrResult.FromError("cancelled")
 
         Dim runtimeReason As String = ""
         If Not OptionalRuntimeManager.TryPrepareOcrRuntime(runtimeReason) Then
@@ -147,6 +149,14 @@ Public Class TesseractOcrEngine
         Dim lastFailure As OcrResult = Nothing
 
         For Each profile As OcrAttemptProfile In profiles
+            ' Once per attempt, and again before the (possibly 60 s) language download below:
+            ' those are the only two places long enough to matter, and they are exactly where
+            ' a stale job used to keep going after the user had flipped to another image.
+            If ct.IsCancellationRequested Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: cancelled before attempt lang=" & profile.Language)
+                Return OcrResult.FromError("cancelled")
+            End If
+
             Dim dataDir As String
             Try
                 dataDir = EnsureTessData(profile.Language, PreferBest)
@@ -157,6 +167,13 @@ Public Class TesseractOcrEngine
 
             If dataDir Is Nothing Then
                 Return OcrResult.Runtime("language data unavailable")
+            End If
+
+            ' EnsureTessData can have spent up to a minute downloading a pack; the user may
+            ' well have moved on in that time.
+            If ct.IsCancellationRequested Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: cancelled after tessdata lang=" & profile.Language)
+                Return OcrResult.FromError("cancelled")
             End If
 
             Dim attemptResult As OcrResult = RecognizeSingleAttempt(source, preparedImages(profile.Preprocess), dataDir, profile)

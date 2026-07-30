@@ -5,6 +5,8 @@ Imports System.IO.Pipes
 Imports System.Text
 Imports System.Text.Json
 Imports System.Text.Json.Serialization
+Imports System.Threading
+Imports System.Threading.Tasks
 
 ''' <summary>
 ''' Named-pipe JSON control client for the bundled Android-share sidecar
@@ -39,26 +41,49 @@ Public NotInheritable Class WorkerIpc
 
     ''' <summary>
     ''' Sends one request and returns the worker's response. Throws on transport
-    ''' failure (no worker listening / connect timeout / broken pipe); callers
+    ''' failure (no worker listening / timeout / broken pipe); callers
     ''' that want a soft failure should wrap in Try or use WorkerProcess helpers.
+    '''
+    ''' <paramref name="timeoutMs"/> bounds the WHOLE exchange, not just the connect. It used
+    ''' to bound only the connect, while the write and the "read until the worker closes its
+    ''' end" loop were unbounded blocking calls - so a worker that accepted the pipe and then
+    ''' never answered (deadlocked, AV-suspended, stuck on disk I/O) blocked the call for ever.
+    ''' Callers pass it through Task.Run, so each such call pinned a thread-pool thread and a
+    ''' pipe handle permanently, and the status pollers added another every 10-30 s for as long
+    ''' as Companion sat in the tray. Every awaiting UI flow simply never resumed.
     ''' </summary>
-    Public Shared Function Send(request As WorkerRequest, Optional connectTimeoutMs As Integer = 5000) As WorkerResponse
+    Public Shared Function Send(request As WorkerRequest, Optional timeoutMs As Integer = 5000) As WorkerResponse
         If request Is Nothing Then Throw New ArgumentNullException(NameOf(request))
         request.schemaVersion = SchemaVersion
 
-        Using pipe As New NamedPipeClientStream(".", PipeName, PipeDirection.InOut, PipeOptions.None)
-            pipe.Connect(connectTimeoutMs)
+        Using deadline As New CancellationTokenSource(Math.Max(250, timeoutMs))
+            Try
+                Return SendAsync(request, timeoutMs, deadline.Token).GetAwaiter().GetResult()
+            Catch ex As OperationCanceledException
+                ' Cancellation here only ever means our own deadline.
+                Throw New TimeoutException("Companion worker did not answer within " & timeoutMs.ToString() & " ms.", ex)
+            End Try
+        End Using
+    End Function
+
+    ''' <summary>The exchange itself, fully asynchronous so the deadline can actually
+    ''' interrupt it - a synchronous pipe Read cannot be cancelled.</summary>
+    Private Shared Async Function SendAsync(request As WorkerRequest,
+                                            timeoutMs As Integer,
+                                            ct As CancellationToken) As Task(Of WorkerResponse)
+        Using pipe As New NamedPipeClientStream(".", PipeName, PipeDirection.InOut, PipeOptions.Asynchronous)
+            Await pipe.ConnectAsync(timeoutMs, ct).ConfigureAwait(False)
 
             Dim payload As Byte() = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request, JsonOpts))
-            pipe.Write(payload, 0, payload.Length)
-            pipe.Flush()
+            Await pipe.WriteAsync(payload, 0, payload.Length, ct).ConfigureAwait(False)
+            Await pipe.FlushAsync(ct).ConfigureAwait(False)
 
             ' No length prefix - read until the worker closes its end.
             Dim respText As String
             Using ms As New MemoryStream()
                 Dim buffer(8191) As Byte
                 Do
-                    Dim n As Integer = pipe.Read(buffer, 0, buffer.Length)
+                    Dim n As Integer = Await pipe.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(False)
                     If n <= 0 Then Exit Do
                     ms.Write(buffer, 0, n)
                 Loop

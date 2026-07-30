@@ -206,6 +206,19 @@ Public Module DocHtmlTranslate
         End Try
     End Sub
 
+    ''' <summary>Size budget for the browser-translate cache. Each entry is a whole folder
+    ''' (an OCR'd HTML page plus its assets), and because the folder name folds in the source
+    ''' file's write time, re-translating an edited image orphans the previous folder outright.
+    ''' Nothing ever pruned this root - unlike LogPackage, which cleans up after itself.</summary>
+    Private Const Browser_Cache_Budget_Mb As Integer = 500
+
+    ''' <summary>The cache root - the folder whose subdirectories are the entries.</summary>
+    Private Function OutputCacheRoot() As String
+        Return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            App_name, Second_App_Name, "browser-translate-cache")
+    End Function
+
     ''' <summary>%LOCALAPPDATA%\SZA\FastMediaSorter\browser-translate-cache\&lt;hash&gt;.
     ''' The hash folds in the file's last-write time, so an edited file re-OCRs into
     ''' a fresh folder instead of reusing a stale page.</summary>
@@ -213,10 +226,18 @@ Public Module DocHtmlTranslate
         Dim ticks As Long = 0
         Try : ticks = File.GetLastWriteTimeUtc(imagePath).Ticks : Catch : End Try
         Dim hash As String = StableHash(imagePath.ToLowerInvariant() & "|" & ticks.ToString())
-        Dim root As String = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            App_name, Second_App_Name, "browser-translate-cache", hash)
-        Return root
+        Dim root As String = OutputCacheRoot()
+
+        ' Trim BEFORE handing out a new entry: the oldest folders go, and the one we are about
+        ' to create is not a candidate because it does not exist yet.
+        Dim removed As Integer = DiskCacheTrim.TrimToBudget(root, Browser_Cache_Budget_Mb,
+                                                           entries_Are_Folders:=True)
+        If removed > 0 Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
+                            " doc-html-translate: trimmed " & removed.ToString() & " old cache folders")
+        End If
+
+        Return Path.Combine(root, hash)
     End Function
 
     Private Function StableHash(text As String) As String

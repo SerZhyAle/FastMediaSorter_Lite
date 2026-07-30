@@ -44,6 +44,18 @@ Public Module WorkerProcess
     ''' spawns it hidden and polls the pipe up to totalWaitMs. Returns the worker
     ''' status (from GetStatus), or Nothing if it could not be reached.
     ''' </summary>
+    ''' <summary>
+    ''' How long after a failed bring-up a repeat call is answered from memory instead of
+    ''' launching another process. Deliberately SHORT: every current caller is an explicit
+    ''' user action (open the window, share a folder, resume from the tray), and making a
+    ''' user wait out a long backoff after they read the error and clicked again would be
+    ''' worse than the waste it prevents. This only swallows the burst - a double click, a
+    ''' window reopened at once, or a future caller that ends up on a timer.
+    ''' </summary>
+    Private Const Spawn_Backoff_Ms As Integer = 5000
+
+    Private spawn_Failed_At As DateTime = DateTime.MinValue
+
     Public Function EnsureRunning(Optional totalWaitMs As Integer = 5000) As WorkerResponse
         ' Fast path: a worker is already listening.
         Dim status As WorkerResponse = TryGetStatus(400)
@@ -51,13 +63,23 @@ Public Module WorkerProcess
 
         If Not IsAvailable() Then Return Nothing
 
+        If spawn_Failed_At <> DateTime.MinValue AndAlso
+           (DateTime.UtcNow - spawn_Failed_At).TotalMilliseconds < Spawn_Backoff_Ms Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " companion: spawn backoff - not retrying yet")
+            Return Nothing
+        End If
+
         Try
-            Process.Start(New ProcessStartInfo(WorkerExePath()) With {
+            ' Using: we never wait on the object itself (readiness is decided by the pipe
+            ' poll below), and a discarded Process holds its handle until finalization.
+            Using spawned As Process = Process.Start(New ProcessStartInfo(WorkerExePath()) With {
                 .UseShellExecute = False,
                 .CreateNoWindow = True,
                 .WindowStyle = ProcessWindowStyle.Hidden})
+            End Using
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " companion: spawn failed: " & ex.Message)
+            spawn_Failed_At = DateTime.UtcNow
             Return Nothing
         End Try
 
@@ -65,8 +87,15 @@ Public Module WorkerProcess
         Do While sw.ElapsedMilliseconds < totalWaitMs
             Thread.Sleep(200)
             status = TryGetStatus(400)
-            If status IsNot Nothing Then Return status
+            If status IsNot Nothing Then
+                spawn_Failed_At = DateTime.MinValue
+                Return status
+            End If
         Loop
+
+        ' It started but never answered the pipe - just as bad as a failed launch, and the
+        ' same backoff applies.
+        spawn_Failed_At = DateTime.UtcNow
         Return Nothing
     End Function
 

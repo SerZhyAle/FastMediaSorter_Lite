@@ -23,6 +23,20 @@ Partial Public NotInheritable Class Localization
             "নির্বাচিত হলে ফাইল সরানোর বদলে কপি হয় - মূল ফাইল থেকে যায়।",
             "منتخب ہونے پر فائلیں منتقل نہیں، نقل ہوتی ہیں - اصل فائلیں محفوظ رہتی ہیں۔",
             "勾选后文件将被复制而非移动 - 无论你接下来按什么，原件都还在。")
+        ' Mainline only: the checkbox that took the place of the global copy mode.
+        Add("Если отмечено, после копирования программа сразу показывает следующий файл. Если снять галочку, после копирования остаётся текущий файл. По умолчанию включено.",
+            "If checked, the app shows the next file right after a copy. If unchecked, the current file stays on screen after copying. On by default.",
+            "Якщо позначено, після копіювання програма одразу показує наступний файл. Якщо зняти позначку, після копіювання залишається поточний файл. Типово увімкнено.",
+            "Wenn aktiviert, zeigt das Programm nach dem Kopieren sofort die nächste Datei. Ohne Häkchen bleibt die aktuelle Datei stehen. Standardmäßig aktiv.",
+            "Se selezionato, dopo la copia il programma mostra subito il file successivo. Senza spunta resta il file attuale. Attivo per impostazione predefinita.",
+            "Si está marcado, tras la copia el programa muestra en seguida el siguiente archivo. Sin la marca, permanece el archivo actual. Activado de forma predeterminada.",
+            "Si coché, le programme affiche le fichier suivant juste après la copie. Sinon, le fichier actuel reste à l'écran. Activé par défaut.",
+            "Se marcado, após a cópia o programa mostra logo o próximo arquivo. Sem a marca, o arquivo atual permanece. Ativado por padrão.",
+            "عند التحديد يعرض البرنامج الملف التالي مباشرة بعد النسخ. وبدونه يبقى الملف الحالي على الشاشة. مُفعّل افتراضيًا.",
+            "चुनने पर कॉपी के तुरंत बाद प्रोग्राम अगली फ़ाइल दिखाता है। चुनाव हटाने पर मौजूदा फ़ाइल बनी रहती है। डिफ़ॉल्ट रूप से चालू।",
+            "নির্বাচিত হলে কপির পরপরই প্রোগ্রাম পরের ফাইল দেখায়। টিক না থাকলে বর্তমান ফাইলই থাকে। ডিফল্টে চালু।",
+            "منتخب ہونے پر پروگرام نقل کے فوراً بعد اگلی فائل دکھاتا ہے۔ نشان ہٹانے پر موجودہ فائل برقرار رہتی ہے۔ ڈیفالٹ میں فعال۔",
+            "勾选后，复制完成即显示下一个文件；取消勾选则停留在当前文件。默认开启。")
         Add("Если отмечено, файловые операции уходят в фоновый поток, чтобы не заставлять вас смотреть на них.",
             "If checked, file operations run in the background, so you don't have to watch them happen.",
             "Якщо позначено, файлові операції виконуються у фоні, щоб не змушувати вас на них дивитися.",
@@ -301,6 +315,21 @@ Partial Public NotInheritable Class Localization
             "কাজ চালাতে কী নম্বরে ডাবল-ক্লিক করুন। ফোল্ডার বাছতে পাথে ডাবল-ক্লিক করুন।",
             "عمل چلانے کے لیے کلید نمبر پر ڈبل کلک کریں۔ فولڈر منتخب کرنے کے لیے راستے پر ڈبل کلک کریں۔",
             "双击键号执行操作。双击路径选择文件夹。")
+        ' Mainline: the same hint, saying which button does which action - the global copy
+        ' mode is gone, so the modifier has to be spelled out.
+        Add("Двойной клик по номеру клавиши - перенести файл, Shift + двойной клик - скопировать. Двойной клик по пути - выбрать папку.",
+            "Double-click a key number to move the file, Shift + double-click to copy it. Double-click a path to pick a folder.",
+            "Подвійний клік по номеру клавіші - перенести файл, Shift + подвійний клік - скопіювати. Подвійний клік по шляху - вибрати теку.",
+            "Doppelklick auf eine Tastennummer verschiebt die Datei, Shift + Doppelklick kopiert sie. Doppelklick auf einen Pfad wählt einen Ordner.",
+            "Doppio clic su un numero di tasto per spostare il file, Shift + doppio clic per copiarlo. Doppio clic su un percorso per scegliere una cartella.",
+            "Doble clic en un número de tecla para mover el archivo, Shift + doble clic para copiarlo. Doble clic en una ruta para elegir carpeta.",
+            "Double-cliquez sur un numéro de touche pour déplacer le fichier, Shift + double clic pour le copier. Double-cliquez sur un chemin pour choisir un dossier.",
+            "Clique duas vezes num número de tecla para mover o arquivo, Shift + clique duplo para copiá-lo. Clique duas vezes num caminho para escolher a pasta.",
+            "انقر نقرًا مزدوجًا على رقم المفتاح لنقل الملف، وShift + نقر مزدوج لنسخه. وانقر نقرًا مزدوجًا على المسار لاختيار مجلد.",
+            "फ़ाइल ले जाने के लिए कुंजी संख्या पर डबल-क्लिक करें, कॉपी के लिए Shift + डबल-क्लिक। फ़ोल्डर चुनने के लिए पथ पर डबल-क्लिक करें।",
+            "ফাইল সরাতে কী নম্বরে ডাবল-ক্লিক করুন, কপি করতে Shift + ডাবল-ক্লিক। ফোল্ডার বাছতে পাথে ডাবল-ক্লিক করুন।",
+            "فائل منتقل کرنے کے لیے کلید نمبر پر ڈبل کلک کریں، نقل کے لیے Shift + ڈبل کلک۔ فولڈر منتخب کرنے کے لیے راستے پر ڈبل کلک کریں۔",
+            "双击键号移动文件，Shift + 双击复制。双击路径可选择文件夹。")
 
         ' --- shared short captions -----------------------------------------------
         Add("По углу", "By corner", "За кутом", "Nach Ecke", "Per angolo", "Por esquina",

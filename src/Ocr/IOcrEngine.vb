@@ -1,6 +1,7 @@
 Option Strict On
 
 Imports System.Drawing
+Imports System.Threading
 
 Public Enum OcrStatus
     Ok
@@ -36,5 +37,13 @@ Public Interface IOcrEngine
 
     ''' <param name="source">A private bitmap snapshot the engine may read freely.</param>
     ''' <param name="languages">Normalized source hint such as "auto", "rus" or "eng".</param>
-    Function Recognize(source As Bitmap, languages As String) As OcrResult
+    ''' <param name="ct">
+    ''' Checked between attempts and before any language-data download. Passing the token to
+    ''' Task.Run only ever stopped a job that had not STARTED; once inside, a run does up to
+    ''' ~18 Tesseract passes (seconds each) plus a possible 60 s download per language, and a
+    ''' "cancelled" job used to burn all of it - while holding the engine lock that the newest
+    ''' job was queued on. During auto-OCR over a slideshow that stacked up threads until the
+    ''' whole app went sluggish.
+    ''' </param>
+    Function Recognize(source As Bitmap, languages As String, ct As CancellationToken) As OcrResult
 End Interface

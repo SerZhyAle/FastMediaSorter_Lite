@@ -9,8 +9,8 @@ Imports System.Windows.Forms
 '
 ' It is here rather than duplicated in each because the pieces that are genuinely shared
 ' are the ones that would rot apart unnoticed: the destination folders (the same eleven
-' slots the number keys and the recipients overlay use) and the "Copy to" vs "Move to"
-' wording, which follows a setting either menu can be opened under.
+' slots the number keys and the recipients overlay use) and the pair of "Move to" /
+' "Copy to" submenus, which both menus now offer side by side.
 Partial Public Class Main_Form
 
     ''' <summary>One menu row that runs <paramref name="action"/>.</summary>
@@ -24,13 +24,18 @@ Partial Public Class Main_Form
     End Sub
 
     ''' <summary>
-    ''' "Move to.." - the same destination folders the number keys and the recipients
-    ''' overlay offer, behind the same PoMove. Nothing when none are configured yet: an
-    ''' empty submenu would only advertise a feature the user has not set up.
+    ''' "Move to.." / "Copy to.." - the same destination folders the number keys and the
+    ''' recipients overlay offer, behind the same one implementation. Nothing when none are
+    ''' configured yet: an empty submenu would only advertise a feature the user has not
+    ''' set up.
+    '''
+    ''' Both submenus are built, always. The wording used to follow the global copy mode,
+    ''' so the menu showed one of the two actions and the other one was reachable only by
+    ''' going to the settings window and coming back
+    ''' (SPECIFICATION_COPY_ACTIONS_REWORK.md §4.4).
     ''' </summary>
-    Private Function CreateRecipientsSubmenu() As ToolStripMenuItem
-        Dim rus As Boolean = Is_Russian_Language
-        Dim root As New ToolStripMenuItem(If(Is_Copying_not_Moving,
+    Private Function CreateRecipientsSubmenu(action As RecipientActionKind) As ToolStripMenuItem
+        Dim root As New ToolStripMenuItem(If(action = RecipientActionKind.Copy,
                                              Localization.T("Копировать в"),
                                              Localization.T("Переместить в")))
 
@@ -42,7 +47,7 @@ Partial Public Class Main_Form
 
             Dim slot As Integer = k
             Dim item As New ToolStripMenuItem(If(k = 10, "0", k.ToString()) & "  " & folder_Path)
-            AddHandler item.Click, Sub() PoMove(slot)
+            AddHandler item.Click, Sub() ExecuteRecipientAction(slot, action)
             root.DropDownItems.Add(item)
         Next
 
@@ -50,15 +55,15 @@ Partial Public Class Main_Form
         Return root
     End Function
 
-    ''' <summary>Rename / move / delete - identical in both menus, and in both cases the
-    ''' very methods the F6, number and Del keys call.</summary>
+    ''' <summary>Rename / move / copy / delete - identical in both menus, and in every case
+    ''' the very methods the F6, number and Del keys call.</summary>
     Private Sub AddFileOperationItems(target As ToolStripItemCollection)
-        Dim rus As Boolean = Is_Russian_Language
-
         AddMenuItem(target, Localization.T("Переименовать.. (F6)"), Sub() RenameCurrentFile())
 
-        Dim recipients_Item As ToolStripMenuItem = CreateRecipientsSubmenu()
-        If recipients_Item IsNot Nothing Then target.Add(recipients_Item)
+        Dim move_Item As ToolStripMenuItem = CreateRecipientsSubmenu(RecipientActionKind.Move)
+        If move_Item IsNot Nothing Then target.Add(move_Item)
+        Dim copy_Item As ToolStripMenuItem = CreateRecipientsSubmenu(RecipientActionKind.Copy)
+        If copy_Item IsNot Nothing Then target.Add(copy_Item)
 
         AddMenuItem(target, Localization.T("Удалить (Del)"), Sub() ReadShowMediaFile(Mode_Delete))
     End Sub

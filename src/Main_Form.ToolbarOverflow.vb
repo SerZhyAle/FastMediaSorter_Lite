@@ -39,6 +39,11 @@ Partial Public Class Main_Form
     ' translate buttons, which are shown only for still images.
     Private ReadOnly toolbar_Hidden_Items As New HashSet(Of Control)()
 
+    ''' <summary>What each overflow menu was last built from, so LayoutToolbar - which
+    ''' runs on every file flip - can skip a rebuild that would produce the same menu.
+    ''' </summary>
+    Private ReadOnly overflow_Menu_Signatures As New Dictionary(Of ContextMenuStrip, String)()
+
     ' Folder box width bounds (px). Preferred matches ApplyModernStyling's 320.
     Private Const Folder_Box_Pref_Width As Integer = 320
     Private Const Folder_Box_Min_Width As Integer = 90
@@ -274,21 +279,70 @@ Partial Public Class Main_Form
 
     ''' <summary>Rebuilds an overflow dropdown to mirror the hidden buttons
     ''' (clicking a menu item just clicks the underlying button). Non-button
-    ''' controls that overflow - the info labels - are simply hidden.</summary>
+    ''' controls that overflow - the info labels - are simply hidden.
+    '''
+    ''' Two things this does NOT do any more, because LayoutToolbar runs on every file
+    ''' flip (the info labels' TextChanged calls it): it does not rebuild when the same
+    ''' buttons are overflowing as last time, and it does not drop the old items on the
+    ''' floor. ToolStrip.Items.Clear does not dispose what it removes, so each rebuild
+    ''' left a generation of items - with their Click closures - for the finalizer.</summary>
     Private Sub RebuildOverflowMenu(menu As ContextMenuStrip, items As List(Of Control))
         If menu Is Nothing Then Return
-        menu.Items.Clear()
 
+        Dim buttons As New List(Of Button)()
         For Each c As Control In items
             Dim b As Button = TryCast(c, Button)
-            If b Is Nothing Then Continue For   ' labels: no menu entry
+            If b IsNot Nothing Then buttons.Add(b)   ' labels: no menu entry
+        Next
 
+        ' Signature = which buttons, in which order, and whether each is enabled: those
+        ' are the only inputs the menu has.
+        Dim signature_Builder As New System.Text.StringBuilder()
+        For Each b As Button In buttons
+            signature_Builder.Append(b.Name).Append(":"c).Append(If(b.Enabled, "1"c, "0"c)).Append("|"c)
+        Next
+        Dim signature As String = signature_Builder.ToString()
+        Dim previous As String = Nothing
+        overflow_Menu_Signatures.TryGetValue(menu, previous)
+        If previous IsNot Nothing AndAlso previous = signature AndAlso menu.Items.Count = buttons.Count Then Return
+
+        ClearAndDisposeItems(menu.Items)
+
+        For Each b As Button In buttons
             Dim item As New ToolStripMenuItem(OverflowText(b)) With {.Enabled = b.Enabled}
             Dim captured As Button = b
             AddHandler item.Click, Sub()
                                        If captured.Enabled Then captured.PerformClick()
                                    End Sub
             menu.Items.Add(item)
+        Next
+
+        overflow_Menu_Signatures(menu) = signature
+    End Sub
+
+    ''' <summary>
+    ''' Empties a ToolStrip item collection AND disposes what it removes. Items.Clear on
+    ''' its own does neither: it unparents the items and leaves them (with their Click
+    ''' closures, images and, for a submenu, its whole DropDown) to the finalizer. Every
+    ''' menu in this app is rebuilt on each open - some of them on each file flip - so
+    ''' that is a generation of live objects per rebuild.
+    '''
+    ''' Shared by the toolbar overflow menus and by the media context menus; lives here
+    ''' because this file is compiled into BOTH builds, while the menu files are
+    ''' modern-only.
+    ''' </summary>
+    Friend Shared Sub ClearAndDisposeItems(target As ToolStripItemCollection)
+        If target Is Nothing OrElse target.Count = 0 Then Return
+
+        Dim old_Items(target.Count - 1) As ToolStripItem
+        target.CopyTo(old_Items, 0)
+        target.Clear()
+        For Each old_Item As ToolStripItem In old_Items
+            Try
+                old_Item.Dispose()
+            Catch
+                ' A disposed item is not worth failing a menu rebuild over.
+            End Try
         Next
     End Sub
 

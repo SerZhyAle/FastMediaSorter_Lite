@@ -8,7 +8,18 @@ param(
     # Skip publishing the .NET 10 modern viewer (SPECIFICATION_DOTNET10_MODERN_BUILD).
     # By default it is published to bin\ModernPublish and mirrored into a "modern\"
     # subfolder of each deploy target for side-by-side testing with the net48 exe.
-    [switch]$SkipModern
+    [switch]$SkipModern,
+    # Skip the final packaging step (tools\Build-Installer.ps1). By default a local
+    # build ends by packaging the copy-anywhere offline installer into dist\, so the
+    # thing you hand to someone else is never older than the exes you just tested.
+    # Still a "сборка", never a "релиз": no v* tag is created or pushed.
+    [switch]$SkipInstaller,
+    # Installer payload, forwarded to tools\Build-Installer.ps1. Default: the lighter
+    # fast OCR models (offline OCR out of the box). -InstallerIncludeBest also bundles
+    # the heavy tessdata_best models; -InstallerSkipOcr bundles none of them (smallest
+    # and quickest package - the models download on first OCR use instead).
+    [switch]$InstallerIncludeBest,
+    [switch]$InstallerSkipOcr
 )
 
 $SolutionDir = $PSScriptRoot
@@ -140,8 +151,8 @@ if (-not $msbuild -or -not (Test-Path $msbuild)) {
 Write-Host "Using MSBuild: $msbuild"
 
 # Housekeeping: drop superseded stage\ trees, orphaned bin\ experiment folders
-# and temp scratch so they do not accumulate. Leaves dist\ alone (a local build
-# does not produce installers - the installer scripts prune their own dist\).
+# and temp scratch so they do not accumulate. Leaves dist\ alone - the installer
+# step at the end runs its own pass that prunes dist\ while keeping this version.
 if (-not $NoClean) {
     & (Join-Path $SolutionDir "tools\Clean-Build.ps1") -Stage -Bin -Temp
 }
@@ -306,4 +317,50 @@ foreach ($Destination in $Destinations) {
     if (Test-Path $staleModernDir) {
         Write-Warning "Leftover from the old layout - delete it: $staleModernDir"
     }
+}
+
+# --- installer package ------------------------------------------------------
+# The distributable end of a local build: bin\Release is already the distribution
+# shape, so tools\Build-Installer.ps1 runs with -SkipBuild and only re-stages that
+# tree, bundles the OCR payload and compiles dist\..-setup.exe. It still does its
+# own `dotnet publish` of the modern viewer and the Companion, because the staged
+# tree must carry exes stamped with the version passed below.
+#
+# This is packaging, not publishing: no v* tag, no upload, nothing billable - the
+# same wall between "сборка" and "релиз" as everywhere else (docs/guides/BUILD_AND_RELEASE.md).
+if (-not $SkipInstaller) {
+    # The stamp the msbuild run above wrote, read as TEXT out of VersionInfo.vb.
+    # The exe's own VersionInfo cannot be used: version fields are numeric, so
+    # 26.7.30.0108 reads back as 26.7.30.108 and the package would be misnamed.
+    $installerVersion = $null
+    $versionInfoFile = Join-Path $SolutionDir "src\My Project\VersionInfo.vb"
+    if (Test-Path $versionInfoFile) {
+        $match = [regex]::Match((Get-Content -LiteralPath $versionInfoFile -Raw), 'AssemblyFileVersion\("([^"]+)"\)')
+        if ($match.Success) { $installerVersion = $match.Groups[1].Value }
+    }
+    if (-not $installerVersion) { $installerVersion = Get-Date -Format "yy.M.d.HHmm" }
+
+    # HASHTABLE splatting, never an array of "-Switch" strings: splatting an ARRAY
+    # passes its elements as POSITIONAL values, so "-SkipBuild" would silently land
+    # in the first positional parameter (-Version) - which then rebuilt the solution
+    # with /p:ReleaseVersion=-SkipBuild and died on BC36962 ("version string does not
+    # conform"), after Rebuild had already wiped bin\Release. Named binding only.
+    $installerArgs = @{ SkipBuild = $true; Version = $installerVersion }
+    if ($NoClean)              { $installerArgs.NoClean     = $true }
+    if ($InstallerIncludeBest) { $installerArgs.IncludeBest = $true }
+    if ($InstallerSkipOcr)     { $installerArgs.SkipOcr     = $true }
+
+    Write-Host ""
+    Write-Host "Packaging the offline installer (version $installerVersion).."
+    try {
+        & (Join-Path $SolutionDir "tools\Build-Installer.ps1") @installerArgs
+        if ($LASTEXITCODE -ne 0) { throw "tools\Build-Installer.ps1 exited with code $LASTEXITCODE." }
+    } catch {
+        # Loud, not a warning: a skipped packaging step leaves a stale dist\ setup.exe
+        # sitting next to a fresh build, which is exactly how an old package gets shipped.
+        Write-Error "Installer packaging failed: $($_.Exception.Message)"
+        exit 1
+    }
+} else {
+    Write-Host "Skipping installer packaging (-SkipInstaller)."
 }

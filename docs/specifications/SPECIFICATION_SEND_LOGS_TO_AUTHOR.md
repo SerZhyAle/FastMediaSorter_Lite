@@ -274,7 +274,7 @@ Designer-компоновке настроек, то есть в x86-сборк�
 | [CHANGELOG.md](../../CHANGELOG.md), раздел `[Unreleased]` | строка на английском: кнопка сбора и отправки журналов на вкладке «О программе» |
 | [README.md](../../README.md) + [README_RU.md](../../README_RU.md) + [README_UK.md](../../README_UK.md) | одна строка в разделе поддержки: как прислать журналы |
 | [how-to-viewer.html](../../how-to-viewer.html) | подраздел «If something goes wrong»: путь Настройки → О программе → Отправить логи автору, что попадает в архив, что программа ничего не отправляет сама |
-| [tools/site-copy.json](../../tools/site-copy.json) | пункт в блоке `know` для **всех 13 языков**; затем `pwsh tools/Build-SitePages.ps1` перегенерирует `<lang>/index.html`. **Сгенерированные HTML руками не править** (канон, инвариант 16); проверка - `-Check` |
+| [tools/site-copy.json](../../tools/site-copy.json) | пункт в блоке `know` для **всех 13 языков**; затем `pwsh tools/Build-SitePages.ps1` перегенерирует `lang/<code>/index.html`. **Сгенерированные HTML руками не править** (канон, инвариант 16); проверка - `-Check` |
 | [docs/privacy.html](../privacy.html) | абзац «Diagnostic logs» (§4): логи локальны, уходят только письмом, которое отправил сам пользователь |
 | [docs/contracts/SETTINGS_WINDOW_INVENTORY_DOTNET10.md](../contracts/SETTINGS_WINDOW_INVENTORY_DOTNET10.md) | в раздел «О программе» - строка про новое действие, чтобы контракт окна оставался полным |
 | Store-листинг | **не трогаем** в рамках этой задачи: описание в Partner Center обновляется на ближайшем релизе по [STORE_PUBLISHING.md](../guides/STORE_PUBLISHING.md) |

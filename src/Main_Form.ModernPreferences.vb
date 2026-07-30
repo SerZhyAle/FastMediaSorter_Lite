@@ -57,6 +57,13 @@ Partial Public Class Main_Form
                   SearchOption.TopDirectoryOnly)
     End Function
 
+    ''' <summary>Whether a copy moves the view on to the next file. Default (and the value
+    ''' when preferences are not loaded yet) is True: the historical behaviour, and the one
+    ''' the sorting run needs.</summary>
+    Private Function AdvanceAfterCopy() As Boolean
+        Return modern_Preferences Is Nothing OrElse modern_Preferences.AdvanceAfterCopy
+    End Function
+
     Private Function StopSlideShowForManualNavigation() As Boolean
         Return modern_Preferences Is Nothing OrElse modern_Preferences.StopSlideshowOnManualNavigation
     End Function

@@ -115,7 +115,10 @@ Partial Public Class Main_Form
         ' that folder and end the stream - simple and predictable, and the alternative
         ' (a whole parallel "URL mode") buys nothing for a sorter.
         lbl_Status.Text = Localization.T("Подключение..")
-        Application.DoEvents()
+        ' Refresh, not DoEvents: all this needs is for the label to be painted before the
+        ' connect, and DoEvents dispatches EVERYTHING - a queued keypress could reenter
+        ' navigation from inside this call.
+        lbl_Status.Refresh()
 
         PlayVideoWithVlcAsync(url)
     End Sub

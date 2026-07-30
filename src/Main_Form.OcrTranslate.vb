@@ -57,6 +57,7 @@ Partial Public Class Main_Form
         ocr_Overlay_Visible = ocr_Settings.OverlayVisible
         ocr_Engine = New TesseractOcrEngine()
         ocr_Cache = New TranslationCache()
+        ApplyOcrCacheBudget()
         ApplyEngineOptions()
         ocr_Auto_Timer.Interval = 350
         ocr_Auto_Timer.Stop()
@@ -64,6 +65,19 @@ Partial Public Class Main_Form
         If toolTip IsNot Nothing AndAlso btn_Translate IsNot Nothing Then
             toolTip.SetToolTip(btn_Translate, Localization.T("OCR + перевод текущего изображения (T) - притворимся, что понимаем эту мангу. ПКМ - настройки. Shift+T - авто-режим."))
         End If
+    End Sub
+
+    ''' <summary>
+    ''' Hands the user's disk-cache limit to the cache that has to honour it. The setting only
+    ''' exists on the modern build (ModernViewerPreferences); net48 keeps the cache's own
+    ''' default, which is the point - both builds are bounded either way, and until now
+    ''' NEITHER was.
+    ''' </summary>
+    Friend Sub ApplyOcrCacheBudget()
+        If ocr_Cache Is Nothing Then Return
+#If Not NETFRAMEWORK Then
+        If modern_Preferences IsNot Nothing Then ocr_Cache.DiskBudgetMb = modern_Preferences.OcrDiskCacheMaxMb
+#End If
     End Sub
 
     Friend Sub SaveOcrSettings()
@@ -252,7 +266,9 @@ Partial Public Class Main_Form
             token.ThrowIfCancellationRequested()
 
             ' OCR off the UI thread.
-            Dim ocrResult As OcrResult = Await Task.Run(Function() ocr_Engine.Recognize(job.Bitmap, job.OcrSourceHint), token).ConfigureAwait(False)
+            ' The token now goes INSIDE the engine too, not just to Task.Run: the latter only
+            ' stops a job that has not started yet.
+            Dim ocrResult As OcrResult = Await Task.Run(Function() ocr_Engine.Recognize(job.Bitmap, job.OcrSourceHint, token), token).ConfigureAwait(False)
             token.ThrowIfCancellationRequested()
 
             Select Case ocrResult.Status
@@ -385,7 +401,11 @@ Partial Public Class Main_Form
         If String.IsNullOrEmpty(Current_File_Name) Then Return False
         Dim ext As String = Path.GetExtension(Current_File_Name).ToLowerInvariant()
         If Not Image_File_Extensions.Contains(ext) Then Return False
-        If Not File.Exists(Current_File_Name) Then Return False
+
+        ' No File.Exists here. OnMediaDisplayed calls this after EVERY flip, and on a share
+        ' that stopped answering a single Exists costs the whole network timeout on the UI
+        ' thread - a per-file stall for a question already answered: a picture box is only
+        ' visible because the file was just read successfully.
         Return is_PictureBox1_Visible OrElse is_PictureBox2_Visible
     End Function
 
@@ -420,15 +440,49 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
+    ''' <summary>The two weights the Translate button ever wears, built once. This runs on
+    ''' every navigation (OnMediaDisplayed), and a New Font per call abandoned the previous
+    ''' one - a GDI font handle each time, thousands per sorting session. Rebuilt lazily
+    ''' whenever the base font changes (a language switch can change the family).</summary>
+    Private ocr_Button_Font_Bold As Font
+    Private ocr_Button_Font_Regular As Font
+    Private ocr_Button_Font_Source As Font
+
     Private Sub UpdateOcrButtonVisual()
         If btn_Translate Is Nothing OrElse ocr_Settings Is Nothing Then Return
+
         Dim caption As String = Localization.T("Перевод")
         If ocr_Settings.AutoMode Then caption &= " ⟳"
+
+        Dim wanted_Font As Font = OcrButtonFont(ocr_Settings.Enabled)
+        Dim changed As Boolean = (btn_Translate.Text <> caption) OrElse (btn_Translate.Font IsNot wanted_Font)
+
         btn_Translate.Text = caption
-        btn_Translate.Font = New Font(btn_Translate.Font, If(ocr_Settings.Enabled, FontStyle.Bold, FontStyle.Regular))
-        ' The caption/weight change resizes the button - re-flow the toolbar.
-        LayoutToolbar()
+        btn_Translate.Font = wanted_Font
+        ' The caption/weight change resizes the button - re-flow the toolbar. Nothing
+        ' changed means nothing to re-flow, and this is a per-navigation path.
+        If changed Then LayoutToolbar()
     End Sub
+
+    Private Function OcrButtonFont(bold As Boolean) As Font
+        ' Baseline = whatever font the button carries, EXCEPT one of our own two: that is
+        ' how a language switch (script fonts follow the UI language) gets picked up while
+        ' our own assignment does not re-trigger a rebuild.
+        Dim baseline As Font = btn_Translate.Font
+        If baseline Is ocr_Button_Font_Bold OrElse baseline Is ocr_Button_Font_Regular Then
+            baseline = ocr_Button_Font_Source
+        End If
+
+        If baseline IsNot Nothing AndAlso baseline IsNot ocr_Button_Font_Source Then
+            If ocr_Button_Font_Bold IsNot Nothing Then ocr_Button_Font_Bold.Dispose()
+            If ocr_Button_Font_Regular IsNot Nothing Then ocr_Button_Font_Regular.Dispose()
+            ocr_Button_Font_Source = baseline
+            ocr_Button_Font_Bold = New Font(baseline, FontStyle.Bold)
+            ocr_Button_Font_Regular = New Font(baseline, FontStyle.Regular)
+        End If
+
+        Return If(bold, ocr_Button_Font_Bold, ocr_Button_Font_Regular)
+    End Function
 
     Private Shared Function CountUsefulDebugChars(text As String) As Integer
         Dim count As Integer = 0

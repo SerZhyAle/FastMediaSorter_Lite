@@ -50,7 +50,10 @@ Partial Public Class Main_Form
     End Function
 
     Private Sub BuildImageMenu()
-        image_Menu.Items.Clear()
+        ' Dispose the previous generation, do not just unparent it: a middle click builds
+        ' ~11 items, ~6 separators and the two recipients submenus (one item per configured
+        ' slot), and Items.Clear disposes none of them.
+        ClearAndDisposeItems(image_Menu.Items)
 
         Dim rus As Boolean = Is_Russian_Language
 

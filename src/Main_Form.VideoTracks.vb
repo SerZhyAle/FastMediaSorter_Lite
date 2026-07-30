@@ -110,16 +110,20 @@ Partial Public Class Main_Form
     Private Function TrackLanguage(id As Integer, audio As Boolean) As String
         If id = Track_Disabled_Id OrElse vlc_Media_Player Is Nothing Then Return ""
         Try
-            Dim media = vlc_Media_Player.Media
-            If media Is Nothing OrElse media.Tracks Is Nothing Then Return ""
-            Dim want = If(audio, LibVLCSharp.Shared.TrackType.Audio, LibVLCSharp.Shared.TrackType.Text)
-            For Each t In media.Tracks
-                If t.TrackType = want AndAlso t.Id = id Then
-                    Dim lang As String = If(t.Language, "").Trim().ToLowerInvariant()
-                    If lang.Length = 0 OrElse lang = "und" Then Return ""
-                    Return lang
-                End If
-            Next
+            ' Using, not a bare read: per LibVLCSharp's own docs the Media getter hands back
+            ' a wrapper that has taken a reference on the native media, and it is the
+            ' caller's to release. This runs per track action and per Playing event.
+            Using media As LibVLCSharp.Shared.Media = vlc_Media_Player.Media
+                If media Is Nothing OrElse media.Tracks Is Nothing Then Return ""
+                Dim want = If(audio, LibVLCSharp.Shared.TrackType.Audio, LibVLCSharp.Shared.TrackType.Text)
+                For Each t In media.Tracks
+                    If t.TrackType = want AndAlso t.Id = id Then
+                        Dim lang As String = If(t.Language, "").Trim().ToLowerInvariant()
+                        If lang.Length = 0 OrElse lang = "und" Then Return ""
+                        Return lang
+                    End If
+                Next
+            End Using
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2475: TrackLanguage failed: " & ex.Message)
         End Try
@@ -132,14 +136,16 @@ Partial Public Class Main_Form
     Private Function IdOfTrackInLanguage(language As String, audio As Boolean) As Integer
         If String.IsNullOrEmpty(language) OrElse vlc_Media_Player Is Nothing Then Return Integer.MinValue
         Try
-            Dim media = vlc_Media_Player.Media
-            If media Is Nothing OrElse media.Tracks Is Nothing Then Return Integer.MinValue
-            Dim want = If(audio, LibVLCSharp.Shared.TrackType.Audio, LibVLCSharp.Shared.TrackType.Text)
-            For Each t In media.Tracks
-                If t.TrackType = want AndAlso String.Equals(If(t.Language, ""), language, StringComparison.OrdinalIgnoreCase) Then
-                    Return t.Id
-                End If
-            Next
+            ' Same ownership rule as TrackLanguage above.
+            Using media As LibVLCSharp.Shared.Media = vlc_Media_Player.Media
+                If media Is Nothing OrElse media.Tracks Is Nothing Then Return Integer.MinValue
+                Dim want = If(audio, LibVLCSharp.Shared.TrackType.Audio, LibVLCSharp.Shared.TrackType.Text)
+                For Each t In media.Tracks
+                    If t.TrackType = want AndAlso String.Equals(If(t.Language, ""), language, StringComparison.OrdinalIgnoreCase) Then
+                        Return t.Id
+                    End If
+                Next
+            End Using
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2476: IdOfTrackInLanguage failed: " & ex.Message)
         End Try
@@ -162,7 +168,7 @@ Partial Public Class Main_Form
     ''' <summary>Rebuilds the menu each time it opens - the track list belongs to the
     ''' file currently playing, not to the button.</summary>
     Private Sub BuildTracksMenu()
-        tracks_Menu.Items.Clear()
+        ClearAndDisposeItems(tracks_Menu.Items)
         If vlc_Media_Player Is Nothing Then Return
 
         Try

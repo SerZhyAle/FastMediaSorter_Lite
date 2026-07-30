@@ -15,6 +15,17 @@ Partial Public Class Main_Form
         MoveUndo
     End Enum
 
+    ''' <summary>What a recipient slot is asked to do with the current file. The point of
+    ''' the type is that the CALLER says it: on the mainline every entry point (a number
+    ''' key, the overlay, a context menu, the settings grid) passes Move or Copy
+    ''' explicitly instead of every one of them reading one global mode flag - which is
+    ''' what made copying a trip to the settings window and back.
+    ''' SPECIFICATION_COPY_ACTIONS_REWORK.md §3.1.</summary>
+    Private Enum RecipientActionKind
+        Move
+        Copy
+    End Enum
+
     ''' <summary>One file operation, whole. The worker reads NOTHING off the form:
     ''' type and paths used to live in two shared fields, so a second hotkey pressed
     ''' during a long move overwrote the in-flight operation and its completion then
@@ -30,6 +41,11 @@ Partial Public Class Main_Form
         ''' It travels with the op because the message is built when the op finishes,
         ''' long after the reason for it was known.</summary>
         Public Property StatusNote As String = ""
+        ''' <summary>A copy that already flipped the view to the next file (the optimistic
+        ''' advance). Only then does a failure have to bring the user back: a copy removes
+        ''' nothing from the list, so there is no list damage to repair - just a view that
+        ''' has moved on from a file whose copy did not happen.</summary>
+        Public Property AdvancedPastSource As Boolean
     End Class
 
     Private Sub InitializeFileOperationWorker()
@@ -86,9 +102,19 @@ Partial Public Class Main_Form
     ''' <summary>True (and says so) while the single file-operation worker is still
     ''' busy. Checked BEFORE anything is released, mutated or recorded: RunWorkerAsync
     ''' on a busy worker throws, and in Undo that throw was not caught at all.
-    ''' Modern never gets here - its queue accepts everything (see EnsureFileOpQueue).</summary>
+    '''
+    ''' Modern's queue accepts everything WHILE IT IS OPEN, and refuses only once the
+    ''' shutdown drain has closed it. That window is real and interactive: FormClosing
+    ''' cancels the close and awaits the drain for up to 15 s, so every hotkey still worked -
+    ''' and every operation started in it was written off in silence while the UI reported
+    ''' "moved"/"deleted". Refusing up front is the honest answer.</summary>
     Private Function FileOpWorkerBusy() As Boolean
 #If Not NETFRAMEWORK Then
+        If file_Op_Queue IsNot Nothing AndAlso file_Op_Queue.IsClosed Then
+            lbl_Status.Text = Localization.T("!Ждите.. завершаются файловые операции, программа закрывается")
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2156: file operation refused - queue closed for shutdown")
+            Return True
+        End If
         Return False
 #Else
         If Not FileOperationWorker.IsBusy Then Return False
@@ -103,7 +129,25 @@ Partial Public Class Main_Form
     ''' FileOpWorkerBusy() first.</summary>
     Private Sub QueueFileOp(op As FileOp)
 #If Not NETFRAMEWORK Then
-        EnsureFileOpQueue().Enqueue(op)
+        If Not EnsureFileOpQueue().Enqueue(op) Then
+            ' Belt and braces: FileOpWorkerBusy already refuses everything once the queue is
+            ' closed, so this should be unreachable. If it ever is reached, the operation is
+            ' NOT going to run and that has to surface as a failure rather than be swallowed.
+            AppFileLogger.WriteLine("FileOpQueue refused an operation after shutdown: " &
+                                    op.Kind.ToString() & " " & If(op.Source, ""))
+            ' Posted, not called: the caller does its optimistic list edit (op.ListIndex = ..)
+            ' AFTER this returns, and the rollback in FinishFileOp needs that edit to have
+            ' happened - exactly the order a real worker failure arrives in.
+            Dim failed As FileOp = op
+            Try
+                Me.BeginInvoke(New Action(Sub()
+                                              If Me.IsDisposed Then Return
+                                              FinishFileOp(failed, New InvalidOperationException("File operation queue is closed."))
+                                          End Sub))
+            Catch
+            End Try
+            Return
+        End If
         ShowFileOpQueueDepth()
 #Else
         current_File_Op = op
@@ -143,19 +187,9 @@ Partial Public Class Main_Form
         ' holds the file. (The old sync-move branch tested the wrong box's visibility
         ' and so released nothing at all.)
         If is_PictureBox2_Visible Then
-            If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image.Dispose()
-            Picture_Box_2.Image = Nothing
-            If pictureBox2_Stream IsNot Nothing Then
-                pictureBox2_Stream.Dispose()
-                pictureBox2_Stream = Nothing
-            End If
+            ReleasePictureBoxMedia(2)
         ElseIf is_PictureBox1_Visible Then
-            If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image.Dispose()
-            Picture_Box_1.Image = Nothing
-            If pictureBox1_Stream IsNot Nothing Then
-                pictureBox1_Stream.Dispose()
-                pictureBox1_Stream = Nothing
-            End If
+            ReleasePictureBoxMedia(1)
         End If
 
         If is_Vlc_Playing Then StopVlcPlayback()
@@ -166,17 +200,47 @@ Partial Public Class Main_Form
 #End If
     End Sub
 
+    ''' <summary>
+    ''' Lets go of one picture box's image AND the MemoryStream it was decoded from.
+    ''' Both halves matter: the stream is deliberately kept open while the image lives
+    ''' (that is what releases the file handle), so whoever drops the image owns dropping
+    ''' the stream too. Assigning Nothing after Dispose is not cosmetic either - a
+    ''' disposed bitmap left on the control throws the moment anything repaints it.
+    ''' </summary>
+    Private Sub ReleasePictureBoxMedia(box_Index As Integer)
+        If box_Index = 2 Then
+            If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image.Dispose()
+            Picture_Box_2.Image = Nothing
+            If pictureBox2_Stream IsNot Nothing Then
+                pictureBox2_Stream.Dispose()
+                pictureBox2_Stream = Nothing
+            End If
+        ElseIf box_Index = 1 Then
+            If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image.Dispose()
+            Picture_Box_1.Image = Nothing
+            If pictureBox1_Stream IsNot Nothing Then
+                pictureBox1_Stream.Dispose()
+                pictureBox1_Stream = Nothing
+            End If
+        End If
+    End Sub
+
+    ''' <summary>Where file_Path sits in the active collection, -1 when absent. The two
+    ''' collections (array / list) are an old split; asking one question about them in one
+    ''' place keeps every caller from repeating the If.</summary>
+    Private Function IndexOfFileInList(file_Path As String) As Integer
+        If is_Files_Array_Active Then
+            Return If(files_Array Is Nothing, -1, Array.IndexOf(files_Array, file_Path))
+        End If
+        Return If(files_List Is Nothing, -1, files_List.IndexOf(file_Path))
+    End Function
+
     ''' <summary>Removes file_Path from the active collection BY VALUE and returns the
     ''' index it sat at (-1 when absent). Removing by current_File_Index is what let a
     ''' delete drop the wrong entry: the index can run ahead of the file actually on
     ''' screen when a jump's display was thrown away by the throttle.</summary>
     Private Function RemoveCurrentFileFromList(file_Path As String) As Integer
-        Dim at As Integer
-        If is_Files_Array_Active Then
-            at = If(files_Array Is Nothing, -1, Array.IndexOf(files_Array, file_Path))
-        Else
-            at = If(files_List Is Nothing, -1, files_List.IndexOf(file_Path))
-        End If
+        Dim at As Integer = IndexOfFileInList(file_Path)
         If at < 0 Then Return -1
 
         If is_Files_Array_Active Then
@@ -305,7 +369,7 @@ Partial Public Class Main_Form
             ReadShowMediaFile(Mode_SetFile)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1290: ERR: " & ex.Message)
-            MsgBox("E011 " & ex.Message)
+            ReportOperationError("E011", ex)
             lbl_Status.Text = Localization.T("! Ошибка переименования")
         End Try
     End Sub
@@ -316,7 +380,29 @@ Partial Public Class Main_Form
         ReadShowMediaFile(Mode_Delete)
     End Sub
 
+    ''' <summary>
+    ''' The historical entry point, kept for the callers that mean "do the usual thing
+    ''' with this slot" - and the ONLY place where the global copy mode is still read.
+    ''' On the mainline it always means Move: the global mode is gone from that UI
+    ''' (there is nothing left to switch it with), and every surface that wants a copy
+    ''' asks for one by name. net48 keeps its checkbox and behaves exactly as before.
+    ''' </summary>
     Private Sub PoMove(ByVal move_Slot_index As Integer)
+#If NETFRAMEWORK Then
+        ExecuteRecipientAction(move_Slot_index, If(Is_Copying_not_Moving, RecipientActionKind.Copy, RecipientActionKind.Move))
+#Else
+        ExecuteRecipientAction(move_Slot_index, RecipientActionKind.Move)
+#End If
+    End Sub
+
+    ''' <summary>
+    ''' Moves or copies the current file into recipient slot <paramref name="move_Slot_index"/>.
+    ''' One authoritative implementation for both actions and for every entry point:
+    ''' same destination resolution, same collision handling, same queue, same history,
+    ''' same undo. Only <paramref name="action"/> differs.
+    ''' </summary>
+    Private Sub ExecuteRecipientAction(ByVal move_Slot_index As Integer, ByVal action As RecipientActionKind)
+        Dim is_Copy As Boolean = (action = RecipientActionKind.Copy)
         Dim destination_Folder_Path As String = Hardkeys_to_move_mediafile(move_Slot_index)
         Dim move_Slot_Key As String = move_Slot_index.ToString
         If move_Slot_Key = "10" Then move_Slot_Key = "0"
@@ -368,17 +454,17 @@ Partial Public Class Main_Form
             history_Source_File_Name = Current_File_Name
             history_Destination_File_Name = destination_Folder_Full_Path
             ' Undo has to reverse what was DONE, not whatever mode is set now.
-            history_Was_Copy = Is_Copying_not_Moving
+            history_Was_Copy = is_Copy
 
             Dim op As New FileOp With {
-                .Kind = If(Is_Copying_not_Moving, FileOpKind.Copy, FileOpKind.Move),
+                .Kind = If(is_Copy, FileOpKind.Copy, FileOpKind.Move),
                 .Source = Current_File_Name,
                 .Destination = destination_Folder_Full_Path,
                 .SlotKey = move_Slot_Key,
                 .StatusNote = collision_Note
             }
 
-            If Is_Copying_not_Moving Then
+            If is_Copy Then
                 lbl_Status.Text = Localization.TF("!Ждите.. Файл копируется ({0}) в каталог {1}", move_Slot_Key, destination_Folder_Full_Path)
 
                 If use_Worker Then
@@ -390,8 +476,17 @@ Partial Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1715: file is copied to " & destination_Folder_Full_Path)
                 End If
 
-                ' The copy leaves the file where it is - just move on to the next one.
-                ReadShowMediaFile(Mode_Next)
+                ' The copy leaves the file where it is, so moving on is a UI choice, not a
+                ' necessity. On the mainline it is the "Go to the next file after copying"
+                ' setting (on by default - the fast sorting run); with it off the same
+                ' file stays on screen, which is what you want when you are filing one
+                ' picture into several folders. net48 always advances, as it always has.
+                Dim advance_After_Copy As Boolean = True
+#If Not NETFRAMEWORK Then
+                advance_After_Copy = AdvanceAfterCopy()
+                op.AdvancedPastSource = advance_After_Copy
+#End If
+                If advance_After_Copy Then ReadShowMediaFile(Mode_Next)
             Else
                 ' Moving needs delete access to the file, so let go of it first.
                 ReleaseActiveMedia()
@@ -416,7 +511,7 @@ Partial Public Class Main_Form
             End If
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1730: E014 " & ex.Message)
-            MsgBox("E014 " & ex.Message)
+            ReportOperationError("E014", ex)
         End Try
     End Sub
 
@@ -477,7 +572,7 @@ Partial Public Class Main_Form
                 End If
             End If
         Catch ex As Exception
-            MsgBox("E016 " & ex.Message)
+            ReportOperationError("E016", ex)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1800: undo E016 " & ex.Message)
         End Try
     End Sub
@@ -603,6 +698,20 @@ Partial Public Class Main_Form
                 InsertFileIntoList(op.Source, op.ListIndex)
                 ReadShowMediaFile(Mode_SetFile)
             End If
+
+#If Not NETFRAMEWORK Then
+            ' A failed copy leaves the list untouched (nothing was removed), but the view
+            ' may have advanced already. Come back to the file whose copy failed, so the
+            ' error message is about the picture in front of you and not about one that
+            ' scrolled by.
+            If op.Kind = FileOpKind.Copy AndAlso op.AdvancedPastSource Then
+                Dim source_At As Integer = IndexOfFileInList(op.Source)
+                If source_At >= 0 Then
+                    current_File_Index = source_At
+                    ReadShowMediaFile(Mode_SetFile)
+                End If
+            End If
+#End If
 
             ' A move that failed leaves nothing to undo - offering it would "return" a
             ' file that never left.

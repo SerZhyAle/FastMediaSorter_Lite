@@ -73,6 +73,27 @@ Partial Public Class Table_Form
     End Sub
 
     ''' <summary>
+    ''' The checkbox that replaced the global "copy mode" on the Files page: it does not
+    ''' decide WHAT a recipient key does (that is now said at the moment of the action),
+    ''' only what the view does after a copy. Built here, in code, because it is a
+    ''' mainline-only setting - the Designer's control set is shared with net48, which
+    ''' keeps its old copy-mode checkbox instead (SPECIFICATION_COPY_ACTIONS_REWORK.md §4.1).
+    ''' </summary>
+    Private Sub AddAdvanceAfterCopyRow(files As FlowLayoutPanel)
+        Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
+        Dim check As New CheckBox With {.Checked = p.AdvanceAfterCopy, .AutoSize = True}
+        AddHandler check.CheckedChanged,
+            Sub()
+                p.AdvanceAfterCopy = check.Checked
+                ApplyExpandedPreferences()
+            End Sub
+        AddSettingRow(files, "advance_after_copy", check, 34, True)
+        If toolTip IsNot Nothing Then
+            toolTip.SetToolTip(check, Localization.T("Если отмечено, после копирования программа сразу показывает следующий файл. Если снять галочку, после копирования остаётся текущий файл. По умолчанию включено."))
+        End If
+    End Sub
+
+    ''' <summary>
     ''' One drop-down option. <paramref name="text"/> is the Russian source string, i.e.
     ''' the dictionary key - translation happens HERE rather than at each of the two
     ''' dozen call sites, which keeps them readable as plain text.

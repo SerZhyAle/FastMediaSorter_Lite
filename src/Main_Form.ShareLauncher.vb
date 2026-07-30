@@ -132,7 +132,10 @@ Partial Public Class Main_Form
                 ' tray-only process and look like it did nothing.
                 psi.Arguments = If(folder.Length > 0, """" & folder & """", CompanionShowWindowCommand)
                 AppFileLogger.WriteLine("ShareLauncher: cold-starting Companion '" & exePath & "'")
-                Process.Start(psi)
+                ' We never wait on it - release the handle instead of leaving it to the
+                ' finalizer (this runs per user click).
+                Dim started As Process = Process.Start(psi)
+                If started IsNot Nothing Then started.Dispose()
             Catch ex As Exception
                 AppFileLogger.LogException("ShareLauncher cold-start", ex)
                 MessageBox.Show(Me,
@@ -157,8 +160,13 @@ Partial Public Class Main_Form
     ''' marker) via WM_COPYDATA, mirroring Application_Events.vb's own forwarding.</summary>
     Private Sub ForwardFolderToCompanion(folder As String)
         Dim payload As String = If(folder.Length > 0, folder, CompanionShowWindowCommand)
+        Dim processes As Process() = Nothing
         Try
-            For Each proc As Process In Process.GetProcessesByName(CompanionProcessName)
+            ' Every element of GetProcessesByName holds a process handle. This runs per user
+            ' click, so they are released in the Finally below rather than left to the
+            ' finalizer - including the ones the loop never reached.
+            processes = Process.GetProcessesByName(CompanionProcessName)
+            For Each proc As Process In processes
                 ' Let the (background) Companion pull its window in front of us when
                 ' it handles the wake - otherwise the window opens silently behind.
                 Try : AllowSetForegroundWindow(proc.Id) : Catch : End Try
@@ -189,6 +197,12 @@ Partial Public Class Main_Form
                 Exit For
             Next
         Catch
+        Finally
+            If processes IsNot Nothing Then
+                For Each proc As Process In processes
+                    Try : proc.Dispose() : Catch : End Try
+                Next
+            End If
         End Try
     End Sub
 

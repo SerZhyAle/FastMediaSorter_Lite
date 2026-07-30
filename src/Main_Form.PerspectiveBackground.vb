@@ -446,89 +446,106 @@ Partial Public Class Main_Form
 
                     If Not imageRect.IsEmpty Then
                         Dim Perspective_Bitmap As New Bitmap(targetWidth, targetHeight)
-                        Using g_bg As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                            g_bg.Clear(Color.FromArgb(255, Me.BackColor.R, Me.BackColor.G, Me.BackColor.B))
-                        End Using
-
-                        Dim color_deviation_threshold As Double = (percent_of_color_deviation / 100) * 255 * 3
-                        Dim edgeOverlap As Integer = 2
-
-                        Using displayedBitmap As Bitmap = CreateDisplayedImageBitmap(active_Bitmap, imageRect.Size, Me.BackColor)
-                            Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
-                                g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
-
-                                If bitmap_proportion < pictureBox_proportion Then
-                                    Dim leftColors As List(Of Color) = GetDisplayedVerticalEdgeColors(displayedBitmap, targetHeight, imageRect, True)
-                                    Dim rightColors As List(Of Color) = GetDisplayedVerticalEdgeColors(displayedBitmap, targetHeight, imageRect, False)
-                                    Dim leftRect As New Rectangle(0, 0, Math.Min(targetWidth, imageRect.Left + edgeOverlap), targetHeight)
-                                    Dim rightStart As Integer = Math.Max(0, imageRect.Right - edgeOverlap)
-                                    Dim rightRect As New Rectangle(rightStart, 0, targetWidth - rightStart, targetHeight)
-
-                                    Dim didDrawLeft As Boolean = PaintVerticalPerspectiveBackground(g, leftColors, leftRect, color_deviation_threshold)
-                                    Dim didDrawRight As Boolean = PaintVerticalPerspectiveBackground(g, rightColors, rightRect, color_deviation_threshold)
-
-                                    Dim leftSeamWidth As Integer = Math.Min(edgeOverlap, imageRect.Left)
-                                    If leftSeamWidth > 0 Then
-                                        PaintVerticalSeamBand(g, leftColors, targetHeight, imageRect.Left - leftSeamWidth, leftSeamWidth)
-                                    End If
-
-                                    Dim rightSeamWidth As Integer = Math.Min(edgeOverlap, targetWidth - imageRect.Right)
-                                    If rightSeamWidth > 0 Then
-                                        PaintVerticalSeamBand(g, rightColors, targetHeight, imageRect.Right, rightSeamWidth)
-                                    End If
-
-                                    is_perspective_drown = didDrawLeft OrElse didDrawRight
-                                Else
-                                    Dim topColors As List(Of Color) = GetDisplayedHorizontalEdgeColors(displayedBitmap, targetWidth, imageRect, True)
-                                    Dim bottomColors As List(Of Color) = GetDisplayedHorizontalEdgeColors(displayedBitmap, targetWidth, imageRect, False)
-                                    Dim topRect As New Rectangle(0, 0, targetWidth, Math.Min(targetHeight, imageRect.Top + edgeOverlap))
-                                    Dim bottomStart As Integer = Math.Max(0, imageRect.Bottom - edgeOverlap)
-                                    Dim bottomRect As New Rectangle(0, bottomStart, targetWidth, targetHeight - bottomStart)
-
-                                    Dim didDrawTop As Boolean = PaintHorizontalPerspectiveBackground(g, topColors, topRect, color_deviation_threshold)
-                                    Dim didDrawBottom As Boolean = PaintHorizontalPerspectiveBackground(g, bottomColors, bottomRect, color_deviation_threshold)
-
-                                    Dim topSeamHeight As Integer = Math.Min(edgeOverlap, imageRect.Top)
-                                    If topSeamHeight > 0 Then
-                                        PaintHorizontalSeamBand(g, topColors, targetWidth, imageRect.Top - topSeamHeight, topSeamHeight)
-                                    End If
-
-                                    Dim bottomSeamHeight As Integer = Math.Min(edgeOverlap, targetHeight - imageRect.Bottom)
-                                    If bottomSeamHeight > 0 Then
-                                        PaintHorizontalSeamBand(g, bottomColors, targetWidth, imageRect.Bottom, bottomSeamHeight)
-                                    End If
-
-                                    is_perspective_drown = didDrawTop OrElse didDrawBottom
-                                End If
+                        ' The bitmap is box-sized (megabytes at a maximised window) and the
+                        ' pixel work below is exactly what the outer Catch exists to swallow -
+                        ' GDI+ throws here transiently while a background decode runs. Without
+                        ' this Finally the bitmap leaked once per such failure, on a path that
+                        ' runs on every photo.
+                        Dim bitmap_Ownership_Passed As Boolean = False
+                        Try
+                            Using g_bg As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                g_bg.Clear(Color.FromArgb(255, Me.BackColor.R, Me.BackColor.G, Me.BackColor.B))
                             End Using
-                        End Using
 
-                        If is_perspective_drown Then
-                            ' Dynamic perspective (modern build): the halo layer fades these
-                            ' bars into the background colour and, on a new photo, grows that
-                            ' fade out from the photo edge. It takes ownership of the bitmap
-                            ' when it takes over; when it declines, the bars go up flat as
-                            ' they always have.
-                            Dim halo_Took_Over As Boolean = False
+                            Dim color_deviation_threshold As Double = (percent_of_color_deviation / 100) * 255 * 3
+                            Dim edgeOverlap As Integer = 2
+
+                            Using displayedBitmap As Bitmap = CreateDisplayedImageBitmap(active_Bitmap, imageRect.Size, Me.BackColor)
+                                Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
+                                    g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
+
+                                    If bitmap_proportion < pictureBox_proportion Then
+                                        Dim leftColors As List(Of Color) = GetDisplayedVerticalEdgeColors(displayedBitmap, targetHeight, imageRect, True)
+                                        Dim rightColors As List(Of Color) = GetDisplayedVerticalEdgeColors(displayedBitmap, targetHeight, imageRect, False)
+                                        Dim leftRect As New Rectangle(0, 0, Math.Min(targetWidth, imageRect.Left + edgeOverlap), targetHeight)
+                                        Dim rightStart As Integer = Math.Max(0, imageRect.Right - edgeOverlap)
+                                        Dim rightRect As New Rectangle(rightStart, 0, targetWidth - rightStart, targetHeight)
+
+                                        Dim didDrawLeft As Boolean = PaintVerticalPerspectiveBackground(g, leftColors, leftRect, color_deviation_threshold)
+                                        Dim didDrawRight As Boolean = PaintVerticalPerspectiveBackground(g, rightColors, rightRect, color_deviation_threshold)
+
+                                        Dim leftSeamWidth As Integer = Math.Min(edgeOverlap, imageRect.Left)
+                                        If leftSeamWidth > 0 Then
+                                            PaintVerticalSeamBand(g, leftColors, targetHeight, imageRect.Left - leftSeamWidth, leftSeamWidth)
+                                        End If
+
+                                        Dim rightSeamWidth As Integer = Math.Min(edgeOverlap, targetWidth - imageRect.Right)
+                                        If rightSeamWidth > 0 Then
+                                            PaintVerticalSeamBand(g, rightColors, targetHeight, imageRect.Right, rightSeamWidth)
+                                        End If
+
+                                        is_perspective_drown = didDrawLeft OrElse didDrawRight
+                                    Else
+                                        Dim topColors As List(Of Color) = GetDisplayedHorizontalEdgeColors(displayedBitmap, targetWidth, imageRect, True)
+                                        Dim bottomColors As List(Of Color) = GetDisplayedHorizontalEdgeColors(displayedBitmap, targetWidth, imageRect, False)
+                                        Dim topRect As New Rectangle(0, 0, targetWidth, Math.Min(targetHeight, imageRect.Top + edgeOverlap))
+                                        Dim bottomStart As Integer = Math.Max(0, imageRect.Bottom - edgeOverlap)
+                                        Dim bottomRect As New Rectangle(0, bottomStart, targetWidth, targetHeight - bottomStart)
+
+                                        Dim didDrawTop As Boolean = PaintHorizontalPerspectiveBackground(g, topColors, topRect, color_deviation_threshold)
+                                        Dim didDrawBottom As Boolean = PaintHorizontalPerspectiveBackground(g, bottomColors, bottomRect, color_deviation_threshold)
+
+                                        Dim topSeamHeight As Integer = Math.Min(edgeOverlap, imageRect.Top)
+                                        If topSeamHeight > 0 Then
+                                            PaintHorizontalSeamBand(g, topColors, targetWidth, imageRect.Top - topSeamHeight, topSeamHeight)
+                                        End If
+
+                                        Dim bottomSeamHeight As Integer = Math.Min(edgeOverlap, targetHeight - imageRect.Bottom)
+                                        If bottomSeamHeight > 0 Then
+                                            PaintHorizontalSeamBand(g, bottomColors, targetWidth, imageRect.Bottom, bottomSeamHeight)
+                                        End If
+
+                                        is_perspective_drown = didDrawTop OrElse didDrawBottom
+                                    End If
+                                End Using
+                            End Using
+
+                            If is_perspective_drown Then
+                                ' Dynamic perspective (modern build): the halo layer fades these
+                                ' bars into the background colour and, on a new photo, grows that
+                                ' fade out from the photo edge. It takes ownership of the bitmap
+                                ' when it takes over; when it declines, the bars go up flat as
+                                ' they always have.
+                                Dim halo_Took_Over As Boolean = False
 #If Not NETFRAMEWORK Then
-                            halo_Took_Over = TryStartPerspectiveHalo(Perspective_Bitmap,
-                                                                    imageRect,
-                                                                    active_PictureBox_Index,
-                                                                    bitmap_proportion < pictureBox_proportion,
-                                                                    animate_This_Draw)
+                                halo_Took_Over = TryStartPerspectiveHalo(Perspective_Bitmap,
+                                                                        imageRect,
+                                                                        active_PictureBox_Index,
+                                                                        bitmap_proportion < pictureBox_proportion,
+                                                                        animate_This_Draw)
 #End If
-                            If Not halo_Took_Over Then
-                                If active_PictureBox_Index = 1 Then
-                                    Picture_Box_1.BackgroundImage?.Dispose()
-                                    Picture_Box_1.BackgroundImage = Perspective_Bitmap
-                                ElseIf active_PictureBox_Index = 2 Then
-                                    Picture_Box_2.BackgroundImage?.Dispose()
-                                    Picture_Box_2.BackgroundImage = Perspective_Bitmap
+                                If Not halo_Took_Over Then
+                                    If active_PictureBox_Index = 1 Then
+                                        Picture_Box_1.BackgroundImage?.Dispose()
+                                        Picture_Box_1.BackgroundImage = Perspective_Bitmap
+                                        bitmap_Ownership_Passed = True
+                                    ElseIf active_PictureBox_Index = 2 Then
+                                        Picture_Box_2.BackgroundImage?.Dispose()
+                                        Picture_Box_2.BackgroundImage = Perspective_Bitmap
+                                        bitmap_Ownership_Passed = True
+                                    End If
+                                Else
+                                    bitmap_Ownership_Passed = True
                                 End If
+                            Else
+                                Perspective_Bitmap.Dispose()
+                                bitmap_Ownership_Passed = True
                             End If
-                        Else
-                            Perspective_Bitmap.Dispose()
-                        End If
+                        Finally
+                            ' Nobody took it: either GDI+ threw on the way here, or the
+                            ' active box index matched neither surface.
+                            If Not bitmap_Ownership_Passed Then Perspective_Bitmap.Dispose()
+                        End Try
                     End If
                 End If
                 ' Catch ex As Exception
@@ -554,7 +571,7 @@ Partial Public Class Main_Form
                         End If
                     End If
                 Catch ex As Exception
-                    MsgBox("E105 " & ex.Message)
+                    ReportOperationError("E105", ex)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w3070: E105 " & ex.Message)
                 End Try
             End If

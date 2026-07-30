@@ -47,7 +47,7 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub BuildVideoMenu()
-        video_Menu.Items.Clear()
+        ClearAndDisposeItems(video_Menu.Items)
 
         Dim rus As Boolean = Is_Russian_Language
 

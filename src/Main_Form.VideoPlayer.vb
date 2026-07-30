@@ -105,7 +105,11 @@ Partial Public Class Main_Form
                 ' Explicit UseShellExecute: opening a document needs the shell; net48
                 ' defaulted to True, .NET defaults to False. On the modern build this
                 ' is the ONLY video fallback when LibVLC is unavailable.
-                Process.Start(New ProcessStartInfo(video_File_Path) With {.UseShellExecute = True})
+                ' The returned Process is ours to release - we never wait on it, and each
+                ' one dropped on the floor held a process handle until finalization. It can
+                ' be Nothing when the shell handed the file to an already-running player.
+                Dim launched As Process = Process.Start(New ProcessStartInfo(video_File_Path) With {.UseShellExecute = True})
+                If launched IsNot Nothing Then launched.Dispose()
 
                 lbl_Status.Text = Localization.TF("Видео открыто во внешнем плеере: {0}", Path.GetFileName(video_File_Path))
 
@@ -131,10 +135,25 @@ Partial Public Class Main_Form
 
         ' Called on the UI thread only, so this needs no lock. A failed attempt is not
         ' cached - the user may install the runtime and try again.
-        If vlc_Init_Task Is Nothing OrElse (vlc_Init_Task.IsCompleted AndAlso Not vlc_Init_Task.Result) Then
+        '
+        ' IsCompleted covers faulted and cancelled too, and Result on either of those throws -
+        ' so ask about the outcome, not just about completion. A task that FAULTED (which is
+        ' now what a stalled runtime download produces, see
+        ' OptionalRuntimeManager.Download_Inactivity_Timeout_Ms) used to be cached and awaited
+        ' by every later video for the rest of the session.
+        If vlc_Init_Task Is Nothing OrElse VlcInitAttemptFailed(vlc_Init_Task) Then
             vlc_Init_Task = InitializeVlcCoreAsync()
         End If
         Return vlc_Init_Task
+    End Function
+
+    ''' <summary>Has this initialisation attempt finished WITHOUT giving us a working player,
+    ''' so the next video should try again rather than await the same answer? Faulted and
+    ''' cancelled count: only a completed-and-True attempt is worth keeping.</summary>
+    Private Shared Function VlcInitAttemptFailed(attempt As Task(Of Boolean)) As Boolean
+        If Not attempt.IsCompleted Then Return False
+        If attempt.IsFaulted OrElse attempt.IsCanceled Then Return True
+        Return Not attempt.Result
     End Function
 
     ''' <summary>Async so a first-run VLC download runs with the UI thread free to
@@ -192,6 +211,26 @@ Partial Public Class Main_Form
             Return True
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0869: LibVLC init failed: " & ex.Message)
+            ' Release in reverse order of construction before letting go: whatever DID get
+            ' built above is a live native object, and nulling the field only makes it
+            ' unreachable - it does not free libvlc. This path is retried on every flip onto
+            ' a video, so a machine where init fails leaked a set per attempt.
+            Try
+                If vlc_Video_View IsNot Nothing Then
+                    If vlc_Video_View.Parent IsNot Nothing Then vlc_Video_View.Parent.Controls.Remove(vlc_Video_View)
+                    vlc_Video_View.MediaPlayer = Nothing
+                    vlc_Video_View.Dispose()
+                End If
+            Catch
+            End Try
+            Try
+                If vlc_Media_Player IsNot Nothing Then vlc_Media_Player.Dispose()
+            Catch
+            End Try
+            Try
+                If libVlc IsNot Nothing Then libVlc.Dispose()
+            Catch
+            End Try
             libVlc = Nothing
             vlc_Media_Player = Nothing
             vlc_Video_View = Nothing

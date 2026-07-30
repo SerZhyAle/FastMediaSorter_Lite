@@ -387,7 +387,12 @@ Public NotInheritable Class MainWindow
         lblStatFiles.Text = String.Format(Localization.T("всего {0} (с запуска {1})"), s.FilesServedTotal, s.FilesServedSinceStart)
     End Sub
 
+    ''' <summary>Set while a stats fetch is out, so the 10 s tick cannot stack requests behind
+    ''' one that is waiting on a worker which stopped answering.</summary>
+    Private _statsFetchInFlight As Boolean = False
+
     Private Sub OnStatsTick(sender As Object, e As EventArgs)
+        If _statsFetchInFlight Then Return
         Dim t As Task = RefreshStatsAsync()
     End Sub
 
@@ -395,7 +400,15 @@ Public NotInheritable Class MainWindow
     ''' ApplyStatusToUi, so it never fights the user's in-flight actions).</summary>
     Private Async Function RefreshStatsAsync() As Task
         If _busy OrElse Not Me.Visible Then Return
-        Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+
+        _statsFetchInFlight = True
+        Dim st As WorkerStatus
+        Try
+            st = Await ShareController.GetStatusAsync()
+        Finally
+            _statsFetchInFlight = False
+        End Try
+
         If IsDisposed OrElse st Is Nothing Then Return
         _status = st
         UpdateStatsBlock()
@@ -574,6 +587,25 @@ Public NotInheritable Class MainWindow
         Catch
         End Try
     End Sub
+
+    ''' <summary>
+    ''' Routes a folder into the already-open window - the "share this folder.." path from the
+    ''' viewer when this window happens to be up.
+    '''
+    ''' It used to be dropped on the floor: TrayContext only passed the folder to the MainWindow
+    ''' CONSTRUCTOR, so with the window already open the wake merely activated it. The user was
+    ''' told nothing, the folder was never added, and the phone never saw it - and because it
+    ''' worked whenever the window happened to be closed, the failure looked random.
+    ''' </summary>
+    Friend Async Function ShareFolderFromWakeAsync(folder As String) As Task
+        If String.IsNullOrEmpty(folder) Then Return
+        If Not ServerFeatures.IsEnabled() OrElse Not WorkerProcess.IsAvailable() Then Return
+        If Not Directory.Exists(folder) Then Return
+
+        ' Same three steps OnShownFirst takes for a folder handed to the constructor.
+        If AddShareRow(folder) Then Await ApplySharedFoldersAsync()
+        OnShareClicked(Me, EventArgs.Empty)
+    End Function
 
     Private Async Sub OnShownFirst(sender As Object, e As EventArgs)
         If _entered Then Return

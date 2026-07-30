@@ -15,7 +15,14 @@ Public Module FileManager
 
         Try
             Dim extension As String = Path.GetExtension(filePath).ToLowerInvariant()
-            AppFileLogger.WriteLine("LoadImageWithStream: file=" & filePath & " extension=" & extension)
+            ' Debug, not AppFileLogger: this fires on EVERY image the app decodes - the one
+            ' on screen, the prefetch of the next one, and every thumbnail the panel builds -
+            ' so as a file-log line it was ~1-2.5 MB/day of unbounded growth plus a
+            ' synchronous flush on the UI thread per file flip. Debug.WriteLine still reaches
+            ' current.log in a Debug build (AppFileLogger hooks the trace listener) and
+            ' compiles away in Release, which is exactly the intended reach. Failures below
+            ' are still logged for real.
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " LoadImageWithStream: file=" & filePath & " extension=" & extension)
             Dim imageBytes As Byte() = File.ReadAllBytes(filePath)
             Dim ms As New IO.MemoryStream(imageBytes)
             Dim nextImage As Image
@@ -127,9 +134,66 @@ Public Module FileManager
 
     ''' <summary>
     ''' Moves a file to a new location.
+    '''
+    ''' Across two shares Windows cannot rename, so this is a byte copy over the wire - the
+    ''' owner's working setup (\\p7\_i\output to \\p7\down, 1-212 MB videos) is exactly that.
+    ''' A File.Move killed part-way through therefore leaves a TRUNCATED file sitting under
+    ''' the final name, indistinguishable from the real thing: the app cannot rule that out
+    ''' (the process can be terminated at any instant - the shutdown drain gives up after
+    ''' 15 s and closes anyway), so the move is staged instead.
+    '''
+    ''' Copy to a temporary name in the destination folder, rename into place, then delete
+    ''' the source. Now an interruption leaves either the finished file, or the original plus
+    ''' an obvious "*.fms-part" leftover - never a plausible-looking half file. Same-volume
+    ''' moves keep the cheap path: there is no copy to interrupt.
     ''' </summary>
     Public Sub MoveFile(sourceFile As String, destFile As String)
-        File.Move(sourceFile, destFile)
+        If IsSameVolume(sourceFile, destFile) Then
+            File.Move(sourceFile, destFile)
+            Return
+        End If
+
+        Dim staging As String = destFile & Partial_Move_Suffix
+        Try
+            If File.Exists(staging) Then File.Delete(staging)
+            File.Copy(sourceFile, staging, True)
+            ' Rename within one folder is atomic enough: no window in which the final name
+            ' exists but holds an incomplete file.
+            If File.Exists(destFile) Then File.Delete(destFile)
+            File.Move(staging, destFile)
+        Catch
+            ' Leave the source alone and take the debris with us: a failed move must not cost
+            ' the file.
+            Try
+                If File.Exists(staging) Then File.Delete(staging)
+            Catch
+            End Try
+            Throw
+        End Try
+
+        File.Delete(sourceFile)
     End Sub
+
+    ''' <summary>Extension given to the in-flight copy of a staged move.</summary>
+    Public Const Partial_Move_Suffix As String = ".fms-part"
+
+    ''' <summary>
+    ''' Are both paths on the same volume, so a move is a rename rather than a copy? Compared
+    ''' by path root, which is what decides it for both drive letters and UNC shares
+    ''' (\\server\share). Unknown answers say False - staging a move that did not need it
+    ''' costs a rename, while NOT staging one that did is the truncation this guards against.
+    ''' </summary>
+    Private Function IsSameVolume(pathA As String, pathB As String) As Boolean
+        Try
+            Dim rootA As String = Path.GetPathRoot(Path.GetFullPath(pathA))
+            Dim rootB As String = Path.GetPathRoot(Path.GetFullPath(pathB))
+            If String.IsNullOrEmpty(rootA) OrElse String.IsNullOrEmpty(rootB) Then Return False
+            Return String.Equals(rootA.TrimEnd(Path.DirectorySeparatorChar),
+                                 rootB.TrimEnd(Path.DirectorySeparatorChar),
+                                 StringComparison.OrdinalIgnoreCase)
+        Catch
+            Return False
+        End Try
+    End Function
 
 End Module

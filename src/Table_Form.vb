@@ -44,8 +44,12 @@ Public Class Table_Form
         End If
 
         ' --- TabPage 1: Destination Folders ---
+#If NETFRAMEWORK Then
         toolTip.SetToolTip(Data_Grid_View, Localization.T("Двойной клик по номеру клавиши - выполнить действие." & vbCrLf & "Двойной клик по пути к папке - сменить её (одинарный клик она вежливо проигнорирует)."))
         toolTip.SetToolTip(chkbox_Copy_Mode, Localization.T("Если отмечено, файлы копируются, а не перемещаются - оригиналы никуда не денутся, что бы вы ни нажали дальше."))
+#Else
+        toolTip.SetToolTip(Data_Grid_View, Localization.T("Двойной клик по номеру клавиши - перенести файл, Shift + двойной клик - скопировать." & vbCrLf & "Двойной клик по пути к папке - сменить её (одинарный клик она вежливо проигнорирует)."))
+#End If
         toolTip.SetToolTip(chkbox_Independent_Thread_For_File_Operation, Localization.T("Если отмечено, файловые операции уходят в фоновый поток, чтобы не заставлять вас смотреть на них."))
 
         ' --- TabPage 2: Settings ---
@@ -226,7 +230,13 @@ Public Class Table_Form
         Next
         Data_Grid_View.Height = grid_Height
         lbl_Grid_Hint.Top = Data_Grid_View.Bottom + 10
+#If NETFRAMEWORK Then
         lbl_Grid_Hint.Text = Localization.T("Двойной клик по номеру клавиши - выполнить действие. Двойной клик по пути - выбрать папку.")
+#Else
+        ' Say the copy path out loud: an undocumented modifier is the same hidden feature
+        ' the global copy mode was.
+        lbl_Grid_Hint.Text = Localization.T("Двойной клик по номеру клавиши - перенести файл, Shift + двойной клик - скопировать. Двойной клик по пути - выбрать папку.")
+#End If
 
         ' One set of assignments for all 13 languages - the Russian text is the key.
             Me.Text = Localization.T("Настройки")
@@ -311,6 +321,15 @@ Public Class Table_Form
 
     Private Sub DataGridView1_CellMouseDoubleClick(sender As Object, e As DataGridViewCellMouseEventArgs) Handles Data_Grid_View.CellMouseDoubleClick
         If e.ColumnIndex = 0 Then
+#If Not NETFRAMEWORK Then
+            ' Shift + double-click on the key number copies instead of moving - the same
+            ' pairing the keyboard uses, so this surface no longer depends on a global
+            ' mode that the mainline UI cannot switch (SPECIFICATION_COPY_ACTIONS_REWORK.md §4.5).
+            If (Control.ModifierKeys And Keys.Shift) = Keys.Shift Then
+                Main_Form.DoKeyAsCopy(e.RowIndex)
+                Return
+            End If
+#End If
             Main_Form.DoKey(e.RowIndex)
         Else
             If e.RowIndex > 0 Then
@@ -327,6 +346,10 @@ Public Class Table_Form
                     Hardkeys_to_move_mediafile(e.RowIndex) = folderBrowse.SelectedPath
                     Data_Grid_View.Item(1, e.RowIndex).Value = Hardkeys_to_move_mediafile(e.RowIndex)
                     Data_Grid_View.Refresh()
+                    ' Straight to the registry, not on a timer: picking a destination folder is
+                    ' deliberate configuration, and it used to live only in memory until the
+                    ' viewer was closed cleanly.
+                    Main_Form.SaveSettingsNow()
                 End If
             End If
         End If
@@ -338,6 +361,8 @@ Public Class Table_Form
         Else
             Hardkeys_to_move_mediafile(e.RowIndex) = Data_Grid_View.Item(1, e.RowIndex).Value.ToString()
         End If
+        ' Typed by hand rather than browsed - same rule as the folder picker above.
+        Main_Form.SaveSettingsNow()
     End Sub
 
     Private Sub SetOnTop_CheckedChanged(sender As Object, e As EventArgs) Handles SetOnTop.CheckedChanged
@@ -469,6 +494,12 @@ Public Class Table_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2021: btn_Language")
 
         Dim menu As New ContextMenuStrip()
+        ' Built per click, so released per click - see the same pattern in
+        ' Main_Form.Localization.vb (ButtonLNG_Click).
+        AddHandler menu.Closed, Sub(s, args)
+                                    Dim m = DirectCast(s, ContextMenuStrip)
+                                    Me.BeginInvoke(New Action(Sub() m.Dispose()))
+                                End Sub
         menu.ShowImageMargin = True
         For i = 0 To Localization.Codes.Length - 1
             Dim code = Localization.Codes(i)

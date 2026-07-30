@@ -8,6 +8,16 @@ Imports System.Windows.Forms
 
 Friend Module AppFileLogger
 
+    ''' <summary>
+    ''' Size at which current.log is rolled over to previous.log on the next start.
+    ''' The file is opened Append and nothing else in the app ever shrinks it, so without
+    ''' this it grew for the life of the installation - a daily user sorting thousands of
+    ''' files adds megabytes a day. Two files, capped: enough to investigate the last
+    ''' incident, bounded on disk. (LogPackage caps only the COPY it puts in the
+    ''' send-to-author ZIP, never the file itself.)
+    ''' </summary>
+    Friend Const Max_Log_Bytes As Long = 8L * 1024L * 1024L
+
     Private ReadOnly syncRoot As New Object()
 
     Private logWriter As StreamWriter = Nothing
@@ -29,6 +39,8 @@ Friend Module AppFileLogger
                 logPathValue = ResolveLogPath()
                 Dim logDir As String = Path.GetDirectoryName(logPathValue)
                 If Not String.IsNullOrEmpty(logDir) Then Directory.CreateDirectory(logDir)
+
+                RotateIfOversized(logPathValue)
 
                 Dim fileStream As New FileStream(logPathValue, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)
                 logWriter = New StreamWriter(fileStream)
@@ -93,6 +105,38 @@ Friend Module AppFileLogger
 
         WriteLine(details)
     End Sub
+
+    ''' <summary>
+    ''' Rolls <paramref name="log_Path"/> over to "previous.log" beside it when it has grown
+    ''' past <see cref="Max_Log_Bytes"/>, so the next Append starts from empty. Returns True
+    ''' when it rotated.
+    '''
+    ''' Runs once per start, before the file is opened - the cheapest possible place, and the
+    ''' only one where no writer holds the handle. Never throws: a log that cannot be rotated
+    ''' must not stop the app from starting (an unwritable folder falls back to
+    ''' %LOCALAPPDATA% in ResolveLogPath, and a locked file simply keeps growing until a
+    ''' start where it is free).
+    ''' </summary>
+    Friend Function RotateIfOversized(log_Path As String) As Boolean
+        Try
+            If String.IsNullOrEmpty(log_Path) Then Return False
+
+            Dim current As New FileInfo(log_Path)
+            If Not current.Exists OrElse current.Length <= Max_Log_Bytes Then Return False
+
+            Dim folder As String = Path.GetDirectoryName(log_Path)
+            If String.IsNullOrEmpty(folder) Then Return False
+            Dim rolled As String = Path.Combine(folder, "previous.log")
+
+            ' One generation back, not a numbered series: the previous session is what an
+            ' incident report needs, and a series is another thing that grows.
+            If File.Exists(rolled) Then File.Delete(rolled)
+            File.Move(log_Path, rolled)
+            Return True
+        Catch
+            Return False
+        End Try
+    End Function
 
     Private Function ResolveLogPath() As String
         ' AppContext.BaseDirectory = exe directory on net48 AND in a .NET 10

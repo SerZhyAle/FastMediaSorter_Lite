@@ -418,12 +418,19 @@ Public Class OllamaTranslator
                             Using stream As Stream = Await resp.Content.ReadAsStreamAsync().ConfigureAwait(False)
                                 Using reader As New StreamReader(stream)
                                     Dim success As Boolean = False
-                                    While Not reader.EndOfStream
+                                    ' Read until ReadLineAsync says end-of-stream, rather than asking
+                                    ' EndOfStream first: that property performs a SYNCHRONOUS read
+                                    ' whenever its buffer is empty, so on a stalled pull the loop
+                                    ' blocked inside the condition - before ever reaching the
+                                    ' cancellation check - and wedged the OCR settings tab.
+                                    ' (The compiler agrees: CA2024.)
+                                    Do
                                         ct.ThrowIfCancellationRequested()
                                         Dim line As String = Await reader.ReadLineAsync().ConfigureAwait(False)
-                                        If String.IsNullOrWhiteSpace(line) Then Continue While
+                                        If line Is Nothing Then Exit Do
+                                        If String.IsNullOrWhiteSpace(line) Then Continue Do
                                         Dim obj As Dictionary(Of String, Object) = TryCast(TranslateHttp.JsonDeserializeObject(line), Dictionary(Of String, Object))
-                                        If obj Is Nothing Then Continue While
+                                        If obj Is Nothing Then Continue Do
 
                                         Dim st As Object = Nothing
                                         obj.TryGetValue("status", st)
@@ -446,7 +453,7 @@ Public Class OllamaTranslator
 
                                         If progress IsNot Nothing AndAlso Not String.IsNullOrEmpty(statusText) Then progress.Report(statusText & pct)
                                         If String.Equals(statusText, "success", StringComparison.OrdinalIgnoreCase) Then success = True
-                                    End While
+                                    Loop
                                     Return success
                                 End Using
                             End Using

@@ -165,6 +165,11 @@ Friend NotInheritable Class TrayContext
             If _mainWindow Is Nothing OrElse _mainWindow.IsDisposed Then Return
             Dim wasVisible As Boolean = _mainWindow.Visible
             RemoveHandler _mainWindow.ServerStateChanged, AddressOf RefreshTrayState
+            ' Close BEFORE Dispose: the window does its own teardown in FormClosing (its
+            ' 10 s stats timer, its window icon). Disposing straight out from under it
+            ' skipped that handler, so every language switch left the old window's poll
+            ' timer running against the worker and leaked its HICON.
+            _mainWindow.Close()
             _mainWindow.Dispose()
             _mainWindow = Nothing
             If wasVisible Then ShowMainWindow(Nothing)
@@ -200,14 +205,26 @@ Friend NotInheritable Class TrayContext
         End Try
     End Sub
 
+    ''' <summary>Set while a stats fetch is out. Without it a worker that stopped answering
+    ''' collected one fire-and-forget request every 30 s - roughly 2900 a day, each holding a
+    ''' thread and a pipe handle - because nothing marked the previous one as unfinished.</summary>
+    Private _statsFetchInFlight As Boolean = False
+
     Private Sub OnStatsTimerTick(sender As Object, e As EventArgs)
+        If _statsFetchInFlight Then Return
         Dim t As Task = UpdateTooltipStatsAsync()
     End Sub
 
     ''' <summary>Enriches the tray tooltip with a concise usage line while serving
     ''' (NotifyIcon.Text is capped ~63 chars). Fire-and-forget; never blocks the UI.</summary>
     Private Async Function UpdateTooltipStatsAsync() As Task
-        Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+        _statsFetchInFlight = True
+        Dim st As WorkerStatus
+        Try
+            st = Await ShareController.GetStatusAsync()
+        Finally
+            _statsFetchInFlight = False
+        End Try
         If _disposed OrElse _notifyIcon Is Nothing Then Return
         ' If sharing was turned off while this fetch was in flight, RefreshTrayState(False)
         ' already stopped the poll timer and set the idle tooltip - don't clobber it back.
@@ -221,7 +238,12 @@ Friend NotInheritable Class TrayContext
                 If last.Length > 0 Then txt &= Localization.TF(" · посл.: {0}", last)
             End If
         Else
-            txt = "Fast Media Sorter: Share Manager"
+            ' The worker is gone (stopped from elsewhere, crashed, or never came up). Stop
+            ' polling it: this tick fires every 30 s for as long as Companion sits in the
+            ' tray - weeks - and each one was a pointless pipe round-trip against something
+            ' that is not there. RefreshTrayState(False) sets the idle tooltip and menu too.
+            RefreshTrayState(False)
+            Return
         End If
         If txt.Length > 63 Then txt = txt.Substring(0, 63)
         Try
@@ -241,11 +263,12 @@ Friend NotInheritable Class TrayContext
 
     ''' <summary>Shows (creating/reusing) the main window and brings it to front. A
     ''' non-empty <paramref name="initialFolder"/> requests the "share this folder"
-    ''' flow; when a window already exists it is just activated (folder routing is
-    ''' refined with the wake protocol in Ф4).</summary>
+    ''' flow - handed to the constructor for a fresh window, routed into the live one
+    ''' when a window is already up.</summary>
     Private Sub ShowMainWindow(initialFolder As String)
         Try
-            If _mainWindow Is Nothing OrElse _mainWindow.IsDisposed Then
+            Dim reused As Boolean = _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed
+            If Not reused Then
                 _mainWindow = New MainWindow(initialFolder)
                 AddHandler _mainWindow.ServerStateChanged, AddressOf RefreshTrayState
             End If
@@ -254,6 +277,19 @@ Friend NotInheritable Class TrayContext
             _mainWindow.Activate()
             _mainWindow.BringToFront()
             ForceToForeground(_mainWindow)
+
+            ' The constructor only sees initialFolder for a NEW window. Reusing one used to
+            ' throw the folder away silently - see MainWindow.ShareFolderFromWakeAsync.
+            If reused AndAlso Not String.IsNullOrEmpty(initialFolder) Then
+                Dim live As MainWindow = _mainWindow
+                Dim folder As String = initialFolder
+                ' Posted so the wake handler returns before the share flow (which awaits the
+                ' worker and can open the wizard) starts.
+                live.BeginInvoke(New Action(Sub()
+                                                If live.IsDisposed Then Return
+                                                Dim t As Task = live.ShareFolderFromWakeAsync(folder)
+                                            End Sub))
+            End If
         Catch
         End Try
     End Sub

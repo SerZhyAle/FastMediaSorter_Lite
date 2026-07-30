@@ -25,8 +25,47 @@ Friend Module OptionalRuntimeManager
     Private Const VcRedistX86Url As String = "https://aka.ms/vc14/vc_redist.x86.exe"
     Private Const VcRedistX64Url As String = "https://aka.ms/vc14/vc_redist.x64.exe"
 
+    ''' <summary>
+    ''' Infinite HttpClient.Timeout is deliberate - it is a per-REQUEST clock, and these are
+    ''' ~80 MB downloads that legitimately take minutes on a slow line. What bounds them
+    ''' instead is <see cref="Download_Inactivity_Timeout_Ms"/>: a token that is cancelled when
+    ''' no bytes arrive for that long. Before it existed, a stream that stalled with no FIN or
+    ''' RST (a laptop changing Wi-Fi network, a dead NAT entry) left the await pending FOR EVER
+    ''' - and since Main_Form caches that task as vlc_Init_Task, every later video in the
+    ''' session awaited the same dead task: no VLC, and not even the external-player fallback,
+    ''' which only runs once the await returns False.
+    ''' </summary>
     Private ReadOnly httpClient As New HttpClient() With {.Timeout = Timeout.InfiniteTimeSpan}
+
+    ''' <summary>How long a download may make no progress before it is given up on.</summary>
+    Private Const Download_Inactivity_Timeout_Ms As Integer = 60000
+
     Private ReadOnly pathSync As New Object()
+
+    ''' <summary>
+    ''' Streams a URL to a file, cancelling if it stalls for Download_Inactivity_Timeout_Ms.
+    ''' Copies block by block rather than using Stream.CopyToAsync so the watchdog is fed by
+    ''' actual progress, not merely by the operation having been started.
+    ''' </summary>
+    Private Async Function DownloadWithInactivityTimeoutAsync(url As String, destinationFile As String) As Task
+        Using watchdog As New CancellationTokenSource(Download_Inactivity_Timeout_Ms)
+            Using response As HttpResponseMessage = Await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, watchdog.Token).ConfigureAwait(False)
+                response.EnsureSuccessStatusCode()
+                Using source As Stream = Await response.Content.ReadAsStreamAsync().ConfigureAwait(False)
+                    Using dest As New FileStream(destinationFile, FileMode.Create, FileAccess.Write, FileShare.None)
+                        Dim buffer(81919) As Byte
+                        Do
+                            Dim read As Integer = Await source.ReadAsync(buffer, 0, buffer.Length, watchdog.Token).ConfigureAwait(False)
+                            If read <= 0 Then Exit Do
+                            Await dest.WriteAsync(buffer, 0, read, watchdog.Token).ConfigureAwait(False)
+                            ' Progress = another full window before we call it stalled.
+                            watchdog.CancelAfter(Download_Inactivity_Timeout_Ms)
+                        Loop
+                    End Using
+                End Using
+            End Using
+        End Using
+    End Function
 
     Public Function GetOcrRuntimeDir() As String
         Dim installed As String = Path.Combine(OcrRuntimeRoot(), CurrentArchFolder())
@@ -187,14 +226,7 @@ Friend Module OptionalRuntimeManager
         Try
             Directory.CreateDirectory(targetRoot)
 
-            Using response As HttpResponseMessage = Await httpClient.GetAsync(GetPackageUrl(kind), HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(False)
-                response.EnsureSuccessStatusCode()
-                Using source As Stream = Await response.Content.ReadAsStreamAsync().ConfigureAwait(False)
-                    Using dest As New FileStream(tempFile, FileMode.Create, FileAccess.Write, FileShare.None)
-                        Await source.CopyToAsync(dest).ConfigureAwait(False)
-                    End Using
-                End Using
-            End Using
+            Await DownloadWithInactivityTimeoutAsync(GetPackageUrl(kind), tempFile).ConfigureAwait(False)
 
             Using archive As ZipArchive = ZipFile.OpenRead(tempFile)
                 For Each entry As ZipArchiveEntry In archive.Entries
@@ -230,14 +262,7 @@ Friend Module OptionalRuntimeManager
         Dim tempFile As String = Path.Combine(Path.GetTempPath(), fileName)
 
         Try
-            Using response As HttpResponseMessage = Await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(False)
-                response.EnsureSuccessStatusCode()
-                Using source As Stream = Await response.Content.ReadAsStreamAsync().ConfigureAwait(False)
-                    Using dest As New FileStream(tempFile, FileMode.Create, FileAccess.Write, FileShare.None)
-                        Await source.CopyToAsync(dest).ConfigureAwait(False)
-                    End Using
-                End Using
-            End Using
+            Await DownloadWithInactivityTimeoutAsync(url, tempFile).ConfigureAwait(False)
 
             Using proc As Process = Process.Start(New ProcessStartInfo(tempFile, "/install /quiet /norestart") With {
                 .UseShellExecute = False,

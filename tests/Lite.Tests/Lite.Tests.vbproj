@@ -107,6 +107,27 @@
     <Compile Include="..\..\src\Localization\*.vb">
       <Link>Linked\Localization\%(Filename)%(Extension)</Link>
     </Compile>
+    <!-- Long-run stability (SPECIFICATION_LONG_RUN_STABILITY.md). All three are leaf
+         modules with no WinForms dependency, which is exactly why the logic lives in
+         them rather than inside Main_Form:
+           AutoSkipPolicy  - the chain bound whose old form was also the recursion depth,
+                             so a dropped share crashed the process (A-2).
+           DiskCacheTrim   - the eviction the OCR and browser-translate caches never had,
+                             and the budget the settings window displayed but nobody
+                             enforced (D-1, D-3).
+           FileOpQueue     - modern-only (whole-file "#If Not NETFRAMEWORK"), so on the
+                             net48 leg this and its tests compile to nothing. Its
+                             post-drain refusal used to be silent while the UI reported
+                             success (B-2). -->
+    <Compile Include="..\..\src\AutoSkipPolicy.vb">
+      <Link>Linked\AutoSkipPolicy.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\DiskCacheTrim.vb">
+      <Link>Linked\DiskCacheTrim.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\FileOpQueue.vb">
+      <Link>Linked\FileOpQueue.vb</Link>
+    </Compile>
   </ItemGroup>
 
   <!-- Each leg gets the SAME ImageSharp its viewer ships with, so the tests exercise

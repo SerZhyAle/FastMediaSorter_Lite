@@ -36,11 +36,10 @@ Partial Public Class Main_Form
     Private Shared Function SendMessage(hWnd As IntPtr, msg As Integer, wParam As IntPtr, ByRef lParam As COPYDATASTRUCT) As Integer
     End Function
 
-    Private Declare Function MapViewOfFile Lib "kernel32.dll" (ByVal hFileMappingObject As IntPtr, ByVal dwDesiredAccess As Integer, ByVal dwFileOffsetHigh As Integer, ByVal dwFileOffsetLow As Integer, ByVal dwNumberOfBytesToMap As Integer) As IntPtr
-
-    Private Declare Function UnmapViewOfFile Lib "kernel32.dll" (ByVal lpBaseAddress As IntPtr) As Boolean
-
-    Private Declare Function CloseHandle Lib "kernel32.dll" (ByVal hObject As IntPtr) As Boolean
+    ' MapViewOfFile / UnmapViewOfFile / CloseHandle used to live here for the WM_USER+1
+    ' receiver in Main_Form.vb. That receiver was dead code that closed a handle supplied by
+    ' whoever posted the message, and was removed with the long-run stability sweep; nothing
+    ' else in either build maps a section, so the declarations went with it.
 
     <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode)>
     Public Shared Function StrCmpLogicalW(psz1 As String, psz2 As String) As Integer
