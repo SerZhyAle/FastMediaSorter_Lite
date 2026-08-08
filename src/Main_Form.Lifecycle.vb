@@ -715,6 +715,9 @@ Partial Public Class Main_Form
         End If
 
         If is_Table_Form_Open Then
+            ' chkbox_Top_Most was restored above, so the viewer may already be pinned -
+            ' the restored settings window has to join that band, not hide behind it.
+            PinToViewerBand(Table_Form)
             Table_Form.Show()
         End If
         is_TextBox_Editing = False

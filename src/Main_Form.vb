@@ -379,7 +379,9 @@ Public Class Main_Form
             folder_Browser_Dialog.UseDescriptionForTitle = True
 #End If
 
-            If folder_Browser_Dialog.ShowDialog() = System.Windows.Forms.DialogResult.OK Then
+            ' Explicit owner: a native dialog cannot carry TopMost, and what keeps it
+            ' above a viewer pinned "поверх всех окон" is being owned by it.
+            If folder_Browser_Dialog.ShowDialog(Me) = System.Windows.Forms.DialogResult.OK Then
                 Current_Folder_Path = folder_Browser_Dialog.SelectedPath
                 lbl_Status.Text = Localization.T("выбрана папка") & ": " & Current_Folder_Path
                 Is_No_Background_Tasks = False
@@ -527,6 +529,10 @@ Public Class Main_Form
         End If
 
         Table_Form.PrepareForDisplay()
+        ' Without this the settings window opens BEHIND a viewer pinned "поверх всех
+        ' окон": being owned by it is not enough to leave the normal z-order band
+        ' (Main_Form.WindowPinning.vb).
+        PinToViewerBand(Table_Form)
         ' Show() on an already-visible form throws ("Form that is already visible
         ' cannot be displayed as a modal dialog box.") and, unhandled, kills the app -
         ' so a second click on "Настройки" while the window is open just re-surfaces it.
@@ -556,6 +562,9 @@ Public Class Main_Form
     Private Sub ChkTopMost_CheckedChanged(sender As Object, e As EventArgs) Handles chkbox_Top_Most.CheckedChanged
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2010: chkTopMost_CheckedChanged")
         Me.TopMost = chkbox_Top_Most.Checked
+        ' An open settings / thumbnail window has to move to the same band, otherwise
+        ' switching this on hides it behind the viewer without touching it.
+        SyncPinnedWindowsWithViewer()
     End Sub
 
 
@@ -644,6 +653,7 @@ Public Class Main_Form
             AddHandler Image_Panel_Form.FormClosed, AddressOf Image_Panel_Form_FormClosed
         End If
         Image_Panel_Form.PrepareForDisplay()
+        PinToViewerBand(Image_Panel_Form)
         Image_Panel_Form.ShowDialog(Me)
         ' A modally-closed form is NOT disposed, and this one is held in a field - so without
         ' this the last session's thumbnails (hundreds of MB on a big folder at a large card
@@ -673,7 +683,7 @@ Public Class Main_Form
                                "|JPEG Files|*.jpg;*.jpeg|PNG Files|*.png|GIF Files|*.gif|BMP Files|*.bmp|WebP Files|*.webp|HEIC Files|*.heic;*.heif|AVIF Files|*.avif|SVG Files|*.svg"
             openFileDialog.InitialDirectory = If(String.IsNullOrEmpty(Current_Folder_Path), Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), Current_Folder_Path)
             openFileDialog.Title = Localization.T("Выберите медиафайл")
-            If openFileDialog.ShowDialog() = DialogResult.OK Then
+            If openFileDialog.ShowDialog(Me) = DialogResult.OK Then
                 Dim selected_File_Path As String = openFileDialog.FileName
                 Dim selected_Folder_Path As String = Path.GetDirectoryName(selected_File_Path)
 

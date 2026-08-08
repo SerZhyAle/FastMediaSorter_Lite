@@ -627,6 +627,17 @@ var
 begin
   Exec('netsh', 'advfirewall firewall delete rule name="FastMediaSorter Companion SFTP"',
     '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  { Deleting by NAME alone leaves rules behind for good. The named one is ours, but
+    the worker also collects rules Windows itself creates: the first time it listens,
+    the firewall prompt appears and an "Allow" writes a rule named after the program
+    (fms-share-worker), which no uninstall of ours has ever touched. Those accumulate
+    one per install location and outlive the files they point at. Deleting by PROGRAM
+    path catches every rule aimed at the exe being removed, whatever its name, and is
+    precisely scoped: the path is inside the directory this uninstall is deleting, so
+    another installation's rule cannot match. }
+  Exec('netsh', 'advfirewall firewall delete rule name=all program="' +
+    ExpandConstant('{app}\companion\fms-share-worker.exe') + '"',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 
 { Opt-in "run the SFTP server right after installation": launch the Share Manager
@@ -906,10 +917,29 @@ begin
   end;
 end;
 
+{ PrepareToInstall stops the Server edition's service (stop-companion.ps1) so its
+  worker releases the files Setup is about to replace - but nothing ever started it
+  again, so every viewer update silently left a server machine not serving until the
+  next reboot. Only an Automatic service is restarted: that start type IS the
+  statement "this must be running", whereas a Manual/Disabled one was stopped by its
+  owner and must stay stopped. Best-effort and silent - a viewer install must not
+  fail over the sharing service. }
+procedure RestartShareServiceIfAutomatic;
+var
+  ResultCode: Integer;
+begin
+  Exec('powershell.exe',
+    '-NoProfile -ExecutionPolicy Bypass -Command "Get-Service -Name ''' + ShareServiceName +
+    ''' -ErrorAction SilentlyContinue | Where-Object { $_.StartType -eq ''Automatic'' -and $_.Status -ne ''Running'' } | Start-Service -ErrorAction SilentlyContinue"',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if (CurStep = ssPostInstall) and ShouldRegisterAssociations then
     RegisterRequestedImageAssociations;
+  if CurStep = ssPostInstall then
+    RestartShareServiceIfAutomatic;
   if (CurStep = ssPostInstall) and ShouldInstallServerFeatures then
   begin
     AddServerFirewallRule;

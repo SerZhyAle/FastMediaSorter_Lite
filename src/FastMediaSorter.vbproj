@@ -290,6 +290,10 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.WindowPinning.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="OcrTranslateSettings.vb" />
     <Compile Include="AutoSkipPolicy.vb" />
     <Compile Include="DiskCacheTrim.vb" />

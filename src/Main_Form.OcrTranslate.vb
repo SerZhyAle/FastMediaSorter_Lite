@@ -538,6 +538,7 @@ Partial Public Class Main_Form
         End If
         Table_Form.PrepareForDisplay()
         Table_Form.SelectOcrTab()
+        PinToViewerBand(Table_Form)
         Table_Form.Show(Me)
         Table_Form.Activate()
     End Sub

@@ -800,6 +800,7 @@ Public NotInheritable Class MainWindow
     End Sub
 
     Private Sub RefreshTestButton()
+        If btnTest Is Nothing Then Return
         Dim st As WorkerStatus = _status
         Dim can As Boolean = st IsNot Nothing AndAlso st.Running AndAlso st.Reachability IsNot Nothing AndAlso
                              Not st.Reachability.IsCgnat AndAlso Not String.IsNullOrEmpty(st.Reachability.ExternalHost)
@@ -1372,6 +1373,14 @@ Public NotInheritable Class MainWindow
         If progressBar IsNot Nothing Then progressBar.Visible = value
         If value AndAlso Not String.IsNullOrEmpty(message) Then SetHint(message)
         Me.UseWaitCursor = value
+        ' btnTest is the one button whose state is computed elsewhere (status + busy),
+        ' so listing it above would duplicate that rule. It still has to be re-asked
+        ' here: every flow calls ApplyStatusToUi() INSIDE the busy window and then
+        ' SetBusy(False), so the button kept the disabled state it was given while busy
+        ' and nothing came along to clear it - the reachability poll that would have
+        ' refreshed it only runs when the address is still unknown. The result was a
+        ' permanently grey "check access from the internet" on a share that works.
+        RefreshTestButton()
     End Sub
 
 End Class

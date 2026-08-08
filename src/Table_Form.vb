@@ -342,7 +342,9 @@ Public Class Table_Form
                 ' The Vista-style dialog .NET uses shows Description only as the title.
                 folderBrowse.UseDescriptionForTitle = True
 #End If
-                If folderBrowse.ShowDialog() = System.Windows.Forms.DialogResult.OK Then
+                ' Explicit owner: this window rides the viewer's always-on-top band,
+                ' and an ownerless native dialog would open behind it.
+                If folderBrowse.ShowDialog(Me) = System.Windows.Forms.DialogResult.OK Then
                     Hardkeys_to_move_mediafile(e.RowIndex) = folderBrowse.SelectedPath
                     Data_Grid_View.Item(1, e.RowIndex).Value = Hardkeys_to_move_mediafile(e.RowIndex)
                     Data_Grid_View.Refresh()

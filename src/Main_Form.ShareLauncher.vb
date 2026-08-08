@@ -146,13 +146,43 @@ Partial Public Class Main_Form
         End If
     End Sub
 
+    ''' <summary>
+    ''' Where the Share Manager actually is. Next to this exe is the normal case, but
+    ''' NOT the only one: the Server edition installs the Share Manager on its own, in
+    ''' its own directory, and a machine that already has it is deliberately installed
+    ''' WITHOUT a second copy beside the viewer. Looking only beside the exe made the
+    ''' button report "reinstall the application" on a perfectly healthy machine whose
+    ''' manager was one folder away. Mirrors TrayContext.ViewerExePath() on the
+    ''' Companion side, which finds a normally installed viewer exactly this way.
+    ''' </summary>
     Private Function CompanionExePath() As String
         Try
             Dim dir As String = Path.GetDirectoryName(Application.ExecutablePath)
-            Return Path.Combine(dir, CompanionExeFileName)
+            Dim beside As String = Path.Combine(dir, CompanionExeFileName)
+            If File.Exists(beside) Then Return beside
         Catch
-            Return ""
         End Try
+
+        ' The Server edition's frozen Inno AppId - the same key its own installer
+        ' writes. Per-user installs land in HKCU, machine-wide ones in HKLM (and under
+        ' Wow6432Node on some upgrade paths).
+        Const serverEditionKey As String =
+            "Software\Microsoft\Windows\CurrentVersion\Uninstall\{A9F3C61B-4D2E-4F58-9C7A-1E6B0D3F82A4}_is1"
+        For Each hive As Microsoft.Win32.RegistryKey In {Microsoft.Win32.Registry.CurrentUser, Microsoft.Win32.Registry.LocalMachine}
+            For Each sub_key As String In {serverEditionKey, serverEditionKey.Replace("Software\", "Software\WOW6432Node\")}
+                Try
+                    Using k As Microsoft.Win32.RegistryKey = hive.OpenSubKey(sub_key, False)
+                        If k Is Nothing Then Continue For
+                        Dim loc As String = TryCast(k.GetValue("InstallLocation"), String)
+                        If String.IsNullOrWhiteSpace(loc) Then Continue For
+                        Dim candidate As String = Path.Combine(loc.Trim().TrimEnd(Path.DirectorySeparatorChar), CompanionExeFileName)
+                        If File.Exists(candidate) Then Return candidate
+                    End Using
+                Catch
+                End Try
+            Next
+        Next
+        Return ""
     End Function
 
     ''' <summary>Companion is already running (possibly tray-only, hidden window) -

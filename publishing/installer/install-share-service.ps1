@@ -495,7 +495,17 @@ function Set-FirewallRule([bool]$enable) {
     # Idempotent: drop any rule of this name first ("No rules match" exits non-zero
     # when there was none, which is fine).
     & netsh.exe advfirewall firewall delete rule name="$FirewallRule" | Out-Null
-    if (-not $enable) { Write-Log 'firewall rule removed'; return }
+    if (-not $enable) {
+        # By NAME alone this leaves rules behind for good. Ours is named, but the
+        # worker also collects rules Windows itself writes: the first time it listens,
+        # the firewall prompt appears and an "Allow" creates a rule named after the
+        # program (fms-share-worker) that no removal of ours has ever touched. Delete
+        # by PROGRAM path too - it catches every rule aimed at this exe whatever its
+        # name, and cannot match another installation's, which has another path.
+        if ($ExePath) { & netsh.exe advfirewall firewall delete rule name=all program="$ExePath" | Out-Null }
+        Write-Log 'firewall rule removed'
+        return
+    }
     Assert-Worker
     # Program-scoped (not port-scoped) so the rule survives the worker's dynamically
     # assigned listen port; all three profiles because a dedicated server's network is

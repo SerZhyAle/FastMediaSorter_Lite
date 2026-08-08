@@ -195,15 +195,16 @@ Partial Public Class Table_Form
         Dim body As String = MailBodyTemplate()
 
         ' Simple MAPI puts its editor up synchronously.  A viewer pinned above all
-        ' windows would otherwise cover that editor and make it appear hung.  The
-        ' setting is restored as soon as the editor returns.
+        ' windows - and this window with it, since it rides the same band - would
+        ' otherwise cover that editor and make it appear hung.  The setting is
+        ' restored as soon as the editor returns.
         Dim restoreMainTopMost As Boolean = MainWindowIsTopMost()
-        If restoreMainTopMost Then Main_Form.TopMost = False
+        If restoreMainTopMost Then Main_Form.SuspendAlwaysOnTop()
         Try
             If MailSender.SendFile(zipPath, subject, body) Then Return
         Finally
             If restoreMainTopMost AndAlso Main_Form IsNot Nothing AndAlso Not Main_Form.IsDisposed Then
-                Main_Form.TopMost = True
+                Main_Form.ResumeAlwaysOnTop(True)
             End If
         End Try
 

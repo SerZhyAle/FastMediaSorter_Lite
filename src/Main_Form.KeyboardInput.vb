@@ -232,6 +232,9 @@ Partial Public Class Main_Form
                         Table_Form.Activate()
                     Else
                         Table_Form.PrepareForDisplay()
+                        ' Modal is no protection: an owned window still has to be put
+                        ' into the pinned band by hand (Main_Form.WindowPinning.vb).
+                        PinToViewerBand(Table_Form)
                         Table_Form.ShowDialog(Me)
                     End If
                 Case Keys.F3

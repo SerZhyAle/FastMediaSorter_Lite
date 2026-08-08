@@ -34,7 +34,6 @@ Partial Public Class Table_Form
     Private _ocrLoading As Boolean
     Private _ocrBusy As Boolean
     Private _ocrDroppedMainTopMost As Boolean
-    Private _ocrMainWasTopMost As Boolean
     Private _ocrSettings As OcrTranslateSettings
 
     Private ocrInner As TabControl
@@ -124,8 +123,8 @@ Partial Public Class Table_Form
     ''' window (Ollama installer / download page) show in front of us.</summary>
     Private Sub OcrTab_Activated(sender As Object, e As EventArgs) Handles Me.Activated
         If _ocrDroppedMainTopMost Then
-            Main_Form.TopMost = _ocrMainWasTopMost
             _ocrDroppedMainTopMost = False
+            Main_Form.ResumeAlwaysOnTop(True)
         End If
     End Sub
 
@@ -604,13 +603,10 @@ Partial Public Class Table_Form
     ''' <summary>Drops the main window's always-on-top so an external window
     ''' (installer / browser) is not hidden behind it. Restored on re-activation.</summary>
     Private Sub DropTopMostForExternal()
-        ' The main window can be pinned always-on-top (persisted "keep on top");
-        ' drop it so a launched installer / browser is not hidden behind it.
-        If Main_Form.TopMost Then
-            _ocrMainWasTopMost = True
-            Main_Form.TopMost = False
-            _ocrDroppedMainTopMost = True
-        End If
+        ' The main window can be pinned always-on-top (persisted "keep on top"), and
+        ' this window now rides the same band - so both have to step aside, not just
+        ' the viewer, or the installer would simply hide behind the settings window.
+        _ocrDroppedMainTopMost = Main_Form.SuspendAlwaysOnTop()
     End Sub
 
     ' --- install / pull / download handlers -----------------------------------
