@@ -31,6 +31,12 @@
 #>
 [CmdletBinding()]
 param(
+    # Pins the packaged exe to a release version (YY.M.D.HHmm) instead of letting the
+    # project stamp the current minute. At release time the Store package must carry
+    # the version of the tag it belongs to - without this, packing an hour after the
+    # tag produced a different stamp than the GitHub/winget artifacts of the same
+    # release, and the Store listing no longer lined up with the changelog entry.
+    [string] $ReleaseVersion       = '',
     [string] $IdentityName         = 'SZA.FastMediaSorterLITE',
     [string] $Publisher            = 'CN=F98ACEDB-1E22-4C39-AF63-F9FCFE807DCD',
     [string] $PublisherDisplayName = 'SZA',
@@ -108,7 +114,9 @@ $ModernProj    = Join-Path $RepoRoot 'src\Modern\FastMediaSorter.Modern.vbproj'
 $ModernPublish = Join-Path $MsixDir 'modern-publish-tmp'
 Write-Host 'Publishing the .NET 10 x64 viewer (self-contained single-file)...' -ForegroundColor Cyan
 if (Test-Path $ModernPublish) { Remove-Item $ModernPublish -Recurse -Force }
-& dotnet publish $ModernProj -c Release -r win-x64 -o $ModernPublish -v minimal --nologo
+$versionArgs = @()
+if ($ReleaseVersion) { $versionArgs = @("-p:ReleaseVersion=$ReleaseVersion") }
+& dotnet publish $ModernProj -c Release -r win-x64 -o $ModernPublish -v minimal --nologo @versionArgs
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish (modern viewer) failed (exit $LASTEXITCODE)." }
 $Exe = Join-Path $ModernPublish 'FastMediaSorter_LITE.exe'
 if (-not (Test-Path $Exe)) { throw "FastMediaSorter_LITE.exe not found at $Exe (modern publish failed?)." }
@@ -158,7 +166,7 @@ foreach ($extra in 'README.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt') {
 $companionProj = Join-Path $RepoRoot 'src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj'
 $companionPub  = Join-Path $MsixDir 'companion-publish-tmp'
 Write-Host 'Publishing Companion (Share Manager, net10 self-contained)...'
-& dotnet publish $companionProj -c Release -r win-x64 -o $companionPub -v minimal --nologo
+& dotnet publish $companionProj -c Release -r win-x64 -o $companionPub -v minimal --nologo @versionArgs
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish (Companion) failed (exit $LASTEXITCODE)." }
 $companionExe = Join-Path $companionPub 'FastMediaSorterCompanion.exe'
 if (-not (Test-Path $companionExe)) { throw "Companion exe not found at $companionExe after publish." }

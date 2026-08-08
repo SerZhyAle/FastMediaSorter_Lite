@@ -63,10 +63,15 @@ the Companion are `dotnet publish` outputs, not MSBuild ones.
 
 ```powershell
 .\build-msix.ps1 `
+  -ReleaseVersion       "<the release tag's YY.M.D.HHmm>" `
   -IdentityName         "<Package/Identity/Name from Partner Center>" `
   -Publisher            "<Package/Identity/Publisher from Partner Center>" `
   -PublisherDisplayName "<PublisherDisplayName from Partner Center>"
 ```
+
+`-ReleaseVersion` pins the packaged exes to the version of the release this package belongs to.
+Leave it out and both projects stamp the current minute instead, so a package built after the tag
+carries a version no other artifact of that release has. Only a throwaway local build should omit it.
 
 What the script packages (order matters - see [BUILD_AND_RELEASE.md](../../docs/guides/BUILD_AND_RELEASE.md)):
 

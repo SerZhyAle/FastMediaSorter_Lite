@@ -157,7 +157,7 @@ Step "Дальше вручную (см. docs/guides/BUILD_AND_RELEASE.md)"
    (манифесты в publishing/winget/server/; там Scope: machine и MinimumOSVersion - так и надо)
    -> docs/guides/SERVER_EDITION_BUILD_AND_TEST.md
 4) Оба PR: заполнить описание через gh pr edit (не оставлять пустым).
-5) Microsoft Store (опц.): cd publishing\msix; .\build-msix.ps1 -IdentityName "<имя>" (БЕЗ -SelfSign),
+5) Microsoft Store (опц.): cd publishing\msix; .\build-msix.ps1 -ReleaseVersion $Version -IdentityName "<имя>" (БЕЗ -SelfSign),
    загрузить unsigned .msix в Partner Center -> docs/guides/STORE_PUBLISHING.md
    Store - только пользовательская редакция; серверную туда не загружаем никогда.
 "@ | Write-Host -ForegroundColor Cyan

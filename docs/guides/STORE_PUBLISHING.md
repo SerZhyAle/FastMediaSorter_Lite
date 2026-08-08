@@ -112,8 +112,12 @@ Pitfalls hit in practice:
 4. Build the Store package (no `-SelfSign`) and upload the **unsigned** `.msix`:
    ```powershell
    cd publishing\msix
-   .\build-msix.ps1 -IdentityName "<Name>" -Publisher "<CN=…>" -PublisherDisplayName "<…>"
+   .\build-msix.ps1 -ReleaseVersion "<the tag's YY.M.D.HHmm>" `
+                    -IdentityName "<Name>" -Publisher "<CN=…>" -PublisherDisplayName "<…>"
    ```
+   Pass `-ReleaseVersion` whenever the package belongs to a release: without it the projects stamp
+   the current minute, so a package built an hour after the tag carries a different version than the
+   GitHub and winget artifacts of the same release. Omit it only for a throwaway local build.
 
 ---
 
