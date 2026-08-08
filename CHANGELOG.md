@@ -8,6 +8,9 @@ Categories: `Added`, `Changed`, `Fixed`, `Removed`.
 
 ## [Unreleased]
 
+### Fixed
+- **Share Manager: "Manage hosting.." -> the button that opens the Server edition's page no longer lands on "page not found".** The address it opened spelled the project name in capitals where the real one does not, and web addresses are case-sensitive, so the one link that explains the always-on edition led nowhere.
+
 ## [26.8.8.2305] - 2026-08-08
 
 ### Added

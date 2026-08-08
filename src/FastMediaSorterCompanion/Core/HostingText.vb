@@ -13,8 +13,10 @@ Option Strict On
 Public Module HostingText
 
     ''' <summary>Where the Server edition is obtained. The Share Manager only ever
-    ''' OPENS this page - it never downloads or runs an installer itself (spec §1.4).</summary>
-    Public Const ServerEditionUrl As String = "https://serzhyale.github.io/FastMediaSorter_LITE/server.html"
+    ''' OPENS this page - it never downloads or runs an installer itself (spec §1.4).
+    ''' The path segment is the repository name, and GitHub Pages is case-sensitive:
+    ''' "FastMediaSorter_Lite", not "_LITE" (which 404s and sent the button nowhere).</summary>
+    Public Const ServerEditionUrl As String = "https://serzhyale.github.io/FastMediaSorter_Lite/server.html"
 
     ''' <summary>The one-line hosting state shown in the main window.</summary>
     Public Function HostModeLine(mode As ServerFeatures.ServerHostMode) As String
