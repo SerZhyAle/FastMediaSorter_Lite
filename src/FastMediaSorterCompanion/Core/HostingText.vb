@@ -137,7 +137,7 @@ Public Module HostingText
     ''' <summary>The LocalService consequences, surfaced BEFORE a root is added rather
     ''' than after a phone fails to open it.</summary>
     Public Function AccountNote() As String
-        Return Localization.T("Служба работает от имени LOCAL SERVICE. Каждой раздаваемой папке нужно право на чтение для этой учётной записи - установщик выдаёт его при добавлении папки. Сетевые пути вида \\сервер\папка так работать не будут.")
+        Return Localization.T("Служба работает от имени LOCAL SERVICE, а не от вашего. Каждой раздаваемой папке нужен доступ для этой учётной записи: чтение, а если папка раздаётся с записью - то и запись. Кнопка выдаёт их по текущему списку папок. Сетевые пути вида \\сервер\папка так работать не будут.")
     End Function
 
     ''' <summary>Shown next to "Remove server role": what is and is not destroyed.</summary>

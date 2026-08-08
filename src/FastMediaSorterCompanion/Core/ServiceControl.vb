@@ -226,9 +226,10 @@ Public Module ServiceControl
         ''' wants after changing something the service only reads at start-up.</summary>
         RestartService
         MigrateToUser
-        ''' <summary>Grants LOCAL SERVICE read access on the currently shared folders.
-        ''' Needed because the service account is not the user who picked them, so a
-        ''' folder under a user profile is invisible to it until this runs.</summary>
+        ''' <summary>Grants LOCAL SERVICE access on the currently shared folders - read
+        ''' for a read-only root, read/write for a writable one. Needed because the
+        ''' service account is not the user who picked them, so a folder under a user
+        ''' profile is invisible to it until this runs.</summary>
         GrantRoots
     End Enum
 
@@ -252,7 +253,13 @@ Public Module ServiceControl
     ''' it. Blocks on the UAC prompt, so call it from a modal where the wait reads.
     ''' The app itself stays non-elevated - only the short-lived helper elevates.
     ''' </summary>
-    Public Function Manage(action As ManageAction, Optional roots As IEnumerable(Of String) = Nothing) As ManageResult
+    ''' <param name="readOnlyRoots">The subset of <paramref name="roots"/> shared
+    ''' read-only. Those get read access; every other root gets read/write, because a
+    ''' folder the list promises as writable that the service account cannot write to
+    ''' fails on the phone, as an SFTP permission error far from the promise.</param>
+    Public Function Manage(action As ManageAction,
+                           Optional roots As IEnumerable(Of String) = Nothing,
+                           Optional readOnlyRoots As IEnumerable(Of String) = Nothing) As ManageResult
         If Not CanManage() Then Return ManageResult.Unavailable
         Dim script As String = HelperScriptPath()
 
@@ -264,7 +271,13 @@ Public Module ServiceControl
         Dim sid As String = CurrentUserSid()
         If sid.Length > 0 Then args &= " -ManageSid """ & sid & """"
         Dim rootList As String = JoinRoots(roots)
-        If rootList.Length > 0 Then args &= " -Roots """ & rootList & """"
+        If rootList.Length > 0 Then
+            args &= " -Roots """ & rootList & """"
+            ' Passed even when empty (every root writable) - the helper reads the
+            ' parameter's PRESENCE as "this caller knows about read-only roots" and
+            ' falls back to read-only-for-everything when it is absent.
+            args &= " -ReadOnlyRoots """ & JoinRoots(readOnlyRoots) & """"
+        End If
 
         Dim psi As New ProcessStartInfo("powershell.exe", args) With {
             .UseShellExecute = True,

@@ -204,9 +204,16 @@ Public NotInheritable Class Share_Hosting_Form
         ' the worker already runs as the person who picked the folders.
         _btnGrantRoots.Visible = canManage AndAlso roots > 0
         _grantRoots = New List(Of String)()
+        _grantReadOnlyRoots = New List(Of String)()
         If st IsNot Nothing AndAlso st.Roots IsNot Nothing Then
             For Each r As ShareFolder In st.Roots
-                If Not String.IsNullOrEmpty(r.hostPath) Then _grantRoots.Add(r.hostPath)
+                If Not String.IsNullOrEmpty(r.hostPath) Then
+                    _grantRoots.Add(r.hostPath)
+                    ' A writable root needs write access for the account that actually
+                    ' serves it, so the two lists must come from the SAME status the
+                    ' folder list is showing - not from a default.
+                    If r.readOnly Then _grantReadOnlyRoots.Add(r.hostPath)
+                End If
             Next
         End If
 
@@ -220,8 +227,12 @@ Public NotInheritable Class Share_Hosting_Form
     ''' state so the elevated call never works from a stale list.</summary>
     Private _grantRoots As New List(Of String)()
 
+    ''' <summary>The subset of <see cref="_grantRoots"/> shared read-only - the rest is
+    ''' granted read/write.</summary>
+    Private _grantReadOnlyRoots As New List(Of String)()
+
     Private Sub OnGrantRoots()
-        RunManage(ServiceControl.ManageAction.GrantRoots, _grantRoots)
+        RunManage(ServiceControl.ManageAction.GrantRoots, _grantRoots, _grantReadOnlyRoots)
     End Sub
 
     Private Sub OnOpenServerPage()
@@ -229,14 +240,16 @@ Public NotInheritable Class Share_Hosting_Form
         NetworkInfo.OpenInBrowser(HostingText.ServerEditionUrl)
     End Sub
 
-    Private Sub RunManage(action As ServiceControl.ManageAction, Optional roots As List(Of String) = Nothing)
+    Private Sub RunManage(action As ServiceControl.ManageAction,
+                          Optional roots As List(Of String) = Nothing,
+                          Optional readOnlyRoots As List(Of String) = Nothing)
         SetActionsEnabled(False)
         _lblResult.ForeColor = Color.DimGray
         _lblResult.Text = HostingText.ManageWorking()
         Me.Refresh()
 
         ' Blocks on the UAC prompt (modal, brief) - the app itself stays non-elevated.
-        Dim res As ServiceControl.ManageResult = ServiceControl.Manage(action, roots)
+        Dim res As ServiceControl.ManageResult = ServiceControl.Manage(action, roots, readOnlyRoots)
 
         If res = ServiceControl.ManageResult.Succeeded Then
             _Changed = True

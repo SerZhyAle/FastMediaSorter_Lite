@@ -47,7 +47,15 @@ param(
     [string]$ManageSid,
 
     # Pipe-separated folder paths for grant-roots.
-    [string]$Roots
+    [string]$Roots,
+
+    # Pipe-separated subset of -Roots that is shared READ-ONLY. Those get (RX); every
+    # other root gets (M), because a writable share the account cannot write to is a
+    # share that fails at the moment the phone tries to use it - and it fails as an
+    # SFTP permission error, far from the folder list that promised otherwise.
+    # Omitting the parameter entirely keeps the old read-only-for-everything behaviour,
+    # so an older caller never silently widens access.
+    [string]$ReadOnlyRoots
 )
 
 $ErrorActionPreference = 'Stop'
@@ -416,9 +424,13 @@ function Test-LocalServiceAce([string]$folder) {
 # Grants (OI)(CI)(RX) to LOCAL SERVICE on each folder and records exactly what was
 # added. Never recursive-rewrites an ACL and never touches an existing administrator
 # grant: it only ADDS one ACE, and the ledger remembers whether it had to.
-function Grant-Roots([string[]]$folders) {
+function Grant-Roots([string[]]$folders, [string[]]$readOnlyFolders, [bool]$rightsKnown) {
     Assert-DataDir
     $ledger = @(Get-Ledger)
+    $readOnlySet = @{}
+    foreach ($ro in @($readOnlyFolders)) {
+        if ($ro) { $readOnlySet[$ro.TrimEnd('\')] = $true }
+    }
     foreach ($folder in $folders) {
         if (-not $folder) { continue }
         if ($folder -like '\\*') {
@@ -432,18 +444,30 @@ function Grant-Roots([string[]]$folders) {
             Write-Log "SKIPPED '$folder': not found"
             continue
         }
-        if ($ledger | Where-Object { $_.path -eq $folder }) {
-            Write-Log "already granted: $folder"
-            continue
+        # (M) for a writable root, (RX) for a read-only one. A root already in the
+        # ledger is re-applied when its LEVEL changed - a folder flipped to writable in
+        # the folder list has to gain write here too, and the old "already granted"
+        # short-circuit is exactly how it would silently stay read-only.
+        $rights = if (-not $rightsKnown -or $readOnlySet.ContainsKey($folder.TrimEnd('\'))) { 'RX' } else { 'M' }
+        $existing = $ledger | Where-Object { $_.path -eq $folder } | Select-Object -First 1
+        if ($existing) {
+            $had = if ($existing.PSObject.Properties['rights']) { [string]$existing.rights } else { 'RX' }
+            if ($had -eq $rights) {
+                Write-Log "already granted ($rights): $folder"
+                continue
+            }
+            Write-Log "re-granting '$folder': $had -> $rights"
         }
-        $preExisting = Test-LocalServiceAce $folder
-        Write-Log "granting LOCAL SERVICE read access on '$folder'"
-        & icacls.exe $folder /grant ('*{0}:(OI)(CI)(RX)' -f $SidLocalService) | Out-Null
+
+        $preExisting = if ($existing) { [bool]$existing.preExisting } else { Test-LocalServiceAce $folder }
+        Write-Log ("granting LOCAL SERVICE {0} access on '{1}'" -f $(if ($rights -eq 'M') { 'read/write' } else { 'read' }), $folder)
+        & icacls.exe $folder /grant ('*{0}:(OI)(CI)({1})' -f $SidLocalService, $rights) | Out-Null
         if ($LASTEXITCODE -ne 0) {
             Write-Log "WARNING: icacls failed on '$folder' (exit $LASTEXITCODE)"
             continue
         }
-        $ledger += [pscustomobject]@{ path = $folder; sid = $SidLocalService; preExisting = [bool]$preExisting }
+        $ledger = @($ledger | Where-Object { $_.path -ne $folder })
+        $ledger += [pscustomobject]@{ path = $folder; sid = $SidLocalService; rights = $rights; preExisting = [bool]$preExisting }
     }
     Save-Ledger $ledger
 }
@@ -583,7 +607,14 @@ switch ($Action) {
     'grant-roots' {
         Assert-DataDir
         if (-not $Roots) { Fail 'no -Roots given' 2 }
-        Grant-Roots @($Roots -split '\|' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+        # "Was -ReadOnlyRoots passed at all", not "is it empty": an empty value is a
+        # legitimate "every root is writable", while an absent parameter is an older
+        # caller that never had the notion, and must keep getting read-only.
+        $rightsKnown = $PSBoundParameters.ContainsKey('ReadOnlyRoots')
+        Grant-Roots `
+            @($Roots -split '\|' | ForEach-Object { $_.Trim() } | Where-Object { $_ }) `
+            @($ReadOnlyRoots -split '\|' | ForEach-Object { $_.Trim() } | Where-Object { $_ }) `
+            $rightsKnown
     }
 }
 
