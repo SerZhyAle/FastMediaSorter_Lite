@@ -104,6 +104,20 @@ Public Module HostingText
         Return Localization.T("Выдать службе доступ к общим папкам")
     End Function
 
+    ''' <summary>Asked at the moment a folder is chosen, not later in a console: the
+    ''' service account needs access the picker's own rights do not give it.</summary>
+    Public Function GrantNeededPrompt(folderList As String) As String
+        Return Localization.TF("Папки раздаёт служба Windows, и работает она под своей учётной записью - к этим папкам у неё пока нет доступа:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Выдать его сейчас? Windows спросит подтверждение.", folderList)
+    End Function
+
+    Public Function GrantDeclinedHint() As String
+        Return Localization.T("Без доступа служба не откроет эти папки на телефоне. Выдать его можно позже - «Управление хостингом..».")
+    End Function
+
+    Public Function GrantWorkingHint() As String
+        Return Localization.T("Выдаю службе доступ к папкам..")
+    End Function
+
     Public Function InstallServerButton() As String
         Return Localization.T("Установить серверную редакцию..")
     End Function

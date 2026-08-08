@@ -259,6 +259,48 @@ Partial Public NotInheritable Class Localization
             "سرور ایڈیشن الگ سے ڈاؤن لوڈ ہوتا ہے - ویب سائٹ سے یا winget کے ذریعے۔ اس کا انسٹالر ہوسٹ کلید، پاس ورڈ، فولڈر فہرست اور پورٹ منتقل کر دیتا ہے، اس لیے جُڑے ہوئے فون دوبارہ جوڑنے کی ضرورت نہیں۔ یہ پروگرام کبھی خود انسٹالر ڈاؤن لوڈ یا چلاتا نہیں۔",
             "服务器版需单独下载 - 从网站或通过 winget。其安装程序会迁移主机密钥、密码、文件夹列表和端口，因此已配对的手机无需重新配对。本程序绝不会自行下载或运行安装程序。")
 
+        Add("Папки раздаёт служба Windows, и работает она под своей учётной записью - к этим папкам у неё пока нет доступа:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Выдать его сейчас? Windows спросит подтверждение.",
+            "The folders are served by a Windows service, and it runs under an account of its own - which has no access to these folders yet:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Grant it now? Windows will ask for confirmation.",
+            "Теки роздає служба Windows, і працює вона під власним обліковим записом - до цих тек у неї поки немає доступу:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Видати його зараз? Windows запитає підтвердження.",
+            "Die Ordner werden von einem Windows-Dienst bereitgestellt, und der läuft unter einem eigenen Konto - auf diese Ordner hat es noch keinen Zugriff:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Jetzt vergeben? Windows fragt nach einer Bestätigung.",
+            "Le cartelle sono servite da un servizio di Windows, che gira con un account proprio - e a queste cartelle non ha ancora accesso:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Concederlo ora? Windows chiederà conferma.",
+            "Las carpetas las sirve un servicio de Windows, que se ejecuta con una cuenta propia y todavía no tiene acceso a estas carpetas:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "¿Concederlo ahora? Windows pedirá confirmación.",
+            "Les dossiers sont servis par un service Windows, qui s'exécute avec son propre compte - lequel n'a pas encore accès à ces dossiers :" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "L'accorder maintenant ? Windows demandera une confirmation.",
+            "As pastas são servidas por um serviço do Windows, que corre com uma conta própria - e ainda não tem acesso a estas pastas:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Conceder agora? O Windows vai pedir confirmação.",
+            "تقدّم المجلدات خدمة Windows تعمل بحساب خاص بها - وهي لا تملك بعد صلاحية الوصول إلى هذه المجلدات:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "هل تمنحها الآن؟ سيطلب Windows تأكيدًا.",
+            "फ़ोल्डर एक Windows सेवा साझा करती है, और वह अपने अलग खाते से चलती है - इन फ़ोल्डरों तक उसकी पहुँच अभी नहीं है:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "अभी दें? Windows पुष्टि माँगेगा।",
+            "ফোল্ডারগুলো একটি Windows সার্ভিস শেয়ার করে, আর সেটি নিজের আলাদা অ্যাকাউন্টে চলে - এই ফোল্ডারগুলোতে তার এখনও অনুমতি নেই:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "এখনই দেবেন? Windows নিশ্চিত করতে বলবে।",
+            "فولڈرز ایک Windows سروس فراہم کرتی ہے، اور وہ اپنے الگ اکاؤنٹ سے چلتی ہے - ان فولڈرز تک اسے ابھی رسائی نہیں ہے:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "ابھی دیں؟ Windows تصدیق مانگے گا۔",
+            "文件夹由一个 Windows 服务提供，它以自己的账户运行 - 目前它还无法访问这些文件夹：" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "现在授予吗？Windows 会请求确认。")
+
+        Add("Без доступа служба не откроет эти папки на телефоне. Выдать его можно позже - «Управление хостингом..».",
+            "Without access the service cannot open these folders on the phone. You can grant it later - «Manage hosting..».",
+            "Без доступу служба не відкриє ці теки на телефоні. Видати його можна пізніше - «Керування хостингом..».",
+            "Ohne Zugriff kann der Dienst diese Ordner auf dem Telefon nicht öffnen. Sie können ihn später vergeben - «Hosting verwalten..».",
+            "Senza accesso il servizio non può aprire queste cartelle sul telefono. Puoi concederlo più tardi - «Gestisci hosting..».",
+            "Sin acceso el servicio no puede abrir estas carpetas en el teléfono. Puede concederlo más tarde - «Gestionar el alojamiento..».",
+            "Sans accès, le service ne peut pas ouvrir ces dossiers sur le téléphone. Vous pouvez l'accorder plus tard - «Gérer l'hébergement..».",
+            "Sem acesso o serviço não consegue abrir estas pastas no telefone. Pode concedê-lo mais tarde - «Gerir o alojamento..».",
+            "بدون صلاحية الوصول لن تتمكن الخدمة من فتح هذه المجلدات على الهاتف. يمكنك منحها لاحقًا - «إدارة الاستضافة..».",
+            "पहुँच के बिना सेवा इन फ़ोल्डरों को फ़ोन पर नहीं खोल पाएगी। आप इसे बाद में दे सकते हैं - «होस्टिंग प्रबंधन..»।",
+            "অনুমতি ছাড়া সার্ভিসটি এই ফোল্ডারগুলো ফোনে খুলতে পারবে না। আপনি পরে দিতে পারেন - «হোস্টিং ব্যবস্থাপনা..»।",
+            "رسائی کے بغیر سروس یہ فولڈرز فون پر نہیں کھول سکے گی۔ آپ بعد میں دے سکتے ہیں - «ہوسٹنگ کا انتظام..»۔",
+            "没有访问权限，该服务无法在手机上打开这些文件夹。你可以稍后授予 - «管理托管..»。")
+
+        Add("Выдаю службе доступ к папкам..",
+            "Granting the service access to the folders..",
+            "Видаю службі доступ до тек..",
+            "Zugriff für den Dienst wird vergeben..",
+            "Concessione dell'accesso al servizio..",
+            "Concediendo acceso al servicio..",
+            "Attribution de l'accès au service..",
+            "A conceder acesso ao serviço..",
+            "جارٍ منح الخدمة صلاحية الوصول إلى المجلدات..",
+            "सेवा को फ़ोल्डरों तक पहुँच दी जा रही है..",
+            "সার্ভিসকে ফোল্ডারে অনুমতি দেওয়া হচ্ছে..",
+            "سروس کو فولڈرز تک رسائی دی جا رہی ہے..",
+            "正在为该服务授予文件夹访问权限..")
+
         Add("Служба работает от имени LOCAL SERVICE, а не от вашего. Каждой раздаваемой папке нужен доступ для этой учётной записи: чтение, а если папка раздаётся с записью - то и запись. Кнопка выдаёт их по текущему списку папок. Сетевые пути вида \\сервер\папка так работать не будут.",
             "The service runs as LOCAL SERVICE, not as you. Every served folder needs access for that account: read, plus write when the folder is shared writable. The button grants that from the current folder list. UNC paths such as \\server\share will not work this way.",
             "Служба працює від імені LOCAL SERVICE, а не від вашого. Кожній роздаваній папці потрібен доступ для цього облікового запису: читання, а якщо папка роздається із записом - то й запис. Кнопка видає їх за поточним списком папок. Мережеві шляхи виду \\сервер\папка так працювати не будуть.",

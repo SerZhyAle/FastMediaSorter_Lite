@@ -988,6 +988,54 @@ Public NotInheritable Class MainWindow
 
     ' --- server ops -------------------------------------------------------------
 
+    ''' <summary>
+    ''' Gives the service account access to the folders that are about to be served, at
+    ''' the moment they are chosen - which is the only moment a user has any reason to
+    ''' think about it.
+    '''
+    ''' In Server mode the worker runs as LOCAL SERVICE, so a folder the person picking
+    ''' it can obviously read may be invisible to the thing that actually serves it.
+    ''' That grant used to be a button in the Hosting console, which is a fair repair
+    ''' path and a terrible primary one: nothing about adding a folder suggests you must
+    ''' then go and find it, and until you did, the phone got an empty or unopenable
+    ''' folder with no explanation anywhere.
+    '''
+    ''' No-op unless something is genuinely missing, so the common case adds no prompt:
+    ''' <see cref="FolderAccess.RootsNeedingGrant"/> reads the ACLs without elevation
+    ''' first, and only a real gap raises the one UAC prompt. Declining is allowed and
+    ''' says what it costs - the folders stay in the list and the console can still fix
+    ''' them later.
+    ''' </summary>
+    Private Async Function EnsureServiceAccessAsync(folders As List(Of ShareFolder)) As Task
+        Dim needy As List(Of ShareFolder) = FolderAccess.RootsNeedingGrant(folders)
+        If needy.Count = 0 Then Return
+        If Not ServiceControl.CanManage() Then Return
+
+        Dim names As New List(Of String)()
+        For Each r As ShareFolder In needy
+            names.Add(If(r.hostPath, ""))
+        Next
+        Dim question As String = HostingText.GrantNeededPrompt(String.Join(Environment.NewLine, names))
+        If MessageBox.Show(Me, question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) <> DialogResult.OK Then
+            SetHint(HostingText.GrantDeclinedHint())
+            Return
+        End If
+
+        SetHint(HostingText.GrantWorkingHint())
+        Dim all As New List(Of String)()
+        Dim readOnlyOnes As New List(Of String)()
+        For Each r As ShareFolder In folders
+            Dim host As String = If(r.hostPath, "")
+            If host.Length = 0 Then Continue For
+            all.Add(host)
+            If r.readOnly Then readOnlyOnes.Add(host)
+        Next
+
+        Dim res As ServiceControl.ManageResult =
+            Await Task.Run(Function() ServiceControl.Manage(ServiceControl.ManageAction.GrantRoots, all, readOnlyOnes))
+        If res <> ServiceControl.ManageResult.Succeeded Then SetHint(HostingText.ManageResultLine(res))
+    End Function
+
     Private Async Function ApplySharedFoldersAsync() As Task
         CancelReachabilityPoll()
         SetBusy(True, Localization.T("Обновляю список папок.."))
@@ -996,6 +1044,7 @@ Public NotInheritable Class MainWindow
             Await ShareController.StopServerAsync()
             _status = Await ShareController.GetStatusAsync()
         Else
+            Await EnsureServiceAccessAsync(folders)
             Dim r As ShareController.ShareResult = Await ShareController.ShareFoldersAsync(folders)
             _status = r.Status
         End If
@@ -1025,6 +1074,7 @@ Public NotInheritable Class MainWindow
             SetHint(Localization.T("Сначала добавьте папку и отметьте её галочкой."))
             Return
         End If
+        Await EnsureServiceAccessAsync(folders)
         SetHint(Localization.T("Включаю раздачу.."))
         Dim res As ShareController.ShareResult = Await ShareController.ShareFoldersAsync(folders)
         _status = res.Status

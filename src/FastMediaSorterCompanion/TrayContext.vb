@@ -131,10 +131,16 @@ Friend NotInheritable Class TrayContext
         UiLanguage.AddLanguageItems(miLang.DropDownItems)
         menu.Items.Add(miLang)
 
-        ' Suite cross-link: open the LITE viewer.
+        ' Suite cross-link: open the LITE viewer. Hidden when there is no viewer to
+        ' open - the Server edition installs the Share Manager alone, so next to THAT
+        ' exe there is none. Deciding on Opening rather than here: the menu is built
+        ' once, and a viewer installed later would otherwise stay unreachable until
+        ' the next restart. A menu item that silently does nothing is worse than one
+        ' that is not there.
         Dim miViewer As New ToolStripMenuItem(Localization.T("Открыть Fast Media Sorter"))
         AddHandler miViewer.Click, Sub() LaunchViewer()
         menu.Items.Add(miViewer)
+        AddHandler menu.Opening, Sub() miViewer.Visible = ViewerExePath().Length > 0
 
         Dim miExit As New ToolStripMenuItem(Localization.T("Выход"))
         AddHandler miExit.Click, Sub() ExitApplication()
@@ -378,11 +384,61 @@ Friend NotInheritable Class TrayContext
         End If
     End Sub
 
+    ''' <summary>
+    ''' The viewer exe to open from the tray, or "" when this machine has none.
+    '''
+    ''' Next to us FIRST - that is the User edition, where both programs share one
+    ''' folder. The Server edition installs the Share Manager on its own, into its own
+    ''' directory, so there is no viewer beside it: the lookup then falls back to the
+    ''' User edition's recorded install location. Without that fallback the tray item
+    ''' did nothing at all on a Server machine that has the viewer installed normally -
+    ''' silently, because the old code just skipped a missing file.
+    ''' </summary>
+    Private Function ViewerExePath() As String
+        Try
+            Dim beside As String = FirstViewerIn(IO.Path.GetDirectoryName(Application.ExecutablePath))
+            If beside.Length > 0 Then Return beside
+        Catch
+        End Try
+
+        ' The User edition's frozen Inno AppId - the same key its own installer writes
+        ' and the Server installer reads to detect it. Per-user installs land in HKCU,
+        ' machine-wide ones in HKLM (and under Wow6432Node on some upgrade paths).
+        Const userEditionKey As String = "Software\Microsoft\Windows\CurrentVersion\Uninstall\{7371E7F1-B8A8-4786-8173-5F5B2B6E6AC9}_is1"
+        For Each hive As Microsoft.Win32.RegistryKey In {Microsoft.Win32.Registry.CurrentUser, Microsoft.Win32.Registry.LocalMachine}
+            For Each sub_key As String In {userEditionKey, userEditionKey.Replace("Software\", "Software\WOW6432Node\")}
+                Try
+                    Using k As Microsoft.Win32.RegistryKey = hive.OpenSubKey(sub_key, False)
+                        If k Is Nothing Then Continue For
+                        Dim loc As String = TryCast(k.GetValue("InstallLocation"), String)
+                        If String.IsNullOrWhiteSpace(loc) Then Continue For
+                        Dim found As String = FirstViewerIn(loc.Trim().TrimEnd(IO.Path.DirectorySeparatorChar))
+                        If found.Length > 0 Then Return found
+                    End Using
+                Catch
+                End Try
+            Next
+        Next
+        Return ""
+    End Function
+
+    ''' <summary>The mainline exe in that folder, else its 32-bit sibling, else "".</summary>
+    Private Function FirstViewerIn(dir As String) As String
+        If String.IsNullOrEmpty(dir) Then Return ""
+        For Each name As String In {"FastMediaSorter_LITE.exe", "FastMediaSorter_x86.exe"}
+            Try
+                Dim candidate As String = IO.Path.Combine(dir, name)
+                If IO.File.Exists(candidate) Then Return candidate
+            Catch
+            End Try
+        Next
+        Return ""
+    End Function
+
     Private Sub LaunchViewer()
         Try
-            Dim dir As String = IO.Path.GetDirectoryName(Application.ExecutablePath)
-            Dim exe As String = IO.Path.Combine(dir, "FastMediaSorter_LITE.exe")
-            If IO.File.Exists(exe) Then
+            Dim exe As String = ViewerExePath()
+            If exe.Length > 0 Then
                 Process.Start(New ProcessStartInfo(exe) With {.UseShellExecute = True})
             End If
         Catch

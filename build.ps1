@@ -292,9 +292,28 @@ function Deploy-ModernExe([string]$TargetDir) {
 
 # A running viewer locks its own exe, so replacing it needs it stopped first.
 # Both names are checked: the two exes are one app (shared mutex/settings).
+#
+# Only a viewer running from somewhere this build WRITES is stopped. The user's
+# installed copy under Program Files is not ours to close: this build never touches
+# that path, so killing it buys nothing and takes away the window they were using -
+# which is exactly what it did until now, by matching on process name alone.
 function Stop-Viewers {
+    $ownedDirs = @($SolutionDir) + @($Destinations)
     foreach ($name in @("FastMediaSorter_LITE", "FastMediaSorter_x86")) {
         foreach ($p in (Get-Process -Name $name -ErrorAction SilentlyContinue)) {
+            $path = $null
+            try { $path = $p.Path } catch { }   # a process we may not query is not ours
+            if (-not $path) { continue }
+            $ours = $false
+            foreach ($dir in $ownedDirs) {
+                if ($dir -and $path.StartsWith((Join-Path $dir ''), [StringComparison]::OrdinalIgnoreCase)) {
+                    $ours = $true; break
+                }
+            }
+            if (-not $ours) {
+                Write-Host "Leaving $name alone - it runs from $path, which this build does not write."
+                continue
+            }
             Write-Host "Stopping running $name so its exe can be replaced.."
             try { $p.Kill(); $p.WaitForExit(3000) } catch { }
         }
