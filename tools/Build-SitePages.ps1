@@ -147,6 +147,7 @@ $cards
       <a class="btn" href="https://apps.microsoft.com/search?query=FastMediaSorter">$(Esc $e.dlStore)</a>
     </div>
     <p><a href="$BaseUrl/how-to-viewer.html">$(Esc $e.guide)</a></p>
+    <p><a href="$BaseUrl/server.html">$(Esc $e.serverLink)</a></p>
 $note  </section>
 
   <footer>

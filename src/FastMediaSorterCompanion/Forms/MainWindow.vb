@@ -54,6 +54,8 @@ Public NotInheritable Class MainWindow
     Private chkOpenOnStart As CheckBox
     Private numMaxConns As NumericUpDown
     Private lblState As Label
+    Private lblAccessState As Label
+    Private lblAccessNext As Label
     Private lnkRouter As LinkLabel
     Private lblHint As Label
     Private pnlStats As TableLayoutPanel
@@ -61,6 +63,8 @@ Public NotInheritable Class MainWindow
     Private lblStatConns As Label
     Private lblStatFiles As Label
     Private _statsTimer As Timer   ' periodic status refresh so the usage block stays live while the window is open
+    Private lblHosting As Label
+    Private btnHosting As Button
     Private lnkAndroid As LinkLabel
     Private lnkSiteGuide As LinkLabel
     Private lnkRouterSearch As LinkLabel
@@ -175,6 +179,17 @@ Public NotInheritable Class MainWindow
         AddServerRow(grid, Localization.T("Пароль:"), AddressOf PasswordValue, AddressOf PasswordValue, False)
         AddRow(outer, grid)
 
+        ' The grid above is ambiguous on its own: a running share prints the LAN address and
+        ' the internet address one under the other, which reads as "both work" even when the
+        ' router was never configured. These two lines say what is actually reachable right
+        ' now, and then name the ONE control for each of the two goals (a QR code for home
+        ' use, or the router setup below) - so the state carries its own next step.
+        lblAccessState = New Label With {.AutoSize = True, .MaximumSize = New Size(340, 0), .Margin = New Padding(0, 10, 0, 2)}
+        AddRow(outer, lblAccessState)
+        lblAccessNext = New Label With {.AutoSize = True, .MaximumSize = New Size(340, 0),
+            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 0, 0, 2)}
+        AddRow(outer, lblAccessNext)
+
         btnTest = New Button With {.Dock = DockStyle.Fill, .Height = 34, .Margin = New Padding(0, 8, 0, 2),
             .Text = Localization.T("Проверить доступ из интернета"), .Visible = False}
         AddHandler btnTest.Click, AddressOf OnTestClicked
@@ -204,6 +219,18 @@ Public NotInheritable Class MainWindow
         AddHandler chkOpenOnStart.CheckedChanged, AddressOf OnOpenOnStartChanged
         AddRow(outer, chkOpenOnStart)
         toolTip.SetToolTip(chkOpenOnStart, Localization.T("Без галочки любой запуск программы оставляет только значок рядом с часами - окно открывается двойным щелчком по нему. С галочкой окно открывается сразу."))
+
+        ' --- hosting: who actually keeps the folders reachable ------------------
+        ' Right under the two autostart options on purpose - that is where the user is
+        ' already asking "will this still be up tomorrow?", and in Server mode the
+        ' honest answer is that neither checkbox above decides it (the service does).
+        lblHosting = New Label With {.AutoSize = True, .Margin = New Padding(0, 12, 0, 2),
+            .MaximumSize = New Size(340, 0), .Font = New Font(Me.Font, FontStyle.Bold)}
+        AddRow(outer, lblHosting)
+        btnHosting = New Button With {.Dock = DockStyle.Fill, .Height = 30, .Margin = New Padding(0, 2, 0, 4),
+            .Text = HostingText.ManageButton()}
+        AddHandler btnHosting.Click, AddressOf OnHostingClicked
+        AddRow(outer, btnHosting)
 
         ' Max simultaneous connections - the DoS-resilience knob (2026-07-15 review).
         ' Default 10; the user may set 1..99999 (their server, their call).
@@ -653,7 +680,14 @@ Public NotInheritable Class MainWindow
         SetBusy(True, Localization.T("Запуск компаньона.."))
         Dim st As WorkerStatus = Await ShareController.EnsureRunningReconciledAsync()
         If st Is Nothing Then
-            SetHint(Localization.T("Не удалось связаться с компаньоном."))
+            ' In Server mode "cannot reach the companion" is the wrong diagnosis and
+            ' the wrong advice: nothing here may spawn a worker, so the actionable
+            ' fact is what the SERVICE is doing - and the fix lives one button away.
+            If ServerFeatures.IsSystemServiceHost() Then
+                SetHint(HostingText.ServiceStateLine(ServiceControl.QueryState()))
+            Else
+                SetHint(Localization.T("Не удалось связаться с компаньоном."))
+            End If
             SetBusy(False)
             Return
         End If
@@ -682,6 +716,12 @@ Public NotInheritable Class MainWindow
             End If
             chkOpenOnStart.Checked = _settings.OpenWindowOnStartup
             numMaxConns.Value = ShareSettings.ClampConnections(_settings.MaxConnections)
+            UpdateHostingBlock()
+            If ServerFeatures.IsSystemServiceHost() Then
+                ' Autostart still governs whether the CONSOLE appears, but no longer
+                ' whether the folders are reachable - say so where the confusion is.
+                toolTip.SetToolTip(chkAutostart, HostingText.Intro(ServerFeatures.ServerHostMode.SystemService))
+            End If
         Catch
         Finally
             _loading = prev
@@ -731,7 +771,7 @@ Public NotInheritable Class MainWindow
 
     ' --- internet test ----------------------------------------------------------
 
-    Private Async Sub OnTestClicked(sender As Object, e As EventArgs)
+    Private Sub OnTestClicked(sender As Object, e As EventArgs)
         If _testing Then Return
         Dim st As WorkerStatus = _status
         Dim reach As WorkerReachability = If(st IsNot Nothing, st.Reachability, Nothing)
@@ -742,33 +782,22 @@ Public NotInheritable Class MainWindow
             SetHint(Localization.T("Адрес из интернета ещё не определён."))
             Return
         End If
+        ' The answer goes into a modal, not into the bottom status strip: the button lives
+        ' in the right-hand column and the strip is the opposite corner of the window, so
+        ' the result read as an unrelated line rather than as the answer to this click.
+        ' The strip still keeps the one-line verdict afterwards, as a lasting trace.
         _testing = True
         btnTest.Enabled = False
-        SetHint(Localization.TF("Проверка {0} ..", host & ":" & port.ToString()))
         Try
-            Dim res As SftpProbe.ProbeResult = Await SftpProbe.ProbeAsync(host, port)
-            SetHint(DescribeProbe(res, host, port))
-        Catch
-            SetHint(Localization.T("Не удалось выполнить проверку."))
+            Using dlg As New Share_Access_Test_Form(host, port)
+                dlg.ShowDialog(Me)
+                If dlg.ResultLine.Length > 0 Then SetHint(dlg.ResultLine)
+            End Using
         Finally
             _testing = False
             RefreshTestButton()
         End Try
     End Sub
-
-    Private Shared Function DescribeProbe(res As SftpProbe.ProbeResult, host As String, port As Integer) As String
-        Dim ep As String = host & ":" & port.ToString()
-        Select Case res
-            Case SftpProbe.ProbeResult.SshOk
-                Return Localization.TF("✓ Доступ из интернета работает: {0}", ep)
-            Case SftpProbe.ProbeResult.PortOpen
-                Return Localization.TF("Порт открыт, но SFTP не ответил: {0}", ep)
-            Case SftpProbe.ProbeResult.Timeout, SftpProbe.ProbeResult.Refused
-                Return Localization.T("✗ С этого ПК не отвечает. Роутер может не пускать на свой адрес изнутри - проверьте с телефона по мобильной сети.")
-            Case Else
-                Return Localization.T("Адрес некорректен.")
-        End Select
-    End Function
 
     Private Sub RefreshTestButton()
         Dim st As WorkerStatus = _status
@@ -1024,6 +1053,7 @@ Public NotInheritable Class MainWindow
             sr.Copy.Visible = show AndAlso Not String.IsNullOrEmpty(sr.CopyFunc())
         Next
 
+        UpdateAccessSummary(running)
         RefreshTestButton()
         lnkRouter.Visible = running
         If running Then SetRouterLink()
@@ -1035,8 +1065,74 @@ Public NotInheritable Class MainWindow
         If running AndAlso Not _routerRequested Then Dim t As Task = DetectRouterAsync()
 
         UpdateStatsBlock()
+        UpdateHostingBlock()
         RaiseEvent ServerStateChanged(running)
     End Sub
+
+    ''' <summary>Keeps the hosting line honest after every status refresh: the mode can
+    ''' change under the window (an elevated install/remove ran, or the service was
+    ''' stopped from services.msc), and a stale "Windows service" line would promise
+    ''' availability nobody is providing.</summary>
+    Private Sub UpdateHostingBlock()
+        If lblHosting Is Nothing Then Return
+        Dim line As String = HostingText.HostModeLine(ServerFeatures.HostMode())
+        lblHosting.Text = line
+        lblHosting.Visible = line.Length > 0
+    End Sub
+
+    ''' <summary>Opens the Hosting console. Re-reads status afterwards only when an
+    ''' elevated action actually changed the machine - the service may have just been
+    ''' installed, started or removed under us.</summary>
+    Private Async Sub OnHostingClicked(sender As Object, e As EventArgs)
+        Dim changed As Boolean
+        Using dlg As New Share_Hosting_Form(_status)
+            dlg.ShowDialog(Me)
+            changed = dlg.Changed
+        End Using
+        UpdateHostingBlock()
+        If Not changed Then Return
+        SetBusy(True, Localization.T("Минутку.."))
+        _status = Await ShareController.GetStatusAsync()
+        ApplyStatusToUi()
+        SetBusy(False)
+    End Sub
+
+    ''' <summary>Fills the "what works right now" + "what to do next" pair under the address
+    ''' grid. Hidden entirely while nothing is being served - <c>lblState</c> already says so,
+    ''' and advice about a share that is off would only be noise.</summary>
+    Private Sub UpdateAccessSummary(running As Boolean)
+        If Not running Then
+            lblAccessState.Visible = False
+            lblAccessNext.Visible = False
+            Return
+        End If
+        Dim reach As WorkerReachability = If(_status IsNot Nothing, _status.Reachability, Nothing)
+        ' The port the outside world would knock on - the mapped external one when a mapping
+        ' exists, else the listen port (which is what a manual forward is usually set to).
+        Dim port As Integer = 0
+        If _status IsNot Nothing Then
+            port = If(reach IsNot Nothing AndAlso reach.ExternalPort > 0, reach.ExternalPort, _status.ListenPort)
+        End If
+        Dim state As String = ShareText.AccessStateLine(reach, port)
+        Dim nextStep As String = ShareText.AccessNextStepLine(reach)
+        lblAccessState.Text = state
+        lblAccessState.ForeColor = AccessStateColor(reach)
+        lblAccessState.Visible = state.Length > 0
+        lblAccessNext.Text = nextStep
+        lblAccessNext.Visible = nextStep.Length > 0
+    End Sub
+
+    ''' <summary>Colour for the state line. Green ONLY once an outside check actually confirmed
+    ''' the internet path, amber when such a check ran and failed (something the user set up is
+    ''' broken), plain text otherwise: LAN-only is a normal, perfectly usable state and must not
+    ''' be painted as a problem just because the internet half is unproven.</summary>
+    Private Shared Function AccessStateColor(reach As WorkerReachability) As Color
+        If reach Is Nothing Then Return SystemColors.GrayText
+        If reach.ExternalPortChecked Then
+            Return If(reach.ExternalPortOpen, Color.ForestGreen, Color.FromArgb(176, 96, 0))
+        End If
+        Return SystemColors.ControlText
+    End Function
 
     ' --- package wizard + viewer launch ----------------------------------------
 

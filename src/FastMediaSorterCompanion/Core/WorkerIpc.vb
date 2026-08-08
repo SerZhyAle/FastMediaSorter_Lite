@@ -53,12 +53,26 @@ Public NotInheritable Class WorkerIpc
     ''' as Companion sat in the tray. Every awaiting UI flow simply never resumed.
     ''' </summary>
     Public Shared Function Send(request As WorkerRequest, Optional timeoutMs As Integer = 5000) As WorkerResponse
+        Return Send(request, timeoutMs, PipeName)
+    End Function
+
+    ''' <summary>
+    ''' The exchange against an explicitly named pipe. Product code never passes anything but
+    ''' <see cref="PipeName"/> - the parameter exists so the timeout tests can drive a pipe of
+    ''' their own. They must: the frozen pipe is a machine-wide singleton, so on any machine
+    ''' where sharing is actually running - a Companion in the tray, or the Server edition's
+    ''' FastMediaSorterCompanionSFTP service - "nothing is listening" and "the server accepts
+    ''' and then says nothing" are both unreachable states, the real worker answers, and the
+    ''' tests fail for a reason that has nothing to do with the code under test.
+    ''' </summary>
+    Public Shared Function Send(request As WorkerRequest, timeoutMs As Integer, pipeName As String) As WorkerResponse
         If request Is Nothing Then Throw New ArgumentNullException(NameOf(request))
+        If String.IsNullOrEmpty(pipeName) Then Throw New ArgumentNullException(NameOf(pipeName))
         request.schemaVersion = SchemaVersion
 
         Using deadline As New CancellationTokenSource(Math.Max(250, timeoutMs))
             Try
-                Return SendAsync(request, timeoutMs, deadline.Token).GetAwaiter().GetResult()
+                Return SendAsync(request, timeoutMs, pipeName, deadline.Token).GetAwaiter().GetResult()
             Catch ex As OperationCanceledException
                 ' Cancellation here only ever means our own deadline.
                 Throw New TimeoutException("Companion worker did not answer within " & timeoutMs.ToString() & " ms.", ex)
@@ -70,8 +84,9 @@ Public NotInheritable Class WorkerIpc
     ''' interrupt it - a synchronous pipe Read cannot be cancelled.</summary>
     Private Shared Async Function SendAsync(request As WorkerRequest,
                                             timeoutMs As Integer,
+                                            pipeName As String,
                                             ct As CancellationToken) As Task(Of WorkerResponse)
-        Using pipe As New NamedPipeClientStream(".", PipeName, PipeDirection.InOut, PipeOptions.Asynchronous)
+        Using pipe As New NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous)
             Await pipe.ConnectAsync(timeoutMs, ct).ConfigureAwait(False)
 
             Dim payload As Byte() = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request, JsonOpts))

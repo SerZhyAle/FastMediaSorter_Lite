@@ -131,8 +131,8 @@ Partial Public Class Main_Form
                 ' and zip files too, and that number was then written over
                 ' total_File_Count - so "1 из 150" became "2 из 100" on the next flip,
                 ' and End walked off the end of the real list.
-                Dim background_Total_File_Count As Integer = My.Computer.FileSystem.GetDirectoryInfo(request.FolderPath).
-                    EnumerateFiles("*", GetConfiguredSearchOption()).Count(Function(f) all_Supported_Extensions.Contains(f.Extension.ToLower()))
+                Dim background_Total_File_Count As Integer = EnumerateConfiguredFiles(request.FolderPath).
+                    Count(Function(f) all_Supported_Extensions.Contains(f.Extension.ToLower()))
 
                 Dim folder_File_Count_State As New Dictionary(Of String, String)
                 folder_File_Count_State("totalFilesCountText") = background_Total_File_Count.ToString
@@ -344,8 +344,7 @@ Partial Public Class Main_Form
         is_Read_Error = False
 
         Try
-            Dim current_Directory_Info As DirectoryInfo = My.Computer.FileSystem.GetDirectoryInfo(Current_Folder_Path)
-            Dim file_Entry_List As List(Of FileEntry) = current_Directory_Info.EnumerateFiles("*", GetConfiguredSearchOption()) _
+            Dim file_Entry_List As List(Of FileEntry) = EnumerateConfiguredFiles(Current_Folder_Path) _
             .Where(Function(f) all_Supported_Extensions.Contains(f.Extension.ToLower())) _
             .Select(Function(f) New FileEntry With {
                 .FilePath = f.FullName,
@@ -404,6 +403,47 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1110: Error reading files: " & ex.Message)
             Return Nothing
         End Try
+    End Function
+
+    ''' <summary>Recursive scans deliberately do not use AllDirectories: Windows lets a
+    ''' junction or symlink point back to an ancestor (or outside the selected tree),
+    ''' and blindly enumerating it can loop forever.  Reparse directories are therefore
+    ''' leaves.  Inaccessible children are skipped just like Explorer's normal scan.</summary>
+    Private Function EnumerateConfiguredFiles(root As String) As IEnumerable(Of FileInfo)
+        Dim result As New List(Of FileInfo)()
+        If String.IsNullOrEmpty(root) OrElse Not Directory.Exists(root) Then Return result
+#If NETFRAMEWORK Then
+        Dim includeSubfolders As Boolean = False
+#Else
+        Dim includeSubfolders As Boolean = modern_Preferences IsNot Nothing AndAlso modern_Preferences.IncludeSubfolders
+#End If
+        If Not includeSubfolders Then
+            Try
+                result.AddRange(New DirectoryInfo(root).EnumerateFiles("*", SearchOption.TopDirectoryOnly))
+            Catch
+            End Try
+            Return result
+        End If
+
+        Dim pending As New Stack(Of String)()
+        pending.Push(root)
+        While pending.Count > 0
+            Dim directory As String = pending.Pop()
+            Try
+                Dim info As New DirectoryInfo(directory)
+                If (info.Attributes And FileAttributes.ReparsePoint) <> 0 AndAlso
+                   Not String.Equals(directory, root, StringComparison.OrdinalIgnoreCase) Then Continue While
+                result.AddRange(info.EnumerateFiles("*", SearchOption.TopDirectoryOnly))
+                For Each child As DirectoryInfo In info.EnumerateDirectories("*", SearchOption.TopDirectoryOnly)
+                    If (child.Attributes And FileAttributes.ReparsePoint) = 0 Then pending.Push(child.FullName)
+                Next
+            Catch ex As UnauthorizedAccessException
+                Debug.WriteLine("Skipping inaccessible directory: " & directory)
+            Catch ex As IOException
+                Debug.WriteLine("Skipping unreadable directory: " & directory)
+            End Try
+        End While
+        Return result
     End Function
 
 End Class

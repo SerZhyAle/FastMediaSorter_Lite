@@ -46,6 +46,12 @@ Partial Public Class Main_Form
         ''' nothing from the list, so there is no list damage to repair - just a view that
         ''' has moved on from a file whose copy did not happen.</summary>
         Public Property AdvancedPastSource As Boolean
+        ''' <summary>Navigation is intentionally deferred until the worker reports a
+        ''' successful copy/move. A failed or skipped operation must leave the view
+        ''' where it was (SETTINGS_EXPANSION §3.2).</summary>
+        Public Property NavigateAfterSuccess As Boolean
+        Public Property CloseIfEmptyAfterSuccess As Boolean
+        Public Property ReplaceExisting As Boolean
     End Class
 
     Private Sub InitializeFileOperationWorker()
@@ -71,9 +77,9 @@ Partial Public Class Main_Form
     Private Shared Sub RunFileOp(op As FileOp)
         Select Case op.Kind
             Case FileOpKind.Copy
-                CopyFile(op.Source, op.Destination)
+                CopyFile(op.Source, op.Destination, op.ReplaceExisting)
             Case FileOpKind.Move
-                MoveFile(op.Source, op.Destination)
+                MoveFile(op.Source, op.Destination, op.ReplaceExisting)
             Case FileOpKind.Delete, FileOpKind.DeleteUndo
                 DeleteFile(op.Source)
             Case FileOpKind.MoveUndo
@@ -286,6 +292,51 @@ Partial Public Class Main_Form
         ' fail honestly instead of looping.
         Return dest_Path
     End Function
+
+    Private Enum CollisionResolution
+        Proceed
+        Skip
+        Cancel
+    End Enum
+
+    ''' <summary>Resolves the user's configured policy before an operation reaches the
+    ''' queue. In particular, Skip and Cancel never mutate the source or its list entry.</summary>
+    Private Function ResolveConfiguredCollision(ByRef destination As String, ByRef statusNote As String,
+                                                ByRef replaceExisting As Boolean) As CollisionResolution
+        If Not File.Exists(destination) Then Return CollisionResolution.Proceed
+
+        Dim policy As String = If(modern_Preferences Is Nothing, "ask", modern_Preferences.NameCollisionPolicy)
+        Select Case policy
+            Case "skip"
+                lbl_Status.Text = Localization.T("Файл с таким именем уже есть: операция пропущена")
+                Return CollisionResolution.Skip
+            Case "rename"
+                Dim original As String = Path.GetFileName(destination)
+                destination = ResolveDestinationCollision(destination)
+                statusNote = Localization.TF(" (имя занято, сохранён как {0})", Path.GetFileName(destination))
+                Return CollisionResolution.Proceed
+            Case "replace"
+                replaceExisting = True
+                statusNote = Localization.T(" (существующий файл будет заменён)")
+                Return CollisionResolution.Proceed
+            Case Else
+                ' WinForms' stock three-button prompt maps cleanly to the safe choices:
+                ' Yes = replace, No = save both, Cancel = do nothing.  The target and
+                ' source paths are named, so this is not a blind overwrite question.
+                Dim answer As DialogResult = MessageBox.Show(Me,
+                    Localization.TF("В папке назначения уже есть файл {0}.\r\nДа — заменить; Нет — сохранить оба; Отмена — пропустить.", Path.GetFileName(destination)),
+                    Localization.T("Совпадение имён"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning)
+                If answer = DialogResult.Cancel Then Return CollisionResolution.Cancel
+                If answer = DialogResult.No Then
+                    destination = ResolveDestinationCollision(destination)
+                    statusNote = Localization.TF(" (имя занято, сохранён как {0})", Path.GetFileName(destination))
+                Else
+                    replaceExisting = True
+                    statusNote = Localization.T(" (существующий файл будет заменён)")
+                End If
+                Return CollisionResolution.Proceed
+        End Select
+    End Function
 #End If
 
     ''' <summary>Puts file_Path back at a clamped position and points the index at it.
@@ -439,16 +490,14 @@ Partial Public Class Main_Form
             ' Said out loud when the name had to change - the destination path in the
             ' status line is long, and a quiet "(2)" inside it is easy to miss.
             Dim collision_Note As String = ""
+            ' Declared on BOTH runtimes - it is read unconditionally by the FileOp below.
+            ' Only the configured collision policy that can set it is mainline-only
+            ' (ResolveConfiguredCollision lives inside the #If Not NETFRAMEWORK block
+            ' above), so net48 keeps its historical behavior: never replace.
+            Dim replace_Existing As Boolean = False
 #If Not NETFRAMEWORK Then
-            ' Same name already there? Take the next free one instead of failing. Done
-            ' here, before anything records the destination, so the operation and the
-            ' undo history agree on what was actually created.
-            Dim intended_Name As String = Path.GetFileName(destination_Folder_Full_Path)
-            destination_Folder_Full_Path = ResolveDestinationCollision(destination_Folder_Full_Path)
-            Dim final_Name As String = Path.GetFileName(destination_Folder_Full_Path)
-            If Not String.Equals(intended_Name, final_Name, StringComparison.Ordinal) Then
-                collision_Note = Localization.TF(" (имя занято, сохранён как {0})", final_Name)
-            End If
+            Dim collision As CollisionResolution = ResolveConfiguredCollision(destination_Folder_Full_Path, collision_Note, replace_Existing)
+            If collision <> CollisionResolution.Proceed Then Return
 #End If
 
             history_Source_File_Name = Current_File_Name
@@ -461,8 +510,15 @@ Partial Public Class Main_Form
                 .Source = Current_File_Name,
                 .Destination = destination_Folder_Full_Path,
                 .SlotKey = move_Slot_Key,
-                .StatusNote = collision_Note
+                .StatusNote = collision_Note,
+                .ReplaceExisting = replace_Existing
             }
+
+#If Not NETFRAMEWORK Then
+            Dim afterOperation As String = If(modern_Preferences Is Nothing, "next", modern_Preferences.AfterFileOperation)
+            op.NavigateAfterSuccess = afterOperation <> "stay"
+            op.CloseIfEmptyAfterSuccess = afterOperation = "closeIfEmpty"
+#End If
 
             If is_Copy Then
                 lbl_Status.Text = Localization.TF("!Ждите.. Файл копируется ({0}) в каталог {1}", move_Slot_Key, destination_Folder_Full_Path)
@@ -471,7 +527,7 @@ Partial Public Class Main_Form
                     QueueFileOp(op)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1690: file is copied ASYNC to " & destination_Folder_Full_Path)
                 Else
-                    CopyFile(op.Source, op.Destination)
+                    CopyFile(op.Source, op.Destination, op.ReplaceExisting)
                     lbl_Status.Text = Localization.TF("файл скопирован ({0}) в каталог {1}", move_Slot_Key, destination_Folder_Full_Path) & collision_Note
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1715: file is copied to " & destination_Folder_Full_Path)
                 End If
@@ -483,8 +539,9 @@ Partial Public Class Main_Form
                 ' picture into several folders. net48 always advances, as it always has.
                 Dim advance_After_Copy As Boolean = True
 #If Not NETFRAMEWORK Then
-                advance_After_Copy = AdvanceAfterCopy()
-                op.AdvancedPastSource = advance_After_Copy
+                ' The expanded setting is the single rule for both Copy and Move.
+                ' Do not navigate optimistically: a failed copy is still the current file.
+                advance_After_Copy = False
 #End If
                 If advance_After_Copy Then ReadShowMediaFile(Mode_Next)
             Else
@@ -501,13 +558,15 @@ Partial Public Class Main_Form
                     op.ListIndex = RemoveCurrentFileFromList(op.Source)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1705: file is moved ASYNC to " & destination_Folder_Full_Path)
                 Else
-                    MoveFile(op.Source, op.Destination)
+                    MoveFile(op.Source, op.Destination, op.ReplaceExisting)
                     op.ListIndex = RemoveCurrentFileFromList(op.Source)
                     lbl_Status.Text = Localization.TF("файл перенесён ({0}) в каталог {1}", move_Slot_Key, destination_Folder_Full_Path) & collision_Note
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1729: file is moved to " & destination_Folder_Full_Path)
                 End If
 
-                ReadShowMediaFile(Mode_SetFile)
+                If Not use_Worker Then
+                    If op.NavigateAfterSuccess Then ReadShowMediaFile(Mode_SetFile)
+                End If
             End If
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1730: E014 " & ex.Message)
@@ -687,6 +746,21 @@ Partial Public Class Main_Form
                     ' undo time found nothing at that path yet).
                     ReadShowMediaFile(Mode_SetFile)
             End Select
+
+#If Not NETFRAMEWORK Then
+            If (op.Kind = FileOpKind.Copy OrElse op.Kind = FileOpKind.Move) AndAlso op.NavigateAfterSuccess Then
+                ' A queued operation is the authoritative outcome.  Only now may the
+                ' selection advance; Skip/Cancel/failure never reaches this branch.
+                If op.CloseIfEmptyAfterSuccess AndAlso total_File_Count <= 0 Then
+                    Current_File_Name = ""
+                    Current_Image_Path = ""
+                    lbl_File_Number.Text = "0"
+                    lbl_Status.Text &= Localization.T("; файлов больше нет")
+                Else
+                    ReadShowMediaFile(If(op.Kind = FileOpKind.Copy, Mode_Next, Mode_SetFile))
+                End If
+            End If
+#End If
         Else
             lbl_Status.Text = Localization.TF("Ошибка операции: {0}", failure.Message)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2230: file operation ERR " & failure.Message)

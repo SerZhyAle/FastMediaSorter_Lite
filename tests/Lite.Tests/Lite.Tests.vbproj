@@ -91,6 +91,9 @@
     <Compile Include="..\..\src\AppFileLogger.vb">
       <Link>Linked\AppFileLogger.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\MultiWindowPolicy.vb">
+      <Link>Linked\MultiWindowPolicy.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Common_Module.vb">
       <Link>Linked\Common_Module.vb</Link>
     </Compile>

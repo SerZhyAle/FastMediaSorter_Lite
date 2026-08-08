@@ -63,7 +63,9 @@ Friend Module AppFileLogger
                 isInitialized = True
 
                 WriteLine("============================================================")
-                WriteLine("Session started: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"))
+                WriteLine("Session started: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff") &
+                          "; PID=" & Process.GetCurrentProcess().Id.ToString() &
+                          "; role=" & MultiWindowPolicy.InstanceRoleName())
                 WriteLine("Log file: " & logPathValue)
                 ' Process.MainModule, not Assembly.Location: the latter is an empty
                 ' string in a single-file publish (.NET 10 build).

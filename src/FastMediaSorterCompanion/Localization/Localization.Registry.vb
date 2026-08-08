@@ -19,6 +19,7 @@ Partial Public NotInheritable Class Localization
         AddWizardStrings()      ' the one-shot package wizard + QR zoom
         AddInternetStrings()    ' the internet-access tab
         AddParamsStrings()      ' per-folder options + the status window
+        AddHostingStrings()     ' User vs Server edition hosting + service management
     End Sub
 
     ''' <summary>

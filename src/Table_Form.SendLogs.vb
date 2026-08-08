@@ -83,6 +83,12 @@ Partial Public Class Table_Form
             .ShowInTaskbar = False,
             .ClientSize = New Size(560, 300)
         }
+            ' A topmost owner does not reliably promote a WinForms modal child to the
+            ' topmost band.  Without this explicit flag the consent window can be
+            ' waiting behind the pinned viewer/settings windows, which looks exactly
+            ' like the button froze until Esc happens to cancel it.
+            dialog.TopMost = Me.TopMost OrElse MainWindowIsTopMost()
+
             Dim header As New Label With {
                 .AutoSize = False, .Location = New Point(16, 14), .Size = New Size(528, 22),
                 .Font = New Font(dialog.Font, FontStyle.Bold),
@@ -188,7 +194,18 @@ Partial Public Class Table_Form
         Dim subject As String = "Fast Media Sorter for Windows " & Application.ProductVersion & " - logs"
         Dim body As String = MailBodyTemplate()
 
-        If MailSender.SendFile(zipPath, subject, body) Then Return
+        ' Simple MAPI puts its editor up synchronously.  A viewer pinned above all
+        ' windows would otherwise cover that editor and make it appear hung.  The
+        ' setting is restored as soon as the editor returns.
+        Dim restoreMainTopMost As Boolean = MainWindowIsTopMost()
+        If restoreMainTopMost Then Main_Form.TopMost = False
+        Try
+            If MailSender.SendFile(zipPath, subject, body) Then Return
+        Finally
+            If restoreMainTopMost AndAlso Main_Form IsNot Nothing AndAlso Not Main_Form.IsDisposed Then
+                Main_Form.TopMost = True
+            End If
+        End Try
 
         Try
             Clipboard.SetFileDropList(New Specialized.StringCollection() From {zipPath})
@@ -243,6 +260,16 @@ Partial Public Class Table_Form
             AppFileLogger.LogException("Table_Form send-logs cleanup", ex)
         End Try
     End Sub
+
+    ''' <summary>Reads the pinned-viewer state defensively: settings may be closing
+    ''' while an async archive build is completing.</summary>
+    Private Shared Function MainWindowIsTopMost() As Boolean
+        Try
+            Return Main_Form IsNot Nothing AndAlso Not Main_Form.IsDisposed AndAlso Main_Form.TopMost
+        Catch
+            Return False
+        End Try
+    End Function
 
 End Class
 #End If

@@ -44,6 +44,53 @@ Partial Public NotInheritable Class Localization
             "! O arquivo já está nessa pasta", "! الملف موجود بالفعل في ذلك المجلد",
             "! फ़ाइल पहले से उस फ़ोल्डर में है", "! ফাইলটি ইতিমধ্যেই সেই ফোল্ডারে আছে",
             "! فائل پہلے ہی اس فولڈر میں ہے", "! 文件已在该文件夹中")
+        Add("Файл с таким именем уже есть: операция пропущена", "A file with this name already exists: operation skipped",
+            "Файл із таким ім'ям уже є: операцію пропущено", "Eine Datei dieses Namens existiert bereits: Vorgang übersprungen",
+            "Esiste già un file con questo nome: operazione ignorata", "Ya existe un archivo con este nombre: operación omitida",
+            "Un fichier de ce nom existe déjà : opération ignorée", "Já existe um arquivo com esse nome: operação ignorada",
+            "يوجد ملف بهذا الاسم بالفعل: تم تخطي العملية", "इस नाम की फ़ाइल पहले से है: कार्रवाई छोड़ी गई",
+            "এই নামে একটি ফাইল আগে থেকেই আছে: কাজটি এড়ানো হয়েছে", "اس نام کی فائل پہلے سے موجود ہے: کارروائی چھوڑ دی گئی",
+            "已存在同名文件：操作已跳过")
+        Add(" (существующий файл будет заменён)", " (the existing file will be replaced)",
+            " (наявний файл буде замінено)", " (die vorhandene Datei wird ersetzt)",
+            " (il file esistente verrà sostituito)", " (se reemplazará el archivo existente)",
+            " (le fichier existant sera remplacé)", " (o arquivo existente será substituído)",
+            " (سيتم استبدال الملف الموجود)", " (मौजूदा फ़ाइल बदली जाएगी)",
+            " (বিদ্যমান ফাইলটি প্রতিস্থাপিত হবে)", " (موجودہ فائل بدل دی جائے گی)", "（将替换现有文件）")
+        Add("В папке назначения уже есть файл {0}.\r\nДа — заменить; Нет — сохранить оба; Отмена — пропустить.",
+            "The destination already contains {0}.\r\nYes — replace; No — keep both; Cancel — skip.",
+            "У папці призначення вже є файл {0}.\r\nТак — замінити; Ні — зберегти обидва; Скасувати — пропустити.",
+            "Im Zielordner gibt es bereits {0}.\r\nJa — ersetzen; Nein — beide behalten; Abbrechen — überspringen.",
+            "La cartella di destinazione contiene già {0}.\r\nSì — sostituisci; No — conserva entrambi; Annulla — salta.",
+            "La carpeta de destino ya contiene {0}.\r\nSí — reemplazar; No — conservar ambos; Cancelar — omitir.",
+            "Le dossier de destination contient déjà {0}.\r\nOui — remplacer ; Non — conserver les deux ; Annuler — ignorer.",
+            "A pasta de destino já contém {0}.\r\nSim — substituir; Não — manter ambos; Cancelar — ignorar.",
+            "تحتوي وجهة النقل على {0}.\r\nنعم للاستبدال؛ لا للاحتفاظ بكليهما؛ إلغاء للتخطي.",
+            "गंतव्य में {0} पहले से है।\r\nहाँ — बदलें; नहीं — दोनों रखें; रद्द — छोड़ें।",
+            "গন্তব্যে {0} ইতিমধ্যে আছে।\r\nহ্যাঁ — প্রতিস্থাপন; না — দুটোই রাখুন; বাতিল — এড়িয়ে যান।",
+            "منزل میں {0} پہلے سے موجود ہے۔\r\nہاں — بدلیں؛ نہیں — دونوں رکھیں؛ منسوخ — چھوڑیں۔",
+            "目标位置已包含 {0}。\r\n是—替换；否—保留两者；取消—跳过。")
+        Add("; файлов больше нет", "; no files remain", "; файлів більше немає", "; keine Dateien mehr",
+            "; non rimangono file", "; no quedan archivos", "; il ne reste aucun fichier", "; não há mais arquivos",
+            "; لا توجد ملفات متبقية", "; कोई फ़ाइल शेष नहीं", "; আর কোনো ফাইল নেই", "; مزید فائلیں باقی نہیں", "；没有更多文件")
+        Add("Экспортировать настройки", "Export settings", "Експортувати налаштування", "Einstellungen exportieren",
+            "Esporta impostazioni", "Exportar configuración", "Exporter les paramètres", "Exportar configurações",
+            "تصدير الإعدادات", "सेटिंग्स निर्यात करें", "সেটিংস রপ্তানি করুন", "ترتیبات برآمد کریں", "导出设置")
+        Add("Настройки экспортированы.", "Settings exported.", "Налаштування експортовано.", "Einstellungen exportiert.",
+            "Impostazioni esportate.", "Configuración exportada.", "Paramètres exportés.", "Configurações exportadas.",
+            "تم تصدير الإعدادات.", "सेटिंग्स निर्यात की गईं।", "সেটিংস রপ্তানি করা হয়েছে।", "ترتیبات برآمد ہو گئیں۔", "设置已导出。")
+        Add("Не удалось экспортировать настройки: {0}", "Could not export settings: {0}", "Не вдалося експортувати налаштування: {0}", "Einstellungen konnten nicht exportiert werden: {0}",
+            "Impossibile esportare le impostazioni: {0}", "No se pudo exportar la configuración: {0}", "Impossible d'exporter les paramètres : {0}", "Não foi possível exportar as configurações: {0}",
+            "تعذر تصدير الإعدادات: {0}", "सेटिंग्स निर्यात नहीं की जा सकीं: {0}", "সেটিংস রপ্তানি করা যায়নি: {0}", "ترتیبات برآمد نہیں ہو سکیں: {0}", "无法导出设置：{0}")
+        Add("Импортировать настройки", "Import settings", "Імпортувати налаштування", "Einstellungen importieren",
+            "Importa impostazioni", "Importar configuración", "Importer les paramètres", "Importar configurações",
+            "استيراد الإعدادات", "सेटिंग्स आयात करें", "সেটিংস আমদানি করুন", "ترتیبات درآمد کریں", "导入设置")
+        Add("Настройки импортированы. Резервная копия: {0}", "Settings imported. Backup: {0}", "Налаштування імпортовано. Резервна копія: {0}", "Einstellungen importiert. Sicherung: {0}",
+            "Impostazioni importate. Backup: {0}", "Configuración importada. Copia de seguridad: {0}", "Paramètres importés. Sauvegarde : {0}", "Configurações importadas. Backup: {0}",
+            "تم استيراد الإعدادات. النسخة الاحتياطية: {0}", "सेटिंग्स आयात की गईं। बैकअप: {0}", "সেটিংস আমদানি করা হয়েছে। ব্যাকআপ: {0}", "ترتیبات درآمد ہو گئیں۔ بیک اپ: {0}", "设置已导入。备份：{0}")
+        Add("Не удалось импортировать настройки: {0}", "Could not import settings: {0}", "Не вдалося імпортувати налаштування: {0}", "Einstellungen konnten nicht importiert werden: {0}",
+            "Impossibile importare le impostazioni: {0}", "No se pudo importar la configuración: {0}", "Impossible d'importer les paramètres : {0}", "Não foi possível importar as configurações: {0}",
+            "تعذر استيراد الإعدادات: {0}", "सेटिंग्स आयात नहीं की जा सकीं: {0}", "সেটিংস আমদানি করা যায়নি: {0}", "ترتیبات درآمد نہیں ہو سکیں: {0}", "无法导入设置：{0}")
         Add("! Нет истории о переносе", "! No history about moved files", "! Немає історії перенесень",
             "! Kein Verlauf verschobener Dateien", "! Nessuna cronologia dei file spostati",
             "! No hay historial de archivos movidos", "! Aucun historique de fichiers déplacés",

@@ -26,9 +26,28 @@ Imports System.Windows.Forms
 '''     is set (written by the deferred runtime opt-in, which already runs as the
 '''     real logged-in user, so HKCU is the correct hive there);
 '''   * the process is packaged (Store MSIX) - the manifest already grants the
-'''     firewall rule + StartupTask, so a packaged build is always "available".
+'''     firewall rule + StartupTask, so a packaged build is always "available";
+'''   * a validated Server edition service is registered (the installer did the
+'''     privileged work already, so consent is a matter of machine state - see
+'''     <see cref="HostMode"/> and SPECIFICATION_SHARE_SYSTEM_SERVICE.md §5).
 ''' </summary>
 Public Module ServerFeatures
+
+    ''' <summary>
+    ''' Who hosts the SFTP worker. Not a preference - an observation, and the one
+    ''' the whole Share Manager branches on:
+    '''   * <c>None</c> - the feature is not enabled at all;
+    '''   * <c>UserSession</c> - the Share Manager owns the worker process and
+    '''     starts/stops it in the interactive session (the default edition);
+    '''   * <c>SystemService</c> - the Windows SCM owns it. The Share Manager is
+    '''     then a management console: it connects, it never spawns or kills, and
+    '''     closing it has no effect on availability.
+    ''' </summary>
+    Public Enum ServerHostMode
+        None
+        UserSession
+        SystemService
+    End Enum
 
     Private Const MarkerFileName As String = "server-features.enabled"
 
@@ -61,6 +80,14 @@ Public Module ServerFeatures
             If AutostartManager.IsPackaged() Then Return True
         Catch
         End Try
+        ' A registered Server edition service IS the consent: an administrator ran an
+        ' elevated installer that created the service, the machine data directory and
+        ' the firewall rule. Checked before the per-user flag because a Server machine
+        ' commonly has several accounts and none of them needs to opt in again.
+        Try
+            If HostMode() = ServerHostMode.SystemService Then Return True
+        Catch
+        End Try
         Try
             Dim marker As String = MarkerPath()
             If marker.Length > 0 AndAlso File.Exists(marker) Then Return True
@@ -76,6 +103,68 @@ Public Module ServerFeatures
     ''' <summary>Clears the cached gate so the next <see cref="IsEnabled"/> re-reads
     ''' the marker + flag. Call after enabling at runtime.</summary>
     Public Sub Refresh()
+        _cached = Nothing
+        _cachedHostMode = Nothing
+    End Sub
+
+    ' --- hosting mode (SPECIFICATION_SHARE_SYSTEM_SERVICE.md §5) ------------------
+
+    ' Cached like IsEnabled: HostMode is read during layout and on every status
+    ' refresh, and each miss costs an SCM round trip plus a registry read.
+    Private _cachedHostMode As ServerHostMode?
+
+    ''' <summary>
+    ''' Which host owns the worker. Authoritative for <c>SystemService</c>: it takes
+    ''' the LIVE SCM answer and additionally validates that the registration is our
+    ''' Server edition worker, so neither a stale HKLM key nor a per-user flag can
+    ''' claim a service that is not there. An unelevated call is enough for both.
+    '''
+    ''' Deliberately NOT symmetric with <see cref="IsEnabled"/>: a machine can have
+    ''' the service while this user has no HKCU flag, and that still means Server.
+    ''' </summary>
+    Public Function HostMode() As ServerHostMode
+        If _cachedHostMode.HasValue Then Return _cachedHostMode.Value
+        Dim v As ServerHostMode = ComputeHostMode()
+        _cachedHostMode = v
+        Return v
+    End Function
+
+    Private Function ComputeHostMode() As ServerHostMode
+        Try
+            If ServiceControl.QueryState() <> ServiceControl.ServiceState.NotInstalled AndAlso
+               ServiceControl.IsOurRegistration() Then
+                Return ServerHostMode.SystemService
+            End If
+        Catch
+        End Try
+        ' No service: User mode when the feature was consented to (marker file, HKCU
+        ' flag or a packaged build), otherwise nothing is hosting anything.
+        Try
+            If AutostartManager.IsPackaged() Then Return ServerHostMode.UserSession
+        Catch
+        End Try
+        Try
+            Dim marker As String = MarkerPath()
+            If marker.Length > 0 AndAlso File.Exists(marker) Then Return ServerHostMode.UserSession
+        Catch
+        End Try
+        Try
+            If GetSetting(App_name, Second_App_Name, EnabledRegValue, "0") = "1" Then Return ServerHostMode.UserSession
+        Catch
+        End Try
+        Return ServerHostMode.None
+    End Function
+
+    ''' <summary>Convenience for the many call sites that only ask "am I a console?"
+    ''' - the answer that decides whether the worker may be spawned or killed.</summary>
+    Public Function IsSystemServiceHost() As Boolean
+        Return HostMode() = ServerHostMode.SystemService
+    End Function
+
+    ''' <summary>Re-reads the SCM state only (after an elevated install/remove), so a
+    ''' management action shows in the UI without restarting the console.</summary>
+    Public Sub RefreshHostMode()
+        _cachedHostMode = Nothing
         _cached = Nothing
     End Sub
 

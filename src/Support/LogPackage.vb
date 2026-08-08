@@ -220,6 +220,7 @@ Public Module LogPackage
         sb.AppendLine()
 
         sb.AppendLine("[settings]")
+        sb.AppendLine("AllowNewWindows=" & Microsoft.VisualBasic.Interaction.GetSetting(App_name, Second_App_Name, "AllowNewWindows", "0"))
         AppendSettings(sb)
         sb.AppendLine()
 
@@ -272,6 +273,7 @@ Public Module LogPackage
                     Return
                 End If
                 For Each name As String In key.GetValueNames().OrderBy(Function(n) n, StringComparer.Ordinal)
+                    If String.Equals(name, "AllowNewWindows", StringComparison.OrdinalIgnoreCase) Then Continue For
                     If IsSecretSetting(name) Then
                         sb.AppendLine(name & "=<hidden>")
                     Else

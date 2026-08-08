@@ -576,6 +576,9 @@ Partial Public Class Main_Form
         ' UI language: the saved "UiLanguage" code, else the legacy Is_Russian_Language
         ' flag of a pre-13-languages install, else the Windows display language.
         Localization.LoadFromSettings()
+        If MultiWindowPolicy.IsSecondaryInstance() Then
+            Me.Text &= " - " & Localization.T("дополнительное окно")
+        End If
 #If Not NETFRAMEWORK Then
         If modern_Preferences Is Nothing Then modern_Preferences = ModernViewerPreferences.Load()
         preferred_Audio_Language = modern_Preferences.PreferredAudioLanguage
@@ -740,6 +743,14 @@ Partial Public Class Main_Form
             app_Left_Int = first_run_left
             app_Top_Int = first_run_top
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1949: saved window position is off-screen, using defaults")
+        End If
+
+        If MultiWindowPolicy.IsSecondaryInstance() Then
+            Dim offset As Integer = 32 * Math.Max(1, My.MyApplication.GetRunningViewerWindowCount())
+            Dim proposed As New Point(app_Left_Int + offset, app_Top_Int + offset)
+            Dim workArea As Rectangle = Screen.FromPoint(proposed).WorkingArea
+            app_Left_Int = Math.Max(workArea.Left, Math.Min(proposed.X, workArea.Right - app_Width_Int))
+            app_Top_Int = Math.Max(workArea.Top, Math.Min(proposed.Y, workArea.Bottom - app_Height_Int))
         End If
 
         Me.SetBounds(app_Left_Int, app_Top_Int, app_Width_Int, app_Height_Int)
@@ -979,6 +990,7 @@ Partial Public Class Main_Form
     ''' <param name="final_Save">True only from the closing path: it additionally clears
     ''' the destination-slot array, which is teardown and must not happen mid-session.</param>
     Private Sub PersistSettings(Optional final_Save As Boolean = False)
+        If MultiWindowPolicy.IsSecondaryInstance() Then Return
         Try
             If Current_Folder_Path IsNot Nothing Then SaveSetting(App_name, Second_App_Name, "ImageFolder", Current_Folder_Path)
             ' Always - zero is as valid a position as any. Skipping it left the previous

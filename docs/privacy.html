@@ -62,6 +62,17 @@
             which reveals your public address and port to that service for the check. The app keeps
             local-only connection counters (this is not telemetry and never leaves your PC).</li>
 
+            <li><strong>The Server edition - a separate download, never installed by default.</strong>
+            If you deliberately install it, the same folder sharing is hosted by a Windows service instead
+            of by your signed-in session, so the folders you chose stay reachable from boot even when nobody
+            is logged on. Nothing about what is collected changes - there is still no telemetry, and files
+            still go straight between your own devices - but the exposure window does: the share is up
+            whenever the machine is, not only while you are using it. The service runs as
+            <code>LOCAL SERVICE</code> and can open only the folders you configured. Its host key, password
+            and settings live in a machine folder readable by administrators and that account alone.
+            Uninstalling stops and removes the service and its firewall rule; the host key is kept unless
+            you delete it, so your paired phones still work if you reinstall.</li>
+
             <li><strong>Network - optional, only for translation.</strong> The on-image translation feature
             is off until you enable and configure it. When you use it, the app sends the recognized text to
             the translation endpoint <em>you</em> choose - a local <a href="https://ollama.com">Ollama</a>

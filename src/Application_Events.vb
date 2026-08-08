@@ -9,7 +9,6 @@ Namespace My
 
         Shared Sub New()
             RuntimeBootstrap.Initialize()
-            AppFileLogger.Initialize()
         End Sub
 
 #If Not NETFRAMEWORK Then
@@ -101,6 +100,25 @@ Namespace My
             Return result
         End Function
 
+        ''' <summary>Counts the top-level viewer windows already owned by other processes.
+        ''' Secondary windows use it to cascade their restore position instead of landing
+        ''' directly on top of the primary window.</summary>
+        Friend Shared Function GetRunningViewerWindowCount() As Integer
+            Dim currentId As Integer = Process.GetCurrentProcess().Id
+            Dim count As Integer = 0
+            For Each proc As Process In GetRunningViewerProcesses(currentId)
+                Try
+                    If proc.MainWindowHandle <> IntPtr.Zero Then
+                        count += 1
+                    Else
+                        count += GetProcessTopLevelWindows(proc.Id).Count
+                    End If
+                Catch
+                End Try
+            Next
+            Return count
+        End Function
+
         Private Sub MyApplication_StartupNextInstance(sender As Object, e As StartupNextInstanceEventArgs) Handles Me.StartupNextInstance
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0004: MyApplication_StartupNextInstance called")
 
@@ -164,8 +182,10 @@ Namespace My
             ' Both then wrote the same registry hive at exit, whoever was last winning.
             Dim created_New As Boolean = False
             Main_Form.Single_Instance_Mutex = New Mutex(True, Main_Form.app_Mutex_Name, created_New)
+            MultiWindowPolicy.MarkInstanceRole(created_New)
+            AppFileLogger.Initialize()
 
-            If Not created_New Then
+            If Not created_New AndAlso Not MultiWindowPolicy.AllowNewWindows() Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-2: Another instance detected via mutex, forwarding args")
 
                 Dim file_Path As String = String.Join(" ", e.CommandLine.ToArray()).Trim()

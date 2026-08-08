@@ -130,12 +130,12 @@ ukrainian.SelectComponentsLabel2=Сам переглядач важить мал
 ; choice. %1 = application name, %n = line break. Text1 is shown when "all users" is the
 ; default and Text2 when "you only" is (our default is lowest -> Text2), so both carry
 ; the same explanation.
-english.PrivilegesRequiredOverrideText1=%1 can be installed for all users of this computer (requires administrator rights) or for you only (no administrator rights).%n%nInstalling for all users additionally sets up the offline video codecs (VLC), the OCR / translation models and Android folder-sharing over SFTP (which adds a Windows Firewall rule). Installing for you only keeps it lightweight - just the image and video viewer.
-english.PrivilegesRequiredOverrideText2=%1 can be installed for you only (no administrator rights) or for all users of this computer (requires administrator rights).%n%nFor you only keeps it lightweight - just the image and video viewer. For all users additionally sets up the offline video codecs (VLC), the OCR / translation models and Android folder-sharing over SFTP (which adds a Windows Firewall rule).
-russian.PrivilegesRequiredOverrideText1=%1 можно установить для всех пользователей этого компьютера (нужны права администратора) или только для вас (без прав администратора).%n%nУстановка для всех пользователей дополнительно ставит оффлайн видео-кодеки (VLC), модели OCR и перевода, а также раздачу папок на Android по SFTP (для этого добавляется правило брандмауэра Windows). Установка только для вас оставляет всё лёгким - только просмотрщик изображений и видео.
-russian.PrivilegesRequiredOverrideText2=%1 можно установить только для вас (без прав администратора) или для всех пользователей этого компьютера (нужны права администратора).%n%nТолько для вас - оставляет всё лёгким, ставится только просмотрщик изображений и видео. Для всех пользователей - дополнительно ставит оффлайн видео-кодеки (VLC), модели OCR и перевода, а также раздачу папок на Android по SFTP (для этого добавляется правило брандмауэра Windows).
-ukrainian.PrivilegesRequiredOverrideText1=%1 можна встановити для всіх користувачів цього комп'ютера (потрібні права адміністратора) або лише для вас (без прав адміністратора).%n%nВстановлення для всіх користувачів додатково ставить офлайн відео-кодеки (VLC), моделі OCR і перекладу та роздачу тек на Android через SFTP (для цього додається правило брандмауера Windows). Встановлення лише для вас залишає все легким - тільки переглядач зображень та відео.
-ukrainian.PrivilegesRequiredOverrideText2=%1 можна встановити лише для вас (без прав адміністратора) або для всіх користувачів цього комп'ютера (потрібні права адміністратора).%n%nЛише для вас - залишає все легким, ставиться тільки переглядач зображень та відео. Для всіх користувачів - додатково ставить офлайн відео-кодеки (VLC), моделі OCR і перекладу та роздачу тек на Android через SFTP (для цього додається правило брандмауера Windows).
+english.PrivilegesRequiredOverrideText1=%1 can be installed for all users of this computer (requires administrator rights) or for you only (no administrator rights).%n%nChoose "for all users" if you want to select offline video codecs (VLC), OCR / translation models, or Android folder-sharing. These components need an elevated install; folder-sharing also adds a Windows Firewall rule. "For you only" installs the lightweight viewer and deliberately disables those components.
+english.PrivilegesRequiredOverrideText2=%1 can be installed for you only (no administrator rights) or for all users of this computer (requires administrator rights).%n%nChoose "for all users" if you want to select offline video codecs (VLC), OCR / translation models, or Android folder-sharing. These components need an elevated install; folder-sharing also adds a Windows Firewall rule. "For you only" installs the lightweight viewer and deliberately disables those components.
+russian.PrivilegesRequiredOverrideText1=%1 можно установить для всех пользователей этого компьютера (нужны права администратора) или только для вас (без прав администратора).%n%nВыберите «для всех пользователей», если хотите установить оффлайн видео-кодеки (VLC), модели OCR / перевода или раздачу папок на Android. Этим компонентам нужна установка с правами администратора; для раздачи папок также добавляется правило брандмауэра Windows. Режим «только для вас» ставит лёгкий просмотрщик и намеренно отключает эти компоненты.
+russian.PrivilegesRequiredOverrideText2=%1 можно установить только для вас (без прав администратора) или для всех пользователей этого компьютера (нужны права администратора).%n%nВыберите «для всех пользователей», если хотите установить оффлайн видео-кодеки (VLC), модели OCR / перевода или раздачу папок на Android. Этим компонентам нужна установка с правами администратора; для раздачи папок также добавляется правило брандмауэра Windows. Режим «только для вас» ставит лёгкий просмотрщик и намеренно отключает эти компоненты.
+ukrainian.PrivilegesRequiredOverrideText1=%1 можна встановити для всіх користувачів цього комп'ютера (потрібні права адміністратора) або лише для вас (без прав адміністратора).%n%nВиберіть «для всіх користувачів», якщо хочете встановити офлайн відеокодеки (VLC), моделі OCR / перекладу або роздачу тек на Android. Цим компонентам потрібне встановлення з правами адміністратора; для роздачі тек також додається правило брандмауера Windows. Режим «лише для вас» встановлює легкий переглядач і навмисно вимикає ці компоненти.
+ukrainian.PrivilegesRequiredOverrideText2=%1 можна встановити лише для вас (без прав адміністратора) або для всіх користувачів цього комп'ютера (потрібні права адміністратора).%n%nВиберіть «для всіх користувачів», якщо хочете встановити офлайн відеокодеки (VLC), моделі OCR / перекладу або роздачу тек на Android. Цим компонентам потрібне встановлення з правами адміністратора; для роздачі тек також додається правило брандмауера Windows. Режим «лише для вас» встановлює легкий переглядач і навмисно вимикає ці компоненти.
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -233,6 +233,9 @@ const
   CompanionSiteUrl = 'https://serzhyale.github.io/doc-html-translate/';
   AndroidGuideUrl = 'https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html';
   AndroidAppBaseUrl = 'https://serzhyale.github.io/FastMediaSorter_mob_v2/';
+  { The Server edition's SCM service name (frozen). Detected here only - this
+    installer never registers, starts or removes it. }
+  ShareServiceName = 'FastMediaSorterCompanionSFTP';
 
 var
   InstallOptionsPage: TWizardPage;
@@ -251,6 +254,69 @@ var
 function IsLanguage(const Lang: String): Boolean;
 begin
   Result := CompareText(ActiveLanguage, Lang) = 0;
+end;
+
+{ --- Server edition conflict detection (SPECIFICATION_SHARE_SYSTEM_SERVICE.md §1.4) --
+  The two editions must never coexist as independent live installations: they would
+  compete for the frozen control pipe, the service name, the listen port and the
+  persistent host key. This installer only DETECTS the Server edition - it never
+  registers, removes or repairs a service. Its job here is to stop and say what to do,
+  because the alternative is a machine where sharing intermittently half-works and
+  nothing explains why. }
+
+function ServerEditionInstalled: Boolean;
+begin
+  Result := RegKeyExists(HKLM, 'SYSTEM\CurrentControlSet\Services\' + ShareServiceName);
+end;
+
+function ServerEditionConflictText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'На этом компьютере установлена СЕРВЕРНАЯ редакция общего доступа: папки раздаёт служба Windows, которая работает без входа в систему.' + #13#10#13#10 +
+              'Установка обычной (пользовательской) редакции поверх неё не остановлена - просмотрщик поставится как обычно. Но раздачей по-прежнему будет управлять служба: Менеджер общего доступа откроется как пульт управления и не станет запускать второй сервер.' + #13#10#13#10 +
+              'Чтобы вернуться к пользовательскому режиму, откройте Менеджер общего доступа -> «Управление хостингом..» -> «Вернуться к пользовательской редакции..» (потребуются права администратора).'
+  else if IsLanguage('ukrainian') then
+    Result := 'На цьому комп''ютері встановлено СЕРВЕРНУ редакцію спільного доступу: теки роздає служба Windows, яка працює без входу в систему.' + #13#10#13#10 +
+              'Встановлення звичайної (користувацької) редакції поверх неї не зупинено - переглядач встановиться як завжди. Але роздачею й далі керуватиме служба: Менеджер спільного доступу відкриється як пульт керування й не запускатиме другий сервер.' + #13#10#13#10 +
+              'Щоб повернутися до користувацького режиму, відкрийте Менеджер спільного доступу -> «Керування хостингом..» -> «Повернутися до користувацької редакції..» (потрібні права адміністратора).'
+  else
+    Result := 'The SERVER edition of folder sharing is installed on this computer: a Windows service serves the folders and keeps running with nobody signed in.' + #13#10#13#10 +
+              'Installing the regular (User) edition over it is not blocked - the viewer installs as usual. But the service stays in charge of sharing: the Share Manager opens as a management console and will not start a second server.' + #13#10#13#10 +
+              'To go back to User mode, open the Share Manager -> "Manage hosting.." -> "Return to the User edition.." (administrator rights are required).';
+end;
+
+function ServerEditionSilentText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'Обнаружена серверная редакция общего доступа (служба Windows). Тихая установка остановлена, чтобы не менять работающую конфигурацию сервера без подтверждения. Запустите установщик в обычном режиме или передайте /ALLOWSERVEREDITION, чтобы продолжить.'
+  else if IsLanguage('ukrainian') then
+    Result := 'Виявлено серверну редакцію спільного доступу (служба Windows). Тиху установку зупинено, щоб не змінювати робочу конфігурацію сервера без підтвердження. Запустіть установник у звичайному режимі або передайте /ALLOWSERVEREDITION, щоб продовжити.'
+  else
+    Result := 'The Server edition of folder sharing (a Windows service) was detected. This silent installation was stopped so a working server configuration is not changed without confirmation. Run Setup interactively, or pass /ALLOWSERVEREDITION to continue.';
+end;
+
+function InitializeSetup: Boolean;
+begin
+  Result := True;
+  if not ServerEditionInstalled then
+    exit;
+
+  { Silent (winget / scripted) installs must fail CLEARLY rather than quietly land a
+    second sharing host on a server. An explicit, documented flag opts out. }
+  if WizardSilent then
+  begin
+    if CompareText(ExpandConstant('{param:ALLOWSERVEREDITION|no}'), 'no') = 0 then
+    begin
+      SuppressibleMsgBox(ServerEditionSilentText, mbError, MB_OK, IDOK);
+      Result := False;
+    end;
+    exit;
+  end;
+
+  { Interactive: explain the consequence and let the user decide. Installing the
+    viewer over a Server edition is legitimate - the two only collide over HOSTING,
+    and the Share Manager already resolves that by connecting instead of spawning. }
+  Result := SuppressibleMsgBox(ServerEditionConflictText, mbInformation, MB_OKCANCEL, IDOK) = IDOK;
 end;
 
 { Can the x64 mainline actually run here? Its bundled .NET 10 runtime requires

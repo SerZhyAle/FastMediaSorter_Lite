@@ -56,10 +56,33 @@ Public Module WorkerProcess
 
     Private spawn_Failed_At As DateTime = DateTime.MinValue
 
+    ''' <summary>
+    ''' How long a Server edition console waits for the service worker to answer the
+    ''' pipe. Longer than the interactive spawn wait on purpose: the SCM may still be
+    ''' bringing a delayed-automatic service up (or restarting it after a recovery
+    ''' action) and the console has no way to hurry it along - waiting is the entire
+    ''' repertoire. Failing early here would show "unavailable" on a service that is
+    ''' seconds from Running.
+    ''' </summary>
+    Private Const Service_Connect_Wait_Ms As Integer = 15000
+
     Public Function EnsureRunning(Optional totalWaitMs As Integer = 5000) As WorkerResponse
         ' Fast path: a worker is already listening.
         Dim status As WorkerResponse = TryGetStatus(400)
         If status IsNot Nothing Then Return status
+
+        ' The service suppresses the foreground worker. Two conditions, because they
+        ' fail differently:
+        '   * the registration is ours -> this is a Server edition install and the
+        '     console is a console, full stop;
+        '   * the service is merely RUNNING (or starting) -> whatever registered it,
+        '     it already owns the frozen pipe, the listen port and the host key, so a
+        '     second worker would only lose the race and report sharing as broken.
+        ' Either way: connect, never spawn (spec §1.4, §3.6 - the two hosts are
+        ' interchangeable, never concurrent).
+        If ServerFeatures.IsSystemServiceHost() OrElse ServiceControl.IsServiceServing() Then
+            Return WaitForServiceWorker()
+        End If
 
         If Not IsAvailable() Then Return Nothing
 
@@ -99,6 +122,21 @@ Public Module WorkerProcess
         Return Nothing
     End Function
 
+    ''' <summary>Polls the control pipe while the service comes up. Returns the status
+    ''' once the service worker answers, or Nothing when it never does - which in
+    ''' Server mode means the service is stopped, broken or not ours, and the UI must
+    ''' offer the administrative controls rather than a "start sharing" that cannot
+    ''' work.</summary>
+    Private Function WaitForServiceWorker() As WorkerResponse
+        Dim sw As Stopwatch = Stopwatch.StartNew()
+        Do
+            Dim status As WorkerResponse = TryGetStatus(1000)
+            If status IsNot Nothing Then Return status
+            If sw.ElapsedMilliseconds >= Service_Connect_Wait_Ms Then Return Nothing
+            Thread.Sleep(500)
+        Loop
+    End Function
+
     ''' <summary>GetStatus with transport failures swallowed (returns Nothing).</summary>
     Public Function TryGetStatus(Optional connectTimeoutMs As Integer = 1000) As WorkerResponse
         Try
@@ -112,12 +150,19 @@ Public Module WorkerProcess
     ''' Hard stop: asks the worker to stop serving, then kills the worker process.
     ''' NOT called on app close - closing LITE must leave the worker running so
     ''' shares survive (acceptance checklist). Use for uninstall / explicit quit.
+    '''
+    ''' In Server mode the kill half is skipped: the process belongs to the SCM, and
+    ''' killing it would trip the configured recovery action into restarting it -
+    ''' a fight the console cannot win and should not start. Stopping the SFTP server
+    ''' over IPC is still the right thing and needs no elevation; stopping the SERVICE
+    ''' is an explicit administrative action (ServiceControl.Manage).
     ''' </summary>
     Public Sub StopWorker()
         Try
             WorkerIpc.Send(New WorkerRequest With {.type = "StopServer"}, 1000)
         Catch
         End Try
+        If ServerFeatures.IsSystemServiceHost() Then Return
         Try
             For Each p As Process In Process.GetProcessesByName(ProcessName)
                 Try

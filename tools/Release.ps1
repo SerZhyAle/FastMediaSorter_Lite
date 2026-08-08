@@ -24,6 +24,10 @@
     Пропустить локальную контрольную сборку (Build-OfflineRelease.ps1). Не рекомендуется:
     локальная проверка ловит ошибки до оплаты CI.
 
+.PARAMETER SkipTests
+    Пропустить прогон тестов (Run-AllTests.ps1). Не рекомендуется: красный пре-флайт
+    обязан останавливать релиз, а не обнаруживаться после публикации.
+
 .PARAMETER AllowDirty
     Разрешить релиз при незакоммиченных изменениях (по умолчанию запрещено).
 
@@ -40,6 +44,7 @@ param(
     [string]$Version = (Get-Date -Format "yy.M.d.HHmm"),
     [switch]$Push,
     [switch]$SkipLocalCheck,
+    [switch]$SkipTests,
     [switch]$AllowDirty
 )
 
@@ -88,11 +93,29 @@ try {
     Pop-Location
 }
 
+# --- Тесты (бесплатно, и красный пре-флайт обязан остановить релиз) ---------
+# Инвариант канона 5: пре-флайт заканчивается письменным PASS/FAIL, и FAIL
+# останавливает отгрузку. Раньше тесты здесь не запускались вовсе, а release.yml
+# их не гоняет - то есть единственной проверкой перед платным тегом была
+# компиляция. Прогон покрывает три набора: вьюер (net48 + net10), Share Manager
+# и Go-воркер (в его собственном репозитории).
+if ($SkipTests) {
+    Write-Warning "Тесты пропущены (-SkipTests). Релиз режется без доказательства, что код работает."
+} else {
+    Step "Тесты (вьюер + Share Manager + воркер)"
+    & (Join-Path $PSScriptRoot "Run-AllTests.ps1")
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Тесты упали. Релиз остановлен ДО оплаты GitHub Actions."
+    }
+    Say "Все наборы тестов зелёные." "Green"
+}
+
 # --- Локальная контрольная сборка (бесплатно, ловит падение CI заранее) -----
 if ($SkipLocalCheck) {
     Write-Warning "Локальная контрольная сборка пропущена (-SkipLocalCheck). CI может упасть платно."
 } else {
     Step "Локальная контрольная сборка (как на CI) - чтобы не платить за упавший GitHub-job"
+    Say "Собирает всё, что собирает release.yml: ZIP + установщик User + установщик Server." "Gray"
     & (Join-Path $PSScriptRoot "Build-OfflineRelease.ps1") -Version $Version
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Локальная сборка упала. Релиз остановлен ДО оплаты GitHub Actions."
@@ -126,10 +149,15 @@ Say "Тег $tag запушен. GitHub Actions собирает релиз." "G
 # --- Пост-релизный чек-лист (ручные шаги) -----------------------------------
 Step "Дальше вручную (см. docs/guides/BUILD_AND_RELEASE.md)"
 @"
-1) GitHub: дождаться сборки и 4 ассетов (setup.exe + zip + два .sha256)
+1) GitHub: дождаться сборки и 6 ассетов - setup.exe + zip + server-setup.exe и три .sha256
    https://github.com/SerZhyAle/FastMediaSorter_Lite/actions
-2) winget: PR в microsoft/winget-pkgs для SerZhyAle.FastMediaSorter
+2) winget, обычная редакция: PR в microsoft/winget-pkgs для SerZhyAle.FastMediaSorter
    (Inno setup.exe напрямую, без зависимостей, без Scope) -> docs/specifications/done/SPECIFICATION_WINGET_PUBLISHING.md
-3) Microsoft Store (опц.): cd publishing\msix; .\build-msix.ps1 -IdentityName "<имя>" (БЕЗ -SelfSign),
+3) winget, серверная редакция: отдельный PR для SerZhyAle.FastMediaSorter.Server
+   (манифесты в publishing/winget/server/; там Scope: machine и MinimumOSVersion - так и надо)
+   -> docs/guides/SERVER_EDITION_BUILD_AND_TEST.md
+4) Оба PR: заполнить описание через gh pr edit (не оставлять пустым).
+5) Microsoft Store (опц.): cd publishing\msix; .\build-msix.ps1 -IdentityName "<имя>" (БЕЗ -SelfSign),
    загрузить unsigned .msix в Partner Center -> docs/guides/STORE_PUBLISHING.md
+   Store - только пользовательская редакция; серверную туда не загружаем никогда.
 "@ | Write-Host -ForegroundColor Cyan

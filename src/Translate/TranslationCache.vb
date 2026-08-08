@@ -154,7 +154,24 @@ Public Class TranslationCache
             Dim dir As String = OcrPaths.OcrCacheDir()
             Directory.CreateDirectory(dir)
             Dim json As String = TranslateHttp.JsonSerialize(ToDto(doc))
-            File.WriteAllText(DiskPath(key), json, Encoding.UTF8)
+            Dim cacheFile As String = DiskPath(key)
+            Dim tempFile As String = Path.Combine(dir, Path.GetRandomFileName() & ".tmp")
+            Try
+                File.WriteAllText(tempFile, json, Encoding.UTF8)
+                ' The cache is shared between viewer processes. Write beside the
+                ' destination and replace it only after the complete JSON exists, so a
+                ' reader never observes a partially written document.
+                If File.Exists(cacheFile) Then
+                    File.Replace(tempFile, cacheFile, Nothing)
+                Else
+                    File.Move(tempFile, cacheFile)
+                End If
+            Finally
+                Try
+                    If File.Exists(tempFile) Then File.Delete(tempFile)
+                Catch
+                End Try
+            End Try
 
             ' Enforce the budget right where the directory grows. Nothing used to: the only
             ' deletion path was the full Clear() on opening the OCR settings tab, so the cache

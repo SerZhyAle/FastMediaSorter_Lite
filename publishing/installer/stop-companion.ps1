@@ -12,8 +12,17 @@
 # the uninstaller. LITE itself is deliberately left to Inno's AppMutex, which closes it
 # gracefully so it still saves its settings on exit.
 #
+# In the Server edition the worker is owned by the Windows SCM, not by the tray app.
+# There, force-killing the process is the wrong move twice over: the configured
+# recovery action restarts it right back (so the file is still locked when Setup
+# copies), and the abrupt exit skips the clean release of the SFTP listener and the
+# UPnP mapping. So the service is stopped through the SCM FIRST, with a bounded wait,
+# and only what survives is killed.
+#
 # Never throws and always exits 0 - a hiccup here must not fail the whole install.
 $ErrorActionPreference = "SilentlyContinue"
+
+$serviceName = "FastMediaSorterCompanionSFTP"
 
 # Use Process.Kill() (not Stop-Process) so no confirmation prompt can ever surface
 # under Setup, and wait briefly so the file handle is released before Setup copies.
@@ -21,6 +30,17 @@ function Stop-Quiet([string]$procName) {
     Get-Process -Name $procName -ErrorAction SilentlyContinue | ForEach-Object {
         try { $_.Kill(); $_.WaitForExit(3000) } catch { }
     }
+}
+
+# 0. Server edition: stop the Windows service. Skipped silently when it is not
+#    installed, which is the normal User edition case.
+$svc = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+if ($svc -and $svc.Status -ne "Stopped") {
+    try {
+        Stop-Service -Name $serviceName -Force -ErrorAction SilentlyContinue
+        # Bounded: past this the kill below is the fallback, and Setup still proceeds.
+        (Get-Service -Name $serviceName).WaitForStatus("Stopped", [TimeSpan]::FromSeconds(30))
+    } catch { }
 }
 
 # 1. Ask the worker to stop over its control pipe first (releases the SFTP server +

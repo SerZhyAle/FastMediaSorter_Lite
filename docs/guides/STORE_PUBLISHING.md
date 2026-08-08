@@ -228,7 +228,9 @@ or video.
 Share folders with your phone: the bundled companion "Fast Media Sorter: Share Manager" turns this PC
 into a private SFTP server for folders you pick, so the Fast Media Sorter Android app can browse them -
 on your home Wi-Fi or over the internet - after a one-time QR pairing. Sharing is strictly opt-in and
-stays between your own devices; nothing is uploaded to any third party.
+stays between your own devices; nothing is uploaded to any third party. Sharing runs while you are
+signed in. A separate always-on Server edition, which hosts the same sharing as a Windows service, is
+not part of the Store version - it is available from the project website and winget.
 
 Optional on-image OCR translation recognizes text in a picture (fully offline, Tesseract) and overlays
 a translation using a provider you configure yourself - a local Ollama model or a LibreTranslate
@@ -266,7 +268,9 @@ Internet Explorer больше нет, и теперь с полноценной
 ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение Fast Media Sorter
 открывало их - в домашней сети Wi-Fi или через интернет - после однократного подключения по QR-коду.
 Раздача включается только по вашему желанию и остаётся между вашими устройствами; никуда на сторону
-ничего не выгружается.
+ничего не выгружается. Раздача работает, пока вы вошли в систему. Отдельная серверная редакция,
+которая поднимает ту же раздачу как службу Windows, в версию из Store не входит - она доступна на
+сайте проекта и через winget.
 
 Необязательный перевод текста прямо на картинке: распознавание полностью офлайн (Tesseract) и
 наложение перевода через выбранного вами провайдера - локальную модель Ollama или сервер

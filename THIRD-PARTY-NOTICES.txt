@@ -1,0 +1,288 @@
+THIRD-PARTY NOTICES
+Fast Media Sorter for Windows (FastMediaSorter LITE) and Fast Media Sorter: Share Manager
+https://github.com/SerZhyAle/FastMediaSorter_Lite
+
+This product bundles third-party components. Their copyright notices and license
+terms are reproduced below. The components remain under their own licenses; the
+application itself is covered by the LICENSE file shipped beside this one.
+
+Not every package listed here is present in every distribution: the 32-bit viewer,
+the 64-bit viewer, the Store (MSIX) package and the Folder Share Server package
+carry different subsets. The list is deliberately a superset, so a package never
+ships a component that is not accounted for.
+
+The full license texts referenced by name (Apache-2.0, MIT, BSD-2-Clause,
+BSD-3-Clause, LGPL-2.1-or-later, zlib) are reproduced at the end of this file
+where they are not quoted in full inline.
+
+================================================================================
+1. Media playback
+================================================================================
+
+LibVLC (libvlc.dll and its plugins) - VideoLAN
+  Version 3.0.21, https://www.videolan.org/vlc/libvlc.html
+  License: GNU Lesser General Public License, version 2.1 or later
+  Copyright (C) 1998-2024 VLC authors and VideoLAN
+
+LibVLCSharp, LibVLCSharp.WinForms - VideoLAN
+  Version 3.9.3, https://github.com/videolan/libvlcsharp
+  License: GNU Lesser General Public License, version 2.1 or later
+  Copyright (C) 2018-2024 VideoLAN
+
+  LGPL note: LibVLC and LibVLCSharp are shipped as separate, unmodified dynamic
+  libraries next to the application, and may be replaced by the user with a
+  compatible version. Their complete corresponding source is available from
+  https://www.videolan.org/vlc/download-sources.html and
+  https://github.com/videolan/libvlcsharp.
+
+  The bundled LibVLC build contains no DVD/Blu-ray decryption component:
+  libdvdcss and libaacs are not shipped, not loaded and not supported.
+
+================================================================================
+2. Image decoding
+================================================================================
+
+SixLabors.ImageSharp
+  Version 3.1.12 (64-bit build), https://github.com/SixLabors/ImageSharp
+  License: Six Labors Split License, Version 1.0 (June 2022)
+  Copyright (c) Six Labors
+  Full text: https://github.com/SixLabors/ImageSharp/blob/main/LICENSE
+
+SixLabors.ImageSharp
+  Version 2.1.13 (32-bit build), https://github.com/SixLabors/ImageSharp
+  License: Apache License 2.0
+  Copyright (c) Six Labors
+
+Magick.NET-Q8-x64 (Magick.NET and the bundled Magick.Native library)
+  Version 14.15.0, https://github.com/dlemstra/Magick.NET
+  License: Apache License 2.0
+  Copyright (c) Dirk Lemstra
+  Magick.Native embeds ImageMagick, licensed under the ImageMagick License
+  (an Apache-2.0-compatible license): https://imagemagick.org/script/license.php
+  Copyright (c) 1999 ImageMagick Studio LLC
+
+================================================================================
+3. Text recognition (OCR)
+================================================================================
+
+Tesseract (.NET wrapper) and the bundled tesseract native library
+  Version 5.2.0, https://github.com/charlesw/tesseract
+  License: Apache License 2.0
+  Copyright (c) Charles Weld and contributors
+
+Tesseract OCR engine and the tessdata / tessdata_best language models
+  https://github.com/tesseract-ocr/tesseract
+  https://github.com/tesseract-ocr/tessdata_fast
+  https://github.com/tesseract-ocr/tessdata_best
+  License: Apache License 2.0
+  Copyright (c) Google Inc. and the Tesseract contributors
+
+  Language models are downloaded on demand in some distributions and bundled in
+  others; either way they are unmodified upstream files under the same license.
+
+================================================================================
+4. Application libraries (.NET)
+================================================================================
+
+QRCoder
+  Version 1.4.3, https://github.com/codebude/QRCoder
+  License: MIT
+  Copyright (c) Raffael Herrmann
+
+System.Buffers 4.5.1, System.Memory 4.5.4, System.Numerics.Vectors 4.5.0,
+System.Runtime.CompilerServices.Unsafe 5.0.0 (32-bit build only)
+  https://github.com/dotnet/runtime
+  License: MIT
+  Copyright (c) .NET Foundation and Contributors
+
+.NET runtime and Windows Forms (embedded in the self-contained 64-bit
+executables)
+  https://github.com/dotnet/runtime
+  License: MIT
+  Copyright (c) .NET Foundation and Contributors
+
+================================================================================
+5. Folder Share worker (fms-share-worker.exe)
+================================================================================
+
+The Android Folder Share sidecar is written in Go and statically links the
+packages below. It is built from https://github.com/SerZhyAle - the
+fms_companion repository - and vendored into the installers as a single binary.
+
+Go standard library
+  https://go.dev
+  License: BSD-3-Clause
+  Copyright (c) 2009 The Go Authors
+
+golang.org/x/crypto, golang.org/x/net, golang.org/x/sync, golang.org/x/sys
+  License: BSD-3-Clause
+  Copyright (c) 2009 The Go Authors
+
+github.com/pkg/sftp
+  License: BSD-2-Clause
+  Copyright (c) 2013 Dave Cheney
+
+github.com/kr/fs
+  License: BSD-3-Clause
+  Copyright (c) 2012 The Go Authors
+
+github.com/Microsoft/go-winio
+  License: MIT
+  Copyright (c) 2015 Microsoft
+
+github.com/grandcat/zeroconf
+  License: MIT
+  Copyright (c) 2016 Stefan Smarzly, (c) 2014 Oleksandr Lobunets
+
+github.com/miekg/dns
+  License: BSD-3-Clause
+  Copyright (c) 2009 The Go Authors
+
+github.com/huin/goupnp
+  License: BSD-2-Clause
+  Copyright (c) 2013 John Beisley
+
+github.com/jackpal/gateway
+  License: BSD-3-Clause
+  Copyright (c) 2010 Jack Palevich
+
+github.com/jackpal/go-nat-pmp
+  License: Apache License 2.0
+  Copyright 2013 John Howard Palevich
+
+github.com/kardianos/service
+  License: zlib
+  Copyright (c) 2015 Daniel Theophanes
+
+github.com/cenkalti/backoff
+  License: MIT
+  Copyright (c) 2014 Cenk Altı
+
+github.com/skip2/go-qrcode
+  License: MIT
+  Copyright (c) 2014 Tom Harwood
+
+================================================================================
+6. License texts
+================================================================================
+
+--------------------------------------------------------------------------------
+MIT License
+--------------------------------------------------------------------------------
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+--------------------------------------------------------------------------------
+BSD 2-Clause License
+--------------------------------------------------------------------------------
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+--------------------------------------------------------------------------------
+BSD 3-Clause License
+--------------------------------------------------------------------------------
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its contributors
+   may be used to endorse or promote products derived from this software without
+   specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+--------------------------------------------------------------------------------
+zlib License
+--------------------------------------------------------------------------------
+
+This software is provided 'as-is', without any express or implied warranty. In
+no event will the authors be held liable for any damages arising from the use of
+this software.
+
+Permission is granted to anyone to use this software for any purpose, including
+commercial applications, and to alter it and redistribute it freely, subject to
+the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not claim
+   that you wrote the original software. If you use this software in a product,
+   an acknowledgment in the product documentation would be appreciated but is
+   not required.
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
+
+--------------------------------------------------------------------------------
+Apache License 2.0
+--------------------------------------------------------------------------------
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+these files except in compliance with the License. You may obtain a copy of the
+License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+
+--------------------------------------------------------------------------------
+GNU Lesser General Public License, version 2.1
+--------------------------------------------------------------------------------
+
+The full text is available at https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+and is distributed with the LibVLC sources referenced in section 1.
+
+--------------------------------------------------------------------------------
+Six Labors Split License, Version 1.0
+--------------------------------------------------------------------------------
+
+The full text is available at
+https://github.com/SixLabors/ImageSharp/blob/main/LICENSE

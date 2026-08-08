@@ -55,6 +55,16 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 на этой машине (`UseModernExe`: Windows 10 build >= 14393 -> мейнлайн, иначе x86-собрат).
 `MinVersion` инсталлятора по-прежнему `6.1` (Win7).
 
+**Второй инсталлятор - серверная редакция.**
+[publishing/installer/FastMediaSorterServer.iss](../../publishing/installer/FastMediaSorterServer.iss) пакует
+**отдельный продукт**: раздачу папок как службу Windows (`FastMediaSorterCompanionSFTP`), которая
+стартует с загрузкой и раздаёт без входа в систему. Вьюера в нём нет вообще - только Share Manager,
+Go-воркер и два повышающих helper-скрипта (~43 МБ против сотен). У него **свои** `AppId`, ARP-имя,
+папка установки, имя ассета и пакет winget - иначе `winget upgrade` перепутал бы две редакции.
+Собирается [tools/Build-ServerInstaller.ps1](../../tools/Build-ServerInstaller.ps1) (и внутри `build.ps1`),
+а на релизе - тем же `.iss` из [release.yml](../../.github/workflows/release.yml).
+Полностью: [SERVER_EDITION_BUILD_AND_TEST.md](SERVER_EDITION_BUILD_AND_TEST.md).
+
 **Оффлайн-payload** ([tools/Prepare-OcrOfflinePayload.ps1](../../tools/Prepare-OcrOfflinePayload.ps1))
 по умолчанию **вырезает** 32-битные нативы (~100 МБ): x86-вьюер догрузит их сам при первом запуске.
 Нужен полностью оффлайновый x86 - зовите с `-KeepX86`.
@@ -85,10 +95,15 @@ GitHub Actions, а **релиз** не должен ничего забыть.
    с `-SkipBuild` (пересборки нет - берётся уже собранный `bin\Release`) и с версией,
    которую только что проставил билд, -> `dist\FastMediaSorter-<версия>-windows-x64-setup.exe` + `.sha256`.
    Нужен Inno Setup 6; если его нет - шаг падает с подсказкой `winget install JRSoftware.InnoSetup`.
-6. **Тег НЕ создаётся, на GitHub ничего не уходит.**
+6. Пакует инсталлятор **серверной редакции** ([tools/Build-ServerInstaller.ps1](../../tools/Build-ServerInstaller.ps1),
+   тоже `-SkipBuild`) -> `dist\FastMediaSorter-<версия>-windows-x64-server-setup.exe` + `.sha256`.
+   Собирается из той же версии и того же воркера, что и обычный пакет: серверный пакет из
+   позапрошлой сборки - это ровно тот способ, которым на машину уезжает устаревший воркер.
+7. **Тег НЕ создаётся, на GitHub ничего не уходит.**
 
 Флаги: `-SkipModern` (без x64-мейнлайна), `-SkipCompanion` (без Share Manager),
 `-SkipInstaller` (без упаковки setup.exe - самая долгая часть),
+`-SkipServerInstaller` (без серверного пакета),
 `-InstallerIncludeBest` / `-InstallerSkipOcr` (что класть в пакет из OCR-моделей:
 по умолчанию - лёгкие `fast`), `-NoClean` (без предварительной уборки).
 
@@ -133,16 +148,28 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 
 **Что это:** обновить документацию и сайт, собрать на GitHub, опубликовать в winget и Microsoft Store.
 
-**Оркестратор:** [tools/Release.ps1](../../tools/Release.ps1) - делает локальную контрольную сборку
-(чтобы НЕ платить за заведомо падающий CI), создаёт и пушит тег, печатает чек-лист публикаций.
+**Оркестратор:** [tools/Release.ps1](../../tools/Release.ps1) - гоняет тесты, делает локальную
+контрольную сборку (чтобы НЕ платить за заведомо падающий CI), создаёт и пушит тег, печатает
+чек-лист публикаций.
 
 ```powershell
-# 1) Сухой прогон - покажет версию/тег и проверит CI-сборку локально, БЕЗ push (бесплатно):
+# 1) Сухой прогон - тесты, локальная сборка всех трёх ассетов, версия/тег. БЕЗ push (бесплатно):
 .\tools\Release.ps1
 
 # 2) Реальный релиз - то же самое, но в конце пушит тег и запускает GitHub Actions:
 .\tools\Release.ps1 -Push
 ```
+
+Пре-флайт - это две проверки, и обе бесплатные:
+
+1. **Тесты** ([tools/Run-AllTests.ps1](../../tools/Run-AllTests.ps1)): вьюер (net48 + net10),
+   Share Manager и Go-воркер в его собственном репозитории. Красный результат останавливает
+   релиз - `release.yml` тестов **не гоняет**, так что другой возможности их увидеть до
+   публикации нет. Отключается `-SkipTests`, и это плохая идея.
+2. **Контрольная сборка** ([tools/Build-OfflineRelease.ps1](../../tools/Build-OfflineRelease.ps1)):
+   собирает ровно то же, что и CI, - ZIP, обычный `setup.exe` и **серверный** `server-setup.exe`.
+   Ассет, который собирает workflow, но не собирает пре-флайт, впервые проверяется уже на
+   платном красном job'е. Отключается `-SkipLocalCheck`.
 
 ### Чек-лист релиза (что нельзя забыть)
 
@@ -158,31 +185,53 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 - [ ] Workflow сам ставит .NET 10 SDK (`setup-dotnet`), собирает msbuild-ом x86-вьюер и делает
       **свои** `dotnet publish` мейнлайна и Companion, после чего стейджит в пакет **оба** exe.
       Версия из тега пробрасывается в publish через `-p:ReleaseVersion=`.
-- [ ] GitHub Actions собрал Release и приложил 4 ассета (setup.exe + zip + два `.sha256`).
+- [ ] GitHub Actions собрал Release и приложил **6 ассетов**: `setup.exe`, `.zip`,
+      `server-setup.exe` и три `.sha256`.
       Следить: https://github.com/SerZhyAle/FastMediaSorter_Lite/actions
 
-**C. winget (после того как GitHub release готов):**
+**C. winget (после того как GitHub release готов) - два независимых пакета:**
 - [ ] Манифест указывает на Inno **`setup.exe`** напрямую (`InstallerType: inno`), без зависимостей,
       без `Scope`. Подробности и грабли - [SPECIFICATION_WINGET_PUBLISHING.md](../specifications/done/SPECIFICATION_WINGET_PUBLISHING.md).
 - [ ] PR в `microsoft/winget-pkgs` для `SerZhyAle.FastMediaSorter` обновлён на новую версию + SHA256.
+- [ ] Отдельный PR для `SerZhyAle.FastMediaSorter.Server` (манифесты -
+      [publishing/winget/server/](../../publishing/winget/server)) на `server-setup.exe` + его SHA256.
+      Здесь `Scope: machine` и `MinimumOSVersion` **объявлены** - в обычном пакете их быть не должно,
+      причины у обоих отличий разные и расписаны в комментариях манифеста.
+- [ ] Описание обоих PR заполнено через `gh pr edit` - пустое описание не оставляем.
 
 **D. Microsoft Store (MSIX, опционально, не блокирует A-C):**
 - [ ] `cd publishing\msix; .\build-msix.ps1 -IdentityName "<имя из Partner Center>"` (БЕЗ `-SelfSign` для Store).
       Пакет **только x64 и только мейнлайн**: скрипт сам публикует модерн-проект, а
       `FastMediaSorter_x86.exe` из стейджа исключается.
 - [ ] Загрузить unsigned `.msix` в Partner Center (Microsoft подпишет сам).
+- [ ] Store - **только пользовательская редакция**. Серверную туда не грузим никогда: она регистрирует
+      службу, а установка службы из пакета Store запрещена политикой и инвариантом самой фичи.
+      Текст листинга это и говорит - источник правки один,
+      [publishing/store/listingData.csv](../../publishing/store/listingData.csv).
 - [ ] Полный плейбук: [STORE_PUBLISHING.md](STORE_PUBLISHING.md), [publishing/msix/README.md](../../publishing/msix/README.md),
       промпт-памятка [publishing/store/STORE_PUBLISHING_PROMPT.md](../../publishing/store/STORE_PUBLISHING_PROMPT.md).
 
+**E. Серверная редакция - проверка на живой машине (до тега, в изолированной VM):**
+- [ ] Матрица из девяти пунктов в
+      [SERVER_EDITION_BUILD_AND_TEST.md](SERVER_EDITION_BUILD_AND_TEST.md#the-verification-matrix).
+      Ключевые и не проверяемые на рабочем ПК: перезагрузка **без входа в систему**, миграция
+      User -> Server и обратно с сохранением отпечатка ключа узла, **обновление поверх реальной
+      прошлой установки** (а не только чистая) и удаление без осиротевшей регистрации в SCM.
+
 ### Чего ещё никто не проверял (честно)
 
-Раскладка "два exe" собирается и гоняется локально, но на 2026-07-16 **не подтверждено на живую**:
-- [ ] установка **с правами админа** (elevated install);
+Раскладка "два exe" уехала двумя релизами по тегу (26.7.23 и 26.7.29), так что сам workflow
+проверен. **Не подтверждено на живую** по-прежнему:
+- [ ] установка **с правами админа** (elevated install) обычной редакции;
 - [ ] ветка Win7/8.1 в инсталляторе (`UseModernExe = False`): ярлык/ассоциации на
       `FastMediaSorter_x86.exe` на настоящей старой ОС;
-- [ ] **настоящий релиз по тегу** - workflow с publish-шагами по тегу ещё ни разу не гонялся.
+- [ ] серверная редакция целиком - её первый релиз по тегу ещё не гонялся, а шаг
+      "Build Server edition installer" в workflow ни разу не выполнялся на раннере
+      (локально собирается, см. пре-флайт выше);
+- [ ] пункты матрицы серверной редакции, кроме тех, что закрыты на рабочей машине.
 
-Это не "сломано", это "не проверено". Первый релиз после перехода стоит вести с оглядкой на эти пункты.
+Это не "сломано", это "не проверено". Первый релиз с серверной редакцией стоит вести с оглядкой
+на эти пункты.
 
 ---
 
@@ -192,7 +241,7 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 | --- | --- | --- |
 | Где | локально | GitHub + winget + Store |
 | Команда | `.\build.ps1` | `.\tools\Release.ps1 -Push` |
-| Что на выходе | оба вьюера в `bin\Release` + Companion + `dist\setup.exe` | setup.exe + zip + два `.sha256` в GitHub Release |
+| Что на выходе | оба вьюера в `bin\Release` + Companion + `dist\` с обоими setup.exe | setup.exe + zip + server-setup.exe + три `.sha256` в GitHub Release |
 | Тег `v*` | нет | да (это и есть триггер) |
 | Стоимость Actions | **$0** | платные минуты (~1 Windows-job на тег) |
 | Триггер CI | - | push тега `vYY.M.D.HHmm` |

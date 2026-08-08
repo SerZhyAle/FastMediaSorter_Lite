@@ -14,6 +14,16 @@ param(
     # thing you hand to someone else is never older than the exes you just tested.
     # Still a "сборка", never a "релиз": no v* tag is created or pushed.
     [switch]$SkipInstaller,
+    # Skip the SERVER edition installer (tools\Build-ServerInstaller.ps1) - the
+    # always-on Folder Share Server, hosted by a Windows service
+    # (docs/specifications/done/SPECIFICATION_SHARE_SYSTEM_SERVICE.md). It is a SEPARATE
+    # product entry, not a mode of the one above: its own AppId, ARP name, install
+    # directory and winget package. Built by default so the two setup.exe files in
+    # dist\ are always from the same sources - a Server package left behind by an
+    # earlier build is exactly how a stale worker gets handed to a server.
+    # Cheap: it reuses the Companion published above and carries no viewer, no VLC
+    # codecs and no OCR models.
+    [switch]$SkipServerInstaller,
     # Installer payload, forwarded to tools\Build-Installer.ps1. Default: the lighter
     # fast OCR models (offline OCR out of the box). -InstallerIncludeBest also bundles
     # the heavy tessdata_best models; -InstallerSkipOcr bundles none of them (smallest
@@ -95,6 +105,20 @@ function Deploy-Companion([string]$TargetDir) {
 # any survivors and wait for the file handle to be released.
 function Stop-ShareWorker {
     if (-not (Get-Process -Name "fms-share-worker" -ErrorAction SilentlyContinue)) { return }
+
+    # The Server edition runs the SAME exe as a Windows service, out of its own
+    # install directory - a copy this build never touches. Killing that process is
+    # both pointless (no file of ours is locked by it) and destructive: the SCM
+    # failure actions restart it as if it had crashed, and the developer's phone
+    # loses the share mid-build. A local build must not disturb a machine service,
+    # so leave it alone and say so.
+    $svc = Get-Service -Name "FastMediaSorterCompanionSFTP" -ErrorAction SilentlyContinue
+    if ($svc -and $svc.Status -eq "Running") {
+        Write-Host "Server edition detected (FastMediaSorterCompanionSFTP is running) - leaving its worker alone."
+        Write-Host "  It serves from its own install directory; nothing here is locked by it."
+        return
+    }
+
     Write-Host "Stopping running Android-share worker (fms-share-worker) so its exe can be replaced.."
     try {
         $pipe = New-Object System.IO.Pipes.NamedPipeClientStream(".", "fms-companion", [System.IO.Pipes.PipeDirection]::InOut)
@@ -363,4 +387,50 @@ if (-not $SkipInstaller) {
     }
 } else {
     Write-Host "Skipping installer packaging (-SkipInstaller)."
+}
+
+# --- SERVER edition installer -----------------------------------------------
+# The optional always-on variant: the same worker, hosted by the Windows SCM
+# instead of by an interactive session, so folders stay reachable from boot with
+# nobody signed in (SPECIFICATION_SHARE_SYSTEM_SERVICE.md).
+#
+# Built here rather than only in CI for one reason: it must never lag behind the
+# regular installer. The two setup.exe files share the vendored worker and the
+# elevated helper script, and a dist\ holding a fresh User package next to a
+# months-old Server package is how a machine ends up with a service running a
+# worker that does not match its console.
+#
+# -SkipBuild reuses the Companion this script already published into bin\Release,
+# so this step is only the staging + ISCC compile. Still packaging, never
+# publishing: no v* tag, no upload.
+if (-not $SkipServerInstaller) {
+    $serverVersion = $installerVersion
+    if (-not $serverVersion) {
+        # -SkipInstaller was given, so the block above never resolved it. Read the
+        # same stamp the same way (as TEXT - a numeric read turns 26.7.30.0108 into
+        # 26.7.30.108 and misnames the package).
+        $versionInfoFile = Join-Path $SolutionDir "src\My Project\VersionInfo.vb"
+        if (Test-Path $versionInfoFile) {
+            $match = [regex]::Match((Get-Content -LiteralPath $versionInfoFile -Raw), 'AssemblyFileVersion\("([^"]+)"\)')
+            if ($match.Success) { $serverVersion = $match.Groups[1].Value }
+        }
+        if (-not $serverVersion) { $serverVersion = Get-Date -Format "yy.M.d.HHmm" }
+    }
+
+    Write-Host ""
+    Write-Host "Packaging the Server edition installer (version $serverVersion).."
+    try {
+        # Hashtable splatting, never an array of "-Switch" strings - see the note on
+        # $installerArgs above for what an array does to the first positional param.
+        # It also has to go through a VARIABLE: an inline @{..} is a hashtable VALUE
+        # bound positionally, not a splat, so it would land in -Version.
+        $serverArgs = @{ SkipBuild = $true; Version = $serverVersion }
+        & (Join-Path $SolutionDir "tools\Build-ServerInstaller.ps1") @serverArgs
+        if ($LASTEXITCODE -ne 0) { throw "tools\Build-ServerInstaller.ps1 exited with code $LASTEXITCODE." }
+    } catch {
+        Write-Error "Server installer packaging failed: $($_.Exception.Message)"
+        exit 1
+    }
+} else {
+    Write-Host "Skipping Server edition installer (-SkipServerInstaller)."
 }

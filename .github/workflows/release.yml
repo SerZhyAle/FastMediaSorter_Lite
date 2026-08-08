@@ -123,6 +123,7 @@ jobs:
 
           if (Test-Path README.md) { Copy-Item README.md $stage }
           if (Test-Path LICENSE)   { Copy-Item LICENSE   $stage }
+          if (Test-Path THIRD-PARTY-NOTICES.txt) { Copy-Item THIRD-PARTY-NOTICES.txt $stage }
 
           # The x64 mainline viewer next to its x86 sibling: two exes, one set of
           # adjacent libraries (each picks its own by process bitness at runtime).
@@ -224,6 +225,55 @@ jobs:
           Write-Host "Installer: $setupName"
           Write-Host "SHA256:    $hash"
 
+      # SERVER edition - the always-on Folder Share Server, hosted by a Windows
+      # service (SPECIFICATION_SHARE_SYSTEM_SERVICE.md). A separate product entry
+      # with its own AppId, ARP name and winget package, so it is a separate asset
+      # rather than a mode of the one above.
+      #
+      # Its payload is deliberately LEAN and therefore staged separately: the Share
+      # Manager, the Go worker and the two elevated helper scripts only - no viewer,
+      # no VLC codecs, no OCR models. Reusing the User stage would ship hundreds of
+      # megabytes a headless server never runs.
+      - name: Build Server edition installer
+        id: serversetup
+        run: |
+          $version = '${{ steps.ver.outputs.version }}'
+          $stage   = "stage/FastMediaSorter-$version-windows-x64-server"
+          $iscc    = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found at $iscc" }
+
+          New-Item -ItemType Directory -Path $stage -Force | Out-Null
+          if (Test-Path README.md) { Copy-Item README.md $stage }
+          if (Test-Path LICENSE)   { Copy-Item LICENSE   $stage }
+          if (Test-Path THIRD-PARTY-NOTICES.txt) { Copy-Item THIRD-PARTY-NOTICES.txt $stage }
+
+          $companionExe = "companion-publish/FastMediaSorterCompanion.exe"
+          if (-not (Test-Path $companionExe)) { throw "Companion exe not found at $companionExe" }
+          Copy-Item $companionExe $stage
+
+          $worker = "payload/companion/fms-share-worker.exe"
+          if (-not (Test-Path $worker)) { throw "SFTP worker not found at $worker - the Server edition IS the worker" }
+          $stageCompanion = Join-Path $stage "companion"
+          New-Item -ItemType Directory -Path $stageCompanion -Force | Out-Null
+          Copy-Item "payload/companion/*" $stageCompanion -Recurse -Force
+
+          $stageAbs = (Resolve-Path $stage).Path
+          $distAbs  = (Resolve-Path dist).Path
+          & $iscc "/DVersion=$version" "/DSourceDir=$stageAbs" "/O$distAbs" publishing\installer\FastMediaSorterServer.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC (Server edition) failed (exit $LASTEXITCODE)" }
+
+          $setupName = "FastMediaSorter-$version-windows-x64-server-setup.exe"
+          $setupPath = "dist/$setupName"
+          if (-not (Test-Path $setupPath)) { throw "Server installer not produced at $setupPath" }
+
+          $hash = (Get-FileHash -Algorithm SHA256 $setupPath).Hash
+          "$hash  $setupName" | Out-File -FilePath "$setupPath.sha256" -Encoding ascii
+
+          "name=$setupName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "sha256=$hash"    | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Server installer: $setupName"
+          Write-Host "SHA256:           $hash"
+
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
@@ -233,6 +283,8 @@ jobs:
             dist/${{ steps.setup.outputs.name }}.sha256
             dist/${{ steps.pkg.outputs.name }}
             dist/${{ steps.pkg.outputs.name }}.sha256
+            dist/${{ steps.serversetup.outputs.name }}
+            dist/${{ steps.serversetup.outputs.name }}.sha256
           body: |
             Fast Media Sorter for Windows ${{ steps.ver.outputs.version }}
 
@@ -243,6 +295,11 @@ jobs:
 
             **Portable offline ZIP:** `${{ steps.pkg.outputs.name }}`
             SHA256: `${{ steps.pkg.outputs.sha256 }}`
+
+            **Always-on Folder Share Server (optional, separate product):** `${{ steps.serversetup.outputs.name }}`
+            SHA256: `${{ steps.serversetup.outputs.sha256 }}`
+
+            Install the Server edition only if this machine must keep folders reachable from your phone whenever Windows is running - it registers a Windows service that starts at boot and serves with nobody signed in. It requires administrator rights, replaces the user-session hosting on that PC, and preserves the host key so paired phones do not need re-pairing. Everything else - SFTP, the QR/`.fmscfg` format, the Android app - is identical.
 
             Both release assets bundle VLC runtimes and OCR language packs, so they are ready to launch offline after install/extract.
 
@@ -255,6 +312,11 @@ jobs:
 
             The winget package uses the Inno Setup installer in silent per-user mode.
             The interactive setup can optionally register the app for common image formats.
+
+            **winget (always-on Folder Share Server)**:
+            ```
+            winget install --id SerZhyAle.FastMediaSorter.Server
+            ```
 
             **Companion app for books/documents:**
             ```

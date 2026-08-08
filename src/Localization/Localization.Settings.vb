@@ -356,6 +356,9 @@ Partial Public NotInheritable Class Localization
             "Eliminar archivo", "Supprimer le fichier", "Excluir arquivo", "حذف الملف",
             "फ़ाइल हटाएँ", "ফাইল মুছুন", "فائل حذف کریں", "删除文件")
 
+        Add("Разрешать запуск в новых окнах",
+            "Allow launching in new windows", "Дозволяти запуск у нових вікнах", "Start in neuen Fenstern erlauben", "Consentire l'avvio in nuove finestre", "Permitir iniciar en ventanas nuevas", "Autoriser le lancement dans de nouvelles fenêtres", "Permitir iniciar em novas janelas", "السماح بالتشغيل في نوافذ جديدة", "नई विंडो में शुरू करने की अनुमति दें", "নতুন উইন্ডোতে চালুর অনুমতি দিন", "نئی ونڈوز میں چلانے کی اجازت دیں", "允许在新窗口中启动")
+
         AddSettingsHintStrings()
         AddOcrStrings()
     End Sub

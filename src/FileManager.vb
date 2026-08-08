@@ -147,9 +147,14 @@ Public Module FileManager
     ''' an obvious "*.fms-part" leftover - never a plausible-looking half file. Same-volume
     ''' moves keep the cheap path: there is no copy to interrupt.
     ''' </summary>
-    Public Sub MoveFile(sourceFile As String, destFile As String)
+    Public Sub MoveFile(sourceFile As String, destFile As String, Optional overwrite As Boolean = False)
         If IsSameVolume(sourceFile, destFile) Then
+#If NETFRAMEWORK Then
+            If overwrite AndAlso File.Exists(destFile) Then File.Delete(destFile)
             File.Move(sourceFile, destFile)
+#Else
+            File.Move(sourceFile, destFile, overwrite)
+#End If
             Return
         End If
 
@@ -159,7 +164,10 @@ Public Module FileManager
             File.Copy(sourceFile, staging, True)
             ' Rename within one folder is atomic enough: no window in which the final name
             ' exists but holds an incomplete file.
-            If File.Exists(destFile) Then File.Delete(destFile)
+            If File.Exists(destFile) Then
+                If Not overwrite Then Throw New IOException("The destination file already exists.")
+                File.Delete(destFile)
+            End If
             File.Move(staging, destFile)
         Catch
             ' Leave the source alone and take the debris with us: a failed move must not cost

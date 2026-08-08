@@ -20,6 +20,13 @@ Imports Xunit
 '''
 ''' The parameter was even NAMED timeoutMs and passed through as the connect timeout, so the
 ''' code read as if it were bounded when it was not. These tests hold it to its name.
+'''
+''' Both tests drive a pipe of their OWN, never the product's frozen `fms-companion`. That pipe
+''' is a machine-wide singleton, so on a machine where sharing is genuinely running - a Companion
+''' in the tray, or the Server edition's FastMediaSorterCompanionSFTP service - the real worker
+''' accepts the connection and answers, "nothing is listening" never happens, and both tests fail
+''' for a reason unrelated to the timeout they exist to prove. Which is precisely the machine a
+''' release is cut from.
 ''' </summary>
 Public Class WorkerIpcTimeoutTests
 
@@ -27,14 +34,21 @@ Public Class WorkerIpcTimeoutTests
     ''' unbounded read would blow straight past it.</summary>
     Private Const Timeout_Ms As Integer = 1500
 
+    ''' <summary>A pipe name nothing else on the machine can own. Per-test, so the two tests
+    ''' cannot collide with each other either when xUnit runs them in parallel.</summary>
+    Private Shared Function ScratchPipeName(purpose As String) As String
+        Return "fms-companion-test-" & purpose & "-" & Guid.NewGuid().ToString("N")
+    End Function
+
     <Fact>
     Public Async Function Send_gives_up_when_no_worker_is_listening() As Task
         ' Nothing on the pipe at all: the connect cannot succeed, and the call must come back
         ' rather than sit there.
+        Dim pipeName As String = ScratchPipeName("silent")
         Dim watch As Stopwatch = Stopwatch.StartNew()
         Dim threw As Boolean = False
         Try
-            Await Task.Run(Sub() WorkerIpc.Send(New WorkerRequest With {.type = "GetStatus"}, Timeout_Ms))
+            Await Task.Run(Sub() WorkerIpc.Send(New WorkerRequest With {.type = "GetStatus"}, Timeout_Ms, pipeName))
         Catch
             threw = True
         End Try
@@ -49,12 +63,13 @@ Public Class WorkerIpcTimeoutTests
     Public Async Function Send_gives_up_on_a_worker_that_accepts_and_then_says_nothing() As Task
         ' The case that used to hang for ever: the connection SUCCEEDS, so the old connect-only
         ' timeout was already satisfied, and then the server neither replies nor closes.
+        Dim pipeName As String = ScratchPipeName("mute")
         Using accepted As New ManualResetEventSlim(False)
             Using release As New ManualResetEventSlim(False)
                 Dim server As Task = Task.Run(Sub()
                                                   Try
                                                       Using pipe As New NamedPipeServerStream(
-                                                          WorkerIpc.PipeName, PipeDirection.InOut, 1)
+                                                          pipeName, PipeDirection.InOut, 1)
                                                           pipe.WaitForConnection()
                                                           accepted.Set()
                                                           ' Hold the connection open, in silence,
@@ -69,7 +84,7 @@ Public Class WorkerIpcTimeoutTests
                 Dim watch As Stopwatch = Stopwatch.StartNew()
                 Dim threw As Boolean = False
                 Try
-                    Await Task.Run(Sub() WorkerIpc.Send(New WorkerRequest With {.type = "GetStatus"}, Timeout_Ms))
+                    Await Task.Run(Sub() WorkerIpc.Send(New WorkerRequest With {.type = "GetStatus"}, Timeout_Ms, pipeName))
                 Catch
                     threw = True
                 End Try

@@ -2,7 +2,7 @@
 
 > Status: **design / not started** (2026-07-16, revision 1). No code yet. Owner ask: *"нужно чтобы у пользователя была возможность менять руками порт, мало кто будет этим пользоваться, но мало ли"*.
 > Scope split across two repos: the Go worker (`P:\windows\fms_companion`, build there - **never** from this repo) owns the bind and gains a "fixed port" mode; the Companion side (`src/FastMediaSorterCompanion/`) gains one setting, one additive IPC field and one control. **LITE itself is untouched** (invariant 8 of the Companion migration: `grep Companion src/*.vb` must still surface only the launcher).
-> Related: [SPECIFICATION_ANDROID_FOLDER_SHARE.md](done/SPECIFICATION_ANDROID_FOLDER_SHARE.md) (worker IPC protocol, `.fmscfg` schema, the risk row this closes), [SPECIFICATION_SHARE_COMPANION_APP.md](done/SPECIFICATION_SHARE_COMPANION_APP.md), [SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](done/SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md) (the firewall rule - program-scoped, so it survives this), [SPECIFICATION_SHARE_SYSTEM_SERVICE.md](SPECIFICATION_SHARE_SYSTEM_SERVICE.md), [SPECIFICATION_QR_IMPORT_ANDROID.md](done/SPECIFICATION_QR_IMPORT_ANDROID.md) (frozen wire contract - unaffected).
+> Related: [SPECIFICATION_ANDROID_FOLDER_SHARE.md](done/SPECIFICATION_ANDROID_FOLDER_SHARE.md) (worker IPC protocol, `.fmscfg` schema, the risk row this closes), [SPECIFICATION_SHARE_COMPANION_APP.md](done/SPECIFICATION_SHARE_COMPANION_APP.md), [SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](done/SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md) (the firewall rule - program-scoped, so it survives this), [SPECIFICATION_SHARE_SYSTEM_SERVICE.md](done/SPECIFICATION_SHARE_SYSTEM_SERVICE.md), [SPECIFICATION_QR_IMPORT_ANDROID.md](done/SPECIFICATION_QR_IMPORT_ANDROID.md) (frozen wire contract - unaffected).
 
 ---
 
@@ -29,7 +29,7 @@ That is a sane default and should stay the default. But the sticky port is only 
 
    The mitigation is honest but weak: the QR the user printed/mailed/scanned is now a lie, and mDNS rediscovery only saves them **on the same LAN** - never the port-forward path, which is the one that needed the fixed number.
 
-3. **A dedicated / always-on box wants a known port** ([SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](done/SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md) §0.2 audience, [SPECIFICATION_SHARE_SYSTEM_SERVICE.md](SPECIFICATION_SHARE_SYSTEM_SERVICE.md) mode B). "Which port does this server listen on" should be an answerable question, not an emergent one.
+3. **A dedicated / always-on box wants a known port** ([SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md](done/SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL.md) §0.2 audience, [SPECIFICATION_SHARE_SYSTEM_SERVICE.md](done/SPECIFICATION_SHARE_SYSTEM_SERVICE.md) mode B). "Which port does this server listen on" should be an answerable question, not an emergent one.
 
 So: an **escape hatch**, not a new default. The owner is explicit that few will use it. The design is therefore judged on *not costing anything when unused*, and the whole feature is one checkbox + one number.
 
@@ -363,7 +363,7 @@ The `.fmscfg` contract ([SPECIFICATION_QR_IMPORT_ANDROID.md](done/SPECIFICATION_
 - **Inno / portable**: the setting is inert until used.
 - **winget**: nothing to validate - manifest untouched, no `AppsAndFeaturesEntries`, no dependency.
 - **Store / MSIX**: no manifest change. The firewall rule comes from `desktop2:windows.firewallRules` and is program-scoped there too, so a fixed port needs nothing extra. Worth stating explicitly in the submission notes only if a listing text ever mentions ports (it does not).
-- **System-service mode** ([SPECIFICATION_SHARE_SYSTEM_SERVICE.md](SPECIFICATION_SHARE_SYSTEM_SERVICE.md), if it ships): **complementary and worth more there** - a headless box wants a known port. The setting lives in the worker's `settings.json`, which mode B relocates to a machine data dir; the Companion-as-management-console pushes `SetNetworkPolicy` over the same pipe. No conflict, but re-check the data-dir path when that spec lands.
+- **System-service mode** ([SPECIFICATION_SHARE_SYSTEM_SERVICE.md](done/SPECIFICATION_SHARE_SYSTEM_SERVICE.md), shipped 2026-08-08 as the Server edition): **complementary and worth more there** - a headless box wants a known port. The setting lives in the worker's `settings.json`, which the Server edition relocates to `%ProgramData%\FastMediaSorterCompanion`; the Companion-as-management-console pushes `SetNetworkPolicy` over the same pipe. No conflict - but this spec must read the data dir the way `sftpserver.DataDir()` now resolves it (machine dir wins once it exists), not the per-user path it was written against.
 
 ---
 

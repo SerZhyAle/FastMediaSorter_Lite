@@ -443,6 +443,8 @@ Partial Public Class Table_Form
             Case "recent_files_limit" : Return Localization.T("Размер истории файлов")
             Case "recent_folders_limit" : Return Localization.T("Размер истории папок")
             Case "startup_open" : Return Localization.T("При запуске открывать")
+            Case "allow_new_windows" : Return Localization.T("Разрешать запуск в новых окнах")
+            Case "secondary_instance_warning" : Return Localization.T("Это дополнительное окно. Изменения настроек действуют до его закрытия и не сохраняются - настройки хранит первое окно.")
             Case "ocr_enabled" : Return Localization.T("Включить OCR")
             Case "ocr_auto" : Return Localization.T("Запускать автоматически")
             Case "section_translation" : Return Localization.TC("settings", "Перевод")
@@ -525,6 +527,7 @@ Partial Public Class Table_Form
             Case "included_extensions" : Return Localization.T("Расширения через точку с запятой; пустое поле — все поддерживаемые.")
             Case "recent_files_limit", "recent_folders_limit" : Return Localization.T("0 отключает сохранение новых записей.")
             Case "startup_open" : Return Localization.T("Что будет показано при обычном запуске без файла в командной строке.")
+            Case "allow_new_windows" : Return Localization.T("Обычно повторный запуск программы отдаёт файл уже открытому окну. Если отмечено, каждый запуск открывает своё окно.")
             Case "ocr_enabled" : Return Localization.T("Разрешает распознавание текста на открытых изображениях.")
             Case "ocr_auto" : Return Localization.T("Распознаёт текст без отдельной команды после открытия изображения.")
             Case "ocr_provider" : Return Localization.T("Выберите локальный или сетевой движок, который выполнит перевод.")
@@ -650,6 +653,7 @@ Partial Public Class Table_Form
 
         BuildModernSftpPage()
         BuildModernAboutPage()
+        If MultiWindowPolicy.IsSecondaryInstance() Then AddInformationBlock(files, "secondary_instance_warning")
         AddExpandedSettingsRows(destinations, viewing, video, files, ocr)
 
         For Each oldLabel As Control In New Control() {lbl_Color, lbl_Slideshow_Interval, lbl_Picture_at_Panel_Size,

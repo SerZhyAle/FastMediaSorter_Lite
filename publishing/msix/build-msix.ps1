@@ -147,7 +147,7 @@ Get-ChildItem $ModernPublish -File |
     Where-Object { $_.Extension -notin '.pdb', '.xml' } |
     ForEach-Object { Copy-Item $_.FullName (Join-Path $Stage $_.Name) -Force }
 Remove-Item $ModernPublish -Recurse -Force -ErrorAction SilentlyContinue
-foreach ($extra in 'README.md', 'LICENSE') {
+foreach ($extra in 'README.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt') {
     $src = Join-Path $RepoRoot $extra
     if (Test-Path $src) { Copy-Item $src $Stage -Force }
 }

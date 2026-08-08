@@ -81,6 +81,7 @@ Partial Public Class Main_Form
     End Sub
 
     Friend Sub SaveOcrSettings()
+        If MultiWindowPolicy.IsSecondaryInstance() Then Return
         If ocr_Settings IsNot Nothing Then ocr_Settings.Save()
     End Sub
 

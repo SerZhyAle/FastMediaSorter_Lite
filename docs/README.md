@@ -25,6 +25,9 @@ stay at the repo root. Structure and naming follow
   SEO/indexing, mandatory site pages, support & voice.
 - [guides/BUILD_AND_RELEASE.md](guides/BUILD_AND_RELEASE.md) - the concrete build-vs-release flow.
 - [guides/STORE_PUBLISHING.md](guides/STORE_PUBLISHING.md) - the Microsoft Store playbook + listing copy.
+- [guides/SERVER_EDITION_BUILD_AND_TEST.md](guides/SERVER_EDITION_BUILD_AND_TEST.md) - the always-on
+  Folder Share Server: what differs from the User edition, how to build and publish it, and the
+  VM matrix it has to pass (it registers a service, so it cannot be verified on the dev box).
 
 ## Conventions in one line
 

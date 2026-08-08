@@ -40,6 +40,7 @@ Public Class OcrTranslateSettings
     End Sub
 
     Public Sub Save()
+        If MultiWindowPolicy.IsSecondaryInstance() Then Return
         WriteBool("OcrEnabled", Enabled)
         WriteBool("OcrAutoMode", AutoMode)
         WriteString("OcrEngine", Engine)

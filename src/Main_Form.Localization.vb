@@ -180,7 +180,7 @@ Partial Public Class Main_Form
     Friend Sub SetUiLanguage(code As String)
         If String.Equals(Localization.CurrentCode, code, StringComparison.OrdinalIgnoreCase) Then Return
         Localization.CurrentCode = code
-        Localization.SaveToSettings()
+        If Not MultiWindowPolicy.IsSecondaryInstance() Then Localization.SaveToSettings()
         LngCh()
         Table_Form.LngCh()
         RepaintMedia()

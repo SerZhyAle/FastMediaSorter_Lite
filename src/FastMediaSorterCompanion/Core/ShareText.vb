@@ -115,6 +115,114 @@ Public Module ShareText
         Return ""
     End Function
 
+    ''' <summary>Plain answer to "what actually works right now?", shown under the address
+    ''' grid in the Share Manager. The grid alone is ambiguous: a running share prints a LAN
+    ''' address and an internet address one under the other, which reads as "both work",
+    ''' while the internet half normally still needs a port forward on the router. Ordered
+    ''' worst-actionable-case first, the same ladder <see cref="AccessNote"/> walks - but
+    ''' phrased for the sharer sitting at the PC, not for the phone.
+    ''' <paramref name="port"/> is the port the outside world would use (the mapped external
+    ''' port when there is one, else the listen port). "" when there is nothing to say yet.</summary>
+    Public Function AccessStateLine(reach As WorkerReachability, port As Integer) As String
+        If reach Is Nothing Then Return Localization.T("Проверяем, что доступно с телефона..")
+        Dim lan As String = If(reach.LanAddress, "")
+        Dim ext As String = If(reach.ExternalHost, "")
+        Dim ipv6 As String = If(reach.Ipv6Address, "")
+        If reach.IsCgnat Then
+            Return Localization.T("Сейчас работает только в вашей сети Wi-Fi. Провайдер использует CGNAT - доступ через интернет невозможен.")
+        ElseIf reach.ExternalPortChecked AndAlso reach.ExternalPortOpen Then
+            Return Localization.T("Работает и в вашей сети Wi-Fi, и через интернет - внешний порт ответил на проверку снаружи.")
+        ElseIf reach.ExternalPortChecked Then
+            Return Localization.TF("Сейчас работает только в вашей сети Wi-Fi. Порт {0} снаружи не отвечает - похоже, на роутере нет проброса.", port)
+        ElseIf ext.Length > 0 AndAlso Not String.IsNullOrEmpty(reach.PortMapMethod) Then
+            ' UPnP/NAT-PMP already mapped it, so "go configure the router" would be wrong
+            ' advice - what is missing here is only the confirmation from outside.
+            Return Localization.T("Сейчас надёжно работает только в вашей сети Wi-Fi. Порт открыт автоматически (UPnP), но снаружи это ещё не проверено.")
+        ElseIf ext.Length > 0 Then
+            Return Localization.T("Сейчас надёжно работает только в вашей сети Wi-Fi. Адрес из интернета известен, но снаружи ещё не проверен - обычно для него нужен проброс порта на роутере.")
+        ElseIf ipv6.Length > 0 Then
+            Return Localization.T("Работает в вашей сети Wi-Fi и по IPv6 - там, где провайдер телефона его поддерживает.")
+        ElseIf lan.Length > 0 Then
+            Return Localization.T("Работает только в вашей сети Wi-Fi. Адрес из интернета не определён.")
+        End If
+        Return ""
+    End Function
+
+    ''' <summary>The concrete next step under <see cref="AccessStateLine"/>. The two goals a
+    ''' user can have at this point lead to two different controls, and the window shows both
+    ''' at once - so name each with the goal it serves instead of leaving the choice implicit.
+    ''' "" while reachability is still being determined: there is no honest advice yet.</summary>
+    Public Function AccessNextStepLine(reach As WorkerReachability) As String
+        If reach Is Nothing Then Return ""
+        If reach.ExternalPortChecked AndAlso reach.ExternalPortOpen Then
+            Return Localization.T("Дальше: нажмите «Поделиться» вверху - получите QR-код, который телефон прочитает и дома, и в дороге.")
+        End If
+        If reach.IsCgnat Then
+            Return Localization.T("Дальше: нажмите «Поделиться» вверху - получите QR-код для домашней сети. Настройка роутера здесь не поможет.")
+        End If
+        If Not reach.ExternalPortChecked AndAlso Not String.IsNullOrEmpty(reach.ExternalHost) AndAlso
+           Not String.IsNullOrEmpty(reach.PortMapMethod) Then
+            Return Localization.T("Дальше - на выбор. Только дома: нажмите «Поделиться» вверху и покажите QR-код телефону. Из любой сети: нажмите «Проверить доступ из интернета» или проверьте с телефона по мобильной сети.")
+        End If
+        Return Localization.T("Дальше - на выбор. Только дома: нажмите «Поделиться» вверху и покажите QR-код телефону, больше ничего не нужно. Из любой сети: следующий шаг - настроить роутер (кнопки ниже).")
+    End Function
+
+    ' --- internet-access test (the "Проверить доступ из интернета" button) ------
+
+    ''' <summary>Title of the modal that reports the internet-access test. The test used
+    ''' to answer into the window's bottom status strip - the far corner from the button
+    ''' that starts it, so the answer read as unrelated to the click. It is a
+    ''' user-initiated one-shot check, so it answers where the user is looking: in a
+    ''' dialog, verdict first, with the reasoning under it.</summary>
+    Public Function AccessTestTitle() As String
+        Return Localization.T("Проверка доступа из интернета")
+    End Function
+
+    ''' <summary>The address being probed, spelled out in the dialog - the verdict lines
+    ''' below stay readable without repeating "host:port" in every branch.</summary>
+    Public Function AccessTestTargetLine(endpoint As String) As String
+        Return Localization.TF("Проверяемый адрес: {0}", endpoint)
+    End Function
+
+    ''' <summary>Progress line while the probe runs.</summary>
+    Public Function AccessTestRunningLine(endpoint As String) As String
+        Return Localization.TF("Проверка {0} ..", endpoint)
+    End Function
+
+    ''' <summary>One-line verdict. Also the line the main window keeps in its status
+    ''' strip after the dialog closes, so the two never word the same result
+    ''' differently.</summary>
+    Public Function AccessTestResultLine(res As SftpProbe.ProbeResult, endpoint As String) As String
+        Select Case res
+            Case SftpProbe.ProbeResult.SshOk
+                Return Localization.TF("✓ Доступ из интернета работает: {0}", endpoint)
+            Case SftpProbe.ProbeResult.PortOpen
+                Return Localization.TF("Порт открыт, но SFTP не ответил: {0}", endpoint)
+            Case SftpProbe.ProbeResult.Timeout, SftpProbe.ProbeResult.Refused
+                Return Localization.T("✗ С этого ПК не отвечает. Роутер может не пускать на свой адрес изнутри - проверьте с телефона по мобильной сети.")
+            Case Else
+                Return Localization.T("Адрес некорректен.")
+        End Select
+    End Function
+
+    ''' <summary>What the verdict means and what to do about it - the part that did not
+    ''' fit a status line. The negative case gets the longest text on purpose: it is the
+    ''' only outcome that is NOT conclusive (the probe leaves from the same PC, so a
+    ''' router without NAT loopback refuses its own external address even when the
+    ''' forward is correct), and the honest next step is a phone on mobile data.</summary>
+    Public Function AccessTestDetail(res As SftpProbe.ProbeResult) As String
+        Select Case res
+            Case SftpProbe.ProbeResult.SshOk
+                Return Localization.T("Сервер ответил по внешнему адресу - проброс порта работает. Телефон подключится из любой сети: нажмите «Поделиться» вверху и покажите ему QR-код.")
+            Case SftpProbe.ProbeResult.PortOpen
+                Return Localization.T("Порт снаружи открыт, но ответила не наша программа. Обычно так бывает, когда правило проброса на роутере ведёт на другое устройство или этот порт занят другой службой. Проверьте правило: внешний порт должен вести на этот ПК и на порт раздачи.")
+            Case SftpProbe.ProbeResult.Timeout, SftpProbe.ProbeResult.Refused
+                Return Localization.T("Проверка идёт с этого же ПК, поэтому она не окончательная: многие роутеры не пускают запрос на свой внешний адрес изнутри домашней сети. Надёжный способ - открыть QR-код на телефоне, выключив на нём Wi-Fi и оставив мобильный интернет. Если и так подключиться не удаётся, настройте проброс порта - кнопка «Как настроить доступ через интернет».")
+            Case Else
+                Return Localization.T("Адрес из интернета ещё не определён.")
+        End Select
+    End Function
+
     ' --- opt-in server-features enablement (SPECIFICATION_SHARE_SERVER_OPTIN_INSTALL) ---
 
     ''' <summary>Heading of the enable-sharing dialog / Settings-tab panel.</summary>

@@ -3,6 +3,7 @@ Option Strict On
 
 Imports System.Windows.Forms
 Imports System.Linq
+Imports System.IO
 
 Partial Public Class Table_Form
 
@@ -63,13 +64,66 @@ Partial Public Class Table_Form
         AddPreferenceChoice(files, "after_file_operation", p.AfterFileOperation,
                             {Choice("next", "Следующий файл"), Choice("stay", "Остаться на текущем"), Choice("closeIfEmpty", "Закрыть, если файлов не осталось")}, Sub(v) p.AfterFileOperation = v)
         AddPreferenceCheck(files, "include_subfolders", p.IncludeSubfolders, Sub(v) p.IncludeSubfolders = v)
-        AddPreferenceText(files, "included_extensions", p.IncludedExtensions, Sub(v) p.IncludedExtensions = v)
+        AddPreferenceText(files, "included_extensions", p.IncludedExtensionsForEditing(), Sub(v) p.SetIncludedExtensionsFromEditing(v))
         AddPreferenceNumber(files, "recent_files_limit", p.RecentFilesLimit, 0, 200, Sub(v) p.RecentFilesLimit = v)
         AddPreferenceNumber(files, "recent_folders_limit", p.RecentFoldersLimit, 0, 200, Sub(v) p.RecentFoldersLimit = v)
         AddPreferenceChoice(files, "startup_open", p.StartupOpenMode,
                             {Choice("home", "Стартовую страницу"), Choice("lastFolder", "Последнюю папку"), Choice("lastFile", "Последний файл")}, Sub(v) p.StartupOpenMode = v)
+        AddSettingsTransferRows(files)
+        AddAllowNewWindowsRow(files, p)
 
         AddPreferenceNumber(ocr, "ocr_cache_limit", p.OcrDiskCacheMaxMb, 0, 1024, Sub(v) p.OcrDiskCacheMaxMb = v)
+    End Sub
+
+    Private Sub AddSettingsTransferRows(files As FlowLayoutPanel)
+        Dim exportButton As New Button With {.AutoSize = True, .Text = Localization.T("Экспортировать настройки")}
+        AddHandler exportButton.Click,
+            Sub()
+                Using dialog As New SaveFileDialog With {.Filter = "Fast Media Sorter settings|*.fms-settings.json", .DefaultExt = "fms-settings.json", .AddExtension = True}
+                    If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+                    Try
+                        File.WriteAllText(dialog.FileName, Main_Form.GetModernPreferences().ExportJson())
+                        MessageBox.Show(Me, Localization.T("Настройки экспортированы."), Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    Catch ex As Exception
+                        MessageBox.Show(Me, Localization.TF("Не удалось экспортировать настройки: {0}", ex.Message), Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    End Try
+                End Using
+            End Sub
+        AddSettingRow(files, "settings_export", exportButton, 210, True)
+
+        Dim importButton As New Button With {.AutoSize = True, .Text = Localization.T("Импортировать настройки")}
+        AddHandler importButton.Click,
+            Sub()
+                Using dialog As New OpenFileDialog With {.Filter = "Fast Media Sorter settings|*.fms-settings.json"}
+                    If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+                    Try
+                        Dim imported As ModernViewerPreferences = ModernViewerPreferences.FromJson(File.ReadAllText(dialog.FileName))
+                        Dim backup As String = dialog.FileName & ".backup"
+                        File.WriteAllText(backup, Main_Form.GetModernPreferences().ExportJson(includePersonalData:=True))
+                        Main_Form.ReplaceModernPreferences(imported)
+                        MessageBox.Show(Me, Localization.TF("Настройки импортированы. Резервная копия: {0}", backup), Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    Catch ex As Exception
+                        ' No write happens before FromJson validated the complete document.
+                        MessageBox.Show(Me, Localization.TF("Не удалось импортировать настройки: {0}", ex.Message), Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    End Try
+                End Using
+            End Sub
+        AddSettingRow(files, "settings_import", importButton, 210, True)
+    End Sub
+
+    ''' <summary>This value is deliberately persisted right away, including from a
+    ''' secondary process, so the next Explorer launch follows the new choice.</summary>
+    Private Sub AddAllowNewWindowsRow(files As FlowLayoutPanel, p As ModernViewerPreferences)
+        Dim check As New CheckBox With {.Checked = p.AllowNewWindows, .AutoSize = True}
+        AddHandler check.CheckedChanged,
+            Sub()
+                p.AllowNewWindows = check.Checked
+                Microsoft.VisualBasic.Interaction.SaveSetting(App_name, Second_App_Name, "AllowNewWindows", If(check.Checked, "1", "0"))
+            End Sub
+        AddSettingRow(files, "allow_new_windows", check, 34, True)
+        If toolTip IsNot Nothing Then
+            toolTip.SetToolTip(check, Localization.T("Действует со следующего запуска. Настройки и позицию окна хранит первое окно. Помните: выделив в проводнике десять файлов, вы получите десять окон. По умолчанию выключено."))
+        End If
     End Sub
 
     ''' <summary>

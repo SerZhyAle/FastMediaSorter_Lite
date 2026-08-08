@@ -3,6 +3,7 @@ Option Strict On
 
 Imports System.IO
 Imports System.Collections.Generic
+Imports System.Text.Json
 
 Partial Public Class Main_Form
 
@@ -18,6 +19,13 @@ Partial Public Class Main_Form
         Return modern_Preferences
     End Function
 
+    Friend Sub ReplaceModernPreferences(imported As ModernViewerPreferences)
+        If imported Is Nothing Then Throw New ArgumentNullException(NameOf(imported))
+        imported.Normalize()
+        modern_Preferences = imported
+        ApplyModernPreferencesFromSettings()
+    End Sub
+
     Friend Sub ApplyModernPreferencesFromSettings()
         If modern_Preferences Is Nothing Then Return
         modern_Preferences.Normalize()
@@ -26,6 +34,10 @@ Partial Public Class Main_Form
         ResetShuffleCycle()
         ApplyRecipientsOverlay()
         If video_Controls IsNot Nothing Then video_Controls_Hide_Timer.Interval = VideoControlsHideDelayMilliseconds()
+        ' Expanded settings are live settings. Persist after normalisation so a change
+        ' made in the settings window survives a crash and is visible to the next
+        ' process without waiting for the main form to close.
+        modern_Preferences.Save()
     End Sub
 
     Private Function RecentFoldersLimit() As Integer
@@ -42,12 +54,17 @@ Partial Public Class Main_Form
         If modern_Preferences Is Nothing OrElse String.IsNullOrWhiteSpace(modern_Preferences.IncludedExtensions) Then Return
 
         Dim requested As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
-        For Each part As String In modern_Preferences.IncludedExtensions.Split(";"c)
-            Dim extension As String = part.Trim()
-            If extension.Length = 0 Then Continue For
-            If Not extension.StartsWith(".", StringComparison.Ordinal) Then extension = "." & extension
-            requested.Add(extension.ToLowerInvariant())
-        Next
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(modern_Preferences.IncludedExtensions)
+                If doc.RootElement.ValueKind <> JsonValueKind.Array Then Return
+                For Each item As JsonElement In doc.RootElement.EnumerateArray()
+                    If item.ValueKind = JsonValueKind.String Then requested.Add(item.GetString().ToLowerInvariant())
+                Next
+            End Using
+        Catch
+            Return
+        End Try
+        If requested.Count = 0 Then Return
         all_Supported_Extensions.IntersectWith(requested)
     End Sub
 
@@ -108,6 +125,28 @@ Partial Public Class Main_Form
     Private Function VideoEndAction() As String
         Return If(modern_Preferences Is Nothing, "stay", modern_Preferences.VideoEndAction)
     End Function
+
+    Private Sub QueueRememberedVideoPosition(filePath As String)
+        If modern_Preferences Is Nothing OrElse Not modern_Preferences.RememberVideoPosition Then Return
+        Try
+            Dim info As New FileInfo(filePath)
+            pending_Video_Seek = modern_Preferences.RememberedVideoPosition(info.FullName, info.LastWriteTimeUtc.Ticks, info.Length)
+        Catch
+            ClearPendingVideoPosition()
+        End Try
+    End Sub
+
+    Private Sub RememberCurrentVideoPosition()
+        If modern_Preferences Is Nothing OrElse Not modern_Preferences.RememberVideoPosition OrElse
+           vlc_Media_Player Is Nothing OrElse String.IsNullOrEmpty(current_Loaded_File_Name) Then Return
+        Try
+            If Not vlc_Media_Player.IsSeekable Then Return
+            Dim info As New FileInfo(current_Loaded_File_Name)
+            modern_Preferences.StoreVideoPosition(info.FullName, info.LastWriteTimeUtc.Ticks, info.Length, vlc_Media_Player.Position)
+            modern_Preferences.Save()
+        Catch
+        End Try
+    End Sub
 
     Private Sub ResetShuffleCycle()
         shuffle_Cycle.Clear()

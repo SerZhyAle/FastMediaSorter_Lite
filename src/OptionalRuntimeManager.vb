@@ -116,6 +116,18 @@ Friend Module OptionalRuntimeManager
 #End If
 
         PrependToPath(dir)
+
+        ' tesseract50.dll imports leptonica-<ver>.dll from its OWN folder. Load that one
+        ' first, by full path, so the by-name import binds to an already-resident module -
+        ' see the note in ProbeDll for why the folder itself is not searchable everywhere.
+        Try
+            For Each dependency As String In Directory.GetFiles(dir, "leptonica*.dll")
+                Dim ignored As String = ""
+                ProbeDll(dir, Path.GetFileName(dependency), ignored)
+            Next
+        Catch
+        End Try
+
         Return ProbeDll(dir, "tesseract50.dll", reason)
     End Function
 
@@ -220,6 +232,33 @@ Friend Module OptionalRuntimeManager
     End Function
 
     Private Async Function InstallRuntimePackageAsync(kind As OptionalRuntimeKind) As Task(Of String)
+        ' The downloaded runtime tree is shared by all viewer processes. A named
+        ' Mutex keeps another window from observing or overwriting a half-extracted
+        ' libvlc/Tesseract package. Run the blocking ownership wait on a pool thread:
+        ' the UI remains responsive while another process finishes its download.
+        Return Await Task.Run(Function() InstallRuntimePackageUnderMutex(kind)).ConfigureAwait(False)
+    End Function
+
+    Private Function InstallRuntimePackageUnderMutex(kind As OptionalRuntimeKind) As String
+        Using runtimeMutex As New Mutex(False, "FastMediaSorterRuntimeDownloadMutex")
+            Dim ownsMutex As Boolean = False
+            Try
+                ownsMutex = runtimeMutex.WaitOne()
+                Return InstallRuntimePackageAsyncCore(kind).GetAwaiter().GetResult()
+            Catch ex As Exception
+                Return ex.Message
+            Finally
+                If ownsMutex Then
+                    Try
+                        runtimeMutex.ReleaseMutex()
+                    Catch
+                    End Try
+                End If
+            End Try
+        End Using
+    End Function
+
+    Private Async Function InstallRuntimePackageAsyncCore(kind As OptionalRuntimeKind) As Task(Of String)
         Dim tempFile As String = Path.Combine(Path.GetTempPath(), "FastMediaSorter-" & kind.ToString().ToLowerInvariant() & ".nupkg")
         Dim targetRoot As String = GetTargetRoot(kind)
 
@@ -397,13 +436,23 @@ Friend Module OptionalRuntimeManager
             Return False
         End If
 
-        Dim handle As IntPtr = LoadLibrary(fullPath)
+        ' LOAD_WITH_ALTERED_SEARCH_PATH, not a plain LoadLibrary: it makes the loader resolve
+        ' THIS dll's own imports out of its directory. Those imports are siblings sitting right
+        ' next to it (libvlc.dll -> libvlccore.dll, tesseract50.dll -> leptonica-*.dll), and a
+        ' plain LoadLibrary never searches the loaded dll's folder - it found them only because
+        ' PrependToPath had put that folder on PATH. A PACKAGED process (MSIX / Microsoft Store)
+        ' does not search PATH at all: its order is package graph -> exe folder -> System32. So
+        ' in the Store build the probe failed with ERROR_MOD_NOT_FOUND (126) and the runtime was
+        ' reported broken while both files sat in the same folder inside the package.
+        Dim handle As IntPtr = LoadLibraryEx(fullPath, IntPtr.Zero, LOAD_WITH_ALTERED_SEARCH_PATH)
         If handle = IntPtr.Zero Then
             reason = BuildLoadLibraryMessage(fullPath, Marshal.GetLastWin32Error())
             Return False
         End If
 
-        FreeLibrary(handle)
+        ' Deliberately NOT freed. Keeping the module resident is what lets a later load BY NAME
+        ' bind to it (Tesseract's InteropDotNet loader, VLC's plugins) inside a packaged process,
+        ' where neither PATH nor the sibling folder is on the search path.
         reason = ""
         Return True
     End Function
@@ -443,12 +492,10 @@ Friend Module OptionalRuntimeManager
                         MessageBoxIcon.Warning)
     End Sub
 
-    <DllImport("kernel32.dll", CharSet:=CharSet.Unicode, SetLastError:=True)>
-    Private Function LoadLibrary(lpFileName As String) As IntPtr
-    End Function
+    Private Const LOAD_WITH_ALTERED_SEARCH_PATH As UInteger = &H8UI
 
-    <DllImport("kernel32.dll", SetLastError:=True)>
-    Private Function FreeLibrary(hModule As IntPtr) As Boolean
+    <DllImport("kernel32.dll", CharSet:=CharSet.Unicode, SetLastError:=True)>
+    Private Function LoadLibraryEx(lpFileName As String, hFile As IntPtr, dwFlags As UInteger) As IntPtr
     End Function
 
 End Module

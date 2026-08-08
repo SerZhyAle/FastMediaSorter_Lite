@@ -3,6 +3,8 @@ Option Strict On
 
 Imports System.Globalization
 Imports System.Text.Json
+Imports System.Collections.Generic
+Imports System.Linq
 
 ''' <summary>
 ''' Persisted preferences introduced by SPECIFICATION_SETTINGS_EXPANSION.  The
@@ -45,10 +47,22 @@ Public NotInheritable Class ModernViewerPreferences
     Public Property PreferredSubtitleLanguage As String = ""
 
     Public Property StartupOpenMode As String = "home"
+    Public Property AllowNewWindows As Boolean = False
     Public Property RecentFilesLimit As Integer = 50
     Public Property RecentFoldersLimit As Integer = 100
     Public Property OcrDiskCacheMaxMb As Integer = 250
     Public Property CustomHotkeysJson As String = "{}"
+    ''' <summary>Bounded JSON stores. They are intentionally profile keys rather than
+    ''' binary settings so an old profile remains readable and portable.</summary>
+    Public Property FolderZoomHistory As String = "[]"
+    Public Property VideoPositionHistory As String = "[]"
+
+    Public NotInheritable Class VideoPositionEntry
+        Public Property Path As String = ""
+        Public Property LastWriteUtcTicks As Long
+        Public Property Length As Long
+        Public Property Position As Single
+    End Class
 
     Public Shared Function Load() As ModernViewerPreferences
         Dim p As New ModernViewerPreferences()
@@ -56,7 +70,7 @@ Public NotInheritable Class ModernViewerPreferences
         p.AfterFileOperation = ReadChoice("AfterFileOperation", p.AfterFileOperation, "next", "stay", "closeIfEmpty")
         p.AdvanceAfterCopy = ReadBool("AdvanceAfterCopy", p.AdvanceAfterCopy)
         p.IncludeSubfolders = ReadBool("IncludeSubfolders", p.IncludeSubfolders)
-        p.IncludedExtensions = ReadString("IncludedExtensions", p.IncludedExtensions)
+        p.IncludedExtensions = NormalizeExtensionJson(ReadString("IncludedExtensions", p.IncludedExtensions))
         p.InterfaceScalePercent = ReadInt("InterfaceScalePercent", p.InterfaceScalePercent, 0, 150)
         If p.InterfaceScalePercent <> 0 AndAlso p.InterfaceScalePercent < 90 Then p.InterfaceScalePercent = 90
         p.NewImageScaleMode = ReadChoice("NewImageScaleMode", p.NewImageScaleMode, "fit", "actual", "perFolder")
@@ -82,19 +96,26 @@ Public NotInheritable Class ModernViewerPreferences
         p.PreferredSubtitleLanguage = ReadString("PreferredSubtitleLanguage", p.PreferredSubtitleLanguage)
 
         p.StartupOpenMode = ReadChoice("StartupOpenMode", p.StartupOpenMode, "home", "lastFolder", "lastFile")
+        p.AllowNewWindows = ReadBool("AllowNewWindows", p.AllowNewWindows)
         p.RecentFilesLimit = ReadInt("RecentFilesLimit", p.RecentFilesLimit, 0, 200)
         p.RecentFoldersLimit = ReadInt("RecentFoldersLimit", p.RecentFoldersLimit, 0, 200)
         p.OcrDiskCacheMaxMb = ReadInt("OcrDiskCacheMaxMb", p.OcrDiskCacheMaxMb, 0, 1024)
         p.CustomHotkeysJson = NormalizeJson(ReadString("CustomHotkeys", p.CustomHotkeysJson))
+        p.FolderZoomHistory = NormalizeArrayJson(ReadString("FolderZoomHistory", p.FolderZoomHistory))
+        p.VideoPositionHistory = NormalizeArrayJson(ReadString("VideoPositionHistory", p.VideoPositionHistory))
         Return p
     End Function
 
     Public Sub Save()
+        ' Secondary processes never overwrite the primary process's profile. The
+        ' AllowNewWindows checkbox writes its one key immediately by design.
+        If MultiWindowPolicy.IsSecondaryInstance() Then Return
+
         WriteString("NameCollisionPolicy", NameCollisionPolicy)
         WriteString("AfterFileOperation", AfterFileOperation)
         WriteBool("AdvanceAfterCopy", AdvanceAfterCopy)
         WriteBool("IncludeSubfolders", IncludeSubfolders)
-        WriteString("IncludedExtensions", IncludedExtensions)
+        WriteString("IncludedExtensions", NormalizeExtensionJson(IncludedExtensions))
         WriteString("InterfaceScalePercent", InterfaceScalePercent.ToString(CultureInfo.InvariantCulture))
         WriteString("NewImageScaleMode", NewImageScaleMode)
         WriteBool("ReduceMotion", ReduceMotion)
@@ -115,18 +136,72 @@ Public NotInheritable Class ModernViewerPreferences
         WriteString("PreferredAudioLanguage", PreferredAudioLanguage)
         WriteString("PreferredSubtitleLanguage", PreferredSubtitleLanguage)
         WriteString("StartupOpenMode", StartupOpenMode)
+        ' Keep a primary process with an older in-memory value from resurrecting a
+        ' choice that a secondary process just wrote for subsequent launches.
+        AllowNewWindows = ReadBool("AllowNewWindows", AllowNewWindows)
+        WriteBool("AllowNewWindows", AllowNewWindows)
         WriteString("RecentFilesLimit", RecentFilesLimit.ToString(CultureInfo.InvariantCulture))
         WriteString("RecentFoldersLimit", RecentFoldersLimit.ToString(CultureInfo.InvariantCulture))
         WriteString("OcrDiskCacheMaxMb", OcrDiskCacheMaxMb.ToString(CultureInfo.InvariantCulture))
         WriteString("CustomHotkeys", NormalizeJson(CustomHotkeysJson))
+        WriteString("FolderZoomHistory", NormalizeArrayJson(FolderZoomHistory))
+        WriteString("VideoPositionHistory", NormalizeArrayJson(VideoPositionHistory))
     End Sub
 
-    Public Function ExportJson() As String
-        Return JsonSerializer.Serialize(Me, New JsonSerializerOptions With {.WriteIndented = True})
+    Public Function ExportJson(Optional includePersonalData As Boolean = False) As String
+        Normalize()
+        Dim exported As ModernViewerPreferences = JsonSerializer.Deserialize(Of ModernViewerPreferences)(JsonSerializer.Serialize(Me))
+        If Not includePersonalData Then
+            ' Paths and resume positions are personal data. The normal export is safe to
+            ' share; an explicit future UI opt-in can use includePersonalData:=True.
+            exported.FolderZoomHistory = "[]"
+            exported.VideoPositionHistory = "[]"
+        End If
+        Return JsonSerializer.Serialize(New SettingsExport With {.SchemaVersion = 1, .Preferences = exported},
+                                        New JsonSerializerOptions With {.WriteIndented = True})
     End Function
 
+    Public Function IncludedExtensionsForEditing() As String
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(NormalizeExtensionJson(IncludedExtensions))
+                Return String.Join("; ", doc.RootElement.EnumerateArray().Select(Function(item) item.GetString()))
+            End Using
+        Catch
+            Return String.Empty
+        End Try
+    End Function
+
+    Public Sub SetIncludedExtensionsFromEditing(value As String)
+        IncludedExtensions = NormalizeExtensionJson(value)
+    End Sub
+
+    Public Function RememberedVideoPosition(path As String, lastWriteUtcTicks As Long, length As Long) As Single
+        If Not RememberVideoPosition OrElse String.IsNullOrEmpty(path) Then Return -1.0F
+        Dim entries As List(Of VideoPositionEntry) = ReadVideoPositions()
+        Dim entry As VideoPositionEntry = entries.FirstOrDefault(Function(item) String.Equals(item.Path, path, StringComparison.OrdinalIgnoreCase))
+        If entry Is Nothing OrElse entry.LastWriteUtcTicks <> lastWriteUtcTicks OrElse entry.Length <> length Then Return -1.0F
+        If entry.Position <= 0.0F OrElse entry.Position >= 1.0F Then Return -1.0F
+        entries.Remove(entry)
+        entries.Add(entry) ' read is use: maintain the LRU order
+        VideoPositionHistory = JsonSerializer.Serialize(entries)
+        Return entry.Position
+    End Function
+
+    Public Sub StoreVideoPosition(path As String, lastWriteUtcTicks As Long, length As Long, position As Single)
+        If Not RememberVideoPosition OrElse String.IsNullOrEmpty(path) OrElse position <= 0.0F OrElse position >= 1.0F Then Return
+        Dim entries As List(Of VideoPositionEntry) = ReadVideoPositions()
+        entries.RemoveAll(Function(item) String.Equals(item.Path, path, StringComparison.OrdinalIgnoreCase))
+        entries.Add(New VideoPositionEntry With {.Path = path, .LastWriteUtcTicks = lastWriteUtcTicks, .Length = length, .Position = position})
+        If entries.Count > 200 Then entries.RemoveRange(0, entries.Count - 200)
+        VideoPositionHistory = JsonSerializer.Serialize(entries)
+    End Sub
+
     Public Shared Function FromJson(json As String) As ModernViewerPreferences
-        Dim p As ModernViewerPreferences = JsonSerializer.Deserialize(Of ModernViewerPreferences)(json)
+        Dim document As SettingsExport = JsonSerializer.Deserialize(Of SettingsExport)(json)
+        If document Is Nothing OrElse document.SchemaVersion <> 1 OrElse document.Preferences Is Nothing Then
+            Throw New FormatException("Unsupported settings document.")
+        End If
+        Dim p As ModernViewerPreferences = document.Preferences
         If p Is Nothing Then Throw New FormatException("Settings document is empty.")
         p.Normalize()
         Return p
@@ -152,10 +227,12 @@ Public NotInheritable Class ModernViewerPreferences
         RecentFilesLimit = Clamp(RecentFilesLimit, 0, 200)
         RecentFoldersLimit = Clamp(RecentFoldersLimit, 0, 200)
         OcrDiskCacheMaxMb = Clamp(OcrDiskCacheMaxMb, 0, 1024)
-        IncludedExtensions = If(IncludedExtensions, String.Empty)
+        IncludedExtensions = NormalizeExtensionJson(IncludedExtensions)
         PreferredAudioLanguage = If(PreferredAudioLanguage, String.Empty)
         PreferredSubtitleLanguage = If(PreferredSubtitleLanguage, String.Empty)
         CustomHotkeysJson = NormalizeJson(CustomHotkeysJson)
+        FolderZoomHistory = NormalizeArrayJson(FolderZoomHistory)
+        VideoPositionHistory = NormalizeArrayJson(VideoPositionHistory)
     End Sub
 
     Private Shared Function ReadString(key As String, defaultValue As String) As String
@@ -204,5 +281,56 @@ Public NotInheritable Class ModernViewerPreferences
         End Try
         Return "{}"
     End Function
+
+    Private Shared Function NormalizeArrayJson(value As String) As String
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(If(value, "[]"))
+                If doc.RootElement.ValueKind = JsonValueKind.Array Then Return doc.RootElement.GetRawText()
+            End Using
+        Catch
+        End Try
+        Return "[]"
+    End Function
+
+    Private Function ReadVideoPositions() As List(Of VideoPositionEntry)
+        Try
+            Dim entries As List(Of VideoPositionEntry) = JsonSerializer.Deserialize(Of List(Of VideoPositionEntry))(NormalizeArrayJson(VideoPositionHistory))
+            If entries IsNot Nothing Then Return entries.Where(Function(item) item IsNot Nothing AndAlso Not String.IsNullOrEmpty(item.Path)).ToList()
+        Catch
+        End Try
+        Return New List(Of VideoPositionEntry)()
+    End Function
+
+    ''' <summary>Empty is the deliberate all-supported-formats sentinel.  Older
+    ''' semicolon-separated values are accepted once and rewritten as the documented
+    ''' lowercase JSON array.</summary>
+    Private Shared Function NormalizeExtensionJson(value As String) As String
+        If String.IsNullOrWhiteSpace(value) Then Return "[]"
+        Dim values As New List(Of String)()
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(value)
+                If doc.RootElement.ValueKind = JsonValueKind.Array Then
+                    For Each item As JsonElement In doc.RootElement.EnumerateArray()
+                        If item.ValueKind = JsonValueKind.String Then values.Add(item.GetString())
+                    Next
+                End If
+            End Using
+        Catch
+            values.AddRange(value.Split(";"c))
+        End Try
+        Dim normalized As New List(Of String)()
+        For Each item As String In values
+            Dim extension As String = If(item, String.Empty).Trim().ToLowerInvariant()
+            If extension.Length = 0 Then Continue For
+            If Not extension.StartsWith(".", StringComparison.Ordinal) Then extension = "." & extension
+            If Not normalized.Contains(extension) Then normalized.Add(extension)
+        Next
+        Return JsonSerializer.Serialize(normalized)
+    End Function
+
+    Private NotInheritable Class SettingsExport
+        Public Property SchemaVersion As Integer
+        Public Property Preferences As ModernViewerPreferences
+    End Class
 End Class
 #End If

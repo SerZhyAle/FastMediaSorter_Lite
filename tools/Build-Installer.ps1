@@ -195,7 +195,7 @@ Get-ChildItem $releaseDir -Recurse -File |
         Copy-Item $_.FullName $destination -Force
     }
 
-foreach ($extra in @("README.md", "LICENSE")) {
+foreach ($extra in @("README.md", "LICENSE", "THIRD-PARTY-NOTICES.txt")) {
     $source = Join-Path $solutionDir $extra
     if (Test-Path $source) { Copy-Item $source $stageDir -Force }
 }

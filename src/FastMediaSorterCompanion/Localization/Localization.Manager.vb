@@ -427,6 +427,65 @@ Partial Public NotInheritable Class Localization
             "✗ اس پی سی سے کوئی جواب نہیں۔ روٹر اندر سے اپنے ہی پتے کو روک سکتا ہے - موبائل ڈیٹا پر فون سے جانچیں۔",
             "✗ 本机无响应。路由器可能拒绝从内部访问其地址 - 请用手机通过移动数据测试。")
 
+        ' --- internet-access test dialog (Share_Access_Test_Form) -----------------
+        ' The verdict lines above are the dialog's headline; these carry the title, the
+        ' address under test and the reasoning that never fit into a status line.
+
+        Add("Проверка доступа из интернета",
+            "Internet access test", "Перевірка доступу з інтернету", "Test des Internetzugriffs",
+            "Verifica dell'accesso da internet", "Comprobación del acceso desde internet",
+            "Test de l'accès depuis internet", "Teste do acesso pela internet",
+            "اختبار الوصول من الإنترنت", "इंटरनेट पहुँच की जाँच", "ইন্টারনেট অ্যাক্সেস পরীক্ষা",
+            "انٹرنیٹ رسائی کی جانچ", "互联网访问测试")
+
+        Add("Проверяемый адрес: {0}",
+            "Address tested: {0}", "Адреса, що перевіряється: {0}", "Geprüfte Adresse: {0}",
+            "Indirizzo verificato: {0}", "Dirección comprobada: {0}", "Adresse testée : {0}",
+            "Endereço testado: {0}", "العنوان المُختبَر: {0}", "जाँचा गया पता: {0}",
+            "পরীক্ষিত ঠিকানা: {0}", "جانچا گیا پتہ: {0}", "测试的地址：{0}")
+
+        Add("Сервер ответил по внешнему адресу - проброс порта работает. Телефон подключится из любой сети: нажмите «Поделиться» вверху и покажите ему QR-код.",
+            "The server answered on the external address - port forwarding works. The phone will connect from any network: press 'Share' at the top and show it the QR code.",
+            "Сервер відповів за зовнішньою адресою - проброс порту працює. Телефон підключиться з будь-якої мережі: натисніть «Поділитися» вгорі й покажіть йому QR-код.",
+            "Der Server hat über die externe Adresse geantwortet - die Portweiterleitung funktioniert. Das Telefon verbindet sich aus jedem Netz: oben auf «Teilen» klicken und ihm den QR-Code zeigen.",
+            "Il server ha risposto sull'indirizzo esterno: l'inoltro della porta funziona. Il telefono si collegherà da qualsiasi rete: premi «Condividi» in alto e mostragli il codice QR.",
+            "El servidor respondió en la dirección externa: la redirección de puerto funciona. El teléfono se conectará desde cualquier red: pulsa «Compartir» arriba y muéstrale el código QR.",
+            "Le serveur a répondu sur l'adresse externe - la redirection de port fonctionne. Le téléphone se connectera depuis n'importe quel réseau : cliquez sur « Partager » en haut et montrez-lui le code QR.",
+            "O servidor respondeu no endereço externo - o encaminhamento de porta funciona. O telemóvel liga-se a partir de qualquer rede: carregue em «Partilhar» no topo e mostre-lhe o código QR.",
+            "استجاب الخادم على العنوان الخارجي - إعادة توجيه المنفذ تعمل. سيتصل الهاتف من أي شبكة: اضغط «مشاركة» في الأعلى وأظهر له رمز QR.",
+            "सर्वर ने बाहरी पते पर उत्तर दिया - पोर्ट फ़ॉरवर्डिंग काम कर रही है। फ़ोन किसी भी नेटवर्क से जुड़ जाएगा: ऊपर «साझा करें» दबाएँ और उसे QR कोड दिखाएँ।",
+            "সার্ভার বাহ্যিক ঠিকানায় সাড়া দিয়েছে - পোর্ট ফরওয়ার্ডিং কাজ করছে। ফোন যেকোনো নেটওয়ার্ক থেকে সংযুক্ত হবে: উপরে «শেয়ার করুন» চাপুন এবং তাকে QR কোডটি দেখান।",
+            "سرور نے بیرونی پتے پر جواب دیا - پورٹ فارورڈنگ کام کر رہی ہے۔ فون کسی بھی نیٹ ورک سے جڑ جائے گا: اوپر «شیئر کریں» دبائیں اور اسے QR کوڈ دکھائیں۔",
+            "服务器已在外部地址上响应 - 端口转发正常。手机可从任意网络连接：点击顶部的「共享」，把二维码给它扫描。")
+
+        Add("Порт снаружи открыт, но ответила не наша программа. Обычно так бывает, когда правило проброса на роутере ведёт на другое устройство или этот порт занят другой службой. Проверьте правило: внешний порт должен вести на этот ПК и на порт раздачи.",
+            "The port is open from outside, but the reply did not come from our program. Usually the forwarding rule on the router points at another device, or another service holds that port. Check the rule: the external port must lead to this PC and to the share port.",
+            "Порт ззовні відкритий, але відповіла не наша програма. Зазвичай так буває, коли правило пробросу на роутері веде на інший пристрій або цей порт зайнятий іншою службою. Перевірте правило: зовнішній порт має вести на цей ПК і на порт роздачі.",
+            "Der Port ist von außen offen, aber die Antwort kam nicht von unserem Programm. Meist zeigt die Weiterleitungsregel im Router auf ein anderes Gerät, oder ein anderer Dienst belegt diesen Port. Prüfen Sie die Regel: Der externe Port muss auf diesen PC und auf den Freigabeport führen.",
+            "La porta è aperta dall'esterno, ma non ha risposto il nostro programma. Di solito la regola di inoltro sul router punta a un altro dispositivo, oppure un altro servizio occupa quella porta. Controlla la regola: la porta esterna deve portare a questo PC e alla porta della condivisione.",
+            "El puerto está abierto desde fuera, pero quien respondió no es nuestro programa. Normalmente la regla de redirección del router apunta a otro dispositivo, o ese puerto lo ocupa otro servicio. Revisa la regla: el puerto externo debe llevar a este PC y al puerto del uso compartido.",
+            "Le port est ouvert depuis l'extérieur, mais ce n'est pas notre programme qui a répondu. En général, la règle de redirection du routeur pointe vers un autre appareil, ou un autre service occupe ce port. Vérifiez la règle : le port externe doit mener à ce PC et au port du partage.",
+            "A porta está aberta do exterior, mas quem respondeu não foi o nosso programa. Normalmente a regra de encaminhamento no router aponta para outro dispositivo, ou outro serviço ocupa essa porta. Verifique a regra: a porta externa deve levar a este PC e à porta da partilha.",
+            "المنفذ مفتوح من الخارج، لكن الذي استجاب ليس برنامجنا. غالبًا ما تشير قاعدة إعادة التوجيه في الموجّه إلى جهاز آخر، أو تشغل خدمة أخرى هذا المنفذ. تحقّق من القاعدة: يجب أن يقود المنفذ الخارجي إلى هذا الحاسوب وإلى منفذ المشاركة.",
+            "पोर्ट बाहर से खुला है, पर उत्तर हमारे कार्यक्रम ने नहीं दिया। आमतौर पर राउटर का फ़ॉरवर्डिंग नियम किसी दूसरे उपकरण की ओर जाता है, या उस पोर्ट पर कोई दूसरी सेवा चल रही है। नियम जाँचें: बाहरी पोर्ट इसी पीसी और साझाकरण के पोर्ट तक जाना चाहिए।",
+            "পোর্টটি বাইরে থেকে খোলা, কিন্তু সাড়া দিয়েছে আমাদের প্রোগ্রাম নয়। সাধারণত রাউটারের ফরওয়ার্ডিং নিয়ম অন্য ডিভাইসের দিকে যায়, অথবা ওই পোর্টে অন্য কোনো পরিষেবা চলছে। নিয়মটি যাচাই করুন: বাহ্যিক পোর্টটি এই পিসি ও শেয়ারিং পোর্টে যাওয়া উচিত।",
+            "پورٹ باہر سے کھلا ہے، مگر جواب ہمارے پروگرام نے نہیں دیا۔ عام طور پر روٹر کا فارورڈنگ اصول کسی دوسرے آلے کی طرف جاتا ہے، یا اس پورٹ پر کوئی اور سروس چل رہی ہے۔ اصول جانچیں: بیرونی پورٹ اسی پی سی اور شیئرنگ پورٹ تک جانا چاہیے۔",
+            "端口从外部是开放的，但应答的并不是本程序。通常是路由器的转发规则指向了其他设备，或该端口被别的服务占用。请检查规则：外部端口应指向本机以及共享所用的端口。")
+
+        Add("Проверка идёт с этого же ПК, поэтому она не окончательная: многие роутеры не пускают запрос на свой внешний адрес изнутри домашней сети. Надёжный способ - открыть QR-код на телефоне, выключив на нём Wi-Fi и оставив мобильный интернет. Если и так подключиться не удаётся, настройте проброс порта - кнопка «Как настроить доступ через интернет».",
+            "The test runs from this same PC, so it is not conclusive: many routers refuse a request to their own external address from inside the home network. The reliable way is to open the QR code on the phone with its Wi-Fi off and mobile data on. If it still cannot connect, set up port forwarding - the 'How to set up internet access' button.",
+            "Перевірка йде з цього ж ПК, тому вона не остаточна: багато роутерів не пускають запит на свою зовнішню адресу зсередини домашньої мережі. Надійний спосіб - відкрити QR-код на телефоні, вимкнувши на ньому Wi-Fi і залишивши мобільний інтернет. Якщо й так підключитися не вдається, налаштуйте проброс порту - кнопка «Як налаштувати доступ через інтернет».",
+            "Der Test läuft von diesem PC aus und ist deshalb nicht endgültig: Viele Router lassen eine Anfrage an ihre eigene externe Adresse aus dem Heimnetz heraus nicht zu. Zuverlässig ist es, den QR-Code auf dem Telefon zu öffnen - dort WLAN aus, mobile Daten an. Klappt es auch dann nicht, richten Sie die Portweiterleitung ein - Schaltfläche «Internetzugriff einrichten».",
+            "La verifica parte da questo stesso PC, quindi non è definitiva: molti router rifiutano dall'interno della rete di casa una richiesta al proprio indirizzo esterno. Il modo affidabile è aprire il codice QR sul telefono con il Wi-Fi spento e la rete mobile attiva. Se anche così non si collega, configura l'inoltro della porta - pulsante «Come configurare l'accesso da internet».",
+            "La comprobación se hace desde este mismo PC, por lo que no es concluyente: muchos routers rechazan desde la red doméstica una petición a su propia dirección externa. Lo fiable es abrir el código QR en el teléfono con el Wi-Fi apagado y los datos móviles activos. Si aun así no conecta, configura la redirección de puerto - botón «Cómo configurar el acceso desde internet».",
+            "Le test part de ce même PC, il n'est donc pas concluant : beaucoup de routeurs refusent, depuis le réseau domestique, une requête vers leur propre adresse externe. La méthode fiable est d'ouvrir le code QR sur le téléphone, Wi-Fi coupé et données mobiles activées. Si la connexion échoue encore, configurez la redirection de port - bouton « Comment configurer l'accès internet ».",
+            "O teste parte deste mesmo PC, por isso não é conclusivo: muitos routers recusam, a partir da rede doméstica, um pedido ao seu próprio endereço externo. O modo fiável é abrir o código QR no telemóvel com o Wi-Fi desligado e os dados móveis ligados. Se mesmo assim não ligar, configure o encaminhamento de porta - botão «Como configurar o acesso pela internet».",
+            "يجري الاختبار من هذا الحاسوب نفسه، لذا فهو غير حاسم: كثير من الموجّهات ترفض من داخل الشبكة المنزلية أي طلب إلى عنوانها الخارجي. الطريقة الموثوقة هي فتح رمز QR على الهاتف مع إيقاف Wi-Fi وتشغيل بيانات الجوال. وإذا لم يتصل حتى حينها، فاضبط إعادة توجيه المنفذ - زر «كيفية إعداد الوصول من الإنترنت».",
+            "जाँच इसी पीसी से चलती है, इसलिए यह अंतिम नहीं है: कई राउटर घरेलू नेटवर्क के भीतर से अपने ही बाहरी पते पर आया अनुरोध नहीं मानते। भरोसेमंद तरीका यह है कि फ़ोन पर Wi-Fi बंद करके और मोबाइल डेटा चालू रखकर QR कोड खोलें। तब भी न जुड़े, तो पोर्ट फ़ॉरवर्डिंग सेट करें - बटन «इंटरनेट पहुँच कैसे सेट करें»।",
+            "পরীক্ষাটি এই পিসি থেকেই চলে, তাই এটি চূড়ান্ত নয়: অনেক রাউটার বাড়ির নেটওয়ার্কের ভেতর থেকে নিজের বাহ্যিক ঠিকানায় আসা অনুরোধ গ্রহণ করে না। নির্ভরযোগ্য উপায় হলো ফোনের Wi-Fi বন্ধ রেখে ও মোবাইল ডেটা চালু রেখে QR কোডটি খোলা। তাতেও সংযোগ না হলে পোর্ট ফরওয়ার্ডিং সেট করুন - «কীভাবে ইন্টারনেট অ্যাক্সেস সেট করবেন» বোতাম।",
+            "جانچ اسی پی سی سے چلتی ہے، اس لیے یہ حتمی نہیں: بہت سے روٹر گھریلو نیٹ ورک کے اندر سے اپنے ہی بیرونی پتے پر آنے والی درخواست قبول نہیں کرتے۔ قابلِ اعتماد طریقہ یہ ہے کہ فون پر Wi-Fi بند اور موبائل ڈیٹا آن کر کے QR کوڈ کھولیں۔ اگر پھر بھی رابطہ نہ ہو تو پورٹ فارورڈنگ ترتیب دیں - «انٹرنیٹ رسائی کیسے ترتیب دیں» بٹن۔",
+            "该测试从本机发起，因此结论并不确定：许多路由器不允许家庭网络内部访问其自身的外部地址。可靠的做法是在手机上关闭 Wi-Fi、开启移动数据后再打开二维码。若仍无法连接，请设置端口转发 - 「如何设置互联网访问」按钮。")
+
         ' --- share lifecycle ------------------------------------------------------
 
         Add("Обновляю список папок..",

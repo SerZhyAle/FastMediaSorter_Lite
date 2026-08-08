@@ -319,6 +319,7 @@ Partial Public Class Main_Form
             ' A different file starts here: whatever restore the previous one was still
             ' owed must not land on this one.
             ClearPendingVideoPosition()
+            QueueRememberedVideoPosition(file_Path)
 #End If
             Dim media As LibVLCSharp.Shared.Media = CreateVlcMedia(file_Path)
             If Is_Video_Loop OrElse VideoEndAction() = "repeat" Then media.AddOption(":input-repeat=65535")
@@ -353,6 +354,9 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub StopVlcPlayback()
+#If Not NETFRAMEWORK Then
+        RememberCurrentVideoPosition()
+#End If
         If vlc_Media_Player IsNot Nothing AndAlso is_Vlc_Playing Then
             Try
                 vlc_Media_Player.Stop()
