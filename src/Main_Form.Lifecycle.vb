@@ -604,6 +604,9 @@ Partial Public Class Main_Form
         ' Default "1", unlike its neighbours: this one only bites once DynamicPerspective
         ' has been switched on by hand, and the growth is what that switch is for.
         Is_Animated_Perspective = GetSetting(App_name, Second_App_Name, "AnimatedPerspective", "1") = "1"
+        ' Absent/empty/corrupt normalizes to medium in HaloSpeedFromSetting, which is what
+        ' hands every existing profile the new (twice as fast) default without a migration.
+        Halo_Animation_Speed = HaloSpeedFromSetting(GetSetting(App_name, Second_App_Name, "AnimatedPerspectiveSpeed", ""))
         Is_no_request_before_file_operation = GetSetting(App_name, Second_App_Name, "NoRequestBeforeFileOperation", "0") = "1"
 
         Is_to_show_picture_sizes = GetSetting(App_name, Second_App_Name, "ShowPictureSizes", "1") = "1"
@@ -1033,6 +1036,7 @@ Partial Public Class Main_Form
             SaveSetting(App_name, Second_App_Name, "isPerspective", If(Is_Pespective, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "DynamicPerspective", If(Is_Dynamic_Perspective, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "AnimatedPerspective", If(Is_Animated_Perspective, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "AnimatedPerspectiveSpeed", HaloSpeedToSetting(Halo_Animation_Speed))
             SaveSetting(App_name, Second_App_Name, "TableOpened", If(Table_Form.Visible, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "RunsCount", (app_Run_Count + 1).ToString)
             SaveSetting(App_name, Second_App_Name, "mediaViewedCount", (media_View_Count).ToString)

@@ -822,6 +822,10 @@ Public Class Image_Panel_Form
         If is_Bulk_Operation_Running Then Return
         If selectedPictureControls.Count = 0 Then Return
 
+        Dim recipient_Slot As Integer = If(move_Slot_index = 0, 10, move_Slot_index)
+        If recipient_Slot < 1 OrElse recipient_Slot > 10 OrElse
+           String.IsNullOrWhiteSpace(Hardkeys_to_move_mediafile(recipient_Slot)) Then Return
+
 #If NETFRAMEWORK Then
         Dim copying As Boolean = Is_Copying_not_Moving
 #Else
@@ -829,13 +833,7 @@ Public Class Image_Panel_Form
 #End If
 
         ' In Main_Form, key '0' corresponds to index 10
-        Dim destination_Folder_Path As String = Hardkeys_to_move_mediafile(If(move_Slot_index = 0, 10, move_Slot_index))
-        Dim move_Slot_Key As String = If(move_Slot_index = 0, "0", move_Slot_index.ToString())
-
-        If String.IsNullOrEmpty(destination_Folder_Path) Then
-            MessageBox.Show(Localization.TF("! Нет каталога-получателя для клавиши {0}", move_Slot_Key), Localization.T("Внимание"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Return
-        End If
+        Dim destination_Folder_Path As String = Hardkeys_to_move_mediafile(recipient_Slot)
 
         Dim work As New List(Of Tuple(Of PictureBox, String))()
         For Each pb As PictureBox In selectedPictureControls

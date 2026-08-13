@@ -59,6 +59,39 @@ Module Common_Module
     ' surprise anyone on upgrade, since its parent is off until deliberately switched on,
     ' and the growth is the point of the effect.
     Public Is_Animated_Perspective As Boolean = True
+    ' Sub-option of Is_Animated_Perspective: how long that growth takes. It only changes
+    ' HOW the halo arrives at a new photo - the resting frame, the falloff shape and the
+    ' two flags above are untouched. Medium is half the historical 350 ms and is the
+    ' default, so an existing profile lands on the faster animation with no migration
+    ' step; the historical timing survives as Slow. Modern build only - the x86 viewer
+    ' hides the drop-down, exactly like the two flags above.
+    Public Enum HaloAnimationSpeed
+        Slow = 0
+        Medium = 1
+        Fast = 2
+    End Enum
+
+    Public Halo_Animation_Speed As HaloAnimationSpeed = HaloAnimationSpeed.Medium
+
+    ''' <summary>The one place the stored value is parsed. A missing, empty or corrupt
+    ''' key is medium - never an exception, never a silently different speed.</summary>
+    Public Function HaloSpeedFromSetting(stored As String) As HaloAnimationSpeed
+        Select Case If(stored, "").Trim().ToLowerInvariant()
+            Case "slow" : Return HaloAnimationSpeed.Slow
+            Case "fast" : Return HaloAnimationSpeed.Fast
+            Case Else : Return HaloAnimationSpeed.Medium
+        End Select
+    End Function
+
+    ''' <summary>The inverse, so the registry only ever sees slow/medium/fast.</summary>
+    Public Function HaloSpeedToSetting(speed As HaloAnimationSpeed) As String
+        Select Case speed
+            Case HaloAnimationSpeed.Slow : Return "slow"
+            Case HaloAnimationSpeed.Fast : Return "fast"
+            Case Else : Return "medium"
+        End Select
+    End Function
+
     ' Mouse-wheel action over an image: False (default) = flip through files, exactly
     ' as it has always worked; True = zoom in/out under the cursor (the "classic
     ' viewer" behaviour), opt-in only. Ctrl/Shift/Alt+wheel keep their meaning in both

@@ -87,19 +87,32 @@ Partial Public NotInheritable Class Localization
             "বারগুলো ছবি থেকে দূরে গিয়ে পটভূমির রঙে মিশে যায় - কঠিন বার নয়, আভা। পরবর্তী ছবি থেকে কার্যকর।",
             "پٹیاں تصویر سے دور ہوتے ہوئے پس منظر کے رنگ میں گھل جاتی ہیں - ٹھوس پٹی کے بجائے ہالہ۔ اگلی تصویر سے لاگو۔",
             "色带随着远离照片渐隐为背景色 - 是光晕而非实心色块。从下一张照片起生效。")
-        Add("Ореол не появляется сразу, а вырастает от края фото к краю экрана - примерно за треть секунды. Снимите галку, и он будет просто нарисован мгновенно. В покое кадр в обоих случаях одинаковый. Растёт только на новом фото: ресайз окна и зум перерисовывают фон сразу.",
-            "The halo grows from the edge of the photo out to the edge of the screen - about a third of a second - instead of just being there. Uncheck it and it is simply drawn at once. The resting frame is the same either way. Only a new photo grows it: resizing the window or zooming redraws the background instantly.",
-            "Ореол не з'являється одразу, а виростає від краю фото до краю екрана - приблизно за третину секунди. Зніміть позначку, і він просто намалюється миттєво. У спокої кадр однаковий в обох випадках. Росте лише на новому фото: зміна розміру вікна та зум перемальовують фон одразу.",
-            "Der Halo wächst vom Rand des Fotos zum Bildschirmrand - etwa eine Drittelsekunde - statt einfach da zu sein. Ohne Haken wird er sofort gezeichnet. Das ruhende Bild ist so oder so identisch. Nur ein neues Foto lässt ihn wachsen: Fenstergröße und Zoom zeichnen den Hintergrund sofort neu.",
-            "L'alone cresce dal bordo della foto fino al bordo dello schermo - circa un terzo di secondo - invece di essere già lì. Togli la spunta e viene disegnato subito. Il fotogramma a riposo è identico in entrambi i casi. Cresce solo su una foto nuova: ridimensionare la finestra o lo zoom ridisegnano lo sfondo all'istante.",
-            "El halo crece desde el borde de la foto hasta el borde de la pantalla, en torno a un tercio de segundo, en lugar de aparecer ya hecho. Desmárquelo y se dibujará al instante. El fotograma en reposo es idéntico en ambos casos. Solo crece con una foto nueva: redimensionar la ventana o el zoom redibujan el fondo de inmediato.",
-            "Le halo croît du bord de la photo vers le bord de l'écran - environ un tiers de seconde - au lieu d'être simplement là. Décochez et il est dessiné aussitôt. L'image au repos est identique dans les deux cas. Seule une nouvelle photo le fait croître : redimensionner la fenêtre ou zoomer redessine le fond immédiatement.",
-            "O halo cresce da borda da foto até a borda da tela - cerca de um terço de segundo - em vez de já estar lá. Desmarque e ele é desenhado de uma vez. O quadro em repouso é igual nos dois casos. Só uma foto nova o faz crescer: redimensionar a janela ou dar zoom redesenha o fundo na hora.",
-            "تنمو الهالة من حافة الصورة إلى حافة الشاشة - نحو ثلث ثانية - بدل أن تكون موجودة فورًا. أزل التحديد فتُرسم مباشرة. الإطار الساكن واحد في الحالتين. تنمو فقط مع صورة جديدة: تغيير حجم النافذة أو التكبير يعيد رسم الخلفية فورًا.",
-            "आभा फ़ोटो के किनारे से स्क्रीन के किनारे तक बढ़ती है - लगभग एक तिहाई सेकंड - बजाय पहले से मौजूद होने के। निशान हटाने पर वह तुरंत खींच दी जाती है। स्थिर फ़्रेम दोनों हाल में एक जैसा है। केवल नई फ़ोटो पर बढ़ती है: विंडो का आकार बदलना या ज़ूम पृष्ठभूमि तुरंत दोबारा खींचते हैं।",
-            "আভা ছবির প্রান্ত থেকে পর্দার প্রান্ত পর্যন্ত বাড়ে - প্রায় এক-তৃতীয়াংশ সেকেন্ড - আগে থেকে থাকার বদলে। টিক তুলে দিলে সঙ্গে সঙ্গে আঁকা হয়। স্থির ফ্রেম দুই ক্ষেত্রেই একই। কেবল নতুন ছবিতেই বাড়ে: উইন্ডো রিসাইজ বা জুম পটভূমি সঙ্গে সঙ্গে আঁকে।",
-            "ہالہ تصویر کے کنارے سے اسکرین کے کنارے تک بڑھتا ہے - تقریباً ایک تہائی سیکنڈ - پہلے سے موجود ہونے کے بجائے۔ نشان ہٹائیں تو فوراً بن جاتا ہے۔ ساکن فریم دونوں صورتوں میں یکساں ہے۔ صرف نئی تصویر پر بڑھتا ہے: ونڈو کا سائز بدلنا یا زوم پس منظر فوراً دوبارہ بناتے ہیں۔",
-            "光晕从照片边缘向屏幕边缘生长 - 约三分之一秒 - 而不是一开始就在那里。取消勾选则立即绘制。静止时两者画面完全相同。只有新照片才会生长：调整窗口大小或缩放会立刻重绘背景。")
+        Add("Ореол не появляется сразу, а вырастает от края фото к краю экрана - длительность выбирается ниже. Снимите галку, и он будет просто нарисован мгновенно. В покое кадр в обоих случаях одинаковый. Растёт только на новом фото: ресайз окна и зум перерисовывают фон сразу.",
+            "The halo grows from the edge of the photo out to the edge of the screen - the duration is chosen below - instead of just being there. Uncheck it and it is simply drawn at once. The resting frame is the same either way. Only a new photo grows it: resizing the window or zooming redraws the background instantly.",
+            "Ореол не з'являється одразу, а виростає від краю фото до краю екрана - тривалість обирається нижче. Зніміть позначку, і він просто намалюється миттєво. У спокої кадр однаковий в обох випадках. Росте лише на новому фото: зміна розміру вікна та зум перемальовують фон одразу.",
+            "Der Halo wächst vom Rand des Fotos zum Bildschirmrand - die Dauer wird unten gewählt - statt einfach da zu sein. Ohne Haken wird er sofort gezeichnet. Das ruhende Bild ist so oder so identisch. Nur ein neues Foto lässt ihn wachsen: Fenstergröße und Zoom zeichnen den Hintergrund sofort neu.",
+            "L'alone cresce dal bordo della foto fino al bordo dello schermo - la durata si sceglie qui sotto - invece di essere già lì. Togli la spunta e viene disegnato subito. Il fotogramma a riposo è identico in entrambi i casi. Cresce solo su una foto nuova: ridimensionare la finestra o lo zoom ridisegnano lo sfondo all'istante.",
+            "El halo crece desde el borde de la foto hasta el borde de la pantalla - la duración se elige más abajo - en lugar de aparecer ya hecho. Desmárquelo y se dibujará al instante. El fotograma en reposo es idéntico en ambos casos. Solo crece con una foto nueva: redimensionar la ventana o el zoom redibujan el fondo de inmediato.",
+            "Le halo croît du bord de la photo vers le bord de l'écran - la durée se choisit ci-dessous - au lieu d'être simplement là. Décochez et il est dessiné aussitôt. L'image au repos est identique dans les deux cas. Seule une nouvelle photo le fait croître : redimensionner la fenêtre ou zoomer redessine le fond immédiatement.",
+            "O halo cresce da borda da foto até a borda da tela - a duração é escolhida abaixo - em vez de já estar lá. Desmarque e ele é desenhado de uma vez. O quadro em repouso é igual nos dois casos. Só uma foto nova o faz crescer: redimensionar a janela ou dar zoom redesenha o fundo na hora.",
+            "تنمو الهالة من حافة الصورة إلى حافة الشاشة - وتُختار المدة أدناه - بدل أن تكون موجودة فورًا. أزل التحديد فتُرسم مباشرة. الإطار الساكن واحد في الحالتين. تنمو فقط مع صورة جديدة: تغيير حجم النافذة أو التكبير يعيد رسم الخلفية فورًا.",
+            "आभा फ़ोटो के किनारे से स्क्रीन के किनारे तक बढ़ती है - अवधि नीचे चुनी जाती है - बजाय पहले से मौजूद होने के। निशान हटाने पर वह तुरंत खींच दी जाती है। स्थिर फ़्रेम दोनों हाल में एक जैसा है। केवल नई फ़ोटो पर बढ़ती है: विंडो का आकार बदलना या ज़ूम पृष्ठभूमि तुरंत दोबारा खींचते हैं।",
+            "আভা ছবির প্রান্ত থেকে পর্দার প্রান্ত পর্যন্ত বাড়ে - সময়কাল নিচে বেছে নেওয়া হয় - আগে থেকে থাকার বদলে। টিক তুলে দিলে সঙ্গে সঙ্গে আঁকা হয়। স্থির ফ্রেম দুই ক্ষেত্রেই একই। কেবল নতুন ছবিতেই বাড়ে: উইন্ডো রিসাইজ বা জুম পটভূমি সঙ্গে সঙ্গে আঁকে।",
+            "ہالہ تصویر کے کنارے سے اسکرین کے کنارے تک بڑھتا ہے - دورانیہ نیچے منتخب ہوتا ہے - پہلے سے موجود ہونے کے بجائے۔ نشان ہٹائیں تو فوراً بن جاتا ہے۔ ساکن فریم دونوں صورتوں میں یکساں ہے۔ صرف نئی تصویر پر بڑھتا ہے: ونڈو کا سائز بدلنا یا زوم پس منظر فوراً دوبارہ بناتے ہیں۔",
+            "光晕从照片边缘向屏幕边缘生长 - 时长在下方选择 - 而不是一开始就在那里。取消勾选则立即绘制。静止时两者画面完全相同。只有新照片才会生长：调整窗口大小或缩放会立刻重绘背景。")
+        Add("Как быстро ореол вырастает у нового фото. Средняя - вдвое быстрее прежней анимации, быстрая - вчетверо. На вид ореола в покое это не влияет.",
+            "How fast the halo grows on a new photo. Medium is twice the speed of the old animation, fast is four times. The halo at rest looks the same either way.",
+            "Як швидко ореол виростає на новому фото. Середня вдвічі швидша за колишню анімацію, швидка - вчетверо. На вигляд ореолу в спокої це не впливає.",
+            "Wie schnell der Halo bei einem neuen Foto wächst. Mittel ist doppelt so schnell wie die bisherige Animation, schnell viermal. Der ruhende Halo sieht in beiden Fällen gleich aus.",
+            "Quanto velocemente l'alone cresce su una foto nuova. Media è il doppio della vecchia animazione, veloce il quadruplo. L'alone a riposo resta identico.",
+            "Con qué rapidez crece el halo en una foto nueva. Media es el doble de rápida que la animación anterior; rápida, cuatro veces. El halo en reposo no cambia.",
+            "À quelle vitesse le halo croît sur une nouvelle photo. Moyenne est deux fois plus rapide que l'ancienne animation, rapide quatre fois. Le halo au repos reste identique.",
+            "Com que rapidez o halo cresce em uma foto nova. Média é o dobro da animação anterior; rápida, o quádruplo. O halo em repouso continua igual.",
+            "سرعة نمو الهالة عند فتح صورة جديدة. المتوسطة ضعف سرعة الحركة السابقة، والسريعة أربعة أضعافها. لا يتغير شكل الهالة الساكنة.",
+            "नई फ़ोटो पर आभा कितनी तेज़ी से बढ़ती है। मध्यम पुरानी एनिमेशन से दोगुनी तेज़ है, तेज़ चार गुनी। स्थिर आभा दोनों हाल में एक जैसी रहती है।",
+            "নতুন ছবিতে আভা কত দ্রুত বাড়ে। মাঝারি আগের অ্যানিমেশনের দ্বিগুণ দ্রুত, দ্রুত চার গুণ। স্থির আভা দুই ক্ষেত্রেই একই থাকে।",
+            "نئی تصویر پر ہالہ کتنی تیزی سے بڑھتا ہے۔ درمیانی پرانی حرکت سے دوگنی تیز ہے، تیز چار گنا۔ ساکن ہالہ دونوں صورتوں میں ایک جیسا رہتا ہے۔",
+            "新照片上光晕生长的快慢。中等是原动画速度的两倍，快速是四倍。静止时的光晕不受影响。")
         Add("Показывать размеры изображения (ширина x высота).",
             "Show the dimensions (width x height) of the image.",
             "Показувати розміри зображення (ширина x висота).",
@@ -352,6 +365,13 @@ Partial Public NotInheritable Class Localization
             "गतिशील परिप्रेक्ष्य", "গতিশীল পরিপ্রেক্ষিত", "متحرک تناظر", "动态透视")
         Add("Анимированная", "Animated", "Анімована", "Animiert", "Animata", "Animada",
             "Animée", "Animada", "متحركة", "एनिमेटेड", "অ্যানিমেটেড", "متحرک", "动画")
+        ' The three halo growth speeds, slowest first (Table_Form.vb builds the drop-down).
+        Add("Медленная", "Slow", "Повільна", "Langsam", "Lenta", "Lenta",
+            "Lente", "Lenta", "بطيئة", "धीमी", "ধীর", "سست", "慢速")
+        Add("Средняя", "Medium", "Середня", "Mittel", "Media", "Media",
+            "Moyenne", "Média", "متوسطة", "मध्यम", "মাঝারি", "درمیانی", "中等")
+        Add("Быстрая", "Fast", "Швидка", "Schnell", "Veloce", "Rápida",
+            "Rapide", "Rápida", "سريعة", "तेज़", "দ্রুত", "تیز", "快速")
         Add("Удаление файла", "Delete file", "Видалення файлу", "Datei löschen", "Elimina file",
             "Eliminar archivo", "Supprimer le fichier", "Excluir arquivo", "حذف الملف",
             "फ़ाइल हटाएँ", "ফাইল মুছুন", "فائل حذف کریں", "删除文件")

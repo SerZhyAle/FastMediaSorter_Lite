@@ -438,7 +438,14 @@ Partial Public Class Main_Form
     ''' (there is nothing left to switch it with), and every surface that wants a copy
     ''' asks for one by name. net48 keeps its checkbox and behaves exactly as before.
     ''' </summary>
+    ''' <summary>Only a non-blank destination makes a digit an active recipient key.</summary>
+    Private Shared Function IsRecipientSlotConfigured(ByVal move_Slot_index As Integer) As Boolean
+        If move_Slot_index < 1 OrElse move_Slot_index > 10 Then Return False
+        Return Not String.IsNullOrWhiteSpace(Hardkeys_to_move_mediafile(move_Slot_index))
+    End Function
+
     Private Sub PoMove(ByVal move_Slot_index As Integer)
+        If Not IsRecipientSlotConfigured(move_Slot_index) Then Return
 #If NETFRAMEWORK Then
         ExecuteRecipientAction(move_Slot_index, If(Is_Copying_not_Moving, RecipientActionKind.Copy, RecipientActionKind.Move))
 #Else
@@ -453,16 +460,12 @@ Partial Public Class Main_Form
     ''' same undo. Only <paramref name="action"/> differs.
     ''' </summary>
     Private Sub ExecuteRecipientAction(ByVal move_Slot_index As Integer, ByVal action As RecipientActionKind)
+        If Not IsRecipientSlotConfigured(move_Slot_index) Then Return
+
         Dim is_Copy As Boolean = (action = RecipientActionKind.Copy)
         Dim destination_Folder_Path As String = Hardkeys_to_move_mediafile(move_Slot_index)
         Dim move_Slot_Key As String = move_Slot_index.ToString
         If move_Slot_Key = "10" Then move_Slot_Key = "0"
-
-        If destination_Folder_Path = "" Then
-            lbl_Status.Text = Localization.TF("! Нет каталога-получателя для клавиши {0}", move_Slot_Key)
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1680: No dest folder set with key " & move_Slot_Key)
-            Return
-        End If
 
         If Current_File_Name = "" Then
             lbl_Status.Text = Localization.T("! Нет файла ")

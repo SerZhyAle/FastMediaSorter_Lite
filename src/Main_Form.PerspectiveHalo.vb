@@ -36,8 +36,10 @@ Imports System.Windows.Forms
 ' what the static painter does once per image, would be ~30x that work per second).
 Partial Public Class Main_Form
 
-    ''' <summary>Time the halo takes to grow from the photo edge out to the screen edge.</summary>
-    Private Const halo_Duration_Ms As Double = 350
+    ''' <summary>Time the halo takes to grow from the photo edge out to the screen edge
+    ''' at the SLOW setting - the timing this effect shipped with. Medium (the default)
+    ''' halves it and Fast quarters it; see HaloDurationMs.</summary>
+    Private Const halo_Duration_Slow_Ms As Double = 350
 
     Private Const halo_Frame_Interval_Ms As Integer = 15
 
@@ -65,6 +67,11 @@ Partial Public Class Main_Form
     ''' <summary>1 or 2 - which picture box the running halo belongs to.</summary>
     Private halo_Box_Index As Integer
 
+    ''' <summary>Duration of the RUNNING growth, snapshotted when it started. Read from
+    ''' the setting once per animation rather than once per frame, so switching the speed
+    ''' mid-flight cannot make a halo jump: the change lands on the next photo.</summary>
+    Private halo_Running_Duration_Ms As Double = halo_Duration_Slow_Ms / 2.0
+
     ''' <summary>True = pillarbox (left/right bars), False = letterbox (top/bottom).
     ''' Mirrors the branch Draw_Perspective actually painted, so we never fade an axis
     ''' it left blank (which at the corners would double-fade towards the background).</summary>
@@ -79,6 +86,18 @@ Partial Public Class Main_Form
         If halo_Box_Index = 1 Then Return Picture_Box_1
         If halo_Box_Index = 2 Then Return Picture_Box_2
         Return Nothing
+    End Function
+
+    ''' <summary>How long the growth should take at the user's chosen speed: the shipped
+    ''' 350 ms as Slow, half of it as Medium (the default) and a quarter as Fast. Only the
+    ''' duration changes - the 15 ms frame cap stays, so Fast simply draws fewer frames
+    ''' (about six plus the starting one) instead of drawing them harder.</summary>
+    Private Shared Function HaloDurationMs() As Double
+        Select Case Halo_Animation_Speed
+            Case HaloAnimationSpeed.Slow : Return halo_Duration_Slow_Ms
+            Case HaloAnimationSpeed.Fast : Return halo_Duration_Slow_Ms / 4.0
+            Case Else : Return halo_Duration_Slow_Ms / 2.0
+        End Select
     End Function
 
     ''' <summary>Ease-out: the halo springs out and settles, instead of crawling at a
@@ -136,6 +155,7 @@ Partial Public Class Main_Form
         target.BackgroundImage = frame
 
         If grow Then
+            halo_Running_Duration_Ms = HaloDurationMs()
             halo_Clock.Restart()
             halo_Timer.Start()
         Else
@@ -184,7 +204,10 @@ Partial Public Class Main_Form
             Return
         End If
 
-        Dim progress As Double = halo_Clock.Elapsed.TotalMilliseconds / halo_Duration_Ms
+        ' Against the clock, not against a tick count: a frame the system timer skipped is
+        ' caught up by the elapsed time, and the last frame is always exactly 1.0.
+        Dim duration As Double = If(halo_Running_Duration_Ms > 0.0, halo_Running_Duration_Ms, halo_Duration_Slow_Ms)
+        Dim progress As Double = halo_Clock.Elapsed.TotalMilliseconds / duration
         Dim finished As Boolean = progress >= 1.0
         If finished Then progress = 1.0
 

@@ -3,6 +3,7 @@ Option Strict On
 Imports System.Collections.Generic
 Imports System.Diagnostics
 Imports System.Drawing
+Imports System.Runtime.InteropServices
 Imports System.Windows.Forms
 
 ' Floating "recipients" panel shown top-left over the media surface.
@@ -131,9 +132,13 @@ Partial Public Class Main_Form
         If capW < LogicalToDeviceUnits(120) Then capW = LogicalToDeviceUnits(120)   ' usable floor on tiny windows
         Dim panelW As Integer = Math.Min(desiredW, capW)
 
-        Dim overlay As New Panel With {
+        ' WinForms does not alpha-compose a normal child Panel over its sibling
+        ' PictureBox/VideoView. A layered child window does, so the configured opacity
+        ' genuinely reveals the media beneath the recipients table.
+        Dim overlay As New RecipientsOverlayPanel With {
             .Name = "recipients_Overlay",
-            .BackColor = Color.FromArgb(RecipientsOverlayAlpha(), 32, 32, 32),
+            .BackColor = Color.FromArgb(32, 32, 32),
+            .OverlayOpacity = CByte(RecipientsOverlayAlpha()),
             .Padding = New Padding(0),
             .Margin = New Padding(0)
         }
@@ -174,7 +179,7 @@ Partial Public Class Main_Form
                 .Location = New Point(0, y),
                 .Size = New Size(If(showCopy, panelW - copyW, panelW), rowH),
                 .ForeColor = If(isDelete, Color.White, Color.Gainsboro),
-                .BackColor = If(isDelete, Color.FromArgb(RecipientsOverlayAlpha(), 96, 32, 32), Color.FromArgb(RecipientsOverlayAlpha(), 52, 52, 52))
+                .BackColor = If(isDelete, Color.FromArgb(96, 32, 32), Color.FromArgb(52, 52, 52))
             }
             b.FlatAppearance.BorderSize = 0
             b.FlatAppearance.MouseOverBackColor = If(isDelete, Color.FromArgb(140, 44, 44), Color.FromArgb(72, 72, 72))
@@ -203,7 +208,7 @@ Partial Public Class Main_Form
                     .Location = New Point(panelW - copyW, y),
                     .Size = New Size(copyW, rowH),
                     .ForeColor = Color.Gainsboro,
-                    .BackColor = Color.FromArgb(RecipientsOverlayAlpha(), 38, 62, 38)
+                    .BackColor = Color.FromArgb(38, 62, 38)
                 }
                 c.FlatAppearance.BorderSize = 0
                 c.FlatAppearance.MouseOverBackColor = Color.FromArgb(52, 88, 52)
@@ -288,6 +293,53 @@ Partial Public Class Main_Form
             SetStyle(ControlStyles.Selectable, False)
             Me.TabStop = False
         End Sub
+    End Class
+
+    ''' <summary>
+    ''' A child control cannot make its alpha BackColor transparent over sibling media
+    ''' controls. WS_EX_LAYERED gives the panel a real compositor alpha channel instead.
+    ''' </summary>
+    Private NotInheritable Class RecipientsOverlayPanel
+        Inherits Panel
+
+        Private Const WS_EX_LAYERED As Integer = &H80000
+        Private Const LWA_ALPHA As UInteger = &H2UI
+        Private overlay_Opacity As Byte = Byte.MaxValue
+
+        Public Property OverlayOpacity As Byte
+            Get
+                Return overlay_Opacity
+            End Get
+            Set(value As Byte)
+                overlay_Opacity = value
+                ApplyLayeredOpacity()
+            End Set
+        End Property
+
+        Protected Overrides ReadOnly Property CreateParams As CreateParams
+            Get
+                Dim parameters As CreateParams = MyBase.CreateParams
+                parameters.ExStyle = parameters.ExStyle Or WS_EX_LAYERED
+                Return parameters
+            End Get
+        End Property
+
+        Protected Overrides Sub OnHandleCreated(e As EventArgs)
+            MyBase.OnHandleCreated(e)
+            ApplyLayeredOpacity()
+        End Sub
+
+        Private Sub ApplyLayeredOpacity()
+            If Not IsHandleCreated Then Return
+            SetLayeredWindowAttributes(Handle, 0UI, overlay_Opacity, LWA_ALPHA)
+        End Sub
+
+        <DllImport("user32.dll", SetLastError:=True)>
+        Private Shared Function SetLayeredWindowAttributes(hwnd As IntPtr,
+                                                            colorKey As UInteger,
+                                                            alpha As Byte,
+                                                            flags As UInteger) As Boolean
+        End Function
     End Class
 
 End Class

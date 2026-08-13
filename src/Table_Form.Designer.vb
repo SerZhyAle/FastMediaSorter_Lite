@@ -33,6 +33,7 @@ Partial Class Table_Form
         Me.chb_perspectiva = New System.Windows.Forms.CheckBox()
         Me.chk_Dynamic_Perspective = New System.Windows.Forms.CheckBox()
         Me.chk_Animated_Perspective = New System.Windows.Forms.CheckBox()
+        Me.cmb_Halo_Speed = New System.Windows.Forms.ComboBox()
         Me.Tab_Control = New System.Windows.Forms.TabControl()
         Me.Tab_Page_1 = New System.Windows.Forms.TabPage()
         Me.Tab_Page_2 = New System.Windows.Forms.TabPage()
@@ -217,6 +218,7 @@ Partial Class Table_Form
         Me.grp_Background.Controls.Add(Me.chb_perspectiva)
         Me.grp_Background.Controls.Add(Me.chk_Dynamic_Perspective)
         Me.grp_Background.Controls.Add(Me.chk_Animated_Perspective)
+        Me.grp_Background.Controls.Add(Me.cmb_Halo_Speed)
         Me.grp_Background.Location = New System.Drawing.Point(8, 8)
         Me.grp_Background.Name = "grp_Background"
         Me.grp_Background.Size = New System.Drawing.Size(656, 132)
@@ -364,6 +366,18 @@ Partial Class Table_Form
         Me.chk_Animated_Perspective.TabIndex = 4
         Me.chk_Animated_Perspective.Text = "Animated"
         Me.chk_Animated_Perspective.UseVisualStyleBackColor = True
+        '
+        'cmb_Halo_Speed
+        '
+        ' Sits beside the "Animated" checkbox rather than under it: this group is only
+        ' ever laid out this way in the x86 viewer, where the whole halo chain is hidden,
+        ' and the row below is already occupied. The .NET 10 shell re-hosts the control.
+        Me.cmb_Halo_Speed.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
+        Me.cmb_Halo_Speed.FormattingEnabled = True
+        Me.cmb_Halo_Speed.Location = New System.Drawing.Point(200, 104)
+        Me.cmb_Halo_Speed.Name = "cmb_Halo_Speed"
+        Me.cmb_Halo_Speed.Size = New System.Drawing.Size(180, 23)
+        Me.cmb_Halo_Speed.TabIndex = 5
         '
         'chkb_show_pic_size
         '
@@ -647,6 +661,7 @@ Partial Class Table_Form
     Friend WithEvents chb_perspectiva As CheckBox
     Friend WithEvents chk_Dynamic_Perspective As CheckBox
     Friend WithEvents chk_Animated_Perspective As CheckBox
+    Friend WithEvents cmb_Halo_Speed As ComboBox
     Friend WithEvents Tab_Control As TabControl
     Friend WithEvents Tab_Page_1 As TabPage
     Friend WithEvents Tab_Page_2 As TabPage

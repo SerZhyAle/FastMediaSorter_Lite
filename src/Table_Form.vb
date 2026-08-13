@@ -56,7 +56,8 @@ Public Class Table_Form
         toolTip.SetToolTip(cmbox_color_schema, Localization.T("Выберите цветовую схему фона для просмотра изображений."))
         toolTip.SetToolTip(chb_perspectiva, Localization.T("Включить перспективный фон: чёрные поля по краям превращаются в продолжение картинки. Чисто для красоты."))
         toolTip.SetToolTip(chk_Dynamic_Perspective, Localization.T("Полосы гаснут к цвету фона по мере удаления от фото - получается ореол, а не сплошная полоса. Применяется со следующего фото."))
-        toolTip.SetToolTip(chk_Animated_Perspective, Localization.T("Ореол не появляется сразу, а вырастает от края фото к краю экрана - примерно за треть секунды. Снимите галку, и он будет просто нарисован мгновенно. В покое кадр в обоих случаях одинаковый. Растёт только на новом фото: ресайз окна и зум перерисовывают фон сразу."))
+        toolTip.SetToolTip(chk_Animated_Perspective, Localization.T("Ореол не появляется сразу, а вырастает от края фото к краю экрана - длительность выбирается ниже. Снимите галку, и он будет просто нарисован мгновенно. В покое кадр в обоих случаях одинаковый. Растёт только на новом фото: ресайз окна и зум перерисовывают фон сразу."))
+        toolTip.SetToolTip(cmb_Halo_Speed, Localization.T("Как быстро ореол вырастает у нового фото. Средняя - вдвое быстрее прежней анимации, быстрая - вчетверо. На вид ореола в покое это не влияет."))
         toolTip.SetToolTip(chkb_show_pic_size, Localization.T("Показывать размеры изображения (ширина x высота)."))
         toolTip.SetToolTip(chkb_is_to_show_file_datetime, Localization.T("Показывать дату и время последнего изменения файла."))
         toolTip.SetToolTip(chkb_show_file_size, Localization.T("Показывать размер файла."))
@@ -132,6 +133,13 @@ Public Class Table_Form
         cmbox_color_schema.Items.Add(Localization.T("По верху")) '4
         cmbox_color_schema.Items.Add(Localization.T("По низу")) '5
         cmbox_color_schema.SelectedIndex = Form_Color_Scheme
+
+        ' Halo growth speed. Rebuilt on every display so a language switch relabels it;
+        ' the selection itself is restored below, next to the two halo checkboxes.
+        cmb_Halo_Speed.Items.Clear()
+        cmb_Halo_Speed.Items.Add(Localization.T("Медленная")) '0 - the historical 350 ms
+        cmb_Halo_Speed.Items.Add(Localization.T("Средняя"))   '1 - default, twice as fast
+        cmb_Halo_Speed.Items.Add(Localization.T("Быстрая"))   '2 - four times as fast
 
         cmb_Picture_Size.Items.Clear()
         cmb_Picture_Size.Items.Add("30x40")
@@ -300,9 +308,11 @@ Public Class Table_Form
         ' bars), so do not offer a switch that does nothing here - same as chk_Wheel_Zooms.
         chk_Dynamic_Perspective.Visible = False
         chk_Animated_Perspective.Visible = False
+        cmb_Halo_Speed.Visible = False
 #Else
         chk_Dynamic_Perspective.Checked = Is_Dynamic_Perspective
         chk_Animated_Perspective.Checked = Is_Animated_Perspective
+        cmb_Halo_Speed.SelectedIndex = HaloSpeedToIndex(Halo_Animation_Speed)
 #End If
         ' Checked above only raises CheckedChanged when the value actually changed, so
         ' the greying cannot rely on that handler alone having run.
@@ -405,6 +415,11 @@ Public Class Table_Form
     End Sub
 
     Private Sub Form2_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
+        ' Recipient shortcuts are deliberately exclusive to the viewer. Returning here
+        ' still lets the focused control receive the key, so NumPad digits edit a
+        ' NumericUpDown (for example table opacity) instead of moving the current file.
+        If IsRecipientShortcut(e.KeyCode) Then Return
+
         ' Don't forward key presses if user is editing a DataGridView cell
         If Data_Grid_View.IsCurrentCellInEditMode Then
             Return
@@ -419,6 +434,11 @@ Public Class Table_Form
         ' Forward key presses to Main_Form only when not editing
         Main_Form.KeybUse(e, Main_Form.GetWas_slideshow())
     End Sub
+
+    Private Shared Function IsRecipientShortcut(keyCode As Keys) As Boolean
+        Return (keyCode >= Keys.D0 AndAlso keyCode <= Keys.D9) OrElse
+               (keyCode >= Keys.NumPad0 AndAlso keyCode <= Keys.NumPad9)
+    End Function
 
     Private Sub CheckBox1_CheckedChanged(sender As Object, e As EventArgs) Handles chkbox_Copy_Mode.CheckedChanged
         Is_Copying_not_Moving = chkbox_Copy_Mode.Checked
@@ -437,12 +457,41 @@ Public Class Table_Form
         SyncDynamicPerspectiveEnabled()
     End Sub
 
-    ''' <summary>Greys the chain down: with no perspective there are no bars to fade, and
-    ''' with no halo there is nothing to animate. Better than letting either read as a
-    ''' setting that is doing something.</summary>
+    ''' <summary>Greys the chain down: with no perspective there are no bars to fade, with
+    ''' no halo there is nothing to animate, and with no animation there is no duration to
+    ''' choose. Better than letting any of them read as a setting that is doing something.
+    ''' Greying never resets the value - switching a parent back on restores the choice.</summary>
     Private Sub SyncDynamicPerspectiveEnabled()
         chk_Dynamic_Perspective.Enabled = chb_perspectiva.Checked
         chk_Animated_Perspective.Enabled = chb_perspectiva.Checked AndAlso chk_Dynamic_Perspective.Checked
+        cmb_Halo_Speed.Enabled = chk_Animated_Perspective.Enabled AndAlso chk_Animated_Perspective.Checked
+    End Sub
+
+    ''' <summary>Drop-down position of a stored speed. The list is ordered slowest first,
+    ''' which is also the enum's order - kept as one function so a reorder is one edit.</summary>
+    Private Shared Function HaloSpeedToIndex(speed As HaloAnimationSpeed) As Integer
+        Select Case speed
+            Case HaloAnimationSpeed.Slow : Return 0
+            Case HaloAnimationSpeed.Fast : Return 2
+            Case Else : Return 1
+        End Select
+    End Function
+
+    Private Shared Function HaloSpeedFromIndex(index As Integer) As HaloAnimationSpeed
+        Select Case index
+            Case 0 : Return HaloAnimationSpeed.Slow
+            Case 2 : Return HaloAnimationSpeed.Fast
+            Case Else : Return HaloAnimationSpeed.Medium
+        End Select
+    End Function
+
+    Private Sub Cmb_Halo_Speed_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmb_Halo_Speed.SelectedIndexChanged
+        ' Items.Clear() during a rebuild drops the selection to -1 and raises this; that is
+        ' not the user choosing anything, so leave the stored speed alone.
+        If cmb_Halo_Speed.SelectedIndex < 0 Then Return
+#If Not NETFRAMEWORK Then
+        Halo_Animation_Speed = HaloSpeedFromIndex(cmb_Halo_Speed.SelectedIndex)
+#End If
     End Sub
 
     Private Sub Chk_Dynamic_Perspective_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Dynamic_Perspective.CheckedChanged
@@ -456,6 +505,8 @@ Public Class Table_Form
 #If Not NETFRAMEWORK Then
         Is_Animated_Perspective = chk_Animated_Perspective.Checked
 #End If
+        ' The speed only means anything while the growth is on - this is its parent now.
+        SyncDynamicPerspectiveEnabled()
     End Sub
 
     Private Sub Chkb_show_pic_size_CheckedChanged(sender As Object, e As EventArgs) Handles chkb_show_pic_size.CheckedChanged

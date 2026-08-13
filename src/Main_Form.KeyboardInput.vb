@@ -22,7 +22,28 @@ Partial Public Class Main_Form
         Return Is_slide_show_mode
     End Function
 
+    Private Shared Function RecipientSlotFromKey(keyCode As Keys) As Integer
+        Select Case keyCode
+            Case Keys.D1, Keys.NumPad1 : Return 1
+            Case Keys.D2, Keys.NumPad2 : Return 2
+            Case Keys.D3, Keys.NumPad3 : Return 3
+            Case Keys.D4, Keys.NumPad4 : Return 4
+            Case Keys.D5, Keys.NumPad5 : Return 5
+            Case Keys.D6, Keys.NumPad6 : Return 6
+            Case Keys.D7, Keys.NumPad7 : Return 7
+            Case Keys.D8, Keys.NumPad8 : Return 8
+            Case Keys.D9, Keys.NumPad9 : Return 9
+            Case Keys.D0, Keys.NumPad0 : Return 10
+            Case Else : Return 0
+        End Select
+    End Function
+
     Public Sub KeybUse(e As KeyEventArgs, was_Slide_Show_Mode As Boolean)
+        ' An unconfigured recipient key is not an action. In particular, do not stop
+        ' the slideshow or show a status message for a slot that has no destination.
+        Dim recipient_Slot As Integer = RecipientSlotFromKey(e.KeyCode)
+        If recipient_Slot <> 0 AndAlso Not IsRecipientSlotConfigured(recipient_Slot) Then Return
+
         SlideShowStop()
         is_Slide_Show_Random_Mode = False
 
