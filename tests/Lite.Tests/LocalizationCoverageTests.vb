@@ -70,10 +70,14 @@ Public Class LocalizationCoverageTests
     '''   * OllamaTranslator - Russian words used to DETECT an untranslated reply from
     '''     the model. They are matched against text, never shown, so translating them
     '''     would break the check they exist for.
+    '''   * OcrTextFilter - the Cyrillic vowel set. A character CLASS, in the same sense as
+    '''     the Latin one beside it: it is matched against recognized text to tell a word
+    '''     from a run of consonants, and never displayed. "Translating" an alphabet is not
+    '''     a meaningful operation.
     ''' The Share Manager has its own tables and its own copy of this test.
     ''' </summary>
     Private Shared ReadOnly Exempt As String() = {
-        "OcrLanguageCatalog.vb", "OllamaTranslator.vb"}
+        "OcrLanguageCatalog.vb", "OllamaTranslator.vb", "OcrTextFilter.vb"}
 
     Private Shared Function Skip(srcPath As String) As Boolean
         If srcPath.IndexOf("\obj\", StringComparison.OrdinalIgnoreCase) >= 0 Then Return True

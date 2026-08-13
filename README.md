@@ -142,6 +142,8 @@ automatically picking the ones matching its own bitness.
   pause/resume.
 - **A halo instead of bars** - "Dynamic perspective", a sub-option of the perspective
   background, fades the bars into the background the further they get from the photo.
+  Its own sub-option grows that halo out of the photo's edge on each new picture, at
+  one of three speeds (slow, medium - the default - or fast).
 
 ## Requirements
 

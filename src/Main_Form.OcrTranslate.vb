@@ -249,7 +249,11 @@ Partial Public Class Main_Form
         Try
             ' Engine/translator identity in the cache key includes the model,
             ' OCR quality and OCR mode, so changing any of them invalidates results.
-            Dim engineName As String = ocr_Engine.Name & "|" & ocr_Settings.OcrModelQuality & "|" & ocr_Settings.OcrPageMode
+            ' OcrPipelineVersion covers everything downstream of the engine (clustering,
+            ' filter, plate colours) - without it a cached document built by the previous
+            ' algorithm would come back and the change would look like it never applied.
+            Dim engineName As String = ocr_Engine.Name & "|" & ocr_Settings.OcrModelQuality & "|" & ocr_Settings.OcrPageMode &
+                                       "|v" & OcrPipelineVersion.ToString(Globalization.CultureInfo.InvariantCulture)
             Dim provider As String = ocr_Settings.Provider & "|" & ocr_Settings.OllamaModel
             Dim key As String = TranslationCache.BuildKey(job.FilePath, job.FileWriteTicks, engineName, provider, job.SourceLang, job.TargetLang)
 
@@ -260,6 +264,14 @@ Partial Public Class Main_Form
                 If cached IsNot Nothing Then ocr_Cache.PutMemory(key, cached)
             End If
             If cached IsNot Nothing Then
+#If Not NETFRAMEWORK Then
+                ' A document written by the x86 viewer - or by any build older than the plate
+                ' colours - lands under the SAME key and arrives here with no colours at all.
+                ' The snapshot is still alive on this branch, so it is coloured in on the spot;
+                ' without that, such a file would keep its white plate forever. Not written
+                ' back: sampling 6000 pixels again is cheaper than a write path inside a read.
+                ApplyPlateColors(job.Bitmap, cached.Blocks)
+#End If
                 ApplyOnUi(cached, Localization.T("Из кэша"), token)
                 Return
             End If
@@ -281,7 +293,7 @@ Partial Public Class Main_Form
                     Return
             End Select
 
-            Dim blocks As List(Of OcrBlock) = OcrBlockBuilder.BuildBlocks(ocrResult.Lines)
+            Dim blocks As List(Of OcrBlock) = OcrBlockBuilder.BuildBlocks(ocrResult.Lines, job.ImageSize)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
                             " ocr: blocks=" & blocks.Count.ToString() &
                             " srcUseful=" & String.Join(",", blocks.Select(Function(b) CountUsefulDebugChars(b.SourceText)).ToArray()))
@@ -289,6 +301,13 @@ Partial Public Class Main_Form
                 SetStatusOnUi(Localization.T("Текст не найден"))
                 Return
             End If
+
+#If Not NETFRAMEWORK Then
+            ' Sample the plate colours here, on the background thread, while the pipeline's
+            ' private snapshot still exists - it is disposed in the Finally below, and by
+            ' paint time the original pixels are gone.
+            ApplyPlateColors(job.Bitmap, blocks)
+#End If
 
             ' Translate.
             SetStatusOnUi(Localization.T("Перевод.."))
@@ -337,6 +356,53 @@ Partial Public Class Main_Form
             End Try
         End Try
     End Function
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>
+    ''' Fills in every block that has no plate colours yet, sampling the image once for all
+    ''' of them: one LockBits, one ARGB copy, then a pure computation per block. Doing it per
+    ''' block would lock and unlock the bitmap dozens of times for the same picture.
+    '''
+    ''' Failure is silent by design - a plate keeps its old constant colour, which is exactly
+    ''' the pre-S4 appearance. Colour sampling must never be able to cost the user the
+    ''' translation itself.
+    ''' </summary>
+    Private Shared Sub ApplyPlateColors(source As Bitmap, blocks As List(Of OcrBlock))
+        If source Is Nothing OrElse blocks Is Nothing OrElse blocks.Count = 0 Then Return
+        If Not blocks.Any(Function(b) b.PlateBackgroundArgb = 0) Then Return
+
+        Try
+            Dim w As Integer = source.Width
+            Dim h As Integer = source.Height
+            If w <= 0 OrElse h <= 0 Then Return
+
+            Dim pixels(w * h - 1) As Integer
+            Dim data As Imaging.BitmapData = source.LockBits(New Rectangle(0, 0, w, h),
+                                                            Imaging.ImageLockMode.ReadOnly,
+                                                            Imaging.PixelFormat.Format32bppArgb)
+            Try
+                ' A negative or short stride means a layout this row-wise copy would misread;
+                ' skip rather than sample garbage.
+                If data.Stride < w * 4 Then Return
+                For y As Integer = 0 To h - 1
+                    Runtime.InteropServices.Marshal.Copy(IntPtr.Add(data.Scan0, y * data.Stride), pixels, y * w, w)
+                Next
+            Finally
+                source.UnlockBits(data)
+            End Try
+
+            For Each b As OcrBlock In blocks
+                If b.PlateBackgroundArgb <> 0 Then Continue For
+                Dim palette As OcrPlateColors.PlatePalette =
+                    OcrPlateColors.Compute(pixels, w, h, b.Box, OcrOverlayFit.MedianLineHeight(b))
+                b.PlateBackgroundArgb = palette.Background
+                b.PlateInkArgb = palette.Ink
+            Next
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: plate colours failed: " & ex.Message)
+        End Try
+    End Sub
+#End If
 
     Private Function CreateTranslator() As ITranslator
         Select Case If(ocr_Settings.Provider, "").Trim().ToLowerInvariant()

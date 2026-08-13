@@ -328,6 +328,14 @@
     <Compile Include="Ocr\OcrModels.vb" />
     <Compile Include="Ocr\IOcrEngine.vb" />
     <Compile Include="Ocr\OcrBlockBuilder.vb" />
+    <Compile Include="Ocr\OcrOverlayFit.vb" />
+    <Compile Include="Ocr\OcrTextFilter.vb" />
+    <!-- Both whole-file "#If Not NETFRAMEWORK" - plate colours are a change of appearance
+         (which this fallback does not take) and the diagnostics are a development tool it has
+         no use for. Listed here anyway so the two project file lists never diverge: they
+         compile to nothing in this build, exactly like ZoomMath.vb and LogPackage.vb. -->
+    <Compile Include="Ocr\OcrPlateColors.vb" />
+    <Compile Include="Ocr\OcrDiagnostics.vb" />
     <Compile Include="Ocr\TesseractOcrEngine.vb" />
     <Compile Include="Translate\ITranslator.vb" />
     <Compile Include="Translate\OllamaTranslator.vb" />

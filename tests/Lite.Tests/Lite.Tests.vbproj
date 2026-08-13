@@ -131,6 +131,31 @@
     <Compile Include="..\..\src\FileOpQueue.vb">
       <Link>Linked\FileOpQueue.vb</Link>
     </Compile>
+    <!-- OCR overlay accuracy (SPECIFICATION_OCR_OVERLAY_ACCURACY.md). Pure logic, kept
+         out of Main_Form exactly so it can be proven here: line clustering, the
+         translatability filter and the font/growth ladder are all decisions a user would
+         otherwise have to catch by eye on a comic page. OcrModels carries the data shapes
+         they operate on (and OcrPipelineVersion, the cache key's guard against a stale
+         document built by the previous algorithm). None of them pulls in Tesseract or
+         WinForms - that is the point of the split. -->
+    <Compile Include="..\..\src\Ocr\OcrModels.vb">
+      <Link>Linked\Ocr\OcrModels.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Ocr\OcrBlockBuilder.vb">
+      <Link>Linked\Ocr\OcrBlockBuilder.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Ocr\OcrOverlayFit.vb">
+      <Link>Linked\Ocr\OcrOverlayFit.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Ocr\OcrTextFilter.vb">
+      <Link>Linked\Ocr\OcrTextFilter.vb</Link>
+    </Compile>
+    <!-- Whole-file "#If Not NETFRAMEWORK", so this and OcrPlateColorsTests compile to
+         nothing on the net48 leg - the honest shape: sampled plate colours are a mainline
+         improvement the x86 fallback does not get. -->
+    <Compile Include="..\..\src\Ocr\OcrPlateColors.vb">
+      <Link>Linked\Ocr\OcrPlateColors.vb</Link>
+    </Compile>
   </ItemGroup>
 
   <!-- Each leg gets the SAME ImageSharp its viewer ships with, so the tests exercise

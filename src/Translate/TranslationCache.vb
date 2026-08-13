@@ -34,6 +34,11 @@ Public Class OcrCacheBlock
     Public Property Y As Integer
     Public Property W As Integer
     Public Property H As Integer
+    ''' <summary>Sampled plate background / text colour, ARGB, 0 = not computed. Present in
+    ''' BOTH builds although only the mainline computes them: one cache directory and one
+    ''' cache key are shared by the two exes, so the document shape has to be too.</summary>
+    Public Property Bg As Integer
+    Public Property Ink As Integer
     Public Property Lines As New List(Of OcrCacheLine)
 End Class
 
@@ -218,7 +223,8 @@ Public Class TranslationCache
             Dim cb As New OcrCacheBlock With {
                 .SourceText = b.SourceText,
                 .TranslatedText = b.TranslatedText,
-                .X = b.Box.X, .Y = b.Box.Y, .W = b.Box.Width, .H = b.Box.Height
+                .X = b.Box.X, .Y = b.Box.Y, .W = b.Box.Width, .H = b.Box.Height,
+                .Bg = b.PlateBackgroundArgb, .Ink = b.PlateInkArgb
             }
             For Each l As OcrLine In b.Lines
                 Dim cl As New OcrCacheLine With {
@@ -252,7 +258,8 @@ Public Class TranslationCache
             Dim b As New OcrBlock With {
                 .SourceText = cb.SourceText,
                 .TranslatedText = cb.TranslatedText,
-                .Box = New Rectangle(cb.X, cb.Y, cb.W, cb.H)
+                .Box = New Rectangle(cb.X, cb.Y, cb.W, cb.H),
+                .PlateBackgroundArgb = cb.Bg, .PlateInkArgb = cb.Ink
             }
             For Each cl As OcrCacheLine In cb.Lines
                 Dim l As New OcrLine With {
