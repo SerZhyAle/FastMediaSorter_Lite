@@ -306,16 +306,58 @@ Partial Public NotInheritable Class Localization
             "Não foi possível enviar o email.", "تعذّر إرسال البريد الإلكتروني.",
             "ईमेल नहीं भेजा जा सका।", "ইমেল পাঠানো যায়নি।", "ای میل نہ بھیجی جا سکی۔", "无法发送邮件。")
 
-        Add("QR-код - клик увеличивает, Esc закрывает",
-            "QR code - click to enlarge, Esc to close", "QR-код - клік збільшує, Esc закриває",
-            "QR-Code - klicken zum Vergrößern, Esc zum Schließen",
-            "Codice QR - clic per ingrandire, Esc per chiudere",
-            "Código QR: clic para ampliar, Esc para cerrar",
-            "Code QR - cliquez pour agrandir, Échap pour fermer",
-            "Código QR - clique para ampliar, Esc para fechar",
-            "رمز QR - انقر للتكبير، Esc للإغلاق", "QR कोड - बड़ा करने के लिए क्लिक, बंद करने के लिए Esc",
-            "QR কোড - বড় করতে ক্লিক, বন্ধ করতে Esc", "QR کوڈ - بڑا کرنے کے لیے کلک، بند کرنے کے لیے Esc",
-            "二维码 - 点击放大，Esc 关闭")
+        ' The QR zoom window title carries its whole contract - it is the only chrome that
+        ' window has (SPECIFICATION_QR_SAVE_AND_COPY.md §3).
+        Add("QR-код - клик увеличивает, сохраняет и копирует; Esc закрывает",
+            "QR code - click to enlarge, save and copy; Esc closes",
+            "QR-код - клік збільшує, зберігає й копіює; Esc закриває",
+            "QR-Code - Klick vergrößert, speichert und kopiert; Esc schließt",
+            "Codice QR - il clic ingrandisce, salva e copia; Esc chiude",
+            "Código QR: el clic amplía, guarda y copia; Esc cierra",
+            "Code QR - le clic agrandit, enregistre et copie ; Échap ferme",
+            "Código QR - o clique amplia, guarda e copia; Esc fecha",
+            "رمز QR - النقر يكبّر ويحفظ وينسخ؛ Esc يغلق",
+            "QR कोड - क्लिक बड़ा करता है, सहेजता और कॉपी करता है; बंद करने के लिए Esc",
+            "QR কোড - ক্লিক বড় করে, সংরক্ষণ ও কপি করে; বন্ধ করতে Esc",
+            "QR کوڈ - کلک بڑا کرتا، محفوظ اور کاپی کرتا ہے؛ بند کرنے کے لیے Esc",
+            "二维码 - 点击可放大、保存并复制；Esc 关闭")
+
+        Add("Скопировано в буфер обмена",
+            "Copied to the clipboard", "Скопійовано в буфер обміну",
+            "In die Zwischenablage kopiert", "Copiato negli appunti", "Copiado al portapapeles",
+            "Copié dans le presse-papiers", "Copiado para a área de transferência",
+            "تم النسخ إلى الحافظة", "क्लिपबोर्ड पर कॉपी किया गया", "ক্লিপবোর্ডে কপি করা হয়েছে",
+            "کلپ بورڈ پر کاپی ہو گیا", "已复制到剪贴板")
+
+        Add("Не удалось скопировать в буфер обмена",
+            "Could not copy to the clipboard", "Не вдалося скопіювати в буфер обміну",
+            "Kopieren in die Zwischenablage fehlgeschlagen", "Impossibile copiare negli appunti",
+            "No se pudo copiar al portapapeles", "Impossible de copier dans le presse-papiers",
+            "Não foi possível copiar para a área de transferência", "تعذّر النسخ إلى الحافظة",
+            "क्लिपबोर्ड पर कॉपी नहीं किया जा सका", "ক্লিপবোর্ডে কপি করা যায়নি",
+            "کلپ بورڈ پر کاپی نہ ہو سکا", "无法复制到剪贴板")
+
+        Add("Не удалось сохранить изображение",
+            "Could not save the image", "Не вдалося зберегти зображення",
+            "Das Bild konnte nicht gespeichert werden", "Impossibile salvare l'immagine",
+            "No se pudo guardar la imagen", "Impossible d'enregistrer l'image",
+            "Não foi possível guardar a imagem", "تعذّر حفظ الصورة",
+            "छवि सहेजी नहीं जा सकी", "ছবিটি সংরক্ষণ করা যায়নি",
+            "تصویر محفوظ نہ ہو سکی", "无法保存图片")
+
+        Add("Изображение содержит доступ к вашим папкам - не публикуйте его.",
+            "The image contains access to your folders - do not publish it.",
+            "Зображення містить доступ до ваших папок - не публікуйте його.",
+            "Das Bild enthält den Zugang zu Ihren Ordnern - veröffentlichen Sie es nicht.",
+            "L'immagine contiene l'accesso alle tue cartelle: non pubblicarla.",
+            "La imagen contiene el acceso a tus carpetas: no la publiques.",
+            "L'image contient l'accès à vos dossiers - ne la publiez pas.",
+            "A imagem contém o acesso às suas pastas - não a publique.",
+            "تحتوي الصورة على صلاحية الوصول إلى مجلداتك - لا تنشرها.",
+            "छवि में आपके फ़ोल्डरों तक पहुँच है - इसे प्रकाशित न करें।",
+            "ছবিটিতে আপনার ফোল্ডারের অ্যাক্সেস রয়েছে - এটি প্রকাশ করবেন না।",
+            "تصویر میں آپ کے فولڈرز تک رسائی موجود ہے - اسے شائع نہ کریں۔",
+            "该图片包含访问你文件夹的凭据 - 请勿公开。")
 
         ' --- strings carrying a runtime value --------------------------------------
 
@@ -336,6 +378,31 @@ Partial Public NotInheritable Class Localization
             "Password: {0}", "Пароль: {0}", "Kennwort: {0}", "Password: {0}", "Contraseña: {0}",
             "Mot de passe : {0}", "Palavra-passe: {0}", "كلمة المرور: {0}", "पासवर्ड: {0}",
             "পাসওয়ার্ড: {0}", "پاس ورڈ: {0}", "密码：{0}")
+
+        Add("Сохранено и скопировано: {0}",
+            "Saved and copied: {0}", "Збережено й скопійовано: {0}", "Gespeichert und kopiert: {0}",
+            "Salvato e copiato: {0}", "Guardado y copiado: {0}", "Enregistré et copié : {0}",
+            "Guardado e copiado: {0}", "تم الحفظ والنسخ: {0}", "सहेजा और कॉपी किया गया: {0}",
+            "সংরক্ষণ ও কপি করা হয়েছে: {0}", "محفوظ اور کاپی ہو گیا: {0}", "已保存并复制：{0}")
+
+        Add("Сохранено: {0}",
+            "Saved: {0}", "Збережено: {0}", "Gespeichert: {0}", "Salvato: {0}", "Guardado: {0}",
+            "Enregistré : {0}", "Guardado: {0}", "تم الحفظ: {0}", "सहेजा गया: {0}",
+            "সংরক্ষণ করা হয়েছে: {0}", "محفوظ ہو گیا: {0}", "已保存：{0}")
+
+        Add("Папка «Изображения» недоступна - сохранено в {0}",
+            "The Pictures folder is not available - saved to {0}",
+            "Папка «Зображення» недоступна - збережено в {0}",
+            "Der Ordner «Bilder» ist nicht verfügbar - gespeichert in {0}",
+            "La cartella «Immagini» non è disponibile - salvato in {0}",
+            "La carpeta «Imágenes» no está disponible: guardado en {0}",
+            "Le dossier « Images » n'est pas disponible - enregistré dans {0}",
+            "A pasta «Imagens» não está disponível - guardado em {0}",
+            "مجلد الصور غير متاح - تم الحفظ في {0}",
+            "«चित्र» फ़ोल्डर उपलब्ध नहीं है - {0} में सहेजा गया",
+            "«ছবি» ফোল্ডার উপলব্ধ নয় - {0}-এ সংরক্ষণ করা হয়েছে",
+            "«تصاویر» فولڈر دستیاب نہیں - {0} میں محفوظ کیا گیا",
+            "「图片」文件夹不可用 - 已保存到 {0}")
 
     End Sub
 

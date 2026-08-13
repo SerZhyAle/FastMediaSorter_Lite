@@ -1,10 +1,10 @@
 # Specification - Save the QR code as an image and put it on the clipboard
 
-> Status: **proposal, 2026-08-08**. Not implemented. Owner decisions of 2026-08-08 are folded in (§1).
+> Status: **implemented, 2026-08-11**. Owner decisions of 2026-08-08 are folded in (§1). Implementation notes are at the end (§12).
 >
-> Scope: this repository only, and inside it the **Share Manager** (Companion) - [Qr_Zoom_Form.vb](../../src/FastMediaSorterCompanion/Forms/Qr_Zoom_Form.vb) is the one window every QR passes through, so the whole feature lands in one file plus its strings. LITE and the net48 x86 fallback are untouched.
+> Scope: this repository only, and inside it the **Share Manager** (Companion) - [Qr_Zoom_Form.vb](../../../src/FastMediaSorterCompanion/Forms/Qr_Zoom_Form.vb) is the one window every QR passes through, so the whole feature lands in one file plus its strings. LITE and the net48 x86 fallback are untouched.
 >
-> Related: [SPECIFICATION_ANDROID_FOLDER_SHARE.md](done/SPECIFICATION_ANDROID_FOLDER_SHARE.md) (what the QR carries), [SPECIFICATION_SHARE_COMPANION_APP.md](done/SPECIFICATION_SHARE_COMPANION_APP.md), [SPECIFICATION_STREAMSPLAYER_BROADCAST_RESOURCE.md](SPECIFICATION_STREAMSPLAYER_BROADCAST_RESOURCE.md) (a third QR that inherits this behaviour for free).
+> Related: [SPECIFICATION_ANDROID_FOLDER_SHARE.md](SPECIFICATION_ANDROID_FOLDER_SHARE.md) (what the QR carries), [SPECIFICATION_SHARE_COMPANION_APP.md](SPECIFICATION_SHARE_COMPANION_APP.md), [SPECIFICATION_STREAMSPLAYER_BROADCAST_RESOURCE.md](../SPECIFICATION_STREAMSPLAYER_BROADCAST_RESOURCE.md) (a third QR that inherits this behaviour for free).
 
 ---
 
@@ -36,7 +36,7 @@ Every QR in the product already opens through `Qr_Zoom_Form`, so all of these ga
 
 | Entry point | How the window opens |
 |---|---|
-| Package wizard ("one-shot package") | `OnShowQr` -> `Qr_Zoom_Form.ShowImage` ([PackageWizardForm.vb:570-573](../../src/FastMediaSorterCompanion/Forms/PackageWizardForm.vb#L570-L573)) |
+| Package wizard ("one-shot package") | `OnShowQr` -> `Qr_Zoom_Form.ShowImage` ([PackageWizardForm.vb:570-573](../../../src/FastMediaSorterCompanion/Forms/PackageWizardForm.vb#L570-L573)) |
 | Tray "Show the code" | `Qr_Zoom_Form.ShowImage` with a hidden owner (the tray-resident stand-alone modal path) |
 | Any QR PictureBox | `Qr_Zoom_Form.ShowZoomed` |
 | **Future**: the broadcast resource QR | inherits this with no further work |
@@ -65,7 +65,7 @@ The window title carries the new contract, since the title is the only chrome th
 
 ## 4. The saved image
 
-- **Format**: PNG. The source bytes already are a PNG produced by `PngByteQRCode.GetGraphic(10)` with quiet zones - **10 pixels per module, ECC level M** ([ShareConfigBuilder.vb:335-338](../../src/FastMediaSorterCompanion/Core/ShareConfigBuilder.vb#L335-L338)) - which for a real `.fmscfg` payload lands around 600-1000 px square. That is already a good size to send.
+- **Format**: PNG. The source bytes already are a PNG produced by `PngByteQRCode.GetGraphic(10)` with quiet zones - **10 pixels per module, ECC level M** ([ShareConfigBuilder.vb:335-338](../../../src/FastMediaSorterCompanion/Core/ShareConfigBuilder.vb#L335-L338)) - which for a real `.fmscfg` payload lands around 600-1000 px square. That is already a good size to send.
 - **Save the code's own pixels, not the zoomed view.** The file must not depend on how far the user happened to have zoomed the window; the whole point is a clean, exactly-square, black-and-white code.
 - **Floor at 512 px.** If the source image is smaller than 512 px on a side, upscale by an integer factor with **nearest-neighbour** interpolation (the same reason `QrBox` overrides `OnPaint`: smoothing turns hard modules into grey gradients, and a messenger's own re-compression on top of that is what makes a code unreadable). Never upscale by a non-integer factor, and never downscale.
 - **Keep the quiet zone.** A code pasted edge-to-edge against a dark chat bubble does not scan. The generator already includes it; nothing may crop it.
@@ -104,7 +104,7 @@ Notes that decide whether this actually works:
 
 ## 7. Security and privacy - one thing the user must be told
 
-**The QR is a credential.** A `.fmscfg` code carries the SFTP user name and password and grants access to every shared folder; the product already warns "do not publish the QR code or the `.fmscfg` file" ([ShareText.vb:13](../../src/FastMediaSorterCompanion/Core/ShareText.vb#L13)). Writing it as a picture into `Pictures\` changes its exposure in two concrete ways:
+**The QR is a credential.** A `.fmscfg` code carries the SFTP user name and password and grants access to every shared folder; the product already warns "do not publish the QR code or the `.fmscfg` file" ([ShareText.vb:13](../../../src/FastMediaSorterCompanion/Core/ShareText.vb#L13)). Writing it as a picture into `Pictures\` changes its exposure in two concrete ways:
 
 1. **`Pictures` is commonly synchronized** - OneDrive backs it up by default on many Windows installations, so the code may leave the machine without the user doing anything.
 2. A picture in `Pictures` is what a phone-backup or a photo app happily indexes.
@@ -128,7 +128,7 @@ New strings land in all 13 languages in the same change (invariant 17): the wind
 
 ## 9. Files
 
-- [src/FastMediaSorterCompanion/Forms/Qr_Zoom_Form.vb](../../src/FastMediaSorterCompanion/Forms/Qr_Zoom_Form.vb) - the click handler, the save + clipboard code, `Ctrl+C` / `Ctrl+S`, the per-window file-name latch, the tooltip, the optional `baseName` parameter on `ShowImage`/`ShowZoomed`.
+- [src/FastMediaSorterCompanion/Forms/Qr_Zoom_Form.vb](../../../src/FastMediaSorterCompanion/Forms/Qr_Zoom_Form.vb) - the click handler, the save + clipboard code, `Ctrl+C` / `Ctrl+S`, the per-window file-name latch, the tooltip, the optional `baseName` parameter on `ShowImage`/`ShowZoomed`.
 - `src/FastMediaSorterCompanion/Localization/*` - the new keys.
 - Callers pass a base name where they have a meaningful one (package wizard, and later the broadcast page). Nothing else changes.
 - `CHANGELOG.md` - one line under `[Unreleased]`, in English.
@@ -159,3 +159,14 @@ No new project reference, no new dependency, no new file - the whole feature is 
 - **Other image formats** (JPEG, SVG, BMP). JPEG in particular is the wrong format for hard black-and-white modules.
 - **Printing.**
 - **LITE and the net48 x86 fallback** - neither has a QR surface.
+
+---
+
+## 12. Implementation notes (2026-08-11)
+
+Everything above shipped as written, with two points worth recording:
+
+1. **`Ctrl+C` and the file entry - §3 wins over the last sentence of §5.** The two sections disagreed: §3's gesture table says `Ctrl+C` is "clipboard only (no file)", while §5 ends with "if not, the keyboard path writes it first, same as a click". Writing a file behind a copy-only gesture is exactly what §3 promises not to do, so `Ctrl+C` never creates one - and, to honour §5's real constraint ("`CF_HDROP` naming a file that does not exist yet is a broken paste"), it includes the `CF_HDROP` entry only when this window has already written the file (a preceding click or `Ctrl+S`). Left click and `Ctrl+S` are unaffected: they write the file first, then set the clipboard.
+2. **The base name the package wizard passes** is the folder the code is for, when the code is for exactly one folder (its per-recipient label, else the folder name). With several folders there is no honest name, so it passes an empty one and the plain timestamped form is used.
+
+Where it lives: the window is [Qr_Zoom_Form.vb](../../../src/FastMediaSorterCompanion/Forms/Qr_Zoom_Form.vb) (the "Save and clipboard" region), the strings are in [Localization.Wizard.vb](../../../src/FastMediaSorterCompanion/Localization/Localization.Wizard.vb), and the size/name rules that no manual click can check reliably - the 512 px floor, the whole-number nearest-neighbour factor, the never-downscale rule, the kept quiet zone, the file-name shape - are covered by [QrImageOutputTests.vb](../../../tests/Companion.Tests/QrImageOutputTests.vb).

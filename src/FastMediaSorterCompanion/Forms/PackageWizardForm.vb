@@ -569,8 +569,23 @@ Public NotInheritable Class PackageWizardForm
 
     Private Sub OnShowQr(sender As Object, e As EventArgs)
         FlushPendingRebuild()
-        Qr_Zoom_Form.ShowImage(Me, _qrImage)
+        Qr_Zoom_Form.ShowImage(Me, _qrImage, QrFileBaseName())
     End Sub
+
+    ''' <summary>A meaningful name part for the PNG the zoom window can save: the folder this
+    ''' code is for, when it is for exactly one. With several folders there is no honest name,
+    ''' so the plain timestamped form is used instead.</summary>
+    Private Function QrFileBaseName() As String
+        Dim only1 As String = Nothing
+        For Each row As DataGridViewRow In dgv.Rows
+            If Not CellBool(row, "inc") Then Continue For
+            Dim st As RowState = TryCast(row.Tag, RowState)
+            If st Is Nothing Then Continue For
+            If only1 IsNot Nothing Then Return ""
+            only1 = If(String.IsNullOrWhiteSpace(st.P.Label), st.FolderName, st.P.Label)
+        Next
+        Return If(only1, "")
+    End Function
 
     Private Sub OnSaveConfig(sender As Object, e As EventArgs)
         FlushPendingRebuild()

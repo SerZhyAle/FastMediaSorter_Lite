@@ -36,3 +36,6 @@ manifests/
 .env
 *token*
 *secret*
+
+# Editor workspace settings - local, not shared
+.vscode/
