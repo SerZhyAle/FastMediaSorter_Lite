@@ -270,8 +270,6 @@ var
   ServerFeaturesHintLabel: TNewStaticText;
   ShareGuideLinkLabel: TNewStaticText;
   ShareAppLinkLabel: TNewStaticText;
-  CompanionTitleLabel: TNewStaticText;
-  CompanionBodyLabel: TNewStaticText;
   CompanionSiteLinkLabel: TNewStaticText;
 
 function IsLanguage(const Lang: String): Boolean;
@@ -629,24 +627,15 @@ begin
     Result := 'Get the FastMediaSorter Android app';
 end;
 
-function CompanionTitleText: String;
+{ One line, in the same list as the two Android links above. }
+function CompanionSiteLinkText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Перевод текста на картинках: doc-html-translate'
+    Result := 'doc-html-translate: перевод текста на картинках и документов в HTML'
   else if IsLanguage('ukrainian') then
-    Result := 'Переклад тексту на зображеннях: doc-html-translate'
+    Result := 'doc-html-translate: переклад тексту на зображеннях і документів у HTML'
   else
-    Result := 'Translate text in images: doc-html-translate';
-end;
-
-function CompanionBodyText: String;
-begin
-  if IsLanguage('russian') then
-    Result := 'Распознаёт и переводит текст на изображениях и фотографиях. Также умеет конвертировать документы (EPUB, PDF и другие) в локальный HTML. Доступно через winget:'
-  else if IsLanguage('ukrainian') then
-    Result := 'Розпізнає та перекладає текст на зображеннях і фотографіях. Також може конвертувати документи (EPUB, PDF та інші) у локальний HTML. Доступно через winget:'
-  else
-    Result := 'Recognizes and translates the text inside images and photos. It can also convert documents (EPUB, PDF and more) into clean local HTML. Available via winget:';
+    Result := 'doc-html-translate: translate text in images, convert documents to HTML';
 end;
 
 function AssociationWriteErrorText: String;
@@ -949,31 +938,17 @@ begin
   ShareAppLinkLabel.Font.Color := clBlue;
   ShareAppLinkLabel.OnClick := @OpenShareApp;
 
-  CompanionTitleLabel := TNewStaticText.Create(WizardForm);
+  { The recommended companion project used to take a heading, a paragraph and a bare
+    URL at the bottom of this page - and on a 100% display the paragraph ran off the
+    bottom edge, so the reader saw a truncated advertisement and no link at all. It is
+    one more link among the other two now: same size, same place, nothing to scroll to. }
+  CompanionSiteLinkLabel := TNewStaticText.Create(WizardForm);
   ConfigureWrappedLabel(
-    CompanionTitleLabel,
-    ShareAppLinkLabel.Top + ShareAppLinkLabel.Height + ScaleY(12),
-    CompanionTitleText,
-    True
-  );
-
-  CompanionBodyLabel := TNewStaticText.Create(WizardForm);
-  ConfigureWrappedLabel(
-    CompanionBodyLabel,
-    CompanionTitleLabel.Top + CompanionTitleLabel.Height + ScaleY(6),
-    CompanionBodyText,
+    CompanionSiteLinkLabel,
+    ShareAppLinkLabel.Top + ShareAppLinkLabel.Height + ScaleY(4),
+    CompanionSiteLinkText,
     False
   );
-
-  { Clickable hyperlink to the companion site - a static label styled as a link.
-    Replaces the old non-selectable winget command line, which could not be
-    copied out of the wizard. }
-  CompanionSiteLinkLabel := TNewStaticText.Create(WizardForm);
-  CompanionSiteLinkLabel.Parent := InstallOptionsPage.Surface;
-  CompanionSiteLinkLabel.Left := 0;
-  CompanionSiteLinkLabel.Top := CompanionBodyLabel.Top + CompanionBodyLabel.Height + ScaleY(6);
-  CompanionSiteLinkLabel.AutoSize := True;
-  CompanionSiteLinkLabel.Caption := CompanionSiteUrl;
   CompanionSiteLinkLabel.Cursor := crHand;
   CompanionSiteLinkLabel.Font.Style := [fsUnderline];
   CompanionSiteLinkLabel.Font.Color := clBlue;
