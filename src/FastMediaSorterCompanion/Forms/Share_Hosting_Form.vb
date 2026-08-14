@@ -32,7 +32,9 @@ Public NotInheritable Class Share_Hosting_Form
     Private _lblServing As Label
     Private _lblStore As Label
     Private _lblResult As Label
+    Private _btnSwitchToService As Button
     Private _btnInstallServer As Button
+    Private _noteDownload As Label
     Private _btnReturnToUser As Button
     Private _btnStart As Button
     Private _btnStop As Button
@@ -99,6 +101,7 @@ Public NotInheritable Class Share_Hosting_Form
         tlp.Controls.Add(_lblServing)
         tlp.Controls.Add(_lblStore)
 
+        _btnSwitchToService = MakeAction(HostingText.SwitchToServiceButton(), AddressOf OnSwitchToService)
         _btnInstallServer = MakeAction(HostingText.InstallServerButton(), AddressOf OnOpenServerPage)
         _btnReturnToUser = MakeAction(HostingText.ReturnToUserButton(), AddressOf OnOpenServerPage)
         _btnStart = MakeAction(HostingText.StartServiceButton(), Sub() RunManage(ServiceControl.ManageAction.StartService))
@@ -108,8 +111,13 @@ Public NotInheritable Class Share_Hosting_Form
         _btnGrantRoots = MakeAction(HostingText.GrantRootsButton(), AddressOf OnGrantRoots)
         _btnRemove = MakeAction(HostingText.RemoveRoleButton(), Sub() RunManage(ServiceControl.ManageAction.Remove))
 
+        tlp.Controls.Add(_btnSwitchToService)
         tlp.Controls.Add(_btnInstallServer)
-        tlp.Controls.Add(NoteLabel(HostingText.DownloadNote(), contentWidth))
+        ' Kept as a field: this note explains the DOWNLOAD button, so it must disappear
+        ' together with it when this installation can take the role on by itself, and it
+        ' says something different in a Store build, which cannot.
+        _noteDownload = NoteLabel(HostingText.DownloadNote(), contentWidth)
+        tlp.Controls.Add(_noteDownload)
         tlp.Controls.Add(_btnReturnToUser)
         tlp.Controls.Add(_btnStart)
         tlp.Controls.Add(_btnStop)
@@ -187,7 +195,19 @@ Public NotInheritable Class Share_Hosting_Form
         _lblServing.Text = HostingText.ServingLine(running, roots)
         _lblStore.Text = HostingText.StateStoreLine(ServiceControl.ActiveDataDir())
 
-        _btnInstallServer.Visible = Not installed
+        ' Two ways to reach always-on hosting, and only one of them is offered at a
+        ' time. An ordinary installation now carries the elevated helper and can take
+        ' the role on itself (one UAC prompt, no second download); a Store package
+        ' cannot register a service at all, so there the honest offer is still the page.
+        Dim canSwitch As Boolean = ServiceControl.CanSwitchToService()
+        _btnSwitchToService.Visible = canSwitch
+        _btnInstallServer.Visible = (Not installed) AndAlso (Not canSwitch)
+        If _noteDownload IsNot Nothing Then
+            _noteDownload.Visible = _btnInstallServer.Visible
+            _noteDownload.Text = If(AutostartManager.IsPackaged(),
+                                    HostingText.SwitchUnavailablePackagedHint(),
+                                    HostingText.DownloadNote())
+        End If
         _btnReturnToUser.Visible = installed
 
         ' Lifecycle controls need the elevated helper, which only the Server installer
@@ -235,6 +255,20 @@ Public NotInheritable Class Share_Hosting_Form
         RunManage(ServiceControl.ManageAction.GrantRoots, _grantRoots, _grantReadOnlyRoots)
     End Sub
 
+    ''' <summary>
+    ''' Take this installation from user-session hosting to the Windows service. The
+    ''' consequences are spelled out BEFORE the UAC prompt, because this is a
+    ''' machine-wide role: a service that starts with Windows, a firewall rule, and a
+    ''' service account granted access to the shared folders. The roots are handed to
+    ''' the same elevated call so the switch does not end in a service that runs and
+    ''' serves nothing - and does not need a second prompt to fix that.
+    ''' </summary>
+    Private Sub OnSwitchToService()
+        If MessageBox.Show(Me, HostingText.SwitchToServicePrompt(), HostingText.Title(),
+                           MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+        RunManage(ServiceControl.ManageAction.MigrateToServer, _grantRoots, _grantReadOnlyRoots)
+    End Sub
+
     Private Sub OnOpenServerPage()
         ' Open the page, never fetch or run anything (spec §1.4 / §2).
         NetworkInfo.OpenInBrowser(HostingText.ServerEditionUrl)
@@ -262,7 +296,7 @@ Public NotInheritable Class Share_Hosting_Form
     End Sub
 
     Private Sub SetActionsEnabled(value As Boolean)
-        For Each b As Button In New Button() {_btnInstallServer, _btnReturnToUser, _btnStart, _btnStop,
+        For Each b As Button In New Button() {_btnSwitchToService, _btnInstallServer, _btnReturnToUser, _btnStart, _btnStop,
                                               _btnRestart, _btnRepair, _btnGrantRoots, _btnRemove}
             If b IsNot Nothing Then b.Enabled = value
         Next

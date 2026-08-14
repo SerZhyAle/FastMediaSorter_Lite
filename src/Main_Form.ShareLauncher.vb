@@ -40,6 +40,10 @@ Partial Public Class Main_Form
     Private Const CompanionMutexName As String = "FastMediaSorterCompanionSingleInstanceMutex"
     Private Const CompanionProcessName As String = "FastMediaSorterCompanion"
     Private Const CompanionExeFileName As String = "FastMediaSorterCompanion.exe"
+    ''' <summary>Where a missing Share component is fetched from: the latest release,
+    ''' whose setup.exe carries the component and installs over the current version
+    ''' in place (same AppId, same directory, settings untouched).</summary>
+    Private Const ShareDownloadPageUrl As String = "https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest"
     ''' <summary>Empty-call marker (no folder) - Companion just shows its window.</summary>
     Private Const CompanionShowWindowCommand As String = "::fms-show-window::"
     Private Const WM_COPYDATA_SHARE As Integer = &H4A
@@ -107,10 +111,7 @@ Partial Public Class Main_Form
         Dim exePath As String = CompanionExePath()
         If String.IsNullOrEmpty(exePath) OrElse Not File.Exists(exePath) Then
             AppFileLogger.WriteLine("ShareLauncher: Companion exe not found at '" & If(exePath, "") & "'")
-            MessageBox.Show(Me,
-                Localization.T("Fast Media Sorter: Share Manager не найден рядом. Переустановите приложение."),
-                Localization.T("Общий доступ"),
-                MessageBoxButtons.OK, MessageBoxIcon.Information)
+            OfferShareComponentDownload()
             Return
         End If
 
@@ -144,6 +145,40 @@ Partial Public Class Main_Form
                     MessageBoxButtons.OK, MessageBoxIcon.Warning)
             End Try
         End If
+    End Sub
+
+    ''' <summary>
+    ''' The Share Manager is not on this machine at all - offer to fetch it instead of
+    ''' telling the user to "reinstall", which is both vague and, for the most common
+    ''' cause, wrong advice: reinstalling the same package the same way lands the same
+    ''' missing component. Share is an OPTIONAL installer component, so a legitimately
+    ''' installed app can be without it - a compact install, a cleared checkbox, or (until
+    ''' the installer's admin gate was dropped) any unattended winget install, which ran
+    ''' Setup in non administrative install mode and skipped every optional payload.
+    ''' Running the current setup.exe over the existing installation adds the component in
+    ''' place - same AppId, same directory, settings and associations untouched.
+    ''' </summary>
+    Private Sub OfferShareComponentDownload()
+        Dim answer As DialogResult = MessageBox.Show(Me,
+            Localization.T("Компонент общего доступа не установлен (Fast Media Sorter: Share Manager)." & vbCrLf & vbCrLf &
+                           "Он входит в полный установщик: запустите его поверх текущей версии - настройки сохранятся." & vbCrLf & vbCrLf &
+                           "Открыть страницу загрузки?"),
+            Localization.T("Общий доступ"),
+            MessageBoxButtons.YesNo, MessageBoxIcon.Information)
+        If answer <> DialogResult.Yes Then Return
+
+        Try
+            AppFileLogger.WriteLine("ShareLauncher: opening the download page for the missing Share component")
+            Dim psi As New ProcessStartInfo(ShareDownloadPageUrl) With {.UseShellExecute = True}
+            Dim started As Process = Process.Start(psi)
+            If started IsNot Nothing Then started.Dispose()
+        Catch ex As Exception
+            AppFileLogger.LogException("ShareLauncher download page", ex)
+            MessageBox.Show(Me,
+                Localization.TF("Не удалось открыть страницу загрузки." & vbCrLf & "{0}", ex.Message),
+                Localization.T("Общий доступ"),
+                MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
     End Sub
 
     ''' <summary>

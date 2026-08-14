@@ -699,6 +699,18 @@ switch ($Action) {
         New-ServiceRegistration
         Set-FirewallRule $true
         Start-ServiceAndVerify
+        # Folders a user picked are invisible to LOCAL SERVICE until they are granted,
+        # so a switch made from the app would otherwise end in a service that runs
+        # perfectly and serves nothing - and the fix would be a SECOND UAC prompt right
+        # after the first. Same elevation, same transaction. The installer passes no
+        # roots (there are none yet at install time) and this stays a no-op there.
+        if ($Roots) {
+            $rightsKnown = $PSBoundParameters.ContainsKey('ReadOnlyRoots')
+            Grant-Roots `
+                @($Roots -split '\|' | ForEach-Object { $_.Trim() } | Where-Object { $_ }) `
+                @($ReadOnlyRoots -split '\|' | ForEach-Object { $_.Trim() } | Where-Object { $_ }) `
+                $rightsKnown
+        }
     }
 
     'migrate-to-user' {

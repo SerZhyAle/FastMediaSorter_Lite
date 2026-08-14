@@ -205,6 +205,78 @@ Partial Public NotInheritable Class Localization
             "سروس کو شیئر کیے گئے فولڈرز تک رسائی دیں",
             "授予服务访问共享文件夹的权限")
 
+        Add("Перевести раздачу в режим службы Windows..",
+            "Switch sharing to a Windows service..", "Перевести роздачу в режим служби Windows..",
+            "Freigabe auf einen Windows-Dienst umstellen..", "Passa alla condivisione come servizio di Windows..",
+            "Cambiar el uso compartido a un servicio de Windows..", "Basculer le partage vers un service Windows..",
+            "Mudar o compartilhamento para um serviço do Windows..", "تحويل المشاركة إلى خدمة Windows..",
+            "साझाकरण को Windows सेवा में बदलें..", "শেয়ারিং Windows সার্ভিসে পরিবর্তন করুন..",
+            "شیئرنگ کو Windows سروس میں منتقل کریں..", "将共享切换为 Windows 服务..")
+        Add("Раздачу папок возьмёт на себя служба Windows: она стартует вместе с системой и работает, даже когда в систему никто не вошёл." & vbCrLf & vbCrLf &
+            "Windows запросит подтверждение администратора один раз. Будут: перенесены ваши настройки, папки и ключ узла в общее машинное хранилище, зарегистрирована служба, добавлено правило брандмауэра и выдан доступ к выбранным папкам." & vbCrLf & vbCrLf &
+            "Ключ узла сохраняется, поэтому уже подключённые телефоны подключать заново не придётся. Вернуться к обычному режиму можно здесь же, кнопкой «Вернуться к пользовательской редакции..»." & vbCrLf & vbCrLf &
+            "Перевести раздачу в режим службы?",
+            "A Windows service will take folder sharing over: it starts with Windows and keeps serving even when nobody is signed in." & vbCrLf & vbCrLf &
+            "Windows will ask for administrator approval once. This moves your settings, folders and host key into the shared machine store, registers the service, adds a firewall rule and grants it access to the selected folders." & vbCrLf & vbCrLf &
+            "The host key is kept, so phones that are already paired do not have to be paired again. You can come back to the ordinary mode from here, with «Return to the User edition..»." & vbCrLf & vbCrLf &
+            "Switch sharing to the service?",
+            "Роздачу тек візьме на себе служба Windows: вона стартує разом із системою й працює навіть тоді, коли в систему ніхто не ввійшов." & vbCrLf & vbCrLf &
+            "Windows один раз запитає підтвердження адміністратора. Буде: перенесено ваші налаштування, теки та ключ вузла до спільного машинного сховища, зареєстровано службу, додано правило брандмауера й видано доступ до вибраних тек." & vbCrLf & vbCrLf &
+            "Ключ вузла зберігається, тож уже підключені телефони підключати наново не доведеться. Повернутися до звичайного режиму можна тут само, кнопкою «Вернуться к пользовательской редакции..»." & vbCrLf & vbCrLf &
+            "Перевести роздачу в режим служби?",
+            "Ein Windows-Dienst übernimmt die Ordnerfreigabe: Er startet mit Windows und liefert weiter, auch wenn niemand angemeldet ist." & vbCrLf & vbCrLf &
+            "Windows fragt einmal nach der Bestätigung durch einen Administrator. Dabei werden Ihre Einstellungen, Ordner und der Hostschlüssel in den gemeinsamen Maschinenspeicher verschoben, der Dienst registriert, eine Firewallregel hinzugefügt und ihm Zugriff auf die ausgewählten Ordner gewährt." & vbCrLf & vbCrLf &
+            "Der Hostschlüssel bleibt erhalten, bereits gekoppelte Telefone müssen also nicht neu gekoppelt werden. Zum gewöhnlichen Modus kommen Sie hier zurück, über «Zur Benutzer-Edition zurückkehren..»." & vbCrLf & vbCrLf &
+            "Freigabe auf den Dienst umstellen?",
+            "Un servizio di Windows si occuperà della condivisione delle cartelle: si avvia con Windows e continua a servire anche quando nessuno ha effettuato l'accesso." & vbCrLf & vbCrLf &
+            "Windows chiederà una volta l'approvazione dell'amministratore. Verranno spostati impostazioni, cartelle e chiave host nell'archivio condiviso della macchina, registrato il servizio, aggiunta una regola del firewall e concesso l'accesso alle cartelle selezionate." & vbCrLf & vbCrLf &
+            "La chiave host viene conservata, quindi i telefoni già associati non dovranno essere associati di nuovo. Puoi tornare alla modalità normale da qui, con «Torna all'edizione Utente..»." & vbCrLf & vbCrLf &
+            "Passare alla condivisione tramite servizio?",
+            "Un servicio de Windows se encargará del uso compartido de carpetas: se inicia con Windows y sigue sirviendo aunque no haya nadie con la sesión iniciada." & vbCrLf & vbCrLf &
+            "Windows pedirá la aprobación del administrador una vez. Se moverán sus ajustes, carpetas y la clave del host al almacén compartido del equipo, se registrará el servicio, se añadirá una regla del firewall y se le concederá acceso a las carpetas seleccionadas." & vbCrLf & vbCrLf &
+            "La clave del host se conserva, así que los teléfonos ya emparejados no tendrán que emparejarse de nuevo. Puede volver al modo normal desde aquí, con «Volver a la edición de Usuario..»." & vbCrLf & vbCrLf &
+            "¿Cambiar el uso compartido al servicio?",
+            "Un service Windows prendra en charge le partage de dossiers : il démarre avec Windows et continue de servir même si personne n'est connecté." & vbCrLf & vbCrLf &
+            "Windows demandera une fois l'approbation d'un administrateur. Vos réglages, vos dossiers et la clé d'hôte seront déplacés vers le stockage commun de la machine, le service sera enregistré, une règle de pare-feu ajoutée et l'accès aux dossiers sélectionnés accordé." & vbCrLf & vbCrLf &
+            "La clé d'hôte est conservée : les téléphones déjà appairés n'auront pas à l'être de nouveau. Vous pouvez revenir au mode ordinaire ici même, avec «Revenir à l'édition Utilisateur..»." & vbCrLf & vbCrLf &
+            "Basculer le partage vers le service ?",
+            "Um serviço do Windows assumirá o compartilhamento de pastas: ele inicia com o Windows e continua servindo mesmo sem ninguém conectado." & vbCrLf & vbCrLf &
+            "O Windows pedirá a aprovação do administrador uma vez. Suas configurações, pastas e a chave do host serão movidas para o armazenamento compartilhado da máquina, o serviço será registrado, uma regra de firewall será adicionada e o acesso às pastas selecionadas concedido." & vbCrLf & vbCrLf &
+            "A chave do host é mantida, então os telefones já pareados não precisarão ser pareados novamente. Você pode voltar ao modo comum aqui mesmo, com «Voltar para a edição de Usuário..»." & vbCrLf & vbCrLf &
+            "Mudar o compartilhamento para o serviço?",
+            "ستتولى خدمة Windows مشاركة المجلدات: تبدأ مع النظام وتستمر في الخدمة حتى لو لم يسجّل أحد الدخول." & vbCrLf & vbCrLf &
+            "سيطلب Windows موافقة المسؤول مرة واحدة. ستُنقل إعداداتك ومجلداتك ومفتاح المضيف إلى المخزن المشترك للجهاز، وتُسجَّل الخدمة، وتُضاف قاعدة جدار حماية، ويُمنح الوصول إلى المجلدات المحددة." & vbCrLf & vbCrLf &
+            "يُحتفظ بمفتاح المضيف، لذا لن تحتاج الهواتف المقترنة بالفعل إلى الاقتران من جديد. يمكنك العودة إلى الوضع العادي من هنا عبر «العودة إلى إصدارة المستخدم..»." & vbCrLf & vbCrLf &
+            "هل تحوّل المشاركة إلى الخدمة؟",
+            "फ़ोल्डर साझाकरण को एक Windows सेवा संभालेगी: यह Windows के साथ शुरू होती है और तब भी सेवा देती रहती है जब कोई साइन इन न हो।" & vbCrLf & vbCrLf &
+            "Windows एक बार व्यवस्थापक की स्वीकृति माँगेगा। आपकी सेटिंग्स, फ़ोल्डर और होस्ट कुंजी साझा मशीन संग्रह में ले जाई जाएँगी, सेवा पंजीकृत होगी, फ़ायरवॉल नियम जुड़ेगा और चुने हुए फ़ोल्डरों तक पहुँच दी जाएगी।" & vbCrLf & vbCrLf &
+            "होस्ट कुंजी सुरक्षित रहती है, इसलिए पहले से जुड़े फ़ोन दोबारा जोड़ने की ज़रूरत नहीं। सामान्य मोड में यहीं से «उपयोगकर्ता संस्करण पर लौटें..» द्वारा लौटा जा सकता है।" & vbCrLf & vbCrLf &
+            "साझाकरण को सेवा में बदलें?",
+            "ফোল্ডার শেয়ারিং একটি Windows সার্ভিস চালাবে: এটি Windows-এর সঙ্গে চালু হয় এবং কেউ সাইন ইন না থাকলেও সেবা দিতে থাকে।" & vbCrLf & vbCrLf &
+            "Windows একবার প্রশাসকের অনুমোদন চাইবে। আপনার সেটিংস, ফোল্ডার ও হোস্ট কী যৌথ মেশিন স্টোরে সরানো হবে, সার্ভিস নিবন্ধিত হবে, ফায়ারওয়াল নিয়ম যোগ হবে এবং নির্বাচিত ফোল্ডারে অ্যাক্সেস দেওয়া হবে।" & vbCrLf & vbCrLf &
+            "হোস্ট কী রক্ষিত থাকে, তাই আগে যুক্ত ফোনগুলো আবার যুক্ত করতে হবে না। সাধারণ মোডে এখান থেকেই «ব্যবহারকারী সংস্করণে ফিরুন..» দিয়ে ফেরা যায়।" & vbCrLf & vbCrLf &
+            "শেয়ারিং সার্ভিসে বদলাবেন?",
+            "فولڈر شیئرنگ ایک Windows سروس سنبھالے گی: یہ Windows کے ساتھ شروع ہوتی ہے اور کسی کے سائن اِن نہ ہونے پر بھی خدمت جاری رکھتی ہے۔" & vbCrLf & vbCrLf &
+            "Windows ایک بار منتظم کی منظوری مانگے گا۔ آپ کی ترتیبات، فولڈر اور ہوسٹ کلید مشترکہ مشین اسٹور میں منتقل ہوں گی، سروس رجسٹر ہوگی، فائر وال قاعدہ شامل ہوگا اور منتخب فولڈروں تک رسائی دی جائے گی۔" & vbCrLf & vbCrLf &
+            "ہوسٹ کلید محفوظ رہتی ہے، اس لیے پہلے سے جُڑے فون دوبارہ جوڑنے کی ضرورت نہیں۔ عام موڈ میں یہیں سے «صارف ایڈیشن پر واپس جائیں..» کے ذریعے واپس آ سکتے ہیں۔" & vbCrLf & vbCrLf &
+            "شیئرنگ کو سروس میں بدلیں؟",
+            "文件夹共享将交给 Windows 服务：它随系统启动，即使无人登录也继续提供服务。" & vbCrLf & vbCrLf &
+            "Windows 会请求一次管理员确认。您的设置、文件夹和主机密钥将移入共用的计算机存储，服务会被注册，防火墙规则会被添加，并授予其访问所选文件夹的权限。" & vbCrLf & vbCrLf &
+            "主机密钥会保留，因此已配对的手机无需重新配对。可以在这里通过「返回用户版..」回到普通模式。" & vbCrLf & vbCrLf &
+            "要把共享切换为服务吗？")
+        Add("Версия из Microsoft Store не может устанавливать службы Windows. Круглосуточная раздача есть в версии с сайта - её можно поставить рядом.",
+            "The Microsoft Store build cannot install Windows services. Always-on sharing is available in the build from the website, which can be installed alongside it.",
+            "Версія з Microsoft Store не може встановлювати служби Windows. Цілодобова роздача є у версії з сайту - її можна поставити поруч.",
+            "Die Microsoft-Store-Version kann keine Windows-Dienste installieren. Die Dauerfreigabe gibt es in der Version von der Website, die sich daneben installieren lässt.",
+            "La versione del Microsoft Store non può installare servizi di Windows. La condivisione sempre attiva è nella versione dal sito, che può essere installata accanto.",
+            "La versión de Microsoft Store no puede instalar servicios de Windows. El uso compartido permanente está en la versión del sitio web, que puede instalarse junto a ella.",
+            "La version du Microsoft Store ne peut pas installer de services Windows. Le partage permanent existe dans la version du site, qui peut être installée à côté.",
+            "A versão da Microsoft Store não pode instalar serviços do Windows. O compartilhamento permanente está na versão do site, que pode ser instalada ao lado.",
+            "لا يمكن لإصدارة Microsoft Store تثبيت خدمات Windows. المشاركة الدائمة متوفرة في الإصدارة الموجودة على الموقع، ويمكن تثبيتها إلى جانبها.",
+            "Microsoft Store संस्करण Windows सेवाएँ स्थापित नहीं कर सकता। हरदम चालू साझाकरण वेबसाइट वाले संस्करण में है, जिसे साथ में स्थापित किया जा सकता है।",
+            "Microsoft Store সংস্করণ Windows সার্ভিস ইনস্টল করতে পারে না। সার্বক্ষণিক শেয়ারিং ওয়েবসাইটের সংস্করণে আছে, যা পাশাপাশি ইনস্টল করা যায়।",
+            "Microsoft Store ورژن Windows سروسز انسٹال نہیں کر سکتا۔ ہمہ وقت شیئرنگ ویب سائٹ والے ورژن میں ہے، جسے ساتھ انسٹال کیا جا سکتا ہے۔",
+            "Microsoft Store 版本无法安装 Windows 服务。全天候共享在网站版本中提供，可以并存安装。")
         Add("Установить серверную редакцию..",
             "Install the Server edition..", "Установити серверну редакцію..",
             "Server-Edition installieren..", "Installa l'edizione Server..",

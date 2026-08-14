@@ -120,6 +120,29 @@ Public Module HostingText
         Return Localization.T("Выдаю службе доступ к папкам..")
     End Function
 
+    ''' <summary>The switch an ordinary installation can now make on its own: this is
+    ''' NOT a second product, it is the same worker under a different host (spec §1 -
+    ''' a packaging and host-mode distinction, never a fork).</summary>
+    Public Function SwitchToServiceButton() As String
+        Return Localization.T("Перевести раздачу в режим службы Windows..")
+    End Function
+
+    ''' <summary>Everything the one UAC prompt is about to do, before it appears. A
+    ''' machine-wide role must never be taken on by a button whose consequences were
+    ''' not spelled out first.</summary>
+    Public Function SwitchToServicePrompt() As String
+        Return Localization.T("Раздачу папок возьмёт на себя служба Windows: она стартует вместе с системой и работает, даже когда в систему никто не вошёл." & vbCrLf & vbCrLf &
+                              "Windows запросит подтверждение администратора один раз. Будут: перенесены ваши настройки, папки и ключ узла в общее машинное хранилище, зарегистрирована служба, добавлено правило брандмауэра и выдан доступ к выбранным папкам." & vbCrLf & vbCrLf &
+                              "Ключ узла сохраняется, поэтому уже подключённые телефоны подключать заново не придётся. Вернуться к обычному режиму можно здесь же, кнопкой «Вернуться к пользовательской редакции..»." & vbCrLf & vbCrLf &
+                              "Перевести раздачу в режим службы?")
+    End Function
+
+    ''' <summary>Why the switch is not offered in the Store build - with the one thing
+    ''' the user can actually do about it.</summary>
+    Public Function SwitchUnavailablePackagedHint() As String
+        Return Localization.T("Версия из Microsoft Store не может устанавливать службы Windows. Круглосуточная раздача есть в версии с сайта - её можно поставить рядом.")
+    End Function
+
     Public Function InstallServerButton() As String
         Return Localization.T("Установить серверную редакцию..")
     End Function

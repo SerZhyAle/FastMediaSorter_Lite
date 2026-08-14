@@ -135,19 +135,48 @@ Partial Public NotInheritable Class Localization
             "সংযোগ করা হচ্ছে..", "منسلک ہو رہا ہے..", "正在连接..")
 
         ' --- Main_Form.ShareLauncher.vb ------------------------------------------
-        Add("Fast Media Sorter: Share Manager не найден рядом. Переустановите приложение.",
-            "Fast Media Sorter: Share Manager was not found alongside this app. Please reinstall.",
-            "Fast Media Sorter: Share Manager не знайдено поруч. Перевстановіть застосунок.",
-            "Fast Media Sorter: Share Manager wurde nicht daneben gefunden. Bitte neu installieren.",
-            "Fast Media Sorter: Share Manager non trovato accanto all'app. Reinstalla l'applicazione.",
-            "Fast Media Sorter: no se encontró Share Manager junto a la aplicación. Reinstálela.",
-            "Fast Media Sorter : Share Manager est introuvable à côté de l'application. Réinstallez-la.",
-            "Fast Media Sorter: Share Manager não foi encontrado ao lado do app. Reinstale.",
-            "Fast Media Sorter: لم يُعثر على Share Manager بجانب التطبيق. أعد التثبيت.",
-            "Fast Media Sorter: Share Manager पास नहीं मिला। कृपया दोबारा इंस्टॉल करें।",
-            "Fast Media Sorter: Share Manager পাশে পাওয়া যায়নি। আবার ইনস্টল করুন।",
-            "Fast Media Sorter: Share Manager ساتھ نہیں ملا۔ دوبارہ انسٹال کریں۔",
-            "Fast Media Sorter：未在旁边找到 Share Manager。请重新安装。")
+        ' Share is an optional installer component, so "not found" is not automatically a
+        ' broken install - it is usually a compact / unattended one. The message offers the
+        ' fix (run the full setup over this version) instead of "please reinstall".
+        Add("Компонент общего доступа не установлен (Fast Media Sorter: Share Manager)." & vbCrLf & vbCrLf &
+            "Он входит в полный установщик: запустите его поверх текущей версии - настройки сохранятся." & vbCrLf & vbCrLf &
+            "Открыть страницу загрузки?",
+            "The folder-sharing component is not installed (Fast Media Sorter: Share Manager)." & vbCrLf & vbCrLf &
+            "It comes with the full installer: run it over your current version - your settings are kept." & vbCrLf & vbCrLf &
+            "Open the download page?",
+            "Компонент спільного доступу не встановлено (Fast Media Sorter: Share Manager)." & vbCrLf & vbCrLf &
+            "Він входить до повного установника: запустіть його поверх поточної версії - налаштування збережуться." & vbCrLf & vbCrLf &
+            "Відкрити сторінку завантаження?",
+            "Die Komponente für die Ordnerfreigabe ist nicht installiert (Fast Media Sorter: Share Manager)." & vbCrLf & vbCrLf &
+            "Sie gehört zum vollständigen Installationsprogramm: Führen Sie es über die aktuelle Version aus - Ihre Einstellungen bleiben erhalten." & vbCrLf & vbCrLf &
+            "Download-Seite öffnen?",
+            "Il componente di condivisione cartelle non è installato (Fast Media Sorter: Share Manager)." & vbCrLf & vbCrLf &
+            "Fa parte del programma di installazione completo: eseguilo sulla versione attuale - le impostazioni vengono mantenute." & vbCrLf & vbCrLf &
+            "Aprire la pagina di download?",
+            "El componente de uso compartido de carpetas no está instalado (Fast Media Sorter: Share Manager)." & vbCrLf & vbCrLf &
+            "Viene con el instalador completo: ejecútelo sobre la versión actual - se conservan sus ajustes." & vbCrLf & vbCrLf &
+            "¿Abrir la página de descarga?",
+            "Le composant de partage de dossiers n'est pas installé (Fast Media Sorter: Share Manager)." & vbCrLf & vbCrLf &
+            "Il fait partie du programme d'installation complet : lancez-le par-dessus la version actuelle - vos réglages sont conservés." & vbCrLf & vbCrLf &
+            "Ouvrir la page de téléchargement ?",
+            "O componente de compartilhamento de pastas não está instalado (Fast Media Sorter: Share Manager)." & vbCrLf & vbCrLf &
+            "Ele vem com o instalador completo: execute-o sobre a versão atual - suas configurações são mantidas." & vbCrLf & vbCrLf &
+            "Abrir a página de download?",
+            "مكوّن مشاركة المجلدات غير مثبَّت (Fast Media Sorter: Share Manager)." & vbCrLf & vbCrLf &
+            "وهو جزء من المثبِّت الكامل: شغّله فوق النسخة الحالية - وستبقى إعداداتك كما هي." & vbCrLf & vbCrLf &
+            "هل تفتح صفحة التنزيل؟",
+            "फ़ोल्डर साझाकरण घटक इंस्टॉल नहीं है (Fast Media Sorter: Share Manager)।" & vbCrLf & vbCrLf &
+            "यह पूर्ण इंस्टॉलर के साथ आता है: इसे मौजूदा संस्करण के ऊपर चलाएँ - आपकी सेटिंग्स बनी रहेंगी।" & vbCrLf & vbCrLf &
+            "डाउनलोड पेज खोलें?",
+            "ফোল্ডার শেয়ারিং উপাদান ইনস্টল করা নেই (Fast Media Sorter: Share Manager)।" & vbCrLf & vbCrLf &
+            "এটি সম্পূর্ণ ইনস্টলারের সঙ্গে আসে: বর্তমান সংস্করণের উপরে চালান - আপনার সেটিংস থাকবে।" & vbCrLf & vbCrLf &
+            "ডাউনলোড পেজ খুলবেন?",
+            "فولڈر شیئرنگ کا جزو انسٹال نہیں ہے (Fast Media Sorter: Share Manager)۔" & vbCrLf & vbCrLf &
+            "یہ مکمل انسٹالر کے ساتھ آتا ہے: اسے موجودہ ورژن کے اوپر چلائیں - آپ کی ترتیبات محفوظ رہیں گی۔" & vbCrLf & vbCrLf &
+            "ڈاؤن لوڈ صفحہ کھولیں؟",
+            "文件夹共享组件未安装（Fast Media Sorter: Share Manager）。" & vbCrLf & vbCrLf &
+            "它包含在完整安装程序中：在当前版本上直接运行即可 - 设置会保留。" & vbCrLf & vbCrLf &
+            "打开下载页面？")
         Add("Общий доступ", "Folder sharing", "Спільний доступ", "Ordnerfreigabe", "Condivisione cartelle",
             "Uso compartido de carpetas", "Partage de dossiers", "Compartilhamento de pastas",
             "مشاركة المجلدات", "फ़ोल्डर साझाकरण", "ফোল্ডার শেয়ারিং", "فولڈر شیئرنگ", "文件夹共享")

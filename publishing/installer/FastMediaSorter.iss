@@ -124,18 +124,19 @@ ukrainian.SelectComponentsLabel2=Сам переглядач важить мал
 
 ; Explain the admin choice at the exact spot it is made (the built-in "Select Setup
 ; Install Mode" screen shown by PrivilegesRequiredOverridesAllowed=dialog), so the user
-; can weigh it and decide before any UAC prompt: admin (all users) unlocks the offline
-; codecs, OCR models and Android folder-sharing (which needs a firewall rule); without
-; admin (you only) they get just the lightweight viewer, which is a perfectly fine
-; choice. %1 = application name, %n = line break. Text1 is shown when "all users" is the
-; default and Text2 when "you only" is (our default is lowest -> Text2), so both carry
-; the same explanation.
-english.PrivilegesRequiredOverrideText1=%1 can be installed for all users of this computer (requires administrator rights) or for you only (no administrator rights).%n%nChoose "for all users" if you want to select offline video codecs (VLC), OCR / translation models, or Android folder-sharing. These components need an elevated install; folder-sharing also adds a Windows Firewall rule. "For you only" installs the lightweight viewer and deliberately disables those components.
-english.PrivilegesRequiredOverrideText2=%1 can be installed for you only (no administrator rights) or for all users of this computer (requires administrator rights).%n%nChoose "for all users" if you want to select offline video codecs (VLC), OCR / translation models, or Android folder-sharing. These components need an elevated install; folder-sharing also adds a Windows Firewall rule. "For you only" installs the lightweight viewer and deliberately disables those components.
-russian.PrivilegesRequiredOverrideText1=%1 можно установить для всех пользователей этого компьютера (нужны права администратора) или только для вас (без прав администратора).%n%nВыберите «для всех пользователей», если хотите установить оффлайн видео-кодеки (VLC), модели OCR / перевода или раздачу папок на Android. Этим компонентам нужна установка с правами администратора; для раздачи папок также добавляется правило брандмауэра Windows. Режим «только для вас» ставит лёгкий просмотрщик и намеренно отключает эти компоненты.
-russian.PrivilegesRequiredOverrideText2=%1 можно установить только для вас (без прав администратора) или для всех пользователей этого компьютера (нужны права администратора).%n%nВыберите «для всех пользователей», если хотите установить оффлайн видео-кодеки (VLC), модели OCR / перевода или раздачу папок на Android. Этим компонентам нужна установка с правами администратора; для раздачи папок также добавляется правило брандмауэра Windows. Режим «только для вас» ставит лёгкий просмотрщик и намеренно отключает эти компоненты.
-ukrainian.PrivilegesRequiredOverrideText1=%1 можна встановити для всіх користувачів цього комп'ютера (потрібні права адміністратора) або лише для вас (без прав адміністратора).%n%nВиберіть «для всіх користувачів», якщо хочете встановити офлайн відеокодеки (VLC), моделі OCR / перекладу або роздачу тек на Android. Цим компонентам потрібне встановлення з правами адміністратора; для роздачі тек також додається правило брандмауера Windows. Режим «лише для вас» встановлює легкий переглядач і навмисно вимикає ці компоненти.
-ukrainian.PrivilegesRequiredOverrideText2=%1 можна встановити лише для вас (без прав адміністратора) або для всіх користувачів цього комп'ютера (потрібні права адміністратора).%n%nВиберіть «для всіх користувачів», якщо хочете встановити офлайн відеокодеки (VLC), моделі OCR / перекладу або роздачу тек на Android. Цим компонентам потрібне встановлення з правами адміністратора; для роздачі тек також додається правило брандмауера Windows. Режим «лише для вас» встановлює легкий переглядач і навмисно вимикає ці компоненти.
+; can weigh it and decide before any UAC prompt. Both modes now install the SAME
+; feature set - the optional components stopped being admin-only (see the comment above
+; the optional [Files] entries); administrator rights buy exactly one thing here, the
+; ability to switch folder sharing on during setup, because that writes a Windows
+; Firewall rule. %1 = application name, %n = line break. Text1 is shown when "all users"
+; is the default and Text2 when "you only" is (our default is lowest -> Text2), so both
+; carry the same explanation.
+english.PrivilegesRequiredOverrideText1=%1 can be installed for all users of this computer (requires administrator rights) or for you only (no administrator rights).%n%nBoth modes install the same features, including the offline video codecs (VLC), the OCR / translation models and the Android folder-sharing companion. Administrator rights are needed for one thing only: turning folder sharing on during setup, which adds a Windows Firewall rule. You can also turn it on later from the Share Manager.
+english.PrivilegesRequiredOverrideText2=%1 can be installed for you only (no administrator rights) or for all users of this computer (requires administrator rights).%n%nBoth modes install the same features, including the offline video codecs (VLC), the OCR / translation models and the Android folder-sharing companion. Administrator rights are needed for one thing only: turning folder sharing on during setup, which adds a Windows Firewall rule. You can also turn it on later from the Share Manager.
+russian.PrivilegesRequiredOverrideText1=%1 можно установить для всех пользователей этого компьютера (нужны права администратора) или только для вас (без прав администратора).%n%nОба режима ставят одинаковый набор возможностей, включая оффлайн видео-кодеки (VLC), модели OCR / перевода и компаньон для раздачи папок на Android. Права администратора нужны ровно для одного: включить раздачу папок прямо при установке, потому что для неё добавляется правило брандмауэра Windows. Включить её можно и позже, из Менеджера общего доступа.
+russian.PrivilegesRequiredOverrideText2=%1 можно установить только для вас (без прав администратора) или для всех пользователей этого компьютера (нужны права администратора).%n%nОба режима ставят одинаковый набор возможностей, включая оффлайн видео-кодеки (VLC), модели OCR / перевода и компаньон для раздачи папок на Android. Права администратора нужны ровно для одного: включить раздачу папок прямо при установке, потому что для неё добавляется правило брандмауэра Windows. Включить её можно и позже, из Менеджера общего доступа.
+ukrainian.PrivilegesRequiredOverrideText1=%1 можна встановити для всіх користувачів цього комп'ютера (потрібні права адміністратора) або лише для вас (без прав адміністратора).%n%nОбидва режими встановлюють однаковий набір можливостей, включно з офлайн відеокодеками (VLC), моделями OCR / перекладу та компаньйоном для роздачі тек на Android. Права адміністратора потрібні лише для одного: увімкнути роздачу тек прямо під час встановлення, бо для неї додається правило брандмауера Windows. Увімкнути її можна й пізніше, з Менеджера спільного доступу.
+ukrainian.PrivilegesRequiredOverrideText2=%1 можна встановити лише для вас (без прав адміністратора) або для всіх користувачів цього комп'ютера (потрібні права адміністратора).%n%nОбидва режими встановлюють однаковий набір можливостей, включно з офлайн відеокодеками (VLC), моделями OCR / перекладу та компаньйоном для роздачі тек на Android. Права адміністратора потрібні лише для одного: увімкнути роздачу тек прямо під час встановлення, бо для неї додається правило брандмауера Windows. Увімкнути її можна й пізніше, з Менеджера спільного доступу.
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -175,21 +176,36 @@ Name: "share";  Description: "{cm:CompShare}";  Types: full; MinVersion: 10.0.14
 ; tree the app has been RUN from would otherwise install our own current.log into
 ; {app} and the user's log would start with our sessions and our paths.
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Excludes: "libvlc\*,tessdata\*,tessdata-best\*,companion\*,FastMediaSorterCompanion.exe,*.log"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: core
+; The three optional components below are NOT gated on an elevated install, and
+; must not be gated on one again. They were (Check: OptionalPayloadAllowed =
+; IsAdminInstallMode), and that silently reduced EVERY unattended install to the
+; viewer alone: Inno runs in non administrative install mode whenever
+; PrivilegesRequired=lowest and no /ALLUSERS was passed, which is exactly how
+; winget invokes this setup (/VERYSILENT, no scope switch). The user downloaded a
+; ~370 MB package and got none of its payload - no codecs, no OCR models, and no
+; Share Manager at all, a feature that has no on-demand download path to recover
+; through (the codecs and models at least self-heal via OptionalRuntimeManager).
+; Nothing in these components needs admin: a per-user install writes them under
+; %LocalAppData%\Programs like every other file. Administrator rights are still
+; required for the ONE privileged step, the SFTP firewall rule, which remains an
+; explicit opt-in - the installer checkbox (ShouldInstallServerFeatures below) or
+; the deferred in-app opt-in via enable-share-server.ps1.
+;
 ; Video codecs (LibVLC) - offline playback of AVI/MKV/VP9/etc. Absent = those
 ; formats fall back to on-demand runtime download (OptionalRuntimeManager).
 ; Whatever arch trees the staged payload holds are shipped as-is: the decision of
 ; which to carry lives in ONE place, Prepare-OcrOfflinePayload.ps1 (-KeepX86). By
 ; default it trims win-x86, so this x64 package ships win-x64 only and the x86
 ; viewer downloads its 32-bit codecs on first use.
-Source: "{#SourceDir}\libvlc\*"; DestDir: "{app}\libvlc"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: codecs; Check: OptionalPayloadAllowed
+Source: "{#SourceDir}\libvlc\*"; DestDir: "{app}\libvlc"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: codecs
 ; OCR/translation language models (fast + best). Absent = packs download on first
 ; OCR use instead of shipping in the installer.
-Source: "{#SourceDir}\tessdata\*"; DestDir: "{app}\tessdata"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: ocr; Check: OptionalPayloadAllowed
-Source: "{#SourceDir}\tessdata-best\*"; DestDir: "{app}\tessdata-best"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: ocr; Check: OptionalPayloadAllowed
+Source: "{#SourceDir}\tessdata\*"; DestDir: "{app}\tessdata"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: ocr
+Source: "{#SourceDir}\tessdata-best\*"; DestDir: "{app}\tessdata-best"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: ocr
 ; Android Folder Share - the self-contained .NET companion app + its SFTP worker.
 ; The companion carries its own .NET runtime, which is the bulk of this component.
-Source: "{#SourceDir}\FastMediaSorterCompanion.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: share; Check: OptionalPayloadAllowed
-Source: "{#SourceDir}\companion\*"; DestDir: "{app}\companion"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: share; Check: OptionalPayloadAllowed
+Source: "{#SourceDir}\FastMediaSorterCompanion.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: share
+Source: "{#SourceDir}\companion\*"; DestDir: "{app}\companion"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: share
 ; Helper Setup/Uninstall use to stop the running Companion app and its worker (see
 ; StopCompanionWorker in [Code]). Kept both as a dontcopy temp extract (Setup runs
 ; this before any app files exist yet, so it cannot read one from {app}) and as a
@@ -199,7 +215,14 @@ Source: "stop-companion.ps1"; DestDir: "{app}"; Flags: ignoreversion
 ; Elevated helper for the deferred, in-app "enable server features" opt-in (adds /
 ; removes the SFTP firewall rule via one UAC prompt). Installed next to the exe so
 ; ServerFeatures.EnableViaElevation prefers it over a direct netsh fallback.
-Source: "enable-share-server.ps1"; DestDir: "{app}"; Flags: ignoreversion; Components: share; Check: OptionalPayloadAllowed
+Source: "enable-share-server.ps1"; DestDir: "{app}"; Flags: ignoreversion; Components: share
+; Elevated management helper for the in-app switch to always-on hosting: Share Manager
+; -> "Manage hosting.." -> switch to the Windows service. It is the SAME script the
+; Server edition installer drives, so every machine-affecting step still lives in one
+; auditable place; shipping it here is what lets an ordinary installation take that role
+; on (behind one visible UAC prompt) instead of requiring a second download. It never
+; runs by itself: nothing in this installer calls it during a normal install.
+Source: "install-share-service.ps1"; DestDir: "{app}"; Flags: ignoreversion; Components: share
 
 [InstallDelete]
 ; The Start-menu group used to be named "FastMediaSorter LITE"; it is now the new
@@ -264,9 +287,59 @@ end;
   because the alternative is a machine where sharing intermittently half-works and
   nothing explains why. }
 
-function ServerEditionInstalled: Boolean;
+function ShareServiceRegistered: Boolean;
 begin
   Result := RegKeyExists(HKLM, 'SYSTEM\CurrentControlSet\Services\' + ShareServiceName);
+end;
+
+{ Where the machine-wide share state lives, and - under \bin - the worker copy the
+  service runs when always-on hosting was switched on from inside the app. Must match
+  ServiceControl.MachineDataDir() and the helper's $BinDirName. }
+function MachineShareDataDir: String;
+begin
+  Result := ExpandConstant('{commonappdata}\FastMediaSorterCompanion');
+end;
+
+function ShareServiceImagePath: String;
+var
+  value: String;
+begin
+  Result := '';
+  if RegQueryStringValue(HKLM, 'SYSTEM\CurrentControlSet\Services\' + ShareServiceName, 'ImagePath', value) then
+    Result := value;
+end;
+
+{ A registered service is not automatically "the Server edition". Since the Share
+  Manager can switch an ordinary installation into always-on hosting, there are two
+  kinds of registration to tell apart, and confusing them is what would either block a
+  harmless update or delete somebody else's server:
+    * ours - the service runs the staged copy under %ProgramData%\..\bin, put there by
+      this application's own opt-in. A viewer install/update over it is routine, and an
+      uninstall may offer to take the role away again;
+    * the separate Server edition - it runs the worker from its own program folder,
+      has its own AppId and uninstaller, and this installer must never touch it. }
+function ShareServiceIsAppOwned: Boolean;
+begin
+  Result := (ShareServiceImagePath <> '') and
+            (Pos(Uppercase(MachineShareDataDir + '\' + 'bin'), Uppercase(ShareServiceImagePath)) > 0);
+end;
+
+function ServerEditionInstalled: Boolean;
+begin
+  Result := ShareServiceRegistered and (not ShareServiceIsAppOwned);
+end;
+
+{ Is this an update of an installation that is already here, rather than a first one? }
+function PreviousInstallationExists: Boolean;
+var
+  AppUninstallKey: String;
+begin
+  { The AppId above, as Inno records it: HKCU for a per-user install, HKLM for an
+    all-users one (and the 32-bit view on some upgrade paths). }
+  AppUninstallKey := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{7371E7F1-B8A8-4786-8173-5F5B2B6E6AC9}_is1';
+  Result := RegKeyExists(HKCU, AppUninstallKey) or
+            RegKeyExists(HKLM, AppUninstallKey) or
+            RegKeyExists(HKLM, 'Software\WOW6432Node\' + AppUninstallKey);
 end;
 
 function ServerEditionConflictText: String;
@@ -295,6 +368,22 @@ begin
     Result := 'The Server edition of folder sharing (a Windows service) was detected. This silent installation was stopped so a working server configuration is not changed without confirmation. Run Setup interactively, or pass /ALLOWSERVEREDITION to continue.';
 end;
 
+function ShareServiceRemovalPromptText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'На этом компьютере раздача папок включена как служба Windows: она работает без входа в систему и продолжит раздавать выбранные папки даже после удаления программы.' + #13#10#13#10 +
+              'Убрать службу вместе с программой? Понадобятся права администратора.' + #13#10#13#10 +
+              'Настройки и ключ узла при этом сохраняются, так что после повторной установки раздачу можно включить снова, и уже подключённые телефоны не придётся подключать заново.'
+  else if IsLanguage('ukrainian') then
+    Result := 'На цьому комп''ютері роздачу тек увімкнено як службу Windows: вона працює без входу в систему й продовжить роздавати вибрані теки навіть після видалення програми.' + #13#10#13#10 +
+              'Прибрати службу разом із програмою? Знадобляться права адміністратора.' + #13#10#13#10 +
+              'Налаштування та ключ вузла при цьому зберігаються, тож після повторного встановлення роздачу можна ввімкнути знову, і вже підключені телефони не доведеться підключати наново.'
+  else
+    Result := 'Folder sharing is switched on as a Windows service on this computer: it runs with nobody signed in and would keep serving the selected folders after the program is removed.' + #13#10#13#10 +
+              'Remove the service together with the program? Administrator rights are required.' + #13#10#13#10 +
+              'Your settings and the host key are kept either way, so a later reinstall can turn sharing back on without re-pairing the phones that are already connected.';
+end;
+
 function InitializeSetup: Boolean;
 begin
   Result := True;
@@ -305,6 +394,15 @@ begin
     second sharing host on a server. An explicit, documented flag opts out. }
   if WizardSilent then
   begin
+    { ..but an UPDATE of an installation that is already on this machine is not that
+      case, and blocking it was a real trap: winget passes no such flag, so on every
+      machine running the Server edition `winget upgrade` failed permanently and the
+      viewer could never be updated again through the channel that installed it. An
+      update replaces viewer files and touches nothing the service owns - the Share
+      Manager already connects to the service instead of spawning a second worker.
+      A FIRST silent install still stops. }
+    if PreviousInstallationExists then
+      exit;
     if CompareText(ExpandConstant('{param:ALLOWSERVEREDITION|no}'), 'no') = 0 then
     begin
       SuppressibleMsgBox(ServerEditionSilentText, mbError, MB_OK, IDOK);
@@ -425,21 +523,21 @@ end;
 function ServerFeaturesHintText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Позволяет телефону Android просматривать папки этого ПК по сети (только чтение, SFTP). Добавляет разрешение в брандмауэр, поэтому нужны права администратора. Менеджер общего доступа откроется по завершении установки, чтобы вы выбрали папку и запустили сервер. Можно включить и позже в "Настройки > Поделиться".'
+    Result := 'Позволяет телефону Android просматривать папки этого ПК по сети (только чтение, SFTP). Добавляет разрешение в брандмауэр, поэтому нужны права администратора. Менеджер общего доступа откроется по завершении установки, чтобы вы выбрали папку и запустили сервер. Можно включить и позже, в самом Менеджере общего доступа.'
   else if IsLanguage('ukrainian') then
-    Result := 'Дозволяє телефону Android переглядати папки цього ПК по мережі (лише читання, SFTP). Додає дозвіл у брандмауер, тож потрібні права адміністратора. Менеджер спільного доступу відкриється після завершення встановлення, щоб ви вибрали теку й запустили сервер. Можна ввімкнути й пізніше в "Налаштування > Поділитися".'
+    Result := 'Дозволяє телефону Android переглядати папки цього ПК по мережі (лише читання, SFTP). Додає дозвіл у брандмауер, тож потрібні права адміністратора. Менеджер спільного доступу відкриється після завершення встановлення, щоб ви вибрали теку й запустили сервер. Можна ввімкнути й пізніше, у самому Менеджері спільного доступу.'
   else
-    Result := 'Lets an Android phone browse this PC''s folders over the network (read-only, SFTP). Adds a firewall exception, so setup needs administrator rights. The Share Manager opens when setup finishes so you can pick a folder and start the server. Can also be enabled later in Settings > Share.';
+    Result := 'Lets an Android phone browse this PC''s folders over the network (read-only, SFTP). Adds a firewall exception, so setup needs administrator rights. The Share Manager opens when setup finishes so you can pick a folder and start the server. Can also be enabled later from the Share Manager itself.';
 end;
 
 function ServerFeaturesAdminHintText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Недоступно: установка выполняется без прав администратора. Включить общий доступ можно позже в программе (Настройки > Поделиться).'
+    Result := 'Недоступно: установка выполняется без прав администратора. Сам компонент раздачи будет установлен - включить общий доступ можно позже, из Менеджера общего доступа (одно подтверждение UAC).'
   else if IsLanguage('ukrainian') then
-    Result := 'Недоступно: встановлення виконується без прав адміністратора. Увімкнути спільний доступ можна пізніше в програмі (Налаштування > Поділитися).'
+    Result := 'Недоступно: встановлення виконується без прав адміністратора. Сам компонент роздачі буде встановлено - увімкнути спільний доступ можна пізніше, з Менеджера спільного доступу (одне підтвердження UAC).'
   else
-    Result := 'Unavailable: setup is running without administrator rights. You can enable sharing later inside the app (Settings > Share).';
+    Result := 'Unavailable: setup is running without administrator rights. The sharing component is still installed - you can enable sharing later from the Share Manager (one UAC prompt).';
 end;
 
 function ServerFeaturesNeedsShareHintText: String;
@@ -571,16 +669,6 @@ var
   ResultCode: Integer;
 begin
   ShellExec('open', ShareAppUrl, '', '', SW_SHOWNORMAL, ewNoWait, ResultCode);
-end;
-
-function OptionalPayloadAllowed: Boolean;
-begin
-  { Codecs, OCR models and the Share companion are offered ONLY in an all-users
-    (elevated) install - a per-user install without admin is the lightweight viewer
-    alone (owner decision). Used as the [Files] Check on those components so they are
-    never written without elevation, in EVERY path - including silent installs where
-    the components page (which also greys them out) is never shown. }
-  Result := IsAdminInstallMode;
 end;
 
 function ShouldRegisterAssociations: Boolean;
@@ -863,30 +951,12 @@ end;
 procedure CurPageChanged(CurPageID: Integer);
 var
   ShareSelected: Boolean;
-  i: Integer;
 begin
-  { Per-user (no-admin) install = the lightweight viewer only. The offline codecs,
-    OCR models and the Share companion are offered ONLY in an all-users (elevated)
-    install: without the firewall rule (admin) the SFTP worker cannot accept a single
-    connection, so shipping it would be pointless (owner decision). So grey those rows
-    out and force viewer-only here; the [Files] Check (OptionalPayloadAllowed) is the
-    hard guarantee that also covers silent installs where this page never shows. The
-    all-users vs me-only choice was made (and explained) on the install-mode screen. }
-  if (CurPageID = wpSelectComponents) and (not IsAdminInstallMode) then
-  begin
-    if WizardForm.TypesCombo <> nil then
-    begin
-      WizardForm.TypesCombo.ItemIndex := 1;   { [Types]: 0 full, 1 compact (viewer only), 2 custom }
-      WizardForm.TypesCombo.Enabled := False;
-    end;
-    { [Components] order: 0 core (fixed), 1 codecs, 2 ocr, 3 share - lock every
-      optional row off. }
-    for i := 1 to WizardForm.ComponentsList.Items.Count - 1 do
-    begin
-      WizardForm.ComponentsList.Checked[i] := False;
-      WizardForm.ComponentsList.ItemEnabled[i] := False;
-    end;
-  end;
+  { A per-user (no-admin) install used to be forced to "compact" here, with every
+    optional row greyed out, to match the [Files] admin gate. Both are gone - see the
+    comment above the optional [Files] entries: those components install fine without
+    elevation, and gating them turned every winget install into a viewer-only one.
+    The components page is now the same free choice in both install modes. }
 
   { The "run the SFTP server after install" opt-in requires two things: the Share
     component must be installed (screen 1 - otherwise there is no worker exe to run)
@@ -953,11 +1023,46 @@ begin
     LaunchShareManager;
 end;
 
+{ Always-on hosting outlives the app on purpose - the service runs its own staged copy
+  of the worker from %ProgramData% - so uninstalling the viewer would otherwise leave a
+  listening SFTP server behind with nothing left on the machine to manage it. Offer to
+  take the role away in the same breath. Only OUR registration (see ShareServiceIsAppOwned):
+  the separate Server edition has its own uninstaller and is none of this one's business. }
+procedure OfferShareServiceRemoval;
+var
+  ResultCode: Integer;
+  ScriptPath: String;
+  Params: String;
+begin
+  if not ShareServiceIsAppOwned then
+    exit;
+  ScriptPath := ExpandConstant('{app}\install-share-service.ps1');
+  if not FileExists(ScriptPath) then
+    exit;
+  { A silent uninstall must never raise a UAC prompt, so the role is left in place -
+    the safe half: it keeps serving exactly what was explicitly published, and the
+    Share Manager (or a reinstall) can still remove it. }
+  if UninstallSilent then
+    exit;
+  if SuppressibleMsgBox(ShareServiceRemovalPromptText, mbConfirmation, MB_YESNO, IDYES) <> IDYES then
+    exit;
+
+  Params := '-NoProfile -ExecutionPolicy Bypass -File "' + ScriptPath + '"' +
+            ' -Action remove' +
+            ' -ExePath "' + ExpandConstant('{app}\companion\fms-share-worker.exe') + '"' +
+            ' -DataDir "' + MachineShareDataDir + '"' +
+            ' -UserDataDir "' + ExpandConstant('{localappdata}\FastMediaSorterCompanion') + '"';
+  ShellExec('runas', 'powershell.exe', Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep <> usUninstall then
     exit;
 
+  { Before the files go: the service holds its own copy, but the roots ACL ledger and
+    the firewall rule are removed by the same helper call. }
+  OfferShareServiceRemoval;
   StopCompanionWorker(ExpandConstant('{app}\stop-companion.ps1'));
 
   { Remove the SFTP firewall rule this app may have added (no-op if absent). The

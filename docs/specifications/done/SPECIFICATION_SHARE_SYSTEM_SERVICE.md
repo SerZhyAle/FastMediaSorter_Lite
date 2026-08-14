@@ -84,7 +84,8 @@ User and Server editions must not coexist as independent live installations. The
 
 - The Server installer detects a User edition and offers a **migration**, not side-by-side installation.
 - The User installer detects a Server edition and offers a **return to User mode**, not a second worker.
-- Silent installers must fail clearly if the other edition is present, unless an explicit, documented migration argument is supplied.
+- Silent installers must fail clearly if the other edition is present, unless an explicit, documented migration argument is supplied. **Exception, added 2026-08-14: an UPDATE of an installation that is already on the machine is not "the other edition being present" and must not be blocked.** The User installer applied the rule to updates too, and since winget passes no such argument, `winget upgrade` failed permanently on every machine hosting the service - the viewer could never be updated again by the channel that installed it. A first unattended install still stops.
+- A registered service is not automatically "the other edition": an ordinary installation can hold the service role itself (§4.4). The two are told apart by what the registration runs - the staged copy under `%ProgramData%` is ours, a worker inside a Server-edition program folder is not - and an installer may only act on its own.
 - The Share Manager may link to the Server download/instructions, but it must not silently download or execute an installer.
 
 ---
@@ -218,6 +219,36 @@ All machine-affecting work is behind visible administrator approval:
 No phone request, ordinary IPC command, or silent User edition install can create the service or broaden ACLs/firewall access.
 
 ---
+
+### 4.4 In-app switch to service hosting (added 2026-08-14)
+
+The Server package is no longer the only way to reach always-on hosting, because requiring a second
+download for what is one program under a different host was a packaging accident, not a product
+decision. The Share Manager's Hosting console offers **"Switch sharing to a Windows service.."**
+whenever no service is registered, the elevated helper and the worker are both present, and the build
+is not packaged. It runs the SAME `install-share-service.ps1 -Action migrate-to-server` the Server
+installer runs - one helper, one auditable path - after a dialog that states what the single UAC
+prompt is about to do.
+
+Three consequences that are not optional:
+
+- **The service runs a staged copy of the worker under `%ProgramData%\FastMediaSorterCompanion\bin`,
+  never the one in the application folder.** A per-user installation lives under
+  `%LOCALAPPDATA%\Programs`, whose ACL grants the user, SYSTEM and Administrators - not LOCAL SERVICE
+  - so a service registered against it cannot start at all, and that is precisely the shape winget
+  produces. The staged copy is read+execute for the service account (the account that runs a binary
+  must not be able to rewrite it), read for the management user, full for SYSTEM/Administrators. The
+  firewall rule names whichever copy actually listens, because the two are different programs to the
+  firewall.
+- **The switch grants the already-shared folders in the same elevated call.** LOCAL SERVICE is not the
+  user who picked them, so without it the switch ends in a service that runs perfectly and serves
+  nothing - and the fix would be a second UAC prompt.
+- **Uninstalling the app offers to take the role away**, because the service outlives the application
+  by design and would otherwise keep a listening SFTP server on a machine with nothing left to manage
+  it. Declining keeps it serving; the state directory and the host key are kept either way.
+
+The Store/MSIX build is excluded: a packaged app cannot register a Windows service, and its container
+would virtualize the attempt rather than fail honestly. There the console keeps offering the page.
 
 ## 5. Gate and mode state
 

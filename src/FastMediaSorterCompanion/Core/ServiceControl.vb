@@ -249,11 +249,30 @@ Public Module ServiceControl
         Unavailable   ' no helper script / no worker payload - nothing to manage
     End Enum
 
-    ''' <summary>True when the bundled elevated helper is present (it ships with the
-    ''' Server installer only).</summary>
+    ''' <summary>True when the bundled elevated helper is present. It ships with the
+    ''' Server installer and, since the Share component became part of every ordinary
+    ''' installation, with the regular installer too - which is what lets a normal
+    ''' install take the service role on instead of sending the user to a download
+    ''' page. A packaged (Store) build has neither the helper nor permission to
+    ''' register a service, so this is False there and the UI offers the page.</summary>
     Public Function CanManage() As Boolean
         Dim script As String = HelperScriptPath()
         Return script.Length > 0 AndAlso File.Exists(script) AndAlso WorkerProcess.IsAvailable()
+    End Function
+
+    ''' <summary>
+    ''' Can this installation switch ITSELF into always-on hosting? Three conditions,
+    ''' each for its own reason: no service may be registered yet (otherwise the
+    ''' console offers Repair/Remove instead), the elevated helper and the worker must
+    ''' both be on disk, and the build must not be packaged - a Store package cannot
+    ''' register a Windows service, and its container would virtualize the attempt away
+    ''' rather than fail honestly. When this is False and no service exists, the console
+    ''' falls back to the Server edition download page.
+    ''' </summary>
+    Public Function CanSwitchToService() As Boolean
+        If AutostartManager.IsPackaged() Then Return False
+        If IsServiceInstalled() Then Return False
+        Return CanManage()
     End Function
 
     ''' <summary>
