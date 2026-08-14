@@ -8,6 +8,12 @@ Categories: `Added`, `Changed`, `Fixed`, `Removed`.
 
 ## [Unreleased]
 
+### Changed
+- **Setup's "turn folder sharing on" checkbox is no longer greyed out when you install without administrator rights.** It used to be disabled with a note telling you to enable sharing later from the Share Manager, because switching sharing on writes a Windows Firewall rule. But that rule is the *only* part of the installation that needs administrator rights, so withdrawing the whole option was too blunt. Tick it now and everything installs as usual; at the very end Windows asks for approval once, for that one rule. Decline it and the program is still completely installed - it says so plainly and points at where to switch sharing on later, which takes the same single prompt. Unattended installs are unchanged: that page is never shown there, so nothing is ever enabled - and no prompt ever appears - unless a person ticks the box.
+
+### Fixed
+- **On a PC that has the separate Server edition, uninstalling the ordinary app could offer to remove a service that is not its own.** Both now stage their worker in the same machine folder, so the path alone no longer identifies whose service it is; the ordinary installer now recognises its own role by the absence of the Server edition and leaves that product's service alone.
+
 ## [26.8.14.1400] - 2026-08-14
 
 ### Added

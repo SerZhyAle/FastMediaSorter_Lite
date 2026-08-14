@@ -131,12 +131,12 @@ ukrainian.SelectComponentsLabel2=Сам переглядач важить мал
 ; Firewall rule. %1 = application name, %n = line break. Text1 is shown when "all users"
 ; is the default and Text2 when "you only" is (our default is lowest -> Text2), so both
 ; carry the same explanation.
-english.PrivilegesRequiredOverrideText1=%1 can be installed for all users of this computer (requires administrator rights) or for you only (no administrator rights).%n%nBoth modes install the same features, including the offline video codecs (VLC), the OCR / translation models and the Android folder-sharing companion. Administrator rights are needed for one thing only: turning folder sharing on during setup, which adds a Windows Firewall rule. You can also turn it on later from the Share Manager.
-english.PrivilegesRequiredOverrideText2=%1 can be installed for you only (no administrator rights) or for all users of this computer (requires administrator rights).%n%nBoth modes install the same features, including the offline video codecs (VLC), the OCR / translation models and the Android folder-sharing companion. Administrator rights are needed for one thing only: turning folder sharing on during setup, which adds a Windows Firewall rule. You can also turn it on later from the Share Manager.
-russian.PrivilegesRequiredOverrideText1=%1 можно установить для всех пользователей этого компьютера (нужны права администратора) или только для вас (без прав администратора).%n%nОба режима ставят одинаковый набор возможностей, включая оффлайн видео-кодеки (VLC), модели OCR / перевода и компаньон для раздачи папок на Android. Права администратора нужны ровно для одного: включить раздачу папок прямо при установке, потому что для неё добавляется правило брандмауэра Windows. Включить её можно и позже, из Менеджера общего доступа.
-russian.PrivilegesRequiredOverrideText2=%1 можно установить только для вас (без прав администратора) или для всех пользователей этого компьютера (нужны права администратора).%n%nОба режима ставят одинаковый набор возможностей, включая оффлайн видео-кодеки (VLC), модели OCR / перевода и компаньон для раздачи папок на Android. Права администратора нужны ровно для одного: включить раздачу папок прямо при установке, потому что для неё добавляется правило брандмауэра Windows. Включить её можно и позже, из Менеджера общего доступа.
-ukrainian.PrivilegesRequiredOverrideText1=%1 можна встановити для всіх користувачів цього комп'ютера (потрібні права адміністратора) або лише для вас (без прав адміністратора).%n%nОбидва режими встановлюють однаковий набір можливостей, включно з офлайн відеокодеками (VLC), моделями OCR / перекладу та компаньйоном для роздачі тек на Android. Права адміністратора потрібні лише для одного: увімкнути роздачу тек прямо під час встановлення, бо для неї додається правило брандмауера Windows. Увімкнути її можна й пізніше, з Менеджера спільного доступу.
-ukrainian.PrivilegesRequiredOverrideText2=%1 можна встановити лише для вас (без прав адміністратора) або для всіх користувачів цього комп'ютера (потрібні права адміністратора).%n%nОбидва режими встановлюють однаковий набір можливостей, включно з офлайн відеокодеками (VLC), моделями OCR / перекладу та компаньйоном для роздачі тек на Android. Права адміністратора потрібні лише для одного: увімкнути роздачу тек прямо під час встановлення, бо для неї додається правило брандмауера Windows. Увімкнути її можна й пізніше, з Менеджера спільного доступу.
+english.PrivilegesRequiredOverrideText1=%1 can be installed for all users of this computer (requires administrator rights) or for you only (no administrator rights).%n%nBoth modes install the same features, including the offline video codecs (VLC), the OCR / translation models and the Android folder-sharing companion. Folder sharing can be switched on in either mode - Windows asks for approval once for its firewall rule. The real difference is only where the program lands and whether the other accounts on this PC see it.
+english.PrivilegesRequiredOverrideText2=%1 can be installed for you only (no administrator rights) or for all users of this computer (requires administrator rights).%n%nBoth modes install the same features, including the offline video codecs (VLC), the OCR / translation models and the Android folder-sharing companion. Folder sharing can be switched on in either mode - Windows asks for approval once for its firewall rule. The real difference is only where the program lands and whether the other accounts on this PC see it.
+russian.PrivilegesRequiredOverrideText1=%1 можно установить для всех пользователей этого компьютера (нужны права администратора) или только для вас (без прав администратора).%n%nОба режима ставят одинаковый набор возможностей, включая оффлайн видео-кодеки (VLC), модели OCR / перевода и компаньон для раздачи папок на Android. Раздачу папок можно включить в любом из них - Windows один раз попросит подтверждение для правила брандмауэра. Разница только в том, куда попадёт программа и увидят ли её другие учётные записи этого ПК.
+russian.PrivilegesRequiredOverrideText2=%1 можно установить только для вас (без прав администратора) или для всех пользователей этого компьютера (нужны права администратора).%n%nОба режима ставят одинаковый набор возможностей, включая оффлайн видео-кодеки (VLC), модели OCR / перевода и компаньон для раздачи папок на Android. Раздачу папок можно включить в любом из них - Windows один раз попросит подтверждение для правила брандмауэра. Разница только в том, куда попадёт программа и увидят ли её другие учётные записи этого ПК.
+ukrainian.PrivilegesRequiredOverrideText1=%1 можна встановити для всіх користувачів цього комп'ютера (потрібні права адміністратора) або лише для вас (без прав адміністратора).%n%nОбидва режими встановлюють однаковий набір можливостей, включно з офлайн відеокодеками (VLC), моделями OCR / перекладу та компаньйоном для роздачі тек на Android. Роздачу тек можна ввімкнути в будь-якому з них - Windows один раз попросить підтвердження для правила брандмауера. Різниця лише в тому, куди потрапить програма й чи побачать її інші облікові записи цього ПК.
+ukrainian.PrivilegesRequiredOverrideText2=%1 можна встановити лише для вас (без прав адміністратора) або для всіх користувачів цього комп'ютера (потрібні права адміністратора).%n%nОбидва режими встановлюють однаковий набір можливостей, включно з офлайн відеокодеками (VLC), моделями OCR / перекладу та компаньйоном для роздачі тек на Android. Роздачу тек можна ввімкнути в будь-якому з них - Windows один раз попросить підтвердження для правила брандмауера. Різниця лише в тому, куди потрапить програма й чи побачать її інші облікові записи цього ПК.
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -539,21 +539,38 @@ end;
 function ServerFeaturesHintText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Позволяет телефону Android просматривать папки этого ПК по сети (только чтение, SFTP). Добавляет разрешение в брандмауэр, поэтому нужны права администратора. Менеджер общего доступа откроется по завершении установки, чтобы вы выбрали папку и запустили сервер. Можно включить и позже, в самом Менеджере общего доступа.'
+    Result := 'Позволяет телефону Android просматривать папки этого ПК по сети (только чтение, SFTP). Для этого добавляется разрешение в брандмауэр Windows. Менеджер общего доступа откроется по завершении установки, чтобы вы выбрали папку и запустили сервер. Можно включить и позже, в самом Менеджере общего доступа.'
   else if IsLanguage('ukrainian') then
-    Result := 'Дозволяє телефону Android переглядати папки цього ПК по мережі (лише читання, SFTP). Додає дозвіл у брандмауер, тож потрібні права адміністратора. Менеджер спільного доступу відкриється після завершення встановлення, щоб ви вибрали теку й запустили сервер. Можна ввімкнути й пізніше, у самому Менеджері спільного доступу.'
+    Result := 'Дозволяє телефону Android переглядати папки цього ПК по мережі (лише читання, SFTP). Для цього додається дозвіл у брандмауер Windows. Менеджер спільного доступу відкриється після завершення встановлення, щоб ви вибрали теку й запустили сервер. Можна ввімкнути й пізніше, у самому Менеджері спільного доступу.'
   else
-    Result := 'Lets an Android phone browse this PC''s folders over the network (read-only, SFTP). Adds a firewall exception, so setup needs administrator rights. The Share Manager opens when setup finishes so you can pick a folder and start the server. Can also be enabled later from the Share Manager itself.';
+    Result := 'Lets an Android phone browse this PC''s folders over the network (read-only, SFTP). This adds one Windows Firewall exception. The Share Manager opens when setup finishes so you can pick a folder and start the server. Can also be enabled later from the Share Manager itself.';
 end;
 
-function ServerFeaturesAdminHintText: String;
+{ Shown when Setup itself is not elevated. The option is NOT withdrawn there: the whole
+  privileged part of it is one firewall rule, so instead of sending the user away to do
+  it later, Setup asks Windows for that single step at the end - one UAC prompt, nothing
+  else elevated. }
+function ServerFeaturesElevationHintText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Недоступно: установка выполняется без прав администратора. Сам компонент раздачи будет установлен - включить общий доступ можно позже, из Менеджера общего доступа (одно подтверждение UAC).'
+    Result := 'Установка идёт без прав администратора, поэтому в конце Windows один раз спросит подтверждение - только чтобы добавить правило брандмауэра. Всё остальное ставится без него. Откажетесь - программа установится как обычно, а раздачу можно будет включить позже в Менеджере общего доступа.'
   else if IsLanguage('ukrainian') then
-    Result := 'Недоступно: встановлення виконується без прав адміністратора. Сам компонент роздачі буде встановлено - увімкнути спільний доступ можна пізніше, з Менеджера спільного доступу (одне підтвердження UAC).'
+    Result := 'Встановлення йде без прав адміністратора, тож наприкінці Windows один раз запитає підтвердження - лише щоб додати правило брандмауера. Усе інше встановлюється без нього. Відмовитеся - програма встановиться як звичайно, а роздачу можна буде ввімкнути пізніше в Менеджері спільного доступу.'
   else
-    Result := 'Unavailable: setup is running without administrator rights. The sharing component is still installed - you can enable sharing later from the Share Manager (one UAC prompt).';
+    Result := 'Setup is running without administrator rights, so at the end Windows will ask for approval once - only to add the firewall rule. Everything else installs without it. Decline and the program still installs normally; sharing can be turned on later from the Share Manager.';
+end;
+
+function ServerFeaturesElevationFailedText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'Общий доступ не включён: подтверждение администратора не получено.' + #13#10#13#10 +
+              'Программа установлена полностью, включая компонент раздачи. Включить общий доступ можно в любой момент: Менеджер общего доступа -> «Управление хостингом..».'
+  else if IsLanguage('ukrainian') then
+    Result := 'Спільний доступ не ввімкнено: підтвердження адміністратора не отримано.' + #13#10#13#10 +
+              'Програму встановлено повністю, включно з компонентом роздачі. Увімкнути спільний доступ можна будь-коли: Менеджер спільного доступу -> «Керування хостингом..».'
+  else
+    Result := 'Folder sharing was not enabled: administrator approval was not given.' + #13#10#13#10 +
+              'The program is fully installed, the sharing component included. You can turn sharing on at any time: Share Manager -> "Manage hosting..".';
 end;
 
 function ServerFeaturesNeedsShareHintText: String;
@@ -694,11 +711,36 @@ end;
 
 function ShouldInstallServerFeatures: Boolean;
 begin
-  { Only when explicitly ticked AND Setup is elevated - the firewall step needs
-    admin. In silent/winget installs the page is never shown, so Checked stays
-    False and this is a no-op (viewer-only). Also require the Share component to be
-    installed - there is no worker exe to allow through the firewall otherwise. }
-  Result := (ServerFeaturesCheckBox <> nil) and ServerFeaturesCheckBox.Checked and IsAdminInstallMode and WizardIsComponentSelected('share');
+  { Only when explicitly ticked, and only with the Share component installed - there
+    is no worker exe to allow through the firewall otherwise. Elevation is NOT a
+    condition any more: a non-elevated Setup asks Windows for the one privileged step
+    (see EnableServerFeaturesElevated). In silent/winget installs the page is never
+    shown, so Checked stays False and this is a no-op - nothing is ever enabled
+    without someone ticking the box. }
+  Result := (ServerFeaturesCheckBox <> nil) and ServerFeaturesCheckBox.Checked and WizardIsComponentSelected('share');
+end;
+
+{ The single privileged step of the opt-in, performed by the same helper the in-app
+  deferred opt-in uses (ServerFeatures.EnableViaElevation), through one ShellExecute
+  "runas". Inno cannot elevate a Setup that is already running - the alternative would
+  be relaunching the wizard from the start - and it does not need to: only the firewall
+  rule needs administrator rights, and everything else this installer writes goes to a
+  per-user location. Returns False when the user dismisses the UAC prompt. }
+function EnableServerFeaturesElevated: Boolean;
+var
+  ResultCode: Integer;
+  ScriptPath: String;
+  Params: String;
+begin
+  Result := False;
+  ScriptPath := ExpandConstant('{app}\enable-share-server.ps1');
+  if not FileExists(ScriptPath) then
+    exit;
+  Params := '-NoProfile -ExecutionPolicy Bypass -File "' + ScriptPath + '"' +
+            ' -ExePath "' + ExpandConstant('{app}\companion\fms-share-worker.exe') + '"';
+  if not ShellExec('runas', 'powershell.exe', Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    exit;
+  Result := (ResultCode = 0);
 end;
 
 procedure AddServerFirewallRule;
@@ -983,17 +1025,16 @@ begin
     ShareSelected := WizardIsComponentSelected('share');
     if ServerFeaturesCheckBox <> nil then
     begin
-      ServerFeaturesCheckBox.Enabled := ShareSelected and IsAdminInstallMode;
+      { The component decides, not elevation: a non-elevated Setup can still turn this
+        on, it just asks Windows for the firewall step at the end. }
+      ServerFeaturesCheckBox.Enabled := ShareSelected;
       if not ServerFeaturesCheckBox.Enabled then
         ServerFeaturesCheckBox.Checked := False;
     end;
     if ServerFeaturesHintLabel <> nil then
     begin
-      { Admin first: without elevation the whole Share feature (and its component) is
-        unavailable, so the "enable it later in the app" note is the honest one - never
-        tell the user to tick a Share component they cannot select without admin. }
-      if not IsAdminInstallMode then
-        ServerFeaturesHintLabel.Caption := ServerFeaturesAdminHintText
+      if not IsAdminInstallMode and ShareSelected then
+        ServerFeaturesHintLabel.Caption := ServerFeaturesHintText + #13#10#13#10 + ServerFeaturesElevationHintText
       else if not ShareSelected then
         ServerFeaturesHintLabel.Caption := ServerFeaturesNeedsShareHintText
       else
@@ -1028,8 +1069,18 @@ begin
     RestartShareServiceIfAutomatic;
   if (CurStep = ssPostInstall) and ShouldInstallServerFeatures then
   begin
-    AddServerFirewallRule;
-    WriteServerFeaturesMarker;
+    { The marker is the gate the non-elevated app reads, so it is written ONLY once the
+      firewall rule really is in place - otherwise the feature would look enabled while
+      no connection could ever reach the worker. }
+    if IsAdminInstallMode then
+    begin
+      AddServerFirewallRule;
+      WriteServerFeaturesMarker;
+    end
+    else if EnableServerFeaturesElevated then
+      WriteServerFeaturesMarker
+    else
+      SuppressibleMsgBox(ServerFeaturesElevationFailedText, mbInformation, MB_OK, IDOK);
   end;
   { Launch the Share Manager once the install is fully done (after the Finished
     page), so the user lands in the UI to pick a folder and start the server -
