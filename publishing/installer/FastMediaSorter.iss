@@ -551,11 +551,11 @@ end;
 function ServerFeaturesElevationHintText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Установка идёт без прав администратора, поэтому в конце Windows один раз спросит подтверждение - только чтобы добавить правило брандмауэра. Всё остальное ставится без него. Откажетесь - программа установится как обычно, а раздачу можно будет включить позже в Менеджере общего доступа.'
+    Result := 'Установка идёт без прав администратора, поэтому в конце Windows один раз спросит подтверждение - только для правила брандмауэра. Откажетесь - программа всё равно установится полностью.'
   else if IsLanguage('ukrainian') then
-    Result := 'Встановлення йде без прав адміністратора, тож наприкінці Windows один раз запитає підтвердження - лише щоб додати правило брандмауера. Усе інше встановлюється без нього. Відмовитеся - програма встановиться як звичайно, а роздачу можна буде ввімкнути пізніше в Менеджері спільного доступу.'
+    Result := 'Встановлення йде без прав адміністратора, тож наприкінці Windows один раз запитає підтвердження - лише для правила брандмауера. Відмовитеся - програма все одно встановиться повністю.'
   else
-    Result := 'Setup is running without administrator rights, so at the end Windows will ask for approval once - only to add the firewall rule. Everything else installs without it. Decline and the program still installs normally; sharing can be turned on later from the Share Manager.';
+    Result := 'Setup is running without administrator rights, so at the end Windows will ask for approval once - only for the firewall rule. Decline it and the program still installs in full.';
 end;
 
 function ServerFeaturesElevationFailedText: String;
@@ -854,6 +854,21 @@ begin
   RegDeleteKeyIncludingSubkeys(HKCU, 'Software\Classes\' + ProgId);
 end;
 
+{ Re-flows the three links that sit under the sharing hint. That hint is NOT a fixed
+  height - it gains a paragraph when Setup is running without administrator rights, and
+  the components page can change which text it shows - while these labels are positioned
+  by absolute Top. Without this, a grown hint is simply drawn over them (which is exactly
+  what happened: the links ended up printed across the middle of the paragraph). }
+procedure LayoutOptionsPageLinks;
+begin
+  if (ServerFeaturesHintLabel = nil) or (ShareGuideLinkLabel = nil) or
+     (ShareAppLinkLabel = nil) or (CompanionSiteLinkLabel = nil) then
+    exit;
+  ShareGuideLinkLabel.Top := ServerFeaturesHintLabel.Top + ServerFeaturesHintLabel.Height + ScaleY(6);
+  ShareAppLinkLabel.Top := ShareGuideLinkLabel.Top + ShareGuideLinkLabel.Height + ScaleY(4);
+  CompanionSiteLinkLabel.Top := ShareAppLinkLabel.Top + ShareAppLinkLabel.Height + ScaleY(4);
+end;
+
 procedure InitializeWizard;
 begin
   InstallOptionsPage := CreateCustomPage(
@@ -953,6 +968,8 @@ begin
   CompanionSiteLinkLabel.Font.Style := [fsUnderline];
   CompanionSiteLinkLabel.Font.Color := clBlue;
   CompanionSiteLinkLabel.OnClick := @OpenCompanionSite;
+
+  LayoutOptionsPageLinks;
 end;
 
 { Stops the tray-resident Companion app (FastMediaSorterCompanion.exe) AND its
@@ -1015,6 +1032,9 @@ begin
       else
         ServerFeaturesHintLabel.Caption := ServerFeaturesHintText;
       WizardForm.AdjustLabelHeight(ServerFeaturesHintLabel);
+      { The hint just changed height - move everything below it, or the links are
+        overdrawn by the paragraph. }
+      LayoutOptionsPageLinks;
     end;
   end;
 end;
