@@ -66,6 +66,24 @@ $ServiceDesc    = 'Serves the folders you selected in Fast Media Sorter over SFT
 $FirewallRule   = 'FastMediaSorter Companion SFTP'
 $LedgerName     = 'granted-roots.json'
 
+# The service runs its OWN copy of the worker, staged under the machine state
+# directory, never the one inside the application folder. Three reasons, in order of
+# how badly each bites:
+#   * a per-user installation lives under %LOCALAPPDATA%\Programs, whose ACL grants
+#     the user, SYSTEM and Administrators - and NOT LOCAL SERVICE. A service
+#     registered against that path cannot even start (access denied), which is exactly
+#     the installation shape winget produces, and now the shape that can switch itself
+#     into service mode from the Share Manager;
+#   * the service holds its binary open, so an application update could not replace a
+#     file it is running - the copy moves that conflict out of the installer's way;
+#   * the service keeps working when the app is uninstalled, which is the honest
+#     behaviour for a machine-wide role someone deliberately enabled.
+$BinDirName = 'bin'
+
+# Set by Sync-ServiceBinaries: the executable the SERVICE is registered against and
+# the one the firewall rule must name. Until then, the caller-supplied path.
+$script:ServiceExePath = $ExePath
+
 # Well-known SIDs, used instead of names: icacls resolves "*S-1-5-19" identically on
 # every Windows language, while "LOCAL SERVICE" fails outright on a localized system.
 $SidSystem      = 'S-1-5-18'
@@ -187,6 +205,75 @@ function Remove-ServiceRegistration {
     for ($i = 0; $i -lt 20 -and (Get-ServiceOrNull); $i++) { Start-Sleep -Milliseconds 250 }
 }
 
+function Get-StagedExePath {
+    if (-not $DataDir -or -not $ExePath) { return '' }
+    return (Join-Path (Join-Path $DataDir $BinDirName) (Split-Path -Leaf $ExePath))
+}
+
+# Puts the service's own copy of the worker in place and points $script:ServiceExePath
+# at it. Idempotent, and a no-op when the caller already handed us the staged path
+# (a repair run started from the staged copy would otherwise copy a file onto itself).
+function Sync-ServiceBinaries {
+    Assert-Worker
+    Assert-DataDir
+
+    $staged = Get-StagedExePath
+    if ([IO.Path]::GetFullPath($ExePath) -ieq [IO.Path]::GetFullPath($staged)) {
+        $script:ServiceExePath = $staged
+        Write-Log "worker already staged at '$staged'"
+        return
+    }
+
+    # Nothing may hold the file while it is replaced; on install/repair the service is
+    # torn down right after this anyway.
+    Stop-ServiceGracefully
+
+    $binDir = Split-Path -Parent $staged
+    if (-not (Test-Path -LiteralPath $binDir)) {
+        New-Item -ItemType Directory -Path $binDir -Force | Out-Null
+    }
+    Write-Log "staging worker: '$ExePath' -> '$staged'"
+    Copy-Item -LiteralPath $ExePath -Destination $staged -Force
+    $sidecar = "$ExePath.sha256"
+    if (Test-Path -LiteralPath $sidecar) {
+        Copy-Item -LiteralPath $sidecar -Destination "$staged.sha256" -Force
+    }
+
+    # The parent directory's ACL hands LOCAL SERVICE and the management user Modify,
+    # which is right for state and wrong for code: the account that RUNS the binary
+    # must not be able to rewrite it. Read+execute for LOCAL SERVICE, read for the
+    # management user (the Share Manager compares this copy against the installed one
+    # to notice when an app update left the service behind), full for SYSTEM/Admins.
+    $aclArgs = @($binDir, '/inheritance:r',
+                 '/grant:r', ('*{0}:(OI)(CI)F' -f $SidSystem),
+                 '/grant:r', ('*{0}:(OI)(CI)F' -f $SidAdmins),
+                 '/grant:r', ('*{0}:(OI)(CI)RX' -f $SidLocalService))
+    foreach ($sid in (Split-Sids $ManageSid)) {
+        $aclArgs += @('/grant:r', ('*{0}:(OI)(CI)RX' -f $sid))
+    }
+    & icacls.exe @aclArgs | Out-Null
+    if ($LASTEXITCODE -ne 0) { Fail "icacls could not secure '$binDir' (exit $LASTEXITCODE)" 4 }
+
+    $script:ServiceExePath = $staged
+}
+
+# Drops the staged copy when the server role goes away. The state directory beside it
+# is deliberately kept (it holds the pinned identity) - this removes only code.
+function Remove-ServiceBinaries {
+    $staged = Get-StagedExePath
+    if (-not $staged) { return }
+    $binDir = Split-Path -Parent $staged
+    if (-not (Test-Path -LiteralPath $binDir)) { return }
+    try {
+        Remove-Item -LiteralPath $binDir -Recurse -Force -ErrorAction Stop
+        Write-Log "removed the staged worker in '$binDir'"
+    } catch {
+        # A file still held by a stopping service must not fail the whole action - the
+        # registration is already gone, which is what "remove the role" means.
+        Write-Log "could not remove '$binDir': $_"
+    }
+}
+
 function New-ServiceRegistration {
     Assert-Worker
     Assert-DataDir
@@ -195,7 +282,7 @@ function New-ServiceRegistration {
     # paths, and passing that through a native command's command line is exactly the
     # kind of quoting that breaks on one Windows PowerShell version and not another.
     # New-Service hands the string to CreateService as-is.
-    $binPath = '"{0}" --service --datadir "{1}"' -f $ExePath, $DataDir
+    $binPath = '"{0}" --service --datadir "{1}"' -f $script:ServiceExePath, $DataDir
     if ($ManageSid) { $binPath += ' --manage-sid "{0}"' -f $ManageSid }
 
     Write-Log "registering $ServiceName -> $binPath"
@@ -502,16 +589,22 @@ function Set-FirewallRule([bool]$enable) {
         # program (fms-share-worker) that no removal of ours has ever touched. Delete
         # by PROGRAM path too - it catches every rule aimed at this exe whatever its
         # name, and cannot match another installation's, which has another path.
-        if ($ExePath) { & netsh.exe advfirewall firewall delete rule name=all program="$ExePath" | Out-Null }
+        # BOTH paths: the installed worker and the service's staged copy are two
+        # different programs to the firewall.
+        foreach ($program in @($ExePath, (Get-StagedExePath))) {
+            if ($program) { & netsh.exe advfirewall firewall delete rule name=all program="$program" | Out-Null }
+        }
         Write-Log 'firewall rule removed'
         return
     }
     Assert-Worker
     # Program-scoped (not port-scoped) so the rule survives the worker's dynamically
     # assigned listen port; all three profiles because a dedicated server's network is
-    # usually classified Public.
+    # usually classified Public. The program is whichever copy will actually listen -
+    # the staged one once the service is registered against it, since a rule naming the
+    # application folder's copy would not cover the process the service starts.
     & netsh.exe advfirewall firewall add rule name="$FirewallRule" dir=in action=allow `
-        program="$ExePath" protocol=TCP profile=domain,private,public enable=yes | Out-Null
+        program="$script:ServiceExePath" protocol=TCP profile=domain,private,public enable=yes | Out-Null
     if ($LASTEXITCODE -ne 0) { Fail "could not add the firewall rule (netsh exit $LASTEXITCODE)" 8 }
     Write-Log 'firewall rule in place'
 }
@@ -530,6 +623,7 @@ switch ($Action) {
         $ManageSid = Resolve-ManagementSid $ManageSid $UserDataDir
         Write-Log "management SID(s): $ManageSid"
         Set-MachineDataDirAcl
+        Sync-ServiceBinaries
         Remove-ServiceRegistration   # idempotent re-install over a previous registration
         New-ServiceRegistration
         Set-FirewallRule $true
@@ -542,6 +636,9 @@ switch ($Action) {
         $ManageSid = Resolve-ManagementSid $ManageSid $UserDataDir
         Write-Log "management SID(s): $ManageSid"
         Set-MachineDataDirAcl
+        # Also re-stages the worker, which is what makes this the "the app updated but
+        # the service is still running the old copy" repair as well as a registration one.
+        Sync-ServiceBinaries
         # Re-registering (rather than "sc config binPath=") is how the command line,
         # the account, the start type and the recovery actions all end up matching this
         # script again, whatever an earlier version or a hand edit left behind.
@@ -555,6 +652,7 @@ switch ($Action) {
         Remove-ServiceRegistration
         Revoke-Roots
         Set-FirewallRule $false
+        Remove-ServiceBinaries
         # The state directory is deliberately LEFT in place: it holds the identity the
         # phones pinned. Deleting it is a separate, explicit choice.
         Write-Log "server role removed. State kept in '$DataDir' - delete it by hand only if you want the phones to re-pair."
@@ -596,6 +694,7 @@ switch ($Action) {
         Write-Log "management SID(s): $ManageSid"
         Copy-State $sourceDir $DataDir
         Set-MachineDataDirAcl
+        Sync-ServiceBinaries
         Remove-ServiceRegistration
         New-ServiceRegistration
         Set-FirewallRule $true
@@ -609,8 +708,15 @@ switch ($Action) {
         Copy-State $DataDir $UserDataDir
         Remove-ServiceRegistration
         Revoke-Roots
-        # The firewall rule stays: the User edition worker is the same executable and
-        # needs the same program-scoped allow to be reachable at all.
+        # The firewall opening follows whichever copy listens next. The service ran the
+        # staged worker, which is about to be deleted; the User edition serves from the
+        # installed one, a different program as far as the firewall is concerned. So the
+        # rule is re-pointed rather than left naming a file that will not exist.
+        $staged = Get-StagedExePath
+        if ($staged) { & netsh.exe advfirewall firewall delete rule name=all program="$staged" | Out-Null }
+        $script:ServiceExePath = $ExePath
+        Set-FirewallRule $true
+        Remove-ServiceBinaries
         Write-Log 'returned to User edition hosting. Start the Share Manager to resume sharing.'
     }
 

@@ -225,6 +225,14 @@ Public Module ServiceControl
         ''' <summary>Stop + start in one elevated step. The action a user actually
         ''' wants after changing something the service only reads at start-up.</summary>
         RestartService
+        ''' <summary>Takes this installation from user-session hosting to the Windows
+        ''' service, in ONE elevated step: the per-user state (folders, settings, and
+        ''' above all the host key phones pinned) is copied to the machine store and
+        ''' validated, the worker is staged where a service account can actually run it,
+        ''' the service is registered and started, and the currently shared folders are
+        ''' granted to the service account. Splitting any of that out would mean a second
+        ''' UAC prompt, and a switch that "worked" but serves nothing.</summary>
+        MigrateToServer
         MigrateToUser
         ''' <summary>Grants LOCAL SERVICE access on the currently shared folders - read
         ''' for a read-only root, read/write for a writable one. Needed because the
@@ -307,6 +315,7 @@ Public Module ServiceControl
             Case ManageAction.StartService : Return "start"
             Case ManageAction.StopService : Return "stop"
             Case ManageAction.RestartService : Return "restart"
+            Case ManageAction.MigrateToServer : Return "migrate-to-server"
             Case ManageAction.GrantRoots : Return "grant-roots"
             Case Else : Return "migrate-to-user"
         End Select
