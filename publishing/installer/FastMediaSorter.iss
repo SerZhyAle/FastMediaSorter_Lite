@@ -318,10 +318,26 @@ end;
       uninstall may offer to take the role away again;
     * the separate Server edition - it runs the worker from its own program folder,
       has its own AppId and uninstaller, and this installer must never touch it. }
+{ Is the separate Server edition installed as a product? Its own frozen Inno AppId is
+  the only reliable answer. The staged-path test below cannot carry this on its own:
+  the Server installer stages its worker into the SAME %ProgramData%\..\bin directory
+  (that is what lets an update replace a file the service is running), so after one
+  Server update the path alone would report somebody else's server as ours. }
+function ServerEditionProductInstalled: Boolean;
+var
+  ServerUninstallKey: String;
+begin
+  ServerUninstallKey := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{A9F3C61B-4D2E-4F58-9C7A-1E6B0D3F82A4}_is1';
+  Result := RegKeyExists(HKLM, ServerUninstallKey) or
+            RegKeyExists(HKLM, 'Software\WOW6432Node\' + ServerUninstallKey) or
+            RegKeyExists(HKCU, ServerUninstallKey);
+end;
+
 function ShareServiceIsAppOwned: Boolean;
 begin
   Result := (ShareServiceImagePath <> '') and
-            (Pos(Uppercase(MachineShareDataDir + '\' + 'bin'), Uppercase(ShareServiceImagePath)) > 0);
+            (Pos(Uppercase(MachineShareDataDir + '\' + 'bin'), Uppercase(ShareServiceImagePath)) > 0) and
+            (not ServerEditionProductInstalled);
 end;
 
 function ServerEditionInstalled: Boolean;
