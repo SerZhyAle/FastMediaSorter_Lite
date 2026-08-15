@@ -91,6 +91,21 @@ Fast Media Sorter for Windows (ранее FastMediaSorter LITE - в Microsoft St
 4. Перемещайте, копируйте или удаляйте файлы по необходимости. Нажали цифру - хаоса стало меньше.
 5. Наслаждайтесь быстрой и эффективной сортировкой медиа и, может, наконец верните себе место на диске.
 
+### Инструкции HOW TO
+
+Короткие практические инструкции на сайте - по одной на каждую задачу (на английском и русском):
+
+| Инструкция | О чём она |
+| --- | --- |
+| [Просмотр](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-viewer.html) | Просмотр и сортировка папки с медиа без потери темпа |
+| [Клавиши](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-keys.html) | Вся раскладка клавиш, масштаб, полный экран и слайдшоу |
+| [Настройка](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-setup.html) | Просмотрщик по умолчанию, язык интерфейса и что происходит с файлом |
+| [OCR](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-ocr.html) | Распознать текст на картинке и прочитать его на своём языке |
+| [Редактор](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-editor.html) | Порисовать на фото, обрезать его и записать результат |
+| [Архивы](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html) | Листать ZIP или CBZ так, будто это папка |
+| [SFTP](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html) | Опубликовать выбранные папки ПК на устройстве Android |
+| [Сеть для Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html) | Роутер, проброс портов и путь через интернет, шаг за шагом |
+
 ## Две программы, одно приложение
 
 В пакете едут **две программы просмотра рядом, в одной папке**, и установщик ставит

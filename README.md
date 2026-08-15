@@ -90,6 +90,21 @@ when the connection has to cross a router.
 4. Move, copy, or delete files as needed. Press a digit, watch the chaos shrink.
 5. Enjoy fast and efficient media sorting, and maybe finally reclaim that disk space.
 
+### HOW TO guides
+
+Short, practical walkthroughs on the site - one per task (English and Russian):
+
+| Guide | What it covers |
+| --- | --- |
+| [Viewer](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-viewer.html) | Review and sort a media folder without losing your flow |
+| [Keys](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-keys.html) | The whole key map, zoom, full screen and the slideshow |
+| [Setup](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-setup.html) | Default viewer, interface language, and what happens to a file |
+| [OCR](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-ocr.html) | Recognize text on a picture and read it in your language |
+| [Editor](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-editor.html) | Draw on a photo, crop it, and write the result back |
+| [Archives](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html) | Page through a ZIP or CBZ as if it were a folder |
+| [SFTP](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html) | Publish selected PC folders to your Android device |
+| [Android network](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html) | Router, port forwarding and the internet path, step by step |
+
 ## Two programs, one app
 
 The package ships **two viewers side by side in the same folder**, and the installer

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keys, zoom and full screen | Fast Media Sorter</title>
+<meta name="description" content="The full keyboard and mouse map of Fast Media Sorter for Windows: navigation, sorting, zoom, full screen, slideshow and video keys.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/how-to-keys.html">
+<link rel="icon" href="assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/sza-kit.css">
+<style>
+html[data-lang="ru"] [data-l="en"],html[data-lang="en"] [data-l="ru"]{display:none}.site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero h1{max-width:850px}.hero .lead{margin:0;max-width:780px}.keys{display:grid;gap:1rem}@media(min-width:860px){.keys{grid-template-columns:1fr 1fr}}.keyset{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.3rem}.keyset h2{font-size:1.1rem;margin:0 0 .7rem}.keyset table{width:100%;border-collapse:collapse}.keyset td{padding:.3rem 0;vertical-align:top;color:var(--text-2);border-top:1px solid var(--border)}.keyset tr:first-child td{border-top:0}.keyset td:first-child{width:11.5rem;padding-right:.8rem;white-space:nowrap;color:var(--text)}.callout{border-left:3px solid var(--gold);padding:.9rem 1rem;background:var(--card);border-radius:0 var(--radius-sm) var(--radius-sm) 0;color:var(--text-2)}.two{display:grid;gap:1rem}@media(min-width:860px){.two{grid-template-columns:1fr 1fr}}.site-footer .container{max-width:min(1760px,94vw)}
+</style>
+<script>(function(){try{var t=localStorage.getItem('sza-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.dataset.theme=t;var l=localStorage.getItem('sza-lang')||((navigator.language||'en').toLowerCase().indexOf('ru')===0?'ru':'en');document.documentElement.dataset.lang=l==='ru'?'ru':'en'}catch(e){}})();</script>
+</head>
+<body><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><a class="brand" href="./">FMS<span class="dot">.</span></a><div class="seg" role="group" aria-label="Language"><button data-setlang="ru">RU</button><button data-setlang="en">EN</button></div><button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button><a class="btn btn-primary btn-sm" href="./#get"><span data-l="en">Download</span><span data-l="ru">Скачать</span></a></header>
+<main class="container">
+<section class="hero"><span class="kicker">HOW TO · KEYS &amp; VIEW</span><h1><span data-l="en">Every key, and how to make the picture fill the screen</span><span data-l="ru">Все клавиши и как показать картинку во весь экран</span></h1><p class="lead"><span data-l="en">The program is built around single keys, so a folder can be reviewed with one hand. Nothing here has to be memorized at once - <kbd>F1</kbd> shows the short version inside the program at any time.</span><span data-l="ru">Программа построена на одиночных клавишах, поэтому папку можно разобрать одной рукой. Запоминать всё сразу не нужно - <kbd>F1</kbd> в любой момент покажет краткую версию прямо в программе.</span></p></section>
+<section class="section keys">
+
+<div class="keyset"><h2><span data-l="en">Move through the folder</span><span data-l="ru">Перемещение по папке</span></h2><table>
+<tr><td><kbd>Space</kbd> <kbd>→</kbd> <kbd>PgDn</kbd></td><td><span data-l="en">Next file</span><span data-l="ru">Следующий файл</span></td></tr>
+<tr><td><kbd>P</kbd> <kbd>←</kbd> <kbd>PgUp</kbd> <kbd>Backspace</kbd></td><td><span data-l="en">Previous file</span><span data-l="ru">Предыдущий файл</span></td></tr>
+<tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td><span data-l="en">Back or forward 10 files</span><span data-l="ru">На 10 файлов назад или вперёд</span></td></tr>
+<tr><td><kbd>Shift</kbd>+<kbd>PgUp</kbd> / <kbd>PgDn</kbd></td><td><span data-l="en">Back or forward 100 files</span><span data-l="ru">На 100 файлов назад или вперёд</span></td></tr>
+<tr><td><kbd>H</kbd> / <kbd>E</kbd></td><td><span data-l="en">First file / last file</span><span data-l="ru">Первый файл / последний файл</span></td></tr>
+<tr><td><kbd>N</kbd></td><td><span data-l="en">Jump to a file number</span><span data-l="ru">Перейти к файлу по номеру</span></td></tr>
+<tr><td><kbd>F</kbd> or <kbd>F4</kbd></td><td><span data-l="en">Choose a file from a list</span><span data-l="ru">Выбрать файл из списка</span></td></tr>
+<tr><td><kbd>Y</kbd></td><td><span data-l="en">A random file from the folder</span><span data-l="ru">Случайный файл из папки</span></td></tr>
+</table></div>
+
+<div class="keyset"><h2><span data-l="en">Sort the current file</span><span data-l="ru">Разбор текущего файла</span></h2><table>
+<tr><td><kbd>1</kbd>..<kbd>9</kbd>, <kbd>0</kbd></td><td><span data-l="en">Move it to the destination folder on that number</span><span data-l="ru">Переместить в папку-получатель под этим номером</span></td></tr>
+<tr><td><kbd>Shift</kbd>+<kbd>1</kbd>..<kbd>0</kbd></td><td><span data-l="en">Copy it to the same folder instead - top-row digits only</span><span data-l="ru">Скопировать в ту же папку - только цифры верхнего ряда</span></td></tr>
+<tr><td><kbd>Del</kbd> or <kbd>D</kbd></td><td><span data-l="en">To the Recycle Bin</span><span data-l="ru">В Корзину</span></td></tr>
+<tr><td><kbd>Shift</kbd>+<kbd>Del</kbd></td><td><span data-l="en">Delete permanently, past the bin</span><span data-l="ru">Удалить насовсем, мимо Корзины</span></td></tr>
+<tr><td><kbd>U</kbd></td><td><span data-l="en">Undo the last operations</span><span data-l="ru">Отменить последние операции</span></td></tr>
+<tr><td><kbd>F6</kbd></td><td><span data-l="en">Rename the file</span><span data-l="ru">Переименовать файл</span></td></tr>
+</table></div>
+
+<div class="keyset"><h2><span data-l="en">Look closer</span><span data-l="ru">Рассмотреть подробнее</span></h2><table>
+<tr><td><span data-l="en">grey</span><span data-l="ru">серый</span> <kbd>+</kbd> / <kbd>−</kbd></td><td><span data-l="en">Zoom in and out at the mouse cursor</span><span data-l="ru">Приблизить и отдалить от курсора мыши</span></td></tr>
+<tr><td><span data-l="en">grey</span><span data-l="ru">серый</span> <kbd>/</kbd></td><td><span data-l="en">Fit the picture to the window</span><span data-l="ru">Вписать картинку в окно</span></td></tr>
+<tr><td><span data-l="en">grey</span><span data-l="ru">серый</span> <kbd>*</kbd></td><td><span data-l="en">Show it at 100%</span><span data-l="ru">Показать в масштабе 100%</span></td></tr>
+<tr><td><span data-l="en">Mouse wheel</span><span data-l="ru">Колесо мыши</span></td><td><span data-l="en">Flips files by default; can be switched to zoom in Settings</span><span data-l="ru">По умолчанию листает файлы; в настройках переключается на масштаб</span></td></tr>
+<tr><td><kbd>R</kbd> / <kbd>Shift</kbd>+<kbd>R</kbd></td><td><span data-l="en">Rotate the view clockwise / counter-clockwise</span><span data-l="ru">Повернуть показ по часовой / против часовой</span></td></tr>
+<tr><td><kbd>T</kbd></td><td><span data-l="en">Recognize and translate the text, once OCR is enabled</span><span data-l="ru">Распознать и перевести текст, когда включён OCR</span></td></tr>
+</table></div>
+
+<div class="keyset"><h2><span data-l="en">Fill the screen</span><span data-l="ru">Во весь экран</span></h2><table>
+<tr><td><kbd>F7</kbd></td><td><span data-l="en">Full screen - the toolbar stays, floating over the picture</span><span data-l="ru">Полный экран - панель инструментов остаётся поверх картинки</span></td></tr>
+<tr><td><kbd>F11</kbd></td><td><span data-l="en">Nothing but the picture - no toolbar at all</span><span data-l="ru">Только картинка - совсем без панели</span></td></tr>
+<tr><td><kbd>Esc</kbd></td><td><span data-l="en">Leave full screen; pressed again, closes the program</span><span data-l="ru">Выйти из полного экрана; повторно - закрыть программу</span></td></tr>
+<tr><td><kbd>S</kbd></td><td><span data-l="en">Slideshow; pressing it again shortens the interval</span><span data-l="ru">Слайдшоу; повторное нажатие сокращает интервал</span></td></tr>
+<tr><td><kbd>I</kbd> or <kbd>F5</kbd></td><td><span data-l="en">Slideshow in random order</span><span data-l="ru">Слайдшоу в случайном порядке</span></td></tr>
+<tr><td><kbd>F3</kbd></td><td><span data-l="en">The thumbnail panel of the folder</span><span data-l="ru">Панель эскизов папки</span></td></tr>
+</table></div>
+
+<div class="keyset"><h2><span data-l="en">Video</span><span data-l="ru">Видео</span></h2><table>
+<tr><td><span data-l="en">Click on the picture</span><span data-l="ru">Клик по картинке</span></td><td><span data-l="en">Pause and resume</span><span data-l="ru">Пауза и продолжение</span></td></tr>
+<tr><td><span data-l="en">Right mouse button</span><span data-l="ru">Правая кнопка мыши</span></td><td><span data-l="en">The menu of everything you can do with the video</span><span data-l="ru">Меню всех действий над видео</span></td></tr>
+<tr><td><kbd>A</kbd></td><td><span data-l="en">Next audio track</span><span data-l="ru">Следующая звуковая дорожка</span></td></tr>
+<tr><td><kbd>V</kbd></td><td><span data-l="en">Next subtitle track</span><span data-l="ru">Следующие субтитры</span></td></tr>
+</table></div>
+
+<div class="keyset"><h2><span data-l="en">Windows and help</span><span data-l="ru">Окна и справка</span></h2><table>
+<tr><td><kbd>F1</kbd></td><td><span data-l="en">The short help over the picture</span><span data-l="ru">Краткая справка поверх картинки</span></td></tr>
+<tr><td><kbd>F2</kbd></td><td><span data-l="en">Settings</span><span data-l="ru">Настройки</span></td></tr>
+<tr><td><span data-l="en">Middle mouse button</span><span data-l="ru">Средняя кнопка мыши</span></td><td><span data-l="en">On a picture: the menu of every action - rotate, zoom, edit, rename, move, delete</span><span data-l="ru">По картинке: меню всех действий - поворот, масштаб, правка, переименование, перенос, удаление</span></td></tr>
+</table></div>
+
+</section>
+<section class="section two"><div class="callout"><b><span data-l="en">Make the keys your own</span><span data-l="ru">Сделайте клавиши своими</span></b><p><span data-l="en">In the 64-bit program, <kbd>F2</kbd> &rarr; <b>Files and system</b> &rarr; <b>Keyboard shortcuts</b> reassigns the actions to the keys you prefer. System combinations, <kbd>F11</kbd> and <kbd>Esc</kbd> stay with the program.</span><span data-l="ru">В 64-битной программе <kbd>F2</kbd> → <b>Файлы и система</b> → <b>Сочетания клавиш</b> позволяет переназначить действия на удобные вам клавиши. Системные сочетания, <kbd>F11</kbd> и <kbd>Esc</kbd> остаются за программой.</span></p></div><div class="callout"><b><span data-l="en">What the 32-bit build does not have</span><span data-l="ru">Чего нет в 32-битной сборке</span></b><p><span data-l="en">Zoom on the grey numpad keys, <kbd>Shift</kbd>+digit copying, the audio and subtitle keys, the mouse menus and the shortcut editor ship in the 64-bit build for Windows 10 and 11. The fallback for Windows 7 and 8.1 keeps the historical keys, and its own <kbd>F1</kbd> help never advertises the rest.</span><span data-l="ru">Масштаб на серых клавишах, копирование по <kbd>Shift</kbd>+цифра, клавиши дорожек и субтитров, меню мыши и редактор сочетаний есть в 64-битной сборке для Windows 10 и 11. Сборка для Windows 7 и 8.1 сохраняет исторические клавиши, и её собственная справка <kbd>F1</kbd> не обещает лишнего.</span></p></div></section>
+<section class="section"><div class="tools-grid">
+<a href="how-to-viewer.html"><b>HOW TO · Viewer</b><span data-l="en">Review and sort a media folder</span><span data-l="ru">Просмотр и сортировка медиафайлов</span></a>
+<a href="how-to-setup.html"><b>HOW TO · Setup</b><span data-l="en">Default viewer, language, settings</span><span data-l="ru">Просмотрщик по умолчанию, язык, настройки</span></a>
+<a href="how-to-editor.html"><b>HOW TO · Editor</b><span data-l="en">Draw on a photo and save it</span><span data-l="ru">Рисование на фото и сохранение</span></a>
+</div></section>
+</main>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter</a> · <a href="how-to-viewer.html">Viewer HOW TO</a> · <a href="how-to-sftp.html">SFTP HOW TO</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div></footer>
+<script>(function(){var d=document.documentElement;function lang(v){d.dataset.lang=v;document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.setlang===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.dataset.setlang)}});lang(d.dataset.lang==='ru'?'ru':'en');document.getElementById('themeBtn').onclick=function(){var v=d.dataset.theme==='light'?'dark':'light';d.dataset.theme=v;try{localStorage.setItem('sza-theme',v)}catch(e){}}})();</script>
+</body></html>

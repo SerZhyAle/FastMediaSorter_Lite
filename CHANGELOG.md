@@ -8,6 +8,9 @@ Categories: `Added`, `Changed`, `Fixed`, `Removed`.
 
 ## [Unreleased]
 
+### Added
+- **A HOW TO section on the site, and five new guides in it.** The site had three guides and no place that listed them; there is now a "HOW TO" block on the front page, on every one of the twelve translated pages, in both READMEs' usage sections and inside each guide, so any one of them leads to the rest. Five guides were written for what had none: the whole **key map** with zoom, full screen and the slideshow; the **first-time setup** - default viewer, interface language, and what happens to a file when a name collides or a folder has no Recycle Bin; **recognizing and translating** the text on a picture, with the translator that runs on your own PC; the **image editor** - draw, crop, and save over the original or beside it; and reading a **ZIP or CBZ** as if it were a folder. The guide pages are in English and Russian.
+
 ## [26.8.15.1510] - 2026-08-15
 
 ### Added

@@ -7,8 +7,28 @@
     "",
     "Keys are the ISO 639-1 codes of the 13 UI languages. 'dir' is rtl for ar/ur.",
     "'machine' marks a locale whose copy is a machine translation and says so on the",
-    "page itself - EN/RU/UK are proofread by the author, the other ten are not."
+    "page itself - EN/RU/UK are proofread by the author, the other ten are not.",
+    "",
+    "'_howto' is deliberately NOT per language: the HOW TO guides themselves exist in",
+    "English and Russian only, so translating the link labels into the other eleven",
+    "would promise a page that does not exist. The block renders in English on every",
+    "language page and says which languages the guides are written in."
   ],
+
+  "_howto": {
+    "title": "HOW TO",
+    "note": "Step-by-step guides. The guide pages themselves are in English and Russian.",
+    "items": [
+      ["how-to-viewer.html",            "Review and sort a media folder"],
+      ["how-to-keys.html",              "Keys, zoom and full screen"],
+      ["how-to-setup.html",             "Default viewer, language, file rules"],
+      ["how-to-ocr.html",               "Read and translate text on a picture"],
+      ["how-to-editor.html",            "Draw on a photo and crop it"],
+      ["how-to-archives.html",          "Read a ZIP or CBZ like a folder"],
+      ["how-to-sftp.html",              "Publish selected PC folders over SFTP"],
+      ["publish-folders-android.html",  "Network and router, step by step"]
+    ]
+  },
 
   "en": {
     "dir": "ltr", "machine": false, "name": "English",

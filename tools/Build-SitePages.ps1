@@ -38,7 +38,8 @@ $Repo     = 'https://github.com/SerZhyAle/FastMediaSorter_Lite'
 
 if (-not (Test-Path $CopyFile)) { throw "Missing copy source: $CopyFile" }
 $copy  = Get-Content $CopyFile -Raw -Encoding UTF8 | ConvertFrom-Json
-$codes = $copy.PSObject.Properties.Name | Where-Object { $_ -ne '_comment' }
+# Anything starting with '_' is shared copy, not a language: '_comment', '_howto'.
+$codes = $copy.PSObject.Properties.Name | Where-Object { -not $_.StartsWith('_') }
 
 function Esc([string]$s) {
     if ($null -eq $s) { return '' }
@@ -70,6 +71,12 @@ function Render([string]$code) {
 
     $note = ''
     if ($e.machine) { $note = "    <p class=`"note`">$(Esc $e.machineNote)</p>`n" }
+
+    # The HOW TO block is the same English copy on every page - see '_howto' in
+    # site-copy.json for why it is not translated.
+    $howto = ($copy._howto.items | ForEach-Object {
+        '      <li><a href="{0}/{1}">{2}</a></li>' -f $BaseUrl, $_[0], (Esc $_[1])
+    }) -join "`n"
 
 @"
 <!DOCTYPE html>
@@ -149,6 +156,14 @@ $cards
     <p><a href="$BaseUrl/how-to-viewer.html">$(Esc $e.guide)</a></p>
     <p><a href="$BaseUrl/server.html">$(Esc $e.serverLink)</a></p>
 $note  </section>
+
+  <section id="howto">
+    <h2>$(Esc $copy._howto.title)</h2>
+    <p class="tagline" lang="en" dir="ltr">$(Esc $copy._howto.note)</p>
+    <ul lang="en" dir="ltr">
+$howto
+    </ul>
+  </section>
 
   <footer>
     <p>$(Esc $e.langLabel):</p>
