@@ -178,6 +178,18 @@
     <Compile Include="Application_Events.vb" />
     <Compile Include="ApplicationModel.vb" />
     <Compile Include="AppFileLogger.vb" />
+    <Compile Include="AppPaths.vb" />
+    <!-- Archive browsing (SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md). Whole-file
+         "#If Not NETFRAMEWORK": on Windows 7/8.1 a dropped .zip still answers
+         "Unsupported format". Listed anyway so the two file sets stay identical. -->
+    <Compile Include="Archives\ArchivePaths.vb" />
+    <Compile Include="Archives\ArchiveTempStore.vb" />
+    <Compile Include="Archives\ArchiveEntryFilter.vb" />
+    <Compile Include="Archives\ArchiveSession.vb" />
+    <Compile Include="Main_Form.Archive.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="FileManager.vb" />
     <Compile Include="HqPictureBox.vb" />
     <Compile Include="Image_Panel_Form.vb">
@@ -296,10 +308,46 @@
     </Compile>
     <Compile Include="OcrTranslateSettings.vb" />
     <Compile Include="AutoSkipPolicy.vb" />
+    <!-- Shared, NOT "#If Not NETFRAMEWORK" like its neighbours: SkipUnreadableFile takes a
+         PathFailureKind on both builds, and a parameter cannot be typed by an enum this
+         project does not compile. Only the behaviour is fenced - here the kind is computed
+         and ignored, so the x86 viewer keeps today's drop-the-file behaviour exactly
+         (SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md §5, invariant 10). -->
+    <Compile Include="PathFailure.vb" />
+    <!-- The Recycle Bin (SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §5). All four are
+         whole-file "#If Not NETFRAMEWORK" and compile to nothing here - this build's DEL is
+         still File.Delete and it never advertises Shift+DEL (invariant 10). Listed anyway so
+         the two projects' file sets stay identical and a divergence is always a seam. -->
+    <Compile Include="DeletePolicy.vb" />
+    <Compile Include="DeleteVolumeProbe.vb" />
+    <Compile Include="RecycleBinIndex.vb" />
+    <Compile Include="RecycleBinIo.vb" />
+    <!-- FileOpKind is SHARED - it left Main_Form so that UndoPolicy could be a pure,
+         tested table instead of a Select Case inside the form. UndoStack.vb next to it is
+         whole-file "#If Not NETFRAMEWORK": this build keeps its three history fields and
+         its one-operation-deep undo. -->
+    <Compile Include="FileOpKind.vb" />
+    <Compile Include="UndoStack.vb" />
     <Compile Include="DiskCacheTrim.vb" />
     <Compile Include="DocHtmlTranslateLauncher.vb" />
     <Compile Include="ZoomMath.vb" />
     <Compile Include="MediaUrl.vb" />
+    <!-- Custom keyboard shortcuts and the two dialogs of the expanded settings window
+         (SPECIFICATION_SETTINGS_EXPANSION.md §3.4, §3.5, §7.2). All four are whole-file
+         "#If Not NETFRAMEWORK" and compile to nothing here - the settings they serve are
+         .NET 10 preferences - and are listed anyway so the two projects' file sets stay
+         identical, exactly like ZoomMath.vb above. -->
+    <Compile Include="CustomHotkeys.vb" />
+    <Compile Include="Main_Form.CustomHotkeys.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Hotkeys_Form.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ExpandedSettingsDialogs.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Main_Form.OpenUrl.vb">
       <SubType>Form</SubType>
     </Compile>
@@ -325,6 +373,29 @@
     <Compile Include="Imaging\ImageDecoder.vb" />
     <Compile Include="Imaging\LegacyWicImageDecoder.vb" />
     <Compile Include="Imaging\ModernImageSharpDecoder.vb" />
+    <!-- The writing half of the seam (SPECIFICATION_IMAGE_EDITOR_DOTNET10.md §9.1).
+         All three are whole-file "#If Not NETFRAMEWORK" and so compile to nothing here,
+         exactly like ZoomMath.vb and LogPackage.vb - they are listed anyway so the two
+         projects' file sets stay identical and a future divergence is a seam, never a
+         missing <Compile Include>. -->
+    <Compile Include="Imaging\ImageEncoder.vb" />
+    <Compile Include="Imaging\ModernImageSharpEncoder.vb" />
+    <Compile Include="Imaging\ImageFileWriter.vb" />
+    <!-- The editor's window and the viewer's entry point into it (§2, §5). Same shape:
+         whole-file "#If Not NETFRAMEWORK", listed so the two file sets stay identical. -->
+    <Compile Include="EditorGeometry.vb" />
+    <Compile Include="EditorImageOps.vb" />
+    <Compile Include="EditorUndoStack.vb" />
+    <Compile Include="Image_Editor_Form.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Image_Editor_Form.Tools.vb">
+      <DependentUpon>Image_Editor_Form.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Main_Form.ImageEditor.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Ocr\OcrModels.vb" />
     <Compile Include="Ocr\IOcrEngine.vb" />
     <Compile Include="Ocr\OcrBlockBuilder.vb" />
@@ -395,7 +466,10 @@
     <Compile Include="Localization\Localization.Menus.vb" />
     <Compile Include="Localization\Localization.OcrTab.vb" />
     <Compile Include="Localization\Localization.Choices.vb" />
+    <Compile Include="Localization\Localization.SettingsExpansion.vb" />
     <Compile Include="Localization\Localization.Support.vb" />
+    <Compile Include="Localization\Localization.Editor.vb" />
+    <Compile Include="Localization\Localization.Archive.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\VersionInfo.vb" />
     <Compile Include="My Project\Resources.Designer.vb">

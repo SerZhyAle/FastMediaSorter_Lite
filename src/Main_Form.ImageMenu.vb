@@ -57,6 +57,14 @@ Partial Public Class Main_Form
 
         Dim rus As Boolean = Is_Russian_Language
 
+        ' --- the editor, first: it is the only entry that opens another window, and it
+        ' is offered only for a still picture (an animation would have to lose either its
+        ' frames or its animation - §10 of the editor specification).
+        If IsCurrentStillImage() Then
+            AddMenuItem(image_Menu.Items, Localization.T("Редактировать.."), Sub() ShowImageEditor())
+            image_Menu.Items.Add(New ToolStripSeparator())
+        End If
+
         ' --- the picture itself
         AddMenuItem(image_Menu.Items, Localization.T("Повернуть по часовой (R)"),
                     Sub() RotateActiveImage(True))

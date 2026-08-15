@@ -21,6 +21,17 @@ Public NotInheritable Class ModernViewerPreferences
     ''' which is what filing one picture into several folders wants
     ''' (SPECIFICATION_COPY_ACTIONS_REWORK.md §3.2).</summary>
     Public Property AdvanceAfterCopy As Boolean = True
+    ''' <summary>Whether DEL aims for the Recycle Bin at all
+    ''' (SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.9). Off means every deletion is
+    ''' permanent and SAYS so - the same wording Shift+DEL produces, because it is the same
+    ''' thing: the user asked for it.</summary>
+    Public Property DeleteToRecycleBin As Boolean = True
+
+    ''' <summary>always | permanentOnly | never. The middle value is the one §0.4 of that
+    ''' specification says is unreachable today and is what a triage session wants: a
+    ''' recycled deletion goes straight through, a PERMANENT one still stops and asks.</summary>
+    Public Property ConfirmDelete As String = "always"
+
     Public Property IncludeSubfolders As Boolean
     Public Property IncludedExtensions As String = ""
     Public Property InterfaceScalePercent As Integer
@@ -64,11 +75,21 @@ Public NotInheritable Class ModernViewerPreferences
         Public Property Position As Single
     End Class
 
+    ''' <summary>One folder's last zoom, for NewImageScaleMode = "perFolder" (§4.2).
+    ''' A scale, not a rectangle: the spec restores how big the next picture opens, and
+    ''' says nothing about where a previous picture had been panned to.</summary>
+    Public NotInheritable Class FolderZoomEntry
+        Public Property Path As String = ""
+        Public Property Factor As Double
+    End Class
+
     Public Shared Function Load() As ModernViewerPreferences
         Dim p As New ModernViewerPreferences()
         p.NameCollisionPolicy = ReadChoice("NameCollisionPolicy", p.NameCollisionPolicy, "ask", "skip", "rename", "replace")
         p.AfterFileOperation = ReadChoice("AfterFileOperation", p.AfterFileOperation, "next", "stay", "closeIfEmpty")
         p.AdvanceAfterCopy = ReadBool("AdvanceAfterCopy", p.AdvanceAfterCopy)
+        p.DeleteToRecycleBin = ReadBool("DeleteToRecycleBin", p.DeleteToRecycleBin)
+        p.ConfirmDelete = ReadConfirmDelete()
         p.IncludeSubfolders = ReadBool("IncludeSubfolders", p.IncludeSubfolders)
         p.IncludedExtensions = NormalizeExtensionJson(ReadString("IncludedExtensions", p.IncludedExtensions))
         p.InterfaceScalePercent = ReadInt("InterfaceScalePercent", p.InterfaceScalePercent, 0, 150)
@@ -114,6 +135,8 @@ Public NotInheritable Class ModernViewerPreferences
         WriteString("NameCollisionPolicy", NameCollisionPolicy)
         WriteString("AfterFileOperation", AfterFileOperation)
         WriteBool("AdvanceAfterCopy", AdvanceAfterCopy)
+        WriteBool("DeleteToRecycleBin", DeleteToRecycleBin)
+        WriteString("ConfirmDelete", ConfirmDelete)
         WriteBool("IncludeSubfolders", IncludeSubfolders)
         WriteString("IncludedExtensions", NormalizeExtensionJson(IncludedExtensions))
         WriteString("InterfaceScalePercent", InterfaceScalePercent.ToString(CultureInfo.InvariantCulture))
@@ -196,6 +219,39 @@ Public NotInheritable Class ModernViewerPreferences
         VideoPositionHistory = JsonSerializer.Serialize(entries)
     End Sub
 
+    ''' <summary>The zoom the given folder was last left at, or -1 when it has none.
+    ''' Reading is a use, so the entry moves to the young end of the 50-entry LRU §4.2
+    ''' bounds this list to.</summary>
+    Public Function RememberedFolderZoom(folder As String) As Double
+        If String.IsNullOrEmpty(folder) Then Return -1.0R
+        Dim entries As List(Of FolderZoomEntry) = ReadFolderZooms()
+        Dim entry As FolderZoomEntry = entries.FirstOrDefault(Function(item) String.Equals(item.Path, folder, StringComparison.OrdinalIgnoreCase))
+        If entry Is Nothing OrElse entry.Factor <= 0.0R Then Return -1.0R
+        entries.Remove(entry)
+        entries.Add(entry)
+        FolderZoomHistory = JsonSerializer.Serialize(entries)
+        Return entry.Factor
+    End Function
+
+    ''' <summary>Drops a folder's record, which is how "Fit" is stored: Fit is not a
+    ''' number - it depends on the window and the picture - so the honest way to remember
+    ''' it is to have nothing to restore, which §4.2 already defines as Fit.</summary>
+    Public Sub ForgetFolderZoom(folder As String)
+        If String.IsNullOrEmpty(folder) Then Return
+        Dim entries As List(Of FolderZoomEntry) = ReadFolderZooms()
+        If entries.RemoveAll(Function(item) String.Equals(item.Path, folder, StringComparison.OrdinalIgnoreCase)) = 0 Then Return
+        FolderZoomHistory = JsonSerializer.Serialize(entries)
+    End Sub
+
+    Public Sub StoreFolderZoom(folder As String, factor As Double)
+        If String.IsNullOrEmpty(folder) OrElse factor <= 0.0R Then Return
+        Dim entries As List(Of FolderZoomEntry) = ReadFolderZooms()
+        entries.RemoveAll(Function(item) String.Equals(item.Path, folder, StringComparison.OrdinalIgnoreCase))
+        entries.Add(New FolderZoomEntry With {.Path = folder, .Factor = factor})
+        If entries.Count > 50 Then entries.RemoveRange(0, entries.Count - 50)
+        FolderZoomHistory = JsonSerializer.Serialize(entries)
+    End Sub
+
     Public Shared Function FromJson(json As String) As ModernViewerPreferences
         Dim document As SettingsExport = JsonSerializer.Deserialize(Of SettingsExport)(json)
         If document Is Nothing OrElse document.SchemaVersion <> 1 OrElse document.Preferences Is Nothing Then
@@ -253,6 +309,30 @@ Public NotInheritable Class ModernViewerPreferences
         Return Choice(ReadString(key, defaultValue), defaultValue, allowed)
     End Function
 
+    ''' <summary>
+    ''' The delete-confirmation setting, migrated ONCE from the profile that predates it
+    ''' (SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.7).
+    '''
+    ''' A profile with no key of its own is not a fresh install - it is somebody who
+    ''' already decided, through the old "no confirmations" checkbox, whether deleting asks.
+    ''' Reading the default over that would start asking again for a person who switched
+    ''' the question off, which is exactly the sort of silent reversal a migration exists to
+    ''' prevent. The new middle value is never arrived at by migration: nobody has asked for
+    ''' it yet, and choosing it for them would change what their setting means.
+    '''
+    ''' It is written back immediately so the answer stops depending on the legacy key: from
+    ''' then on the two are independent, which is what lets the old checkbox keep governing
+    ''' everything else it always did.
+    ''' </summary>
+    Private Shared Function ReadConfirmDelete() As String
+        Dim stored As String = ReadString("ConfirmDelete", "")
+        If stored <> "" Then Return Choice(stored, "always", "always", "permanentOnly", "never")
+
+        Dim migrated As String = If(ReadString("NoRequestBeforeFileOperation", "0") = "1", "never", "always")
+        WriteString("ConfirmDelete", migrated)
+        Return migrated
+    End Function
+
     Private Shared Sub WriteString(key As String, value As String)
         Microsoft.VisualBasic.Interaction.SaveSetting(App_name, Second_App_Name, key, If(value, String.Empty))
     End Sub
@@ -290,6 +370,15 @@ Public NotInheritable Class ModernViewerPreferences
         Catch
         End Try
         Return "[]"
+    End Function
+
+    Private Function ReadFolderZooms() As List(Of FolderZoomEntry)
+        Try
+            Dim entries As List(Of FolderZoomEntry) = JsonSerializer.Deserialize(Of List(Of FolderZoomEntry))(NormalizeArrayJson(FolderZoomHistory))
+            If entries IsNot Nothing Then Return entries.Where(Function(item) item IsNot Nothing AndAlso Not String.IsNullOrEmpty(item.Path)).ToList()
+        Catch
+        End Try
+        Return New List(Of FolderZoomEntry)()
     End Function
 
     Private Function ReadVideoPositions() As List(Of VideoPositionEntry)

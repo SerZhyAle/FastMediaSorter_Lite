@@ -69,6 +69,7 @@ Partial Public Class Main_Form
         LocalizeOpenUrlEntryPoint()
         LocalizeVideoTracks()
         LocalizeVideoControls()
+        LocalizeImageEditor()
 #End If
         LocalizeToolbarOverflow()
         LocalizeBrowserTranslate()
@@ -94,6 +95,7 @@ Partial Public Class Main_Form
         sb.AppendLine(Localization.T("Средняя кнопка мыши по картинке - меню со всеми действиями над ней (поворот, масштаб, переименовать, переместить, удалить). "))
         sb.AppendLine(Localization.T("У видео: клик по картинке - пауза/продолжить, правая кнопка - меню со всеми действиями над видео. "))
         sb.AppendLine(Localization.T("A - следующая звуковая дорожка, V - следующие субтитры (и кнопка ""Дорожки"", когда есть из чего выбрать). "))
+        sb.AppendLine(Localization.T("Del отправляет файл в Корзину, Shift+Del - мимо неё, насовсем (на сетевом диске и флешке Корзины нет - программа скажет об этом заранее). "))
         Return sb.ToString()
 #End If
     End Function

@@ -25,6 +25,10 @@ Public Module AutostartManager
     Private Const RunKeyPath As String = "Software\Microsoft\Windows\CurrentVersion\Run"
     Private Const RunValueName As String = "FastMediaSorterShare"
 
+    ''' <summary>Where the shell records its own veto over a Run entry - see
+    ''' <see cref="IsBlockedByShell"/>. Same value name as under Run.</summary>
+    Private Const StartupApprovedPath As String = "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"
+
     ' GetCurrentPackageFullName returns this when the process has no package identity.
     Private Const APPMODEL_ERROR_NO_PACKAGE As Integer = 15700
 
@@ -48,19 +52,84 @@ Public Module AutostartManager
     End Function
 
     ''' <summary>
-    ''' Current autostart state. For packaged builds the manifest StartupTask owns
-    ''' this, so we report True (the checkbox is read-only there anyway).
+    ''' True when Windows itself has vetoed this startup entry. Task Manager's "Startup
+    ''' apps" page and Settings -> Apps -> Startup do NOT delete the Run value when you
+    ''' switch an item off: they leave it in place and record the veto here, and the shell
+    ''' then skips the entry at logon. So the Run value alone answers "is it registered",
+    ''' never "will it actually start" - which is how a ticked checkbox, a correct Run
+    ''' value and no tray icon at logon coexisted for days before this was found.
+    ''' Byte 0 carries the state and its low bit IS the veto (02/06 = allowed,
+    ''' 01/03/07 = blocked); the following bytes are the FILETIME of the change.
+    ''' </summary>
+    Private Function IsBlockedByShell() As Boolean
+        Try
+            Using k As RegistryKey = Registry.CurrentUser.OpenSubKey(StartupApprovedPath, writable:=False)
+                If k Is Nothing Then Return False
+                Return IsShellVetoRecord(TryCast(k.GetValue(RunValueName), Byte()))
+            End Using
+        Catch
+            ' Unreadable - report "not blocked" rather than unticking a checkbox the
+            ' user set, since the common case by far is that no veto exists.
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' Reads one StartupApproved record: True when it says "blocked". Kept pure and
+    ''' separate from the registry so the byte layout - the one part of this that is
+    ''' guesswork about someone else's format - can be unit-tested. An absent or empty
+    ''' record is NOT a veto: the shell only writes here once an item has been switched
+    ''' off or back on, so "no record" is the untouched, allowed state.
+    ''' </summary>
+    Public Function IsShellVetoRecord(raw As Byte()) As Boolean
+        If raw Is Nothing OrElse raw.Length = 0 Then Return False
+        Return (raw(0) And 1) <> 0
+    End Function
+
+    ''' <summary>The "allowed" record, byte-identical to what Task Manager writes when an
+    ''' item is switched back on: state 2 and a zeroed change FILETIME.</summary>
+    Public Function ShellAllowRecord() As Byte()
+        Return New Byte() {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+    End Function
+
+    ''' <summary>
+    ''' Lifts the shell's veto by writing the same "allowed" record Task Manager writes.
+    ''' Called ONLY from <see cref="SetEnabled"/> when the user has just asked for
+    ''' autostart in our own UI - that request is the consent that makes overwriting an
+    ''' earlier Task Manager "off" the right move, because otherwise ticking the box
+    ''' would visibly change nothing. Never creates the key: no key means nothing was
+    ''' ever vetoed, and there is nothing to lift.
+    ''' </summary>
+    Private Sub ClearShellBlock()
+        Try
+            Using k As RegistryKey = Registry.CurrentUser.OpenSubKey(StartupApprovedPath, writable:=True)
+                If k Is Nothing Then Return
+                If Not IsShellVetoRecord(TryCast(k.GetValue(RunValueName), Byte())) Then Return
+                k.SetValue(RunValueName, ShellAllowRecord(), RegistryValueKind.Binary)
+            End Using
+        Catch
+            ' Best-effort: the Run value is still written, so the state is no worse than
+            ' before - the user can also flip the item back on in Task Manager.
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Current autostart state, as in "will it actually start at the next logon" - the
+    ''' registered Run value AND no shell veto over it (<see cref="IsBlockedByShell"/>).
+    ''' For packaged builds the manifest StartupTask owns this, so we report True (the
+    ''' checkbox is read-only there anyway).
     ''' </summary>
     Public Function IsEnabled() As Boolean
         If IsPackaged() Then Return True
         Try
             Using k As RegistryKey = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable:=False)
                 If k Is Nothing Then Return False
-                Return k.GetValue(RunValueName) IsNot Nothing
+                If k.GetValue(RunValueName) Is Nothing Then Return False
             End Using
         Catch
             Return False
         End Try
+        Return Not IsBlockedByShell()
     End Function
 
     ''' <summary>
@@ -80,6 +149,9 @@ Public Module AutostartManager
                 If k Is Nothing Then Return False
                 If enabled Then
                     k.SetValue(RunValueName, RunCommand(exe), RegistryValueKind.String)
+                    ' Writing the value is not enough on a machine where the entry was
+                    ' switched off in Task Manager - see ClearShellBlock.
+                    ClearShellBlock()
                 ElseIf k.GetValue(RunValueName) IsNot Nothing Then
                     k.DeleteValue(RunValueName, throwOnMissingValue:=False)
                 End If

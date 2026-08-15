@@ -70,8 +70,13 @@ Public Module FileManager
     ''' and then strips the tag, so the displayed pixels are upright. No-op when the
     ''' tag is missing or already normal. Failures are swallowed - a bad tag must
     ''' never stop the image from loading.
+    '''
+    ''' Friend rather than Private because the image editor decodes its own copy from
+    ''' the file's bytes (it must not take pixels from Picture_Box.Image) and has to
+    ''' orient them by exactly this rule - two implementations of "upright" would be two
+    ''' answers to what the saved Orientation tag should say.
     ''' </summary>
-    Private Sub ApplyExifOrientation(img As Image)
+    Friend Sub ApplyExifOrientation(img As Image)
         Const OrientationId As Integer = &H112
         Try
             If img Is Nothing Then Return

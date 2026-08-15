@@ -153,6 +153,14 @@
     <!-- OCR engine, unchanged (epic §4). -->
     <PackageReference Include="Tesseract" Version="5.2.0" />
 
+    <!-- Archive browsing (SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §8). ONE library
+         for every container - ZIP/CBZ now, 7z/RAR/CBR in Ф2 - because two code paths
+         for one job are two sets of bugs. Fully managed, no native part, so it costs
+         the single-file publish very little. MIT; the notice ships in
+         THIRD-PARTY-NOTICES.txt (canon invariant 12). Modern only: the x86 project
+         must NOT reference it - archive browsing does not exist there. -->
+    <PackageReference Include="SharpCompress" Version="0.50.4" />
+
     <!-- DPAPI (DpapiSecrets): ProtectedData is inbox on net10.0-windows
          (NU1510 flags the explicit package as redundant) - no PackageReference. -->
   </ItemGroup>

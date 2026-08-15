@@ -65,15 +65,58 @@
     <Compile Include="..\..\src\Imaging\ModernImageSharpDecoder.vb">
       <Link>Linked\Imaging\ModernImageSharpDecoder.vb</Link>
     </Compile>
+    <!-- The writing half of the seam (SPECIFICATION_IMAGE_EDITOR_DOTNET10.md §9). This is
+         the dangerous half of the editor - it writes over the user's originals - and it is
+         deliberately UI-free so exactly that can be proven here. All three are whole-file
+         "#If Not NETFRAMEWORK", so on the net48 leg they and their tests compile to
+         nothing, matching the shipped shape. -->
+    <Compile Include="..\..\src\Imaging\ImageEncoder.vb">
+      <Link>Linked\Imaging\ImageEncoder.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\ModernImageSharpEncoder.vb">
+      <Link>Linked\Imaging\ModernImageSharpEncoder.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\ImageFileWriter.vb">
+      <Link>Linked\Imaging\ImageFileWriter.vb</Link>
+    </Compile>
     <!-- The zoom geometry of the .NET 10 viewer. Whole-file "#If Not NETFRAMEWORK",
          so on the net48 leg this - and ZoomMathTests - compile to nothing, which is
          the honest shape: the classic zoom model does not exist in the x86 viewer. -->
     <Compile Include="..\..\src\ZoomMath.vb">
       <Link>Linked\ZoomMath.vb</Link>
     </Compile>
+    <!-- Where the editor lays the picture on its canvas. Built on ZoomMath.FitFactor
+         above, and kept out of the editor window for the same reason ZoomMath is kept
+         out of Main_Form.Zoom.vb: it is a pure function, and every stroke the editor
+         will ever draw is placed relative to what it returns. -->
+    <Compile Include="..\..\src\EditorGeometry.vb">
+      <Link>Linked\EditorGeometry.vb</Link>
+    </Compile>
+    <!-- The crop itself (Ф-4). Outside the window for the same reason: "the kept pixels
+         arrive unchanged, at the right offset" is exact and checkable, while an off-by-one
+         or a quietly resampled crop looks perfectly right on a canvas scaled to a fifth of
+         the picture and is found later, in the saved file. -->
+    <Compile Include="..\..\src\EditorImageOps.vb">
+      <Link>Linked\EditorImageOps.vb</Link>
+    </Compile>
+    <!-- The editor's undo history. Here rather than in the window because its whole
+         reason to exist is a budget: twenty snapshots of a 6000x4000 photo are 1.9 GB,
+         and "does it really evict" is a question for a test with small pictures and a
+         small budget, not for a person watching Task Manager. -->
+    <Compile Include="..\..\src\EditorUndoStack.vb">
+      <Link>Linked\EditorUndoStack.vb</Link>
+    </Compile>
     <!-- "Open URL.." address handling - modern-only for the same reason. -->
     <Compile Include="..\..\src\MediaUrl.vb">
       <Link>Linked\MediaUrl.vb</Link>
+    </Compile>
+    <!-- The custom-shortcut model (SPECIFICATION_SETTINGS_EXPANSION.md §3.5). Here rather
+         than in the dialog because everything that can go wrong with a remapping is a
+         rule about strings: which combinations may be assigned, who already owns one, and
+         whether the key an action was moved OFF still does its old job. Whole-file
+         "#If Not NETFRAMEWORK", so it and its tests compile to nothing on the net48 leg. -->
+    <Compile Include="..\..\src\CustomHotkeys.vb">
+      <Link>Linked\CustomHotkeys.vb</Link>
     </Compile>
     <!-- File operations. RenameFile is where "photo2.jpg" once landed on disk as
          "photo2.jpg.jpg" while the viewer recorded the name it had asked for - the
@@ -93,6 +136,27 @@
     </Compile>
     <Compile Include="..\..\src\MultiWindowPolicy.vb">
       <Link>Linked\MultiWindowPolicy.vb</Link>
+    </Compile>
+    <!-- Where the app keeps state on disk, and the archive cache built on it. The two
+         Archives files are whole-file "#If Not NETFRAMEWORK", so they and their tests
+         compile to nothing on the net48 leg - the honest shape, since archive browsing
+         does not exist in the x86 viewer. They pull in nothing new: AppFileLogger and
+         Common_Module are already here, and no archive library is needed to prove the
+         naming rule or the orphan sweep. -->
+    <Compile Include="..\..\src\AppPaths.vb">
+      <Link>Linked\AppPaths.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Archives\ArchivePaths.vb">
+      <Link>Linked\Archives\ArchivePaths.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Archives\ArchiveTempStore.vb">
+      <Link>Linked\Archives\ArchiveTempStore.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Archives\ArchiveEntryFilter.vb">
+      <Link>Linked\Archives\ArchiveEntryFilter.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Archives\ArchiveSession.vb">
+      <Link>Linked\Archives\ArchiveSession.vb</Link>
     </Compile>
     <Compile Include="..\..\src\Common_Module.vb">
       <Link>Linked\Common_Module.vb</Link>
@@ -124,6 +188,44 @@
                              success (B-2). -->
     <Compile Include="..\..\src\AutoSkipPolicy.vb">
       <Link>Linked\AutoSkipPolicy.vb</Link>
+    </Compile>
+    <!-- The classifier that decides whether a read failure is about the FILE (drop it from
+         the list, as always) or about everything between us and it (keep it - a dropped SMB
+         session used to shred a healthy folder one file per keypress). It is here rather
+         than inside Main_Form precisely because the decision hangs on exception DERIVATION -
+         FileNotFoundException is an IOException and UnauthorizedAccessException is not - and
+         that is a question for a test, not for whoever edits the Select Case next. Compiled
+         on both legs: the enum is shared, only the behaviour is fenced. -->
+    <Compile Include="..\..\src\PathFailure.vb">
+      <Link>Linked\PathFailure.vb</Link>
+    </Compile>
+    <!-- Whether a deletion can go to the Recycle Bin, and - when it cannot - why. Only the
+         PURE half is linked: DeleteVolumeProbe reads the registry and DriveInfo, and keeping
+         it out of this file is exactly what lets the rule matrix be proven without a NAS and
+         a USB stick. Whole-file "#If Not NETFRAMEWORK", so this and DeletePolicyTests compile
+         to nothing on the net48 leg - the honest shape, since the x86 viewer's DEL is still a
+         bare File.Delete. -->
+    <Compile Include="..\..\src\DeletePolicy.vb">
+      <Link>Linked\DeletePolicy.vb</Link>
+    </Compile>
+    <!-- The other pure half of the same feature: what the Recycle Bin's own $I record says,
+         and which record belongs to the deletion U is taking back. Linked for the same
+         reason - the impure half (RecycleBinIo) enumerates a per-user, per-volume system
+         folder, and pinning "an unknown record version is REFUSED, never guessed at" must
+         not require deleting a real file first. Whole-file "#If Not NETFRAMEWORK". -->
+    <Compile Include="..\..\src\RecycleBinIndex.vb">
+      <Link>Linked\RecycleBinIndex.vb</Link>
+    </Compile>
+    <!-- The history behind U, and the table saying what U can promise. FileOpKind left
+         Main_Form precisely so this could be tested: the rule "an undo is never itself
+         undoable" has to hold for kinds nobody has written yet, and a Select Case inside a
+         form is not where that gets noticed. UndoStack.vb is modern-only; FileOpKind.vb is
+         shared and compiles on both legs, like the enum in the shipped x86 viewer. -->
+    <Compile Include="..\..\src\FileOpKind.vb">
+      <Link>Linked\FileOpKind.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\UndoStack.vb">
+      <Link>Linked\UndoStack.vb</Link>
     </Compile>
     <Compile Include="..\..\src\DiskCacheTrim.vb">
       <Link>Linked\DiskCacheTrim.vb</Link>
@@ -168,6 +270,10 @@
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     <!-- ModernImageSharpDecoder uses Magick.NET for AVIF/HEIC/HEIF fallback. -->
     <PackageReference Include="Magick.NET-Q8-x64" Version="14.15.0" />
+    <!-- ArchiveSession reads through the very library the mainline ships with, so the
+         archive tests exercise the shipping path rather than a stand-in. Modern leg
+         only: the archive files compile to nothing on net48. -->
+    <PackageReference Include="SharpCompress" Version="0.50.4" />
   </ItemGroup>
 
 </Project>

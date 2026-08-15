@@ -6,9 +6,12 @@ Fast Media Sorter for Windows (formerly FastMediaSorter LITE - it is still publi
 - Slideshow and random file viewing modes
 - Recent files and folders tracking, so you don't have to remember where you left off
 - File operations: move, copy, rename, and delete
+- Deleting is no longer the one thing you cannot take back: `DEL` sends the file to the **Recycle Bin** where one exists, `Shift+DEL` goes past it on purpose, and every permanent deletion names its reason - a network drive and a memory stick have no bin at all, and the app says so instead of pretending. `U` walks back through the **last 50 operations**, renames and deletions included, each file returning to its folder and to its place in the list (64-bit program)
 - Move or copy, decided as you go: a digit `1..9`/`0` moves the current file into that folder, **Shift + the same top-row digit copies it there** - no mode to switch on beforehand and forget about. The same pair is on the recipients panel, in both media menus, and in the recipients table (Shift + double-click). Whether a copy then jumps to the next file is one checkbox in Settings, on by default (64-bit program)
 - Recipients panel over the media: a floating list of your hotkey destination folders - click a row to move the current file there, the narrow zone beside it to copy it (or delete it), so you can sort one-handed with the mouse (off by default; toggle in Settings)
 - Image panel for quick visual navigation
+- **A ZIP or CBZ opens like a folder** - a comic or a folder of scans browses, slideshows, zooms and translates exactly like loose files, with nothing unpacked in advance and nothing left behind afterwards (64-bit program)
+- **Mark up and crop a picture in its own window** - brush, rectangle and ellipse, colour and thickness, a live crop frame with handles, `Ctrl+Z`, then save over the original or beside it in any of six formats. Your EXIF comes with it (64-bit program)
 - Automatic EXIF orientation correction, for when the camera was held sideways
 - High-quality (bicubic) scaling for sharp downscaling of large images
 - Optional on-image overlay with the file name and position (handy in full-screen)
@@ -144,6 +147,27 @@ automatically picking the ones matching its own bitness.
   background, fades the bars into the background the further they get from the photo.
   Its own sub-option grows that halo out of the photo's edge on each new picture, at
   one of three speeds (slow, medium - the default - or fast).
+- **The Recycle Bin, and an undo that means it.** `DEL` puts the file in the bin,
+  `Shift+DEL` deletes past it, and where Windows keeps no bin - a network share, a
+  memory stick, a drive with the bin switched off - the question says which of those
+  it is rather than a flat "are you sure". `U` steps back through the last 50
+  operations: moves, copies, `F6` renames and deletions, the last of these taken
+  back out of the bin, into the folder and onto the screen. The question before a
+  deletion is its own three-value setting - always, only when the file will not go
+  to the bin, or never. (The 32-bit program deletes finally, as it always did.)
+- **Archives browse like folders**: a `.zip` or `.cbz` opens as an ordinary file
+  list, one picture extracted at a time into a private folder that is swept away
+  when you leave - or on the next archive, if the app was killed. The archive is
+  only ever read, so `DEL` and the destination folders say so instead of acting.
+  (7z, RAR and CBR are not open yet.)
+- **An editing window that writes to disk.** Brush, rectangle and ellipse, outlined
+  or filled, eight colour swatches beside the full picker, thickness in the
+  picture's own pixels, `Shift` for a square or circle, `Ctrl+Z`. Cropping is a live
+  frame with eight handles - everything outside it dims, and nothing is cut until
+  `Enter`. **Save** writes over the original through a temporary file, so a share
+  that blinks cannot leave half a photo; **Save as..** offers PNG, JPEG, BMP, TIFF
+  and WebP. EXIF is carried across and the stale embedded thumbnail dropped. Adding
+  text is the one part not there yet.
 
 ## Requirements
 
@@ -158,6 +182,9 @@ Short version: the installer works this out for you (see above). Long version:
 | **Recipients panel** | yes | yes |
 | **Video** | LibVLC, with a control bar | IE component (H.264) + LibVLC fallback |
 | **HEIC / HEIF / AVIF** | yes | no - Windows 7/8.1 have no codecs for them |
+| **Recycle Bin + 50-step undo** | yes | no - `DEL` is final and undo is one operation deep |
+| **ZIP / CBZ as a folder** | yes | no - "Unsupported format", as before |
+| **Image editing (draw, crop, save)** | yes | no |
 | **Zoom keys, track picking, "Open URL..", media menus, perspective halo** | yes | no |
 | **Android folder sharing** | yes | no - the Share Manager is itself a 64-bit program, so it cannot start on the Windows versions this build is for |
 

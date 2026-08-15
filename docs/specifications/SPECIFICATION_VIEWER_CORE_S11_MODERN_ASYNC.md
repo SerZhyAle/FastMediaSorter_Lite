@@ -2,6 +2,9 @@
 
 Статус: частично реализовано 2026-07-16 - У-02, У-03(б), У-07, У-11, У-12 сделаны; У-03(в) и У-01 - см. §0.1
 Дата: 2026-07-16, ревизия 1
+Учёт: **У-03(в) - это же C-2** из [SPECIFICATION_LONG_RUN_STABILITY.md §6.4](done/SPECIFICATION_LONG_RUN_STABILITY.md),
+одна правка под двумя именами. Владелец этой единицы работы - **эта** спецификация;
+в очереди она считается один раз (2026-08-14).
 Родитель: [SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md](done/SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md)
 Заменяет: утверждённую часть [С7](SPECIFICATION_VIEWER_CORE_S7_MODERN_PIPELINE.md), [С8](SPECIFICATION_VIEWER_CORE_S8_MODERN_FILEOPS.md), [С9](SPECIFICATION_VIEWER_CORE_S9_MODERN_FOLDER.md), [С10](SPECIFICATION_VIEWER_CORE_S10_MODERN_UX.md)
 Сборки: **только .NET 10 mainline** (за швом `#If Not NETFRAMEWORK`; net48 не меняется вообще)

@@ -68,9 +68,31 @@ Partial Public Class Table_Form
     ''' not recreated, so no setting behaviour or Handles-based event wiring is
     ''' duplicated here.
     ''' </summary>
+    ''' <summary>
+    ''' The interface scale of §4.1: 1.0 unless the user chose a percentage. Read ONCE,
+    ''' here, because every metric below is baked into a control at build time - which is
+    ''' exactly why changing it asks to restart the window rather than pretending to
+    ''' apply live. At 1.0 every Sp/Sf below returns its argument unchanged, so the
+    ''' default window is pixel-for-pixel the one that shipped.
+    ''' </summary>
+    Private settingsScale As Single = 1.0F
+
+    Private Function Sp(value As Integer) As Integer
+        If settingsScale = 1.0F Then Return value
+        Return CInt(Math.Round(value * settingsScale))
+    End Function
+
+    Private Function Sf(points As Single) As Single
+        If settingsScale = 1.0F Then Return points
+        Return points * settingsScale
+    End Function
+
     Private Sub BuildModernSettingsLayout()
         If modernSettingsBuilt Then Return
         modernSettingsBuilt = True
+
+        Dim percent As Integer = Main_Form.GetModernPreferences().InterfaceScalePercent
+        settingsScale = If(percent <= 0, 1.0F, percent / 100.0F)
 
         LoadSystemSettingsPalette()
 
@@ -80,10 +102,10 @@ Partial Public Class Table_Form
         FormBorderStyle = FormBorderStyle.Sizable
         MaximizeBox = True
         MinimizeBox = False
-        MinimumSize = New Size(760, 520)
-        ClientSize = New Size(900, 600)
+        MinimumSize = New Size(Sp(760), Sp(520))
+        ClientSize = New Size(Sp(900), Sp(600))
         BackColor = SettingsCanvas
-        Font = New Font("Segoe UI", 9.0F, FontStyle.Regular)
+        Font = New Font("Segoe UI", Sf(9.0F), FontStyle.Regular)
 
         modernSettingsShell = New Panel With {
             .Dock = DockStyle.Fill,
@@ -92,13 +114,13 @@ Partial Public Class Table_Form
         }
         modernSettingsSidebar = New Panel With {
             .Dock = DockStyle.Left,
-            .Width = 218,
+            .Width = Sp(218),
             .BackColor = SettingsSidebar,
             .Padding = New Padding(16, 20, 16, 16)
         }
         modernSettingsHeader = New Panel With {
             .Dock = DockStyle.Top,
-            .Height = 68,
+            .Height = Sp(68),
             .BackColor = SettingsSurface,
             .Padding = New Padding(22, 10, 22, 8)
         }
@@ -118,14 +140,14 @@ Partial Public Class Table_Form
             .AutoSize = True,
             .Text = "Fast Media Sorter",
             .ForeColor = SettingsText,
-            .Font = New Font("Segoe UI", 9.0F, FontStyle.Bold),
-            .Location = New Point(18, 18)
+            .Font = New Font("Segoe UI", Sf(9.0F), FontStyle.Bold),
+            .Location = New Point(Sp(18), Sp(18))
         }
         modernSidebarSectionLabel = New Label With {
             .AutoSize = True,
             .ForeColor = SettingsSidebarMuted,
-            .Font = New Font("Segoe UI", 8.5F, FontStyle.Regular),
-            .Location = New Point(19, 43)
+            .Font = New Font("Segoe UI", Sf(8.5F), FontStyle.Regular),
+            .Location = New Point(Sp(19), Sp(43))
         }
         modernSettingsSidebar.Controls.Add(modernProductLabel)
         modernSettingsSidebar.Controls.Add(modernSidebarSectionLabel)
@@ -133,17 +155,17 @@ Partial Public Class Table_Form
         modernSettingsTitle = New Label With {
             .AutoSize = False,
             .ForeColor = SettingsText,
-            .Font = New Font("Segoe UI Semibold", 13.0F, FontStyle.Regular),
-            .Location = New Point(20, 3),
-            .Height = 36,
+            .Font = New Font("Segoe UI Semibold", Sf(13.0F), FontStyle.Regular),
+            .Location = New Point(Sp(20), Sp(3)),
+            .Height = Sp(36),
             .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
         }
         modernSettingsSubtitle = New Label With {
             .AutoSize = False,
             .ForeColor = SettingsMutedText,
-            .Font = New Font("Segoe UI", 8.5F, FontStyle.Regular),
-            .Location = New Point(20, 39),
-            .Height = 22,
+            .Font = New Font("Segoe UI", Sf(8.5F), FontStyle.Regular),
+            .Location = New Point(Sp(20), Sp(39)),
+            .Height = Sp(22),
             .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
         }
         modernSettingsHeader.Controls.Add(modernSettingsTitle)
@@ -213,7 +235,7 @@ Partial Public Class Table_Form
     End Sub
 
     Private Sub BuildModernSettingsNavigation()
-        Dim top As Integer = 70
+        Dim top As Integer = Sp(70)
         Dim navLabels As String() = {"Destination folders", "Viewing", "Video and quality", "Files and system",
                                      "OCR", "Translation", "Android / SFTP", "About"}
         modernSettingsNavButtons = New Button(navLabels.Length - 1) {}
@@ -226,11 +248,11 @@ Partial Public Class Table_Form
                 .UseVisualStyleBackColor = False,
                 .BackColor = SettingsSidebar,
                 .ForeColor = SettingsSidebarMuted,
-                .Font = New Font("Segoe UI Semibold", 8.5F, FontStyle.Regular),
+                .Font = New Font("Segoe UI Semibold", Sf(8.5F), FontStyle.Regular),
                 .TextAlign = ContentAlignment.MiddleLeft,
-                .Height = 38,
-                .Width = modernSettingsSidebar.ClientSize.Width - 24,
-                .Location = New Point(12, top),
+                .Height = Sp(38),
+                .Width = modernSettingsSidebar.ClientSize.Width - Sp(24),
+                .Location = New Point(Sp(12), top),
                 .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right,
                 .Padding = New Padding(12, 0, 8, 0),
                 .Cursor = Cursors.Hand,
@@ -240,7 +262,7 @@ Partial Public Class Table_Form
             AddHandler button.Click, AddressOf ModernSettingsNavClicked
             modernSettingsSidebar.Controls.Add(button)
             modernSettingsNavButtons(index) = button
-            top += 42
+            top += Sp(42)
         Next
     End Sub
 
@@ -371,14 +393,14 @@ Partial Public Class Table_Form
         Return found
     End Function
 
-    Private Shared Sub ConfigureModernCheckbox(check As CheckBox, row As ModernSettingRow)
+    Private Sub ConfigureModernCheckbox(check As CheckBox, row As ModernSettingRow)
         ' PrepareForDisplay localizes the legacy controls on every opening and can
         ' therefore restore their old long captions. In the modern row the caption
         ' is already rendered by row.Title; keeping it on the tiny editor produces
         ' the stray first letters seen to the right of the checkbox.
         check.Text = String.Empty
         check.AutoSize = False
-        check.Size = New Size(28, 28)
+        check.Size = New Size(Sp(28), Sp(28))
         check.CheckAlign = ContentAlignment.MiddleCenter
         check.TextAlign = ContentAlignment.MiddleCenter
         check.Padding = Padding.Empty
@@ -412,6 +434,7 @@ Partial Public Class Table_Form
             Case "slideshow_interval" : Return Localization.T("Интервал слайдшоу")
             Case "thumbnail_size" : Return Localization.T("Размер карточки изображения")
             Case "section_accessibility" : Return Localization.T("Комфорт просмотра")
+            Case "interface_scale" : Return Localization.T("Масштаб интерфейса")
             Case "new_image_scale" : Return Localization.T("Масштаб нового изображения")
             Case "reduce_motion" : Return Localization.T("Уменьшать анимацию")
             Case "section_slideshow_behavior" : Return Localization.T("Поведение слайд-шоу")
@@ -425,6 +448,7 @@ Partial Public Class Table_Form
             Case "video_volume" : Return Localization.T("Громкость видео")
             Case "section_video_behavior" : Return Localization.T("Поведение видео")
             Case "video_autoplay" : Return Localization.T("Запускать видео автоматически")
+            Case "video_remember_position" : Return Localization.T("Запоминать позицию просмотра")
             Case "video_controls_delay" : Return Localization.T("Задержка скрытия панели, с")
             Case "video_controls_paused" : Return Localization.T("Показывать панель при паузе")
             Case "video_click_action" : Return Localization.T("Одиночный клик по видео")
@@ -439,11 +463,18 @@ Partial Public Class Table_Form
             Case "section_file_behavior" : Return Localization.T("Поведение файлов")
             Case "name_collision" : Return Localization.T("Совпадение имён")
             Case "after_file_operation" : Return Localization.T("После копирования или перемещения")
+            Case "delete_to_recycle_bin" : Return Localization.T("Удалять в Корзину")
+            Case "confirm_delete" : Return Localization.T("Спрашивать перед удалением")
             Case "include_subfolders" : Return Localization.T("Просматривать вложенные папки")
             Case "included_extensions" : Return Localization.T("Типы файлов")
+            Case "custom_hotkeys" : Return Localization.T("Сочетания клавиш")
             Case "recent_files_limit" : Return Localization.T("Размер истории файлов")
             Case "recent_folders_limit" : Return Localization.T("Размер истории папок")
+            Case "recent_history" : Return Localization.T("Недавние файлы и папки")
             Case "startup_open" : Return Localization.T("При запуске открывать")
+            Case "settings_export_personal" : Return Localization.T("Включить личные данные")
+            Case "settings_export" : Return Localization.T("Экспорт настроек")
+            Case "settings_import" : Return Localization.T("Импорт настроек")
             Case "allow_new_windows" : Return Localization.T("Разрешать запуск в новых окнах")
             Case "secondary_instance_warning" : Return Localization.T("Это дополнительное окно. Изменения настроек действуют до его закрытия и не сохраняются - настройки хранит первое окно.")
             Case "ocr_enabled" : Return Localization.T("Включить OCR")
@@ -465,6 +496,7 @@ Partial Public Class Table_Form
             Case "ocr_overlay_visible" : Return Localization.T("Показывать панель перевода")
             Case "ocr_disk_cache" : Return Localization.T("Кэшировать результаты на диске")
             Case "ocr_cache_limit" : Return Localization.T("Максимальный размер OCR-кэша, МБ")
+            Case "ocr_cache_clear" : Return Localization.T("Занято на диске")
             Case "sftp_intro" : Return Localization.T("Доступ к медиатеке с телефона")
             Case "sftp_manager" : Return Localization.T("Публикация папок по SFTP")
             Case "sftp_guide" : Return Localization.T("Инструкция по подключению")
@@ -502,6 +534,7 @@ Partial Public Class Table_Form
             Case "wheel_zooms" : Return Localization.T("Колесо меняет масштаб; при отключении оно листает файлы.")
             Case "slideshow_interval" : Return Localization.T("Базовая пауза между изображениями, в секундах.")
             Case "thumbnail_size" : Return Localization.T("Размер карточек в панели предварительного просмотра.")
+            Case "interface_scale" : Return Localization.T("Размер шрифта и элементов окна настроек. Применяется после его перезапуска.")
             Case "new_image_scale" : Return Localization.T("Начальный масштаб при открытии следующего изображения.")
             Case "reduce_motion" : Return Localization.T("Отключает декоративные переходы и анимацию ореола.")
             Case "slideshow_random_order" : Return Localization.T("Выберите обычный, случайный или перемешанный порядок.")
@@ -513,22 +546,30 @@ Partial Public Class Table_Form
             Case "video_mute" : Return Localization.T("Каждое видео начинает воспроизводиться с выключенным звуком.")
             Case "video_volume" : Return Localization.T("Начальная громкость воспроизведения, от 0 до 100 %.")
             Case "video_autoplay" : Return Localization.T("Если выключено, видео открывается на паузе.")
+            Case "video_remember_position" : Return Localization.T("Изменившийся файл всегда начинается с начала.")
             Case "video_controls_delay" : Return Localization.T("Через сколько секунд бездействия скрывать панель управления.")
             Case "video_controls_paused" : Return Localization.T("Не скрывает управление, пока видео поставлено на паузу.")
             Case "video_click_action" : Return Localization.T("Действие левой кнопки мыши на поверхности видео.")
             Case "video_end_action" : Return Localization.T("Что делать, когда воспроизведение достигло конца.")
-            Case "preferred_audio_language", "preferred_subtitle_language" : Return Localization.T("Код языка, например ru, en или rus. Оставьте пустым для выбора плеера.")
+            Case "preferred_audio_language", "preferred_subtitle_language" : Return Localization.T("Если такой дорожки нет, выбор остаётся за плеером.")
             Case "advance_after_copy" : Return Localization.T("После копирования сразу показывается следующий файл. Снимите галочку, чтобы остаться на текущем.")
             Case "no_confirmation" : Return Localization.T("Файловые операции выполняются сразу. Используйте осторожно.")
             Case "image_associations" : Return Localization.T("Открывает системные параметры приложений по умолчанию для изображений.")
             Case "video_associations" : Return Localization.T("Открывает системные параметры приложений по умолчанию для видео.")
             Case "interface_language" : Return Localization.T("Выберите, на каком языке показывать интерфейс.")
             Case "name_collision" : Return Localization.T("Что делать, если в папке-получателе уже есть файл с тем же именем.")
+            Case "delete_to_recycle_bin" : Return Localization.T("На сетевом диске и съёмном носителе Корзины нет - там файл удаляется безвозвратно, и программа скажет об этом. Shift+DEL всегда удаляет мимо Корзины.")
+            Case "confirm_delete" : Return Localization.T("Средний вариант удобен для быстрой разборки: удаление в Корзину проходит молча, а безвозвратное всё равно спросит.")
             Case "after_file_operation" : Return Localization.T("Выберите, что показывать после успешной операции.")
             Case "include_subfolders" : Return Localization.T("Добавляет подходящие файлы из всех вложенных папок.")
-            Case "included_extensions" : Return Localization.T("Расширения через точку с запятой; пустое поле — все поддерживаемые.")
+            Case "included_extensions" : Return Localization.T("Выберите группы и отдельные форматы. Если отмечено всё - показываются все поддерживаемые.")
+            Case "custom_hotkeys" : Return Localization.T("Переназначьте клавиши действий. Системные сочетания, F11 и Esc остаются за программой.")
             Case "recent_files_limit", "recent_folders_limit" : Return Localization.T("0 отключает сохранение новых записей.")
+            Case "recent_history" : Return Localization.T("Открыть запись, удалить одну или очистить историю целиком.")
             Case "startup_open" : Return Localization.T("Что будет показано при обычном запуске без файла в командной строке.")
+            Case "settings_export_personal" : Return Localization.T("История папок и позиции просмотра попадут в файл. API-ключи и пароли - никогда.")
+            Case "settings_export" : Return Localization.T("Сохраняет параметры в файл. Личные данные - пути и позиции просмотра - не включаются.")
+            Case "settings_import" : Return Localization.T("Читает параметры из файла. Прежний профиль сохраняется рядом с ним как .backup.")
             Case "allow_new_windows" : Return Localization.T("Обычно повторный запуск программы отдаёт файл уже открытому окну. Если отмечено, каждый запуск открывает своё окно.")
             Case "ocr_enabled" : Return Localization.T("Разрешает распознавание текста на открытых изображениях.")
             Case "ocr_auto" : Return Localization.T("Распознаёт текст без отдельной команды после открытия изображения.")
@@ -546,6 +587,7 @@ Partial Public Class Table_Form
             Case "ocr_overlay_visible" : Return Localization.T("Показывает или скрывает уже распознанный перевод поверх изображения.")
             Case "ocr_disk_cache" : Return Localization.T("Сохраняет распознанный текст, чтобы повторно не обрабатывать файл.")
             Case "ocr_cache_limit" : Return Localization.T("0 означает без ограничения; очистка по LRU выполняется после записи.")
+            Case "ocr_cache_clear" : Return Localization.T("Текущий размер сохранённых результатов. Очистка не меняет настройки OCR.")
             Case "sftp_intro" : Return Localization.T("Опубликуйте выбранные папки встроенным SFTP-сервером и открывайте их в мобильном приложении.")
             Case "sftp_manager" : Return Localization.T("Открывает отдельное приложение управления SFTP-доступом и опубликованными папками.")
             Case "sftp_guide" : Return Localization.T("Пошаговая настройка сервера, сети и подключения мобильного клиента.")
@@ -687,18 +729,20 @@ Partial Public Class Table_Form
         Return flow
     End Function
 
+    ''' <summary>The two column thresholds move with the interface scale (§4.1) - at 150 %
+    ''' a row genuinely needs half again as much room before it can be halved.</summary>
     Private Sub ResizeModernPageItems(flow As FlowLayoutPanel)
-        Dim width As Integer = Math.Max(460, flow.ClientSize.Width - flow.Padding.Horizontal - 18)
-        Dim useTwoColumns As Boolean = width >= 820
+        Dim width As Integer = Math.Max(Sp(460), flow.ClientSize.Width - flow.Padding.Horizontal - Sp(18))
+        Dim useTwoColumns As Boolean = width >= Sp(820)
         For Each child As Control In flow.Controls
             Dim compact As Boolean = String.Equals(TryCast(child.Tag, String), "modern:compact", StringComparison.Ordinal)
-            child.Width = If(compact AndAlso useTwoColumns, Math.Max(300, (width - 8) \ 2), width)
+            child.Width = If(compact AndAlso useTwoColumns, Math.Max(Sp(300), (width - 8) \ 2), width)
         Next
     End Sub
 
     Private Sub AddSectionHeader(flow As FlowLayoutPanel, key As String)
-        Dim host As New Panel With {.Height = 28, .Margin = New Padding(0, 6, 0, 0), .BackColor = SettingsCanvas, .Tag = "modern:full"}
-        Dim title As New Label With {.AutoSize = False, .Dock = DockStyle.Fill, .Font = New Font("Segoe UI Semibold", 9.5F),
+        Dim host As New Panel With {.Height = Sp(28), .Margin = New Padding(0, 6, 0, 0), .BackColor = SettingsCanvas, .Tag = "modern:full"}
+        Dim title As New Label With {.AutoSize = False, .Dock = DockStyle.Fill, .Font = New Font("Segoe UI Semibold", Sf(9.5F)),
                                      .ForeColor = SettingsText, .TextAlign = ContentAlignment.MiddleLeft, .Padding = New Padding(4, 0, 0, 0)}
         host.Controls.Add(title)
         flow.Controls.Add(host)
@@ -706,17 +750,17 @@ Partial Public Class Table_Form
     End Sub
 
     Private Sub AddSettingRow(flow As FlowLayoutPanel, key As String, editor As Control, editorWidth As Integer, Optional compact As Boolean = False)
-        Dim host As New Panel With {.Height = 56, .Margin = New Padding(0, 0, 6, 6), .BackColor = SettingsSurface, .Padding = New Padding(12, 5, 12, 5),
+        Dim host As New Panel With {.Height = Sp(56), .Margin = New Padding(0, 0, 6, 6), .BackColor = SettingsSurface, .Padding = New Padding(12, 5, 12, 5),
                                    .Tag = If(compact, "modern:compact", "modern:full")}
-        Dim title As New Label With {.AutoSize = False, .Location = New Point(14, 8), .Height = 20,
-                                     .Font = New Font("Segoe UI Semibold", 8.75F), .ForeColor = SettingsText}
-        Dim description As New Label With {.AutoSize = False, .Location = New Point(14, 31), .Height = 22,
-                                           .Font = New Font("Segoe UI", 8.0F), .ForeColor = SettingsMutedText,
+        Dim title As New Label With {.AutoSize = False, .Location = New Point(Sp(14), Sp(8)), .Height = Sp(20),
+                                     .Font = New Font("Segoe UI Semibold", Sf(8.75F)), .ForeColor = SettingsText}
+        Dim description As New Label With {.AutoSize = False, .Location = New Point(Sp(14), Sp(31)), .Height = Sp(22),
+                                           .Font = New Font("Segoe UI", Sf(8.0F)), .ForeColor = SettingsMutedText,
                                            .AutoEllipsis = True}
         Dim row As New ModernSettingRow With {.Key = key, .Host = host, .Title = title, .Description = description, .Editor = editor, .Compact = compact}
         Dim check As CheckBox = TryCast(editor, CheckBox)
         ReparentModernSettingsControl(editor, host)
-        editor.Width = editorWidth
+        editor.Width = Sp(editorWidth)
 
         If check IsNot Nothing Then
             editor.Anchor = AnchorStyles.Top Or AnchorStyles.Left
@@ -741,21 +785,29 @@ Partial Public Class Table_Form
         AddHandler host.Resize,
             Sub()
                 If check IsNot Nothing Then
-                    editor.Left = 14
-                    title.Left = editor.Right + 10
+                    editor.Left = Sp(14)
+                    title.Left = editor.Right + Sp(10)
                     description.Left = title.Left
-                    title.Width = Math.Max(180, host.ClientSize.Width - title.Left - 14)
+                    title.Width = Math.Max(Sp(180), host.ClientSize.Width - title.Left - Sp(14))
                     description.Width = title.Width
                     editor.Top = title.Top + Math.Max(0, (title.Height - editor.Height) \ 2)
                 Else
-                    editor.Width = Math.Min(editorWidth, Math.Max(150, host.ClientSize.Width - 260))
-                    editor.Left = Math.Max(230, Math.Min(420, host.ClientSize.Width - editor.Width - 12))
-                    Dim labelWidth As Integer = Math.Max(180, editor.Left - 32)
-                    title.Left = 14
-                    description.Left = 14
+                    editor.Width = Math.Min(Sp(editorWidth), Math.Max(Sp(150), host.ClientSize.Width - Sp(260)))
+                    editor.Left = Math.Max(Sp(230), Math.Min(Sp(420), host.ClientSize.Width - editor.Width - Sp(12)))
+                    ' The caption ends 14 px before the editor - the same inset it starts
+                    ' at on the left. It used to be 32, an 18 px gap wider than the row's
+                    ' own margin, and those four pixels were the whole difference for the
+                    ' longest caption in the window ("После копирования или перемещения",
+                    ' 216 px) once two columns squeeze a row down to ~406 px wide.
+                    ' SettingsLayoutTests measures every caption in all 13 languages
+                    ' against exactly this arithmetic - at the default scale, where every
+                    ' Sp() below returns its argument unchanged.
+                    Dim labelWidth As Integer = Math.Max(Sp(180), editor.Left - Sp(28))
+                    title.Left = Sp(14)
+                    description.Left = Sp(14)
                     title.Width = labelWidth
                     description.Width = labelWidth
-                    editor.Top = Math.Max(10, (host.ClientSize.Height - editor.Height) \ 2)
+                    editor.Top = Math.Max(Sp(10), (host.ClientSize.Height - editor.Height) \ 2)
                 End If
             End Sub
         flow.Controls.Add(host)
@@ -773,24 +825,25 @@ Partial Public Class Table_Form
 
     Private Sub SizeModernSettingRow(row As ModernSettingRow)
         If row.Description Is Nothing Then Return
-        Dim titleHeight As Integer = Math.Max(19, row.Title.Font.Height + 2)
+        ' Heights come from the fonts, so they follow the interface scale on their own.
+        Dim titleHeight As Integer = Math.Max(Sp(19), row.Title.Font.Height + 2)
         Dim lines As Integer = If(row.Key.EndsWith("_intro", StringComparison.Ordinal), 2, 1)
-        Dim descriptionHeight As Integer = Math.Max(17, row.Description.Font.Height * lines + 2)
-        row.Title.Top = 6
+        Dim descriptionHeight As Integer = Math.Max(Sp(17), row.Description.Font.Height * lines + 2)
+        row.Title.Top = Sp(6)
         row.Title.Height = titleHeight
         row.Description.Top = row.Title.Bottom + 1
         row.Description.Height = descriptionHeight
-        row.Host.Height = row.Description.Bottom + 6
+        row.Host.Height = row.Description.Bottom + Sp(6)
         Dim check As CheckBox = TryCast(row.Editor, CheckBox)
         If check IsNot Nothing Then
-            check.Left = 14
-            row.Title.Left = check.Right + 10
+            check.Left = Sp(14)
+            row.Title.Left = check.Right + Sp(10)
             row.Description.Left = row.Title.Left
-            row.Title.Width = Math.Max(180, row.Host.ClientSize.Width - row.Title.Left - 14)
+            row.Title.Width = Math.Max(Sp(180), row.Host.ClientSize.Width - row.Title.Left - Sp(14))
             row.Description.Width = row.Title.Width
             check.Top = row.Title.Top + Math.Max(0, (row.Title.Height - check.Height) \ 2)
         ElseIf row.Editor IsNot Nothing Then
-            row.Editor.Top = Math.Max(10, (row.Host.ClientSize.Height - row.Editor.Height) \ 2)
+            row.Editor.Top = Math.Max(Sp(10), (row.Host.ClientSize.Height - row.Editor.Height) \ 2)
         End If
     End Sub
 
@@ -1205,18 +1258,18 @@ Partial Public Class Table_Form
                 button.UseVisualStyleBackColor = False
                 button.BackColor = SettingsSurface
                 button.ForeColor = SettingsAccent
-                button.Font = New Font("Segoe UI Semibold", 9.0F, FontStyle.Regular)
+                button.Font = New Font("Segoe UI Semibold", Sf(9.0F), FontStyle.Regular)
             ElseIf TypeOf control Is ComboBox OrElse TypeOf control Is TextBox OrElse TypeOf control Is NumericUpDown Then
                 control.BackColor = If(settingsDarkMode, Color.FromArgb(50, 52, 57), SystemColors.Window)
                 control.ForeColor = SettingsText
-                control.Font = New Font("Segoe UI", 9.0F, FontStyle.Regular)
+                control.Font = New Font("Segoe UI", Sf(9.0F), FontStyle.Regular)
             ElseIf TypeOf control Is CheckBox Then
                 control.BackColor = SettingsSurface
                 control.ForeColor = SettingsText
-                control.Font = New Font("Segoe UI", 9.0F, FontStyle.Regular)
+                control.Font = New Font("Segoe UI", Sf(9.0F), FontStyle.Regular)
             ElseIf TypeOf control Is Label Then
                 control.ForeColor = SettingsMutedText
-                control.Font = New Font("Segoe UI", 9.0F, FontStyle.Regular)
+                control.Font = New Font("Segoe UI", Sf(9.0F), FontStyle.Regular)
             End If
 
             If control.HasChildren Then StyleModernSettingsControlTree(control)

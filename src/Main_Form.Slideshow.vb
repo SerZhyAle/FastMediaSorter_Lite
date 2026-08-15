@@ -50,6 +50,13 @@ Partial Public Class Main_Form
     Private Sub SlideShowStop()
         SlideShowTimer().Enabled = False
         Is_slide_show_mode = False
+#If Not NETFRAMEWORK Then
+        ' Leaving the slideshow restores the interface at once (§5.2) - the reveal flag
+        ' goes back up BEFORE the applier reads it.
+        slideshow_Chrome_Revealed = True
+        slideshow_Chrome_Timer.Stop()
+        ApplySlideshowChrome()
+#End If
         ' Clear it HERE, the one place every stop goes through. It used to be cleared
         ' only by KeybUse and SetSlideShow, while the mouse (clicks, toolbar buttons)
         ' just called this - so after stopping a RANDOM slideshow with the mouse the
@@ -73,6 +80,11 @@ Partial Public Class Main_Form
         SlideShowTimer.Enabled = True
         Is_slide_show_mode = True
         lbl_Slideshow_Time.Visible = True
+#If Not NETFRAMEWORK Then
+        slideshow_Chrome_Revealed = False
+        slideshow_Chrome_Timer.Stop()
+        ApplySlideshowChrome()
+#End If
     End Sub
 
     Private Sub SetRandomSlideShow(Optional was_Running As Boolean = False)
@@ -88,5 +100,62 @@ Partial Public Class Main_Form
 
         ReadShowMediaFile(Mode_ForSlideShow)
     End Sub
+
+#If Not NETFRAMEWORK Then
+
+    ''' <summary>
+    ''' The interface a running slideshow hides (§5.2), and the temporary reveal that
+    ''' brings it back.
+    '''
+    ''' Two flags rather than one: SlideshowUiMode says WHAT may be hidden, this one says
+    ''' whether the user has just asked to see it anyway. Both are read by
+    ''' SlideshowHidesToolbar / SlideshowHidesStatus, which the single chrome-visibility
+    ''' point in ISizeChanged consults - so full-screen, super-full-screen and the
+    ''' slideshow can never each write their own answer over the others'.
+    ''' </summary>
+    Private slideshow_Chrome_Revealed As Boolean = True
+
+    ''' <summary>What the layout was last told. The applier is called from a mouse-move
+    ''' handler, so it has to be free when nothing actually changed.</summary>
+    Private slideshow_Chrome_Hidden_Now As Boolean
+
+    Private WithEvents slideshow_Chrome_Timer As New System.Windows.Forms.Timer() With {.Interval = 2500}
+
+    Private Sub ApplySlideshowChrome()
+        Dim hidden As Boolean = SlideshowHidesToolbar() OrElse SlideshowHidesStatus()
+        If hidden = slideshow_Chrome_Hidden_Now Then Return
+        slideshow_Chrome_Hidden_Now = hidden
+        ' Showing or hiding a docked panel changes the media area, so this goes through
+        ' the ordinary layout pass - the picture is re-fitted and the perspective bars
+        ' rebuilt for the size actually on screen.
+        ISizeChanged()
+    End Sub
+
+    ''' <summary>Movement or a keystroke brings the hidden chrome back for a few seconds
+    ''' without stopping the slideshow. A no-op when nothing is hidden.</summary>
+    Friend Sub RevealSlideshowChromeTemporarily()
+        If Not Is_slide_show_mode Then Return
+        If modern_Preferences Is Nothing OrElse modern_Preferences.SlideshowUiMode = "none" Then Return
+
+        slideshow_Chrome_Revealed = True
+        slideshow_Chrome_Timer.Stop()
+        slideshow_Chrome_Timer.Start()
+        ApplySlideshowChrome()
+    End Sub
+
+    Private Sub Slideshow_Chrome_Timer_Tick(sender As Object, e As EventArgs) Handles slideshow_Chrome_Timer.Tick
+        slideshow_Chrome_Timer.Stop()
+        slideshow_Chrome_Revealed = False
+        ApplySlideshowChrome()
+    End Sub
+
+#Else
+
+    ''' <summary>Nothing is ever hidden on the frozen x86 target, so the reveal has
+    ''' nothing to do - the call site stays seam-free.</summary>
+    Friend Sub RevealSlideshowChromeTemporarily()
+    End Sub
+
+#End If
 
 End Class

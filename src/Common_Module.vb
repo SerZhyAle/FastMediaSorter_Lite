@@ -25,6 +25,16 @@ Module Common_Module
     Public App_name As String = "SZA"
 
     ''' <summary>
+    ''' The two exes this app ships as, by process name. They share one mutex and one
+    ''' settings hive - they ARE one app - so anything that asks "is one of ours running?"
+    ''' has to ask about both: the single-instance forwarding (which would otherwise find
+    ''' nothing when the sibling is the one running) and the archive cache's orphan sweep
+    ''' (which decides whether a session directory still has an owner). One list, so a
+    ''' renamed exe is one edit.
+    ''' </summary>
+    Public ReadOnly Viewer_Process_Names As String() = {"FastMediaSorter_LITE", "FastMediaSorter_x86"}
+
+    ''' <summary>
     ''' The author's address shown in the app and used by every "write to the author"
     ''' action, including the log package on the About tab. One constant, so the three
     ''' call sites cannot drift apart.

@@ -245,12 +245,18 @@ Public Class Main_Form
     ''' resumes - nothing cancels it, so it has to check.</summary>
     Private media_Generation As Integer = 0
 
+#If NETFRAMEWORK Then
+    ' The one-operation-deep history of the x86 viewer. On the mainline these three are
+    ' replaced by undo_Entries (Main_Form.FileOperations.vb) - a bounded stack that also
+    ' covers deletions and renames - and are fenced away rather than left to rot as two
+    ' histories that can disagree (SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.5).
     Dim history_Source_File_Name As String = ""
     Dim history_Destination_File_Name As String = ""
     ' What the recorded operation actually WAS. Undo used to branch on the current
     ' Is_Copying_not_Moving instead: flip the mode to "copy" after moving a file and U
     ' deleted it at the destination - the only copy left - instead of moving it back.
     Private history_Was_Copy As Boolean
+#End If
     Private WithEvents BgWorker As New BackgroundWorker()
     Private is_BgWorker_Online As Boolean
 
@@ -382,6 +388,11 @@ Public Class Main_Form
             ' Explicit owner: a native dialog cannot carry TopMost, and what keeps it
             ' above a viewer pinned "поверх всех окон" is being owned by it.
             If folder_Browser_Dialog.ShowDialog(Me) = System.Windows.Forms.DialogResult.OK Then
+#If Not NETFRAMEWORK Then
+                ' Picking a folder is a change of context, so the archive - and its
+                ' temporary directory - goes now rather than at shutdown (§4.3).
+                LeaveArchive()
+#End If
                 Current_Folder_Path = folder_Browser_Dialog.SelectedPath
                 lbl_Status.Text = Localization.T("выбрана папка") & ": " & Current_Folder_Path
                 Is_No_Background_Tasks = False
@@ -523,10 +534,7 @@ Public Class Main_Form
         SlideShowStop()
 
         ' Check if Table_Form is disposed and recreate it if necessary
-        If Table_Form Is Nothing OrElse Table_Form.IsDisposed Then
-            Table_Form = New Table_Form()
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1961: Table_Form recreated")
-        End If
+        EnsureSettingsWindow()
 
         Table_Form.PrepareForDisplay()
         ' Without this the settings window opens BEHIND a viewer pinned "поверх всех
@@ -578,6 +586,12 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2130: cmbox_MediaFolder SelectedIndexChanged")
 
             If cmbox_Media_Folder.SelectedIndex >= 0 Then
+#If Not NETFRAMEWORK Then
+                ' Picking a recent folder leaves the archive, with its temporary directory
+                ' (§4.3) - and it has to happen before Current_Folder_Path is overwritten,
+                ' which is what the archive mode is recognised by.
+                LeaveArchive()
+#End If
                 Is_No_Background_Tasks = False
                 Current_Folder_Path = cmbox_Media_Folder.SelectedItem.ToString()
 
@@ -685,6 +699,11 @@ Public Class Main_Form
             openFileDialog.Title = Localization.T("Выберите медиафайл")
             If openFileDialog.ShowDialog(Me) = DialogResult.OK Then
                 Dim selected_File_Path As String = openFileDialog.FileName
+#If Not NETFRAMEWORK Then
+                ' Same rule as the folder picker: another file is another context, and the
+                ' archive's temporary directory goes with the archive (§4.3).
+                LeaveArchive()
+#End If
                 Dim selected_Folder_Path As String = Path.GetDirectoryName(selected_File_Path)
 
                 ' Set up the necessary state for external input processing

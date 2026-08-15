@@ -121,7 +121,11 @@ Source: "stop-companion.ps1"; DestDir: "{tmp}"; Flags: dontcopy
 Source: "stop-companion.ps1"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#AppName}"; Filename: "{app}\{#CompanionExe}"
+; "--show": a bare launch obeys the manager's own "open the window at startup" option,
+; which is OFF by default, so without the flag this Start-menu item would start a
+; tray-only process and read as a click that did nothing. Clicking a shortcut IS the
+; explicit "open it" gesture, the same one LITE's Share Manager button makes.
+Name: "{group}\{#AppName}"; Filename: "{app}\{#CompanionExe}"; Parameters: "--show"
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
 
 [Code]

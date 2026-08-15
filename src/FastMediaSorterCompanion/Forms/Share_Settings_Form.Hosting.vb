@@ -1,29 +1,37 @@
 Option Strict On
 
+Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.Windows.Forms
 
 ''' <summary>
-''' The Hosting console (SPECIFICATION_SHARE_SYSTEM_SERVICE.md §2, §3.6, §4.3).
+''' The Hosting console (SPECIFICATION_SHARE_SYSTEM_SERVICE.md §2, §3.6, §4.3), as the third
+''' collapsible group of the manager settings.
 '''
-''' Two jobs, and the second one is why it exists as its own window:
-'''   * say which host owns the worker and, separately, what the service and the
-'''     SFTP server are each doing right now - "service installed", "service
-'''     running", "SFTP serving" and "no folders configured" are four different
-'''     states and the main window has no room to keep them apart;
-'''   * gather every machine-affecting action in one place, each behind a visible
-'''     UAC prompt via the elevated helper. Routine Start/Stop sharing stays on the
-'''     main window as plain IPC and never elevates - only service lifecycle does.
+''' Two jobs, and the second one is why it is a group of its own rather than a few more rows
+''' under "Сеть":
+'''   * say which host owns the worker and, separately, what the service and the SFTP
+'''     server are each doing right now - "service installed", "service running", "SFTP
+'''     serving" and "no folders configured" are four different states and the main window
+'''     has no room to keep them apart;
+'''   * gather every machine-affecting action in one place, each behind a visible UAC prompt
+'''     via the elevated helper. Routine Start/Stop sharing stays on the main window as
+'''     plain IPC and never elevates - only service lifecycle does.
 '''
-''' It never downloads or launches an installer: the edition-change entries open
-''' the documented page and stop there (spec §1.4).
-''' Built entirely in code (no Designer), like the other Companion dialogs.
+''' It was `Share_Hosting_Form`, its own modal, until 2026-08-15. Merging it in cost nothing
+''' structurally - the settings window had become its only caller - and removed the fourth
+''' level of nesting on the path to an elevated action. Nothing about WHAT elevates, or
+''' about the single auditable helper it goes through, changed: the code below is the old
+''' window's body, moved.
+'''
+''' It never downloads or launches an installer: the edition-change entries open the
+''' documented page and stop there (spec §1.4).
 ''' </summary>
-Public NotInheritable Class Share_Hosting_Form
-    Inherits Form
+Partial Public NotInheritable Class Share_Settings_Form
 
-    Private ReadOnly _status As WorkerStatus
-    Private _iconHandle As IntPtr
+    ''' <summary>The notes here are long prose; this is the width they wrap at, and it is
+    ''' what makes the settings dialog as wide as it is.</summary>
+    Private Const HostingContentWidth As Integer = 520
 
     Private _lblHost As Label
     Private _lblIntro As Label
@@ -42,64 +50,41 @@ Public NotInheritable Class Share_Hosting_Form
     Private _btnRepair As Button
     Private _btnGrantRoots As Button
     Private _btnRemove As Button
-    Private _btnClose As Button
 
-    ''' <summary>True when an elevated action actually changed the machine, so the
-    ''' caller re-reads status instead of showing a stale console.</summary>
-    Public ReadOnly Property Changed As Boolean
+    ''' <summary>The folder paths the grant action would cover, refreshed with the
+    ''' state so the elevated call never works from a stale list.</summary>
+    Private _grantRoots As New List(Of String)()
 
-    Public Sub New(status As WorkerStatus)
-        _status = status
-        BuildUi()
-    End Sub
+    ''' <summary>The subset of <see cref="_grantRoots"/> shared read-only - the rest is
+    ''' granted read/write.</summary>
+    Private _grantReadOnlyRoots As New List(Of String)()
 
-    Private Sub BuildUi()
-        ' Script font + text direction for the active language, before any control
-        ' exists - children inherit both (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
-        UiLanguage.ApplyTo(Me)
-        Me.Text = HostingText.Title()
-        Me.Icon = ShareIcons.CreateIcon(_iconHandle)
-        AddHandler Me.FormClosed, Sub() ShareIcons.FreeIcon(Me.Icon, _iconHandle)
-        Me.FormBorderStyle = FormBorderStyle.FixedDialog
-        Me.MaximizeBox = False
-        Me.MinimizeBox = False
-        Me.ShowInTaskbar = False
-        Me.StartPosition = FormStartPosition.CenterParent
-        ' AutoSize + TableLayoutPanel, no absolute coordinates: the notes are long and
-        ' the window must grow to fit them at any display scaling (see DpiLayout).
-        Me.AutoSize = True
-        Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
-
-        Const contentWidth As Integer = 520
-
-        Dim tlp As New TableLayoutPanel With {.Dock = DockStyle.Fill, .AutoSize = True,
-            .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 1,
-            .Padding = New Padding(16, 16, 16, 12), .GrowStyle = TableLayoutPanelGrowStyle.AddRows}
-        tlp.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
-
+    Private Sub BuildHostingSection(sec As CollapsibleSection)
         _lblHost = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 6),
-            .MaximumSize = New Size(contentWidth, 0),
+            .MaximumSize = New Size(HostingContentWidth, 0),
             .Font = New Font(Me.Font.FontFamily, Me.Font.Size * 1.15F, FontStyle.Bold)}
         _lblIntro = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 10),
-            .MaximumSize = New Size(contentWidth, 0)}
+            .MaximumSize = New Size(HostingContentWidth, 0)}
         ' The four facts, each on its own line and never merged: who is answering the
         ' pipe right now, what the SCM says about the service, whether SFTP is actually
         ' serving, and which state store both hosts are working on.
         _lblLive = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 2),
-            .MaximumSize = New Size(contentWidth, 0), .Font = New Font(Me.Font, FontStyle.Bold)}
+            .MaximumSize = New Size(HostingContentWidth, 0), .Font = New Font(Me.Font, FontStyle.Bold)}
         _lblService = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 2),
-            .MaximumSize = New Size(contentWidth, 0)}
+            .MaximumSize = New Size(HostingContentWidth, 0)}
         _lblServing = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 2),
-            .MaximumSize = New Size(contentWidth, 0), .ForeColor = SystemColors.GrayText}
+            .MaximumSize = New Size(HostingContentWidth, 0), .ForeColor = SystemColors.GrayText}
         _lblStore = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 12),
-            .MaximumSize = New Size(contentWidth, 0), .ForeColor = SystemColors.GrayText}
+            .MaximumSize = New Size(HostingContentWidth, 0), .ForeColor = SystemColors.GrayText}
 
-        tlp.Controls.Add(_lblHost)
-        tlp.Controls.Add(_lblIntro)
-        tlp.Controls.Add(_lblLive)
-        tlp.Controls.Add(_lblService)
-        tlp.Controls.Add(_lblServing)
-        tlp.Controls.Add(_lblStore)
+        ' The group's header already names it, so the console's own bold title would be the
+        ' same word twice; the mode line it used to carry is the group's live summary now.
+        sec.AddBodyRow(_lblHost)
+        sec.AddBodyRow(_lblIntro)
+        sec.AddBodyRow(_lblLive)
+        sec.AddBodyRow(_lblService)
+        sec.AddBodyRow(_lblServing)
+        sec.AddBodyRow(_lblStore)
 
         _btnSwitchToService = MakeAction(HostingText.SwitchToServiceButton(), AddressOf OnSwitchToService)
         _btnInstallServer = MakeAction(HostingText.InstallServerButton(), AddressOf OnOpenServerPage)
@@ -111,43 +96,27 @@ Public NotInheritable Class Share_Hosting_Form
         _btnGrantRoots = MakeAction(HostingText.GrantRootsButton(), AddressOf OnGrantRoots)
         _btnRemove = MakeAction(HostingText.RemoveRoleButton(), Sub() RunManage(ServiceControl.ManageAction.Remove))
 
-        tlp.Controls.Add(_btnSwitchToService)
-        tlp.Controls.Add(_btnInstallServer)
+        sec.AddBodyRow(_btnSwitchToService)
+        sec.AddBodyRow(_btnInstallServer)
         ' Kept as a field: this note explains the DOWNLOAD button, so it must disappear
         ' together with it when this installation can take the role on by itself, and it
         ' says something different in a Store build, which cannot.
-        _noteDownload = NoteLabel(HostingText.DownloadNote(), contentWidth)
-        tlp.Controls.Add(_noteDownload)
-        tlp.Controls.Add(_btnReturnToUser)
-        tlp.Controls.Add(_btnStart)
-        tlp.Controls.Add(_btnStop)
-        tlp.Controls.Add(_btnRestart)
-        tlp.Controls.Add(_btnRepair)
-        tlp.Controls.Add(_btnGrantRoots)
-        tlp.Controls.Add(NoteLabel(HostingText.AccountNote(), contentWidth))
-        tlp.Controls.Add(_btnRemove)
-        tlp.Controls.Add(NoteLabel(HostingText.RemoveNote(), contentWidth))
+        _noteDownload = NoteLabel(HostingText.DownloadNote())
+        sec.AddBodyRow(_noteDownload)
+        sec.AddBodyRow(_btnReturnToUser)
+        sec.AddBodyRow(_btnStart)
+        sec.AddBodyRow(_btnStop)
+        sec.AddBodyRow(_btnRestart)
+        sec.AddBodyRow(_btnRepair)
+        sec.AddBodyRow(_btnGrantRoots)
+        sec.AddBodyRow(NoteLabel(HostingText.AccountNote()))
+        sec.AddBodyRow(_btnRemove)
+        sec.AddBodyRow(NoteLabel(HostingText.RemoveNote()))
 
-        _lblResult = New Label With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 4),
-            .MaximumSize = New Size(contentWidth, 0), .MinimumSize = New Size(contentWidth, 0),
+        _lblResult = New Label With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 0),
+            .MaximumSize = New Size(HostingContentWidth, 0),
             .ForeColor = Color.DimGray, .Text = ""}
-        tlp.Controls.Add(_lblResult)
-
-        Dim btnFlow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Anchor = AnchorStyles.Right, .Margin = New Padding(0, 4, 0, 0),
-            .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False}
-        _btnClose = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Padding = New Padding(12, 6, 12, 6), .Margin = New Padding(0),
-            .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.OK}
-        btnFlow.Controls.Add(_btnClose)
-        tlp.Controls.Add(btnFlow)
-
-        Me.Controls.Add(tlp)
-        Me.AcceptButton = _btnClose
-        Me.CancelButton = _btnClose
-
-        ApplyState()
-        DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
+        sec.AddBodyRow(_lblResult)
     End Sub
 
     Private Function MakeAction(text As String, onClick As Action) As Button
@@ -158,18 +127,42 @@ Public NotInheritable Class Share_Hosting_Form
         Return b
     End Function
 
-    Private Shared Function NoteLabel(text As String, width As Integer) As Label
-        Return New Label With {.AutoSize = True, .MaximumSize = New Size(width, 0),
+    Private Shared Function NoteLabel(text As String) As Label
+        Return New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
             .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 0, 0, 10), .Text = text}
     End Function
+
+    ''' <summary>
+    ''' Refreshes the group from a LIVE worker probe, the first time it is actually unfolded.
+    '''
+    ''' The structure was already applied without one while the dialog was being built (see
+    ''' the <c>probeLive</c> parameter below), so this is not what decides the layout - it is
+    ''' what makes the two live lines honest. Splitting it that way is what keeps the dialog
+    ''' from opening at its worst-case height AND from paying a worker round trip every time
+    ''' someone opens it to tick one checkbox.
+    ''' </summary>
+    Private Sub EnsureHostingLoaded()
+        If _hostingLoaded Then Return
+        _hostingLoaded = True
+        ApplyHostingState(True)
+        UpdateSummaries()
+        FitToContent()
+    End Sub
 
     ''' <summary>
     ''' Paints the console from the live host mode + SCM state. Which buttons exist
     ''' at all is decided here rather than by disabling them, so a User edition never
     ''' shows service lifecycle controls it has no helper to run - and the Server
     ''' edition never shows an "install the Server edition" it already is.
+    '''
+    ''' <paramref name="probeLive"/> False uses the status the caller handed in instead of
+    ''' asking the worker. Everything that decides which controls EXIST comes from the SCM
+    ''' and from whether the elevated helper is installed - both cheap and both local - so a
+    ''' probe-free pass produces the same layout, which is all the build needs. Only the
+    ''' "who is answering the pipe right now" line and the served-root list want the live
+    ''' answer, and those are corrected the moment the tab is opened.
     ''' </summary>
-    Private Sub ApplyState()
+    Private Sub ApplyHostingState(probeLive As Boolean)
         Dim mode As ServerFeatures.ServerHostMode = ServerFeatures.HostMode()
         Dim state As ServiceControl.ServiceState = ServiceControl.QueryState()
         Dim installed As Boolean = state <> ServiceControl.ServiceState.NotInstalled
@@ -179,13 +172,14 @@ Public NotInheritable Class Share_Hosting_Form
         _lblHost.Text = HostingText.HostModeLine(mode)
         _lblIntro.Text = HostingText.Intro(mode)
 
-        ' Fresh probe rather than the status we were handed: this window is where a
-        ' user comes when something looks wrong, and a cached snapshot is exactly what
-        ' would hide a worker that died a minute ago.
-        Dim live As WorkerResponse = WorkerProcess.TryGetStatus(1200)
+        ' Fresh probe rather than the status we were handed: this page is where a user
+        ' comes when something looks wrong, and a cached snapshot is exactly what would
+        ' hide a worker that died a minute ago.
+        Dim live As WorkerResponse = If(probeLive, WorkerProcess.TryGetStatus(1200), Nothing)
+        Dim answering As Boolean = If(probeLive, live IsNot Nothing, _status IsNot Nothing)
         Dim st As WorkerStatus = If(live IsNot Nothing, live.Status, _status)
-        _lblLive.Text = HostingText.LiveHostLine(serviceServing, live IsNot Nothing)
-        _lblLive.ForeColor = If(live IsNot Nothing, Color.ForestGreen, Color.Firebrick)
+        _lblLive.Text = HostingText.LiveHostLine(serviceServing, answering)
+        _lblLive.ForeColor = If(answering, Color.ForestGreen, Color.Firebrick)
 
         _lblService.Text = HostingText.ServiceStateLine(state)
         _lblService.ForeColor = If(state = ServiceControl.ServiceState.Running, Color.ForestGreen, SystemColors.ControlText)
@@ -243,14 +237,6 @@ Public NotInheritable Class Share_Hosting_Form
         End If
     End Sub
 
-    ''' <summary>The folder paths the grant action would cover, refreshed with the
-    ''' state so the elevated call never works from a stale list.</summary>
-    Private _grantRoots As New List(Of String)()
-
-    ''' <summary>The subset of <see cref="_grantRoots"/> shared read-only - the rest is
-    ''' granted read/write.</summary>
-    Private _grantReadOnlyRoots As New List(Of String)()
-
     Private Sub OnGrantRoots()
         RunManage(ServiceControl.ManageAction.GrantRoots, _grantRoots, _grantReadOnlyRoots)
     End Sub
@@ -277,7 +263,7 @@ Public NotInheritable Class Share_Hosting_Form
     Private Sub RunManage(action As ServiceControl.ManageAction,
                           Optional roots As List(Of String) = Nothing,
                           Optional readOnlyRoots As List(Of String) = Nothing)
-        SetActionsEnabled(False)
+        SetHostingActionsEnabled(False)
         _lblResult.ForeColor = Color.DimGray
         _lblResult.Text = HostingText.ManageWorking()
         Me.Refresh()
@@ -286,16 +272,18 @@ Public NotInheritable Class Share_Hosting_Form
         Dim res As ServiceControl.ManageResult = ServiceControl.Manage(action, roots, readOnlyRoots)
 
         If res = ServiceControl.ManageResult.Succeeded Then
-            _Changed = True
+            _changed = True
             ServerFeatures.RefreshHostMode()
         End If
         _lblResult.ForeColor = If(res = ServiceControl.ManageResult.Succeeded, Color.ForestGreen, Color.Firebrick)
         _lblResult.Text = HostingText.ManageResultLine(res)
-        SetActionsEnabled(True)
-        ApplyState()
+        SetHostingActionsEnabled(True)
+        ApplyHostingState(True)
+        UpdateSummaries()
+        FitToContent()
     End Sub
 
-    Private Sub SetActionsEnabled(value As Boolean)
+    Private Sub SetHostingActionsEnabled(value As Boolean)
         For Each b As Button In New Button() {_btnSwitchToService, _btnInstallServer, _btnReturnToUser, _btnStart, _btnStop,
                                               _btnRestart, _btnRepair, _btnGrantRoots, _btnRemove}
             If b IsNot Nothing Then b.Enabled = value

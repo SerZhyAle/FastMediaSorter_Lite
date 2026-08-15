@@ -62,7 +62,15 @@ Partial Public Class Main_Form
     ''' Drop-in: same arguments, same result (Nothing on failure - the decoder
     ''' swallows its own errors), same thread by the time it returns.
     ''' </summary>
-    Private Function LoadImageWithProgress(file_Path As String, file_Size_Bytes As Long) As Tuple(Of Image, IO.MemoryStream)
+    ''' <param name="failure_Kind">Why the result is Nothing, when it is. Two very different
+    ''' things arrive here as one null: a file that is not a picture (Content) and a decode
+    ''' abandoned at its deadline because the read blocked on a dead SMB session (Transport).
+    ''' The caller drops the first from the list and must not drop the second - which is what
+    ''' the header above describes doing, and why it needed a second value to say it with.</param>
+    Private Function LoadImageWithProgress(file_Path As String, file_Size_Bytes As Long,
+                                           ByRef failure_Kind As PathFailureKind) As Tuple(Of Image, IO.MemoryStream)
+        failure_Kind = PathFailureKind.Content
+
         ' Started before the task, so the counter shown to the user is the wait they
         ' have actually sat through, not the wait since the badge appeared.
         Dim watch As Stopwatch = Stopwatch.StartNew()
@@ -93,6 +101,11 @@ Partial Public Class Main_Form
                 ' Nothing can cancel a blocking file read, so the task is abandoned rather
                 ' than waited on - with a continuation that releases whatever it eventually
                 ' produces, or the Image and its MemoryStream would leak.
+                '
+                ' Twenty seconds without a first block is not a verdict on the file: it is
+                ' the redirector timing out per block on a session that is gone. Saying so
+                ' is what keeps the file - and the other 199 behind it - in the list.
+                failure_Kind = PathFailureKind.Transport
                 AbandonDecode(decode, file_Path, watch.ElapsedMilliseconds)
                 Return Nothing
             End If

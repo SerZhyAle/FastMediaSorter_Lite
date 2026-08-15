@@ -227,7 +227,7 @@
     <ol class="quickstart">
       <li><span data-l="en">Install via winget or the installer above.</span><span data-l="ru">Установите через winget или установщиком выше.</span><span data-l="uk">Встановіть через winget або інсталятором вище.</span></li>
       <li><span data-l="en">Open the app and pick a folder of photos or videos.</span><span data-l="ru">Откройте приложение и выберите папку с фото или видео.</span><span data-l="uk">Відкрийте застосунок і виберіть папку з фото чи відео.</span></li>
-      <li><span data-l="en">Set destination folders and first move or copy the files you have reviewed. Delete only after you have checked the selection: deletion is irreversible.</span><span data-l="ru">Настройте папки-получатели и сначала перемещайте или копируйте просмотренные файлы. Удаляйте только после проверки выбора: удаление необратимо.</span><span data-l="uk">Налаштуйте папки-отримувачі й спершу переміщуйте або копіюйте переглянуті файли. Видаляйте лише після перевірки вибору: видалення незворотне.</span></li>
+      <li><span data-l="en">Set destination folders and first move or copy the files you have reviewed. DEL goes to the Recycle Bin and U takes it back - but on a network share or a memory stick Windows keeps no bin at all, and there the deletion is final. The app says which case you are in before it asks.</span><span data-l="ru">Настройте папки-получатели и сначала перемещайте или копируйте просмотренные файлы. DEL кладёт файл в Корзину, а U возвращает его обратно - но в сетевой папке и на флешке Корзины у Windows нет вовсе, и там удаление окончательно. Программа скажет, какой это случай, ещё до вопроса.</span><span data-l="uk">Налаштуйте папки-отримувачі й спершу переміщуйте або копіюйте переглянуті файли. DEL кладе файл до Кошика, а U повертає його назад - але в мережевій теці та на флешці Кошика у Windows немає взагалі, і там видалення остаточне. Програма скаже, який це випадок, ще до питання.</span></li>
     </ol>
     </div>
   </section>
@@ -284,6 +284,33 @@
           <span data-l="en">Move, copy, rename and delete without leaving the keyboard. Assign folders to keys and file each item where it belongs in a single press - a digit moves it, Shift + the same digit copies it there instead.</span>
           <span data-l="ru">Перемещение, копирование, переименование и удаление - не отрываясь от клавиатуры. Назначьте папки на клавиши и раскладывайте файлы одним нажатием: цифра переносит файл, Shift + та же цифра копирует его туда.</span>
           <span data-l="uk">Переміщення, копіювання, перейменування та видалення - не відриваючись від клавіатури. Призначте теки на клавіші й розкладайте файли одним натисканням: цифра переносить файл, Shift + та сама цифра копіює його туди.</span>
+        </p>
+      </article>
+
+      <article class="card">
+        <h3><img src="assets/icons/refresh.svg" alt="" width="22" height="22"><span data-l="en">Recycle Bin &amp; undo</span><span data-l="ru">Корзина и отмена</span><span data-l="uk">Кошик і скасування</span></h3>
+        <p>
+          <span data-l="en">DEL sends the file to the Recycle Bin, Shift+DEL deletes past it on purpose, and U walks back through the last 50 operations - moves, copies, F6 renames and deletions, each file returning to its folder and to its place in the list. Where Windows keeps no Recycle Bin at all - a network share, a memory stick, a drive with the bin switched off - the question names which of those it is instead of a flat "are you sure". 64-bit program.</span>
+          <span data-l="ru">DEL отправляет файл в Корзину, Shift+DEL намеренно удаляет мимо неё, а U отматывает последние 50 операций - перемещения, копирования, переименования по F6 и удаления, причём файл возвращается и в свою папку, и на своё место в списке. Там, где Windows корзины не держит вовсе - сетевая папка, флешка, диск с отключённой корзиной, - вопрос называет, что именно из этого, вместо глухого «вы уверены?». 64-битная программа.</span>
+          <span data-l="uk">DEL надсилає файл до Кошика, Shift+DEL навмисно видаляє повз нього, а U відмотує останні 50 операцій - переміщення, копіювання, перейменування через F6 та видалення, причому файл повертається і до своєї теки, і на своє місце у списку. Там, де Windows кошика не тримає взагалі - мережева тека, флешка, диск із вимкненим кошиком, - питання називає, що саме з цього, замість глухого «ви впевнені?». 64-бітна програма.</span>
+        </p>
+      </article>
+
+      <article class="card">
+        <h3><img src="assets/icons/folder.svg" alt="" width="22" height="22"><span data-l="en">Archives as folders</span><span data-l="ru">Архивы как папки</span><span data-l="uk">Архіви як теки</span></h3>
+        <p>
+          <span data-l="en">A ZIP or CBZ opens like an ordinary folder: a comic or a folder of scans browses, slideshows, zooms and translates exactly as loose files do. Nothing is unpacked in advance - each picture is extracted as it is about to be shown, into a private folder that is swept away when you leave the archive, when you close the program, or on the next archive if the program was killed. The archive itself is only ever read, so DEL and the destination folders say so instead of acting. 7z, RAR and CBR are not open yet. 64-bit program.</span>
+          <span data-l="ru">ZIP или CBZ открывается как обычная папка: комикс или папка сканов листается, крутится в слайд-шоу, масштабируется и переводится точно так же, как обычные файлы. Ничего не распаковывается заранее - каждая картинка достаётся ровно перед показом, в собственную временную папку, которая убирается при выходе из архива, при закрытии программы или на следующем архиве, если программу убили. Сам архив только читается, поэтому DEL и каталоги-получатели честно отказываются работать. 7z, RAR и CBR пока не открываются. 64-битная программа.</span>
+          <span data-l="uk">ZIP або CBZ відкривається як звичайна тека: комікс чи тека сканів гортається, крутиться у слайд-шоу, масштабується й перекладається так само, як звичайні файли. Нічого не розпаковується заздалегідь - кожна картинка дістається саме перед показом, до власної тимчасової теки, яка прибирається на виході з архіву, при закритті програми або на наступному архіві, якщо програму вбили. Сам архів лише читається, тому DEL і каталоги-отримувачі чесно відмовляються працювати. 7z, RAR та CBR поки не відкриваються. 64-бітна програма.</span>
+        </p>
+      </article>
+
+      <article class="card">
+        <h3><img src="assets/icons/screen.svg" alt="" width="22" height="22"><span data-l="en">Draw, crop, save</span><span data-l="ru">Рисование и кадрирование</span><span data-l="uk">Малювання та кадрування</span></h3>
+        <p>
+          <span data-l="en">An editing window of its own: brush, rectangle and ellipse, outlined or filled, eight colour swatches beside the full picker, thickness in the picture's own pixels, Shift for a square or circle, Ctrl+Z. Cropping is a live frame with eight handles - everything outside it dims, and nothing is cut until you say so. Save writes over the original through a temporary file, so a share that blinks cannot leave half a photo; Save as.. offers PNG, JPEG, BMP, TIFF and WebP. Your EXIF is carried across and the stale embedded thumbnail dropped. 64-bit program.</span>
+          <span data-l="ru">Собственное окно редактирования: кисть, прямоугольник и эллипс - контуром или заливкой, восемь образцов цвета рядом с полной палитрой, толщина в пикселях самой картинки, Shift для квадрата или круга, Ctrl+Z. Кадрирование - живая рамка с восемью маркерами: всё за её пределами затемняется, и ничего не отрезается, пока вы не скажете. «Сохранить» пишет поверх оригинала через временный файл, так что моргнувшая шара не оставит половину фотографии; «Сохранить как..» предлагает PNG, JPEG, BMP, TIFF и WebP. EXIF переносится, устаревшая встроенная миниатюра выбрасывается. 64-битная программа.</span>
+          <span data-l="uk">Власне вікно редагування: пензель, прямокутник та еліпс - контуром або заливкою, вісім зразків кольору поруч із повною палітрою, товщина в пікселях самої картинки, Shift для квадрата чи кола, Ctrl+Z. Кадрування - жива рамка з вісьмома маркерами: усе поза нею затемнюється, і нічого не відрізається, доки ви не скажете. «Зберегти» пише поверх оригіналу через тимчасовий файл, тож шара, яка моргнула, не лишить половини фотографії; «Зберегти як..» пропонує PNG, JPEG, BMP, TIFF та WebP. EXIF переноситься, застаріла вбудована мініатюра викидається. 64-бітна програма.</span>
         </p>
       </article>
 

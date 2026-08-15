@@ -25,6 +25,12 @@ Partial Public Class Main_Form
         Public Property TargetIsBox1 As Boolean
         Public Property CountFolder As Boolean
         Public Property IsRandomMode As Boolean
+#If Not NETFRAMEWORK Then
+        ''' <summary>The open archive, or Nothing for an ordinary folder. Part of the
+        ''' snapshot for the same reason as everything else here: the worker must not read
+        ''' a live field that the UI thread can change mid-decode.</summary>
+        Public Property Archive As ArchiveSession
+#End If
     End Class
 
     ''' <summary>What the worker decoded, and what it was decoded for.</summary>
@@ -147,6 +153,21 @@ Partial Public Class Main_Form
 
                 Dim SecondFileExtension = Path.GetExtension(next_File_After_Current_in_worker).ToLower
 
+#If Not NETFRAMEWORK Then
+                ' Inside an archive the neighbour is not on disk yet, and the decode below
+                ' would simply find nothing - so the prefetch would silently never happen
+                ' and every flip would pay full extraction + decode. Refusals are ignored
+                ' here on purpose: this is a guess about the next picture, and the display
+                ' path will report the reason if the user actually gets there.
+                If request.Archive IsNot Nothing Then
+                    Dim ahead As Integer = request.Archive.IndexOfTempPath(next_File_After_Current_in_worker)
+                    If ahead >= 0 Then
+                        Dim ignored As ArchiveSession.EntryRefusal
+                        request.Archive.TryEnsureExtracted(ahead, ignored)
+                    End If
+                End If
+#End If
+
                 If Image_File_Extensions.Contains(SecondFileExtension) Then
                     ' sza250609 - GIF fix
                     Dim next_Image_Data As Tuple(Of Image, IO.MemoryStream) = LoadImageWithStream(next_File_After_Current_in_worker)
@@ -190,6 +211,13 @@ Partial Public Class Main_Form
         ElseIf file_Meta_State.ContainsKey("fileName") Then
 
             Dim current_File_Display_Text = file_Meta_State("fileName")
+#If Not NETFRAMEWORK Then
+            ' Inside an archive show the entry's own name ("1998/03/foto12.jpg"), never the
+            ' path in the temporary directory - which the user is not shown anywhere (§2.2)
+            ' and which would be meaningless to copy or read out.
+            Dim entry_Name As String = ArchiveDisplayName(file_Meta_State("fileName"))
+            If entry_Name.Length > 0 Then current_File_Display_Text = entry_Name
+#End If
 
             If Is_to_show_file_datetime AndAlso
                     file_Meta_State.ContainsKey("fileTimeText") Then
@@ -344,14 +372,24 @@ Partial Public Class Main_Form
         is_Read_Error = False
 
         Try
-            Dim file_Entry_List As List(Of FileEntry) = EnumerateConfiguredFiles(Current_Folder_Path) _
-            .Where(Function(f) all_Supported_Extensions.Contains(f.Extension.ToLower())) _
-            .Select(Function(f) New FileEntry With {
-                .FilePath = f.FullName,
-                .FileSize = f.Length,
-                .FileName = f.Name,
-                .FileDate = f.LastWriteTime
-            }).ToList()
+            ' An open archive supplies the rows instead of the file system (Nothing when
+            ' this is an ordinary folder). Everything below - the sort, the list/array
+            ' split, the callers - is unchanged: the rows carry paths inside the session's
+            ' temporary directory, and the file at each path appears when it is displayed.
+            Dim file_Entry_List As List(Of FileEntry) = Nothing
+#If Not NETFRAMEWORK Then
+            file_Entry_List = ArchiveFileEntries()
+#End If
+            If file_Entry_List Is Nothing Then
+                file_Entry_List = EnumerateConfiguredFiles(Current_Folder_Path) _
+                .Where(Function(f) all_Supported_Extensions.Contains(f.Extension.ToLower())) _
+                .Select(Function(f) New FileEntry With {
+                    .FilePath = f.FullName,
+                    .FileSize = f.Length,
+                    .FileName = f.Name,
+                    .FileDate = f.LastWriteTime
+                }).ToList()
+            End If
 
             If file_Entry_List.Count = 0 Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1096: Files count=0")

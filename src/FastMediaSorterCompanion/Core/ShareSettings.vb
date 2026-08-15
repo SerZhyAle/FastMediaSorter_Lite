@@ -54,6 +54,37 @@ Public Class ShareSettings
     Public Const MinMaxConnections As Integer = 1
     Public Const MaxMaxConnections As Integer = 99999
 
+    ' --- Share Manager window geometry + section state -------------------------
+    '
+    ' The window used to have neither: a 980x700 MinimumSize scaled to 1715x1225 at 175%
+    ' display scaling, i.e. taller than the screen, so ClampToWorkingArea - a safety net -
+    ' was doing the sizing and every session opened full height. The window is small and
+    ' resizable now (560x420 minimum), which only pays off if it is also remembered.
+    '
+    ' Sizes are the WINDOW size (outer bounds, what MinimumSize/Size measure) in LOGICAL
+    ' px, i.e. divided by the display factor on save and multiplied back on restore, so a
+    ' window sized on a 175% monitor reopens the same physical size on a 100% one.
+    ' Positions are raw screen coordinates - a logical position means nothing across a
+    ' multi-monitor desktop - and are only honoured when they still land on a screen.
+
+    ''' <summary>Last window position, raw screen px. -1 = never saved -> CenterScreen.</summary>
+    Public Property WindowX As Integer = -1               ' Share_WindowX
+    Public Property WindowY As Integer = -1               ' Share_WindowY
+
+    ''' <summary>Last window size in logical (96-DPI) px; 0 = never saved -> the default.</summary>
+    Public Property WindowWidth As Integer = 0            ' Share_WindowWidth
+    Public Property WindowHeight As Integer = 0           ' Share_WindowHeight
+
+    ''' <summary>Restore the window maximised. The size above stays the NORMAL size, taken
+    ''' from RestoreBounds, so un-maximising lands back on the remembered rectangle.</summary>
+    Public Property WindowMaximized As Boolean = False    ' Share_WindowMaximized
+
+    ''' <summary>Which collapsible sections are open, as a CSV of section keys
+    ''' ("access,internet,stats"). ONE value rather than one flag per section: a section
+    ''' added later is simply not in the list and starts collapsed - no migration, no
+    ''' orphan registry value when one is removed.</summary>
+    Public Property ExpandedSections As String = ""       ' Share_ExpandedSections
+
     ''' <summary>Read-only mirror of the server-features consent flag (HKCU
     ''' Share_ServerFeaturesEnabled), the deferred opt-in gate. OWNED and written by
     ''' <see cref="ServerFeatures"/>; loaded here only for convenience and
@@ -69,6 +100,12 @@ Public Class ShareSettings
         LanOnlyExport = ReadBool("Share_LanOnlyExport", False)
         ExcludePasswordFromExport = ReadBool("Share_ExcludePassword", False)
         MaxConnections = ClampConnections(ReadInt("Share_MaxConnections", DefaultMaxConnections))
+        WindowX = ReadInt("Share_WindowX", -1)
+        WindowY = ReadInt("Share_WindowY", -1)
+        WindowWidth = ReadInt("Share_WindowWidth", 0)
+        WindowHeight = ReadInt("Share_WindowHeight", 0)
+        WindowMaximized = ReadBool("Share_WindowMaximized", False)
+        ExpandedSections = ReadString("Share_ExpandedSections", "")
         ServerFeaturesEnabled = ReadBool(ServerFeatures.EnabledRegValue, False)
     End Sub
 
@@ -80,6 +117,12 @@ Public Class ShareSettings
         WriteBool("Share_LanOnlyExport", LanOnlyExport)
         WriteBool("Share_ExcludePassword", ExcludePasswordFromExport)
         WriteInt("Share_MaxConnections", ClampConnections(MaxConnections))
+        WriteInt("Share_WindowX", WindowX)
+        WriteInt("Share_WindowY", WindowY)
+        WriteInt("Share_WindowWidth", WindowWidth)
+        WriteInt("Share_WindowHeight", WindowHeight)
+        WriteBool("Share_WindowMaximized", WindowMaximized)
+        WriteString("Share_ExpandedSections", If(ExpandedSections, ""))
         ' ServerFeaturesEnabled is intentionally NOT written here - ServerFeatures
         ' owns that flag (see the property remark).
     End Sub
@@ -114,6 +157,14 @@ Public Class ShareSettings
 
     Private Shared Sub WriteInt(key As String, value As Integer)
         SaveSetting(App_name, Second_App_Name, key, value.ToString(Globalization.CultureInfo.InvariantCulture))
+    End Sub
+
+    Private Shared Function ReadString(key As String, def As String) As String
+        Return GetSetting(App_name, Second_App_Name, key, def)
+    End Function
+
+    Private Shared Sub WriteString(key As String, value As String)
+        SaveSetting(App_name, Second_App_Name, key, If(value, ""))
     End Sub
 
 End Class

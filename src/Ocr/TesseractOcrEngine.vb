@@ -23,12 +23,11 @@ Friend Module OcrPaths
         Return AppContext.BaseDirectory
     End Function
 
-    ''' <summary>%LOCALAPPDATA%\SZA\FastMediaSorter</summary>
+    ''' <summary>%LOCALAPPDATA%\SZA\FastMediaSorter. The location itself is not an OCR
+    ''' fact - the archive cache writes under the same root - so it lives in AppPaths and
+    ''' this stays as the name the OCR code has always called it by.</summary>
     Public Function AppDataRoot() As String
-        Dim root As String = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            App_name, Second_App_Name)
-        Return root
+        Return AppPaths.LocalAppDataRoot()
     End Function
 
     ''' <summary>Writable tessdata directory (created on demand).</summary>

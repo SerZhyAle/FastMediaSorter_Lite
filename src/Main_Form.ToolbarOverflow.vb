@@ -83,8 +83,10 @@ Partial Public Class Main_Form
             btn_Move_Table, btn_Rename, bt_Delete, lbl_Zoom,
             btn_Translate, btn_TranslateBrowser}
 #If Not NETFRAMEWORK Then
-        ' Video-only, and mutually exclusive with the image-only translate buttons -
-        ' whichever media is up, only one of them is ever in the row.
+        ' Image-only, right after the translate pair it shares its visibility rule with.
+        row2.Add(btn_Edit)
+        ' Video-only, and mutually exclusive with the image-only buttons above -
+        ' whichever media is up, only one kind is ever in the row.
         row2.Add(btn_Tracks)
 #End If
         toolbar_Row2_Items = row2.ToArray()
@@ -368,6 +370,8 @@ Partial Public Class Main_Form
             Case "bt_Delete" : Return Localization.T("Удалить")
             Case "btn_Translate" : Return Localization.T("Перевод")
             Case "btn_TranslateBrowser" : Return Localization.T("Перевод в браузере")
+            ' Its caption is a Segoe MDL2 pencil - meaningless as a menu line.
+            Case "btn_Edit" : Return Localization.T("Правка")
             Case Else : Return b.Text
         End Select
     End Function

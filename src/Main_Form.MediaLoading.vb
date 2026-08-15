@@ -77,8 +77,29 @@ Partial Public Class Main_Form
     ''' <summary>Drops the file that would not load and moves on in the direction the
     ''' user was actually going. Auto-skipping a broken file is by design; it simply
     ''' never happened, because the follow-up call landed inside the 40 ms throttle
-    ''' window this very call had just opened, and was thrown away in silence.</summary>
-    Private Sub SkipUnreadableFile()
+    ''' window this very call had just opened, and was thrown away in silence.
+    '''
+    ''' Since Ф1 of SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md it first asks
+    ''' WHY the file would not load. Dropping it is right for a file that will not decode
+    ''' and wrong for everything between us and it: a dropped SMB session used to shred a
+    ''' healthy folder's list one file per keypress (§0.4).</summary>
+    ''' <param name="kind">What the caller knows about the failure. The default is the
+    ''' pre-Ф1 behaviour - drop the file - so a call site that has learnt nothing new
+    ''' behaves exactly as it always did.</param>
+    Private Sub SkipUnreadableFile(Optional kind As PathFailureKind = PathFailureKind.Unknown)
+#If Not NETFRAMEWORK Then
+        If Not PathFailure.IsAboutTheFile(kind) Then
+            ' The list is innocent (D7). Keep the file, keep the position, and stop the
+            ' chain rather than feed it (D8): the next file is behind the same dead
+            ' transport, so walking a thousand of them is the bug, not the recovery.
+            auto_Skip_Chain = 0
+            lbl_Status.Text = ReadFailureText(kind, Current_File_Name)
+            AppFileLogger.WriteLine("Read failure kept in list [" & kind.ToString() & "]: " & Current_File_Name)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0913: " & kind.ToString() & " - file kept in the list")
+            Return
+        End If
+#End If
+
         ' A file that will not decode has no business in the list - keep it and paging
         ' back walks right into it again.
         Dim removed_At As Integer = RemoveCurrentFileFromList(Current_File_Name)
@@ -100,6 +121,80 @@ Partial Public Class Main_Form
         pending_Jump_Status = ""        ' keep the "could not load X" line on screen
         RequestAutoSkipJump()
     End Sub
+
+    ''' <summary>
+    ''' Second-guesses a call site that thinks the file is at fault.
+    '''
+    ''' The two questions the display path actually asks - File.Exists and "did the decoder
+    ''' return anything" - both answer False for a deleted file AND for a share that stopped
+    ''' answering, and those two need opposite treatment. So when a failure looks like it is
+    ''' about the file, the FOLDER gets asked: a folder that no longer answers turns the
+    ''' verdict into Transport, because the absence of the file is then no evidence about the
+    ''' file at all.
+    '''
+    ''' Cost: one Directory.Exists, on a path the caller has just probed anyway - no new class
+    ''' of blocking, and microseconds on a local disk (where a broken JPEG still skips, as it
+    ''' should).
+    ''' </summary>
+    Private Function ReadFailure(kind As PathFailureKind) As PathFailureKind
+#If NETFRAMEWORK Then
+        ' The x86 fallback keeps today's behaviour to the byte: the kind travels with the
+        ' call and is ignored (CLAUDE.md maintenance policy; invariant 10 of the spec).
+        Return kind
+#Else
+        If Not PathFailure.IsAboutTheFile(kind) Then Return kind
+
+        Try
+            Dim folder As String = Path.GetDirectoryName(Current_File_Name)
+            If String.IsNullOrEmpty(folder) Then folder = Current_Folder_Path
+            If Not String.IsNullOrEmpty(folder) AndAlso Not Directory.Exists(folder) Then
+                Return PathFailureKind.Transport
+            End If
+        Catch ex As Exception
+            ' Asking the question failed - keep the caller's answer rather than invent one.
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0914: folder probe failed: " & ex.Message)
+        End Try
+
+        Return kind
+#End If
+    End Function
+
+    ''' <summary>
+    ''' Will <see cref="SkipUnreadableFile"/> keep this file instead of dropping it? The call
+    ''' sites ask before writing their own status line, because when the file is kept the
+    ''' sentence has to be about the transport, not about the file.
+    '''
+    ''' Always False on net48: nothing is ever kept there, so every legacy status line is
+    ''' written exactly when it always was (invariant 10).
+    ''' </summary>
+    Private Shared Function FailureKeepsFile(kind As PathFailureKind) As Boolean
+#If NETFRAMEWORK Then
+        Return False
+#Else
+        Return Not PathFailure.IsAboutTheFile(kind)
+#End If
+    End Function
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>The sentence for a failure that is NOT about the file. It says both halves:
+    ''' what went wrong, and that the list was left alone - otherwise the user's next move is
+    ''' the rescan this whole change exists to make unnecessary.</summary>
+    Private Shared Function ReadFailureText(kind As PathFailureKind, file_Path As String) As String
+        Dim name As String = ""
+        Try
+            name = Path.GetFileName(file_Path)
+        Catch ex As Exception
+            name = If(file_Path, "")
+        End Try
+
+        Select Case kind
+            Case PathFailureKind.Denied
+                Return Localization.TF("Нет доступа, файл оставлен в списке: {0}", name)
+            Case Else
+                Return Localization.TF("Нет связи с папкой, файл оставлен в списке: {0}", name)
+        End Select
+    End Function
+#End If
 
     ''' <summary>
     ''' Asks for the next file in an auto-skip chain, on a FRESH stack.
@@ -175,11 +270,24 @@ Partial Public Class Main_Form
                 auto_Skip_Generation += 1
             End If
 
+#If Not NETFRAMEWORK Then
+            ' DEL inside an archive would delete the extracted copy, leave a hole in the
+            ' list and change nothing about the archive - the same refusal the recipient
+            ' slots get, from the same one point (§7).
+            If read_Mode_Type = Mode_Delete AndAlso ArchiveModeBlocksFileOperations() Then Exit Sub
+#End If
+
+#If NETFRAMEWORK Then
+            ' net48 only, and it always was: on the mainline QueueFileOp goes to the queue
+            ' and this worker is never started, so the check has been dead code there.
+            ' Fenced rather than deleted while this branch was being rewritten, so it is
+            ' not read later as an accidental behaviour change (R-1 §6.7).
             If FileOperationWorker.IsBusy AndAlso read_Mode_Type = Mode_Delete Then
                 lbl_Status.Text = Localization.T("!Ждите.. предыдущая операция ещё выполняется")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0340: DeleteFile skiped while FileOperationWorker")
                 Exit Sub
             End If
+#End If
 
             Dim slideshow_Interval_Text = If(Is_slide_show_mode, (SlideShowTimer.Interval / 1000).ToString() & "s", "")
             If Not lbl_Slideshow_Time.Text = slideshow_Interval_Text Then lbl_Slideshow_Time.Text = slideshow_Interval_Text
@@ -372,6 +480,14 @@ Partial Public Class Main_Form
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0530: case ReadPrevFile")
 
             Case Mode_Delete '3
+#If Not NETFRAMEWORK Then
+                ' One deletion route (R-1 §3.3). The policy decides bin versus permanent,
+                ' and the confirmation and the status line are both built from that one
+                ' decision, so they cannot disagree about what just happened.
+                Dim forced_Permanent As Boolean = pending_Delete_Permanent
+                pending_Delete_Permanent = False     ' read once, whatever the outcome
+                If Not ExecuteDelete(Current_File_Name, forced_Permanent) Then Return False
+#Else
                 If String.IsNullOrEmpty(Current_File_Name) Then
                     lbl_Status.Text = Localization.T("! Нет файла для удаления")
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0540: case DeleteFile failed")
@@ -420,6 +536,7 @@ Partial Public Class Main_Form
                     ReportOperationError("E001", ex)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0590: ERR: " & ex.Message)
                 End Try
+#End If
 
             Case Mode_ForRandom '4
                 If Not LoadFilesForRandomOrSlideshow(is_File_Found, True) Then
@@ -692,7 +809,17 @@ Partial Public Class Main_Form
             ' 1000 % while the label still said "200 %", the left click stopped flipping
             ' (zoom_Scale = 0 means "zoomed"), and Draw_Perspective went off to build a
             ' background for an 8000x6000 box on every single file.
-            If zoom_Scale <> 1 Then ZoomToFit()
+            ' Programmatic: this fit is the display path tidying up after the previous
+            ' picture, not the user choosing Fit, so it must not overwrite the per-folder
+            ' zoom §4.2 remembers.
+            If zoom_Scale <> 1 Then
+                is_Zoom_Applied_By_Program = True
+                Try
+                    ZoomToFit()
+                Finally
+                    is_Zoom_Applied_By_Program = False
+                End Try
+            End If
 #End If
 
             ' The third condition is not paranoia: "LOADED" and the name only say a
@@ -730,9 +857,15 @@ Partial Public Class Main_Form
                     ' Check if file exists and is accessible
                     If Not File.Exists(Current_File_Name) Then
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0906: File does not exist: " & Current_File_Name)
-                        lbl_Status.Text = Localization.TF("Файл не найден: {0}", Path.GetFileName(Current_File_Name))
 
-                        SkipUnreadableFile()
+                        ' File.Exists says False for a deleted file and for a share that has
+                        ' stopped answering; ReadFailure asks the folder which one this is.
+                        Dim absent_Kind As PathFailureKind = ReadFailure(PathFailureKind.Missing)
+                        If Not FailureKeepsFile(absent_Kind) Then
+                            lbl_Status.Text = Localization.TF("Файл не найден: {0}", Path.GetFileName(Current_File_Name))
+                        End If
+
+                        SkipUnreadableFile(absent_Kind)
                         Return
                     End If
 
@@ -742,7 +875,7 @@ Partial Public Class Main_Form
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0907: File is empty: " & Current_File_Name)
                         lbl_Status.Text = Localization.TF("Файл пуст: {0}", Path.GetFileName(Current_File_Name))
 
-                        SkipUnreadableFile()
+                        SkipUnreadableFile(PathFailureKind.Content)
                         Return
                     End If
 
@@ -752,7 +885,9 @@ Partial Public Class Main_Form
                     ' managed decoder, and this call is what froze the window with the
                     ' PREVIOUS file still on it. See Main_Form.LoadingIndicator.vb;
                     ' otherwise identical to LoadImageWithStream.
-                    Dim image_Data_Tuple As Tuple(Of Image, IO.MemoryStream) = LoadImageWithProgress(Current_File_Name, fileInfo.Length)
+                    Dim decode_Failure As PathFailureKind = PathFailureKind.Content
+                    Dim image_Data_Tuple As Tuple(Of Image, IO.MemoryStream) =
+                        LoadImageWithProgress(Current_File_Name, fileInfo.Length, decode_Failure)
 
                     If image_Data_Tuple IsNot Nothing Then
                         Dim loaded_Image As Image = image_Data_Tuple.Item1
@@ -791,28 +926,43 @@ Partial Public Class Main_Form
                     Else
                         ' Image loading failed - skip to next file
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0908: Image loading failed for: " & Current_File_Name)
-                        lbl_Status.Text = Localization.TF("Не удалось загрузить: {0}", Path.GetFileName(Current_File_Name))
 
-                        SkipUnreadableFile()
+                        ' Two very different failures arrive as Nothing: a file that is not a
+                        ' picture, and a decode abandoned at its deadline because the read
+                        ' blocked on a dead SMB session. Only the first one is about the file.
+                        Dim load_Kind As PathFailureKind = ReadFailure(decode_Failure)
+                        If Not FailureKeepsFile(load_Kind) Then
+                            lbl_Status.Text = Localization.TF("Не удалось загрузить: {0}", Path.GetFileName(Current_File_Name))
+                        End If
+
+                        SkipUnreadableFile(load_Kind)
                         Return
                     End If
                 Catch ex As ArgumentException
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0905: ArgumentException loading image: " & ex.Message & " File: " & Current_File_Name)
                     lbl_Status.Text = Localization.TF("Недопустимый файл изображения: {0}", Path.GetFileName(Current_File_Name))
 
-                    SkipUnreadableFile()
+                    ' GDI+ reports a corrupt bitmap this way, so the call site knows better
+                    ' than the classifier here: this is the content, not the path.
+                    SkipUnreadableFile(PathFailureKind.Content)
                     Return
                 Catch ex As OutOfMemoryException
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0909: OutOfMemoryException loading image: " & ex.Message & " File: " & Current_File_Name)
                     lbl_Status.Text = Localization.TF("Недостаточно памяти для загрузки: {0}", Path.GetFileName(Current_File_Name))
 
-                    SkipUnreadableFile()
+                    SkipUnreadableFile(PathFailureKind.OutOfMemory)
                     Return
                 Catch ex As Exception
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0911: Error loading image: [" & ex.GetType().Name & "] " & ex.Message & " File: " & Current_File_Name)
-                    lbl_Status.Text = Localization.TF("Ошибка загрузки: {0}", Path.GetFileName(Current_File_Name))
 
-                    SkipUnreadableFile()
+                    ' The whole fix in one line: an IOException from a dropped share is a
+                    ' transport failure, and a transport failure leaves the list alone.
+                    Dim caught_Kind As PathFailureKind = PathFailure.Classify(ex)
+                    If Not FailureKeepsFile(caught_Kind) Then
+                        lbl_Status.Text = Localization.TF("Ошибка загрузки: {0}", Path.GetFileName(Current_File_Name))
+                    End If
+
+                    SkipUnreadableFile(caught_Kind)
                     Return
                 End Try
             End If
@@ -820,6 +970,13 @@ Partial Public Class Main_Form
 
             ' Final visibility update
             UpdateControlVisibility()
+
+#If Not NETFRAMEWORK Then
+            ' The picture is on screen and fitted; §4.2 gets to say whether it stays that
+            ' way, opens at 100 % or takes this folder's remembered scale. It runs BEFORE
+            ' the perspective draw below so the bars are built for the final geometry.
+            ApplyNewImageScaleMode()
+#End If
 
             ' A new photo just went up, so dynamic perspective grows its halo here (and
             ' only here - see Draw_Perspective's animate parameter).
@@ -1144,6 +1301,14 @@ Partial Public Class Main_Form
                     Return
                 End Try
 
+#If Not NETFRAMEWORK Then
+                ' Inside an archive the file does not exist until we extract it, and this
+                ' has to happen BEFORE the "the file is gone" branch below - that branch
+                ' drops the entry from the list, so every page of a comic would fall out of
+                ' it one flip at a time. A no-op outside an archive.
+                EnsureArchiveEntryOnDisk(Current_File_Name)
+#End If
+
                 If Not String.IsNullOrEmpty(Current_File_Name) AndAlso Not File.Exists(Current_File_Name) Then
 
                     ' Straight after an undo the file may still be travelling back (the
@@ -1157,6 +1322,24 @@ Partial Public Class Main_Form
                     End If
 
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0975: New current file does not exist: " & Current_File_Name)
+
+#If Not NETFRAMEWORK Then
+                    ' The SEVENTH removal site, and the one a network blip reaches FIRST -
+                    ' the specification's §3.8 named the six inside SkipUnreadableFile and
+                    ' missed this one, which never goes through it. Same reasoning, same fix:
+                    ' File.Exists answers False for a deleted file and for a share that has
+                    ' stopped answering, so ask the folder before believing the file is gone.
+                    '
+                    ' The index is deliberately NOT rolled back: the user pressed Next, so
+                    ' moving on is what they asked for. It is the LIST that must survive.
+                    If ReadFailure(PathFailureKind.Missing) = PathFailureKind.Transport Then
+                        lbl_Status.Text = ReadFailureText(PathFailureKind.Transport, Current_File_Name)
+                        AppFileLogger.WriteLine("Folder stopped answering, list kept: " & Current_File_Name)
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0978: folder unreachable - list kept intact")
+                        Return
+                    End If
+#End If
+
                     lbl_Status.Text = Localization.T("Файл не найден, переход к следующему")
 
                     ' Remove the invalid file from the list and try the next one
@@ -1205,6 +1388,11 @@ Partial Public Class Main_Form
                 End If
                 Current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
                 Current_Image_Path = Current_File_Name
+#If Not NETFRAMEWORK Then
+                ' Same reason as above: this branch reaches a file without going past the
+                ' existence check, and inside an archive nothing is on disk until asked.
+                EnsureArchiveEntryOnDisk(Current_File_Name)
+#End If
             End If
 
             If Not String.IsNullOrEmpty(Current_File_Name) Then
@@ -1296,6 +1484,16 @@ Partial Public Class Main_Form
                         .CountFolder = was_External_Input_Previously,
                         .IsRandomMode = is_Slide_Show_Random_Mode
                     }
+#If Not NETFRAMEWORK Then
+                    ' The session travels in the snapshot like everything else the worker
+                    ' needs, so the worker can extract the NEXT entry before decoding it -
+                    ' and never reads a live field to find out whether an archive is open.
+                    new_Args.Archive = archive_Session
+                    ' Counting the folder in the background is meaningless here: an archive
+                    ' knows exactly how many entries it has, and the count would come from
+                    ' walking a directory that only holds what has been viewed (§3.3).
+                    If archive_Session IsNot Nothing Then new_Args.CountFolder = False
+#End If
 
                     If is_BgWorker_Online OrElse BgWorker.IsBusy Then
                         ' Store the pending operation instead of canceling

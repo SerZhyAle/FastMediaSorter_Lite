@@ -453,6 +453,18 @@ Partial Public Class Main_Form
     ''' <summary>Acts on what the probe found. UI thread, both builds.</summary>
     Private Sub ApplyArgument(argument_For_Path As String, is_No_Back_Flag_In_This_Call As Boolean, probe As ArgumentProbe)
         Try
+#If Not NETFRAMEWORK Then
+            ' Any change of context leaves the archive first, with its temporary directory
+            ' (§4.3). EnterArchive below does the same, so opening one archive straight
+            ' from another cleans up in between.
+            LeaveArchive()
+
+            If Not probe.IsDirectory AndAlso probe.Exists AndAlso ArchiveEntryFilter.IsArchivePath(argument_For_Path) Then
+                EnterArchive(argument_For_Path)
+                Return
+            End If
+#End If
+
             If probe.IsDirectory Then
                 If Not is_No_Back_Flag_In_This_Call Then
                     Is_No_Background_Tasks = False
@@ -583,6 +595,9 @@ Partial Public Class Main_Form
         If modern_Preferences Is Nothing Then modern_Preferences = ModernViewerPreferences.Load()
         preferred_Audio_Language = modern_Preferences.PreferredAudioLanguage
         preferred_Subtitle_Language = modern_Preferences.PreferredSubtitleLanguage
+        ' The custom shortcuts (§3.5). An untouched profile yields an empty map and every
+        ' key then reaches the historical dispatch exactly as before.
+        ReloadCustomHotkeys()
 #End If
         InitializeTooltips()
         InitializeOcrTranslate()
@@ -708,7 +723,15 @@ Partial Public Class Main_Form
                 ' clamps the index itself, and LoadFiles reports an empty or unreadable
                 ' folder on its own. (Measured on \\p7\_i\output\C, 15 779 files: 1.1 s
                 ' per pass - so this deletion halves the cold start.)
-                Integer.TryParse(GetSetting(App_name, Second_App_Name, "LastCounter"), current_File_Index)
+                ' §7.1 of SPECIFICATION_SETTINGS_EXPANSION: "last folder" opens the folder
+                ' and starts at its beginning, "last file" additionally restores which file
+                ' was open. Reading the saved index in both modes made the two settings the
+                ' same thing.
+                If StartupOpenMode() = "lastFile" Then
+                    Integer.TryParse(GetSetting(App_name, Second_App_Name, "LastCounter"), current_File_Index)
+                Else
+                    current_File_Index = 0
+                End If
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0040: folder from savings: " & Current_Folder_Path & " - index " & current_File_Index.ToString)
 
                 ReadShowMediaFile(Mode_Files)
@@ -801,6 +824,14 @@ Partial Public Class Main_Form
         ' LITE closes like a normal viewer - no close-to-tray. Sharing (if any) is
         ' owned entirely by Fast Media Sorter: Share Manager, which keeps
         ' running independently; closing LITE never touches it.
+
+#If Not NETFRAMEWORK Then
+        ' Line 2 of the archive cleanup (§4.4): close the archive and take its temporary
+        ' directory with it. Deliberately BEFORE the queue-drain dance below, which can
+        ' cancel the close and come back later - the extracted files are ours and the exit
+        ' must not depend on the rest of this handler being reached.
+        LeaveArchive()
+#End If
 
 #If Not NETFRAMEWORK Then
         ' A queued move is a file being COPIED across shares - killing the process
@@ -998,7 +1029,15 @@ Partial Public Class Main_Form
     Private Sub PersistSettings(Optional final_Save As Boolean = False)
         If MultiWindowPolicy.IsSecondaryInstance() Then Return
         Try
-            If Current_Folder_Path IsNot Nothing Then SaveSetting(App_name, Second_App_Name, "ImageFolder", Current_Folder_Path)
+            ' PersistableFolderPath, not Current_Folder_Path: inside an archive the latter
+            ' is the archive itself, and the next start would try to list a file as a
+            ' folder (invariant 5 - no container and no temporary path outlives the
+            ' session). Outside an archive the two are the same value.
+            Dim folder_To_Persist As String = Current_Folder_Path
+#If Not NETFRAMEWORK Then
+            folder_To_Persist = PersistableFolderPath()
+#End If
+            If folder_To_Persist IsNot Nothing Then SaveSetting(App_name, Second_App_Name, "ImageFolder", folder_To_Persist)
             ' Always - zero is as valid a position as any. Skipping it left the previous
             ' folder's counter in place: close folder B on its first file and the next
             ' start opened B at file 51, remembered from folder A.

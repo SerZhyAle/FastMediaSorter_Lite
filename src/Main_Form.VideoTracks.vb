@@ -59,6 +59,13 @@ Partial Public Class Main_Form
             .Visible = False
         }
         host.Controls.Add(btn_Tracks)
+        ' Collapsed until a video is actually playing something with a choice in it.
+        ' Visible = False on its own does NOT survive the first LayoutToolbar - PlaceControl
+        ' force-shows whatever it lays out - and the visibility rule is only recomputed when
+        ' playback starts or stops, so before the first video ever played the button sat in
+        ' the toolbar of an empty window. It has to start in the hidden set, exactly as
+        ' btn_Edit does (Main_Form.ImageEditor.vb).
+        SetToolbarItemHidden(btn_Tracks, True)
 
         tracks_Menu = New ContextMenuStrip()
         AddHandler tracks_Menu.Opening, Sub(s, e) BuildTracksMenu()
@@ -141,7 +148,7 @@ Partial Public Class Main_Form
                 If media Is Nothing OrElse media.Tracks Is Nothing Then Return Integer.MinValue
                 Dim want = If(audio, LibVLCSharp.Shared.TrackType.Audio, LibVLCSharp.Shared.TrackType.Text)
                 For Each t In media.Tracks
-                    If t.TrackType = want AndAlso String.Equals(If(t.Language, ""), language, StringComparison.OrdinalIgnoreCase) Then
+                    If t.TrackType = want AndAlso LanguageCodesMatch(language, If(t.Language, "")) Then
                         Return t.Id
                     End If
                 Next
@@ -150,6 +157,48 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2476: IdOfTrackInLanguage failed: " & ex.Message)
         End Try
         Return Integer.MinValue
+    End Function
+
+    ''' <summary>
+    ''' Two-letter and three-letter names for the same language, and both ISO 639-2
+    ''' variants where they differ (German is "ger" bibliographically and "deu"
+    ''' terminologically, and a container may carry either).
+    '''
+    ''' This exists because §6.3 turned the preferred-language rows into pickers over the
+    ''' app's own catalogue, which speaks ISO 639-1 - while a matroska track almost always
+    ''' declares "rus" or "eng". A plain string comparison would have made the picker look
+    ''' right and match nothing.
+    ''' </summary>
+    Private Shared ReadOnly language_Code_Aliases As String()() = {
+        New String() {"en", "eng"}, New String() {"ru", "rus"}, New String() {"uk", "ukr"},
+        New String() {"be", "bel"}, New String() {"de", "ger", "deu"}, New String() {"fr", "fre", "fra"},
+        New String() {"es", "spa"}, New String() {"it", "ita"}, New String() {"pt", "por"},
+        New String() {"nl", "dut", "nld"}, New String() {"pl", "pol"}, New String() {"cs", "cze", "ces"},
+        New String() {"sk", "slo", "slk"}, New String() {"sv", "swe"}, New String() {"no", "nor"},
+        New String() {"da", "dan"}, New String() {"fi", "fin"}, New String() {"tr", "tur"},
+        New String() {"el", "gre", "ell"}, New String() {"bg", "bul"}, New String() {"ro", "rum", "ron"},
+        New String() {"hu", "hun"}, New String() {"ja", "jpn"}, New String() {"ko", "kor"},
+        New String() {"zh", "chi", "zho"}, New String() {"ar", "ara"}, New String() {"he", "heb"},
+        New String() {"hi", "hin"}, New String() {"th", "tha"}, New String() {"vi", "vie"},
+        New String() {"id", "ind"}, New String() {"fa", "per", "fas"}}
+
+    Private Shared Function LanguageCodesMatch(wanted As String, actual As String) As Boolean
+        If String.IsNullOrEmpty(wanted) OrElse String.IsNullOrEmpty(actual) Then Return False
+        If String.Equals(wanted, actual, StringComparison.OrdinalIgnoreCase) Then Return True
+
+        ' A container often spells the language out ("Russian"), and the catalogue's
+        ' regional codes ("zh-TW") have to match the base language too.
+        Dim want As String = wanted.Split("-"c)(0)
+        For Each family As String() In language_Code_Aliases
+            Dim hasWanted As Boolean = False
+            Dim hasActual As Boolean = False
+            For Each code As String In family
+                If String.Equals(code, want, StringComparison.OrdinalIgnoreCase) Then hasWanted = True
+                If String.Equals(code, actual, StringComparison.OrdinalIgnoreCase) Then hasActual = True
+            Next
+            If hasWanted AndAlso hasActual Then Return True
+        Next
+        Return False
     End Function
 
     ''' <summary>Shows or collapses the button. Cheap enough to call on every media

@@ -61,6 +61,20 @@ Partial Public Class Main_Form
     ''' free it), we only draw into it - hence the identity check in the tick.</summary>
     Private halo_Frame As Bitmap
 
+    ''' <summary>
+    ''' The frame that was on screen when this growth started - the previous photo's one,
+    ''' taken over from the picture box instead of being disposed. It is laid over each
+    ''' frame of the growth at alpha 1-eased, so the picture starts from what was already
+    ''' there and dissolves into the new frame instead of the bar snapping to flat
+    ''' background and growing back. We own it; Nothing when there was none.
+    '''
+    ''' IT FADES WITH TIME, NEVER WITH DISTANCE. At the end of the growth its alpha is 0,
+    ''' so the resting frame is composed of exactly what it always was - the resting halo
+    ''' is the reference the whole file is built around, and an underlay that survived into
+    ''' it would change the picture the moment the underlay was released.
+    ''' </summary>
+    Private halo_Underlay As Bitmap
+
     ''' <summary>Where the photo itself sits inside the box, i.e. where the halo starts.</summary>
     Private halo_Image_Rect As Rectangle
 
@@ -124,7 +138,10 @@ Partial Public Class Main_Form
 
         ' A new photo only grows its halo if the user asked for the animation; otherwise
         ' the same halo is simply drawn at rest. (A resize/zoom redraw never grows.)
-        Dim grow As Boolean = animate AndAlso Is_Animated_Perspective
+        ' "Reduce motion" (§4.3 of SPECIFICATION_SETTINGS_EXPANSION) lands here rather
+        ' than on the setting itself: the resting halo IS the frame, so switching the
+        ' growth off must not change what the picture ends up looking like.
+        Dim grow As Boolean = animate AndAlso Is_Animated_Perspective AndAlso Not ReduceMotionActive()
 
         ' Only ever touches state we own, so `bars` is still safe to hand back.
         StopPerspectiveHalo()
@@ -139,6 +156,9 @@ Partial Public Class Main_Form
             halo_Box_Index = boxIndex
             halo_Vertical_Bars = verticalBars
 
+            ' Before the first frame is composed - it is what that frame starts from.
+            If grow Then TakeOverPreviousFrameAsUnderlay(frame.Size)
+
             RenderHaloFrame(If(grow, 0.0, 1.0))
         Catch ex As Exception
             ' Give the bitmap back untouched rather than leaving the caller with a
@@ -146,11 +166,13 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1133: halo start skipped: [" & ex.GetType().Name & "] " & ex.Message)
             halo_Bars = Nothing
             halo_Frame = Nothing
+            ReleaseHaloUnderlay()
             frame?.Dispose()
             Return False
         End Try
 
         Dim target As PictureBox = HaloTargetBox()
+        ' Nothing when the frame that was here became the underlay - it is ours now.
         target.BackgroundImage?.Dispose()
         target.BackgroundImage = frame
 
@@ -175,7 +197,43 @@ Partial Public Class Main_Form
         halo_Timer.Stop()
         halo_Clock.Reset()
         ReleaseHaloSource()
+        ReleaseHaloUnderlay()
         halo_Frame = Nothing
+    End Sub
+
+    ''' <summary>
+    ''' Takes the frame currently on the picture box away from it, to be dissolved out of
+    ''' during the growth. Ownership MOVES: the box's reference is cleared, so the caller's
+    ''' usual BackgroundImage?.Dispose() finds nothing and this bitmap lives until the
+    ''' growth ends.
+    '''
+    ''' A frame of a different size is left where it is. It belongs to a window of another
+    ''' size, and stretching it would dissolve out of a picture that was never on screen.
+    ''' </summary>
+    Private Sub TakeOverPreviousFrameAsUnderlay(frameSize As Size)
+        ReleaseHaloUnderlay()
+
+        Dim target As PictureBox = HaloTargetBox()
+        If target Is Nothing Then Return
+
+        Dim previous As Bitmap = TryCast(target.BackgroundImage, Bitmap)
+        If previous Is Nothing OrElse previous.Size <> frameSize Then Return
+
+        target.BackgroundImage = Nothing
+        halo_Underlay = previous
+    End Sub
+
+    ''' <summary>The previous frame is ours from the moment it is taken over, and it is a
+    ''' box-sized bitmap - it must not outlive the growth that dissolves it.</summary>
+    Private Sub ReleaseHaloUnderlay()
+        If halo_Underlay Is Nothing Then Return
+        Dim underlay As Bitmap = halo_Underlay
+        halo_Underlay = Nothing
+        Try
+            underlay.Dispose()
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1136: halo underlay dispose skipped: [" & ex.GetType().Name & "] " & ex.Message)
+        End Try
     End Sub
 
     Private Sub ReleaseHaloSource()
@@ -226,6 +284,8 @@ Partial Public Class Main_Form
             halo_Timer.Stop()
             halo_Clock.Reset()
             ReleaseHaloSource()
+            ' The last frame drew it at alpha 0, so nothing on screen depends on it now.
+            ReleaseHaloUnderlay()
             halo_Frame = Nothing
         End If
     End Sub
@@ -255,6 +315,35 @@ Partial Public Class Main_Form
                 PaintHaloFade(g, background, New Rectangle(0, 0, width, halo_Image_Rect.Top), False, True, eased)
                 PaintHaloFade(g, background, New Rectangle(0, halo_Image_Rect.Bottom, width, height - halo_Image_Rect.Bottom), False, False, eased)
             End If
+
+            ' Last, over the finished frame: what was on screen before this photo, fading
+            ' out as the growth runs. Everything above this line is untouched - the frame
+            ' underneath is exactly what it always was, and at eased = 1 this draws nothing
+            ' at all, so the halo still comes to rest on the same pixels.
+            PaintHaloUnderlay(g, eased)
+        End Using
+    End Sub
+
+    ''' <summary>
+    ''' The previous frame, laid whole over this one at alpha 1-eased.
+    '''
+    ''' ONE DrawImage, over the whole surface. Fading it by DISTANCE instead - showing it
+    ''' where the growth has not reached - was tried and is wrong twice over: the bar ends
+    ''' the growth showing the old frame rather than the background, and painting a picture
+    ''' through a gradient means slicing it into constant-alpha bands, which is visible as
+    ''' stripes and as blocks at the corners. Time is the right axis: the old frame is what
+    ''' the eye was already on, and it simply stops being there.
+    ''' </summary>
+    Private Sub PaintHaloUnderlay(g As Graphics, eased As Double)
+        If halo_Underlay Is Nothing Then Return
+
+        Dim fade As Single = CSng(Math.Max(0.0, Math.Min(1.0, 1.0 - eased)))
+        If fade <= 0.0F Then Return
+
+        Dim area As New Rectangle(0, 0, halo_Frame.Width, halo_Frame.Height)
+        Using attributes As New Imaging.ImageAttributes()
+            attributes.SetColorMatrix(New Imaging.ColorMatrix() With {.Matrix33 = fade})
+            g.DrawImage(halo_Underlay, area, 0, 0, area.Width, area.Height, GraphicsUnit.Pixel, attributes)
         End Using
     End Sub
 

@@ -1,6 +1,46 @@
 # Спецификация: расширенные настройки Fast Media Sorter
 
-**Статус:** проект для реализации.  
+**Статус:** **реализовано** (доведено 2026-08-15 по рабочему дереву).
+
+Хранение: все ключи профиля из §3..§7 объявлены, читаются, нормализуются и пишутся в
+[ModernViewerPreferences.vb](../../../src/ModernViewerPreferences.vb)
+(`NameCollisionPolicy`, `AfterFileOperation`, `AdvanceAfterCopy`, `IncludeSubfolders`,
+`IncludedExtensions`, `InterfaceScalePercent`, `NewImageScaleMode`, `ReduceMotion`,
+пять ключей `RecipientsOverlay*`, три ключа слайд-шоу, восемь ключей видео,
+`StartupOpenMode`, `AllowNewWindows`, `RecentFilesLimit`, `RecentFoldersLimit`,
+`OcrDiskCacheMaxMb`, `CustomHotkeys`, `FolderZoomHistory`, `VideoPositionHistory`).
+
+Поведение. Пять ключей до 2026-08-15 только хранились - запись в реестр была, а
+эффекта не было; они доведены до конца:
+- §4.1 `InterfaceScalePercent` - новая строка настроек плюс масштабирование шрифтов и
+  метрик оболочки окна (`Sp`/`Sf` в
+  [Table_Form.ModernLayout.vb](../../../src/Table_Form.ModernLayout.vb)); при 1.0 обе
+  функции возвращают аргумент без изменений, поэтому окно по умолчанию попиксельно
+  прежнее. Перезапуск окна - `RequestSettingsWindowRestart` + хук `FormClosed`.
+- §4.2 `NewImageScaleMode` + `FolderZoomHistory` - `ApplyNewImageScaleMode` на пути
+  показа нового изображения; флаг `is_Zoom_Applied_By_Program` отделяет программный
+  fit от выбранного пользователем, иначе восстановление масштаба само бы его и стирало.
+- §4.3 `ReduceMotion` - `ReduceMotionActive()` (настройка OR системный
+  `SPI_GETCLIENTAREAANIMATION`, только чтение) гасит рост ореола.
+- §5.2 `SlideshowUiMode` - единственная точка видимости хрома `ApplyChromeVisibility`
+  в [Main_Form.UILayout.vb](../../../src/Main_Form.UILayout.vb) плюс временный показ
+  по движению мыши.
+- §3.5 `CustomHotkeys` - чистая модель [CustomHotkeys.vb](../../../src/CustomHotkeys.vb)
+  (покрыта `CustomHotkeysTests`), диалог [Hotkeys_Form.vb](../../../src/Hotkeys_Form.vb)
+  и диспетчер [Main_Form.CustomHotkeys.vb](../../../src/Main_Form.CustomHotkeys.vb).
+  Карта хранит **только переопределения**: пустая карта не меняет ни одной клавиши, а
+  «осиротевшее» умолчание перехваченного действия перестаёт работать - иначе действие
+  отвечало бы на две клавиши сразу.
+
+UI §3.4, §7.2, §7.3, §7.4, §6.3 - диалоги
+[ExpandedSettingsDialogs.vb](../../../src/ExpandedSettingsDialogs.vb) (типы файлов и
+история), строка размера OCR-кэша с очисткой, импорт с выбором «Заменить»/«Объединить»
+и сводкой изменений, экспорт с явным чекбоксом личных данных, и выпадающие списки
+языков дорожек вместо полей ввода (сопоставление кодов ISO 639-1/639-2 живёт в
+`LanguageCodesMatch`). Всё остальное - в
+[Table_Form.ExpandedSettings.vb](../../../src/Table_Form.ExpandedSettings.vb).
+
+Проверки §8 - ручные, они относятся к поведению и остаются справочным списком.
 **Цель:** добавить перечисленные настройки в .NET 10-окно без потери текущих
 профилей и без превращения формы в длинный список редко используемых флажков.
 

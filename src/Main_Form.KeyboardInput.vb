@@ -59,6 +59,15 @@ Partial Public Class Main_Form
         End If
 
 #If Not NETFRAMEWORK Then
+        ' Modern: the user's own shortcuts come first, so a rebinding really does win over
+        ' the key it was moved off (§3.5). Costs one dictionary lookup and returns False
+        ' immediately for a profile that has never opened the shortcuts dialog.
+        If TryHandleCustomHotkey(e, was_Slide_Show_Mode) Then
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Exit Sub
+        End If
+
         ' Modern: NumPad +/-/*// zoom (spec 4.3). Checked before the maps below and
         ' independent of Shift, and it only claims those four grey keys - NumPad 0..9
         ' stay with sorting, the arrows stay navigation. Returns False for anything
@@ -99,6 +108,13 @@ Partial Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1616: Shift+T toggle auto OCR")
                     If ocr_Settings IsNot Nothing Then ToggleOcrAutoMode()
 #If Not NETFRAMEWORK Then
+                ' Shift+DEL deletes past the Recycle Bin - the Explorer idiom, and the one
+                ' gesture that says "I mean it" without a trip to the settings window. The
+                ' flag is read once by the Mode_Delete branch, whatever the outcome.
+                Case Keys.Delete, Keys.D
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1617: Shift+Del - permanent delete")
+                    pending_Delete_Permanent = True
+                    ReadShowMediaFile(Mode_Delete)
                 ' Shift + digit COPIES into the same slot the bare digit moves into: the
                 ' one thing that used to require a trip to the settings window and back.
                 ' Top row only, deliberately - with NumLock on, Windows drops NumLock
@@ -156,13 +172,7 @@ Partial Public Class Main_Form
                     ' Pass what the slideshow state was BEFORE this method stopped it.
                     SetSlideShow(was_Slide_Show_Mode)
                 Case Keys.F6
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1340: to rename")
-                    If Not String.IsNullOrEmpty(Current_File_Name) Then
-                        RenameCurrentFile()
-                    Else
-                        lbl_Status.Text = Localization.T("! Нет файла для переименования")
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1350: No file to rename")
-                    End If
+                    RenameCurrentFileFromKeyboard()
 
                 Case Keys.F7
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1645: F7 - Toggle fullscreen")
@@ -223,16 +233,7 @@ Partial Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1500: Rotate CW")
                     RotateActiveImage(True)
                 Case Keys.T
-                    ' When the OCR feature is on, T runs OCR/translate (or toggles
-                    ' the overlay). When it is off, T keeps its legacy meaning of
-                    ' counter-clockwise rotate (also always available on Shift+R).
-                    If ocr_Settings IsNot Nothing AndAlso ocr_Settings.Enabled Then
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1540: T -> OCR/translate")
-                        TriggerOcrHotkey()
-                    Else
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1540: T -> Rev Rotate (OCR off)")
-                        RotateActiveImage(False)
-                    End If
+                    RunOcrHotkeyOrRotate()
                 Case Keys.Up
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1580: -10")
                     JumpBy(-10, "-10 файлов")
@@ -240,24 +241,9 @@ Partial Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1590: +10")
                     JumpBy(10, "+10 файлов")
                 Case Keys.F1
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1620: F1 help")
-                    lbl_Help_Info.Visible = True
-                    lbl_Help_Info.BringToFront()
+                    ShowFirstRunHelp()
                 Case Keys.F2
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1630: F2")
-                    ' Recreate if a previous modeless Show(Me) (toolbar / btn_Move_Table)
-                    ' disposed the cached instance, and never ShowDialog an already-visible
-                    ' one (it would throw) - just bring it to the front instead.
-                    If Table_Form Is Nothing OrElse Table_Form.IsDisposed Then Table_Form = New Table_Form()
-                    If Table_Form.Visible Then
-                        Table_Form.Activate()
-                    Else
-                        Table_Form.PrepareForDisplay()
-                        ' Modal is no protection: an owned window still has to be put
-                        ' into the pinned band by hand (Main_Form.WindowPinning.vb).
-                        PinToViewerBand(Table_Form)
-                        Table_Form.ShowDialog(Me)
-                    End If
+                    ShowSettingsWindow()
                 Case Keys.F3
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1630: F5")
                     ShowImagePanelForm()
@@ -285,6 +271,99 @@ Partial Public Class Main_Form
         If key_Handled Then
             e.Handled = True
             e.SuppressKeyPress = True
+        End If
+    End Sub
+
+    ''' <summary>F6 - rename, with the status line the empty case needs. A method rather
+    ''' than an inline branch because a custom shortcut can be bound to the same action
+    ''' (§3.5) and the two must not drift apart.</summary>
+    Private Sub RenameCurrentFileFromKeyboard()
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1340: to rename")
+        If Not String.IsNullOrEmpty(Current_File_Name) Then
+            RenameCurrentFile()
+        Else
+            lbl_Status.Text = Localization.T("! Нет файла для переименования")
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1350: No file to rename")
+        End If
+    End Sub
+
+    ''' <summary>T - when the OCR feature is on it runs OCR/translate (or toggles the
+    ''' overlay); when it is off it keeps its legacy meaning of counter-clockwise rotate,
+    ''' which is also always available on Shift+R.</summary>
+    Private Sub RunOcrHotkeyOrRotate()
+        If ocr_Settings IsNot Nothing AndAlso ocr_Settings.Enabled Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1540: T -> OCR/translate")
+            TriggerOcrHotkey()
+        Else
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1540: T -> Rev Rotate (OCR off)")
+            RotateActiveImage(False)
+        End If
+    End Sub
+
+    ''' <summary>F1 - the first-run help card.</summary>
+    Private Sub ShowFirstRunHelp()
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1620: F1 help")
+        lbl_Help_Info.Visible = True
+        lbl_Help_Info.BringToFront()
+    End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>Set by the interface-scale row of §4.1, which cannot take effect in a
+    ''' window that has already been built at the old scale.</summary>
+    Private settings_Restart_Requested As Boolean
+
+    Friend Sub RequestSettingsWindowRestart()
+        settings_Restart_Requested = True
+    End Sub
+
+    ''' <summary>
+    ''' Rebuilds the settings window after a scale change. Hooked on FormClosed rather
+    ''' than done by the dialog itself, so it covers BOTH ways the window is opened - the
+    ''' modal F2 path and the modeless toolbar one - and runs off the closing stack.
+    ''' </summary>
+    Private Sub SettingsWindowClosed(sender As Object, e As FormClosedEventArgs)
+        If Not settings_Restart_Requested Then Return
+        settings_Restart_Requested = False
+        If IsDisposed OrElse Not IsHandleCreated Then Return
+
+        BeginInvoke(New MethodInvoker(
+            Sub()
+                Try
+                    ' ShowDialog does not dispose, and the old instance still carries the
+                    ' shell it built at the previous scale - a fresh one is the point.
+                    If Table_Form IsNot Nothing AndAlso Not Table_Form.IsDisposed Then Table_Form.Dispose()
+                Catch ex As Exception
+                    AppFileLogger.LogException("Main_Form dispose settings window", ex)
+                End Try
+                ShowSettingsWindow()
+            End Sub))
+    End Sub
+#End If
+
+    ''' <summary>Recreate if a previous modeless Show(Me) (toolbar / btn_Move_Table)
+    ''' disposed the cached instance. The close hook is attached exactly once per
+    ''' instance, here, because BOTH entry points come through this method.</summary>
+    Friend Sub EnsureSettingsWindow()
+        If Table_Form Is Nothing OrElse Table_Form.IsDisposed Then
+            Table_Form = New Table_Form()
+#If Not NETFRAMEWORK Then
+            AddHandler Table_Form.FormClosed, AddressOf SettingsWindowClosed
+#End If
+        End If
+    End Sub
+
+    ''' <summary>F2 - the settings window.</summary>
+    Private Sub ShowSettingsWindow()
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1630: F2")
+        EnsureSettingsWindow()
+        If Table_Form.Visible Then
+            Table_Form.Activate()
+        Else
+            Table_Form.PrepareForDisplay()
+            ' Modal is no protection: an owned window still has to be put
+            ' into the pinned band by hand (Main_Form.WindowPinning.vb).
+            PinToViewerBand(Table_Form)
+            Table_Form.ShowDialog(Me)
         End If
     End Sub
 

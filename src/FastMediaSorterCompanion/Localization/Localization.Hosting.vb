@@ -373,6 +373,34 @@ Partial Public NotInheritable Class Localization
             "سروس کو فولڈرز تک رسائی دی جا رہی ہے..",
             "正在为该服务授予文件夹访问权限..")
 
+        Add("Раздача работает, но у службы нет доступа к папкам: {0}",
+            "Sharing is on, but the service has no access to folders: {0}",
+            "Роздача працює, але служба не має доступу до тек: {0}",
+            "Die Freigabe läuft, aber der Dienst hat keinen Zugriff auf Ordner: {0}",
+            "La condivisione è attiva, ma il servizio non ha accesso alle cartelle: {0}",
+            "El uso compartido está activo, pero el servicio no tiene acceso a carpetas: {0}",
+            "Le partage est actif, mais le service n'a pas accès aux dossiers : {0}",
+            "A partilha está ativa, mas o serviço não tem acesso a pastas: {0}",
+            "المشاركة مفعّلة، لكن الخدمة لا تملك صلاحية الوصول إلى مجلدات: {0}",
+            "साझाकरण चालू है, पर सेवा को फ़ोल्डरों तक पहुँच नहीं: {0}",
+            "শেয়ারিং চালু, কিন্তু সার্ভিসের ফোল্ডারে অনুমতি নেই: {0}",
+            "شیئرنگ چالو ہے، مگر سروس کو فولڈرز تک رسائی نہیں: {0}",
+            "共享已开启，但该服务无权访问文件夹：{0}")
+
+        Add("У службы нет доступа к этой папке - на телефоне она не откроется.",
+            "The service has no access to this folder - it will not open on the phone.",
+            "Служба не має доступу до цієї теки - на телефоні вона не відкриється.",
+            "Der Dienst hat keinen Zugriff auf diesen Ordner - auf dem Telefon lässt er sich nicht öffnen.",
+            "Il servizio non ha accesso a questa cartella - sul telefono non si aprirà.",
+            "El servicio no tiene acceso a esta carpeta - en el teléfono no se abrirá.",
+            "Le service n'a pas accès à ce dossier - il ne s'ouvrira pas sur le téléphone.",
+            "O serviço não tem acesso a esta pasta - no telefone não vai abrir.",
+            "الخدمة لا تملك صلاحية الوصول إلى هذا المجلد - لن يُفتح على الهاتف.",
+            "सेवा को इस फ़ोल्डर तक पहुँच नहीं है - फ़ोन पर यह नहीं खुलेगा।",
+            "সার্ভিসের এই ফোল্ডারে অনুমতি নেই - ফোনে এটি খুলবে না।",
+            "سروس کو اس فولڈر تک رسائی نہیں - فون پر یہ نہیں کھلے گا۔",
+            "该服务无权访问此文件夹 - 在手机上将无法打开。")
+
         Add("Служба работает от имени LOCAL SERVICE, а не от вашего. Каждой раздаваемой папке нужен доступ для этой учётной записи: чтение, а если папка раздаётся с записью - то и запись. Кнопка выдаёт их по текущему списку папок. Сетевые пути вида \\сервер\папка так работать не будут.",
             "The service runs as LOCAL SERVICE, not as you. Every served folder needs access for that account: read, plus write when the folder is shared writable. The button grants that from the current folder list. UNC paths such as \\server\share will not work this way.",
             "Служба працює від імені LOCAL SERVICE, а не від вашого. Кожній роздаваній папці потрібен доступ для цього облікового запису: читання, а якщо папка роздається із записом - то й запис. Кнопка видає їх за поточним списком папок. Мережеві шляхи виду \\сервер\папка так працювати не будуть.",

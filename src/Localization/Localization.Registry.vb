@@ -18,7 +18,10 @@ Partial Public NotInheritable Class Localization
         AddMenuStrings()        ' media context menus, toolbar overflow, status hints
         AddOcrTabStrings()      ' the OCR & translation tab of the settings window
         AddChoiceStrings()      ' drop-down options of the expanded (.NET 10) settings
+        AddSettingsExpansionStrings()   ' SPECIFICATION_SETTINGS_EXPANSION: scale, shortcuts, history
         AddSupportStrings()     ' "send the logs to the author" row, dialog and mail body
+        AddEditorStrings()      ' the image editor window and its save path
+        AddArchiveStrings()     ' browsing an archive as a folder
     End Sub
 
 End Class

@@ -89,6 +89,14 @@ QRCoder
   License: MIT
   Copyright (c) Raffael Herrmann
 
+SharpCompress (64-bit viewer only)
+  Version 0.50.4, https://github.com/adamhathcock/sharpcompress
+  License: MIT
+  Copyright (c) Adam Hathcock
+
+  Reads ZIP/CBZ (and, from phase 2, 7z/RAR/CBR) for the "browse an archive like a
+  folder" feature. Fully managed - no native library ships with it.
+
 System.Buffers 4.5.1, System.Memory 4.5.4, System.Numerics.Vectors 4.5.0,
 System.Runtime.CompilerServices.Unsafe 5.0.0 (32-bit build only)
   https://github.com/dotnet/runtime

@@ -559,6 +559,68 @@ function Grant-Roots([string[]]$folders, [string[]]$readOnlyFolders, [bool]$righ
     Save-Ledger $ledger
 }
 
+# Reads a property whatever case the writer used. The share list is written by the Go
+# worker and edited by the Share Manager; a case difference between them must not turn
+# into "no folders found", which would look exactly like a correct no-op.
+function Get-JsonProp($obj, [string[]]$names) {
+    if ($null -eq $obj) { return $null }
+    foreach ($n in $names) {
+        $p = $obj.PSObject.Properties[$n]
+        if ($p -and $null -ne $p.Value) { return $p.Value }
+    }
+    return $null
+}
+
+# The folders the service is about to serve, read from the state directory it serves
+# them FROM.
+#
+# This exists because -Roots is only ever passed by the Share Manager. The Server
+# installer cannot pass it - at ssPostInstall there is no folder list in its hands -
+# and the old code read that as "there are no folders yet". True for a fresh install,
+# FALSE for the case the Server installer explicitly supports: installing over a User
+# edition that was already sharing. There Copy-State brings a populated shares.json
+# across, the service starts, publishes every one of those folders, and holds
+# permission on none of them - a share that answers the phone with "permission denied"
+# on every listing while the app shows it as working.
+function Get-StateRoots {
+    if (-not $DataDir) { return @() }
+    $path = Join-Path $DataDir 'shares.json'
+    if (-not (Test-Path -LiteralPath $path)) { return @() }
+    try {
+        $raw = Get-Content -LiteralPath $path -Raw -ErrorAction Stop
+        if (-not $raw -or -not $raw.Trim()) { return @() }
+        $items = @($raw | ConvertFrom-Json)
+    } catch {
+        Write-Log "WARNING: could not read the share list '$path': $($_.Exception.Message)"
+        return @()
+    }
+    $out = @()
+    foreach ($item in $items) {
+        $folder = Get-JsonProp $item @('HostPath', 'hostPath', 'Path', 'path')
+        if (-not $folder) { continue }
+        $ro = Get-JsonProp $item @('ReadOnly', 'readOnly')
+        $out += [pscustomobject]@{ path = [string]$folder; readOnly = [bool]$ro }
+    }
+    return $out
+}
+
+# Grants the service account access to everything the state directory says is shared.
+#
+# Idempotent by construction: Grant-Roots skips a root already recorded at the same
+# level, so running this on every start costs a ledger read and logs nothing new. That
+# is what makes it safe to call from install/repair/start as well as from the
+# migration - an installation that came up without its grants heals on the next start
+# instead of staying silently broken until someone finds the Hosting console.
+function Grant-StateRoots([string]$reason) {
+    $roots = @(Get-StateRoots)
+    if ($roots.Count -eq 0) { return }
+    Write-Log ("granting service access to {0} shared folder(s) listed in the state directory ({1})" -f $roots.Count, $reason)
+    Grant-Roots `
+        @($roots | ForEach-Object { $_.path }) `
+        @($roots | Where-Object { $_.readOnly } | ForEach-Object { $_.path }) `
+        $true
+}
+
 # Removes ONLY the ACEs this script recorded, and only where LOCAL SERVICE had no
 # grant of its own before we arrived.
 function Revoke-Roots {
@@ -627,6 +689,12 @@ switch ($Action) {
         Remove-ServiceRegistration   # idempotent re-install over a previous registration
         New-ServiceRegistration
         Set-FirewallRule $true
+        # Every path that brings the service up also makes sure it can read what it is
+        # about to publish. A grant is the one part of the setup that lives outside the
+        # service registration - on the folders themselves - so it is the part an older
+        # installer, a restored state directory or a hand-edited share list can leave
+        # missing, with nothing in the service's own state to show for it.
+        Grant-StateRoots 'service install'
         Start-ServiceAndVerify
     }
 
@@ -645,6 +713,7 @@ switch ($Action) {
         Remove-ServiceRegistration
         New-ServiceRegistration
         Set-FirewallRule $true
+        Grant-StateRoots 'service repair'
         Start-ServiceAndVerify
     }
 
@@ -660,6 +729,7 @@ switch ($Action) {
 
     'start' {
         if (-not (Get-ServiceOrNull)) { Fail "$ServiceName is not installed" 9 }
+        Grant-StateRoots 'service start'
         Start-ServiceAndVerify
     }
 
@@ -674,6 +744,7 @@ switch ($Action) {
         # with a window in between where nothing is serving.
         if (-not (Get-ServiceOrNull)) { Fail "$ServiceName is not installed" 9 }
         Stop-ServiceGracefully
+        Grant-StateRoots 'service restart'
         Start-ServiceAndVerify
     }
 
@@ -698,19 +769,28 @@ switch ($Action) {
         Remove-ServiceRegistration
         New-ServiceRegistration
         Set-FirewallRule $true
-        Start-ServiceAndVerify
         # Folders a user picked are invisible to LOCAL SERVICE until they are granted,
         # so a switch made from the app would otherwise end in a service that runs
         # perfectly and serves nothing - and the fix would be a SECOND UAC prompt right
-        # after the first. Same elevation, same transaction. The installer passes no
-        # roots (there are none yet at install time) and this stays a no-op there.
+        # after the first. Same elevation, same transaction.
+        #
+        # BEFORE the service starts, not after: the worker publishes whatever the share
+        # list names the moment it comes up, and granting afterwards leaves a window in
+        # which a phone is offered folders that refuse to open.
         if ($Roots) {
             $rightsKnown = $PSBoundParameters.ContainsKey('ReadOnlyRoots')
             Grant-Roots `
                 @($Roots -split '\|' | ForEach-Object { $_.Trim() } | Where-Object { $_ }) `
                 @($ReadOnlyRoots -split '\|' | ForEach-Object { $_.Trim() } | Where-Object { $_ }) `
                 $rightsKnown
+        } else {
+            # The Server installer's path: it has no folder list to pass, but the state
+            # it just migrated names every folder that is about to be served. Without
+            # this, installing the Server edition over a User edition that was already
+            # sharing produces a service that publishes folders it cannot read.
+            Grant-StateRoots 'migrated state'
         }
+        Start-ServiceAndVerify
     }
 
     'migrate-to-user' {

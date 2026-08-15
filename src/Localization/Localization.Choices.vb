@@ -130,6 +130,35 @@ Partial Public NotInheritable Class Localization
             "Replace", "Замінити", "Ersetzen", "Sostituisci", "Reemplazar", "Remplacer",
             "Substituir", "استبدال", "बदलें", "প্রতিস্থাপন করুন", "تبدیل کریں", "替换")
 
+        ' --- when to ask before deleting (R-1 Ф4) ---------------------------------
+        '
+        ' The middle option names the OUTCOME rather than the setting ("only when the file
+        ' will not go to the Recycle Bin", not "only permanent ones"): what the user is
+        ' choosing between is which deletions are worth stopping for, and the answer is the
+        ' ones that cannot be taken back.
+
+        Add("Всегда",
+            "Always", "Завжди", "Immer", "Sempre", "Siempre", "Toujours", "Sempre",
+            "دائمًا", "हमेशा", "সর্বদা", "ہمیشہ", "总是")
+
+        Add("Только если файл не попадёт в Корзину",
+            "Only when the file will not go to the Recycle Bin",
+            "Тільки якщо файл не потрапить до Кошика",
+            "Nur wenn die Datei nicht in den Papierkorb geht",
+            "Solo se il file non finirà nel Cestino",
+            "Solo si el archivo no irá a la Papelera",
+            "Seulement si le fichier n'ira pas à la Corbeille",
+            "Só quando o ficheiro não for para a Reciclagem",
+            "فقط إذا لم ينتقل الملف إلى سلة المحذوفات",
+            "केवल जब फ़ाइल रीसायकल बिन में नहीं जाएगी",
+            "শুধু যখন ফাইলটি রিসাইকেল বিনে যাবে না",
+            "صرف جب فائل ری سائیکل بن میں نہ جائے",
+            "仅当文件不会进入回收站时")
+
+        Add("Никогда",
+            "Never", "Ніколи", "Nie", "Mai", "Nunca", "Jamais", "Nunca",
+            "أبدًا", "कभी नहीं", "কখনও নয়", "کبھی نہیں", "从不")
+
         ' --- where to go after a file operation -----------------------------------
 
         Add("Остаться на текущем",

@@ -73,19 +73,19 @@ https://github.com/SerZhyAle/FastMediaSorter_Lite
 В Microsoft Store приложение публикуется как ""FastMediaSorter LITE"".
 
 Интерфейс доступен на 13 языках - английском, русском, украинском, немецком, итальянском, испанском, французском, португальском, арабском, хинди, бенгальском, урду и китайском - и при первом запуске берёт язык интерфейса Windows; кнопка на панели переключает его в любой момент. Арабский и урду идут справа налево. Автором вычитаны английский, русский и украинский; остальные десять сделаны машиной и не вычитаны, поправки приветствуются через issue-трекер."
-ReleaseNotes,3,Text,,"- Copying is now something you ask for as you sort, not a mode you switch on beforehand: a digit 1..9/0 moves the file into that folder, Shift + the same top-row digit copies it there. The ""COPY mode"" checkbox is gone; a new ""Go to the next file after copying"" lets one picture be filed into several folders in a row.
-- iPhone photos really do open now. HEIC, HEIF and AVIF were announced last time, but the library that decodes them was left out of the package - so they worked only in a developer build. It is simply in the package now.
-- With ""keep on top"" on, the windows the app opens no longer hide behind it: Settings, the thumbnail panel (F3) and the file pickers join it instead of waiting underneath, where the button looked dead.
-- Your settings are no longer lost if the app does not close normally - they are saved as they change, not only on a clean exit.
-- Left open for days it now behaves: the thumbnail panel opens instantly in a folder of thousands, a network drive that goes away no longer crashes the app, and the log beside it stops growing forever. A sleeping network share no longer freezes the window.
-- New: ""Send the logs to the author"" on the About tab - it opens your own mail program with the archive attached, and shows you what is in it first.
-- Every package now carries THIRD-PARTY-NOTICES.txt, and no longer ships a log file left over from the build machine.","- Копирование теперь выбирается в момент сортировки, а не включается заранее: цифра 1..9/0 переносит файл в эту папку, Shift + та же цифра верхнего ряда копирует его туда. Галочка «Режим КОПИРОВАНИЯ» убрана; новая настройка «Переходить к следующему файлу после копирования» позволяет разложить один снимок сразу по нескольким папкам.
-- Фотографии с iPhone наконец открываются. HEIC, HEIF и AVIF были заявлены в прошлый раз, но библиотека, которая их читает, не попала в пакет - и они работали только в сборке разработчика. Теперь она в пакете.
-- При включённом «поверх всех окон» окна программы больше не прячутся за ним: настройки, панель эскизов (F3) и выбор файлов встают в тот же слой, а не ждут под ним, где кнопка казалась нерабочей.
-- Настройки больше не теряются при аварийном закрытии - они сохраняются по мере изменения, а не только при обычном выходе.
-- Программа выдерживает многодневную работу: панель эскизов открывается мгновенно даже в папке на тысячи файлов, пропавший сетевой диск больше не роняет программу, а журнал рядом с ней перестал расти без конца. Уснувшая сетевая папка больше не подвешивает окно.
-- Новое: «Отправить логи автору» на вкладке «О программе» - открывает вашу почтовую программу с уже вложенным архивом и сначала показывает, что в него попало.
-- В каждый пакет добавлен THIRD-PARTY-NOTICES.txt, и из них убран журнал, оставшийся от сборочной машины."
+ReleaseNotes,3,Text,,"- One speech balloon is one plate again. Translated text used to break a single balloon into two or three plates: lines set in capitals have no descenders, so the space beneath them looked like a paragraph break and the translator was handed fragments instead of a sentence. A heading is no longer swallowed by the paragraph under it.
+- A long translation no longer loses its tail in silence. The text shrinks first, then the plate grows downwards - never past the picture edge, never into the plate below - and only then is anything trimmed. On a short block the text no longer spills outside its own plate.
+- A screenshot or a form no longer arrives as one plate covering most of the picture: it is split into one plate per line, and no recognized text is lost.
+- The translation plate takes its background and text colours from the picture underneath it, instead of being the same nearly-white rectangle on every image.
+- Zooming and resizing a picture full of translated text got noticeably lighter.
+- Share Manager: a click on the enlarged QR code also saves it as a picture and puts it on the clipboard.
+- The halo around a photo can now appear at three speeds, and by default it is twice as fast as before.","- Одна реплика - одна плашка. Перевод разбивал единственный пузырь на две-три плашки: строки из прописных не имеют выносных элементов, просвет под ними выглядел как разрыв абзаца, и переводчик получал обрывки вместо фразы. Заголовок больше не слипается с абзацем под ним.
+- Длинный перевод больше не теряет хвост молча. Сначала уменьшается кегль, затем плашка растёт вниз - не за край картинки и не на плашку под ней, - и только потом что-то обрезается. На низком блоке текст не вылезает за свою плашку.
+- Скриншот или бланк больше не приходит одной плашкой на пол-картинки: она распускается по строкам, и ни одно распознанное слово не теряется.
+- Плашка перевода берёт цвет фона и текста из картинки под собой, а не остаётся одинаковым почти белым прямоугольником на любом изображении.
+- Масштабирование и изменение размера окна на картинке с множеством переводов стали заметно легче.
+- Share Manager: клик по увеличенному QR-коду теперь ещё и сохраняет его картинкой и кладёт в буфер обмена.
+- Ореол вокруг фотографии появляется с одной из трёх скоростей, по умолчанию вдвое быстрее прежнего."
 Title,4,Text,,FastMediaSorter LITE,FastMediaSorter LITE
 ShortTitle,5,Text,,,
 SortTitle,6,Text,,,
@@ -94,8 +94,8 @@ ShortDescription,8,Text,,"Fast, keyboard-driven photo and video sorter for Windo
 DevStudio,9,Text,,,
 CopyrightTrademarkInformation,12,Text,,,
 AdditionalLicenseTerms,13,Text,,,
-DesktopScreenshot1,100,Relative path (or URL to file in Partner Center),,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701610873/listings/1152922700025761155/listingassets/3025800733625409030,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701610873/listings/1152922700025763687/listingassets/3055099419020406820
-DesktopScreenshot2,101,Relative path (or URL to file in Partner Center),,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701610873/listings/1152922700025761155/listingassets/3023393504544634841,
+DesktopScreenshot1,100,Relative path (or URL to file in Partner Center),,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701655057/listings/1152922700025761155/listingassets/3023393504544634841,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701655057/listings/1152922700025763687/listingassets/3055099419020406820
+DesktopScreenshot2,101,Relative path (or URL to file in Partner Center),,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701655057/listings/1152922700025761155/listingassets/3025800733625409030,
 DesktopScreenshot3,102,Relative path (or URL to file in Partner Center),,,
 DesktopScreenshot4,103,Relative path (or URL to file in Partner Center),,,
 DesktopScreenshot5,104,Relative path (or URL to file in Partner Center),,,
@@ -374,12 +374,12 @@ SurfaceHubScreenshotCaption27,576,Text,,,
 SurfaceHubScreenshotCaption28,577,Text,,,
 SurfaceHubScreenshotCaption29,578,Text,,,
 SurfaceHubScreenshotCaption30,579,Text,,,
-StoreLogo720x1080,600,Relative path (or URL to file in Partner Center),,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701610873/listings/1152922700025761155/listingassets/3050076764715196387,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701610873/listings/1152922700025763687/listingassets/3022629546116260337
-StoreLogo1080x1080,601,Relative path (or URL to file in Partner Center),,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701610873/listings/1152922700025761155/listingassets/3036439103532951622,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701610873/listings/1152922700025763687/listingassets/3025557750549655006
-StoreLogo300x300,602,Relative path (or URL to file in Partner Center),,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701610873/listings/1152922700025761155/listingassets/3057676845112721243,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701610873/listings/1152922700025763687/listingassets/3043958606557801922
+StoreLogo720x1080,600,Relative path (or URL to file in Partner Center),,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701655057/listings/1152922700025761155/listingassets/3050076764715196387,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701655057/listings/1152922700025763687/listingassets/3022629546116260337
+StoreLogo1080x1080,601,Relative path (or URL to file in Partner Center),,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701655057/listings/1152922700025761155/listingassets/3036439103532951622,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701655057/listings/1152922700025763687/listingassets/3025557750549655006
+StoreLogo300x300,602,Relative path (or URL to file in Partner Center),,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701655057/listings/1152922700025761155/listingassets/3057676845112721243,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701655057/listings/1152922700025763687/listingassets/3043958606557801922
 OverrideLogosForWin10,603,True/False,,True,True
-StoreLogoOverride150x150,604,Relative path (or URL to file in Partner Center),,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701610873/listings/1152922700025761155/listingassets/3046912387967780904,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701610873/listings/1152922700025763687/listingassets/3001348119762024668
-StoreLogoOverride71x71,605,Relative path (or URL to file in Partner Center),,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701610873/listings/1152922700025761155/listingassets/3040752949928120002,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701610873/listings/1152922700025763687/listingassets/3036918995987892825
+StoreLogoOverride150x150,604,Relative path (or URL to file in Partner Center),,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701655057/listings/1152922700025761155/listingassets/3046912387967780904,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701655057/listings/1152922700025763687/listingassets/3001348119762024668
+StoreLogoOverride71x71,605,Relative path (or URL to file in Partner Center),,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701655057/listings/1152922700025761155/listingassets/3040752949928120002,https://developer.microsoft.com/en-us/dashboard/apps/9N59Z73WZ53C/submissions/1152921505701655057/listings/1152922700025763687/listingassets/3036918995987892825
 PromoImage1920x1080,606,Relative path (or URL to file in Partner Center),,,
 PromoImage2400x1200,607,Relative path (or URL to file in Partner Center),,,
 XboxBrandedKeyArt584x800,608,Relative path (or URL to file in Partner Center),,,

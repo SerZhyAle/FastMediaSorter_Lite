@@ -40,8 +40,13 @@ Namespace My
         ''' forwarding target must be searched under BOTH names - looking only for
         ''' our own name would find nothing when the sibling is the one running,
         ''' and the launch would cancel silently with no window and no file opened.
+        '''
+        ''' The list itself lives in Common_Module: the archive cache's orphan sweep asks
+        ''' the same question from the other side - "does this session directory still
+        ''' have an owner?" - and two copies would be one more place to forget when an exe
+        ''' is renamed.
         ''' </summary>
-        Private Shared ReadOnly Viewer_Process_Names As String() = {"FastMediaSorter_LITE", "FastMediaSorter_x86"}
+        Private Shared ReadOnly Viewer_Process_Names As String() = Common_Module.Viewer_Process_Names
 
         Private Shared Function GetRunningViewerProcesses(current_Id As Integer) As List(Of Process)
             Dim found As New List(Of Process)

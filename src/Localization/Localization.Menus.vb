@@ -362,6 +362,154 @@ Partial Public NotInheritable Class Localization
             "کیا آپ واقعی {0} فائل(یں) مستقل طور پر حذف کرنا چاہتے ہیں؟",
             "确定要永久删除 {0} 个文件吗？")
 
+        ' The Recycle Bin question, in the three shapes of R-1 §3.7: to the bin, permanent
+        ' because the user said so, and permanent because the target has no bin. The last
+        ' one is five separate sentences on purpose - "permanently" without a reason is not
+        ' an acceptable message when the reason is the difference between the user's own
+        ' gesture and a property of their share (invariant 3).
+        Add("Удалить файл '{0}' в Корзину?",
+            "Move the file '{0}' to the Recycle Bin?",
+            "Перемістити файл '{0}' до Кошика?",
+            "Die Datei '{0}' in den Papierkorb verschieben?",
+            "Spostare il file '{0}' nel Cestino?",
+            "¿Mover el archivo '{0}' a la Papelera?",
+            "Déplacer le fichier '{0}' vers la Corbeille ?",
+            "Mover o ficheiro '{0}' para a Reciclagem?",
+            "نقل الملف '{0}' إلى سلة المحذوفات؟",
+            "फ़ाइल '{0}' को रीसायकल बिन में भेजें?",
+            "'{0}' ফাইলটি রিসাইকেল বিনে পাঠাবেন?",
+            "فائل '{0}' کو ری سائیکل بن میں بھیجیں؟",
+            "将文件「{0}」移到回收站吗？")
+
+        Add("Удалить файл '{0}' безвозвратно, минуя Корзину?",
+            "Delete the file '{0}' permanently, past the Recycle Bin?",
+            "Видалити файл '{0}' безповоротно, оминаючи Кошик?",
+            "Die Datei '{0}' endgültig löschen, am Papierkorb vorbei?",
+            "Eliminare definitivamente il file '{0}', senza passare dal Cestino?",
+            "¿Borrar definitivamente el archivo '{0}', sin pasar por la Papelera?",
+            "Supprimer définitivement le fichier '{0}', sans passer par la Corbeille ?",
+            "Eliminar definitivamente o ficheiro '{0}', sem passar pela Reciclagem?",
+            "حذف الملف '{0}' نهائيًا دون المرور بسلة المحذوفات؟",
+            "फ़ाइल '{0}' को रीसायकल बिन में भेजे बिना स्थायी रूप से हटाएँ?",
+            "'{0}' ফাইলটি রিসাইকেল বিন এড়িয়ে স্থায়ীভাবে মুছবেন?",
+            "فائل '{0}' کو ری سائیکل بن کے بغیر مستقل طور پر حذف کریں؟",
+            "不经回收站，永久删除文件「{0}」吗？")
+
+        Add("Файл '{0}' будет удалён безвозвратно: на сетевом диске Корзины нет.",
+            "The file '{0}' will be deleted permanently: a network drive has no Recycle Bin.",
+            "Файл '{0}' буде видалено безповоротно: на мережевому диску Кошика немає.",
+            "Die Datei '{0}' wird endgültig gelöscht: auf einem Netzlaufwerk gibt es keinen Papierkorb.",
+            "Il file '{0}' sarà eliminato definitivamente: su un'unità di rete non esiste il Cestino.",
+            "El archivo '{0}' se borrará definitivamente: una unidad de red no tiene Papelera.",
+            "Le fichier '{0}' sera supprimé définitivement : un lecteur réseau n'a pas de Corbeille.",
+            "O ficheiro '{0}' será eliminado definitivamente: uma unidade de rede não tem Reciclagem.",
+            "سيُحذف الملف '{0}' نهائيًا: لا توجد سلة محذوفات على محرك الشبكة.",
+            "फ़ाइल '{0}' स्थायी रूप से हट जाएगी: नेटवर्क ड्राइव पर रीसायकल बिन नहीं होता।",
+            "'{0}' ফাইলটি স্থায়ীভাবে মুছে যাবে: নেটওয়ার্ক ড্রাইভে রিসাইকেল বিন নেই।",
+            "فائل '{0}' مستقل طور پر حذف ہو جائے گی: نیٹ ورک ڈرائیو پر ری سائیکل بن نہیں ہوتا۔",
+            "文件「{0}」将被永久删除：网络驱动器没有回收站。")
+
+        Add("Файл '{0}' будет удалён безвозвратно: на съёмном носителе Корзины нет.",
+            "The file '{0}' will be deleted permanently: removable media have no Recycle Bin.",
+            "Файл '{0}' буде видалено безповоротно: на знімному носії Кошика немає.",
+            "Die Datei '{0}' wird endgültig gelöscht: auf einem Wechseldatenträger gibt es keinen Papierkorb.",
+            "Il file '{0}' sarà eliminato definitivamente: su un supporto rimovibile non esiste il Cestino.",
+            "El archivo '{0}' se borrará definitivamente: un medio extraíble no tiene Papelera.",
+            "Le fichier '{0}' sera supprimé définitivement : un support amovible n'a pas de Corbeille.",
+            "O ficheiro '{0}' será eliminado definitivamente: um suporte amovível não tem Reciclagem.",
+            "سيُحذف الملف '{0}' نهائيًا: لا توجد سلة محذوفات على وسائط قابلة للإزالة.",
+            "फ़ाइल '{0}' स्थायी रूप से हट जाएगी: हटाने योग्य मीडिया पर रीसायकल बिन नहीं होता।",
+            "'{0}' ফাইলটি স্থায়ীভাবে মুছে যাবে: অপসারণযোগ্য মিডিয়ায় রিসাইকেল বিন নেই।",
+            "فائل '{0}' مستقل طور پر حذف ہو جائے گی: ہٹائے جانے والے میڈیا پر ری سائیکل بن نہیں ہوتا۔",
+            "文件「{0}」将被永久删除：可移动介质没有回收站。")
+
+        Add("Файл '{0}' будет удалён безвозвратно: Корзина отключена для этого диска.",
+            "The file '{0}' will be deleted permanently: the Recycle Bin is switched off for this drive.",
+            "Файл '{0}' буде видалено безповоротно: Кошик вимкнено для цього диска.",
+            "Die Datei '{0}' wird endgültig gelöscht: der Papierkorb ist für dieses Laufwerk deaktiviert.",
+            "Il file '{0}' sarà eliminato definitivamente: il Cestino è disattivato per questa unità.",
+            "El archivo '{0}' se borrará definitivamente: la Papelera está desactivada para esta unidad.",
+            "Le fichier '{0}' sera supprimé définitivement : la Corbeille est désactivée pour ce lecteur.",
+            "O ficheiro '{0}' será eliminado definitivamente: a Reciclagem está desativada para esta unidade.",
+            "سيُحذف الملف '{0}' نهائيًا: سلة المحذوفات معطّلة لهذا القرص.",
+            "फ़ाइल '{0}' स्थायी रूप से हट जाएगी: इस ड्राइव के लिए रीसायकल बिन बंद है।",
+            "'{0}' ফাইলটি স্থায়ীভাবে মুছে যাবে: এই ড্রাইভের জন্য রিসাইকেল বিন বন্ধ।",
+            "فائل '{0}' مستقل طور پر حذف ہو جائے گی: اس ڈرائیو کے لیے ری سائیکل بن بند ہے۔",
+            "文件「{0}」将被永久删除：此驱动器的回收站已关闭。")
+
+        Add("Файл '{0}' будет удалён безвозвратно: он больше, чем вмещает Корзина.",
+            "The file '{0}' will be deleted permanently: it is larger than the Recycle Bin holds.",
+            "Файл '{0}' буде видалено безповоротно: він більший, ніж вміщує Кошик.",
+            "Die Datei '{0}' wird endgültig gelöscht: sie ist größer, als der Papierkorb fasst.",
+            "Il file '{0}' sarà eliminato definitivamente: è più grande della capacità del Cestino.",
+            "El archivo '{0}' se borrará definitivamente: es mayor de lo que cabe en la Papelera.",
+            "Le fichier '{0}' sera supprimé définitivement : il dépasse la capacité de la Corbeille.",
+            "O ficheiro '{0}' será eliminado definitivamente: é maior do que a Reciclagem comporta.",
+            "سيُحذف الملف '{0}' نهائيًا: حجمه أكبر مما تتسع له سلة المحذوفات.",
+            "फ़ाइल '{0}' स्थायी रूप से हट जाएगी: यह रीसायकल बिन की क्षमता से बड़ी है।",
+            "'{0}' ফাইলটি স্থায়ীভাবে মুছে যাবে: এটি রিসাইকেল বিনের ধারণক্ষমতার চেয়ে বড়।",
+            "فائل '{0}' مستقل طور پر حذف ہو جائے گی: یہ ری سائیکل بن کی گنجائش سے بڑی ہے۔",
+            "文件「{0}」将被永久删除：它超过了回收站的容量。")
+
+        Add("Файл '{0}' будет удалён безвозвратно: это расположение не поддерживает Корзину.",
+            "The file '{0}' will be deleted permanently: this location does not support the Recycle Bin.",
+            "Файл '{0}' буде видалено безповоротно: це розташування не підтримує Кошик.",
+            "Die Datei '{0}' wird endgültig gelöscht: dieser Speicherort unterstützt keinen Papierkorb.",
+            "Il file '{0}' sarà eliminato definitivamente: questa posizione non supporta il Cestino.",
+            "El archivo '{0}' se borrará definitivamente: esta ubicación no admite la Papelera.",
+            "Le fichier '{0}' sera supprimé définitivement : cet emplacement ne prend pas en charge la Corbeille.",
+            "O ficheiro '{0}' será eliminado definitivamente: esta localização não suporta a Reciclagem.",
+            "سيُحذف الملف '{0}' نهائيًا: هذا الموقع لا يدعم سلة المحذوفات.",
+            "फ़ाइल '{0}' स्थायी रूप से हट जाएगी: यह स्थान रीसायकल बिन का समर्थन नहीं करता।",
+            "'{0}' ফাইলটি স্থায়ীভাবে মুছে যাবে: এই অবস্থান রিসাইকেল বিন সমর্থন করে না।",
+            "فائل '{0}' مستقل طور پر حذف ہو جائے گی: یہ مقام ری سائیکل بن کی حمایت نہیں کرتا۔",
+            "文件「{0}」将被永久删除：此位置不支持回收站。")
+
+        ' The same three shapes for the F3 panel's selection. The environmental reasons
+        ' collapse into one sentence here: a list of five reasons under one Yes/No is
+        ' noise, and the panel already deletes everything it was given in one go.
+        Add("Удалить {0} файл(ов) в Корзину?",
+            "Move {0} file(s) to the Recycle Bin?",
+            "Перемістити {0} файл(ів) до Кошика?",
+            "{0} Datei(en) in den Papierkorb verschieben?",
+            "Spostare {0} file nel Cestino?",
+            "¿Mover {0} archivo(s) a la Papelera?",
+            "Déplacer {0} fichier(s) vers la Corbeille ?",
+            "Mover {0} ficheiro(s) para a Reciclagem?",
+            "نقل {0} ملف إلى سلة المحذوفات؟",
+            "{0} फ़ाइल(ें) रीसायकल बिन में भेजें?",
+            "{0}টি ফাইল রিসাইকেল বিনে পাঠাবেন?",
+            "{0} فائل(یں) ری سائیکل بن میں بھیجیں؟",
+            "将 {0} 个文件移到回收站吗？")
+
+        Add("Удалить {0} файл(ов) безвозвратно, минуя Корзину?",
+            "Delete {0} file(s) permanently, past the Recycle Bin?",
+            "Видалити {0} файл(ів) безповоротно, оминаючи Кошик?",
+            "{0} Datei(en) endgültig löschen, am Papierkorb vorbei?",
+            "Eliminare definitivamente {0} file, senza passare dal Cestino?",
+            "¿Borrar definitivamente {0} archivo(s), sin pasar por la Papelera?",
+            "Supprimer définitivement {0} fichier(s), sans passer par la Corbeille ?",
+            "Eliminar definitivamente {0} ficheiro(s), sem passar pela Reciclagem?",
+            "حذف {0} ملف نهائيًا دون المرور بسلة المحذوفات؟",
+            "{0} फ़ाइल(ें) रीसायकल बिन में भेजे बिना स्थायी रूप से हटाएँ?",
+            "{0}টি ফাইল রিসাইকেল বিন এড়িয়ে স্থায়ীভাবে মুছবেন?",
+            "{0} فائل(یں) ری سائیکل بن کے بغیر مستقل طور پر حذف کریں؟",
+            "不经回收站，永久删除 {0} 个文件吗？")
+
+        Add("{0} файл(ов) будет удалено безвозвратно: Корзина здесь недоступна.",
+            "{0} file(s) will be deleted permanently: there is no Recycle Bin here.",
+            "{0} файл(ів) буде видалено безповоротно: Кошик тут недоступний.",
+            "{0} Datei(en) werden endgültig gelöscht: hier gibt es keinen Papierkorb.",
+            "{0} file saranno eliminati definitivamente: qui non c'è il Cestino.",
+            "{0} archivo(s) se borrarán definitivamente: aquí no hay Papelera.",
+            "{0} fichier(s) seront supprimés définitivement : il n'y a pas de Corbeille ici.",
+            "{0} ficheiro(s) serão eliminados definitivamente: aqui não há Reciclagem.",
+            "سيُحذف {0} ملف نهائيًا: لا توجد سلة محذوفات هنا.",
+            "{0} फ़ाइल(ें) स्थायी रूप से हट जाएँगी: यहाँ रीसायकल बिन नहीं है।",
+            "{0}টি ফাইল স্থায়ীভাবে মুছে যাবে: এখানে রিসাইকেল বিন নেই।",
+            "{0} فائل(یں) مستقل طور پر حذف ہو جائیں گی: یہاں ری سائیکل بن نہیں ہے۔",
+            "{0} 个文件将被永久删除：这里没有回收站。")
+
         Add("Вы уверены, что хотите {0} {1} файл(ов) в '{2}'?",
             "Are you sure you want to {0} {1} file(s) to '{2}'?",
             "Ви впевнені, що хочете {0} {1} файл(ів) до '{2}'?",

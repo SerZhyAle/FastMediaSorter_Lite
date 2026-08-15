@@ -3,6 +3,13 @@
 Статус: **реализовано, кроме C-2 и C-3** (2026-07-30, локальная сборка; тег не создавался).
 Сделаны все пункты этапов A, B, D, E и C-1, C-4..C-11. **C-2 и C-3 не тронуты** - см. §6
 пункты 4 и 5: обоим нужна проверка на живой сетевой шаре владельца, а не только сборка.
+Документ переведён в `done/` 2026-08-14: срез закрыт, а два отложенных пункта - не остаток
+этой работы, а самостоятельные единицы, и учитываются они **один раз, там же**:
+- **C-2** (скан каталога в фон) = **У-03(в)** в
+  [S11 §1(в)](../SPECIFICATION_VIEWER_CORE_S11_MODERN_ASYNC.md) - одна и та же правка,
+  отложенная в обоих документах по одной и той же причине; очередь считает её по S11.
+- **C-3** (`MediaPlayer.Stop()` в фон) - отложен с аргументом: файловая операция всё равно
+  обязана дождаться остановки, поэтому спека требует начинать с измерения, а не с правки.
 Дата: 2026-07-30, ревизия 2
 Основание: полный аудит исходников на «долгую работу у пользователя» - 8 измерений
 (GDI+/изображения, таймеры и подписки, LibVLC, потоки и блокировки, рост данных и
@@ -11,12 +18,12 @@
 всем партиалам `Main_Form`), 1 опровергнута, 1 осталась «вероятной».
 Сборки: правки идут в **общий код обеих сборок**, если рядом не сказано иное; net48
 трогаем только там, где это починка настоящего бага (политика сопровождения из
-[CLAUDE.md](../../CLAUDE.md)).
-Соседи: [SPECIFICATION_VIEWER_CORE_S11_MODERN_ASYNC.md](SPECIFICATION_VIEWER_CORE_S11_MODERN_ASYNC.md)
+[CLAUDE.md](../../../CLAUDE.md)).
+Соседи: [SPECIFICATION_VIEWER_CORE_S11_MODERN_ASYNC.md](../SPECIFICATION_VIEWER_CORE_S11_MODERN_ASYNC.md)
 (асинхронное ядро - там уже описан скан папки в фоне, см. C-2),
-[SPECIFICATION_VIEWER_CORE_S1_DATALOSS.md](done/SPECIFICATION_VIEWER_CORE_S1_DATALOSS.md)
+[SPECIFICATION_VIEWER_CORE_S1_DATALOSS.md](SPECIFICATION_VIEWER_CORE_S1_DATALOSS.md)
 (предыдущий срез по потере данных),
-[SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md](done/SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md)
+[SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md](SPECIFICATION_VIEWER_CORE_AUDIT_DOTNET10.md)
 (аудит ядра 2026-07-16 - другой вопрос: корректность операций, а не долгая работа).
 
 ## 0. О чём этот документ
@@ -44,14 +51,14 @@
 
 - **Опровергнуто:** «`companion.log` растёт без ротации в трее неделями». Ротации
   действительно нет, но во всём Companion **два** вызова `WriteLine`
-  ([ShareConfigBuilder.vb:113](../../src/FastMediaSorterCompanion/Core/ShareConfigBuilder.vb) и
+  ([ShareConfigBuilder.vb:113](../../../src/FastMediaSorterCompanion/Core/ShareConfigBuilder.vb) и
   `:192`), оба - внутри редкой ветки `If lan.Length = 0`. Файл не растёт, потому что в
   него практически никто не пишет. Правка не нужна.
 - **Понижено с medium/high до low** (жизненный цикл оказался закрыт в другом файле, или
   путь достижим не так часто, как утверждала находка): `Media`-обёртки LibVLC, пустая
   папка, `Perspective_Bitmap`, шрифт кнопки перевода, объекты `Process`.
 - **`Media` в горячем пути играть не пришлось**: `PlayVideoWithVlcAsync` честно делает
-  `media.Dispose()` сразу после `Play` ([Main_Form.VideoPlayer.vb:290](../../src/Main_Form.VideoPlayer.vb)),
+  `media.Dispose()` сразу после `Play` ([Main_Form.VideoPlayer.vb:290](../../../src/Main_Form.VideoPlayer.vb)),
   так что утечки «одна `Media` на каждое видео» **нет** - остались только обёртки
   геттера в `VideoTracks` (E-6).
 
@@ -77,8 +84,8 @@
 
 ### A-1. Панель миниатюр материализует по окну на каждый файл от нуля до текущего
 
-Файл: [Image_Panel_Form.vb](../../src/Image_Panel_Form.vb) (+ точка вызова
-[Main_Form.vb:656](../../src/Main_Form.vb) `ShowImagePanelForm`).
+Файл: [Image_Panel_Form.vb](../../../src/Image_Panel_Form.vb) (+ точка вызова
+[Main_Form.vb:656](../../../src/Main_Form.vb) `ShowImagePanelForm`).
 Сборки: обе. Находки аудита: #1, #42, #43, #2, #9, #6, #44.
 
 **Симптом.** Пользователь долистал до файла ~10 000 в папке на 15 тысяч фото (размер из
@@ -96,9 +103,9 @@
 While initial_Target_PictureBox Is Nothing AndAlso currently_Loaded_Index < allImageFiles.Count
 ```
 
-([Image_Panel_Form.vb:172](../../src/Image_Panel_Form.vb)) - то есть зовёт
+([Image_Panel_Form.vb:172](../../../src/Image_Panel_Form.vb)) - то есть зовёт
 `LoadNextBatchAsync` пока не появится карточка **текущего** файла, а каждая карточка это
-`New PictureBox()` ([:455](../../src/Image_Panel_Form.vb)), добавленный в видимый
+`New PictureBox()` ([:455](../../../src/Image_Panel_Form.vb)), добавленный в видимый
 `FlowLayoutPanel` (значит настоящий HWND), плюс `CreateThumbnail` → `LoadImageWithStream`
 (полный декод). Виртуализации нет, вытеснения нет.
 
@@ -115,20 +122,20 @@ While initial_Target_PictureBox Is Nothing AndAlso currently_Loaded_Index < allI
 3. **Освобождать `Image` везде, где карточка уходит**: WinForms `PictureBox.Dispose()`
    **не** освобождает картинку, присвоенную через свойство `Image` (только загруженную
    через `ImageLocation`). Сейчас её теряют три места: перенос
-   ([:565](../../src/Image_Panel_Form.vb)), удаление ([:372](../../src/Image_Panel_Form.vb))
+   ([:565](../../../src/Image_Panel_Form.vb)), удаление ([:372](../../../src/Image_Panel_Form.vb))
    и `InitializeState`, который делает `imagePanel.Controls.Clear()` после того, как
-   освободил картинки только у **оставшихся** контролов ([:383-386](../../src/Image_Panel_Form.vb)).
+   освободил картинки только у **оставшихся** контролов ([:383-386](../../../src/Image_Panel_Form.vb)).
 4. **Не терять миниатюру на раннем выходе**: в `LoadNextBatchAsync` ветка
    `If Me.IsDisposed OrElse pb.IsDisposed OrElse CStr(pb.Tag) <> filePath Then Return`
-   ([:468](../../src/Image_Panel_Form.vb)) бросает уже построенный битмап; его надо
+   ([:468](../../../src/Image_Panel_Form.vb)) бросает уже построенный битмап; его надо
    освободить, а `pb.Invoke` обернуть в `Try`, который тоже освобождает при отказе.
 5. **Освобождать панель после закрытия**: `ShowDialog` **не** освобождает форму, а ссылка
    на неё живёт в поле `Main_Form.Image_Panel_Form`, поэтому все миниатюры прошлого
    открытия остаются в памяти до следующего открытия панели (то есть, возможно, сутками).
    После `ShowDialog` освобождаем содержимое (или саму форму - `PrepareForDisplay` всё
    равно перестраивает всё с нуля).
-6. **Массовые операции - в фон.** `PoMove_for_Panel` ([:553-571](../../src/Image_Panel_Form.vb))
-   и `DeleteSelectedFiles` ([:369](../../src/Image_Panel_Form.vb)) вызывают
+6. **Массовые операции - в фон.** `PoMove_for_Panel` ([:553-571](../../../src/Image_Panel_Form.vb))
+   и `DeleteSelectedFiles` ([:369](../../../src/Image_Panel_Form.vb)) вызывают
    `File.Copy`/`File.Move`/`File.Delete` прямо в обработчике. Выделили 300 фото,
    приёмник на сетевой шаре - окно стоит минутами без прогресса и без отмены. Цикл
    уходит на фоновую задачу, удаление карточки возвращается через `BeginInvoke`,
@@ -142,8 +149,8 @@ USER») не превышает ~1000, рабочее множество не р
 
 ### A-2. Автоскип нечитаемого файла - взаимная рекурсия на UI-потоке до `StackOverflow`
 
-Файлы: [Main_Form.MediaLoading.vb:75-96](../../src/Main_Form.MediaLoading.vb) (`SkipUnreadableFile`),
-[там же :1289-1292](../../src/Main_Form.MediaLoading.vb) (второй путь, в `Catch`).
+Файлы: [Main_Form.MediaLoading.vb:75-96](../../../src/Main_Form.MediaLoading.vb) (`SkipUnreadableFile`),
+[там же :1289-1292](../../../src/Main_Form.MediaLoading.vb) (второй путь, в `Catch`).
 Сборки: обе. Находки: #18 + дополнение критика.
 
 **Симптом.** Пользователь листает папку на 5 000 файлов на `\\p7\..`, и NAS теряет
@@ -159,12 +166,12 @@ SMB-сессию (сон, перезагрузка, кабель). Следую�
 → `UpdateFileIndexAndList` → `UpdateCurrentFileAndDisplay` → `LoadStandardImageInPictureBox`
 → снова `SkipUnreadableFile` **не разворачивает стек**: ~5 кадров на каждый пропущенный
 файл. Единственный ограничитель - `auto_Skip_Chain > Math.Max(1, total_File_Count)`
-([:128](../../src/Main_Form.MediaLoading.vb)), и комментарий рядом честно признаёт
+([:128](../../../src/Main_Form.MediaLoading.vb)), и комментарий рядом честно признаёт
 проблему («индекс завернётся, а стек нет»), но **сам счётчик и есть глубина стека**: на
 папке в тысячи файлов мегабайтный стек UI-потока кончается раньше счётчика.
 
 Второй, **никем не ограниченный** путь той же формы - `Catch` вокруг диспетчера медиа
-([:1269-1292](../../src/Main_Form.MediaLoading.vb)): он удаляет файл из списка и зовёт
+([:1269-1292](../../../src/Main_Form.MediaLoading.vb)): он удаляет файл из списка и зовёт
 `UpdateCurrentFileAndDisplay(True, False)` напрямую, минуя `is_Auto_Skip` и его счётчик.
 Папка, где кидает **каждый** файл (например синхронный бросок из `PlayVideoWithVlcAsync`,
 когда нативные библиотеки VLC не грузятся), нанизывает столько кадров, сколько в папке
@@ -198,7 +205,7 @@ Me.BeginInvoke(New Action(Sub() ReadShowMediaFile(Mode_JumpTo, is_Auto_Skip:=Tru
 
 ### A-3. `current.log` пишется на каждый декод и не ротируется никогда
 
-Файлы: [AppFileLogger.vb:24-79](../../src/AppFileLogger.vb), [FileManager.vb:18](../../src/FileManager.vb).
+Файлы: [AppFileLogger.vb:24-79](../../../src/AppFileLogger.vb), [FileManager.vb:18](../../../src/FileManager.vb).
 Сборки: обе. Находки: #28, #3.
 
 **Симптом.** Пользователь раскладывает 5-10 тысяч фото в день (это и есть основной
@@ -210,11 +217,11 @@ Me.BeginInvoke(New Action(Sub() ReadShowMediaFile(Mode_JumpTo, is_Auto_Skip:=Tru
 файла это UI-поток.
 
 **Причина.** `AppFileLogger.Initialize` открывает файл `FileMode.Append`
-([:33](../../src/AppFileLogger.vb)) и не проверяет размер - ни при старте, ни потом.
+([:33](../../../src/AppFileLogger.vb)) и не проверяет размер - ни при старте, ни потом.
 Единственное ограничение в кодовой базе (`LogPackage.MaxEntryBytes = 2 МБ`) касается
 **копии** внутри ZIP для «отправить логи автору», но не файла на диске. А самый горячий
 писатель - безусловная строка `AppFileLogger.WriteLine("LoadImageWithStream: file=..")`
-в [FileManager.vb:18](../../src/FileManager.vb); это не `Debug.WriteLine`, поэтому она
+в [FileManager.vb:18](../../../src/FileManager.vb); это не `Debug.WriteLine`, поэтому она
 остаётся и в Release обеих сборок.
 
 **Правка.** Два независимых куска, и нужны оба:
@@ -225,7 +232,7 @@ Me.BeginInvoke(New Action(Sub() ReadShowMediaFile(Mode_JumpTo, is_Auto_Skip:=Tru
    растёт, а материал для разбора инцидента остаётся. Порог - константа рядом с кодом.
 2. **Убрать строку на каждый декод.** Она диагностическая; на её месте достаточно
    `Debug.WriteLine` (пропадает в Release) либо явный уровень «подробно», выключенный по
-   умолчанию. Строка «file not found» ([:12](../../src/FileManager.vb)) остаётся - она
+   умолчанию. Строка «file not found» ([:12](../../../src/FileManager.vb)) остаётся - она
    пишется на аварии, а не в норме.
 
 **Тест.** Ротация - чистая файловая логика: покрыть в `tests/Lite.Tests` (создать файл
@@ -238,7 +245,7 @@ Me.BeginInvoke(New Action(Sub() ReadShowMediaFile(Mode_JumpTo, is_Auto_Skip:=Tru
 
 ### B-1. Приёмники, недавние списки и все настройки пишутся только в `FormClosing`
 
-Файл: [Main_Form.Lifecycle.vb:758-838](../../src/Main_Form.Lifecycle.vb).
+Файл: [Main_Form.Lifecycle.vb:758-838](../../../src/Main_Form.Lifecycle.vb).
 Сборки: обе. Находка: #31.
 
 **Симптом.** Пользователь перенастроил несколько каталогов-получателей DEL/0..9, потом
@@ -251,7 +258,7 @@ LibVLC, сброс драйвера видео, `taskkill` или отключе
 **Причина.** `MoveOn1..MoveOn9`/`MoveOn0`, `RecentMediaFiles`, `RecentFolders`,
 `ImageFolder`/`LastCounter` и все флаги записываются **исключительно** внутри
 `Form1_FormClosing`. Правка каталога в `Table_Form` меняет только массив в памяти
-(`Hardkeys_to_move_mediafile`, [Table_Form.vb:346,358](../../src/Table_Form.vb)).
+(`Hardkeys_to_move_mediafile`, [Table_Form.vb:346,358](../../../src/Table_Form.vb)).
 Немедленно сохраняются только три вещи: язык интерфейса, настройки OCR и флаг вопроса об
 ассоциациях.
 
@@ -277,8 +284,8 @@ Private Sub PersistSettings()
 
 ### B-2. Операция, поставленная в очередь после начала дренажа, теряется молча
 
-Файлы: [FileOpQueue.vb:63-69](../../src/FileOpQueue.vb),
-[Main_Form.Lifecycle.vb:748-755](../../src/Main_Form.Lifecycle.vb).
+Файлы: [FileOpQueue.vb:63-69](../../../src/FileOpQueue.vb),
+[Main_Form.Lifecycle.vb:748-755](../../../src/Main_Form.Lifecycle.vb).
 Сборки: **только modern** (`FileOpQueue` - целиком `#If Not NETFRAMEWORK`). Находка: #19.
 
 **Симптом.** Пользователь закрывает окно, когда в очереди ещё висит перенос на 200 МБ.
@@ -288,7 +295,7 @@ Private Sub PersistSettings()
 сказал «перенесён»/«удалён», файлы ушли из списка - а на диске ничего не произошло.
 
 **Причина.** `DrainAsync` первым делом делает `_channel.Writer.TryComplete()`
-([:106](../../src/FileOpQueue.vb)), после чего `Enqueue` попадает в ветку
+([:106](../../../src/FileOpQueue.vb)), после чего `Enqueue` попадает в ветку
 
 ```vb
 If Not _channel.Writer.TryWrite(op) Then
@@ -297,8 +304,8 @@ End If
 ```
 
 а вызывающая сторона состояние уже изменила: перенос убрал файл из списка
-([Main_Form.FileOperations.vb:458](../../src/Main_Form.FileOperations.vb)), удаление -
-убрало и напечатало «удалён: ..» ([Main_Form.MediaLoading.vb:364-370](../../src/Main_Form.MediaLoading.vb)).
+([Main_Form.FileOperations.vb:458](../../../src/Main_Form.FileOperations.vb)), удаление -
+убрало и напечатало «удалён: ..» ([Main_Form.MediaLoading.vb:364-370](../../../src/Main_Form.MediaLoading.vb)).
 Путь откатки (`FinishFileOp`) не срабатывает, потому что никто не сообщил об отказе.
 
 **Правка.** Отказ обязан быть видимым, и его должно быть **некому** получить:
@@ -317,9 +324,9 @@ End If
 
 ### B-3. Закрытие после таймаута дренажа обрывает перенос на полуслове
 
-Файлы: [Main_Form.Lifecycle.vb:748-755](../../src/Main_Form.Lifecycle.vb) (modern),
-[там же :860](../../src/Main_Form.Lifecycle.vb) (net48, 5 с),
-[Main_Form.FileOperations.vb](../../src/Main_Form.FileOperations.vb) (`RunFileOp`).
+Файлы: [Main_Form.Lifecycle.vb:748-755](../../../src/Main_Form.Lifecycle.vb) (modern),
+[там же :860](../../../src/Main_Form.Lifecycle.vb) (net48, 5 с),
+[Main_Form.FileOperations.vb](../../../src/Main_Form.FileOperations.vb) (`RunFileOp`).
 Сборки: обе. Находка: #20.
 
 **Симптом.** Пользователь поставил пять переносов по 100-200 МБ на `\\p7\down` (мгновенно,
@@ -348,7 +355,7 @@ End If
 
 ### B-4. Companion теряет папку из LITE, когда его окно уже открыто
 
-Файл: [FastMediaSorterCompanion/TrayContext.vb:244-249, 341](../../src/FastMediaSorterCompanion/TrayContext.vb).
+Файл: [FastMediaSorterCompanion/TrayContext.vb:244-249, 341](../../../src/FastMediaSorterCompanion/TrayContext.vb).
 Сборки: Companion (net10). Находка: #38.
 
 **Симптом.** Окно Share Manager открыто (нормальное состояние для программы в трее). В
@@ -360,11 +367,11 @@ LITE пользователь щёлкает правой по полю папк
 
 **Причина.** `OnPayloadReceived` направляет полезную нагрузку в `ShowMainWindow(payload)`,
 а тот использует `initialFolder` **только при создании нового окна**
-([:249](../../src/FastMediaSorterCompanion/TrayContext.vb)); если `_mainWindow` уже есть и
+([:249](../../../src/FastMediaSorterCompanion/TrayContext.vb)); если `_mainWindow` уже есть и
 не освобождено, метод делает `Show`/`Activate`/`BringToFront`, а аргумент отбрасывает.
 `MainWindow` читает `_initialFolder` один раз, в `OnShownFirst`
-([MainWindow.vb:583](../../src/FastMediaSorterCompanion/Forms/MainWindow.vb)). Комментарий
-на [:244-245](../../src/FastMediaSorterCompanion/TrayContext.vb) сам признаёт незакрытый
+([MainWindow.vb:583](../../../src/FastMediaSorterCompanion/Forms/MainWindow.vb)). Комментарий
+на [:244-245](../../../src/FastMediaSorterCompanion/TrayContext.vb) сам признаёт незакрытый
 хвост («уточняется протоколом пробуждения в Ф4») - и он уехал в релиз.
 
 **Правка.** В `ShowMainWindow`, когда окно уже живо и `initialFolder` не пуст, вызвать
@@ -386,11 +393,11 @@ LITE пользователь щёлкает правой по полю папк
 
 ### C-1. Ожидание декода не имеет дедлайна
 
-Файл: [Main_Form.LoadingIndicator.vb:52-85](../../src/Main_Form.LoadingIndicator.vb).
+Файл: [Main_Form.LoadingIndicator.vb:52-85](../../../src/Main_Form.LoadingIndicator.vb).
 Сборки: обе. Находка: #8.
 
 `LoadImageWithProgress` крутит `Loop Until decode.Wait(loading_Badge_Frame_Ms)`
-([:72](../../src/Main_Form.LoadingIndicator.vb)) **пока декод не вернётся**. То, что ждём
+([:72](../../../src/Main_Form.LoadingIndicator.vb)) **пока декод не вернётся**. То, что ждём
 без прокачки сообщений - осознанно и описано в заголовке файла (иначе нажатие войдёт
 повторно в загрузку того же файла), но верхней границы нет. Синхронное чтение по мёртвой
 SMB-сессии стоит таймаут редиректора на каждый блок, и на многомегабайтном файле окно
@@ -404,17 +411,17 @@ SMB-сессии стоит таймаут редиректора на кажд�
 
 ### C-2. Скан каталога идёт на UI-потоке - НЕ СДЕЛАНО, см. §6 (4)
 
-Файлы: [Main_Form.FileScanning.vb:348](../../src/Main_Form.FileScanning.vb) (`GetFiles`),
-вызовы из [Main_Form.MediaLoading.vb:432/524/584](../../src/Main_Form.MediaLoading.vb).
+Файлы: [Main_Form.FileScanning.vb:348](../../../src/Main_Form.FileScanning.vb) (`GetFiles`),
+вызовы из [Main_Form.MediaLoading.vb:432/524/584](../../../src/Main_Form.MediaLoading.vb).
 Сборки: обе. Находка: #21.
 
 **Из этого пункта сделана только дешёвая часть** - убран `File.Exists` из
-`IsCurrentFileEligibleImage` ([Main_Form.OcrTranslate.vb](../../src/Main_Form.OcrTranslate.vb)),
+`IsCurrentFileEligibleImage` ([Main_Form.OcrTranslate.vb](../../../src/Main_Form.OcrTranslate.vb)),
 который `OnMediaDisplayed` дёргал после **каждого** показа: на неотвечающей шаре это полный
 сетевой таймаут за вопрос, ответ на который уже известен (видимый picture box означает, что
 файл только что прочитан). Сам скан в фон - отложен.
 
-**Это уже спроектировано** в [S11 §1, пункт (в)](SPECIFICATION_VIEWER_CORE_S11_MODERN_ASYNC.md)
+**Это уже спроектировано** в [S11 §1, пункт (в)](../SPECIFICATION_VIEWER_CORE_S11_MODERN_ASYNC.md)
 (`EnsureFolderList` + `folder_List_Loaded_For` + отмена по поколению) и там же отложено
 «требует механики продолжения в конвейере». Аудит подтверждает цену отсрочки: на тёплой
 шаре это ~1.1 с на 15 779 файлов, но на **упавшей** сессии первое обращение к каталогу
@@ -423,22 +430,22 @@ SMB-сессии стоит таймаут редиректора на кажд�
 
 **Правка.** Реализовать S11 §1(в) как написано; отдельного дизайна не требуется. Заодно
 убрать синхронные точки того же класса на каждом листании: `File.Exists`
-([MediaLoading.vb:1104](../../src/Main_Form.MediaLoading.vb)), `FileInfo`
-([там же :697](../../src/Main_Form.MediaLoading.vb)) и `File.Exists` в
-`IsCurrentFileEligibleImage` ([Main_Form.OcrTranslate.vb:388](../../src/Main_Form.OcrTranslate.vb)),
+([MediaLoading.vb:1104](../../../src/Main_Form.MediaLoading.vb)), `FileInfo`
+([там же :697](../../../src/Main_Form.MediaLoading.vb)) и `File.Exists` в
+`IsCurrentFileEligibleImage` ([Main_Form.OcrTranslate.vb:388](../../../src/Main_Form.OcrTranslate.vb)),
 который `OnMediaDisplayed` зовёт после **каждого** показа.
 
 ### C-3. `MediaPlayer.Stop()` вызывается на UI-потоке при каждом уходе с видео - НЕ СДЕЛАНО, см. §6 (5)
 
-Файл: [Main_Form.VideoPlayer.vb:316-336](../../src/Main_Form.VideoPlayer.vb).
+Файл: [Main_Form.VideoPlayer.vb:316-336](../../../src/Main_Form.VideoPlayer.vb).
 Сборки: обе (в modern чаще - там VLC единственный движок). Находка: #15.
 
 `libvlc_media_player_stop` синхронный: он присоединяет поток ввода/декодера, прежде чем
 вернуться - обычно 50-300 мс на локальном файле и **несколько секунд**, если ввод
 подвис на сетевой шаре. Зовётся с UI-потока при каждом переходе видео → фото
-([MediaLoading.vb:883-885](../../src/Main_Form.MediaLoading.vb)), перед **каждым**
+([MediaLoading.vb:883-885](../../../src/Main_Form.MediaLoading.vb)), перед **каждым**
 переносом/удалением/переименованием видео
-([FileOperations.vb:177](../../src/Main_Form.FileOperations.vb)) и при закрытии.
+([FileOperations.vb:177](../../../src/Main_Form.FileOperations.vb)) и при закрытии.
 
 **Правка.** Вынести `Stop()` на рабочий поток (`Await Task.Run`), но **не терять
 упорядоченность**: файловая операция обязана дождаться остановки (VLC держит файл
@@ -453,8 +460,8 @@ SMB-сессии стоит таймаут редиректора на кажд�
 
 ### C-4. Загрузка рантаймов: бесконечный таймаут, и подвисшая задача кэшируется на всю сессию
 
-Файлы: [OptionalRuntimeManager.vb:28, 190-196, 233-239](../../src/OptionalRuntimeManager.vb),
-[Main_Form.VideoPlayer.vb:134](../../src/Main_Form.VideoPlayer.vb) (`EnsureVlcInitializedAsync`).
+Файлы: [OptionalRuntimeManager.vb:28, 190-196, 233-239](../../../src/OptionalRuntimeManager.vb),
+[Main_Form.VideoPlayer.vb:134](../../../src/Main_Form.VideoPlayer.vb) (`EnsureVlcInitializedAsync`).
 Сборки: обе (чаще x86 - его 32-битные нативы по умолчанию вырезаны из релиза). Находка: #14.
 
 ```vb
@@ -475,9 +482,9 @@ Private ReadOnly httpClient As New HttpClient() With {.Timeout = Timeout.Infinit
 
 ### C-5. Отмена OCR не доходит внутрь `Recognize`
 
-Файлы: [Ocr/IOcrEngine.vb](../../src/Ocr/IOcrEngine.vb),
-[Ocr/TesseractOcrEngine.vb:119, 149-152, 223-230](../../src/Ocr/TesseractOcrEngine.vb),
-[Main_Form.OcrTranslate.vb:255, 368](../../src/Main_Form.OcrTranslate.vb).
+Файлы: [Ocr/IOcrEngine.vb](../../../src/Ocr/IOcrEngine.vb),
+[Ocr/TesseractOcrEngine.vb:119, 149-152, 223-230](../../../src/Ocr/TesseractOcrEngine.vb),
+[Main_Form.OcrTranslate.vb:255, 368](../../../src/Main_Form.OcrTranslate.vb).
 Сборки: обе. Находка: #22.
 
 **Симптом.** Включён авто-OCR (Shift+T) при слайдшоу на 5 с по плотным сканам, где одно
@@ -499,10 +506,10 @@ Tesseract, «Распознавание..» для картинки на экр�
 
 ### C-6. Пайп к воркеру имеет таймаут только на подключение
 
-Файл: [FastMediaSorterCompanion/Core/WorkerIpc.vb:45-76](../../src/FastMediaSorterCompanion/Core/WorkerIpc.vb).
+Файл: [FastMediaSorterCompanion/Core/WorkerIpc.vb:45-76](../../../src/FastMediaSorterCompanion/Core/WorkerIpc.vb).
 Сборки: Companion. Находка: #37.
 
-Ограничено только `pipe.Connect(connectTimeoutMs)` ([:50](../../src/FastMediaSorterCompanion/Core/WorkerIpc.vb)).
+Ограничено только `pipe.Connect(connectTimeoutMs)` ([:50](../../../src/FastMediaSorterCompanion/Core/WorkerIpc.vb)).
 Последующие `pipe.Write`/`Flush` и цикл `pipe.Read` («читаем, пока воркер не закроет свою
 сторону») блокирующие, без таймаута и без токена. Если Go-воркер принял соединение, но не
 отвечает и не закрывает (взведённый дедлок, приостановка антивирусом, зависший диск),
@@ -511,8 +518,8 @@ Tesseract, «Распознавание..» для картинки на экр�
 сквозной таймаут, а это только подключение.
 
 **Последствия за недели в трее.** Таймер статистики в трее (30 с,
-[TrayContext.vb:203](../../src/FastMediaSorterCompanion/TrayContext.vb)) и в окне (10 с,
-[MainWindow.vb:390](../../src/FastMediaSorterCompanion/Forms/MainWindow.vb)) продолжают
+[TrayContext.vb:203](../../../src/FastMediaSorterCompanion/TrayContext.vb)) и в окне (10 с,
+[MainWindow.vb:390](../../../src/FastMediaSorterCompanion/Forms/MainWindow.vb)) продолжают
 стрелять «выстрелил и забыл» - **ни один флаг занятости не выставлен зависшими
 вызовами** - поэтому каждые 10-30 с добавляется навсегда заблокированный поток пула плюс
 хэндл пайпа: ~2880 в сутки только из трея. Через несколько дней - голодание пула
@@ -530,7 +537,7 @@ Tesseract, «Распознавание..» для картинки на экр�
 
 ### C-7. net48: `ProbeArgument` выполняется на UI-потоке
 
-Файл: [Main_Form.Lifecycle.vb:313-381](../../src/Main_Form.Lifecycle.vb) (ветка `#Else`).
+Файл: [Main_Form.Lifecycle.vb:313-381](../../../src/Main_Form.Lifecycle.vb) (ветка `#Else`).
 Сборки: **только net48** - и это починка настоящего бага, а не доработка (политика
 сопровождения соблюдена: в modern это уже исправлено, ветка просто не получила правку).
 Находка: #23.
@@ -547,17 +554,17 @@ Tesseract, «Распознавание..» для картинки на экр�
 
 ### C-8. Шторм модальных `MsgBox` из перехватчиков в горячих путях
 
-Файлы: [Main_Form.MediaLoading.vb:377, 509, 573, 629](../../src/Main_Form.MediaLoading.vb),
-[Main_Form.FileOperations.vb:329, 471, 532](../../src/Main_Form.FileOperations.vb),
-[Main_Form.KeyboardInput.vb:302](../../src/Main_Form.KeyboardInput.vb),
-[Main_Form.PerspectiveBackground.vb:557](../../src/Main_Form.PerspectiveBackground.vb).
+Файлы: [Main_Form.MediaLoading.vb:377, 509, 573, 629](../../../src/Main_Form.MediaLoading.vb),
+[Main_Form.FileOperations.vb:329, 471, 532](../../../src/Main_Form.FileOperations.vb),
+[Main_Form.KeyboardInput.vb:302](../../../src/Main_Form.KeyboardInput.vb),
+[Main_Form.PerspectiveBackground.vb:557](../../../src/Main_Form.PerspectiveBackground.vb).
 Сборки: обе. Найдено при проверке находок (не одним из измерений) - но класс тот же.
 
 **Симптом.** Девять мест ловят исключение и показывают **модальный** `MsgBox("E0xx " & ..)`.
 Модальное окно останавливает всё до нажатия кнопки, а причина у таких ошибок в долгой
 работе обычно повторяемая (сетевой сбой, транзиентный GDI+) - и на удерживаемой клавише
 листания диалоги идут пачкой, по одному на файл. Отдельно `E105` в
-[PerspectiveBackground.vb:557](../../src/Main_Form.PerspectiveBackground.vb) стоит в
+[PerspectiveBackground.vb:557](../../../src/Main_Form.PerspectiveBackground.vb) стоит в
 косметическом пути (фоновые полосы), где соседний перехватчик того же файла осознанно
 молчит в лог - то есть внутри одного файла две несовместимые политики.
 
@@ -565,12 +572,12 @@ Tesseract, «Распознавание..» для картинки на экр�
 Диагностический код (`E001`..`E016`) сохранить в тексте статуса и в логе - он полезен для
 разбора. Это не сокрытие ошибки: пользователь по-прежнему её видит, но программа не
 встаёт. Ровно этот приём уже применён в `Draw_Perspective` (внешний `Catch` на
-[:562](../../src/Main_Form.PerspectiveBackground.vb) с комментарием «косметика не имеет
+[:562](../../../src/Main_Form.PerspectiveBackground.vb) с комментарием «косметика не имеет
 права ронять показ»).
 
 ### C-9. Опрос занятого файла стучит по сети с UI-потока каждые 800 мс
 
-Файл: [Main_Form.Lifecycle.vb:232-250](../../src/Main_Form.Lifecycle.vb).
+Файл: [Main_Form.Lifecycle.vb:232-250](../../../src/Main_Form.Lifecycle.vb).
 Сборки: обе. Находка: #25.
 
 Такт ожидания разблокировки делает `File.GetAttributes(pending_Unlock_Path)` прямо в
@@ -584,7 +591,7 @@ Tesseract, «Распознавание..» для картинки на экр�
 
 ### C-10. `Application.DoEvents()` в `OpenMediaUrl` пускает повторный вход
 
-Файл: [Main_Form.OpenUrl.vb:118](../../src/Main_Form.OpenUrl.vb).
+Файл: [Main_Form.OpenUrl.vb:118](../../../src/Main_Form.OpenUrl.vb).
 Сборки: modern. Находка: #27.
 
 `DoEvents` в середине операции разрешает нажатию войти в навигацию, пока текущая ещё не
@@ -594,11 +601,11 @@ Tesseract, «Распознавание..» для картинки на экр�
 
 ### C-11. `PullModelAsync`: бесконечный таймаут плюс блокирующий `EndOfStream`
 
-Файл: [Translate/OllamaTranslator.vb:406-464](../../src/Translate/OllamaTranslator.vb).
+Файл: [Translate/OllamaTranslator.vb:406-464](../../../src/Translate/OllamaTranslator.vb).
 Сборки: обе. Находка: #24.
 
 `HttpClient` с `Timeout.InfiniteTimeSpan`, `ReadAsStreamAsync()` без токена и
-`While Not reader.EndOfStream` ([:421](../../src/Translate/OllamaTranslator.vb)):
+`While Not reader.EndOfStream` ([:421](../../../src/Translate/OllamaTranslator.vb)):
 `EndOfStream` делает **синхронное** блокирующее чтение, когда буфер пуст, а токен
 проверяется только между итерациями - вкладка OCR подвисает наглухо.
 
@@ -612,9 +619,9 @@ Tesseract, «Распознавание..» для картинки на экр�
 
 ### D-1. Дисковый кэш OCR не вытесняется, а объявленный лимит - мёртвый код
 
-Файлы: [Translate/TranslationCache.vb:82-123](../../src/Translate/TranslationCache.vb),
-[ModernViewerPreferences.vb:50](../../src/ModernViewerPreferences.vb),
-[Table_Form.ExpandedSettings.vb:72](../../src/Table_Form.ExpandedSettings.vb).
+Файлы: [Translate/TranslationCache.vb:82-123](../../../src/Translate/TranslationCache.vb),
+[ModernViewerPreferences.vb:50](../../../src/ModernViewerPreferences.vb),
+[Table_Form.ExpandedSettings.vb:72](../../../src/Table_Form.ExpandedSettings.vb).
 Сборки: обе (настройка - modern). Находка: #29.
 
 `SaveToDisk` кладёт по одному JSON на распознанную картинку в
@@ -639,12 +646,12 @@ Tesseract, «Распознавание..» для картинки на экр�
 
 ### D-2. Кэш результатов OCR в памяти не имеет границы
 
-Файл: [Translate/TranslationCache.vb:59, 74-78](../../src/Translate/TranslationCache.vb).
+Файл: [Translate/TranslationCache.vb:59, 74-78](../../../src/Translate/TranslationCache.vb).
 Сборки: обе. Находка: #30.
 
 `memory` - обычный `Dictionary`; `PutMemory` только добавляет и заменяет, и каждое
 попадание в дисковый кэш тоже продвигается в память
-([Main_Form.OcrTranslate.vb:245](../../src/Main_Form.OcrTranslate.vb)). Ни LRU, ни
+([Main_Form.OcrTranslate.vb:245](../../../src/Main_Form.OcrTranslate.vb)). Ни LRU, ни
 ограничения по числу, ни привязки к папке - единственное вытеснение это тот же `Clear()`
 по открытию вкладки настроек. Каждый `OcrOverlayDocument` держит полное дерево
 блоков/строк/слов (все распознанные строки плюс `Rectangle` на слово).
@@ -661,14 +668,14 @@ Tesseract, «Распознавание..» для картинки на экр�
 
 ### D-3. Кэш браузерного перевода не вытесняется
 
-Файл: [DocHtmlTranslateLauncher.vb:212](../../src/DocHtmlTranslateLauncher.vb).
+Файл: [DocHtmlTranslateLauncher.vb:212](../../../src/DocHtmlTranslateLauncher.vb).
 Сборки: обе. Найдено критиком полноты.
 
 `OutputCacheDir` создаёт `%LOCALAPPDATA%\SZA\FastMediaSorter\browser-translate-cache\<hash>`
 на каждую картинку, отданную внешнему инструменту, и хэш **намеренно** включает время
 последней записи файла - значит пересохранённая картинка осиротит прежний каталог целиком.
 По всему `src/` нет ни `Directory.Delete`, ни какой-либо чистки этого корня (для
-контраста: [Support/LogPackage.vb:90](../../src/Support/LogPackage.vb) свои ZIP-ы в
+контраста: [Support/LogPackage.vb:90](../../../src/Support/LogPackage.vb) свои ZIP-ы в
 `%TEMP%` чистит). Каталоги содержат HTML-страницу с ресурсами - то есть не по килобайту.
 
 **Правка.** Та же политика, что у D-1, тем же кодом: общий помощник «удерживать каталог
@@ -685,20 +692,20 @@ Tesseract, «Распознавание..» для картинки на экр�
 
 | # | Файл и место | Что не так | Правка |
 |---|---|---|---|
-| **E-1** | [Main_Form.MediaLoading.vb:1299-1324](../../src/Main_Form.MediaLoading.vb) | ветка «нет файлов» освобождает `Image` обоих боксов, но **не** обнуляет свойство и **не** освобождает `pictureBox1_Stream`/`pictureBox2_Stream` - остаются освобождённые картинки, присвоенные контролам, и два живых `MemoryStream` | повторить то, что уже правильно делает `ReleaseActiveMedia` ([FileOperations.vb:155-183](../../src/Main_Form.FileOperations.vb)): `.Image = Nothing` после `Dispose`, поток освободить и обнулить - для **обоих** боксов |
-| **E-2** | [Main_Form.PerspectiveBackground.vb:448](../../src/Main_Form.PerspectiveBackground.vb) | `Perspective_Bitmap` (размером с бокс) теряется, если GDI+ бросит между созданием и передачей владения (внешний `Catch` на [:562](../../src/Main_Form.PerspectiveBackground.vb) это глотает - и правильно делает, полосы косметика) | обернуть время жизни в `Try/Finally`: освобождать, если владение так и не передали (флаг «отдан» рядом с `halo_Took_Over`) |
-| **E-3** | [Main_Form.Localization.vb:197](../../src/Main_Form.Localization.vb), `Table_Form.btn_Language_Click` | `New ContextMenuStrip()` на каждый клик и **никогда** не освобождается | взять уже существующий в этом же репозитории приём - [Main_Form.vb:476-479](../../src/Main_Form.vb): `AddHandler menu.Closed, Sub(s, args) .. BeginInvoke(Sub() m.Dispose())` |
-| **E-4** | [Main_Form.ToolbarOverflow.vb:288](../../src/Main_Form.ToolbarOverflow.vb), [Main_Form.ImageMenu.vb:53](../../src/Main_Form.ImageMenu.vb), [Main_Form.MediaMenu.vb:37](../../src/Main_Form.MediaMenu.vb) | `Items.Clear()` **не** освобождает `ToolStripItem`: меню переполнения перестраивается **на каждом листании**, меню картинки - на каждый средний клик, каждое поколение уходит в очередь финализации | освобождать прежние элементы перед `Clear()`; для меню переполнения ещё и **пропускать перестройку**, если набор скрытых кнопок не изменился |
-| **E-5** | [Main_Form.RecipientsOverlay.vb:86, 151](../../src/Main_Form.RecipientsOverlay.vb) | `ui_Font` создаётся на каждую перестройку оверлея и не освобождается (`Control.Dispose` присвоенный шрифт не трогает); `recipients_ToolTip` навсегда удерживает **каждое** поколение уже освобождённых кнопок | держать шрифт полем и освобождать прежний на перестройке и при закрытии формы; в разборке `ApplyRecipientsOverlay` звать `recipients_ToolTip.RemoveAll()` **до** `recipients_Overlay.Dispose()` |
-| **E-6** | [Main_Form.VideoTracks.vb:113, 135](../../src/Main_Form.VideoTracks.vb) | геттер `vlc_Media_Player.Media` по документации завендоренного LibVLCSharp 3.9.3 **увеличивает счётчик ссылок** нативной media и требует `Dispose` обёртки; здесь не освобождается | обернуть чтение в `Using` (`.Tracks` читается внутри) |
-| **E-7** | [Main_Form.VideoPlayer.vb:108](../../src/Main_Form.VideoPlayer.vb) | `Process.Start(..)` внешнего плеера: возвращённый `Process` отбрасывается, хэндл живёт до финализации | забрать результат и освободить (с проверкой на `Nothing`: `ShellExecute` может вернуть `Nothing`, если переиспользован существующий процесс) |
-| **E-8** | [Main_Form.ShareLauncher.vb:135](../../src/Main_Form.ShareLauncher.vb) | `Process.Start` и элементы `GetProcessesByName` не освобождаются, а путь проходится **на каждый** щелчок пользователя | `Using`/`Dispose` на результат и на каждый элемент перечисления (маленький помощник для цикла пересылки) |
-| **E-9** | [Main_Form.vb:307, 326-361](../../src/Main_Form.vb) (ветка `MY_CUSTOM_MESSAGE`) | мёртвый приёмник: живой канал между экземплярами - только `WM_COPYDATA`, а эта ветка зовёт `CloseHandle` на **переданном снаружи** `WParam` ([:356](../../src/Main_Form.vb)) | удалить ветку и константу целиком, а вместе с ними объявления `MapViewOfFile`/`UnmapViewOfFile`/`CloseHandle`/`OpenFileMapping` в [Main_Form.NativeMethods.vb:39-43](../../src/Main_Form.NativeMethods.vb) - после удаления ветки они больше ни от кого не используются (проверить `grep`) |
-| **E-10** | [Main_Form.OcrTranslate.vb:428](../../src/Main_Form.OcrTranslate.vb) | `btn_Translate.Font = New Font(..)` на **каждой** навигации, прежний шрифт брошен; плюс безусловный `LayoutToolbar()` | держать два готовых шрифта (жирный и обычный), переназначать только при фактической смене `ocr_Settings.Enabled`, освобождать заменённый; `LayoutToolbar` звать только когда что-то изменилось |
-| **E-11** | [FastMediaSorterCompanion/TrayContext.vb:223](../../src/FastMediaSorterCompanion/TrayContext.vb) | таймер статистики трея **не останавливается**, когда воркер остановлен или умер вне интерфейса - опрос идёт вечно | в `UpdateTooltipStatsAsync`: если статус `Nothing` или не `Running` - `_statsTimer.Stop()` (или `RefreshTrayState(False)`), а не только сброс текста подсказки |
-| **E-12** | [FastMediaSorterCompanion/TrayContext.vb:168](../../src/FastMediaSorterCompanion/TrayContext.vb) | смена языка освобождает `MainWindow` **без** `Close`: `FormClosing` не поднимается, таймер статистики окна продолжает работать, HICON утекает | звать `_mainWindow.Close()` перед отпусканием ссылки, либо перенести уборку таймера/иконки в переопределённый `Dispose`/обработчик `Disposed` самого окна |
-| **E-13** | [FastMediaSorterCompanion/Core/WorkerProcess.vb:55](../../src/FastMediaSorterCompanion/Core/WorkerProcess.vb) | `Process.Start` воркера не освобождается (при этом `StopWorker` освобождает всё, что трогает - асимметрия); неудачный подъём повторяется без задержки | `Using proc As Process = Process.Start(..)` (или `Dispose` после цикла опроса) плюс запомненная метка недавней неудачи, чтобы не пытаться заново мгновенно |
-| **E-14** | [Main_Form.VideoPlayer.vb:195](../../src/Main_Form.VideoPlayer.vb) | при **неудачной** инициализации LibVLC живые нативные объекты (`LibVLC`, `MediaPlayer`, `VideoView`) обнуляются без `Dispose`, а путь повторяется при каждом листании на видео (находка «вероятная», не подтверждённая до конца - но правка дешевле разбирательства) | в `Catch` освобождать в обратном порядке: снять `vlc_Video_View` с родителя и освободить, затем `vlc_Media_Player.Dispose()`, затем `libVlc.Dispose()` |
+| **E-1** | [Main_Form.MediaLoading.vb:1299-1324](../../../src/Main_Form.MediaLoading.vb) | ветка «нет файлов» освобождает `Image` обоих боксов, но **не** обнуляет свойство и **не** освобождает `pictureBox1_Stream`/`pictureBox2_Stream` - остаются освобождённые картинки, присвоенные контролам, и два живых `MemoryStream` | повторить то, что уже правильно делает `ReleaseActiveMedia` ([FileOperations.vb:155-183](../../../src/Main_Form.FileOperations.vb)): `.Image = Nothing` после `Dispose`, поток освободить и обнулить - для **обоих** боксов |
+| **E-2** | [Main_Form.PerspectiveBackground.vb:448](../../../src/Main_Form.PerspectiveBackground.vb) | `Perspective_Bitmap` (размером с бокс) теряется, если GDI+ бросит между созданием и передачей владения (внешний `Catch` на [:562](../../../src/Main_Form.PerspectiveBackground.vb) это глотает - и правильно делает, полосы косметика) | обернуть время жизни в `Try/Finally`: освобождать, если владение так и не передали (флаг «отдан» рядом с `halo_Took_Over`) |
+| **E-3** | [Main_Form.Localization.vb:197](../../../src/Main_Form.Localization.vb), `Table_Form.btn_Language_Click` | `New ContextMenuStrip()` на каждый клик и **никогда** не освобождается | взять уже существующий в этом же репозитории приём - [Main_Form.vb:476-479](../../../src/Main_Form.vb): `AddHandler menu.Closed, Sub(s, args) .. BeginInvoke(Sub() m.Dispose())` |
+| **E-4** | [Main_Form.ToolbarOverflow.vb:288](../../../src/Main_Form.ToolbarOverflow.vb), [Main_Form.ImageMenu.vb:53](../../../src/Main_Form.ImageMenu.vb), [Main_Form.MediaMenu.vb:37](../../../src/Main_Form.MediaMenu.vb) | `Items.Clear()` **не** освобождает `ToolStripItem`: меню переполнения перестраивается **на каждом листании**, меню картинки - на каждый средний клик, каждое поколение уходит в очередь финализации | освобождать прежние элементы перед `Clear()`; для меню переполнения ещё и **пропускать перестройку**, если набор скрытых кнопок не изменился |
+| **E-5** | [Main_Form.RecipientsOverlay.vb:86, 151](../../../src/Main_Form.RecipientsOverlay.vb) | `ui_Font` создаётся на каждую перестройку оверлея и не освобождается (`Control.Dispose` присвоенный шрифт не трогает); `recipients_ToolTip` навсегда удерживает **каждое** поколение уже освобождённых кнопок | держать шрифт полем и освобождать прежний на перестройке и при закрытии формы; в разборке `ApplyRecipientsOverlay` звать `recipients_ToolTip.RemoveAll()` **до** `recipients_Overlay.Dispose()` |
+| **E-6** | [Main_Form.VideoTracks.vb:113, 135](../../../src/Main_Form.VideoTracks.vb) | геттер `vlc_Media_Player.Media` по документации завендоренного LibVLCSharp 3.9.3 **увеличивает счётчик ссылок** нативной media и требует `Dispose` обёртки; здесь не освобождается | обернуть чтение в `Using` (`.Tracks` читается внутри) |
+| **E-7** | [Main_Form.VideoPlayer.vb:108](../../../src/Main_Form.VideoPlayer.vb) | `Process.Start(..)` внешнего плеера: возвращённый `Process` отбрасывается, хэндл живёт до финализации | забрать результат и освободить (с проверкой на `Nothing`: `ShellExecute` может вернуть `Nothing`, если переиспользован существующий процесс) |
+| **E-8** | [Main_Form.ShareLauncher.vb:135](../../../src/Main_Form.ShareLauncher.vb) | `Process.Start` и элементы `GetProcessesByName` не освобождаются, а путь проходится **на каждый** щелчок пользователя | `Using`/`Dispose` на результат и на каждый элемент перечисления (маленький помощник для цикла пересылки) |
+| **E-9** | [Main_Form.vb:307, 326-361](../../../src/Main_Form.vb) (ветка `MY_CUSTOM_MESSAGE`) | мёртвый приёмник: живой канал между экземплярами - только `WM_COPYDATA`, а эта ветка зовёт `CloseHandle` на **переданном снаружи** `WParam` ([:356](../../../src/Main_Form.vb)) | удалить ветку и константу целиком, а вместе с ними объявления `MapViewOfFile`/`UnmapViewOfFile`/`CloseHandle`/`OpenFileMapping` в [Main_Form.NativeMethods.vb:39-43](../../../src/Main_Form.NativeMethods.vb) - после удаления ветки они больше ни от кого не используются (проверить `grep`) |
+| **E-10** | [Main_Form.OcrTranslate.vb:428](../../../src/Main_Form.OcrTranslate.vb) | `btn_Translate.Font = New Font(..)` на **каждой** навигации, прежний шрифт брошен; плюс безусловный `LayoutToolbar()` | держать два готовых шрифта (жирный и обычный), переназначать только при фактической смене `ocr_Settings.Enabled`, освобождать заменённый; `LayoutToolbar` звать только когда что-то изменилось |
+| **E-11** | [FastMediaSorterCompanion/TrayContext.vb:223](../../../src/FastMediaSorterCompanion/TrayContext.vb) | таймер статистики трея **не останавливается**, когда воркер остановлен или умер вне интерфейса - опрос идёт вечно | в `UpdateTooltipStatsAsync`: если статус `Nothing` или не `Running` - `_statsTimer.Stop()` (или `RefreshTrayState(False)`), а не только сброс текста подсказки |
+| **E-12** | [FastMediaSorterCompanion/TrayContext.vb:168](../../../src/FastMediaSorterCompanion/TrayContext.vb) | смена языка освобождает `MainWindow` **без** `Close`: `FormClosing` не поднимается, таймер статистики окна продолжает работать, HICON утекает | звать `_mainWindow.Close()` перед отпусканием ссылки, либо перенести уборку таймера/иконки в переопределённый `Dispose`/обработчик `Disposed` самого окна |
+| **E-13** | [FastMediaSorterCompanion/Core/WorkerProcess.vb:55](../../../src/FastMediaSorterCompanion/Core/WorkerProcess.vb) | `Process.Start` воркера не освобождается (при этом `StopWorker` освобождает всё, что трогает - асимметрия); неудачный подъём повторяется без задержки | `Using proc As Process = Process.Start(..)` (или `Dispose` после цикла опроса) плюс запомненная метка недавней неудачи, чтобы не пытаться заново мгновенно |
+| **E-14** | [Main_Form.VideoPlayer.vb:195](../../../src/Main_Form.VideoPlayer.vb) | при **неудачной** инициализации LibVLC живые нативные объекты (`LibVLC`, `MediaPlayer`, `VideoView`) обнуляются без `Dispose`, а путь повторяется при каждом листании на видео (находка «вероятная», не подтверждённая до конца - но правка дешевле разбирательства) | в `Catch` освобождать в обратном порядке: снять `vlc_Video_View` с родителя и освободить, затем `vlc_Media_Player.Dispose()`, затем `libVlc.Dispose()` |
 
 ---
 
@@ -707,7 +714,7 @@ Tesseract, «Распознавание..» для картинки на экр�
 Три пункта не входят в срез. Причины записаны, чтобы к вопросу не возвращаться.
 
 1. **net48: файловые операции по умолчанию идут на UI-потоке** (находка #26,
-   [Main_Form.FileOperations.vb:461](../../src/Main_Form.FileOperations.vb)). Реестровое
+   [Main_Form.FileOperations.vb:461](../../../src/Main_Form.FileOperations.vb)). Реестровое
    значение `UseIndependentThreadForOperationsWithFiles` по умолчанию `0`, поэтому в
    x86-сборке перенос между шарами (полное копирование по проводу) морозит окно на всю
    передачу - 10-60 с на файле 100-200 МБ. В modern это закрыто очередью. **Нужно решение
@@ -718,13 +725,13 @@ Tesseract, «Распознавание..» для картинки на экр�
    а при включённой галке фолбэк отказывает горячим клавишам («!Ждите..») вместо
    постановки в очередь. Вариант (б) дешевле и честнее называется починкой.
 2. **Оверлей OCR пересчитывает подбор шрифта на каждую отрисовку** (находка #7,
-   [Main_Form.OcrOverlay.vb:158](../../src/Main_Form.OcrOverlay.vb)). `FitFont` создаёт и
+   [Main_Form.OcrOverlay.vb:158](../../../src/Main_Form.OcrOverlay.vb)). `FitFont` создаёт и
    измеряет шрифты в цикле внутри обработчика `Paint`. Это заметно только когда оверлей
    на экране, и правильная правка - кэш подобранного размера на блок с ключом по
    зуму/прямоугольнику и сбросом на изменении зума/размера/документа. Отдельный дизайн,
    отдельная стадия; в «дешёвые» не лезет.
 3. **Кэш движка Tesseract на один слот перемалывается многоязычным списком попыток**
-   (находка #34, [Ocr/TesseractOcrEngine.vb:223](../../src/Ocr/TesseractOcrEngine.vb)).
+   (находка #34, [Ocr/TesseractOcrEngine.vb:223](../../../src/Ocr/TesseractOcrEngine.vb)).
    Правильно - словарь «один движок на `dataDir|lang`» с освобождением при смене настроек
    и на выходе. Это уже вопрос времени жизни нативных объектов, а не строчка; и цена
    отказа - только скорость OCR. Отложено вместе с C-5, которую логично делать в том же
@@ -735,7 +742,7 @@ Tesseract, «Распознавание..» для картинки на экр�
    `cmbox_Sort`, `files_Array`/`files_List`, `is_Files_Array_Active`) и стоит внутри трёх
    синхронных путей `ReadShowMediaFile`. Чтобы вынести её, нужна механика продолжения
    (`EnsureFolderList` + `folder_List_Loaded_For` + отмена по поколению), уже описанная в
-   [S11 §1(в)](SPECIFICATION_VIEWER_CORE_S11_MODERN_ASYNC.md) и **там же отложенная по той же
+   [S11 §1(в)](../SPECIFICATION_VIEWER_CORE_S11_MODERN_ASYNC.md) и **там же отложенная по той же
    причине**. Это самая рискованная правка списка: ошибка даёт чёрный экран или чужой файл при
    каждом входе в папку, а проверить её можно только на живой шаре - сборка и юнит-тесты тут
    ничего не доказывают. Остаётся отдельной стадией со своей приёмкой.
@@ -755,8 +762,8 @@ Tesseract, «Распознавание..» для картинки на экр�
 ## 7. Проверка и приёмка
 
 Автоматизируемая часть (репозиторий имеет мультитаргетные наборы, оркестратор -
-[tools/Run-AllTests.ps1](../../tools/Run-AllTests.ps1), см.
-[docs/guides/TESTING.md](../guides/TESTING.md)); **новые тесты обязательны для пунктов,
+[tools/Run-AllTests.ps1](../../../tools/Run-AllTests.ps1), см.
+[docs/guides/TESTING.md](../../guides/TESTING.md)); **новые тесты обязательны для пунктов,
 где логика чистая:**
 
 | Пункт | Набор | Что проверяет тест |
@@ -788,7 +795,7 @@ Tesseract, «Распознавание..» для картинки на экр�
    картинки, оверлей приёмников, панель, внешний плеер, «Поделиться..») и сверить хэндлы
    USER/GDI процесса до и после - они должны вернуться к исходному.
 
-Отчёт по каждому этапу - в [PROGRESS_DOTNET10_MODERN_BUILD.md](../guides/PROGRESS_DOTNET10_MODERN_BUILD.md)
+Отчёт по каждому этапу - в [PROGRESS_DOTNET10_MODERN_BUILD.md](../../guides/PROGRESS_DOTNET10_MODERN_BUILD.md)
 (журнал реализации), запись в `CHANGELOG.md` - только по фактически собранной и
 проверенной правке.
 

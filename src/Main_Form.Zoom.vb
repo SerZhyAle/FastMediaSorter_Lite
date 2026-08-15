@@ -113,6 +113,7 @@ Partial Public Class Main_Form
         zoom_Factor = target
         zoom_Scale = 0.0F   ' "not fit" - enables panning, stops click-navigation
         UpdateZoomLabel()
+        RememberFolderZoom(target)
     End Sub
 
     ''' <summary>
@@ -135,6 +136,7 @@ Partial Public Class Main_Form
         SkipZoom()
         zoom_Factor = 1.0
         UpdateZoomLabel()
+        ForgetFolderZoom()
     End Sub
 
     ''' <summary>100 % - one image pixel per screen pixel (NumPad *, Shift+wheel).</summary>

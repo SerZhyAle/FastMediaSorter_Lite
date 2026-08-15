@@ -326,6 +326,10 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub Pic_MouseMove(sender As Object, e As MouseEventArgs)
+        ' Moving the mouse is how a slideshow with hidden chrome is asked to show it
+        ' again for a moment - without stopping the slideshow, which any key would.
+        RevealSlideshowChromeTemporarily()
+
         If e.Button = MouseButtons.Left Then
             If Not is_PictureBox1_Visible AndAlso Not is_PictureBox2_Visible Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2470: pic_MouseMove - no picture box visible")

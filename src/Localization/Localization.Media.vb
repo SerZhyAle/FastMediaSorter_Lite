@@ -17,6 +17,35 @@ Partial Public NotInheritable Class Localization
             "! Nenhum arquivo legível nesta pasta", "! لا توجد ملفات قابلة للقراءة في هذا المجلد",
             "! इस फ़ोल्डर में कोई पढ़ने योग्य फ़ाइल नहीं", "! এই ফোল্ডারে পড়ার মতো ফাইল নেই",
             "! اس فولڈر میں کوئی قابلِ مطالعہ فائل نہیں", "! 此文件夹中没有可读文件")
+        ' Ф1 of SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md. Both say the same
+        ' second half on purpose: what went wrong, AND that the list was left alone - without
+        ' it the user's next move is the rescan the whole change exists to make unnecessary.
+        Add("Нет связи с папкой, файл оставлен в списке: {0}",
+            "No connection to the folder, the file was kept in the list: {0}",
+            "Немає зв'язку з текою, файл залишено у списку: {0}",
+            "Keine Verbindung zum Ordner, die Datei bleibt in der Liste: {0}",
+            "Nessuna connessione alla cartella, il file resta nell'elenco: {0}",
+            "Sin conexión con la carpeta, el archivo permanece en la lista: {0}",
+            "Pas de connexion au dossier, le fichier reste dans la liste : {0}",
+            "Sem conexão com a pasta, o arquivo permanece na lista: {0}",
+            "لا يوجد اتصال بالمجلد، تم الإبقاء على الملف في القائمة: {0}",
+            "फ़ोल्डर से संपर्क नहीं, फ़ाइल सूची में बनी रही: {0}",
+            "ফোল্ডারের সঙ্গে সংযোগ নেই, ফাইলটি তালিকায় রাখা হয়েছে: {0}",
+            "فولڈر سے رابطہ نہیں، فائل فہرست میں برقرار ہے: {0}",
+            "无法连接到文件夹，文件已保留在列表中：{0}")
+        Add("Нет доступа, файл оставлен в списке: {0}",
+            "Access denied, the file was kept in the list: {0}",
+            "Немає доступу, файл залишено у списку: {0}",
+            "Kein Zugriff, die Datei bleibt in der Liste: {0}",
+            "Accesso negato, il file resta nell'elenco: {0}",
+            "Acceso denegado, el archivo permanece en la lista: {0}",
+            "Accès refusé, le fichier reste dans la liste : {0}",
+            "Acesso negado, o arquivo permanece na lista: {0}",
+            "تم رفض الوصول، تم الإبقاء على الملف في القائمة: {0}",
+            "पहुँच नहीं, फ़ाइल सूची में बनी रही: {0}",
+            "প্রবেশাধিকার নেই, ফাইলটি তালিকায় রাখা হয়েছে: {0}",
+            "رسائی نہیں، فائل فہرست میں برقرار ہے: {0}",
+            "没有访问权限，文件已保留在列表中：{0}")
         Add("!Ждите.. предыдущая операция ещё выполняется",
             "!Wait.. previous operation still running", "!Зачекайте.. попередня операція ще виконується",
             "!Warten.. der vorherige Vorgang läuft noch", "!Attendi.. l'operazione precedente è ancora in corso",
@@ -41,6 +70,19 @@ Partial Public NotInheritable Class Localization
             "تأكيد الحذف", "हटाने की पुष्टि", "মোছার নিশ্চিতকরণ", "حذف کی تصدیق", "删除确认")
         Add("удалён: ", "file deleted: ", "видалено: ", "gelöscht: ", "eliminato: ", "eliminado: ",
             "supprimé : ", "excluído: ", "تم الحذف: ", "हटाया गया: ", "মোছা হয়েছে: ", "حذف ہوا: ", "已删除：")
+        ' The two outcomes, said apart. The old line above is still the net48 one, where a
+        ' deletion has exactly one meaning; on the mainline the status has to agree with the
+        ' question that was just answered (R-1 invariant 2).
+        Add("удалён в Корзину: {0}",
+            "moved to the Recycle Bin: {0}", "видалено до Кошика: {0}", "in den Papierkorb verschoben: {0}",
+            "spostato nel Cestino: {0}", "movido a la Papelera: {0}", "déplacé vers la Corbeille : {0}",
+            "movido para a Reciclagem: {0}", "نُقل إلى سلة المحذوفات: {0}", "रीसायकल बिन में भेजा गया: {0}",
+            "রিসাইকেল বিনে পাঠানো হয়েছে: {0}", "ری سائیکل بن میں بھیجا گیا: {0}", "已移到回收站：{0}")
+        Add("удалён безвозвратно: {0}",
+            "deleted permanently: {0}", "видалено безповоротно: {0}", "endgültig gelöscht: {0}",
+            "eliminato definitivamente: {0}", "borrado definitivamente: {0}", "supprimé définitivement : {0}",
+            "eliminado definitivamente: {0}", "حُذف نهائيًا: {0}", "स्थायी रूप से हटाया गया: {0}",
+            "স্থায়ীভাবে মোছা হয়েছে: {0}", "مستقل طور پر حذف ہوا: {0}", "已永久删除：{0}")
         Add("! Файл не найден", "! File not found", "! Файл не знайдено", "! Datei nicht gefunden",
             "! File non trovato", "! Archivo no encontrado", "! Fichier introuvable",
             "! Arquivo não encontrado", "! لم يتم العثور على الملف", "! फ़ाइल नहीं मिली",

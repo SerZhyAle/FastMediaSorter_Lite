@@ -98,6 +98,7 @@ english.CompCore=Core - image & video viewer and sorter (required)
 english.CompCodecs=Video codecs (VLC) - offline playback of AVI, MKV, VP9 and other formats
 english.CompOcr=OCR & translation models - offline on-image text recognition
 english.CompShare=Android Folder Share companion - share folders to your phone (bundles its own .NET runtime)
+english.ShareManagerComment=Share folders from this PC to an Android phone over Wi-Fi
 
 russian.TypeFull=Полная - всё для работы без интернета (рекомендуется)
 russian.TypeCompact=Компактная - только просмотрщик (кодеки и модели скачаются по мере надобности)
@@ -106,6 +107,7 @@ russian.CompCore=Ядро - просмотр и сортировка изобр�
 russian.CompCodecs=Видео-кодеки (VLC) - оффлайн-воспроизведение AVI, MKV, VP9 и других форматов
 russian.CompOcr=Модели OCR и перевода - распознавание текста на изображении без интернета
 russian.CompShare=Компаньон Android Folder Share - раздача папок на телефон (включает свой рантайм .NET)
+russian.ShareManagerComment=Раздача папок этого ПК на телефон Android по Wi-Fi
 
 ukrainian.TypeFull=Повна - усе для роботи без інтернету (рекомендовано)
 ukrainian.TypeCompact=Компактна - лише переглядач (кодеки та моделі завантажаться за потреби)
@@ -114,6 +116,7 @@ ukrainian.CompCore=Ядро - перегляд і сортування зобр�
 ukrainian.CompCodecs=Відео-кодеки (VLC) - офлайн-відтворення AVI, MKV, VP9 та інших форматів
 ukrainian.CompOcr=Моделі OCR та перекладу - розпізнавання тексту на зображенні без інтернету
 ukrainian.CompShare=Компаньйон Android Folder Share - роздача тек на телефон (містить власний рантайм .NET)
+ukrainian.ShareManagerComment=Роздача тек цього ПК на телефон Android через Wi-Fi
 
 ; Prepend an honest one-liner to the component-selection page: the viewer is light,
 ; the weight is optional offline payload the user can trim.
@@ -236,6 +239,16 @@ Type: filesandordirs; Name: "{autoprograms}\FastMediaSorter LITE"
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Check: UseModernExe
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeNameX86}"; Check: UseLegacyExe
+; The Share Manager - the program that drives the SFTP worker (and, on a machine
+; running the Server edition, the service). Until this entry existed it could only be
+; reached from inside the viewer or from its own tray icon, so a user who had closed
+; the icon, or whose logon autostart never fired, had no way left to open it at all.
+; Named after its window title with the colon dropped (a colon is not a legal file
+; name, and a Start-menu item IS a file).
+; "--show" is not optional: a bare launch deliberately obeys the manager's own
+; "open the window at startup" option, which is OFF by default, so without it the
+; Start-menu item would start a tray-only process and read as a click that did nothing.
+Name: "{group}\Fast Media Sorter - Share Manager"; Filename: "{app}\FastMediaSorterCompanion.exe"; Parameters: "--show"; Comment: "{cm:ShareManagerComment}"; Components: share
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon; Check: UseModernExe
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeNameX86}"; Tasks: desktopicon; Check: UseLegacyExe

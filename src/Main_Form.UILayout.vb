@@ -39,13 +39,7 @@ Partial Public Class Main_Form
         ' Leaving full-screen always clears super-full-screen.
         If Not is_Full_Screen_Mode Then is_Super_Full_Screen_Mode = False
 
-        ' Chrome per mode:
-        '   windowed          -> toolbar docked at top, status bar at bottom
-        '   full-screen       -> image fills the screen, toolbar floats over it
-        '   super-full-screen -> no chrome at all
-        panel_Status.Visible = Not is_Full_Screen_Mode
-        flow_Toolbar.Visible = Not is_Super_Full_Screen_Mode
-        SetToolbarOverlay(is_Full_Screen_Mode AndAlso Not is_Super_Full_Screen_Mode)
+        ApplyChromeVisibility()
 
         Me.Focus()
         Me.PerformLayout()
@@ -62,6 +56,25 @@ Partial Public Class Main_Form
         SkipZoom()
 
         is_Programmatic_Resize = False
+    End Sub
+
+    ''' <summary>
+    ''' The ONE place that decides whether the toolbar and the status bar are on screen.
+    '''
+    ''' Chrome per mode:
+    '''   windowed          -> toolbar docked at top, status bar at bottom
+    '''   full-screen       -> image fills the screen, toolbar floats over it
+    '''   super-full-screen -> no chrome at all
+    '''
+    ''' A running slideshow can hide either of them on top of that (§5.2 of
+    ''' SPECIFICATION_SETTINGS_EXPANSION). It is asked here rather than setting the two
+    ''' Visible flags itself, because the next layout pass would otherwise put back
+    ''' whatever the slideshow had just hidden.
+    ''' </summary>
+    Private Sub ApplyChromeVisibility()
+        panel_Status.Visible = Not is_Full_Screen_Mode AndAlso Not SlideshowHidesStatus()
+        flow_Toolbar.Visible = Not is_Super_Full_Screen_Mode AndAlso Not SlideshowHidesToolbar()
+        SetToolbarOverlay(is_Full_Screen_Mode AndAlso Not is_Super_Full_Screen_Mode)
     End Sub
 
     ''' <summary>

@@ -120,6 +120,19 @@ Public Module HostingText
         Return Localization.T("Выдаю службе доступ к папкам..")
     End Function
 
+    ''' <summary>The state line when the listener is up but the account behind it cannot
+    ''' read the folders the list promises. Green would be a lie: from the phone this
+    ''' share is broken on every folder, and without this line the only symptom anywhere
+    ''' is a directory that refuses to open - on the other side of the network.</summary>
+    Public Function RunningNoAccessLine(blocked As Integer) As String
+        Return Localization.TF("Раздача работает, но у службы нет доступа к папкам: {0}", blocked)
+    End Function
+
+    ''' <summary>Hover text on a folder row the service account cannot read.</summary>
+    Public Function FolderNoAccessTip() As String
+        Return Localization.T("У службы нет доступа к этой папке - на телефоне она не откроется.")
+    End Function
+
     ''' <summary>The switch an ordinary installation can now make on its own: this is
     ''' NOT a second product, it is the same worker under a different host (spec §1 -
     ''' a packaging and host-mode distinction, never a fork).</summary>

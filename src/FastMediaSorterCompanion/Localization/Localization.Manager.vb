@@ -233,9 +233,9 @@ Partial Public NotInheritable Class Localization
             "Remove", "Прибрати", "Entfernen", "Rimuovi", "Quitar", "Retirer", "Remover",
             "إزالة", "हटाएँ", "সরান", "ہٹائیں", "移除")
 
-        Add("Настроить..",
-            "Options..", "Налаштувати..", "Optionen..", "Opzioni..", "Opciones..", "Options..",
-            "Opções..", "خيارات..", "विकल्प..", "বিকল্প..", "اختیارات..", "选项..")
+        Add("Редактировать",
+            "Edit", "Редагувати", "Bearbeiten", "Modifica", "Editar", "Modifier",
+            "Editar", "تعديل", "संपादित करें", "সম্পাদনা", "ترمیم", "编辑")
 
         Add("Название",
             "Name", "Назва", "Name", "Nome", "Nombre", "Nom", "Nome",
@@ -600,6 +600,128 @@ Partial Public NotInheritable Class Localization
             "All files", "Усі файли", "Alle Dateien", "Tutti i file", "Todos los archivos",
             "Tous les fichiers", "Todos os ficheiros", "كل الملفات", "सभी फ़ाइलें",
             "সব ফাইল", "تمام فائلیں", "所有文件")
+
+        ' --- the compact window: section headers, header strip, settings ----------
+        ' SPECIFICATION_SHARE_MANAGER_COMPACT_WINDOW.md §5. The three section titles are
+        ' short ON PURPOSE - they are measured at the minimum window width in all thirteen
+        ' languages (§7.8) and, unlike the summaries beside them, must never ellipsize.
+
+        Add("Доступ с телефона",
+            "Phone access", "Доступ з телефона", "Zugriff vom Telefon", "Accesso dal telefono",
+            "Acceso desde el teléfono", "Accès depuis le téléphone", "Acesso pelo telemóvel",
+            "الوصول من الهاتف", "फ़ोन से पहुँच", "ফোন থেকে অ্যাক্সেস", "فون سے رسائی", "手机访问")
+
+        Add("Доступ из интернета",
+            "Internet access", "Доступ з інтернету", "Internetzugriff", "Accesso da internet",
+            "Acceso desde internet", "Accès depuis internet", "Acesso pela internet",
+            "الوصول عبر الإنترنت", "इंटरनेट से पहुँच", "ইন্টারনেট থেকে অ্যাক্সেস",
+            "انٹرنیٹ سے رسائی", "互联网访问")
+
+        Add("Статистика",
+            "Statistics", "Статистика", "Statistik", "Statistiche", "Estadísticas",
+            "Statistiques", "Estatísticas", "الإحصائيات", "आँकड़े", "পরিসংখ্যান",
+            "اعداد و شمار", "统计")
+
+        Add("Раздача работает - {0}, порт {1}",
+            "Sharing is on - {0}, port {1}", "Роздача працює - {0}, порт {1}",
+            "Freigabe aktiv - {0}, Port {1}", "Condivisione attiva - {0}, porta {1}",
+            "Compartición activa - {0}, puerto {1}", "Partage actif - {0}, port {1}",
+            "Partilha ativa - {0}, porta {1}", "المشاركة تعمل - {0}، المنفذ {1}",
+            "साझाकरण चालू है - {0}, पोर्ट {1}", "শেয়ারিং চালু - {0}, পোর্ট {1}",
+            "شیئرنگ چالو ہے - {0}، پورٹ {1}", "共享已开启 - {0}，端口 {1}")
+
+        ' Three plural forms because the Russian source needs three; a language whose rule
+        ' is simpler maps two of them onto the same wording, which costs nothing.
+        Add("{0} папка",
+            "{0} folder", "{0} папка", "{0} Ordner", "{0} cartella", "{0} carpeta",
+            "{0} dossier", "{0} pasta", "{0} مجلد", "{0} फ़ोल्डर", "{0} ফোল্ডার",
+            "{0} فولڈر", "{0} 个文件夹")
+
+        Add("{0} папки",
+            "{0} folders", "{0} папки", "{0} Ordner", "{0} cartelle", "{0} carpetas",
+            "{0} dossiers", "{0} pastas", "{0} مجلدات", "{0} फ़ोल्डर", "{0} ফোল্ডার",
+            "{0} فولڈرز", "{0} 个文件夹")
+
+        Add("{0} папок",
+            "{0} folders", "{0} папок", "{0} Ordner", "{0} cartelle", "{0} carpetas",
+            "{0} dossiers", "{0} pastas", "{0} مجلدات", "{0} फ़ोल्डर", "{0} ফোল্ডার",
+            "{0} فولڈرز", "{0} 个文件夹")
+
+        Add("{0} подключений, {1} файлов",
+            "{0} connections, {1} files", "{0} підключень, {1} файлів",
+            "{0} Verbindungen, {1} Dateien", "{0} connessioni, {1} file",
+            "{0} conexiones, {1} archivos", "{0} connexions, {1} fichiers",
+            "{0} ligações, {1} ficheiros", "{0} اتصالات، {1} ملفات",
+            "{0} कनेक्शन, {1} फ़ाइलें", "{0} সংযোগ, {1} ফাইল",
+            "{0} کنکشنز، {1} فائلیں", "{0} 次连接，{1} 个文件")
+
+        Add("Подробнее..",
+            "Details..", "Докладніше..", "Details..", "Dettagli..", "Detalles..",
+            "Détails..", "Detalhes..", "التفاصيل..", "विवरण..", "বিস্তারিত..",
+            "تفصیلات..", "详情..")
+
+        Add("Справка ▾",
+            "Help ▾", "Довідка ▾", "Hilfe ▾", "Guida ▾", "Ayuda ▾", "Aide ▾", "Ajuda ▾",
+            "مساعدة ▾", "सहायता ▾", "সহায়তা ▾", "مدد ▾", "帮助 ▾")
+
+        Add("Показать пароль",
+            "Show password", "Показати пароль", "Passwort anzeigen", "Mostra la password",
+            "Mostrar la contraseña", "Afficher le mot de passe", "Mostrar a palavra-passe",
+            "إظهار كلمة المرور", "पासवर्ड दिखाएँ", "পাসওয়ার্ড দেখান",
+            "پاس ورڈ دکھائیں", "显示密码")
+
+        Add("Скрыть пароль",
+            "Hide password", "Сховати пароль", "Passwort verbergen", "Nascondi la password",
+            "Ocultar la contraseña", "Masquer le mot de passe", "Ocultar a palavra-passe",
+            "إخفاء كلمة المرور", "पासवर्ड छिपाएँ", "পাসওয়ার্ড লুকান",
+            "پاس ورڈ چھپائیں", "隐藏密码")
+
+        Add("Настройки",
+            "Settings", "Налаштування", "Einstellungen", "Impostazioni", "Configuración",
+            "Paramètres", "Definições", "الإعدادات", "सेटिंग्स", "সেটিংস", "ترتیبات", "设置")
+
+        Add("Настройки менеджера..",
+            "Manager settings..", "Налаштування менеджера..", "Manager-Einstellungen..",
+            "Impostazioni del gestore..", "Ajustes del gestor..",
+            "Paramètres du gestionnaire..", "Definições do gestor..", "إعدادات المدير..",
+            "मैनेजर सेटिंग्स..", "ম্যানেজার সেটিংস..", "مینیجر کی ترتیبات..", "管理器设置..")
+
+        Add("Настройки менеджера",
+            "Manager settings", "Налаштування менеджера", "Manager-Einstellungen",
+            "Impostazioni del gestore", "Ajustes del gestor", "Paramètres du gestionnaire",
+            "Definições do gestor", "إعدادات المدير", "मैनेजर सेटिंग्स",
+            "ম্যানেজার সেটিংস", "مینیجر کی ترتیبات", "管理器设置")
+
+        Add("Запуск",
+            "Startup", "Запуск", "Start", "Avvio", "Inicio", "Démarrage", "Arranque",
+            "بدء التشغيل", "स्टार्टअप", "স্টার্টআপ", "اسٹارٹ اپ", "启动")
+
+        Add("Сеть",
+            "Network", "Мережа", "Netzwerk", "Rete", "Red", "Réseau", "Rede",
+            "الشبكة", "नेटवर्क", "নেটওয়ার্ক", "نیٹ ورک", "网络")
+
+        Add("Хостинг",
+            "Hosting", "Хостинг", "Hosting", "Hosting", "Alojamiento", "Hébergement",
+            "Alojamento", "الاستضافة", "होस्टिंग", "হোস্টিং", "ہوسٹنگ", "托管")
+
+        ' The settings groups' folded summaries - the answer without unfolding anything.
+        Add("Автозапуск включён",
+            "Autostart on", "Автозапуск увімкнено", "Autostart ein", "Avvio automatico attivo",
+            "Inicio automático activado", "Démarrage automatique activé", "Arranque automático ativado",
+            "التشغيل التلقائي مفعّل", "ऑटोस्टार्ट चालू", "অটোস্টার্ট চালু",
+            "آٹو اسٹارٹ آن", "自动启动：开")
+
+        Add("Автозапуск выключен",
+            "Autostart off", "Автозапуск вимкнено", "Autostart aus", "Avvio automatico disattivo",
+            "Inicio automático desactivado", "Démarrage automatique désactivé", "Arranque automático desativado",
+            "التشغيل التلقائي معطّل", "ऑटोस्टार्ट बंद", "অটোস্টার্ট বন্ধ",
+            "آٹو اسٹارٹ آف", "自动启动：关")
+
+        Add("до {0} подключений",
+            "up to {0} connections", "до {0} підключень", "bis zu {0} Verbindungen",
+            "fino a {0} connessioni", "hasta {0} conexiones", "jusqu'à {0} connexions",
+            "até {0} ligações", "حتى {0} اتصالات", "अधिकतम {0} कनेक्शन",
+            "সর্বোচ্চ {0} সংযোগ", "زیادہ سے زیادہ {0} کنکشنز", "最多 {0} 个连接")
 
     End Sub
 

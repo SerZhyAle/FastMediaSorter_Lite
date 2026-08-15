@@ -79,6 +79,14 @@ Partial Public Class Main_Form
         Dim still As Boolean = IsCurrentStillImage()
         SetToolbarItemHidden(btn_Translate, Not still)
         SetToolbarItemHidden(btn_TranslateBrowser, Not (still AndAlso DocHtmlTranslate.IsAvailableCached()))
+#If Not NETFRAMEWORK Then
+        ' The editor's button rides the same predicate and the same single recompute
+        ' point (SPECIFICATION_IMAGE_EDITOR_DOTNET10.md §2): a still image can be edited,
+        ' a video or a running animation cannot. Hidden only through SetToolbarItemHidden -
+        ' PlaceControl force-shows anything it lays out, so a bare Visible = False would
+        ' be undone by the next LayoutToolbar.
+        SetToolbarItemHidden(btn_Edit, Not still)
+#End If
         LayoutToolbar()
     End Sub
 

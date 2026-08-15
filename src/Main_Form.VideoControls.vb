@@ -271,6 +271,7 @@ Partial Public Class Main_Form
     ''' <summary>Hooked onto the VLC surface: moving the mouse over the picture is what
     ''' summons the bar, exactly as it did in the IE player.</summary>
     Private Sub Vlc_Video_View_MouseMove(sender As Object, e As MouseEventArgs)
+        RevealSlideshowChromeTemporarily()
         ShowVideoControls()
     End Sub
 

@@ -20,7 +20,10 @@
       ["Plays almost anything", "Video runs through the built-in VLC engine - H.264/MP4, MKV, AVI, VP9 and more."],
       ["Ambilight background", "The empty bars beside a photo take their colour from the photo itself instead of staying black."],
       ["Offline OCR translation", "Recognize text on an image and lay the translation over it, without sending the picture anywhere."],
-      ["Share folders over SFTP", "Publish the folders you pick over SFTP and open them in the Android app - or in any SFTP client. Off until you switch it on."]
+      ["Share folders over SFTP", "Publish the folders you pick over SFTP and open them in the Android app - or in any SFTP client. Off until you switch it on."],
+      ["Undo, and a real Recycle Bin", "Del sends the file to the Recycle Bin, Shift+Del goes past it, and U walks back through the last 50 operations - renames and deletions included. Where Windows keeps no bin at all, the app says so instead of pretending."],
+      ["Archives open like folders", "A ZIP or CBZ browses like an ordinary folder, slideshow, zoom and translation included. Nothing is unpacked in advance and nothing is left behind."],
+      ["Draw on a picture, crop it, save it", "Brush, rectangle and ellipse, a live crop frame with handles, then save over the original or beside it. Your EXIF travels with the picture."]
     ],
     "knowTitle": "Worth knowing",
     "know": [
@@ -48,7 +51,10 @@
       ["Играет почти всё", "Видео идёт через встроенный движок VLC - H.264/MP4, MKV, AVI, VP9 и другие."],
       ["Фон Ambilight", "Пустые поля рядом с фотографией берут цвет у самой фотографии, а не остаются чёрными."],
       ["OCR-перевод офлайн", "Распознайте текст на картинке и положите перевод поверх неё, никуда не отправляя изображение."],
-      ["Раздача папок по SFTP", "Опубликуйте выбранные папки по SFTP и откройте их в приложении для Android - или в любом SFTP-клиенте. Выключено, пока не включите."]
+      ["Раздача папок по SFTP", "Опубликуйте выбранные папки по SFTP и откройте их в приложении для Android - или в любом SFTP-клиенте. Выключено, пока не включите."],
+      ["Отмена и настоящая Корзина", "Del отправляет файл в Корзину, Shift+Del - мимо неё, а U отматывает последние 50 операций, включая переименования и удаления. Там, где Windows корзины не держит вовсе, программа честно об этом говорит."],
+      ["Архивы открываются как папки", "ZIP или CBZ листается как обычная папка - со слайд-шоу, масштабом и переводом. Ничего не распаковывается заранее и ничего не остаётся после."],
+      ["Рисование и кадрирование", "Кисть, прямоугольник и эллипс, живая рамка кадрирования с маркерами, затем сохранение поверх оригинала или рядом с ним. EXIF едет вместе с картинкой."]
     ],
     "knowTitle": "Что стоит знать",
     "know": [
@@ -76,7 +82,10 @@
       ["Грає майже все", "Відео йде через вбудований рушій VLC - H.264/MP4, MKV, AVI, VP9 та інші."],
       ["Фон Ambilight", "Порожні поля поруч із фотографією беруть колір у самої фотографії, а не лишаються чорними."],
       ["OCR-переклад офлайн", "Розпізнайте текст на зображенні й покладіть переклад поверх нього, нікуди не надсилаючи картинку."],
-      ["Роздача папок через SFTP", "Опублікуйте вибрані теки через SFTP і відкрийте їх у застосунку для Android - або в будь-якому SFTP-клієнті. Вимкнено, доки не увімкнете."]
+      ["Роздача папок через SFTP", "Опублікуйте вибрані теки через SFTP і відкрийте їх у застосунку для Android - або в будь-якому SFTP-клієнті. Вимкнено, доки не увімкнете."],
+      ["Скасування і справжній Кошик", "Del надсилає файл до Кошика, Shift+Del - повз нього, а U відмотує останні 50 операцій, включно з перейменуваннями та видаленнями. Там, де Windows кошика не тримає взагалі, програма чесно про це каже."],
+      ["Архіви відкриваються як теки", "ZIP або CBZ гортається як звичайна тека - зі слайд-шоу, масштабом і перекладом. Нічого не розпаковується заздалегідь і нічого не лишається після."],
+      ["Малювання та кадрування", "Пензель, прямокутник та еліпс, жива рамка кадрування з маркерами, потім збереження поверх оригіналу або поруч із ним. EXIF їде разом із картинкою."]
     ],
     "knowTitle": "Що варто знати",
     "know": [
@@ -104,7 +113,10 @@
       ["Spielt fast alles", "Video läuft über die eingebaute VLC-Engine - H.264/MP4, MKV, AVI, VP9 und mehr."],
       ["Ambilight-Hintergrund", "Die leeren Balken neben einem Foto nehmen ihre Farbe vom Foto selbst, statt schwarz zu bleiben."],
       ["OCR-Übersetzung offline", "Text auf einem Bild erkennen und die Übersetzung darüberlegen - ohne das Bild irgendwohin zu senden."],
-      ["Ordner über SFTP freigeben", "Veröffentlichen Sie ausgewählte Ordner über SFTP und öffnen Sie sie in der Android-App - oder in einem beliebigen SFTP-Client. Aus, bis Sie es einschalten."]
+      ["Ordner über SFTP freigeben", "Veröffentlichen Sie ausgewählte Ordner über SFTP und öffnen Sie sie in der Android-App - oder in einem beliebigen SFTP-Client. Aus, bis Sie es einschalten."],
+      ["Rückgängig, und ein echter Papierkorb", "Entf legt die Datei in den Papierkorb, Umschalt+Entf daran vorbei, und U geht die letzten 50 Vorgänge zurück - Umbenennungen und Löschungen eingeschlossen. Wo Windows gar keinen Papierkorb führt, sagt die App es, statt so zu tun."],
+      ["Archive öffnen sich wie Ordner", "Ein ZIP oder CBZ blättert wie ein gewöhnlicher Ordner - mit Diashow, Zoom und Übersetzung. Nichts wird vorab entpackt und nichts bleibt zurück."],
+      ["Zeichnen, zuschneiden, speichern", "Pinsel, Rechteck und Ellipse, ein lebendiger Zuschnittrahmen mit Griffen, dann über das Original speichern oder daneben. Ihre EXIF-Daten reisen mit dem Bild."]
     ],
     "knowTitle": "Gut zu wissen",
     "know": [
@@ -132,7 +144,10 @@
       ["Riproduce quasi tutto", "Il video passa dal motore VLC integrato - H.264/MP4, MKV, AVI, VP9 e altri."],
       ["Sfondo Ambilight", "Le bande vuote accanto alla foto prendono il colore dalla foto stessa invece di restare nere."],
       ["Traduzione OCR offline", "Riconosci il testo di un'immagine e sovrapponi la traduzione, senza inviare la foto da nessuna parte."],
-      ["Condividi cartelle via SFTP", "Pubblica le cartelle che scegli via SFTP e aprile nell'app Android - o in un qualsiasi client SFTP. Disattivo finché non lo attivi."]
+      ["Condividi cartelle via SFTP", "Pubblica le cartelle che scegli via SFTP e aprile nell'app Android - o in un qualsiasi client SFTP. Disattivo finché non lo attivi."],
+      ["Annulla, e un vero Cestino", "Canc manda il file nel Cestino, Maiusc+Canc lo scavalca, e U ripercorre le ultime 50 operazioni - rinomine ed eliminazioni comprese. Dove Windows non tiene alcun cestino, l'app lo dice invece di fingere."],
+      ["Gli archivi si aprono come cartelle", "Uno ZIP o CBZ si sfoglia come una cartella normale - con presentazione, zoom e traduzione. Nulla viene estratto in anticipo e nulla resta dopo."],
+      ["Disegna, ritaglia, salva", "Pennello, rettangolo ed ellisse, una cornice di ritaglio dal vivo con maniglie, poi salva sull'originale o accanto. I tuoi dati EXIF viaggiano con l'immagine."]
     ],
     "knowTitle": "Da sapere",
     "know": [
@@ -160,7 +175,10 @@
       ["Reproduce casi todo", "El vídeo pasa por el motor VLC integrado: H.264/MP4, MKV, AVI, VP9 y más."],
       ["Fondo Ambilight", "Las bandas vacías junto a la foto toman el color de la propia foto en vez de quedarse negras."],
       ["Traducción OCR sin conexión", "Reconozca el texto de una imagen y superponga la traducción, sin enviar la foto a ninguna parte."],
-      ["Comparta carpetas por SFTP", "Publique las carpetas que elija por SFTP y ábralas en la aplicación Android o en cualquier cliente SFTP. Desactivado hasta que lo active."]
+      ["Comparta carpetas por SFTP", "Publique las carpetas que elija por SFTP y ábralas en la aplicación Android o en cualquier cliente SFTP. Desactivado hasta que lo active."],
+      ["Deshacer, y una Papelera de verdad", "Supr envía el archivo a la Papelera, Mayús+Supr la evita, y U retrocede por las últimas 50 operaciones - cambios de nombre y borrados incluidos. Donde Windows no guarda ninguna papelera, la aplicación lo dice en vez de fingir."],
+      ["Los archivos comprimidos se abren como carpetas", "Un ZIP o CBZ se recorre como una carpeta normal - con pase de diapositivas, zoom y traducción. Nada se extrae por adelantado y nada queda después."],
+      ["Dibuje, recorte, guarde", "Pincel, rectángulo y elipse, un marco de recorte en vivo con tiradores, y luego guardar sobre el original o junto a él. Sus datos EXIF viajan con la imagen."]
     ],
     "knowTitle": "Conviene saber",
     "know": [
@@ -188,7 +206,10 @@
       ["Lit presque tout", "La vidéo passe par le moteur VLC intégré : H.264/MP4, MKV, AVI, VP9 et d'autres."],
       ["Fond Ambilight", "Les bandes vides à côté d'une photo prennent leur couleur dans la photo elle-même au lieu de rester noires."],
       ["Traduction OCR hors ligne", "Reconnaissez le texte d'une image et posez la traduction dessus, sans envoyer la photo nulle part."],
-      ["Partagez des dossiers via SFTP", "Publiez les dossiers de votre choix via SFTP et ouvrez-les dans l'application Android - ou dans n'importe quel client SFTP. Désactivé tant que vous ne l'activez pas."]
+      ["Partagez des dossiers via SFTP", "Publiez les dossiers de votre choix via SFTP et ouvrez-les dans l'application Android - ou dans n'importe quel client SFTP. Désactivé tant que vous ne l'activez pas."],
+      ["Annuler, et une vraie Corbeille", "Suppr envoie le fichier à la Corbeille, Maj+Suppr passe outre, et U remonte les 50 dernières opérations - renommages et suppressions compris. Là où Windows ne tient aucune corbeille, l'application le dit au lieu de faire semblant."],
+      ["Les archives s'ouvrent comme des dossiers", "Un ZIP ou CBZ se feuillette comme un dossier ordinaire - diaporama, zoom et traduction compris. Rien n'est extrait à l'avance et rien ne reste après."],
+      ["Dessinez, recadrez, enregistrez", "Pinceau, rectangle et ellipse, un cadre de recadrage vivant avec poignées, puis enregistrez sur l'original ou à côté. Vos données EXIF voyagent avec l'image."]
     ],
     "knowTitle": "Bon à savoir",
     "know": [
@@ -216,7 +237,10 @@
       ["Reproduz quase tudo", "O vídeo passa pelo mecanismo VLC integrado: H.264/MP4, MKV, AVI, VP9 e mais."],
       ["Fundo Ambilight", "As barras vazias ao lado da foto tiram a cor da própria foto em vez de continuarem pretas."],
       ["Tradução OCR off-line", "Reconheça o texto de uma imagem e sobreponha a tradução, sem enviar a foto para lugar nenhum."],
-      ["Compartilhe pastas por SFTP", "Publique as pastas que você escolher por SFTP e abra-as no app Android - ou em qualquer cliente SFTP. Desligado até você ligar."]
+      ["Compartilhe pastas por SFTP", "Publique as pastas que você escolher por SFTP e abra-as no app Android - ou em qualquer cliente SFTP. Desligado até você ligar."],
+      ["Desfazer, e uma Lixeira de verdade", "Del envia o arquivo para a Lixeira, Shift+Del passa por fora dela, e U percorre de volta as últimas 50 operações - renomeações e exclusões incluídas. Onde o Windows não mantém lixeira nenhuma, o aplicativo diz isso em vez de fingir."],
+      ["Os arquivos compactados abrem como pastas", "Um ZIP ou CBZ é folheado como uma pasta comum - com apresentação, zoom e tradução. Nada é extraído com antecedência e nada fica para trás."],
+      ["Desenhe, recorte, salve", "Pincel, retângulo e elipse, uma moldura de corte ao vivo com alças, e então salve sobre o original ou ao lado dele. Seus dados EXIF viajam com a imagem."]
     ],
     "knowTitle": "Vale saber",
     "know": [
@@ -244,7 +268,10 @@
       ["يشغّل كل شيء تقريبًا", "يمر الفيديو عبر محرك VLC المدمج - H.264/MP4 وMKV وAVI وVP9 وغيرها."],
       ["خلفية Ambilight", "الأشرطة الفارغة بجانب الصورة تأخذ لونها من الصورة نفسها بدل أن تبقى سوداء."],
       ["ترجمة OCR دون اتصال", "تعرّف على النص في الصورة وضع الترجمة فوقه، دون إرسال الصورة إلى أي مكان."],
-      ["شارك المجلدات عبر SFTP", "انشر المجلدات التي تختارها عبر SFTP وافتحها في تطبيق أندرويد - أو في أي عميل SFTP. معطّل حتى تفعّله بنفسك."]
+      ["شارك المجلدات عبر SFTP", "انشر المجلدات التي تختارها عبر SFTP وافتحها في تطبيق أندرويد - أو في أي عميل SFTP. معطّل حتى تفعّله بنفسك."],
+      ["تراجع، وسلة محذوفات حقيقية", "المفتاح Del يرسل الملف إلى سلة المحذوفات، وShift+Del يتجاوزها، وU يعود بك عبر آخر 50 عملية - بما فيها إعادة التسمية والحذف. وحيث لا يحتفظ ويندوز بسلة محذوفات أصلًا، يقول التطبيق ذلك بدل التظاهر."],
+      ["الأرشيفات تُفتح كالمجلدات", "يُتصفَّح ملف ZIP أو CBZ كمجلد عادي - مع عرض الشرائح والتكبير والترجمة. لا شيء يُستخرج مسبقًا ولا شيء يبقى بعده."],
+      ["ارسم على الصورة، اقتصّها، احفظها", "فرشاة ومستطيل وقطع ناقص، وإطار اقتصاص حي بمقابض، ثم احفظ فوق الأصل أو بجانبه. وبيانات EXIF تسافر مع الصورة."]
     ],
     "knowTitle": "جدير بالمعرفة",
     "know": [
@@ -272,7 +299,10 @@
       ["लगभग सब कुछ चलाता है", "वीडियो अंतर्निहित VLC इंजन से चलता है - H.264/MP4, MKV, AVI, VP9 और अन्य।"],
       ["Ambilight पृष्ठभूमि", "फ़ोटो के बगल की खाली पट्टियाँ काली रहने के बजाय फ़ोटो से ही रंग लेती हैं।"],
       ["ऑफ़लाइन OCR अनुवाद", "छवि पर लिखा पाठ पहचानें और अनुवाद उसी पर रखें - चित्र कहीं भेजे बिना।"],
-      ["SFTP से फ़ोल्डर साझा करें", "अपने चुने हुए फ़ोल्डर SFTP से प्रकाशित करें और उन्हें Android ऐप में - या किसी भी SFTP क्लाइंट में - खोलें। जब तक चालू न करें, बंद रहता है।"]
+      ["SFTP से फ़ोल्डर साझा करें", "अपने चुने हुए फ़ोल्डर SFTP से प्रकाशित करें और उन्हें Android ऐप में - या किसी भी SFTP क्लाइंट में - खोलें। जब तक चालू न करें, बंद रहता है।"],
+      ["पूर्ववत करें, और एक असली रीसायकल बिन", "Del फ़ाइल को रीसायकल बिन में भेजता है, Shift+Del उसे छोड़ देता है, और U पिछली 50 क्रियाओं को वापस लेता है - नाम बदलना और हटाना भी। जहाँ विंडोज़ कोई बिन रखता ही नहीं, ऐप बहाना बनाने के बजाय यह कह देता है।"],
+      ["संग्रह फ़ोल्डर की तरह खुलते हैं", "ZIP या CBZ सामान्य फ़ोल्डर की तरह देखा जाता है - स्लाइडशो, ज़ूम और अनुवाद सहित। कुछ भी पहले से नहीं खोला जाता और बाद में कुछ नहीं बचता।"],
+      ["चित्र पर बनाएँ, काटें, सहेजें", "ब्रश, आयत और दीर्घवृत्त, हैंडल वाला जीवंत क्रॉप फ़्रेम, फिर मूल पर या उसके पास सहेजें। आपका EXIF डेटा चित्र के साथ चलता है।"]
     ],
     "knowTitle": "जानने योग्य",
     "know": [
@@ -300,7 +330,10 @@
       ["প্রায় সব কিছু চালায়", "ভিডিও চলে অন্তর্নির্মিত VLC ইঞ্জিনে - H.264/MP4, MKV, AVI, VP9 এবং আরও।"],
       ["Ambilight পটভূমি", "ছবির পাশের ফাঁকা বার কালো না থেকে ছবিরই রঙ নেয়।"],
       ["অফলাইন OCR অনুবাদ", "ছবির লেখা শনাক্ত করে তার উপরেই অনুবাদ বসান - ছবি কোথাও না পাঠিয়ে।"],
-      ["SFTP-এ ফোল্ডার শেয়ার", "আপনার বেছে নেওয়া ফোল্ডার SFTP-এ প্রকাশ করুন এবং Android অ্যাপে - বা যেকোনো SFTP ক্লায়েন্টে - খুলুন। না চালানো পর্যন্ত বন্ধ থাকে।"]
+      ["SFTP-এ ফোল্ডার শেয়ার", "আপনার বেছে নেওয়া ফোল্ডার SFTP-এ প্রকাশ করুন এবং Android অ্যাপে - বা যেকোনো SFTP ক্লায়েন্টে - খুলুন। না চালানো পর্যন্ত বন্ধ থাকে।"],
+      ["ফিরিয়ে আনা, আর সত্যিকারের রিসাইকেল বিন", "Del ফাইলটিকে রিসাইকেল বিনে পাঠায়, Shift+Del তা এড়িয়ে যায়, আর U শেষ ৫০টি কাজ পিছিয়ে দেয় - নাম বদল আর মোছাসহ। যেখানে উইন্ডোজ কোনো বিনই রাখে না, অ্যাপ ভান না করে সেটাই বলে।"],
+      ["আর্কাইভ খোলে ফোল্ডারের মতো", "ZIP বা CBZ সাধারণ ফোল্ডারের মতোই দেখা যায় - স্লাইডশো, জুম আর অনুবাদসহ। আগেভাগে কিছু খোলা হয় না, পরেও কিছু পড়ে থাকে না।"],
+      ["ছবিতে আঁকুন, ছাঁটুন, সংরক্ষণ করুন", "তুলি, আয়ত ও উপবৃত্ত, হাতলসহ জীবন্ত ক্রপ ফ্রেম, তারপর মূলটির উপরে বা তার পাশে সংরক্ষণ। আপনার EXIF তথ্য ছবির সঙ্গেই যায়।"]
     ],
     "knowTitle": "জেনে রাখা ভালো",
     "know": [
@@ -328,7 +361,10 @@
       ["تقریباً سب کچھ چلاتا ہے", "ویڈیو بلٹ اِن VLC انجن سے چلتی ہے - H.264/MP4، MKV، AVI، VP9 اور مزید۔"],
       ["Ambilight پس منظر", "تصویر کے پہلو کی خالی پٹیاں سیاہ رہنے کے بجائے تصویر ہی سے رنگ لیتی ہیں۔"],
       ["آف لائن OCR ترجمہ", "تصویر پر لکھا متن پہچانیں اور ترجمہ اسی پر رکھیں - تصویر کہیں بھیجے بغیر۔"],
-      ["SFTP سے فولڈر شیئر کریں", "اپنے منتخب فولڈر SFTP سے شائع کریں اور انہیں Android ایپ میں - یا کسی بھی SFTP کلائنٹ میں - کھولیں۔ جب تک آن نہ کریں، بند رہتا ہے۔"]
+      ["SFTP سے فولڈر شیئر کریں", "اپنے منتخب فولڈر SFTP سے شائع کریں اور انہیں Android ایپ میں - یا کسی بھی SFTP کلائنٹ میں - کھولیں۔ جب تک آن نہ کریں، بند رہتا ہے۔"],
+      ["واپسی، اور ایک اصلی ری سائیکل بِن", "Del فائل کو ری سائیکل بِن میں بھیجتا ہے، Shift+Del اُس سے آگے نکل جاتا ہے، اور U پچھلی 50 کارروائیاں واپس لے آتا ہے - نام کی تبدیلی اور حذف سمیت۔ جہاں ونڈوز کوئی بِن رکھتا ہی نہیں، ایپ بہانہ بنانے کے بجائے یہ کہہ دیتی ہے۔"],
+      ["آرکائیو فولڈر کی طرح کھلتے ہیں", "ZIP یا CBZ عام فولڈر کی طرح دیکھا جاتا ہے - سلائیڈ شو، زوم اور ترجمے کے ساتھ۔ کچھ بھی پہلے سے نہیں کھولا جاتا اور بعد میں کچھ باقی نہیں رہتا۔"],
+      ["تصویر پر بنائیں، تراشیں، محفوظ کریں", "برش، مستطیل اور بیضوی، دستوں والا زندہ کراپ فریم، پھر اصل پر یا اُس کے ساتھ محفوظ کریں۔ آپ کا EXIF ڈیٹا تصویر کے ساتھ سفر کرتا ہے۔"]
     ],
     "knowTitle": "جاننے کے قابل",
     "know": [
@@ -356,7 +392,10 @@
       ["几乎什么都能播", "视频走内置的 VLC 引擎 - H.264/MP4、MKV、AVI、VP9 等等。"],
       ["Ambilight 背景", "照片旁边的空白色块不再是黑的，而是取自照片本身的颜色。"],
       ["离线 OCR 翻译", "识别图片上的文字并把译文叠在原处 - 图片不会被发到任何地方。"],
-      ["用 SFTP 分享文件夹", "把你挑选的文件夹通过 SFTP 发布，在 Android 应用里打开 - 也可以用任何 SFTP 客户端连接。默认关闭，你不开它就不动。"]
+      ["用 SFTP 分享文件夹", "把你挑选的文件夹通过 SFTP 发布，在 Android 应用里打开 - 也可以用任何 SFTP 客户端连接。默认关闭，你不开它就不动。"],
+      ["撤销，以及真正的回收站", "Del 把文件送进回收站，Shift+Del 绕过它，U 则回退最近 50 步操作 - 包括重命名和删除。在 Windows 根本没有回收站的地方，程序会直说，而不是假装。"],
+      ["压缩包像文件夹一样打开", "ZIP 或 CBZ 可以像普通文件夹一样浏览 - 幻灯片、缩放和翻译都在。事先不解包，事后不留痕。"],
+      ["在图片上绘制、裁剪、保存", "画笔、矩形和椭圆，带控制点的实时裁剪框，然后覆盖原图保存或另存到旁边。EXIF 数据随图片一起走。"]
     ],
     "knowTitle": "值得一提",
     "know": [

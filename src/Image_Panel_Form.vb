@@ -471,8 +471,20 @@ Public Class Image_Panel_Form
         Next
         If work.Count = 0 Then Return
 
+#If Not NETFRAMEWORK Then
+        ' The same policy as every other deletion in the application (R-1 §3.8), decided
+        ' ONCE for the selection: three hundred files out of one folder must not cost
+        ' three hundred probes.
+        Dim decision As DeleteDecision = SelectionDeleteDecision(work)
+        Dim confirmMsg = DeleteText.ConfirmMany(decision, work.Count)
+        ' The same setting the viewer asks by (Ф4). A selection of three hundred files is
+        ' the last place two surfaces should disagree about whether deleting asks.
+        Dim mustAsk As Boolean = DeletePolicy.ShouldConfirm(Main_Form.GetModernPreferences().ConfirmDelete, decision)
+#Else
         Dim confirmMsg = Localization.TF("Вы уверены, что хотите безвозвратно удалить {0} файл(ов)?", work.Count)
-        If Not Is_no_request_before_file_operation AndAlso
+        Dim mustAsk As Boolean = Not Is_no_request_before_file_operation
+#End If
+        If mustAsk AndAlso
             MessageBox.Show(confirmMsg, Localization.TC("panel", "Подтверждение удаления"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
 
         Dim errors As New System.Text.StringBuilder()
@@ -489,7 +501,11 @@ Public Class Image_Panel_Form
                 Dim failure As Exception = Nothing
                 Await Task.Run(Sub()
                                    Try
+#If Not NETFRAMEWORK Then
+                                       RecycleBinIo.DeleteAs(filePath, decision)
+#Else
                                        File.Delete(filePath)
+#End If
                                    Catch ex As Exception
                                        failure = ex
                                    End Try
@@ -515,6 +531,42 @@ Public Class Image_Panel_Form
         End If
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " p0080: pics deleted: " & done.ToString())
     End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>
+    ''' One verdict for the whole selection, probing each distinct volume root once.
+    '''
+    ''' A mixed selection (possible only with subfolder scanning) takes the PERMANENT
+    ''' answer, because that is the true one for at least one of the files, and a dialog
+    ''' promising the Recycle Bin to a file the share will swallow is exactly the lie this
+    ''' work exists to remove.
+    '''
+    ''' The size is deliberately not passed: the quota rule is per file, this decision is
+    ''' per selection, and stat-ing three hundred files over SMB to sharpen one sentence
+    ''' is not a trade worth making. It leaves §6.1 in force - the shell has the last word.
+    ''' </summary>
+    Private Function SelectionDeleteDecision(work As List(Of Tuple(Of PictureBox, String))) As DeleteDecision
+        Dim verdict As DeleteDecision = Nothing
+        Dim roots_Seen As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+
+        For Each item In work
+            Dim root As String = DeleteVolumeProbe.VolumeRootOf(item.Item2)
+            If Not roots_Seen.Add(root) Then Continue For
+
+            Dim one As DeleteDecision = DeletePolicy.Decide(DeleteVolumeProbe.FactsFor(item.Item2),
+                                                            -1,
+                                                            binEnabledBySetting:=Main_Form.GetModernPreferences().DeleteToRecycleBin,
+                                                            forcedPermanent:=False)
+            If verdict Is Nothing OrElse (Not verdict.IsPermanent AndAlso one.IsPermanent) Then verdict = one
+        Next
+
+        If verdict Is Nothing Then
+            verdict = New DeleteDecision With {.Outcome = DeleteOutcome.Permanent,
+                                               .Reason = PermanentReason.VolumeUnknown}
+        End If
+        Return verdict
+    End Function
+#End If
 
     Private Sub InitializeState()
         ReleaseAllCards()
