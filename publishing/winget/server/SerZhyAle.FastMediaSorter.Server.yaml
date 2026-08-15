@@ -16,13 +16,15 @@
 # publishing/installer/FastMediaSorterServer.iss (UninstallDisplayName), which is
 # how winget correlates upgrades.
 #
-# First published with 26.8.8.2305 (PR microsoft/winget-pkgs#414217), so the identity
-# above is now frozen. Version/InstallerUrl/InstallerSha256 are refreshed each release
-# from the published GitHub asset - take the SHA from the release body or the asset's
-# .sha256 sidecar, never by hand.
+# NOT published yet. The first submission was PR microsoft/winget-pkgs#414217 at
+# 26.8.8.2305; it sat in moderation until it was five releases stale, so it was closed
+# in favour of #417819 at 26.8.15.1510. The identity above is frozen from whichever
+# version actually merges. Version/InstallerUrl/InstallerSha256 are refreshed each
+# release from the published GitHub asset - take the SHA from the asset's .sha256
+# sidecar and verify it against the downloaded file, never type one by hand.
 
 PackageIdentifier: SerZhyAle.FastMediaSorter.Server
-PackageVersion: "26.8.8.2305"
+PackageVersion: "26.8.15.1510"
 DefaultLocale: en-US
 ManifestType: version
 ManifestVersion: 1.12.0
