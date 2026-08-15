@@ -8,6 +8,8 @@ Categories: `Added`, `Changed`, `Fixed`, `Removed`.
 
 ## [Unreleased]
 
+## [26.8.15.1510] - 2026-08-15
+
 ### Added
 - **The settings that were listed but did nothing now do what they say (64-bit program).** Five rows in Settings had been storing a choice and changing nothing about the program: they are now wired to the behaviour they name.
 
