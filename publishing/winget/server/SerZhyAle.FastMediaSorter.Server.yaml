@@ -17,7 +17,7 @@
 # how winget correlates upgrades.
 #
 # NOT published yet. The first submission was PR microsoft/winget-pkgs#414217 at
-# 26.8.8.2305; it sat in moderation until it was five releases stale, so it was closed
+# 26.8.8.2305; it sat in moderation until it was four releases stale, so it was closed
 # in favour of #417819 at 26.8.15.1510. The identity above is frozen from whichever
 # version actually merges. Version/InstallerUrl/InstallerSha256 are refreshed each
 # release from the published GitHub asset - take the SHA from the asset's .sha256
