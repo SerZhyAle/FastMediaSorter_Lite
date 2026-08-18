@@ -35,6 +35,8 @@ $BaseUrl  = 'https://serzhyale.github.io/FastMediaSorter_Lite'
 $LangDir  = 'lang'   # the one root folder that holds every translated page
 $Releases = 'https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest'
 $Repo     = 'https://github.com/SerZhyAle/FastMediaSorter_Lite'
+$OgImage  = 'assets/social-preview-1280x640.png'          # verified present; assets/og-image.png never was
+$Favicon  = 'assets/icons/Fast_Media_Sorter.ico'          # ditto for assets/favicon.ico
 
 if (-not (Test-Path $CopyFile)) { throw "Missing copy source: $CopyFile" }
 $copy  = Get-Content $CopyFile -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -44,6 +46,28 @@ $codes = $copy.PSObject.Properties.Name | Where-Object { -not $_.StartsWith('_')
 function Esc([string]$s) {
     if ($null -eq $s) { return '' }
     $s.Replace('&','&amp;').Replace('<','&lt;').Replace('>','&gt;').Replace('"','&quot;')
+}
+
+# Structured data. Built through ConvertTo-Json so the localized strings are escaped as JSON
+# rather than as HTML - Esc() is the wrong tool inside a script block and would emit &quot;.
+function JsonLd([string]$code, $e) {
+    $ld = [ordered]@{
+        '@context'            = 'https://schema.org'
+        '@type'               = 'SoftwareApplication'
+        'name'                = $e.title
+        'description'         = $e.tagline
+        'url'                 = (PageUrl $code)
+        'inLanguage'          = $code
+        'applicationCategory' = 'MultimediaApplication'
+        'operatingSystem'     = 'Windows 7, Windows 8.1, Windows 10, Windows 11'
+        'image'               = "$BaseUrl/$OgImage"
+        'downloadUrl'         = $Releases
+        'isAccessibleForFree' = $true
+        'offers'              = [ordered]@{ '@type' = 'Offer'; 'price' = '0'; 'priceCurrency' = 'USD' }
+        'author'              = [ordered]@{ '@type' = 'Person'; 'name' = 'SerZhyAle' }
+    }
+    # No softwareVersion: a version baked into a page goes stale on the next release (SZA-VER04).
+    ($ld | ConvertTo-Json -Depth 5 -Compress)
 }
 
 # Absolute paths from the site root: a relative href breaks one directory down.
@@ -92,9 +116,16 @@ $alts
 <meta property="og:title" content="$(Esc $e.title)">
 <meta property="og:description" content="$(Esc $e.tagline)">
 <meta property="og:url" content="$(PageUrl $code)">
-<meta property="og:image" content="$BaseUrl/assets/og-image.png">
+<meta property="og:image" content="$BaseUrl/$OgImage">
+<meta property="og:site_name" content="Fast Media Sorter for Windows">
+<meta property="og:locale" content="$code">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="$(Esc $e.title)">
+<meta name="twitter:description" content="$(Esc $e.tagline)">
+<meta name="twitter:image" content="$BaseUrl/$OgImage">
 <meta name="theme-color" content="#0d1017">
-<link rel="icon" href="$BaseUrl/assets/favicon.ico" sizes="any">
+<link rel="icon" href="$BaseUrl/$Favicon" sizes="any">
+<script type="application/ld+json">$(JsonLd $code $e)</script>
 <style>
   :root{--bg:#0d1017;--bg2:#171b26;--fg:#e8ecf4;--muted:#aab2be;--accent:#7aa2ff;--border:rgba(255,255,255,.10)}
   *{box-sizing:border-box}
@@ -199,6 +230,69 @@ foreach ($code in $codes) {
     $written += "$LangDir/$code/index.html"
 }
 
+# --- robots.txt + sitemap.xml -------------------------------------------------
+# Both are render targets, not hand-maintained files: the public set is the root
+# .html pages plus one directory per translated language, and a hand-written
+# sitemap goes stale the first time either set changes. The root page is listed
+# as the bare directory URL, which is what canonical says, so a crawler is never
+# offered index.html and / as two things.
+function RootPages {
+    Get-ChildItem -LiteralPath $Root -Filter '*.html' -File |
+        Sort-Object Name | ForEach-Object { $_.Name }
+}
+
+function RenderRobots {
+    @"
+User-agent: *
+Allow: /
+
+Sitemap: $BaseUrl/sitemap.xml
+
+"@ -replace "`r`n", "`n"
+}
+
+function RenderSitemap {
+    $urls = @()
+    foreach ($f in RootPages) {
+        $urls += if ($f -eq 'index.html') { "$BaseUrl/" } else { "$BaseUrl/$f" }
+    }
+    foreach ($code in ($codes | Where-Object { $_ -ne 'en' })) { $urls += (PageUrl $code) }
+
+    $body = ($urls | ForEach-Object {
+        # The entry page carries the hreflang set, so it is the one that declares the
+        # alternates; a per-page alternate block on a how-to that has no translation
+        # would be a lie.
+        if ($_ -eq "$BaseUrl/") {
+            $alts = (($codes | ForEach-Object {
+                '    <xhtml:link rel="alternate" hreflang="{0}" href="{1}"/>' -f $_, (PageUrl $_)
+            }) -join "`n")
+            "  <url>`n    <loc>$_</loc>`n$alts`n    <xhtml:link rel=`"alternate`" hreflang=`"x-default`" href=`"$BaseUrl/`"/>`n  </url>"
+        } else {
+            "  <url>`n    <loc>$_</loc>`n  </url>"
+        }
+    }) -join "`n"
+
+    @"
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+$body
+</urlset>
+"@ -replace "`r`n", "`n"
+}
+
+foreach ($pair in @(@('robots.txt', (RenderRobots)), @('sitemap.xml', (RenderSitemap)))) {
+    $name = $pair[0]; $text = $pair[1]
+    $dest = Join-Path $Root $name
+    if ($Check) {
+        if (-not (Test-Path $dest)) { $stale += "$name (missing)"; continue }
+        $on = (Get-Content $dest -Raw -Encoding UTF8) -replace "`r`n", "`n"
+        if ($on -ne $text) { $stale += $name }
+        continue
+    }
+    [IO.File]::WriteAllText($dest, $text, (New-Object Text.UTF8Encoding $false))
+    $written += $name
+}
 if ($Check) {
     # The pages used to live one per folder in the repository root. A leftover there
     # would still be served by Pages and would silently outrank the real page.
@@ -209,11 +303,11 @@ if ($Check) {
         exit 1
     }
     if ($stale.Count -gt 0) {
-        Write-Warning "Pages out of date with site-copy.json: $($stale -join ', ')"
+        Write-Warning "Render targets out of date with site-copy.json: $($stale -join ', ')"
         Write-Host "Run .\tools\Build-SitePages.ps1 to regenerate."
         exit 1
     }
-    Write-Host "All language pages match site-copy.json."
+    Write-Host "All language pages, robots.txt and sitemap.xml match site-copy.json."
     exit 0
 }
 

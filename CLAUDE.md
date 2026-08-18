@@ -345,7 +345,14 @@ Design + full record: [SPECIFICATION_THIRTEEN_UI_LANGUAGES.md](docs/specificatio
   [tools/Build-SitePages.ps1](tools/Build-SitePages.ps1) from [tools/site-copy.json](tools/site-copy.json).
   They are render targets - edit the JSON and re-run, never the HTML (canon invariant 16); `-Check`
   proves the committed pages still match **and** fails if a legacy per-language folder is left in the
-  repo root. The prefix is the script's single `$LangDir` - URL, hreflang and output path all follow it,
+  repo root. **`robots.txt` and `sitemap.xml` are render targets of the same script** - the sitemap's
+  public set is "every `*.html` in the repo root, plus one directory per translated language", derived at
+  run time, so adding a page needs no edit here; the root entry is listed as the bare directory URL to
+  match `canonical`, and only that entry carries the `xhtml:link` alternates. The **shared social assets
+  are named once** at the top of the script (`$OgImage`, `$Favicon`): both previously pointed at
+  `assets/og-image.png` and `assets/favicon.ico`, which have never existed, so all 12 translated pages
+  shipped a dead link preview and a dead favicon while the hand-authored root page pointed at the real
+  files. The prefix is the script's single `$LangDir` - URL, hreflang and output path all follow it,
   but the root `index.html` (the hand-authored trilingual entry) carries its own switcher and hreflang
   block that must be edited by hand to match. Pages is branch-based here (`main:/`), so a clean
   `/lang/ru/` URL needs a real directory; `/ru/` and friends are gone and are **not** redirected.
