@@ -88,6 +88,10 @@ Partial Public NotInheritable Class Localization
         Add("Размер истории файлов", "Recent-files limit", "Розмір історії файлів", "Grenze für zuletzt verwendete Dateien", "Limite dei file recenti", "Límite de archivos recientes", "Limite des fichiers récents", "Limite de arquivos recentes", "حد الملفات الحديثة", "हाल की फ़ाइलों की सीमा", "সাম্প্রতিক ফাইলের সীমা", "حالیہ فائلوں کی حد", "最近文件数量上限")
         Add("Размер истории папок", "Recent-folders limit", "Розмір історії тек", "Grenze für zuletzt verwendete Ordner", "Limite delle cartelle recenti", "Límite de carpetas recientes", "Limite des dossiers récents", "Limite de pastas recentes", "حد المجلدات الحديثة", "हाल के फ़ोल्डरों की सीमा", "সাম্প্রতিক ফোল্ডারের সীমা", "حالیہ فولڈرز کی حد", "最近文件夹数量上限")
         Add("При запуске открывать", "Open at startup", "Під час запуску відкривати", "Beim Start öffnen", "All'avvio apri", "Abrir al iniciar", "Ouvrir au démarrage", "Abrir ao iniciar", "الفتح عند البدء", "शुरू होने पर खोलें", "চালু হওয়ার সময় খুলুন", "شروع پر کھولیں", "启动时打开")
+        ' The resume option (SPECIFICATION_RESUME_LAST_PLAYBACK_DOTNET10 §6). It sits under
+        ' the row above because the pair reads as one decision: what to open, and whether to
+        ' carry on from the same frame.
+        Add("Продолжать с последнего файла", "Resume the last file", "Продовжувати з останнього файлу", "Letzte Datei fortsetzen", "Riprendi dall'ultimo file", "Continuar con el último archivo", "Reprendre le dernier fichier", "Continuar do último arquivo", "متابعة آخر ملف", "अंतिम फ़ाइल से जारी रखें", "শেষ ফাইল থেকে চালিয়ে যান", "آخری فائل سے جاری رکھیں", "从上次的文件继续")
         ' The two rows of AddSettingsTransferRows. Until these existed the window printed
         ' their raw keys - "settings_export" / "settings_import" - as the captions, in all
         ' thirteen languages, because ModernSettingTitle falls back to "Return key".

@@ -30,6 +30,14 @@
 ; correlate to two DIFFERENT winget packages, and a shared DisplayName would make
 ; "winget upgrade" hand a machine the wrong edition.
 #define AppNameArp    "Fast Media Sorter Folder Share Server"
+; Start-menu GROUP - deliberately NOT {#AppName}: both editions live under ONE product
+; folder in the Start menu, so this must stay byte-identical to the User edition's
+; DefaultGroupName in FastMediaSorter.iss (its {#AppName}). The two installers write
+; into the same group without touching each other's shortcuts - Inno removes only the
+; entries it created, and the emptied folder goes with whichever uninstaller runs last.
+; This is a shortcut-placement name only, NOT an identity anchor: AppId, the ARP
+; DisplayName and the winget package stay distinct per edition.
+#define AppGroupName  "Fast Media Sorter for Windows"
 #define AppPublisher  "SerZhyAle"
 #define CompanionExe  "FastMediaSorterCompanion.exe"
 #define WorkerExe     "fms-share-worker.exe"
@@ -49,7 +57,7 @@ AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}/issues
 AppUpdatesURL={#AppURL}/releases
 DefaultDirName={autopf}\FastMediaSorter_Server
-DefaultGroupName={#AppName}
+DefaultGroupName={#AppGroupName}
 DisableProgramGroupPage=yes
 LicenseFile={#SourceDir}\LICENSE
 OutputBaseFilename=FastMediaSorter-{#Version}-windows-x64-server-setup
@@ -119,6 +127,15 @@ Source: "install-share-service.ps1"; DestDir: "{tmp}"; Flags: dontcopy
 ; Stops the service, the Companion and the worker before files are replaced.
 Source: "stop-companion.ps1"; DestDir: "{tmp}"; Flags: dontcopy
 Source: "stop-companion.ps1"; DestDir: "{app}"; Flags: ignoreversion
+
+[InstallDelete]
+; Up to and including 26.8.15 this edition owned a Start-menu group of its own, named
+; after the product. Inno never removes shortcuts it created in a previous install, so
+; an upgrade would leave that folder standing next to the shared one with a stale copy
+; of both entries. It only ever held this product's own shortcuts, and it is always
+; {commonprograms} here (PrivilegesRequired=admin), so removing it outright is safe.
+; Harmless on a fresh install, where the folder does not exist.
+Type: filesandordirs; Name: "{commonprograms}\Fast Media Sorter Folder Share Server"
 
 [Icons]
 ; "--show": a bare launch obeys the manager's own "open the window at startup" option,

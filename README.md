@@ -5,6 +5,7 @@ Fast Media Sorter for Windows (formerly FastMediaSorter LITE - it is still publi
 - Fast navigation through large folders of images and videos (even the embarrassingly large ones)
 - Slideshow and random file viewing modes
 - Recent files and folders tracking, so you don't have to remember where you left off
+- Pick up where you stopped: switch on **"Resume the last file"** and a plain start reopens the exact file that was on screen last time, with its folder listed behind it - and a video carries on from the position it was left at. Off unless you ask for it; a file that has since gone simply leaves the window empty (64-bit program)
 - File operations: move, copy, rename, and delete
 - Deleting is no longer the one thing you cannot take back: `DEL` sends the file to the **Recycle Bin** where one exists, `Shift+DEL` goes past it on purpose, and every permanent deletion names its reason - a network drive and a memory stick have no bin at all, and the app says so instead of pretending. `U` walks back through the **last 50 operations**, renames and deletions included, each file returning to its folder and to its place in the list (64-bit program)
 - Move or copy, decided as you go: a digit `1..9`/`0` moves the current file into that folder, **Shift + the same top-row digit copies it there** - no mode to switch on beforehand and forget about. The same pair is on the recipients panel, in both media menus, and in the recipients table (Shift + double-click). Whether a copy then jumps to the next file is one checkbox in Settings, on by default (64-bit program)

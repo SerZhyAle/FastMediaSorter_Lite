@@ -247,10 +247,12 @@ Public Class TesseractOcrEngine
                 Dim engine As TesseractEngine = GetEngine(dataDir, profile.Language)
                 Using pix As Pix = Pix.LoadFromMemory(prepared.Bytes)
                     Using page As Page = engine.Process(pix, profile.Segmentation)
-                        Dim lines As List(Of OcrLine) = ExtractLines(page, prepared.InvScale, source.Width, source.Height)
+                        Dim dropped As New List(Of OcrDroppedLine)
+                        Dim lines As List(Of OcrLine) = ExtractLines(page, prepared.InvScale, source.Width, source.Height, dropped)
                         Return New OcrResult With {
                             .Status = If(lines.Count > 0, OcrStatus.Ok, OcrStatus.NoText),
-                            .Lines = lines
+                            .Lines = lines,
+                            .Dropped = dropped
                         }
                     End Using
                 End Using
@@ -275,7 +277,12 @@ Public Class TesseractOcrEngine
         End Try
     End Function
 
-    Private Shared Function ExtractLines(page As Page, invScale As Double, maxW As Integer, maxH As Integer) As List(Of OcrLine)
+    ''' <param name="dropped">Receives every line the threshold refused, with the rule that
+    ''' refused it. Filled from the SAME call that decides - see OcrTextFilter.LineRejection -
+    ''' and carried on this attempt's result, so the record that reaches the diagnostics dump
+    ''' belongs to the pass that actually won rather than to a union over all of them.</param>
+    Private Shared Function ExtractLines(page As Page, invScale As Double, maxW As Integer, maxH As Integer,
+                                         dropped As List(Of OcrDroppedLine)) As List(Of OcrLine)
         Dim lines As New List(Of OcrLine)
 
         Using iter As ResultIterator = page.GetIterator()
@@ -288,13 +295,21 @@ Public Class TesseractOcrEngine
                         Dim conf As Single = iter.GetConfidence(PageIteratorLevel.TextLine) / 100.0F
                         Dim box As Rectangle = MapBox(r, invScale, maxW, maxH)
                         Dim cleaned As String = CleanLineText(txt)
-                        If IsAcceptableLine(cleaned, conf) Then
+                        Dim rejection As String = OcrTextFilter.LineRejection(cleaned, conf)
+                        If rejection.Length = 0 Then
                             lines.Add(New OcrLine With {
                                 .Text = cleaned,
                                 .Box = box,
                                 .Words = New List(Of OcrWord) From {
                                     New OcrWord With {.Text = cleaned, .Box = box, .Confidence = conf}
                                 }
+                            })
+                        ElseIf dropped IsNot Nothing Then
+                            dropped.Add(New OcrDroppedLine With {
+                                .Text = cleaned,
+                                .Box = box,
+                                .Confidence = conf,
+                                .Rule = rejection
                             })
                         End If
                     End If
@@ -319,46 +334,13 @@ Public Class TesseractOcrEngine
         Return s
     End Function
 
-    Private Shared Function CountUsefulCharacters(text As String) As Integer
-        Dim count As Integer = 0
-        For Each ch As Char In text
-            If Char.IsLetterOrDigit(ch) Then count += 1
-        Next
-        Return count
-    End Function
-
-    ''' <summary>
-    ''' Rejects the stray 1-2 character "lines" Tesseract hallucinates from
-    ''' textured backgrounds (skin, fabric, hair) while keeping real text.
-    ''' Keys on word length, NOT raw confidence: downscaled page text frequently
-    ''' scores low yet is correct, so confidence-only filtering was dropping the
-    ''' actual speech text.
-    ''' </summary>
-    Private Shared Function IsAcceptableLine(text As String, confidence As Single) As Boolean
-        Dim useful As Integer = CountUsefulCharacters(text)
-        If useful = 0 Then Return False
-        ' Mostly punctuation/symbols -> noise.
-        If useful / CDbl(Math.Max(1, text.Length)) < 0.45 Then Return False
-        ' A real text line contains at least one proper word (3+ letters); accept
-        ' it regardless of confidence.
-        If LongestLetterRun(text) >= 3 Then Return True
-        ' Otherwise keep only highly-confident short tokens (e.g. "OK", "Да").
-        Return useful >= 2 AndAlso confidence >= 0.85F
-    End Function
-
-    Private Shared Function LongestLetterRun(text As String) As Integer
-        Dim best As Integer = 0
-        Dim current As Integer = 0
-        For Each ch As Char In text
-            If Char.IsLetter(ch) Then
-                current += 1
-                If current > best Then best = current
-            Else
-                current = 0
-            End If
-        Next
-        Return best
-    End Function
+    ' The line-acceptance rule that used to live here - it rejects the stray 1-2 character
+    ' "lines" Tesseract hallucinates from textured backgrounds (skin, fabric, hair) while
+    ' keeping real text, keying on word length rather than raw confidence - moved to
+    ' OcrTextFilter.LineRejection unchanged. Not tidying: the record of what the threshold
+    ' dropped has to come out of the same call that applies it, and the pure module is also
+    ' the only place the tests can reach without the native engine. The two counting helpers
+    ' went with it because the attempt scorer below uses the same two measures.
 
     Private Shared Function MapBox(r As Rect, inv As Double, maxW As Integer, maxH As Integer) As Rectangle
         Dim x As Integer = CInt(Math.Round(r.X1 * inv))
@@ -606,7 +588,7 @@ Public Class TesseractOcrEngine
 
         For Each line As OcrLine In result.Lines
             totalChars += line.Text.Length
-            Dim lineUseful As Integer = CountUsefulCharacters(line.Text)
+            Dim lineUseful As Integer = OcrTextFilter.CountLettersAndDigits(line.Text)
             usefulChars += lineUseful
             If lineUseful >= 3 Then goodLines += 1
 
@@ -618,7 +600,7 @@ Public Class TesseractOcrEngine
             Dim usefulRatio As Double = lineUseful / CDbl(Math.Max(1, line.Text.Length))
             Dim symbolNoise As Double = SymbolRatio(line.Text)
             Dim digitNoise As Double = DigitRatio(line.Text)
-            Dim longestRun As Integer = LongestLetterRun(line.Text)
+            Dim longestRun As Integer = OcrTextFilter.LongestLetterRun(line.Text)
 
             Dim looksNatural As Boolean =
                 lineUseful >= 4 AndAlso

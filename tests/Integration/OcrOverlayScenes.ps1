@@ -16,6 +16,14 @@
 
     The viewer's OCR settings are borrowed for the run and put back afterwards.
 
+    A scene that produced NO plates is reported apart and fails, never averaged in: its
+    "largest plate covers 0.0000 of the frame" and its "0 plates trimmed" are the same numbers
+    a perfect scene gives, so folding it into the aggregates makes a gate green by excluding
+    exactly the scenes that went wrong (section 16.5). For those scenes the dump now also
+    carries what the thresholds refused, which is the difference between "the engine read
+    nothing" and "a threshold threw away what it read" - two facts that looked identical
+    before, because neither wrote a line.
+
 .PARAMETER WorkDir
     Where scenes and the dump go. Default: %TEMP%\fms-ocr-scenes.
 
@@ -218,6 +226,8 @@ if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $by
 }
 
 $seen = @{}
+$measured = 0
+$blank = @()
 foreach ($line in Get-Content $dump) {
     if ([string]::IsNullOrWhiteSpace($line)) { continue }
     $doc = $line | ConvertFrom-Json
@@ -236,13 +246,48 @@ foreach ($line in Get-Content $dump) {
         if ($bg -gt $maxBg) { $maxBg = $bg }
     }
 
-    Write-Host ("{0,-32} plates {1,2}  maxCover {2}  grown {3}  trimmed {4}  bgLuma {5}" -f
-                $name, $doc.blocks.Count, $maxCov.ToString('F4'), $grown, $trimmed, $maxBg)
+    # "dropped" is an array when the run measured its refusals, null when nobody did (a
+    # document served from the disk cache). Distinguishing the two is the whole point:
+    # reporting "not measured" as "nothing was dropped" is how a gate goes green while
+    # excluding every scene that found no text (section 16.5).
+    $hasDropField = $doc.PSObject.Properties.Name -contains 'dropped'
+    $dropCount = if (-not $hasDropField -or $null -eq $doc.dropped) { -1 } else { @($doc.dropped).Count }
+    $dropText  = if ($dropCount -lt 0) { 'n/a' } else { $dropCount.ToString() }
+
+    Write-Host ("{0,-32} plates {1,2}  maxCover {2}  grown {3}  trimmed {4}  bgLuma {5}  dropped {6}" -f
+                $name, $doc.blocks.Count, $maxCov.ToString('F4'), $grown, $trimmed, $maxBg, $dropText)
+
+    # A scene with no plates measures NOTHING - its maxCover of 0 and its trimmed of 0 are
+    # the flattering zeros, not a clean result - so it is reported apart and never folded
+    # into the aggregates below.
+    if ($doc.blocks.Count -eq 0) {
+        $blank += $name
+        if ($dropCount -gt 0) {
+            $rules = (@($doc.dropped) | ForEach-Object { $_.rule } | Sort-Object -Unique) -join ', '
+            Write-Host ("  no plates; the thresholds refused {0} line(s): {1}" -f $dropCount, $rules)
+            foreach ($d in @($doc.dropped)) {
+                Write-Host ("    [{0}] {1}" -f $d.rule, $d.text)
+            }
+        } elseif ($dropCount -eq 0) {
+            Write-Host '  no plates, and no threshold refused anything - the engine read nothing here.'
+        }
+        $failures += "${name}: no plates at all (dropped: $dropText)"
+        continue
+    }
+    $measured++
 
     # Section 11: no plate may cover more of the frame than the dissolve rule allows.
     if ($maxCov -gt 0.52) { $failures += "${name}: a plate covers $($maxCov.ToString('F4')) of the frame" }
     # Section 2: trimming is the last rung and should not be reached on these scenes.
     if ($trimmed -gt 0) { $failures += "${name}: $trimmed plate(s) had text trimmed" }
+    # Section 9: what the filter threw away, on a scene that DID produce plates. Not a
+    # failure by itself - some refusals are the filter doing its job - but it is the number
+    # the acceptance item asks for, and it used to be unobtainable without a second build.
+    if ($dropCount -gt 0) {
+        foreach ($d in @($doc.dropped)) {
+            Write-Host ("  dropped [{0}] {1}" -f $d.rule, $d.text)
+        }
+    }
 
     if ($expected.ContainsKey($name)) {
         $e = $expected[$name]
@@ -263,6 +308,10 @@ foreach ($s in $scenes) {
 }
 
 Write-Host ''
+Write-Host ("Scenes: {0} dumped, {1} measured, {2} without plates{3}" -f
+            $seen.Count, $measured, $blank.Count,
+            $(if ($blank.Count -gt 0) { " ($($blank -join ', '))" } else { '' }))
+
 if ($failures.Count -gt 0) {
     Write-Host 'FAILED:'
     $failures | ForEach-Object { Write-Host "  - $_" }

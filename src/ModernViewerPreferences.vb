@@ -58,6 +58,13 @@ Public NotInheritable Class ModernViewerPreferences
     Public Property PreferredSubtitleLanguage As String = ""
 
     Public Property StartupOpenMode As String = "home"
+    ''' <summary>Reopen the exact file that was on screen, and let the existing
+    ''' VideoPositionHistory carry the playback position across the restart
+    ''' (SPECIFICATION_RESUME_LAST_PLAYBACK_DOTNET10 §1). Off by default: restoring is a
+    ''' guess the application makes on its own, so it has to be asked for. Deliberately
+    ''' separate from StartupOpenMode - that one says WHAT to open, this one says "and
+    ''' carry on from the same frame".</summary>
+    Public Property ResumeLastPlayback As Boolean = False
     Public Property AllowNewWindows As Boolean = False
     Public Property RecentFilesLimit As Integer = 50
     Public Property RecentFoldersLimit As Integer = 100
@@ -117,6 +124,7 @@ Public NotInheritable Class ModernViewerPreferences
         p.PreferredSubtitleLanguage = ReadString("PreferredSubtitleLanguage", p.PreferredSubtitleLanguage)
 
         p.StartupOpenMode = ReadChoice("StartupOpenMode", p.StartupOpenMode, "home", "lastFolder", "lastFile")
+        p.ResumeLastPlayback = ReadBool("ResumeLastPlayback", p.ResumeLastPlayback)
         p.AllowNewWindows = ReadBool("AllowNewWindows", p.AllowNewWindows)
         p.RecentFilesLimit = ReadInt("RecentFilesLimit", p.RecentFilesLimit, 0, 200)
         p.RecentFoldersLimit = ReadInt("RecentFoldersLimit", p.RecentFoldersLimit, 0, 200)
@@ -159,6 +167,7 @@ Public NotInheritable Class ModernViewerPreferences
         WriteString("PreferredAudioLanguage", PreferredAudioLanguage)
         WriteString("PreferredSubtitleLanguage", PreferredSubtitleLanguage)
         WriteString("StartupOpenMode", StartupOpenMode)
+        WriteBool("ResumeLastPlayback", ResumeLastPlayback)
         ' Keep a primary process with an older in-memory value from resurrecting a
         ' choice that a secondary process just wrote for subsequent launches.
         AllowNewWindows = ReadBool("AllowNewWindows", AllowNewWindows)

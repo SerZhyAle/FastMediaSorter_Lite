@@ -137,6 +137,15 @@
     <Compile Include="..\..\src\MultiWindowPolicy.vb">
       <Link>Linked\MultiWindowPolicy.vb</Link>
     </Compile>
+    <!-- The .NET 10 preference block. Linked for the resume option
+         (SPECIFICATION_RESUME_LAST_PLAYBACK_DOTNET10 §8.1): "off unless asked for" is
+         exactly the kind of default that is easy to get wrong and impossible to notice.
+         Whole-file "#If Not NETFRAMEWORK", so it and its tests compile to nothing on the
+         net48 leg, and it needs nothing new - Common_Module and MultiWindowPolicy above
+         are its only dependencies. -->
+    <Compile Include="..\..\src\ModernViewerPreferences.vb">
+      <Link>Linked\ModernViewerPreferences.vb</Link>
+    </Compile>
     <!-- Where the app keeps state on disk, and the archive cache built on it. The two
          Archives files are whole-file "#If Not NETFRAMEWORK", so they and their tests
          compile to nothing on the net48 leg - the honest shape, since archive browsing

@@ -221,6 +221,7 @@ Partial Public Class Table_Form
         AddHandler modernSettingsContent.Resize, AddressOf ModernSettingsContentResized
         AddHandler SystemEvents.UserPreferenceChanged, AddressOf ModernSystemPreferenceChanged
         AddHandler FormClosed, AddressOf ModernSettingsFormClosed
+        AddHandler Shown, AddressOf ModernSettingsShown
         BuildModernDataLayout()
         StyleModernSettingsControls()
         LayoutModernSettingsPages()
@@ -285,6 +286,32 @@ Partial Public Class Table_Form
     Private Sub ModernSettingsTabChanged(sender As Object, e As EventArgs)
         If Tab_Control.SelectedTab Is modernTranslationPage Then OnEnterOcrTab()
         RefreshModernSettingsHeader()
+        ScrollActiveModernPageToTop()
+    End Sub
+
+    Private Sub ModernSettingsShown(sender As Object, e As EventArgs)
+        ScrollActiveModernPageToTop()
+    End Sub
+
+    ''' <summary>A settings page always opens at its top. Both the TabPage and its flow
+    ''' panel have AutoScroll on, and such a container scrolls a newly focused child into
+    ''' view - so whichever control WinForms focuses on entering the page decided where
+    ''' the page started, hiding the rows above it. BeginInvoke runs after focus has been
+    ''' placed, which is the whole point.</summary>
+    Private Sub ScrollActiveModernPageToTop()
+        If Not modernSettingsBuilt OrElse Tab_Control Is Nothing OrElse Not IsHandleCreated Then Return
+        Dim page As TabPage = Tab_Control.SelectedTab
+        If page Is Nothing Then Return
+        BeginInvoke(New MethodInvoker(
+            Sub()
+                Try
+                    page.AutoScrollPosition = Point.Empty
+                    For Each flow As FlowLayoutPanel In modernPageFlows
+                        If flow.Parent Is page Then flow.AutoScrollPosition = Point.Empty
+                    Next
+                Catch
+                End Try
+            End Sub))
     End Sub
 
     Private Sub ModernSettingsContentResized(sender As Object, e As EventArgs)
@@ -472,6 +499,7 @@ Partial Public Class Table_Form
             Case "recent_folders_limit" : Return Localization.T("Размер истории папок")
             Case "recent_history" : Return Localization.T("Недавние файлы и папки")
             Case "startup_open" : Return Localization.T("При запуске открывать")
+            Case "resume_last_playback" : Return Localization.T("Продолжать с последнего файла")
             Case "settings_export_personal" : Return Localization.T("Включить личные данные")
             Case "settings_export" : Return Localization.T("Экспорт настроек")
             Case "settings_import" : Return Localization.T("Импорт настроек")
@@ -567,6 +595,7 @@ Partial Public Class Table_Form
             Case "recent_files_limit", "recent_folders_limit" : Return Localization.T("0 отключает сохранение новых записей.")
             Case "recent_history" : Return Localization.T("Открыть запись, удалить одну или очистить историю целиком.")
             Case "startup_open" : Return Localization.T("Что будет показано при обычном запуске без файла в командной строке.")
+            Case "resume_last_playback" : Return Localization.T("При запуске открыть файл, который был на экране, и продолжить видео с той же позиции. Если файл недоступен - окно остаётся пустым.")
             Case "settings_export_personal" : Return Localization.T("История папок и позиции просмотра попадут в файл. API-ключи и пароли - никогда.")
             Case "settings_export" : Return Localization.T("Сохраняет параметры в файл. Личные данные - пути и позиции просмотра - не включаются.")
             Case "settings_import" : Return Localization.T("Читает параметры из файла. Прежний профиль сохраняется рядом с ним как .backup.")
@@ -626,6 +655,11 @@ Partial Public Class Table_Form
         ReparentModernSettingsControl(Data_Grid_View, gridHost)
         Data_Grid_View.Dock = DockStyle.Fill
         Data_Grid_View.ScrollBars = ScrollBars.Vertical
+        ' Not reachable by Tab, so it is not what WinForms focuses when the page opens:
+        ' an AutoScroll container scrolls its newly focused child into view, and the grid
+        ' is tall enough that doing so pushed the row above it - the recipients-overlay
+        ' switch - out of sight. A click still focuses and edits the grid as before.
+        Data_Grid_View.TabStop = False
         destinations.Controls.Add(gridHost)
 
         Dim viewing As FlowLayoutPanel = CreateModernPageFlow(Tab_Page_2)

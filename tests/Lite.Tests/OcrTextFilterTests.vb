@@ -108,4 +108,65 @@ Public Class OcrTextFilterTests
         Assert.True(Keep("नमस्ते दुनिया"))
     End Sub
 
+    ' --- one predicate decides and records (section 16.1) ----------------------
+
+    <Fact>
+    Public Sub Decision_And_Reason_Are_The_Same_Call()
+        ' The whole value of recording what the filter dropped rests on the record coming out
+        ' of the rule that is actually applied. Two copies of one condition would pass any
+        ' review of the constants and drift apart the first time one of them changed - after
+        ' which the dump would describe a decision nobody takes. So: for every sample, a
+        ' non-empty reason means rejected and an empty reason means kept, with no third
+        ' outcome available to either side.
+        Dim samples As String() = {
+            "сссчщ", "https://example.com/x", "abc", "Да, хорошо", "What are you doing here?",
+            "光", "日本語", "PC 設定", "مرحبا بالعالم", "C:\Users\x\a.jpg", "", "   "
+        }
+        For Each s As String In samples
+            For Each lineCount As Integer In New Integer() {1, 2}
+                Dim reason As String = OcrTextFilter.RejectionReason(s, lineCount)
+                Assert.Equal(reason.Length = 0, OcrTextFilter.ShouldTranslate(s, lineCount))
+            Next
+        Next
+    End Sub
+
+    <Theory>
+    <InlineData("сссчщ", "no-vowel")>
+    <InlineData("abc", "too-few-letters")>
+    <InlineData("https://example.com/x", "address")>
+    <InlineData("光", "cjk-too-short")>
+    <InlineData("", "empty")>
+    Public Sub Reason_Names_The_Rule_That_Refused(text As String, expected As String)
+        ' The names travel into the diagnostics dump, so a scene can be read without
+        ' re-deriving which threshold bit. They are part of the contract, not a debug string.
+        Assert.Equal(expected, OcrTextFilter.RejectionReason(text, 1))
+    End Sub
+
+    ' --- the line rule, one step earlier --------------------------------------
+
+    <Fact>
+    Public Sub LineRule_Keeps_A_Real_Word_At_Any_Confidence()
+        ' Deliberately unchanged, and now deliberately written down: a line carrying a real
+        ' word survives however low the engine's confidence is. Downscaled page text scores
+        ' low and is correct. The other project measured the cost of the same leniency and
+        ' rolled theirs back - safe on average, wrong on a page recognized in the wrong
+        ' language - so this test exists to make a future change to it a decision.
+        Assert.Equal("", OcrTextFilter.LineRejection("Привет", 0.05F))
+        Assert.Equal("", OcrTextFilter.LineRejection("stop", 0.0F))
+    End Sub
+
+    <Fact>
+    Public Sub LineRule_Rejects_Short_Unconfident_Noise()
+        Assert.Equal("short-low-confidence", OcrTextFilter.LineRejection("in", 0.4F))
+        Assert.Equal("no-letters-or-digits", OcrTextFilter.LineRejection("\", 0.9F))
+        Assert.Equal("mostly-punctuation", OcrTextFilter.LineRejection("a....... ", 0.9F))
+    End Sub
+
+    <Fact>
+    Public Sub LineRule_Keeps_A_Confident_Short_Token()
+        ' "OK", "Да" - two useful characters and the engine is sure.
+        Assert.Equal("", OcrTextFilter.LineRejection("OK", 0.9F))
+        Assert.Equal("short-low-confidence", OcrTextFilter.LineRejection("OK", 0.5F))
+    End Sub
+
 End Class

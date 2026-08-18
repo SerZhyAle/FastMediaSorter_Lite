@@ -89,6 +89,9 @@ Partial Public Class Table_Form
         AddHistoryRow(files)
         AddPreferenceChoice(files, "startup_open", p.StartupOpenMode,
                             {Choice("home", "Стартовую страницу"), Choice("lastFolder", "Последнюю папку"), Choice("lastFile", "Последний файл")}, Sub(v) p.StartupOpenMode = v)
+        ' Directly under it, because the two are a pair: that row says WHAT to open, this
+        ' one says "and carry on from the same frame" (RESUME_LAST_PLAYBACK §6).
+        AddPreferenceCheck(files, "resume_last_playback", p.ResumeLastPlayback, Sub(v) p.ResumeLastPlayback = v)
         AddSettingsTransferRows(files)
         AddAllowNewWindowsRow(files, p)
 

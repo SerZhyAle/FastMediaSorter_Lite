@@ -20,8 +20,9 @@ Imports System.Windows.Forms
 ' ReadShowMediaFile(Mode_Delete) - identical behaviour, no new file logic.
 Partial Public Class Main_Form
 
-    Private recipients_Overlay As Panel
+    Private recipients_Overlay As RecipientsOverlayWindow
     Private recipients_ToolTip As ToolTip
+    Private recipients_Overlay_Tracking As Boolean
 
     ''' <summary>The font the current overlay generation was built with. A Font assigned
     ''' to a control is NOT disposed by Control.Dispose, so without holding it here every
@@ -32,6 +33,11 @@ Partial Public Class Main_Form
     ''' Form1_FormClosing. ApplyRecipientsOverlay handles the per-rebuild half.</summary>
     Private Sub DisposeRecipientsOverlayResources()
         Try
+            If recipients_Overlay IsNot Nothing Then
+                recipients_Overlay.Close()
+                recipients_Overlay.Dispose()
+                recipients_Overlay = Nothing
+            End If
             If recipients_ToolTip IsNot Nothing Then
                 recipients_ToolTip.RemoveAll()
                 recipients_ToolTip.Dispose()
@@ -55,11 +61,11 @@ Partial Public Class Main_Form
         ' Tear down any existing overlay first (rebuild from current data).
         If recipients_Overlay IsNot Nothing Then
             Try
-                ' RemoveAll BEFORE the panel goes: a ToolTip keeps an entry per control it
+                ' RemoveAll BEFORE the window goes: a ToolTip keeps an entry per control it
                 ' was set on, so without this it held every generation of dead buttons for
                 ' the lifetime of the form.
                 If recipients_ToolTip IsNot Nothing Then recipients_ToolTip.RemoveAll()
-                If recipients_Overlay.Parent IsNot Nothing Then recipients_Overlay.Parent.Controls.Remove(recipients_Overlay)
+                recipients_Overlay.Close()
                 recipients_Overlay.Dispose()
             Catch
             End Try
@@ -72,17 +78,28 @@ Partial Public Class Main_Form
         End If
 
         If Not Is_Show_Recipients_Overlay Then Return
-        If panel_Media Is Nothing Then Return
+        If panel_Media Is Nothing OrElse Not Me.IsHandleCreated Then Return
 
         Try
             BuildRecipientsOverlay()
             If recipients_Overlay Is Nothing Then Return
-            panel_Media.Controls.Add(recipients_Overlay)
+            TrackRecipientsOverlayGeometry()
+            recipients_Overlay.Owner = Me
             PositionRecipientsOverlay()
-            recipients_Overlay.BringToFront()
+            recipients_Overlay.Show()
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2400: recipients overlay build failed: " & ex.Message)
         End Try
+    End Sub
+
+    ''' <summary>The overlay is a window of its own, so - unlike a child panel - it does
+    ''' not travel with the form for free. Subscribed once; the handlers no-op while the
+    ''' overlay is off.</summary>
+    Private Sub TrackRecipientsOverlayGeometry()
+        If recipients_Overlay_Tracking Then Return
+        recipients_Overlay_Tracking = True
+        AddHandler Me.LocationChanged, Sub() KeepRecipientsOverlayOnTop()
+        AddHandler Me.SizeChanged, Sub() KeepRecipientsOverlayOnTop()
     End Sub
 
     ''' <summary>Re-asserts the overlay's position and z-order after the media
@@ -92,7 +109,6 @@ Partial Public Class Main_Form
         If recipients_Overlay Is Nothing OrElse Not Is_Show_Recipients_Overlay Then Return
         Try
             PositionRecipientsOverlay()
-            recipients_Overlay.BringToFront()
         Catch
         End Try
     End Sub
@@ -133,14 +149,18 @@ Partial Public Class Main_Form
         Dim panelW As Integer = Math.Min(desiredW, capW)
 
         ' WinForms does not alpha-compose a normal child Panel over its sibling
-        ' PictureBox/VideoView. A layered child window does, so the configured opacity
-        ' genuinely reveals the media beneath the recipients table.
-        Dim overlay As New RecipientsOverlayPanel With {
+        ' PictureBox/VideoView, so the overlay needs a layered window to let the
+        ' configured opacity reveal the media beneath it. A layered CHILD window is not
+        ' it: WS_EX_LAYERED on a child fails CreateWindowEx outright here ("Error
+        ' creating window handle" in current.log, reproduced on .NET 10 / Windows 11),
+        ' which is why the table never appeared. A borderless owned top-level window is
+        ' layered by the shell in the normal way - and it also floats over the LibVLC
+        ' VideoView, which a sibling control cannot reliably do.
+        Dim overlay As New RecipientsOverlayWindow With {
             .Name = "recipients_Overlay",
             .BackColor = Color.FromArgb(32, 32, 32),
-            .OverlayOpacity = CByte(RecipientsOverlayAlpha()),
-            .Padding = New Padding(0),
-            .Margin = New Padding(0)
+            .Opacity = Math.Max(0.15R, Math.Min(1.0R, RecipientsOverlayAlpha() / 255.0R)),
+            .Padding = New Padding(0)
         }
 
         ' Mainline: every recipient row carries a second, narrow zone that COPIES into the
@@ -222,12 +242,22 @@ Partial Public Class Main_Form
             y += rowH
         Next
 
-        overlay.Size = New Size(panelW, If(scrollRows, rowH * visibleRows, y))
+        overlay.ClientSize = New Size(panelW, If(scrollRows, rowH * visibleRows, y))
         recipients_Overlay = overlay
     End Sub
 
     Private Sub PositionRecipientsOverlay()
         If recipients_Overlay Is Nothing OrElse panel_Media Is Nothing Then Return
+
+        ' A window of its own is not clipped by the form, so it must hide itself whenever
+        ' the media surface is not on screen - minimized, or the form hidden.
+        If Me.WindowState = FormWindowState.Minimized OrElse Not Me.Visible OrElse
+           Not panel_Media.Visible OrElse panel_Media.ClientSize.Width <= 0 Then
+            If recipients_Overlay.Visible Then recipients_Overlay.Visible = False
+            Return
+        End If
+        If Not recipients_Overlay.Visible AndAlso recipients_Overlay.IsHandleCreated Then recipients_Overlay.Visible = True
+
         Dim margin As Integer = LogicalToDeviceUnits(8)
         Dim topOffset As Integer = margin
         ' In full-screen (not super) the floating toolbar sits over the top strip;
@@ -247,7 +277,11 @@ Partial Public Class Main_Form
                 x = Math.Max(margin, panel_Media.ClientSize.Width - recipients_Overlay.Width - margin)
                 y = Math.Max(margin, panel_Media.ClientSize.Height - recipients_Overlay.Height - margin)
         End Select
-        recipients_Overlay.Location = New Point(x, y)
+
+        ' The corner is the media area's, expressed on screen - the overlay is a separate
+        ' window, so its Location is in screen coordinates, not the form's client space.
+        Dim onScreen As Point = panel_Media.PointToScreen(New Point(x, y))
+        If recipients_Overlay.Location <> onScreen Then recipients_Overlay.Location = onScreen
     End Sub
 
     ''' <summary>A click on a recipient row is exactly the matching key press.</summary>
@@ -296,50 +330,42 @@ Partial Public Class Main_Form
     End Class
 
     ''' <summary>
-    ''' A child control cannot make its alpha BackColor transparent over sibling media
-    ''' controls. WS_EX_LAYERED gives the panel a real compositor alpha channel instead.
+    ''' The overlay's host: a borderless owned window, so Form.Opacity gives it a real
+    ''' compositor alpha channel over the media (a child control cannot alpha-compose over
+    ''' a sibling PictureBox/VideoView, and WS_EX_LAYERED on a CHILD window fails to be
+    ''' created at all - see the comment at BuildRecipientsOverlay). It never activates:
+    ''' the app is keyboard-driven and a click here must not take focus from the viewer.
     ''' </summary>
-    Private NotInheritable Class RecipientsOverlayPanel
-        Inherits Panel
+    Private NotInheritable Class RecipientsOverlayWindow
+        Inherits Form
 
-        Private Const WS_EX_LAYERED As Integer = &H80000
-        Private Const LWA_ALPHA As UInteger = &H2UI
-        Private overlay_Opacity As Byte = Byte.MaxValue
+        Private Const WS_EX_NOACTIVATE As Integer = &H8000000
+        Private Const WS_EX_TOOLWINDOW As Integer = &H80
 
-        Public Property OverlayOpacity As Byte
+        Public Sub New()
+            FormBorderStyle = FormBorderStyle.None
+            StartPosition = FormStartPosition.Manual
+            ShowInTaskbar = False
+            ControlBox = False
+            MinimizeBox = False
+            MaximizeBox = False
+            KeyPreview = False
+            AutoScaleMode = AutoScaleMode.None
+        End Sub
+
+        Protected Overrides ReadOnly Property ShowWithoutActivation As Boolean
             Get
-                Return overlay_Opacity
+                Return True
             End Get
-            Set(value As Byte)
-                overlay_Opacity = value
-                ApplyLayeredOpacity()
-            End Set
         End Property
 
         Protected Overrides ReadOnly Property CreateParams As CreateParams
             Get
                 Dim parameters As CreateParams = MyBase.CreateParams
-                parameters.ExStyle = parameters.ExStyle Or WS_EX_LAYERED
+                parameters.ExStyle = parameters.ExStyle Or WS_EX_NOACTIVATE Or WS_EX_TOOLWINDOW
                 Return parameters
             End Get
         End Property
-
-        Protected Overrides Sub OnHandleCreated(e As EventArgs)
-            MyBase.OnHandleCreated(e)
-            ApplyLayeredOpacity()
-        End Sub
-
-        Private Sub ApplyLayeredOpacity()
-            If Not IsHandleCreated Then Return
-            SetLayeredWindowAttributes(Handle, 0UI, overlay_Opacity, LWA_ALPHA)
-        End Sub
-
-        <DllImport("user32.dll", SetLastError:=True)>
-        Private Shared Function SetLayeredWindowAttributes(hwnd As IntPtr,
-                                                            colorKey As UInteger,
-                                                            alpha As Byte,
-                                                            flags As UInteger) As Boolean
-        End Function
     End Class
 
 End Class

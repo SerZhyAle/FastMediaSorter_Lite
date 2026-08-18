@@ -293,11 +293,25 @@ Partial Public Class Main_Form
                     Return
             End Select
 
-            Dim blocks As List(Of OcrBlock) = OcrBlockBuilder.BuildBlocks(ocrResult.Lines, job.ImageSize)
+            ' What the two thresholds refused on this run: the engine's line rule filled its
+            ' half inside Recognize, the block filter fills the rest below. Collected in both
+            ' builds, used only by the modern one's diagnostics - a handful of small objects
+            ' per image is not worth a compile seam, and one code path here cannot disagree
+            ' with itself the way two would.
+            Dim dropped As New List(Of OcrDroppedLine)(ocrResult.Dropped)
+            Dim blocks As List(Of OcrBlock) = OcrBlockBuilder.BuildBlocks(ocrResult.Lines, job.ImageSize, dropped)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
                             " ocr: blocks=" & blocks.Count.ToString() &
+                            " dropped=" & dropped.Count.ToString() &
                             " srcUseful=" & String.Join(",", blocks.Select(Function(b) CountUsefulDebugChars(b.SourceText)).ToArray()))
             If blocks.Count = 0 Then
+#If Not NETFRAMEWORK Then
+                ' Nothing will be painted, so nothing would dump - and this is precisely the
+                ' scene the record exists for: "the engine found nothing" and "a threshold
+                ' threw away what it found" are the same picture on screen and different
+                ' facts. Dumped from here, once, instead of from a paint that never happens.
+                OcrDiagnostics.DumpDocument(BuildDoc(job, engineName, provider, blocks, dropped))
+#End If
                 SetStatusOnUi(Localization.T("Текст не найден"))
                 Return
             End If
@@ -323,7 +337,7 @@ Partial Public Class Main_Form
                 For Each b As OcrBlock In blocks
                     b.TranslatedText = b.SourceText
                 Next
-                ApplyOnUi(BuildDoc(job, engineName, provider, blocks),
+                ApplyOnUi(BuildDoc(job, engineName, provider, blocks, dropped),
                           Localization.T("Переводчик недоступен"), token)
                 Return
             End If
@@ -339,7 +353,7 @@ Partial Public Class Main_Form
                 blocks(i).TranslatedText = If(i < translations.Count AndAlso Not String.IsNullOrWhiteSpace(translations(i)), translations(i), blocks(i).SourceText)
             Next
 
-            Dim finalDoc As OcrOverlayDocument = BuildDoc(job, engineName, provider, blocks)
+            Dim finalDoc As OcrOverlayDocument = BuildDoc(job, engineName, provider, blocks, dropped)
             ocr_Cache.PutMemory(key, finalDoc)
             If ocr_Settings.DiskCache Then ocr_Cache.SaveToDisk(key, finalDoc)
             ApplyOnUi(finalDoc, "", token)
@@ -413,7 +427,12 @@ Partial Public Class Main_Form
         End Select
     End Function
 
-    Private Function BuildDoc(job As OcrJob, engineName As String, provider As String, blocks As List(Of OcrBlock)) As OcrOverlayDocument
+    ''' <param name="dropped">Refusals measured on THIS run, or Nothing when they were not
+    ''' measured. A document that came back from the disk cache passes Nothing and says so in
+    ''' the dump; one served from memory keeps the refusals of the run that built it, because
+    ''' those are genuinely its own.</param>
+    Private Function BuildDoc(job As OcrJob, engineName As String, provider As String, blocks As List(Of OcrBlock),
+                              dropped As List(Of OcrDroppedLine)) As OcrOverlayDocument
         Return New OcrOverlayDocument With {
             .FilePath = job.FilePath,
             .FileWriteTicks = job.FileWriteTicks,
@@ -422,7 +441,8 @@ Partial Public Class Main_Form
             .TargetLanguage = job.TargetLang,
             .Engine = engineName,
             .Translator = provider,
-            .Blocks = blocks
+            .Blocks = blocks,
+            .Dropped = dropped
         }
     End Function
 

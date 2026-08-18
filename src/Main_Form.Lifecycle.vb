@@ -543,6 +543,143 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
+#If Not NETFRAMEWORK Then
+
+    ' ---------------------------------------------------------------------------------
+    ' Resume the last played file (SPECIFICATION_RESUME_LAST_PLAYBACK_DOTNET10).
+    '
+    ' "Last file" used to mean the last INDEX inside the last folder, so deleting or
+    ' renaming anything earlier in the list reopened a neighbour. This remembers the path
+    ' itself, and because the file is opened through the ordinary display path, the
+    ' existing VideoPositionHistory carries the playback position across the restart with
+    ' no second store and no code of its own (§3.3).
+    ' ---------------------------------------------------------------------------------
+
+    ''' <summary>The full path of the last media file actually shown, or "". Session state
+    ''' of the same kind as ImageFolder/LastCounter, so it lives beside them in the profile
+    ''' and rides the same debounced flush (§4).</summary>
+    Private last_Played_File As String = ""
+
+    ''' <summary>
+    ''' Records the file on screen (§3.4). Called from the one place that already maintains
+    ''' the recent-files list, so "shown" means the same thing for both.
+    '''
+    ''' An archive entry and a remote MRL are skipped rather than cleared: the key keeps
+    ''' whatever real file preceded them. An extracted entry lives under
+    ''' archive-cache\&lt;pid&gt;-&lt;token&gt;\ and is gone by the next start (the archive
+    ''' invariant), and a stream has no path to probe and no "continue from here" to offer.
+    ''' </summary>
+    Private Sub RememberLastPlayedFile(path As String)
+        If String.IsNullOrEmpty(path) Then Return
+        If IsArchiveMode() Then Return
+        If IsRemoteMediaUrl(path) Then Return
+        last_Played_File = path
+    End Sub
+
+    ''' <summary>Drops the remembered file - what "clear the history" has to mean, or the
+    ''' cleared-out viewer reopens the same file on the next start (§4).</summary>
+    Private Sub ForgetLastPlayedFile()
+        If String.IsNullOrEmpty(last_Played_File) Then Return
+        last_Played_File = ""
+        MarkSettingsDirty()
+    End Sub
+
+    ''' <summary>
+    ''' Branch 2 of §3.1: True when the option owns this startup, in which case the caller
+    ''' must NOT fall through to StartupOpenMode - a failed resume is a deliberately empty
+    ''' window, not a random folder (§3.2.3).
+    '''
+    ''' A secondary window never resumes (§3.5): three windows reopening the same file is
+    ''' not what "continue where I left off" means, and only the primary process writes the
+    ''' key in the first place.
+    ''' </summary>
+    Private Function TryResumeLastPlayedFile() As Boolean
+        If Not ResumeLastPlaybackEnabled() Then Return False
+        If String.IsNullOrEmpty(last_Played_File) Then Return False
+        If MultiWindowPolicy.IsSecondaryInstance() Then Return False
+
+        ResumeLastPlayedFileAsync(last_Played_File)
+        Return True
+    End Function
+
+    ''' <summary>
+    ''' Probes off the UI thread - the same ProbeArgument a command-line file goes through -
+    ''' so a sleeping share costs an empty window, not a frozen one (§3.2.1). Nothing here
+    ''' ever reaches lbl_Status: the user did not ask for this, so a failure they did not
+    ''' cause must not shout at them (§0.3).
+    ''' </summary>
+    Private Async Sub ResumeLastPlayedFileAsync(path As String)
+        Dim generation As Integer = media_Generation
+
+        Dim probe As ArgumentProbe
+        Try
+            probe = Await Task.Run(Function() ProbeArgument(path))
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0310: resume: last file unavailable: " & path)
+            Return
+        End Try
+
+        ' The user opened something themselves while we waited on a dead share.
+        If generation <> media_Generation Then Return
+        If Me.IsDisposed Then Return
+
+        If Not probe.Exists OrElse probe.IsDirectory Then
+            ' The path is kept, not cleared: a NAS that is off today is on tomorrow, and
+            ' forgetting it over one failed probe throws away the user's state (§3.2.4).
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0311: resume: last file unavailable: " & path)
+            Return
+        End If
+
+        OpenResumedFile(path)
+    End Sub
+
+    ''' <summary>
+    ''' Opens the folder the file sits in with the WHOLE folder listed and the cursor on
+    ''' that file, so arrows, the slideshow and the N/total counter work immediately - a
+    ''' one-file list (what a command-line argument builds) would be wrong here, because
+    ''' the user is carrying on browsing rather than opening an attachment (§3.2.2).
+    ''' </summary>
+    Private Sub OpenResumedFile(file_Path As String)
+        Try
+            Dim folder As String = Path.GetDirectoryName(file_Path)
+            If String.IsNullOrEmpty(folder) Then Return
+
+            Current_Folder_Path = folder
+            current_File_Index = 0
+            ' LoadFiles fills the list and the count; ReadShowMediaFile then updates the
+            ' folder combo and the recent-folder list from Current_Folder_Path.
+            If Not LoadFiles() Then Return
+
+            ' Not in the filtered list (the extension filter changed, say): show the folder
+            ' from its start. The file is not forced into the list - that is not an error
+            ' and gets no message.
+            Dim index As Integer = -1
+            If is_Files_Array_Active Then
+                If files_Array IsNot Nothing Then
+                    index = Array.FindIndex(files_Array, Function(item) String.Equals(item, file_Path, StringComparison.OrdinalIgnoreCase))
+                End If
+            ElseIf files_List IsNot Nothing Then
+                index = files_List.FindIndex(Function(item) String.Equals(item, file_Path, StringComparison.OrdinalIgnoreCase))
+            End If
+            If index >= 0 Then current_File_Index = index
+
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0041: resume: " & file_Path & " - index " & current_File_Index.ToString())
+            ReadShowMediaFile(Mode_SetFile)
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0312: resume: last file unavailable: " & file_Path & " - " & ex.Message)
+        End Try
+    End Sub
+
+#Else
+
+    ''' <summary>The frozen x86 target has no resume option (§2.2), so branch 2 never
+    ''' fires there and the startup it shipped with is untouched.</summary>
+    Private Function TryResumeLastPlayedFile() As Boolean
+        Return False
+    End Function
+
+#End If
+
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
         Debug.WriteLine(" - - - ")
@@ -702,6 +839,12 @@ Partial Public Class Main_Form
             End If
         End If
 
+#If Not NETFRAMEWORK Then
+        ' Session state beside ImageFolder/LastCounter, and read before the startup
+        ' branches below decide what to open (§4).
+        last_Played_File = GetSetting(App_name, Second_App_Name, "LastPlayedFile", "")
+#End If
+
         If Table_Form.chkbox_Independent_Thread_For_File_Operation IsNot Nothing Then
             Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked = GetSetting(App_name, Second_App_Name, "UseIndependentThreadForOperationsWithFiles", "0") = "1"
         End If
@@ -710,8 +853,15 @@ Partial Public Class Main_Form
 
 
         If My.Application.CommandLineArgs.Count > 0 Then
+            ' Branch 1 (§3.1): an explicit file always beats any memory.
             Dim fullCommandLine As String = String.Join(" ", My.Application.CommandLineArgs.ToArray())
             ProcessArgument(fullCommandLine)
+        ElseIf TryResumeLastPlayedFile() Then
+            ' Branch 2: the resume option took charge - independently of StartupOpenMode,
+            ' including "home". It probes off the UI thread and finishes on its own, and a
+            ' failure deliberately leaves the window empty rather than falling through to
+            ' branch 3 (§3.2.3).
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0039: resume: restoring the last played file")
         ElseIf StartupOpenMode() <> "home" Then
             Current_Folder_Path = GetSetting(App_name, Second_App_Name, "ImageFolder", "")
             If Not Current_Folder_Path = "" Then
@@ -1042,6 +1192,12 @@ Partial Public Class Main_Form
             ' folder's counter in place: close folder B on its first file and the next
             ' start opened B at file 51, remembered from folder A.
             SaveSetting(App_name, Second_App_Name, "LastCounter", current_File_Index.ToString)
+#If Not NETFRAMEWORK Then
+            ' The file itself, not its position in a list that changes between sessions
+            ' (§0.1). Written always, so switching the resume option on works from the very
+            ' next start instead of after one more file has been viewed (§7).
+            SaveSetting(App_name, Second_App_Name, "LastPlayedFile", If(last_Played_File, ""))
+#End If
 
             SaveSetting(App_name, Second_App_Name, "chkTopMost", If(chkbox_Top_Most.Checked, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "ShowRecipientsOverlay", If(Is_Show_Recipients_Overlay, "1", "0"))

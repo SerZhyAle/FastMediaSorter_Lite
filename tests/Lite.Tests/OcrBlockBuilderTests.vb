@@ -338,4 +338,58 @@ Public Class OcrBlockBuilderTests
         Assert.Equal(6, blocks(1).Lines.Count)
     End Sub
 
+    ' --- what the filter threw away is recorded (section 16.1) ----------------
+
+    <Fact>
+    Public Sub DroppedBlock_IsRecordedWithItsBoxAndRule()
+        ' The question the acceptance run could not answer - "what did the filter throw away
+        ' that the previous code kept" - is answered by the threshold writing down its own
+        ' refusals rather than by a run of an older build, which answers it once and goes
+        ' stale the same day. The record has to carry WHERE it was and WHICH rule bit, or a
+        ' scene still cannot be read.
+        Dim source = Lines(L("Hello there friend", 10, 10, 300, 40),
+                           L("сссчщ", 10, 400, 200, 430))
+        Dim dropped As New List(Of OcrDroppedLine)
+
+        Dim blocks = OcrBlockBuilder.BuildBlocks(source, New Size(800, 900), dropped)
+
+        Assert.Single(blocks)
+        Assert.Single(dropped)
+        Assert.Equal("сссчщ", dropped(0).Text)
+        Assert.Equal("no-vowel", dropped(0).Rule)
+        Assert.Equal(Rectangle.FromLTRB(10, 400, 200, 430), dropped(0).Box)
+        ' No engine confidence exists at this point; a made-up number would be worse than
+        ' none, so it is negative and the dump reports null.
+        Assert.True(dropped(0).Confidence < 0.0F)
+    End Sub
+
+    <Fact>
+    Public Sub RecordingDoesNotChangeWhatIsKept()
+        ' The record is inert by construction: passing a collector must not move a single
+        ' block. Same input, both overloads, same result.
+        Dim withCollector = OcrBlockBuilder.BuildBlocks(AccountsWindowLines(), New Size(640, 563), New List(Of OcrDroppedLine))
+        Dim without = OcrBlockBuilder.BuildBlocks(AccountsWindowLines(), New Size(640, 563))
+
+        Assert.Equal(without.Count, withCollector.Count)
+        For i As Integer = 0 To without.Count - 1
+            Assert.Equal(without(i).Box, withCollector(i).Box)
+            Assert.Equal(without(i).SourceText, withCollector(i).SourceText)
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub DissolvedLines_AreNotRecordedAsDropped()
+        ' Dissolving happens AFTER the filter and re-runs it on nothing: the assembled text
+        ' already passed, and checking each short line again would throw part of it away.
+        ' Nothing is lost there, so nothing may appear in the record either - otherwise the
+        ' one number the acceptance item reads ("how much did the filter eat") counts lines
+        ' that are still on screen.
+        Dim dropped As New List(Of OcrDroppedLine)
+
+        Dim blocks = OcrBlockBuilder.BuildBlocks(AccountsWindowLines(), New Size(640, 563), dropped)
+
+        Assert.True(blocks.Count >= 6)
+        Assert.Empty(dropped)
+    End Sub
+
 End Class

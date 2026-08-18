@@ -1408,6 +1408,13 @@ Partial Public Class Main_Form
                     recent_Media_File_List.RemoveAt(0)
                 End If
 
+#If Not NETFRAMEWORK Then
+                ' The same moment, for the same reason: this is where a file counts as
+                ' shown (SPECIFICATION_RESUME_LAST_PLAYBACK_DOTNET10 §3.4). The MarkSettingsDirty
+                ' below flushes it with the rest.
+                RememberLastPlayedFile(Current_File_Name)
+#End If
+
                 ' The recent list and the folder position (LastCounter) now exist only in
                 ' memory until something writes them; ask for the trailing-edge flush so an
                 ' ungraceful exit costs at most the last minute instead of the whole session.

@@ -48,6 +48,39 @@ Public Class OcrLine
     Public Property Box As Rectangle
 End Class
 
+''' <summary>
+''' One thing a threshold refused, and which threshold refused it
+''' (SPECIFICATION_OCR_OVERLAY_ACCURACY.md, section 16.1).
+'''
+''' The question the acceptance run could not answer was never "are plates found" - it was
+''' "what did the filter throw away that the previous code kept". Comparing two builds answers
+''' that once and goes stale the same day, so the threshold records its own refusals instead,
+''' through the SAME predicate that applies them: two copies of one condition would pass any
+''' review of the constants and drift apart the first time one of them changed, after which the
+''' record would describe a decision that is no longer being taken.
+'''
+''' It is inert on purpose. Nothing here is rendered, and the attempt score is still computed
+''' from the lines that were KEPT, so recording a refusal cannot change which pass the reader
+''' ends up seeing. It rides with the winning attempt rather than being merged across all of
+''' them - a union describes no single decision.
+''' </summary>
+Public Class OcrDroppedLine
+    ''' <summary>Text as the recognizer read it, after cleanup - the thing that was lost.</summary>
+    Public Property Text As String = ""
+
+    ''' <summary>Where it sat, in original image pixels. Zero-sized for a block-level refusal
+    ''' whose box was never assembled.</summary>
+    Public Property Box As Rectangle
+
+    ''' <summary>Engine confidence, 0..1, or a negative value when the refusal happened after
+    ''' the engine (the block filter has no confidence of its own).</summary>
+    Public Property Confidence As Single = -1.0F
+
+    ''' <summary>Name of the rule that refused it - "short-low-confidence", "vowel",
+    ''' "address", .. - so a scene can be read without re-deriving which threshold bit.</summary>
+    Public Property Rule As String = ""
+End Class
+
 Public Class OcrBlock
     Public Property Lines As New List(Of OcrLine)
     Public Property SourceText As String = ""
@@ -104,4 +137,17 @@ Public Class OcrOverlayDocument
     Public Property Engine As String = ""
     Public Property Translator As String = ""
     Public Property Blocks As New List(Of OcrBlock)
+
+    ''' <summary>
+    ''' What the thresholds refused on the run that produced this document, or Nothing when
+    ''' nobody measured it. The two are DIFFERENT values and must not collapse into one: an
+    ''' empty list means "measured, nothing was dropped", Nothing means "this document came
+    ''' back from the cache, so the refusals of the run that built it are not here". Reporting
+    ''' the second as the first is the same flattering-zero mistake the acceptance harness made
+    ''' with hidden ink (section 16.5).
+    '''
+    ''' Deliberately NOT part of the cache DTO (<see cref="OcrCacheDoc"/>): it describes a run,
+    ''' not the image, and a document read from disk honestly has none.
+    ''' </summary>
+    Public Property Dropped As List(Of OcrDroppedLine) = Nothing
 End Class

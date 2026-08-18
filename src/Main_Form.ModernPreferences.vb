@@ -71,6 +71,12 @@ Partial Public Class Main_Form
         Return If(modern_Preferences Is Nothing, "lastFolder", modern_Preferences.StartupOpenMode)
     End Function
 
+    ''' <summary>§3.1 branch 2 of SPECIFICATION_RESUME_LAST_PLAYBACK_DOTNET10 - reopen the
+    ''' exact file that was on screen. Off unless the user asked for it.</summary>
+    Private Function ResumeLastPlaybackEnabled() As Boolean
+        Return modern_Preferences IsNot Nothing AndAlso modern_Preferences.ResumeLastPlayback
+    End Function
+
     ''' <summary>Restricts the already-supported extension set, never adds an
     ''' unknown extension merely because it appears in a hand-edited profile.</summary>
     Private Sub ApplyConfiguredExtensionFilter()
@@ -123,8 +129,17 @@ Partial Public Class Main_Form
     ''' <summary>Takes back what §7.2's dialog left after removals, and rebuilds the folder
     ''' drop-down from it so the two never disagree.</summary>
     Friend Sub ReplaceRecentHistory(files As List(Of String), folders As List(Of String))
+        ' "Clear the history" has to reach the remembered last file too, or a cleared-out
+        ' viewer reopens on the next start exactly what was just cleared
+        ' (SPECIFICATION_RESUME_LAST_PLAYBACK_DOTNET10 §4). Only when the entry really left
+        ' the list: with a recent-files limit of 0 it was never in it, and that must not be
+        ' read as a removal.
+        Dim was_Listed As Boolean = ListedInRecentFiles(recent_Media_File_List, last_Played_File)
+
         recent_Media_File_List = New List(Of String)(files)
         recent_Folder_List = New List(Of String)(folders)
+
+        If was_Listed AndAlso Not ListedInRecentFiles(recent_Media_File_List, last_Played_File) Then ForgetLastPlayedFile()
 
         Dim previous As String = cmbox_Media_Folder.Text
         cmbox_Media_Folder.Items.Clear()
@@ -134,6 +149,11 @@ Partial Public Class Main_Form
         Next
         cmbox_Media_Folder.Text = previous
     End Sub
+
+    Private Shared Function ListedInRecentFiles(entries As List(Of String), path As String) As Boolean
+        If entries Is Nothing OrElse String.IsNullOrEmpty(path) Then Return False
+        Return entries.FindIndex(Function(item) String.Equals(item, path, StringComparison.OrdinalIgnoreCase)) >= 0
+    End Function
 
     ''' <summary>Opens a history entry - a file or a folder - through the same door a
     ''' command line or a drag-and-drop uses.</summary>
@@ -350,6 +370,12 @@ Partial Public Class Main_Form
     ''' names those two behaviours apart - the frozen target keeps the one it shipped.</summary>
     Private Function StartupOpenMode() As String
         Return "lastFile"
+    End Function
+
+    ''' <summary>The resume option is a .NET 10 feature (§2.2): the frozen target keeps
+    ''' the start it shipped with, and never records a last-played path.</summary>
+    Private Function ResumeLastPlaybackEnabled() As Boolean
+        Return False
     End Function
 
     Private Function GetConfiguredSearchOption() As IO.SearchOption

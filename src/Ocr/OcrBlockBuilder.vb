@@ -81,6 +81,15 @@ Public Module OcrBlockBuilder
     ''' dissolve rule, which is the one rule stated as a fraction of the page. An empty
     ''' size disables that rule only.</param>
     Public Function BuildBlocks(lines As List(Of OcrLine), imageSize As Size) As List(Of OcrBlock)
+        Return BuildBlocks(lines, imageSize, Nothing)
+    End Function
+
+    ''' <param name="dropped">Receives every block the translatability filter refused, with
+    ''' the rule that refused it (section 16.1). Optional - pass Nothing when nobody is
+    ''' collecting - but the record comes out of the SAME call that decides, so it cannot
+    ''' describe a threshold that is no longer the one being applied.</param>
+    Public Function BuildBlocks(lines As List(Of OcrLine), imageSize As Size,
+                                dropped As List(Of OcrDroppedLine)) As List(Of OcrBlock)
         Dim blocks As New List(Of OcrBlock)
         If lines Is Nothing OrElse lines.Count = 0 Then Return blocks
 
@@ -112,7 +121,17 @@ Public Module OcrBlockBuilder
         ' a single stray word from a texture).
         Dim kept As New List(Of OcrBlock)
         For Each b As OcrBlock In blocks
-            If OcrTextFilter.ShouldTranslate(b.SourceText, b.Lines.Count) Then kept.Add(b)
+            Dim rejection As String = OcrTextFilter.RejectionReason(b.SourceText, b.Lines.Count)
+            If rejection.Length = 0 Then
+                kept.Add(b)
+            ElseIf dropped IsNot Nothing Then
+                dropped.Add(New OcrDroppedLine With {
+                    .Text = b.SourceText,
+                    .Box = b.Box,
+                    .Confidence = -1.0F,
+                    .Rule = rejection
+                })
+            End If
         Next
 
         ' Dissolve AFTER the filter, never before: the assembled block text has already

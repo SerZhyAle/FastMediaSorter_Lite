@@ -16,6 +16,12 @@ Public Class OcrResult
     Public Property Lines As New List(Of OcrLine)
     Public Property Message As String = ""
 
+    ''' <summary>Lines this pass recognized and then refused, with the rule that refused each.
+    ''' Carried per attempt rather than merged across all of them: the engine returns ONE
+    ''' attempt's result, so the record travels with the pass that won and describes the
+    ''' decisions actually taken on the text the reader is looking at.</summary>
+    Public Property Dropped As New List(Of OcrDroppedLine)
+
     Public Shared Function Runtime(message As String) As OcrResult
         Return New OcrResult With {.Status = OcrStatus.RuntimeMissing, .Message = message}
     End Function
