@@ -39,3 +39,6 @@ manifests/
 
 # Editor workspace settings - local, not shared
 .vscode/
+
+# Private working specifications — retained locally, never committed.
+/docs/specifications/
