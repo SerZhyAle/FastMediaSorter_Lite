@@ -4,7 +4,7 @@ Option Strict On
 Imports System.Text
 
 ' What the Recycle Bin knows about a file it holds, read straight off disk.
-' SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.6. Modern build only, like the rest
+' 017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.6. Modern build only, like the rest
 ' of the feature, so this whole file compiles to nothing in the x86 viewer.
 '
 ' A recycled file is a PAIR inside "<volume root>\$Recycle.Bin\<user SID>\":

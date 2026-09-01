@@ -1,7 +1,7 @@
 Option Strict On
 
 ' <summary>
-' Strings of archive browsing (SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §10): what the
+' Strings of archive browsing (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §10): what the
 ' status line says on entering an archive, and every refusal the feature can hand back -
 ' invariant 9 there is that nothing fails silently. See Localization.vb for the key
 ' convention.
@@ -9,7 +9,7 @@ Option Strict On
 Partial Public NotInheritable Class Localization
 
     ''' <summary>
-    ''' Archive browsing (SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §10). Every one of
+    ''' Archive browsing (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §10). Every one of
     ''' these is a refusal or a state the user would otherwise have to guess at: invariant 9
     ''' of that specification is that nothing fails silently.
     ''' </summary>
@@ -95,6 +95,109 @@ Partial Public NotInheritable Class Localization
             "Não foi possível extrair esta entrada", "تعذّر استخراج هذا العنصر",
             "यह प्रविष्टि निकाली नहीं जा सकी", "এই এন্ট্রিটি বের করা যায়নি",
             "یہ اندراج نکالا نہیں جا سکا", "无法解压该条目")
+
+        ' --- entry points and settings (§2.1, §2.3, §9, §12 Ф4) --------------------
+
+        Add("Архивы",
+            "Archives", "Архіви", "Archive", "Archivi", "Archivos comprimidos", "Archives",
+            "Arquivos compactados", "الأرشيفات", "संग्रह", "আর্কাইভ", "آرکائیوز", "压缩包")
+
+        Add("Открыть архив..",
+            "Open archive..", "Відкрити архів..", "Archiv öffnen..", "Apri archivio..",
+            "Abrir archivo comprimido..", "Ouvrir une archive..", "Abrir arquivo compactado..",
+            "فتح أرشيف..", "संग्रह खोलें..", "আর্কাইভ খুলুন..", "آرکائیو کھولیں..", "打开压缩包..")
+
+        Add("Открыть ZIP или CBZ как папку",
+            "Open a ZIP or CBZ as a folder", "Відкрити ZIP або CBZ як папку",
+            "ZIP oder CBZ als Ordner öffnen", "Apri uno ZIP o CBZ come cartella",
+            "Abrir un ZIP o CBZ como carpeta", "Ouvrir un ZIP ou CBZ comme un dossier",
+            "Abrir um ZIP ou CBZ como pasta", "افتح ZIP أو CBZ كمجلد",
+            "ZIP या CBZ को फ़ोल्डर की तरह खोलें", "ZIP বা CBZ ফোল্ডারের মতো খুলুন",
+            "ZIP یا CBZ کو فولڈر کی طرح کھولیں", "将 ZIP 或 CBZ 作为文件夹打开")
+
+        Add("Закрыть архив",
+            "Close archive", "Закрити архів", "Archiv schließen", "Chiudi archivio",
+            "Cerrar archivo comprimido", "Fermer l'archive", "Fechar arquivo compactado",
+            "إغلاق الأرشيف", "संग्रह बंद करें", "আর্কাইভ বন্ধ করুন", "آرکائیو بند کریں", "关闭压缩包")
+
+        Add("Вернуться в папку, где лежит архив",
+            "Return to the folder the archive is in", "Повернутися до папки, де лежить архів",
+            "Zurück zum Ordner, in dem das Archiv liegt", "Torna alla cartella in cui si trova l'archivio",
+            "Volver a la carpeta donde está el archivo comprimido",
+            "Revenir au dossier où se trouve l'archive",
+            "Voltar à pasta onde está o arquivo compactado",
+            "العودة إلى المجلد الذي يحتوي على الأرشيف",
+            "उस फ़ोल्डर पर लौटें जहाँ संग्रह है", "আর্কাইভটি যে ফোল্ডারে আছে সেখানে ফিরে যান",
+            "اس فولڈر پر واپس جائیں جہاں آرکائیو موجود ہے", "返回压缩包所在的文件夹")
+
+        Add("Архив закрыт",
+            "Archive closed", "Архів закрито", "Archiv geschlossen", "Archivio chiuso",
+            "Archivo comprimido cerrado", "Archive fermée", "Arquivo compactado fechado",
+            "تم إغلاق الأرشيف", "संग्रह बंद हुआ", "আর্কাইভ বন্ধ হয়েছে", "آرکائیو بند ہو گیا", "压缩包已关闭")
+
+        Add("Лимит кэша архивов, МБ",
+            "Archive cache limit, MB", "Ліміт кешу архівів, МБ", "Cache-Grenze für Archive, MB",
+            "Limite cache archivi, MB", "Límite de caché de archivos comprimidos, MB",
+            "Limite du cache des archives, Mo", "Limite de cache de arquivos compactados, MB",
+            "حد ذاكرة تخزين الأرشيفات المؤقتة، ميغابايت", "संग्रह कैश सीमा, MB",
+            "আর্কাইভ ক্যাশ সীমা, MB", "آرکائیو کیش کی حد، MB", "压缩包缓存上限（MB）")
+
+        Add("Сколько места на диске может занимать временная распаковка одного открытого архива.",
+            "How much disk space one open archive's temporary extraction may use.",
+            "Скільки місця на диску може займати тимчасова розпаковка одного відкритого архіву.",
+            "Wie viel Speicherplatz die temporäre Entpackung eines geöffneten Archivs belegen darf.",
+            "Quanto spazio su disco può occupare l'estrazione temporanea di un archivio aperto.",
+            "Cuánto espacio en disco puede ocupar la extracción temporal de un archivo comprimido abierto.",
+            "Combien d'espace disque l'extraction temporaire d'une archive ouverte peut occuper.",
+            "Quanto espaço em disco a extração temporária de um arquivo compactado aberto pode ocupar.",
+            "مقدار مساحة القرص التي يمكن أن يشغلها الاستخراج المؤقت لأرشيف مفتوح واحد.",
+            "एक खुले संग्रह की अस्थायी निकासी कितनी डिस्क जगह ले सकती है।",
+            "একটি খোলা আর্কাইভের সাময়িক এক্সট্র্যাকশন কতটা ডিস্ক স্থান নিতে পারে।",
+            "ایک کھلے آرکائیو کی عارضی نکاسی ڈسک کی کتنی جگہ لے سکتی ہے۔",
+            "一个已打开压缩包的临时解压内容最多可占用的磁盘空间。")
+
+        Add("Лимит одной записи архива, МБ",
+            "Archive entry limit, MB", "Ліміт одного запису архіву, МБ",
+            "Grenze für einen Archiveintrag, MB", "Limite per una singola voce dell'archivio, MB",
+            "Límite de entrada del archivo, MB", "Limite d'une entrée d'archive, Mo",
+            "Limite de entrada do arquivo, MB", "حد عنصر واحد في الأرشيف، ميغابايت",
+            "संग्रह की एक प्रविष्टि की सीमा, MB", "আর্কাইভের একটি এন্ট্রির সীমা, MB",
+            "آرکائیو کے ایک اندراج کی حد، MB", "压缩包单个条目上限（MB）")
+
+        Add("Запись крупнее этого не распаковывается, а показывает честный отказ вместо картинки.",
+            "An entry larger than this is not extracted - it shows a plain refusal instead of a picture.",
+            "Запис, більший за це значення, не розпаковується - замість картинки показується чесна відмова.",
+            "Ein Eintrag, der größer ist, wird nicht entpackt - statt eines Bildes erscheint eine klare Ablehnung.",
+            "Una voce più grande di questo valore non viene estratta - al posto dell'immagine compare un rifiuto chiaro.",
+            "Una entrada mayor que esto no se extrae; en lugar de la imagen se muestra un rechazo claro.",
+            "Une entrée plus grande que cela n'est pas extraite - un refus clair s'affiche à la place de l'image.",
+            "Uma entrada maior que isso não é extraída - em vez da imagem aparece uma recusa clara.",
+            "لا يُستخرج عنصر أكبر من هذا الحد - يظهر رفض واضح بدلاً من الصورة.",
+            "इससे बड़ी प्रविष्टि नहीं निकाली जाती - चित्र की जगह स्पष्ट अस्वीकृति दिखती है।",
+            "এর চেয়ে বড় এন্ট্রি বের করা হয় না - ছবির বদলে স্পষ্ট প্রত্যাখ্যান দেখানো হয়।",
+            "اس سے بڑا اندراج نہیں نکالا جاتا - تصویر کی بجائے واضح انکار دکھایا جاتا ہے۔",
+            "超过此大小的条目不会被解压，会显示明确的拒绝提示而不是图片。")
+
+        Add("Лимит записей в архиве",
+            "Archive entries limit", "Ліміт записів в архіві", "Grenze für Archiveinträge",
+            "Limite di voci nell'archivio", "Límite de entradas del archivo comprimido",
+            "Limite d'entrées dans une archive", "Limite de entradas no arquivo compactado",
+            "حد عدد عناصر الأرشيف", "संग्रह प्रविष्टियों की सीमा", "আর্কাইভ এন্ট্রির সীমা",
+            "آرکائیو اندراجات کی حد", "压缩包条目数量上限")
+
+        Add("Архив с большим числом записей показывается обрезанным до этого количества, и строка состояния предупреждает об этом.",
+            "An archive with more entries than this is shown truncated to this count, and the status line says so.",
+            "Архів із більшою кількістю записів показується обрізаним до цього числа, і рядок стану про це попереджає.",
+            "Ein Archiv mit mehr Einträgen wird auf diese Anzahl gekürzt angezeigt, und die Statuszeile weist darauf hin.",
+            "Un archivio con più voci di questo numero viene mostrato troncato a questo conteggio, e la barra di stato lo segnala.",
+            "Un archivo comprimido con más entradas que esto se muestra recortado a esa cantidad, y la línea de estado lo indica.",
+            "Une archive avec plus d'entrées que cela est affichée tronquée à ce nombre, et la ligne d'état le signale.",
+            "Um arquivo compactado com mais entradas que isso é mostrado truncado nesse número, e a linha de status avisa.",
+            "الأرشيف الذي يحتوي على عناصر أكثر من هذا العدد يُعرض مقتطعًا عند هذا العدد، ويشير سطر الحالة إلى ذلك.",
+            "इससे अधिक प्रविष्टियों वाला संग्रह इस संख्या तक सीमित दिखाया जाता है, और स्थिति पंक्ति यह बताती है।",
+            "এর চেয়ে বেশি এন্ট্রি থাকা আর্কাইভ এই সংখ্যা পর্যন্ত সীমিত করে দেখানো হয়, এবং স্ট্যাটাস লাইন তা জানায়।",
+            "اس سے زیادہ اندراجات والا آرکائیو اس تعداد تک محدود دکھایا جاتا ہے، اور اسٹیٹس لائن یہ بتاتی ہے۔",
+            "超过此数量的压缩包会被截断显示，状态栏会提示这一点。")
 
     End Sub
 

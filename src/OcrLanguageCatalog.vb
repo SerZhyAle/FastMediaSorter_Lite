@@ -9,7 +9,7 @@ Imports System.IO
 ''' One selectable OCR/translation language with its display name and flag key.
 '''
 ''' The name is the language's ENDONYM - what the language calls itself. That was a
-''' pair of NameEn/NameRu fields until SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §2.8:
+''' pair of NameEn/NameRu fields until 013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §2.8:
 ''' with thirteen interface languages, naming 33 languages in each of them would be
 ''' 429 strings for a list where the endonym is the better answer anyway. A Greek user
 ''' recognises "Ελληνικά" in any interface; "Greek" and "Греческий" only help two.

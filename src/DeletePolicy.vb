@@ -2,7 +2,7 @@
 Option Strict On
 
 ' Whether a deletion can go to the Recycle Bin - and, when it cannot, WHY.
-' SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.1. Modern build only, like the
+' 017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.1. Modern build only, like the
 ' rest of the feature, so this whole file compiles to nothing in the x86 viewer.
 '
 ' WHY IT IS SEPARATE FROM THE PROBE: everything here is a pure function of its

@@ -44,6 +44,11 @@ Partial Public Class Main_Form
 
     Private Sub SlideShow_Elapsed() Handles SlideShowTimer.Tick
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1890: SlideShowTimer")
+#If Not NETFRAMEWORK Then
+        ' A known-length audio track owns the slide interval; streams (unknown length)
+        ' retain the ordinary interval so a radio URL cannot hold the slideshow forever.
+        If IsAudioNowPlaying() AndAlso IsVlcActuallyPlaying() AndAlso vlc_Media_Player IsNot Nothing AndAlso vlc_Media_Player.Length > 0 Then Return
+#End If
         ReadShowMediaFile(Mode_InSlideShow)
     End Sub
 

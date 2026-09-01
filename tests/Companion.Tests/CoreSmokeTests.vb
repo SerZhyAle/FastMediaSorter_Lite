@@ -12,7 +12,7 @@ Imports Xunit
 Public Class CoreSmokeTests
 
     ' ShareText no longer takes a "rus" flag - it reads the active UI language
-    ' (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A'), so these drive it by code.
+    ' (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A'), so these drive it by code.
 
     <Theory>
     <InlineData("ru")>

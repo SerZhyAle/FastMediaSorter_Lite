@@ -8,7 +8,7 @@ Imports System.Threading.Tasks
 Imports Xunit
 
 ''' <summary>
-''' Ф1 of SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md §4 - the acceptance the
+''' Ф1 of 011_SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md §4 - the acceptance the
 ''' spec asks for in points 4 of that phase.
 '''
 ''' What is really under test is a decision the viewer makes several times a second while

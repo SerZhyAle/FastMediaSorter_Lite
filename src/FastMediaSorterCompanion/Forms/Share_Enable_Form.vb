@@ -28,7 +28,7 @@ Public Class Share_Enable_Form
 
     Private Sub BuildUi()
         ' Script font + text direction for the active language, before any control
-        ' exists - children inherit both (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
+        ' exists - children inherit both (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
         UiLanguage.ApplyTo(Me)
         Me.Text = ShareText.ServerEnableTitle()
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)

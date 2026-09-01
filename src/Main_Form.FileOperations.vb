@@ -48,6 +48,16 @@ Partial Public Class Main_Form
         Public Property NavigateAfterSuccess As Boolean
         Public Property CloseIfEmptyAfterSuccess As Boolean
         Public Property ReplaceExisting As Boolean
+        ''' <summary>The destination's final segment does not exist yet and may be made
+        ''' (011_SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md §3.6). The DECISION is
+        ''' taken where the policy lives - ExecuteRecipientAction, from the slot verdict - and
+        ''' the COST is paid where blocking is harmless, on the worker (D5): CreateDirectory
+        ''' on a sleeping share blocks for the full timeout, and doing that on the UI thread
+        ''' would hand back the freeze the queue was built to remove.</summary>
+        Public Property CreateDestinationFolder As Boolean
+        ''' <summary>Written by the worker when it really made the folder, so the success
+        ''' line can say so. A folder that already existed says nothing.</summary>
+        Public Property CreatedDestinationFolder As Boolean
 #If Not NETFRAMEWORK Then
         ''' <summary>When the deletion was queued. It is what tells one deletion of
         ''' 'cover.jpg' from another when the Recycle Bin is searched for it (Ф3), so it
@@ -87,8 +97,10 @@ Partial Public Class Main_Form
     Private Shared Sub RunFileOp(op As FileOp)
         Select Case op.Kind
             Case FileOpKind.Copy
+                EnsureDestinationFolder(op)
                 CopyFile(op.Source, op.Destination, op.ReplaceExisting)
             Case FileOpKind.Move
+                EnsureDestinationFolder(op)
                 MoveFile(op.Source, op.Destination, op.ReplaceExisting)
             Case FileOpKind.Delete, FileOpKind.DeleteUndo
                 DeleteFile(op.Source)
@@ -107,6 +119,28 @@ Partial Public Class Main_Form
             Case FileOpKind.MoveUndo
                 MoveFile(op.Source, op.Destination)
         End Select
+    End Sub
+
+    ''' <summary>
+    ''' Makes the destination's final segment, on the worker thread, when the slot verdict
+    ''' said it may be (§3.6, D5/D6).
+    '''
+    ''' Only the LAST segment, and only because the probe already found the parent
+    ''' answering: CreateDirectory would happily build a whole tree, and "I typed the share
+    ''' name wrong and the application created it for me" is exactly what D6 refuses. It is
+    ''' re-checked here rather than trusted from the verdict because a verdict is a snapshot
+    ''' (§6.2) - if the folder appeared in the meantime, nothing happens.
+    '''
+    ''' A failure here is an operation failure and travels the ordinary rollback path in
+    ''' FinishFileOp, which is what keeps "the folder could not be created" from being
+    ''' reported as a move that did not happen.
+    ''' </summary>
+    Private Shared Sub EnsureDestinationFolder(op As FileOp)
+        If op Is Nothing OrElse Not op.CreateDestinationFolder Then Return
+        Dim folder As String = Path.GetDirectoryName(op.Destination)
+        If String.IsNullOrEmpty(folder) OrElse Directory.Exists(folder) Then Return
+        Directory.CreateDirectory(folder)
+        op.CreatedDestinationFolder = True
     End Sub
 
     ''' <summary>Back on the UI thread once an operation has finished.</summary>
@@ -481,7 +515,7 @@ Partial Public Class Main_Form
             ReadShowMediaFile(Mode_SetFile)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1290: ERR: " & ex.Message)
-            ReportOperationError("E011", ex)
+            ReportOperationError("E011", ex, FolderOfFile(Current_File_Name))
             lbl_Status.Text = Localization.T("! Ошибка переименования")
         End Try
     End Sub
@@ -540,6 +574,20 @@ Partial Public Class Main_Form
             Return
         End If
 
+        ' Declared on both runtimes - the FileOp below reads it unconditionally. Only the
+        ' mainline can ever set it: the health verdict that decides it is modern-only, so
+        ' net48 keeps its historical behaviour (a missing destination fails in the worker).
+        Dim create_Destination As Boolean = False
+#If Not NETFRAMEWORK Then
+        ' THE gate (§3.4, invariant 8). It sits here - before ReleaseActiveMedia, before the
+        ' optimistic list removal, before QueueFileOp - because a dead NAS used to cost
+        ' twenty queued transfers and twenty files rolling back into the list minutes later
+        ' (§0.2). False means the action must not happen: either it was refused with a reason
+        ' on the status line, or a probe was started and this call will be made again with
+        ' the answer in hand.
+        If Not SlotHealthAllowsAction(move_Slot_index, action, create_Destination) Then Return
+#End If
+
         Try
             Dim source_File_Info As System.IO.FileInfo = My.Computer.FileSystem.GetFileInfo(Current_File_Name)
             Dim destination_Folder_Full_Path As String = destination_Folder_Path & "\" & source_File_Info.Name
@@ -585,7 +633,8 @@ Partial Public Class Main_Form
                 .Destination = destination_Folder_Full_Path,
                 .SlotKey = move_Slot_Key,
                 .StatusNote = collision_Note,
-                .ReplaceExisting = replace_Existing
+                .ReplaceExisting = replace_Existing,
+                .CreateDestinationFolder = create_Destination
             }
 
 #If Not NETFRAMEWORK Then
@@ -644,7 +693,7 @@ Partial Public Class Main_Form
             End If
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1730: E014 " & ex.Message)
-            ReportOperationError("E014", ex)
+            ReportOperationError("E014", ex, destination_Folder_Path)
         End Try
     End Sub
 
@@ -935,7 +984,7 @@ Partial Public Class Main_Form
     End Sub
 
     ''' <summary>
-    ''' THE deletion route on the mainline (SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md
+    ''' THE deletion route on the mainline (017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md
     ''' §3.3). Every surface - DEL/D, Shift+DEL, the media menus, the recipients overlay -
     ''' arrives here, exactly as every recipient slot arrives at ExecuteRecipientAction,
     ''' and for the same reason: five surfaces that each decide for themselves are five
@@ -1009,12 +1058,21 @@ Partial Public Class Main_Form
                             op.Kind.ToString() & "): " & targetPath)
             Return True
         Catch ex As Exception
-            ReportOperationError("E001", ex)
+            ReportOperationError("E001", ex, FolderOfFile(targetPath))
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0590: ERR: " & ex.Message)
             Return False
         End Try
     End Function
 #End If
+
+    ''' <summary>Tail for the success line when the destination folder had to be made
+    ''' (§3.6). Silent when it already existed - an auto-create is only worth saying out
+    ''' loud the once, and saying it every time would train the user to stop reading.
+    ''' Always silent on net48, which never sets the flag.</summary>
+    Private Shared Function CreatedFolderNote(op As FileOp) As String
+        If op Is Nothing OrElse Not op.CreatedDestinationFolder Then Return ""
+        Return Localization.T("; каталог создан")
+    End Function
 
     ''' <summary>
     ''' What an operation's ending means, on the UI thread. One implementation for both
@@ -1027,10 +1085,12 @@ Partial Public Class Main_Form
         If failure Is Nothing Then
             Select Case op.Kind
                 Case FileOpKind.Copy
-                    lbl_Status.Text = Localization.TF("файл скопирован ({0}) в каталог {1}", op.SlotKey, op.Destination) & op.StatusNote
+                    lbl_Status.Text = Localization.TF("файл скопирован ({0}) в каталог {1}", op.SlotKey, op.Destination) &
+                                      op.StatusNote & CreatedFolderNote(op)
 
                 Case FileOpKind.Move
-                    lbl_Status.Text = Localization.TF("файл перенесён ({0}) в каталог {1}", op.SlotKey, op.Destination) & op.StatusNote
+                    lbl_Status.Text = Localization.TF("файл перенесён ({0}) в каталог {1}", op.SlotKey, op.Destination) &
+                                      op.StatusNote & CreatedFolderNote(op)
 
                 Case FileOpKind.Delete, FileOpKind.RecycleDelete
                     ' The status line was already written when the delete was queued -
@@ -1112,7 +1172,15 @@ Partial Public Class Main_Form
             End If
 #End If
         Else
+#If Not NETFRAMEWORK Then
+            ' §3.7: the user hears a category, the log keeps the exception. The path named
+            ' is the DESTINATION for a transfer - "no connection to <the NAS>" is the
+            ' sentence that tells them what to do; the source is where they already are.
+            ReportOperationError("E014", failure,
+                                 FolderOfFile(If(String.IsNullOrEmpty(op.Destination), op.Source, op.Destination)))
+#Else
             lbl_Status.Text = Localization.TF("Ошибка операции: {0}", failure.Message)
+#End If
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2230: file operation ERR " & failure.Message)
 
             ' The operation did not happen, so undo the optimistic list mutation: the

@@ -78,8 +78,11 @@
             the translation endpoint <em>you</em> choose - a local <a href="https://ollama.com">Ollama</a>
             model on your own machine, or a <a href="https://libretranslate.com">LibreTranslate</a> server
             you specify - to receive the translated text. <strong>OCR (text recognition) runs fully offline.</strong>
-            If you never use translation, the app makes no network requests, except optionally downloading
-            additional OCR language packs on demand from the public Tesseract data repository.</li>
+            If you never use translation, the app makes no network requests, except for optional components you
+            ask the app to fetch: additional OCR language packs from the public Tesseract data repository, and
+            <a href="https://ffmpeg.org">FFmpeg</a> - the video encoder behind "Replace with video" - from its
+            published Windows builds. Both downloads happen only after you say yes to a prompt that names what
+            is being fetched; nothing about your files, your paths or your usage is sent with either.</li>
 
             <li><strong>API keys (if you set one).</strong> If a translation provider you configure needs an
             API key, it is stored encrypted on your device using Windows DPAPI and is sent only to that
@@ -90,9 +93,11 @@
         <ul>
             <li><strong>Settings.</strong> Preferences and hotkeys are stored in the Windows registry (in the
             Microsoft Store build these live inside the app's package container).</li>
-            <li><strong>OCR data and cache.</strong> Downloaded Tesseract language packs and the translation
-            cache are stored under <code>%LOCALAPPDATA%\SZA\FastMediaSorter</code>. These contain no personal
-            data and never leave your device.</li>
+            <li><strong>OCR data and caches.</strong> Downloaded Tesseract language packs, a downloaded copy
+            of FFmpeg, the translation cache and the decode cache (decoded copies of the WEBP, AVIF and HEIC
+            files you have opened, kept so the second view is instant) are stored under
+            <code>%LOCALAPPDATA%\SZA\FastMediaSorter</code>. These never leave your device, and both caches
+            can be emptied or switched off in Settings.</li>
         </ul>
 
         <h2>Data sharing</h2>

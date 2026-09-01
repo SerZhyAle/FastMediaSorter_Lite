@@ -23,18 +23,34 @@ Public Module FileManager
             ' compiles away in Release, which is exactly the intended reach. Failures below
             ' are still logged for real.
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " LoadImageWithStream: file=" & filePath & " extension=" & extension)
-            Dim imageBytes As Byte() = File.ReadAllBytes(filePath)
-            Dim ms As New IO.MemoryStream(imageBytes)
+            Dim ms As IO.MemoryStream = Nothing
             Dim nextImage As Image
 
             If ImageDecoderProvider.Decoder_Backed_Extensions.Contains(extension) Then
+#If NETFRAMEWORK Then
+                ms = New IO.MemoryStream(File.ReadAllBytes(filePath))
                 nextImage = ImageDecoderProvider.Current.DecodeToImage(ms)
+#Else
+                ' The one modern-only branch of this function
+                ' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §3.1).
+                ' DecodeCache reads the file itself, because on a HIT it must not read it at
+                ' all - the whole point is that the second view of an animated WEBP costs a
+                ' cache read instead of a decode plus a GIF encode. The stream it returns is
+                ' the PAYLOAD stream, which is strictly more correct than the source bytes
+                ' returned here before: for an animation, the stream GDI+ actually reads was
+                ' the invisible one, and the one the caller kept alive was dead weight.
+                Dim viaCache As Tuple(Of Image, IO.MemoryStream) = DecodeCache.LoadImage(filePath)
+                If viaCache Is Nothing Then Return Nothing
+                nextImage = viaCache.Item1
+                ms = viaCache.Item2
+#End If
             Else
+                ms = New IO.MemoryStream(File.ReadAllBytes(filePath))
                 nextImage = Image.FromStream(ms)
             End If
 
             If nextImage Is Nothing Then
-                ms.Dispose()
+                ms?.Dispose()
                 Return Nothing
             End If
 

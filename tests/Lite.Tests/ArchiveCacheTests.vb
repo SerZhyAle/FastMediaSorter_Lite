@@ -5,7 +5,7 @@ Imports System.IO
 Imports Xunit
 
 ''' <summary>
-''' Ф0 of SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md - the archive cache's names and its
+''' Ф0 of 010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md - the archive cache's names and its
 ''' cleanup, before any archive is ever opened.
 '''
 ''' Two things here are worth proving by machine rather than by eye:

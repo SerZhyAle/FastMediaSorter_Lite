@@ -8,7 +8,7 @@ Imports System.Text
 Imports Xunit
 
 ''' <summary>
-''' Ф1 of SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md - an archive read as a folder.
+''' Ф1 of 010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md - an archive read as a folder.
 '''
 ''' The archives here are built by the test with the framework's own ZIP writer and read
 ''' back through SharpCompress, which is the shipping path: what is proven is the contract
@@ -66,6 +66,17 @@ Public Class ArchiveSessionTests
 
     Private Function OpenSession(archivePath As String, Optional maxEntries As Integer = 0) As ArchiveSession
         Return New ArchiveSession(archivePath, sessionDir, Media, maxEntries)
+    End Function
+
+    ''' <summary>Content that will not compress away to almost nothing - all-zero filler
+    ''' would itself trip the bomb ratio check (§6.2) that the eviction tests below have no
+    ''' interest in exercising.</summary>
+    Private Shared Function Incompressible(size As Integer, seed As Integer) As Byte()
+        Dim buffer(size - 1) As Byte
+        For j = 0 To size - 1
+            buffer(j) = CByte((j * 37 + seed * 11) Mod 256)
+        Next
+        Return buffer
     End Function
 
     ' ------------------------------------------------------------- the entry list ----
@@ -216,6 +227,96 @@ Public Class ArchiveSessionTests
             Assert.Equal(1, session.IndexOfTempPath(session.Entries(1).TempPath))
             Assert.Equal(-1, session.IndexOfTempPath(Path.Combine(sessionDir, "not-an-entry.jpg")))
             Assert.Equal(-1, session.IndexOfTempPath(""))
+        End Using
+    End Sub
+
+    ' ---------------------------------------------------------------- eviction ----
+
+    ''' <summary>
+    ''' §5.4: once the session directory would grow past its budget, the least-recently
+    ''' touched entries go first - proven by walking forward through an archive whose
+    ''' entries do not all fit at once, and finding the early ones gone while the one just
+    ''' shown remains.
+    ''' </summary>
+    <Fact>
+    Public Sub Eviction_keeps_the_directory_under_budget_and_drops_the_oldest_first()
+        Dim entrySize = 1000
+        Dim archivePath = MakeArchive("many-heavy.zip",
+            Sub(zip)
+                For i = 0 To 4
+                    AddEntry(zip, "p" & i.ToString("00") & ".jpg", Incompressible(entrySize, i))
+                Next
+            End Sub)
+
+        Using session = OpenSession(archivePath)
+            Dim refusal As ArchiveSession.EntryRefusal
+            ' Comfortably holds two entries, not all five - walking forward has to evict.
+            Dim budget As Long = entrySize * 2L + 100L
+
+            For i = 0 To 4
+                Assert.True(session.TryEnsureExtracted(i, refusal, maxCacheBytes:=budget))
+            Next
+
+            Assert.False(File.Exists(session.Entries(0).TempPath), "The first entry should have been evicted long ago.")
+            Assert.True(File.Exists(session.Entries(4).TempPath), "The entry just shown must never be evicted.")
+        End Using
+    End Sub
+
+    ''' <summary>
+    ''' The entry just asked for and its immediate neighbours are never evicted, even when
+    ''' the budget alone would call for it - they are what the UI or the prefetch is about
+    ''' to want next.
+    ''' </summary>
+    <Fact>
+    Public Sub Eviction_never_touches_the_current_entry_or_its_neighbours()
+        Dim entrySize = 1000
+        Dim archivePath = MakeArchive("triplet.zip",
+            Sub(zip)
+                For i = 0 To 2
+                    AddEntry(zip, "p" & i.ToString("00") & ".jpg", Incompressible(entrySize, i))
+                Next
+            End Sub)
+
+        Using session = OpenSession(archivePath)
+            Dim refusal As ArchiveSession.EntryRefusal
+            ' All three on disk first, budget off - otherwise "still there" would just mean
+            ' "never asked for".
+            For i = 0 To 2
+                Assert.True(session.TryEnsureExtracted(i, refusal, maxCacheBytes:=0))
+            Next
+
+            ' Touch the middle entry again with a budget smaller than even one entry -
+            ' eviction has nowhere to go, because the touched entry and both its
+            ' neighbours (§5.4) are the whole archive.
+            Assert.True(session.TryEnsureExtracted(1, refusal, maxCacheBytes:=1L))
+
+            For i = 0 To 2
+                Assert.True(File.Exists(session.Entries(i).TempPath),
+                           "Entry " & i.ToString() & " is the touched entry or its neighbour and must survive.")
+            Next
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_zero_or_negative_budget_means_eviction_is_off()
+        Dim entrySize = 1000
+        Dim archivePath = MakeArchive("unbounded.zip",
+            Sub(zip)
+                For i = 0 To 4
+                    AddEntry(zip, "p" & i.ToString("00") & ".jpg", Incompressible(entrySize, i))
+                Next
+            End Sub)
+
+        Using session = OpenSession(archivePath)
+            Dim refusal As ArchiveSession.EntryRefusal
+            For i = 0 To 4
+                Assert.True(session.TryEnsureExtracted(i, refusal, maxCacheBytes:=0))
+            Next
+
+            For i = 0 To 4
+                Assert.True(File.Exists(session.Entries(i).TempPath),
+                           "Entry " & i.ToString() & " should still be on disk with eviction off.")
+            Next
         End Using
     End Sub
 

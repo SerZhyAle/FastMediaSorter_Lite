@@ -22,6 +22,8 @@ Partial Public NotInheritable Class Localization
         AddSupportStrings()     ' "send the logs to the author" row, dialog and mail body
         AddEditorStrings()      ' the image editor window and its save path
         AddArchiveStrings()     ' browsing an archive as a folder
+        AddVideoStrings()       ' the decode cache's settings rows + "Replace with video"
+        AddSlotHealthStrings()  ' recipient-slot verdicts, auto-created folders, honest failures
     End Sub
 
 End Class

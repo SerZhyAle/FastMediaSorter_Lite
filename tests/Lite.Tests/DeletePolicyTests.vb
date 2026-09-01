@@ -4,7 +4,7 @@ Option Strict On
 Imports Xunit
 
 ' The rule matrix behind "to the Recycle Bin" versus "gone for good"
-' (SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.1). Modern-only, exactly like the
+' (017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.1). Modern-only, exactly like the
 ' feature: DeletePolicy.vb is whole-file "#If Not NETFRAMEWORK", so on the net48 leg of
 ' this project both it and this file compile to nothing.
 '

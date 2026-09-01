@@ -9,7 +9,7 @@ Imports Xunit
 
 ''' <summary>
 ''' Guards the Share Manager's 13-language string table
-''' (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A', §7.1).
+''' (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A', §7.1).
 '''
 ''' Same contract as the viewer's LocalizationParityTests, over Companion's own tables:
 ''' a Russian-keyed dictionary fails softly by design - a missing entry shows Russian

@@ -4,7 +4,7 @@ Option Strict On
 Imports System.Drawing
 Imports System.Windows.Forms
 
-' Classic zoom model - modern build only (SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md).
+' Classic zoom model - modern build only (012_SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md).
 ' The x86 viewer keeps the historical mechanics untouched (the spec freezes it), so
 ' this whole file compiles to nothing there.
 '

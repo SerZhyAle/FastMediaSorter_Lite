@@ -70,6 +70,7 @@ Partial Public Class Main_Form
         LocalizeVideoTracks()
         LocalizeVideoControls()
         LocalizeImageEditor()
+        LocalizeToVideo()
 #End If
         LocalizeToolbarOverflow()
         LocalizeBrowserTranslate()
@@ -166,7 +167,7 @@ Partial Public Class Main_Form
     ''' Right-to-left TEXT for Arabic and Urdu - deliberately NOT RightToLeftLayout.
     ''' Mirroring the client area would move the media PictureBox, and Draw_Perspective,
     ''' the OCR overlay and PaintInfoOverlay all re-derive their geometry from that
-    ''' rectangle (owner decision, SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §2.6 г).
+    ''' rectangle (owner decision, 013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §2.6 г).
     ''' </summary>
     Private Sub ApplyRightToLeftText()
         Dim rtl = If(Localization.IsRightToLeft(), RightToLeft.Yes, RightToLeft.No)

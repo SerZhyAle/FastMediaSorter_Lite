@@ -4,7 +4,7 @@ Option Strict On
 Imports System.Drawing
 Imports Xunit
 
-' The zoom geometry of the .NET 10 viewer (SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md).
+' The zoom geometry of the .NET 10 viewer (012_SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md).
 ' Modern-only, exactly like the feature: ZoomMath.vb is whole-file "#If Not NETFRAMEWORK",
 ' so on the net48 leg of this project both it and this file compile to nothing.
 '

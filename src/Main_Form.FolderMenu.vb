@@ -23,6 +23,8 @@ Partial Public Class Main_Form
     Private folder_Context_Menu As ContextMenuStrip
     Private folder_Menu_Select_Item As ToolStripMenuItem
     Private folder_Menu_File_Item As ToolStripMenuItem
+    Private folder_Menu_Open_Archive_Item As ToolStripMenuItem
+    Private folder_Menu_Close_Archive_Item As ToolStripMenuItem
     Private folder_Menu_Share_Item As ToolStripMenuItem
     Private folder_Combo_Edit_Hook As ComboEditContextMenuHook
 
@@ -46,11 +48,24 @@ Partial Public Class Main_Form
             AddHandler folder_Menu_File_Item.Click, Sub() Choose_file()
             folder_Context_Menu.Items.Add(folder_Menu_File_Item)
 
+            ' Next to Select folder../Select file.. (010_SPECIFICATION_ARCHIVE_BROWSING
+            ' §2.1 point 4, §2.3, §12 Ф4) - "Close archive" only shows while an archive is
+            ' actually open, decided fresh on every Opening so the state can never go stale.
+            folder_Menu_Open_Archive_Item = New ToolStripMenuItem()
+            AddHandler folder_Menu_Open_Archive_Item.Click, Sub() OpenArchiveViaDialog()
+            folder_Context_Menu.Items.Add(folder_Menu_Open_Archive_Item)
+
+            folder_Menu_Close_Archive_Item = New ToolStripMenuItem()
+            AddHandler folder_Menu_Close_Archive_Item.Click, Sub() CloseArchiveAndReturn()
+            folder_Context_Menu.Items.Add(folder_Menu_Close_Archive_Item)
+
             folder_Context_Menu.Items.Add(New ToolStripSeparator())
 
             folder_Menu_Share_Item = New ToolStripMenuItem()
             AddHandler folder_Menu_Share_Item.Click, Sub() ActivateShareEntryPoint()
             folder_Context_Menu.Items.Add(folder_Menu_Share_Item)
+
+            AddHandler folder_Context_Menu.Opening, Sub() folder_Menu_Close_Archive_Item.Visible = IsArchiveMode()
 
             ' The label answers a right-click by itself, so the plain assignment works
             ' there. The combo needs the hook below.
@@ -97,6 +112,16 @@ Partial Public Class Main_Form
             ' as the toolbar's "file" button and the F / F4 keys.
             folder_Menu_File_Item.Text = Localization.T("Выбрать мамку..")
             folder_Menu_File_Item.ToolTipText = Localization.T("Выбрать медиафайл (F, F4)")
+        End If
+
+        If folder_Menu_Open_Archive_Item IsNot Nothing Then
+            folder_Menu_Open_Archive_Item.Text = Localization.T("Открыть архив..")
+            folder_Menu_Open_Archive_Item.ToolTipText = Localization.T("Открыть ZIP или CBZ как папку")
+        End If
+
+        If folder_Menu_Close_Archive_Item IsNot Nothing Then
+            folder_Menu_Close_Archive_Item.Text = Localization.T("Закрыть архив")
+            folder_Menu_Close_Archive_Item.ToolTipText = Localization.T("Вернуться в папку, где лежит архив")
         End If
 
         If folder_Menu_Share_Item IsNot Nothing Then

@@ -51,7 +51,7 @@ Public NotInheritable Class Share_Access_Test_Form
 
     Private Sub BuildUi()
         ' Script font + text direction for the active language, before any control exists -
-        ' children inherit both (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
+        ' children inherit both (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
         UiLanguage.ApplyTo(Me)
         Me.Text = ShareText.AccessTestTitle()
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)

@@ -5,7 +5,7 @@
     "(canon invariant 16: a render target is regenerated, not hand-edited).",
     "",
     "Keys are the ISO 639-1 codes of the 13 UI languages (see",
-    "docs/specifications/SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §1.1).",
+    "docs/specifications/013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §1.1).",
     "'store' is the Partner Center locale the rendered file is uploaded to;",
     "'font' must cover the script - Segoe UI has no Devanagari/Bengali/Han;",
     "'rtl' turns on DirectionRightToLeft when the strings are drawn.",

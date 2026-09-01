@@ -16,7 +16,7 @@
 
     Why the split: the app's own interface today exists only in Russian and
     English (13-language UI is the plan in
-    docs/specifications/SPECIFICATION_THIRTEEN_UI_LANGUAGES.md, block A). So
+    docs/specifications/013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md, block A). So
     `ru` gets Russian chrome and the other twelve get English chrome, while the
     caption - the part a shopper actually reads on the listing card - is in all
     13. When block A ships, ChromeFor() below returns the locale itself and the
@@ -84,7 +84,7 @@ if ($Locales) {
 }
 
 # The app's UI language for a given listing locale. Since block A of
-# SPECIFICATION_THIRTEEN_UI_LANGUAGES.md shipped, the viewer itself speaks all 13,
+# 013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md shipped, the viewer itself speaks all 13,
 # so a locale is captured in its own language - one launch per locale.
 function ChromeFor([string]$code) { $code }
 

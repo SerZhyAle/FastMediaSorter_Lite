@@ -2,8 +2,10 @@
 Option Strict On
 
 Imports System.IO
+Imports System.Linq
+Imports System.Windows.Forms
 
-' The viewer's side of archive browsing (SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md).
+' The viewer's side of archive browsing (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md).
 '
 ' An archive is shown as a folder: the file list is filled with paths inside the session's
 ' temporary directory, and each file appears there the moment something is about to show
@@ -28,9 +30,18 @@ Partial Public Class Main_Form
     ''' </summary>
     Private archive_Return_Folder As String = ""
 
-    ''' <summary>Ceiling on how many entries become files (§5.3). Ф3 turns it into a
-    ''' setting; until then it is the specification's default.</summary>
+    ''' <summary>Ceiling on how many entries become files (§5.3, §9) - the settings
+    ''' default, overridden by ModernViewerPreferences.ArchiveMaxEntries.</summary>
     Private Const Archive_Max_Entries As Integer = 20000
+
+    ''' <summary>The broad archive admission set. Navigation toggles are intentionally
+    ''' not part of this decision: ArchiveFileEntries applies them later, allowing a
+    ''' disabled kind to be re-enabled in the current archive without reopening it.</summary>
+    Private Function ArchiveSupportsExtension(extension As String) As Boolean
+        Return Image_File_Extensions.Contains(extension) OrElse
+               video_File_Extensions.Contains(extension) OrElse
+               web_specific_image_extensions.Contains(extension)
+    End Function
 
     Friend Function IsArchiveMode() As Boolean
         Return archive_Session IsNot Nothing
@@ -78,9 +89,13 @@ Partial Public Class Main_Form
             ArchiveTempStore.SweepOrphans()
 
             sessionDir = ArchiveTempStore.CreateSession()
+            Dim maxEntries As Integer = GetModernPreferences().ArchiveMaxEntries
+            ' Keep every built-in media entry in the session. The navigation kind filter
+            ' is applied when rows are built, so turning video or audio back on can reveal
+            ' entries without reopening the archive.
             Dim session As New ArchiveSession(archivePath, sessionDir,
-                                              Function(extension) all_Supported_Extensions.Contains(extension),
-                                              Archive_Max_Entries)
+                                              AddressOf ArchiveSupportsExtension,
+                                              maxEntries)
 
             If session.IsEncrypted Then
                 session.Dispose()
@@ -116,7 +131,7 @@ Partial Public Class Main_Form
 
             Dim opened As String = Localization.TF("Архив: {0} файлов", session.Entries.Count.ToString())
             If session.WasTruncated Then
-                opened &= "  " & Localization.TF("Показаны первые {0} записей", Archive_Max_Entries.ToString())
+                opened &= "  " & Localization.TF("Показаны первые {0} записей", maxEntries.ToString())
             End If
             lbl_Status.Text = opened
         Catch ex As Exception
@@ -178,6 +193,7 @@ Partial Public Class Main_Form
 
         Dim rows As New List(Of FileEntry)(archive_Session.Entries.Count)
         For Each entry As ArchiveEntryInfo In archive_Session.Entries
+            If Not all_Supported_Extensions.Contains(Path.GetExtension(entry.EntryName).ToLowerInvariant()) Then Continue For
             rows.Add(New FileEntry With {
                 .FilePath = entry.TempPath,
                 .FileSize = entry.Size,
@@ -203,8 +219,12 @@ Partial Public Class Main_Form
         Dim index As Integer = archive_Session.IndexOfTempPath(filePath)
         If index < 0 Then Return
 
+        Dim prefs As ModernViewerPreferences = GetModernPreferences()
+        Dim maxEntryBytes As Long = CLng(prefs.ArchiveMaxEntryMb) * 1024L * 1024L
+        Dim maxCacheBytes As Long = CLng(prefs.ArchiveCacheMaxMb) * 1024L * 1024L
+
         Dim refusal As ArchiveSession.EntryRefusal
-        If archive_Session.TryEnsureExtracted(index, refusal) Then Return
+        If archive_Session.TryEnsureExtracted(index, refusal, maxEntryBytes, maxCacheBytes) Then Return
 
         lbl_Status.Text = ArchiveRefusalText(refusal, archive_Session.Entries(index))
     End Sub
@@ -236,6 +256,56 @@ Partial Public Class Main_Form
         If index < 0 Then Return ""
         Return archive_Session.Entries(index).EntryName
     End Function
+
+    ' ---------------------------------------------------------- entry points (Ф4) ----
+
+    ''' <summary>
+    ''' The folder box menu's "Open archive.." entry (§2.1 point 4, §12 Ф4). Filtered to
+    ''' what the viewer can actually open today (ArchiveEntryFilter.Openable_Extensions) -
+    ''' 7z/RAR/CBR are containers the viewer already recognizes but cannot read yet (Ф2),
+    ''' so offering them in this dialog would be a filter that lies. Delegates to
+    ''' ProcessArgument, the one ingress for a concrete path (invariant already relied on
+    ''' by Choose_file()): it already recognizes an archive extension and routes to
+    ''' EnterArchive, so picking one here is exactly like picking a picture.
+    ''' </summary>
+    Friend Sub OpenArchiveViaDialog()
+        SlideShowStop()
+        Using dialog As New OpenFileDialog()
+            Dim archiveExtensions As String = String.Join(";",
+                ArchiveEntryFilter.Openable_Extensions.Select(Function(ext) "*" & ext))
+            dialog.Filter = Localization.T("Архивы") & "|" & archiveExtensions
+            dialog.InitialDirectory = If(String.IsNullOrEmpty(Current_Folder_Path),
+                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), Current_Folder_Path)
+            dialog.Title = Localization.T("Открыть архив..")
+            If dialog.ShowDialog(Me) = DialogResult.OK Then
+                ProcessArgument(dialog.FileName)
+            End If
+        End Using
+    End Sub
+
+    ''' <summary>
+    ''' The folder box menu's "Close archive" entry (§2.3, §12 Ф4). Returns to the folder
+    ''' the archive itself lives in - the same "open a folder" path SelectFolderViaDialog
+    ''' uses.
+    '''
+    ''' Simplification worth naming: §2.3 also asks for the archive to be left selected as
+    ''' the current entry. The file list here is always built from
+    ''' all_Supported_Extensions, and an archive is deliberately never a member of that set
+    ''' (§1) - there is no row in an ordinary folder listing to put a cursor on without
+    ''' teaching the folder view about a file kind it otherwise never shows. Returning to
+    ''' the right folder is the part every acceptance case (§13.2) actually checks.
+    ''' </summary>
+    Friend Sub CloseArchiveAndReturn()
+        If archive_Session Is Nothing Then Return
+        Dim returnFolder As String = archive_Return_Folder
+        LeaveArchive()
+        If String.IsNullOrEmpty(returnFolder) Then Return
+
+        Current_Folder_Path = returnFolder
+        lbl_Status.Text = Localization.T("Архив закрыт")
+        Is_No_Background_Tasks = False
+        ReadShowMediaFile(Mode_FolderAndFile)
+    End Sub
 
 End Class
 #End If

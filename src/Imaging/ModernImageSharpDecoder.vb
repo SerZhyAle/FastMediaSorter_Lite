@@ -15,48 +15,80 @@ Imports System.IO
 ''' AV1/HEVC decoder - again with no OS codec involved, so iPhone photos open
 ''' without the paid Store "HEVC Video Extensions".
 ''' This whole file compiles only in the modern build.
+'''
+''' There is exactly ONE decode implementation here, and it is
+''' <see cref="DecodeToPayload"/> - the encoded bytes ImageSharp/Magick produce
+''' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §3.1).
+''' <see cref="DecodeToImage"/> is a wrapper that hands those bytes to GDI+, and the
+''' decode cache stores the very same bytes. Two decode paths that could drift apart is
+''' precisely what the payload interface exists to avoid.
 ''' </summary>
 Friend NotInheritable Class ModernImageSharpDecoder
-    Implements IImageDecoder
+    Implements IImageDecoder, IImageDecoderPayload
 
     Public Function DecodeToImage(stream As MemoryStream) As Image Implements IImageDecoder.DecodeToImage
-        stream.Position = 0
+        Dim payload As DecodedPayload = DecodeToPayload(stream)
+        If payload Is Nothing OrElse payload.Bytes Is Nothing Then Return Nothing
 
-        ' AVIF/HEIC/HEIF are ISO-BMFF containers ("ftyp" box); ImageSharp would
-        ' throw UnknownImageFormatException on them, so route by signature - the
-        ' MemoryStream has no file name to key on.
-        If IsIsoBmff(stream) Then Return LoadViaMagick(stream)
+        Dim payloadStream As New MemoryStream(payload.Bytes)
+        If payload.Kind = DecodedPayloadKind.Gif Then
+            ' The GIF stream is intentionally NOT disposed: GDI+ streams later frames from
+            ' it for the lifetime of the Image (the caller-side file stream in
+            ' LoadImageWithStream stays open the same way).
+            Return Image.FromStream(payloadStream)
+        End If
 
-        Using sharpImage As SixLabors.ImageSharp.Image = SixLabors.ImageSharp.Image.Load(stream)
-            If sharpImage.Frames.Count > 1 Then
-                Return TranscodeAnimationToGif(sharpImage)
-            End If
-
-            Using pngStream As New MemoryStream()
-                SixLabors.ImageSharp.ImageExtensions.SaveAsPng(sharpImage, pngStream)
-                pngStream.Position = 0
-
-                Using pngImage As Image = Image.FromStream(pngStream)
-                    Return New Bitmap(pngImage)
-                End Using
+        Using payloadStream
+            Using pngImage As Image = Image.FromStream(payloadStream)
+                Return New Bitmap(pngImage)
             End Using
         End Using
     End Function
 
     ''' <summary>
-    ''' Animated WEBP/APNG -> GIF in memory. GDI+ animates GIF natively
-    ''' (RawFormat = Gif), so Main_Form.GifPlayback picks the result up as if the
-    ''' file had been a GIF. The GIF stream is intentionally NOT disposed here:
-    ''' GDI+ streams later frames from it for the lifetime of the Image (the
-    ''' caller-side file stream in LoadImageWithStream stays open the same way).
+    ''' The decode itself. Returns the encoded bytes rather than a GDI+ image, so the
+    ''' cache can keep exactly what was produced and the timing that justifies keeping it.
     ''' </summary>
-    Private Function TranscodeAnimationToGif(sharpImage As SixLabors.ImageSharp.Image) As Image
+    Public Function DecodeToPayload(stream As MemoryStream) As DecodedPayload Implements IImageDecoderPayload.DecodeToPayload
+        Dim watch As Stopwatch = Stopwatch.StartNew()
+        stream.Position = 0
+
+        ' AVIF/HEIC/HEIF are ISO-BMFF containers ("ftyp" box); ImageSharp would
+        ' throw UnknownImageFormatException on them, so route by signature - the
+        ' MemoryStream has no file name to key on.
+        If IsIsoBmff(stream) Then Return PayloadViaMagick(stream, watch)
+
+        Using sharpImage As SixLabors.ImageSharp.Image = SixLabors.ImageSharp.Image.Load(stream)
+            If sharpImage.Frames.Count > 1 Then Return TranscodeAnimationToGif(sharpImage, watch)
+
+            Using pngStream As New MemoryStream()
+                SixLabors.ImageSharp.ImageExtensions.SaveAsPng(sharpImage, pngStream)
+                Return New DecodedPayload With {
+                    .Bytes = pngStream.ToArray(),
+                    .Kind = DecodedPayloadKind.Png,
+                    .IsAnimation = False,
+                    .DecodeMs = watch.ElapsedMilliseconds
+                }
+            End Using
+        End Using
+    End Function
+
+    ''' <summary>
+    ''' Animated WEBP/APNG -> GIF bytes. GDI+ animates GIF natively (RawFormat = Gif), so
+    ''' Main_Form.GifPlayback picks the result up as if the file had been a GIF.
+    ''' </summary>
+    Private Function TranscodeAnimationToGif(sharpImage As SixLabors.ImageSharp.Image, watch As Stopwatch) As DecodedPayload
         CopyWebpFrameDelaysToGif(sharpImage)
 
-        Dim gifStream As New MemoryStream()
-        SixLabors.ImageSharp.ImageExtensions.SaveAsGif(sharpImage, gifStream)
-        gifStream.Position = 0
-        Return Image.FromStream(gifStream)
+        Using gifStream As New MemoryStream()
+            SixLabors.ImageSharp.ImageExtensions.SaveAsGif(sharpImage, gifStream)
+            Return New DecodedPayload With {
+                .Bytes = gifStream.ToArray(),
+                .Kind = DecodedPayloadKind.Gif,
+                .IsAnimation = True,
+                .DecodeMs = watch.ElapsedMilliseconds
+            }
+        End Using
     End Function
 
     ''' <summary>
@@ -112,13 +144,13 @@ Friend NotInheritable Class ModernImageSharpDecoder
     End Function
 
     ''' <summary>
-    ''' Magick.NET decode for the ISO-BMFF formats: first frame, re-encoded to a
-    ''' detached PNG the same way the ImageSharp path does. Honors the EXIF
-    ''' auto-rotate setting here because the PNG re-encode drops the Orientation
-    ''' tag before FileManager.ApplyExifOrientation could see it (iPhone HEICs
-    ''' rely on that tag).
+    ''' Magick.NET decode for the ISO-BMFF formats: first frame, re-encoded to PNG the same
+    ''' way the ImageSharp path does. Honors the EXIF auto-rotate setting here because the
+    ''' PNG re-encode drops the Orientation tag before FileManager.ApplyExifOrientation
+    ''' could see it (iPhone HEICs rely on that tag) - which is also why Is_Exif_AutoRotate
+    ''' is part of the cache key (§4).
     ''' </summary>
-    Private Shared Function LoadViaMagick(stream As MemoryStream) As Image
+    Private Shared Function PayloadViaMagick(stream As MemoryStream, watch As Stopwatch) As DecodedPayload
         stream.Position = 0
 
         Using magickImage As New ImageMagick.MagickImage(stream)
@@ -126,11 +158,12 @@ Friend NotInheritable Class ModernImageSharpDecoder
 
             Using pngStream As New MemoryStream()
                 magickImage.Write(pngStream, ImageMagick.MagickFormat.Png)
-                pngStream.Position = 0
-
-                Using pngImage As Image = Image.FromStream(pngStream)
-                    Return New Bitmap(pngImage)
-                End Using
+                Return New DecodedPayload With {
+                    .Bytes = pngStream.ToArray(),
+                    .Kind = DecodedPayloadKind.Png,
+                    .IsAnimation = False,
+                    .DecodeMs = watch.ElapsedMilliseconds
+                }
             End Using
         End Using
     End Function

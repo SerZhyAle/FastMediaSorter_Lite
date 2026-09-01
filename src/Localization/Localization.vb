@@ -13,7 +13,7 @@ Imports System.Globalization
 ''' in every file - which is exactly why the old
 ''' <c>If(Is_Russian_Language, "рус", "eng")</c> pattern is being replaced.
 '''
-''' See docs/specifications/SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §2.
+''' See docs/specifications/013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §2.
 '''
 ''' A key with no entry returns the Russian source unchanged: a new string is visible
 ''' but never crashes and never shows MISSING_KEY_42. LocalizationParityTests is what

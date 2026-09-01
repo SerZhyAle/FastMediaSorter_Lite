@@ -4,7 +4,7 @@ Option Strict On
 '
 ' It lived inside Main_Form as a Private Enum until the undo stack needed a rule - "which
 ' completed operations can be taken back, and by doing what" - that is worth proving with a
-' test rather than re-reading a Select Case (SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md
+' test rather than re-reading a Select Case (017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md
 ' §3.5). A Private nested enum cannot be named by anything outside the class, so the enum
 ' moved out and UndoPolicy could stay pure. Nothing else changed: every "FileOpKind.X" in
 ' the form partials resolves exactly as before, both projects compile it, and the members

@@ -79,6 +79,39 @@
     <Compile Include="..\..\src\Imaging\ImageFileWriter.vb">
       <Link>Linked\Imaging\ImageFileWriter.vb</Link>
     </Compile>
+    <!-- The decode cache (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md
+         §3-§7). Linked because the whole feature rests on ONE discipline - a key that
+         changes whenever the answer does - and on a store that must turn every kind of
+         damaged entry into a plain miss. Neither is provable by looking at a picture: a
+         stale hit shows a perfectly good image, just the wrong one. All five are
+         whole-file "#If Not NETFRAMEWORK", so they and their tests compile to nothing on
+         the net48 leg, matching the shipped shape. They pull in nothing new - AppPaths and
+         DiskCacheTrim are already here. -->
+    <Compile Include="..\..\src\Imaging\ImageDecodePayload.vb">
+      <Link>Linked\Imaging\ImageDecodePayload.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\DecodeCacheKey.vb">
+      <Link>Linked\Imaging\DecodeCacheKey.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\DecodeCachePolicy.vb">
+      <Link>Linked\Imaging\DecodeCachePolicy.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\DecodeCacheStore.vb">
+      <Link>Linked\Imaging\DecodeCacheStore.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\DecodeCache.vb">
+      <Link>Linked\Imaging\DecodeCache.vb</Link>
+    </Compile>
+    <!-- "Replace with video" (same specification, §9-§10). Only the PURE half is linked:
+         AnimationToVideo spawns a process and Main_Form.ToVideo owns the window, and keeping
+         both out is exactly what lets the two dangerous questions be answered here without
+         FFmpeg and without a real photo - what the encoder is asked to do, and when the
+         ORIGINAL may be deleted. Whole-file "#If Not NETFRAMEWORK", so this and its tests
+         compile to nothing on the net48 leg. It needs ImageFileWriter (already above) for the
+         shared temp-name marker. -->
+    <Compile Include="..\..\src\Video\VideoConvertPlan.vb">
+      <Link>Linked\Video\VideoConvertPlan.vb</Link>
+    </Compile>
     <!-- The zoom geometry of the .NET 10 viewer. Whole-file "#If Not NETFRAMEWORK",
          so on the net48 leg this - and ZoomMathTests - compile to nothing, which is
          the honest shape: the classic zoom model does not exist in the x86 viewer. -->
@@ -146,6 +179,9 @@
     <Compile Include="..\..\src\ModernViewerPreferences.vb">
       <Link>Linked\ModernViewerPreferences.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\AudioMetadata.vb">
+      <Link>Linked\AudioMetadata.vb</Link>
+    </Compile>
     <!-- Where the app keeps state on disk, and the archive cache built on it. The two
          Archives files are whole-file "#If Not NETFRAMEWORK", so they and their tests
          compile to nothing on the net48 leg - the honest shape, since archive browsing
@@ -207,6 +243,16 @@
          on both legs: the enum is shared, only the behaviour is fenced. -->
     <Compile Include="..\..\src\PathFailure.vb">
       <Link>Linked\PathFailure.vb</Link>
+    </Compile>
+    <!-- The cache policy behind "a dead slot costs one probe, not twenty SMB timeouts"
+         (SLOT_HEALTH Ф2, invariant 5). Linked because the promise is entirely about a
+         clock: the scene it replaces is "put the NAS to sleep and press 3 twenty times",
+         and handing the policy the time turns that into arithmetic. The probe itself -
+         the half that touches the network - stays in Main_Form.SlotHealth.vb and is
+         deliberately not here. Whole-file "#If Not NETFRAMEWORK", so it and its tests
+         compile to nothing on the net48 leg. -->
+    <Compile Include="..\..\src\SlotHealth.vb">
+      <Link>Linked\SlotHealth.vb</Link>
     </Compile>
     <!-- Whether a deletion can go to the Recycle Bin, and - when it cannot - why. Only the
          PURE half is linked: DeleteVolumeProbe reads the registry and DriveInfo, and keeping

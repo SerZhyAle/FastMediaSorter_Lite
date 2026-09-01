@@ -5,7 +5,7 @@ Imports Xunit
 
 ''' <summary>
 ''' What language a given machine starts in - the part of
-''' SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §7.3 that can be proved without a German
+''' 013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §7.3 that can be proved without a German
 ''' Windows to hand. Manual check 6 ("first run on a German Windows shows German") is
 ''' exactly MatchCulture plus DefaultCode's order of preference, so it is pinned here
 ''' rather than left to a machine nobody has.

@@ -66,6 +66,24 @@ Public Class ResumeLastPlaybackTests
         Assert.False(ModernViewerPreferences.FromJson(off.ExportJson()).ResumeLastPlayback)
     End Sub
 
+    <Fact>
+    Public Sub Navigation_kind_defaults_and_export_are_stable()
+        Dim defaults As New ModernViewerPreferences()
+        Assert.True(defaults.IncludeVideoInNavigation)
+        Assert.True(defaults.IncludeAudioInNavigation)
+        Assert.False(defaults.IncludeDocumentInNavigation)
+
+        Dim source As New ModernViewerPreferences() With {
+            .IncludeVideoInNavigation = False,
+            .IncludeAudioInNavigation = False,
+            .IncludeDocumentInNavigation = True
+        }
+        Dim restored As ModernViewerPreferences = ModernViewerPreferences.FromJson(source.ExportJson())
+        Assert.False(restored.IncludeVideoInNavigation)
+        Assert.False(restored.IncludeAudioInNavigation)
+        Assert.True(restored.IncludeDocumentInNavigation)
+    End Sub
+
     Private Shared Sub DeleteKey()
         Try
             Interaction.DeleteSetting(App_name, Second_App_Name, Key)

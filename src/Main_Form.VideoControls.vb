@@ -227,6 +227,7 @@ Partial Public Class Main_Form
 
         video_Controls_Timer.Start()
         video_Controls_Hide_Timer.Stop()
+        If IsAudioNowPlaying() AndAlso (modern_Preferences Is Nothing OrElse modern_Preferences.AudioControlsAlwaysVisible) Then Return
         video_Controls_Hide_Timer.Interval = VideoControlsHideDelayMilliseconds()
         video_Controls_Hide_Timer.Start()
     End Sub
@@ -248,6 +249,7 @@ Partial Public Class Main_Form
             video_Controls_Hide_Timer.Start()
             Return
         End If
+        If IsAudioNowPlaying() AndAlso (modern_Preferences Is Nothing OrElse modern_Preferences.AudioControlsAlwaysVisible) Then Return
         If video_Controls.Bounds.Contains(panel_Media.PointToClient(Cursor.Position)) Then
             video_Controls_Hide_Timer.Start()
             Return
@@ -289,8 +291,10 @@ Partial Public Class Main_Form
             video_Controls_Timer.Stop()
             Return
         End If
+        CheckAudioSleepTimer()
         If video_Controls Is Nothing OrElse Not video_Controls.Visible Then Return
         RefreshVideoControlsState()
+        If IsAudioNowPlaying() AndAlso modern_Preferences IsNot Nothing AndAlso modern_Preferences.AudioVisualiser Then RepaintMedia()
     End Sub
 
     ''' <summary>Pulls the live state out of the player and into the bar.</summary>

@@ -27,6 +27,12 @@ Public Class Table_Form
         ' recipients overlay so it reflects the current set (the show/hide flag is
         ' persisted by Main_Form, not here anymore).
         Main_Form.ApplyRecipientsOverlay()
+#If Not NETFRAMEWORK Then
+        ' Re-ask about the destinations the user may have just changed, so the first press
+        ' after closing this window is answered from a warm cache instead of paying for a
+        ' probe (§3.3).
+        Main_Form.PrewarmSlotHealth()
+#End If
         If toolTip IsNot Nothing Then
             toolTip.Dispose()
             toolTip = Nothing ' Устанавливаем переменную в Nothing после уничтожения
@@ -229,6 +235,10 @@ Public Class Table_Form
 
         Data_Grid_View.Item(0, 10).Value = "0"
 
+#If Not NETFRAMEWORK Then
+        ApplySlotHealthToGrid()
+#End If
+
         ' There are only 11 destination keys (DEL + 0..9), so shrink the grid to
         ' exactly those rows instead of stretching it down the whole tab (which
         ' left a large empty area below the last key).
@@ -358,6 +368,9 @@ Public Class Table_Form
                     Hardkeys_to_move_mediafile(e.RowIndex) = folderBrowse.SelectedPath
                     Data_Grid_View.Item(1, e.RowIndex).Value = Hardkeys_to_move_mediafile(e.RowIndex)
                     Data_Grid_View.Refresh()
+#If Not NETFRAMEWORK Then
+                    ProbeGridRow(e.RowIndex)
+#End If
                     ' Straight to the registry, not on a timer: picking a destination folder is
                     ' deliberate configuration, and it used to live only in memory until the
                     ' viewer was closed cleanly.
@@ -375,7 +388,69 @@ Public Class Table_Form
         End If
         ' Typed by hand rather than browsed - same rule as the folder picker above.
         Main_Form.SaveSettingsNow()
+#If Not NETFRAMEWORK Then
+        ' Ask about the new path and tint the cell when it answers. The value has ALREADY
+        ' been saved above and is never taken back (Ф4 acceptance 1): a slot for a share
+        ' that happens to be down right now must stay configurable - the feedback is
+        ' feedback, not validation with a veto.
+        ProbeGridRow(e.RowIndex)
+#End If
     End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>
+    ''' Paints the cached slot verdicts onto column 1 - a tint plus a tooltip, and
+    ''' deliberately NO new column (§3.5): CellMouseDoubleClick branches on
+    ''' e.ColumnIndex = 0 and CellEndEdit reads Item(1, ..) unconditionally, so a third
+    ''' column needs both guarded. That work belongs to the slot-names item, which
+    ''' actually wants columns; the trap is recorded here so whoever takes it finds it
+    ''' already named.
+    '''
+    ''' Reads the cache only - the settings window never probes on its own.
+    ''' </summary>
+    Private Sub ApplySlotHealthToGrid()
+        If Data_Grid_View Is Nothing OrElse Data_Grid_View.Rows.Count < 11 Then Return
+
+        For z As Integer = 1 To 10
+            Dim cell As DataGridViewCell = Data_Grid_View.Item(1, z)
+            Dim destination As String = If(Hardkeys_to_move_mediafile(z), "")
+            Dim verdict As SlotVerdict = Main_Form.CachedSlotVerdict(destination)
+
+            If verdict Is Nothing OrElse String.IsNullOrWhiteSpace(destination) Then
+                ' Nobody has asked yet. Leave it alone rather than imply an answer.
+                cell.Style.BackColor = Color.Empty
+                cell.ToolTipText = ""
+            ElseIf verdict.State = SlotState.WillBeCreated Then
+                cell.Style.BackColor = Color.FromArgb(255, 248, 220)
+                cell.ToolTipText = Main_Form.SlotHealthNote(verdict)
+            ElseIf SlotHealthPolicy.IsUsable(verdict.State) Then
+                cell.Style.BackColor = Color.Empty
+                cell.ToolTipText = ""
+            Else
+                cell.Style.BackColor = Color.FromArgb(255, 226, 226)
+                cell.ToolTipText = Main_Form.SlotHealthNote(verdict)
+            End If
+        Next
+    End Sub
+
+    ''' <summary>Re-asks about one row's destination and repaints the grid when the answer
+    ''' lands. Never blocks: the probe runs on a worker and comes back through the form's
+    ''' message loop.</summary>
+    Private Sub ProbeGridRow(rowIndex As Integer)
+        If rowIndex < 1 OrElse rowIndex > 10 Then Return
+        Dim destination As String = If(Hardkeys_to_move_mediafile(rowIndex), "")
+        If String.IsNullOrWhiteSpace(destination) Then
+            ApplySlotHealthToGrid()
+            Return
+        End If
+
+        Main_Form.RefreshSlotHealth(destination,
+                                    Sub()
+                                        If Me.IsDisposed Then Return
+                                        ApplySlotHealthToGrid()
+                                    End Sub)
+    End Sub
+#End If
 
     Private Sub SetOnTop_CheckedChanged(sender As Object, e As EventArgs) Handles SetOnTop.CheckedChanged
         Is_Show_Recipients_Overlay = SetOnTop.Checked

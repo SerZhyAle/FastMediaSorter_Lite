@@ -18,7 +18,7 @@ Imports System.Security
 ''' session - a ten-second blip walked the auto-skip chain through a healthy folder, one
 ''' file per keypress, and ended in "no readable files in this folder" about a folder in
 ''' which everything was readable. See
-''' SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md §0.4 and §3.1.
+''' 011_SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md §0.4 and §3.1.
 '''
 ''' Pure: no I/O, no form state, no clock. That is what makes the classification testable
 ''' without a NAS - and the derivation trap below is exactly the kind of thing a test has

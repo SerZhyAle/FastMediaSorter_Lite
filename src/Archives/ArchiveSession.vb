@@ -4,7 +4,7 @@ Option Strict On
 Imports System.IO
 
 ''' <summary>
-''' One open archive, seen as a folder (SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §3.2, §5).
+''' One open archive, seen as a folder (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §3.2, §5).
 '''
 ''' The whole design in one sentence: <b>there is no virtual file system</b>. Every entry
 ''' is given a real path inside the session directory the moment the archive is opened,
@@ -45,6 +45,14 @@ Friend NotInheritable Class ArchiveSession
     Friend Const Default_Max_Entry_Bytes As Long = 512L * 1024L * 1024L
 
     ''' <summary>
+    ''' Ceiling on the session directory as a whole (§5.3), the default until Ф4 wires it
+    ''' to a setting. Enforced by the LRU eviction below - a budget, not a hard wall: the
+    ''' entry just touched and its immediate neighbours are never evicted, so the actual
+    ''' directory can sit above this for as long as those alone exceed it.
+    ''' </summary>
+    Friend Const Default_Max_Cache_Bytes As Long = 2048L * 1024L * 1024L
+
+    ''' <summary>
     ''' Expansion ratio that means "bomb" (§6.2). Deliberately generous - a page of flat
     ''' colour genuinely compresses ~50:1 - and deliberately not a setting: this one is a
     ''' guard, not a preference.
@@ -59,6 +67,16 @@ Friend NotInheritable Class ArchiveSession
     Private ReadOnly entry_Handles As New List(Of SharpCompress.Archives.IArchiveEntry)()
     Private ReadOnly by_Temp_Path As New Dictionary(Of String, Integer)(StringComparer.OrdinalIgnoreCase)
     Private disposed As Boolean = False
+
+    ''' <summary>
+    ''' Which entries are currently extracted, oldest-used first (§5.4). Touched on every
+    ''' successful <see cref="TryEnsureExtracted"/> - whether that call wrote a new file or
+    ''' found one already on disk, either way the entry was just asked for, so it moves to
+    ''' the fresh end and is the last thing eviction would pick.
+    ''' </summary>
+    Private ReadOnly lru_Recency As New List(Of Integer)()
+    Private ReadOnly extracted_Sizes As New Dictionary(Of Integer, Long)()
+    Private session_Bytes As Long = 0
 
     Friend ReadOnly Property ArchiveFilePath As String
         Get
@@ -183,21 +201,22 @@ Friend NotInheritable Class ArchiveSession
     ''' prefetch and the display path can be working on the same entry at once.
     ''' </summary>
     Friend Function TryEnsureExtracted(index As Integer, ByRef refusal As EntryRefusal,
-                                       Optional maxEntryBytes As Long = Default_Max_Entry_Bytes) As Boolean
+                                       Optional maxEntryBytes As Long = Default_Max_Entry_Bytes,
+                                       Optional maxCacheBytes As Long = Default_Max_Cache_Bytes) As Boolean
         ' Serialized on purpose: the display path and the prefetch worker both call this,
         ' and they would otherwise be reading two entries out of ONE archive stream at the
         ' same time - SharpCompress seeks that stream per entry, so concurrent reads do not
         ' race over a lock, they race over the file position. The work inside is one
         ' entry's decompression, so the wait is bounded by the picture being fetched.
         SyncLock extraction_Gate
-            Return EnsureExtractedCore(index, refusal, maxEntryBytes)
+            Return EnsureExtractedCore(index, refusal, maxEntryBytes, maxCacheBytes)
         End SyncLock
     End Function
 
     Private ReadOnly extraction_Gate As New Object()
 
     Private Function EnsureExtractedCore(index As Integer, ByRef refusal As EntryRefusal,
-                                         maxEntryBytes As Long) As Boolean
+                                         maxEntryBytes As Long, maxCacheBytes As Long) As Boolean
         refusal = EntryRefusal.None
         If index < 0 OrElse index >= entry_Infos.Count Then
             refusal = EntryRefusal.Broken
@@ -212,7 +231,11 @@ Friend NotInheritable Class ArchiveSession
         ' ".part" rename that half-happened would otherwise be trusted.
         Try
             Dim onDisk As New FileInfo(info.TempPath)
-            If onDisk.Exists AndAlso onDisk.Length = info.Size Then Return True
+            If onDisk.Exists AndAlso onDisk.Length = info.Size Then
+                TouchExtracted(index, onDisk.Length)
+                EvictIfOverBudget(index, maxCacheBytes)
+                Return True
+            End If
         Catch
             ' Fall through and extract again.
         End Try
@@ -243,6 +266,8 @@ Friend NotInheritable Class ArchiveSession
 
             If File.Exists(info.TempPath) Then File.Delete(info.TempPath)
             File.Move(part, info.TempPath)
+            TouchExtracted(index, info.Size)
+            EvictIfOverBudget(index, maxCacheBytes)
             Return True
         Catch ex As Exception
             AppFileLogger.WriteLine("Archive: entry not extracted: " & info.EntryName & " - " & ex.Message)
@@ -254,6 +279,55 @@ Friend NotInheritable Class ArchiveSession
             Return False
         End Try
     End Function
+
+    ''' <summary>Records that <paramref name="index"/> is on disk and just got asked for,
+    ''' moving it to the fresh end of the recency order (§5.4). Safe to call more than
+    ''' once for the same entry - only the first call counts its bytes.</summary>
+    Private Sub TouchExtracted(index As Integer, size As Long)
+        If Not extracted_Sizes.ContainsKey(index) Then
+            extracted_Sizes(index) = size
+            session_Bytes += size
+        End If
+        lru_Recency.Remove(index)
+        lru_Recency.Add(index)
+    End Sub
+
+    ''' <summary>
+    ''' Keeps the session directory under its budget by deleting the least-recently-used
+    ''' extracted entries (§5.4) - except <paramref name="justTouched"/> and its immediate
+    ''' neighbours, which are what the UI or the prefetch is about to want next and are
+    ''' never evicted even when everything else already has been. A session that never
+    ''' grows past the budget never deletes anything.
+    ''' </summary>
+    Private Sub EvictIfOverBudget(justTouched As Integer, maxCacheBytes As Long)
+        If maxCacheBytes <= 0 Then Return
+        Do While session_Bytes > maxCacheBytes
+            Dim victim As Integer = -1
+            For Each candidate As Integer In lru_Recency
+                If candidate = justTouched OrElse candidate = justTouched - 1 OrElse candidate = justTouched + 1 Then Continue For
+                victim = candidate
+                Exit For
+            Next
+            If victim < 0 Then Exit Do   ' nothing left to evict - everything is protected
+            EvictEntry(victim)
+        Loop
+    End Sub
+
+    Private Sub EvictEntry(index As Integer)
+        Dim size As Long
+        If Not extracted_Sizes.TryGetValue(index, size) Then Return
+        Try
+            Dim path As String = entry_Infos(index).TempPath
+            If File.Exists(path) Then File.Delete(path)
+        Catch
+            ' A file that refuses to go (antivirus, a lingering handle) is left for the
+            ' cleanup rubezhi (§4) - the accounting below still drops it, so the budget
+            ' check does not spin on the same entry forever.
+        End Try
+        extracted_Sizes.Remove(index)
+        lru_Recency.Remove(index)
+        session_Bytes -= size
+    End Sub
 
     ''' <summary>
     ''' Copies with a ceiling on what is actually written, not on what the header claimed

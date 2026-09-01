@@ -43,7 +43,9 @@
       ["Share folders over SFTP", "Publish the folders you pick over SFTP and open them in the Android app - or in any SFTP client. Off until you switch it on."],
       ["Undo, and a real Recycle Bin", "Del sends the file to the Recycle Bin, Shift+Del goes past it, and U walks back through the last 50 operations - renames and deletions included. Where Windows keeps no bin at all, the app says so instead of pretending."],
       ["Archives open like folders", "A ZIP or CBZ browses like an ordinary folder, slideshow, zoom and translation included. Nothing is unpacked in advance and nothing is left behind."],
-      ["Draw on a picture, crop it, save it", "Brush, rectangle and ellipse, a live crop frame with handles, then save over the original or beside it. Your EXIF travels with the picture."]
+      ["Draw on a picture, crop it, save it", "Brush, rectangle and ellipse, a live crop frame with handles, then save over the original or beside it. Your EXIF travels with the picture."],
+      ["Turn an animation into a video", "An animated WEBP, APNG or GIF becomes an ordinary MP4 - with a seek bar, a pause and full colour - and replaces the original. The encoder is downloaded only if you ask for it, and those same slow formats now reopen instantly the second time."],
+      ["Music gets a screen", "An MP3, WAV, M4A, WMA or OGG shows its album cover - or a wave-and-particle animation when it has none - with the title, artist, album and format along the bottom. Its own settings decide what happens at the end of a track, and a sleep timer stops playback after up to three hours."]
     ],
     "knowTitle": "Worth knowing",
     "know": [
@@ -74,7 +76,9 @@
       ["Раздача папок по SFTP", "Опубликуйте выбранные папки по SFTP и откройте их в приложении для Android - или в любом SFTP-клиенте. Выключено, пока не включите."],
       ["Отмена и настоящая Корзина", "Del отправляет файл в Корзину, Shift+Del - мимо неё, а U отматывает последние 50 операций, включая переименования и удаления. Там, где Windows корзины не держит вовсе, программа честно об этом говорит."],
       ["Архивы открываются как папки", "ZIP или CBZ листается как обычная папка - со слайд-шоу, масштабом и переводом. Ничего не распаковывается заранее и ничего не остаётся после."],
-      ["Рисование и кадрирование", "Кисть, прямоугольник и эллипс, живая рамка кадрирования с маркерами, затем сохранение поверх оригинала или рядом с ним. EXIF едет вместе с картинкой."]
+      ["Рисование и кадрирование", "Кисть, прямоугольник и эллипс, живая рамка кадрирования с маркерами, затем сохранение поверх оригинала или рядом с ним. EXIF едет вместе с картинкой."],
+      ["Анимация превращается в видео", "Анимированный WEBP, APNG или GIF становится обычным MP4 - с перемоткой, паузой и полным цветом - и заменяет оригинал. Кодировщик загружается, только если вы этого попросите, а те же медленные форматы теперь открываются повторно мгновенно."],
+      ["У музыки появился экран", "MP3, WAV, M4A, WMA или OGG показывает обложку альбома - или анимацию из волн и частиц, если обложки нет - с названием, исполнителем, альбомом и форматом внизу. Свои настройки решают, что делать в конце дорожки, а таймер сна останавливает воспроизведение не позже чем через три часа."]
     ],
     "knowTitle": "Что стоит знать",
     "know": [
@@ -105,7 +109,9 @@
       ["Роздача папок через SFTP", "Опублікуйте вибрані теки через SFTP і відкрийте їх у застосунку для Android - або в будь-якому SFTP-клієнті. Вимкнено, доки не увімкнете."],
       ["Скасування і справжній Кошик", "Del надсилає файл до Кошика, Shift+Del - повз нього, а U відмотує останні 50 операцій, включно з перейменуваннями та видаленнями. Там, де Windows кошика не тримає взагалі, програма чесно про це каже."],
       ["Архіви відкриваються як теки", "ZIP або CBZ гортається як звичайна тека - зі слайд-шоу, масштабом і перекладом. Нічого не розпаковується заздалегідь і нічого не лишається після."],
-      ["Малювання та кадрування", "Пензель, прямокутник та еліпс, жива рамка кадрування з маркерами, потім збереження поверх оригіналу або поруч із ним. EXIF їде разом із картинкою."]
+      ["Малювання та кадрування", "Пензель, прямокутник та еліпс, жива рамка кадрування з маркерами, потім збереження поверх оригіналу або поруч із ним. EXIF їде разом із картинкою."],
+      ["Анімація стає відео", "Анімований WEBP, APNG чи GIF перетворюється на звичайний MP4 - з перемоткою, паузою та повним кольором - і замінює оригінал. Кодувальник завантажується, лише якщо ви попросите, а ті самі повільні формати тепер відкриваються повторно миттєво."],
+      ["У музики з'явився екран", "MP3, WAV, M4A, WMA чи OGG показує обкладинку альбому - або анімацію з хвиль і частинок, якщо обкладинки немає - із назвою, виконавцем, альбомом і форматом унизу. Власні налаштування вирішують, що робити наприкінці доріжки, а таймер сну зупиняє відтворення не пізніше ніж за три години."]
     ],
     "knowTitle": "Що варто знати",
     "know": [
@@ -136,7 +142,9 @@
       ["Ordner über SFTP freigeben", "Veröffentlichen Sie ausgewählte Ordner über SFTP und öffnen Sie sie in der Android-App - oder in einem beliebigen SFTP-Client. Aus, bis Sie es einschalten."],
       ["Rückgängig, und ein echter Papierkorb", "Entf legt die Datei in den Papierkorb, Umschalt+Entf daran vorbei, und U geht die letzten 50 Vorgänge zurück - Umbenennungen und Löschungen eingeschlossen. Wo Windows gar keinen Papierkorb führt, sagt die App es, statt so zu tun."],
       ["Archive öffnen sich wie Ordner", "Ein ZIP oder CBZ blättert wie ein gewöhnlicher Ordner - mit Diashow, Zoom und Übersetzung. Nichts wird vorab entpackt und nichts bleibt zurück."],
-      ["Zeichnen, zuschneiden, speichern", "Pinsel, Rechteck und Ellipse, ein lebendiger Zuschnittrahmen mit Griffen, dann über das Original speichern oder daneben. Ihre EXIF-Daten reisen mit dem Bild."]
+      ["Zeichnen, zuschneiden, speichern", "Pinsel, Rechteck und Ellipse, ein lebendiger Zuschnittrahmen mit Griffen, dann über das Original speichern oder daneben. Ihre EXIF-Daten reisen mit dem Bild."],
+      ["Aus einer Animation wird ein Video", "Ein animiertes WEBP, APNG oder GIF wird ein gewöhnliches MP4 - mit Suchleiste, Pause und vollen Farben - und ersetzt das Original. Der Encoder wird nur auf Nachfrage geladen, und dieselben langsamen Formate öffnen sich beim zweiten Mal sofort."],
+      ["Musik bekommt einen Bildschirm", "Eine MP3, WAV, M4A, WMA oder OGG zeigt ihr Albumcover - oder eine Wellen- und Partikelanimation, wenn keines vorhanden ist - mit Titel, Interpret, Album und Format am unteren Rand. Eigene Einstellungen bestimmen, was am Ende eines Titels geschieht, und ein Sleeptimer beendet die Wiedergabe nach höchstens drei Stunden."]
     ],
     "knowTitle": "Gut zu wissen",
     "know": [
@@ -167,7 +175,9 @@
       ["Condividi cartelle via SFTP", "Pubblica le cartelle che scegli via SFTP e aprile nell'app Android - o in un qualsiasi client SFTP. Disattivo finché non lo attivi."],
       ["Annulla, e un vero Cestino", "Canc manda il file nel Cestino, Maiusc+Canc lo scavalca, e U ripercorre le ultime 50 operazioni - rinomine ed eliminazioni comprese. Dove Windows non tiene alcun cestino, l'app lo dice invece di fingere."],
       ["Gli archivi si aprono come cartelle", "Uno ZIP o CBZ si sfoglia come una cartella normale - con presentazione, zoom e traduzione. Nulla viene estratto in anticipo e nulla resta dopo."],
-      ["Disegna, ritaglia, salva", "Pennello, rettangolo ed ellisse, una cornice di ritaglio dal vivo con maniglie, poi salva sull'originale o accanto. I tuoi dati EXIF viaggiano con l'immagine."]
+      ["Disegna, ritaglia, salva", "Pennello, rettangolo ed ellisse, una cornice di ritaglio dal vivo con maniglie, poi salva sull'originale o accanto. I tuoi dati EXIF viaggiano con l'immagine."],
+      ["Un'animazione diventa un video", "Un WEBP, APNG o GIF animato diventa un normale MP4 - con barra di scorrimento, pausa e colori pieni - e sostituisce l'originale. L'encoder si scarica solo se lo chiedi, e gli stessi formati lenti ora si riaprono all'istante."],
+      ["La musica ha il suo schermo", "Un MP3, WAV, M4A, WMA o OGG mostra la copertina dell'album - o un'animazione di onde e particelle quando non ce n'è - con titolo, artista, album e formato in basso. Impostazioni dedicate decidono cosa succede alla fine di un brano, e un timer di spegnimento ferma la riproduzione entro tre ore."]
     ],
     "knowTitle": "Da sapere",
     "know": [
@@ -198,7 +208,9 @@
       ["Comparta carpetas por SFTP", "Publique las carpetas que elija por SFTP y ábralas en la aplicación Android o en cualquier cliente SFTP. Desactivado hasta que lo active."],
       ["Deshacer, y una Papelera de verdad", "Supr envía el archivo a la Papelera, Mayús+Supr la evita, y U retrocede por las últimas 50 operaciones - cambios de nombre y borrados incluidos. Donde Windows no guarda ninguna papelera, la aplicación lo dice en vez de fingir."],
       ["Los archivos comprimidos se abren como carpetas", "Un ZIP o CBZ se recorre como una carpeta normal - con pase de diapositivas, zoom y traducción. Nada se extrae por adelantado y nada queda después."],
-      ["Dibuje, recorte, guarde", "Pincel, rectángulo y elipse, un marco de recorte en vivo con tiradores, y luego guardar sobre el original o junto a él. Sus datos EXIF viajan con la imagen."]
+      ["Dibuje, recorte, guarde", "Pincel, rectángulo y elipse, un marco de recorte en vivo con tiradores, y luego guardar sobre el original o junto a él. Sus datos EXIF viajan con la imagen."],
+      ["Una animación se convierte en vídeo", "Un WEBP, APNG o GIF animado pasa a ser un MP4 normal - con barra de avance, pausa y color completo - y sustituye al original. El codificador se descarga solo si lo pides, y esos mismos formatos lentos ahora se reabren al instante."],
+      ["La música tiene su propia pantalla", "Un MP3, WAV, M4A, WMA u OGG muestra la portada del álbum - o una animación de ondas y partículas cuando no la hay - con el título, el artista, el álbum y el formato abajo. Sus propios ajustes deciden qué pasa al terminar la pista, y un temporizador de apagado detiene la reproducción como mucho a las tres horas."]
     ],
     "knowTitle": "Conviene saber",
     "know": [
@@ -229,7 +241,9 @@
       ["Partagez des dossiers via SFTP", "Publiez les dossiers de votre choix via SFTP et ouvrez-les dans l'application Android - ou dans n'importe quel client SFTP. Désactivé tant que vous ne l'activez pas."],
       ["Annuler, et une vraie Corbeille", "Suppr envoie le fichier à la Corbeille, Maj+Suppr passe outre, et U remonte les 50 dernières opérations - renommages et suppressions compris. Là où Windows ne tient aucune corbeille, l'application le dit au lieu de faire semblant."],
       ["Les archives s'ouvrent comme des dossiers", "Un ZIP ou CBZ se feuillette comme un dossier ordinaire - diaporama, zoom et traduction compris. Rien n'est extrait à l'avance et rien ne reste après."],
-      ["Dessinez, recadrez, enregistrez", "Pinceau, rectangle et ellipse, un cadre de recadrage vivant avec poignées, puis enregistrez sur l'original ou à côté. Vos données EXIF voyagent avec l'image."]
+      ["Dessinez, recadrez, enregistrez", "Pinceau, rectangle et ellipse, un cadre de recadrage vivant avec poignées, puis enregistrez sur l'original ou à côté. Vos données EXIF voyagent avec l'image."],
+      ["Une animation devient une vidéo", "Un WEBP, APNG ou GIF animé devient un MP4 ordinaire - avec barre de lecture, pause et couleurs complètes - et remplace l'original. L'encodeur n'est téléchargé que si vous le demandez, et ces mêmes formats lents se rouvrent désormais instantanément."],
+      ["La musique a son propre écran", "Un MP3, WAV, M4A, WMA ou OGG affiche la pochette de l'album - ou une animation d'ondes et de particules à défaut - avec le titre, l'artiste, l'album et le format en bas. Des réglages dédiés décident de ce qui se passe à la fin d'une piste, et une minuterie de veille arrête la lecture au bout de trois heures au plus."]
     ],
     "knowTitle": "Bon à savoir",
     "know": [
@@ -260,7 +274,9 @@
       ["Compartilhe pastas por SFTP", "Publique as pastas que você escolher por SFTP e abra-as no app Android - ou em qualquer cliente SFTP. Desligado até você ligar."],
       ["Desfazer, e uma Lixeira de verdade", "Del envia o arquivo para a Lixeira, Shift+Del passa por fora dela, e U percorre de volta as últimas 50 operações - renomeações e exclusões incluídas. Onde o Windows não mantém lixeira nenhuma, o aplicativo diz isso em vez de fingir."],
       ["Os arquivos compactados abrem como pastas", "Um ZIP ou CBZ é folheado como uma pasta comum - com apresentação, zoom e tradução. Nada é extraído com antecedência e nada fica para trás."],
-      ["Desenhe, recorte, salve", "Pincel, retângulo e elipse, uma moldura de corte ao vivo com alças, e então salve sobre o original ou ao lado dele. Seus dados EXIF viajam com a imagem."]
+      ["Desenhe, recorte, salve", "Pincel, retângulo e elipse, uma moldura de corte ao vivo com alças, e então salve sobre o original ou ao lado dele. Seus dados EXIF viajam com a imagem."],
+      ["Uma animação vira um vídeo", "Um WEBP, APNG ou GIF animado passa a ser um MP4 comum - com barra de busca, pausa e cor completa - e substitui o original. O codificador só é baixado se você pedir, e esses mesmos formatos lentos agora reabrem na hora."],
+      ["A música ganha uma tela", "Um MP3, WAV, M4A, WMA ou OGG mostra a capa do álbum - ou uma animação de ondas e partículas quando não há capa - com título, artista, álbum e formato embaixo. Ajustes próprios decidem o que acontece no fim da faixa, e um temporizador de sono para a reprodução em até três horas."]
     ],
     "knowTitle": "Vale saber",
     "know": [
@@ -291,7 +307,9 @@
       ["شارك المجلدات عبر SFTP", "انشر المجلدات التي تختارها عبر SFTP وافتحها في تطبيق أندرويد - أو في أي عميل SFTP. معطّل حتى تفعّله بنفسك."],
       ["تراجع، وسلة محذوفات حقيقية", "المفتاح Del يرسل الملف إلى سلة المحذوفات، وShift+Del يتجاوزها، وU يعود بك عبر آخر 50 عملية - بما فيها إعادة التسمية والحذف. وحيث لا يحتفظ ويندوز بسلة محذوفات أصلًا، يقول التطبيق ذلك بدل التظاهر."],
       ["الأرشيفات تُفتح كالمجلدات", "يُتصفَّح ملف ZIP أو CBZ كمجلد عادي - مع عرض الشرائح والتكبير والترجمة. لا شيء يُستخرج مسبقًا ولا شيء يبقى بعده."],
-      ["ارسم على الصورة، اقتصّها، احفظها", "فرشاة ومستطيل وقطع ناقص، وإطار اقتصاص حي بمقابض، ثم احفظ فوق الأصل أو بجانبه. وبيانات EXIF تسافر مع الصورة."]
+      ["ارسم على الصورة، اقتصّها، احفظها", "فرشاة ومستطيل وقطع ناقص، وإطار اقتصاص حي بمقابض، ثم احفظ فوق الأصل أو بجانبه. وبيانات EXIF تسافر مع الصورة."],
+      ["تحويل الصورة المتحركة إلى فيديو", "يتحول ملف WEBP أو APNG أو GIF المتحرك إلى ملف MP4 عادي - بشريط تقدم وإيقاف مؤقت وألوان كاملة - ويحل محل الأصل. لا يُنزَّل المُرمِّز إلا إذا طلبت ذلك، وهذه الصيغ البطيئة نفسها تُفتح الآن فورًا في المرة الثانية."],
+      ["للموسيقى شاشة خاصة بها", "يعرض ملف MP3 أو WAV أو M4A أو WMA أو OGG غلاف الألبوم - أو رسمًا متحركًا من الموجات والجسيمات عند غيابه - مع العنوان والفنان والألبوم والصيغة في الأسفل. إعدادات خاصة تقرر ما يحدث عند انتهاء المقطع، ومؤقّت النوم يوقف التشغيل خلال ثلاث ساعات على الأكثر."]
     ],
     "knowTitle": "جدير بالمعرفة",
     "know": [
@@ -322,7 +340,9 @@
       ["SFTP से फ़ोल्डर साझा करें", "अपने चुने हुए फ़ोल्डर SFTP से प्रकाशित करें और उन्हें Android ऐप में - या किसी भी SFTP क्लाइंट में - खोलें। जब तक चालू न करें, बंद रहता है।"],
       ["पूर्ववत करें, और एक असली रीसायकल बिन", "Del फ़ाइल को रीसायकल बिन में भेजता है, Shift+Del उसे छोड़ देता है, और U पिछली 50 क्रियाओं को वापस लेता है - नाम बदलना और हटाना भी। जहाँ विंडोज़ कोई बिन रखता ही नहीं, ऐप बहाना बनाने के बजाय यह कह देता है।"],
       ["संग्रह फ़ोल्डर की तरह खुलते हैं", "ZIP या CBZ सामान्य फ़ोल्डर की तरह देखा जाता है - स्लाइडशो, ज़ूम और अनुवाद सहित। कुछ भी पहले से नहीं खोला जाता और बाद में कुछ नहीं बचता।"],
-      ["चित्र पर बनाएँ, काटें, सहेजें", "ब्रश, आयत और दीर्घवृत्त, हैंडल वाला जीवंत क्रॉप फ़्रेम, फिर मूल पर या उसके पास सहेजें। आपका EXIF डेटा चित्र के साथ चलता है।"]
+      ["चित्र पर बनाएँ, काटें, सहेजें", "ब्रश, आयत और दीर्घवृत्त, हैंडल वाला जीवंत क्रॉप फ़्रेम, फिर मूल पर या उसके पास सहेजें। आपका EXIF डेटा चित्र के साथ चलता है।"],
+      ["एनिमेशन से असली वीडियो", "एनिमेटेड WEBP, APNG या GIF एक साधारण MP4 बन जाता है - सीक बार, पॉज़ और पूरे रंग के साथ - और मूल फ़ाइल की जगह ले लेता है। एन्कोडर तभी डाउनलोड होता है जब आप कहें, और वही धीमे प्रारूप अब दूसरी बार तुरंत खुलते हैं।"],
+      ["संगीत को अपनी स्क्रीन मिली", "MP3, WAV, M4A, WMA या OGG अपना एल्बम कवर दिखाता है - और कवर न हो तो लहरों और कणों का एनिमेशन - नीचे शीर्षक, कलाकार, एल्बम और प्रारूप के साथ। अपनी सेटिंग्स तय करती हैं कि ट्रैक खत्म होने पर क्या हो, और स्लीप टाइमर अधिकतम तीन घंटे में प्लेबैक रोक देता है।"]
     ],
     "knowTitle": "जानने योग्य",
     "know": [
@@ -353,7 +373,9 @@
       ["SFTP-এ ফোল্ডার শেয়ার", "আপনার বেছে নেওয়া ফোল্ডার SFTP-এ প্রকাশ করুন এবং Android অ্যাপে - বা যেকোনো SFTP ক্লায়েন্টে - খুলুন। না চালানো পর্যন্ত বন্ধ থাকে।"],
       ["ফিরিয়ে আনা, আর সত্যিকারের রিসাইকেল বিন", "Del ফাইলটিকে রিসাইকেল বিনে পাঠায়, Shift+Del তা এড়িয়ে যায়, আর U শেষ ৫০টি কাজ পিছিয়ে দেয় - নাম বদল আর মোছাসহ। যেখানে উইন্ডোজ কোনো বিনই রাখে না, অ্যাপ ভান না করে সেটাই বলে।"],
       ["আর্কাইভ খোলে ফোল্ডারের মতো", "ZIP বা CBZ সাধারণ ফোল্ডারের মতোই দেখা যায় - স্লাইডশো, জুম আর অনুবাদসহ। আগেভাগে কিছু খোলা হয় না, পরেও কিছু পড়ে থাকে না।"],
-      ["ছবিতে আঁকুন, ছাঁটুন, সংরক্ষণ করুন", "তুলি, আয়ত ও উপবৃত্ত, হাতলসহ জীবন্ত ক্রপ ফ্রেম, তারপর মূলটির উপরে বা তার পাশে সংরক্ষণ। আপনার EXIF তথ্য ছবির সঙ্গেই যায়।"]
+      ["ছবিতে আঁকুন, ছাঁটুন, সংরক্ষণ করুন", "তুলি, আয়ত ও উপবৃত্ত, হাতলসহ জীবন্ত ক্রপ ফ্রেম, তারপর মূলটির উপরে বা তার পাশে সংরক্ষণ। আপনার EXIF তথ্য ছবির সঙ্গেই যায়।"],
+      ["অ্যানিমেশন থেকে সত্যিকারের ভিডিও", "অ্যানিমেটেড WEBP, APNG বা GIF সাধারণ MP4 হয়ে যায় - সিক বার, পজ ও পূর্ণ রঙসহ - এবং মূল ফাইলের জায়গা নেয়। এনকোডার কেবল আপনি চাইলেই নামে, আর সেই ধীর ফরম্যাটগুলোই এখন দ্বিতীয়বার সঙ্গে সঙ্গে খোলে।"],
+      ["গানের নিজস্ব পর্দা", "MP3, WAV, M4A, WMA বা OGG তার অ্যালবাম কভার দেখায় - কভার না থাকলে ঢেউ ও কণার অ্যানিমেশন - নিচে শিরোনাম, শিল্পী, অ্যালবাম ও ফরম্যাট সহ। নিজস্ব সেটিংস ঠিক করে ট্র্যাক শেষ হলে কী হবে, আর স্লিপ টাইমার সর্বোচ্চ তিন ঘণ্টার মধ্যে বাজানো থামিয়ে দেয়।"]
     ],
     "knowTitle": "জেনে রাখা ভালো",
     "know": [
@@ -384,7 +406,9 @@
       ["SFTP سے فولڈر شیئر کریں", "اپنے منتخب فولڈر SFTP سے شائع کریں اور انہیں Android ایپ میں - یا کسی بھی SFTP کلائنٹ میں - کھولیں۔ جب تک آن نہ کریں، بند رہتا ہے۔"],
       ["واپسی، اور ایک اصلی ری سائیکل بِن", "Del فائل کو ری سائیکل بِن میں بھیجتا ہے، Shift+Del اُس سے آگے نکل جاتا ہے، اور U پچھلی 50 کارروائیاں واپس لے آتا ہے - نام کی تبدیلی اور حذف سمیت۔ جہاں ونڈوز کوئی بِن رکھتا ہی نہیں، ایپ بہانہ بنانے کے بجائے یہ کہہ دیتی ہے۔"],
       ["آرکائیو فولڈر کی طرح کھلتے ہیں", "ZIP یا CBZ عام فولڈر کی طرح دیکھا جاتا ہے - سلائیڈ شو، زوم اور ترجمے کے ساتھ۔ کچھ بھی پہلے سے نہیں کھولا جاتا اور بعد میں کچھ باقی نہیں رہتا۔"],
-      ["تصویر پر بنائیں، تراشیں، محفوظ کریں", "برش، مستطیل اور بیضوی، دستوں والا زندہ کراپ فریم، پھر اصل پر یا اُس کے ساتھ محفوظ کریں۔ آپ کا EXIF ڈیٹا تصویر کے ساتھ سفر کرتا ہے۔"]
+      ["تصویر پر بنائیں، تراشیں، محفوظ کریں", "برش، مستطیل اور بیضوی، دستوں والا زندہ کراپ فریم، پھر اصل پر یا اُس کے ساتھ محفوظ کریں۔ آپ کا EXIF ڈیٹا تصویر کے ساتھ سفر کرتا ہے۔"],
+      ["اینیمیشن سے اصل ویڈیو", "اینیمیٹڈ WEBP، APNG یا GIF ایک عام MP4 بن جاتا ہے - سیک بار، پاز اور مکمل رنگ کے ساتھ - اور اصل فائل کی جگہ لے لیتا ہے۔ اینکوڈر صرف آپ کے کہنے پر ڈاؤن لوڈ ہوتا ہے، اور وہی سست فارمیٹ اب دوسری بار فوراً کھلتے ہیں۔"],
+      ["موسیقی کی اپنی سکرین", "MP3، WAV، M4A، WMA یا OGG اپنا البم کور دکھاتا ہے - اور کور نہ ہو تو لہروں اور ذرات کی حرکت پذیری - نیچے عنوان، فنکار، البم اور فارمیٹ کے ساتھ۔ اپنی ترتیبات طے کرتی ہیں کہ ٹریک ختم ہونے پر کیا ہو، اور سلیپ ٹائمر زیادہ سے زیادہ تین گھنٹے میں چلنا روک دیتا ہے۔"]
     ],
     "knowTitle": "جاننے کے قابل",
     "know": [
@@ -415,7 +439,9 @@
       ["用 SFTP 分享文件夹", "把你挑选的文件夹通过 SFTP 发布，在 Android 应用里打开 - 也可以用任何 SFTP 客户端连接。默认关闭，你不开它就不动。"],
       ["撤销，以及真正的回收站", "Del 把文件送进回收站，Shift+Del 绕过它，U 则回退最近 50 步操作 - 包括重命名和删除。在 Windows 根本没有回收站的地方，程序会直说，而不是假装。"],
       ["压缩包像文件夹一样打开", "ZIP 或 CBZ 可以像普通文件夹一样浏览 - 幻灯片、缩放和翻译都在。事先不解包，事后不留痕。"],
-      ["在图片上绘制、裁剪、保存", "画笔、矩形和椭圆，带控制点的实时裁剪框，然后覆盖原图保存或另存到旁边。EXIF 数据随图片一起走。"]
+      ["在图片上绘制、裁剪、保存", "画笔、矩形和椭圆，带控制点的实时裁剪框，然后覆盖原图保存或另存到旁边。EXIF 数据随图片一起走。"],
+      ["把动画变成真正的视频", "动画 WEBP、APNG 或 GIF 会变成普通的 MP4 - 有进度条、可暂停、色彩完整 - 并取代原文件。编码器只在你要求时才下载，而这些原本很慢的格式现在第二次打开是瞬间的。"],
+      ["音乐也有了自己的画面", "MP3、WAV、M4A、WMA 或 OGG 会显示专辑封面 - 没有封面时则显示波纹与粒子动画 - 底部列出标题、艺术家、专辑和格式。专属设置决定曲目结束时的行为，睡眠定时器最多三小时后停止播放。"]
     ],
     "knowTitle": "值得一提",
     "know": [

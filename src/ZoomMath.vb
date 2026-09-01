@@ -4,7 +4,7 @@ Option Strict On
 Imports System.Drawing
 
 ' The geometry behind the classic zoom model - modern build only, like the rest of
-' the feature (SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md), so this whole file
+' the feature (012_SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md), so this whole file
 ' compiles to nothing in the x86 viewer.
 '
 ' WHY IT IS SEPARATE FROM Main_Form.Zoom.vb: everything here is a pure function of

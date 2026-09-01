@@ -79,7 +79,7 @@ Partial Public Class Main_Form
     ''' never happened, because the follow-up call landed inside the 40 ms throttle
     ''' window this very call had just opened, and was thrown away in silence.
     '''
-    ''' Since Ф1 of SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md it first asks
+    ''' Since Ф1 of 011_SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md it first asks
     ''' WHY the file would not load. Dropping it is right for a file that will not decode
     ''' and wrong for everything between us and it: a dropped SMB session used to shred a
     ''' healthy folder's list one file per keypress (§0.4).</summary>
@@ -1269,6 +1269,10 @@ Partial Public Class Main_Form
         ' New media from here on: anything already in flight for the previous one is
         ' now stale and must not touch the screen when it comes back.
         media_Generation += 1
+#If Not NETFRAMEWORK Then
+        ClearAudioSurface()
+        SetMediaDisplayKind(MediaKind.Image)
+#End If
 
         Dim previous_File_Name As String = Current_File_Name
         Current_File_Name = ""
@@ -1436,6 +1440,16 @@ Partial Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1030: P to load")
                     LoadStandardImageInPictureBox()
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1040: Picture box is set")
+#If Not NETFRAMEWORK Then
+                ElseIf KindOf(current_File_Extension) = MediaKind.Audio Then
+                    ' Audio branch (modern only): same playback engine (LibVLC) as video,
+                    ' but with audio surface instead of VideoView (SPECIFICATION_AUDIO_FIRST_CLASS_DOTNET10.md PA-1).
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1010: Audio to load")
+                    SetMediaDisplayKind(MediaKind.Audio)
+                    PlayVideoWithVlcAsync(Current_File_Name)
+                    RequestAudioMetadataAsync(Current_File_Name, media_Generation)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: Audio is set")
+#End If
                 ElseIf video_File_Extensions.Contains(current_File_Extension) Then
 #If NETFRAMEWORK Then
                     ' net48: try the IE WebBrowser first (H.264/MP4), LibVLC picks
@@ -1447,6 +1461,7 @@ Partial Public Class Main_Form
                     ' Modern (.NET 10): single video engine - straight to LibVLC,
                     ' no WebBrowser round-trip (SPECIFICATION_DOTNET10_MODERN_BUILD §6.2).
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1010: VLC to load")
+                    SetMediaDisplayKind(MediaKind.Video)
                     PlayVideoWithVlcAsync(Current_File_Name)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: VLC is set")
 #End If

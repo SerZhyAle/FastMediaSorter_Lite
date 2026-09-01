@@ -49,6 +49,7 @@ Partial Public Class Table_Form
     Private modernProductLabel As Label
     Private modernDataLayoutBuilt As Boolean
     Private modernTranslationPage As TabPage
+    Private modernAudioPage As TabPage
     Private modernSftpPage As TabPage
     Private modernAboutPage As TabPage
     Private ReadOnly modernSettingsRows As New List(Of ModernSettingRow)()
@@ -104,6 +105,7 @@ Partial Public Class Table_Form
         MinimizeBox = False
         MinimumSize = New Size(Sp(760), Sp(520))
         ClientSize = New Size(Sp(900), Sp(600))
+        RestoreModernSettingsWindowSize()
         BackColor = SettingsCanvas
         Font = New Font("Segoe UI", Sf(9.0F), FontStyle.Regular)
 
@@ -204,7 +206,7 @@ Partial Public Class Table_Form
         Tab_Control.Multiline = True
         Tab_Control.BackColor = SettingsCanvas
 
-        For Each page As TabPage In New TabPage() {Tab_Page_1, Tab_Page_2, Tab_Page_3, Tab_Page_4, Tab_Page_5, modernTranslationPage, modernSftpPage, modernAboutPage}
+        For Each page As TabPage In New TabPage() {Tab_Page_1, Tab_Page_2, Tab_Page_3, modernAudioPage, Tab_Page_4, Tab_Page_5, modernTranslationPage, modernSftpPage, modernAboutPage}
             page.BackColor = SettingsCanvas
             page.UseVisualStyleBackColor = False
             page.Padding = New Padding(0)
@@ -222,6 +224,7 @@ Partial Public Class Table_Form
         AddHandler SystemEvents.UserPreferenceChanged, AddressOf ModernSystemPreferenceChanged
         AddHandler FormClosed, AddressOf ModernSettingsFormClosed
         AddHandler Shown, AddressOf ModernSettingsShown
+        AddHandler FormClosing, AddressOf SaveModernSettingsWindowSize
         BuildModernDataLayout()
         StyleModernSettingsControls()
         LayoutModernSettingsPages()
@@ -237,7 +240,7 @@ Partial Public Class Table_Form
 
     Private Sub BuildModernSettingsNavigation()
         Dim top As Integer = Sp(70)
-        Dim navLabels As String() = {"Destination folders", "Viewing", "Video and quality", "Files and system",
+        Dim navLabels As String() = {"Destination folders", "Viewing", "Video and quality", "Audio", "Files and system",
                                      "OCR", "Translation", "Android / SFTP", "About"}
         modernSettingsNavButtons = New Button(navLabels.Length - 1) {}
 
@@ -268,9 +271,11 @@ Partial Public Class Table_Form
     End Sub
 
     Private Sub BuildExtraModernSettingsPages()
+        modernAudioPage = New TabPage With {.Name = "Tab_Page_Audio", .Text = "Audio"}
         modernTranslationPage = New TabPage With {.Name = "Tab_Page_Translation", .Text = "Translation"}
         modernSftpPage = New TabPage With {.Name = "Tab_Page_Sftp", .Text = "Android / SFTP"}
         modernAboutPage = New TabPage With {.Name = "Tab_Page_About", .Text = "About"}
+        Tab_Control.TabPages.Insert(3, modernAudioPage)
         Tab_Control.TabPages.Add(modernTranslationPage)
         Tab_Control.TabPages.Add(modernSftpPage)
         Tab_Control.TabPages.Add(modernAboutPage)
@@ -290,7 +295,58 @@ Partial Public Class Table_Form
     End Sub
 
     Private Sub ModernSettingsShown(sender As Object, e As EventArgs)
+        PositionModernSettingsOnOwnerMonitor()
         ScrollActiveModernPageToTop()
+    End Sub
+
+    ''' <summary>
+    ''' Restores the size independently of the main viewer's geometry. The values are
+    ''' bounded by the current monitor so a size saved on a larger display cannot make
+    ''' the settings window unusable on a smaller one.
+    ''' </summary>
+    Private Sub RestoreModernSettingsWindowSize()
+        Dim savedWidth As Integer
+        Dim savedHeight As Integer
+        If Not Integer.TryParse(GetSetting(App_name, Second_App_Name, "SettingsWindowWidth", "0"), savedWidth) OrElse
+           Not Integer.TryParse(GetSetting(App_name, Second_App_Name, "SettingsWindowHeight", "0"), savedHeight) OrElse
+           savedWidth <= 0 OrElse savedHeight <= 0 Then Return
+
+        FitModernSettingsClientSize(Screen.FromControl(Me).WorkingArea, savedWidth, savedHeight)
+    End Sub
+
+    ''' <summary>Places the settings beside its owner rather than on whichever monitor
+    ''' Windows chooses for a not-yet-visible form.</summary>
+    Private Sub PositionModernSettingsOnOwnerMonitor()
+        Dim ownerForm As Form = Owner
+        If ownerForm Is Nothing Then Return
+
+        Dim workArea As Rectangle = Screen.FromControl(ownerForm).WorkingArea
+        FitModernSettingsClientSize(workArea, ClientSize.Width, ClientSize.Height)
+        Location = New Point(
+            workArea.Left + Math.Max(0, (workArea.Width - Width) \ 2),
+            workArea.Top + Math.Max(0, (workArea.Height - Height) \ 2))
+    End Sub
+
+    Private Sub FitModernSettingsClientSize(workArea As Rectangle, desiredWidth As Integer, desiredHeight As Integer)
+        Dim chromeWidth As Integer = Width - ClientSize.Width
+        Dim chromeHeight As Integer = Height - ClientSize.Height
+        Dim maxClientWidth As Integer = Math.Max(1, workArea.Width - chromeWidth)
+        Dim maxClientHeight As Integer = Math.Max(1, workArea.Height - chromeHeight)
+        Dim minClientWidth As Integer = Math.Max(1, MinimumSize.Width - chromeWidth)
+        Dim minClientHeight As Integer = Math.Max(1, MinimumSize.Height - chromeHeight)
+
+        ClientSize = New Size(
+            Math.Min(Math.Max(desiredWidth, minClientWidth), maxClientWidth),
+            Math.Min(Math.Max(desiredHeight, minClientHeight), maxClientHeight))
+    End Sub
+
+    ''' <summary>Saves only a normal window's client area; maximising it must not
+    ''' replace the user's preferred size with the dimensions of one monitor.</summary>
+    Private Sub SaveModernSettingsWindowSize(sender As Object, e As FormClosingEventArgs)
+        If WindowState <> FormWindowState.Normal Then Return
+
+        SaveSetting(App_name, Second_App_Name, "SettingsWindowWidth", ClientSize.Width.ToString())
+        SaveSetting(App_name, Second_App_Name, "SettingsWindowHeight", ClientSize.Height.ToString())
     End Sub
 
     ''' <summary>A settings page always opens at its top. Both the TabPage and its flow
@@ -326,6 +382,7 @@ Partial Public Class Table_Form
         Dim navLabels As String() = {Localization.T("Получатели"),
              Localization.T("Просмотр"),
              Localization.T("Видео"),
+             Localization.T("Аудио"),
              Localization.T("Файлы"),
              Localization.T("OCR"),
              Localization.TC("settings", "Перевод"),
@@ -348,6 +405,7 @@ Partial Public Class Table_Form
         Dim titles As String() = {Localization.T("Каталоги-получатели"),
              Localization.T("Просмотр"),
              Localization.T("Видео и качество"),
+             Localization.T("Аудио"),
              Localization.T("Файлы и система"),
              Localization.T("OCR"),
              Localization.TC("settings", "Перевод"),
@@ -356,6 +414,7 @@ Partial Public Class Table_Form
         Dim subtitles As String() = {Localization.T("Назначьте папки для быстрого перемещения и копирования."),
              Localization.T("Настройте фон, информацию на экране и слайдшоу."),
              Localization.T("Качество изображения и привычное поведение видео."),
+             Localization.T("Обложки, управление и поведение аудиодорожек."),
              Localization.T("Операции с файлами, интеграция и язык интерфейса."),
              Localization.T("Распознавание текста на изображениях и параметры OCR."),
              Localization.T("Сервис и параметры перевода распознанного текста."),
@@ -474,12 +533,19 @@ Partial Public Class Table_Form
             Case "video_mute" : Return Localization.T("Запускать без звука")
             Case "video_volume" : Return Localization.T("Громкость видео")
             Case "section_video_behavior" : Return Localization.T("Поведение видео")
+            Case "include_video_navigation" : Return Localization.T("Учитывать видео при пролистывании файлов")
             Case "video_autoplay" : Return Localization.T("Запускать видео автоматически")
             Case "video_remember_position" : Return Localization.T("Запоминать позицию просмотра")
             Case "video_controls_delay" : Return Localization.T("Задержка скрытия панели, с")
             Case "video_controls_paused" : Return Localization.T("Показывать панель при паузе")
             Case "video_click_action" : Return Localization.T("Одиночный клик по видео")
             Case "video_end_action" : Return Localization.T("После окончания видео")
+            Case "section_audio_behavior" : Return Localization.T("Поведение аудио")
+            Case "include_audio_navigation" : Return Localization.T("Учитывать аудио при пролистывании файлов")
+            Case "audio_end_action" : Return Localization.T("После окончания аудио")
+            Case "audio_controls_visible" : Return Localization.T("Всегда показывать панель аудио")
+            Case "audio_visualiser" : Return Localization.T("Визуализатор без обложки")
+            Case "audio_sleep_timer" : Return Localization.T("Таймер сна, мин")
             Case "preferred_audio_language" : Return Localization.T("Предпочтительный язык звука")
             Case "preferred_subtitle_language" : Return Localization.T("Предпочтительный язык субтитров")
             Case "advance_after_copy" : Return Localization.T("Переходить к следующему файлу после копирования")
@@ -492,6 +558,7 @@ Partial Public Class Table_Form
             Case "after_file_operation" : Return Localization.T("После копирования или перемещения")
             Case "delete_to_recycle_bin" : Return Localization.T("Удалять в Корзину")
             Case "confirm_delete" : Return Localization.T("Спрашивать перед удалением")
+            Case "create_missing_destination" : Return Localization.T("Создавать отсутствующий каталог получателя")
             Case "include_subfolders" : Return Localization.T("Просматривать вложенные папки")
             Case "included_extensions" : Return Localization.T("Типы файлов")
             Case "custom_hotkeys" : Return Localization.T("Сочетания клавиш")
@@ -500,6 +567,10 @@ Partial Public Class Table_Form
             Case "recent_history" : Return Localization.T("Недавние файлы и папки")
             Case "startup_open" : Return Localization.T("При запуске открывать")
             Case "resume_last_playback" : Return Localization.T("Продолжать с последнего файла")
+            Case "section_archives" : Return Localization.T("Архивы")
+            Case "archive_cache_limit" : Return Localization.T("Лимит кэша архивов, МБ")
+            Case "archive_entry_limit" : Return Localization.T("Лимит одной записи архива, МБ")
+            Case "archive_entries_limit" : Return Localization.T("Лимит записей в архиве")
             Case "settings_export_personal" : Return Localization.T("Включить личные данные")
             Case "settings_export" : Return Localization.T("Экспорт настроек")
             Case "settings_import" : Return Localization.T("Импорт настроек")
@@ -525,6 +596,9 @@ Partial Public Class Table_Form
             Case "ocr_disk_cache" : Return Localization.T("Кэшировать результаты на диске")
             Case "ocr_cache_limit" : Return Localization.T("Максимальный размер OCR-кэша, МБ")
             Case "ocr_cache_clear" : Return Localization.T("Занято на диске")
+            Case "to_video_confirm" : Return Localization.T("Спрашивать перед заменой видео")
+            Case "decode_cache_limit" : Return Localization.T("Кэш декодирования, МБ")
+            Case "decode_cache_clear" : Return Localization.T("Занято на диске")
             Case "sftp_intro" : Return Localization.T("Доступ к медиатеке с телефона")
             Case "sftp_manager" : Return Localization.T("Публикация папок по SFTP")
             Case "sftp_guide" : Return Localization.T("Инструкция по подключению")
@@ -574,11 +648,16 @@ Partial Public Class Table_Form
             Case "video_mute" : Return Localization.T("Каждое видео начинает воспроизводиться с выключенным звуком.")
             Case "video_volume" : Return Localization.T("Начальная громкость воспроизведения, от 0 до 100 %.")
             Case "video_autoplay" : Return Localization.T("Если выключено, видео открывается на паузе.")
+            Case "include_video_navigation", "include_audio_navigation" : Return Localization.T("Выключенные типы не показываются в текущей папке и не входят в счётчик.")
             Case "video_remember_position" : Return Localization.T("Изменившийся файл всегда начинается с начала.")
             Case "video_controls_delay" : Return Localization.T("Через сколько секунд бездействия скрывать панель управления.")
             Case "video_controls_paused" : Return Localization.T("Не скрывает управление, пока видео поставлено на паузу.")
             Case "video_click_action" : Return Localization.T("Действие левой кнопки мыши на поверхности видео.")
             Case "video_end_action" : Return Localization.T("Что делать, когда воспроизведение достигло конца.")
+            Case "audio_end_action" : Return Localization.T("Что делать, когда аудиодорожка достигла конца.")
+            Case "audio_controls_visible" : Return Localization.T("Оставляет транспортную панель видимой во время аудио.")
+            Case "audio_visualiser" : Return Localization.T("Показывает фирменные волны и частицы, если в аудио нет встроенной обложки.")
+            Case "audio_sleep_timer" : Return Localization.T("Через сколько минут остановить воспроизведение. 0 отключает таймер.")
             Case "preferred_audio_language", "preferred_subtitle_language" : Return Localization.T("Если такой дорожки нет, выбор остаётся за плеером.")
             Case "advance_after_copy" : Return Localization.T("После копирования сразу показывается следующий файл. Снимите галочку, чтобы остаться на текущем.")
             Case "no_confirmation" : Return Localization.T("Файловые операции выполняются сразу. Используйте осторожно.")
@@ -589,6 +668,7 @@ Partial Public Class Table_Form
             Case "delete_to_recycle_bin" : Return Localization.T("На сетевом диске и съёмном носителе Корзины нет - там файл удаляется безвозвратно, и программа скажет об этом. Shift+DEL всегда удаляет мимо Корзины.")
             Case "confirm_delete" : Return Localization.T("Средний вариант удобен для быстрой разборки: удаление в Корзину проходит молча, а безвозвратное всё равно спросит.")
             Case "after_file_operation" : Return Localization.T("Выберите, что показывать после успешной операции.")
+            Case "create_missing_destination" : Return Localization.T("Если у каталога-получателя нет только последней папки, а та, что над ней, доступна - папка создаётся при первом переносе. Выключено - такой каталог считается ненайденным.")
             Case "include_subfolders" : Return Localization.T("Добавляет подходящие файлы из всех вложенных папок.")
             Case "included_extensions" : Return Localization.T("Выберите группы и отдельные форматы. Если отмечено всё - показываются все поддерживаемые.")
             Case "custom_hotkeys" : Return Localization.T("Переназначьте клавиши действий. Системные сочетания, F11 и Esc остаются за программой.")
@@ -596,6 +676,9 @@ Partial Public Class Table_Form
             Case "recent_history" : Return Localization.T("Открыть запись, удалить одну или очистить историю целиком.")
             Case "startup_open" : Return Localization.T("Что будет показано при обычном запуске без файла в командной строке.")
             Case "resume_last_playback" : Return Localization.T("При запуске открыть файл, который был на экране, и продолжить видео с той же позиции. Если файл недоступен - окно остаётся пустым.")
+            Case "archive_cache_limit" : Return Localization.T("Сколько места на диске может занимать временная распаковка одного открытого архива.")
+            Case "archive_entry_limit" : Return Localization.T("Запись крупнее этого не распаковывается, а показывает честный отказ вместо картинки.")
+            Case "archive_entries_limit" : Return Localization.T("Архив с большим числом записей показывается обрезанным до этого количества, и строка состояния предупреждает об этом.")
             Case "settings_export_personal" : Return Localization.T("История папок и позиции просмотра попадут в файл. API-ключи и пароли - никогда.")
             Case "settings_export" : Return Localization.T("Сохраняет параметры в файл. Личные данные - пути и позиции просмотра - не включаются.")
             Case "settings_import" : Return Localization.T("Читает параметры из файла. Прежний профиль сохраняется рядом с ним как .backup.")
@@ -617,6 +700,9 @@ Partial Public Class Table_Form
             Case "ocr_disk_cache" : Return Localization.T("Сохраняет распознанный текст, чтобы повторно не обрабатывать файл.")
             Case "ocr_cache_limit" : Return Localization.T("0 означает без ограничения; очистка по LRU выполняется после записи.")
             Case "ocr_cache_clear" : Return Localization.T("Текущий размер сохранённых результатов. Очистка не меняет настройки OCR.")
+            Case "to_video_confirm" : Return Localization.T("Оригинал удаляется безвозвратно, поэтому по умолчанию программа спрашивает.")
+            Case "decode_cache_limit" : Return Localization.T("Ускоряет повторное открытие анимаций и медленных форматов. 0 отключает кэш.")
+            Case "decode_cache_clear" : Return Localization.T("Текущий размер сохранённых результатов декодирования.")
             Case "sftp_intro" : Return Localization.T("Опубликуйте выбранные папки встроенным SFTP-сервером и открывайте их в мобильном приложении.")
             Case "sftp_manager" : Return Localization.T("Открывает отдельное приложение управления SFTP-доступом и опубликованными папками.")
             Case "sftp_guide" : Return Localization.T("Пошаговая настройка сервера, сети и подключения мобильного клиента.")
@@ -685,6 +771,8 @@ Partial Public Class Table_Form
         AddSettingRow(video, "video_mute", chk_Video_Mute, 34, True)
         AddSettingRow(video, "video_volume", num_Video_Volume, 100, True)
 
+        Dim audio As FlowLayoutPanel = CreateModernPageFlow(modernAudioPage)
+
         Dim files As FlowLayoutPanel = CreateModernPageFlow(Tab_Page_4)
         ' The global "copy mode" is gone from this window: copying is now asked for at the
         ' moment of the action (Shift+digit, the recipients overlay, both media menus,
@@ -733,7 +821,7 @@ Partial Public Class Table_Form
         BuildModernSftpPage()
         BuildModernAboutPage()
         If MultiWindowPolicy.IsSecondaryInstance() Then AddInformationBlock(files, "secondary_instance_warning")
-        AddExpandedSettingsRows(destinations, viewing, video, files, ocr)
+        AddExpandedSettingsRows(destinations, viewing, video, audio, files, ocr)
 
         For Each oldLabel As Control In New Control() {lbl_Color, lbl_Slideshow_Interval, lbl_Picture_at_Panel_Size,
                                                         lbl_Video_Volume, lblOcrTranslator, lblOcrEndpoint, lblOcrServer,

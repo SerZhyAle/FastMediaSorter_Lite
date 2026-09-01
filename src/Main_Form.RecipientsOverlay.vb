@@ -86,6 +86,10 @@ Partial Public Class Main_Form
             TrackRecipientsOverlayGeometry()
             recipients_Overlay.Owner = Me
             PositionRecipientsOverlay()
+            ' An owned form is not automatically born in its owner's topmost band.
+            ' Pin it before Show so an overlay created during startup is visible when
+            ' the viewer already has "always on top" enabled.
+            PinToViewerBand(recipients_Overlay)
             recipients_Overlay.Show()
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2400: recipients overlay build failed: " & ex.Message)
@@ -100,6 +104,13 @@ Partial Public Class Main_Form
         recipients_Overlay_Tracking = True
         AddHandler Me.LocationChanged, Sub() KeepRecipientsOverlayOnTop()
         AddHandler Me.SizeChanged, Sub() KeepRecipientsOverlayOnTop()
+#If Not NETFRAMEWORK Then
+        ' A verdict that lands after the overlay was built has to reach it, and by
+        ' RESTATING the rows rather than rebuilding them: a rebuild disposes every button
+        ' and its font, and a probe answering mid-click would then take the button out from
+        ' under the pointer.
+        AddHandler Me.SlotHealthChanged, Sub() ApplyRecipientsOverlayHealth()
+#End If
     End Sub
 
     ''' <summary>Re-asserts the overlay's position and z-order after the media
@@ -206,6 +217,9 @@ Partial Public Class Main_Form
             b.FlatAppearance.MouseDownBackColor = If(isDelete, Color.FromArgb(170, 50, 50), Color.FromArgb(96, 96, 96))
             ' Full path in the tooltip - the caption may be ellipsized.
             If Not isDelete Then
+#If Not NETFRAMEWORK Then
+                b.Name = Recipients_Move_Row_Name
+#End If
                 recipients_ToolTip.SetToolTip(b, If(showCopy,
                                                     Localization.TF("Перенести в: {0}", Hardkeys_to_move_mediafile(r.Item1)),
                                                     Hardkeys_to_move_mediafile(r.Item1)))
@@ -230,6 +244,7 @@ Partial Public Class Main_Form
                     .ForeColor = Color.Gainsboro,
                     .BackColor = Color.FromArgb(38, 62, 38)
                 }
+                c.Name = Recipients_Copy_Row_Name
                 c.FlatAppearance.BorderSize = 0
                 c.FlatAppearance.MouseOverBackColor = Color.FromArgb(52, 88, 52)
                 c.FlatAppearance.MouseDownBackColor = Color.FromArgb(66, 112, 66)
@@ -244,7 +259,61 @@ Partial Public Class Main_Form
 
         overlay.ClientSize = New Size(panelW, If(scrollRows, rowH * visibleRows, y))
         recipients_Overlay = overlay
+#If Not NETFRAMEWORK Then
+        ApplyRecipientsOverlayHealth()
+#End If
     End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>Names for the two zones of a recipient row, so the health pass can find
+    ''' them again without rebuilding the overlay (which would dispose and remake every
+    ''' button and its font).</summary>
+    Private Const Recipients_Move_Row_Name As String = "recipient_move_row"
+    Private Const Recipients_Copy_Row_Name As String = "recipient_copy_row"
+
+    ''' <summary>
+    ''' Redraws the rows from the CACHED slot verdicts (§3.5). It probes nothing: opening the
+    ''' overlay must never be able to cost a timeout, and a slot nobody has asked about yet is
+    ''' drawn normally - dimming what has not been checked would be a lie of the same shape as
+    ''' the one this feature removes.
+    ''' </summary>
+    Friend Sub ApplyRecipientsOverlayHealth()
+        If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed Then Return
+
+        Try
+            For Each control As Control In recipients_Overlay.Controls
+                Dim row As Button = TryCast(control, Button)
+                If row Is Nothing OrElse row.Tag Is Nothing Then Continue For
+                Dim slot As Integer = CInt(row.Tag)
+                If slot < 1 OrElse slot > 10 Then Continue For   ' the delete row has no destination
+
+                Dim is_Copy_Zone As Boolean = (row.Name = Recipients_Copy_Row_Name)
+                Dim destination As String = Hardkeys_to_move_mediafile(slot)
+                Dim verdict As SlotVerdict = CachedSlotVerdict(destination)
+                Dim unusable As Boolean = verdict IsNot Nothing AndAlso Not SlotHealthPolicy.IsUsable(verdict.State)
+
+                If unusable Then
+                    row.ForeColor = Color.FromArgb(122, 122, 122)
+                    row.BackColor = If(is_Copy_Zone, Color.FromArgb(40, 48, 40), Color.FromArgb(42, 42, 42))
+                Else
+                    row.ForeColor = Color.Gainsboro
+                    row.BackColor = If(is_Copy_Zone, Color.FromArgb(38, 62, 38), Color.FromArgb(52, 52, 52))
+                End If
+
+                If recipients_ToolTip IsNot Nothing Then
+                    Dim note As String = SlotHealthNote(verdict)
+                    Dim tip As String = If(is_Copy_Zone,
+                                           Localization.TF("Скопировать в: {0}", destination),
+                                           Localization.TF("Перенести в: {0}", destination))
+                    If note <> "" Then tip &= Environment.NewLine & note
+                    recipients_ToolTip.SetToolTip(row, tip)
+                End If
+            Next
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2401: recipients overlay health pass failed: " & ex.Message)
+        End Try
+    End Sub
+#End If
 
     Private Sub PositionRecipientsOverlay()
         If recipients_Overlay Is Nothing OrElse panel_Media Is Nothing Then Return

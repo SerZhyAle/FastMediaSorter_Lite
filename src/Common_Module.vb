@@ -1,4 +1,4 @@
-﻿Imports System.Runtime.InteropServices
+Imports System.Runtime.InteropServices
 
 Module Common_Module
     Public Hardkeys_to_move_mediafile(10) As String
@@ -6,7 +6,7 @@ Module Common_Module
     ''' <summary>
     ''' Derived from the UI language, not a setting of its own any more: the app ships
     ''' 13 interface languages and the chosen one lives in Localization.CurrentCode
-    ''' (registry value "UiLanguage" - see SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §2.4).
+    ''' (registry value "UiLanguage" - see 013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §2.4).
     '''
     ''' It is kept - and kept public - deliberately. Call sites that still ask
     ''' "is this Russian?" keep compiling and keep behaving sensibly: a German user gets
@@ -106,7 +106,7 @@ Module Common_Module
     ' as it has always worked; True = zoom in/out under the cursor (the "classic
     ' viewer" behaviour), opt-in only. Ctrl/Shift/Alt+wheel keep their meaning in both
     ' modes, and the wheel over video always flips. Modern build only - the x86 viewer
-    ' keeps the historical mechanics (SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md 4.4).
+    ' keeps the historical mechanics (012_SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md 4.4).
     Public Zoom_Wheel_Zooms As Boolean = False
     ' Floating list of destination folders (recipients) shown top-left over the
     ' media, so the current file can be sorted by clicking. Off by default (fresh

@@ -22,7 +22,7 @@ Public NotInheritable Class ModernViewerPreferences
     ''' (SPECIFICATION_COPY_ACTIONS_REWORK.md §3.2).</summary>
     Public Property AdvanceAfterCopy As Boolean = True
     ''' <summary>Whether DEL aims for the Recycle Bin at all
-    ''' (SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.9). Off means every deletion is
+    ''' (017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.9). Off means every deletion is
     ''' permanent and SAYS so - the same wording Shift+DEL produces, because it is the same
     ''' thing: the user asked for it.</summary>
     Public Property DeleteToRecycleBin As Boolean = True
@@ -31,6 +31,16 @@ Public NotInheritable Class ModernViewerPreferences
     ''' specification says is unreachable today and is what a triage session wants: a
     ''' recycled deletion goes straight through, a PERMANENT one still stops and asks.</summary>
     Public Property ConfirmDelete As String = "always"
+
+    ''' <summary>Make a recipient slot's final folder when it is not there yet
+    ''' (011_SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md §3.6). On, because
+    ''' "sort this card into 2026-08/best" otherwise means leaving the loop, making the
+    ''' folder in Explorer and finding the place in the list again - and the mechanism
+    ''' costs one line. Off makes a missing destination refuse with "not found", which is
+    ''' today's behaviour with a better sentence. Only ever the FINAL segment, and only
+    ''' when its parent answered (D6) - that is the difference between "the folder for this
+    ''' session did not exist yet" and building a mistyped share name.</summary>
+    Public Property CreateMissingDestination As Boolean = True
 
     Public Property IncludeSubfolders As Boolean
     Public Property IncludedExtensions As String = ""
@@ -49,6 +59,9 @@ Public NotInheritable Class ModernViewerPreferences
     Public Property SlideshowUiMode As String = "none"
 
     Public Property VideoAutoplay As Boolean = True
+    ''' <summary>Whether video files participate in folder navigation. On by default so
+    ''' existing profiles keep their historical mixed image/video browsing behaviour.</summary>
+    Public Property IncludeVideoInNavigation As Boolean = True
     Public Property RememberVideoPosition As Boolean = True
     Public Property VideoControlsHideDelaySec As Integer = 3
     Public Property ShowVideoControlsWhenPaused As Boolean = True
@@ -56,6 +69,25 @@ Public NotInheritable Class ModernViewerPreferences
     Public Property VideoEndAction As String = "stay"
     Public Property PreferredAudioLanguage As String = ""
     Public Property PreferredSubtitleLanguage As String = ""
+
+    ''' <summary>What to do when an audio track finishes (SPECIFICATION_AUDIO_FIRST_CLASS_DOTNET10.md PA-4).
+    ''' Default "next" - advancing at the end of a track makes sense in a music folder.</summary>
+    Public Property AudioEndAction As String = "next"
+    ''' <summary>Whether audio files participate in folder navigation. On by default so
+    ''' an upgrade never silently hides music from an existing sorting pass.</summary>
+    Public Property IncludeAudioInNavigation As Boolean = True
+    ''' <summary>Reserved for PK/PD. Document enumeration is not enabled until that
+    ''' feature ships, but a profile can already carry the explicit future choice.</summary>
+    Public Property IncludeDocumentInNavigation As Boolean = False
+    ''' <summary>Show audio transport bar always, never hide on idle
+    ''' (SPECIFICATION_AUDIO_FIRST_CLASS_DOTNET10.md PA-3). On by default - nothing else is
+    ''' on the audio surface to interact with, so hiding covers would be pointless.</summary>
+    Public Property AudioControlsAlwaysVisible As Boolean = True
+    ''' <summary>Show the branded fallback when the audio file has no embedded cover art.
+    ''' On by default: an otherwise empty audio surface is not useful.</summary>
+    Public Property AudioVisualiser As Boolean = True
+    ''' <summary>Stop playback after N minutes (PA-6). Zero means off.</summary>
+    Public Property SleepTimerMinutes As Integer = 0
 
     Public Property StartupOpenMode As String = "home"
     ''' <summary>Reopen the exact file that was on screen, and let the existing
@@ -69,6 +101,33 @@ Public NotInheritable Class ModernViewerPreferences
     Public Property RecentFilesLimit As Integer = 50
     Public Property RecentFoldersLimit As Integer = 100
     Public Property OcrDiskCacheMaxMb As Integer = 250
+    ''' <summary>Budget for the decode cache, in megabytes
+    ''' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §6.2). Zero means the
+    ''' cache is OFF - nothing read, nothing written - the same reading OcrDiskCacheMaxMb
+    ''' already documents. The ceiling is higher than the OCR cache's because one entry here
+    ''' is a whole transcoded animation, not a page of JSON.</summary>
+    Public Property DecodeCacheMaxMb As Integer = 512
+    ''' <summary>Whether "Replace with video" asks before it runs
+    ''' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §10.1). On, because the
+    ''' step it guards deletes the original PERMANENTLY. The confirmation's own checkbox is
+    ''' what turns it off, and this row is what turns it back on - a suppressed warning the
+    ''' user cannot find again is not a setting, it is a trap.</summary>
+    Public Property ConfirmReplaceWithVideo As Boolean = True
+
+    ''' <summary>Ceiling on an archive session's temporary directory, in megabytes
+    ''' (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §5.3, §9). Enforced by LRU
+    ''' eviction (§5.4): the entry just shown and its immediate neighbours are never
+    ''' evicted, so browsing never stalls even when the budget is tight.</summary>
+    Public Property ArchiveCacheMaxMb As Integer = 2048
+    ''' <summary>Ceiling on a single archive entry the viewer will extract, in megabytes
+    ''' (§5.3, §9). An entry over this size is refused with a plain message instead of
+    ''' being written to disk.</summary>
+    Public Property ArchiveMaxEntryMb As Integer = 512
+    ''' <summary>Ceiling on how many entries of one archive become rows in the file list
+    ''' (§5.3, §9). An archive with more entries than this is shown truncated, and the
+    ''' status line says so.</summary>
+    Public Property ArchiveMaxEntries As Integer = 20000
+
     Public Property CustomHotkeysJson As String = "{}"
     ''' <summary>Bounded JSON stores. They are intentionally profile keys rather than
     ''' binary settings so an old profile remains readable and portable.</summary>
@@ -97,6 +156,7 @@ Public NotInheritable Class ModernViewerPreferences
         p.AdvanceAfterCopy = ReadBool("AdvanceAfterCopy", p.AdvanceAfterCopy)
         p.DeleteToRecycleBin = ReadBool("DeleteToRecycleBin", p.DeleteToRecycleBin)
         p.ConfirmDelete = ReadConfirmDelete()
+        p.CreateMissingDestination = ReadBool("CreateMissingDestination", p.CreateMissingDestination)
         p.IncludeSubfolders = ReadBool("IncludeSubfolders", p.IncludeSubfolders)
         p.IncludedExtensions = NormalizeExtensionJson(ReadString("IncludedExtensions", p.IncludedExtensions))
         p.InterfaceScalePercent = ReadInt("InterfaceScalePercent", p.InterfaceScalePercent, 0, 150)
@@ -115,6 +175,7 @@ Public NotInheritable Class ModernViewerPreferences
         p.SlideshowUiMode = ReadChoice("SlideshowUiMode", p.SlideshowUiMode, "none", "toolbar", "toolbarAndStatus")
 
         p.VideoAutoplay = ReadBool("VideoAutoplay", p.VideoAutoplay)
+        p.IncludeVideoInNavigation = ReadBool("IncludeVideoInNavigation", p.IncludeVideoInNavigation)
         p.RememberVideoPosition = ReadBool("RememberVideoPosition", p.RememberVideoPosition)
         p.VideoControlsHideDelaySec = ReadInt("VideoControlsHideDelaySec", p.VideoControlsHideDelaySec, 1, 15)
         p.ShowVideoControlsWhenPaused = ReadBool("ShowVideoControlsWhenPaused", p.ShowVideoControlsWhenPaused)
@@ -123,12 +184,24 @@ Public NotInheritable Class ModernViewerPreferences
         p.PreferredAudioLanguage = ReadString("PreferredAudioLanguage", p.PreferredAudioLanguage)
         p.PreferredSubtitleLanguage = ReadString("PreferredSubtitleLanguage", p.PreferredSubtitleLanguage)
 
+        p.AudioEndAction = ReadChoice("AudioEndAction", p.AudioEndAction, "next", "stay", "repeat")
+        p.IncludeAudioInNavigation = ReadBool("IncludeAudioInNavigation", p.IncludeAudioInNavigation)
+        p.IncludeDocumentInNavigation = ReadBool("IncludeDocumentInNavigation", p.IncludeDocumentInNavigation)
+        p.AudioControlsAlwaysVisible = ReadBool("AudioControlsAlwaysVisible", p.AudioControlsAlwaysVisible)
+        p.AudioVisualiser = ReadBool("AudioVisualiser", p.AudioVisualiser)
+        p.SleepTimerMinutes = ReadInt("SleepTimerMinutes", p.SleepTimerMinutes, 0, 180)
+
         p.StartupOpenMode = ReadChoice("StartupOpenMode", p.StartupOpenMode, "home", "lastFolder", "lastFile")
         p.ResumeLastPlayback = ReadBool("ResumeLastPlayback", p.ResumeLastPlayback)
         p.AllowNewWindows = ReadBool("AllowNewWindows", p.AllowNewWindows)
         p.RecentFilesLimit = ReadInt("RecentFilesLimit", p.RecentFilesLimit, 0, 200)
         p.RecentFoldersLimit = ReadInt("RecentFoldersLimit", p.RecentFoldersLimit, 0, 200)
         p.OcrDiskCacheMaxMb = ReadInt("OcrDiskCacheMaxMb", p.OcrDiskCacheMaxMb, 0, 1024)
+        p.DecodeCacheMaxMb = ReadInt("DecodeCacheMaxMb", p.DecodeCacheMaxMb, 0, 8192)
+        p.ConfirmReplaceWithVideo = ReadBool("ConfirmReplaceWithVideo", p.ConfirmReplaceWithVideo)
+        p.ArchiveCacheMaxMb = ReadInt("ArchiveCacheMaxMb", p.ArchiveCacheMaxMb, 100, 16384)
+        p.ArchiveMaxEntryMb = ReadInt("ArchiveMaxEntryMb", p.ArchiveMaxEntryMb, 16, 4096)
+        p.ArchiveMaxEntries = ReadInt("ArchiveMaxEntries", p.ArchiveMaxEntries, 100, 100000)
         p.CustomHotkeysJson = NormalizeJson(ReadString("CustomHotkeys", p.CustomHotkeysJson))
         p.FolderZoomHistory = NormalizeArrayJson(ReadString("FolderZoomHistory", p.FolderZoomHistory))
         p.VideoPositionHistory = NormalizeArrayJson(ReadString("VideoPositionHistory", p.VideoPositionHistory))
@@ -145,6 +218,7 @@ Public NotInheritable Class ModernViewerPreferences
         WriteBool("AdvanceAfterCopy", AdvanceAfterCopy)
         WriteBool("DeleteToRecycleBin", DeleteToRecycleBin)
         WriteString("ConfirmDelete", ConfirmDelete)
+        WriteBool("CreateMissingDestination", CreateMissingDestination)
         WriteBool("IncludeSubfolders", IncludeSubfolders)
         WriteString("IncludedExtensions", NormalizeExtensionJson(IncludedExtensions))
         WriteString("InterfaceScalePercent", InterfaceScalePercent.ToString(CultureInfo.InvariantCulture))
@@ -159,6 +233,7 @@ Public NotInheritable Class ModernViewerPreferences
         WriteBool("StopSlideshowOnManualNavigation", StopSlideshowOnManualNavigation)
         WriteString("SlideshowUiMode", SlideshowUiMode)
         WriteBool("VideoAutoplay", VideoAutoplay)
+        WriteBool("IncludeVideoInNavigation", IncludeVideoInNavigation)
         WriteBool("RememberVideoPosition", RememberVideoPosition)
         WriteString("VideoControlsHideDelaySec", VideoControlsHideDelaySec.ToString(CultureInfo.InvariantCulture))
         WriteBool("ShowVideoControlsWhenPaused", ShowVideoControlsWhenPaused)
@@ -166,6 +241,14 @@ Public NotInheritable Class ModernViewerPreferences
         WriteString("VideoEndAction", VideoEndAction)
         WriteString("PreferredAudioLanguage", PreferredAudioLanguage)
         WriteString("PreferredSubtitleLanguage", PreferredSubtitleLanguage)
+
+        WriteString("AudioEndAction", AudioEndAction)
+        WriteBool("IncludeAudioInNavigation", IncludeAudioInNavigation)
+        WriteBool("IncludeDocumentInNavigation", IncludeDocumentInNavigation)
+        WriteBool("AudioControlsAlwaysVisible", AudioControlsAlwaysVisible)
+        WriteBool("AudioVisualiser", AudioVisualiser)
+        WriteString("SleepTimerMinutes", SleepTimerMinutes.ToString(CultureInfo.InvariantCulture))
+
         WriteString("StartupOpenMode", StartupOpenMode)
         WriteBool("ResumeLastPlayback", ResumeLastPlayback)
         ' Keep a primary process with an older in-memory value from resurrecting a
@@ -175,6 +258,11 @@ Public NotInheritable Class ModernViewerPreferences
         WriteString("RecentFilesLimit", RecentFilesLimit.ToString(CultureInfo.InvariantCulture))
         WriteString("RecentFoldersLimit", RecentFoldersLimit.ToString(CultureInfo.InvariantCulture))
         WriteString("OcrDiskCacheMaxMb", OcrDiskCacheMaxMb.ToString(CultureInfo.InvariantCulture))
+        WriteString("DecodeCacheMaxMb", DecodeCacheMaxMb.ToString(CultureInfo.InvariantCulture))
+        WriteBool("ConfirmReplaceWithVideo", ConfirmReplaceWithVideo)
+        WriteString("ArchiveCacheMaxMb", ArchiveCacheMaxMb.ToString(CultureInfo.InvariantCulture))
+        WriteString("ArchiveMaxEntryMb", ArchiveMaxEntryMb.ToString(CultureInfo.InvariantCulture))
+        WriteString("ArchiveMaxEntries", ArchiveMaxEntries.ToString(CultureInfo.InvariantCulture))
         WriteString("CustomHotkeys", NormalizeJson(CustomHotkeysJson))
         WriteString("FolderZoomHistory", NormalizeArrayJson(FolderZoomHistory))
         WriteString("VideoPositionHistory", NormalizeArrayJson(VideoPositionHistory))
@@ -288,10 +376,15 @@ Public NotInheritable Class ModernViewerPreferences
         VideoControlsHideDelaySec = Clamp(VideoControlsHideDelaySec, 1, 15)
         VideoSingleClickAction = Choice(VideoSingleClickAction, "pauseResume", "pauseResume", "nextFile")
         VideoEndAction = Choice(VideoEndAction, "stay", "stay", "nextFile", "repeat")
+
+        AudioEndAction = Choice(AudioEndAction, "next", "next", "stay", "repeat")
+        SleepTimerMinutes = Clamp(SleepTimerMinutes, 0, 180)
+
         StartupOpenMode = Choice(StartupOpenMode, "home", "home", "lastFolder", "lastFile")
         RecentFilesLimit = Clamp(RecentFilesLimit, 0, 200)
         RecentFoldersLimit = Clamp(RecentFoldersLimit, 0, 200)
         OcrDiskCacheMaxMb = Clamp(OcrDiskCacheMaxMb, 0, 1024)
+        DecodeCacheMaxMb = Clamp(DecodeCacheMaxMb, 0, 8192)
         IncludedExtensions = NormalizeExtensionJson(IncludedExtensions)
         PreferredAudioLanguage = If(PreferredAudioLanguage, String.Empty)
         PreferredSubtitleLanguage = If(PreferredSubtitleLanguage, String.Empty)
@@ -320,7 +413,7 @@ Public NotInheritable Class ModernViewerPreferences
 
     ''' <summary>
     ''' The delete-confirmation setting, migrated ONCE from the profile that predates it
-    ''' (SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.7).
+    ''' (017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.7).
     '''
     ''' A profile with no key of its own is not a fresh install - it is somebody who
     ''' already decided, through the old "no confirmations" checkbox, whether deleting asks.

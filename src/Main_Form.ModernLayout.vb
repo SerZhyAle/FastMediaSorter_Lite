@@ -106,6 +106,10 @@ Partial Public Class Main_Form
         ' Image editor entry point - shown for a still image, by the same predicate and
         ' at the same recompute point as the translate buttons.
         BuildImageEditorToolbarControls(flow_Toolbar)
+
+        ' "Replace with video" - the mirror image of the editor's predicate, shown only
+        ' while an animation is actually playing.
+        BuildToVideoToolbarControls(flow_Toolbar)
 #End If
 
         ' Right-edge "more" button + the priority/overflow partitioning that

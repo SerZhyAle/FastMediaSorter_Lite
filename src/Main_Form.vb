@@ -100,6 +100,11 @@ Public Class Main_Form
 #End If
     Private video_File_Extensions As New HashSet(Of String) From {".webm", ".ogg", ".3g2", ".mkv", ".3gp", ".mp4", ".m4v", ".m4a", ".mov", ".mp3", ".avi", ".wmv", ".asf", ".mpg", ".mpeg", ".flv", ".wav", ".wma"}
 
+#If Not NETFRAMEWORK Then
+    ' Track the kind of media currently displayed (audio/video/image)
+    ' for routing to the correct surface and controlling visibility/behavior
+    Private current_Media_Display_Kind As MediaKind = MediaKind.Image
+#End If
 
     Public Current_Folder_Path As String = ""
     Public Is_slide_show_mode As Boolean = False
@@ -249,7 +254,7 @@ Public Class Main_Form
     ' The one-operation-deep history of the x86 viewer. On the mainline these three are
     ' replaced by undo_Entries (Main_Form.FileOperations.vb) - a bounded stack that also
     ' covers deletions and renames - and are fenced away rather than left to rot as two
-    ' histories that can disagree (SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.5).
+    ' histories that can disagree (017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.5).
     Dim history_Source_File_Name As String = ""
     Dim history_Destination_File_Name As String = ""
     ' What the recorded operation actually WAS. Undo used to branch on the current
@@ -646,15 +651,59 @@ Public Class Main_Form
     ''' status line plus the log says the same thing and keeps the diagnostic code (E001..E105)
     ''' the user can quote, without taking the app hostage.
     ''' </summary>
-    Private Sub ReportOperationError(diagnostic_Code As String, ex As Exception)
+    ''' <param name="context_Folder">The FOLDER the operation was about, when the caller
+    ''' knows it - never a file path, because naming the folder is what tells the user which
+    ''' share is down. On the mainline it turns the sentence from one about .NET into
+    ''' one about the user's NAS (§3.7 of the slot-health specification): the exception is
+    ''' classified and the category is what reaches the status line, while the raw message
+    ''' keeps going to the log, which is what the "send the logs to the author" flow reads.
+    ''' An unrecognised failure keeps the old loud wording WITH the code - an unclassified
+    ''' failure must stay conspicuous (invariant 2).</param>
+    Private Sub ReportOperationError(diagnostic_Code As String, ex As Exception,
+                                     Optional context_Folder As String = "")
         Dim detail As String = diagnostic_Code & " " & If(ex Is Nothing, "", ex.Message)
         Try
-            lbl_Status.Text = Localization.TF("Ошибка операции: {0}", detail)
+            lbl_Status.Text = OperationErrorText(detail, ex, context_Folder)
         Catch
         End Try
         AppFileLogger.LogException("Operation failed (" & diagnostic_Code & ")", ex)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " " & detail)
     End Sub
+
+    ''' <summary>The sentence the user sees for a caught operation failure. net48 keeps the
+    ''' historical raw-exception line to the byte (invariant 10).</summary>
+    Private Shared Function OperationErrorText(detail As String, ex As Exception, context_Folder As String) As String
+#If NETFRAMEWORK Then
+        Return Localization.TF("Ошибка операции: {0}", detail)
+#Else
+        If Not String.IsNullOrEmpty(context_Folder) Then
+            Select Case PathFailure.Classify(ex)
+                Case PathFailureKind.Missing
+                    Return Localization.TF("! Каталог не найден: {0}", context_Folder)
+                Case PathFailureKind.Denied
+                    Return Localization.TF("! Нет доступа к каталогу: {0}", context_Folder)
+                Case PathFailureKind.Transport
+                    Return Localization.TF("! Нет связи с каталогом: {0}", context_Folder)
+                Case PathFailureKind.Invalid
+                    Return Localization.TF("! Недопустимый путь: {0}", context_Folder)
+            End Select
+        End If
+        Return Localization.TF("Ошибка операции: {0}", detail)
+#End If
+    End Function
+
+    ''' <summary>The containing folder of a file path, as string work only - never
+    ''' Directory.Exists, because this is called on the UI thread while handling a failure
+    ''' that is very often a share which has stopped answering, and that is exactly the call
+    ''' that would block there. Empty when there is no parent, which puts the caller back on
+    ''' the old wording rather than on a wrong noun.</summary>
+    Private Shared Function FolderOfFile(file_Path As String) As String
+        Try
+            Return If(System.IO.Path.GetDirectoryName(file_Path), "")
+        Catch
+            Return ""
+        End Try
+    End Function
 
     Private Sub Btn_Panel_Click(sender As Object, e As EventArgs) Handles btn_Panel.Click
         SlideShowStop()
@@ -668,6 +717,7 @@ Public Class Main_Form
         End If
         Image_Panel_Form.PrepareForDisplay()
         PinToViewerBand(Image_Panel_Form)
+        PositionChildOnViewerMonitor(Image_Panel_Form)
         Image_Panel_Form.ShowDialog(Me)
         ' A modally-closed form is NOT disposed, and this one is held in a field - so without
         ' this the last session's thumbnails (hundreds of MB on a big folder at a large card
@@ -690,42 +740,41 @@ Public Class Main_Form
             ' Build video extensions string for filter
             Dim videoExtensions As String = String.Join(";", video_File_Extensions.Select(Function(ext) "*" & ext))
             Dim imageExtensions As String = "*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.heif;*.avif;*.svg"
+            Dim archiveExtensions As String = ""
+            Dim archiveFilterGroup As String = ""
+#If Not NETFRAMEWORK Then
+            ' A ZIP/CBZ browses like a folder (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md
+            ' §2.1 point 3, §12 Ф4) - only what Openable_Extensions can actually read today;
+            ' 7z/RAR/CBR stay out of this dialog until Ф2 can open them for real.
+            archiveExtensions = String.Join(";", ArchiveEntryFilter.Openable_Extensions.Select(Function(ext) "*" & ext))
+            archiveFilterGroup = "|" & Localization.T("Архивы") & "|" & archiveExtensions
+#End If
 
             openFileDialog.Filter = "All Supported Files|" & imageExtensions & ";" & videoExtensions &
+                               If(archiveExtensions.Length > 0, ";" & archiveExtensions, "") &
                                "|Image Files|" & imageExtensions &
                                "|Video Files|" & videoExtensions &
+                               archiveFilterGroup &
                                "|JPEG Files|*.jpg;*.jpeg|PNG Files|*.png|GIF Files|*.gif|BMP Files|*.bmp|WebP Files|*.webp|HEIC Files|*.heic;*.heif|AVIF Files|*.avif|SVG Files|*.svg"
             openFileDialog.InitialDirectory = If(String.IsNullOrEmpty(Current_Folder_Path), Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), Current_Folder_Path)
             openFileDialog.Title = Localization.T("Выберите медиафайл")
             If openFileDialog.ShowDialog(Me) = DialogResult.OK Then
                 Dim selected_File_Path As String = openFileDialog.FileName
-#If Not NETFRAMEWORK Then
-                ' Same rule as the folder picker: another file is another context, and the
-                ' archive's temporary directory goes with the archive (§4.3).
-                LeaveArchive()
-#End If
-                Dim selected_Folder_Path As String = Path.GetDirectoryName(selected_File_Path)
-
-                ' Set up the necessary state for external input processing
-                Current_Folder_Path = selected_Folder_Path
-                Current_Image_Path = selected_File_Path
-                Current_File_Name = selected_File_Path
-
-                ' Update the folder combo box
-                is_TextBox_Editing = True
-                cmbox_Media_Folder.Text = Current_Folder_Path
-                is_TextBox_Editing = False
-
-                ' Mark as external input to ensure proper processing
-                is_External_Input_Received = True
-                was_External_Input_Previously = True
-
-                ' Reset file index and count for the new selection
-                current_File_Index = 0
-                total_File_Count = 1
-
-                ReadShowMediaFile(Mode_FolderAndKnownFile)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2455: File chosen - " & selected_File_Path)
+
+                ' ProcessArgument is the ONE ingress for a concrete file - the command line,
+                ' a second instance, drag-drop, the Recent list and the editor all arrive here.
+                ' The picker used to duplicate a subset of that setup and then call
+                ' ReadShowMediaFile(Mode_FolderAndKnownFile) directly; in that mode
+                ' UpdateFileIndexAndList deliberately does NOT rebuild the list while
+                ' is_External_Input_Received is set, so the missing "files_List = {the chosen
+                ' file}" line meant the display pipeline could resolve the PREVIOUS entry and
+                ' the chosen file simply never opened. Delegating also brings the network
+                ' probe (a dead share no longer freezes the window), the "keep what is on
+                ' screen when the open fails" rule, the locked-file watch, and - on the
+                ' mainline - the single archive exit, so no second archive transition is
+                ' needed here.
+                ProcessArgument(selected_File_Path)
             End If
         End Using
     End Sub

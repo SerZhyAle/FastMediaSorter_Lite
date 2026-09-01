@@ -6,7 +6,7 @@ Imports System.IO
 ''' <summary>
 ''' The archive cache on disk: one directory per session, and the three lines of defence
 ''' that make sure the disk goes back to the state it was in
-''' (SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §4, invariant 4).
+''' (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §4, invariant 4).
 '''
 ''' The point of the third line - the orphan sweep - is that the first two can be skipped:
 ''' a killed process, a power cut and a crash all leave a session directory behind, and

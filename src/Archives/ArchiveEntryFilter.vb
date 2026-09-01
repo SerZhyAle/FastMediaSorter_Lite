@@ -5,7 +5,7 @@ Imports System.IO
 
 ''' <summary>
 ''' Which entries of an archive become files in the list
-''' (SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §3.3, §6.3).
+''' (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §3.3, §6.3).
 '''
 ''' Pure, and separate from <see cref="ArchiveSession"/> on purpose: it decides what the
 ''' user sees AND what is allowed to touch the disk, and both answers are worth pinning

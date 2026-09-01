@@ -7,7 +7,7 @@ Imports System.Security.Principal
 Imports System.Threading
 
 ' The act of deleting, both ways - and, since Ф3, the act of taking it back.
-' SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.4 and §3.6. Modern build only - the
+' 017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.4 and §3.6. Modern build only - the
 ' x86 viewer keeps its bare File.Delete (invariant 10).
 '
 ' Everything shell-affine in the application lives in this one file, which is the point:

@@ -1,5 +1,6 @@
 Option Strict On
 
+Imports System.Drawing
 Imports System.Windows.Forms
 
 ' The "keep on top" z-order band, in one place.
@@ -33,6 +34,31 @@ Partial Public Class Main_Form
             If child.TopMost <> Me.TopMost Then child.TopMost = Me.TopMost
         Catch ex As Exception
             AppFileLogger.LogException("Main_Form pin child window", ex)
+        End Try
+    End Sub
+
+    ''' <summary>Places a window opened by the viewer on the viewer's current monitor.
+    '''
+    ''' Window coordinates are global to the virtual desktop.  Therefore a remembered
+    ''' editor/panel rectangle can be perfectly valid while still being on another
+    ''' monitor; FormStartPosition also falls back to the primary monitor before the
+    ''' child has an owner.  Centre after the owner has been assigned instead.
+    ''' </summary>
+    Friend Sub PositionChildOnViewerMonitor(child As Form)
+        If child Is Nothing OrElse child.IsDisposed Then Return
+        Try
+            Dim workArea As Rectangle = Screen.FromControl(Me).WorkingArea
+            Dim width As Integer = Math.Min(child.Width, workArea.Width)
+            Dim height As Integer = Math.Min(child.Height, workArea.Height)
+            If width <> child.Width OrElse height <> child.Height Then
+                child.Size = New Size(width, height)
+            End If
+
+            child.Location = New Point(
+                workArea.Left + Math.Max(0, (workArea.Width - child.Width) \ 2),
+                workArea.Top + Math.Max(0, (workArea.Height - child.Height) \ 2))
+        Catch ex As Exception
+            AppFileLogger.LogException("Main_Form position child window", ex)
         End Try
     End Sub
 

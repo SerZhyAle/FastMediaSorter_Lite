@@ -16,7 +16,22 @@ Partial Public Class Main_Form
     Private Sub InitializeExtensionLists()
         all_Supported_Extensions.Clear()
         all_Supported_Extensions.UnionWith(Image_File_Extensions)
+#If Not NETFRAMEWORK Then
+        ' video_File_Extensions also contains audio containers because LibVLC plays both.
+        ' Navigation settings deliberately split that playback set by MediaKind.
+        For Each extension As String In video_File_Extensions
+            Select Case KindOf(extension)
+                Case MediaKind.Video
+                    If modern_Preferences Is Nothing OrElse modern_Preferences.IncludeVideoInNavigation Then all_Supported_Extensions.Add(extension)
+                Case MediaKind.Audio
+                    If modern_Preferences Is Nothing OrElse modern_Preferences.IncludeAudioInNavigation Then all_Supported_Extensions.Add(extension)
+                Case Else
+                    all_Supported_Extensions.Add(extension)
+            End Select
+        Next
+#Else
         all_Supported_Extensions.UnionWith(video_File_Extensions)
+#End If
         all_Supported_Extensions.UnionWith(web_specific_image_extensions)
 #If Not NETFRAMEWORK Then
         ApplyConfiguredExtensionFilter()
@@ -188,6 +203,10 @@ Partial Public Class Main_Form
         BgWorker.WorkerSupportsCancellation = True
 #If Not NETFRAMEWORK Then
         modern_Preferences = ModernViewerPreferences.Load()
+        ' The decode cache runs on pool threads (the loading indicator and the prefetch
+        ' worker both decode there) and cannot reach the form, so the budget is mirrored
+        ' into it - here at startup, and again whenever the settings window changes it.
+        DecodeCacheStore.BudgetMb = modern_Preferences.DecodeCacheMaxMb
 #End If
 #If NETFRAMEWORK Then
         Web_Browser.ObjectForScripting = Me
@@ -894,7 +913,9 @@ Partial Public Class Main_Form
             ' chkbox_Top_Most was restored above, so the viewer may already be pinned -
             ' the restored settings window has to join that band, not hide behind it.
             PinToViewerBand(Table_Form)
-            Table_Form.Show()
+            ' TopMost puts it into the right band; the explicit owner also keeps it
+            ' above the viewer within that band.
+            Table_Form.Show(Me)
         End If
         is_TextBox_Editing = False
 
@@ -962,6 +983,15 @@ Partial Public Class Main_Form
         ' Now the form is at its final size and panel_Media exists - build the
         ' recipients overlay if the user left it on.
         ApplyRecipientsOverlay()
+
+#If Not NETFRAMEWORK Then
+        ' Ask the ten slots whether they are alive, in the background (§3.3, Ф4). Here
+        ' rather than in Form1_Load on purpose: by the Shown event the first image is
+        ' already on screen, so ten probes against a share that may be asleep cannot delay
+        ' it. Nothing waits for the answers - they only fill the cache, so the first press
+        ' of a slot is usually free.
+        PrewarmSlotHealth()
+#End If
     End Sub
 
 #If Not NETFRAMEWORK Then

@@ -10,7 +10,7 @@ Public Module CompanionGlobals
     Public ReadOnly App_name As String = "SZA"
     Public ReadOnly Second_App_Name As String = "FastMediaSorter"
 
-    ' The old RU/EN boolean is gone: since SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A'
+    ' The old RU/EN boolean is gone: since 013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A'
     ' the language is an ISO code and every call site goes through Localization.T/TF.
     ' Nothing here needs a two-way branch, so keeping a derived boolean would only invite
     ' new ones - a parity test asserts none comes back.

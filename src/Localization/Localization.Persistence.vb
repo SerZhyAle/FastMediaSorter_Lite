@@ -4,7 +4,7 @@ Imports Microsoft.VisualBasic
 
 ' <summary>
 ' Where the chosen UI language lives and how an existing install migrates onto it.
-' See docs/specifications/SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §2.4.
+' See docs/specifications/013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §2.4.
 ' </summary>
 Partial Public NotInheritable Class Localization
 

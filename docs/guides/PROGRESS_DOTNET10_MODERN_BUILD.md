@@ -8,7 +8,7 @@
 
 Спецификации-источники (все решения - там):
 - [SPECIFICATION_DOTNET10_MODERN_BUILD.md](../specifications/done/SPECIFICATION_DOTNET10_MODERN_BUILD.md) - эпик (фазы Ф0-Ф7)
-- [SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md](../specifications/SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md) - зум/панорама (Ф-Z0..Ф-Z5, все O-Z-* решены)
+- [012_SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md](../specifications/012_SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md) - зум/панорама (Ф-Z0..Ф-Z5, все O-Z-* решены)
 - [SPECIFICATION_MKV_ISO_PLAYBACK_DOTNET10.md](../specifications/done/SPECIFICATION_MKV_ISO_PLAYBACK_DOTNET10.md) - MKV/ISO (Ф-A..Ф-G)
 
 Дата старта: 2026-07-16.

@@ -6,7 +6,7 @@ Imports System.Text
 
 ''' <summary>
 ''' Where an archive session's extracted entries live, and what they are called
-''' (SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §3.2, §4.1).
+''' (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §3.2, §4.1).
 '''
 ''' Every function here is pure - a string in, a string out, no file system - because
 ''' this is where the feature's second invariant is enforced: <b>the destination name is

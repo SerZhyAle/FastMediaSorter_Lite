@@ -39,7 +39,7 @@ Partial Public NotInheritable Class MainWindow
 
     Private Sub BuildUi()
         ' Script font + text direction for the active language, before any control
-        ' exists - children inherit both (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
+        ' exists - children inherit both (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
         UiLanguage.ApplyTo(Me)
         Me.Text = "Fast Media Sorter: Share Manager"
         Me.StartPosition = FormStartPosition.CenterScreen

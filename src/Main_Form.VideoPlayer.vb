@@ -296,10 +296,18 @@ Partial Public Class Main_Form
             StopGifLoopPlayback()
 
             is_WebBrowser_Visible = False
+#If Not NETFRAMEWORK Then
+            is_PictureBox1_Visible = IsAudioNowPlaying()
+#Else
             is_PictureBox1_Visible = False
+#End If
             is_PictureBox2_Visible = False
             Web_Browser.Visible = False
+#If Not NETFRAMEWORK Then
+            Picture_Box_1.Visible = IsAudioNowPlaying()
+#Else
             Picture_Box_1.Visible = False
+#End If
             Picture_Box_2.Visible = False
 #If NETFRAMEWORK Then
             ' Clear leftover WebBrowser content when VLC takes over. Modern never
@@ -310,8 +318,13 @@ Partial Public Class Main_Form
 
             vlc_Video_View.Location = Picture_Box_1.Location
             vlc_Video_View.Size = Picture_Box_1.Size
+#If Not NETFRAMEWORK Then
+            vlc_Video_View.Visible = Not IsAudioNowPlaying()
+            If Not IsAudioNowPlaying() Then vlc_Video_View.BringToFront()
+#Else
             vlc_Video_View.Visible = True
             vlc_Video_View.BringToFront()
+#End If
             ' VLC just took the top of the z-order - reassert the recipients overlay.
             KeepRecipientsOverlayOnTop()
 
@@ -322,7 +335,11 @@ Partial Public Class Main_Form
             QueueRememberedVideoPosition(file_Path)
 #End If
             Dim media As LibVLCSharp.Shared.Media = CreateVlcMedia(file_Path)
+#If Not NETFRAMEWORK Then
+            If Is_Video_Loop OrElse If(IsAudioNowPlaying(), AudioEndAction() = "repeat", VideoEndAction() = "repeat") Then media.AddOption(":input-repeat=65535")
+#Else
             If Is_Video_Loop OrElse VideoEndAction() = "repeat" Then media.AddOption(":input-repeat=65535")
+#End If
 #If Not NETFRAMEWORK Then
             pause_New_Video_When_Ready = Not VideoShouldAutoplay()
 #End If
@@ -333,6 +350,7 @@ Partial Public Class Main_Form
             is_Vlc_Playing = True
             current_Loaded_File_Name = file_Path
 #If Not NETFRAMEWORK Then
+            If IsAudioNowPlaying() Then BeginAudioPlayback()
             ' Up front, then it fades out on its own - so a new video announces that it
             ' HAS a transport, instead of leaving the user to discover it by waving the
             ' mouse about.
@@ -420,7 +438,7 @@ Partial Public Class Main_Form
 
 #If Not NETFRAMEWORK Then
     Private Sub Vlc_Media_Player_EndReached(sender As Object, e As EventArgs)
-        If VideoEndAction() <> "nextFile" Then Return
+        If If(IsAudioNowPlaying(), AudioEndAction() <> "next", VideoEndAction() <> "nextFile") Then Return
         Try
             If Me.IsDisposed OrElse Not Me.IsHandleCreated Then Return
             Me.BeginInvoke(Sub()

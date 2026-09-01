@@ -41,7 +41,7 @@ Public NotInheritable Class InternetAccessForm
 
     Private Sub BuildUi()
         ' Script font + text direction for the active language, before any control
-        ' exists - children inherit both (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
+        ' exists - children inherit both (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
         UiLanguage.ApplyTo(Me)
         Me.Text = Localization.T("Инструкция по пробросу порта")
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)

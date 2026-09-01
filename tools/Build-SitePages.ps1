@@ -16,7 +16,7 @@
     output path follows. The root index.html's own switcher is hand-authored and
     must be kept in step by hand.
 
-    See docs/specifications/SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block B.
+    See docs/specifications/013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block B.
 
     The generated HTML is a render target - edit site-copy.json and re-run, never the
     pages themselves (canon invariant 16).

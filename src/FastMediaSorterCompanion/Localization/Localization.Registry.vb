@@ -9,7 +9,7 @@ Option Strict On
 ' links the engine and forgets its tables fails the build with BC30451 instead of
 ' silently shipping an English-only exe.
 '
-' See docs/specifications/SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A'.
+' See docs/specifications/013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A'.
 ' </summary>
 Partial Public NotInheritable Class Localization
 

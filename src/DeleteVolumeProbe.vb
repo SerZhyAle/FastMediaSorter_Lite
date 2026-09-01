@@ -8,7 +8,7 @@ Imports Microsoft.Win32
 
 ' The impure half of the delete policy: the facts about a volume, and the sentences
 ' built from the decision they lead to.
-' SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.2 and §3.7. Modern build only.
+' 017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.2 and §3.7. Modern build only.
 '
 ' Kept out of DeletePolicy.vb on purpose - that file has to stay free of the registry
 ' and DriveInfo so the rule matrix can be proven in a test. What lives here is

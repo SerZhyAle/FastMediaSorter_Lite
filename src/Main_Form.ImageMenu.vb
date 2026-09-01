@@ -65,6 +65,16 @@ Partial Public Class Main_Form
             image_Menu.Items.Add(New ToolStripSeparator())
         End If
 
+        ' --- and the animation's counterpart, in the same first position and under the
+        ' opposite predicate: an animation cannot be edited, and a still cannot be turned
+        ' into a video. There is no hotkey for it - the letters near this concept are taken,
+        ' and a one-key path to a permanent delete is not something to add quietly (§11).
+        If IsCurrentAnimation() Then
+            AddMenuItem(image_Menu.Items, Localization.T("Заменить видео.."),
+                        Sub() StartReplaceAnimationWithVideo())
+            image_Menu.Items.Add(New ToolStripSeparator())
+        End If
+
         ' --- the picture itself
         AddMenuItem(image_Menu.Items, Localization.T("Повернуть по часовой (R)"),
                     Sub() RotateActiveImage(True))

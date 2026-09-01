@@ -13,6 +13,10 @@
       ri   - Reinstall: stop, rebuild, redeploy and LAUNCH locally (reinstall.ps1)
       rit  - Reinstall and launch minimized to tray (reinstall.ps1 -Tray)
       rin  - Reinstall without launching (reinstall.ps1 -NoLaunch)
+      ris  - Reinstall the SERVER edition on this PC: build the Server setup.exe,
+             install it (one UAC prompt) and verify the service really runs this
+             build (reinstall-server.ps1)
+      risc - ..with a full uninstall/install cycle instead of an in-place upgrade
 
     Packaging (still local, no tag):
       bi   - Build the copy-anywhere offline installer setup.exe (tools\Build-Installer.ps1)
@@ -69,6 +73,8 @@ $scripts = @{
     'ri'   = @{ Path = 'reinstall.ps1'; Args = @{} }
     'rit'  = @{ Path = 'reinstall.ps1'; Args = @{ Tray = $true } }
     'rin'  = @{ Path = 'reinstall.ps1'; Args = @{ NoLaunch = $true } }
+    'ris'  = @{ Path = 'reinstall-server.ps1'; Args = @{} }
+    'risc' = @{ Path = 'reinstall-server.ps1'; Args = @{ Clean = $true } }
     'bi'   = @{ Path = 'tools\Build-Installer.ps1'; Args = @{} }
     'bib'  = @{ Path = 'tools\Build-Installer.ps1'; Args = @{ IncludeBest = $true } }
     'off'  = @{ Path = 'tools\Build-OfflineRelease.ps1'; Args = @{} }
@@ -95,6 +101,8 @@ function Show-Help {
     Write-Host "  ri   - Reinstall: stop, rebuild, redeploy and LAUNCH" -ForegroundColor Cyan
     Write-Host "  rit  - Reinstall and launch minimized to tray" -ForegroundColor Cyan
     Write-Host "  rin  - Reinstall without launching" -ForegroundColor Cyan
+    Write-Host "  ris  - Build + install the SERVER edition here, then verify the service" -ForegroundColor Cyan
+    Write-Host "  risc - ..full uninstall/install cycle instead of an in-place upgrade" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Packaging (local, no tag):" -ForegroundColor Yellow
     Write-Host "  bi   - Copy-anywhere offline installer setup.exe" -ForegroundColor Cyan

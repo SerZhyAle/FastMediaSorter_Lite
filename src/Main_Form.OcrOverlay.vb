@@ -17,6 +17,9 @@ Imports System.Windows.Forms
 Partial Public Class Main_Form
 
     Private Sub Picture_Box_1_Paint(sender As Object, e As PaintEventArgs) Handles Picture_Box_1.Paint
+#If Not NETFRAMEWORK Then
+        PaintAudioSurface(e.Graphics, Picture_Box_1.ClientRectangle)
+#End If
         PaintOcrOverlay(Picture_Box_1, e)
         PaintInfoOverlay(Picture_Box_1, e)
     End Sub

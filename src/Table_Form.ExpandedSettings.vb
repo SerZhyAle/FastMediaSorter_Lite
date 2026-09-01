@@ -24,12 +24,15 @@ Partial Public Class Table_Form
     ''' rebuilding the page.</summary>
     Private ocrCacheSizeLabel As Label
 
+    ''' <summary>Same, for the decode cache row (§6.2).</summary>
+    Private decodeCacheSizeLabel As Label
+
     ''' <summary>The "include personal data" opt-in of §7.4. Deliberately a field rather
     ''' than a preference: it is a decision about one export, not a setting.</summary>
     Private exportPersonalData As Boolean
 
     Private Sub AddExpandedSettingsRows(destinations As FlowLayoutPanel, viewing As FlowLayoutPanel,
-                                        video As FlowLayoutPanel, files As FlowLayoutPanel,
+                                        video As FlowLayoutPanel, audio As FlowLayoutPanel, files As FlowLayoutPanel,
                                         ocr As FlowLayoutPanel)
         Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
 
@@ -58,6 +61,8 @@ Partial Public Class Table_Form
                             Sub(v) p.SlideshowUiMode = v)
 
         AddSectionHeader(video, "section_video_behavior")
+        AddNavigationKindCheck(video, "include_video_navigation", p.IncludeVideoInNavigation,
+                               Sub(v) p.IncludeVideoInNavigation = v)
         AddPreferenceCheck(video, "video_autoplay", p.VideoAutoplay, Sub(v) p.VideoAutoplay = v)
         AddPreferenceCheck(video, "video_remember_position", p.RememberVideoPosition, Sub(v) p.RememberVideoPosition = v)
         AddPreferenceNumber(video, "video_controls_delay", p.VideoControlsHideDelaySec, 1, 15, Sub(v) p.VideoControlsHideDelaySec = v)
@@ -66,9 +71,17 @@ Partial Public Class Table_Form
                             {Choice("pauseResume", "Пауза / продолжить"), Choice("nextFile", "Следующий файл")}, Sub(v) p.VideoSingleClickAction = v)
         AddPreferenceChoice(video, "video_end_action", p.VideoEndAction,
                             {Choice("stay", "Оставить последний кадр"), Choice("nextFile", "Следующий файл"), Choice("repeat", "Повторить")}, Sub(v) p.VideoEndAction = v)
-        AddPreferenceChoice(video, "preferred_audio_language", p.PreferredAudioLanguage,
+        AddSectionHeader(audio, "section_audio_behavior")
+        AddNavigationKindCheck(audio, "include_audio_navigation", p.IncludeAudioInNavigation,
+                               Sub(v) p.IncludeAudioInNavigation = v)
+        AddPreferenceChoice(audio, "audio_end_action", p.AudioEndAction,
+                            {Choice("next", "Следующий файл"), Choice("stay", Localization.T("Остановиться")), Choice("repeat", "Повторить")}, Sub(v) p.AudioEndAction = v)
+        AddPreferenceCheck(audio, "audio_controls_visible", p.AudioControlsAlwaysVisible, Sub(v) p.AudioControlsAlwaysVisible = v)
+        AddPreferenceCheck(audio, "audio_visualiser", p.AudioVisualiser, Sub(v) p.AudioVisualiser = v)
+        AddPreferenceNumber(audio, "audio_sleep_timer", p.SleepTimerMinutes, 0, 180, Sub(v) p.SleepTimerMinutes = v)
+        AddPreferenceChoice(audio, "preferred_audio_language", p.PreferredAudioLanguage,
                             TrackLanguageChoices(subtitles:=False), Sub(v) p.PreferredAudioLanguage = v)
-        AddPreferenceChoice(video, "preferred_subtitle_language", p.PreferredSubtitleLanguage,
+        AddPreferenceChoice(audio, "preferred_subtitle_language", p.PreferredSubtitleLanguage,
                             TrackLanguageChoices(subtitles:=True), Sub(v) p.PreferredSubtitleLanguage = v)
 
         AddSectionHeader(files, "section_file_behavior")
@@ -78,9 +91,19 @@ Partial Public Class Table_Form
                             {Choice("next", "Следующий файл"), Choice("stay", "Остаться на текущем"), Choice("closeIfEmpty", "Закрыть, если файлов не осталось")}, Sub(v) p.AfterFileOperation = v)
         ' The two deletion rows sit with the transfer policy they belong with, and in this
         ' order: whether the bin is used at all decides what the confirmation can even say.
+        ' With the transfer policy, because it is one: it says what a recipient slot does
+        ' when its folder is not there yet (SLOT_HEALTH §3.6). Off means "not found" and a
+        ' refusal, which is the behaviour that existed before it.
+        AddPreferenceCheck(files, "create_missing_destination", p.CreateMissingDestination,
+                           Sub(v) p.CreateMissingDestination = v)
         AddPreferenceCheck(files, "delete_to_recycle_bin", p.DeleteToRecycleBin, Sub(v) p.DeleteToRecycleBin = v)
         AddPreferenceChoice(files, "confirm_delete", p.ConfirmDelete,
                             {Choice("always", "Всегда"), Choice("permanentOnly", "Только если файл не попадёт в Корзину"), Choice("never", "Никогда")}, Sub(v) p.ConfirmDelete = v)
+        ' With the two deletion rows, because it guards a deletion: "Replace with video"
+        ' removes the original permanently. The confirmation's own checkbox is what turns
+        ' this off; this row is the only way back on
+        ' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §10.1).
+        AddPreferenceCheck(files, "to_video_confirm", p.ConfirmReplaceWithVideo, Sub(v) p.ConfirmReplaceWithVideo = v)
         AddPreferenceCheck(files, "include_subfolders", p.IncludeSubfolders, Sub(v) p.IncludeSubfolders = v)
         AddFileTypesRow(files, p)
         AddHotkeysRow(files, p)
@@ -95,8 +118,20 @@ Partial Public Class Table_Form
         AddSettingsTransferRows(files)
         AddAllowNewWindowsRow(files, p)
 
+        ' ZIP/CBZ browsing (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §9, §12 Ф4).
+        AddSectionHeader(files, "section_archives")
+        AddPreferenceNumber(files, "archive_cache_limit", p.ArchiveCacheMaxMb, 100, 16384, Sub(v) p.ArchiveCacheMaxMb = v)
+        AddPreferenceNumber(files, "archive_entry_limit", p.ArchiveMaxEntryMb, 16, 4096, Sub(v) p.ArchiveMaxEntryMb = v)
+        AddPreferenceNumber(files, "archive_entries_limit", p.ArchiveMaxEntries, 100, 100000, Sub(v) p.ArchiveMaxEntries = v)
+
         AddPreferenceNumber(ocr, "ocr_cache_limit", p.OcrDiskCacheMaxMb, 0, 1024, Sub(v) p.OcrDiskCacheMaxMb = v)
         AddOcrCacheRow(ocr)
+        ' The decode cache sits beside the OCR one: they are the same kind of setting - a
+        ' megabyte budget for work already paid for - and the second answer to "what does
+        ' this app keep on disk" belongs next to the first, not on a page of its own
+        ' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §6.2).
+        AddPreferenceNumber(ocr, "decode_cache_limit", p.DecodeCacheMaxMb, 0, 8192, Sub(v) p.DecodeCacheMaxMb = v)
+        AddDecodeCacheRow(ocr)
     End Sub
 
     ''' <summary>
@@ -222,16 +257,45 @@ Partial Public Class Table_Form
 
     Private Sub RefreshOcrCacheSize()
         If ocrCacheSizeLabel Is Nothing Then Return
-        ocrCacheSizeLabel.Text = Localization.TF("{0} МБ", MegabytesOnDisk(OcrPaths.OcrCacheDir()))
+        ocrCacheSizeLabel.Text = Localization.TF("{0} МБ", MegabytesOnDisk(OcrPaths.OcrCacheDir(), "*.json"))
+    End Sub
+
+    ''' <summary>The decode cache's own size-and-clear row, built exactly like the OCR one
+    ''' above (§6.2). Its size comes from DecodeCacheStore rather than from a second walk
+    ''' of the directory: the store owns the file pattern, and a copy of it here is a copy
+    ''' that would be wrong the day the extension changes.</summary>
+    Private Sub AddDecodeCacheRow(ocr As FlowLayoutPanel)
+        Dim host As New FlowLayoutPanel With {.Width = 300, .Height = 30, .WrapContents = False,
+                                              .FlowDirection = FlowDirection.LeftToRight,
+                                              .Margin = Padding.Empty, .Padding = Padding.Empty}
+        decodeCacheSizeLabel = New Label With {.AutoSize = False, .Width = 100, .Height = 26,
+                                               .TextAlign = Drawing.ContentAlignment.MiddleLeft}
+        Dim clearButton As New Button With {.AutoSize = True, .Text = Localization.T("Очистить кэш")}
+        AddHandler clearButton.Click,
+            Sub()
+                If MessageBox.Show(Me, Localization.T("Удалить сохранённые результаты декодирования? Сами изображения не изменятся."),
+                                   Localization.T("Настройки"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+                DecodeCacheStore.Clear(DecodeCacheStore.CacheDir())
+                RefreshDecodeCacheSize()
+            End Sub
+        host.Controls.Add(decodeCacheSizeLabel)
+        host.Controls.Add(clearButton)
+        AddSettingRow(ocr, "decode_cache_clear", host, 300, True)
+        RefreshDecodeCacheSize()
+    End Sub
+
+    Private Sub RefreshDecodeCacheSize()
+        If decodeCacheSizeLabel Is Nothing Then Return
+        decodeCacheSizeLabel.Text = Localization.TF("{0} МБ", Megabytes(DecodeCacheStore.BytesOnDisk(DecodeCacheStore.CacheDir())))
     End Sub
 
     ''' <summary>One decimal, and never an exception: a cache directory that cannot be
     ''' measured is a disk problem, not a reason to fail opening the settings.</summary>
-    Private Shared Function MegabytesOnDisk(cacheDir As String) As String
+    Private Shared Function MegabytesOnDisk(cacheDir As String, filePattern As String) As String
         Dim bytes As Long = 0
         Try
             If Not String.IsNullOrEmpty(cacheDir) AndAlso Directory.Exists(cacheDir) Then
-                For Each entry As String In Directory.GetFiles(cacheDir, "*.json")
+                For Each entry As String In Directory.GetFiles(cacheDir, filePattern)
                     Try
                         bytes += New FileInfo(entry).Length
                     Catch
@@ -240,6 +304,10 @@ Partial Public Class Table_Form
             End If
         Catch
         End Try
+        Return Megabytes(bytes)
+    End Function
+
+    Private Shared Function Megabytes(bytes As Long) As String
         Return (bytes / 1048576.0R).ToString("0.0", Globalization.CultureInfo.CurrentCulture)
     End Function
 
@@ -444,6 +512,19 @@ Partial Public Class Table_Form
             Sub()
                 apply(check.Checked)
                 ApplyExpandedPreferences()
+            End Sub
+        AddSettingRow(flow, key, check, 34, True)
+    End Sub
+
+    ''' <summary>A kind toggle needs more than applying preferences: it changes which
+    ''' rows exist in the current folder, so refresh through Main_Form's single reload
+    ''' path after persisting the new value.</summary>
+    Private Sub AddNavigationKindCheck(flow As FlowLayoutPanel, key As String, value As Boolean, apply As Action(Of Boolean))
+        Dim check As New CheckBox With {.Checked = value, .AutoSize = True}
+        AddHandler check.CheckedChanged,
+            Sub()
+                apply(check.Checked)
+                Main_Form.ApplyMediaKindNavigationPreferenceChange()
             End Sub
         AddSettingRow(flow, key, check, 34, True)
     End Sub

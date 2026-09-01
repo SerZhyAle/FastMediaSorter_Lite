@@ -179,7 +179,7 @@
     <Compile Include="ApplicationModel.vb" />
     <Compile Include="AppFileLogger.vb" />
     <Compile Include="AppPaths.vb" />
-    <!-- Archive browsing (SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md). Whole-file
+    <!-- Archive browsing (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md). Whole-file
          "#If Not NETFRAMEWORK": on Windows 7/8.1 a dropped .zip still answers
          "Unsupported format". Listed anyway so the two file sets stay identical. -->
     <Compile Include="Archives\ArchivePaths.vb" />
@@ -214,6 +214,12 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.AudioView.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AudioMetadata.vb" />
+    <Compile Include="MediaKind.vb" />
     <Compile Include="Main_Form.DragDrop.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
@@ -223,6 +229,10 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Main_Form.RecipientsOverlay.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.SlotHealth.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
@@ -312,9 +322,16 @@
          PathFailureKind on both builds, and a parameter cannot be typed by an enum this
          project does not compile. Only the behaviour is fenced - here the kind is computed
          and ignored, so the x86 viewer keeps today's drop-the-file behaviour exactly
-         (SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md §5, invariant 10). -->
+         (011_SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md §5, invariant 10). -->
     <Compile Include="PathFailure.vb" />
-    <!-- The Recycle Bin (SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §5). All four are
+    <!-- Slot health (same specification, Ф2..Ф4). Both are whole-file
+         "#If Not NETFRAMEWORK" and compile to nothing here: this build's file-operation
+         transport is a single BackgroundWorker that refuses a second operation anyway, so
+         the "twenty presses into a dead share" shape the probe guards against cannot arise
+         (invariant 10). Listed so the two projects' file sets stay identical and any
+         divergence is always a seam rather than a forgotten line. -->
+    <Compile Include="SlotHealth.vb" />
+    <!-- The Recycle Bin (017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §5). All four are
          whole-file "#If Not NETFRAMEWORK" and compile to nothing here - this build's DEL is
          still File.Delete and it never advertises Shift+DEL (invariant 10). Listed anyway so
          the two projects' file sets stay identical and a divergence is always a seam. -->
@@ -381,6 +398,17 @@
     <Compile Include="Imaging\ImageEncoder.vb" />
     <Compile Include="Imaging\ModernImageSharpEncoder.vb" />
     <Compile Include="Imaging\ImageFileWriter.vb" />
+    <!-- The decode cache
+         (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §3-§7). All five are
+         whole-file "#If Not NETFRAMEWORK" and compile to nothing here: this build keeps
+         decoding WEBP through WIC/ImageSharp 2 on every open, exactly as it does today
+         (§2.2). Listed anyway so the two projects' file sets stay identical and a
+         divergence is always a seam, never a missing <Compile Include>. -->
+    <Compile Include="Imaging\ImageDecodePayload.vb" />
+    <Compile Include="Imaging\DecodeCacheKey.vb" />
+    <Compile Include="Imaging\DecodeCachePolicy.vb" />
+    <Compile Include="Imaging\DecodeCacheStore.vb" />
+    <Compile Include="Imaging\DecodeCache.vb" />
     <!-- The editor's window and the viewer's entry point into it (§2, §5). Same shape:
          whole-file "#If Not NETFRAMEWORK", listed so the two file sets stay identical. -->
     <Compile Include="EditorGeometry.vb" />
@@ -393,6 +421,20 @@
       <DependentUpon>Image_Editor_Form.vb</DependentUpon>
     </Compile>
     <Compile Include="Main_Form.ImageEditor.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <!-- "Replace with video"
+         (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §8-§11). All four are
+         whole-file "#If Not NETFRAMEWORK" and compile to nothing here - this build shows no
+         such button and never downloads FFmpeg (§2.2). Listed anyway so the two projects'
+         file sets stay identical. -->
+    <Compile Include="Video\VideoConvertPlan.vb" />
+    <Compile Include="Video\AnimationToVideo.vb" />
+    <Compile Include="Video\Video_Convert_Form.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.ToVideo.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
@@ -444,7 +486,7 @@
     <Compile Include="Support\LogPackage.vb" />
     <Compile Include="Support\MailSender.vb" />
     <Compile Include="Common_Module.vb" />
-    <!-- The 13-language localization layer (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md).
+    <!-- The 13-language localization layer (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md).
          The modern project picks these up through its ..\**\*.vb glob; this old-style
          project needs them BY HAND - a missing entry fails on the first reference with
          BC30451, which is the good case. Codes/Names are cut to RU+EN here by an
@@ -470,6 +512,8 @@
     <Compile Include="Localization\Localization.Support.vb" />
     <Compile Include="Localization\Localization.Editor.vb" />
     <Compile Include="Localization\Localization.Archive.vb" />
+    <Compile Include="Localization\Localization.Video.vb" />
+    <Compile Include="Localization\Localization.SlotHealth.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\VersionInfo.vb" />
     <Compile Include="My Project\Resources.Designer.vb">

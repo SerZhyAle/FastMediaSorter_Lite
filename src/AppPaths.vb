@@ -7,7 +7,7 @@ Imports System.IO
 '''
 ''' It existed inside <c>OcrPaths</c> first, because OCR was the first feature that needed
 ''' a writable directory - but the location is not an OCR fact: the archive cache
-''' (SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §4.1) writes under the same root, and a
+''' (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §4.1) writes under the same root, and a
 ''' second copy of the path would be a second answer to "where does this app live", one of
 ''' which would eventually be wrong. OcrPaths now defers here.
 '''

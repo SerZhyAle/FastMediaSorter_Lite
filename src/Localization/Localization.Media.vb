@@ -17,7 +17,7 @@ Partial Public NotInheritable Class Localization
             "! Nenhum arquivo legível nesta pasta", "! لا توجد ملفات قابلة للقراءة في هذا المجلد",
             "! इस फ़ोल्डर में कोई पढ़ने योग्य फ़ाइल नहीं", "! এই ফোল্ডারে পড়ার মতো ফাইল নেই",
             "! اس فولڈر میں کوئی قابلِ مطالعہ فائل نہیں", "! 此文件夹中没有可读文件")
-        ' Ф1 of SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md. Both say the same
+        ' Ф1 of 011_SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md. Both say the same
         ' second half on purpose: what went wrong, AND that the list was left alone - without
         ' it the user's next move is the rescan the whole change exists to make unnecessary.
         Add("Нет связи с папкой, файл оставлен в списке: {0}",

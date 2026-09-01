@@ -127,6 +127,12 @@
   .scenarios{margin:0 0 .2rem}
   #features details.sec{margin-top:1rem}
   .site-footer .container{max-width:min(1760px,94vw)}
+  /* Signature brand visual: procedural waves and drifting particles. */
+  html{background:var(--bg)}
+  body{background:transparent}
+  .brand-visual{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+  .site-header,.container,.site-footer{position:relative;z-index:1}
+  .site-footer{background:color-mix(in srgb,var(--bg) 68%,transparent);backdrop-filter:blur(3px)}
   @media(max-width:560px){.hero-id{align-items:flex-start}.hero-avatar{width:52px;height:52px}}
   @media(max-width:480px){
     .container{width:100%!important;max-width:100%!important}
@@ -141,9 +147,7 @@
 </head>
 <body>
 
-<div class="bg-blobs" aria-hidden="true">
-  <div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div>
-</div>
+<canvas class="brand-visual" id="brandVisual" aria-hidden="true"></canvas>
 
 <header class="site-header">
   <a class="brand" href="#top" aria-label="Fast Media Sorter">FMS<span class="dot">.</span></a>
@@ -351,6 +355,36 @@
       </article>
 
       <article class="card">
+        <h3><img src="assets/icons/screen.svg" alt="" width="22" height="22"><span data-l="en">Animation into video</span><span data-l="ru">Анимация в видео</span><span data-l="uk">Анімація у відео</span></h3>
+        <p>
+          <span data-l="en">An animated WEBP, APNG or GIF is a picture file that behaves like a video and loses on every count: no seek bar, no pause, no hardware decoding, and only 256 colours. One button turns it into an ordinary MP4 beside it and replaces the original - which is deleted permanently, so the program says so first, names both files, and warns when transparency is about to be flattened onto black. The encoder (FFmpeg, GPL, about 110 MB) is not bundled: the first conversion asks whether to download it, and a No simply cancels.</span>
+          <span data-l="ru">Анимированный WEBP, APNG или GIF - это файл-картинка, ведущий себя как видео и проигрывающий по всем статьям: ни перемотки, ни паузы, ни аппаратного декодирования, и всего 256 цветов. Одна кнопка превращает его в обычный MP4 рядом и заменяет оригинал - тот удаляется безвозвратно, поэтому программа сначала говорит об этом, называет оба имени файлов и предупреждает, если прозрачность будет залита чёрным. Кодировщик (FFmpeg, GPL, около 110 МБ) в комплект не входит: первое преобразование спросит, загрузить ли его, и «Нет» просто отменяет действие.</span>
+          <span data-l="uk">Анімований WEBP, APNG чи GIF - це файл-картинка, що поводиться як відео і програє за всіма статтями: ані перемотки, ані паузи, ані апаратного декодування, і лише 256 кольорів. Одна кнопка перетворює його на звичайний MP4 поруч і замінює оригінал - той видаляється безповоротно, тому програма спершу каже про це, називає обидва імені файлів і попереджає, якщо прозорість буде залито чорним. Кодувальник (FFmpeg, GPL, близько 110 МБ) до комплекту не входить: перше перетворення спитає, чи завантажувати його, а «Ні» просто скасовує дію.</span>
+        </p>
+        <div class="pills"><span class="pill gold"><span data-l="en">64-bit build only</span><span data-l="ru">только 64-битная сборка</span><span data-l="uk">тільки 64-бітна збірка</span></span></div>
+      </article>
+
+      <article class="card">
+        <h3><img src="assets/icons/slideshow.svg" alt="" width="22" height="22"><span data-l="en">Music has a screen</span><span data-l="ru">У музыки есть экран</span><span data-l="uk">У музики є екран</span></h3>
+        <p>
+          <span data-l="en">An MP3, WAV, M4A, WMA or OGG used to travel through the video path and show a black rectangle. Audio is now its own kind of file: the embedded album cover fills the window, and when the file carries none, a wave-and-particle animation stands in for it. Along the bottom sit the title, the artist and the album as the file spells them, with the codec, bitrate, sample rate, length and size underneath. Its own settings section decides what happens when a track ends - next file, stop, or repeat - whether the transport panel stays visible, and a sleep timer of up to three hours. Video and audio can each be left out of paging entirely, so a folder of photographs stays a folder of photographs.</span>
+          <span data-l="ru">MP3, WAV, M4A, WMA или OGG раньше шёл по видеопути и показывал чёрный прямоугольник. Теперь аудио - самостоятельный тип файла: встроенная обложка альбома заполняет окно, а если её нет, вместо неё идёт анимация из волн и частиц. Внизу - название, исполнитель и альбом так, как их пишет сам файл, а под ними кодек, битрейт, частота дискретизации, длительность и размер. Свой раздел настроек решает, что делать в конце дорожки - следующий файл, остановиться или повторить, - оставлять ли панель воспроизведения на виду, и таймер сна до трёх часов. Видео и аудио можно вообще исключить из пролистывания, чтобы папка с фотографиями осталась папкой с фотографиями.</span>
+          <span data-l="uk">MP3, WAV, M4A, WMA чи OGG раніше йшов відеошляхом і показував чорний прямокутник. Тепер аудіо - самостійний тип файлу: вбудована обкладинка альбому заповнює вікно, а якщо її немає, замість неї йде анімація з хвиль і частинок. Унизу - назва, виконавець та альбом так, як їх пише сам файл, а під ними кодек, бітрейт, частота дискретизації, тривалість і розмір. Власний розділ налаштувань вирішує, що робити наприкінці доріжки - наступний файл, зупинитися чи повторити, - чи лишати панель відтворення на видноті, і таймер сну до трьох годин. Відео та аудіо можна взагалі виключити з гортання, щоб тека з фотографіями лишилася текою з фотографіями.</span>
+        </p>
+        <div class="pills"><span class="pill gold"><span data-l="en">64-bit build only</span><span data-l="ru">только 64-битная сборка</span><span data-l="uk">тільки 64-бітна збірка</span></span></div>
+      </article>
+
+      <article class="card">
+        <h3><img src="assets/icons/slideshow.svg" alt="" width="22" height="22"><span data-l="en">Slow formats open once</span><span data-l="ru">Медленные форматы открываются один раз</span><span data-l="uk">Повільні формати відкриваються один раз</span></h3>
+        <p>
+          <span data-l="en">Animated WEBP, AVIF and HEIC have no Windows codec, so the program decodes them itself - seconds of work for a large animation, which is what the "Loading.." badge is about. That work is now kept on disk and reused while the file is unchanged, so the badge appears once per file instead of once per view, and walking a folder forwards fills the cache for the walk back. Settings show how much space it takes, empty it on request and set its limit; 0 switches it off. JPEG, PNG and BMP are never cached - Windows opens those in milliseconds.</span>
+          <span data-l="ru">Для анимированного WEBP, AVIF и HEIC в Windows нет кодека, поэтому программа декодирует их сама - для большой анимации это секунды работы, о которых и говорит значок «Загрузка..». Теперь результат сохраняется на диске и переиспользуется, пока файл не изменился, так что значок появляется один раз на файл, а не один раз на просмотр, а проход по папке вперёд наполняет кэш для прохода назад. Настройки показывают занятое место, очищают кэш по требованию и задают его предел; 0 отключает кэш. JPEG, PNG и BMP не кэшируются никогда - Windows открывает их за миллисекунды.</span>
+          <span data-l="uk">Для анімованого WEBP, AVIF та HEIC у Windows немає кодека, тож програма декодує їх сама - для великої анімації це секунди роботи, про які й каже значок «Завантаження..». Тепер результат зберігається на диску та використовується повторно, доки файл не змінився, тому значок з'являється один раз на файл, а не один раз на перегляд, а прохід текою вперед наповнює кеш для проходу назад. Налаштування показують зайняте місце, очищають кеш на вимогу та задають його межу; 0 вимикає кеш. JPEG, PNG і BMP не кешуються ніколи - Windows відкриває їх за мілісекунди.</span>
+        </p>
+        <div class="pills"><span class="pill gold"><span data-l="en">64-bit build only</span><span data-l="ru">только 64-битная сборка</span><span data-l="uk">тільки 64-бітна збірка</span></span></div>
+      </article>
+
+      <article class="card">
         <h3><img src="assets/icons/folder.svg" alt="" width="22" height="22"><span data-l="en">Recipients panel</span><span data-l="ru">Панель получателей</span><span data-l="uk">Панель отримувачів</span></h3>
         <p>
           <span data-l="en">A narrow floating list of your destination folders over the picture: click a row to move the current file there, the narrow zone beside it to copy it, and the bottom row deletes it. The same actions as the DEL and 0-9 keys, for when your hand is on the mouse. Off by default; switch it on in Settings > Files and system.</span>
@@ -508,6 +542,67 @@
 <button class="to-top" id="toTop" aria-label="Back to top">↑</button>
 
 <script>
+(function(){
+  // The shared Fast Media Sorter visual: sine waves plus drifting particles.
+  // Keep the per-frame time step at 0.003; it is the cross-surface motion contract.
+  var canvas=document.getElementById('brandVisual');
+  if(!canvas||!canvas.getContext)return;
+  var ctx=canvas.getContext('2d'), width=0, height=0, frame=0, time=0, active=false;
+  var particles=[], waveCount=0, particleCount=0, dpr=1;
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function palette(){
+    var light=document.documentElement.getAttribute('data-theme')==='light';
+    return light?{wash:'rgba(238,243,234,.17)',waveLight:36,particleLight:31}:{wash:'rgba(10,15,10,.15)',waveLight:58,particleLight:69};
+  }
+  function randomize(){
+    waveCount=5+Math.floor(Math.random()*8);
+    particleCount=15+Math.floor(Math.random()*41);
+    particles=[];
+    for(var i=0;i<particleCount;i++)particles.push({
+      x:Math.random()*width,y:Math.random()*height,r:1+Math.random()*5,
+      vx:(Math.random()-.5)*.42,vy:(Math.random()-.5)*.42,
+      hue:Math.random()<.58?130+Math.random()*34:38+Math.random()*22
+    });
+  }
+  function resize(){
+    dpr=Math.min(window.devicePixelRatio||1,2);
+    width=window.innerWidth;height=window.innerHeight;
+    canvas.width=Math.max(1,Math.round(width*dpr));canvas.height=Math.max(1,Math.round(height*dpr));
+    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle=document.documentElement.getAttribute('data-theme')==='light'?'#eef3ea':'#0a0f0a';ctx.fillRect(0,0,width,height);
+    randomize();
+  }
+  function draw(){
+    var colors=palette();
+    ctx.fillStyle=colors.wash;ctx.fillRect(0,0,width,height);
+    time+=.003;
+    ctx.lineWidth=1.5;
+    for(var j=0;j<waveCount;j++){
+      var phase=j*.8, amplitude=height*(.10+(j%4)*.025), lane=(j-(waveCount-1)/2)*height*.028;
+      ctx.beginPath();
+      for(var x=0;x<=width;x+=20){
+        var y=height*.5+lane+Math.sin(x*.0105+time+phase)*amplitude*Math.abs(Math.sin(time*.4+j*.2));
+        if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      }
+      var waveHue=j%3===1?45:136+j*4;
+      ctx.strokeStyle='hsla('+waveHue+', 65%, '+colors.waveLight+'%, .24)';ctx.stroke();
+    }
+    particles.forEach(function(p){
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<-p.r||p.x>width+p.r)p.vx*=-1;
+      if(p.y<-p.r||p.y>height+p.r)p.vy*=-1;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle='hsla('+p.hue+', 82%, '+colors.particleLight+'%, .46)';ctx.fill();
+    });
+  }
+  function animate(){if(!active)return;draw();frame=requestAnimationFrame(animate);}
+  function start(){if(active||reduce)return;active=true;frame=requestAnimationFrame(animate);}
+  function stop(){active=false;cancelAnimationFrame(frame);}
+  window.addEventListener('resize',function(){resize();if(reduce)draw();},{passive:true});
+  document.addEventListener('visibilitychange',function(){if(document.hidden)stop();else start();});
+  resize();draw();start();
+})();
+
 (function(){
   var doc=document.documentElement;
 

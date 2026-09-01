@@ -2,7 +2,7 @@
 Option Strict On
 
 ' The history behind U, and the table that says what U can actually promise.
-' SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.5. Modern build only - the x86 viewer
+' 017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.5. Modern build only - the x86 viewer
 ' keeps its three history fields and its one-operation-deep undo (invariant 10).
 '
 ' Both halves are here rather than inside Main_Form for the same reason ZoomMath and

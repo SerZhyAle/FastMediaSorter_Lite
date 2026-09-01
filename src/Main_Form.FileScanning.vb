@@ -163,7 +163,14 @@ Partial Public Class Main_Form
                     Dim ahead As Integer = request.Archive.IndexOfTempPath(next_File_After_Current_in_worker)
                     If ahead >= 0 Then
                         Dim ignored As ArchiveSession.EntryRefusal
-                        request.Archive.TryEnsureExtracted(ahead, ignored)
+                        ' Same settings-derived ceilings as the UI path (Main_Form.Archive.vb,
+                        ' EnsureArchiveEntryOnDisk) - a prefetch that ignored them could grow
+                        ' the session past the budget the user just set, right before the
+                        ' UI-path extraction evicts it back down again.
+                        Dim archivePrefs As ModernViewerPreferences = GetModernPreferences()
+                        request.Archive.TryEnsureExtracted(ahead, ignored,
+                            CLng(archivePrefs.ArchiveMaxEntryMb) * 1024L * 1024L,
+                            CLng(archivePrefs.ArchiveCacheMaxMb) * 1024L * 1024L)
                     End If
                 End If
 #End If

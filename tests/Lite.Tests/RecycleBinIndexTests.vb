@@ -5,7 +5,7 @@ Imports System.Text
 Imports Xunit
 
 ' What the Recycle Bin's own $I record says, and which record belongs to the deletion U is
-' taking back (SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.6). Modern-only, exactly
+' taking back (017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.6). Modern-only, exactly
 ' like the feature: RecycleBinIndex.vb is whole-file "#If Not NETFRAMEWORK", so on the net48
 ' leg of this project both it and this file compile to nothing.
 '

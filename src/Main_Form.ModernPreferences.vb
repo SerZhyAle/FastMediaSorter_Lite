@@ -57,10 +57,23 @@ Partial Public Class Main_Form
         preferred_Audio_Language = modern_Preferences.PreferredAudioLanguage
         preferred_Subtitle_Language = modern_Preferences.PreferredSubtitleLanguage
         If video_Controls IsNot Nothing Then video_Controls_Hide_Timer.Interval = VideoControlsHideDelayMilliseconds()
+        ' Mirrored rather than read: the decode cache is consulted from pool threads.
+        DecodeCacheStore.BudgetMb = modern_Preferences.DecodeCacheMaxMb
         ' Expanded settings are live settings. Persist after normalisation so a change
         ' made in the settings window survives a crash and is visible to the next
         ' process without waiting for the main form to close.
         modern_Preferences.Save()
+    End Sub
+
+    ''' <summary>Applies a video/audio navigation toggle as a visible folder refresh.
+    ''' The list is never mutated below a running slideshow: it is stopped first and the
+    ''' ordinary load path then rebuilds list, counter, grid and prefetch together.</summary>
+    Friend Sub ApplyMediaKindNavigationPreferenceChange()
+        If modern_Preferences Is Nothing Then Return
+        If Is_slide_show_mode Then SlideShowStop()
+        ApplyModernPreferencesFromSettings()
+        If String.IsNullOrEmpty(Current_Folder_Path) Then Return
+        ReadShowMediaFile(Mode_FolderAndFile)
     End Sub
 
     Private Function RecentFoldersLimit() As Integer
@@ -301,6 +314,10 @@ Partial Public Class Main_Form
 
     Private Function VideoEndAction() As String
         Return If(modern_Preferences Is Nothing, "stay", modern_Preferences.VideoEndAction)
+    End Function
+
+    Private Function AudioEndAction() As String
+        Return If(modern_Preferences Is Nothing, "next", modern_Preferences.AudioEndAction)
     End Function
 
     Private Sub QueueRememberedVideoPosition(filePath As String)

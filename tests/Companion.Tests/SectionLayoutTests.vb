@@ -11,7 +11,7 @@ Imports Xunit
 
 ''' <summary>
 ''' The layout test of SPECIFICATION_SHARE_MANAGER_COMPACT_WINDOW.md §7.8, the compact
-''' window's half of SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §7.2: build every section
+''' window's half of 013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §7.2: build every section
 ''' header's title in all 13 languages at the NARROWEST width the window can be, and fail
 ''' when one needs more room than it gets.
 '''

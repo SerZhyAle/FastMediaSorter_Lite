@@ -82,6 +82,7 @@ Partial Public Class Main_Form
             ' An owned window still has to be put into the viewer's z-order band by hand
             ' when "always on top" is on - see Main_Form.WindowPinning.vb.
             PinToViewerBand(editor)
+            PositionChildOnViewerMonitor(editor)
             If editor.ShowDialog(Me) <> DialogResult.OK Then Return
 
             savedPath = editor.SavedPath

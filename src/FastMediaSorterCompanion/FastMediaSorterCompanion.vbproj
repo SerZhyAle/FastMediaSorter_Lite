@@ -64,7 +64,7 @@
     <!--
       The localization ENGINE is shared with the viewer, verbatim - same dictionary
       shape, same Russian-source keys, same registry value, so a language chosen in
-      either program shows in the other (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md
+      either program shows in the other (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md
       block A'). Only the string TABLES differ: Companion supplies its own
       RegisterStrings() in Localization\Localization.Registry.vb, which is why the
       engine's shared constructor can call an implementation this project owns.

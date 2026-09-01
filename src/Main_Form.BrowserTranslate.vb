@@ -86,6 +86,10 @@ Partial Public Class Main_Form
         ' PlaceControl force-shows anything it lays out, so a bare Visible = False would
         ' be undone by the next LayoutToolbar.
         SetToolbarItemHidden(btn_Edit, Not still)
+        ' "Replace with video" rides the same single recompute point, under the opposite
+        ' predicate: a running animation can be converted, a still and a video cannot
+        ' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §11).
+        SetToolbarItemHidden(btn_ToVideo, Not IsCurrentAnimation())
 #End If
         LayoutToolbar()
     End Sub

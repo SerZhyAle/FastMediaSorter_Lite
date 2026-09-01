@@ -8,7 +8,7 @@ Imports System.Text.RegularExpressions
 Imports Xunit
 
 ''' <summary>
-''' Guards the 13-language string table (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §7.1).
+''' Guards the 13-language string table (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §7.1).
 '''
 ''' A Russian-keyed dictionary fails softly by design - a missing entry shows the
 ''' Russian source instead of crashing. That is the right runtime behaviour and the

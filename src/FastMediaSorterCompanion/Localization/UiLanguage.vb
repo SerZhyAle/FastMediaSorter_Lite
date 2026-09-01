@@ -13,7 +13,7 @@ Imports System.Windows.Forms
 ''' That is why <see cref="Changed"/> exists - TrayContext owns the window and the tray
 ''' menu, so it is the one that can recreate both.
 '''
-''' See docs/specifications/SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A'.
+''' See docs/specifications/013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A'.
 ''' </summary>
 Friend Module UiLanguage
 
@@ -76,7 +76,7 @@ Friend Module UiLanguage
     ''' alike, rather than a right-to-left layout. RightToLeft alone gives what is actually
     ''' wanted - right-aligned text and reversed column/flow order in the layout panels
     ''' every Companion window is built from. Same conclusion the viewer reached
-    ''' (SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §2.6 г), for a different reason.
+    ''' (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md §2.6 г), for a different reason.
     '''
     ''' Call as the FIRST statement of the form's builder, before any control is added:
     ''' children inherit both, and the direction has to be set before the layout is

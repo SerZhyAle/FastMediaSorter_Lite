@@ -12,6 +12,13 @@ Imports System.Windows.Forms
 Friend Enum OptionalRuntimeKind
     Ocr
     Vlc
+#If Not NETFRAMEWORK Then
+    ''' <summary>The video encoder behind "Replace with video"
+    ''' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §8). Fenced with the
+    ''' feature it serves: the x86 fallback has no button that could ask for it, and an
+    ''' enum member it can never reach is a promise it does not keep.</summary>
+    Ffmpeg
+#End If
 End Enum
 
 Friend Module OptionalRuntimeManager
@@ -24,6 +31,36 @@ Friend Module OptionalRuntimeManager
 
     Private Const VcRedistX86Url As String = "https://aka.ms/vc14/vc_redist.x86.exe"
     Private Const VcRedistX64Url As String = "https://aka.ms/vc14/vc_redist.x64.exe"
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>
+    ''' FFmpeg, pinned (§8.2). Three things about this constant set are deliberate:
+    '''
+    ''' * A VERSIONED tag, never "latest". The specification names BtbN/FFmpeg-Builds, and
+    '''   that repository turned out not to be pinnable AT ALL: it keeps only about five
+    '''   weeks of autobuild tags, so a tag pinned today 404s within a month and the feature
+    '''   quietly stops working for everyone who had not downloaded yet. GyanD/codexffmpeg
+    '''   publishes the same thing - a 64-bit STATIC GPLv3 Windows build with libx264 - under
+    '''   permanent release tags, which is what "pinned" actually requires. Everything else
+    '''   §8.2 asks for is unchanged.
+    ''' * The SHA-256 is mandatory, unlike the NuGet packages. This is an executable from a
+    '''   release asset, so "it downloaded" is not "it is what we asked for". A mismatch
+    '''   aborts before a single byte is extracted.
+    ''' * The size is a constant rather than a number inside a sentence, so the download
+    '''   prompt cannot go stale when the pinned build changes size.
+    ''' </summary>
+    Private Const FfmpegVersion As String = "9.0.1"
+    Private Const FfmpegArchiveName As String = "ffmpeg-" & FfmpegVersion & "-essentials_build.zip"
+    Private Const FfmpegUrl As String = "https://github.com/GyanD/codexffmpeg/releases/download/" & FfmpegVersion & "/" & FfmpegArchiveName
+    Private Const FfmpegSha256 As String = "fec81ae03971d9dd4be3ebe02e263bd2ec1d789483f931bdba5f5715e65da2e9"
+
+    ''' <summary>Rounded down from the real 111 MB - the prompt says "about".</summary>
+    Friend Const FfmpegDownloadMb As Integer = 110
+
+    ''' <summary>The only file extracted: no ffplay, no ffprobe, no documentation. The gpl
+    ''' build is static, so there is nothing beside it to carry.</summary>
+    Private Const FfmpegExeName As String = "ffmpeg.exe"
+#End If
 
     ''' <summary>
     ''' Infinite HttpClient.Timeout is deliberate - it is a per-REQUEST clock, and these are
@@ -86,6 +123,42 @@ Friend Module OptionalRuntimeManager
 
         Return ""
     End Function
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>
+    ''' The ffmpeg.exe to run, or "".
+    '''
+    ''' Exe-adjacent wins if present, exactly as GetOcrRuntimeDir/GetVlcRuntimeDir do - so a
+    ''' future offline packaging option needs no code change here, only a folder in the
+    ''' package. Today nothing bundles it: FFmpeg is GPL and ~110 MB, and shipping nothing
+    ''' is what keeps invariant 12 (THIRD-PARTY-NOTICES inside every package that bundles
+    ''' third-party binaries) inapplicable rather than merely satisfied.
+    ''' </summary>
+    Public Function GetFfmpegPath() As String
+        Dim local As String = Path.Combine(OcrPaths.ExeDir(), "ffmpeg", FfmpegExeName)
+        If File.Exists(local) Then Return local
+
+        Dim installed As String = Path.Combine(FfmpegRuntimeRoot(), FfmpegExeName)
+        If File.Exists(installed) Then Return installed
+
+        Return ""
+    End Function
+
+    Public Function HasFfmpegRuntime() As Boolean
+        Return GetFfmpegPath().Length > 0
+    End Function
+
+    ''' <summary>Downloads FFmpeg after an explicit Yes, if it is not already there. A No
+    ''' simply cancels the action - nothing is remembered as broken and the next click asks
+    ''' again (§8.3).</summary>
+    Public Async Function EnsureFfmpegRuntimeInteractiveAsync(owner As IWin32Window) As Task(Of Boolean)
+        Return Await EnsureRuntimeInteractiveAsync(OptionalRuntimeKind.Ffmpeg, owner).ConfigureAwait(True)
+    End Function
+
+    Private Function FfmpegRuntimeRoot() As String
+        Return Path.Combine(OcrPaths.AppDataRoot(), "ffmpeg", FfmpegVersion)
+    End Function
+#End If
 
     Public Function HasOcrRuntime() As Boolean
         Return GetOcrRuntimeDir().Length > 0
@@ -214,6 +287,10 @@ Friend Module OptionalRuntimeManager
                 Return HasOcrRuntime()
             Case OptionalRuntimeKind.Vlc
                 Return HasVlcRuntime()
+#If Not NETFRAMEWORK Then
+            Case OptionalRuntimeKind.Ffmpeg
+                Return HasFfmpegRuntime()
+#End If
             Case Else
                 Return False
         End Select
@@ -225,6 +302,19 @@ Friend Module OptionalRuntimeManager
                 Return TryPrepareOcrRuntime(reason)
             Case OptionalRuntimeKind.Vlc
                 Return TryPrepareVlcRuntime(reason)
+#If Not NETFRAMEWORK Then
+            Case OptionalRuntimeKind.Ffmpeg
+                ' An executable we spawn, not a library we load - there is nothing to
+                ' probe with LoadLibraryEx and no PATH to prepend to. Being there IS being
+                ' ready; a build that cannot run reports itself through its exit code, which
+                ' is where the conversion already looks (VideoConvertPlan.DecideEncode).
+                If HasFfmpegRuntime() Then
+                    reason = ""
+                    Return True
+                End If
+                reason = "FFmpeg is not installed."
+                Return False
+#End If
             Case Else
                 reason = "Unknown runtime."
                 Return False
@@ -259,13 +349,24 @@ Friend Module OptionalRuntimeManager
     End Function
 
     Private Async Function InstallRuntimePackageAsyncCore(kind As OptionalRuntimeKind) As Task(Of String)
-        Dim tempFile As String = Path.Combine(Path.GetTempPath(), "FastMediaSorter-" & kind.ToString().ToLowerInvariant() & ".nupkg")
+        Dim tempFile As String = Path.Combine(Path.GetTempPath(), "FastMediaSorter-" & kind.ToString().ToLowerInvariant() & ".zip")
         Dim targetRoot As String = GetTargetRoot(kind)
 
         Try
             Directory.CreateDirectory(targetRoot)
 
             Await DownloadWithInactivityTimeoutAsync(GetPackageUrl(kind), tempFile).ConfigureAwait(False)
+
+            ' Empty for the NuGet packages, mandatory for FFmpeg (§8.2): that one is an
+            ' executable from a release asset, so it is verified BEFORE a single byte is
+            ' extracted rather than trusted because the download finished.
+            Dim expectedHash As String = GetExpectedSha256(kind)
+            If expectedHash.Length > 0 Then
+                Dim actualHash As String = Sha256OfFile(tempFile)
+                If Not String.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase) Then
+                    Return "Checksum mismatch: expected " & expectedHash & ", got " & actualHash & "."
+                End If
+            End If
 
             Using archive As ZipArchive = ZipFile.OpenRead(tempFile)
                 For Each entry As ZipArchiveEntry In archive.Entries
@@ -346,9 +447,43 @@ Friend Module OptionalRuntimeManager
                 If normalized.StartsWith("build/x86/", StringComparison.OrdinalIgnoreCase) Then
                     Return "libvlc/win-x86/" & normalized.Substring("build/x86/".Length)
                 End If
+
+#If Not NETFRAMEWORK Then
+            Case OptionalRuntimeKind.Ffmpeg
+                ' The archive is one versioned root folder over bin/ + doc/ + LICENSE.
+                ' Exactly one entry is taken, flattened to the runtime root: matching on the
+                ' tail rather than on the root's name is what keeps this working when the
+                ' pin moves to a build whose folder is called something else.
+                If normalized.EndsWith("/bin/" & FfmpegExeName, StringComparison.OrdinalIgnoreCase) Then
+                    Return FfmpegExeName
+                End If
+#End If
         End Select
 
         Return ""
+    End Function
+
+    ''' <summary>The expected archive hash, or "" for the packages that are not verified.
+    ''' NuGet is served over HTTPS from a package feed with its own integrity story; a GitHub
+    ''' release asset is an executable somebody could replace.</summary>
+    Private Function GetExpectedSha256(kind As OptionalRuntimeKind) As String
+#If Not NETFRAMEWORK Then
+        If kind = OptionalRuntimeKind.Ffmpeg Then Return FfmpegSha256
+#End If
+        Return ""
+    End Function
+
+    Private Function Sha256OfFile(filePath As String) As String
+        Using hasher As Security.Cryptography.SHA256 = Security.Cryptography.SHA256.Create()
+            Using stream As New FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read)
+                Dim digest As Byte() = hasher.ComputeHash(stream)
+                Dim builder As New Text.StringBuilder(digest.Length * 2)
+                For Each b As Byte In digest
+                    builder.Append(b.ToString("x2"))
+                Next
+                Return builder.ToString()
+            End Using
+        End Using
     End Function
 
     Private Function GetTargetRoot(kind As OptionalRuntimeKind) As String
@@ -357,6 +492,10 @@ Friend Module OptionalRuntimeManager
                 Return OcrRuntimeRoot()
             Case OptionalRuntimeKind.Vlc
                 Return VlcRuntimeRoot()
+#If Not NETFRAMEWORK Then
+            Case OptionalRuntimeKind.Ffmpeg
+                Return FfmpegRuntimeRoot()
+#End If
             Case Else
                 Return OcrPaths.AppDataRoot()
         End Select
@@ -368,6 +507,10 @@ Friend Module OptionalRuntimeManager
                 Return OcrPackageUrl
             Case OptionalRuntimeKind.Vlc
                 Return VlcPackageUrl
+#If Not NETFRAMEWORK Then
+            Case OptionalRuntimeKind.Ffmpeg
+                Return FfmpegUrl
+#End If
             Case Else
                 Return ""
         End Select
@@ -379,6 +522,10 @@ Friend Module OptionalRuntimeManager
                 Return "OCR runtime"
             Case OptionalRuntimeKind.Vlc
                 Return "VLC runtime"
+#If Not NETFRAMEWORK Then
+            Case OptionalRuntimeKind.Ffmpeg
+                Return "FFmpeg"
+#End If
             Case Else
                 Return "runtime"
         End Select
@@ -391,6 +538,11 @@ Friend Module OptionalRuntimeManager
 
             Case OptionalRuntimeKind.Vlc
                 Return Localization.T("Поддержка VLC ещё не установлена. Скачать и установить её сейчас?")
+
+#If Not NETFRAMEWORK Then
+            Case OptionalRuntimeKind.Ffmpeg
+                Return Localization.TF("Для создания видео нужен FFmpeg (около {0} МБ). Он будет загружен с сайта проекта и сохранён в папке программы. FFmpeg - свободная программа под лицензией GPL. Загрузить сейчас?", FfmpegDownloadMb.ToString())
+#End If
         End Select
 
         Return ""

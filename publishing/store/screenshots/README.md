@@ -46,7 +46,7 @@ Three deliberate choices, each because the alternative leaks or misleads:
 
 Both the caption **and the app interface inside the capture** are in the
 locale's language: the viewer ships 13 UI languages (block A of
-[SPECIFICATION_THIRTEEN_UI_LANGUAGES.md](../../../docs/specifications/SPECIFICATION_THIRTEEN_UI_LANGUAGES.md)),
+[013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md](../../../docs/specifications/013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md)),
 so the script sets `UiLanguage` and launches the app once per locale - thirteen
 captures, not one reused twelve times.
 
@@ -69,5 +69,5 @@ Partner Center -> *Store listings* -> `<locale>` -> Screenshots. The Store
 requires screenshots only on the default locale; the rest are optional but are
 what a shopper in that language actually sees. A locale must exist in the
 listing before its image can be attached - see
-[SPECIFICATION_THIRTEEN_UI_LANGUAGES.md](../../../docs/specifications/SPECIFICATION_THIRTEEN_UI_LANGUAGES.md)
+[013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md](../../../docs/specifications/013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md)
 §5.1 for the export-then-merge order.
