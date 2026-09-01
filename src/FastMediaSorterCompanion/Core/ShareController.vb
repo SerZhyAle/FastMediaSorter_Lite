@@ -18,6 +18,13 @@ Imports System.Threading.Tasks
 ''' </summary>
 Public Module ShareController
 
+    ''' <summary>The token the worker embeds in <see cref="WorkerStatus.LastStartError"/>
+    ''' when a bind was refused with an access denial rather than "already in use" - the
+    ''' Hyper-V / WSL / Docker excluded-range case. Matched literally and case-sensitively;
+    ''' it is a marker precisely because the OS error text around it is localized. Must stay
+    ''' identical to service.ExcludedRangeMarker in the worker repo.</summary>
+    Public Const ExcludedRangeMarker As String = " [excluded-range]"
+
     ''' <summary>Outcome of a ShareFoldersAsync call.</summary>
     Public NotInheritable Class ShareResult
         ''' <summary>The worker exe was found next to the app.</summary>
@@ -134,8 +141,12 @@ Public Module ShareController
     End Function
 
     ''' <summary>
-    ''' Pushes the network policy (max simultaneous connections + LAN-only switch)
-    ''' from ShareSettings to the worker via SetNetworkPolicy. This is the ENFORCING
+    ''' Pushes the network policy (max simultaneous connections + LAN-only switch +
+    ''' the pinned listen port) from ShareSettings to the worker via SetNetworkPolicy.
+    ''' The port rides here rather than on a request type of its own because this is
+    ''' already the server-wide-knobs channel, is already pushed before StartServer and
+    ''' on the resume path, and already restarts a running server when a knob changes -
+    ''' which a port change needs anyway. This is the ENFORCING
     ''' side of "LAN only": it stops the worker opening any UPnP/NAT-PMP hole and
     ''' advertising a WAN path, not just stripping the exported config. Best-effort -
     ''' an older worker soft-fails on the unknown request type and keeps its
@@ -148,8 +159,79 @@ Public Module ShareController
         Await SendAsync(New WorkerRequest With {
             .type = "SetNetworkPolicy",
             .maxConnections = ShareSettings.ClampConnections(s.MaxConnections),
-            .lanOnly = s.LanOnlyExport
+            .lanOnly = s.LanOnlyExport,
+            .port = ShareSettings.ClampPort(s.ListenPort)
         }, 5000)
+    End Function
+
+    ''' <summary>
+    ''' The port this PC serves on, whether or not the server happens to be up. Answered in
+    ''' the order that is actually true: what the worker itself is bound to, then what it
+    ''' will bind next (it reports that while down - the number is in every QR already
+    ''' handed out), then the number recorded on this side. 0 = no port anywhere yet, which
+    ''' only happens before the first ever start.
+    ''' </summary>
+    Public Function EffectivePort(status As WorkerStatus) As Integer
+        If status IsNot Nothing Then
+            If status.Running AndAlso status.ListenPort > 0 Then Return status.ListenPort
+            If status.DesiredPort > 0 Then Return status.DesiredPort
+        End If
+        Try
+            Dim s As New ShareSettings()
+            s.Load()
+            Return ShareSettings.ClampPort(s.ListenPort)
+        Catch
+            Return ShareSettings.UnsetPort
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' The honest verdict on the port, or "" when there is nothing to say. Two ways it can
+    ''' fail to be the port, and neither may be silent: the worker refused to bind it and
+    ''' stayed down (busy / inside a Hyper-V excluded range), or an older worker dropped the
+    ''' unknown request field and is serving on a different number - which PortSupported
+    ''' identifies rather than leaves us guessing. Called from the status -> UI path, so it
+    ''' must never throw.
+    ''' </summary>
+    Public Function PortWarning(status As WorkerStatus) As String
+        Dim want As Integer
+        Try
+            Dim s As New ShareSettings()
+            s.Load()
+            want = ShareSettings.ClampPort(s.ListenPort)
+        Catch
+            want = ShareSettings.UnsetPort
+        End Try
+        Return PortWarning(status, want)
+    End Function
+
+    ''' <summary>The verdict itself, with the port recorded on this side passed in - the
+    ''' whole decision without a registry read, which is what makes it testable.</summary>
+    Public Function PortWarning(status As WorkerStatus, want As Integer) As String
+        If status Is Nothing Then Return ""
+        If Not status.Running Then
+            ' Only a FAILED start is ours to explain - a share the user simply turned off
+            ' is not a port problem.
+            If String.IsNullOrEmpty(status.LastStartError) Then Return ""
+            ' The number comes from the worker when it has one: a start can fail on a port
+            ' this side never recorded (the OS-assigned first one), and "some port is
+            ' busy" would be a useless sentence.
+            Dim busy As Integer = If(status.DesiredPort > 0, status.DesiredPort, want)
+            If busy = ShareSettings.UnsetPort Then Return ""
+            Dim text As String = ShareText.PortBusyText(busy)
+            ' The worker marks an access denial (as opposed to a plain "in use") with a
+            ' stable ASCII token, because the OS message itself is localized. That case
+            ' needs the second line - nothing is listening and the port still cannot be
+            ' bound, which is unguessable without naming Hyper-V/WSL/Docker.
+            If status.LastStartError.IndexOf(ExcludedRangeMarker, StringComparison.Ordinal) >= 0 Then
+                text &= Environment.NewLine & ShareText.PortExcludedRangeHint()
+            End If
+            Return text
+        End If
+        ' Serving on a number nobody asked for. Only reachable against a worker too old to
+        ' understand the request field, which is what the message says.
+        If want = ShareSettings.UnsetPort OrElse status.ListenPort = want Then Return ""
+        Return ShareText.PortMismatchText(want, status.ListenPort)
     End Function
 
     ''' <summary>Resets the worker's local usage counters (stats.json) and returns the

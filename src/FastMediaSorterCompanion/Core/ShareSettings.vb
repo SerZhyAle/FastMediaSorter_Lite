@@ -54,6 +54,36 @@ Public Class ShareSettings
     Public Const MinMaxConnections As Integer = 1
     Public Const MaxMaxConnections As Integer = 99999
 
+    ''' <summary>The SFTP listen port (015_SPECIFICATION_SHARE_MANUAL_PORT.md). It is a
+    ''' GUARANTEED setting, not a mode: this number is printed in every QR code and .fmscfg
+    ''' handed out and typed by hand into router forwarding rules, so it moves when the owner
+    ''' moves it and at no other time. <see cref="UnsetPort"/> (0) is not "automatic" - it
+    ''' only means nobody has recorded a number on THIS side yet, in which case the worker's
+    ''' own persisted port (Status.DesiredPort) is the answer; the OS chooses exactly once,
+    ''' on the first ever start, and that choice is then permanent too.</summary>
+    Public Property ListenPort As Integer = UnsetPort ' Share_ListenPort
+
+    ''' <summary>"No number recorded here" - never a request to let the port float.</summary>
+    Public Const UnsetPort As Integer = 0
+
+    ''' <summary>Floor for a chosen port. NOT a permission constraint - unlike Unix, Windows
+    ''' lets any process bind 22 or 80 - but a footgun guard: low ports collide with system
+    ''' listeners (OpenSSH on 22, HTTP.SYS on 80/443, WinRM on 5985) and the bind failure
+    ''' reads as our bug.</summary>
+    Public Const MinFixedPort As Integer = 1024
+
+    Public Const MaxFixedPort As Integer = 65535
+
+    ''' <summary>Recommended ceiling, carried by the UI hint rather than enforced: 49152 is
+    ''' where the Windows dynamic/ephemeral range starts, and a port inside it can be taken
+    ''' by any outgoing connection from any process before the worker starts - which is the
+    ''' one way a guaranteed port can still fail to come up.</summary>
+    Public Const RecommendedMaxFixedPort As Integer = 49151
+
+    ''' <summary>Offered only when nothing better is known - the normal path shows the port
+    ''' the server is already on, so nobody has to invent a number.</summary>
+    Public Const SuggestedFixedPort As Integer = 2222
+
     ' --- Share Manager window geometry + section state -------------------------
     '
     ' The window used to have neither: a 980x700 MinimumSize scaled to 1715x1225 at 175%
@@ -100,6 +130,7 @@ Public Class ShareSettings
         LanOnlyExport = ReadBool("Share_LanOnlyExport", False)
         ExcludePasswordFromExport = ReadBool("Share_ExcludePassword", False)
         MaxConnections = ClampConnections(ReadInt("Share_MaxConnections", DefaultMaxConnections))
+        ListenPort = ClampPort(ReadInt("Share_ListenPort", UnsetPort))
         WindowX = ReadInt("Share_WindowX", -1)
         WindowY = ReadInt("Share_WindowY", -1)
         WindowWidth = ReadInt("Share_WindowWidth", 0)
@@ -117,6 +148,7 @@ Public Class ShareSettings
         WriteBool("Share_LanOnlyExport", LanOnlyExport)
         WriteBool("Share_ExcludePassword", ExcludePasswordFromExport)
         WriteInt("Share_MaxConnections", ClampConnections(MaxConnections))
+        WriteInt("Share_ListenPort", ClampPort(ListenPort))
         WriteInt("Share_WindowX", WindowX)
         WriteInt("Share_WindowY", WindowY)
         WriteInt("Share_WindowWidth", WindowWidth)
@@ -126,6 +158,17 @@ Public Class ShareSettings
         ' ServerFeaturesEnabled is intentionally NOT written here - ServerFeatures
         ' owns that flag (see the property remark).
     End Sub
+
+    ''' <summary>Clamps a listen-port value: 0 (and anything below it) means "not recorded",
+    ''' and a chosen port is kept inside [1024, 65535]. Everything reading or writing the
+    ''' setting goes through here, so a hand-edited registry value can never reach the
+    ''' worker.</summary>
+    Public Shared Function ClampPort(value As Integer) As Integer
+        If value <= UnsetPort Then Return UnsetPort
+        If value < MinFixedPort Then Return MinFixedPort
+        If value > MaxFixedPort Then Return MaxFixedPort
+        Return value
+    End Function
 
     ''' <summary>Clamps a connection-limit value into the accepted [1, 99999] range;
     ''' a stored 0 (never set) degrades to the default.</summary>

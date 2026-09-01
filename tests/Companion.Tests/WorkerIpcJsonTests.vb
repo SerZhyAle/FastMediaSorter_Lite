@@ -70,6 +70,44 @@ Public Class WorkerIpcJsonTests
         Assert.False(resp.Status.Reachability.IsCgnat)
     End Sub
 
+    ''' <summary>The port rides an EXISTING request type as a nullable field, so an unset
+    ''' port must be OMITTED rather than sent as 0. The port is a setting, not a mode: both
+    ''' "absent" and 0 mean "leave it alone" - there is nothing to switch back to.</summary>
+    <Fact>
+    Public Sub SetNetworkPolicy_Request_CarriesThePortOnlyWhenSet()
+        Dim without As String = JsonSerializer.Serialize(
+            New WorkerRequest With {.type = "SetNetworkPolicy", .maxConnections = 10}, WriteOpts)
+        Assert.DoesNotContain("port", without)
+
+        Dim withPort As String = JsonSerializer.Serialize(
+            New WorkerRequest With {.type = "SetNetworkPolicy", .maxConnections = 10, .port = 2222}, WriteOpts)
+        Assert.Contains("""port"":2222", withPort)
+
+        Dim unchanged As String = JsonSerializer.Serialize(
+            New WorkerRequest With {.type = "SetNetworkPolicy", .port = 0}, WriteOpts)
+        Assert.Contains("""port"":0", unchanged)
+    End Sub
+
+    ''' <summary>The three additive status fields bind, and an older worker that omits them
+    ''' degrades to 0/False/Nothing rather than failing the whole response.</summary>
+    <Fact>
+    Public Sub Status_BindsDesiredPortAndStartError()
+        Dim wire As String =
+            "{""schemaVersion"":1,""ok"":true,""status"":{""running"":false,""listenPort"":0," &
+            """roots"":[],""lastError"":""x"",""desiredPort"":2222,""portSupported"":true," &
+            """lastStartError"":""port 2222 unavailable [excluded-range]: bind""}}"
+        Dim resp As WorkerResponse = JsonSerializer.Deserialize(Of WorkerResponse)(wire, ReadOpts)
+        Assert.Equal(2222, resp.Status.DesiredPort)
+        Assert.True(resp.Status.PortSupported)
+        Assert.Contains(ShareController.ExcludedRangeMarker, resp.Status.LastStartError)
+
+        Dim older As String = "{""schemaVersion"":1,""ok"":true,""status"":{""running"":true,""listenPort"":2222,""roots"":[]}}"
+        Dim old As WorkerResponse = JsonSerializer.Deserialize(Of WorkerResponse)(older, ReadOpts)
+        Assert.Equal(0, old.Status.DesiredPort)
+        Assert.False(old.Status.PortSupported)
+        Assert.Null(old.Status.LastStartError)
+    End Sub
+
     <Fact>
     Public Sub Response_ErrorEnvelope_Binds()
         Dim wire As String = "{""schemaVersion"":1,""ok"":false,""error"":""schema mismatch""}"

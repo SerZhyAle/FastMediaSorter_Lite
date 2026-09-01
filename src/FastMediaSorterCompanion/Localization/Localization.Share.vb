@@ -324,6 +324,20 @@ Partial Public NotInheritable Class Localization
             "在您的 Wi-Fi 和互联网上均可访问 - 外部端口已响应来自外网的检测。")
 
         ' {0} = the port the outside world would knock on (mapped external port, else listen port).
+        Add("Сейчас работает только в вашей сети Wi-Fi. Порт {0} открыт на роутере автоматически (UPnP), но снаружи не отвечает - похоже, входящие подключения закрывает провайдер.",
+            "For now this works only on your Wi-Fi. Port {0} was opened on the router automatically (UPnP), but it does not answer from outside - your provider is probably blocking inbound connections.",
+            "Зараз працює лише у вашій мережі Wi-Fi. Порт {0} відкрито на роутері автоматично (UPnP), але ззовні він не відповідає - схоже, вхідні підключення закриває провайдер.",
+            "Derzeit funktioniert das nur in Ihrem WLAN. Port {0} wurde am Router automatisch geöffnet (UPnP), antwortet von außen aber nicht - vermutlich blockiert Ihr Anbieter eingehende Verbindungen.",
+            "Per ora funziona solo nella tua rete Wi-Fi. La porta {0} è stata aperta sul router automaticamente (UPnP), ma dall'esterno non risponde: probabilmente il provider blocca le connessioni in entrata.",
+            "Por ahora solo funciona en tu red Wi-Fi. El puerto {0} se abrió en el router automáticamente (UPnP), pero no responde desde fuera: seguramente tu proveedor bloquea las conexiones entrantes.",
+            "Pour l'instant, cela ne fonctionne que sur votre Wi-Fi. Le port {0} a été ouvert automatiquement sur le routeur (UPnP), mais il ne répond pas de l'extérieur - votre fournisseur bloque probablement les connexions entrantes.",
+            "Por agora funciona apenas na sua rede Wi-Fi. A porta {0} foi aberta no router automaticamente (UPnP), mas não responde do exterior - o seu operador deve estar a bloquear ligações de entrada.",
+            "يعمل حاليًا داخل شبكة Wi-Fi لديك فقط. فُتح المنفذ {0} على الموجّه تلقائيًا (UPnP)، لكنه لا يستجيب من الخارج - على الأرجح يحجب المزوّد الاتصالات الواردة.",
+            "अभी यह केवल आपके Wi-Fi नेटवर्क में काम करता है। पोर्ट {0} राउटर पर स्वतः खुल गया (UPnP), पर बाहर से उत्तर नहीं देता - संभवतः आपका प्रदाता आने वाले कनेक्शन रोक रहा है।",
+            "এখন এটি কেবল আপনার Wi-Fi নেটওয়ার্কে কাজ করে। পোর্ট {0} রাউটারে স্বয়ংক্রিয়ভাবে খোলা হয়েছে (UPnP), কিন্তু বাইরে থেকে সাড়া দেয় না - সম্ভবত আপনার প্রোভাইডার ইনকামিং সংযোগ আটকে রাখছে।",
+            "ابھی یہ صرف آپ کے Wi-Fi نیٹ ورک میں کام کرتا ہے۔ پورٹ {0} روٹر پر خودکار طور پر کھل گیا (UPnP)، مگر باہر سے جواب نہیں دیتا - غالباً آپ کا فراہم کنندہ آنے والے کنکشنز روک رہا ہے۔",
+            "目前只能在您的 Wi-Fi 网络中使用。端口 {0} 已由路由器自动打开（UPnP），但从外部没有响应 - 可能是运营商屏蔽了入站连接。")
+
         Add("Сейчас работает только в вашей сети Wi-Fi. Порт {0} снаружи не отвечает - похоже, на роутере нет проброса.",
             "Right now this works only on your own Wi-Fi. Port {0} does not answer from outside - the router most likely has no forward for it.",
             "Зараз працює лише у вашій мережі Wi-Fi. Порт {0} ззовні не відповідає - схоже, на роутері немає проброса.",
@@ -705,6 +719,78 @@ Partial Public NotInheritable Class Localization
             "3. 找到「端口转发」板块（Port Forwarding / Virtual Server）。" & vbCrLf &
             "4. 添加规则：外部端口 {1} -> {2}:{3}，协议 TCP。" & vbCrLf &
             "5. 保存规则 - 然后在手机上重新扫描二维码（或重新保存 .fmscfg）。")
+
+        ' --- the pinned listen port -----------------------------------------------
+
+        Add("Этот же номер вы прописываете в правиле проброса на роутере, и он записан в выданных QR-кодах. Программа его не меняет - поменяете вы, поменяйте и в роутере. Лучше держать число меньше 49152: выше начинается диапазон, из которого Windows раздаёт порты исходящим соединениям, и его может занять любая программа.",
+            "This is the same number you put in the router's forwarding rule, and it is written into the QR codes you handed out. The program never changes it - if you change it, change it on the router too. Better keep it below 49152: above that is the range Windows hands out to outgoing connections, and any program can take it.",
+            "Цей самий номер ви прописуєте в правилі пробросу на роутері, і він записаний у виданих QR-кодах. Програма його не змінює - зміните ви, змініть і в роутері. Краще тримати число менше 49152: вище починається діапазон, з якого Windows роздає порти вихідним з'єднанням, і його може зайняти будь-яка програма.",
+            "Dieselbe Zahl tragen Sie in die Weiterleitungsregel des Routers ein, und sie steht in den bereits verteilten QR-Codes. Das Programm ändert sie nie - ändern Sie sie, ändern Sie sie auch im Router. Halten Sie sie möglichst unter 49152: darüber beginnt der Bereich, aus dem Windows Ports für ausgehende Verbindungen vergibt, und den kann jedes Programm belegen.",
+            "È lo stesso numero che scrivi nella regola di inoltro del router ed è scritto nei codici QR che hai distribuito. Il programma non lo cambia mai: se lo cambi tu, cambialo anche sul router. Meglio tenerlo sotto 49152: sopra inizia l'intervallo che Windows assegna alle connessioni in uscita, e qualsiasi programma può occuparlo.",
+            "Es el mismo número que pones en la regla de reenvío del router y que está escrito en los códigos QR que repartiste. El programa nunca lo cambia: si lo cambias tú, cámbialo también en el router. Mejor mantenerlo por debajo de 49152: por encima empieza el rango que Windows reparte a las conexiones salientes, y cualquier programa puede ocuparlo.",
+            "C'est le même numéro que vous indiquez dans la règle de redirection du routeur, et il est inscrit dans les codes QR déjà distribués. Le programme ne le change jamais : si vous le changez, changez-le aussi sur le routeur. Mieux vaut rester sous 49152 : au-dessus commence la plage que Windows attribue aux connexions sortantes, et n'importe quel programme peut la prendre.",
+            "É o mesmo número que indica na regra de encaminhamento do router e que está escrito nos códigos QR distribuídos. O programa nunca o muda - se o mudar, mude-o também no router. É melhor mantê-lo abaixo de 49152: acima disso começa o intervalo que o Windows atribui às ligações de saída, e qualquer programa o pode ocupar.",
+            "هو نفسه الرقم الذي تكتبه في قاعدة التوجيه على الموجّه، وهو مكتوب في رموز QR التي وزّعتها. البرنامج لا يغيّره أبدًا - وإذا غيّرته أنت فغيّره في الموجّه أيضًا. يُفضَّل إبقاؤه أقل من 49152: فوق ذلك يبدأ النطاق الذي يوزّعه Windows على الاتصالات الصادرة، ويمكن لأي برنامج أن يشغله.",
+            "यही संख्या आप राउटर के फ़ॉरवर्डिंग नियम में लिखते हैं, और यही बाँटे गए QR कोड में दर्ज है। कार्यक्रम इसे कभी नहीं बदलता - आप बदलें तो राउटर में भी बदलें। इसे 49152 से नीचे रखना बेहतर है: उससे ऊपर वह श्रेणी शुरू होती है जिसे Windows बाहर जाने वाले कनेक्शनों को देता है, और उसे कोई भी प्रोग्राम ले सकता है।",
+            "এই একই সংখ্যা আপনি রাউটারের ফরওয়ার্ডিং নিয়মে লেখেন, আর সেটিই দেওয়া QR কোডে লেখা আছে। প্রোগ্রাম এটি কখনও বদলায় না - আপনি বদলালে রাউটারেও বদলান। এটি 49152-এর নিচে রাখা ভালো: তার উপরে সেই পরিসর শুরু হয় যা Windows বাইরে যাওয়া সংযোগগুলিকে দেয়, আর যেকোনো প্রোগ্রাম সেটি দখল করতে পারে।",
+            "یہی نمبر آپ روٹر کے فارورڈنگ اصول میں لکھتے ہیں، اور یہی دیے گئے QR کوڈز میں درج ہے۔ پروگرام اسے کبھی نہیں بدلتا - آپ بدلیں تو روٹر میں بھی بدلیں۔ اسے 49152 سے نیچے رکھنا بہتر ہے: اس سے اوپر وہ حد شروع ہوتی ہے جو Windows باہر جانے والے کنکشنز کو دیتا ہے، اور اسے کوئی بھی پروگرام لے سکتا ہے۔",
+            "这就是您填进路由器转发规则里的号码，也写在已经发出的二维码中。程序从不改动它 - 您改了它，也请在路由器上一并改。最好保持小于 49152：再往上是 Windows 分配给对外连接的范围，任何程序都可能占用。")
+
+        Add("Порт {0} занят другой программой - общий доступ не запущен. Освободите порт или выберите другой номер (кнопка «Подобрать свободный» рядом с полем) - и поменяйте его в правиле на роутере.",
+            "Port {0} is taken by another program - sharing did not start. Free that port, or choose another number (the «Find a free one» button next to the field) - and change it in the router rule too.",
+            "Порт {0} зайнятий іншою програмою - спільний доступ не запущено. Звільніть порт або виберіть інший номер (кнопка «Підібрати вільний» поряд з полем) - і змініть його в правилі на роутері.",
+            "Port {0} ist von einem anderen Programm belegt - die Freigabe wurde nicht gestartet. Geben Sie den Port frei oder wählen Sie eine andere Zahl (Schaltfläche «Freien suchen» neben dem Feld) - und ändern Sie sie auch in der Router-Regel.",
+            "La porta {0} è occupata da un altro programma: la condivisione non è partita. Libera quella porta oppure scegli un altro numero (il pulsante «Trova una libera» accanto al campo) e cambialo anche nella regola del router.",
+            "El puerto {0} está ocupado por otro programa: no se inició el acceso compartido. Libera ese puerto o elige otro número (el botón «Buscar uno libre» junto al campo) y cámbialo también en la regla del router.",
+            "Le port {0} est occupé par un autre programme - le partage n'a pas démarré. Libérez ce port ou choisissez un autre numéro (le bouton «En trouver un libre» à côté du champ) - et changez-le aussi dans la règle du routeur.",
+            "A porta {0} está ocupada por outro programa - a partilha não arrancou. Liberte essa porta ou escolha outro número (o botão «Encontrar uma livre» ao lado do campo) - e mude-o também na regra do router.",
+            "المنفذ {0} مشغول ببرنامج آخر - لم تبدأ المشاركة. حرّر المنفذ أو اختر رقمًا آخر (زر «اختيار منفذ متاح» بجانب الحقل) - وغيّره أيضًا في قاعدة الموجّه.",
+            "पोर्ट {0} किसी दूसरे प्रोग्राम के पास है - साझा पहुँच शुरू नहीं हुई। वह पोर्ट खाली करें या दूसरी संख्या चुनें (फ़ील्ड के पास «कोई खाली चुनें» बटन) - और राउटर के नियम में भी बदल दें।",
+            "পোর্ট {0} অন্য একটি প্রোগ্রামের দখলে - শেয়ারিং চালু হয়নি। পোর্টটি খালি করুন বা অন্য একটি সংখ্যা বেছে নিন (ফিল্ডের পাশে «একটি খালি খুঁজুন» বোতাম) - আর রাউটারের নিয়মেও সেটি বদলে দিন।",
+            "پورٹ {0} کسی دوسرے پروگرام کے پاس ہے - اشتراک شروع نہیں ہوا۔ وہ پورٹ خالی کریں یا دوسرا نمبر منتخب کریں (فیلڈ کے پاس «کوئی خالی تلاش کریں» بٹن) - اور روٹر کے اصول میں بھی بدل دیں۔",
+            "端口 {0} 已被其他程序占用 - 共享未启动。请释放该端口，或选择另一个号码（字段旁的「查找空闲端口」按钮）- 并在路由器规则中一并修改。")
+
+        Add("Порт не удаётся занять, хотя его никто не слушает. Возможно, он попал в диапазон, зарезервированный Hyper-V, WSL или Docker. Проверьте командой: netsh int ipv4 show excludedportrange tcp",
+            "The port cannot be bound even though nothing is listening on it. It may fall inside a range reserved by Hyper-V, WSL or Docker. Check with: netsh int ipv4 show excludedportrange tcp",
+            "Порт не вдається зайняти, хоча його ніхто не слухає. Можливо, він потрапив у діапазон, зарезервований Hyper-V, WSL або Docker. Перевірте командою: netsh int ipv4 show excludedportrange tcp",
+            "Der Port lässt sich nicht belegen, obwohl niemand darauf lauscht. Möglicherweise liegt er in einem von Hyper-V, WSL oder Docker reservierten Bereich. Prüfen Sie mit: netsh int ipv4 show excludedportrange tcp",
+            "La porta non può essere occupata anche se nessuno è in ascolto. Potrebbe rientrare in un intervallo riservato da Hyper-V, WSL o Docker. Verifica con: netsh int ipv4 show excludedportrange tcp",
+            "El puerto no se puede ocupar aunque nadie escucha en él. Puede estar dentro de un rango reservado por Hyper-V, WSL o Docker. Compruébalo con: netsh int ipv4 show excludedportrange tcp",
+            "Le port ne peut pas être pris alors que personne ne l'écoute. Il est peut-être dans une plage réservée par Hyper-V, WSL ou Docker. Vérifiez avec : netsh int ipv4 show excludedportrange tcp",
+            "Não é possível ocupar a porta embora ninguém esteja à escuta. Pode estar num intervalo reservado pelo Hyper-V, WSL ou Docker. Verifique com: netsh int ipv4 show excludedportrange tcp",
+            "لا يمكن حجز المنفذ رغم أنّ لا أحد يستمع عليه. ربما يقع ضمن نطاق محجوز لـ Hyper-V أو WSL أو Docker. تحقّق بالأمر: netsh int ipv4 show excludedportrange tcp",
+            "पोर्ट पर कोई सुन नहीं रहा, फिर भी उसे लिया नहीं जा सकता। संभव है वह Hyper-V, WSL या Docker द्वारा सुरक्षित रखी गई श्रेणी में आता हो। इस आदेश से जाँचें: netsh int ipv4 show excludedportrange tcp",
+            "কেউ শুনছে না, তবুও পোর্টটি দখল করা যাচ্ছে না। সম্ভবত এটি Hyper-V, WSL বা Docker-এর সংরক্ষিত পরিসরে পড়েছে। এই কমান্ড দিয়ে দেখুন: netsh int ipv4 show excludedportrange tcp",
+            "پورٹ پر کوئی سن نہیں رہا، پھر بھی اسے حاصل نہیں کیا جا سکتا۔ ممکن ہے یہ Hyper-V، WSL یا Docker کی محفوظ کردہ حد میں آتا ہو۔ اس کمانڈ سے جانچیں: netsh int ipv4 show excludedportrange tcp",
+            "虽然没有程序在监听，该端口仍无法占用。它可能落在 Hyper-V、WSL 或 Docker 预留的范围内。请用命令检查：netsh int ipv4 show excludedportrange tcp")
+
+        Add("Сервер работает на порту {0}, а не на выбранном {1}. Обновите приложение - установленный рабочий модуль ещё не умеет выбирать порт.",
+            "The server is running on port {0}, not the chosen {1}. Update the app - the installed worker cannot choose a port yet.",
+            "Сервер працює на порту {0}, а не на вибраному {1}. Оновіть застосунок - встановлений робочий модуль ще не вміє вибирати порт.",
+            "Der Server läuft auf Port {0}, nicht auf dem gewählten {1}. Aktualisieren Sie die App - das installierte Arbeitsmodul kann den Port noch nicht wählen.",
+            "Il server è in esecuzione sulla porta {0}, non su quella scelta {1}. Aggiorna l'app: il modulo installato non sa ancora scegliere la porta.",
+            "El servidor funciona en el puerto {0}, no en el elegido {1}. Actualiza la aplicación: el módulo instalado todavía no sabe elegir el puerto.",
+            "Le serveur tourne sur le port {0}, pas sur celui choisi {1}. Mettez l'application à jour - le module installé ne sait pas encore choisir le port.",
+            "O servidor está a funcionar na porta {0} e não na escolhida {1}. Atualize a aplicação - o módulo instalado ainda não sabe escolher a porta.",
+            "الخادم يعمل على المنفذ {0} وليس على المنفذ المختار {1}. حدّث التطبيق - وحدة العمل المثبَّتة لا تستطيع بعد اختيار المنفذ.",
+            "सर्वर पोर्ट {0} पर चल रहा है, चुने गए {1} पर नहीं। ऐप अपडेट करें - स्थापित वर्कर मॉड्यूल अभी पोर्ट चुनना नहीं जानता।",
+            "সার্ভার চলছে পোর্ট {0}-এ, নির্বাচিত {1}-এ নয়। অ্যাপটি আপডেট করুন - ইনস্টল করা ওয়ার্কার মডিউল এখনও পোর্ট বেছে নিতে পারে না।",
+            "سرور پورٹ {0} پر چل رہا ہے، منتخب کردہ {1} پر نہیں۔ ایپ اپ ڈیٹ کریں - نصب شدہ ورکر ماڈیول ابھی پورٹ منتخب کرنا نہیں جانتا۔",
+            "服务器运行在端口 {0}，而不是所选的 {1}。请更新应用 - 已安装的工作模块尚不支持选择端口。")
+
+        Add("Порт изменился - выданные раньше QR-коды и файлы настроек больше не подходят. Создайте их заново.",
+            "The port changed - QR codes and config files you handed out earlier no longer match. Export them again.",
+            "Порт змінився - видані раніше QR-коди та файли налаштувань більше не підходять. Створіть їх заново.",
+            "Der Port hat sich geändert - bereits verteilte QR-Codes und Konfigurationsdateien passen nicht mehr. Erstellen Sie sie neu.",
+            "La porta è cambiata: i codici QR e i file di configurazione già distribuiti non sono più validi. Creali di nuovo.",
+            "El puerto ha cambiado: los códigos QR y los archivos de configuración ya repartidos dejan de servir. Vuelve a crearlos.",
+            "Le port a changé - les codes QR et fichiers de configuration déjà distribués ne conviennent plus. Recréez-les.",
+            "A porta mudou - os códigos QR e ficheiros de configuração já distribuídos deixaram de servir. Crie-os de novo.",
+            "تغيّر المنفذ - رموز QR وملفات الإعداد التي وزّعتها من قبل لم تعد صالحة. أنشئها من جديد.",
+            "पोर्ट बदल गया है - पहले बाँटे गए QR कोड और सेटिंग फ़ाइलें अब मेल नहीं खातीं। उन्हें दोबारा बनाएँ।",
+            "পোর্ট বদলে গেছে - আগে দেওয়া QR কোড ও কনফিগ ফাইল আর মেলে না। সেগুলি আবার তৈরি করুন।",
+            "پورٹ بدل گیا ہے - پہلے دیے گئے QR کوڈ اور سیٹنگ فائلیں اب مطابقت نہیں رکھتیں۔ انہیں دوبارہ بنائیں۔",
+            "端口已更改 - 之前发出的二维码和配置文件不再匹配。请重新生成。")
 
     End Sub
 

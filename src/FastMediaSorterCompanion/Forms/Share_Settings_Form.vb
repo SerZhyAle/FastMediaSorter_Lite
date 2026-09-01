@@ -47,6 +47,9 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private chkAutostart As CheckBox
     Private chkOpenOnStart As CheckBox
     Private numMaxConns As NumericUpDown
+    Private numPort As NumericUpDown
+    Private lnkFreePort As LinkLabel
+    Private lblPortNote As Label
     Private toolTip As ToolTip
 
     Private _root As TableLayoutPanel
@@ -72,6 +75,18 @@ Partial Public NotInheritable Class Share_Settings_Form
             Return _changed
         End Get
     End Property
+
+    ''' <summary>True when something here changed what the WORKER is doing - today only the
+    ''' pinned port, which restarts a running server on another number. Nothing elevated
+    ''' happened, so <see cref="Changed"/> stays false, but the caller's status snapshot (the
+    ''' port it prints, the state line) is stale all the same and has to be re-read.</summary>
+    Public ReadOnly Property WorkerStateChanged As Boolean
+        Get
+            Return _portPushed
+        End Get
+    End Property
+
+    Private _portPushed As Boolean
 
     Public Sub New(Optional status As WorkerStatus = Nothing)
         _status = status
@@ -186,6 +201,42 @@ Partial Public NotInheritable Class Share_Settings_Form
         sec.AddBodyRow(pnlConns)
         toolTip.SetToolTip(numMaxConns, Localization.T("Сколько устройств могут быть подключены одновременно. По умолчанию 10; можно от 1 до 99999. Значение меньше 2 может кратко отклонять переподключение телефона."))
 
+        ' The listen port (015_SPECIFICATION_SHARE_MANUAL_PORT.md). A plain number, not a
+        ' mode: this IS the port, the one in the router rule and in every QR handed out. It
+        ' was briefly a "Fixed port" checkbox, which was wrong twice over - it implied the
+        ' port otherwise drifts by design (it does not; that was a bug, now fixed), and it
+        ' offered a second state nobody wants for a number that lives inside a printed code.
+        Dim pnlPort As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .WrapContents = False, .Margin = New Padding(0, 8, 0, 0)}
+        Dim lblPort As New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 6, 0),
+            .Text = Localization.T("Порт:")}
+        numPort = New NumericUpDown With {.Minimum = ShareSettings.MinFixedPort,
+            .Maximum = ShareSettings.MaxFixedPort, .Value = ShareSettings.SuggestedFixedPort,
+            .Width = 84, .Margin = New Padding(0, 2, 0, 0)}
+        ' The escape hatch for the one way a guaranteed port can still fail: somebody else
+        ' took it. "Pick another" should not mean guessing a number.
+        lnkFreePort = New LinkLabel With {.AutoSize = True, .Margin = New Padding(10, 6, 0, 0),
+            .Text = Localization.T("Подобрать свободный")}
+        AddHandler numPort.ValueChanged, AddressOf OnPortValueChanged
+        AddHandler numPort.Leave, AddressOf OnPortCommit
+        AddHandler lnkFreePort.LinkClicked, AddressOf OnPickFreePort
+        pnlPort.Controls.Add(lblPort)
+        pnlPort.Controls.Add(numPort)
+        pnlPort.Controls.Add(lnkFreePort)
+        sec.AddBodyRow(pnlPort)
+        toolTip.SetToolTip(numPort, ShareText.PortHint())
+
+        sec.AddBodyRow(New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
+            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 4, 0, 0),
+            .Text = ShareText.PortHint()})
+
+        ' One live line under the control: why the port is not serving, or that the codes
+        ' handed out earlier no longer match. A port that failed to bind must never read as
+        ' a plain "sharing is off".
+        lblPortNote = New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
+            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 4, 0, 0)}
+        sec.AddBodyRow(lblPortNote)
+
         ' Calm, factual reachability note (decision F): same-network devices can reach the
         ' share while it runs. It sits here rather than on the main window because it is
         ' the footnote of the setting above, not a state anybody reads per session.
@@ -249,6 +300,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             End If
             chkOpenOnStart.Checked = _settings.OpenWindowOnStartup
             numMaxConns.Value = ShareSettings.ClampConnections(_settings.MaxConnections)
+            LoadPortState()
             If ServerFeatures.IsSystemServiceHost() Then
                 ' Autostart still governs whether the CONSOLE appears, but no longer
                 ' whether the folders are reachable - say so where the confusion is.
@@ -272,12 +324,116 @@ Partial Public NotInheritable Class Share_Settings_Form
                                  Localization.T("Автозапуск включён"),
                                  Localization.T("Автозапуск выключен"))
         _secStartup.SummaryColor = SystemColors.GrayText
-        _secNetwork.Summary = Localization.TF("до {0} подключений", CInt(numMaxConns.Value))
+        ' The port is exactly the kind of fact a folded section must still answer: someone
+        ' opens this dialog to check which number their router rule has to name.
+        _secNetwork.Summary = Localization.TF("до {0} подключений, порт {1}",
+                                              CInt(numMaxConns.Value), CInt(numPort.Value))
         _secNetwork.SummaryColor = SystemColors.GrayText
         ' Verbatim from HostingText - the same sentence the group's own first line shows,
         ' so the folded and unfolded states cannot drift apart.
         _secHosting.Summary = HostingText.HostModeLine(ServerFeatures.HostMode())
         _secHosting.SummaryColor = SystemColors.GrayText
+    End Sub
+
+    ' --- the pinned listen port -------------------------------------------------
+
+    ''' <summary>
+    ''' Fills the port row with the port this PC actually serves on - from the worker, which
+    ''' reports it even while the server is down, because that number is already printed in
+    ''' the QR codes people scanned. The suggestion is only for a machine that has never
+    ''' started sharing at all.
+    ''' </summary>
+    Private Sub LoadPortState()
+        Dim shown As Integer = ShareController.EffectivePort(_status)
+        If shown < ShareSettings.MinFixedPort OrElse shown > ShareSettings.MaxFixedPort Then
+            shown = ShareSettings.SuggestedFixedPort
+        End If
+        numPort.Value = CDec(shown)
+        UpdatePortNote()
+    End Sub
+
+    ''' <summary>The port the server is actually on, or 0. A snapshot from when this dialog
+    ''' opened - the main window owns the live line.</summary>
+    Private Function LivePort() As Integer
+        If _status Is Nothing OrElse Not _status.Running Then Return 0
+        Return _status.ListenPort
+    End Function
+
+    ''' <summary>Either the honest verdict on a port that is not serving, or the re-export
+    ''' reminder once the number really moved. Never a reassurance nobody asked for: with
+    ''' nothing to say the line disappears.</summary>
+    Private Sub UpdatePortNote()
+        If lblPortNote Is Nothing Then Return
+        Dim warn As String = ShareController.PortWarning(_status)
+        If warn <> "" Then
+            lblPortNote.Text = warn
+            lblPortNote.ForeColor = CollapsibleSection.AttentionColor
+        ElseIf LivePort() > 0 AndAlso LivePort() <> CInt(numPort.Value) Then
+            lblPortNote.Text = ShareText.PortReexportHint()
+            lblPortNote.ForeColor = CollapsibleSection.AttentionColor
+        Else
+            lblPortNote.Text = ""
+            lblPortNote.ForeColor = SystemColors.GrayText
+        End If
+        lblPortNote.Visible = lblPortNote.Text <> ""
+    End Sub
+
+    ''' <summary>Records the port on this side. The worker keeps its own copy and is the one
+    ''' that guarantees it; this is what the window shows and what gets re-pushed on the next
+    ''' resume, so the two must not drift.</summary>
+    Private Sub SavePortChoice()
+        _settings.ListenPort = ShareSettings.ClampPort(CInt(numPort.Value))
+        _settings.Save()
+    End Sub
+
+    ''' <summary>Fills the field with a port that is free right now. Advisory - anything can
+    ''' take it between the probe and the worker's bind - so it is committed through the same
+    ''' path as a typed number and the worker still has the last word.</summary>
+    Private Async Sub OnPickFreePort(sender As Object, e As LinkLabelLinkClickedEventArgs)
+        Dim found As Integer = FreePortFinder.FindFree(CInt(numPort.Value))
+        If found = ShareSettings.UnsetPort Then Return
+        Dim prev As Boolean = _loading
+        _loading = True
+        numPort.Value = CDec(found)
+        _loading = prev
+        Try
+            SavePortChoice()
+        Catch
+        End Try
+        UpdatePortNote()
+        UpdateSummaries()
+        _portPushed = True
+        Try
+            Await ShareController.PushNetworkPolicyAsync()
+        Catch
+        End Try
+    End Sub
+
+    ''' <summary>Persist on every tick (cheap, local); the push waits for Leave, exactly as
+    ''' the connection cap does - a spinner passing through 2221 must not restart a running
+    ''' server on each intermediate value.</summary>
+    Private Sub OnPortValueChanged(sender As Object, e As EventArgs)
+        If _loading Then Return
+        Try
+            SavePortChoice()
+        Catch
+        End Try
+        UpdatePortNote()
+        UpdateSummaries()
+    End Sub
+
+    Private Async Sub OnPortCommit(sender As Object, e As EventArgs)
+        If _loading Then Return
+        Try
+            SavePortChoice()
+        Catch
+        End Try
+        _portPushed = True
+        Try
+            Await ShareController.PushNetworkPolicyAsync()
+        Catch
+        End Try
+        UpdatePortNote()
     End Sub
 
     ' --- handlers (moved verbatim from MainWindow) ------------------------------

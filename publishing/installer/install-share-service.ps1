@@ -433,7 +433,7 @@ function Resolve-UserDataDir([string]$hint) {
     return $hint
 }
 
-function Copy-State([string]$from, [string]$to) {
+function Copy-State([string]$from, [string]$to, [switch]$OnlyWhenTargetIsFresh) {
     if (-not (Test-Path -LiteralPath $from)) {
         Write-Log "no state to migrate from '$from' - starting fresh"
         return
@@ -449,6 +449,17 @@ function Copy-State([string]$from, [string]$to) {
             # Two different identities. Overwriting either one breaks the phones paired
             # to it, so this is a stop, not a merge.
             Fail "'$to' already holds a DIFFERENT host key ($($target.fingerprint)) than '$from' ($($source.fingerprint)). Migration stopped - remove or back up one of them by hand, otherwise paired phones would need re-pairing." 7
+        }
+        if ($OnlyWhenTargetIsFresh -and $target.hostKeyPresent) {
+            # Migration is a ONE-TIME move, and it has already happened: this directory
+            # holds the identity and is what the service has been serving from. Every
+            # later install would otherwise copy the per-user directory - a snapshot of
+            # whenever the User edition last ran - back over it, rolling the LIVE state
+            # backwards: the listen port (silently invalidating the router forward and
+            # every QR already handed out), the share list, the credential, the counters.
+            # Same identity, nothing to preserve, so nothing to copy.
+            Write-Log "'$to' already holds this identity - keeping the machine state as it is (nothing migrated)"
+            return
         }
     } else {
         New-Item -ItemType Directory -Path $to -Force | Out-Null
@@ -852,7 +863,10 @@ switch ($Action) {
         # the elevating administrator's profile - see Resolve-ManagementSid.
         $ManageSid = Resolve-ManagementSid $ManageSid $sourceDir
         Write-Log "management SID(s): $ManageSid"
-        Copy-State $sourceDir $DataDir
+        # -OnlyWhenTargetIsFresh: the Server installer passes /MIGRATEFROMUSER on EVERY
+        # install, so this runs on ordinary upgrades too. Only the first one is a
+        # migration; after that the machine directory is the live state and must win.
+        Copy-State $sourceDir $DataDir -OnlyWhenTargetIsFresh
         Set-MachineDataDirAcl
         Sync-ServiceBinaries
         Remove-ServiceRegistration

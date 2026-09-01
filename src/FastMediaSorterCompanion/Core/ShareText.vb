@@ -132,6 +132,12 @@ Public Module ShareText
             Return Localization.T("Сейчас работает только в вашей сети Wi-Fi. Провайдер использует CGNAT - доступ через интернет невозможен.")
         ElseIf reach.ExternalPortChecked AndAlso reach.ExternalPortOpen Then
             Return Localization.T("Работает и в вашей сети Wi-Fi, и через интернет - внешний порт ответил на проверку снаружи.")
+        ElseIf reach.ExternalPortChecked AndAlso Not String.IsNullOrEmpty(reach.PortMapMethod) Then
+            ' A mapping demonstrably exists (UPnP/NAT-PMP reported one) and the outside
+            ' still cannot get in, so "there is no forward on the router" would be a wrong
+            ' guess about the one thing we can actually see. What is left upstream: the
+            ' provider filtering inbound connections, or the check itself being refused.
+            Return Localization.TF("Сейчас работает только в вашей сети Wi-Fi. Порт {0} открыт на роутере автоматически (UPnP), но снаружи не отвечает - похоже, входящие подключения закрывает провайдер.", port)
         ElseIf reach.ExternalPortChecked Then
             Return Localization.TF("Сейчас работает только в вашей сети Wi-Fi. Порт {0} снаружи не отвечает - похоже, на роутере нет проброса.", port)
         ElseIf ext.Length > 0 AndAlso Not String.IsNullOrEmpty(reach.PortMapMethod) Then
@@ -195,7 +201,12 @@ Public Module ShareText
     Public Function AccessTestResultLine(res As SftpProbe.ProbeResult, endpoint As String) As String
         Select Case res
             Case SftpProbe.ProbeResult.SshOk
-                Return Localization.TF("✓ Доступ из интернета работает: {0}", endpoint)
+                ' NOT "internet access works". The probe leaves from this PC and comes back
+                ' through the router's own WAN address, so it never reaches the internet:
+                ' it proves the forwarding rule points here, and says nothing about whether
+                ' the provider lets an inbound connection through. Claiming otherwise put a
+                ' green "works" next to the worker's honest "the outside got no answer".
+                Return Localization.TF("Сервер ответил по внешнему адресу {0} - но проверка не покидала вашу сеть.", endpoint)
             Case SftpProbe.ProbeResult.PortOpen
                 Return Localization.TF("Порт открыт, но SFTP не ответил: {0}", endpoint)
             Case SftpProbe.ProbeResult.Timeout, SftpProbe.ProbeResult.Refused
@@ -213,7 +224,7 @@ Public Module ShareText
     Public Function AccessTestDetail(res As SftpProbe.ProbeResult) As String
         Select Case res
             Case SftpProbe.ProbeResult.SshOk
-                Return Localization.T("Сервер ответил по внешнему адресу - проброс порта работает. Телефон подключится из любой сети: нажмите «Поделиться» вверху и покажите ему QR-код.")
+                Return Localization.T("Запрос ушёл с этого ПК на внешний адрес роутера и вернулся внутрь - так проверяется правило проброса, но не то, пускает ли провайдер входящие подключения снаружи. Окончательно подтвердит только телефон: выключите на нём Wi-Fi, оставьте мобильный интернет и откройте QR-код.")
             Case SftpProbe.ProbeResult.PortOpen
                 Return Localization.T("Порт снаружи открыт, но ответила не наша программа. Обычно так бывает, когда правило проброса на роутере ведёт на другое устройство или этот порт занят другой службой. Проверьте правило: внешний порт должен вести на этот ПК и на порт раздачи.")
             Case SftpProbe.ProbeResult.Timeout, SftpProbe.ProbeResult.Refused
@@ -292,6 +303,40 @@ Public Module ShareText
             "4. Добавьте правило: внешний порт {1} -> {2}:{3}, протокол TCP." & vbCrLf &
             "5. Сохраните правило - и заново отсканируйте QR-код (или сохраните .fmscfg) на телефоне.",
             router, extPort, lanIp, port)
+    End Function
+
+    ' --- the listen port (015_SPECIFICATION_SHARE_MANUAL_PORT.md §5) -------------
+
+    ''' <summary>What the number under the field is for - it is the same one the router rule
+    ''' and every QR carry - plus the one piece of advice worth giving about choosing it.</summary>
+    Public Function PortHint() As String
+        Return Localization.T("Этот же номер вы прописываете в правиле проброса на роутере, и он записан в выданных QR-кодах. Программа его не меняет - поменяете вы, поменяйте и в роутере. Лучше держать число меньше 49152: выше начинается диапазон, из которого Windows раздаёт порты исходящим соединениям, и его может занять любая программа.")
+    End Function
+
+    ''' <summary>The port could not be bound, so nothing is being served - stated plainly,
+    ''' with the way out. Silence here would defeat the whole point: the alternative
+    ''' (serving on some other number) looks like success and is not.</summary>
+    Public Function PortBusyText(port As Integer) As String
+        Return Localization.TF("Порт {0} занят другой программой - общий доступ не запущен. Освободите порт или выберите другой номер (кнопка «Подобрать свободный» рядом с полем) - и поменяйте его в правиле на роутере.", port)
+    End Function
+
+    ''' <summary>Shown only when the bind failed with nothing visibly listening on the
+    ''' port - the famously confusing case where Hyper-V, WSL2 or Docker Desktop reserved a
+    ''' whole block at boot and netstat shows it free.</summary>
+    Public Function PortExcludedRangeHint() As String
+        Return Localization.T("Порт не удаётся занять, хотя его никто не слушает. Возможно, он попал в диапазон, зарезервированный Hyper-V, WSL или Docker. Проверьте командой: netsh int ipv4 show excludedportrange tcp")
+    End Function
+
+    ''' <summary>We asked for one port and the server runs on another - which only happens
+    ''' when the installed worker predates the setting and silently dropped the field.</summary>
+    Public Function PortMismatchText(want As Integer, got As Integer) As String
+        Return Localization.TF("Сервер работает на порту {0}, а не на выбранном {1}. Обновите приложение - установленный рабочий модуль ещё не умеет выбирать порт.", got, want)
+    End Function
+
+    ''' <summary>A port change invalidates everything already exported - said once, where
+    ''' the change is made.</summary>
+    Public Function PortReexportHint() As String
+        Return Localization.T("Порт изменился - выданные раньше QR-коды и файлы настроек больше не подходят. Создайте их заново.")
     End Function
 
 End Module

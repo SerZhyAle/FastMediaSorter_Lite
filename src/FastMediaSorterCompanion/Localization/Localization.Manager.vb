@@ -167,6 +167,16 @@ Partial Public NotInheritable Class Localization
             "بیک وقت کتنے آلات جڑے رہ سکتے ہیں۔ پہلے سے طے شدہ 10؛ 1 سے 99999 تک۔ 2 سے کم پر فون کا دوبارہ کنکشن مختصر وقت کے لیے مسترد ہو سکتا ہے۔",
             "可同时连接的设备数量。默认 10；可设 1 至 99999。小于 2 时，手机重新连接可能被短暂拒绝。")
 
+        Add("Порт:",
+            "Port:", "Порт:", "Port:", "Porta:", "Puerto:", "Port :", "Porta:",
+            "المنفذ:", "पोर्ट:", "পোর্ট:", "پورٹ:", "端口：")
+
+        Add("Подобрать свободный",
+            "Find a free one", "Підібрати вільний", "Freien suchen", "Trova una libera",
+            "Buscar uno libre", "En trouver un libre", "Encontrar uma livre",
+            "اختيار منفذ متاح", "कोई खाली चुनें", "একটি খালি খুঁজুন",
+            "کوئی خالی تلاش کریں", "查找空闲端口")
+
         ' --- usage counters -------------------------------------------------------
 
         Add("Статистика раздачи",
@@ -405,13 +415,19 @@ Partial Public NotInheritable Class Localization
             "अभी कोई इंटरनेट पता नहीं।", "এখনও কোনো ইন্টারনেট ঠিকানা নেই।",
             "ابھی کوئی انٹرنیٹ پتہ نہیں۔", "尚无互联网地址。")
 
-        Add("✓ Доступ из интернета работает: {0}",
-            "✓ Internet access works: {0}", "✓ Доступ з інтернету працює: {0}",
-            "✓ Internetzugriff funktioniert: {0}", "✓ L'accesso da internet funziona: {0}",
-            "✓ El acceso desde internet funciona: {0}", "✓ L'accès depuis internet fonctionne : {0}",
-            "✓ O acesso pela internet funciona: {0}", "✓ الوصول من الإنترنت يعمل: {0}",
-            "✓ इंटरनेट पहुँच काम कर रही है: {0}", "✓ ইন্টারনেট অ্যাক্সেস কাজ করছে: {0}",
-            "✓ انٹرنیٹ رسائی کام کر رہی ہے: {0}", "✓ 互联网访问正常：{0}")
+        Add("Сервер ответил по внешнему адресу {0} - но проверка не покидала вашу сеть.",
+            "The server answered on the external address {0} - but the check never left your network.",
+            "Сервер відповів на зовнішній адресі {0} - але перевірка не покидала вашу мережу.",
+            "Der Server hat unter der externen Adresse {0} geantwortet - die Prüfung hat Ihr Netzwerk aber nie verlassen.",
+            "Il server ha risposto all'indirizzo esterno {0}, ma la verifica non ha lasciato la tua rete.",
+            "El servidor respondió en la dirección externa {0}, pero la comprobación no salió de tu red.",
+            "Le serveur a répondu à l'adresse externe {0} - mais la vérification n'a jamais quitté votre réseau.",
+            "O servidor respondeu no endereço externo {0} - mas a verificação nunca saiu da sua rede.",
+            "استجاب الخادم على العنوان الخارجي {0} - لكن الفحص لم يغادر شبكتك.",
+            "सर्वर ने बाहरी पते {0} पर उत्तर दिया - पर यह जाँच आपके नेटवर्क से बाहर गई ही नहीं।",
+            "সার্ভার বাহ্যিক ঠিকানা {0}-এ সাড়া দিয়েছে - তবে পরীক্ষাটি আপনার নেটওয়ার্কের বাইরে যায়নি।",
+            "سرور نے بیرونی پتے {0} پر جواب دیا - مگر یہ جانچ آپ کے نیٹ ورک سے باہر گئی ہی نہیں۔",
+            "服务器在外部地址 {0} 上作出了响应 - 但这次检查从未离开您的网络。")
 
         Add("✗ С этого ПК не отвечает. Роутер может не пускать на свой адрес изнутри - проверьте с телефона по мобильной сети.",
             "✗ No answer from this PC. Your router may block its own address from inside - test from the phone on mobile data.",
@@ -444,19 +460,19 @@ Partial Public NotInheritable Class Localization
             "Endereço testado: {0}", "العنوان المُختبَر: {0}", "जाँचा गया पता: {0}",
             "পরীক্ষিত ঠিকানা: {0}", "جانچا گیا پتہ: {0}", "测试的地址：{0}")
 
-        Add("Сервер ответил по внешнему адресу - проброс порта работает. Телефон подключится из любой сети: нажмите «Поделиться» вверху и покажите ему QR-код.",
-            "The server answered on the external address - port forwarding works. The phone will connect from any network: press 'Share' at the top and show it the QR code.",
-            "Сервер відповів за зовнішньою адресою - проброс порту працює. Телефон підключиться з будь-якої мережі: натисніть «Поділитися» вгорі й покажіть йому QR-код.",
-            "Der Server hat über die externe Adresse geantwortet - die Portweiterleitung funktioniert. Das Telefon verbindet sich aus jedem Netz: oben auf «Teilen» klicken und ihm den QR-Code zeigen.",
-            "Il server ha risposto sull'indirizzo esterno: l'inoltro della porta funziona. Il telefono si collegherà da qualsiasi rete: premi «Condividi» in alto e mostragli il codice QR.",
-            "El servidor respondió en la dirección externa: la redirección de puerto funciona. El teléfono se conectará desde cualquier red: pulsa «Compartir» arriba y muéstrale el código QR.",
-            "Le serveur a répondu sur l'adresse externe - la redirection de port fonctionne. Le téléphone se connectera depuis n'importe quel réseau : cliquez sur « Partager » en haut et montrez-lui le code QR.",
-            "O servidor respondeu no endereço externo - o encaminhamento de porta funciona. O telemóvel liga-se a partir de qualquer rede: carregue em «Partilhar» no topo e mostre-lhe o código QR.",
-            "استجاب الخادم على العنوان الخارجي - إعادة توجيه المنفذ تعمل. سيتصل الهاتف من أي شبكة: اضغط «مشاركة» في الأعلى وأظهر له رمز QR.",
-            "सर्वर ने बाहरी पते पर उत्तर दिया - पोर्ट फ़ॉरवर्डिंग काम कर रही है। फ़ोन किसी भी नेटवर्क से जुड़ जाएगा: ऊपर «साझा करें» दबाएँ और उसे QR कोड दिखाएँ।",
-            "সার্ভার বাহ্যিক ঠিকানায় সাড়া দিয়েছে - পোর্ট ফরওয়ার্ডিং কাজ করছে। ফোন যেকোনো নেটওয়ার্ক থেকে সংযুক্ত হবে: উপরে «শেয়ার করুন» চাপুন এবং তাকে QR কোডটি দেখান।",
-            "سرور نے بیرونی پتے پر جواب دیا - پورٹ فارورڈنگ کام کر رہی ہے۔ فون کسی بھی نیٹ ورک سے جڑ جائے گا: اوپر «شیئر کریں» دبائیں اور اسے QR کوڈ دکھائیں۔",
-            "服务器已在外部地址上响应 - 端口转发正常。手机可从任意网络连接：点击顶部的「共享」，把二维码给它扫描。")
+        Add("Запрос ушёл с этого ПК на внешний адрес роутера и вернулся внутрь - так проверяется правило проброса, но не то, пускает ли провайдер входящие подключения снаружи. Окончательно подтвердит только телефон: выключите на нём Wi-Fi, оставьте мобильный интернет и откройте QR-код.",
+            "The request left this PC for the router's external address and came straight back inside - that tests the forwarding rule, not whether your provider lets inbound connections in from outside. Only the phone can settle it: turn its Wi-Fi off, leave mobile data on and open the QR code.",
+            "Запит пішов з цього ПК на зовнішню адресу роутера і повернувся всередину - так перевіряється правило пробросу, але не те, чи пускає провайдер вхідні підключення ззовні. Остаточно підтвердить лише телефон: вимкніть на ньому Wi-Fi, залиште мобільний інтернет і відкрийте QR-код.",
+            "Die Anfrage ging von diesem PC an die externe Adresse des Routers und kam direkt wieder herein - das prüft die Weiterleitungsregel, nicht ob Ihr Anbieter eingehende Verbindungen von außen zulässt. Endgültig klärt das nur das Telefon: WLAN dort ausschalten, mobile Daten anlassen und den QR-Code öffnen.",
+            "La richiesta è partita da questo PC verso l'indirizzo esterno del router ed è rientrata subito: così si verifica la regola di inoltro, non se il provider accetta connessioni in ingresso dall'esterno. Solo il telefono può dirlo con certezza: spegni il Wi-Fi, lascia i dati mobili e apri il codice QR.",
+            "La petición salió de este PC hacia la dirección externa del router y volvió adentro: eso comprueba la regla de reenvío, no si tu proveedor permite conexiones entrantes desde fuera. Solo el teléfono lo confirma: apaga su Wi-Fi, deja los datos móviles y abre el código QR.",
+            "La requête est partie de ce PC vers l'adresse externe du routeur et est revenue à l'intérieur - cela teste la règle de redirection, pas le fait que votre fournisseur laisse entrer les connexions depuis l'extérieur. Seul le téléphone peut trancher : coupez son Wi-Fi, laissez les données mobiles et ouvrez le code QR.",
+            "O pedido saiu deste PC para o endereço externo do router e voltou logo para dentro - isso testa a regra de encaminhamento, não se o seu operador deixa entrar ligações vindas de fora. Só o telemóvel confirma: desligue o Wi-Fi, deixe os dados móveis e abra o código QR.",
+            "خرج الطلب من هذا الحاسوب إلى العنوان الخارجي للموجّه وعاد إلى الداخل مباشرة - وهذا يختبر قاعدة التوجيه، لا ما إذا كان المزوّد يسمح بالاتصالات الواردة من الخارج. الهاتف وحده يحسم الأمر: أوقف Wi-Fi عليه، وأبقِ بيانات الجوال، وافتح رمز QR.",
+            "अनुरोध इस पीसी से राउटर के बाहरी पते पर गया और सीधे भीतर लौट आया - इससे फ़ॉरवर्डिंग नियम की जाँच होती है, यह नहीं कि आपका प्रदाता बाहर से आने वाले कनेक्शन भीतर आने देता है या नहीं। निर्णय केवल फ़ोन कर सकता है: उसका Wi-Fi बंद करें, मोबाइल डेटा चालू रखें और QR कोड खोलें।",
+            "অনুরোধটি এই পিসি থেকে রাউটারের বাহ্যিক ঠিকানায় গিয়ে সরাসরি ভেতরে ফিরে এসেছে - এতে ফরওয়ার্ডিং নিয়ম যাচাই হয়, আপনার প্রোভাইডার বাইরে থেকে আসা সংযোগ ঢুকতে দেয় কি না তা নয়। কেবল ফোনই এটি নিশ্চিত করতে পারে: তার Wi-Fi বন্ধ করুন, মোবাইল ডেটা চালু রাখুন এবং QR কোড খুলুন।",
+            "درخواست اس پی سی سے روٹر کے بیرونی پتے پر گئی اور سیدھی اندر واپس آ گئی - اس سے فارورڈنگ اصول جانچا جاتا ہے، یہ نہیں کہ آپ کا فراہم کنندہ باہر سے آنے والے کنکشنز کو اندر آنے دیتا ہے یا نہیں۔ فیصلہ صرف فون کر سکتا ہے: اس کا Wi-Fi بند کریں، موبائل ڈیٹا چالو رکھیں اور QR کوڈ کھولیں۔",
+            "请求从这台电脑发往路由器的外部地址后又直接绕回内部 - 这检验的是转发规则，而不是运营商是否允许来自外部的入站连接。只有手机能给出结论：关掉它的 Wi-Fi，保留移动数据，然后打开二维码。")
 
         Add("Порт снаружи открыт, но ответила не наша программа. Обычно так бывает, когда правило проброса на роутере ведёт на другое устройство или этот порт занят другой службой. Проверьте правило: внешний порт должен вести на этот ПК и на порт раздачи.",
             "The port is open from outside, but the reply did not come from our program. Usually the forwarding rule on the router points at another device, or another service holds that port. Check the rule: the external port must lead to this PC and to the share port.",
@@ -716,6 +732,14 @@ Partial Public NotInheritable Class Localization
             "Inicio automático desactivado", "Démarrage automatique désactivé", "Arranque automático desativado",
             "التشغيل التلقائي معطّل", "ऑटोस्टार्ट बंद", "অটোস্টার্ট বন্ধ",
             "آٹو اسٹارٹ آف", "自动启动：关")
+
+        Add("до {0} подключений, порт {1}",
+            "up to {0} connections, port {1}", "до {0} підключень, порт {1}",
+            "bis zu {0} Verbindungen, Port {1}", "fino a {0} connessioni, porta {1}",
+            "hasta {0} conexiones, puerto {1}", "jusqu'à {0} connexions, port {1}",
+            "até {0} ligações, porta {1}", "حتى {0} اتصالات، المنفذ {1}",
+            "अधिकतम {0} कनेक्शन, पोर्ट {1}", "সর্বোচ্চ {0} সংযোগ, পোর্ট {1}",
+            "زیادہ سے زیادہ {0} کنکشنز، پورٹ {1}", "最多 {0} 个连接，端口 {1}")
 
         Add("до {0} подключений",
             "up to {0} connections", "до {0} підключень", "bis zu {0} Verbindungen",

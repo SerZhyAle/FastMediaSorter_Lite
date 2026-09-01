@@ -135,6 +135,14 @@ Public Class WorkerRequest
     ''' "unsupported request type", so nothing breaks.</summary>
     Public Property maxConnections As Integer?
     Public Property lanOnly As Boolean?
+    ''' <summary>SetNetworkPolicy: move the SFTP listen port to this number. The worker binds
+    ''' exactly it or does not serve at all - a port that quietly became another one is the
+    ''' precise failure this exists to prevent. The port is a setting, not a mode, so there
+    ''' is nothing to switch back to: 0 and "omitted" both mean unchanged. Additive on an
+    ''' EXISTING request type, which an older worker silently drops rather than rejecting -
+    ''' hence <see cref="WorkerStatus.PortSupported"/>, which turns that into a
+    ''' diagnosis.</summary>
+    Public Property port As Integer?
 End Class
 
 ''' <summary>A shared root. Used both in requests (folders) and status (roots).</summary>
@@ -170,6 +178,19 @@ Public Class WorkerStatus
     Public Property Roots As List(Of ShareFolder)
     ''' <summary>Always present (may be empty). Last server-side error text.</summary>
     Public Property LastError As String
+    ''' <summary>The port this worker serves on, reported even while the server is DOWN -
+    ''' which is exactly when it is needed, since that number is in every QR already handed
+    ''' out and the window must still be able to show it. 0 only before the first ever
+    ''' start.</summary>
+    Public Property DesiredPort As Integer
+    ''' <summary>This worker understands the <c>port</c> request field. Additive: an older
+    ''' worker omits it, so False after we asked for a port positively identifies one - the
+    ''' difference between "update the app" and a mystery number on screen.</summary>
+    Public Property PortSupported As Boolean
+    ''' <summary>Non-empty when the LAST attempt to start the SFTP server failed; cleared by
+    ''' a successful start. The boot-restore path has no requester to answer, so without this
+    ''' a refused pinned port would read as a plain "not running".</summary>
+    Public Property LastStartError As String
     Public Property Reachability As WorkerReachability
     ''' <summary>Local usage counters (SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md §3.2).
     ''' Additive field - absent from an older worker, in which case it stays Nothing and is

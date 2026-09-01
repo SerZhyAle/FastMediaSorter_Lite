@@ -296,6 +296,17 @@ Partial Public NotInheritable Class MainWindow
         lblState.Visible = Not empty
         lblStateDot.Visible = Not empty
 
+        ' A port that kept the server from starting (or that is not the port it ended up on)
+        ' outranks every other line here: the share looks off - or looks fine on a number
+        ' nobody forwarded - and this is the only place that says why.
+        Dim portWarning As String = ShareController.PortWarning(_status)
+        If portWarning <> "" Then
+            lblState.Text = portWarning
+            lblState.ForeColor = CollapsibleSection.AttentionColor
+            lblStateDot.ForeColor = lblState.ForeColor
+            Return
+        End If
+
         If running AndAlso _rootsWithoutAccess > 0 Then
             ' A listener that answers and then refuses every folder is not a working
             ' share, and green is what made that state invisible from this PC: the

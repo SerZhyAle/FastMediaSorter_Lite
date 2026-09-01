@@ -387,7 +387,9 @@ Partial Public NotInheritable Class MainWindow
         Dim changed As Boolean
         Using dlg As New Share_Settings_Form(_status)
             dlg.ShowDialog(Me)
-            changed = dlg.Changed
+            ' Either an elevated hosting action changed the machine, or a pinned port moved
+            ' the running server - both leave the status snapshot here stale.
+            changed = dlg.Changed OrElse dlg.WorkerStateChanged
         End Using
         LoadLocalState()
         If Not changed Then Return
