@@ -186,13 +186,25 @@ email (1-3 business days).
 > file, so asset URLs never go stale. Import it in Partner Center via the submission's listing page →
 > "Import listing data".
 
-> **Status (2026-07-23):** the copy below is **still queued for the NEXT submission** - none of it is on
-> the live listing yet. The last submission to pass certification is **26.7.14.1801 (Submission 2)**,
-> which used the *previous, shorter* description. Everything since then (26.7.15 Share Manager hardening
-> + recipients panel, and the whole 26.7.23.1127 .NET 10 rewrite - zoom, HEIC/AVIF, audio/subtitle
-> tracks, Open URL, video controls, background file ops, media context menus, and the viewer-core fix
-> pass) has queued up in this same unsubmitted copy. The "What's new" block below covers **the full span
-> from 26.7.14.1801 to 26.7.23.1127** - Store users last saw 26.7.14.1801, so all of it is "new" to them.
+> **Status (2026-09-01):** the copy below is **still queued for the NEXT submission** - none of it is on
+> the live listing yet, and the queue has now been growing for six weeks. The last submission recorded
+> as passing certification is **26.7.14.1801 (Submission 2)**, which used the *previous, shorter*
+> description. Everything since then has piled up into this one unsubmitted copy: the 26.7.15 Share
+> Manager hardening + recipients panel, the whole 26.7.23.1127 .NET 10 rewrite (zoom, HEIC/AVIF,
+> audio/subtitle tracks, Open URL, video controls, background file ops, media context menus, the
+> viewer-core fix pass), then 13 UI languages, the Recycle Bin + 50-step undo, reassignable shortcuts,
+> ZIP/CBZ browsing, the image editor, and finally 26.9.1.1550 (audio as its own kind of file with its
+> own screen, animation -> MP4, the decode cache, honest destination-folder failures).
+>
+> The package to upload is `publishing/msix/dist/FastMediaSorter_LITE-26.901.1550.0-x64.msix`
+> (26.9.1.1550 remapped; unsigned on purpose - Microsoft re-signs on certification).
+>
+> **One thing to check first:** `publishing/store/listingData.csv` was exported from Partner Center on
+> 2026-08-14 and its `ReleaseNotes` row holds 26.8.13.2350 copy. An export mirrors the *draft* listing
+> as much as the live one, so it does not prove 26.8.13.2350 shipped. Confirm the live version in
+> Partner Center; if anything later than 26.7.14.1801 did go live, trim the "What's new" block below to
+> what is genuinely new to that reader.
+>
 > Apply the blocks (Description + Product features + What's new) at the next Store submission, not
 > retroactively.
 >
@@ -228,6 +240,18 @@ retired Internet Explorer component is no longer present, now with a full contro
 audio track and subtitle picking) and "Open URL.." to play straight off a network address. Zoom at the
 mouse cursor with drag-to-pan, and right-click/middle-click menus put every action right on the picture
 or video.
+
+Sorting is not only about moving files. Del sends a file to the Recycle Bin where one exists and says
+plainly when there is none - a network drive or a memory stick - instead of pretending; U walks back
+through the last 50 operations, renames and deletions included, each file returning to its folder and
+to its place in the list. A ZIP or CBZ opens like an ordinary folder, so a comic or a folder of scans
+browses, zooms and translates exactly like loose files, with nothing unpacked in advance and nothing
+left behind afterwards. A picture can be marked up and cropped in its own editing window - brush,
+rectangle and ellipse, a live crop frame with handles, Ctrl+Z - then saved over the original or beside
+it in any of six formats, EXIF carried across. An animated WEBP, APNG or GIF can be turned into an
+ordinary MP4 that replaces it, with a seek bar, a pause and full colour. And a music file gets a screen
+of its own: the album cover it carries, or a wave-and-particle animation when it has none, with the
+title, artist, album and format along the bottom, an end-of-track action and a sleep timer.
 
 Share folders with your phone: the bundled companion "Fast Media Sorter: Share Manager" turns this PC
 into a private SFTP server for folders you pick, so the Fast Media Sorter Android app can browse them -
@@ -268,6 +292,19 @@ Internet Explorer больше нет, и теперь с полноценной
 сетевому пути. Масштабирование под курсором мыши с перетаскиванием, а меню по правому/среднему
 клику выносят все действия прямо на изображение или видео.
 
+Сортировка - это не только перемещение файлов. Del отправляет файл в Корзину там, где она есть, и
+честно предупреждает, когда её нет - на сетевом диске или флешке, - вместо того чтобы делать вид; U
+отменяет последние 50 операций, включая переименования и удаления, и каждый файл возвращается в свою
+папку и на своё место в списке. ZIP или CBZ открывается как обычная папка: комикс или папка сканов
+листается, масштабируется и переводится ровно так же, как отдельные файлы, - ничего не нужно
+распаковывать заранее и ничего не остаётся потом. Картинку можно разметить и кадрировать в отдельном
+окне редактирования - кисть, прямоугольник и эллипс, живая рамка кадрирования с маркерами, Ctrl+Z, -
+а затем сохранить поверх оригинала или рядом в одном из шести форматов, с переносом EXIF.
+Анимированный WEBP, APNG или GIF можно превратить в обычный MP4, который его заменит, - с перемоткой,
+паузой и полным цветом. А у музыкального файла появился свой экран: обложка альбома, если она есть, а
+если нет - анимация из волн и частиц, с названием, исполнителем, альбомом и форматом внизу, действием
+в конце дорожки и таймером сна.
+
 Раздавайте папки на телефон: программа-компаньон "Fast Media Sorter: Share Manager" превращает этот
 ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение Fast Media Sorter
 открывало их - в домашней сети Wi-Fi или через интернет - после однократного подключения по QR-коду.
@@ -302,47 +339,63 @@ Right-click/middle-click menus put every action - rotate, translate, move, delet
 Share folders to your phone: a bundled tray companion runs a private, opt-in SFTP server paired by QR (Wi-Fi or internet)
 Optional on-image OCR translation: offline Tesseract OCR + a translator you configure (Ollama / LibreTranslate)
 Set it as your default image viewer for JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, AVIF and SVG
+Del uses the Recycle Bin where there is one and says so when there is not; U undoes the last 50 operations, renames included
+Opens a ZIP or CBZ like a folder: browse, zoom and translate a comic or a folder of scans with nothing unpacked in advance
+Mark up and crop a picture in its own window - brush, rectangle, ellipse, live crop frame, Ctrl+Z - and save over it or beside it
+Turn an animated WEBP, APNG or GIF into an ordinary MP4 that replaces it, with a seek bar, a pause and full colour
+A screen of its own for music: album cover or a wave-and-particle animation, title/artist/album, end-of-track action, sleep timer
 Open source, no account, no ads, no telemetry
 ```
 
-### What's new in this version (Store "release notes" field) - next submission (26.7.14.1801 -> 26.7.23.1127)
+> **20 is the ceiling** - the list above is exactly 20 lines. Adding a feature now means dropping one,
+> not appending a 21st.
 
-> Paste this into the submission's **"What's new in this version"** box (Partner Center does not accept
-> this remotely - it is a per-submission field, **capped at 1500 characters**). EN is the primary; RU is
-> optional for the RU listing. Keep it short - the Store shows only the first lines on the product page.
+### What's new in this version (Store "release notes" field) - next submission (26.7.14.1801 -> 26.9.1.1550)
+
+> Paste this into the submission's **"What's new in this version"** box - **capped at 1500 characters**.
+> EN is the primary; RU is optional for the RU listing. Keep it short: the Store shows only the first
+> lines on the product page, so the biggest, most visible changes come first.
 >
-> **Covers everything since the last live submission (26.7.14.1801).** That includes the 26.7.15 items
-> (recipients panel, share hardening) and the full 26.7.23.1127 .NET 10 rewrite. Biggest/most visible
-> changes first, since the Store truncates; the long viewer-core fix pass is summarized, not itemized.
-> Both blocks below are pre-trimmed to fit the 1500-char cap (EN ~1295, RU ~1420) - don't add detail back
-> without re-checking the length.
+> **This block assumes the last submission to pass certification is still 26.7.14.1801**, as recorded
+> in the status note above - meaning the whole 26.7.23 .NET 10 rewrite plus every 26.8.x and 26.9.1
+> release is new to Store users. `publishing/store/listingData.csv` (exported 2026-08-14) carries
+> release notes for 26.8.13.2350, which is a *prepared draft*, not proof that it shipped. **Check the
+> live version in Partner Center before pasting**: if something later than 26.7.14.1801 did go live,
+> drop the lines it already covers, because "new" has to mean new to the reader.
+>
+> Both blocks are pre-trimmed to fit the 1500-char cap (EN ~1487, RU ~1495) - don't add detail back
+> without re-measuring.
 
 **EN**
 ```
-- Rebuilt as a modern 64-bit program with its own runtime: nothing extra to install, no .NET Framework needed. Your settings carry over.
-- HEIC, HEIF and AVIF (iPhone/camera photos) and animated WEBP now open everywhere, with no extra codec required.
-- Video always plays through the built-in VLC engine, now with a full control bar (seek, mute, volume), audio/subtitle track picking remembered by language, and "Open URL.." for network video.
-- Zoom at the mouse cursor on the numeric keypad's grey keys, with drag-to-pan.
-- Right-click a video or middle-click a picture for a menu with everything you can do to it - rotate, translate, move, delete, and more.
-- File moves/copies now run in the background so the next file appears instantly; moving onto an existing name saves as "name (2)" instead of failing.
-- New: a recipients panel over the media - click destination folders right on the image to sort one-handed with the mouse.
-- "Dynamic perspective" fades the Ambilight-style background bars into a soft halo around the photo.
-- Folder sharing is safer by default: "LAN only" truly blocks internet access, idle/stalled connections drop, failed logins are logged, and connections can be capped.
-- A large pass of fixes across browsing, file operations, slideshow, video and window state.
+- Rebuilt as a modern 64-bit program with its own runtime: nothing extra to install, no .NET Framework. Your settings carry over.
+- HEIC, HEIF, AVIF and animated WEBP open everywhere with no extra codec, and now reopen instantly the second time.
+- Del uses the Recycle Bin where there is one and says so honestly when there is not; U takes back the last 50 operations, renames and deletions included.
+- A ZIP or CBZ opens like a folder: browse, zoom and translate a comic or a folder of scans with nothing unpacked in advance.
+- New: mark up and crop a picture in its own editing window, then save over the original or beside it in any of six formats.
+- New: turn an animated WEBP, APNG or GIF into an ordinary MP4 that replaces it, with a seek bar, a pause and full colour.
+- New: music gets a screen of its own - album cover or a wave animation, track details, an end-of-track action and a sleep timer.
+- Video: a full control bar, audio and subtitle tracks remembered by language, and "Open URL.." for network video.
+- Zoom at the mouse cursor on the numeric keypad's grey keys with drag-to-pan, and menus right on the picture or video.
+- A destination folder that is switched off or asleep says so on the first press instead of after twenty timeouts; a missing last folder is created for you.
+- Keyboard shortcuts can be reassigned, and the settings that were listed but did nothing now do what they say.
+- The interface speaks 13 languages, and folder sharing is safer by default.
 ```
 
 **RU**
 ```
-- Пересобрано как современная 64-битная программа со своей средой выполнения: ничего доустанавливать не нужно, .NET Framework больше не требуется. Настройки сохраняются.
-- HEIC, HEIF и AVIF (фото с iPhone и камер) и анимированные WEBP теперь открываются везде, без дополнительных кодеков.
-- Видео всегда воспроизводится встроенным движком VLC, теперь с панелью управления (перемотка, звук, громкость), выбором аудиодорожки и субтитров по языку и командой "Открыть по адресу.." для сетевого видео.
-- Масштабирование под курсором мыши на серых клавишах цифрового блока, с перетаскиванием.
-- Правый клик по видео или средний клик по картинке - меню со всеми действиями: поворот, перевод, перемещение, удаление и другое.
-- Перемещение/копирование файлов теперь идёт в фоне, следующий файл появляется мгновенно; перемещение на существующее имя сохраняется как "имя (2)" вместо ошибки.
-- Новое: панель получателей поверх медиа - кликайте по папкам назначения прямо на изображении и сортируйте одной рукой мышью.
-- "Динамическая перспектива" превращает полосы фона в стиле ambilight в мягкий ореол вокруг фото.
-- Общий доступ безопаснее по умолчанию: режим "только локальная сеть" действительно блокирует интернет, простаивающие подключения сбрасываются, неудачные входы записываются в журнал, а число подключений можно ограничить.
-- Большой пакет исправлений в просмотре, файловых операциях, слайд-шоу, видео и состоянии окна.
+- Пересобрано как современная 64-битная программа со своей средой выполнения: ничего доустанавливать не нужно, .NET Framework не требуется. Настройки сохраняются.
+- HEIC, HEIF, AVIF и анимированные WEBP открываются везде без дополнительных кодеков, а медленные форматы теперь открываются повторно мгновенно.
+- Del отправляет файл в Корзину там, где она есть, и честно предупреждает, когда её нет; U отменяет последние 50 операций, включая переименования.
+- ZIP или CBZ открывается как папка: комикс или папку сканов можно листать, масштабировать и переводить, ничего не распаковывая заранее.
+- Новое: разметка и кадрирование картинки в отдельном окне - поверх оригинала или рядом, в одном из шести форматов.
+- Новое: анимированный WEBP, APNG или GIF превращается в обычный MP4 - с перемоткой, паузой и полным цветом.
+- Новое: у музыки появился свой экран - обложка альбома или анимация из волн, сведения о дорожке, действие в конце и таймер сна.
+- Видео: панель управления, выбор аудиодорожки и субтитров по языку и "Открыть по адресу.." для сетевого видео.
+- Масштабирование под курсором на серых клавишах цифрового блока и меню прямо на картинке или видео.
+- Папка-получатель, которая выключена или спит, сообщает об этом сразу, а не после двадцати таймаутов; недостающая последняя папка создаётся сама.
+- Горячие клавиши можно переназначать, а настройки, которые были в списке, но ничего не делали, теперь работают.
+- Интерфейс говорит на 13 языках, а раздача папок по умолчанию безопаснее.
 ```
 
 ### runFullTrust justification (keep under ~1000 chars)
