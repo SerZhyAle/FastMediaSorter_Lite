@@ -186,27 +186,28 @@ email (1-3 business days).
 > file, so asset URLs never go stale. Import it in Partner Center via the submission's listing page →
 > "Import listing data".
 
-> **Status (2026-09-01):** the copy below is **still queued for the NEXT submission** - none of it is on
-> the live listing yet, and the queue has now been growing for six weeks. The last submission recorded
-> as passing certification is **26.7.14.1801 (Submission 2)**, which used the *previous, shorter*
-> description. Everything since then has piled up into this one unsubmitted copy: the 26.7.15 Share
-> Manager hardening + recipients panel, the whole 26.7.23.1127 .NET 10 rewrite (zoom, HEIC/AVIF,
-> audio/subtitle tracks, Open URL, video controls, background file ops, media context menus, the
-> viewer-core fix pass), then 13 UI languages, the Recycle Bin + 50-step undo, reassignable shortcuts,
-> ZIP/CBZ browsing, the image editor, and finally 26.9.1.1550 (audio as its own kind of file with its
-> own screen, animation -> MP4, the decode cache, honest destination-folder failures).
+> **Status (2026-09-01): submitted.** The owner uploaded
+> `publishing/msix/dist/FastMediaSorter_LITE-26.901.1550.0-x64.msix` (26.9.1.1550 remapped; unsigned,
+> because Microsoft re-signs on certification) with the copy below, and the submission is in
+> certification - a few business days. **Submitted is not live**: until it passes, the storefront still
+> serves the previous package, so do not treat the blocks below as published copy or start a new
+> version's edits on top of them yet.
 >
-> The package to upload is `publishing/msix/dist/FastMediaSorter_LITE-26.901.1550.0-x64.msix`
-> (26.9.1.1550 remapped; unsigned on purpose - Microsoft re-signs on certification).
+> That submission closed a six-week backlog. The last version recorded as passing certification before
+> it was **26.7.14.1801 (Submission 2)**, with the previous, shorter description; everything after it
+> had piled up unsubmitted - the 26.7.15 Share Manager hardening + recipients panel, the whole
+> 26.7.23.1127 .NET 10 rewrite (zoom, HEIC/AVIF, audio/subtitle tracks, Open URL, video controls,
+> background file ops, media context menus, the viewer-core fix pass), then 13 UI languages, the
+> Recycle Bin + 50-step undo, reassignable shortcuts, ZIP/CBZ browsing, the image editor, and finally
+> 26.9.1.1550 (audio as its own kind of file with its own screen, animation -> MP4, the decode cache,
+> honest destination-folder failures). That is why the "What's new" block spans seven releases rather
+> than one.
 >
-> **One thing to check first:** `publishing/store/listingData.csv` was exported from Partner Center on
-> 2026-08-14 and its `ReleaseNotes` row holds 26.8.13.2350 copy. An export mirrors the *draft* listing
-> as much as the live one, so it does not prove 26.8.13.2350 shipped. Confirm the live version in
-> Partner Center; if anything later than 26.7.14.1801 did go live, trim the "What's new" block below to
-> what is genuinely new to that reader.
->
-> Apply the blocks (Description + Product features + What's new) at the next Store submission, not
-> retroactively.
+> **Next time, write the block for the span since whatever actually went live**, and check that in
+> Partner Center rather than inferring it here: `publishing/store/listingData.csv` is exported from the
+> submission page and mirrors the *draft* as much as the live listing, so its `ReleaseNotes` row is not
+> evidence that a version shipped. Once this submission is certified, the live baseline becomes
+> **26.9.1.1550** and the next block starts there.
 >
 > **Rebrand note (2026-07):** the product **title stays "FastMediaSorter LITE"** in Partner Center
 > (frozen reserved name = the update anchor - do NOT change it). Only the **Description** text below is
@@ -390,21 +391,18 @@ Del использует Корзину там, где она есть, и че�
 > Center, re-export and diff before overwriting the file** - it also holds screenshot and logo asset
 > URLs that only a real export can produce.
 
-### What's new in this version (Store "release notes" field) - next submission (26.7.14.1801 -> 26.9.1.1550)
+### What's new in this version (Store "release notes" field) - submitted 2026-09-01 (26.7.14.1801 -> 26.9.1.1550)
 
-> Paste this into the submission's **"What's new in this version"** box - **capped at 1500 characters**.
-> EN is the primary; RU is optional for the RU listing. Keep it short: the Store shows only the first
-> lines on the product page, so the biggest, most visible changes come first.
+> This is the text that went into the submission's **"What's new in this version"** box - **capped at
+> 1500 characters** (measured: EN 1485, RU 1493). EN is the primary; RU is the RU listing's copy. Keep
+> it short: the Store shows only the first lines on the product page, so the biggest, most visible
+> changes come first.
 >
-> **This block assumes the last submission to pass certification is still 26.7.14.1801**, as recorded
-> in the status note above - meaning the whole 26.7.23 .NET 10 rewrite plus every 26.8.x and 26.9.1
-> release is new to Store users. `publishing/store/listingData.csv` (exported 2026-08-14) carries
-> release notes for 26.8.13.2350, which is a *prepared draft*, not proof that it shipped. **Check the
-> live version in Partner Center before pasting**: if something later than 26.7.14.1801 did go live,
-> drop the lines it already covers, because "new" has to mean new to the reader.
->
-> Both blocks are pre-trimmed to fit the 1500-char cap (EN ~1487, RU ~1495) - don't add detail back
-> without re-measuring.
+> It covers seven releases because the previous certified version was 26.7.14.1801 - see the status
+> note above. **The next block replaces this one and starts from 26.9.1.1550**, assuming this
+> submission certifies; confirm that in Partner Center rather than assuming it. Don't add detail back
+> into either block without re-measuring against the cap - `Build-ListingData.ps1` enforces it and will
+> refuse to regenerate the CSV.
 
 **EN**
 ```
