@@ -52,6 +52,10 @@ Partial Public NotInheritable Class MainWindow
     ''' answer (the console can still fix it later), and re-asking on every status
     ''' refresh would turn a choice into nagging.</summary>
     Private _grantOffered As Boolean
+    ''' <summary>The folder set whose SUBTREES have already been walked. Same reason as
+    ''' <see cref="_grantOffered"/>, plus a second one: the walk touches the disk, so
+    ''' repeating it for an unchanged list would be a cost as well as a nag.</summary>
+    Private _subtreeCheckedKey As String = ""
     ''' <summary>Host path of the row created or edited last, so the list can put the
     ''' selection back on it - the row a user has just been working with is the one the
     ''' next action is almost always meant for.</summary>

@@ -255,10 +255,25 @@ Partial Public NotInheritable Class MainWindow
     ''' says what it costs - the folders stay in the list and the console can still fix
     ''' them later.
     ''' </summary>
+    ''' <summary>
+    ''' The whole access preflight for a folder set: first the shared folders themselves,
+    ''' then everything inside them. The second half is the part that was missing - a
+    ''' readable root says nothing about the tree below it, which is how a phone came to
+    ''' receive an empty listing for a folder of 758 files while every check here passed.
+    ''' Skipped when the user has just declined the first grant: one refusal is an answer,
+    ''' asking again in the next breath is nagging.
+    ''' </summary>
     Private Async Function EnsureServiceAccessAsync(folders As List(Of ShareFolder)) As Task
+        If Await EnsureRootAccessAsync(folders) Then
+            Await EnsureSubtreeAccessAsync(folders)
+        End If
+    End Function
+
+    ''' <summary>Returns False only when the user declined the prompt.</summary>
+    Private Async Function EnsureRootAccessAsync(folders As List(Of ShareFolder)) As Task(Of Boolean)
         Dim needy As List(Of ShareFolder) = FolderAccess.RootsNeedingGrant(folders)
-        If needy.Count = 0 Then Return
-        If Not ServiceControl.CanManage() Then Return
+        If needy.Count = 0 Then Return True
+        If Not ServiceControl.CanManage() Then Return True
 
         Dim names As New List(Of String)()
         For Each r As ShareFolder In needy
@@ -267,7 +282,7 @@ Partial Public NotInheritable Class MainWindow
         Dim question As String = HostingText.GrantNeededPrompt(String.Join(Environment.NewLine, names))
         If MessageBox.Show(Me, question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) <> DialogResult.OK Then
             SetHint(HostingText.GrantDeclinedHint())
-            Return
+            Return False
         End If
 
         SetHint(HostingText.GrantWorkingHint())
@@ -283,6 +298,79 @@ Partial Public NotInheritable Class MainWindow
         Dim res As ServiceControl.ManageResult =
             Await Task.Run(Function() ServiceControl.Manage(ServiceControl.ManageAction.GrantRoots, all, readOnlyOnes))
         If res <> ServiceControl.ManageResult.Succeeded Then SetHint(HostingText.ManageResultLine(res))
+        Return True
+    End Function
+
+    ''' <summary>
+    ''' Walks inside the shared folders and offers to repair the subdirectories the
+    ''' serving account cannot read.
+    '''
+    ''' The repair is an explicit ACE for the service account on each blocked folder, not
+    ''' "re-enable ACL inheritance". Inheritance was the obvious guess and it is the wrong
+    ''' one here: in the incident that prompted this, the folders sat under intermediate
+    ''' directories that had inheritance disabled and carried no service ACE of their own,
+    ''' so restoring inheritance only ever brought back Everyone - which is what the whole
+    ''' share had silently been relying on. It also changes access for every other
+    ''' principal at once and leaves no record, where a grant is scoped, recorded in the
+    ''' ledger and removed again on revoke.
+    '''
+    ''' Asked once per folder set: a scan is not free, and a user who said no to this list
+    ''' should not meet it again on the next status tick.
+    ''' </summary>
+    Private Async Function EnsureSubtreeAccessAsync(folders As List(Of ShareFolder)) As Task
+        If folders Is Nothing OrElse folders.Count = 0 Then Return
+        If Not ServiceControl.CanManage() Then Return
+
+        Dim key As String = String.Join("|", folders.Select(Function(f) If(f?.hostPath, "")))
+        If String.Equals(key, _subtreeCheckedKey, StringComparison.OrdinalIgnoreCase) Then Return
+        _subtreeCheckedKey = key
+
+        Dim scan As FolderAccess.SubtreeScan = Await Task.Run(Function() FolderAccess.ScanRoots(folders))
+        If scan Is Nothing OrElse scan.Grantable.Count = 0 Then
+            ' Blocked by an explicit Deny only: reportable, but a grant cannot fix it, so
+            ' it must not raise a UAC prompt that would change nothing.
+            If scan IsNot Nothing AndAlso scan.Blocked.Count > 0 Then SetHint(HostingText.SubtreeBlockedWarning(scan.Blocked.Count))
+            Return
+        End If
+
+        Dim question As String = HostingText.SubtreeGrantPrompt(FolderListForPrompt(scan.Grantable))
+        If MessageBox.Show(Me, question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) <> DialogResult.OK Then
+            SetHint(HostingText.SubtreeBlockedWarning(scan.Blocked.Count))
+            Return
+        End If
+
+        SetHint(HostingText.GrantWorkingHint())
+        Dim readOnlyOnes As List(Of String) = BlockedReadOnlySubset(scan.Grantable, folders)
+        Dim res As ServiceControl.ManageResult =
+            Await Task.Run(Function() ServiceControl.Manage(ServiceControl.ManageAction.GrantRoots, scan.Grantable, readOnlyOnes))
+        SetHint(If(res = ServiceControl.ManageResult.Succeeded, "", HostingText.ManageResultLine(res)))
+    End Function
+
+    ''' <summary>A prompt has to fit on screen: show the first few paths in full and count
+    ''' the rest. Truncating each path instead would hide the very part that identifies
+    ''' the folder, since these differ only deep in the tree.</summary>
+    Private Shared Function FolderListForPrompt(paths As List(Of String)) As String
+        Const shown As Integer = 12
+        If paths.Count <= shown Then Return String.Join(Environment.NewLine, paths)
+        Return String.Join(Environment.NewLine, paths.Take(shown)) & Environment.NewLine &
+               HostingText.AndMore(paths.Count - shown)
+    End Function
+
+    ''' <summary>A blocked subfolder inherits the read/write level of the shared folder it
+    ''' sits under - granting it more than its own root has would quietly widen what the
+    ''' service can do.</summary>
+    Private Shared Function BlockedReadOnlySubset(blocked As List(Of String), folders As List(Of ShareFolder)) As List(Of String)
+        Dim result As New List(Of String)()
+        For Each path As String In blocked
+            For Each f As ShareFolder In folders
+                If f Is Nothing OrElse String.IsNullOrEmpty(f.hostPath) Then Continue For
+                If path.StartsWith(f.hostPath, StringComparison.OrdinalIgnoreCase) Then
+                    If f.readOnly Then result.Add(path)
+                    Exit For
+                End If
+            Next
+        Next
+        Return result
     End Function
 
     ''' <summary>

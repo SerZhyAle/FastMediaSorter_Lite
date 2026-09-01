@@ -4,6 +4,7 @@ Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.IO
 Imports System.Text
+Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 ''' <summary>
@@ -51,6 +52,17 @@ Public NotInheritable Class PackageWizardForm
     Private toolTip As ToolTip
     Private _qrGlyph As Image
     Private _qrImage As Image   ' the current QR bitmap - opened enlarged on demand (no inline preview)
+    ' Access preflight. A code is a promise that the folders behind it open, and until
+    ' the 2026-09-01 incident nothing here checked: the share root was readable, so the
+    ' wizard happily produced a code for a tree whose subfolders the serving account
+    ' could not list, and the only symptom appeared on the phone. The scan runs off the
+    ' UI thread and its result is cached per SELECTION, so toggling the export options
+    ' does not re-walk the disk; _accessGen drops the answer of a scan whose selection
+    ' has already moved on (the generation guard used elsewhere in the app).
+    Private _accessGen As Integer
+    Private _accessKey As String = Nothing
+    Private _accessScan As FolderAccess.SubtreeScan
+    Private _accessChecking As Boolean
     ' Accent colours for the "Show QR" button - match the app's blue share glyph (ShareIcons).
     Private Shared ReadOnly QrAccent As Color = Color.FromArgb(30, 120, 220)
     Private Shared ReadOnly QrAccentDark As Color = Color.FromArgb(18, 78, 150)
@@ -547,7 +559,117 @@ Public NotInheritable Class PackageWizardForm
         Else
             SetHint("")
         End If
+
+        BeginAccessCheck(selected)
     End Sub
+
+    ' --- access preflight -------------------------------------------------------
+
+    ''' <summary>
+    ''' Checks that the folders this code promises can actually be served, and holds the
+    ''' code back until the answer is in. Handing out a QR for a tree the serving account
+    ''' cannot read is the failure this exists to remove - the recipient scans it, gets an
+    ''' empty folder, and nothing on this PC ever says why.
+    '''
+    ''' Cached per selection and run off the UI thread: the walk is bounded but still far
+    ''' too slow to sit in a 250 ms debounce, and re-walking the same folders every time a
+    ''' checkbox moves would make the wizard feel broken.
+    ''' </summary>
+    Private Sub BeginAccessCheck(selected As List(Of ShareFolder))
+        Dim key As String = AccessKeyOf(selected)
+        If String.Equals(key, _accessKey, StringComparison.Ordinal) Then
+            ApplyAccessResult(_accessScan)   ' same folders as last time - reuse the verdict
+            Return
+        End If
+
+        _accessKey = key
+        _accessScan = Nothing
+        _accessChecking = True
+        _accessGen += 1
+        Dim gen As Integer = _accessGen
+
+        ' Held back, not shown-then-withdrawn: a code that appears and then turns out to
+        ' be worthless may already have been scanned.
+        SetQrAvailable(False)
+        SetHint(HostingText.CheckingAccessHint())
+
+        Dim roots As New List(Of ShareFolder)(selected)
+        Task.Run(Function() FolderAccess.ScanRoots(roots, Access_Check_Budget)).
+            ContinueWith(Sub(t As Task(Of FolderAccess.SubtreeScan))
+                             Dim scan As FolderAccess.SubtreeScan = Nothing
+                             Try : scan = t.Result : Catch : End Try
+                             If Me.IsDisposed OrElse Not Me.IsHandleCreated Then Return
+                             Try
+                                 Me.BeginInvoke(Sub()
+                                                    If gen <> _accessGen Then Return   ' the selection moved on
+                                                    _accessChecking = False
+                                                    _accessScan = scan
+                                                    ApplyAccessResult(scan)
+                                                End Sub)
+                             Catch
+                             End Try
+                         End Sub)
+    End Sub
+
+    ''' <summary>The wizard gets a tighter budget than the default: it runs while someone
+    ''' is clicking checkboxes, so a slow answer is worse than a partial one - and a
+    ''' partial one is reported as partial rather than as "all clear".</summary>
+    Private Shared ReadOnly Access_Check_Budget As TimeSpan = TimeSpan.FromSeconds(2)
+
+    ''' <summary>Identity of a selection, so an unrelated edit does not re-walk the disk.
+    ''' Read/write matters as much as the path: a folder shared writable needs more from
+    ''' the serving account than a read-only one.</summary>
+    Private Shared Function AccessKeyOf(selected As List(Of ShareFolder)) As String
+        Dim sb As New StringBuilder()
+        For Each r As ShareFolder In selected
+            If r Is Nothing Then Continue For
+            sb.Append(If(r.hostPath, "")).Append(If(r.readOnly, "|ro", "|rw")).Append(vbLf)
+        Next
+        Return sb.ToString()
+    End Function
+
+    Private Sub ApplyAccessResult(scan As FolderAccess.SubtreeScan)
+        If _accessChecking Then Return
+        Dim usable As Boolean = _config IsNot Nothing AndAlso _qrImage IsNot Nothing
+
+        If scan Is Nothing OrElse scan.Blocked.Count = 0 Then
+            SetQrAvailable(usable)
+            If scan IsNot Nothing AndAlso Not scan.Completed Then SetHint(HostingText.SubtreeScanTruncated(scan.Scanned))
+            Return
+        End If
+
+        ' Every shared folder itself unreadable: the code would open an empty tree, so it
+        ' is not offered at all. The .fmscfg export stays available - a user who knows
+        ' they are about to fix the rights should not have to redo the whole wizard.
+        If AllRootsBlocked(scan) Then
+            SetQrAvailable(False)
+            SetHint(HostingText.SubtreeNothingReadable())
+            Return
+        End If
+
+        ' Part of the tree is served: the code is real, so it is shown - with what it
+        ' will NOT deliver stated plainly next to it.
+        SetQrAvailable(usable)
+        Dim msg As String = HostingText.SubtreeBlockedWarning(scan.Blocked.Count)
+        If Not scan.Completed Then msg &= " " & HostingText.SubtreeScanTruncated(scan.Scanned)
+        SetHint(msg)
+    End Sub
+
+    ''' <summary>True when every selected folder is blocked at its own root - the case
+    ''' where the code promises nothing at all.</summary>
+    Private Function AllRootsBlocked(scan As FolderAccess.SubtreeScan) As Boolean
+        If _status Is Nothing OrElse _status.Roots Is Nothing Then Return False
+        Dim blocked As New HashSet(Of String)(scan.Blocked, StringComparer.OrdinalIgnoreCase)
+        Dim any As Boolean = False
+        For Each row As DataGridViewRow In dgv.Rows
+            If Not CellBool(row, "inc") Then Continue For
+            Dim st As RowState = TryCast(row.Tag, RowState)
+            If st Is Nothing Then Continue For
+            any = True
+            If Not blocked.Contains(st.HostPath) Then Return False
+        Next
+        Return any
+    End Function
 
     Private Sub OnRebuildToggle(sender As Object, e As EventArgs)
         If _loading Then Return

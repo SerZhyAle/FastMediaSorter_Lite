@@ -518,6 +518,10 @@ function Grant-Roots([string[]]$folders, [string[]]$readOnlyFolders, [bool]$righ
     foreach ($ro in @($readOnlyFolders)) {
         if ($ro) { $readOnlySet[$ro.TrimEnd('\')] = $true }
     }
+    # What was granted, and at which level, so the deep pass below can carry the SAME
+    # level down a branch - a subfolder must never end up with more access than the
+    # shared folder it sits under.
+    $granted = @{}
     foreach ($folder in $folders) {
         if (-not $folder) { continue }
         if ($folder -like '\\*') {
@@ -541,6 +545,10 @@ function Grant-Roots([string[]]$folders, [string[]]$readOnlyFolders, [bool]$righ
             $had = if ($existing.PSObject.Properties['rights']) { [string]$existing.rights } else { 'RX' }
             if ($had -eq $rights) {
                 Write-Log "already granted ($rights): $folder"
+                # Still walked below: the root's ACE has not changed, but a folder that
+                # refuses inherited ACEs may have been CREATED inside it since the last
+                # run - which is the whole failure mode this pass exists for.
+                $granted[$folder] = $rights
                 continue
             }
             Write-Log "re-granting '$folder': $had -> $rights"
@@ -555,8 +563,89 @@ function Grant-Roots([string[]]$folders, [string[]]$readOnlyFolders, [bool]$righ
         }
         $ledger = @($ledger | Where-Object { $_.path -ne $folder })
         $ledger += [pscustomobject]@{ path = $folder; sid = $SidLocalService; rights = $rights; preExisting = [bool]$preExisting }
+        $granted[$folder] = $rights
     }
+
+    # Second pass: the grant above is (OI)(CI), and inheritance is exactly what a
+    # folder with a PROTECTED ACL does not accept. Every such folder inside a shared
+    # root is therefore a wall the root grant never reaches past - and so is everything
+    # below it.
+    #
+    # This is not hypothetical. It is what the 2026-09-01 incident actually was: the
+    # share root carried a proper LOCAL SERVICE ACE, two intermediate folders had
+    # inheritance disabled and carried only a stale copy of an older root ACL, and the
+    # whole tree below them was being served through the Everyone ACE in that copy. The
+    # day a tool created a folder without Everyone, it went dark - and re-enabling
+    # inheritance on it, the obvious repair, only ever restored Everyone again.
+    foreach ($entry in $granted.GetEnumerator()) {
+        foreach ($break in (Get-InheritanceBreaks $entry.Key)) {
+            if ($granted.ContainsKey($break)) { continue }
+            if (Test-LocalServiceAce $break) { continue }   # already has its own ACE
+            Write-Log ("granting LOCAL SERVICE {0} access on inheritance break '{1}'" -f $(if ($entry.Value -eq 'M') { 'read/write' } else { 'read' }), $break)
+            & icacls.exe $break /grant ('*{0}:(OI)(CI)({1})' -f $SidLocalService, $entry.Value) | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                Write-Log "WARNING: icacls failed on '$break' (exit $LASTEXITCODE)"
+                continue
+            }
+            $ledger = @($ledger | Where-Object { $_.path -ne $break })
+            $ledger += [pscustomobject]@{ path = $break; sid = $SidLocalService; rights = $entry.Value; preExisting = $false }
+        }
+    }
+
     Save-Ledger $ledger
+}
+
+# Maximum directories one deep pass will look at. A shared root can be a whole disk,
+# and this runs inside a UAC-elevated step the user is waiting on.
+$DeepScanLimit = 20000
+
+# The folders inside $root whose ACL is PROTECTED - i.e. which refuse inherited ACEs,
+# and past which an (OI)(CI) grant on the root has no effect.
+#
+# Only these are reported, not every unreadable folder: a folder that merely lacks the
+# ACE inherits it the moment the root grant is applied, so granting it individually
+# would add an explicit ACE where an inherited one already does the job, and leave a
+# ledger entry to remove later for no reason.
+function Get-InheritanceBreaks([string]$root) {
+    $found = New-Object System.Collections.Generic.List[string]
+    if (-not (Test-Path -LiteralPath $root)) { return $found }
+
+    $pending = New-Object System.Collections.Generic.Stack[string]
+    $pending.Push($root)
+    $seen = 0
+    while ($pending.Count -gt 0) {
+        if ($seen -ge $DeepScanLimit) {
+            Write-Log "deep ACL scan of '$root' stopped at $DeepScanLimit folders - there may be more inheritance breaks below"
+            break
+        }
+        $dir = $pending.Pop()
+        $seen++
+        try {
+            foreach ($child in [System.IO.Directory]::GetDirectories($dir)) {
+                # Never follow a junction/symlink: it can point back up the tree or out
+                # of the share entirely, and widening an ACL somewhere the user never
+                # shared is not this script's business.
+                try {
+                    $attr = [System.IO.File]::GetAttributes($child)
+                    if ($attr -band [System.IO.FileAttributes]::ReparsePoint) { continue }
+                } catch { continue }
+                try {
+                    if ((Get-Acl -LiteralPath $child -ErrorAction Stop).AreAccessRulesProtected) {
+                        $found.Add($child)
+                        # Its children inherit from IT, so the grant we are about to put
+                        # here reaches them; no need to walk further down this branch.
+                        continue
+                    }
+                } catch { continue }
+                $pending.Push($child)
+            }
+        } catch {
+            # Unreadable even elevated, or gone mid-walk. Nothing to grant on a folder
+            # we cannot enumerate, and guessing would only produce noise in the ledger.
+            continue
+        }
+    }
+    return $found
 }
 
 # Reads a property whatever case the writer used. The share list is written by the Go

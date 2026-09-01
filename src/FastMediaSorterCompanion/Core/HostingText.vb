@@ -133,6 +133,48 @@ Public Module HostingText
         Return Localization.T("У службы нет доступа к этой папке - на телефоне она не откроется.")
     End Function
 
+    ''' <summary>
+    ''' The share root is readable but folders INSIDE it are not - the shape of the
+    ''' 2026-09-01 incident, where a phone got an empty listing for a folder of 758
+    ''' files and every check on the PC said the share was fine, because every check
+    ''' looked at the root alone.
+    ''' </summary>
+    Public Function SubtreeBlockedWarning(blocked As Integer) As String
+        Return Localization.TF("Внутри выбранных папок есть подпапки без доступа: {0}. На телефоне они не откроются.", blocked.ToString())
+    End Function
+
+    ''' <summary>Nothing in the selection is readable, so the code would hand the phone
+    ''' an address that opens an empty tree. Showing it anyway is the failure mode this
+    ''' whole check exists to remove.</summary>
+    Public Function SubtreeNothingReadable() As String
+        Return Localization.T("Ни одна из выбранных папок не доступна службе. QR-код не показан: открывать по нему нечего.")
+    End Function
+
+    Public Function FixPermissionsButton() As String
+        Return Localization.T("Исправить права")
+    End Function
+
+    ''' <summary>Asks before the one UAC prompt, naming the folders it is about to
+    ''' change - a machine-affecting action must never be a surprise.</summary>
+    Public Function SubtreeGrantPrompt(folderList As String) As String
+        Return Localization.TF("К этим подпапкам у службы нет доступа - на телефоне они не откроются:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Выдать доступ сейчас? Windows спросит подтверждение.", folderList)
+    End Function
+
+    ''' <summary>A scan that ran out its budget covered only part of the tree. Saying
+    ''' "nothing found" there would be a clean bill of health nobody checked for.</summary>
+    Public Function SubtreeScanTruncated(scanned As Integer) As String
+        Return Localization.TF("Проверено папок: {0} - проверка не завершена, могут быть и другие.", scanned.ToString())
+    End Function
+
+    ''' <summary>Tail of a folder list too long to show in full.</summary>
+    Public Function AndMore(rest As Integer) As String
+        Return Localization.TF("..и ещё {0}", rest.ToString())
+    End Function
+
+    Public Function CheckingAccessHint() As String
+        Return Localization.T("Проверяю доступ к папкам..")
+    End Function
+
     ''' <summary>The switch an ordinary installation can now make on its own: this is
     ''' NOT a second product, it is the same worker under a different host (spec §1 -
     ''' a packaging and host-mode distinction, never a fork).</summary>

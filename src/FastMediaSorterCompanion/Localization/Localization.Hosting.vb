@@ -489,6 +489,84 @@ Partial Public NotInheritable Class Localization
             "کارروائی ناکام رہی۔ تفصیلات سروس لاگ میں ہیں۔",
             "操作失败。详情见服务日志。")
 
+        ' --- subtree access preflight (the 2026-09-01 empty-listing incident) --------
+
+        Add("Внутри выбранных папок есть подпапки без доступа: {0}. На телефоне они не откроются.",
+            "Subfolders without access inside the selected folders: {0}. They will not open on the phone.",
+            "Усередині вибраних папок є підпапки без доступу: {0}. На телефоні вони не відкриються.",
+            "Unterordner ohne Zugriff in den gewählten Ordnern: {0}. Auf dem Telefon lassen sie sich nicht öffnen.",
+            "Sottocartelle senza accesso nelle cartelle selezionate: {0}. Sul telefono non si apriranno.",
+            "Subcarpetas sin acceso dentro de las carpetas seleccionadas: {0}. En el teléfono no se abrirán.",
+            "Sous-dossiers sans accès dans les dossiers sélectionnés : {0}. Ils ne s'ouvriront pas sur le téléphone.",
+            "Subpastas sem acesso nas pastas selecionadas: {0}. No telefone não vão abrir.",
+            "مجلدات فرعية بلا صلاحية وصول داخل المجلدات المحددة: {0}. لن تُفتح على الهاتف.",
+            "चुने गए फ़ोल्डरों के भीतर बिना पहुँच वाले सबफ़ोल्डर: {0}। फ़ोन पर वे नहीं खुलेंगे।",
+            "নির্বাচিত ফোল্ডারের ভিতরে অনুমতিহীন সাবফোল্ডার: {0}। ফোনে সেগুলি খুলবে না।",
+            "منتخب فولڈرز کے اندر بغیر رسائی کے ذیلی فولڈر: {0}۔ فون پر یہ نہیں کھلیں گے۔",
+            "所选文件夹内无权访问的子文件夹：{0}。它们在手机上打不开。")
+
+        Add("Ни одна из выбранных папок не доступна службе. QR-код не показан: открывать по нему нечего.",
+            "The service cannot read any of the selected folders. No QR code is shown: it would open nothing.",
+            "Жодна з вибраних папок не доступна службі. QR-код не показано: відкривати за ним нічого.",
+            "Der Dienst kann keinen der gewählten Ordner lesen. Kein QR-Code: er würde nichts öffnen.",
+            "Il servizio non può leggere nessuna delle cartelle selezionate. Nessun codice QR: non aprirebbe nulla.",
+            "El servicio no puede leer ninguna de las carpetas seleccionadas. No se muestra el código QR: no abriría nada.",
+            "Le service ne peut lire aucun des dossiers sélectionnés. Aucun code QR : il n'ouvrirait rien.",
+            "O serviço não consegue ler nenhuma das pastas selecionadas. Sem código QR: não abriria nada.",
+            "لا تستطيع الخدمة قراءة أي من المجلدات المحددة. لا يُعرض رمز QR: لن يفتح شيئا.",
+            "सेवा चुने गए किसी भी फ़ोल्डर को नहीं पढ़ सकती। QR कोड नहीं दिखाया गया: उससे कुछ नहीं खुलेगा।",
+            "সার্ভিস নির্বাচিত কোনও ফোল্ডারই পড়তে পারে না। QR কোড দেখানো হয়নি: এতে কিছুই খুলবে না।",
+            "سروس منتخب کردہ کوئی بھی فولڈر نہیں پڑھ سکتی۔ QR کوڈ نہیں دکھایا گیا: اس سے کچھ نہیں کھلے گا۔",
+            "服务无法读取任何所选文件夹。未显示二维码：扫描它也打不开任何内容。")
+
+        Add("Исправить права",
+            "Fix permissions", "Виправити права", "Rechte reparieren",
+            "Correggi i permessi", "Corregir permisos", "Corriger les droits",
+            "Corrigir permissões", "إصلاح الأذونات", "अनुमतियाँ ठीक करें",
+            "অনুমতি ঠিক করুন", "اجازتیں درست کریں", "修复权限")
+
+        Add("К этим подпапкам у службы нет доступа - на телефоне они не откроются:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Выдать доступ сейчас? Windows спросит подтверждение.",
+            "The service has no access to these subfolders - they will not open on the phone:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Grant it now? Windows will ask for confirmation.",
+            "Служба не має доступу до цих підпапок - на телефоні вони не відкриються:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Надати доступ зараз? Windows запитає підтвердження.",
+            "Der Dienst hat keinen Zugriff auf diese Unterordner - auf dem Telefon lassen sie sich nicht öffnen:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Jetzt gewähren? Windows fragt nach einer Bestätigung.",
+            "Il servizio non ha accesso a queste sottocartelle - sul telefono non si apriranno:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Concedere l'accesso ora? Windows chiederà conferma.",
+            "El servicio no tiene acceso a estas subcarpetas - en el teléfono no se abrirán:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "¿Concederlo ahora? Windows pedirá confirmación.",
+            "Le service n'a pas accès à ces sous-dossiers - ils ne s'ouvriront pas sur le téléphone :" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "L'accorder maintenant ? Windows demandera une confirmation.",
+            "O serviço não tem acesso a estas subpastas - no telefone não vão abrir:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "Conceder agora? O Windows vai pedir confirmação.",
+            "الخدمة لا تملك صلاحية الوصول إلى هذه المجلدات الفرعية - لن تُفتح على الهاتف:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "هل تمنحها الآن؟ سيطلب Windows تأكيدا.",
+            "सेवा को इन सबफ़ोल्डरों तक पहुँच नहीं है - फ़ोन पर वे नहीं खुलेंगे:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "अभी पहुँच दें? Windows पुष्टि माँगेगा।",
+            "সার্ভিসের এই সাবফোল্ডারগুলিতে অনুমতি নেই - ফোনে সেগুলি খুলবে না:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "এখনই অনুমতি দেবেন? Windows নিশ্চিতকরণ চাইবে।",
+            "سروس کو ان ذیلی فولڈرز تک رسائی نہیں - فون پر یہ نہیں کھلیں گے:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "ابھی رسائی دیں؟ Windows تصدیق مانگے گا۔",
+            "服务无权访问这些子文件夹，它们在手机上打不开：" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "现在授予权限吗？Windows 会要求确认。")
+
+        Add("Проверено папок: {0} - проверка не завершена, могут быть и другие.",
+            "Folders checked: {0} - the check did not finish, there may be more.",
+            "Перевірено тек: {0} - перевірку не завершено, можуть бути й інші.",
+            "Geprüfte Ordner: {0} - die Prüfung wurde nicht abgeschlossen, es können weitere sein.",
+            "Cartelle controllate: {0} - il controllo non è terminato, potrebbero essercene altre.",
+            "Carpetas comprobadas: {0} - la comprobación no terminó, puede haber más.",
+            "Dossiers vérifiés : {0} - la vérification n'est pas terminée, il peut y en avoir d'autres.",
+            "Pastas verificadas: {0} - a verificação não terminou, pode haver mais.",
+            "المجلدات المفحوصة: {0} - لم يكتمل الفحص، وقد يوجد المزيد.",
+            "जाँचे गए फ़ोल्डर: {0} - जाँच पूरी नहीं हुई, और भी हो सकते हैं।",
+            "পরীক্ষিত ফোল্ডার: {0} - পরীক্ষা শেষ হয়নি, আরও থাকতে পারে।",
+            "جانچے گئے فولڈر: {0} - جانچ مکمل نہیں ہوئی، مزید بھی ہو سکتے ہیں۔",
+            "已检查的文件夹：{0} - 检查未完成，可能还有更多。")
+
+        Add("..и ещё {0}",
+            "..and {0} more", "..і ще {0}", "..und {0} weitere",
+            "..e altre {0}", "..y {0} más", "..et {0} de plus",
+            "..e mais {0}", "..و{0} أخرى", "..और {0} अन्य",
+            "..এবং আরও {0}", "..اور {0} مزید", "..另有 {0} 个")
+
+        Add("Проверяю доступ к папкам..",
+            "Checking folder access..", "Перевіряю доступ до тек..", "Prüfe den Ordnerzugriff..",
+            "Controllo l'accesso alle cartelle..", "Comprobando el acceso a las carpetas..",
+            "Vérification de l'accès aux dossiers..", "A verificar o acesso às pastas..",
+            "جارٍ فحص الوصول إلى المجلدات..", "फ़ोल्डर पहुँच जाँची जा रही है..",
+            "ফোল্ডারের অনুমতি পরীক্ষা করা হচ্ছে..", "فولڈر تک رسائی جانچی جا رہی ہے..",
+            "正在检查文件夹访问权限..")
+
     End Sub
 
 End Class

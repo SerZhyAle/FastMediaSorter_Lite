@@ -8,6 +8,10 @@ Categories: `Added`, `Changed`, `Fixed`, `Removed`.
 
 ## [Unreleased]
 
+### Fixed
+- **A shared folder whose subfolders the sharing service cannot read no longer fails silently on the phone.** A phone opened a shared folder holding 758 files and got an empty list. Nothing on the PC was wrong as far as the PC could tell: the shared folder itself was readable, and every check the Share Manager made looked at that folder and no further. Four folders deep inside it had been created by another program with cut-down permissions, and the account the sharing service runs under - which is not the account you are signed in as - could not open them. Three things changed. Adding or switching on a shared folder now **looks inside it as well**, lists any folders that will not be visible on the phone, and offers to repair them in one step; the check is time-limited and says plainly when it did not get to the end, rather than reporting a clean result it never finished. The **access code (QR) is no longer offered for folders that cannot be served** - it is held back entirely when none of the chosen folders can be read, and when only part of a tree is affected the code is still shown with the number of folders that will not open stated next to it. And the repair now reaches the **whole** tree: permission is re-applied at every folder inside a share that had inheritance switched off, which is where the original grant had always stopped without anyone noticing.
+- **The sharing service now records a folder it was refused, and tells the phone the real reason.** A refused folder produced a generic "failure" that a phone cannot act on - it reads the same as a broken connection, which is why the client gave up on the entire folder scan instead of skipping one folder - and it was written to no log at all, so the PC held no trace of what had happened. The service now answers "permission denied", which is what actually happened, and writes one line naming the folder and the operation to its own log. The rest of the shared folders keep working throughout, as they always did.
+
 ## [26.9.1.1550] - 2026-09-01
 
 ### Added
