@@ -1,91 +1,56 @@
 ﻿Field,ID,Type (Type),default,en-us,ru
-Description,2,Text,,"Sort thousands of photos and videos in minutes. Fast Media Sorter is a fast, keyboard-driven viewer
-and sorter for images and video on Windows.
+Description,2,Text,,"Sort thousands of photos and videos in minutes. Fast Media Sorter is a fast, keyboard-driven viewer and sorter for images and video on Windows.
 
-Open a folder and fly through it: full-screen slideshow, quick panel navigation, and one-key Move /
-Copy / Rename / Delete. Assign folders to hotkeys and file each item with a single press -
-a digit moves it, Shift and the same digit copies it - or turn on the recipients panel to click those destination folders right over the image and sort one-handed with
-the mouse. It plays a broad range of video through its built-in VLC engine - H.264/MP4, AVI, MKV, VP9,
-ZMBV and more - and fills letterbox/pillarbox bars with a matching ""ambilight"" background.
+Open a folder and fly through it: full-screen slideshow, quick panel navigation, and one-key Move / Copy / Rename / Delete. Assign folders to hotkeys and file each item with a single press - or turn on the recipients panel to click those destination folders right over the image and sort one-handed with the mouse. It plays a broad range of video through its built-in VLC engine - H.264/MP4, AVI, MKV, VP9, ZMBV and more - and fills letterbox/pillarbox bars with a matching ""ambilight"" background.
 
-Rebuilt as a modern 64-bit app that carries its own runtime: there is nothing extra to install and no
-.NET Framework prerequisite. Static and animated WEBP images open everywhere, because the app decodes
-them itself instead of needing the Windows ""WebP Image Extensions"" codec that some editions of Windows
-lack, and so do HEIC/HEIF and AVIF - the formats iPhones and modern cameras produce - with no paid codec
-required. Video always runs through the built-in VLC engine, so it plays the same on systems where the
-retired Internet Explorer component is no longer present, now with a full control bar (seek, volume,
-audio track and subtitle picking) and ""Open URL.."" to play straight off a network address. Zoom at the
-mouse cursor with drag-to-pan, and right-click/middle-click menus put every action right on the picture
-or video.
+Rebuilt as a modern 64-bit app that carries its own runtime: there is nothing extra to install and no .NET Framework prerequisite. Static and animated WEBP images open everywhere, because the app decodes them itself instead of needing the Windows ""WebP Image Extensions"" codec that some editions of Windows lack, and so do HEIC/HEIF and AVIF - the formats iPhones and modern cameras produce - with no paid codec required. Video always runs through the built-in VLC engine, so it plays the same on systems where the retired Internet Explorer component is no longer present, now with a full control bar (seek, volume, audio track and subtitle picking) and ""Open URL.."" to play straight off a network address. Zoom at the mouse cursor with drag-to-pan, and right-click/middle-click menus put every action right on the picture or video.
 
-Share folders with your phone: the bundled companion ""Fast Media Sorter: Share Manager"" turns this PC
-into a private SFTP server for folders you pick, so the Fast Media Sorter Android app can browse them -
-on your home Wi-Fi or over the internet - after a one-time QR pairing. Sharing is strictly opt-in and
-stays between your own devices; nothing is uploaded to any third party. Sharing runs while you are
-signed in. A separate always-on Server edition, which hosts the same sharing as a Windows service, is
-not part of the Store version - it is available from the project website and winget.
+Sorting is not only about moving files. Del sends a file to the Recycle Bin where one exists and says plainly when there is none - a network drive or a memory stick - instead of pretending; U walks back through the last 50 operations, renames and deletions included, each file returning to its folder and to its place in the list. A ZIP or CBZ opens like an ordinary folder, so a comic or a folder of scans browses, zooms and translates exactly like loose files, with nothing unpacked in advance and nothing left behind afterwards. A picture can be marked up and cropped in its own editing window - brush, rectangle and ellipse, a live crop frame with handles, Ctrl+Z - then saved over the original or beside it in any of six formats, EXIF carried across. An animated WEBP, APNG or GIF can be turned into an ordinary MP4 that replaces it, with a seek bar, a pause and full colour. And a music file gets a screen of its own: the album cover it carries, or a wave-and-particle animation when it has none, with the title, artist, album and format along the bottom, an end-of-track action and a sleep timer.
 
-Optional on-image OCR translation recognizes text in a picture (fully offline, Tesseract) and overlays
-a translation using a provider you configure yourself - a local Ollama model or a LibreTranslate
-endpoint. OCR works without any network connection.
+Share folders with your phone: the bundled companion ""Fast Media Sorter: Share Manager"" turns this PC into a private SFTP server for folders you pick, so the Fast Media Sorter Android app can browse them - on your home Wi-Fi or over the internet - after a one-time QR pairing. Sharing is strictly opt-in and stays between your own devices; nothing is uploaded to any third party. Sharing runs while you are signed in. A separate always-on Server edition, which hosts the same sharing as a Windows service, is not part of the Store version - it is available from the project website and winget.
+
+Optional on-image OCR translation recognizes text in a picture (fully offline, Tesseract) and overlays a translation using a provider you configure yourself - a local Ollama model or a LibreTranslate endpoint. OCR works without any network connection.
 
 No account, no ads, no telemetry. Open source: https://github.com/SerZhyAle/FastMediaSorter_Lite
 
-On the Microsoft Store this app is published as ""FastMediaSorter LITE"".
+On the Microsoft Store this app is published as ""FastMediaSorter LITE"".","Разберите тысячи фото и видео за минуты. Fast Media Sorter - быстрый просмотрщик и сортировщик изображений и видео для Windows, управляемый с клавиатуры.
 
-The interface is available in 13 languages - English, Russian, Ukrainian, German, Italian, Spanish, French, Portuguese, Arabic, Hindi, Bengali, Urdu and Chinese - and follows your Windows display language on first run; a toolbar button switches it any time. Arabic and Urdu are laid out right to left. English, Russian and Ukrainian are proofread by the author; the other ten are machine translations and are not proofread, and corrections are welcome through the issue tracker.","Разберите тысячи фото и видео за минуты. Fast Media Sorter - быстрый просмотрщик и сортировщик
-изображений и видео для Windows, управляемый с клавиатуры.
+Откройте папку и листайте её мгновенно: полноэкранное слайд-шоу, быстрая навигация по панели и перемещение / копирование / переименование / удаление одной клавишей. Назначьте папки на горячие клавиши и раскладывайте файлы одним нажатием - или включите панель получателей и кликайте по этим папкам прямо поверх изображения, сортируя одной рукой мышью. Видео воспроизводится встроенным движком VLC - H.264/MP4, AVI, MKV, VP9, ZMBV и другие - а поля по краям кадра заполняются фоном в стиле ""ambilight"" под цвет изображения.
 
-Откройте папку и листайте её мгновенно: полноэкранное слайд-шоу, быстрая навигация по панели и
-перемещение / копирование / переименование / удаление одной клавишей. Назначьте папки на горячие
-клавиши и раскладывайте файлы одним нажатием - цифра переносит, Shift с той же цифрой копирует -
-или включите панель получателей и кликайте по этим
-папкам прямо поверх изображения, сортируя одной рукой мышью. Видео воспроизводится встроенным
-движком VLC - H.264/MP4, AVI, MKV, VP9, ZMBV и другие - а поля по краям кадра заполняются фоном в
-стиле ""ambilight"" под цвет изображения.
+Программа пересобрана как современное 64-битное приложение со своей средой выполнения: ничего доустанавливать не нужно, .NET Framework больше не требуется. Статические и анимированные WEBP-изображения открываются везде - приложение декодирует их само, без кодека Windows ""WebP Image Extensions"", которого нет в некоторых редакциях Windows, а также HEIC/HEIF и AVIF - форматы, которые снимают iPhone и современные камеры - без каких-либо платных кодеков. Видео всегда идёт через встроенный движок VLC, поэтому оно одинаково воспроизводится и на системах, где компонента Internet Explorer больше нет, и теперь с полноценной панелью управления (перемотка, громкость, выбор аудиодорожки и субтитров) и командой ""Открыть по адресу.."" для воспроизведения прямо по сетевому пути. Масштабирование под курсором мыши с перетаскиванием, а меню по правому/среднему клику выносят все действия прямо на изображение или видео.
 
-Программа пересобрана как современное 64-битное приложение со своей средой выполнения: ничего
-доустанавливать не нужно, .NET Framework больше не требуется. Статические и анимированные
-WEBP-изображения открываются везде - приложение декодирует их само, без кодека Windows ""WebP Image
-Extensions"", которого нет в некоторых редакциях Windows, а также HEIC/HEIF и AVIF - форматы,
-которые снимают iPhone и современные камеры - без каких-либо платных кодеков. Видео всегда идёт
-через встроенный движок VLC, поэтому оно одинаково воспроизводится и на системах, где компонента
-Internet Explorer больше нет, и теперь с полноценной панелью управления (перемотка, громкость,
-выбор аудиодорожки и субтитров) и командой ""Открыть по адресу.."" для воспроизведения прямо по
-сетевому пути. Масштабирование под курсором мыши с перетаскиванием, а меню по правому/среднему
-клику выносят все действия прямо на изображение или видео.
+Сортировка - это не только перемещение файлов. Del отправляет файл в Корзину там, где она есть, и честно предупреждает, когда её нет - на сетевом диске или флешке, - вместо того чтобы делать вид; U отменяет последние 50 операций, включая переименования и удаления, и каждый файл возвращается в свою папку и на своё место в списке. ZIP или CBZ открывается как обычная папка: комикс или папка сканов листается, масштабируется и переводится ровно так же, как отдельные файлы, - ничего не нужно распаковывать заранее и ничего не остаётся потом. Картинку можно разметить и кадрировать в отдельном окне редактирования - кисть, прямоугольник и эллипс, живая рамка кадрирования с маркерами, Ctrl+Z, - а затем сохранить поверх оригинала или рядом в одном из шести форматов, с переносом EXIF. Анимированный WEBP, APNG или GIF можно превратить в обычный MP4, который его заменит, - с перемоткой, паузой и полным цветом. А у музыкального файла появился свой экран: обложка альбома, если она есть, а если нет - анимация из волн и частиц, с названием, исполнителем, альбомом и форматом внизу, действием в конце дорожки и таймером сна.
 
-Раздавайте папки на телефон: программа-компаньон ""Fast Media Sorter: Share Manager"" превращает этот
-ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение Fast Media Sorter
-открывало их - в домашней сети Wi-Fi или через интернет - после однократного подключения по QR-коду.
-Раздача включается только по вашему желанию и остаётся между вашими устройствами; никуда на сторону
-ничего не выгружается. Раздача работает, пока вы вошли в систему. Отдельная серверная редакция,
-которая поднимает ту же раздачу как службу Windows, в версию из Store не входит - она доступна на
-сайте проекта и через winget.
+Раздавайте папки на телефон: программа-компаньон ""Fast Media Sorter: Share Manager"" превращает этот ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение Fast Media Sorter открывало их - в домашней сети Wi-Fi или через интернет - после однократного подключения по QR-коду. Раздача включается только по вашему желанию и остаётся между вашими устройствами; никуда на сторону ничего не выгружается. Раздача работает, пока вы вошли в систему. Отдельная серверная редакция, которая поднимает ту же раздачу как службу Windows, в версию из Store не входит - она доступна на сайте проекта и через winget.
 
-Необязательный перевод текста прямо на картинке: распознавание полностью офлайн (Tesseract) и
-наложение перевода через выбранного вами провайдера - локальную модель Ollama или сервер
-LibreTranslate. Распознавание работает без интернета.
+Необязательный перевод текста прямо на картинке: распознавание полностью офлайн (Tesseract) и наложение перевода через выбранного вами провайдера - локальную модель Ollama или сервер LibreTranslate. Распознавание работает без интернета.
 
-Без аккаунта, без рекламы, без телеметрии. Открытый исходный код:
-https://github.com/SerZhyAle/FastMediaSorter_Lite
+Без аккаунта, без рекламы, без телеметрии. Открытый исходный код: https://github.com/SerZhyAle/FastMediaSorter_Lite
 
-В Microsoft Store приложение публикуется как ""FastMediaSorter LITE"".
-
-Интерфейс доступен на 13 языках - английском, русском, украинском, немецком, итальянском, испанском, французском, португальском, арабском, хинди, бенгальском, урду и китайском - и при первом запуске берёт язык интерфейса Windows; кнопка на панели переключает его в любой момент. Арабский и урду идут справа налево. Автором вычитаны английский, русский и украинский; остальные десять сделаны машиной и не вычитаны, поправки приветствуются через issue-трекер."
-ReleaseNotes,3,Text,,"- One speech balloon is one plate again. Translated text used to break a single balloon into two or three plates: lines set in capitals have no descenders, so the space beneath them looked like a paragraph break and the translator was handed fragments instead of a sentence. A heading is no longer swallowed by the paragraph under it.
-- A long translation no longer loses its tail in silence. The text shrinks first, then the plate grows downwards - never past the picture edge, never into the plate below - and only then is anything trimmed. On a short block the text no longer spills outside its own plate.
-- A screenshot or a form no longer arrives as one plate covering most of the picture: it is split into one plate per line, and no recognized text is lost.
-- The translation plate takes its background and text colours from the picture underneath it, instead of being the same nearly-white rectangle on every image.
-- Zooming and resizing a picture full of translated text got noticeably lighter.
-- Share Manager: a click on the enlarged QR code also saves it as a picture and puts it on the clipboard.
-- The halo around a photo can now appear at three speeds, and by default it is twice as fast as before.","- Одна реплика - одна плашка. Перевод разбивал единственный пузырь на две-три плашки: строки из прописных не имеют выносных элементов, просвет под ними выглядел как разрыв абзаца, и переводчик получал обрывки вместо фразы. Заголовок больше не слипается с абзацем под ним.
-- Длинный перевод больше не теряет хвост молча. Сначала уменьшается кегль, затем плашка растёт вниз - не за край картинки и не на плашку под ней, - и только потом что-то обрезается. На низком блоке текст не вылезает за свою плашку.
-- Скриншот или бланк больше не приходит одной плашкой на пол-картинки: она распускается по строкам, и ни одно распознанное слово не теряется.
-- Плашка перевода берёт цвет фона и текста из картинки под собой, а не остаётся одинаковым почти белым прямоугольником на любом изображении.
-- Масштабирование и изменение размера окна на картинке с множеством переводов стали заметно легче.
-- Share Manager: клик по увеличенному QR-коду теперь ещё и сохраняет его картинкой и кладёт в буфер обмена.
-- Ореол вокруг фотографии появляется с одной из трёх скоростей, по умолчанию вдвое быстрее прежнего."
+В Microsoft Store приложение публикуется как ""FastMediaSorter LITE""."
+ReleaseNotes,3,Text,,"- Rebuilt as a modern 64-bit program with its own runtime: nothing extra to install, no .NET Framework. Your settings carry over.
+- HEIC, HEIF, AVIF and animated WEBP open everywhere with no extra codec, and now reopen instantly the second time.
+- Del uses the Recycle Bin where there is one and says so honestly when there is not; U takes back the last 50 operations, renames and deletions included.
+- A ZIP or CBZ opens like a folder: browse, zoom and translate a comic or a folder of scans with nothing unpacked in advance.
+- New: mark up and crop a picture in its own editing window, then save over the original or beside it in any of six formats.
+- New: turn an animated WEBP, APNG or GIF into an ordinary MP4 that replaces it, with a seek bar, a pause and full colour.
+- New: music gets a screen of its own - album cover or a wave animation, track details, an end-of-track action and a sleep timer.
+- Video: a full control bar, audio and subtitle tracks remembered by language, and ""Open URL.."" for network video.
+- Zoom at the mouse cursor on the numeric keypad's grey keys with drag-to-pan, and menus right on the picture or video.
+- A destination folder that is switched off or asleep says so on the first press instead of after twenty timeouts; a missing last folder is created for you.
+- Keyboard shortcuts can be reassigned, and the settings that were listed but did nothing now do what they say.
+- The interface speaks 13 languages, and folder sharing is safer by default.","- Пересобрано как современная 64-битная программа со своей средой выполнения: ничего доустанавливать не нужно, .NET Framework не требуется. Настройки сохраняются.
+- HEIC, HEIF, AVIF и анимированные WEBP открываются везде без дополнительных кодеков, а медленные форматы теперь открываются повторно мгновенно.
+- Del отправляет файл в Корзину там, где она есть, и честно предупреждает, когда её нет; U отменяет последние 50 операций, включая переименования.
+- ZIP или CBZ открывается как папка: комикс или папку сканов можно листать, масштабировать и переводить, ничего не распаковывая заранее.
+- Новое: разметка и кадрирование картинки в отдельном окне - поверх оригинала или рядом, в одном из шести форматов.
+- Новое: анимированный WEBP, APNG или GIF превращается в обычный MP4 - с перемоткой, паузой и полным цветом.
+- Новое: у музыки появился свой экран - обложка альбома или анимация из волн, сведения о дорожке, действие в конце и таймер сна.
+- Видео: панель управления, выбор аудиодорожки и субтитров по языку и ""Открыть по адресу.."" для сетевого видео.
+- Масштабирование под курсором на серых клавишах цифрового блока и меню прямо на картинке или видео.
+- Папка-получатель, которая выключена или спит, сообщает об этом сразу, а не после двадцати таймаутов; недостающая последняя папка создаётся сама.
+- Горячие клавиши можно переназначать, а настройки, которые были в списке, но ничего не делали, теперь работают.
+- Интерфейс говорит на 13 языках, а раздача папок по умолчанию безопаснее."
 Title,4,Text,,FastMediaSorter LITE,FastMediaSorter LITE
 ShortTitle,5,Text,,,
 SortTitle,6,Text,,,
@@ -389,25 +354,25 @@ OptionalPromo358x358,611,Relative path (or URL to file in Partner Center),,,
 OptionalPromo1000x800,612,Relative path (or URL to file in Partner Center),,,
 OptionalPromo414x180,613,Relative path (or URL to file in Partner Center),,,
 Feature1,700,Text,,Fast keyboard-driven sorting: one-key Move / Copy / Rename / Delete with hotkey-assigned folders,Быстрая сортировка с клавиатуры: перемещение / копирование / переименование / удаление одной клавишей с папками на горячих клавишах
-Feature2,701,Text,,Optional recipients panel over the media: click destination folders on the image to sort one-handed with the mouse,
-Feature3,702,Text,,Full-screen slideshow and quick panel/thumbnail navigation for large image and video collections,
-Feature4,703,Text,,"Plays video through a built-in VLC engine: H.264/MP4, AVI, MKV, VP9, ZMBV and more, with no extra codec packs",
-Feature5,704,Text,,"Opens static and animated WEBP on its own - no Windows ""WebP Image Extensions"" codec required",
-Feature6,705,Text,,"Opens HEIC, HEIF and AVIF too - the formats iPhones and modern cameras produce - with no paid codec needed",
-Feature7,706,Text,,"Modern 64-bit build with its own runtime: nothing extra to install, no .NET Framework prerequisite",
-Feature8,707,Text,,"Zoom at the mouse cursor with drag-to-pan, plus audio-track and subtitle picking remembered by language",
-Feature9,708,Text,,"A video control bar (seek, time, mute, volume) and ""Open URL.."" to play straight off a network address",
-Feature10,709,Text,,"Right-click/middle-click menus put every action - rotate, translate, move, delete, and more - right on the picture or video",
-Feature11,710,Text,,"""Ambilight"" perspective background fills letterbox/pillarbox bars to match the image",
-Feature12,711,Text,,"Share folders to your phone: a bundled tray companion runs a private, opt-in SFTP server paired by QR (Wi-Fi or internet)",
-Feature13,712,Text,,Optional on-image OCR translation: offline Tesseract OCR + a translator you configure (Ollama / LibreTranslate),
-Feature14,713,Text,,"Set it as your default image viewer for JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, AVIF and SVG",
-Feature15,714,Text,,"Open source, no account, no ads, no telemetry",
-Feature16,715,Text,,,
-Feature17,716,Text,,,
-Feature18,717,Text,,,
-Feature19,718,Text,,,
-Feature20,719,Text,,,
+Feature2,701,Text,,Optional recipients panel over the media: click destination folders on the image to sort one-handed with the mouse,Панель получателей поверх медиа: кликайте по папкам назначения прямо на изображении и сортируйте одной рукой мышью
+Feature3,702,Text,,Full-screen slideshow and quick panel/thumbnail navigation for large image and video collections,Полноэкранное слайд-шоу и быстрая навигация по панели миниатюр для больших коллекций фото и видео
+Feature4,703,Text,,"Plays video through a built-in VLC engine: H.264/MP4, AVI, MKV, VP9, ZMBV and more, with no extra codec packs","Видео идёт через встроенный движок VLC: H.264/MP4, AVI, MKV, VP9, ZMBV и другие, без дополнительных кодек-паков"
+Feature5,704,Text,,"Opens static and animated WEBP on its own - no Windows ""WebP Image Extensions"" codec required","Открывает статические и анимированные WEBP сам - кодек Windows ""WebP Image Extensions"" не нужен"
+Feature6,705,Text,,"Opens HEIC, HEIF and AVIF too - the formats iPhones and modern cameras produce - with no paid codec needed","Открывает и HEIC, HEIF, AVIF - форматы iPhone и современных камер - без платных кодеков"
+Feature7,706,Text,,"Modern 64-bit build with its own runtime: nothing extra to install, no .NET Framework prerequisite","Современная 64-битная сборка со своей средой выполнения: ничего доустанавливать не нужно, .NET Framework не требуется"
+Feature8,707,Text,,"Zoom at the mouse cursor with drag-to-pan, plus audio-track and subtitle picking remembered by language","Масштабирование под курсором мыши с перетаскиванием, выбор аудиодорожки и субтитров запоминается по языку"
+Feature9,708,Text,,"A video control bar (seek, time, mute, volume) and ""Open URL.."" to play straight off a network address","Панель управления видео (перемотка, время, звук, громкость) и ""Открыть по адресу.."" для воспроизведения по сетевому пути"
+Feature10,709,Text,,"Right-click/middle-click menus put every action - rotate, translate, move, delete, and more - right on the picture or video","Меню по правому и среднему клику выносят все действия - поворот, перевод, перемещение, удаление и другое - прямо на картинку или видео"
+Feature11,710,Text,,"""Ambilight"" perspective background fills letterbox/pillarbox bars to match the image","Фон-перспектива в стиле ""ambilight"" заполняет поля по краям кадра под цвет изображения"
+Feature12,711,Text,,"Share folders to your phone: a bundled tray companion runs a private, opt-in SFTP server paired by QR (Wi-Fi or internet)","Раздача папок на телефон: программа-компаньон поднимает частный SFTP-сервер по вашему желанию, подключение по QR-коду (Wi-Fi или интернет)"
+Feature13,712,Text,,Optional on-image OCR translation: offline Tesseract OCR + a translator you configure (Ollama / LibreTranslate),Необязательный перевод текста на картинке: офлайн-распознавание Tesseract и переводчик по вашему выбору (Ollama / LibreTranslate)
+Feature14,713,Text,,"Set it as your default image viewer for JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, AVIF and SVG","Назначьте программу просмотрщиком по умолчанию для JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, AVIF и SVG"
+Feature15,714,Text,,"Del uses the Recycle Bin where there is one and says so when there is not; U undoes the last 50 operations, renames included","Del использует Корзину там, где она есть, и честно предупреждает, когда её нет; U отменяет последние 50 операций, включая переименования"
+Feature16,715,Text,,"Opens a ZIP or CBZ like a folder: browse, zoom and translate a comic or a folder of scans with nothing unpacked in advance","Открывает ZIP или CBZ как папку: комикс или папку сканов можно листать, масштабировать и переводить, ничего не распаковывая"
+Feature17,716,Text,,"Mark up and crop a picture in its own window - brush, rectangle, ellipse, live crop frame, Ctrl+Z - and save over it or beside it","Разметка и кадрирование картинки в своём окне - кисть, прямоугольник, эллипс, живая рамка кадрирования, Ctrl+Z - с сохранением поверх или рядом"
+Feature18,717,Text,,"Turn an animated WEBP, APNG or GIF into an ordinary MP4 that replaces it, with a seek bar, a pause and full colour","Превращает анимированный WEBP, APNG или GIF в обычный MP4, который его заменяет, - с перемоткой, паузой и полным цветом"
+Feature19,718,Text,,"A screen of its own for music: album cover or a wave-and-particle animation, title/artist/album, end-of-track action, sleep timer","Свой экран для музыки: обложка альбома или анимация из волн и частиц, название/исполнитель/альбом, действие в конце, таймер сна"
+Feature20,719,Text,,"Open source, no account, no ads, no telemetry","Открытый исходный код, без аккаунта, без рекламы, без телеметрии"
 MinimumHardwareReq1,800,Text,,,
 MinimumHardwareReq2,801,Text,,,
 MinimumHardwareReq3,802,Text,,,

@@ -350,6 +350,46 @@ Open source, no account, no ads, no telemetry
 > **20 is the ceiling** - the list above is exactly 20 lines. Adding a feature now means dropping one,
 > not appending a 21st.
 
+### Product features (RU - one per line, same order, ≤200 chars each)
+```
+Быстрая сортировка с клавиатуры: перемещение / копирование / переименование / удаление одной клавишей с папками на горячих клавишах
+Панель получателей поверх медиа: кликайте по папкам назначения прямо на изображении и сортируйте одной рукой мышью
+Полноэкранное слайд-шоу и быстрая навигация по панели миниатюр для больших коллекций фото и видео
+Видео идёт через встроенный движок VLC: H.264/MP4, AVI, MKV, VP9, ZMBV и другие, без дополнительных кодек-паков
+Открывает статические и анимированные WEBP сам - кодек Windows "WebP Image Extensions" не нужен
+Открывает и HEIC, HEIF, AVIF - форматы iPhone и современных камер - без платных кодеков
+Современная 64-битная сборка со своей средой выполнения: ничего доустанавливать не нужно, .NET Framework не требуется
+Масштабирование под курсором мыши с перетаскиванием, выбор аудиодорожки и субтитров запоминается по языку
+Панель управления видео (перемотка, время, звук, громкость) и "Открыть по адресу.." для воспроизведения по сетевому пути
+Меню по правому и среднему клику выносят все действия - поворот, перевод, перемещение, удаление и другое - прямо на картинку или видео
+Фон-перспектива в стиле "ambilight" заполняет поля по краям кадра под цвет изображения
+Раздача папок на телефон: программа-компаньон поднимает частный SFTP-сервер по вашему желанию, подключение по QR-коду (Wi-Fi или интернет)
+Необязательный перевод текста на картинке: офлайн-распознавание Tesseract и переводчик по вашему выбору (Ollama / LibreTranslate)
+Назначьте программу просмотрщиком по умолчанию для JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, AVIF и SVG
+Del использует Корзину там, где она есть, и честно предупреждает, когда её нет; U отменяет последние 50 операций, включая переименования
+Открывает ZIP или CBZ как папку: комикс или папку сканов можно листать, масштабировать и переводить, ничего не распаковывая
+Разметка и кадрирование картинки в своём окне - кисть, прямоугольник, эллипс, живая рамка кадрирования, Ctrl+Z - с сохранением поверх или рядом
+Превращает анимированный WEBP, APNG или GIF в обычный MP4, который его заменяет, - с перемоткой, паузой и полным цветом
+Свой экран для музыки: обложка альбома или анимация из волн и частиц, название/исполнитель/альбом, действие в конце, таймер сна
+Открытый исходный код, без аккаунта, без рекламы, без телеметрии
+```
+
+> The RU column of `listingData.csv` used to carry only `Feature1`; 2-20 were empty, so a Russian
+> visitor saw one bullet. These are the missing nineteen, in the same order as the EN list so the two
+> stay diffable.
+
+> **The blocks on this page are the source; the CSV is generated from them.** After editing any of
+> Description / Product features / What's new above, run
+> `pwsh -NoProfile -File .\publishing\store\Build-ListingData.ps1` - it rewrites only the
+> `Description`, `ReleaseNotes` and `Feature1..20` cells of
+> [publishing/store/listingData.csv](../../publishing/store/listingData.csv) (both `en-us` and `ru`),
+> carries every other cell through unchanged, and refuses to write if the copy breaks a Partner
+> Center limit (1500 for What's new, 10000 for Description, 20 features of 200 chars). `-Check`
+> verifies the committed CSV still matches and exits 1 if not. Import it in Partner Center via the
+> submission's listing page -> "Import listing data". **After editing anything by hand in Partner
+> Center, re-export and diff before overwriting the file** - it also holds screenshot and logo asset
+> URLs that only a real export can produce.
+
 ### What's new in this version (Store "release notes" field) - next submission (26.7.14.1801 -> 26.9.1.1550)
 
 > Paste this into the submission's **"What's new in this version"** box - **capped at 1500 characters**.
