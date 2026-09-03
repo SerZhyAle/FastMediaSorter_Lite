@@ -2,8 +2,8 @@
   "$comment": "site.root is '.' because Pages serves this repo from the root, NOT from docs/. The larger docs/index.html is an unpublished staging copy - do not assume the two are meant to match.",
 
   "canon": {
-    "version": "2026.08.18.1",
-    "coreDigest": "sha256:961c9c8a835892b19e6297261fc5ba3e597d3a9ea76401257964d38a9d086958",
+    "version": "2026.09.03.3",
+    "coreDigest": "sha256:cdf49be6d22723aaaed939965af4aea5568c4159f69fe61c49e2e7774d8b942a",
     "adoptedOn": "2026-08-18",
     "model": "reference",
     "contribRecord": "contrib/fastmediasorter_lite.md"
