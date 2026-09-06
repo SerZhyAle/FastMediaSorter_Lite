@@ -2,7 +2,7 @@
   "$comment": "site.root is '.' because Pages serves this repo from the root, NOT from docs/. The larger docs/index.html is an unpublished staging copy - do not assume the two are meant to match.",
 
   "canon": {
-    "version": "2026.09.03.3",
+    "version": "2026.09.06.1",
     "coreDigest": "sha256:cdf49be6d22723aaaed939965af4aea5568c4159f69fe61c49e2e7774d8b942a",
     "adoptedOn": "2026-08-18",
     "model": "reference",
