@@ -65,6 +65,9 @@ exactly where they are. It is a plain, standard SFTP service, so those folders o
 - **Any other SFTP client** - WinSCP, FileZilla, a file manager on Linux or macOS, another PC. The
   address and port, the login, the password and the host-key fingerprint are all shown in the Share
   Manager window, each with a copy button.
+  The port is yours to set: it is picked once, on the very first start, and never moves on its own
+  afterwards - so a forwarding rule typed into your router, an exported `.fmscfg` and a QR code you
+  have already handed out all stay valid.
 
 What it does, and what it deliberately does not:
 

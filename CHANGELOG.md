@@ -8,6 +8,8 @@ Categories: `Added`, `Changed`, `Fixed`, `Removed`.
 
 ## [Unreleased]
 
+## [26.9.20.1206] - 2026-09-20
+
 ### Added
 - **The sharing port is now a setting you can see and change - and a number the program guarantees.** Until now nobody chose that port and nobody was shown it: Windows handed one out on the very first start and the program then stuck to it, but only mostly. If anything happened to hold that number the next time sharing started, the program quietly took a different one - and from that moment the port-forwarding rule you had typed into your router pointed at nothing, as did every access code (QR) and settings file you had already handed out. Nothing said so; the share simply stopped answering from outside. The Share Manager's settings now show **"Port"** under "Network", filled with the number sharing actually uses - the same one that goes into the router rule and into every code you hand out. It changes when you change it and at no other time, so it is safe to write down. Next to it, **"Find a free one"** fills in a port that is free right now, from the range meant for exactly this (below 49152; above that is what Windows hands out to outgoing connections, where any program can take it). And if the port cannot be taken at startup, sharing **does not start on some other number** - it stays off and says which port is busy, because a share quietly serving on a port nobody was told about looks like success and is not. The rare case where nothing is listening and the port still cannot be used - a range reserved by Hyper-V, WSL or Docker - is named too, with the command that lists those ranges. Changing the port needs no administrator rights and touches no firewall rule.
 
