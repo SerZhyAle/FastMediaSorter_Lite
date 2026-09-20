@@ -299,7 +299,11 @@ Partial Public Class Main_Form
             ' per image is not worth a compile seam, and one code path here cannot disagree
             ' with itself the way two would.
             Dim dropped As New List(Of OcrDroppedLine)(ocrResult.Dropped)
-            Dim blocks As List(Of OcrBlock) = OcrBlockBuilder.BuildBlocks(ocrResult.Lines, job.ImageSize, dropped)
+            ' preserveOrder: only when S7 actually cut a stitched line on this page, in which
+            ' case the lines already arrive column by column and the builder's top-then-left
+            ' sort would interleave them straight back.
+            Dim blocks As List(Of OcrBlock) = OcrBlockBuilder.BuildBlocks(
+                ocrResult.Lines, job.ImageSize, dropped, ocrResult.LinesRegrouped)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
                             " ocr: blocks=" & blocks.Count.ToString() &
                             " dropped=" & dropped.Count.ToString() &

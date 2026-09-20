@@ -141,6 +141,29 @@ function Build-Scenes([string]$dir) {
     Add-Text $c 'HEAVY' 90 120 190 ([System.Drawing.Color]::FromArgb(244, 244, 240)) -Bold
     Add-Text $c 'TYPE' 90 300 190 ([System.Drawing.Color]::FromArgb(244, 244, 240)) -Bold
     Save-Canvas $c (Join-Path $dir 'd2-display-lettering.png')
+
+    # 18 - S7: one balloon either side of a figure. Tesseract's own layout analysis returns
+    #      BOTH as one 1574x189 text line, so before the split this drew a single plate across
+    #      the artwork carrying both replies as one sentence. Two plates, and neither may
+    #      reach into the x 900..1150 band the figure occupies.
+    $c = New-Canvas 2048 1400 $paper
+    $fig = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(70, 78, 96))
+    $c.Graphics.FillEllipse($fig, 930, 560, 190, 190)
+    $c.Graphics.FillRectangle($fig, 950, 760, 150, 420)
+    $fig.Dispose()
+    Add-Text $c 'WHO GOES THERE' 200 600 56 $ink
+    Add-Text $c 'ONLY THE WIND' 1330 600 56 $ink
+    Save-Canvas $c (Join-Path $dir 'e-stitched-balloons.png')
+
+    # 18 (paired) - two columns over a narrow gutter, every row stitched across it. This is the
+    #      case cutting ALONE makes worse: the runs come out interleaved and a single-pass
+    #      clustering fragments both columns, so it is really a check on the regrouping.
+    $c = New-Canvas 1400 1000 $paper
+    'the door was open', 'and the lamp still lit', 'nobody had waited' |
+        ForEach-Object -Begin { $y = 200 } -Process { Add-Text $c $_ 100 $y 36 $ink; $y += 70 }
+    'he counted the steps', 'twice on the way down', 'and lost the number' |
+        ForEach-Object -Begin { $y = 200 } -Process { Add-Text $c $_ 760 $y 36 $ink; $y += 70 }
+    Save-Canvas $c (Join-Path $dir 'e2-stitched-columns.png')
 }
 
 # What each scene must produce. `MaxPlates` left at 0 means "no upper bound".
@@ -152,6 +175,10 @@ $expected = @{
     'c-window-list.png'         = @{ MinPlates = 6; MaxPlates = 0; Why = 'the page-wide plate dissolves per line' }
     'd-dark-panel.png'          = @{ MinPlates = 1; MaxPlates = 0; MaxBgLuma = 100; Why = 'a dark panel gets a dark plate' }
     'd2-display-lettering.png'  = @{ MinPlates = 1; MaxPlates = 0; MaxBgLuma = 100; Why = 'the ring test keeps the pair the right way round' }
+    # MaxWidthShare is the check that matters here, not the count: a plate the full width of
+    # the frame IS the defect, and two plates of the right count could still both be bars.
+    'e-stitched-balloons.png'   = @{ MinPlates = 2; MaxPlates = 2; MaxWidthShare = 0.35; Why = 'the stitched line is cut, one plate per balloon' }
+    'e2-stitched-columns.png'   = @{ MinPlates = 2; MaxPlates = 2; MaxWidthShare = 0.35; Why = 'the cut runs are regrouped into their two columns' }
 }
 
 function Get-Luma([string]$rgb) {
@@ -235,11 +262,16 @@ foreach ($line in Get-Content $dump) {
     $seen[$name] = $true
     $frame = [double]$doc.width * $doc.height
 
-    $maxCov = 0.0; $grown = 0; $trimmed = 0; $maxBg = -1
+    $maxCov = 0.0; $grown = 0; $trimmed = 0; $maxBg = -1; $maxWidthShare = 0.0
     foreach ($b in $doc.blocks) {
         $plateH = $b.plateY1 - $b.y0
         $cov = (($b.x1 - $b.x0) * [double]$plateH) / $frame
         if ($cov -gt $maxCov) { $maxCov = $cov }
+        # Width alone, because the S7 defect is wide but SHORT: a bar carrying two balloons
+        # measured 1574x189 on a 2048x1400 scene, which is 0.10 of the frame against a 0.52
+        # coverage bound - the rule that would have caught it never fires.
+        $ws = ($b.x1 - $b.x0) / [double]$doc.width
+        if ($ws -gt $maxWidthShare) { $maxWidthShare = $ws }
         if ($plateH -gt ($b.y1 - $b.y0)) { $grown++ }
         if ($b.truncated) { $trimmed++ }
         $bg = Get-Luma $b.background
@@ -254,8 +286,9 @@ foreach ($line in Get-Content $dump) {
     $dropCount = if (-not $hasDropField -or $null -eq $doc.dropped) { -1 } else { @($doc.dropped).Count }
     $dropText  = if ($dropCount -lt 0) { 'n/a' } else { $dropCount.ToString() }
 
-    Write-Host ("{0,-32} plates {1,2}  maxCover {2}  grown {3}  trimmed {4}  bgLuma {5}  dropped {6}" -f
-                $name, $doc.blocks.Count, $maxCov.ToString('F4'), $grown, $trimmed, $maxBg, $dropText)
+    Write-Host ("{0,-32} plates {1,2}  maxCover {2}  maxWidth {3}  grown {4}  trimmed {5}  bgLuma {6}  dropped {7}" -f
+                $name, $doc.blocks.Count, $maxCov.ToString('F4'), $maxWidthShare.ToString('F2'),
+                $grown, $trimmed, $maxBg, $dropText)
 
     # A scene with no plates measures NOTHING - its maxCover of 0 and its trimmed of 0 are
     # the flattering zeros, not a clean result - so it is reported apart and never folded
@@ -299,6 +332,9 @@ foreach ($line in Get-Content $dump) {
         }
         if ($e.ContainsKey('MaxBgLuma') -and $maxBg -gt $e.MaxBgLuma) {
             $failures += "${name}: plate background luma $maxBg, expected under $($e.MaxBgLuma) - $($e.Why)"
+        }
+        if ($e.ContainsKey('MaxWidthShare') -and $maxWidthShare -gt $e.MaxWidthShare) {
+            $failures += "${name}: a plate spans $($maxWidthShare.ToString('F2')) of the width, expected under $($e.MaxWidthShare) - $($e.Why)"
         }
     }
 }

@@ -301,6 +301,14 @@
     <Compile Include="..\..\src\Ocr\OcrBlockBuilder.vb">
       <Link>Linked\Ocr\OcrBlockBuilder.vb</Link>
     </Compile>
+    <!-- The stitched-line split (S7). Linked for the same reason as the clustering it runs in
+         front of: it is pure geometry over the recognizer's output, and its whole argument is
+         a measured ratio - the kind of thing that has to be checked against real word boxes,
+         not judged by eye on a comic page. It needs no Tesseract: the fixtures in
+         OcrLineSplitterTests are the engine's own output, recorded. -->
+    <Compile Include="..\..\src\Ocr\OcrLineSplitter.vb">
+      <Link>Linked\Ocr\OcrLineSplitter.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Ocr\OcrOverlayFit.vb">
       <Link>Linked\Ocr\OcrOverlayFit.vb</Link>
     </Compile>

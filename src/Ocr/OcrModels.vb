@@ -33,7 +33,10 @@ Public Module OcrPipeline
     ''' 2 - S1: line clustering by median pitch, type size and the dissolve rule.
     ''' 3 - S3: the translatability filter (vowels, addresses, word-likeness, a CJK branch).
     ''' 4 - S4: plate background/ink sampled from the image.
-    Public Const OcrPipelineVersion As Integer = 4
+    ''' 5 - S7: the stitched-line split and the column regrouping in front of the clustering.
+    '''     It changes which lines exist and in which order they arrive, so it changes the
+    '''     blocks - the one thing this constant is for.
+    Public Const OcrPipelineVersion As Integer = 5
 End Module
 
 Public Class OcrWord
@@ -43,9 +46,27 @@ Public Class OcrWord
 End Class
 
 Public Class OcrLine
+    ''' <summary>The line's own words, in the engine's order, with their own boxes and
+    ''' confidences. Real since S7 (section 18) - it used to hold ONE stub word equal to the
+    ''' whole line, which is why the type-size rule of 16.2/16.3 could not be written.</summary>
     Public Property Words As New List(Of OcrWord)
     Public Property Text As String = ""
     Public Property Box As Rectangle
+
+    ''' <summary>
+    ''' Engine confidence for the line, 0..1.
+    '''
+    ''' Carried on the line rather than derived from <see cref="Words"/> on purpose. The
+    ''' attempt scorer averages a confidence to pick the LANGUAGE, and while Words held one
+    ''' stub per line that average was the mean of line confidences; going to real words would
+    ''' have silently changed it to a mean over words - a different number, and therefore a
+    ''' different language on some images - as a side effect of a geometry change. Keeping the
+    ''' value the scorer reads here makes that change provably nil (section 18.4).
+    '''
+    ''' For a run produced by <see cref="OcrLineSplitter"/> it is the mean confidence of that
+    ''' run's OWN words, never the stitched line's.
+    ''' </summary>
+    Public Property Confidence As Single
 End Class
 
 ''' <summary>

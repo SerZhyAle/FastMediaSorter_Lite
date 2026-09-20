@@ -24,6 +24,7 @@ Public Class OcrCacheLine
     Public Property Y As Integer
     Public Property W As Integer
     Public Property H As Integer
+    Public Property Conf As Single
     Public Property Words As New List(Of OcrCacheWord)
 End Class
 
@@ -229,6 +230,7 @@ Public Class TranslationCache
             For Each l As OcrLine In b.Lines
                 Dim cl As New OcrCacheLine With {
                     .Text = l.Text,
+                    .Conf = l.Confidence,
                     .X = l.Box.X, .Y = l.Box.Y, .W = l.Box.Width, .H = l.Box.Height
                 }
                 For Each w As OcrWord In l.Words
@@ -264,6 +266,7 @@ Public Class TranslationCache
             For Each cl As OcrCacheLine In cb.Lines
                 Dim l As New OcrLine With {
                     .Text = cl.Text,
+                    .Confidence = cl.Conf,
                     .Box = New Rectangle(cl.X, cl.Y, cl.W, cl.H)
                 }
                 For Each cw As OcrCacheWord In cl.Words

@@ -22,6 +22,16 @@ Public Class OcrResult
     ''' decisions actually taken on the text the reader is looking at.</summary>
     Public Property Dropped As New List(Of OcrDroppedLine)
 
+    ''' <summary>
+    ''' True when <see cref="OcrLineSplitter"/> cut a stitched line on this pass and therefore
+    ''' put <see cref="Lines"/> into ITS column order rather than the engine's. The clustering
+    ''' must then keep that order instead of re-sorting top-then-left, which is exactly the
+    ''' sort that interleaves two columns (see OcrBlockBuilder.BuildBlocks, preserveOrder).
+    '''
+    ''' False on a page with no stitch, and then the list is the engine's own, untouched.
+    ''' </summary>
+    Public Property LinesRegrouped As Boolean
+
     Public Shared Function Runtime(message As String) As OcrResult
         Return New OcrResult With {.Status = OcrStatus.RuntimeMissing, .Message = message}
     End Function

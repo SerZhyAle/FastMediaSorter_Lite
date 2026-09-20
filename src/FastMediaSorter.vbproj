@@ -441,6 +441,7 @@
     <Compile Include="Ocr\OcrModels.vb" />
     <Compile Include="Ocr\IOcrEngine.vb" />
     <Compile Include="Ocr\OcrBlockBuilder.vb" />
+    <Compile Include="Ocr\OcrLineSplitter.vb" />
     <Compile Include="Ocr\OcrOverlayFit.vb" />
     <Compile Include="Ocr\OcrTextFilter.vb" />
     <!-- Both whole-file "#If Not NETFRAMEWORK" - plate colours are a change of appearance

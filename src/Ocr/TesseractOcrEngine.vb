@@ -248,11 +248,13 @@ Public Class TesseractOcrEngine
                 Using pix As Pix = Pix.LoadFromMemory(prepared.Bytes)
                     Using page As Page = engine.Process(pix, profile.Segmentation)
                         Dim dropped As New List(Of OcrDroppedLine)
-                        Dim lines As List(Of OcrLine) = ExtractLines(page, prepared.InvScale, source.Width, source.Height, dropped)
+                        Dim regrouped As Boolean = False
+                        Dim lines As List(Of OcrLine) = ExtractLines(page, prepared.InvScale, source.Width, source.Height, dropped, regrouped)
                         Return New OcrResult With {
                             .Status = If(lines.Count > 0, OcrStatus.Ok, OcrStatus.NoText),
                             .Lines = lines,
-                            .Dropped = dropped
+                            .Dropped = dropped,
+                            .LinesRegrouped = regrouped
                         }
                     End Using
                 End Using
@@ -281,8 +283,55 @@ Public Class TesseractOcrEngine
     ''' refused it. Filled from the SAME call that decides - see OcrTextFilter.LineRejection -
     ''' and carried on this attempt's result, so the record that reaches the diagnostics dump
     ''' belongs to the pass that actually won rather than to a union over all of them.</param>
+    ''' <param name="regrouped">Set when <see cref="OcrLineSplitter"/> cut a stitched line, so
+    ''' the returned order is its column order and the clustering must not re-sort.</param>
     Private Shared Function ExtractLines(page As Page, invScale As Double, maxW As Integer, maxH As Integer,
-                                         dropped As List(Of OcrDroppedLine)) As List(Of OcrLine)
+                                         dropped As List(Of OcrDroppedLine),
+                                         ByRef regrouped As Boolean) As List(Of OcrLine)
+        ' Read the whole page first, floor and all. The split (S7) needs to see the lines the
+        ' floor will drop as well as the ones it keeps: an empty full-page "line" reaches no
+        ' plate, but it is exactly what must be kept out of the column grouping, and it cannot
+        ' be kept out of something it was never in.
+        Dim raw As List(Of OcrLine) = ReadPageLines(page, invScale, maxW, maxH)
+
+        Dim split As List(Of OcrLine) = OcrLineSplitter.SplitStitchedLines(raw, regrouped)
+
+        Dim lines As New List(Of OcrLine)
+        For Each line As OcrLine In split
+            ' A line the engine returned with no text at all was never text, and recording it
+            ' as a refusal would inflate "what the threshold threw away" (16.1) with things
+            ' nobody lost. It was skipped before S7 and is skipped here; it travels this far
+            ' only so the column grouping can see - and exclude - it.
+            If line.Text.Length = 0 Then Continue For
+
+            Dim rejection As String = OcrTextFilter.LineRejection(line.Text, line.Confidence)
+            If rejection.Length = 0 Then
+                lines.Add(line)
+            ElseIf dropped IsNot Nothing Then
+                dropped.Add(New OcrDroppedLine With {
+                    .Text = line.Text,
+                    .Box = line.Box,
+                    .Confidence = line.Confidence,
+                    .Rule = rejection
+                })
+            End If
+        Next
+
+        Return lines
+    End Function
+
+    ''' <summary>
+    ''' The engine's own output, mapped back to original-image pixels: one entry per text line,
+    ''' each carrying the WORDS inside it.
+    '''
+    ''' The word level is read with <c>Next(TextLine, Word)</c>, which walks the words of the
+    ''' current line and stops at its last one - the iterator is then still inside that line,
+    ''' so the outer <c>Next(TextLine)</c> advances exactly one line as it always did. Words
+    ''' used to be a single stub equal to the whole line; the two rules of section 16.2/16.3
+    ''' and the split of section 18 all measure a word, and none of them could be written
+    ''' against a stub.
+    ''' </summary>
+    Private Shared Function ReadPageLines(page As Page, invScale As Double, maxW As Integer, maxH As Integer) As List(Of OcrLine)
         Dim lines As New List(Of OcrLine)
 
         Using iter As ResultIterator = page.GetIterator()
@@ -291,28 +340,38 @@ Public Class TesseractOcrEngine
                 Dim r As Rect = Nothing
                 If iter.TryGetBoundingBox(PageIteratorLevel.TextLine, r) Then
                     Dim txt As String = iter.GetText(PageIteratorLevel.TextLine)
-                    If Not String.IsNullOrWhiteSpace(txt) Then
-                        Dim conf As Single = iter.GetConfidence(PageIteratorLevel.TextLine) / 100.0F
-                        Dim box As Rectangle = MapBox(r, invScale, maxW, maxH)
-                        Dim cleaned As String = CleanLineText(txt)
-                        Dim rejection As String = OcrTextFilter.LineRejection(cleaned, conf)
-                        If rejection.Length = 0 Then
-                            lines.Add(New OcrLine With {
-                                .Text = cleaned,
-                                .Box = box,
-                                .Words = New List(Of OcrWord) From {
-                                    New OcrWord With {.Text = cleaned, .Box = box, .Confidence = conf}
-                                }
-                            })
-                        ElseIf dropped IsNot Nothing Then
-                            dropped.Add(New OcrDroppedLine With {
-                                .Text = cleaned,
-                                .Box = box,
-                                .Confidence = conf,
-                                .Rule = rejection
-                            })
+                    Dim conf As Single = iter.GetConfidence(PageIteratorLevel.TextLine) / 100.0F
+                    Dim box As Rectangle = MapBox(r, invScale, maxW, maxH)
+                    Dim cleaned As String = CleanLineText(If(txt, ""))
+
+                    Dim words As New List(Of OcrWord)
+                    Do
+                        Dim wr As Rect = Nothing
+                        If iter.TryGetBoundingBox(PageIteratorLevel.Word, wr) Then
+                            Dim wt As String = CleanLineText(If(iter.GetText(PageIteratorLevel.Word), ""))
+                            If wt.Length > 0 Then
+                                words.Add(New OcrWord With {
+                                    .Text = wt,
+                                    .Box = MapBox(wr, invScale, maxW, maxH),
+                                    .Confidence = iter.GetConfidence(PageIteratorLevel.Word) / 100.0F
+                                })
+                            End If
                         End If
+                    Loop While iter.Next(PageIteratorLevel.TextLine, PageIteratorLevel.Word)
+
+                    ' A line the engine returned with no usable words keeps the stub it has
+                    ' always had, so nothing downstream that reads Words meets an empty list
+                    ' where it used to meet one entry.
+                    If words.Count = 0 AndAlso cleaned.Length > 0 Then
+                        words.Add(New OcrWord With {.Text = cleaned, .Box = box, .Confidence = conf})
                     End If
+
+                    lines.Add(New OcrLine With {
+                        .Text = cleaned,
+                        .Box = box,
+                        .Confidence = conf,
+                        .Words = words
+                    })
                 End If
             Loop While iter.Next(PageIteratorLevel.TextLine)
         End Using
@@ -630,10 +689,12 @@ Public Class TesseractOcrEngine
                 expectedMismatchLines += 1
             End If
 
-            For Each word As OcrWord In line.Words
-                confSum += word.Confidence
-                confCount += 1
-            Next
+            ' The LINE's confidence, not a mean over its words. While Words held one stub per
+            ' line these were the same number; reading the words instead would have quietly
+            ' re-weighted this average by word count - and this average picks the LANGUAGE -
+            ' as a side effect of S7's geometry change. Section 18.4.
+            confSum += line.Confidence
+            confCount += 1
         Next
 
         Dim avgConfidence As Double = If(confCount > 0, confSum / confCount, 0.0)

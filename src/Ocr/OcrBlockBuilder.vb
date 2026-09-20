@@ -88,17 +88,29 @@ Public Module OcrBlockBuilder
     ''' the rule that refused it (section 16.1). Optional - pass Nothing when nobody is
     ''' collecting - but the record comes out of the SAME call that decides, so it cannot
     ''' describe a threshold that is no longer the one being applied.</param>
+    ''' <param name="preserveOrder">Take the incoming order as reading order instead of
+    ''' sorting. Passed only when <see cref="OcrLineSplitter"/> cut a stitched line on this
+    ''' page and already arranged the runs column by column
+    ''' (<see cref="OcrResult.LinesRegrouped"/>): the sort below is top-then-left, which is
+    ''' precisely what interleaves two columns, so re-running it would undo the regrouping and
+    ''' hand this single-pass walk a page it closes a plate on at every second line.
+    ''' Deliberately NOT the default - on a page with no stitch the engine's order is the one
+    ''' this walk has always been fed, and a stage that touches nothing cannot regress
+    ''' anything.</param>
     Public Function BuildBlocks(lines As List(Of OcrLine), imageSize As Size,
-                                dropped As List(Of OcrDroppedLine)) As List(Of OcrBlock)
+                                dropped As List(Of OcrDroppedLine),
+                                Optional preserveOrder As Boolean = False) As List(Of OcrBlock)
         Dim blocks As New List(Of OcrBlock)
         If lines Is Nothing OrElse lines.Count = 0 Then Return blocks
 
         ' Top-to-bottom, then left-to-right. The engine hands lines back in its own
         ' order - a sparse-text pass returns them out of reading order entirely - so
         ' the walk below cannot rely on the input sequence.
-        Dim ordered As List(Of OcrLine) = lines.
-            OrderBy(Function(l) l.Box.Top).
-            ThenBy(Function(l) l.Box.Left).ToList()
+        Dim ordered As List(Of OcrLine) = If(preserveOrder,
+            lines,
+            lines.
+                OrderBy(Function(l) l.Box.Top).
+                ThenBy(Function(l) l.Box.Left).ToList())
 
         Dim medianHeight As Integer = MedianLineHeight(ordered)
         Dim gapThreshold As Integer = Math.Max(6, CInt(medianHeight * 0.9))
