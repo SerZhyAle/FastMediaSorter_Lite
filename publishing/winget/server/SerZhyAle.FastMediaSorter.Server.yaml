@@ -24,7 +24,7 @@
 # sidecar and verify it against the downloaded file, never type one by hand.
 
 PackageIdentifier: SerZhyAle.FastMediaSorter.Server
-PackageVersion: "26.8.15.1510"
+PackageVersion: "26.9.20.1206"
 DefaultLocale: en-US
 ManifestType: version
 ManifestVersion: 1.12.0
