@@ -65,4 +65,46 @@ Public Class AutostartApprovalTests
         Assert.False(AutostartManager.IsShellVetoRecord(New Byte() {2}))
     End Sub
 
+    ' --- the Server-edition one-shot offer -----------------------------------------
+    ' Args order: isServiceHost, alreadyOffered, runValuePresent, shellRecordPresent.
+
+    <Fact>
+    Public Sub OfferFiresOnceOnAVirginServiceHost()
+        ' The only case it may fire: the machine hosts the service (so the tray icon is
+        ' the only management surface a reboot leaves) and nothing about autostart has
+        ' been decided in this account yet.
+        Assert.True(AutostartManager.ShouldOfferAutostart(True, False, False, False))
+    End Sub
+
+    <Fact>
+    Public Sub OfferNeverFiresOnAUserEditionMachine()
+        ' User edition: the manager is a tool you open, not a console a reboot must
+        ' leave behind. Writing a Run value there would be autostart nobody asked for.
+        Assert.False(AutostartManager.ShouldOfferAutostart(False, False, False, False))
+    End Sub
+
+    <Fact>
+    Public Sub OfferIsMadeOnlyOncePerAccount()
+        ' The flag is written whether the offer was taken or later revoked, so a user who
+        ' turns autostart off does not get it turned back on at the next start.
+        Assert.False(AutostartManager.ShouldOfferAutostart(True, True, False, False))
+    End Sub
+
+    <Fact>
+    Public Sub OfferLeavesAnExistingRunValueAlone()
+        ' Already registered - there is nothing to offer, and rewriting it would fight
+        ' MigrateRunTargetIfNeeded over the same value.
+        Assert.False(AutostartManager.ShouldOfferAutostart(True, False, True, False))
+    End Sub
+
+    <Fact>
+    Public Sub OfferRespectsAnyShellDecision()
+        ' A StartupApproved record - veto OR explicit allow - means somebody has already
+        ' been through Task Manager's Startup page for this entry. Enabling ourselves over
+        ' that would make this a program that switches itself back on; those machines get
+        ' the note in Settings instead. Holds whether or not a Run value is present.
+        Assert.False(AutostartManager.ShouldOfferAutostart(True, False, False, True))
+        Assert.False(AutostartManager.ShouldOfferAutostart(True, False, True, True))
+    End Sub
+
 End Class

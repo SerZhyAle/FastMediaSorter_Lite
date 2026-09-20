@@ -102,6 +102,13 @@ Friend Module Program
             ' tray icon appears at logon. No-op otherwise.
             AutostartManager.MigrateRunTargetIfNeeded()
 
+            ' Server edition only, once per account: register our own logon autostart, so a
+            ' reboot leaves the tray icon behind and not just a running service with no way
+            ' to reach it. Deliberately silent about a decision already taken - see
+            ' AutostartManager.ShouldOfferAutostart. Must run AFTER the migration above so
+            ' it reads the migrated value instead of racing it.
+            AutostartManager.OfferForSystemServiceHostOnce()
+
             Application.EnableVisualStyles()
             Application.SetCompatibleTextRenderingDefault(False)
             Try

@@ -733,6 +733,28 @@ Partial Public NotInheritable Class Localization
             "التشغيل التلقائي معطّل", "ऑटोस्टार्ट बंद", "অটোস্টার্ট বন্ধ",
             "آٹو اسٹارٹ آف", "自动启动：关")
 
+        Add("Автозапуск отключён в Windows",
+            "Autostart blocked by Windows", "Автозапуск заблоковано Windows",
+            "Autostart von Windows blockiert", "Avvio automatico bloccato da Windows",
+            "Inicio automático bloqueado por Windows", "Démarrage automatique bloqué par Windows",
+            "Arranque automático bloqueado pelo Windows", "التشغيل التلقائي محجوب بواسطة Windows",
+            "ऑटोस्टार्ट Windows द्वारा अवरुद्ध", "অটোস্টার্ট Windows দ্বারা অবরুদ্ধ",
+            "آٹو اسٹارٹ Windows نے روک دیا", "自动启动被 Windows 阻止")
+
+        Add("Этот пункт автозагрузки отключён в Windows (Диспетчер задач - Автозагрузка приложений), поэтому значок не появляется при входе. Поставьте галочку заново, чтобы включить его.",
+            "Windows has switched this startup entry off (Task Manager - Startup apps), so the icon does not appear at logon. Tick the box again to switch it back on.",
+            "Windows вимкнув цей пункт автозавантаження (Диспетчер завдань - Автозавантаження застосунків), тому значок не з'являється під час входу. Поставте галочку знову, щоб увімкнути його.",
+            "Windows hat diesen Autostart-Eintrag abgeschaltet (Task-Manager - Autostart von Apps), daher erscheint das Symbol bei der Anmeldung nicht. Setzen Sie das Häkchen erneut, um ihn wieder einzuschalten.",
+            "Windows ha disattivato questa voce di avvio automatico (Gestione attività - App di avvio), quindi l'icona non compare all'accesso. Rimetti il segno di spunta per riattivarla.",
+            "Windows ha desactivado esta entrada de inicio (Administrador de tareas - Aplicaciones de inicio), por lo que el icono no aparece al iniciar sesión. Vuelve a marcar la casilla para activarla.",
+            "Windows a désactivé cette entrée de démarrage (Gestionnaire des tâches - Applications de démarrage), l'icône n'apparaît donc pas à l'ouverture de session. Cochez à nouveau la case pour la réactiver.",
+            "O Windows desativou esta entrada de arranque (Gestor de Tarefas - Aplicações de arranque), por isso o ícone não aparece ao iniciar sessão. Volte a marcar a caixa para a reativar.",
+            "أوقف Windows عنصر بدء التشغيل هذا (إدارة المهام - تطبيقات بدء التشغيل)، لذلك لا تظهر الأيقونة عند تسجيل الدخول. حدّد المربع مرة أخرى لإعادة تشغيله.",
+            "Windows ने इस स्टार्टअप प्रविष्टि को बंद कर दिया है (टास्क मैनेजर - स्टार्टअप ऐप्स), इसलिए लॉगऑन पर आइकन दिखाई नहीं देता। इसे फिर चालू करने के लिए बॉक्स पर दोबारा टिक करें।",
+            "Windows এই স্টার্টআপ এন্ট্রিটি বন্ধ করে দিয়েছে (টাস্ক ম্যানেজার - স্টার্টআপ অ্যাপস), তাই লগঅনে আইকনটি দেখা যায় না। এটি আবার চালু করতে বক্সে পুনরায় টিক দিন।",
+            "Windows نے یہ اسٹارٹ اپ اندراج بند کر دیا ہے (ٹاسک مینیجر - اسٹارٹ اپ ایپس)، اس لیے لاگ اِن پر آئیکن نہیں آتا۔ اسے دوبارہ چالو کرنے کے لیے خانے پر دوبارہ نشان لگائیں۔",
+            "Windows 已关闭该启动项（任务管理器 - 启动应用），因此登录时不会出现图标。重新勾选即可再次开启。")
+
         Add("до {0} подключений, порт {1}",
             "up to {0} connections, port {1}", "до {0} підключень, порт {1}",
             "bis zu {0} Verbindungen, Port {1}", "fino a {0} connessioni, porta {1}",

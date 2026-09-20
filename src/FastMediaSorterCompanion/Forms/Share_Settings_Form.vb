@@ -50,6 +50,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private numPort As NumericUpDown
     Private lnkFreePort As LinkLabel
     Private lblPortNote As Label
+    Private lblAutostartNote As Label
     Private toolTip As ToolTip
 
     Private _root As TableLayoutPanel
@@ -173,6 +174,15 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddHandler chkAutostart.CheckedChanged, AddressOf OnAutostartChanged
         sec.AddBodyRow(chkAutostart)
 
+        ' The one case an unticked checkbox cannot express: the entry IS registered and
+        ' Windows refuses to run it (Task Manager's Startup page leaves the Run value in
+        ' place and records a veto instead). Without this line that state is pixel-identical
+        ' to "autostart was never switched on", which is how a machine sat for weeks with a
+        ' running share and no console. Ticking the box repairs it - SetEnabled lifts the veto.
+        lblAutostartNote = New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
+            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 2, 0, 2)}
+        sec.AddBodyRow(lblAutostartNote)
+
         ' Off by default, and it governs EVERY plain start - the logon one, a double-click on
         ' the exe, a script - so unticked really means "no window" (TrayContext). Only an
         ' explicit request still opens it: the viewer's Share buttons, the tray icon, a
@@ -295,6 +305,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Try
             chkAutostart.Checked = AutostartManager.IsEnabled()
             chkAutostart.Enabled = Not AutostartManager.IsPackaged()
+            UpdateAutostartNote()
             If AutostartManager.IsPackaged() Then
                 toolTip.SetToolTip(chkAutostart, Localization.T("Автозапуском управляет Windows (пакет из Store)."))
             End If
@@ -320,10 +331,17 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' </summary>
     Private Sub UpdateSummaries()
         If _secStartup Is Nothing Then Return
-        _secStartup.Summary = If(chkAutostart.Checked,
-                                 Localization.T("Автозапуск включён"),
-                                 Localization.T("Автозапуск выключен"))
-        _secStartup.SummaryColor = SystemColors.GrayText
+        ' A shell veto is its own summary: folded, "Автозапуск выключен" would be the
+        ' second place this state hides behind a word that means something else.
+        If AutostartManager.State() = AutostartState.BlockedByShell Then
+            _secStartup.Summary = Localization.T("Автозапуск отключён в Windows")
+            _secStartup.SummaryColor = CollapsibleSection.AttentionColor
+        Else
+            _secStartup.Summary = If(chkAutostart.Checked,
+                                     Localization.T("Автозапуск включён"),
+                                     Localization.T("Автозапуск выключен"))
+            _secStartup.SummaryColor = SystemColors.GrayText
+        End If
         ' The port is exactly the kind of fact a folded section must still answer: someone
         ' opens this dialog to check which number their router rule has to name.
         _secNetwork.Summary = Localization.TF("до {0} подключений, порт {1}",
@@ -358,6 +376,22 @@ Partial Public NotInheritable Class Share_Settings_Form
         If _status Is Nothing OrElse Not _status.Running Then Return 0
         Return _status.ListenPort
     End Function
+
+    ''' <summary>The line under the autostart checkbox. It exists for exactly one state -
+    ''' the entry is registered and the shell vetoes it - and says nothing in every other,
+    ''' because a checkbox that already reads "on" needs no second voice agreeing with it.
+    ''' </summary>
+    Private Sub UpdateAutostartNote()
+        If lblAutostartNote Is Nothing Then Return
+        If AutostartManager.State() = AutostartState.BlockedByShell Then
+            lblAutostartNote.Text = Localization.T("Этот пункт автозагрузки отключён в Windows (Диспетчер задач - Автозагрузка приложений), поэтому значок не появляется при входе. Поставьте галочку заново, чтобы включить его.")
+            lblAutostartNote.ForeColor = CollapsibleSection.AttentionColor
+        Else
+            lblAutostartNote.Text = ""
+            lblAutostartNote.ForeColor = SystemColors.GrayText
+        End If
+        lblAutostartNote.Visible = lblAutostartNote.Text <> ""
+    End Sub
 
     ''' <summary>Either the honest verdict on a port that is not serving, or the re-export
     ''' reminder once the number really moved. Never a reassurance nobody asked for: with
@@ -477,7 +511,11 @@ Partial Public NotInheritable Class Share_Settings_Form
             chkAutostart.Checked = AutostartManager.IsEnabled()
             _loading = prev
         End Try
+        UpdateAutostartNote()
         UpdateSummaries()
+        ' The note is two wrapped lines tall when it is there and nothing when it is not,
+        ' so repairing the veto has to give the height back.
+        If _built Then FitToContent()
     End Sub
 
     ''' <summary>Persists the "open the window at startup" sub-option. Read back by

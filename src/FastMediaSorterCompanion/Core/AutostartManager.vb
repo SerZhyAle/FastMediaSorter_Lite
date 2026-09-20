@@ -5,6 +5,24 @@ Imports System.Windows.Forms
 Imports Microsoft.Win32
 
 ''' <summary>
+''' What will ACTUALLY happen at the next logon - not the same question as "did the user
+''' ask for autostart". A registered Run value the shell has vetoed is indistinguishable
+''' from no autostart at all through <see cref="AutostartManager.IsEnabled"/>, and that is
+''' exactly how a Server-edition machine came back from a reboot with its service running,
+''' its folders reachable, and no management console anywhere.
+''' </summary>
+Public Enum AutostartState
+    ''' <summary>Store build: the manifest StartupTask owns this and an HKCU write is virtualized.</summary>
+    Packaged
+    ''' <summary>Registered and not vetoed - the tray icon appears at the next logon.</summary>
+    Active
+    ''' <summary>No Run value: autostart was never asked for, or was switched off in our own UI.</summary>
+    NotRegistered
+    ''' <summary>Registered, but the shell records a veto over it - Windows skips it silently.</summary>
+    BlockedByShell
+End Enum
+
+''' <summary>
 ''' Channel-aware logon autostart for Fast Media Sorter: Share Manager.
 '''
 ''' Unpackaged (portable ZIP / Inno / winget): opt-in HKCU Run value pointing at
@@ -24,6 +42,12 @@ Public Module AutostartManager
 
     Private Const RunKeyPath As String = "Software\Microsoft\Windows\CurrentVersion\Run"
     Private Const RunValueName As String = "FastMediaSorterShare"
+
+    ''' <summary>Per-user "the Server-edition offer has already been made" flag - see
+    ''' <see cref="OfferForSystemServiceHostOnce"/>. Lives in the same hive as every
+    ''' other Share_* setting, and is written whether the offer was taken or refused,
+    ''' so it is asked exactly once per account.</summary>
+    Private Const OfferedRegValue As String = "Share_AutostartOffered"
 
     ''' <summary>Where the shell records its own veto over a Run entry - see
     ''' <see cref="IsBlockedByShell"/>. Same value name as under Run.</summary>
@@ -114,22 +138,40 @@ Public Module AutostartManager
     End Sub
 
     ''' <summary>
+    ''' Whether an HKCU Run value is registered at all - "did anyone ask for autostart",
+    ''' which is NOT the same as "will it start" (<see cref="IsBlockedByShell"/>).
+    ''' </summary>
+    Private Function IsRegistered() As Boolean
+        Try
+            Using k As RegistryKey = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable:=False)
+                If k Is Nothing Then Return False
+                Return k.GetValue(RunValueName) IsNot Nothing
+            End Using
+        Catch
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' The full three-way answer, so a caller can tell "never asked for" from "asked for
+    ''' and Windows refuses". <see cref="IsEnabled"/> collapses the last two into False,
+    ''' which is right for a checkbox and wrong for anything that has to explain itself.
+    ''' </summary>
+    Public Function State() As AutostartState
+        If IsPackaged() Then Return AutostartState.Packaged
+        If Not IsRegistered() Then Return AutostartState.NotRegistered
+        Return If(IsBlockedByShell(), AutostartState.BlockedByShell, AutostartState.Active)
+    End Function
+
+    ''' <summary>
     ''' Current autostart state, as in "will it actually start at the next logon" - the
     ''' registered Run value AND no shell veto over it (<see cref="IsBlockedByShell"/>).
     ''' For packaged builds the manifest StartupTask owns this, so we report True (the
     ''' checkbox is read-only there anyway).
     ''' </summary>
     Public Function IsEnabled() As Boolean
-        If IsPackaged() Then Return True
-        Try
-            Using k As RegistryKey = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable:=False)
-                If k Is Nothing Then Return False
-                If k.GetValue(RunValueName) Is Nothing Then Return False
-            End Using
-        Catch
-            Return False
-        End Try
-        Return Not IsBlockedByShell()
+        Dim s As AutostartState = State()
+        Return s = AutostartState.Packaged OrElse s = AutostartState.Active
     End Function
 
     ''' <summary>
@@ -190,6 +232,66 @@ Public Module AutostartManager
         Catch
         End Try
     End Sub
+
+    ''' <summary>
+    ''' The decision behind <see cref="OfferForSystemServiceHostOnce"/>, kept pure so the
+    ''' one thing that matters here - that it stays quiet in every case but the first -
+    ''' is unit-tested rather than reasoned about.
+    '''
+    ''' It fires only when the machine hosts the SFTP service (Server edition, where the
+    ''' tray icon is the ONLY management surface a reboot leaves behind), this account has
+    ''' not been offered before, and nothing about autostart has been decided yet: no Run
+    ''' value, and no shell record either way. That last clause is the important one - a
+    ''' veto is the user's own Task Manager decision, and silently undoing it would make
+    ''' this a program that switches itself back on. Those machines get the note in
+    ''' Settings instead, which says what happened and how to restore it.
+    ''' </summary>
+    Public Function ShouldOfferAutostart(isServiceHost As Boolean, alreadyOffered As Boolean,
+                                         runValuePresent As Boolean, shellRecordPresent As Boolean) As Boolean
+        If Not isServiceHost Then Return False
+        If alreadyOffered Then Return False
+        Return Not runValuePresent AndAlso Not shellRecordPresent
+    End Function
+
+    ''' <summary>
+    ''' On a Server-edition machine, register the console's own logon autostart the first
+    ''' time we run in this account - see <see cref="ShouldOfferAutostart"/> for when that
+    ''' is allowed. Without it the service came up at boot, the folders were reachable and
+    ''' there was no tray icon and no window: the only way back in was a Start-menu entry
+    ''' the user had no reason to look for.
+    '''
+    ''' Called once from startup, after <see cref="MigrateRunTargetIfNeeded"/> so it sees
+    ''' the migrated value rather than racing it. Never throws; the flag is written even
+    ''' when the write fails, because a failing offer repeated at every logon is worse
+    ''' than one that has to be ticked by hand.
+    ''' </summary>
+    Public Sub OfferForSystemServiceHostOnce()
+        If IsPackaged() Then Return
+        Try
+            Dim offered As Boolean = GetSetting(App_name, Second_App_Name, OfferedRegValue, "0") = "1"
+            If Not ShouldOfferAutostart(ServerFeatures.IsSystemServiceHost(), offered,
+                                        IsRegistered(), ShellRecordExists()) Then Return
+            SaveSetting(App_name, Second_App_Name, OfferedRegValue, "1")
+            If SetEnabled(True) Then SaveSetting(App_name, Second_App_Name, "Share_AutostartEnabled", "1")
+        Catch
+        End Try
+    End Sub
+
+    ''' <summary>Whether the shell holds ANY record for our entry - allowed or vetoed.
+    ''' Either way somebody has already been through Task Manager's Startup page for it,
+    ''' and <see cref="ShouldOfferAutostart"/> then leaves the decision alone.</summary>
+    Private Function ShellRecordExists() As Boolean
+        Try
+            Using k As RegistryKey = Registry.CurrentUser.OpenSubKey(StartupApprovedPath, writable:=False)
+                If k Is Nothing Then Return False
+                Return k.GetValue(RunValueName) IsNot Nothing
+            End Using
+        Catch
+            ' Unreadable - assume a record exists, so an unreadable hive can never be the
+            ' reason we write an autostart entry the user did not ask for.
+            Return True
+        End Try
+    End Function
 
     ''' <summary>The HKCU Run command: quoted Companion path + the silent-tray flag,
     ''' so a logon launch goes straight to the tray (spec §4.5.1).</summary>
