@@ -59,6 +59,15 @@ AppUpdatesURL={#AppURL}/releases
 DefaultDirName={autopf}\FastMediaSorter_Server
 DefaultGroupName={#AppGroupName}
 DisableProgramGroupPage=yes
+; MUST stay "no" while the page above is disabled. Inno's default is to reuse the group
+; name a PREVIOUS install of this AppId recorded, and DefaultGroupName is then only a
+; fallback nobody reaches - so up to 26.9.1 the move into the shared product folder
+; never happened on an upgrade: the [InstallDelete] below removed the old standalone
+; folder and Inno recreated the shortcuts straight back into it, because that name was
+; still what "Inno Setup: Icon Group" said. The group is not a user choice here (the
+; page is off), so there is nothing to remember and this directive is what makes
+; DefaultGroupName mean what it says.
+UsePreviousGroup=no
 LicenseFile={#SourceDir}\LICENSE
 OutputBaseFilename=FastMediaSorter-{#Version}-windows-x64-server-setup
 ; This .iss lives at <repo>\publishing\installer, so the repo-root assets tree is two levels up.
@@ -83,11 +92,15 @@ PrivilegesRequired=admin
 ; that survives logoff is the whole point - so the Windows 7/8.1 floor the User
 ; installer keeps (for its 32-bit viewer) does not apply here.
 MinVersion=10.0.14393
-; Setup replaces the Companion exe, so a running instance must be gone first. The
-; SERVICE is stopped separately and first, by stop-companion.ps1 - killing its process
-; would only make the configured recovery action restart it straight back onto the
-; file Setup is about to replace.
-AppMutex=FastMediaSorterCompanionSingleInstanceMutex
+; Setup replaces the Companion exe, so a running instance must be gone first - and
+; that is done by stop-companion.ps1 from PrepareToInstall (service through the SCM
+; first, then the tray app, then any surviving worker). Deliberately NO AppMutex on
+; FastMediaSorterCompanionSingleInstanceMutex: Inno checks it at startup, BEFORE
+; PrepareToInstall ever runs, and the Share Manager sits in the tray from logon, so it
+; is practically always held. Interactively that is a pointless "close it" prompt the
+; user cannot satisfy (a window-close only returns it to the tray); silently -
+; /SUPPRESSMSGBOXES, i.e. winget and reinstall-server.ps1 - the prompt is answered
+; Cancel and every upgrade aborts with exit code 1 before touching a file.
 VersionInfoVersion={#Version}
 VersionInfoCompany={#AppPublisher}
 VersionInfoProductName={#AppName}
@@ -99,6 +112,10 @@ Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 Name: "ukrainian"; MessagesFile: "compiler:Languages\Ukrainian.isl"
 
 [Tasks]
+; Checked by default, unlike the viewer's optional icon: on this edition the Share
+; Manager IS the product's only window, and a machine that reboots into a running
+; service with nothing on screen is exactly the state this edition shipped in.
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "openmanager"; Description: "{cm:OpenManagerTask}"
 
 [CustomMessages]
@@ -137,6 +154,15 @@ Source: "stop-companion.ps1"; DestDir: "{app}"; Flags: ignoreversion
 ; Harmless on a fresh install, where the folder does not exist.
 Type: filesandordirs; Name: "{commonprograms}\Fast Media Sorter Folder Share Server"
 
+; The uninstall shortcut is named in the language the install ran in ("Uninstall .." /
+; "Удалить .." / "Видалити .."), and Inno leaves the previous language's copy behind when
+; that changes - so a machine reinstalled in two languages ends up with two of them. The
+; leading space is deliberate: it matches only the "<verb> <AppName>.lnk" forms and never
+; "{#AppName}.lnk" itself, so the product's own shortcut is not deleted and recreated
+; (which would break a taskbar pin resolving through it). [InstallDelete] runs before
+; [Icons], so the current language's copy is written back immediately.
+Type: files; Name: "{group}\* {#AppName}.lnk"
+
 [Icons]
 ; "--show": a bare launch obeys the manager's own "open the window at startup" option,
 ; which is OFF by default, so without the flag this Start-menu item would start a
@@ -144,6 +170,11 @@ Type: filesandordirs; Name: "{commonprograms}\Fast Media Sorter Folder Share Ser
 ; explicit "open it" gesture, the same one LITE's Share Manager button makes.
 Name: "{group}\{#AppName}"; Filename: "{app}\{#CompanionExe}"; Parameters: "--show"
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
+; Same "--show" reasoning. A desktop icon matters more here than on the viewer: the
+; console has no file association, nothing opens it by double-clicking a document, and
+; the Start-menu entry sits under a product folder named after the VIEWER (the shared
+; group), which is not where someone looks for a server they just installed.
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#CompanionExe}"; Parameters: "--show"; Tasks: desktopicon
 
 [Code]
 const

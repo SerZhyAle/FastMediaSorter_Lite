@@ -47,6 +47,14 @@ AppUpdatesURL={#AppURL}/releases
 DefaultDirName={autopf}\FastMediaSorter_LITE
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
+; The group page is off, so there is no user choice to remember - and Inno's default of
+; reusing the name a previous install recorded turns DefaultGroupName into a fallback
+; nobody reaches. That is what kept the Server edition out of this shared folder for a
+; release (see FastMediaSorterServer.iss); here it is a latent trap of the same shape,
+; armed the next time the display name moves. The [InstallDelete] of the pre-rename
+; folder below stays as it is - this makes it belt and braces rather than the only line
+; of defence.
+UsePreviousGroup=no
 LicenseFile={#SourceDir}\LICENSE
 OutputBaseFilename=FastMediaSorter-{#Version}-windows-x64-setup
 ; This .iss lives at <repo>\publishing\installer, so the repo-root assets tree is two levels up.
@@ -99,6 +107,7 @@ english.CompCodecs=Video codecs (VLC) - offline playback of AVI, MKV, VP9 and ot
 english.CompOcr=OCR & translation models - offline on-image text recognition
 english.CompShare=Android Folder Share companion - share folders to your phone (bundles its own .NET runtime)
 english.ShareManagerComment=Share folders from this PC to an Android phone over Wi-Fi
+english.ShareDesktopIcon=Create a desktop shortcut for the Share Manager
 
 russian.TypeFull=Полная - всё для работы без интернета (рекомендуется)
 russian.TypeCompact=Компактная - только просмотрщик (кодеки и модели скачаются по мере надобности)
@@ -108,6 +117,7 @@ russian.CompCodecs=Видео-кодеки (VLC) - оффлайн-воспрои
 russian.CompOcr=Модели OCR и перевода - распознавание текста на изображении без интернета
 russian.CompShare=Компаньон Android Folder Share - раздача папок на телефон (включает свой рантайм .NET)
 russian.ShareManagerComment=Раздача папок этого ПК на телефон Android по Wi-Fi
+russian.ShareDesktopIcon=Создать ярлык Менеджера общего доступа на рабочем столе
 
 ukrainian.TypeFull=Повна - усе для роботи без інтернету (рекомендовано)
 ukrainian.TypeCompact=Компактна - лише переглядач (кодеки та моделі завантажаться за потреби)
@@ -117,6 +127,7 @@ ukrainian.CompCodecs=Відео-кодеки (VLC) - офлайн-відтвор
 ukrainian.CompOcr=Моделі OCR та перекладу - розпізнавання тексту на зображенні без інтернету
 ukrainian.CompShare=Компаньйон Android Folder Share - роздача тек на телефон (містить власний рантайм .NET)
 ukrainian.ShareManagerComment=Роздача тек цього ПК на телефон Android через Wi-Fi
+ukrainian.ShareDesktopIcon=Створити ярлик Менеджера спільного доступу на робочому столі
 
 ; Prepend an honest one-liner to the component-selection page: the viewer is light,
 ; the weight is optional offline payload the user can trim.
@@ -143,6 +154,12 @@ ukrainian.PrivilegesRequiredOverrideText2=%1 можна встановити л�
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+; Unchecked, and only offered with the share component: here the viewer is the product
+; and the Share Manager the side tool, so this is the opposite default from the Server
+; edition, where the manager is all there is. Offered at all because nothing else puts
+; the manager on screen - it has no file association and its own tray icon only exists
+; once something has started it.
+Name: "sharedesktopicon"; Description: "{cm:ShareDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Components: share; Flags: unchecked
 
 ; The viewer itself is tiny; almost all of the package weight is optional,
 ; offline-ready payload (VLC codecs, OCR models, the Share companion). Exposing it
@@ -234,6 +251,15 @@ Source: "install-share-service.ps1"; DestDir: "{app}"; Flags: ignoreversion; Com
 ; this leftover shortcut folder is the only thing to clean.
 Type: filesandordirs; Name: "{autoprograms}\FastMediaSorter LITE"
 
+; The uninstall shortcut carries the name of the language the install ran in
+; ("Uninstall .." / "Удалить .." / "Видалити .."), and Inno leaves the previous
+; language's copy standing when that changes - so this machine had both an English and
+; a Ukrainian one side by side. The leading space matches only the "<verb> <AppName>.lnk"
+; forms, never "{#AppName}.lnk" itself, so the product's own shortcut is not deleted and
+; recreated (which would break a taskbar pin resolving through it). [InstallDelete] runs
+; before [Icons], so the current language's copy is written back immediately.
+Type: files; Name: "{group}\* {#AppName}.lnk"
+
 ; Shortcuts point at the exe that RUNS on this machine: the x64 mainline on
 ; Windows 10 1607+, the 32-bit sibling on Windows 7/8.1 (both are installed).
 [Icons]
@@ -252,6 +278,11 @@ Name: "{group}\Fast Media Sorter - Share Manager"; Filename: "{app}\FastMediaSor
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon; Check: UseModernExe
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeNameX86}"; Tasks: desktopicon; Check: UseLegacyExe
+; Same "--show" reasoning as the Start-menu entry above. No UseModernExe/UseLegacyExe
+; check: the Share Manager is x64 .NET 10 only, which is why the component itself
+; carries MinVersion 10.0.14393 - on the machines the x86 viewer exists for there is
+; nothing here to point at.
+Name: "{autodesktop}\Fast Media Sorter - Share Manager"; Filename: "{app}\FastMediaSorterCompanion.exe"; Parameters: "--show"; Comment: "{cm:ShareManagerComment}"; Tasks: sharedesktopicon; Components: share
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent; Check: UseModernExe
