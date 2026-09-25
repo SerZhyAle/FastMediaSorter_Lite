@@ -210,7 +210,7 @@ Public Module ShareText
             Case SftpProbe.ProbeResult.PortOpen
                 Return Localization.TF("Порт открыт, но SFTP не ответил: {0}", endpoint)
             Case SftpProbe.ProbeResult.Timeout, SftpProbe.ProbeResult.Refused
-                Return Localization.T("✗ С этого ПК не отвечает. Роутер может не пускать на свой адрес изнутри - проверьте с телефона по мобильной сети.")
+                Return Localization.T("С этого ПК не отвечает. Роутер может не пускать на свой адрес изнутри - проверьте с телефона по мобильной сети.")
             Case Else
                 Return Localization.T("Адрес некорректен.")
         End Select
@@ -242,9 +242,31 @@ Public Module ShareText
     End Function
 
     ''' <summary>What/why body shown before the one UAC prompt. States the network
-    ''' exposure honestly and that it needs administrator rights once.</summary>
+    ''' exposure honestly and that it needs administrator rights once.
+    '''
+    ''' Names EVERYTHING the switch enables (APP-BEHAVIOUR rule 4, ticket 028 Ф-6): the
+    ''' earlier text said nothing about the router port mapping and the public-address
+    ''' check that run once sharing starts, and it promised "for reading" while a newly
+    ''' added folder is shared writable by default. It also says how to take it back.</summary>
     Public Function ServerEnableBody() As String
-        Return Localization.T("Чтобы делиться папками с телефоном Android, нужен небольшой фоновый SFTP-сервер и разрешение в брандмауэре Windows. Это один раз потребует прав администратора. После включения выбранные вами папки станут доступны для чтения по сети. Продолжить?")
+        Return Localization.T("Чтобы делиться папками с телефоном Android, нужен небольшой фоновый SFTP-сервер и разрешение в брандмауэре Windows - для этого один раз понадобятся права администратора. Пока раздача включена, выбранные вами папки доступны по сети для чтения, а папки с разрешённой записью - и для записи. Если не отмечено «Только локальная сеть», программа также просит роутер открыть порт (UPnP/NAT-PMP) и проверяет через внешний сервис check-host.net, виден ли он из интернета. Всё это можно выключить в любой момент: Настройки менеджера - Сеть - «Выключить функции сервера..». Продолжить?")
+    End Function
+
+    ''' <summary>The link under every in-app elevation (ticket 037 Ф-4, INSTALL-TRUST rule 7):
+    ''' the dialog that raises a UAC prompt is a first-run surface, so it points at the page
+    ''' that itemizes every elevation and its undo.</summary>
+    Public Function TrustLinkText() As String
+        Return Localization.T("Зачем нужны права администратора и как их забрать обратно")
+    End Function
+
+    ''' <summary>That page in the language the Share Manager is speaking.</summary>
+    Public Function TrustPageUrl() As String
+        Return SitePages.TrustPageUrl(Localization.CurrentCode)
+    End Function
+
+    ''' <summary>The withdrawal of that consent (ticket 028 Ф-6): what it stops and what it removes.</summary>
+    Public Function ServerDisableQuestion() As String
+        Return Localization.T("Выключить функции сервера? Раздача остановится, подключённые телефоны будут отключены, а разрешение в брандмауэре Windows будет удалено - для этого понадобятся права администратора. Список папок и пароль сохранятся; включить всё снова можно в любой момент.")
     End Function
 
     ''' <summary>Shorter intro for the Settings tab's enablement panel (the primary,
@@ -275,7 +297,7 @@ Public Module ShareText
     End Function
 
     Public Function ServerEnableFailed() As String
-        Return Localization.T("Не удалось настроить брандмауэр. Попробуйте ещё раз.")
+        Return Localization.T("Не удалось настроить брандмауэр. Попробуйте ещё раз; если не выйдет - отправьте журнал автору: меню значка в трее - «Отправить журнал автору..».")
     End Function
 
     ''' <summary>Worker payload missing - nothing to enable (a fresh clone / a build

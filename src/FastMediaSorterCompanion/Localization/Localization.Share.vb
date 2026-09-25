@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 ' <summary>
 ' Tray menu, the shared ShareText prose and the server-features opt-in dialog.
@@ -791,6 +791,104 @@ Partial Public NotInheritable Class Localization
             "পোর্ট বদলে গেছে - আগে দেওয়া QR কোড ও কনফিগ ফাইল আর মেলে না। সেগুলি আবার তৈরি করুন।",
             "پورٹ بدل گیا ہے - پہلے دیے گئے QR کوڈ اور سیٹنگ فائلیں اب مطابقت نہیں رکھتیں۔ انہیں دوبارہ بنائیں۔",
             "端口已更改 - 之前发出的二维码和配置文件不再匹配。请重新生成。")
+
+        ' WORKER-IPC section 6 rule 3. The server's own refusal names the two halves and stops
+        ' there; "update the app" belongs to the end that faces the user, which is this one.
+        Add("Служба общего доступа отвечает по версии протокола {0}, а это приложение понимает {1}. Обновите приложение.",
+            "The sharing service answers with protocol version {0}, and this app understands {1}. Update the app.",
+            "Служба спільного доступу відповідає за версією протоколу {0}, а цей застосунок розуміє {1}. Оновіть застосунок.",
+            "Der Freigabedienst antwortet mit Protokollversion {0}, diese App versteht {1}. Aktualisieren Sie die App.",
+            "Il servizio di condivisione risponde con la versione di protocollo {0}, questa app capisce la {1}. Aggiorna l'app.",
+            "El servicio de uso compartido responde con la versión de protocolo {0} y esta aplicación entiende la {1}. Actualiza la aplicación.",
+            "Le service de partage répond avec la version de protocole {0}, alors que cette application comprend la {1}. Mettez l'application à jour.",
+            "O serviço de partilha responde com a versão de protocolo {0} e esta aplicação compreende a {1}. Atualize a aplicação.",
+            "تجيب خدمة المشاركة بإصدار البروتوكول {0}، بينما يفهم هذا التطبيق الإصدار {1}. حدّث التطبيق.",
+            "साझाकरण सेवा प्रोटोकॉल संस्करण {0} से उत्तर देती है, और यह ऐप {1} समझता है। ऐप अपडेट करें।",
+            "শেয়ারিং পরিষেবা প্রোটোকল সংস্করণ {0} দিয়ে উত্তর দেয়, আর এই অ্যাপ {1} বোঝে। অ্যাপটি আপডেট করুন।",
+            "اشتراک سروس پروٹوکول ورژن {0} کے ساتھ جواب دیتی ہے، جبکہ یہ ایپ {1} سمجھتی ہے۔ ایپ اپ ڈیٹ کریں۔",
+            "共享服务以协议版本 {0} 作答，而本应用理解的是 {1}。请更新应用。")
+
+        ' The same refusal in the Server edition: the worker there is the Windows service,
+        ' which updates with its own package, so the sentence names it.
+        Add("Служба Windows {0} отвечает по версии протокола {1}, а это приложение понимает {2}. Обновите приложение и серверную редакцию до одной версии.",
+            "The Windows service {0} answers with protocol version {1}, and this app understands {2}. Update the app and the Server edition to the same version.",
+            "Служба Windows {0} відповідає за версією протоколу {1}, а цей застосунок розуміє {2}. Оновіть застосунок і серверну редакцію до однієї версії.",
+            "Der Windows-Dienst {0} antwortet mit Protokollversion {1}, diese App versteht {2}. Aktualisieren Sie die App und die Server-Edition auf dieselbe Version.",
+            "Il servizio Windows {0} risponde con la versione di protocollo {1}, questa app capisce la {2}. Aggiorna l'app e l'edizione Server alla stessa versione.",
+            "El servicio de Windows {0} responde con la versión de protocolo {1} y esta aplicación entiende la {2}. Actualiza la aplicación y la edición Server a la misma versión.",
+            "Le service Windows {0} répond avec la version de protocole {1}, alors que cette application comprend la {2}. Mettez l'application et l'édition Server à la même version.",
+            "O serviço do Windows {0} responde com a versão de protocolo {1} e esta aplicação compreende a {2}. Atualize a aplicação e a edição Server para a mesma versão.",
+            "تجيب خدمة Windows {0} بإصدار البروتوكول {1}، بينما يفهم هذا التطبيق الإصدار {2}. حدّث التطبيق وإصدار الخادم إلى النسخة نفسها.",
+            "Windows सेवा {0} प्रोटोकॉल संस्करण {1} से उत्तर देती है, और यह ऐप {2} समझता है। ऐप और सर्वर संस्करण को एक ही संस्करण पर अपडेट करें।",
+            "Windows পরিষেবা {0} প্রোটোকল সংস্করণ {1} দিয়ে উত্তর দেয়, আর এই অ্যাপ {2} বোঝে। অ্যাপ ও সার্ভার সংস্করণ একই সংস্করণে আপডেট করুন।",
+            "Windows سروس {0} پروٹوکول ورژن {1} کے ساتھ جواب دیتی ہے، جبکہ یہ ایپ {2} سمجھتی ہے۔ ایپ اور سرور ایڈیشن کو ایک ہی ورژن پر اپ ڈیٹ کریں۔",
+            "Windows 服务 {0} 以协议版本 {1} 作答，而本应用理解的是 {2}。请将应用和服务器版更新到同一版本。")
+
+        ' WORKER-IPC section 3 rule 2: the worker answered, and the answer was ok=false. {0} is
+        ' the worker's own reason, which arrives in English.
+        Add("Служба общего доступа отказала: {0}",
+            "The sharing service refused: {0}",
+            "Служба спільного доступу відмовила: {0}",
+            "Der Freigabedienst hat abgelehnt: {0}",
+            "Il servizio di condivisione ha rifiutato: {0}",
+            "El servicio de uso compartido se negó: {0}",
+            "Le service de partage a refusé : {0}",
+            "O serviço de partilha recusou: {0}",
+            "رفضت خدمة المشاركة: {0}",
+            "साझाकरण सेवा ने अस्वीकार किया: {0}",
+            "শেয়ারিং পরিষেবা প্রত্যাখ্যান করেছে: {0}",
+            "اشتراک سروس نے انکار کر دیا: {0}",
+            "共享服务拒绝了请求：{0}")
+
+        ' A refused SetNetworkPolicy while LAN only is on - the privacy switch is not enforced.
+        Add("Работающая служба общего доступа старше этого приложения и не может обеспечить режим «только локальная сеть». Обновите приложение или выключите раздачу.",
+            "The running sharing service is older than this app and cannot enforce «LAN only». Update the app or turn sharing off.",
+            "Запущена служба спільного доступу старіша за цей застосунок і не може забезпечити режим «лише локальна мережа». Оновіть застосунок або вимкніть роздачу.",
+            "Der laufende Freigabedienst ist älter als diese App und kann «Nur lokales Netzwerk» nicht durchsetzen. Aktualisieren Sie die App oder beenden Sie die Freigabe.",
+            "Il servizio di condivisione in esecuzione è più vecchio di questa app e non può applicare «Solo rete locale». Aggiorna l'app o disattiva la condivisione.",
+            "El servicio de uso compartido en ejecución es más antiguo que esta aplicación y no puede aplicar «Solo red local». Actualiza la aplicación o desactiva el uso compartido.",
+            "Le service de partage en cours est plus ancien que cette application et ne peut pas appliquer «Réseau local uniquement». Mettez l'application à jour ou arrêtez le partage.",
+            "O serviço de partilha em execução é mais antigo do que esta aplicação e não consegue aplicar «Apenas rede local». Atualize a aplicação ou desligue a partilha.",
+            "خدمة المشاركة العاملة أقدم من هذا التطبيق ولا يمكنها فرض «الشبكة المحلية فقط». حدّث التطبيق أو أوقف المشاركة.",
+            "चल रही साझाकरण सेवा इस ऐप से पुरानी है और «केवल स्थानीय नेटवर्क» लागू नहीं कर सकती। ऐप अपडेट करें या साझाकरण बंद करें।",
+            "চলমান শেয়ারিং পরিষেবাটি এই অ্যাপের চেয়ে পুরোনো এবং «শুধু লোকাল নেটওয়ার্ক» প্রয়োগ করতে পারে না। অ্যাপ আপডেট করুন বা শেয়ারিং বন্ধ করুন।",
+            "چلتی ہوئی اشتراک سروس اس ایپ سے پرانی ہے اور «صرف مقامی نیٹ ورک» نافذ نہیں کر سکتی۔ ایپ اپ ڈیٹ کریں یا اشتراک بند کریں۔",
+            "正在运行的共享服务比本应用旧，无法强制执行「仅限局域网」。请更新应用或关闭共享。")
+
+        ' ResetStats refused or unanswered - the counters on screen are left as they were.
+        Add("Не удалось сбросить счётчики.",
+            "Could not reset the counters.",
+            "Не вдалося скинути лічильники.",
+            "Die Zähler konnten nicht zurückgesetzt werden.",
+            "Impossibile azzerare i contatori.",
+            "No se pudieron restablecer los contadores.",
+            "Impossible de réinitialiser les compteurs.",
+            "Não foi possível repor os contadores.",
+            "تعذّر إعادة تعيين العدادات.",
+            "काउंटर रीसेट नहीं हो सके।",
+            "কাউন্টার রিসেট করা যায়নি।",
+            "کاؤنٹر ری سیٹ نہیں ہو سکے۔",
+            "无法重置计数器。")
+
+        Add("Не удалось сбросить счётчики: {0}",
+            "Could not reset the counters: {0}",
+            "Не вдалося скинути лічильники: {0}",
+            "Die Zähler konnten nicht zurückgesetzt werden: {0}",
+            "Impossibile azzerare i contatori: {0}",
+            "No se pudieron restablecer los contadores: {0}",
+            "Impossible de réinitialiser les compteurs : {0}",
+            "Não foi possível repor os contadores: {0}",
+            "تعذّر إعادة تعيين العدادات: {0}",
+            "काउंटर रीसेट नहीं हो सके: {0}",
+            "কাউন্টার রিসেট করা যায়নি: {0}",
+            "کاؤنٹر ری سیٹ نہیں ہو سکے: {0}",
+            "无法重置计数器：{0}")
+
+        Add("Сброс не удался",
+            "Reset failed", "Скидання не вдалося", "Zurücksetzen fehlgeschlagen",
+            "Azzeramento non riuscito", "No se pudo restablecer", "Échec de la réinitialisation",
+            "A reposição falhou", "فشلت إعادة التعيين", "रीसेट विफल रहा", "রিসেট ব্যর্থ হয়েছে",
+            "ری سیٹ ناکام رہا", "重置失败")
 
     End Sub
 

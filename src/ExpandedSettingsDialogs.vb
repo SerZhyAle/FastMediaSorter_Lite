@@ -223,29 +223,75 @@ Public NotInheritable Class History_Form
         Controls.Add(button)
     End Sub
 
-    ''' <summary>Newest first - the order the recent-files menu already shows.</summary>
+    ''' <summary>Newest first - the order the recent-files menu already shows. The two
+    ''' lists are stored the opposite way round (files newest LAST, folders newest FIRST),
+    ''' so only the file list is reversed; reversing both showed the oldest folder at the
+    ''' top (053 F-04).</summary>
     Private Sub Fill()
         fileList.BeginUpdate()
         fileList.Items.Clear()
-        For Each entry As String In Enumerable.Reverse(files)
+        For Each entry As String In Utils.RecentNewestFirst(files, storedNewestFirst:=False)
             fileList.Items.Add(entry)
         Next
         fileList.EndUpdate()
 
         folderList.BeginUpdate()
         folderList.Items.Clear()
-        For Each entry As String In Enumerable.Reverse(folders)
+        For Each entry As String In Utils.RecentNewestFirst(folders, storedNewestFirst:=True)
             folderList.Items.Add(entry)
         Next
         folderList.EndUpdate()
     End Sub
+
+    ''' <summary>How long one existence probe may take before its entry stays "unknown".
+    ''' A sleeping NAS answers File.Exists after a full SMB timeout.</summary>
+    Private Const Probe_Timeout_Ms As Integer = 2000
+
+    ''' <summary>Existence verdicts, by list and path. Filled off the UI thread; read by
+    ''' DrawEntry, which never touches the disk itself.</summary>
+    Private ReadOnly existence As New Dictionary(Of String, Boolean)(StringComparer.OrdinalIgnoreCase)
+    Private ReadOnly probing As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+    Private ReadOnly existenceLock As New Object()
+
+    ''' <summary>
+    ''' The verdict for one entry, or Nothing while it is unknown - in which case a probe is
+    ''' started once, on a worker, with a time limit, and the list is repainted when it
+    ''' answers. DrawEntry used to call File.Exists/Directory.Exists itself on every paint
+    ''' of every row: a history with NAS paths froze the dialog for tens of seconds per row,
+    ''' again on every scroll (053 F-04).
+    ''' </summary>
+    Private Function KnownExistence(entry As String, isFolder As Boolean, list As ListBox) As Boolean?
+        Dim key As String = If(isFolder, "D|", "F|") & entry
+        SyncLock existenceLock
+            Dim known As Boolean
+            If existence.TryGetValue(key, known) Then Return known
+            If Not probing.Add(key) Then Return Nothing
+        End SyncLock
+
+        Threading.Tasks.Task.Run(
+            Sub()
+                Dim probe As Threading.Tasks.Task(Of Boolean) =
+                    Threading.Tasks.Task.Run(Function() Exists(entry, isFolder))
+                If Not probe.Wait(Probe_Timeout_Ms) Then Return ' stays unknown: drawn as present
+                SyncLock existenceLock
+                    existence(key) = probe.Result
+                End SyncLock
+                Try
+                    If Not list.IsDisposed AndAlso list.IsHandleCreated Then list.BeginInvoke(New MethodInvoker(AddressOf list.Invalidate))
+                Catch ex As Exception
+                    AppFileLogger.LogException("History: repainting after a probe", ex)
+                End Try
+            End Sub)
+        Return Nothing
+    End Function
 
     Private Sub DrawEntry(sender As Object, e As DrawItemEventArgs)
         Dim list As ListBox = TryCast(sender, ListBox)
         If list Is Nothing OrElse e.Index < 0 OrElse e.Index >= list.Items.Count Then Return
 
         Dim entry As String = Convert.ToString(list.Items(e.Index))
-        Dim missing As Boolean = Not Exists(entry, list Is folderList)
+        ' Unknown is drawn as present: greying an entry is a claim, made only once proven.
+        Dim missing As Boolean = Not KnownExistence(entry, list Is folderList, list).GetValueOrDefault(True)
         e.DrawBackground()
         Dim colour As Color = If((e.State And DrawItemState.Selected) = DrawItemState.Selected,
                                  SystemColors.HighlightText,

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Builds the SERVER edition installer (setup.exe) - the always-on Folder Share
     Server, hosted by a Windows service. LOCAL flow ("сборка", not "релиз"): it never
@@ -27,7 +27,9 @@
     Keep it identical to the User edition build of the same release.
 
 .PARAMETER SkipBuild
-    Reuse the existing publish output instead of re-publishing the Companion.
+    Reuse an existing Share Manager build instead of re-publishing the Companion:
+    the one staged by the User installer of the SAME version
+    (stage\FastMediaSorter-<version>-windows-x64\), else bin\Release.
 
 .PARAMETER MaxCompress
     Use the published-release compression (lzma2/ultra, solid) - smallest file but
@@ -100,14 +102,27 @@ if (-not (Test-Path $companionProj)) {
     throw "Companion project not found ($companionProj) - the Server package would have nothing to install."
 }
 if ($SkipBuild) {
-    $prebuilt = Join-Path $solutionDir "bin\Release\FastMediaSorterCompanion.exe"
-    if (-not (Test-Path $prebuilt)) { throw "-SkipBuild was given but $prebuilt does not exist. Run without -SkipBuild first." }
+    # The User installer of the same version publishes the Share Manager fresh into
+    # its own stage, so take THAT one when it exists: the two setup.exe files of one
+    # build must carry the same Share Manager. bin\Release is only the fallback - it
+    # can hold an exe from an earlier build (build.ps1 -SkipCompanion rebuilds none,
+    # and msbuild Rebuild never removes it), which is how dist\ used to end up with
+    # two setups of one version carrying different Share Managers.
+    $userStageExe = Join-Path $solutionDir ("stage\FastMediaSorter-" + $Version + "-windows-x64\FastMediaSorterCompanion.exe")
+    $binExe = Join-Path $solutionDir "bin\Release\FastMediaSorterCompanion.exe"
+    if (Test-Path $userStageExe) {
+        $prebuilt = $userStageExe
+    } elseif (Test-Path $binExe) {
+        $prebuilt = $binExe
+    } else {
+        throw "-SkipBuild was given but neither $userStageExe nor $binExe exists. Run without -SkipBuild first."
+    }
     Copy-Item $prebuilt $stageDir -Force
-    Write-Host "Reused the existing Share Manager build."
+    Write-Host "Reused the existing Share Manager build: $prebuilt"
 } else {
     $companionPub = Join-Path $stageDir "companion-publish-tmp"
     Write-Host "Publishing the Share Manager (net10, self-contained single-file).."
-    & dotnet publish $companionProj -c Release -r win-x64 -o $companionPub -v minimal --nologo
+    & dotnet publish $companionProj -c Release -r win-x64 -p:ReleaseVersion=$Version -o $companionPub -v minimal --nologo
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish (Companion) failed with exit code $LASTEXITCODE." }
     $companionExe = Join-Path $companionPub "FastMediaSorterCompanion.exe"
     if (-not (Test-Path $companionExe)) { throw "Companion exe not found at $companionExe after publish." }

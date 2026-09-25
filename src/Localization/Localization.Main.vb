@@ -68,9 +68,9 @@ Partial Public NotInheritable Class Localization
             "Choisir un dossier de fichiers multimédias", "Selecionar uma pasta com arquivos de mídia",
             "اختيار مجلد به ملفات وسائط", "मीडिया फ़ाइलों वाला फ़ोल्डर चुनें",
             "মিডিয়া ফাইলসহ ফোল্ডার নির্বাচন করুন", "میڈیا فائلوں والا فولڈر منتخب کریں", "选择包含媒体文件的文件夹")
-        Add("Перечитать текущую папку - вдруг там что-то поменялось за вашей спиной.",
+        Add("Обновить текущую папку - вдруг там что-то поменялось за вашей спиной.",
             "Reload the current folder - in case something changed behind your back.",
-            "Перечитати поточну теку - раптом там щось змінилося за вашою спиною.",
+            "Оновити поточну теку - раптом там щось змінилося за вашою спиною.",
             "Aktuellen Ordner neu einlesen - falls sich hinter Ihrem Rücken etwas geändert hat.",
             "Rileggi la cartella corrente - nel caso sia cambiato qualcosa alle tue spalle.",
             "Volver a leer la carpeta actual, por si algo cambió a sus espaldas.",
@@ -175,10 +175,6 @@ Partial Public NotInheritable Class Localization
             "সবসময় উপরে - যেন কিছুই একে ঢাকতে না পারে।",
             "ہمیشہ سب سے اوپر - تاکہ کوئی اسے ڈھانپ نہ سکے۔",
             "总在最前 - 谁也别想挡住它。")
-        Add("Выбрать файл..",
-            "Choose file..", "Вибрати файл..", "Datei wählen..", "Scegli file..", "Elegir archivo..",
-            "Choisir un fichier..", "Escolher arquivo..", "اختيار ملف..", "फ़ाइल चुनें..",
-            "ফাইল নির্বাচন করুন..", "فائل منتخب کریں..", "选择文件..")
         Add("Порядок сортировки файлов",
             "File sort order", "Порядок сортування файлів", "Sortierreihenfolge der Dateien",
             "Ordinamento dei file", "Orden de clasificación de archivos", "Ordre de tri des fichiers",
@@ -234,10 +230,6 @@ Partial Public NotInheritable Class Localization
             "বর্তমান ফাইলের নম্বর ও মোট সংখ্যা - কাজের মাপ বুঝতে।",
             "موجودہ فائل کا نمبر اور کل تعداد - تاکہ کام کا اندازہ ہو۔",
             "当前文件序号与总数 - 好掂量掂量工作量。")
-        Add("Недавние файлы",
-            "Recent files", "Нещодавні файли", "Zuletzt verwendete Dateien", "File recenti",
-            "Archivos recientes", "Fichiers récents", "Arquivos recentes", "الملفات الحديثة",
-            "हाल की फ़ाइलें", "সাম্প্রতিক ফাইল", "حالیہ فائلیں", "最近的文件")
         Add("Файл всё ещё занят: ",
             "File still locked: ", "Файл усе ще зайнятий: ", "Datei weiterhin gesperrt: ",
             "File ancora bloccato: ", "El archivo sigue bloqueado: ", "Fichier toujours verrouillé : ",
@@ -275,10 +267,6 @@ Partial Public NotInheritable Class Localization
             "المزيد - أزرار لم تتسع في الصف.", "और - वे बटन जो पंक्ति में नहीं समाए।",
             "আরও - যে বোতামগুলো সারিতে ধরেনি।", "مزید - وہ بٹن جو قطار میں نہ سما سکے۔",
             "更多 - 这一行放不下的按钮。")
-        Add("Выбрать папку..",
-            "Select folder..", "Вибрати теку..", "Ordner wählen..", "Scegli cartella..",
-            "Seleccionar carpeta..", "Choisir un dossier..", "Selecionar pasta..", "اختيار مجلد..",
-            "फ़ोल्डर चुनें..", "ফোল্ডার নির্বাচন করুন..", "فولڈر منتخب کریں..", "选择文件夹..")
         Add("Открыть другую папку с медиафайлами",
             "Open another folder of media files", "Відкрити іншу теку з медіафайлами",
             "Einen anderen Ordner mit Mediendateien öffnen", "Apri un'altra cartella di file multimediali",
@@ -320,6 +308,8 @@ Partial Public NotInheritable Class Localization
         ' --- video controls / tracks -------------------------------------------
         Add("Перемотка", "Seek", "Перемотування", "Suchlauf", "Ricerca", "Búsqueda", "Recherche",
             "Busca", "التقديم", "सीक", "সিক", "سیک", "进度")
+        Add("Воспроизвести", "Play", "Відтворити", "Wiedergeben", "Riproduci", "Reproducir", "Lire", "Reproduzir",
+            "تشغيل", "चलाएँ", "চালান", "چلائیں", "播放")
         Add("Громкость", "Volume", "Гучність", "Lautstärke", "Volume", "Volumen", "Volume",
             "Volume", "مستوى الصوت", "ध्वनि", "ভলিউম", "آواز", "音量")
         Add("Пауза / продолжить (клик по видео - то же самое; правая кнопка - меню)",
@@ -338,9 +328,6 @@ Partial Public NotInheritable Class Localization
         Add("Звук вкл/выкл", "Mute / unmute", "Звук увімк/вимк", "Ton ein/aus", "Attiva/disattiva audio",
             "Silenciar / activar sonido", "Couper / rétablir le son", "Ativar / desativar som",
             "كتم / إلغاء كتم الصوت", "ध्वनि चालू/बंद", "শব্দ চালু/বন্ধ", "آواز آن/آف", "静音 / 取消静音")
-        Add("Пауза / продолжить", "Pause / resume", "Пауза / продовжити", "Pause / Fortsetzen",
-            "Pausa / riprendi", "Pausar / reanudar", "Pause / reprise", "Pausar / continuar",
-            "إيقاف مؤقت / متابعة", "रोकें / जारी रखें", "থামান / চালান", "روکیں / جاری رکھیں", "暂停 / 继续")
         Add("Дорожки", "Tracks", "Доріжки", "Spuren", "Tracce", "Pistas", "Pistes", "Faixas",
             "المسارات", "ट्रैक", "ট্র্যাক", "ٹریکس", "轨道")
         Add("Звуковые дорожки и субтитры.  A - следующая звуковая, V - следующие субтитры.",

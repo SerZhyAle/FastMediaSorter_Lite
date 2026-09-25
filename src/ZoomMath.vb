@@ -36,10 +36,13 @@ Friend Module ZoomMath
     ''' Never force the user above 4000 %, and never below 5 % - except when Fit itself
     ''' is smaller than 5 % (a huge image in a small window), where Fit is the honest
     ''' floor: refusing to show the whole picture would be the bug, not the limit.
+    ''' The ceiling mirrors it: a tiny image whose Fit is above 4000 % has Fit as its
+    ''' ceiling, or "zoom in" would shrink it (audit B-09).
     ''' </summary>
     Friend Function Clamp(value As Double, fitFactor As Double) As Double
         Dim lower As Double = Math.Min(Factor_Floor, fitFactor)
-        Return Math.Max(lower, Math.Min(Factor_Max, value))
+        Dim upper As Double = Math.Max(Factor_Max, fitFactor)
+        Return Math.Max(lower, Math.Min(upper, value))
     End Function
 
     ''' <summary>

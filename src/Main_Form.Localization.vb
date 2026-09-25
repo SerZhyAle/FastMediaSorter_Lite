@@ -43,8 +43,8 @@ Partial Public Class Main_Form
         If lbl_Status.Text = "status" Then lbl_Status.Text = ""
 
         lbl_Folder.Text = Localization.T("Каталог:")
-        btn_Prev_File.Text = Localization.T("<< пред(PgUp)")
-        btn_Next_File.Text = Localization.T("след(PgDn) >>")
+        btn_Prev_File.Text = Localization.T("предыдущий (PgUp)")
+        btn_Next_File.Text = Localization.T("следующий (PgDn)")
         bt_Delete.Text = Localization.T("удалить (del)")
         btn_Move_Table.Text = Localization.T("Настройки")
 
@@ -71,6 +71,7 @@ Partial Public Class Main_Form
         LocalizeVideoControls()
         LocalizeImageEditor()
         LocalizeToVideo()
+        ApplyCatalogToolbarGlyphs()
 #End If
         LocalizeToolbarOverflow()
         LocalizeBrowserTranslate()

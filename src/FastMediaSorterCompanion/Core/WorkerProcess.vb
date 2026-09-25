@@ -67,8 +67,25 @@ Public Module WorkerProcess
     Private Const Service_Connect_Wait_Ms As Integer = 15000
 
     Public Function EnsureRunning(Optional totalWaitMs As Integer = 5000) As WorkerResponse
+        Return EnsureRunning(totalWaitMs, WorkerIpc.PipeName, AddressOf SpawnWorker)
+    End Function
+
+    ''' <summary>
+    ''' The bring-up against an explicit pipe, with the launch passed in - so a test can drive
+    ''' a private pipe and observe that nothing is launched (the frozen pipe is a machine-wide
+    ''' singleton; see WorkerIpc.Send). <paramref name="startWorker"/> returns False when the
+    ''' launch itself failed.
+    '''
+    ''' ANY answer means a worker is running - including a version refusal (WORKER-IPC
+    ''' section 6 rule 3), an <c>ok=false</c>, and every <see cref="WorkerExchangeProblem"/>
+    ''' (an unreadable answer, a pipe this account may not open, a pipe held by a process we
+    ''' do not trust). Whoever holds the frozen pipe, a second worker would only lose the race
+    ''' for it. The refusal used to be swallowed as "nobody answered", and this function then
+    ''' went on to spawn.
+    ''' </summary>
+    Friend Function EnsureRunning(totalWaitMs As Integer, pipeName As String, startWorker As Func(Of Boolean)) As WorkerResponse
         ' Fast path: a worker is already listening.
-        Dim status As WorkerResponse = TryGetStatus(400)
+        Dim status As WorkerResponse = TryGetStatus(400, pipeName)
         If status IsNot Nothing Then Return status
 
         ' The service suppresses the foreground worker. Two conditions, because they
@@ -81,7 +98,7 @@ Public Module WorkerProcess
         ' Either way: connect, never spawn (spec §1.4, §3.6 - the two hosts are
         ' interchangeable, never concurrent).
         If ServerFeatures.IsSystemServiceHost() OrElse ServiceControl.IsServiceServing() Then
-            Return WaitForServiceWorker()
+            Return WaitForServiceWorker(pipeName)
         End If
 
         If Not IsAvailable() Then Return Nothing
@@ -92,24 +109,15 @@ Public Module WorkerProcess
             Return Nothing
         End If
 
-        Try
-            ' Using: we never wait on the object itself (readiness is decided by the pipe
-            ' poll below), and a discarded Process holds its handle until finalization.
-            Using spawned As Process = Process.Start(New ProcessStartInfo(WorkerExePath()) With {
-                .UseShellExecute = False,
-                .CreateNoWindow = True,
-                .WindowStyle = ProcessWindowStyle.Hidden})
-            End Using
-        Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " companion: spawn failed: " & ex.Message)
+        If Not startWorker() Then
             spawn_Failed_At = DateTime.UtcNow
             Return Nothing
-        End Try
+        End If
 
         Dim sw As Stopwatch = Stopwatch.StartNew()
         Do While sw.ElapsedMilliseconds < totalWaitMs
             Thread.Sleep(200)
-            status = TryGetStatus(400)
+            status = TryGetStatus(400, pipeName)
             If status IsNot Nothing Then
                 spawn_Failed_At = DateTime.MinValue
                 Return status
@@ -122,60 +130,122 @@ Public Module WorkerProcess
         Return Nothing
     End Function
 
+    ''' <summary>Launches the bundled worker hidden. False when the launch itself failed.</summary>
+    Private Function SpawnWorker() As Boolean
+        Try
+            ' Using: we never wait on the object itself (readiness is decided by the pipe
+            ' poll), and a discarded Process holds its handle until finalization.
+            Using spawned As Process = Process.Start(New ProcessStartInfo(WorkerExePath()) With {
+                .UseShellExecute = False,
+                .CreateNoWindow = True,
+                .WindowStyle = ProcessWindowStyle.Hidden})
+            End Using
+            Return True
+        Catch ex As Exception
+            AppFileLogger.LogException("Worker: spawn failed", ex)
+            Return False
+        End Try
+    End Function
+
     ''' <summary>Polls the control pipe while the service comes up. Returns the status
     ''' once the service worker answers, or Nothing when it never does - which in
     ''' Server mode means the service is stopped, broken or not ours, and the UI must
     ''' offer the administrative controls rather than a "start sharing" that cannot
     ''' work.</summary>
-    Private Function WaitForServiceWorker() As WorkerResponse
+    Private Function WaitForServiceWorker(pipeName As String) As WorkerResponse
         Dim sw As Stopwatch = Stopwatch.StartNew()
         Do
-            Dim status As WorkerResponse = TryGetStatus(1000)
+            Dim status As WorkerResponse = TryGetStatus(1000, pipeName)
             If status IsNot Nothing Then Return status
             If sw.ElapsedMilliseconds >= Service_Connect_Wait_Ms Then Return Nothing
             Thread.Sleep(500)
         Loop
     End Function
 
-    ''' <summary>GetStatus with transport failures swallowed (returns Nothing).</summary>
+    ''' <summary>GetStatus with transport failures swallowed (returns Nothing). A version
+    ''' refusal is NOT a transport failure and comes back as a refused response
+    ''' (<see cref="WorkerResponse.IsRefused"/>).</summary>
     Public Function TryGetStatus(Optional connectTimeoutMs As Integer = 1000) As WorkerResponse
+        Return TryGetStatus(connectTimeoutMs, WorkerIpc.PipeName)
+    End Function
+
+    Friend Function TryGetStatus(connectTimeoutMs As Integer, pipeName As String) As WorkerResponse
+        Return Exchange(New WorkerRequest With {.type = "GetStatus"}, connectTimeoutMs, pipeName)
+    End Function
+
+    ''' <summary>
+    ''' The most recent version refusal (WORKER-IPC section 6 rule 3), or Nothing once any
+    ''' later exchange was understood or nobody answered at all. The pipe is a machine-wide
+    ''' singleton, so this is a fact about THE worker, not about one call - which is what lets
+    ''' a screen that only holds a Nothing status still say why.
+    ''' </summary>
+    Public ReadOnly Property LastRefusal As WorkerVersionRefusedException
+        Get
+            Return last_Refusal
+        End Get
+    End Property
+
+    Private last_Refusal As WorkerVersionRefusedException
+
+    ''' <summary>The problem of the most recent exchange (<see cref="WorkerExchangeProblem"/>),
+    ''' None once one was understood, refused or met silence. Machine-wide like
+    ''' <see cref="LastRefusal"/>, and for the same reason: a screen holding only a Nothing
+    ''' status can still say why.</summary>
+    Public ReadOnly Property LastProblem As WorkerExchangeProblem
+        Get
+            Return last_Problem
+        End Get
+    End Property
+
+    Private last_Problem As WorkerExchangeProblem = WorkerExchangeProblem.None
+
+    ''' <summary>
+    ''' One exchange, with the outcomes kept apart: a response (read <c>Ok</c> on it), a
+    ''' refused response (<see cref="WorkerResponse.IsRefused"/> - a worker answered, with a
+    ''' newer protocol), a response carrying a problem (<see cref="WorkerResponse.IsProblem"/>
+    ''' - something holds the pipe: an answer we cannot read, an account we are not, a process
+    ''' that is not our worker), or Nothing (transport failure: nobody answered in time).
+    ''' Never throws. Every product exchange goes through here, so <see cref="LastRefusal"/>
+    ''' and <see cref="LastProblem"/> are always current.
+    ''' </summary>
+    Friend Function Exchange(request As WorkerRequest, timeoutMs As Integer, pipeName As String) As WorkerResponse
         Try
-            Return WorkerIpc.Send(New WorkerRequest With {.type = "GetStatus"}, connectTimeoutMs)
-        Catch
-            Return Nothing
+            Dim resp As WorkerResponse = WorkerIpc.Send(request, timeoutMs, pipeName)
+            last_Refusal = Nothing
+            last_Problem = WorkerExchangeProblem.None
+            Return resp
+        Catch refusal As WorkerVersionRefusedException
+            last_Refusal = refusal
+            last_Problem = WorkerExchangeProblem.None
+            Return WorkerResponse.Refused(refusal)
+        Catch ex As Exception
+            last_Refusal = Nothing
+            Dim problem As WorkerExchangeProblem = ClassifyFailure(ex)
+            last_Problem = problem
+            If problem = WorkerExchangeProblem.None Then Return Nothing
+            AppFileLogger.LogException("Worker: " & problem.ToString(), ex)
+            Return WorkerResponse.WithProblem(problem)
         End Try
     End Function
 
     ''' <summary>
-    ''' Hard stop: asks the worker to stop serving, then kills the worker process.
-    ''' NOT called on app close - closing LITE must leave the worker running so
-    ''' shares survive (acceptance checklist). Use for uninstall / explicit quit.
-    '''
-    ''' In Server mode the kill half is skipped: the process belongs to the SCM, and
-    ''' killing it would trip the configured recovery action into restarting it -
-    ''' a fight the console cannot win and should not start. Stopping the SFTP server
-    ''' over IPC is still the right thing and needs no elevation; stopping the SERVICE
-    ''' is an explicit administrative action (ServiceControl.Manage).
+    ''' Which failures mean "something holds the pipe" rather than "nobody answered". An
+    ''' access denial on connect is the pipe DACL of a worker that belongs to another
+    ''' account (the owner plus the enrolled management SIDs): a second account's console
+    ''' used to read it as "not running", spawn a worker that could only lose the pipe, or
+    ''' wait out the service and then say "the service is running" with no hint that this
+    ''' account is simply not enrolled (ticket 054 H-26).
     ''' </summary>
-    Public Sub StopWorker()
-        Try
-            WorkerIpc.Send(New WorkerRequest With {.type = "StopServer"}, 1000)
-        Catch
-        End Try
-        If ServerFeatures.IsSystemServiceHost() Then Return
-        Try
-            For Each p As Process In Process.GetProcessesByName(ProcessName)
-                Try
-                    p.Kill()
-                    p.WaitForExit(2000)
-                Catch
-                Finally
-                    p.Dispose()
-                End Try
-            Next
-        Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " companion: stop failed: " & ex.Message)
-        End Try
-    End Sub
+    Friend Function ClassifyFailure(ex As Exception) As WorkerExchangeProblem
+        Dim typed As WorkerExchangeException = TryCast(ex, WorkerExchangeException)
+        If typed IsNot Nothing Then Return typed.Problem
+        If TypeOf ex Is UnauthorizedAccessException Then Return WorkerExchangeProblem.NotAuthorized
+        Return WorkerExchangeProblem.None
+    End Function
+
+    ' StopWorker - the "hard stop" that sent StopServer to whoever held the pipe and then
+    ' killed every fms-share-worker process by NAME, in any session this account could open -
+    ' was removed (ticket 054 H-24): it had no caller, and its shape was the danger. Stopping
+    ' sharing is StopServer over IPC; stopping the SERVICE is ServiceControl.Manage.
 
 End Module

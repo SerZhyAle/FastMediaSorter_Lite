@@ -1,6 +1,7 @@
 Option Strict On
 
 Imports System.Drawing
+Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 ''' <summary>
@@ -135,6 +136,8 @@ Partial Public NotInheritable Class MainWindow
         Dim copy As New Button With {.Width = 28, .Height = 26, .Margin = New Padding(2, 3, 0, 3), .Image = _copyGlyph,
             .ImageAlign = ContentAlignment.MiddleCenter, .TabStop = False, .Anchor = AnchorStyles.Left, .Tag = copyFunc}
         toolTip.SetToolTip(copy, Localization.T("Копировать в буфер"))
+        ' Glyph-only: the name says WHAT it copies (APP-BEHAVIOUR rule 9, ticket 028 Ф-7).
+        copy.AccessibleName = Localization.TF("{0} - копировать в буфер", caption.TrimEnd(":"c, " "c))
         AddHandler copy.Click, AddressOf OnCopyClick
 
         grid.Controls.Add(cap, 0, row)
@@ -251,7 +254,10 @@ Partial Public NotInheritable Class MainWindow
     Private Sub ApplyStatusToUi()
         Dim running As Boolean = _status IsNot Nothing AndAlso _status.Running
 
-        _rootsWithoutAccess = RefreshFolderAccessWarnings()
+        ' Off the UI thread now (ticket 054 H-19): the walk paints the rows and re-runs
+        ' UpdateStateLine when its answer is in; _rootsWithoutAccess holds the previous
+        ' answer until then.
+        Dim t As Task = RefreshFolderAccessAsync()
 
         btnToggle.Text = If(running, Localization.T("Остановить раздачу"), Localization.T("Начать раздачу"))
         UpdateStateLine(running)
@@ -274,8 +280,10 @@ Partial Public NotInheritable Class MainWindow
         btnShare.Enabled = running AndAlso Not _busy
         btnGuide.Enabled = running AndAlso Not _busy
         If miRouterSearch IsNot Nothing Then miRouterSearch.Enabled = running
-
-        If running AndAlso Not _routerRequested Then Dim t As Task = DetectRouterAsync()
+        ' The router is no longer detected just because this window shows a running share:
+        ' detection talks to whatever answers on the LAN, and the privacy text promises
+        ' nothing is contacted without being asked (ticket 054 H-17). It runs on the router
+        ' link, the router search and the port-forward guide - each a click.
 
         UpdateStatsBlock()
         UpdateHostingBlock()
@@ -300,10 +308,24 @@ Partial Public NotInheritable Class MainWindow
         ' outranks every other line here: the share looks off - or looks fine on a number
         ' nobody forwarded - and this is the only place that says why.
         Dim portWarning As String = ShareController.PortWarning(_status)
-        If portWarning <> "" Then
-            lblState.Text = portWarning
+        ' Two more verdicts outrank the ordinary state, both from a worker that answered and
+        ' said no (WORKER-IPC section 6 rule 3 and section 3 rule 2): it speaks a newer
+        ' protocol, so nothing it says is read; or it refused the network policy while LAN
+        ' only is on, so the privacy switch is not being enforced. Either is shown even
+        ' over an empty list - the intro would hide the only line that explains it.
+        Dim workerWarning As String = If(_status Is Nothing, ShareController.RefusalMessage(), "")
+        If workerWarning = "" AndAlso portWarning = "" Then workerWarning = ShareController.PolicyWarning()
+        If workerWarning <> "" Then
+            lblIntro.Visible = False
+            lblState.Visible = True
+            lblStateDot.Visible = True
+        Else
+            workerWarning = portWarning
+        End If
+        If workerWarning <> "" Then
+            lblState.Text = workerWarning
             lblState.ForeColor = CollapsibleSection.AttentionColor
-            lblStateDot.ForeColor = lblState.ForeColor
+            SetStateGlyph("shareStatusError")
             Return
         End If
 
@@ -313,16 +335,43 @@ Partial Public NotInheritable Class MainWindow
             ' phone got "permission denied" while the window said everything was fine.
             lblState.Text = HostingText.RunningNoAccessLine(_rootsWithoutAccess)
             lblState.ForeColor = CollapsibleSection.AttentionColor
+            SetStateGlyph("shareStatusError")
         ElseIf running Then
             Dim count As Integer = CountSharedFolders()
             Dim port As Integer = If(_status IsNot Nothing, _status.ListenPort, 0)
             lblState.Text = Localization.TF("Раздача работает - {0}, порт {1}", FolderCountText(count), port)
             lblState.ForeColor = Color.ForestGreen
+            SetStateGlyph("shareStatusOk")
         Else
             lblState.Text = Localization.T("Раздача выключена")
             lblState.ForeColor = Color.DimGray
+            SetStateGlyph("shareStatus")
         End If
-        lblStateDot.ForeColor = lblState.ForeColor
+    End Sub
+
+    ''' <summary>Palette hues of the state look (the catalog's palette.json, day tones,
+    ''' read 2026-09-24): the Share Manager has one light surface, so the day tone is the
+    ''' one that applies. status.unknown carries no hue and takes the theme's grey.</summary>
+    Private Shared ReadOnly StateOkHue As Color = ColorTranslator.FromHtml("#2E7D32")
+    Private Shared ReadOnly StateErrorHue As Color = ColorTranslator.FromHtml("#D32F2F")
+
+    ''' <summary>Paints the state glyph for a map entry and gives it the entry's name, so a
+    ''' screen reader hears the state rather than an unnamed picture.</summary>
+    Private Sub SetStateGlyph(mapName As String)
+        If lblStateDot Is Nothing Then Return
+        Dim meaning As IconMeaning = IconMap.GetMeaning(mapName)
+        If meaning Is Nothing Then Return
+        If String.Equals(TryCast(lblStateDot.Tag, String), mapName, StringComparison.Ordinal) AndAlso
+           lblStateDot.Image IsNot Nothing Then Return
+        Dim hue As Color = SystemColors.GrayText
+        If meaning.GlyphId = "status.ok" Then hue = StateOkHue
+        If meaning.GlyphId = "status.error" Then hue = StateErrorHue
+        Dim old As Image = lblStateDot.Image
+        lblStateDot.Image = GlyphRenderer.Render(meaning.GlyphId, LogicalToDeviceUnits(16), hue,
+                                                 AddressOf CompanionAssets.OpenBundledAsset)
+        lblStateDot.Tag = mapName
+        lblStateDot.AccessibleName = Localization.T(meaning.LocalizationKey)
+        If old IsNot Nothing Then old.Dispose()
     End Sub
 
     Private Function CountSharedFolders() As Integer
@@ -420,8 +469,8 @@ Partial Public NotInheritable Class MainWindow
         Else
             lblStatLast.Text = lastAt & "  -  " & s.LastConnectionAddress
         End If
-        lblStatConns.Text = String.Format(Localization.T("всего {0} (с запуска {1})"), s.TotalConnections, s.ConnectionsSinceStart)
-        lblStatFiles.Text = String.Format(Localization.T("всего {0} (с запуска {1})"), s.FilesServedTotal, s.FilesServedSinceStart)
+        lblStatConns.Text = Localization.TF("всего {0} (с запуска {1})", s.TotalConnections, s.ConnectionsSinceStart)
+        lblStatFiles.Text = Localization.TF("всего {0} (с запуска {1})", s.FilesServedTotal, s.FilesServedSinceStart)
     End Sub
 
     ''' <summary>Set while a stats fetch is out, so the 10 s tick cannot stack requests behind
@@ -448,9 +497,31 @@ Partial Public NotInheritable Class MainWindow
         End Try
 
         If IsDisposed OrElse st Is Nothing Then Return
+        ' A user action that started while this fetch was out owns the status now - its
+        ' snapshot is newer than this one (ticket 054 H-12).
+        If _busy Then Return
+        Dim wasRunning As Boolean = _status IsNot Nothing AndAlso _status.Running
         _status = st
+        If st.Running <> wasRunning Then
+            ' The server changed state under the window (the tray's "turn sharing off", a
+            ' service stopped elsewhere): the header, the toggle caption and "Поделиться" all
+            ' follow, not just the counters.
+            ApplyStatusToUi()
+            Return
+        End If
         UpdateStatsBlock()
         UpdateStatsSummary()
+    End Function
+
+    ''' <summary>A full refresh from the worker, for a change made outside this window (the
+    ''' tray's "turn sharing off"). Skipped while a user action is in flight - it will apply
+    ''' its own, newer status.</summary>
+    Friend Async Function RefreshFromWorkerAsync() As Task
+        If _busy OrElse IsDisposed OrElse Not _entered Then Return
+        Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+        If IsDisposed OrElse _busy Then Return
+        _status = st
+        ApplyStatusToUi()
     End Function
 
     ''' <summary>Keeps the hosting line honest after every status refresh: the mode can
@@ -537,6 +608,8 @@ Partial Public NotInheritable Class MainWindow
             Return
         End If
         NetworkInfo.OpenInBrowser(url)
+        ' Asked for: the link names the model from now on.
+        Dim t As Task = DetectRouterAsync()
     End Sub
 
     Private Async Sub OnOpenRouterSearch(sender As Object, e As EventArgs)

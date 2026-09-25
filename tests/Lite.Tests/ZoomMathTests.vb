@@ -69,6 +69,16 @@ Public Class ZoomMathTests
     End Sub
 
     <Fact>
+    Public Sub Clamp_WhenFitIsAboveTheCeiling_ZoomingInNeverShrinks()
+        ' Audit B-09: a 16x16 icon in a 1080p panel fits at 67.5x. One notch in used to
+        ' be clamped to 40x - "zoom in" made the picture smaller.
+        Dim fit As Double = 67.5
+        Assert.True(ZoomMath.Clamp(84.4, fit) >= fit)
+        Dim stepped As Double = ZoomMath.Clamp(ZoomMath.Snap(ZoomMath.StepFrom(fit, True, False), fit), fit)
+        Assert.True(stepped >= fit, "stepped to " & stepped.ToString())
+    End Sub
+
+    <Fact>
     Public Sub Clamp_LeavesAnOrdinaryScaleAlone()
         Assert.Equal(2.5, ZoomMath.Clamp(2.5, 0.5), 6)
     End Sub

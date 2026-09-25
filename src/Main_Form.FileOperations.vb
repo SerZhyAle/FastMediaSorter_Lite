@@ -37,14 +37,15 @@ Partial Public Class Main_Form
         ''' It travels with the op because the message is built when the op finishes,
         ''' long after the reason for it was known.</summary>
         Public Property StatusNote As String = ""
-        ''' <summary>A copy that already flipped the view to the next file (the optimistic
-        ''' advance). Only then does a failure have to bring the user back: a copy removes
-        ''' nothing from the list, so there is no list damage to repair - just a view that
-        ''' has moved on from a file whose copy did not happen.</summary>
-        Public Property AdvancedPastSource As Boolean
-        ''' <summary>Navigation is intentionally deferred until the worker reports a
-        ''' successful copy/move. A failed or skipped operation must leave the view
-        ''' where it was (SETTINGS_EXPANSION §3.2).</summary>
+        ''' <summary>The generation of the file list this operation was started from
+        ''' (Main_Form.file_List_Generation). Its completion, rollback and undo touch the
+        ''' list - and the view - only while that list is still the one on screen (audit
+        ''' 047, C-13).</summary>
+        Public Property ListGeneration As Integer
+        ''' <summary>A copy's navigation is deferred until the worker reports success: a
+        ''' failed or skipped copy leaves the view where it was (SETTINGS_EXPANSION §3.2).
+        ''' A move shows the next file at once - the moved one has already left the list -
+        ''' and uses this only for "close if empty".</summary>
         Public Property NavigateAfterSuccess As Boolean
         Public Property CloseIfEmptyAfterSuccess As Boolean
         Public Property ReplaceExisting As Boolean
@@ -71,6 +72,14 @@ Partial Public Class Main_Form
         ''' travels with the operation rather than being thrown - and the list is only
         ''' touched once this says the file is really back (invariant 8).</summary>
         Public Property RestoreOutcome As BinRestoreResult = BinRestoreResult.NotAttempted
+        ''' <summary>Written by the worker: the shell was asked to recycle the file, the
+        ''' file is gone, and the bin holds no record of it - so it was deleted for good
+        ''' (audit 047, C-09). The shell does that in silence when it cannot recycle
+        ''' (a subst drive, a volume mounted in a folder, a virtual disk).</summary>
+        Public Property RecycleFellThrough As Boolean
+        ''' <summary>For an undo operation: the history entry it was built from, pushed
+        ''' back if the undo fails so U can be pressed again (audit 047, C-07).</summary>
+        Public Property UndoOrigin As FileOp
 #End If
     End Class
 
@@ -105,8 +114,17 @@ Partial Public Class Main_Form
             Case FileOpKind.Delete, FileOpKind.DeleteUndo
                 DeleteFile(op.Source)
             Case FileOpKind.RecycleDelete
+                ' Stamped HERE, just before the shell call, not at queue time: the bin's
+                ' record is matched against this within a two-second tolerance, and an op
+                ' that waited behind a slow copy would otherwise be too old to find it.
+                op.DeletedAtUtc = DateTime.UtcNow
                 ' The shell call, on its own STA thread - this consumer is a pool thread.
                 RecycleBinIo.SendToBin(op.Source)
+                ' "Sent to the bin" is a claim the shell does not check for us: where it
+                ' cannot recycle, it deletes for good without a word (audit 047, C-09).
+                ' Believe it only once the bin holds the record.
+                op.RecycleFellThrough = Not File.Exists(op.Source) AndAlso
+                                        Not RecycleBinIo.IsInBin(op.Source, op.DeletedAtUtc)
             Case FileOpKind.RestoreFromBin
                 ' Source is where the file was deleted from (what the bin's record names);
                 ' Destination is where it goes now, which differs only if the name was taken
@@ -150,15 +168,32 @@ Partial Public Class Main_Form
         ShowFileOpQueueDepth()
     End Sub
 
-    ''' <summary>The tail of pending transfers has to be visible - on a 200 MB clip over
-    ''' SMB it is the only sign that anything is still happening.</summary>
+    ''' <summary>
+    ''' The tail of pending transfers has to be visible - on a 200 MB clip over SMB it is
+    ''' the only sign that anything is still happening.
+    '''
+    ''' APPENDED to the line, never written over it (audit 047, C-12): FinishFileOp had just
+    ''' written a failure - or the "name was taken, saved as x (2).jpg" tail - and this
+    ''' replaced it in the same tick, so a copy that did not happen was never reported at
+    ''' all. A depth appended earlier is cut off first, so the line does not grow.
+    ''' </summary>
     Private Sub ShowFileOpQueueDepth()
         If file_Op_Queue Is Nothing Then Return
-        Dim n As Integer = file_Op_Queue.PendingCount
-        If n > 1 Then
-            lbl_Status.Text = Localization.T("в очереди: ") & n.ToString()
+        Dim depth_Label As String = Localization.T("в очереди: ")
+        Dim text As String = If(lbl_Status.Text, "")
+        If text.StartsWith(depth_Label, StringComparison.Ordinal) Then
+            text = ""
+        Else
+            Dim cut As Integer = text.IndexOf(Queue_Depth_Separator & depth_Label, StringComparison.Ordinal)
+            If cut >= 0 Then text = text.Substring(0, cut)
         End If
+
+        Dim n As Integer = file_Op_Queue.PendingCount
+        If n > 1 Then text &= If(text.Length = 0, "", Queue_Depth_Separator) & depth_Label & n.ToString()
+        If Not String.Equals(lbl_Status.Text, text, StringComparison.Ordinal) Then lbl_Status.Text = text
     End Sub
+
+    Private Const Queue_Depth_Separator As String = " | "
 #End If
 
     ''' <summary>True (and says so) while the single file-operation worker is still
@@ -230,7 +265,7 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
         Return True
 #Else
-        Return Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked
+        Return Is_Independent_Thread_For_File_Operations
 #End If
     End Function
 
@@ -256,6 +291,14 @@ Partial Public Class Main_Form
 
         If is_Vlc_Playing Then StopVlcPlayback()
         current_Loaded_File_Name = ""
+
+#If Not NETFRAMEWORK Then
+        ' After VLC has stopped, never before: the media input reads from the container's
+        ' decrypting stream, and pulling that out from under a running player is the one
+        ' way to crash inside libvlc. Order is the whole of the rule
+        ' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §5.2).
+        SecureReleaseCurrent()
+#End If
 
 #If NETFRAMEWORK Then
         Web_Browser.DocumentText = ""
@@ -349,6 +392,10 @@ Partial Public Class Main_Form
         Return dest_Path
     End Function
 
+    ''' <summary>The first-use warning of the "replace" collision policy has been answered
+    ''' Yes in this session (SETTINGS_EXPANSION §3.1; audit 047, C-11).</summary>
+    Private replace_Warned_This_Session As Boolean = False
+
     Private Enum CollisionResolution
         Proceed
         Skip
@@ -372,6 +419,20 @@ Partial Public Class Main_Form
                 statusNote = Localization.TF(" (имя занято, сохранён как {0})", Path.GetFileName(destination))
                 Return CollisionResolution.Proceed
             Case "replace"
+                ' SETTINGS_EXPANSION §3.1 asks for a warning the first time "replace" is
+                ' about to overwrite something - it had never been built (audit 047, C-11).
+                ' Once per session, like the other "don't ask again" of APP-BEHAVIOUR rule 5:
+                ' the setting is the user's standing answer, the warning only makes sure
+                ' they know it is being acted on. The default is No.
+                If Not replace_Warned_This_Session Then
+                    If MessageBox.Show(Me,
+                        Localization.TF("В настройках выбрано «заменять»: файл {0} в папке назначения будет перезаписан. Продолжить? Это предупреждение показывается один раз за сеанс.", Path.GetFileName(destination)),
+                        Localization.T("Совпадение имён"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+                        MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
+                        Return CollisionResolution.Cancel
+                    End If
+                    replace_Warned_This_Session = True
+                End If
                 replaceExisting = True
                 statusNote = Localization.T(" (существующий файл будет заменён)")
                 Return CollisionResolution.Proceed
@@ -379,9 +440,14 @@ Partial Public Class Main_Form
                 ' WinForms' stock three-button prompt maps cleanly to the safe choices:
                 ' Yes = replace, No = save both, Cancel = do nothing.  The target and
                 ' source paths are named, so this is not a blind overwrite question.
+                ' The DEFAULT is Cancel: sorting is a run of key presses, and the Space or
+                ' Enter already typed for the next picture lands on this box - with the
+                ' stock default that was "Yes" and it overwrote a different photo
+                ' (audit 046, C-01). Replacing now takes a click or the Y accelerator.
                 Dim answer As DialogResult = MessageBox.Show(Me,
                     Localization.TF("В папке назначения уже есть файл {0}.\r\nДа — заменить; Нет — сохранить оба; Отмена — пропустить.", Path.GetFileName(destination)),
-                    Localization.T("Совпадение имён"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning)
+                    Localization.T("Совпадение имён"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button3)
                 If answer = DialogResult.Cancel Then Return CollisionResolution.Cancel
                 If answer = DialogResult.No Then
                     destination = ResolveDestinationCollision(destination)
@@ -416,14 +482,14 @@ Partial Public Class Main_Form
     ''' Swaps one path for another in place - what a rename does to the list, and what
     ''' undoing one does to it again.
     '''
-    ''' By VALUE first, with the remembered position only as a fallback: the list can have
-    ''' been re-sorted or rescanned between the rename and the undo, and writing blindly at
-    ''' a remembered index would then rename the wrong row. Returns the position it wrote
-    ''' at, or -1 when the old path is not in the list at all.
+    ''' By VALUE only. The remembered position used to be a fallback, and that fallback is
+    ''' exactly the case where the list is another folder's: an undo pressed after changing
+    ''' folder overwrote whatever unrelated row sat at the old index (audit 047, C-13c).
+    ''' The index is left where it is - the caller decides whether the view follows.
+    ''' Returns the position it wrote at, or -1 when the old path is not in the list.
     ''' </summary>
-    Private Function ReplaceFileInList(old_Path As String, new_Path As String, Optional hint As Integer = -1) As Integer
+    Private Function ReplaceFileInList(old_Path As String, new_Path As String) As Integer
         Dim at As Integer = IndexOfFileInList(old_Path)
-        If at < 0 AndAlso hint >= 0 AndAlso hint < total_File_Count Then at = hint
         If at < 0 Then Return -1
 
         If is_Files_Array_Active Then
@@ -433,19 +499,30 @@ Partial Public Class Main_Form
             If files_List Is Nothing OrElse at >= files_List.Count Then Return -1
             files_List(at) = new_Path
         End If
-        current_File_Index = at
         Return at
     End Function
 
     Private Sub RenameCurrentFile()
+#If Not NETFRAMEWORK Then
+        ' DEL and the recipient slots already refuse inside an archive; a rename silently
+        ' renamed the extracted temporary copy and changed nothing about the archive
+        ' (audit 047, C-18). The same point refuses a resource that cannot rename (006 PV-7).
+        If ResourceBlocksFileOperations(ResourceVerb.Rename) Then Return
+#End If
+        ' THE file this rename is about, captured once (audit 047, C-06). The InputBox below
+        ' runs a modal message loop, and that loop runs queued completions and forwarded
+        ' launches that reassign Current_File_Name - a copy finishing while the box was open
+        ' flipped to the next file, and THAT file was renamed, with the first one's
+        ' extension. Nothing after the prompt reads Current_File_Name again.
+        Dim source_Path As String = Current_File_Name
         Try
-            If Not My.Computer.FileSystem.FileExists(Current_File_Name) Then
+            If Not My.Computer.FileSystem.FileExists(source_Path) Then
                 lbl_Status.Text = Localization.T("! Файл не найден")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1250: file not found")
                 Return
             End If
-            Dim current_File_Name_Without_Extension As String = Path.GetFileNameWithoutExtension(Current_File_Name)
-            Dim current_File_Extension As String = Path.GetExtension(Current_File_Name)
+            Dim current_File_Name_Without_Extension As String = Path.GetFileNameWithoutExtension(source_Path)
+            Dim current_File_Extension As String = Path.GetExtension(source_Path)
             Dim new_File_Name As String = InputBox(Localization.T("Введите новое имя файла:"),
                                             Localization.T("Переименование файла"),
                                             current_File_Name_Without_Extension)
@@ -454,17 +531,34 @@ Partial Public Class Main_Form
                 Return
             End If
 
-            Dim current_Directory_Path As String = Path.GetDirectoryName(Current_File_Name)
+            If Not String.Equals(Current_File_Name, source_Path, StringComparison.Ordinal) Then
+                lbl_Status.Text = Localization.T("! Файл на экране сменился, пока было открыто окно - действие отменено")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1262: rename cancelled - the file on screen changed during the prompt")
+                Return
+            End If
+
+            ' A name, not a path: "..\x", "sub\x" or "D:\other\x" went through Path.Combine,
+            ' where a rooted second argument wins, and "renamed" the file into another
+            ' folder or onto another drive (audit 047, C-18).
+            If Not FileOpRules.IsValidNewFileName(new_File_Name) Then
+                lbl_Status.Text = Localization.T("! Недопустимое имя файла: символы \ / : * ? < > | в нём нельзя")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1265: rename refused - not a plain file name")
+                Return
+            End If
+
+            Dim current_Directory_Path As String = Path.GetDirectoryName(source_Path)
             Dim new_File_Full_Path As String = Path.Combine(current_Directory_Path, new_File_Name & current_File_Extension)
-            If new_File_Full_Path = Current_File_Name Then
+            If new_File_Full_Path = source_Path Then
                 lbl_Status.Text = Localization.T("! Имя не изменено")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1270: file is not new")
                 Return
             End If
 
             ' Say it plainly: File.Move onto an existing name throws IOException, which
-            ' surfaced as a bare "E011" MsgBox.
-            If File.Exists(new_File_Full_Path) Then
+            ' surfaced as a bare "E011" MsgBox. A case-only rename (photo -> Photo) is the
+            ' same file answering File.Exists, not a collision - RenameFile supports it.
+            If File.Exists(new_File_Full_Path) AndAlso
+               Not String.Equals(new_File_Full_Path, source_Path, StringComparison.OrdinalIgnoreCase) Then
                 lbl_Status.Text = Localization.T("! Файл с таким именем уже есть")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1275: rename target already exists")
                 Return
@@ -473,20 +567,15 @@ Partial Public Class Main_Form
             ' A rename is a File.Move, so it needs delete access: a playing video holds
             ' the file (LibVLC in both builds, IE on net48) and the rename just failed
             ' with E011. PoMove has always released the media first - so must this.
-            Dim renamed_At As Integer
-            If is_Files_Array_Active Then
-                renamed_At = If(files_Array Is Nothing, -1, Array.IndexOf(files_Array, Current_File_Name))
-            Else
-                renamed_At = If(files_List Is Nothing, -1, files_List.IndexOf(Current_File_Name))
-            End If
+            Dim renamed_At As Integer = IndexOfFileInList(source_Path)
             ReleaseActiveMedia()
 
             ' Follow the path RenameFile actually created, never one we assembled here:
             ' the two used to diverge, and the list kept a name that was not on disk.
 #If Not NETFRAMEWORK Then
-            Dim original_Path As String = Current_File_Name
+            Dim original_Path As String = source_Path
 #End If
-            Dim renamed_Path As String = RenameFile(Current_File_Name, new_File_Name & current_File_Extension)
+            Dim renamed_Path As String = RenameFile(source_Path, new_File_Name & current_File_Extension)
 
             ' By value, not by current_File_Index - the index can point elsewhere.
             If renamed_At >= 0 Then
@@ -506,7 +595,8 @@ Partial Public Class Main_Form
             RecordUndo(New FileOp With {.Kind = FileOpKind.Rename,
                                         .Source = original_Path,
                                         .Destination = renamed_Path,
-                                        .ListIndex = renamed_At})
+                                        .ListIndex = renamed_At,
+                                        .ListGeneration = file_List_Generation})
 #End If
 
             lbl_Status.Text = Localization.TF("Файл переименован: {0}{1}", new_File_Name, current_File_Extension)
@@ -515,7 +605,7 @@ Partial Public Class Main_Form
             ReadShowMediaFile(Mode_SetFile)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1290: ERR: " & ex.Message)
-            ReportOperationError("E011", ex, FolderOfFile(Current_File_Name))
+            ReportOperationError("E011", ex, FolderOfFile(source_Path))
             lbl_Status.Text = Localization.T("! Ошибка переименования")
         End Try
     End Sub
@@ -560,7 +650,9 @@ Partial Public Class Main_Form
         ' Every move/copy route - the digit keys, the recipients overlay, both media menus,
         ' the settings grid, the thumbnail panel - ends here, which is why the archive's
         ' single refusal point sits here too (§7, invariant 6) rather than at each of them.
-        If ArchiveModeBlocksFileOperations() Then Return
+        ' A resource is asked about the verb itself: copying OUT of a read-only one only
+        ' reads it, moving out of it deletes there (006 PV-7).
+        If ResourceBlocksFileOperations(If(action = RecipientActionKind.Copy, ResourceVerb.Copy, ResourceVerb.Move)) Then Return
 #End If
 
         Dim is_Copy As Boolean = (action = RecipientActionKind.Copy)
@@ -568,7 +660,13 @@ Partial Public Class Main_Form
         Dim move_Slot_Key As String = move_Slot_index.ToString
         If move_Slot_Key = "10" Then move_Slot_Key = "0"
 
-        If Current_File_Name = "" Then
+        ' THE file this action is about, captured once (audit 047, C-06). The collision
+        ' prompt below is modal, its message loop runs queued completions and forwarded
+        ' launches, and those reassign Current_File_Name: a rollback arriving during the
+        ' prompt used to send ANOTHER file into the slot under this one's name. Nothing
+        ' after the prompt reads Current_File_Name again except to see that it moved.
+        Dim source_Path As String = Current_File_Name
+        If source_Path = "" Then
             lbl_Status.Text = Localization.T("! Нет файла ")
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1740: No file")
             Return
@@ -589,18 +687,32 @@ Partial Public Class Main_Form
 #End If
 
         Try
-            Dim source_File_Info As System.IO.FileInfo = My.Computer.FileSystem.GetFileInfo(Current_File_Name)
+            Dim source_File_Info As System.IO.FileInfo = My.Computer.FileSystem.GetFileInfo(source_Path)
             Dim destination_Folder_Full_Path As String = destination_Folder_Path & "\" & source_File_Info.Name
 
             ' A slot pointing at the folder we are viewing: File.Move(a, a) succeeds,
             ' so the file used to be dropped from the list while sitting right where it
             ' was, and a copy onto itself threw a bare "E014".
             If String.Equals(Path.GetDirectoryName(destination_Folder_Full_Path),
-                             Path.GetDirectoryName(Current_File_Name), StringComparison.OrdinalIgnoreCase) Then
+                             Path.GetDirectoryName(source_Path), StringComparison.OrdinalIgnoreCase) Then
                 lbl_Status.Text = Localization.T("! Файл уже в этой папке")
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1683: destination equals current folder")
                 Return
             End If
+#If Not NETFRAMEWORK Then
+            ' The same folder under another spelling - a mapped drive and its UNC path, a
+            ' server's name and its address - passes the string test above, and the name
+            ' "collision" is then the file with itself: "replace" deleted it (audit 046,
+            ' C-02). Asked by file identity, and only when the name is taken at all, which
+            ' is the only case where it can be the same file. Mainline only: net48 never
+            ' replaces, so there the same situation already fails safely as "exists".
+            If File.Exists(destination_Folder_Full_Path) AndAlso
+               FileManager.IsSameFile(source_Path, destination_Folder_Full_Path) Then
+                lbl_Status.Text = Localization.T("! Файл уже в этой папке")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1684: destination is the same file under another path")
+                Return
+            End If
+#End If
 
             Dim use_Worker As Boolean = UseAsyncFileOps()
             If use_Worker AndAlso FileOpWorkerBusy() Then Return
@@ -616,30 +728,51 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
             Dim collision As CollisionResolution = ResolveConfiguredCollision(destination_Folder_Full_Path, collision_Note, replace_Existing)
             If collision <> CollisionResolution.Proceed Then Return
+
+            ' The prompt (and the first-use "replace" warning) ran a modal message loop. If
+            ' anything changed the file on screen meanwhile, the answer was given about a
+            ' file that is no longer the one in front of the user - do nothing (C-06).
+            If Not String.Equals(Current_File_Name, source_Path, StringComparison.Ordinal) Then
+                lbl_Status.Text = Localization.T("! Файл на экране сменился, пока было открыто окно - действие отменено")
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1686: slot action cancelled - the file on screen changed during the prompt")
+                Return
+            End If
 #End If
 
 #If NETFRAMEWORK Then
-            history_Source_File_Name = Current_File_Name
-            history_Destination_File_Name = destination_Folder_Full_Path
-            ' Undo has to reverse what was DONE, not whatever mode is set now.
-            history_Was_Copy = is_Copy
+            ' The queued operation is recorded now and FinishFileOp clears the record if it
+            ' fails. The synchronous one is recorded only once it has returned (below): it
+            ' used to be written here, BEFORE the copy, so a copy refused because the slot
+            ' already held a different file left U pointing at that file - and U deleted it
+            ' (audit 046, C-03).
+            If use_Worker Then RememberNet48Undo(source_Path, destination_Folder_Full_Path, is_Copy)
 #End If
             ' The mainline records nothing here on purpose: the entry is pushed by
             ' FinishFileOp once the operation has actually succeeded (D8).
 
             Dim op As New FileOp With {
                 .Kind = If(is_Copy, FileOpKind.Copy, FileOpKind.Move),
-                .Source = Current_File_Name,
+                .Source = source_Path,
                 .Destination = destination_Folder_Full_Path,
                 .SlotKey = move_Slot_Key,
                 .StatusNote = collision_Note,
                 .ReplaceExisting = replace_Existing,
-                .CreateDestinationFolder = create_Destination
+                .CreateDestinationFolder = create_Destination,
+                .ListGeneration = file_List_Generation
             }
 
 #If Not NETFRAMEWORK Then
             Dim afterOperation As String = If(modern_Preferences Is Nothing, "next", modern_Preferences.AfterFileOperation)
-            op.NavigateAfterSuccess = afterOperation <> "stay"
+            If is_Copy Then
+                ' The copy leaves the file where it is, so moving on is a choice, and it is
+                ' the "Go to the next file after copying" checkbox that makes it (audit 047,
+                ' C-11 - the checkbox had been saved and read by nothing since 30a3960). With
+                ' it off the same file stays on screen: filing one picture into several
+                ' folders. "Stay after an operation" keeps it there too.
+                op.NavigateAfterSuccess = afterOperation <> "stay" AndAlso AdvanceAfterCopy()
+            Else
+                op.NavigateAfterSuccess = afterOperation <> "stay"
+            End If
             op.CloseIfEmptyAfterSuccess = afterOperation = "closeIfEmpty"
 #End If
 
@@ -651,22 +784,19 @@ Partial Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1690: file is copied ASYNC to " & destination_Folder_Full_Path)
                 Else
                     CopyFile(op.Source, op.Destination, op.ReplaceExisting)
+#If NETFRAMEWORK Then
+                    RememberNet48Undo(op.Source, op.Destination, True)
+#End If
                     lbl_Status.Text = Localization.TF("файл скопирован ({0}) в каталог {1}", move_Slot_Key, destination_Folder_Full_Path) & collision_Note
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1715: file is copied to " & destination_Folder_Full_Path)
                 End If
 
-                ' The copy leaves the file where it is, so moving on is a UI choice, not a
-                ' necessity. On the mainline it is the "Go to the next file after copying"
-                ' setting (on by default - the fast sorting run); with it off the same
-                ' file stays on screen, which is what you want when you are filing one
-                ' picture into several folders. net48 always advances, as it always has.
-                Dim advance_After_Copy As Boolean = True
-#If Not NETFRAMEWORK Then
-                ' The expanded setting is the single rule for both Copy and Move.
-                ' Do not navigate optimistically: a failed copy is still the current file.
-                advance_After_Copy = False
+#If NETFRAMEWORK Then
+                ' net48 always advances, as it always has. The mainline advances only once
+                ' the copy has succeeded (FinishFileOp): a failed copy is still the file on
+                ' screen, and its error has to be about that file.
+                ReadShowMediaFile(Mode_Next)
 #End If
-                If advance_After_Copy Then ReadShowMediaFile(Mode_Next)
             Else
                 ' Moving needs delete access to the file, so let go of it first.
                 ReleaseActiveMedia()
@@ -676,20 +806,29 @@ Partial Public Class Main_Form
                 If use_Worker Then
                     QueueFileOp(op)
                     ' Optimistic: sorting must feel instant. The price is a rollback in
-                    ' RunWorkerCompleted if the move fails - not a file that silently
-                    ' vanished from the view while still sitting in the folder.
+                    ' FinishFileOp if the move fails - not a file that silently vanished
+                    ' from the view while still sitting in the folder.
                     op.ListIndex = RemoveCurrentFileFromList(op.Source)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1705: file is moved ASYNC to " & destination_Folder_Full_Path)
                 Else
                     MoveFile(op.Source, op.Destination, op.ReplaceExisting)
+#If NETFRAMEWORK Then
+                    RememberNet48Undo(op.Source, op.Destination, False)
+#End If
                     op.ListIndex = RemoveCurrentFileFromList(op.Source)
                     lbl_Status.Text = Localization.TF("файл перенесён ({0}) в каталог {1}", move_Slot_Key, destination_Folder_Full_Path) & collision_Note
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1729: file is moved to " & destination_Folder_Full_Path)
                 End If
 
-                If Not use_Worker Then
-                    If op.NavigateAfterSuccess Then ReadShowMediaFile(Mode_SetFile)
-                End If
+                ' Show the file that slid into the moved one's place, NOW - sync and queued
+                ' alike, on both builds (audit 047, C-05). 30a3960 made this conditional on a
+                ' flag only the mainline sets and moved the queued case to the completion,
+                ' so the x86 viewer stayed blank after every move with Current_File_Name
+                ' still naming the moved file - and the next arrow press, stepping from an
+                ' index that already pointed at the following file, skipped one unseen. On
+                ' the mainline "stay" means the same thing for a move: the file is gone, so
+                ' what stays is the position. A failed move rolls back and shows it again.
+                ReadShowMediaFile(Mode_SetFile)
             End If
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1730: E014 " & ex.Message)
@@ -708,6 +847,21 @@ Partial Public Class Main_Form
     ''' </summary>
     Private Sub Undo()
         If FileOpWorkerBusy() Then Return
+        ' Undo moves a file back from wherever it went, and inside an archive the list is the
+        ' archive's: the file would land in a real folder and its path in the archive's list
+        ' (audit 052 G-17). The one refusal point says so; U works again after leaving.
+        If ResourceBlocksFileOperations(ResourceVerb.Move) Then Return
+
+        ' The history holds COMPLETED operations only, so while anything is still queued the
+        ' top of it is an older operation than the one just made: "1" on a slow SMB move
+        ' followed at once by U moved back a file from minutes ago, into a folder the user
+        ' was not looking at (audit 047, C-14). Say so instead; U works once the queue is
+        ' done, and then it takes back the operation the user means.
+        If file_Op_Queue IsNot Nothing AndAlso file_Op_Queue.PendingCount > 0 Then
+            lbl_Status.Text = Localization.T("! Подождите: файловые операции ещё выполняются - отмена станет доступна после них")
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1809: undo refused - operations still queued")
+            Return
+        End If
 
         Dim entry As FileOp = undo_Entries.Peek()
         If entry Is Nothing Then
@@ -734,7 +888,17 @@ Partial Public Class Main_Form
             Select Case plan
                 Case UndoPlan.DeleteTheCopy
                     undo_Entries.Pop()
-                    Dim op As New FileOp With {.Kind = FileOpKind.DeleteUndo, .Source = entry.Destination}
+                    ' Undoing a copy deletes it for good, so it may only happen while the
+                    ' original still exists: after a DEL on the original the copy is the one
+                    ' instance left, and U used to destroy it (audit 046, C-04). Popped either
+                    ' way - the entry could only ever refuse again.
+                    If Not FileManager.CopyUndoMayDelete(entry.Source, entry.Destination) Then
+                        lbl_Status.Text = Localization.T("! Оригинала больше нет или он изменился - копия осталась единственной, отмена её не удалит")
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1812: undo refused - the copy is the only one left")
+                        Return
+                    End If
+                    Dim op As New FileOp With {.Kind = FileOpKind.DeleteUndo, .Source = entry.Destination,
+                                               .UndoOrigin = entry, .ListGeneration = file_List_Generation}
                     lbl_Status.Text = Localization.TF("!Ждите. Файл удаляется в каталоге {0}", entry.Destination)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1750: undo copied async deletion")
                     QueueFileOp(op)
@@ -745,16 +909,30 @@ Partial Public Class Main_Form
                         .Kind = FileOpKind.MoveUndo,
                         .Source = entry.Destination,
                         .Destination = entry.Source,
-                        .ListIndex = If(entry.ListIndex >= 0, entry.ListIndex, current_File_Index)
+                        .UndoOrigin = entry,
+                        .ListGeneration = file_List_Generation
                     }
                     lbl_Status.Text = Localization.TF("!Ждите. Возвращается в каталог {0}", entry.Source)
-                    ReleaseActiveMedia()
+                    ' Only the file being moved has to be let go of - the slot folder can be
+                    ' the one on screen, with that very file playing. Anything else on screen
+                    ' is replaced by the display below, or stays, when nothing is inserted.
+                    If String.Equals(Current_File_Name, entry.Destination, StringComparison.OrdinalIgnoreCase) Then ReleaseActiveMedia()
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1780: undo move async deletion")
                     QueueFileOp(op)
-                    ' Optimistic and clamped, exactly as the move was: after moving away
-                    ' the last file of a folder the index is -1 and a raw Insert(-1) threw.
-                    InsertFileIntoList(op.Destination, op.ListIndex)
-                    ReadShowMediaFile(Mode_AfterUndo)
+                    ' Optimistic and clamped, exactly as the move was - but only into the
+                    ' list the file belongs in (audit 047, C-13): the list the move came from,
+                    ' or a list of the folder it is going back to. Pressed while looking at
+                    ' the slot folder or any other one, it used to plant the original path in
+                    ' that folder's list. ListIndex -1 records that nothing was inserted.
+                    If FileOpRules.ListStampMatches(entry.ListGeneration, file_List_Generation) OrElse
+                       IsListOfFolder(FolderOfFile(entry.Source)) Then
+                        op.ListIndex = If(entry.ListIndex >= 0, entry.ListIndex, current_File_Index)
+                        InsertFileIntoList(op.Destination, op.ListIndex)
+                        ' Until the worker lands it, the row names a file that is not there
+                        ' yet - navigating onto it must not drop it as "not found" (C-13e).
+                        files_Arriving.Add(op.Destination)
+                        ReadShowMediaFile(Mode_AfterUndo)
+                    End If
 
                 Case UndoPlan.RenameBack
                     ' The file has to still be where the rename left it. If something else
@@ -770,7 +948,9 @@ Partial Public Class Main_Form
                         .Kind = FileOpKind.RenameUndo,
                         .Source = entry.Destination,
                         .Destination = entry.Source,
-                        .ListIndex = entry.ListIndex
+                        .ListIndex = entry.ListIndex,
+                        .UndoOrigin = entry,
+                        .ListGeneration = file_List_Generation
                     }
                     lbl_Status.Text = Localization.T("!Ждите. Возвращается прежнее имя..")
                     ReleaseActiveMedia()
@@ -799,7 +979,9 @@ Partial Public Class Main_Form
                         .Source = entry.Source,
                         .Destination = ResolveDestinationCollision(entry.Source),
                         .ListIndex = If(entry.ListIndex >= 0, entry.ListIndex, current_File_Index),
-                        .DeletedAtUtc = entry.DeletedAtUtc}
+                        .DeletedAtUtc = entry.DeletedAtUtc,
+                        .UndoOrigin = entry,
+                        .ListGeneration = entry.ListGeneration}
                     lbl_Status.Text = Localization.T("!Ждите. Файл возвращается из Корзины..")
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1814: undo restore from the Recycle Bin")
                     QueueFileOp(op)
@@ -812,7 +994,29 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1800: undo E016 " & ex.Message)
         End Try
     End Sub
+
+    ''' <summary>Paths a queued move-back will land at, whose list rows exist before the
+    ''' files do (audit 047, C-13e). Only ever touched on the UI thread.</summary>
+    Private ReadOnly files_Arriving As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+
+    ''' <summary>Is the list on screen the scan of this folder? The honest question for "does
+    ''' a file coming back to <paramref name="folder"/> belong in it".</summary>
+    Private Function IsListOfFolder(folder As String) As Boolean
+        If String.IsNullOrEmpty(folder) Then Return False
+        If files_List Is Nothing AndAlso files_Array Is Nothing Then Return False
+        Return String.Equals(folder_List_Loaded_For, folder, StringComparison.OrdinalIgnoreCase)
+    End Function
 #Else
+    ''' <summary>The x86 viewer's one-deep undo record. Written only for an operation that
+    ''' was queued (FinishFileOp clears it on failure) or has already succeeded - never for
+    ''' one that is about to be attempted.</summary>
+    Private Sub RememberNet48Undo(source_Path As String, destination_Path As String, was_Copy As Boolean)
+        history_Source_File_Name = source_Path
+        history_Destination_File_Name = destination_Path
+        ' Undo has to reverse what was DONE, not whatever mode is set now.
+        history_Was_Copy = was_Copy
+    End Sub
+
     Private Sub Undo()
         If history_Destination_File_Name = "" Then
             lbl_Status.Text = Localization.T("! Нет истории о переносе")
@@ -829,6 +1033,16 @@ Partial Public Class Main_Form
             ' DELETED it at the destination (the only copy left) instead of moving it
             ' back.
             If history_Was_Copy Then
+                ' The copy is deleted only while the original it duplicates is still there
+                ' - a DEL on the original in between made the copy the only one left
+                ' (audit 046, C-04). The record goes: it can only ever refuse again.
+                If Not FileManager.CopyUndoMayDelete(history_Source_File_Name, history_Destination_File_Name) Then
+                    lbl_Status.Text = Localization.T("! Оригинала больше нет или он изменился - копия осталась единственной, отмена её не удалит")
+                    history_Destination_File_Name = ""
+                    history_Source_File_Name = ""
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1812: undo refused - the copy is the only one left")
+                    Return
+                End If
                 Dim op As New FileOp With {.Kind = FileOpKind.DeleteUndo, .Source = history_Destination_File_Name}
                 lbl_Status.Text = Localization.TF("!Ждите. Файл удаляется в каталоге {0}", history_Destination_File_Name)
 
@@ -847,7 +1061,8 @@ Partial Public Class Main_Form
                     .Kind = FileOpKind.MoveUndo,
                     .Source = history_Destination_File_Name,
                     .Destination = history_Source_File_Name,
-                    .ListIndex = current_File_Index
+                    .ListIndex = current_File_Index,
+                    .ListGeneration = file_List_Generation
                 }
                 lbl_Status.Text = Localization.TF("!Ждите. Возвращается в каталог {0}", history_Source_File_Name)
                 ReleaseActiveMedia()
@@ -889,6 +1104,15 @@ Partial Public Class Main_Form
     Private Sub CopyFilePathToClipboard()
         If Not String.IsNullOrEmpty(Current_File_Name) Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2120: Filename sent to clipboard")
+#If Not NETFRAMEWORK Then
+            ' Inside an archive the file on screen is a temporary copy that is deleted when
+            ' the archive closes; the path worth pasting is the archive's (010 §7, audit
+            ' 052 G-17). The temporary path is never shown or handed out (§2.2).
+            If IsArchiveMode() AndAlso ArchivePaths.IsUnderArchiveCache(Current_File_Name) Then
+                CopyTextToClipboard(OpenArchivePath(), lbl_Status, Localization.T("Путь к архиву скопирован в буфер"))
+                Return
+            End If
+#End If
             CopyTextToClipboard(Current_File_Name, lbl_Status, Localization.T("Имя файла скопировано в буфер"))
         End If
     End Sub
@@ -963,6 +1187,22 @@ Partial Public Class Main_Form
     Private pending_Delete_Permanent As Boolean
 
     ''' <summary>
+    ''' Shift+DEL (and its custom shortcut). The flag lives exactly as long as this one call
+    ''' (audit 047, C-15): ReadShowMediaFile has early exits that never reach the Mode_Delete
+    ''' branch - the 40 ms throttle, a folder read in progress, the archive refusal - and a
+    ''' flag left standing by one of them turned the NEXT plain DEL into a deletion past the
+    ''' Recycle Bin, with Yes as the prompt's default.
+    ''' </summary>
+    Private Sub DeleteCurrentFilePermanently()
+        pending_Delete_Permanent = True
+        Try
+            ReadShowMediaFile(Mode_Delete)
+        Finally
+            pending_Delete_Permanent = False
+        End Try
+    End Sub
+
+    ''' <summary>
     ''' What U walks back through. Bounded, oldest dropped first, memory only: once the
     ''' process is gone the Recycle Bin IS the history, and Explorer shows it better than
     ''' we would (§6.4).
@@ -1030,7 +1270,7 @@ Partial Public Class Main_Form
         ' flag: that one still governs every other file operation, and it could never say
         ' "ask me only about the deletions that cannot be taken back" (§3.7, §0.4).
         If DeletePolicy.ShouldConfirm(prefs.ConfirmDelete, decision) Then
-            If MessageBox.Show(DeleteText.ConfirmOne(decision, Path.GetFileName(targetPath)),
+            If MessageBox.Show(Me, DeleteText.ConfirmOne(decision, Path.GetFileName(targetPath)),
                                Localization.T("Подтверждение удаления"),
                                MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then
                 Return False
@@ -1048,7 +1288,8 @@ Partial Public Class Main_Form
                 .Kind = If(decision.Outcome = DeleteOutcome.Recycle, FileOpKind.RecycleDelete, FileOpKind.Delete),
                 .Source = targetPath,
                 .DeletedAtUtc = DateTime.UtcNow,
-                .PermanentDeleteReason = decision.Reason}
+                .PermanentDeleteReason = decision.Reason,
+                .ListGeneration = file_List_Generation}
             QueueFileOp(op)
             ' Optimistic, rolled back by FinishFileOp if the operation fails.
             op.ListIndex = RemoveCurrentFileFromList(targetPath)
@@ -1078,9 +1319,31 @@ Partial Public Class Main_Form
     ''' What an operation's ending means, on the UI thread. One implementation for both
     ''' transports: net48's BackgroundWorker and the modern queue arrive here alike, so
     ''' the two builds cannot drift on what a failure does to the list.
+    '''
+    ''' It touches the list and the view only while the list on screen is still the one the
+    ''' operation started from (audit 047, C-13): a completion arrives long after the key
+    ''' press, and by then the user may be in another folder, where "put it back at index
+    ''' 12" plants one folder's file in another folder's list.
     ''' </summary>
     Private Sub FinishFileOp(op As FileOp, failure As Exception)
         If op Is Nothing Then Return
+
+        Dim on_Shown_List As Boolean = FileOpRules.ListStampMatches(op.ListGeneration, file_List_Generation)
+
+#If Not NETFRAMEWORK Then
+        ' Landed or failed, the row no longer names a file that is merely on its way.
+        If op.Kind = FileOpKind.MoveUndo Then files_Arriving.Remove(op.Destination)
+
+        ' The shell said "recycled" and the bin holds no record: it deleted the file for
+        ' good (audit 047, C-09). Say so now, and record the deletion as the permanent one
+        ' it was - U then names the reason instead of "maybe the bin was emptied".
+        If failure Is Nothing AndAlso op.Kind = FileOpKind.RecycleDelete AndAlso op.RecycleFellThrough Then
+            op.Kind = FileOpKind.Delete
+            op.PermanentDeleteReason = PermanentReason.VolumeUnknown
+            lbl_Status.Text = Localization.TF("! Корзина не приняла файл - он удалён безвозвратно: {0}", op.Source)
+            AppFileLogger.WriteLine("Recycle Bin kept no record - the file was deleted permanently: " & op.Source)
+        End If
+#End If
 
         If failure Is Nothing Then
             Select Case op.Kind
@@ -1108,27 +1371,37 @@ Partial Public Class Main_Form
                     history_Source_File_Name = ""
                     ' The file only arrived back now - show it (the display that ran at
                     ' undo time found nothing at that path yet).
-                    ReadShowMediaFile(Mode_SetFile)
+                    If on_Shown_List Then ReadShowMediaFile(Mode_SetFile)
 #Else
                 ' The mainline reads the paths off the operation instead of off two shared
                 ' fields, so a second undo pressed while the first is still in flight
                 ' cannot make one of them announce the other's path.
                 Case FileOpKind.DeleteUndo
                     lbl_Status.Text = Localization.TF("файл удалён в каталоге {0}", op.Source)
+                    ' The copy is gone - if its folder is the one on screen, so is its row.
+                    DropListedFile(op.Source)
 
                 Case FileOpKind.MoveUndo
                     lbl_Status.Text = Localization.TF("файл возвращён в каталог {0}", op.Destination)
-                    ' The file only arrived back now - show it (the display that ran at
-                    ' undo time found nothing at that path yet).
-                    ReadShowMediaFile(Mode_SetFile)
+                    ' U pressed while looking at the slot folder: that row names a file which
+                    ' has just left it (C-13b).
+                    DropListedFile(op.Source)
+                    ' The file only arrived back now - show it, if the view is still on its
+                    ' row (the display that ran at undo time found nothing at that path yet).
+                    If on_Shown_List AndAlso String.Equals(Current_File_Name, op.Destination, StringComparison.OrdinalIgnoreCase) Then
+                        ReadShowMediaFile(Mode_SetFile)
+                    End If
 
                 Case FileOpKind.RenameUndo
                     ' The list still holds the name the rename gave it; rewrite that one
-                    ' entry in place rather than rescanning the folder.
-                    ReplaceFileInList(op.Source, op.Destination, op.ListIndex)
-                    Current_File_Name = op.Destination
+                    ' entry in place rather than rescanning the folder - by value only.
+                    Dim renamed_At As Integer = ReplaceFileInList(op.Source, op.Destination)
                     lbl_Status.Text = Localization.TF("имя возвращено: {0}", Path.GetFileName(op.Destination))
-                    ReadShowMediaFile(Mode_SetFile)
+                    If renamed_At >= 0 AndAlso String.Equals(Current_File_Name, op.Source, StringComparison.OrdinalIgnoreCase) Then
+                        current_File_Index = renamed_At
+                        Current_File_Name = op.Destination
+                        ReadShowMediaFile(Mode_SetFile)
+                    End If
 
                 Case FileOpKind.RestoreFromBin
                     ' The one operation that finishes WITHOUT an exception and still may not
@@ -1136,12 +1409,17 @@ Partial Public Class Main_Form
                     ' and only because the worker verified the file is at that path
                     ' (invariant 8); the others say what happened and leave everything alone.
                     If op.RestoreOutcome = BinRestoreResult.Restored Then
-                        InsertFileIntoList(op.Destination, op.ListIndex)
-                        Current_File_Name = op.Destination
                         lbl_Status.Text = If(String.Equals(op.Destination, op.Source, StringComparison.OrdinalIgnoreCase),
                                              Localization.TF("файл восстановлен из Корзины: {0}", op.Destination),
                                              Localization.TF("файл восстановлен из Корзины под именем {0}", Path.GetFileName(op.Destination)))
-                        ReadShowMediaFile(Mode_SetFile)
+                        ' Only into the list it belongs in (C-13).
+                        If on_Shown_List OrElse IsListOfFolder(FolderOfFile(op.Destination)) Then
+                            Dim done_Text As String = lbl_Status.Text
+                            InsertFileIntoList(op.Destination, op.ListIndex)
+                            Current_File_Name = op.Destination
+                            ReadShowMediaFile(Mode_SetFile)
+                            If String.IsNullOrEmpty(lbl_Status.Text) Then lbl_Status.Text = done_Text
+                        End If
                     ElseIf op.RestoreOutcome = BinRestoreResult.SourceFolderGone Then
                         lbl_Status.Text = Localization.T("! Папка, из которой файл был удалён, больше не существует")
                     Else
@@ -1155,20 +1433,27 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
             ' Only now, and only for what actually happened.
             RecordUndo(op)
-#End If
 
-#If Not NETFRAMEWORK Then
-            If (op.Kind = FileOpKind.Copy OrElse op.Kind = FileOpKind.Move) AndAlso op.NavigateAfterSuccess Then
-                ' A queued operation is the authoritative outcome.  Only now may the
-                ' selection advance; Skip/Cancel/failure never reaches this branch.
-                If op.CloseIfEmptyAfterSuccess AndAlso total_File_Count <= 0 Then
-                    Current_File_Name = ""
-                    Current_Image_Path = ""
-                    lbl_File_Number.Text = "0"
-                    lbl_Status.Text &= Localization.T("; файлов больше нет")
-                Else
-                    ReadShowMediaFile(If(op.Kind = FileOpKind.Copy, Mode_Next, Mode_SetFile))
-                End If
+            ' A copy advances only now that it has happened (a failed copy is still the file
+            ' on screen), and only if the user is still looking at the file that was copied:
+            ' a copy finishing after the user moved on used to flip once more, skipping a
+            ' file and restarting a video (C-13d). The "next" navigation clears the status
+            ' line, so the success line is put back.
+            If op.Kind = FileOpKind.Copy AndAlso op.NavigateAfterSuccess AndAlso on_Shown_List AndAlso
+               String.Equals(Current_File_Name, op.Source, StringComparison.Ordinal) Then
+                Dim done_Text As String = lbl_Status.Text
+                ReadShowMediaFile(Mode_Next)
+                If String.IsNullOrEmpty(lbl_Status.Text) Then lbl_Status.Text = done_Text
+            End If
+
+            ' A move already showed the next file when it was queued (C-05); what is left is
+            ' "close if empty" once the last one has really gone.
+            If op.Kind = FileOpKind.Move AndAlso op.CloseIfEmptyAfterSuccess AndAlso on_Shown_List AndAlso
+               total_File_Count <= 0 Then
+                Current_File_Name = ""
+                Current_Image_Path = ""
+                lbl_File_Number.Text = "0"
+                lbl_Status.Text &= Localization.T("; файлов больше нет")
             End If
 #End If
         Else
@@ -1176,43 +1461,52 @@ Partial Public Class Main_Form
             ' §3.7: the user hears a category, the log keeps the exception. The path named
             ' is the DESTINATION for a transfer - "no connection to <the NAS>" is the
             ' sentence that tells them what to do; the source is where they already are.
-            ReportOperationError("E014", failure,
-                                 FolderOfFile(If(String.IsNullOrEmpty(op.Destination), op.Source, op.Destination)))
+            ' Except when the failure is the source itself being held open by another
+            ' program: then the folder to name is the source's (C-17).
+            Dim failure_Folder As String =
+                If(PathFailure.Classify(failure) = PathFailureKind.Locked OrElse String.IsNullOrEmpty(op.Destination),
+                   FolderOfFile(op.Source), FolderOfFile(op.Destination))
+            ReportOperationError("E014", failure, failure_Folder)
 #Else
-            lbl_Status.Text = Localization.TF("Ошибка операции: {0}", failure.Message)
+            lbl_Status.Text = Localization.TF("Ошибка операции: {0}", FailureText.Describe(failure))
 #End If
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2230: file operation ERR " & failure.Message)
 
-            ' The operation did not happen, so undo the optimistic list mutation: the
-            ' file is still in its folder and must stay visible. (It used to be dropped
-            ' from the list the moment the job was queued and never came back.)
-            '
-            ' A restore is the exception, and it has to be named rather than left to the
-            ' ListIndex >= 0 test: nothing was removed for it - its ListIndex is where the
-            ' file WOULD go - so "putting it back" would add a list entry for a file that
-            ' is still sitting in the Recycle Bin. (The kind exists in both builds' enum
-            ' and is only ever created by the mainline, so no seam is needed here.)
-            If op.Kind = FileOpKind.RestoreFromBin Then
-                ' Only a real failure reaches here (a denied access, a share that went
-                ' away); the ordinary "it is not in the bin any more" is a success with an
-                ' outcome, handled above.
-            ElseIf op.ListIndex >= 0 Then
-                InsertFileIntoList(op.Source, op.ListIndex)
-                ReadShowMediaFile(Mode_SetFile)
-            End If
+            ' The operation did not happen, so undo the optimistic list mutation - per KIND,
+            ' because the inverses mutated the list differently (audit 047, C-07), and only
+            ' on the list the operation came from (C-13).
+            Select Case op.Kind
+                Case FileOpKind.RestoreFromBin, FileOpKind.RenameUndo, FileOpKind.DeleteUndo, FileOpKind.Copy
+                    ' Nothing was taken out of the list for these. A restore's ListIndex is
+                    ' where the file WOULD go; putting "it" back would list a file that is
+                    ' still in the Recycle Bin - or, for a rename undo, a duplicate row.
+
+                Case FileOpKind.MoveUndo
+                    ' The optimistic row is the ORIGINAL path, which does not exist: take it
+                    ' out again. Inserting op.Source instead - the file's path in the SLOT
+                    ' folder - gave the list two wrong rows, and DEL or a slot key on the
+                    ' foreign one acted on a file in the slot folder.
+                    If on_Shown_List AndAlso IndexOfFileInList(op.Destination) >= 0 Then
+                        Dim was_On_Screen As Boolean = String.Equals(Current_File_Name, op.Destination, StringComparison.OrdinalIgnoreCase)
+                        RemoveCurrentFileFromList(op.Destination)
+                        If was_On_Screen Then ReadShowMediaFile(Mode_SetFile)
+                    End If
+
+                Case Else
+                    ' Move, Delete, RecycleDelete: the file is still in its folder and must
+                    ' stay visible. (It used to be dropped from the list the moment the job
+                    ' was queued and never came back.)
+                    If op.ListIndex >= 0 AndAlso on_Shown_List Then
+                        InsertFileIntoList(op.Source, op.ListIndex)
+                        ReadShowMediaFile(Mode_SetFile)
+                    End If
+            End Select
 
 #If Not NETFRAMEWORK Then
-            ' A failed copy leaves the list untouched (nothing was removed), but the view
-            ' may have advanced already. Come back to the file whose copy failed, so the
-            ' error message is about the picture in front of you and not about one that
-            ' scrolled by.
-            If op.Kind = FileOpKind.Copy AndAlso op.AdvancedPastSource Then
-                Dim source_At As Integer = IndexOfFileInList(op.Source)
-                If source_At >= 0 Then
-                    current_File_Index = source_At
-                    ReadShowMediaFile(Mode_SetFile)
-                End If
-            End If
+            ' An undo that failed is still owed: the entry goes back on top so U can be
+            ' pressed again once the cause is fixed (C-07). It was popped when the undo was
+            ' queued, and a failure used to lose it for good.
+            If op.UndoOrigin IsNot Nothing Then undo_Entries.Push(op.UndoOrigin)
 #End If
 
 #If NETFRAMEWORK Then
@@ -1226,5 +1520,27 @@ Partial Public Class Main_Form
 #End If
         End If
     End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>Takes a path that is no longer on disk out of the list on screen, by value,
+    ''' and shows what slid into its place when it was the file on screen. A no-op when the
+    ''' list does not hold it - which is the ordinary case.</summary>
+    Private Sub DropListedFile(file_Path As String)
+        If IndexOfFileInList(file_Path) < 0 Then Return
+        Dim was_On_Screen As Boolean = String.Equals(Current_File_Name, file_Path, StringComparison.OrdinalIgnoreCase)
+        RemoveCurrentFileFromList(file_Path)
+        If was_On_Screen Then ReadShowMediaFile(Mode_SetFile)
+    End Sub
+#End If
+
+    ''' <summary>A row whose file a queued move-back has not landed yet (audit 047, C-13e).
+    ''' Always False on net48, whose undo keeps its historical shape.</summary>
+    Private Function IsFileArriving(file_Path As String) As Boolean
+#If Not NETFRAMEWORK Then
+        Return Not String.IsNullOrEmpty(file_Path) AndAlso files_Arriving.Contains(file_Path)
+#Else
+        Return False
+#End If
+    End Function
 
 End Class

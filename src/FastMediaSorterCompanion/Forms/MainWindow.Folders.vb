@@ -3,6 +3,7 @@ Option Strict On
 Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.IO
+Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 ''' <summary>
@@ -43,6 +44,10 @@ Partial Public NotInheritable Class MainWindow
             SetHint(Localization.T("Эта папка уже в списке."))
             Return
         End If
+        ' Said at the moment it is picked, not after a phone fails to open it (ticket 054 H-19).
+        If FolderAccess.NetworkRootsInServerMode(New ShareFolder() {New ShareFolder With {.hostPath = path}}).Count > 0 Then
+            SetHint(HostingText.FolderNoAccessTip())
+        End If
         Dim before As ShareRootParams = ShareRootParamsStore.GetFor(path)
         Using dlg As New Share_Root_Params_Form(ShareFolderDisplayName(path), before)
             If dlg.ShowDialog(Me) = DialogResult.OK Then
@@ -65,6 +70,15 @@ Partial Public NotInheritable Class MainWindow
         If _busy OrElse lvFolders.SelectedItems.Count = 0 Then Return
         Dim it As ListViewItem = lvFolders.SelectedItems(0)
         Dim host As String = Convert.ToString(it.Tag)
+        ' The folder's own settings - PIN, filters, destination - go with it and nothing
+        ' brings them back (APP-BEHAVIOUR rule 5, ticket 028 Ф-5). Cancel is the default.
+        Dim question As String = Localization.TF(
+            "Убрать папку «{0}» из раздачи?" & vbCrLf & vbCrLf &
+            "Телефоны перестанут её видеть, а её настройки (PIN, фильтры, папка назначения) будут удалены.",
+            If(String.IsNullOrEmpty(host), it.Text, host))
+        If WillStopServer(it) Then question &= vbCrLf & vbCrLf & Localization.T("Это последняя отмеченная папка: раздача остановится.")
+        If MessageBox.Show(Me, question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
+                           MessageBoxDefaultButton.Button2) <> DialogResult.OK Then Return
         If Not String.IsNullOrEmpty(host) Then ShareRootParamsStore.RemoveFor(host)
         If String.Equals(host, _lastTouchedRoot, StringComparison.OrdinalIgnoreCase) Then _lastTouchedRoot = ""
         lvFolders.Items.Remove(it)
@@ -109,8 +123,35 @@ Partial Public NotInheritable Class MainWindow
 
     Private Async Sub OnItemChecked(sender As Object, e As ItemCheckedEventArgs)
         If _loading OrElse _busy Then Return
+        ' Unticking the last folder stops a running server and disconnects every phone
+        ' on it - asked first (APP-BEHAVIOUR rule 5, ticket 028 Ф-5).
+        If Not e.Item.Checked AndAlso ServerIsRunning() AndAlso CurrentShareFolders().Count = 0 Then
+            If MessageBox.Show(Me, Localization.T("Это последняя отмеченная папка. Снять отметку и остановить раздачу? Подключённые телефоны будут отключены."),
+                               Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
+                               MessageBoxDefaultButton.Button2) <> DialogResult.OK Then
+                Dim prev As Boolean = _loading
+                _loading = True
+                e.Item.Checked = True
+                _loading = prev
+                Return
+            End If
+        End If
         Await ApplySharedFoldersAsync()
     End Sub
+
+    Private Function ServerIsRunning() As Boolean
+        Return _status IsNot Nothing AndAlso _status.Running
+    End Function
+
+    ''' <summary>True when removing <paramref name="item"/> leaves a running server with no
+    ''' checked folder - ApplySharedFoldersAsync then stops it.</summary>
+    Private Function WillStopServer(item As ListViewItem) As Boolean
+        If Not ServerIsRunning() OrElse Not item.Checked Then Return False
+        For Each other As ListViewItem In lvFolders.Items
+            If other IsNot item AndAlso other.Checked Then Return False
+        Next
+        Return True
+    End Function
 
     Private Function AddShareRow(path As String) As Boolean
         If String.IsNullOrWhiteSpace(path) Then Return False
@@ -224,13 +265,22 @@ Partial Public NotInheritable Class MainWindow
     End Sub
 
     Private Function CurrentShareFolders() As List(Of ShareFolder)
-        Dim list As New List(Of ShareFolder)()
+        Dim hosts As New List(Of String)()
+        Dim wanted As New List(Of String)()
         For Each it As ListViewItem In lvFolders.Items
             If Not it.Checked Then Continue For
             Dim host As String = Convert.ToString(it.Tag)
             If String.IsNullOrEmpty(host) Then Continue For
-            Dim writable As Boolean = ShareRootParamsStore.GetFor(host).IsWritable()
-            list.Add(New ShareFolder With {.name = it.Text, .hostPath = host, .readOnly = Not writable})
+            hosts.Add(host)
+            wanted.Add(it.Text)
+        Next
+        ' One name builder for every list the worker gets: two folders with the same leaf,
+        ' a whole drive or a label with a slash used to take ALL sharing down (ticket 054 H-03).
+        Dim names As List(Of String) = ShareRootNames.MakeUnique(wanted, hosts)
+        Dim list As New List(Of ShareFolder)()
+        For i As Integer = 0 To hosts.Count - 1
+            Dim writable As Boolean = ShareRootParamsStore.GetFor(hosts(i)).IsWritable()
+            list.Add(New ShareFolder With {.name = names(i), .hostPath = hosts(i), .readOnly = Not writable})
         Next
         Return list
     End Function
@@ -286,9 +336,11 @@ Partial Public NotInheritable Class MainWindow
         End If
 
         SetHint(HostingText.GrantWorkingHint())
+        ' Exactly the folders the prompt just listed, and no others: an elevated grant
+        ' covers what the person approving it saw (ticket 054 H-09).
         Dim all As New List(Of String)()
         Dim readOnlyOnes As New List(Of String)()
-        For Each r As ShareFolder In folders
+        For Each r As ShareFolder In needy
             Dim host As String = If(r.hostPath, "")
             If host.Length = 0 Then Continue For
             all.Add(host)
@@ -297,6 +349,7 @@ Partial Public NotInheritable Class MainWindow
 
         Dim res As ServiceControl.ManageResult =
             Await Task.Run(Function() ServiceControl.Manage(ServiceControl.ManageAction.GrantRoots, all, readOnlyOnes))
+        If IsDisposed Then Return False
         If res <> ServiceControl.ManageResult.Succeeded Then SetHint(HostingText.ManageResultLine(res))
         Return True
     End Function
@@ -326,6 +379,7 @@ Partial Public NotInheritable Class MainWindow
         _subtreeCheckedKey = key
 
         Dim scan As FolderAccess.SubtreeScan = Await Task.Run(Function() FolderAccess.ScanRoots(folders))
+        If IsDisposed Then Return
         If scan Is Nothing OrElse scan.Grantable.Count = 0 Then
             ' Blocked by an explicit Deny only: reportable, but a grant cannot fix it, so
             ' it must not raise a UAC prompt that would change nothing.
@@ -343,6 +397,7 @@ Partial Public NotInheritable Class MainWindow
         Dim readOnlyOnes As List(Of String) = BlockedReadOnlySubset(scan.Grantable, folders)
         Dim res As ServiceControl.ManageResult =
             Await Task.Run(Function() ServiceControl.Manage(ServiceControl.ManageAction.GrantRoots, scan.Grantable, readOnlyOnes))
+        If IsDisposed Then Return
         SetHint(If(res = ServiceControl.ManageResult.Succeeded, "", HostingText.ManageResultLine(res)))
     End Function
 
@@ -358,17 +413,27 @@ Partial Public NotInheritable Class MainWindow
 
     ''' <summary>A blocked subfolder inherits the read/write level of the shared folder it
     ''' sits under - granting it more than its own root has would quietly widen what the
-    ''' service can do.</summary>
-    Private Shared Function BlockedReadOnlySubset(blocked As List(Of String), folders As List(Of ShareFolder)) As List(Of String)
+    ''' service can do.
+    '''
+    ''' The folder a path sits under is the LONGEST shared folder that contains it, compared
+    ''' on a path boundary: a raw prefix match put "D:\Photos2\x" under a writable
+    ''' "D:\Photos" listed first and granted it read/write (ticket 054 H-25).</summary>
+    Friend Shared Function BlockedReadOnlySubset(blocked As List(Of String), folders As List(Of ShareFolder)) As List(Of String)
         Dim result As New List(Of String)()
         For Each path As String In blocked
+            Dim owner As ShareFolder = Nothing
+            Dim ownerLength As Integer = -1
             For Each f As ShareFolder In folders
                 If f Is Nothing OrElse String.IsNullOrEmpty(f.hostPath) Then Continue For
-                If path.StartsWith(f.hostPath, StringComparison.OrdinalIgnoreCase) Then
-                    If f.readOnly Then result.Add(path)
-                    Exit For
+                Dim root As String = f.hostPath.TrimEnd("\"c)
+                Dim inside As Boolean = String.Equals(path.TrimEnd("\"c), root, StringComparison.OrdinalIgnoreCase) OrElse
+                                        path.StartsWith(root & "\", StringComparison.OrdinalIgnoreCase)
+                If inside AndAlso root.Length > ownerLength Then
+                    owner = f
+                    ownerLength = root.Length
                 End If
             Next
+            If owner IsNot Nothing AndAlso owner.readOnly Then result.Add(path)
         Next
         Return result
     End Function
@@ -378,29 +443,80 @@ Partial Public NotInheritable Class MainWindow
     ''' and returns how many there are.
     '''
     ''' Runs on every status refresh because the answer changes under the window - an
-    ''' elevated grant, a folder swapped out, a switch to service hosting - and it can
-    ''' afford to: one DACL read per folder, no elevation, no worker round-trip.
+    ''' elevated grant, a folder swapped out, a switch to service hosting - but the DACL
+    ''' reads (and the drive probes a disconnected mapped drive can block on for seconds)
+    ''' happen OFF the UI thread (ticket 054 H-19): this used to run synchronously twenty
+    ''' times in one reachability poll and could pin the window for most of it.
     '''
     ''' The row is coloured rather than renamed: the item text IS the share name the
     ''' phone sees (<see cref="CurrentShareFolders"/> reads it back), so decorating it
     ''' would rename the share.
     ''' </summary>
-    Private Function RefreshFolderAccessWarnings() As Integer
-        If lvFolders Is Nothing Then Return 0
+    Private Function RefreshFolderAccessAsync() As Task
+        ' Coalesced: ApplyStatusToUi fires one, and the entry flow awaits one - the same
+        ' walk serves both, and a burst of status refreshes cannot queue walks behind
+        ' each other.
+        If _accessRefresh IsNot Nothing AndAlso Not _accessRefresh.IsCompleted Then Return _accessRefresh
+        _accessRefresh = RefreshFolderAccessCoreAsync()
+        Return _accessRefresh
+    End Function
 
-        Dim blocked As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
-        For Each r As ShareFolder In FolderAccess.RootsNeedingGrant(CurrentShareFolders())
-            If r IsNot Nothing AndAlso Not String.IsNullOrEmpty(r.hostPath) Then blocked.Add(r.hostPath)
+    Private _accessRefresh As Task
+
+    Private Async Function RefreshFolderAccessCoreAsync() As Task
+        If lvFolders Is Nothing Then Return
+        ' The ListView is read on the UI thread; only the disk/ACL work moves off it.
+        Dim current As List(Of ShareFolder) = CurrentShareFolders()
+        Dim key As String = FolderAccessKeyOf(current)
+        Dim blocked As HashSet(Of String) = Nothing
+        Dim network As HashSet(Of String) = Nothing
+        Await Task.Run(Sub()
+                           blocked = HostsOf(FolderAccess.RootsNeedingGrant(current))
+                           network = HostsOf(FolderAccess.NetworkRootsInServerMode(current))
+                       End Sub)
+        ' The window may have closed while the walk was out (ticket 054 H-11)...
+        If IsDisposed OrElse Disposing Then Return
+        ' ...or the list may have moved on - painting a stale answer over a fresh list
+        ' would name folders that are no longer shared and miss ones that just were.
+        If Not String.Equals(key, FolderAccessKeyOf(CurrentShareFolders()), StringComparison.OrdinalIgnoreCase) Then Return
+        _rootsWithoutAccess = ApplyFolderAccessWarnings(blocked, network)
+        ' The state line carries the no-access warning; it was painted before this answer
+        ' existed, so paint it again now that it does.
+        UpdateStateLine(_status IsNot Nothing AndAlso _status.Running)
+    End Function
+
+    Private Shared Function HostsOf(roots As List(Of ShareFolder)) As HashSet(Of String)
+        Dim set_ As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        For Each r As ShareFolder In roots
+            If r IsNot Nothing AndAlso Not String.IsNullOrEmpty(r.hostPath) Then set_.Add(r.hostPath)
         Next
+        Return set_
+    End Function
 
+    ''' <summary>Identity of a folder list for the refresh guard: read/write matters as
+    ''' much as the path, because a writable root asks more of the serving account.</summary>
+    Private Shared Function FolderAccessKeyOf(folders As List(Of ShareFolder)) As String
+        Dim sb As New System.Text.StringBuilder()
+        For Each f As ShareFolder In folders
+            sb.Append(If(f?.hostPath, "")).Append(If(f IsNot Nothing AndAlso f.readOnly, "|ro", "|rw")).Append(vbLf)
+        Next
+        Return sb.ToString()
+    End Function
+
+    ''' <summary>Paints the verdicts onto the rows. A network folder is not a missing
+    ''' grant - no grant helps it (ticket 054 H-19) - but it is just as unservable, and
+    ''' says so in its own words.</summary>
+    Private Function ApplyFolderAccessWarnings(blocked As HashSet(Of String), network As HashSet(Of String)) As Integer
         Dim tip As String = HostingText.FolderNoAccessTip()
+        Dim networkTip As String = tip
         For Each it As ListViewItem In lvFolders.Items
             Dim host As String = Convert.ToString(it.Tag)
-            Dim bad As Boolean = Not String.IsNullOrEmpty(host) AndAlso blocked.Contains(host)
+            Dim isNetwork As Boolean = Not String.IsNullOrEmpty(host) AndAlso network.Contains(host)
+            Dim bad As Boolean = isNetwork OrElse (Not String.IsNullOrEmpty(host) AndAlso blocked.Contains(host))
             it.ForeColor = If(bad, Color.Firebrick, SystemColors.WindowText)
-            it.ToolTipText = If(bad, tip, "")
+            it.ToolTipText = If(isNetwork, networkTip, If(bad, tip, ""))
         Next
-        Return blocked.Count
+        Return blocked.Count + network.Count
     End Function
 
     ''' <summary>
@@ -425,16 +541,26 @@ Partial Public NotInheritable Class MainWindow
         CancelReachabilityPoll()
         SetBusy(True, Localization.T("Обновляю список папок.."))
         Dim folders As List(Of ShareFolder) = CurrentShareFolders()
+        Dim refused As String = ""
         If folders.Count = 0 Then
-            Await ShareController.StopServerAsync()
-            _status = Await ShareController.GetStatusAsync()
+            ' The empty list is PERSISTED before the stop (ticket 046 H-01): a bare stop
+            ' left the last folder in the worker's shares.json, served again from the next
+            ' worker start on.
+            Dim u As ShareController.ShareResult = Await ShareController.UnshareAllAsync()
+            _status = If(u.Status, Await ShareController.GetStatusAsync())
+            refused = u.ErrorText
         Else
             Await EnsureServiceAccessAsync(folders)
+            If IsDisposed Then Return
             Dim r As ShareController.ShareResult = Await ShareController.ShareFoldersAsync(folders)
             _status = r.Status
+            refused = r.ErrorText
         End If
+        ' The window may have closed while the worker was busy (ticket 054 H-11).
+        If IsDisposed Then Return
         ApplyStatusToUi()
         SetBusy(False)
+        If refused <> "" Then SetHint(refused)
         If _status IsNot Nothing AndAlso _status.Running AndAlso _status.Reachability Is Nothing Then Await PollReachabilityAsync()
     End Function
 
@@ -443,10 +569,13 @@ Partial Public NotInheritable Class MainWindow
         CancelReachabilityPoll()
         SetBusy(True, Localization.T("Минутку.."))
         Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+        If IsDisposed Then Return
         If st IsNot Nothing AndAlso st.Running Then
             SetHint(Localization.T("Останавливаю раздачу.."))
             Await ShareController.StopServerAsync()
-            _status = Await ShareController.GetStatusAsync()
+            Dim after As WorkerStatus = Await ShareController.GetStatusAsync()
+            If IsDisposed Then Return
+            _status = after
             ApplyStatusToUi()
             SetBusy(False)
             SetHint(Localization.T("Раздача остановлена."))
@@ -460,26 +589,79 @@ Partial Public NotInheritable Class MainWindow
             Return
         End If
         Await EnsureServiceAccessAsync(folders)
+        If IsDisposed Then Return
         SetHint(Localization.T("Включаю раздачу.."))
         Dim res As ShareController.ShareResult = Await ShareController.ShareFoldersAsync(folders)
+        If IsDisposed Then Return
         _status = res.Status
         ApplyStatusToUi()
         SetBusy(False)
-        SetHint(If(res.Served, Localization.T("Раздача запущена."),
-                              Localization.T("Запущено, адрес не подтверждён - проверьте брандмауэр/сеть.")))
+        ' A worker that answered "no" is a different problem from an address nobody has
+        ' confirmed yet, and gets its own words (WORKER-IPC section 3 rule 2).
+        If res.ErrorText <> "" Then
+            SetHint(res.ErrorText)
+        Else
+            SetHint(If(res.Served, Localization.T("Раздача запущена."),
+                                  Localization.T("Запущено, адрес не подтверждён - проверьте брандмауэр/сеть.")))
+        End If
         If _status IsNot Nothing AndAlso _status.Running AndAlso _status.Reachability Is Nothing Then Await PollReachabilityAsync()
     End Sub
 
     ' --- small helpers ----------------------------------------------------------
 
-    ''' <summary>RO-column cell: "✓" = hard read-only (server blocks writes); "~" =
-    ''' soft read-only (phone shown read-only, server still writable); blank otherwise.</summary>
+    ''' <summary>RO-column cell: the canonical name of status.locked = hard read-only
+    ''' (server blocks writes), painted as the padlock glyph by OnFolderDrawSubItem; "~" =
+    ''' soft read-only (phone shown read-only, server still writable); blank otherwise.
+    ''' The cell keeps a real text so a screen reader says "read-only", not nothing.
+    ''' A check mark used to stand here - but a check mark is status.ok / action.confirm,
+    ''' so a read-only folder read as "fine" (ICON-SET rule 1, spec 027 phase 7).</summary>
     Private Shared Function RoLabel(p As ShareRootParams) As String
         If p Is Nothing Then Return ""
-        If Not p.IsWritable() Then Return "✓"
-        If p.SoftReadOnly Then Return "~"
+        If Not p.IsWritable() Then Return HardReadOnlyText()
+        If p.SoftReadOnlyInEffect() Then Return "~"   ' a destination ignores the hint (ticket 034)
         Return ""
     End Function
+
+    Private Shared Function HardReadOnlyText() As String
+        Return Localization.T(IconMap.GetMeaning("folderReadOnly").LocalizationKey)
+    End Function
+
+    ''' <summary>The list is owner-drawn for ONE cell kind only: a hard read-only RO cell
+    ''' gets the status.locked glyph; everything else - headers, the check boxes, every
+    ''' other cell, the row colours of RefreshFolderAccessWarnings - is drawn by Windows.</summary>
+    Private Sub OnFolderDrawSubItem(sender As Object, e As DrawListViewSubItemEventArgs)
+        If e.ColumnIndex <> 3 OrElse e.SubItem Is Nothing OrElse e.SubItem.Text <> HardReadOnlyText() Then
+            e.DrawDefault = True
+            Return
+        End If
+        Dim selected As Boolean = e.Item.Selected
+        Dim focused As Boolean = lvFolders.Focused
+        Dim back As Color = If(selected, If(focused, SystemColors.Highlight, SystemColors.Control), lvFolders.BackColor)
+        Dim ink As Color = If(selected AndAlso focused, SystemColors.HighlightText, e.Item.ForeColor)
+        Using b As New SolidBrush(back)
+            e.Graphics.FillRectangle(b, e.Bounds)
+        End Using
+        Dim size As Integer = Math.Min(LogicalToDeviceUnits(16), Math.Max(1, e.Bounds.Height - 2))
+        Using glyph As Bitmap = GlyphRenderer.Render("status.locked", size, ink, AddressOf CompanionAssets.OpenBundledAsset)
+            e.Graphics.DrawImage(glyph, e.Bounds.Left + (e.Bounds.Width - size) \ 2,
+                                 e.Bounds.Top + (e.Bounds.Height - size) \ 2, size, size)
+        End Using
+    End Sub
+
+    ''' <summary>Owner-drawn full-row-select lists repaint a hovered row without raising
+    ''' DrawSubItem for it (a long-standing WinForms quirk), which would wipe the padlock
+    ''' until the next full repaint - so a hovered row is invalidated whole.</summary>
+    Private Sub OnFolderListMouseMove(sender As Object, e As MouseEventArgs)
+        Dim hit As ListViewItem = lvFolders.GetItemAt(e.X, e.Y)
+        If hit Is _lastHoveredFolder Then Return
+        If _lastHoveredFolder IsNot Nothing AndAlso _lastHoveredFolder.ListView Is lvFolders Then
+            lvFolders.Invalidate(_lastHoveredFolder.Bounds)
+        End If
+        _lastHoveredFolder = hit
+        If hit IsNot Nothing Then lvFolders.Invalidate(hit.Bounds)
+    End Sub
+
+    Private _lastHoveredFolder As ListViewItem
 
     ''' <summary>"Тип" column: the folder's export profile in the same words the
     ''' resource dialog's "Тип ресурса" combo uses. A plain (none) folder shows
@@ -496,13 +678,11 @@ Partial Public NotInheritable Class MainWindow
         End Select
     End Function
 
+    ''' <summary>A new row's name - the one the phone will see. A drive root used to come out
+    ''' as "D:\" (DirectoryInfo's name for it), which the worker refuses as a share name.</summary>
     Private Shared Function ShareFolderDisplayName(path As String) As String
-        Try
-            Dim n As String = New DirectoryInfo(path).Name
-            If Not String.IsNullOrEmpty(n) Then Return n
-        Catch
-        End Try
-        Return path
+        Dim n As String = ShareRootNames.ForFolder(path)
+        Return If(n.Length > 0, n, path)
     End Function
 
     Private Sub RestripeList()

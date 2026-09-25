@@ -109,6 +109,16 @@ Friend Module Program
             ' it reads the migrated value instead of racing it.
             AutostartManager.OfferForSystemServiceHostOnce()
 
+            ' Crash logging, the way the viewer has it (ticket 054 H-11). Without it an
+            ' exception escaping an Async Sub handler reached the user as the raw WinForms
+            ' "Unhandled exception" dialog of a tray app, and nothing of it reached
+            ' companion.log - the file "Send the log to the author" ships. Before the first
+            ' window: the mode can only be set while no control exists on this thread.
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException)
+            AddHandler Application.ThreadException, AddressOf OnThreadException
+            AddHandler AppDomain.CurrentDomain.UnhandledException, AddressOf OnUnhandledException
+            AddHandler Threading.Tasks.TaskScheduler.UnobservedTaskException, AddressOf OnUnobservedTaskException
+
             Application.EnableVisualStyles()
             Application.SetCompatibleTextRenderingDefault(False)
             Try
@@ -137,6 +147,28 @@ Friend Module Program
                 mtx.Dispose()
             End If
         End Try
+    End Sub
+
+    ' --- crash logging (ticket 054 H-11) ------------------------------------------
+
+    ''' <summary>An exception escaping a UI event handler. Logged, and the tray app carries on
+    ''' - the default dialog offered "Continue" anyway, with a stack trace nobody could act on.</summary>
+    Private Sub OnThreadException(sender As Object, e As ThreadExceptionEventArgs)
+        AppFileLogger.LogException("Unhandled UI exception", e.Exception)
+    End Sub
+
+    ''' <summary>An exception on any other thread. The runtime ends the process after this
+    ''' returns; the log line is what survives it.</summary>
+    Private Sub OnUnhandledException(sender As Object, e As UnhandledExceptionEventArgs)
+        AppFileLogger.LogException("Unhandled exception (terminating=" & e.IsTerminating.ToString() & ")",
+                                   TryCast(e.ExceptionObject, Exception))
+    End Sub
+
+    ''' <summary>A faulted task nobody awaited - a fire-and-forget refresh, typically. Observed
+    ''' here so it is logged rather than lost.</summary>
+    Private Sub OnUnobservedTaskException(sender As Object, e As Threading.Tasks.UnobservedTaskExceptionEventArgs)
+        AppFileLogger.LogException("Unobserved task exception", e.Exception)
+        e.SetObserved()
     End Sub
 
     ' --- WM_COPYDATA forward to the already-running instance ------------------

@@ -185,5 +185,65 @@ Public Class CustomHotkeysTests
         Assert.Equal(0, CustomHotkeys.RecipientSlotOf("recipient11"))
     End Sub
 
+    ' ----------------------------- audit 047, C-19: every factory key retires ----
+
+    ''' <summary>Moving "delete" off Delete retired only Delete: D went on deleting while the
+    ''' dialog showed the action rebound.</summary>
+    <Fact>
+    Public Sub Moving_delete_retires_D_as_well()
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""deleteFile"":""Ctrl+Shift+X""}")
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "Delete"))
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "D"))
+        ' Its permanent sibling is untouched.
+        Assert.False(CustomHotkeys.IsRetiredDefault(map, "Shift+Delete"))
+        Assert.False(CustomHotkeys.IsRetiredDefault(map, "Shift+D"))
+    End Sub
+
+    <Fact>
+    Public Sub Moving_the_permanent_delete_retires_Shift_D_as_well()
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""deletePermanent"":""-""}")
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "Shift+Delete"))
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "Shift+D"))
+    End Sub
+
+    <Fact>
+    Public Sub Moving_a_recipient_slot_retires_its_NumPad_digit()
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""recipient5"":""Ctrl+5""}")
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "5"))
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "Num 5"))
+        Assert.False(CustomHotkeys.IsRetiredDefault(map, "Num 6"))
+    End Sub
+
+    <Fact>
+    Public Sub Moving_next_file_retires_every_key_that_flipped_forward()
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""nextFile"":""Ctrl+N""}")
+        For Each combo As String In {"Right", "Space", "PageDown", "BrowserForward"}
+            Assert.True(CustomHotkeys.IsRetiredDefault(map, combo), combo)
+        Next
+    End Sub
+
+    ''' <summary>A key another action was moved ONTO is that action's, never retired.</summary>
+    <Fact>
+    Public Sub A_factory_extra_taken_over_by_another_action_is_not_retired()
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""deleteFile"":""Ctrl+Shift+X"",""help"":""D""}")
+        Assert.False(CustomHotkeys.IsRetiredDefault(map, "D"))
+        Assert.Equal("help", CustomHotkeys.OwnerOfOverride(map, "D"))
+    End Sub
+
+    <Fact>
+    Public Sub Every_factory_extra_is_usable_and_belongs_to_one_action()
+        Dim seen As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+        For Each action As HotkeyAction In CustomHotkeys.Catalog
+            For Each extra As String In action.ExtraDefaults
+                Assert.False(CustomHotkeys.Canonical(extra).Length = 0, "Unusable extra for " & action.Id & ": " & extra)
+            Next
+            For Each combo As String In CustomHotkeys.FactoryCombos(action)
+                Dim owner As String = Nothing
+                Assert.False(seen.TryGetValue(combo, owner), combo & " belongs to both " & owner & " and " & action.Id)
+                seen(combo) = action.Id
+            Next
+        Next
+    End Sub
+
 End Class
 #End If

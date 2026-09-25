@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Drawing
@@ -15,9 +15,40 @@ Imports System.Drawing
 ''' still alive - by paint time those pixels are gone, and sampling them in Paint would cost
 ''' the frame anyway.
 '''
-''' Modern-only: this is a change of appearance, not a defect fix, and the x86 fallback does
-''' not take those (CLAUDE.md, "Maintenance policy"). A block it produced carries 0 in both
-''' fields, which the renderer reads as "not computed" and paints the old constant.
+''' Modern-only, and that is a DECISION rather than an omission - `OCR-OVERLAY` rule 8 calls a
+''' constant white plate with black text a defect, so the net48 x86 fallback deviates from the
+''' rule for as long as this file stays whole-file `#If Not NETFRAMEWORK`. The decision, written
+''' down here so the dated exception in the catalog's registry is renewed deliberately each time
+''' rather than drifting past its date (ticket 025 section 1):
+'''
+'''   Leave it. Sampled plate colours are a change of APPEARANCE, and the maintenance policy for
+'''   that build takes bug fixes only (CLAUDE.md, "Maintenance policy") - a rule that exists
+'''   because the machines that exe is for are the ones nobody tests on. The renderer already
+'''   reads a block with 0 in both colour fields as *not sampled* and falls back with no branch
+'''   of its own, so the constant plate is a documented fallback rather than an accident, and a
+'''   document written by either exe still deserializes in the other under the shared cache key.
+'''   What would change the answer: the x86 build acquiring a reason to be touched anyway, or
+'''   the constant plate turning up in a real report from a Windows 7 user rather than in an
+'''   audit.
+'''
+''' Pure, so porting it would be mechanical if that day comes: it takes an ARGB array and
+''' returns two integers.
+'''
+''' Constant status (`OCR-OVERLAY` rule 13). None of these is derived here in the rule's sense -
+''' two measurements from opposite sides with the margin stated. Every threshold is INHERITED
+''' from the reference implementation's sampler (`OCR-PIPELINE` sections 3.2-3.3, corrected by
+''' amendment 1.2 items D and E, where every one of them is itself `policy` - chosen, not
+''' bracketed); the one number that is ours is a budget, chosen here. Ticket 033 owns deriving
+''' them on this product's material (it replaced the closed ticket 025).
+''' | Constant | Status | Source |
+''' | --- | --- | --- |
+''' | <see cref="SampleBudget"/> | chosen here, NOT derived | a budget, not a threshold: it is set by the invariant that no stage may make OCR slower on an image that already worked, and 6000 samples is below the cost of the LockBits that precedes it. The reference samples the same ~6000 (`OCR-PIPELINE` 3.2). |
+''' | <see cref="InkDistance"/> | inherited | `OCR-PIPELINE` 3.2 and 1.2 item D (ink deviation 90). Not re-measured here. Ticket 033. |
+''' | <see cref="MinInkFraction"/> | inherited | `OCR-PIPELINE` 3.2 and 1.2 item D (ink share 15 per mille). Ticket 033. |
+''' | <see cref="MinLumaContrast"/> | inherited | `OCR-PIPELINE` 3.2 (55 luma) - the contrast floor rule 8 requires, with the reference implementation's number. Ticket 033. |
+''' | <see cref="RingMinVotes"/> | inherited | `OCR-PIPELINE` 3.3 and section 5 (ring min samples 40) - rule 8's "minimum vote count". Ticket 033. |
+''' | <see cref="RingBandDivisor"/> | inherited | `OCR-PIPELINE` 3.3 as corrected by 1.2 item E: a third of a line. The reference's own code (`pad := lh / 3`); the one alternative - sharing the ink band - came out 0.43 of a line against 0.33 in the reference and was rejected (recorded on the constant). Ticket 033. |
+''' | <see cref="InkBandFactor"/> | inherited | `OCR-PIPELINE` 1.2 item D (ink strip 1.3 lines), kept separate from the ring for the reason on the constant. Ticket 033. |
 ''' </summary>
 Public Module OcrPlateColors
 

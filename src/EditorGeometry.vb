@@ -83,6 +83,19 @@ Friend Module EditorGeometry
     End Function
 
     ''' <summary>
+    ''' A NEW crop frame from the two dragged pixels, both of them inside it (audit 052
+    ''' G-11). <see cref="CanvasToImage"/> clamps a point to the last pixel, W-1, and
+    ''' <see cref="NormalizeDrag"/> treats the far corner as the EXCLUSIVE edge - so a frame
+    ''' dragged past the bottom-right came out (W-1) x (H-1) and could never take the last
+    ''' column and row. Inclusive of the corner pixel, as <see cref="ResizeCrop"/> already is.
+    ''' </summary>
+    Friend Function CropFromDrag(anchor As Point, corner As Point, imageSize As Size) As Rectangle
+        Return ClampCropRect(Rectangle.FromLTRB(Math.Min(anchor.X, corner.X), Math.Min(anchor.Y, corner.Y),
+                                                Math.Max(anchor.X, corner.X) + 1, Math.Max(anchor.Y, corner.Y) + 1),
+                             imageSize)
+    End Function
+
+    ''' <summary>
     ''' Where the dragged corner goes when Shift is held (§6): a square, or a circle once
     ''' the ellipse is inscribed in it.
     '''

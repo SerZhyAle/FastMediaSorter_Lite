@@ -77,19 +77,34 @@ Partial Public Class Main_Form
     ''' companion button additionally needs the companion installed.</summary>
     Friend Sub ApplyTranslateButtonsVisibility()
         Dim still As Boolean = IsCurrentStillImage()
+        Dim browserable As Boolean = still AndAlso DocHtmlTranslate.IsAvailableCached()
+#If Not NETFRAMEWORK Then
+        ' The browser companion is handed a PATH, and a container's content may never be
+        ' handed to another program by path (FDSEC-BEHAVIOUR §6 rule 4) - nor could it be,
+        ' since the only path that exists is the sealed file. The in-app OCR overlay above
+        ' still works: it reads the bitmap already on screen and keeps its result in memory.
+        If IsSecureContentOnScreen() Then browserable = False
+#End If
         SetToolbarItemHidden(btn_Translate, Not still)
-        SetToolbarItemHidden(btn_TranslateBrowser, Not (still AndAlso DocHtmlTranslate.IsAvailableCached()))
+        SetToolbarItemHidden(btn_TranslateBrowser, Not browserable)
 #If Not NETFRAMEWORK Then
         ' The editor's button rides the same predicate and the same single recompute
         ' point (SPECIFICATION_IMAGE_EDITOR_DOTNET10.md §2): a still image can be edited,
         ' a video or a running animation cannot. Hidden only through SetToolbarItemHidden -
         ' PlaceControl force-shows anything it lays out, so a bare Visible = False would
         ' be undone by the next LayoutToolbar.
-        SetToolbarItemHidden(btn_Edit, Not still)
+        ' Both of these WRITE, and inside a container that means putting the plaintext on
+        ' disk: saving an edit means re-packing (the deferred writer), and "replace with
+        ' video" writes an MP4 beside the container which IS the decrypted file
+        ' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §7). The editor is HIDDEN
+        ' rather than refused, because an action that is offered and then declines is worse
+        ' than one that was never offered.
+        Dim sealedContent As Boolean = IsSecureContentOnScreen()
+        SetToolbarItemHidden(btn_Edit, Not still OrElse sealedContent)
         ' "Replace with video" rides the same single recompute point, under the opposite
         ' predicate: a running animation can be converted, a still and a video cannot
         ' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §11).
-        SetToolbarItemHidden(btn_ToVideo, Not IsCurrentAnimation())
+        SetToolbarItemHidden(btn_ToVideo, Not IsCurrentAnimation() OrElse sealedContent)
 #End If
         LayoutToolbar()
     End Sub
@@ -103,6 +118,11 @@ Partial Public Class Main_Form
 
     Private Sub LaunchBrowserTranslate(force As Boolean)
         If Not IsCurrentStillImage() Then Return
+#If Not NETFRAMEWORK Then
+        ' The button is hidden for a container, but a hotkey or a menu can still arrive
+        ' here - and this is the call that would hand a path to another program.
+        If SecureBlocksWritingAction() Then Return
+#End If
         Dim imagePath As String = Current_File_Name
         Dim ocrLang As String = BuildOcrLangArgument()
 
@@ -123,16 +143,11 @@ Partial Public Class Main_Form
         End If
     End Sub
 
-    ''' <summary>Maps the OCR source-language setting to a doc-html-translate
-    ''' -ocr-lang value (Tesseract codes). "auto" becomes the first ~3 attempt codes
-    ''' joined by "+"; an empty result means "don't pass -ocr-lang".</summary>
+    ''' <summary>The OCR source-language setting as a doc-html-translate -ocr-lang value;
+    ''' "" (no flag) on "auto" - see DocHtmlTranslate.OcrLangArgument.</summary>
     Private Function BuildOcrLangArgument() As String
         If ocr_Settings Is Nothing Then Return ""
-        Dim primary As String = OcrTranslateSettings.NormalizeOcrSourceCode(ocr_Settings.SourceLang)
-        If primary <> "auto" Then Return primary
-        Dim codes As List(Of String) = OcrTranslateSettings.OcrAttemptCodes("auto")
-        If codes Is Nothing OrElse codes.Count = 0 Then Return ""
-        Return String.Join("+", codes.Take(3).ToArray())
+        Return DocHtmlTranslate.OcrLangArgument(OcrTranslateSettings.NormalizeOcrSourceCode(ocr_Settings.SourceLang))
     End Function
 
     ' --- discoverability menu on the OCR "Translate" button -------------------

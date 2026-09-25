@@ -114,7 +114,7 @@ cd publishing\msix; .\build-msix.ps1 -SelfSign   (можно -NoBuild для т�
    - Package/Properties/PublisherDisplayName -> должно быть SZA (моё)
    Они должны совпадать ТОЧНО, иначе аплоад отклонят.
 4) Собрать Store-пакет БЕЗ -SelfSign и загрузить UNSIGNED .msix (Microsoft подпишет сам):
-   .\build-msix.ps1 -IdentityName "<новое Name>"
+   .\build-msix.ps1 -ReleaseVersion <тег релиза без v> -IdentityName "<новое Name>"
    (-Publisher и -PublisherDisplayName уже зашиты как мои значения по умолчанию)
 
 === ФАЗА 5. Материалы листинга ===

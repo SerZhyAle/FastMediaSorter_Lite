@@ -62,7 +62,32 @@ Public Module PathFailure
         ''' file (§6.4): that preserves today's auto-skip for anything unseen, and the log line
         ''' names the exception type so the next kind can be added on purpose.</summary>
         Unknown
+        ''' <summary>The name the operation wanted is already taken (ERROR_FILE_EXISTS,
+        ''' ERROR_ALREADY_EXISTS) - a collision that appeared between the check and the write.
+        ''' Added by audit 047 C-17: it used to read as "no connection to the folder" and sent
+        ''' the user off to check a NAS that was fine. Added at the END so no stored or
+        ''' compared value of the older kinds moves.</summary>
+        Exists
+        ''' <summary>Another program has the file open (a sharing or lock violation). The
+        ''' file and the folder are both fine; the list is innocent (C-17).</summary>
+        Locked
+        ''' <summary>A decode on a LOCAL volume ran past its deadline (audit 048, A-18): the
+        ''' picture is simply expensive (a huge animated WEBP, a HEIC on a slow CPU). Not a
+        ''' verdict on the file and not the transport - it used to be reported as "no
+        ''' connection to the folder". Keeps the file. Added at the END, like Exists/Locked.</summary>
+        SlowDecode
     End Enum
+
+    Private Const HResultFileExists As Integer = &H80070050
+    Private Const HResultAlreadyExists As Integer = &H800700B7
+    Private Const HResultSharingViolation As Integer = &H80070020
+    Private Const HResultLockViolation As Integer = &H80070021
+    ''' <summary>ERROR_DIRECTORY, "The directory name is invalid": what enumerating a path
+    ''' that names a FILE answers on .NET Framework - a slot set to a file by mistake (C-24).</summary>
+    Private Const HResultDirectoryNameInvalid As Integer = &H8007010B
+    ''' <summary>ERROR_INVALID_PARAMETER: what the same enumeration answers on .NET 10, which
+    ''' asks the directory differently. Measured, not assumed - see PathFailureTests.</summary>
+    Private Const HResultInvalidParameter As Integer = &H80070057
 
     ''' <summary>
     ''' Turns an exception into a category.
@@ -93,9 +118,21 @@ Public Module PathFailure
            TypeOf real Is NotSupportedException OrElse
            TypeOf real Is FormatException Then Return PathFailureKind.Invalid
 
-        ' Everything left under IOException is the transport: the session dropped, the device
-        ' is not ready, the stream ended early.
-        If TypeOf real Is IOException Then Return PathFailureKind.Transport
+        If TypeOf real Is IOException Then
+            ' The IOExceptions that name their cause in the HResult and are NOT about the
+            ' transport (audit 047, C-17 and C-24).
+            Select Case real.HResult
+                Case HResultFileExists, HResultAlreadyExists
+                    Return PathFailureKind.Exists
+                Case HResultSharingViolation, HResultLockViolation
+                    Return PathFailureKind.Locked
+                Case HResultDirectoryNameInvalid, HResultInvalidParameter
+                    Return PathFailureKind.Invalid
+            End Select
+            ' Everything left under IOException is the transport: the session dropped, the
+            ' device is not ready, the stream ended early.
+            Return PathFailureKind.Transport
+        End If
 
         Return PathFailureKind.Unknown
     End Function
@@ -107,7 +144,11 @@ Public Module PathFailure
     ''' </summary>
     Public Function IsAboutTheFile(kind As PathFailureKind) As Boolean
         Select Case kind
-            Case PathFailureKind.Transport, PathFailureKind.Denied
+            Case PathFailureKind.Transport, PathFailureKind.Denied, PathFailureKind.Locked,
+                 PathFailureKind.SlowDecode
+                ' Locked: the file is fine and will be readable once the other program lets
+                ' go - dropping it from the list would be the wrong answer, exactly as for a
+                ' denial. (It used to be classified as Transport, which kept it too.)
                 Return False
             Case Else
                 ' Unknown included, on purpose - see the enum. None too: "nothing went wrong"

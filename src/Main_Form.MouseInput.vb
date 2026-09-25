@@ -17,6 +17,24 @@ Partial Public Class Main_Form
         ' Store the initial mouse position for drag detection
         mouse_Down_Start_Point = e.Location
 
+#If Not NETFRAMEWORK Then
+        ' PRIORITY 0: a plain left click on a LOCKED container is the explicit unlock
+        ' action (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §3.3). It borrows
+        ' "next file" for exactly the case where what is on screen is a placeholder rather
+        ' than a picture - every other way forward (the arrows, Space, PageDown, the
+        ' toolbar) still works, and clicking the thing that says "needs a password" and
+        ' being taken past it would be the odder answer. LOCKED really means locked (audit
+        ' 052 G-07): a damaged or unreadable container keeps the click as "next file".
+        If e.Button = MouseButtons.Left AndAlso Control.ModifierKeys = Keys.None AndAlso
+           IsSecurePlaceholderLocked() Then
+            pending_Single_Click_Timer.Stop()
+            pending_Single_Click_Event = Nothing
+            SlideShowStop()
+            SecureUnlockCurrent()
+            Return
+        End If
+#End If
+
         ' PRIORITY 1: Check modifier keys FIRST (these execute immediately without delay)
         '
         ' All three jumps go through JumpBy: the index moves inside the pipeline, after
@@ -128,6 +146,12 @@ Partial Public Class Main_Form
         HandlePictureBoxMouseDown(sender, e)
     End Sub
 
+    ''' <summary>Collects sub-notch wheel deltas into whole flips (C-21).</summary>
+    Private ReadOnly wheel_Accumulator As New WheelAccumulator()
+    ''' <summary>A monotonic clock for the accumulator's idle reset and the overlay's
+    ''' double-click guard - DateTime.Now can jump.</summary>
+    Private ReadOnly input_Clock As Stopwatch = Stopwatch.StartNew()
+
     Private Sub MouseUse(ByVal e As MouseEventArgs)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1170: MouseUse Delta: " & e.Delta.ToString)
 
@@ -142,7 +166,11 @@ Partial Public Class Main_Form
 #End If
 
         If (Control.ModifierKeys And Keys.Alt) = Keys.Alt Then
+#If Not NETFRAMEWORK Then
+            ZoomToFit()   ' Alt+wheel = reset to Fit (audit B-21)
+#Else
             SkipZoom()
+#End If
 
         ElseIf e.Delta <> 0 AndAlso (is_PictureBox1_Visible OrElse is_PictureBox2_Visible) AndAlso (Control.ModifierKeys And Keys.Shift) = Keys.Shift Then
             ' SHIFT + Scroll: Set to original 1:1 resolution
@@ -233,11 +261,16 @@ Partial Public Class Main_Form
             zoom_Scale = If(zoom_Scale = 0, 1, zoom_Scale) * zoom_Scale_Factor
             lbl_Zoom.Text = "" & zoom_Scale.ToString("F2")
         Else
+            ' One flip per WHEEL_DELTA, not per message (audit 047, C-21): a precision
+            ' touchpad or a free-spinning wheel sends many small messages, and each used to
+            ' flip a whole file - a swipe went past files faster than anyone can look at them.
+            Dim wheel_Flip As Integer = 0
+            If e.Delta <> 0 Then wheel_Flip = wheel_Accumulator.Add(e.Delta, input_Clock.ElapsedMilliseconds)
             Select Case e.Delta
                 Case Is < 0
-                    ReadShowMediaFile(Mode_Next)
+                    If wheel_Flip < 0 Then ReadShowMediaFile(Mode_Next)
                 Case Is > 0
-                    ReadShowMediaFile(Mode_Prev)
+                    If wheel_Flip > 0 Then ReadShowMediaFile(Mode_Prev)
                 Case 0
                     Select Case e.Button
                         Case MouseButtons.Left
@@ -278,7 +311,13 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub lbl_Zoom_MouseDown(sender As Object, e As MouseEventArgs) Handles lbl_Zoom.MouseDown
+#If Not NETFRAMEWORK Then
+        ' Spec 012: a click on the label is Fit - the real one, which forgets the
+        ' per-folder zoom and keeps the label readout (audit B-21).
+        ZoomToFit()
+#Else
         SkipZoom()
+#End If
     End Sub
 
     Private Sub Picture_Box_1_MouseMove(sender As Object, e As MouseEventArgs) Handles Picture_Box_1.MouseMove

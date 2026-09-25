@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 Imports System.Drawing.Drawing2D
@@ -7,6 +7,7 @@ Imports System.IO
 Imports System.Net
 Imports System.Runtime.InteropServices
 Imports System.Threading
+Imports System.Threading.Tasks
 Imports Tesseract
 
 ''' <summary>
@@ -62,13 +63,18 @@ End Module
 ''' on Tesseract.Drawing / System.Drawing.Common. Missing native runtime or
 ''' missing language data degrade to <see cref="OcrStatus.RuntimeMissing"/>
 ''' instead of throwing.
+'''
+''' Constant status (`OCR-OVERLAY` rule 13). The sizing constants moved to OcrImageScale with
+''' their table (audit 051 E-05). The one left here is about the patience of a download - it
+''' does not decide what is drawn, which is why it carries no two-sided bracket. Ticket 033
+''' owns measuring it.
+''' | Constant | Status | Source |
+''' | --- | --- | --- |
+''' | DownloadTimeoutMs | chosen here, NOT derived | patience, not accuracy: a minute per language pack. It changes nothing about what is recognized. |
 ''' </summary>
 Public Class TesseractOcrEngine
     Implements IOcrEngine
 
-    Private Const MaxOcrDimension As Integer = 3200
-    Private Const MinOcrDimension As Integer = 1200
-    Private Const MaxUpscaleFactor As Double = 1.75
     Private Const DownloadTimeoutMs As Integer = 60000
     Private Const TessDataBaseUrl As String = "https://github.com/tesseract-ocr/tessdata_fast/raw/main/"
     Private Const TessDataBestBaseUrl As String = "https://github.com/tesseract-ocr/tessdata_best/raw/main/"
@@ -76,6 +82,9 @@ Public Class TesseractOcrEngine
     Private ReadOnly sync As New Object()
     Private cachedEngine As TesseractEngine
     Private cachedKey As String = ""
+    ''' <summary>Set at shutdown: GetEngine refuses to build a new engine, so a job that got
+    ''' past its cancellation check just before the close cannot re-create one (E-15).</summary>
+    Private retired As Boolean
 
     Private Enum OcrPreprocessMode
         Normal
@@ -135,17 +144,36 @@ Public Class TesseractOcrEngine
         Else
             profiles = BuildAttemptProfiles(languageAttempts, includeInverted)
         End If
-        Dim preparedImages As Dictionary(Of OcrPreprocessMode, PreparedOcrImage)
+        ' One resample of the source, made on first need and shared by every preprocess
+        ' mode; each mode's buffer is then built the first time a profile asks for it. They
+        ' used to be built all at once, each with its own full-resolution resample, before
+        ' the first attempt - which usually wins on its own (audit 051 E-08).
+        Dim scale As Double = OcrImageScale.ComputeScale(source.Width, source.Height)
+        Dim invScale As Double = 1.0 / scale
+        Dim flat As Bitmap = Nothing
+        Dim preparedImages As New LazyByKey(Of OcrPreprocessMode, PreparedOcrImage)(
+            Function(mode As OcrPreprocessMode)
+                If flat Is Nothing Then flat = RenderScaledBitmap(source, scale)
+                Return New PreparedOcrImage With {.Bytes = EncodeOcrBuffer(flat, mode), .InvScale = invScale}
+            End Function)
 
         Try
-            preparedImages = BuildPreparedImages(source, profiles)
-        Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: buffer error: " & ex.Message)
-            Return OcrResult.FromError("image preparation failed")
+            Return RecognizeAttempts(source, profiles, preparedImages, ct)
+        Finally
+            If flat IsNot Nothing Then flat.Dispose()
         End Try
+    End Function
 
+    ''' <summary>The message of a Failed result whose picture could not be prepared for the
+    ''' engine (usually memory on the 32-bit viewer); the pipeline names it.</summary>
+    Public Const ImagePreparationFailed As String = "image preparation failed"
+
+    Private Function RecognizeAttempts(source As Bitmap, profiles As List(Of OcrAttemptProfile),
+                                       preparedImages As LazyByKey(Of OcrPreprocessMode, PreparedOcrImage),
+                                       ct As CancellationToken) As OcrResult
         Dim best As OcrAttemptScore = Nothing
         Dim lastFailure As OcrResult = Nothing
+        Dim languagesMissing As Boolean = False
 
         For Each profile As OcrAttemptProfile In profiles
             ' Once per attempt, and again before the (possibly 60 s) language download below:
@@ -158,14 +186,25 @@ Public Class TesseractOcrEngine
 
             Dim dataDir As String
             Try
-                dataDir = EnsureTessData(profile.Language, PreferBest)
+                dataDir = EnsureTessData(profile.Language, PreferBest, allowDownload:=RecognitionMayDownload)
             Catch ex As Exception
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: tessdata error: " & ex.Message)
-                Return OcrResult.Runtime("language data unavailable")
+                Return OcrResult.Runtime(LanguageDataMissing)
             End Try
 
             If dataDir Is Nothing Then
-                Return OcrResult.Runtime("language data unavailable")
+#If Not NETFRAMEWORK Then
+                ' Nothing is downloaded from inside recognition (APP-BEHAVIOUR rule 4, ticket
+                ' 028 Ф-6): a language with no data is skipped, and the caller - which asks
+                ' before recognition starts - hears about it only if no language had data.
+                languagesMissing = True
+                Continue For
+#Else
+                ' The same message as the mainline's, so the pipeline names the language and
+                ' the download instead of "OCR engine unavailable" (ticket 033 Ф-6, F7 - taken
+                ' on x86 as a bug fix, owner decision O-5).
+                Return OcrResult.Runtime(LanguageDataMissing)
+#End If
             End If
 
             ' EnsureTessData can have spent up to a minute downloading a pack; the user may
@@ -175,7 +214,15 @@ Public Class TesseractOcrEngine
                 Return OcrResult.FromError("cancelled")
             End If
 
-            Dim attemptResult As OcrResult = RecognizeSingleAttempt(source, preparedImages(profile.Preprocess), dataDir, profile)
+            Dim prepared As PreparedOcrImage
+            Try
+                prepared = preparedImages.Get(profile.Preprocess)
+            Catch ex As Exception
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: buffer error: " & ex.Message)
+                Return OcrResult.FromError(ImagePreparationFailed)
+            End Try
+
+            Dim attemptResult As OcrResult = RecognizeSingleAttempt(source, prepared, dataDir, profile)
             If attemptResult.Status = OcrStatus.RuntimeMissing Then Return attemptResult
 
             If attemptResult.Status = OcrStatus.Failed Then
@@ -219,10 +266,26 @@ Public Class TesseractOcrEngine
         End If
 
         If lastFailure IsNot Nothing Then Return lastFailure
+        If languagesMissing Then Return OcrResult.Runtime(LanguageDataMissing)
         Return New OcrResult With {.Status = OcrStatus.NoText, .Message = "no text after retries"}
     End Function
 
+    ''' <summary>The Message of a RuntimeMissing result that means "no language had data",
+    ''' so the pipeline can say that instead of "the OCR engine is unavailable".</summary>
+    Public Const LanguageDataMissing As String = "language data missing"
+
+    ''' <summary>Whether recognition may fetch a missing language pack itself. The x86
+    ''' fallback keeps the historical implicit download (maintenance policy, dated
+    ''' exception); the mainline never downloads from inside recognition - the caller asks
+    ''' first (APP-BEHAVIOUR rule 4, ticket 028 Ф-6).</summary>
+#If NETFRAMEWORK Then
+    Private Const RecognitionMayDownload As Boolean = True
+#Else
+    Private Const RecognitionMayDownload As Boolean = False
+#End If
+
     Private Function GetEngine(dataDir As String, langs As String) As TesseractEngine
+        If Volatile.Read(retired) Then Throw New ObjectDisposedException(NameOf(TesseractOcrEngine))
         Dim key As String = dataDir & "|" & langs
         If cachedEngine IsNot Nothing AndAlso String.Equals(cachedKey, key, StringComparison.Ordinal) Then
             Return cachedEngine
@@ -275,7 +338,9 @@ Public Class TesseractOcrEngine
                ex.Message.IndexOf("tesseract", StringComparison.OrdinalIgnoreCase) >= 0 Then
                 Return OcrResult.Runtime("OCR native runtime missing")
             End If
-            Return OcrResult.FromError(ex.Message)
+            ' The type only: the message is never shown (the pipeline says "OCR error"), and the
+            ' full exception is already in the line logged above.
+            Return OcrResult.FromError(ex.GetType().Name)
         End Try
     End Function
 
@@ -418,48 +483,35 @@ Public Class TesseractOcrEngine
         Return New Rectangle(x, y, w, h)
     End Function
 
-    Private Shared Function BuildPreparedImages(source As Bitmap, profiles As List(Of OcrAttemptProfile)) As Dictionary(Of OcrPreprocessMode, PreparedOcrImage)
-        Dim result As New Dictionary(Of OcrPreprocessMode, PreparedOcrImage)()
-        For Each mode As OcrPreprocessMode In profiles.Select(Function(p) p.Preprocess).Distinct()
-            Dim invScale As Double = 1.0
-            Dim bytes As Byte() = BuildOcrBuffer(source, mode, invScale)
-            result(mode) = New PreparedOcrImage With {.Bytes = bytes, .InvScale = invScale}
-        Next
-        Return result
-    End Function
-
-    ''' <summary>Flatten + preprocess to a 24bpp BMP byte[]; sets invScale.</summary>
-    Private Shared Function BuildOcrBuffer(source As Bitmap, preprocess As OcrPreprocessMode, ByRef invScale As Double) As Byte()
+    ''' <summary>The source flattened onto white and resampled by <paramref name="scale"/>,
+    ''' 24 bpp - made once per recognition and shared by every preprocess mode.</summary>
+    Private Shared Function RenderScaledBitmap(source As Bitmap, scale As Double) As Bitmap
         Dim w As Integer = source.Width
         Dim h As Integer = source.Height
-        Dim scale As Double = ComputeScale(w, h)
-        invScale = 1.0 / scale
-
         Dim tw As Integer = Math.Max(1, CInt(Math.Round(w * scale)))
         Dim th As Integer = Math.Max(1, CInt(Math.Round(h * scale)))
+        Return RenderFlatBitmap(source, w, h, tw, th)
+    End Function
 
-        Using flat As Bitmap = RenderFlatBitmap(source, w, h, tw, th)
-            ApplyPreprocess(flat, preprocess)
-            Using ms As New MemoryStream()
-                flat.Save(ms, System.Drawing.Imaging.ImageFormat.Bmp)
-                Return ms.ToArray()
-            End Using
+    ''' <summary>One preprocess mode applied to a copy of the shared resample, as a 24 bpp BMP
+    ''' byte array. Normal needs no copy - it is the resample itself, encoded.</summary>
+    Private Shared Function EncodeOcrBuffer(flat As Bitmap, preprocess As OcrPreprocessMode) As Byte()
+        If preprocess = OcrPreprocessMode.Normal Then Return EncodeBmp(flat)
+        Using copy As Bitmap = flat.Clone(New Rectangle(0, 0, flat.Width, flat.Height), PixelFormat.Format24bppRgb)
+            ApplyPreprocess(copy, preprocess)
+            Return EncodeBmp(copy)
         End Using
     End Function
 
-    Private Shared Function ComputeScale(width As Integer, height As Integer) As Double
-        Dim longest As Integer = Math.Max(width, height)
-        If longest <= 0 Then Return 1.0
-
-        If longest > MaxOcrDimension Then
-            Return MaxOcrDimension / CDbl(longest)
-        End If
-
-        If longest < MinOcrDimension Then
-            Return Math.Min(MaxUpscaleFactor, MinOcrDimension / CDbl(longest))
-        End If
-
-        Return 1.0
+    Private Shared Function EncodeBmp(bitmap As Bitmap) As Byte()
+        ' Sized up front: a 24 bpp BMP is its header plus padded rows, and a MemoryStream
+        ' left to grow doubles its buffer on the way - twice the peak for nothing.
+        Dim rowBytes As Long = ((CLng(bitmap.Width) * 3L + 3L) \ 4L) * 4L
+        Dim capacity As Long = 54L + rowBytes * bitmap.Height
+        Using ms As New MemoryStream(CInt(Math.Min(capacity, Integer.MaxValue)))
+            bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Bmp)
+            Return ms.ToArray()
+        End Using
     End Function
 
     Private Shared Function RenderFlatBitmap(source As Bitmap, sourceW As Integer, sourceH As Integer, targetW As Integer, targetH As Integer) As Bitmap
@@ -743,7 +795,7 @@ Public Class TesseractOcrEngine
     ''' high-quality tessdata directory when present; otherwise downloads fast
     ''' models into the per-user directory.
     ''' </summary>
-    Private Shared Function EnsureTessData(langs As String, preferBest As Boolean) As String
+    Private Shared Function EnsureTessData(langs As String, preferBest As Boolean, Optional allowDownload As Boolean = True) As String
         Dim codes As String() = langs.Split("+"c)
 
         Dim bundledBest As String = OcrPaths.BundledBestTessDataDir()
@@ -757,7 +809,7 @@ Public Class TesseractOcrEngine
         End If
 
         ' "Best" quality: download the high-accuracy models into the best dir.
-        If preferBest Then
+        If preferBest AndAlso allowDownload Then
             Directory.CreateDirectory(userBest)
             Dim allBest As Boolean = True
             For Each code As String In codes
@@ -791,6 +843,7 @@ Public Class TesseractOcrEngine
                 Continue For
             End If
 
+            If Not allowDownload Then Return Nothing
             If Not DownloadTessData(code, dest) Then
                 Return Nothing
             End If
@@ -848,6 +901,72 @@ Public Class TesseractOcrEngine
         Return EnsureLanguagesPublic(languages, False)
     End Function
 
+    ''' <summary>The Tesseract codes recognition will try for a source-language hint.</summary>
+    Public Shared Function RecognitionLanguageCodes(languageHint As String) As List(Of String)
+        Return BuildLanguageAttempts(languageHint)
+    End Function
+
+    ''' <summary>The Tesseract codes the settings' "download pack" button means.</summary>
+    Public Shared Function DownloadLanguageCodes(languages As String) As List(Of String)
+        Return New List(Of String)(NormalizeDownloadLanguages(languages).Split("+"c))
+    End Function
+
+    ''' <summary>
+    ''' The codes with no language data on disk (ticket 028 Ф-6). With <paramref name="preferBest"/>
+    ''' a code counts as present only in a "best" directory - so the answer is what a
+    ''' download of the best models would fetch; without it, data of either quality will do.
+    ''' Local disk reads only: this is what lets the caller ask BEFORE anything is fetched.
+    ''' </summary>
+    Public Shared Function MissingLanguageCodes(codes As IEnumerable(Of String), preferBest As Boolean) As List(Of String)
+        Dim dirs As New List(Of String) From {OcrPaths.BundledBestTessDataDir(), OcrPaths.UserBestTessDataDir()}
+        If Not preferBest Then
+            dirs.Add(OcrPaths.BundledTessDataDir())
+            dirs.Add(OcrPaths.UserTessDataDir())
+        End If
+        Dim missing As New List(Of String)
+        For Each code As String In codes
+            If String.IsNullOrWhiteSpace(code) OrElse missing.Contains(code) Then Continue For
+            Dim present As Boolean = False
+            For Each dir As String In dirs
+                If File.Exists(Path.Combine(dir, code & ".traineddata")) Then
+                    present = True
+                    Exit For
+                End If
+            Next
+            If Not present Then missing.Add(code)
+        Next
+        Return missing
+    End Function
+
+    ''' <summary>
+    ''' Downloads the given language packs, one file at a time, each to a ".part" file that
+    ''' is renamed only once complete - so a Cancel or a failure leaves no partial pack that
+    ''' recognition would later try to load (APP-BEHAVIOUR rule 3). Throws on failure and
+    ''' OperationCanceledException on Cancel; the caller runs it behind the download dialog.
+    ''' </summary>
+    Public Shared Async Function DownloadLanguagesAsync(codes As IList(Of String), preferBest As Boolean,
+                                                        progress As IProgress(Of DownloadReport),
+                                                        cancel As CancellationToken) As Task
+        Dim targetDir As String = If(preferBest, OcrPaths.UserBestTessDataDir(), OcrPaths.UserTessDataDir())
+        Dim baseUrl As String = If(preferBest, TessDataBestBaseUrl, TessDataBaseUrl)
+        Directory.CreateDirectory(targetDir)
+        For Each code As String In codes
+            Dim dest As String = Path.Combine(targetDir, code & ".traineddata")
+            If File.Exists(dest) Then Continue For
+            Dim tmp As String = dest & ".part"
+            Try
+                Await OptionalRuntimeManager.DownloadWithInactivityTimeoutAsync(baseUrl & code & ".traineddata", tmp, progress, cancel).ConfigureAwait(False)
+                If File.Exists(dest) Then File.Delete(dest)
+                File.Move(tmp, dest)
+            Finally
+                Try
+                    If File.Exists(tmp) Then File.Delete(tmp)
+                Catch
+                End Try
+            End Try
+        Next
+    End Function
+
     Public Shared Function EnsureLanguagesPublic(languages As String, preferBest As Boolean) As Boolean
         Try
             Return EnsureTessData(NormalizeDownloadLanguages(languages), preferBest) IsNot Nothing
@@ -878,15 +997,36 @@ Public Class TesseractOcrEngine
 
     Public Sub DisposeEngine()
         SyncLock sync
-            If cachedEngine IsNot Nothing Then
-                Try
-                    cachedEngine.Dispose()
-                Catch
-                End Try
-                cachedEngine = Nothing
-                cachedKey = ""
-            End If
+            DisposeCachedEngine()
         End SyncLock
+    End Sub
+
+    ''' <summary>
+    ''' Shutdown: disposes the engine only if nothing is using it right now, and never waits.
+    ''' A pass already inside engine.Process cannot be interrupted by cancellation, and
+    ''' waiting for it here hung the closing window for seconds with "best" models (audit 051
+    ''' E-15); an engine still busy is left to process exit. Either way no new engine is built
+    ''' after this, so a job that slipped past its cancellation check cannot re-create one.
+    ''' </summary>
+    Public Sub RetireEngine()
+        Volatile.Write(retired, True)
+        If Not Monitor.TryEnter(sync, 0) Then Return
+        Try
+            DisposeCachedEngine()
+        Finally
+            Monitor.Exit(sync)
+        End Try
+    End Sub
+
+    Private Sub DisposeCachedEngine()
+        If cachedEngine IsNot Nothing Then
+            Try
+                cachedEngine.Dispose()
+            Catch
+            End Try
+            cachedEngine = Nothing
+            cachedKey = ""
+        End If
     End Sub
 
 End Class

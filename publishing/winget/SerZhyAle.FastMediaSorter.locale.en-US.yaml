@@ -60,6 +60,8 @@ Tags:
 - winforms
 ReleaseNotesUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.9.20.1206
 Documentations:
+- DocumentLabel: Windows warning (SmartScreen)
+  DocumentUrl: https://serzhyale.github.io/FastMediaSorter_Lite/trust.html
 - DocumentLabel: Wiki
   DocumentUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/wiki
 ManifestType: defaultLocale

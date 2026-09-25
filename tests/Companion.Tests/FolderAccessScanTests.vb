@@ -232,6 +232,43 @@ Public Class FolderAccessScanTests
         End Using
     End Sub
 
+    ' --- the verdict itself (ticket 054 H-21) ---------------------------------------
+
+    ''' <summary>An inherit-only ACE speaks for what is created INSIDE the folder, not for
+    ''' the folder itself - a secondary drive root's default "Authenticated Users:
+    ''' (OI)(CI)(IO)(M)" used to read as write access to the root, so no grant was offered
+    ''' while LOCAL SERVICE could not create a file in it.</summary>
+    <Fact>
+    Public Sub Verdict_IgnoresInheritOnlyAces()
+        Using tree As New TempTree()
+            Dim folder As String = tree.Dir("io-only")
+            ' Give everyone inherit-only MODIFY on the folder: nothing for the folder
+            ' itself, everything for what it contains.
+            Dim di As New DirectoryInfo(folder)
+            Dim acl As DirectorySecurity = di.GetAccessControl()
+            acl.AddAccessRule(New FileSystemAccessRule(
+                New SecurityIdentifier("S-1-5-11"),
+                FileSystemRights.Modify,
+                InheritanceFlags.ContainerInherit Or InheritanceFlags.ObjectInherit,
+                PropagationFlags.InheritOnly,
+                AccessControlType.Allow))
+            di.SetAccessControl(acl)
+
+            Assert.Equal(FolderAccess.AccessVerdict.Missing,
+                         FolderAccess.Verdict(folder, FileSystemRights.ReadAndExecute))
+            Assert.Equal(FolderAccess.AccessVerdict.Missing,
+                         FolderAccess.Verdict(folder, FileSystemRights.Modify))
+            ' With a real (non-inherit-only) read ACE on top, the read verdict flips -
+            ' proving the skip above did not merely break the evaluation.
+            tree.GrantLocalService(folder)
+            Assert.Equal(FolderAccess.AccessVerdict.Granted,
+                         FolderAccess.Verdict(folder, FileSystemRights.ReadAndExecute))
+            ' ...while write is still not there: (RX) plus (IO)(M) is not Modify on the root.
+            Assert.Equal(FolderAccess.AccessVerdict.Missing,
+                         FolderAccess.Verdict(folder, FileSystemRights.Modify))
+        End Using
+    End Sub
+
     <Fact>
     Public Sub ScanRoots_SharesOneBudgetAcrossFolders()
         Using tree As New TempTree()

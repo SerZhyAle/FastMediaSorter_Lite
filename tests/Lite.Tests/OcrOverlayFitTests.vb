@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 Imports Xunit
@@ -150,6 +150,107 @@ Public Class OcrOverlayFitTests
     Public Sub Growth_DegenerateInputs_DoNotThrow()
         Assert.Equal(0, OcrOverlayFit.GrowthBudget(Rectangle.Empty, Nothing, 600))
         Assert.Equal(450, OcrOverlayFit.GrowthBudget(New Rectangle(100, 100, 200, 50), Nothing, 600))
+    End Sub
+
+    ' --- the last rung: release, never an ellipsis (OCR-OVERLAY rule 9) --------
+
+    <Fact>
+    Public Sub Release_GivesTheTextTheHeightItNeeds_PastTheBudget()
+        ' The rung that replaced StringTrimming.EllipsisWord. The growth budget stopped this
+        ' plate at the neighbour below; releasing it ignores that bound and takes what the text
+        ' measured at the font floor actually needs.
+        Dim plate As New Rectangle(100, 100, 200, 50)
+        Assert.Equal(260, OcrOverlayFit.ReleasedHeight(plate, 260.0, 900))
+    End Sub
+
+    <Fact>
+    Public Sub Release_StopsAtTheBottomOfTheDisplayedImage()
+        ' The one bound left. Past the image edge a plate is drawn on the window background,
+        ' where nothing anchors it to the text it replaces.
+        Dim plate As New Rectangle(100, 100, 200, 50)
+        Assert.Equal(500, OcrOverlayFit.ReleasedHeight(plate, 4000.0, 600))
+    End Sub
+
+    <Fact>
+    Public Sub Release_NeverShrinksThePlate()
+        ' Every other rung promises the mapped box is a floor; this one may not break it -
+        ' including for a plate that already extends past the bottom of the image, where the
+        ' available height is negative.
+        Dim plate As New Rectangle(100, 100, 200, 120)
+        Assert.Equal(120, OcrOverlayFit.ReleasedHeight(plate, 10.0, 900))
+
+        Dim offImage As New Rectangle(100, 700, 200, 150)
+        Assert.Equal(150, OcrOverlayFit.ReleasedHeight(offImage, 400.0, 600))
+    End Sub
+
+    <Fact>
+    Public Sub Release_DoesNotMoveTheTopEdge()
+        ' Stated as a test because it is the half of rule 9 that is easy to lose: the anchor
+        ' point of the source block does not move while the box grows. The function only ever
+        ' returns a HEIGHT, so the only way to break this is to start returning something else.
+        Dim plate As New Rectangle(100, 250, 200, 40)
+        Dim h As Integer = OcrOverlayFit.ReleasedHeight(plate, 300.0, 900)
+        Assert.Equal(300, h)
+        Assert.Equal(250, New Rectangle(plate.X, plate.Y, plate.Width, h).Top)
+    End Sub
+
+    ' --- type size comes from WORD heights (OCR-OVERLAY rule 5) ---------------
+
+    Private Shared Function Word(h As Integer) As OcrWord
+        Return New OcrWord With {.Text = "w", .Box = New Rectangle(0, 0, 20, h), .Confidence = 0.9F}
+    End Function
+
+    Private Shared Function LineOf(boxHeight As Integer, ParamArray wordHeights As Integer()) As OcrLine
+        Dim l As New OcrLine With {.Text = "line", .Box = New Rectangle(0, 0, 200, boxHeight)}
+        For Each h As Integer In wordHeights
+            l.Words.Add(Word(h))
+        Next
+        Return l
+    End Function
+
+    <Fact>
+    Public Sub TypeSize_IsTheMedianOfWordHeights_NotOfLineBoxes()
+        ' The defect the rule names: a line box is the union of its words, so one artifact
+        ' inside it - a speck of the drawing read as a glyph with a tall box - inflates the
+        ' whole line and through it the type size of every plate in the block.
+        Dim b As New OcrBlock With {.Box = New Rectangle(0, 0, 200, 120)}
+        b.Lines.Add(LineOf(120, 30, 30, 30))   ' box inflated to 120 by one artifact
+        b.Lines.Add(LineOf(32, 30, 30, 32))
+
+        Assert.Equal(30, OcrOverlayFit.MedianLineHeight(b))
+    End Sub
+
+    <Fact>
+    Public Sub TypeSize_FallsBackToLineBoxes_WhenTheLinesCarryNoWords()
+        ' A document built before the engine gave lines their real words, or a pass that
+        ' reported none. The fallback is the same median over the only boxes there are - not a
+        ' second algorithm, and never zero.
+        Dim b As New OcrBlock With {.Box = New Rectangle(0, 0, 200, 90)}
+        b.Lines.Add(LineOf(40))
+        b.Lines.Add(LineOf(44))
+        b.Lines.Add(LineOf(48))
+
+        Assert.Equal(44, OcrOverlayFit.MedianLineHeight(b))
+    End Sub
+
+    <Fact>
+    Public Sub TypeSize_IgnoresZeroSizedWordBoxes()
+        Dim b As New OcrBlock With {.Box = New Rectangle(0, 0, 200, 60)}
+        b.Lines.Add(LineOf(30, 0, 30, 0, 30))
+
+        Assert.Equal(30, OcrOverlayFit.MedianLineHeight(b))
+    End Sub
+
+    <Fact>
+    Public Sub TypeSize_DegenerateBlocks_FallBackToTheBlockBox()
+        Assert.Equal(0, OcrOverlayFit.MedianLineHeight(Nothing))
+
+        Dim noLines As New OcrBlock With {.Box = New Rectangle(0, 0, 200, 77)}
+        Assert.Equal(77, OcrOverlayFit.MedianLineHeight(noLines))
+
+        Dim noBoxes As New OcrBlock With {.Box = New Rectangle(0, 0, 200, 55)}
+        noBoxes.Lines.Add(LineOf(0))
+        Assert.Equal(55, OcrOverlayFit.MedianLineHeight(noBoxes))
     End Sub
 
 End Class

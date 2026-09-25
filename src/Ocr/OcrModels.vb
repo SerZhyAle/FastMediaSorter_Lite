@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 
@@ -36,7 +36,18 @@ Public Module OcrPipeline
     ''' 5 - S7: the stitched-line split and the column regrouping in front of the clustering.
     '''     It changes which lines exist and in which order they arrive, so it changes the
     '''     blocks - the one thing this constant is for.
-    Public Const OcrPipelineVersion As Integer = 5
+    ''' 6 - ticket 025 section 4: the overlay type size is the median of WORD heights, not of
+    '''     line-box heights (`OCR-OVERLAY` rule 5). It looks like a rendering change and is
+    '''     not: the same median is what OcrPlateColors.Compute is handed, so the SAMPLED
+    '''     plate background and ink - which ARE cached content - move with it.
+    ''' 7 - audit 051 (E-02, E-03, E-05, E-10), one bump for four changes to content: only a
+    '''     complete translation is cached now; a refusal is judged by shape, so correct
+    '''     translations containing "пожалуйста" or "sorry" stop being replaced by the source;
+    '''     a tall strip is no longer shrunk by its long edge; and the curly quotes, the
+    '''     ellipsis and the dashes count as punctuation in attempt scoring. It also retires
+    '''     every document a failed translation had already written to disk as a success.
+    '''     (The E-01 key change - the displayed grid - changes no content and needs none.)
+    Public Const OcrPipelineVersion As Integer = 7
 End Module
 
 Public Class OcrWord
@@ -122,9 +133,15 @@ Public Class OcrBlock
     Public Property RenderFontPx As Single
 
     ''' <summary>The translation still did not fit after shrinking to the floor AND growing
-    ''' the plate as far as its budget allowed, so its tail was trimmed. Rare by design -
-    ''' a tiny source box with another block right below it - but no longer silent.</summary>
-    Public Property Truncated As Boolean
+    ''' the plate as far as its budget allowed, so the plate was RELEASED: it grew past its
+    ''' budget, bounded only by the bottom of the displayed image, and may overlap the plate
+    ''' below it. Rare by design - a tiny source box with another block right below it - and
+    ''' recorded so the frequency can be measured rather than guessed at.
+    '''
+    ''' It replaced a field named <c>Truncated</c>, which recorded the same condition when the
+    ''' answer to it was an ellipsis. `OCR-OVERLAY` rule 9 permits no ellipsis, so nothing is
+    ''' cut any more and the old name could only ever have been False.</summary>
+    Public Property Released As Boolean
 
     ' --- sampled colours ------------------------------------------------------
     ' ARGB, and 0 means "not computed" - NOT black. Only the mainline samples them; the
@@ -171,4 +188,13 @@ Public Class OcrOverlayDocument
     ''' not the image, and a document read from disk honestly has none.
     ''' </summary>
     Public Property Dropped As List(Of OcrDroppedLine) = Nothing
+
+    ''' <summary>
+    ''' True when this document is shown but was NOT cached, because its translation is
+    ''' incomplete - the translator was unreachable, timed out, refused the language or
+    ''' handed some segments back untranslated. T then runs the pipeline again instead of
+    ''' toggling the plates (audit 051 E-02). Not part of the cache DTO for the same reason
+    ''' as <see cref="Dropped"/>: only a complete document is ever written.
+    ''' </summary>
+    Public Property IsPartial As Boolean = False
 End Class

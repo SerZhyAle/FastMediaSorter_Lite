@@ -87,8 +87,8 @@ Partial Public NotInheritable Class Localization
             "copy", "копія", "Kopie", "copia", "copia", "copie",
             "cópia", "نسخة", "कॉपी", "কপি", "نقل", "复制")
 
-        Add("Перенести в: {0}",
-            "Move to: {0}", "Перенести до: {0}", "Verschieben nach: {0}", "Sposta in: {0}",
+        Add("Переместить в: {0}",
+            "Move to: {0}", "Перемістити до: {0}", "Verschieben nach: {0}", "Sposta in: {0}",
             "Mover a: {0}", "Déplacer vers : {0}", "Mover para: {0}", "نقل إلى: {0}",
             "यहाँ ले जाएँ: {0}", "এখানে সরান: {0}", "یہاں منتقل کریں: {0}", "移动到：{0}")
 
@@ -108,12 +108,12 @@ Partial Public NotInheritable Class Localization
             "Supprimer (Suppr)", "Eliminar (Del)", "حذف (Del)", "हटाएँ (Del)", "মুছুন (Del)",
             "حذف کریں (Del)", "删除 (Del)")
 
-        Add("Полный экран (F7)",
+        Add("Во весь экран (F7)",
             "Full screen (F7)", "Повний екран (F7)", "Vollbild (F7)", "Schermo intero (F7)",
             "Pantalla completa (F7)", "Plein écran (F7)", "Ecrã inteiro (F7)",
             "ملء الشاشة (F7)", "पूर्ण स्क्रीन (F7)", "পূর্ণ স্ক্রিন (F7)", "پوری اسکرین (F7)", "全屏 (F7)")
 
-        Add("Полный экран без панелей (F11)",
+        Add("Во весь экран без панелей (F11)",
             "Full screen, no panels (F11)", "Повний екран без панелей (F11)",
             "Vollbild ohne Leisten (F11)", "Schermo intero senza barre (F11)",
             "Pantalla completa sin barras (F11)", "Plein écran sans barres (F11)",
@@ -192,11 +192,6 @@ Partial Public NotInheritable Class Localization
             "إعادة تحميل المجلد", "फ़ोल्डर फिर से लोड करें", "ফোল্ডার পুনরায় লোড করুন",
             "فولڈر دوبارہ لوڈ کریں", "重新载入文件夹")
 
-        Add("Панель изображений",
-            "Image panel", "Панель зображень", "Bildleiste", "Pannello immagini",
-            "Panel de imágenes", "Panneau d'images", "Painel de imagens",
-            "لوحة الصور", "छवि पैनल", "ছবির প্যানেল", "تصاویر کا پینل", "图片面板")
-
         Add("Полный экран",
             "Fullscreen", "Повний екран", "Vollbild", "Schermo intero", "Pantalla completa",
             "Plein écran", "Ecrã inteiro", "ملء الشاشة", "पूर्ण स्क्रीन", "পূর্ণ স্ক্রিন",
@@ -239,7 +234,7 @@ Partial Public NotInheritable Class Localization
             "এলোমেলো স্লাইডশো", "بے ترتیب سلائیڈ شو", "随机幻灯片")
 
         Add("Слайд-шоу",
-            "Slideshow", "Слайд-шоу", "Diaschau", "Slideshow", "Pase de diapositivas",
+            "Slideshow", "Слайд-шоу", "Diashow", "Slideshow", "Pase de diapositivas",
             "Diaporama", "Apresentação", "عرض الشرائح", "स्लाइडशो", "স্লাইডশো",
             "سلائیڈ شو", "幻灯片")
 
@@ -615,19 +610,21 @@ Partial Public NotInheritable Class Localization
             "VLC سپورٹ ابھی انسٹال نہیں۔ کیا اسے ابھی ڈاؤن لوڈ کر کے انسٹال کریں؟",
             "尚未安装 VLC 支持。现在下载并安装吗？")
 
-        Add("{0} требует Microsoft Visual C++ Redistributable. Скачать и тихо установить его сейчас?",
-            "{0} requires the Microsoft Visual C++ Redistributable. Download and silently install it now?",
-            "{0} потребує Microsoft Visual C++ Redistributable. Завантажити й тихо встановити його зараз?",
-            "{0} benötigt das Microsoft Visual C++ Redistributable. Jetzt herunterladen und still installieren?",
-            "{0} richiede il Microsoft Visual C++ Redistributable. Scaricarlo e installarlo in modo silenzioso ora?",
-            "{0} necesita el Microsoft Visual C++ Redistributable. ¿Descargarlo e instalarlo en silencio ahora?",
-            "{0} nécessite le Microsoft Visual C++ Redistributable. Le télécharger et l'installer silencieusement maintenant ?",
-            "{0} requer o Microsoft Visual C++ Redistributable. Transferir e instalar em silêncio agora?",
-            "يتطلب {0} حزمة Microsoft Visual C++ Redistributable. هل تريد تنزيلها وتثبيتها بصمت الآن؟",
-            "{0} को Microsoft Visual C++ Redistributable चाहिए। इसे अभी डाउनलोड करके चुपचाप स्थापित करें?",
-            "{0}-এর জন্য Microsoft Visual C++ Redistributable প্রয়োজন। এখনই ডাউনলোড করে নীরবে ইনস্টল করবেন?",
-            "{0} کو Microsoft Visual C++ Redistributable درکار ہے۔ کیا اسے ابھی ڈاؤن لوڈ کر کے خاموشی سے انسٹال کریں؟",
-            "{0} 需要 Microsoft Visual C++ Redistributable。现在下载并静默安装吗？")
+        ' Named and handed over, never run (ticket 037 Ф-3.3): {0} is OCR or VLC, {1} the
+        ' runtime's bitness (x64/x86), which must match the viewer process, not Windows.
+        Add("Для {0} нужен Microsoft Visual C++ Redistributable ({1}), а на этом компьютере его нет. Это установщик Microsoft, и права администратора он запрашивает сам, поэтому программа его не запускает. Скачать его с сайта Microsoft в браузере? Запустите скачанный файл, затем повторите попытку.",
+            "{0} needs the Microsoft Visual C++ Redistributable ({1}), and this computer does not have it. It is Microsoft's installer and asks for administrator rights itself, so this program does not run it. Download it from Microsoft in your browser? Run the downloaded file, then try again.",
+            "Для {0} потрібен Microsoft Visual C++ Redistributable ({1}), а на цьому комп'ютері його немає. Це інсталятор Microsoft, і права адміністратора він запитує сам, тому програма його не запускає. Завантажити його із сайту Microsoft у браузері? Запустіть завантажений файл, потім спробуйте ще раз.",
+            "{0} benötigt das Microsoft Visual C++ Redistributable ({1}), und auf diesem Computer fehlt es. Es ist ein Installer von Microsoft und fragt selbst nach Administratorrechten, deshalb startet dieses Programm ihn nicht. Jetzt im Browser von Microsoft herunterladen? Führen Sie die heruntergeladene Datei aus und versuchen Sie es dann erneut.",
+            "{0} richiede il Microsoft Visual C++ Redistributable ({1}), che su questo computer manca. È un programma di installazione di Microsoft e chiede da sé i diritti di amministratore, quindi questo programma non lo avvia. Scaricarlo dal sito di Microsoft nel browser? Eseguite il file scaricato, poi riprovate.",
+            "{0} necesita el Microsoft Visual C++ Redistributable ({1}), y este equipo no lo tiene. Es un instalador de Microsoft que pide por sí mismo permisos de administrador, así que este programa no lo ejecuta. ¿Descargarlo desde el sitio de Microsoft en el navegador? Ejecuta el archivo descargado y vuelve a intentarlo.",
+            "{0} nécessite le Microsoft Visual C++ Redistributable ({1}), absent de cet ordinateur. C'est un programme d'installation de Microsoft qui demande lui-même les droits administrateur, ce programme ne le lance donc pas. Le télécharger depuis le site de Microsoft dans le navigateur ? Lancez le fichier téléchargé, puis réessayez.",
+            "{0} requer o Microsoft Visual C++ Redistributable ({1}), que não está instalado neste computador. É um instalador da Microsoft que pede ele próprio direitos de administrador, por isso este programa não o executa. Transferi-lo do site da Microsoft no navegador? Execute o ficheiro transferido e tente novamente.",
+            "يحتاج {0} إلى Microsoft Visual C++ Redistributable ({1})، وهو غير موجود على هذا الكمبيوتر. إنه مثبّت من Microsoft يطلب صلاحيات المسؤول بنفسه، لذلك لا يشغّله هذا البرنامج. هل تريد تنزيله من موقع Microsoft في المتصفح؟ شغّل الملف الذي نزّلته ثم حاول مرة أخرى.",
+            "{0} के लिए Microsoft Visual C++ Redistributable ({1}) चाहिए, और यह इस कंप्यूटर पर नहीं है। यह Microsoft का इंस्टॉलर है और प्रशासक अधिकार ख़ुद माँगता है, इसलिए यह प्रोग्राम उसे नहीं चलाता। क्या इसे ब्राउज़र में Microsoft की साइट से डाउनलोड करें? डाउनलोड की गई फ़ाइल चलाएँ, फिर दोबारा कोशिश करें।",
+            "{0}-এর জন্য Microsoft Visual C++ Redistributable ({1}) প্রয়োজন, আর এই কম্পিউটারে তা নেই। এটি Microsoft-এর ইনস্টলার এবং প্রশাসক অধিকার নিজেই চায়, তাই এই প্রোগ্রাম এটি চালায় না। ব্রাউজারে Microsoft-এর সাইট থেকে এটি ডাউনলোড করবেন? ডাউনলোড করা ফাইলটি চালান, তারপর আবার চেষ্টা করুন।",
+            "{0} کے لیے Microsoft Visual C++ Redistributable ({1}) درکار ہے، اور یہ اس کمپیوٹر پر نہیں ہے۔ یہ Microsoft کا انسٹالر ہے جو ایڈمنسٹریٹر حقوق خود مانگتا ہے، اس لیے یہ پروگرام اسے نہیں چلاتا۔ کیا اسے براؤزر میں Microsoft کی سائٹ سے ڈاؤن لوڈ کریں؟ ڈاؤن لوڈ کی گئی فائل چلائیں، پھر دوبارہ کوشش کریں۔",
+            "{0} 需要 Microsoft Visual C++ Redistributable（{1}），而这台电脑上没有。它是 Microsoft 的安装程序，会自己请求管理员权限，所以本程序不运行它。要在浏览器中从 Microsoft 网站下载吗？运行下载的文件后再试一次。")
 
         Add("Не удалось подготовить {0}.",
             "Could not prepare {0}.", "Не вдалося підготувати {0}.", "{0} konnte nicht vorbereitet werden.",

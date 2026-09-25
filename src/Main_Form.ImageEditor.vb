@@ -18,31 +18,23 @@ Partial Public Class Main_Form
 
     Private WithEvents btn_Edit As Button
 
-    ''' <summary>Segoe MDL2 Assets - Windows' own icon font, shipping since Windows 10
-    ''' RTM (below the modern build's 1607 floor). Same reasoning as the video bar's
-    ''' glyphs: the app is pinned to Microsoft Sans Serif, which has no pencil.</summary>
-    Private Const Edit_Glyph_Font As String = "Segoe MDL2 Assets"
-    Private Const Edit_Glyph As String = ChrW(&HE70F)
-
     ''' <summary>Creates the "Edit" toolbar button. Called from BuildModernLayout right
     ''' after the translate buttons, so it inherits the uniform chrome and joins the
     ''' overflow set.
     '''
-    ''' AccessibleName is not optional here: the caption is a private-use glyph, so a
-    ''' screen reader would otherwise read rubbish - the same reason the video bar's
-    ''' buttons carry one.</summary>
+    ''' The button's picture and accessible name both come from IconMap.</summary>
     Friend Sub BuildImageEditorToolbarControls(host As Panel)
         If btn_Edit IsNot Nothing OrElse host Is Nothing Then Return
         btn_Edit = New Button With {
             .Name = "btn_Edit",
-            .Text = Edit_Glyph,
-            .Font = New Font(Edit_Glyph_Font, 9.0F),
+            .Text = "",
             .AutoSize = True,
             .TabStop = False,
             .Visible = False,
-            .AccessibleName = Localization.T("Правка изображения")
+            .AccessibleName = Localization.T("Редактировать")
         }
         host.Controls.Add(btn_Edit)
+        ApplyCatalogGlyph(btn_Edit, 20)
         ' Collapsed until something editable is actually on screen. Visible = False on
         ' its own would not survive the first LayoutToolbar (PlaceControl force-shows
         ' whatever it lays out), so the button has to start in the hidden set.
@@ -53,7 +45,7 @@ Partial Public Class Main_Form
     ''' InitializeTooltips and LngCh.</summary>
     Friend Sub LocalizeImageEditor()
         If btn_Edit Is Nothing Then Return
-        btn_Edit.AccessibleName = Localization.T("Правка изображения")
+        btn_Edit.AccessibleName = Localization.T("Редактировать")
         If toolTip IsNot Nothing Then
             toolTip.SetToolTip(btn_Edit, Localization.T("Открыть изображение в редакторе"))
         End If
@@ -65,6 +57,10 @@ Partial Public Class Main_Form
     ''' </summary>
     Friend Sub ShowImageEditor()
         If Not IsCurrentStillImage() Then Return
+        ' The editor button is hidden for a container, but the middle-click menu and a
+        ' hotkey reach this directly. Saving means re-packing, which is the deferred
+        ' writer (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §7).
+        If SecureBlocksWritingAction() Then Return
         Dim filePath As String = Current_File_Name
         If String.IsNullOrEmpty(filePath) Then Return
 
@@ -74,6 +70,11 @@ Partial Public Class Main_Form
         Dim savedOverOriginal As Boolean = False
 
         Using editor As New Image_Editor_Form(filePath, Is_Exif_AutoRotate)
+            ' Inside an archive the file on screen is a temporary copy under the archive
+            ' cache: "Save" is refused by the writer's own probe (InsideArchive), and "Save
+            ' as.." must start beside the ARCHIVE under the entry's own name - not in a
+            ' directory deleted on leaving (audit 046, G-03).
+            If IsArchiveMode() Then editor.SetSaveAsDefaults(archive_Return_Folder, ArchiveDisplayName(filePath))
             If Not editor.TryLoadOriginal() Then
                 lbl_Status.Text = Localization.T("Не удалось открыть изображение для правки")
                 Return

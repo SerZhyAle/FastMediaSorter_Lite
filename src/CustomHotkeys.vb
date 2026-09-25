@@ -12,15 +12,24 @@ Imports System.Windows.Forms
 ''' the box.</summary>
 Public NotInheritable Class HotkeyAction
 
-    Public Sub New(id As String, caption As String, defaultCombo As String)
+    Public Sub New(id As String, caption As String, defaultCombo As String, ParamArray extraDefaults As String())
         Me.Id = id
         Me.Caption = caption
         Me.DefaultCombo = defaultCombo
+        Me.ExtraDefaults = If(extraDefaults, Array.Empty(Of String)())
     End Sub
 
     Public ReadOnly Id As String
     Public ReadOnly Caption As String
+    ''' <summary>The combination the dialog shows and the conflict check asks about.</summary>
     Public ReadOnly DefaultCombo As String
+    ''' <summary>
+    ''' The OTHER keys the viewer's historical key map answers with the same action - D
+    ''' beside Delete, Space and PageDown beside Right, NumPad 1 beside 1. Moving the action
+    ''' must retire every one of them, or the dialog shows it rebound while a factory key
+    ''' still performs it (audit 047, C-19).
+    ''' </summary>
+    Public ReadOnly ExtraDefaults As String()
 End Class
 
 ''' <summary>
@@ -59,22 +68,22 @@ Public NotInheritable Class CustomHotkeys
 
     Private Shared Function BuildCatalog() As HotkeyAction()
         Dim actions As New List(Of HotkeyAction) From {
-            New HotkeyAction("nextFile", "Следующий файл", "Right"),
-            New HotkeyAction("prevFile", "Предыдущий файл", "Left"),
+            New HotkeyAction("nextFile", "Следующий файл", "Right", "Space", "PageDown", "BrowserForward"),
+            New HotkeyAction("prevFile", "Предыдущий файл", "Left", "P", "B", "Backspace", "PageUp", "BrowserBack"),
             New HotkeyAction("randomFile", "Случайный файл", "Y"),
             New HotkeyAction("slideshow", "Слайд-шоу", "S"),
-            New HotkeyAction("randomSlideshow", "Случайное слайд-шоу", "I"),
-            New HotkeyAction("firstFile", "Первый файл", "Home"),
-            New HotkeyAction("lastFile", "Последний файл", "End"),
+            New HotkeyAction("randomSlideshow", "Случайное слайд-шоу", "I", "F5"),
+            New HotkeyAction("firstFile", "Первый файл", "Home", "H", "BrowserHome"),
+            New HotkeyAction("lastFile", "Последний файл", "End", "E", "L", "BrowserStop"),
             New HotkeyAction("back10", "Назад на 10 файлов", "Up"),
             New HotkeyAction("forward10", "Вперёд на 10 файлов", "Down"),
             New HotkeyAction("back100", "Назад на 100 файлов", "Shift+PageUp"),
             New HotkeyAction("forward100", "Вперёд на 100 файлов", "Shift+PageDown"),
-            New HotkeyAction("chooseFile", "Выбрать файл", "F4"),
+            New HotkeyAction("chooseFile", "Выбрать файл", "F4", "F"),
             New HotkeyAction("jumpToNumber", "Перейти к номеру файла", "N"),
             New HotkeyAction("renameFile", "Переименовать файл", "F6"),
-            New HotkeyAction("deleteFile", "Удалить файл", "Delete"),
-            New HotkeyAction("deletePermanent", "Удалить безвозвратно", "Shift+Delete"),
+            New HotkeyAction("deleteFile", "Удалить файл", "Delete", "D"),
+            New HotkeyAction("deletePermanent", "Удалить безвозвратно", "Shift+Delete", "Shift+D"),
             New HotkeyAction("undo", "Отменить действие", "U"),
             New HotkeyAction("rotateCw", "Повернуть по часовой стрелке", "R"),
             New HotkeyAction("rotateCcw", "Повернуть против часовой стрелки", "Shift+R"),
@@ -92,7 +101,7 @@ Public NotInheritable Class CustomHotkeys
         ' Slots 1..9 answer to their own digit, slot 10 to "0" - the frozen MoveOn0 rule.
         For slot As Integer = 1 To 10
             Dim digit As String = If(slot = 10, "0", slot.ToString(Globalization.CultureInfo.InvariantCulture))
-            actions.Add(New HotkeyAction(RecipientActionId(slot), "", digit))
+            actions.Add(New HotkeyAction(RecipientActionId(slot), "", digit, "Num " & digit))
         Next
         Return actions.ToArray()
     End Function
@@ -366,9 +375,25 @@ Public NotInheritable Class CustomHotkeys
 
         For Each action As HotkeyAction In Catalog
             If Not map.ContainsKey(action.Id) Then Continue For
-            If String.Equals(Canonical(action.DefaultCombo), combo, StringComparison.OrdinalIgnoreCase) Then Return True
+            For Each factory As String In FactoryCombos(action)
+                If String.Equals(factory, combo, StringComparison.OrdinalIgnoreCase) Then Return True
+            Next
         Next
         Return False
+    End Function
+
+    ''' <summary>Every combination the viewer answers with this action out of the box, in
+    ''' canonical spelling: the shown default first, then the historical extras.</summary>
+    Public Shared Function FactoryCombos(action As HotkeyAction) As IEnumerable(Of String)
+        Dim combos As New List(Of String)()
+        If action Is Nothing Then Return combos
+        Dim primary As String = Canonical(action.DefaultCombo)
+        If primary.Length > 0 Then combos.Add(primary)
+        For Each extra As String In action.ExtraDefaults
+            Dim combo As String = Canonical(extra)
+            If combo.Length > 0 AndAlso Not combos.Contains(combo) Then combos.Add(combo)
+        Next
+        Return combos
     End Function
 
 End Class

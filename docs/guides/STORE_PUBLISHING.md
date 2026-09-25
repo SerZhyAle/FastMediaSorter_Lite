@@ -465,31 +465,47 @@ No user data is collected; no telemetry. Open source: https://github.com/SerZhyA
 ```
 
 ### Privacy policy (hosted as docs/privacy.html; key points)
+
+> **Microsoft Store has no data-safety form** in the Play sense. Its "answers" are three texts: the
+> privacy-policy URL (docs/privacy.html), the `runFullTrust` justification above and the description.
+> This block is written FROM docs/privacy.html (ticket 037 Ф-5, INSTALL-TRUST rule 6), and the "what the
+> program never does" list of the install-trust page (`tools/trust-copy.json`) says the same thing. Change
+> one of the three and change the other two in the same edit.
+
 ```
-FastMediaSorter LITE collects no personal data, has no accounts, no ads, and no telemetry/analytics.
-It runs entirely on your device.
+Fast Media Sorter for Windows collects no personal data, has no accounts, no ads, and no telemetry/analytics.
+It runs entirely on your device. The developer receives nothing about you or your use of the app, unless
+you choose to send your logs yourself (see Diagnostic logs below).
 
 What it accesses and why:
-- Your media files: read/copy/move/rename/delete only the files and folders you open, to sort them.
-- Folder sharing (optional, opt-in): if you enable it, the bundled Share Manager companion runs a local
-  SFTP server so your own phone can browse the folders you choose, over your local network or the
-  internet. Access credentials and the server host key are generated and stored only on your PC; the
-  files are served directly between your own devices and are never sent to us or any third party. It
-  keeps local-only connection counters (number/time of connections, files served) on your PC - this is
-  not telemetry and never leaves the machine. Enabling it adds a Windows Firewall rule for the worker.
-  While the share is on, any device on your current network (home, office, or a public Wi-Fi) can reach
-  the PC on the share port; access requires the password embedded in the QR/config you share, so treat
-  that code as a key. Turn "LAN only" on to keep the share off the internet entirely; turn sharing off
-  when you are done. The password does not expire. When you enable internet access, the app asks the
-  public service check-host.net to confirm the forwarded port is actually reachable, which discloses your
-  public address and port to that service for the check.
-- Network for translation (optional): only if you enable on-image translation, the app sends the
-  recognized text to the translation endpoint YOU configure (a local Ollama model or a LibreTranslate
-  server). OCR runs fully offline. Otherwise the app makes no network requests except optionally
-  downloading OCR language packs on demand.
-Local files it writes: settings (registry), OCR language data/cache, and sharing configuration/stats
-under %LOCALAPPDATA%. These never leave your device.
-Data sharing: none. Open source: https://github.com/SerZhyAle/FastMediaSorter_Lite. Contact: serzhyale@gmail.com
+- Your media files: reads, displays, copies, moves, renames and deletes only the files and folders you open.
+- Folder sharing (optional, opt-in): the bundled Share Manager companion runs a local SFTP server so your
+  own phone can browse the folders you choose, over your local network or the internet. The password and
+  the server host key are generated and kept only on your PC; files go directly between your own devices,
+  never through us or any third party. While a share is on, any device on your current network (home,
+  office, or a public Wi-Fi) can reach the PC on the share port; access needs the password embedded in the
+  QR/config you share, so treat that code as a key. "LAN only" keeps the share off the internet; idle
+  connections close after a few hours. With internet access on, the app asks your own router to forward
+  the share port (UPnP/NAT-PMP) and asks the public service check-host.net to confirm the port answers from
+  outside, which shows that service your public address and port. While a share runs, the PC announces
+  itself on the local network (mDNS) so a paired phone can find it again. Local-only connection counters
+  are not telemetry and never leave the PC. In this Store package the firewall rule comes from the package
+  manifest, and no Windows service is ever registered.
+- Always-on sharing (GitHub and winget builds only, never this package): a Windows service, only if you
+  ask for it and approve an administrator prompt; it runs as LOCAL SERVICE with access only to the folders
+  you share, and "Remove the server role" or uninstalling takes it away. Nothing collected changes.
+- Network, only for what you use: on-image translation sends the recognized text to the endpoint YOU
+  configure (a local Ollama model or a LibreTranslate server); OCR runs fully offline. Otherwise the app
+  fetches only components you ask for or approve in a prompt that names them - OCR language packs,
+  FFmpeg for "Replace with video", the OCR/video runtimes when a build did not bring them, the Ollama
+  installer and translation models, doc-html-translate through winget - and sends nothing about your
+  files with any of them.
+- Diagnostic logs: written locally. "Send the logs to the author" packs them, shows what is inside and
+  opens a message in YOUR mail program; nothing is sent until you send it yourself.
+Local files it writes: settings (registry - inside the package container in this Store build), OCR data,
+FFmpeg, the translation and decode caches under %LOCALAPPDATA%\SZA\FastMediaSorter, and sharing
+configuration/stats under %LOCALAPPDATA%\FastMediaSorterCompanion. These never leave your device.
+Data sharing: none with the developer. Open source: https://github.com/SerZhyAle/FastMediaSorter_Lite. Contact: serzhyale@gmail.com
 ```
 
 ---

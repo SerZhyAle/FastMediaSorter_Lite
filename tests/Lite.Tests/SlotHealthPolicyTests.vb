@@ -218,5 +218,34 @@ Public Class SlotHealthPolicyTests
         Assert.True(SlotHealthPolicy.Probe_Timeout_Ms <= SlotHealthPolicy.Retry_Window_Seconds * 1000)
     End Sub
 
+    ' ------------------------------------------ audit 047, C-24: one spelling ----
+
+    ''' <summary>"D:\Sorted " probed Ready (the probe trimmed) and then moved into
+    ''' "D:\Sorted \x.jpg" (the action did not). Stored once, in one spelling.</summary>
+    <Theory>
+    <InlineData("D:\Sorted ", "D:\Sorted")>
+    <InlineData("  D:\Sorted", "D:\Sorted")>
+    <InlineData(" D:\a\..\Sorted ", "D:\Sorted")>
+    <InlineData("\nas\share\sorted ", "\nas\share\sorted")>
+    <InlineData("D:\Sorted\", "D:\Sorted\")>
+    Public Sub A_slot_is_stored_trimmed_and_canonical(raw As String, expected As String)
+        Assert.Equal(expected, SlotHealthPolicy.NormalizeSlotPath(raw))
+    End Sub
+
+    <Theory>
+    <InlineData(Nothing, "")>
+    <InlineData("", "")>
+    <InlineData("   ", "")>
+    Public Sub An_empty_slot_stays_empty(raw As String, expected As String)
+        Assert.Equal(expected, SlotHealthPolicy.NormalizeSlotPath(raw))
+    End Sub
+
+    ''' <summary>A relative path is not made absolute against whatever the working directory
+    ''' happens to be; it is kept as typed so the probe can call it invalid.</summary>
+    <Fact>
+    Public Sub A_relative_slot_is_left_as_typed()
+        Assert.Equal("Sorted", SlotHealthPolicy.NormalizeSlotPath(" Sorted "))
+    End Sub
+
 End Class
 #End If

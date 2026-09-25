@@ -63,6 +63,19 @@ Public Class Image_Panel_Form
 
     Private is_Loading As Boolean = False
 
+    ''' <summary>
+    ''' The load session. ReleaseAllCards bumps it - on close and on every re-prepare - and
+    ''' every loader captures it on entry and gives up after each Await once it has moved.
+    ''' Without it a load still running when the panel closed resumed against the reset
+    ''' window (0..0) and decoded the folder from index 0 up to the old target, off screen
+    ''' (audit B-07). Read from the thread pool by FillThumbnailAsync, hence Volatile.
+    ''' </summary>
+    Private load_Generation As Integer = 0
+
+    Private Function CurrentLoadGeneration() As Integer
+        Return System.Threading.Volatile.Read(load_Generation)
+    End Function
+
     ''' <summary>Set while a bulk copy/move/delete is running off the UI thread, so a second
     ''' one cannot start on a selection the first is still consuming.</summary>
     Private is_Bulk_Operation_Running As Boolean = False
@@ -149,6 +162,19 @@ Public Class Image_Panel_Form
         AddHandler resizeDebounceTimer.Tick, AddressOf OnResizeTimerTick
     End Sub
 
+#If Not NETFRAMEWORK Then
+    Private has_Remembered_Placement As Boolean = False
+
+    ''' <summary>True once PrepareForDisplay restored a rectangle the user left the panel
+    ''' at. The viewer then keeps it instead of centring the panel on its own monitor -
+    ''' that centring is only the answer for a panel that has never been placed.</summary>
+    Friend ReadOnly Property HasRememberedPlacement As Boolean
+        Get
+            Return has_Remembered_Placement
+        End Get
+    End Property
+#End If
+
     Public Sub SetSortIndexFromMainForm(idx As Integer)
         sortIndexFromMainForm = idx
     End Sub
@@ -164,6 +190,15 @@ Public Class Image_Panel_Form
         ' Update background color when preparing for display
         UpdateBackgroundColor()
 
+        ' Direction from the language table (APP-BEHAVIOUR rule 8, ticket 028 Ф-7): the
+        ' window's title and the status of a batch are localized text. The x86 build ships
+        ' RU/EN only, so there this is always No.
+        Dim direction As RightToLeft = If(Localization.IsRightToLeft(), RightToLeft.Yes, RightToLeft.No)
+        If Me.RightToLeft <> direction Then Me.RightToLeft = direction
+        ' The grid itself stays in file order, left to right: a FlowLayoutPanel reverses its
+        ' flow under RightToLeft, and the paging and keyboard code index cards by position.
+        imagePanel.RightToLeft = RightToLeft.No
+
         InitializeState()
         InitializeTooltips()
 
@@ -175,10 +210,28 @@ Public Class Image_Panel_Form
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "PicturePanelLeft"), app_Left_Int)
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "PicturePanelWidth"), app_Width_Int)
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "PicturePanelHeight"), app_Height_Int)
+#If NETFRAMEWORK Then
         app_Top_Int = If(app_Top_Int < 0 OrElse app_Top_Int > picture_panel_position_Limit_Top, first_run_top, app_Top_Int)
         app_Left_Int = If(app_Left_Int < 0 OrElse app_Left_Int > picture_panel_position_Limit_Left, first_run_left, app_Left_Int)
+#End If
         app_Width_Int = If(app_Width_Int < picture_panel_position_Limit_Width_Low OrElse app_Width_Int > picture_panel_position_Limit_Width, first_run_width, app_Width_Int)
         app_Height_Int = If(app_Height_Int < picture_panel_position_Limit_Height_Low OrElse app_Height_Int > picture_panel_position_Limit_Height, first_run_height, app_Height_Int)
+
+#If Not NETFRAMEWORK Then
+        ' APP-BEHAVIOUR rule 10 (ticket 028 Ф-2). The fixed ceilings (Top <= 720,
+        ' Left <= 1000) came from a 1366x768 world, and "must not be negative" threw away
+        ' every monitor left of or above the primary one. The position is now judged by
+        ' the displays that exist, and one that lands on none goes to the nearest.
+        ' Manual start position, or Windows picks its own and the rectangle is ignored.
+        Me.StartPosition = FormStartPosition.Manual
+        has_Remembered_Placement = GetSetting(App_name, Second_App_Name, "PicturePanelLeft", "").Length > 0
+        Dim placed As Rectangle = WindowPlacement.Place(New Rectangle(app_Left_Int, app_Top_Int, app_Width_Int, app_Height_Int),
+                                                        WindowPlacement.CurrentWorkAreas())
+        app_Left_Int = placed.Left
+        app_Top_Int = placed.Top
+        app_Width_Int = placed.Width
+        app_Height_Int = placed.Height
+#End If
 
         Me.SetBounds(app_Left_Int, app_Top_Int, app_Width_Int, app_Height_Int)
 
@@ -208,6 +261,7 @@ Public Class Image_Panel_Form
     ''' to how deep in the folder the user had got - see Max_Live_Thumbnails.
     ''' </summary>
     Private Async Function LoadContentAsync() As Task
+        Dim generation As Integer = CurrentLoadGeneration()
         Dim targetFile As String = Current_File_Name
 
         initial_Target_PictureBox = Nothing ' Reset special highlight
@@ -229,9 +283,11 @@ Public Class Image_Panel_Form
         While window_Last_Index < allImageFiles.Count
             If is_Loading Then
                 Await Task.Delay(50)
+                If generation <> CurrentLoadGeneration() Then Return
                 Continue While
             End If
             Await LoadNextBatchAsync()
+            If generation <> CurrentLoadGeneration() Then Return
             If targetIndex < 0 OrElse window_Last_Index > targetIndex Then Exit While
         End While
 
@@ -377,7 +433,9 @@ Public Class Image_Panel_Form
 
             Case Keys.Escape
                 e.Handled = True
-                Me.Close()
+                ' Not in the middle of a bulk move/delete: FormClosing refuses anyway, and
+                ' the operation must finish on the session that started it (audit B-14).
+                If Not is_Bulk_Operation_Running Then Me.Close()
         End Select
     End Sub
 
@@ -516,7 +574,8 @@ Public Class Image_Panel_Form
                     RemoveCardForVanishedFile(pb, filePath)
                     done += 1
                 Else
-                    errors.AppendLine(Localization.T("Не удалось удалить файл: ") & filePath & " - " & failure.Message)
+                    AppFileLogger.LogException("Thumbnail panel: delete " & filePath, failure)
+                    errors.AppendLine(Localization.T("Не удалось удалить файл: ") & filePath & " - " & FailureText.Describe(failure))
                 End If
             Next
         Finally
@@ -576,7 +635,7 @@ Public Class Image_Panel_Form
         Dim current_Folder_Path As String = Main_Form.Current_Folder_Path
         If Not String.IsNullOrEmpty(current_Folder_Path) AndAlso Directory.Exists(current_Folder_Path) Then
             Dim extensions As String() = Main_Form.Image_File_Extensions
-            Dim files = Directory.GetFiles(current_Folder_Path).Where(Function(f) extensions.Contains(Path.GetExtension(f).ToLower())).ToList()
+            Dim files = Directory.GetFiles(current_Folder_Path).Where(Function(f) extensions.Contains(Path.GetExtension(f).ToLowerInvariant())).ToList()
             Dim sortIndex As Integer = sortIndexFromMainForm
             Try
                 If sortIndex = 0 AndAlso Main_Form.cmbox_Sort IsNot Nothing Then
@@ -604,19 +663,33 @@ Public Class Image_Panel_Form
     End Sub
 
     Private Async Function FillVisibleAreaAsync() As Task
-        While Not imagePanel.VerticalScroll.Visible AndAlso window_Last_Index < allImageFiles.Count
+        Dim generation As Integer = CurrentLoadGeneration()
+        ' A hidden panel may never show a scrollbar, so without the Visible test this walked
+        ' to the end of the folder behind a closed window (audit B-07).
+        While Me.Visible AndAlso Not imagePanel.VerticalScroll.Visible AndAlso window_Last_Index < allImageFiles.Count
             If is_Loading Then Return
             Await LoadNextBatchAsync()
             Await Task.Delay(10)
+            If generation <> CurrentLoadGeneration() Then Return
         End While
     End Function
 
     Private Sub Image_Panel_Form_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
         If Not MultiWindowPolicy.IsSecondaryInstance() Then
+#If NETFRAMEWORK Then
             If Me.Top >= 0 Then SaveSetting(App_name, Second_App_Name, "PicturePanelTop", Me.Top.ToString)
             If Me.Left >= 0 Then SaveSetting(App_name, Second_App_Name, "PicturePanelLeft", Me.Left.ToString)
             If Me.Height >= 200 Then SaveSetting(App_name, Second_App_Name, "PicturePanelHeight", Me.Height.ToString)
             If Me.Width >= 320 Then SaveSetting(App_name, Second_App_Name, "PicturePanelWidth", Me.Width.ToString)
+#Else
+            ' Negative coordinates are a monitor left of or above the primary one, and a
+            ' maximized panel remembers its normal rectangle, not the screen's.
+            Dim normal_Bounds As Rectangle = WindowPlacement.NormalRectangle(Me.WindowState, Me.Bounds, Me.RestoreBounds)
+            SaveSetting(App_name, Second_App_Name, "PicturePanelTop", normal_Bounds.Top.ToString)
+            SaveSetting(App_name, Second_App_Name, "PicturePanelLeft", normal_Bounds.Left.ToString)
+            If normal_Bounds.Height >= 200 Then SaveSetting(App_name, Second_App_Name, "PicturePanelHeight", normal_Bounds.Height.ToString)
+            If normal_Bounds.Width >= 320 Then SaveSetting(App_name, Second_App_Name, "PicturePanelWidth", normal_Bounds.Width.ToString)
+#End If
         End If
 
         If toolTip IsNot Nothing Then
@@ -651,17 +724,30 @@ Public Class Image_Panel_Form
     ''' it either.
     ''' </summary>
     Private Function FillThumbnailAsync(pb As PictureBox, file_Path As String) As Task
+        Dim generation As Integer = CurrentLoadGeneration()
         Return Task.Run(Sub()
+                            ' The session this card belongs to is over (the panel closed or
+                            ' was re-prepared): skip the full-size decode entirely (audit B-07).
+                            If generation <> CurrentLoadGeneration() OrElse pb.IsDisposed Then Return
+
                             Dim thumbnail As Image = CreateThumbnail(file_Path, Picture_Box_Width_At_Panel, Picture_Box_Height_At_Panel)
+                            ' Set inside the marshalled delegate once the bitmap has an owner
+                            ' (the card, or its own Dispose). Until then it is ours: a failed
+                            ' Invoke used to leave it to the finalizer, because the local had
+                            ' already been cleared (audit B-19).
+                            Dim handed_Over As Image = Nothing
+                            Dim delivered As Boolean = False
                             Try
-                                If Me.IsDisposed OrElse pb.IsDisposed OrElse CStr(pb.Tag) <> file_Path Then
+                                If Me.IsDisposed OrElse pb.IsDisposed OrElse CStr(pb.Tag) <> file_Path OrElse
+                                   generation <> CurrentLoadGeneration() Then
                                     thumbnail?.Dispose()
                                     Return
                                 End If
                                 If thumbnail IsNot Nothing Then
-                                    Dim handed_Over As Image = thumbnail
+                                    handed_Over = thumbnail
                                     thumbnail = Nothing
                                     pb.Invoke(New Action(Sub()
+                                                             delivered = True
                                                              If pb.IsDisposed OrElse CStr(pb.Tag) <> file_Path Then
                                                                  handed_Over.Dispose()
                                                                  Return
@@ -670,12 +756,17 @@ Public Class Image_Panel_Form
                                                              pb.Image = handed_Over
                                                          End Sub))
                                 Else
+#If NETFRAMEWORK Then
                                     pb.Invoke(New Action(Sub() pb.BackColor = Color.Red))
+#Else
+                                    pb.Invoke(New Action(Sub() ShowMissingThumbnail(pb, file_Path)))
+#End If
                                 End If
                             Catch
                                 ' The card or the form went away between the checks and the
                                 ' marshal - the bitmap is still ours to release.
                                 thumbnail?.Dispose()
+                                If Not delivered Then handed_Over?.Dispose()
                             End Try
                         End Sub)
     End Function
@@ -688,6 +779,8 @@ Public Class Image_Panel_Form
     ''' of megabytes behind a window that is not even open.
     ''' </summary>
     Friend Sub ReleaseAllCards()
+        ' Ends the load session first: every loader still awaiting stops at its next check.
+        System.Threading.Interlocked.Increment(load_Generation)
         ClearSelection()
         initial_Target_PictureBox = Nothing
 
@@ -761,6 +854,12 @@ Public Class Image_Panel_Form
 
             ' FlowLayoutPanel lays its children out in Controls order, so prepending is
             ' Add + SetChildIndex to the front.
+            Dim scroll_Before As Integer = 0
+            Try
+                scroll_Before = -imagePanel.AutoScrollPosition.Y
+            Catch
+            End Try
+
             Dim tasks As New List(Of Task)()
             Dim insert_At As Integer = 0
             For i = startIndex To endIndex
@@ -773,6 +872,18 @@ Public Class Image_Panel_Form
             Next
             window_First_Index = startIndex
             TrimWindow(from_Front:=False)
+
+            ' Keep what the user was looking at where it was: the rows just prepended push
+            ' it down, so move the scroll offset down by the same height - the mirror of
+            ' TrimWindow's compensation. Left at 0, the view jumped and the next paint
+            ' found "at the top, more above" again and loaded another batch, and another
+            ' (audit B-15).
+            Dim cols As Integer = ColumnsPerRow()
+            Dim added_Rows As Integer = (insert_At + cols - 1) \ cols
+            Try
+                imagePanel.AutoScrollPosition = New Point(0, scroll_Before + added_Rows * RowHeight())
+            Catch
+            End Try
             Await Task.WhenAll(tasks)
         Finally
             is_Loading = False
@@ -827,6 +938,44 @@ Public Class Image_Panel_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " p0035: PicPanel trimmed " & drop.ToString() &
                         " cards, window " & window_First_Index.ToString() & ".." & window_Last_Index.ToString())
     End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>
+    ''' A card whose picture could not be decoded shows what the file IS - the vocabulary's
+    ''' content.image or content.video glyph in the panel's text colour - instead of the
+    ''' old solid red tile, which read as an error mark rather than as a file
+    ''' (ICON-EXTERNAL rule 4, spec 027 phase 9).
+    ''' </summary>
+    Private Sub ShowMissingThumbnail(pb As PictureBox, file_Path As String)
+        If pb.IsDisposed OrElse CStr(pb.Tag) <> file_Path Then Return
+        Dim mapName As String = If(MediaKindClassifier.KindOf(Path.GetExtension(file_Path)) = MediaKind.Video,
+                                   "thumbnail_Video_Missing", "thumbnail_Image_Missing")
+        Dim meaning As IconMeaning = IconMap.GetMeaning(mapName)
+        Dim w As Integer = Math.Max(1, pb.Width)
+        Dim h As Integer = Math.Max(1, pb.Height)
+        ' The largest size tier that leaves the glyph at most half the card.
+        Dim tier As Integer = 16
+        For Each candidate As Integer In New Integer() {20, 24, 32, 40, 48}
+            If candidate * 2 <= Math.Min(w, h) Then tier = candidate
+        Next
+        Try
+            Dim card As New Bitmap(w, h)
+            Using g As Graphics = Graphics.FromImage(card)
+                g.Clear(Me.BackColor)
+                Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, tier, Me.ForeColor, AddressOf RuntimeBootstrap.OpenBundledAsset)
+                    g.DrawImage(glyph, (w - tier) \ 2, (h - tier) \ 2, tier, tier)
+                End Using
+            End Using
+            pb.Image?.Dispose()
+            pb.Image = card
+            pb.AccessibleName = Localization.T(meaning.LocalizationKey)
+        Catch
+            ' A missing glyph resource must not take the panel down; the old red tile
+            ' is still a visible "this one failed".
+            pb.BackColor = Color.Red
+        End Try
+    End Sub
+#End If
 
     Private Function CreateThumbnail(imagePath As String, width As Integer, height As Integer) As Image
         Try
@@ -915,12 +1064,24 @@ MessageBox.Show(confirmMsg, Localization.T("Подтверждение"), Messag
                 SetPanelBusy(True, Localization.TF("{0}: {1} из {2}", busy_Caption, success_count + 1, work.Count))
 
                 Dim failure As Exception = Nothing
+                Dim name_Taken As Boolean = False
                 Await Task.Run(Sub()
                                    Try
-                                       If copying Then
-                                           File.Copy(source_file_path, destination_file_path, True) ' Allow overwrite
+                                       ' Never over a file that is already there: IMG_0001.jpg
+                                       ' from a second card is a different photo, and this
+                                       ' loop has no undo and no Recycle Bin (audit 046, T-01 -
+                                       ' the interim guard until 005 PG-1 routes the panel
+                                       ' through the main window's one implementation).
+                                       ' Through FileManager, never File.Copy/File.Move: those
+                                       ' are the staged routines, so an interrupted transfer
+                                       ' leaves no half file under the real name (audit 047,
+                                       ' C-08) and a read-only source still moves (C-16).
+                                       If File.Exists(destination_file_path) Then
+                                           name_Taken = True
+                                       ElseIf copying Then
+                                           FileManager.CopyFile(source_file_path, destination_file_path)
                                        Else
-                                           File.Move(source_file_path, destination_file_path)
+                                           FileManager.MoveFile(source_file_path, destination_file_path)
                                        End If
                                    Catch ex As Exception
                                        failure = ex
@@ -928,12 +1089,16 @@ MessageBox.Show(confirmMsg, Localization.T("Подтверждение"), Messag
                                End Sub)
                 If Me.IsDisposed Then Return
 
-                If failure Is Nothing Then
+                If name_Taken Then
+                    error_messages.AppendLine(Localization.TF("Не удалось обработать {0}: {1}", source_file_path,
+                                                              Localization.T("Файл с таким именем уже есть: операция пропущена")))
+                ElseIf failure Is Nothing Then
                     ' Only a MOVE takes the file out of this folder; a copy leaves it here.
                     If Not copying Then RemoveCardForVanishedFile(pbToProcess, source_file_path)
                     success_count += 1
                 Else
-                    error_messages.AppendLine(Localization.TF("Не удалось обработать {0}: {1}", source_file_path, failure.Message))
+                    AppFileLogger.LogException("Thumbnail panel: move/copy " & source_file_path, failure)
+                    error_messages.AppendLine(Localization.TF("Не удалось обработать {0}: {1}", source_file_path, FailureText.Describe(failure)))
                 End If
             Next
         Finally
@@ -958,6 +1123,16 @@ MessageBox.Show(confirmMsg, Localization.T("Подтверждение"), Messag
     End Sub
 
     Private Sub Image_Panel_Form_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
+        ' A bulk operation keeps running after the window closes: files kept moving with no
+        ' progress shown, and a panel reopened meanwhile had its file list and window
+        ' indices edited by the old loop (audit B-14). The user waits for "N of M" to end;
+        ' Windows shutting down or the app exiting still closes.
+        If is_Bulk_Operation_Running AndAlso e.CloseReason = CloseReason.UserClosing Then
+            e.Cancel = True
+            System.Media.SystemSounds.Beep.Play()
+            Return
+        End If
+
         If toolTip IsNot Nothing Then
             toolTip.Dispose()
             toolTip = Nothing

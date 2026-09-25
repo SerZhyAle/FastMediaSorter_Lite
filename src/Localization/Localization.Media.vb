@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 ' <summary>
 ' Strings of media loading, the loading indicator, URL opening, the Share
@@ -132,9 +132,6 @@ Partial Public NotInheritable Class Localization
         Add(" Б", " B", " Б", " B", " B", " B", " o", " B", " بايت", " B", " B", " B", " B")
 
         ' --- Main_Form.OpenUrl.vb ------------------------------------------------
-        Add("Открыть URL..", "Open URL..", "Відкрити URL..", "URL öffnen..", "Apri URL..",
-            "Abrir URL..", "Ouvrir une URL..", "Abrir URL..", "فتح رابط..", "URL खोलें..",
-            "URL খুলুন..", "URL کھولیں..", "打开网址..")
         Add("Выбрать файл..  (правый клик - открыть URL)",
             "Choose file..  (right-click to open a URL)", "Вибрати файл..  (правий клік - відкрити URL)",
             "Datei wählen..  (Rechtsklick öffnet eine URL)", "Scegli file..  (tasto destro per aprire un URL)",
@@ -270,10 +267,6 @@ Partial Public NotInheritable Class Localization
             "ব্রাউজারে অনুবাদ - doc-html-translate ইনস্টল করুন..",
             "براؤزر میں ترجمہ - doc-html-translate انسٹال کریں..",
             "在浏览器中翻译 - 安装 doc-html-translate..")
-        Add("Перевод в браузере", "Translate in browser", "Переклад у браузері", "Im Browser übersetzen",
-            "Traduci nel browser", "Traducir en el navegador", "Traduire dans le navigateur",
-            "Traduzir no navegador", "الترجمة في المتصفح", "ब्राउज़र में अनुवाद", "ব্রাউজারে অনুবাদ",
-            "براؤزر میں ترجمہ", "在浏览器中翻译")
         Add("Устанавливаю doc-html-translate.. после установки откройте меню снова",
             "Installing doc-html-translate.. reopen the menu once it finishes",
             "Встановлюю doc-html-translate.. після встановлення відкрийте меню знову",
@@ -318,6 +311,19 @@ Partial Public NotInheritable Class Localization
             "OCR इंजन उपलब्ध नहीं", "OCR ইঞ্জিন নেই", "OCR انجن دستیاب نہیں", "OCR 引擎不可用")
         Add("Ошибка OCR", "OCR error", "Помилка OCR", "OCR-Fehler", "Errore OCR", "Error de OCR",
             "Erreur OCR", "Erro de OCR", "خطأ OCR", "OCR त्रुटि", "OCR ত্রুটি", "OCR خرابی", "OCR 出错")
+        Add("Язык оригинала не определён - выберите его в настройках OCR",
+            "Source language not identified - choose it in the OCR settings",
+            "Мову оригіналу не визначено - виберіть її в налаштуваннях OCR",
+            "Ausgangssprache nicht erkannt - in den OCR-Einstellungen wählen",
+            "Lingua di origine non identificata - sceglila nelle impostazioni OCR",
+            "No se identificó el idioma de origen: elígelo en los ajustes de OCR",
+            "Langue source non identifiée - choisissez-la dans les paramètres OCR",
+            "Idioma de origem não identificado - escolha-o nas definições de OCR",
+            "تعذّر تحديد لغة المصدر - اخترها في إعدادات OCR",
+            "स्रोत भाषा पहचानी नहीं गई - OCR सेटिंग्स में चुनें",
+            "উৎস ভাষা শনাক্ত হয়নি - OCR সেটিংসে বেছে নিন",
+            "ماخذ زبان کی شناخت نہیں ہوئی - OCR ترتیبات میں منتخب کریں",
+            "未能识别原文语言 - 请在 OCR 设置中选择")
         Add("Текст не найден", "No text found", "Текст не знайдено", "Kein Text gefunden",
             "Nessun testo trovato", "No se encontró texto", "Aucun texte trouvé",
             "Nenhum texto encontrado", "لم يُعثر على نص", "कोई पाठ नहीं मिला", "কোনো লেখা পাওয়া যায়নি",
@@ -329,6 +335,88 @@ Partial Public NotInheritable Class Localization
             "Übersetzer nicht verfügbar", "Traduttore non disponibile", "Traductor no disponible",
             "Traducteur indisponible", "Tradutor indisponível", "المترجم غير متاح",
             "अनुवादक उपलब्ध नहीं", "অনুবাদক অনুপলব্ধ", "مترجم دستیاب نہیں", "翻译器不可用")
+        ' Audit 051 E-02/E-04/E-13: a translation that is not complete is shown, not cached,
+        ' and says so - with T as the way to try again.
+        Add("Переводчик не ответил вовремя - T повторит",
+            "The translator did not answer in time - T will retry",
+            "Перекладач не відповів вчасно - T повторить",
+            "Der Übersetzer hat nicht rechtzeitig geantwortet - T versucht es erneut",
+            "Il traduttore non ha risposto in tempo - T riproverà",
+            "El traductor no respondió a tiempo: T lo reintentará",
+            "Le traducteur n'a pas répondu à temps - T réessaiera",
+            "O tradutor não respondeu a tempo - T tentará de novo",
+            "لم يستجب المترجم في الوقت المحدد - سيعيد T المحاولة",
+            "अनुवादक ने समय पर जवाब नहीं दिया - T फिर से कोशिश करेगा",
+            "অনুবাদক সময়মতো সাড়া দেয়নি - T আবার চেষ্টা করবে",
+            "مترجم نے وقت پر جواب نہیں دیا - T دوبارہ کوشش کرے گا",
+            "翻译器未及时响应 - 按 T 重试")
+        Add("Перевод не удался - T повторит",
+            "Translation failed - T will retry",
+            "Переклад не вдався - T повторить",
+            "Übersetzung fehlgeschlagen - T versucht es erneut",
+            "Traduzione non riuscita - T riproverà",
+            "La traducción falló: T lo reintentará",
+            "La traduction a échoué - T réessaiera",
+            "A tradução falhou - T tentará de novo",
+            "فشلت الترجمة - سيعيد T المحاولة",
+            "अनुवाद विफल रहा - T फिर से कोशिश करेगा",
+            "অনুবাদ ব্যর্থ হয়েছে - T আবার চেষ্টা করবে",
+            "ترجمہ ناکام رہا - T دوبارہ کوشش کرے گا",
+            "翻译失败 - 按 T 重试")
+        Add("Не переведено фрагментов: {0} из {1} - T повторит",
+            "Blocks not translated: {0} of {1} - T will retry",
+            "Не перекладено фрагментів: {0} з {1} - T повторить",
+            "Nicht übersetzte Blöcke: {0} von {1} - T versucht es erneut",
+            "Blocchi non tradotti: {0} su {1} - T riproverà",
+            "Bloques sin traducir: {0} de {1}; T lo reintentará",
+            "Blocs non traduits : {0} sur {1} - T réessaiera",
+            "Blocos não traduzidos: {0} de {1} - T tentará de novo",
+            "كتل لم تُترجم: {0} من {1} - سيعيد T المحاولة",
+            "अनूदित नहीं हुए खंड: {1} में से {0} - T फिर से कोशिश करेगा",
+            "অনূদিত হয়নি এমন অংশ: {1}-এর মধ্যে {0} - T আবার চেষ্টা করবে",
+            "ترجمہ نہ ہونے والے حصے: {1} میں سے {0} - T دوبارہ کوشش کرے گا",
+            "未翻译的文本块：{0}/{1} - 按 T 重试")
+        Add("Переводчик не поддерживает язык {0} - выберите другой в настройках OCR",
+            "The translator does not support {0} - choose another language in the OCR settings",
+            "Перекладач не підтримує мову {0} - виберіть іншу в налаштуваннях OCR",
+            "Der Übersetzer unterstützt {0} nicht - wählen Sie in den OCR-Einstellungen eine andere Sprache",
+            "Il traduttore non supporta {0} - scegli un'altra lingua nelle impostazioni OCR",
+            "El traductor no admite {0}: elige otro idioma en los ajustes de OCR",
+            "Le traducteur ne prend pas en charge {0} - choisissez une autre langue dans les paramètres OCR",
+            "O tradutor não suporta {0} - escolha outro idioma nas definições de OCR",
+            "المترجم لا يدعم {0} - اختر لغة أخرى في إعدادات OCR",
+            "अनुवादक {0} का समर्थन नहीं करता - OCR सेटिंग्स में दूसरी भाषा चुनें",
+            "অনুবাদক {0} সমর্থন করে না - OCR সেটিংসে অন্য ভাষা বেছে নিন",
+            "مترجم {0} کی معاونت نہیں کرتا - OCR ترتیبات میں کوئی اور زبان منتخب کریں",
+            "翻译器不支持 {0} - 请在 OCR 设置中选择其他语言")
+        ' Audit 051 E-08: the snapshot or a preprocessed buffer did not fit in memory.
+        Add("Не удалось подготовить изображение для OCR",
+            "Could not prepare the image for OCR",
+            "Не вдалося підготувати зображення для OCR",
+            "Das Bild konnte nicht für die Texterkennung vorbereitet werden",
+            "Impossibile preparare l'immagine per l'OCR",
+            "No se pudo preparar la imagen para el OCR",
+            "Impossible de préparer l'image pour l'OCR",
+            "Não foi possível preparar a imagem para o OCR",
+            "تعذّر تجهيز الصورة للتعرف الضوئي",
+            "OCR के लिए छवि तैयार नहीं की जा सकी",
+            "OCR-এর জন্য ছবি প্রস্তুত করা যায়নি",
+            "OCR کے لیے تصویر تیار نہیں کی جا سکی",
+            "无法为 OCR 准备图像")
+        ' Audit 051 E-14: the downloaded installer is not signed by Ollama Inc.
+        Add("Установщик Ollama не прошёл проверку подписи - открываю сайт Ollama..",
+            "The Ollama installer failed the signature check - opening the Ollama website..",
+            "Інсталятор Ollama не пройшов перевірку підпису - відкриваю сайт Ollama..",
+            "Das Ollama-Installationsprogramm hat die Signaturprüfung nicht bestanden - die Ollama-Website wird geöffnet..",
+            "Il programma di installazione di Ollama non ha superato la verifica della firma - apro il sito di Ollama..",
+            "El instalador de Ollama no superó la comprobación de firma: abriendo el sitio de Ollama..",
+            "Le programme d'installation d'Ollama n'a pas passé la vérification de signature - ouverture du site d'Ollama..",
+            "O instalador do Ollama falhou na verificação de assinatura - abrindo o site do Ollama..",
+            "فشل مثبّت Ollama في التحقق من التوقيع - جارٍ فتح موقع Ollama..",
+            "Ollama इंस्टॉलर हस्ताक्षर जाँच में विफल रहा - Ollama की वेबसाइट खोली जा रही है..",
+            "Ollama ইনস্টলার স্বাক্ষর যাচাইয়ে ব্যর্থ হয়েছে - Ollama-এর ওয়েবসাইট খোলা হচ্ছে..",
+            "Ollama انسٹالر دستخط کی جانچ میں ناکام رہا - Ollama کی ویب سائٹ کھولی جا رہی ہے..",
+            "Ollama 安装程序未通过签名验证 - 正在打开 Ollama 网站..")
         Add("Перевод", "Translate", "Переклад", "Übersetzen", "Traduci", "Traducir", "Traduire",
             "Traduzir", "ترجمة", "अनुवाद", "অনুবাদ", "ترجمہ", "翻译")
     End Sub

@@ -196,6 +196,49 @@ Public Class LocalizationParityTests
                     vbLf & String.Join(vbLf, readers))
     End Sub
 
+    ''' <summary>
+    ''' APP-BEHAVIOUR rule 8 (ticket 028 Ф-7): direction is declared beside every shipped
+    ''' language, and it agrees with the scripts that are written right to left. A language
+    ''' added without its direction - or with the wrong one - fails here, not in a window
+    ''' nobody on the team can read.
+    ''' </summary>
+    <Fact>
+    Public Sub Every_language_declares_its_direction_and_only_Arabic_and_Urdu_run_right_to_left()
+        Assert.Equal(Localization.Codes.Length, Localization.RightToLeftByCode.Length)
+        Dim rightToLeftScripts As New HashSet(Of String)(StringComparer.Ordinal) From {"ar", "ur", "he", "fa"}
+        For i = 0 To Localization.Codes.Length - 1
+            Dim code = Localization.Codes(i)
+            Assert.True(rightToLeftScripts.Contains(code) = Localization.RightToLeftByCode(i),
+                        code & " declares " & If(Localization.RightToLeftByCode(i), "right-to-left", "left-to-right") & ".")
+        Next
+
+        Dim saved = Localization.CurrentCode
+        Try
+            For Each code In Localization.Codes
+                Localization.CurrentCode = code
+                Assert.Equal(rightToLeftScripts.Contains(code), Localization.IsRightToLeft())
+            Next
+        Finally
+            Localization.CurrentCode = saved
+        End Try
+    End Sub
+
+    ''' <summary>The flag lives in the table; no window decides direction from a code list.</summary>
+    <Fact>
+    Public Sub No_source_decides_direction_from_a_language_code()
+        Dim srcDir = FindSourceDir()
+        Dim offenders As New List(Of String)()
+        For Each srcPath In Directory.GetFiles(srcDir, "*.vb", SearchOption.AllDirectories)
+            If srcPath.IndexOf("\obj\", StringComparison.OrdinalIgnoreCase) >= 0 Then Continue For
+            Dim text = File.ReadAllText(srcPath)
+            If Regex.IsMatch(text, "=\s*""(ar|ur)""\s*(OrElse|Or)\s*\w+\s*=\s*""(ar|ur)""") Then
+                offenders.Add(Path.GetFileName(srcPath))
+            End If
+        Next
+        Assert.True(offenders.Count = 0, "Direction decided from a code list instead of Localization.IsRightToLeft: " &
+                    String.Join(", ", offenders))
+    End Sub
+
     ' ------------------------------------------------------------------ helpers ----
 
     ''' <summary>Full 13-language code list, independent of the build's own seam.</summary>

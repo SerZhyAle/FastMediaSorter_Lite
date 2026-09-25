@@ -34,11 +34,11 @@ Fast Media Sorter for Windows (formerly FastMediaSorter LITE - it is still publi
   plugin scavenger hunt, and nothing that depends on Internet Explorer still being
   installed
 
-## Mobile Version 📱
+## Mobile Version
 
 Want to sort media from the comfort of the couch? Check out **FastMediaSorter v2** - a powerful Android application with support for local files, network drives (SMB, SFTP, FTP), and cloud storage (Google Drive, OneDrive, Dropbox):
 
-🔗 **[FastMediaSorter for Android website](https://serzhyale.github.io/FastMediaSorter_mob_v2/)** · **[GitHub](https://github.com/SerZhyAle/FastMediaSorter_mob_v2)**
+**[FastMediaSorter for Android website](https://serzhyale.github.io/FastMediaSorter_mob_v2/)** · **[GitHub](https://github.com/SerZhyAle/FastMediaSorter_mob_v2)**
 
 Get it on **[Google Play](https://play.google.com/store/apps/details?id=com.sza.fastmediasorter)**, **[IzzyOnDroid](https://apt.izzysoft.de/fdroid/index/apk/com.sza.fastmediasorter)**, or as a direct **[APK from GitHub Releases](https://github.com/SerZhyAle/FastMediaSorter_mob_v2/releases)**.
 
@@ -61,7 +61,8 @@ exactly where they are. It is a plain, standard SFTP service, so those folders o
 
 - **FastMediaSorter for Android** - the case it was built for: the phone sorts the photos and videos
   sitting on this PC's disks, over your home Wi-Fi or across the internet, after a one-time pairing by
-  QR code (or an exported `.fmscfg` file).
+  QR code (or an exported `.fmscfg` file). Both carry the login password (and any folder PIN), so
+  hand them over like a key, never post them.
 - **Any other SFTP client** - WinSCP, FileZilla, a file manager on Linux or macOS, another PC. The
   address and port, the login, the password and the host-key fingerprint are all shown in the Share
   Manager window, each with a copy button.
@@ -239,6 +240,20 @@ Both GitHub release assets are offline-ready: they already include VLC runtimes
 and OCR language packs, so no first-run download is needed for media playback or
 OCR recognition.
 
+### Windows will warn you, and here is why
+
+These builds are not code-signed, so SmartScreen shows **"Windows protected your PC"**
+the first time you run one. Nothing is wrong: a signing certificate costs several
+hundred dollars a year and the program is free, so one has not been bought. Click
+**More info**, then **Run anyway** - and do not switch SmartScreen off, which is never
+needed here.
+
+[What the warning is, why it appears, exactly what to click, and what the program never
+does](https://serzhyale.github.io/FastMediaSorter_Lite/trust.html) - including the two
+optional features that ask for administrator rights and the single action that takes
+them back. The Microsoft Store build is signed by Microsoft at certification and shows
+none of this.
+
 ### What's in the package (and why it's large)
 
 The main program is a single ~110 MB exe because it carries its own .NET runtime -
@@ -283,7 +298,7 @@ Project page: [doc-html-translate](https://github.com/SerZhyAle/doc-html-transla
 
 A handy collection of AI-agent presets and tooling by the same author:
 
-🔗 **[Universal Agent Kit](https://serzhyale.github.io/universal-agent-kit/)**
+**[Universal Agent Kit](https://serzhyale.github.io/universal-agent-kit/)**
 
 ## Author
 - Website: [sza.od.ua](https://sza.od.ua)

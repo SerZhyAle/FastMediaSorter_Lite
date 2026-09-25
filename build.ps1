@@ -1,4 +1,4 @@
-param(
+﻿param(
     # Skip the pre-build housekeeping (tools\Clean-Build.ps1) that prunes
     # superseded stage\ trees, orphaned bin\ folders and temp files.
     [switch]$NoClean,
@@ -98,13 +98,34 @@ function Deploy-Companion([string]$TargetDir) {
     Write-Host "Deployed companion payload -> $dest"
 }
 
+# Directories this build WRITES: the repo (bin\, stage\ ..) and the deploy targets.
+# A process running from anywhere else - the user's installed copy under Program
+# Files or %LOCALAPPDATA%\Programs - is not ours to close: this build never touches
+# its files, so killing it buys nothing and takes away something the user was using.
+function Test-RunsFromOwnedDir([System.Diagnostics.Process]$Process) {
+    $path = $null
+    try { $path = $Process.Path } catch { }   # a process we may not query is not ours
+    if (-not $path) { return $false }
+    foreach ($dir in (@($SolutionDir) + @($Destinations))) {
+        if ($dir -and $path.StartsWith((Join-Path $dir ''), [StringComparison]::OrdinalIgnoreCase)) { return $true }
+    }
+    return $false
+}
+
 # A running Android-share worker (fms-share-worker.exe) launched from a deploy
 # target locks its own exe, so Copy-Item over it fails with "being used by another
 # process". Stop it before deploying: best-effort graceful StopServer over the
 # control pipe (releases the SFTP server + UPnP port map cleanly), then force-kill
 # any survivors and wait for the file handle to be released.
+#
+# Only a worker running from a directory this build writes (Test-RunsFromOwnedDir).
+# The installed User edition's worker serves the user's phone out of the install
+# directory, which nothing here replaces - killing it only cut a live share on every
+# local build. The pipe is shared by whichever worker is up, so StopServer is sent
+# only when every running worker is one of ours.
 function Stop-ShareWorker {
-    if (-not (Get-Process -Name "fms-share-worker" -ErrorAction SilentlyContinue)) { return }
+    $workers = @(Get-Process -Name "fms-share-worker" -ErrorAction SilentlyContinue)
+    if ($workers.Count -eq 0) { return }
 
     # The Server edition runs the SAME exe as a Windows service, out of its own
     # install directory - a copy this build never touches. Killing that process is
@@ -119,16 +140,25 @@ function Stop-ShareWorker {
         return
     }
 
+    $ours = @($workers | Where-Object { Test-RunsFromOwnedDir $_ })
+    foreach ($p in ($workers | Where-Object { -not (Test-RunsFromOwnedDir $_) })) {
+        $where = $null; try { $where = $p.Path } catch { }
+        Write-Host "Leaving fms-share-worker alone - it runs from $where, which this build does not write."
+    }
+    if ($ours.Count -eq 0) { return }
+
     Write-Host "Stopping running Android-share worker (fms-share-worker) so its exe can be replaced.."
-    try {
-        $pipe = New-Object System.IO.Pipes.NamedPipeClientStream(".", "fms-companion", [System.IO.Pipes.PipeDirection]::InOut)
-        $pipe.Connect(1000)
-        $bytes = [System.Text.Encoding]::UTF8.GetBytes('{"schemaVersion":1,"type":"StopServer"}')
-        $pipe.Write($bytes, 0, $bytes.Length); $pipe.Flush()
-        $pipe.Dispose()
-        Start-Sleep -Milliseconds 300
-    } catch { }
-    foreach ($p in (Get-Process -Name "fms-share-worker" -ErrorAction SilentlyContinue)) {
+    if ($ours.Count -eq $workers.Count) {
+        try {
+            $pipe = New-Object System.IO.Pipes.NamedPipeClientStream(".", "fms-companion", [System.IO.Pipes.PipeDirection]::InOut)
+            $pipe.Connect(1000)
+            $bytes = [System.Text.Encoding]::UTF8.GetBytes('{"schemaVersion":1,"type":"StopServer"}')
+            $pipe.Write($bytes, 0, $bytes.Length); $pipe.Flush()
+            $pipe.Dispose()
+            Start-Sleep -Milliseconds 300
+        } catch { }
+    }
+    foreach ($p in $ours) {
         try { $p.Kill(); $p.WaitForExit(3000) } catch { }
     }
     Start-Sleep -Milliseconds 300
@@ -136,11 +166,19 @@ function Stop-ShareWorker {
 
 # A running Companion (Share Manager) locks its own 100+ MB single-file exe, so
 # Copy-Item over it fails. Stop it before deploying (it is only a tray/UI process -
-# the worker it controls keeps running independently).
+# the worker it controls keeps running independently). Same scope as the viewers
+# and the worker: only a copy running from a directory this build writes - the
+# installed tray app is left alone.
 function Stop-Companion {
-    if (-not (Get-Process -Name "FastMediaSorterCompanion" -ErrorAction SilentlyContinue)) { return }
-    Write-Host "Stopping running FastMediaSorterCompanion so its exe can be replaced.."
-    foreach ($p in (Get-Process -Name "FastMediaSorterCompanion" -ErrorAction SilentlyContinue)) {
+    $procs = @(Get-Process -Name "FastMediaSorterCompanion" -ErrorAction SilentlyContinue)
+    if ($procs.Count -eq 0) { return }
+    foreach ($p in $procs) {
+        if (-not (Test-RunsFromOwnedDir $p)) {
+            $where = $null; try { $where = $p.Path } catch { }
+            Write-Host "Leaving FastMediaSorterCompanion alone - it runs from $where, which this build does not write."
+            continue
+        }
+        Write-Host "Stopping running FastMediaSorterCompanion so its exe can be replaced.."
         try { $p.Kill(); $p.WaitForExit(3000) } catch { }
     }
     Start-Sleep -Milliseconds 300
@@ -182,16 +220,9 @@ if (-not $NoClean) {
 }
 
 # Restore NuGet packages (packages.config). Needed for a fresh clone; a no-op when
-# packages are already present. Downloads nuget.exe to tools\ if it isn't on PATH.
-$nuget = (Get-Command nuget.exe -ErrorAction SilentlyContinue).Source
-if (-not $nuget) {
-    $nuget = Join-Path $SolutionDir "tools\nuget.exe"
-    if (-not (Test-Path $nuget)) {
-        New-Item -ItemType Directory -Path (Split-Path $nuget) -Force | Out-Null
-        Write-Host "Downloading nuget.exe..."
-        Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" -OutFile $nuget
-    }
-}
+# packages are already present. Uses nuget.exe from PATH, else the PINNED copy in
+# tools\ (downloaded and hash-checked on first use - tools\Get-PinnedNuGet.ps1).
+$nuget = & (Join-Path $SolutionDir "tools\Get-PinnedNuGet.ps1")
 Write-Host "Restoring NuGet packages..."
 & $nuget restore $SolutionFile -NonInteractive
 if ($LASTEXITCODE -ne 0) {
@@ -199,9 +230,16 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-Write-Host "Building Release..."
+# ONE version stamp for everything this build produces: the x86 viewer (msbuild),
+# the x64 mainline and the Share Manager (dotnet publish) and both installers.
+# Each used to stamp its own compile minute, so bin\Release and the deploy targets
+# held a FastMediaSorter_LITE.exe and a FastMediaSorter_x86.exe with different
+# versions - and what was hand-tested was not what got packaged. Kept as TEXT from
+# here on: the exe's numeric FileVersion turns 26.7.30.0108 into 26.7.30.108.
+$BuildVersion = Get-Date -Format "yy.M.d.HHmm"
+Write-Host "Building Release (version $BuildVersion)..."
 
-& $msbuild $SolutionFile /p:Configuration=Release /p:Platform="Any CPU" /t:Rebuild /v:minimal /nologo
+& $msbuild $SolutionFile /p:Configuration=Release /p:Platform="Any CPU" /p:ReleaseVersion=$BuildVersion /t:Rebuild /v:minimal /nologo
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Build failed (exit code $LASTEXITCODE)."
@@ -231,7 +269,7 @@ if (-not $SkipCompanion) {
     Write-Host "Publishing Companion (net10, self-contained single-file).."
     Stop-Companion   # release a lock on the previous exe under bin\CompanionPublish
     Remove-Item $CompanionPublishDir -Recurse -Force -ErrorAction SilentlyContinue
-    & $dotnet publish $CompanionProj -c Release -r win-x64 -o $CompanionPublishDir -v minimal --nologo
+    & $dotnet publish $CompanionProj -c Release -r win-x64 -p:ReleaseVersion=$BuildVersion -o $CompanionPublishDir -v minimal --nologo
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Companion publish failed (exit code $LASTEXITCODE)."
         exit $LASTEXITCODE
@@ -253,7 +291,7 @@ if (-not $SkipModern) {
     if (-not $dotnet) { $dotnet = "dotnet" }
     Write-Host "Publishing modern viewer (net10 x64, self-contained single-file).."
     Remove-Item $ModernPublishDir -Recurse -Force -ErrorAction SilentlyContinue
-    & $dotnet publish $ModernProj -c Release -r win-x64 -o $ModernPublishDir -v minimal --nologo
+    & $dotnet publish $ModernProj -c Release -r win-x64 -p:ReleaseVersion=$BuildVersion -o $ModernPublishDir -v minimal --nologo
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Modern publish failed (exit code $LASTEXITCODE)."
         exit $LASTEXITCODE
@@ -278,6 +316,19 @@ if (-not $SkipModern) {
     Write-Host "Modern viewer staged next to the x86 sibling -> $(Join-Path $OutputDir $ExeName)"
 } else {
     Write-Host "Skipping modern viewer publish (-SkipModern)."
+}
+
+# BUILD-EVIDENCE rule 2: every exe this run produced must carry $BuildVersion - read out of the
+# exe's own version resource, since a stale exe agrees with anything that reads the source. It
+# judges only what THIS run built (a -Skip* leaves the previous exe in place on purpose) and runs
+# before anything is deployed, so a mismatched exe never reaches a work folder.
+$builtExes = @($SingleFileExe)
+if (-not $SkipModern)    { $builtExes += $ModernExe }
+if (-not $SkipCompanion) { $builtExes += $CompanionExe }
+& (Join-Path $SolutionDir "tools\Test-ArtifactVersion.ps1") -Expect $BuildVersion -Path $builtExes
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "The built exes do not all carry $BuildVersion - nothing was deployed." -ForegroundColor Red
+    exit $LASTEXITCODE
 }
 
 # Copy the .NET 10 x64 mainline exe next to the x86 viewer in a deploy target,
@@ -372,16 +423,9 @@ foreach ($Destination in $Destinations) {
 # This is packaging, not publishing: no v* tag, no upload, nothing billable - the
 # same wall between "сборка" and "релиз" as everywhere else (docs/guides/BUILD_AND_RELEASE.md).
 if (-not $SkipInstaller) {
-    # The stamp the msbuild run above wrote, read as TEXT out of VersionInfo.vb.
-    # The exe's own VersionInfo cannot be used: version fields are numeric, so
-    # 26.7.30.0108 reads back as 26.7.30.108 and the package would be misnamed.
-    $installerVersion = $null
-    $versionInfoFile = Join-Path $SolutionDir "src\My Project\VersionInfo.vb"
-    if (Test-Path $versionInfoFile) {
-        $match = [regex]::Match((Get-Content -LiteralPath $versionInfoFile -Raw), 'AssemblyFileVersion\("([^"]+)"\)')
-        if ($match.Success) { $installerVersion = $match.Groups[1].Value }
-    }
-    if (-not $installerVersion) { $installerVersion = Get-Date -Format "yy.M.d.HHmm" }
+    # The one stamp this build passed to msbuild and to both publishes (see
+    # $BuildVersion above), so the package is named after the exes it carries.
+    $installerVersion = $BuildVersion
 
     # HASHTABLE splatting, never an array of "-Switch" strings: splatting an ARRAY
     # passes its elements as POSITIONAL values, so "-SkipBuild" would silently land
@@ -419,22 +463,14 @@ if (-not $SkipInstaller) {
 # months-old Server package is how a machine ends up with a service running a
 # worker that does not match its console.
 #
-# -SkipBuild reuses the Companion this script already published into bin\Release,
-# so this step is only the staging + ISCC compile. Still packaging, never
-# publishing: no v* tag, no upload.
+# -SkipBuild reuses a Share Manager built by THIS run: the one the User installer
+# step just staged (Build-ServerInstaller prefers it), else the one this script
+# published into bin\Release. Neither exists when -SkipCompanion AND -SkipInstaller
+# are both given - bin\Release then holds whatever an earlier build left there - so
+# in that case the Server step publishes the Share Manager itself instead.
+# Still packaging, never publishing: no v* tag, no upload.
 if (-not $SkipServerInstaller) {
-    $serverVersion = $installerVersion
-    if (-not $serverVersion) {
-        # -SkipInstaller was given, so the block above never resolved it. Read the
-        # same stamp the same way (as TEXT - a numeric read turns 26.7.30.0108 into
-        # 26.7.30.108 and misnames the package).
-        $versionInfoFile = Join-Path $SolutionDir "src\My Project\VersionInfo.vb"
-        if (Test-Path $versionInfoFile) {
-            $match = [regex]::Match((Get-Content -LiteralPath $versionInfoFile -Raw), 'AssemblyFileVersion\("([^"]+)"\)')
-            if ($match.Success) { $serverVersion = $match.Groups[1].Value }
-        }
-        if (-not $serverVersion) { $serverVersion = Get-Date -Format "yy.M.d.HHmm" }
-    }
+    $serverVersion = $BuildVersion
 
     Write-Host ""
     Write-Host "Packaging the Server edition installer (version $serverVersion).."
@@ -443,7 +479,8 @@ if (-not $SkipServerInstaller) {
         # $installerArgs above for what an array does to the first positional param.
         # It also has to go through a VARIABLE: an inline @{..} is a hashtable VALUE
         # bound positionally, not a splat, so it would land in -Version.
-        $serverArgs = @{ SkipBuild = $true; Version = $serverVersion }
+        $serverArgs = @{ Version = $serverVersion }
+        if (-not ($SkipCompanion -and $SkipInstaller)) { $serverArgs.SkipBuild = $true }
         & (Join-Path $SolutionDir "tools\Build-ServerInstaller.ps1") @serverArgs
         if ($LASTEXITCODE -ne 0) { throw "tools\Build-ServerInstaller.ps1 exited with code $LASTEXITCODE." }
     } catch {

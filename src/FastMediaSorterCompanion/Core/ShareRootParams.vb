@@ -4,8 +4,9 @@ Imports System.Text.Json
 
 ''' <summary>
 ''' Per-shared-root resource parameters for the .fmscfg schema v2 export
-''' (Android contract S1002, COMPANION_EXPORT_SPEC §3): how the imported resource
-''' is configured on the phone - name, type/profile, media set, scan conditions,
+''' (FMSCFG, CONFIG_FORMAT.md "Schema (version 2 - per-root resource params)"):
+''' how the imported resource is configured on the phone - name, type/profile,
+''' media set, scan conditions,
 ''' destination flag, comment, PIN, slideshow interval. Defaults mirror the
 ''' Android import defaults exactly, so an all-default instance emits a pure v1
 ''' root and the whole .fmscfg can stay schemaVersion 1 (old Android apps keep
@@ -81,10 +82,23 @@ Public Class ShareRootParams
 
     ''' <summary>The value of the exported <c>readOnly</c> field the phone is told:
     ''' true when the server enforces read-only (<see cref="IsWritable"/> = false) OR
-    ''' the user asked for the soft client-hint (<see cref="SoftReadOnly"/>). Always
-    ''' &gt;= the server's real restriction (never advertises writable-when-locked).</summary>
+    ''' the user asked for the soft client-hint (<see cref="SoftReadOnly"/>) on a folder
+    ''' that is not a destination. Always &gt;= the server's real restriction (never
+    ''' advertises writable-when-locked).
+    '''
+    ''' A destination ignores the soft hint (ticket 034 phase 2): FMSCFG 2.1 amendment A
+    ''' resolves a root to writable when <c>isDestination</c> is true whatever
+    ''' <c>readOnly</c> says, so "readOnly":true beside "isDestination":true reached the
+    ''' phone as writable while every surface here said read-only. The soft flag stays
+    ''' stored, so clearing "destination" brings the hint back.</summary>
     Public Function AdvertisedReadOnly() As Boolean
-        Return (Not IsWritable()) OrElse SoftReadOnly
+        Return (Not IsWritable()) OrElse (SoftReadOnly AndAlso Not IsDestination)
+    End Function
+
+    ''' <summary>The soft hint is in force - set, and not overridden by
+    ''' <see cref="IsDestination"/>. What the folder list's "~" marker shows.</summary>
+    Public Function SoftReadOnlyInEffect() As Boolean
+        Return SoftReadOnly AndAlso Not IsDestination
     End Function
 
     ''' <summary>True when every field is at the Android import default - nothing to
@@ -195,12 +209,31 @@ Public Module ShareRootParamsStore
                         Next
                     End If
                 End If
-            Catch
-                ' A corrupt blob must never break the Share tab - start clean.
+            Catch ex As Exception
+                ' A corrupt blob must never break the Share tab - start clean. But not by
+                ' losing it: the next SetFor overwrites the value, and with it every PIN,
+                ' filter and hard read-only it held (ticket 054 H-18). The unreadable text is
+                ' kept aside, once, where a later version - or a person - can still read it.
+                AppFileLogger.LogException("Share root params: the stored blob could not be read; it is kept as " & RegKey & UnreadableSuffix, ex)
+                BackUpUnreadable()
             End Try
         End If
         Return _map
     End Function
+
+    Private Const UnreadableSuffix As String = ".unreadable"
+
+    Private Sub BackUpUnreadable()
+        Try
+            Dim raw As String = GetSetting(App_name, Second_App_Name, RegKey, "")
+            If raw.Length = 0 Then Return
+            ' Never over an earlier backup: the first unreadable blob is the one that held
+            ' the settings; anything after it was written by this code from an empty start.
+            If GetSetting(App_name, Second_App_Name, RegKey & UnreadableSuffix, "").Length > 0 Then Return
+            SaveSetting(App_name, Second_App_Name, RegKey & UnreadableSuffix, raw)
+        Catch
+        End Try
+    End Sub
 
     Private Sub Save()
         Try

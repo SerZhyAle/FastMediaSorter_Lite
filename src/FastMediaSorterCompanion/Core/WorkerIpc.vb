@@ -1,26 +1,31 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.IO
 Imports System.IO.Pipes
+Imports System.Runtime.InteropServices
+Imports System.Security.Principal
 Imports System.Text
 Imports System.Text.Json
 Imports System.Text.Json.Serialization
 Imports System.Threading
 Imports System.Threading.Tasks
+Imports Microsoft.Win32.SafeHandles
 
 ''' <summary>
 ''' Named-pipe JSON control client for the bundled Android-share sidecar
 ''' (companion\fms-share-worker.exe). One request -> one response per
 ''' connection; the worker closes the pipe after replying. Transport only -
 ''' the worker owns the SFTP server, keys, mDNS, port mapping and QR/config
-''' rendering. Protocol: SPECIFICATION_ANDROID_FOLDER_SHARE.md Appendix A (v1).
+''' rendering. Protocol: WORKER-IPC sections 2-5, wire schemaVersion 1.
 ''' </summary>
 Public NotInheritable Class WorkerIpc
 
     ''' <summary>Pipe name (server side is \\.\pipe\fms-companion).</summary>
     Public Const PipeName As String = "fms-companion"
 
-    ''' <summary>IPC schema version this client speaks. Mismatch = "update the app".</summary>
+    ''' <summary>IPC schema version this client speaks (WORKER-IPC section 3 rule 1).
+    ''' It rides on every request, and a response carrying a HIGHER one is refused cleanly by
+    ''' <see cref="EnsureUnderstood"/> - WORKER-IPC section 6 rule 3.</summary>
     Public Const SchemaVersion As Integer = 1
 
     ' System.Text.Json replaces net48's JavaScriptSerializer (spec §6.2). Two
@@ -80,6 +85,140 @@ Public NotInheritable Class WorkerIpc
         End Using
     End Function
 
+    ''' <summary>
+    ''' The exact bytes this host puts on the pipe for <paramref name="request"/> - the ONE
+    ''' serializer, stamping <c>schemaVersion</c> first. Friend so the conformance tests pin
+    ''' what the product emits rather than what a mirrored copy of its options would emit
+    ''' (WORKER-IPC section 7: the host half of the recorded exchange).
+    ''' </summary>
+    Friend Shared Function SerializeRequest(request As WorkerRequest) As Byte()
+        If request Is Nothing Then Throw New ArgumentNullException(NameOf(request))
+        request.schemaVersion = SchemaVersion
+        Return Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request, JsonOpts))
+    End Function
+
+    ''' <summary>
+    ''' Reads one response exactly as <see cref="Send"/> does: case-insensitive binding, then
+    ''' the version check. Throws <see cref="WorkerVersionRefusedException"/> for a response
+    ''' from a newer worker - never returns a partially understood one.
+    ''' </summary>
+    Friend Shared Function ParseResponse(text As String) As WorkerResponse
+        ' Deserialize is case-insensitive (JsonOpts), so PascalCase DTO names
+        ' bind to the worker's camelCase JSON fields.
+        Dim response As WorkerResponse
+        Try
+            response = JsonSerializer.Deserialize(Of WorkerResponse)(text, JsonOpts)
+        Catch ex As JsonException
+            ' A worker answered - with something this client cannot bind: a field whose type
+            ' changed in a newer worker, a truncated write. The version is read on its own
+            ' first, so a newer worker is still refused by NAME; anything else is "an answer
+            ' we could not read", never "nobody answered" (ticket 054 H-22) - that reading sent
+            ' EnsureRunning off to spawn a second worker that could only lose the pipe.
+            Dim version As Integer = TryReadSchemaVersion(text)
+            If version > SchemaVersion Then Throw New WorkerVersionRefusedException(version, SchemaVersion)
+            Throw New WorkerExchangeException(WorkerExchangeProblem.Malformed, "Unreadable worker answer.", ex)
+        End Try
+        ' A literal "null" body deserializes to Nothing, which every caller read as silence.
+        If response Is Nothing Then Throw New WorkerExchangeException(WorkerExchangeProblem.Malformed, "Empty worker answer.")
+        EnsureUnderstood(response)
+        Return response
+    End Function
+
+    ''' <summary>The top-level <c>schemaVersion</c> of an answer that did not bind as a whole,
+    ''' or 0 when even that cannot be read.</summary>
+    Private Shared Function TryReadSchemaVersion(text As String) As Integer
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(text)
+                If doc.RootElement.ValueKind <> JsonValueKind.Object Then Return 0
+                For Each prop As JsonProperty In doc.RootElement.EnumerateObject()
+                    Dim v As Integer
+                    If String.Equals(prop.Name, "schemaVersion", StringComparison.OrdinalIgnoreCase) AndAlso
+                       prop.Value.ValueKind = JsonValueKind.Number AndAlso prop.Value.TryGetInt32(v) Then Return v
+                Next
+            End Using
+        Catch
+        End Try
+        Return 0
+    End Function
+
+    ' --- who is on the other end (ticket 054 H-10) ----------------------------------
+
+    ''' <summary>
+    ''' Test seam: a verifier for a PRIVATE pipe name, replacing <see cref="IsTrustedServer"/>
+    ''' for that name only - so a test can drive the refusal without affecting any other
+    ''' test running in parallel. Never set for the product's pipe.
+    ''' </summary>
+    Friend Shared ReadOnly ServerVerifierOverrides As New System.Collections.Concurrent.ConcurrentDictionary(Of String, Func(Of Integer, Boolean))(StringComparer.Ordinal)
+
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Private Shared Function GetNamedPipeServerProcessId(pipe As SafePipeHandle, ByRef serverProcessId As UInteger) As Boolean
+    End Function
+
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Private Shared Function OpenProcess(desiredAccess As UInteger, inheritHandle As Boolean, processId As Integer) As IntPtr
+    End Function
+
+    <DllImport("advapi32.dll", SetLastError:=True)>
+    Private Shared Function OpenProcessToken(process As IntPtr, desiredAccess As UInteger, ByRef token As IntPtr) As Boolean
+    End Function
+
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Private Shared Function CloseHandle(handle As IntPtr) As Boolean
+    End Function
+
+    Private Const PROCESS_QUERY_LIMITED_INFORMATION As UInteger = &H1000UI
+    Private Const TOKEN_QUERY As UInteger = &H8UI
+
+    ''' <summary>
+    ''' The pipe name is machine-wide, and before the worker creates it (logon, after a crash)
+    ''' ANY local account can - with a DACL of its choosing. The client then sent that process
+    ''' its folder list and put its username, password, fingerprint and port into the QR, so a
+    ''' phone uploaded into someone else's server. The server is trusted when it is the
+    ''' process the SCM runs our service in (only an administrator can register that name), or
+    ''' when it runs as THIS account - which is every worker this user could have started, and
+    ''' a boundary nothing else offers anyway (the same account can replace the app itself).
+    ''' </summary>
+    Friend Shared Function IsTrustedServer(pid As Integer) As Boolean
+        If pid <= 0 Then Return False
+        Dim servicePid As Integer = ServiceControl.ServiceProcessId()
+        If servicePid > 0 AndAlso servicePid = pid Then Return True
+        Dim owner As String = ProcessOwnerSid(pid)
+        Return owner.Length > 0 AndAlso String.Equals(owner, ServiceControl.CurrentUserSid(), StringComparison.OrdinalIgnoreCase)
+    End Function
+
+    ''' <summary>The account a process runs as, or "" when it cannot be read - another
+    ''' account's process usually cannot, which is exactly the answer "not ours".</summary>
+    Friend Shared Function ProcessOwnerSid(pid As Integer) As String
+        Dim proc As IntPtr = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        If proc = IntPtr.Zero Then Return ""
+        Try
+            Dim token As IntPtr = IntPtr.Zero
+            If Not OpenProcessToken(proc, TOKEN_QUERY, token) Then Return ""
+            Try
+                Using id As New WindowsIdentity(token)
+                    Return If(id.User?.Value, "")
+                End Using
+            Finally
+                CloseHandle(token)
+            End Try
+        Catch
+            Return ""
+        Finally
+            CloseHandle(proc)
+        End Try
+    End Function
+
+    ''' <summary>Refuses the exchange BEFORE a byte of the request is written when the
+    ''' server is not one we trust.</summary>
+    Private Shared Sub VerifyServer(pipe As NamedPipeClientStream, pipeName As String)
+        Dim pid As UInteger
+        Dim known As Boolean = GetNamedPipeServerProcessId(pipe.SafePipeHandle, pid)
+        Dim verifier As Func(Of Integer, Boolean) = Nothing
+        If Not ServerVerifierOverrides.TryGetValue(pipeName, verifier) Then verifier = AddressOf IsTrustedServer
+        If known AndAlso verifier(CInt(pid)) Then Return
+        Throw New WorkerExchangeException(WorkerExchangeProblem.NotOurWorker, "The control pipe is held by an untrusted process.")
+    End Sub
+
     ''' <summary>The exchange itself, fully asynchronous so the deadline can actually
     ''' interrupt it - a synchronous pipe Read cannot be cancelled.</summary>
     Private Shared Async Function SendAsync(request As WorkerRequest,
@@ -88,8 +227,9 @@ Public NotInheritable Class WorkerIpc
                                             ct As CancellationToken) As Task(Of WorkerResponse)
         Using pipe As New NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous)
             Await pipe.ConnectAsync(timeoutMs, ct).ConfigureAwait(False)
+            VerifyServer(pipe, pipeName)
 
-            Dim payload As Byte() = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request, JsonOpts))
+            Dim payload As Byte() = SerializeRequest(request)
             Await pipe.WriteAsync(payload, 0, payload.Length, ct).ConfigureAwait(False)
             Await pipe.FlushAsync(ct).ConfigureAwait(False)
 
@@ -109,17 +249,116 @@ Public NotInheritable Class WorkerIpc
                 Throw New IOException("Companion worker closed the pipe without a response.")
             End If
 
-            ' Deserialize is case-insensitive (JsonOpts), so PascalCase DTO names
-            ' bind to the worker's camelCase JSON fields.
-            Return JsonSerializer.Deserialize(Of WorkerResponse)(respText, JsonOpts)
+            Return ParseResponse(respText)
         End Using
+    End Function
+
+    ''' <summary>
+    ''' WORKER-IPC section 6 rule 3: a <c>schemaVersion</c> above the reader's own is refused
+    ''' cleanly, by BOTH ends, with a message that names the two halves - never a partial
+    ''' application of the response and never a guess. The server has held this since it was
+    ''' written; this is the host half, and without it a newer worker was read as if it were
+    ''' this one.
+    '''
+    ''' The case is reachable inside a single release here, which is why it is not theoretical:
+    ''' the worker is a vendored binary built from a separate repository, so a newer one can be
+    ''' dropped in beside an unchanged client.
+    '''
+    ''' Refused UPWARDS only, deliberately. The rule the server is stricter under - refuse any
+    ''' version you do not know, including 0 (section 6 rule 4) - is stated for the server for a
+    ''' reason the host does not share: an absent <c>schemaVersion</c> on a REQUEST means a
+    ''' caller that is not a client of this contract at all, while an absent one on a RESPONSE
+    ''' would mean a worker older than the field, and refusing that would break the very
+    ''' upgrade path the field exists to protect. Section 3 rule 4's "an unknown field is
+    ''' ignored" points the same way: older is tolerated, newer is refused.
+    '''
+    ''' The words "update the app" belong to the end that faces the user, which is this one -
+    ''' the server's own message names the two halves and stops there.
+    '''
+    ''' Thrown as its OWN type, never as a transport failure. It used to be a plain
+    ''' NotSupportedException on the theory that every caller shows a thrown message - in fact
+    ''' every caller swallowed it as "the worker is unreachable", so a newer worker read as
+    ''' "could not reach the companion" and EnsureRunning went on to spawn a second one.
+    ''' <see cref="WorkerProcess.Exchange"/> is where it is turned into a typed result.
+    ''' </summary>
+    Friend Shared Sub EnsureUnderstood(response As WorkerResponse)
+        If response Is Nothing Then Return
+        If response.SchemaVersion <= SchemaVersion Then Return
+        Throw New WorkerVersionRefusedException(response.SchemaVersion, SchemaVersion)
+    End Sub
+
+End Class
+
+''' <summary>
+''' WORKER-IPC section 6 rule 3 on the host: the worker answered, with a protocol version above
+''' the one this client speaks, so nothing in the answer was applied. Distinct from every
+''' transport failure on purpose - a worker that answered is RUNNING, and the two conclusions a
+''' caller draws from "nobody answered" (show "cannot reach", start a worker) are both wrong
+''' here. The message is the registered, localized one the user reads.
+''' </summary>
+Public NotInheritable Class WorkerVersionRefusedException
+    Inherits Exception
+
+    ''' <summary>The <c>schemaVersion</c> the worker answered with.</summary>
+    Public ReadOnly Property WorkerVersion As Integer
+    ''' <summary>The <c>schemaVersion</c> this client speaks.</summary>
+    Public ReadOnly Property ClientVersion As Integer
+
+    Public Sub New(workerVersion As Integer, clientVersion As Integer)
+        MyBase.New(Text(workerVersion, clientVersion))
+        Me.WorkerVersion = workerVersion
+        Me.ClientVersion = clientVersion
+    End Sub
+
+    ''' <summary>The sentence the user reads, in the active UI language.</summary>
+    Public Shared Function Text(workerVersion As Integer, clientVersion As Integer) As String
+        Return Localization.TF("Служба общего доступа отвечает по версии протокола {0}, а это приложение понимает {1}. Обновите приложение.",
+                               workerVersion, clientVersion)
+    End Function
+
+    ''' <summary>The Server edition's variant: the worker there is the Windows service, which
+    ''' updates with its own package, so the sentence names the service rather than leaving
+    ''' "update the app" to be read as this console alone.</summary>
+    Public Shared Function ServiceText(workerVersion As Integer, clientVersion As Integer) As String
+        Return Localization.TF("Служба Windows {0} отвечает по версии протокола {1}, а это приложение понимает {2}. Обновите приложение и серверную редакцию до одной версии.",
+                               ServiceControl.ServiceName, workerVersion, clientVersion)
     End Function
 
 End Class
 
+''' <summary>
+''' What went wrong with an exchange that was neither a refusal nor silence. Each one means
+''' SOMETHING holds the control pipe - so, like a refusal, none of them may be read as
+''' "nobody answered", which is what starts a second worker.
+''' </summary>
+Public Enum WorkerExchangeProblem
+    None
+    ''' <summary>A worker answered in a shape this client cannot read (ticket 054 H-22).</summary>
+    Malformed
+    ''' <summary>The control pipe exists, and this account is not allowed to open it - another
+    ''' account manages sharing on this PC (ticket 054 H-26).</summary>
+    NotAuthorized
+    ''' <summary>The control pipe is held by a process that is neither our service nor this
+    ''' account's own (ticket 054 H-10). Nothing was sent to it.</summary>
+    NotOurWorker
+End Enum
+
+''' <summary>An exchange that ended in a <see cref="WorkerExchangeProblem"/>. Its Message is
+''' for the log only; the user reads ShareController.ProblemMessage.</summary>
+Public NotInheritable Class WorkerExchangeException
+    Inherits Exception
+
+    Public ReadOnly Property Problem As WorkerExchangeProblem
+
+    Public Sub New(problem As WorkerExchangeProblem, message As String, Optional inner As Exception = Nothing)
+        MyBase.New(message, inner)
+        Me.Problem = problem
+    End Sub
+End Class
+
 ' --- request DTOs (property names are the on-the-wire JSON field names) --------
 
-''' <summary>Request envelope. type is one of the Appendix A message names.</summary>
+''' <summary>Request envelope. type is one of the WORKER-IPC section 4 message names.</summary>
 Public Class WorkerRequest
     Public Property schemaVersion As Integer = WorkerIpc.SchemaVersion
     ' "type" and "readOnly" collide with VB keywords; bracket-escape keeps the
@@ -131,14 +370,17 @@ Public Class WorkerRequest
     ''' the JSON (JsonOpts WhenWritingNull) rather than sent as an explicit 0/false -
     ''' the worker leaves an absent field unchanged. maxConnections is clamped to
     ''' [1, 99999] by the worker; lanOnly enforces the LAN-only switch (no UPnP, no
-    ''' WAN path). Additive - an older worker replies with a benign
-    ''' "unsupported request type", so nothing breaks.</summary>
+    ''' WAN path). Additive - an older worker replies <c>ok=false</c> ("unsupported
+    ''' request type"), which is NOT benign when LAN only is on: ShareController reads it
+    ''' and says so (<see cref="ShareController.LanOnlyNotEnforced"/>).</summary>
     Public Property maxConnections As Integer?
     Public Property lanOnly As Boolean?
     ''' <summary>SetNetworkPolicy: move the SFTP listen port to this number. The worker binds
     ''' exactly it or does not serve at all - a port that quietly became another one is the
     ''' precise failure this exists to prevent. The port is a setting, not a mode, so there
-    ''' is nothing to switch back to: 0 and "omitted" both mean unchanged. Additive on an
+    ''' is nothing to switch back to. An unset port is OMITTED, never sent as 0 (WORKER-IPC
+    ''' rule 4) - the worker happens to read 0 as unchanged too, but absent is what the
+    ''' contract says, so absent is what this host sends. Additive on an
     ''' EXISTING request type, which an older worker silently drops rather than rejecting -
     ''' hence <see cref="WorkerStatus.PortSupported"/>, which turns that into a
     ''' diagnosis.</summary>
@@ -158,15 +400,58 @@ Public Class ShareFolder
     Public Property [readOnly] As Boolean = False
 End Class
 
-' --- response DTOs (Appendix A.2) ---------------------------------------------
+' --- response DTOs (WORKER-IPC section 3 envelope + section 5 status) ---------
 
 Public Class WorkerResponse
     Public Property SchemaVersion As Integer
+    ''' <summary>The verdict, and the only one (WORKER-IPC section 3 rule 2): a transport that
+    ''' succeeded says nothing about whether the request did. An older worker answers a
+    ''' request type it does not know with <c>ok=false</c> - which, for SetNetworkPolicy, is
+    ''' the difference between LAN only being enforced and not.</summary>
     Public Property Ok As Boolean
     ''' <summary>Present only on failure (omitempty on the wire).</summary>
     Public Property [Error] As String
     Public Property Status As WorkerStatus
     Public Property Export As WorkerExport
+
+    ''' <summary>Set only on a response the HOST built: the worker answered with a newer
+    ''' protocol version, so nothing it said was read (<see cref="Ok"/> is False and
+    ''' <see cref="Status"/> is Nothing). Never on the wire.</summary>
+    <JsonIgnore>
+    Public Property Refusal As WorkerVersionRefusedException
+
+    ''' <summary>True when this is the host's record of a version refusal.</summary>
+    <JsonIgnore>
+    Public ReadOnly Property IsRefused As Boolean
+        Get
+            Return Refusal IsNot Nothing
+        End Get
+    End Property
+
+    ''' <summary>The typed result of a refused exchange: a worker answered, and what it
+    ''' answered was not applied.</summary>
+    Public Shared Function Refused(refusal As WorkerVersionRefusedException) As WorkerResponse
+        If refusal Is Nothing Then Throw New ArgumentNullException(NameOf(refusal))
+        Return New WorkerResponse With {.SchemaVersion = refusal.WorkerVersion, .Ok = False, .Refusal = refusal}
+    End Function
+
+    ''' <summary>Set only on a response the HOST built: something holds the control pipe, and
+    ''' the exchange could not be completed with it (<see cref="WorkerExchangeProblem"/>).
+    ''' <see cref="Ok"/> is False and <see cref="Status"/> is Nothing. Never on the wire.</summary>
+    <JsonIgnore>
+    Public Property Problem As WorkerExchangeProblem = WorkerExchangeProblem.None
+
+    <JsonIgnore>
+    Public ReadOnly Property IsProblem As Boolean
+        Get
+            Return Problem <> WorkerExchangeProblem.None
+        End Get
+    End Property
+
+    ''' <summary>The typed result of an exchange that ended in <paramref name="problem"/>.</summary>
+    Public Shared Function WithProblem(problem As WorkerExchangeProblem) As WorkerResponse
+        Return New WorkerResponse With {.Ok = False, .Problem = problem}
+    End Function
 End Class
 
 Public Class WorkerStatus

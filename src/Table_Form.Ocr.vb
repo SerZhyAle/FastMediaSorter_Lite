@@ -611,6 +611,10 @@ Partial Public Class Table_Form
 
     ' --- install / pull / download handlers -----------------------------------
 
+    ''' <summary>A brand, the same word in every language - a constant, not a literal, so the
+    ''' localization scanner does not read it as a context argument.</summary>
+    Private Const OllamaProductName As String = "Ollama"
+
     Private Async Sub OnInstallOllama(sender As Object, e As EventArgs)
         If _ocrBusy Then Return
         If OllamaManager.IsInstalled() Then
@@ -621,6 +625,19 @@ Partial Public Class Table_Form
         Dim confirm As String = Localization.T("Скачать и установить Ollama? Это несколько сотен МБ, загрузка может занять время.")
         If MessageBox.Show(Me, confirm, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
 
+#If Not NETFRAMEWORK Then
+        ' Behind the download dialog: progress, a Cancel that removes the partial installer,
+        ' no wait cursor while Cancel is live (APP-BEHAVIOUR rule 3, ticket 028 Ф-6).
+        Dim run As DownloadRun(Of String) = Await Download_Progress_Form.RunAsync(Of String)(
+            Me, OllamaProductName, Localization.TF("Загрузка: {0}", OllamaProductName),
+            Function(p, t) OllamaManager.DownloadInstallerAsync(New Progress(Of String)(Sub(s) p.Report(New DownloadReport With {.Detail = s})), t))
+        If run.Cancelled Then
+            DownloadMessages.ShowCancelled(Me, OllamaProductName)
+            Return
+        End If
+        If run.Failure IsNot Nothing Then AppFileLogger.LogException("OCR settings: Ollama installer download", run.Failure)
+        Dim installerPath As String = If(run.Value, "")
+#Else
         SetOcrBusy(True)
         lblOcrStatus.Text = Localization.T("Скачивание Ollama..")
         Dim installerPath As String = ""
@@ -628,15 +645,25 @@ Partial Public Class Table_Form
             Dim prog As New Progress(Of String)(Sub(s) lblOcrStatus.Text = (Localization.T("Скачивание Ollama: ")) & s)
             installerPath = Await OllamaManager.DownloadInstallerAsync(prog, CancellationToken.None)
         Catch ex As Exception
-            lblOcrStatus.Text = ex.Message
+            AppFileLogger.LogException("OCR settings: download", ex)
+            lblOcrStatus.Text = FailureText.Describe(ex)
         End Try
         SetOcrBusy(False)
+#End If
 
         DropTopMostForExternal()
 
         If installerPath.Length > 0 AndAlso IO.File.Exists(installerPath) Then
-            lblOcrStatus.Text = Localization.T("Запуск установщика Ollama..")
-            OllamaManager.RunInstaller(installerPath)
+            ' Only a file signed by Ollama is started (audit 051 E-14); anything else is
+            ' deleted and the download page opened instead.
+            If OllamaManager.IsGenuineInstaller(installerPath) Then
+                lblOcrStatus.Text = Localization.T("Запуск установщика Ollama..")
+                OllamaManager.RunInstaller(installerPath)
+            Else
+                OllamaManager.DiscardInstaller(installerPath)
+                lblOcrStatus.Text = Localization.T("Установщик Ollama не прошёл проверку подписи - открываю сайт Ollama..")
+                OllamaManager.OpenWebPage()
+            End If
         Else
             lblOcrStatus.Text = Localization.T("Не удалось скачать. Открываю сайт Ollama..")
             OllamaManager.OpenWebPage()
@@ -681,17 +708,41 @@ Partial Public Class Table_Form
             Return
         End If
 
-        SetOcrBusy(True)
         Dim endpoint As String = txtOcrEndpoint.Text.Trim()
         Dim ok As Boolean = False
+#If Not NETFRAMEWORK Then
+        ' A model is gigabytes: asked first, then pulled behind the download dialog with its
+        ' own Cancel (APP-BEHAVIOUR rules 3 and 4, ticket 028 Ф-6). Ollama reports the size
+        ' only once the pull has started, so the question states the range honestly instead
+        ' of a number fetched behind the user's back.
+        If MessageBox.Show(Me, Localization.TF("Скачать модель «{0}» через Ollama? Модели занимают от сотен МБ до десятков ГБ; загрузку можно отменить.", modelName),
+                           Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+        Dim run As DownloadRun(Of Boolean) = Await Download_Progress_Form.RunAsync(Of Boolean)(
+            Me, OllamaProductName, Localization.TF("Загрузка: {0}", modelName),
+            Function(p, t) New OllamaTranslator(endpoint, modelName).PullModelAsync(
+                modelName, New Progress(Of String)(Sub(s) p.Report(New DownloadReport With {.Detail = s})), t))
+        If run.Cancelled Then
+            DownloadMessages.ShowCancelled(Me, modelName)
+            lblOcrStatus.Text = ""
+            Return
+        End If
+        If run.Failure IsNot Nothing Then
+            AppFileLogger.LogException("OCR settings: Ollama model pull", run.Failure)
+            lblOcrStatus.Text = FailureText.Describe(run.Failure)
+        End If
+        ok = run.Succeeded AndAlso run.Value
+#Else
+        SetOcrBusy(True)
         Try
             Dim tr As New OllamaTranslator(endpoint, modelName)
             Dim prog As New Progress(Of String)(Sub(s) lblOcrStatus.Text = Localization.TC("ollama", "Загрузка: ") & s)
             ok = Await tr.PullModelAsync(modelName, prog, CancellationToken.None)
         Catch ex As Exception
-            lblOcrStatus.Text = ex.Message
+            AppFileLogger.LogException("OCR settings: download", ex)
+            lblOcrStatus.Text = FailureText.Describe(ex)
         End Try
         SetOcrBusy(False)
+#End If
 
         lblOcrStatus.Text = If(ok,
             Localization.T("Модель установлена: ") & modelName,
@@ -710,15 +761,33 @@ Partial Public Class Table_Form
             Return
         End If
 
+#If Not NETFRAMEWORK Then
+        ' The button is the request; the dialog is progress and Cancel (ticket 028 Ф-6). A
+        ' pack already on disk is reported, not downloaded again (APP-BEHAVIOUR rule 5).
+        Dim missing As List(Of String) = TesseractOcrEngine.MissingLanguageCodes(TesseractOcrEngine.DownloadLanguageCodes(tessLangs), preferBest)
+        If missing.Count = 0 Then
+            lblOcrStatus.Text = Localization.TF("Уже установлено: пакет {0}", tessLangs)
+            Return
+        End If
+        Dim ok As Boolean = Await OptionalRuntimeManager.DownloadWithDialogAsync(
+            Me, Localization.T("Языковые пакеты OCR"),
+            Function(p, t) TesseractOcrEngine.DownloadLanguagesAsync(missing, preferBest, p, t))
+        If Not ok Then
+            lblOcrStatus.Text = ""
+            Return
+        End If
+#Else
         SetOcrBusy(True)
         lblOcrStatus.Text = Localization.T("Скачивание языкового пакета: ") & tessLangs
         Dim ok As Boolean = False
         Try
             ok = Await Task.Run(Function() TesseractOcrEngine.EnsureLanguagesPublic(tessLangs, preferBest))
         Catch ex As Exception
-            lblOcrStatus.Text = ex.Message
+            AppFileLogger.LogException("OCR settings: download", ex)
+            lblOcrStatus.Text = FailureText.Describe(ex)
         End Try
         SetOcrBusy(False)
+#End If
 
         lblOcrStatus.Text = If(ok,
             Localization.T("Готово: пакет ") & tessLangs,

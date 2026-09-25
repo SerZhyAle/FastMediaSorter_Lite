@@ -47,29 +47,30 @@ Partial Public Class Main_Form
         Return archive_Session IsNot Nothing
     End Function
 
-    ''' <summary>
-    ''' The one place that refuses a file operation inside an archive (§7, invariant 6),
-    ''' and says so - a key that silently does nothing reads as a broken program. Returns
-    ''' True when the caller must stop.
-    '''
-    ''' v1 is view-only by the owner's decision: the archive is never modified, and
-    ''' "extract this entry into a recipient folder" is a separate feature (§14, О-1),
-    ''' not a side effect of browsing.
-    ''' </summary>
-    Friend Function ArchiveModeBlocksFileOperations() As Boolean
-        If archive_Session Is Nothing Then Return False
-        lbl_Status.Text = Localization.T("В архиве файловые операции недоступны")
-        Return True
+    ''' <summary>The open archive's own path, or "" - what "copy the path" hands out inside
+    ''' an archive instead of a temporary copy (G-17).</summary>
+    Friend Function OpenArchivePath() As String
+        If archive_Session Is Nothing Then Return ""
+        Return archive_Session.ArchiveFilePath
     End Function
+
+    ' The refusal of a file operation inside an archive (§7, invariant 6) is no longer
+    ' here: it is one branch of ResourceBlocksFileOperations (Main_Form.Resource.vb), the
+    ' single refusal point that answers for archives and read-only resources alike
+    ' (006_SPECIFICATION_FILESYSTEM_PROVIDER_LAYER_DOTNET10.md PV-7). v1 of archives is still
+    ' view-only by the owner's decision: every verb is refused there, copy included.
 
     ''' <summary>
     ''' What may be written to the registry as "the current folder". Inside an archive that
     ''' is the folder the archive sits in - the archive path itself would come back on the
-    ''' next start as a folder that cannot be listed.
+    ''' next start as a folder that cannot be listed. Inside a remote resource it is the
+    ''' resource locator, which the next start can re-open - never the cache directory.
     ''' </summary>
     Friend Function PersistableFolderPath() As String
-        If archive_Session Is Nothing Then Return Current_Folder_Path
-        Return archive_Return_Folder
+        If archive_Session IsNot Nothing Then Return archive_Return_Folder
+        Dim resource As ResourceSession = ActiveResourceSession()
+        If resource IsNot Nothing Then Return resource.Locator
+        Return Current_Folder_Path
     End Function
 
     ' ------------------------------------------------------------------ entering ----
@@ -96,6 +97,14 @@ Partial Public Class Main_Form
             Dim session As New ArchiveSession(archivePath, sessionDir,
                                               AddressOf ArchiveSupportsExtension,
                                               maxEntries)
+
+            If session.UnsupportedKind.Length > 0 Then
+                ' A RAR or 7z wearing a .zip/.cbz name (audit 052 G-15).
+                session.Dispose()
+                ArchiveTempStore.DeleteSession(sessionDir)
+                lbl_Status.Text = Localization.TF("Это не ZIP-архив ({0}) - такие архивы пока не поддерживаются", session.UnsupportedKind)
+                Return
+            End If
 
             If session.IsEncrypted Then
                 session.Dispose()
@@ -174,8 +183,21 @@ Partial Public Class Main_Form
         End Try
         archive_Session = Nothing
         archive_Return_Folder = ""
+        archive_Refused_Path = ""
 
         ArchiveTempStore.DeleteSession(sessionDir)
+    End Sub
+
+    ''' <summary>
+    ''' Leaves the open archive unless <paramref name="typedPath"/> names that very archive
+    ''' (the folder box shows the archive path, so Enter on it unchanged is "stay"). The
+    ''' folder box's Enter is the one change of folder that did not leave (audit 052
+    ''' A-13/G-06): the typed folder was then listed with the ARCHIVE's pages in it.
+    ''' </summary>
+    Friend Sub LeaveArchiveUnlessShowing(typedPath As String)
+        If archive_Session Is Nothing Then Return
+        If String.Equals(If(typedPath, "").Trim(), archive_Session.ArchiveFilePath, StringComparison.OrdinalIgnoreCase) Then Return
+        LeaveArchive()
     End Sub
 
     ' ------------------------------------------------------------- the file list ----
@@ -224,9 +246,40 @@ Partial Public Class Main_Form
         Dim maxCacheBytes As Long = CLng(prefs.ArchiveCacheMaxMb) * 1024L * 1024L
 
         Dim refusal As ArchiveSession.EntryRefusal
-        If archive_Session.TryEnsureExtracted(index, refusal, maxEntryBytes, maxCacheBytes) Then Return
+        If archive_Session.TryEnsureExtracted(index, refusal, maxEntryBytes, maxCacheBytes) Then
+            If String.Equals(archive_Refused_Path, filePath, StringComparison.OrdinalIgnoreCase) Then archive_Refused_Path = ""
+            Return
+        End If
 
-        lbl_Status.Text = ArchiveRefusalText(refusal, archive_Session.Entries(index))
+        archive_Refused_Path = filePath
+        archive_Refused_Text = ArchiveRefusalText(refusal, archive_Session.Entries(index))
+        lbl_Status.Text = archive_Refused_Text
+    End Sub
+
+    ''' <summary>The entry the last extraction refused, and why - so the display path can
+    ''' keep the entry and its reason instead of taking a refusal for a vanished file
+    ''' (audit 052 A-12/G-05).</summary>
+    Private archive_Refused_Path As String = ""
+    Private archive_Refused_Text As String = ""
+
+    ''' <summary>
+    ''' Was <paramref name="filePath"/> refused by the archive a moment ago? Then it is not a
+    ''' stale list entry: it stays in the list, N/total stays what it was, and the refusal
+    ''' stays on the status line (010 invariant 9). Before this, the display path saw only
+    ''' "the file does not exist", dropped the entry with "file not found", and took the
+    ''' next entry WITHOUT extracting it - so it dropped that one too.
+    ''' </summary>
+    Friend Function IsArchiveEntryRefused(filePath As String) As Boolean
+        If archive_Session Is Nothing OrElse String.IsNullOrEmpty(filePath) Then Return False
+        If Not String.Equals(archive_Refused_Path, filePath, StringComparison.OrdinalIgnoreCase) Then Return False
+        Return Not File.Exists(filePath)
+    End Function
+
+    ''' <summary>A refused entry on screen: the blank surface an unsupported file gets, with
+    ''' the refusal - not "unsupported format" - on the status line.</summary>
+    Friend Sub ShowArchiveRefusal(filePath As String)
+        ShowUnsupportedFormat(filePath)
+        lbl_Status.Text = archive_Refused_Text
     End Sub
 
     ''' <summary>Why an entry did not appear, in words (§10, invariant 9).</summary>

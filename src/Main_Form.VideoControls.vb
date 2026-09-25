@@ -39,16 +39,6 @@ Partial Public Class Main_Form
     ''' behaviour the IE controls had.</summary>
     Private WithEvents video_Controls_Hide_Timer As New Timer() With {.Interval = 2500}
 
-    ''' <summary>Segoe MDL2 Assets is Windows' own icon font and has shipped since
-    ''' Windows 10 RTM - below the modern build's floor (1607), so it is always there.
-    ''' The app pins Microsoft Sans Serif 8.25 for its Designer layout, and that font
-    ''' has no transport glyphs at all, hence an explicit font here.</summary>
-    Private Const Glyph_Font As String = "Segoe MDL2 Assets"
-    Private Const Glyph_Play As String = ChrW(&HE768)
-    Private Const Glyph_Pause As String = ChrW(&HE769)
-    Private Const Glyph_Volume As String = ChrW(&HE767)
-    Private Const Glyph_Mute As String = ChrW(&HE74F)
-
     ''' <summary>Builds the bar on first use and makes sure it is parented. Lazy on
     ''' purpose: most sessions are images only and never pay for it.</summary>
     Private Sub EnsureVideoControls()
@@ -73,24 +63,30 @@ Partial Public Class Main_Form
         Dim pad As Integer = LogicalToDeviceUnits(8)
         Dim bar_H As Integer = LogicalToDeviceUnits(38)
         Dim btn_W As Integer = LogicalToDeviceUnits(34)
-        Dim glyph As New Font(Glyph_Font, 10.0F)
 
+        ' Pinned left-to-right (APP-BEHAVIOUR rule 8, ticket 028 Ф-7). The main window takes
+        ' RightToLeft from Arabic and Urdu and a child inherits it; a transport bar must not:
+        ' time runs left to right on every player, and a mirrored Play triangle reads as
+        ' Rewind. Declared here, on the bar, so the "12:34 / 56:78" label keeps its order too.
         video_Controls = New Panel With {
             .Name = "video_Controls",
             .BackColor = Color.FromArgb(28, 28, 28),
             .Height = bar_H,
-            .Visible = False
+            .Visible = False,
+            .RightToLeft = RightToLeft.No
         }
 
         ' Every part is named: WinForms passes Control.Name through as the UIA
         ' AutomationId, which is what a screen reader - and the UI test that drives this
         ' bar - uses to find it.
-        btn_Video_Play = NewBarButton("btn_Video_Play", Glyph_Play, glyph, btn_W, bar_H)
+        btn_Video_Play = NewBarButton("btn_Video_Play", btn_W, bar_H)
         btn_Video_Play.Location = New Point(0, 0)
         video_Controls.Controls.Add(btn_Video_Play)
 
-        btn_Video_Mute = NewBarButton("btn_Video_Mute", Glyph_Volume, glyph, btn_W, bar_H)
+        btn_Video_Mute = NewBarButton("btn_Video_Mute", btn_W, bar_H)
         video_Controls.Controls.Add(btn_Video_Mute)
+        SetVideoGlyph(btn_Video_Play, "media.play")
+        SetVideoGlyph(btn_Video_Mute, "media.volume")
 
         video_Seek = New FlatSlider With {
             .Name = "video_Seek",
@@ -134,11 +130,10 @@ Partial Public Class Main_Form
         LocalizeVideoControls()
     End Sub
 
-    Private Function NewBarButton(name As String, text As String, glyph_Font As Font, w As Integer, h As Integer) As NonFocusButton
+    Private Function NewBarButton(name As String, w As Integer, h As Integer) As NonFocusButton
         Dim b As New NonFocusButton() With {
             .Name = name,
-            .Text = text,
-            .Font = glyph_Font,
+            .Text = "",
             .FlatStyle = FlatStyle.Flat,
             .ForeColor = Color.Gainsboro,
             .BackColor = Color.FromArgb(28, 28, 28),
@@ -151,6 +146,15 @@ Partial Public Class Main_Form
         b.FlatAppearance.MouseDownBackColor = Color.FromArgb(88, 88, 88)
         Return b
     End Function
+
+    Private Sub SetVideoGlyph(button As Button, glyphId As String)
+        If String.Equals(TryCast(button.Tag, String), glyphId, StringComparison.Ordinal) Then Return
+        Dim oldImage As Image = button.Image
+        button.Image = GlyphRenderer.Render(glyphId, LogicalToDeviceUnits(20), button.ForeColor, AddressOf RuntimeBootstrap.OpenBundledAsset)
+        If oldImage IsNot Nothing Then oldImage.Dispose()
+        button.ImageAlign = ContentAlignment.MiddleCenter
+        button.Tag = glyphId
+    End Sub
 
     ''' <summary>Places the row: play | seek (stretches) | clock | mute | volume.</summary>
     Private Sub LayoutVideoControlsRow(pad As Integer)
@@ -204,7 +208,7 @@ Partial Public Class Main_Form
         ' The buttons' captions are icon-font glyphs from the private use area - a screen
         ' reader would announce garbage. These names are what it says instead (and what
         ' the UI test finds them by).
-        btn_Video_Play.AccessibleName = Localization.T("Пауза / продолжить")
+        btn_Video_Play.AccessibleName = Localization.T("Воспроизвести")
         btn_Video_Mute.AccessibleName = mute_Text
         video_Seek.AccessibleName = seek_Text
         video_Volume.AccessibleName = volume_Text
@@ -309,8 +313,10 @@ Partial Public Class Main_Form
             Dim len_Ms As Long = vlc_Media_Player.Length
             lbl_Video_Time.Text = FormatMediaTime(pos_Ms) & " / " & FormatMediaTime(len_Ms)
 
-            btn_Video_Play.Text = If(IsVlcActuallyPlaying(), Glyph_Pause, Glyph_Play)
-            btn_Video_Mute.Text = If(is_Video_Muted, Glyph_Mute, Glyph_Volume)
+            Dim playing As Boolean = IsVlcActuallyPlaying()
+            SetVideoGlyph(btn_Video_Play, If(playing, "media.pause", "media.play"))
+            btn_Video_Play.AccessibleName = Localization.T(If(playing, "Пауза", "Воспроизвести"))
+            SetVideoGlyph(btn_Video_Mute, If(is_Video_Muted, "media.mute", "media.volume"))
             If Not video_Volume.IsDragging Then video_Volume.Value = If(is_Video_Muted, 0.0, video_Volume_Level)
         Catch ex As Exception
             ' The player can be torn down under us between the check and the call.
@@ -407,7 +413,7 @@ Partial Public Class Main_Form
     Private Sub video_Volume_Scrubbing(sender As Object, e As EventArgs) Handles video_Volume.Scrubbing
         ' Volume follows the finger live: it is cheap and the point is to hear it.
         SetVideoAudioState(video_Volume.Value, False)
-        btn_Video_Mute.Text = Glyph_Volume
+        SetVideoGlyph(btn_Video_Mute, "media.volume")
     End Sub
 
     ''' <summary>

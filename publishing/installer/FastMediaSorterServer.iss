@@ -163,6 +163,12 @@ Type: filesandordirs; Name: "{commonprograms}\Fast Media Sorter Folder Share Ser
 ; [Icons], so the current language's copy is written back immediately.
 Type: files; Name: "{group}\* {#AppName}.lnk"
 
+[UninstallDelete]
+; The Share Manager writes companion.log next to its exe when that folder is writable;
+; nothing else removes it (ticket 055 I-03, the same entries as the User installer).
+Type: files; Name: "{app}\companion.log"
+Type: files; Name: "{app}\companion.log.old"
+
 [Icons]
 ; "--show": a bare launch obeys the manager's own "open the window at startup" option,
 ; which is OFF by default, so without the flag this Start-menu item would start a
@@ -303,14 +309,17 @@ begin
 end;
 
 { Stops the service, the Companion and the worker before Setup/Uninstall replaces or
-  removes their files. Best-effort: a hiccup here must not abort Setup. }
+  removes their files. Best-effort: a hiccup here must not abort Setup. -AppDir scopes
+  the kill to THIS installation's processes, so another account's own sharing from
+  another installation is left running (ticket 054 H-26). }
 procedure StopEverything(const ScriptPath: String);
 var
   ResultCode: Integer;
 begin
   if not FileExists(ScriptPath) then
     exit;
-  Exec('powershell.exe', '-NoProfile -ExecutionPolicy Bypass -File "' + ScriptPath + '"',
+  Exec('powershell.exe', '-NoProfile -ExecutionPolicy Bypass -File "' + ScriptPath + '"' +
+    ' -AppDir "' + ExpandConstant('{app}') + '"',
     '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 
@@ -356,6 +365,24 @@ begin
     LaunchShareManager;
 end;
 
+{ The Share Manager's logon autostart (HKCU Run value "FastMediaSorterShare", written by
+  AutostartManager at run time) is not removed by any [Registry] entry, so uninstall left
+  a dead Startup-apps entry Windows tried at every logon (ticket 055 I-03). Removed only
+  when it points into THIS installation: the User edition's Share Manager, installed
+  elsewhere, writes the same value name. Mirrors RemoveShareManagerAutostart in
+  FastMediaSorter.iss. }
+procedure RemoveShareManagerAutostart;
+var
+  RunValue: String;
+begin
+  if not RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'FastMediaSorterShare', RunValue) then
+    exit;
+  if Pos(Uppercase(ExpandConstant('{app}\FastMediaSorterCompanion.exe')), Uppercase(RunValue)) = 0 then
+    exit;
+  RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'FastMediaSorterShare');
+  RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run', 'FastMediaSorterShare');
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   ResultCode: Integer;
@@ -370,4 +397,5 @@ begin
     documented on the Server page. }
   RunHelperScript(ExpandConstant('{app}\install-share-service.ps1'), 'remove', ResultCode);
   StopEverything(ExpandConstant('{app}\stop-companion.ps1'));
+  RemoveShareManagerAutostart;
 end;

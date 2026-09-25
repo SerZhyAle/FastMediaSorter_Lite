@@ -1,0 +1,23 @@
+WORKER-IPC request fixtures - the host half of section 7
+==========================================================
+
+Generated, never hand-edited. Each file is the exact byte sequence the Share Manager's
+own serializer (WorkerIpc.SerializeRequest) writes to the pipe for one request type,
+as the product builds that request. No trailing newline: the pipe carries none.
+
+Contract   : WORKER-IPC 0.9 (pointer: docs/contracts/WORKER-IPC.md)
+Generator  : WorkerIpcConformanceTests.Generate_RequestFixtures_WhenAsked
+Command    : set FMS_REGENERATE_WORKER_IPC=1, then run tests/Companion.Tests
+Pinned by  : WorkerIpcConformanceTests.RequestFixtures_MatchTheProductSerializer_ByteForByte
+
+Digests
+-------
+
+  SHA-256  a052d6343870b31cbe4062e3a76f67c47394d6ff669f55bd02970f26a34c4de6  get-status.json
+  SHA-256  94fb95918a7b0fd0da1f5d5bf373b7d81f1a10fcbd69191f42a22ac6e920f489  reset-stats.json
+  SHA-256  c2500d616dec13e27811441562f230a870d443f7441b7e9ef66fec1a4df394e7  set-network-policy-full.json
+  SHA-256  47fd7160e384ef305ab646e0bae36b14379d8bc7f5e19abad9bf305e194393bd  set-network-policy-partial.json
+  SHA-256  89240f971d31c50dc4d78cc7ff34532ef2e9a8896038326adcb50a5edd893390  set-network-policy-port-only.json
+  SHA-256  3b1e5e3fea1d63fd118069b32b3f586f10afb27127c048af898ccdd7a41ea649  set-shared-folders.json
+  SHA-256  95ce2f744adbf8e190fe84a91eaa2dc8615cbd2c3b1203774990c30314556231  start-server.json
+  SHA-256  9befd51d163b0539c47a9b2016b5a742dabf993a70f044ebf0033bbccce52d0e  stop-server.json

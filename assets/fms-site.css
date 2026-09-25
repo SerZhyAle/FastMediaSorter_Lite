@@ -1,0 +1,27 @@
+/* Product-level presentation only. The shared kit stays byte-identical. */
+:root{--wide:min(1760px,94vw)}
+.site-header>.brand{margin-right:auto}
+.brand-mark{display:inline-flex;align-items:center;gap:.5rem}
+.brand-mark img{width:24px;height:24px;filter:grayscale(1) contrast(2)}
+.hero{text-align:left;padding:1.2rem 0}
+.hero .lead,.lead-narrow,.section-desc{max-width:none}
+.button-group,.hero-actions{justify-content:flex-start}
+.get{max-width:none;margin:.4rem 0 1.5rem}
+.scenario-card{display:flex;flex-direction:column;min-height:210px}
+.scenario-card p{flex-grow:1}
+.site-footer .container{max-width:var(--wide)}
+.footer-langs{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:14px 0 0;padding-top:14px;border-top:1px solid var(--border);font-size:14px;opacity:.85}
+.footer-langs a{text-decoration:none}
+.script-ar,.script-ur{font-family:var(--font-body),"Nirmala UI","Segoe UI",sans-serif}
+.script-hi{font-family:var(--font-body),"Nirmala UI",sans-serif}
+.script-bn{font-family:var(--font-body),"Nirmala UI",sans-serif}
+.script-zh{font-family:var(--font-body),"Microsoft YaHei UI",sans-serif}
+[dir="rtl"]{text-align:right}
+[dir="rtl"] .site-header,[dir="rtl"] .channels,[dir="rtl"] .footer-bottom{direction:rtl}
+[dir="rtl"] .brand{margin-right:0;margin-left:auto}
+[dir="rtl"] .quickstart li{padding-left:0;padding-right:2rem}
+[dir="rtl"] .quickstart li::before{left:auto;right:0}
+[dir="rtl"] .note{border-left:1px solid var(--border);border-right:3px solid var(--gold)}
+[dir="rtl"] details.sec>summary::after{margin-left:0;margin-right:auto}
+@media(min-width:1300px){.grid{grid-template-columns:repeat(4,1fr)}.tools-grid{grid-template-columns:repeat(6,1fr)}}
+@media(max-width:480px){.container{width:100%;max-width:100%;padding:0 12px}.site-header{max-width:calc(100% - 24px);min-width:0;padding:8px 10px;gap:6px}.brand-mark{flex:1 1 0;min-width:0}.brand{min-width:0;font-size:13px;line-height:1.2;white-space:normal}.seg button{padding:5px 8px}.hero .lead,.sec-head p,.scenarios .card p{overflow-wrap:anywhere}}

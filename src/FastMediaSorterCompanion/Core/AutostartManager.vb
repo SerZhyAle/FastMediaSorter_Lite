@@ -139,7 +139,8 @@ Public Module AutostartManager
 
     ''' <summary>
     ''' Whether an HKCU Run value is registered at all - "did anyone ask for autostart",
-    ''' which is NOT the same as "will it start" (<see cref="IsBlockedByShell"/>).
+    ''' which is NOT the same as "will it start" (<see cref="IsBlockedByShell"/>,
+    ''' <see cref="IsTargetMissing"/>).
     ''' </summary>
     Private Function IsRegistered() As Boolean
         Try
@@ -152,22 +153,55 @@ Public Module AutostartManager
         End Try
     End Function
 
+    ''' <summary>The exe the Run command names, or "". Handles the quoted (normal) form and
+    ''' an unquoted path with a space-less exe.</summary>
+    Private Function RunTargetPath(cmd As String) As String
+        Dim s As String = If(cmd, "").Trim()
+        If s.Length = 0 Then Return ""
+        If s(0) = """"c Then
+            Dim close As Integer = s.IndexOf(""""c, 1)
+            If close > 1 Then Return s.Substring(1, close - 1)
+            Return ""
+        End If
+        Dim sp As Integer = s.IndexOf(" "c)
+        Return If(sp < 0, s, s.Substring(0, sp))
+    End Function
+
+    ''' <summary>The registered command names an exe that is no longer on disk: the entry
+    ''' exists, the checkbox therefore reads "on", and nothing will ever start. Reported
+    ''' separately so the settings note can say what happened instead of just "off".</summary>
+    Public Function IsTargetMissing() As Boolean
+        If IsPackaged() Then Return False
+        Try
+            Using k As RegistryKey = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable:=False)
+                If k Is Nothing Then Return False
+                Dim target As String = RunTargetPath(TryCast(k.GetValue(RunValueName), String))
+                Return target.Length > 0 AndAlso Not IO.File.Exists(target)
+            End Using
+        Catch
+            Return False
+        End Try
+    End Function
+
     ''' <summary>
-    ''' The full three-way answer, so a caller can tell "never asked for" from "asked for
-    ''' and Windows refuses". <see cref="IsEnabled"/> collapses the last two into False,
+    ''' The three-way answer, so a caller can tell "never asked for" from "asked for
+    ''' and Windows refuses". <see cref="IsEnabled"/> collapses the last three into False,
     ''' which is right for a checkbox and wrong for anything that has to explain itself.
     ''' </summary>
     Public Function State() As AutostartState
         If IsPackaged() Then Return AutostartState.Packaged
         If Not IsRegistered() Then Return AutostartState.NotRegistered
-        Return If(IsBlockedByShell(), AutostartState.BlockedByShell, AutostartState.Active)
+        If IsBlockedByShell() Then Return AutostartState.BlockedByShell
+        If IsTargetMissing() Then Return AutostartState.NotRegistered
+        Return AutostartState.Active
     End Function
 
     ''' <summary>
     ''' Current autostart state, as in "will it actually start at the next logon" - the
-    ''' registered Run value AND no shell veto over it (<see cref="IsBlockedByShell"/>).
-    ''' For packaged builds the manifest StartupTask owns this, so we report True (the
-    ''' checkbox is read-only there anyway).
+    ''' registered Run value, no shell veto over it (<see cref="IsBlockedByShell"/>) and
+    ''' a target that still exists (<see cref="IsTargetMissing"/>). For packaged builds the
+    ''' manifest StartupTask owns this, so we report True (the checkbox is read-only there
+    ''' anyway).
     ''' </summary>
     Public Function IsEnabled() As Boolean
         Dim s As AutostartState = State()
@@ -200,7 +234,7 @@ Public Module AutostartManager
             End Using
             Return True
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " companion autostart: " & ex.Message)
+            AppFileLogger.LogException("Autostart", ex)
             Return False
         End Try
     End Function
@@ -212,6 +246,12 @@ Public Module AutostartManager
     ''' controls appear at logon instead of a headless worker. No-op when packaged,
     ''' when autostart is off (value absent), or when the value already matches.
     ''' Called once from startup; never throws.
+    '''
+    ''' WHAT counts as "the old target" is <see cref="ShouldRewriteRunTarget"/> - the check
+    ''' this module started without. It used to rewrite on ANY difference from our own
+    ''' command, so a portable ZIP copy, a dev build or the other edition's Share Manager
+    ''' that merely RAN once took the logon autostart over (ticket 054 H-16), and deleting
+    ''' that copy left a dead entry behind a checkbox that still read "on".
     ''' </summary>
     Public Sub MigrateRunTargetIfNeeded()
         If IsPackaged() Then Return
@@ -222,16 +262,47 @@ Public Module AutostartManager
                 If String.IsNullOrEmpty(current) Then Return   ' autostart not enabled - nothing to migrate
                 Dim companion As String = CompanionExePath()
                 If companion.Length = 0 Then Return
-                ' Rewrite when the exe target OR the silent-tray flag is missing (an
-                ' old value points at the worker, or a value without --tray would pop
-                ' the window at every logon).
-                If Not String.Equals(current, RunCommand(companion), StringComparison.OrdinalIgnoreCase) Then
-                    k.SetValue(RunValueName, RunCommand(companion), RegistryValueKind.String)
-                End If
+                ' Rewrite only our own exe with a missing/wrong flag (adds --tray), the old
+                ' worker/viewer targets, or an entry whose exe no longer exists (a repair).
+                If Not ShouldRewriteRunTarget(current, companion) Then Return
+                k.SetValue(RunValueName, RunCommand(companion), RegistryValueKind.String)
             End Using
         Catch
         End Try
     End Sub
+
+    ''' <summary>
+    ''' Whether the one-shot rewrite may repoint <paramref name="current"/> at this
+    ''' Companion. Kept pure so the takeover rule is unit-tested rather than reasoned
+    ''' about: only our own exe with anything but the exact silent-tray command, the old
+    ''' pre-Companion targets (the bare worker, the viewer), or an entry whose exe file is
+    ''' gone. Anything else that EXISTS - another installation's Companion, a foreign
+    ''' program - owns the logon slot, and merely running is not consent to take it over.
+    ''' </summary>
+    Friend Function ShouldRewriteRunTarget(current As String, companionExe As String) As Boolean
+        If String.IsNullOrEmpty(current) OrElse String.IsNullOrEmpty(companionExe) Then Return False
+        If String.Equals(current.Trim(), RunCommand(companionExe), StringComparison.OrdinalIgnoreCase) Then Return False
+        Dim target As String = RunTargetPath(current)
+        If target.Length = 0 Then Return False
+        ' Our own exe under any other wording of the command: rewrite fixes the flag.
+        If String.Equals(target, companionExe, StringComparison.OrdinalIgnoreCase) Then Return True
+        Dim name As String = ""
+        Try
+            name = IO.Path.GetFileName(target)
+        Catch
+        End Try
+        ' The pre-Companion LITE wrote the bare worker here; the viewer's own exe is the
+        ' other historical shape of the same entry.
+        If String.Equals(name, WorkerProcess.ExeName, StringComparison.OrdinalIgnoreCase) OrElse
+           String.Equals(name, "FastMediaSorter_LITE.exe", StringComparison.OrdinalIgnoreCase) OrElse
+           String.Equals(name, "FastMediaSorter_x86.exe", StringComparison.OrdinalIgnoreCase) Then Return True
+        ' A dead entry is repaired rather than left as a checkbox that lies.
+        Try
+            Return Not IO.File.Exists(target)
+        Catch
+            Return False
+        End Try
+    End Function
 
     ''' <summary>
     ''' The decision behind <see cref="OfferForSystemServiceHostOnce"/>, kept pure so the

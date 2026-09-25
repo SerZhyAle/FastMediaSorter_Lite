@@ -18,6 +18,7 @@ Imports Xunit
 '''
 ''' Companion is not multi-targeted: it is .NET 10 only, so it always ships all 13.
 ''' </summary>
+<Collection(UiLanguageCollection.Name)>
 Public Class LocalizationParityTests
 
     ' Translations stored per key: everything after Russian, which is the key itself.

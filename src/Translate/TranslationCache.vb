@@ -58,7 +58,8 @@ End Class
 ''' <summary>
 ''' Two-tier cache for overlay documents: a process-lifetime in-memory map plus
 ''' an optional JSON disk cache under %LOCALAPPDATA%\SZA\FastMediaSorter\ocr-cache.
-''' Key = filePath|fileWriteTicks|ocrEngine|translator|srcLang|dstLang.
+''' The key is built by OcrResultPolicy.BuildCacheKey (file, write time, displayed pixel
+''' grid, engine, translator, languages).
 ''' </summary>
 Public Class TranslationCache
 
@@ -89,10 +90,6 @@ Public Class TranslationCache
 
     ''' <summary>Budget for the disk tier, in megabytes. Zero disables trimming.</summary>
     Friend Property DiskBudgetMb As Integer = Default_Disk_Budget_Mb
-
-    Public Shared Function BuildKey(filePath As String, fileWriteTicks As Long, ocrEngine As String, translator As String, srcLang As String, dstLang As String) As String
-        Return String.Join("|", filePath, fileWriteTicks.ToString(), ocrEngine, translator, srcLang, dstLang)
-    End Function
 
     Public Function TryGetMemory(key As String) As OcrOverlayDocument
         SyncLock sync

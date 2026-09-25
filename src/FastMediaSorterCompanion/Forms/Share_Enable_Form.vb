@@ -1,6 +1,7 @@
 Option Strict On
 
 Imports System.Drawing
+Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 ''' <summary>
@@ -55,6 +56,11 @@ Public Class Share_Enable_Form
             .Text = ShareText.ServerEnableTitle()}
         _body = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 8), .MaximumSize = New Size(contentWidth, 0),
             .Text = ShareText.ServerEnableBody()}
+        ' What the UAC prompt the button raises is for, and how each part is taken back - the
+        ' install-trust page (ticket 037 Ф-4). The body names the undo; the page itemizes it.
+        Dim lnkTrust As New LinkLabel With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 8),
+            .MaximumSize = New Size(contentWidth, 0), .Text = ShareText.TrustLinkText()}
+        AddHandler lnkTrust.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareText.TrustPageUrl())
         _status = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 4), .MaximumSize = New Size(contentWidth, 0),
             .MinimumSize = New Size(contentWidth, 0), .ForeColor = Color.DimGray, .Text = ""}
 
@@ -70,6 +76,7 @@ Public Class Share_Enable_Form
 
         tlp.Controls.Add(_title)
         tlp.Controls.Add(_body)
+        tlp.Controls.Add(lnkTrust)
         tlp.Controls.Add(_status)
         tlp.Controls.Add(btnFlow)
 
@@ -85,15 +92,19 @@ Public Class Share_Enable_Form
         DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
     End Sub
 
-    Private Sub OnEnableClicked(sender As Object, e As EventArgs)
+    Private Async Sub OnEnableClicked(sender As Object, e As EventArgs)
         _btnEnable.Enabled = False
         _btnCancel.Enabled = False
         _status.ForeColor = Color.DimGray
         _status.Text = ShareText.ServerEnableWorking()
         Me.Refresh()
 
-        ' Blocks on the UAC prompt (modal, brief) - the app itself stays non-elevated.
-        Dim res As ServerFeatures.EnableResult = ServerFeatures.EnableViaElevation()
+        ' Blocks on the UAC prompt (modal, brief) - the app itself stays non-elevated, and
+        ' runs the wait off the UI thread so the dialog keeps painting (ticket 054 H-15).
+        Dim res As ServerFeatures.EnableResult = Await Task.Run(Function() ServerFeatures.EnableViaElevation())
+
+        ' The dialog may have been closed while the helper was out.
+        If IsDisposed OrElse Disposing Then Return
 
         Select Case res
             Case ServerFeatures.EnableResult.Enabled

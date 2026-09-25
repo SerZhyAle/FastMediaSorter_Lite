@@ -23,6 +23,9 @@ Partial Public Class Main_Form
         Public Property FolderPath As String = ""
         ''' <summary>Which box this decode is FOR, decided when the job was queued.</summary>
         Public Property TargetIsBox1 As Boolean
+        ''' <summary>media_Generation the request was made for (audit 048, A-01/A-15): the
+        ''' result and every progress report are accepted only while it is still current.</summary>
+        Public Property Generation As Integer
         Public Property CountFolder As Boolean
         Public Property IsRandomMode As Boolean
 #If Not NETFRAMEWORK Then
@@ -30,6 +33,12 @@ Partial Public Class Main_Form
         ''' snapshot for the same reason as everything else here: the worker must not read
         ''' a live field that the UI thread can change mid-decode.</summary>
         Public Property Archive As ArchiveSession
+        ''' <summary>The open resource, or Nothing for a plain folder - which is always, until
+        ''' ticket 007 ships a provider that has to materialise.</summary>
+        Public Property Resource As ResourceSession
+        ''' <summary>The files to materialise ahead of the one on screen (006 PV-6), decided
+        ''' on the UI thread; empty for a plain folder.</summary>
+        Public Property AheadFiles As List(Of String)
 #End If
     End Class
 
@@ -37,6 +46,7 @@ Partial Public Class Main_Form
     Private NotInheritable Class PrefetchResult
         Public Property NextFile As String = ""
         Public Property TargetIsBox1 As Boolean
+        Public Property Generation As Integer
         Public Property Picture As Image
         Public Property Data As IO.MemoryStream
     End Class
@@ -72,12 +82,14 @@ Partial Public Class Main_Form
                 ' thread threw InvalidOperationException, the catch-all below swallowed
                 ' it, and the whole prefetch went down with it - on exactly the path
                 ' (the file vanished from under us) where it is needed most.
-                worker.ReportProgress(0, New Dictionary(Of String, String) From {{"clearCurrentFile", "1"}})
+                worker.ReportProgress(0, New Dictionary(Of String, String) From {
+                    {"clearCurrentFile", "1"}, {Progress_Generation_Key, request.Generation.ToString()}})
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0060: File is lost for BgWorker size calculation")
             Else
                 Dim file_Meta_State As New Dictionary(Of String, String)
 
                 file_Meta_State("fileName") = current_File_Name_in_worker
+                file_Meta_State(Progress_Generation_Key) = request.Generation.ToString()
 
                 If Is_to_show_file_sizes OrElse
                         Is_to_show_picture_sizes OrElse
@@ -107,7 +119,7 @@ Partial Public Class Main_Form
                     End If
 
                     If Is_to_show_picture_sizes Then
-                        Dim fileExtension As String = current_File_Info.Extension.ToLower()
+                        Dim fileExtension As String = current_File_Info.Extension.ToLowerInvariant()
                         If Image_File_Extensions.Contains(fileExtension) Then
                             ' Header-only read (no GDI+) on the worker-local file. Using
                             ' Image.FromFile(Current_File_Name) here was a double bug: it
@@ -137,12 +149,20 @@ Partial Public Class Main_Form
                 ' and zip files too, and that number was then written over
                 ' total_File_Count - so "1 из 150" became "2 из 100" on the next flip,
                 ' and End walked off the end of the real list.
-                Dim background_Total_File_Count As Integer = EnumerateConfiguredFiles(request.FolderPath).
-                    Count(Function(f) all_Supported_Extensions.Contains(f.Extension.ToLower()))
+#If Not NETFRAMEWORK Then
+                Dim background_Total_File_Count As Integer = CountProviderFiles(request.FolderPath, request.Resource)
+#Else
+                Dim background_Total_File_Count As Integer = CountConfiguredFiles(request.FolderPath)
+#End If
 
-                Dim folder_File_Count_State As New Dictionary(Of String, String)
-                folder_File_Count_State("totalFilesCountText") = background_Total_File_Count.ToString
-                DirectCast(sender, BackgroundWorker).ReportProgress(0, folder_File_Count_State)
+                ' -1: the folder could not be counted. Say nothing rather than "0" - and do
+                ' not let it take the prefetch below down with it.
+                If background_Total_File_Count >= 0 Then
+                    Dim folder_File_Count_State As New Dictionary(Of String, String)
+                    folder_File_Count_State("totalFilesCountText") = background_Total_File_Count.ToString
+                    folder_File_Count_State(Progress_Generation_Key) = request.Generation.ToString()
+                    DirectCast(sender, BackgroundWorker).ReportProgress(0, folder_File_Count_State)
+                End If
 
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0090: folder files: " & background_Total_File_Count)
             End If
@@ -151,7 +171,7 @@ Partial Public Class Main_Form
                 Not next_File_After_Current_in_worker = "" AndAlso
                 Not next_File_After_Current_in_worker = current_File_Name_in_worker Then
 
-                Dim SecondFileExtension = Path.GetExtension(next_File_After_Current_in_worker).ToLower
+                Dim SecondFileExtension = Path.GetExtension(next_File_After_Current_in_worker).ToLowerInvariant()
 
 #If Not NETFRAMEWORK Then
                 ' Inside an archive the neighbour is not on disk yet, and the decode below
@@ -161,6 +181,14 @@ Partial Public Class Main_Form
                 ' path will report the reason if the user actually gets there.
                 If request.Archive IsNot Nothing Then
                     Dim ahead As Integer = request.Archive.IndexOfTempPath(next_File_After_Current_in_worker)
+                    ' Only a picture of modest size (audit 052 G-14): this worker decodes
+                    ' nothing else, and extracting a 500 MB video ahead held the extraction
+                    ' lock the UI thread needs for the entry the user actually went to.
+                    If ahead >= 0 AndAlso Not ArchiveEntryFilter.ShouldPrefetch(
+                            Image_File_Extensions.Contains(SecondFileExtension),
+                            request.Archive.Entries(ahead).Size) Then
+                        ahead = -1
+                    End If
                     If ahead >= 0 Then
                         Dim ignored As ArchiveSession.EntryRefusal
                         ' Same settings-derived ceilings as the UI path (Main_Form.Archive.vb,
@@ -172,6 +200,34 @@ Partial Public Class Main_Form
                             CLng(archivePrefs.ArchiveMaxEntryMb) * 1024L * 1024L,
                             CLng(archivePrefs.ArchiveCacheMaxMb) * 1024L * 1024L)
                     End If
+                End If
+
+                ' A resource that has to materialise fetches before anything is decoded
+                ' (006 PV-6): the next file and, on a fast link, a couple beyond it. Only
+                ' kinds this worker decodes - on a remote link fetching a video nobody asked
+                ' for is the difference between navigating and waiting. The fetch honours the
+                ' session's token, which leaving the resource cancels. Failures are left to
+                ' the display path, which reports them if the user actually gets there.
+                If request.Resource IsNot Nothing AndAlso request.AheadFiles IsNot Nothing Then
+                    Dim depth As Integer = Math.Max(1, RemoteCacheStore.PrefetchDepth(request.Resource.Provider.Capabilities))
+                    For Each ahead_File As String In request.AheadFiles
+                        If worker.CancellationPending OrElse Is_No_Background_Tasks Then Exit For
+                        If Not Image_File_Extensions.Contains(Path.GetExtension(ahead_File).ToLowerInvariant()) Then Continue For
+                        If request.Resource.TryEnsureLocal(ahead_File, protectAround:=depth) = EnsureLocalOutcome.Cancelled Then Exit For
+                    Next
+                End If
+#End If
+
+#If Not NETFRAMEWORK Then
+                ' A secure container is UNSEALED here, not decoded: the expensive part of
+                ' opening one is the Argon2id derivation, and warming it is the whole of
+                ' what a prefetch can usefully do for a file whose contents the display path
+                ' must classify for itself. It runs only while a session credential is held
+                ' - without one the answer would be a modal dialog from a pool thread - and
+                ' only for this ONE file, which is all the prefetch ever looks at
+                ' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §6).
+                If IsSecureContainerExtension(SecondFileExtension) Then
+                    PrefetchSecureContainer(next_File_After_Current_in_worker)
                 End If
 #End If
 
@@ -186,6 +242,7 @@ Partial Public Class Main_Form
                         e.Result = New PrefetchResult With {
                             .NextFile = next_File_After_Current_in_worker,
                             .TargetIsBox1 = request.TargetIsBox1,
+                            .Generation = request.Generation,
                             .Picture = next_Image_Data.Item1,
                             .Data = next_Image_Data.Item2
                         }
@@ -209,22 +266,56 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
+    ''' <summary>The key under which every progress report carries its request's generation.</summary>
+    Private Const Progress_Generation_Key As String = "generation"
+
+    ''' <summary>
+    ''' The name the status bar shows for a file: the path itself, or - on the mainline - the
+    ''' archive entry's own name, the resource file's own name, or an open container's sealed
+    ''' true name, never a temporary or cache path. Shared by the synchronous write in the
+    ''' display path and the worker's size/date/dimensions report (audit 048, A-15).
+    ''' </summary>
+    Private Function CurrentFileDisplayName(file_Path As String) As String
+        Dim display_Text As String = If(file_Path, "")
+#If Not NETFRAMEWORK Then
+        ' Inside an archive show the entry's own name ("1998/03/foto12.jpg"), never the
+        ' path in the temporary directory - which the user is not shown anywhere (§2.2)
+        ' and which would be meaningless to copy or read out.
+        Dim entry_Name As String = ArchiveDisplayName(display_Text)
+        If entry_Name.Length > 0 Then display_Text = entry_Name
+        ' The same for a file of a remote resource: its own name, not the cache path.
+        Dim resource_Name As String = ResourceDisplayName(If(file_Path, ""))
+        If resource_Name.Length > 0 Then display_Text = resource_Name
+
+        ' And an open container shows its sealed true name, on the same setting that
+        ' governs every other surface (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §9).
+        Dim sealed_Name As String = SecureDisplayName(If(file_Path, ""))
+        If sealed_Name.Length > 0 Then display_Text = sealed_Name
+#End If
+        Return display_Text
+    End Function
+
     Private Sub BgWorker_ProgressChanged(sender As Object, e As ProgressChangedEventArgs) Handles BgWorker.ProgressChanged
         Dim file_Meta_State As Dictionary(Of String, String) = DirectCast(e.UserState, Dictionary(Of String, String))
+
+        ' A report about media the user has already left must not touch the screen (audit
+        ' 048, A-15): requests run one after another, so a slow decode of the previous
+        ' request's "next" used to leave the label naming the PREVIOUS file, and a late
+        ' folder count wrote the total of a folder the user had left into the counter.
+        Dim report_Generation As Integer
+        If Not file_Meta_State.ContainsKey(Progress_Generation_Key) OrElse
+           Not Integer.TryParse(file_Meta_State(Progress_Generation_Key), report_Generation) OrElse
+           Not NavigationRules.IsReportCurrent(report_Generation, media_Generation) Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0165: stale BgWorker progress dropped")
+            Return
+        End If
 
         If file_Meta_State.ContainsKey("clearCurrentFile") Then
             lbl_Current_File.Text = ""
 
         ElseIf file_Meta_State.ContainsKey("fileName") Then
 
-            Dim current_File_Display_Text = file_Meta_State("fileName")
-#If Not NETFRAMEWORK Then
-            ' Inside an archive show the entry's own name ("1998/03/foto12.jpg"), never the
-            ' path in the temporary directory - which the user is not shown anywhere (§2.2)
-            ' and which would be meaningless to copy or read out.
-            Dim entry_Name As String = ArchiveDisplayName(file_Meta_State("fileName"))
-            If entry_Name.Length > 0 Then current_File_Display_Text = entry_Name
-#End If
+            Dim current_File_Display_Text = CurrentFileDisplayName(file_Meta_State("fileName"))
 
             If Is_to_show_file_datetime AndAlso
                     file_Meta_State.ContainsKey("fileTimeText") Then
@@ -304,7 +395,14 @@ Partial Public Class Main_Form
                 ' it used to mean writing the image into whichever box the live flags
                 ' pointed at - occasionally the visible one, swapping the picture under
                 ' the user's eyes while the name and counter said something else.
-                If Not String.Equals(result.NextFile, next_File_After_Current, StringComparison.OrdinalIgnoreCase) Then
+                ' The name alone was not enough (audit 048, A-01): a request queued while the
+                ' worker was busy survives a box swap, and a back-and-forth between two photos
+                ' landed "the next file" in the box that had become the VISIBLE one. So the
+                ' result must also be for the media generation still on screen and aimed at
+                ' the box that is still hidden.
+                If Not NavigationRules.IsPrefetchCurrent(result.Generation, media_Generation,
+                                                         result.TargetIsBox1, is_Second_PictureBox_Active,
+                                                         result.NextFile, next_File_After_Current) Then
                     result.Picture?.Dispose()
                     result.Data?.Dispose()
                     bgWorker_Result = "SKIPED"
@@ -386,10 +484,13 @@ Partial Public Class Main_Form
             Dim file_Entry_List As List(Of FileEntry) = Nothing
 #If Not NETFRAMEWORK Then
             file_Entry_List = ArchiveFileEntries()
-#End If
+            ' Otherwise the provider layer (006 PV-4): the open resource's listing, or the
+            ' plain folder's scan through LocalProvider - the same scan, moved.
+            If file_Entry_List Is Nothing Then file_Entry_List = ProviderFileEntries(Current_Folder_Path)
+#Else
             If file_Entry_List Is Nothing Then
                 file_Entry_List = EnumerateConfiguredFiles(Current_Folder_Path) _
-                .Where(Function(f) all_Supported_Extensions.Contains(f.Extension.ToLower())) _
+                .Where(Function(f) all_Supported_Extensions.Contains(f.Extension.ToLowerInvariant())) _
                 .Select(Function(f) New FileEntry With {
                     .FilePath = f.FullName,
                     .FileSize = f.Length,
@@ -397,6 +498,7 @@ Partial Public Class Main_Form
                     .FileDate = f.LastWriteTime
                 }).ToList()
             End If
+#End If
 
             If file_Entry_List.Count = 0 Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1096: Files count=0")
@@ -443,52 +545,58 @@ Partial Public Class Main_Form
             End If
 
         Catch ex As Exception
+            ' The folder itself could not be read (the scan throws for its root since audit
+            ' 048 A-07): an honest error, not "empty", and - because the callers return
+            ' before the recent-folders insert on a read error - no recent entry for it.
             is_Read_Error = True
-            lbl_Status.Text = Localization.T("! Ошибка чтения файлов")
+            lbl_Status.Text = FolderReadFailureText(ex, Current_Folder_Path)
+            AppFileLogger.LogException("Folder scan failed: " & Current_Folder_Path, ex)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1110: Error reading files: " & ex.Message)
             Return Nothing
         End Try
     End Function
 
-    ''' <summary>Recursive scans deliberately do not use AllDirectories: Windows lets a
-    ''' junction or symlink point back to an ancestor (or outside the selected tree),
-    ''' and blindly enumerating it can loop forever.  Reparse directories are therefore
-    ''' leaves.  Inaccessible children are skipped just like Explorer's normal scan.</summary>
-    Private Function EnumerateConfiguredFiles(root As String) As IEnumerable(Of FileInfo)
-        Dim result As New List(Of FileInfo)()
-        If String.IsNullOrEmpty(root) OrElse Not Directory.Exists(root) Then Return result
+    ''' <summary>The folder scan of the x86 build: FolderScan.EnumerateFiles, shared with the
+    ''' mainline's LocalProvider.ListEntries (006 PV-4). The x86 build never scans subfolders.
+    ''' A root that cannot be read throws (audit 048, A-07); GetFiles classifies it.</summary>
 #If NETFRAMEWORK Then
-        Dim includeSubfolders As Boolean = False
-#Else
-        Dim includeSubfolders As Boolean = modern_Preferences IsNot Nothing AndAlso modern_Preferences.IncludeSubfolders
-#End If
-        If Not includeSubfolders Then
-            Try
-                result.AddRange(New DirectoryInfo(root).EnumerateFiles("*", SearchOption.TopDirectoryOnly))
-            Catch
-            End Try
-            Return result
-        End If
+    Private Function EnumerateConfiguredFiles(root As String) As IEnumerable(Of FileInfo)
+        Return FolderScan.EnumerateFiles(root, False, Threading.CancellationToken.None)
+    End Function
 
-        Dim pending As New Stack(Of String)()
-        pending.Push(root)
-        While pending.Count > 0
-            Dim directory As String = pending.Pop()
-            Try
-                Dim info As New DirectoryInfo(directory)
-                If (info.Attributes And FileAttributes.ReparsePoint) <> 0 AndAlso
-                   Not String.Equals(directory, root, StringComparison.OrdinalIgnoreCase) Then Continue While
-                result.AddRange(info.EnumerateFiles("*", SearchOption.TopDirectoryOnly))
-                For Each child As DirectoryInfo In info.EnumerateDirectories("*", SearchOption.TopDirectoryOnly)
-                    If (child.Attributes And FileAttributes.ReparsePoint) = 0 Then pending.Push(child.FullName)
-                Next
-            Catch ex As UnauthorizedAccessException
-                Debug.WriteLine("Skipping inaccessible directory: " & directory)
-            Catch ex As IOException
-                Debug.WriteLine("Skipping unreadable directory: " & directory)
-            End Try
-        End While
-        Return result
+    ''' <summary>The background count: a failure here only means no count, never a read error.</summary>
+    Private Function CountConfiguredFiles(root As String) As Integer
+        Try
+            Return EnumerateConfiguredFiles(root).Count(Function(f) all_Supported_Extensions.Contains(f.Extension.ToLowerInvariant()))
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0085: background count failed: " & ex.Message)
+            Return -1
+        End Try
+    End Function
+#End If
+
+    ''' <summary>
+    ''' The status line for a folder that could not be read at all (audit 048, A-07) - in
+    ''' the slot-health vocabulary, naming the folder: "not found", "no access" or "no
+    ''' connection", never "the folder is empty". The x86 build keeps its historical line.
+    ''' </summary>
+    Private Shared Function FolderReadFailureText(ex As Exception, folder_Path As String) As String
+#If NETFRAMEWORK Then
+        Return Localization.T("! Ошибка чтения файлов")
+#Else
+        Select Case PathFailure.Classify(ex)
+            Case PathFailureKind.Missing
+                Return Localization.TF("! Каталог не найден: {0}", folder_Path)
+            Case PathFailureKind.Denied
+                Return Localization.TF("! Нет доступа к каталогу: {0}", folder_Path)
+            Case PathFailureKind.Transport
+                Return Localization.TF("! Нет связи с каталогом: {0}", folder_Path)
+            Case PathFailureKind.Invalid
+                Return Localization.TF("! Недопустимый путь: {0}", folder_Path)
+            Case Else
+                Return Localization.T("! Ошибка чтения файлов")
+        End Select
+#End If
     End Function
 
 End Class

@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 ' <summary>
 ' The Hosting surface: the User edition (this program hosts the worker) vs the
@@ -293,6 +293,49 @@ Partial Public NotInheritable Class Localization
             "उपयोक्ता संस्करण पर लौटें..", "ইউজার সংস্করণে ফিরুন..",
             "یوزر ایڈیشن پر واپس جائیں..", "返回用户版..")
 
+        ' The confirmation of the in-app return (ticket 054 H-05) - the consequences are
+        ' spelled out before the one UAC prompt, the same rule the switch prompt follows.
+        Add("Вернуть раздачу этой программе?" & vbCrLf & vbCrLf &
+            "Служба Windows будет остановлена и удалена, ваши настройки, папки и ключ узла вернутся в пользовательское хранилище, а правило брандмауэра будет указывать на эту программу. Телефонам подключаться заново не придётся - ключ узла сохраняется." & vbCrLf & vbCrLf &
+            "Раздача снова будет работать, пока вы в системе и менеджер запущен. Windows запросит подтверждение администратора один раз.",
+            "Hand sharing back to this program?" & vbCrLf & vbCrLf &
+            "The Windows service will be stopped and removed, your settings, folders and host key return to the per-user store, and the firewall rule will point at this program. The phones will not have to re-pair - the host key survives." & vbCrLf & vbCrLf &
+            "Sharing will again work while you are logged in and the manager is running. Windows will ask for administrator confirmation once.",
+            "Повернути роздачу цій програмі?" & vbCrLf & vbCrLf &
+            "Службу Windows буде зупинено та видалено, ваші налаштування, папки і ключ вузла повернуться до користувацького сховища, а правило брандмауера вказуватиме на цю програму. Телефонам підключатися наново не доведеться - ключ вузла зберігається." & vbCrLf & vbCrLf &
+            "Роздача знову працюватиме, поки ви в системі і менеджер запущений. Windows запитає підтвердження адміністратора один раз.",
+            "Die Freigabe an dieses Programm zurückgeben?" & vbCrLf & vbCrLf &
+            "Der Windows-Dienst wird gestoppt und entfernt, Ihre Einstellungen, Ordner und der Hostschlüssel kehren in den Benutzerspeicher zurück, und die Firewall-Regel zeigt auf dieses Programm. Die Telefone müssen sich nicht neu koppeln - der Hostschlüssel bleibt erhalten." & vbCrLf & vbCrLf &
+            "Die Freigabe funktioniert wieder, solange Sie angemeldet sind und der Manager läuft. Windows fragt einmal nach der Administratorbestätigung.",
+            "Riportare la condivisione a questo programma?" & vbCrLf & vbCrLf &
+            "Il servizio Windows verrà arrestato e rimosso, le impostazioni, le cartelle e la chiave host tornano all'archivio utente e la regola del firewall punterà a questo programma. I telefoni non dovranno riconnettersi - la chiave host resta." & vbCrLf & vbCrLf &
+            "La condivisione tornerà a funzionare finché sei connesso e il gestore è in esecuzione. Windows chiederà conferma dell'amministratore una volta.",
+            "¿Devolver el uso compartido a este programa?" & vbCrLf & vbCrLf &
+            "El servicio de Windows se detendrá y eliminará, su configuración, carpetas y clave de host vuelven al almacén del usuario, y la regla del firewall apuntará a este programa. Los teléfonos no tendrán que volver a emparejarse: la clave de host se conserva." & vbCrLf & vbCrLf &
+            "El uso compartido volverá a funcionar mientras tenga la sesión iniciada y el gestor esté en ejecución. Windows pedirá confirmación de administrador una vez.",
+            "Rendre le partage à ce programme ?" & vbCrLf & vbCrLf &
+            "Le service Windows sera arrêté et supprimé, vos paramètres, dossiers et clé d'hôte reviennent au magasin de l'utilisateur, et la règle du pare-feu pointera vers ce programme. Les téléphones n'auront pas à être réappairés - la clé d'hôte est conservée." & vbCrLf & vbCrLf &
+            "Le partage fonctionnera à nouveau tant que vous êtes connecté et que le gestionnaire tourne. Windows demandera une confirmation d'administrateur une fois.",
+            "Devolver a partilha a este programa?" & vbCrLf & vbCrLf &
+            "O serviço Windows será parado e removido, as suas definições, pastas e chave de anfitrião voltam ao arquivo do utilizador, e a regra da firewall passará a apontar para este programa. Os telemóveis não terão de ser emparelhados de novo - a chave de anfitrião mantém-se." & vbCrLf & vbCrLf &
+            "A partilha voltará a funcionar enquanto tiver sessão iniciada e o gestor estiver em execução. O Windows pedirá confirmação de administrador uma vez.",
+            "إعادة المشاركة إلى هذا البرنامج؟" & vbCrLf & vbCrLf &
+            "سيتم إيقاف خدمة Windows وإزالتها، وتعود إعداداتك والمجلدات ومفتاح المضيف إلى مخزن المستخدم، وستشير قاعدة جدار الحماية إلى هذا البرنامج. لن تحتاج الهواتف إلى إعادة الاقتران - فمفتاح المضيف محفوظ." & vbCrLf & vbCrLf &
+            "ستعمل المشاركة مرة أخرى طالما أنت مسجل الدخول والمدير يعمل. سيطلب Windows تأكيد المسؤول مرة واحدة.",
+            "इस प्रोग्राम को साझा करना वापस लौटाएँ?" & vbCrLf & vbCrLf &
+            "Windows सेवा रुकेगी और हटा दी जाएगी, आपकी सेटिंग, फ़ोल्डर और होस्ट कुंजी उपयोक्ता स्टोर में लौट आएँगी, और फ़ायरवॉल नियम इस प्रोग्राम की ओर इंगित करेगा। फ़ोनों को दोबारा जोड़ना नहीं पड़ेगा - होस्ट कुंजी बनी रहती है।" & vbCrLf & vbCrLf &
+            "जब तक आप लॉग इन हैं और मैनेजर चल रहा है, साझा करना फिर से काम करेगा। Windows एक बार व्यवस्थापक की पुष्टि मांगेगा।",
+            "শেয়ার করা এই প্রোগ্রামের কাছে ফিরিয়ে দেবেন?" & vbCrLf & vbCrLf &
+            "Windows সার্ভিসটি বন্ধ হয়ে সরানো হবে, আপনার সেটিং, ফোল্ডার ও হোস্ট কী ব্যবহারকারীর স্টোরে ফিরে যাবে, আর ফায়ারওয়াল নিয়ম এই প্রোগ্রামের দিকে নির্দেশ করবে। ফোনগুলিকে আবার জুড়তে হবে না - হোস্ট কী থেকে যায়।" & vbCrLf & vbCrLf &
+            "আপনি লগ ইন থাকা অবস্থায় এবং ম্যানেজার চালু থাকলে শেয়ার আবার কাজ করবে। Windows একবার অ্যাডমিনিস্ট্রেটর নিশ্চিতকরণ চাইবে।",
+            "شیئرنگ واپس اس پروگرام کو دے دیں؟" & vbCrLf & vbCrLf &
+            "Windows سروس رک کر ہٹا دی جائے گی، آپ کی ترتیبات، فولڈر اور ہوسٹ کلید صارف اسٹور میں واپس آ جائیں گی، اور فائروال رول اس پروگرام کی طرف اشارہ کرے گا۔ فونوں کو دوبارہ جوڑنے کی ضرورت نہیں - ہوسٹ کلید محفوظ رہتی ہے۔" & vbCrLf & vbCrLf &
+            "جب تک آپ لاگ اِن ہیں اور مینیجر چل رہا ہے، شیئرنگ دوبارہ کام کرے گی۔ Windows ایک بار ایڈمنسٹریٹر کی تصدیق مانگے گا۔",
+            "把共享交还给这个程序？" & vbCrLf & vbCrLf &
+            "Windows 服务将被停止并删除，你的设置、文件夹和主机密钥回到用户存储，防火墙规则将指向这个程序。手机无需重新配对 - 主机密钥保留。" & vbCrLf & vbCrLf &
+            "只要你已登录且管理器在运行，共享就会继续工作。Windows 将请求一次管理员确认。")
+
+
         Add("Запустить службу",
             "Start the service", "Запустити службу", "Dienst starten", "Avvia il servizio",
             "Iniciar el servicio", "Démarrer le service", "Iniciar o serviço",
@@ -401,19 +444,19 @@ Partial Public NotInheritable Class Localization
             "سروس کو اس فولڈر تک رسائی نہیں - فون پر یہ نہیں کھلے گا۔",
             "该服务无权访问此文件夹 - 在手机上将无法打开。")
 
-        Add("Служба работает от имени LOCAL SERVICE, а не от вашего. Каждой раздаваемой папке нужен доступ для этой учётной записи: чтение, а если папка раздаётся с записью - то и запись. Кнопка выдаёт их по текущему списку папок. Сетевые пути вида \\сервер\папка так работать не будут.",
-            "The service runs as LOCAL SERVICE, not as you. Every served folder needs access for that account: read, plus write when the folder is shared writable. The button grants that from the current folder list. UNC paths such as \\server\share will not work this way.",
-            "Служба працює від імені LOCAL SERVICE, а не від вашого. Кожній роздаваній папці потрібен доступ для цього облікового запису: читання, а якщо папка роздається із записом - то й запис. Кнопка видає їх за поточним списком папок. Мережеві шляхи виду \\сервер\папка так працювати не будуть.",
-            "Der Dienst läuft als LOCAL SERVICE, nicht unter Ihrem Konto. Jeder freigegebene Ordner braucht Rechte für dieses Konto: Lesen und, wenn der Ordner beschreibbar freigegeben ist, auch Schreiben. Die Schaltfläche vergibt sie anhand der aktuellen Ordnerliste. UNC-Pfade wie \\Server\Freigabe funktionieren so nicht.",
-            "Il servizio viene eseguito come LOCAL SERVICE, non come te. Ogni cartella condivisa richiede l'accesso per quell'account: lettura e, se la cartella è condivisa in scrittura, anche scrittura. Il pulsante li concede in base all'elenco attuale delle cartelle. I percorsi UNC come \\server\condivisione non funzionano in questo modo.",
-            "El servicio se ejecuta como LOCAL SERVICE, no como usted. Cada carpeta compartida necesita acceso para esa cuenta: lectura y, si la carpeta se comparte con escritura, también escritura. El botón los concede según la lista actual de carpetas. Las rutas UNC como \\servidor\recurso no funcionan así.",
-            "Le service s'exécute en tant que LOCAL SERVICE, pas en votre nom. Chaque dossier partagé a besoin d'un accès pour ce compte : lecture, et écriture si le dossier est partagé en écriture. Le bouton les accorde d'après la liste actuelle des dossiers. Les chemins UNC comme \\serveur\partage ne fonctionnent pas ainsi.",
-            "O serviço é executado como LOCAL SERVICE, não em seu nome. Cada pasta partilhada precisa de acesso para essa conta: leitura e, se a pasta for partilhada com escrita, também escrita. O botão concede-os a partir da lista atual de pastas. Caminhos UNC como \\servidor\partilha não funcionam desta forma.",
-            "تعمل الخدمة باسم LOCAL SERVICE وليس باسمك. يحتاج كل مجلد مُشارَك إلى صلاحيات لهذا الحساب: القراءة، وكذلك الكتابة إذا كان المجلد مُشارَكًا مع إمكانية الكتابة. يمنحها الزر وفق قائمة المجلدات الحالية. مسارات UNC مثل \\server\share لن تعمل بهذه الطريقة.",
-            "सेवा आपके नाम से नहीं, LOCAL SERVICE के रूप में चलती है। साझा की गई हर फ़ोल्डर को उस खाते के लिए अनुमति चाहिए: पढ़ना, और यदि फ़ोल्डर लिखने की अनुमति के साथ साझा है तो लिखना भी। बटन उन्हें मौजूदा फ़ोल्डर सूची के अनुसार देता है। \\server\share जैसे UNC पथ इस तरह काम नहीं करेंगे।",
-            "সার্ভিসটি আপনার নামে নয়, LOCAL SERVICE হিসেবে চলে। শেয়ার করা প্রতিটি ফোল্ডারের জন্য ওই অ্যাকাউন্টের অনুমতি দরকার: পড়া, আর ফোল্ডারটি লেখার অনুমতিসহ শেয়ার করা থাকলে লেখাও। বোতামটি বর্তমান ফোল্ডার তালিকা অনুযায়ী তা দেয়। \\server\share ধরনের UNC পাথ এভাবে কাজ করবে না।",
-            "سروس آپ کے نام سے نہیں بلکہ LOCAL SERVICE کے طور پر چلتی ہے۔ ہر شیئر کیے گئے فولڈر کو اس اکاؤنٹ کے لیے اجازت درکار ہے: پڑھنا، اور اگر فولڈر لکھنے کی اجازت کے ساتھ شیئر ہو تو لکھنا بھی۔ بٹن انہیں موجودہ فولڈر فہرست کے مطابق دیتا ہے۔ \\server\share جیسے UNC راستے اس طرح کام نہیں کریں گے۔",
-            "该服务以 LOCAL SERVICE 身份运行，而不是以你的身份。每个共享文件夹都需要授予该账户权限：读取，若该文件夹以可写方式共享，还需写入。按钮会按当前文件夹列表授予。\\server\share 这类 UNC 路径无法以此方式工作。")
+        Add("Служба работает от имени LOCAL SERVICE, а не от вашего. Каждой раздаваемой папке нужен доступ для этой учётной записи: чтение, а если папка раздаётся с записью - то и запись. Кнопка выдаёт их по текущему списку папок. Сетевые пути - вида \\сервер\папка и подключённые сетевые диски (например, Z:) - так работать не будут.",
+            "The service runs as LOCAL SERVICE, not as you. Every served folder needs access for that account: read, plus write when the folder is shared writable. The button grants that from the current folder list. Network paths - UNC paths such as \\server\share and mapped network drives (Z:, for example) - will not work this way.",
+            "Служба працює від імені LOCAL SERVICE, а не від вашого. Кожній роздаваній папці потрібен доступ для цього облікового запису: читання, а якщо папка роздається із записом - то й запис. Кнопка видає їх за поточним списком папок. Мережеві шляхи - виду \\сервер\папка і підключені мережеві диски (наприклад, Z:) - так працювати не будуть.",
+            "Der Dienst läuft als LOCAL SERVICE, nicht unter Ihrem Konto. Jeder freigegebene Ordner braucht Rechte für dieses Konto: Lesen und, wenn der Ordner beschreibbar freigegeben ist, auch Schreiben. Die Schaltfläche vergibt sie anhand der aktuellen Ordnerliste. Netzwerkpfade - UNC-Pfade wie \\Server\Freigabe und zugeordnete Netzlaufwerke (z. B. Z:) - funktionieren so nicht.",
+            "Il servizio viene eseguito come LOCAL SERVICE, non come te. Ogni cartella condivisa richiede l'accesso per quell'account: lettura e, se la cartella è condivisa in scrittura, anche scrittura. Il pulsante li concede in base all'elenco attuale delle cartelle. I percorsi di rete - percorsi UNC come \\server\condivisione e unità di rete mappate (ad esempio Z:) - non funzionano in questo modo.",
+            "El servicio se ejecuta como LOCAL SERVICE, no como usted. Cada carpeta compartida necesita acceso para esa cuenta: lectura y, si la carpeta se comparte con escritura, también escritura. El botón los concede según la lista actual de carpetas. Las rutas de red - rutas UNC como \\servidor\recurso y unidades de red asignadas (por ejemplo, Z:) - no funcionan así.",
+            "Le service s'exécute en tant que LOCAL SERVICE, pas en votre nom. Chaque dossier partagé a besoin d'un accès pour ce compte : lecture, et écriture si le dossier est partagé en écriture. Le bouton les accorde d'après la liste actuelle des dossiers. Les chemins réseau - chemins UNC comme \\serveur\partage et lecteurs réseau mappés (Z: par exemple) - ne fonctionnent pas ainsi.",
+            "O serviço é executado como LOCAL SERVICE, não em seu nome. Cada pasta partilhada precisa de acesso para essa conta: leitura e, se a pasta for partilhada com escrita, também escrita. O botão concede-os a partir da lista atual de pastas. Os caminhos de rede - caminhos UNC como \\servidor\partilha e unidades de rede mapeadas (por exemplo, Z:) - não funcionam desta forma.",
+            "تعمل الخدمة باسم LOCAL SERVICE وليس باسمك. يحتاج كل مجلد مُشارَك إلى صلاحيات لهذا الحساب: القراءة، وكذلك الكتابة إذا كان المجلد مُشارَكًا مع إمكانية الكتابة. يمنحها الزر وفق قائمة المجلدات الحالية. مسارات الشبكة - مسارات UNC مثل \\server\share ومحركات أقراص الشبكة المعيّنة (مثل Z:) - لن تعمل بهذه الطريقة.",
+            "सेवा आपके नाम से नहीं, LOCAL SERVICE के रूप में चलती है। साझा की गई हर फ़ोल्डर को उस खाते के लिए अनुमति चाहिए: पढ़ना, और यदि फ़ोल्डर लिखने की अनुमति के साथ साझा है तो लिखना भी। बटन उन्हें मौजूदा फ़ोल्डर सूची के अनुसार देता है। नेटवर्क पथ - \\server\share जैसे UNC पथ और मैप किए गए नेटवर्क ड्राइव (जैसे Z:) - इस तरह काम नहीं करेंगे।",
+            "সার্ভিসটি আপনার নামে নয়, LOCAL SERVICE হিসেবে চলে। শেয়ার করা প্রতিটি ফোল্ডারের জন্য ওই অ্যাকাউন্টের অনুমতি দরকার: পড়া, আর ফোল্ডারটি লেখার অনুমতিসহ শেয়ার করা থাকলে লেখাও। বোতামটি বর্তমান ফোল্ডার তালিকা অনুযায়ী তা দেয়। নেটওয়ার্ক পাথ - \\server\share ধরনের UNC পাথ এবং ম্যাপ করা নেটওয়ার্ক ড্রাইভ (যেমন Z:) - এভাবে কাজ করবে না।",
+            "سروس آپ کے نام سے نہیں بلکہ LOCAL SERVICE کے طور پر چلتی ہے۔ ہر شیئر کیے گئے فولڈر کو اس اکاؤنٹ کے لیے اجازت درکار ہے: پڑھنا، اور اگر فولڈر لکھنے کی اجازت کے ساتھ شیئر ہو تو لکھنا بھی۔ بٹن انہیں موجودہ فولڈر فہرست کے مطابق دیتا ہے۔ نیٹ ورک راستے - \\server\share جیسے UNC راستے اور میپ شدہ نیٹ ورک ڈرائیوز (مثلاً Z:) - اس طرح کام نہیں کریں گے۔",
+            "该服务以 LOCAL SERVICE 身份运行，而不是以你的身份。每个共享文件夹都需要授予该账户权限：读取，若该文件夹以可写方式共享，还需写入。按钮会按当前文件夹列表授予。网络路径 - \\server\share 这类 UNC 路径和映射的网络驱动器（例如 Z:）- 无法以此方式工作。")
 
         Add("Удаление роли сервера остановит и удалит службу. Ключ узла, пароль и список папок останутся на месте - после возврата в пользовательский режим телефоны подключатся как раньше.",
             "Removing the server role stops and deletes the service. The host key, password and folder list stay where they are - after returning to User mode the phones connect as before.",
@@ -566,6 +609,50 @@ Partial Public NotInheritable Class Localization
             "جارٍ فحص الوصول إلى المجلدات..", "फ़ोल्डर पहुँच जाँची जा रही है..",
             "ফোল্ডারের অনুমতি পরীক্ষা করা হচ্ছে..", "فولڈر تک رسائی جانچی جا رہی ہے..",
             "正在检查文件夹访问权限..")
+
+        ' --- who holds the control pipe (ticket 054 H-10, H-22, H-26) ------------------
+
+        Add("Служба общего доступа ответила в непонятном формате. Обновите приложение и службу до одной версии.",
+            "The sharing service answered in a format this app cannot read. Update the app and the service to the same version.",
+            "Служба спільного доступу відповіла в незрозумілому форматі. Оновіть застосунок і службу до однієї версії.",
+            "Der Freigabedienst hat in einem Format geantwortet, das diese App nicht lesen kann. Bringen Sie App und Dienst auf dieselbe Version.",
+            "Il servizio di condivisione ha risposto in un formato che l'app non sa leggere. Aggiorna l'app e il servizio alla stessa versione.",
+            "El servicio de uso compartido respondió en un formato que esta aplicación no puede leer. Actualice la aplicación y el servicio a la misma versión.",
+            "Le service de partage a répondu dans un format que cette application ne sait pas lire. Mettez l'application et le service à la même version.",
+            "O serviço de partilha respondeu num formato que esta aplicação não consegue ler. Atualize a aplicação e o serviço para a mesma versão.",
+            "ردّت خدمة المشاركة بتنسيق لا يستطيع هذا التطبيق قراءته. حدّث التطبيق والخدمة إلى الإصدار نفسه.",
+            "साझा करने वाली सेवा ने ऐसे प्रारूप में उत्तर दिया जिसे यह ऐप नहीं पढ़ सकता। ऐप और सेवा को एक ही संस्करण पर अपडेट करें।",
+            "শেয়ারিং সার্ভিস এমন ফরম্যাটে উত্তর দিয়েছে যা এই অ্যাপ পড়তে পারে না। অ্যাপ ও সার্ভিস একই সংস্করণে হালনাগাদ করুন।",
+            "شیئرنگ سروس نے ایسے فارمیٹ میں جواب دیا جسے یہ ایپ نہیں پڑھ سکتی۔ ایپ اور سروس کو ایک ہی ورژن پر اپ ڈیٹ کریں۔",
+            "共享服务的应答格式本应用无法读取。请将应用和服务更新到同一版本。")
+
+        Add("Этой учётной записи не разрешено управлять общим доступом на этом компьютере - им управляет другая учётная запись.",
+            "This account is not allowed to manage sharing on this PC - another account manages it.",
+            "Цьому обліковому запису не дозволено керувати спільним доступом на цьому комп'ютері - ним керує інший обліковий запис.",
+            "Dieses Konto darf die Freigabe auf diesem PC nicht verwalten - ein anderes Konto verwaltet sie.",
+            "Questo account non può gestire la condivisione su questo PC: la gestisce un altro account.",
+            "Esta cuenta no puede administrar el uso compartido en este PC: lo administra otra cuenta.",
+            "Ce compte n'est pas autorisé à gérer le partage sur ce PC - un autre compte le gère.",
+            "Esta conta não tem permissão para gerir a partilha neste PC - outra conta gere-a.",
+            "لا يُسمح لهذا الحساب بإدارة المشاركة على هذا الكمبيوتر - يديرها حساب آخر.",
+            "इस खाते को इस PC पर साझाकरण प्रबंधित करने की अनुमति नहीं है - इसे कोई दूसरा खाता प्रबंधित करता है।",
+            "এই অ্যাকাউন্টকে এই পিসিতে শেয়ারিং পরিচালনার অনুমতি দেওয়া হয়নি - অন্য একটি অ্যাকাউন্ট এটি পরিচালনা করে।",
+            "اس اکاؤنٹ کو اس PC پر شیئرنگ کا انتظام کرنے کی اجازت نہیں - اس کا انتظام کوئی دوسرا اکاؤنٹ کرتا ہے۔",
+            "此帐户无权管理这台电脑上的共享 - 由另一个帐户管理。")
+
+        Add("Канал управления общим доступом занят посторонней программой. Ей ничего не передано; раздача не запущена. Перезагрузите компьютер или завершите эту программу.",
+            "The sharing control channel is held by another program. Nothing was sent to it, and sharing was not started. Restart the PC or close that program.",
+            "Канал керування спільним доступом зайнятий сторонньою програмою. Їй нічого не передано; роздачу не запущено. Перезавантажте комп'ютер або завершіть цю програму.",
+            "Der Steuerkanal der Freigabe ist von einem fremden Programm belegt. Ihm wurde nichts übergeben, die Freigabe wurde nicht gestartet. Starten Sie den PC neu oder beenden Sie dieses Programm.",
+            "Il canale di controllo della condivisione è occupato da un altro programma. Non gli è stato inviato nulla e la condivisione non è stata avviata. Riavvia il PC o chiudi quel programma.",
+            "El canal de control del uso compartido está ocupado por otro programa. No se le envió nada y el uso compartido no se inició. Reinicie el PC o cierre ese programa.",
+            "Le canal de contrôle du partage est occupé par un autre programme. Rien ne lui a été transmis et le partage n'a pas démarré. Redémarrez le PC ou fermez ce programme.",
+            "O canal de controlo da partilha está ocupado por outro programa. Nada lhe foi enviado e a partilha não foi iniciada. Reinicie o PC ou feche esse programa.",
+            "قناة التحكم في المشاركة يشغلها برنامج آخر. لم يُرسَل إليه شيء ولم تبدأ المشاركة. أعد تشغيل الكمبيوتر أو أغلق ذلك البرنامج.",
+            "साझाकरण का नियंत्रण चैनल किसी दूसरे प्रोग्राम के पास है। उसे कुछ नहीं भेजा गया और साझाकरण शुरू नहीं हुआ। PC को फिर से चालू करें या उस प्रोग्राम को बंद करें।",
+            "শেয়ারিংয়ের নিয়ন্ত্রণ চ্যানেল অন্য একটি প্রোগ্রাম দখল করে আছে। তাকে কিছু পাঠানো হয়নি এবং শেয়ারিং শুরু হয়নি। পিসি রিস্টার্ট করুন বা সেই প্রোগ্রামটি বন্ধ করুন।",
+            "شیئرنگ کا کنٹرول چینل کسی دوسرے پروگرام کے قبضے میں ہے۔ اسے کچھ نہیں بھیجا گیا اور شیئرنگ شروع نہیں ہوئی۔ PC دوبارہ شروع کریں یا وہ پروگرام بند کریں۔",
+            "共享控制通道被其他程序占用。未向其发送任何内容，共享未启动。请重启电脑或关闭该程序。")
 
     End Sub
 

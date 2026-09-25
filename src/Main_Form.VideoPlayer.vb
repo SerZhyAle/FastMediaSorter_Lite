@@ -82,10 +82,51 @@ Partial Public Class Main_Form
         End If
     End Sub
 
+#If NETFRAMEWORK Then
+    ''' <summary>
+    ''' What the video page may call through window.external - these three and nothing
+    ''' else (audit 046, D-06). ObjectForScripting used to be the main window itself, and
+    ''' COM hands script EVERY public member of it: DoKey (delete, move to a recipient
+    ''' slot), ProcessArgument, SetVolume. A page that a crafted file name could get a line
+    ''' of script into must not be holding the form. net48 only - the mainline has no
+    ''' WebBrowser.
+    ''' </summary>
+    <Runtime.InteropServices.ComVisible(True)>
+    Public NotInheritable Class VideoPageScriptBridge
+        Private ReadOnly owner As Main_Form
+
+        Friend Sub New(owner As Main_Form)
+            Me.owner = owner
+        End Sub
+
+        Public Sub HandleVideoError(errorMessage As String)
+            owner.HandleVideoError(errorMessage)
+        End Sub
+
+        Public Sub SetVideoAudioState(volume As Double, muted As Boolean)
+            owner.SetVideoAudioState(volume, muted)
+        End Sub
+
+        Public Sub HandleWebBrowserDoubleClick()
+            owner.HandleWebBrowserDoubleClick()
+        End Sub
+    End Class
+#End If
+
     ''' <summary>Hands the file to whatever Windows plays it with. Takes the path as an
     ''' argument: it used to read Current_File_Name, which by the time a slow VLC init
     ''' gave up could be a completely different file.</summary>
     Private Sub TryOpenVideoWithDefaultPlayer(video_File_Path As String)
+#If Not NETFRAMEWORK Then
+        ' Never for a secure container (§5.4 rule 7, §7). This hands a PATH to whatever
+        ' Windows has registered, and for a container that program either cannot open it
+        ' or - worse - unpacks it somewhere. The honest message replaces the fallback
+        ' rather than the fallback being attempted and failing quietly.
+        If IsSecureContainerExtension(Path.GetExtension(video_File_Path)) Then
+            lbl_Status.Text = Localization.T("Защищённый файл нельзя открыть во внешнем плеере")
+            Return
+        End If
+#End If
         Try
             If Not String.IsNullOrEmpty(video_File_Path) AndAlso File.Exists(video_File_Path) Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0866: Opening video with default player: " & video_File_Path)
@@ -116,7 +157,7 @@ Partial Public Class Main_Form
             End If
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0867: Error opening video with default player: " & ex.Message)
-            lbl_Status.Text = Localization.TF("Ошибка запуска внешнего плеера: {0}", ex.Message)
+            lbl_Status.Text = Localization.TF("Ошибка запуска внешнего плеера: {0}", FailureText.Describe(ex))
         End Try
     End Sub
 
@@ -181,6 +222,9 @@ Partial Public Class Main_Form
                 .EnableKeyInput = False
             }
             AddHandler vlc_Media_Player.Playing, AddressOf Vlc_Media_Player_Playing
+            ' Play() is asynchronous: a corrupt file, an unreachable URL or a refused
+            ' credential is reported ONLY by this event (audit 050 D-17).
+            AddHandler vlc_Media_Player.EncounteredError, AddressOf Vlc_Media_Player_EncounteredError
 #If Not NETFRAMEWORK Then
             AddHandler vlc_Media_Player.EndReached, AddressOf Vlc_Media_Player_EndReached
 #End If
@@ -260,6 +304,15 @@ Partial Public Class Main_Form
     ''' </summary>
     Private Function CreateVlcMedia(file_Path As String) As LibVLCSharp.Shared.Media
 #If Not NETFRAMEWORK Then
+        ' A secure container plays from its own decrypting stream and has no path VLC could
+        ' open - which is the point: no decrypted byte ever reaches the disk
+        ' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §5.2). The input outlives
+        ' this Media and is disposed with the container, by SecureReleaseCurrent.
+        Dim secure_Input As LibVLCSharp.Shared.StreamMediaInput = SecureMediaInputFor(file_Path)
+        If secure_Input IsNot Nothing Then
+            Return New LibVLCSharp.Shared.Media(libVlc, secure_Input)
+        End If
+
         If IsRemoteMediaUrl(file_Path) Then
             Return New LibVLCSharp.Shared.Media(libVlc, file_Path, LibVLCSharp.Shared.FromType.FromLocation)
         End If
@@ -298,6 +351,14 @@ Partial Public Class Main_Form
             is_WebBrowser_Visible = False
 #If Not NETFRAMEWORK Then
             is_PictureBox1_Visible = IsAudioNowPlaying()
+            If IsAudioNowPlaying() Then
+                ' The audio surface paints Picture_Box_1; the photo it held is let go, and
+                ' the next prefetch goes to the hidden box 2, not under the cover
+                ' (audit 050 D-04 - PaintAudioSurface also clears, for a prefetch already
+                ' in flight).
+                ReleasePictureBoxMedia(1)
+                is_Second_PictureBox_Active = False
+            End If
 #Else
             is_PictureBox1_Visible = False
 #End If
@@ -329,6 +390,11 @@ Partial Public Class Main_Form
             KeepRecipientsOverlayOnTop()
 
 #If Not NETFRAMEWORK Then
+            ' The outgoing file's position, before Play replaces it (audit 050 D-01): a
+            ' video-to-video change never passes through StopVlcPlayback.
+            If is_Vlc_Playing AndAlso Not String.Equals(vlc_Playing_Path, file_Path, StringComparison.OrdinalIgnoreCase) Then
+                RememberCurrentVideoPosition()
+            End If
             ' A different file starts here: whatever restore the previous one was still
             ' owed must not land on this one.
             ClearPendingVideoPosition()
@@ -336,19 +402,35 @@ Partial Public Class Main_Form
 #End If
             Dim media As LibVLCSharp.Shared.Media = CreateVlcMedia(file_Path)
 #If Not NETFRAMEWORK Then
-            If Is_Video_Loop OrElse If(IsAudioNowPlaying(), AudioEndAction() = "repeat", VideoEndAction() = "repeat") Then media.AddOption(":input-repeat=65535")
+            If CurrentEffectiveRepeat() Then media.AddOption(":input-repeat=65535")
 #Else
             If Is_Video_Loop OrElse VideoEndAction() = "repeat" Then media.AddOption(":input-repeat=65535")
 #End If
 #If Not NETFRAMEWORK Then
             pause_New_Video_When_Ready = Not VideoShouldAutoplay()
+            ' A container's media is kept and watched rather than released: LibVLC writes
+            ' an embedded cover to its art cache as the input starts, and the watch is what
+            ' deletes it (Main_Form.Secure.vb, audit 046 G-04). Attached before Play.
+            Dim keep_Media_For_Art_Watch As Boolean = WatchSecureMediaArt(file_Path, media)
 #End If
             vlc_Media_Player.Play(media)
+#If Not NETFRAMEWORK Then
+            If Not keep_Media_For_Art_Watch Then media.Dispose()
+#Else
             media.Dispose()
+#End If
             ApplyVideoAudioStateToVlc()
 
             is_Vlc_Playing = True
             current_Loaded_File_Name = file_Path
+            ' What VLC is playing, kept apart from current_Loaded_File_Name, which the
+            ' display path clears and reuses (050 D-01), and the stamp that tells this
+            ' media's events from the previous one's (D-10, D-17, D-19).
+            vlc_Playing_Path = file_Path
+            vlc_Play_Generation = generation
+#If Not NETFRAMEWORK Then
+            vlc_Play_Serial += 1
+#End If
 #If Not NETFRAMEWORK Then
             If IsAudioNowPlaying() Then BeginAudioPlayback()
             ' Up front, then it fades out on its own - so a new video announces that it
@@ -361,6 +443,9 @@ Partial Public Class Main_Form
             ' Path.GetFileName on an MRL drags the query string in and returns nothing
             ' at all for an address ending in "/".
             If IsRemoteMediaUrl(file_Path) Then shown_Name = DisplayNameForMrl(file_Path)
+            ' An archive entry by its own name, never the temporary copy's (audit 052 G-17).
+            Dim archive_Entry_Name As String = ArchiveDisplayName(file_Path)
+            If archive_Entry_Name.Length > 0 Then shown_Name = archive_Entry_Name
 #End If
             lbl_Status.Text = Localization.TF("Видео воспроизводится через VLC: {0}", shown_Name)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0871: Playing via LibVLC: " & file_Path)
@@ -384,6 +469,7 @@ Partial Public Class Main_Form
             End Try
         End If
         is_Vlc_Playing = False
+        vlc_Playing_Path = ""
         If vlc_Video_View IsNot Nothing Then vlc_Video_View.Visible = False
 #If Not NETFRAMEWORK Then
         ' No video, no transport: it must not linger over the next image.
@@ -396,12 +482,62 @@ Partial Public Class Main_Form
 #End If
     End Sub
 
+    ''' <summary>The file VLC was last told to play, "" when stopped. Not
+    ''' current_Loaded_File_Name: the display path clears that before VLC is stopped, which
+    ''' is how a position was never saved on a file change (audit 050 D-01).</summary>
+    Private vlc_Playing_Path As String = ""
+
+    ''' <summary>media_Generation of the file VLC was last told to play. An event of the
+    ''' player is acted on only while this is still the generation on screen: a libvlc
+    ''' event is posted, and by the time it runs the user may be on another file
+    ''' (045 §3 theme 2; audit 050 D-17, D-19).</summary>
+    Private vlc_Play_Generation As Integer = -1
+
+    Private Function IsVlcEventCurrent(event_Generation As Integer) As Boolean
+        Return is_Vlc_Playing AndAlso event_Generation = vlc_Play_Generation AndAlso event_Generation = media_Generation
+    End Function
+
+    ''' <summary>
+    ''' A failed open (audit 050 D-17). Play() is asynchronous, so a corrupt or unsupported
+    ''' file, an unreachable URL or a refused credential never threw - the surface stayed
+    ''' black under "playing through VLC", and the external-player fallback, which only ran
+    ''' when Play threw, never ran. Now the status says so, and a local file goes to the
+    ''' external player as the synchronous failure always did.
+    ''' </summary>
+    Private Sub Vlc_Media_Player_EncounteredError(sender As Object, e As EventArgs)
+        Dim event_Generation As Integer = vlc_Play_Generation
+        Try
+            If Me.IsDisposed OrElse Not Me.IsHandleCreated Then Return
+            Me.BeginInvoke(Sub()
+                               If Not IsVlcEventCurrent(event_Generation) Then Return
+                               Dim failed_Path As String = vlc_Playing_Path
+                               Dim shown_Name As String = Path.GetFileName(failed_Path)
+#If Not NETFRAMEWORK Then
+                               If IsRemoteMediaUrl(failed_Path) Then shown_Name = DisplayNameForMrl(failed_Path)
+#End If
+                               AppFileLogger.WriteLine("LibVLC could not play: " & failed_Path)
+                               StopVlcPlayback()
+                               lbl_Status.Text = Localization.TF("VLC не смог воспроизвести: {0}", shown_Name)
+#If Not NETFRAMEWORK Then
+                               If IsRemoteMediaUrl(failed_Path) Then Return
+#End If
+                               TryOpenVideoWithDefaultPlayer(failed_Path)
+                           End Sub)
+        Catch
+            ' The form can go away between the check and the post - nothing to do.
+        End Try
+    End Sub
+
     Private Sub Vlc_Video_View_MouseDoubleClick(sender As Object, e As MouseEventArgs)
 #If Not NETFRAMEWORK Then
-        ' The first click of the pair has already flipped playback - WinForms raises
-        ' MouseClick once, then MouseDoubleClick - and a double-click means "full screen",
-        ' not "full screen, and also pause". Put it back.
-        If e.Button = MouseButtons.Left Then RevertClickPlayPause()
+        ' The first click of the pair flipped playback - WinForms raises MouseClick once,
+        ' then MouseDoubleClick - and a double-click means "full screen", not "full screen,
+        ' and also pause". Put it back, but ONLY when that click did flip it, on this same
+        ' video (audit 050 D-15): in "click = next file" mode there was nothing to undo, and
+        ' reverting from a stale flag paused the video that had just opened.
+        video_Click_Next_Timer.Stop()
+        If e.Button = MouseButtons.Left AndAlso last_Click_Toggled_Generation = media_Generation Then RevertClickPlayPause()
+        last_Click_Toggled_Generation = -1
 #End If
         HandleWebBrowserDoubleClick()
     End Sub
@@ -421,8 +557,14 @@ Partial Public Class Main_Form
                                ' it was at - and this is the first moment it will seek.
                                ApplyPendingVideoPosition()
                                ' Track lists do not exist until VLC is actually playing -
-                               ' this event is the first moment they can be read.
-                               ApplyPreferredTracks()
+                               ' this event is the first moment they can be read. ONCE per
+                               ' media (audit 050 D-10): Playing is raised again on every
+                               ' resume from pause, and re-applying the preference then
+                               ' took back the user's pick of a second track in the same
+                               ' language. Marked only once the lists were readable.
+                               If tracks_Applied_Serial <> vlc_Play_Serial AndAlso ApplyPreferredTracks() Then
+                                   tracks_Applied_Serial = vlc_Play_Serial
+                               End If
                                ApplyVideoTracksButtonVisibility()
                                If pause_New_Video_When_Ready Then
                                    pause_New_Video_When_Ready = False
@@ -437,12 +579,55 @@ Partial Public Class Main_Form
     End Sub
 
 #If Not NETFRAMEWORK Then
+    ''' <summary>Which Play() the preferred tracks were applied for (audit 050 D-10).</summary>
+    Private vlc_Play_Serial As Integer = 0
+    Private tracks_Applied_Serial As Integer = -1
+
+    ''' <summary>media_Generation of the last left click that flipped playback, -1 when the
+    ''' last click did not (audit 050 D-15).</summary>
+    Private last_Click_Toggled_Generation As Integer = -1
+
+    ''' <summary>"Click = next file" waits out the double-click time first, so the first
+    ''' click of a double-click (full screen) never navigates (audit 050 D-15).</summary>
+    Private WithEvents video_Click_Next_Timer As New Timer()
+    Private video_Click_Next_Generation As Integer = -1
+
+    ''' <summary>
+    ''' Called by the display path as the screen moves to another file, BEFORE it clears
+    ''' current_Loaded_File_Name: the playing file's position is stored now, because VLC
+    ''' is stopped only later, by which time nothing names the file any more - so "remember
+    ''' position" never saved anything on a file change (audit 050 D-01). A stream from
+    ''' "Open URL" ends here too (D-05).
+    ''' </summary>
+    Friend Sub NoteLeavingCurrentMedia()
+        If is_Vlc_Playing Then RememberCurrentVideoPosition()
+        is_Stream_On_Screen = False
+    End Sub
+
+    Private Sub video_Click_Next_Timer_Tick(sender As Object, e As EventArgs) Handles video_Click_Next_Timer.Tick
+        video_Click_Next_Timer.Stop()
+        If video_Click_Next_Generation = media_Generation AndAlso is_Vlc_Playing Then ReadShowMediaFile(Mode_Next)
+    End Sub
+
     Private Sub Vlc_Media_Player_EndReached(sender As Object, e As EventArgs)
-        If If(IsAudioNowPlaying(), AudioEndAction() <> "next", VideoEndAction() <> "nextFile") Then Return
+        ' Captured HERE, on the libvlc thread (reading an Integer is safe): the callback
+        ' below runs later, and by then the user may have pressed Next and be on a new file
+        ' that this end must not skip (audit 050 D-19).
+        Dim event_Generation As Integer = vlc_Play_Generation
         Try
             If Me.IsDisposed OrElse Not Me.IsHandleCreated Then Return
             Me.BeginInvoke(Sub()
-                               If is_Vlc_Playing Then ReadShowMediaFile(Mode_Next)
+                               If Not IsVlcEventCurrent(event_Generation) Then Return
+                               ' Watched to the end: it opens from the start next time, and an
+                               ' older mid-file resume point goes (audit 050 D-11).
+                               RememberVideoFinished(vlc_Playing_Path)
+                               If If(IsAudioNowPlaying(), AudioEndAction() <> "next", VideoEndAction() <> "nextFile") Then Return
+                               audio_Auto_Advancing = True
+                               Try
+                                   ReadShowMediaFile(Mode_Next)
+                               Finally
+                                   audio_Auto_Advancing = False
+                               End Try
                            End Sub)
         Catch
         End Try
@@ -470,8 +655,13 @@ Partial Public Class Main_Form
                 ' open (Main_Form.VideoMenu.vb). Remember which way it went: a double-click
                 ' has to undo it (see Vlc_Video_View_MouseDoubleClick).
                 If VideoClickMovesToNextFile() Then
-                    ReadShowMediaFile(Mode_Next)
+                    last_Click_Toggled_Generation = -1
+                    video_Click_Next_Generation = media_Generation
+                    video_Click_Next_Timer.Interval = Math.Max(1, SystemInformation.DoubleClickTime)
+                    video_Click_Next_Timer.Stop()
+                    video_Click_Next_Timer.Start()
                 Else
+                    last_Click_Toggled_Generation = media_Generation
                     video_Click_Paused = TogglePlayPause()
                     RefreshVideoControlsState()
                     ShowVideoControls()
@@ -503,7 +693,7 @@ Partial Public Class Main_Form
 
             Dim video_Html_Content As String = "<video id='videoPlayer' controls autoplay" & loop_Attribute & muted_Attribute & " style='width:100%;height:calc(100% - " & height_For_instruments_on_WebPanel & "px);object-fit:fill;'" &
                             " onerror=""fmsReportVideoError('Error: Unsupported video type (video element error)');"">" &
-                            "<source src='" & video_File_Absolute_Uri & "' onerror=""fmsReportVideoError('Error: Unsupported video type (source failed to load)');"">" &
+                            WebVideoMarkup.SourceTag(video_File_Absolute_Uri) &
                             "<track kind='captions' default>" &
                             "<p style='color: " & text_Color & "; text-align: center;'>" &
                             Localization.T("Ваш браузер не поддерживает видео.") & "</p>" &
@@ -566,11 +756,11 @@ Partial Public Class Main_Form
         Catch ex As Exception
             Web_Browser.DocumentText = "<html><body style='background:black; color:" &
                             If(Form_Color_Scheme = 0, "black", "white") &
-                            "; text-align:center;'><p>Error preparing video player: " & ex.Message & "</p></body></html>"
+                            "; text-align:center;'><p>Error preparing video player: " & WebVideoMarkup.AttributeValue(FailureText.Describe(ex)) & "</p></body></html>"
             is_WebBrowser_Visible = False
 
             UpdateControlVisibility()
-            lbl_Status.Text = Localization.TF("Ошибка загрузки видео: {0}", ex.Message)
+            lbl_Status.Text = Localization.TF("Ошибка загрузки видео: {0}", FailureText.Describe(ex))
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0860: Error loading video: " & ex.Message)
         End Try
     End Sub

@@ -8,8 +8,9 @@ Imports System.Text.Json
 
 Partial Public Class Main_Form
 
-    Private shuffle_Cycle As New Queue(Of Integer)()
-    Private shuffle_Cycle_Count As Integer
+    ' The shuffle-without-repeats state, one object for every caller (SlideshowOrder.vb,
+    ' audit 048 A-04).
+    Private ReadOnly shuffle_Cycle As New ShuffleCycle()
 
     ''' <summary>Set while the display path or the scale-mode below moves the zoom itself,
     ''' so an automatic fit is never mistaken for the user choosing one and written into
@@ -40,7 +41,11 @@ Partial Public Class Main_Form
     Friend Sub ReplaceModernPreferences(imported As ModernViewerPreferences)
         If imported Is Nothing Then Throw New ArgumentNullException(NameOf(imported))
         imported.Normalize()
-        modern_Preferences = imported
+        ' Into the existing object, never a new reference: the settings window's rows
+        ' write into the instance they were built from (053 F-02).
+        GetModernPreferences().CopyFrom(imported)
+        ' Save() alone can never change this one key - it re-reads it first (053 F-18).
+        modern_Preferences.PersistAllowNewWindows()
         ApplyModernPreferencesFromSettings()
     End Sub
 
@@ -59,6 +64,9 @@ Partial Public Class Main_Form
         If video_Controls IsNot Nothing Then video_Controls_Hide_Timer.Interval = VideoControlsHideDelayMilliseconds()
         ' Mirrored rather than read: the decode cache is consulted from pool threads.
         DecodeCacheStore.BudgetMb = modern_Preferences.DecodeCacheMaxMb
+        ' And the OCR cache's, which was read once at start-up: lowering it from 250 to 20
+        ' kept trimming to 250 for the rest of the session (audit 051 E-07).
+        ApplyOcrCacheBudget()
         ' Expanded settings are live settings. Persist after normalisation so a change
         ' made in the settings window survives a crash and is visible to the next
         ' process without waiting for the main form to close.
@@ -289,7 +297,7 @@ Partial Public Class Main_Form
     End Function
 
     Private Function RecipientsOverlayVisibleRows() As Integer
-        Return If(modern_Preferences Is Nothing, 10, modern_Preferences.RecipientsOverlayVisibleRows)
+        Return If(modern_Preferences Is Nothing, 11, modern_Preferences.RecipientsOverlayVisibleRows)
     End Function
 
     Private Function RecipientsOverlayPosition() As String
@@ -330,41 +338,54 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
+    ''' <summary>Stores where the playing file is. Keyed by <c>vlc_Playing_Path</c> - what
+    ''' VLC was actually told to play - not current_Loaded_File_Name, which the display
+    ''' path clears before VLC is stopped (audit 050 D-01).</summary>
     Private Sub RememberCurrentVideoPosition()
-        If modern_Preferences Is Nothing OrElse Not modern_Preferences.RememberVideoPosition OrElse
-           vlc_Media_Player Is Nothing OrElse String.IsNullOrEmpty(current_Loaded_File_Name) Then Return
+        If vlc_Media_Player Is Nothing OrElse Not CanRememberPositionFor(vlc_Playing_Path) Then Return
         Try
             If Not vlc_Media_Player.IsSeekable Then Return
-            Dim info As New FileInfo(current_Loaded_File_Name)
+            Dim info As New FileInfo(vlc_Playing_Path)
             modern_Preferences.StoreVideoPosition(info.FullName, info.LastWriteTimeUtc.Ticks, info.Length, vlc_Media_Player.Position)
             modern_Preferences.Save()
         Catch
         End Try
     End Sub
 
+    ''' <summary>A file played to its end opens from the start next time: its entry goes
+    ''' (RESUME spec §3.3, audit 050 D-11).</summary>
+    Private Sub RememberVideoFinished(filePath As String)
+        If Not CanRememberPositionFor(filePath) Then Return
+        Try
+            Dim info As New FileInfo(filePath)
+            modern_Preferences.StoreVideoPosition(info.FullName, info.LastWriteTimeUtc.Ticks, info.Length, 1.0F)
+            modern_Preferences.Save()
+        Catch
+        End Try
+    End Sub
+
+    Private Function CanRememberPositionFor(filePath As String) As Boolean
+        If modern_Preferences Is Nothing OrElse Not modern_Preferences.RememberVideoPosition Then Return False
+        ' A stream has no file to key a position by.
+        If String.IsNullOrEmpty(filePath) OrElse IsRemoteMediaUrl(filePath) Then Return False
+        ' An archive entry's temporary copy is keyed by a random session token: its position
+        ' could never be found again, and 010 §4.6 keeps the temporary path out of every
+        ' persisted history (audit 052 A-05).
+        If ArchivePaths.IsUnderArchiveCache(filePath) Then Return False
+        Return True
+    End Function
+
     Private Sub ResetShuffleCycle()
-        shuffle_Cycle.Clear()
-        shuffle_Cycle_Count = 0
+        shuffle_Cycle.Reset()
     End Sub
 
     Private Function NextShuffleCycleIndex(total As Integer, current As Integer) As Integer
-        If total <= 1 Then Return 0
-        If shuffle_Cycle_Count <> total OrElse shuffle_Cycle.Count = 0 Then
-            Dim values As New List(Of Integer)()
-            For i As Integer = 0 To total - 1
-                If i <> current Then values.Add(i)
-            Next
-            For i As Integer = values.Count - 1 To 1 Step -1
-                Dim j As Integer = slideshow_Rng.Next(i + 1)
-                Dim swap As Integer = values(i)
-                values(i) = values(j)
-                values(j) = swap
-            Next
-            If values.Count = 0 Then values.Add(0)
-            shuffle_Cycle = New Queue(Of Integer)(values)
-            shuffle_Cycle_Count = total
-        End If
-        Return shuffle_Cycle.Dequeue()
+        Return shuffle_Cycle.NextIndex(total, current, slideshow_Rng)
+    End Function
+
+    ''' <summary>True when the user chose "shuffle without repeats" for random order.</summary>
+    Private Function IsShuffleCycleOrder() As Boolean
+        Return modern_Preferences IsNot Nothing AndAlso modern_Preferences.SlideshowRandomOrder = "shuffleCycle"
     End Function
 End Class
 #End If
@@ -412,7 +433,7 @@ Partial Public Class Main_Form
     End Function
 
     Private Function RecipientsOverlayVisibleRows() As Integer
-        Return 10
+        Return 11   ' ten slots + Delete: the Delete row is never below the fold (audit B-13)
     End Function
 
     Private Function RecipientsOverlayPosition() As String

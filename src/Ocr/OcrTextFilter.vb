@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Globalization
 Imports System.Text
@@ -25,6 +25,22 @@ Imports System.Text
 ''' one (is this recognized LINE worth keeping), <see cref="RejectionReason"/> the block-level
 ''' one (is this assembled BLOCK worth translating). Each states its answer as a reason rather
 ''' than a boolean so the same call can decide and be recorded - see <see cref="OcrDroppedLine"/>.
+'''
+''' Constant status (`OCR-OVERLAY` rule 13). This stage is the one where the numbers are policy
+''' rather than geometry - "how few letters is not language" has no widest-legitimate and
+''' narrowest-defect pair to sit between - so most rows say so plainly rather than dressing a
+''' choice up as a measurement. Ticket 033 owns deriving them, and the instrument for
+''' doing it already exists: every one of these refusals is written into the discard record of
+''' rule 12, with the rule name, so the corpus is being collected as the feature is used.
+''' | Constant | Status | Source |
+''' | --- | --- | --- |
+''' | <see cref="MinLetters"/> | chosen here, NOT derived | policy: fewer letters than this in a whole single-line block is noise more often than language. No corpus. |
+''' | <see cref="MinLettersMultiLine"/> | chosen here, NOT derived | the leniency this product's previous filter already granted, carried over unchanged so this stage could not be blamed for a regression it did not cause. Our own earlier code is not a source in rule 13's sense, so this is not *inherited*. |
+''' | <see cref="MinCjkChars"/> | chosen here, NOT derived | policy, and stated as an argument rather than a number: one ideograph on its own is as likely to be a mark on the artwork as a word, two are a phrase. |
+''' | <see cref="MinWordFraction"/> | chosen here, NOT derived | half - the point at which a block is more misread pattern than text. No corpus. |
+''' | <see cref="MinUsefulFraction"/> | chosen here, NOT derived | policy. |
+''' | <see cref="MinLetterRun"/> | chosen here, NOT derived | policy: three letters in a row is the shortest run that is a word in every language this ships for. |
+''' | <see cref="ShortTokenConfidence"/> | chosen here, NOT derived | policy, and the SAFE direction is recorded with it: the rule it guards is deliberately lenient, and the measured cost of that leniency in the sibling product is written on <see cref="LineRejection"/> per rule 15. |
 ''' </summary>
 Public Module OcrTextFilter
 

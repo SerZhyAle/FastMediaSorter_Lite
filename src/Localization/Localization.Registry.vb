@@ -24,6 +24,8 @@ Partial Public NotInheritable Class Localization
         AddArchiveStrings()     ' browsing an archive as a folder
         AddVideoStrings()       ' the decode cache's settings rows + "Replace with video"
         AddSlotHealthStrings()  ' recipient-slot verdicts, auto-created folders, honest failures
+        AddSecureStrings()      ' secure .fd-sec containers: the password dialog and the three outcomes
+        AddAppUxStrings()       ' ticket 028: confirmations, failure causes, the download dialog, accessible names
     End Sub
 
 End Class

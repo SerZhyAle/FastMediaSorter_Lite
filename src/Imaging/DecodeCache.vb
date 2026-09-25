@@ -40,13 +40,25 @@ Friend Module DecodeCache
     ''' treats a Nothing from DecodeToImage today.
     ''' </summary>
     Friend Function LoadImage(filePath As String) As Tuple(Of Image, MemoryStream)
+        Dim ignored As PathFailureKind = PathFailureKind.Content
+        Return LoadImage(filePath, ignored)
+    End Function
+
+    ''' <param name="failure">Set only when the file's bytes could not be READ (audit 048,
+    ''' A-06) - Locked, Denied, Transport, Missing. A decode that fails leaves it as the
+    ''' caller set it (Content).</param>
+    Friend Function LoadImage(filePath As String, ByRef failure As PathFailureKind) As Tuple(Of Image, MemoryStream)
         Dim payloadDecoder As IImageDecoderPayload = TryCast(ImageDecoderProvider.Current, IImageDecoderPayload)
         Dim budgetMb As Integer = DecodeCacheStore.BudgetMb
 
         ' No key when the cache is off or the file cannot be stat'ed - the decode below
         ' then runs exactly as it did before this feature existed.
+        ' No key either for an archive entry's temporary copy (audit 052 G-21): its path
+        ' carries the session's random token, so an entry filed under it can never be hit
+        ' again and would only evict entries that can.
         Dim key As String = ""
-        If payloadDecoder IsNot Nothing AndAlso DecodeCachePolicy.IsEnabled(budgetMb) Then
+        If payloadDecoder IsNot Nothing AndAlso DecodeCachePolicy.IsEnabled(budgetMb) AndAlso
+           Not ArchivePaths.IsUnderArchiveCache(filePath) Then
             key = TryBuildKey(filePath)
         End If
 
@@ -61,13 +73,8 @@ Friend Module DecodeCache
             End If
         End If
 
-        Dim sourceBytes As Byte()
-        Try
-            sourceBytes = File.ReadAllBytes(filePath)
-        Catch ex As Exception
-            AppFileLogger.LogException("DecodeCache could not read: " & filePath, ex)
-            Return Nothing
-        End Try
+        Dim sourceBytes As Byte() = FileManager.ReadSourceBytes(filePath, failure)
+        If sourceBytes Is Nothing Then Return Nothing
 
         ' A decoder with no payload interface (there is none today, but the seam allows one)
         ' keeps the historical path untouched, cache or no cache.

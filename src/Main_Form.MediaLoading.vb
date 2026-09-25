@@ -68,6 +68,9 @@ Partial Public Class Main_Form
     ''' the stop condition for a folder in which nothing decodes at all.</summary>
     Private auto_Skip_Chain As Integer = 0
 
+    ''' <summary>The chain's limit, fixed when the chain starts (AutoSkipPolicy.BoundAtChainStart).</summary>
+    Private auto_Skip_Chain_Bound As Integer = 0
+
     ''' <summary>Bumped by every navigation the USER asks for, so a skip continuation that
     ''' was posted to the message loop and then overtaken by a keypress is dropped instead
     ''' of yanking the user to the file the skip had picked.</summary>
@@ -148,6 +151,12 @@ Partial Public Class Main_Form
             Dim folder As String = Path.GetDirectoryName(Current_File_Name)
             If String.IsNullOrEmpty(folder) Then folder = Current_Folder_Path
             If Not String.IsNullOrEmpty(folder) AndAlso Not Directory.Exists(folder) Then
+                ' Directory.Exists cannot tell a deleted folder from one that stopped
+                ' answering (011 §11.2). On a LOCAL volume that is ready there is nothing to
+                ' stop answering: the folder is gone (audit 048, A-22). It used to read "no
+                ' connection" on every flip while the dead list was walked for ever; as
+                ' Missing, the list cleans itself.
+                If IsOnLocalReadyVolume(folder) Then Return PathFailureKind.Missing
                 Return PathFailureKind.Transport
             End If
         Catch ex As Exception
@@ -176,6 +185,27 @@ Partial Public Class Main_Form
     End Function
 
 #If Not NETFRAMEWORK Then
+    ''' <summary>
+    ''' True when <paramref name="file_Path"/> is on a local volume that is ready - a fixed
+    ''' disk, or a removable one that is present (audit 048, A-18/A-22). False for a UNC path,
+    ''' a mapped network drive, a drive that is not ready (a card pulled out) and anything
+    ''' that cannot be asked: for those "it did not answer" stays the honest reading.
+    ''' </summary>
+    Private Shared Function IsOnLocalReadyVolume(file_Path As String) As Boolean
+        Try
+            If String.IsNullOrEmpty(file_Path) OrElse NavigationRules.IsUncPath(file_Path) Then Return False
+            Dim root As String = Path.GetPathRoot(file_Path)
+            If String.IsNullOrEmpty(root) OrElse root.StartsWith("\\", StringComparison.Ordinal) Then Return False
+            Dim drive As New DriveInfo(root)
+            If drive.DriveType = DriveType.Network OrElse drive.DriveType = DriveType.NoRootDirectory OrElse
+               drive.DriveType = DriveType.Unknown Then Return False
+            Return drive.IsReady
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0915: volume probe failed: " & ex.Message)
+            Return False
+        End Try
+    End Function
+
     ''' <summary>The sentence for a failure that is NOT about the file. It says both halves:
     ''' what went wrong, and that the list was left alone - otherwise the user's next move is
     ''' the rescan this whole change exists to make unnecessary.</summary>
@@ -190,6 +220,11 @@ Partial Public Class Main_Form
         Select Case kind
             Case PathFailureKind.Denied
                 Return Localization.TF("Нет доступа, файл оставлен в списке: {0}", name)
+            Case PathFailureKind.Locked
+                Return Localization.TF("Файл открыт в другой программе, оставлен в списке: {0}", name)
+            Case PathFailureKind.SlowDecode
+                ' Audit 048, A-18: a local decode past its deadline is not "no connection".
+                Return Localization.TF("Файл слишком долго декодируется, оставлен в списке: {0}", name)
             Case Else
                 Return Localization.TF("Нет связи с папкой, файл оставлен в списке: {0}", name)
         End Select
@@ -236,16 +271,19 @@ Partial Public Class Main_Form
 
             ' The throttle is there to tame the user's key repeat - it must never touch
             ' our OWN skip of an unreadable file. That call comes back within a
-            ' millisecond of this one setting last_Action_Time, so the throttle ate it
+            ' millisecond of this one setting last_Action_Ms, so the throttle ate it
             ' and the auto-skip (by design: a broken file must not stop the flip)
             ' silently never happened - the stale image just stayed on screen.
+            ' Measured on the monotonic clock (audit 048, A-08): against DateTime.Now the
+            ' DST fall-back put the last stamp an hour in the future and refused every key,
+            ' click and slideshow tick until wall time caught up.
             If Not is_Auto_Skip Then
-                Dim current_Operation_Time As DateTime = DateTime.Now
-                If last_Action_Time.AddSeconds(minimum_time_before_next_media_file) > current_Operation_Time Then
+                Dim current_Operation_Ms As Long = MonotonicClock.NowMs()
+                If Not MonotonicClock.HasElapsed(current_Operation_Ms, last_Action_Ms, minimum_time_before_next_media_file_Ms) Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0330: Try to read the new file less than 0.04s - cancelled")
                     Exit Sub
                 End If
-                last_Action_Time = current_Operation_Time
+                last_Action_Ms = current_Operation_Ms
             End If
 
             ' Only a mode that STARTS a file operation has to wait for the worker. The
@@ -256,8 +294,13 @@ Partial Public Class Main_Form
             ' where nothing decodes has to stop by count, not by luck: the index wraps
             ' round for ever and the stack would not.
             If is_Auto_Skip Then
+                ' The bound is the folder as it was when the chain STARTED (audit 048, A-09).
+                ' Every skip removes its file, so compared with the live, shrinking count a
+                ' run of more than half the folder stopped with "no readable files" while
+                ' readable ones were still ahead.
+                If auto_Skip_Chain = 0 Then auto_Skip_Chain_Bound = AutoSkipPolicy.BoundAtChainStart(total_File_Count)
                 auto_Skip_Chain += 1
-                If Not AutoSkipPolicy.ShouldContinue(auto_Skip_Chain, total_File_Count) Then
+                If Not AutoSkipPolicy.ShouldContinue(auto_Skip_Chain, auto_Skip_Chain_Bound) Then
                     auto_Skip_Chain = 0
                     lbl_Status.Text = Localization.T("! Нет читаемых файлов в папке")
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0335: auto-skip chain exhausted - nothing readable")
@@ -273,8 +316,9 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
             ' DEL inside an archive would delete the extracted copy, leave a hole in the
             ' list and change nothing about the archive - the same refusal the recipient
-            ' slots get, from the same one point (§7).
-            If read_Mode_Type = Mode_Delete AndAlso ArchiveModeBlocksFileOperations() Then Exit Sub
+            ' slots get, from the same one point (§7) - which also answers for a resource
+            ' that cannot delete (006 PV-7).
+            If read_Mode_Type = Mode_Delete AndAlso ResourceBlocksFileOperations(ResourceVerb.Delete) Then Exit Sub
 #End If
 
 #If NETFRAMEWORK Then
@@ -297,7 +341,7 @@ Partial Public Class Main_Form
             ' and every undo protection below was dead code.
             Dim is_After_Undo_Operation As Boolean = (read_Mode_Type = "AfterUndo")
             Dim is_File_Found As Boolean = True
-            If Not UpdateFileIndexAndList(read_Mode_Type, is_File_Found) Then
+            If Not UpdateFileIndexAndList(read_Mode_Type, is_File_Found, is_Auto_Skip) Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0350: Mastering the file is failed")
                 Return
             End If
@@ -319,29 +363,31 @@ Partial Public Class Main_Form
                     ' Insert at the beginning (first position)
                     recent_Folder_List.Insert(0, Current_Folder_Path)
 
-                    ' Remove excess folders from the end if we exceed the limit
-                    If recent_Folder_List.Count > RecentFoldersLimit() Then
-                        recent_Folder_List.RemoveAt(recent_Folder_List.Count - 1)
-                    End If
+                    ' Down to the limit, not one element per insert: a lowered limit (0 =
+                    ' "record nothing") has to hold from the next folder on (053 F-12).
+                    Utils.ApplyRecentLimit(recent_Folder_List, RecentFoldersLimit(), newestFirst:=True)
 
                     ' A new folder in the recent list is worth keeping through a crash.
                     MarkSettingsDirty()
                 End If
 
+                Dim refresh_Combo As Action =
+                    Sub()
+                        cmbox_Media_Folder.Items.Clear()
+                        For Each folder In recent_Folder_List
+                            cmbox_Media_Folder.Items.Add(folder)
+                        Next
+                        If cmbox_Media_Folder.Items.Count > 0 Then
+                            cmbox_Media_Folder.SelectedIndex = 0 ' Select the first item (current folder)
+                        Else
+                            ' Nothing is recorded (limit 0): the box still names the folder.
+                            cmbox_Media_Folder.Text = Current_Folder_Path
+                        End If
+                    End Sub
                 If cmbox_Media_Folder.InvokeRequired Then
-                    cmbox_Media_Folder.Invoke(Sub()
-                                                  cmbox_Media_Folder.Items.Clear()
-                                                  For Each folder In recent_Folder_List
-                                                      cmbox_Media_Folder.Items.Add(folder)
-                                                  Next
-                                                  cmbox_Media_Folder.SelectedIndex = 0 ' Select the first item (current folder)
-                                              End Sub)
+                    cmbox_Media_Folder.Invoke(refresh_Combo)
                 Else
-                    cmbox_Media_Folder.Items.Clear()
-                    For Each folder In recent_Folder_List
-                        cmbox_Media_Folder.Items.Add(folder)
-                    Next
-                    cmbox_Media_Folder.SelectedIndex = 0 ' Select the first item (current folder)
+                    refresh_Combo()
                 End If
             End If
             is_TextBox_Editing = False
@@ -353,7 +399,8 @@ Partial Public Class Main_Form
         End If
     End Sub
 
-    Private Function UpdateFileIndexAndList(read_Mode_Type As String, ByRef is_File_Found As Boolean) As Boolean
+    Private Function UpdateFileIndexAndList(read_Mode_Type As String, ByRef is_File_Found As Boolean,
+                                            Optional is_Auto_Skip As Boolean = False) As Boolean
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0400: UpdateFileIndexAndList = " & read_Mode_Type.ToString)
 
         ' The user is choosing a file themselves, so stop waiting for that locked one -
@@ -387,7 +434,11 @@ Partial Public Class Main_Form
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0421: case JumpBy " & pending_Jump_Delta.ToString())
 
             Case Mode_JumpTo
-                is_Nav_Backwards = pending_Jump_Target < current_File_Index
+                ' An auto-skip jump carries the direction the user was going (audit 048,
+                ' A-19): SkipUnreadableFile wraps a forward skip off the LAST file to 0, and
+                ' re-deriving the direction from "0 < current" turned the chain round
+                ' towards the files the user had already passed.
+                If Not is_Auto_Skip Then is_Nav_Backwards = pending_Jump_Target < current_File_Index
                 current_File_Index = pending_Jump_Target
                 If current_File_Index < 0 Then current_File_Index = 0
                 If current_File_Index > total_File_Count - 1 Then current_File_Index = total_File_Count - 1
@@ -396,6 +447,7 @@ Partial Public Class Main_Form
 
             Case Mode_Files '80
                 If Not LoadFiles() Then Return False
+                ClearExternalInputState()   ' audit 048, A-14 - see Mode_FolderAndFile
                 If current_File_Index < 0 Then current_File_Index = 0
                 If current_File_Index > total_File_Count - 1 Then current_File_Index = total_File_Count - 1
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0430: case ReadFiles")
@@ -413,7 +465,15 @@ Partial Public Class Main_Form
                 End If
 
                 If is_Slide_Show_Random_Mode Then
+                    ' The same order choice the slideshow start makes (audit 048, A-04):
+                    ' every tick used to draw plain random with repeats, so "shuffle
+                    ' without repeats" did nothing after the first slide.
+#If Not NETFRAMEWORK Then
+                    current_File_Index = SlideshowOrder.NextIndex(True, IsShuffleCycleOrder(), total_File_Count,
+                                                                  current_File_Index, slideshow_Rng, shuffle_Cycle)
+#Else
                     current_File_Index = slideshow_Rng.Next(0, total_File_Count)
+#End If
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0460: case RND InSlideShow")
                 Else
                     ' Wrap to the start, exactly like the manual "next file" does. The
@@ -434,6 +494,10 @@ Partial Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0450: case ReadFolderAndFile is failed")
                     Return False
                 End If
+                ' The whole folder is in memory now: whatever an earlier external open left
+                ' behind is over (audit 048, A-14). Left set, the first file got no prefetch
+                ' and the first Next/Prev re-read and re-sorted the folder just loaded.
+                ClearExternalInputState()
                 lbl_Status.Text = ""
                 current_File_Index = 0
 
@@ -488,18 +552,33 @@ Partial Public Class Main_Form
                 pending_Delete_Permanent = False     ' read once, whatever the outcome
                 If Not ExecuteDelete(Current_File_Name, forced_Permanent) Then Return False
 #Else
-                If String.IsNullOrEmpty(Current_File_Name) Then
+                ' THE file this deletion is about, captured BEFORE the prompt and used for
+                ' both the prompt and the delete (audit 047, F-05). The MessageBox runs a
+                ' modal message loop, and a file double-clicked in Explorer meanwhile is
+                ' forwarded into it (WM_COPYDATA / StartupNextInstance) and becomes
+                ' Current_File_Name - so the file named in the prompt was kept and the
+                ' forwarded one was deleted, permanently (net48 has no Recycle Bin path).
+                Dim doomed_File As String = Current_File_Name
+                If String.IsNullOrEmpty(doomed_File) Then
                     lbl_Status.Text = Localization.T("! Нет файла для удаления")
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0540: case DeleteFile failed")
                     Return False
                 End If
 
-                Dim confirmMsg = Localization.TF("Вы уверены, что хотите безвозвратно удалить файл '{0}'? Обратно его уже не уговорить.", Path.GetFileName(Current_File_Name))
+                Dim confirmMsg = Localization.TF("Вы уверены, что хотите безвозвратно удалить файл '{0}'? Обратно его уже не уговорить.", Path.GetFileName(doomed_File))
 
                 If Not Is_no_request_before_file_operation AndAlso
-                    MessageBox.Show(confirmMsg, Localization.T("Подтверждение удаления"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then
+                    MessageBox.Show(Me, confirmMsg, Localization.T("Подтверждение удаления"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then
 
                     Return False ' User cancelled
+                End If
+
+                ' Something replaced the file on screen while the prompt was open: the "Yes"
+                ' was about a file that is no longer in front of the user.
+                If Not String.Equals(Current_File_Name, doomed_File, StringComparison.Ordinal) Then
+                    lbl_Status.Text = Localization.T("! Файл на экране сменился, пока было открыто окно - действие отменено")
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0545: delete cancelled - the file on screen changed during the prompt")
+                    Return False
                 End If
 
                 Try
@@ -510,13 +589,12 @@ Partial Public Class Main_Form
                     ' holding an AVI/ZMBV/VP9 open as it is on the modern build.
                     ReleaseActiveMedia()
 
-                    Dim doomed_File As String = Current_File_Name
-
                     If My.Computer.FileSystem.FileExists(doomed_File) Then
                         ' The worker is idle here: ReadShowMediaFile refuses the
                         ' DeleteFile mode while it is busy.
                         If UseAsyncFileOps() Then
-                            Dim op As New FileOp With {.Kind = FileOpKind.Delete, .Source = doomed_File}
+                            Dim op As New FileOp With {.Kind = FileOpKind.Delete, .Source = doomed_File,
+                                                       .ListGeneration = file_List_Generation}
                             QueueFileOp(op)
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0550: file in task to be deleted: " & doomed_File)
                             ' Optimistic, rolled back by RunWorkerCompleted if it fails.
@@ -564,6 +642,27 @@ Partial Public Class Main_Form
         Return True
     End Function
 
+    ''' <summary>A full folder list was just loaded: the external-open state is over.</summary>
+    Private Sub ClearExternalInputState()
+        was_External_Input_Previously = False
+        is_External_Input_Received = False
+    End Sub
+
+    ''' <summary>
+    ''' Installs a one-file list - an externally opened file whose folder is read later
+    ''' (audit 048, A-02). The ONE place that does it, because every install has to leave
+    ''' array mode too: after a folder of max_Number_Of_Files_For_List files or more the
+    ''' array stayed active, and the display path read files_Array(0) - the first file of
+    ''' the previous, huge folder - showed it as "1 of 1" and aimed DEL at it.
+    ''' </summary>
+    Private Sub InstallSingleFileList(file_Path As String)
+        is_Files_Array_Active = False
+        files_Array = Nothing
+        files_List = New List(Of String) From {file_Path}
+        total_File_Count = 1
+        NoteFileListReplaced()
+    End Sub
+
     ''' <summary>True when files_List/files_Array really describe Current_Folder_Path.
     '''
     ''' Replaces the old signal for "the list is not loaded yet": current_File_Index = 0.
@@ -581,6 +680,13 @@ Partial Public Class Main_Form
     ''' scan result is accepted.</summary>
     Private Sub MarkFolderListLoaded()
         folder_List_Loaded_For = Current_Folder_Path
+        NoteFileListReplaced()
+    End Sub
+
+    ''' <summary>A new list is in memory: whatever an older operation remembered about
+    ''' positions in the previous one no longer applies (audit 047, C-13).</summary>
+    Private Sub NoteFileListReplaced()
+        file_List_Generation += 1
     End Sub
 
     Private Function LoadFilesForRandomOrSlideshow(ByRef is_File_Found As Boolean, is_Random_File_Mode As Boolean) As Boolean
@@ -751,11 +857,14 @@ Partial Public Class Main_Form
                 ' let the caller wipe the media surface. Only a real read error costs
                 ' the session (and even then GetFiles has already said so in the status).
                 If read_Error Then
-                    lbl_Status.Text = Localization.T("! Ошибка чтения файлов")
+                    ' GetFiles has already said WHICH failure it was ("folder not found",
+                    ' "no connection", ..) - overwriting it here with the generic line threw
+                    ' that away (audit 048, A-07).
                     Current_Folder_Path = ""
                     cmbox_Media_Folder.Text = ""
                     files_List = Nothing
                     files_Array = Nothing
+                    NoteFileListReplaced()
                     Return False
                 End If
 
@@ -765,6 +874,7 @@ Partial Public Class Main_Form
                 is_Files_Array_Active = False
                 files_List = New List(Of String)()
                 files_Array = Nothing
+                NoteFileListReplaced()
                 Return True
             End If
 
@@ -890,39 +1000,8 @@ Partial Public Class Main_Form
                         LoadImageWithProgress(Current_File_Name, fileInfo.Length, decode_Failure)
 
                     If image_Data_Tuple IsNot Nothing Then
-                        Dim loaded_Image As Image = image_Data_Tuple.Item1
-                        Dim loaded_Image_Stream As IO.MemoryStream = image_Data_Tuple.Item2
-
-                        If Not is_this_First_Picture_File_We_Show AndAlso is_Second_PictureBox_Active Then
-                            ' Use PictureBox2 - load image first, then update visibility
-                            If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
-                            If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
-                            Picture_Box_2.Image = loaded_Image
-                            pictureBox2_Stream = loaded_Image_Stream
-                            StartGifLoopPlayback(Picture_Box_2.Image)
-
-                            ' Now update visibility - show P2 first, then hide P1
-                            is_PictureBox2_Visible = True
-                            UpdateControlVisibility()
-                            is_PictureBox1_Visible = False
-                            is_Second_PictureBox_Active = True
-                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0890: P2 set (not found loaded) isSecondaryPictureBoxActive=true")
-                        Else
-                            ' Use PictureBox1 - load image first, then update visibility
-                            If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
-                            If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
-                            Picture_Box_1.Image = loaded_Image
-                            pictureBox1_Stream = loaded_Image_Stream
-                            StartGifLoopPlayback(Picture_Box_1.Image)
-
-                            ' Now update visibility - show P1 first, then hide P2
-                            is_PictureBox1_Visible = True
-                            UpdateControlVisibility()
-                            is_PictureBox2_Visible = False
-                            is_Second_PictureBox_Active = False
-                            is_this_First_Picture_File_We_Show = False
-                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0900: P1 set (not found loaded) isSecondaryPictureBoxActive=false")
-                        End If
+                        PlaceDecodedImage(image_Data_Tuple.Item1, image_Data_Tuple.Item2)
+                        StartGifLoopPlayback(If(is_PictureBox1_Visible, Picture_Box_1.Image, Picture_Box_2.Image))
                     Else
                         ' Image loading failed - skip to next file
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0908: Image loading failed for: " & Current_File_Name)
@@ -995,6 +1074,50 @@ Partial Public Class Main_Form
         End If
 #End If
 
+    End Sub
+
+    ''' <summary>
+    ''' Puts a freshly decoded image on whichever picture box is next, disposing what that
+    ''' box was holding - image AND the MemoryStream it was decoded from, since the stream
+    ''' is deliberately kept open while the image lives.
+    '''
+    ''' Extracted from the display path so the secure-container branch places its picture
+    ''' through exactly the same code (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md
+    ''' §5.2): the box swap, the visibility order and the first-picture special case are
+    ''' the sort of thing that goes subtly wrong when it exists twice.
+    '''
+    ''' The caller starts GIF playback afterwards - the two callers want it on different
+    ''' objects, and neither wants it inside a helper that only knows about pixels.
+    ''' </summary>
+    Private Sub PlaceDecodedImage(loaded_Image As Image, loaded_Image_Stream As IO.MemoryStream)
+        If Not is_this_First_Picture_File_We_Show AndAlso is_Second_PictureBox_Active Then
+            ' Use PictureBox2 - load image first, then update visibility
+            If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
+            If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
+            Picture_Box_2.Image = loaded_Image
+            pictureBox2_Stream = loaded_Image_Stream
+
+            ' Now update visibility - show P2 first, then hide P1
+            is_PictureBox2_Visible = True
+            UpdateControlVisibility()
+            is_PictureBox1_Visible = False
+            is_Second_PictureBox_Active = True
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0890: P2 set (not found loaded) isSecondaryPictureBoxActive=true")
+        Else
+            ' Use PictureBox1 - load image first, then update visibility
+            If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
+            If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
+            Picture_Box_1.Image = loaded_Image
+            pictureBox1_Stream = loaded_Image_Stream
+
+            ' Now update visibility - show P1 first, then hide P2
+            is_PictureBox1_Visible = True
+            UpdateControlVisibility()
+            is_PictureBox2_Visible = False
+            is_Second_PictureBox_Active = False
+            is_this_First_Picture_File_We_Show = False
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0900: P1 set (not found loaded) isSecondaryPictureBoxActive=false")
+        End If
     End Sub
 
     ''' <summary>Blanks the media surface for a file that IS in the list but has no
@@ -1270,8 +1393,22 @@ Partial Public Class Main_Form
         ' now stale and must not touch the screen when it comes back.
         media_Generation += 1
 #If Not NETFRAMEWORK Then
+        ' The outgoing video's position and the end of an "Open URL" stream (audit 050
+        ' D-01, D-05) - before anything below clears the names they need.
+        NoteLeavingCurrentMedia()
         ClearAudioSurface()
         SetMediaDisplayKind(MediaKind.Image)
+
+        ' An open container is let go here, before anything else touches the screen: its
+        ' decrypting stream is what VLC has been reading from, so playback stops FIRST and
+        ' the stream goes after it. Doing it here rather than in each branch is what keeps
+        ' a container from outliving its picture on the ordinary paths - flipping from a
+        ' sealed video to a plain JPEG never passes through the secure code at all
+        ' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §5.2).
+        If IsSecureContentOnScreen() Then
+            If is_Vlc_Playing Then StopVlcPlayback()
+            SecureReleaseCurrent()
+        End If
 #End If
 
         Dim previous_File_Name As String = Current_File_Name
@@ -1309,17 +1446,26 @@ Partial Public Class Main_Form
                 ' Inside an archive the file does not exist until we extract it, and this
                 ' has to happen BEFORE the "the file is gone" branch below - that branch
                 ' drops the entry from the list, so every page of a comic would fall out of
-                ' it one flip at a time. A no-op outside an archive.
-                EnsureArchiveEntryOnDisk(Current_File_Name)
+                ' it one flip at a time. The same holds for a remote resource's file, which
+                ' is not here until it is fetched (006 PV-4). A no-op for a plain file.
+                EnsureEntryLocal(Current_File_Name)
+                ' An entry the archive REFUSED (too large, bomb, encrypted, unreadable) is not
+                ' a vanished file: it keeps its place in the list and its reason on screen,
+                ' and the dispatch below shows it as refused (audit 052 A-12/G-05).
+                Dim entry_Refused As Boolean = IsArchiveEntryRefused(Current_File_Name)
+#Else
+                Dim entry_Refused As Boolean = False
 #End If
 
-                If Not String.IsNullOrEmpty(Current_File_Name) AndAlso Not File.Exists(Current_File_Name) Then
+                If Not entry_Refused AndAlso Not String.IsNullOrEmpty(Current_File_Name) AndAlso Not File.Exists(Current_File_Name) Then
 
                     ' Straight after an undo the file may still be travelling back (the
                     ' worker is moving it): that is not a stale entry, so leave the list
                     ' alone - dropping it here would undo the undo. The completion
                     ' handler shows it once it has landed.
-                    If is_After_Undo_Operation Then
+                    ' The same holds for any row a queued move-back has not landed yet,
+                    ' however the user got onto it (audit 047, C-13e).
+                    If is_After_Undo_Operation OrElse IsFileArriving(Current_File_Name) Then
                         lbl_Status.Text = Localization.TF("Файл {0} перемещается назад операционной системой.", Current_File_Name)
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0974: after undo - file not back yet, list kept")
                         Return
@@ -1358,15 +1504,25 @@ Partial Public Class Main_Form
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0976: Error removing invalid file: " & ex.Message)
                     End Try
 
-                    ' Adjust index if necessary
-                    If current_File_Index >= total_File_Count Then
-                        current_File_Index = Math.Max(0, total_File_Count - 1)
-                    End If
+                    ' The slot now holds the file AFTER the vanished one. Going backwards the
+                    ' user wants the one BEFORE it (audit 048, A-19): taking the same index
+                    ' bounced Prev onto an externally deleted file straight back to the file
+                    ' the user had just left - the bounce is_Nav_Backwards exists to prevent.
+                    ' Both directions wrap, like every other "next file" path.
+                    If is_Nav_Backwards Then current_File_Index -= 1
+                    If current_File_Index < 0 Then current_File_Index = Math.Max(0, total_File_Count - 1)
+                    If current_File_Index >= total_File_Count Then current_File_Index = 0
 
                     ' Try again with the adjusted index
                     If total_File_Count > 0 Then
                         Current_File_Name = If(is_Files_Array_Active, files_Array(current_File_Index), files_List(current_File_Index))
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0976: Adjusted to new file: " & Current_File_Name)
+#If Not NETFRAMEWORK Then
+                        ' The substitute has not been past the extraction either; without
+                        ' this an archive entry taken here was dropped as "missing" too
+                        ' (audit 052 A-12).
+                        EnsureEntryLocal(Current_File_Name)
+#End If
                     Else
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0977: No more files available")
                         Return
@@ -1378,9 +1534,12 @@ Partial Public Class Main_Form
                 ' PREVIOUS folder under this folder's counter - and DEL then deleted
                 ' that stranger while removing an entry of the current folder from the
                 ' list. Trust the file actually on screen; failing that, the first one.
+                ' previous_File_Name, not Current_File_Name (audit 048, A-20): the latter was
+                ' blanked at the top of this method, so the lookup never ran and recovery
+                ' always fell back to the first file.
                 Dim recovered_At As Integer = -1
-                If Not String.IsNullOrEmpty(Current_File_Name) Then
-                    recovered_At = If(is_Files_Array_Active, Array.IndexOf(files_Array, Current_File_Name), files_List.IndexOf(Current_File_Name))
+                If Not String.IsNullOrEmpty(previous_File_Name) Then
+                    recovered_At = If(is_Files_Array_Active, Array.IndexOf(files_Array, previous_File_Name), files_List.IndexOf(previous_File_Name))
                 End If
 
                 If recovered_At >= 0 Then
@@ -1395,7 +1554,7 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
                 ' Same reason as above: this branch reaches a file without going past the
                 ' existence check, and inside an archive nothing is on disk until asked.
-                EnsureArchiveEntryOnDisk(Current_File_Name)
+                EnsureEntryLocal(Current_File_Name)
 #End If
             End If
 
@@ -1406,11 +1565,18 @@ Partial Public Class Main_Form
                 ' external open, slideshow start) went looking for the wrong file.
                 Current_Image_Path = Current_File_Name
 
+#If Not NETFRAMEWORK Then
+                ' An archive entry's temporary copy is never a recent file: it is gone the
+                ' moment the archive closes, and a comic would evict every real entry
+                ' (010 invariant 5, audit 052 A-05).
+                If Not ArchivePaths.IsUnderArchiveCache(Current_File_Name) Then
+#End If
                 recent_Media_File_List.Remove(Current_File_Name)
                 recent_Media_File_List.Add(Current_File_Name)
-                If recent_Media_File_List.Count > RecentFilesLimit() Then
-                    recent_Media_File_List.RemoveAt(0)
+                Utils.ApplyRecentLimit(recent_Media_File_List, RecentFilesLimit(), newestFirst:=False)
+#If Not NETFRAMEWORK Then
                 End If
+#End If
 
 #If Not NETFRAMEWORK Then
                 ' The same moment, for the same reason: this is where a file counts as
@@ -1433,10 +1599,32 @@ Partial Public Class Main_Form
             lbl_File_Number.Text = Localization.TF("{0} из {1}", current_File_Number, total_File_Count)
 
             Try
-                Dim current_File_Extension As String = Path.GetExtension(Current_File_Name).ToLower()
-                Dim current_File_Uri As String = New Uri(Current_File_Name).ToString()
+                Dim current_File_Extension As String = NavigationRules.ExtensionKey(Current_File_Name)
+                ' No "New Uri(Current_File_Name)" here any more (audit 048, A-11): it ran for
+                ' EVERY file before the dispatch and throws for \\wsl$\.. and \\?\.. paths, so
+                ' every such file went down the E005 path and nothing was ever shown. Only the
+                ' net48 WebBrowser needs a URI, and it builds one itself below.
 
+                ' The name first, synchronously (audit 048, A-15): the worker only appends
+                ' size, date and dimensions. Left to the serial worker alone, the label kept
+                ' naming the PREVIOUS file for as long as the previous request's decode ran.
+                If Not Is_No_Background_Tasks Then lbl_Current_File.Text = CurrentFileDisplayName(Current_File_Name)
+
+#If Not NETFRAMEWORK Then
+                ' The container branch comes FIRST, before the image/video split: what is
+                ' inside is unknown until the container opens, and the split below can only
+                ' see ".fd-sec" (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §5.3).
+                If IsArchiveEntryRefused(Current_File_Name) Then
+                    ' Refused by the archive: shown as refused, never dropped (A-12/G-05) -
+                    ' whichever of the three paths above reached the entry.
+                    ShowArchiveRefusal(Current_File_Name)
+                ElseIf IsSecureContainerExtension(current_File_Extension) Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1005: secure container to open")
+                    DisplaySecureContainer(Current_File_Name)
+                ElseIf Image_File_Extensions.Contains(current_File_Extension) Then
+#Else
                 If Image_File_Extensions.Contains(current_File_Extension) Then
+#End If
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1030: P to load")
                     LoadStandardImageInPictureBox()
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1040: Picture box is set")
@@ -1455,7 +1643,18 @@ Partial Public Class Main_Form
                     ' net48: try the IE WebBrowser first (H.264/MP4), LibVLC picks
                     ' up unsupported codecs via HandleVideoError.
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1010: WB to load")
-                    LoadVideoInWebBrowser(current_File_Uri)
+                    Dim current_File_Uri As String = Nothing
+                    Try
+                        current_File_Uri = New Uri(Current_File_Name).ToString()
+                    Catch ex As UriFormatException
+                        ' \\wsl$\.. and \\?\.. paths have no file URI; LibVLC takes the path.
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1011: no URI for the path, straight to VLC: " & ex.Message)
+                    End Try
+                    If current_File_Uri Is Nothing Then
+                        PlayVideoWithVlcAsync(Current_File_Name)
+                    Else
+                        LoadVideoInWebBrowser(current_File_Uri)
+                    End If
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: WB is set")
 #Else
                     ' Modern (.NET 10): single video engine - straight to LibVLC,
@@ -1503,6 +1702,7 @@ Partial Public Class Main_Form
                         .NextFile = next_File_After_Current,
                         .FolderPath = Current_Folder_Path,
                         .TargetIsBox1 = is_First_Picture_Box_Need_To_Be_Cached,
+                        .Generation = media_Generation,
                         .CountFolder = was_External_Input_Previously,
                         .IsRandomMode = is_Slide_Show_Random_Mode
                     }
@@ -1515,6 +1715,10 @@ Partial Public Class Main_Form
                     ' knows exactly how many entries it has, and the count would come from
                     ' walking a directory that only holds what has been viewed (§3.3).
                     If archive_Session IsNot Nothing Then new_Args.CountFolder = False
+                    ' The resource and the files to fetch ahead, for the same reason (006
+                    ' PV-6). Both Nothing/empty for a plain folder, which costs nothing.
+                    new_Args.Resource = ActiveResourceSession()
+                    new_Args.AheadFiles = ResourcePrefetchAhead()
 #End If
 
                     If is_BgWorker_Online OrElse BgWorker.IsBusy Then
@@ -1538,34 +1742,18 @@ Partial Public Class Main_Form
                 If Not is_After_Undo_Operation Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1070: E005 [" & ex.GetType().Name & "] " & ex.Message & " File: " & Current_File_Name)
 
-                    ' Instead of showing error, try to skip to next file
-                    lbl_Status.Text = Localization.TF("Ошибка файла, переход к следующему: {0}", Path.GetFileName(Current_File_Name))
-
-                    ' Remove the problematic file from the list
-                    If is_Files_Array_Active Then
-                        files_Array = RemoveAt(files_Array, current_File_Index)
-                    Else
-                        files_List.RemoveAt(current_File_Index)
+                    ' Classified and skipped through the ONE skip path (audit 048, A-11):
+                    ' this was an eighth, unclassified removal site - by index, with its own
+                    ' copy of the wrap and none of the direction handling. SkipUnreadableFile
+                    ' removes by name, follows the user's direction, keeps the file on the
+                    ' mainline when the failure is not about it, and continues through the
+                    ' counted, posted jump (RequestAutoSkipJump), so a folder where every
+                    ' dispatch throws still cannot recurse without bound.
+                    Dim dispatch_Kind As PathFailureKind = ReadFailure(PathFailure.Classify(ex))
+                    If Not FailureKeepsFile(dispatch_Kind) Then
+                        lbl_Status.Text = Localization.TF("Ошибка файла, переход к следующему: {0}", Path.GetFileName(Current_File_Name))
                     End If
-                    total_File_Count -= 1
-
-                    ' Adjust index and try next file
-                    If current_File_Index >= total_File_Count Then
-                        current_File_Index = Math.Max(0, total_File_Count - 1)
-                    End If
-
-                    If total_File_Count > 0 Then
-                        ' Try the next file - but through the counted, posted path, not by
-                        ' calling the display straight back. This is the SECOND shape of the
-                        ' recursion fixed in RequestAutoSkipJump: it bypassed the chain guard
-                        ' entirely (that lives in ReadShowMediaFile's is_Auto_Skip branch), so
-                        ' a folder where every file's dispatch throws - VLC natives that will
-                        ' not load, a path New Uri rejects - nested one frame set per file
-                        ' with nothing to stop it.
-                        pending_Jump_Target = current_File_Index
-                        pending_Jump_Status = ""
-                        RequestAutoSkipJump()
-                    End If
+                    SkipUnreadableFile(dispatch_Kind)
                 Else
                     lbl_Status.Text = Localization.TF("Файл {0} перемещается назад операционной системой.", Current_File_Name)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1080: UNdo E005 " & ex.Message)
@@ -1588,6 +1776,9 @@ Partial Public Class Main_Form
 #End If
 
             lbl_File_Number.Text = ""
+            ' No file, so no file name either (audit 048, A-15): no worker runs here, and the
+            ' label went on naming - with size and date - the file that had just left.
+            lbl_Current_File.Text = ""
             lbl_Status.Text = Localization.T("! Нет файлов в папке")
             is_PictureBox1_Visible = False
             is_PictureBox2_Visible = False

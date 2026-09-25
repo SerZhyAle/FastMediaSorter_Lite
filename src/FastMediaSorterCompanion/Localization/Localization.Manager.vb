@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 ' <summary>
 ' The Share Manager main window: header, server grid, options, usage counters,
@@ -429,19 +429,19 @@ Partial Public NotInheritable Class Localization
             "سرور نے بیرونی پتے {0} پر جواب دیا - مگر یہ جانچ آپ کے نیٹ ورک سے باہر گئی ہی نہیں۔",
             "服务器在外部地址 {0} 上作出了响应 - 但这次检查从未离开您的网络。")
 
-        Add("✗ С этого ПК не отвечает. Роутер может не пускать на свой адрес изнутри - проверьте с телефона по мобильной сети.",
-            "✗ No answer from this PC. Your router may block its own address from inside - test from the phone on mobile data.",
-            "✗ З цього ПК не відповідає. Роутер може не пускати на свою адресу зсередини - перевірте з телефона через мобільну мережу.",
-            "✗ Von diesem PC keine Antwort. Ihr Router lässt seine eigene Adresse von innen möglicherweise nicht zu - testen Sie es vom Telefon über Mobilfunk.",
-            "✗ Nessuna risposta da questo PC. Il router potrebbe bloccare il proprio indirizzo dall'interno: prova dal telefono in rete mobile.",
-            "✗ Sin respuesta desde este PC. El router puede bloquear su propia dirección desde dentro: prueba desde el teléfono con datos móviles.",
-            "✗ Aucune réponse depuis ce PC. Votre routeur peut bloquer sa propre adresse depuis l'intérieur - testez depuis le téléphone en données mobiles.",
-            "✗ Sem resposta a partir deste PC. O router pode bloquear o próprio endereço a partir de dentro - teste com o telemóvel em dados móveis.",
-            "✗ لا استجابة من هذا الحاسوب. قد يمنع الموجّه عنوانه الخاص من الداخل - اختبر من الهاتف عبر بيانات الجوال.",
-            "✗ इस पीसी से कोई उत्तर नहीं। राउटर भीतर से अपने ही पते को रोक सकता है - मोबाइल डेटा पर फ़ोन से जाँचें।",
-            "✗ এই পিসি থেকে কোনো সাড়া নেই। রাউটার ভেতর থেকে নিজের ঠিকানা আটকে দিতে পারে - মোবাইল ডেটায় ফোন থেকে পরীক্ষা করুন।",
-            "✗ اس پی سی سے کوئی جواب نہیں۔ روٹر اندر سے اپنے ہی پتے کو روک سکتا ہے - موبائل ڈیٹا پر فون سے جانچیں۔",
-            "✗ 本机无响应。路由器可能拒绝从内部访问其地址 - 请用手机通过移动数据测试。")
+        Add("С этого ПК не отвечает. Роутер может не пускать на свой адрес изнутри - проверьте с телефона по мобильной сети.",
+            "No answer from this PC. Your router may block its own address from inside - test from the phone on mobile data.",
+            "З цього ПК не відповідає. Роутер може не пускати на свою адресу зсередини - перевірте з телефона через мобільну мережу.",
+            "Von diesem PC keine Antwort. Ihr Router lässt seine eigene Adresse von innen möglicherweise nicht zu - testen Sie es vom Telefon über Mobilfunk.",
+            "Nessuna risposta da questo PC. Il router potrebbe bloccare il proprio indirizzo dall'interno: prova dal telefono in rete mobile.",
+            "Sin respuesta desde este PC. El router puede bloquear su propia dirección desde dentro: prueba desde el teléfono con datos móviles.",
+            "Aucune réponse depuis ce PC. Votre routeur peut bloquer sa propre adresse depuis l'intérieur - testez depuis le téléphone en données mobiles.",
+            "Sem resposta a partir deste PC. O router pode bloquear o próprio endereço a partir de dentro - teste com o telemóvel em dados móveis.",
+            "لا استجابة من هذا الحاسوب. قد يمنع الموجّه عنوانه الخاص من الداخل - اختبر من الهاتف عبر بيانات الجوال.",
+            "इस पीसी से कोई उत्तर नहीं। राउटर भीतर से अपने ही पते को रोक सकता है - मोबाइल डेटा पर फ़ोन से जाँचें।",
+            "এই পিসি থেকে কোনো সাড়া নেই। রাউটার ভেতর থেকে নিজের ঠিকানা আটকে দিতে পারে - মোবাইল ডেটায় ফোন থেকে পরীক্ষা করুন।",
+            "اس پی سی سے کوئی جواب نہیں۔ روٹر اندر سے اپنے ہی پتے کو روک سکتا ہے - موبائل ڈیٹا پر فون سے جانچیں۔",
+            "本机无响应。路由器可能拒绝从内部访问其地址 - 请用手机通过移动数据测试。")
 
         ' --- internet-access test dialog (Share_Access_Test_Form) -----------------
         ' The verdict lines above are the dialog's headline; these carry the title, the
@@ -576,6 +576,19 @@ Partial Public NotInheritable Class Localization
             "La condivisione è disattivata", "El uso compartido está desactivado",
             "Le partage est désactivé", "A partilha está desativada",
             "المشاركة متوقفة", "साझाकरण बंद है", "শেয়ারিং বন্ধ", "شیئرنگ بند ہے", "共享已关闭")
+
+        ' --- iconography: names of the state glyph and the section chevrons (spec 027) ---
+        Add("Требует внимания",
+            "Needs attention", "Потребує уваги", "Erfordert Aufmerksamkeit",
+            "Richiede attenzione", "Requiere atención", "Nécessite votre attention",
+            "Requer atenção", "يتطلب الانتباه", "ध्यान देने की ज़रूरत है", "মনোযোগ প্রয়োজন",
+            "توجہ درکار ہے", "需要注意")
+        Add("Развернуть",
+            "Expand", "Розгорнути", "Aufklappen", "Espandi", "Expandir", "Développer",
+            "Expandir", "توسيع", "विस्तृत करें", "প্রসারিত করুন", "پھیلائیں", "展开")
+        Add("Свернуть",
+            "Collapse", "Згорнути", "Zuklappen", "Comprimi", "Contraer", "Réduire",
+            "Recolher", "طي", "संक्षिप्त करें", "সংকুচিত করুন", "سمیٹیں", "折叠")
 
         Add("Сначала запустите сервер.",
             "Start the server first.", "Спершу запустіть сервер.", "Starten Sie zuerst den Server.",
@@ -754,6 +767,73 @@ Partial Public NotInheritable Class Localization
             "Windows এই স্টার্টআপ এন্ট্রিটি বন্ধ করে দিয়েছে (টাস্ক ম্যানেজার - স্টার্টআপ অ্যাপস), তাই লগঅনে আইকনটি দেখা যায় না। এটি আবার চালু করতে বক্সে পুনরায় টিক দিন।",
             "Windows نے یہ اسٹارٹ اپ اندراج بند کر دیا ہے (ٹاسک مینیجر - اسٹارٹ اپ ایپس)، اس لیے لاگ اِن پر آئیکن نہیں آتا۔ اسے دوبارہ چالو کرنے کے لیے خانے پر دوبارہ نشان لگائیں۔",
             "Windows 已关闭该启动项（任务管理器 - 启动应用），因此登录时不会出现图标。重新勾选即可再次开启。")
+
+        ' A Run value whose exe file is gone (ticket 054 H-16): the checkbox reads "on"
+        ' because the entry exists, and nothing will ever start. The fix is the tick.
+        Add("Автозапуск указывает на удалённый файл - значок не появится при входе. Поставьте галочку заново, чтобы вернуть его.",
+            "Autostart points at a file that no longer exists - the icon will not appear at logon. Tick the box again to restore it.",
+            "Автозавантаження вказує на видалений файл - значок не з'явиться під час входу. Поставте галочку знову, щоб повернути його.",
+            "Der Autostart zeigt auf eine Datei, die es nicht mehr gibt - das Symbol erscheint also nicht bei der Anmeldung. Setzen Sie das Häkchen erneut, um ihn wiederherzustellen.",
+            "L'avvio automatico punta a un file che non esiste più - l'icona non comparirà all'accesso. Rimetti il segno di spunta per ripristinarlo.",
+            "El inicio automático apunta a un archivo que ya no existe: el icono no aparecerá al iniciar sesión. Vuelve a marcar la casilla para restaurarlo.",
+            "Le démarrage automatique pointe vers un fichier qui n'existe plus - l'icône n'apparaîtra pas à l'ouverture de session. Cochez à nouveau la case pour le rétablir.",
+            "O arranque automático aponta para um ficheiro que já não existe - o ícone não aparecerá ao iniciar sessão. Volte a marcar a caixa para o restaurar.",
+            "يشير بدء التشغيل التلقائي إلى ملف لم يعد موجودًا - لن تظهر الأيقونة عند تسجيل الدخول. حدّد المربع مرة أخرى لاستعادته.",
+            "ऑटोस्टार्ट उस फ़ाइल की ओर इशारा करता है जो अब मौजूद नहीं है - लॉगऑन पर आइकन नहीं दिखेगा। इसे वापस लाने के लिए बॉक्स पर दोबारा टिक करें।",
+            "অটোস্টার্ট এমন একটি ফাইলের দিকে নির্দেশ করে যা আর নেই - লগঅনে আইকনটি দেখা যাবে না। এটি ফিরিয়ে আনতে বক্সে পুনরায় টিক দিন।",
+            "آٹو اسٹارٹ ایسی فائل کی طرف اشارہ کرتا ہے جو اب موجود نہیں - لاگ اِن پر آئیکن نظر نہیں آئے گی۔ اسے بحال کرنے کے لیے خانے پر دوبارہ نشان لگائیں۔",
+            "自动启动指向一个已不存在的文件 - 登录时不会出现图标。重新勾选即可恢复。")
+
+        ' The server-wide LAN-only switch and its wording (ticket 054 H-06) - this is the
+        ' switch the server-features consent text names by these words.
+        Add("Только локальная сеть (без доступа из интернета)",
+            "Local network only (no internet access)", "Тільки локальна мережа (без доступу з інтернету)",
+            "Nur lokales Netzwerk (kein Internetzugriff)", "Solo rete locale (senza accesso da Internet)",
+            "Solo red local (sin acceso desde Internet)", "Réseau local uniquement (sans accès Internet)",
+            "Só rede local (sem acesso à Internet)", "الشبكة المحلية فقط (بدون وصول من الإنترنت)",
+            "केवल स्थानीय नेटवर्क (इंटरनेट से पहुँच नहीं)", "শুধু স্থানীয় নেটওয়ার্ক (ইন্টারনেট থেকে অ্যাক্সেস নেই)",
+            "صرف مقامی نیٹ ورک (انٹرنیٹ سے رسائی نہیں)", "仅限本地网络（无互联网访问）")
+
+        Add("Относится ко всей раздаче, а не к одному коду: пока включено, программа не просит роутер открыть порт (UPnP/NAT-PMP) и не даёт адрес из интернета. Адрес из интернета, уже вписанный в выданные коды, перестаёт работать; по локальной сети всё работает как раньше.",
+            "Applies to the whole share, not to one code: while it is on, the program does not ask the router to open the port (UPnP/NAT-PMP) and offers no internet address. An internet address already embedded in handed-out codes stops working; over the local network everything works as before.",
+            "Стосується всієї роздачі, а не одного коду: поки ввімкнено, програма не просить роутер відкрити порт (UPnP/NAT-PMP) і не дає адреси з інтернету. Адреса з інтернету, вже вписана у видані коди, перестає працювати; локальною мережею все працює як раніше.",
+            "Gilt für die gesamte Freigabe, nicht für einen Code: Solange es an ist, bittet das Programm den Router nicht, den Port zu öffnen (UPnP/NAT-PMP), und gibt keine Internetadresse aus. Eine bereits in verteilten Codes enthaltene Internetadresse funktioniert dann nicht mehr; im lokalen Netzwerk funktioniert alles wie zuvor.",
+            "Si applica all'intera condivisione, non a un solo codice: finché è attivo, il programma non chiede al router di aprire la porta (UPnP/NAT-PMP) e non offre indirizzi Internet. Un indirizzo Internet già incluso nei codici consegnati smette di funzionare; sulla rete locale tutto funziona come prima.",
+            "Se aplica a todo el uso compartido, no a un solo código: mientras esté activado, el programa no pide al router que abra el puerto (UPnP/NAT-PMP) ni ofrece dirección de internet. Una dirección de internet ya incluida en los códigos entregados deja de funcionar; en la red local todo sigue funcionando como antes.",
+            "Concerne le partage entier, pas un seul code : tant qu'il est activé, le programme ne demande pas au routeur d'ouvrir le port (UPnP/NAT-PMP) et ne propose aucune adresse Internet. Une adresse Internet déjà inscrite dans les codes remis cesse de fonctionner ; sur le réseau local, tout fonctionne comme avant.",
+            "Aplica-se a toda a partilha, não a um só código: enquanto estiver ativado, o programa não pede ao router para abrir a porta (UPnP/NAT-PMP) e não fornece endereço de Internet. Um endereço de Internet já incluído nos códigos entregues deixa de funcionar; na rede local tudo funciona como antes.",
+            "ينطبق على المشاركة بالكامل لا على رمز واحد: أثناء تشغيله، لا يطلب البرنامج من الموجّه فتح المنفذ (UPnP/NAT-PMP) ولا يقدّم عنوان إنترنت. عنوان الإنترنت المضمّن بالفعل في الرموز المُسلَّمة يتوقف عن العمل؛ على الشبكة المحلية يعمل كل شيء كما كان.",
+            "पूरी साझा करने की सेटिंग पर लागू होता है, किसी एक कोड पर नहीं: जब तक यह चालू है, प्रोग्राम राउटर से पोर्ट खोलने (UPnP/NAT-PMP) की अनुरोध नहीं करता और कोई इंटरनेट पता नहीं देता। बाँटे गए कोड में पहले से शामिल इंटरनेट पता काम करना बंद कर देता है; स्थानीय नेटवर्क पर सब पहले जैसा काम करता है।",
+            "পুরো শেয়ারে প্রযোজ্য, একটি কোডে নয়: চালু থাকা অবস্থায় প্রোগ্রাম রাউটারকে পোর্ট খুলতে (UPnP/NAT-PMP) বলে না এবং ইন্টারনেট ঠিকানা দেয় না। আগে থেকেই বিতরণ করা কোডে যাওয়া ইন্টারনেট ঠিকানা কাজ করা বন্ধ করে দেয়; স্থানীয় নেটওয়ার্কে সব আগের মতোই কাজ করে।",
+            "پوری شیئرنگ پر لاگو ہوتا ہے، کسی ایک کوڈ پر نہیں: جب تک یہ آن ہے، پروگرام روٹر سے پورٹ کھولنے (UPnP/NAT-PMP) کی درخواست نہیں کرتا اور انٹرنیٹ ایڈریس نہیں دیتا۔ پہلے سے بانٹے کوڈز میں شامل انٹرنیٹ ایڈریس کام کرنا بند کر دیتا ہے؛ مقامی نیٹ ورک پر سب پہلے جیسا کام کرتا ہے۔",
+            "作用于整个共享而非单个代码：开启期间，程序不会请求路由器打开端口（UPnP/NAT-PMP），也不提供互联网地址。已写入发放代码中的互联网地址将失效；本地网络上一切照旧。")
+
+        Add("Включить режим «только локальная сеть»?" & vbCrLf & vbCrLf &
+            "Программа перестанет просить роутер открыть порт (UPnP/NAT-PMP) и не будет выдавать адрес из интернета. Адрес из интернета в уже выданных кодах перестанет работать; по локальной сети всё продолжит работать. Работающая раздача перезапустится.",
+            "Switch on ""local network only""?" & vbCrLf & vbCrLf &
+            "The program will stop asking the router to open the port (UPnP/NAT-PMP) and will offer no internet address. Internet addresses already embedded in handed-out codes will stop working; over the local network everything keeps working. A running share restarts.",
+            "Увімкнути режим «лише локальна мережа»?" & vbCrLf & vbCrLf &
+            "Програма перестане просити роутер відкрити порт (UPnP/NAT-PMP) і не видаватиме адреси з інтернету. Адреса з інтернету у вже виданих кодах перестане працювати; локальною мережею все продовжить працювати. Працююча роздача перезапуститься.",
+            """Nur lokales Netzwerk"" einschalten?" & vbCrLf & vbCrLf &
+            "Das Programm bittet den Router nicht mehr, den Port zu öffnen (UPnP/NAT-PMP), und gibt keine Internetadresse mehr aus. Bereits in verteilten Codes enthaltene Internetadressen funktionieren dann nicht mehr; im lokalen Netzwerk läuft alles weiter. Eine laufende Freigabe startet neu.",
+            "Attivare la modalità ""solo rete locale""?" & vbCrLf & vbCrLf &
+            "Il programma smetterà di chiedere al router di aprire la porta (UPnP/NAT-PMP) e non fornirà più indirizzi Internet. Gli indirizzi Internet già inclusi nei codici consegnati smetteranno di funzionare; sulla rete locale tutto continua a funzionare. Una condivisione attiva verrà riavviata.",
+            "¿Activar el modo ""solo red local""?" & vbCrLf & vbCrLf &
+            "El programa dejará de pedir al router que abra el puerto (UPnP/NAT-PMP) y no entregará direcciones de internet. Las direcciones de internet ya incluidas en los códigos entregados dejarán de funcionar; en la red local todo seguirá funcionando. Un uso compartido activo se reiniciará.",
+            "Activer le mode « réseau local uniquement » ?" & vbCrLf & vbCrLf &
+            "Le programme cessera de demander au routeur d'ouvrir le port (UPnP/NAT-PMP) et ne fournira plus d'adresse Internet. Les adresses Internet déjà inscrites dans les codes remis cesseront de fonctionner ; sur le réseau local, tout continue de fonctionner. Un partage en cours redémarre.",
+            "Ativar o modo ""só rede local""?" & vbCrLf & vbCrLf &
+            "O programa deixará de pedir ao router para abrir a porta (UPnP/NAT-PMP) e não fornecerá endereços de Internet. Os endereços de Internet já incluídos nos códigos entregues deixarão de funcionar; na rede local tudo continua a funcionar. Uma partilha em execução reinicia.",
+            "تشغيل وضع ""الشبكة المحلية فقط""؟" & vbCrLf & vbCrLf &
+            "سيتوقف البرنامج عن طلب فتح المنفذ من الموجّه (UPnP/NAT-PMP) ولن يقدّم أي عنوان إنترنت. عناوين الإنترنت المضمّنة بالفعل في الرموز المُسلَّمة ستتوقف عن العمل؛ على الشبكة المحلية يستمر كل شيء بالعمل. تُعاد تشغيل المشاركة النشطة.",
+            """केवल स्थानीय नेटवर्क"" मोड चालू करें?" & vbCrLf & vbCrLf &
+            "प्रोग्राम राउटर से पोर्ट खोलने (UPnP/NAT-PMP) की अनुरोध करना बंद कर देगा और इंटरनेट पता नहीं देगा। बाँटे गए कोड में पहले से शामिल इंटरनेट पता काम करना बंद कर देगा; स्थानीय नेटवर्क पर सब चलता रहेगा। चालू साझा करना पुनः आरंभ होगा।",
+            """শুধু স্থানীয় নেটওয়ার্ক"" মোড চালু করবেন?" & vbCrLf & vbCrLf &
+            "প্রোগ্রামটি রাউটারকে পোর্ট খুলতে (UPnP/NAT-PMP) বলা বন্ধ করবে এবং ইন্টারনেট ঠিকানা দেবে না। আগে বিতরণ করা কোডে থাকা ইন্টারনেট ঠিকানা কাজ করা বন্ধ করবে; স্থানীয় নেটওয়ার্কে সব চলতে থাকবে। চালু শেয়ার পুনরায় চালু হবে।",
+            """صرف مقامی نیٹ ورک"" موڈ آن کریں؟" & vbCrLf & vbCrLf &
+            "پروگرام روٹر سے پورٹ کھولنے (UPnP/NAT-PMP) کی درخواست کرنا بند کر دے گا اور انٹرنیٹ ایڈریس نہیں دے گا۔ پہلے بانٹے کوڈز میں شامل انٹرنیٹ ایڈریس کام کرنا بند کر دے گا؛ مقامی نیٹ ورک پر سب چلتا رہے گا۔ چالو شیئرنگ دوبارہ شروع ہوگی۔",
+            "开启仅限本地网络模式？" & vbCrLf & vbCrLf &
+            "程序将不再请求路由器打开端口（UPnP/NAT-PMP），也不再提供互联网地址。已写入发放代码中的互联网地址将失效；本地网络上一切继续正常。正在运行的共享将重启。")
 
         Add("до {0} подключений, порт {1}",
             "up to {0} connections, port {1}", "до {0} підключень, порт {1}",

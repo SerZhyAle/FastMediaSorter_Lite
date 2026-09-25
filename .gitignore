@@ -34,8 +34,16 @@ manifests/
 *.jks
 *.keystore
 .env
-*token*
-*secret*
+.env.*
+# By secret-bearing NAME or EXTENSION only. The old "*token*" / "*secret*" matched any
+# path segment, case-insensitively here (core.ignorecase), so an ordinary source file
+# such as SecretStore.vb or TokenCounter.vb was silently never committed: it built
+# locally and was missing from every clone and from CI.
+*.token
+*.secret
+*.secrets
+secrets.json
+client_secret*.json
 
 # Editor workspace settings - local, not shared
 .vscode/

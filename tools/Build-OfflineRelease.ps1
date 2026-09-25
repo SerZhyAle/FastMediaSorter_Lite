@@ -28,21 +28,6 @@ function Resolve-MsBuild {
     throw "MSBuild not found."
 }
 
-function Resolve-NuGet {
-    $cmd = Get-Command nuget.exe -ErrorAction SilentlyContinue
-    if ($cmd) {
-        return $cmd.Source
-    }
-
-    $nuget = Join-Path $solutionDir "tools\nuget.exe"
-    if (-not (Test-Path $nuget)) {
-        New-Item -ItemType Directory -Path (Split-Path $nuget) -Force | Out-Null
-        Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" -OutFile $nuget
-    }
-
-    return $nuget
-}
-
 function Resolve-Iscc {
     $cmd = Get-Command ISCC.exe -ErrorAction SilentlyContinue
     if ($cmd) {
@@ -79,9 +64,25 @@ function Get-RelativePath {
     return [System.Uri]::UnescapeDataString($baseUri.MakeRelativeUri($targetUri).ToString().Replace('/', '\'))
 }
 
-$msbuild = Resolve-MsBuild
-$nuget = Resolve-NuGet
+# Inno Setup is a HARD requirement here, checked before anything is built. This
+# script is the free pre-flight tools\Release.ps1 runs before the billable tag push,
+# and it promises to build what release.yml builds: the ZIP AND both installers.
+# It used to warn and exit 0 without ISCC - a green pre-flight after which the two
+# .iss files, [Code] included, were compiled for the first time on the paid runner.
 $iscc = Resolve-Iscc
+if (-not $iscc) {
+    Write-Error @"
+Inno Setup 6 (ISCC.exe) was not found - it is required: this pre-flight must compile
+both installers (User and Server edition) exactly as release.yml does.
+Install it, then re-run:
+    winget install JRSoftware.InnoSetup
+(or download from https://jrsoftware.org/isdl.php)
+"@
+    exit 1
+}
+
+$msbuild = Resolve-MsBuild
+$nuget = & (Join-Path $PSScriptRoot "Get-PinnedNuGet.ps1")
 
 Write-Host "Using MSBuild: $msbuild"
 Write-Host "Using NuGet:   $nuget"
@@ -166,7 +167,7 @@ Remove-Item -LiteralPath $modernOut -Recurse -Force -ErrorAction SilentlyContinu
 $companionProj = Join-Path $solutionDir "src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj"
 $companionOut  = Join-Path $stageDir "companion-publish-tmp"
 Write-Host "Publishing Companion (Share Manager, net10 self-contained).."
-& dotnet publish $companionProj -c Release -r win-x64 -o $companionOut -v minimal --nologo
+& dotnet publish $companionProj -c Release -r win-x64 -p:ReleaseVersion=$Version -o $companionOut -v minimal --nologo
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish (Companion) failed with exit code $LASTEXITCODE."
 }
@@ -199,70 +200,67 @@ $zipHash = (Get-FileHash -Algorithm SHA256 $zipPath).Hash
 Write-Host "ZIP:    $zipPath"
 Write-Host "SHA256: $zipHash"
 
-if (Test-Path $iscc) {
-    $stageAbs = (Resolve-Path $stageDir).Path
-    $distAbs = (Resolve-Path $distDir).Path
-    & $iscc "/DVersion=$Version" "/DSourceDir=$stageAbs" "/O$distAbs" (Join-Path $solutionDir "publishing\installer\FastMediaSorter.iss")
-    if ($LASTEXITCODE -ne 0) {
-        throw "Inno Setup failed with exit code $LASTEXITCODE."
-    }
-
-    $setupName = "FastMediaSorter-$Version-windows-x64-setup.exe"
-    $setupPath = Join-Path $distDir $setupName
-    $setupHash = (Get-FileHash -Algorithm SHA256 $setupPath).Hash
-    "$setupHash  $setupName" | Out-File -FilePath ($setupPath + ".sha256") -Encoding ascii
-    Write-Host "SETUP:  $setupPath"
-    Write-Host "SHA256: $setupHash"
-
-    # SERVER edition - the always-on Folder Share Server (a Windows service). A separate
-    # product entry with its own AppId, ARP name and winget package, so it is a separate
-    # asset rather than a mode of the one above.
-    #
-    # It is built HERE, and not only by build.ps1, because this script is what
-    # tools\Release.ps1 runs as the free local check before the billable tag push: an
-    # asset the release workflow builds but the pre-flight does not is an asset whose
-    # first proof of compiling is a paid, red CI job.
-    #
-    # Mirror of release.yml's "Build Server edition installer" step, including its lean
-    # stage - the Share Manager, the Go worker and the two elevated helper scripts only.
-    # No viewer, no VLC codecs, no OCR models: a headless server runs none of them, and
-    # reusing the stage above would ship hundreds of megabytes it never opens.
-    $serverStage = Join-Path $solutionDir "stage\FastMediaSorter-$Version-windows-x64-server"
-    if (Test-Path $serverStage) {
-        Remove-Item -LiteralPath $serverStage -Recurse -Force
-    }
-    New-Item -ItemType Directory -Path $serverStage -Force | Out-Null
-
-    foreach ($extra in @("README.md", "LICENSE", "THIRD-PARTY-NOTICES.txt")) {
-        $source = Join-Path $solutionDir $extra
-        if (Test-Path $source) {
-            Copy-Item $source $serverStage -Force
-        }
-    }
-
-    # Both come from the staged User tree, already published above - the two editions
-    # must ship the SAME Share Manager build and the SAME worker binary, or a phone
-    # paired against one could meet a different protocol on the other.
-    Copy-Item (Join-Path $stageDir "FastMediaSorterCompanion.exe") $serverStage -Force
-    $serverCompanion = Join-Path $serverStage "companion"
-    New-Item -ItemType Directory -Path $serverCompanion -Force | Out-Null
-    Copy-Item (Join-Path $stageCompanion "*") $serverCompanion -Recurse -Force
-
-    $serverStageAbs = (Resolve-Path $serverStage).Path
-    & $iscc "/DVersion=$Version" "/DSourceDir=$serverStageAbs" "/O$distAbs" (Join-Path $solutionDir "publishing\installer\FastMediaSorterServer.iss")
-    if ($LASTEXITCODE -ne 0) {
-        throw "Inno Setup (Server edition) failed with exit code $LASTEXITCODE."
-    }
-
-    $serverName = "FastMediaSorter-$Version-windows-x64-server-setup.exe"
-    $serverPath = Join-Path $distDir $serverName
-    if (-not (Test-Path $serverPath)) {
-        throw "Server installer not produced at $serverPath."
-    }
-    $serverHash = (Get-FileHash -Algorithm SHA256 $serverPath).Hash
-    "$serverHash  $serverName" | Out-File -FilePath ($serverPath + ".sha256") -Encoding ascii
-    Write-Host "SERVER: $serverPath"
-    Write-Host "SHA256: $serverHash"
-} else {
-    Write-Warning "Inno Setup was not found at $iscc. ZIP was built, both installers were skipped."
+# ISCC was resolved (or the script stopped) at the top - see the note there.
+$stageAbs = (Resolve-Path $stageDir).Path
+$distAbs = (Resolve-Path $distDir).Path
+& $iscc "/DVersion=$Version" "/DSourceDir=$stageAbs" "/O$distAbs" (Join-Path $solutionDir "publishing\installer\FastMediaSorter.iss")
+if ($LASTEXITCODE -ne 0) {
+    throw "Inno Setup failed with exit code $LASTEXITCODE."
 }
+
+$setupName = "FastMediaSorter-$Version-windows-x64-setup.exe"
+$setupPath = Join-Path $distDir $setupName
+$setupHash = (Get-FileHash -Algorithm SHA256 $setupPath).Hash
+"$setupHash  $setupName" | Out-File -FilePath ($setupPath + ".sha256") -Encoding ascii
+Write-Host "SETUP:  $setupPath"
+Write-Host "SHA256: $setupHash"
+
+# SERVER edition - the always-on Folder Share Server (a Windows service). A separate
+# product entry with its own AppId, ARP name and winget package, so it is a separate
+# asset rather than a mode of the one above.
+#
+# It is built HERE, and not only by build.ps1, because this script is what
+# tools\Release.ps1 runs as the free local check before the billable tag push: an
+# asset the release workflow builds but the pre-flight does not is an asset whose
+# first proof of compiling is a paid, red CI job.
+#
+# Mirror of release.yml's "Build Server edition installer" step, including its lean
+# stage - the Share Manager, the Go worker and the two elevated helper scripts only.
+# No viewer, no VLC codecs, no OCR models: a headless server runs none of them, and
+# reusing the stage above would ship hundreds of megabytes it never opens.
+$serverStage = Join-Path $solutionDir "stage\FastMediaSorter-$Version-windows-x64-server"
+if (Test-Path $serverStage) {
+    Remove-Item -LiteralPath $serverStage -Recurse -Force
+}
+New-Item -ItemType Directory -Path $serverStage -Force | Out-Null
+
+foreach ($extra in @("README.md", "LICENSE", "THIRD-PARTY-NOTICES.txt")) {
+    $source = Join-Path $solutionDir $extra
+    if (Test-Path $source) {
+        Copy-Item $source $serverStage -Force
+    }
+}
+
+# Both come from the staged User tree, already published above - the two editions
+# must ship the SAME Share Manager build and the SAME worker binary, or a phone
+# paired against one could meet a different protocol on the other.
+Copy-Item (Join-Path $stageDir "FastMediaSorterCompanion.exe") $serverStage -Force
+$serverCompanion = Join-Path $serverStage "companion"
+New-Item -ItemType Directory -Path $serverCompanion -Force | Out-Null
+Copy-Item (Join-Path $stageCompanion "*") $serverCompanion -Recurse -Force
+
+$serverStageAbs = (Resolve-Path $serverStage).Path
+& $iscc "/DVersion=$Version" "/DSourceDir=$serverStageAbs" "/O$distAbs" (Join-Path $solutionDir "publishing\installer\FastMediaSorterServer.iss")
+if ($LASTEXITCODE -ne 0) {
+    throw "Inno Setup (Server edition) failed with exit code $LASTEXITCODE."
+}
+
+$serverName = "FastMediaSorter-$Version-windows-x64-server-setup.exe"
+$serverPath = Join-Path $distDir $serverName
+if (-not (Test-Path $serverPath)) {
+    throw "Server installer not produced at $serverPath."
+}
+$serverHash = (Get-FileHash -Algorithm SHA256 $serverPath).Hash
+"$serverHash  $serverName" | Out-File -FilePath ($serverPath + ".sha256") -Encoding ascii
+Write-Host "SERVER: $serverPath"
+Write-Host "SHA256: $serverHash"

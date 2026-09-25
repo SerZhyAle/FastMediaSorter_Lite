@@ -3,22 +3,34 @@
     Live integration smoke of the frozen named-pipe protocol against a RUNNING
     SFTP worker (fms-share-worker.exe). Framework-free: connects to
     \\.\pipe\fms-companion, sends a GetStatus request, and validates the response
-    JSON shape (SPECIFICATION_ANDROID_FOLDER_SHARE.md Appendix A).
+    JSON shape (contract WORKER-IPC sections 3 and 5; the pointer is
+    docs/contracts/WORKER-IPC.md).
 
     Read-only: it only reads status, never SetSharedFolders, so it can't disturb
-    the user's shares.json. If no worker is running it SKIPS (exit 0) rather than
-    failing - start the Share Manager (or the worker) first for a real check.
+    the user's shares.json. With no worker running there is nothing to judge, so
+    the run is COULD NOT VERIFY (exit 2) - never a pass. Start the Share Manager
+    (or the worker) first for a real check.
 
-    Exit: 0 = pass or skip (no worker); 1 = worker replied but the contract is broken.
+    Exit codes (CHECK-VERDICT): 0 = the worker speaks the frozen v1 protocol;
+    1 = the worker replied but the contract is broken; 2 = could not verify (no
+    worker listening). The last line is the verdict, `WorkerRoundTrip: <WORD>`.
 #>
 $ErrorActionPreference = 'Stop'
+. (Join-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) 'tools\lib\Verdict.ps1')
+
+trap {
+    Write-Host "  $($_.Exception.Message)"
+    Exit-Verdict 'WorkerRoundTrip' 2 'the check itself failed'
+}
+
+Write-Subject 'WorkerRoundTrip' 'the worker listening on \\.\pipe\fms-companion, GetStatus, schema v1'
 
 $pipe = New-Object System.IO.Pipes.NamedPipeClientStream('.', 'fms-companion', [System.IO.Pipes.PipeDirection]::InOut)
 try {
     $pipe.Connect(2000)
 } catch {
-    Write-Host "SKIP: no worker listening on \\.\pipe\fms-companion (start the Share Manager first)." -ForegroundColor Yellow
-    exit 0
+    $pipe.Dispose()
+    Exit-Verdict 'WorkerRoundTrip' 2 'no worker listening on \\.\pipe\fms-companion - start the Share Manager first'
 }
 
 try {
@@ -35,22 +47,21 @@ try {
 }
 
 if ([string]::IsNullOrWhiteSpace($respText)) {
-    Write-Host "FAIL: worker closed the pipe without a response." -ForegroundColor Red
-    exit 1
+    Exit-Verdict 'WorkerRoundTrip' 1 'the worker closed the pipe without a response'
 }
 
 try {
     $resp = $respText | ConvertFrom-Json
 } catch {
-    Write-Host "FAIL: response is not valid JSON: $respText" -ForegroundColor Red
-    exit 1
+    Write-Host "  response: $respText"
+    Exit-Verdict 'WorkerRoundTrip' 1 'the response is not valid JSON'
 }
 
 # Frozen contract: response carries schemaVersion + ok; a successful GetStatus carries status.
-$ok = $true
-if ($null -eq $resp.schemaVersion) { Write-Host "FAIL: missing schemaVersion"; $ok = $false }
-if ($null -eq $resp.ok)            { Write-Host "FAIL: missing ok"; $ok = $false }
-if ($resp.ok -and $null -eq $resp.status) { Write-Host "FAIL: ok=true but no status"; $ok = $false }
+$broken = @()
+if ($null -eq $resp.schemaVersion) { $broken += 'missing schemaVersion' }
+if ($null -eq $resp.ok)            { $broken += 'missing ok' }
+if ($resp.ok -and $null -eq $resp.status) { $broken += 'ok=true but no status' }
 
 if ($resp.status) {
     $s = $resp.status
@@ -62,5 +73,8 @@ if ($resp.status) {
     }
 }
 
-if ($ok) { Write-Host "PASS: live worker speaks the frozen v1 protocol." -ForegroundColor Green; exit 0 }
-exit 1
+if ($broken.Count -gt 0) {
+    $broken | ForEach-Object { Write-Host "  - $_" }
+    Exit-Verdict 'WorkerRoundTrip' 1 ($broken -join '; ')
+}
+Exit-Verdict 'WorkerRoundTrip' 0 'the live worker speaks the frozen v1 protocol'

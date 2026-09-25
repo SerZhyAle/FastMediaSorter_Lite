@@ -58,6 +58,17 @@ Friend NotInheritable Class ModernImageSharpDecoder
         ' MemoryStream has no file name to key on.
         If IsIsoBmff(stream) Then Return PayloadViaMagick(stream, watch)
 
+        ' Ask the header first (audit 048, A-17): a crafted animated WEBP of a few KB can
+        ' demand tens of GB once decoded, and the prefetch would start that unasked.
+        Dim info As SixLabors.ImageSharp.ImageInfo = SixLabors.ImageSharp.Image.Identify(stream)
+        stream.Position = 0
+        Dim frames As Integer = If(info.FrameMetadataCollection Is Nothing, 1, info.FrameMetadataCollection.Count)
+        If Not DecodeBudget.IsWithinBudget(info.Width, info.Height, frames) Then
+            AppFileLogger.WriteLine("Decode refused, over budget: " & info.Width.ToString() & "x" &
+                                    info.Height.ToString() & " x " & frames.ToString() & " frames")
+            Return Nothing
+        End If
+
         Using sharpImage As SixLabors.ImageSharp.Image = SixLabors.ImageSharp.Image.Load(stream)
             If sharpImage.Frames.Count > 1 Then Return TranscodeAnimationToGif(sharpImage, watch)
 
@@ -118,6 +129,11 @@ Friend NotInheritable Class ModernImageSharpDecoder
                 stream.Position = 0
                 Dim magickInfo As New ImageMagick.MagickImageInfo(stream)
                 If magickInfo.Width <= 0 OrElse magickInfo.Height <= 0 Then Return Size.Empty
+                ' The size as DISPLAYED (audit 048, A-21): the decode auto-orients by this
+                ' very tag when Is_Exif_AutoRotate is on, so the label must swap with it.
+                If Is_Exif_AutoRotate AndAlso Utils.IsQuarterTurnOrientation(CInt(magickInfo.Orientation)) Then
+                    Return New Size(CInt(magickInfo.Height), CInt(magickInfo.Width))
+                End If
                 Return New Size(CInt(magickInfo.Width), CInt(magickInfo.Height))
             End If
 
@@ -152,6 +168,17 @@ Friend NotInheritable Class ModernImageSharpDecoder
     ''' </summary>
     Private Shared Function PayloadViaMagick(stream As MemoryStream, watch As Stopwatch) As DecodedPayload
         stream.Position = 0
+
+        ' The same budget as the ImageSharp path (audit 048, A-17), from the header. Only the
+        ' first frame is decoded here, so the frame count does not enter into it. The
+        ' process-wide Magick limits are applied first, from their one place.
+        MagickResourceLimits.EnsureApplied()
+        Dim header As New ImageMagick.MagickImageInfo(stream)
+        stream.Position = 0
+        If Not DecodeBudget.IsWithinBudget(CLng(header.Width), CLng(header.Height), 1) Then
+            AppFileLogger.WriteLine("Decode refused, over budget: " & header.Width.ToString() & "x" & header.Height.ToString())
+            Return Nothing
+        End If
 
         Using magickImage As New ImageMagick.MagickImage(stream)
             If Is_Exif_AutoRotate Then magickImage.AutoOrient()

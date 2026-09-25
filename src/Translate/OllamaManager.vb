@@ -73,9 +73,24 @@ Public Module OllamaManager
         End Try
     End Function
 
-    ''' <summary>Downloads OllamaSetup.exe to %TEMP%, reporting percent. Returns path or "".</summary>
+    ''' <summary>The common name on Ollama's code-signing certificate. The installer is run
+    ''' only when its Authenticode signature is valid AND carries this name.</summary>
+    Public Const ExpectedSigner As String = "Ollama Inc."
+
+    ''' <summary>
+    ''' Downloads OllamaSetup.exe, reporting percent. Returns path or "".
+    '''
+    ''' Into a fresh, randomly named folder under the app's own data directory - it used to be
+    ''' a fixed %TEMP%\OllamaSetup.exe, overwritten in place and run, so a stale or planted
+    ''' file at that predictable name was what got started (audit 051 E-14). The name of the
+    ''' file itself stays OllamaSetup.exe: installers look at it.
+    ''' </summary>
     Public Async Function DownloadInstallerAsync(progress As IProgress(Of String), ct As CancellationToken) As Task(Of String)
-        Dim dest As String = Path.Combine(Path.GetTempPath(), "OllamaSetup.exe")
+        Dim downloads As String = Path.Combine(AppPaths.LocalAppDataRoot(), "downloads")
+        SweepOldDownloads(downloads)
+        Dim folder As String = Path.Combine(downloads, Path.GetRandomFileName())
+        Directory.CreateDirectory(folder)
+        Dim dest As String = Path.Combine(folder, "OllamaSetup.exe")
         Try
             Using client As New HttpClient()
                 client.Timeout = Timeout.InfiniteTimeSpan
@@ -110,20 +125,69 @@ Public Module OllamaManager
             End Using
             Return dest
         Catch ex As OperationCanceledException
+            ' A cancelled download leaves no partial installer behind (APP-BEHAVIOUR rule 3).
+            TryDeletePartial(dest)
             Throw
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ollama: installer download failed: " & ex.Message)
+            TryDeletePartial(dest)
             Return ""
         End Try
     End Function
 
-    Public Sub RunInstaller(installerPath As String)
+    ''' <summary>Removes installer folders left by earlier downloads (a started installer
+    ''' cannot delete itself). A day old, so one still running is never touched.</summary>
+    Private Sub SweepOldDownloads(downloads As String)
         Try
-            Process.Start(New ProcessStartInfo(installerPath) With {.UseShellExecute = True})
-        Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ollama: run installer failed: " & ex.Message)
+            If Not Directory.Exists(downloads) Then Return
+            For Each dir As String In Directory.GetDirectories(downloads)
+                Try
+                    If Directory.GetCreationTimeUtc(dir) < DateTime.UtcNow.AddDays(-1) Then Directory.Delete(dir, True)
+                Catch
+                End Try
+            Next
+        Catch
         End Try
     End Sub
+
+    Private Sub TryDeletePartial(path As String)
+        Try
+            If File.Exists(path) Then File.Delete(path)
+            Dim folder As String = IO.Path.GetDirectoryName(path)
+            If Directory.Exists(folder) AndAlso Not Directory.EnumerateFileSystemEntries(folder).Any() Then Directory.Delete(folder)
+        Catch
+        End Try
+    End Sub
+
+    ''' <summary>True when the downloaded installer is signed by Ollama (valid Authenticode
+    ''' signature, signer <see cref="ExpectedSigner"/>).</summary>
+    Public Function IsGenuineInstaller(installerPath As String) As Boolean
+        Return AuthenticodeCheck.IsSignedBy(installerPath, ExpectedSigner)
+    End Function
+
+    ''' <summary>Removes a downloaded installer that failed the signature check.</summary>
+    Public Sub DiscardInstaller(installerPath As String)
+        TryDeletePartial(installerPath)
+    End Sub
+
+    ''' <summary>
+    ''' Starts the installer - but only after checking, at the moment of starting, that it is
+    ''' signed by Ollama; the check is here rather than only in the caller so no path can run
+    ''' an unchecked file. False = not started.
+    ''' </summary>
+    Public Function RunInstaller(installerPath As String) As Boolean
+        If Not IsGenuineInstaller(installerPath) Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ollama: installer signature rejected")
+            Return False
+        End If
+        Try
+            Process.Start(New ProcessStartInfo(installerPath) With {.UseShellExecute = True})
+            Return True
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ollama: run installer failed: " & ex.Message)
+            Return False
+        End Try
+    End Function
 
     Public Sub OpenWebPage()
         Try

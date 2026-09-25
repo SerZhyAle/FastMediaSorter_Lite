@@ -38,6 +38,7 @@ Partial Public NotInheritable Class Localization
 #If NETFRAMEWORK Then
     Public Shared ReadOnly Codes As String() = {"ru", "en"}
     Public Shared ReadOnly Names As String() = {"Русский", "English"}
+    Public Shared ReadOnly RightToLeftByCode As Boolean() = {False, False}
 #Else
     Public Shared ReadOnly Codes As String() = {
         "ru", "en", "uk", "de", "it", "es", "fr", "pt", "ar", "hi", "bn", "ur", "zh"}
@@ -46,6 +47,16 @@ Partial Public NotInheritable Class Localization
     Public Shared ReadOnly Names As String() = {
         "Русский", "English", "Українська", "Deutsch", "Italiano", "Español", "Français",
         "Português", "العربية", "हिन्दी", "বাংলা", "اردو", "中文"}
+
+    ''' <summary>
+    ''' Writing direction, declared once beside the language and in the same order as Codes
+    ''' (APP-BEHAVIOUR rule 8, ticket 028 Ф-7): every window reads it through
+    ''' IsRightToLeft, and LocalizationParityTests compares it with the list of scripts that
+    ''' are written right to left, so a fourteenth language cannot arrive without an answer.
+    ''' </summary>
+    Public Shared ReadOnly RightToLeftByCode As Boolean() = {
+        False, False, False, False, False, False, False,
+        False, True, False, False, True, False}
 #End If
 
     ''' <summary>Index of English inside Codes - the fallback when a translation is empty.</summary>
@@ -140,20 +151,85 @@ Partial Public NotInheritable Class Localization
     ''' correctly - "Файл занят: {0}" can.
     ''' </summary>
     Public Shared Function TF(ru As String, ParamArray args As Object()) As String
-        Dim pattern = T(ru)
-        Try
-            Return String.Format(pattern, args)
-        Catch ex As FormatException
-            ' A translation whose placeholders were mangled must not take the app down.
-            ' The parity test checks placeholder arity, so this is belt-and-braces.
-            Return String.Format(ru, args)
-        End Try
+        Return SafeFormat(T(ru), args)
     End Function
 
-    ''' <summary>Arabic and Urdu are written right to left; WinForms has to be told.</summary>
+    ''' <summary>
+    ''' String.Format that cannot throw (APP-BEHAVIOUR rule 7). These strings are formatted
+    ''' inside event handlers, so an exception here is not a bad message - it is a handler
+    ''' abandoned half-way (Application.ThreadException logs it and keeps the loop running,
+    ''' 053 F-15). Each shortfall degrades instead:
+    ''' a missing argument renders blank, an unparseable template renders itself.
+    '''
+    ''' The earlier fallback re-formatted the Russian source with the same arguments,
+    ''' outside any Try - so a call site passing too few arguments threw from the
+    ''' fallback as well.
+    ''' </summary>
+    Friend Shared Function SafeFormat(pattern As String, args As Object()) As String
+        If pattern Is Nothing Then Return String.Empty
+        If args Is Nothing Then args = New Object() {}
+        Try
+            Return String.Format(CultureInfo.CurrentCulture, pattern, args)
+        Catch ex As FormatException
+        End Try
+
+        ' Pad the arguments up to the highest index the template names, so a
+        ' placeholder with no argument renders as an empty string.
+        ' An index past 99 is a mangled template, not a real placeholder.
+        Dim highest = HighestPlaceholder(pattern)
+        If highest >= args.Length AndAlso highest < 100 Then
+            Dim padded(highest) As Object
+            Array.Copy(args, padded, args.Length)
+            For i = args.Length To highest
+                padded(i) = String.Empty
+            Next
+            Try
+                Return String.Format(CultureInfo.CurrentCulture, pattern, padded)
+            Catch ex As FormatException
+            End Try
+        End If
+
+        ' The template itself does not parse (a mangled brace, a bad format item).
+        Return pattern
+    End Function
+
+    ''' <summary>
+    ''' The highest {n} index in a composite-format template, or -1. Escaped braces are
+    ''' skipped; anything malformed simply stops contributing - the caller falls back to
+    ''' the template, so this never has to be a validating parser.
+    ''' </summary>
+    Friend Shared Function HighestPlaceholder(pattern As String) As Integer
+        Dim highest = -1
+        Dim i = 0
+        While i < pattern.Length
+            Dim c = pattern(i)
+            If c = "{"c Then
+                If i + 1 < pattern.Length AndAlso pattern(i + 1) = "{"c Then
+                    i += 2
+                    Continue While
+                End If
+                Dim j = i + 1
+                Dim value = 0
+                Dim digits = 0
+                While j < pattern.Length AndAlso Char.IsDigit(pattern(j)) AndAlso digits < 6
+                    value = value * 10 + AscW(pattern(j)) - AscW("0"c)
+                    digits += 1
+                    j += 1
+                End While
+                If digits > 0 AndAlso value > highest Then highest = value
+                i = j
+            Else
+                i += 1
+            End If
+        End While
+        Return highest
+    End Function
+
+    ''' <summary>Whether the active language is written right to left (Arabic and Urdu
+    ''' today) - read from RightToLeftByCode, never from a list of codes here.</summary>
     Public Shared Function IsRightToLeft() As Boolean
-        Dim code = _currentCode
-        Return code = "ar" OrElse code = "ur"
+        Dim index = CurrentIndex
+        Return index >= 0 AndAlso index < RightToLeftByCode.Length AndAlso RightToLeftByCode(index)
     End Function
 
     ''' <summary>
@@ -237,7 +313,26 @@ Partial Public NotInheritable Class Localization
     Friend Shared Sub Add(ru As String, en As String, uk As String, de As String, it As String,
                           es As String, fr As String, pt As String, ar As String, hi As String,
                           bn As String, ur As String, zh As String)
-        Map(ru) = New String() {en, uk, de, it, es, fr, pt, ar, hi, bn, ur, zh}
+        Register(ru, New String() {en, uk, de, it, es, fr, pt, ar, hi, bn, ur, zh})
+    End Sub
+
+    Private Shared ReadOnly duplicateKeysList As New List(Of String)()
+
+    ''' <summary>
+    ''' Keys registered more than once. A second registration used to replace the first
+    ''' silently - registration order decided which translation survived, and the parity
+    ''' tests, iterating the finished dictionary, could not see it (053 F-19). Recorded,
+    ''' not thrown: a duplicate must fail a test, never the start of a shipped exe.
+    ''' </summary>
+    Friend Shared ReadOnly Property DuplicateKeys As IReadOnlyList(Of String)
+        Get
+            Return duplicateKeysList
+        End Get
+    End Property
+
+    Private Shared Sub Register(key As String, values As String())
+        If Map.ContainsKey(key) Then duplicateKeysList.Add(key.Replace(ContextSeparator, "|"c))
+        Map(key) = values
     End Sub
 
     ' ---------------------------------------------------------------- context ----
@@ -258,7 +353,7 @@ Partial Public NotInheritable Class Localization
     Friend Shared Sub AddC(context As String, ru As String, en As String, uk As String, de As String,
                            it As String, es As String, fr As String, pt As String, ar As String,
                            hi As String, bn As String, ur As String, zh As String)
-        Map(context & ContextSeparator & ru) = New String() {en, uk, de, it, es, fr, pt, ar, hi, bn, ur, zh}
+        Register(context & ContextSeparator & ru, New String() {en, uk, de, it, es, fr, pt, ar, hi, bn, ur, zh})
     End Sub
 
     ''' <summary>

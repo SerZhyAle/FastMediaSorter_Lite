@@ -1,6 +1,7 @@
 #If Not NETFRAMEWORK Then
 Option Strict On
 
+Imports System.Collections.Generic
 Imports System.IO
 Imports System.IO.Compression
 Imports System.Text
@@ -118,6 +119,105 @@ Public Class LogPackageTests
             If report.Contains("TranslateApiKey") Then Assert.Contains("TranslateApiKey=<hidden>", report)
         Finally
             If Not String.IsNullOrEmpty(result.Path) Then Delete(result.Path)
+        End Try
+    End Sub
+
+    ' ---- spec 039 phase 1: nothing secret or personal leaves in the bundle ----
+
+    Private Const SeededPin As String = "739184"
+
+    Private Shared Function SeededSettings() As List(Of KeyValuePair(Of String, Object))
+        Dim profile As String = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+        Return New List(Of KeyValuePair(Of String, Object)) From {
+            New KeyValuePair(Of String, Object)("Share_RootParams",
+                "{""D:\\Photos\\Private"":{""label"":""Family"",""accessPin"":""" & SeededPin & """}}"),
+            New KeyValuePair(Of String, Object)("RecentFolders", profile & "\Pictures|D:\Holiday|E:\Work"),
+            New KeyValuePair(Of String, Object)("RecentMediaFiles", ""),
+            New KeyValuePair(Of String, Object)("LastPlayedFile", profile & "\Videos\clip.mp4"),
+            New KeyValuePair(Of String, Object)("ImageFolder", profile & "\Pictures"),
+            New KeyValuePair(Of String, Object)("MoveOn3", "D:\Sorted\Cats"),
+            New KeyValuePair(Of String, Object)("MoveOn4", ""),
+            New KeyValuePair(Of String, Object)("TranslateEndpoint", "http://user:pass@example.org"),
+            New KeyValuePair(Of String, Object)("TranslateApiKey", "encrypted-blob"),
+            New KeyValuePair(Of String, Object)("UiLanguage", "de"),
+            New KeyValuePair(Of String, Object)("VideoVolume", 42)
+        }
+    End Function
+
+    <Fact>
+    Public Sub A_share_pin_never_reaches_any_entry_of_the_archive()
+        Dim result As LogPackage.LogPackageResult = LogPackage.Build(AddressOf SeededSettings)
+
+        Try
+            Assert.False(String.IsNullOrEmpty(result.Path), "Build() returned no path: " & If(result.ErrorText, ""))
+            Using archive As ZipArchive = ZipFile.OpenRead(result.Path)
+                For Each entry As ZipArchiveEntry In archive.Entries
+                    Using reader As New StreamReader(entry.Open())
+                        Dim text As String = reader.ReadToEnd()
+                        Assert.DoesNotContain(SeededPin, text)
+                        Assert.DoesNotContain("Share_RootParams", text)
+                    End Using
+                Next
+            End Using
+        Finally
+            If Not String.IsNullOrEmpty(result.Path) Then Delete(result.Path)
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Only_allow_listed_values_are_written_and_paths_become_counts()
+        Dim lines As List(Of String) = LogPackage.DescribeSettings(SeededSettings())
+        Dim text As String = String.Join(vbLf, lines)
+
+        Assert.Contains("UiLanguage=de", lines)
+        Assert.Contains("VideoVolume=42", lines)
+        Assert.Contains("TranslateApiKey=<hidden>", lines)
+        Assert.Contains("RecentFolders=<3 entries, not sent>", lines)
+        Assert.Contains("RecentMediaFiles=<0 entries, not sent>", lines)
+        Assert.Contains("MoveOn3=<set, path not sent>", lines)
+        Assert.Contains("MoveOn4=<empty>", lines)
+        ' LastPlayedFile, ImageFolder and TranslateEndpoint are not on the list.
+        Assert.Contains("(3 other values not sent)", lines)
+
+        Assert.DoesNotContain("Holiday", text)
+        Assert.DoesNotContain("Cats", text)
+        Assert.DoesNotContain("clip.mp4", text)
+        Assert.DoesNotContain("user:pass", text)
+        Assert.DoesNotContain("encrypted-blob", text)
+    End Sub
+
+    <Fact>
+    Public Sub An_empty_profile_says_so()
+        Assert.Equal({"no saved profile"}, LogPackage.DescribeSettings(New List(Of KeyValuePair(Of String, Object))()).ToArray())
+    End Sub
+
+    <Theory>
+    <InlineData("Running exe: C:\Users\Alice\AppData\Local\app.exe", "Running exe: <USER>\AppData\Local\app.exe")>
+    <InlineData("opened c:\users\alice\Pictures\a.jpg", "opened <USER>\Pictures\a.jpg")>
+    <InlineData("uri C:/Users/Alice/x.png twice C:\Users\Alice", "uri <USER>/x.png twice <USER>")>
+    <InlineData("D:\Photos\a.jpg", "D:\Photos\a.jpg")>
+    Public Sub The_user_profile_prefix_is_replaced(input As String, expected As String)
+        Assert.Equal(expected, LogPackage.RedactUserProfile(input, "C:\Users\Alice\"))
+    End Sub
+
+    <Fact>
+    Public Sub A_copied_log_carries_no_user_profile_path()
+        Dim profile As String = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+        Dim logPath As String = Path.Combine(Path.GetTempPath(), "fms-test-profile-" & Guid.NewGuid().ToString("N") & ".log")
+        Dim zipPath As String = logPath & ".zip"
+
+        Try
+            File.WriteAllText(logPath, "opened " & profile & "\Pictures\a.jpg" & vbLf)
+            Using zip As New FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None)
+                Using archive As New ZipArchive(zip, ZipArchiveMode.Create)
+                    LogPackage.CopyLogEntry(archive, "current.log", logPath)
+                End Using
+            End Using
+
+            Assert.Equal("opened <USER>\Pictures\a.jpg" & vbLf, ReadEntry(zipPath, "current.log"))
+        Finally
+            Delete(logPath)
+            Delete(zipPath)
         End Try
     End Sub
 

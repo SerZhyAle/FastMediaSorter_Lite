@@ -198,4 +198,147 @@ Public Class ShareConfigBuilderTests
         End Using
     End Sub
 
+    ' --- advertised writability may never be looser than the server (ticket 054 H-07) --
+
+    ''' <summary>The wizard's per-code grid used to be exported AS-IS: an untouched grid on
+    ''' a folder the server serves READ-ONLY advertised readOnly:false - exactly the
+    ''' "Move deletes the original, then rm is denied" bug the FMSCFG producer rule exists
+    ''' to prevent.</summary>
+    <Fact>
+    Public Sub Build_AWritablePromiseOnAServerReadOnlyRoot_IsClamped()
+        Dim st As WorkerStatus = RunningStatus()
+        st.Roots(0).readOnly = True
+        Dim grid As New Dictionary(Of String, ShareRootParams) From {
+            {st.Roots(0).hostPath, New ShareRootParams With {.IsReadOnly = False, .IsDestination = True}}
+        }
+        Dim res = ShareConfigBuilder.Build(st, includeExternal:=False, perRootParams:=grid)
+        Assert.NotNull(res)
+        Using doc = JsonDocument.Parse(res.ConfigJson)
+            Dim root = doc.RootElement.GetProperty("roots")(0)
+            Assert.True(root.GetProperty("readOnly").GetBoolean())
+            ' A read-only root is never a destination either.
+            Dim destination As JsonElement = Nothing
+            Assert.False(root.TryGetProperty("isDestination", destination) AndAlso destination.GetBoolean())
+        End Using
+    End Sub
+
+    ''' <summary>A stricter code is allowed: claiming read-only on a writable share is a
+    ''' promise the phone keeps, not one the server breaks.</summary>
+    <Fact>
+    Public Sub Build_GridReadOnlyOnAWritableRoot_IsAdvertised()
+        Dim st As WorkerStatus = RunningStatus()
+        st.Roots(0).readOnly = False
+        Dim grid As New Dictionary(Of String, ShareRootParams) From {
+            {st.Roots(0).hostPath, New ShareRootParams With {.IsReadOnly = True}}
+        }
+        Dim res = ShareConfigBuilder.Build(st, includeExternal:=False, perRootParams:=grid)
+        Using doc = JsonDocument.Parse(res.ConfigJson)
+            Assert.True(doc.RootElement.GetProperty("roots")(0).GetProperty("readOnly").GetBoolean())
+        End Using
+    End Sub
+
+    ' --- ticket 034: the FMSCFG producer against the contract ------------------------
+
+    ''' <summary>Phase 2 - FMSCFG 2.1 amendment A resolves isDestination:true to writable, so a
+    ''' soft read-only hint on a destination was exported as a state the phone reads as
+    ''' writable while every surface here said read-only. A destination now ignores the hint.</summary>
+    <Fact>
+    Public Sub Build_SoftReadOnlyDestination_ExportsWritable()
+        Dim st As WorkerStatus = RunningStatus()
+        Dim grid As New Dictionary(Of String, ShareRootParams) From {
+            {st.Roots(0).hostPath, New ShareRootParams With {.SoftReadOnly = True, .IsDestination = True}}
+        }
+        Dim res = ShareConfigBuilder.Build(st, includeExternal:=False, perRootParams:=grid)
+        Assert.NotNull(res)
+        Using doc = JsonDocument.Parse(res.ConfigJson)
+            Dim root = doc.RootElement.GetProperty("roots")(0)
+            Assert.False(root.GetProperty("readOnly").GetBoolean())
+            Assert.True(root.GetProperty("isDestination").GetBoolean())
+        End Using
+    End Sub
+
+    ''' <summary>Phase 1 - FMSCFG rule 6: the diagnostic log line may carry neither the
+    ''' password nor any accessPin; that log is packed by "send logs to the author".</summary>
+    <Fact>
+    Public Sub RedactSecrets_RemovesPasswordAndEveryPin()
+        Dim hostB As String = "C:\__fms_test__" & Guid.NewGuid().ToString("N")
+        Dim st As WorkerStatus = RunningStatus()
+        st.Password = "pa""ss\word-7731"
+        st.Roots.Add(New ShareFolder With {.name = "Video", .hostPath = hostB, .readOnly = False})
+        Dim grid As New Dictionary(Of String, ShareRootParams) From {
+            {st.Roots(0).hostPath, New ShareRootParams With {.AccessPin = "4815"}},
+            {hostB, New ShareRootParams With {.AccessPin = "1623"}}
+        }
+        Dim res = ShareConfigBuilder.Build(st, includeExternal:=False, perRootParams:=grid)
+        Assert.NotNull(res)
+        Assert.Contains("4815", res.ConfigJson)   ' the payload itself carries them by design
+
+        Dim logged As String = ShareConfigBuilder.RedactSecrets(res.ConfigJson)
+        Assert.DoesNotContain("7731", logged)
+        Assert.DoesNotContain("4815", logged)
+        Assert.DoesNotContain("1623", logged)
+        ' Still valid JSON with the non-secret fields intact - a useful diagnostic.
+        Using doc = JsonDocument.Parse(logged)
+            Assert.Equal("***", doc.RootElement.GetProperty("password").GetString())
+            Assert.Equal("***", doc.RootElement.GetProperty("roots")(1).GetProperty("accessPin").GetString())
+            Assert.Equal("fms", doc.RootElement.GetProperty("username").GetString())
+        End Using
+    End Sub
+
+    ''' <summary>Phase 1 - a saved .fmscfg is owner-only, like the reference exporter's.</summary>
+    <Fact>
+    Public Sub WriteConfigFile_IsOwnerOnly()
+        Dim dir As String = IO.Path.Combine(IO.Path.GetTempPath(), "fms-034-" & Guid.NewGuid().ToString("N"))
+        IO.Directory.CreateDirectory(dir)
+        Try
+            Dim path As String = IO.Path.Combine(dir, "t.fmscfg")
+            ShareConfigBuilder.WriteConfigFile(path, "{""a"":1}")
+            Assert.Equal("{""a"":1}", IO.File.ReadAllText(path))
+            Dim acl = IO.FileSystemAclExtensions.GetAccessControl(New IO.FileInfo(path))
+            Assert.True(acl.AreAccessRulesProtected)
+            Dim meSid = Security.Principal.WindowsIdentity.GetCurrent().User
+            For Each rule As Security.AccessControl.FileSystemAccessRule In acl.GetAccessRules(True, True, GetType(Security.Principal.SecurityIdentifier))
+                Assert.Equal(meSid, rule.IdentityReference)
+            Next
+        Finally
+            Try : IO.Directory.Delete(dir, recursive:=True) : Catch : End Try
+        End Try
+    End Sub
+
+    ''' <summary>Phase 1 - the email hand-off's leftovers go; anything else in the folder stays.</summary>
+    <Fact>
+    Public Sub DeleteStaleConfigCopies_RemovesOnlyConfigCopies()
+        Dim dir As String = IO.Path.Combine(IO.Path.GetTempPath(), "fms-034-" & Guid.NewGuid().ToString("N"))
+        IO.Directory.CreateDirectory(IO.Path.Combine(dir, "mail-abc"))
+        Try
+            IO.File.WriteAllText(IO.Path.Combine(dir, "FastMediaSorter.fmscfg"), "x")
+            IO.File.WriteAllText(IO.Path.Combine(dir, "mail-abc", "FastMediaSorter.fmscfg"), "x")
+            IO.File.WriteAllText(IO.Path.Combine(dir, "other.zip"), "x")
+            ShareConfigBuilder.DeleteStaleConfigCopies(dir)
+            Assert.Empty(IO.Directory.GetFiles(dir, "*.fmscfg", IO.SearchOption.AllDirectories))
+            Assert.True(IO.File.Exists(IO.Path.Combine(dir, "other.zip")))
+        Finally
+            Try : IO.Directory.Delete(dir, recursive:=True) : Catch : End Try
+        End Try
+    End Sub
+
+    ''' <summary>Phase 4 - pins TODAY's behaviour while the owner decides (registry exception):
+    ''' a port-forward the worker's connect-back found closed is still exported, and the
+    ''' accessNote says so. If the owner keeps "a dead entry is a bug", this test flips.</summary>
+    <Fact>
+    Public Sub Build_CheckedAndClosedPortforward_IsStillExported_PendingOwner()
+        Dim reach As New WorkerReachability With {
+            .LanAddress = "192.168.1.50", .ExternalHost = "203.0.113.5", .ExternalPort = 2222,
+            .IsCgnat = False, .ExternalPortChecked = True, .ExternalPortOpen = False
+        }
+        Dim res = ShareConfigBuilder.Build(RunningStatus(reach), includeExternal:=True)
+        Assert.NotNull(res)
+        Assert.True(res.HasExternal)
+        Assert.NotEqual("", res.AccessNote)
+        Using doc = JsonDocument.Parse(res.ConfigJson)
+            Dim paths = doc.RootElement.GetProperty("accessPaths")
+            Assert.Equal("portforward", paths(paths.GetArrayLength() - 1).GetProperty("kind").GetString())
+        End Using
+    End Sub
+
 End Class

@@ -12,7 +12,7 @@ stay at the repo root. Structure and naming follow
 | [specifications/](specifications/) | specs still being built | `NNN_SPECIFICATION_` |
 | [specifications/done/](specifications/done/) | shipped specs (archive - historical, do not churn) | `SPECIFICATION_` |
 | roadmaps/ | forward-looking plans - none open right now, so the folder is absent | `ROADMAP_` |
-| [contracts/](contracts/) | frozen wire/interface contracts with other products | `CONTRACT_` |
+| [contracts/](contracts/) | one short **pointer** per contract this product touches, into the shared contracts catalog (see [contracts/README.md](contracts/README.md)); never a copy of the contract - a disagreement is an amendment or a dated registry exception, not a local edit | contract id (`FDSEC.md`) |
 | [dev-notes/](dev-notes/) | throwaway diagnostics/captures (not authoritative) | *(none)* |
 | assets/, images/ | doc & site images | - |
 | privacy.html | hosted privacy policy (Store-required) | - |
@@ -33,8 +33,9 @@ stay at the repo root. Structure and naming follow
 
 ## Conventions in one line
 
-New doc = `TYPE_` prefix (`SPECIFICATION_`, `ROADMAP_`, `CONTRACT_`, `PROGRESS_`, `RESEARCH_`, `PLAN_`)
-in the matching folder. Active specifications additionally start with their three-digit sequential
+New doc = `TYPE_` prefix (`SPECIFICATION_`, `ROADMAP_`, `PROGRESS_`, `RESEARCH_`, `PLAN_`)
+in the matching folder. A contract is never a new doc here: it lives in the shared catalog, and
+`contracts/` only gains a pointer named by the contract's id. Active specifications additionally start with their three-digit sequential
 ticket: `NNN_SPECIFICATION_...`; see [specifications/README.md](specifications/README.md). A spec
 that ships moves to `specifications/done/`. Text style: hyphen not em-dash, `..` not `...`, `ё` in
 Russian.

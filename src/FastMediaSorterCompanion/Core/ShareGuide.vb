@@ -55,16 +55,7 @@ Public Module ShareGuide
             Return False
         End Try
 
-        html = html.
-            Replace("__ROUTER_URL__", If(routerUrl, "")).
-            Replace("__EXT_PORT__", If(extPort > 0, extPort.ToString(), "-")).
-            Replace("__LAN_IP__", If(String.IsNullOrEmpty(lanIp), "-", lanIp)).
-            Replace("__PORT__", If(port > 0, port.ToString(), "-")).
-            Replace("__ROUTER_MODEL__", If(routerModel, "")).
-            Replace("__ROUTER_SEARCH_URL__", If(String.IsNullOrEmpty(routerSearchUrl), "https://www.google.com/search?q=how+to+set+up+port+forwarding", routerSearchUrl)).
-            Replace("__SITE_GUIDE_URL__", SiteGuideUrl).
-            Replace("__SITE_URL__", SiteUrl).
-            Replace("__LANG__", Localization.GuideCode())
+        html = RenderGuide(html, routerUrl, extPort, lanIp, port, routerModel, routerSearchUrl)
 
         Try
             Dim outDir As String = Path.Combine(Path.GetTempPath(), "FastMediaSorter")
@@ -75,6 +66,27 @@ Public Module ShareGuide
         Catch
             Return False
         End Try
+    End Function
+
+    ''' <summary>
+    ''' The template with the values in. Every value is HTML-encoded: the router model comes
+    ''' from whatever device answered the SSDP search, and it lands inside markup of a page
+    ''' this app writes to disk and opens in the browser (ticket 054 H-17). Encoding covers the
+    ''' attribute uses too (href="..") - quotes included.
+    ''' </summary>
+    Friend Function RenderGuide(template As String, routerUrl As String, extPort As Integer, lanIp As String, port As Integer,
+                                routerModel As String, routerSearchUrl As String) As String
+        Dim enc As Func(Of String, String) = Function(v) System.Net.WebUtility.HtmlEncode(If(v, ""))
+        Return If(template, "").
+            Replace("__ROUTER_URL__", enc(routerUrl)).
+            Replace("__EXT_PORT__", If(extPort > 0, extPort.ToString(), "-")).
+            Replace("__LAN_IP__", enc(If(String.IsNullOrEmpty(lanIp), "-", lanIp))).
+            Replace("__PORT__", If(port > 0, port.ToString(), "-")).
+            Replace("__ROUTER_MODEL__", enc(routerModel)).
+            Replace("__ROUTER_SEARCH_URL__", enc(If(String.IsNullOrEmpty(routerSearchUrl), "https://www.google.com/search?q=how+to+set+up+port+forwarding", routerSearchUrl))).
+            Replace("__SITE_GUIDE_URL__", SiteGuideUrl).
+            Replace("__SITE_URL__", SiteUrl).
+            Replace("__LANG__", Localization.GuideCode())
     End Function
 
 End Module

@@ -2,6 +2,7 @@ Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Drawing
+Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 ''' <summary>
@@ -88,13 +89,13 @@ Partial Public NotInheritable Class Share_Settings_Form
 
         _btnSwitchToService = MakeAction(HostingText.SwitchToServiceButton(), AddressOf OnSwitchToService)
         _btnInstallServer = MakeAction(HostingText.InstallServerButton(), AddressOf OnOpenServerPage)
-        _btnReturnToUser = MakeAction(HostingText.ReturnToUserButton(), AddressOf OnOpenServerPage)
+        _btnReturnToUser = MakeAction(HostingText.ReturnToUserButton(), AddressOf OnReturnToUser)
         _btnStart = MakeAction(HostingText.StartServiceButton(), Sub() RunManage(ServiceControl.ManageAction.StartService))
         _btnStop = MakeAction(HostingText.StopServiceButton(), Sub() RunManage(ServiceControl.ManageAction.StopService))
         _btnRestart = MakeAction(HostingText.RestartServiceButton(), Sub() RunManage(ServiceControl.ManageAction.RestartService))
         _btnRepair = MakeAction(HostingText.RepairServiceButton(), Sub() RunManage(ServiceControl.ManageAction.Repair))
         _btnGrantRoots = MakeAction(HostingText.GrantRootsButton(), AddressOf OnGrantRoots)
-        _btnRemove = MakeAction(HostingText.RemoveRoleButton(), Sub() RunManage(ServiceControl.ManageAction.Remove))
+        _btnRemove = MakeAction(HostingText.RemoveRoleButton(), AddressOf OnRemoveRole)
 
         sec.AddBodyRow(_btnSwitchToService)
         sec.AddBodyRow(_btnInstallServer)
@@ -112,6 +113,13 @@ Partial Public NotInheritable Class Share_Settings_Form
         sec.AddBodyRow(NoteLabel(HostingText.AccountNote()))
         sec.AddBodyRow(_btnRemove)
         sec.AddBodyRow(NoteLabel(HostingText.RemoveNote()))
+        ' Every button in this group that raises a UAC prompt is answered on one page: what
+        ' each elevation does and which action takes it back (ticket 037 Ф-4, INSTALL-TRUST
+        ' rule 7). A MessageBox cannot carry a link, so the group does.
+        Dim lnkTrust As New LinkLabel With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
+            .Margin = New Padding(0, 0, 0, 10), .Text = ShareText.TrustLinkText()}
+        AddHandler lnkTrust.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareText.TrustPageUrl())
+        sec.AddBodyRow(lnkTrust)
 
         _lblResult = New Label With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 0),
             .MaximumSize = New Size(HostingContentWidth, 0),
@@ -136,18 +144,26 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' Refreshes the group from a LIVE worker probe, the first time it is actually unfolded.
     '''
     ''' The structure was already applied without one while the dialog was being built (see
-    ''' the <c>probeLive</c> parameter below), so this is not what decides the layout - it is
-    ''' what makes the two live lines honest. Splitting it that way is what keeps the dialog
-    ''' from opening at its worst-case height AND from paying a worker round trip every time
-    ''' someone opens it to tick one checkbox.
+    ''' <see cref="ApplyHostingState"/>), so this is not what decides the layout - it is
+    ''' what makes the two live lines honest. The probe runs OFF the UI thread (ticket 054
+    ''' H-15): it blocks up to 1.2 s, and this dialog is modal - the window behind it and
+    ''' the tray menu must stay alive while it runs.
     ''' </summary>
-    Private Sub EnsureHostingLoaded()
+    Private Async Sub EnsureHostingLoaded()
         If _hostingLoaded Then Return
         _hostingLoaded = True
-        ApplyHostingState(True)
+        Await RefreshHostingStateAsync()
+    End Sub
+
+    ''' <summary>The live probe off the UI thread, then the repaint it exists for.</summary>
+    Private Async Function RefreshHostingStateAsync() As Task
+        Dim live As WorkerResponse = Await Task.Run(Function() WorkerProcess.TryGetStatus(1200))
+        ' The dialog may have closed while the probe was out.
+        If IsDisposed OrElse Disposing Then Return
+        ApplyHostingState(live)
         UpdateSummaries()
         FitToContent()
-    End Sub
+    End Function
 
     ''' <summary>
     ''' Paints the console from the live host mode + SCM state. Which buttons exist
@@ -155,14 +171,16 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' shows service lifecycle controls it has no helper to run - and the Server
     ''' edition never shows an "install the Server edition" it already is.
     '''
-    ''' <paramref name="probeLive"/> False uses the status the caller handed in instead of
-    ''' asking the worker. Everything that decides which controls EXIST comes from the SCM
-    ''' and from whether the elevated helper is installed - both cheap and both local - so a
-    ''' probe-free pass produces the same layout, which is all the build needs. Only the
-    ''' "who is answering the pipe right now" line and the served-root list want the live
-    ''' answer, and those are corrected the moment the tab is opened.
+    ''' <paramref name="live"/> is the answer of a probe the CALLER ran off the UI thread,
+    ''' or Nothing when there was none - the build-time pass hands in Nothing and falls
+    ''' back to the status the dialog was opened with. Everything that decides which
+    ''' controls EXIST comes from the SCM and from whether the elevated helper is
+    ''' installed - both cheap and both local - so a probe-free pass produces the same
+    ''' layout, which is all the build needs. Only the "who is answering the pipe right
+    ''' now" line and the served-root list want the live answer, and those are corrected
+    ''' the moment the tab is opened.
     ''' </summary>
-    Private Sub ApplyHostingState(probeLive As Boolean)
+    Private Sub ApplyHostingState(live As WorkerResponse)
         Dim mode As ServerFeatures.ServerHostMode = ServerFeatures.HostMode()
         Dim state As ServiceControl.ServiceState = ServiceControl.QueryState()
         Dim installed As Boolean = state <> ServiceControl.ServiceState.NotInstalled
@@ -172,11 +190,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lblHost.Text = HostingText.HostModeLine(mode)
         _lblIntro.Text = HostingText.Intro(mode)
 
-        ' Fresh probe rather than the status we were handed: this page is where a user
-        ' comes when something looks wrong, and a cached snapshot is exactly what would
-        ' hide a worker that died a minute ago.
-        Dim live As WorkerResponse = If(probeLive, WorkerProcess.TryGetStatus(1200), Nothing)
-        Dim answering As Boolean = If(probeLive, live IsNot Nothing, _status IsNot Nothing)
+        Dim answering As Boolean = If(live IsNot Nothing, True, _status IsNot Nothing)
         Dim st As WorkerStatus = If(live IsNot Nothing, live.Status, _status)
         _lblLive.Text = HostingText.LiveHostLine(serviceServing, answering)
         _lblLive.ForeColor = If(answering, Color.ForestGreen, Color.Firebrick)
@@ -237,8 +251,42 @@ Partial Public NotInheritable Class Share_Settings_Form
         End If
     End Sub
 
+    ''' <summary>
+    ''' Removing the service role is asked first (APP-BEHAVIOUR rule 5, ticket 028 Ф-5): a
+    ''' note beside the button and the UAC prompt are not a confirmation - the UAC prompt
+    ''' says only that something wants elevation, never what it will delete. The question
+    ''' is the note's own sentence, so the two cannot drift.
+    ''' </summary>
+    Private Sub OnRemoveRole()
+        If MessageBox.Show(Me, HostingText.RemoveNote() & vbCrLf & vbCrLf & Localization.T("Удалить роль сервера?"),
+                           HostingText.Title(), MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+                           MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
+        RunManage(ServiceControl.ManageAction.Remove)
+    End Sub
+
     Private Sub OnGrantRoots()
         RunManage(ServiceControl.ManageAction.GrantRoots, _grantRoots, _grantReadOnlyRoots)
+    End Sub
+
+    ''' <summary>
+    ''' The promised in-app way back from service hosting (ticket 054 H-05): the switch
+    ''' prompt says this button exists, so it performs the migration - one UAC prompt
+    ''' that copies the state back, removes the service and re-points the firewall rule
+    ''' at this installation's worker. Only where this installation CAN: a packaged build
+    ''' and an installation without the helper fall back to the documented page, and the
+    ''' separate Server edition keeps the page too - there "user edition" means installing
+    ''' another product, which this program must not do for the user (spec §1.4).
+    ''' </summary>
+    Private Sub OnReturnToUser()
+        If ServiceControl.CanManage() AndAlso ServiceControl.IsOrdinaryEdition() Then
+            If MessageBox.Show(Me, HostingText.ReturnToUserPrompt(), HostingText.Title(),
+                               MessageBoxButtons.YesNo, MessageBoxIcon.Question,
+                               MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
+            RunManage(ServiceControl.ManageAction.MigrateToUser)
+        Else
+            ' Open the page, never fetch or run anything (spec §1.4 / §2).
+            NetworkInfo.OpenInBrowser(HostingText.ServerEditionUrl)
+        End If
     End Sub
 
     ''' <summary>
@@ -260,17 +308,28 @@ Partial Public NotInheritable Class Share_Settings_Form
         NetworkInfo.OpenInBrowser(HostingText.ServerEditionUrl)
     End Sub
 
-    Private Sub RunManage(action As ServiceControl.ManageAction,
-                          Optional roots As List(Of String) = Nothing,
-                          Optional readOnlyRoots As List(Of String) = Nothing)
+    ''' <summary>
+    ''' Runs one elevated action and reports its outcome. The helper call runs OFF the UI
+    ''' thread (ticket 054 H-15): migrate-to-server includes worker invocations, a deep ACL
+    ''' walk and a 30 s service-start wait, and on the UI thread that froze the whole
+    ''' Companion - tray menu, main window and the viewer's "Share this folder" handshake
+    ''' alike - for as long as the admin took to answer the UAC prompt.
+    ''' </summary>
+    Private Async Sub RunManage(action As ServiceControl.ManageAction,
+                                Optional roots As List(Of String) = Nothing,
+                                Optional readOnlyRoots As List(Of String) = Nothing)
         SetHostingActionsEnabled(False)
         _lblResult.ForeColor = Color.DimGray
         _lblResult.Text = HostingText.ManageWorking()
         Me.Refresh()
 
-        ' Blocks on the UAC prompt (modal, brief) - the app itself stays non-elevated.
-        Dim res As ServiceControl.ManageResult = ServiceControl.Manage(action, roots, readOnlyRoots)
+        ' Blocks on the UAC prompt and the helper's work - the app itself stays
+        ' non-elevated, and now also responsive, while it runs.
+        Dim res As ServiceControl.ManageResult =
+            Await Task.Run(Function() ServiceControl.Manage(action, roots, readOnlyRoots))
 
+        ' The dialog may have been closed while the helper was out (ticket 054 H-11).
+        If IsDisposed OrElse Disposing Then Return
         If res = ServiceControl.ManageResult.Succeeded Then
             _changed = True
             ServerFeatures.RefreshHostMode()
@@ -278,9 +337,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lblResult.ForeColor = If(res = ServiceControl.ManageResult.Succeeded, Color.ForestGreen, Color.Firebrick)
         _lblResult.Text = HostingText.ManageResultLine(res)
         SetHostingActionsEnabled(True)
-        ApplyHostingState(True)
-        UpdateSummaries()
-        FitToContent()
+        Await RefreshHostingStateAsync()
     End Sub
 
     Private Sub SetHostingActionsEnabled(value As Boolean)

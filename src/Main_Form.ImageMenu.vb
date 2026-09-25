@@ -75,6 +75,29 @@ Partial Public Class Main_Form
             image_Menu.Items.Add(New ToolStripSeparator())
         End If
 
+        ' --- secure containers (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §7,
+        ' O-2). "Unlock" always asks, even for one declined a moment ago - declining meant
+        ' "not now". "Verify" is the full guarantee the streaming reader gives up: it reads
+        ' every block and checks the sealed digest, which on a large file is a full read,
+        ' so it is an action rather than something paid for on every open. "Forget the
+        ' password" is here whenever one is held, because a password the user cannot put
+        ' down is one they have to close the program to be rid of.
+        ' "Open" only for a LOCKED placeholder (audit 052 G-07): a damaged or unsupported
+        ' container is not offered a password dialog it could never use.
+        If IsSecurePlaceholderLocked() Then
+            AddMenuItem(image_Menu.Items, Localization.T("Открыть защищённый файл.. (Enter)"),
+                        Sub() SecureUnlockCurrent())
+            image_Menu.Items.Add(New ToolStripSeparator())
+        ElseIf IsCurrentFileSecureContainer() AndAlso IsSecureContentOnScreen() Then
+            AddMenuItem(image_Menu.Items, Localization.T("Проверить контейнер целиком"),
+                        Sub() SecureVerifyCurrent())
+            image_Menu.Items.Add(New ToolStripSeparator())
+        End If
+        If SecureHasCredential() Then
+            AddMenuItem(image_Menu.Items, Localization.T("Забыть пароль"), Sub() SecureForgetCredential())
+            image_Menu.Items.Add(New ToolStripSeparator())
+        End If
+
         ' --- the picture itself
         AddMenuItem(image_Menu.Items, Localization.T("Повернуть по часовой (R)"),
                     Sub() RotateActiveImage(True))

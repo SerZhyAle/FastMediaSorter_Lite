@@ -13,117 +13,6 @@ Imports System.Diagnostics
 
 Partial Public Class Main_Form
 
-    Function IsRunningAsAdministrator() As Boolean
-        Dim identity = WindowsIdentity.GetCurrent()
-        Dim principal = New WindowsPrincipal(identity)
-        Return principal.IsInRole(WindowsBuiltInRole.Administrator)
-    End Function
-
-    ' Add this function to check .jpg association
-    Private Function IsJpgAssociatedWithThisApp() As Boolean
-        Try
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2410: check for JPG associacion")
-            Using key = Registry.ClassesRoot.OpenSubKey(".jpg")
-                If key Is Nothing Then Return False
-                Dim progId = key.GetValue("")?.ToString()
-                If String.IsNullOrEmpty(progId) Then Return False
-                Using progKey = Registry.ClassesRoot.OpenSubKey(progId & "\shell\open\command")
-                    If progKey Is Nothing Then Return False
-                    Dim command = progKey.GetValue("")?.ToString()
-                    If String.IsNullOrEmpty(command) Then Return False
-                    Dim exePath = Application.ExecutablePath.ToLowerInvariant()
-                    Return command.ToLowerInvariant().Contains(exePath)
-                End Using
-            End Using
-        Catch
-            Return False
-        End Try
-    End Function
-
-    Private Sub AssociateJpgWithThisApp()
-        Try
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2420: JPG associacion..")
-            Dim exePath = Application.ExecutablePath
-            Dim progId = "FastMediaSorter.jpg"
-            ' Set ProgID
-            Using progKey = Registry.ClassesRoot.CreateSubKey(progId)
-                progKey.SetValue("", "JPEG Image - Fast Media Sorter")
-                Using shellKey = progKey.CreateSubKey("shell\open\command")
-                    shellKey.SetValue("", """" & exePath & """ ""%1""")
-                End Using
-            End Using
-            ' Set .jpg default
-            Using extKey = Registry.ClassesRoot.CreateSubKey(".jpg")
-                extKey.SetValue("", progId)
-            End Using
-        Catch ex As Exception
-            MessageBox.Show(Localization.T("Ошибка ассоциации: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ERR with JPG associacion.." & ex.Message)
-        End Try
-    End Sub
-
-    Private Sub CheckAndOfferJpgAssociation()
-        If IsRunningAsAdministrator() AndAlso Not IsJpgAssociatedWithThisApp() Then
-            Dim msg = Localization.T("Ассоциировать .JPG файлы с этой программой?")
-            If MessageBox.Show(msg, "Association", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
-                AssociateJpgWithThisApp()
-            End If
-        End If
-    End Sub
-
-    Private Function AreImageTypesAssociatedWithThisApp() As Boolean
-        Return IsExtensionAssociatedWithThisApp(".jpg") AndAlso
-           IsExtensionAssociatedWithThisApp(".png") AndAlso
-           IsExtensionAssociatedWithThisApp(".gif")
-    End Function
-
-    Private Function IsExtensionAssociatedWithThisApp(ext As String) As Boolean
-        Try
-            Using key = Registry.ClassesRoot.OpenSubKey(ext)
-                If key Is Nothing Then Return False
-                Dim progId = key.GetValue("")?.ToString()
-                If String.IsNullOrEmpty(progId) Then Return False
-                Using progKey = Registry.ClassesRoot.OpenSubKey(progId & "\shell\open\command")
-                    If progKey Is Nothing Then Return False
-                    Dim command = progKey.GetValue("")?.ToString()
-                    If String.IsNullOrEmpty(command) Then Return False
-                    Dim exePath = Application.ExecutablePath.ToLowerInvariant()
-                    Return command.ToLowerInvariant().Contains(exePath)
-                End Using
-            End Using
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2430: Ext associaciated")
-        Catch
-            Return False
-        End Try
-    End Function
-
-    Private Sub AssociateImageTypesWithThisApp()
-        AssociateExtensionWithThisApp(".jpg", "FastMediaSorter.jpg", "JPEG Image - Fast Media Sorter")
-        AssociateExtensionWithThisApp(".png", "FastMediaSorter.png", "PNG Image - Fast Media Sorter")
-        AssociateExtensionWithThisApp(".gif", "FastMediaSorter.gif", "GIF Image - Fast Media Sorter")
-
-        MessageBox.Show(Localization.T("Ассоциации установлены. Возможно потребуется перезапустить Проводник или Windows."), "Association", MessageBoxButtons.OK, MessageBoxIcon.Information)
-    End Sub
-
-    Private Sub AssociateExtensionWithThisApp(ext As String, progId As String, description As String)
-        Try
-            Dim exePath = Application.ExecutablePath
-            Using progKey = Registry.ClassesRoot.CreateSubKey(progId)
-                progKey.SetValue("", description)
-                Using shellKey = progKey.CreateSubKey("shell\open\command")
-                    shellKey.SetValue("", """" & exePath & """ ""%1""")
-                End Using
-            End Using
-
-            Using extKey = Registry.ClassesRoot.CreateSubKey(ext)
-                extKey.SetValue("", progId)
-            End Using
-        Catch ex As Exception
-            MessageBox.Show(Localization.T("Ошибка ассоциации: ") & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ERR Ext associaciated: " & ex.Message)
-        End Try
-    End Sub
-
     Private Sub CheckAndOfferImageAssociations()
         ' First-run startup must stay non-blocking for packaged installs and
         ' validation environments. File associations remain available through the
@@ -131,7 +20,47 @@ Partial Public Class Main_Form
         SaveSetting(App_name, Second_App_Name, "UserAlreadyAskedForAssociations", "1")
     End Sub
 
+#If Not NETFRAMEWORK Then
+    ' GetCurrentPackageFullName answers this when the process has no package identity.
+    Private Const APPMODEL_ERROR_NO_PACKAGE As Integer = 15700
+
+    <DllImport("kernel32.dll", CharSet:=CharSet.Unicode, EntryPoint:="GetCurrentPackageFullName")>
+    Private Shared Function GetCurrentPackageFullName(ByRef packageFullNameLength As Integer, packageFullName As Char()) As Integer
+    End Function
+
+    ''' <summary>True when this is the Store (MSIX) build. Only the mainline is ever
+    ''' packaged, so this lives behind the seam.</summary>
+    Friend Shared Function IsPackagedApp() As Boolean
+        Try
+            Dim length As Integer = 0
+            Return GetCurrentPackageFullName(length, Nothing) <> APPMODEL_ERROR_NO_PACKAGE
+        Catch
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' Under MSIX the writes below land in the package's private hive and change nothing
+    ''' Explorer sees - yet the dialog said "registered N formats" (audit 047, C-22). The
+    ''' packaged build already declares its file associations in its manifest; what is left
+    ''' for the user is to pick the default, which only Windows Settings can do. Returns
+    ''' True when it handled the request that way.
+    ''' </summary>
+    Private Function OpenDefaultAppsSettingsWhenPackaged() As Boolean
+        If Not IsPackagedApp() Then Return False
+        Try
+            Process.Start(New ProcessStartInfo("ms-settings:defaultapps") With {.UseShellExecute = True})
+        Catch ex As Exception
+            AppFileLogger.LogException("Opening Windows default-apps settings", ex)
+        End Try
+        Return True
+    End Function
+#End If
+
     Public Sub AssociateAllImageFormatsWithThisApp()
+#If Not NETFRAMEWORK Then
+        If OpenDefaultAppsSettingsWhenPackaged() Then Return
+#End If
         ' Only formats this app can actually DISPLAY. The modern build claims
         ' avif/heic/heif too (Magick.NET decodes them, epic O-3); on x86 they stay
         ' unclaimed - no decoder there, so becoming their default handler would
@@ -140,12 +69,12 @@ Partial Public Class Main_Form
         ' (see web_specific_image_extensions) - we just don't claim them.
 #If NETFRAMEWORK Then
         Dim all_Image_Extensions() As String = {
-            ".jpg", ".jpeg", ".gif", ".png", ".bmp", ".tiff",
+            ".jpg", ".jpeg", ".gif", ".png", ".bmp", ".tif", ".tiff",
             ".ico", ".wmf", ".emf", ".exif", ".webp"
         }
 #Else
         Dim all_Image_Extensions() As String = {
-            ".jpg", ".jpeg", ".gif", ".png", ".bmp", ".tiff",
+            ".jpg", ".jpeg", ".gif", ".png", ".bmp", ".tif", ".tiff",
             ".ico", ".wmf", ".emf", ".exif", ".webp",
             ".avif", ".heic", ".heif"
         }
@@ -186,7 +115,7 @@ Partial Public Class Main_Form
 
         Dim registered_Count As Integer = all_Image_Extensions.Length - failed.Count
         If failed.Count = 0 Then
-            MessageBox.Show(
+            MessageBox.Show(Me,
                 Localization.TF("Успешно зарегистрировано {0} форматов:" & vbCrLf &
                                 "{1}" & vbCrLf & vbCrLf &
                                 "Изменения применены для текущего пользователя.",
@@ -194,7 +123,7 @@ Partial Public Class Main_Form
                 Localization.T("Регистрация завершена"),
                 MessageBoxButtons.OK, MessageBoxIcon.Information)
         Else
-            MessageBox.Show(
+            MessageBox.Show(Me,
                 Localization.TF("Зарегистрировано: {0}" & vbCrLf & "Ошибок: {1} ({2})", registered_Count.ToString(), failed.Count.ToString(), String.Join(", ", failed)),
                 Localization.T("Регистрация"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning)
@@ -205,6 +134,9 @@ Partial Public Class Main_Form
     ' app can play (the same set the player accepts via WebBrowser/LibVLC). Writes
     ' to HKCU\Software\Classes so no admin rights are needed.
     Public Sub AssociateAllVideoFormatsWithThisApp()
+#If Not NETFRAMEWORK Then
+        If OpenDefaultAppsSettingsWhenPackaged() Then Return
+#End If
         Dim all_Video_Extensions() As String = video_File_Extensions.ToArray()
 
         Dim failed As New List(Of String)
@@ -242,7 +174,7 @@ Partial Public Class Main_Form
 
         Dim registered_Count As Integer = all_Video_Extensions.Length - failed.Count
         If failed.Count = 0 Then
-            MessageBox.Show(
+            MessageBox.Show(Me,
                 Localization.TF("Успешно зарегистрировано {0} форматов:" & vbCrLf &
                                 "{1}" & vbCrLf & vbCrLf &
                                 "Изменения применены для текущего пользователя.",
@@ -250,11 +182,97 @@ Partial Public Class Main_Form
                 Localization.T("Регистрация завершена"),
                 MessageBoxButtons.OK, MessageBoxIcon.Information)
         Else
-            MessageBox.Show(
+            MessageBox.Show(Me,
                 Localization.TF("Зарегистрировано: {0}" & vbCrLf & "Ошибок: {1} ({2})", registered_Count.ToString(), failed.Count.ToString(), String.Join(", ", failed)),
                 Localization.T("Регистрация"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End If
     End Sub
+
+#If Not NETFRAMEWORK Then
+
+    ' Secure containers, and the ONE way this program may appear in Explorer for them
+    ' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §8, FDSEC-BEHAVIOUR §14.2).
+    '
+    ' Registering a file association is an explicit, reversible, user-invoked act - never
+    ' a side effect of installation, never silent, per-user by default. The installer
+    ' registers NOTHING for .fd-sec, in any component.
+    '
+    ' And .fd-sec is not ours to take: FileDO already registers the ProgID
+    ' FileDO.SecureContainer for it, recording whatever owned the extension before. A
+    ' silent swap by us would fight a product that behaves correctly. So the opt-in below
+    ' is ADDITIVE - it puts this viewer in Explorer's "Open with" list and takes nothing
+    ' away. Becoming the DEFAULT handler is a separate act and is deliberately not offered
+    ' here: it displaces a named owner, and Windows 10 and 11 will not let a program make
+    ' itself the default from code anyway - only the user can, through Explorer.
+
+    Private Const Secure_Prog_Id As String = "FastMediaSorter.fd-sec"
+
+    ''' <summary>Is this viewer currently offered for .fd-sec in Explorer's Open with?</summary>
+    Friend Shared Function IsSecureContainerOpenWithRegistered() As Boolean
+        Try
+            Using key = Registry.CurrentUser.OpenSubKey("Software\Classes\" & FdSecFormat.Extension & "\OpenWithProgids")
+                If key Is Nothing Then Return False
+                Return key.GetValue(Secure_Prog_Id) IsNot Nothing
+            End Using
+        Catch
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' Adds this viewer to Explorer's "Open with" list for .fd-sec, per user, without
+    ''' touching whatever owns the extension. Returns True when the registry accepted it.
+    ''' </summary>
+    Friend Shared Function RegisterSecureContainerOpenWith() As Boolean
+        Try
+            Dim exePath As String = Application.ExecutablePath
+            Using classesKey = Registry.CurrentUser.CreateSubKey("Software\Classes")
+                Using progKey = classesKey.CreateSubKey(Secure_Prog_Id)
+                    ' The ProgID's own name says what the file is, not what is inside it -
+                    ' nothing outside the container may ever claim to know that.
+                    progKey.SetValue("", "Secure container - Fast Media Sorter")
+                    Using shellKey = progKey.CreateSubKey("shell\open\command")
+                        shellKey.SetValue("", """" & exePath & """ ""%1""")
+                    End Using
+                    Using iconKey = progKey.CreateSubKey("DefaultIcon")
+                        iconKey.SetValue("", """" & exePath & """,0")
+                    End Using
+                End Using
+                ' OpenWithProgids, NOT the extension's default value: this offers the
+                ' viewer and displaces nobody.
+                Using openWithKey = classesKey.CreateSubKey(FdSecFormat.Extension & "\OpenWithProgids")
+                    openWithKey.SetValue(Secure_Prog_Id, Array.Empty(Of Byte)(), RegistryValueKind.None)
+                End Using
+            End Using
+            SHChangeNotify(&H8000000, &H1000, IntPtr.Zero, IntPtr.Zero)
+            Return True
+        Catch ex As Exception
+            AppFileLogger.LogException("Secure container: registering the Open-with entry", ex)
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>Takes it back out again, leaving the extension exactly as it was found -
+    ''' both directions from the same place (§8).</summary>
+    Friend Shared Function UnregisterSecureContainerOpenWith() As Boolean
+        Try
+            Using openWithKey = Registry.CurrentUser.OpenSubKey("Software\Classes\" & FdSecFormat.Extension & "\OpenWithProgids", True)
+                If openWithKey IsNot Nothing AndAlso openWithKey.GetValue(Secure_Prog_Id) IsNot Nothing Then
+                    openWithKey.DeleteValue(Secure_Prog_Id, False)
+                End If
+            End Using
+            Using classesKey = Registry.CurrentUser.OpenSubKey("Software\Classes", True)
+                If classesKey IsNot Nothing Then classesKey.DeleteSubKeyTree(Secure_Prog_Id, False)
+            End Using
+            SHChangeNotify(&H8000000, &H1000, IntPtr.Zero, IntPtr.Zero)
+            Return True
+        Catch ex As Exception
+            AppFileLogger.LogException("Secure container: removing the Open-with entry", ex)
+            Return False
+        End Try
+    End Function
+
+#End If
 
 End Class

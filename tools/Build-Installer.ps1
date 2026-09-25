@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Builds a standalone offline installer (setup.exe) you can copy to any Windows
     machine and run - no GitHub release, no tag, no internet needed at install time.
@@ -103,18 +103,6 @@ function Resolve-MsBuild {
     throw "MSBuild not found. Install Visual Studio or add MSBuild to PATH."
 }
 
-function Resolve-NuGet {
-    $cmd = Get-Command nuget.exe -ErrorAction SilentlyContinue
-    if ($cmd) { return $cmd.Source }
-
-    $nuget = Join-Path $solutionDir "tools\nuget.exe"
-    if (-not (Test-Path $nuget)) {
-        New-Item -ItemType Directory -Path (Split-Path $nuget) -Force | Out-Null
-        Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" -OutFile $nuget
-    }
-    return $nuget
-}
-
 function Resolve-Iscc {
     $cmd = Get-Command ISCC.exe -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
@@ -166,7 +154,7 @@ if (-not $NoClean) {
 if ($SkipBuild) {
     Write-Host "Skipping build - reusing existing bin\Release."
 } else {
-    $nuget = Resolve-NuGet
+    $nuget = & (Join-Path $PSScriptRoot "Get-PinnedNuGet.ps1")
     Write-Host "NuGet:       $nuget"
     & $nuget restore $solutionFile -NonInteractive
     if ($LASTEXITCODE -ne 0) { throw "NuGet restore failed with exit code $LASTEXITCODE." }
@@ -241,7 +229,7 @@ $companionProj = Join-Path $solutionDir "src\FastMediaSorterCompanion\FastMediaS
 if (Test-Path $companionProj) {
     $companionPub = Join-Path $stageDir "companion-publish-tmp"
     Write-Host "Publishing Companion (Share Manager, net10 self-contained).."
-    & dotnet publish $companionProj -c Release -r win-x64 -o $companionPub -v minimal --nologo
+    & dotnet publish $companionProj -c Release -r win-x64 -p:ReleaseVersion=$Version -o $companionPub -v minimal --nologo
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish (Companion) failed with exit code $LASTEXITCODE." }
     $companionExe = Join-Path $companionPub "FastMediaSorterCompanion.exe"
     if (-not (Test-Path $companionExe)) { throw "Companion exe not found at $companionExe after publish." }

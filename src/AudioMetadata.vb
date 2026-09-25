@@ -27,6 +27,38 @@ Public NotInheritable Class AudioMetadata
         Return result
     End Function
 
+    ''' <summary>
+    ''' A codec as a person reads it, from LibVLC's FourCC (audit 050 D-02). The value is a
+    ''' UInt32 whose bytes are four ASCII letters, lowest byte first ('m','p','4','a' is
+    ''' 0x6134706D); formatting it as a number printed "1634492771" on the plate. The
+    ''' common audio codecs get their everyday name; anything else shows its four letters,
+    ''' and a value that is not four printable letters shows nothing rather than noise.
+    ''' </summary>
+    Public Shared Function CodecName(fourCc As UInteger) As String
+        If fourCc = 0UI Then Return ""
+        Dim chars(3) As Char
+        For i As Integer = 0 To 3
+            Dim b As Integer = CInt((fourCc >> (8 * i)) And &HFFUI)
+            If b < 32 OrElse b > 126 Then Return ""
+            chars(i) = ChrW(b)
+        Next
+        Dim text As String = New String(chars).Trim()
+        If text.Length = 0 Then Return ""
+        Select Case text.ToLowerInvariant()
+            Case "mpga", "mp3" : Return "MP3"
+            Case "mp4a" : Return "AAC"
+            Case "flac" : Return "FLAC"
+            Case "vorb" : Return "Vorbis"
+            Case "opus" : Return "Opus"
+            Case "a52", "ac-3" : Return "AC-3"
+            Case "eac3" : Return "E-AC-3"
+            Case "alac" : Return "ALAC"
+            Case "wma1", "wma2", "wmap", "wmal" : Return "WMA"
+            Case "s16l", "s24l", "s32l", "f32l", "u8", "araw", "lpcm" : Return "PCM"
+        End Select
+        Return text.ToUpperInvariant()
+    End Function
+
     Private Shared Function BuildFileFormat(filePath As String, fileSizeBytes As Long) As String
         Dim extension As String = Path.GetExtension(filePath).ToUpperInvariant()
         Return If(fileSizeBytes >= 0, extension & " • " & FormatSize(fileSizeBytes), extension)

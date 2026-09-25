@@ -167,7 +167,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
 
     Private Sub BuildChrome()
         Me.Name = "Image_Editor_Form"
-        Me.Text = Localization.T("Правка изображения")
+        Me.Text = Localization.T("Редактирование изображения")
         Me.StartPosition = FormStartPosition.Manual
         Me.MinimumSize = New Size(900, 700)
         Me.KeyPreview = True
@@ -298,11 +298,16 @@ Partial Friend NotInheritable Class Image_Editor_Form
     ''' </summary>
     Private Sub ApplySaveAvailability()
         Dim allowed As Boolean = (replace_Refusal = ImageFileWriter.ReplaceRefusal.None)
-        btn_Save.Enabled = allowed AndAlso Not saving
+        ' "Save" writes over the original, so it waits for an edit (ticket 028 Ф-5,
+        ' APP-BEHAVIOUR rule 5): re-encoding an untouched JPEG is a loss with nothing to
+        ' show for it. The reason goes on the button's tooltip - a grey button with no
+        ' reason reads as broken - and "Save as.." stays available either way.
+        btn_Save.Enabled = allowed AndAlso dirty AndAlso Not saving
         btn_Save_As.Enabled = Not saving
         btn_Close.Enabled = Not saving
         btn_Undo.Enabled = undo_History.CanUndo AndAlso Not saving
         If btn_Apply_Crop IsNot Nothing Then btn_Apply_Crop.Enabled = Not saving
+        tool_Tips.SetToolTip(btn_Save, If(allowed AndAlso Not dirty, Localization.T("Нечего сохранять: изображение не изменено"), ""))
 
         If allowed Then
             SetStatus(SizeText())
@@ -334,6 +339,10 @@ Partial Friend NotInheritable Class Image_Editor_Form
                 Return Localization.T("нет прав на запись")
             Case ImageFileWriter.ReplaceRefusal.Locked
                 Return Localization.T("файл занят другой программой")
+            Case ImageFileWriter.ReplaceRefusal.MultiFrame
+                Return Localization.T("в файле несколько страниц или кадров, правится только первый")
+            Case ImageFileWriter.ReplaceRefusal.InsideArchive
+                Return Localization.T("это файл внутри архива")
             Case Else
                 Return Localization.T("файл не найден")
         End Select
@@ -377,7 +386,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
 
         Dim answer As DialogResult = MessageBox.Show(Me,
             Localization.T("JPEG будет пересжат - это необратимо. Дата съёмки и остальные EXIF-данные сохранятся. Продолжить?"),
-            Localization.T("Правка изображения"),
+            Localization.T("Редактирование изображения"),
             MessageBoxButtons.YesNo, MessageBoxIcon.Question)
         If answer <> DialogResult.Yes Then Return False
 
@@ -396,16 +405,42 @@ Partial Friend NotInheritable Class Image_Editor_Form
 
         Using dialog As New SaveFileDialog()
             dialog.Title = Localization.T("Сохранить как..")
-            dialog.InitialDirectory = Path.GetDirectoryName(source_Path)
-            dialog.FileName = Path.GetFileNameWithoutExtension(source_Path) & " (edited)" & preferred
+            dialog.InitialDirectory = If(String.IsNullOrEmpty(save_As_Folder), Path.GetDirectoryName(source_Path), save_As_Folder)
+            dialog.FileName = If(String.IsNullOrEmpty(save_As_Stem), Path.GetFileNameWithoutExtension(source_Path), save_As_Stem) &
+                              " (edited)" & preferred
             dialog.OverwritePrompt = True
             dialog.AddExtension = True
             dialog.Filter = BuildSaveFilter(preferred)
             dialog.FilterIndex = 1
             If dialog.ShowDialog(Me) <> DialogResult.OK Then Return ""
+            ' Never into the archive cache: the whole session directory is deleted when the
+            ' archive is left, so a result saved there is lost without a word (G-03).
+            If ArchivePaths.IsUnderArchiveCache(dialog.FileName) Then
+                SetStatus(Localization.T("Сюда сохранить нельзя: это временная папка архива"))
+                Return ""
+            End If
             Return dialog.FileName
         End Using
     End Function
+
+    ''' <summary>Where "Save as.." starts, and the name it offers, when the picture being
+    ''' edited is not where the user thinks it is - an archive entry is a temporary copy
+    ''' under the archive cache, and the default must be the folder the ARCHIVE is in and
+    ''' the entry's own name (audit 046, G-03). Empty means "beside the file".</summary>
+    Private save_As_Folder As String = ""
+    Private save_As_Stem As String = ""
+
+    ''' <summary>Called by the viewer before the window is shown, for an archive entry.
+    ''' <paramref name="entryName"/> is the name inside the archive ("1998/03/foto12.jpg");
+    ''' only its last segment is used.</summary>
+    Friend Sub SetSaveAsDefaults(folder As String, entryName As String)
+        save_As_Folder = If(folder, "")
+        Dim segment As String = If(entryName, "")
+        Dim cut As Integer = segment.LastIndexOfAny(New Char() {"/"c, "\"c})
+        If cut >= 0 Then segment = segment.Substring(cut + 1)
+        Dim dot As Integer = segment.LastIndexOf("."c)
+        save_As_Stem = If(dot > 0, segment.Substring(0, dot), segment)
+    End Sub
 
     ''' <summary>
     ''' Only the writable formats (§9.1), with the picture's own format first so the
@@ -452,11 +487,21 @@ Partial Friend NotInheritable Class Image_Editor_Form
 
         Try
             Await ImageFileWriter.SaveAsync(image_Bitmap, targetPath, original_Bytes, orientation_Policy)
+        Catch ex As ImageFileWriter.ImageSaveIncompleteException
+            ' The one failure after which "not saved" is not the whole truth: the original
+            ' is no longer under its name. Both files are on disk, and the user is told
+            ' where, rather than being left to believe nothing happened (G-01).
+            AppFileLogger.LogException("Image editor: saving " & targetPath & " stopped half way", ex)
+            saving = False
+            ApplySaveAvailability()
+            SetStatus(Localization.TF("Не удалось сохранить, и оригинал не вернулся на место. Оригинал: {0}; правка: {1}",
+                                      ex.OriginalNowAt, ex.EditAt))
+            Return
         Catch ex As Exception
             AppFileLogger.LogException("Image editor: saving " & targetPath, ex)
             saving = False
             ApplySaveAvailability()
-            SetStatus(Localization.TF("Не удалось сохранить: {0}", ex.Message))
+            SetStatus(Localization.TF("Не удалось сохранить: {0}", FailureText.Describe(ex)))
             Return
         End Try
 
@@ -529,7 +574,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
 
         Dim answer As DialogResult = MessageBox.Show(Me,
             Localization.T("Правки не сохранены. Закрыть?"),
-            Localization.T("Правка изображения"),
+            Localization.T("Редактирование изображения"),
             MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
         Return answer = DialogResult.Yes
     End Function

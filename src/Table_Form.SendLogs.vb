@@ -49,7 +49,7 @@ Partial Public Class Table_Form
 
             If String.IsNullOrEmpty(result.Path) Then
                 MessageBox.Show(Me,
-                    Localization.TF("Не удалось собрать архив: {0}", If(result.ErrorText, "")),
+                    Localization.TF("Не удалось собрать архив: {0}", FailureText.Describe(result.Failure)),
                     Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
@@ -57,7 +57,7 @@ Partial Public Class Table_Form
             ShowLogPackageDialog(result)
         Catch ex As Exception
             AppFileLogger.LogException("Table_Form send-logs click", ex)
-            MessageBox.Show(Me, Localization.TF("Не удалось собрать архив: {0}", ex.Message),
+            MessageBox.Show(Me, Localization.TF("Не удалось собрать архив: {0}", FailureText.Describe(ex)),
                             Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
         Finally
             Me.Cursor = previousCursor
@@ -201,7 +201,20 @@ Partial Public Class Table_Form
         Dim restoreMainTopMost As Boolean = MainWindowIsTopMost()
         If restoreMainTopMost Then Main_Form.SuspendAlwaysOnTop()
         Try
-            If MailSender.SendFile(zipPath, subject, body) Then Return
+            ' Owned by this window, so the client's editor is modal to it (053 F-14).
+            Select Case MailSender.Send(zipPath, subject, body, Me.Handle)
+                Case MailSender.MailSendOutcome.Sent
+                    Return
+                Case MailSender.MailSendOutcome.Cancelled
+                    ' Nothing was sent: the archive would otherwise wait in %TEMP% for the
+                    ' next send-logs run a week later.
+                    Try
+                        File.Delete(zipPath)
+                    Catch ex As Exception
+                        AppFileLogger.LogException("Table_Form send-logs cleanup after cancel", ex)
+                    End Try
+                    Return
+            End Select
         Finally
             If restoreMainTopMost AndAlso Main_Form IsNot Nothing AndAlso Not Main_Form.IsDisposed Then
                 Main_Form.ResumeAlwaysOnTop(True)

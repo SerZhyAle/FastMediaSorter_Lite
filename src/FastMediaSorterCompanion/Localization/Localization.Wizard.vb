@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 ' <summary>
 ' The one-shot "share this, right now" package wizard and the QR zoom window.
@@ -47,27 +47,103 @@ Partial Public NotInheritable Class Localization
             "सामान्य स्थानांतरण सेटिंग्स:", "সাধারণ স্থানান্তর সেটিং:",
             "عمومی منتقلی ترتیبات:", "通用传输设置：")
 
-        Add("Только локальная сеть (без адреса из интернета)",
-            "LAN only (no internet address)", "Лише локальна мережа (без адреси з інтернету)",
-            "Nur lokales Netzwerk (ohne Internetadresse)", "Solo rete locale (senza indirizzo internet)",
-            "Solo red local (sin dirección de internet)", "Réseau local uniquement (sans adresse internet)",
-            "Apenas rede local (sem endereço de internet)", "الشبكة المحلية فقط (بدون عنوان إنترنت)",
-            "केवल स्थानीय नेटवर्क (इंटरनेट पता नहीं)", "শুধু স্থানীয় নেটওয়ার্ক (ইন্টারনেট ঠিকানা ছাড়া)",
-            "صرف مقامی نیٹ ورک (انٹرنیٹ پتے کے بغیر)", "仅局域网（不含互联网地址）")
+        ' Per-CODE only since ticket 054 H-06: this shapes one export. The server-wide
+        ' enforcement is its own switch in Settings - Network, worded like the consent text.
+        Add("Не включать адрес из интернета в этот код",
+            "Leave the internet address out of this code", "Не включати адресу з інтернету в цей код",
+            "Die Internetadresse nicht in diesen Code aufnehmen", "Non includere l'indirizzo Internet in questo codice",
+            "No incluir la dirección de internet en este código", "Ne pas inclure l'adresse Internet dans ce code",
+            "Não incluir o endereço de Internet neste código", "عدم تضمين عنوان الإنترنت في هذا الرمز",
+            "इस कोड में इंटरनेट पता शामिल न करें", "এই কোডে ইন্টারনেট ঠিকানা অন্তর্ভুক্ত করবেন না",
+            "اس کوڈ میں انٹرنیٹ ایڈریس شامل نہ کریں", "不在此代码中包含互联网地址")
 
-        Add("Пароль не попадёт в файл/QR - телефон запросит его при импорте; передайте пароль отдельно.",
-            "The password stays out of the file/QR - the phone asks for it at import; pass it separately.",
-            "Пароль не потрапить у файл/QR - телефон запитає його під час імпорту; передайте пароль окремо.",
-            "Das Kennwort kommt nicht in Datei/QR - das Telefon fragt beim Import danach; geben Sie es separat weiter.",
-            "La password resta fuori dal file/QR: il telefono la chiede all'importazione; comunicala separatamente.",
-            "La contraseña no se incluye en el archivo/QR: el teléfono la pedirá al importar; compártela por separado.",
-            "Le mot de passe reste hors du fichier/QR - le téléphone le demande à l'import ; transmettez-le séparément.",
-            "A palavra-passe fica fora do ficheiro/QR - o telemóvel pede-a na importação; transmita-a em separado.",
-            "لن تُدرج كلمة المرور في الملف/رمز QR - سيطلبها الهاتف عند الاستيراد؛ أرسلها بشكل منفصل.",
-            "पासवर्ड फ़ाइल/QR में नहीं जाएगा - आयात के समय फ़ोन उसे माँगेगा; पासवर्ड अलग से भेजें।",
-            "পাসওয়ার্ড ফাইল/QR-এ যাবে না - আমদানির সময় ফোন সেটি চাইবে; পাসওয়ার্ডটি আলাদাভাবে পাঠান।",
-            "پاس ورڈ فائل/QR میں شامل نہیں ہوگا - درآمد کے وقت فون اسے مانگے گا؛ پاس ورڈ الگ سے بھیجیں۔",
-            "密码不会写入文件/二维码 - 手机在导入时会询问；请另行传达密码。")
+        Add("Относится только к этому коду: телефон будет подключаться по локальной сети. Сам сервер это не выключает - доступ из интернета для всей раздачи закрывается отдельно: Настройки менеджера - Сеть.",
+            "Applies to this code only: the phone will connect over the local network. It does not switch the server off - internet access for the whole share is closed separately, in Manager Settings - Network.",
+            "Стосується лише цього коду: телефон підключатиметься локальною мережею. Сам сервер це не вимикає - доступ з інтернету для всієї роздачі закривається окремо: Налаштування менеджера - Мережа.",
+            "Gilt nur für diesen Code: Das Telefon verbindet sich über das lokale Netzwerk. Der Server selbst wird dadurch nicht ausgeschaltet - den Internetzugriff für die gesamte Freigabe schaltet man separat ab: Manager-Einstellungen - Netzwerk.",
+            "Si applica solo a questo codice: il telefono si connetterà tramite la rete locale. Non spegne il server - l'accesso da Internet per l'intera condivisione si chiude a parte: Impostazioni gestore - Rete.",
+            "Se aplica solo a este código: el teléfono se conectará por la red local. No apaga el servidor: el acceso desde internet para todo el uso compartido se cierra aparte, en Configuración del gestor - Red.",
+            "Concerne uniquement ce code : le téléphone se connectera par le réseau local. Cela n'éteint pas le serveur - l'accès Internet de tout le partage se ferme à part, dans Paramètres du gestionnaire - Réseau.",
+            "Aplica-se apenas a este código: o telefone ligar-se-á pela rede local. Não desliga o servidor - o acesso à Internet de toda a partilha fecha-se à parte, em Definições do gestor - Rede.",
+            "ينطبق على هذا الرمز فقط: سيتصل الهاتف عبر الشبكة المحلية. لا يوقف الخادم نفسه - الوصول من الإنترنت للمشاركة بالكامل يُغلق بشكل منفصل في: إعدادات المدير - الشبكة.",
+            "केवल इस कोड पर लागू: फ़ोन स्थानीय नेटवर्क से जुड़ेगा। यह सर्वर को बंद नहीं करता - पूरी साझा करने की सेटिंग के लिए इंटरनेट पहुँच अलग से बंद होती है: मैनेजर सेटिंग - नेटवर्क।",
+            "শুধু এই কোডে প্রযোজ্য: ফোনটি স্থানীয় নেটওয়ার্কের মাধ্যমে সংযোগ করবে। এটি সার্ভার বন্ধ করে না - পুরো শেয়ারের জন্য ইন্টারনেট অ্যাক্সেস আলাদাভাবে বন্ধ হয়: ম্যানেজার সেটিং - নেটওয়ার্ক।",
+            "صرف اس کوڈ پر لاگو: فون مقامی نیٹ ورک سے جُڑے گا۔ یہ سرور کو بند نہیں کرتا - پوری شیئرنگ کے لیے انٹرنیٹ رسائی الگ سے بند ہوتی ہے: مینیجر ترتیبات - نیٹ ورک۔",
+            "仅适用于此代码：手机将通过本地网络连接。这不会关闭服务器 - 整个共享的互联网访问在别处单独关闭：管理器设置 - 网络。")
+
+        ' Ticket 034 phase 3: no promise about what the phone does with an empty password -
+        ' the Android importer's answer is still open.
+        Add("Пароль не попадёт в файл/QR - передайте его отдельно. Примет ли телефон код без пароля, зависит от версии приложения.",
+            "The password stays out of the file/QR - pass it on separately. Whether the phone accepts a code without a password depends on the app version.",
+            "Пароль не потрапить у файл/QR - передайте його окремо. Чи прийме телефон код без пароля, залежить від версії застосунку.",
+            "Das Kennwort kommt nicht in Datei/QR - geben Sie es separat weiter. Ob das Telefon einen Code ohne Kennwort annimmt, hängt von der App-Version ab.",
+            "La password resta fuori dal file/QR: comunicala separatamente. Se il telefono accetti un codice senza password dipende dalla versione dell'app.",
+            "La contraseña no se incluye en el archivo/QR: compártela por separado. Que el teléfono acepte un código sin contraseña depende de la versión de la aplicación.",
+            "Le mot de passe reste hors du fichier/QR - transmettez-le séparément. L'acceptation d'un code sans mot de passe par le téléphone dépend de la version de l'application.",
+            "A palavra-passe fica fora do ficheiro/QR - transmita-a em separado. Se o telemóvel aceita um código sem palavra-passe depende da versão da aplicação.",
+            "لن تُدرج كلمة المرور في الملف/رمز QR - أرسلها بشكل منفصل. قبول الهاتف لرمز بلا كلمة مرور يعتمد على إصدار التطبيق.",
+            "पासवर्ड फ़ाइल/QR में नहीं जाएगा - उसे अलग से भेजें। फ़ोन बिना पासवर्ड वाला कोड स्वीकार करेगा या नहीं, यह ऐप के संस्करण पर निर्भर है।",
+            "পাসওয়ার্ড ফাইল/QR-এ যাবে না - সেটি আলাদাভাবে পাঠান। ফোন পাসওয়ার্ড ছাড়া কোড গ্রহণ করবে কি না, তা অ্যাপের সংস্করণের উপর নির্ভর করে।",
+            "پاس ورڈ فائل/QR میں شامل نہیں ہوگا - اسے الگ سے بھیجیں۔ فون بغیر پاس ورڈ کا کوڈ قبول کرے گا یا نہیں، یہ ایپ کے ورژن پر منحصر ہے۔",
+            "密码不会写入文件/二维码 - 请另行传达。手机是否接受不含密码的代码取决于应用版本。")
+
+        ' Ticket 034 phase 1 - FMSCFG rule 6: the payload is a secret.
+        Add("QR-код и файл .fmscfg содержат пароль (и PIN, если он задан) - храните и передавайте их как ключ.",
+            "The QR code and the .fmscfg file contain the password (and the PIN, if set) - keep and hand them over like a key.",
+            "QR-код і файл .fmscfg містять пароль (і PIN, якщо його задано) - зберігайте й передавайте їх як ключ.",
+            "QR-Code und .fmscfg-Datei enthalten das Kennwort (und die PIN, falls gesetzt) - bewahren und übergeben Sie sie wie einen Schlüssel.",
+            "Il codice QR e il file .fmscfg contengono la password (e il PIN, se impostato): conservali e consegnali come una chiave.",
+            "El código QR y el archivo .fmscfg contienen la contraseña (y el PIN, si se ha definido): guárdalos y entrégalos como una llave.",
+            "Le code QR et le fichier .fmscfg contiennent le mot de passe (et le PIN, s'il est défini) - conservez-les et transmettez-les comme une clé.",
+            "O código QR e o ficheiro .fmscfg contêm a palavra-passe (e o PIN, se definido) - guarde-os e entregue-os como uma chave.",
+            "يحتوي رمز QR وملف ‎.fmscfg‎ على كلمة المرور (ورمز PIN إن وُجد) - احفظهما وسلّمهما كما تُسلَّم المفاتيح.",
+            "QR कोड और .fmscfg फ़ाइल में पासवर्ड (और PIN, यदि सेट है) होता है - इन्हें चाबी की तरह रखें और सौंपें।",
+            "QR কোড ও .fmscfg ফাইলে পাসওয়ার্ড (এবং PIN, যদি সেট থাকে) থাকে - এগুলো চাবির মতো রাখুন ও হস্তান্তর করুন।",
+            "QR کوڈ اور ‎.fmscfg‎ فائل میں پاس ورڈ (اور PIN، اگر مقرر ہو) ہوتا ہے - انہیں چابی کی طرح رکھیں اور حوالے کریں۔",
+            "二维码和 .fmscfg 文件包含密码（以及 PIN，如已设置）- 请像钥匙一样保管和交付。")
+
+        Add("QR-код и файл .fmscfg открывают доступ к папкам (и содержат PIN, если он задан) - храните и передавайте их как ключ.",
+            "The QR code and the .fmscfg file open access to the folders (and contain the PIN, if set) - keep and hand them over like a key.",
+            "QR-код і файл .fmscfg відкривають доступ до папок (і містять PIN, якщо його задано) - зберігайте й передавайте їх як ключ.",
+            "QR-Code und .fmscfg-Datei öffnen den Zugriff auf die Ordner (und enthalten die PIN, falls gesetzt) - bewahren und übergeben Sie sie wie einen Schlüssel.",
+            "Il codice QR e il file .fmscfg danno accesso alle cartelle (e contengono il PIN, se impostato): conservali e consegnali come una chiave.",
+            "El código QR y el archivo .fmscfg dan acceso a las carpetas (y contienen el PIN, si se ha definido): guárdalos y entrégalos como una llave.",
+            "Le code QR et le fichier .fmscfg ouvrent l'accès aux dossiers (et contiennent le PIN, s'il est défini) - conservez-les et transmettez-les comme une clé.",
+            "O código QR e o ficheiro .fmscfg dão acesso às pastas (e contêm o PIN, se definido) - guarde-os e entregue-os como uma chave.",
+            "يفتح رمز QR وملف ‎.fmscfg‎ الوصول إلى المجلدات (ويحتويان على رمز PIN إن وُجد) - احفظهما وسلّمهما كما تُسلَّم المفاتيح.",
+            "QR कोड और .fmscfg फ़ाइल फ़ोल्डरों तक पहुँच खोलते हैं (और PIN, यदि सेट है, रखते हैं) - इन्हें चाबी की तरह रखें और सौंपें।",
+            "QR কোড ও .fmscfg ফাইল ফোল্ডারে প্রবেশাধিকার দেয় (এবং PIN, যদি সেট থাকে, ধারণ করে) - এগুলো চাবির মতো রাখুন ও হস্তান্তর করুন।",
+            "QR کوڈ اور ‎.fmscfg‎ فائل فولڈرز تک رسائی کھولتے ہیں (اور PIN، اگر مقرر ہو، رکھتے ہیں) - انہیں چابی کی طرح رکھیں اور حوالے کریں۔",
+            "二维码和 .fmscfg 文件可打开文件夹访问（并包含 PIN，如已设置）- 请像钥匙一样保管和交付。")
+
+        Add("Этот файл открывает доступ к папкам: не пересылайте его и удалите после импорта.",
+            "This file opens access to the folders: do not forward it, and delete it after importing.",
+            "Цей файл відкриває доступ до папок: не пересилайте його і видаліть після імпорту.",
+            "Diese Datei öffnet den Zugriff auf die Ordner: Leiten Sie sie nicht weiter und löschen Sie sie nach dem Import.",
+            "Questo file dà accesso alle cartelle: non inoltrarlo ed eliminalo dopo l'importazione.",
+            "Este archivo da acceso a las carpetas: no lo reenvíes y elimínalo después de importarlo.",
+            "Ce fichier ouvre l'accès aux dossiers : ne le transférez pas et supprimez-le après l'import.",
+            "Este ficheiro dá acesso às pastas: não o reencaminhe e elimine-o depois de importar.",
+            "يفتح هذا الملف الوصول إلى المجلدات: لا تُعِد توجيهه واحذفه بعد الاستيراد.",
+            "यह फ़ाइल फ़ोल्डरों तक पहुँच खोलती है: इसे आगे न भेजें और आयात के बाद हटा दें।",
+            "এই ফাইলটি ফোল্ডারে প্রবেশাধিকার দেয়: এটি ফরওয়ার্ড করবেন না এবং আমদানির পরে মুছে ফেলুন।",
+            "یہ فائل فولڈرز تک رسائی کھولتی ہے: اسے آگے نہ بھیجیں اور درآمد کے بعد حذف کر دیں۔",
+            "此文件可打开文件夹访问：请勿转发，导入后请删除。")
+
+        ' Ticket 034 phase 2 - a destination ignores the soft read-only hint.
+        Add("На папку-получатель не действует: она всегда доступна на запись.",
+            "Does not apply to a destination folder: it is always writable.",
+            "На папку-одержувач не діє: вона завжди доступна для запису.",
+            "Gilt nicht für einen Zielordner: Er ist immer beschreibbar.",
+            "Non vale per una cartella di destinazione: è sempre scrivibile.",
+            "No se aplica a una carpeta de destino: siempre admite escritura.",
+            "Ne s'applique pas à un dossier de destination : il est toujours accessible en écriture.",
+            "Não se aplica a uma pasta de destino: tem sempre acesso de escrita.",
+            "لا ينطبق على مجلد الوجهة: فهو قابل للكتابة دائمًا.",
+            "गंतव्य फ़ोल्डर पर लागू नहीं होता: उसमें हमेशा लिखा जा सकता है।",
+            "গন্তব্য ফোল্ডারে প্রযোজ্য নয়: সেখানে সবসময় লেখা যায়।",
+            "منزل فولڈر پر لاگو نہیں ہوتا: اس میں ہمیشہ لکھا جا سکتا ہے۔",
+            "不适用于目标文件夹：它始终可写。")
 
         Add("Показать QR-код",
             "Show QR code", "Показати QR-код", "QR-Code anzeigen", "Mostra il codice QR",
@@ -160,19 +236,19 @@ Partial Public NotInheritable Class Localization
             "সার্ভার পরিবর্তন আটকায় (প্রকৃত লক)।", "سرور تبدیلیاں روکتا ہے (حقیقی تالا)۔",
             "服务器会阻止修改（真正的锁定）。")
 
-        Add("Приложение спрячет кнопки изменения, но сервер запись не запрещает.",
-            "The app hides edit buttons, but the server does not block writes.",
-            "Застосунок сховає кнопки змінення, але сервер запис не забороняє.",
-            "Die App blendet die Bearbeitungsschaltflächen aus, der Server verhindert Schreibzugriffe aber nicht.",
-            "L'app nasconde i pulsanti di modifica, ma il server non blocca la scrittura.",
-            "La aplicación oculta los botones de edición, pero el servidor no bloquea la escritura.",
-            "L'application masque les boutons d'édition, mais le serveur n'empêche pas l'écriture.",
-            "A aplicação esconde os botões de edição, mas o servidor não bloqueia a escrita.",
-            "يخفي التطبيق أزرار التعديل، لكن الخادم لا يمنع الكتابة.",
-            "ऐप संपादन बटन छिपा देता है, पर सर्वर लिखने से नहीं रोकता।",
-            "অ্যাপ সম্পাদনার বোতাম লুকায়, কিন্তু সার্ভার লেখা আটকায় না।",
-            "ایپ ترمیم کے بٹن چھپا دیتی ہے، مگر سرور لکھنے سے نہیں روکتا۔",
-            "应用会隐藏编辑按钮，但服务器不会阻止写入。")
+        Add("Приложение спрячет кнопки изменения, но сервер запись не запрещает. На папку-получатель не действует.",
+            "The app hides edit buttons, but the server does not block writes. Does not apply to a destination folder.",
+            "Застосунок сховає кнопки змінення, але сервер запис не забороняє. На папку-одержувач не діє.",
+            "Die App blendet die Bearbeitungsschaltflächen aus, der Server verhindert Schreibzugriffe aber nicht. Gilt nicht für einen Zielordner.",
+            "L'app nasconde i pulsanti di modifica, ma il server non blocca la scrittura. Non vale per una cartella di destinazione.",
+            "La aplicación oculta los botones de edición, pero el servidor no bloquea la escritura. No se aplica a una carpeta de destino.",
+            "L'application masque les boutons d'édition, mais le serveur n'empêche pas l'écriture. Ne s'applique pas à un dossier de destination.",
+            "A aplicação esconde os botões de edição, mas o servidor não bloqueia a escrita. Não se aplica a uma pasta de destino.",
+            "يخفي التطبيق أزرار التعديل، لكن الخادم لا يمنع الكتابة. لا ينطبق على مجلد الوجهة.",
+            "ऐप संपादन बटन छिपा देता है, पर सर्वर लिखने से नहीं रोकता। गंतव्य फ़ोल्डर पर लागू नहीं होता।",
+            "অ্যাপ সম্পাদনার বোতাম লুকায়, কিন্তু সার্ভার লেখা আটকায় না। গন্তব্য ফোল্ডারে প্রযোজ্য নয়।",
+            "ایپ ترمیم کے بٹن چھپا دیتی ہے، مگر سرور لکھنے سے نہیں روکتا۔ منزل فولڈر پر لاگو نہیں ہوتا۔",
+            "应用会隐藏编辑按钮，但服务器不会阻止写入。不适用于目标文件夹。")
 
         Add("Папка-получатель: в неё можно копировать/переносить с телефона (делает папку доступной на запись).",
             "Destination folder: the phone can copy/move into it (makes the folder writable).",

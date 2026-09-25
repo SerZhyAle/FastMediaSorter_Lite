@@ -42,10 +42,16 @@ Public Class DeletePolicyTests
         Assert.True(DeletePolicy.ShouldConfirm("always", Decide(Facts(DeleteVolumeKind.Network))))
     End Sub
 
+    ''' <summary>
+    ''' "never" once silenced the permanent question too. APP-BEHAVIOUR rule 5 and the
+    ''' owner's decision on ticket 028 Ф-5 narrow it: a recycled deletion may go through
+    ''' in silence, an irreversible one always asks - including Shift+DEL.
+    ''' </summary>
     <Fact>
-    Public Sub Never_asks_about_neither_including_a_forced_permanent_one()
+    Public Sub Never_is_narrowed_to_recycled_deletes_and_still_asks_about_a_permanent_one()
         Assert.False(DeletePolicy.ShouldConfirm("never", Decide(Facts(DeleteVolumeKind.FixedDisk))))
-        Assert.False(DeletePolicy.ShouldConfirm("never", Decide(Facts(DeleteVolumeKind.FixedDisk), forced:=True)))
+        Assert.True(DeletePolicy.ShouldConfirm("never", Decide(Facts(DeleteVolumeKind.FixedDisk), forced:=True)))
+        Assert.True(DeletePolicy.ShouldConfirm("never", Decide(Facts(DeleteVolumeKind.Network))))
     End Sub
 
     <Fact>

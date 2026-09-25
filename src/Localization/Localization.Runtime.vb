@@ -243,6 +243,25 @@ Partial Public NotInheritable Class Localization
             "Wiedergabe über VLC: {0}", "Riproduzione tramite VLC: {0}", "Reproduciendo con VLC: {0}",
             "Lecture via VLC : {0}", "Reproduzindo via VLC: {0}", "التشغيل عبر VLC: {0}",
             "VLC से चल रहा है: {0}", "VLC দিয়ে চলছে: {0}", "VLC سے چل رہا ہے: {0}", "正在通过 VLC 播放：{0}")
+        ' Audit 050 D-17: LibVLC's EncounteredError, which used to leave "playing" on screen.
+        Add("VLC не смог воспроизвести: {0}", "VLC could not play: {0}", "VLC не зміг відтворити: {0}",
+            "VLC konnte nicht abspielen: {0}", "VLC non è riuscito a riprodurre: {0}", "VLC no pudo reproducir: {0}",
+            "VLC n'a pas pu lire : {0}", "O VLC não conseguiu reproduzir: {0}", "تعذر على VLC تشغيل: {0}",
+            "VLC इसे चला नहीं सका: {0}", "VLC চালাতে পারেনি: {0}", "VLC اسے نہیں چلا سکا: {0}", "VLC 无法播放：{0}")
+        ' Audit 050 D-05: a stream from "Open URL" is on screen, the folder's file is under it.
+        Add("Открыт поток по URL - файловые операции недоступны",
+            "A stream from a URL is open - file operations are not available",
+            "Відкрито потік за URL - файлові операції недоступні",
+            "Ein Stream von einer URL ist geöffnet - Dateioperationen sind nicht verfügbar",
+            "È aperto uno stream da URL - le operazioni sui file non sono disponibili",
+            "Hay una transmisión de URL abierta - las operaciones con archivos no están disponibles",
+            "Un flux d'URL est ouvert - les opérations sur les fichiers ne sont pas disponibles",
+            "Um stream de URL está aberto - as operações com arquivos não estão disponíveis",
+            "بث من عنوان URL مفتوح - عمليات الملفات غير متاحة",
+            "URL से स्ट्रीम खुली है - फ़ाइल संचालन उपलब्ध नहीं हैं",
+            "URL থেকে স্ট্রিম খোলা আছে - ফাইল অপারেশন উপলভ্য নয়",
+            "URL سے اسٹریم کھلی ہے - فائل کے آپریشن دستیاب نہیں",
+            "已打开 URL 流 - 无法进行文件操作")
         Add("Ошибка загрузки видео: {0}", "Error loading video: {0}", "Помилка завантаження відео: {0}",
             "Fehler beim Laden des Videos: {0}", "Errore nel caricamento del video: {0}",
             "Error al cargar el vídeo: {0}", "Erreur de chargement de la vidéo : {0}",

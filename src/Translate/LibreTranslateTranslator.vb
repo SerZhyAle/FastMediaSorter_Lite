@@ -47,13 +47,22 @@ Public Class LibreTranslateTranslator
         End Try
     End Function
 
-    Public Async Function TranslateAsync(texts As List(Of String), sourceLang As String, targetLang As String, ct As CancellationToken) As Task(Of List(Of String)) Implements ITranslator.TranslateAsync
-        If texts.Count = 0 Then Return New List(Of String)()
+    Public Async Function TranslateAsync(texts As List(Of String), sourceLang As String, targetLang As String, ct As CancellationToken) As Task(Of TranslationBatch) Implements ITranslator.TranslateAsync
+        If texts.Count = 0 Then Return New TranslationBatch()
+
+        ' A target the server has no model for is refused before the request, by name,
+        ' instead of an HTTP 400 that used to come back as "the source text, translated"
+        ' and be cached as such (audit 051 E-13). An unsupported SOURCE only loses the hint.
+        Dim target As String = TranslateLang.LibreTranslateCode(targetLang)
+        If target.Length = 0 Then Return TranslationBatch.AllFailed(texts, TranslationFailure.UnsupportedLanguage)
+        Dim source As String = TranslateLang.LibreTranslateCode(sourceLang)
+        If source.Length = 0 Then source = "auto"
+
         Try
             Dim body As New Dictionary(Of String, Object) From {
                 {"q", texts.ToArray()},
-                {"source", NormalizeLang(sourceLang)},
-                {"target", NormalizeLang(targetLang)},
+                {"source", source},
+                {"target", target},
                 {"format", "text"}
             }
             If apiKey.Length > 0 Then body("api_key") = apiKey
@@ -61,54 +70,51 @@ Public Class LibreTranslateTranslator
             Dim payload As String = TranslateHttp.JsonSerialize(body)
             Using content As New StringContent(payload, Encoding.UTF8, "application/json")
                 Dim resp As HttpResponseMessage = Await TranslateHttp.Client.PostAsync(baseUrl & "/translate", content, ct).ConfigureAwait(False)
-                If Not resp.IsSuccessStatusCode Then Return New List(Of String)(texts)
+                If Not resp.IsSuccessStatusCode Then Return TranslationBatch.AllFailed(texts, TranslationFailure.Other)
                 Dim json As String = Await resp.Content.ReadAsStringAsync().ConfigureAwait(False)
                 Return ParseTranslated(json, texts)
             End Using
-        Catch ex As OperationCanceledException
+        Catch ex As OperationCanceledException When ct.IsCancellationRequested
             Throw
+        Catch ex As OperationCanceledException
+            ' The HttpClient timeout, not navigation (audit 051 E-04).
+            Return TranslationBatch.AllFailed(texts, TranslationFailure.Timeout)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " libretranslate: error: " & ex.Message)
-            Return New List(Of String)(texts)
+            Return TranslationBatch.AllFailed(texts, TranslationFailure.Other)
         End Try
     End Function
 
-    Private Shared Function ParseTranslated(json As String, fallback As List(Of String)) As List(Of String)
+    Private Shared Function ParseTranslated(json As String, sources As List(Of String)) As TranslationBatch
         Dim root As Dictionary(Of String, Object) = TryCast(TranslateHttp.JsonDeserializeObject(json), Dictionary(Of String, Object))
-        If root Is Nothing Then Return New List(Of String)(fallback)
+        If root Is Nothing Then Return TranslationBatch.AllFailed(sources, TranslationFailure.Other)
 
         Dim tObj As Object = Nothing
-        If Not root.TryGetValue("translatedText", tObj) Then Return New List(Of String)(fallback)
+        If Not root.TryGetValue("translatedText", tObj) Then Return TranslationBatch.AllFailed(sources, TranslationFailure.Other)
 
+        Dim answers As New List(Of String)
         Dim arr As Object() = TryCast(tObj, Object())
         If arr IsNot Nothing Then
-            Dim outList As New List(Of String)(arr.Length)
             For Each item As Object In arr
-                outList.Add(TranslateHttp.JsonItemToString(item))
+                answers.Add(TranslateHttp.JsonItemToString(item))
             Next
-            Return outList
+        Else
+            ' Single-string response form.
+            answers.Add(TranslateHttp.JsonItemToString(tObj))
         End If
 
-        ' Single-string response form.
-        Return New List(Of String) From {TranslateHttp.JsonItemToString(tObj)}
-    End Function
-
-    Private Shared Function NormalizeLang(code As String) As String
-        Dim c As String = If(code, "").Trim().ToLowerInvariant()
-        Select Case c
-            Case "", "auto" : Return "auto"
-            Case "eng" : Return "en"
-            Case "rus" : Return "ru"
-            Case "ukr" : Return "uk"
-            Case "deu", "ger" : Return "de"
-            Case "fra", "fre" : Return "fr"
-            Case "spa" : Return "es"
-            Case "ita" : Return "it"
-            Case "jpn" : Return "ja"
-            Case "kor" : Return "ko"
-            Case "chi_sim", "chi-sim" : Return "zh"
-            Case Else : Return c
-        End Select
+        ' One entry per source, whatever the server sent: a missing or blank answer is that
+        ' segment's failure, not a shorter list for the pipeline to guess about.
+        Dim result As New TranslationBatch With {.ModelUsed = "libretranslate"}
+        For i As Integer = 0 To sources.Count - 1
+            Dim answer As String = If(i < answers.Count, answers(i), "")
+            If String.IsNullOrWhiteSpace(answer) Then
+                result.Add(sources(i), False)
+            Else
+                result.Add(answer, True)
+            End If
+        Next
+        Return result
     End Function
 
 End Class

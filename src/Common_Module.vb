@@ -21,6 +21,12 @@ Module Common_Module
     End Property
 
     Public Is_Copying_not_Moving As Boolean
+    ''' <summary>"Use independent thread for file operations" (registry
+    ''' UseIndependentThreadForOperationsWithFiles). A flag, not the checkbox: the settings
+    ''' window is recreated after a modeless close, and a new instance's box starts
+    ''' unchecked - the value used to reset to off and be saved as 0 (053 F-10). Honoured
+    ''' by the x86 build only; the mainline carries it through unchanged for the shared hive.</summary>
+    Public Is_Independent_Thread_For_File_Operations As Boolean
     Public Second_App_Name As String = "FastMediaSorter"
     Public App_name As String = "SZA"
 
@@ -37,9 +43,11 @@ Module Common_Module
     ''' <summary>
     ''' The author's address shown in the app and used by every "write to the author"
     ''' action, including the log package on the About tab. One constant, so the three
-    ''' call sites cannot drift apart.
+    ''' call sites cannot drift apart. The literal itself lives in MailSender, which the
+    ''' Share Manager links too, so its own "send the log" (ticket 028 Ф-3) writes to the
+    ''' same address without a second copy.
     ''' </summary>
-    Public Const Author_Email As String = "sza@ukr.net"
+    Public Const Author_Email As String = MailSender.AuthorAddress
     Public Is_No_Background_Tasks As Boolean = False
     Public Is_Pespective As Boolean = True
     Public Form_Color_Scheme As Integer = 0 ' 0 - dynamic, 1 - black, 2 - white, 3 - most

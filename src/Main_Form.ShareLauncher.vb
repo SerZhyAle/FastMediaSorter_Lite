@@ -57,15 +57,29 @@ Partial Public Class Main_Form
 
     Private Delegate Function EnumWindowsCompanionProc(hWnd As IntPtr, lParam As IntPtr) As Boolean
 
-    <DllImport("user32.dll", CharSet:=CharSet.Auto)>
-    Private Shared Function SendMessageCompanionCopyData(hWnd As IntPtr, msg As Integer, wParam As IntPtr, ByRef lParam As COMPANION_COPYDATASTRUCT) As Integer
+    ' Every declaration here is renamed to avoid colliding with the same imports in
+    ' other Main_Form partials, so each one MUST name its real export: without an
+    ' EntryPoint the runtime looks up the VB method name in user32.dll, finds nothing
+    ' and throws EntryPointNotFoundException - which is how the wake silently did
+    ' nothing until spec 040 (DllImportEntryPointTests guards the whole tree now).
+
+    ''' <summary>SendMessage with a deadline (APP-ACTIVATION rule 3): a hung Share
+    ''' Manager must not freeze the viewer's UI thread with it.</summary>
+    <DllImport("user32.dll", EntryPoint:="SendMessageTimeoutW", SetLastError:=True)>
+    Private Shared Function SendMessageTimeoutCompanion(hWnd As IntPtr, msg As Integer, wParam As IntPtr,
+                                                        ByRef lParam As COMPANION_COPYDATASTRUCT,
+                                                        flags As Integer, timeout As Integer,
+                                                        ByRef result As IntPtr) As IntPtr
     End Function
 
-    <DllImport("user32.dll", SetLastError:=True)>
+    Private Const SMTO_ABORTIFHUNG_COMPANION As Integer = &H2
+    Private Const Companion_Send_Timeout_Ms As Integer = 2000
+
+    <DllImport("user32.dll", EntryPoint:="EnumWindows", SetLastError:=True)>
     Private Shared Function EnumWindowsCompanion(callback As EnumWindowsCompanionProc, lParam As IntPtr) As Boolean
     End Function
 
-    <DllImport("user32.dll", SetLastError:=True)>
+    <DllImport("user32.dll", EntryPoint:="GetWindowThreadProcessId", SetLastError:=True)>
     Private Shared Function GetWindowThreadProcessIdCompanion(hWnd As IntPtr, ByRef processId As Integer) As Integer
     End Function
 
@@ -120,31 +134,39 @@ Partial Public Class Main_Form
             existingMutex.Close()
             AppFileLogger.WriteLine("ShareLauncher: Companion running - forwarding " &
                                     If(folder.Length > 0, "folder", "show-window"))
-            ForwardFolderToCompanion(folder)
-        Else
-            Try
-                ' Let the freshly-launched Companion raise its window in front of us
-                ' (we don't have its PID yet, so grant to any process).
-                Try : AllowSetForegroundWindow(ASFW_ANY) : Catch : End Try
-                Dim psi As New ProcessStartInfo(exePath) With {.UseShellExecute = True}
-                ' With no folder we still have to SAY "show your window": a bare launch
-                ' obeys Companion's own "open the manager window at startup" option (off
-                ' by default), so without the marker this button would cold-start a
-                ' tray-only process and look like it did nothing.
-                psi.Arguments = If(folder.Length > 0, """" & folder & """", CompanionShowWindowCommand)
-                AppFileLogger.WriteLine("ShareLauncher: cold-starting Companion '" & exePath & "'")
-                ' We never wait on it - release the handle instead of leaving it to the
-                ' finalizer (this runs per user click).
-                Dim started As Process = Process.Start(psi)
-                If started IsNot Nothing Then started.Dispose()
-            Catch ex As Exception
-                AppFileLogger.LogException("ShareLauncher cold-start", ex)
-                MessageBox.Show(Me,
-                    Localization.TF("Не удалось запустить Fast Media Sorter: Share Manager." & vbCrLf & "{0}", ex.Message),
-                    Localization.T("Общий доступ"),
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            End Try
+            If ForwardFolderToCompanion(folder) Then Return
+            ' No window took the payload (hung, mid-start, or no window yet). Starting
+            ' the exe again hands the same argument to its own single-instance
+            ' forwarding, so the click is never silently lost.
+            AppFileLogger.WriteLine("ShareLauncher: no Companion window accepted the wake - falling back to a start")
         End If
+        ColdStartCompanion(exePath, folder)
+    End Sub
+
+    Private Sub ColdStartCompanion(exePath As String, folder As String)
+        Try
+            ' Let the freshly-launched Companion raise its window in front of us
+            ' (we don't have its PID yet, so grant to any process).
+            Try : AllowSetForegroundWindow(ASFW_ANY) : Catch : End Try
+            Dim psi As New ProcessStartInfo(exePath) With {.UseShellExecute = True}
+            ' With no folder we still have to SAY "show your window": a bare launch
+            ' obeys Companion's own "open the manager window at startup" option (off
+            ' by default), so without the marker this button would cold-start a
+            ' tray-only process and look like it did nothing.
+            ' QuoteArgument, not a bare pair of quotes: "E:\" reads back as E:" (053 F-13).
+            psi.Arguments = If(folder.Length > 0, Utils.QuoteArgument(folder), CompanionShowWindowCommand)
+            AppFileLogger.WriteLine("ShareLauncher: cold-starting Companion '" & exePath & "'")
+            ' We never wait on it - release the handle instead of leaving it to the
+            ' finalizer (this runs per user click).
+            Dim started As Process = Process.Start(psi)
+            If started IsNot Nothing Then started.Dispose()
+        Catch ex As Exception
+            AppFileLogger.LogException("ShareLauncher cold-start", ex)
+            MessageBox.Show(Me,
+                Localization.TF("Не удалось запустить Fast Media Sorter: Share Manager." & vbCrLf & "{0}", FailureText.Describe(ex)),
+                Localization.T("Общий доступ"),
+                MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
     End Sub
 
     ''' <summary>
@@ -175,7 +197,7 @@ Partial Public Class Main_Form
         Catch ex As Exception
             AppFileLogger.LogException("ShareLauncher download page", ex)
             MessageBox.Show(Me,
-                Localization.TF("Не удалось открыть страницу загрузки." & vbCrLf & "{0}", ex.Message),
+                Localization.TF("Не удалось открыть страницу загрузки." & vbCrLf & "{0}", FailureText.Describe(ex)),
                 Localization.T("Общий доступ"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End Try
@@ -222,9 +244,11 @@ Partial Public Class Main_Form
 
     ''' <summary>Companion is already running (possibly tray-only, hidden window) -
     ''' find its top-level window(s) and forward the folder (or the bare show-window
-    ''' marker) via WM_COPYDATA, mirroring Application_Events.vb's own forwarding.</summary>
-    Private Sub ForwardFolderToCompanion(folder As String)
+    ''' marker) via WM_COPYDATA, mirroring Application_Events.vb's own forwarding.
+    ''' True when at least one window accepted it within the deadline.</summary>
+    Private Function ForwardFolderToCompanion(folder As String) As Boolean
         Dim payload As String = If(folder.Length > 0, folder, CompanionShowWindowCommand)
+        Dim delivered As Boolean = False
         Dim processes As Process() = Nothing
         Try
             ' Every element of GetProcessesByName holds a process handle. This runs per user
@@ -254,14 +278,22 @@ Partial Public Class Main_Form
                     Marshal.WriteByte(ptr, bytes.Length, 0)
                     Dim cds As New COMPANION_COPYDATASTRUCT With {.dwData = IntPtr.Zero, .cbData = bytes.Length, .lpData = ptr}
                     For Each h As IntPtr In targets
-                        SendMessageCompanionCopyData(h, WM_COPYDATA_SHARE, IntPtr.Zero, cds)
+                        Dim sendResult As IntPtr = IntPtr.Zero
+                        If SendMessageTimeoutCompanion(h, WM_COPYDATA_SHARE, IntPtr.Zero, cds,
+                                                       SMTO_ABORTIFHUNG_COMPANION, Companion_Send_Timeout_Ms,
+                                                       sendResult) <> IntPtr.Zero Then
+                            delivered = True
+                        End If
                     Next
                 Finally
                     Marshal.FreeHGlobal(ptr)
                 End Try
-                Exit For
+                AppFileLogger.WriteLine("ShareLauncher: wake sent to " & targets.Count.ToString() &
+                                        " window(s), delivered=" & delivered.ToString())
+                If delivered Then Exit For
             Next
-        Catch
+        Catch ex As Exception
+            AppFileLogger.LogException("ShareLauncher forward", ex)
         Finally
             If processes IsNot Nothing Then
                 For Each proc As Process In processes
@@ -269,7 +301,8 @@ Partial Public Class Main_Form
                 Next
             End If
         End Try
-    End Sub
+        Return delivered
+    End Function
 
     ''' <summary>All top-level windows of a process, including hidden ones - a
     ''' tray-resident Companion has MainWindowHandle = Zero.</summary>
@@ -282,7 +315,8 @@ Partial Public Class Main_Form
                                      If pid = processId Then result.Add(hWnd)
                                      Return True
                                  End Function, IntPtr.Zero)
-        Catch
+        Catch ex As Exception
+            AppFileLogger.LogException("ShareLauncher enumerate windows", ex)
         End Try
         Return result
     End Function

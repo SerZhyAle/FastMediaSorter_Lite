@@ -33,7 +33,6 @@
       t    - Run all unit-test suites (tools\Run-AllTests.ps1)
       ti   - ..including integration tests (Run-AllTests -Integration)
       cl   - Clean stage/dist/bin/temp build artifacts (tools\Clean-Build.ps1)
-      ocr  - Prepare/refresh the offline OCR payload (tools\Prepare-OcrOfflinePayload.ps1)
       c    - git commit -a + push
       cc   - git commit -a (no push)
 .EXAMPLE
@@ -85,7 +84,9 @@ $scripts = @{
     't'    = @{ Path = 'tools\Run-AllTests.ps1'; Args = @{} }
     'ti'   = @{ Path = 'tools\Run-AllTests.ps1'; Args = @{ Integration = $true } }
     'cl'   = @{ Path = 'tools\Clean-Build.ps1'; Args = @{} }
-    'ocr'  = @{ Path = 'tools\Prepare-OcrOfflinePayload.ps1'; Args = @{} }
+    # No 'ocr' alias: tools\Prepare-OcrOfflinePayload.ps1 fills a packager's stage tree
+    # and its -StageDir is mandatory, so a bare alias could only stop at a prompt. The
+    # packagers (bi / bib / off / msix) run it themselves.
 }
 
 # git shortcuts (no dedicated scripts in this repo, unlike the mobile one).
@@ -119,7 +120,6 @@ function Show-Help {
     Write-Host "  t    - Run all unit-test suites" -ForegroundColor Cyan
     Write-Host "  ti   - ..including integration tests" -ForegroundColor Cyan
     Write-Host "  cl   - Clean stage/dist/bin/temp artifacts" -ForegroundColor Cyan
-    Write-Host "  ocr  - Prepare/refresh the offline OCR payload" -ForegroundColor Cyan
     Write-Host "  c    - git commit -a + push" -ForegroundColor Cyan
     Write-Host "  cc   - git commit -a (no push)" -ForegroundColor Cyan
     Write-Host ""

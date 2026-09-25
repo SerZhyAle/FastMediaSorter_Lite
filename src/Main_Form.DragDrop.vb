@@ -12,11 +12,45 @@ Partial Public Class Main_Form
     Private Const WM_COPYGLOBALDATA As UInteger = &H49UI
     Private Const WM_COPYDATA_MSG As UInteger = &H4AUI
     Private Const WM_DROPFILES As UInteger = &H233UI
-    Private Const MSGFLT_ADD As UInteger = 1UI
+    Private Const MSGFLT_ALLOW As UInteger = 1UI
 
+    ''' <summary>Per window, not process-wide (Windows 7+): only the windows that take a
+    ''' drop or a forwarded file are opened up.</summary>
     <DllImport("user32.dll", SetLastError:=True)>
-    Private Shared Function ChangeWindowMessageFilter(message As UInteger, dwFlag As UInteger) As Boolean
+    Private Shared Function ChangeWindowMessageFilterEx(hWnd As IntPtr, message As UInteger, action As UInteger,
+                                                        pChangeFilterStruct As IntPtr) As Boolean
     End Function
+
+    ''' <summary>
+    ''' Lets a lower-integrity sender (the ordinary Explorer) reach <paramref name="target"/>
+    ''' with a drop or a forwarded file - ONLY when this process is elevated (053 F-07).
+    ''' At medium integrity the only lower senders are Low-integrity sandboxes, which must
+    ''' not be able to make the viewer open a path they name; and the old process-wide call
+    ''' admitted them. Re-applied on every handle creation, because a filter belongs to an
+    ''' HWND and a control can recreate its handle (a RightToLeft change does).
+    ''' </summary>
+    Private Sub AdmitLowerIntegrityMessages(target As Control)
+        If target Is Nothing Then Return
+        If Not SingleInstanceProtocol.ShouldAdmitLowerIntegrityMessages(SingleInstanceProtocol.IsProcessElevated()) Then Return
+        RemoveHandler target.HandleCreated, AddressOf FilteredControl_HandleCreated
+        AddHandler target.HandleCreated, AddressOf FilteredControl_HandleCreated
+        If target.IsHandleCreated Then ApplyMessageFilter(target.Handle)
+    End Sub
+
+    Private Sub FilteredControl_HandleCreated(sender As Object, e As EventArgs)
+        Dim target As Control = TryCast(sender, Control)
+        If target IsNot Nothing Then ApplyMessageFilter(target.Handle)
+    End Sub
+
+    Private Shared Sub ApplyMessageFilter(hWnd As IntPtr)
+        Try
+            ChangeWindowMessageFilterEx(hWnd, WM_DROPFILES, MSGFLT_ALLOW, IntPtr.Zero)
+            ChangeWindowMessageFilterEx(hWnd, WM_COPYDATA_MSG, MSGFLT_ALLOW, IntPtr.Zero)
+            ChangeWindowMessageFilterEx(hWnd, WM_COPYGLOBALDATA, MSGFLT_ALLOW, IntPtr.Zero)
+        Catch ex As Exception
+            AppFileLogger.LogException("ChangeWindowMessageFilterEx", ex)
+        End Try
+    End Sub
 
     ' Drag-and-drop of a media file is wired not only to the form but to the
     ' media surfaces themselves (the two picture boxes, the media container, the
@@ -28,18 +62,14 @@ Partial Public Class Main_Form
     Private Sub WireSurfaceDragDrop()
         ' When the app runs elevated (e.g. launched from an elevated file manager)
         ' Windows' UIPI blocks the drop from a normal-IL Explorer and shows the
-        ' "no-drop" cursor. Allow the drag-drop messages through, process-wide so
-        ' it covers every child surface HWND. Harmless (no-op) when not elevated.
-        Try
-            ChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD)
-            ChangeWindowMessageFilter(WM_COPYDATA_MSG, MSGFLT_ADD)
-            ChangeWindowMessageFilter(WM_COPYGLOBALDATA, MSGFLT_ADD)
-        Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0234: ChangeWindowMessageFilter failed: " & ex.Message)
-        End Try
+        ' "no-drop" cursor, and a forwarded file from an ordinary launch never
+        ' arrives. The form itself takes the forward (WM_COPYDATA); the surfaces take
+        ' the drop. Nothing is opened up when the process is not elevated.
+        AdmitLowerIntegrityMessages(Me)
 
         For Each surface As Control In New Control() {Picture_Box_1, Picture_Box_2, panel_Media, lbl_Help_Info}
             If surface Is Nothing Then Continue For
+            AdmitLowerIntegrityMessages(surface)
             surface.AllowDrop = True
             AddHandler surface.DragEnter, AddressOf Form1_DragEnter
             AddHandler surface.DragDrop, AddressOf Form1_DragDrop
@@ -63,6 +93,7 @@ Partial Public Class Main_Form
     ' codec-fallback formats), so drops over a playing AVI/MKV also open the file.
     Private Sub WireVlcSurfaceDragDrop()
         If vlc_Video_View Is Nothing Then Return
+        AdmitLowerIntegrityMessages(vlc_Video_View)
         vlc_Video_View.AllowDrop = True
         AddHandler vlc_Video_View.DragEnter, AddressOf Form1_DragEnter
         AddHandler vlc_Video_View.DragDrop, AddressOf Form1_DragDrop

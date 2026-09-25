@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 
@@ -24,6 +24,11 @@ Imports System.Drawing
 ''' So the repair belongs here, on the recognizer's output, and nowhere later.
 '''
 ''' Both builds: this is a defect fix, not a mainline refinement.
+'''
+''' Constant status (`OCR-OVERLAY` rule 13).
+''' | Constant | Status | Bracket |
+''' | --- | --- | --- |
+''' | <see cref="MaxWordGapRatio"/> | derived here | SPECIFICATION_OCR_OVERLAY_ACCURACY.md section 18.2: 2.06x is the widest gap inside a line that really is one line, 5.29x the narrowest cross-region stitch, and 3.5 sits 1.70x above the first and 1.51x below the second. The band between them is recorded as UNDECIDED on the constant itself, per rule 15. It happens to equal the sibling product's number, and the condition for carrying it over - same engine family, same page-segmentation mode - is stated there too. |
 ''' </summary>
 Public Module OcrLineSplitter
 

@@ -14,8 +14,11 @@ permissions:
 
 # Сериализуем релизы по тегу. cancel-in-progress: false - публикацию релиза
 # нельзя обрывать на середине (иначе полурелиз / битые ассеты).
+# Group by the TAG in both trigger paths: on a manual dispatch github.ref is the
+# branch picked in the UI, so a re-run of a tag would not have been serialised
+# against that tag's own push run.
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -26,16 +29,42 @@ jobs:
       run:
         shell: pwsh
     steps:
-      - uses: actions/checkout@v6
-
-      - name: Resolve version from tag
+      # The tag is validated BEFORE anything is checked out or built. Both trigger
+      # paths go through it: a tag push (GITHUB_REF_NAME) and a manual dispatch
+      # (inputs.tag). The input reaches the script through env, never spliced into
+      # the script text with an expression - an expression is pasted in before pwsh
+      # parses the script, so a crafted "tag" would run as code on the release runner.
+      # Every later ${{ steps.ver.outputs.* }} is derived from this validated value.
+      - name: Resolve and validate the release tag
         id: ver
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
         run: |
-          $tag = if ($env:GITHUB_REF -like 'refs/tags/*') { $env:GITHUB_REF -replace '^refs/tags/','' } else { '${{ inputs.tag }}' }
+          $tag = if ($env:EVENT_NAME -eq 'workflow_dispatch') { $env:INPUT_TAG } else { $env:GITHUB_REF_NAME }
+          if ($tag -cnotmatch '^v[0-9]{2}\.[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4}\z') {
+            throw "Release tag '$tag' is not of the form vYY.M.D.HHmm - nothing was built."
+          }
           $version = $tag -replace '^v',''
           "tag=$tag"          | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "version=$version"  | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Write-Host "Tag=$tag  Version=$version"
+
+      # Check out the TAG, not the branch the dispatch was started from. Without the
+      # ref a manual re-run built main's HEAD and published it under the old tag -
+      # assets whose source was not the tagged commit, consumed by winget and the Store.
+      - uses: actions/checkout@v6
+        with:
+          ref: refs/tags/${{ steps.ver.outputs.tag }}
+
+      - name: Prove the checkout is the tagged commit
+        env:
+          RELEASE_TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          $head = (git rev-parse HEAD).Trim()
+          $tagged = (git rev-list -n 1 "refs/tags/$env:RELEASE_TAG").Trim()
+          Write-Host "HEAD=$head  $env:RELEASE_TAG=$tagged"
+          if (-not $tagged -or $head -ne $tagged) { throw "Checked-out HEAD $head is not the commit of $env:RELEASE_TAG ($tagged)." }
 
       - uses: microsoft/setup-msbuild@v3
 
@@ -77,9 +106,10 @@ jobs:
 
       # Companion app (Share Manager, net10) - self-contained single-file exe so
       # users without the .NET 10 runtime can still run it. Output goes to
-      # companion-publish/FastMediaSorterCompanion.exe, staged below.
+      # companion-publish/FastMediaSorterCompanion.exe, staged below. ReleaseVersion
+      # stamps it with the tag's version like the two viewers (ticket 055 I-08).
       - name: Publish Companion (Share Manager, net10 self-contained)
-        run: dotnet publish src/FastMediaSorterCompanion/FastMediaSorterCompanion.vbproj -c Release -r win-x64 -o companion-publish -v minimal --nologo
+        run: dotnet publish src/FastMediaSorterCompanion/FastMediaSorterCompanion.vbproj -c Release -r win-x64 -p:ReleaseVersion=${{ steps.ver.outputs.version }} -o companion-publish -v minimal --nologo
 
       - name: Stage release files
         id: stage
@@ -152,17 +182,19 @@ jobs:
           "stage=$stage" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Get-ChildItem $stage -Recurse | Format-Table -AutoSize
 
-      # ГЛАВНАЯ ЭКОНОМИЯ: кэш скачанных tessdata-моделей (fast + best, 33 языка).
-      # Восстанавливаем прямо в каталоги stage; скрипт ниже видит готовые файлы
-      # ("Keeping existing model") и пропускает сотни МБ загрузок с GitHub.
-      # Ключ привязан к языковому списку в скрипте - изменишь языки, кэш сам обновится.
+      # The downloaded tessdata models (fast + best, 33 languages). The script keeps
+      # them in tools/ocr-cache/<fast|best> and copies them into the stage from there,
+      # so THAT is the directory to cache - a fixed path. The stage path carries the
+      # version, which changes every release, and actions/cache derives the cache
+      # version from the path list, so caching the stage copy could never hit.
+      # The key follows the script (language list, pinned commits) and the SHA-256
+      # manifest; the script re-verifies every cached file against that manifest, so
+      # a restored cache cannot smuggle in bytes the manifest does not name.
       - name: Cache OCR tessdata
         uses: actions/cache@v4
         with:
-          path: |
-            ${{ steps.stage.outputs.stage }}/tessdata
-            ${{ steps.stage.outputs.stage }}/tessdata-best
-          key: tessdata-${{ hashFiles('tools/Prepare-OcrOfflinePayload.ps1') }}-v1
+          path: tools/ocr-cache
+          key: tessdata-${{ hashFiles('tools/Prepare-OcrOfflinePayload.ps1', 'tools/tessdata.sha256') }}-v2
 
       - name: Add offline OCR payload
         run: .\tools\Prepare-OcrOfflinePayload.ps1 -StageDir '${{ steps.stage.outputs.stage }}' -IncludeBest
@@ -289,6 +321,8 @@ jobs:
             Fast Media Sorter for Windows ${{ steps.ver.outputs.version }}
 
             ## Install
+
+            Windows will warn about these downloads: they are not code-signed. [What the warning is, why it appears, exactly what to click, and what administrator rights are used for](https://serzhyale.github.io/FastMediaSorter_Lite/trust.html).
 
             **Installer (recommended):** `${{ steps.setup.outputs.name }}`
             SHA256: `${{ steps.setup.outputs.sha256 }}`

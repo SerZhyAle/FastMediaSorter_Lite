@@ -8,11 +8,18 @@ Partial Public NotInheritable Class Localization
 
     Private Shared Sub AddChromeStrings()
 
+        Add("Во весь экран", "Full screen", "На весь екран", "Vollbild", "Schermo intero", "Pantalla completa", "Plein écran", "Tela cheia", "ملء الشاشة", "पूर्ण स्क्रीन", "পূর্ণ পর্দা", "مکمل اسکرین", "全屏")
+
         ' --- toolbar --------------------------------------------------------------
         Add("Каталог:", "Folder:", "Тека:", "Ordner:", "Cartella:", "Carpeta:", "Dossier :", "Pasta:", "المجلد:", "फ़ोल्डर:", "ফোল্ডার:", "فولڈر:", "文件夹：")
-        Add("<< пред(PgUp)", "<< (P)rev", "<< попер(PgUp)", "<< Zurück(Bild↑)", "<< Prec(PgSu)", "<< Ant(RePág)", "<< Préc(PgPr)", "<< Ant(PgUp)", "<< السابق(PgUp)", "<< पिछला(PgUp)", "<< আগের(PgUp)", "<< پچھلا(PgUp)", "<< 上一个(PgUp)")
-        Add("след(PgDn) >>", "(N)ext >>", "наст(PgDn) >>", "Weiter(Bild↓) >>", "Succ(PgGiù) >>", "Sig(AvPág) >>", "Suiv(PgSu) >>", "Próx(PgDn) >>", "التالي(PgDn) >>", "अगला(PgDn) >>", "পরের(PgDn) >>", "اگلا(PgDn) >>", "下一个(PgDn) >>")
-        Add("удалить (del)", "(D)elete", "видалити (del)", "Löschen (Entf)", "elimina (Canc)", "eliminar (Supr)", "supprimer (Suppr)", "excluir (Del)", "حذف (Del)", "हटाएँ (Del)", "মুছুন (Del)", "حذف (Del)", "删除 (Del)")
+        Add("предыдущий (PgUp)", "(P)revious", "попередній (PgUp)", "Vorherige (Bild↑)", "Precedente (PgSu)", "Anterior (RePág)", "Précédent (PgPr)", "Anterior (PgUp)", "السابق (PgUp)", "पिछला (PgUp)", "আগের (PgUp)", "پچھلا (PgUp)", "上一个 (PgUp)")
+        Add("следующий (PgDn)", "(N)ext", "наступний (PgDn)", "Nächste (Bild↓)", "Successivo (PgGiù)", "Siguiente (AvPág)", "Suivant (PgSu)", "Próximo (PgDn)", "التالي (PgDn)", "अगला (PgDn)", "পরের (PgDn)", "اگلا (PgDn)", "下一个 (PgDn)")
+        ' Suffix on the Translate button while auto-OCR is on (spec 027: a word, not the
+        ' refresh arrow the folder button already carries).
+        ' Accessible name of a thumbnail card that could not be decoded (content.image).
+        Add("Изображение", "Image", "Зображення", "Bild", "Immagine", "Imagen", "Image", "Imagem", "صورة", "छवि", "ছবি", "تصویر", "图片")
+        Add("(авто)","(auto)", "(авто)", "(auto)", "(auto)", "(auto)", "(auto)", "(auto)", "(تلقائي)", "(स्वतः)", "(স্বয়ংক্রিয়)", "(خودکار)", "(自动)")
+        Add("удалить (del)","(D)elete", "видалити (del)", "Löschen (Entf)", "elimina (Canc)", "eliminar (Supr)", "supprimer (Suppr)", "excluir (Del)", "حذف (Del)", "हटाएँ (Del)", "মুছুন (Del)", "حذف (Del)", "删除 (Del)")
 
         ' --- first-run help, before the zoom block --------------------------------
         Add(" Программа для быстрого переноса/копирования изображений по папкам. Да, та самая, которой вам не хватало.",

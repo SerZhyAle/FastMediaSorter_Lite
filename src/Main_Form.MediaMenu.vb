@@ -71,9 +71,9 @@ Partial Public Class Main_Form
     ''' <summary>Full screen - the same two flips F7 and F11 do.</summary>
     Private Sub AddViewItems(target As ToolStripItemCollection)
         Dim rus As Boolean = Is_Russian_Language
-        AddMenuItem(target, Localization.T("Полный экран (F7)"),
+        AddMenuItem(target, Localization.T("Во весь экран (F7)"),
                     AddressOf ToggleFullScreenMode, checked:=is_Full_Screen_Mode)
-        AddMenuItem(target, Localization.T("Полный экран без панелей (F11)"),
+        AddMenuItem(target, Localization.T("Во весь экран без панелей (F11)"),
                     AddressOf ToggleSuperFullScreenMode, checked:=is_Super_Full_Screen_Mode)
     End Sub
 

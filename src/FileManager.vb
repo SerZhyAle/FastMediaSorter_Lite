@@ -1,5 +1,6 @@
 Imports System.Drawing.Imaging
 Imports System.IO
+Imports System.Runtime.InteropServices
 
 Public Module FileManager
 
@@ -7,12 +8,33 @@ Public Module FileManager
     ''' Loads an image from file and returns a Tuple with the Image and its MemoryStream.
     ''' </summary>
     Public Function LoadImageWithStream(filePath As String) As Tuple(Of Image, IO.MemoryStream)
+        Dim ignored As PathFailureKind
+        Return LoadImageWithStream(filePath, ignored)
+    End Function
+
+    ''' <summary>
+    ''' LoadImageWithStream that also says WHY it returned Nothing (audit 048, A-06).
+    '''
+    ''' The loader used to catch everything and return Nothing, so the display path could only
+    ''' call every failure "Content" - and a photo still being copied into the folder (a
+    ''' sharing violation) or an ACL-restricted file on a NAS was dropped from the list as
+    ''' "not a picture". Now a failure to READ the bytes is classified by PathFailure (Locked,
+    ''' Denied, Transport, Missing ..), while a failure to DECODE them stays Content - a
+    ''' decoder that trips over a truncated file throws EndOfStreamException, an IOException,
+    ''' and must not be mistaken for a dropped share.
+    ''' </summary>
+    ''' <param name="failure">None on success; otherwise the class of the failure.</param>
+    Public Function LoadImageWithStream(filePath As String, ByRef failure As PathFailureKind) As Tuple(Of Image, IO.MemoryStream)
+        failure = PathFailureKind.None
         If String.IsNullOrEmpty(filePath) OrElse Not File.Exists(filePath) Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0036: LoadImage file not found")
             AppFileLogger.WriteLine("LoadImageWithStream: file not found: " & If(filePath, "(null)"))
+            failure = PathFailureKind.Missing
             Return Nothing
         End If
 
+        ' Anything thrown past this point that is not classified below is about the bytes.
+        failure = PathFailureKind.Content
         Try
             Dim extension As String = Path.GetExtension(filePath).ToLowerInvariant()
             ' Debug, not AppFileLogger: this fires on EVERY image the app decodes - the one
@@ -28,7 +50,9 @@ Public Module FileManager
 
             If ImageDecoderProvider.Decoder_Backed_Extensions.Contains(extension) Then
 #If NETFRAMEWORK Then
-                ms = New IO.MemoryStream(File.ReadAllBytes(filePath))
+                Dim source_Bytes As Byte() = ReadSourceBytes(filePath, failure)
+                If source_Bytes Is Nothing Then Return Nothing
+                ms = New IO.MemoryStream(source_Bytes)
                 nextImage = ImageDecoderProvider.Current.DecodeToImage(ms)
 #Else
                 ' The one modern-only branch of this function
@@ -39,14 +63,36 @@ Public Module FileManager
                 ' the PAYLOAD stream, which is strictly more correct than the source bytes
                 ' returned here before: for an animation, the stream GDI+ actually reads was
                 ' the invisible one, and the one the caller kept alive was dead weight.
-                Dim viaCache As Tuple(Of Image, IO.MemoryStream) = DecodeCache.LoadImage(filePath)
+                Dim viaCache As Tuple(Of Image, IO.MemoryStream) = DecodeCache.LoadImage(filePath, failure)
                 If viaCache Is Nothing Then Return Nothing
                 nextImage = viaCache.Item1
                 ms = viaCache.Item2
 #End If
             Else
-                ms = New IO.MemoryStream(File.ReadAllBytes(filePath))
-                nextImage = Image.FromStream(ms)
+                Dim source_Bytes As Byte() = ReadSourceBytes(filePath, failure)
+                If source_Bytes Is Nothing Then Return Nothing
+                ms = New IO.MemoryStream(source_Bytes)
+                Try
+                    nextImage = Image.FromStream(ms)
+                Catch ex As ArgumentException When ImageDecoderProvider.LooksDecoderBacked(source_Bytes)
+                    ' A WEBP (or, on the mainline, an AVIF/HEIC) saved under a .jpg/.png name -
+                    ' browsers do it all the time (audit 048, A-16). Routing is by extension,
+                    ' GDI+ has no codec for those bytes on most editions, and the file was
+                    ' dropped as undecodable while the managed decoder right behind the seam
+                    ' would have opened it. The header, not the name, decides the retry.
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0037: GDI+ refused, header says decoder-backed: " & filePath)
+#If NETFRAMEWORK Then
+                    ms.Position = 0
+                    nextImage = ImageDecoderProvider.Current.DecodeToImage(ms)
+#Else
+                    ms.Dispose()
+                    ms = Nothing
+                    Dim viaDecoder As Tuple(Of Image, IO.MemoryStream) = DecodeCache.LoadImage(filePath, failure)
+                    If viaDecoder Is Nothing Then Return Nothing
+                    nextImage = viaDecoder.Item1
+                    ms = viaDecoder.Item2
+#End If
+                End Try
             End If
 
             If nextImage Is Nothing Then
@@ -73,10 +119,31 @@ Public Module FileManager
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0040: LoadImage end ")
 
+            failure = PathFailureKind.None
             Return Tuple.Create(nextImage, ms)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " E041: ERR loading image " & ex.Message)
             AppFileLogger.LogException("LoadImageWithStream failed for: " & filePath, ex)
+            Return Nothing
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' The file's bytes, or Nothing with <paramref name="failure"/> saying why the READ failed
+    ''' (audit 048, A-06): a sharing violation is Locked, an ACL refusal Denied, a dropped
+    ''' share Transport - all of them "keep the file" - and a file deleted in between Missing.
+    ''' Only this read is classified; what the decoder later throws is about the content.
+    ''' </summary>
+    Friend Function ReadSourceBytes(filePath As String, ByRef failure As PathFailureKind) As Byte()
+        Try
+            Return File.ReadAllBytes(filePath)
+        Catch ex As Exception
+            failure = PathFailure.Classify(ex)
+            ' An unclassifiable read failure is still a failure of the read, not a verdict on
+            ' a picture nobody has seen - but Unknown keeps today's "drop it" on purpose (see
+            ' PathFailureKind.Unknown), so it is passed on as it is.
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " E042: could not read [" & failure.ToString() & "] " & filePath & ": " & ex.Message)
+            AppFileLogger.LogException("Reading an image failed [" & failure.ToString() & "]: " & filePath, ex)
             Return Nothing
         End Try
     End Function
@@ -129,6 +196,12 @@ Public Module FileManager
     ''' file from the list.
     ''' </summary>
     Public Function RenameFile(currentFileName As String, newFileNameWithExtension As String) As String
+#If Not NETFRAMEWORK Then
+        ' A file of an open remote resource is renamed THERE (006 PV-4); for anything else
+        ' this returns False at once and the rename below is unchanged.
+        Dim routed As String = Nothing
+        If ResourceRouting.TryRename(currentFileName, newFileNameWithExtension, routed) Then Return routed
+#End If
         Dim directory As String = Path.GetDirectoryName(currentFileName)
         Dim newFullPath As String = Path.Combine(directory, newFileNameWithExtension)
         ' Ordinal on purpose: a case-only rename (photo -> Photo) is a real rename.
@@ -141,16 +214,89 @@ Public Module FileManager
     ''' Deletes a file if it exists.
     ''' </summary>
     Public Sub DeleteFile(filePath As String)
+#If Not NETFRAMEWORK Then
+        If ResourceRouting.TryDelete(filePath) Then Return
+#End If
         If File.Exists(filePath) Then
             File.Delete(filePath)
         End If
     End Sub
 
     ''' <summary>
-    ''' Copies a file to a new location.
+    ''' Copies a file to a new location - staged, exactly like a cross-volume move (audit
+    ''' 047, C-08). A File.Copy straight onto the final name left a truncated file there
+    ''' when the copy was interrupted - the app closed with "No" during a 200 MB copy to a
+    ''' share, a crash, a kill - and it looked like the real thing, so the user could later
+    ''' delete the original trusting it. With "replace" the old destination had already
+    ''' been cut short too. Now the final name only ever holds a complete file.
     ''' </summary>
     Public Sub CopyFile(sourceFile As String, destFile As String, Optional overwrite As Boolean = False)
-        File.Copy(sourceFile, destFile, overwrite)
+#If Not NETFRAMEWORK Then
+        If ResourceRouting.TryCopy(sourceFile, destFile, overwrite) Then Return
+#End If
+        ' "Replace" must never be allowed to mean "replace the file with itself" (C-02).
+        If overwrite Then ThrowIfSameFile(sourceFile, destFile)
+        ' Refused before a byte is copied: without "replace" an existing name was always an
+        ' error, and finding it only after a 200 MB copy would waste the copy.
+        If Not overwrite AndAlso File.Exists(destFile) Then Throw DestinationExists()
+        CopyThroughStaging(sourceFile, destFile, overwrite)
+    End Sub
+
+    ''' <summary>
+    ''' THE copy routine of every transfer that is not a same-volume rename: copy to
+    ''' "&lt;dest&gt;.fms-part" in the destination folder, then rename that into place, deleting
+    ''' the old destination only when replacing and only once the new bytes are complete.
+    ''' An interruption leaves the finished file, or an obvious "*.fms-part" leftover -
+    ''' never a plausible half file under the real name. Both the move and the copy use it,
+    ''' so there is one staging rule and not two that drift.
+    ''' </summary>
+    Private Sub CopyThroughStaging(sourceFile As String, destFile As String, overwrite As Boolean)
+        Dim staging As String = destFile & Partial_Move_Suffix
+        Try
+            ' A leftover of an earlier attempt carries the source's attributes (File.Copy
+            ' copies them), so a read-only camera file leaves a read-only leftover.
+            If File.Exists(staging) Then
+                ClearReadOnly(staging)
+                File.Delete(staging)
+            End If
+            File.Copy(sourceFile, staging, True)
+            ' Rename within one folder is atomic enough: no window in which the final name
+            ' exists but holds an incomplete file.
+            If File.Exists(destFile) Then
+                If Not overwrite Then Throw DestinationExists()
+                ThrowIfSameFile(sourceFile, destFile)
+                File.Delete(destFile)
+            End If
+            File.Move(staging, destFile)
+        Catch
+            ' Leave the source alone and take the debris with us: a failed transfer must not
+            ' cost the file.
+            Try
+                If File.Exists(staging) Then
+                    ClearReadOnly(staging)
+                    File.Delete(staging)
+                End If
+            Catch
+            End Try
+            Throw
+        End Try
+    End Sub
+
+    ''' <summary>"The destination file already exists", carrying ERROR_FILE_EXISTS so the
+    ''' failure classifier can say so instead of blaming the connection (C-17).</summary>
+    Private Function DestinationExists() As IOException
+        Return New IOException("The destination file already exists.", HResultFileExists)
+    End Function
+
+    Private Const HResultFileExists As Integer = &H80070050
+
+    ''' <summary>Drops the read-only attribute, so the file can be deleted. Used only on a
+    ''' file that is being replaced or moved away - never on one that stays.</summary>
+    Private Sub ClearReadOnly(filePath As String)
+        Dim attributes As FileAttributes = File.GetAttributes(filePath)
+        If (attributes And FileAttributes.ReadOnly) = FileAttributes.ReadOnly Then
+            File.SetAttributes(filePath, attributes And Not FileAttributes.ReadOnly)
+        End If
     End Sub
 
     ''' <summary>
@@ -169,6 +315,16 @@ Public Module FileManager
     ''' moves keep the cheap path: there is no copy to interrupt.
     ''' </summary>
     Public Sub MoveFile(sourceFile As String, destFile As String, Optional overwrite As Boolean = False)
+#If Not NETFRAMEWORK Then
+        If ResourceRouting.TryMove(sourceFile, destFile, overwrite) Then Return
+#End If
+        ' The same file under two spellings (a mapped drive and its UNC path, a server's
+        ' name and its IP address) is a different ROOT string, so the staged path below ran:
+        ' "replace" deleted the destination - which was the source - and the final delete
+        ' took the copy that had just been put back (audit 046, C-02). A name collision with
+        ' ITSELF is refused before anything is deleted.
+        If overwrite AndAlso File.Exists(destFile) Then ThrowIfSameFile(sourceFile, destFile)
+
         If IsSameVolume(sourceFile, destFile) Then
 #If NETFRAMEWORK Then
             If overwrite AndAlso File.Exists(destFile) Then File.Delete(destFile)
@@ -179,29 +335,156 @@ Public Module FileManager
             Return
         End If
 
-        Dim staging As String = destFile & Partial_Move_Suffix
-        Try
-            If File.Exists(staging) Then File.Delete(staging)
-            File.Copy(sourceFile, staging, True)
-            ' Rename within one folder is atomic enough: no window in which the final name
-            ' exists but holds an incomplete file.
-            If File.Exists(destFile) Then
-                If Not overwrite Then Throw New IOException("The destination file already exists.")
-                File.Delete(destFile)
-            End If
-            File.Move(staging, destFile)
-        Catch
-            ' Leave the source alone and take the debris with us: a failed move must not cost
-            ' the file.
-            Try
-                If File.Exists(staging) Then File.Delete(staging)
-            Catch
-            End Try
-            Throw
-        End Try
+        CopyThroughStaging(sourceFile, destFile, overwrite)
 
+        ' Defence in depth: the source is deleted only when it is provably NOT the file that
+        ' now sits at the destination.
+        If IsSameFile(sourceFile, destFile) Then
+            Throw New IOException("The source and the destination are the same file; it was left in place.")
+        End If
+        ' A read-only source - a camera's "protected" photo on an SD card, and card to disk
+        ' is always this staged path - made File.Delete throw AFTER the copy had landed: the
+        ' move was reported failed and rolled back, the file sat in both places, and every
+        ' retry bred "x (2).jpg" (audit 047, C-16). The file is being moved, and its copy
+        ' already carries the attribute, so dropping it on the source loses nothing.
+        ClearReadOnly(sourceFile)
         File.Delete(sourceFile)
     End Sub
+
+    ''' <summary>
+    ''' Are these two paths the same file on disk, whatever they are called? Decided by the
+    ''' file system's own identity - volume serial number plus file index, with size and
+    ''' write time as a check against a server that reports a meaningless index - never by
+    ''' comparing strings: <c>Z:\photos</c>, <c>\\nas\share\photos</c>,
+    ''' <c>\\nas.local\share\photos</c> and <c>\\?\Z:\photos</c> are four spellings of one
+    ''' folder.
+    '''
+    ''' False when either identity cannot be read (a missing file, a share that does not
+    ''' answer, a server that reports index 0): callers use it to REFUSE, so "unknown" must
+    ''' fall back to what they did before rather than invent a refusal.
+    ''' </summary>
+    Friend Function IsSameFile(pathA As String, pathB As String) As Boolean
+        Dim a As FileIdentity = Nothing
+        Dim b As FileIdentity = Nothing
+        If Not TryGetFileIdentity(pathA, a) OrElse Not TryGetFileIdentity(pathB, b) Then Return False
+        Return a.Equals(b)
+    End Function
+
+    ''' <summary>
+    ''' May undoing a copy delete the copy? Undo deletes it permanently, so only while the
+    ''' original it duplicates is still in place and still the same size - otherwise the
+    ''' "copy" has become the only instance of the file (the original was deleted, which on
+    ''' a share is permanent) and U would destroy the last one (audit 046, C-04). A copy
+    ''' that is gone already has nothing to lose, and the old behaviour (a no-op delete)
+    ''' stands. The pure rule is <see cref="CopyUndoMayDelete(Boolean, Long, Boolean, Long, Boolean)"/>.
+    ''' </summary>
+    Friend Function CopyUndoMayDelete(originalPath As String, copyPath As String) As Boolean
+        Try
+            Dim copy As New FileInfo(copyPath)
+            Dim original As New FileInfo(originalPath)
+            Dim copyExists As Boolean = copy.Exists
+            Dim originalExists As Boolean = original.Exists
+            Return CopyUndoMayDelete(originalExists, If(originalExists, original.Length, -1L),
+                                     copyExists, If(copyExists, copy.Length, -1L),
+                                     copyExists AndAlso originalExists AndAlso IsSameFile(originalPath, copyPath))
+        Catch
+            ' Cannot tell: keep the file. A refusal costs one more key press; a wrong
+            ' deletion costs the photo.
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>The rule itself, with the file system already asked.</summary>
+    Friend Function CopyUndoMayDelete(originalExists As Boolean, originalLength As Long,
+                                      copyExists As Boolean, copyLength As Long,
+                                      sameFile As Boolean) As Boolean
+        If Not copyExists Then Return True
+        If Not originalExists OrElse sameFile Then Return False
+        Return originalLength = copyLength
+    End Function
+
+    Private Sub ThrowIfSameFile(sourceFile As String, destFile As String)
+        If IsSameFile(sourceFile, destFile) Then
+            Throw New IOException("The source and the destination are the same file; nothing was replaced.")
+        End If
+    End Sub
+
+    ''' <summary>What makes a file itself, as far as <see cref="IsSameFile"/> is concerned.</summary>
+    Friend Structure FileIdentity
+        Friend VolumeSerial As UInteger
+        Friend FileIndex As ULong
+        Friend Length As ULong
+        Friend LastWriteTicks As Long
+    End Structure
+
+    ''' <summary>
+    ''' Reads a file's identity through a handle opened for NO data access and with every
+    ''' sharing mode - so it succeeds on a file another program (or a playing video) holds
+    ''' open, and it never takes a lock of its own.
+    ''' </summary>
+    Friend Function TryGetFileIdentity(filePath As String, ByRef identity As FileIdentity) As Boolean
+        If String.IsNullOrEmpty(filePath) Then Return False
+        Try
+            Using handle As Microsoft.Win32.SafeHandles.SafeFileHandle =
+                FileIdentityNative.CreateFileW(filePath, 0UI,
+                                               FileIdentityNative.FILE_SHARE_READ Or FileIdentityNative.FILE_SHARE_WRITE Or FileIdentityNative.FILE_SHARE_DELETE,
+                                               IntPtr.Zero, FileIdentityNative.OPEN_EXISTING,
+                                               FileIdentityNative.FILE_FLAG_BACKUP_SEMANTICS, IntPtr.Zero)
+                If handle.IsInvalid Then Return False
+                Dim info As FileIdentityNative.BY_HANDLE_FILE_INFORMATION = Nothing
+                If Not FileIdentityNative.GetFileInformationByHandle(handle, info) Then Return False
+                Dim index As ULong = (CULng(info.nFileIndexHigh) << 32) Or CULng(info.nFileIndexLow)
+                ' Some SMB servers report 0 for every file; that is "unknown", not an identity.
+                If index = 0UL Then Return False
+                identity = New FileIdentity With {
+                    .VolumeSerial = info.dwVolumeSerialNumber,
+                    .FileIndex = index,
+                    .Length = (CULng(info.nFileSizeHigh) << 32) Or CULng(info.nFileSizeLow),
+                    .LastWriteTicks = (CLng(info.ftLastWriteTimeHigh) << 32) Or CLng(info.ftLastWriteTimeLow)
+                }
+                Return True
+            End Using
+        Catch
+            Return False
+        End Try
+    End Function
+
+    Private NotInheritable Class FileIdentityNative
+        Friend Const FILE_SHARE_READ As UInteger = &H1UI
+        Friend Const FILE_SHARE_WRITE As UInteger = &H2UI
+        Friend Const FILE_SHARE_DELETE As UInteger = &H4UI
+        Friend Const OPEN_EXISTING As UInteger = 3UI
+        ' Lets the same call open a directory, and costs nothing for a file.
+        Friend Const FILE_FLAG_BACKUP_SEMANTICS As UInteger = &H2000000UI
+
+        <StructLayout(LayoutKind.Sequential)>
+        Friend Structure BY_HANDLE_FILE_INFORMATION
+            Friend dwFileAttributes As UInteger
+            Friend ftCreationTimeLow As UInteger
+            Friend ftCreationTimeHigh As UInteger
+            Friend ftLastAccessTimeLow As UInteger
+            Friend ftLastAccessTimeHigh As UInteger
+            Friend ftLastWriteTimeLow As UInteger
+            Friend ftLastWriteTimeHigh As UInteger
+            Friend dwVolumeSerialNumber As UInteger
+            Friend nFileSizeHigh As UInteger
+            Friend nFileSizeLow As UInteger
+            Friend nNumberOfLinks As UInteger
+            Friend nFileIndexHigh As UInteger
+            Friend nFileIndexLow As UInteger
+        End Structure
+
+        <DllImport("kernel32.dll", CharSet:=CharSet.Unicode, SetLastError:=True, EntryPoint:="CreateFileW")>
+        Friend Shared Function CreateFileW(lpFileName As String, dwDesiredAccess As UInteger, dwShareMode As UInteger,
+                                           lpSecurityAttributes As IntPtr, dwCreationDisposition As UInteger,
+                                           dwFlagsAndAttributes As UInteger, hTemplateFile As IntPtr) As Microsoft.Win32.SafeHandles.SafeFileHandle
+        End Function
+
+        <DllImport("kernel32.dll", SetLastError:=True, EntryPoint:="GetFileInformationByHandle")>
+        Friend Shared Function GetFileInformationByHandle(hFile As Microsoft.Win32.SafeHandles.SafeFileHandle,
+                                                          ByRef lpFileInformation As BY_HANDLE_FILE_INFORMATION) As <MarshalAs(UnmanagedType.Bool)> Boolean
+        End Function
+    End Class
 
     ''' <summary>Extension given to the in-flight copy of a staged move.</summary>
     Public Const Partial_Move_Suffix As String = ".fms-part"

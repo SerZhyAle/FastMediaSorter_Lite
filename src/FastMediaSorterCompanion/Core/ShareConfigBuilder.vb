@@ -1,12 +1,15 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Globalization
 Imports System.IO
 Imports System.IO.Compression
+Imports System.Security.AccessControl
+Imports System.Security.Principal
 Imports System.Text
 Imports System.Text.Encodings.Web
 Imports System.Text.Json
+Imports System.Text.RegularExpressions
 
 ''' <summary>
 ''' Builds the .fmscfg resource config and its QR code entirely on the LITE side,
@@ -16,10 +19,11 @@ Imports System.Text.Json
 ''' internet access" toggle advertise the external path (LAN + port-forward) in a
 ''' single scannable QR / one .fmscfg, so sharing works by one scan either way.
 '''
-''' The .fmscfg schema (frozen contract - see the companion CONFIG_FORMAT.md and
-''' the Android-side COMPANION_EXPORT_SPEC, S1002) and the QR payload rule (plain
-''' JSON when small, else "FMSCFG1:" + base64(gzip)) are reproduced faithfully so
-''' the shipped Android importer accepts it.
+''' The .fmscfg schema is the FMSCFG contract - CONFIG_FORMAT.md "Schema (version 1)"
+''' and "Schema (version 2 - per-root resource params)" - and the QR payload rule
+''' (plain JSON when small, else "FMSCFG1:" + base64(gzip)) is FMSCFG rule 4. Both are
+''' reproduced faithfully so the shipped Android importer accepts what we write.
+''' See docs/contracts/FMSCFG.md.
 '''
 ''' Schema v2 (resource params): each root can carry the target resource's
 ''' configuration (profile, media types, scan conditions, destination flag,
@@ -58,6 +62,23 @@ Public NotInheritable Class ShareExportOverrides
     Public Property ForceSoftReadOnly As Boolean
 End Class
 
+''' <summary>
+''' The two values in the payload that are NOT a function of the input: the exporting PC's
+''' name and the moment of export. Supplied only by the byte-stable conformance test
+''' (FMSCFG rule 5), which cannot assert bytes against a value that changes with the machine
+''' and the clock.
+'''
+''' Nothing on every product path, and the product path is still the one that decides what
+''' those two values normally are - so a test cannot quietly pin a different timestamp format
+''' or a different resource-name shape than the one that actually ships.
+''' </summary>
+Public NotInheritable Class ShareConfigStamp
+    ''' <summary>Replaces "FastMediaSorter Companion on &lt;machine&gt;". Empty = the real one.</summary>
+    Public Property ResourceName As String = ""
+    ''' <summary>Replaces DateTime.UtcNow. Date.MinValue = the real clock.</summary>
+    Public Property CreatedAtUtc As Date = Date.MinValue
+End Class
+
 Public Module ShareConfigBuilder
 
     Private Const QrPrefix As String = "FMSCFG1:"
@@ -77,10 +98,11 @@ Public Module ShareConfigBuilder
     ''' LAN path; adds the internet (port-forward) path when <paramref name="includeExternal"/>
     ''' is on and reachability found a usable non-CGNAT external host. Returns
     ''' Nothing when there is nothing to serve (not running / no address / no roots).
-    ''' <paramref name="includePassword"/> off = the §6 "exclude password" safeguard:
-    ''' the password key stays present with an empty value (spec §2 - "passwordless
-    ''' share, recipient types it at import") and the sender must pass the real
-    ''' password out-of-band.
+    ''' <paramref name="includePassword"/> off = the "exclude password" safeguard: the
+    ''' password key stays present with an empty value and the sender must pass the real
+    ''' password out-of-band. FMSCFG does not describe an empty password, and whether the
+    ''' shipped importer accepts one is an open question to the Android side - a dated
+    ''' registry exception until it is answered (ticket 034 phase 3).
     ''' </summary>
     ''' <param name="exportOverrides">Shared overrides applied to EVERY root (the legacy
     ''' uniform path - kept for callers/tests that set one PIN/RO/slideshow for the whole code).</param>
@@ -91,11 +113,14 @@ Public Module ShareConfigBuilder
     ''' wizard's editable grid - §4.5.3). When a root has an entry, that complete ShareRootParams is used
     ''' AS-IS for this export (highest precedence), so a recipient can get any per-folder configuration.
     ''' The frozen .fmscfg wire shape is unchanged - RootJson emits the same roots[] fields.</param>
+    ''' <param name="stamp">Test-only injection of the two values that are not a function of the
+    ''' input - see <see cref="ShareConfigStamp"/>. Nothing on every product path.</param>
     Public Function Build(status As WorkerStatus, includeExternal As Boolean,
                           Optional includePassword As Boolean = True,
                           Optional exportOverrides As ShareExportOverrides = Nothing,
                           Optional perRootOverrides As Dictionary(Of String, ShareExportOverrides) = Nothing,
-                          Optional perRootParams As Dictionary(Of String, ShareRootParams) = Nothing) As ShareConfigResult
+                          Optional perRootParams As Dictionary(Of String, ShareRootParams) = Nothing,
+                          Optional stamp As ShareConfigStamp = Nothing) As ShareConfigResult
         If status Is Nothing OrElse Not status.Running Then Return Nothing
         Dim reach As WorkerReachability = status.Reachability
         Dim port As Integer = status.ListenPort
@@ -131,6 +156,10 @@ Public Module ShareConfigBuilder
             hasIpv6 = True
         End If
 
+        ' Emitted even when the worker's connect-back ran and found the port closed
+        ' (ExternalPortChecked and not ExternalPortOpen): the code keeps working once the
+        ' user fixes the forward the accessNote points at. FMSCFG says "a dead entry is a
+        ' bug" - a dated registry exception until the owner rules (ticket 034 phase 4).
         Dim hasExt As Boolean = False
         If includeExternal AndAlso reach IsNot Nothing AndAlso Not reach.IsCgnat AndAlso Not String.IsNullOrEmpty(reach.ExternalHost) Then
             Dim extPort As Integer = If(reach.ExternalPort > 0, reach.ExternalPort, port)
@@ -158,6 +187,11 @@ Public Module ShareConfigBuilder
                     End If
                     p = ApplyOverrides(ShareRootParamsStore.GetFor(r.hostPath), ov)
                 End If
+                ' The SFTP server's per-root read-only comes from the folder list pushed to
+                ' it, never from a code - so what a code advertises may be stricter than the
+                ' server, never looser (ticket 054 H-07, the FMSCFG producer rule the stored
+                ' params already follow through AdvertisedReadOnly).
+                p = ClampToServer(p, r.readOnly)
                 roots.Append(RootJson(nm, p, anyV2))
             Next
         End If
@@ -168,28 +202,36 @@ Public Module ShareConfigBuilder
         ' it, so it never bumps schemaVersion).
         Dim note As String = ShareText.AccessNote(reach, port, includeExternal)
 
-        ' Field order mirrors the companion CONFIG_FORMAT.md / Android fixture;
-        ' accessNote is the optional trailing field.
+        ' Field order mirrors CONFIG_FORMAT.md "Canonical test vector" and the Android
+        ' fixture built from the same bytes (FMSCFG rule 5); accessNote is the optional
+        ' trailing field.
+        Dim resourceName As String = "FastMediaSorter Companion on " & SafeMachineName()
+        Dim createdAt As Date = DateTime.UtcNow
+        If stamp IsNot Nothing Then
+            If Not String.IsNullOrEmpty(stamp.ResourceName) Then resourceName = stamp.ResourceName
+            If stamp.CreatedAtUtc <> Date.MinValue Then createdAt = stamp.CreatedAtUtc
+        End If
+
         Dim sb As New StringBuilder()
         sb.Append("{""schemaVersion"":").Append(If(anyV2, "2", "1"))
-        sb.Append(",""resourceName"":").Append(J("FastMediaSorter Companion on " & SafeMachineName()))
+        sb.Append(",""resourceName"":").Append(J(resourceName))
         sb.Append(",""protocol"":""sftp""")
         sb.Append(",""accessPaths"":[").Append(paths).Append("]"c)
         sb.Append(",""username"":").Append(J(If(status.Username, "")))
         sb.Append(",""password"":").Append(J(If(includePassword, If(status.Password, ""), "")))
         sb.Append(",""hostKeyFingerprintSha256"":").Append(J(If(status.Fingerprint, "")))
         sb.Append(",""roots"":[").Append(roots).Append("]"c)
-        sb.Append(",""createdAt"":").Append(J(DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss'Z'", CultureInfo.InvariantCulture)))
+        sb.Append(",""createdAt"":").Append(J(createdAt.ToString("yyyy-MM-ddTHH:mm:ss'Z'", CultureInfo.InvariantCulture)))
         If note.Length > 0 Then sb.Append(",""accessNote"":").Append(J(note))
         sb.Append("}"c)
         Dim json As String = sb.ToString()
 
         If lan.Length = 0 Then
             ' Same diagnostic as above, one level deeper: the actual accessPaths
-            ' shipped when the lan entry is missing. Password redacted - this is
-            ' a log file, not a secrets store.
+            ' shipped when the lan entry is missing. Every secret redacted - this is
+            ' a log file, not a secrets store, and "send logs to the author" packs it.
             Try
-                AppFileLogger.WriteLine("ShareConfigBuilder.Build: exported JSON (password redacted): " & RedactPassword(json))
+                AppFileLogger.WriteLine("ShareConfigBuilder.Build: exported JSON (secrets redacted): " & RedactSecrets(json))
             Catch
             End Try
         End If
@@ -229,6 +271,23 @@ Public Module ShareConfigBuilder
         Return c
     End Function
 
+    ''' <summary>
+    ''' The params a code may advertise for a root the server serves read-only when
+    ''' <paramref name="serverReadOnly"/> is set: read-only, and never a destination - a
+    ''' writable promise there is exactly the "Move deletes the original, then rm is denied"
+    ''' bug. On a writable root nothing changes: a stricter code (soft or claimed hard
+    ''' read-only) is allowed, and says readOnly:true either way. A copy; the caller's params
+    ''' are untouched.
+    ''' </summary>
+    Friend Function ClampToServer(p As ShareRootParams, serverReadOnly As Boolean) As ShareRootParams
+        If p Is Nothing OrElse Not serverReadOnly Then Return p
+        If Not p.IsWritable() Then Return p
+        Dim c As ShareRootParams = p.Clone()
+        c.IsReadOnly = True
+        c.IsDestination = False
+        Return c
+    End Function
+
     ''' <summary>One roots[] entry. v1 fields (virtualPath, label) always present;
     ''' every v2 field only when it differs from the Android import default (§3).
     ''' Sets <paramref name="anyV2"/> when at least one v2 field was emitted.</summary>
@@ -246,7 +305,8 @@ Public Module ShareConfigBuilder
         ' always >= the SFTP server's real restriction (never advertises writable when
         ' the server would deny it - the "Move deletes original -> rm denied" bug), but
         ' MAY be stricter (soft RO: server writable, phone shown read-only). A
-        ' destination is inherently writable and (unless soft RO) exports readOnly:false.
+        ' destination is inherently writable and always exports readOnly:false - the
+        ' soft hint does not apply to it (FMSCFG 2.1 amendment A, ticket 034 phase 2).
         Dim advertisedRo As Boolean = p IsNot Nothing AndAlso p.AdvertisedReadOnly()
         sb.Append(",""readOnly"":").Append(If(advertisedRo, "true", "false"))
 
@@ -305,18 +365,62 @@ Public Module ShareConfigBuilder
         Return JsonSerializer.Serialize(If(s, ""), JsonStringOpts)
     End Function
 
-    ''' <summary>Blanks out the "password" field's value for diagnostic logging -
-    ''' the export JSON carries a live SFTP credential by design (contract §6),
-    ''' which must never land in a plaintext log file.</summary>
-    Private Function RedactPassword(json As String) As String
-        Const marker As String = """password"":"""
-        Dim idx As Integer = json.IndexOf(marker, StringComparison.Ordinal)
-        If idx < 0 Then Return json
-        Dim valueStart As Integer = idx + marker.Length
-        Dim valueEnd As Integer = json.IndexOf(""""c, valueStart)
-        If valueEnd < 0 Then Return json
-        Return json.Substring(0, valueStart) & "***" & json.Substring(valueEnd)
+    ''' <summary>The payload fields FMSCFG treats as secrets: the SFTP password and every
+    ''' root's accessPin (the v2 table gives the PIN the password's sensitivity).</summary>
+    Private ReadOnly SecretField As New Regex("(""(?:password|accessPin)"":"")(?:[^""\\]|\\.)*("")", RegexOptions.CultureInvariant)
+
+    ''' <summary>Blanks out the value of every secret field for diagnostic logging - the
+    ''' export JSON carries a live SFTP credential and per-root PINs by design (FMSCFG rule 6),
+    ''' which must never land in a plaintext log file: that log is what "send logs to the
+    ''' author" packs (ticket 034 phase 1). An escaped quote inside a value does not end it.</summary>
+    Friend Function RedactSecrets(json As String) As String
+        If String.IsNullOrEmpty(json) Then Return If(json, "")
+        Return SecretField.Replace(json, "$1***$2")
     End Function
+
+    ''' <summary>
+    ''' Writes an exported .fmscfg the way the reference exporter does: owner-only (FMSCFG
+    ''' rule 6 - the file is a key). Where the file system has ACLs, inheritance is cut and
+    ''' only the current user keeps access; a FAT stick has none and keeps its default
+    ''' silently - the file is still written (ticket 034 phase 1).
+    ''' </summary>
+    Public Sub WriteConfigFile(path As String, json As String)
+        File.WriteAllText(path, json, New UTF8Encoding(False))
+        RestrictToCurrentUser(path)
+    End Sub
+
+    ''' <summary>Owner-only ACL on <paramref name="path"/>. False when the file system has no
+    ''' ACLs or the change was refused - never an exception.</summary>
+    Friend Function RestrictToCurrentUser(path As String) As Boolean
+        Try
+            Dim me_ As SecurityIdentifier = WindowsIdentity.GetCurrent().User
+            If me_ Is Nothing Then Return False
+            Dim fi As New FileInfo(path)
+            Dim acl As New FileSecurity()
+            acl.SetAccessRuleProtection(True, False)   ' protected; inherited rules NOT copied
+            acl.AddAccessRule(New FileSystemAccessRule(me_, FileSystemRights.FullControl, AccessControlType.Allow))
+            fi.SetAccessControl(acl)
+            Return True
+        Catch
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>Deletes plaintext .fmscfg copies directly under <paramref name="dir"/> and in
+    ''' its "mail-*" folders - the email hand-off of builds before ticket 034 left one there
+    ''' for good. Only .fmscfg files; anything else in the folder is not ours to touch.</summary>
+    Public Sub DeleteStaleConfigCopies(dir As String)
+        Try
+            If Not Directory.Exists(dir) Then Return
+            For Each f As String In Directory.GetFiles(dir, "*.fmscfg")
+                Try : File.Delete(f) : Catch : End Try
+            Next
+            For Each d As String In Directory.GetDirectories(dir, "mail-*")
+                Try : Directory.Delete(d, recursive:=True) : Catch : End Try
+            Next
+        Catch
+        End Try
+    End Sub
 
     ''' <summary>Plain JSON when small enough, else "FMSCFG1:" + base64(gzip(json))
     ''' - matches the worker's QrPayload rule so the Android importer decodes it.</summary>

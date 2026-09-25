@@ -17,7 +17,7 @@
     The viewer's OCR settings are borrowed for the run and put back afterwards.
 
     A scene that produced NO plates is reported apart and fails, never averaged in: its
-    "largest plate covers 0.0000 of the frame" and its "0 plates trimmed" are the same numbers
+    "largest plate covers 0.0000 of the frame" and its "0 plates released" are the same numbers
     a perfect scene gives, so folding it into the aggregates makes a gate green by excluding
     exactly the scenes that went wrong (section 16.5). For those scenes the dump now also
     carries what the thresholds refused, which is the difference between "the engine read
@@ -34,15 +34,23 @@
 .PARAMETER KeepScenes
     Reuse scenes already in WorkDir instead of drawing them again.
 
+.PARAMETER JudgeDump
+    Judge an existing dump file and nothing else: no scenes are drawn, no viewer is started,
+    no setting is touched. For re-reading a run, and for proving the judge itself - a dump line
+    edited by hand must fail the way the rule says it does (ticket 033 Ф-2).
+
 .OUTPUTS
-    Exit 0 = every check passed. 2 = a viewer was already running (its settings and environment
-    would be the ones in force). 3 = the viewer produced no dump. 4 = a check failed.
+    Exit codes (CHECK-VERDICT): 0 = every check passed. 1 = a check failed. 2 = could not
+    verify: no built viewer, no scenes, a viewer already running (its settings and environment
+    would be the ones in force), or the viewer produced no dump. The last line is the verdict,
+    `OcrOverlayScenes: <WORD> (..)`. Run it by hand or through tools\Run-AllTests.ps1 -OcrScenes.
 #>
 [CmdletBinding()]
 param(
     [string]$WorkDir = (Join-Path $env:TEMP 'fms-ocr-scenes'),
     [int]$SecondsPerScene = 45,
-    [switch]$KeepScenes
+    [switch]$KeepScenes,
+    [string]$JudgeDump = ''
 )
 
 Set-StrictMode -Version Latest
@@ -54,6 +62,15 @@ $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $exe      = Join-Path $repoRoot 'bin\Release\FastMediaSorter_LITE.exe'
 $dump     = Join-Path $WorkDir 'diag.jsonl'
 $regPath  = 'HKCU:\Software\VB and VBA Program Settings\SZA\FastMediaSorter'
+
+. (Join-Path $repoRoot 'tools\lib\Verdict.ps1')
+
+# An unexpected terminating error must not surface as exit 1, which reads as a failed check. The
+# finally block below that puts the OCR settings back still runs first.
+trap {
+    Write-Host "  $($_.Exception.Message)"
+    Exit-Verdict 'OcrOverlayScenes' 2 'the harness itself failed'
+}
 
 # --- scenes -------------------------------------------------------------------
 # Each one targets ONE acceptance item, and the expectation is written beside it.
@@ -190,19 +207,29 @@ function Get-Luma([string]$rgb) {
 
 # --- run ----------------------------------------------------------------------
 
+if ($JudgeDump) {
+    # Judge only: the scenes are whatever the dump names, so "never reached the overlay" has
+    # nothing to compare against and is skipped.
+    Write-Subject 'OcrOverlayScenes' "judging $JudgeDump (no viewer run)"
+    $dump = $JudgeDump
+    $scenes = @()
+} else {
+
+$exeVersion = if (Test-Path $exe) { (Get-Item $exe).VersionInfo.FileVersion } else { 'missing' }
+Write-Subject 'OcrOverlayScenes' "$exe ($exeVersion), scenes in $WorkDir"
+
 if (-not (Test-Path $exe)) {
-    Write-Error "No viewer at $exe - run build.ps1 first." -ErrorAction Continue; exit 4
+    Exit-Verdict 'OcrOverlayScenes' 2 "no viewer at $exe - run build.ps1 first"
 }
 if (Get-Process -Name FastMediaSorter_LITE, FastMediaSorter_x86 -ErrorAction SilentlyContinue) {
-    Write-Error 'A viewer is already running - stop it first, or its settings and environment win.' -ErrorAction Continue
-    exit 2
+    Exit-Verdict 'OcrOverlayScenes' 2 'a viewer is already running - stop it first, or its settings and environment win'
 }
 
 New-Item -ItemType Directory -Force -Path $WorkDir | Out-Null
 if (-not $KeepScenes) { Build-Scenes $WorkDir }
 
 $scenes = Get-ChildItem $WorkDir -Filter *.png -File | Sort-Object Name
-if ($scenes.Count -eq 0) { Write-Error "No scenes in $WorkDir." -ErrorAction Continue; exit 4 }
+if ($scenes.Count -eq 0) { Exit-Verdict 'OcrOverlayScenes' 2 "no scenes in $WorkDir" }
 Write-Host "Scenes: $($scenes.Count) in $WorkDir"
 
 $restore = @{}
@@ -240,10 +267,12 @@ try {
     Write-Host 'Settings restored.'
 }
 
+}   # end of the viewer run ($JudgeDump not given)
+
 # --- judge --------------------------------------------------------------------
 
 if (-not (Test-Path $dump)) {
-    Write-Error 'The viewer produced no diagnostics dump.' -ErrorAction Continue; exit 3
+    Exit-Verdict 'OcrOverlayScenes' 2 'the viewer produced no diagnostics dump'
 }
 
 $bytes = [IO.File]::ReadAllBytes($dump)
@@ -262,7 +291,7 @@ foreach ($line in Get-Content $dump) {
     $seen[$name] = $true
     $frame = [double]$doc.width * $doc.height
 
-    $maxCov = 0.0; $grown = 0; $trimmed = 0; $maxBg = -1; $maxWidthShare = 0.0
+    $maxCov = 0.0; $grown = 0; $released = 0; $unmeasured = 0; $maxBg = -1; $maxWidthShare = 0.0
     foreach ($b in $doc.blocks) {
         $plateH = $b.plateY1 - $b.y0
         $cov = (($b.x1 - $b.x0) * [double]$plateH) / $frame
@@ -273,7 +302,18 @@ foreach ($line in Get-Content $dump) {
         $ws = ($b.x1 - $b.x0) / [double]$doc.width
         if ($ws -gt $maxWidthShare) { $maxWidthShare = $ws }
         if ($plateH -gt ($b.y1 - $b.y0)) { $grown++ }
-        if ($b.truncated) { $trimmed++ }
+        # "released" since ticket 025 removed the ellipsis; "truncated" is what a dump written
+        # by an older build calls the same condition. A block with NEITHER was not measured,
+        # and counting it as 0 is the flattering zero OCR-OVERLAY rule 14 forbids - the read
+        # of the old name alone went on reporting 0 for every scene after the rename (033 F2).
+        $names = $b.PSObject.Properties.Name
+        if ($names -contains 'released') {
+            if ($b.released) { $released++ }
+        } elseif ($names -contains 'truncated') {
+            if ($b.truncated) { $released++ }
+        } else {
+            $unmeasured++
+        }
         $bg = Get-Luma $b.background
         if ($bg -gt $maxBg) { $maxBg = $bg }
     }
@@ -286,11 +326,12 @@ foreach ($line in Get-Content $dump) {
     $dropCount = if (-not $hasDropField -or $null -eq $doc.dropped) { -1 } else { @($doc.dropped).Count }
     $dropText  = if ($dropCount -lt 0) { 'n/a' } else { $dropCount.ToString() }
 
-    Write-Host ("{0,-32} plates {1,2}  maxCover {2}  maxWidth {3}  grown {4}  trimmed {5}  bgLuma {6}  dropped {7}" -f
+    $releasedText = if ($unmeasured -gt 0) { 'n/a' } else { $released.ToString() }
+    Write-Host ("{0,-32} plates {1,2}  maxCover {2}  maxWidth {3}  grown {4}  released {5}  bgLuma {6}  dropped {7}" -f
                 $name, $doc.blocks.Count, $maxCov.ToString('F4'), $maxWidthShare.ToString('F2'),
-                $grown, $trimmed, $maxBg, $dropText)
+                $grown, $releasedText, $maxBg, $dropText)
 
-    # A scene with no plates measures NOTHING - its maxCover of 0 and its trimmed of 0 are
+    # A scene with no plates measures NOTHING - its maxCover of 0 and its released of 0 are
     # the flattering zeros, not a clean result - so it is reported apart and never folded
     # into the aggregates below.
     if ($doc.blocks.Count -eq 0) {
@@ -311,8 +352,10 @@ foreach ($line in Get-Content $dump) {
 
     # Section 11: no plate may cover more of the frame than the dissolve rule allows.
     if ($maxCov -gt 0.52) { $failures += "${name}: a plate covers $($maxCov.ToString('F4')) of the frame" }
-    # Section 2: trimming is the last rung and should not be reached on these scenes.
-    if ($trimmed -gt 0) { $failures += "${name}: $trimmed plate(s) had text trimmed" }
+    # Rule 14: a plate whose last-rung flag is missing was not measured - a failure, not a 0.
+    if ($unmeasured -gt 0) { $failures += "${name}: $unmeasured plate(s) carry no released flag - not measured" }
+    # Section 2: releasing is the last rung of the ladder and should not be reached on these scenes.
+    if ($released -gt 0) { $failures += "${name}: $released plate(s) reached the last rung (released)" }
     # Section 9: what the filter threw away, on a scene that DID produce plates. Not a
     # failure by itself - some refusals are the filter doing its job - but it is the number
     # the acceptance item asks for, and it used to be unobtainable without a second build.
@@ -348,11 +391,10 @@ Write-Host ("Scenes: {0} dumped, {1} measured, {2} without plates{3}" -f
             $seen.Count, $measured, $blank.Count,
             $(if ($blank.Count -gt 0) { " ($($blank -join ', '))" } else { '' }))
 
+$sceneCount = if ($JudgeDump) { $seen.Count } else { $scenes.Count }
 if ($failures.Count -gt 0) {
     Write-Host 'FAILED:'
     $failures | ForEach-Object { Write-Host "  - $_" }
-    Write-Error "$($failures.Count) check(s) failed." -ErrorAction Continue
-    exit 4
+    Exit-Verdict 'OcrOverlayScenes' 1 "$($failures.Count) check(s) failed over $sceneCount scene(s)"
 }
-Write-Host 'PASS - every scene met its expectation.'
-exit 0
+Exit-Verdict 'OcrOverlayScenes' 0 "$sceneCount scene(s), every one met its expectation"

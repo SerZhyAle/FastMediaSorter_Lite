@@ -199,6 +199,80 @@ Partial Public NotInheritable Class Localization
             "اس سے زیادہ اندراجات والا آرکائیو اس تعداد تک محدود دکھایا جاتا ہے، اور اسٹیٹس لائن یہ بتاتی ہے۔",
             "超过此数量的压缩包会被截断显示，状态栏会提示这一点。")
 
+        ' The provider layer (006_SPECIFICATION_FILESYSTEM_PROVIDER_LAYER_DOTNET10.md PV-7):
+        ' the same single refusal point now answers for a resource whose capabilities do not
+        ' include a verb, and a resource's file that could not be fetched says so. Kept
+        ' beside the archive strings because it is the same discipline, generalised.
+        Add("Этот ресурс не позволяет эту операцию с файлами",
+            "This resource does not allow this file operation",
+            "Цей ресурс не дозволяє цю операцію з файлами",
+            "Diese Ressource erlaubt diese Dateioperation nicht",
+            "Questa risorsa non consente questa operazione sui file",
+            "Este recurso no permite esta operación con archivos",
+            "Cette ressource n'autorise pas cette opération sur les fichiers",
+            "Este recurso não permite esta operação com arquivos",
+            "هذا المورد لا يسمح بعملية الملفات هذه",
+            "यह संसाधन इस फ़ाइल संचालन की अनुमति नहीं देता",
+            "এই রিসোর্সে এই ফাইল অপারেশন করা যায় না",
+            "یہ وسیلہ اس فائل آپریشن کی اجازت نہیں دیتا",
+            "此资源不允许此文件操作")
+        Add("Не удалось открыть ресурс",
+            "Could not open the resource",
+            "Не вдалося відкрити ресурс",
+            "Die Ressource konnte nicht geöffnet werden",
+            "Impossibile aprire la risorsa",
+            "No se pudo abrir el recurso",
+            "Impossible d'ouvrir la ressource",
+            "Não foi possível abrir o recurso",
+            "تعذر فتح المورد",
+            "संसाधन नहीं खोला जा सका",
+            "রিসোর্সটি খোলা যায়নি",
+            "وسیلہ نہیں کھولا جا سکا",
+            "无法打开该资源")
+        Add("Не удалось получить файл с ресурса",
+            "Could not fetch the file from the resource",
+            "Не вдалося отримати файл із ресурсу",
+            "Die Datei konnte nicht von der Ressource geladen werden",
+            "Impossibile recuperare il file dalla risorsa",
+            "No se pudo obtener el archivo del recurso",
+            "Impossible de récupérer le fichier depuis la ressource",
+            "Não foi possível obter o arquivo do recurso",
+            "تعذر جلب الملف من المورد",
+            "संसाधन से फ़ाइल प्राप्त नहीं की जा सकी",
+            "রিসোর্স থেকে ফাইলটি আনা যায়নি",
+            "وسیلے سے فائل حاصل نہیں کی جا سکی",
+            "无法从该资源获取文件")
+
+        ' --- audit 052 G-15, G-17 -----------------------------------------------------
+
+        Add("Это не ZIP-архив ({0}) - такие архивы пока не поддерживаются",
+            "This is not a ZIP archive ({0}) - such archives are not supported yet",
+            "Це не ZIP-архів ({0}) - такі архіви поки не підтримуються",
+            "Das ist kein ZIP-Archiv ({0}) - solche Archive werden noch nicht unterstützt",
+            "Questo non è un archivio ZIP ({0}) - archivi di questo tipo non sono ancora supportati",
+            "Esto no es un archivo ZIP ({0}) - estos archivos aún no son compatibles",
+            "Ce n'est pas une archive ZIP ({0}) - ces archives ne sont pas encore prises en charge",
+            "Isto não é um arquivo ZIP ({0}) - esses arquivos ainda não são suportados",
+            "هذا ليس أرشيف ZIP ({0}) - هذه الأرشيفات غير مدعومة بعد",
+            "यह ZIP संग्रह नहीं है ({0}) - ऐसे संग्रह अभी समर्थित नहीं हैं",
+            "এটি ZIP আর্কাইভ নয় ({0}) - এমন আর্কাইভ এখনও সমর্থিত নয়",
+            "یہ ZIP آرکائیو نہیں ہے ({0}) - ایسے آرکائیو ابھی معاون نہیں ہیں",
+            "这不是 ZIP 压缩包（{0}）- 暂不支持此类压缩包")
+
+        Add("Путь к архиву скопирован в буфер",
+            "The archive path was copied to the clipboard",
+            "Шлях до архіву скопійовано в буфер",
+            "Der Pfad des Archivs wurde in die Zwischenablage kopiert",
+            "Il percorso dell'archivio è stato copiato negli appunti",
+            "La ruta del archivo se copió al portapapeles",
+            "Le chemin de l'archive a été copié dans le presse-papiers",
+            "O caminho do arquivo foi copiado para a área de transferência",
+            "نُسخ مسار الأرشيف إلى الحافظة",
+            "संग्रह का पथ क्लिपबोर्ड में कॉपी किया गया",
+            "আর্কাইভের পথ ক্লিপবোর্ডে কপি করা হয়েছে",
+            "آرکائیو کا راستہ کلپ بورڈ میں کاپی کر دیا گیا",
+            "压缩包路径已复制到剪贴板")
+
     End Sub
 
 End Class

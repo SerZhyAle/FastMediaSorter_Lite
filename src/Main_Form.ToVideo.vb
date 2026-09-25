@@ -60,8 +60,12 @@ Partial Public Class Main_Form
     Friend Sub LocalizeToVideo()
         If btn_ToVideo Is Nothing Then Return
         btn_ToVideo.AccessibleName = Localization.T("Заменить видео")
+        ' The name is the menu's name for the action; the tooltip's longer wording is its
+        ' description, so a screen reader hears both and they never contradict (spec 027).
+        Dim hint As String = Localization.T("Преобразовать анимацию в видео и удалить оригинал")
+        btn_ToVideo.AccessibleDescription = hint
         If toolTip IsNot Nothing Then
-            toolTip.SetToolTip(btn_ToVideo, Localization.T("Преобразовать анимацию в видео и удалить оригинал"))
+            toolTip.SetToolTip(btn_ToVideo, hint)
         End If
     End Sub
 
@@ -92,7 +96,10 @@ Partial Public Class Main_Form
     ''' </summary>
     Friend Async Function ReplaceAnimationWithVideoAsync() As Task
         If to_Video_Running OrElse Not IsCurrentAnimation() Then Return
-        If ArchiveModeBlocksFileOperations() Then Return
+        If ResourceBlocksFileOperations(ResourceVerb.WriteBeside) Then Return
+        ' It writes an MP4 beside the original, and beside a container that MP4 would be
+        ' the plaintext (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §5.4 rule 3).
+        If SecureBlocksWritingAction() Then Return
 
         Dim sourcePath As String = Current_File_Name
         If String.IsNullOrEmpty(sourcePath) OrElse Not File.Exists(sourcePath) Then Return
@@ -119,12 +126,17 @@ Partial Public Class Main_Form
             Dim run As AnimationToVideo.EncoderRun =
                 Await EncodeWithProgressAsync(ffmpegExe, sourcePath, tempPath, fps, durationMs).ConfigureAwait(True)
 
+            ' The video must hold the animation, not merely exist (audit 050 D-18).
             Dim encode As VideoReplaceOutcome = VideoConvertPlan.DecideEncode(
-                run.Cancelled, run.ExitCode, File.Exists(tempPath), FileLength(tempPath))
+                run.Cancelled, run.ExitCode, File.Exists(tempPath), FileLength(tempPath),
+                durationMs, fps, run.FramesWritten, run.OutTimeMs)
+            AppFileLogger.WriteLine("Replace with video: " & encode.ToString() & " (source " & frameCount.ToString() & " frames / " &
+                                    durationMs.ToString() & " ms at " & fps.ToString() & " fps; written " &
+                                    run.FramesWritten.ToString() & " frames / " & run.OutTimeMs.ToString() & " ms)")
 
             ' 4. Rename the temporary file onto the target.
             Dim swapped As Boolean = False
-            If encode = VideoReplaceOutcome.EncodedOk Then swapped = TryPlaceVideo(tempPath, targetPath)
+            If VideoConvertPlan.ShouldPlaceVideo(encode) Then swapped = TryPlaceVideo(tempPath, targetPath)
 
             ' 5-6. Only now - the video exists at its final name - is the original released
             ' and deleted (invariant 2). ReleaseActiveMedia first: a MemoryStream-backed
@@ -142,7 +154,8 @@ Partial Public Class Main_Form
             ReportOutcome(outcome, targetPath, run.Detail, deleteError)
 
             ' 7. Land on the file that was just made - the folder has never heard of it.
-            If outcome = VideoReplaceOutcome.Success OrElse outcome = VideoReplaceOutcome.OriginalNotDeleted Then
+            If outcome = VideoReplaceOutcome.Success OrElse outcome = VideoReplaceOutcome.OriginalNotDeleted OrElse
+               outcome = VideoReplaceOutcome.OriginalKeptUnverified Then
                 ProcessArgument(targetPath)
             End If
         Finally
@@ -152,17 +165,21 @@ Partial Public Class Main_Form
 
     ' --- the steps, one method each -------------------------------------------
 
+    ''' <summary>
+    ''' Set by the confirmation's own checkbox and never written anywhere: it lasts until the
+    ''' viewer closes (ticket 028 Ф-5, owner decision 2026-09-24). The deletion it guards is
+    ''' past the Recycle Bin, and APP-BEHAVIOUR rule 5 does not let a user switch the
+    ''' question off for good - only for the sorting run in front of them.
+    ''' </summary>
+    Private to_Video_Confirm_Skipped_This_Session As Boolean = False
+
     Private Function ConfirmReplaceWithVideo(sourcePath As String, targetPath As String, hasAlpha As Boolean) As Boolean
-        Dim preferences As ModernViewerPreferences = GetModernPreferences()
-        If Not preferences.ConfirmReplaceWithVideo Then Return True
+        If to_Video_Confirm_Skipped_This_Session Then Return True
 
         Using dialog As New Video_Replace_Confirm_Form(Path.GetFileName(sourcePath), Path.GetFileName(targetPath), hasAlpha)
             PinToViewerBand(dialog)
             If dialog.ShowDialog(Me) <> DialogResult.OK Then Return False
-            If dialog.DoNotAskAgain Then
-                preferences.ConfirmReplaceWithVideo = False
-                ApplyModernPreferencesFromSettings()
-            End If
+            If dialog.DoNotAskAgain Then to_Video_Confirm_Skipped_This_Session = True
         End Using
         Return True
     End Function
@@ -235,7 +252,7 @@ Partial Public Class Main_Form
             reason = ""
             Return True
         Catch ex As Exception
-            reason = ex.Message
+            reason = FailureText.Describe(ex)
             AppFileLogger.LogException("Video created but the original stayed: " & sourcePath, ex)
             Return False
         End Try
@@ -266,6 +283,8 @@ Partial Public Class Main_Form
                 lbl_Status.Text = Localization.TF("Готово: {0}", Path.GetFileName(targetPath))
             Case VideoReplaceOutcome.OriginalNotDeleted
                 lbl_Status.Text = Localization.TF("Видео создано, но не удалось удалить оригинал: {0}", deleteError)
+            Case VideoReplaceOutcome.OriginalKeptUnverified
+                lbl_Status.Text = Localization.TF("Видео создано, но его полноту не удалось проверить - оригинал сохранён: {0}", Path.GetFileName(targetPath))
             Case VideoReplaceOutcome.Cancelled
                 lbl_Status.Text = Localization.T("Преобразование отменено")
             Case Else
@@ -274,13 +293,24 @@ Partial Public Class Main_Form
     End Sub
 
     ''' <summary>
-    ''' A reason a person can act on. FFmpeg's own last line is the best answer when there is
-    ''' one; the outcome name is the fallback for the cases where FFmpeg said nothing because
-    ''' it thought it had succeeded.
+    ''' A reason a person can act on (APP-BEHAVIOUR rule 6, ticket 028 Ф-3). FFmpeg's own last
+    ''' line is a diagnostic in English, so it goes to the log; the user reads what happened
+    ''' to their file and what to do. Every one of these outcomes leaves the original untouched.
     ''' </summary>
     Private Function DescribeFailure(outcome As VideoReplaceOutcome, encoderDetail As String) As String
-        If Not String.IsNullOrWhiteSpace(encoderDetail) Then Return encoderDetail
-        Return outcome.ToString()
+        If Not String.IsNullOrWhiteSpace(encoderDetail) Then
+            AppFileLogger.WriteLine("Replace with video: " & outcome.ToString() & " - " & encoderDetail)
+        End If
+        Select Case outcome
+            Case VideoReplaceOutcome.SwapFailed
+                Return Localization.T("готовое видео не удалось переименовать - возможно, файл с таким именем занят. Оригинал не тронут; повторите попытку.")
+            Case VideoReplaceOutcome.OutputMissing, VideoReplaceOutcome.OutputTooSmall
+                Return Localization.T("FFmpeg не создал пригодный файл. Оригинал не тронут; подробности записаны в журнал.")
+            Case VideoReplaceOutcome.OutputIncomplete
+                Return Localization.T("в видео попали не все кадры анимации. Оригинал не тронут; подробности записаны в журнал.")
+            Case Else
+                Return Localization.T("FFmpeg завершился с ошибкой. Оригинал не тронут; подробности записаны в журнал.")
+        End Select
     End Function
 
     ' --- what the playing animation can tell us --------------------------------

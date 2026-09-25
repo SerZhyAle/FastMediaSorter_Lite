@@ -77,11 +77,24 @@ Partial Public Class Main_Form
 
         ' The path travels as an argument, never as a global read from the pool
         ' thread: the user goes on flipping and Current_File_Name moves under us.
+        ' The loader says WHY it returned Nothing (audit 048, A-06): a locked or access-denied
+        ' file is not "not a picture". Written by the pool thread before the task completes,
+        ' read here only after a completed Wait - which orders the two.
+        Dim read_Failure As PathFailureKind = PathFailureKind.Content
         Dim decode As System.Threading.Tasks.Task(Of Tuple(Of Image, IO.MemoryStream)) =
-            System.Threading.Tasks.Task.Run(Function() LoadImageWithStream(file_Path))
+            System.Threading.Tasks.Task.Run(Function()
+                                                Dim reported As PathFailureKind = PathFailureKind.Content
+                                                Dim loaded As Tuple(Of Image, IO.MemoryStream) = LoadImageWithStream(file_Path, reported)
+                                                read_Failure = reported
+                                                Return loaded
+                                            End Function)
 
         ' The common case - no badge is ever built and nothing on screen moves.
-        If decode.Wait(loading_Badge_Delay_Ms) Then Return decode.GetAwaiter().GetResult()
+        If decode.Wait(loading_Badge_Delay_Ms) Then
+            Dim quick As Tuple(Of Image, IO.MemoryStream) = decode.GetAwaiter().GetResult()
+            If quick Is Nothing Then failure_Kind = LoaderFailureKind(read_Failure)
+            Return quick
+        End If
 
         Dim saved_Status As String = ShowLoadingStatus(file_Path)
         Dim result As Tuple(Of Image, IO.MemoryStream)
@@ -105,7 +118,7 @@ Partial Public Class Main_Form
                 ' Twenty seconds without a first block is not a verdict on the file: it is
                 ' the redirector timing out per block on a session that is gone. Saying so
                 ' is what keeps the file - and the other 199 behind it - in the list.
-                failure_Kind = PathFailureKind.Transport
+                failure_Kind = DeadlineFailureKind(file_Path)
                 AbandonDecode(decode, file_Path, watch.ElapsedMilliseconds)
                 Return Nothing
             End If
@@ -114,6 +127,7 @@ Partial Public Class Main_Form
             ' instead of an AggregateException wrapping it, so the caller's
             ' ArgumentException / OutOfMemoryException catches still match.
             result = decode.GetAwaiter().GetResult()
+            If result Is Nothing Then failure_Kind = LoaderFailureKind(read_Failure)
         Finally
             HideLoadingBadge()
             RestoreLoadingStatus(saved_Status)
@@ -121,6 +135,30 @@ Partial Public Class Main_Form
                             watch.ElapsedMilliseconds.ToString() & " ms: " & file_Path)
         End Try
         Return result
+    End Function
+
+    ''' <summary>The loader's own verdict as the display path's failure kind. None cannot
+    ''' arrive with a Nothing result; if it ever did, it is the historical Content.</summary>
+    Private Shared Function LoaderFailureKind(reported As PathFailureKind) As PathFailureKind
+        If reported = PathFailureKind.None Then Return PathFailureKind.Content
+        Return reported
+    End Function
+
+    ''' <summary>
+    ''' What a decode abandoned at its deadline says (audit 048, A-18). Twenty seconds without
+    ''' a result on a share is the redirector timing out per block - Transport. On a local,
+    ''' ready volume there is no redirector: the decode itself is slow (a huge animated WEBP
+    ''' or HEIC on a slow CPU), and "no connection to the folder" was a false sentence. That
+    ''' is SlowDecode - the file stays in the list either way, since the abandoned decode may
+    ''' still finish and fill the decode cache. The x86 build keeps Transport (it ignores the
+    ''' kind anyway, invariant 10 of 011).
+    ''' </summary>
+    Private Function DeadlineFailureKind(file_Path As String) As PathFailureKind
+#If NETFRAMEWORK Then
+        Return PathFailureKind.Transport
+#Else
+        Return If(IsOnLocalReadyVolume(file_Path), PathFailureKind.SlowDecode, PathFailureKind.Transport)
+#End If
     End Function
 
     ''' <summary>Lets go of a decode that outran its deadline, releasing its result whenever

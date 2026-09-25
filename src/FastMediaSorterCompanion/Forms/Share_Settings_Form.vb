@@ -46,11 +46,18 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     Private chkAutostart As CheckBox
     Private chkOpenOnStart As CheckBox
+    Private chkLanOnly As CheckBox
     Private numMaxConns As NumericUpDown
     Private numPort As NumericUpDown
+    Private btnApplyPort As Button
+    ''' <summary>The port that is actually in force - in the QR codes and router rules
+    ''' already handed out - or 0 on a machine that has never recorded one. The field above
+    ''' is only a pending value until "Apply" commits it (ticket 028 Ф-5).</summary>
+    Private _committedPort As Integer
     Private lnkFreePort As LinkLabel
     Private lblPortNote As Label
     Private lblAutostartNote As Label
+    Private lblLanOnlyNote As Label
     Private toolTip As ToolTip
 
     Private _root As TableLayoutPanel
@@ -77,17 +84,19 @@ Partial Public NotInheritable Class Share_Settings_Form
         End Get
     End Property
 
-    ''' <summary>True when something here changed what the WORKER is doing - today only the
-    ''' pinned port, which restarts a running server on another number. Nothing elevated
-    ''' happened, so <see cref="Changed"/> stays false, but the caller's status snapshot (the
-    ''' port it prints, the state line) is stale all the same and has to be re-read.</summary>
+    ''' <summary>True when something here changed what the WORKER is doing - today the
+    ''' pinned port and the LAN-only switch, either of which restarts a running server on
+    ''' the spot. Nothing elevated happened, so <see cref="Changed"/> stays false, but the
+    ''' caller's status snapshot (the port it prints, the state line, the internet path) is
+    ''' stale all the same and has to be re-read.</summary>
     Public ReadOnly Property WorkerStateChanged As Boolean
         Get
-            Return _portPushed
+            Return _portPushed OrElse _policyPushed
         End Get
     End Property
 
     Private _portPushed As Boolean
+    Private _policyPushed As Boolean
 
     Public Sub New(Optional status As WorkerStatus = Nothing)
         _status = status
@@ -104,7 +113,14 @@ Partial Public NotInheritable Class Share_Settings_Form
         UiLanguage.ApplyTo(Me)
         Me.Text = Localization.T("Настройки менеджера")
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
-        AddHandler Me.FormClosed, Sub() ShareIcons.FreeIcon(Me.Icon, _iconHandle)
+        ' The tooltip is disposed with the window (ticket 054 H-20): a live ToolTip keeps
+        ' a native window and references to every control it serves, so a closed settings
+        ' dialog would stay reachable from the tray process that outlives it.
+        AddHandler Me.FormClosed,
+            Sub()
+                Try : toolTip.Dispose() : Catch : End Try
+                ShareIcons.FreeIcon(Me.Icon, _iconHandle)
+            End Sub
         ' Sizable rather than the usual FixedDialog: an accordion changes height by design,
         ' and a fixed dialog that outgrows the screen has no way to give the user the rest.
         ' The root panel AutoScrolls, so the worst case is a scrollbar, never a lost button.
@@ -138,6 +154,12 @@ Partial Public NotInheritable Class Share_Settings_Form
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(16, 5, 16, 5),
             .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.OK}
         _strip.Controls.Add(btnClose)
+        ' The Share Manager's own "send the log" (ticket 028 Ф-3), on the left of the strip:
+        ' it opens a dialog and changes nothing here, so it is not a setting.
+        Dim lnkSendLog As New LinkLabel With {.Dock = DockStyle.Left, .AutoSize = True,
+            .Padding = New Padding(0, 8, 0, 0), .Text = Localization.T("Отправить журнал автору..")}
+        AddHandler lnkSendLog.LinkClicked, Async Sub() Await SendLogsFlow.RunAsync(Me)
+        _strip.Controls.Add(lnkSendLog)
 
         ' Fill first, docked strip second - WinForms docks from the END of the collection.
         Me.Controls.Add(_root)
@@ -149,7 +171,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' Before the sizing below, and deliberately probe-free: the hosting group shows at
         ' most half of its nine actions in any given state, and measuring it with all of
         ' them visible sizes the dialog for a state it will never draw.
-        ApplyHostingState(False)
+        ApplyHostingState(Nothing)
         UpdateSummaries()
         ' The two small groups open, the big one folded (see the class remark).
         _secStartup.Expanded = True
@@ -227,11 +249,17 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' took it. "Pick another" should not mean guessing a number.
         lnkFreePort = New LinkLabel With {.AutoSize = True, .Margin = New Padding(10, 6, 0, 0),
             .Text = Localization.T("Подобрать свободный")}
+        ' A value control no longer restarts the server as focus leaves it (APP-BEHAVIOUR
+        ' rule 12, ticket 028 Ф-5): the number is pending until this button, which asks
+        ' first and names what stops working.
+        btnApplyPort = New Button With {.AutoSize = True, .Margin = New Padding(6, 0, 0, 0),
+            .Text = Localization.T("Применить порт"), .Enabled = False}
         AddHandler numPort.ValueChanged, AddressOf OnPortValueChanged
-        AddHandler numPort.Leave, AddressOf OnPortCommit
+        AddHandler btnApplyPort.Click, AddressOf OnApplyPort
         AddHandler lnkFreePort.LinkClicked, AddressOf OnPickFreePort
         pnlPort.Controls.Add(lblPort)
         pnlPort.Controls.Add(numPort)
+        pnlPort.Controls.Add(btnApplyPort)
         pnlPort.Controls.Add(lnkFreePort)
         sec.AddBodyRow(pnlPort)
         toolTip.SetToolTip(numPort, ShareText.PortHint())
@@ -247,12 +275,70 @@ Partial Public NotInheritable Class Share_Settings_Form
             .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 4, 0, 0)}
         sec.AddBodyRow(lblPortNote)
 
+        ' The SERVER-WIDE "LAN only" enforcement (ticket 054 H-06). This is the switch the
+        ' consent text names: while it is off, the program asks the router to open the
+        ' port (UPnP/NAT-PMP) and checks the external path. It applies to the whole share
+        ' - every code, not one - and is pushed to the worker THE MOMENT it moves, not at
+        ' the next resume. The wizard's per-code checkbox only shapes one export and never
+        ' reaches this push.
+        chkLanOnly = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 2),
+            .Text = Localization.T("Только локальная сеть (без доступа из интернета)")}
+        AddHandler chkLanOnly.CheckedChanged, AddressOf OnLanOnlyChanged
+        sec.AddBodyRow(chkLanOnly)
+        lblLanOnlyNote = New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
+            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 2, 0, 0)}
+        sec.AddBodyRow(lblLanOnlyNote)
+        toolTip.SetToolTip(chkLanOnly, Localization.T("Относится ко всей раздаче, а не к одному коду: пока включено, программа не просит роутер открыть порт (UPnP/NAT-PMP) и не даёт адрес из интернета. Адрес из интернета, уже вписанный в выданные коды, перестаёт работать; по локальной сети всё работает как раньше."))
+
         ' Calm, factual reachability note (decision F): same-network devices can reach the
         ' share while it runs. It sits here rather than on the main window because it is
         ' the footnote of the setting above, not a state anybody reads per session.
         sec.AddBodyRow(New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
             .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 10, 0, 0),
             .Text = ShareText.NetworkReachNote()})
+
+        ' The way back from the opt-in (ticket 028 Ф-6, APP-BEHAVIOUR rule 4): a standing
+        ' consent is revocable in one action, from where the network settings live. Hidden
+        ' where this user cannot withdraw it from here - a Store build, the Server edition.
+        If ServerFeatures.CanWithdraw() Then
+            Dim btnWithdraw As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                .Margin = New Padding(0, 10, 0, 0), .Padding = New Padding(8, 2, 8, 2),
+                .Text = Localization.T("Выключить функции сервера..")}
+            AddHandler btnWithdraw.Click, AddressOf OnWithdrawServerFeatures
+            sec.AddBodyRow(btnWithdraw)
+        End If
+    End Sub
+
+    ''' <summary>Stops sharing, then removes the firewall rule and the consent with one UAC
+    ''' prompt. Asked first: it disconnects every phone. On success the dialog closes and the
+    ''' main window falls back to its enable panel.</summary>
+    Private Async Sub OnWithdrawServerFeatures(sender As Object, e As EventArgs)
+        If MessageBox.Show(Me, ShareText.ServerDisableQuestion(), Me.Text, MessageBoxButtons.YesNo,
+                           MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
+        Try
+            Await ShareController.StopServerAsync()
+        Catch ex As Exception
+            AppFileLogger.LogException("Withdraw: stopping the server", ex)
+        End Try
+        ' Off the UI thread (ticket 054 H-15): the helper blocks on its UAC prompt, and
+        ' this window is not the only thing that must stay alive while it does.
+        Dim result As ServerFeatures.WithdrawResult = Await Task.Run(Function() ServerFeatures.WithdrawViaElevation())
+        If IsDisposed OrElse Disposing Then Return
+        Select Case result
+            Case ServerFeatures.WithdrawResult.Declined
+                MessageBox.Show(Me, Localization.T("Ничего не изменено: права администратора не получены. Раздача остановлена - её можно снова включить в главном окне."),
+                                Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Case ServerFeatures.WithdrawResult.Failed
+                MessageBox.Show(Me, Localization.T("Не удалось выполнить действие. Повторите попытку; если не выйдет - отправьте журнал автору: меню значка в трее - «Отправить журнал автору..»."),
+                                Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Case ServerFeatures.WithdrawResult.StillEnabledByInstaller
+                _changed = True
+                MessageBox.Show(Me, Localization.T("Разрешение в брандмауэре удалено, но функции сервера включены установщиком для всего компьютера. Чтобы выключить их полностью, измените установку: Параметры Windows - Приложения."),
+                                Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Case Else
+                _changed = True
+                Me.DialogResult = DialogResult.OK
+        End Select
     End Sub
 
     ' --- layout helpers ---------------------------------------------------------
@@ -310,6 +396,8 @@ Partial Public NotInheritable Class Share_Settings_Form
                 toolTip.SetToolTip(chkAutostart, Localization.T("Автозапуском управляет Windows (пакет из Store)."))
             End If
             chkOpenOnStart.Checked = _settings.OpenWindowOnStartup
+            chkLanOnly.Checked = _settings.LanOnly
+            UpdateLanOnlyNote()
             numMaxConns.Value = ShareSettings.ClampConnections(_settings.MaxConnections)
             LoadPortState()
             If ServerFeatures.IsSystemServiceHost() Then
@@ -345,7 +433,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' The port is exactly the kind of fact a folded section must still answer: someone
         ' opens this dialog to check which number their router rule has to name.
         _secNetwork.Summary = Localization.TF("до {0} подключений, порт {1}",
-                                              CInt(numMaxConns.Value), CInt(numPort.Value))
+                                              CInt(numMaxConns.Value), If(_committedPort > 0, _committedPort, CInt(numPort.Value)))
         _secNetwork.SummaryColor = SystemColors.GrayText
         ' Verbatim from HostingText - the same sentence the group's own first line shows,
         ' so the folded and unfolded states cannot drift apart.
@@ -365,9 +453,29 @@ Partial Public NotInheritable Class Share_Settings_Form
         Dim shown As Integer = ShareController.EffectivePort(_status)
         If shown < ShareSettings.MinFixedPort OrElse shown > ShareSettings.MaxFixedPort Then
             shown = ShareSettings.SuggestedFixedPort
+            _committedPort = 0
+        Else
+            _committedPort = shown
         End If
+        _baselinePort = shown
         numPort.Value = CDec(shown)
+        UpdatePortApply()
         UpdatePortNote()
+    End Sub
+
+    ''' <summary>What the field held when the dialog opened, or after the last Apply: the
+    ''' port in force, or on a machine that never shared, the suggestion - which the worker
+    ''' may replace with its own first choice, so it is not something to "apply".</summary>
+    Private _baselinePort As Integer
+
+    Private Function PortPending() As Boolean
+        Return numPort IsNot Nothing AndAlso CInt(numPort.Value) <> _baselinePort
+    End Function
+
+    ''' <summary>"Apply" is live only while the field holds a number that is not in force.</summary>
+    Private Sub UpdatePortApply()
+        If btnApplyPort Is Nothing Then Return
+        btnApplyPort.Enabled = PortPending()
     End Sub
 
     ''' <summary>The port the server is actually on, or 0. A snapshot from when this dialog
@@ -377,14 +485,21 @@ Partial Public NotInheritable Class Share_Settings_Form
         Return _status.ListenPort
     End Function
 
-    ''' <summary>The line under the autostart checkbox. It exists for exactly one state -
-    ''' the entry is registered and the shell vetoes it - and says nothing in every other,
-    ''' because a checkbox that already reads "on" needs no second voice agreeing with it.
+    ''' <summary>The line under the autostart checkbox. It exists for exactly two states -
+    ''' the entry is registered and the shell vetoes it, or the entry names an exe that is
+    ''' no longer on disk - and says nothing in every other, because a checkbox that already
+    ''' reads "on" needs no second voice agreeing with it.
     ''' </summary>
     Private Sub UpdateAutostartNote()
         If lblAutostartNote Is Nothing Then Return
         If AutostartManager.State() = AutostartState.BlockedByShell Then
             lblAutostartNote.Text = Localization.T("Этот пункт автозагрузки отключён в Windows (Диспетчер задач - Автозагрузка приложений), поэтому значок не появляется при входе. Поставьте галочку заново, чтобы включить его.")
+            lblAutostartNote.ForeColor = CollapsibleSection.AttentionColor
+        ElseIf AutostartManager.IsTargetMissing() Then
+            ' A Run value whose exe is gone (ticket 054 H-16): the entry exists, so the
+            ' checkbox reads "on", and nothing will ever start. State() unticks it and this
+            ' line says why - re-ticking repairs it by pointing the entry here.
+            lblAutostartNote.Text = Localization.T("Автозапуск указывает на удалённый файл - значок не появится при входе. Поставьте галочку заново, чтобы вернуть его.")
             lblAutostartNote.ForeColor = CollapsibleSection.AttentionColor
         Else
             lblAutostartNote.Text = ""
@@ -402,7 +517,11 @@ Partial Public NotInheritable Class Share_Settings_Form
         If warn <> "" Then
             lblPortNote.Text = warn
             lblPortNote.ForeColor = CollapsibleSection.AttentionColor
-        ElseIf LivePort() > 0 AndAlso LivePort() <> CInt(numPort.Value) Then
+        ElseIf PortPending() Then
+            ' A pending number must not look applied: closing the dialog now discards it.
+            lblPortNote.Text = Localization.TF("Порт {0} ещё не применён - нажмите «Применить порт».", CInt(numPort.Value))
+            lblPortNote.ForeColor = CollapsibleSection.AttentionColor
+        ElseIf LivePort() > 0 AndAlso LivePort() <> _baselinePort Then
             lblPortNote.Text = ShareText.PortReexportHint()
             lblPortNote.ForeColor = CollapsibleSection.AttentionColor
         Else
@@ -423,46 +542,48 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' <summary>Fills the field with a port that is free right now. Advisory - anything can
     ''' take it between the probe and the worker's bind - so it is committed through the same
     ''' path as a typed number and the worker still has the last word.</summary>
-    Private Async Sub OnPickFreePort(sender As Object, e As LinkLabelLinkClickedEventArgs)
+    Private Sub OnPickFreePort(sender As Object, e As LinkLabelLinkClickedEventArgs)
         Dim found As Integer = FreePortFinder.FindFree(CInt(numPort.Value))
         If found = ShareSettings.UnsetPort Then Return
-        Dim prev As Boolean = _loading
-        _loading = True
+        ' Fills the field only - the number is committed by "Apply", like a typed one.
         numPort.Value = CDec(found)
-        _loading = prev
-        Try
-            SavePortChoice()
-        Catch
-        End Try
-        UpdatePortNote()
-        UpdateSummaries()
-        _portPushed = True
-        Try
-            Await ShareController.PushNetworkPolicyAsync()
-        Catch
-        End Try
+        If btnApplyPort IsNot Nothing AndAlso btnApplyPort.Enabled Then btnApplyPort.Focus()
     End Sub
 
-    ''' <summary>Persist on every tick (cheap, local); the push waits for Leave, exactly as
-    ''' the connection cap does - a spinner passing through 2221 must not restart a running
-    ''' server on each intermediate value.</summary>
+    ''' <summary>The field is a pending value: nothing is saved or pushed until "Apply".</summary>
     Private Sub OnPortValueChanged(sender As Object, e As EventArgs)
         If _loading Then Return
-        Try
-            SavePortChoice()
-        Catch
-        End Try
+        UpdatePortApply()
         UpdatePortNote()
-        UpdateSummaries()
     End Sub
 
-    Private Async Sub OnPortCommit(sender As Object, e As EventArgs)
-        If _loading Then Return
+    ''' <summary>
+    ''' Commits the pending port (APP-BEHAVIOUR rules 5 and 12, ticket 028 Ф-5, owner
+    ''' decision 2026-09-24). The port is what every phone is paired to (spec 015): once one
+    ''' was in force, changing it makes every QR code and .fmscfg handed out, and the router
+    ''' rule, stop working - so that is said BEFORE the change, not in a note afterwards.
+    ''' </summary>
+    Private Async Sub OnApplyPort(sender As Object, e As EventArgs)
+        If Not PortPending() Then Return
+        Dim newPort As Integer = CInt(numPort.Value)
+        If _committedPort > 0 Then
+            Dim question As String = Localization.TF(
+                "Сменить порт {0} на {1}?" & vbCrLf & vbCrLf &
+                "Все QR-коды и файлы .fmscfg, уже выданные телефонам, и правило проброса порта на роутере перестанут работать - их придётся создать заново. Работающая раздача перезапустится на новом порту.",
+                _committedPort, newPort)
+            If MessageBox.Show(Me, question, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+                               MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
+        End If
         Try
             SavePortChoice()
         Catch
         End Try
+        _committedPort = newPort
+        _baselinePort = newPort
         _portPushed = True
+        UpdatePortApply()
+        UpdatePortNote()
+        UpdateSummaries()
         Try
             Await ShareController.PushNetworkPolicyAsync()
         Catch
@@ -496,6 +617,59 @@ Partial Public NotInheritable Class Share_Settings_Form
             Await ShareController.PushNetworkPolicyAsync()
         Catch
         End Try
+    End Sub
+
+    ''' <summary>
+    ''' The server-wide LAN-only switch (ticket 054 H-06): persisted AND pushed the moment
+    ''' it moves, so the enforcing half follows the checkbox instead of waiting for the next
+    ''' resume. Turning it on while a share is live is asked about first: it removes the
+    ''' internet path from every code already handed out, which is not a side effect to
+    ''' discover from a phone that no longer connects.
+    ''' </summary>
+    Private Async Sub OnLanOnlyChanged(sender As Object, e As EventArgs)
+        If _loading Then Return
+        If chkLanOnly.Checked AndAlso LiveServerRunning() Then
+            Dim question As String = Localization.T(
+                "Включить режим «только локальная сеть»?" & vbCrLf & vbCrLf &
+                "Программа перестанет просить роутер открыть порт (UPnP/NAT-PMP) и не будет выдавать адрес из интернета. Адрес из интернета в уже выданных кодах перестанет работать; по локальной сети всё продолжит работать. Работающая раздача перезапустится.")
+            If MessageBox.Show(Me, question, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+                               MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
+                Dim prev As Boolean = _loading
+                _loading = True
+                chkLanOnly.Checked = False
+                _loading = prev
+                Return
+            End If
+        End If
+        Try
+            _settings.LanOnly = chkLanOnly.Checked
+            _settings.Save()
+        Catch
+        End Try
+        _policyPushed = True
+        Try
+            Await ShareController.PushNetworkPolicyAsync()
+        Catch
+        End Try
+        ' The dialog may have closed while the push was out (ticket 054 H-11).
+        If IsDisposed OrElse Disposing Then Return
+        UpdateLanOnlyNote()
+    End Sub
+
+    ''' <summary>Whether the status this dialog was opened with showed a running server -
+    ''' what decides that switching LAN-only on deserves the question above.</summary>
+    Private Function LiveServerRunning() As Boolean
+        Return _status IsNot Nothing AndAlso _status.Running
+    End Function
+
+    ''' <summary>The line under the LAN-only switch. Only the older-worker refusal has
+    ''' anything to say here - a push the worker answered keeps quiet.</summary>
+    Private Sub UpdateLanOnlyNote()
+        If lblLanOnlyNote Is Nothing Then Return
+        Dim warn As String = ShareController.PolicyWarning()
+        lblLanOnlyNote.Text = warn
+        lblLanOnlyNote.ForeColor = CollapsibleSection.AttentionColor
+        lblLanOnlyNote.Visible = warn <> ""
     End Sub
 
     Private Sub OnAutostartChanged(sender As Object, e As EventArgs)

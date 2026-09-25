@@ -27,7 +27,6 @@ Partial Public NotInheritable Class Localization
         ' group boxes
         Add("Фон", "Background", "Фон", "Hintergrund", "Sfondo", "Fondo", "Arrière-plan", "Fundo", "الخلفية", "पृष्ठभूमि", "পটভূমি", "پس منظر", "背景")
         Add("Информация на экране", "On-screen info", "Інформація на екрані", "Bildschirminfos", "Info a schermo", "Información en pantalla", "Infos à l'écran", "Informações na tela", "معلومات على الشاشة", "स्क्रीन पर जानकारी", "পর্দায় তথ্য", "اسکرین پر معلومات", "屏幕信息")
-        Add("Слайдшоу", "Slideshow", "Слайд-шоу", "Diashow", "Presentazione", "Pase de diapositivas", "Diaporama", "Apresentação de slides", "عرض الشرائح", "स्लाइडशो", "স্লাইডশো", "سلائیڈ شو", "幻灯片")
         Add("Панель миниатюр", "Thumbnail panel", "Панель мініатюр", "Miniaturansicht", "Pannello miniature", "Panel de miniaturas", "Panneau de miniatures", "Painel de miniaturas", "لوحة المصغّرات", "थंबनेल पैनल", "থাম্বনেইল প্যানেল", "تھمب نیل پینل", "缩略图面板")
         Add("Качество изображения", "Image quality", "Якість зображення", "Bildqualität", "Qualità immagine", "Calidad de imagen", "Qualité d'image", "Qualidade da imagem", "جودة الصورة", "छवि गुणवत्ता", "ছবির মান", "تصویر کا معیار", "图像质量")
         Add("Видео", "Video", "Відео", "Video", "Video", "Vídeo", "Vidéo", "Vídeo", "الفيديو", "वीडियो", "ভিডিও", "ویڈیو", "视频")

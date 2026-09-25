@@ -333,10 +333,10 @@ Public NotInheritable Class CollapsibleSection
             End Using
             If Me.Focused Then ControlPaint.DrawFocusRectangle(g, New Rectangle(1, 1, w - 2, h - 2))
 
-            Dim glyph As Integer = Math.Max(7, CInt(Me.Font.Height * 0.42F))
+            Dim glyph As Integer = Math.Min(Math.Max(12, Me.Font.Height), Math.Max(1, h - 4))
             Dim pad As Integer = 6
             Dim chevronX As Integer = If(rtl, w - pad - glyph, pad)
-            DrawChevron(g, New Rectangle(chevronX, (h - glyph) \ 2, glyph, glyph), _expanded, rtl)
+            DrawChevron(g, New Rectangle(chevronX, (h - glyph) \ 2, glyph, glyph), _expanded)
 
             Dim textFlags As TextFormatFlags = TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine Or TextFormatFlags.NoPadding
             If rtl Then textFlags = textFlags Or TextFormatFlags.RightToLeft
@@ -367,29 +367,17 @@ Public NotInheritable Class CollapsibleSection
                                   textFlags Or TextFormatFlags.EndEllipsis Or If(rtl, TextFormatFlags.Left, TextFormatFlags.Right))
         End Sub
 
-        ''' <summary>Solid triangle: down when open, pointing "into the row" when closed -
-        ''' which is right in RTL and left in LTR.</summary>
-        Private Shared Sub DrawChevron(g As Graphics, r As Rectangle, expanded As Boolean, rtl As Boolean)
-            Dim pts As Point()
-            If expanded Then
-                pts = New Point() {New Point(r.Left, r.Top + r.Height \ 4),
-                                   New Point(r.Right, r.Top + r.Height \ 4),
-                                   New Point(r.Left + r.Width \ 2, r.Bottom)}
-            ElseIf rtl Then
-                pts = New Point() {New Point(r.Right, r.Top),
-                                   New Point(r.Right, r.Bottom),
-                                   New Point(r.Left, r.Top + r.Height \ 2)}
-            Else
-                pts = New Point() {New Point(r.Left, r.Top),
-                                   New Point(r.Left, r.Bottom),
-                                   New Point(r.Right, r.Top + r.Height \ 2)}
-            End If
-            Dim saved As SmoothingMode = g.SmoothingMode
-            g.SmoothingMode = SmoothingMode.AntiAlias
-            Using b As New SolidBrush(Color.FromArgb(92, 104, 122))
-                g.FillPolygon(b, pts)
+        ''' <summary>The vocabulary's disclosure pair: nav.expand (chevron down) while the
+        ''' section is folded, nav.collapse (chevron up) while it is open - each shows the
+        ''' action a click performs. Both are rtl "fixed", so nothing mirrors here. It was a
+        ''' solid triangle in a baked grey, and a solid down triangle is nav.dropdown's
+        ''' shape (ICON-SET rule 2, spec 027 phase 7).</summary>
+        Private Shared Sub DrawChevron(g As Graphics, r As Rectangle, expanded As Boolean)
+            Dim meaning As IconMeaning = IconMap.GetMeaning(If(expanded, "collapsibleSectionOpen", "collapsibleSection"))
+            Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, Math.Max(1, r.Width), SystemColors.GrayText,
+                                                         AddressOf CompanionAssets.OpenBundledAsset)
+                g.DrawImage(glyph, r.Left, r.Top, r.Width, r.Height)
             End Using
-            g.SmoothingMode = saved
         End Sub
 
     End Class

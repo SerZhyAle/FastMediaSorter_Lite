@@ -54,11 +54,15 @@ Friend Module UiLanguage
         Next
     End Sub
 
-    ''' <summary>Drops the language list under <paramref name="anchor"/>.</summary>
+    ''' <summary>Drops the language list under <paramref name="anchor"/>. A fresh menu per
+    ''' click, disposed the moment it closes: a shown ContextMenuStrip keeps a native window
+    ''' and closures over the anchor, and this menu can outlive the window it was dropped
+    ''' from - every language switch rebuilds the main window (ticket 054 H-20).</summary>
     Friend Sub ShowLanguageMenu(anchor As Control)
         If anchor Is Nothing Then Return
         Dim menu As New ContextMenuStrip()
         AddLanguageItems(menu.Items)
+        AddHandler menu.Closed, Sub() menu.Dispose()
         menu.Show(anchor, New Point(0, anchor.Height))
     End Sub
 

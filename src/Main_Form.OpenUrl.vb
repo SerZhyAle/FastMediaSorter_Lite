@@ -114,6 +114,8 @@ Partial Public Class Main_Form
         ' counter stay on whatever folder is loaded. Next/Prev therefore walk back into
         ' that folder and end the stream - simple and predictable, and the alternative
         ' (a whole parallel "URL mode") buys nothing for a sorter.
+        EnterStreamDisplayState()
+
         lbl_Status.Text = Localization.T("Подключение..")
         ' Refresh, not DoEvents: all this needs is for the label to be painted before the
         ' connect, and DoEvents dispatches EVERYTHING - a queued keypress could reenter
@@ -121,6 +123,44 @@ Partial Public Class Main_Form
         lbl_Status.Refresh()
 
         PlayVideoWithVlcAsync(url)
+    End Sub
+
+    ''' <summary>
+    ''' True while a stream from "Open URL" is on screen. The folder's file is still
+    ''' Current_File_Name underneath - the stream belongs to no folder - so every file verb
+    ''' refuses while this is set (ResourceBlocksFileOperations), the way an archive does.
+    ''' Cleared by the next navigation (NoteLeavingCurrentMedia).
+    ''' </summary>
+    Private is_Stream_On_Screen As Boolean
+
+    Friend Function IsStreamOnScreen() As Boolean
+        Return is_Stream_On_Screen
+    End Function
+
+    ''' <summary>
+    ''' Gives the stream a display state of its own (audit 050 D-05). OpenMediaUrl used to
+    ''' change nothing but the player: with a stream on screen, DEL, the slot keys and the
+    ''' recipients overlay acted on the photo shown BEFORE the URL - unseen, and silently
+    ''' with "ask only when the file will not reach the Recycle Bin"; over an audio file the
+    ''' stream's picture stayed hidden under the previous track's plate, and the old track's
+    ''' pending tag parse still landed.
+    ''' </summary>
+    Private Sub EnterStreamDisplayState()
+        ' The outgoing video's position, while its name is still known.
+        If is_Vlc_Playing Then RememberCurrentVideoPosition()
+        ' Anything still in flight for the previous file is stale from here on.
+        media_Generation += 1
+        ' A container's decrypting stream is what VLC may have been reading: stop first,
+        ' then let the container go (the order UpdateCurrentFileAndDisplay keeps).
+        If IsSecureContentOnScreen() Then
+            If is_Vlc_Playing Then StopVlcPlayback()
+            SecureReleaseCurrent()
+        End If
+        ClearAudioSurface()
+        ' A stream is shown as video, whatever it carries: its picture goes on the VideoView,
+        ' and the audio plate, the audio sleep timer and the audio end action stay with files.
+        SetMediaDisplayKind(MediaKind.Video)
+        is_Stream_On_Screen = True
     End Sub
 
 End Class

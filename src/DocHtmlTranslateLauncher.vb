@@ -13,9 +13,10 @@ Imports Microsoft.Win32
 ''' to our own in-app OCR overlay (see SPECIFICATION_DOC_HTML_TRANSLATE_INTEGRATION.md).
 '''
 ''' Modelled on <see cref="OllamaManager"/>: find the exe, check availability, run
-''' it. The launch contract (positional image path, -ocr-lang / -folder flags, exit
-''' codes) is FROZEN by the companion and lives in
-''' P:\WINDOWS\EPUB_2_HTML\docs\integration-image-translate.md - never change it here.
+''' it. The launch contract is OCR-INVOCATION section 1 (the positional image path,
+''' the -ocr-lang / -force / -folder flags and the exit codes) and section 2-4 (engine
+''' lookup, detection, install offer); it is owned by the companion product and frozen
+''' there - never change it here. See docs/contracts/OCR-INVOCATION.md.
 ''' </summary>
 Public Module DocHtmlTranslate
 
@@ -152,19 +153,13 @@ Public Module DocHtmlTranslate
             cacheDir = OutputCacheDir(imagePath)
             Directory.CreateDirectory(cacheDir)
         Catch ex As Exception
-            errMsg = ex.Message
+            AppFileLogger.LogException("doc-html-translate launch", ex)
+            errMsg = FailureText.Describe(ex)
             Return False
         End Try
 
-        Dim args As New StringBuilder()
-        Dim lang As String = If(ocrLang, "").Trim()
-        If lang.Length > 0 Then args.Append("-ocr-lang ").Append(lang).Append(" ")
-        If force Then args.Append("-force ")
-        args.Append("-folder ").Append(Quote(cacheDir)).Append(" ")
-        args.Append(Quote(imagePath))
-
         Try
-            Dim psi As New ProcessStartInfo(exe, args.ToString()) With {
+            Dim psi As New ProcessStartInfo(exe, BuildArguments(ocrLang, force, cacheDir, imagePath)) With {
                 .UseShellExecute = False,
                 .CreateNoWindow = True,
                 .WindowStyle = ProcessWindowStyle.Hidden
@@ -181,7 +176,8 @@ Public Module DocHtmlTranslate
             proc.Start()
             Return True
         Catch ex As Exception
-            errMsg = ex.Message
+            AppFileLogger.LogException("doc-html-translate launch", ex)
+            errMsg = FailureText.Describe(ex)
             Return False
         End Try
     End Function
@@ -213,7 +209,7 @@ Public Module DocHtmlTranslate
     Private Const Browser_Cache_Budget_Mb As Integer = 500
 
     ''' <summary>The cache root - the folder whose subdirectories are the entries.</summary>
-    Private Function OutputCacheRoot() As String
+    Friend Function OutputCacheRoot() As String
         Return Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             App_name, Second_App_Name, "browser-translate-cache")
@@ -259,6 +255,34 @@ Public Module DocHtmlTranslate
         Catch
             Return ""
         End Try
+    End Function
+
+    ''' <summary>
+    ''' The -ocr-lang value for a normalized OCR source code, or "" for none.
+    '''
+    ''' "auto" sends NOTHING (ticket 033 Ф-7, finding F8, owner decision O-3). It used to send
+    ''' the first three codes of this product's assumed ladder ("rus+ukr+eng") as if the user
+    ''' had chosen them, and the producer runs its own script detection only when the reader
+    ''' did NOT choose (`OCR-PIPELINE` section 2.0) - so an assumption dressed as a choice
+    ''' switched off the producer's `OCR-OVERLAY` rule 10 protection. `OCR-INVOCATION` section 1
+    ''' permits omitting the flag. A language the user picked is still passed.
+    ''' </summary>
+    Friend Function OcrLangArgument(normalizedSourceCode As String) As String
+        Dim code As String = If(normalizedSourceCode, "").Trim()
+        If code.Length = 0 OrElse String.Equals(code, "auto", StringComparison.OrdinalIgnoreCase) Then Return ""
+        Return code
+    End Function
+
+    ''' <summary>The command line of `OCR-INVOCATION` section 1: the optional flags, then the
+    ''' quoted image path LAST.</summary>
+    Friend Function BuildArguments(ocrLang As String, force As Boolean, outputFolder As String, imagePath As String) As String
+        Dim args As New StringBuilder()
+        Dim lang As String = If(ocrLang, "").Trim()
+        If lang.Length > 0 Then args.Append("-ocr-lang ").Append(lang).Append(" ")
+        If force Then args.Append("-force ")
+        args.Append("-folder ").Append(Quote(outputFolder)).Append(" ")
+        args.Append(Quote(imagePath))
+        Return args.ToString()
     End Function
 
     Private Function Quote(value As String) As String

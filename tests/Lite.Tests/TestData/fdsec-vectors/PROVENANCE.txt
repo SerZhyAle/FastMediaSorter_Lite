@@ -1,0 +1,45 @@
+FDSEC conformance vectors - vendored artifacts, not a vendored contract
+=======================================================================
+
+What this folder is
+-------------------
+The committed conformance vectors of the FDSEC-FORMAT contract, section 16, copied here
+so that FdSecConformanceTests can run for anyone who clones this repository. A test that
+depends on a drive letter cannot run for anybody else, which is why these three files
+travel with the tests.
+
+What this folder is NOT
+-----------------------
+A copy of a contract. The two documents - FDSEC-FORMAT and FDSEC-BEHAVIOUR - stay in the
+shared catalog and are CITED, never duplicated (see docs/contracts/FDSEC.md, and
+CLAUDE.md's first line for where the catalog lives). Copying an artifact so a test can
+run is a different act from copying a document so a repository can disagree with it.
+
+Source
+------
+  contract ids : FDSEC-FORMAT 1.1, FDSEC-BEHAVIOUR 1.1
+  artifact set : vectors/ beside those documents in the shared catalog
+  taken on     : 2026-09-24 (re-vendored for 1.1, ticket 038; the 1.0 set was taken 2026-09-22)
+  generated    : 2026-09-20 (the "generated" field of vectors.json)
+
+Digests
+-------
+The test asserts these before it trusts a byte, so a vector file that changed under us
+fails loudly instead of quietly redefining what "conformant" means. Re-running the
+catalog's generator is a deliberate act and updates this file with it.
+
+1.1 added two cases to vectors.json and changed neither container: root_empty_credential
+(the empty credential's root under the empty container's salt) and containers.multi, a
+three-chunk original published as layout fields rather than as a file - the test
+assembles it from those fields and checks the result against blake2b256_of_file.
+
+  SHA-256  6c23dd6c35ccdb4d9706d78575b0652c07fee8d378bc56e83ce51520e21077b9  vectors.json
+  SHA-256  c151e3fbcfbc915229dd777ac0505d71313b1896f2678c34b6bfc68dd43e681f  container-empty.fd-sec
+  SHA-256  f101bfb460a7b2674d6b54283052b3289b7c636388cbaf5ea088660714245d3a  container-onebyte.fd-sec
+
+One value the vectors do not carry
+----------------------------------
+vectors.json publishes root_fast_branch but not the credential it was derived from - the
+generator holds that string. It is recovered and pinned in FdSecConformanceTests
+(FastBranchCredential), verified against the published root under the empty container's
+salt, so the fast branch is proven rather than assumed.

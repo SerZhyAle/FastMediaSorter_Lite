@@ -22,6 +22,36 @@ Partial Public Class Main_Form
         Return Is_slide_show_mode
     End Function
 
+    ''' <summary>The key of the last WM_KEYDOWN this window saw, and whether Windows marked
+    ''' it as an auto-repeat - KeyEventArgs does not carry that bit (audit 047, C-20).</summary>
+    Private last_KeyDown_Code As Keys = Keys.None
+    Private last_KeyDown_Was_Repeat As Boolean
+
+    ''' <summary>
+    ''' Reads the repeat bit off the raw message before the key becomes a KeyDown event.
+    ''' ProcessCmdKey runs for every key-down aimed at this window or any control on it
+    ''' (a child passes it up to its parent), ahead of KeyPreview. Nothing is consumed here.
+    ''' </summary>
+    Protected Overrides Function ProcessCmdKey(ByRef msg As Message, keyData As Keys) As Boolean
+        Const WM_KEYDOWN As Integer = &H100
+        Const WM_SYSKEYDOWN As Integer = &H104
+        If msg.Msg = WM_KEYDOWN OrElse msg.Msg = WM_SYSKEYDOWN Then
+            last_KeyDown_Code = keyData And Keys.KeyCode
+            last_KeyDown_Was_Repeat = KeyRouting.IsAutoRepeat(msg.LParam.ToInt64())
+        End If
+        Return MyBase.ProcessCmdKey(msg, keyData)
+    End Function
+
+    Private Function IsAutoRepeatOf(keyCode As Keys) As Boolean
+        Return last_KeyDown_Was_Repeat AndAlso last_KeyDown_Code = keyCode
+    End Function
+
+    ''' <summary>A key-down that bypassed ProcessCmdKey (an ActiveX host with focus) must
+    ''' not inherit a stale "repeat" and be swallowed: the release clears it.</summary>
+    Private Sub Form1_KeyUp(sender As Object, e As KeyEventArgs) Handles MyBase.KeyUp
+        If e.KeyCode = last_KeyDown_Code Then last_KeyDown_Was_Repeat = False
+    End Sub
+
     Private Shared Function RecipientSlotFromKey(keyCode As Keys) As Integer
         Select Case keyCode
             Case Keys.D1, Keys.NumPad1 : Return 1
@@ -39,17 +69,27 @@ Partial Public Class Main_Form
     End Function
 
     Public Sub KeybUse(e As KeyEventArgs, was_Slide_Show_Mode As Boolean)
-        ' An unconfigured recipient key is not an action. In particular, do not stop
-        ' the slideshow or show a status message for a slot that has no destination.
-        Dim recipient_Slot As Integer = RecipientSlotFromKey(e.KeyCode)
-        If recipient_Slot <> 0 AndAlso Not IsRecipientSlotConfigured(recipient_Slot) Then Return
-
-        SlideShowStop()
-        is_Slide_Show_Random_Mode = False
+        ' A key that moves, copies or deletes the file acts once per press (audit 047,
+        ' C-20): each auto-repeat that arrived after the previous operation had finished
+        ' took the next file, so one long press sorted a run of files nobody had looked at.
+        ' Swallowed, so the repeat does not reach a focused control either.
+        If KeyRouting.IsDestructiveKey(e.KeyCode) AndAlso IsAutoRepeatOf(e.KeyCode) Then
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Exit Sub
+        End If
 
         If cmbox_Media_Folder.Visible AndAlso Me.cmbox_Media_Folder.Focused Then
+            SlideShowStop()
+            is_Slide_Show_Random_Mode = False
             If e.KeyCode = Keys.Enter AndAlso cmbox_Media_Folder.Text <> "" Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1300: Enter pressed")
+#If Not NETFRAMEWORK Then
+                ' A typed folder leaves an open archive, like every other change of folder
+                ' (audit 052 A-13/G-06) - and before Current_Folder_Path is overwritten,
+                ' which is what the archive mode is recognised by.
+                LeaveArchiveUnlessShowing(cmbox_Media_Folder.Text)
+#End If
                 Current_Folder_Path = cmbox_Media_Folder.Text
                 ReadShowMediaFile(Mode_FolderAndFile)
             Else
@@ -60,13 +100,32 @@ Partial Public Class Main_Form
 
 #If Not NETFRAMEWORK Then
         ' Modern: the user's own shortcuts come first, so a rebinding really does win over
-        ' the key it was moved off (§3.5). Costs one dictionary lookup and returns False
-        ' immediately for a profile that has never opened the shortcuts dialog.
+        ' the key it was moved off (§3.5) - and first means before the unconfigured-slot
+        ' return below too: "5" bound to "next file" did nothing while slot 5 had no folder
+        ' (audit 047, C-19). Costs one dictionary lookup and returns False immediately for
+        ' a profile that has never opened the shortcuts dialog.
         If TryHandleCustomHotkey(e, was_Slide_Show_Mode) Then
             e.Handled = True
             e.SuppressKeyPress = True
             Exit Sub
         End If
+#End If
+
+        ' The historical map was written for bare keys and Shift. Ctrl and Alt were never
+        ' looked at, so Alt+F4 opened the file chooser - and, handled, kept the window open
+        ' - Alt+Space flipped a file, Ctrl+1 moved one and Alt+D deleted one (audit 047,
+        ' C-10). Such a combination is left to Windows and the focused control.
+        If Not KeyRouting.MainMapAccepts(e.KeyData) Then Exit Sub
+
+        ' An unconfigured recipient key is not an action. In particular, do not stop
+        ' the slideshow or show a status message for a slot that has no destination.
+        Dim recipient_Slot As Integer = RecipientSlotFromKey(e.KeyCode)
+        If recipient_Slot <> 0 AndAlso Not IsRecipientSlotConfigured(recipient_Slot) Then Return
+
+        SlideShowStop()
+        is_Slide_Show_Random_Mode = False
+
+#If Not NETFRAMEWORK Then
 
         ' Modern: NumPad +/-/*// zoom (spec 4.3). Checked before the maps below and
         ' independent of Shift, and it only claims those four grey keys - NumPad 0..9
@@ -110,11 +169,10 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
                 ' Shift+DEL deletes past the Recycle Bin - the Explorer idiom, and the one
                 ' gesture that says "I mean it" without a trip to the settings window. The
-                ' flag is read once by the Mode_Delete branch, whatever the outcome.
+                ' flag lives for this one call only, whatever the outcome (C-15).
                 Case Keys.Delete, Keys.D
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1617: Shift+Del - permanent delete")
-                    pending_Delete_Permanent = True
-                    ReadShowMediaFile(Mode_Delete)
+                    DeleteCurrentFilePermanently()
                 ' Shift + digit COPIES into the same slot the bare digit moves into: the
                 ' one thing that used to require a trip to the settings window and back.
                 ' Top row only, deliberately - with NumLock on, Windows drops NumLock
@@ -157,6 +215,17 @@ Partial Public Class Main_Form
             End Select
         Else
             Select Case e.KeyCode
+#If Not NETFRAMEWORK Then
+                ' Enter on a locked container is the explicit unlock action - and ONLY
+                ' there: everywhere else Enter has never done anything in this window, so
+                ' this takes nothing away (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §3.3).
+                Case Keys.Enter
+                    If IsSecurePlaceholderLocked() Then
+                        SecureUnlockCurrent()
+                    Else
+                        key_Handled = False
+                    End If
+#End If
                 ' Keys.N is deliberately NOT here: it used to be, and since the first
                 ' matching Case wins, its own branch below ("jump to file number") was
                 ' unreachable. Space/Right/PageDown already cover "next file".
@@ -387,18 +456,27 @@ Partial Public Class Main_Form
     Private Sub RotateActiveImage(clockwise As Boolean)
         Dim rot As RotateFlipType = If(clockwise, RotateFlipType.Rotate90FlipNone, RotateFlipType.Rotate270FlipNone)
         Try
+            Dim rotated As Boolean = False
             If is_Second_PictureBox_Active Then
                 If is_PictureBox2_Visible AndAlso Picture_Box_2.Image IsNot Nothing Then
                     Picture_Box_2.Image.RotateFlip(rot)
                     Picture_Box_2.Invalidate()
+                    rotated = True
                 End If
             Else
                 If is_PictureBox1_Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
                     Picture_Box_1.Image.RotateFlip(rot)
                     Picture_Box_1.Invalidate()
+                    rotated = True
                 End If
             End If
-            current_Overlay_Document = Nothing
+            ' Counted only when a picture really turned: the count is part of the OCR
+            ' cache key, and a key that moves without the pixels would miss for nothing.
+            If rotated Then
+                OnActiveImageRotated(clockwise)
+            Else
+                current_Overlay_Document = Nothing
+            End If
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1505: rotated " & If(clockwise, "CW", "CCW"))
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1530: ERR: " & ex.Message)

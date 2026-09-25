@@ -44,6 +44,32 @@ Friend Module ArchivePaths
     End Function
 
     ''' <summary>
+    ''' Is <paramref name="candidatePath"/> inside the archive cache - a session's temporary
+    ''' copy, or anywhere else under the root? Such a path is ours, not the user's: the
+    ''' whole session directory is deleted on leaving the archive, so nothing the user
+    ''' means to keep may be written there, and an entry's copy is not the archive (audit
+    ''' 046, G-03 - the editor saved over one and wrote "Save as" results into one).
+    ''' Pure, and prefix-safe: <c>archive-cache-old</c> is not inside <c>archive-cache</c>.
+    ''' </summary>
+    Friend Function IsUnderArchiveCache(candidatePath As String, cacheRootPath As String) As Boolean
+        If String.IsNullOrEmpty(candidatePath) OrElse String.IsNullOrEmpty(cacheRootPath) Then Return False
+        Try
+            Dim candidate As String = Path.GetFullPath(candidatePath).TrimEnd(Path.DirectorySeparatorChar)
+            Dim root As String = Path.GetFullPath(cacheRootPath).TrimEnd(Path.DirectorySeparatorChar)
+            If String.Equals(candidate, root, StringComparison.OrdinalIgnoreCase) Then Return True
+            Return candidate.StartsWith(root & Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+        Catch
+            ' A path that cannot even be normalised is not one we would write to anyway.
+            Return False
+        End Try
+    End Function
+
+    ''' <summary><see cref="IsUnderArchiveCache(String, String)"/> against the real root.</summary>
+    Friend Function IsUnderArchiveCache(candidatePath As String) As Boolean
+        Return IsUnderArchiveCache(candidatePath, CacheRoot())
+    End Function
+
+    ''' <summary>
     ''' Directory name for a session owned by <paramref name="processId"/>:
     ''' <c>&lt;pid&gt;-&lt;8 hex&gt;</c>.
     '''

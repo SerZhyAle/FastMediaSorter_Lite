@@ -9,7 +9,52 @@ Namespace My
 
         Shared Sub New()
             RuntimeBootstrap.Initialize()
+#If NETFRAMEWORK Then
+            ' TLS 1.2 for every HTTPS call this process makes (050 D-07 = E-09). net48 uses
+            ' SystemDefault, and on Windows 7 SP1 SChannel's client default is TLS 1.0 unless
+            ' the registry was changed by hand - so nuget.org (the VLC and OCR runtimes),
+            ' LibreTranslate over https and the Ollama installer all failed on exactly the
+            ' machines the x86 exe exists for. It used to be OR-ed in only inside the tessdata
+            ' downloader, so it depended on a language pack having downloaded first. OR-ed,
+            ' never assigned: whatever the system already allows stays allowed.
+            Try
+                System.Net.ServicePointManager.SecurityProtocol =
+                    System.Net.ServicePointManager.SecurityProtocol Or System.Net.SecurityProtocolType.Tls12
+            Catch
+                ' A system without the TLS 1.2 client refuses the value; the old default stays.
+            End Try
+#End If
+            ' The logger is set up in Startup, but the application framework can fail
+            ' before Startup runs (its own single-instance pipe, 053 F-03). Without this a
+            ' crash there left nothing in current.log.
+            AddHandler AppDomain.CurrentDomain.UnhandledException, AddressOf EarlyUnhandledException
         End Sub
+
+        ' System.UnhandledExceptionEventArgs: inside Namespace My the bare name is the
+        ' application framework's own type of the same name.
+        Private Shared Sub EarlyUnhandledException(sender As Object, e As System.UnhandledExceptionEventArgs)
+            ' Once Startup has initialised the logger, its own handler reports this.
+            If AppFileLogger.IsReady Then Return
+            Try
+                AppFileLogger.Initialize()
+                Dim ex As Exception = TryCast(e.ExceptionObject, Exception)
+                If ex IsNot Nothing Then
+                    AppFileLogger.LogException("Unhandled exception before Startup; IsTerminating=" & e.IsTerminating.ToString(), ex)
+                End If
+            Catch
+                ' Logging must never add a second failure to the first one.
+            End Try
+        End Sub
+
+        <DllImport("user32.dll", SetLastError:=True)>
+        Private Shared Function AllowSetForegroundWindow(dwProcessId As Integer) As Boolean
+        End Function
+
+        ''' <summary>How long a launch keeps trying to hand its file to a viewer that is
+        ''' still starting (its window not created, or busy in Form1_Load) before it gives
+        ''' up and opens the file itself.</summary>
+        Private Const Forward_Deadline_Ms As Integer = 6000
+        Private Const Forward_Retry_Pause_Ms As Integer = 250
 
 #If Not NETFRAMEWORK Then
         ''' <summary>
@@ -59,10 +104,6 @@ Namespace My
                 End Try
             Next
             Return found
-        End Function
-
-        <DllImport("user32.dll", CharSet:=CharSet.Auto)>
-        Private Shared Function SendMessageCopyData(hWnd As IntPtr, msg As Integer, wParam As IntPtr, ByRef lParam As Main_Form.COPYDATASTRUCT) As Integer
         End Function
 
         ''' <summary>SendMessage with a deadline. A plain SendMessage is synchronous and
@@ -186,9 +227,23 @@ Namespace My
             ' its form, a second launch found nothing and became a second full instance.
             ' Both then wrote the same registry hive at exit, whoever was last winning.
             Dim created_New As Boolean = False
-            Main_Form.Single_Instance_Mutex = New Mutex(True, Main_Form.app_Mutex_Name, created_New)
+            Dim mutex_Error As Exception = Nothing
+            Try
+                Main_Form.Single_Instance_Mutex = New Mutex(True, Main_Form.app_Mutex_Name, created_New)
+            Catch ex As UnauthorizedAccessException
+                ' The mutex exists but belongs to an ELEVATED viewer: its token's default
+                ' DACL grants only Administrators and SYSTEM, so an ordinary launch may not
+                ' open it. That IS the answer "another instance exists" - forward to it; an
+                ' elevated primary admits WM_COPYDATA from us (Main_Form.DragDrop.vb). It
+                ' used to escape Startup and crash the new process (053 F-03).
+                created_New = False
+                mutex_Error = ex
+            End Try
             MultiWindowPolicy.MarkInstanceRole(created_New)
             AppFileLogger.Initialize()
+            If mutex_Error IsNot Nothing Then
+                AppFileLogger.WriteLine("Single instance: the mutex belongs to an elevated viewer - forwarding to it")
+            End If
 
             If Not created_New AndAlso Not MultiWindowPolicy.AllowNewWindows() Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-2: Another instance detected via mutex, forwarding args")
@@ -204,46 +259,18 @@ Namespace My
 
                 Dim current_Id As Integer = Process.GetCurrentProcess().Id
                 Dim delivered As Boolean = False
+                Dim deadline As DateTime = DateTime.UtcNow.AddMilliseconds(Forward_Deadline_Ms)
 
-                For Each proc As Process In GetRunningViewerProcesses(current_Id)
-                    ' A tray-resident instance hides its window, so MainWindowHandle
-                    ' is IntPtr.Zero - fall back to enumerating the process's
-                    ' top-level windows. Sending to all of them is safe: only
-                    ' Main_Form's WndProc reacts to WM_COPYDATA.
-                    Dim target_Handles As New List(Of IntPtr)
-                    If proc.MainWindowHandle <> IntPtr.Zero Then
-                        target_Handles.Add(proc.MainWindowHandle)
-                    Else
-                        target_Handles.AddRange(GetProcessTopLevelWindows(proc.Id))
-                    End If
-                    If target_Handles.Count = 0 Then Continue For
-
-                    Try
-                        Dim bytes() As Byte = System.Text.Encoding.UTF8.GetBytes(file_Path)
-                        Dim ptr As IntPtr = Marshal.AllocHGlobal(bytes.Length + 1)
-                        Marshal.Copy(bytes, 0, ptr, bytes.Length)
-                        Marshal.WriteByte(ptr, bytes.Length, 0)
-
-                        Dim cds As New Main_Form.COPYDATASTRUCT()
-                        cds.dwData = IntPtr.Zero
-                        cds.cbData = bytes.Length
-                        cds.lpData = ptr
-
-                        For Each target_Handle As IntPtr In target_Handles
-                            Dim send_Result As IntPtr = IntPtr.Zero
-                            If SendMessageTimeout(target_Handle, WM_COPYDATA_LOCAL, IntPtr.Zero, cds,
-                                                  SMTO_ABORTIFHUNG, Copy_Data_Send_Timeout_Ms, send_Result) <> IntPtr.Zero Then
-                                delivered = True
-                            End If
-                        Next
-                        Marshal.FreeHGlobal(ptr)
-
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-3: Args sent via WM_COPYDATA to PID " & proc.Id.ToString() & " (" & target_Handles.Count.ToString() & " window(s)), delivered=" & delivered.ToString())
-                    Catch ex As Exception
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-4: Error sending to existing instance: " & ex.Message)
-                    End Try
-                    If delivered Then Exit For
-                Next
+                ' A viewer that is still starting has no window yet, or is busy inside
+                ' Form1_Load and cannot answer: try again for a few seconds rather than
+                ' opening a rival instance at the first silence (S6 Б-38, which 053 F-06
+                ' found defeated). Nobody running under either name ends the wait at once.
+                Do
+                    Dim viewer_Found As Boolean = False
+                    delivered = TryForwardOnce(file_Path, current_Id, viewer_Found)
+                    If delivered OrElse Not viewer_Found OrElse DateTime.UtcNow >= deadline Then Exit Do
+                    Thread.Sleep(Forward_Retry_Pause_Ms)
+                Loop
 
                 ' Cancel ONLY if the argument really reached someone. It used to be
                 ' unconditional, so a renamed exe (no process under either known name),
@@ -255,9 +282,67 @@ Namespace My
                     Return
                 End If
 
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-5: nobody took the argument - starting normally")
+                AppFileLogger.WriteLine("Single instance: no running viewer took the argument - starting normally")
             End If
 
         End Sub
+
+        ''' <summary>
+        ''' One pass over every running viewer process. True only when a Main_Form
+        ''' answered the tagged forward as handled - a helper window of the process
+        ''' (GDI+, broadcast) answers WM_COPYDATA with 0 and no longer counts (053 F-06).
+        ''' </summary>
+        Private Shared Function TryForwardOnce(file_Path As String, current_Id As Integer, ByRef viewer_Found As Boolean) As Boolean
+            viewer_Found = False
+            For Each proc As Process In GetRunningViewerProcesses(current_Id)
+                viewer_Found = True
+                ' A hidden or minimised instance can report MainWindowHandle = 0 - fall
+                ' back to the process's top-level windows. Sending to all of them is safe:
+                ' only Main_Form's WndProc acts on the tagged message.
+                Dim target_Handles As New List(Of IntPtr)
+                If proc.MainWindowHandle <> IntPtr.Zero Then
+                    target_Handles.Add(proc.MainWindowHandle)
+                Else
+                    target_Handles.AddRange(GetProcessTopLevelWindows(proc.Id))
+                End If
+                If target_Handles.Count = 0 Then Continue For
+
+                ' The receiver restores and activates its window for a bare relaunch;
+                ' without this grant the foreground lock refuses it and only the taskbar
+                ' button flashes. We are the foreground process right now, so we may.
+                Try
+                    AllowSetForegroundWindow(proc.Id)
+                Catch ex As Exception
+                    AppFileLogger.LogException("Single instance: AllowSetForegroundWindow", ex)
+                End Try
+
+                Dim bytes() As Byte = System.Text.Encoding.UTF8.GetBytes(file_Path)
+                Dim ptr As IntPtr = Marshal.AllocHGlobal(bytes.Length + 1)
+                Try
+                    Marshal.Copy(bytes, 0, ptr, bytes.Length)
+                    Marshal.WriteByte(ptr, bytes.Length, 0)
+
+                    Dim cds As New Main_Form.COPYDATASTRUCT()
+                    cds.dwData = SingleInstanceProtocol.Tag_Pointer
+                    cds.cbData = bytes.Length
+                    cds.lpData = ptr
+
+                    For Each target_Handle As IntPtr In target_Handles
+                        Dim send_Result As IntPtr = IntPtr.Zero
+                        Dim sent As Boolean = SendMessageTimeout(target_Handle, WM_COPYDATA_LOCAL, IntPtr.Zero, cds,
+                                                                 SMTO_ABORTIFHUNG, Copy_Data_Send_Timeout_Ms, send_Result) <> IntPtr.Zero
+                        If SingleInstanceProtocol.IsDelivered(sent, send_Result) Then
+                            AppFileLogger.WriteLine("Single instance: argument forwarded to PID " & proc.Id.ToString())
+                            Return True
+                        End If
+                    Next
+                Catch ex As Exception
+                    AppFileLogger.LogException("Single instance: forwarding to PID " & proc.Id.ToString(), ex)
+                Finally
+                    Marshal.FreeHGlobal(ptr)
+                End Try
+            Next
+            Return False
+        End Function
     End Class
 End Namespace

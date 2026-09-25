@@ -10,7 +10,13 @@ Namespace My
 
         Public Sub New()
             MyBase.New(Global.Microsoft.VisualBasic.ApplicationServices.AuthenticationMode.Windows)
-            Me.IsSingleInstance = Not MultiWindowPolicy.AllowNewWindows()
+            ' Not for an elevated process: the framework's own single-instance pipe is
+            ' created CurrentUserOnly, and an elevated and an ordinary process cannot
+            ' connect to each other's pipe in either direction - Run() then throws
+            ' CantStartSingleInstanceException before Startup, a crash with the file
+            ' unopened (053 F-03). The mutex path in Startup covers that process instead.
+            Me.IsSingleInstance = Not MultiWindowPolicy.AllowNewWindows() AndAlso
+                                  Not SingleInstanceProtocol.IsProcessElevated()
             Me.EnableVisualStyles = False
             Me.SaveMySettingsOnExit = True
             Me.ShutDownStyle = Global.Microsoft.VisualBasic.ApplicationServices.ShutdownMode.AfterMainFormCloses

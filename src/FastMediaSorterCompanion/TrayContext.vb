@@ -142,6 +142,18 @@ Friend NotInheritable Class TrayContext
         menu.Items.Add(miViewer)
         AddHandler menu.Opening, Sub() miViewer.Visible = ViewerExePath().Length > 0
 
+        ' The log the failure the user just saw was written to, sent from here - not from
+        ' the viewer's settings, which a Share Manager user may never open (ticket 028 Ф-3,
+        ' APP-BEHAVIOUR rule 6). Centred on the main window when it is on screen.
+        Dim miSendLog As New ToolStripMenuItem(Localization.T("Отправить журнал автору.."))
+        AddHandler miSendLog.Click,
+            Async Sub()
+                Dim owner As IWin32Window = Nothing
+                If _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed AndAlso _mainWindow.Visible Then owner = _mainWindow
+                Await SendLogsFlow.RunAsync(owner)
+            End Sub
+        menu.Items.Add(miSendLog)
+
         Dim miExit As New ToolStripMenuItem(Localization.T("Выход"))
         AddHandler miExit.Click, Sub() ExitApplication()
         menu.Items.Add(miExit)
@@ -244,10 +256,12 @@ Friend NotInheritable Class TrayContext
                 If last.Length > 0 Then txt &= Localization.TF(" · посл.: {0}", last)
             End If
         Else
-            ' The worker is gone (stopped from elsewhere, crashed, or never came up). Stop
+            ' The worker is gone (stopped from elsewhere, crashed, or never came up) - or it
+            ' was replaced by one on a newer protocol, which says so once. Stop
             ' polling it: this tick fires every 30 s for as long as Companion sits in the
             ' tray - weeks - and each one was a pointless pipe round-trip against something
             ' that is not there. RefreshTrayState(False) sets the idle tooltip and menu too.
+            If st Is Nothing Then ShowRefusalOnce()
             RefreshTrayState(False)
             Return
         End If
@@ -265,6 +279,13 @@ Friend NotInheritable Class TrayContext
         Catch
         End Try
         RefreshTrayState(False)
+        ' An open window kept "running" in its header after this (ticket 054 H-12).
+        Try
+            If _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed Then
+                Dim t As Task = _mainWindow.RefreshFromWorkerAsync()
+            End If
+        Catch
+        End Try
     End Sub
 
     ''' <summary>Shows (creating/reusing) the main window and brings it to front. A
@@ -344,10 +365,57 @@ Friend NotInheritable Class TrayContext
         Try
             Dim st As WorkerStatus = Await ShareController.EnsureRunningReconciledAsync()
             running = st IsNot Nothing AndAlso st.Running
+            If st Is Nothing Then ShowRefusalOnce()
         Catch
         End Try
         RefreshTrayState(running)
     End Function
+
+    ''' <summary>The worker version this tray already told the user about, so a poll does not
+    ''' repeat the balloon every tick. 0 = none shown.</summary>
+    Private _refusalShownFor As Integer = 0
+
+    ''' <summary>
+    ''' WORKER-IPC section 6 rule 3 reaches the tray: a resident worker on a newer protocol
+    ''' answers every request with something this app will not read, so sharing looks off for
+    ''' no visible reason - the one failure the silent logon autostart must not keep quiet
+    ''' about, because nothing else will ever say it. Once per worker version.
+    ''' </summary>
+    Private Sub ShowRefusalOnce()
+        Dim refusal As WorkerVersionRefusedException = WorkerProcess.LastRefusal
+        If refusal Is Nothing Then
+            ShowProblemOnce()
+            Return
+        End If
+        If refusal.WorkerVersion = _refusalShownFor Then Return
+        _refusalShownFor = refusal.WorkerVersion
+        Try
+            _notifyIcon.ShowBalloonTip(8000,
+                "Fast Media Sorter: Share Manager",
+                ShareController.RefusalMessage(refusal),
+                ToolTipIcon.Warning)
+        Catch
+        End Try
+    End Sub
+
+    ''' <summary>The exchange problem this tray already told the user about. None = none shown.</summary>
+    Private _problemShown As WorkerExchangeProblem = WorkerExchangeProblem.None
+
+    ''' <summary>The same once-only balloon for a pipe that is held but unusable - above all a
+    ''' pipe held by a process that is not our worker, which a silent logon start would
+    ''' otherwise leave looking like "sharing is simply off" (ticket 054 H-10, H-26).</summary>
+    Private Sub ShowProblemOnce()
+        Dim problem As WorkerExchangeProblem = WorkerProcess.LastProblem
+        If problem = WorkerExchangeProblem.None OrElse problem = _problemShown Then Return
+        _problemShown = problem
+        Try
+            _notifyIcon.ShowBalloonTip(8000,
+                "Fast Media Sorter: Share Manager",
+                ShareController.ProblemMessage(problem),
+                ToolTipIcon.Warning)
+        Catch
+        End Try
+    End Sub
 
     ''' <summary>Updates the tray tooltip to the current server state. Takes the
     ''' running flag directly (never re-fetches on the UI thread - a blocking
@@ -446,6 +514,12 @@ Friend NotInheritable Class TrayContext
     End Sub
 
     Private Sub ExitApplication()
+        ' Close the window while the message loop still runs, so its FormClosing writes
+        ' the geometry; Dispose below repeats the Close as a backstop.
+        Try
+            If _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed Then _mainWindow.Close()
+        Catch
+        End Try
         ExitThread()
     End Sub
 
@@ -458,7 +532,13 @@ Friend NotInheritable Class TrayContext
             Catch
             End Try
             Try
-                If _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed Then _mainWindow.Dispose()
+                ' Close BEFORE Dispose, as the language switch above does: FormClosing is
+                ' where the window writes its geometry, and a bare Dispose skipped it, so
+                ' Exit from the tray forgot where the window was (spec 028 phase 1).
+                If _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed Then
+                    _mainWindow.Close()
+                    _mainWindow.Dispose()
+                End If
             Catch
             End Try
             Try

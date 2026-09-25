@@ -16,12 +16,60 @@ Public Interface ITranslator
     Function ProbeAsync(ct As CancellationToken) As Task(Of Boolean)
 
     ''' <summary>
-    ''' Translate every input segment. Returns a list of the same length and
-    ''' order. On a per-segment failure the original text is returned for that
-    ''' slot so the overlay still shows something.
+    ''' Translate every input segment. Returns one entry per input, in order. On a
+    ''' per-segment failure the original text is returned for that slot so the overlay
+    ''' still shows something - and the slot says it FAILED, which is what keeps a failure
+    ''' out of the cache (audit 051 E-02: it used to be indistinguishable from a
+    ''' translation and was cached as one, forever). An expired HTTP timeout is a failure
+    ''' of the whole batch, never an OperationCanceledException: only the caller's token
+    ''' may end a translation silently (E-04).
     ''' </summary>
-    Function TranslateAsync(texts As List(Of String), sourceLang As String, targetLang As String, ct As CancellationToken) As Task(Of List(Of String))
+    Function TranslateAsync(texts As List(Of String), sourceLang As String, targetLang As String, ct As CancellationToken) As Task(Of TranslationBatch)
 End Interface
+
+''' <summary>Why a batch translated nothing at all, when there is one reason for all of it.</summary>
+Public Enum TranslationFailure
+    None = 0
+    ''' <summary>The backend did not answer within the HTTP timeout.</summary>
+    Timeout
+    ''' <summary>The backend cannot translate into (or out of) the requested language.</summary>
+    UnsupportedLanguage
+    ''' <summary>Anything else: no model, an HTTP error, a reply that could not be read.</summary>
+    Other
+End Enum
+
+''' <summary>
+''' What a translator returns: the text for every segment, whether that text really is a
+''' translation, and - for a batch that failed as a whole - why.
+''' </summary>
+Public NotInheritable Class TranslationBatch
+    Public ReadOnly Property Texts As New List(Of String)
+    Public ReadOnly Property Translated As New List(Of Boolean)
+    Public Property Failure As TranslationFailure = TranslationFailure.None
+    ''' <summary>The model or engine that actually answered, when the backend can say.
+    ''' Ollama may fall back from the configured model to another installed one.</summary>
+    Public Property ModelUsed As String = ""
+
+    Public Sub Add(text As String, ok As Boolean)
+        Texts.Add(If(text, ""))
+        Translated.Add(ok)
+    End Sub
+
+    ''' <summary>Every segment returned as its source, marked failed.</summary>
+    Public Shared Function AllFailed(sources As IEnumerable(Of String), failure As TranslationFailure) As TranslationBatch
+        Dim b As New TranslationBatch With {.Failure = failure}
+        For Each s As String In sources
+            b.Add(s, False)
+        Next
+        Return b
+    End Function
+
+    Public ReadOnly Property FailedCount As Integer
+        Get
+            Return Translated.Where(Function(t) Not t).Count()
+        End Get
+    End Property
+End Class
 
 ''' <summary>Maps language codes to human names for LLM prompts.</summary>
 Public Module TranslateLang
@@ -61,8 +109,53 @@ Public Module TranslateLang
             Case "vi", "vie" : Return "Vietnamese"
             Case "id", "ind" : Return "Indonesian"
             Case "fa", "fas" : Return "Persian"
+            ' Audit 051 E-06: all three are offered (be in the pickers, bn/ur as the default
+            ' target of a Bengali or Urdu interface) and fell through to Case Else, so the
+            ' prompt read "Translate .. into be" - an English word, not a language.
+            Case "be", "bel" : Return "Belarusian"
+            Case "bn", "ben" : Return "Bengali"
+            Case "ur", "urd" : Return "Urdu"
             Case "auto", "" : Return "the source language"
             Case Else : Return code
+        End Select
+    End Function
+
+    ''' <summary>
+    ''' True for a language written right to left. The overlay's paragraph direction follows
+    ''' the TRANSLATION, not the interface (audit 051 E-11): an Arabic translation shown in a
+    ''' Russian interface still needs its "!" on the left.
+    ''' </summary>
+    Public Function IsRightToLeft(code As String) As Boolean
+        Select Case If(code, "").Trim().ToLowerInvariant()
+            Case "ar", "ara", "fa", "fas", "he", "heb", "ur", "urd" : Return True
+            Case Else : Return False
+        End Select
+    End Function
+
+    ''' <summary>
+    ''' The code LibreTranslate (Argos) uses for one of ours, or "" when it has none - the
+    ''' caller then refuses up front instead of sending a code the server answers 400 to
+    ''' (audit 051 E-13). Unknown codes pass through lower-cased: servers load different
+    ''' language sets, so only a code known to be missing everywhere is refused here.
+    ''' </summary>
+    Public Function LibreTranslateCode(code As String) As String
+        Dim c As String = If(code, "").Trim().ToLowerInvariant()
+        Select Case c
+            Case "", "auto" : Return "auto"
+            Case "eng" : Return "en"
+            Case "rus" : Return "ru"
+            Case "ukr" : Return "uk"
+            Case "deu", "ger" : Return "de"
+            Case "fra", "fre" : Return "fr"
+            Case "spa" : Return "es"
+            Case "ita" : Return "it"
+            Case "jpn" : Return "ja"
+            Case "kor" : Return "ko"
+            Case "chi_sim", "chi-sim", "zh-cn" : Return "zh"
+            Case "zh-tw", "chi_tra", "chi-tra" : Return "zt"
+            Case "no", "nor", "nb" : Return "nb"
+            Case "be", "bel" : Return ""
+            Case Else : Return c
         End Select
     End Function
 
@@ -112,7 +205,7 @@ Friend Module TextScriptHeuristics
                     Return TextScriptFamily.Cyrillic
             Case "el", "ell"
                 Return TextScriptFamily.Greek
-            Case "ar", "ara", "fa", "fas"
+            Case "ar", "ara", "fa", "fas", "ur", "urd"
                 Return TextScriptFamily.Arabic
             Case "he", "heb"
                 Return TextScriptFamily.Hebrew
@@ -127,6 +220,20 @@ Friend Module TextScriptHeuristics
             Case Else
                 Return TextScriptFamily.Unknown
         End Select
+    End Function
+
+    ''' <summary>
+    ''' Whether a run of text lays out right to left: its letters are mostly Arabic or Hebrew
+    ''' script. Text with no letters at all (digits, punctuation) takes the direction of the
+    ''' language it was translated into.
+    ''' </summary>
+    Friend Function IsRightToLeftText(text As String, fallbackLanguage As String) As Boolean
+        Dim dominant As TextScriptFamily = TextScriptFamily.Unknown
+        Dim share As Double = 0.0
+        Dim letters As Integer = 0
+        Dim mixed As Integer = 0
+        If Not TryGetDominantScript(text, dominant, share, letters, mixed) Then Return TranslateLang.IsRightToLeft(fallbackLanguage)
+        Return dominant = TextScriptFamily.Arabic OrElse dominant = TextScriptFamily.Hebrew
     End Function
 
     Friend Function TryGetDominantScript(text As String,
@@ -164,6 +271,19 @@ Friend Module TextScriptHeuristics
         Return True
     End Function
 
+    ''' <summary>
+    ''' Punctuation that is part of ordinary text, not recognition noise. Built with ChrW,
+    ''' never typed: the VB compiler reads the curly double quotes U+201C/U+201D as string
+    ''' delimiters, so the literal this replaced held a doubled "" where the author wrote
+    ''' “” and the curly quotes were never in the set (audit 051 E-10). The ellipsis and the
+    ''' dashes are added because Russian dialogue is punctuated with them.
+    ''' </summary>
+    Private ReadOnly OrdinaryPunctuation As String =
+        ".,!?;:'""-()[]{}«»" &
+        ChrW(&H201C) & ChrW(&H201D) & ChrW(&H201E) &   ' curly double quotes: left, right, low
+        ChrW(&H2018) & ChrW(&H2019) &                   ' curly single quotes
+        ChrW(&H2026) & ChrW(&H2014) & ChrW(&H2013)      ' ellipsis, em dash, en dash
+
     Friend Function SymbolRatio(text As String) As Double
         Dim nonWhitespace As Integer = 0
         Dim noisy As Integer = 0
@@ -172,7 +292,7 @@ Friend Module TextScriptHeuristics
             If Char.IsWhiteSpace(ch) Then Continue For
             nonWhitespace += 1
             If Char.IsLetterOrDigit(ch) Then Continue For
-            If ".,!?;:'""-()[]{}«»“”„".IndexOf(ch) >= 0 Then Continue For
+            If OrdinaryPunctuation.IndexOf(ch) >= 0 Then Continue For
             noisy += 1
         Next
 

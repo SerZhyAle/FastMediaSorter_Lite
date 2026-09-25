@@ -25,6 +25,31 @@ Partial Public Class Main_Form
         perspective_Trailing_Timer.Start()
     End Sub
 
+    ''' <summary>Drops the perspective frame of the box that is NOT
+    ''' <paramref name="activeIndex"/>. Only the visible box may carry bars (audit B-11).</summary>
+    Private Sub ClearHiddenBoxBackground(activeIndex As Integer)
+        Dim hidden As PictureBox = Nothing
+        If activeIndex = 1 Then
+            hidden = Picture_Box_2
+        ElseIf activeIndex = 2 Then
+            hidden = Picture_Box_1
+        End If
+        If hidden Is Nothing OrElse hidden.BackgroundImage Is Nothing Then Return
+        Try
+            Dim old_Bg As Image = hidden.BackgroundImage
+            hidden.BackgroundImage = Nothing
+            old_Bg.Dispose()
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1137: hidden box background dispose skipped: [" & ex.GetType().Name & "] " & ex.Message)
+        End Try
+    End Sub
+
+    ''' <summary>The settings window switched perspective on or off: draw or clear now
+    ''' rather than on the next photo (audit B-04).</summary>
+    Friend Sub RefreshPerspective()
+        If is_form_shown Then Draw_Perspective()
+    End Sub
+
     Private Sub Perspective_Trailing_Timer_Tick(sender As Object, e As EventArgs) Handles perspective_Trailing_Timer.Tick
         perspective_Trailing_Timer.Stop()
         Draw_Perspective()
@@ -381,13 +406,26 @@ Partial Public Class Main_Form
             (Not Is_slide_show_mode Or
             SlideShowTimer.Interval >= slideshow_limit_to_change_color)
 
-        Dim throttle_Elapsed As Boolean =
-            last_Perspective_Draw_Time < DateTime.Now.Subtract(TimeSpan.FromMilliseconds(how_long_wait_before_draw_perspective))
+#If Not NETFRAMEWORK Then
+        ' A zoomed picture has no bars: its box is the image rectangle, so the "bars"
+        ' would be 0-1 px wide, built from a box-sized bitmap that can reach hundreds of
+        ' MB at high zoom (audit B-12).
+        If zoom_Scale <> 1 Then perspective_Applies = False
+#End If
 
-        ' Nothing is going to be drawn, so drop the intent too - otherwise it would sit
-        ' here and make some later resize animate a photo that has been on screen for
-        ' minutes.
-        If Not perspective_Applies Then perspective_Animate_Pending = False
+        Dim throttle_Elapsed As Boolean =
+            MonotonicClock.HasElapsed(MonotonicClock.NowMs(), last_Perspective_Draw_Ms, how_long_wait_before_draw_perspective)
+
+        ' Nothing is going to be drawn, so nothing may STAY drawn either: the only other
+        ' place bars are removed is inside the drawing branch below, so switching
+        ' perspective off, a fast slideshow or a zoom left the previous photo's bars
+        ' framing every later one (audit B-04). ClearPerspectiveBackground also drops
+        ' the animation intent - otherwise it would sit here and make some later resize
+        ' animate a photo that has been on screen for minutes.
+        If Not perspective_Applies Then
+            ClearPerspectiveBackground()
+            Return
+        End If
 
         ' A redraw is wanted but came too soon after the last one: defer it instead
         ' of dropping it. (Fast scrolling otherwise lost the draw for the image we
@@ -401,7 +439,7 @@ Partial Public Class Main_Form
             perspective_Trailing_Timer.Stop()
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1129: corners redrawn")
-            last_Perspective_Draw_Time = DateTime.Now()
+            last_Perspective_Draw_Ms = MonotonicClock.NowMs()
 
             Dim animate_This_Draw As Boolean = perspective_Animate_Pending
             perspective_Animate_Pending = False
@@ -412,22 +450,30 @@ Partial Public Class Main_Form
             Dim active_PictureBox_Index As Int16 = 0
             Dim is_perspective_drown As Boolean = False
 
+            ' TryCast, not CType: a WMF/EMF decodes to a Metafile, and the cast threw into
+            ' the outer Catch with the previous photo's bars still up (audit B-04).
             If is_PictureBox1_Visible Then
-                active_Bitmap = CType(Picture_Box_1.Image, Bitmap)
+                active_Bitmap = TryCast(Picture_Box_1.Image, Bitmap)
                 active_PictureBox_Index = 1
             ElseIf is_PictureBox2_Visible Then
-                active_Bitmap = CType(Picture_Box_2.Image, Bitmap)
+                active_Bitmap = TryCast(Picture_Box_2.Image, Bitmap)
                 active_PictureBox_Index = 2
             End If
 
             Dim w = Picture_Box_1.Width - 1
             Dim h = Picture_Box_1.Height - 1
 
-            If active_Bitmap IsNot Nothing AndAlso
-                    active_Bitmap.Width > 1 AndAlso
-                    active_Bitmap.Height > 1 AndAlso
-            w > 1 AndAlso
-                h > 1 Then
+            Dim has_Drawable_Bitmap As Boolean =
+                active_Bitmap IsNot Nothing AndAlso
+                active_Bitmap.Width > 1 AndAlso
+                active_Bitmap.Height > 1 AndAlso
+                w > 1 AndAlso
+                h > 1
+
+            ' Nothing to analyse means nothing to show: take the old bars down.
+            If Not has_Drawable_Bitmap Then ClearPerspectiveBackground()
+
+            If has_Drawable_Bitmap Then
 
                 Dim bH = active_Bitmap.Height - 1
                 Dim bW = active_Bitmap.Width - 1
@@ -574,6 +620,12 @@ Partial Public Class Main_Form
                     ReportOperationError("E105", ex)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w3070: E105 " & ex.Message)
                 End Try
+
+                ' The two boxes alternate. Whatever the hidden one still carries is the
+                ' frame of the photo BEFORE the previous one: the halo dissolved out of it
+                ' and a throttled flip showed it (audit B-11). The halo has already taken
+                ' its underlay by now, so the hidden box can let go.
+                ClearHiddenBoxBackground(active_PictureBox_Index)
             End If
 
             Catch ex As Exception

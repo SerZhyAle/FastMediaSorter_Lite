@@ -28,8 +28,23 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Product>Fast Media Sorter: Share Manager</Product>
     <AssemblyTitle>Fast Media Sorter: Share Manager</AssemblyTitle>
-    <Company>SerZhyAle</Company>
+    <Company>SZA</Company>
     <NeutralLanguage>en</NeutralLanguage>
+    <ApplicationIcon>..\..\assets\icons\Fast_Media_Sorter.ico</ApplicationIcon>
+    <!-- ProductVersion feeds the log-mail subject and report (SendLogsFlow); keep it the
+         bare stamp, as the viewer does, instead of "<version>+<commit>". -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <!-- The same YY.M.D.HHmm stamp as both viewers (ticket 055 I-08): every packager passes
+       -p:ReleaseVersion=... so the three programs of one package carry one version;
+       a plain build stamps the current minute, like src/Modern/FastMediaSorter.Modern.vbproj. -->
+  <PropertyGroup>
+    <AutoVersion Condition="'$(ReleaseVersion)' != ''">$(ReleaseVersion)</AutoVersion>
+    <AutoVersion Condition="'$(AutoVersion)' == ''">$([System.DateTime]::Now.ToString("yy")).$([System.DateTime]::Now.Month).$([System.DateTime]::Now.Day).$([System.DateTime]::Now.ToString("HHmm"))</AutoVersion>
+    <Version>$(AutoVersion)</Version>
+    <AssemblyVersion>$(AutoVersion)</AssemblyVersion>
+    <FileVersion>$(AutoVersion)</FileVersion>
   </PropertyGroup>
 
   <!-- Publish model: self-contained single file (SPECIFICATION_SHARE_COMPANION_APP.md
@@ -58,6 +73,9 @@
     <EmbeddedResource Include="..\..\assets\help\port-forward.html">
       <LogicalName>help/port-forward.html</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\..\assets\glyphs\*.svg">
+      <LogicalName>glyphs/%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -81,6 +99,21 @@
       linked, not copied, so the P/Invoke exists once.
     -->
     <Compile Include="..\Support\MailSender.vb" Link="Core\MailSender.vb" />
+    <!--
+      The viewer's log package, for the Share Manager's own "send the log" (ticket 028
+      Ф-3, APP-BEHAVIOUR rule 6): one report format, one settings allow-list, one
+      redaction, both logs in one archive - linked so none of that exists twice.
+    -->
+    <Compile Include="..\Support\LogPackage.vb" Link="Core\LogPackage.vb" />
+    <!--
+      The site pages both programs link to by UI language - here the install-trust page
+      the opt-in and the hosting group point at (ticket 037 Ф-4). Linked so a page that
+      moves is corrected once.
+    -->
+    <Compile Include="..\Support\SitePages.vb" Link="Core\SitePages.vb" />
+    <Compile Include="..\Icons\IconMap.vb" Link="Core\IconMap.vb" />
+    <Compile Include="..\Icons\SvgPathData.vb" Link="Core\SvgPathData.vb" />
+    <Compile Include="..\Icons\GlyphRenderer.vb" Link="Core\GlyphRenderer.vb" />
   </ItemGroup>
 
 </Project>

@@ -15,6 +15,12 @@ The full license texts referenced by name (Apache-2.0, MIT, BSD-2-Clause,
 BSD-3-Clause, LGPL-2.1-or-later, zlib) are reproduced at the end of this file
 where they are not quoted in full inline.
 
+Material Icons (vendored iconography glyph paths)
+  Source: Google Material Icons, copied from the shared iconography catalog.
+  License: Apache License 2.0.
+  The exact vendored subset and SHA-256 provenance are recorded in
+  assets/glyphs/PROVENANCE.txt.
+
 ================================================================================
 1. Media playback
 ================================================================================
@@ -80,6 +86,34 @@ Tesseract OCR engine and the tessdata / tessdata_best language models
   Language models are downloaded on demand in some distributions and bundled in
   others; either way they are unmodified upstream files under the same license.
 
+Leptonica (leptonica-1.82.0.dll, shipped next to tesseract50.dll)
+  Version 1.82.0, http://www.leptonica.org/ - https://github.com/DanBloomberg/leptonica
+  License: BSD 2-Clause style, reproduced in full as distributed with 1.82.0:
+
+  Copyright (C) 2001-2020 Leptonica.  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+  1. Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above
+     copyright notice, this list of conditions and the following
+     disclaimer in the documentation and/or other materials
+     provided with the distribution.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 ================================================================================
 4. Application libraries (.NET)
 ================================================================================
@@ -96,6 +130,24 @@ SharpCompress (64-bit viewer only)
 
   Reads ZIP/CBZ (and, from phase 2, 7z/RAR/CBR) for the "browse an archive like a
   folder" feature. Fully managed - no native library ships with it.
+
+BouncyCastle.Cryptography (64-bit viewer only)
+  Version 2.6.2, https://github.com/bcgit/bc-csharp
+  License: MIT
+  Copyright (c) 2000-2025 The Legion of the Bouncy Castle Inc.
+
+  Supplies the four primitives the .fd-sec secure-container format is built from -
+  Argon2id, BLAKE2b, raw ChaCha20 and the IETF ChaCha20-Poly1305 the viewer turns
+  into XChaCha20-Poly1305. The .NET base class library carries none of them. Fully
+  managed - no native library ships with it.
+
+Microsoft Edge WebView2 SDK loader (WebView2Loader.dll, 32-bit build only)
+  Version 1.0.3240.44, https://aka.ms/webview2
+  License: BSD 3-Clause
+  Copyright (C) Microsoft Corporation. All rights reserved.
+
+  Only in packages built with the 32-bit native trees kept (runtimes\win-x86);
+  the default packages trim it.
 
 System.Buffers 4.5.1, System.Memory 4.5.4, System.Numerics.Vectors 4.5.0,
 System.Runtime.CompilerServices.Unsafe 5.0.0 (32-bit build only)

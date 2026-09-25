@@ -19,6 +19,13 @@ Public NotInheritable Class Share_Status_Form
     Private _iconHandle As IntPtr
     Private _status As WorkerStatus
     Private _busy As Boolean
+    ''' <summary>Created on the first refused reset; carries the worker's own reason.</summary>
+    Private _tip As ToolTip
+
+    Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)
+        If _tip IsNot Nothing Then _tip.Dispose()
+        MyBase.OnFormClosed(e)
+    End Sub
 
     Private lblState As Label
     Private lblLastConn As Label
@@ -103,15 +110,34 @@ Public NotInheritable Class Share_Status_Form
 
     Private Async Sub OnReset(sender As Object, e As EventArgs)
         If _busy Then Return
+        ' The totals cannot be brought back once the worker drops them (APP-BEHAVIOUR
+        ' rule 5, ticket 028 Ф-5).
+        If MessageBox.Show(Me, Localization.T("Обнулить счётчики подключений и файлов? Прежние значения восстановить не получится."),
+                           Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
+                           MessageBoxDefaultButton.Button2) <> DialogResult.OK Then Return
         _busy = True
         btnReset.Enabled = False
+        Dim failure As String = ""
         Try
-            Dim st As WorkerStatus = Await ShareController.ResetStatsAsync()
-            If st IsNot Nothing Then _status = st
+            ' Only an answer with ok reset anything (WORKER-IPC section 3 rule 2). An older
+            ' worker answers ok=false WITH a status, and those are the counters it still
+            ' has - so a refused reset leaves the numbers on screen exactly as they were.
+            Dim resp As WorkerResponse = Await ShareController.ResetStatsAsync()
+            failure = ShareController.ResetFailureText(resp)
+            If failure = "" AndAlso resp.Status IsNot Nothing Then _status = resp.Status
         Catch
+            failure = ShareController.ResetFailureText(Nothing)
         End Try
         If Not IsDisposed Then
             btnReset.Enabled = True
+            If failure <> "" Then
+                btnReset.Text = Localization.T("Сброс не удался")
+                If _tip Is Nothing Then _tip = New ToolTip()
+                _tip.SetToolTip(btnReset, failure)
+            Else
+                btnReset.Text = Localization.T("Сбросить счётчики")
+                If _tip IsNot Nothing Then _tip.SetToolTip(btnReset, "")
+            End If
             Populate()
         End If
         _busy = False
@@ -158,8 +184,8 @@ Public NotInheritable Class Share_Status_Form
         Else
             lblLastConn.Text = lastAt & "  -  " & s.LastConnectionAddress
         End If
-        lblConns.Text = String.Format(Localization.T("всего {0} (с запуска {1})"), s.TotalConnections, s.ConnectionsSinceStart)
-        lblFiles.Text = String.Format(Localization.T("всего {0} (с запуска {1})"), s.FilesServedTotal, s.FilesServedSinceStart)
+        lblConns.Text = Localization.TF("всего {0} (с запуска {1})", s.TotalConnections, s.ConnectionsSinceStart)
+        lblFiles.Text = Localization.TF("всего {0} (с запуска {1})", s.FilesServedTotal, s.FilesServedSinceStart)
         Dim firstAt As String = FormatTime(s.FirstConnectionAt)
         lblFirst.Text = If(firstAt.Length = 0, never, firstAt)
     End Sub

@@ -27,7 +27,8 @@ Imports Microsoft.Win32
 Imports System.Diagnostics ' Add this line with other imports
 
 
-<ComVisible(True)>
+' Not ComVisible: the only COM consumer was the x86 video page's window.external, which
+' now gets VideoPageScriptBridge instead of the whole form (audit 046, D-06).
 Public Class Main_Form
 
     ' Explicit constructor (same body the VB compiler used to synthesize) so the
@@ -89,13 +90,13 @@ Public Class Main_Form
     ' x86/net48: no AVIF/HEIC decoder exists on its target OSes (Win 7/8.1 WIC has
     ' no HEIF codec), so those stay in web_specific_image_extensions - scanned and
     ' sortable with an honest "unsupported" status, never claimed as displayable.
-    Public Image_File_Extensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tiff", ".ico", ".wmf", ".emf", ".exif", ".webp"}
+    Public Image_File_Extensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".ico", ".wmf", ".emf", ".exif", ".webp"}
     Private web_specific_image_extensions As New HashSet(Of String) From {".heic", ".heif", ".avif", ".svg"}
 #Else
     ' Modern: AVIF/HEIC/HEIF decode via Magick.NET behind the IImageDecoder seam
     ' (epic O-3), so they are first-class displayable formats here. Both builds
     ' scan the same file set - the x86 exe keeps them in the web-specific list.
-    Public Image_File_Extensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tiff", ".ico", ".wmf", ".emf", ".exif", ".webp", ".avif", ".heic", ".heif"}
+    Public Image_File_Extensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".ico", ".wmf", ".emf", ".exif", ".webp", ".avif", ".heic", ".heif"}
     Private web_specific_image_extensions As New HashSet(Of String) From {".svg"}
 #End If
     Private video_File_Extensions As New HashSet(Of String) From {".webm", ".ogg", ".3g2", ".mkv", ".3gp", ".mp4", ".m4v", ".m4a", ".mov", ".mp3", ".avi", ".wmv", ".asf", ".mpg", ".mpeg", ".flv", ".wav", ".wma"}
@@ -161,7 +162,9 @@ Public Class Main_Form
     End Sub
 
     Private is_form_shown As Boolean = False
-    Private last_Perspective_Draw_Time As DateTime
+    ' Monotonic milliseconds (MonotonicClock) of the last perspective draw - never wall
+    ' clock, which stalls the throttle for an hour after a DST fall-back (audit B-10).
+    Private last_Perspective_Draw_Ms As Long = -how_long_wait_before_draw_perspective
     ''' <summary>Held for the process lifetime; created in MyApplication_Startup.</summary>
     Friend Shared Single_Instance_Mutex As Mutex
     Private app_Run_Count As Integer
@@ -197,6 +200,11 @@ Public Class Main_Form
     ''' <summary>The folder the list in memory was read from - the honest answer to "is
     ''' the list loaded?", which used to be guessed from current_File_Index = 0.</summary>
     Private folder_List_Loaded_For As String = ""
+    ''' <summary>Bumped every time files_List/files_Array is REPLACED (a scan, an empty
+    ''' folder, a one-file list from Explorer) - never by an in-place edit. A file operation
+    ''' remembers it, and its completion, rollback or undo touches the list only while it
+    ''' still matches (audit 047, C-13; FileOpRules.ListStampMatches).</summary>
+    Private file_List_Generation As Integer = 0
 
     Private is_Dragging As Boolean = False
     Private last_Drag_Update_Time As DateTime = DateTime.MinValue
@@ -208,7 +216,11 @@ Public Class Main_Form
     Private drag_Grab_Offset As Size
 
     Private is_Table_Form_Open As Boolean
-    Private last_Action_Time As DateTime
+    ' Monotonic milliseconds (MonotonicClock) of the last accepted navigation - never wall
+    ' time: a DateTime.Now stamp refused every flip and every slideshow tick for up to an
+    ' hour after the DST fall-back (audit 048, A-08). Far in the past = nothing yet (half of
+    ' Long.MinValue, so "now - last" cannot overflow).
+    Private last_Action_Ms As Long = Long.MinValue \ 2
     Private is_Full_Screen_Mode As Boolean
     Private is_Super_Full_Screen_Mode As Boolean
     Private is_External_Input_Received As Boolean = False
@@ -296,6 +308,8 @@ Public Class Main_Form
 
     Private WithEvents ResizeDebounceTimer As New System.Windows.Forms.Timer()
     Private is_Last_Full_Screen_State As Boolean = False
+    ' The window state full screen was entered from, restored on leaving it (audit B-17).
+    Private pre_Full_Screen_Window_State As FormWindowState = FormWindowState.Normal
 
     Private WithEvents gif_Restart_Timer As New System.Windows.Forms.Timer()
     Private gif_Total_Duration_Ms As Integer = 0
@@ -314,7 +328,7 @@ Public Class Main_Form
 
 
 
-    Private Const minimum_time_before_next_media_file As Double = 0.04
+    Private Const minimum_time_before_next_media_file_Ms As Long = 40
 
 
 
@@ -341,6 +355,14 @@ Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0888: WM_COPYDATA")
             Try
                 Dim cds As COPYDATASTRUCT = CType(Marshal.PtrToStructure(m.LParam, GetType(COPYDATASTRUCT)), COPYDATASTRUCT)
+                ' Only a forward from one of our own launches opens anything. WM_COPYDATA
+                ' authenticates nothing; untagged, any process that could reach this window
+                ' made it open a path of its choosing (053 F-06/F-07).
+                If Not SingleInstanceProtocol.IsViewerCopyData(cds.dwData) Then
+                    AppFileLogger.WriteLine("WM_COPYDATA without the viewer tag - ignored")
+                    MyBase.WndProc(m)
+                    Return
+                End If
                 ' The sender (Application_Events) encodes the path as UTF-8. Decode it the
                 ' same way: PtrToStringAnsi uses the system code page and silently mangles
                 ' any non-ASCII filename, which then fails File.Exists ("file not found").
@@ -351,15 +373,28 @@ Public Class Main_Form
                     received_Data = Encoding.UTF8.GetString(received_Bytes)
                 End If
                 If String.IsNullOrEmpty(received_Data) Then
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0000: Error processing WM_COPYDATA - received data is null or empty")
+                    AppFileLogger.WriteLine("WM_COPYDATA from a viewer launch carried no data")
                     Return
                 End If
 
-                External_message(received_Data)
-
+                ' Answer at once and act after: the sender counts a delivery only on this
+                ' value (a helper window answering 0 no longer passes for us), and it waits
+                ' at most 3 s - opening a file on a sleeping share inside this call would
+                ' read as "not delivered" and the file would open twice.
+                m.Result = New IntPtr(SingleInstanceProtocol.Handled_Result)
+                Dim forwarded As String = received_Data
+                BeginInvoke(New Action(
+                    Sub()
+                        Try
+                            External_message(forwarded)
+                        Catch ex As Exception
+                            AppFileLogger.LogException("Opening a forwarded argument", ex)
+                        End Try
+                    End Sub))
             Catch ex As Exception
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0020: Error processing WM_COPYDATA - " & ex.Message)
+                AppFileLogger.LogException("Processing a forwarded WM_COPYDATA", ex)
             End Try
+            Return
         End If
 
         MyBase.WndProc(m)
@@ -397,6 +432,7 @@ Public Class Main_Form
                 ' Picking a folder is a change of context, so the archive - and its
                 ' temporary directory - goes now rather than at shutdown (§4.3).
                 LeaveArchive()
+                LeaveResource()
 #End If
                 Current_Folder_Path = folder_Browser_Dialog.SelectedPath
                 lbl_Status.Text = Localization.T("выбрана папка") & ": " & Current_Folder_Path
@@ -515,14 +551,8 @@ Public Class Main_Form
     End Sub
 
 
-    Private Sub TextBox1_KeyPress(sender As Object, e As KeyPressEventArgs)
-        If e.KeyChar = Convert.ToChar(Keys.Enter) Then
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1870: Enter pressed in folder box")
-
-            Current_Folder_Path = Me.cmbox_Media_Folder.Text
-            FolderSelected()
-        End If
-    End Sub
+    ' TextBox1_KeyPress lived here: no Handles clause and no AddHandler, so it never ran
+    ' (audit 048, A-20). Enter in the folder box is handled by KeybUse.
 
 
 
@@ -596,6 +626,7 @@ Public Class Main_Form
                 ' (§4.3) - and it has to happen before Current_Folder_Path is overwritten,
                 ' which is what the archive mode is recognised by.
                 LeaveArchive()
+                LeaveResource()
 #End If
                 Is_No_Background_Tasks = False
                 Current_Folder_Path = cmbox_Media_Folder.SelectedItem.ToString()
@@ -661,20 +692,26 @@ Public Class Main_Form
     ''' failure must stay conspicuous (invariant 2).</param>
     Private Sub ReportOperationError(diagnostic_Code As String, ex As Exception,
                                      Optional context_Folder As String = "")
-        Dim detail As String = diagnostic_Code & " " & If(ex Is Nothing, "", ex.Message)
         Try
-            lbl_Status.Text = OperationErrorText(detail, ex, context_Folder)
+            lbl_Status.Text = OperationErrorText(diagnostic_Code, ex, context_Folder)
         Catch
         End Try
         AppFileLogger.LogException("Operation failed (" & diagnostic_Code & ")", ex)
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " " & detail)
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " " & diagnostic_Code & " " & If(ex Is Nothing, "", ex.Message))
     End Sub
 
     ''' <summary>The sentence the user sees for a caught operation failure. net48 keeps the
-    ''' historical raw-exception line to the byte (invariant 10).</summary>
-    Private Shared Function OperationErrorText(detail As String, ex As Exception, context_Folder As String) As String
+    ''' historical raw-exception line to the byte (invariant 10) - FailureText.Describe is
+    ''' the raw text there.
+    '''
+    ''' On the mainline an unclassified failure keeps its diagnostic code, loud on purpose
+    ''' (invariant 2 of the slot-health specification), but no longer prints the exception
+    ''' (APP-BEHAVIOUR rule 6, ticket 028 Ф-3, owner decision 2026-09-24): the code goes with
+    ''' a cause read from the exception's type and, when that is unknown too, with where the
+    ''' log is and how to send it.</summary>
+    Private Shared Function OperationErrorText(diagnostic_Code As String, ex As Exception, context_Folder As String) As String
 #If NETFRAMEWORK Then
-        Return Localization.TF("Ошибка операции: {0}", detail)
+        Return Localization.TF("Ошибка операции: {0}", diagnostic_Code & " " & FailureText.Describe(ex))
 #Else
         If Not String.IsNullOrEmpty(context_Folder) Then
             Select Case PathFailure.Classify(ex)
@@ -686,9 +723,14 @@ Public Class Main_Form
                     Return Localization.TF("! Нет связи с каталогом: {0}", context_Folder)
                 Case PathFailureKind.Invalid
                     Return Localization.TF("! Недопустимый путь: {0}", context_Folder)
+                ' Audit 047, C-17: both used to fall into Transport and read "no connection".
+                Case PathFailureKind.Exists
+                    Return Localization.TF("! Имя уже занято в каталоге: {0}", context_Folder)
+                Case PathFailureKind.Locked
+                    Return Localization.TF("! Файл открыт в другой программе: {0}", context_Folder)
             End Select
         End If
-        Return Localization.TF("Ошибка операции: {0}", detail)
+        Return Localization.TF("Ошибка операции: {0}", diagnostic_Code & " - " & FailureText.Describe(ex))
 #End If
     End Function
 
@@ -717,7 +759,11 @@ Public Class Main_Form
         End If
         Image_Panel_Form.PrepareForDisplay()
         PinToViewerBand(Image_Panel_Form)
+#If NETFRAMEWORK Then
         PositionChildOnViewerMonitor(Image_Panel_Form)
+#Else
+        If Not Image_Panel_Form.HasRememberedPlacement Then PositionChildOnViewerMonitor(Image_Panel_Form)
+#End If
         Image_Panel_Form.ShowDialog(Me)
         ' A modally-closed form is NOT disposed, and this one is held in a field - so without
         ' this the last session's thumbnails (hundreds of MB on a big folder at a large card
@@ -727,6 +773,9 @@ Public Class Main_Form
     End Sub
 
     Private Sub Main_Form_Deactivate(sender As Object, e As EventArgs) Handles Me.Deactivate
+        ' A key released while another window had focus never sends us its key-up; the
+        ' next press of it must not look like an auto-repeat (audit 047, C-20).
+        last_KeyDown_Was_Repeat = False
     End Sub
 
     Private Sub btn_choose_file_Click(sender As Object, e As EventArgs) Handles btn_choose_file.Click
@@ -792,7 +841,11 @@ Public Class Main_Form
         Dim fileNumber As Integer
         Dim take_number As String
 
-        take_number = InputBox(Localization.T("Введите номер файла:"), Localization.T("Перейти к файлу"), (current_File_Index + 1).ToString, 1, total_File_Count)
+        ' No XPos/YPos (audit 048, A-03): the two trailing arguments of InputBox are the
+        ' dialog's POSITION, not a range. They were passed as (1, total_File_Count), so in a
+        ' folder of a few thousand files the modal dialog opened below the screen and the
+        ' viewer looked frozen. Without them it is centred; the range is checked below.
+        take_number = InputBox(Localization.T("Введите номер файла:"), Localization.T("Перейти к файлу"), (current_File_Index + 1).ToString)
 
         ' Cancel / Esc gives back an empty string - that is someone changing their mind,
         ' not an error worth a modal box saying "Invalid file number".

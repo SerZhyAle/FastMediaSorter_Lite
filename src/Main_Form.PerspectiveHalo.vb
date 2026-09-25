@@ -216,11 +216,20 @@ Partial Public Class Main_Form
         Dim target As PictureBox = HaloTargetBox()
         If target Is Nothing Then Return
 
-        Dim previous As Bitmap = TryCast(target.BackgroundImage, Bitmap)
-        If previous Is Nothing OrElse previous.Size <> frameSize Then Return
+        ' The frame that was ON SCREEN. With the background preload the new photo lands
+        ' in the other box, so what was visible is the box that is now hidden; reading
+        ' the target dissolved out of the photo before the previous one (audit B-11).
+        ' Draw_Perspective clears the hidden box after every draw, so at most one of the
+        ' two carries a frame, and when the same box is reused it is the target.
+        Dim other As PictureBox = If(ReferenceEquals(target, Picture_Box_1), Picture_Box_2, Picture_Box_1)
+        For Each source As PictureBox In New PictureBox() {other, target}
+            Dim previous As Bitmap = TryCast(source.BackgroundImage, Bitmap)
+            If previous Is Nothing OrElse previous.Size <> frameSize Then Continue For
 
-        target.BackgroundImage = Nothing
-        halo_Underlay = previous
+            source.BackgroundImage = Nothing
+            halo_Underlay = previous
+            Return
+        Next
     End Sub
 
     ''' <summary>The previous frame is ours from the moment it is taken over, and it is a

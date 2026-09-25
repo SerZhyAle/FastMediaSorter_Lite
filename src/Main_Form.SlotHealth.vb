@@ -294,8 +294,10 @@ Partial Public Class Main_Form
         Select Case kind
             Case PathFailureKind.None : Return SlotState.Ready
             Case PathFailureKind.Missing : Return SlotState.Missing
-            Case PathFailureKind.Denied : Return SlotState.Denied
-            Case PathFailureKind.Invalid : Return SlotState.Invalid
+            Case PathFailureKind.Denied, PathFailureKind.Locked : Return SlotState.Denied
+            ' Invalid includes ERROR_DIRECTORY - a slot that names a FILE, which used to read
+            ' "no connection, press again" for ever (audit 047, C-24).
+            Case PathFailureKind.Invalid, PathFailureKind.Exists : Return SlotState.Invalid
             Case Else
                 ' Transport, OutOfMemory, Content, Unknown. For a DIRECTORY the honest
                 ' reading of anything unclassified is "it did not answer" - which is also

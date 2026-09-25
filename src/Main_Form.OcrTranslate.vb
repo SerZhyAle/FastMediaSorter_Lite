@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 Imports System.IO
@@ -23,6 +23,12 @@ Partial Public Class Main_Form
     Private ocr_Overlay_Visible As Boolean = True
     Private ocr_Job_Cts As CancellationTokenSource
 
+    ''' <summary>Quarter turns applied on screen (R / Shift+R) since the current picture was
+    ''' displayed, clockwise positive, 0..3. Part of the cache key: the file does not change
+    ''' when the picture is turned, but the grid the boxes are measured in does (audit 051
+    ''' E-01). Reset on every display, because a fresh load is upright again.</summary>
+    Private ocr_Quarter_Turns As Integer
+
     Private WithEvents btn_Translate As Button
     Private WithEvents ocr_Auto_Timer As New System.Windows.Forms.Timer()
 
@@ -31,9 +37,23 @@ Partial Public Class Main_Form
         Public FileWriteTicks As Long
         Public Bitmap As Bitmap
         Public ImageSize As Size
+        Public QuarterTurns As Integer
+        Public ExifAutoRotate As Boolean
         Public OcrSourceHint As String
         Public SourceLang As String
         Public TargetLang As String
+#If Not NETFRAMEWORK Then
+        ''' <summary>False for a secure container: the disk cache keys on path and write
+        ''' time and persists RECOGNISED TEXT, which for a container is the text of a
+        ''' secret (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §5.4 rule 2). The
+        ''' memory cache still works, so re-showing the same page costs nothing; nothing
+        ''' reaches the disk in either direction.</summary>
+        Public AllowDiskCache As Boolean = True
+        ''' <summary>True for a picture out of a secure container: its recognised text is
+        ''' the text of a secret and never goes into the developer dump either (audit 052
+        ''' E-12) - "not a log" includes a log someone switched on by hand.</summary>
+        Public IsSealedContent As Boolean
+#End If
     End Class
 
     ' --- setup / teardown -----------------------------------------------------
@@ -99,8 +119,11 @@ Partial Public Class Main_Form
             ocr_Auto_Timer.Stop()
         Catch
         End Try
+        ' Never wait for a pass in flight: cancellation cannot interrupt engine.Process, and
+        ' waiting for it on the UI thread hung the window for seconds on close with "best"
+        ' models (audit 051 E-15). Process exit reclaims an engine that is still busy.
         Dim te As TesseractOcrEngine = TryCast(ocr_Engine, TesseractOcrEngine)
-        If te IsNot Nothing Then te.DisposeEngine()
+        If te IsNot Nothing Then te.RetireEngine()
     End Sub
 
     ' --- navigation hook ------------------------------------------------------
@@ -111,6 +134,7 @@ Partial Public Class Main_Form
 
         ' The overlay belonged to the previous image: cancel + clear.
         CancelOcrJob()
+        ocr_Quarter_Turns = 0
         current_Overlay_Document = Nothing
         InvalidateOverlay()
         UpdateOcrButtonVisual()
@@ -136,11 +160,27 @@ Partial Public Class Main_Form
     ''' <summary>T key / button: translate, or toggle overlay if already done.</summary>
     Friend Sub TriggerOcrHotkey()
         If ocr_Settings Is Nothing Then Return
-        If CurrentDocBelongsToCurrentFile() Then
+        ' A partial document - shown, never cached - is the one state where T must run
+        ' again rather than hide the plates: "T will retry" is what its status line says.
+        If CurrentDocBelongsToCurrentFile() AndAlso Not current_Overlay_Document.IsPartial Then
             ToggleOverlayVisibility()
         Else
             TranslateCurrentImage(False)
         End If
+    End Sub
+
+    ''' <summary>
+    ''' The picture on screen was turned a quarter (R / Shift+R). Its boxes are now in a
+    ''' different grid, so the overlay goes, a job still running on the old grid is cancelled
+    ''' - it used to finish and paint the pre-rotation plates over the turned picture - and
+    ''' the turn is counted so the next run is filed under the new grid (audit 051 E-01).
+    ''' </summary>
+    Friend Sub OnActiveImageRotated(clockwise As Boolean)
+        CancelOcrJob()
+        ocr_Quarter_Turns = (ocr_Quarter_Turns + If(clockwise, 1, 3)) Mod 4
+        current_Overlay_Document = Nothing
+        InvalidateOverlay()
+        UpdateOcrButtonVisual()
     End Sub
 
     ''' <summary>Shift+T: toggle auto mode.</summary>
@@ -182,6 +222,62 @@ Partial Public Class Main_Form
 
     ' --- pipeline -------------------------------------------------------------
 
+#If Not NETFRAMEWORK Then
+    ''' <summary>
+    ''' Language data is fetched only because the user said yes (APP-BEHAVIOUR rule 4,
+    ''' ticket 028 Ф-6). It used to be downloaded from INSIDE recognition, silently - and with
+    ''' auto-OCR on, that meant on an image flip. Now:
+    '''   * a manual run asks, the same way the runtime download does, and downloads behind
+    '''     the dialog with progress and Cancel;
+    '''   * auto-OCR never downloads: it uses whatever language data exists, and when none of
+    '''     the languages has any it skips the image and says why and how to fix it.
+    ''' False = do not recognize this image.
+    ''' </summary>
+    Private Async Function EnsureOcrLanguageDataAsync(isAuto As Boolean) As Task(Of Boolean)
+        Dim preferBest As Boolean = String.Equals(ocr_Settings.OcrModelQuality, "best", StringComparison.OrdinalIgnoreCase)
+        Dim codes As List(Of String) = TesseractOcrEngine.RecognitionLanguageCodes(ocr_Settings.OcrSourceHint())
+        Dim wanted As List(Of String) = TesseractOcrEngine.MissingLanguageCodes(codes, preferBest)
+        If wanted.Count = 0 Then Return True
+
+        ' Something usable already on disk - the engine skips the languages with no data.
+        Dim usableExists As Boolean = TesseractOcrEngine.MissingLanguageCodes(codes, False).Count < codes.Count
+
+        If isAuto Then
+            If usableExists Then Return True
+            SetOcrStatus(Localization.TF("Нет языкового пакета OCR ({0}) - автоперевод пропустил изображение. Нажмите T, чтобы скачать его.",
+                                         OcrLanguageCatalog.DescribeTesseractCodes(wanted)))
+            Return False
+        End If
+
+        Dim question As String = Localization.TF("Для распознавания нужны языковые пакеты OCR: {0}. Скачать их сейчас?",
+                                                 OcrLanguageCatalog.DescribeTesseractCodes(wanted))
+        If MessageBox.Show(Me, question, "Fast Media Sorter", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
+            Dim toFetch As List(Of String) = wanted
+            If Await OptionalRuntimeManager.DownloadWithDialogAsync(
+                    Me, Localization.T("Языковые пакеты OCR"),
+                    Function(p, t) TesseractOcrEngine.DownloadLanguagesAsync(toFetch, preferBest, p, t)).ConfigureAwait(True) Then
+                Return True
+            End If
+        End If
+
+        If usableExists Then Return True
+        SetOcrStatus(LanguagePackMissingStatus(wanted))
+        Return False
+    End Function
+#End If
+
+    ''' <summary>
+    ''' The status for "no language data": which language, and where to get it
+    ''' (`OCR-OVERLAY` rule 10 asks for the fix to be named; ticket 033 Ф-6, finding F7). It
+    ''' used to read "OCR engine unavailable" - on the x86 viewer always, on the mainline for
+    ''' a pack missing at recognition time - which sent people after the engine instead of
+    ''' the language.
+    ''' </summary>
+    Private Shared Function LanguagePackMissingStatus(codes As IEnumerable(Of String)) As String
+        Return Localization.TF("Нет языкового пакета OCR ({0}) - скачайте его: Настройки -> OCR и перевод -> Распознавание (OCR)",
+                               OcrLanguageCatalog.DescribeTesseractCodes(codes))
+    End Function
+
     Friend Async Sub TranslateCurrentImage(isAuto As Boolean)
         If ocr_Settings Is Nothing Then Return
         If Not ocr_Settings.Enabled Then
@@ -207,6 +303,15 @@ Partial Public Class Main_Form
             Return
         End If
 
+#If Not NETFRAMEWORK Then
+        ' Sealed content is never recognised automatically, and its text goes to a
+        ' translator off this machine only after the user said so (audit 052 G-13).
+        If isAuto AndAlso Not SecureAllowsAutomaticOcr() Then Return
+        If Not isAuto AndAlso Not SecureConfirmsTranslatorEndpoint(ocr_Settings.Endpoint) Then Return
+
+        If Not Await EnsureOcrLanguageDataAsync(isAuto) Then Return
+#End If
+
         Dim pb As PictureBox = GetActivePictureBox()
         If pb Is Nothing OrElse pb.Image Is Nothing Then Return
 
@@ -216,7 +321,10 @@ Partial Public Class Main_Form
         Try
             snapshot = New Bitmap(pb.Image)
         Catch ex As Exception
+            ' Said, not swallowed: on the 32-bit viewer a large photo can run out of memory
+            ' right here, and T then looked like it did nothing at all (audit 051 E-08).
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: snapshot failed: " & ex.Message)
+            SetOcrStatus(Localization.T("Не удалось подготовить изображение для OCR"))
             Return
         End Try
 
@@ -232,10 +340,19 @@ Partial Public Class Main_Form
             .FileWriteTicks = ticks,
             .Bitmap = snapshot,
             .ImageSize = New Size(snapshot.Width, snapshot.Height),
+            .QuarterTurns = ocr_Quarter_Turns,
+            .ExifAutoRotate = Is_Exif_AutoRotate,
             .OcrSourceHint = ocr_Settings.OcrSourceHint(),
             .SourceLang = ocr_Settings.SourceLang,
             .TargetLang = ocr_Settings.TargetLang
         }
+#If Not NETFRAMEWORK Then
+        ' An archive entry's path carries the session's random token, so a result filed
+        ' under it can never be found again - it would only evict entries that can
+        ' (audit 052 G-21). Memory still serves the session.
+        job.IsSealedContent = Not SecureAllowsDiskCache()
+        job.AllowDiskCache = Not job.IsSealedContent AndAlso Not ArchivePaths.IsUnderArchiveCache(path)
+#End If
 
         CancelOcrJob()
         ocr_Job_Cts = New CancellationTokenSource()
@@ -255,14 +372,30 @@ Partial Public Class Main_Form
             Dim engineName As String = ocr_Engine.Name & "|" & ocr_Settings.OcrModelQuality & "|" & ocr_Settings.OcrPageMode &
                                        "|v" & OcrPipelineVersion.ToString(Globalization.CultureInfo.InvariantCulture)
             Dim provider As String = ocr_Settings.Provider & "|" & ocr_Settings.OllamaModel
-            Dim key As String = TranslationCache.BuildKey(job.FilePath, job.FileWriteTicks, engineName, provider, job.SourceLang, job.TargetLang)
+            Dim key As String = OcrResultPolicy.BuildCacheKey(job.FilePath, job.FileWriteTicks,
+                                                              job.ImageSize.Width, job.ImageSize.Height,
+                                                              job.QuarterTurns, job.ExifAutoRotate,
+                                                              engineName, provider, job.SourceLang, job.TargetLang)
 
             ' Cache (memory, then disk).
+            Dim diskCacheAllowed As Boolean = ocr_Settings.DiskCache
+#If Not NETFRAMEWORK Then
+            diskCacheAllowed = diskCacheAllowed AndAlso job.AllowDiskCache
+#End If
+
             Dim cached As OcrOverlayDocument = ocr_Cache.TryGetMemory(key)
-            If cached Is Nothing AndAlso ocr_Settings.DiskCache Then
+            Dim fromDisk As Boolean = False
+            If cached Is Nothing AndAlso diskCacheAllowed Then
                 cached = ocr_Cache.TryLoadFromDisk(key)
-                If cached IsNot Nothing Then ocr_Cache.PutMemory(key, cached)
+                fromDisk = cached IsNot Nothing
             End If
+            ' Boxes in another grid than the one on screen are not this picture's plates,
+            ' whatever the key says (audit 051 E-01, fix c): run afresh instead.
+            If cached IsNot Nothing AndAlso Not OcrResultPolicy.DocumentFitsGrid(cached.ImageSize.Width, cached.ImageSize.Height,
+                                                                                  job.ImageSize.Width, job.ImageSize.Height) Then
+                cached = Nothing
+            End If
+            If cached IsNot Nothing AndAlso fromDisk Then ocr_Cache.PutMemory(key, cached)
             If cached IsNot Nothing Then
 #If Not NETFRAMEWORK Then
                 ' A document written by the x86 viewer - or by any build older than the plate
@@ -286,10 +419,22 @@ Partial Public Class Main_Form
 
             Select Case ocrResult.Status
                 Case OcrStatus.RuntimeMissing
-                    SetStatusOnUi(Localization.T("OCR-движок недоступен"))
+                    If ocrResult.Message = TesseractOcrEngine.LanguageDataMissing Then
+                        ' Name the language that is missing, and where the download is.
+                        Dim wanted As List(Of String) = TesseractOcrEngine.MissingLanguageCodes(
+                            TesseractOcrEngine.RecognitionLanguageCodes(job.OcrSourceHint), False)
+                        If wanted.Count = 0 Then wanted = TesseractOcrEngine.RecognitionLanguageCodes(job.OcrSourceHint)
+                        SetStatusOnUi(LanguagePackMissingStatus(wanted))
+                    Else
+                        SetStatusOnUi(Localization.T("OCR-движок недоступен"))
+                    End If
                     Return
                 Case OcrStatus.Failed
-                    SetStatusOnUi(Localization.T("Ошибка OCR"))
+                    If ocrResult.Message = TesseractOcrEngine.ImagePreparationFailed Then
+                        SetStatusOnUi(Localization.T("Не удалось подготовить изображение для OCR"))
+                    Else
+                        SetStatusOnUi(Localization.T("Ошибка OCR"))
+                    End If
                     Return
             End Select
 
@@ -308,13 +453,29 @@ Partial Public Class Main_Form
                             " ocr: blocks=" & blocks.Count.ToString() &
                             " dropped=" & dropped.Count.ToString() &
                             " srcUseful=" & String.Join(",", blocks.Select(Function(b) CountUsefulDebugChars(b.SourceText)).ToArray()))
+            ' OCR-OVERLAY rule 10, and it runs BEFORE the empty check because the failure it
+            ' catches is not an empty page: a ladder that cannot read the script still returns
+            ' text, and the filter then refuses nearly all of it. Handing that to the user as
+            ' "no text found" hides the one fact that would let them fix it. Never cached -
+            ' picking the language is exactly the thing that makes the next run different.
+            If OcrLanguageGuard.ShouldRefuse(String.Equals(job.OcrSourceHint, "auto", StringComparison.Ordinal),
+                                             blocks, dropped) Then
+#If Not NETFRAMEWORK Then
+                ' Nothing is painted, so nothing would dump - and a refused run is precisely
+                ' the scene the record exists for.
+                OcrDiagnostics.DumpDocument(BuildDoc(job, engineName, provider, New List(Of OcrBlock)(), dropped), mayPersist:=Not job.IsSealedContent)
+#End If
+                SetStatusOnUi(Localization.T("Язык оригинала не определён - выберите его в настройках OCR"))
+                Return
+            End If
+
             If blocks.Count = 0 Then
 #If Not NETFRAMEWORK Then
                 ' Nothing will be painted, so nothing would dump - and this is precisely the
                 ' scene the record exists for: "the engine found nothing" and "a threshold
                 ' threw away what it found" are the same picture on screen and different
                 ' facts. Dumped from here, once, instead of from a paint that never happens.
-                OcrDiagnostics.DumpDocument(BuildDoc(job, engineName, provider, blocks, dropped))
+                OcrDiagnostics.DumpDocument(BuildDoc(job, engineName, provider, blocks, dropped), mayPersist:=Not job.IsSealedContent)
 #End If
                 SetStatusOnUi(Localization.T("Текст не найден"))
                 Return
@@ -338,32 +499,51 @@ Partial Public Class Main_Form
 
             If Not available Then
                 ' Show the recognized text untranslated; don't cache (allow retry).
-                For Each b As OcrBlock In blocks
-                    b.TranslatedText = b.SourceText
-                Next
-                ApplyOnUi(BuildDoc(job, engineName, provider, blocks, dropped),
-                          Localization.T("Переводчик недоступен"), token)
+                ShowUntranslated(job, engineName, provider, blocks, dropped, Localization.T("Переводчик недоступен"), token)
                 Return
             End If
 
             Dim sources As List(Of String) = blocks.Select(Function(b) b.SourceText).ToList()
-            Dim translations As List(Of String) = Await translator.TranslateAsync(sources, job.SourceLang, job.TargetLang, token).ConfigureAwait(False)
+            Dim batch As TranslationBatch
+            Try
+                batch = Await translator.TranslateAsync(sources, job.SourceLang, job.TargetLang, token).ConfigureAwait(False)
+            Catch ex As OperationCanceledException When Not token.IsCancellationRequested
+                ' Backstop for a translator that lets its HTTP timeout escape: that is not
+                ' navigation, and the recognized text is still worth showing (audit 051 E-04).
+                batch = TranslationBatch.AllFailed(sources, TranslationFailure.Timeout)
+            End Try
             token.ThrowIfCancellationRequested()
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
-                            " ocr: translations=" & translations.Count.ToString() &
-                            " dstUseful=" & String.Join(",", translations.Select(Function(t) CountUsefulDebugChars(t)).ToArray()))
+                            " ocr: translations=" & batch.Texts.Count.ToString() &
+                            " failed=" & batch.FailedCount.ToString() &
+                            " dstUseful=" & String.Join(",", batch.Texts.Select(Function(t) CountUsefulDebugChars(t)).ToArray()))
 
             For i As Integer = 0 To blocks.Count - 1
-                blocks(i).TranslatedText = If(i < translations.Count AndAlso Not String.IsNullOrWhiteSpace(translations(i)), translations(i), blocks(i).SourceText)
+                Dim ok As Boolean = i < batch.Texts.Count AndAlso batch.Translated(i) AndAlso Not String.IsNullOrWhiteSpace(batch.Texts(i))
+                blocks(i).TranslatedText = If(ok, batch.Texts(i), blocks(i).SourceText)
             Next
 
-            Dim finalDoc As OcrOverlayDocument = BuildDoc(job, engineName, provider, blocks, dropped)
+            ' The model that really answered, not only the one configured: Ollama falls back
+            ' to another installed model when the configured one is missing.
+            Dim answeredBy As String = If(batch.ModelUsed.Length > 0, ocr_Settings.Provider & "|" & batch.ModelUsed, provider)
+            Dim outcome As OcrResultPolicy.TranslationOutcome = OcrResultPolicy.Classify(batch)
+            If Not OcrResultPolicy.IsCacheable(outcome) Then
+                ' Shown, never cached, and T runs it again (audit 051 E-02): a failure used to
+                ' be written to both tiers as a translation and come back "from cache" for ever.
+                ShowUntranslated(job, engineName, answeredBy, blocks, dropped, TranslationFailureStatus(batch, job.TargetLang), token)
+                Return
+            End If
+
+            Dim finalDoc As OcrOverlayDocument = BuildDoc(job, engineName, answeredBy, blocks, dropped)
             ocr_Cache.PutMemory(key, finalDoc)
-            If ocr_Settings.DiskCache Then ocr_Cache.SaveToDisk(key, finalDoc)
+            If diskCacheAllowed Then ocr_Cache.SaveToDisk(key, finalDoc)
             ApplyOnUi(finalDoc, "", token)
 
+        Catch ex As OperationCanceledException When token.IsCancellationRequested
+            ' Navigated away (or rotated, or closed) - discard silently.
         Catch ex As OperationCanceledException
-            ' Navigated away - discard silently.
+            ' Cancelled by something other than our token - a timeout. Never silent (E-04).
+            SetStatusOnUi(Localization.T("Переводчик не ответил вовремя - T повторит"))
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: pipeline error: " & ex.Message)
             SetStatusOnUi(Localization.T("Ошибка OCR"))
@@ -450,6 +630,38 @@ Partial Public Class Main_Form
         }
     End Function
 
+    ''' <summary>
+    ''' Shows the blocks with whatever translation they got - the source text where none -
+    ''' as a PARTIAL document: never cached, and T runs the pipeline again (audit 051 E-02).
+    ''' </summary>
+    Private Sub ShowUntranslated(job As OcrJob, engineName As String, provider As String, blocks As List(Of OcrBlock),
+                                 dropped As List(Of OcrDroppedLine), statusText As String, token As CancellationToken)
+        For Each b As OcrBlock In blocks
+            If String.IsNullOrWhiteSpace(b.TranslatedText) Then b.TranslatedText = b.SourceText
+        Next
+        Dim doc As OcrOverlayDocument = BuildDoc(job, engineName, provider, blocks, dropped)
+        doc.IsPartial = True
+        ApplyOnUi(doc, statusText, token)
+    End Sub
+
+    ''' <summary>The status line for a translation that is not complete - it names the
+    ''' reason when there is one, and always that T will try again.</summary>
+    Private Shared Function TranslationFailureStatus(batch As TranslationBatch, targetLang As String) As String
+        Select Case batch.Failure
+            Case TranslationFailure.Timeout
+                Return Localization.T("Переводчик не ответил вовремя - T повторит")
+            Case TranslationFailure.UnsupportedLanguage
+                Return Localization.TF("Переводчик не поддерживает язык {0} - выберите другой в настройках OCR",
+                                       OcrLanguageCatalog.NameFor(targetLang))
+        End Select
+        Dim total As Integer = batch.Translated.Count
+        Dim failed As Integer = batch.FailedCount
+        If total = 0 OrElse failed >= total Then Return Localization.T("Перевод не удался - T повторит")
+        Return Localization.TF("Не переведено фрагментов: {0} из {1} - T повторит",
+                               failed.ToString(Globalization.CultureInfo.CurrentCulture),
+                               total.ToString(Globalization.CultureInfo.CurrentCulture))
+    End Function
+
     Private Sub ApplyOnUi(doc As OcrOverlayDocument, statusText As String, token As CancellationToken)
         If Me.IsDisposed Then Return
         Try
@@ -463,6 +675,11 @@ Partial Public Class Main_Form
         If token.IsCancellationRequested Then Return
         ' Step 9 of the pipeline: only apply if the same file is still shown.
         If Not String.Equals(doc.FilePath, Current_File_Name, StringComparison.Ordinal) Then Return
+        ' And only onto the grid it was measured in: a turn since the job started cancels
+        ' it, but a result already queued on the UI thread is caught here (audit 051 E-01).
+        Dim pb As PictureBox = GetActivePictureBox()
+        If pb Is Nothing OrElse pb.Image Is Nothing OrElse
+           Not OcrResultPolicy.DocumentFitsGrid(doc.ImageSize.Width, doc.ImageSize.Height, pb.Image.Width, pb.Image.Height) Then Return
 
         current_Overlay_Document = doc
         ocr_Overlay_Visible = True
@@ -491,6 +708,13 @@ Partial Public Class Main_Form
     Private Function IsCurrentFileEligibleImage() As Boolean
         If String.IsNullOrEmpty(Current_File_Name) Then Return False
         Dim ext As String = Path.GetExtension(Current_File_Name).ToLowerInvariant()
+#If Not NETFRAMEWORK Then
+        ' A picture out of a secure container is a picture: its own name ends in .fd-sec
+        ' and says nothing about what is on screen, so the extension test would refuse the
+        ' one thing §0 promises works exactly as usual. The overlay it produces is kept in
+        ' memory only - the disk half of the cache is off for containers (§5.4 rule 2).
+        If IsSecureImageOnScreen() Then Return is_PictureBox1_Visible OrElse is_PictureBox2_Visible
+#End If
         If Not Image_File_Extensions.Contains(ext) Then Return False
 
         ' No File.Exists here. OnMediaDisplayed calls this after EVERY flip, and on a share
@@ -543,7 +767,13 @@ Partial Public Class Main_Form
         If btn_Translate Is Nothing OrElse ocr_Settings Is Nothing Then Return
 
         Dim caption As String = Localization.T("Перевод")
+#If NETFRAMEWORK Then
         If ocr_Settings.AutoMode Then caption &= " ⟳"
+#Else
+        ' A word, not "⟳": that arrow is action.refresh, which the folder button on the
+        ' same toolbar already draws (ICON-SET rule 1, spec 027 question 3).
+        If ocr_Settings.AutoMode Then caption &= " " & Localization.T("(авто)")
+#End If
 
         Dim wanted_Font As Font = OcrButtonFont(ocr_Settings.Enabled)
         Dim changed As Boolean = (btn_Translate.Text <> caption) OrElse (btn_Translate.Font IsNot wanted_Font)
@@ -623,9 +853,7 @@ Partial Public Class Main_Form
     ''' Public-ish (Friend) so the toolbar Translate button's right-click can call it.</summary>
     Friend Sub ShowOcrTranslateSettings()
         EnsureOcrSettings()
-        If Table_Form Is Nothing OrElse Table_Form.IsDisposed Then
-            Table_Form = New Table_Form()
-        End If
+        EnsureSettingsWindow()
         Table_Form.PrepareForDisplay()
         Table_Form.SelectOcrTab()
         PinToViewerBand(Table_Form)

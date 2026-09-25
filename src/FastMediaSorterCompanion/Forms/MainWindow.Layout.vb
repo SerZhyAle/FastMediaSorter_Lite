@@ -51,8 +51,8 @@ Partial Public NotInheritable Class MainWindow
         ' NB: the AutoScaleMode/AutoScaleDimensions pair is set at the END of this method
         ' (DpiLayout.ApplyAutoScale) - it only scales the children that already exist.
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
-        ' The glyphs are code-drawn bitmaps: auto-scaling grows the buttons around them but
-        ' never the images, so they are drawn at the display's DPI right away.
+        ' The catalog SVG paths are rasterised at the current display DPI: auto-scaling
+        ' grows buttons but never an Image assigned to them.
         BuildGlyphs()
         toolTip = New ToolTip()
         _statsTimer = New Timer With {.Interval = 10000}
@@ -128,9 +128,13 @@ Partial Public NotInheritable Class MainWindow
             state.RowStyles.Add(New RowStyle(SizeType.AutoSize))
         Next
 
-        lblStateDot = New Label With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Visible = False,
-            .Margin = New Padding(0, 1, 6, 0), .Text = "●",
-            .Font = New Font(Me.Font.FontFamily, Me.Font.Size + 2.0F, FontStyle.Bold)}
+        ' The state glyph (status.ok / status.error / status.unknown in the colour look -
+        ' ICON-RENDER item C: a state indicator). It used to be a "●" in the state colour,
+        ' which is no vocabulary shape; SetStateGlyph paints and names it.
+        lblStateDot = New Label With {.AutoSize = False, .Anchor = AnchorStyles.Left, .Visible = False,
+            .Margin = New Padding(0, 1, 6, 0), .Text = "",
+            .Size = New Size(16, 16),
+            .ImageAlign = ContentAlignment.MiddleCenter}
         ' Both start in the empty-list state, which is what a freshly constructed window is
         ' in: the intro speaks, the state line waits for a status to describe.
         lblState = New Label With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 3, 0, 0),
@@ -223,6 +227,13 @@ Partial Public NotInheritable Class MainWindow
         lvFolders.Columns.Add(Localization.T("Тип"))
         lvFolders.Columns.Add(Localization.T("Папка"))
         lvFolders.Columns.Add("RO", 0, HorizontalAlignment.Center)
+        ' Owner-drawn only for the padlock in the RO column (OnFolderDrawSubItem);
+        ' headers and every other cell stay Windows-drawn.
+        lvFolders.OwnerDraw = True
+        AddHandler lvFolders.DrawColumnHeader, Sub(s, ev) ev.DrawDefault = True
+        AddHandler lvFolders.DrawItem, Sub(s, ev) ev.DrawDefault = False
+        AddHandler lvFolders.DrawSubItem, AddressOf OnFolderDrawSubItem
+        AddHandler lvFolders.MouseMove, AddressOf OnFolderListMouseMove
         AddHandler lvFolders.SelectedIndexChanged, AddressOf OnListSelectionChanged
         AddHandler lvFolders.MouseDown, AddressOf OnListMouseDown
         AddHandler lvFolders.ItemCheck, AddressOf OnItemCheck
@@ -280,6 +291,8 @@ Partial Public NotInheritable Class MainWindow
         miSiteGuide = AddHelpItem(menu, Localization.T("Как публиковать папки (сайт)"), Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl))
         miRouterSearch = AddHelpItem(menu, Localization.T("Инструкция для моей модели роутера"), Sub() OnOpenRouterSearch(Me, EventArgs.Empty))
         miOpenViewer = AddHelpItem(menu, Localization.T("Открыть Fast Media Sorter"), Sub() OnOpenViewerClicked(Me, EventArgs.Empty))
+        ' A field, disposed with the window - see _helpMenu (ticket 054 H-20).
+        _helpMenu = menu
 
         btnHelp = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Anchor = AnchorStyles.Right, .Padding = New Padding(8, 3, 8, 3), .Margin = New Padding(0, 0, 12, 0),
@@ -558,10 +571,10 @@ Partial Public NotInheritable Class MainWindow
         Dim oldAdd As Image = _addGlyph
         Dim oldGear As Image = _gearGlyph
         Dim oldEye As Image = _eyeGlyph
-        _shareGlyph = ShareIcons.CreateGlyphBitmap(LogicalToDeviceUnits(22))
-        _copyGlyph = BuildCopyGlyph(LogicalToDeviceUnits(16))
-        _addGlyph = BuildAddGlyph(LogicalToDeviceUnits(18))
-        _gearGlyph = BuildGearGlyph(LogicalToDeviceUnits(18))
+        _shareGlyph = CatalogGlyph("action.share", 22)
+        _copyGlyph = CatalogGlyph("action.copy", 16)
+        _addGlyph = CatalogGlyph("action.add", 18)
+        _gearGlyph = CatalogGlyph("app.settings", 18)
         _eyeGlyph = BuildEyeGlyph(LogicalToDeviceUnits(16))
         If btnShare IsNot Nothing Then btnShare.Image = _shareGlyph
         If btnAdd IsNot Nothing Then btnAdd.Image = _addGlyph
@@ -570,6 +583,12 @@ Partial Public NotInheritable Class MainWindow
         For Each sr As ServerRow In _serverRows
             sr.Copy.Image = _copyGlyph
         Next
+        ' The state glyph is drawn at device size too - repaint it for the new DPI.
+        Dim stateEntry As String = If(lblStateDot IsNot Nothing, TryCast(lblStateDot.Tag, String), Nothing)
+        If stateEntry IsNot Nothing Then
+            lblStateDot.Tag = Nothing
+            SetStateGlyph(stateEntry)
+        End If
         ' Only now that nothing points at them any more.
         DisposeImage(oldShare)
         DisposeImage(oldCopy)
@@ -585,78 +604,25 @@ Partial Public NotInheritable Class MainWindow
         End Try
     End Sub
 
-    ''' <summary>Windows-style "copy" glyph (two overlapping documents), drawn at
-    ''' <paramref name="size"/> px (the artwork below is authored for 16 px).</summary>
-    Private Shared Function BuildCopyGlyph(size As Integer) As Bitmap
-        Dim bmp As New Bitmap(size, size)
-        Using g As Graphics = Graphics.FromImage(bmp)
-            g.SmoothingMode = SmoothingMode.AntiAlias
-            g.Clear(Color.Transparent)
-            g.ScaleTransform(size / 16.0F, size / 16.0F)
-            ' Back page (offset), then front page over it - clear two-document "copy" mark.
-            Using back As New SolidBrush(Color.FromArgb(214, 224, 238)) : g.FillRectangle(back, 3, 2, 7, 9) : End Using
-            Using p As New Pen(Color.FromArgb(64, 92, 140), 1.3F)
-                g.DrawRectangle(p, 3, 2, 7, 9)
-                Using b As New SolidBrush(Color.White) : g.FillRectangle(b, 6, 5, 7, 9) : End Using
-                g.DrawRectangle(p, 6, 5, 7, 9)
-            End Using
-        End Using
-        Return bmp
+    Private Function CatalogGlyph(glyphId As String, logicalTier As Integer) As Bitmap
+        Return GlyphRenderer.Render(glyphId, LogicalToDeviceUnits(logicalTier), SystemColors.ControlText,
+                                   AddressOf CompanionAssets.OpenBundledAsset)
     End Function
 
-    ''' <summary>Green "+" glyph for the Add-folder button, drawn at <paramref name="size"/> px
-    ''' (the artwork below is authored for 18 px).</summary>
-    Private Shared Function BuildAddGlyph(size As Integer) As Bitmap
-        Dim bmp As New Bitmap(size, size)
-        Using g As Graphics = Graphics.FromImage(bmp)
-            g.SmoothingMode = SmoothingMode.AntiAlias
-            g.Clear(Color.Transparent)
-            g.ScaleTransform(size / 18.0F, size / 18.0F)
-            Using b As New SolidBrush(Color.FromArgb(46, 160, 67)) : g.FillEllipse(b, 1, 1, 16, 16) : End Using
-            Using p As New Pen(Color.White, 2.4F)
-                g.DrawLine(p, 9, 5, 9, 13)
-                g.DrawLine(p, 5, 9, 13, 9)
-            End Using
-        End Using
-        Return bmp
-    End Function
-
-    ''' <summary>Settings gear, drawn at <paramref name="size"/> px (authored for 18 px).
-    ''' Code-drawn like its neighbours rather than the "⚙" character: the app pins its own
-    ''' UI font and swaps the family per script (Nirmala UI, YaHei), and a font without that
-    ''' code point would put a substituted box on the one button with no caption.</summary>
-    Private Shared Function BuildGearGlyph(size As Integer) As Bitmap
-        Dim bmp As New Bitmap(size, size)
-        Using g As Graphics = Graphics.FromImage(bmp)
-            g.SmoothingMode = SmoothingMode.AntiAlias
-            g.Clear(Color.Transparent)
-            g.ScaleTransform(size / 18.0F, size / 18.0F)
-            Using p As New Pen(Color.FromArgb(70, 82, 98), 2.0F)
-                ' Eight teeth as spokes past the rim, then the rim and the hub over them.
-                For i As Integer = 0 To 7
-                    Dim a As Double = Math.PI * i / 4.0
-                    g.DrawLine(p, 9.0F + CSng(Math.Cos(a) * 4.6), 9.0F + CSng(Math.Sin(a) * 4.6),
-                                  9.0F + CSng(Math.Cos(a) * 8.0), 9.0F + CSng(Math.Sin(a) * 8.0))
-                Next
-                g.DrawEllipse(p, 3.4F, 3.4F, 11.2F, 11.2F)
-                g.DrawEllipse(p, 6.6F, 6.6F, 4.8F, 4.8F)
-            End Using
-        End Using
-        Return bmp
-    End Function
-
-    ''' <summary>Reveal-password eye, drawn at <paramref name="size"/> px (authored for 16 px).</summary>
+    ''' <summary>Reveal-password eye, drawn at <paramref name="size"/> px (authored for 16 px).
+    ''' Still code-drawn: the vocabulary has no reveal-password meaning yet (spec 027, the
+    ''' desktop-meanings proposal). Inked in the theme colour, never a baked grey.</summary>
     Private Shared Function BuildEyeGlyph(size As Integer) As Bitmap
         Dim bmp As New Bitmap(size, size)
         Using g As Graphics = Graphics.FromImage(bmp)
             g.SmoothingMode = SmoothingMode.AntiAlias
             g.Clear(Color.Transparent)
             g.ScaleTransform(size / 16.0F, size / 16.0F)
-            Using p As New Pen(Color.FromArgb(70, 82, 98), 1.4F)
+            Using p As New Pen(SystemColors.ControlText, 1.4F)
                 g.DrawCurve(p, New PointF() {New PointF(1.5F, 8), New PointF(8, 3.2F), New PointF(14.5F, 8)})
                 g.DrawCurve(p, New PointF() {New PointF(1.5F, 8), New PointF(8, 12.8F), New PointF(14.5F, 8)})
             End Using
-            Using b As New SolidBrush(Color.FromArgb(70, 82, 98)) : g.FillEllipse(b, 6.2F, 6.2F, 3.6F, 3.6F) : End Using
+            Using b As New SolidBrush(SystemColors.ControlText) : g.FillEllipse(b, 6.2F, 6.2F, 3.6F, 3.6F) : End Using
         End Using
         Return bmp
     End Function

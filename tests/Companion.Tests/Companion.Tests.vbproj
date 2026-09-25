@@ -23,4 +23,19 @@
     <ProjectReference Include="..\..\src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj" />
   </ItemGroup>
 
+  <!-- The TF call-site scanner (APP-BEHAVIOUR rule 7, ticket 028 Ф-4) is shared with
+       Lite.Tests: one parser for both programs, linked rather than copied. -->
+  <ItemGroup>
+    <Compile Include="..\Lite.Tests\TfCallSiteScanner.vb" Link="Linked\TfCallSiteScanner.vb" />
+    <Compile Include="..\Lite.Tests\ExceptionTextScanner.vb" Link="Linked\ExceptionTextScanner.vb" />
+  </ItemGroup>
+
+  <!-- WORKER-IPC section 7 fixtures (WorkerIpcConformanceTests): the request half is generated
+       by the product serializer, the response half is vendored from the worker's owner. -->
+  <ItemGroup>
+    <None Include="TestData\worker-ipc\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

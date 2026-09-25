@@ -221,15 +221,72 @@ Public Module ServerFeatures
         Catch ex As System.ComponentModel.Win32Exception
             ' 1223 = ERROR_CANCELLED: the user said No to the UAC prompt.
             If ex.NativeErrorCode = 1223 Then Return EnableResult.Declined
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " server-features enable: " & ex.Message)
+            AppFileLogger.LogException("Server features: enable", ex)
             Return EnableResult.Failed
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " server-features enable: " & ex.Message)
+            AppFileLogger.LogException("Server features: enable", ex)
             Return EnableResult.Failed
         End Try
+        If rc <> 0 Then AppFileLogger.WriteLine("Server features: enable - firewall helper exit code " & rc.ToString())
         If rc <> 0 Then Return EnableResult.Failed
         RecordEnabledForThisUser()
         Return EnableResult.Enabled
+    End Function
+
+    ''' <summary>Outcome of withdrawing the opt-in.</summary>
+    Public Enum WithdrawResult
+        Withdrawn                  ' firewall rule removed, consent flag cleared, gate closed
+        Declined                   ' the user dismissed the UAC prompt - nothing changed
+        Failed                     ' the helper ran and failed - nothing changed
+        StillEnabledByInstaller    ' rule removed and flag cleared, but a machine marker keeps the gate open
+    End Enum
+
+    ''' <summary>
+    ''' Whether this user can take the opt-in back from inside the app (ticket 028 Ф-6,
+    ''' APP-BEHAVIOUR rule 4: a standing consent is revocable in one action). Not for a
+    ''' Store build, whose firewall rule belongs to the package manifest, and not for the
+    ''' Server edition, whose service has its own "Remove server role".
+    ''' </summary>
+    Public Function CanWithdraw() As Boolean
+        Try
+            If AutostartManager.IsPackaged() Then Return False
+            Return HostMode() = ServerHostMode.UserSession
+        Catch
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' The reverse of <see cref="EnableViaElevation"/>: one UAC prompt removes the firewall
+    ''' rule (and the installer's machine marker, through the bundled helper), then this
+    ''' user's consent flag is cleared. The flag goes only after the elevated step succeeds,
+    ''' so a declined prompt leaves everything exactly as it was. The caller stops sharing
+    ''' first - a running worker must not outlive the consent it ran under.
+    ''' </summary>
+    Public Function WithdrawViaElevation() As WithdrawResult
+        Dim rc As Integer
+        Try
+            rc = RunElevatedFirewall(WorkerProcess.WorkerExePath(), disable:=True)
+        Catch ex As System.ComponentModel.Win32Exception
+            If ex.NativeErrorCode = 1223 Then Return WithdrawResult.Declined
+            AppFileLogger.LogException("Server features: withdraw", ex)
+            Return WithdrawResult.Failed
+        Catch ex As Exception
+            AppFileLogger.LogException("Server features: withdraw", ex)
+            Return WithdrawResult.Failed
+        End Try
+        If rc <> 0 Then
+            AppFileLogger.WriteLine("Server features: withdraw - firewall helper exit code " & rc.ToString())
+            Return WithdrawResult.Failed
+        End If
+        Try
+            SaveSetting(App_name, Second_App_Name, EnabledRegValue, "0")
+        Catch ex As Exception
+            AppFileLogger.LogException("Server features: clearing the consent flag", ex)
+        End Try
+        Refresh()
+        If IsEnabled() Then Return WithdrawResult.StillEnabledByInstaller
+        Return WithdrawResult.Withdrawn
     End Function
 
     ''' <summary>Runs the elevated firewall helper and returns its exit code. Prefers
@@ -246,11 +303,16 @@ Public Module ServerFeatures
             psi = New ProcessStartInfo("powershell.exe", args)
         Else
             ' No bundled script (dev/portable): drive netsh directly. Program-scoped
-            ' inbound allow so the rule survives the worker's dynamic listen port.
-            Dim verb As String = If(disable, "delete", "add")
-            Dim rule As String = "advfirewall firewall " & verb & " rule name=""" & FirewallRuleName & """"
-            If Not disable Then
-                rule &= " dir=in action=allow program=""" & workerExe & """ protocol=TCP profile=domain,private,public enable=yes"
+            ' inbound allow so the rule survives the worker's dynamic listen port. The
+            ' withdrawal deletes by PROGRAM, never by name, exactly like the script: the
+            ' name is shared with the Server edition's rule, which points at another copy
+            ' of the worker and is not this installation's to remove (ticket 037 Ф-3).
+            Dim rule As String
+            If disable Then
+                rule = "advfirewall firewall delete rule name=all program=""" & workerExe & """"
+            Else
+                rule = "advfirewall firewall add rule name=""" & FirewallRuleName & """" &
+                       " dir=in action=allow program=""" & workerExe & """ protocol=TCP profile=domain,private,public enable=yes"
             End If
             psi = New ProcessStartInfo("netsh", rule)
         End If

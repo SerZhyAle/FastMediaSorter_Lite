@@ -32,9 +32,9 @@ Partial Public Class Main_Form
         Public lpData As IntPtr
     End Structure
 
-    <DllImport("user32.dll", CharSet:=CharSet.Auto)>
-    Private Shared Function SendMessage(hWnd As IntPtr, msg As Integer, wParam As IntPtr, ByRef lParam As COPYDATASTRUCT) As Integer
-    End Function
+    ' A SendMessage(.., ByRef COPYDATASTRUCT) As Integer stood here, never called: the
+    ' forwarding uses SendMessageTimeout in Application_Events.vb, and an Integer LRESULT
+    ' would have truncated on x64 had anyone reached for it (053 F-20).
 
     ' MapViewOfFile / UnmapViewOfFile / CloseHandle used to live here for the WM_USER+1
     ' receiver in Main_Form.vb. That receiver was dead code that closed a handle supplied by

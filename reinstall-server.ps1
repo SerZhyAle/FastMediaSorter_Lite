@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Build the SERVER edition from these sources and install it on THIS machine, then
     prove the running Windows service really is the build that was just made.
@@ -311,8 +311,9 @@ Check "the control pipe is listening" $pipeUp "\\.\pipe\$PipeName"
 
 if ($pipeUp) {
     # The protocol check itself is already written and already used by the test runner -
-    # reuse it rather than re-implementing the round trip. Note it SKIPS (exit 0) when
-    # no worker answers, which is why the pipe is asserted separately above.
+    # reuse it rather than re-implementing the round trip. With no worker answering it
+    # exits 2 (could not verify), which fails this check too; the pipe is asserted
+    # separately above so that case is named on its own line.
     Write-Host "  ---- tests\Integration\WorkerRoundTrip.ps1 ----" -ForegroundColor DarkGray
     & (Join-Path $root 'tests\Integration\WorkerRoundTrip.ps1')
     Check "the worker speaks the frozen v1 protocol" ($LASTEXITCODE -eq 0) "WorkerRoundTrip.ps1 exit $LASTEXITCODE"

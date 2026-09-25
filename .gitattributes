@@ -5,3 +5,17 @@
 # newlines inside quoted multi-line cells. text=auto would rewrite those embedded
 # LFs to CRLF on checkout and corrupt the format Partner Center expects on import.
 publishing/store/listingData.csv -text
+
+# Vendored iconography artifacts are byte-for-byte copies of the contracts catalog, pinned by
+# SHA-256 (assets/glyphs/PROVENANCE.txt, tests/Lite.Tests/TestData/icon-vocabulary/PROVENANCE.txt).
+# A CRLF rewrite on checkout would break every hash on a fresh Windows clone.
+assets/glyphs/*.svg -text
+tests/Lite.Tests/TestData/icon-vocabulary/vocabulary.jsonl -text
+
+# WORKER-IPC request fixtures are the exact bytes the Share Manager puts on the pipe, pinned
+# byte for byte and by SHA-256 (tests/Companion.Tests/TestData/worker-ipc/requests/PROVENANCE.txt).
+tests/Companion.Tests/TestData/worker-ipc/** -text
+
+# FDSEC conformance vectors are pinned byte-for-byte in PROVENANCE.txt.  In particular,
+# vectors.json is deliberately LF-only, so a Windows checkout must not rewrite it to CRLF.
+tests/Lite.Tests/TestData/fdsec-vectors/** -text

@@ -20,6 +20,7 @@ Partial Public NotInheritable Class Localization
         AddInternetStrings()    ' the internet-access tab
         AddParamsStrings()      ' per-folder options + the status window
         AddHostingStrings()     ' User vs Server edition hosting + service management
+        AddAppUxStrings()       ' ticket 028: confirmations, failure actions, consent, accessible names
     End Sub
 
     ''' <summary>

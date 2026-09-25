@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fast Media Sorter for Windows - Privacy Policy</title>
-    <meta name="description" content="Fast Media Sorter for Windows privacy policy: runs on your device, collects no personal data, no telemetry. Network is used only for the optional translation feature you configure.">
+    <meta name="description" content="Fast Media Sorter for Windows privacy policy: runs on your device, collects no personal data, no telemetry. Network is used only by features you switch on and components you ask for.">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -36,11 +36,12 @@
     <div class="container">
         <p><a href="./">&larr; Fast Media Sorter for Windows</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a></p>
         <h1>Privacy Policy</h1>
-        <p class="note">Last updated: 14 June 2026</p>
+        <p class="note">Last updated: 25 September 2026</p>
 
         <p><strong>Fast Media Sorter for Windows collects no personal data.</strong> It has no user accounts, no
         advertising, and no telemetry or analytics. It runs entirely on your own device, and the developer
-        receives no data about you or your use of the app - honestly, we wouldn't know what to do with it anyway.</p>
+        receives no data about you or your use of the app - unless you choose to send your logs yourself (see
+        <a href="#logs">Diagnostic logs</a>) - honestly, we wouldn't know what to do with it anyway.</p>
 
         <h2>What the app accesses, and why</h2>
         <ul>
@@ -59,30 +60,46 @@
             the internet; idle connections close after a few hours, and you can cap how many devices connect
             at once. If you turn on internet access, the app asks the public service
             <a href="https://check-host.net">check-host.net</a> to confirm your forwarded port is reachable,
-            which reveals your public address and port to that service for the check. The app keeps
+            which reveals your public address and port to that service for the check. With internet access
+            on, the app also asks your own router to forward the share port (UPnP or NAT-PMP), and while a
+            share runs the PC announces itself on your local network (mDNS) so a paired phone can find it
+            again when its address changes; neither of those leaves your network. The app keeps
             local-only connection counters (this is not telemetry and never leaves your PC).</li>
 
-            <li><strong>The Server edition - a separate download, never installed by default.</strong>
-            If you deliberately install it, the same folder sharing is hosted by a Windows service instead
-            of by your signed-in session, so the folders you chose stay reachable from boot even when nobody
-            is logged on. Nothing about what is collected changes - there is still no telemetry, and files
-            still go straight between your own devices - but the exposure window does: the share is up
-            whenever the machine is, not only while you are using it. The service runs as
-            <code>LOCAL SERVICE</code> and can open only the folders you configured. Its host key, password
-            and settings live in a machine folder readable by administrators and that account alone.
-            Uninstalling stops and removes the service and its firewall rule; the host key is kept unless
-            you delete it, so your paired phones still work if you reinstall.</li>
+            <li><strong>Always-on sharing - a Windows service, only if you ask for it.</strong> It comes
+            either from the separate Server edition download or from the Share Manager's own "Switch sharing to
+            a Windows service.." (Manager settings &rarr; Hosting); it is never installed by default, and
+            either way Windows asks for administrator approval first. The same folder sharing is then hosted
+            by a Windows service instead of by your signed-in session, so the folders you chose stay reachable
+            from boot even when nobody is logged on. Nothing about what is collected changes - there is still
+            no telemetry, and files still go straight between your own devices - but the exposure window does:
+            the share is up whenever the machine is, not only while you are using it. The service runs as
+            <code>LOCAL SERVICE</code>, which is given read access to each folder you share (and write access
+            only where you allowed writing) and nothing else. Its host key, password and settings live in a
+            machine folder, <code>%ProgramData%\FastMediaSorterCompanion</code>, that only administrators, the
+            service and your account can open. "Remove the server role" in the Share Manager, or uninstalling
+            the Server edition, stops and removes the service, takes back those folder permissions and removes
+            the firewall rule; uninstalling the ordinary edition offers to do the same for a service its Share
+            Manager set up (a silent uninstall, such as <code>winget uninstall</code>, cannot ask and leaves it
+            in place). The host key is kept unless you delete that folder, so your paired phones still work if
+            you reinstall.</li>
 
-            <li><strong>Network - optional, only for translation.</strong> The on-image translation feature
-            is off until you enable and configure it. When you use it, the app sends the recognized text to
-            the translation endpoint <em>you</em> choose - a local <a href="https://ollama.com">Ollama</a>
+            <li><strong>Network - only when you use a feature that needs it.</strong> The on-image translation
+            feature is off until you enable and configure it. When you use it, the app sends the recognized text
+            to the translation endpoint <em>you</em> choose - a local <a href="https://ollama.com">Ollama</a>
             model on your own machine, or a <a href="https://libretranslate.com">LibreTranslate</a> server
             you specify - to receive the translated text. <strong>OCR (text recognition) runs fully offline.</strong>
-            If you never use translation, the app makes no network requests, except for optional components you
-            ask the app to fetch: additional OCR language packs from the public Tesseract data repository, and
-            <a href="https://ffmpeg.org">FFmpeg</a> - the video encoder behind "Replace with video" - from its
-            published Windows builds. Both downloads happen only after you say yes to a prompt that names what
-            is being fetched; nothing about your files, your paths or your usage is sent with either.</li>
+            Apart from that, the app makes no network requests except to fetch an optional component you ask
+            for: additional OCR language packs from the public Tesseract data repository; the OCR and video
+            playback runtimes from <a href="https://www.nuget.org">nuget.org</a>, when a build did not bring
+            them along; <a href="https://ffmpeg.org">FFmpeg</a> - the video encoder behind "Replace with video" -
+            from its published Windows builds; the Ollama installer from ollama.com, and translation models
+            through your own Ollama, when you press the button for them; and doc-html-translate through
+            <code>winget</code>, when you press its install button. Each happens only after you press that
+            button or say yes to a prompt that names what is being fetched; nothing about your files, your
+            paths or your usage is sent with any of them. If a runtime needs the Microsoft Visual C++
+            Redistributable and it is missing, the app says so and can open Microsoft's download in your
+            browser - it never downloads or runs that installer itself.</li>
 
             <li><strong>API keys (if you set one).</strong> If a translation provider you configure needs an
             API key, it is stored encrypted on your device using Windows DPAPI and is sent only to that
@@ -104,10 +121,11 @@
         <p>None with the developer - the kind of "none" that is actually none, and no telemetry or analytics
         ever. The only things that leave your device do so at your explicit choice and go where you direct them,
         not to us: the text you translate goes to the translation endpoint you configured; shared files go
-        directly to your own phone over SFTP; and, if you enable internet access, your public address and port
-        are shown to check-host.net solely to test reachability.</p>
+        directly to your own phone over SFTP; if you enable internet access, your public address and port
+        are shown to check-host.net solely to test reachability; and the log archive reaches the developer only
+        if you send it yourself from your own mail program.</p>
 
-        <h2>Diagnostic logs</h2>
+        <h2 id="logs">Diagnostic logs</h2>
         <p>The app writes a plain-text log of its own work next to the program (or, when that folder is not
         writable, under your local application data). It never leaves your device on its own. Settings &rarr;
         About has a "Send the logs to the author" button: it packs those logs and a report of your version,

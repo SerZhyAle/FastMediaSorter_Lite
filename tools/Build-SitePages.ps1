@@ -1,7 +1,7 @@
-<#
+﻿<#
 .SYNOPSIS
     Renders the per-language first pages of the site - lang/<code>/index.html -
-    from tools/site-copy.json.
+    from tools/site-copy.json, and the install-trust page from tools/trust-copy.json.
 
 .DESCRIPTION
     The site is served from the repository ROOT (see .sza-canon.json: site.root ".").
@@ -21,14 +21,45 @@
     The generated HTML is a render target - edit site-copy.json and re-run, never the
     pages themselves (canon invariant 16).
 
+    The SECOND page this script renders is the install-trust page (INSTALL-TRUST
+    contract, ticket 025 section 7): trust.html at the site root for English, and
+    lang/<code>/trust.html for the other twelve. Its copy lives in tools/trust-copy.json
+    and its language metadata does NOT - dir, endonym, the machine-translation flag and
+    the switcher label are read from site-copy.json, so a language is described once.
+    It is rendered here rather than hand-authored like the how-to pages precisely because
+    the contract requires it in all thirteen locales in one edit (canon invariant 17).
+
 .PARAMETER Check
     Render into memory and fail if any page on disk differs. For a pre-flight sweep:
-    it proves the committed HTML still matches its source.
+    it proves the committed HTML still matches its source. tools\Release.ps1 runs it
+    before every tag (tools\check-placement.jsonl).
+
+.NOTES
+    Exit codes with -Check (CHECK-VERDICT):
+      0 - every render target on disk matches its source;
+      1 - a render target differs or is missing, or a legacy per-language folder is left
+          in the repository root;
+      2 - could not verify: a copy source is missing or unreadable, or rendering failed.
+    The last line is the verdict, `Build-SitePages: <WORD> (..)`. Without -Check the
+    script writes the pages and a failure is an ordinary error (exit 1).
 #>
 [CmdletBinding()]
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'lib\Verdict.ps1')
+
+# In check mode an unexpected terminating error - an unreadable copy file, a render that
+# throws - means nothing was compared, which is not the same fact as "a page is stale".
+trap {
+    if (-not $Check) { break }
+    Write-Host "  $($_.Exception.Message)"
+    Exit-Verdict 'Build-SitePages' 2 'the check could not run'
+}
+if ($Check) {
+    Write-Subject 'Build-SitePages' ('the trust pages, the per-language index pages, robots.txt and sitemap.xml ' +
+        'against tools/site-copy.json + tools/trust-copy.json')
+}
 $Root     = Split-Path $PSScriptRoot -Parent
 $CopyFile = Join-Path $PSScriptRoot 'site-copy.json'
 $BaseUrl  = 'https://serzhyale.github.io/FastMediaSorter_Lite'
@@ -38,8 +69,12 @@ $Repo     = 'https://github.com/SerZhyAle/FastMediaSorter_Lite'
 $OgImage  = 'assets/social-preview-1280x640.png'          # verified present; assets/og-image.png never was
 $Favicon  = 'assets/icons/Fast_Media_Sorter.ico'          # ditto for assets/favicon.ico
 
-if (-not (Test-Path $CopyFile)) { throw "Missing copy source: $CopyFile" }
-$copy  = Get-Content $CopyFile -Raw -Encoding UTF8 | ConvertFrom-Json
+$TrustFile = Join-Path $PSScriptRoot 'trust-copy.json'
+
+if (-not (Test-Path $CopyFile))  { throw "Missing copy source: $CopyFile" }
+if (-not (Test-Path $TrustFile)) { throw "Missing copy source: $TrustFile" }
+$copy  = Get-Content $CopyFile  -Raw -Encoding UTF8 | ConvertFrom-Json
+$trust = Get-Content $TrustFile -Raw -Encoding UTF8 | ConvertFrom-Json
 # Anything starting with '_' is shared copy, not a language: '_comment', '_howto'.
 $codes = $copy.PSObject.Properties.Name | Where-Object { -not $_.StartsWith('_') }
 
@@ -72,6 +107,7 @@ function JsonLd([string]$code, $e) {
 
 # Absolute paths from the site root: a relative href breaks one directory down.
 function PageUrl([string]$code) { if ($code -eq 'en') { "$BaseUrl/" } else { "$BaseUrl/$LangDir/$code/" } }
+function TrustUrl([string]$code) { if ($code -eq 'en') { "$BaseUrl/trust.html" } else { "$BaseUrl/$LangDir/$code/trust.html" } }
 
 function Render([string]$code) {
     $e = $copy.$code
@@ -186,6 +222,7 @@ $cards
     </div>
     <p><a href="$BaseUrl/how-to-viewer.html">$(Esc $e.guide)</a></p>
     <p><a href="$BaseUrl/server.html">$(Esc $e.serverLink)</a></p>
+    <p><a href="$(TrustUrl $code)">$(Esc $trust.$code.title)</a></p>
 $note  </section>
 
   <section id="howto">
@@ -209,7 +246,132 @@ $howto
 "@
 }
 
-$written = @(); $stale = @()
+function RenderTrust([string]$code) {
+    $t   = $trust.$code
+    $e   = $copy.$code          # language metadata only - one description per language
+    $rtl = ($e.dir -eq 'rtl')
+
+    $alts = ($codes | ForEach-Object {
+        '<link rel="alternate" hreflang="{0}" href="{1}">' -f $_, (TrustUrl $_)
+    }) -join "`n"
+    $alts += "`n" + ('<link rel="alternate" hreflang="x-default" href="{0}">' -f (TrustUrl 'en'))
+
+    $switcher = ($codes | ForEach-Object {
+        $cls = if ($_ -eq $code) { ' class="on"' } else { '' }
+        '<a{0} hreflang="{1}" href="{2}">{3}</a>' -f $cls, $_, (TrustUrl $_), (Esc $copy.$_.name)
+    }) -join "`n      "
+
+    # The four sections INSTALL-TRUST rule 1 fixes, plus rule 6's list, in the order the
+    # contract states. The order is the JSON's; nothing here reorders it.
+    $sections = ($t.sections | ForEach-Object {
+        $items = ($_.items | ForEach-Object { "        <li>$(Esc $_)</li>" }) -join "`n"
+        "  <section>`n    <h2>$(Esc $_.h)</h2>`n    <p class=`"tagline`">$(Esc $_.p)</p>`n    <ul>`n$items`n    </ul>`n  </section>"
+    }) -join "`n"
+
+    $mt = ''
+    if ($e.machine) { $mt = "    <p class=`"note`">$(Esc $e.machineNote)</p>`n" }
+
+@"
+<!DOCTYPE html>
+<html lang="$code"$(if ($rtl) { ' dir="rtl"' })>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$(Esc $t.title)</title>
+<meta name="description" content="$(Esc $t.desc)">
+<link rel="canonical" href="$(TrustUrl $code)">
+$alts
+<meta property="og:type" content="article">
+<meta property="og:title" content="$(Esc $t.title)">
+<meta property="og:description" content="$(Esc $t.desc)">
+<meta property="og:url" content="$(TrustUrl $code)">
+<meta property="og:image" content="$BaseUrl/$OgImage">
+<meta property="og:site_name" content="Fast Media Sorter for Windows">
+<meta property="og:locale" content="$code">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="$(Esc $t.title)">
+<meta name="twitter:description" content="$(Esc $t.desc)">
+<meta name="twitter:image" content="$BaseUrl/$OgImage">
+<meta name="theme-color" content="#0d1017">
+<link rel="icon" href="$BaseUrl/$Favicon" sizes="any">
+<style>
+  :root{--bg:#0d1017;--bg2:#171b26;--fg:#e8ecf4;--muted:#aab2be;--accent:#7aa2ff;--border:rgba(255,255,255,.10)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:16px/1.6 "Segoe UI",system-ui,-apple-system,"Noto Sans","Noto Sans Arabic","Noto Sans Devanagari","Noto Sans Bengali","Microsoft YaHei",sans-serif}
+  .wrap{max-width:820px;margin:0 auto;padding:0 20px}
+  header{padding:56px 0 8px}
+  h1{font-size:clamp(26px,4.4vw,38px);line-height:1.2;margin:0 0 14px}
+  .tagline{font-size:16px;color:var(--muted);margin:0 0 14px;max-width:70ch}
+  h2{font-size:20px;margin:40px 0 10px}
+  ul{padding-inline-start:22px;color:var(--muted)}
+  li{margin:10px 0}
+  .note{margin:28px 0 0;padding:12px 16px;border-inline-start:3px solid var(--accent);
+        background:rgba(122,162,255,.07);border-radius:0 10px 10px 0;color:var(--muted);font-size:14px}
+  .btns{display:flex;flex-wrap:wrap;gap:10px;margin:28px 0 6px}
+  .btn{display:inline-block;padding:11px 18px;border-radius:10px;text-decoration:none;
+       border:1px solid var(--border);color:var(--fg);background:var(--bg2)}
+  .langs{display:flex;flex-wrap:wrap;gap:8px 14px;margin:10px 0 0;font-size:14px}
+  .langs a{color:var(--muted);text-decoration:none}
+  .langs a:hover{color:var(--fg)}
+  .langs a.on{color:var(--accent);font-weight:600}
+  footer{margin:56px 0 40px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:14px}
+  footer a{color:var(--muted)}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>$(Esc $t.title)</h1>
+    <p class="tagline">$(Esc $t.intro)</p>
+  </header>
+
+$sections
+
+  <p class="note">$(Esc $t.note)</p>
+
+  <div class="btns">
+    <a class="btn" href="$(PageUrl $code)">$(Esc $t.backLabel)</a>
+    <a class="btn" href="$Releases">$(Esc $t.dlLabel)</a>
+    <a class="btn" href="$BaseUrl/docs/privacy.html">$(Esc $t.privacyLabel)</a>
+  </div>
+$mt
+  <footer>
+    <p>$(Esc $e.langLabel):</p>
+    <nav class="langs">
+      $switcher
+    </nav>
+    <p><a href="$Repo">GitHub</a></p>
+  </footer>
+</div>
+</body>
+</html>
+"@
+}
+
+$written = @(); $stale = @(); $compared = 0
+
+# The install-trust page, English at the site root and the other twelve beside their
+# index. Written BEFORE the sitemap block below, which globs the root for *.html.
+foreach ($code in $codes) {
+    $path = if ($code -eq 'en') { Join-Path $Root 'trust.html' }
+            else { Join-Path (Join-Path (Join-Path $Root $LangDir) $code) 'trust.html' }
+    $html = (RenderTrust $code) -replace "`r`n", "`n"
+
+    if ($Check) {
+        $compared++
+        if (-not (Test-Path $path)) { $stale += "trust:$code (missing)"; continue }
+        $on = (Get-Content $path -Raw -Encoding UTF8) -replace "`r`n", "`n"
+        if ($on -ne $html) { $stale += "trust:$code" }
+        continue
+    }
+
+    New-Item -ItemType Directory -Path (Split-Path $path -Parent) -Force | Out-Null
+    [IO.File]::WriteAllText($path, $html, (New-Object Text.UTF8Encoding $false))
+    $written += (Resolve-Path -Relative $path)
+}
+
 foreach ($code in $codes) {
     # English is the root entry page, which is hand-authored and trilingual.
     if ($code -eq 'en') { continue }
@@ -219,6 +381,7 @@ foreach ($code in $codes) {
     $html = (Render $code) -replace "`r`n", "`n"
 
     if ($Check) {
+        $compared++
         if (-not (Test-Path $path)) { $stale += "$code (missing)" ; continue }
         $on = (Get-Content $path -Raw -Encoding UTF8) -replace "`r`n", "`n"
         if ($on -ne $html) { $stale += $code }
@@ -256,7 +419,12 @@ function RenderSitemap {
     foreach ($f in RootPages) {
         $urls += if ($f -eq 'index.html') { "$BaseUrl/" } else { "$BaseUrl/$f" }
     }
-    foreach ($code in ($codes | Where-Object { $_ -ne 'en' })) { $urls += (PageUrl $code) }
+    foreach ($code in ($codes | Where-Object { $_ -ne 'en' })) {
+        $urls += (PageUrl $code)
+        # The trust page exists in every language, so its twelve translated URLs need
+        # listing too; the English one is already picked up by the root *.html glob.
+        $urls += (TrustUrl $code)
+    }
 
     $body = ($urls | ForEach-Object {
         # The entry page carries the hreflang set, so it is the one that declares the
@@ -285,6 +453,7 @@ foreach ($pair in @(@('robots.txt', (RenderRobots)), @('sitemap.xml', (RenderSit
     $name = $pair[0]; $text = $pair[1]
     $dest = Join-Path $Root $name
     if ($Check) {
+        $compared++
         if (-not (Test-Path $dest)) { $stale += "$name (missing)"; continue }
         $on = (Get-Content $dest -Raw -Encoding UTF8) -replace "`r`n", "`n"
         if ($on -ne $text) { $stale += $name }
@@ -296,19 +465,22 @@ foreach ($pair in @(@('robots.txt', (RenderRobots)), @('sitemap.xml', (RenderSit
 if ($Check) {
     # The pages used to live one per folder in the repository root. A leftover there
     # would still be served by Pages and would silently outrank the real page.
-    $orphans = $codes | Where-Object { $_ -ne 'en' -and (Test-Path (Join-Path $Root "$_/index.html")) }
+    $orphans = @($codes | Where-Object { $_ -ne 'en' -and (Test-Path (Join-Path $Root "$_/index.html")) })
+    if ($compared -eq 0) { Exit-Verdict 'Build-SitePages' 2 'no render target was compared' }
+    # Both findings are reported together: stopping at the first turns one fix into two runs.
+    $problems = @()
     if ($orphans.Count -gt 0) {
-        Write-Warning "Legacy per-language folders left in the repository root: $($orphans -join ', ')"
-        Write-Host "Delete them - the pages live under $LangDir/ now."
-        exit 1
+        Write-Host "Legacy per-language folders left in the repository root: $($orphans -join ', ')"
+        Write-Host "  Delete them - the pages live under $LangDir/ now."
+        $problems += "$($orphans.Count) legacy folder(s)"
     }
     if ($stale.Count -gt 0) {
-        Write-Warning "Render targets out of date with site-copy.json: $($stale -join ', ')"
-        Write-Host "Run .\tools\Build-SitePages.ps1 to regenerate."
-        exit 1
+        Write-Host "Render targets out of date with their copy source: $($stale -join ', ')"
+        Write-Host "  Run .\tools\Build-SitePages.ps1 to regenerate."
+        $problems += "$($stale.Count) of $compared render target(s) stale"
     }
-    Write-Host "All language pages, robots.txt and sitemap.xml match site-copy.json."
-    exit 0
+    if ($problems.Count -gt 0) { Exit-Verdict 'Build-SitePages' 1 ($problems -join ', ') }
+    Exit-Verdict 'Build-SitePages' 0 "$compared render targets match tools/site-copy.json + tools/trust-copy.json"
 }
 
 Write-Host "Wrote $($written.Count) pages:"

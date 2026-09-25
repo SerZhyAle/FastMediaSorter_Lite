@@ -34,6 +34,10 @@ Friend Module AnimationToVideo
         ''' <summary>The tail of stderr, or the exception text when the process could not be
         ''' started at all.</summary>
         Public Property Detail As String = ""
+        ''' <summary>The last frame= of the progress stream, -1 when none arrived (050 D-18).</summary>
+        Public Property FramesWritten As Long = -1
+        ''' <summary>The last out_time= of the progress stream in ms, -1 when none arrived.</summary>
+        Public Property OutTimeMs As Long = -1
     End Class
 
     ''' <summary>
@@ -70,7 +74,13 @@ Friend Module AnimationToVideo
 
                 AddHandler proc.OutputDataReceived,
                     Sub(sender As Object, e As DataReceivedEventArgs)
-                        If e.Data Is Nothing OrElse progress Is Nothing Then Return
+                        If e.Data Is Nothing Then Return
+                        ' The counts the verdict needs (050 D-18); the last block wins.
+                        Dim frames As Long = VideoConvertPlan.ParseProgressValue(e.Data, "frame")
+                        If frames >= 0 Then run.FramesWritten = frames
+                        Dim outTime As Long = VideoConvertPlan.ParseProgressValue(e.Data, "out_time")
+                        If outTime >= 0 Then run.OutTimeMs = outTime
+                        If progress Is Nothing Then Return
                         Dim percent As Integer = ParseProgressPercent(e.Data, totalDurationMs)
                         If percent >= 0 Then progress.Report(percent)
                     End Sub

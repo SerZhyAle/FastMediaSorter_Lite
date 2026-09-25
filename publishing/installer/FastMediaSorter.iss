@@ -289,7 +289,43 @@ Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(
 Filename: "{app}\{#AppExeNameX86}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent; Check: UseLegacyExe
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{localappdata}\FastMediaSorter_LITE"
+; What the viewer downloads and caches at run time under its per-user state root,
+; %LOCALAPPDATA%\SZA\FastMediaSorter (AppPaths.LocalAppDataRoot, shared by both exes).
+; This used to name "{localappdata}\FastMediaSorter_LITE", a folder no version writes,
+; so hundreds of MB of runtimes, models and caches outlived every uninstall. Each line
+; is a folder the source writes today:
+;   optional-runtime  OCR and VLC natives downloaded on demand (OptionalRuntimeManager)
+;   ffmpeg            FFmpeg downloaded for "convert to video" (OptionalRuntimeManager)
+;   tessdata(-best)   OCR language models downloaded on demand (OcrPaths)
+;   ocr-cache         OCR + translation result cache (OcrPaths.OcrCacheDir, TranslationCache)
+;   decode-cache      decoded AVIF/HEIC/animated-WEBP frames (DecodeCacheStore)
+;   archive-cache     entries extracted from an open ZIP/CBZ (ArchivePaths)
+;   browser-translate-cache  pages OCR'd for the browser hand-off (DocHtmlTranslateLauncher)
+;   logs              current.log when the exe's own folder is not writable (AppFileLogger)
+; Only runtimes, models, caches and logs - never the root. The user's settings (the
+; registry hive SZA\FastMediaSorter) and the Recycle-Bin index STAY on uninstall, by
+; owner decision 2026-09-25 (ticket 055 I-10), so a reinstall finds them. The two
+; dirifempty lines remove the root only when nothing else is left in it.
+; The Share Manager's state (%LOCALAPPDATA%\FastMediaSorterCompanion) is NEVER listed:
+; it holds the host key paired phones pinned.
+Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\optional-runtime"
+Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\ffmpeg"
+Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\tessdata"
+Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\tessdata-best"
+Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\ocr-cache"
+Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\decode-cache"
+Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\archive-cache"
+Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\browser-translate-cache"
+Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\logs"
+Type: dirifempty; Name: "{localappdata}\SZA\FastMediaSorter"
+Type: dirifempty; Name: "{localappdata}\SZA"
+; The run-time logs written next to the exes (AppFileLogger / the Share Manager's
+; logger) and their rolled-over copies are not [Files] entries, so without these the
+; install folder itself survived every uninstall.
+Type: files; Name: "{app}\current.log"
+Type: files; Name: "{app}\previous.log"
+Type: files; Name: "{app}\companion.log"
+Type: files; Name: "{app}\companion.log.old"
 ; The server-features consent marker is written post-install (not tracked by
 ; [Files]), so remove it explicitly. The firewall rule itself is deleted in
 ; CurUninstallStepChanged below.
@@ -298,6 +334,7 @@ Type: files; Name: "{app}\companion\server-features.enabled"
 [Code]
 const
   CompanionSiteUrl = 'https://serzhyale.github.io/doc-html-translate/';
+  SiteBaseUrl = 'https://serzhyale.github.io/FastMediaSorter_Lite/';
   AndroidGuideUrl = 'https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html';
   AndroidAppBaseUrl = 'https://serzhyale.github.io/FastMediaSorter_mob_v2/';
   { The Server edition's SCM service name (frozen). Detected here only - this
@@ -312,6 +349,7 @@ var
   ServerFeaturesTitleLabel: TNewStaticText;
   ServerFeaturesCheckBox: TNewCheckBox;
   ServerFeaturesHintLabel: TNewStaticText;
+  TrustLinkLabel: TNewStaticText;
   ShareGuideLinkLabel: TNewStaticText;
   ShareAppLinkLabel: TNewStaticText;
   CompanionSiteLinkLabel: TNewStaticText;
@@ -442,6 +480,21 @@ begin
               'Your settings and the host key are kept either way, so a later reinstall can turn sharing back on without re-pairing the phones that are already connected.';
 end;
 
+{ Asked before the per-user uninstall's one UAC prompt - the prompt itself says only
+  that something wants elevation, never what for. }
+function ServerFirewallRemovalPromptText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'Для общего доступа к папкам в брандмауэр Windows было добавлено правило для компонента раздачи этой программы. Удалить его можно только с правами администратора, поэтому Windows один раз спросит подтверждение.' + #13#10#13#10 +
+              'Удалить правило брандмауэра? Если ответить «Нет», оно останется в брандмауэре Защитника Windows под именем «FastMediaSorter Companion SFTP», и его можно будет удалить там позже.'
+  else if IsLanguage('ukrainian') then
+    Result := 'Для спільного доступу до тек у брандмауер Windows було додано правило для компонента роздачі цієї програми. Видалити його можна лише з правами адміністратора, тому Windows один раз попросить підтвердження.' + #13#10#13#10 +
+              'Видалити правило брандмауера? Якщо відповісти «Ні», воно залишиться в брандмауері Захисника Windows під назвою «FastMediaSorter Companion SFTP», і його можна буде видалити там пізніше.'
+  else
+    Result := 'Folder sharing added a Windows Firewall rule for this program''s sharing component. Only administrator rights can remove it, so Windows will ask for approval once.' + #13#10#13#10 +
+              'Remove the firewall rule? If you answer No, it stays in Windows Defender Firewall as "FastMediaSorter Companion SFTP" and can be deleted there later.';
+end;
+
 function InitializeSetup: Boolean;
 begin
   Result := True;
@@ -538,14 +591,29 @@ begin
     Result := 'Make {#AppName} the default viewer for common image formats?';
 end;
 
+{ Names only what RegisterRequestedImageAssociations claims on THIS machine: HEIC,
+  HEIF and AVIF need the x64 mainline's decoder, so the x86 fallback (Windows 7/8.1)
+  does not get them, and SVG is claimed nowhere - neither viewer displays it. }
 function RegisterAssociationsText: String;
 begin
-  if IsLanguage('russian') then
-    Result := 'Да, зарегистрировать для JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, AVIF и SVG'
-  else if IsLanguage('ukrainian') then
-    Result := 'Так, зареєструвати для JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, AVIF і SVG'
+  if UseModernExe then
+  begin
+    if IsLanguage('russian') then
+      Result := 'Да, зарегистрировать для JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, HEIF и AVIF'
+    else if IsLanguage('ukrainian') then
+      Result := 'Так, зареєструвати для JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, HEIF і AVIF'
+    else
+      Result := 'Yes, register FastMediaSorter for JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, HEIF, and AVIF';
+  end
   else
-    Result := 'Yes, register FastMediaSorter for JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, AVIF, and SVG';
+  begin
+    if IsLanguage('russian') then
+      Result := 'Да, зарегистрировать для JPG, PNG, GIF, BMP, TIFF и WEBP'
+    else if IsLanguage('ukrainian') then
+      Result := 'Так, зареєструвати для JPG, PNG, GIF, BMP, TIFF і WEBP'
+    else
+      Result := 'Yes, register FastMediaSorter for JPG, PNG, GIF, BMP, TIFF, and WEBP';
+  end;
 end;
 
 function AssociationsHintText: String;
@@ -580,12 +648,15 @@ end;
 
 function ServerFeaturesHintText: String;
 begin
+  { The last sentence is the way back (INSTALL-TRUST rule 5, ticket 037 Ф-4): the
+    firewall rule this option adds has an undo that is not an uninstall. It replaced
+    "can also be enabled later" rather than joining it - this page has no height to spare. }
   if IsLanguage('russian') then
-    Result := 'Позволяет телефону Android просматривать папки этого ПК по сети (только чтение, SFTP). Для этого добавляется разрешение в брандмауэр Windows. Менеджер общего доступа откроется по завершении установки, чтобы вы выбрали папку и запустили сервер. Можно включить и позже, в самом Менеджере общего доступа.'
+    Result := 'Позволяет телефону Android открывать выбранные вами папки этого ПК по сети (SFTP). Для этого добавляется одно разрешение в брандмауэр Windows, а по завершении установки откроется Менеджер общего доступа, чтобы вы выбрали папку и запустили сервер. Включить можно и позже, в самом Менеджере общего доступа, - и там же выключить: «Настройки менеджера» -> «Сеть» -> «Выключить функции сервера..».'
   else if IsLanguage('ukrainian') then
-    Result := 'Дозволяє телефону Android переглядати папки цього ПК по мережі (лише читання, SFTP). Для цього додається дозвіл у брандмауер Windows. Менеджер спільного доступу відкриється після завершення встановлення, щоб ви вибрали теку й запустили сервер. Можна ввімкнути й пізніше, у самому Менеджері спільного доступу.'
+    Result := 'Дозволяє телефону Android відкривати вибрані вами теки цього ПК по мережі (SFTP). Для цього додається один дозвіл у брандмауер Windows, а після завершення встановлення відкриється Менеджер спільного доступу, щоб ви вибрали теку й запустили сервер. Увімкнути можна й пізніше, у самому Менеджері спільного доступу, - і там само вимкнути: «Налаштування менеджера» -> «Мережа» -> «Вимкнути функції сервера..».'
   else
-    Result := 'Lets an Android phone browse this PC''s folders over the network (read-only, SFTP). This adds one Windows Firewall exception. The Share Manager opens when setup finishes so you can pick a folder and start the server. Can also be enabled later from the Share Manager itself.';
+    Result := 'Lets an Android phone open the folders you pick on this PC over the network (SFTP). This adds one Windows Firewall exception, and the Share Manager opens when setup finishes so you can pick a folder and start the server. You can also turn it on later in the Share Manager - and off again there: "Manager settings" -> "Network" -> "Switch off server features..".';
 end;
 
 { Shown when Setup itself is not elevated. The option is NOT withdrawn there: the whole
@@ -595,24 +666,24 @@ end;
 function ServerFeaturesElevationHintText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Установка идёт без прав администратора, поэтому в конце Windows один раз спросит подтверждение - только для правила брандмауэра. Откажетесь - программа всё равно установится полностью.'
+    Result := 'Установка идёт без прав администратора, поэтому в конце Windows один раз спросит подтверждение - только для правила брандмауэра. Откажетесь - программа всё равно установится полностью. При удалении программы Windows спросит ещё раз - чтобы убрать правило.'
   else if IsLanguage('ukrainian') then
-    Result := 'Встановлення йде без прав адміністратора, тож наприкінці Windows один раз запитає підтвердження - лише для правила брандмауера. Відмовитеся - програма все одно встановиться повністю.'
+    Result := 'Встановлення йде без прав адміністратора, тож наприкінці Windows один раз запитає підтвердження - лише для правила брандмауера. Відмовитеся - програма все одно встановиться повністю. Під час видалення програми Windows запитає ще раз - щоб прибрати правило.'
   else
-    Result := 'Setup is running without administrator rights, so at the end Windows will ask for approval once - only for the firewall rule. Decline it and the program still installs in full.';
+    Result := 'Setup is running without administrator rights, so at the end Windows will ask for approval once - only for the firewall rule. Decline it and the program still installs in full. Uninstalling asks once more, to remove the rule.';
 end;
 
 function ServerFeaturesElevationFailedText: String;
 begin
   if IsLanguage('russian') then
     Result := 'Общий доступ не включён: подтверждение администратора не получено.' + #13#10#13#10 +
-              'Программа установлена полностью, включая компонент раздачи. Включить общий доступ можно в любой момент: Менеджер общего доступа -> «Управление хостингом..».'
+              'Программа установлена полностью, включая компонент раздачи. Включить общий доступ можно в любой момент: Менеджер общего доступа -> «Включить функции сервера..».'
   else if IsLanguage('ukrainian') then
     Result := 'Спільний доступ не ввімкнено: підтвердження адміністратора не отримано.' + #13#10#13#10 +
-              'Програму встановлено повністю, включно з компонентом роздачі. Увімкнути спільний доступ можна будь-коли: Менеджер спільного доступу -> «Керування хостингом..».'
+              'Програму встановлено повністю, включно з компонентом роздачі. Увімкнути спільний доступ можна будь-коли: Менеджер спільного доступу -> «Увімкнути функції сервера..».'
   else
     Result := 'Folder sharing was not enabled: administrator approval was not given.' + #13#10#13#10 +
-              'The program is fully installed, the sharing component included. You can turn sharing on at any time: Share Manager -> "Manage hosting..".';
+              'The program is fully installed, the sharing component included. You can turn sharing on at any time: Share Manager -> "Enable server features..".';
 end;
 
 function ServerFeaturesNeedsShareHintText: String;
@@ -649,6 +720,29 @@ begin
     Result := AndroidAppBaseUrl + 'index-uk.html'
   else
     Result := AndroidAppBaseUrl;
+end;
+
+{ The install-trust page (INSTALL-TRUST rule 7, ticket 037 Ф-4): the options page is
+  where Setup asks for its one optional elevation, so it links the page that itemizes
+  every elevation and its undo. Per-language page, like the guide link above. }
+function TrustPageUrl: String;
+begin
+  if IsLanguage('russian') then
+    Result := SiteBaseUrl + 'lang/ru/trust.html'
+  else if IsLanguage('ukrainian') then
+    Result := SiteBaseUrl + 'lang/uk/trust.html'
+  else
+    Result := SiteBaseUrl + 'trust.html';
+end;
+
+function TrustLinkText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'Почему Windows предупреждает и зачем нужны права администратора'
+  else if IsLanguage('ukrainian') then
+    Result := 'Чому Windows попереджає і навіщо потрібні права адміністратора'
+  else
+    Result := 'Why Windows warns, and what administrator rights are used for';
 end;
 
 function ShareGuideLinkText: String;
@@ -721,6 +815,13 @@ var
   ResultCode: Integer;
 begin
   ShellExec('open', CompanionSiteUrl, '', '', SW_SHOWNORMAL, ewNoWait, ResultCode);
+end;
+
+procedure OpenTrustPage(Sender: TObject);
+var
+  ResultCode: Integer;
+begin
+  ShellExec('open', TrustPageUrl, '', '', SW_SHOWNORMAL, ewNoWait, ResultCode);
 end;
 
 procedure OpenShareGuide(Sender: TObject);
@@ -800,23 +901,97 @@ begin
     'enabled ' + GetDateTimeString('yyyy/mm/dd hh:nn:ss', '-', ':') + #13#10, False);
 end;
 
+{ The worker this installation ships - the only program whose firewall rules its
+  uninstall may remove. }
+function InstalledWorkerExe: String;
+begin
+  Result := ExpandConstant('{app}\companion\fms-share-worker.exe');
+end;
+
+{ Does Windows Firewall hold any rule aimed at this installation's worker - ours by
+  name, or one Windows' own "Allow access" prompt wrote? Reading the rules needs no
+  administrator rights (deleting them does), so a per-user uninstall asks for approval
+  only when there is something to remove. A check that cannot run answers True: one
+  prompt too many is cheaper than an inbound allow left behind without a word. }
+function ServerFirewallRuleExists: Boolean;
+var
+  ResultCode: Integer;
+  Exe: String;
+begin
+  Exe := InstalledWorkerExe;
+  { Single-quoted inside the PowerShell command: an apostrophe in the path is doubled. }
+  StringChangeEx(Exe, '''', '''''', True);
+  if not Exec('powershell.exe',
+    '-NoProfile -ExecutionPolicy Bypass -Command "if (Get-NetFirewallApplicationFilter -Program ''' + Exe +
+    ''' -ErrorAction SilentlyContinue) { exit 0 }; if (Get-Command Get-NetFirewallApplicationFilter -ErrorAction SilentlyContinue) { exit 3 }; exit 4"',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+  begin
+    Result := True;
+    exit;
+  end;
+  Result := (ResultCode <> 3);
+end;
+
+{ The per-user uninstall's one elevated step (ticket 037 Ф-3.1): the same helper the
+  in-app "Switch off server features.." runs, through one ShellExecute "runas", so the
+  rule most users have - a per-user install asked for it at the end of Setup - no longer
+  outlives the program. Falls back to an elevated netsh when the helper is absent (the
+  Share component was never installed, yet a rule for this path exists). }
+function RemoveServerFirewallRuleElevated: Boolean;
+var
+  ResultCode: Integer;
+  ScriptPath: String;
+begin
+  ScriptPath := ExpandConstant('{app}\enable-share-server.ps1');
+  if FileExists(ScriptPath) then
+    Result := ShellExec('runas', 'powershell.exe',
+      '-NoProfile -ExecutionPolicy Bypass -File "' + ScriptPath + '" -ExePath "' + InstalledWorkerExe + '" -Disable',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0)
+  else
+    Result := ShellExec('runas', 'netsh.exe',
+      'advfirewall firewall delete rule name=all program="' + InstalledWorkerExe + '"',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
 procedure RemoveServerFirewallRule;
 var
   ResultCode: Integer;
 begin
-  Exec('netsh', 'advfirewall firewall delete rule name="FastMediaSorter Companion SFTP"',
-    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  { Deleting by NAME alone leaves rules behind for good. The named one is ours, but
-    the worker also collects rules Windows itself creates: the first time it listens,
-    the firewall prompt appears and an "Allow" writes a rule named after the program
-    (fms-share-worker), which no uninstall of ours has ever touched. Those accumulate
-    one per install location and outlive the files they point at. Deleting by PROGRAM
-    path catches every rule aimed at the exe being removed, whatever its name, and is
-    precisely scoped: the path is inside the directory this uninstall is deleting, so
-    another installation's rule cannot match. }
-  Exec('netsh', 'advfirewall firewall delete rule name=all program="' +
-    ExpandConstant('{app}\companion\fms-share-worker.exe') + '"',
-    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  { By PROGRAM path only, never by name. The name is shared: the Server edition and an
+    always-on role this installation handed to the service carry a rule of the same
+    name that points at ANOTHER copy of the worker, and deleting by name took their
+    inbound allow away with ours - including the role the user had just chosen to keep.
+    By path the delete is precisely scoped (the path is inside the directory this
+    uninstall is deleting) and still catches every rule aimed at our exe, whatever its
+    name: the first time the worker listens, Windows' own firewall prompt can write one
+    named after the program (fms-share-worker), which a delete by name never touched. }
+  if IsAdminInstallMode then
+  begin
+    { Already elevated: nothing to ask. }
+    Exec('netsh', 'advfirewall firewall delete rule name=all program="' + InstalledWorkerExe + '"',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    exit;
+  end;
+
+  { A per-user uninstall is not elevated, and netsh cannot delete a rule without
+    administrator rights - the plain Exec this used to be failed without a word and left
+    the rule most users have in place. Ask for the one step, and say so first. }
+  if not ServerFirewallRuleExists then
+    exit;
+  if UninstallSilent then
+  begin
+    { A silent uninstall (winget) must never raise a UAC prompt nobody is there to
+      answer. The rule stays; the trust page says so, and says how to remove it first. }
+    Log('Folder-sharing firewall rule left in place: a silent per-user uninstall cannot ask for administrator approval.');
+    exit;
+  end;
+  if SuppressibleMsgBox(ServerFirewallRemovalPromptText, mbConfirmation, MB_YESNO, IDYES) <> IDYES then
+  begin
+    Log('Folder-sharing firewall rule left in place: the user chose to keep it.');
+    exit;
+  end;
+  if not RemoveServerFirewallRuleElevated then
+    Log('Folder-sharing firewall rule left in place: administrator approval was not given or the helper failed.');
 end;
 
 { Opt-in "run the SFTP server right after installation": launch the Share Manager
@@ -861,6 +1036,14 @@ begin
   RegisterOpenWithSupport(Ext);
 end;
 
+{ The same list the viewer's own "Set as default" button claims, per exe
+  (Main_Form.FileAssociation.vb AssociateAllImageFormatsWithThisApp): only formats the
+  exe that runs HERE can actually display. .heic/.heif/.avif are decoded by the x64
+  mainline only (Magick.NET), so they are claimed only when UseModernExe - on Windows
+  7/8.1 the associations point at the x86 exe, which would open them to "unsupported
+  format". .svg is displayed by neither exe and is never claimed. .tif is claimed on
+  both (owner decision 2026-09-25, ticket 055 I-02): both exes read it through GDI+,
+  and the viewer's own lists gain .tif in the same change. }
 procedure RegisterRequestedImageAssociations;
 var
   FailedCount: Integer;
@@ -872,15 +1055,19 @@ begin
   if not RegisterImageAssociation('.gif', 'FastMediaSorter.gif', 'GIF Image - FastMediaSorter') then FailedCount := FailedCount + 1;
   if not RegisterImageAssociation('.png', 'FastMediaSorter.png', 'PNG Image - FastMediaSorter') then FailedCount := FailedCount + 1;
   if not RegisterImageAssociation('.bmp', 'FastMediaSorter.bmp', 'BMP Image - FastMediaSorter') then FailedCount := FailedCount + 1;
+  if not RegisterImageAssociation('.tif', 'FastMediaSorter.tif', 'TIFF Image - FastMediaSorter') then FailedCount := FailedCount + 1;
   if not RegisterImageAssociation('.tiff', 'FastMediaSorter.tiff', 'TIFF Image - FastMediaSorter') then FailedCount := FailedCount + 1;
   if not RegisterImageAssociation('.ico', 'FastMediaSorter.ico', 'ICO Image - FastMediaSorter') then FailedCount := FailedCount + 1;
   if not RegisterImageAssociation('.wmf', 'FastMediaSorter.wmf', 'WMF Image - FastMediaSorter') then FailedCount := FailedCount + 1;
   if not RegisterImageAssociation('.emf', 'FastMediaSorter.emf', 'EMF Image - FastMediaSorter') then FailedCount := FailedCount + 1;
   if not RegisterImageAssociation('.exif', 'FastMediaSorter.exif', 'EXIF Image - FastMediaSorter') then FailedCount := FailedCount + 1;
   if not RegisterImageAssociation('.webp', 'FastMediaSorter.webp', 'WEBP Image - FastMediaSorter') then FailedCount := FailedCount + 1;
-  if not RegisterImageAssociation('.heic', 'FastMediaSorter.heic', 'HEIC Image - FastMediaSorter') then FailedCount := FailedCount + 1;
-  if not RegisterImageAssociation('.avif', 'FastMediaSorter.avif', 'AVIF Image - FastMediaSorter') then FailedCount := FailedCount + 1;
-  if not RegisterImageAssociation('.svg', 'FastMediaSorter.svg', 'SVG Image - FastMediaSorter') then FailedCount := FailedCount + 1;
+  if UseModernExe then
+  begin
+    if not RegisterImageAssociation('.avif', 'FastMediaSorter.avif', 'AVIF Image - FastMediaSorter') then FailedCount := FailedCount + 1;
+    if not RegisterImageAssociation('.heic', 'FastMediaSorter.heic', 'HEIC Image - FastMediaSorter') then FailedCount := FailedCount + 1;
+    if not RegisterImageAssociation('.heif', 'FastMediaSorter.heif', 'HEIF Image - FastMediaSorter') then FailedCount := FailedCount + 1;
+  end;
 
   if FailedCount > 0 then
     SuppressibleMsgBox(AssociationWriteErrorText, mbError, MB_OK, IDOK);
@@ -898,6 +1085,47 @@ begin
   RegDeleteKeyIncludingSubkeys(HKCU, 'Software\Classes\' + ProgId);
 end;
 
+{ Earlier versions of this installer claimed .svg on every machine, and .heic/.avif
+  on Windows 7/8.1 too, pointed at an exe that cannot display them - a double-click then
+  opened to "unsupported format". An upgrade takes those claims back whether or not the
+  box is ticked this time. Only OUR registrations are touched: RemoveImageAssociation
+  clears an extension's default only while it still names our ProgID. }
+procedure WithdrawImageAssociation(const Ext: String);
+begin
+  RemoveImageAssociation(Ext, 'FastMediaSorter.' + Copy(Ext, 2, MaxInt));
+  RegDeleteValue(HKCU, 'Software\Classes\Applications\{#AppExeName}\SupportedTypes', Ext);
+  RegDeleteValue(HKCU, 'Software\Classes\Applications\{#AppExeNameX86}\SupportedTypes', Ext);
+end;
+
+procedure WithdrawUndisplayableImageAssociations;
+begin
+  WithdrawImageAssociation('.svg');
+  if not UseModernExe then
+  begin
+    WithdrawImageAssociation('.heic');
+    WithdrawImageAssociation('.heif');
+    WithdrawImageAssociation('.avif');
+  end;
+end;
+
+{ The Share Manager's logon autostart (AutostartManager: HKCU Run value
+  "FastMediaSorterShare" pointing at FastMediaSorterCompanion.exe, plus the shell's
+  StartupApproved record for the same name) is written at run time, so no Registry
+  section entry removes it - uninstall left a dead Startup-apps entry Windows tried at
+  every logon. Removed only when it points into THIS installation: the Server edition's
+  Share Manager, installed elsewhere, writes the same value name. }
+procedure RemoveShareManagerAutostart;
+var
+  RunValue: String;
+begin
+  if not RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'FastMediaSorterShare', RunValue) then
+    exit;
+  if Pos(Uppercase(ExpandConstant('{app}\FastMediaSorterCompanion.exe')), Uppercase(RunValue)) = 0 then
+    exit;
+  RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'FastMediaSorterShare');
+  RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run', 'FastMediaSorterShare');
+end;
+
 { Re-flows the three links that sit under the sharing hint. That hint is NOT a fixed
   height - it gains a paragraph when Setup is running without administrator rights, and
   the components page can change which text it shows - while these labels are positioned
@@ -905,10 +1133,11 @@ end;
   what happened: the links ended up printed across the middle of the paragraph). }
 procedure LayoutOptionsPageLinks;
 begin
-  if (ServerFeaturesHintLabel = nil) or (ShareGuideLinkLabel = nil) or
+  if (ServerFeaturesHintLabel = nil) or (TrustLinkLabel = nil) or (ShareGuideLinkLabel = nil) or
      (ShareAppLinkLabel = nil) or (CompanionSiteLinkLabel = nil) then
     exit;
-  ShareGuideLinkLabel.Top := ServerFeaturesHintLabel.Top + ServerFeaturesHintLabel.Height + ScaleY(6);
+  TrustLinkLabel.Top := ServerFeaturesHintLabel.Top + ServerFeaturesHintLabel.Height + ScaleY(6);
+  ShareGuideLinkLabel.Top := TrustLinkLabel.Top + TrustLinkLabel.Height + ScaleY(4);
   ShareAppLinkLabel.Top := ShareGuideLinkLabel.Top + ShareGuideLinkLabel.Height + ScaleY(4);
   CompanionSiteLinkLabel.Top := ShareAppLinkLabel.Top + ShareAppLinkLabel.Height + ScaleY(4);
 end;
@@ -970,13 +1199,27 @@ begin
     False
   );
 
+  { First under the hint, because it answers the hint: what the approval the hint
+    mentions is for, and how every elevation is taken back (the install-trust page). }
+  TrustLinkLabel := TNewStaticText.Create(WizardForm);
+  ConfigureWrappedLabel(
+    TrustLinkLabel,
+    ServerFeaturesHintLabel.Top + ServerFeaturesHintLabel.Height + ScaleY(6),
+    TrustLinkText,
+    False
+  );
+  TrustLinkLabel.Cursor := crHand;
+  TrustLinkLabel.Font.Style := [fsUnderline];
+  TrustLinkLabel.Font.Color := clBlue;
+  TrustLinkLabel.OnClick := @OpenTrustPage;
+
   { Companion links for the Android side of folder sharing: the step-by-step guide
     (language-matched via ?lang=) and the Android app's own site (its per-language
     pages, same as the guide page links to in its footer). }
   ShareGuideLinkLabel := TNewStaticText.Create(WizardForm);
   ConfigureWrappedLabel(
     ShareGuideLinkLabel,
-    ServerFeaturesHintLabel.Top + ServerFeaturesHintLabel.Height + ScaleY(6),
+    TrustLinkLabel.Top + TrustLinkLabel.Height + ScaleY(4),
     ShareGuideLinkText,
     False
   );
@@ -1025,21 +1268,24 @@ end;
   control pipe (clean SFTP + UPnP teardown), then terminates the Companion, then
   force-kills any surviving worker. Best-effort: a missing or failing script must
   never abort Setup. }
-procedure StopCompanionWorker(const ScriptPath: String);
+procedure StopCompanionWorker(const ScriptPath, AppDir: String);
 var
   ResultCode: Integer;
 begin
   if not FileExists(ScriptPath) then
     exit;
-  Exec('powershell.exe', '-NoProfile -ExecutionPolicy Bypass -File "' + ScriptPath + '"',
-    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  { -AppDir names THIS installation (ticket 054 H-26): the helper then stops only
+    processes started from that folder - not another account's sharing from another
+    installation. Unknown, it falls back to every copy by name, as it always did. }
+  Exec('powershell.exe', '-NoProfile -ExecutionPolicy Bypass -File "' + ScriptPath +
+    '" -AppDir "' + AppDir + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   Result := '';
   ExtractTemporaryFile('stop-companion.ps1');
-  StopCompanionWorker(ExpandConstant('{tmp}\stop-companion.ps1'));
+  StopCompanionWorker(ExpandConstant('{tmp}\stop-companion.ps1'), ExpandConstant('{app}'));
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
@@ -1102,6 +1348,8 @@ end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
+  if CurStep = ssPostInstall then
+    WithdrawUndisplayableImageAssociations;
   if (CurStep = ssPostInstall) and ShouldRegisterAssociations then
     RegisterRequestedImageAssociations;
   if CurStep = ssPostInstall then
@@ -1163,13 +1411,25 @@ end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
+  { stop-companion.ps1 (below) stops the sharing service unconditionally so no worker
+    holds a file of ours - including when the user just chose to KEEP an always-on role,
+    and including the separate Server edition's service, which runs from its own folder
+    and is none of this uninstaller's business. Either way the service would then stay
+    down until the next reboot and paired phones lose the share. Mirror the install
+    path: once our files are gone, start it again if its start type says it must run
+    (a removed service is simply not found). }
+  if CurUninstallStep = usPostUninstall then
+  begin
+    RestartShareServiceIfAutomatic;
+    exit;
+  end;
   if CurUninstallStep <> usUninstall then
     exit;
 
   { Before the files go: the service holds its own copy, but the roots ACL ledger and
     the firewall rule are removed by the same helper call. }
   OfferShareServiceRemoval;
-  StopCompanionWorker(ExpandConstant('{app}\stop-companion.ps1'));
+  StopCompanionWorker(ExpandConstant('{app}\stop-companion.ps1'), ExpandConstant('{app}'));
 
   { Remove the SFTP firewall rule this app may have added (no-op if absent). The
     consent marker is removed by the [UninstallDelete] entry. }
@@ -1180,6 +1440,7 @@ begin
   RemoveImageAssociation('.gif', 'FastMediaSorter.gif');
   RemoveImageAssociation('.png', 'FastMediaSorter.png');
   RemoveImageAssociation('.bmp', 'FastMediaSorter.bmp');
+  RemoveImageAssociation('.tif', 'FastMediaSorter.tif');
   RemoveImageAssociation('.tiff', 'FastMediaSorter.tiff');
   RemoveImageAssociation('.ico', 'FastMediaSorter.ico');
   RemoveImageAssociation('.wmf', 'FastMediaSorter.wmf');
@@ -1187,9 +1448,39 @@ begin
   RemoveImageAssociation('.exif', 'FastMediaSorter.exif');
   RemoveImageAssociation('.webp', 'FastMediaSorter.webp');
   RemoveImageAssociation('.heic', 'FastMediaSorter.heic');
+  RemoveImageAssociation('.heif', 'FastMediaSorter.heif');
   RemoveImageAssociation('.avif', 'FastMediaSorter.avif');
+  { No longer registered (see WithdrawUndisplayableImageAssociations), but an older
+    version of this installer did - an uninstall straight from one must clean it. }
   RemoveImageAssociation('.svg', 'FastMediaSorter.svg');
+
+  { The video/audio formats the viewer's Settings -> "default video player" button
+    claims at run time (Main_Form.FileAssociation.vb AssociateAllVideoFormatsWithThisApp,
+    the video_File_Extensions list in Main_Form.vb). Nothing in this installer wrote
+    them, so nothing removed them: .mp4 and friends kept pointing at a ProgID whose
+    command is the deleted exe. Keep this list in step with video_File_Extensions. }
+  RemoveImageAssociation('.webm', 'FastMediaSorter.webm');
+  RemoveImageAssociation('.ogg', 'FastMediaSorter.ogg');
+  RemoveImageAssociation('.3g2', 'FastMediaSorter.3g2');
+  RemoveImageAssociation('.mkv', 'FastMediaSorter.mkv');
+  RemoveImageAssociation('.3gp', 'FastMediaSorter.3gp');
+  RemoveImageAssociation('.mp4', 'FastMediaSorter.mp4');
+  RemoveImageAssociation('.m4v', 'FastMediaSorter.m4v');
+  RemoveImageAssociation('.m4a', 'FastMediaSorter.m4a');
+  RemoveImageAssociation('.mov', 'FastMediaSorter.mov');
+  RemoveImageAssociation('.mp3', 'FastMediaSorter.mp3');
+  RemoveImageAssociation('.avi', 'FastMediaSorter.avi');
+  RemoveImageAssociation('.wmv', 'FastMediaSorter.wmv');
+  RemoveImageAssociation('.asf', 'FastMediaSorter.asf');
+  RemoveImageAssociation('.mpg', 'FastMediaSorter.mpg');
+  RemoveImageAssociation('.mpeg', 'FastMediaSorter.mpeg');
+  RemoveImageAssociation('.flv', 'FastMediaSorter.flv');
+  RemoveImageAssociation('.wav', 'FastMediaSorter.wav');
+  RemoveImageAssociation('.wma', 'FastMediaSorter.wma');
+
   { Both names: which one was registered depends on the OS this was installed on. }
   RegDeleteKeyIncludingSubkeys(HKCU, 'Software\Classes\Applications\{#AppExeName}');
   RegDeleteKeyIncludingSubkeys(HKCU, 'Software\Classes\Applications\{#AppExeNameX86}');
+
+  RemoveShareManagerAutostart;
 end;

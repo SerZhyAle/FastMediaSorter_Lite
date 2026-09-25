@@ -86,14 +86,24 @@ Public Class PinnedPortTests
         Assert.Contains("netsh int ipv4 show excludedportrange tcp", ShareController.PortWarning(st, 2222))
     End Sub
 
-    ''' <summary>Running on a number nobody asked for = an older worker silently dropped the
-    ''' unknown request field. Named, not guessed.</summary>
+    ''' <summary>Running on a number nobody asked for AND without the capability field = an
+    ''' older worker silently dropped the unknown request field. Named, not guessed - and it is
+    ''' PortSupported that names it (WORKER-IPC section 6 rule 1), not the mismatch alone.</summary>
     <Fact>
     Public Sub StaleWorker_ServingOnAnotherPort_IsCalledOut()
         Dim st As New WorkerStatus With {.Running = True, .ListenPort = 62708, .PortSupported = False}
         Dim text As String = ShareController.PortWarning(st, 2222)
         Assert.Contains("62708", text)
         Assert.Contains("2222", text)
+    End Sub
+
+    ''' <summary>The same mismatch from a worker that DOES understand the port field is not a
+    ''' stale worker: the setting just changed and the running server has not rebound yet.
+    ''' Telling that user to update the app would be wrong advice.</summary>
+    <Fact>
+    Public Sub CurrentWorker_NotYetRebound_IsNotCalledStale()
+        Dim st As New WorkerStatus With {.Running = True, .ListenPort = 62708, .DesiredPort = 62708, .PortSupported = True}
+        Assert.Equal("", ShareController.PortWarning(st, 2222))
     End Sub
 
     ' --- picking a free port ----------------------------------------------------
@@ -124,6 +134,49 @@ Public Class PinnedPortTests
         Assert.False(FreePortFinder.IsFree(80))
         Assert.False(FreePortFinder.IsFree(0))
         Assert.False(FreePortFinder.IsFree(70000))
+    End Sub
+
+    ' --- a start error is not necessarily the port (ticket 054 H-03) ------------
+
+    ''' <summary>The worker records EVERY failed start as "port N unavailable: ..", a
+    ''' refused folder list included. Only a refused BIND is a port problem - and this is
+    ''' the one reading that decides, until the worker's owner ships a structured
+    ''' lastStartErrorKind.</summary>
+    <Fact>
+    Public Sub IsBindFailure_RecognizesOnlyBindRefusals()
+        Assert.True(ShareController.IsBindFailure("port 2222 unavailable: listen tcp :2222: bind: address already in use"))
+        Assert.True(ShareController.IsBindFailure("port 2222 unavailable: listen tcp :2222: bind: An attempt was made" &
+                                                  " to access a socket in a way forbidden by its access permissions" &
+                                                  ShareController.ExcludedRangeMarker))
+        Assert.False(ShareController.IsBindFailure("port 2222 unavailable: duplicate root name Photos"))
+        Assert.False(ShareController.IsBindFailure(""))
+        Assert.False(ShareController.IsBindFailure(Nothing))
+    End Sub
+
+    ''' <summary>"Choose another port and change it in the router" is the WRONG advice for
+    ''' a refused folder list - following it changes the guaranteed port, invalidates every
+    ''' code already handed out, and still does not fix sharing.</summary>
+    <Fact>
+    Public Sub NonBindStartFailure_IsNotCalledPortBusy()
+        Dim st As New WorkerStatus With {
+            .Running = False, .DesiredPort = 2222,
+            .LastStartError = "port 2222 unavailable: duplicate root name Photos"}
+        Dim text As String = ShareController.PortWarning(st, 2222)
+        Assert.NotEqual("", text)                       ' the failure is still explained...
+        Assert.DoesNotContain("занят другой программой", text)   ' ...just not as a busy port
+        Assert.DoesNotContain(ShareText.PortBusyText(2222), text)
+        ' The worker's own reason is shown without its misleading lead-in.
+        Assert.Contains("duplicate root name", text)
+        Assert.DoesNotContain("port 2222 unavailable", text)
+    End Sub
+
+    <Fact>
+    Public Sub WithoutPortPrefix_StripsOnlyTheLeadIn()
+        Assert.Equal("bind: address already in use",
+                     ShareController.WithoutPortPrefix("port 2222 unavailable: bind: address already in use"))
+        Assert.Equal("other shape",
+                     ShareController.WithoutPortPrefix("port 70000 unavailable (excluded): other shape"))
+        Assert.Equal("no prefix here", ShareController.WithoutPortPrefix("no prefix here"))
     End Sub
 
 End Class

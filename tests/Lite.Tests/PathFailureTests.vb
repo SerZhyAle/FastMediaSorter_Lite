@@ -98,9 +98,14 @@ Public Class PathFailureTests
     ''' the list; the two that accuse the transport do not.
     ''' </summary>
     <Fact>
-    Public Sub Only_transport_and_denial_leave_the_list_alone()
+    Public Sub Only_transport_denial_and_a_lock_leave_the_list_alone()
         Assert.False(PathFailure.IsAboutTheFile(PathFailureKind.Transport))
         Assert.False(PathFailure.IsAboutTheFile(PathFailureKind.Denied))
+        ' Another program holding the file open accuses neither the file nor the list; it
+        ' used to be classified as Transport, which kept the file too (audit 047, C-17).
+        Assert.False(PathFailure.IsAboutTheFile(PathFailureKind.Locked))
+        ' A slow LOCAL decode is not a verdict on the file either (audit 048, A-18).
+        Assert.False(PathFailure.IsAboutTheFile(PathFailureKind.SlowDecode))
 
         Assert.True(PathFailure.IsAboutTheFile(PathFailureKind.Missing))
         Assert.True(PathFailure.IsAboutTheFile(PathFailureKind.Invalid))
@@ -116,9 +121,85 @@ Public Class PathFailureTests
         For Each raw As Object In [Enum].GetValues(GetType(PathFailureKind))
             Dim kind As PathFailureKind = CType(raw, PathFailureKind)
             Dim about As Boolean = PathFailure.IsAboutTheFile(kind)
-            Assert.True(about OrElse kind = PathFailureKind.Transport OrElse kind = PathFailureKind.Denied,
+            Assert.True(about OrElse kind = PathFailureKind.Transport OrElse kind = PathFailureKind.Denied OrElse
+                        kind = PathFailureKind.Locked OrElse kind = PathFailureKind.SlowDecode,
                         "Unexpected keep-the-file verdict for " & kind.ToString())
         Next
+    End Sub
+
+    ' ------------------------------------------- audit 047: the HResult cases ----
+
+    ''' <summary>C-17: a name taken between the check and the write - MoveFile's own
+    ''' refusal, File.Move/File.Copy's ERROR_FILE_EXISTS, CreateDirectory's
+    ''' ERROR_ALREADY_EXISTS - read "no connection to the folder" and sent the user to
+    ''' check a NAS that was fine.</summary>
+    <Theory>
+    <InlineData(&H80070050)>
+    <InlineData(&H800700B7)>
+    Public Sub A_taken_name_is_Exists_not_Transport(hresult As Integer)
+        Assert.Equal(PathFailureKind.Exists, PathFailure.Classify(New IOException("exists", hresult)))
+    End Sub
+
+    ''' <summary>C-17: the source open in another program (sharing / lock violation).</summary>
+    <Theory>
+    <InlineData(&H80070020)>
+    <InlineData(&H80070021)>
+    Public Sub A_sharing_or_lock_violation_is_Locked(hresult As Integer)
+        Assert.Equal(PathFailureKind.Locked, PathFailure.Classify(New IOException("in use", hresult)))
+    End Sub
+
+    ''' <summary>C-24: enumerating a path that names a FILE answers ERROR_DIRECTORY, and a
+    ''' slot set to a file by mistake read "no connection, press again" for ever.</summary>
+    <Fact>
+    Public Sub A_directory_name_that_is_a_file_is_Invalid()
+        Assert.Equal(PathFailureKind.Invalid, PathFailure.Classify(New IOException("The directory name is invalid.", &H8007010B)))
+    End Sub
+
+    ''' <summary>The same, from the real call the slot probe makes.</summary>
+    <Fact>
+    Public Sub Enumerating_a_file_as_a_folder_is_Invalid()
+        Dim file_Path As String = Path.GetTempFileName()
+        Try
+            Dim caught As Exception = Nothing
+            Try
+                Using walker = Directory.EnumerateFileSystemEntries(file_Path).GetEnumerator()
+                    walker.MoveNext()
+                End Using
+            Catch ex As Exception
+                caught = ex
+            End Try
+            Assert.NotNull(caught)
+            Assert.Equal(PathFailureKind.Invalid, PathFailure.Classify(caught))
+        Finally
+            File.Delete(file_Path)
+        End Try
+    End Sub
+
+    ''' <summary>A real sharing violation, not a hand-made HResult.</summary>
+    <Fact>
+    Public Sub Opening_a_file_another_program_holds_is_Locked()
+        Dim file_Path As String = Path.GetTempFileName()
+        Try
+            Using holder As New FileStream(file_Path, FileMode.Open, FileAccess.ReadWrite, FileShare.None)
+                Dim caught As Exception = Nothing
+                Try
+                    Using reader As New FileStream(file_Path, FileMode.Open, FileAccess.Read, FileShare.Read)
+                    End Using
+                Catch ex As Exception
+                    caught = ex
+                End Try
+                Assert.NotNull(caught)
+                Assert.Equal(PathFailureKind.Locked, PathFailure.Classify(caught))
+            End Using
+        Finally
+            File.Delete(file_Path)
+        End Try
+    End Sub
+
+    ''' <summary>An IOException that names none of those keeps its Transport reading.</summary>
+    <Fact>
+    Public Sub Other_HResults_stay_Transport()
+        Assert.Equal(PathFailureKind.Transport, PathFailure.Classify(New IOException("network name gone", &H80070040)))
     End Sub
 
     ' ------------------------------------------------------------------- wrappers ----

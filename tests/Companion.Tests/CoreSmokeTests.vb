@@ -9,6 +9,7 @@ Imports Xunit
 ''' (never throw, always return usable strings) since they run on the UI/hot paths.
 ''' Machine-dependent results are asserted for shape, not exact value.
 ''' </summary>
+<Collection(UiLanguageCollection.Name)>
 Public Class CoreSmokeTests
 
     ' ShareText no longer takes a "rus" flag - it reads the active UI language

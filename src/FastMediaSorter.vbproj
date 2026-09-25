@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\ILMerge.3.0.41\build\ILMerge.props" Condition="Exists('..\packages\ILMerge.3.0.41\build\ILMerge.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -190,7 +190,45 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <!-- Provider layer (006_SPECIFICATION_FILESYSTEM_PROVIDER_LAYER_DOTNET10.md). Whole-file
+         "#If Not NETFRAMEWORK": this build keeps its own folder scan. Listed anyway so the
+         two file sets stay identical. -->
+    <Compile Include="Resources\IFileSystemProvider.vb" />
+    <Compile Include="Resources\LocalProvider.vb" />
+    <Compile Include="Resources\RemoteCachePaths.vb" />
+    <Compile Include="Resources\RemoteCacheStore.vb" />
+    <Compile Include="Resources\ResourceRegistry.vb" />
+    <Compile Include="Resources\ResourceSession.vb" />
+    <Compile Include="Resources\ResourceTransfer.vb" />
+    <Compile Include="Resources\ResourceRouting.vb" />
+    <Compile Include="Main_Form.Resource.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <!-- Secure containers (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md). Every
+         file is whole-file "#If Not NETFRAMEWORK" - the feature is the .NET 10 mainline
+         only, and this project references no cryptography library at all. Listed anyway
+         so the two file sets stay identical, which is the house rule. -->
+    <Compile Include="Secure\FdSecOutcome.vb" />
+    <Compile Include="Secure\FdSecPrimitives.vb" />
+    <Compile Include="Secure\FdSecKdf.vb" />
+    <Compile Include="Secure\FdSecHead.vb" />
+    <Compile Include="Secure\FdSecMetadata.vb" />
+    <Compile Include="Secure\FdSecScreen.vb" />
+    <Compile Include="Secure\FdSecContainer.vb" />
+    <Compile Include="Secure\FdSecStream.vb" />
+    <Compile Include="SecureMessages.vb" />
+    <Compile Include="SecurePolicy.vb" />
+    <Compile Include="VlcArtCache.vb" />
+    <Compile Include="Secure_Password_Form.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.Secure.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="FileManager.vb" />
+    <Compile Include="WebVideoMarkup.vb" />
     <Compile Include="HqPictureBox.vb" />
     <Compile Include="Image_Panel_Form.vb">
       <SubType>Form</SubType>
@@ -318,6 +356,17 @@
     </Compile>
     <Compile Include="OcrTranslateSettings.vb" />
     <Compile Include="AutoSkipPolicy.vb" />
+    <!-- Ticket 047: the pure rename / list-stamp rules and the input guards (Ctrl/Alt gate,
+         no auto-repeat on destructive keys, wheel accumulator, overlay double-click). -->
+    <Compile Include="FileOpRules.vb" />
+    <Compile Include="InputGuards.vb" />
+    <!-- Ticket 049 B-10: the one monotonic clock for throttles. -->
+    <Compile Include="MonotonicClock.vb" />
+    <!-- Ticket 048: pure navigation/decode rules (slideshow order, prefetch acceptance,
+         extension keys, folder-scan and decode-budget helpers). -->
+    <Compile Include="SlideshowOrder.vb" />
+    <Compile Include="NavigationRules.vb" />
+    <Compile Include="FolderScan.vb" />
     <!-- Shared, NOT "#If Not NETFRAMEWORK" like its neighbours: SkipUnreadableFile takes a
          PathFailureKind on both builds, and a parameter cannot be typed by an enum this
          project does not compile. Only the behaviour is fenced - here the kind is computed
@@ -348,6 +397,19 @@
     <Compile Include="DiskCacheTrim.vb" />
     <Compile Include="DocHtmlTranslateLauncher.vb" />
     <Compile Include="ZoomMath.vb" />
+    <!-- Window geometry arithmetic (ticket 028 Ф-2). Whole-file "#If Not NETFRAMEWORK":
+         the x86 fallback keeps its historical placement under a dated exception. -->
+    <Compile Include="WindowPlacement.vb" />
+    <!-- Failure cause and action text (ticket 028 Ф-3). Compiled on both builds: shared
+         call sites use it, and on net48 Describe returns the raw text that build always
+         showed (dated exception - the fallback is frozen). -->
+    <Compile Include="FailureText.vb" />
+    <!-- The download dialog with progress and Cancel (ticket 028 Ф-6). Whole-file
+         "#If Not NETFRAMEWORK": the x86 fallback keeps its uncancellable downloads under a
+         dated exception, and the file is listed so the two projects' sets stay identical. -->
+    <Compile Include="Download_Progress_Form.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="MediaUrl.vb" />
     <!-- Custom keyboard shortcuts and the two dialogs of the expanded settings window
          (SPECIFICATION_SETTINGS_EXPANSION.md §3.4, §3.5, §7.2). All four are whole-file
@@ -398,6 +460,7 @@
     <Compile Include="Imaging\ImageEncoder.vb" />
     <Compile Include="Imaging\ModernImageSharpEncoder.vb" />
     <Compile Include="Imaging\ImageFileWriter.vb" />
+    <Compile Include="Imaging\MagickResourceLimits.vb" />
     <!-- The decode cache
          (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §3-§7). All five are
          whole-file "#If Not NETFRAMEWORK" and compile to nothing here: this build keeps
@@ -444,6 +507,7 @@
     <Compile Include="Ocr\OcrLineSplitter.vb" />
     <Compile Include="Ocr\OcrOverlayFit.vb" />
     <Compile Include="Ocr\OcrTextFilter.vb" />
+    <Compile Include="Ocr\OcrLanguageGuard.vb" />
     <!-- Both whole-file "#If Not NETFRAMEWORK" - plate colours are a change of appearance
          (which this fallback does not take) and the diagnostics are a development tool it has
          no use for. Listed here anyway so the two project file lists never diverge: they
@@ -451,15 +515,22 @@
     <Compile Include="Ocr\OcrPlateColors.vb" />
     <Compile Include="Ocr\OcrDiagnostics.vb" />
     <Compile Include="Ocr\TesseractOcrEngine.vb" />
+    <Compile Include="Ocr\OcrImageScale.vb" />
     <Compile Include="Translate\ITranslator.vb" />
+    <Compile Include="Translate\TranslationQuality.vb" />
+    <Compile Include="Translate\OcrResultPolicy.vb" />
     <Compile Include="Translate\OllamaTranslator.vb" />
     <Compile Include="Translate\OllamaManager.vb" />
     <Compile Include="Translate\LibreTranslateTranslator.vb" />
     <Compile Include="Translate\TranslationCache.vb" />
     <Compile Include="Security\DpapiSecrets.vb" />
+    <Compile Include="Security\AuthenticodeCheck.vb" />
     <Compile Include="OcrLanguageCatalog.vb" />
     <Compile Include="OptionalRuntimeManager.vb" />
+    <Compile Include="RuntimeInstallPlan.vb" />
+    <Compile Include="PlaybackRules.vb" />
     <Compile Include="MultiWindowPolicy.vb" />
+    <Compile Include="SingleInstanceProtocol.vb" />
     <Compile Include="RuntimeBootstrap.vb" />
     <Compile Include="Table_Form.Designer.vb">
       <DependentUpon>Table_Form.vb</DependentUpon>
@@ -486,6 +557,9 @@
     </Compile>
     <Compile Include="Support\LogPackage.vb" />
     <Compile Include="Support\MailSender.vb" />
+    <!-- Site page URLs by language (ticket 037). No seam: the x86 viewer's settings
+         window never links them, and a constant it does not read costs nothing. -->
+    <Compile Include="Support\SitePages.vb" />
     <Compile Include="Common_Module.vb" />
     <!-- The 13-language localization layer (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md).
          The modern project picks these up through its ..\**\*.vb glob; this old-style
@@ -515,6 +589,13 @@
     <Compile Include="Localization\Localization.Archive.vb" />
     <Compile Include="Localization\Localization.Video.vb" />
     <Compile Include="Localization\Localization.SlotHealth.vb" />
+    <!-- Compiled here too, unlike the rest of the secure-container feature: the strings
+         are shared by both builds' registry, and a table missing from one project fails
+         its shared constructor with BC30451, which is the right failure. -->
+    <Compile Include="Localization\Localization.Secure.vb" />
+    <!-- Ticket 028 (APP-BEHAVIOUR contract sync). Registered by both builds for the same
+         reason as the table above. -->
+    <Compile Include="Localization\Localization.AppUx.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\VersionInfo.vb" />
     <Compile Include="My Project\Resources.Designer.vb">
@@ -528,6 +609,9 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="Utils.vb" />
+    <Compile Include="Icons\IconMap.vb" />
+    <Compile Include="Icons\SvgPathData.vb" />
+    <Compile Include="Icons\GlyphRenderer.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Main_Form.resx">

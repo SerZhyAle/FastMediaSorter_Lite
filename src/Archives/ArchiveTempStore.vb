@@ -127,9 +127,10 @@ Friend Module ArchiveTempStore
     ''' <summary>
     ''' Is that pid still a running viewer? Our own pid counts without asking. Anything we
     ''' cannot answer counts as "not alive" - a directory whose owner cannot be identified
-    ''' is exactly what an orphan looks like.
+    ''' is exactly what an orphan looks like. Shared with the remote cache's sweep
+    ''' (RemoteCacheStore), which asks the same question about the same kind of directory.
     ''' </summary>
-    Private Function IsLiveViewerProcess(processId As Integer) As Boolean
+    Friend Function IsLiveViewerProcess(processId As Integer) As Boolean
         Try
             If processId = Diagnostics.Process.GetCurrentProcess().Id Then Return True
 

@@ -43,6 +43,9 @@ Public Module OcrLanguageCatalog
 
     ' Endonyms, in the historical order (the picker's order is a product decision, not
     ' an alphabet). "auto" carries its Russian source string and is translated on display.
+    ' bn and ur were added last by audit 051 E-06: a Bengali or Urdu interface makes its own
+    ' language the default translation target, and neither was in the list - the picker then
+    ' showed "English" while every request asked for "bn"/"ur".
     Private ReadOnly _all As LanguageEntry() = {
         New LanguageEntry("auto", "Автоопределение"),
         New LanguageEntry("en", "English"),
@@ -77,7 +80,9 @@ Public Module OcrLanguageCatalog
         New LanguageEntry("th", "ไทย"),
         New LanguageEntry("vi", "Tiếng Việt"),
         New LanguageEntry("id", "Bahasa Indonesia"),
-        New LanguageEntry("fa", "فارسی")
+        New LanguageEntry("fa", "فارسی"),
+        New LanguageEntry("bn", "বাংলা"),
+        New LanguageEntry("ur", "اردو")
     }
 
     ''' <summary>All entries including "auto" (for the OCR source picker).</summary>
@@ -88,6 +93,38 @@ Public Module OcrLanguageCatalog
     ''' <summary>All entries except "auto" (for the translation target picker).</summary>
     Public Function TargetLanguages() As LanguageEntry()
         Return _all.Where(Function(e) e.Code <> "auto").ToArray()
+    End Function
+
+    ''' <summary>True when the translation-target picker can show this code.</summary>
+    Public Function IsTargetLanguage(code As String) As Boolean
+        Dim c As String = If(code, "").Trim()
+        Return TargetLanguages().Any(Function(e) String.Equals(e.Code, c, StringComparison.OrdinalIgnoreCase))
+    End Function
+
+    ''' <summary>The endonym for one of our codes, or the code itself when it is not listed.</summary>
+    Public Function NameFor(code As String) As String
+        Dim c As String = If(code, "").Trim()
+        Dim entry As LanguageEntry = _all.FirstOrDefault(Function(e) String.Equals(e.Code, c, StringComparison.OrdinalIgnoreCase))
+        Return If(entry Is Nothing, c, entry.DisplayName())
+    End Function
+
+    ''' <summary>
+    ''' Tesseract language codes ("rus", "chi_sim") as the names a person reads - the
+    ''' endonyms of the entries they belong to - joined for a status line. A code no entry
+    ''' maps to is shown as it is rather than dropped: the message must still say what is
+    ''' missing (ticket 033 Ф-6).
+    ''' </summary>
+    Public Function DescribeTesseractCodes(codes As IEnumerable(Of String)) As String
+        Dim names As New List(Of String)
+        For Each code As String In If(codes, Enumerable.Empty(Of String)())
+            If String.IsNullOrWhiteSpace(code) Then Continue For
+            Dim entry As LanguageEntry = _all.FirstOrDefault(
+                Function(e) e.Code <> "auto" AndAlso
+                            String.Equals(OcrTranslateSettings.NormalizeOcrSourceCode(e.Code), code, StringComparison.OrdinalIgnoreCase))
+            Dim name As String = If(entry Is Nothing, code, entry.Name)
+            If Not names.Contains(name) Then names.Add(name)
+        Next
+        Return String.Join(", ", names)
     End Function
 
 End Module

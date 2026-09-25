@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 Imports Xunit
@@ -92,17 +92,60 @@ Public Class OcrBlockBuilderTests
     End Sub
 
     <Fact>
-    Public Sub TwoLinesInAColumn_UseTheGapFallback_NotThePitch()
-        ' One pair is one pitch, and its median IS that pair - so a single misread line
-        ' would set the threshold for the whole image. Below MinPitchPairs the builder
-        ' falls back to the historical ink-gap rule instead: gap 14 <= max(6, 0.9*40) = 36.
+    Public Sub TwoLinesInAColumn_UseAWidenedPitch_NeverTheInkGap()
+        ' OCR-OVERLAY rule 6 forbids the ink gap outright, and this is the case that used to
+        ' fall back to it: one pair is one pitch, and its median IS that pair, so a single
+        ' misread line would set the threshold for the whole image. The answer is not a
+        ' different measurement but a wider tolerance on the same one - 54 px top-to-top
+        ' against UncorroboratedPitchFactor * 54 = 81.
         Dim blocks = OcrBlockBuilder.BuildBlocks(Column(2, 100, 54, 40), New Size(800, 600))
         Assert.Single(blocks)
 
-        ' Same two lines, gap now well past the fallback threshold: two blocks. Had the
-        ' single pair been trusted as a median, ANY spacing would have merged them.
+        ' Same two lines, now three median heights apart: the pair does not qualify at all, no
+        ' pitch exists, and the builder declines to group rather than reaching for the gap.
         Dim far = OcrBlockBuilder.BuildBlocks(Column(2, 100, 200, 40), New Size(800, 600))
         Assert.Equal(2, far.Count)
+    End Sub
+
+    <Fact>
+    Public Sub TheWidenedToleranceAppliesOnlyToAnUncorroboratedPitch()
+        ' The tolerance must not leak into a page that HAS a median. Two pairs of 54 px put the
+        ' threshold back at PitchFactor * 54 = 65, so a 70 px step - which the widened
+        ' tolerance of the test above would have swallowed - closes the block.
+        Dim page As New List(Of OcrLine)(Column(3, 100, 54, 40))
+        page.Add(New OcrLine With {
+            .Text = "sample text 4",
+            .Box = New Rectangle(100, 100 + 2 * 54 + 70, 400, 40)
+        })
+
+        Dim blocks = OcrBlockBuilder.BuildBlocks(page, New Size(800, 600))
+
+        Assert.Equal(2, blocks.Count)
+        Assert.Equal(3, blocks(0).Lines.Count)
+    End Sub
+
+    <Fact>
+    Public Sub NoPitchAtAll_IsOneBlockPerLine_NotAGapRule()
+        ' The honest answer to "there is nothing to group by", and the one case where removing
+        ' the ink-gap fallback genuinely changes an outcome.
+        '
+        ' Two phrases SIDE BY SIDE: same top, same height, and enough horizontal overlap to
+        ' pass the column test. Top-to-top is 0, so no pair qualifies, no pitch exists, and the
+        ' builder declines. The ink-gap rule measured top minus the PREVIOUS BOTTOM, which here
+        ' is -40 - comfortably under any threshold - so it merged them into one plate spanning
+        ' both phrases and handed the translator one run-on sentence.
+        '
+        ' Everywhere else the two rules agree, and that is worth writing down rather than
+        ' rediscovering: for a pair to have merged under the gap rule and be declined now, its
+        ' top-to-top distance would have to exceed three median heights while its ink gap
+        ' stayed under 0.9 of one, which no arrangement of two boxes can do.
+        Dim pair = Lines(
+            L("first phrase here", 100, 100, 400, 140),
+            L("second phrase here", 250, 100, 550, 140))
+
+        Dim blocks = OcrBlockBuilder.BuildBlocks(pair, New Size(800, 600))
+
+        Assert.Equal(2, blocks.Count)
     End Sub
 
     ' --- rule 1: column --------------------------------------------------------

@@ -125,6 +125,9 @@
     <EmbeddedResource Include="..\..\assets\icons\doc-html-translate.png">
       <LogicalName>FmsPayloadicons/doc-html-translate.png</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\..\assets\glyphs\*.svg">
+      <LogicalName>FmsPayloadglyphs/%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -160,6 +163,17 @@
          THIRD-PARTY-NOTICES.txt (canon invariant 12). Modern only: the x86 project
          must NOT reference it - archive browsing does not exist there. -->
     <PackageReference Include="SharpCompress" Version="0.50.4" />
+
+    <!-- Secure containers (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §4.4).
+         The .NET base class library carries NONE of the four primitives the FDSEC format
+         needs: no Argon2 of any kind, no BLAKE2b, and System.Security.Cryptography's
+         ChaCha20Poly1305 is the 12-byte IETF variant backed on Windows by a CNG algorithm
+         our support floor (Windows 10 1607) predates. BouncyCastle carries all four and
+         is fully managed, which keeps the single-file publish a single file and lays
+         nothing down per architecture next to the exe. MIT; the notice ships in
+         THIRD-PARTY-NOTICES.txt (canon invariant 12). Modern only: the x86 project must
+         NOT reference it - src/Secure is whole-file "#If Not NETFRAMEWORK" there. -->
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
 
     <!-- DPAPI (DpapiSecrets): ProtectedData is inbox on net10.0-windows
          (NU1510 flags the explicit package as redundant) - no PackageReference. -->

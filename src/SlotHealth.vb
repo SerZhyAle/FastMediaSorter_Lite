@@ -78,6 +78,27 @@ Public Module SlotHealthPolicy
     ''' alive".</summary>
     Public Const Probe_Timeout_Ms As Integer = 2000
 
+    ''' <summary>
+    ''' The one spelling of a slot path, applied where a slot is STORED (the registry load,
+    ''' the folder picker, a typed grid cell) - audit 047, C-24. The probe keyed its verdict
+    ''' on the trimmed value while the action used the raw one, so "D:\Sorted " probed
+    ''' Ready and then moved into "D:\Sorted \x.jpg", failed and rolled back. Surrounding
+    ''' white space goes; a fully qualified path is made canonical; anything else (a
+    ''' relative path, which would resolve against the working directory) is left as typed
+    ''' so the probe can say it is invalid.
+    ''' </summary>
+    Public Function NormalizeSlotPath(raw As String) As String
+        If raw Is Nothing Then Return ""
+        Dim trimmed As String = raw.Trim()
+        If trimmed.Length = 0 Then Return ""
+        Try
+            If System.IO.Path.IsPathFullyQualified(trimmed) Then Return System.IO.Path.GetFullPath(trimmed)
+        Catch
+            ' Characters no path may hold: keep it as typed - the probe reports it Invalid.
+        End Try
+        Return trimmed
+    End Function
+
     ''' <summary>May an action against a slot in this state go ahead?</summary>
     Public Function IsUsable(state As SlotState) As Boolean
         Return state = SlotState.Ready OrElse state = SlotState.WillBeCreated

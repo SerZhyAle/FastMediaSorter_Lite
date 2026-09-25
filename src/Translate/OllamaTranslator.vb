@@ -194,42 +194,53 @@ Public Class OllamaTranslator
         End Try
     End Function
 
-    Public Async Function TranslateAsync(texts As List(Of String), sourceLang As String, targetLang As String, ct As CancellationToken) As Task(Of List(Of String)) Implements ITranslator.TranslateAsync
-        Dim results As New List(Of String)(texts)
+    Public Async Function TranslateAsync(texts As List(Of String), sourceLang As String, targetLang As String, ct As CancellationToken) As Task(Of TranslationBatch) Implements ITranslator.TranslateAsync
+        If texts.Count = 0 Then Return New TranslationBatch()
 
-        If texts.Count = 0 Then Return results
+        Try
+            If Not Await EnsureModelAsync(ct).ConfigureAwait(False) Then
+                Return TranslationBatch.AllFailed(texts, TranslationFailure.Other) ' no model -> echo source, marked failed
+            End If
 
-        If Not Await EnsureModelAsync(ct).ConfigureAwait(False) Then
-            Return New List(Of String)(texts) ' no model -> echo source
-        End If
+            Dim langName As String = TranslateLang.DisplayName(targetLang)
+            Dim result As New TranslationBatch With {.ModelUsed = model}
 
-        Dim langName As String = TranslateLang.DisplayName(targetLang)
-
-        ' 1) Try a single batched request.
-        Dim batched As List(Of String) = Await TryTranslateBatchAsync(texts, langName, ct).ConfigureAwait(False)
-        If batched IsNot Nothing AndAlso batched.Count = texts.Count Then
-            ' Repair echoed, wrong-script, refusal or noisy segments individually.
-            For i As Integer = 0 To texts.Count - 1
-                Dim reason As String = GetBadTranslationReason(texts(i), batched(i), targetLang)
-                If reason.Length > 0 Then
+            ' 1) Try a single batched request.
+            Dim batched As List(Of String) = Await TryTranslateBatchAsync(texts, langName, ct).ConfigureAwait(False)
+            If batched IsNot Nothing AndAlso batched.Count = texts.Count Then
+                ' Repair echoed, wrong-script, refusal or noisy segments individually.
+                For i As Integer = 0 To texts.Count - 1
+                    Dim reason As String = TranslationQuality.BadTranslationReason(texts(i), batched(i), targetLang)
+                    If reason.Length = 0 Then
+                        result.Add(batched(i), True)
+                        Continue For
+                    End If
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
                                     " ollama: retry segment " & i.ToString() &
                                     " because " & reason &
-                                    " src=" & CountUsefulCharacters(texts(i)).ToString() &
-                                    " dst=" & CountUsefulCharacters(batched(i)).ToString())
-                    batched(i) = Await TranslateOneAsync(texts(i), langName, targetLang, ct).ConfigureAwait(False)
-                End If
-            Next
-            Return batched
-        End If
+                                    " src=" & TranslationQuality.CountUsefulCharacters(texts(i)).ToString() &
+                                    " dst=" & TranslationQuality.CountUsefulCharacters(batched(i)).ToString())
+                    Dim one As KeyValuePair(Of String, Boolean) = Await TranslateOneAsync(texts(i), langName, targetLang, ct).ConfigureAwait(False)
+                    result.Add(one.Key, one.Value)
+                Next
+                Return result
+            End If
 
-        ' 2) Fall back to per-segment translation.
-        Dim outList As New List(Of String)(texts.Count)
-        For i As Integer = 0 To texts.Count - 1
-            ct.ThrowIfCancellationRequested()
-            outList.Add(Await TranslateOneAsync(texts(i), langName, targetLang, ct).ConfigureAwait(False))
-        Next
-        Return outList
+            ' 2) Fall back to per-segment translation.
+            For i As Integer = 0 To texts.Count - 1
+                ct.ThrowIfCancellationRequested()
+                Dim one As KeyValuePair(Of String, Boolean) = Await TranslateOneAsync(texts(i), langName, targetLang, ct).ConfigureAwait(False)
+                result.Add(one.Key, one.Value)
+            Next
+            Return result
+        Catch ex As OperationCanceledException When Not ct.IsCancellationRequested
+            ' The HttpClient timeout, not the user: an expired Timeout surfaces as a
+            ' TaskCanceledException, and the pipeline used to take it for "navigated away"
+            ' and drop the recognized text in silence (audit 051 E-04). One timeout ends the
+            ' whole batch - the per-segment fallback would only wait for the next one.
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ollama: timed out")
+            Return TranslationBatch.AllFailed(texts, TranslationFailure.Timeout)
+        End Try
     End Function
 
     Private Async Function TryTranslateBatchAsync(texts As List(Of String), langName As String, ct As CancellationToken) As Task(Of List(Of String))
@@ -270,8 +281,10 @@ Public Class OllamaTranslator
         End Try
     End Function
 
-    Private Async Function TranslateOneAsync(text As String, langName As String, targetLang As String, ct As CancellationToken) As Task(Of String)
-        If String.IsNullOrWhiteSpace(text) Then Return text
+    ''' <summary>One segment, with one retry. The value says whether the text returned is a
+    ''' translation (True) or the source handed back because every answer was rejected.</summary>
+    Private Async Function TranslateOneAsync(text As String, langName As String, targetLang As String, ct As CancellationToken) As Task(Of KeyValuePair(Of String, Boolean))
+        If String.IsNullOrWhiteSpace(text) Then Return New KeyValuePair(Of String, Boolean)(text, True)
 
         Dim prompt As String =
             "Translate the FULL following text into " & langName & "." & vbLf &
@@ -283,7 +296,7 @@ Public Class OllamaTranslator
         Dim first As String = Await GenerateAsync(prompt, False, ct).ConfigureAwait(False)
         first = If(first, "").Trim()
 
-        Dim firstReason As String = GetBadTranslationReason(text, first, targetLang)
+        Dim firstReason As String = TranslationQuality.BadTranslationReason(text, first, targetLang)
         Dim firstBad As Boolean = first.Length = 0 OrElse firstReason.Length > 0
         If firstBad Then
             Dim retryPrompt As String =
@@ -294,28 +307,26 @@ Public Class OllamaTranslator
                 "Text: " & text
             Dim second As String = Await GenerateAsync(retryPrompt, False, ct).ConfigureAwait(False)
             second = If(second, "").Trim()
-            Dim secondReason As String = GetBadTranslationReason(text, second, targetLang)
-            If second.Length > 0 AndAlso secondReason.Length = 0 Then Return second
-            ' Prefer a usable first result over a bad retry.
-            If first.Length > 0 AndAlso firstReason.Length = 0 Then Return first
-            If second.Length > 0 AndAlso secondReason.Length = 0 Then Return second
+            Dim secondReason As String = TranslationQuality.BadTranslationReason(text, second, targetLang)
+            If second.Length > 0 AndAlso secondReason.Length = 0 Then Return New KeyValuePair(Of String, Boolean)(second, True)
             If firstReason.Length > 0 Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
                                 " ollama: rejected first translation because " & firstReason &
-                                " src=" & CountUsefulCharacters(text).ToString() &
-                                " dst=" & CountUsefulCharacters(first).ToString())
+                                " src=" & TranslationQuality.CountUsefulCharacters(text).ToString() &
+                                " dst=" & TranslationQuality.CountUsefulCharacters(first).ToString())
             End If
             If secondReason.Length > 0 Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
                                 " ollama: rejected retry translation because " & secondReason &
-                                " src=" & CountUsefulCharacters(text).ToString() &
-                                " dst=" & CountUsefulCharacters(second).ToString())
+                                " src=" & TranslationQuality.CountUsefulCharacters(text).ToString() &
+                                " dst=" & TranslationQuality.CountUsefulCharacters(second).ToString())
             End If
-            ' Everything drifted to the wrong script -> show the source, not gibberish.
-            Return text
+            ' Everything was rejected -> show the source, not gibberish, and say it failed
+            ' so the pipeline does not cache it as a translation (audit 051 E-02).
+            Return New KeyValuePair(Of String, Boolean)(text, False)
         End If
 
-        Return first
+        Return New KeyValuePair(Of String, Boolean)(first, True)
     End Function
 
     ''' <summary>POST /api/generate (stream=false); returns the "response" field.</summary>
@@ -465,7 +476,7 @@ Public Class OllamaTranslator
             Throw
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ollama: pull failed: " & ex.Message)
-            If progress IsNot Nothing Then progress.Report("error: " & ex.Message)
+            If progress IsNot Nothing Then progress.Report(FailureText.Describe(ex))
             Return False
         End Try
     End Function
@@ -479,134 +490,6 @@ Public Class OllamaTranslator
             Next
         Next
         Return names(0)
-    End Function
-
-    Private Shared Function IsBadTranslation(source As String, candidate As String, targetLang As String) As Boolean
-        Return GetBadTranslationReason(source, candidate, targetLang).Length > 0
-    End Function
-
-    Private Shared Function GetBadTranslationReason(source As String, candidate As String, targetLang As String) As String
-        If String.IsNullOrWhiteSpace(candidate) Then Return "empty"
-        If LooksLikeEcho(source, candidate) Then Return "echo"
-        If LooksWrongScript(candidate, targetLang) Then Return "wrong-script"
-        If LooksLikeRefusal(candidate) Then Return "refusal"
-        If LooksNoisy(candidate) Then Return "noisy"
-        If LooksTruncated(source, candidate, targetLang) Then Return "truncated"
-        Return ""
-    End Function
-
-    Private Shared Function LooksWrongScript(text As String, targetLang As String) As Boolean
-        If String.IsNullOrWhiteSpace(text) Then Return False
-        Dim expected As TextScriptFamily = ExpectedScriptForLanguage(targetLang)
-        If expected = TextScriptFamily.Unknown Then Return False
-
-        Dim dominant As TextScriptFamily = TextScriptFamily.Unknown
-        Dim share As Double = 0.0
-        Dim letters As Integer = 0
-        Dim mixedLetters As Integer = 0
-        If Not TryGetDominantScript(text, dominant, share, letters, mixedLetters) Then Return False
-
-        If expected = TextScriptFamily.Cjk Then
-            Return dominant <> TextScriptFamily.Cjk AndAlso letters >= 2 AndAlso share >= 0.6
-        End If
-
-        If dominant = TextScriptFamily.Cjk AndAlso letters >= 2 AndAlso share >= 0.15 Then Return True
-        Return letters >= 4 AndAlso dominant <> TextScriptFamily.Unknown AndAlso dominant <> expected AndAlso share >= 0.6
-    End Function
-
-    Private Shared Function LooksLikeEcho(source As String, candidate As String) As Boolean
-        If String.IsNullOrWhiteSpace(candidate) Then Return False
-        Dim a As String = source.Trim()
-        Dim b As String = candidate.Trim()
-        If a.Length < 3 Then Return False
-        Return String.Equals(a, b, StringComparison.OrdinalIgnoreCase)
-    End Function
-
-    Private Shared Function LooksLikeRefusal(text As String) As Boolean
-        Dim s As String = If(text, "").Trim().ToLowerInvariant()
-        If s.Length = 0 Then Return False
-
-        Dim phrases As String() = {
-            "i cannot", "i can't", "sorry", "unable to", "cannot fulfill", "can't fulfill",
-            "please make sure", "unrecognized symbols", "use the correct alphabet",
-            "translation request", "output only", "json object",
-            "не могу", "не могу выполнить", "не распознаю", "пожалуйста", "алфавит", "язык для перевода"
-        }
-
-        For Each phrase As String In phrases
-            If s.IndexOf(phrase, StringComparison.Ordinal) >= 0 Then Return True
-        Next
-
-        Return False
-    End Function
-
-    Private Shared Function LooksNoisy(text As String) As Boolean
-        Dim symbolNoise As Double = SymbolRatio(text)
-        If text.Length >= 10 AndAlso symbolNoise >= 0.22 Then Return True
-
-        Dim digits As Integer = 0
-        Dim nonWhitespace As Integer = 0
-        For Each ch As Char In text
-            If Char.IsWhiteSpace(ch) Then Continue For
-            nonWhitespace += 1
-            If Char.IsDigit(ch) Then digits += 1
-        Next
-        If nonWhitespace >= 10 AndAlso digits / CDbl(nonWhitespace) >= 0.35 Then Return True
-
-        Dim dominant As TextScriptFamily = TextScriptFamily.Unknown
-        Dim share As Double = 0.0
-        Dim letters As Integer = 0
-        Dim mixedLetters As Integer = 0
-        If TryGetDominantScript(text, dominant, share, letters, mixedLetters) AndAlso
-           letters >= 8 AndAlso share < 0.55 Then
-            Return True
-        End If
-
-        Return False
-    End Function
-
-    Private Shared Function LooksTruncated(source As String, candidate As String, targetLang As String) As Boolean
-        Dim sourceUseful As Integer = CountUsefulCharacters(source)
-        If sourceUseful < 45 Then Return False
-
-        Dim candidateUseful As Integer = CountUsefulCharacters(candidate)
-        Dim minRatio As Double = If(ExpectedScriptForLanguage(targetLang) = TextScriptFamily.Cjk, 0.22, 0.42)
-
-        If sourceUseful >= 120 AndAlso candidateUseful < CInt(Math.Floor(sourceUseful * 0.35)) Then
-            Return True
-        End If
-
-        Dim sourceSentences As Integer = CountSentenceMarkers(source)
-        Dim candidateSentences As Integer = CountSentenceMarkers(candidate)
-
-        If sourceSentences >= 2 AndAlso
-           candidateSentences + 1 < sourceSentences AndAlso
-           candidateUseful < CInt(Math.Floor(sourceUseful * 0.7)) Then
-            Return True
-        End If
-
-        If (sourceSentences >= 2 OrElse sourceUseful >= 90) AndAlso
-           candidateUseful < Math.Max(18, CInt(Math.Floor(sourceUseful * minRatio))) Then
-            Return True
-        End If
-
-        Return False
-    End Function
-
-    Private Shared Function CountUsefulCharacters(text As String) As Integer
-        Dim count As Integer = 0
-        For Each ch As Char In If(text, "")
-            If Char.IsLetterOrDigit(ch) Then count += 1
-        Next
-        Return count
-    End Function
-
-    Private Shared Function CountSentenceMarkers(text As String) As Integer
-        Dim count As Integer = 0
-        For Each ch As Char In If(text, "")
-            If ch = "."c OrElse ch = "!"c OrElse ch = "?"c Then count += 1
-        Next
-        Return count
     End Function
 
     Private Shared Function LinkedTimeout(ct As CancellationToken, ms As Integer) As CancellationTokenSource

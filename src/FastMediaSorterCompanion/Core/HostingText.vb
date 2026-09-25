@@ -206,6 +206,19 @@ Public Module HostingText
         Return Localization.T("Вернуться к пользовательской редакции..")
     End Function
 
+    ''' <summary>
+    ''' What the one UAC prompt of the return will do, before it appears (ticket 054 H-05):
+    ''' the service stops and is removed, the state comes back to this user's store, the
+    ''' firewall rule is re-pointed at this installation's worker. The host key is copied
+    ''' with everything else, so the phones do not have to re-pair - the promise the switch
+    ''' made and no button kept until now.
+    ''' </summary>
+    Public Function ReturnToUserPrompt() As String
+        Return Localization.T("Вернуть раздачу этой программе?" & vbCrLf & vbCrLf &
+                              "Служба Windows будет остановлена и удалена, ваши настройки, папки и ключ узла вернутся в пользовательское хранилище, а правило брандмауэра будет указывать на эту программу. Телефонам подключаться заново не придётся - ключ узла сохраняется." & vbCrLf & vbCrLf &
+                              "Раздача снова будет работать, пока вы в системе и менеджер запущен. Windows запросит подтверждение администратора один раз.")
+    End Function
+
     Public Function StartServiceButton() As String
         Return Localization.T("Запустить службу")
     End Function
@@ -229,9 +242,11 @@ Public Module HostingText
     End Function
 
     ''' <summary>The LocalService consequences, surfaced BEFORE a root is added rather
-    ''' than after a phone fails to open it.</summary>
+    ''' than after a phone fails to open it. Mapped network drives are named beside UNC -
+    ''' both look local to every check that matters, and neither can be served by the
+    ''' service account (ticket 054 H-19).</summary>
     Public Function AccountNote() As String
-        Return Localization.T("Служба работает от имени LOCAL SERVICE, а не от вашего. Каждой раздаваемой папке нужен доступ для этой учётной записи: чтение, а если папка раздаётся с записью - то и запись. Кнопка выдаёт их по текущему списку папок. Сетевые пути вида \\сервер\папка так работать не будут.")
+        Return Localization.T("Служба работает от имени LOCAL SERVICE, а не от вашего. Каждой раздаваемой папке нужен доступ для этой учётной записи: чтение, а если папка раздаётся с записью - то и запись. Кнопка выдаёт их по текущему списку папок. Сетевые пути - вида \\сервер\папка и подключённые сетевые диски (например, Z:) - так работать не будут.")
     End Function
 
     ''' <summary>Shown next to "Remove server role": what is and is not destroyed.</summary>
@@ -256,7 +271,7 @@ Public Module HostingText
             Case ServiceControl.ManageResult.Unavailable
                 Return ManageUnavailable()
             Case Else
-                Return Localization.T("Не удалось выполнить действие. Подробности - в журнале службы.")
+                Return Localization.T("Не удалось выполнить действие. Повторите попытку; если не выйдет - отправьте журнал автору: меню значка в трее - «Отправить журнал автору..».")
         End Select
     End Function
 

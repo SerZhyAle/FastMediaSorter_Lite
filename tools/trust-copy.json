@@ -1,0 +1,809 @@
+{
+  "_comment": "Source of truth for the install-trust page (INSTALL-TRUST contract, tickets 025 section 7 and 037). Rendered by tools/Build-SitePages.ps1 into trust.html (English, site root) and lang/<code>/trust.html for the other twelve languages - those files are RENDER TARGETS, never edited by hand (canon invariant 16). Language metadata (dir, endonym, machine-translation flag, switcher label) is NOT repeated here: the renderer reads it from site-copy.json, so a language is described in one place. Rule 1 fixes four sections in this order: what the warning is (1st), why it appears (2nd), exactly what to click (3rd) and what the program never does (5th, the last). The 4th sits between them and answers rule 5: every use of administrator rights, then the single action that takes each back. The last is rule 6's factual list, which must keep saying what docs/privacy.html and the Store privacy answers in docs/guides/STORE_PUBLISHING.md say. Every locale carries the same section and item counts as English (held by TrustPageContractTests), and a button the page names is quoted exactly as the app shows it in that language.",
+  "en": {
+    "title": "Why Windows warns about this download",
+    "desc": "What the SmartScreen warning on Fast Media Sorter for Windows means, why it appears, exactly what to click, and what the program never does.",
+    "intro": "Fast Media Sorter for Windows is a small free program written by one independent developer. The builds published on GitHub, which winget installs too, are not code-signed, so Windows treats them with extra caution and you may meet a warning or two. Below is what each one is, why it appears, exactly what to click, and what the program never does.",
+    "sections": [
+      {
+        "h": "What the warning is",
+        "p": "One of these three, depending on what you downloaded.",
+        "items": [
+          "«Windows protected your PC» - this is SmartScreen. It appears the first time you run a setup file or the program from the portable ZIP.",
+          "«Do you want to allow this app to make changes to your device?» - this is the Windows administrator prompt. It appears only if you choose to install for all users or switch folder sharing on, and the fourth section says exactly what each does with it.",
+          "An antivirus warning about the single-file download, which only releases before 12 June 2026 offered. Microsoft Defender scores its self-extracting bootstrap as Program:Script/Wacapew.A!ml - a known false positive for this shape of file. The setup files and the portable ZIP are not affected."
+        ]
+      },
+      {
+        "h": "Why it appears",
+        "p": "Nothing is broken and the warning is not a mistake. SmartScreen asks two things about a file: is it signed with a certificate Windows recognizes, and have enough people already run it.",
+        "items": [
+          "Not signed. A code-signing certificate costs several hundred dollars a year. The program is free and earns nothing, so paying for one is a choice that has not been made - it is not an oversight.",
+          "Not yet known. Reputation is counted per file, so every new version starts from zero. It builds up on its own as people download that release, which is why the warning fades between versions and comes back for a while after each new one.",
+          "The Microsoft Store build is the exception: Microsoft signs it during certification, so it shows none of this. It is the same program."
+        ]
+      },
+      {
+        "h": "Exactly what to click",
+        "p": "Two clicks, and nothing here weakens your protection.",
+        "items": [
+          "SmartScreen: click More info on the dialog, then Run anyway. That is all.",
+          "Administrator prompt: read the next section first, then answer Yes. Answer No to the folder-sharing prompt and the program still installs and runs in full - only sharing stays off. Setup itself needs the prompt only if you chose to install for all users.",
+          "Antivirus: if the file was quarantined, restore it and add an exception for that one install folder. Never switch SmartScreen off and never disable your antivirus - neither is needed here, and both keep protecting everything else you download.",
+          "If you would rather verify than trust: every release carries a .sha256 file beside it, and Get-FileHash <file> -Algorithm SHA256 in PowerShell must print the same value. The source code is public."
+        ]
+      },
+      {
+        "h": "What administrator rights are used for, and how to take them back",
+        "p": "The viewer itself never asks for administrator rights. Setup asks only if you choose to install for all users, and folder sharing only when you switch it on. Each use is listed here, then the way back.",
+        "items": [
+          "Installing for all users - your choice in Setup. Setup first asks whether to install for you only, which needs no administrator rights, or for every account on this PC. Only the second asks Windows, to put the program in Program Files and its shortcuts where every account sees them.",
+          "Folder sharing - one firewall rule. When you switch sharing on, in Setup or later in the Share Manager, Windows asks once and a single inbound firewall rule is added for companion\\fms-share-worker.exe. It lets that one program receive connections and does nothing else. Until you switch sharing on, nothing listens and nothing is added.",
+          "Always-on sharing - a Windows service. Only if you ask for it, in one of two ways: in the Share Manager's «Manager settings», Hosting, «Switch sharing to a Windows service..», or with the separate Server installer, which you download and run yourself. Windows asks once, and four things are done: the service FastMediaSorterCompanionSFTP is registered and runs as LOCAL SERVICE; the firewall rule is pointed at the copy of the sharing program the service runs; LOCAL SERVICE may read each folder you share, and write only where you allowed writing; and the sharing settings, password and host key move to %ProgramData%\\FastMediaSorterCompanion, a folder only administrators, the service and your account can open.",
+          "To take it back without uninstalling, open the Share Manager's «Manager settings»: Network, «Switch off server features..» removes the firewall rule; Hosting, «Remove the server role» stops and deletes the service, takes back its folder permissions and removes the firewall rule; Hosting, «Return to the User edition..» also removes the service and the folder permissions, but hands sharing back to your own session with its firewall rule. Each asks Windows once.",
+          "Or uninstall: each entry in Windows Settings, Apps removes what it added. FastMediaSorter LITE removes its firewall rule - installed for you only, Windows asks once for that - and offers to remove a service its Share Manager registered. Fast Media Sorter Folder Share Server removes its service, the folder permissions and the firewall rule. A silent uninstall, such as winget uninstall, cannot ask, so it leaves a Share Manager service in place, and for an install made for you only the firewall rule too; switch them off in the Share Manager first.",
+          "Kept on purpose: the host key, password and folder list stay in %LOCALAPPDATA%\\FastMediaSorterCompanion - or in %ProgramData%\\FastMediaSorterCompanion once sharing has run as a service - so paired phones reconnect after a reinstall. Delete that folder and every phone has to be paired again."
+        ]
+      },
+      {
+        "h": "What the program never does",
+        "p": "The same list as the privacy page and the Microsoft Store data-safety answers, because there is only one truth to tell.",
+        "items": [
+          "No telemetry, no analytics, no accounts, no advertising. The developer receives nothing about you or about how you use the program - unless you press «Send the logs to the author», which opens a message in your own mail program for you to check and send yourself.",
+          "It never sends your files anywhere by itself. When you share folders, your phone connects straight to your PC over an encrypted SFTP connection.",
+          "It never opens a port and never asks for administrator rights on its own. Sharing is off until you switch it on, and the window always shows what is reachable and from where.",
+          "It downloads something only when you ask or say yes to a prompt that names what is being fetched: an OCR language pack, the OCR or video playback runtime, the video encoder FFmpeg, the Ollama installer or a translation model for it, or doc-html-translate through winget. Nothing about your files is sent with the request.",
+          "Text you translate goes only to the translation endpoint you set up yourself - a model on your own machine, or a server you named."
+        ]
+      }
+    ],
+    "note": "One third-party service can be contacted, and only if you turn on internet access for sharing: check-host.net is asked to confirm that your forwarded port answers from outside, which shows that service your public address and port. Nothing else is sent to it. Two more things stay inside your own network: with internet access on, the program asks your router to forward the sharing port (UPnP or NAT-PMP), and while sharing runs, the PC announces itself on the local network (mDNS) so a paired phone can find it again.",
+    "backLabel": "Back to the main page",
+    "dlLabel": "Downloads",
+    "privacyLabel": "Privacy policy"
+  },
+  "ru": {
+    "title": "Почему Windows предупреждает об этой загрузке",
+    "desc": "Что означает предупреждение SmartScreen при установке Fast Media Sorter для Windows, почему оно появляется, на что именно нажать и чего программа не делает никогда.",
+    "intro": "Fast Media Sorter для Windows - небольшая бесплатная программа одного независимого разработчика. Сборки, опубликованные на GitHub (их же ставит и winget), не подписаны сертификатом, поэтому Windows относится к ним настороженно, и вы можете увидеть одно-два предупреждения. Ниже - что это за предупреждения, почему они появляются, на что именно нажать и чего программа не делает никогда.",
+    "sections": [
+      {
+        "h": "Что это за предупреждение",
+        "p": "Одно из трёх - смотря что именно вы скачали.",
+        "items": [
+          "«Система Windows защитила ваш компьютер» - это SmartScreen. Появляется при первом запуске установщика или программы из портативного ZIP.",
+          "«Разрешить этому приложению вносить изменения на вашем устройстве?» - это запрос прав администратора. Он появляется, только если вы выбрали установку для всех пользователей или включаете общий доступ к папкам, и четвёртый раздел точно описывает, что каждое из них делает с этими правами.",
+          "Предупреждение антивируса о загрузке одним файлом - её предлагали только выпуски до 12 июня 2026 года. Microsoft Defender оценивает её самораспаковывающуюся оболочку как Program:Script/Wacapew.A!ml. Это известное ложное срабатывание для файлов такой формы; установщиков и портативного ZIP оно не касается."
+        ]
+      },
+      {
+        "h": "Почему оно появляется",
+        "p": "Ничего не сломано, и предупреждение - не ошибка. SmartScreen проверяет у файла две вещи: подписан ли он сертификатом, который Windows знает, и достаточно ли людей уже его запускали.",
+        "items": [
+          "Не подписан. Сертификат для подписи кода стоит несколько сотен долларов в год. Программа бесплатна и ничего не зарабатывает, поэтому такой сертификат не куплен - это решение, а не недосмотр.",
+          "Пока неизвестен. Репутация считается для каждого файла отдельно, поэтому каждая новая версия начинает с нуля. Она накапливается сама по мере того, как этот выпуск скачивают, - поэтому предупреждение стихает между версиями и ненадолго возвращается после каждой новой.",
+          "Сборка из Microsoft Store - исключение: её подписывает сама Microsoft при сертификации, поэтому ничего из этого там не появляется. Программа та же самая."
+        ]
+      },
+      {
+        "h": "На что именно нажать",
+        "p": "Два клика, и ничего из перечисленного не ослабляет вашу защиту.",
+        "items": [
+          "SmartScreen: нажмите «Подробнее» в окне, затем «Выполнить в любом случае». Это всё.",
+          "Запрос администратора: сначала прочитайте следующий раздел, затем ответьте «Да». Ответите «Нет» на запрос общего доступа к папкам - программа всё равно установится и будет работать полностью, выключенным останется только общий доступ. Самой установке этот запрос нужен, только если вы выбрали установку для всех пользователей.",
+          "Антивирус: если файл попал в карантин, восстановите его и добавьте исключение для одной этой папки установки. Никогда не выключайте SmartScreen и не отключайте антивирус - здесь это не нужно, а они продолжают защищать всё остальное, что вы скачиваете.",
+          "Если хочется проверить, а не поверить: рядом с каждым выпуском лежит файл .sha256, и команда Get-FileHash <файл> -Algorithm SHA256 в PowerShell должна вывести то же значение. Исходный код открыт."
+        ]
+      },
+      {
+        "h": "Зачем нужны права администратора и как их забрать обратно",
+        "p": "Сам просмотрщик прав администратора не запрашивает никогда. Установщик запрашивает их, только если вы выбрали установку для всех пользователей, а общий доступ к папкам - только когда вы его включаете. Ниже - каждое такое использование и способ вернуть всё назад.",
+        "items": [
+          "Установка для всех пользователей - ваш выбор в установщике. Сначала установщик спрашивает, ставить только для вас - без прав администратора - или для всех учётных записей этого ПК. Windows спрашивает подтверждение только во втором случае: чтобы положить программу в Program Files, а ярлыки - туда, где их видят все учётные записи.",
+          "Общий доступ к папкам - одно правило брандмауэра. Когда вы включаете общий доступ - в установщике или позже в Share Manager, - Windows спрашивает один раз, и добавляется одно входящее правило брандмауэра для companion\\fms-share-worker.exe. Оно разрешает принимать соединения одной этой программе и не делает больше ничего. Пока общий доступ не включён, никто ничего не слушает и ничего не добавляется.",
+          "Постоянная раздача - служба Windows. Только если вы сами её попросили, одним из двух способов: в Share Manager - «Настройки менеджера», «Хостинг», «Перевести раздачу в режим службы Windows..» - или отдельным серверным установщиком, который вы сами скачиваете и запускаете. Windows спрашивает один раз, и делается четыре вещи: регистрируется служба FastMediaSorterCompanionSFTP, работающая от имени LOCAL SERVICE; правило брандмауэра переводится на ту копию программы раздачи, которую запускает служба; LOCAL SERVICE получает право читать каждую раздаваемую папку, а записывать - только туда, где вы разрешили запись; настройки раздачи, пароль и ключ узла переезжают в %ProgramData%\\FastMediaSorterCompanion - папку, которую могут открыть только администраторы, служба и ваша учётная запись.",
+          "Чтобы вернуть всё без удаления программы, откройте в Share Manager «Настройки менеджера»: «Сеть», «Выключить функции сервера..» удаляет правило брандмауэра; «Хостинг», «Удалить роль сервера» останавливает и удаляет службу, забирает выданные ей права на папки и удаляет правило брандмауэра; «Хостинг», «Вернуться к пользовательской редакции..» тоже удаляет службу и права на папки, но возвращает раздачу вашему сеансу вместе с её правилом брандмауэра. Каждое действие один раз спрашивает Windows.",
+          "Или удалите программу: каждая запись в «Параметры Windows», «Приложения» убирает то, что добавила. FastMediaSorter LITE удаляет своё правило брандмауэра - если программа установлена только для вас, Windows один раз спросит подтверждение - и предлагает удалить службу, которую зарегистрировал его Share Manager. Fast Media Sorter Folder Share Server удаляет свою службу, права на папки и правило брандмауэра. Тихое удаление, например winget uninstall, спросить не может, поэтому оставляет на месте службу Share Manager, а при установке только для вас - и правило брандмауэра; выключите их в Share Manager заранее.",
+          "Намеренно сохраняется: ключ узла, пароль и список папок остаются в %LOCALAPPDATA%\\FastMediaSorterCompanion - или в %ProgramData%\\FastMediaSorterCompanion, если раздача уже работала как служба, - чтобы привязанные телефоны подключились после переустановки. Удалите эту папку - и каждый телефон придётся привязывать заново."
+        ]
+      },
+      {
+        "h": "Чего программа не делает никогда",
+        "p": "Тот же список, что на странице конфиденциальности и в ответах о данных в Microsoft Store, - правда только одна.",
+        "items": [
+          "Никакой телеметрии, аналитики, учётных записей и рекламы. Разработчик не получает ничего ни о вас, ни о том, как вы пользуетесь программой, - если только вы сами не нажмёте «Отправить логи автору»: тогда в вашей почтовой программе откроется письмо, которое вы проверяете и отправляете сами.",
+          "Она никогда не отправляет ваши файлы куда-либо сама. При общем доступе телефон соединяется напрямую с вашим компьютером по зашифрованному SFTP.",
+          "Она никогда не открывает порт и не запрашивает права администратора по своей инициативе. Общий доступ выключен, пока вы его не включите, и окно всегда показывает, что и откуда доступно.",
+          "Она скачивает что-либо только по вашей просьбе или после вопроса, в котором названо, что именно загружается: языковой пакет OCR, среду выполнения OCR или воспроизведения видео, видеокодировщик FFmpeg, установщик Ollama или модель перевода для него, либо doc-html-translate через winget. Ничего о ваших файлах вместе с запросом не отправляется.",
+          "Текст, который вы переводите, уходит только на тот адрес перевода, который вы настроили сами, - модель на вашей же машине или названный вами сервер."
+        ]
+      }
+    ],
+    "note": "Один сторонний сервис всё же может быть вызван, и только если вы включите доступ из интернета для общего доступа к папкам: у check-host.net спрашивают, отвечает ли проброшенный порт снаружи, и этот сервис видит ваш публичный адрес и порт. Больше ему ничего не отправляется. Ещё две вещи не выходят за пределы вашей сети: при включённом доступе из интернета программа просит ваш роутер пробросить порт раздачи (UPnP или NAT-PMP), а пока раздача работает, компьютер объявляет о себе в локальной сети (mDNS), чтобы привязанный телефон снова его нашёл.",
+    "backLabel": "На главную страницу",
+    "dlLabel": "Загрузки",
+    "privacyLabel": "Конфиденциальность"
+  },
+  "uk": {
+    "title": "Чому Windows попереджає про це завантаження",
+    "desc": "Що означає попередження SmartScreen під час встановлення Fast Media Sorter для Windows, чому воно з'являється, на що саме натиснути і чого програма не робить ніколи.",
+    "intro": "Fast Media Sorter для Windows - невелика безкоштовна програма одного незалежного розробника. Збірки, опубліковані на GitHub (їх же встановлює і winget), не підписані сертифікатом, тому Windows ставиться до них обережно, і ви можете побачити одне-два попередження. Нижче - що це за попередження, чому вони з'являються, на що саме натиснути і чого програма не робить ніколи.",
+    "sections": [
+      {
+        "h": "Що це за попередження",
+        "p": "Одне з трьох - залежно від того, що саме ви завантажили.",
+        "items": [
+          "«Система Windows захистила ваш комп'ютер» - це SmartScreen. З'являється під час першого запуску інсталятора або програми з портативного ZIP.",
+          "«Дозволити цій програмі вносити зміни на вашому пристрої?» - це запит прав адміністратора. Він з'являється, лише якщо ви обрали встановлення для всіх користувачів або вмикаєте спільний доступ до папок, і четвертий розділ точно описує, що кожне з них робить із цими правами.",
+          "Попередження антивіруса про завантаження одним файлом - його пропонували лише випуски до 12 червня 2026 року. Microsoft Defender оцінює його саморозпаковувану оболонку як Program:Script/Wacapew.A!ml. Це відоме хибне спрацьовування для файлів такої форми; інсталяторів і портативного ZIP воно не стосується."
+        ]
+      },
+      {
+        "h": "Чому воно з'являється",
+        "p": "Нічого не зламано, і попередження - не помилка. SmartScreen перевіряє у файла дві речі: чи підписаний він сертифікатом, який Windows знає, і чи достатньо людей уже його запускали.",
+        "items": [
+          "Не підписаний. Сертифікат для підпису коду коштує кілька сотень доларів на рік. Програма безкоштовна і нічого не заробляє, тож такий сертифікат не куплений - це рішення, а не недогляд.",
+          "Поки що невідомий. Репутація рахується для кожного файла окремо, тому кожна нова версія починає з нуля. Вона накопичується сама, коли цей випуск завантажують, - тому попередження стихає між версіями і ненадовго повертається після кожної нової.",
+          "Збірка з Microsoft Store - виняток: її підписує сама Microsoft під час сертифікації, тому нічого з цього там не з'являється. Програма та сама."
+        ]
+      },
+      {
+        "h": "На що саме натиснути",
+        "p": "Два кліки, і ніщо з переліченого не послаблює ваш захист.",
+        "items": [
+          "SmartScreen: натисніть «Докладніше» у вікні, потім «Виконати в будь-якому разі». Це все.",
+          "Запит адміністратора: спершу прочитайте наступний розділ, потім дайте відповідь «Так». Відповісте «Ні» на запит спільного доступу до папок - програма все одно встановиться і працюватиме повністю, вимкненим залишиться тільки спільний доступ. Самому інсталятору цей запит потрібен, лише якщо ви обрали встановлення для всіх користувачів.",
+          "Антивірус: якщо файл потрапив у карантин, відновіть його і додайте виняток для однієї цієї папки встановлення. Ніколи не вимикайте SmartScreen і не відключайте антивірус - тут це не потрібно, а вони й далі захищають усе інше, що ви завантажуєте.",
+          "Якщо хочеться перевірити, а не повірити: поруч із кожним випуском лежить файл .sha256, і команда Get-FileHash <файл> -Algorithm SHA256 у PowerShell має вивести те саме значення. Вихідний код відкритий."
+        ]
+      },
+      {
+        "h": "Навіщо потрібні права адміністратора і як забрати їх назад",
+        "p": "Сам переглядач прав адміністратора не запитує ніколи. Інсталятор запитує їх, лише якщо ви обрали встановлення для всіх користувачів, а спільний доступ до папок - лише коли ви його вмикаєте. Нижче - кожне таке використання і спосіб усе повернути.",
+        "items": [
+          "Встановлення для всіх користувачів - ваш вибір в інсталяторі. Спершу інсталятор питає, чи ставити лише для вас - без прав адміністратора - чи для всіх облікових записів цього ПК. Windows питає підтвердження лише в другому випадку: щоб покласти програму в Program Files, а ярлики - туди, де їх бачать усі облікові записи.",
+          "Спільний доступ до папок - одне правило брандмауера. Коли ви вмикаєте спільний доступ - в інсталяторі або пізніше в Share Manager, - Windows питає один раз, і додається одне вхідне правило брандмауера для companion\\fms-share-worker.exe. Воно дозволяє приймати з'єднання одній цій програмі і більше не робить нічого. Поки спільний доступ не ввімкнено, ніхто нічого не слухає і нічого не додається.",
+          "Постійна роздача - служба Windows. Лише якщо ви самі її попросили, одним із двох способів: у Share Manager - «Налаштування менеджера», «Хостинг», «Перевести роздачу в режим служби Windows..» - або окремим серверним інсталятором, який ви самі завантажуєте і запускаєте. Windows питає один раз, і робиться чотири речі: реєструється служба FastMediaSorterCompanionSFTP, що працює від імені LOCAL SERVICE; правило брандмауера переводиться на ту копію програми роздачі, яку запускає служба; LOCAL SERVICE отримує право читати кожну папку, що роздається, а записувати - лише туди, де ви дозволили запис; налаштування роздачі, пароль і ключ вузла переїжджають до %ProgramData%\\FastMediaSorterCompanion - папки, яку можуть відкрити лише адміністратори, служба і ваш обліковий запис.",
+          "Щоб усе повернути без видалення програми, відкрийте в Share Manager «Налаштування менеджера»: «Мережа», «Вимкнути функції сервера..» видаляє правило брандмауера; «Хостинг», «Видалити роль сервера» зупиняє і видаляє службу, забирає видані їй права на папки і видаляє правило брандмауера; «Хостинг», «Повернутися до користувацької редакції..» теж видаляє службу і права на папки, але повертає роздачу вашому сеансу разом із її правилом брандмауера. Кожна дія один раз питає Windows.",
+          "Або видаліть програму: кожен запис у «Параметри Windows», «Програми» прибирає те, що додав. FastMediaSorter LITE видаляє своє правило брандмауера - якщо програму встановлено лише для вас, Windows один раз попросить підтвердження - і пропонує видалити службу, яку зареєстрував його Share Manager. Fast Media Sorter Folder Share Server видаляє свою службу, права на папки і правило брандмауера. Тихе видалення, наприклад winget uninstall, запитати не може, тому залишає на місці службу Share Manager, а за встановлення лише для вас - і правило брандмауера; вимкніть їх у Share Manager заздалегідь.",
+          "Навмисно зберігається: ключ вузла, пароль і список папок залишаються в %LOCALAPPDATA%\\FastMediaSorterCompanion - або в %ProgramData%\\FastMediaSorterCompanion, якщо роздача вже працювала як служба, - щоб прив'язані телефони під'єдналися після перевстановлення. Видаліть цю папку - і кожен телефон доведеться прив'язувати заново."
+        ]
+      },
+      {
+        "h": "Чого програма не робить ніколи",
+        "p": "Той самий перелік, що на сторінці конфіденційності та у відповідях про дані в Microsoft Store, - правда лише одна.",
+        "items": [
+          "Жодної телеметрії, аналітики, облікових записів і реклами. Розробник не отримує нічого ні про вас, ні про те, як ви користуєтеся програмою, - хіба що ви самі натиснете «Надіслати журнали автору»: тоді у вашій поштовій програмі відкриється лист, який ви перевіряєте і надсилаєте самі.",
+          "Вона ніколи не надсилає ваші файли кудись сама. За спільного доступу телефон з'єднується напряму з вашим комп'ютером зашифрованим SFTP.",
+          "Вона ніколи не відкриває порт і не запитує права адміністратора з власної ініціативи. Спільний доступ вимкнено, доки ви його не ввімкнете, і вікно завжди показує, що і звідки доступне.",
+          "Вона завантажує щось лише на ваше прохання або після запитання, у якому названо, що саме завантажується: мовний пакет OCR, середовище виконання OCR або відтворення відео, відеокодувальник FFmpeg, інсталятор Ollama або модель перекладу для нього, або doc-html-translate через winget. Нічого про ваші файли разом із запитом не надсилається.",
+          "Текст, який ви перекладаєте, іде тільки на ту адресу перекладу, яку ви налаштували самі, - модель на вашій же машині або названий вами сервер."
+        ]
+      }
+    ],
+    "note": "Один сторонній сервіс усе ж може бути викликаний, і лише якщо ви ввімкнете доступ з інтернету для спільного доступу до папок: у check-host.net запитують, чи відповідає переспрямований порт ззовні, і цей сервіс бачить вашу публічну адресу та порт. Більше йому нічого не надсилається. Ще дві речі не виходять за межі вашої мережі: коли доступ з інтернету ввімкнено, програма просить ваш роутер переспрямувати порт роздачі (UPnP або NAT-PMP), а поки роздача працює, комп'ютер оголошує про себе в локальній мережі (mDNS), щоб прив'язаний телефон знову його знайшов.",
+    "backLabel": "На головну сторінку",
+    "dlLabel": "Завантаження",
+    "privacyLabel": "Конфіденційність"
+  },
+  "de": {
+    "title": "Warum Windows vor diesem Download warnt",
+    "desc": "Was die SmartScreen-Warnung bei Fast Media Sorter für Windows bedeutet, warum sie erscheint, worauf genau zu klicken ist und was das Programm niemals tut.",
+    "intro": "Fast Media Sorter für Windows ist ein kleines kostenloses Programm eines einzelnen unabhängigen Entwicklers. Die auf GitHub veröffentlichten Builds, die auch winget installiert, sind nicht signiert, deshalb behandelt Windows sie besonders vorsichtig und Sie sehen möglicherweise ein oder zwei Warnungen. Hier steht, was jede davon ist, warum sie erscheint, worauf genau zu klicken ist und was das Programm niemals tut.",
+    "sections": [
+      {
+        "h": "Was die Warnung ist",
+        "p": "Eine von drei - je nachdem, was Sie heruntergeladen haben.",
+        "items": [
+          "«Der Computer wurde durch Windows geschützt» - das ist SmartScreen. Es erscheint beim ersten Start eines Installers oder des Programms aus dem portablen ZIP.",
+          "«Möchten Sie zulassen, dass durch diese App Änderungen an Ihrem Gerät vorgenommen werden?» - das ist die Administrator-Abfrage von Windows. Sie erscheint nur, wenn Sie die Installation für alle Benutzer wählen oder die Ordnerfreigabe einschalten, und der vierte Abschnitt sagt genau, was jeweils damit geschieht.",
+          "Eine Virenwarnung zum Einzeldatei-Download, den nur Versionen vor dem 12. Juni 2026 angeboten haben. Microsoft Defender bewertet dessen selbstentpackenden Starter als Program:Script/Wacapew.A!ml. Das ist ein bekannter Fehlalarm für diese Art von Datei; die Installer und das portable ZIP sind nicht betroffen."
+        ]
+      },
+      {
+        "h": "Warum sie erscheint",
+        "p": "Es ist nichts kaputt, und die Warnung ist kein Fehler. SmartScreen prüft zwei Dinge an einer Datei: Ist sie mit einem Zertifikat signiert, das Windows kennt, und haben sie schon genug Menschen ausgeführt?",
+        "items": [
+          "Nicht signiert. Ein Code-Signing-Zertifikat kostet mehrere hundert Dollar pro Jahr. Das Programm ist kostenlos und verdient nichts, deshalb wurde keines gekauft - das ist eine Entscheidung, kein Versäumnis.",
+          "Noch nicht bekannt. Reputation wird pro Datei gezählt, also beginnt jede neue Version bei null. Sie wächst von selbst, während dieses Release heruntergeladen wird - deshalb verschwindet die Warnung zwischen den Versionen und kommt nach jeder neuen für eine Weile zurück.",
+          "Der Build aus dem Microsoft Store ist die Ausnahme: Microsoft signiert ihn bei der Zertifizierung, deshalb tritt dort nichts davon auf. Es ist dasselbe Programm."
+        ]
+      },
+      {
+        "h": "Worauf genau zu klicken ist",
+        "p": "Zwei Klicks, und nichts davon schwächt Ihren Schutz.",
+        "items": [
+          "SmartScreen: Klicken Sie im Dialog auf Weitere Informationen und dann auf Trotzdem ausführen. Das ist alles.",
+          "Administrator-Abfrage: Lesen Sie zuerst den nächsten Abschnitt und antworten Sie dann mit Ja. Antworten Sie bei der Ordnerfreigabe mit Nein, wird das Programm trotzdem vollständig installiert und läuft - nur die Freigabe bleibt aus. Der Installer selbst braucht die Abfrage nur, wenn Sie die Installation für alle Benutzer gewählt haben.",
+          "Virenschutz: Wurde die Datei in Quarantäne verschoben, stellen Sie sie wieder her und legen Sie eine Ausnahme für diesen einen Installationsordner an. Schalten Sie SmartScreen niemals aus und deaktivieren Sie niemals Ihren Virenschutz - hier ist beides unnötig, und beides schützt weiterhin alles andere, was Sie herunterladen.",
+          "Wenn Sie lieber prüfen als vertrauen: Zu jedem Release gehört eine .sha256-Datei, und Get-FileHash <Datei> -Algorithm SHA256 in PowerShell muss denselben Wert ausgeben. Der Quellcode ist offen."
+        ]
+      },
+      {
+        "h": "Wofür Administratorrechte verwendet werden und wie Sie sie zurücknehmen",
+        "p": "Der Betrachter selbst fragt nie nach Administratorrechten. Der Installer fragt nur, wenn Sie die Installation für alle Benutzer wählen, und die Ordnerfreigabe nur, wenn Sie sie einschalten. Hier steht jede Verwendung und danach der Weg zurück.",
+        "items": [
+          "Installation für alle Benutzer - Ihre Wahl im Installer. Der Installer fragt zuerst, ob nur für Sie installiert werden soll, ohne Administratorrechte, oder für jedes Konto dieses PCs. Nur im zweiten Fall fragt Windows nach, um das Programm unter Program Files abzulegen und die Verknüpfungen dort, wo jedes Konto sie sieht.",
+          "Ordnerfreigabe - eine Firewallregel. Wenn Sie die Freigabe einschalten, im Installer oder später im Share Manager, fragt Windows einmal, und es wird eine einzige eingehende Firewallregel für companion\\fms-share-worker.exe hinzugefügt. Sie erlaubt nur diesem einen Programm, Verbindungen anzunehmen, und tut sonst nichts. Solange die Freigabe aus ist, lauscht nichts und es wird nichts hinzugefügt.",
+          "Dauerhafte Freigabe - ein Windows-Dienst. Nur wenn Sie ihn anfordern, auf einem von zwei Wegen: im Share Manager unter «Manager-Einstellungen», Hosting, «Freigabe auf einen Windows-Dienst umstellen..» oder mit dem separaten Server-Installer, den Sie selbst herunterladen und ausführen. Windows fragt einmal, und vier Dinge geschehen: Der Dienst FastMediaSorterCompanionSFTP wird registriert und läuft als LOCAL SERVICE; die Firewallregel wird auf die Kopie des Freigabeprogramms umgestellt, die der Dienst startet; LOCAL SERVICE darf jeden freigegebenen Ordner lesen und nur dort schreiben, wo Sie Schreiben erlaubt haben; und die Freigabe-Einstellungen, das Kennwort und der Hostschlüssel ziehen nach %ProgramData%\\FastMediaSorterCompanion um, in einen Ordner, den nur Administratoren, der Dienst und Ihr Konto öffnen können.",
+          "Zurücknehmen ohne Deinstallation, in den «Manager-Einstellungen» des Share Managers: Netzwerk, «Serverfunktionen ausschalten..» entfernt die Firewallregel; Hosting, «Serverrolle entfernen» beendet und löscht den Dienst, nimmt seine Ordnerrechte zurück und entfernt die Firewallregel; Hosting, «Zurück zur Benutzer-Edition..» entfernt ebenfalls den Dienst und die Ordnerrechte, gibt die Freigabe aber samt ihrer Firewallregel an Ihre eigene Sitzung zurück. Jede Aktion fragt Windows einmal.",
+          "Oder deinstallieren: Jeder Eintrag unter Windows-Einstellungen, Apps entfernt, was er hinzugefügt hat. FastMediaSorter LITE entfernt seine Firewallregel - bei einer Installation nur für Sie fragt Windows dafür einmal nach - und bietet an, einen von seinem Share Manager registrierten Dienst zu entfernen. Fast Media Sorter Folder Share Server entfernt seinen Dienst, die Ordnerrechte und die Firewallregel. Eine stille Deinstallation, etwa winget uninstall, kann nicht fragen und lässt deshalb einen Share-Manager-Dienst stehen, bei einer Installation nur für Sie auch die Firewallregel; schalten Sie beides vorher im Share Manager ab.",
+          "Absichtlich behalten: Hostschlüssel, Kennwort und Ordnerliste bleiben in %LOCALAPPDATA%\\FastMediaSorterCompanion - oder in %ProgramData%\\FastMediaSorterCompanion, sobald die Freigabe als Dienst lief -, damit gekoppelte Telefone sich nach einer Neuinstallation wieder verbinden. Löschen Sie diesen Ordner, muss jedes Telefon neu gekoppelt werden."
+        ]
+      },
+      {
+        "h": "Was das Programm niemals tut",
+        "p": "Dieselbe Liste wie auf der Datenschutzseite und in den Datenschutzangaben im Microsoft Store - es gibt nur eine Wahrheit zu erzählen.",
+        "items": [
+          "Keine Telemetrie, keine Analyse, keine Konten, keine Werbung. Der Entwickler erhält nichts über Sie oder darüber, wie Sie das Programm nutzen - es sei denn, Sie klicken auf «Protokolle an den Autor senden»: Dann öffnet sich in Ihrem eigenen Mailprogramm eine Nachricht, die Sie prüfen und selbst absenden.",
+          "Es sendet Ihre Dateien niemals von sich aus irgendwohin. Bei einer Freigabe verbindet sich Ihr Telefon direkt mit Ihrem PC über eine verschlüsselte SFTP-Verbindung.",
+          "Es öffnet niemals von selbst einen Port und verlangt niemals von selbst Administratorrechte. Die Freigabe ist aus, bis Sie sie einschalten, und das Fenster zeigt immer, was von wo aus erreichbar ist.",
+          "Es lädt nur etwas herunter, wenn Sie darum bitten oder einer Rückfrage zustimmen, die benennt, was geholt wird: ein OCR-Sprachpaket, die Laufzeit für OCR oder Videowiedergabe, den Video-Encoder FFmpeg, den Ollama-Installer oder ein Übersetzungsmodell dafür, oder doc-html-translate über winget. Nichts über Ihre Dateien wird mitgesendet.",
+          "Text, den Sie übersetzen, geht nur an den Übersetzungsdienst, den Sie selbst eingerichtet haben - ein Modell auf Ihrem eigenen Rechner oder einen von Ihnen genannten Server."
+        ]
+      }
+    ],
+    "note": "Ein einziger Drittanbieterdienst kann kontaktiert werden, und nur, wenn Sie den Internetzugang für die Freigabe einschalten: check-host.net wird gebeten zu bestätigen, dass Ihr weitergeleiteter Port von außen antwortet, wodurch dieser Dienst Ihre öffentliche Adresse und den Port sieht. Sonst wird ihm nichts gesendet. Zwei weitere Dinge bleiben in Ihrem eigenen Netzwerk: Bei eingeschaltetem Internetzugang bittet das Programm Ihren Router, den Freigabeport weiterzuleiten (UPnP oder NAT-PMP), und solange die Freigabe läuft, meldet sich der PC im lokalen Netzwerk (mDNS), damit ein gekoppeltes Telefon ihn wiederfindet.",
+    "backLabel": "Zurück zur Hauptseite",
+    "dlLabel": "Downloads",
+    "privacyLabel": "Datenschutz"
+  },
+  "it": {
+    "title": "Perché Windows avvisa su questo download",
+    "desc": "Che cosa significa l'avviso SmartScreen su Fast Media Sorter per Windows, perché compare, su cosa cliccare esattamente e cosa il programma non fa mai.",
+    "intro": "Fast Media Sorter per Windows è un piccolo programma gratuito scritto da un solo sviluppatore indipendente. Le build pubblicate su GitHub, le stesse che installa winget, non sono firmate, quindi Windows le tratta con particolare prudenza e potreste incontrare uno o due avvisi. Qui sotto: che cosa sono, perché compaiono, su cosa cliccare esattamente e cosa il programma non fa mai.",
+    "sections": [
+      {
+        "h": "Che cos'è l'avviso",
+        "p": "Uno di questi tre, a seconda di cosa avete scaricato.",
+        "items": [
+          "«Windows ha protetto il PC» - è SmartScreen. Compare al primo avvio di un programma di installazione o del programma dallo ZIP portatile.",
+          "«Vuoi consentire a questa app di apportare modifiche al dispositivo?» - è la richiesta di diritti di amministratore di Windows. Compare solo se scegliete di installare per tutti gli utenti o se attivate la condivisione di cartelle, e la quarta sezione dice esattamente che cosa ne fa ciascuna delle due.",
+          "Un avviso dell'antivirus sul download in un unico file, offerto solo dalle versioni precedenti al 12 giugno 2026. Microsoft Defender classifica il suo avviatore autoestraente come Program:Script/Wacapew.A!ml. È un falso positivo noto per questo tipo di file; i programmi di installazione e lo ZIP portatile non sono interessati."
+        ]
+      },
+      {
+        "h": "Perché compare",
+        "p": "Non c'è nulla di rotto e l'avviso non è un errore. SmartScreen verifica due cose di un file: se è firmato con un certificato che Windows riconosce e se abbastanza persone lo hanno già eseguito.",
+        "items": [
+          "Non firmato. Un certificato per la firma del codice costa diverse centinaia di dollari all'anno. Il programma è gratuito e non guadagna nulla, quindi non ne è stato acquistato uno: è una scelta, non una dimenticanza.",
+          "Non ancora conosciuto. La reputazione si conta per singolo file, quindi ogni nuova versione riparte da zero. Cresce da sola man mano che quella release viene scaricata: per questo l'avviso si attenua tra una versione e l'altra e torna per un po' dopo ognuna nuova.",
+          "La build del Microsoft Store è l'eccezione: Microsoft la firma durante la certificazione, quindi lì non compare nulla di tutto questo. È lo stesso programma."
+        ]
+      },
+      {
+        "h": "Su cosa cliccare esattamente",
+        "p": "Due clic, e nulla di quanto segue indebolisce la vostra protezione.",
+        "items": [
+          "SmartScreen: cliccate su Ulteriori informazioni nella finestra, poi su Esegui comunque. Tutto qui.",
+          "Richiesta di amministratore: leggete prima la sezione successiva, poi rispondete Sì. Se alla richiesta della condivisione di cartelle rispondete No, il programma si installa e funziona comunque per intero: resta spenta solo la condivisione. L'installazione stessa ne ha bisogno solo se avete scelto di installare per tutti gli utenti.",
+          "Antivirus: se il file è finito in quarantena, ripristinatelo e aggiungete un'eccezione per quella singola cartella di installazione. Non disattivate mai SmartScreen e non disabilitate mai l'antivirus: qui non serve, e continuano a proteggere tutto il resto che scaricate.",
+          "Se preferite verificare invece che fidarvi: accanto a ogni release c'è un file .sha256, e Get-FileHash <file> -Algorithm SHA256 in PowerShell deve stampare lo stesso valore. Il codice sorgente è pubblico."
+        ]
+      },
+      {
+        "h": "A cosa servono i diritti di amministratore e come riprenderseli",
+        "p": "Il visualizzatore in sé non chiede mai i diritti di amministratore. L'installazione li chiede solo se scegliete di installare per tutti gli utenti, e la condivisione di cartelle solo quando la attivate. Qui sotto ogni uso, e poi la via del ritorno.",
+        "items": [
+          "Installazione per tutti gli utenti - una vostra scelta. Il programma di installazione chiede per prima cosa se installare solo per voi, senza diritti di amministratore, o per ogni account di questo PC. Solo nel secondo caso Windows chiede conferma, per mettere il programma in Program Files e i collegamenti dove ogni account li vede.",
+          "Condivisione di cartelle - una regola del firewall. Quando attivate la condivisione, durante l'installazione o più tardi nello Share Manager, Windows chiede una volta e viene aggiunta un'unica regola del firewall in ingresso per companion\\fms-share-worker.exe. Permette solo a quel programma di ricevere connessioni e non fa nient'altro. Finché la condivisione è spenta, niente è in ascolto e niente viene aggiunto.",
+          "Condivisione sempre attiva - un servizio di Windows. Solo se lo chiedete voi, in uno di due modi: nello Share Manager, «Impostazioni del gestore», Hosting, «Passa alla condivisione come servizio di Windows..», oppure con il programma di installazione Server separato, che scaricate ed eseguite voi. Windows chiede una volta e si fanno quattro cose: viene registrato il servizio FastMediaSorterCompanionSFTP, che gira come LOCAL SERVICE; la regola del firewall viene puntata sulla copia del programma di condivisione avviata dal servizio; LOCAL SERVICE può leggere ogni cartella condivisa e scrivere solo dove avete permesso la scrittura; e le impostazioni di condivisione, la password e la chiave dell'host passano in %ProgramData%\\FastMediaSorterCompanion, una cartella che possono aprire solo gli amministratori, il servizio e il vostro account.",
+          "Per riprendervi tutto senza disinstallare, aprite le «Impostazioni del gestore» dello Share Manager: Rete, «Disattiva le funzioni server..» rimuove la regola del firewall; Hosting, «Rimuovi il ruolo server» arresta ed elimina il servizio, ritira i suoi permessi sulle cartelle e rimuove la regola del firewall; Hosting, «Torna all'edizione Utente..» rimuove anch'esso il servizio e i permessi sulle cartelle, ma restituisce la condivisione alla vostra sessione insieme alla sua regola del firewall. Ogni azione chiede conferma a Windows una volta.",
+          "Oppure disinstallate: ogni voce in Impostazioni di Windows, App rimuove ciò che ha aggiunto. FastMediaSorter LITE rimuove la sua regola del firewall - se installato solo per voi, Windows chiede conferma una volta - e propone di rimuovere un servizio registrato dal suo Share Manager. Fast Media Sorter Folder Share Server rimuove il suo servizio, i permessi sulle cartelle e la regola del firewall. Una disinstallazione silenziosa, come winget uninstall, non può chiedere, quindi lascia al suo posto un servizio dello Share Manager e, per un'installazione solo per voi, anche la regola del firewall: disattivateli prima nello Share Manager.",
+          "Conservato di proposito: la chiave dell'host, la password e l'elenco delle cartelle restano in %LOCALAPPDATA%\\FastMediaSorterCompanion - oppure in %ProgramData%\\FastMediaSorterCompanion se la condivisione ha già funzionato come servizio - così i telefoni associati si ricollegano dopo una reinstallazione. Cancellate quella cartella e ogni telefono andrà associato di nuovo."
+        ]
+      },
+      {
+        "h": "Cosa il programma non fa mai",
+        "p": "Lo stesso elenco della pagina sulla privacy e delle risposte sulla sicurezza dei dati nel Microsoft Store: c'è una sola verità da raccontare.",
+        "items": [
+          "Nessuna telemetria, nessuna analisi, nessun account, nessuna pubblicità. Lo sviluppatore non riceve nulla su di voi né su come usate il programma - a meno che non premiate «Invia i log all'autore», che apre un messaggio nel vostro programma di posta, da controllare e inviare voi stessi.",
+          "Non invia mai i vostri file da nessuna parte di sua iniziativa. Durante la condivisione il telefono si collega direttamente al PC con una connessione SFTP cifrata.",
+          "Non apre mai una porta e non chiede mai i diritti di amministratore di propria iniziativa. La condivisione è spenta finché non la accendete, e la finestra mostra sempre che cosa è raggiungibile e da dove.",
+          "Scarica qualcosa solo se lo chiedete o se rispondete sì a una domanda che dice che cosa viene scaricato: un pacchetto linguistico OCR, il runtime per l'OCR o la riproduzione video, il codificatore video FFmpeg, il programma di installazione di Ollama o un modello di traduzione per esso, oppure doc-html-translate tramite winget. Con la richiesta non viene inviato nulla sui vostri file.",
+          "Il testo che traducete va solo all'endpoint di traduzione che avete configurato voi: un modello sulla vostra macchina o un server che avete indicato."
+        ]
+      }
+    ],
+    "note": "Può essere contattato un solo servizio di terze parti, e solo se attivate l'accesso da internet per la condivisione: a check-host.net si chiede di confermare che la porta inoltrata risponde dall'esterno, e così quel servizio vede il vostro indirizzo pubblico e la porta. Non gli viene inviato nient'altro. Altre due cose restano dentro la vostra rete: con l'accesso da internet attivo, il programma chiede al router di inoltrare la porta di condivisione (UPnP o NAT-PMP), e mentre la condivisione è attiva il PC si annuncia sulla rete locale (mDNS), così un telefono associato può ritrovarlo.",
+    "backLabel": "Torna alla pagina principale",
+    "dlLabel": "Download",
+    "privacyLabel": "Privacy"
+  },
+  "es": {
+    "title": "Por qué Windows advierte sobre esta descarga",
+    "desc": "Qué significa el aviso de SmartScreen en Fast Media Sorter para Windows, por qué aparece, en qué hay que hacer clic exactamente y qué no hace nunca el programa.",
+    "intro": "Fast Media Sorter para Windows es un pequeño programa gratuito escrito por un único desarrollador independiente. Las compilaciones publicadas en GitHub, las mismas que instala winget, no están firmadas, así que Windows las trata con especial cautela y es posible que veas uno o dos avisos. A continuación: qué es cada uno, por qué aparece, en qué hacer clic exactamente y qué no hace nunca el programa.",
+    "sections": [
+      {
+        "h": "Qué es el aviso",
+        "p": "Uno de estos tres, según lo que hayas descargado.",
+        "items": [
+          "«Windows protegió su PC» - eso es SmartScreen. Aparece la primera vez que ejecutas un instalador o el programa del ZIP portátil.",
+          "«¿Quieres permitir que esta aplicación haga cambios en el dispositivo?» - esa es la solicitud de permisos de administrador de Windows. Solo aparece si eliges instalar para todos los usuarios o activas la compartición de carpetas, y la cuarta sección dice exactamente qué hace cada una con ellos.",
+          "Un aviso del antivirus sobre la descarga de un solo archivo, que solo ofrecían las versiones anteriores al 12 de junio de 2026. Microsoft Defender puntúa su arrancador autoextraíble como Program:Script/Wacapew.A!ml. Es un falso positivo conocido para este tipo de archivo; los instaladores y el ZIP portátil no se ven afectados."
+        ]
+      },
+      {
+        "h": "Por qué aparece",
+        "p": "No hay nada roto y el aviso no es un error. SmartScreen comprueba dos cosas de un archivo: si está firmado con un certificado que Windows reconoce y si ya lo ha ejecutado suficiente gente.",
+        "items": [
+          "Sin firmar. Un certificado de firma de código cuesta varios cientos de dólares al año. El programa es gratuito y no genera ingresos, así que no se ha comprado ninguno: es una decisión, no un descuido.",
+          "Todavía desconocido. La reputación se cuenta por archivo, así que cada versión nueva empieza de cero. Crece sola a medida que se descarga esa versión: por eso el aviso se atenúa entre versiones y vuelve un tiempo tras cada una nueva.",
+          "La compilación de Microsoft Store es la excepción: Microsoft la firma durante la certificación, así que allí no aparece nada de esto. Es el mismo programa."
+        ]
+      },
+      {
+        "h": "En qué hacer clic exactamente",
+        "p": "Dos clics, y nada de esto debilita tu protección.",
+        "items": [
+          "SmartScreen: haz clic en Más información en el cuadro de diálogo y después en Ejecutar de todas formas. Eso es todo.",
+          "Solicitud de administrador: lee primero la sección siguiente y responde Sí. Si a la solicitud de la compartición de carpetas respondes No, el programa se instala y funciona igualmente por completo; solo queda apagada la compartición. El propio instalador solo la necesita si elegiste instalar para todos los usuarios.",
+          "Antivirus: si el archivo acabó en cuarentena, restáuralo y añade una excepción para esa única carpeta de instalación. No desactives nunca SmartScreen ni deshabilites nunca el antivirus: aquí no hace falta, y ambos siguen protegiendo todo lo demás que descargues.",
+          "Si prefieres verificar antes que confiar: junto a cada versión hay un archivo .sha256, y Get-FileHash <archivo> -Algorithm SHA256 en PowerShell debe mostrar el mismo valor. El código fuente es público."
+        ]
+      },
+      {
+        "h": "Para qué se usan los permisos de administrador y cómo retirarlos",
+        "p": "El visor en sí nunca pide permisos de administrador. El instalador los pide solo si eliges instalar para todos los usuarios, y la compartición de carpetas solo cuando la activas. Aquí está cada uso y, después, cómo deshacerlo.",
+        "items": [
+          "Instalar para todos los usuarios - tu elección en el instalador. Primero pregunta si instalar solo para ti, sin permisos de administrador, o para todas las cuentas de este PC. Solo en el segundo caso Windows pide confirmación, para poner el programa en Program Files y los accesos directos donde los ve cada cuenta.",
+          "Compartición de carpetas - una regla del firewall. Cuando activas la compartición, en el instalador o más tarde en el Share Manager, Windows pregunta una vez y se añade una única regla de entrada del firewall para companion\\fms-share-worker.exe. Permite recibir conexiones solo a ese programa y no hace nada más. Mientras la compartición esté apagada, nada escucha y no se añade nada.",
+          "Compartición permanente - un servicio de Windows. Solo si tú lo pides, de una de dos formas: en el Share Manager, «Ajustes del gestor», Alojamiento, «Cambiar el uso compartido a un servicio de Windows..», o con el instalador Server independiente, que descargas y ejecutas tú. Windows pregunta una vez y se hacen cuatro cosas: se registra el servicio FastMediaSorterCompanionSFTP, que se ejecuta como LOCAL SERVICE; la regla del firewall pasa a apuntar a la copia del programa de compartición que arranca el servicio; LOCAL SERVICE puede leer cada carpeta compartida y escribir solo donde permitiste la escritura; y los ajustes de compartición, la contraseña y la clave del host se trasladan a %ProgramData%\\FastMediaSorterCompanion, una carpeta que solo pueden abrir los administradores, el servicio y tu cuenta.",
+          "Para retirarlo todo sin desinstalar, abre los «Ajustes del gestor» del Share Manager: Red, «Desactivar las funciones de servidor..» elimina la regla del firewall; Alojamiento, «Quitar el rol de servidor» detiene y elimina el servicio, retira sus permisos sobre las carpetas y elimina la regla del firewall; Alojamiento, «Volver a la edición de Usuario..» también elimina el servicio y los permisos sobre las carpetas, pero devuelve la compartición a tu propia sesión con su regla del firewall. Cada acción pide confirmación a Windows una vez.",
+          "O desinstala: cada entrada de Configuración de Windows, Aplicaciones quita lo que añadió. FastMediaSorter LITE elimina su regla del firewall - si se instaló solo para ti, Windows pide confirmación una vez - y ofrece quitar un servicio que registró su Share Manager. Fast Media Sorter Folder Share Server elimina su servicio, los permisos sobre las carpetas y la regla del firewall. Una desinstalación silenciosa, como winget uninstall, no puede preguntar, así que deja en su sitio un servicio del Share Manager y, en una instalación solo para ti, también la regla del firewall; desactívalos antes en el Share Manager.",
+          "Se conserva a propósito: la clave del host, la contraseña y la lista de carpetas quedan en %LOCALAPPDATA%\\FastMediaSorterCompanion - o en %ProgramData%\\FastMediaSorterCompanion si la compartición ya funcionó como servicio - para que los teléfonos emparejados vuelvan a conectarse tras reinstalar. Borra esa carpeta y habrá que emparejar de nuevo cada teléfono."
+        ]
+      },
+      {
+        "h": "Qué no hace nunca el programa",
+        "p": "La misma lista que la página de privacidad y las respuestas de seguridad de datos de Microsoft Store: solo hay una verdad que contar.",
+        "items": [
+          "Sin telemetría, sin analítica, sin cuentas, sin publicidad. El desarrollador no recibe nada sobre ti ni sobre cómo usas el programa, salvo que pulses «Enviar los registros al autor», que abre un mensaje en tu propio programa de correo para que lo revises y lo envíes tú.",
+          "Nunca envía tus archivos a ninguna parte por su cuenta. Al compartir carpetas, tu teléfono se conecta directamente a tu PC por una conexión SFTP cifrada.",
+          "Nunca abre un puerto ni pide permisos de administrador por iniciativa propia. La compartición está apagada hasta que la enciendas, y la ventana muestra siempre qué es accesible y desde dónde.",
+          "Solo descarga algo cuando tú lo pides o aceptas una pregunta que nombra qué se va a descargar: un paquete de idioma de OCR, el entorno de ejecución de OCR o de reproducción de vídeo, el codificador de vídeo FFmpeg, el instalador de Ollama o un modelo de traducción para él, o doc-html-translate mediante winget. No se envía nada sobre tus archivos con la petición.",
+          "El texto que traduces va solo al destino de traducción que hayas configurado tú: un modelo en tu propia máquina o un servidor que hayas indicado."
+        ]
+      }
+    ],
+    "note": "Se puede contactar con un único servicio de terceros, y solo si activas el acceso desde internet para la compartición: se pide a check-host.net que confirme que tu puerto reenviado responde desde fuera, lo que muestra a ese servicio tu dirección pública y el puerto. No se le envía nada más. Otras dos cosas no salen de tu propia red: con el acceso desde internet activado, el programa pide a tu router que reenvíe el puerto de compartición (UPnP o NAT-PMP), y mientras la compartición funciona, el PC se anuncia en la red local (mDNS) para que un teléfono emparejado pueda volver a encontrarlo.",
+    "backLabel": "Volver a la página principal",
+    "dlLabel": "Descargas",
+    "privacyLabel": "Privacidad"
+  },
+  "fr": {
+    "title": "Pourquoi Windows met en garde à propos de ce téléchargement",
+    "desc": "Ce que signifie l'avertissement SmartScreen pour Fast Media Sorter pour Windows, pourquoi il apparaît, sur quoi cliquer exactement et ce que le programme ne fait jamais.",
+    "intro": "Fast Media Sorter pour Windows est un petit logiciel gratuit écrit par un seul développeur indépendant. Les versions publiées sur GitHub, celles qu'installe aussi winget, ne sont pas signées, Windows les traite donc avec une prudence particulière et vous verrez peut-être un ou deux avertissements. Voici ce qu'est chacun d'eux, pourquoi il apparaît, sur quoi cliquer exactement et ce que le programme ne fait jamais.",
+    "sections": [
+      {
+        "h": "Ce qu'est l'avertissement",
+        "p": "L'un de ces trois, selon ce que vous avez téléchargé.",
+        "items": [
+          "«Windows a protégé votre ordinateur» - c'est SmartScreen. Il apparaît au premier lancement d'un programme d'installation ou du programme depuis le ZIP portable.",
+          "«Voulez-vous autoriser cette application à apporter des modifications à votre appareil ?» - c'est la demande de droits administrateur de Windows. Elle n'apparaît que si vous choisissez d'installer pour tous les utilisateurs ou activez le partage de dossiers, et la quatrième section dit exactement ce que chacun en fait.",
+          "Un avertissement de l'antivirus au sujet du téléchargement en un seul fichier, proposé uniquement par les versions antérieures au 12 juin 2026. Microsoft Defender classe son lanceur auto-extractible comme Program:Script/Wacapew.A!ml. C'est un faux positif connu pour ce type de fichier ; les programmes d'installation et le ZIP portable ne sont pas concernés."
+        ]
+      },
+      {
+        "h": "Pourquoi il apparaît",
+        "p": "Rien n'est cassé et l'avertissement n'est pas une erreur. SmartScreen vérifie deux choses sur un fichier : est-il signé avec un certificat que Windows reconnaît, et assez de gens l'ont-ils déjà exécuté ?",
+        "items": [
+          "Non signé. Un certificat de signature de code coûte plusieurs centaines de dollars par an. Le programme est gratuit et ne rapporte rien, aucun certificat n'a donc été acheté : c'est un choix, pas un oubli.",
+          "Pas encore connu. La réputation se compte par fichier, chaque nouvelle version repart donc de zéro. Elle se construit d'elle-même à mesure que cette version est téléchargée : c'est pourquoi l'avertissement s'estompe entre les versions et revient un temps après chaque nouvelle.",
+          "La version du Microsoft Store fait exception : Microsoft la signe lors de la certification, rien de tout cela n'y apparaît donc. C'est le même programme."
+        ]
+      },
+      {
+        "h": "Sur quoi cliquer exactement",
+        "p": "Deux clics, et rien ici n'affaiblit votre protection.",
+        "items": [
+          "SmartScreen : cliquez sur Informations complémentaires dans la boîte de dialogue, puis sur Exécuter quand même. C'est tout.",
+          "Demande d'administrateur : lisez d'abord la section suivante, puis répondez Oui. Répondez Non à la demande du partage de dossiers et le programme s'installe et fonctionne tout de même entièrement - seul le partage reste désactivé. L'installation elle-même n'en a besoin que si vous avez choisi d'installer pour tous les utilisateurs.",
+          "Antivirus : si le fichier a été mis en quarantaine, restaurez-le et ajoutez une exception pour ce seul dossier d'installation. Ne désactivez jamais SmartScreen et ne désactivez jamais votre antivirus : ce n'est pas nécessaire ici, et tous deux continuent de protéger tout le reste de ce que vous téléchargez.",
+          "Si vous préférez vérifier plutôt que faire confiance : un fichier .sha256 accompagne chaque version, et Get-FileHash <fichier> -Algorithm SHA256 dans PowerShell doit afficher la même valeur. Le code source est public."
+        ]
+      },
+      {
+        "h": "À quoi servent les droits administrateur et comment les reprendre",
+        "p": "La visionneuse elle-même ne demande jamais de droits administrateur. L'installation ne les demande que si vous choisissez d'installer pour tous les utilisateurs, et le partage de dossiers seulement quand vous l'activez. Chaque usage est détaillé ici, puis le chemin du retour.",
+        "items": [
+          "Installer pour tous les utilisateurs - votre choix dans l'installation. Elle demande d'abord s'il faut installer pour vous seul, sans droits administrateur, ou pour tous les comptes de ce PC. Seul le second cas fait intervenir Windows, pour placer le programme dans Program Files et ses raccourcis là où chaque compte les voit.",
+          "Partage de dossiers - une règle de pare-feu. Quand vous activez le partage, dans l'installation ou plus tard dans le Share Manager, Windows demande une fois et une seule règle de pare-feu entrante est ajoutée pour companion\\fms-share-worker.exe. Elle permet à ce seul programme de recevoir des connexions et ne fait rien d'autre. Tant que le partage est désactivé, rien n'écoute et rien n'est ajouté.",
+          "Partage permanent - un service Windows. Seulement si vous le demandez, de l'une de deux façons : dans le Share Manager, «Paramètres du gestionnaire», Hébergement, «Basculer le partage vers un service Windows..», ou avec le programme d'installation Server séparé, que vous téléchargez et lancez vous-même. Windows demande une fois, et quatre choses sont faites : le service FastMediaSorterCompanionSFTP est enregistré et s'exécute en tant que LOCAL SERVICE ; la règle de pare-feu est dirigée vers la copie du programme de partage que lance le service ; LOCAL SERVICE peut lire chaque dossier partagé, et n'écrire que là où vous avez autorisé l'écriture ; et les paramètres de partage, le mot de passe et la clé d'hôte déménagent dans %ProgramData%\\FastMediaSorterCompanion, un dossier que seuls les administrateurs, le service et votre compte peuvent ouvrir.",
+          "Pour tout reprendre sans désinstaller, ouvrez les «Paramètres du gestionnaire» du Share Manager : Réseau, «Désactiver les fonctions serveur..» supprime la règle de pare-feu ; Hébergement, «Supprimer le rôle serveur» arrête et supprime le service, retire ses droits sur les dossiers et supprime la règle de pare-feu ; Hébergement, «Revenir à l'édition Utilisateur..» supprime aussi le service et les droits sur les dossiers, mais rend le partage à votre propre session avec sa règle de pare-feu. Chaque action demande une fois à Windows.",
+          "Ou désinstallez : chaque entrée de Paramètres Windows, Applications retire ce qu'elle a ajouté. FastMediaSorter LITE supprime sa règle de pare-feu - s'il est installé pour vous seul, Windows demande une fois pour cela - et propose de supprimer un service enregistré par son Share Manager. Fast Media Sorter Folder Share Server supprime son service, les droits sur les dossiers et la règle de pare-feu. Une désinstallation silencieuse, comme winget uninstall, ne peut rien demander : elle laisse donc en place un service du Share Manager et, pour une installation pour vous seul, la règle de pare-feu ; désactivez-les d'abord dans le Share Manager.",
+          "Conservé exprès : la clé d'hôte, le mot de passe et la liste des dossiers restent dans %LOCALAPPDATA%\\FastMediaSorterCompanion - ou dans %ProgramData%\\FastMediaSorterCompanion une fois que le partage a tourné en service - pour que les téléphones associés se reconnectent après une réinstallation. Supprimez ce dossier et chaque téléphone devra être associé à nouveau."
+        ]
+      },
+      {
+        "h": "Ce que le programme ne fait jamais",
+        "p": "La même liste que la page de confidentialité et que les réponses de sécurité des données du Microsoft Store : il n'y a qu'une vérité à raconter.",
+        "items": [
+          "Aucune télémétrie, aucune analytique, aucun compte, aucune publicité. Le développeur ne reçoit rien à votre sujet ni sur votre usage du programme - sauf si vous cliquez sur «Envoyer les journaux à l'auteur», qui ouvre un message dans votre propre messagerie, que vous vérifiez et envoyez vous-même.",
+          "Il n'envoie jamais vos fichiers où que ce soit de lui-même. Lors d'un partage, votre téléphone se connecte directement à votre PC par une connexion SFTP chiffrée.",
+          "Il n'ouvre jamais de port et ne demande jamais de droits administrateur de sa propre initiative. Le partage est désactivé tant que vous ne l'activez pas, et la fenêtre montre toujours ce qui est joignable et depuis où.",
+          "Il ne télécharge quelque chose que si vous le demandez ou acceptez une question qui nomme ce qui va être récupéré : un pack de langue OCR, l'environnement d'exécution de l'OCR ou de la lecture vidéo, l'encodeur vidéo FFmpeg, le programme d'installation d'Ollama ou un modèle de traduction pour lui, ou doc-html-translate via winget. Rien sur vos fichiers n'est envoyé avec la requête.",
+          "Le texte que vous traduisez ne part que vers le service de traduction que vous avez configuré vous-même : un modèle sur votre propre machine, ou un serveur que vous avez indiqué."
+        ]
+      }
+    ],
+    "note": "Un seul service tiers peut être contacté, et seulement si vous activez l'accès depuis internet pour le partage : check-host.net est interrogé pour confirmer que votre port redirigé répond depuis l'extérieur, ce qui montre à ce service votre adresse publique et le port. Rien d'autre ne lui est envoyé. Deux autres choses restent dans votre propre réseau : avec l'accès depuis internet activé, le programme demande à votre routeur de rediriger le port de partage (UPnP ou NAT-PMP), et tant que le partage fonctionne, le PC s'annonce sur le réseau local (mDNS) pour qu'un téléphone associé puisse le retrouver.",
+    "backLabel": "Retour à la page principale",
+    "dlLabel": "Téléchargements",
+    "privacyLabel": "Confidentialité"
+  },
+  "pt": {
+    "title": "Porque é que o Windows avisa sobre esta transferência",
+    "desc": "O que significa o aviso do SmartScreen no Fast Media Sorter para Windows, porque aparece, onde clicar exatamente e o que o programa nunca faz.",
+    "intro": "O Fast Media Sorter para Windows é um pequeno programa gratuito escrito por um único programador independente. As compilações publicadas no GitHub, as mesmas que o winget instala, não estão assinadas, por isso o Windows trata-as com especial cautela e poderá ver um ou dois avisos. Em seguida: o que é cada um, porque aparece, onde clicar exatamente e o que o programa nunca faz.",
+    "sections": [
+      {
+        "h": "O que é o aviso",
+        "p": "Um destes três, conforme o que transferiu.",
+        "items": [
+          "«O Windows protegeu o seu PC» - isto é o SmartScreen. Aparece na primeira vez que executa um instalador ou o programa a partir do ZIP portátil.",
+          "«Quer permitir que esta aplicação faça alterações ao seu dispositivo?» - este é o pedido de direitos de administrador do Windows. Só aparece se escolher instalar para todos os utilizadores ou ligar a partilha de pastas, e a quarta secção diz exatamente o que cada um faz com eles.",
+          "Um aviso do antivírus sobre a transferência num único ficheiro, que só as versões anteriores a 12 de junho de 2026 ofereciam. O Microsoft Defender classifica o seu arrancador auto-extraível como Program:Script/Wacapew.A!ml. É um falso positivo conhecido para este tipo de ficheiro; os instaladores e o ZIP portátil não são afetados."
+        ]
+      },
+      {
+        "h": "Porque aparece",
+        "p": "Nada está avariado e o aviso não é um erro. O SmartScreen verifica duas coisas num ficheiro: está assinado com um certificado que o Windows reconhece, e já foi executado por gente suficiente?",
+        "items": [
+          "Não assinado. Um certificado de assinatura de código custa várias centenas de dólares por ano. O programa é gratuito e não gera receita, por isso não foi comprado nenhum: é uma decisão, não um esquecimento.",
+          "Ainda desconhecido. A reputação conta-se por ficheiro, por isso cada versão nova começa do zero. Cresce sozinha à medida que essa versão é transferida - é por isso que o aviso se atenua entre versões e regressa por algum tempo depois de cada nova.",
+          "A versão da Microsoft Store é a exceção: a Microsoft assina-a durante a certificação, por isso nada disto aparece ali. É o mesmo programa."
+        ]
+      },
+      {
+        "h": "Onde clicar exatamente",
+        "p": "Dois cliques, e nada disto enfraquece a sua proteção.",
+        "items": [
+          "SmartScreen: clique em Mais informações na caixa de diálogo e depois em Executar mesmo assim. É só isso.",
+          "Pedido de administrador: leia primeiro a secção seguinte e depois responda Sim. Se responder Não ao pedido da partilha de pastas, o programa instala-se e funciona na mesma por completo - apenas a partilha fica desligada. O próprio instalador só precisa dele se escolheu instalar para todos os utilizadores.",
+          "Antivírus: se o ficheiro foi para a quarentena, restaure-o e adicione uma exceção para essa única pasta de instalação. Nunca desligue o SmartScreen nem desative o antivírus - aqui não é preciso, e ambos continuam a proteger tudo o resto que transferir.",
+          "Se prefere verificar em vez de confiar: junto a cada versão há um ficheiro .sha256, e Get-FileHash <ficheiro> -Algorithm SHA256 no PowerShell tem de escrever o mesmo valor. O código-fonte é público."
+        ]
+      },
+      {
+        "h": "Para que servem os direitos de administrador e como os retirar",
+        "p": "O visualizador em si nunca pede direitos de administrador. O instalador só os pede se escolher instalar para todos os utilizadores, e a partilha de pastas só quando a liga. Cada utilização está descrita aqui e, depois, o caminho de volta.",
+        "items": [
+          "Instalar para todos os utilizadores - a sua escolha no instalador. Primeiro pergunta se deve instalar só para si, sem direitos de administrador, ou para todas as contas deste PC. Só no segundo caso o Windows pede confirmação, para colocar o programa em Program Files e os atalhos onde todas as contas os veem.",
+          "Partilha de pastas - uma regra da firewall. Quando liga a partilha, no instalador ou mais tarde no Share Manager, o Windows pergunta uma vez e é adicionada uma única regra de entrada da firewall para companion\\fms-share-worker.exe. Permite receber ligações apenas a esse programa e não faz mais nada. Enquanto a partilha estiver desligada, nada está à escuta e nada é adicionado.",
+          "Partilha permanente - um serviço do Windows. Só se o pedir, de uma de duas formas: no Share Manager, «Definições do gestor», Alojamento, «Mudar o compartilhamento para um serviço do Windows..», ou com o instalador Server separado, que transfere e executa por conta própria. O Windows pergunta uma vez e são feitas quatro coisas: é registado o serviço FastMediaSorterCompanionSFTP, que é executado como LOCAL SERVICE; a regra da firewall passa a apontar para a cópia do programa de partilha que o serviço inicia; LOCAL SERVICE pode ler cada pasta partilhada e escrever apenas onde permitiu a escrita; e as definições de partilha, a palavra-passe e a chave do anfitrião passam para %ProgramData%\\FastMediaSorterCompanion, uma pasta que só os administradores, o serviço e a sua conta podem abrir.",
+          "Para retirar tudo sem desinstalar, abra as «Definições do gestor» do Share Manager: Rede, «Desligar as funções de servidor..» remove a regra da firewall; Alojamento, «Remover a função de servidor» para e elimina o serviço, retira as permissões dele sobre as pastas e remove a regra da firewall; Alojamento, «Voltar à edição de Utilizador..» também elimina o serviço e as permissões sobre as pastas, mas devolve a partilha à sua própria sessão com a respetiva regra da firewall. Cada ação pede confirmação ao Windows uma vez.",
+          "Ou desinstale: cada entrada em Definições do Windows, Aplicações remove o que adicionou. O FastMediaSorter LITE remove a sua regra da firewall - se foi instalado só para si, o Windows pede confirmação uma vez - e propõe remover um serviço registado pelo seu Share Manager. O Fast Media Sorter Folder Share Server remove o seu serviço, as permissões sobre as pastas e a regra da firewall. Uma desinstalação silenciosa, como winget uninstall, não pode perguntar, por isso deixa no lugar um serviço do Share Manager e, numa instalação só para si, também a regra da firewall; desligue-os antes no Share Manager.",
+          "Mantido de propósito: a chave do anfitrião, a palavra-passe e a lista de pastas ficam em %LOCALAPPDATA%\\FastMediaSorterCompanion - ou em %ProgramData%\\FastMediaSorterCompanion depois de a partilha ter funcionado como serviço - para que os telemóveis emparelhados voltem a ligar-se após uma reinstalação. Apague essa pasta e cada telemóvel terá de ser emparelhado de novo."
+        ]
+      },
+      {
+        "h": "O que o programa nunca faz",
+        "p": "A mesma lista da página de privacidade e das respostas de segurança de dados da Microsoft Store - só há uma verdade a contar.",
+        "items": [
+          "Sem telemetria, sem análises, sem contas, sem publicidade. O programador não recebe nada sobre si nem sobre a forma como usa o programa - a não ser que carregue em «Enviar os registros ao autor», que abre uma mensagem no seu próprio programa de correio para verificar e enviar por si.",
+          "Nunca envia os seus ficheiros para lado nenhum por iniciativa própria. Na partilha, o telemóvel liga-se diretamente ao seu PC por uma ligação SFTP cifrada.",
+          "Nunca abre uma porta nem pede direitos de administrador por iniciativa própria. A partilha está desligada até a ligar, e a janela mostra sempre o que está acessível e a partir de onde.",
+          "Só transfere algo quando o pede ou aceita uma pergunta que diz o que vai ser obtido: um pacote de idioma de OCR, o runtime de OCR ou de reprodução de vídeo, o codificador de vídeo FFmpeg, o instalador do Ollama ou um modelo de tradução para ele, ou o doc-html-translate através do winget. Nada sobre os seus ficheiros é enviado com o pedido.",
+          "O texto que traduz vai apenas para o serviço de tradução que configurou - um modelo na sua própria máquina ou um servidor que indicou."
+        ]
+      }
+    ],
+    "note": "Pode ser contactado um único serviço de terceiros, e só se ligar o acesso pela internet para a partilha: pede-se a check-host.net que confirme que a porta reencaminhada responde do exterior, o que mostra a esse serviço o seu endereço público e a porta. Nada mais lhe é enviado. Outras duas coisas ficam dentro da sua própria rede: com o acesso pela internet ligado, o programa pede ao seu router que reencaminhe a porta de partilha (UPnP ou NAT-PMP), e enquanto a partilha funciona, o PC anuncia-se na rede local (mDNS) para que um telemóvel emparelhado o volte a encontrar.",
+    "backLabel": "Voltar à página principal",
+    "dlLabel": "Transferências",
+    "privacyLabel": "Privacidade"
+  },
+  "ar": {
+    "title": "لماذا يحذّر Windows من هذا التنزيل",
+    "desc": "ما معنى تحذير SmartScreen في Fast Media Sorter for Windows، ولماذا يظهر، وعلى ماذا تضغط بالضبط، وما الذي لا يفعله البرنامج أبدًا.",
+    "intro": "‏Fast Media Sorter for Windows برنامج صغير مجاني كتبه مطوّر مستقل واحد. النسخ المنشورة على GitHub، وهي نفسها التي يثبّتها winget، غير موقّعة رقميًا، لذلك يتعامل معها Windows بحذر إضافي وقد ترى تحذيرًا أو اثنين. فيما يلي: ما هو كل تحذير، ولماذا يظهر، وعلى ماذا تضغط بالضبط، وما الذي لا يفعله البرنامج أبدًا.",
+    "sections": [
+      {
+        "h": "ما هو التحذير",
+        "p": "واحد من ثلاثة، بحسب ما نزّلته.",
+        "items": [
+          "«قام Windows بحماية جهازك» - هذا هو SmartScreen. يظهر عند أول تشغيل لأحد برامج التثبيت أو للبرنامج من ملف ZIP المحمول.",
+          "«هل تريد السماح لهذا التطبيق بإجراء تغييرات على جهازك؟» - هذا طلب صلاحيات المسؤول في Windows. لا يظهر إلا إذا اخترت التثبيت لجميع المستخدمين أو شغّلت مشاركة المجلدات، والقسم الرابع يوضّح بالضبط ماذا يفعل كل منهما بها.",
+          "تحذير من مكافح الفيروسات بشأن التنزيل ذي الملف الواحد، الذي لم تقدّمه إلا الإصدارات السابقة لـ 12 يونيو 2026. يصنّف Microsoft Defender مُشغّله ذاتي الاستخراج على أنه Program:Script/Wacapew.A!ml. هذا إنذار كاذب معروف لهذا الشكل من الملفات؛ برامج التثبيت وملف ZIP المحمول غير معنيّة به."
+        ]
+      },
+      {
+        "h": "لماذا يظهر",
+        "p": "لا شيء معطّل، والتحذير ليس خطأ. يسأل SmartScreen عن أمرين في الملف: هل وُقّع بشهادة يعرفها Windows، وهل شغّله عدد كافٍ من الناس بالفعل.",
+        "items": [
+          "غير موقّع. شهادة توقيع البرامج تكلّف عدة مئات من الدولارات سنويًا. البرنامج مجاني ولا يحقق دخلًا، لذلك لم تُشترَ شهادة - وهذا قرار وليس سهوًا.",
+          "غير معروف بعد. تُحسب السمعة لكل ملف على حدة، لذلك تبدأ كل نسخة جديدة من الصفر. وهي تتراكم وحدها كلما نزّل الناس ذلك الإصدار - لهذا يخفت التحذير بين الإصدارات ويعود لفترة بعد كل إصدار جديد.",
+          "نسخة Microsoft Store هي الاستثناء: توقّعها Microsoft أثناء الاعتماد، لذلك لا يظهر فيها شيء من هذا. وهو البرنامج نفسه."
+        ]
+      },
+      {
+        "h": "على ماذا تضغط بالضبط",
+        "p": "ضغطتان، ولا شيء هنا يُضعف حمايتك.",
+        "items": [
+          "‏SmartScreen: اضغط «مزيد من المعلومات» في النافذة، ثم «تشغيل على أي حال». هذا كل شيء.",
+          "طلب المسؤول: اقرأ القسم التالي أولًا، ثم أجب بـ «نعم». إن أجبت بـ «لا» على طلب مشاركة المجلدات فسيُثبَّت البرنامج ويعمل بالكامل على أي حال - تبقى المشاركة وحدها معطّلة. أما برنامج التثبيت نفسه فلا يحتاج هذا الطلب إلا إذا اخترت التثبيت لجميع المستخدمين.",
+          "مكافح الفيروسات: إن وُضع الملف في الحجر، فاستعده وأضف استثناءً لمجلد التثبيت هذا وحده. لا تُطفئ SmartScreen أبدًا ولا تعطّل مكافح الفيروسات أبدًا - لا حاجة لذلك هنا، وكلاهما يواصل حماية كل ما تنزّله غير ذلك.",
+          "إن فضّلت التحقق على الثقة: مع كل إصدار ملف ‎.sha256‎ بجانبه، ويجب أن يطبع الأمر Get-FileHash <الملف> -Algorithm SHA256 في PowerShell القيمة نفسها. الشيفرة المصدرية مفتوحة."
+        ]
+      },
+      {
+        "h": "فيمَ تُستخدم صلاحيات المسؤول وكيف تستردّها",
+        "p": "العارض نفسه لا يطلب صلاحيات المسؤول أبدًا. يطلبها برنامج التثبيت فقط إذا اخترت التثبيت لجميع المستخدمين، وتطلبها مشاركة المجلدات فقط عندما تشغّلها. فيما يلي كل استخدام، ثم طريق التراجع.",
+        "items": [
+          "التثبيت لجميع المستخدمين - اختيارك في برنامج التثبيت. يسأل برنامج التثبيت أولًا: هل يُثبَّت لك وحدك، دون صلاحيات المسؤول، أم لكل الحسابات على هذا الكمبيوتر. في الحالة الثانية وحدها يسأل Windows، ليضع البرنامج في Program Files واختصاراته حيث يراها كل حساب.",
+          "مشاركة المجلدات - قاعدة جدار حماية واحدة. عند تشغيل المشاركة، في برنامج التثبيت أو لاحقًا في Share Manager، يسأل Windows مرة واحدة، وتُضاف قاعدة واردة واحدة لجدار الحماية من أجل companion\\fms-share-worker.exe. تسمح لذلك البرنامج وحده باستقبال الاتصالات ولا تفعل شيئًا آخر. وما دامت المشاركة مطفأة، لا شيء يستمع ولا يُضاف شيء.",
+          "المشاركة الدائمة - خدمة Windows. فقط إذا طلبتها بنفسك، بإحدى طريقتين: في Share Manager عبر «إعدادات المدير»، «الاستضافة»، «تحويل المشاركة إلى خدمة Windows..»، أو بمثبّت Server المنفصل الذي تنزّله وتشغّله بنفسك. يسأل Windows مرة واحدة، وتُنفَّذ أربعة أمور: تُسجَّل الخدمة FastMediaSorterCompanionSFTP وتعمل باسم LOCAL SERVICE؛ وتُوجَّه قاعدة جدار الحماية إلى نسخة برنامج المشاركة التي تشغّلها الخدمة؛ ويُسمح لـ LOCAL SERVICE بقراءة كل مجلد تشاركه، والكتابة فقط حيث سمحت بالكتابة؛ وتنتقل إعدادات المشاركة وكلمة المرور ومفتاح المضيف إلى %ProgramData%\\FastMediaSorterCompanion، وهو مجلد لا يفتحه إلا المسؤولون والخدمة وحسابك.",
+          "للتراجع دون إزالة التثبيت، افتح «إعدادات المدير» في Share Manager: «الشبكة»، «إيقاف وظائف الخادم..» يزيل قاعدة جدار الحماية؛ «الاستضافة»، «إزالة دور الخادم» يوقف الخدمة ويحذفها، ويسحب صلاحياتها على المجلدات، ويزيل قاعدة جدار الحماية؛ «الاستضافة»، «العودة إلى إصدارة المستخدم..» يحذف كذلك الخدمة وصلاحيات المجلدات، لكنه يعيد المشاركة إلى جلستك مع قاعدة جدار الحماية الخاصة بها. كل إجراء يسأل Windows مرة واحدة.",
+          "أو أزل التثبيت: كل إدخال في إعدادات Windows، التطبيقات يزيل ما أضافه. يزيل FastMediaSorter LITE قاعدة جدار الحماية الخاصة به - وإذا كان مثبّتًا لك وحدك فسيسأل Windows مرة واحدة لذلك - ويعرض إزالة خدمة سجّلها Share Manager الخاص به. ويزيل Fast Media Sorter Folder Share Server خدمته وصلاحيات المجلدات وقاعدة جدار الحماية. أما الإزالة الصامتة، مثل winget uninstall، فلا تستطيع السؤال، لذا تترك خدمة Share Manager في مكانها، وفي التثبيت لك وحدك تترك قاعدة جدار الحماية أيضًا؛ أوقفهما في Share Manager مسبقًا.",
+          "يُحتفظ به عمدًا: مفتاح المضيف وكلمة المرور وقائمة المجلدات تبقى في %LOCALAPPDATA%\\FastMediaSorterCompanion - أو في %ProgramData%\\FastMediaSorterCompanion بعد أن تكون المشاركة قد عملت كخدمة - كي تعود الهواتف المقترنة إلى الاتصال بعد إعادة التثبيت. احذف ذلك المجلد وسيلزم إقران كل هاتف من جديد."
+        ]
+      },
+      {
+        "h": "ما الذي لا يفعله البرنامج أبدًا",
+        "p": "القائمة نفسها الواردة في صفحة الخصوصية وفي إجابات أمان البيانات في Microsoft Store - فليس هناك سوى حقيقة واحدة.",
+        "items": [
+          "لا قياس عن بُعد، ولا تحليلات، ولا حسابات، ولا إعلانات. لا يتلقى المطوّر شيئًا عنك ولا عن طريقة استخدامك للبرنامج - إلا إذا ضغطت «إرسال السجلات إلى المؤلف»، فتُفتح رسالة في برنامج البريد الخاص بك لتراجعها وترسلها بنفسك.",
+          "لا يرسل ملفاتك إلى أي مكان من تلقاء نفسه أبدًا. عند المشاركة يتصل هاتفك مباشرة بحاسوبك عبر اتصال SFTP مشفّر.",
+          "لا يفتح منفذًا ولا يطلب صلاحيات المسؤول من تلقاء نفسه أبدًا. المشاركة مطفأة حتى تشغّلها، والنافذة تُظهر دائمًا ما هو متاح ومن أين.",
+          "لا ينزّل شيئًا إلا إذا طلبته أو وافقت على سؤال يسمّي ما سيُجلب: حزمة لغة للتعرّف الضوئي، أو بيئة تشغيل التعرّف الضوئي أو تشغيل الفيديو، أو مشفّر الفيديو FFmpeg، أو مثبّت Ollama أو نموذج ترجمة له، أو doc-html-translate عبر winget. ولا يُرسل شيء عن ملفاتك مع الطلب.",
+          "النص الذي تترجمه يذهب فقط إلى عنوان الترجمة الذي أعددته بنفسك - نموذج على جهازك أنت، أو خادم سمّيته."
+        ]
+      }
+    ],
+    "note": "قد يُتصل بخدمة خارجية واحدة، وفقط إذا فعّلت الوصول من الإنترنت للمشاركة: يُسأل check-host.net ما إذا كان المنفذ المعاد توجيهه يستجيب من الخارج، وبذلك ترى تلك الخدمة عنوانك العام والمنفذ. ولا يُرسل إليها شيء آخر. وأمران آخران يبقيان داخل شبكتك: عند تفعيل الوصول من الإنترنت يطلب البرنامج من الموجّه إعادة توجيه منفذ المشاركة (UPnP أو NAT-PMP)، وما دامت المشاركة تعمل يعلن الكمبيوتر عن نفسه في الشبكة المحلية (mDNS) كي يعثر عليه هاتف مقترن من جديد.",
+    "backLabel": "العودة إلى الصفحة الرئيسية",
+    "dlLabel": "التنزيلات",
+    "privacyLabel": "الخصوصية"
+  },
+  "hi": {
+    "title": "Windows इस डाउनलोड पर चेतावनी क्यों देता है",
+    "desc": "Fast Media Sorter for Windows पर आने वाली SmartScreen चेतावनी का क्या मतलब है, वह क्यों दिखती है, ठीक किस पर क्लिक करना है, और प्रोग्राम कभी क्या नहीं करता।",
+    "intro": "Fast Media Sorter for Windows एक छोटा मुफ़्त प्रोग्राम है, जिसे एक स्वतंत्र डेवलपर ने लिखा है। GitHub पर प्रकाशित बिल्ड, जिन्हें winget भी इंस्टॉल करता है, कोड-साइन नहीं हैं, इसलिए Windows उन्हें अतिरिक्त सावधानी से देखता है और आपको एक-दो चेतावनियाँ मिल सकती हैं। नीचे बताया गया है कि हर चेतावनी क्या है, क्यों दिखती है, ठीक किस पर क्लिक करना है, और प्रोग्राम कभी क्या नहीं करता।",
+    "sections": [
+      {
+        "h": "चेतावनी है क्या",
+        "p": "इन तीन में से एक, इस पर निर्भर करते हुए कि आपने क्या डाउनलोड किया।",
+        "items": [
+          "«Windows protected your PC» - यह SmartScreen है। यह किसी सेटअप फ़ाइल या पोर्टेबल ZIP से प्रोग्राम को पहली बार चलाने पर दिखती है।",
+          "«Do you want to allow this app to make changes to your device?» - यह Windows की प्रशासक अनुमति की माँग है। यह केवल तब आती है जब आप सभी उपयोगकर्ताओं के लिए इंस्टॉल करना चुनें या फ़ोल्डर-साझाकरण चालू करें, और चौथा खंड ठीक-ठीक बताता है कि दोनों में से हर एक उससे क्या करता है।",
+          "सिंगल-फ़ाइल डाउनलोड पर एंटीवायरस की चेतावनी, जो डाउनलोड केवल 12 जून 2026 से पहले की रिलीज़ में मिलता था। Microsoft Defender उसके स्व-निष्कर्षण वाले लॉन्चर को Program:Script/Wacapew.A!ml मानता है। इस तरह की फ़ाइलों के लिए यह एक ज्ञात ग़लत चेतावनी है; सेटअप फ़ाइलों और पोर्टेबल ZIP पर इसका असर नहीं है।"
+        ]
+      },
+      {
+        "h": "यह क्यों दिखती है",
+        "p": "कुछ भी ख़राब नहीं है और चेतावनी कोई ग़लती नहीं है। SmartScreen फ़ाइल के बारे में दो बातें देखता है: क्या वह ऐसे प्रमाणपत्र से हस्ताक्षरित है जिसे Windows पहचानता है, और क्या पर्याप्त लोग उसे पहले ही चला चुके हैं।",
+        "items": [
+          "हस्ताक्षरित नहीं। कोड-साइनिंग प्रमाणपत्र की सालाना क़ीमत कई सौ डॉलर है। प्रोग्राम मुफ़्त है और कुछ कमाता नहीं, इसलिए प्रमाणपत्र नहीं ख़रीदा गया - यह एक निर्णय है, चूक नहीं।",
+          "अभी अनजाना। प्रतिष्ठा हर फ़ाइल के लिए अलग गिनी जाती है, इसलिए हर नया संस्करण शून्य से शुरू होता है। जैसे-जैसे वह रिलीज़ डाउनलोड होती है, यह अपने आप बनती जाती है - इसीलिए चेतावनी संस्करणों के बीच हल्की पड़ जाती है और हर नए संस्करण के बाद कुछ समय के लिए लौट आती है।",
+          "Microsoft Store वाला बिल्ड अपवाद है: Microsoft प्रमाणन के दौरान उस पर हस्ताक्षर करता है, इसलिए वहाँ इनमें से कुछ नहीं दिखता। प्रोग्राम वही है।"
+        ]
+      },
+      {
+        "h": "ठीक किस पर क्लिक करना है",
+        "p": "दो क्लिक, और इनमें से कुछ भी आपकी सुरक्षा कमज़ोर नहीं करता।",
+        "items": [
+          "SmartScreen: संवाद में More info पर क्लिक करें, फिर Run anyway पर। बस इतना ही।",
+          "प्रशासक की माँग: पहले अगला खंड पढ़ें, फिर Yes चुनें। फ़ोल्डर-साझाकरण की माँग पर No चुनने पर भी प्रोग्राम पूरी तरह इंस्टॉल होकर चलता है - बस साझाकरण बंद रहता है। इंस्टॉलर को ख़ुद यह माँग तभी चाहिए जब आपने सभी उपयोगकर्ताओं के लिए इंस्टॉल करना चुना हो।",
+          "एंटीवायरस: अगर फ़ाइल क्वारंटीन में चली गई है, तो उसे बहाल करें और उसी एक इंस्टॉल फ़ोल्डर के लिए अपवाद जोड़ें। SmartScreen कभी बंद न करें और एंटीवायरस कभी निष्क्रिय न करें - यहाँ इसकी ज़रूरत नहीं है, और वे आपके बाक़ी सभी डाउनलोड की रक्षा करते रहते हैं।",
+          "अगर भरोसे के बजाय जाँच पसंद हो: हर रिलीज़ के साथ एक .sha256 फ़ाइल होती है, और PowerShell में Get-FileHash <फ़ाइल> -Algorithm SHA256 वही मान दिखाना चाहिए। स्रोत कोड सार्वजनिक है।"
+        ]
+      },
+      {
+        "h": "प्रशासक अधिकार किसलिए हैं और उन्हें वापस कैसे लें",
+        "p": "व्यूअर स्वयं कभी प्रशासक अधिकार नहीं माँगता। इंस्टॉलर उन्हें केवल तब माँगता है जब आप सभी उपयोगकर्ताओं के लिए इंस्टॉल करना चुनें, और फ़ोल्डर-साझाकरण केवल तब जब आप उसे चालू करें। यहाँ हर उपयोग दिया है, फिर वापसी का रास्ता।",
+        "items": [
+          "सभी उपयोगकर्ताओं के लिए इंस्टॉल - इंस्टॉलर में आपका चुनाव। इंस्टॉलर पहले पूछता है कि केवल आपके लिए इंस्टॉल करे, बिना प्रशासक अधिकारों के, या इस PC के हर खाते के लिए। केवल दूसरी स्थिति में Windows पूछता है, ताकि प्रोग्राम Program Files में और उसके शॉर्टकट वहाँ रखे जाएँ जहाँ हर खाता उन्हें देखे।",
+          "फ़ोल्डर-साझाकरण - एक फ़ायरवॉल नियम। साझाकरण चालू करने पर, इंस्टॉलर में या बाद में Share Manager में, Windows एक बार पूछता है और companion\\fms-share-worker.exe के लिए एक ही इनबाउंड फ़ायरवॉल नियम जुड़ता है। यह केवल उसी एक प्रोग्राम को कनेक्शन लेने देता है और कुछ नहीं करता। जब तक साझाकरण बंद है, कुछ भी सुन नहीं रहा और कुछ नहीं जुड़ता।",
+          "हमेशा चालू साझाकरण - एक Windows सेवा। केवल तभी, जब आप ख़ुद माँगें, दो में से किसी एक तरीक़े से: Share Manager में «मैनेजर सेटिंग्स», «होस्टिंग», «साझाकरण को Windows सेवा में बदलें..», या अलग Server इंस्टॉलर से, जिसे आप ख़ुद डाउनलोड करके चलाते हैं। Windows एक बार पूछता है और चार काम होते हैं: FastMediaSorterCompanionSFTP सेवा पंजीकृत होती है और LOCAL SERVICE के रूप में चलती है; फ़ायरवॉल नियम साझाकरण प्रोग्राम की उस प्रति पर मोड़ दिया जाता है जिसे सेवा चलाती है; LOCAL SERVICE आपके साझा किए हर फ़ोल्डर को पढ़ सकता है, और लिख केवल वहीं सकता है जहाँ आपने लिखने की अनुमति दी; और साझाकरण की सेटिंग्स, पासवर्ड और होस्ट कुंजी %ProgramData%\\FastMediaSorterCompanion में चली जाती हैं, एक ऐसा फ़ोल्डर जिसे केवल प्रशासक, सेवा और आपका खाता खोल सकते हैं।",
+          "अनइंस्टॉल किए बिना वापस लेने के लिए Share Manager की «मैनेजर सेटिंग्स» खोलें: «नेटवर्क», «सर्वर सुविधाएँ बंद करें..» फ़ायरवॉल नियम हटाता है; «होस्टिंग», «सर्वर भूमिका हटाएँ» सेवा को रोककर हटाता है, फ़ोल्डरों पर उसके अधिकार वापस लेता है और फ़ायरवॉल नियम हटाता है; «होस्टिंग», «उपयोक्ता संस्करण पर लौटें..» भी सेवा और फ़ोल्डर अधिकार हटाता है, पर साझाकरण को उसके फ़ायरवॉल नियम सहित आपके अपने सत्र को लौटा देता है। हर क्रिया Windows से एक बार पूछती है।",
+          "या अनइंस्टॉल करें: Windows सेटिंग्स, ऐप्स की हर प्रविष्टि वही हटाती है जो उसने जोड़ा। FastMediaSorter LITE अपना फ़ायरवॉल नियम हटाता है - केवल आपके लिए इंस्टॉल होने पर Windows इसके लिए एक बार पूछता है - और अपने Share Manager द्वारा पंजीकृत सेवा हटाने का प्रस्ताव देता है। Fast Media Sorter Folder Share Server अपनी सेवा, फ़ोल्डर अधिकार और फ़ायरवॉल नियम हटाता है। मौन अनइंस्टॉल, जैसे winget uninstall, पूछ नहीं सकता, इसलिए Share Manager की सेवा को, और केवल आपके लिए किए गए इंस्टॉल में फ़ायरवॉल नियम को भी, जगह पर छोड़ देता है; इन्हें पहले Share Manager में बंद कर दें।",
+          "जान-बूझकर रखा जाता है: होस्ट कुंजी, पासवर्ड और फ़ोल्डर सूची %LOCALAPPDATA%\\FastMediaSorterCompanion में रहती हैं - या %ProgramData%\\FastMediaSorterCompanion में, यदि साझाकरण सेवा के रूप में चल चुका है - ताकि जोड़े गए फ़ोन दोबारा इंस्टॉल के बाद फिर जुड़ जाएँ। वह फ़ोल्डर मिटाएँ, तो हर फ़ोन को फिर से जोड़ना होगा।"
+        ]
+      },
+      {
+        "h": "प्रोग्राम कभी क्या नहीं करता",
+        "p": "वही सूची जो गोपनीयता पृष्ठ पर और Microsoft Store के डेटा-सुरक्षा उत्तरों में है - सच एक ही है।",
+        "items": [
+          "कोई टेलीमेट्री नहीं, कोई एनालिटिक्स नहीं, कोई खाते नहीं, कोई विज्ञापन नहीं। डेवलपर को आपके बारे में या आपके उपयोग के बारे में कुछ नहीं मिलता - जब तक आप «लॉग लेखक को भेजें» न दबाएँ, जो आपके अपने मेल प्रोग्राम में एक संदेश खोलता है, जिसे आप जाँचकर ख़ुद भेजते हैं।",
+          "वह आपकी फ़ाइलें कभी अपने आप कहीं नहीं भेजता। साझाकरण में आपका फ़ोन एन्क्रिप्टेड SFTP कनेक्शन से सीधे आपके PC से जुड़ता है।",
+          "वह कभी अपने आप कोई पोर्ट नहीं खोलता और न ही प्रशासक अधिकार माँगता है। साझाकरण तब तक बंद रहता है जब तक आप उसे चालू न करें, और खिड़की हमेशा दिखाती है कि क्या और कहाँ से पहुँच में है।",
+          "वह कुछ भी तभी डाउनलोड करता है जब आप कहें या ऐसे सवाल पर हाँ कहें जिसमें बताया गया हो कि क्या लाया जा रहा है: OCR भाषा पैक, OCR या वीडियो प्लेबैक रनटाइम, वीडियो एन्कोडर FFmpeg, Ollama इंस्टॉलर या उसके लिए अनुवाद मॉडल, या winget के ज़रिए doc-html-translate। अनुरोध के साथ आपकी फ़ाइलों के बारे में कुछ नहीं भेजा जाता।",
+          "जो पाठ आप अनुवाद करते हैं, वह केवल उसी अनुवाद पते पर जाता है जो आपने स्वयं तय किया - आपकी अपनी मशीन का मॉडल, या आपका बताया हुआ सर्वर।"
+        ]
+      }
+    ],
+    "note": "एक ही बाहरी सेवा से संपर्क हो सकता है, और वह भी केवल तब जब आप साझाकरण के लिए इंटरनेट पहुँच चालू करें: check-host.net से पूछा जाता है कि आपका फ़ॉरवर्ड किया पोर्ट बाहर से जवाब देता है या नहीं, जिससे उस सेवा को आपका सार्वजनिक पता और पोर्ट दिखता है। इसके अलावा उसे कुछ नहीं भेजा जाता। दो और चीज़ें आपके अपने नेटवर्क के भीतर ही रहती हैं: इंटरनेट पहुँच चालू होने पर प्रोग्राम आपके राउटर से साझाकरण पोर्ट फ़ॉरवर्ड करने को कहता है (UPnP या NAT-PMP), और साझाकरण चलते समय PC स्थानीय नेटवर्क में अपनी घोषणा करता है (mDNS), ताकि जोड़ा गया फ़ोन उसे फिर ढूँढ सके।",
+    "backLabel": "मुख्य पृष्ठ पर लौटें",
+    "dlLabel": "डाउनलोड",
+    "privacyLabel": "गोपनीयता"
+  },
+  "bn": {
+    "title": "Windows কেন এই ডাউনলোড নিয়ে সতর্ক করে",
+    "desc": "Fast Media Sorter for Windows-এ আসা SmartScreen সতর্কবার্তার অর্থ কী, কেন তা দেখা যায়, ঠিক কোথায় ক্লিক করতে হবে, আর প্রোগ্রামটি কখনও কী করে না।",
+    "intro": "Fast Media Sorter for Windows একজন স্বাধীন ডেভেলপারের লেখা ছোট একটি বিনামূল্যের প্রোগ্রাম। GitHub-এ প্রকাশিত বিল্ডগুলি, যেগুলি winget-ও ইনস্টল করে, কোড-সাইন করা নয়, তাই Windows সেগুলিকে বাড়তি সতর্কতায় দেখে এবং আপনি এক-দুটি সতর্কবার্তা পেতে পারেন। নিচে: প্রতিটি সতর্কবার্তা কী, কেন আসে, ঠিক কোথায় ক্লিক করতে হবে, আর প্রোগ্রামটি কখনও কী করে না।",
+    "sections": [
+      {
+        "h": "সতর্কবার্তাটি কী",
+        "p": "আপনি কী ডাউনলোড করেছেন তার উপর নির্ভর করে এই তিনটির একটি।",
+        "items": [
+          "«Windows protected your PC» - এটি SmartScreen। কোনো সেটআপ ফাইল বা পোর্টেবল ZIP থেকে প্রোগ্রামটি প্রথমবার চালালে এটি দেখা যায়।",
+          "«Do you want to allow this app to make changes to your device?» - এটি Windows-এর প্রশাসক অনুমতির অনুরোধ। এটি কেবল তখনই আসে যখন আপনি সব ব্যবহারকারীর জন্য ইনস্টল করা বেছে নেন বা ফোল্ডার-শেয়ারিং চালু করেন, এবং চতুর্থ অংশে লেখা আছে প্রতিটি এটি দিয়ে ঠিক কী করে।",
+          "একক-ফাইল ডাউনলোড নিয়ে অ্যান্টিভাইরাসের সতর্কবার্তা, যে ডাউনলোড কেবল 12 জুন 2026-এর আগের রিলিজগুলিতে ছিল। Microsoft Defender এর স্ব-নিষ্কাশনকারী লঞ্চারকে Program:Script/Wacapew.A!ml হিসেবে গণ্য করে। এই ধরনের ফাইলের জন্য এটি একটি পরিচিত মিথ্যা সংকেত; সেটআপ ফাইল ও পোর্টেবল ZIP এতে পড়ে না।"
+        ]
+      },
+      {
+        "h": "কেন এটি আসে",
+        "p": "কিছুই ভাঙা নেই, আর সতর্কবার্তাটি ভুল নয়। SmartScreen একটি ফাইল সম্পর্কে দুটি প্রশ্ন করে: এটি কি Windows চেনে এমন সার্টিফিকেট দিয়ে সই করা, আর যথেষ্ট মানুষ কি এটি ইতিমধ্যে চালিয়েছে।",
+        "items": [
+          "সই করা নয়। কোড-সাইনিং সার্টিফিকেটের খরচ বছরে কয়েকশো ডলার। প্রোগ্রামটি বিনামূল্যের এবং কিছু আয় করে না, তাই সার্টিফিকেট কেনা হয়নি - এটি সিদ্ধান্ত, ভুলে যাওয়া নয়।",
+          "এখনও অজানা। সুনাম প্রতিটি ফাইলের জন্য আলাদা গোনা হয়, তাই প্রতিটি নতুন সংস্করণ শূন্য থেকে শুরু করে। সেই রিলিজ যত ডাউনলোড হয়, তত নিজে থেকেই তা বাড়ে - তাই সংস্করণের মাঝে সতর্কবার্তা মিলিয়ে যায় এবং প্রতিটি নতুন সংস্করণের পর কিছু সময়ের জন্য ফিরে আসে।",
+          "Microsoft Store-এর বিল্ড ব্যতিক্রম: Microsoft প্রত্যয়নের সময় সেটিতে সই করে, তাই সেখানে এর কিছুই দেখা যায় না। প্রোগ্রাম একই।"
+        ]
+      },
+      {
+        "h": "ঠিক কোথায় ক্লিক করতে হবে",
+        "p": "দুটি ক্লিক, আর এর কিছুই আপনার সুরক্ষা দুর্বল করে না।",
+        "items": [
+          "SmartScreen: ডায়ালগে More info-তে ক্লিক করুন, তারপর Run anyway-তে। এটুকুই।",
+          "প্রশাসক অনুরোধ: আগে পরের অংশটি পড়ুন, তারপর Yes বলুন। ফোল্ডার-শেয়ারিংয়ের অনুরোধে No বললেও প্রোগ্রামটি পুরোপুরি ইনস্টল হয় ও চলে - কেবল শেয়ারিং বন্ধ থাকে। ইনস্টলারের নিজের এই অনুরোধ লাগে কেবল তখনই, যদি আপনি সব ব্যবহারকারীর জন্য ইনস্টল করা বেছে নেন।",
+          "অ্যান্টিভাইরাস: ফাইলটি কোয়ারেন্টিনে গেলে সেটি ফিরিয়ে আনুন এবং ঐ একটি ইনস্টল ফোল্ডারের জন্য ব্যতিক্রম যোগ করুন। SmartScreen কখনও বন্ধ করবেন না, অ্যান্টিভাইরাস কখনও নিষ্ক্রিয় করবেন না - এখানে তার দরকার নেই, আর তারা আপনার বাকি সব ডাউনলোড রক্ষা করে চলে।",
+          "বিশ্বাসের বদলে যাচাই করতে চাইলে: প্রতিটি রিলিজের পাশে একটি .sha256 ফাইল থাকে, আর PowerShell-এ Get-FileHash <ফাইল> -Algorithm SHA256 একই মান দেখাবে। সোর্স কোড উন্মুক্ত।"
+        ]
+      },
+      {
+        "h": "প্রশাসক অধিকার কী কাজে লাগে এবং কীভাবে ফিরিয়ে নেবেন",
+        "p": "ভিউয়ার নিজে কখনও প্রশাসক অধিকার চায় না। ইনস্টলার চায় কেবল তখনই যখন আপনি সব ব্যবহারকারীর জন্য ইনস্টল করা বেছে নেন, আর ফোল্ডার-শেয়ারিং চায় কেবল তখনই যখন আপনি তা চালু করেন। এখানে প্রতিটি ব্যবহার, তারপর ফেরার পথ।",
+        "items": [
+          "সব ব্যবহারকারীর জন্য ইনস্টল - ইনস্টলারে আপনার বাছাই। ইনস্টলার প্রথমে জিজ্ঞাসা করে কেবল আপনার জন্য ইনস্টল করবে, প্রশাসক অধিকার ছাড়াই, নাকি এই PC-র প্রতিটি অ্যাকাউন্টের জন্য। কেবল দ্বিতীয় ক্ষেত্রেই Windows জিজ্ঞাসা করে, যাতে প্রোগ্রামটি Program Files-এ এবং শর্টকাটগুলি এমন জায়গায় রাখা যায় যেখানে প্রতিটি অ্যাকাউন্ট সেগুলি দেখে।",
+          "ফোল্ডার-শেয়ারিং - একটি ফায়ারওয়াল নিয়ম। শেয়ারিং চালু করলে, ইনস্টলারে বা পরে Share Manager-এ, Windows একবার জিজ্ঞাসা করে এবং companion\\fms-share-worker.exe-এর জন্য একটিমাত্র ইনবাউন্ড ফায়ারওয়াল নিয়ম যোগ হয়। এটি কেবল ঐ একটি প্রোগ্রামকে সংযোগ নিতে দেয়, আর কিছু করে না। শেয়ারিং বন্ধ থাকা পর্যন্ত কিছুই শোনে না এবং কিছু যোগ হয় না।",
+          "সবসময়-চালু শেয়ারিং - একটি Windows সার্ভিস। কেবল তখনই, যদি আপনি নিজে চান, দুটি উপায়ের একটিতে: Share Manager-এ «ম্যানেজার সেটিংস», «হোস্টিং», «শেয়ারিং Windows সার্ভিসে পরিবর্তন করুন..», অথবা আলাদা Server ইনস্টলার দিয়ে, যা আপনি নিজে নামিয়ে চালান। Windows একবার জিজ্ঞাসা করে এবং চারটি কাজ হয়: FastMediaSorterCompanionSFTP সার্ভিস নিবন্ধিত হয় এবং LOCAL SERVICE হিসেবে চলে; ফায়ারওয়াল নিয়মটি শেয়ারিং প্রোগ্রামের সেই কপির দিকে ঘোরানো হয় যেটি সার্ভিস চালায়; LOCAL SERVICE আপনার শেয়ার করা প্রতিটি ফোল্ডার পড়তে পারে, আর লিখতে পারে কেবল সেখানে যেখানে আপনি লেখার অনুমতি দিয়েছেন; এবং শেয়ারিংয়ের সেটিংস, পাসওয়ার্ড ও হোস্ট কী চলে যায় %ProgramData%\\FastMediaSorterCompanion-এ, এমন একটি ফোল্ডারে যা কেবল প্রশাসক, সার্ভিস ও আপনার অ্যাকাউন্ট খুলতে পারে।",
+          "আনইনস্টল না করে ফিরিয়ে নিতে Share Manager-এর «ম্যানেজার সেটিংস» খুলুন: «নেটওয়ার্ক», «সার্ভার বৈশিষ্ট্য বন্ধ করুন..» ফায়ারওয়াল নিয়ম সরায়; «হোস্টিং», «সার্ভার ভূমিকা সরান» সার্ভিস থামিয়ে মুছে দেয়, ফোল্ডারে তার অধিকার ফিরিয়ে নেয় এবং ফায়ারওয়াল নিয়ম সরায়; «হোস্টিং», «ইউজার সংস্করণে ফিরুন..»-ও সার্ভিস ও ফোল্ডার অধিকার সরায়, তবে শেয়ারিং তার ফায়ারওয়াল নিয়মসহ আপনার নিজের সেশনে ফিরিয়ে দেয়। প্রতিটি কাজে Windows একবার জিজ্ঞাসা করে।",
+          "অথবা আনইনস্টল করুন: Windows Settings, Apps-এর প্রতিটি এন্ট্রি যা যোগ করেছিল তা-ই সরায়। FastMediaSorter LITE তার ফায়ারওয়াল নিয়ম সরায় - কেবল আপনার জন্য ইনস্টল হলে Windows এর জন্য একবার জিজ্ঞাসা করে - এবং তার Share Manager-এর নিবন্ধিত সার্ভিস সরানোর প্রস্তাব দেয়। Fast Media Sorter Folder Share Server তার সার্ভিস, ফোল্ডার অধিকার ও ফায়ারওয়াল নিয়ম সরায়। নীরব আনইনস্টল, যেমন winget uninstall, জিজ্ঞাসা করতে পারে না, তাই Share Manager-এর সার্ভিস, আর কেবল আপনার জন্য করা ইনস্টলে ফায়ারওয়াল নিয়মও, জায়গায় রেখে দেয়; আগে Share Manager-এ এগুলি বন্ধ করুন।",
+          "ইচ্ছে করে রাখা হয়: হোস্ট কী, পাসওয়ার্ড ও ফোল্ডার তালিকা %LOCALAPPDATA%\\FastMediaSorterCompanion-এ থাকে - অথবা %ProgramData%\\FastMediaSorterCompanion-এ, যদি শেয়ারিং সার্ভিস হিসেবে চলে থাকে - যাতে যুক্ত ফোনগুলি পুনরায় ইনস্টলের পরে আবার সংযোগ করতে পারে। সেই ফোল্ডার মুছলে প্রতিটি ফোন নতুন করে যুক্ত করতে হবে।"
+        ]
+      },
+      {
+        "h": "প্রোগ্রামটি কখনও কী করে না",
+        "p": "গোপনীয়তা পাতা ও Microsoft Store-এর ডেটা-নিরাপত্তা উত্তরের সেই একই তালিকা - সত্য একটিই।",
+        "items": [
+          "কোনো টেলিমেট্রি নেই, বিশ্লেষণ নেই, অ্যাকাউন্ট নেই, বিজ্ঞাপন নেই। ডেভেলপার আপনার সম্পর্কে বা আপনার ব্যবহারের সম্পর্কে কিছুই পান না - যদি না আপনি «লগ লেখকের কাছে পাঠান» চাপেন, যা আপনার নিজের মেল প্রোগ্রামে একটি বার্তা খোলে, যা আপনি দেখে নিজে পাঠান।",
+          "এটি কখনও নিজে থেকে আপনার ফাইল কোথাও পাঠায় না। শেয়ারিংয়ের সময় আপনার ফোন এনক্রিপ্টেড SFTP সংযোগে সরাসরি আপনার PC-র সঙ্গে যুক্ত হয়।",
+          "এটি কখনও নিজে থেকে পোর্ট খোলে না বা প্রশাসক অধিকার চায় না। আপনি চালু না করা পর্যন্ত শেয়ারিং বন্ধ, আর উইন্ডোটি সবসময় দেখায় কী কোথা থেকে পৌঁছনো যায়।",
+          "সে কিছু নামায় কেবল তখনই যখন আপনি চান বা এমন প্রশ্নে সম্মতি দেন যাতে বলা থাকে ঠিক কী আনা হচ্ছে: OCR ভাষা প্যাক, OCR বা ভিডিও প্লেব্যাকের রানটাইম, ভিডিও এনকোডার FFmpeg, Ollama ইনস্টলার বা তার জন্য অনুবাদ মডেল, অথবা winget দিয়ে doc-html-translate। অনুরোধের সঙ্গে আপনার ফাইল সম্পর্কে কিছু পাঠানো হয় না।",
+          "আপনি যে লেখা অনুবাদ করেন তা কেবল আপনার নিজের ঠিক করা অনুবাদ ঠিকানায় যায় - আপনার নিজের মেশিনের মডেল, বা আপনার বলা সার্ভার।"
+        ]
+      }
+    ],
+    "note": "একটিমাত্র বাইরের পরিষেবার সঙ্গে যোগাযোগ হতে পারে, আর তা কেবল তখনই যখন আপনি শেয়ারিংয়ের জন্য ইন্টারনেট প্রবেশ চালু করেন: check-host.net-কে জিজ্ঞাসা করা হয় আপনার ফরওয়ার্ড করা পোর্ট বাইরে থেকে সাড়া দেয় কি না, তাতে সেই পরিষেবা আপনার সর্বজনীন ঠিকানা ও পোর্ট দেখে। এর বাইরে তাকে কিছু পাঠানো হয় না। আরও দুটি জিনিস আপনার নিজের নেটওয়ার্কের ভিতরেই থাকে: ইন্টারনেট প্রবেশ চালু থাকলে প্রোগ্রামটি আপনার রাউটারকে শেয়ারিং পোর্ট ফরওয়ার্ড করতে বলে (UPnP বা NAT-PMP), আর শেয়ারিং চলার সময় PC স্থানীয় নেটওয়ার্কে নিজের উপস্থিতি জানায় (mDNS), যাতে যুক্ত ফোন তাকে আবার খুঁজে পায়।",
+    "backLabel": "মূল পাতায় ফিরুন",
+    "dlLabel": "ডাউনলোড",
+    "privacyLabel": "গোপনীয়তা"
+  },
+  "ur": {
+    "title": "ونڈوز اس ڈاؤن لوڈ پر خبردار کیوں کرتا ہے",
+    "desc": "‏Fast Media Sorter for Windows پر آنے والی SmartScreen وارننگ کا کیا مطلب ہے، یہ کیوں آتی ہے، بالکل کس پر کلک کرنا ہے، اور پروگرام کبھی کیا نہیں کرتا۔",
+    "intro": "‏Fast Media Sorter for Windows ایک چھوٹا مفت پروگرام ہے جسے ایک آزاد ڈویلپر نے لکھا ہے۔ ‏GitHub پر شائع کردہ بلڈ، جنہیں winget بھی انسٹال کرتا ہے، کوڈ سے دستخط شدہ نہیں ہیں، اس لیے ونڈوز انہیں زیادہ احتیاط سے دیکھتا ہے اور آپ کو ایک دو وارننگ مل سکتی ہیں۔ نیچے درج ہے کہ ہر وارننگ کیا ہے، کیوں آتی ہے، بالکل کس پر کلک کرنا ہے، اور پروگرام کبھی کیا نہیں کرتا۔",
+    "sections": [
+      {
+        "h": "وارننگ ہے کیا",
+        "p": "ان تین میں سے ایک، اس پر منحصر کہ آپ نے کیا ڈاؤن لوڈ کیا۔",
+        "items": [
+          "«Windows protected your PC» - یہ SmartScreen ہے۔ کسی سیٹ اپ فائل یا پورٹیبل ZIP سے پروگرام کو پہلی بار چلانے پر آتی ہے۔",
+          "«Do you want to allow this app to make changes to your device?» - یہ ونڈوز کی ایڈمنسٹریٹر اجازت کی درخواست ہے۔ یہ صرف تب آتی ہے جب آپ تمام صارفین کے لیے انسٹال کرنا چنیں یا فولڈر شیئرنگ آن کریں، اور چوتھا حصہ بالکل بتاتا ہے کہ ان میں سے ہر ایک اس سے کیا کرتا ہے۔",
+          "ایک فائل والے ڈاؤن لوڈ پر اینٹی وائرس کی وارننگ، جو ڈاؤن لوڈ صرف 12 جون 2026 سے پہلے کی ریلیزز میں ملتا تھا۔ ‏Microsoft Defender اس کے خود کھلنے والے لانچر کو Program:Script/Wacapew.A!ml شمار کرتا ہے۔ اس شکل کی فائلوں کے لیے یہ ایک معروف غلط اشارہ ہے؛ سیٹ اپ فائلیں اور پورٹیبل ZIP اس سے متاثر نہیں۔"
+        ]
+      },
+      {
+        "h": "یہ کیوں آتی ہے",
+        "p": "کچھ خراب نہیں ہے اور وارننگ کوئی غلطی نہیں۔ ‏SmartScreen فائل کے بارے میں دو باتیں دیکھتا ہے: کیا وہ ایسے سرٹیفکیٹ سے دستخط شدہ ہے جسے ونڈوز پہچانتا ہے، اور کیا کافی لوگ اسے پہلے ہی چلا چکے ہیں۔",
+        "items": [
+          "دستخط شدہ نہیں۔ کوڈ سائننگ سرٹیفکیٹ کی سالانہ قیمت کئی سو ڈالر ہے۔ پروگرام مفت ہے اور کچھ کماتا نہیں، اس لیے سرٹیفکیٹ نہیں خریدا گیا - یہ ایک فیصلہ ہے، بھول نہیں۔",
+          "ابھی نامعلوم۔ ساکھ ہر فائل کے لیے الگ گنی جاتی ہے، اس لیے ہر نیا ورژن صفر سے شروع ہوتا ہے۔ جیسے جیسے وہ ریلیز ڈاؤن لوڈ ہوتی ہے، یہ خود بنتی جاتی ہے - اسی لیے وارننگ ورژنوں کے درمیان مدھم پڑ جاتی ہے اور ہر نئے ورژن کے بعد کچھ عرصے کے لیے واپس آ جاتی ہے۔",
+          "‏Microsoft Store والا بلڈ استثنا ہے: ‏Microsoft تصدیق کے دوران اس پر دستخط کرتی ہے، اس لیے وہاں اس میں سے کچھ نہیں آتا۔ پروگرام وہی ہے۔"
+        ]
+      },
+      {
+        "h": "بالکل کس پر کلک کرنا ہے",
+        "p": "دو کلک، اور ان میں سے کچھ بھی آپ کی حفاظت کمزور نہیں کرتا۔",
+        "items": [
+          "‏SmartScreen: ڈائیلاگ میں More info پر کلک کریں، پھر Run anyway پر۔ بس اتنا ہی۔",
+          "ایڈمنسٹریٹر کی درخواست: پہلے اگلا حصہ پڑھیں، پھر Yes کہیں۔ فولڈر شیئرنگ کی درخواست پر No کہنے پر بھی پروگرام پوری طرح انسٹال ہو کر چلتا ہے - صرف شیئرنگ بند رہتی ہے۔ انسٹالر کو خود یہ درخواست تبھی چاہیے جب آپ نے تمام صارفین کے لیے انسٹال کرنا چنا ہو۔",
+          "اینٹی وائرس: اگر فائل قرنطینہ میں چلی گئی ہے تو اسے بحال کریں اور اسی ایک انسٹال فولڈر کے لیے استثنا شامل کریں۔ ‏SmartScreen کبھی بند نہ کریں اور اینٹی وائرس کبھی غیر فعال نہ کریں - یہاں اس کی ضرورت نہیں، اور وہ آپ کے باقی تمام ڈاؤن لوڈ کی حفاظت کرتے رہتے ہیں۔",
+          "اگر بھروسے کے بجائے جانچ پسند ہو: ہر ریلیز کے ساتھ ایک .sha256 فائل ہوتی ہے، اور PowerShell میں Get-FileHash <فائل> -Algorithm SHA256 وہی قدر دکھانی چاہیے۔ سورس کوڈ کھلا ہے۔"
+        ]
+      },
+      {
+        "h": "ایڈمنسٹریٹر حقوق کس کام آتے ہیں اور انہیں واپس کیسے لیں",
+        "p": "ویور خود کبھی ایڈمنسٹریٹر حقوق نہیں مانگتا۔ انسٹالر انہیں صرف تب مانگتا ہے جب آپ تمام صارفین کے لیے انسٹال کرنا چنیں، اور فولڈر شیئرنگ صرف تب جب آپ اسے آن کریں۔ یہاں ہر استعمال درج ہے، پھر واپسی کا راستہ۔",
+        "items": [
+          "تمام صارفین کے لیے انسٹال - انسٹالر میں آپ کا انتخاب۔ انسٹالر پہلے پوچھتا ہے کہ صرف آپ کے لیے انسٹال کرے، ایڈمنسٹریٹر حقوق کے بغیر، یا اس PC کے ہر اکاؤنٹ کے لیے۔ صرف دوسری صورت میں ونڈوز پوچھتا ہے، تاکہ پروگرام Program Files میں اور اس کے شارٹ کٹ وہاں رکھے جائیں جہاں ہر اکاؤنٹ انہیں دیکھے۔",
+          "فولڈر شیئرنگ - ایک فائروال قاعدہ۔ شیئرنگ آن کرنے پر، انسٹالر میں یا بعد میں Share Manager میں، ونڈوز ایک بار پوچھتا ہے اور companion\\fms-share-worker.exe کے لیے ایک ہی اِن باؤنڈ فائروال قاعدہ شامل ہوتا ہے۔ یہ صرف اسی ایک پروگرام کو کنکشن لینے دیتا ہے اور کچھ نہیں کرتا۔ جب تک شیئرنگ بند ہے، کچھ بھی نہیں سن رہا اور کچھ شامل نہیں ہوتا۔",
+          "ہمیشہ آن شیئرنگ - ایک ونڈوز سروس۔ صرف اس صورت میں جب آپ خود مانگیں، دو میں سے کسی ایک طریقے سے: Share Manager میں «مینیجر کی ترتیبات»، «ہوسٹنگ»، «شیئرنگ کو Windows سروس میں منتقل کریں..»، یا الگ Server انسٹالر سے، جسے آپ خود ڈاؤن لوڈ کر کے چلاتے ہیں۔ ونڈوز ایک بار پوچھتا ہے اور چار کام ہوتے ہیں: FastMediaSorterCompanionSFTP سروس رجسٹر ہوتی ہے اور LOCAL SERVICE کے طور پر چلتی ہے؛ فائروال قاعدہ شیئرنگ پروگرام کی اس کاپی کی طرف موڑ دیا جاتا ہے جسے سروس چلاتی ہے؛ LOCAL SERVICE آپ کے شیئر کیے ہر فولڈر کو پڑھ سکتا ہے، اور لکھ صرف وہیں سکتا ہے جہاں آپ نے لکھنے کی اجازت دی؛ اور شیئرنگ کی ترتیبات، پاس ورڈ اور ہوسٹ کی %ProgramData%\\FastMediaSorterCompanion میں منتقل ہو جاتے ہیں، ایک ایسا فولڈر جسے صرف ایڈمنسٹریٹر، سروس اور آپ کا اکاؤنٹ کھول سکتے ہیں۔",
+          "ان انسٹال کیے بغیر واپس لینے کے لیے Share Manager کی «مینیجر کی ترتیبات» کھولیں: «نیٹ ورک»، «سرور کی خصوصیات بند کریں..» فائروال قاعدہ ہٹاتا ہے؛ «ہوسٹنگ»، «سرور رول ہٹائیں» سروس روک کر ہٹاتا ہے، فولڈروں پر اس کے حقوق واپس لیتا ہے اور فائروال قاعدہ ہٹاتا ہے؛ «ہوسٹنگ»، «یوزر ایڈیشن پر واپس جائیں..» بھی سروس اور فولڈر کے حقوق ہٹاتا ہے، مگر شیئرنگ کو اس کے فائروال قاعدے سمیت آپ کے اپنے سیشن کو لوٹا دیتا ہے۔ ہر عمل ونڈوز سے ایک بار پوچھتا ہے۔",
+          "یا ان انسٹال کریں: ونڈوز کی ترتیبات، ایپس کا ہر اندراج وہی ہٹاتا ہے جو اس نے شامل کیا۔ ‏FastMediaSorter LITE اپنا فائروال قاعدہ ہٹاتا ہے - صرف آپ کے لیے انسٹال ہونے پر ونڈوز اس کے لیے ایک بار پوچھتا ہے - اور اپنے Share Manager کی رجسٹر کردہ سروس ہٹانے کی پیشکش کرتا ہے۔ ‏Fast Media Sorter Folder Share Server اپنی سروس، فولڈر کے حقوق اور فائروال قاعدہ ہٹاتا ہے۔ خاموش ان انسٹال، جیسے winget uninstall، پوچھ نہیں سکتا، اس لیے Share Manager کی سروس کو، اور صرف آپ کے لیے کیے گئے انسٹال میں فائروال قاعدے کو بھی، اپنی جگہ چھوڑ دیتا ہے؛ انہیں پہلے Share Manager میں بند کر دیں۔",
+          "جان بوجھ کر رکھا جاتا ہے: ہوسٹ کی، پاس ورڈ اور فولڈر کی فہرست %LOCALAPPDATA%\\FastMediaSorterCompanion میں رہتی ہیں - یا %ProgramData%\\FastMediaSorterCompanion میں، اگر شیئرنگ سروس کے طور پر چل چکی ہو - تاکہ جوڑے گئے فون دوبارہ انسٹال کے بعد پھر جڑ جائیں۔ وہ فولڈر مٹائیں تو ہر فون کو نئے سرے سے جوڑنا ہوگا۔"
+        ]
+      },
+      {
+        "h": "پروگرام کبھی کیا نہیں کرتا",
+        "p": "وہی فہرست جو پرائیویسی صفحے پر اور Microsoft Store کے ڈیٹا سیفٹی جوابات میں ہے - سچ ایک ہی ہے۔",
+        "items": [
+          "کوئی ٹیلی میٹری نہیں، کوئی تجزیات نہیں، کوئی اکاؤنٹ نہیں، کوئی اشتہار نہیں۔ ڈویلپر کو آپ کے بارے میں یا آپ کے استعمال کے بارے میں کچھ نہیں ملتا - سوائے اس کے کہ آپ «لاگز مصنف کو بھیجیں» دبائیں، جو آپ کے اپنے میل پروگرام میں ایک پیغام کھولتا ہے جسے آپ دیکھ کر خود بھیجتے ہیں۔",
+          "یہ آپ کی فائلیں کبھی خود سے کہیں نہیں بھیجتا۔ شیئرنگ کے دوران آپ کا فون خفیہ کردہ SFTP کنکشن سے براہِ راست آپ کے PC سے جڑتا ہے۔",
+          "یہ کبھی خود سے کوئی پورٹ نہیں کھولتا اور نہ ایڈمنسٹریٹر حقوق مانگتا ہے۔ جب تک آپ آن نہ کریں شیئرنگ بند رہتی ہے، اور ونڈو ہمیشہ دکھاتی ہے کہ کیا اور کہاں سے قابلِ رسائی ہے۔",
+          "وہ کچھ بھی تبھی ڈاؤن لوڈ کرتا ہے جب آپ کہیں یا ایسے سوال پر ہاں کہیں جس میں بتایا گیا ہو کہ کیا لایا جا رہا ہے: OCR زبان پیک، OCR یا ویڈیو پلے بیک کا رن ٹائم، ویڈیو اینکوڈر FFmpeg، Ollama انسٹالر یا اس کے لیے ترجمے کا ماڈل، یا winget کے ذریعے doc-html-translate۔ درخواست کے ساتھ آپ کی فائلوں کے بارے میں کچھ نہیں بھیجا جاتا۔",
+          "جو متن آپ ترجمہ کرتے ہیں وہ صرف اسی ترجمہ پتے پر جاتا ہے جو آپ نے خود مقرر کیا - آپ کی اپنی مشین کا ماڈل، یا آپ کا بتایا ہوا سرور۔"
+        ]
+      }
+    ],
+    "note": "صرف ایک بیرونی سروس سے رابطہ ہو سکتا ہے، اور وہ بھی تبھی جب آپ شیئرنگ کے لیے انٹرنیٹ رسائی آن کریں: ‏check-host.net سے پوچھا جاتا ہے کہ آپ کا فارورڈ کردہ پورٹ باہر سے جواب دیتا ہے یا نہیں، جس سے اس سروس کو آپ کا عوامی پتہ اور پورٹ نظر آتا ہے۔ اس کے علاوہ اسے کچھ نہیں بھیجا جاتا۔ مزید دو چیزیں آپ کے اپنے نیٹ ورک کے اندر ہی رہتی ہیں: انٹرنیٹ رسائی آن ہونے پر پروگرام آپ کے راؤٹر سے شیئرنگ پورٹ فارورڈ کرنے کو کہتا ہے (UPnP یا NAT-PMP)، اور شیئرنگ چلتے وقت PC مقامی نیٹ ورک میں اپنا اعلان کرتا ہے (mDNS)، تاکہ جوڑا گیا فون اسے دوبارہ ڈھونڈ سکے۔",
+    "backLabel": "مرکزی صفحے پر واپس",
+    "dlLabel": "ڈاؤن لوڈ",
+    "privacyLabel": "پرائیویسی"
+  },
+  "zh": {
+    "title": "为什么 Windows 会对这个下载发出警告",
+    "desc": "Fast Media Sorter for Windows 的 SmartScreen 警告是什么意思、为什么出现、到底该点哪里，以及这个程序从不做什么。",
+    "intro": "Fast Media Sorter for Windows 是一位独立开发者写的免费小程序。发布在 GitHub 上的版本（winget 安装的也是它们）没有代码签名，所以 Windows 会格外谨慎地对待它们，您可能会遇到一两条警告。下面说明每条警告是什么、为什么出现、到底该点哪里，以及这个程序从不做什么。",
+    "sections": [
+      {
+        "h": "这条警告是什么",
+        "p": "取决于您下载的是哪一种，共有三种。",
+        "items": [
+          "«Windows 已保护你的电脑» - 这是 SmartScreen。第一次运行安装程序或便携版 ZIP 中的程序时出现。",
+          "«你要允许此应用对你的设备进行更改吗？» - 这是 Windows 的管理员权限请求。只有当您选择为所有用户安装，或打开文件夹共享时，才会出现它；第四节说明两者各自用这些权限做了什么。",
+          "杀毒软件对单文件下载的警告，只有 2026 年 6 月 12 日之前的版本提供过这种下载。Microsoft Defender 将其自解压引导程序判为 Program:Script/Wacapew.A!ml。这是这类文件的已知误报；安装程序和便携版 ZIP 不受影响。"
+        ]
+      },
+      {
+        "h": "为什么会出现",
+        "p": "没有任何东西出错，这条警告也不是错误。SmartScreen 对一个文件问两件事：它是否用 Windows 认识的证书签名，以及是否已有足够多的人运行过它。",
+        "items": [
+          "未签名。代码签名证书每年要几百美元。程序免费，也没有收入，所以没有购买证书 - 这是一个决定，不是疏忽。",
+          "尚不知名。信誉是按文件计算的，因此每个新版本都从零开始。随着这个版本被下载，它会自行积累 - 所以警告在版本之间会淡去，每出一个新版本又会回来一阵子。",
+          "Microsoft Store 版本是例外：Microsoft 在认证时为它签名，因此那里不会出现这些。程序是同一个。"
+        ]
+      },
+      {
+        "h": "到底该点哪里",
+        "p": "两次点击，而且这里没有任何一步会削弱您的防护。",
+        "items": [
+          "SmartScreen：在对话框中点击「更多信息」，然后点击「仍要运行」。就这样。",
+          "管理员请求：先读下一节，然后回答「是」。对文件夹共享的请求回答「否」，程序照样完整安装并运行 - 只是共享保持关闭。安装程序本身只有在您选择为所有用户安装时才需要这个请求。",
+          "杀毒软件：如果文件被隔离，请将它还原，并为那一个安装文件夹添加例外。绝不要关闭 SmartScreen，也绝不要停用杀毒软件 - 这里都不需要，而它们会继续保护您下载的其他一切。",
+          "如果您更愿意验证而不是相信：每个版本旁边都有一个 .sha256 文件，在 PowerShell 中运行 Get-FileHash <文件> -Algorithm SHA256 应当输出相同的值。源代码是公开的。"
+        ]
+      },
+      {
+        "h": "管理员权限用来做什么，以及如何收回",
+        "p": "查看器本身从不请求管理员权限。只有当您选择为所有用户安装时，安装程序才会请求；只有当您打开文件夹共享时，共享才会请求。下面逐项列出每种用途，然后是撤销方法。",
+        "items": [
+          "为所有用户安装 - 您在安装程序中的选择。安装程序先询问是只为您安装（不需要管理员权限），还是为这台电脑上的所有账户安装。只有第二种情况 Windows 才会询问，以便把程序放进 Program Files，并把快捷方式放到每个账户都能看到的位置。",
+          "文件夹共享 - 一条防火墙规则。当您打开共享时（在安装程序中，或之后在 Share Manager 中），Windows 会询问一次，并为 companion\\fms-share-worker.exe 添加一条入站防火墙规则。它只允许这一个程序接收连接，不做别的。共享未打开时，没有任何东西在监听，也不会添加任何东西。",
+          "常驻共享 - 一个 Windows 服务。只有在您自己要求时才会有，方式有两种：在 Share Manager 的「管理器设置」、「托管」中点「将共享切换为 Windows 服务..」，或者使用您自己下载并运行的单独 Server 安装程序。Windows 询问一次，然后做四件事：注册服务 FastMediaSorterCompanionSFTP，以 LOCAL SERVICE 身份运行；把防火墙规则指向该服务运行的那份共享程序副本；允许 LOCAL SERVICE 读取您共享的每个文件夹，并且只在您允许写入的地方写入；把共享设置、密码和主机密钥移到 %ProgramData%\\FastMediaSorterCompanion，这个文件夹只有管理员、该服务和您的账户能打开。",
+          "不卸载也能收回：打开 Share Manager 的「管理器设置」。「网络」中的「关闭服务器功能..」删除防火墙规则；「托管」中的「移除服务器角色」停止并删除服务，收回它对文件夹的权限，并删除防火墙规则；「托管」中的「返回用户版..」同样删除服务和文件夹权限，但会把共享连同其防火墙规则交还给您自己的会话。每个操作都会让 Windows 询问一次。",
+          "或者卸载：Windows 设置「应用」中的每一项只删除它自己添加的内容。FastMediaSorter LITE 删除自己的防火墙规则（如果是只为您安装的，Windows 会为此询问一次），并提议删除其 Share Manager 注册的服务。Fast Media Sorter Folder Share Server 删除自己的服务、文件夹权限和防火墙规则。静默卸载（例如 winget uninstall）无法询问，因此会保留 Share Manager 注册的服务，只为您安装时还会保留防火墙规则；请先在 Share Manager 中关闭它们。",
+          "有意保留：主机密钥、密码和文件夹列表保存在 %LOCALAPPDATA%\\FastMediaSorterCompanion 中（如果共享曾以服务方式运行，则在 %ProgramData%\\FastMediaSorterCompanion 中），这样重新安装后已配对的手机可以重新连接。删除该文件夹后，每部手机都需要重新配对。"
+        ]
+      },
+      {
+        "h": "这个程序从不做什么",
+        "p": "与隐私页面以及 Microsoft Store 数据安全问卷上的说法完全一致 - 真相只有一个。",
+        "items": [
+          "没有遥测、没有分析、没有账户、没有广告。开发者收不到关于您或您如何使用程序的任何信息 - 除非您点「把日志发送给作者」，它会在您自己的邮件程序中打开一封邮件，由您检查后亲自发送。",
+          "它从不自行把您的文件发送到任何地方。共享时，您的手机通过加密的 SFTP 连接直接连到您的电脑。",
+          "它从不自行开放端口，也从不自行请求管理员权限。共享在您打开之前一直关闭，窗口始终显示什么可以访问、从哪里可以访问。",
+          "只有在您要求、或同意一个明确说明要下载什么的提示之后，它才会下载东西：OCR 语言包、OCR 或视频播放运行库、视频编码器 FFmpeg、Ollama 安装程序或其翻译模型，或通过 winget 安装 doc-html-translate。请求中不带任何关于您文件的信息。",
+          "您翻译的文本只会发送到您自己设置的翻译地址 - 您自己机器上的模型，或您指定的服务器。"
+        ]
+      }
+    ],
+    "note": "只有一项第三方服务可能被访问，而且只在您为共享打开互联网访问时：程序会请 check-host.net 确认您转发的端口能否从外部响应，这会让该服务看到您的公网地址和端口。除此之外不会向它发送任何内容。另外两件事只在您自己的网络内进行：打开互联网访问后，程序会请您的路由器转发共享端口（UPnP 或 NAT-PMP）；共享运行期间，电脑会在局域网中广播自己（mDNS），以便已配对的手机重新找到它。",
+    "backLabel": "返回主页",
+    "dlLabel": "下载",
+    "privacyLabel": "隐私"
+  }
+}

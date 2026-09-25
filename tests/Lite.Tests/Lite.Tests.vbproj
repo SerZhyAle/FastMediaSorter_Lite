@@ -33,6 +33,13 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <!-- ProtectedData lives in System.Security.dll on net48 (inbox on net10.0-windows): the
+       linked DpapiSecrets needs it, and it comes along only because OcrTranslateSettings -
+       the OCR code mapping the language-naming tests use - does. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="System.Security" />
+  </ItemGroup>
+
   <!-- The same project-level imports both viewer vbprojs declare. The linked sources
        are written against them (FileManager.vb says "Image", not
        "System.Drawing.Image"), so without these they do not compile here. -->
@@ -51,6 +58,15 @@
     <!-- Link the production source directly (same assembly => Friend members visible). -->
     <Compile Include="..\..\src\Utils.vb">
       <Link>Linked\Utils.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Icons\IconMap.vb">
+      <Link>Linked\Icons\IconMap.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Icons\SvgPathData.vb">
+      <Link>Linked\Icons\SvgPathData.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Icons\GlyphRenderer.vb">
+      <Link>Linked\Icons\GlyphRenderer.vb</Link>
     </Compile>
     <!-- Utils.GetImageDimensions probes WEBP through the IImageDecoder seam, so the
          seam has to come along. The modern decoder file compiles to nothing here
@@ -78,6 +94,11 @@
     </Compile>
     <Compile Include="..\..\src\Imaging\ImageFileWriter.vb">
       <Link>Linked\Imaging\ImageFileWriter.vb</Link>
+    </Compile>
+    <!-- The one place Magick's resource limits are set (audit 052 G-20): a disk limit of
+         zero, so a decrypted picture never spills into a %TEMP% pixel cache. -->
+    <Compile Include="..\..\src\Imaging\MagickResourceLimits.vb">
+      <Link>Linked\Imaging\MagickResourceLimits.vb</Link>
     </Compile>
     <!-- The decode cache (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md
          §3-§7). Linked because the whole feature rests on ONE discipline - a key that
@@ -118,6 +139,17 @@
     <Compile Include="..\..\src\ZoomMath.vb">
       <Link>Linked\ZoomMath.vb</Link>
     </Compile>
+    <!-- Window geometry (APP-BEHAVIOUR rule 10, ticket 028 Ф-2): which rectangle to
+         remember and where a remembered one goes when its monitor is gone. Pure, and
+         whole-file "#If Not NETFRAMEWORK" like ZoomMath. -->
+    <Compile Include="..\..\src\WindowPlacement.vb">
+      <Link>Linked\WindowPlacement.vb</Link>
+    </Compile>
+    <!-- Failure cause from the exception's type (APP-BEHAVIOUR rule 6, ticket 028 Ф-3).
+         Both legs: net48 keeps the raw text, net10 names a cause. -->
+    <Compile Include="..\..\src\FailureText.vb">
+      <Link>Linked\FailureText.vb</Link>
+    </Compile>
     <!-- Where the editor lays the picture on its canvas. Built on ZoomMath.FitFactor
          above, and kept out of the editor window for the same reason ZoomMath is kept
          out of Main_Form.Zoom.vb: it is a pure function, and every stroke the editor
@@ -143,6 +175,16 @@
     <Compile Include="..\..\src\MediaUrl.vb">
       <Link>Linked\MediaUrl.vb</Link>
     </Compile>
+    <!-- Audit 050. RuntimeInstallPlan is the disk half of the runtime installer (staging,
+         the .complete marker, entry containment, the pinned digests) and is shared, so
+         both legs prove it. PlaybackRules (repeat, the track cycle, the sleep deadline) is
+         whole-file "#If Not NETFRAMEWORK", like the LibVLC paths that use it. -->
+    <Compile Include="..\..\src\RuntimeInstallPlan.vb">
+      <Link>Linked\RuntimeInstallPlan.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\PlaybackRules.vb">
+      <Link>Linked\PlaybackRules.vb</Link>
+    </Compile>
     <!-- The custom-shortcut model (SPECIFICATION_SETTINGS_EXPANSION.md §3.5). Here rather
          than in the dialog because everything that can go wrong with a remapping is a
          rule about strings: which combinations may be assigned, who already owns one, and
@@ -159,6 +201,12 @@
     <Compile Include="..\..\src\FileManager.vb">
       <Link>Linked\FileManager.vb</Link>
     </Compile>
+    <!-- The x86 video page's one value from outside - the file name - encoded for its
+         attribute (audit 046 D-06). Whole-file "#If NETFRAMEWORK": it and its test run
+         on the net48 leg only, which is the shipped shape. -->
+    <Compile Include="..\..\src\WebVideoMarkup.vb">
+      <Link>Linked\WebVideoMarkup.vb</Link>
+    </Compile>
     <!-- Tail of that dependency: the legacy decoder logs a failed WEBP decode (this
          is the log line the Server 2025 bug was diagnosed from - worth keeping), and
          the logger reads two name constants from Common_Module. Both are small leaf
@@ -169,6 +217,10 @@
     </Compile>
     <Compile Include="..\..\src\MultiWindowPolicy.vb">
       <Link>Linked\MultiWindowPolicy.vb</Link>
+    </Compile>
+    <!-- The WM_COPYDATA hand-off rules between the viewer processes (053 F-03/F-06/F-07). -->
+    <Compile Include="..\..\src\SingleInstanceProtocol.vb">
+      <Link>Linked\SingleInstanceProtocol.vb</Link>
     </Compile>
     <!-- The .NET 10 preference block. Linked for the resume option
          (SPECIFICATION_RESUME_LAST_PLAYBACK_DOTNET10 §8.1): "off unless asked for" is
@@ -203,6 +255,34 @@
     <Compile Include="..\..\src\Archives\ArchiveSession.vb">
       <Link>Linked\Archives\ArchiveSession.vb</Link>
     </Compile>
+    <!-- The provider layer (006_SPECIFICATION_FILESYSTEM_PROVIDER_LAYER_DOTNET10.md).
+         FileManager's verbs ask ResourceRouting first, so linking FileManager needs these;
+         all whole-file "#If Not NETFRAMEWORK", like the feature, and built on the archive
+         cache files just above. -->
+    <Compile Include="..\..\src\Resources\IFileSystemProvider.vb">
+      <Link>Linked\Resources\IFileSystemProvider.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\LocalProvider.vb">
+      <Link>Linked\Resources\LocalProvider.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\RemoteCachePaths.vb">
+      <Link>Linked\Resources\RemoteCachePaths.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\RemoteCacheStore.vb">
+      <Link>Linked\Resources\RemoteCacheStore.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\ResourceRegistry.vb">
+      <Link>Linked\Resources\ResourceRegistry.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\ResourceSession.vb">
+      <Link>Linked\Resources\ResourceSession.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\ResourceTransfer.vb">
+      <Link>Linked\Resources\ResourceTransfer.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\ResourceRouting.vb">
+      <Link>Linked\Resources\ResourceRouting.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Common_Module.vb">
       <Link>Linked\Common_Module.vb</Link>
     </Compile>
@@ -211,6 +291,16 @@
          LogPackageTests - compile to nothing, matching the shipped shape. -->
     <Compile Include="..\..\src\Support\LogPackage.vb">
       <Link>Linked\Support\LogPackage.vb</Link>
+    </Compile>
+    <!-- Common_Module.Author_Email is MailSender.AuthorAddress (ticket 028 Ф-3: the
+         Share Manager links MailSender and writes to the same address). -->
+    <Compile Include="..\..\src\Support\MailSender.vb">
+      <Link>Linked\Support\MailSender.vb</Link>
+    </Compile>
+    <!-- Site page URLs (ticket 037): TrustPageContractTests holds every language's
+         trust link to a page that exists in the repository. -->
+    <Compile Include="..\..\src\Support\SitePages.vb">
+      <Link>Linked\Support\SitePages.vb</Link>
     </Compile>
     <!-- The 13-language localization layer. Linked whole, tables included: the parity
          test's whole job is to look at the real shipped table, and running it on BOTH
@@ -233,6 +323,30 @@
                              success (B-2). -->
     <Compile Include="..\..\src\AutoSkipPolicy.vb">
       <Link>Linked\AutoSkipPolicy.vb</Link>
+    </Compile>
+    <!-- Ticket 047: the rename-name rule, the list stamp, and the input guards (the
+         Ctrl/Alt gate, auto-repeat, the wheel accumulator, the overlay double-click).
+         Shared, so both legs prove them. -->
+    <Compile Include="..\..\src\FileOpRules.vb">
+      <Link>Linked\FileOpRules.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\InputGuards.vb">
+      <Link>Linked\InputGuards.vb</Link>
+    </Compile>
+    <!-- Ticket 049 B-10: the monotonic throttle clock. Shared, so both legs prove it. -->
+    <Compile Include="..\..\src\MonotonicClock.vb">
+      <Link>Linked\MonotonicClock.vb</Link>
+    </Compile>
+    <!-- Ticket 048: the pure navigation/decode rules (slideshow order, prefetch acceptance,
+         extension keys, decode budget). Shared, so both legs prove them. -->
+    <Compile Include="..\..\src\SlideshowOrder.vb">
+      <Link>Linked\SlideshowOrder.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\NavigationRules.vb">
+      <Link>Linked\NavigationRules.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\FolderScan.vb">
+      <Link>Linked\FolderScan.vb</Link>
     </Compile>
     <!-- The classifier that decides whether a read failure is about the FILE (drop it from
          the list, as always) or about everything between us and it (keep it - a dropped SMB
@@ -315,12 +429,145 @@
     <Compile Include="..\..\src\Ocr\OcrTextFilter.vb">
       <Link>Linked\Ocr\OcrTextFilter.vb</Link>
     </Compile>
+    <!-- The refusal of OCR-OVERLAY rule 10: an ASSUMED source language that the run's own
+         discard record says could not read the page produces no overlay and a message naming
+         the fix. Pure - it reads the record rule 12 already writes and needs no engine - which
+         is the whole reason it is a module and not three lines inside the pipeline. -->
+    <Compile Include="..\..\src\Ocr\OcrLanguageGuard.vb">
+      <Link>Linked\Ocr\OcrLanguageGuard.vb</Link>
+    </Compile>
     <!-- Whole-file "#If Not NETFRAMEWORK", so this and OcrPlateColorsTests compile to
          nothing on the net48 leg - the honest shape: sampled plate colours are a mainline
          improvement the x86 fallback does not get. -->
     <Compile Include="..\..\src\Ocr\OcrPlateColors.vb">
       <Link>Linked\Ocr\OcrPlateColors.vb</Link>
     </Compile>
+    <!-- Audit 051 and ticket 033. Every decision here either throws text away, keeps a
+         failure, or files a result under a key - none of which shows on screen as anything
+         but a plausible-looking overlay, so each is held by a test:
+           ITranslator          - the per-segment result, language names, the punctuation
+                                  whitelist that lost its curly quotes (E-10), RTL (E-11)
+                                  and LibreTranslate's codes (E-13);
+           TranslationQuality   - what counts as a refusal or an acceptable echo (E-03);
+           OcrResultPolicy      - the cache key with the displayed grid (E-01) and "only a
+                                  complete translation is cached" (E-02);
+           OcrImageScale        - a tall strip keeps readable lettering (E-05) and buffers
+                                  are built only when asked for (E-08);
+           OcrDiagnostics       - rule 14's null-versus-empty and rule 17's "changes
+                                  nothing" (033 Ф-8). Whole-file modern-only, so it and its
+                                  tests compile to nothing on the net48 leg;
+           DocHtmlTranslateLauncher - the OCR-INVOCATION command line (033 Ф-7);
+           OcrLanguageCatalog (+ RuntimeBootstrap for its flag loader, OcrTranslateSettings
+                                  and DpapiSecrets for the code mapping) - every target and
+                                  UI language has a name (E-06), and a missing pack is
+                                  named (033 Ф-6). -->
+    <Compile Include="..\..\src\Translate\ITranslator.vb">
+      <Link>Linked\Translate\ITranslator.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Translate\TranslationQuality.vb">
+      <Link>Linked\Translate\TranslationQuality.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Translate\OcrResultPolicy.vb">
+      <Link>Linked\Translate\OcrResultPolicy.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Ocr\OcrImageScale.vb">
+      <Link>Linked\Ocr\OcrImageScale.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Ocr\OcrDiagnostics.vb">
+      <Link>Linked\Ocr\OcrDiagnostics.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\DocHtmlTranslateLauncher.vb">
+      <Link>Linked\DocHtmlTranslateLauncher.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\OcrLanguageCatalog.vb">
+      <Link>Linked\OcrLanguageCatalog.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\RuntimeBootstrap.vb">
+      <Link>Linked\RuntimeBootstrap.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\OcrTranslateSettings.vb">
+      <Link>Linked\OcrTranslateSettings.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Security\DpapiSecrets.vb">
+      <Link>Linked\Security\DpapiSecrets.vb</Link>
+    </Compile>
+    <!-- Secure containers (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §13).
+         This is the one subsystem in the repository where being ALMOST right produces a
+         reader that opens nothing anyone else made and says nothing useful about why -
+         so the whole of src/Secure is linked and run against the catalog's committed
+         vectors. All eight are whole-file "#If Not NETFRAMEWORK", so they and their
+         tests compile to nothing on the net48 leg, which is the shipped shape. -->
+    <Compile Include="..\..\src\Secure\FdSecOutcome.vb">
+      <Link>Linked\Secure\FdSecOutcome.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Secure\FdSecPrimitives.vb">
+      <Link>Linked\Secure\FdSecPrimitives.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Secure\FdSecKdf.vb">
+      <Link>Linked\Secure\FdSecKdf.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Secure\FdSecHead.vb">
+      <Link>Linked\Secure\FdSecHead.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Secure\FdSecMetadata.vb">
+      <Link>Linked\Secure\FdSecMetadata.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Secure\FdSecScreen.vb">
+      <Link>Linked\Secure\FdSecScreen.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Secure\FdSecContainer.vb">
+      <Link>Linked\Secure\FdSecContainer.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Secure\FdSecStream.vb">
+      <Link>Linked\Secure\FdSecStream.vb</Link>
+    </Compile>
+    <!-- The outcome-to-words map, outside the form precisely so "three classes, three
+         messages, never merged" is something a test can hold it to. -->
+    <Compile Include="..\..\src\SecureMessages.vb">
+      <Link>Linked\SecureMessages.vb</Link>
+    </Compile>
+    <!-- The pure decisions of the viewer's container side (audit 052 G-07, G-10, G-13):
+         when to ask for a password, which name a failure may show, whether a translator
+         endpoint stays on this machine. Whole-file "#If Not NETFRAMEWORK". -->
+    <Compile Include="..\..\src\SecurePolicy.vb">
+      <Link>Linked\SecurePolicy.vb</Link>
+    </Compile>
+    <!-- What a secure playback may delete from LibVLC's art cache (audit 046 G-04). The
+         planning half is pure and deletes files, so its narrowness is held by a test.
+         Whole-file "#If Not NETFRAMEWORK". -->
+    <Compile Include="..\..\src\VlcArtCache.vb">
+      <Link>Linked\VlcArtCache.vb</Link>
+    </Compile>
+    <!-- The one classifier. A container is its own kind until it opens, and its sealed
+         TRUE name then goes through this same function - so there is one answer to "what
+         kind of file is this" and not two. Whole-file "#If Not NETFRAMEWORK". -->
+    <Compile Include="..\..\src\MediaKind.vb">
+      <Link>Linked\MediaKind.vb</Link>
+    </Compile>
+  </ItemGroup>
+
+  <!-- The catalog's conformance vectors, vendored as ARTIFACTS beside a PROVENANCE.txt
+       that names the contract, its version, the date taken and each file's SHA-256 - the
+       tests check those digests before trusting a byte. A test that depends on a drive
+       letter cannot run for anyone else, which is why they travel with the suite; the
+       documents themselves stay in the catalog and are only cited. -->
+  <ItemGroup>
+    <None Include="TestData\fdsec-vectors\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestData\fdsec-vectors\%(Filename)%(Extension)</Link>
+    </None>
+    <None Include="TestData\icon-vocabulary\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestData\icon-vocabulary\%(Filename)%(Extension)</Link>
+    </None>
+    <None Include="..\..\assets\glyphs\*.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestData\glyphs\%(Filename)%(Extension)</Link>
+    </None>
+    <None Include="..\..\assets\glyphs\PROVENANCE.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestData\glyphs\PROVENANCE.txt</Link>
+    </None>
   </ItemGroup>
 
   <!-- Each leg gets the SAME ImageSharp its viewer ships with, so the tests exercise
@@ -337,6 +584,10 @@
          archive tests exercise the shipping path rather than a stand-in. Modern leg
          only: the archive files compile to nothing on net48. -->
     <PackageReference Include="SharpCompress" Version="0.50.4" />
+    <!-- The same cryptography library the mainline ships with, so the conformance run
+         exercises the shipping code path rather than a stand-in. Modern leg only:
+         src/Secure compiles to nothing on net48. -->
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
   </ItemGroup>
 
 </Project>

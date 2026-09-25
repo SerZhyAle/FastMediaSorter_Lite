@@ -99,5 +99,21 @@ Friend Module ArchiveEntryFilter
         Return leaf.Substring(dot).ToLowerInvariant()
     End Function
 
+    ''' <summary>
+    ''' The largest entry the background prefetch extracts ahead (audit 052 G-14). A page of a
+    ''' comic is a few megabytes; anything past this is extracted when the user actually
+    ''' arrives, instead of holding the extraction lock while they go somewhere else.
+    ''' </summary>
+    Friend Const Max_Prefetch_Entry_Bytes As Long = 64L * 1024L * 1024L
+
+    ''' <summary>
+    ''' Is the entry ahead worth extracting in the background? Only a picture - the prefetch
+    ''' decodes nothing else, so extracting a video ahead buys it nothing - and only one of
+    ''' modest size, because the display path waits for the same lock.
+    ''' </summary>
+    Friend Function ShouldPrefetch(isImage As Boolean, size As Long) As Boolean
+        Return isImage AndAlso size > 0 AndAlso size <= Max_Prefetch_Entry_Bytes
+    End Function
+
 End Module
 #End If

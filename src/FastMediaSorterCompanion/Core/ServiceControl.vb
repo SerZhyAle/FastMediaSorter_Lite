@@ -138,6 +138,50 @@ Public Module ServiceControl
         End Try
     End Function
 
+    <StructLayout(LayoutKind.Sequential)>
+    Private Structure SERVICE_STATUS_PROCESS
+        Public dwServiceType As UInteger
+        Public dwCurrentState As UInteger
+        Public dwControlsAccepted As UInteger
+        Public dwWin32ExitCode As UInteger
+        Public dwServiceSpecificExitCode As UInteger
+        Public dwCheckPoint As UInteger
+        Public dwWaitHint As UInteger
+        Public dwProcessId As UInteger
+        Public dwServiceFlags As UInteger
+    End Structure
+
+    Private Const SC_STATUS_PROCESS_INFO As Integer = 0
+
+    <DllImport("advapi32.dll", SetLastError:=True)>
+    Private Function QueryServiceStatusEx(service As IntPtr, infoLevel As Integer, ByRef buffer As SERVICE_STATUS_PROCESS,
+                                          bufSize As Integer, ByRef bytesNeeded As Integer) As Boolean
+    End Function
+
+    ''' <summary>The process the SCM runs the service in right now, or 0 when it is not
+    ''' running or the query failed. What the control-pipe client checks a server against in
+    ''' Server mode (ticket 054 H-10): only an administrator can register this service name,
+    ''' so its process is the service's worker whoever runs the console.</summary>
+    Public Function ServiceProcessId() As Integer
+        Dim scm As IntPtr = IntPtr.Zero
+        Dim svc As IntPtr = IntPtr.Zero
+        Try
+            scm = OpenSCManagerW(Nothing, Nothing, SC_MANAGER_CONNECT)
+            If scm = IntPtr.Zero Then Return 0
+            svc = OpenServiceW(scm, ServiceName, SERVICE_QUERY_STATUS)
+            If svc = IntPtr.Zero Then Return 0
+            Dim st As SERVICE_STATUS_PROCESS = Nothing
+            Dim needed As Integer
+            If Not QueryServiceStatusEx(svc, SC_STATUS_PROCESS_INFO, st, Marshal.SizeOf(GetType(SERVICE_STATUS_PROCESS)), needed) Then Return 0
+            Return CInt(st.dwProcessId)
+        Catch
+            Return 0
+        Finally
+            If svc <> IntPtr.Zero Then CloseServiceHandle(svc)
+            If scm <> IntPtr.Zero Then CloseServiceHandle(scm)
+        End Try
+    End Function
+
     ''' <summary>
     ''' True while the service holds (or is about to hold) the share. This is the
     ''' suppression check: whoever asks must NOT start a foreground worker, because
@@ -305,6 +349,10 @@ Public Module ServiceControl
             ' falls back to read-only-for-everything when it is absent.
             args &= " -ReadOnlyRoots """ & JoinRoots(readOnlyRoots) & """"
         End If
+        ' Removing the service role from an ordinary installation hands sharing back to
+        ' this program, whose own opt-in firewall rule the removal would otherwise delete
+        ' with the service's (ticket 054 H-05).
+        If action = ManageAction.Remove AndAlso IsOrdinaryEdition() Then args &= " -RestoreUserRule"
 
         Dim psi As New ProcessStartInfo("powershell.exe", args) With {
             .UseShellExecute = True,
@@ -313,15 +361,19 @@ Public Module ServiceControl
         Try
             Using p As Process = Process.Start(psi)
                 p.WaitForExit()
+                If p.ExitCode <> 0 Then
+                    AppFileLogger.WriteLine("Share service: manage " & action.ToString() & " - helper exit code " & p.ExitCode.ToString() &
+                                            " (" & HelperExitMeaning(p.ExitCode) & ")")
+                End If
                 Return If(p.ExitCode = 0, ManageResult.Succeeded, ManageResult.Failed)
             End Using
         Catch ex As System.ComponentModel.Win32Exception
             ' 1223 = ERROR_CANCELLED: the user said No to the UAC prompt.
             If ex.NativeErrorCode = 1223 Then Return ManageResult.Declined
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " share-service manage: " & ex.Message)
+            AppFileLogger.LogException("Share service: manage", ex)
             Return ManageResult.Failed
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " share-service manage: " & ex.Message)
+            AppFileLogger.LogException("Share service: manage", ex)
             Return ManageResult.Failed
         End Try
     End Function
@@ -340,13 +392,53 @@ Public Module ServiceControl
         End Select
     End Function
 
+    ''' <summary>What an exit code of the elevated helper means, for companion.log - the
+    ''' codes are listed in the helper's own header. The helper writes the full reason to
+    ''' its log; this line only says where to look.</summary>
+    Friend Function HelperExitMeaning(code As Integer) As String
+        Select Case code
+            Case 2 : Return "missing argument or worker"
+            Case 3 : Return "the service did not start"
+            Case 4 : Return "an ACL could not be set"
+            Case 5 : Return "not elevated"
+            Case 6 : Return "the state did not validate"
+            Case 7 : Return "host-key mismatch"
+            Case 8 : Return "firewall"
+            Case 9 : Return "the service is not installed"
+            Case 10 : Return "several identities"
+            Case 11 : Return "the state directory cannot be trusted - see install-share-service.log in the administrator's %TEMP%"
+            Case 12 : Return "some folders were not granted"
+            Case 13 : Return "the service account is not LOCAL SERVICE"
+            Case 14 : Return "the old registration is still marked for deletion"
+            Case Else : Return "unexpected error - see install-share-service.log"
+        End Select
+    End Function
+
+    ''' <summary>An ordinary (User) edition installation - the viewer sits next to this
+    ''' program. The Server edition ships the Share Manager alone.</summary>
+    Public Function IsOrdinaryEdition() As Boolean
+        Try
+            Dim baseDir As String = Path.GetDirectoryName(Application.ExecutablePath)
+            If String.IsNullOrEmpty(baseDir) Then Return False
+            Return File.Exists(Path.Combine(baseDir, "FastMediaSorter_LITE.exe")) OrElse
+                   File.Exists(Path.Combine(baseDir, "FastMediaSorter_x86.exe"))
+        Catch
+            Return False
+        End Try
+    End Function
+
     ''' <summary>Packs folder paths into the single -Roots argument the helper takes.
-    ''' Pipe-separated because a path may contain a comma or a space but never "|".</summary>
-    Private Function JoinRoots(roots As IEnumerable(Of String)) As String
+    ''' Pipe-separated because a path may contain a comma or a space but never "|".
+    ''' Each path goes WITHOUT a trailing backslash: the list is quoted, and a drive root's
+    ''' "D:\" right before the closing quote is an escaped quote to the Windows argument
+    ''' parser, which then swallowed the rest of the command line - the helper received a
+    ''' mangled -Roots and no -ReadOnlyRoots (ticket 054 H-03). The helper puts the
+    ''' backslash back on a bare drive letter.</summary>
+    Friend Function JoinRoots(roots As IEnumerable(Of String)) As String
         If roots Is Nothing Then Return ""
         Dim kept As New List(Of String)()
         For Each r As String In roots
-            Dim v As String = If(r, "").Trim()
+            Dim v As String = If(r, "").Trim().TrimEnd("\"c)
             If v.Length > 0 AndAlso v.IndexOf(""""c) < 0 AndAlso v.IndexOf("|"c) < 0 Then kept.Add(v)
         Next
         Return String.Join("|", kept)

@@ -357,14 +357,14 @@ Partial Public Class Main_Form
         If vlc_Media_Player Is Nothing OrElse Not is_Vlc_Playing Then Return False
         Try
             Dim tracks = If(audio, vlc_Media_Player.AudioTrackDescription, vlc_Media_Player.SpuDescription)
-            If tracks Is Nothing OrElse tracks.Length < 2 Then Return False
+            If tracks Is Nothing Then Return False
 
+            ' The same rule as HasTrackChoice, not Length (audit 050 D-16): the "Disable"
+            ' entry made a one-track MP4 look like a choice, and A switched its only sound
+            ' off. Returning False also leaves the key to a custom hotkey bound to it.
             Dim current As Integer = If(audio, vlc_Media_Player.AudioTrack, vlc_Media_Player.Spu)
-            Dim at As Integer = -1
-            For i As Integer = 0 To tracks.Length - 1
-                If tracks(i).Id = current Then at = i : Exit For
-            Next
-            Dim [next] As Integer = tracks((at + 1) Mod tracks.Length).Id
+            Dim [next] As Integer = PlaybackRules.NextTrackInCycle(tracks.Select(Function(t) t.Id).ToArray(), current, audio)
+            If [next] = PlaybackRules.No_Track Then Return False
 
             If audio Then SetAudioTrack([next]) Else SetSubtitleTrack([next])
             Return True
@@ -397,27 +397,41 @@ Partial Public Class Main_Form
     ''' because ids are per-file; a file without the preferred language simply keeps
     ''' VLC's own pick rather than getting an arbitrary one.
     ''' </summary>
-    Friend Sub ApplyPreferredTracks()
-        If vlc_Media_Player Is Nothing Then Return
+    ''' <returns>True when the track lists could be read, so the caller can treat the
+    ''' preference as applied for this media and not re-apply it on a resume from pause
+    ''' (audit 050 D-10).</returns>
+    Friend Function ApplyPreferredTracks() As Boolean
+        If vlc_Media_Player Is Nothing Then Return False
         applying_Track_Preference = True
         Try
-            If preferred_Audio_Language.Length > 0 Then
+            Dim audio_Tracks = vlc_Media_Player.AudioTrackDescription
+            Dim subtitle_Tracks = vlc_Media_Player.SpuDescription
+            If (audio_Tracks Is Nothing OrElse audio_Tracks.Length = 0) AndAlso
+               (subtitle_Tracks Is Nothing OrElse subtitle_Tracks.Length = 0) Then Return False
+
+            ' A track already speaking the preferred language is left alone: it may be the
+            ' user's pick of the second track in that language.
+            If preferred_Audio_Language.Length > 0 AndAlso
+               Not LanguageCodesMatch(preferred_Audio_Language, TrackLanguage(vlc_Media_Player.AudioTrack, audio:=True)) Then
                 Dim id As Integer = IdOfTrackInLanguage(preferred_Audio_Language, audio:=True)
                 If id <> Integer.MinValue Then vlc_Media_Player.SetAudioTrack(id)
             End If
 
             If preferred_Subtitle_Language = Subtitle_Off_Key Then
                 vlc_Media_Player.SetSpu(Track_Disabled_Id)
-            ElseIf preferred_Subtitle_Language.Length > 0 Then
+            ElseIf preferred_Subtitle_Language.Length > 0 AndAlso
+                   Not LanguageCodesMatch(preferred_Subtitle_Language, TrackLanguage(vlc_Media_Player.Spu, audio:=False)) Then
                 Dim id As Integer = IdOfTrackInLanguage(preferred_Subtitle_Language, audio:=False)
                 If id <> Integer.MinValue Then vlc_Media_Player.SetSpu(id)
             End If
+            Return True
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2474: ApplyPreferredTracks failed: " & ex.Message)
+            Return False
         Finally
             applying_Track_Preference = False
         End Try
-    End Sub
+    End Function
 
 End Class
 #End If

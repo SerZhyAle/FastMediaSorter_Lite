@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Fast local test loop: silently kill every running instance, rebuild EVERYTHING
     (LITE + Share Manager companion + worker payload) via build.ps1, then relaunch
@@ -89,11 +89,14 @@ Start-Sleep -Milliseconds 300
 
 # --- 2. rebuild + redeploy everything (reuse build.ps1) --------------------------
 
-$buildArgs = @()
-if ($NoClean)       { $buildArgs += '-NoClean' }
-if ($SkipCompanion) { $buildArgs += '-SkipCompanion' }
+# HASHTABLE splatting binds by name. An array of '-NoClean' / '-SkipCompanion' strings
+# splats as POSITIONAL values: build.ps1 has no positional parameter, so both landed in
+# its $args and were silently ignored (the trap build.ps1 documents above $installerArgs).
+$buildArgs = @{}
+if ($NoClean)       { $buildArgs.NoClean = $true }
+if ($SkipCompanion) { $buildArgs.SkipCompanion = $true }
 
-Write-Host "Rebuilding via build.ps1 $($buildArgs -join ' ').." -ForegroundColor Cyan
+Write-Host "Rebuilding via build.ps1 $(($buildArgs.Keys | ForEach-Object { "-$_" }) -join ' ').." -ForegroundColor Cyan
 & (Join-Path $root 'build.ps1') @buildArgs
 if ($LASTEXITCODE -ne 0) {
     Write-Error "build.ps1 failed (exit code $LASTEXITCODE) - not launching."

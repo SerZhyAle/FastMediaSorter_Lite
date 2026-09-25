@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Drawing
@@ -26,7 +26,20 @@ Imports System.Text
 ''' calculation - so turning diagnostics on cannot change what it describes. Nothing is
 ''' written next to the user's images: the dump goes only where the user pointed it.
 '''
-''' Modern-only: it is a development tool, not something a Windows 7 fallback needs.
+''' Modern-only, and that is a DECISION rather than an omission (ticket 033 Ф-5, finding F4).
+''' `OCR-OVERLAY` rule 12 asks for the discard record to be WRITTEN, and rule 17 for the
+''' diagnostics to change nothing; the net48 x86 fallback writes neither, so it deviates from
+''' both for as long as this file stays whole-file `#If Not NETFRAMEWORK`, and the catalog's
+''' registry carries the dated exception. The decision, written here so that exception is
+''' renewed deliberately rather than drifting past its date:
+'''
+'''   Leave it. The dump is a development tool, read by the scene harness and by whoever is
+'''   tuning a threshold - both on the mainline - and the maintenance policy for the x86 build
+'''   takes bug fixes only (CLAUDE.md, "Maintenance policy"). The x86 exe still COLLECTS the
+'''   discard list: the engine and OcrBlockBuilder fill it in both builds, so porting the dump
+'''   would be this file and nothing else. What would change the answer: a threshold that
+'''   behaves differently on the x86 build (the only reason to read its record), or the x86
+'''   build acquiring a reason to be touched anyway.
 ''' </summary>
 Public Module OcrDiagnostics
 
@@ -96,78 +109,39 @@ Public Module OcrDiagnostics
         End Try
     End Sub
 
+    ''' <summary>Whether a dump is written at all: the developer switch is on AND the text
+    ''' may reach the disk. Pure, for the rule test of E-12.</summary>
+    Friend Function ShouldDump(dumpEnabled As Boolean, mayPersist As Boolean) As Boolean
+        Return dumpEnabled AndAlso mayPersist
+    End Function
+
     ''' <summary>
     ''' Appends one JSON line describing the whole image. Shape follows the exchange
     ''' specification section 10.4 so the two projects' dumps stay comparable, plus the three
-    ''' fields only we have: the plate as it ended up after the growth rung, whether the
-    ''' translation still had to be trimmed, and what the thresholds refused.
+    ''' fields only we have: the plate as it ended up after the growth rung, whether the plate
+    ''' had to be RELEASED past that budget, and what the thresholds refused. The released
+    ''' flag was called "truncated" until ticket 025 section 4 removed the ellipsis that name
+    ''' described; the condition it reports is the same one.
     '''
     ''' Called for a page with NO plates too, and that is the point rather than an edge case
     ''' (section 16.1): a scene where a correctly read word was thrown away by a threshold used
     ''' to look exactly like a scene where the engine found nothing, because neither wrote a
     ''' line. The record only reports; it renders nothing and changes no decision.
+    '''
+    ''' <paramref name="mayPersist"/> is False for a picture out of a secure container, and
+    ''' then nothing is written: its recognised text is plaintext of a secret, and the
+    ''' boundary is "no decrypted byte reaches the disk - not a log" (audit 052 E-12).
+    ''' Required, not optional, so a new call site has to answer the question.
     ''' </summary>
-    Public Sub DumpDocument(doc As OcrOverlayDocument)
-        If doc Is Nothing OrElse diag_File.Length = 0 Then Return
+    Public Sub DumpDocument(doc As OcrOverlayDocument, mayPersist As Boolean)
+        If doc Is Nothing OrElse Not ShouldDump(diag_File.Length > 0, mayPersist) Then Return
         SyncLock dump_Sync
             If ReferenceEquals(doc, last_Dumped) Then Return
             last_Dumped = doc
         End SyncLock
 
         Try
-            Dim sb As New StringBuilder()
-            sb.Append("{""file"":").Append(Quote(doc.FilePath))
-            sb.Append(",""width"":").Append(Num(doc.ImageSize.Width))
-            sb.Append(",""height"":").Append(Num(doc.ImageSize.Height))
-            sb.Append(",""blocks"":[")
-            For i As Integer = 0 To doc.Blocks.Count - 1
-                Dim b As OcrBlock = doc.Blocks(i)
-                If i > 0 Then sb.Append(",")
-                Dim plateBottom As Integer = b.Box.Top + If(b.RenderPlateHeight > 0, b.RenderPlateHeight, b.Box.Height)
-                sb.Append("{""text"":").Append(Quote(If(Not String.IsNullOrWhiteSpace(b.TranslatedText), b.TranslatedText, b.SourceText)))
-                sb.Append(",""x0"":").Append(Num(b.Box.Left))
-                sb.Append(",""y0"":").Append(Num(b.Box.Top))
-                sb.Append(",""x1"":").Append(Num(b.Box.Right))
-                sb.Append(",""y1"":").Append(Num(b.Box.Bottom))
-                sb.Append(",""lineH"":").Append(Num(OcrOverlayFit.MedianLineHeight(b)))
-                sb.Append(",""fontPx"":").Append(b.RenderFontPx.ToString("0.##", CultureInfo.InvariantCulture))
-                sb.Append(",""plateY1"":").Append(Num(plateBottom))
-                sb.Append(",""truncated"":").Append(If(b.Truncated, "true", "false"))
-                sb.Append(",""background"":").Append(Rgb(b.PlateBackgroundArgb))
-                sb.Append(",""ink"":").Append(Rgb(b.PlateInkArgb))
-                sb.Append("}")
-            Next
-            sb.Append("]")
-
-            ' "dropped": an ARRAY when the run measured its refusals - empty means it measured
-            ' and dropped nothing - and null when nobody did, which is what a document read
-            ' back from the cache honestly is. The two must stay distinguishable: reporting
-            ' "not measured" as "nothing was dropped" is the same flattering zero that made the
-            ' hidden-ink gate green while it was excluding every scene that found no text
-            ' (section 16.5).
-            sb.Append(",""dropped"":")
-            If doc.Dropped Is Nothing Then
-                sb.Append("null")
-            Else
-                sb.Append("[")
-                For i As Integer = 0 To doc.Dropped.Count - 1
-                    Dim d As OcrDroppedLine = doc.Dropped(i)
-                    If i > 0 Then sb.Append(",")
-                    sb.Append("{""text"":").Append(Quote(d.Text))
-                    sb.Append(",""x0"":").Append(Num(d.Box.Left))
-                    sb.Append(",""y0"":").Append(Num(d.Box.Top))
-                    sb.Append(",""x1"":").Append(Num(d.Box.Right))
-                    sb.Append(",""y1"":").Append(Num(d.Box.Bottom))
-                    ' Negative confidence means the refusal happened after the engine, where
-                    ' there is none - null rather than a made-up number.
-                    sb.Append(",""conf"":").Append(If(d.Confidence < 0.0F, "null",
-                                                      d.Confidence.ToString("0.###", CultureInfo.InvariantCulture)))
-                    sb.Append(",""rule"":").Append(Quote(d.Rule))
-                    sb.Append("}")
-                Next
-                sb.Append("]")
-            End If
-            sb.Append("}")
+            Dim line As String = BuildDumpLine(doc)
 
             ' UTF8Encoding(False), not Encoding.UTF8: the latter puts a byte-order mark at the
             ' head of the file, and a BOM on line 1 of a JSONL dump makes the first record fail
@@ -178,12 +152,74 @@ Public Module OcrDiagnostics
             ' now, and two appends racing on one handle lose a line to a sharing violation -
             ' silently, since the catch below only writes to the debug output.
             SyncLock dump_Sync
-                File.AppendAllText(diag_File, sb.ToString() & Environment.NewLine, New UTF8Encoding(False))
+                File.AppendAllText(diag_File, line & Environment.NewLine, New UTF8Encoding(False))
             End SyncLock
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr-diag: dump failed: " & ex.Message)
         End Try
     End Sub
+
+    ''' <summary>
+    ''' The one JSON line for a document. Pure and read-only - it reads the values the renderer
+    ''' recorded and writes nothing back - which is what `OCR-OVERLAY` rule 17 ("diagnostics
+    ''' change nothing") rests on, and what the tests hold it to (ticket 033 Ф-8).
+    ''' </summary>
+    Friend Function BuildDumpLine(doc As OcrOverlayDocument) As String
+        Dim sb As New StringBuilder()
+        sb.Append("{""file"":").Append(Quote(doc.FilePath))
+        sb.Append(",""width"":").Append(Num(doc.ImageSize.Width))
+        sb.Append(",""height"":").Append(Num(doc.ImageSize.Height))
+        sb.Append(",""blocks"":[")
+        For i As Integer = 0 To doc.Blocks.Count - 1
+            Dim b As OcrBlock = doc.Blocks(i)
+            If i > 0 Then sb.Append(",")
+            Dim plateBottom As Integer = b.Box.Top + If(b.RenderPlateHeight > 0, b.RenderPlateHeight, b.Box.Height)
+            sb.Append("{""text"":").Append(Quote(If(Not String.IsNullOrWhiteSpace(b.TranslatedText), b.TranslatedText, b.SourceText)))
+            sb.Append(",""x0"":").Append(Num(b.Box.Left))
+            sb.Append(",""y0"":").Append(Num(b.Box.Top))
+            sb.Append(",""x1"":").Append(Num(b.Box.Right))
+            sb.Append(",""y1"":").Append(Num(b.Box.Bottom))
+            sb.Append(",""lineH"":").Append(Num(OcrOverlayFit.MedianLineHeight(b)))
+            sb.Append(",""fontPx"":").Append(b.RenderFontPx.ToString("0.##", CultureInfo.InvariantCulture))
+            sb.Append(",""plateY1"":").Append(Num(plateBottom))
+            sb.Append(",""released"":").Append(If(b.Released, "true", "false"))
+            sb.Append(",""background"":").Append(Rgb(b.PlateBackgroundArgb))
+            sb.Append(",""ink"":").Append(Rgb(b.PlateInkArgb))
+            sb.Append("}")
+        Next
+        sb.Append("]")
+
+        ' "dropped": an ARRAY when the run measured its refusals - empty means it measured
+        ' and dropped nothing - and null when nobody did, which is what a document read
+        ' back from the cache honestly is. The two must stay distinguishable: reporting
+        ' "not measured" as "nothing was dropped" is the same flattering zero that made the
+        ' hidden-ink gate green while it was excluding every scene that found no text
+        ' (section 16.5).
+        sb.Append(",""dropped"":")
+        If doc.Dropped Is Nothing Then
+            sb.Append("null")
+        Else
+            sb.Append("[")
+            For i As Integer = 0 To doc.Dropped.Count - 1
+                Dim d As OcrDroppedLine = doc.Dropped(i)
+                If i > 0 Then sb.Append(",")
+                sb.Append("{""text"":").Append(Quote(d.Text))
+                sb.Append(",""x0"":").Append(Num(d.Box.Left))
+                sb.Append(",""y0"":").Append(Num(d.Box.Top))
+                sb.Append(",""x1"":").Append(Num(d.Box.Right))
+                sb.Append(",""y1"":").Append(Num(d.Box.Bottom))
+                ' Negative confidence means the refusal happened after the engine, where
+                ' there is none - null rather than a made-up number.
+                sb.Append(",""conf"":").Append(If(d.Confidence < 0.0F, "null",
+                                                  d.Confidence.ToString("0.###", CultureInfo.InvariantCulture)))
+                sb.Append(",""rule"":").Append(Quote(d.Rule))
+                sb.Append("}")
+            Next
+            sb.Append("]")
+        End If
+        sb.Append("}")
+        Return sb.ToString()
+    End Function
 
     Private Function Num(value As Integer) As String
         Return value.ToString(CultureInfo.InvariantCulture)

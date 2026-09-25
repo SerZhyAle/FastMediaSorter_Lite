@@ -148,7 +148,7 @@ Public Module RouterInfo
         End Try
     End Function
 
-    Private Function ParseDeviceXml(xml As String) As RouterIdentity
+    Friend Function ParseDeviceXml(xml As String) As RouterIdentity
         Dim id As New RouterIdentity()
         id.Vendor = CleanVendor(FirstTag(xml, "manufacturer"))
         id.Model = CleanText(FirstTag(xml, "modelName"))
@@ -181,39 +181,14 @@ Public Module RouterInfo
         Dim id As New RouterIdentity() With {.Source = "http"}
         Dim scanText As New StringBuilder()
 
-        Try
-            Dim req As HttpWebRequest = CType(WebRequest.Create("http://" & ip & "/"), HttpWebRequest)
-            req.Method = "GET"
-            req.Timeout = 1200
-            req.ReadWriteTimeout = 1200
-            req.AllowAutoRedirect = True
-            req.UserAgent = "FastMediaSorter"
-            Dim resp As HttpWebResponse = Nothing
-            Try
-                resp = CType(req.GetResponse(), HttpWebResponse)
-            Catch wex As WebException
-                resp = TryCast(wex.Response, HttpWebResponse) ' 401 pages still carry headers
-            End Try
-            If resp IsNot Nothing Then
-                Using resp
-                    scanText.Append(" ").Append(If(resp.Headers("Server"), ""))
-                    scanText.Append(" ").Append(If(resp.Headers("WWW-Authenticate"), ""))
-                    Try
-                        Using sr As New IO.StreamReader(resp.GetResponseStream(), Encoding.UTF8)
-                            Dim buf(4095) As Char
-                            Dim n As Integer = sr.Read(buf, 0, buf.Length)
-                            If n > 0 Then
-                                Dim body As New String(buf, 0, n)
-                                Dim tm As Match = Regex.Match(body, "<title[^>]*>(.*?)</title>", RegexOptions.IgnoreCase Or RegexOptions.Singleline)
-                                If tm.Success Then scanText.Append(" ").Append(tm.Groups(1).Value)
-                            End If
-                        End Using
-                    Catch
-                    End Try
-                End Using
-            End If
-        Catch
-        End Try
+        ' A 401 page still carries the headers - the fetch keeps any status.
+        Dim page As FetchResult = Fetch("http://" & ip & "/", 1200)
+        If page IsNot Nothing Then
+            scanText.Append(" ").Append(page.Server)
+            scanText.Append(" ").Append(page.Authenticate)
+            Dim tm As Match = Regex.Match(page.Body, "<title[^>]*>(.*?)</title>", RegexOptions.IgnoreCase Or RegexOptions.Singleline)
+            If tm.Success Then scanText.Append(" ").Append(tm.Groups(1).Value)
+        End If
 
         id.Vendor = MatchVendor(scanText.ToString())
         Return id
@@ -221,21 +196,67 @@ Public Module RouterInfo
 
     ' --- helpers ----------------------------------------------------------------
 
+    ''' <summary>
+    ''' Everything read from a LAN device is read on its terms: whatever answers the SSDP
+    ''' search, or sits at the gateway address, decides what comes back (ticket 054 H-17). So
+    ''' a read is capped, the whole request has one deadline (a per-read timeout let an
+    ''' endless trickle pin a thread and its memory for as long as the device liked), and no
+    ''' redirect is followed - one would turn opening a window into a request to any host the
+    ''' device names, which the privacy text never mentions.
+    ''' </summary>
+    Friend Const Max_Body_Bytes As Integer = 64 * 1024
+
+    Private NotInheritable Class FetchResult
+        Public Server As String = ""
+        Public Authenticate As String = ""
+        Public Body As String = ""
+    End Class
+
     Private Function HttpGet(url As String, timeoutMs As Integer) As String
+        Dim r As FetchResult = Fetch(url, timeoutMs)
+        Return If(r Is Nothing, "", r.Body)
+    End Function
+
+    Private Function Fetch(url As String, timeoutMs As Integer) As FetchResult
         Try
-            Dim req As HttpWebRequest = CType(WebRequest.Create(url), HttpWebRequest)
-            req.Method = "GET"
-            req.Timeout = timeoutMs
-            req.ReadWriteTimeout = timeoutMs
-            req.UserAgent = "FastMediaSorter"
-            Using resp As HttpWebResponse = CType(req.GetResponse(), HttpWebResponse)
-                Using sr As New IO.StreamReader(resp.GetResponseStream(), Encoding.UTF8)
-                    Return sr.ReadToEnd()
+            Return FetchAsync(url, timeoutMs).GetAwaiter().GetResult()
+        Catch
+            Return Nothing
+        End Try
+    End Function
+
+    Private Async Function FetchAsync(url As String, timeoutMs As Integer) As Task(Of FetchResult)
+        Using handler As New Http.SocketsHttpHandler With {
+                .AllowAutoRedirect = False,
+                .UseProxy = False,
+                .ConnectTimeout = TimeSpan.FromMilliseconds(timeoutMs)}
+            Using client As New Http.HttpClient(handler) With {.Timeout = System.Threading.Timeout.InfiniteTimeSpan}
+                Using deadline As New System.Threading.CancellationTokenSource(timeoutMs)
+                    Using req As New Http.HttpRequestMessage(Http.HttpMethod.Get, url)
+                        req.Headers.TryAddWithoutValidation("User-Agent", "FastMediaSorter")
+                        Using resp As Http.HttpResponseMessage = Await client.SendAsync(req, Http.HttpCompletionOption.ResponseHeadersRead, deadline.Token).ConfigureAwait(False)
+                            Dim result As New FetchResult()
+                            Dim values As IEnumerable(Of String) = Nothing
+                            If resp.Headers.TryGetValues("Server", values) Then result.Server = String.Join(" ", values)
+                            If resp.Headers.TryGetValues("WWW-Authenticate", values) Then result.Authenticate = String.Join(" ", values)
+                            Using body As IO.Stream = Await resp.Content.ReadAsStreamAsync(deadline.Token).ConfigureAwait(False)
+                                Using ms As New IO.MemoryStream()
+                                    Dim buf(8191) As Byte
+                                    Do While ms.Length < Max_Body_Bytes
+                                        Dim want As Integer = CInt(Math.Min(buf.Length, Max_Body_Bytes - ms.Length))
+                                        Dim n As Integer = Await body.ReadAsync(buf, 0, want, deadline.Token).ConfigureAwait(False)
+                                        If n <= 0 Then Exit Do
+                                        ms.Write(buf, 0, n)
+                                    Loop
+                                    result.Body = Encoding.UTF8.GetString(ms.ToArray())
+                                End Using
+                            End Using
+                            Return result
+                        End Using
+                    End Using
                 End Using
             End Using
-        Catch
-            Return ""
-        End Try
+        End Using
     End Function
 
     Private Function ExtractHeader(httpResponse As String, header As String) As String
@@ -277,15 +298,27 @@ Public Module RouterInfo
         End Select
     End Function
 
-    Private Function CleanText(raw As String) As String
+    ''' <summary>A device-supplied name, made plain text. Decoded FIRST and stripped after:
+    ''' the other way round, "&amp;lt;img onerror=..&amp;gt;" survived the tag strip and was
+    ''' decoded into live markup (ticket 054 H-17). Then only printable characters are kept,
+    ''' minus the few that mean something to HTML or a shell.</summary>
+    Friend Function CleanText(raw As String) As String
         If String.IsNullOrEmpty(raw) Then Return ""
         Dim s As String = raw
         Try
-            s = Regex.Replace(s, "<[^>]+>", " ")           ' strip stray tags
             s = System.Net.WebUtility.HtmlDecode(s)
+            s = Regex.Replace(s, "<[^>]*>", " ")           ' strip tags, including decoded ones
         Catch
         End Try
-        s = Regex.Replace(s, "\s+", " ").Trim()
+        Dim kept As New StringBuilder(s.Length)
+        For Each c As Char In s
+            If Char.IsControl(c) Then
+                kept.Append(" "c)
+            ElseIf "<>""'`&".IndexOf(c) < 0 Then
+                kept.Append(c)
+            End If
+        Next
+        s = Regex.Replace(kept.ToString(), "\s+", " ").Trim()
         If s.Length > 60 Then s = s.Substring(0, 60).Trim()
         Return s
     End Function

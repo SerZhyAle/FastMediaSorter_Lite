@@ -16,7 +16,13 @@ Public Class OcrTranslateSettings
     Public Property Endpoint As String = ""              ' TranslateEndpoint
     Public Property ApiKey As String = ""                ' decrypted; persisted encrypted
     Public Property OverlayVisible As Boolean = True     ' OverlayVisible
-    Public Property OverlayOpacity As Integer = 210      ' OverlayOpacity (alpha 0-255)
+    ''' <summary>Plate alpha, 0-255. Opaque by default: `OCR-OVERLAY` rule 7 asks for an
+    ''' opaque plate, and anything lower is the user's own choice on the Settings slider
+    ''' (ticket 033 Ф-4, owner decision O-1). It was 210 until 2026-09-25; a value an older
+    ''' build saved is kept as it is.</summary>
+    Public Property OverlayOpacity As Integer = DefaultOverlayOpacity ' OverlayOpacity
+
+    Public Const DefaultOverlayOpacity As Integer = 255
     Public Property DiskCache As Boolean = True          ' OcrDiskCache
     Public Property OllamaModel As String = "qwen2.5:3b" ' OllamaModel ("" = auto-detect)
     Public Property OcrModelQuality As String = "fast"   ' OcrModelQuality (fast/best)
@@ -29,10 +35,13 @@ Public Class OcrTranslateSettings
         SourceLang = ReadString("OcrSourceLang", "auto")
         Provider = ReadString("TranslateProvider", "ollama")
         TargetLang = ReadString("TranslateTargetLang", defaultTargetLang)
+        ' A target the picker cannot show would be displayed as "English" while every
+        ' request asked for it by code (audit 051 E-06) - so it becomes English for real.
+        If Not OcrLanguageCatalog.IsTargetLanguage(TargetLang) Then TargetLang = "en"
         Endpoint = ReadString("TranslateEndpoint", "")
         ApiKey = DpapiSecrets.Unprotect(ReadString("TranslateApiKey", ""))
         OverlayVisible = ReadBool("OverlayVisible", True)
-        OverlayOpacity = ClampOpacity(ReadInt("OverlayOpacity", 210))
+        OverlayOpacity = ClampOpacity(ReadInt("OverlayOpacity", DefaultOverlayOpacity))
         DiskCache = ReadBool("OcrDiskCache", True)
         OllamaModel = ReadString("OllamaModel", "qwen2.5:3b")
         OcrModelQuality = ReadString("OcrModelQuality", "fast")
@@ -168,6 +177,8 @@ Public Class OcrTranslateSettings
             Case "vi", "vie" : Return "vie"
             Case "id", "ind" : Return "ind"
             Case "fa", "fas" : Return "fas"
+            Case "bn", "ben" : Return "ben"
+            Case "ur", "urd" : Return "urd"
             Case Else : Return s
         End Select
     End Function
@@ -195,9 +206,8 @@ Public Class OcrTranslateSettings
     End Function
 
     Private Shared Function ReadInt(key As String, def As Integer) As Integer
-        Dim result As Integer = def
-        Integer.TryParse(GetSetting(App_name, Second_App_Name, key, def.ToString()), result)
-        Return result
+        ' The default on a corrupt value, not 0 (053 F-17).
+        Return Utils.ParseIntSetting(GetSetting(App_name, Second_App_Name, key, def.ToString()), def)
     End Function
 
     Private Shared Sub WriteString(key As String, value As String)

@@ -49,6 +49,8 @@ Public NotInheritable Class PackageWizardForm
     Private btnEmail As Button
     Private btnClose As Button
     Private lblHint As Label
+    ''' <summary>Always-visible: the code and the file are a key (FMSCFG rule 6, ticket 034 phase 1).</summary>
+    Private lblSecret As Label
     Private toolTip As ToolTip
     Private _qrGlyph As Image
     Private _qrImage As Image   ' the current QR bitmap - opened enlarged on demand (no inline preview)
@@ -133,12 +135,22 @@ Public NotInheritable Class PackageWizardForm
         ' Below the grid: common per-export settings (full width), then ONE action-button row.
         Dim leftCol As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.TopDown, .WrapContents = False, .Margin = New Padding(0)}
         leftCol.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 4), .Font = New Font(Me.Font, FontStyle.Bold), .Text = Localization.T("Общие настройки передачи:")})
-        chkLanOnly = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = Localization.T("Только локальная сеть (без адреса из интернета)")}
+        ' Per-CODE only (ticket 054 H-06): this shapes what THIS export carries and nothing
+        ' else. It used to be worded - and wired - as the server-wide "LAN only", while
+        ' silently acting as one at the next resume; the enforcing switch is its own,
+        ' pushed the moment it moves, in Settings - Сеть.
+        chkLanOnly = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = Localization.T("Не включать адрес из интернета в этот код")}
         chkNoPassword = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 6), .Text = Localization.T("Не включать пароль в файл/QR")}
         AddHandler chkLanOnly.CheckedChanged, AddressOf OnRebuildToggle
         AddHandler chkNoPassword.CheckedChanged, AddressOf OnRebuildToggle
-        toolTip.SetToolTip(chkNoPassword, Localization.T("Пароль не попадёт в файл/QR - телефон запросит его при импорте; передайте пароль отдельно."))
-        leftCol.Controls.AddRange(New Control() {chkLanOnly, chkNoPassword})
+        toolTip.SetToolTip(chkLanOnly, Localization.T("Относится только к этому коду: телефон будет подключаться по локальной сети. Сам сервер это не выключает - доступ из интернета для всей раздачи закрывается отдельно: Настройки менеджера - Сеть."))
+        ' No promise about what the phone does with an empty password: the importer's
+        ' answer is still open (ticket 034 phase 3, FMSCFG registry exception).
+        toolTip.SetToolTip(chkNoPassword, Localization.T("Пароль не попадёт в файл/QR - передайте его отдельно. Примет ли телефон код без пароля, зависит от версии приложения."))
+        ' FMSCFG rule 6: the payload is a secret. Said once, always visible, next to the
+        ' toggles that decide what the secret contains (ticket 034 phase 1).
+        lblSecret = New Label With {.AutoSize = True, .MaximumSize = New Size(520, 0), .ForeColor = Color.Firebrick, .Margin = New Padding(0, 2, 0, 2)}
+        leftCol.Controls.AddRange(New Control() {chkLanOnly, chkNoPassword, lblSecret})
         ' NB: the LAN address + host-key fingerprint are deliberately NOT shown here. The
         ' package embeds ALL access paths (LAN + IPv6 + internet), so showing only the LAN
         ' address misleads the user into thinking the code is local-only; those details already
@@ -195,6 +207,7 @@ Public NotInheritable Class PackageWizardForm
         chkLanOnly.Checked = _settings.LanOnlyExport
         chkNoPassword.Checked = _settings.ExcludePasswordFromExport
         _loading = False
+        UpdateSecretLine()
 
         AddHandler Me.Shown, AddressOf OnShownFirst
         AddHandler Me.FormClosed, AddressOf HandleFormClosed
@@ -284,9 +297,17 @@ Public NotInheritable Class PackageWizardForm
         dgv.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "pin", .HeaderText = "PIN", .MinimumWidth = 70})
         dgv.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "slide", .HeaderText = Localization.T("Слайд-шоу, сек"), .MinimumWidth = 80})
 
+        ' Hard read-only and "destination" are what the SERVER enforces for the folder, set
+        ' once per shared folder in the main window - the one shared login in a code cannot
+        ' be restricted per code (spec §4.5.3). Shown here, never edited: ticking "read only"
+        ' for one recipient used to change only what the code SAID, while that recipient could
+        ' still write (ticket 054 H-07). A per-code restriction is the soft hint next to it.
+        dgv.Columns("ro").[ReadOnly] = True
+        dgv.Columns("dest").[ReadOnly] = True
+
         ' Header tooltips for the less-obvious columns.
         dgv.Columns("ro").ToolTipText = Localization.T("Сервер запрещает изменения (настоящий запрет).")
-        dgv.Columns("softro").ToolTipText = Localization.T("Приложение спрячет кнопки изменения, но сервер запись не запрещает.")
+        dgv.Columns("softro").ToolTipText = Localization.T("Приложение спрячет кнопки изменения, но сервер запись не запрещает. На папку-получатель не действует.")
         dgv.Columns("dest").ToolTipText = Localization.T("Папка-получатель: в неё можно копировать/переносить с телефона (делает папку доступной на запись).")
         dgv.Columns("media").ToolTipText = Localization.T("Нажмите, чтобы выбрать точный набор типов. Пусто = решает тип.")
 
@@ -308,7 +329,10 @@ Public NotInheritable Class PackageWizardForm
         ' (and its grid/timer) is then disposed, so bail before touching any control.
         If IsDisposed OrElse Disposing Then Return
         If _status Is Nothing OrElse Not _status.Running Then
-            SetHint(Localization.T("Сервер не запущен."))
+            ' A worker on a newer protocol answered - it may well be serving, and "not
+            ' running" would be the wrong sentence (WORKER-IPC section 6 rule 3).
+            Dim refusal As String = If(_status Is Nothing, ShareController.RefusalMessage(), "")
+            SetHint(If(refusal <> "", refusal, Localization.T("Сервер не запущен.")))
             Return
         End If
         PopulateGrid()
@@ -347,6 +371,7 @@ Public NotInheritable Class PackageWizardForm
                     row.Cells("ro").Value = p.IsReadOnly
                     row.Cells("softro").Value = p.SoftReadOnly
                     row.Cells("dest").Value = p.IsDestination
+                    SyncSoftReadOnlyCell(row, p.IsDestination)
                     row.Cells("comment").Value = p.Comment
                     row.Cells("pin").Value = p.AccessPin
                     row.Cells("slide").Value = p.SlideshowInterval.ToString()
@@ -403,6 +428,7 @@ Public NotInheritable Class PackageWizardForm
             Case "dest"
                 p.IsDestination = CellBool(row, "dest")
                 If p.IsDestination Then SetCellBool(row, "ro", False) : p.IsReadOnly = False
+                SyncSoftReadOnlyCell(row, p.IsDestination)
             Case "comment"
                 p.Comment = CellText(row, "comment")
             Case "pin"
@@ -470,6 +496,17 @@ Public NotInheritable Class PackageWizardForm
         _syncing = True
         row.Cells(name).Value = value
         _syncing = False
+    End Sub
+
+    ''' <summary>A destination ignores the soft read-only hint (ShareRootParams.AdvertisedReadOnly,
+    ''' ticket 034 phase 2), so its cell is greyed and locked while "destination" is set. The
+    ''' value is kept, not cleared - the stored hint comes back if the folder stops being one.</summary>
+    Private Shared Sub SyncSoftReadOnlyCell(row As DataGridViewRow, isDestination As Boolean)
+        Dim cell As DataGridViewCell = row.Cells("softro")
+        cell.ReadOnly = isDestination
+        cell.Style.ForeColor = If(isDestination, SystemColors.GrayText, Color.Empty)
+        cell.Style.BackColor = If(isDestination, SystemColors.Control, Color.Empty)
+        cell.ToolTipText = If(isDestination, Localization.T("На папку-получатель не действует: она всегда доступна на запись."), "")
     End Sub
 
     ' --- rebuild ----------------------------------------------------------------
@@ -676,7 +713,17 @@ Public NotInheritable Class PackageWizardForm
         _settings.LanOnlyExport = chkLanOnly.Checked
         _settings.ExcludePasswordFromExport = chkNoPassword.Checked
         Try : _settings.Save() : Catch : End Try
+        UpdateSecretLine()
         ScheduleRebuild()
+    End Sub
+
+    ''' <summary>The rule-6 line: what the code carries depends on the password toggle, the fact
+    ''' that it is a key does not.</summary>
+    Private Sub UpdateSecretLine()
+        If lblSecret Is Nothing Then Return
+        lblSecret.Text = If(chkNoPassword.Checked,
+            Localization.T("QR-код и файл .fmscfg открывают доступ к папкам (и содержат PIN, если он задан) - храните и передавайте их как ключ."),
+            Localization.T("QR-код и файл .fmscfg содержат пароль (и PIN, если он задан) - храните и передавайте их как ключ."))
     End Sub
 
     Private Sub OnCopyLogin(sender As Object, e As EventArgs)
@@ -715,7 +762,7 @@ Public NotInheritable Class PackageWizardForm
         Using dlg As New SaveFileDialog() With {.Filter = "FMS config (*.fmscfg)|*.fmscfg", .FileName = "FastMediaSorter.fmscfg"}
             If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
             Try
-                File.WriteAllText(dlg.FileName, _config.ConfigJson, New UTF8Encoding(False))
+                ShareConfigBuilder.WriteConfigFile(dlg.FileName, _config.ConfigJson)
                 SetHint(Localization.T("Файл сохранён."))
             Catch
                 SetHint(Localization.T("Не удалось сохранить файл."))
@@ -723,21 +770,37 @@ Public NotInheritable Class PackageWizardForm
         End Using
     End Sub
 
+    ''' <summary>
+    ''' Hands the code to the mail client. The attachment is a key (FMSCFG rule 6), so the body
+    ''' says so, and the temporary copy lives only for the call: Simple MAPI has taken the
+    ''' attachment by the time MAPISendMail returns, and a copy left in %TEMP% for good is a
+    ''' plaintext credential nobody knows is there (ticket 034 phase 1). Each send gets its own
+    ''' folder, so the recipient still sees the plain file name.
+    ''' </summary>
     Private Sub OnEmail(sender As Object, e As EventArgs)
         FlushPendingRebuild()
         If _config Is Nothing OrElse String.IsNullOrEmpty(_config.ConfigJson) Then Return
+        Dim root As String = Path.Combine(Path.GetTempPath(), "FastMediaSorter")
+        Dim dir As String = Path.Combine(root, "mail-" & Guid.NewGuid().ToString("N"))
         Try
-            Dim dir As String = Path.Combine(Path.GetTempPath(), "FastMediaSorter")
+            ShareConfigBuilder.DeleteStaleConfigCopies(root)   ' what builds before 034 left behind
             Directory.CreateDirectory(dir)
             Dim cfgFile As String = Path.Combine(dir, "FastMediaSorter.fmscfg")
-            File.WriteAllText(cfgFile, _config.ConfigJson, New UTF8Encoding(False))
+            ShareConfigBuilder.WriteConfigFile(cfgFile, _config.ConfigJson)
             Dim subject As String = Localization.T("Доступ к папкам Fast Media Sorter")
-            Dim body As String = Localization.T("Импортируйте вложенный файл .fmscfg в приложении FastMediaSorter на Android.")
+            Dim body As String = Localization.T("Импортируйте вложенный файл .fmscfg в приложении FastMediaSorter на Android.") &
+                Environment.NewLine & Environment.NewLine &
+                Localization.T("Этот файл открывает доступ к папкам: не пересылайте его и удалите после импорта.")
             If Not MailSender.SendFile(cfgFile, subject, body) Then
                 SetHint(Localization.T("Не удалось открыть почтовый клиент."))
             End If
         Catch
             SetHint(Localization.T("Не удалось отправить письмо."))
+        Finally
+            Try
+                If Directory.Exists(dir) Then Directory.Delete(dir, recursive:=True)
+            Catch
+            End Try
         End Try
     End Sub
 

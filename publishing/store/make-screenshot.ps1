@@ -1,4 +1,4 @@
-<#
+﻿<#
     Generates Microsoft Store listing images in all required sizes and in English and Russian.
 
     Output (assets/store/):

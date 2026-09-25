@@ -7,12 +7,27 @@ Imports System.Windows.Forms
 ''' read-only (e.g. under MSIX). Mirrors the LITE AppFileLogger contract that the
 ''' ported Share code already calls (currently ShareConfigBuilder diagnostics).
 ''' Never throws - a logging failure must never break a share operation.
+'''
+''' Since ticket 028 Ф-3 (APP-BEHAVIOUR rule 6) this is where a caught exception goes:
+''' before it, seven catch sites wrote only to Debug.WriteLine, which a Release build
+''' drops, so the log the user can send held nothing about the failure they saw. It is
+''' capped the way the viewer's log is, so a chatty failure cannot grow it for ever.
 ''' </summary>
 Public Module AppFileLogger
 
     Private ReadOnly Gate As New Object()
     Private _path As String
     Private _resolved As Boolean
+
+    ''' <summary>Past this size the log is rotated to companion.log.old on the next write.</summary>
+    Friend Const Max_Log_Bytes As Long = 2L * 1024L * 1024L
+
+    ''' <summary>Where companion.log lives, or Nothing when no location is writable.</summary>
+    Public ReadOnly Property LogFilePath As String
+        Get
+            Return LogPath()
+        End Get
+    End Property
 
     Private Function LogPath() As String
         If _resolved Then Return _path
@@ -42,10 +57,38 @@ Public Module AppFileLogger
             Dim p As String = LogPath()
             If p Is Nothing Then Return
             SyncLock Gate
+                RotateIfOversized(p)
                 File.AppendAllText(p, message & Environment.NewLine)
             End SyncLock
         Catch
         End Try
     End Sub
+
+    ''' <summary>A caught exception, whole, with a time stamp and what was being done.</summary>
+    Public Sub LogException(context As String, ex As Exception)
+        If ex Is Nothing Then
+            WriteLine(Stamp() & " " & context)
+            Return
+        End If
+        WriteLine(Stamp() & " " & context & ": " & ex.ToString())
+    End Sub
+
+    Private Function Stamp() As String
+        Return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", Globalization.CultureInfo.InvariantCulture)
+    End Function
+
+    ''' <summary>Keeps one previous generation; True when a rotation happened.</summary>
+    Friend Function RotateIfOversized(logPath As String) As Boolean
+        Try
+            Dim info As New FileInfo(logPath)
+            If Not info.Exists OrElse info.Length <= Max_Log_Bytes Then Return False
+            Dim older As String = logPath & ".old"
+            If File.Exists(older) Then File.Delete(older)
+            File.Move(logPath, older)
+            Return True
+        Catch
+            Return False
+        End Try
+    End Function
 
 End Module

@@ -14,9 +14,12 @@ Option Strict On
 Partial Public NotInheritable Class Localization
 
     Private Shared Sub AddEditorStrings()
+        Add("Редактировать",
+            "Edit", "Редагувати", "Bearbeiten", "Modifica", "Editar", "Modifier", "Editar",
+            "تحرير", "संपादित करें", "সম্পাদনা", "ترمیم", "编辑")
 
         ' --- entry point: toolbar button + middle-click menu --------------------
-        Add("Правка изображения",
+        Add("Редактирование изображения",
             "Edit image", "Редагування зображення", "Bild bearbeiten", "Modifica immagine",
             "Editar imagen", "Modifier l'image", "Editar imagem", "تحرير الصورة",
             "छवि संपादन", "ছবি সম্পাদনা", "تصویر میں ترمیم", "编辑图片")
@@ -232,6 +235,56 @@ Partial Public NotInheritable Class Localization
             "il file non esiste", "el archivo no existe", "le fichier est introuvable",
             "o arquivo não existe", "الملف غير موجود", "फ़ाइल मौजूद नहीं है",
             "ফাইলটি নেই", "فائل موجود نہیں", "文件不存在")
+        ' Audit 046 G-02 / G-03: two more reasons "Save" is off, and where "Save as.."
+        ' must not write.
+        Add("в файле несколько страниц или кадров, правится только первый",
+            "the file has several pages or frames, and only the first is edited",
+            "у файлі кілька сторінок або кадрів, редагується лише перший",
+            "die Datei hat mehrere Seiten oder Einzelbilder, bearbeitet wird nur das erste",
+            "il file ha più pagine o fotogrammi e viene modificato solo il primo",
+            "el archivo tiene varias páginas o fotogramas y solo se edita el primero",
+            "le fichier a plusieurs pages ou images, et seule la première est modifiée",
+            "o arquivo tem várias páginas ou quadros, e só o primeiro é editado",
+            "يحتوي الملف على عدة صفحات أو إطارات، ولا يُحرَّر إلا الأول",
+            "फ़ाइल में कई पृष्ठ या फ़्रेम हैं, और केवल पहला संपादित होता है",
+            "ফাইলে একাধিক পৃষ্ঠা বা ফ্রেম আছে, আর শুধু প্রথমটি সম্পাদিত হয়",
+            "فائل میں کئی صفحات یا فریم ہیں، اور صرف پہلا ترمیم ہوتا ہے",
+            "文件包含多个页面或帧，只编辑第一个")
+        Add("это файл внутри архива",
+            "this is a file inside an archive", "це файл усередині архіву",
+            "dies ist eine Datei in einem Archiv", "questo è un file all'interno di un archivio",
+            "es un archivo dentro de un archivo comprimido", "c'est un fichier à l'intérieur d'une archive",
+            "este é um arquivo dentro de um arquivo compactado", "هذا ملف داخل أرشيف",
+            "यह एक संग्रह के अंदर की फ़ाइल है", "এটি একটি আর্কাইভের ভেতরের ফাইল",
+            "یہ ایک آرکائیو کے اندر کی فائل ہے", "这是压缩包内的文件")
+        Add("Сюда сохранить нельзя: это временная папка архива",
+            "Cannot save here: this is the archive's temporary folder",
+            "Сюди зберегти не можна: це тимчасова тека архіву",
+            "Hier kann nicht gespeichert werden: Dies ist der temporäre Ordner des Archivs",
+            "Impossibile salvare qui: questa è la cartella temporanea dell'archivio",
+            "No se puede guardar aquí: es la carpeta temporal del archivo comprimido",
+            "Impossible d'enregistrer ici : c'est le dossier temporaire de l'archive",
+            "Não é possível salvar aqui: esta é a pasta temporária do arquivo compactado",
+            "لا يمكن الحفظ هنا: هذا هو المجلد المؤقت للأرشيف",
+            "यहाँ सहेजा नहीं जा सकता: यह संग्रह का अस्थायी फ़ोल्डर है",
+            "এখানে সংরক্ষণ করা যাবে না: এটি আর্কাইভের অস্থায়ী ফোল্ডার",
+            "یہاں محفوظ نہیں کیا جا سکتا: یہ آرکائیو کا عارضی فولڈر ہے",
+            "无法保存到此处：这是压缩包的临时文件夹")
+        ' Audit 046 G-01: the one save failure after which the original is no longer
+        ' under its own name - both files are kept, and this says where.
+        Add("Не удалось сохранить, и оригинал не вернулся на место. Оригинал: {0}; правка: {1}",
+            "Could not save, and the original could not be put back. Original: {0}; edit: {1}",
+            "Не вдалося зберегти, і оригінал не повернувся на місце. Оригінал: {0}; правка: {1}",
+            "Speichern fehlgeschlagen, und das Original konnte nicht zurückgelegt werden. Original: {0}; Bearbeitung: {1}",
+            "Impossibile salvare, e l'originale non è stato rimesso al suo posto. Originale: {0}; modifica: {1}",
+            "No se pudo guardar y el original no pudo volver a su sitio. Original: {0}; edición: {1}",
+            "Échec de l'enregistrement, et l'original n'a pas pu être remis en place. Original : {0} ; modification : {1}",
+            "Não foi possível salvar, e o original não voltou ao lugar. Original: {0}; edição: {1}",
+            "تعذّر الحفظ، ولم يُعَد الأصل إلى مكانه. الأصل: {0}؛ التعديل: {1}",
+            "सहेजा नहीं जा सका, और मूल फ़ाइल अपनी जगह वापस नहीं आई। मूल: {0}; संपादन: {1}",
+            "সংরক্ষণ করা যায়নি, এবং মূল ফাইলটি আগের জায়গায় ফেরেনি। মূল: {0}; সম্পাদনা: {1}",
+            "محفوظ نہیں ہو سکا، اور اصل فائل اپنی جگہ واپس نہیں آئی۔ اصل: {0}؛ ترمیم: {1}",
+            "无法保存，且原文件未能放回原位。原文件：{0}；编辑结果：{1}")
 
         ' --- the one confirmation the save path asks (§9.5) ---------------------
         Add("JPEG будет пересжат - это необратимо. Дата съёмки и остальные EXIF-данные сохранятся. Продолжить?",

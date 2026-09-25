@@ -223,6 +223,7 @@ Partial Public Class Table_Form
         AddHandler modernSettingsContent.Resize, AddressOf ModernSettingsContentResized
         AddHandler SystemEvents.UserPreferenceChanged, AddressOf ModernSystemPreferenceChanged
         AddHandler FormClosed, AddressOf ModernSettingsFormClosed
+        AddHandler VisibleChanged, AddressOf ModernSettingsVisibleChanged
         AddHandler Shown, AddressOf ModernSettingsShown
         AddHandler FormClosing, AddressOf SaveModernSettingsWindowSize
         BuildModernDataLayout()
@@ -571,6 +572,11 @@ Partial Public Class Table_Form
             Case "archive_cache_limit" : Return Localization.T("Лимит кэша архивов, МБ")
             Case "archive_entry_limit" : Return Localization.T("Лимит одной записи архива, МБ")
             Case "archive_entries_limit" : Return Localization.T("Лимит записей в архиве")
+            Case "section_secure" : Return Localization.T("Защищённые файлы")
+            Case "secure_in_navigation" : Return Localization.T("Показывать защищённые файлы в папке")
+            Case "secure_remember_minutes" : Return Localization.T("Помнить пароль, минут")
+            Case "secure_show_true_name" : Return Localization.T("Показывать настоящее имя файла")
+            Case "secure_open_with" : Return Localization.T("Контейнеры .fd-sec")
             Case "settings_export_personal" : Return Localization.T("Включить личные данные")
             Case "settings_export" : Return Localization.T("Экспорт настроек")
             Case "settings_import" : Return Localization.T("Импорт настроек")
@@ -596,7 +602,6 @@ Partial Public Class Table_Form
             Case "ocr_disk_cache" : Return Localization.T("Кэшировать результаты на диске")
             Case "ocr_cache_limit" : Return Localization.T("Максимальный размер OCR-кэша, МБ")
             Case "ocr_cache_clear" : Return Localization.T("Занято на диске")
-            Case "to_video_confirm" : Return Localization.T("Спрашивать перед заменой видео")
             Case "decode_cache_limit" : Return Localization.T("Кэш декодирования, МБ")
             Case "decode_cache_clear" : Return Localization.T("Занято на диске")
             Case "sftp_intro" : Return Localization.T("Доступ к медиатеке с телефона")
@@ -611,6 +616,7 @@ Partial Public Class Table_Form
             Case "project_github" : Return "GitHub"
             Case "project_releases" : Return Localization.T("Новые версии")
             Case "project_privacy" : Return Localization.T("Политика конфиденциальности")
+            Case "project_trust" : Return Localization.T("Почему Windows предупреждает")
             Case "project_email" : Return Localization.T("Связаться с автором")
             Case Else : Return key
         End Select
@@ -661,8 +667,8 @@ Partial Public Class Table_Form
             Case "preferred_audio_language", "preferred_subtitle_language" : Return Localization.T("Если такой дорожки нет, выбор остаётся за плеером.")
             Case "advance_after_copy" : Return Localization.T("После копирования сразу показывается следующий файл. Снимите галочку, чтобы остаться на текущем.")
             Case "no_confirmation" : Return Localization.T("Файловые операции выполняются сразу. Используйте осторожно.")
-            Case "image_associations" : Return Localization.T("Открывает системные параметры приложений по умолчанию для изображений.")
-            Case "video_associations" : Return Localization.T("Открывает системные параметры приложений по умолчанию для видео.")
+            Case "image_associations" : Return Localization.T("Регистрирует программу для открытия изображений у текущего пользователя, без прав администратора.")
+            Case "video_associations" : Return Localization.T("Регистрирует программу для открытия видео и аудио у текущего пользователя, без прав администратора.")
             Case "interface_language" : Return Localization.T("Выберите, на каком языке показывать интерфейс.")
             Case "name_collision" : Return Localization.T("Что делать, если в папке-получателе уже есть файл с тем же именем.")
             Case "delete_to_recycle_bin" : Return Localization.T("На сетевом диске и съёмном носителе Корзины нет - там файл удаляется безвозвратно, и программа скажет об этом. Shift+DEL всегда удаляет мимо Корзины.")
@@ -679,6 +685,10 @@ Partial Public Class Table_Form
             Case "archive_cache_limit" : Return Localization.T("Сколько места на диске может занимать временная распаковка одного открытого архива.")
             Case "archive_entry_limit" : Return Localization.T("Запись крупнее этого не распаковывается, а показывает честный отказ вместо картинки.")
             Case "archive_entries_limit" : Return Localization.T("Архив с большим числом записей показывается обрезанным до этого количества, и строка состояния предупреждает об этом.")
+            Case "secure_in_navigation" : Return Localization.T("Файлы .fd-sec попадают в список папки и считаются в счётчике. Что внутри - неизвестно, пока файл не открыт паролем.")
+            Case "secure_remember_minutes" : Return Localization.T("Пароль хранится только в памяти программы и нигде не записывается. 0 - помнить до закрытия программы.")
+            Case "secure_show_true_name" : Return Localization.T("Открытый контейнер показывает имя файла, который в нём спрятан - в строке состояния и в подписи поверх картинки. Выключите, если на экран смотрит кто-то ещё.")
+            Case "secure_open_with" : Return Localization.T("Добавляет программу в меню «Открыть с помощью» для .fd-sec, ничего не отбирая у той программы, которой эти файлы принадлежат сейчас.")
             Case "settings_export_personal" : Return Localization.T("История папок и позиции просмотра попадут в файл. API-ключи и пароли - никогда.")
             Case "settings_export" : Return Localization.T("Сохраняет параметры в файл. Личные данные - пути и позиции просмотра - не включаются.")
             Case "settings_import" : Return Localization.T("Читает параметры из файла. Прежний профиль сохраняется рядом с ним как .backup.")
@@ -700,7 +710,6 @@ Partial Public Class Table_Form
             Case "ocr_disk_cache" : Return Localization.T("Сохраняет распознанный текст, чтобы повторно не обрабатывать файл.")
             Case "ocr_cache_limit" : Return Localization.T("0 означает без ограничения; очистка по LRU выполняется после записи.")
             Case "ocr_cache_clear" : Return Localization.T("Текущий размер сохранённых результатов. Очистка не меняет настройки OCR.")
-            Case "to_video_confirm" : Return Localization.T("Оригинал удаляется безвозвратно, поэтому по умолчанию программа спрашивает.")
             Case "decode_cache_limit" : Return Localization.T("Ускоряет повторное открытие анимаций и медленных форматов. 0 отключает кэш.")
             Case "decode_cache_clear" : Return Localization.T("Текущий размер сохранённых результатов декодирования.")
             Case "sftp_intro" : Return Localization.T("Опубликуйте выбранные папки встроенным SFTP-сервером и открывайте их в мобильном приложении.")
@@ -715,6 +724,7 @@ Partial Public Class Table_Form
             Case "project_github" : Return Localization.T("Исходный код, задачи и техническая документация.")
             Case "project_releases" : Return Localization.T("Список опубликованных версий и файлов для установки.")
             Case "project_privacy" : Return Localization.T("Как приложение обрабатывает пользовательские данные.")
+            Case "project_trust" : Return Localization.T("Предупреждение SmartScreen, на что нажать и зачем нужны права администратора.")
             Case "project_email" : Return Localization.T("Написать автору проекта по электронной почте.")
             Case Else : Return String.Empty
         End Select
@@ -1049,7 +1059,12 @@ Partial Public Class Table_Form
         AddProjectLinkRow(flow, "project_site", "https://serzhyale.github.io/FastMediaSorter_Lite/")
         AddProjectLinkRow(flow, "project_github", "https://github.com/SerZhyAle/FastMediaSorter_Lite")
         AddProjectLinkRow(flow, "project_releases", "https://github.com/SerZhyAle/FastMediaSorter_Lite/releases")
-        AddProjectLinkRow(flow, "project_privacy", "https://serzhyale.github.io/FastMediaSorter_Lite/privacy.html")
+        ' The policy lives under docs/ - the root /privacy.html this row used to open is a 404.
+        AddProjectLinkRow(flow, "project_privacy", SitePages.PrivacyPageUrl)
+        ' Beside the privacy page, because it answers the same question from the other side:
+        ' the warnings Windows raises and what administrator rights are used for (INSTALL-TRUST
+        ' rule 7, ticket 037 Ф-4). In the language the settings window is speaking.
+        AddProjectLinkRow(flow, "project_trust", SitePages.TrustPageUrl(Localization.CurrentCode))
         AddProjectLinkRow(flow, "project_email", "mailto:" & Author_Email & "?subject=Fast Media Sorter for Windows")
     End Sub
 
@@ -1095,7 +1110,11 @@ Partial Public Class Table_Form
         Try
             Process.Start(New ProcessStartInfo(Convert.ToString(link.Tag)) With {.UseShellExecute = True})
         Catch ex As Exception
-            MessageBox.Show(Me, ex.Message, Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            ' The action is the address itself, so the user can open it by hand
+            ' (APP-BEHAVIOUR rule 6, ticket 028 Ф-3); the exception goes to the log.
+            AppFileLogger.LogException("Settings: opening a project link", ex)
+            MessageBox.Show(Me, Localization.TF("Не удалось открыть ссылку в браузере. Откройте её вручную: {0}", Convert.ToString(link.Tag)),
+                            Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End Try
     End Sub
 
@@ -1256,6 +1275,16 @@ Partial Public Class Table_Form
 
     Private Sub ModernSettingsFormClosed(sender As Object, e As FormClosedEventArgs)
         RemoveHandler SystemEvents.UserPreferenceChanged, AddressOf ModernSystemPreferenceChanged
+    End Sub
+
+    ''' <summary>The F2 path shows this instance modally and never disposes it, so the next
+    ''' open reuses the same window - FormClosed has already dropped the theme subscription
+    ''' by then, and later light/dark switches were ignored (053 F-09). Subscribe again on
+    ''' every show; Remove first keeps it to exactly one subscription.</summary>
+    Private Sub ModernSettingsVisibleChanged(sender As Object, e As EventArgs)
+        If Not Visible OrElse IsDisposed Then Return
+        RemoveHandler SystemEvents.UserPreferenceChanged, AddressOf ModernSystemPreferenceChanged
+        AddHandler SystemEvents.UserPreferenceChanged, AddressOf ModernSystemPreferenceChanged
     End Sub
 
     Private Sub ApplySettingsTitleBarTheme()

@@ -14,6 +14,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# Windows PowerShell 5.1 redraws Invoke-WebRequest's progress bar per chunk, which
+# makes a large download many times slower. Nothing here reads the progress stream.
+$ProgressPreference = "SilentlyContinue"
 
 $releaseLanguages = @(
     "eng", "rus", "ukr", "bel", "deu", "fra", "spa", "ita", "por", "nld",
@@ -23,8 +26,28 @@ $releaseLanguages = @(
 )
 
 $stageRoot = (Resolve-Path $StageDir).Path
-$fastBaseUrl = "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main"
-$bestBaseUrl = "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main"
+# Pinned to a commit, never to a branch: these files ship inside every package and
+# native Tesseract parses them, so the bytes must be the ones reviewed and recorded -
+# an upstream push to `main` (or a compromised upstream) must not enter a release
+# unnoticed, and two builds of one version must carry the same models. Every file is
+# checked against tools\tessdata.sha256 (see Assert-ModelHash). Moving to a newer
+# commit means changing the SHA here AND regenerating every line of that manifest.
+$fastCommit  = "87416418657359cb625c412a48b6e1d6d41c29bd"
+$bestCommit  = "e12c65a915945e4c28e237a9b52bc4a8f39a0cec"
+$fastBaseUrl = "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/$fastCommit"
+$bestBaseUrl = "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/$bestCommit"
+
+# "<sha256>  <set>/<code>.traineddata" per line, '#' comments allowed.
+$manifestPath = Join-Path $PSScriptRoot "tessdata.sha256"
+if (-not (Test-Path $manifestPath)) { throw "OCR model manifest not found: $manifestPath" }
+$expectedHashes = @{}
+foreach ($line in Get-Content -LiteralPath $manifestPath) {
+    $trimmed = $line.Trim()
+    if ($trimmed.Length -eq 0 -or $trimmed.StartsWith("#")) { continue }
+    $parts = $trimmed -split '\s+', 2
+    if ($parts.Count -ne 2 -or $parts[0] -notmatch '^[0-9a-fA-F]{64}$') { throw "Malformed line in ${manifestPath}: $line" }
+    $expectedHashes[$parts[1].Trim()] = $parts[0].ToUpperInvariant()
+}
 
 # Persistent, version-independent download cache. The staging directory this
 # script populates lives under stage\FastMediaSorter-<version>-...\ and its
@@ -44,6 +67,37 @@ function Remove-IfExists {
     }
 }
 
+# Fails, naming the file, when its bytes are not the ones the manifest records.
+function Assert-ModelHash {
+    param([string]$FilePath, [string]$ManifestKey, [string]$Hint)
+
+    if (-not $expectedHashes.ContainsKey($ManifestKey)) {
+        throw "No SHA-256 for $ManifestKey in $manifestPath - add it (from the pinned commit) before bundling this model."
+    }
+    $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $FilePath).Hash.ToUpperInvariant()
+    if ($actual -ne $expectedHashes[$ManifestKey]) {
+        throw "OCR model $FilePath does not match $ManifestKey in $manifestPath (got $actual, expected $($expectedHashes[$ManifestKey])). $Hint"
+    }
+}
+
+# A transient network error must not turn a paid release run red on its own.
+function Invoke-DownloadWithRetry {
+    param([string]$Uri, [string]$OutFile)
+
+    $attempts = 4
+    for ($i = 1; $i -le $attempts; $i++) {
+        try {
+            Invoke-WebRequest -Uri $Uri -OutFile $OutFile -UseBasicParsing
+            return
+        } catch {
+            if ($i -eq $attempts) { throw }
+            $delay = 5 * $i
+            Write-Warning "Download of $Uri failed (attempt $i of $attempts): $($_.Exception.Message). Retrying in $delay s.."
+            Start-Sleep -Seconds $delay
+        }
+    }
+}
+
 function Sync-LanguageSet {
     param(
         [string]$BaseUrl,
@@ -57,18 +111,32 @@ function Sync-LanguageSet {
 
     $downloaded = 0
     foreach ($code in $releaseLanguages) {
-        $cached = Join-Path $CacheDir ($code + ".traineddata")
+        $fileName = $code + ".traineddata"
+        $key = "$Label/$fileName"
+        $cached = Join-Path $CacheDir $fileName
         if (-not (Test-Path $cached)) {
             $tmp = $cached + ".part"
             Write-Host "Downloading $Label model: $code"
-            Invoke-WebRequest -Uri "$BaseUrl/$code.traineddata" -OutFile $tmp
+            Invoke-DownloadWithRetry -Uri "$BaseUrl/$fileName" -OutFile $tmp
+            # Checked BEFORE it enters the cache, so a bad download never becomes a
+            # cached file that later runs would trust.
+            try {
+                Assert-ModelHash -FilePath $tmp -ManifestKey $key -Hint "The download was discarded."
+            } catch {
+                Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
+                throw
+            }
             Move-Item -LiteralPath $tmp -Destination $cached -Force
             $downloaded++
         }
-        Copy-Item -LiteralPath $cached -Destination (Join-Path $TargetDir ($code + ".traineddata")) -Force
+        $staged = Join-Path $TargetDir $fileName
+        Copy-Item -LiteralPath $cached -Destination $staged -Force
+        # The staged copy is what ships - checked for every file, cache hit or not, so
+        # a corrupted or tampered cache (local, or restored by CI) stops the run here.
+        Assert-ModelHash -FilePath $staged -ManifestKey $key -Hint "Delete the cached copy $cached to download it again."
     }
     $fromCache = $releaseLanguages.Count - $downloaded
-    Write-Host "$Label models: $downloaded downloaded, $fromCache from cache -> $TargetDir"
+    Write-Host "$Label models: $downloaded downloaded, $fromCache from cache, all $($releaseLanguages.Count) verified -> $TargetDir"
 }
 
 if ($KeepX86) {

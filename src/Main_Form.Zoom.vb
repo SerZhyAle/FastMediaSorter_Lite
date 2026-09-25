@@ -112,6 +112,9 @@ Partial Public Class Main_Form
 
         zoom_Factor = target
         zoom_Scale = 0.0F   ' "not fit" - enables panning, stops click-navigation
+        ' The fit-time bars are box-sized: left on an enlarged box they tile across it
+        ' and show through every transparent pixel (audit B-12). Zoomed has no bars.
+        ClearPerspectiveBackground()
         UpdateZoomLabel()
         RememberFolderZoom(target)
     End Sub
@@ -133,10 +136,14 @@ Partial Public Class Main_Form
     ''' <summary>Fit (the default on every load/resize). Delegates to the historical
     ''' reset so there is exactly one definition of "fit" in the app.</summary>
     Friend Sub ZoomToFit()
+        Dim was_Zoomed As Boolean = zoom_Scale <> 1
         SkipZoom()
         zoom_Factor = 1.0
         UpdateZoomLabel()
         ForgetFolderZoom()
+        ' Back at Fit the bars come back (a zoom took them down - audit B-12). Not when
+        ' the display path fits on its own before a new photo: that one draws anyway.
+        If was_Zoomed AndAlso Not is_Zoom_Applied_By_Program AndAlso is_form_shown Then Draw_Perspective()
     End Sub
 
     ''' <summary>100 % - one image pixel per screen pixel (NumPad *, Shift+wheel).</summary>

@@ -178,13 +178,13 @@ Partial Public NotInheritable Class Localization
             "Probando {0} ..", "Test de {0} ..", "A testar {0} ..",
             "اختبار {0} ..", "जाँच {0} ..", "পরীক্ষা {0} ..", "جانچ {0} ..", "正在测试 {0} ..")
 
-        Add("✓ SFTP-сервер доступен: {0}",
-            "✓ SFTP server reachable: {0}", "✓ SFTP-сервер доступний: {0}",
-            "✓ SFTP-Server erreichbar: {0}", "✓ Server SFTP raggiungibile: {0}",
-            "✓ Servidor SFTP accesible: {0}", "✓ Serveur SFTP joignable : {0}",
-            "✓ Servidor SFTP alcançável: {0}", "✓ خادم SFTP متاح: {0}",
-            "✓ SFTP सर्वर उपलब्ध: {0}", "✓ SFTP সার্ভার উপলব্ধ: {0}",
-            "✓ SFTP سرور قابلِ رسائی: {0}", "✓ SFTP 服务器可访问：{0}")
+        Add("SFTP-сервер доступен: {0}",
+            "SFTP server reachable: {0}", "SFTP-сервер доступний: {0}",
+            "SFTP-Server erreichbar: {0}", "Server SFTP raggiungibile: {0}",
+            "Servidor SFTP accesible: {0}", "Serveur SFTP joignable : {0}",
+            "Servidor SFTP alcançável: {0}", "خادم SFTP متاح: {0}",
+            "SFTP सर्वर उपलब्ध: {0}", "SFTP সার্ভার উপলব্ধ: {0}",
+            "SFTP سرور قابلِ رسائی: {0}", "SFTP 服务器可访问：{0}")
 
         Add("Порт открыт, но SFTP не ответил: {0}",
             "Port open, but no SFTP reply: {0}", "Порт відкрито, але SFTP не відповів: {0}",
@@ -194,19 +194,19 @@ Partial Public NotInheritable Class Localization
             "पोर्ट खुला है, पर SFTP ने उत्तर नहीं दिया: {0}", "পোর্ট খোলা, কিন্তু SFTP সাড়া দেয়নি: {0}",
             "پورٹ کھلا ہے مگر SFTP نے جواب نہیں دیا: {0}", "端口已开放，但 SFTP 无响应：{0}")
 
-        Add("✗ С этого ПК не отвечает ({0}). Роутер может не пускать на свой внешний адрес изнутри - проверьте с телефона по мобильной сети.",
-            "✗ No answer from this PC ({0}). Your router may block its own address from inside - test from the phone on mobile data.",
-            "✗ З цього ПК не відповідає ({0}). Роутер може не пускати на свою зовнішню адресу зсередини - перевірте з телефона через мобільну мережу.",
-            "✗ Von diesem PC keine Antwort ({0}). Ihr Router lässt seine eigene Adresse von innen möglicherweise nicht zu - testen Sie es vom Telefon über Mobilfunk.",
-            "✗ Nessuna risposta da questo PC ({0}). Il router potrebbe bloccare il proprio indirizzo dall'interno: prova dal telefono in rete mobile.",
-            "✗ Sin respuesta desde este PC ({0}). El router puede bloquear su propia dirección desde dentro: prueba desde el teléfono con datos móviles.",
-            "✗ Aucune réponse depuis ce PC ({0}). Votre routeur peut bloquer sa propre adresse depuis l'intérieur - testez depuis le téléphone en données mobiles.",
-            "✗ Sem resposta a partir deste PC ({0}). O router pode bloquear o próprio endereço a partir de dentro - teste com o telemóvel em dados móveis.",
-            "✗ لا استجابة من هذا الحاسوب ({0}). قد يمنع الموجّه عنوانه الخاص من الداخل - اختبر من الهاتف عبر بيانات الجوال.",
-            "✗ इस पीसी से कोई उत्तर नहीं ({0})। राउटर भीतर से अपने ही पते को रोक सकता है - मोबाइल डेटा पर फ़ोन से जाँचें।",
-            "✗ এই পিসি থেকে কোনো সাড়া নেই ({0})। রাউটার ভেতর থেকে নিজের ঠিকানা আটকে দিতে পারে - মোবাইল ডেটায় ফোন থেকে পরীক্ষা করুন।",
-            "✗ اس پی سی سے کوئی جواب نہیں ({0})۔ روٹر اندر سے اپنے ہی پتے کو روک سکتا ہے - موبائل ڈیٹا پر فون سے جانچیں۔",
-            "✗ 本机无响应（{0}）。路由器可能拒绝从内部访问其外部地址 - 请用手机通过移动数据测试。")
+        Add("С этого ПК не отвечает ({0}). Роутер может не пускать на свой внешний адрес изнутри - проверьте с телефона по мобильной сети.",
+            "No answer from this PC ({0}). Your router may block its own address from inside - test from the phone on mobile data.",
+            "З цього ПК не відповідає ({0}). Роутер може не пускати на свою зовнішню адресу зсередини - перевірте з телефона через мобільну мережу.",
+            "Von diesem PC keine Antwort ({0}). Ihr Router lässt seine eigene Adresse von innen möglicherweise nicht zu - testen Sie es vom Telefon über Mobilfunk.",
+            "Nessuna risposta da questo PC ({0}). Il router potrebbe bloccare il proprio indirizzo dall'interno: prova dal telefono in rete mobile.",
+            "Sin respuesta desde este PC ({0}). El router puede bloquear su propia dirección desde dentro: prueba desde el teléfono con datos móviles.",
+            "Aucune réponse depuis ce PC ({0}). Votre routeur peut bloquer sa propre adresse depuis l'intérieur - testez depuis le téléphone en données mobiles.",
+            "Sem resposta a partir deste PC ({0}). O router pode bloquear o próprio endereço a partir de dentro - teste com o telemóvel em dados móveis.",
+            "لا استجابة من هذا الحاسوب ({0}). قد يمنع الموجّه عنوانه الخاص من الداخل - اختبر من الهاتف عبر بيانات الجوال.",
+            "इस पीसी से कोई उत्तर नहीं ({0})। राउटर भीतर से अपने ही पते को रोक सकता है - मोबाइल डेटा पर फ़ोन से जाँचें।",
+            "এই পিসি থেকে কোনো সাড়া নেই ({0})। রাউটার ভেতর থেকে নিজের ঠিকানা আটকে দিতে পারে - মোবাইল ডেটায় ফোন থেকে পরীক্ষা করুন।",
+            "اس پی سی سے کوئی جواب نہیں ({0})۔ روٹر اندر سے اپنے ہی پتے کو روک سکتا ہے - موبائل ڈیٹا پر فون سے جانچیں۔",
+            "本机无响应（{0}）。路由器可能拒绝从内部访问其外部地址 - 请用手机通过移动数据测试。")
 
         Add("Роутер: {0}",
             "Router: {0}", "Роутер: {0}", "Router: {0}", "Router: {0}", "Router: {0}",

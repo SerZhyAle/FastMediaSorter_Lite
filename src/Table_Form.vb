@@ -33,9 +33,16 @@ Public Class Table_Form
         ' probe (§3.3).
         Main_Form.PrewarmSlotHealth()
 #End If
+    End Sub
+
+    ''' <summary>The tooltip goes with the WINDOW, not with a close: the F2 path closes this
+    ''' instance modally and shows it again, and the tooltips set while the rows were
+    ''' built (AllowNewWindows, AdvanceAfterCopy, the export opt-in, the row descriptions)
+    ''' are set only once - disposing at close lost them on every reopen (053 F-09).</summary>
+    Private Sub Table_Form_Disposed(sender As Object, e As EventArgs) Handles Me.Disposed
         If toolTip IsNot Nothing Then
             toolTip.Dispose()
-            toolTip = Nothing ' Устанавливаем переменную в Nothing после уничтожения
+            toolTip = Nothing
         End If
     End Sub
 
@@ -82,10 +89,25 @@ Public Class Table_Form
 
         toolTip.SetToolTip(btn_Language, Localization.T("Язык интерфейса"))
 
-        toolTip.SetToolTip(btn_Set_As_Default, Localization.T("Открыть параметры Windows для назначения программы просмотра изображений по умолчанию."))
+        ' The image button writes the per-user registry itself, exactly like the video one;
+        ' its tooltip claimed it opened Windows Settings (audit 047, C-22). Only the Store
+        ' build really does open Settings - there the registry writes would be invisible.
+        Dim opens_Settings As Boolean = False
+#If Not NETFRAMEWORK Then
+        opens_Settings = Main_Form.IsPackagedApp()
+#End If
+        If opens_Settings Then
+            toolTip.SetToolTip(btn_Set_As_Default, Localization.T("Открыть параметры Windows, чтобы выбрать программы по умолчанию."))
+        Else
+            toolTip.SetToolTip(btn_Set_As_Default, Localization.T("Сделать эту программу просмотрщиком изображений по умолчанию - для текущего пользователя, без прав администратора."))
+        End If
 
         If btn_Set_As_Default_Video IsNot Nothing Then
-            toolTip.SetToolTip(btn_Set_As_Default_Video, Localization.T("Сделать эту программу видеоплеером по умолчанию - для текущего пользователя, без танцев с правами администратора."))
+            If opens_Settings Then
+                toolTip.SetToolTip(btn_Set_As_Default_Video, Localization.T("Открыть параметры Windows, чтобы выбрать программы по умолчанию."))
+            Else
+                toolTip.SetToolTip(btn_Set_As_Default_Video, Localization.T("Сделать эту программу видеоплеером по умолчанию - для текущего пользователя, без танцев с правами администратора."))
+            End If
         End If
 
 #If Not NETFRAMEWORK Then
@@ -105,6 +127,13 @@ Public Class Table_Form
     End Sub
     Public Sub PrepareForDisplay()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-2: the_Table_Form_Load")
+
+        ' Direction from the language table, like every other window (APP-BEHAVIOUR rule 8,
+        ' ticket 028 Ф-7) - this one set none. RightToLeft only, never RightToLeftLayout.
+        ' Runs on every language change too (LngCh calls this). The x86 build ships RU/EN
+        ' only, so there it is always No - its behaviour is unchanged.
+        Dim direction As RightToLeft = If(Localization.IsRightToLeft(), RightToLeft.Yes, RightToLeft.No)
+        If Me.RightToLeft <> direction Then Me.RightToLeft = direction
 
         InitializeTooltips()
 
@@ -138,7 +167,8 @@ Public Class Table_Form
         cmbox_color_schema.Items.Add(Localization.T("По краю")) '3
         cmbox_color_schema.Items.Add(Localization.T("По верху")) '4
         cmbox_color_schema.Items.Add(Localization.T("По низу")) '5
-        cmbox_color_schema.SelectedIndex = Form_Color_Scheme
+        ' Guarded here too: the load path clamps, but nothing stops another writer (053 F-16).
+        cmbox_color_schema.SelectedIndex = If(Form_Color_Scheme >= 0 AndAlso Form_Color_Scheme < cmbox_color_schema.Items.Count, Form_Color_Scheme, 1)
 
         ' Halo growth speed. Rebuilt on every display so a language switch relabels it;
         ' the selection itself is restored below, next to the two halo checkboxes.
@@ -221,6 +251,7 @@ Public Class Table_Form
         btn_Language.Text = Localization.CurrentCode.ToUpperInvariant()
 
         chkbox_Copy_Mode.Checked = Is_Copying_not_Moving
+        chkbox_Independent_Thread_For_File_Operation.Checked = Is_Independent_Thread_For_File_Operations
         Data_Grid_View.Rows.Clear()
         Data_Grid_View.Rows.Add()
         Data_Grid_View.Item(0, 0).Value = "DEL"
@@ -269,7 +300,7 @@ Public Class Table_Form
 
             grp_Background.Text = Localization.T("Фон")
             grp_OnScreen.Text = Localization.T("Информация на экране")
-            grp_Slideshow.Text = Localization.T("Слайдшоу")
+            grp_Slideshow.Text = Localization.T("Слайд-шоу")
             grp_Panel.Text = Localization.T("Панель миниатюр")
             grp_Quality.Text = Localization.T("Качество изображения")
             grp_Video.Text = Localization.T("Видео")
@@ -365,7 +396,11 @@ Public Class Table_Form
                 ' Explicit owner: this window rides the viewer's always-on-top band,
                 ' and an ownerless native dialog would open behind it.
                 If folderBrowse.ShowDialog(Me) = System.Windows.Forms.DialogResult.OK Then
+#If Not NETFRAMEWORK Then
+                    Hardkeys_to_move_mediafile(e.RowIndex) = SlotHealthPolicy.NormalizeSlotPath(folderBrowse.SelectedPath)
+#Else
                     Hardkeys_to_move_mediafile(e.RowIndex) = folderBrowse.SelectedPath
+#End If
                     Data_Grid_View.Item(1, e.RowIndex).Value = Hardkeys_to_move_mediafile(e.RowIndex)
                     Data_Grid_View.Refresh()
 #If Not NETFRAMEWORK Then
@@ -385,6 +420,14 @@ Public Class Table_Form
             Hardkeys_to_move_mediafile(e.RowIndex) = ""
         Else
             Hardkeys_to_move_mediafile(e.RowIndex) = Data_Grid_View.Item(1, e.RowIndex).Value.ToString()
+#If Not NETFRAMEWORK Then
+            ' Stored in the one spelling the probe and the action share (audit 047, C-24),
+            ' and shown that way, so the cell says what will actually be used.
+            Hardkeys_to_move_mediafile(e.RowIndex) = SlotHealthPolicy.NormalizeSlotPath(Hardkeys_to_move_mediafile(e.RowIndex))
+            If Not String.Equals(Convert.ToString(Data_Grid_View.Item(1, e.RowIndex).Value), Hardkeys_to_move_mediafile(e.RowIndex), StringComparison.Ordinal) Then
+                Data_Grid_View.Item(1, e.RowIndex).Value = Hardkeys_to_move_mediafile(e.RowIndex)
+            End If
+#End If
         End If
         ' Typed by hand rather than browsed - same rule as the folder picker above.
         Main_Form.SaveSettingsNow()
@@ -495,8 +538,22 @@ Public Class Table_Form
         ' NumericUpDown (for example table opacity) instead of moving the current file.
         If IsRecipientShortcut(e.KeyCode) Then Return
 
-        ' Don't forward key presses if user is editing a DataGridView cell
+        ' Don't forward key presses if user is editing a DataGridView cell - Escape
+        ' there cancels the edit, which is the grid's own business.
         If Data_Grid_View.IsCurrentCellInEditMode Then
+            Return
+        End If
+
+        ' Escape belongs to this window: it closes the settings and nothing else, the
+        ' same path as the close box. Forwarded, it reached the viewer's Escape/X/Q
+        ' "close the application" (spec 028 phase 1, APP-BEHAVIOUR rule 1). An open
+        ' drop-down keeps its own Escape (fold the list).
+        If e.KeyCode = Keys.Escape AndAlso e.Modifiers = Keys.None Then
+            Dim combo As ComboBox = TryCast(Me.ActiveControl, ComboBox)
+            If combo IsNot Nothing AndAlso combo.DroppedDown Then Return
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Me.Close()
             Return
         End If
 
@@ -506,9 +563,26 @@ Public Class Table_Form
             Return
         End If
 
-        ' Forward key presses to Main_Form only when not editing
+        ' Only paging keys reach the viewer - the reason this forwarding exists is to
+        ' flip photos while the settings stay open. Everything else (D/Delete delete the
+        ' file on screen, X/Q close the app, the slot digits move it) stays here.
+        If Not IsForwardedToViewer(e.KeyData) Then Return
+
         Main_Form.KeybUse(e, Main_Form.GetWas_slideshow())
     End Sub
+
+    ''' <summary>The allow-list of keys the settings window hands to the viewer: plain
+    ''' navigation, no modifiers. A new viewer hotkey is therefore NOT reachable from
+    ''' here until it is added on purpose.</summary>
+    Private Shared Function IsForwardedToViewer(keyData As Keys) As Boolean
+        Select Case keyData
+            Case Keys.Left, Keys.Right, Keys.PageUp, Keys.PageDown, Keys.Home, Keys.End,
+                 Keys.BrowserBack, Keys.BrowserForward, Keys.BrowserHome
+                Return True
+            Case Else
+                Return False
+        End Select
+    End Function
 
     Private Shared Function IsRecipientShortcut(keyCode As Keys) As Boolean
         Return (keyCode >= Keys.D0 AndAlso keyCode <= Keys.D9) OrElse
@@ -517,6 +591,10 @@ Public Class Table_Form
 
     Private Sub CheckBox1_CheckedChanged(sender As Object, e As EventArgs) Handles chkbox_Copy_Mode.CheckedChanged
         Is_Copying_not_Moving = chkbox_Copy_Mode.Checked
+    End Sub
+
+    Private Sub Chkbox_Independent_Thread_CheckedChanged(sender As Object, e As EventArgs) Handles chkbox_Independent_Thread_For_File_Operation.CheckedChanged
+        Is_Independent_Thread_For_File_Operations = chkbox_Independent_Thread_For_File_Operation.Checked
     End Sub
 
     Private Sub Data_Grid_View_CellContentClick(sender As Object, e As DataGridViewCellEventArgs) Handles Data_Grid_View.CellContentClick
@@ -528,8 +606,12 @@ Public Class Table_Form
     End Sub
 
     Private Sub Chb_perspectiva_CheckedChanged(sender As Object, e As EventArgs) Handles chb_perspectiva.CheckedChanged
+        Dim changed As Boolean = Is_Pespective <> chb_perspectiva.Checked
         Is_Pespective = chb_perspectiva.Checked
         SyncDynamicPerspectiveEnabled()
+        ' Draw or take down the bars on the photo on screen now; flipping the flag alone
+        ' left them up until the app restarted (audit B-04).
+        If changed Then Main_Form.RefreshPerspective()
     End Sub
 
     ''' <summary>Greys the chain down: with no perspective there are no bars to fade, with
@@ -602,10 +684,6 @@ Public Class Table_Form
 
     Private Sub Chkb_no_request_before_file_operation_CheckedChanged(sender As Object, e As EventArgs) Handles chkb_no_request_before_file_operation.CheckedChanged
         Is_no_request_before_file_operation = chkb_no_request_before_file_operation.Checked
-    End Sub
-
-    Private Sub Table_Form_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
-        If ToolTip IsNot Nothing Then ToolTip.Dispose()
     End Sub
 
     Private Sub Cmb_Picture_Size_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmb_Picture_Size.SelectedIndexChanged

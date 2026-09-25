@@ -27,9 +27,11 @@ Public NotInheritable Class ModernViewerPreferences
     ''' thing: the user asked for it.</summary>
     Public Property DeleteToRecycleBin As Boolean = True
 
-    ''' <summary>always | permanentOnly | never. The middle value is the one §0.4 of that
+    ''' <summary>always | permanentOnly. The second value is the one §0.4 of that
     ''' specification says is unreachable today and is what a triage session wants: a
-    ''' recycled deletion goes straight through, a PERMANENT one still stops and asks.</summary>
+    ''' recycled deletion goes straight through, a PERMANENT one still stops and asks.
+    ''' A third value, "never", silenced the permanent question too and was retired by
+    ''' ticket 028 Ф-5 - a stored one reads back as permanentOnly.</summary>
     Public Property ConfirmDelete As String = "always"
 
     ''' <summary>Make a recipient slot's final folder when it is not there yet
@@ -52,7 +54,7 @@ Public NotInheritable Class ModernViewerPreferences
     Public Property RecipientsOverlayWidth As Integer = 280
     Public Property RecipientsOverlayFontSize As Integer = 11
     Public Property RecipientsOverlayOpacity As Integer = 88
-    Public Property RecipientsOverlayVisibleRows As Integer = 10
+    Public Property RecipientsOverlayVisibleRows As Integer = 11   ' ten slots + Delete fit without scrolling (audit B-13)
 
     Public Property SlideshowRandomOrder As String = "natural"
     Public Property StopSlideshowOnManualNavigation As Boolean = True
@@ -103,16 +105,12 @@ Public NotInheritable Class ModernViewerPreferences
     Public Property OcrDiskCacheMaxMb As Integer = 250
     ''' <summary>Budget for the decode cache, in megabytes
     ''' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §6.2). Zero means the
-    ''' cache is OFF - nothing read, nothing written - the same reading OcrDiskCacheMaxMb
-    ''' already documents. The ceiling is higher than the OCR cache's because one entry here
+    ''' cache is OFF - nothing read, nothing written. Note the adjacent OcrDiskCacheMaxMb reads
+    ''' zero the OTHER way - there it means "no limit" (DiskCacheTrim, and the settings hint
+    ''' says so); this comment used to claim the two agreed (audit 051 E-07). Aligning them is
+    ''' the owner's call. The ceiling is higher than the OCR cache's because one entry here
     ''' is a whole transcoded animation, not a page of JSON.</summary>
     Public Property DecodeCacheMaxMb As Integer = 512
-    ''' <summary>Whether "Replace with video" asks before it runs
-    ''' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §10.1). On, because the
-    ''' step it guards deletes the original PERMANENTLY. The confirmation's own checkbox is
-    ''' what turns it off, and this row is what turns it back on - a suppressed warning the
-    ''' user cannot find again is not a setting, it is a trap.</summary>
-    Public Property ConfirmReplaceWithVideo As Boolean = True
 
     ''' <summary>Ceiling on an archive session's temporary directory, in megabytes
     ''' (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §5.3, §9). Enforced by LRU
@@ -127,6 +125,32 @@ Public NotInheritable Class ModernViewerPreferences
     ''' (§5.3, §9). An archive with more entries than this is shown truncated, and the
     ''' status line says so.</summary>
     Public Property ArchiveMaxEntries As Integer = 20000
+
+    ''' <summary>Ceiling on an open remote resource's cache session, in megabytes
+    ''' (006_SPECIFICATION_FILESYSTEM_PROVIDER_LAYER_DOTNET10.md PV-3). Enforced by LRU
+    ''' eviction that never touches the file on screen or its neighbours. No settings row
+    ''' yet: nothing in this build opens a resource that materialises (ticket 007).</summary>
+    Public Property RemoteCacheMaxMb As Integer = RemoteCacheStore.Default_Max_Mb
+
+    ''' <summary>Whether .fd-sec containers are listed in the folder at all
+    ''' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §9). On: a container is an
+    ''' ordinary file of the user's, and hiding it by default would mean a folder that
+    ''' silently shows fewer files than it holds. The navigation filters of ticket 009
+    ''' deliberately do NOT apply to it - its real kind is unknown until it is opened, and
+    ''' deriving a password-protected key to decide whether a file belongs in a list is not
+    ''' a thing a folder listing may do.</summary>
+    Public Property SecureIncludeInNavigation As Boolean = True
+
+    ''' <summary>Idle timeout of the session credential, in minutes; 0 means "until the
+    ''' program closes" (§5.5, §9). The credential is held in memory only and is never
+    ''' written anywhere, so this is about a screen left unattended, not about storage.</summary>
+    Public Property SecureRememberMinutes As Integer = 15
+
+    ''' <summary>Show the sealed true name on screen once a container is open - the status
+    ''' line, the current-file label and the info overlay (§9, O-1). On, because the user
+    ''' needs to know what is open; off turns it off everywhere at once, which is what
+    ''' somebody sharing a screen wants.</summary>
+    Public Property SecureShowTrueName As Boolean = True
 
     Public Property CustomHotkeysJson As String = "{}"
     ''' <summary>Bounded JSON stores. They are intentionally profile keys rather than
@@ -198,10 +222,13 @@ Public NotInheritable Class ModernViewerPreferences
         p.RecentFoldersLimit = ReadInt("RecentFoldersLimit", p.RecentFoldersLimit, 0, 200)
         p.OcrDiskCacheMaxMb = ReadInt("OcrDiskCacheMaxMb", p.OcrDiskCacheMaxMb, 0, 1024)
         p.DecodeCacheMaxMb = ReadInt("DecodeCacheMaxMb", p.DecodeCacheMaxMb, 0, 8192)
-        p.ConfirmReplaceWithVideo = ReadBool("ConfirmReplaceWithVideo", p.ConfirmReplaceWithVideo)
         p.ArchiveCacheMaxMb = ReadInt("ArchiveCacheMaxMb", p.ArchiveCacheMaxMb, 100, 16384)
         p.ArchiveMaxEntryMb = ReadInt("ArchiveMaxEntryMb", p.ArchiveMaxEntryMb, 16, 4096)
         p.ArchiveMaxEntries = ReadInt("ArchiveMaxEntries", p.ArchiveMaxEntries, 100, 100000)
+        p.RemoteCacheMaxMb = ReadInt("RemoteCacheMaxMb", p.RemoteCacheMaxMb, 100, 16384)
+        p.SecureIncludeInNavigation = ReadBool("SecureIncludeInNavigation", p.SecureIncludeInNavigation)
+        p.SecureRememberMinutes = ReadInt("SecureRememberMinutes", p.SecureRememberMinutes, 0, 480)
+        p.SecureShowTrueName = ReadBool("SecureShowTrueName", p.SecureShowTrueName)
         p.CustomHotkeysJson = NormalizeJson(ReadString("CustomHotkeys", p.CustomHotkeysJson))
         p.FolderZoomHistory = NormalizeArrayJson(ReadString("FolderZoomHistory", p.FolderZoomHistory))
         p.VideoPositionHistory = NormalizeArrayJson(ReadString("VideoPositionHistory", p.VideoPositionHistory))
@@ -259,10 +286,15 @@ Public NotInheritable Class ModernViewerPreferences
         WriteString("RecentFoldersLimit", RecentFoldersLimit.ToString(CultureInfo.InvariantCulture))
         WriteString("OcrDiskCacheMaxMb", OcrDiskCacheMaxMb.ToString(CultureInfo.InvariantCulture))
         WriteString("DecodeCacheMaxMb", DecodeCacheMaxMb.ToString(CultureInfo.InvariantCulture))
-        WriteBool("ConfirmReplaceWithVideo", ConfirmReplaceWithVideo)
         WriteString("ArchiveCacheMaxMb", ArchiveCacheMaxMb.ToString(CultureInfo.InvariantCulture))
         WriteString("ArchiveMaxEntryMb", ArchiveMaxEntryMb.ToString(CultureInfo.InvariantCulture))
         WriteString("ArchiveMaxEntries", ArchiveMaxEntries.ToString(CultureInfo.InvariantCulture))
+        WriteString("RemoteCacheMaxMb", RemoteCacheMaxMb.ToString(CultureInfo.InvariantCulture))
+        ' No value here stores a credential, a derived key or a sealed true name, and none
+        ' ever may (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §9).
+        WriteBool("SecureIncludeInNavigation", SecureIncludeInNavigation)
+        WriteString("SecureRememberMinutes", SecureRememberMinutes.ToString(CultureInfo.InvariantCulture))
+        WriteBool("SecureShowTrueName", SecureShowTrueName)
         WriteString("CustomHotkeys", NormalizeJson(CustomHotkeysJson))
         WriteString("FolderZoomHistory", NormalizeArrayJson(FolderZoomHistory))
         WriteString("VideoPositionHistory", NormalizeArrayJson(VideoPositionHistory))
@@ -300,17 +332,31 @@ Public NotInheritable Class ModernViewerPreferences
         Dim entries As List(Of VideoPositionEntry) = ReadVideoPositions()
         Dim entry As VideoPositionEntry = entries.FirstOrDefault(Function(item) String.Equals(item.Path, path, StringComparison.OrdinalIgnoreCase))
         If entry Is Nothing OrElse entry.LastWriteUtcTicks <> lastWriteUtcTicks OrElse entry.Length <> length Then Return -1.0F
-        If entry.Position <= 0.0F OrElse entry.Position >= 1.0F Then Return -1.0F
+        If entry.Position <= 0.0F OrElse entry.Position >= VideoWatchedToEndPosition Then Return -1.0F
         entries.Remove(entry)
         entries.Add(entry) ' read is use: maintain the LRU order
         VideoPositionHistory = JsonSerializer.Serialize(entries)
         Return entry.Position
     End Function
 
+    ''' <summary>From this fraction on a video counts as watched to the end: it keeps no
+    ''' resume point and opens from the start (RESUME spec §3.3, audit 050 D-11). Below 1.0
+    ''' on purpose - libvlc reports 0.99x for a file that played out, and a resume "in the
+    ''' last second" with VideoEndAction = nextFile skipped the file the moment it opened.</summary>
+    Public Const VideoWatchedToEndPosition As Single = 0.97F
+
     Public Sub StoreVideoPosition(path As String, lastWriteUtcTicks As Long, length As Long, position As Single)
-        If Not RememberVideoPosition OrElse String.IsNullOrEmpty(path) OrElse position <= 0.0F OrElse position >= 1.0F Then Return
+        ' Zero or less says nothing: a player that has not started yet (the user flipped on
+        ' before the pending seek landed) or one already stopped. The entry is left alone.
+        If Not RememberVideoPosition OrElse String.IsNullOrEmpty(path) OrElse position <= 0.0F Then Return
         Dim entries As List(Of VideoPositionEntry) = ReadVideoPositions()
-        entries.RemoveAll(Function(item) String.Equals(item.Path, path, StringComparison.OrdinalIgnoreCase))
+        ' Remove FIRST (050 D-11): a position at the end must clear the older mid-video
+        ' entry, not leave it behind to resume at next time.
+        Dim removed As Integer = entries.RemoveAll(Function(item) String.Equals(item.Path, path, StringComparison.OrdinalIgnoreCase))
+        If position >= VideoWatchedToEndPosition Then
+            If removed > 0 Then VideoPositionHistory = JsonSerializer.Serialize(entries)
+            Return
+        End If
         entries.Add(New VideoPositionEntry With {.Path = path, .LastWriteUtcTicks = lastWriteUtcTicks, .Length = length, .Position = position})
         If entries.Count > 200 Then entries.RemoveRange(0, entries.Count - 200)
         VideoPositionHistory = JsonSerializer.Serialize(entries)
@@ -360,6 +406,40 @@ Public NotInheritable Class ModernViewerPreferences
         Return p
     End Function
 
+    ''' <summary>The scalar preferences, which is every property the profile stores. The
+    ''' nested entry classes are not properties of this type, so nothing else gets in.</summary>
+    Public Shared Function WritableProperties() As IEnumerable(Of Reflection.PropertyInfo)
+        Return GetType(ModernViewerPreferences).
+            GetProperties(Reflection.BindingFlags.Public Or Reflection.BindingFlags.Instance).
+            Where(Function(prop) prop.CanRead AndAlso prop.CanWrite)
+    End Function
+
+    ''' <summary>
+    ''' Takes every stored value of <paramref name="source"/> into THIS instance.
+    '''
+    ''' An import goes through here instead of swapping the object: every row of the
+    ''' settings window holds a closure over the instance it was built from, and after a
+    ''' swap each of them wrote into an orphan - neither applied nor saved for the rest of
+    ''' the session (053 F-02). Keeping the identity keeps every closure live.
+    ''' </summary>
+    Public Sub CopyFrom(source As ModernViewerPreferences)
+        If source Is Nothing Then Throw New ArgumentNullException(NameOf(source))
+        If ReferenceEquals(source, Me) Then Return
+        For Each prop As Reflection.PropertyInfo In WritableProperties()
+            prop.SetValue(Me, prop.GetValue(source))
+        Next
+    End Sub
+
+    ''' <summary>
+    ''' Writes AllowNewWindows straight away, the way its checkbox does. Save() re-reads the
+    ''' key before writing it (so an older in-memory value cannot undo a secondary process's
+    ''' choice), which means an import that goes only through Save() could never change it
+    ''' although the import summary listed it (053 F-18).
+    ''' </summary>
+    Public Sub PersistAllowNewWindows()
+        WriteBool("AllowNewWindows", AllowNewWindows)
+    End Sub
+
     Public Sub Normalize()
         NameCollisionPolicy = Choice(NameCollisionPolicy, "ask", "ask", "skip", "rename", "replace")
         AfterFileOperation = Choice(AfterFileOperation, "next", "next", "stay", "closeIfEmpty")
@@ -402,9 +482,10 @@ Public NotInheritable Class ModernViewerPreferences
     End Function
 
     Private Shared Function ReadInt(key As String, defaultValue As Integer, minimum As Integer, maximum As Integer) As Integer
-        Dim value As Integer = defaultValue
-        Integer.TryParse(ReadString(key, defaultValue.ToString(CultureInfo.InvariantCulture)), NumberStyles.Integer, CultureInfo.InvariantCulture, value)
-        Return Clamp(value, minimum, maximum)
+        ' Not TryParse into the default: it zeroes its out argument on failure, and a
+        ' corrupt value then came out as 0 or the minimum - no decode cache, a credential
+        ' kept until exit - instead of the default (053 F-17).
+        Return Utils.ParseIntSetting(ReadString(key, defaultValue.ToString(CultureInfo.InvariantCulture)), defaultValue, minimum, maximum)
     End Function
 
     Private Shared Function ReadChoice(key As String, defaultValue As String, ParamArray allowed As String()) As String
@@ -428,9 +509,20 @@ Public NotInheritable Class ModernViewerPreferences
     ''' </summary>
     Private Shared Function ReadConfirmDelete() As String
         Dim stored As String = ReadString("ConfirmDelete", "")
-        If stored <> "" Then Return Choice(stored, "always", "always", "permanentOnly", "never")
+        If stored <> "" Then
+            ' "never" is retired (ticket 028 Ф-5, APP-BEHAVIOUR rule 5, owner decision
+            ' 2026-09-24): it silenced the question for a PERMANENT deletion too, and an
+            ' opt-out of the confirmation of an irreversible action is not offered. The
+            ' closest honest reading of what that person asked for - fewer questions - is
+            ' "ask only when the file will not reach the Recycle Bin", written back once.
+            If stored = "never" Then
+                WriteString("ConfirmDelete", "permanentOnly")
+                Return "permanentOnly"
+            End If
+            Return Choice(stored, "always", "always", "permanentOnly")
+        End If
 
-        Dim migrated As String = If(ReadString("NoRequestBeforeFileOperation", "0") = "1", "never", "always")
+        Dim migrated As String = If(ReadString("NoRequestBeforeFileOperation", "0") = "1", "permanentOnly", "always")
         WriteString("ConfirmDelete", migrated)
         Return migrated
     End Function

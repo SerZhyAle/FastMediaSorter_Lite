@@ -29,4 +29,21 @@ Public Module AutoSkipPolicy
         Return chain_Length <= Math.Max(1, files_In_Folder)
     End Function
 
+    ''' <summary>
+    ''' The <c>files_In_Folder</c> a chain is measured against, taken ONCE, when it starts
+    ''' (audit 048, A-09).
+    '''
+    ''' Every skip removes its file from the list, so the live count shrinks as the chain
+    ''' grows. Compared with that live count, the k-th continuation was allowed only while
+    ''' k &lt;= N - k: a run of more than half the folder unreadable stopped with "no readable
+    ''' files" while the readable rest was still ahead. The chain starts right after the
+    ''' first unreadable file was dropped, so the folder it walks had one file more than the
+    ''' list now holds. Removal already guarantees the chain ends; the bound only has to stop
+    ''' a chain that does NOT remove anything.
+    ''' </summary>
+    ''' <param name="files_Remaining">The list size at the moment the chain starts.</param>
+    Public Function BoundAtChainStart(files_Remaining As Integer) As Integer
+        Return Math.Max(0, files_Remaining) + 1
+    End Function
+
 End Module

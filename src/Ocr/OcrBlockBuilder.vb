@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 
@@ -19,7 +19,11 @@ Imports System.Drawing
 '''                 is visibly shorter than the line, the gap measured to the next
 '''                 one comes out large, and one speech balloon used to break into
 '''                 three plates - which cost the translator the sentence, not
-'''                 just the geometry;
+'''                 just the geometry. There is no ink-gap fallback any more
+'''                 (`OCR-OVERLAY` rule 6 forbids the ink gap outright): a page
+'''                 with too few pairs to corroborate a median widens the
+'''                 tolerance instead, and a page with NO pitch at all is not
+'''                 grouped, because there is nothing to group by;
 '''   3. type size - the line's height is within <see cref="TypeSizeRatio"/> of
 '''                 the median height of the block SO FAR. A heading sits on the
 '''                 same pitch as the paragraph under it, so no pitch threshold
@@ -30,10 +34,27 @@ Imports System.Drawing
 '''                 pitch in ONE column, so rules 1-3 see no seam anywhere and the
 '''                 whole page arrives as a single plate.
 '''
-''' The constants come from a measured corpus, not from taste - see
-''' SPECIFICATION_OCR_OVERLAY_ACCURACY.md sections 4 (S1), 13.7 and 14.1, where each
-''' bound is bracketed by the widest legitimate scene on one side and the narrowest
-''' defect on the other.
+''' The constants come from a measured corpus where one exists - the REFERENCE implementation's
+''' (`OCR-PIPELINE` section 2.5, and its section 5 table with the status column of amendment 1.2
+''' item M) - and this repository's archived report
+''' (docs/specifications/done/SPECIFICATION_OCR_OVERLAY_ACCURACY.md sections 4, 13.7 and 14.1)
+''' records the same brackets as the reference measured them, on the reference's material.
+'''
+''' Constant status (`OCR-OVERLAY` rule 13). *Derived here* would name a report of THIS product
+''' and the two measurements the number sits between - no row below can, so none claims it;
+''' *inherited* names the source and the ticket that owns deriving it here; *chosen here, NOT
+''' derived* gives the reason (the third status the reference proposed as `policy`, see
+''' `OCR-OVERLAY` PROPOSAL-2026-09-25-constant-status-and-exchange). Ticket 033 owns every
+''' derivation below (it replaced ticket 025, which is closed and owns nothing).
+''' | Constant | Status | Source / reason |
+''' | --- | --- | --- |
+''' | <see cref="PitchFactor"/> | inherited | `OCR-PIPELINE` section 2.5 and section 5 (1.2); the source itself marks it `policy` - anchored on two balloon scenes, never bracketed. Ticket 033. |
+''' | <see cref="MaxLeadingRatio"/> | inherited | `OCR-PIPELINE` section 5 (3); `policy` at the source - typographic leading sits near 2.9 line heights. Ticket 033. |
+''' | <see cref="MinPitchPairs"/> | chosen here, NOT derived | arithmetic, not a corpus: on one pair the median IS that pair, so one misread line would set the page threshold. Two is the smallest count at which a median can outvote a single outlier. |
+''' | <see cref="UncorroboratedPitchFactor"/> | chosen here, NOT derived | chosen so a two-line block that grouped under the removed ink-gap fallback still groups: that rule allowed a top-to-top delta of roughly 1.9 median heights, this one allows 1.5 pitches. No external source. Ticket 033 owns measuring it. |
+''' | <see cref="TypeSizeRatio"/> | inherited | `OCR-PIPELINE` section 2.5 and section 5, `derived` THERE: 1.42x the widest spread within one inscription, 1.86x the narrowest step between two texts, measured on the reference's corpus (archived report section 13.7 records it). The bracket is why the value is trusted; it is not this product's measurement. Ticket 033. |
+''' | <see cref="MaxPlateCoverage"/> | inherited | `OCR-PIPELINE` section 2.5 and section 5, `derived` THERE (`ocr_plate_coverage_2026-08-13`): 0.4004 the largest legitimate plate, 0.6829 the application-window defect (archived report section 14.1). Ticket 033. |
+''' | <see cref="MinPlateLineFill"/> | inherited | same source and report: 0.7921 legitimate, 0.6608 the same defect. The rejected alternative (area rather than height) is recorded on the constant itself, per rule 15. Ticket 033. |
 ''' </summary>
 Public Module OcrBlockBuilder
 
@@ -54,6 +75,18 @@ Public Module OcrBlockBuilder
     ''' median is then an honest median of an incomplete set. That case is what rule 3
     ''' is for.</summary>
     Public Const MinPitchPairs As Integer = 2
+
+    ''' <summary>Tolerance applied to a pitch that fewer than <see cref="MinPitchPairs"/>
+    ''' pairs corroborated - one pair, whose "median" is simply that pair. Wider than
+    ''' <see cref="PitchFactor"/> because the number it multiplies is uncorroborated in BOTH
+    ''' directions: a single pair that came out short would otherwise make the threshold
+    ''' stricter than any measured page.
+    '''
+    ''' INHERITED, not derived - see the constant status table on the module. It replaces the
+    ''' ink-gap fallback that `OCR-OVERLAY` rule 6 forbids, and it is set so the replacement
+    ''' does not quietly become stricter than what shipped: the old rule allowed a top-to-top
+    ''' delta of about 1.9 median heights on median-sized boxes.</summary>
+    Public Const UncorroboratedPitchFactor As Double = 1.5
 
     ''' <summary>Largest height ratio, in either direction, between a line and the median
     ''' of the block it wants to join. Bracketed by measurement: 1.42x is the widest spread
@@ -113,14 +146,16 @@ Public Module OcrBlockBuilder
                 ThenBy(Function(l) l.Box.Left).ToList())
 
         Dim medianHeight As Integer = MedianLineHeight(ordered)
-        Dim gapThreshold As Integer = Math.Max(6, CInt(medianHeight * 0.9))
-        Dim pitch As Integer = MedianLinePitch(ordered, medianHeight)
+        ' ONE number decides rule 2 now: the largest top-to-top step that still continues a
+        ' block. 0 means the page yielded no line pitch at all, and rule 6 leaves exactly one
+        ' honest answer for that - do not group.
+        Dim maxStep As Integer = MaxTopDelta(ordered, medianHeight)
 
         Dim current As New List(Of OcrLine)
         For Each line As OcrLine In ordered
             If current.Count = 0 Then
                 current.Add(line)
-            ElseIf ContinuesBlock(current, line, pitch, gapThreshold) Then
+            ElseIf ContinuesBlock(current, line, maxStep) Then
                 current.Add(line)
             Else
                 blocks.Add(MakeBlock(current))
@@ -163,20 +198,23 @@ Public Module OcrBlockBuilder
         Return result
     End Function
 
-    ''' <summary>Rules 1-3: does this line continue the block being assembled?</summary>
-    Private Function ContinuesBlock(block As List(Of OcrLine), line As OcrLine, pitch As Integer, gapThreshold As Integer) As Boolean
+    ''' <summary>
+    ''' Rules 1-3: does this line continue the block being assembled?
+    '''
+    ''' <paramref name="maxTopDelta"/> already carries its tolerance (see
+    ''' <see cref="MaxTopDelta"/>), so there is one comparison here and no second place where
+    ''' a factor could be applied twice. Zero means the page has no pitch: rule 6 permits no
+    ''' ink-gap fallback, and a page with nothing to group BY is handed back one block per
+    ''' line rather than grouped by a different measurement wearing pitch's name.
+    ''' </summary>
+    Private Function ContinuesBlock(block As List(Of OcrLine), line As OcrLine, maxTopDelta As Integer) As Boolean
         Dim prev As OcrLine = block(block.Count - 1)
         If Not SharesColumn(prev.Box, line.Box) Then Return False
         If Not SameTypeSize(block, line) Then Return False
+        If maxTopDelta <= 0 Then Return False
 
-        If pitch > 0 Then
-            ' Top-to-top, so an ink box shorter than its line cannot inflate the distance.
-            Return (line.Box.Top - prev.Box.Top) <= pitch * PitchFactor
-        End If
-
-        ' Pitch undefined (one line on the image, or no pair shared a column): fall back
-        ' to the historical ink-gap rule rather than becoming stricter than before.
-        Return (line.Box.Top - prev.Box.Bottom) <= gapThreshold
+        ' Top-to-top, so an ink box shorter than its line cannot inflate the distance.
+        Return (line.Box.Top - prev.Box.Top) <= maxTopDelta
     End Function
 
     ''' <summary>
@@ -248,12 +286,20 @@ Public Module OcrBlockBuilder
     End Function
 
     ''' <summary>
-    ''' Median top-to-top distance over adjacent line pairs that share a column, run
-    ''' forwards, and sit within <see cref="MaxLeadingRatio"/> median heights of each other.
-    ''' Returns 0 when the pitch is undefined - fewer than <see cref="MinPitchPairs"/> pairs
-    ''' qualified - and the caller then falls back to the ink-gap rule.
+    ''' The largest top-to-top step that still continues a block, tolerance included.
+    '''
+    ''' Built from the median top-to-top distance over adjacent line pairs that share a
+    ''' column, run forwards, and sit within <see cref="MaxLeadingRatio"/> median heights of
+    ''' each other. Fewer than <see cref="MinPitchPairs"/> such pairs means the median is
+    ''' simply that one pair, so it is widened by <see cref="UncorroboratedPitchFactor"/>
+    ''' instead of being thrown away: `OCR-OVERLAY` rule 6 forbids measuring the gap between
+    ''' ink boxes at all, which is what this used to fall back to, and an uncorroborated pitch
+    ''' is still a pitch.
+    '''
+    ''' Returns 0 when NO pair qualified. That is not a pitch with a wide tolerance, it is the
+    ''' absence of one, and the caller declines to group rather than inventing a measurement.
     ''' </summary>
-    Private Function MedianLinePitch(ordered As List(Of OcrLine), medianHeight As Integer) As Integer
+    Private Function MaxTopDelta(ordered As List(Of OcrLine), medianHeight As Integer) As Integer
         Dim maxLeading As Double = Math.Max(1, medianHeight) * MaxLeadingRatio
         Dim pitches As New List(Of Integer)
         For i As Integer = 1 To ordered.Count - 1
@@ -265,9 +311,11 @@ Public Module OcrBlockBuilder
             If Not SharesColumn(previous, box) Then Continue For
             pitches.Add(delta)
         Next
-        If pitches.Count < MinPitchPairs Then Return 0
+        If pitches.Count = 0 Then Return 0
         pitches.Sort()
-        Return pitches(pitches.Count \ 2)
+        Dim pitch As Integer = pitches(pitches.Count \ 2)
+        Dim factor As Double = If(pitches.Count >= MinPitchPairs, PitchFactor, UncorroboratedPitchFactor)
+        Return CInt(Math.Ceiling(pitch * factor))
     End Function
 
     Private Function MedianLineHeight(lines As List(Of OcrLine)) As Integer

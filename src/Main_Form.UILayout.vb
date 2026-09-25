@@ -26,11 +26,20 @@ Partial Public Class Main_Form
         Dim needs_Form_State_Change As Boolean = (is_Full_Screen_Mode <> is_Last_Full_Screen_State)
         If needs_Form_State_Change Then
             If is_Full_Screen_Mode Then
+                ' Remember how the window was, and cycle through Normal: Windows does not
+                ' re-maximize an already maximized window over the taskbar once its
+                ' border is gone (audit B-17).
+                pre_Full_Screen_Window_State = If(WindowState = FormWindowState.Maximized,
+                                                  FormWindowState.Maximized, FormWindowState.Normal)
+                If WindowState <> FormWindowState.Normal Then WindowState = FormWindowState.Normal
                 FormBorderStyle = FormBorderStyle.None
                 WindowState = FormWindowState.Maximized
             Else
                 FormBorderStyle = FormBorderStyle.Sizable
+                ' Back to what it was: a maximized window stays maximized. Cycling through
+                ' Normal lets the maximize take the Sizable frame's bounds again.
                 WindowState = FormWindowState.Normal
+                If pre_Full_Screen_Window_State = FormWindowState.Maximized Then WindowState = FormWindowState.Maximized
             End If
             is_Last_Full_Screen_State = is_Full_Screen_Mode
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1936: Form state changed, border/window updated")
@@ -40,6 +49,9 @@ Partial Public Class Main_Form
         If Not is_Full_Screen_Mode Then is_Super_Full_Screen_Mode = False
 
         ApplyChromeVisibility()
+#If Not NETFRAMEWORK Then
+        UpdateFullScreenGlyph()
+#End If
 
         Me.Focus()
         Me.PerformLayout()
@@ -52,8 +64,10 @@ Partial Public Class Main_Form
             ApplyToolbarRegion(True)
         End If
 
-        If is_form_shown Then Draw_Perspective()
+        ' Fit first, then the bars: a zoomed picture draws none (audit B-12), so the
+        ' other order left a resize out of a zoom with no bars at all.
         SkipZoom()
+        If is_form_shown Then Draw_Perspective()
 
         is_Programmatic_Resize = False
     End Sub

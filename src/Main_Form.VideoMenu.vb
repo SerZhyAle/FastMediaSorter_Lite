@@ -73,7 +73,7 @@ Partial Public Class Main_Form
                     End Sub,
                     checked:=is_Video_Muted)
 
-        AddMenuItem(video_Menu.Items, Localization.T("Повторять"), AddressOf ToggleVideoLoop, checked:=Is_Video_Loop)
+        AddMenuItem(video_Menu.Items, Localization.T("Повторять"), AddressOf ToggleVideoLoop, checked:=CurrentEffectiveRepeat())
 
         ' --- tracks
         Dim audio_Item As ToolStripMenuItem = CreateTrackSubmenu(audio:=True)
@@ -115,11 +115,33 @@ Partial Public Class Main_Form
     ''' choice from then on (it is the same global).
     ''' </summary>
     Private Sub ToggleVideoLoop()
-        Is_Video_Loop = Not Is_Video_Loop
-        lbl_Status.Text = Localization.T(If(Is_Video_Loop, "Повтор включён", "Повтор выключен"))
+        ' One answer for the checkmark, the reopen and the next file (audit 050 D-14): the
+        ' item used to show and flip only the loop flag, while an end action of "repeat"
+        ' kept repeating - unchecked while it repeated, "on" when it already was, and "off"
+        ' only until the next file. Turning it off now clears whichever setting asked.
+        If CurrentEffectiveRepeat() Then
+            Is_Video_Loop = False
+            If modern_Preferences IsNot Nothing Then
+                If IsAudioNowPlaying() Then
+                    modern_Preferences.AudioEndAction = PlaybackRules.EndActionAfterRepeatOff(modern_Preferences.AudioEndAction)
+                Else
+                    modern_Preferences.VideoEndAction = PlaybackRules.EndActionAfterRepeatOff(modern_Preferences.VideoEndAction)
+                End If
+                modern_Preferences.Save()
+            End If
+        Else
+            Is_Video_Loop = True
+        End If
+        lbl_Status.Text = Localization.T(If(CurrentEffectiveRepeat(), "Повтор включён", "Повтор выключен"))
         RestartCurrentVideoPreservingPosition()
         ShowVideoControls()
     End Sub
+
+    ''' <summary>Whether what is playing repeats: the loop flag or the end action of the
+    ''' kind on screen (PlaybackRules.EffectiveRepeat).</summary>
+    Friend Function CurrentEffectiveRepeat() As Boolean
+        Return PlaybackRules.EffectiveRepeat(Is_Video_Loop, IsAudioNowPlaying(), AudioEndAction(), VideoEndAction())
+    End Function
 
     Private Sub RestartCurrentVideoPreservingPosition()
         If vlc_Media_Player Is Nothing OrElse Not is_Vlc_Playing Then Return
@@ -133,9 +155,11 @@ Partial Public Class Main_Form
             pending_Video_Pause = Not vlc_Media_Player.IsPlaying
 
             Dim media As LibVLCSharp.Shared.Media = CreateVlcMedia(file_Path)
-            If Is_Video_Loop Then media.AddOption(":input-repeat=65535")
+            If CurrentEffectiveRepeat() Then media.AddOption(":input-repeat=65535")
             vlc_Media_Player.Play(media)
             media.Dispose()
+            ' A reopened media starts on VLC's own track pick again (050 D-10).
+            vlc_Play_Serial += 1
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2510: video reopen failed: " & ex.Message)
             ClearPendingVideoPosition()

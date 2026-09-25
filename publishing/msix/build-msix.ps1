@@ -76,17 +76,6 @@ function Resolve-MsBuild {
     throw "MSBuild not found (install Visual Studio 2022 or the Build Tools)."
 }
 
-function Resolve-NuGet {
-    $cmd = Get-Command nuget.exe -ErrorAction SilentlyContinue
-    if ($cmd) { return $cmd.Source }
-    $nuget = Join-Path $RepoRoot 'tools\nuget.exe'
-    if (-not (Test-Path $nuget)) {
-        New-Item -ItemType Directory -Path (Split-Path $nuget) -Force | Out-Null
-        Invoke-WebRequest -Uri 'https://dist.nuget.org/win-x86-commandline/latest/nuget.exe' -OutFile $nuget
-    }
-    return $nuget
-}
-
 function Get-RelativePath([string] $BasePath, [string] $TargetPath) {
     $baseResolved   = (Resolve-Path $BasePath).Path.TrimEnd('\') + '\'
     $targetResolved = (Resolve-Path $TargetPath).Path
@@ -95,14 +84,27 @@ function Get-RelativePath([string] $BasePath, [string] $TargetPath) {
     return [System.Uri]::UnescapeDataString($baseUri.MakeRelativeUri($targetUri).ToString().Replace('/', '\'))
 }
 
+# --- 0. Version ------------------------------------------------------------
+if ($ReleaseVersion) {
+    if ($ReleaseVersion -notmatch '^\d{2}\.\d{1,2}\.\d{1,2}\.\d{4}$') {
+        throw "-ReleaseVersion '$ReleaseVersion' is not of the form YY.M.D.HHmm (the release tag without its 'v')."
+    }
+} elseif (-not $SelfSign) {
+    # A Store package without it gets the CURRENT minute, which matches no GitHub or
+    # winget artifact of the release it is meant to belong to.
+    Write-Warning 'No -ReleaseVersion: the package is stamped with the current minute. For a Store upload pass -ReleaseVersion <release tag without the v>.'
+}
+
 # --- 1. Build --------------------------------------------------------------
 if (-not $NoBuild) {
     Write-Host 'Building Release...' -ForegroundColor Cyan
     $msbuild = Resolve-MsBuild
-    $nuget   = Resolve-NuGet
+    $nuget   = & (Join-Path $RepoRoot 'tools\Get-PinnedNuGet.ps1')
     & $nuget restore $Solution -NonInteractive
     if ($LASTEXITCODE -ne 0) { throw "NuGet restore failed (exit $LASTEXITCODE)." }
-    & $msbuild $Solution /p:Configuration=$Configuration /p:Platform="Any CPU" /t:Rebuild /v:minimal /nologo
+    $msbuildVersionArgs = @()
+    if ($ReleaseVersion) { $msbuildVersionArgs = @("/p:ReleaseVersion=$ReleaseVersion") }
+    & $msbuild $Solution /p:Configuration=$Configuration /p:Platform="Any CPU" @msbuildVersionArgs /t:Rebuild /v:minimal /nologo
     if ($LASTEXITCODE -ne 0) { throw "MSBuild failed (exit $LASTEXITCODE)." }
 }
 # The viewer ships as two exes, but the Store package carries only the x64
@@ -136,11 +138,24 @@ if (Test-Path $Stage) { Remove-Item $Stage -Recurse -Force }
 New-Item -ItemType Directory -Path (Join-Path $Stage 'Assets') -Force | Out-Null
 
 Write-Host 'Staging release payload (excluding *.pdb / *.xml)...'
+# This package is x64-only and carries no x86 viewer, so nothing that exists only for
+# FastMediaSorter_x86.exe has a consumer in it: the exe and its .exe.config, the
+# net48 managed assemblies msbuild copies loose beside it (the x64 mainline carries
+# its own inside its single-file bundle), and the 32-bit native trees. The ZIP and the
+# Inno installer DO ship the x86 exe, so they keep these - only this package drops them.
+$net48OnlyFiles = @(
+    'FastMediaSorter_x86.exe', 'FastMediaSorter_x86.exe.config',
+    'LibVLCSharp.dll', 'LibVLCSharp.WinForms.dll', 'SixLabors.ImageSharp.dll',
+    'Tesseract.dll', 'QRCoder.dll', 'System.Buffers.dll', 'System.Memory.dll',
+    'System.Numerics.Vectors.dll', 'System.Runtime.CompilerServices.Unsafe.dll'
+)
+$x86OnlyTrees = @('x86\', 'libvlc\win-x86\', 'runtimes\win-x86\')
 Get-ChildItem $ReleaseDir -Recurse -File |
     Where-Object { $_.Extension -notin '.pdb', '.xml', '.log' } |
-    Where-Object { $_.Name -ne 'FastMediaSorter_x86.exe' } |   # x64-only package
     ForEach-Object {
         $rel  = Get-RelativePath $ReleaseDir $_.FullName
+        if ($net48OnlyFiles -contains $rel) { return }
+        foreach ($tree in $x86OnlyTrees) { if ($rel.StartsWith($tree, [StringComparison]::OrdinalIgnoreCase)) { return } }
         $dest = Join-Path $Stage $rel
         New-Item -ItemType Directory -Path (Split-Path $dest -Parent) -Force | Out-Null
         Copy-Item $_.FullName $dest -Force
@@ -180,7 +195,9 @@ New-Item -ItemType Directory -Path $stageCompanion -Force | Out-Null
 Copy-Item (Join-Path $workerSrc '*') $stageCompanion -Recurse -Force
 Write-Host 'Staged Companion exe + SFTP worker.'
 
-# Trim x86-only trees and bundle offline tessdata (same tool the GitHub release uses).
+# Bundle offline tessdata (same tool the GitHub release uses). The x86-only trees it
+# would also trim were already left out of the stage above - with -SkipOcrPayload
+# too, which used to keep ~100 MB of 32-bit natives in an x64-only package.
 if (-not $SkipOcrPayload) {
     if (-not (Test-Path $OcrPayload)) { throw "OCR payload tool not found: $OcrPayload" }
     if ($IncludeBestOcr) { & $OcrPayload -StageDir $Stage -IncludeBest }

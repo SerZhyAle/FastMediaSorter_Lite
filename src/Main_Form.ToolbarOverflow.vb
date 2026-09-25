@@ -151,6 +151,12 @@ Partial Public Class Main_Form
 
             RebuildOverflowMenu(overflow_Menu, LayoutRow1(rowTop1, rowH, innerLeft, innerRight))
             RebuildOverflowMenu(overflow_Menu_2, LayoutRow2(rowTop2, rowH, innerLeft, innerRight))
+
+            ' Floating over the full-screen image, the toolbar is clipped to the
+            ' rectangles its controls had when the region was cut. A button shown or
+            ' moved by this pass needs a new hole, or it is invisible and unclickable
+            ' (audit B-03). Still inside the re-entrancy guard.
+            If flow_Toolbar.Parent Is panel_Media Then ApplyToolbarRegion(True)
         Finally
             laying_Out_Toolbar = False
         End Try
@@ -297,11 +303,12 @@ Partial Public Class Main_Form
             If b IsNot Nothing Then buttons.Add(b)   ' labels: no menu entry
         Next
 
-        ' Signature = which buttons, in which order, and whether each is enabled: those
-        ' are the only inputs the menu has.
+        ' Signature = which buttons, in which order, whether each is enabled and what
+        ' its line says: those are the only inputs the menu has. The text is part of it
+        ' because a UI-language switch keeps the same buttons overflowing (audit B-18).
         Dim signature_Builder As New System.Text.StringBuilder()
         For Each b As Button In buttons
-            signature_Builder.Append(b.Name).Append(":"c).Append(If(b.Enabled, "1"c, "0"c)).Append("|"c)
+            signature_Builder.Append(b.Name).Append(":"c).Append(If(b.Enabled, "1"c, "0"c)).Append(":"c).Append(OverflowText(b)).Append("|"c)
         Next
         Dim signature As String = signature_Builder.ToString()
         Dim previous As String = Nothing
@@ -313,8 +320,11 @@ Partial Public Class Main_Form
         For Each b As Button In buttons
             Dim item As New ToolStripMenuItem(OverflowText(b)) With {.Enabled = b.Enabled}
             Dim captured As Button = b
+            ' InvokeOnClick, never PerformClick: an overflowed button is hidden, and
+            ' PerformClick raises nothing for a control that cannot be selected - every
+            ' menu line was a no-op (audit B-01).
             AddHandler item.Click, Sub()
-                                       If captured.Enabled Then captured.PerformClick()
+                                       If captured.Enabled Then Me.InvokeOnClick(captured, EventArgs.Empty)
                                    End Sub
             menu.Items.Add(item)
         Next
@@ -352,12 +362,18 @@ Partial Public Class Main_Form
     ''' toolbar glyphs like ▦/⛶ would be meaningless there).</summary>
     Private Function OverflowText(b As Button) As String
         Dim rus As Boolean = Is_Russian_Language
+#If Not NETFRAMEWORK Then
+        ' The menu line and the button's accessible name read the same map entry, so
+        ' the two cannot drift apart (spec 027, phase 1).
+        Dim meaning As IconMeaning = IconMap.GetMeaning(b.Name)
+        If meaning IsNot Nothing Then Return Localization.T(meaning.LocalizationKey)
+#End If
         Select Case b.Name
             Case "btn_choose_file" : Return Localization.T("Выбрать файл..")
             Case "btn_Select_Folder" : Return Localization.T("Выбрать папку..")
             Case "btn_Review" : Return Localization.T("Обновить папку")
             Case "btn_Panel" : Return Localization.T("Панель изображений")
-            Case "btn_Full_Screen" : Return Localization.T("Полный экран")
+            Case "btn_Full_Screen" : Return Localization.T("Во весь экран")
             Case "btn_Language" : Return Localization.T("Язык интерфейса")
             Case "btn_RecentFiles" : Return Localization.T("Недавние файлы")
             Case "btn_Prev_File" : Return Localization.T("Предыдущий файл")
@@ -370,8 +386,7 @@ Partial Public Class Main_Form
             Case "bt_Delete" : Return Localization.T("Удалить")
             Case "btn_Translate" : Return Localization.T("Перевод")
             Case "btn_TranslateBrowser" : Return Localization.T("Перевод в браузере")
-            ' Its caption is a Segoe MDL2 pencil - meaningless as a menu line.
-            Case "btn_Edit" : Return Localization.T("Правка")
+            Case "btn_Edit" : Return Localization.T("Редактировать")
             Case Else : Return b.Text
         End Select
     End Function

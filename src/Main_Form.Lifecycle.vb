@@ -35,6 +35,24 @@ Partial Public Class Main_Form
         all_Supported_Extensions.UnionWith(web_specific_image_extensions)
 #If Not NETFRAMEWORK Then
         ApplyConfiguredExtensionFilter()
+
+        ' Secure containers are their own class, on their own preference, and that
+        ' preference is the ONLY thing that decides them - which is why this runs AFTER the
+        ' file-types filter rather than before it
+        ' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §6).
+        '
+        ' Two reasons it cannot be one of the groups in that dialog. A container's real
+        ' kind is unknowable until it is opened, so it belongs to none of "images", "video"
+        ' or "audio" - and narrowing to images would otherwise hide a container holding a
+        ' photograph. And deciding whether a file belongs in a folder listing must never
+        ' cost a password-protected key derivation, which is what asking would mean. So the
+        ' checkbox in Settings is the single authority, and a narrowed file-types list
+        ' cannot silently switch it off.
+        If modern_Preferences Is Nothing OrElse modern_Preferences.SecureIncludeInNavigation Then
+            all_Supported_Extensions.Add(FdSecFormat.Extension)
+        Else
+            all_Supported_Extensions.Remove(FdSecFormat.Extension)
+        End If
 #End If
     End Sub
 
@@ -50,7 +68,7 @@ Partial Public Class Main_Form
 
         ' --- Buttons and Checkboxes ---
         toolTip.SetToolTip(btn_Select_Folder, Localization.T("Выбрать папку с медиафайлами"))
-        toolTip.SetToolTip(btn_Review, Localization.T("Перечитать текущую папку - вдруг там что-то поменялось за вашей спиной."))
+        toolTip.SetToolTip(btn_Review, Localization.T("Обновить текущую папку - вдруг там что-то поменялось за вашей спиной."))
         toolTip.SetToolTip(btn_Panel, Localization.T("Показать панель изображений (F3)"))
         toolTip.SetToolTip(btn_Full_Screen, Localization.T("Полноэкранный режим - картинка во весь экран и ничего лишнего."))
         toolTip.SetToolTip(btn_Prev_File, Localization.T("Предыдущий файл (Стрелка влево, PgUp)"))
@@ -166,7 +184,7 @@ Partial Public Class Main_Form
                 End If
             End Using
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0030: Error to set WebBrowser mode")
+            AppFileLogger.LogException("Setting the WebBrowser emulation mode", ex)
         End Try
     End Sub
 #End If
@@ -178,10 +196,9 @@ Partial Public Class Main_Form
         pending_Single_Click_Timer.Interval = SystemInformation.DoubleClickTime
         pending_Single_Click_Timer.Enabled = False
 
-        ' Initialize Table_Form if not already done
-        If Table_Form Is Nothing Then
-            Table_Form = New Table_Form()
-        End If
+        ' Through the one factory, so this first instance gets the same close hook as every
+        ' later one - without it "restart now" after a scale change did nothing (053 F-09).
+        EnsureSettingsWindow()
 
         ResizeDebounceTimer.Interval = 200
         ResizeDebounceTimer.Enabled = False
@@ -209,7 +226,9 @@ Partial Public Class Main_Form
         DecodeCacheStore.BudgetMb = modern_Preferences.DecodeCacheMaxMb
 #End If
 #If NETFRAMEWORK Then
-        Web_Browser.ObjectForScripting = Me
+        ' A three-method bridge, never the form: script in the video page can reach
+        ' exactly what ObjectForScripting exposes (audit 046, D-06).
+        Web_Browser.ObjectForScripting = New VideoPageScriptBridge(Me)
 #End If
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0003: InitializeExtensionLists")
@@ -455,7 +474,7 @@ Partial Public Class Main_Form
         Try
             probe = Await Task.Run(Function() ProbeArgument(argument_For_Path))
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0281: probe failed: " & ex.Message)
+            AppFileLogger.LogException("Probing a forwarded argument", ex)
             Return
         End Try
 
@@ -477,6 +496,7 @@ Partial Public Class Main_Form
             ' (§4.3). EnterArchive below does the same, so opening one archive straight
             ' from another cleans up in between.
             LeaveArchive()
+            LeaveResource()
 
             If Not probe.IsDirectory AndAlso probe.Exists AndAlso ArchiveEntryFilter.IsArchivePath(argument_For_Path) Then
                 EnterArchive(argument_For_Path)
@@ -546,8 +566,10 @@ Partial Public Class Main_Form
                 is_External_Input_Received = True
                 was_External_Input_Previously = True
                 current_File_Index = 0
-                total_File_Count = 1
-                files_List = New List(Of String) From {Current_Image_Path}
+                ' Leaves array mode as well (audit 048, A-02): after a folder of 100 000+
+                ' files the array stayed active and the display read the OLD folder's first
+                ' file instead of this one.
+                InstallSingleFileList(Current_Image_Path)
 
                 ReadShowMediaFile(Mode_FolderAndKnownFile)
             End If
@@ -557,7 +579,7 @@ Partial Public Class Main_Form
             ' quietly returns on an empty folder path - over an argument that was bad
             ' (an over-long path arriving by drag-drop, say) while a perfectly good
             ' folder was open on screen.
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0300: Error processing argument: " & ex.Message)
+            AppFileLogger.LogException("Processing an argument", ex)
             lbl_Status.Text = Localization.TF("Не удалось открыть: {0}", argument_For_Path)
         End Try
     End Sub
@@ -634,7 +656,7 @@ Partial Public Class Main_Form
         Try
             probe = Await Task.Run(Function() ProbeArgument(path))
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0310: resume: last file unavailable: " & path)
+            AppFileLogger.LogException("Resume: probing the last file", ex)
             Return
         End Try
 
@@ -685,7 +707,7 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0041: resume: " & file_Path & " - index " & current_File_Index.ToString())
             ReadShowMediaFile(Mode_SetFile)
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0312: resume: last file unavailable: " & file_Path & " - " & ex.Message)
+            AppFileLogger.LogException("Resume: opening the last file", ex)
         End Try
     End Sub
 
@@ -704,6 +726,10 @@ Partial Public Class Main_Form
         Debug.WriteLine(" - - - ")
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0000: Form started")
         Me.AllowDrop = True
+
+        ' An exception that escapes a UI handler is logged by AppFileLogger and would
+        ' otherwise leave no visible trace at all (053 F-15).
+        AppFileLogger.UiFaultReporter = AddressOf ReportUiFault
 
         ' Build the modern docked layout (reparents the Designer controls into
         ' flow_Toolbar / panel_Status / panel_Media) before anything lays out.
@@ -725,7 +751,8 @@ Partial Public Class Main_Form
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "mediaViewedCount", "0"), media_View_Count)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0021: media Viewed: " & media_View_Count.ToString)
 
-        Integer.TryParse(GetSetting(App_name, Second_App_Name, "color_scheme", "1"), Form_Color_Scheme)
+        ' Held to the six schemes: an out-of-range value crashed every start (053 F-16).
+        Form_Color_Scheme = Utils.ColorSchemeFromSetting(GetSetting(App_name, Second_App_Name, "color_scheme", "1"))
 
         ' Initial native title-bar theme; refined per-image by RecolorChrome.
         ApplyTitleBarTheme(Form_Color_Scheme <> 2)
@@ -765,8 +792,8 @@ Partial Public Class Main_Form
         InitializeOpenUrlEntryPoint()
 #End If
 
-        Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Width_At_Panel", "80"), Picture_Box_Width_At_Panel)
-        Integer.TryParse(GetSetting(App_name, Second_App_Name, "Picture_Box_Height_At_Panel", "80"), Picture_Box_Height_At_Panel)
+        Picture_Box_Width_At_Panel = Utils.ParseIntSetting(GetSetting(App_name, Second_App_Name, "Picture_Box_Width_At_Panel", "80"), 80)
+        Picture_Box_Height_At_Panel = Utils.ParseIntSetting(GetSetting(App_name, Second_App_Name, "Picture_Box_Height_At_Panel", "80"), 80)
 
         Is_Pespective = GetSetting(App_name, Second_App_Name, "isPerspective", "1") = "1"
         ' Default "0" = the bars look exactly as they always have, so an upgrade does not
@@ -789,10 +816,8 @@ Partial Public Class Main_Form
         Is_Exif_AutoRotate = GetSetting(App_name, Second_App_Name, "ExifAutoRotate", "1") = "1"
         Is_HighQuality_Scaling = GetSetting(App_name, Second_App_Name, "HighQualityScaling", "1") = "1"
         Is_Show_Info_Overlay = GetSetting(App_name, Second_App_Name, "ShowInfoOverlay", "0") = "1"
-        Dim slideshow_Seconds As Integer = 10
-        Integer.TryParse(GetSetting(App_name, Second_App_Name, "SlideshowIntervalSec", "10"), slideshow_Seconds)
-        If slideshow_Seconds < 1 Then slideshow_Seconds = 1
-        If slideshow_Seconds > 120 Then slideshow_Seconds = 120
+        ' A corrupt value means the default 10 s, not a 1-second slideshow (053 F-17).
+        Dim slideshow_Seconds As Integer = Utils.ParseIntSetting(GetSetting(App_name, Second_App_Name, "SlideshowIntervalSec", "10"), 10, 1, 120)
         Slideshow_Base_Interval_Ms = slideshow_Seconds * 1000
 
         Dim sort_Direction_Index = 0
@@ -836,16 +861,24 @@ Partial Public Class Main_Form
             Hardkeys_to_move_mediafile(z) = GetSetting(App_name, Second_App_Name, "MoveOn" & z.ToString, "")
         Next
         Hardkeys_to_move_mediafile(10) = GetSetting(App_name, Second_App_Name, "MoveOn0", "")
+#If Not NETFRAMEWORK Then
+        ' One spelling for the probe and the action (audit 047, C-24) - including a value an
+        ' older build stored with a stray space.
+        For z = 1 To 10
+            Hardkeys_to_move_mediafile(z) = SlotHealthPolicy.NormalizeSlotPath(Hardkeys_to_move_mediafile(z))
+        Next
+#End If
 
         Dim recent_Folders_Data As String = GetSetting(App_name, Second_App_Name, "RecentFolders", "")
         If Not String.IsNullOrEmpty(recent_Folders_Data) Then
             recent_Folder_List = recent_Folders_Data.Split("|"c).ToList()
             recent_Folder_List.RemoveAll(Function(x) String.IsNullOrEmpty(x))
+            ' The LIST, not only the combo: an untrimmed list kept every folder the limit
+            ' was lowered below, and wrote them back on every flush (053 F-12).
+            Utils.ApplyRecentLimit(recent_Folder_List, RecentFoldersLimit(), newestFirst:=True)
 
             For Each folder In recent_Folder_List
-                If cmbox_Media_Folder.Items.Count < RecentFoldersLimit() Then
-                    cmbox_Media_Folder.Items.Add(folder)
-                End If
+                cmbox_Media_Folder.Items.Add(folder)
             Next
         End If
 
@@ -853,9 +886,7 @@ Partial Public Class Main_Form
         If Not String.IsNullOrEmpty(recent_Media_Files_Data) Then
             recent_Media_File_List = recent_Media_Files_Data.Split("|"c).ToList()
             recent_Media_File_List.RemoveAll(Function(x) String.IsNullOrEmpty(x))
-            If recent_Media_File_List.Count > RecentFilesLimit() Then
-                recent_Media_File_List = recent_Media_File_List.Skip(recent_Media_File_List.Count - RecentFilesLimit()).ToList()
-            End If
+            Utils.ApplyRecentLimit(recent_Media_File_List, RecentFilesLimit(), newestFirst:=False)
         End If
 
 #If Not NETFRAMEWORK Then
@@ -864,9 +895,7 @@ Partial Public Class Main_Form
         last_Played_File = GetSetting(App_name, Second_App_Name, "LastPlayedFile", "")
 #End If
 
-        If Table_Form.chkbox_Independent_Thread_For_File_Operation IsNot Nothing Then
-            Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked = GetSetting(App_name, Second_App_Name, "UseIndependentThreadForOperationsWithFiles", "0") = "1"
-        End If
+        Is_Independent_Thread_For_File_Operations = GetSetting(App_name, Second_App_Name, "UseIndependentThreadForOperationsWithFiles", "0") = "1"
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0025: Command line args count: " & My.Application.CommandLineArgs.Count.ToString)
 
@@ -939,11 +968,24 @@ Partial Public Class Main_Form
         If app_Height_Int < main_form_position_Limit_Height_Low OrElse app_Height_Int > main_form_position_Limit_Height Then app_Height_Int = first_run_height
 
         Dim saved_Bounds As New Rectangle(app_Left_Int, app_Top_Int, app_Width_Int, app_Height_Int)
+#If NETFRAMEWORK Then
         If Not SystemInformation.VirtualScreen.IntersectsWith(saved_Bounds) Then
             app_Left_Int = first_run_left
             app_Top_Int = first_run_top
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1949: saved window position is off-screen, using defaults")
         End If
+#Else
+        ' APP-BEHAVIOUR rule 10: a rectangle that no longer lands on a display goes to the
+        ' NEAREST surviving one - not to the first-run corner of the primary monitor.
+        Dim placed_Bounds As Rectangle = WindowPlacement.Place(saved_Bounds, WindowPlacement.CurrentWorkAreas())
+        If placed_Bounds <> saved_Bounds Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1949: saved window position is off-screen, moved to the nearest display")
+        End If
+        app_Left_Int = placed_Bounds.Left
+        app_Top_Int = placed_Bounds.Top
+        app_Width_Int = placed_Bounds.Width
+        app_Height_Int = placed_Bounds.Height
+#End If
 
         If MultiWindowPolicy.IsSecondaryInstance() Then
             Dim offset As Integer = 32 * Math.Max(1, My.MyApplication.GetRunningViewerWindowCount())
@@ -955,6 +997,21 @@ Partial Public Class Main_Form
 
         Me.SetBounds(app_Left_Int, app_Top_Int, app_Width_Int, app_Height_Int)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1950: Form_Sizes: " & app_Left_Int.ToString & " - " & app_Top_Int.ToString & " " & app_Width_Int.ToString & " - " & app_Height_Int.ToString)
+
+#If Not NETFRAMEWORK Then
+        ' The state comes back on top of the normal rectangle just set, so un-maximizing
+        ' returns to the size the window had. A second window of the viewer opens normal,
+        ' offset from the first, as before.
+        If Not MultiWindowPolicy.IsSecondaryInstance() Then
+            Select Case WindowPlacement.ParseState(GetSetting(App_name, Second_App_Name, "AppWindowState", ""))
+                Case WindowPlacement.StateMaximized
+                    Me.WindowState = FormWindowState.Maximized
+                Case WindowPlacement.StateFullScreen
+                    ' ISizeChanged below applies the border and the state together.
+                    is_Full_Screen_Mode = True
+            End Select
+        End If
+#End If
 
         ResizeDebounceTimer.Stop()
 
@@ -1000,10 +1057,31 @@ Partial Public Class Main_Form
     Private is_Closing_After_Drain As Boolean = False
 #End If
 
+    ''' <summary>Says in the status line that a UI handler failed. Non-modal on purpose:
+    ''' a dialog raised from inside a fault can itself fault, or stack up once per
+    ''' repaint. The message names the cause and points at the log.</summary>
+    Private Sub ReportUiFault(ex As Exception)
+        If Me.IsDisposed OrElse lbl_Status Is Nothing OrElse lbl_Status.IsDisposed Then Return
+        lbl_Status.Text = Localization.TF("Внутренняя ошибка: {0}. Последнее действие могло выполниться не полностью; подробности - в журнале.",
+                                          FailureText.Describe(ex))
+    End Sub
+
     Private Async Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
         ' LITE closes like a normal viewer - no close-to-tray. Sharing (if any) is
         ' owned entirely by Fast Media Sorter: Share Manager, which keeps
         ' running independently; closing LITE never touches it.
+
+        ' A shutdown or logoff arrives here from WM_QUERYENDSESSION, which is a QUESTION:
+        ' another program can still veto it (or `shutdown /a` cancel it), and this window
+        ' then keeps running. So on that path only persist, and leave every piece of
+        ' teardown to FormClosed, which WinForms raises only once the close really happens
+        ' (WM_ENDSESSION with TRUE, or an ordinary close). Tearing down here used to leave a
+        ' cancelled shutdown with disposed timers and images - and, with the slot array
+        ' cleared, a flush a minute later that wiped all ten destination folders (053 F-01).
+        If e.CloseReason = CloseReason.WindowsShutDown Then
+            PersistSettings()
+            Return
+        End If
 
 #If Not NETFRAMEWORK Then
         ' Line 2 of the archive cleanup (§4.4): close the archive and take its temporary
@@ -1011,6 +1089,13 @@ Partial Public Class Main_Form
         ' cancel the close and come back later - the extracted files are ours and the exit
         ' must not depend on the rest of this handler being reached.
         LeaveArchive()
+        LeaveResource()
+
+        ' Same reasoning for a secure container: the open one is closed and the session
+        ' credential dropped here, before anything that can cancel the close. Nothing was
+        ' ever written down for it to survive the process
+        ' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §5.5).
+        SecureShutdown()
 #End If
 
 #If Not NETFRAMEWORK Then
@@ -1050,9 +1135,29 @@ Partial Public Class Main_Form
 #End If
 
         ' The whole settings block moved into PersistSettings so it is no longer reachable
-        ' ONLY from here - see B-1 in SPECIFICATION_LONG_RUN_STABILITY.md. final_Save:=True
-        ' adds the teardown half (clearing the destination-slot array).
-        PersistSettings(final_Save:=True)
+        ' ONLY from here - see B-1 in SPECIFICATION_LONG_RUN_STABILITY.md. Saved here, while
+        ' the settings window and every control still report their live state; the
+        ' teardown waits for FormClosed.
+        PersistSettings()
+    End Sub
+
+    ''' <summary>
+    ''' The teardown half of closing. Raised only when the close really happens - after an
+    ''' ordinary FormClosing that nobody cancelled, or on WM_ENDSESSION(TRUE) at the end of
+    ''' a shutdown that went through - never for a shutdown that was later cancelled.
+    ''' </summary>
+    Private Sub Form1_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+        If e.CloseReason = CloseReason.WindowsShutDown Then
+            ' FormClosing only persisted on this path. Save once more - the session may have
+            ' moved on between the question and the answer - and run what an ordinary close
+            ' runs before its queue drain. Both are no-ops when nothing is open.
+            PersistSettings()
+#If Not NETFRAMEWORK Then
+            LeaveArchive()
+            LeaveResource()
+            SecureShutdown()
+#End If
+        End If
 
 
         ' Wait on the workers' own signals, not on IsBusy: IsBusy is cleared by a
@@ -1203,10 +1308,13 @@ Partial Public Class Main_Form
     ''' loss - silently reverted days of changes to the values from the previous clean
     ''' exit. Now the same block also runs when a change worth keeping happens, and after
     ''' an idle pause (see MarkSettingsDirty).
+    '''
+    ''' It never clears anything. It used to take a final_Save flag that also emptied the
+    ''' destination-slot array; a shutdown cancelled after that point left the array empty
+    ''' in a running window, and the next flush wrote ten empty MoveOn values (053 F-01).
+    ''' The process ending frees the array on its own.
     ''' </summary>
-    ''' <param name="final_Save">True only from the closing path: it additionally clears
-    ''' the destination-slot array, which is teardown and must not happen mid-session.</param>
-    Private Sub PersistSettings(Optional final_Save As Boolean = False)
+    Private Sub PersistSettings()
         If MultiWindowPolicy.IsSecondaryInstance() Then Return
         Try
             ' PersistableFolderPath, not Current_Folder_Path: inside an archive the latter
@@ -1239,23 +1347,19 @@ Partial Public Class Main_Form
                 Try
                     SaveSetting(App_name, Second_App_Name, "MoveOn" & z.ToString, If(Hardkeys_to_move_mediafile(z), ""))
                 Catch ex As Exception
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1180: ERR: " & ex.Message)
-                Finally
-                    ' Clearing the slot is TEARDOWN, not part of saving - doing it on an
-                    ' eager save would wipe the user's destinations mid-session.
-                    If final_Save Then Hardkeys_to_move_mediafile(z) = Nothing
+                    AppFileLogger.LogException("Settings: saving MoveOn" & z.ToString, ex)
                 End Try
             Next
             Try
                 SaveSetting(App_name, Second_App_Name, "MoveOn0", If(Hardkeys_to_move_mediafile(10), ""))
             Catch ex As Exception
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1181: ERR: " & ex.Message)
-            Finally
-                If final_Save Then Hardkeys_to_move_mediafile(10) = Nothing
+                AppFileLogger.LogException("Settings: saving MoveOn0", ex)
             End Try
 
-            ' Writes UiLanguage plus the legacy Is_Russian_Language mirror.
-            Localization.SaveToSettings()
+            ' Only the first run's default. The choice itself is saved by SetUiLanguage when
+            ' it is made; writing the in-memory code here on every flush overwrote a
+            ' language picked in the Share Manager meanwhile (053 F-08).
+            Localization.SaveIfAbsent()
             SaveSetting(App_name, Second_App_Name, "FirstRun", "0")
             SaveSetting(App_name, Second_App_Name, "CopyMode", If(Is_Copying_not_Moving, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "isPerspective", If(Is_Pespective, "1", "0"))
@@ -1287,16 +1391,37 @@ Partial Public Class Main_Form
             ' or above, the primary one; refusing to save them lost the position on
             ' every restart there. The size guards had their limits swapped: height was
             ' checked against the WIDTH floor and width against the HEIGHT one.
+#If NETFRAMEWORK Then
             SaveSetting(App_name, Second_App_Name, "AppTop", Me.Top.ToString)
             SaveSetting(App_name, Second_App_Name, "AppLeft", Me.Left.ToString)
             If Me.Height >= main_form_position_Limit_Height_Low Then SaveSetting(App_name, Second_App_Name, "AppHeight", Me.Height.ToString)
             If Me.Width >= main_form_position_Limit_Width_Low Then SaveSetting(App_name, Second_App_Name, "AppWidth", Me.Width.ToString)
+#Else
+            ' APP-BEHAVIOUR rule 10 (ticket 028 Ф-2): a maximized or full-screen window
+            ' reports the screen's rectangle, and writing that over the normal one made the
+            ' window forget its size. The normal rectangle and the state are two values.
+            Dim normal_Bounds As Rectangle = WindowPlacement.NormalRectangle(Me.WindowState, Me.Bounds, Me.RestoreBounds)
+            SaveSetting(App_name, Second_App_Name, "AppTop", normal_Bounds.Top.ToString)
+            SaveSetting(App_name, Second_App_Name, "AppLeft", normal_Bounds.Left.ToString)
+            If normal_Bounds.Height >= main_form_position_Limit_Height_Low Then SaveSetting(App_name, Second_App_Name, "AppHeight", normal_Bounds.Height.ToString)
+            If normal_Bounds.Width >= main_form_position_Limit_Width_Low Then SaveSetting(App_name, Second_App_Name, "AppWidth", normal_Bounds.Width.ToString)
+            ' Minimized is not a state to come back to: the state before it is kept.
+            If Me.WindowState <> FormWindowState.Minimized Then
+                Dim window_State As String = WindowPlacement.StateNormal
+                If is_Full_Screen_Mode Then
+                    window_State = WindowPlacement.StateFullScreen
+                ElseIf Me.WindowState = FormWindowState.Maximized Then
+                    window_State = WindowPlacement.StateMaximized
+                End If
+                SaveSetting(App_name, Second_App_Name, "AppWindowState", window_State)
+            End If
+#End If
 
             SaveSetting(App_name, Second_App_Name, "VideoVolume", video_Volume_Level.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))
             SaveSetting(App_name, Second_App_Name, "VideoMuted", If(is_Video_Muted, "1", "0"))
             SaveSetting(App_name, Second_App_Name, "RecentFolders", String.Join("|", recent_Folder_List))
 
-            SaveSetting(App_name, Second_App_Name, "UseIndependentThreadForOperationsWithFiles", If(Table_Form.chkbox_Independent_Thread_For_File_Operation.Checked, "1", "0"))
+            SaveSetting(App_name, Second_App_Name, "UseIndependentThreadForOperationsWithFiles", If(Is_Independent_Thread_For_File_Operations, "1", "0"))
 
             SaveOcrSettings()
 #If Not NETFRAMEWORK Then
@@ -1309,7 +1434,7 @@ Partial Public Class Main_Form
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1190: settings are saved")
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1200: ERR: " & ex.Message)
+            AppFileLogger.LogException("Settings: saving the settings block", ex)
         End Try
 
         settings_Dirty = False

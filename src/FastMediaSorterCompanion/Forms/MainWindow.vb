@@ -117,6 +117,11 @@ Partial Public NotInheritable Class MainWindow
     Private miOpenViewer As ToolStripMenuItem
     Private lnkLanguage As LinkLabel
     Private toolTip As ToolTip
+    ''' <summary>The help drop-down. A shown ContextMenuStrip keeps a native window rooted
+    ''' in the handle table and closures over this window's handlers, so it is a field and
+    ''' dies with the form (ticket 054 H-20) - otherwise every closed MainWindow (and a
+    ''' language switch rebuilds it) could stay reachable from the tray process.</summary>
+    Private _helpMenu As ContextMenuStrip
     Private ReadOnly _serverRows As New List(Of ServerRow)()
 
     ' --- layout containers ------------------------------------------------------
@@ -250,6 +255,22 @@ Partial Public NotInheritable Class MainWindow
         Catch
         End Try
         Try : _statsTimer.Stop() : _statsTimer.Dispose() : Catch : End Try
+        ' What outlives the form is released here rather than left to finalization
+        ' (ticket 054 H-20): the tooltip and the help menu each hold a native window and
+        ' references back into this form, and the glyph bitmaps are plain GDI objects a
+        ' tray process has no reason to keep.
+        Try : toolTip.Dispose() : Catch : End Try
+        Try : _helpMenu.Dispose() : Catch : End Try
+        DisposeImage(_copyGlyph)
+        DisposeImage(_addGlyph)
+        DisposeImage(_shareGlyph)
+        DisposeImage(_gearGlyph)
+        DisposeImage(_eyeGlyph)
+        _copyGlyph = Nothing
+        _addGlyph = Nothing
+        _shareGlyph = Nothing
+        _gearGlyph = Nothing
+        _eyeGlyph = Nothing
         ShareIcons.FreeIcon(Me.Icon, _iconHandle)
     End Sub
 
@@ -275,11 +296,19 @@ Partial Public NotInheritable Class MainWindow
 
         SetBusy(True, Localization.T("Запуск компаньона.."))
         Dim st As WorkerStatus = Await ShareController.EnsureRunningReconciledAsync()
+        ' Up to 15 s in Server mode: the window may have been closed meanwhile (ticket 054 H-11).
+        If IsDisposed Then Return
         If st Is Nothing Then
+            ' A worker that answered with a newer protocol is running and said so - that
+            ' is not "cannot reach", and the fix is an update (WORKER-IPC section 6 rule 3).
             ' In Server mode "cannot reach the companion" is the wrong diagnosis and
             ' the wrong advice: nothing here may spawn a worker, so the actionable
             ' fact is what the SERVICE is doing - and the fix lives one button away.
-            If ServerFeatures.IsSystemServiceHost() Then
+            Dim refusal As String = ShareController.RefusalMessage()
+            If refusal <> "" Then
+                SetHint(refusal)
+                ApplyStatusToUi()
+            ElseIf ServerFeatures.IsSystemServiceHost() Then
                 SetHint(HostingText.ServiceStateLine(ServiceControl.QueryState()))
             Else
                 SetHint(Localization.T("Не удалось связаться с компаньоном."))
@@ -299,9 +328,15 @@ Partial Public NotInheritable Class MainWindow
 
         ' The service can already be serving folders it has no access to - registered by
         ' something that had no folder list to pass it, or with the offer declined once.
-        ' Opening this window is the first moment anyone could see that, so it is also
-        ' the right moment to offer the fix rather than wait for a folder to be re-picked.
+        ' Opening this window is the first moment anyone could see that, so it is also the
+        ' right moment to offer the fix rather than wait for a folder to be re-picked.
+        ' Awaited here (not fire-and-forget as in ApplyStatusToUi): the offer's condition
+        ' is the count this walk produces, and deciding it on the previous count is how
+        ' the offer silently never happens.
+        Await RefreshFolderAccessAsync()
+        If IsDisposed Then Return
         Await OfferGrantForServedFoldersAsync()
+        If IsDisposed Then Return
 
         If st.Running AndAlso st.Reachability Is Nothing Then Await PollReachabilityAsync()
     End Function
@@ -393,8 +428,15 @@ Partial Public NotInheritable Class MainWindow
         End Using
         LoadLocalState()
         If Not changed Then Return
+        ' The opt-in may just have been withdrawn (ticket 028 Ф-6): back to the enable panel.
+        If Not ServerFeatures.IsEnabled() Then
+            ApplyGate()
+            Return
+        End If
         SetBusy(True, Localization.T("Минутку.."))
-        _status = Await ShareController.GetStatusAsync()
+        Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+        If IsDisposed Then Return
+        _status = st
         ApplyStatusToUi()
         SetBusy(False)
     End Sub

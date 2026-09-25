@@ -36,6 +36,14 @@ Partial Public Class Main_Form
         Dim actionId As String = CustomHotkeys.OwnerOfOverride(custom_Hotkeys, combo)
         If actionId.Length > 0 Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1650: custom hotkey " & combo & " -> " & actionId)
+            ' KeybUse asks the custom map before it stops the slideshow (so a digit bound to
+            ' an action works whatever its slot holds - audit 047, C-19), so the stop is
+            ' done here - except for a slot with no folder, which is not an action at all.
+            Dim slot As Integer = CustomHotkeys.RecipientSlotOf(actionId)
+            If slot = 0 OrElse IsRecipientSlotConfigured(slot) Then
+                SlideShowStop()
+                is_Slide_Show_Random_Mode = False
+            End If
             RunHotkeyAction(actionId, wasSlideShow)
             Return True
         End If
@@ -69,9 +77,7 @@ Partial Public Class Main_Form
             Case "jumpToNumber" : Jump_To_file_Number()
             Case "renameFile" : RenameCurrentFileFromKeyboard()
             Case "deleteFile" : ReadShowMediaFile(Mode_Delete)
-            Case "deletePermanent"
-                pending_Delete_Permanent = True
-                ReadShowMediaFile(Mode_Delete)
+            Case "deletePermanent" : DeleteCurrentFilePermanently()
             Case "undo" : Undo()
             Case "rotateCw" : RotateActiveImage(True)
             Case "rotateCcw" : RotateActiveImage(False)

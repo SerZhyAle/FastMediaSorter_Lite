@@ -29,6 +29,24 @@ Public Class AudioMetadataTests
         Assert.Equal(".MP3 • 1.0 MB", value.FormatLine)
     End Sub
 
+    ''' <summary>Audit 050 D-02: LibVLC's codec is a FourCC, lowest byte first. Formatted
+    ''' as a number it put "1634492771" on the plate.</summary>
+    <Fact>
+    Public Sub FourCC_codecs_read_as_names()
+        Assert.Equal("AAC", AudioMetadata.CodecName(&H6134706DUI))   ' "mp4a"
+        Assert.Equal("MP3", AudioMetadata.CodecName(&H6167706DUI))   ' "mpga"
+        Assert.Equal("FLAC", AudioMetadata.CodecName(&H63616C66UI))  ' "flac"
+        Assert.Equal("Opus", AudioMetadata.CodecName(&H7375706FUI))  ' "opus"
+        Assert.Equal("XYZW", AudioMetadata.CodecName(&H575A5958UI))  ' an unknown one shows its letters
+    End Sub
+
+    <Fact>
+    Public Sub A_FourCC_that_is_not_letters_shows_nothing()
+        Assert.Equal("", AudioMetadata.CodecName(0UI))
+        Assert.Equal("", AudioMetadata.CodecName(&H1020304UI))
+        Assert.Equal("", AudioMetadata.CodecName(&H20202020UI))
+    End Sub
+
     <Fact>
     Public Sub Long_title_is_truncated()
         Dim value = AudioMetadata.FromValues("C:\Music\song.mp3", New String("A"c, 201))

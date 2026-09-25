@@ -48,6 +48,18 @@ Partial Public NotInheritable Class Localization
         End If
     End Sub
 
+    ' <summary>
+    ' Writes the language only when none is stored yet - the first run's resolved default.
+    ' A periodic flush must never write the in-memory code over what is there: both
+    ' programs share the value, and the viewer's flush a minute after any navigation put
+    ' its own language back over one just chosen in the Share Manager (053 F-08). A
+    ' choice is saved at the moment it is made (Main_Form.SetUiLanguage).
+    ' </summary>
+    Public Shared Sub SaveIfAbsent()
+        Dim stored = Interaction.GetSetting(App_name, Second_App_Name, UiLanguageValue, "")
+        If String.IsNullOrEmpty(stored) Then SaveToSettings()
+    End Sub
+
     ' <summary>Persist the active language, plus the legacy mirror.</summary>
     Public Shared Sub SaveToSettings()
         Interaction.SaveSetting(App_name, Second_App_Name, UiLanguageValue, CurrentCode)

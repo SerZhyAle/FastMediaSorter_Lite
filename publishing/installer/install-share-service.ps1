@@ -22,7 +22,14 @@
         and a pre-existing LOCAL SERVICE grant is left alone on revoke.
 
     Exit code 0 = success. Any non-zero code is surfaced by the caller as a failure;
-    the reason is appended to <DataDir>\install-share-service.log.
+    the reason is appended to <DataDir>\install-share-service.log - or, when that
+    directory cannot be trusted, to install-share-service.log in the elevated
+    account's own %TEMP%. The codes: 1 unexpected error, 2 missing argument or
+    worker, 3 service did not start, 4 an ACL could not be set, 5 not elevated,
+    6 state did not validate, 7 host-key mismatch, 8 firewall, 9 service not
+    installed, 10 several identities, 11 the state directory (or bin) cannot be
+    trusted, 12 some requested folders were not granted, 13 the service account is
+    not LOCAL SERVICE, 14 the old registration is still marked for deletion.
 
 .PARAMETER Action
     install | repair | remove | start | stop | migrate-to-server | migrate-to-user |
@@ -55,7 +62,14 @@ param(
     # SFTP permission error, far from the folder list that promised otherwise.
     # Omitting the parameter entirely keeps the old read-only-for-everything behaviour,
     # so an older caller never silently widens access.
-    [string]$ReadOnlyRoots
+    [string]$ReadOnlyRoots,
+
+    # "remove" only: the installation stays an ordinary (User) edition, whose own opt-in
+    # firewall rule names the installed worker. Removing the service role deletes every
+    # rule aimed at that program, so without this the User edition was left listening
+    # with no inbound allow at all (ticket 054 H-05). The Server edition's uninstaller
+    # never passes it - nothing of that installation is left to listen.
+    [switch]$RestoreUserRule
 )
 
 $ErrorActionPreference = 'Stop'
@@ -84,36 +98,79 @@ $BinDirName = 'bin'
 # the one the firewall rule must name. Until then, the caller-supplied path.
 $script:ServiceExePath = $ExePath
 
+# The copy of the worker this script EXECUTES (--inspect-datadir). Once staged into the
+# administrators-only bin directory it is that copy, never the one in the application
+# folder: a per-user installation leaves that folder writable by the user, and a file
+# that can change under us must not be what an elevated step runs (ticket 054 H-08).
+$script:InspectExePath = $ExePath
+
 # Well-known SIDs, used instead of names: icacls resolves "*S-1-5-19" identically on
 # every Windows language, while "LOCAL SERVICE" fails outright on a localized system.
 $SidSystem      = 'S-1-5-18'
 $SidLocalService= 'S-1-5-19'
 $SidAdmins      = 'S-1-5-32-544'
+$SidTrustedInstaller = 'S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464'
+
+# Windows PowerShell (.NET Framework) and PowerShell 7 (.NET) reach the ACL-at-creation
+# APIs differently; the installers always run powershell.exe, 7 only has to work.
+$script:IsDesktopEdition = ($PSVersionTable.PSEdition -ne 'Core')
 
 # --- logging ------------------------------------------------------------------
 
 $script:LogPath = $null
 
-function Initialize-Log {
-    if (-not $DataDir) { return }
-    try {
-        if (-not (Test-Path -LiteralPath $DataDir)) {
-            New-Item -ItemType Directory -Path $DataDir -Force | Out-Null
-        }
-        $script:LogPath = Join-Path $DataDir 'install-share-service.log'
-    } catch { $script:LogPath = $null }
+# Lines logged before the log file may be opened. Kept, and written out as soon as there
+# is somewhere safe to put them (the state directory once it is verified, or the
+# fallback when the action stops before that).
+$script:PendingLog = New-Object System.Collections.Generic.List[string]
+
+# Where the log goes when the state directory cannot be used: this elevated account's
+# own temporary folder, which no other standard user can write to.
+function Get-FallbackLogPath {
+    try { return (Join-Path ([System.IO.Path]::GetTempPath()) 'install-share-service.log') } catch { return $null }
 }
 
+function Write-PendingLog([string]$path) {
+    if (-not $path -or $script:PendingLog.Count -eq 0) { return }
+    try { Add-Content -LiteralPath $path -Value $script:PendingLog.ToArray() -Encoding UTF8 } catch { }
+    $script:PendingLog.Clear()
+}
+
+# Opens the log inside the state directory - ONLY after that directory was verified
+# (Assert-TrustedDirectory / Initialize-MachineDataDir), and never by creating it. It used
+# to create %ProgramData%\FastMediaSorterCompanion right here, before the elevation check
+# and before any ownership check, which is one way a directory owned by someone else ended
+# up adopted by the next elevated run (ticket 046 H-02).
+function Initialize-Log {
+    if (-not $DataDir) { return }
+    $attr = Get-RawAttributes $DataDir
+    if ($null -eq $attr -or -not ($attr -band [System.IO.FileAttributes]::Directory)) { return }
+    $candidate = Join-Path $DataDir 'install-share-service.log'
+    # A log file that is a link would turn every elevated Add-Content into a write wherever
+    # the link points. It is only our own text, so the link goes, never its target.
+    try { if (Test-ReparsePoint $candidate) { Remove-LinkOnly $candidate } } catch { return }
+    $script:LogPath = $candidate
+    Write-PendingLog $candidate
+}
+
+# Write-Host, not Write-Output: a log line on the success stream becomes part of the
+# RETURN VALUE of whichever function logged it. Resolve-UserDataDir logged the profile it
+# found and then returned it, so the caller got "<log line> <path>" as one string - a
+# directory that does not exist - and the migration "started fresh", generating a NEW
+# host key that unpaired every phone.
 function Write-Log([string]$message) {
     $line = "{0} {1}" -f (Get-Date).ToUniversalTime().ToString('s'), $message
-    Write-Output $line
+    Write-Host $line
     if ($script:LogPath) {
         try { Add-Content -LiteralPath $script:LogPath -Value $line -Encoding UTF8 } catch { }
+    } else {
+        $script:PendingLog.Add($line)
     }
 }
 
 function Fail([string]$message, [int]$code = 1) {
     Write-Log "FAILED: $message"
+    if (-not $script:LogPath) { Write-PendingLog (Get-FallbackLogPath) }
     exit $code
 }
 
@@ -137,6 +194,193 @@ function Assert-DataDir {
     if (-not $DataDir) { Fail 'no -DataDir given' 2 }
 }
 
+# --- filesystem safety (ticket 046 H-02) ---------------------------------------
+#
+# Everything this script writes lands in a directory an elevated process has to be able
+# to trust, and %ProgramData% is not such a place by default: any standard user may create
+# a subfolder there, becomes its owner, and keeps an ACE of their own that "/inheritance:r
+# /grant:r" never removes. A junction or a symbolic link, in turn, makes an elevated write
+# or ACL change land wherever it points. So: no link is ever followed, an existing
+# directory is adopted only when an administrator or the system owns it, and a directory
+# this script creates carries its final ACL from the first instant.
+
+# Owners an existing state or bin directory may have. LOCAL SERVICE is the service's own
+# account, which recreates the directory if it vanished while the service was registered.
+$TrustedOwnerSids = @($SidSystem, $SidAdmins, $SidTrustedInstaller, $SidLocalService)
+
+# Attributes WITHOUT following a link (GetFileAttributes reads the link itself, even a
+# dangling one). $null when nothing exists at the path.
+function Get-RawAttributes([string]$path) {
+    if (-not $path) { return $null }
+    try { return [System.IO.File]::GetAttributes($path) } catch { return $null }
+}
+
+function Test-ReparsePoint([string]$path) {
+    $attr = Get-RawAttributes $path
+    if ($null -eq $attr) { return $false }
+    return [bool]($attr -band [System.IO.FileAttributes]::ReparsePoint)
+}
+
+# A junction or a symbolic link: a path that stands for another one. Test-ReparsePoint is
+# the strict test for our own directories and files, where no reparse point belongs at
+# all; a folder someone SHARES may well be one of another kind - every OneDrive folder is
+# a cloud-files reparse point - and is an ordinary folder for this purpose.
+function Test-NameLink([string]$path) {
+    try { $item = Get-Item -LiteralPath $path -Force -ErrorAction Stop } catch { return $false }
+    return (@('Junction', 'SymbolicLink') -contains [string]$item.LinkType)
+}
+
+# Removes a link itself - or a plain file - never what a link points at.
+function Remove-LinkOnly([string]$path) {
+    $attr = Get-RawAttributes $path
+    if ($null -eq $attr) { return }
+    if ($attr -band [System.IO.FileAttributes]::Directory) {
+        [System.IO.Directory]::Delete($path, $false)
+        return
+    }
+    if (-not ($attr -band [System.IO.FileAttributes]::ReparsePoint)) {
+        [System.IO.File]::SetAttributes($path, [System.IO.FileAttributes]::Normal)
+    }
+    [System.IO.File]::Delete($path)
+}
+
+# Deletes a directory tree without ever following a link inside it: a link is removed as
+# a link, so a junction planted in the tree cannot turn this into a delete somewhere else.
+function Remove-TreeNoFollow([string]$path) {
+    $attr = Get-RawAttributes $path
+    if ($null -eq $attr) { return }
+    if (($attr -band [System.IO.FileAttributes]::ReparsePoint) -or -not ($attr -band [System.IO.FileAttributes]::Directory)) {
+        Remove-LinkOnly $path
+        return
+    }
+    foreach ($entry in [System.IO.Directory]::GetFileSystemEntries($path)) { Remove-TreeNoFollow $entry }
+    [System.IO.Directory]::Delete($path, $false)
+}
+
+function Get-OwnerSid([string]$path) {
+    try { return (Get-Acl -LiteralPath $path).GetOwner([System.Security.Principal.SecurityIdentifier]).Value } catch { return $null }
+}
+
+function Get-SidDisplay([string]$sid) {
+    if (-not $sid) { return '(unknown)' }
+    try { return (New-Object System.Security.Principal.SecurityIdentifier($sid)).Translate([System.Security.Principal.NTAccount]).Value } catch { return $sid }
+}
+
+function Test-TrustedOwner([string]$sid) {
+    if (-not $sid) { return $false }
+    if ($TrustedOwnerSids -contains $sid) { return $true }
+    # Under the "objects created by administrators are owned by the creator" policy, a
+    # directory this same elevated account made earlier is owned by the account itself.
+    return ($sid -eq ([Security.Principal.WindowsIdentity]::GetCurrent()).User.Value)
+}
+
+# '' when $path is absent or may be adopted, otherwise the reason it may not.
+function Get-DirectoryDistrust([string]$path) {
+    $attr = Get-RawAttributes $path
+    if ($null -eq $attr) { return '' }
+    if ($attr -band [System.IO.FileAttributes]::ReparsePoint) {
+        return "'$path' is a junction or a symbolic link, and an elevated step never follows one - it could point anywhere. Remove the link by hand, then run this again."
+    }
+    if (-not ($attr -band [System.IO.FileAttributes]::Directory)) {
+        return "'$path' exists but is a file, not a directory. Remove it by hand, then run this again."
+    }
+    $owner = Get-OwnerSid $path
+    if (-not (Test-TrustedOwner $owner)) {
+        return ("'$path' belongs to '{0}', not to an administrator or the system. Whoever owns it could read the host key and the SFTP password kept there and change what the service runs, so it is not used. Nothing was changed. Check its contents, then delete it or make Administrators its owner (icacls ""$path"" /setowner *S-1-5-32-544), and run this again." -f (Get-SidDisplay $owner))
+    }
+    return ''
+}
+
+# $true when $path is an existing directory this script may adopt, $false when nothing is
+# there yet (the caller creates it). Anything else stops the whole action BEFORE a byte is
+# written into it - no log line, no copied secret, no ACL change.
+function Assert-TrustedDirectory([string]$path, [string]$what) {
+    $why = Get-DirectoryDistrust $path
+    if ($why) { Fail "$what refused: $why" 11 }
+    return ($null -ne (Get-RawAttributes $path))
+}
+
+function New-AllowRule([string]$sid, [string]$rights, [string]$scope) {
+    $id = New-Object System.Security.Principal.SecurityIdentifier($sid)
+    $inherit = [System.Security.AccessControl.InheritanceFlags]::None
+    $propagate = [System.Security.AccessControl.PropagationFlags]::None
+    if ($scope -ne 'this') {
+        $inherit = [System.Security.AccessControl.InheritanceFlags]'ContainerInherit, ObjectInherit'
+        # 'children': the rule reaches everything inside, but not the directory itself.
+        if ($scope -eq 'children') { $propagate = [System.Security.AccessControl.PropagationFlags]::InheritOnly }
+    }
+    return New-Object System.Security.AccessControl.FileSystemAccessRule($id,
+        [System.Security.AccessControl.FileSystemRights]$rights, $inherit, $propagate,
+        [System.Security.AccessControl.AccessControlType]::Allow)
+}
+
+# A directory descriptor built from nothing: owned by Administrators, no inheritance from
+# the parent, SYSTEM and Administrators in full control, and ONLY what the caller adds.
+function New-LockedDirectorySecurity {
+    $sec = New-Object System.Security.AccessControl.DirectorySecurity
+    $sec.SetOwner((New-Object System.Security.Principal.SecurityIdentifier($SidAdmins)))
+    $sec.SetAccessRuleProtection($true, $false)
+    $sec.AddAccessRule((New-AllowRule $SidSystem 'FullControl' 'tree'))
+    $sec.AddAccessRule((New-AllowRule $SidAdmins 'FullControl' 'tree'))
+    return $sec
+}
+
+# The state directory. LOCAL SERVICE and the enrolled management user(s) may create,
+# change and delete the FILES of the state (stats, shares, settings) - but hold no DELETE
+# on the directory itself. With it, a standard management user could rename the whole
+# store away while the service is stopped and put a directory of their own, with a bin of
+# their own, where the service looks for its binary.
+function New-DataDirSecurity {
+    $sec = New-LockedDirectorySecurity
+    foreach ($sid in (@($SidLocalService) + @(Split-Sids $ManageSid))) {
+        $sec.AddAccessRule((New-AllowRule $sid 'ReadAndExecute, Write' 'this'))
+        $sec.AddAccessRule((New-AllowRule $sid 'Modify' 'children'))
+    }
+    return $sec
+}
+
+# The service's binary directory: code, so read+execute for the account that runs it and
+# read for the management user (to compare it with the installed copy) - never write.
+function New-BinDirSecurity {
+    $sec = New-LockedDirectorySecurity
+    foreach ($sid in (@($SidLocalService) + @(Split-Sids $ManageSid))) {
+        $sec.AddAccessRule((New-AllowRule $sid 'ReadAndExecute' 'tree'))
+    }
+    return $sec
+}
+
+function Set-DirectorySecurity([string]$path, $security) {
+    $info = New-Object System.IO.DirectoryInfo($path)
+    if ($script:IsDesktopEdition) { $info.SetAccessControl($security) }
+    else { [System.IO.FileSystemAclExtensions]::SetAccessControl($info, $security) }
+}
+
+# Creates a directory WITH its descriptor, so there is no moment in which it carries the
+# parent's "Users may create files here". The caller has checked that nothing is there;
+# if something appeared in between, the create does not apply the descriptor - which is
+# why every caller verifies the result instead of assuming it.
+function New-SecureDirectory([string]$path, $security) {
+    $info = New-Object System.IO.DirectoryInfo($path)
+    if ($script:IsDesktopEdition) { $info.Create($security) }
+    else { [System.IO.FileSystemAclExtensions]::Create($info, $security) }
+}
+
+# '' when $path is owned by Administrators, inherits nothing and carries entries for
+# $allowedSids only; otherwise what is wrong with it.
+function Get-LockdownProblem([string]$path, [string[]]$allowedSids) {
+    try { $acl = Get-Acl -LiteralPath $path } catch { return "its ACL cannot be read: $($_.Exception.Message)" }
+    $owner = $acl.GetOwner([System.Security.Principal.SecurityIdentifier]).Value
+    if ($owner -ne $SidAdmins) { return "its owner is '$(Get-SidDisplay $owner)', not Administrators" }
+    if (-not $acl.AreAccessRulesProtected) { return 'it still inherits entries from its parent' }
+    foreach ($rule in $acl.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier])) {
+        if ($rule.IsInherited) { return 'it still carries inherited entries' }
+        if ($allowedSids -notcontains $rule.IdentityReference.Value) {
+            return "it carries an unexpected entry for '$(Get-SidDisplay $rule.IdentityReference.Value)'"
+        }
+    }
+    return ''
+}
+
 # --- worker invocation --------------------------------------------------------
 
 # Runs the worker and returns its exit code and streams.
@@ -151,8 +395,9 @@ function Assert-DataDir {
 # for a GUI image as for a console one.
 function Invoke-Worker([string]$workerArgs) {
     Assert-Worker
+    if (-not (Test-Path -LiteralPath $script:InspectExePath)) { Fail "worker executable not found: '$script:InspectExePath'" 2 }
     $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName               = $ExePath
+    $psi.FileName               = $script:InspectExePath
     $psi.Arguments              = $workerArgs
     $psi.UseShellExecute        = $false
     $psi.RedirectStandardOutput = $true
@@ -200,9 +445,12 @@ function Remove-ServiceRegistration {
     Stop-ServiceGracefully
     Write-Log "deleting $ServiceName .."
     & sc.exe delete $ServiceName | Out-Null
-    # The SCM keeps a deleted service until the last handle closes; give it a moment
-    # so an immediately following create does not hit ERROR_SERVICE_MARKED_FOR_DELETE.
-    for ($i = 0; $i -lt 20 -and (Get-ServiceOrNull); $i++) { Start-Sleep -Milliseconds 250 }
+    # The SCM keeps a deleted service until the last handle closes (an open Services
+    # console is enough); give it time so an immediately following create does not hit
+    # ERROR_SERVICE_MARKED_FOR_DELETE. Register-Service avoids the delete altogether
+    # whenever it can, because this is the step that can leave a machine with no service.
+    for ($i = 0; $i -lt 120 -and (Get-ServiceOrNull); $i++) { Start-Sleep -Milliseconds 250 }
+    if (Get-ServiceOrNull) { Write-Log "WARNING: $ServiceName is still marked for deletion - a Services console or another tool keeps a handle to it open" }
 }
 
 function Get-StagedExePath {
@@ -218,20 +466,39 @@ function Sync-ServiceBinaries {
     Assert-DataDir
 
     $staged = Get-StagedExePath
+    $binDir = Split-Path -Parent $staged
     if ([IO.Path]::GetFullPath($ExePath) -ieq [IO.Path]::GetFullPath($staged)) {
+        [void](Assert-TrustedDirectory $binDir 'the service binary directory')
         $script:ServiceExePath = $staged
+        $script:InspectExePath = $staged
         Write-Log "worker already staged at '$staged'"
         return
     }
 
     # Nothing may hold the file while it is replaced; on install/repair the service is
-    # torn down right after this anyway.
+    # re-registered right after this anyway.
     Stop-ServiceGracefully
 
-    $binDir = Split-Path -Parent $staged
-    if (-not (Test-Path -LiteralPath $binDir)) {
-        New-Item -ItemType Directory -Path $binDir -Force | Out-Null
+    # Never reused (ticket 046 H-02): whatever is there was put there by someone at some
+    # point, and it is about to become the image a service runs. Deleting it - links
+    # removed as links, never followed - and recreating it with its final ACL is the only
+    # state that proves itself. The ACL is right for code: the account that RUNS the
+    # binary must not be able to rewrite it (read+execute for LOCAL SERVICE, read for the
+    # management user, full for SYSTEM/Administrators).
+    if ($null -ne (Get-RawAttributes $binDir)) {
+        Write-Log "replacing '$binDir'"
+        Remove-TreeNoFollow $binDir
     }
+    New-SecureDirectory $binDir (New-BinDirSecurity)
+    [void](Assert-TrustedDirectory $binDir 'the service binary directory')
+    $problem = Get-LockdownProblem $binDir (@($SidSystem, $SidAdmins, $SidLocalService) + @(Split-Sids $ManageSid))
+    if ($problem) { Fail "could not secure '$binDir': $problem" 4 }
+
+    # Staged FIRST, executed after: from here on the only copy this script runs is the
+    # one in an administrators-only directory. What it was copied FROM is still the
+    # application folder - a per-user installation's, writable by that user - so the copy
+    # is only as trustworthy as that folder; see ticket 054 H-08 for what closing that
+    # needs (a signed worker, verified here).
     Write-Log "staging worker: '$ExePath' -> '$staged'"
     Copy-Item -LiteralPath $ExePath -Destination $staged -Force
     $sidecar = "$ExePath.sha256"
@@ -239,22 +506,8 @@ function Sync-ServiceBinaries {
         Copy-Item -LiteralPath $sidecar -Destination "$staged.sha256" -Force
     }
 
-    # The parent directory's ACL hands LOCAL SERVICE and the management user Modify,
-    # which is right for state and wrong for code: the account that RUNS the binary
-    # must not be able to rewrite it. Read+execute for LOCAL SERVICE, read for the
-    # management user (the Share Manager compares this copy against the installed one
-    # to notice when an app update left the service behind), full for SYSTEM/Admins.
-    $aclArgs = @($binDir, '/inheritance:r',
-                 '/grant:r', ('*{0}:(OI)(CI)F' -f $SidSystem),
-                 '/grant:r', ('*{0}:(OI)(CI)F' -f $SidAdmins),
-                 '/grant:r', ('*{0}:(OI)(CI)RX' -f $SidLocalService))
-    foreach ($sid in (Split-Sids $ManageSid)) {
-        $aclArgs += @('/grant:r', ('*{0}:(OI)(CI)RX' -f $sid))
-    }
-    & icacls.exe @aclArgs | Out-Null
-    if ($LASTEXITCODE -ne 0) { Fail "icacls could not secure '$binDir' (exit $LASTEXITCODE)" 4 }
-
     $script:ServiceExePath = $staged
+    $script:InspectExePath = $staged
 }
 
 # Drops the staged copy when the server role goes away. The state directory beside it
@@ -263,15 +516,29 @@ function Remove-ServiceBinaries {
     $staged = Get-StagedExePath
     if (-not $staged) { return }
     $binDir = Split-Path -Parent $staged
-    if (-not (Test-Path -LiteralPath $binDir)) { return }
+    if ($null -eq (Get-RawAttributes $binDir)) { return }
     try {
-        Remove-Item -LiteralPath $binDir -Recurse -Force -ErrorAction Stop
+        # Never Remove-Item -Recurse here: on Windows PowerShell it can walk INTO a
+        # junction and delete what it points at.
+        Remove-TreeNoFollow $binDir
         Write-Log "removed the staged worker in '$binDir'"
     } catch {
         # A file still held by a stopping service must not fail the whole action - the
         # registration is already gone, which is what "remove the role" means.
         Write-Log "could not remove '$binDir': $_"
     }
+}
+
+function Get-ServiceBinPath {
+    $binPath = '"{0}" --service --datadir "{1}"' -f $script:ServiceExePath, $DataDir
+    if ($ManageSid) { $binPath += ' --manage-sid "{0}"' -f $ManageSid }
+    return $binPath
+}
+
+function Get-ServiceRegistryValue([string]$name) {
+    try {
+        return [string](Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName" -Name $name -ErrorAction Stop).$name
+    } catch { return '' }
 }
 
 function New-ServiceRegistration {
@@ -282,30 +549,110 @@ function New-ServiceRegistration {
     # paths, and passing that through a native command's command line is exactly the
     # kind of quoting that breaks on one Windows PowerShell version and not another.
     # New-Service hands the string to CreateService as-is.
-    $binPath = '"{0}" --service --datadir "{1}"' -f $script:ServiceExePath, $DataDir
-    if ($ManageSid) { $binPath += ' --manage-sid "{0}"' -f $ManageSid }
-
+    $binPath = Get-ServiceBinPath
     Write-Log "registering $ServiceName -> $binPath"
     New-Service -Name $ServiceName -BinaryPathName $binPath -DisplayName $ServiceDisplay `
                 -Description $ServiceDesc -StartupType Automatic | Out-Null
 
+    # LocalService: low local privilege, and it presents anonymous credentials on the
+    # network. That last part is why a UNC root does not work under it - documented,
+    # not worked around. New-Service registers LocalSystem, so this call is what keeps
+    # the SFTP server from running as SYSTEM - checked, and verified below.
+    & sc.exe config $ServiceName obj= 'NT AUTHORITY\LocalService' | Out-Null
+    if ($LASTEXITCODE -ne 0) { Write-Log "WARNING: setting the service account returned $LASTEXITCODE" }
+    Set-ServiceOptions
+}
+
+# Re-points an EXISTING registration at this script's command line and account without
+# deleting it. Delete + create was how repair used to work, and the delete is the step
+# that can strand a machine with no service at all: while any handle to the old one is
+# open, the SCM keeps it "marked for deletion" and the create fails (ticket 054 H-13).
+# Win32_Service.Change takes the path as a plain string, so none of the native-command
+# quoting New-Service exists to avoid comes back. $false = could not, fall back.
+function Update-ServiceRegistration {
+    $binPath = Get-ServiceBinPath
+    Write-Log "updating the registration of $ServiceName in place -> $binPath"
+    try {
+        $svc = Get-CimInstance -ClassName Win32_Service -Filter "Name='$ServiceName'" -ErrorAction Stop
+        if (-not $svc) { return $false }
+        $result = Invoke-CimMethod -InputObject $svc -MethodName Change -ErrorAction Stop -Arguments @{
+            DisplayName   = $ServiceDisplay
+            PathName      = $binPath
+            StartMode     = 'Automatic'
+            StartName     = 'NT AUTHORITY\LocalService'
+            StartPassword = ''
+        }
+        if ($result.ReturnValue -ne 0) {
+            Write-Log "Win32_Service.Change returned $($result.ReturnValue)"
+            return $false
+        }
+    } catch {
+        Write-Log "the in-place update failed: $($_.Exception.Message)"
+        return $false
+    }
+    if ((Get-ServiceRegistryValue 'ImagePath') -ne $binPath) {
+        Write-Log "the in-place update did not take (the image path reads '$(Get-ServiceRegistryValue 'ImagePath')')"
+        return $false
+    }
+    & sc.exe description $ServiceName $ServiceDesc | Out-Null
+    Set-ServiceOptions
+    return $true
+}
+
+# The options New-Service cannot express. Each exit code is read: a failure here used to
+# vanish into Out-Null.
+function Set-ServiceOptions {
     # DELAYED automatic start: the worker needs a network stack for mDNS, UPnP and the
     # reachability probe. (The worker also retries on its own - SCM recovery cannot
     # help a service that started healthy but too early - but starting late is cheaper
     # than retrying.)
     & sc.exe config $ServiceName start= delayed-auto | Out-Null
-
-    # LocalService: low local privilege, and it presents anonymous credentials on the
-    # network. That last part is why a UNC root does not work under it - documented,
-    # not worked around.
-    & sc.exe config $ServiceName obj= 'NT AUTHORITY\LocalService' | Out-Null
+    if ($LASTEXITCODE -ne 0) { Write-Log "WARNING: setting the delayed start returned $LASTEXITCODE" }
 
     # Restart on process failure with a bounded, widening cadence. failureflag=1 is the
     # half that is easy to miss: without it Windows only reacts to a service that died
     # WITHOUT reporting a stop, and the worker host deliberately reports a stop with a
     # service-specific non-zero exit code when its main loop ends unexpectedly.
     & sc.exe failure $ServiceName reset= 86400 actions= restart/5000/restart/30000/restart/120000 | Out-Null
+    if ($LASTEXITCODE -ne 0) { Write-Log "WARNING: setting the recovery actions returned $LASTEXITCODE" }
     & sc.exe failureflag $ServiceName 1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { Write-Log "WARNING: setting the failure flag returned $LASTEXITCODE" }
+}
+
+# The account is read back, never assumed (ticket 054 H-14). A registration that would
+# run the SFTP server as anything but LOCAL SERVICE - LocalSystem above all, New-Service's
+# default - is removed rather than started: every root-confinement bug would otherwise be a
+# full-disk exposure.
+function Assert-ServiceAccount {
+    $account = Get-ServiceRegistryValue 'ObjectName'
+    if ($account -ieq 'NT AUTHORITY\LocalService') {
+        Write-Log "service account: $account"
+        return
+    }
+    Write-Log "the service account is '$account', not LOCAL SERVICE - removing the registration so nothing runs with more rights than intended"
+    & sc.exe delete $ServiceName | Out-Null
+    Fail "could not set the service account to LOCAL SERVICE (it read '$account')" 13
+}
+
+# Brings the registration to this script's command line, account, start type and
+# recovery actions - updating an existing one in place, creating one otherwise.
+function Register-Service {
+    Assert-Worker
+    Assert-DataDir
+    if (Get-ServiceOrNull) {
+        Stop-ServiceGracefully
+        if (-not (Update-ServiceRegistration)) {
+            Write-Log 're-creating the registration instead'
+            Remove-ServiceRegistration
+            if (Get-ServiceOrNull) {
+                Fail "$ServiceName is still marked for deletion - a Services console or another tool keeps a handle to it open. Close it (or restart Windows), then run this again." 14
+            }
+            New-ServiceRegistration
+        }
+    } else {
+        New-ServiceRegistration
+    }
+    Assert-ServiceAccount
 }
 
 function Start-ServiceAndVerify {
@@ -323,32 +670,46 @@ function Start-ServiceAndVerify {
 
 function Set-MachineDataDirAcl {
     Assert-DataDir
-    if (-not (Test-Path -LiteralPath $DataDir)) {
-        New-Item -ItemType Directory -Path $DataDir -Force | Out-Null
-    }
-    # /inheritance:r + an explicit list: the directory holds the private host key and
-    # the SFTP password, so the inherited "Users: read" that %ProgramData% hands down
-    # by default must go.
+    [void](Assert-TrustedDirectory $DataDir 'the machine state directory')
+    # A descriptor built from scratch, not "/inheritance:r /grant:r": the directory holds
+    # the private host key and the SFTP password, so the inherited "Users: read" that
+    # %ProgramData% hands down must go - and so must ANY other entry, which the icacls
+    # form left in place (ticket 046 H-02). The owner becomes Administrators, which also
+    # takes the implicit right to rewrite the DACL away from whoever created it.
     #
-    # LocalService gets Modify (it writes stats, shares, settings). The enrolled
-    # management user gets Modify TOO, and that is deliberate rather than lax: from
-    # the moment this directory exists it is the ONE state store both hosts use, so
-    # the foreground worker - which runs as that user whenever the service is stopped
-    # - has to be able to write the same shares.json, settings.json and stats.json.
-    # Read-only here would silently split the two editions into separate folder lists.
-    # It is not a privilege escalation either: everything in the file (password
-    # included) is already handed to that same user over the control pipe.
+    # LocalService gets Modify on the files (it writes stats, shares, settings). The
+    # enrolled management user gets it TOO, and that is deliberate rather than lax: from
+    # the moment this directory exists it is the ONE state store both hosts use, so the
+    # foreground worker - which runs as that user whenever the service is stopped - has
+    # to be able to write the same shares.json, settings.json and stats.json. Read-only
+    # here would silently split the two editions into separate folder lists. It is not a
+    # privilege escalation either: everything in the files (password included) is already
+    # handed to that same user over the control pipe. What neither gets is DELETE on the
+    # directory itself - see New-DataDirSecurity.
     Write-Log "locking down $DataDir"
-    # NB: not $args - that is an automatic variable inside a function.
-    $aclArgs = @($DataDir, '/inheritance:r',
-                 '/grant:r', ('*{0}:(OI)(CI)F' -f $SidSystem),
-                 '/grant:r', ('*{0}:(OI)(CI)F' -f $SidAdmins),
-                 '/grant:r', ('*{0}:(OI)(CI)M' -f $SidLocalService))
-    foreach ($sid in (Split-Sids $ManageSid)) {
-        $aclArgs += @('/grant:r', ('*{0}:(OI)(CI)M' -f $sid))
+    Set-DirectorySecurity $DataDir (New-DataDirSecurity)
+    $problem = Get-LockdownProblem $DataDir (@($SidSystem, $SidAdmins, $SidLocalService) + @(Split-Sids $ManageSid))
+    if ($problem) { Fail "could not secure '$DataDir': $problem" 4 }
+}
+
+# The one way the machine state directory comes into use by an action that writes to it
+# (install, repair, migrate-to-server): an existing directory is adopted only when an
+# administrator or the system owns it and it is no link; a missing one is CREATED with its
+# final ACL, so no other account ever had a moment in which to put a file of its own in
+# it. Then the ACL is rebuilt and verified, and only then is the log opened there.
+function Initialize-MachineDataDir {
+    Assert-DataDir
+    if (Assert-TrustedDirectory $DataDir 'the machine state directory') {
+        Write-Log "state directory '$DataDir' exists and is owned by an administrator or the system"
+    } else {
+        Write-Log "creating '$DataDir' with its final ACL"
+        New-SecureDirectory $DataDir (New-DataDirSecurity)
+        # Something may have appeared between the check and the create, and then the
+        # create applied nothing - so the owner is checked again rather than assumed.
+        if (-not (Assert-TrustedDirectory $DataDir 'the machine state directory')) { Fail "could not create '$DataDir'" 4 }
     }
-    & icacls.exe @aclArgs | Out-Null
-    if ($LASTEXITCODE -ne 0) { Fail "icacls could not secure '$DataDir' (exit $LASTEXITCODE)" 4 }
+    Set-MachineDataDirAcl
+    Initialize-Log
 }
 
 # The SID of the profile a path lives under, read from the profile list rather than
@@ -387,6 +748,16 @@ function Resolve-ManagementSid([string]$explicit, [string]$stateDir) {
     return ([Security.Principal.WindowsIdentity]::GetCurrent()).User.Value
 }
 
+# The folders of -Roots / -ReadOnlyRoots. The app sends each without its trailing
+# backslash - "D:\" right before a closing quote is an escaped quote to the Windows argument
+# parser, which swallowed the rest of the command line (ticket 054 H-03) - so a bare drive
+# letter gets its backslash back here: "D:" alone means "the current folder on D:".
+function Split-RootList([string]$value) {
+    if (-not $value) { return @() }
+    return @($value -split '\|' | ForEach-Object { $_.Trim() } | Where-Object { $_ } | ForEach-Object {
+        if ($_ -match '^[A-Za-z]:$') { $_ + '\' } else { $_ }
+    })
+}
 function Split-Sids([string]$value) {
     if (-not $value) { return @() }
     return @($value -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
@@ -438,6 +809,11 @@ function Copy-State([string]$from, [string]$to, [switch]$OnlyWhenTargetIsFresh) 
         Write-Log "no state to migrate from '$from' - starting fresh"
         return
     }
+    # This runs elevated between two directories other accounts can write to, so neither
+    # end may be a link: reading through one could copy another account's files where the
+    # management user can read them, writing through one could land anywhere.
+    if (Test-ReparsePoint $from) { Fail "'$from' is a junction or a symbolic link - migration refused. Nothing was copied." 11 }
+    if (Test-ReparsePoint $to) { Fail "'$to' is a junction or a symbolic link - migration refused. Nothing was copied." 11 }
     $source = Get-StateInfo $from
     if (-not $source.hostKeyPresent) {
         Write-Log "'$from' holds no host key yet - nothing to preserve"
@@ -466,8 +842,16 @@ function Copy-State([string]$from, [string]$to, [switch]$OnlyWhenTargetIsFresh) 
     }
 
     Write-Log "migrating state '$from' -> '$to'"
-    Get-ChildItem -LiteralPath $from -File | Where-Object { $_.Name -ne 'service.log' -and $_.Name -ne 'install-share-service.log' } | ForEach-Object {
-        Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $to $_.Name) -Force
+    Get-ChildItem -LiteralPath $from -File | Where-Object { $_.Name -ne 'service.log' -and $_.Name -ne 'install-share-service.log' -and $_.Name -ne $LedgerName } | ForEach-Object {
+        # A link among the SOURCE files is skipped, one at the destination is removed as a
+        # link first - so the copy neither reads nor writes anything outside the two stores.
+        if ($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+            Write-Log "WARNING: not migrating '$($_.FullName)': it is a link"
+            return
+        }
+        $dest = Join-Path $to $_.Name
+        if (Test-ReparsePoint $dest) { Remove-LinkOnly $dest }
+        Copy-Item -LiteralPath $_.FullName -Destination $dest -Force
     }
 
     if ($source.hostKeyPresent) {
@@ -481,15 +865,86 @@ function Copy-State([string]$from, [string]$to, [switch]$OnlyWhenTargetIsFresh) 
 
 # --- root ACL ledger ----------------------------------------------------------
 
+# The elements of a JSON array, one by one. Windows PowerShell 5.1 - which is what the
+# installers and the Share Manager run - emits a parsed JSON array as ONE object, so
+# @(... | ConvertFrom-Json) is a one-element array holding the real one. Every reader
+# below then saw a single "entry" whose properties were arrays: the share list read as
+# empty (no folder was ever granted from it), and with two or more ledger entries every
+# one looked "pre-existing", so revoke removed nothing.
+function ConvertFrom-JsonList([string]$text) {
+    if (-not $text -or -not $text.Trim()) { return }
+    foreach ($item in ($text | ConvertFrom-Json)) { $item }
+}
+
 function Get-Ledger {
     $path = Join-Path $DataDir $LedgerName
     if (-not (Test-Path -LiteralPath $path)) { return @() }
-    try { return @(Get-Content -LiteralPath $path -Raw | ConvertFrom-Json) } catch { return @() }
+    try { return @(ConvertFrom-JsonList (Get-Content -LiteralPath $path -Raw)) } catch { return @() }
 }
 
+# The ledger is the one record of what an ADMINISTRATOR approved, and the state
+# directory around it is writable by the management user by design - so the ledger is
+# written with an ACL of its own that only SYSTEM and Administrators can change, created
+# with it (no moment in which it inherits the management user's Modify), and read back
+# for a re-grant only while it still has that ACL (ticket 054 H-09).
 function Save-Ledger($entries) {
     $path = Join-Path $DataDir $LedgerName
-    ($entries | ConvertTo-Json -Depth 4) | Set-Content -LiteralPath $path -Encoding UTF8
+    # Written fresh, never rewritten: a file someone else created keeps its owner - and
+    # any handle they hold on it - through a rewrite.
+    if ($null -ne (Get-RawAttributes $path)) { Remove-LinkOnly $path }
+    $text = ConvertTo-Json -InputObject @($entries) -Depth 4
+    $bytes = (New-Object System.Text.UTF8Encoding($false)).GetBytes([string]$text)
+
+    $sec = New-Object System.Security.AccessControl.FileSecurity
+    $sec.SetOwner((New-Object System.Security.Principal.SecurityIdentifier($SidAdmins)))
+    $sec.SetAccessRuleProtection($true, $false)
+    foreach ($sid in @($SidSystem, $SidAdmins)) {
+        $sec.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+            (New-Object System.Security.Principal.SecurityIdentifier($sid)),
+            [System.Security.AccessControl.FileSystemRights]::FullControl,
+            [System.Security.AccessControl.AccessControlType]::Allow)))
+    }
+    # CreateNew: if something appeared at the path in between, this fails instead of
+    # writing into it.
+    if ($script:IsDesktopEdition) {
+        $stream = New-Object System.IO.FileStream($path, [System.IO.FileMode]::CreateNew,
+            [System.Security.AccessControl.FileSystemRights]::FullControl, [System.IO.FileShare]::None,
+            4096, [System.IO.FileOptions]::None, $sec)
+    } else {
+        $stream = [System.IO.FileSystemAclExtensions]::Create((New-Object System.IO.FileInfo($path)),
+            [System.IO.FileMode]::CreateNew, [System.Security.AccessControl.FileSystemRights]::FullControl,
+            [System.IO.FileShare]::None, 4096, [System.IO.FileOptions]::None, $sec)
+    }
+    try { $stream.Write($bytes, 0, $bytes.Length) } finally { $stream.Dispose() }
+}
+
+# The ledger entries an administrator approved - or nothing, when the ledger is not in the
+# locked form Save-Ledger writes (written by an older version, or changed by someone
+# else). Used to decide what may be RE-granted without showing anyone a list; revoking
+# still reads the plain ledger, since removing a grant can never widen access.
+function Get-ApprovedLedger {
+    $path = Join-Path $DataDir $LedgerName
+    $attr = Get-RawAttributes $path
+    if ($null -eq $attr) { return @() }
+    $why = ''
+    if ($attr -band [System.IO.FileAttributes]::ReparsePoint) { $why = 'it is a link' }
+    else {
+        try {
+            $acl = Get-Acl -LiteralPath $path
+            if ($acl.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $SidAdmins) { $why = 'it is not owned by Administrators' }
+            elseif (-not $acl.AreAccessRulesProtected) { $why = 'it inherits the state directory''s write access' }
+            else {
+                foreach ($rule in $acl.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier])) {
+                    if (@($SidSystem, $SidAdmins) -notcontains $rule.IdentityReference.Value) { $why = "it carries an entry for '$(Get-SidDisplay $rule.IdentityReference.Value)'" }
+                }
+            }
+        } catch { $why = "its ACL cannot be read: $($_.Exception.Message)" }
+    }
+    if ($why) {
+        Write-Log "the grant ledger is not used to re-grant anything: $why"
+        return @()
+    }
+    return @(Get-Ledger)
 }
 
 # Did LOCAL SERVICE already have an explicit grant here before we arrived?
@@ -519,11 +974,61 @@ function Test-LocalServiceAce([string]$folder) {
     return $false
 }
 
+# Paths an elevated grant must never touch, whatever list asked for them (ticket 054
+# H-09): '' when $folder may be granted, otherwise why not. The share list that feeds a
+# grant is writable by the management user, and a grant is (OI)(CI) plus a deep pass that
+# follows every inheritance break down - so a parent of other accounts' profiles, or the
+# system drive, would hand LOCAL SERVICE (and through the SFTP login, that user) far more
+# than any shared folder.
+function Get-SystemPathRefusal([string]$folder) {
+    $full = $null
+    try { $full = [System.IO.Path]::GetFullPath($folder).TrimEnd('\') } catch { return 'not a valid path' }
+    $systemDrive = [System.IO.Path]::GetPathRoot($env:SystemRoot).TrimEnd('\')
+    if ($full -ieq $systemDrive) { return 'the whole system drive cannot be given to the service account' }
+    foreach ($protected in @($env:SystemRoot, $env:ProgramFiles, ${env:ProgramFiles(x86)}, $DataDir)) {
+        if (-not $protected) { continue }
+        $p = $protected.TrimEnd('\')
+        if ($full -ieq $p -or $full.StartsWith($p + '\', [StringComparison]::OrdinalIgnoreCase)) {
+            return "it is inside '$p', a system or application folder"
+        }
+    }
+    return ''
+}
+
+function Get-GrantRefusal([string]$folder) {
+    $full = $null
+    try { $full = [System.IO.Path]::GetFullPath($folder).TrimEnd('\') } catch { return 'not a valid path' }
+    if (Test-NameLink $full) { return 'it is a junction or a symbolic link - share the folder it points to instead' }
+    $system = Get-SystemPathRefusal $full
+    if ($system) { return $system }
+    $allowed = @(Split-Sids $ManageSid)
+    $listKey = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList'
+    foreach ($entry in (Get-ChildItem -Path $listKey -ErrorAction SilentlyContinue)) {
+        $profileDir = (Get-ItemProperty -Path $entry.PSPath -Name 'ProfileImagePath' -ErrorAction SilentlyContinue).ProfileImagePath
+        if (-not $profileDir) { continue }
+        $profileDir = $profileDir.TrimEnd('\')
+        if ($allowed -contains $entry.PSChildName) { continue }
+        if ($full -ieq $profileDir -or $full.StartsWith($profileDir + '\', [StringComparison]::OrdinalIgnoreCase)) {
+            return "it is inside the profile of another account ($(Get-SidDisplay $entry.PSChildName))"
+        }
+        if ($profileDir.StartsWith($full + '\', [StringComparison]::OrdinalIgnoreCase)) {
+            return "it contains the profile of another account ($(Get-SidDisplay $entry.PSChildName))"
+        }
+    }
+    return ''
+}
+
+# Requested roots that did NOT end up granted in the last Grant-Roots - skipped, refused
+# or failed. "grant-roots" turns a non-zero count into its own exit code: it used to exit 0
+# with every folder skipped, and the app said "Done." over a row that stayed red.
+$script:GrantShortfall = 0
+
 # Grants (OI)(CI)(RX) to LOCAL SERVICE on each folder and records exactly what was
 # added. Never recursive-rewrites an ACL and never touches an existing administrator
 # grant: it only ADDS one ACE, and the ledger remembers whether it had to.
 function Grant-Roots([string[]]$folders, [string[]]$readOnlyFolders, [bool]$rightsKnown) {
     Assert-DataDir
+    $script:GrantShortfall = 0
     $ledger = @(Get-Ledger)
     $readOnlySet = @{}
     foreach ($ro in @($readOnlyFolders)) {
@@ -540,10 +1045,21 @@ function Grant-Roots([string[]]$folders, [string[]]$readOnlyFolders, [bool]$righ
             # cannot be made to work by an ACL here. Say so precisely instead of adding
             # an ACE that changes nothing.
             Write-Log "SKIPPED '$folder': a network path cannot be served under LOCAL SERVICE (it authenticates anonymously). Use a local path, or a supported alternative service account."
+            $script:GrantShortfall++
             continue
         }
         if (-not (Test-Path -LiteralPath $folder)) {
-            Write-Log "SKIPPED '$folder': not found"
+            # The usual reason besides a folder that is really gone: a MAPPED network drive.
+            # Drive letters belong to the logon session that mapped them, so this elevated
+            # step - and the service - never see it (ticket 054 H-19).
+            Write-Log "SKIPPED '$folder': not found here. A mapped network drive letter is not visible to the service (it belongs to the signed-in user); share a local folder instead."
+            $script:GrantShortfall++
+            continue
+        }
+        $refusal = Get-GrantRefusal $folder
+        if ($refusal) {
+            Write-Log "REFUSED '$folder': $refusal"
+            $script:GrantShortfall++
             continue
         }
         # (M) for a writable root, (RX) for a read-only one. A root already in the
@@ -570,6 +1086,7 @@ function Grant-Roots([string[]]$folders, [string[]]$readOnlyFolders, [bool]$righ
         & icacls.exe $folder /grant ('*{0}:(OI)(CI)({1})' -f $SidLocalService, $rights) | Out-Null
         if ($LASTEXITCODE -ne 0) {
             Write-Log "WARNING: icacls failed on '$folder' (exit $LASTEXITCODE)"
+            $script:GrantShortfall++
             continue
         }
         $ledger = @($ledger | Where-Object { $_.path -ne $folder })
@@ -689,7 +1206,7 @@ function Get-StateRoots {
     try {
         $raw = Get-Content -LiteralPath $path -Raw -ErrorAction Stop
         if (-not $raw -or -not $raw.Trim()) { return @() }
-        $items = @($raw | ConvertFrom-Json)
+        $items = @(ConvertFrom-JsonList $raw)
     } catch {
         Write-Log "WARNING: could not read the share list '$path': $($_.Exception.Message)"
         return @()
@@ -711,28 +1228,59 @@ function Get-StateRoots {
 # is what makes it safe to call from install/repair/start as well as from the
 # migration - an installation that came up without its grants heals on the next start
 # instead of staying silently broken until someone finds the Hosting console.
+#
+# RE-applies only, since ticket 054 H-09: shares.json is writable by the management user
+# (by design) and settable over the pipe without elevation, and every elevated start,
+# restart, repair and Server upgrade used to grant whatever it listed - a standard user
+# could have LOCAL SERVICE, and through the SFTP login themselves, handed any folder on
+# the machine by an administrator who only clicked "Restart service". Now a folder is
+# re-granted here only when an administrator already approved it (the locked ledger), and
+# never above the level approved; a folder that is merely listed is left for the Share
+# Manager, which asks with the list in front of the person approving it.
 function Grant-StateRoots([string]$reason) {
     $roots = @(Get-StateRoots)
     if ($roots.Count -eq 0) { return }
-    Write-Log ("granting service access to {0} shared folder(s) listed in the state directory ({1})" -f $roots.Count, $reason)
-    Grant-Roots `
-        @($roots | ForEach-Object { $_.path }) `
-        @($roots | Where-Object { $_.readOnly } | ForEach-Object { $_.path }) `
-        $true
+    $approved = @{}
+    foreach ($entry in @(Get-ApprovedLedger)) {
+        if ($entry.path) { $approved[[string]$entry.path] = [string]$entry.rights }
+    }
+    $again = @()
+    $againReadOnly = @()
+    foreach ($r in $roots) {
+        if (-not $approved.ContainsKey($r.path)) {
+            Write-Log "NOT granting '$($r.path)' ($reason): no administrator has approved it yet. The Share Manager offers the grant with the folder list shown."
+            continue
+        }
+        $again += $r.path
+        if ($r.readOnly -or $approved[$r.path] -ne 'M') { $againReadOnly += $r.path }
+    }
+    if ($again.Count -eq 0) { return }
+    Write-Log ("re-applying the approved service access on {0} shared folder(s) ({1})" -f $again.Count, $reason)
+    Grant-Roots $again $againReadOnly $true
 }
 
 # Removes ONLY the ACEs this script recorded, and only where LOCAL SERVICE had no
 # grant of its own before we arrived.
+#
+# Always the LOCAL SERVICE SID, never the one written in the ledger: the plain ledger may
+# have been edited, and "remove this SID from that folder" run elevated must not become a
+# way to strip Administrators from a system folder. System folders are never touched.
 function Revoke-Roots {
     if (-not $DataDir -or -not (Test-Path -LiteralPath $DataDir)) { return }
     foreach ($entry in @(Get-Ledger)) {
+        if (-not $entry.path) { continue }
         if ($entry.preExisting) {
             Write-Log "keeping the pre-existing LOCAL SERVICE grant on '$($entry.path)'"
             continue
         }
         if (-not (Test-Path -LiteralPath $entry.path)) { continue }
+        $system = Get-SystemPathRefusal ([string]$entry.path)
+        if ($system) {
+            Write-Log "not touching '$($entry.path)': $system"
+            continue
+        }
         Write-Log "removing our LOCAL SERVICE grant on '$($entry.path)'"
-        & icacls.exe $entry.path /remove:g ('*{0}' -f $entry.sid) | Out-Null
+        & icacls.exe $entry.path /remove:g ('*{0}' -f $SidLocalService) | Out-Null
     }
     $path = Join-Path $DataDir $LedgerName
     if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue }
@@ -773,9 +1321,29 @@ function Set-FirewallRule([bool]$enable) {
 
 # --- actions ------------------------------------------------------------------
 
-Initialize-Log
+# Any terminating error from here on - a locked file under Copy-Item, New-Service,
+# Start-Service - used to end the script with exit 1 and NO reason in the log the UI tells
+# the user to send (ticket 054 H-13).
+trap {
+    Write-Log ("FAILED: {0}" -f (($_ | Out-String).Trim()))
+    if (-not $script:LogPath) { Write-PendingLog (Get-FallbackLogPath) }
+    exit 1
+}
+
+# Elevation first, and nothing written anywhere before it: a non-elevated run must not
+# leave a directory behind for the next elevated one to adopt.
 Assert-Elevated
 Write-Log "action=$Action exe='$ExePath' dataDir='$DataDir'"
+
+# An existing state directory is checked BEFORE anything is logged into it, copied into
+# it or read from it (ticket 046 H-02). "remove" still takes the registration and the
+# firewall rule away from an untrusted one - leaving a service that serves out of it would
+# be worse - and "stop" only ever stops; everything else refuses.
+$script:DataDirDistrust = if ($DataDir) { Get-DirectoryDistrust $DataDir } else { '' }
+if ($script:DataDirDistrust -and $Action -ne 'remove' -and $Action -ne 'stop') {
+    Fail "the machine state directory refused: $script:DataDirDistrust" 11
+}
+if (-not $script:DataDirDistrust) { Initialize-Log }
 
 switch ($Action) {
 
@@ -784,14 +1352,15 @@ switch ($Action) {
         Assert-DataDir
         $ManageSid = Resolve-ManagementSid $ManageSid $UserDataDir
         Write-Log "management SID(s): $ManageSid"
-        Set-MachineDataDirAcl
+        Initialize-MachineDataDir
         Sync-ServiceBinaries
-        Remove-ServiceRegistration   # idempotent re-install over a previous registration
-        New-ServiceRegistration
+        # Updated in place over a previous registration, created otherwise.
+        Register-Service
         Set-FirewallRule $true
         # Every path that brings the service up also makes sure it can read what it is
-        # about to publish. A grant is the one part of the setup that lives outside the
-        # service registration - on the folders themselves - so it is the part an older
+        # about to publish - as far as an administrator already approved (ticket 054 H-09).
+        # A grant is the one part of the setup that lives outside the service
+        # registration - on the folders themselves - so it is the part an older
         # installer, a restored state directory or a hand-edited share list can leave
         # missing, with nothing in the service's own state to show for it.
         Grant-StateRoots 'service install'
@@ -803,15 +1372,15 @@ switch ($Action) {
         Assert-DataDir
         $ManageSid = Resolve-ManagementSid $ManageSid $UserDataDir
         Write-Log "management SID(s): $ManageSid"
-        Set-MachineDataDirAcl
+        Initialize-MachineDataDir
         # Also re-stages the worker, which is what makes this the "the app updated but
         # the service is still running the old copy" repair as well as a registration one.
         Sync-ServiceBinaries
-        # Re-registering (rather than "sc config binPath=") is how the command line,
-        # the account, the start type and the recovery actions all end up matching this
-        # script again, whatever an earlier version or a hand edit left behind.
-        Remove-ServiceRegistration
-        New-ServiceRegistration
+        # The command line, the account, the start type and the recovery actions all end
+        # up matching this script again, whatever an earlier version or a hand edit left
+        # behind - updated in place, so a handle someone holds on the old registration
+        # cannot leave the machine without a service (ticket 054 H-13).
+        Register-Service
         Set-FirewallRule $true
         Grant-StateRoots 'service repair'
         Start-ServiceAndVerify
@@ -819,8 +1388,19 @@ switch ($Action) {
 
     'remove' {
         Remove-ServiceRegistration
-        Revoke-Roots
         Set-FirewallRule $false
+        if ($RestoreUserRule -and $ExePath -and (Test-Path -LiteralPath $ExePath)) {
+            # The User edition serves from the installed worker again; its opt-in rule
+            # comes back under the same name the opt-in helper uses.
+            $script:ServiceExePath = $ExePath
+            Set-FirewallRule $true
+        }
+        if ($script:DataDirDistrust) {
+            # Nothing inside an untrusted directory is read (the ledger) or deleted (bin):
+            # either could be steered by whoever owns it.
+            Fail "the service registration and the firewall rule were removed, but the machine state directory was left untouched: $script:DataDirDistrust" 11
+        }
+        Revoke-Roots
         Remove-ServiceBinaries
         # The state directory is deliberately LEFT in place: it holds the identity the
         # phones pinned. Deleting it is a separate, explicit choice.
@@ -854,23 +1434,34 @@ switch ($Action) {
         if (-not $UserDataDir) { Fail 'no -UserDataDir given' 2 }
         # Order matters: the User edition worker must be down before its files are read,
         # and the service must not be registered until the identity has been validated
-        # in its new home (spec §2 - migration is a transaction).
+        # in its new home (spec §2 - migration is a transaction). Every worker on the
+        # machine is stopped, not only this installation's: the one whose state is being
+        # migrated may run from another installation, and any worker left running would
+        # hold the control pipe the service is about to need. Each is named in the log.
         Get-Process -Name 'fms-share-worker' -ErrorAction SilentlyContinue | ForEach-Object {
-            try { $_.Kill(); $_.WaitForExit(5000) } catch { }
+            $procPath = $null
+            try { $procPath = $_.Path } catch { }
+            Write-Log ("stopping worker pid {0} (session {1}, '{2}')" -f $_.Id, $_.SessionId, $procPath)
+            try { $_.Kill(); [void]$_.WaitForExit(5000) } catch { }
         }
         $sourceDir = Resolve-UserDataDir $UserDataDir
         # Resolved from the state directory that actually holds the identity, not from
         # the elevating administrator's profile - see Resolve-ManagementSid.
         $ManageSid = Resolve-ManagementSid $ManageSid $sourceDir
         Write-Log "management SID(s): $ManageSid"
+        # The machine directory is verified (or created with its final ACL) BEFORE the
+        # identity is copied into it (ticket 046 H-02), and the worker is staged into its
+        # administrators-only bin before anything runs it (ticket 054 H-08) - Copy-State
+        # executes it to inspect both stores.
+        Initialize-MachineDataDir
+        Sync-ServiceBinaries
         # -OnlyWhenTargetIsFresh: the Server installer passes /MIGRATEFROMUSER on EVERY
         # install, so this runs on ordinary upgrades too. Only the first one is a
         # migration; after that the machine directory is the live state and must win.
         Copy-State $sourceDir $DataDir -OnlyWhenTargetIsFresh
+        # Again after the copy: the copied files take the directory's entries.
         Set-MachineDataDirAcl
-        Sync-ServiceBinaries
-        Remove-ServiceRegistration
-        New-ServiceRegistration
+        Register-Service
         Set-FirewallRule $true
         # Folders a user picked are invisible to LOCAL SERVICE until they are granted,
         # so a switch made from the app would otherwise end in a service that runs
@@ -883,14 +1474,17 @@ switch ($Action) {
         if ($Roots) {
             $rightsKnown = $PSBoundParameters.ContainsKey('ReadOnlyRoots')
             Grant-Roots `
-                @($Roots -split '\|' | ForEach-Object { $_.Trim() } | Where-Object { $_ }) `
-                @($ReadOnlyRoots -split '\|' | ForEach-Object { $_.Trim() } | Where-Object { $_ }) `
+                @(Split-RootList $Roots) `
+                @(Split-RootList $ReadOnlyRoots) `
                 $rightsKnown
+            if ($script:GrantShortfall -gt 0) {
+                Write-Log "WARNING: $script:GrantShortfall of the shared folders were not granted - see the SKIPPED/REFUSED lines above"
+            }
         } else {
-            # The Server installer's path: it has no folder list to pass, but the state
-            # it just migrated names every folder that is about to be served. Without
-            # this, installing the Server edition over a User edition that was already
-            # sharing produces a service that publishes folders it cannot read.
+            # The Server installer's path: it has no folder list to pass. What the state
+            # names is re-granted only as far as an administrator approved it before; the
+            # rest waits for the Share Manager, which the installer opens next and which
+            # asks with the list shown (ticket 054 H-09).
             Grant-StateRoots 'migrated state'
         }
         Start-ServiceAndVerify
@@ -899,6 +1493,12 @@ switch ($Action) {
     'migrate-to-user' {
         Assert-Worker
         if (-not $UserDataDir) { Fail 'no -UserDataDir given' 2 }
+        # The inspection runs the service's own copy when it is there: that one sits in
+        # an administrators-only directory (ticket 054 H-08).
+        $staged = Get-StagedExePath
+        if ($staged -and (Test-Path -LiteralPath $staged) -and -not (Get-DirectoryDistrust (Split-Path -Parent $staged))) {
+            $script:InspectExePath = $staged
+        }
         Stop-ServiceGracefully
         Copy-State $DataDir $UserDataDir
         Remove-ServiceRegistration
@@ -907,7 +1507,6 @@ switch ($Action) {
         # staged worker, which is about to be deleted; the User edition serves from the
         # installed one, a different program as far as the firewall is concerned. So the
         # rule is re-pointed rather than left naming a file that will not exist.
-        $staged = Get-StagedExePath
         if ($staged) { & netsh.exe advfirewall firewall delete rule name=all program="$staged" | Out-Null }
         $script:ServiceExePath = $ExePath
         Set-FirewallRule $true
@@ -918,14 +1517,20 @@ switch ($Action) {
     'grant-roots' {
         Assert-DataDir
         if (-not $Roots) { Fail 'no -Roots given' 2 }
+        # Only where the service role lives. Creating the machine directory here would
+        # make it the state store of a User edition worker too, splitting its settings.
+        if ($null -eq (Get-RawAttributes $DataDir)) { Fail "'$DataDir' does not exist - the service role is not installed" 9 }
         # "Was -ReadOnlyRoots passed at all", not "is it empty": an empty value is a
         # legitimate "every root is writable", while an absent parameter is an older
         # caller that never had the notion, and must keep getting read-only.
         $rightsKnown = $PSBoundParameters.ContainsKey('ReadOnlyRoots')
         Grant-Roots `
-            @($Roots -split '\|' | ForEach-Object { $_.Trim() } | Where-Object { $_ }) `
-            @($ReadOnlyRoots -split '\|' | ForEach-Object { $_.Trim() } | Where-Object { $_ }) `
+            @(Split-RootList $Roots) `
+            @(Split-RootList $ReadOnlyRoots) `
             $rightsKnown
+        if ($script:GrantShortfall -gt 0) {
+            Fail "$script:GrantShortfall of the requested folders were not granted - see the SKIPPED/REFUSED/WARNING lines above" 12
+        }
     }
 }
 

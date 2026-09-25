@@ -74,7 +74,10 @@
 
       <Extensions>
         <!-- Let users set FastMediaSorter as a handler / default for common image formats.
-             Mirrors the per-user associations the Inno installer registers. -->
+             Mirrors the per-user associations the Inno installer registers - only formats
+             the x64 mainline can DISPLAY (Main_Form.FileAssociation.vb): no .svg, which
+             neither viewer decodes. .tif stays: GDI+ reads it and the viewer's own lists
+             gain it too (owner decision 2026-09-25, ticket 055 I-02). -->
         <uap:Extension Category="windows.fileTypeAssociation">
           <uap:FileTypeAssociation Name="fastmediasorterimages">
             <uap:Logo>Assets\Square44x44Logo.png</uap:Logo>
@@ -91,7 +94,6 @@
               <uap:FileType>.heic</uap:FileType>
               <uap:FileType>.heif</uap:FileType>
               <uap:FileType>.avif</uap:FileType>
-              <uap:FileType>.svg</uap:FileType>
               <uap:FileType>.wmf</uap:FileType>
               <uap:FileType>.emf</uap:FileType>
             </uap:SupportedFileTypes>

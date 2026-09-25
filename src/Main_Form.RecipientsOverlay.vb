@@ -194,6 +194,9 @@ Partial Public Class Main_Form
         Dim visibleRows As Integer = RecipientsOverlayVisibleRows()
         Dim scrollRows As Boolean = rows.Count > visibleRows
         overlay.AutoScroll = scrollRows
+        ' With a scrollbar the rows must fit beside it: full-width rows grew a horizontal
+        ' scrollbar too, and the copy zones sat under the vertical one (audit B-13).
+        Dim rowW As Integer = If(scrollRows, panelW - SystemInformation.VerticalScrollBarWidth, panelW)
         For Each r In rows
             Dim isDelete As Boolean = (r.Item1 = -1)
             Dim showCopy As Boolean = Not isDelete AndAlso copyW > 0
@@ -208,7 +211,7 @@ Partial Public Class Main_Form
                 .TabStop = False,
                 .UseVisualStyleBackColor = False,
                 .Location = New Point(0, y),
-                .Size = New Size(If(showCopy, panelW - copyW, panelW), rowH),
+                .Size = New Size(If(showCopy, rowW - copyW, rowW), rowH),
                 .ForeColor = If(isDelete, Color.White, Color.Gainsboro),
                 .BackColor = If(isDelete, Color.FromArgb(96, 32, 32), Color.FromArgb(52, 52, 52))
             }
@@ -221,7 +224,7 @@ Partial Public Class Main_Form
                 b.Name = Recipients_Move_Row_Name
 #End If
                 recipients_ToolTip.SetToolTip(b, If(showCopy,
-                                                    Localization.TF("Перенести в: {0}", Hardkeys_to_move_mediafile(r.Item1)),
+                                                    Localization.TF("Переместить в: {0}", Hardkeys_to_move_mediafile(r.Item1)),
                                                     Hardkeys_to_move_mediafile(r.Item1)))
             End If
             AddHandler b.Click, AddressOf RecipientOverlayButton_Click
@@ -239,7 +242,7 @@ Partial Public Class Main_Form
                     .AutoEllipsis = True,
                     .TabStop = False,
                     .UseVisualStyleBackColor = False,
-                    .Location = New Point(panelW - copyW, y),
+                    .Location = New Point(rowW - copyW, y),
                     .Size = New Size(copyW, rowH),
                     .ForeColor = Color.Gainsboro,
                     .BackColor = Color.FromArgb(38, 62, 38)
@@ -281,16 +284,28 @@ Partial Public Class Main_Form
         If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed Then Return
 
         Try
+            ' A resource that cannot delete draws its move and DEL rows disabled, from the
+            ' same answer the refusal point gives (006 PV-7). Always True for a plain folder.
+            Dim move_Allowed As Boolean = ResourceAllows(ResourceVerb.Move)
+            Dim delete_Allowed As Boolean = ResourceAllows(ResourceVerb.Delete)
+
             For Each control As Control In recipients_Overlay.Controls
                 Dim row As Button = TryCast(control, Button)
                 If row Is Nothing OrElse row.Tag Is Nothing Then Continue For
                 Dim slot As Integer = CInt(row.Tag)
+                If slot = -1 Then
+                    ' The delete row: its own colours, as BuildRecipientsOverlay paints them.
+                    row.ForeColor = If(delete_Allowed, Color.White, Color.FromArgb(122, 122, 122))
+                    row.BackColor = If(delete_Allowed, Color.FromArgb(96, 32, 32), Color.FromArgb(42, 42, 42))
+                    Continue For
+                End If
                 If slot < 1 OrElse slot > 10 Then Continue For   ' the delete row has no destination
 
                 Dim is_Copy_Zone As Boolean = (row.Name = Recipients_Copy_Row_Name)
                 Dim destination As String = Hardkeys_to_move_mediafile(slot)
                 Dim verdict As SlotVerdict = CachedSlotVerdict(destination)
-                Dim unusable As Boolean = verdict IsNot Nothing AndAlso Not SlotHealthPolicy.IsUsable(verdict.State)
+                Dim unusable As Boolean = (verdict IsNot Nothing AndAlso Not SlotHealthPolicy.IsUsable(verdict.State)) OrElse
+                                          (Not is_Copy_Zone AndAlso Not move_Allowed)
 
                 If unusable Then
                     row.ForeColor = Color.FromArgb(122, 122, 122)
@@ -304,7 +319,7 @@ Partial Public Class Main_Form
                     Dim note As String = SlotHealthNote(verdict)
                     Dim tip As String = If(is_Copy_Zone,
                                            Localization.TF("Скопировать в: {0}", destination),
-                                           Localization.TF("Перенести в: {0}", destination))
+                                           Localization.TF("Переместить в: {0}", destination))
                     If note <> "" Then tip &= Environment.NewLine & note
                     recipients_ToolTip.SetToolTip(row, tip)
                 End If
@@ -353,12 +368,22 @@ Partial Public Class Main_Form
         If recipients_Overlay.Location <> onScreen Then recipients_Overlay.Location = onScreen
     End Sub
 
+    ''' <summary>Remembers the last click per row, to drop a double-click's second one.</summary>
+    Private ReadOnly recipient_Click_Guard As New RepeatClickGuard()
+
     ''' <summary>A click on a recipient row is exactly the matching key press.</summary>
     Private Sub RecipientOverlayButton_Click(sender As Object, e As EventArgs)
         Dim b As Button = TryCast(sender, Button)
         If b Is Nothing OrElse b.Tag Is Nothing Then Return
         Dim slot As Integer = CInt(b.Tag)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2410: recipients overlay click, slot=" & slot.ToString())
+
+        ' A habitual double-click on a row is two Clicks on a Button - two files moved
+        ' where one was meant (audit 047, C-20). The second, within 300 ms, is dropped.
+        If recipient_Click_Guard.IsRepeat(slot, input_Clock.ElapsedMilliseconds) Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2412: recipients overlay repeat click ignored")
+            Return
+        End If
 
         ' Match the keyboard path: it stops the slideshow first (KeybUse).
         SlideShowStop()
@@ -380,6 +405,13 @@ Partial Public Class Main_Form
         Dim slot As Integer = CInt(b.Tag)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2411: recipients overlay copy click, slot=" & slot.ToString())
 
+        ' Same guard as the move zone, under its own key so a move and a copy of one row
+        ' in quick succession are two gestures (C-20).
+        If recipient_Click_Guard.IsRepeat(100 + slot, input_Clock.ElapsedMilliseconds) Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2413: recipients overlay repeat copy click ignored")
+            Return
+        End If
+
         SlideShowStop()
         ExecuteRecipientAction(slot, RecipientActionKind.Copy)
         KeepRecipientsOverlayOnTop()
@@ -395,6 +427,8 @@ Partial Public Class Main_Form
         Public Sub New()
             SetStyle(ControlStyles.Selectable, False)
             Me.TabStop = False
+            ' Captions are folder paths: "R&D" must not become an underlined D (audit B-20).
+            Me.UseMnemonic = False
         End Sub
     End Class
 

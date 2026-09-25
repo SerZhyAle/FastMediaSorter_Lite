@@ -21,7 +21,6 @@ Partial Public Class Main_Form
 
     Private audio_Current_Metadata As AudioMetadata
     Private audio_Cover_Bitmap As Bitmap
-    Private audio_Playback_Started_Utc As DateTime
     Private audio_Sleep_Stopped As Boolean
     Private audio_Visualiser_Buffer As Bitmap
     Private audio_Visualiser_Particles() As AudioVisualiserParticle
@@ -52,57 +51,88 @@ Partial Public Class Main_Form
         Public Hue As Single
     End Structure
 
-    ''' <summary>Parses tags off the UI thread. The generation check prevents a late
-    ''' answer from being painted on a file the user has already left.</summary>
-    Friend Sub RequestAudioMetadataAsync(filePath As String, generation As Integer)
-        Task.Run(Sub()
-                     Try
-                         Dim watch As Stopwatch = Stopwatch.StartNew()
-                         Using media As Media = CreateVlcMedia(filePath)
-                             media.Parse(MediaParseOptions.ParseLocal)
-                             If watch.Elapsed > TimeSpan.FromSeconds(2) Then Return
-                             Dim track As MediaTrack
-                             Dim hasTrack As Boolean = False
-                             If media.Tracks IsNot Nothing Then
-                                 For Each candidate As MediaTrack In media.Tracks
-                                     If candidate.TrackType = TrackType.Audio Then
-                                         track = candidate
-                                         hasTrack = True
-                                         Exit For
-                                     End If
-                                 Next
-                             End If
-                             Dim size As Long = -1
-                             Try : size = New FileInfo(filePath).Length : Catch : End Try
-                             Dim codec As String = ""
-                             Dim bitrate As Long = 0
-                             Dim sampleRate As Long = 0
-                             If hasTrack Then
-                                 codec = track.Codec.ToString()
-                                 bitrate = CLng(track.Bitrate)
-                                 sampleRate = CLng(track.Data.Audio.Rate)
-                             End If
-                             Dim tags = AudioMetadata.FromValues(filePath, MediaMeta(media, MetadataType.Title), MediaMeta(media, MetadataType.Artist), MediaMeta(media, MetadataType.Album), MediaMeta(media, MetadataType.ArtworkURL), codec, bitrate, sampleRate, media.Duration, size)
-                             If Me.IsDisposed OrElse Not Me.IsHandleCreated Then Return
-                             Me.BeginInvoke(Sub()
-                                                If generation <> media_Generation OrElse Not String.Equals(Current_File_Name, filePath, StringComparison.Ordinal) Then Return
-                                                audio_Current_Metadata = tags
-                                                LoadAudioCover(tags.CoverPath, filePath)
-                                                RepaintMedia()
-                                            End Sub)
-                         End Using
-                     Catch ex As Exception
-                         Debug.WriteLine("Audio metadata parse skipped: " & ex.Message)
-                     End Try
-                 End Sub)
+    ''' <summary>How long the tag parse may take before the plate falls back to the file
+    ''' name. Handed to libvlc itself, so a slow share ends the parse instead of a guard
+    ''' nobody reaches.</summary>
+    Private Const Audio_Parse_Timeout_Ms As Integer = 2000
+
+    ''' <summary>
+    ''' Parses tags off the UI thread. The generation check prevents a late answer from
+    ''' being painted on a file the user has already left.
+    '''
+    ''' The parse is AWAITED (audit 050 D-02). Media.Parse returns a Task in LibVLCSharp 3,
+    ''' and it used to be dropped: the tags were read at once, before libvlc had parsed
+    ''' anything, and the Using then released the media - which cancels a pending preparse.
+    ''' So every plate showed the file name and "MP3 - 5.2 MB", and no cover but the one
+    ''' the hand-written ID3 reader found.
+    ''' </summary>
+    Friend Async Sub RequestAudioMetadataAsync(filePath As String, generation As Integer)
+        Try
+            ' The first audio file after a runtime download can get here before libvlc
+            ' exists; wait for the same initialisation the player awaits (never a second one).
+            If libVlc Is Nothing Then
+                If Not Await EnsureVlcInitializedAsync().ConfigureAwait(True) Then Return
+                If generation <> media_Generation Then Return
+            End If
+            Dim tags As AudioMetadata = Await Task.Run(Function() ParseAudioMetadataAsync(filePath)).ConfigureAwait(True)
+            If Me.IsDisposed OrElse generation <> media_Generation OrElse
+               Not String.Equals(Current_File_Name, filePath, StringComparison.Ordinal) Then Return
+            audio_Current_Metadata = tags
+            LoadAudioCover(tags.CoverPath, filePath)
+            RepaintMedia()
+        Catch ex As Exception
+            Debug.WriteLine("Audio metadata parse skipped: " & ex.Message)
+        End Try
     End Sub
+
+    ''' <summary>Reads the tags of one file. Values are taken only from a parse that
+    ''' finished; anything else keeps the file-name fallback of AudioMetadata.FromValues.</summary>
+    Private Async Function ParseAudioMetadataAsync(filePath As String) As Task(Of AudioMetadata)
+        Dim size As Long = -1
+        Try : size = New FileInfo(filePath).Length : Catch : End Try
+
+        Using media As Media = CreateVlcMedia(filePath)
+            ' FetchLocal as well: it is what turns an embedded picture ("attachment://") into
+            ' a file:// ArtworkURL the cover loader can open.
+            Dim status As MediaParsedStatus = Await media.Parse(MediaParseOptions.ParseLocal Or MediaParseOptions.FetchLocal,
+                                                                Audio_Parse_Timeout_Ms).ConfigureAwait(False)
+            If status <> MediaParsedStatus.Done Then
+                Debug.WriteLine("Audio metadata parse: " & status.ToString() & " for " & filePath)
+                Return AudioMetadata.FromValues(filePath, fileSizeBytes:=size)
+            End If
+
+            Dim codec As String = ""
+            Dim bitrate As Long = 0
+            Dim sampleRate As Long = 0
+            If media.Tracks IsNot Nothing Then
+                For Each candidate As MediaTrack In media.Tracks
+                    If candidate.TrackType = TrackType.Audio Then
+                        codec = AudioMetadata.CodecName(candidate.Codec)
+                        bitrate = CLng(candidate.Bitrate)
+                        sampleRate = CLng(candidate.Data.Audio.Rate)
+                        Exit For
+                    End If
+                Next
+            End If
+            Return AudioMetadata.FromValues(filePath, MediaMeta(media, MetadataType.Title), MediaMeta(media, MetadataType.Artist),
+                                            MediaMeta(media, MetadataType.Album), MediaMeta(media, MetadataType.ArtworkURL),
+                                            codec, bitrate, sampleRate, media.Duration, size)
+        End Using
+    End Function
 
     Private Shared Function MediaMeta(media As Media, kind As MetadataType) As String
         Try : Return If(media.Meta(kind), "") : Catch : Return "" : End Try
     End Function
 
     Friend Sub PaintAudioSurface(g As Graphics, bounds As Rectangle)
-        If Not IsAudioNowPlaying() OrElse audio_Current_Metadata Is Nothing Then Return
+        If Not IsAudioNowPlaying() Then Return
+        ' The surface is ours, all of it (audit 050 D-04): Picture_Box_1 may still hold the
+        ' previous photo, or receive the next one from the prefetch while the track plays,
+        ' and the aspect-fit cover and the plate used to be drawn over it - the photo showed
+        ' around a square cover and under the plate. The base class has painted the image
+        ' by the time this Paint handler runs, so clearing here covers every such case.
+        g.Clear(Me.BackColor)
+        If audio_Current_Metadata Is Nothing Then Return
         If audio_Cover_Bitmap IsNot Nothing Then
             audio_Visualiser_Timer.Stop()
             DrawAudioCover(g, audio_Cover_Bitmap, bounds)
@@ -113,14 +143,46 @@ Partial Public Class Main_Form
             audio_Visualiser_Timer.Stop()
         End If
         Dim top = Math.Max(12, bounds.Height - 118)
-        Using plate As New SolidBrush(Color.FromArgb(175, 0, 0, 0)), white As New SolidBrush(Color.White), muted As New SolidBrush(Color.Gainsboro), titleFont As New Font("Segoe UI", 15.0F, FontStyle.Bold), detailFont As New Font("Segoe UI", 10.0F), fmt As New StringFormat With {.Trimming = StringTrimming.EllipsisCharacter, .FormatFlags = StringFormatFlags.NoWrap}
-            g.FillRectangle(plate, New Rectangle(12, top, Math.Max(0, bounds.Width - 24), Math.Max(0, bounds.Height - top - 8)))
-            Dim line = top + 8
-            g.DrawString(audio_Current_Metadata.Title, titleFont, white, New Rectangle(22, line, bounds.Width - 44, 28), fmt) : line += 30
-            If audio_Current_Metadata.Artist <> "" Then g.DrawString(audio_Current_Metadata.Artist, detailFont, white, New Rectangle(22, line, bounds.Width - 44, 20), fmt) : line += 20
-            If audio_Current_Metadata.Album <> "" Then g.DrawString(audio_Current_Metadata.Album, detailFont, white, New Rectangle(22, line, bounds.Width - 44, 20), fmt) : line += 20
-            g.DrawString(audio_Current_Metadata.FormatLine, detailFont, muted, New Rectangle(22, line, bounds.Width - 44, 20), fmt)
-        End Using
+        EnsureAudioPaintObjects()
+        g.FillRectangle(audio_Plate_Brush, New Rectangle(12, top, Math.Max(0, bounds.Width - 24), Math.Max(0, bounds.Height - top - 8)))
+        Dim line = top + 8
+        g.DrawString(audio_Current_Metadata.Title, audio_Title_Font, Brushes.White, New Rectangle(22, line, bounds.Width - 44, 28), audio_Plate_Format) : line += 30
+        If audio_Current_Metadata.Artist <> "" Then g.DrawString(audio_Current_Metadata.Artist, audio_Detail_Font, Brushes.White, New Rectangle(22, line, bounds.Width - 44, 20), audio_Plate_Format) : line += 20
+        If audio_Current_Metadata.Album <> "" Then g.DrawString(audio_Current_Metadata.Album, audio_Detail_Font, Brushes.White, New Rectangle(22, line, bounds.Width - 44, 20), audio_Plate_Format) : line += 20
+        g.DrawString(audio_Current_Metadata.FormatLine, audio_Detail_Font, Brushes.Gainsboro, New Rectangle(22, line, bounds.Width - 44, 20), audio_Plate_Format)
+    End Sub
+
+    ' The plate's and the visualiser's GDI+ objects, made once and reused (audit 050 D-21).
+    ' They used to be created and disposed inside every 16 ms frame - two fonts, three
+    ' brushes and a StringFormat per paint, a Pen and a GraphicsPath per wave and a brush per
+    ' particle per tick: thousands of GDI+ handles a second for as long as an uncovered
+    ' track was on screen. Disposed in ClearAudioSurface.
+    Private audio_Plate_Brush As SolidBrush
+    Private audio_Title_Font As Font
+    Private audio_Detail_Font As Font
+    Private audio_Plate_Format As StringFormat
+    Private audio_Visualiser_Pen As Pen
+    Private audio_Visualiser_Fill As SolidBrush
+    Private audio_Visualiser_Path As GraphicsPath
+
+    Private Sub EnsureAudioPaintObjects()
+        If audio_Plate_Brush Is Nothing Then audio_Plate_Brush = New SolidBrush(Color.FromArgb(175, 0, 0, 0))
+        If audio_Title_Font Is Nothing Then audio_Title_Font = New Font("Segoe UI", 15.0F, FontStyle.Bold)
+        If audio_Detail_Font Is Nothing Then audio_Detail_Font = New Font("Segoe UI", 10.0F)
+        If audio_Plate_Format Is Nothing Then audio_Plate_Format = New StringFormat With {.Trimming = StringTrimming.EllipsisCharacter, .FormatFlags = StringFormatFlags.NoWrap}
+        If audio_Visualiser_Pen Is Nothing Then audio_Visualiser_Pen = New Pen(Color.White, 1.0F)
+        If audio_Visualiser_Fill Is Nothing Then audio_Visualiser_Fill = New SolidBrush(Color.White)
+        If audio_Visualiser_Path Is Nothing Then audio_Visualiser_Path = New GraphicsPath()
+    End Sub
+
+    Private Sub DisposeAudioPaintObjects()
+        If audio_Plate_Brush IsNot Nothing Then audio_Plate_Brush.Dispose() : audio_Plate_Brush = Nothing
+        If audio_Title_Font IsNot Nothing Then audio_Title_Font.Dispose() : audio_Title_Font = Nothing
+        If audio_Detail_Font IsNot Nothing Then audio_Detail_Font.Dispose() : audio_Detail_Font = Nothing
+        If audio_Plate_Format IsNot Nothing Then audio_Plate_Format.Dispose() : audio_Plate_Format = Nothing
+        If audio_Visualiser_Pen IsNot Nothing Then audio_Visualiser_Pen.Dispose() : audio_Visualiser_Pen = Nothing
+        If audio_Visualiser_Fill IsNot Nothing Then audio_Visualiser_Fill.Dispose() : audio_Visualiser_Fill = Nothing
+        If audio_Visualiser_Path IsNot Nothing Then audio_Visualiser_Path.Dispose() : audio_Visualiser_Path = Nothing
     End Sub
 
     ''' <summary>Fills the media surface as far as the source aspect ratio permits;
@@ -186,11 +248,14 @@ Partial Public Class Main_Form
         audio_Visualiser_Startup_Frame_Count = Math.Min(36, audio_Visualiser_Startup_Frame_Count + 1)
         Dim startupProgress = audio_Visualiser_Startup_Frame_Count / 36.0F
         Dim startupGain = 0.35F + 0.65F * startupProgress * (2.0F - startupProgress)
+        EnsureAudioPaintObjects()
+        Dim pen As Pen = audio_Visualiser_Pen
+        Dim fill As SolidBrush = audio_Visualiser_Fill
+        Dim path As GraphicsPath = audio_Visualiser_Path
         Using canvas = Graphics.FromImage(audio_Visualiser_Buffer)
             canvas.SmoothingMode = SmoothingMode.AntiAlias
-            Using wash As New SolidBrush(Color.FromArgb(38, If(audio_Visualiser_Light_Theme, 245, 10), If(audio_Visualiser_Light_Theme, 245, 10), If(audio_Visualiser_Light_Theme, 245, 10)))
-                canvas.FillRectangle(wash, 0, 0, w, h)
-            End Using
+            fill.Color = Color.FromArgb(38, If(audio_Visualiser_Light_Theme, 245, 10), If(audio_Visualiser_Light_Theme, 245, 10), If(audio_Visualiser_Light_Theme, 245, 10))
+            canvas.FillRectangle(fill, 0, 0, w, h)
             Dim travelSpan = CSng(Math.Sqrt(w * w + h * h)) + audio_Visualiser_Step_Px * 6.0F
             Dim centerDrift = CSng(Math.Sin(audio_Visualiser_Time * 0.45F)) * Math.Min(w, h) * 0.02F
             Dim centerX = w * 0.5F + audio_Visualiser_Direction_X * centerDrift
@@ -201,17 +266,18 @@ Partial Public Class Main_Form
                 Dim envelope = 0.40F + 0.60F * CSng(Math.Abs(Math.Sin(audio_Visualiser_Time * 0.4F + wave * 0.2F)))
                 Dim amplitude = h * audio_Visualiser_Wave_Amplitude * startupGain * envelope
                 Dim bandOffset = (wave - (audio_Visualiser_Wave_Count - 1) * 0.5F) * laneSpacing
-                Using path As New GraphicsPath(), pen As New Pen(HslColor((audio_Visualiser_Base_Wave_Hue + wave * audio_Visualiser_Wave_Hue_Step) Mod 360.0F, 0.8F, If(audio_Visualiser_Light_Theme, 0.35F, 0.65F), waveAlpha), audio_Visualiser_Stroke_Width)
-                    Dim distance = -travelSpan * 0.5F : Dim first = True : Dim previous As PointF = PointF.Empty
-                    While distance <= travelSpan * 0.5F
-                        Dim displacement = CSng(Math.Sin(distance * 0.0105F + audio_Visualiser_Time + wave * 0.8F)) * amplitude
-                        Dim point As New PointF(centerX + audio_Visualiser_Direction_X * distance + audio_Visualiser_Normal_X * (bandOffset + displacement), centerY + audio_Visualiser_Direction_Y * distance + audio_Visualiser_Normal_Y * (bandOffset + displacement))
-                        If first Then path.AddLine(point, point) : first = False Else path.AddLine(previous, point)
-                        previous = point
-                        distance += audio_Visualiser_Step_Px
-                    End While
-                    canvas.DrawPath(pen, path)
-                End Using
+                path.Reset()
+                pen.Color = HslColor((audio_Visualiser_Base_Wave_Hue + wave * audio_Visualiser_Wave_Hue_Step) Mod 360.0F, 0.8F, If(audio_Visualiser_Light_Theme, 0.35F, 0.65F), waveAlpha)
+                pen.Width = audio_Visualiser_Stroke_Width
+                Dim distance = -travelSpan * 0.5F : Dim first = True : Dim previous As PointF = PointF.Empty
+                While distance <= travelSpan * 0.5F
+                    Dim displacement = CSng(Math.Sin(distance * 0.0105F + audio_Visualiser_Time + wave * 0.8F)) * amplitude
+                    Dim point As New PointF(centerX + audio_Visualiser_Direction_X * distance + audio_Visualiser_Normal_X * (bandOffset + displacement), centerY + audio_Visualiser_Direction_Y * distance + audio_Visualiser_Normal_Y * (bandOffset + displacement))
+                    If first Then path.AddLine(point, point) : first = False Else path.AddLine(previous, point)
+                    previous = point
+                    distance += audio_Visualiser_Step_Px
+                End While
+                canvas.DrawPath(pen, path)
             Next
             For i = 0 To audio_Visualiser_Particles.Length - 1
                 Dim particle = audio_Visualiser_Particles(i)
@@ -219,9 +285,8 @@ Partial Public Class Main_Form
                 If particle.X < 0 OrElse particle.X > w Then particle.Dx = -particle.Dx
                 If particle.Y < 0 OrElse particle.Y > h Then particle.Dy = -particle.Dy
                 audio_Visualiser_Particles(i) = particle
-                Using brush As New SolidBrush(HslColor(particle.Hue, 0.9F, If(audio_Visualiser_Light_Theme, 0.3F, 0.7F), 0.38F + 0.32F * startupGain))
-                    canvas.FillEllipse(brush, particle.X - particle.Radius, particle.Y - particle.Radius, particle.Radius * 2, particle.Radius * 2)
-                End Using
+                fill.Color = HslColor(particle.Hue, 0.9F, If(audio_Visualiser_Light_Theme, 0.3F, 0.7F), 0.38F + 0.32F * startupGain)
+                canvas.FillEllipse(fill, particle.X - particle.Radius, particle.Y - particle.Radius, particle.Radius * 2, particle.Radius * 2)
             Next
         End Using
     End Sub
@@ -343,24 +408,38 @@ Partial Public Class Main_Form
     End Function
 
     Private Sub audio_Visualiser_Timer_Tick(sender As Object, e As EventArgs) Handles audio_Visualiser_Timer.Tick
-        If Not IsAudioNowPlaying() OrElse audio_Cover_Bitmap IsNot Nothing OrElse modern_Preferences Is Nothing OrElse Not modern_Preferences.AudioVisualiser Then
+        ' Not while nothing plays - after the sleep timer or a stop there is nothing to
+        ' animate, and the tick was the one thing still spending the UI thread (050 D-21).
+        If Not IsAudioNowPlaying() OrElse Not is_Vlc_Playing OrElse audio_Cover_Bitmap IsNot Nothing OrElse modern_Preferences Is Nothing OrElse Not modern_Preferences.AudioVisualiser Then
             audio_Visualiser_Timer.Stop()
             Return
         End If
         RepaintMedia()
     End Sub
 
+    ''' <summary>Set by the end-of-track advance while it opens the next file, so the sleep
+    ''' deadline knows the listener did not ask for it (audit 050 D-03).</summary>
+    Private audio_Auto_Advancing As Boolean
+    Private ReadOnly audio_Sleep_Deadline As New SleepDeadline()
+
     Friend Sub BeginAudioPlayback()
-        audio_Playback_Started_Utc = DateTime.UtcNow
+        ' Kept across an automatic advance (end of track, slideshow step), re-armed by a
+        ' track the user chose: the timer now counts from when listening began, not from
+        ' the start of the current track.
+        audio_Sleep_Deadline.TrackStarted(Environment.TickCount64,
+                                          If(modern_Preferences Is Nothing, 0, modern_Preferences.SleepTimerMinutes),
+                                          automatic:=audio_Auto_Advancing OrElse Is_slide_show_mode)
         audio_Sleep_Stopped = False
     End Sub
     Friend Sub CheckAudioSleepTimer()
-        If Not IsAudioNowPlaying() OrElse audio_Sleep_Stopped OrElse modern_Preferences Is Nothing OrElse modern_Preferences.SleepTimerMinutes <= 0 Then Return
-        If DateTime.UtcNow - audio_Playback_Started_Utc < TimeSpan.FromMinutes(modern_Preferences.SleepTimerMinutes) Then Return
+        If Not IsAudioNowPlaying() OrElse audio_Sleep_Stopped OrElse modern_Preferences Is Nothing Then Return
+        If Not audio_Sleep_Deadline.IsDue(Environment.TickCount64, modern_Preferences.SleepTimerMinutes) Then Return
+        audio_Sleep_Deadline.Disarm()
         audio_Sleep_Stopped = True : StopVlcPlayback() : lbl_Status.Text = Localization.T("Таймер сна остановил воспроизведение")
     End Sub
     Friend Sub ClearAudioSurface()
         audio_Visualiser_Timer.Stop()
+        DisposeAudioPaintObjects()
         audio_Current_Metadata = Nothing
         If audio_Cover_Bitmap IsNot Nothing Then audio_Cover_Bitmap.Dispose() : audio_Cover_Bitmap = Nothing
         If audio_Visualiser_Buffer IsNot Nothing Then audio_Visualiser_Buffer.Dispose() : audio_Visualiser_Buffer = Nothing

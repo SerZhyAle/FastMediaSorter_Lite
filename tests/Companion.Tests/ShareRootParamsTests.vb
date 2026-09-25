@@ -35,7 +35,8 @@ Public Class ShareRootParamsTests
     <InlineData(False, True, False, True)>    ' soft RO -> advertised RO (server still writable)
     <InlineData(False, False, True, False)>   ' destination writable -> advertised writable
     <InlineData(True, False, True, False)>    ' hard RO + destination: destination forces writable -> advertised writable
-    <InlineData(False, True, True, True)>     ' destination writable but soft RO hint -> advertised RO
+    <InlineData(False, True, True, False)>    ' destination ignores the soft RO hint (FMSCFG 2.1 amendment A, ticket 034)
+    <InlineData(True, True, True, False)>     ' ...also with hard RO stored: the destination wins
     Public Sub AdvertisedReadOnly_TruthTable(hardRo As Boolean, softRo As Boolean, destination As Boolean, expectedAdvertisedRo As Boolean)
         Dim p As New ShareRootParams With {.IsReadOnly = hardRo, .SoftReadOnly = softRo, .IsDestination = destination}
         Assert.Equal(expectedAdvertisedRo, p.AdvertisedReadOnly())

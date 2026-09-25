@@ -45,15 +45,21 @@ Public NotInheritable Class InternetAccessForm
         UiLanguage.ApplyTo(Me)
         Me.Text = Localization.T("Инструкция по пробросу порта")
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
-        AddHandler Me.FormClosed, Sub() ShareIcons.FreeIcon(Me.Icon, _iconHandle)
+        ' Created before the close hook below can reference it: the tooltip keeps a
+        ' native window and references to the controls it serves, so it is disposed with
+        ' the dialog rather than left to finalization (ticket 054 H-20).
+        Dim tip As New ToolTip()
+        AddHandler Me.FormClosed,
+            Sub()
+                Try : tip.Dispose() : Catch : End Try
+                ShareIcons.FreeIcon(Me.Icon, _iconHandle)
+            End Sub
         Me.FormBorderStyle = FormBorderStyle.Sizable
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
         Me.MinimumSize = New Size(560, 420)
         Me.ClientSize = New Size(680, 520)
-
-        Dim tip As New ToolTip()
 
         ' Single root TableLayoutPanel, one column, explicit rows - no Dock-stacking
         ' order to guess at. Header/footer rows are AutoSize (sized to the actual
@@ -247,11 +253,11 @@ Public NotInheritable Class InternetAccessForm
         Dim ep As String = host & ":" & port.ToString()
         Select Case res
             Case SftpProbe.ProbeResult.SshOk
-                Return Localization.TF("✓ SFTP-сервер доступен: {0}", ep)
+                Return Localization.TF("SFTP-сервер доступен: {0}", ep)
             Case SftpProbe.ProbeResult.PortOpen
                 Return Localization.TF("Порт открыт, но SFTP не ответил: {0}", ep)
             Case SftpProbe.ProbeResult.Timeout, SftpProbe.ProbeResult.Refused
-                Return Localization.TF("✗ С этого ПК не отвечает ({0}). Роутер может не пускать на свой внешний адрес изнутри - проверьте с телефона по мобильной сети.", ep)
+                Return Localization.TF("С этого ПК не отвечает ({0}). Роутер может не пускать на свой внешний адрес изнутри - проверьте с телефона по мобильной сети.", ep)
 
             Case Else
                 Return Localization.T("Адрес некорректен.")

@@ -34,11 +34,11 @@ Fast Media Sorter for Windows (раніше FastMediaSorter LITE - у Microsoft 
   кодеків, без полювання на плагіни й без залежності від того, чи є ще в системі
   Internet Explorer
 
-## Мобільна версія 📱
+## Мобільна версія
 
 Хочете сортувати медіа, не встаючи з дивана? Спробуйте **FastMediaSorter v2** - потужний Android-додаток з підтримкою локальних файлів, мережевих дисків (SMB, SFTP, FTP) та хмарних сховищ (Google Drive, OneDrive, Dropbox):
 
-🔗 **[Сайт FastMediaSorter для Android](https://serzhyale.github.io/FastMediaSorter_mob_v2/index-uk.html)** · **[GitHub](https://github.com/SerZhyAle/FastMediaSorter_mob_v2)**
+**[Сайт FastMediaSorter для Android](https://serzhyale.github.io/FastMediaSorter_mob_v2/index-uk.html)** · **[GitHub](https://github.com/SerZhyAle/FastMediaSorter_mob_v2)**
 
 Встановити: **[Google Play](https://play.google.com/store/apps/details?id=com.sza.fastmediasorter)**, **[IzzyOnDroid](https://apt.izzysoft.de/fdroid/index/apk/com.sza.fastmediasorter)** або прямий **[APK зі сторінки релізів GitHub](https://github.com/SerZhyAle/FastMediaSorter_mob_v2/releases)**.
 
@@ -61,7 +61,8 @@ Fast Media Sorter for Windows (раніше FastMediaSorter LITE - у Microsoft 
 
 - **у FastMediaSorter для Android** - сценарій, заради якого все й задумувалося: телефон сортує фото та
   відео, що лежать на дисках цього ПК, домашньою мережею Wi-Fi або через інтернет, після одноразового
-  підключення за QR-кодом (чи експортованим файлом `.fmscfg`).
+  підключення за QR-кодом (чи експортованим файлом `.fmscfg`). І код, і файл містять пароль (і PIN
+  папки, якщо його задано) - передавайте їх як ключ і ніколи не публікуйте.
 - **у будь-якому іншому SFTP-клієнті** - WinSCP, FileZilla, файловий менеджер у Linux чи macOS, інший
   ПК. Адреса й порт, логін, пароль і відбиток ключа вузла показані у вікні Share Manager, кожен зі
   своєю кнопкою копіювання.
@@ -237,6 +238,20 @@ winget install --id SerZhyAle.FastMediaSorter
 пакети, тому для відтворення медіа та OCR не потрібне перше дозавантаження з
 мережі.
 
+### Windows попередить, і ось чому
+
+Ці збірки не підписані сертифікатом, тому під час першого запуску SmartScreen
+показує **«Система Windows захистила ваш комп'ютер»**. Нічого не зламано:
+сертифікат для підпису коду коштує кілька сотень доларів на рік, а програма
+безкоштовна, тому його не куплено. Натисніть **«Докладніше»**, потім **«Виконати в
+будь-якому разі»** - і не вимикайте SmartScreen, тут це не потрібно ніколи.
+
+[Що це за попередження, чому воно з'являється, на що саме натиснути і чого програма
+не робить ніколи](https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/trust.html) -
+включно з двома необов'язковими функціями, які запитують права адміністратора, і одною
+дією, якою ці права забираються назад. Збірку з Microsoft Store підписує сама Microsoft
+під час сертифікації, і нічого з цього там не з'являється.
+
 ### Що входить у пакет (і чому він великий)
 
 Основна програма - це один exe на ~110 МБ, бо несе всередині власний рантайм .NET.
@@ -282,7 +297,7 @@ winget install SerZhyAle.DocHtmlTranslate
 
 Зручний набір пресетів та інструментів для AI-агентів від того ж автора:
 
-🔗 **[Universal Agent Kit](https://serzhyale.github.io/universal-agent-kit/)**
+**[Universal Agent Kit](https://serzhyale.github.io/universal-agent-kit/)**
 
 ## Автор
 - Сайт: [sza.od.ua](https://sza.od.ua)

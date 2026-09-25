@@ -168,7 +168,13 @@ Partial Public Class Main_Form
         For Each c As Control In flow_Toolbar.Controls
             Dim b As Button = TryCast(c, Button)
             If b IsNot Nothing Then
+#If Not NETFRAMEWORK Then
+                ' "Replace with video" draws a private-use Segoe MDL2 codepoint: in Segoe UI
+                ' it has no glyph and no fallback, so it rendered as a box (audit B-08).
+                If b IsNot btn_ToVideo Then b.Font = ui_Font
+#Else
                 b.Font = ui_Font
+#End If
                 b.FlatStyle = FlatStyle.Flat
                 b.FlatAppearance.BorderSize = 0
                 b.UseVisualStyleBackColor = False
@@ -193,8 +199,12 @@ Partial Public Class Main_Form
             End If
         Next
 
-        ' Clearer glyphs for the formerly-cryptic buttons (height already fixed
-        ' above, so the larger glyph font doesn't change the row).
+        ' The mainline reads the catalog SVG path data, rather than relying on a
+        ' Unicode/MDL2 character whose drawing changes by font and Windows version.
+        ' The x86 fallback keeps its Unicode captions (spec 027 section 3.3 exception).
+#If NETFRAMEWORK Then
+        ' Keep the exact legacy captions: the Designer strings are placeholders, not
+        ' user-facing labels.  The x86 maintenance branch intentionally remains glyph-based.
         btn_Review.Text = "⟳"
         btn_Panel.Text = "▦"
         btn_Full_Screen.Text = "⛶"
@@ -209,6 +219,13 @@ Partial Public Class Main_Form
                                                btn_Overflow, btn_Overflow_2}
             If gb IsNot Nothing Then gb.Font = glyph_Font
         Next
+#Else
+        ' This control is deliberately not in the current icon catalog.  Keep its
+        ' established Unicode caption until proposal 2 of contract 027 lands.
+        btn_Random_Slideshow.Text = "⤮▶"
+        btn_Random_Slideshow.Font = glyph_Font
+        ApplyCatalogToolbarGlyphs()
+#End If
 
         For Each c As Control In panel_Status.Controls
             c.Font = ui_Font
@@ -239,7 +256,10 @@ Partial Public Class Main_Form
                 If flow_Toolbar.Parent IsNot Nothing Then flow_Toolbar.Parent.Controls.Remove(flow_Toolbar)
                 flow_Toolbar.Dock = DockStyle.Top
                 Me.Controls.Add(flow_Toolbar)
-                flow_Toolbar.BringToFront()
+                ' SendToBack, not BringToFront: WinForms docks from the highest z-index
+                ' down, so the toolbar must dock before the Fill panel takes the rest.
+                ' In front it docked last and covered the top of the image (audit B-02).
+                flow_Toolbar.SendToBack()
             End If
         End If
 
@@ -301,6 +321,9 @@ Partial Public Class Main_Form
 
         RecolorContainer(flow_Toolbar, back_Color, opposite_Color, hover_Color)
         RecolorContainer(panel_Status, back_Color, opposite_Color, hover_Color)
+#If Not NETFRAMEWORK Then
+        RecolorCatalogToolbarGlyphs()
+#End If
 
         ' Overflow dropdowns match the chrome.
         For Each m As ContextMenuStrip In New ContextMenuStrip() {overflow_Menu, overflow_Menu_2}

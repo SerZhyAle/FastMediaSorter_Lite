@@ -10,6 +10,7 @@ Public Enum MediaKind
     Video       ' Something LibVLC plays with a picture (video/WebM/MKV/3GP/MOV/AVI/WMV/etc.)
     Audio       ' Something LibVLC plays without a picture (MP3/WAV/M4A/WMA/OGG)
     Document    ' Text, PDF, EPUB - sortable now, previewable later (PD)
+    Secure      ' A sealed .fd-sec container: its real kind is unknown until it is opened
     Other       ' User-configured, no built-in renderer
 End Enum
 
@@ -22,6 +23,12 @@ Public Module MediaKindClassifier
         If String.IsNullOrEmpty(extension) Then Return MediaKind.Other
 
         Dim ext = extension.ToLowerInvariant()
+
+        ' A secure container, whose real kind nobody can know until it is opened
+        ' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §5.3). After opening, the
+        ' sealed TRUE name comes back through this same function, so there is still one
+        ' classifier - the container is simply a kind of its own until then.
+        If ext = ".fd-sec" Then Return MediaKind.Secure
 
         ' Image formats: all decodable image types on modern build
         If IsImageExtension(ext) Then Return MediaKind.Image
@@ -41,7 +48,7 @@ Public Module MediaKindClassifier
 
     Private Function IsImageExtension(ext As String) As Boolean
         Return ext = ".jpg" OrElse ext = ".jpeg" OrElse ext = ".png" OrElse ext = ".gif" OrElse
-               ext = ".bmp" OrElse ext = ".tiff" OrElse ext = ".ico" OrElse ext = ".wmf" OrElse
+               ext = ".bmp" OrElse ext = ".tif" OrElse ext = ".tiff" OrElse ext = ".ico" OrElse ext = ".wmf" OrElse
                ext = ".emf" OrElse ext = ".exif" OrElse ext = ".webp" OrElse ext = ".avif" OrElse
                ext = ".heic" OrElse ext = ".heif"
     End Function

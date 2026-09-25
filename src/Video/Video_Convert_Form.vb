@@ -45,6 +45,8 @@ Friend NotInheritable Class Video_Convert_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
+        ' Direction from the language table (APP-BEHAVIOUR rule 8, ticket 028 Ф-7).
+        If Localization.IsRightToLeft() Then Me.RightToLeft = RightToLeft.Yes
         Me.ClientSize = New Size(400, 116)
 
         caption = New Label With {
@@ -151,6 +153,8 @@ Friend NotInheritable Class Video_Replace_Confirm_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
+        ' Direction from the language table (APP-BEHAVIOUR rule 8, ticket 028 Ф-7).
+        If Localization.IsRightToLeft() Then Me.RightToLeft = RightToLeft.Yes
         Me.ClientSize = New Size(460, If(warnAboutAlpha, 176, 156))
 
         Dim message As String = Localization.TF("{0} будет преобразован в {1}. Оригинал будет удалён безвозвратно, минуя Корзину.",
@@ -170,7 +174,7 @@ Friend NotInheritable Class Video_Replace_Confirm_Form
         suppress = New CheckBox With {
             .AutoSize = True,
             .Location = New Point(14, text.Bottom + 10),
-            .Text = Localization.T("Больше не спрашивать")
+            .Text = Localization.T("Не спрашивать до закрытия программы")
         }
 
         Dim accept As New Button With {

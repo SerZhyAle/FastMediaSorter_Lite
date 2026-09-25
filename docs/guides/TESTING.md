@@ -37,17 +37,32 @@ exe»: набор вьювера теперь **мультитаргетный**
 ```powershell
 .\tools\Run-AllTests.ps1              # все три набора (unit/логика), быстро, без сети/телефона
 .\tools\Run-AllTests.ps1 -Integration # + живой round-trip по пайпу к запущенному воркеру
+.\tools\Run-AllTests.ps1 -OcrScenes   # + стенд OCR-сцен на собранном вьювере (минуты, окно на экране)
 .\tools\Run-AllTests.ps1 -SkipGo      # без Go-набора (если репозиторий воркера не склонирован)
 ```
 
-Код возврата ненулевой, если хоть один набор упал - годится для pre-commit / CI.
+Коды возврата - по контракту `CHECK-VERDICT` (общий помощник [tools/lib/Verdict.ps1](../../tools/lib/Verdict.ps1)):
+**0** - всё, что запускалось, прошло; **1** - набор запустился и упал; **2** - не удалось проверить
+(нет проекта, `dotnet`, `go.exe`, репозитория воркера, живого воркера) и при этом ничего не упало.
+«Не смог проверить» никогда не считается проходом. Набор, выключенный `-SkipGo`, в таблице и в строке
+вердикта значится как **SKIPPED**, а не как пройденный. Последняя строка прогона - вердикт, например
+`Run-AllTests: PASS (4 passed)` или `Run-AllTests: COULD NOT VERIFY (not verified: worker-go, 3 passed)`.
+Репозиторий воркера по умолчанию ищется рядом с этим (`..\fms_companion`); другой путь - `-WorkerRepo`
+или переменная `FMS_WORKER_REPO`.
+
+Какой раннер владеет какой проверкой, записано в [tools/check-placement.jsonl](../../tools/check-placement.jsonl)
+(контракт `CHECK-PLACEMENT`), и `tools/Test-CheckPlacement.ps1` в каждом прогоне сверяет реестр с кодом
+раннеров в обе стороны.
 
 | # | Программа | Рантайм | Проект/набор | Команда |
 |---|---|---|---|---|
 | 1 | Сортировщик (LITE) | net48 (x86-собрат) | `tests/Lite.Tests` (xUnit) | `dotnet test` |
 | 2 | Менеджер воркера / Share Manager | net10.0-windows | `tests/Companion.Tests` (xUnit) | `dotnet test` |
 | 3 | SFTP-воркер | Go | `P:\windows\fms_companion` | `go test ./...` |
+| + | Реестр размещения проверок | PowerShell | `tools/Test-CheckPlacement.ps1` | всегда |
 | + | Живой протокол (интеграция) | PowerShell | `tests/Integration/WorkerRoundTrip.ps1` | `-Integration` |
+| + | OCR-сцены на собранном вьювере | PowerShell | `tests/Integration/OcrOverlayScenes.ps1` | `-OcrScenes` |
+| + | Повышенный помощник службы | PowerShell (администратор) | `tests/Integration/ShareServiceHelper.ps1` | запуск вручную, §5 |
 
 **Сортировщик теперь два exe.** Мейнлайн `FastMediaSorter_LITE.exe` (net10, x64,
 `src/Modern/FastMediaSorter.Modern.vbproj`) и `FastMediaSorter_x86.exe` (net48,
@@ -170,9 +185,29 @@ shares) и `internal/service`. Оркестратор явно печатает 
 
 Framework-free проверка: коннектится к `\\.\pipe\fms-companion` запущенного воркера,
 шлёт `GetStatus`, валидирует форму ответа (Appendix A). **Только чтение** - никаких
-`SetSharedFolders`, `shares.json` пользователя не трогается. Если воркер не запущен -
-SKIP (exit 0), а не падение: запустите Share Manager (или воркер) и повторите с
-`-Integration`.
+`SetSharedFolders`, `shares.json` пользователя не трогается. Если воркер не запущен, проверять
+нечего: `WorkerRoundTrip: COULD NOT VERIFY`, exit 2 - не проход и не падение. Запустите Share
+Manager (или воркер) и повторите с `-Integration`.
+
+---
+
+## 5. Повышенный помощник службы - `tests/Integration/ShareServiceHelper.ps1`
+
+Проверки `publishing/installer/install-share-service.ps1` из тикета 054 (H-09, H-13, H-14).
+**Нужна PowerShell с правами администратора**; без них скрипт пишет `NOT RUN` и выходит с
+кодом 2 («не удалось проверить»), а не 0. В `Run-AllTests.ps1` не входит: оркестратор работает
+без прав администратора.
+
+- Всегда (служба не затрагивается, всё во временном каталоге под `%ProgramData%`, добавленные
+  ACE снимаются): `grant-roots` выходит с кодом 12, а не 0, если хоть одна папка не выдана
+  (её нет, или это системная папка), пишет причину и выдаёт остальные; перевыдача при
+  start/restart (`Grant-StateRoots`, загружается из самого помощника) касается только папок из
+  защищённого реестра одобренных и не выдаёт ничего, если реестр эту защиту потерял.
+- Только с `-ServiceInstall` и только если служба `FastMediaSorterCompanionSFTP` **не**
+  зарегистрирована (то есть на ВМ): `install` регистрирует службу от `NT AUTHORITY\LocalService`,
+  затем `remove` её снимает - вместе с правилом брандмауэра «FastMediaSorter Companion SFTP».
+
+Коды возврата: 0 - всё прошло, 1 - проверка упала, 2 - не проверено.
 
 ---
 

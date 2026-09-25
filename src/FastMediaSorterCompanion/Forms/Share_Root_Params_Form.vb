@@ -76,7 +76,15 @@ Public Class Share_Root_Params_Form
         UiLanguage.ApplyTo(Me)
         Me.Text = Localization.TF("Параметры ресурса - {0}", _folderName)
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
-        AddHandler Me.FormClosed, Sub() ShareIcons.FreeIcon(Me.Icon, _iconHandle)
+        ' Created before the close hook below can reference it: the tooltip keeps a
+        ' native window and references to the controls it serves, so it is disposed with
+        ' the dialog rather than left to finalization (ticket 054 H-20).
+        Dim tip As New ToolTip()
+        AddHandler Me.FormClosed,
+            Sub()
+                Try : tip.Dispose() : Catch : End Try
+                ShareIcons.FreeIcon(Me.Icon, _iconHandle)
+            End Sub
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
         Me.MinimizeBox = False
@@ -84,8 +92,6 @@ Public Class Share_Root_Params_Form
         Me.StartPosition = FormStartPosition.CenterParent
         ' Fallback size; OnLoad measures the real content and caps it to the screen.
         Me.ClientSize = New Size(500, 620)
-
-        Dim tip As New ToolTip()
 
         ' Not docked/AutoSize-Fill: it must be free to grow taller than the window so the
         ' AutoScroll host below can scroll it. Anchored top-left, sized to its content.
@@ -152,7 +158,7 @@ Public Class Share_Root_Params_Form
         AddFullRow(tlp, chkReadOnly, r) : r += 1
         chkSoftReadOnly = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2),
             .Text = Localization.T("Публиковать как «только чтение» - подсказка приложению (сервер не блокирует)")}
-        tip.SetToolTip(chkSoftReadOnly, Localization.T("Приложение спрячет кнопки изменения, но сервер запись не запрещает."))
+        tip.SetToolTip(chkSoftReadOnly, Localization.T("Приложение спрячет кнопки изменения, но сервер запись не запрещает. На папку-получатель не действует."))
         AddFullRow(tlp, chkSoftReadOnly, r) : r += 1
         chkDestination = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 0),
             .Text = Localization.T("Папка-получатель - в неё можно копировать и переносить с телефона")}
@@ -337,6 +343,9 @@ Public Class Share_Root_Params_Form
 
     Private Sub UpdateDestinationEnabled()
         lblDestNote.Visible = chkDestination.Checked
+        ' A destination ignores the soft hint (ShareRootParams.AdvertisedReadOnly, ticket 034
+        ' phase 2): greyed, never cleared, so unticking "destination" brings it back.
+        chkSoftReadOnly.Enabled = Not chkDestination.Checked
     End Sub
 
 End Class

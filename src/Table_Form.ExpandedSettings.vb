@@ -98,12 +98,10 @@ Partial Public Class Table_Form
                            Sub(v) p.CreateMissingDestination = v)
         AddPreferenceCheck(files, "delete_to_recycle_bin", p.DeleteToRecycleBin, Sub(v) p.DeleteToRecycleBin = v)
         AddPreferenceChoice(files, "confirm_delete", p.ConfirmDelete,
-                            {Choice("always", "Всегда"), Choice("permanentOnly", "Только если файл не попадёт в Корзину"), Choice("never", "Никогда")}, Sub(v) p.ConfirmDelete = v)
-        ' With the two deletion rows, because it guards a deletion: "Replace with video"
-        ' removes the original permanently. The confirmation's own checkbox is what turns
-        ' this off; this row is the only way back on
-        ' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §10.1).
-        AddPreferenceCheck(files, "to_video_confirm", p.ConfirmReplaceWithVideo, Sub(v) p.ConfirmReplaceWithVideo = v)
+                            {Choice("always", "Всегда"), Choice("permanentOnly", "Только если файл не попадёт в Корзину")}, Sub(v) p.ConfirmDelete = v)
+        ' No "Never" and no "ask before Replace with video" row (ticket 028 Ф-5, APP-BEHAVIOUR
+        ' rule 5): both would switch off the question guarding a deletion nothing can undo.
+        ' The replace confirmation's own checkbox now lasts for the session only.
         AddPreferenceCheck(files, "include_subfolders", p.IncludeSubfolders, Sub(v) p.IncludeSubfolders = v)
         AddFileTypesRow(files, p)
         AddHotkeysRow(files, p)
@@ -123,6 +121,18 @@ Partial Public Class Table_Form
         AddPreferenceNumber(files, "archive_cache_limit", p.ArchiveCacheMaxMb, 100, 16384, Sub(v) p.ArchiveCacheMaxMb = v)
         AddPreferenceNumber(files, "archive_entry_limit", p.ArchiveMaxEntryMb, 16, 4096, Sub(v) p.ArchiveMaxEntryMb = v)
         AddPreferenceNumber(files, "archive_entries_limit", p.ArchiveMaxEntries, 100, 100000, Sub(v) p.ArchiveMaxEntries = v)
+
+        ' Secure containers (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §8, §9).
+        ' Four rows and not one of them stores a credential, a derived key or a sealed true
+        ' name - the whole feature keeps those in memory and nowhere else.
+        AddSectionHeader(files, "section_secure")
+        AddPreferenceCheck(files, "secure_in_navigation", p.SecureIncludeInNavigation,
+                           Sub(v) p.SecureIncludeInNavigation = v)
+        AddPreferenceNumber(files, "secure_remember_minutes", p.SecureRememberMinutes, 0, 480,
+                            Sub(v) p.SecureRememberMinutes = v)
+        AddPreferenceCheck(files, "secure_show_true_name", p.SecureShowTrueName,
+                           Sub(v) p.SecureShowTrueName = v)
+        AddSecureAssociationRow(files)
 
         AddPreferenceNumber(ocr, "ocr_cache_limit", p.OcrDiskCacheMaxMb, 0, 1024, Sub(v) p.OcrDiskCacheMaxMb = v)
         AddOcrCacheRow(ocr)
@@ -231,6 +241,40 @@ Partial Public Class Table_Form
                 Main_Form.OpenHistoryEntry(chosen)
             End Sub
         AddSettingRow(files, "recent_history", button, 230, True)
+    End Sub
+
+    ''' <summary>
+    ''' The Explorer opt-in of §8, and both directions from the same place.
+    '''
+    ''' A button, not a checkbox (ticket 028 Ф-5, APP-BEHAVIOUR rule 12): pressing it
+    ''' writes the registry there and then, and an operation does not ride on a checkbox in
+    ''' a window of values. Its caption is the action it will take, derived from the
+    ''' registry every time, so a user who removed the entry in Explorer sees "Add".
+    ''' It adds this viewer to "Open with" and takes nothing away - .fd-sec belongs to
+    ''' whatever already owns it, and FileDO owns it correctly.
+    ''' </summary>
+    Private Sub AddSecureAssociationRow(files As FlowLayoutPanel)
+        Dim button As New Button With {.AutoSize = True}
+        Dim refresh As Action =
+            Sub()
+                button.Text = If(Main_Form.IsSecureContainerOpenWithRegistered(),
+                                 Localization.T("Убрать из «Открыть с помощью»"),
+                                 Localization.T("Добавить в «Открыть с помощью»"))
+            End Sub
+        refresh()
+        AddHandler button.Click,
+            Sub()
+                Dim ok As Boolean = If(Main_Form.IsSecureContainerOpenWithRegistered(),
+                                       Main_Form.UnregisterSecureContainerOpenWith(),
+                                       Main_Form.RegisterSecureContainerOpenWith())
+                If Not ok Then
+                    MessageBox.Show(Me, Localization.T("Не удалось изменить запись в реестре"),
+                                    Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                End If
+                ' Whatever the registry actually says now, not what was asked for.
+                refresh()
+            End Sub
+        AddSettingRow(files, "secure_open_with", button, 230, True)
     End Sub
 
     ''' <summary>§7.3. The number above sets the budget; this row says what the cache
@@ -352,7 +396,8 @@ Partial Public Class Table_Form
                         File.WriteAllText(dialog.FileName, Main_Form.GetModernPreferences().ExportJson(exportPersonalData))
                         MessageBox.Show(Me, Localization.T("Настройки экспортированы."), Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Information)
                     Catch ex As Exception
-                        MessageBox.Show(Me, Localization.TF("Не удалось экспортировать настройки: {0}", ex.Message), Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
+                        AppFileLogger.LogException("Settings export", ex)
+                        MessageBox.Show(Me, Localization.TF("Не удалось экспортировать настройки: {0}", FailureText.Describe(ex)), Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
                     End Try
                 End Using
             End Sub
@@ -376,17 +421,24 @@ Partial Public Class Table_Form
             Try
                 imported = ModernViewerPreferences.FromJson(File.ReadAllText(dialog.FileName))
             Catch ex As Exception
-                MessageBox.Show(Me, Localization.TF("Не удалось импортировать настройки: {0}", ex.Message),
+                AppFileLogger.LogException("Settings import", ex)
+                MessageBox.Show(Me, Localization.TF("Не удалось импортировать настройки: {0}", FailureText.Describe(ex)),
                                 Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Return
             End Try
 
             Dim current As ModernViewerPreferences = Main_Form.GetModernPreferences()
             Dim changes As List(Of String) = DescribeDifferences(current, imported)
-            Dim summary As String = If(changes.Count = 0,
-                Localization.T("Файл прочитан. Отличий от текущих настроек нет."),
+            If changes.Count = 0 Then
+                ' Nothing to import is reported, not confirmed (APP-BEHAVIOUR rule 5, ticket
+                ' 028 Ф-5): no question, no backup, no write.
+                MessageBox.Show(Me, Localization.T("Файл прочитан. Отличий от текущих настроек нет."),
+                                Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+            Dim summary As String =
                 Localization.TF("Файл прочитан. Изменится параметров: {0}.", changes.Count) & vbCrLf & vbCrLf &
-                String.Join(vbCrLf, changes.Take(12)))
+                String.Join(vbCrLf, changes.Take(12))
 
             ' Yes = replace everything the document describes, No = merge only what differs
             ' from the shipped defaults, so a partial file cannot silently reset the rest.
@@ -399,7 +451,8 @@ Partial Public Class Table_Form
             Try
                 File.WriteAllText(backup, current.ExportJson(includePersonalData:=True))
             Catch ex As Exception
-                MessageBox.Show(Me, Localization.TF("Не удалось создать резервную копию: {0}", ex.Message),
+                AppFileLogger.LogException("Settings import backup", ex)
+                MessageBox.Show(Me, Localization.TF("Не удалось создать резервную копию: {0}", FailureText.Describe(ex)),
                                 Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Return
             End Try
@@ -410,6 +463,10 @@ Partial Public Class Table_Form
             MessageBox.Show(Me, Localization.TF("Настройки импортированы. Резервная копия: {0}", backup) & vbCrLf &
                                 Localization.T("Масштаб интерфейса и режим запуска применятся после перезапуска."),
                             Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ' Every row of this window still shows the value it was built with. Rebuild the
+            ' window, the way a scale change does, so what is on screen is what was imported.
+            Main_Form.RequestSettingsWindowRestart()
+            Close()
         End Using
     End Sub
 
@@ -439,12 +496,8 @@ Partial Public Class Table_Form
         Return copy
     End Function
 
-    ''' <summary>The scalar preferences, which is every property the profile stores. The
-    ''' nested entry classes are not properties of this type, so nothing else gets in.</summary>
     Private Shared Function WritableProperties() As IEnumerable(Of Reflection.PropertyInfo)
-        Return GetType(ModernViewerPreferences).
-            GetProperties(Reflection.BindingFlags.Public Or Reflection.BindingFlags.Instance).
-            Where(Function(prop) prop.CanRead AndAlso prop.CanWrite)
+        Return ModernViewerPreferences.WritableProperties()
     End Function
 
     Private Shared Function DescribeDifferences(current As ModernViewerPreferences, imported As ModernViewerPreferences) As List(Of String)

@@ -3,6 +3,7 @@ Option Strict On
 Imports System.Diagnostics
 Imports System.IO
 Imports System.Reflection
+Imports System.Runtime.InteropServices
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
@@ -25,6 +26,12 @@ Friend Module AppFileLogger
     Private isInitialized As Boolean = False
     Private logPathValue As String = ""
 
+    Public ReadOnly Property IsReady As Boolean
+        Get
+            Return isInitialized
+        End Get
+    End Property
+
     Public ReadOnly Property LogFilePath As String
         Get
             Return logPathValue
@@ -42,8 +49,11 @@ Friend Module AppFileLogger
 
                 RotateIfOversized(logPathValue)
 
-                Dim fileStream As New FileStream(logPathValue, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)
-                logWriter = New StreamWriter(fileStream)
+                ' Append-only, not FileMode.Append: Append seeks to the end ONCE, at open,
+                ' and each handle then writes at its own offset - a second process (the
+                ' forwarding launch, a second window) overwrote this one's lines and this
+                ' one overwrote its (053 F-11). An append-only handle always writes at EOF.
+                logWriter = New StreamWriter(OpenAppendOnly(logPathValue))
                 logWriter.AutoFlush = True
                 logListener = New TextWriterTraceListener(logWriter)
 #If NETFRAMEWORK Then
@@ -132,12 +142,58 @@ Friend Module AppFileLogger
 
             ' One generation back, not a numbered series: the previous session is what an
             ' incident report needs, and a series is another thing that grows.
+            '
+            ' Move current.log aside FIRST and only then replace previous.log. The other
+            ' order deleted previous.log and then failed the move whenever another
+            ' instance held current.log - destroying a generation without rotating
+            ' (053 F-11). A locked file now leaves both untouched and keeps growing until
+            ' a start where it is free.
+            Dim staging As String = Path.Combine(folder, "previous.log.rotating")
+            If File.Exists(staging) Then File.Delete(staging)
+            Try
+                File.Move(log_Path, staging)
+            Catch
+                Return False
+            End Try
             If File.Exists(rolled) Then File.Delete(rolled)
-            File.Move(log_Path, rolled)
+            File.Move(staging, rolled)
             Return True
         Catch
             Return False
         End Try
+    End Function
+
+    Private Const FILE_APPEND_DATA As UInteger = &H4UI
+    Private Const SYNCHRONIZE As UInteger = &H100000UI
+    Private Const FILE_SHARE_READ As UInteger = &H1UI
+    Private Const FILE_SHARE_WRITE As UInteger = &H2UI
+    Private Const OPEN_ALWAYS As UInteger = 4UI
+    Private Const FILE_ATTRIBUTE_NORMAL As UInteger = &H80UI
+
+    <DllImport("kernel32.dll", EntryPoint:="CreateFileW", SetLastError:=True,
+                                               CharSet:=CharSet.Unicode)>
+    Private Function CreateFileW(fileName As String, desiredAccess As UInteger, shareMode As UInteger,
+                                 securityAttributes As IntPtr, creationDisposition As UInteger,
+                                 flagsAndAttributes As UInteger, templateFile As IntPtr) As Microsoft.Win32.SafeHandles.SafeFileHandle
+    End Function
+
+    ''' <summary>
+    ''' Opens <paramref name="log_Path"/> for appending only - FILE_APPEND_DATA without
+    ''' FILE_WRITE_DATA - which Windows documents as "write operations will not overwrite
+    ''' existing data": every write lands at the end of the file as it is at that moment,
+    ''' whoever else is appending. Shared for reading and writing, as before, so a second
+    ''' process and the send-logs packer can still open it.
+    ''' </summary>
+    Friend Function OpenAppendOnly(log_Path As String) As Stream
+        Dim handle As Microsoft.Win32.SafeHandles.SafeFileHandle =
+            CreateFileW(log_Path, FILE_APPEND_DATA Or SYNCHRONIZE, FILE_SHARE_READ Or FILE_SHARE_WRITE,
+                        IntPtr.Zero, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, IntPtr.Zero)
+        If handle.IsInvalid Then
+            Dim errorCode As Integer = Marshal.GetLastWin32Error()
+            handle.Dispose()
+            Throw New IOException("Cannot open the log for appending: " & log_Path, New System.ComponentModel.Win32Exception(errorCode))
+        End If
+        Return New AppendOnlyFileStream(handle)
     End Function
 
     Private Function ResolveLogPath() As String
@@ -166,8 +222,25 @@ Friend Module AppFileLogger
         Return Path.Combine(fallbackDir, "current.log")
     End Function
 
+    ''' <summary>
+    ''' Set by the main window: says on screen that something failed. Attaching ANY handler
+    ''' to Application.ThreadException stops WinForms from showing its own dialog and keeps
+    ''' the loop running, so an exception from a handler - a half-done move, a half-built
+    ''' list - used to leave the app in whatever state it reached with nothing visible
+    ''' (053 F-15). The log alone is not enough; the user has to know to look.
+    ''' </summary>
+    Friend UiFaultReporter As Action(Of Exception)
+
     Private Sub OnThreadException(sender As Object, e As Threading.ThreadExceptionEventArgs)
         LogException("UI thread exception", e.Exception)
+        Dim reporter As Action(Of Exception) = UiFaultReporter
+        If reporter Is Nothing Then Return
+        Try
+            reporter(e.Exception)
+        Catch ex As Exception
+            ' The reporter failing must not become a second fault on the same thread.
+            LogException("UI fault reporter", ex)
+        End Try
     End Sub
 
     Private Sub OnUnhandledException(sender As Object, e As UnhandledExceptionEventArgs)
@@ -215,3 +288,95 @@ Friend Module AppFileLogger
     End Sub
 
 End Module
+
+''' <summary>
+''' A write-only stream over an append-only handle, calling WriteFile itself. Not a
+''' FileStream around the handle: FileStream tracks its own position - net48 checks it
+''' against the OS pointer before a write and throws once another process has appended,
+''' and .NET writes at the tracked offset - and both assumptions are wrong for a file that
+''' several processes append to. WriteFile on this handle always writes at EOF.
+''' </summary>
+Friend NotInheritable Class AppendOnlyFileStream
+    Inherits Stream
+
+    Private ReadOnly handle As Microsoft.Win32.SafeHandles.SafeFileHandle
+
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Private Shared Function WriteFile(file As Microsoft.Win32.SafeHandles.SafeFileHandle, buffer As Byte(),
+                                      bytesToWrite As Integer, ByRef bytesWritten As Integer,
+                                      overlapped As IntPtr) As Boolean
+    End Function
+
+    Friend Sub New(handle As Microsoft.Win32.SafeHandles.SafeFileHandle)
+        Me.handle = handle
+    End Sub
+
+    Public Overrides ReadOnly Property CanRead As Boolean
+        Get
+            Return False
+        End Get
+    End Property
+
+    Public Overrides ReadOnly Property CanSeek As Boolean
+        Get
+            Return False
+        End Get
+    End Property
+
+    Public Overrides ReadOnly Property CanWrite As Boolean
+        Get
+            Return Not handle.IsClosed
+        End Get
+    End Property
+
+    Public Overrides ReadOnly Property Length As Long
+        Get
+            Throw New NotSupportedException()
+        End Get
+    End Property
+
+    Public Overrides Property Position As Long
+        Get
+            Throw New NotSupportedException()
+        End Get
+        Set(value As Long)
+            Throw New NotSupportedException()
+        End Set
+    End Property
+
+    Public Overrides Sub Write(buffer As Byte(), offset As Integer, count As Integer)
+        If buffer Is Nothing Then Throw New ArgumentNullException(NameOf(buffer))
+        If count <= 0 Then Return
+        Dim chunk As Byte() = buffer
+        If offset <> 0 OrElse count <> buffer.Length Then
+            chunk = New Byte(count - 1) {}
+            Array.Copy(buffer, offset, chunk, 0, count)
+        End If
+        Dim written As Integer = 0
+        If Not WriteFile(handle, chunk, count, written, IntPtr.Zero) Then
+            Throw New IOException("Writing the log failed.",
+                                  New System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error()))
+        End If
+    End Sub
+
+    Public Overrides Sub Flush()
+        ' Nothing is buffered here: every Write is one WriteFile.
+    End Sub
+
+    Public Overrides Function Read(buffer As Byte(), offset As Integer, count As Integer) As Integer
+        Throw New NotSupportedException()
+    End Function
+
+    Public Overrides Function Seek(offset As Long, origin As SeekOrigin) As Long
+        Throw New NotSupportedException()
+    End Function
+
+    Public Overrides Sub SetLength(value As Long)
+        Throw New NotSupportedException()
+    End Sub
+
+    Protected Overrides Sub Dispose(disposing As Boolean)
+        If disposing Then handle.Dispose()
+        MyBase.Dispose(disposing)
+    End Sub
+End Class

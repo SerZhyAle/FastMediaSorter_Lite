@@ -439,8 +439,9 @@ Partial Friend NotInheritable Class Image_Editor_Form
                 If (Control.ModifierKeys And Keys.Shift) = Keys.Shift Then
                     corner = EditorGeometry.ConstrainToSquare(gesture_Anchor, imagePoint)
                 End If
-                crop_Rect = EditorGeometry.ClampCropRect(
-                    EditorGeometry.NormalizeDrag(gesture_Anchor, corner), image_Bitmap.Size)
+                ' Inclusive of the corner pixel, like a resize (audit 052 G-11): the last
+                ' column and row can be in a freshly drawn frame.
+                crop_Rect = EditorGeometry.CropFromDrag(gesture_Anchor, corner, image_Bitmap.Size)
 
             Case EditorGeometry.CropHandle.Inside
                 crop_Rect = EditorGeometry.MoveCrop(crop_Drag_Start_Rect,
@@ -572,7 +573,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
             cropped = EditorImageOps.CropTo(image_Bitmap, rect)
         Catch ex As Exception
             AppFileLogger.LogException("Image editor: applying the crop", ex)
-            SetStatus(Localization.TF("Не удалось обрезать: {0}", ex.Message))
+            SetStatus(Localization.TF("Не удалось обрезать: {0}", FailureText.Describe(ex)))
             Return
         End Try
         If cropped Is Nothing Then Return
@@ -839,8 +840,22 @@ Partial Friend NotInheritable Class Image_Editor_Form
         Friend ReadOnly Tool As EditorTool
         Private is_Selected As Boolean
 
+        ''' <summary>The control name the icon map knows this tool by (spec 027): the
+        ''' vocabulary picture and the accessible name both come from that entry.</summary>
+        Friend Shared Function MapName(forTool As EditorTool) As String
+            Select Case forTool
+                Case EditorTool.Crop : Return "editor_Tool_Crop"
+                Case EditorTool.RectangleOutline : Return "editor_Tool_Rectangle"
+                Case EditorTool.RectangleFilled : Return "editor_Tool_Rectangle_Filled"
+                Case EditorTool.EllipseOutline : Return "editor_Tool_Oval"
+                Case EditorTool.EllipseFilled : Return "editor_Tool_Oval_Filled"
+                Case Else : Return "editor_Tool_Brush"
+            End Select
+        End Function
+
         Friend Sub New(forTool As EditorTool)
             Me.Tool = forTool
+            Me.Name = MapName(forTool)
             Me.SetStyle(ControlStyles.Selectable, False)
             Me.TabStop = False
             Me.Text = ""
@@ -871,6 +886,18 @@ Partial Friend NotInheritable Class Image_Editor_Form
 
             Dim ink As Color = If(is_Selected, SystemColors.HighlightText, SystemColors.ControlText)
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias
+
+            ' A tool with a vocabulary meaning draws the catalog's picture at the 20 tier
+            ' (spec 027, phase 6). The two filled variants have none yet - they wait for
+            ' the desktop-meanings proposal and keep the GDI+ drawing below meanwhile.
+            Dim meaning As IconMeaning = IconMap.GetMeaning(Me.Name)
+            If meaning IsNot Nothing AndAlso meaning.IsVocabulary Then
+                Const Tier As Integer = 20
+                Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, Tier, ink, AddressOf RuntimeBootstrap.OpenBundledAsset)
+                    e.Graphics.DrawImage(glyph, (Me.ClientSize.Width - Tier) \ 2, (Me.ClientSize.Height - Tier) \ 2, Tier, Tier)
+                End Using
+                Return
+            End If
 
             Using pen As New Pen(ink, 2.0F), fill As New SolidBrush(ink)
                 Select Case Tool

@@ -54,10 +54,32 @@ Public Module FolderAccess
     Public Function NeedsGrant(hostPath As String, writable As Boolean) As Boolean
         If String.IsNullOrWhiteSpace(hostPath) Then Return False
         Dim path As String = hostPath.Trim()
-        If path.StartsWith("\\", StringComparison.Ordinal) Then Return False
+        If IsNetworkPath(path) Then Return False
         If Not Directory.Exists(path) Then Return False
 
         Return Verdict(path, RequiredRights(writable)) = AccessVerdict.Missing
+    End Function
+
+    ''' <summary>
+    ''' A folder on the network - a UNC path, or a MAPPED drive letter (ticket 054 H-19). The
+    ''' second looked local to every check here: Directory.Exists answers for the user who
+    ''' mapped it, the DACL read reached the remote server, a grant was asked for, and the
+    ''' elevated helper - which does not see this logon session's drive letters - skipped it
+    ''' while the service, anonymous on the network, could never serve it. The drive type is
+    ''' read through <paramref name="driveProbe"/> so the rule is testable without a network.
+    ''' </summary>
+    Public Function IsNetworkPath(path As String, Optional driveProbe As Func(Of String, DriveType) = Nothing) As Boolean
+        If String.IsNullOrWhiteSpace(path) Then Return False
+        Dim p As String = path.Trim()
+        If p.StartsWith("\\", StringComparison.Ordinal) OrElse p.StartsWith("//", StringComparison.Ordinal) Then Return True
+        If p.Length < 2 OrElse p(1) <> ":"c OrElse Not Char.IsLetter(p(0)) Then Return False
+        Dim root As String = p.Substring(0, 2) & "\"
+        Try
+            Dim kind As DriveType = If(driveProbe IsNot Nothing, driveProbe(root), New DriveInfo(root).DriveType)
+            Return kind = DriveType.Network
+        Catch
+            Return False
+        End Try
     End Function
 
     ''' <summary>What the DACL of one folder says about the service account.</summary>
@@ -93,6 +115,11 @@ Public Module FolderAccess
             For Each rule As FileSystemAccessRule In rules
                 Dim sid As String = CType(rule.IdentityReference, SecurityIdentifier).Value
                 If Array.IndexOf(Service_Sids, sid) < 0 Then Continue For
+                ' An inherit-only entry speaks for what is created INSIDE the folder, not for
+                ' the folder itself - a secondary drive root's default "Authenticated Users:
+                ' (OI)(CI)(IO)(M)" read as write access to the root and no grant was offered
+                ' (ticket 054 H-21). Skipped for Allow and Deny alike.
+                If (rule.PropagationFlags And PropagationFlags.InheritOnly) <> 0 Then Continue For
                 If rule.AccessControlType = AccessControlType.Deny AndAlso
                    (rule.FileSystemRights And needed) <> 0 Then Return AccessVerdict.Denied
                 If rule.AccessControlType = AccessControlType.Allow Then
@@ -117,6 +144,20 @@ Public Module FolderAccess
             If NeedsGrant(r.hostPath, Not r.readOnly) Then needy.Add(r)
         Next
         Return needy
+    End Function
+
+    ''' <summary>The roots the SERVICE can never serve because they are on the network (a UNC
+    ''' path or a mapped drive) - no grant fixes them, so they are reported apart from
+    ''' <see cref="RootsNeedingGrant"/>. Empty outside Server mode, where the worker runs as
+    ''' the user and sees their mapped drives.</summary>
+    Public Function NetworkRootsInServerMode(roots As IEnumerable(Of ShareFolder)) As List(Of ShareFolder)
+        Dim found As New List(Of ShareFolder)()
+        If roots Is Nothing Then Return found
+        If ServerFeatures.HostMode() <> ServerFeatures.ServerHostMode.SystemService Then Return found
+        For Each r As ShareFolder In roots
+            If r IsNot Nothing AndAlso IsNetworkPath(r.hostPath) Then found.Add(r)
+        Next
+        Return found
     End Function
 
     ''' <summary>Default ceiling for a subtree scan. A share can be a whole disk, and
@@ -179,7 +220,7 @@ Public Module FolderAccess
         ' A UNC root cannot be fixed by an ACL here (LOCAL SERVICE authenticates
         ' anonymously on the network), so scanning one would only produce findings
         ' nothing in this app can act on.
-        If root.StartsWith("\\", StringComparison.Ordinal) Then Return result
+        If IsNetworkPath(root) Then Return result
         If Not Directory.Exists(root) Then Return result
 
         Dim limit As TimeSpan = If(budget = TimeSpan.Zero, Default_Scan_Budget, budget)

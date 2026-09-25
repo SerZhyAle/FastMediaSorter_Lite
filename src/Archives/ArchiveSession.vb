@@ -120,14 +120,52 @@ Friend NotInheritable Class ArchiveSession
         stream_Of_Archive = New FileStream(archivePath, FileMode.Open, FileAccess.Read,
                                            FileShare.ReadWrite Or FileShare.Delete)
         Try
-            archive = SharpCompress.Archives.ArchiveFactory.OpenArchive(
-                stream_Of_Archive, New SharpCompress.Readers.ReaderOptions())
-            BuildEntryList(isSupportedMedia, maxEntries)
+            archive = SharpCompress.Archives.ArchiveFactory.OpenArchive(stream_Of_Archive, ReaderOptionsForLegacyNames())
+            ' The openable set is decided by EXTENSION, but the factory detects the format by
+            ' CONTENT - and a RAR or 7z renamed .cbz is common. A solid RAR refuses random
+            ' access (every page "broken"), a 7z unpacks its solid block from the start for
+            ' every page on the UI thread: exactly the Ф2 cost 010 kept out. Refused by name
+            ' instead, with no entries (audit 052 G-15).
+            If archive.Type <> SharpCompress.Common.ArchiveType.Zip Then
+                unsupported_Kind = archive.Type.ToString()
+            Else
+                BuildEntryList(isSupportedMedia, maxEntries)
+            End If
         Catch
+            If archive IsNot Nothing Then archive.Dispose()
             stream_Of_Archive.Dispose()
             Throw
         End Try
     End Sub
+
+    ''' <summary>
+    ''' G-16: names stored WITHOUT the ZIP UTF-8 flag are in the OEM code page of the machine
+    ''' that made the archive - CP866 for Explorer or WinRAR on Russian or Ukrainian Windows.
+    ''' SharpCompress would read them as CP437 and show box-drawing garbage; this machine's
+    ''' OEM code page is what Explorer and 7-Zip assume, and names that DO carry the flag
+    ''' are still read as UTF-8.
+    ''' </summary>
+    Friend Shared Function ReaderOptionsForLegacyNames() As SharpCompress.Readers.ReaderOptions
+        Dim options As New SharpCompress.Readers.ReaderOptions()
+        Try
+            Text.Encoding.RegisterProvider(Text.CodePagesEncodingProvider.Instance)
+            Dim oem As Text.Encoding = Text.Encoding.GetEncoding(Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage)
+            options.ArchiveEncoding = New SharpCompress.Common.ArchiveEncoding() With {.Default = oem}
+        Catch ex As Exception
+            ' No such code page on this machine: the library's own default is the fallback.
+            AppFileLogger.WriteLine("Archive: OEM code page not available - " & ex.Message)
+        End Try
+        Return options
+    End Function
+
+    ''' <summary>The detected format when it is not ZIP ("Rar", "SevenZip", ..), otherwise
+    ''' empty. A session with a kind here has no entries and must not be browsed.</summary>
+    Friend ReadOnly Property UnsupportedKind As String
+        Get
+            Return unsupported_Kind
+        End Get
+    End Property
+    Private unsupported_Kind As String = ""
 
     ''' <summary>
     ''' True when the archive was opened but every entry in it is encrypted - the honest
@@ -218,6 +256,13 @@ Friend NotInheritable Class ArchiveSession
     Private Function EnsureExtractedCore(index As Integer, ByRef refusal As EntryRefusal,
                                          maxEntryBytes As Long, maxCacheBytes As Long) As Boolean
         refusal = EntryRefusal.None
+        ' A late prefetch that reaches here after the archive was left must not recreate the
+        ' session directory that LeaveArchive just deleted - it survived the whole process,
+        ' because the orphan sweep treats our own pid as live (audit 052 G-21).
+        If disposed OrElse closing_Requested Then
+            refusal = EntryRefusal.Broken
+            Return False
+        End If
         If index < 0 OrElse index >= entry_Infos.Count Then
             refusal = EntryRefusal.Broken
             Return False
@@ -260,7 +305,7 @@ Friend NotInheritable Class ArchiveSession
             Directory.CreateDirectory(temp_Root)
             Using source As Stream = entry.OpenEntryStream()
                 Using target As New FileStream(part, FileMode.Create, FileAccess.Write, FileShare.None)
-                    CopyBounded(source, target, info.Size)
+                    CopyBounded(source, target, info.Size, Function() Threading.Volatile.Read(closing_Requested))
                 End Using
             End Using
 
@@ -334,7 +379,8 @@ Friend NotInheritable Class ArchiveSession
     ''' (§6.2). A bomb declares a modest size and then keeps producing bytes; without this
     ''' the check above would be a suggestion.
     ''' </summary>
-    Private Shared Sub CopyBounded(source As Stream, target As Stream, declaredSize As Long)
+    Private Shared Sub CopyBounded(source As Stream, target As Stream, declaredSize As Long,
+                                   cancelled As Func(Of Boolean))
         ' A little slack: some writers round the stored size, and failing a legitimate
         ' entry over one byte would be worse than writing one byte too many.
         Dim ceiling As Long = declaredSize + 4096L
@@ -342,6 +388,9 @@ Friend NotInheritable Class ArchiveSession
         Dim written As Long = 0
 
         Do
+            ' Checked per block (G-14/G-21): closing the archive stops an extraction in
+            ' flight instead of waiting for a large entry to finish under the lock.
+            If cancelled() Then Throw New OperationCanceledException("The archive was closed during extraction.")
             Dim read As Integer = source.Read(buffer, 0, buffer.Length)
             If read <= 0 Then Exit Do
             written += read
@@ -353,18 +402,28 @@ Friend NotInheritable Class ArchiveSession
         Loop
     End Sub
 
+    ''' <summary>Set before the lock is taken, read inside the copy loop: an extraction in
+    ''' flight notices the archive is closing within one block.</summary>
+    Private closing_Requested As Boolean
+
     Public Sub Dispose() Implements IDisposable.Dispose
         If disposed Then Return
-        disposed = True
-        Try
-            If archive IsNot Nothing Then archive.Dispose()
-        Catch ex As Exception
-            AppFileLogger.WriteLine("Archive: closing failed - " & ex.Message)
-        End Try
-        Try
-            If stream_Of_Archive IsNot Nothing Then stream_Of_Archive.Dispose()
-        Catch
-        End Try
+        Threading.Volatile.Write(closing_Requested, True)
+        ' Under the extraction lock (G-21): the archive stream is not closed underneath a
+        ' copy, and nothing can start extracting - or recreate the directory - after this.
+        SyncLock extraction_Gate
+            If disposed Then Return
+            disposed = True
+            Try
+                If archive IsNot Nothing Then archive.Dispose()
+            Catch ex As Exception
+                AppFileLogger.WriteLine("Archive: closing failed - " & ex.Message)
+            End Try
+            Try
+                If stream_Of_Archive IsNot Nothing Then stream_Of_Archive.Dispose()
+            Catch
+            End Try
+        End SyncLock
     End Sub
 
 End Class

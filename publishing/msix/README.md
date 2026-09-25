@@ -69,19 +69,27 @@ the Companion are `dotnet publish` outputs, not MSBuild ones.
   -PublisherDisplayName "<PublisherDisplayName from Partner Center>"
 ```
 
-`-ReleaseVersion` pins the packaged exes to the version of the release this package belongs to.
-Leave it out and both projects stamp the current minute instead, so a package built after the tag
-carries a version no other artifact of that release has. Only a throwaway local build should omit it.
+`-ReleaseVersion` pins the packaged exes to the version of the release this package belongs to: it is
+passed to the MSBuild run and to both `dotnet publish` runs, and the MSIX version is derived from it.
+Leave it out and the builds stamp the current minute instead, so a package built after the tag carries
+a version no other artifact of that release has - the script warns when a Store (unsigned) build omits
+it. Only a throwaway local build should. (The Share Manager exe carries the stamp only once its own
+project reads `ReleaseVersion`; until then it reports 1.0.0.0 - ticket 055 I-08.)
 
 What the script packages (order matters - see [BUILD_AND_RELEASE.md](../../docs/guides/BUILD_AND_RELEASE.md)):
 
 1. MSBuild Release, whose `bin\Release` tree supplies the **support payload** (LibVLC, `tessdata`,
-   flags). Its `FastMediaSorter_x86.exe` output is filtered out of the stage.
+   flags). Everything that exists only for the x86 fallback is filtered out of the stage, since this
+   package carries no x86 viewer: `FastMediaSorter_x86.exe` and its `.exe.config`, the net48 managed
+   assemblies MSBuild copies loose beside it (LibVLCSharp, ImageSharp 2, Tesseract, QRCoder, the
+   `System.*` shims) and the 32-bit native trees (`x86\`, `libvlc\win-x86\`, `runtimes\win-x86\`) -
+   the last ones regardless of `-SkipOcrPayload`.
 2. `dotnet publish src\Modern\FastMediaSorter.Modern.vbproj -c Release -r win-x64` - this is the
    **only** step that produces the mainline `FastMediaSorter_LITE.exe` the manifest points at.
    MSBuild alone never yields it, so a `-NoBuild` run still publishes the viewer.
 3. `dotnet publish` of the Companion, plus the committed Go SFTP worker into `companion\`.
-4. `Prepare-OcrOfflinePayload.ps1` (trims the x86-only native trees), logos, manifest, `makeappx`.
+4. `Prepare-OcrOfflinePayload.ps1` (the OCR models, pinned and hash-checked against
+   `tools/tessdata.sha256`), logos, manifest, `makeappx`.
 
 Output: `publishing/msix/dist/FastMediaSorter_LITE-<version>-x64.msix`, **unsigned** - that's correct, upload it
 as-is. The package version is read from **the published mainline exe** (not the MSBuild output): its

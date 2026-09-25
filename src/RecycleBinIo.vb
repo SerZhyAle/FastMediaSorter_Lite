@@ -116,6 +116,23 @@ Friend Module RecycleBinIo
     End Function
 
     ''' <summary>
+    ''' Does the bin hold a record of this deletion - a $I naming the path, stamped no
+    ''' earlier than <paramref name="deletedAtUtc"/> (less the clock tolerance), with its
+    ''' $R data still there? Asked straight after <see cref="SendToBin"/> (audit 047, C-09):
+    ''' "no" means the shell deleted the file for good, and the user has to be told so
+    ''' rather than shown "moved to the Recycle Bin". An unreadable bin also answers "no" -
+    ''' the safe direction, a scarier message than necessary and never a false promise.
+    ''' </summary>
+    Friend Function IsInBin(originalPath As String, deletedAtUtc As DateTime) As Boolean
+        Try
+            Dim record As RecycleBinRecord = FindRecord(originalPath, deletedAtUtc)
+            Return record IsNot Nothing AndAlso Not String.IsNullOrEmpty(record.DataPath) AndAlso File.Exists(record.DataPath)
+        Catch
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>
     ''' The impure half of §3.6: every $I in the SID folder of the ORIGINAL path's volume,
     ''' parsed, then matched by RecycleBinIndex. Per-volume and per-user is how the bin is
     ''' built - a file deleted from D: is never in C:'s bin, and another account's records

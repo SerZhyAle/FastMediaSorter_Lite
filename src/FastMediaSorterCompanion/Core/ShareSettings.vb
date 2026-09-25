@@ -36,8 +36,18 @@ Public Class ShareSettings
     ''' when ON, the exported QR/.fmscfg carries ONLY the LAN accessPath (the WAN
     ''' address is never embedded, even when a port-forward is available). Default
     ''' OFF = the combined [lan, portforward] config (S1006). Distinct from
-    ''' ExternalAccessIntent, which is the wizard's show-internet-section flag.</summary>
+    ''' <see cref="ExternalAccessIntent"/>, which is the wizard's show-internet-section flag.
+    ''' Purely the remembered default of the per-code checkbox since ticket 054 H-06 - it
+    ''' shapes ONE export and has nothing to do with what the server enforces
+    ''' (<see cref="LanOnly"/>).</summary>
     Public Property LanOnlyExport As Boolean = False ' Share_LanOnlyExport
+
+    ''' <summary>The server-wide "LAN only" enforcement, pushed to the worker with
+    ''' SetNetworkPolicy and switched in Settings - Сеть: no UPnP/NAT-PMP mapping, no WAN
+    ''' path. Seeded from the old <c>Share_LanOnlyExport</c> value, which - before the two
+    ''' meanings were split (ticket 054 H-06) - carried this enforcement while living behind
+    ''' a per-code checkbox, so an install that had it on keeps it on.</summary>
+    Public Property LanOnly As Boolean = False       ' Share_LanOnly (seeded from Share_LanOnlyExport)
 
     ''' <summary>The §6 "exclude password" safeguard: export .fmscfg/QR with an
     ''' empty password so the recipient types it at import; the sender passes the
@@ -128,6 +138,7 @@ Public Class ShareSettings
         WorkerEverStarted = ReadBool("Share_WorkerEverStarted", False)
         ExternalAccessIntent = ReadBool("Share_ExternalAccessIntent", True)
         LanOnlyExport = ReadBool("Share_LanOnlyExport", False)
+        LanOnly = ReadBool("Share_LanOnly", ReadBool("Share_LanOnlyExport", False))
         ExcludePasswordFromExport = ReadBool("Share_ExcludePassword", False)
         MaxConnections = ClampConnections(ReadInt("Share_MaxConnections", DefaultMaxConnections))
         ListenPort = ClampPort(ReadInt("Share_ListenPort", UnsetPort))
@@ -146,6 +157,7 @@ Public Class ShareSettings
         WriteBool("Share_WorkerEverStarted", WorkerEverStarted)
         WriteBool("Share_ExternalAccessIntent", ExternalAccessIntent)
         WriteBool("Share_LanOnlyExport", LanOnlyExport)
+        WriteBool("Share_LanOnly", LanOnly)
         WriteBool("Share_ExcludePassword", ExcludePasswordFromExport)
         WriteInt("Share_MaxConnections", ClampConnections(MaxConnections))
         WriteInt("Share_ListenPort", ClampPort(ListenPort))

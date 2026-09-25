@@ -107,9 +107,13 @@ Public Class Qr_Zoom_Form
         Me.BackColor = Color.White
         Me.ClientSize = New Size(clientSide, clientSide)
         Me.KeyPreview = True
+        ' Direction and script font from the language, like the other forms (APP-BEHAVIOUR
+        ' rule 8, ticket 028 Ф-7): the title and the save/copy messages are localized text.
+        UiLanguage.ApplyTo(Me)
 
         _pic = New QrBox With {.Dock = DockStyle.Fill, .SizeMode = PictureBoxSizeMode.Zoom,
-            .Image = img, .BackColor = Color.White, .Cursor = Cursors.Hand}
+            .Image = img, .BackColor = Color.White, .Cursor = Cursors.Hand,
+            .AccessibleName = Localization.T("QR-код для телефона"), .AccessibleRole = AccessibleRole.Graphic}
         AddHandler _pic.MouseClick, AddressOf OnImageMouseClick
         Controls.Add(_pic)
 
