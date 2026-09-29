@@ -11,8 +11,9 @@ Imports System.Security.Cryptography.X509Certificates
 ''' from anybody else is exactly what a planted file would carry.
 '''
 ''' Written for the Ollama installer (audit 051 E-14), the one executable the viewer downloads
-''' and starts itself. Audit 050 D-13 asks for the same check on its own download and should
-''' reuse this module rather than grow a second one.
+''' and starts itself. Audit 050 D-13 closed without a second caller: the runtime packages are
+''' pinned by SHA-256 and the VC++ runtime is only a link the user opens (ticket 037 Ф-3.3). A
+''' future executable download should reuse this module rather than grow a second one.
 ''' </summary>
 Friend Module AuthenticodeCheck
 
@@ -79,7 +80,8 @@ Friend Module AuthenticodeCheck
     Friend Function SignerCommonName(filePath As String) As String
         Try
 #Disable Warning SYSLIB0057 ' The signer of a signed FILE, which is what this API exists for.
-            Using cert As New X509Certificate2(X509Certificate.CreateFromSignedFile(filePath))
+            Using signer As X509Certificate = X509Certificate.CreateFromSignedFile(filePath),
+                  cert As New X509Certificate2(signer)
 #Enable Warning SYSLIB0057
                 Return cert.GetNameInfo(X509NameType.SimpleName, False)
             End Using

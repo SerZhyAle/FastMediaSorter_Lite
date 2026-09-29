@@ -189,16 +189,21 @@ Public Module DocHtmlTranslate
         Try
             Dim args As String = "install --id " & WingetId &
                 " -e --source winget --accept-package-agreements --accept-source-agreements"
-            Process.Start(New ProcessStartInfo("winget", args) With {.UseShellExecute = True})
+            Using started As Process = Process.Start(New ProcessStartInfo("winget", args) With {.UseShellExecute = True})
+            End Using
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " doc-html-translate: winget install failed: " & ex.Message)
+            ' No winget (Server, LTSC, Windows 7/8.1, a profile before App Installer registers):
+            ' the caller's status still says an install is running (audit 057.S10-3).
+            AppFileLogger.WriteLine("doc-html-translate: winget install could not start - " & ex.Message)
         End Try
     End Sub
 
     Public Sub OpenStorePage()
         Try
-            Process.Start(New ProcessStartInfo(StorePage) With {.UseShellExecute = True})
-        Catch
+            Using started As Process = Process.Start(New ProcessStartInfo(StorePage) With {.UseShellExecute = True})
+            End Using
+        Catch ex As Exception
+            AppFileLogger.WriteLine("doc-html-translate: store page could not open - " & ex.Message)
         End Try
     End Sub
 

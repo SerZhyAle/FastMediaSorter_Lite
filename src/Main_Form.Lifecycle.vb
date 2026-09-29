@@ -614,6 +614,9 @@ Partial Public Class Main_Form
         If String.IsNullOrEmpty(path) Then Return
         If IsArchiveMode() Then Return
         If IsRemoteMediaUrl(path) Then Return
+        ' A session's temporary copy (archive entry or remote resource) is gone with its
+        ' session - never a file to resume (audit 057, S02-8).
+        If RemoteCachePaths.IsSessionCopy(path) Then Return
         last_Played_File = path
     End Sub
 

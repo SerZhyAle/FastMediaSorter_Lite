@@ -31,8 +31,8 @@ Imports System.Drawing
 Public Module OcrOverlayFit
 
     ''' <summary>Where the ladder starts, as a fraction of the source text's own size. Just
-    ''' under 1.0 because the translation is drawn with padding inside a box the source text
-    ''' filled edge to edge. INHERITED from `OCR-PIPELINE` §3.4 - see the constant status
+    ''' under 1.0, as the reference implementation's plate fit has it; this product draws with
+    ''' no padding (ticket 033 O-2), which the factor was not re-derived for. INHERITED from `OCR-PIPELINE` §3.4 - see the constant status
     ''' table on the module.</summary>
     Public Const StartFactor As Double = 0.92
 
@@ -125,8 +125,10 @@ Public Module OcrOverlayFit
     ''' would leave the image or reach a plate below it in the same column. Both bounds are
     ''' geometric, which is why they belong here and not in the renderer.
     '''
-    ''' Bounding by neighbours is what makes paint ORDER stop mattering: plates cannot end up
-    ''' overlapping, so no plate can be drawn over another one's text.
+    ''' Bounding by neighbours keeps the first two rungs clear of the plate below. Only a
+    ''' RELEASED plate (<see cref="ReleasedHeight"/>, rung 3) grows past this budget and may
+    ''' overlap it; paint order then decides - the overflow rule at the top of
+    ''' Main_Form.OcrOverlay.vb.
     ''' </summary>
     ''' <param name="plate">The plate as it stands before growing.</param>
     ''' <param name="others">Every other plate rectangle, in the same space. The plate itself

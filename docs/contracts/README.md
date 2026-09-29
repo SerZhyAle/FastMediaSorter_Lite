@@ -34,6 +34,7 @@ not a local edit and not a local copy kept "in sync".
 | [`MEDIA-CLASSIFICATION.md`](MEDIA-CLASSIFICATION.md) | `MEDIA-CLASSIFICATION` | consumer - `MediaKindClassifier`, a local classifier today (ticket 043) |
 | [`AUTOMATED-CHECKS.md`](AUTOMATED-CHECKS.md) | `CHECK-VERDICT`, `CHECK-BASELINE`, `CHECK-PLACEMENT`, `BUILD-EVIDENCE` | consumer - the test runner and generator checks (ticket 042) |
 | [`DOC-QUALITY.md`](DOC-QUALITY.md) | `DOC-INTERNAL-QUALITY`, `DOC-EXTERNAL-QUALITY` | consumer - the internal docs and the published site, adopted 2026-09-26 (tickets 058, 059) |
+| [`CAPTURE-OUTPUT.md`](CAPTURE-OUTPUT.md) | `CAPTURE-OUTPUT` | none today, declared 2026-09-26 - no capture kind is written; the editor's "Save as..", "Replace with video" and the QR image's place are a proposal beside the contract (ticket 096) |
 | [`RULE-ADOPTION.md`](RULE-ADOPTION.md) | `REPO-STAMP`, `HARNESS-PROFILE`, `REPO-LAYOUT`, `RULE-DELIVERY` | producer of the stamp, consumer of the rest |
 | [`NO-ROLE.md`](NO-ROLE.md) | `LAN-DISCOVERY`, `UPDATE-MANIFEST`, `USER-PLAYLIST` | none - declared so the next run does not re-investigate |
 

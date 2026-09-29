@@ -504,8 +504,8 @@ Public NotInheritable Class PackageWizardForm
     Private Shared Sub SyncSoftReadOnlyCell(row As DataGridViewRow, isDestination As Boolean)
         Dim cell As DataGridViewCell = row.Cells("softro")
         cell.ReadOnly = isDestination
-        cell.Style.ForeColor = If(isDestination, SystemColors.GrayText, Color.Empty)
-        cell.Style.BackColor = If(isDestination, SystemColors.Control, Color.Empty)
+        cell.Style.ForeColor = If(isDestination, ThemeService.Palette.TextMuted, Color.Empty)
+        cell.Style.BackColor = If(isDestination, ThemeService.Palette.SurfaceWindow, Color.Empty)
         cell.ToolTipText = If(isDestination, Localization.T("На папку-получатель не действует: она всегда доступна на запись."), "")
     End Sub
 
@@ -835,7 +835,7 @@ Public NotInheritable Class PackageWizardForm
         Else
             btnShowQr.BackColor = SystemColors.Control
             btnShowQr.ForeColor = SystemColors.GrayText
-            btnShowQr.FlatAppearance.BorderColor = SystemColors.ControlDark
+            btnShowQr.FlatAppearance.BorderColor = ThemeService.Palette.Border
         End If
     End Sub
 

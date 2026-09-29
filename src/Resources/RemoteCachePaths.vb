@@ -56,5 +56,22 @@ Friend Module RemoteCachePaths
         Return IsUnderRemoteCache(candidatePath, CacheRoot())
     End Function
 
+    ''' <summary>
+    ''' Is <paramref name="candidatePath"/> a session's temporary copy - an archive entry's
+    ''' or a remote resource's materialised file? Such a path is gone once its session
+    ''' closes, so it must never be persisted: not as a recent file, not as the "resume last
+    ''' file" target (audit 057, S02-8 - the archive half was 052 A-05, this adds resources
+    ''' before 007 ships the first provider).
+    ''' </summary>
+    Friend Function IsSessionCopy(candidatePath As String, archiveCacheRoot As String, remoteCacheRoot As String) As Boolean
+        Return ArchivePaths.IsUnderArchiveCache(candidatePath, archiveCacheRoot) OrElse
+               IsUnderRemoteCache(candidatePath, remoteCacheRoot)
+    End Function
+
+    ''' <summary><see cref="IsSessionCopy(String, String, String)"/> against the real roots.</summary>
+    Friend Function IsSessionCopy(candidatePath As String) As Boolean
+        Return IsSessionCopy(candidatePath, ArchivePaths.CacheRoot(), CacheRoot())
+    End Function
+
 End Module
 #End If

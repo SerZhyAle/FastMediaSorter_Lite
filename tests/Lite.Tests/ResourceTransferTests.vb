@@ -126,6 +126,23 @@ Public Class ResourceTransferTests
         Assert.Empty(Directory.GetFiles(staging))
     End Sub
 
+    ''' <summary>057.S07-3: the routing is asked before FileManager's own "same file" guard
+    ''' (C-02), so the write path has to refuse it itself. The test backing store is
+    ''' case-insensitive, like the Windows folder the Share worker serves.</summary>
+    <Fact>
+    Public Sub A_move_within_onto_itself_with_replace_is_refused_and_keeps_the_file()
+        For Each serverRename As Boolean In New Boolean() {True, False}
+            For Each dest As String In New String() {"/MOV/a.jpg", "/MOV/A.jpg"}
+                Dim provider As ResourceTestProvider = NewProvider(New ProviderCapabilities(supportsServerSideRename:=serverRename))
+                provider.PutFile("/MOV/a.jpg", New Byte(49) {})
+                Assert.ThrowsAny(Of IOException)(
+                    Sub() ResourceTransfer.MoveWithin(provider, "/MOV/a.jpg", dest, True, Path.Combine(workDir, "staging")))
+                Assert.Equal(50L, New FileInfo(provider.BackingPath("/MOV/a.jpg")).Length)
+                Assert.Equal(0, provider.DeleteCalls)
+            Next
+        Next
+    End Sub
+
     <Fact>
     Public Sub Provider_paths_split_and_join_with_their_own_separator()
         Assert.Equal("/MOV", ResourceTransfer.ParentOf("/MOV/a.jpg"))

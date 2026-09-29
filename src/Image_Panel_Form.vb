@@ -8,6 +8,21 @@ Imports System.Windows.Forms
 
 Public Class Image_Panel_Form
     Inherits Form
+#If Not NETFRAMEWORK Then
+    Implements IThemeAware
+
+    ' DECLARED OUTSIDE THE THEME (spec 060 rule 10, APP-STYLE rule 5): the thumbnail panel is
+    ' content-coloured - it takes the main window's background scheme (UpdateBackgroundColor),
+    ' because it is a strip of the same pictures. Its menus and dialogs follow the theme.
+    Private ReadOnly Property ThemesItself As Boolean Implements IThemeAware.ThemesItself
+        Get
+            Return True
+        End Get
+    End Property
+
+    Private Sub ApplyTheme(palette As ThemePalette) Implements IThemeAware.ApplyTheme
+    End Sub
+#End If
 
     ' --- UI Controls and Constants ---
     Private Const resize_debounce_interval As Integer = 200
@@ -958,8 +973,11 @@ Public Class Image_Panel_Form
         For Each candidate As Integer In New Integer() {20, 24, 32, 40, 48}
             If candidate * 2 <= Math.Min(w, h) Then tier = candidate
         Next
+        ' Ours until the card takes it: a glyph that fails to render used to abandon the
+        ' half-drawn bitmap to the finalizer (audit 057.S03).
+        Dim card As Bitmap = Nothing
         Try
-            Dim card As New Bitmap(w, h)
+            card = New Bitmap(w, h)
             Using g As Graphics = Graphics.FromImage(card)
                 g.Clear(Me.BackColor)
                 Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, tier, Me.ForeColor, AddressOf RuntimeBootstrap.OpenBundledAsset)
@@ -968,10 +986,12 @@ Public Class Image_Panel_Form
             End Using
             pb.Image?.Dispose()
             pb.Image = card
+            card = Nothing
             pb.AccessibleName = Localization.T(meaning.LocalizationKey)
         Catch
             ' A missing glyph resource must not take the panel down; the old red tile
             ' is still a visible "this one failed".
+            card?.Dispose()
             pb.BackColor = Color.Red
         End Try
     End Sub
@@ -994,14 +1014,22 @@ Public Class Image_Panel_Form
                     Dim destX = (width - destWidth) \ 2
                     Dim destY = (height - destHeight) \ 2
                     Dim bmPhoto As New Bitmap(width, height, Imaging.PixelFormat.Format32bppArgb)
-                    Dim dpiX As Single = If(originalImage.HorizontalResolution > 0, originalImage.HorizontalResolution, 96.0F)
-                    Dim dpiY As Single = If(originalImage.VerticalResolution > 0, originalImage.VerticalResolution, 96.0F)
-                    bmPhoto.SetResolution(dpiX, dpiY)
-                    Using grPhoto As Graphics = Graphics.FromImage(bmPhoto)
-                        grPhoto.Clear(Me.BackColor)  ' Use panel background color
-                        grPhoto.InterpolationMode = InterpolationMode.Low
-                        grPhoto.DrawImage(originalImage, New Rectangle(destX, destY, destWidth, destHeight), New Rectangle(0, 0, sourceWidth, sourceHeight), GraphicsUnit.Pixel)
-                    End Using
+                    Try
+                        Dim dpiX As Single = If(originalImage.HorizontalResolution > 0, originalImage.HorizontalResolution, 96.0F)
+                        Dim dpiY As Single = If(originalImage.VerticalResolution > 0, originalImage.VerticalResolution, 96.0F)
+                        bmPhoto.SetResolution(dpiX, dpiY)
+                        Using grPhoto As Graphics = Graphics.FromImage(bmPhoto)
+                            grPhoto.Clear(Me.BackColor)  ' Use panel background color
+                            grPhoto.InterpolationMode = InterpolationMode.Low
+                            grPhoto.DrawImage(originalImage, New Rectangle(destX, destY, destWidth, destHeight), New Rectangle(0, 0, sourceWidth, sourceHeight), GraphicsUnit.Pixel)
+                        End Using
+                    Catch
+                        ' A draw that fails (GDI+ out of memory on a huge original, a broken
+                        ' frame) used to abandon the thumbnail bitmap; the outer Catch still
+                        ' turns the failure into "no thumbnail" (audit 057.S03).
+                        bmPhoto.Dispose()
+                        Throw
+                    End Try
                     Return bmPhoto
                 End Using
             End Using
@@ -1090,6 +1118,9 @@ MessageBox.Show(confirmMsg, Localization.T("Подтверждение"), Messag
                 If Me.IsDisposed Then Return
 
                 If name_Taken Then
+                    ' Logged as well: with "no confirmation" on, the summary below is never
+                    ' shown, and this skip would leave no trace at all (audit 057.S03).
+                    AppFileLogger.WriteLine("Thumbnail panel: skipped, name already taken in the slot: " & destination_file_path)
                     error_messages.AppendLine(Localization.TF("Не удалось обработать {0}: {1}", source_file_path,
                                                               Localization.T("Файл с таким именем уже есть: операция пропущена")))
                 ElseIf failure Is Nothing Then

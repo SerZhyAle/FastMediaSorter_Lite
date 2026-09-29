@@ -133,6 +133,9 @@ Friend Module Program
                 Application.SetDefaultFont(New Font("Segoe UI", 9.0F))
             Catch
             End Try
+            ' The application theme shared with the viewer (spec 060) - after the rendering
+            ' defaults above (it creates a control), before the tray menu and the first window.
+            ThemeService.Initialize()
 
             ' Who decides whether the window shows: an EXPLICIT request always wins (a
             ' folder to share, or --show from LITE's Share Manager button), and every

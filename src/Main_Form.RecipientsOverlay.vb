@@ -93,6 +93,9 @@ Partial Public Class Main_Form
             recipients_Overlay.Show()
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2400: recipients overlay build failed: " & ex.Message)
+            ' Debug.WriteLine is stripped from Release: without this a table that never
+            ' appears (the old "Error creating window handle") left nothing in current.log.
+            AppFileLogger.LogException("Recipients overlay: build", ex)
         End Try
     End Sub
 
@@ -125,8 +128,6 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub BuildRecipientsOverlay()
-        Dim rus As Boolean = Is_Russian_Language
-
         ' Rows: registered destinations (keys 1..9, then 0) + Delete last.
         ' Item1 = slot (1..10; -1 = delete). Runtime convention: key "k" -> slot k,
         ' key "0" -> slot 10 (matches the keyboard, NOT the legacy grid DoKey).

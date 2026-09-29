@@ -285,6 +285,12 @@ Namespace My
                 AppFileLogger.WriteLine("Single instance: no running viewer took the argument - starting normally")
             End If
 
+#If Not NETFRAMEWORK Then
+            ' The application theme (spec 060): before the main window exists, so every window
+            ' and menu of this process is themed from its first paint. After the forwarding
+            ' above - a launch that only hands its file on never shows a window.
+            ThemeService.Initialize()
+#End If
         End Sub
 
         ''' <summary>

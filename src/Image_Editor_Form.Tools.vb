@@ -884,7 +884,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
             Dim box As Rectangle = Rectangle.Inflate(Me.ClientRectangle, -10, -10)
             If box.Width <= 0 OrElse box.Height <= 0 Then Return
 
-            Dim ink As Color = If(is_Selected, SystemColors.HighlightText, SystemColors.ControlText)
+            Dim ink As Color = If(is_Selected, ThemeService.Palette.AccentInk, ThemeService.Palette.TextPrimary)
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias
 
             ' A tool with a vocabulary meaning draws the catalog's picture at the 20 tier

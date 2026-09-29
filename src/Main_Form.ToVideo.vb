@@ -274,6 +274,8 @@ Partial Public Class Main_Form
             If File.Exists(tempPath) Then File.Delete(tempPath)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0042: leftover video temp not removed: " & ex.Message)
+            ' A x.fms-tmp.mp4 left in the user's own folder; this is the only trace (057.S09-5).
+            AppFileLogger.WriteLine("Replace with video: the temporary file was not removed: " & tempPath & " (" & ex.Message & ")")
         End Try
     End Sub
 

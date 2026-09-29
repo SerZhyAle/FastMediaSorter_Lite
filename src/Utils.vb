@@ -178,7 +178,12 @@ Module Utils
     End Sub
 
     ''' <summary>
-    ''' Explicitly detaches a task while still observing faults for debugging.
+    ''' Explicitly detaches a task while still observing faults.
+    '''
+    ''' The fault goes to the file log (audit 057.S01-1): Debug.WriteLine is compiled away in
+    ''' Release together with its argument, so the continuation used to do nothing there - a
+    ''' faulted OCR pipeline or thumbnail batch surfaced only if the finalizer ever reported it
+    ''' as unobserved, and in a Debug build it never reached the file at all.
     ''' </summary>
     Public Sub Forget(task As Task)
         If task Is Nothing Then Return
@@ -186,8 +191,9 @@ Module Utils
         task.ContinueWith(
             Sub(t)
                 Try
-                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " async: " & t.Exception.GetBaseException().Message)
+                    AppFileLogger.LogException("Detached task failed", t.Exception.GetBaseException())
                 Catch
+                    ' The log itself is the last resort; nothing further to tell.
                 End Try
             End Sub,
             TaskContinuationOptions.OnlyOnFaulted)
@@ -247,7 +253,11 @@ Module Utils
                 ' WEBP (and AVIF/HEIC/HEIF on modern): let the platform decoder read
                 ' the dimensions so we stay off GDI+. The seam reports the displayed size
                 ' itself (the mainline's Magick path reads the orientation it auto-orients by).
-                If ImageDecoderProvider.Decoder_Backed_Extensions.Contains(IO.Path.GetExtension(filePath)) Then
+                ' By extension OR by header (audit 057.S01-2): a WEBP saved under a .jpg name
+                ' is displayed through the same seam since audit 048 A-16, and its label read
+                ' "?x?" because only the name was asked here.
+                If ImageDecoderProvider.Decoder_Backed_Extensions.Contains(IO.Path.GetExtension(filePath)) OrElse
+                   (n >= 12 AndAlso ImageDecoderProvider.LooksDecoderBacked(head)) Then
                     fs.Seek(0, IO.SeekOrigin.Begin)
                     Return ImageDecoderProvider.Current.TryGetPixelSize(fs)
                 End If

@@ -260,6 +260,9 @@ Partial Public Class Main_Form
             End If
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0041: ERR BCK! " & ex.Message)
+            ' Debug is stripped in Release (audit 057.S01-4): without this a prefetch that
+            ' died - and took the size/date line with it - left no trail at all.
+            AppFileLogger.LogException("Prefetch worker failed for: " & next_File_After_Current_in_worker, ex)
         Finally
             ' Whoever is waiting to close needs to know we have actually left.
             bgworker_Done.Set()
@@ -432,6 +435,7 @@ Partial Public Class Main_Form
                 End If
             Catch ex As Exception
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0203: Error handling BgWorker result: " & ex.Message)
+                AppFileLogger.LogException("Prefetch result not applied", ex)
                 bgWorker_Result = "ERR: " & ex.Message
                 current_Second_File_Name = ""
             End Try

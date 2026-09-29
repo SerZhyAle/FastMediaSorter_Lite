@@ -82,6 +82,8 @@ Partial Public Class Main_Form
             RepaintMedia()
         Catch ex As Exception
             Debug.WriteLine("Audio metadata parse skipped: " & ex.Message)
+            ' The only trace in Release (057.S08-7): the track is left without its tag plate.
+            AppFileLogger.WriteLine("Audio tags not read [" & ex.GetType().Name & "]: " & ex.Message)
         End Try
     End Sub
 
@@ -325,10 +327,16 @@ Partial Public Class Main_Form
             End If
             Using source As New Bitmap(coverPath)
                 Dim copy As New Bitmap(source.Width, source.Height)
-                Using canvas = Graphics.FromImage(copy)
-                    canvas.InterpolationMode = If(Is_HighQuality_Scaling, InterpolationMode.HighQualityBicubic, InterpolationMode.Default)
-                    canvas.DrawImage(source, 0, 0, copy.Width, copy.Height)
-                End Using
+                Try
+                    Using canvas = Graphics.FromImage(copy)
+                        canvas.InterpolationMode = If(Is_HighQuality_Scaling, InterpolationMode.HighQualityBicubic, InterpolationMode.Default)
+                        canvas.DrawImage(source, 0, 0, copy.Width, copy.Height)
+                    End Using
+                Catch
+                    ' Ours until it becomes audio_Cover_Bitmap (057.S08-8).
+                    copy.Dispose()
+                    Throw
+                End Try
                 If audio_Cover_Bitmap IsNot Nothing Then audio_Cover_Bitmap.Dispose()
                 audio_Cover_Bitmap = copy
             End Using
@@ -391,9 +399,15 @@ Partial Public Class Main_Form
         If imageStart <= 0 Then Return
         Using bytes As New MemoryStream(payload, imageStart, payload.Length - imageStart, False), source As New Bitmap(bytes)
             Dim copy As New Bitmap(source.Width, source.Height)
-            Using canvas = Graphics.FromImage(copy)
-                canvas.DrawImageUnscaled(source, 0, 0)
-            End Using
+            Try
+                Using canvas = Graphics.FromImage(copy)
+                    canvas.DrawImageUnscaled(source, 0, 0)
+                End Using
+            Catch
+                ' Ours until it becomes audio_Cover_Bitmap (057.S08-8).
+                copy.Dispose()
+                Throw
+            End Try
             If audio_Cover_Bitmap IsNot Nothing Then audio_Cover_Bitmap.Dispose()
             audio_Cover_Bitmap = copy
         End Using

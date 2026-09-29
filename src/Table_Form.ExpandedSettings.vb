@@ -98,10 +98,11 @@ Partial Public Class Table_Form
                            Sub(v) p.CreateMissingDestination = v)
         AddPreferenceCheck(files, "delete_to_recycle_bin", p.DeleteToRecycleBin, Sub(v) p.DeleteToRecycleBin = v)
         AddPreferenceChoice(files, "confirm_delete", p.ConfirmDelete,
-                            {Choice("always", "Всегда"), Choice("permanentOnly", "Только если файл не попадёт в Корзину")}, Sub(v) p.ConfirmDelete = v)
-        ' No "Never" and no "ask before Replace with video" row (ticket 028 Ф-5, APP-BEHAVIOUR
-        ' rule 5): both would switch off the question guarding a deletion nothing can undo.
-        ' The replace confirmation's own checkbox now lasts for the session only.
+                            {Choice("always", "Всегда"), Choice("permanentOnly", "Только если файл не попадёт в Корзину"),
+                             Choice("never", "Никогда")}, Sub(v) p.ConfirmDelete = v)
+        ' "Never" is back by owner decision 2026-09-27 (a sorter, not a nursery) - a dated
+        ' exception to APP-BEHAVIOUR rule 5. Still no "ask before Replace with video" row:
+        ' that confirmation's own checkbox lasts for the session only.
         AddPreferenceCheck(files, "include_subfolders", p.IncludeSubfolders, Sub(v) p.IncludeSubfolders = v)
         AddFileTypesRow(files, p)
         AddHotkeysRow(files, p)
@@ -545,6 +546,28 @@ Partial Public Class Table_Form
         If toolTip IsNot Nothing Then
             toolTip.SetToolTip(check, Localization.T("Если отмечено, после копирования программа сразу показывает следующий файл. Если снять галочку, после копирования остаётся текущий файл. По умолчанию включено."))
         End If
+    End Sub
+
+    ''' <summary>
+    ''' The application theme (060_SPECIFICATION_APP_THEME_SYSTEM_LIGHT_DARK.md §4). Not a
+    ''' ModernViewerPreferences field: the value is shared with the Share Manager, so it lives in
+    ''' the hive both programs read, and ThemeService owns it - storing, applying to every open
+    ''' window at once, and telling the other program.
+    ''' </summary>
+    Private Sub AddUiThemeRow(flow As FlowLayoutPanel)
+        Dim choices As PreferenceChoice() = {Choice("system", "Как в системе"), Choice("light", "Светлая"), Choice("dark", "Тёмная")}
+        Dim combo As New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList}
+        combo.Items.AddRange(choices)
+        Dim current As String = ThemeModes.ToSetting(ThemeService.Mode)
+        combo.SelectedItem = If(choices.FirstOrDefault(Function(item) item.Value = current), choices(0))
+        AddHandler combo.SelectedIndexChanged,
+            Sub()
+                Dim choice As PreferenceChoice = TryCast(combo.SelectedItem, PreferenceChoice)
+                If choice Is Nothing Then Return
+                Dim mode As ThemeMode = ThemeModes.Parse(choice.Value)
+                If mode <> ThemeService.Mode Then ThemeService.SetMode(mode)
+            End Sub
+        AddSettingRow(flow, "ui_theme", combo, 230, True)
     End Sub
 
     ''' <summary>

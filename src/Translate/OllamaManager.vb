@@ -69,6 +69,7 @@ Public Module OllamaManager
             Return True
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ollama: start failed: " & ex.Message)
+            AppFileLogger.LogException("Ollama: start server", ex)
             Return False
         End Try
     End Function
@@ -95,7 +96,12 @@ Public Module OllamaManager
             Using client As New HttpClient()
                 client.Timeout = Timeout.InfiniteTimeSpan
                 Using resp As HttpResponseMessage = Await client.GetAsync(DownloadUrl, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(False)
-                    If Not resp.IsSuccessStatusCode Then Return ""
+                    If Not resp.IsSuccessStatusCode Then
+                        ' This function never throws but for Cancel, so the caller's
+                        ' Failure log never fires: the reason is written here (057.S12-7).
+                        AppFileLogger.WriteLine("Ollama installer download: HTTP " & CInt(resp.StatusCode).ToString(Globalization.CultureInfo.InvariantCulture))
+                        Return ""
+                    End If
                     Dim total As Long = If(resp.Content.Headers.ContentLength.HasValue, resp.Content.Headers.ContentLength.Value, -1L)
                     Using src As Stream = Await resp.Content.ReadAsStreamAsync().ConfigureAwait(False)
                         Using fs As New FileStream(dest, FileMode.Create, FileAccess.Write, FileShare.None)
@@ -130,6 +136,7 @@ Public Module OllamaManager
             Throw
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ollama: installer download failed: " & ex.Message)
+            AppFileLogger.LogException("Ollama installer download", ex)
             TryDeletePartial(dest)
             Return ""
         End Try
@@ -178,13 +185,16 @@ Public Module OllamaManager
     Public Function RunInstaller(installerPath As String) As Boolean
         If Not IsGenuineInstaller(installerPath) Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ollama: installer signature rejected")
+            AppFileLogger.WriteLine("Ollama installer: signature check failed, not started")
             Return False
         End If
         Try
             Process.Start(New ProcessStartInfo(installerPath) With {.UseShellExecute = True})
             Return True
         Catch ex As Exception
+            ' A declined UAC prompt or an antivirus block lands here (057.S12-7).
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ollama: run installer failed: " & ex.Message)
+            AppFileLogger.LogException("Ollama installer: start", ex)
             Return False
         End Try
     End Function
@@ -192,7 +202,8 @@ Public Module OllamaManager
     Public Sub OpenWebPage()
         Try
             Process.Start(New ProcessStartInfo(WebPage) With {.UseShellExecute = True})
-        Catch
+        Catch ex As Exception
+            AppFileLogger.LogException("Ollama: open download page", ex)
         End Try
     End Sub
 

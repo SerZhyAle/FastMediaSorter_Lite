@@ -26,6 +26,7 @@ Partial Public NotInheritable Class Localization
         AddSlotHealthStrings()  ' recipient-slot verdicts, auto-created folders, honest failures
         AddSecureStrings()      ' secure .fd-sec containers: the password dialog and the three outcomes
         AddAppUxStrings()       ' ticket 028: confirmations, failure causes, the download dialog, accessible names
+        AddThemeStrings()       ' spec 060: the system / light / dark theme setting
     End Sub
 
 End Class

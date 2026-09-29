@@ -1,5 +1,6 @@
 Option Strict On
 
+Imports System.Collections.Generic
 Imports System.IO
 
 ''' <summary>
@@ -10,6 +11,75 @@ Imports System.IO
 ''' Both builds compile it.
 ''' </summary>
 Public Module NavigationRules
+
+    ' The read modes of Main_Form.ReadShowMediaFile. Defined here, once, so the pure rules
+    ' below and their tests speak the same strings the form sends; Main_Form's Mode_*
+    ' constants are these values.
+    Public Const ReadMode_Next As String = "ReadNextFile"
+    Public Const ReadMode_Prev As String = "ReadPrevFile"
+    Public Const ReadMode_SetFile As String = "SetFile"
+    Public Const ReadMode_Files As String = "ReadFiles"
+    Public Const ReadMode_FolderAndFile As String = "ReadFolderAndFile"
+    Public Const ReadMode_FolderAndKnownFile As String = "ReadFolderAndKnownFile"
+    Public Const ReadMode_Delete As String = "DeleteFile"
+    Public Const ReadMode_InSlideShow As String = "InSlideShow"
+    Public Const ReadMode_ForRandom As String = "ReadForRandom"
+    Public Const ReadMode_ForSlideShow As String = "ReadForSlideShow"
+    Public Const ReadMode_AfterUndo As String = "AfterUndo"
+    Public Const ReadMode_JumpBy As String = "JumpBy"
+    Public Const ReadMode_JumpTo As String = "JumpTo"
+
+    ''' <summary>
+    ''' May the 40 ms key-repeat throttle refuse this read mode (audit 057, S02-4)?
+    '''
+    ''' The throttle exists to tame key repeat and fast slideshow ticks. It used to refuse
+    ''' EVERY mode but an auto-skip - including the ones whose callers have already changed
+    ''' state before calling in: an external open (Current_File_Name, a one-file list),
+    ''' a folder pick (Current_Folder_Path), entering an archive, a file operation that has
+    ''' already edited the list (SetFile/AfterUndo). Refusing those dropped the display and
+    ''' left the old picture up while DEL / 0-9 already aimed at the new file.
+    '''
+    ''' So only the modes a held key or a timer repeats are throttled: Next, Prev, JumpBy,
+    ''' ForRandom, InSlideShow - and Delete, which is also a held key (D / Del) and whose
+    ''' caller mutates nothing before the call (the Shift+DEL flag is cleared in a Finally,
+    ''' audit 047 C-15), so refusing a repeat of it loses nothing and keeps the destructive
+    ''' key's rate where it always was.
+    ''' </summary>
+    Public Function IsThrottledReadMode(read_Mode As String) As Boolean
+        Select Case read_Mode
+            Case ReadMode_Next, ReadMode_Prev, ReadMode_JumpBy, ReadMode_ForRandom,
+                 ReadMode_InSlideShow, ReadMode_Delete
+                Return True
+            Case Else
+                Return False
+        End Select
+    End Function
+
+    ''' <summary>
+    ''' Records <paramref name="folder"/> as the most recent folder (audit 057, S02-6) and
+    ''' says whether the list changed. Moves it to the front (once - Ordinal, as the list has
+    ''' always compared), then holds the list to <paramref name="limit"/>: 0 records nothing
+    ''' and empties whatever an earlier, higher limit left (053 F-12).
+    '''
+    ''' It used to run only when the folder box's text differed from the folder - and every
+    ''' ingress but the folder dialog writes the box first, so a folder opened from Explorer
+    ''' never entered the list and re-picking one never moved it to the top.
+    ''' </summary>
+    Public Function PromoteRecentFolder(list As List(Of String), folder As String, limit As Integer) As Boolean
+        If list Is Nothing OrElse String.IsNullOrEmpty(folder) Then Return False
+        Dim changed As Boolean = False
+        If limit > 0 AndAlso (list.Count = 0 OrElse Not String.Equals(list(0), folder, StringComparison.Ordinal)) Then
+            list.Remove(folder)
+            list.Insert(0, folder)
+            changed = True
+        End If
+        Dim keep As Integer = Math.Max(0, limit)
+        If list.Count > keep Then
+            list.RemoveRange(keep, list.Count - keep)
+            changed = True
+        End If
+        Return changed
+    End Function
 
     ''' <summary>
     ''' May a finished prefetch be put into its picture box (audit 048, A-01)?

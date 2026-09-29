@@ -18,6 +18,7 @@ Imports System.Windows.Forms
 ''' express the floor, and an AutoSize+AutoScroll panel is a documented WinForms conflict.
 ''' </summary>
 Partial Public NotInheritable Class MainWindow
+    Implements IThemeAware
 
     ''' <summary>Row indices of the root layout - the list row's height is computed.</summary>
     Private Const HeaderRow As Integer = 0
@@ -605,7 +606,7 @@ Partial Public NotInheritable Class MainWindow
     End Sub
 
     Private Function CatalogGlyph(glyphId As String, logicalTier As Integer) As Bitmap
-        Return GlyphRenderer.Render(glyphId, LogicalToDeviceUnits(logicalTier), SystemColors.ControlText,
+        Return GlyphRenderer.Render(glyphId, LogicalToDeviceUnits(logicalTier), ThemeService.Palette.TextPrimary,
                                    AddressOf CompanionAssets.OpenBundledAsset)
     End Function
 
@@ -618,13 +619,31 @@ Partial Public NotInheritable Class MainWindow
             g.SmoothingMode = SmoothingMode.AntiAlias
             g.Clear(Color.Transparent)
             g.ScaleTransform(size / 16.0F, size / 16.0F)
-            Using p As New Pen(SystemColors.ControlText, 1.4F)
+            Using p As New Pen(ThemeService.Palette.TextPrimary, 1.4F)
                 g.DrawCurve(p, New PointF() {New PointF(1.5F, 8), New PointF(8, 3.2F), New PointF(14.5F, 8)})
                 g.DrawCurve(p, New PointF() {New PointF(1.5F, 8), New PointF(8, 12.8F), New PointF(14.5F, 8)})
             End Using
-            Using b As New SolidBrush(SystemColors.ControlText) : g.FillEllipse(b, 6.2F, 6.2F, 3.6F, 3.6F) : End Using
+            Using b As New SolidBrush(ThemeService.Palette.TextPrimary) : g.FillEllipse(b, 6.2F, 6.2F, 3.6F, 3.6F) : End Using
         End Using
         Return bmp
     End Function
+
+    ' --- the application theme (spec 060) ---------------------------------------------------
+    ' The service walks this window like any other; what it cannot reach is what is painted
+    ' into bitmaps (the button glyphs, the state dot) and the list's per-row colours.
+
+    Private ReadOnly Property ThemesItself As Boolean Implements IThemeAware.ThemesItself
+        Get
+            Return False
+        End Get
+    End Property
+
+    Private Sub ApplyTheme(palette As ThemePalette) Implements IThemeAware.ApplyTheme
+        BuildGlyphs()
+        If lvFolders IsNot Nothing Then
+            RestripeList()
+            lvFolders.Invalidate()
+        End If
+    End Sub
 
 End Class

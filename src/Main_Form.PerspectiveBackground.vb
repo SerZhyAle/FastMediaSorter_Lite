@@ -238,18 +238,26 @@ Partial Public Class Main_Form
     Private Function CreateDisplayedImageBitmap(sourceImage As Image, displaySize As Size, backgroundColor As Color) As Bitmap
         Dim displayedBitmap As New Bitmap(displaySize.Width, displaySize.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
 
-        Using g As Graphics = Graphics.FromImage(displayedBitmap)
-            g.Clear(Color.FromArgb(255, backgroundColor.R, backgroundColor.G, backgroundColor.B))
-            ' Wrap mode TileFlipXY prevents GDI+ from blending the outermost row/column
-            ' with the off-image (cleared background) area during downscaling. Without it,
-            ' the sampled edge column is pulled toward the dark BackColor, so the perspective
-            ' bars start darker than the real image edge and the seam becomes visible.
-            Dim destRect As New Rectangle(0, 0, displaySize.Width, displaySize.Height)
-            Using attr As New System.Drawing.Imaging.ImageAttributes()
-                attr.SetWrapMode(Drawing2D.WrapMode.TileFlipXY)
-                g.DrawImage(sourceImage, destRect, 0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attr)
+        Try
+            Using g As Graphics = Graphics.FromImage(displayedBitmap)
+                g.Clear(Color.FromArgb(255, backgroundColor.R, backgroundColor.G, backgroundColor.B))
+                ' Wrap mode TileFlipXY prevents GDI+ from blending the outermost row/column
+                ' with the off-image (cleared background) area during downscaling. Without it,
+                ' the sampled edge column is pulled toward the dark BackColor, so the perspective
+                ' bars start darker than the real image edge and the seam becomes visible.
+                Dim destRect As New Rectangle(0, 0, displaySize.Width, displaySize.Height)
+                Using attr As New System.Drawing.Imaging.ImageAttributes()
+                    attr.SetWrapMode(Drawing2D.WrapMode.TileFlipXY)
+                    g.DrawImage(sourceImage, destRect, 0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attr)
+                End Using
             End Using
-        End Using
+        Catch
+            ' The transient GDI+ failure Draw_Perspective's outer Catch swallows can land
+            ' here, before the caller's Using owns the bitmap - free it, then let the
+            ' exception go on exactly as before (audit 057.S04-3).
+            displayedBitmap.Dispose()
+            Throw
+        End Try
 
         Return displayedBitmap
     End Function
@@ -633,6 +641,9 @@ Partial Public Class Main_Form
                 ' failure here abort the (already-shown) image. It'll be retried on
                 ' the next navigation/resize, or by the trailing-redraw timer.
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1131: perspective draw skipped: [" & ex.GetType().Name & "] " & ex.Message)
+                ' One line, no stack: Release strips Debug, and a failure that repeats on
+                ' every photo (no bars at all) must leave a trace in current.log (057.S04-4).
+                AppFileLogger.WriteLine("Perspective draw skipped: [" & ex.GetType().Name & "] " & ex.Message)
             End Try
         End If
 

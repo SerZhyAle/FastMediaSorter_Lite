@@ -58,6 +58,24 @@ Friend Module MediaUrl
     End Function
 
     ''' <summary>
+    ''' An address fit for current.log, which "Send logs to the author" ships: scheme, host,
+    ''' port and path only - never the user info (smb://user:password@..), which is the only
+    ''' place VLC takes a credential, and never the query (?token=..) of a signed link
+    ''' (audit 057.S08-2).
+    ''' </summary>
+    Friend Function ForLog(mrl As String) As String
+        If String.IsNullOrWhiteSpace(mrl) Then Return ""
+        Try
+            Return New Uri(mrl.Trim()).GetComponents(
+                UriComponents.Scheme Or UriComponents.Host Or UriComponents.Port Or UriComponents.Path,
+                UriFormat.UriEscaped)
+        Catch
+            ' Unparseable: the text as typed may still hold a password, so none of it.
+            Return "(unparseable address)"
+        End Try
+    End Function
+
+    ''' <summary>
     ''' The file extension an address points at, lowercased, or "" when there is none to
     ''' read. Uses AbsolutePath so a query string never becomes part of the extension.
     ''' </summary>

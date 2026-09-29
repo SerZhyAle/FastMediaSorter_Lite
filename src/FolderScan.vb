@@ -17,8 +17,9 @@ Imports System.Threading
 ''' S3 Б-23 had introduced is_Read_Error precisely to tell those apart; the scan defeated it.
 ''' Now the root's failure reaches the caller, which classifies it (PathFailure).
 '''
-''' Subfolders of a recursive scan keep the old rule: an inaccessible or unreadable child is
-''' skipped, just like Explorer's own scan.
+''' Subfolders of a recursive scan keep the old rule for failures that are about the child -
+''' denied, gone, a path too long: it is skipped, just like Explorer's own scan. A TRANSPORT
+''' failure of a child is not about it and fails the scan (audit 057, S01-5).
 ''' </summary>
 Public Module FolderScan
 
@@ -53,9 +54,56 @@ Public Module FolderScan
             Throw New DirectoryNotFoundException("Folder not found: " & root)
         End If
 
+        Return ScanTree(root, include_Subfolders, ct, RealLister)
+    End Function
+
+    ''' <summary>
+    ''' What the scan needs from the file system, as a seam (audit 057, S01-5): no real
+    ''' volume drops an SMB session on demand half-way through a tree, so the rule "which
+    ''' child failure is skipped" could not be tested against a real folder.
+    ''' </summary>
+    Friend Interface IDirectoryLister
+        ''' <summary>True when <paramref name="directory"/> is a junction or symlink.</summary>
+        Function IsReparsePoint(directory As String) As Boolean
+        ''' <summary>The files directly inside <paramref name="directory"/>, lazily.</summary>
+        Function ListFiles(directory As String) As IEnumerable(Of FileInfo)
+        ''' <summary>The full paths of the subfolders directly inside
+        ''' <paramref name="directory"/> that are NOT reparse points, lazily.</summary>
+        Function ListSubdirectories(directory As String) As IEnumerable(Of String)
+    End Interface
+
+    ''' <summary>The lister over the real file system - DirectoryInfo, as the scan always used.</summary>
+    Private NotInheritable Class FileSystemLister
+        Implements IDirectoryLister
+
+        Public Function IsReparsePoint(directory As String) As Boolean Implements IDirectoryLister.IsReparsePoint
+            Return (New DirectoryInfo(directory).Attributes And FileAttributes.ReparsePoint) <> 0
+        End Function
+
+        Public Function ListFiles(directory As String) As IEnumerable(Of FileInfo) Implements IDirectoryLister.ListFiles
+            Return New DirectoryInfo(directory).EnumerateFiles("*", SearchOption.TopDirectoryOnly)
+        End Function
+
+        Public Iterator Function ListSubdirectories(directory As String) As IEnumerable(Of String) Implements IDirectoryLister.ListSubdirectories
+            For Each child As DirectoryInfo In New DirectoryInfo(directory).EnumerateDirectories("*", SearchOption.TopDirectoryOnly)
+                If (child.Attributes And FileAttributes.ReparsePoint) = 0 Then Yield child.FullName
+            Next
+        End Function
+    End Class
+
+    Private ReadOnly RealLister As IDirectoryLister = New FileSystemLister()
+
+    ''' <summary>
+    ''' The walk itself, over any lister. The root's existence has already been settled by
+    ''' the caller; every failure of the ROOT still reaches the caller.
+    ''' </summary>
+    Friend Function ScanTree(root As String, include_Subfolders As Boolean,
+                             ct As CancellationToken, lister As IDirectoryLister) As List(Of FileInfo)
+        Dim result As New List(Of FileInfo)()
+
         If Not include_Subfolders Then
             ' No catch: a failure here - at the first entry or half-way - is the ROOT's.
-            For Each f As FileInfo In New DirectoryInfo(root).EnumerateFiles("*", SearchOption.TopDirectoryOnly)
+            For Each f As FileInfo In lister.ListFiles(root)
                 result.Add(f)
             Next
             Return result
@@ -68,22 +116,32 @@ Public Module FolderScan
             Dim directory As String = pending.Pop()
             Dim is_Root As Boolean = String.Equals(directory, root, StringComparison.OrdinalIgnoreCase)
             Try
-                Dim info As New DirectoryInfo(directory)
-                If (info.Attributes And FileAttributes.ReparsePoint) <> 0 AndAlso Not is_Root Then Continue While
+                If Not is_Root AndAlso lister.IsReparsePoint(directory) Then Continue While
                 ' Added one by one: a subfolder that fails half-way keeps the files already read.
-                For Each f As FileInfo In info.EnumerateFiles("*", SearchOption.TopDirectoryOnly)
+                For Each f As FileInfo In lister.ListFiles(directory)
                     result.Add(f)
                 Next
-                For Each child As DirectoryInfo In info.EnumerateDirectories("*", SearchOption.TopDirectoryOnly)
-                    If (child.Attributes And FileAttributes.ReparsePoint) = 0 Then pending.Push(child.FullName)
+                For Each child As String In lister.ListSubdirectories(directory)
+                    pending.Push(child)
                 Next
-            Catch ex As UnauthorizedAccessException When Not is_Root
-                Debug.WriteLine("Skipping inaccessible directory: " & directory)
-            Catch ex As IOException When Not is_Root
+            Catch ex As Exception When Not is_Root AndAlso IsSkippableChildFailure(ex)
                 Debug.WriteLine("Skipping unreadable directory: " & directory)
             End Try
         End While
         Return result
+    End Function
+
+    ''' <summary>
+    ''' May a SUBFOLDER's failure be skipped, Explorer-style (audit 057, S01-5)? Only when it
+    ''' is about that subfolder: denied, gone since it was listed, a path too long, locked.
+    ''' A transport failure is not about the child - it is the session under the whole tree
+    ''' dropping - and skipping it handed back a truncated tree as the whole one, with the
+    ''' counter, End and the recent-folders list all describing it. It fails the scan, so
+    ''' GetFiles reports it as the read error it is (the rule 048 A-07 set for the root).
+    ''' </summary>
+    Friend Function IsSkippableChildFailure(ex As Exception) As Boolean
+        If Not (TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException) Then Return False
+        Return PathFailure.Classify(ex) <> PathFailureKind.Transport
     End Function
 
 End Module

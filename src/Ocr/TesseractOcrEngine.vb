@@ -189,6 +189,7 @@ Public Class TesseractOcrEngine
                 dataDir = EnsureTessData(profile.Language, PreferBest, allowDownload:=RecognitionMayDownload)
             Catch ex As Exception
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: tessdata error: " & ex.Message)
+                AppFileLogger.WriteLine("OCR: language data for " & profile.Language & " - [" & ex.GetType().FullName & "] " & ex.Message)
                 Return OcrResult.Runtime(LanguageDataMissing)
             End Try
 
@@ -219,6 +220,7 @@ Public Class TesseractOcrEngine
                 prepared = preparedImages.Get(profile.Preprocess)
             Catch ex As Exception
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: buffer error: " & ex.Message)
+                AppFileLogger.WriteLine("OCR: image preparation, mode " & profile.Preprocess.ToString() & " - [" & ex.GetType().FullName & "] " & ex.Message)
                 Return OcrResult.FromError(ImagePreparationFailed)
             End Try
 
@@ -324,25 +326,38 @@ Public Class TesseractOcrEngine
             End SyncLock
         Catch ex As DllNotFoundException
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: native missing: " & ex.Message)
+            LogAttemptFailure(profile, ex)
             Return OcrResult.Runtime("OCR native runtime missing")
         Catch ex As TypeInitializationException
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: type init: " & ex.Message)
+            LogAttemptFailure(profile, ex)
             Return OcrResult.Runtime("OCR native runtime missing")
         Catch ex As TesseractException
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: tesseract: " & ex.Message)
+            LogAttemptFailure(profile, ex)
             Return OcrResult.FromError("OCR runtime/data problem")
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: error: " & ex.Message)
+            LogAttemptFailure(profile, ex)
             If TypeOf ex Is BadImageFormatException OrElse
                ex.Message.IndexOf("leptonica", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
                ex.Message.IndexOf("tesseract", StringComparison.OrdinalIgnoreCase) >= 0 Then
                 Return OcrResult.Runtime("OCR native runtime missing")
             End If
-            ' The type only: the message is never shown (the pipeline says "OCR error"), and the
-            ' full exception is already in the line logged above.
+            ' The type only: the message is never shown (the pipeline says "OCR error"); the
+            ' exception itself went to current.log above (Debug output is stripped in Release).
             Return OcrResult.FromError(ex.GetType().Name)
         End Try
     End Function
+
+    ''' <summary>One line in current.log per failed attempt - the engine's own exception, never
+    ''' recognized text. Until audit 057.S12-6 every attempt failure (a corrupt traineddata, a
+    ''' missing native) wrote only to Debug, which Release strips.</summary>
+    Private Shared Sub LogAttemptFailure(profile As OcrAttemptProfile, ex As Exception)
+        AppFileLogger.WriteLine("OCR attempt failed (" & profile.Language & ", " &
+                                profile.Segmentation.ToString() & ", " & profile.Preprocess.ToString() &
+                                "): [" & ex.GetType().FullName & "] " & ex.Message)
+    End Sub
 
     ''' <param name="dropped">Receives every line the threshold refused, with the rule that
     ''' refused it. Filled from the SAME call that decides - see OcrTextFilter.LineRejection -
@@ -516,12 +531,20 @@ Public Class TesseractOcrEngine
 
     Private Shared Function RenderFlatBitmap(source As Bitmap, sourceW As Integer, sourceH As Integer, targetW As Integer, targetH As Integer) As Bitmap
         Dim flat As New Bitmap(targetW, targetH, PixelFormat.Format24bppRgb)
-        Using g As Graphics = Graphics.FromImage(flat)
-            g.Clear(Color.White)
-            g.InterpolationMode = InterpolationMode.HighQualityBicubic
-            g.PixelOffsetMode = PixelOffsetMode.HighQuality
-            g.DrawImage(source, New Rectangle(0, 0, targetW, targetH), 0, 0, sourceW, sourceH, GraphicsUnit.Pixel)
-        End Using
+        Try
+            Using g As Graphics = Graphics.FromImage(flat)
+                g.Clear(Color.White)
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality
+                g.DrawImage(source, New Rectangle(0, 0, targetW, targetH), 0, 0, sourceW, sourceH, GraphicsUnit.Pixel)
+            End Using
+        Catch
+            ' The caller never received it, so nothing else can release it: a GDI+ failure
+            ' here (memory on the 32-bit viewer) must not leave the resample to the finalizer
+            ' (audit 057.S12-4).
+            flat.Dispose()
+            Throw
+        End Try
         Return flat
     End Function
 
@@ -885,6 +908,7 @@ Public Class TesseractOcrEngine
             Return True
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: tessdata download failed " & code & ": " & ex.Message)
+            AppFileLogger.WriteLine("OCR language pack download failed (" & code & "): [" & ex.GetType().FullName & "] " & ex.Message)
             Try
                 If File.Exists(tmp) Then File.Delete(tmp)
             Catch

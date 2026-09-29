@@ -13,7 +13,19 @@ Public Module SvgPathData
 
     Public Function Parse(pathData As String) As GraphicsPath
         Dim path As New GraphicsPath()
-        If String.IsNullOrWhiteSpace(pathData) Then Return path
+        Try
+            AppendTo(path, pathData)
+            Return path
+        Catch
+            ' A malformed path throws FormatException; the half-built GraphicsPath has no
+            ' other owner, so it is released here rather than left to the finalizer.
+            path.Dispose()
+            Throw
+        End Try
+    End Function
+
+    Private Sub AppendTo(path As GraphicsPath, pathData As String)
+        If String.IsNullOrWhiteSpace(pathData) Then Return
 
         Dim tokens As New List(Of String)()
         For Each match As Match In tokenPattern.Matches(pathData)
@@ -115,8 +127,8 @@ Public Module SvgPathData
                         Dim rx As Single = Math.Abs(reader.ReadNumber())
                         Dim ry As Single = Math.Abs(reader.ReadNumber())
                         Dim rotation As Single = reader.ReadNumber()
-                        Dim largeArc As Boolean = reader.ReadNumber() <> 0.0F
-                        Dim sweep As Boolean = reader.ReadNumber() <> 0.0F
+                        Dim largeArc As Boolean = reader.ReadFlag()
+                        Dim sweep As Boolean = reader.ReadFlag()
                         Dim point As PointF = ReadPoint(reader, relative, current)
                         AddArc(path, current, rx, ry, rotation, largeArc, sweep, point)
                         current = point
@@ -124,13 +136,15 @@ Public Module SvgPathData
                 Case "Z"c
                     path.CloseFigure()
                     current = figureStart
+                    ' Closepath takes no parameters. A number here used to leave the loop on
+                    ' the same token forever - a hang under the renderer's cache lock.
+                    If reader.HasNumber Then Throw New FormatException("SVG path has parameters after a closepath.")
                 Case Else
                     Throw New FormatException("Unsupported SVG path command '" & command & "'.")
             End Select
             previousCommand = command
         End While
-        Return path
-    End Function
+    End Sub
 
     Private Function ReadPoint(reader As PathReader, relative As Boolean, origin As PointF) As PointF
         Dim x As Single = reader.ReadNumber()
@@ -252,6 +266,21 @@ Public Module SvgPathData
             Dim token As String = tokens(index)
             index += 1
             Return Single.Parse(token, NumberStyles.Float, CultureInfo.InvariantCulture)
+        End Function
+        ''' <summary>An arc flag. SVG 1.1 section 8.3 makes a flag exactly one character that
+        ''' needs no separator, so minified paths write "a1 1 0 011 1" (large 0, sweep 1, x 1,
+        ''' y 1) - which the number tokenizer reads as the single number 011.</summary>
+        Public Function ReadFlag() As Boolean
+            If Not HasNumber Then Throw New FormatException("SVG path has too few parameters.")
+            Dim token As String = tokens(index)
+            Dim first As Char = token(0)
+            If token.Length > 1 AndAlso (first = "0"c OrElse first = "1"c) Then
+                ' Consume only the flag character; the rest of the token is the next value.
+                tokens(index) = token.Substring(1)
+                Return first = "1"c
+            End If
+            index += 1
+            Return Single.Parse(token, NumberStyles.Float, CultureInfo.InvariantCulture) <> 0.0F
         End Function
         Private Shared Function IsCommand(value As String) As Boolean
             Return value.Length = 1 AndAlso Char.IsLetter(value(0))

@@ -145,6 +145,21 @@ Public Class ImageDecoderSeamTests
         End Try
     End Sub
 
+    ''' <summary>
+    ''' Audit 057.S01-2: a WEBP saved under a .jpg name is displayed through the seam since
+    ''' audit 048 A-16, so its size label must come from the seam too - the header decides,
+    ''' not the name. It used to read "?x?" (Size.Empty).
+    ''' </summary>
+    <Fact>
+    Public Sub GetImageDimensions_WebpUnderAJpgName_UsesTheSeamByHeader()
+        Dim p As String = WriteTemp(StaticWebp, ".jpg")
+        Try
+            Assert.Equal(New Size(120, 90), Utils.GetImageDimensions(p))
+        Finally
+            File.Delete(p)
+        End Try
+    End Sub
+
 #End If
 
 #If NETFRAMEWORK Then

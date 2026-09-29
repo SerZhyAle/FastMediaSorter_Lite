@@ -46,6 +46,7 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     Private chkAutostart As CheckBox
     Private chkOpenOnStart As CheckBox
+    Private cmbTheme As ComboBox
     Private chkLanOnly As CheckBox
     Private numMaxConns As NumericUpDown
     Private numPort As NumericUpDown
@@ -214,6 +215,29 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddHandler chkOpenOnStart.CheckedChanged, AddressOf OnOpenOnStartChanged
         sec.AddBodyRow(chkOpenOnStart)
         toolTip.SetToolTip(chkOpenOnStart, Localization.T("Без галочки любой запуск программы оставляет только значок рядом с часами - окно открывается двойным щелчком по нему. С галочкой окно открывается сразу."))
+
+        ' The application theme (060_SPECIFICATION_APP_THEME_SYSTEM_LIGHT_DARK.md §4). The same
+        ' stored value the viewer's Settings - Viewing offers: a change here repaints every
+        ' window of this program at once and reaches a running viewer through ThemeService.
+        Dim themeRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .WrapContents = False, .Margin = New Padding(0, 6, 0, 2)}
+        Dim lblTheme As New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 8, 0),
+            .Text = Localization.T("Тема оформления")}
+        cmbTheme = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 180, .Margin = New Padding(0, 2, 0, 0)}
+        cmbTheme.Items.AddRange(New Object() {Localization.T("Как в системе"), Localization.T("Светлая"), Localization.T("Тёмная")})
+        cmbTheme.SelectedIndex = CInt(ThemeService.Mode)
+        AddHandler cmbTheme.SelectedIndexChanged, AddressOf OnThemeChanged
+        themeRow.Controls.Add(lblTheme)
+        themeRow.Controls.Add(cmbTheme)
+        sec.AddBodyRow(themeRow)
+        toolTip.SetToolTip(cmbTheme, Localization.T("Светлая, тёмная или как в Windows - для всех окон просмотрщика и менеджера общего доступа."))
+    End Sub
+
+    ''' <summary>The combo's order IS the ThemeMode order: system, light, dark.</summary>
+    Private Sub OnThemeChanged(sender As Object, e As EventArgs)
+        If cmbTheme.SelectedIndex < 0 Then Return
+        Dim mode As ThemeMode = CType(cmbTheme.SelectedIndex, ThemeMode)
+        If mode <> ThemeService.Mode Then ThemeService.SetMode(mode)
     End Sub
 
     Private Sub BuildNetworkSection(sec As CollapsibleSection)

@@ -324,11 +324,16 @@ Public NotInheritable Class CollapsibleSection
             Dim w As Integer = Me.ClientSize.Width
             Dim h As Integer = Me.ClientSize.Height
 
-            g.Clear(If(_hot, Color.FromArgb(238, 243, 250),
-                       If(Me.Parent IsNot Nothing, Me.Parent.BackColor, SystemColors.Control)))
+            ' Spec 060: the palette in dark mode. The two light tints predate the palette and are
+            ' kept, so the light header is the one it always was.
+            Dim theme As ThemePalette = ThemeService.Palette
+            Dim hotBack As Color = If(theme.IsDark, theme.ControlHover, Color.FromArgb(238, 243, 250))
+            Dim hairline As Color = If(theme.IsDark, theme.Border, Color.FromArgb(224, 228, 234))
+            g.Clear(If(_hot, hotBack,
+                       If(Me.Parent IsNot Nothing, Me.Parent.BackColor, theme.SurfaceWindow)))
             ' A hairline under the row: three stacked sections read as three rows rather
             ' than as one block of text when they are all folded.
-            Using p As New Pen(Color.FromArgb(224, 228, 234))
+            Using p As New Pen(hairline)
                 g.DrawLine(p, 0, h - 1, w, h - 1)
             End Using
             If Me.Focused Then ControlPaint.DrawFocusRectangle(g, New Rectangle(1, 1, w - 2, h - 2))
@@ -350,7 +355,7 @@ Public NotInheritable Class CollapsibleSection
                 Dim titleRect As Rectangle = If(rtl,
                     New Rectangle(pad, 0, w - left - pad, h),
                     New Rectangle(left, 0, right - left, h))
-                TextRenderer.DrawText(g, _title, bold, titleRect, SystemColors.ControlText,
+                TextRenderer.DrawText(g, _title, bold, titleRect, theme.TextPrimary,
                                       textFlags Or If(rtl, TextFormatFlags.Right, TextFormatFlags.Left))
             End Using
 
@@ -363,7 +368,8 @@ Public NotInheritable Class CollapsibleSection
             Dim sumRect As Rectangle = If(rtl,
                 New Rectangle(pad, 0, available, h),
                 New Rectangle(right - available, 0, available, h))
-            TextRenderer.DrawText(g, _summary, Me.Font, sumRect, _summaryColor,
+            Dim summaryInk As Color = theme.Restate(_summaryColor, False)
+            TextRenderer.DrawText(g, _summary, Me.Font, sumRect, summaryInk,
                                   textFlags Or TextFormatFlags.EndEllipsis Or If(rtl, TextFormatFlags.Left, TextFormatFlags.Right))
         End Sub
 
@@ -374,7 +380,7 @@ Public NotInheritable Class CollapsibleSection
         ''' shape (ICON-SET rule 2, spec 027 phase 7).</summary>
         Private Shared Sub DrawChevron(g As Graphics, r As Rectangle, expanded As Boolean)
             Dim meaning As IconMeaning = IconMap.GetMeaning(If(expanded, "collapsibleSectionOpen", "collapsibleSection"))
-            Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, Math.Max(1, r.Width), SystemColors.GrayText,
+            Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, Math.Max(1, r.Width), ThemeService.Palette.TextMuted,
                                                          AddressOf CompanionAssets.OpenBundledAsset)
                 g.DrawImage(glyph, r.Left, r.Top, r.Width, r.Height)
             End Using

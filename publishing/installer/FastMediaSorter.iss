@@ -153,12 +153,9 @@ ukrainian.PrivilegesRequiredOverrideText1=%1 можна встановити д�
 ukrainian.PrivilegesRequiredOverrideText2=%1 можна встановити лише для вас (без прав адміністратора) або для всіх користувачів цього комп'ютера (потрібні права адміністратора).%n%nОбидва режими встановлюють однаковий набір можливостей, включно з офлайн відеокодеками (VLC), моделями OCR / перекладу та компаньйоном для роздачі тек на Android. Роздачу тек можна ввімкнути в будь-якому з них - Windows один раз попросить підтвердження для правила брандмауера. Різниця лише в тому, куди потрапить програма й чи побачать її інші облікові записи цього ПК.
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-; Unchecked, and only offered with the share component: here the viewer is the product
-; and the Share Manager the side tool, so this is the opposite default from the Server
-; edition, where the manager is all there is. Offered at all because nothing else puts
-; the manager on screen - it has no file association and its own tray icon only exists
-; once something has started it.
+; Only offered with the share component: here the viewer is the product and the Share
+; Manager the side tool. Nothing else puts the manager on screen - it has no file
+; association and its own tray icon only exists once something has started it.
 Name: "sharedesktopicon"; Description: "{cm:ShareDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Components: share; Flags: unchecked
 
 ; The viewer itself is tiny; almost all of the package weight is optional,
@@ -276,8 +273,10 @@ Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeNameX86}"; Check: UseLegacy
 ; Start-menu item would start a tray-only process and read as a click that did nothing.
 Name: "{group}\Fast Media Sorter - Share Manager"; Filename: "{app}\FastMediaSorterCompanion.exe"; Parameters: "--show"; Comment: "{cm:ShareManagerComment}"; Components: share
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon; Check: UseModernExe
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeNameX86}"; Tasks: desktopicon; Check: UseLegacyExe
+; The viewer gets a desktop shortcut on every install, including silent installs and
+; upgrades where an earlier run remembered the old unchecked desktop task.
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Check: UseModernExe
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeNameX86}"; Check: UseLegacyExe
 ; Same "--show" reasoning as the Start-menu entry above. No UseModernExe/UseLegacyExe
 ; check: the Share Manager is x64 .NET 10 only, which is why the component itself
 ; carries MinVersion 10.0.14393 - on the machines the x86 viewer exists for there is

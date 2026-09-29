@@ -17,19 +17,19 @@ Partial Public Class Main_Form
     ' drifted apart from their Select Case twice: "ReadAfterUndo" (compared, never sent)
     ' and "ReadForJumpToFile" (sent, no branch at all - it only ever worked because the
     ' caller had already moved the index itself).
-    Friend Const Mode_Next As String = "ReadNextFile"
-    Friend Const Mode_Prev As String = "ReadPrevFile"
-    Friend Const Mode_SetFile As String = "SetFile"
-    Friend Const Mode_Files As String = "ReadFiles"
-    Friend Const Mode_FolderAndFile As String = "ReadFolderAndFile"
-    Friend Const Mode_FolderAndKnownFile As String = "ReadFolderAndKnownFile"
-    Friend Const Mode_Delete As String = "DeleteFile"
-    Friend Const Mode_InSlideShow As String = "InSlideShow"
-    Friend Const Mode_ForRandom As String = "ReadForRandom"
-    Friend Const Mode_ForSlideShow As String = "ReadForSlideShow"
-    Friend Const Mode_AfterUndo As String = "AfterUndo"
-    Friend Const Mode_JumpBy As String = "JumpBy"
-    Friend Const Mode_JumpTo As String = "JumpTo"
+    Friend Const Mode_Next As String = NavigationRules.ReadMode_Next
+    Friend Const Mode_Prev As String = NavigationRules.ReadMode_Prev
+    Friend Const Mode_SetFile As String = NavigationRules.ReadMode_SetFile
+    Friend Const Mode_Files As String = NavigationRules.ReadMode_Files
+    Friend Const Mode_FolderAndFile As String = NavigationRules.ReadMode_FolderAndFile
+    Friend Const Mode_FolderAndKnownFile As String = NavigationRules.ReadMode_FolderAndKnownFile
+    Friend Const Mode_Delete As String = NavigationRules.ReadMode_Delete
+    Friend Const Mode_InSlideShow As String = NavigationRules.ReadMode_InSlideShow
+    Friend Const Mode_ForRandom As String = NavigationRules.ReadMode_ForRandom
+    Friend Const Mode_ForSlideShow As String = NavigationRules.ReadMode_ForSlideShow
+    Friend Const Mode_AfterUndo As String = NavigationRules.ReadMode_AfterUndo
+    Friend Const Mode_JumpBy As String = NavigationRules.ReadMode_JumpBy
+    Friend Const Mode_JumpTo As String = NavigationRules.ReadMode_JumpTo
 
     ' Arguments of the pending jump. The index is moved INSIDE the pipeline (see the
     ' JumpBy/JumpTo cases): callers used to do "current_File_Index += 10" themselves and
@@ -96,7 +96,7 @@ Partial Public Class Main_Form
             ' chain rather than feed it (D8): the next file is behind the same dead
             ' transport, so walking a thousand of them is the bug, not the recovery.
             auto_Skip_Chain = 0
-            lbl_Status.Text = ReadFailureText(kind, Current_File_Name)
+            ShowKeptReadFailure(kind)
             AppFileLogger.WriteLine("Read failure kept in list [" & kind.ToString() & "]: " & Current_File_Name)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0913: " & kind.ToString() & " - file kept in the list")
             Return
@@ -162,6 +162,9 @@ Partial Public Class Main_Form
         Catch ex As Exception
             ' Asking the question failed - keep the caller's answer rather than invent one.
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0914: folder probe failed: " & ex.Message)
+            ' Release strips Debug.WriteLine: the verdict below falls back to the caller's
+            ' kind, and the log is the only trace of why (audit 057.S02-2).
+            AppFileLogger.WriteLine("Read failure: folder probe failed [" & ex.GetType().Name & "], caller's kind kept: " & kind.ToString())
         End Try
 
         Return kind
@@ -185,6 +188,15 @@ Partial Public Class Main_Form
     End Function
 
 #If Not NETFRAMEWORK Then
+    ''' <summary>Show the file that remains selected after a read failure without
+    ''' leaving the previous picture under its name or its file-operation hotkeys.</summary>
+    Private Sub ShowKeptReadFailure(kind As PathFailureKind)
+        BlankActiveMediaSurface()
+        lbl_File_Number.Text = Localization.TF("{0} из {1}", current_File_Index + 1, total_File_Count)
+        lbl_Current_File.Text = CurrentFileDisplayName(Current_File_Name)
+        lbl_Status.Text = ReadFailureText(kind, Current_File_Name)
+    End Sub
+
     ''' <summary>
     ''' True when <paramref name="file_Path"/> is on a local volume that is ready - a fixed
     ''' disk, or a removable one that is present (audit 048, A-18/A-22). False for a UNC path,
@@ -277,9 +289,15 @@ Partial Public Class Main_Form
             ' Measured on the monotonic clock (audit 048, A-08): against DateTime.Now the
             ' DST fall-back put the last stamp an hour in the future and refused every key,
             ' click and slideshow tick until wall time caught up.
+            ' And it may refuse only a mode a held key or a timer repeats (audit 057, S02-4):
+            ' an external open, a folder pick, an archive entry or a file operation has
+            ' already changed state before calling in, and dropping its display left the old
+            ' picture up while DEL / 0-9 aimed at the new file. Those still stamp the clock,
+            ' so a key repeat right behind them waits its 40 ms.
             If Not is_Auto_Skip Then
                 Dim current_Operation_Ms As Long = MonotonicClock.NowMs()
-                If Not MonotonicClock.HasElapsed(current_Operation_Ms, last_Action_Ms, minimum_time_before_next_media_file_Ms) Then
+                If NavigationRules.IsThrottledReadMode(read_Mode_Type) AndAlso
+                   Not MonotonicClock.HasElapsed(current_Operation_Ms, last_Action_Ms, minimum_time_before_next_media_file_Ms) Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0330: Try to read the new file less than 0.04s - cancelled")
                     Exit Sub
                 End If
@@ -353,23 +371,22 @@ Partial Public Class Main_Form
 
             is_TextBox_Editing = True
 
-            If Not cmbox_Media_Folder.Text = Current_Folder_Path Then
+            ' The recent-folders list is updated whatever the folder box says (audit 057,
+            ' S02-6): every ingress but the folder dialog writes the box BEFORE calling in, so
+            ' gating this on "box text <> folder" kept folders opened from Explorer, the
+            ' command line or a typed path out of the list for good. The read-error guard of
+            ' 048 A-07 still holds - a folder that could not be read returned above, with
+            ' Current_Folder_Path cleared. Down to the limit, not one element per insert: a
+            ' lowered limit (0 = "record nothing") has to hold from the next folder on (053 F-12).
+            Dim recent_Changed As Boolean = False
+            If IsRecentFolderCandidate() Then
+                recent_Changed = NavigationRules.PromoteRecentFolder(recent_Folder_List, Current_Folder_Path, RecentFoldersLimit())
+                ' A new folder in the recent list is worth keeping through a crash.
+                If recent_Changed Then MarkSettingsDirty()
+            End If
+
+            If recent_Changed OrElse Not cmbox_Media_Folder.Text = Current_Folder_Path Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0370: folder combo list is updated")
-
-                ' Move current folder to first position if it's not already there
-                If recent_Folder_List.Count = 0 OrElse recent_Folder_List(0) <> Current_Folder_Path Then
-                    ' Remove if exists elsewhere in the list
-                    recent_Folder_List.Remove(Current_Folder_Path)
-                    ' Insert at the beginning (first position)
-                    recent_Folder_List.Insert(0, Current_Folder_Path)
-
-                    ' Down to the limit, not one element per insert: a lowered limit (0 =
-                    ' "record nothing") has to hold from the next folder on (053 F-12).
-                    Utils.ApplyRecentLimit(recent_Folder_List, RecentFoldersLimit(), newestFirst:=True)
-
-                    ' A new folder in the recent list is worth keeping through a crash.
-                    MarkSettingsDirty()
-                End If
 
                 Dim refresh_Combo As Action =
                     Sub()
@@ -642,6 +659,21 @@ Partial Public Class Main_Form
         Return True
     End Function
 
+    ''' <summary>
+    ''' May Current_Folder_Path go into the recent-folders list? Not inside an archive (it
+    ''' names the .zip/.cbz file, and picking it from the list would read a FILE as a folder)
+    ''' nor inside a remote resource (the locator is 007's to persist). Until 057 S02-6 the
+    ''' box-text gate kept both out by accident - EnterArchive writes the box first.
+    ''' </summary>
+    Private Function IsRecentFolderCandidate() As Boolean
+        If String.IsNullOrEmpty(Current_Folder_Path) Then Return False
+#If Not NETFRAMEWORK Then
+        If IsArchiveMode() Then Return False
+        If ActiveResourceSession() IsNot Nothing Then Return False
+#End If
+        Return True
+    End Function
+
     ''' <summary>A full folder list was just loaded: the external-open state is over.</summary>
     Private Sub ClearExternalInputState()
         was_External_Input_Previously = False
@@ -660,6 +692,11 @@ Partial Public Class Main_Form
         files_Array = Nothing
         files_List = New List(Of String) From {file_Path}
         total_File_Count = 1
+        ' A one-file list is not the scan of any folder (audit 057, S02-5). Left naming the
+        ' folder already browsed, IsFolderListLoaded answered True for it: "random" picked
+        ' from one file, a slideshow stopped on its first tick, and IsListOfFolder took it
+        ' for the folder's scan when an undo brought a file back.
+        folder_List_Loaded_For = ""
         NoteFileListReplaced()
     End Sub
 
@@ -788,6 +825,19 @@ Partial Public Class Main_Form
 
                 Dim read_Error As Boolean = False
                 Dim files As Object = GetFiles(read_Error)
+                If files Is Nothing AndAlso Not read_Error AndAlso Not String.IsNullOrEmpty(Current_Image_Path) Then
+                    ' The folder listed EMPTY although the opened file is in it - its kind is
+                    ' left out of navigation (009), say. The same answer as the "not found"
+                    ' branch below: the opened file stays, as a one-file list (audit 057,
+                    ' S02-7). Returning False here made the first Next/Prev do nothing and the
+                    ' second wipe the surface with "no files in folder" under a playing video.
+                    InstallSingleFileList(Current_Image_Path)
+                    current_File_Index = 0
+                    is_File_Found = True
+                    lbl_Status.Text = ""
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0715: empty listing - the opened file is kept alone")
+                    Return True
+                End If
                 If files Is Nothing Then
                     total_File_Count = 0
                     current_File_Index = 0
@@ -1130,6 +1180,15 @@ Partial Public Class Main_Form
     ''' bare media panel, nothing happens, and the user is stranded on a file they
     ''' cannot even see. An empty visible box keeps the way out.</summary>
     Private Sub ShowUnsupportedFormat(file_Path As String)
+        BlankActiveMediaSurface()
+
+        current_Loaded_File_Name = file_Path
+        lbl_Status.Text = Localization.TF("Формат не поддерживается: {0}", Path.GetFileName(file_Path))
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1045: unsupported format, surface blanked: " & file_Path)
+    End Sub
+
+    ''' <summary>Leave one empty picture box visible so navigation by click still works.</summary>
+    Private Sub BlankActiveMediaSurface()
         ' Frees the shown image and its stream, stops the GIF timer and VLC - and,
         ' importantly, leaves the visibility flags alone.
         ReleaseActiveMedia()
@@ -1155,10 +1214,6 @@ Partial Public Class Main_Form
         ResetBackgroundToNeutral()
 
         UpdateControlVisibility()
-
-        current_Loaded_File_Name = file_Path
-        lbl_Status.Text = Localization.TF("Формат не поддерживается: {0}", Path.GetFileName(file_Path))
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1045: unsupported format, surface blanked: " & file_Path)
     End Sub
 
     ''' <summary>What a surface with NO image wears: the scheme's own base colour, never
@@ -1483,7 +1538,8 @@ Partial Public Class Main_Form
                     ' The index is deliberately NOT rolled back: the user pressed Next, so
                     ' moving on is what they asked for. It is the LIST that must survive.
                     If ReadFailure(PathFailureKind.Missing) = PathFailureKind.Transport Then
-                        lbl_Status.Text = ReadFailureText(PathFailureKind.Transport, Current_File_Name)
+                        ShowKeptReadFailure(PathFailureKind.Transport)
+                        OnMediaDisplayed()
                         AppFileLogger.WriteLine("Folder stopped answering, list kept: " & Current_File_Name)
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0978: folder unreachable - list kept intact")
                         Return
@@ -1502,6 +1558,8 @@ Partial Public Class Main_Form
                         total_File_Count -= 1
                     Catch ex As Exception
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0976: Error removing invalid file: " & ex.Message)
+                        ' The only trace in Release (audit 057.S02-2): the entry stays in the list.
+                        AppFileLogger.WriteLine("Vanished file not removed from the list [" & ex.GetType().Name & "]: " & ex.Message)
                     End Try
 
                     ' The slot now holds the file AFTER the vanished one. Going backwards the
@@ -1568,8 +1626,9 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
                 ' An archive entry's temporary copy is never a recent file: it is gone the
                 ' moment the archive closes, and a comic would evict every real entry
-                ' (010 invariant 5, audit 052 A-05).
-                If Not ArchivePaths.IsUnderArchiveCache(Current_File_Name) Then
+                ' (010 invariant 5, audit 052 A-05). The same holds for a remote resource's
+                ' materialised copy under remote-cache (audit 057, S02-8).
+                If Not RemoteCachePaths.IsSessionCopy(Current_File_Name) Then
 #End If
                 recent_Media_File_List.Remove(Current_File_Name)
                 recent_Media_File_List.Add(Current_File_Name)

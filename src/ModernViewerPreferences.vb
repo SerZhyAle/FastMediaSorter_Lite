@@ -30,8 +30,8 @@ Public NotInheritable Class ModernViewerPreferences
     ''' <summary>always | permanentOnly. The second value is the one §0.4 of that
     ''' specification says is unreachable today and is what a triage session wants: a
     ''' recycled deletion goes straight through, a PERMANENT one still stops and asks.
-    ''' A third value, "never", silenced the permanent question too and was retired by
-    ''' ticket 028 Ф-5 - a stored one reads back as permanentOnly.</summary>
+    ''' A third value, "never", silences the permanent question too: retired by ticket 028
+    ''' Ф-5, restored by owner decision 2026-09-27 as an explicit choice.</summary>
     Public Property ConfirmDelete As String = "always"
 
     ''' <summary>Make a recipient slot's final folder when it is not there yet
@@ -510,16 +510,10 @@ Public NotInheritable Class ModernViewerPreferences
     Private Shared Function ReadConfirmDelete() As String
         Dim stored As String = ReadString("ConfirmDelete", "")
         If stored <> "" Then
-            ' "never" is retired (ticket 028 Ф-5, APP-BEHAVIOUR rule 5, owner decision
-            ' 2026-09-24): it silenced the question for a PERMANENT deletion too, and an
-            ' opt-out of the confirmation of an irreversible action is not offered. The
-            ' closest honest reading of what that person asked for - fewer questions - is
-            ' "ask only when the file will not reach the Recycle Bin", written back once.
-            If stored = "never" Then
-                WriteString("ConfirmDelete", "permanentOnly")
-                Return "permanentOnly"
-            End If
-            Return Choice(stored, "always", "always", "permanentOnly")
+            ' "never" was retired on 2026-09-24 (ticket 028 Ф-5) and restored by owner
+            ' decision 2026-09-27: it is offered again as an explicit choice. A value the
+            ' retirement already rewrote to permanentOnly stays so - it is not guessed back.
+            Return Choice(stored, "always", "always", "permanentOnly", "never")
         End If
 
         Dim migrated As String = If(ReadString("NoRequestBeforeFileOperation", "0") = "1", "permanentOnly", "always")

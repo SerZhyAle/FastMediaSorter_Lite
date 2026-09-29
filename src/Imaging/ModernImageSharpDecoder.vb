@@ -126,6 +126,10 @@ Friend NotInheritable Class ModernImageSharpDecoder
     Public Function TryGetPixelSize(stream As Stream) As Size Implements IImageDecoder.TryGetPixelSize
         Try
             If IsIsoBmff(stream) Then
+                ' The process-wide limits first, as the decode does (audit 057.S01-3): the
+                ' size label is often the FIRST Magick call of a session - the prefetch
+                ' worker asks it before any decode - and it ran with Magick's defaults.
+                MagickResourceLimits.EnsureApplied()
                 stream.Position = 0
                 Dim magickInfo As New ImageMagick.MagickImageInfo(stream)
                 If magickInfo.Width <= 0 OrElse magickInfo.Height <= 0 Then Return Size.Empty

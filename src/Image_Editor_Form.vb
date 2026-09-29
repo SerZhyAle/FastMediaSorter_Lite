@@ -622,6 +622,9 @@ Partial Friend NotInheritable Class Image_Editor_Form
         Friend Sub New()
             Me.SetStyle(ControlStyles.AllPaintingInWmPaint Or ControlStyles.OptimizedDoubleBuffer Or
                         ControlStyles.UserPaint Or ControlStyles.ResizeRedraw, True)
+            ' Outside the application theme on purpose (spec 060 rule 10, APP-STYLE rule 5): the
+            ' canvas is the photo's surround, the same neutral dark in both themes, like a
+            ' viewer's letterbox - a literal colour, so the theme leaves it alone.
             Me.BackColor = Color.FromArgb(32, 32, 32)
         End Sub
 

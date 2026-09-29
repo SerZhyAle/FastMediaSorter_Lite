@@ -130,11 +130,13 @@ Friend Module DeletePolicy
     ''' </summary>
     Friend Function ShouldConfirm(policy As String, decision As DeleteDecision) As Boolean
         Select Case If(policy, "")
-            Case "permanentOnly", "never"
-                ' "never" is read as permanentOnly (ticket 028 Ф-5, APP-BEHAVIOUR rule 5): a
-                ' user may skip the question for a deletion the Recycle Bin can undo, never
-                ' for one nothing can. The preference reader retires the value; this keeps a
-                ' stray one from reaching the old meaning.
+            Case "never"
+                ' Restored by owner decision 2026-09-27 after ticket 028 Ф-5 had retired it:
+                ' this is a sorter, and a sorting run that stops on every permanent delete is
+                ' not one. Explicit opt-in only - no migration ever arrives here. A dated
+                ' exception to APP-BEHAVIOUR rule 5 in the catalog registry.
+                Return False
+            Case "permanentOnly"
                 Return decision Is Nothing OrElse decision.IsPermanent
             Case Else
                 Return True

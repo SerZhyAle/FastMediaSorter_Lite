@@ -363,9 +363,12 @@ Partial Public NotInheritable Class MainWindow
         If meaning Is Nothing Then Return
         If String.Equals(TryCast(lblStateDot.Tag, String), mapName, StringComparison.Ordinal) AndAlso
            lblStateDot.Image IsNot Nothing Then Return
-        Dim hue As Color = SystemColors.GrayText
-        If meaning.GlyphId = "status.ok" Then hue = StateOkHue
-        If meaning.GlyphId = "status.error" Then hue = StateErrorHue
+        ' Spec 060: the two light hues predate the palette and are kept; dark mode takes the
+        ' palette's status roles, lightened to read on charcoal.
+        Dim theme As ThemePalette = ThemeService.Palette
+        Dim hue As Color = theme.TextMuted
+        If meaning.GlyphId = "status.ok" Then hue = If(theme.IsDark, theme.Success, StateOkHue)
+        If meaning.GlyphId = "status.error" Then hue = If(theme.IsDark, theme.Danger, StateErrorHue)
         Dim old As Image = lblStateDot.Image
         lblStateDot.Image = GlyphRenderer.Render(meaning.GlyphId, LogicalToDeviceUnits(16), hue,
                                                  AddressOf CompanionAssets.OpenBundledAsset)

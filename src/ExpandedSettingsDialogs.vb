@@ -294,8 +294,8 @@ Public NotInheritable Class History_Form
         Dim missing As Boolean = Not KnownExistence(entry, list Is folderList, list).GetValueOrDefault(True)
         e.DrawBackground()
         Dim colour As Color = If((e.State And DrawItemState.Selected) = DrawItemState.Selected,
-                                 SystemColors.HighlightText,
-                                 If(missing, SystemColors.GrayText, SystemColors.WindowText))
+                                 ThemeService.Palette.AccentInk,
+                                 If(missing, ThemeService.Palette.TextMuted, ThemeService.Palette.TextPrimary))
         TextRenderer.DrawText(e.Graphics, entry, e.Font, e.Bounds, colour,
                               TextFormatFlags.Left Or TextFormatFlags.VerticalCenter Or TextFormatFlags.PathEllipsis)
         e.DrawFocusRectangle()

@@ -49,8 +49,6 @@ Partial Public Class Main_Form
     Private Sub BuildVideoMenu()
         ClearAndDisposeItems(video_Menu.Items)
 
-        Dim rus As Boolean = Is_Russian_Language
-
         ' A stream belongs to no folder and has no file to rename, move or hand to another
         ' player - those items are left out rather than shown dead (Main_Form.OpenUrl.vb).
         Dim is_Local_File As Boolean = Not String.IsNullOrEmpty(current_Loaded_File_Name) AndAlso
@@ -162,6 +160,8 @@ Partial Public Class Main_Form
             vlc_Play_Serial += 1
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2510: video reopen failed: " & ex.Message)
+            ' The status already says the new mode is on; this is the only trace (057.S09-5).
+            AppFileLogger.WriteLine("Video menu: reopening the video to apply Repeat failed (" & ex.GetType().Name & "): " & ex.Message)
             ClearPendingVideoPosition()
         End Try
     End Sub

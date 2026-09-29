@@ -35,8 +35,25 @@ Friend NotInheritable Class ResourceSession
     Private ReadOnly cancel_Source As New CancellationTokenSource()
     Private ReadOnly fetch_Gate As New Object()
 
-    Private entry_List As IReadOnlyList(Of ResourceEntry) = New List(Of ResourceEntry)()
-    Private by_Local_Path As New Dictionary(Of String, Integer)(StringComparer.OrdinalIgnoreCase)
+    ''' <summary>
+    ''' One listing and its local-path index, published together and never changed after:
+    ''' LoadListing and Rekey build a new pair under fetch_Gate and swap it in. A reader off
+    ''' the gate - the routing on the UI thread, the prefetch worker - therefore never pairs
+    ''' the index of one listing with the entries of another, and never reads a dictionary
+    ''' while it is being written (057.S07-1). The entries' own fields are the one thing
+    ''' Rekey still changes in place; each is a single reference write.
+    ''' </summary>
+    Private NotInheritable Class Listing
+        Friend Sub New(entries As List(Of ResourceEntry), byLocalPath As Dictionary(Of String, Integer))
+            Me.Entries = entries
+            Me.ByLocalPath = byLocalPath
+        End Sub
+        Friend ReadOnly Property Entries As List(Of ResourceEntry)
+        Friend ReadOnly Property ByLocalPath As Dictionary(Of String, Integer)
+    End Class
+
+    Private current_Listing As New Listing(New List(Of ResourceEntry)(),
+                                           New Dictionary(Of String, Integer)(StringComparer.OrdinalIgnoreCase))
 
     ' The LRU accounting, as in the archive session: sizes of what is on disk, recency
     ' oldest first, and the total. Touched only under fetch_Gate.
@@ -71,7 +88,7 @@ Friend NotInheritable Class ResourceSession
 
     Friend ReadOnly Property Entries As IReadOnlyList(Of ResourceEntry)
         Get
-            Return entry_List
+            Return Snapshot().Entries
         End Get
     End Property
 
@@ -113,18 +130,25 @@ Friend NotInheritable Class ResourceSession
             ' A new directory's names reuse the indexes, so the old accounting describes
             ' files that now belong to different entries: forget it and empty the cache.
             ForgetMaterialisedLocked()
-            entry_List = files
-            by_Local_Path = map
+            Volatile.Write(current_Listing, New Listing(files, map))
             CurrentDirectory = remoteDir
         End SyncLock
     End Sub
 
-    ''' <summary>Which entry a local path belongs to, or -1.</summary>
-    Friend Function IndexOfLocalPath(localPath As String) As Integer
+    Private Function Snapshot() As Listing
+        Return Volatile.Read(current_Listing)
+    End Function
+
+    Private Shared Function IndexIn(listing As Listing, localPath As String) As Integer
         If String.IsNullOrEmpty(localPath) Then Return -1
         Dim found As Integer
-        If by_Local_Path.TryGetValue(localPath, found) Then Return found
+        If listing.ByLocalPath.TryGetValue(localPath, found) Then Return found
         Return -1
+    End Function
+
+    ''' <summary>Which entry a local path belongs to, or -1.</summary>
+    Friend Function IndexOfLocalPath(localPath As String) As Integer
+        Return IndexIn(Snapshot(), localPath)
     End Function
 
     Friend Function OwnsLocalPath(localPath As String) As Boolean
@@ -133,8 +157,9 @@ Friend NotInheritable Class ResourceSession
 
     ''' <summary>The entry behind a local path, or Nothing.</summary>
     Friend Function EntryAt(localPath As String) As ResourceEntry
-        Dim index As Integer = IndexOfLocalPath(localPath)
-        Return If(index < 0, Nothing, entry_List(index))
+        Dim listing As Listing = Snapshot()
+        Dim index As Integer = IndexIn(listing, localPath)
+        Return If(index < 0, Nothing, listing.Entries(index))
     End Function
 
     ''' <summary>
@@ -152,13 +177,16 @@ Friend NotInheritable Class ResourceSession
                                    Optional ct As CancellationToken = Nothing,
                                    Optional progress As IProgress(Of Long) = Nothing,
                                    Optional protectAround As Integer = 1) As EnsureLocalOutcome
-        Dim index As Integer = IndexOfLocalPath(localPath)
-        If index < 0 Then Return EnsureLocalOutcome.NotOurs
+        If IndexOfLocalPath(localPath) < 0 Then Return EnsureLocalOutcome.NotOurs
         If Not NeedsMaterialisation Then Return EnsureLocalOutcome.Ready
 
         Using linked As CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancel_Source.Token, ct)
             SyncLock fetch_Gate
                 If disposed Then Return EnsureLocalOutcome.Cancelled
+                ' Resolved again under the gate: the wait for it can outlast a new listing,
+                ' whose indexes name other files.
+                Dim index As Integer = IndexOfLocalPath(localPath)
+                If index < 0 Then Return EnsureLocalOutcome.NotOurs
                 Return EnsureLocalLocked(index, linked.Token, progress, Math.Max(1, protectAround))
             End SyncLock
         End Using
@@ -166,7 +194,7 @@ Friend NotInheritable Class ResourceSession
 
     Private Function EnsureLocalLocked(index As Integer, ct As CancellationToken,
                                        progress As IProgress(Of Long), protectAround As Integer) As EnsureLocalOutcome
-        Dim entry As ResourceEntry = entry_List(index)
+        Dim entry As ResourceEntry = current_Listing.Entries(index)
 
         ' Already here and the right size - the common case on the way back through a folder.
         Try
@@ -208,9 +236,9 @@ Friend NotInheritable Class ResourceSession
     ''' (PV-5): the next look fetches it again instead of showing the old bytes.
     ''' </summary>
     Friend Sub Invalidate(localPath As String)
-        Dim index As Integer = IndexOfLocalPath(localPath)
-        If index < 0 Then Return
         SyncLock fetch_Gate
+            Dim index As Integer = IndexOfLocalPath(localPath)
+            If index < 0 Then Return
             DropLocalLocked(index)
         End SyncLock
     End Sub
@@ -221,10 +249,11 @@ Friend NotInheritable Class ResourceSession
     ''' is one; the index - and so the place in the list - stays.
     ''' </summary>
     Friend Function Rekey(localPath As String, newRemotePath As String, newName As String) As String
-        Dim index As Integer = IndexOfLocalPath(localPath)
-        If index < 0 Then Return localPath
         SyncLock fetch_Gate
-            Dim entry As ResourceEntry = entry_List(index)
+            Dim listing As Listing = current_Listing
+            Dim index As Integer = IndexIn(listing, localPath)
+            If index < 0 Then Return localPath
+            Dim entry As ResourceEntry = listing.Entries(index)
             Dim oldLocal As String = entry.LocalPath
             Dim newLocal As String = If(NeedsMaterialisation,
                 Path.Combine(SessionDir, RemoteCachePaths.EntryFileName(index, newName)),
@@ -239,8 +268,10 @@ Friend NotInheritable Class ResourceSession
             entry.FullPath = newRemotePath
             entry.Name = newName
             entry.LocalPath = newLocal
-            by_Local_Path.Remove(oldLocal)
-            by_Local_Path(newLocal) = index
+            Dim map As New Dictionary(Of String, Integer)(listing.ByLocalPath, StringComparer.OrdinalIgnoreCase)
+            map.Remove(oldLocal)
+            map(newLocal) = index
+            Volatile.Write(current_Listing, New Listing(listing.Entries, map))
             Return newLocal
         End SyncLock
     End Function
@@ -257,16 +288,23 @@ Friend NotInheritable Class ResourceSession
     End Sub
 
     Private Sub EvictOverBudget(justTouched As Integer, protectAround As Integer)
+        ' The distance wraps, as the prefetch does: after the last entry it fetches the
+        ' first, and a straight distance left the file on screen unprotected (057.S07-2).
+        Dim count As Integer = current_Listing.Entries.Count
         Dim victims As List(Of Integer) = RemoteCacheStore.ChooseEvictions(
             lru_Recency, local_Sizes, session_Bytes, MaxCacheBytes,
-            Function(candidate) Math.Abs(candidate - justTouched) <= protectAround)
+            Function(candidate)
+                Dim distance As Integer = Math.Abs(candidate - justTouched)
+                Return Math.Min(distance, count - distance) <= protectAround
+            End Function)
         For Each victim As Integer In victims
             DropLocalLocked(victim)
         Next
     End Sub
 
     Private Sub DropLocalLocked(index As Integer)
-        If index >= 0 AndAlso index < entry_List.Count Then DeleteQuietly(entry_List(index).LocalPath)
+        Dim entries As List(Of ResourceEntry) = current_Listing.Entries
+        If index >= 0 AndAlso index < entries.Count Then DeleteQuietly(entries(index).LocalPath)
         Dim size As Long
         If local_Sizes.TryGetValue(index, size) Then
             local_Sizes.Remove(index)

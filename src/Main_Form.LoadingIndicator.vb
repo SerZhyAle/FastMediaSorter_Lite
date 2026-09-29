@@ -78,22 +78,34 @@ Partial Public Class Main_Form
         ' The path travels as an argument, never as a global read from the pool
         ' thread: the user goes on flipping and Current_File_Name moves under us.
         ' The loader says WHY it returned Nothing (audit 048, A-06): a locked or access-denied
-        ' file is not "not a picture". Written by the pool thread before the task completes,
-        ' read here only after a completed Wait - which orders the two.
-        Dim read_Failure As PathFailureKind = PathFailureKind.Content
-        Dim decode As System.Threading.Tasks.Task(Of Tuple(Of Image, IO.MemoryStream)) =
-            System.Threading.Tasks.Task.Run(Function()
-                                                Dim reported As PathFailureKind = PathFailureKind.Content
-                                                Dim loaded As Tuple(Of Image, IO.MemoryStream) = LoadImageWithStream(file_Path, reported)
-                                                read_Failure = reported
-                                                Return loaded
-                                            End Function)
+        ' file is not "not a picture" - carried in the outcome, so a caller that JOINS an
+        ' abandoned decode gets the verdict along with the pixels.
+        '
+        ' One decode per path (audit 057, S01-6): a decode of this file abandoned at an
+        ' earlier visit's deadline and still running is taken over instead of a second one
+        ' started beside it. It is handed over, never shared - the registry decides under
+        ' one lock whether the late result goes to this caller or gets released, so the
+        ' Image and its stream keep exactly one owner (see InFlightDecodeRegistry).
+        Dim lease As InFlightDecodeRegistry(Of DecodeOutcome).Lease =
+            in_Flight_Decodes.Acquire(file_Path, DecodeGroup(file_Path),
+                                      Function() System.Threading.Tasks.Task.Run(Function() DecodeForDisplay(file_Path)))
+        Select Case lease.Admission
+            Case DecodeAdmission.Refused, DecodeAdmission.Busy
+                ' Too many decodes of this volume are already stuck: starting another would
+                ' park one more pool thread in the same dead read. Kept in the list, with the
+                ' sentence the deadline would have produced - just without the 20 s wait.
+                failure_Kind = DeadlineFailureKind(file_Path)
+                AppFileLogger.WriteLine("Decode not started (" & lease.Admission.ToString() & ", " &
+                                        in_Flight_Decodes.AbandonedCount.ToString() & " abandoned): " & file_Path)
+                Return Nothing
+            Case DecodeAdmission.Joined
+                AppFileLogger.WriteLine("Decode joined (still running from an earlier visit): " & file_Path)
+        End Select
+        Dim decode As System.Threading.Tasks.Task(Of DecodeOutcome) = lease.Task
 
         ' The common case - no badge is ever built and nothing on screen moves.
         If decode.Wait(loading_Badge_Delay_Ms) Then
-            Dim quick As Tuple(Of Image, IO.MemoryStream) = decode.GetAwaiter().GetResult()
-            If quick Is Nothing Then failure_Kind = LoaderFailureKind(read_Failure)
-            Return quick
+            Return TakeOutcome(decode, failure_Kind)
         End If
 
         Dim saved_Status As String = ShowLoadingStatus(file_Path)
@@ -119,15 +131,11 @@ Partial Public Class Main_Form
                 ' the redirector timing out per block on a session that is gone. Saying so
                 ' is what keeps the file - and the other 199 behind it - in the list.
                 failure_Kind = DeadlineFailureKind(file_Path)
-                AbandonDecode(decode, file_Path, watch.ElapsedMilliseconds)
+                AbandonDecode(lease, file_Path, watch.ElapsedMilliseconds)
                 Return Nothing
             End If
 
-            ' GetResult, not .Result: it rethrows what the decode actually threw
-            ' instead of an AggregateException wrapping it, so the caller's
-            ' ArgumentException / OutOfMemoryException catches still match.
-            result = decode.GetAwaiter().GetResult()
-            If result Is Nothing Then failure_Kind = LoaderFailureKind(read_Failure)
+            result = TakeOutcome(decode, failure_Kind)
         Finally
             HideLoadingBadge()
             RestoreLoadingStatus(saved_Status)
@@ -161,22 +169,72 @@ Partial Public Class Main_Form
 #End If
     End Function
 
-    ''' <summary>Lets go of a decode that outran its deadline, releasing its result whenever
-    ''' (if ever) it lands.</summary>
-    Private Shared Sub AbandonDecode(decode As System.Threading.Tasks.Task(Of Tuple(Of Image, IO.MemoryStream)),
+    ''' <summary>What one display decode produced: the picture (or Nothing) and, when
+    ''' Nothing, the loader's own reason.</summary>
+    Private NotInheritable Class DecodeOutcome
+        Public Loaded As Tuple(Of Image, IO.MemoryStream)
+        Public Failure As PathFailureKind = PathFailureKind.Content
+    End Class
+
+    ''' <summary>How many decodes of one volume may be abandoned and still running before a
+    ''' request for a NEW file there is refused outright (audit 057, S01-6). Each one is a
+    ''' pool thread parked in a read (or a CPU busy with a huge HEIC); four is below the
+    ''' pool's minimum on any machine this runs on, so the healthy decode that comes next
+    ''' still gets a thread at once.</summary>
+    Private Const abandoned_Decode_Cap As Integer = 4
+
+    ''' <summary>The display path's running decodes, one per path, for the whole process
+    ''' (every window decodes on the one UI thread and shares the one thread pool).</summary>
+    Private Shared ReadOnly in_Flight_Decodes As New InFlightDecodeRegistry(Of DecodeOutcome)(
+        AddressOf ReleaseDecodeOutcome, abandoned_Decode_Cap)
+
+    ''' <summary>The pool-thread half: decode and keep the loader's verdict with the result.</summary>
+    Private Shared Function DecodeForDisplay(file_Path As String) As DecodeOutcome
+        Dim outcome As New DecodeOutcome()
+        Dim reported As PathFailureKind = PathFailureKind.Content
+        outcome.Loaded = LoadImageWithStream(file_Path, reported)
+        outcome.Failure = reported
+        Return outcome
+    End Function
+
+    ''' <summary>The result of a completed decode, now owned by the caller.</summary>
+    Private Shared Function TakeOutcome(decode As System.Threading.Tasks.Task(Of DecodeOutcome),
+                                        ByRef failure_Kind As PathFailureKind) As Tuple(Of Image, IO.MemoryStream)
+        ' GetResult, not .Result: it rethrows what the decode actually threw
+        ' instead of an AggregateException wrapping it, so the caller's
+        ' ArgumentException / OutOfMemoryException catches still match.
+        Dim outcome As DecodeOutcome = decode.GetAwaiter().GetResult()
+        Dim loaded As Tuple(Of Image, IO.MemoryStream) = If(outcome Is Nothing, Nothing, outcome.Loaded)
+        If loaded Is Nothing Then failure_Kind = LoaderFailureKind(If(outcome Is Nothing, PathFailureKind.Content, outcome.Failure))
+        Return loaded
+    End Function
+
+    ''' <summary>Disposes a result nobody owns any more - an abandoned decode that landed.</summary>
+    Private Shared Sub ReleaseDecodeOutcome(outcome As DecodeOutcome)
+        Dim late As Tuple(Of Image, IO.MemoryStream) = outcome.Loaded
+        If late Is Nothing Then Return
+        late.Item1?.Dispose()
+        late.Item2?.Dispose()
+    End Sub
+
+    ''' <summary>What the abandoned-decode cap counts by: the volume root (C:\, or
+    ''' \\server\share), so a dead share cannot refuse a local file its decode.</summary>
+    Private Shared Function DecodeGroup(file_Path As String) As String
+        Try
+            Return If(Path.GetPathRoot(file_Path), "")
+        Catch
+            Return ""
+        End Try
+    End Function
+
+    ''' <summary>Lets go of a decode that outran its deadline. Its result is released
+    ''' whenever (if ever) it lands - unless the user comes back to the file first, in
+    ''' which case that visit takes the decode over instead of starting another.</summary>
+    Private Shared Sub AbandonDecode(lease As InFlightDecodeRegistry(Of DecodeOutcome).Lease,
                                      file_Path As String,
                                      waited_Ms As Long)
         AppFileLogger.WriteLine("Decode abandoned after " & waited_Ms.ToString() & " ms: " & file_Path)
-        decode.ContinueWith(Sub(finished)
-                                Try
-                                    If finished.Status <> System.Threading.Tasks.TaskStatus.RanToCompletion Then Return
-                                    Dim late As Tuple(Of Image, IO.MemoryStream) = finished.Result
-                                    If late Is Nothing Then Return
-                                    late.Item1?.Dispose()
-                                    late.Item2?.Dispose()
-                                Catch
-                                End Try
-                            End Sub, System.Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously)
+        lease.Abandon()
     End Sub
 
     ''' <summary>True when it is safe to touch controls from here at all. The badge is

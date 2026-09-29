@@ -53,4 +53,18 @@ Public Class AudioMetadataTests
         Assert.Equal(201, value.Title.Length)
         Assert.EndsWith("…", value.Title)
     End Sub
+
+    ' "h" in a TimeSpan format is the Hours COMPONENT: a 25-hour audiobook read "1:01:01"
+    ' (audit 057.S08-10). Whole hours are counted, and the one-hour shape is unchanged.
+    <Fact>
+    Public Sub Duration_over_a_day_keeps_its_hours()
+        Dim value = AudioMetadata.FromValues("C:\Books\long.m4b", durationMilliseconds:=25L * 3600000L + 61000L)
+        Assert.Equal("25:01:01", value.FormatLine)
+    End Sub
+
+    <Fact>
+    Public Sub Duration_of_an_hour_or_more_keeps_its_shape()
+        Assert.Equal("1:00:00", AudioMetadata.FromValues("C:\a.mp3", durationMilliseconds:=3600000L).FormatLine)
+        Assert.Equal("59:59", AudioMetadata.FromValues("C:\a.mp3", durationMilliseconds:=3599000L).FormatLine)
+    End Sub
 End Class

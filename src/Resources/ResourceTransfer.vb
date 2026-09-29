@@ -105,6 +105,15 @@ Friend Module ResourceTransfer
                           overwrite As Boolean, stagingDir As String,
                           Optional progress As IProgress(Of Long) = Nothing,
                           Optional ct As CancellationToken = Nothing)
+        ' "Replace" must never mean "replace the file with itself" (FileManager's C-02 guard,
+        ' which the routing is asked BEFORE). Both branches below delete the destination or
+        ' the source once the other side is in place, and with the two being one file that
+        ' is the only copy. Case-insensitive: the worker serves a Windows folder, where
+        ' "a.jpg" and "A.jpg" are one file (057.S07-3).
+        If overwrite AndAlso String.Equals(remoteSource, remoteDest, StringComparison.OrdinalIgnoreCase) Then
+            Throw New IOException("The source and the destination are the same file; nothing was replaced.")
+        End If
+
         If provider.Capabilities.SupportsServerSideRename Then
             Dim existing As ResourceEntry = Nothing
             If provider.TryStat(remoteDest, existing) Then

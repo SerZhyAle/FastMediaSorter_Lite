@@ -546,6 +546,10 @@ Partial Public Class Main_Form
             SetStatusOnUi(Localization.T("Переводчик не ответил вовремя - T повторит"))
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: pipeline error: " & ex.Message)
+            ' Debug.WriteLine is compiled away in Release: without this line a support report
+            ' of "Ошибка OCR" carries nothing in current.log (audit 057.S11-3, after 057.S01-1;
+            ' the direction 095 / 057.S10-1 asks the slices for).
+            AppFileLogger.LogException("OCR pipeline failed", ex)
             SetStatusOnUi(Localization.T("Ошибка OCR"))
         Finally
             Try

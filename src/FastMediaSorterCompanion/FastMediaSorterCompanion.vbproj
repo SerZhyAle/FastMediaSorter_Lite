@@ -114,6 +114,16 @@
     <Compile Include="..\Icons\IconMap.vb" Link="Core\IconMap.vb" />
     <Compile Include="..\Icons\SvgPathData.vb" Link="Core\SvgPathData.vb" />
     <Compile Include="..\Icons\GlyphRenderer.vb" Link="Core\GlyphRenderer.vb" />
+    <!--
+      The application theme (spec 060): one stored mode, one palette, one applier for both
+      programs, so a window of either follows the same system / light / dark choice. The
+      strings table comes along because both settings windows offer the choice.
+    -->
+    <Compile Include="..\Theming\ThemePalette.vb" Link="Theming\ThemePalette.vb" />
+    <Compile Include="..\Theming\ThemeApplier.vb" Link="Theming\ThemeApplier.vb" />
+    <Compile Include="..\Theming\ThemedMenuRenderer.vb" Link="Theming\ThemedMenuRenderer.vb" />
+    <Compile Include="..\Theming\ThemeService.vb" Link="Theming\ThemeService.vb" />
+    <Compile Include="..\Localization\Localization.Theme.vb" Link="Localization\Localization.Theme.vb" />
   </ItemGroup>
 
 </Project>

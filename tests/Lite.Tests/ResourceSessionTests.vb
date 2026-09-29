@@ -203,6 +203,26 @@ Public Class ResourceSessionTests
         session.Dispose()
     End Sub
 
+    ''' <summary>057.S07-2: the prefetch wraps like "next file" does, so after the last entry
+    ''' it fetches the first - and the neighbour protection has to wrap with it, or the file
+    ''' on screen is the least recently used one and goes.</summary>
+    <Fact>
+    Public Sub Prefetching_past_the_end_of_the_list_never_evicts_the_file_on_screen()
+        Dim provider As ResourceTestProvider = NewProvider()
+        Dim files As List(Of ResourceEntry) = provider.ListEntries("/MOV", CancellationToken.None).
+            Where(Function(e) Not e.IsDirectory).ToList()
+        Dim onScreen As Integer = files.Count - 1
+        ' Room for one of the two files, not both.
+        Dim session As ResourceSession = OpenSession(provider, files(onScreen).Length + files(0).Length - 1)
+
+        Dim shown As String = session.Entries(onScreen).LocalPath
+        Assert.Equal(EnsureLocalOutcome.Ready, session.TryEnsureLocal(shown))
+        Assert.Equal(EnsureLocalOutcome.Ready, session.TryEnsureLocal(session.Entries(0).LocalPath))
+
+        Assert.True(File.Exists(shown))
+        session.Dispose()
+    End Sub
+
     <Fact>
     Public Sub Eviction_choice_is_lru_and_respects_protection()
         Dim sizes As New Dictionary(Of Integer, Long) From {{0, 100}, {1, 100}, {2, 100}, {3, 100}}

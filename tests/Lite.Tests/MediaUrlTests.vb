@@ -136,5 +136,25 @@ Public Class MediaUrlTests
         Assert.Equal("", MediaUrl.ExtensionOf(""))
     End Sub
 
+    ' current.log goes out with "Send logs to the author": a stream that fails to open
+    ' (most often: a wrong password) used to write its address there as typed (057.S08-2).
+    <Theory>
+    <InlineData("smb://user:secret@nas/share/movie.mkv", "smb://nas/share/movie.mkv")>
+    <InlineData("sftp://user:secret@host:2222/dir/movie.mkv", "sftp://host:2222/dir/movie.mkv")>
+    <InlineData("https://cdn.example/movie.mkv?user=x&token=secret", "https://cdn.example/movie.mkv")>
+    <InlineData("rtsp://cam.local/stream1", "rtsp://cam.local/stream1")>
+    Public Sub ForLog_DropsCredentialsAndQuery(url As String, expected As String)
+        Dim logged As String = MediaUrl.ForLog(url)
+        Assert.Equal(expected, logged)
+        Assert.DoesNotContain("secret", logged)
+    End Sub
+
+    <Fact>
+    Public Sub ForLog_UnparseableOrEmpty_GivesNothingOfTheText()
+        Assert.Equal("(unparseable address)", MediaUrl.ForLog("http://user:secret@host:notaport/x"))
+        Assert.Equal("", MediaUrl.ForLog(""))
+        Assert.Equal("", MediaUrl.ForLog(Nothing))
+    End Sub
+
 End Class
 #End If

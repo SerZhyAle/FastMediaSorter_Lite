@@ -21,6 +21,7 @@ Partial Public NotInheritable Class Localization
         AddParamsStrings()      ' per-folder options + the status window
         AddHostingStrings()     ' User vs Server edition hosting + service management
         AddAppUxStrings()       ' ticket 028: confirmations, failure actions, consent, accessible names
+        AddThemeStrings()       ' spec 060: the theme setting (table linked from the viewer)
     End Sub
 
     ''' <summary>

@@ -16,6 +16,7 @@ Imports Microsoft.Win32
 ' than replaced, so the existing five TabPages remain the source of truth for
 ' keyboard navigation, OCR activation and all legacy bindings.
 Partial Public Class Table_Form
+    Implements IThemeAware
 
     Private SettingsCanvas As Color
     Private SettingsSurface As Color
@@ -221,8 +222,6 @@ Partial Public Class Table_Form
 
         AddHandler Tab_Control.SelectedIndexChanged, AddressOf ModernSettingsTabChanged
         AddHandler modernSettingsContent.Resize, AddressOf ModernSettingsContentResized
-        AddHandler SystemEvents.UserPreferenceChanged, AddressOf ModernSystemPreferenceChanged
-        AddHandler FormClosed, AddressOf ModernSettingsFormClosed
         AddHandler VisibleChanged, AddressOf ModernSettingsVisibleChanged
         AddHandler Shown, AddressOf ModernSettingsShown
         AddHandler FormClosing, AddressOf SaveModernSettingsWindowSize
@@ -506,6 +505,8 @@ Partial Public Class Table_Form
             Case "recipients_font" : Return Localization.T("Размер текста")
             Case "recipients_opacity" : Return Localization.T("Непрозрачность")
             Case "recipients_rows" : Return Localization.T("Видимые строки")
+            Case "section_appearance" : Return Localization.T("Оформление")
+            Case "ui_theme" : Return Localization.T("Тема оформления")
             Case "section_background" : Return Localization.T("Фон изображения")
             Case "background_color" : Return Localization.T("Цвет фона")
             Case "perspective" : Return Localization.T("Перспективный фон")
@@ -630,6 +631,7 @@ Partial Public Class Table_Form
             Case "recipients_font" : Return Localization.T("Размер текста в пунктах.")
             Case "recipients_opacity" : Return Localization.T("Прозрачность фона таблицы в процентах.")
             Case "recipients_rows" : Return Localization.T("Лишние строки будут доступны прокруткой.")
+            Case "ui_theme" : Return Localization.T("Светлая, тёмная или как в Windows - для всех окон просмотрщика и менеджера общего доступа.")
             Case "background_color" : Return Localization.T("Выберите, как вычислять цвет свободной области вокруг фотографии.")
             Case "perspective" : Return Localization.T("Продолжает края фотографии на свободную область экрана.")
             Case "dynamic_perspective" : Return Localization.T("Плавно смешивает продолжение изображения с выбранным фоном.")
@@ -759,6 +761,10 @@ Partial Public Class Table_Form
         destinations.Controls.Add(gridHost)
 
         Dim viewing As FlowLayoutPanel = CreateModernPageFlow(Tab_Page_2)
+        ' The application theme first (spec 060): it is about every window, not the picture, and
+        ' the background scheme right below is the picture's - two different questions.
+        AddSectionHeader(viewing, "section_appearance")
+        AddUiThemeRow(viewing)
         AddSectionHeader(viewing, "section_background")
         AddSettingRow(viewing, "background_color", cmbox_color_schema, 210)
         AddSettingRow(viewing, "perspective", chb_perspectiva, 34, True)
@@ -1133,19 +1139,10 @@ Partial Public Class Table_Form
             Return
         End If
 
-        Dim appsUseLightTheme As Boolean = True
-        Try
-            Using key As RegistryKey = Registry.CurrentUser.OpenSubKey("Software\Microsoft\Windows\CurrentVersion\Themes\Personalize")
-                If key IsNot Nothing Then
-                    Dim value As Object = key.GetValue("AppsUseLightTheme")
-                    If value IsNot Nothing Then appsUseLightTheme = Convert.ToInt32(value) <> 0
-                End If
-            End Using
-        Catch
-            appsUseLightTheme = GetSettingsBrightness(SystemColors.Window) >= 128
-        End Try
-
-        settingsDarkMode = Not appsUseLightTheme
+        ' The application theme decides (spec 060): system, light or dark - resolved once, for
+        ' every window of both programs. This window used to read Windows' own setting itself,
+        ' which was right only while "system" was the only mode there was.
+        settingsDarkMode = ThemeService.IsDark
         SettingsAccent = SystemColors.Highlight
         If settingsDarkMode Then
             SettingsCanvas = Color.FromArgb(30, 31, 34)
@@ -1214,6 +1211,7 @@ Partial Public Class Table_Form
 
         RefreshModernSettingsHeader()
         ApplySettingsTitleBarTheme()
+        ThemeApplier.ApplyNativeTree(Me, settingsDarkMode)
         Invalidate(True)
     End Sub
 
@@ -1241,6 +1239,10 @@ Partial Public Class Table_Form
             ElseIf TypeOf control Is TextBox OrElse TypeOf control Is ComboBox OrElse TypeOf control Is NumericUpDown Then
                 control.BackColor = If(settingsDarkMode, Color.FromArgb(50, 52, 57), SystemColors.Window)
                 control.ForeColor = SettingsText
+                ' A visual-styles drop-down list ignores BackColor and stayed white on the dark
+                ' cards; the flat style paints with it (spec 060).
+                Dim combo As ComboBox = TryCast(control, ComboBox)
+                If combo IsNot Nothing Then combo.FlatStyle = If(settingsDarkMode, FlatStyle.Flat, FlatStyle.Standard)
             ElseIf TypeOf control Is CheckBox Then
                 control.BackColor = SettingsSurface
                 control.ForeColor = SettingsText
@@ -1263,28 +1265,34 @@ Partial Public Class Table_Form
         Next
     End Sub
 
-    Private Sub ModernSystemPreferenceChanged(sender As Object, e As UserPreferenceChangedEventArgs)
-        If IsDisposed OrElse Not IsHandleCreated Then Return
-        BeginInvoke(New MethodInvoker(
-            Sub()
-                If IsDisposed Then Return
-                LoadSystemSettingsPalette()
-                ApplySystemSettingsPalette()
-            End Sub))
+    ' --- the application theme (spec 060 rule 10) -----------------------------------------
+    ' This window THEMES ITSELF: it had a complete two-palette implementation before the
+    ' application theme existed (cards, sidebar, the destination grid), so the service does not
+    ' walk it - it only tells it when the resolved theme changed, and a system light/dark switch
+    ' reaches it the same way (ThemeService follows UserPreferenceChanged for every window).
+
+    Private ReadOnly Property ThemesItself As Boolean Implements IThemeAware.ThemesItself
+        Get
+            Return True
+        End Get
+    End Property
+
+    Private Sub ApplyTheme(palette As ThemePalette) Implements IThemeAware.ApplyTheme
+        If IsDisposed OrElse Not modernSettingsBuilt Then Return
+        LoadSystemSettingsPalette()
+        ApplySystemSettingsPalette()
     End Sub
 
-    Private Sub ModernSettingsFormClosed(sender As Object, e As FormClosedEventArgs)
-        RemoveHandler SystemEvents.UserPreferenceChanged, AddressOf ModernSystemPreferenceChanged
-    End Sub
-
-    ''' <summary>The F2 path shows this instance modally and never disposes it, so the next
-    ''' open reuses the same window - FormClosed has already dropped the theme subscription
-    ''' by then, and later light/dark switches were ignored (053 F-09). Subscribe again on
-    ''' every show; Remove first keeps it to exactly one subscription.</summary>
+    ''' <summary>The F2 path shows this instance modally and never disposes it, so the next open
+    ''' reuses the same window - one that may have been hidden while the theme changed, and a
+    ''' hidden window is not always among the open forms the service repaints (053 F-09 was the
+    ''' same trap with the old per-window subscription). Catch up on every show.</summary>
     Private Sub ModernSettingsVisibleChanged(sender As Object, e As EventArgs)
         If Not Visible OrElse IsDisposed Then Return
-        RemoveHandler SystemEvents.UserPreferenceChanged, AddressOf ModernSystemPreferenceChanged
-        AddHandler SystemEvents.UserPreferenceChanged, AddressOf ModernSystemPreferenceChanged
+        If settingsDarkMode <> ThemeService.IsDark AndAlso Not SystemInformation.HighContrast Then
+            LoadSystemSettingsPalette()
+            ApplySystemSettingsPalette()
+        End If
     End Sub
 
     Private Sub ApplySettingsTitleBarTheme()

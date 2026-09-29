@@ -255,6 +255,8 @@ Partial Public Class Main_Form
             Return True
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0869: LibVLC init failed: " & ex.Message)
+            ' The only trace in Release (057.S08-7): the status line then says VLC is not installed.
+            AppFileLogger.LogException("LibVLC could not be initialised", ex)
             ' Release in reverse order of construction before letting go: whatever DID get
             ' built above is a live native object, and nulling the field only makes it
             ' unreachable - it does not free libvlc. This path is retried on every flip onto
@@ -451,6 +453,8 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0871: Playing via LibVLC: " & file_Path)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0872: LibVLC play failed: " & ex.Message)
+            ' No path: a stream's address can carry a password (057.S08-2, S08-7).
+            AppFileLogger.LogException("LibVLC play failed", ex)
             StopVlcPlayback()
             TryOpenVideoWithDefaultPlayer(file_Path)
         End Try
@@ -512,10 +516,16 @@ Partial Public Class Main_Form
                                If Not IsVlcEventCurrent(event_Generation) Then Return
                                Dim failed_Path As String = vlc_Playing_Path
                                Dim shown_Name As String = Path.GetFileName(failed_Path)
+                               Dim logged_Path As String = failed_Path
 #If Not NETFRAMEWORK Then
-                               If IsRemoteMediaUrl(failed_Path) Then shown_Name = DisplayNameForMrl(failed_Path)
+                               If IsRemoteMediaUrl(failed_Path) Then
+                                   shown_Name = DisplayNameForMrl(failed_Path)
+                                   ' Never an address as typed: it can carry a password or a
+                                   ' token, and current.log is what "Send logs" ships (057.S08-2).
+                                   logged_Path = MediaUrl.ForLog(failed_Path)
+                               End If
 #End If
-                               AppFileLogger.WriteLine("LibVLC could not play: " & failed_Path)
+                               AppFileLogger.WriteLine("LibVLC could not play: " & logged_Path)
                                StopVlcPlayback()
                                lbl_Status.Text = Localization.TF("VLC не смог воспроизвести: {0}", shown_Name)
 #If Not NETFRAMEWORK Then

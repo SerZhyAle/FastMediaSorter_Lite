@@ -605,11 +605,15 @@ Friend Module OptionalRuntimeManager
             ' A cancelled or failed download leaves no partial file behind (APP-BEHAVIOUR rule 3).
             Try
                 If File.Exists(tempFile) Then File.Delete(tempFile)
-            Catch
+            Catch ex As Exception
+                ' Nothing else ever removes it: up to ~110 MB left in %TEMP% (057.S09-5).
+                AppFileLogger.WriteLine("Runtime " & kind.ToString() & ": the downloaded package was not removed: " & tempFile & " (" & ex.Message & ")")
             End Try
             Try
                 If Directory.Exists(staging) Then Directory.Delete(staging, True)
-            Catch
+            Catch ex As Exception
+                ' Swept by the next install (RuntimeInstallPlan.SweepStaging).
+                AppFileLogger.WriteLine("Runtime " & kind.ToString() & ": the staging folder was not removed: " & ex.Message)
             End Try
         End Try
     End Function

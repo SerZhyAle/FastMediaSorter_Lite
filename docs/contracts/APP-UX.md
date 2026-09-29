@@ -18,10 +18,14 @@
   is pinned left-to-right; a glyph-only control carries a name.
 - A download runs behind `Download_Progress_Form` (progress, Cancel as an outcome); nothing - OCR
   language data included - is fetched without the user asking.
-- An irreversible action confirms first; the product has undo, so a recycled delete may skip it, a
-  permanent one never does.
+- An irreversible action confirms first; the product has undo, so a recycled delete may skip it. The
+  one deviation: `ConfirmDelete = never` (an explicit user choice, never a default or a migration)
+  skips the question for a permanent delete too - owner decision 2026-09-27, a dated exception to
+  rule 5 in the catalog registry.
 - Window geometry is written in normal-state coordinates and restored to the nearest display
   (`WindowPlacement`).
-- A theme mechanism is a feature scheduled against specification 002; the viewer's main window is a
-  content-coloured window, accepted by the contract at 0.10.
+- Both programs offer system / light / dark (`UiTheme`, shared hive) through one palette table and one
+  applier ([specification 060](../specifications/060_SPECIFICATION_APP_THEME_SYSTEM_LIGHT_DARK.md)); a window
+  outside the theme implements `IThemeAware` and says why where it is defined. The viewer's main window and
+  thumbnail panel are content-coloured windows, accepted by the contract at 0.10.
 - The net48 x86 fallback takes bug fixes only; its gaps are one dated exception in the registry.

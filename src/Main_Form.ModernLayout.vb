@@ -325,6 +325,7 @@ Partial Public Class Main_Form
         RecolorCatalogToolbarGlyphs()
 #End If
 
+#If NETFRAMEWORK Then
         ' Overflow dropdowns match the chrome.
         For Each m As ContextMenuStrip In New ContextMenuStrip() {overflow_Menu, overflow_Menu_2}
             If m IsNot Nothing Then
@@ -332,6 +333,12 @@ Partial Public Class Main_Form
                 m.ForeColor = opposite_Color
             End If
         Next
+#Else
+        ' The overflow dropdowns are menus, and menus follow the application theme (spec 060,
+        ' APP-STYLE rule 5 amendment: a content-coloured window's menus are still themed) - they
+        ' paint through ToolStripManager.Renderer, so nothing is set here. Painting them in the
+        ' picture's colour made a white-background photo open a white menu in dark mode.
+#End If
 
         ApplyTitleBarTheme(IsDarkColor(back_Color))
     End Sub

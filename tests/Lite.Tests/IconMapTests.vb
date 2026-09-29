@@ -47,6 +47,16 @@ Public Class IconMapTests
     End Sub
 
     <Fact>
+    Public Sub AnSvgWithoutPathsOrMalformed_StillThrowsToTheCaller()
+        ' Audit 057.S04-2: the failure path now frees the bitmap it would have returned;
+        ' the caller must still see the same exception, not a blank glyph.
+        Assert.Throws(Of FormatException)(
+            Sub() GlyphRenderer.RenderSvg("<svg xmlns=""http://www.w3.org/2000/svg"" viewBox=""0 0 24 24""><g/></svg>", 24, Drawing.Color.Black))
+        Assert.Throws(Of System.Xml.XmlException)(
+            Sub() GlyphRenderer.RenderSvg("<svg", 24, Drawing.Color.Black))
+    End Sub
+
+    <Fact>
     Public Sub VendoredGlyphHashesMatchTheirProvenance()
         Dim glyphDir As String = Path.Combine(AppContext.BaseDirectory, "TestData", "glyphs")
         For Each line As String In File.ReadAllLines(Path.Combine(glyphDir, "PROVENANCE.txt"))

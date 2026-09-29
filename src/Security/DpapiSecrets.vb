@@ -18,7 +18,8 @@ Public Module DpapiSecrets
             Dim blob As Byte() = ProtectedData.Protect(data, Nothing, DataProtectionScope.CurrentUser)
             Return Convert.ToBase64String(blob)
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " dpapi: protect failed: " & ex.Message)
+            ' The failure, never the value: neither exception message carries the key.
+            AppFileLogger.WriteLine("DPAPI: protect failed - " & ex.GetType().Name & ": " & ex.Message)
             Return ""
         End Try
     End Function
@@ -31,7 +32,9 @@ Public Module DpapiSecrets
             Dim data As Byte() = ProtectedData.Unprotect(blob, Nothing, DataProtectionScope.CurrentUser)
             Return Encoding.UTF8.GetString(data)
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " dpapi: unprotect failed: " & ex.Message)
+            ' A profile restored or migrated to another machine lands here: the key field comes
+            ' up empty, and this line is the only trace of why (audit 057.S10-6).
+            AppFileLogger.WriteLine("DPAPI: the stored API key could not be decrypted - " & ex.GetType().Name & ": " & ex.Message)
             Return ""
         End Try
     End Function

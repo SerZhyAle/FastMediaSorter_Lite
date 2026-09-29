@@ -135,7 +135,10 @@ Friend Module VlcArtCache
                 If Not Directory.Exists(dir) Then Continue For
                 If Directory.EnumerateFileSystemEntries(dir).Any() Then Exit For
                 Directory.Delete(dir, recursive:=False)
-            Catch
+            Catch ex As Exception
+                ' Never the path - its folder names ARE the sealed artist and album. The
+                ' release scrub tries again; this line says it was needed (057.S08-9).
+                AppFileLogger.WriteLine("LibVLC art cache: an emptied folder could not be removed (" & ex.GetType().Name & ")")
                 Exit For
             End Try
         Next

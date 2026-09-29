@@ -59,16 +59,24 @@ Friend NotInheritable Class LegacyWicImageDecoder
         bitmapSource.CopyPixels(pixels, stride, 0)
 
         Dim bitmap As New Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
-        Dim dpiX As Single = If(CSng(bitmapSource.DpiX) > 0, CSng(bitmapSource.DpiX), 96.0F)
-        Dim dpiY As Single = If(CSng(bitmapSource.DpiY) > 0, CSng(bitmapSource.DpiY), 96.0F)
-        bitmap.SetResolution(dpiX, dpiY)
-
-        Dim rect As New Rectangle(0, 0, width, height)
-        Dim data As BitmapData = bitmap.LockBits(rect, ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
         Try
-            Marshal.Copy(pixels, 0, data.Scan0, pixels.Length)
-        Finally
-            bitmap.UnlockBits(data)
+            Dim dpiX As Single = If(CSng(bitmapSource.DpiX) > 0, CSng(bitmapSource.DpiX), 96.0F)
+            Dim dpiY As Single = If(CSng(bitmapSource.DpiY) > 0, CSng(bitmapSource.DpiY), 96.0F)
+            bitmap.SetResolution(dpiX, dpiY)
+
+            Dim rect As New Rectangle(0, 0, width, height)
+            Dim data As BitmapData = bitmap.LockBits(rect, ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
+            Try
+                Marshal.Copy(pixels, 0, data.Scan0, pixels.Length)
+            Finally
+                bitmap.UnlockBits(data)
+            End Try
+        Catch
+            ' The caller never receives this bitmap when filling it fails - it falls back to
+            ' ImageSharp - so it is released here instead of waiting for the finalizer
+            ' (audit 057.S02-1). The exception itself travels on unchanged.
+            bitmap.Dispose()
+            Throw
         End Try
 
         Return bitmap

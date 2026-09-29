@@ -186,8 +186,9 @@ Public Class OllamaTranslator
     Public Async Function ProbeAsync(ct As CancellationToken) As Task(Of Boolean) Implements ITranslator.ProbeAsync
         Try
             Using linked As CancellationTokenSource = LinkedTimeout(ct, 2500)
-                Dim resp As HttpResponseMessage = Await TranslateHttp.Client.GetAsync(baseUrl & "/api/tags", linked.Token).ConfigureAwait(False)
-                Return resp.IsSuccessStatusCode
+                Using resp As HttpResponseMessage = Await TranslateHttp.Client.GetAsync(baseUrl & "/api/tags", linked.Token).ConfigureAwait(False)
+                    Return resp.IsSuccessStatusCode
+                End Using
             End Using
         Catch
             Return False
@@ -343,14 +344,15 @@ Public Class OllamaTranslator
 
         Dim payload As String = TranslateHttp.JsonSerialize(body)
         Using content As New StringContent(payload, Encoding.UTF8, "application/json")
-            Dim resp As HttpResponseMessage = Await TranslateHttp.Client.PostAsync(baseUrl & "/api/generate", content, ct).ConfigureAwait(False)
-            If Not resp.IsSuccessStatusCode Then Return ""
-            Dim json As String = Await resp.Content.ReadAsStringAsync().ConfigureAwait(False)
-            Dim root As Dictionary(Of String, Object) = TryCast(TranslateHttp.JsonDeserializeObject(json), Dictionary(Of String, Object))
-            If root Is Nothing Then Return ""
-            Dim r As Object = Nothing
-            root.TryGetValue("response", r)
-            Return Convert.ToString(r)
+            Using resp As HttpResponseMessage = Await TranslateHttp.Client.PostAsync(baseUrl & "/api/generate", content, ct).ConfigureAwait(False)
+                If Not resp.IsSuccessStatusCode Then Return ""
+                Dim json As String = Await resp.Content.ReadAsStringAsync().ConfigureAwait(False)
+                Dim root As Dictionary(Of String, Object) = TryCast(TranslateHttp.JsonDeserializeObject(json), Dictionary(Of String, Object))
+                If root Is Nothing Then Return ""
+                Dim r As Object = Nothing
+                root.TryGetValue("response", r)
+                Return Convert.ToString(r)
+            End Using
         End Using
     End Function
 
@@ -385,24 +387,25 @@ Public Class OllamaTranslator
         Dim names As New List(Of String)
         Try
             Using linked As CancellationTokenSource = LinkedTimeout(ct, 4000)
-                Dim resp As HttpResponseMessage = Await TranslateHttp.Client.GetAsync(baseUrl & "/api/tags", linked.Token).ConfigureAwait(False)
-                If Not resp.IsSuccessStatusCode Then Return names
-                Dim json As String = Await resp.Content.ReadAsStringAsync().ConfigureAwait(False)
-                Dim root As Dictionary(Of String, Object) = TryCast(TranslateHttp.JsonDeserializeObject(json), Dictionary(Of String, Object))
-                If root Is Nothing Then Return names
-                Dim modelsObj As Object = Nothing
-                root.TryGetValue("models", modelsObj)
-                Dim arr As Object() = TryCast(modelsObj, Object())
-                If arr Is Nothing Then Return names
-                For Each m As Object In arr
-                    Dim md As Dictionary(Of String, Object) = TryCast(m, Dictionary(Of String, Object))
-                    If md IsNot Nothing Then
-                        Dim nm As Object = Nothing
-                        md.TryGetValue("name", nm)
-                        Dim s As String = Convert.ToString(nm)
-                        If Not String.IsNullOrWhiteSpace(s) Then names.Add(s)
-                    End If
-                Next
+                Using resp As HttpResponseMessage = Await TranslateHttp.Client.GetAsync(baseUrl & "/api/tags", linked.Token).ConfigureAwait(False)
+                    If Not resp.IsSuccessStatusCode Then Return names
+                    Dim json As String = Await resp.Content.ReadAsStringAsync().ConfigureAwait(False)
+                    Dim root As Dictionary(Of String, Object) = TryCast(TranslateHttp.JsonDeserializeObject(json), Dictionary(Of String, Object))
+                    If root Is Nothing Then Return names
+                    Dim modelsObj As Object = Nothing
+                    root.TryGetValue("models", modelsObj)
+                    Dim arr As Object() = TryCast(modelsObj, Object())
+                    If arr Is Nothing Then Return names
+                    For Each m As Object In arr
+                        Dim md As Dictionary(Of String, Object) = TryCast(m, Dictionary(Of String, Object))
+                        If md IsNot Nothing Then
+                            Dim nm As Object = Nothing
+                            md.TryGetValue("name", nm)
+                            Dim s As String = Convert.ToString(nm)
+                            If Not String.IsNullOrWhiteSpace(s) Then names.Add(s)
+                        End If
+                    Next
+                End Using
             End Using
         Catch
         End Try
@@ -425,7 +428,10 @@ Public Class OllamaTranslator
                 Using content As New StringContent(body, Encoding.UTF8, "application/json")
                     Using req As New HttpRequestMessage(HttpMethod.Post, baseUrl & "/api/pull") With {.Content = content}
                         Using resp As HttpResponseMessage = Await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(False)
-                            If Not resp.IsSuccessStatusCode Then Return False
+                            If Not resp.IsSuccessStatusCode Then
+                                AppFileLogger.WriteLine("Ollama: model pull refused - HTTP " & CInt(resp.StatusCode).ToString())
+                                Return False
+                            End If
                             Using stream As Stream = Await resp.Content.ReadAsStreamAsync().ConfigureAwait(False)
                                 Using reader As New StreamReader(stream)
                                     Dim success As Boolean = False
@@ -458,6 +464,7 @@ Public Class OllamaTranslator
 
                                         Dim errObj As Object = Nothing
                                         If obj.TryGetValue("error", errObj) Then
+                                            AppFileLogger.WriteLine("Ollama: model pull failed - " & Convert.ToString(errObj))
                                             If progress IsNot Nothing Then progress.Report("error: " & Convert.ToString(errObj))
                                             Return False
                                         End If
@@ -475,7 +482,8 @@ Public Class OllamaTranslator
         Catch ex As OperationCanceledException
             Throw
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ollama: pull failed: " & ex.Message)
+            ' The progress line vanishes with the dialog; this is the only record (057.S10-5).
+            AppFileLogger.WriteLine("Ollama: model pull failed - " & ex.Message)
             If progress IsNot Nothing Then progress.Report(FailureText.Describe(ex))
             Return False
         End Try

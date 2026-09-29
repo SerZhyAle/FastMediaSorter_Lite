@@ -361,7 +361,6 @@ Partial Public Class Main_Form
     ''' <summary>Readable, localized label for a button in the overflow menu (the
     ''' toolbar glyphs like ▦/⛶ would be meaningless there).</summary>
     Private Function OverflowText(b As Button) As String
-        Dim rus As Boolean = Is_Russian_Language
 #If Not NETFRAMEWORK Then
         ' The menu line and the button's accessible name read the same map entry, so
         ' the two cannot drift apart (spec 027, phase 1).

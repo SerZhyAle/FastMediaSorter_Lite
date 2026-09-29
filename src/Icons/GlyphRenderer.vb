@@ -70,9 +70,10 @@ Public Module GlyphRenderer
 
     Public Function RenderSvg(svg As String, size As Integer, colour As Color) As Bitmap
         Dim bitmap As New Bitmap(size, size)
-        bitmap.SetResolution(96.0F, 96.0F)
-        Dim shapes As List(Of GlyphShape) = ReadShapes(svg)
+        Dim shapes As List(Of GlyphShape) = Nothing
         Try
+            bitmap.SetResolution(96.0F, 96.0F)
+            shapes = ReadShapes(svg)
             If shapes.Count = 0 Then Throw New FormatException("The catalog SVG contains no path data.")
             Using graphics As Graphics = Graphics.FromImage(bitmap)
                 graphics.SmoothingMode = SmoothingMode.AntiAlias
@@ -93,10 +94,17 @@ Public Module GlyphRenderer
                     End If
                 Next
             End Using
+        Catch
+            ' A malformed or empty SVG: nobody receives the bitmap, so it is ours to free
+            ' (audit 057.S04-2). The exception itself goes on to the caller unchanged.
+            bitmap.Dispose()
+            Throw
         Finally
-            For Each shape As GlyphShape In shapes
-                shape.Dispose()
-            Next
+            If shapes IsNot Nothing Then
+                For Each shape As GlyphShape In shapes
+                    shape.Dispose()
+                Next
+            End If
         End Try
         Return bitmap
     End Function
@@ -111,7 +119,18 @@ Public Module GlyphRenderer
     Public Function ReadShapes(svg As String) As List(Of GlyphShape)
         Dim result As New List(Of GlyphShape)()
         Dim doc As XDocument = XDocument.Parse(svg)
-        Walk(doc.Root, New Matrix(), 1.0F, result)
+        Try
+            Using identity As New Matrix()
+                Walk(doc.Root, identity, 1.0F, result)
+            End Using
+        Catch
+            ' A path that fails to parse part-way: the shapes read before it are never
+            ' returned, so their GraphicsPaths are freed here (audit 057.S04-2).
+            For Each shape As GlyphShape In result
+                shape.Dispose()
+            Next
+            Throw
+        End Try
         Return result
     End Function
 

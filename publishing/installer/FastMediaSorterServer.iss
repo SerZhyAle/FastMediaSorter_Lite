@@ -112,10 +112,6 @@ Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 Name: "ukrainian"; MessagesFile: "compiler:Languages\Ukrainian.isl"
 
 [Tasks]
-; Checked by default, unlike the viewer's optional icon: on this edition the Share
-; Manager IS the product's only window, and a machine that reboots into a running
-; service with nothing on screen is exactly the state this edition shipped in.
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "openmanager"; Description: "{cm:OpenManagerTask}"
 
 [CustomMessages]
@@ -179,8 +175,9 @@ Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
 ; Same "--show" reasoning. A desktop icon matters more here than on the viewer: the
 ; console has no file association, nothing opens it by double-clicking a document, and
 ; the Start-menu entry sits under a product folder named after the VIEWER (the shared
-; group), which is not where someone looks for a server they just installed.
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#CompanionExe}"; Parameters: "--show"; Tasks: desktopicon
+; group), which is not where someone looks for a server they just installed. Create it
+; on every install, including upgrades that remembered an unchecked desktop task.
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#CompanionExe}"; Parameters: "--show"
 
 [Code]
 const

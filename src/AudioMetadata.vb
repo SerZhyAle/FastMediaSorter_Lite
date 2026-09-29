@@ -66,7 +66,10 @@ Public NotInheritable Class AudioMetadata
 
     Private Shared Function FormatDuration(milliseconds As Long) As String
         Dim value As TimeSpan = TimeSpan.FromMilliseconds(milliseconds)
-        Return If(value.TotalHours >= 1, value.ToString("h\:mm\:ss"), value.ToString("m\:ss"))
+        If value.TotalHours < 1 Then Return value.ToString("m\:ss")
+        ' Whole hours: "h" is the Hours COMPONENT and dropped the days, so a 25-hour
+        ' audiobook read "1:00:00" (057.S08-10).
+        Return CLng(Math.Floor(value.TotalHours)).ToString(CultureInfo.InvariantCulture) & value.ToString("\:mm\:ss")
     End Function
 
     Private Shared Function FormatSize(bytes As Long) As String

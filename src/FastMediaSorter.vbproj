@@ -322,6 +322,10 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.Theme.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Main_Form.KeyboardInput.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
@@ -367,6 +371,9 @@
     <Compile Include="SlideshowOrder.vb" />
     <Compile Include="NavigationRules.vb" />
     <Compile Include="FolderScan.vb" />
+    <!-- Ticket 086 (audit 057 S01-6): one running display decode per path, handed over
+         rather than duplicated, with a cap on the abandoned ones. Pure, both builds. -->
+    <Compile Include="InFlightDecodeRegistry.vb" />
     <!-- Shared, NOT "#If Not NETFRAMEWORK" like its neighbours: SkipUnreadableFile takes a
          PathFailureKind on both builds, and a parameter cannot be typed by an enum this
          project does not compile. Only the behaviour is fenced - here the kind is computed
@@ -596,6 +603,14 @@
     <!-- Ticket 028 (APP-BEHAVIOUR contract sync). Registered by both builds for the same
          reason as the table above. -->
     <Compile Include="Localization\Localization.AppUx.vb" />
+    <!-- Spec 060 (application theme). The strings are registered by both builds like the
+         tables above; the theme itself is .NET 10 only, so the four Theming files compile
+         to nothing here. -->
+    <Compile Include="Localization\Localization.Theme.vb" />
+    <Compile Include="Theming\ThemePalette.vb" />
+    <Compile Include="Theming\ThemeApplier.vb" />
+    <Compile Include="Theming\ThemedMenuRenderer.vb" />
+    <Compile Include="Theming\ThemeService.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\VersionInfo.vb" />
     <Compile Include="My Project\Resources.Designer.vb">

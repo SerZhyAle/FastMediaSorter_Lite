@@ -39,8 +39,9 @@ Public Class LibreTranslateTranslator
         Try
             Using linked As CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(ct)
                 linked.CancelAfter(3000)
-                Dim resp As HttpResponseMessage = Await TranslateHttp.Client.GetAsync(baseUrl & "/languages", linked.Token).ConfigureAwait(False)
-                Return resp.IsSuccessStatusCode
+                Using resp As HttpResponseMessage = Await TranslateHttp.Client.GetAsync(baseUrl & "/languages", linked.Token).ConfigureAwait(False)
+                    Return resp.IsSuccessStatusCode
+                End Using
             End Using
         Catch
             Return False
@@ -69,10 +70,14 @@ Public Class LibreTranslateTranslator
 
             Dim payload As String = TranslateHttp.JsonSerialize(body)
             Using content As New StringContent(payload, Encoding.UTF8, "application/json")
-                Dim resp As HttpResponseMessage = Await TranslateHttp.Client.PostAsync(baseUrl & "/translate", content, ct).ConfigureAwait(False)
-                If Not resp.IsSuccessStatusCode Then Return TranslationBatch.AllFailed(texts, TranslationFailure.Other)
-                Dim json As String = Await resp.Content.ReadAsStringAsync().ConfigureAwait(False)
-                Return ParseTranslated(json, texts)
+                ' Disposed on every path, including the non-2xx one below that returns without
+                ' reading the content: an undrained response keeps its connection out of the
+                ' pool until the GC finalizes it (audit 057.S11-1; Ollama's side is 057.S10-8).
+                Using resp As HttpResponseMessage = Await TranslateHttp.Client.PostAsync(baseUrl & "/translate", content, ct).ConfigureAwait(False)
+                    If Not resp.IsSuccessStatusCode Then Return TranslationBatch.AllFailed(texts, TranslationFailure.Other)
+                    Dim json As String = Await resp.Content.ReadAsStringAsync().ConfigureAwait(False)
+                    Return ParseTranslated(json, texts)
+                End Using
             End Using
         Catch ex As OperationCanceledException When ct.IsCancellationRequested
             Throw

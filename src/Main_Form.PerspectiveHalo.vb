@@ -164,6 +164,7 @@ Partial Public Class Main_Form
             ' Give the bitmap back untouched rather than leaving the caller with a
             ' disposed one - it will paint the flat bars, which is the old behaviour.
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1133: halo start skipped: [" & ex.GetType().Name & "] " & ex.Message)
+            AppFileLogger.WriteLine("Perspective halo start skipped: [" & ex.GetType().Name & "] " & ex.Message)
             halo_Bars = Nothing
             halo_Frame = Nothing
             ReleaseHaloUnderlay()
@@ -284,6 +285,7 @@ Partial Public Class Main_Form
             ' Cosmetics - never let a GDI+ transient take the (already shown) photo
             ' with it. The next navigation or resize repaints the background.
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1135: halo frame skipped: [" & ex.GetType().Name & "] " & ex.Message)
+            AppFileLogger.WriteLine("Perspective halo frame skipped: [" & ex.GetType().Name & "] " & ex.Message)
             finished = True
         End Try
 

@@ -513,7 +513,8 @@ Partial Public NotInheritable Class MainWindow
             Dim host As String = Convert.ToString(it.Tag)
             Dim isNetwork As Boolean = Not String.IsNullOrEmpty(host) AndAlso network.Contains(host)
             Dim bad As Boolean = isNetwork OrElse (Not String.IsNullOrEmpty(host) AndAlso blocked.Contains(host))
-            it.ForeColor = If(bad, Color.Firebrick, SystemColors.WindowText)
+            ' Empty resets the row to the list's own ink, which follows the theme by itself.
+            it.ForeColor = If(bad, ThemeService.Palette.Danger, Color.Empty)
             it.ToolTipText = If(isNetwork, networkTip, If(bad, tip, ""))
         Next
         Return blocked.Count + network.Count
@@ -636,8 +637,9 @@ Partial Public NotInheritable Class MainWindow
         End If
         Dim selected As Boolean = e.Item.Selected
         Dim focused As Boolean = lvFolders.Focused
-        Dim back As Color = If(selected, If(focused, SystemColors.Highlight, SystemColors.Control), lvFolders.BackColor)
-        Dim ink As Color = If(selected AndAlso focused, SystemColors.HighlightText, e.Item.ForeColor)
+        Dim theme As ThemePalette = ThemeService.Palette
+        Dim back As Color = If(selected, If(focused, theme.Accent, theme.SurfaceWindow), lvFolders.BackColor)
+        Dim ink As Color = If(selected AndAlso focused, theme.AccentInk, theme.Restate(e.Item.ForeColor, False))
         Using b As New SolidBrush(back)
             e.Graphics.FillRectangle(b, e.Bounds)
         End Using
@@ -685,10 +687,17 @@ Partial Public NotInheritable Class MainWindow
         Return If(n.Length > 0, n, path)
     End Function
 
+    ''' <summary>Alternate row tint. The light odd-row blue predates the palette and is kept; in
+    ''' dark mode the rows alternate between the two surface roles (spec 060). Also restates the
+    ''' "blocked folder" ink, which a theme switch would otherwise leave in the other palette.</summary>
     Private Sub RestripeList()
-        Dim odd As Color = Color.FromArgb(244, 247, 252)
+        Dim theme As ThemePalette = ThemeService.Palette
+        Dim even As Color = theme.SurfaceRaised
+        Dim odd As Color = If(theme.IsDark, theme.SurfaceWindow, Color.FromArgb(244, 247, 252))
         For i As Integer = 0 To lvFolders.Items.Count - 1
-            lvFolders.Items(i).BackColor = If((i And 1) = 0, SystemColors.Window, odd)
+            Dim it As ListViewItem = lvFolders.Items(i)
+            it.BackColor = If((i And 1) = 0, even, odd)
+            If ThemePalette.RoleForColor(it.ForeColor, False) = ThemeRole.Danger Then it.ForeColor = theme.Danger
         Next
     End Sub
 

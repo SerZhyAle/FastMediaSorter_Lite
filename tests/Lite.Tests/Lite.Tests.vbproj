@@ -145,6 +145,11 @@
     <Compile Include="..\..\src\WindowPlacement.vb">
       <Link>Linked\WindowPlacement.vb</Link>
     </Compile>
+    <!-- The application theme's pure half (spec 060, APP-STYLE rules 2-4): the mode codec,
+         its resolution and the one palette table. Whole-file "#If Not NETFRAMEWORK". -->
+    <Compile Include="..\..\src\Theming\ThemePalette.vb">
+      <Link>Linked\Theming\ThemePalette.vb</Link>
+    </Compile>
     <!-- Failure cause from the exception's type (APP-BEHAVIOUR rule 6, ticket 028 Ф-3).
          Both legs: net48 keeps the raw text, net10 names a cause. -->
     <Compile Include="..\..\src\FailureText.vb">
@@ -347,6 +352,11 @@
     </Compile>
     <Compile Include="..\..\src\FolderScan.vb">
       <Link>Linked\FolderScan.vb</Link>
+    </Compile>
+    <!-- Ticket 086 (audit 057 S01-6): the display path's in-flight decode registry - join,
+         never duplicate, one owner per result. Pure, both legs. -->
+    <Compile Include="..\..\src\InFlightDecodeRegistry.vb">
+      <Link>Linked\InFlightDecodeRegistry.vb</Link>
     </Compile>
     <!-- The classifier that decides whether a read failure is about the FILE (drop it from
          the list, as always) or about everything between us and it (keep it - a dropped SMB
