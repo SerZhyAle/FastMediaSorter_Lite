@@ -1,4 +1,4 @@
-<# Exercises the actual Main_Form without reading/saving user settings.
+﻿<# Exercises the actual Main_Form without reading/saving user settings.
    The subclass suppresses Load, Shown and FormClosing. Evidence stays in WorkDir. #>
 param([string]$WorkDir = (Join-Path $env:TEMP 'fms-modern-chrome-scenes'))
 $ErrorActionPreference = 'Stop'
@@ -18,6 +18,7 @@ using System;
 using System.Drawing;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using fmsl;
@@ -41,6 +42,13 @@ static class Scenes {
  static object Call(object instance, string name, params object[] args) {
   var method = typeof(Main_Form).GetMethods(Flags).Single(m => m.Name == name && m.GetParameters().Length == args.Length);
   try { return method.Invoke(instance,args); } catch(TargetInvocationException e) { throw e.InnerException; }
+ }
+ [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr hwnd, uint msg, IntPtr wparam, IntPtr lparam);
+ static void Click(Control surface, Rectangle bounds) {
+  var point=new Point(bounds.Left+bounds.Width/2,bounds.Top+bounds.Height/2);
+  Cursor.Position=surface.PointToScreen(point);
+  var packed=(IntPtr)((point.Y<<16)|(point.X&0xffff));
+  SendMessage(surface.Handle,0x201,(IntPtr)1,packed); SendMessage(surface.Handle,0x202,IntPtr.Zero,packed); Pump();
  }
  static void Assert(bool condition,string message) { if (!condition) throw new Exception(message); }
  static void Pump(int ms=160) { var end=Environment.TickCount64+ms; do { Application.DoEvents(); Thread.Sleep(10); } while(Environment.TickCount64<end); }
@@ -112,6 +120,12 @@ static class Scenes {
    SendMessage(surface.Handle,0x201,new IntPtr(1),click); SendMessage(surface.Handle,0x202,IntPtr.Zero,click); Pump();
    Assert(!((CheckBox)Get(form,"chkbox_Top_Most")).Checked,"Pointer click did not invoke the pin carrier");
    Assert(form.ContainsFocus,"A chrome click stole viewer focus");
+   foreach(var host in Hosts(form)) foreach(var item in ((System.Collections.IEnumerable)Get(Get(host,"Surface"),"Items")).Cast<object>())
+    if((bool)Get(item,"Visible")) Assert(!string.IsNullOrWhiteSpace((string)Get(item,"Tooltip")),"Missing tooltip: "+Get(item,"Id"));
+   first.GetType().GetProperty("Enabled").SetValue(first,false);
+   SendMessage(surface.Handle,0x200,IntPtr.Zero,click); Pump();
+   Assert((string)Get(surface,"shownTip")== (string)Get(first,"Tooltip"),"Disabled control lost its tooltip");
+   first.GetType().GetProperty("Enabled").SetValue(first,true);
    var sortItem=((System.Collections.IEnumerable)Get(surface,"Items")).Cast<object>().Single(item=>(string)Get(item,"Id")=="cmbox_Sort");
    Call(form,"ChromeShowSort",sortItem); Pump();
    var popup=form.OwnedForms.Single(h=>h.GetType().Name=="ChromeMenu");
@@ -122,12 +136,31 @@ static class Scenes {
    var route=popupType.GetMethod("HandlePopupKey",BindingFlags.Public|BindingFlags.Static);
    route.Invoke(null,new object[]{Keys.Down}); route.Invoke(null,new object[]{Keys.Enter}); Pump();
    Assert(((ComboBox)Get(form,"cmbox_Sort")).SelectedIndex==1,"Popup keyboard selection did not reach the sort carrier");
+   Click((Control)surface,(Rectangle)Get(sortItem,"Bounds"));
+   popup=form.OwnedForms.Single(h=>h.GetType().Name=="ChromeMenu" && h.Visible);
+   var popupSurface=(Control)Get(popup,"Surface");
+   var options=((System.Collections.IEnumerable)Get(popupSurface,"Items")).Cast<object>().ToArray();
+   Click(popupSurface,(Rectangle)Get(options[0],"Bounds"));
+   Assert(((ComboBox)Get(form,"cmbox_Sort")).SelectedIndex==0,"Mouse selection did not apply ABC sorting");
+   var sortDir=System.IO.Path.Combine(args[0],"sort-files"); System.IO.Directory.CreateDirectory(sortDir);
+   image.Save(System.IO.Path.Combine(sortDir,"z.png")); image.Save(System.IO.Path.Combine(sortDir,"a.png"));
+   ((System.Collections.Generic.HashSet<string>)Get(form,"all_Supported_Extensions")).Add(".png");
+   form.Current_Folder_Path=sortDir;
+   Call(form,"ChromeApplySort",1); Pump();
+   Assert(((System.Collections.IEnumerable)Get(form,"files_List")).Cast<string>().Select(System.IO.Path.GetFileName).SequenceEqual(new[]{"z.png","a.png"}),"XYZ did not reorder the folder");
+   Call(form,"ChromeApplySort",0); Pump();
+   Assert(((System.Collections.IEnumerable)Get(form,"files_List")).Cast<string>().Select(System.IO.Path.GetFileName).SequenceEqual(new[]{"a.png","z.png"}),"ABC did not reorder the folder");
+   Call(form,"ChromeApplySort",0); Pump();
+   Assert(((System.Collections.IEnumerable)Get(form,"files_List")).Cast<string>().First().EndsWith("a.png"),"Reapplying ABC failed");
+   form.Current_Folder_Path="";
    var path=Get(form,"chrome_Path"); path.GetType().GetMethod("BeginEditing").Invoke(path,null); Pump();
    Assert(((Control)Get(path,"Editor")).Focused,"Path editor did not get deliberate keyboard focus");
    path.GetType().GetMethod("EndEditing").Invoke(path,new object[]{true}); Pump();
    Assert(form.ContainsFocus && !((Control)path).ContainsFocus,"Leaving path editing did not restore viewer focus: active="+Form.ActiveForm?.Name+" main="+form.Name+" focused="+form.ContainsFocus+" path="+((Control)path).ContainsFocus);
-   foreach(int percent in new[]{100,125,150}) {
+   foreach(int percent in new[]{100,125,150,100,100}) {
     prefs.GetType().GetProperty("InterfaceScalePercent").SetValue(prefs,percent); Call(form,"ChromeConfigure"); Pump();
+    var editor=(Control)Get(path,"Editor");
+    typeof(Control).GetMethod("RecreateHandle",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(editor,null); Pump();
     Assert(media.Bounds==bounds,"Changing interface scale changed media bounds");
     Assert(Hosts(form).All(h=>h.Width<=media.Width),"Scaled panel escaped the media width");
    }
@@ -142,6 +175,12 @@ static class Scenes {
     }
     screenshot.Save(System.IO.Path.Combine(args[0],"modern-chrome.png"));
    }
+   var statusHost=Hosts(form).Single(h=>h.Name=="chrome_Status");
+   ((Label)Get(form,"lbl_Status")).Text="Internal error: Unexpected error. The details are in the log.";
+   Call(form,"Chrome_Timer_Tick",null,EventArgs.Empty); Pump();
+   var statusItems=((System.Collections.IEnumerable)Get(Get(statusHost,"Surface"),"Items")).Cast<object>().ToArray();
+   Assert(statusItems.All(item=>statusHost.ClientRectangle.Contains((Rectangle)Get(item,"Bounds"))),"Status content escaped the strip");
+   Assert(media.RectangleToScreen(media.ClientRectangle).Contains(statusHost.Bounds),"Status strip escaped the media area");
    form.ClientSize=new Size(520,680); Call(form,"PlaceChromePanels"); Pump();
    Assert(Hosts(form).Any(h=>((System.Collections.IEnumerable)Get(Get(h,"Surface"),"OverflowItems")).Cast<object>().Any()),"Narrow window did not expose overflow");
    form.ClientSize=new Size(1000,680); Call(form,"PlaceChromePanels"); Pump();
@@ -156,7 +195,7 @@ static class Scenes {
    if((bool)Call(form,"ChromeFadeAllowed")) Assert(Hosts(form).Any(h=>h.Visible && h.Opacity>0 && h.Opacity<0.86),"Reveal did not produce intermediate fade opacity");
    Pump(220); Assert(Hosts(form).Any(h=>h.Visible),"Pointer hot zone did not reveal the chrome");
    Call(form,"DisposeRecipientsOverlayResources"); Call(form,"DisposeChromeResources"); form.Hide();
-   Console.WriteLine("Geometry, media pixels, F10/Tab/Esc, path focus, scale and idle hide passed; DPI="+form.DeviceDpi);
+   Console.WriteLine("Geometry, tooltips, ABC/XYZ folder order, mouse/keyboard menus, font handle recreation, scale and idle hide passed; DPI="+form.DeviceDpi);
    return 0;
   } catch(Exception e) { Console.WriteLine(e); return 1; }
  }

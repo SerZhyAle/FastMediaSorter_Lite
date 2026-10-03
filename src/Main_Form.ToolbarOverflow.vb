@@ -130,6 +130,9 @@ Partial Public Class Main_Form
     ''' call on every resize / navigation.
     ''' </summary>
     Friend Sub LayoutToolbar()
+#If Not NETFRAMEWORK Then
+        If ModernChromeOn() Then Return
+#End If
         If Not modern_Layout_Built OrElse flow_Toolbar Is Nothing Then Return
         If toolbar_Row2_Items Is Nothing OrElse cmbox_Media_Folder Is Nothing Then Return
         If laying_Out_Toolbar Then Return
@@ -156,7 +159,9 @@ Partial Public Class Main_Form
             ' rectangles its controls had when the region was cut. A button shown or
             ' moved by this pass needs a new hole, or it is invisible and unclickable
             ' (audit B-03). Still inside the re-entrancy guard.
+#If NETFRAMEWORK Then
             If flow_Toolbar.Parent Is panel_Media Then ApplyToolbarRegion(True)
+#End If
         Finally
             laying_Out_Toolbar = False
         End Try
@@ -324,7 +329,14 @@ Partial Public Class Main_Form
             ' PerformClick raises nothing for a control that cannot be selected - every
             ' menu line was a no-op (audit B-01).
             AddHandler item.Click, Sub()
-                                       If captured.Enabled Then Me.InvokeOnClick(captured, EventArgs.Empty)
+                                       If Not captured.Enabled Then Return
+                                       ' Anchor-to-self dropdowns must open at this row's overflow
+                                       ' button, even when the hidden control has a stale location.
+                                       If Not captured.Visible Then
+                                           Dim owner As Button = If(menu Is overflow_Menu, btn_Overflow, btn_Overflow_2)
+                                           captured.Location = captured.Parent.PointToClient(owner.Parent.PointToScreen(owner.Location))
+                                       End If
+                                       Me.InvokeOnClick(captured, EventArgs.Empty)
                                    End Sub
             menu.Items.Add(item)
         Next

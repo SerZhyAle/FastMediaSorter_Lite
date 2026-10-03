@@ -90,7 +90,7 @@ Public NotInheritable Class FdSecMetadata
     ''' Nothing and the surface simply does not show a date it does not have.
     ''' </summary>
     Friend Shared Function FromFileTime(value As ULong) As Date?
-        If value = 0UL Then Return Nothing
+        If value = 0UL OrElse value > CULng(Long.MaxValue) Then Return Nothing
         Try
             Return Date.FromFileTimeUtc(CLng(value))
         Catch ex As ArgumentOutOfRangeException

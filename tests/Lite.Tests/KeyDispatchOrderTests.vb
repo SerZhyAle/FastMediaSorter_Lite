@@ -20,7 +20,7 @@ Public Class KeyDispatchOrderTests
     Public Sub The_gates_run_in_the_order_the_defects_need()
         Dim body As String = MethodBody(KeyboardSource(), "Public Sub KeybUse")
 
-        Dim repeatAt As Integer = body.IndexOf("KeyRouting.IsDestructiveKey(e.KeyCode) AndAlso IsAutoRepeatOf(e.KeyCode)", StringComparison.Ordinal)
+        Dim repeatAt As Integer = body.IndexOf("If destructive_Press AndAlso IsAutoRepeatOf(e.KeyCode)", StringComparison.Ordinal)
         Dim customAt As Integer = body.IndexOf("TryHandleCustomHotkey(", StringComparison.Ordinal)
         Dim modifierAt As Integer = body.IndexOf("If Not KeyRouting.MainMapAccepts(e.KeyData) Then Exit Sub", StringComparison.Ordinal)
         Dim slotAt As Integer = body.IndexOf("Not IsRecipientSlotConfigured(recipient_Slot) Then Return", StringComparison.Ordinal)

@@ -8,57 +8,57 @@
     "as stale, by name. Re-translate the named locales first - batching the fan-out to the",
     "release boundary is allowed - then re-record. Never edit the hashes by hand."
   ],
-  "recorded": "2026-10-01",
-  "siteFingerprint": "98d530833967a20f",
-  "trustFingerprint": "fdb658d6ff3bd1e3",
+  "recorded": "2026-10-03",
+  "siteFingerprint": "527d28dd0a1fbe73",
+  "trustFingerprint": "16a5c07723f19477",
   "locales": {
     "ru": {
-      "site": "98d530833967a20f",
-      "trust": "fdb658d6ff3bd1e3"
+      "site": "527d28dd0a1fbe73",
+      "trust": "16a5c07723f19477"
     },
     "uk": {
-      "site": "98d530833967a20f",
-      "trust": "fdb658d6ff3bd1e3"
+      "site": "527d28dd0a1fbe73",
+      "trust": "16a5c07723f19477"
     },
     "de": {
-      "site": "98d530833967a20f",
-      "trust": "fdb658d6ff3bd1e3"
+      "site": "527d28dd0a1fbe73",
+      "trust": "16a5c07723f19477"
     },
     "it": {
-      "site": "98d530833967a20f",
-      "trust": "fdb658d6ff3bd1e3"
+      "site": "527d28dd0a1fbe73",
+      "trust": "16a5c07723f19477"
     },
     "es": {
-      "site": "98d530833967a20f",
-      "trust": "fdb658d6ff3bd1e3"
+      "site": "527d28dd0a1fbe73",
+      "trust": "16a5c07723f19477"
     },
     "fr": {
-      "site": "98d530833967a20f",
-      "trust": "fdb658d6ff3bd1e3"
+      "site": "527d28dd0a1fbe73",
+      "trust": "16a5c07723f19477"
     },
     "pt": {
-      "site": "98d530833967a20f",
-      "trust": "fdb658d6ff3bd1e3"
+      "site": "527d28dd0a1fbe73",
+      "trust": "16a5c07723f19477"
     },
     "ar": {
-      "site": "98d530833967a20f",
-      "trust": "fdb658d6ff3bd1e3"
+      "site": "527d28dd0a1fbe73",
+      "trust": "16a5c07723f19477"
     },
     "hi": {
-      "site": "98d530833967a20f",
-      "trust": "fdb658d6ff3bd1e3"
+      "site": "527d28dd0a1fbe73",
+      "trust": "16a5c07723f19477"
     },
     "bn": {
-      "site": "98d530833967a20f",
-      "trust": "fdb658d6ff3bd1e3"
+      "site": "527d28dd0a1fbe73",
+      "trust": "16a5c07723f19477"
     },
     "ur": {
-      "site": "98d530833967a20f",
-      "trust": "fdb658d6ff3bd1e3"
+      "site": "527d28dd0a1fbe73",
+      "trust": "16a5c07723f19477"
     },
     "zh": {
-      "site": "98d530833967a20f",
-      "trust": "fdb658d6ff3bd1e3"
+      "site": "527d28dd0a1fbe73",
+      "trust": "16a5c07723f19477"
     }
   }
 }

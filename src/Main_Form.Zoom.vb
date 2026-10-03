@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Drawing
@@ -135,6 +135,8 @@ Partial Public Class Main_Form
         ClearPerspectiveBackground()
         UpdateZoomLabel()
         RememberFolderZoom(factor)
+        ' A PDF page zoomed past its render resolution is re-rendered sharper.
+        RefreshPdfResolution()
     End Sub
 
     ''' <summary>Feeds the viewport pair to both boxes of the swap pair and repaints
@@ -251,6 +253,15 @@ Partial Public Class Main_Form
     ''' <summary>NumPad zoom (spec 4.3). Only the grey block - every Ctrl combo is
     ''' already taken, and NumPad 0..9 belong to sorting. Returns True if consumed.</summary>
     Private Function TryHandleZoomKey(e As KeyEventArgs) As Boolean
+        If IsTextDocumentShown() Then
+            Select Case e.KeyCode
+                Case Keys.Add : ZoomText(0.1F)
+                Case Keys.Subtract : ZoomText(-0.1F)
+                Case Keys.Divide : ResetTextZoom()
+                Case Else : Return False
+            End Select
+            Return True
+        End If
         Select Case e.KeyCode
             Case Keys.Add
                 ZoomStepAt(True, False, CursorAnchorOnPanel())

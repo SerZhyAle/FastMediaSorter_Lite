@@ -58,16 +58,12 @@ Namespace My
 
 #If Not NETFRAMEWORK Then
         ''' <summary>
-        ''' Pin the net48 rendering metrics (audit 2026-07-16). The SHIPPED net48
-        ''' exe never embedded app.manifest (byte-scan proven), so its reference
-        ''' behavior is DPI-UNAWARE - Windows bitmap-scales the whole window and
-        ''' the pixel-tuned Designer layout never sees a scale factor. Match it
-        ''' exactly; flipping to PerMonitorV2 is a deliberate future step (needs
-        ''' the layout re-tested at 125/150%). Font: .NET defaults to Segoe UI
-        ''' 9pt - pin the classic font all Designer coordinates assume.
+        ''' Modern floating chrome derives metrics from DeviceDpi (002 phase 7).
+        ''' PerMonitorV2 keeps it crisp and repositions hosts when crossing monitors.
+        ''' The net48 application retains its shipped DPI-unaware behavior.
         ''' </summary>
         Private Sub MyApplication_ApplyApplicationDefaults(sender As Object, e As ApplyApplicationDefaultsEventArgs) Handles Me.ApplyApplicationDefaults
-            e.HighDpiMode = System.Windows.Forms.HighDpiMode.DpiUnaware
+            e.HighDpiMode = System.Windows.Forms.HighDpiMode.PerMonitorV2
             e.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25F)
         End Sub
 #End If
@@ -93,19 +89,27 @@ Namespace My
         ''' </summary>
         Private Shared ReadOnly Viewer_Process_Names As String() = Common_Module.Viewer_Process_Names
 
-        Private Shared Function GetRunningViewerProcesses(current_Id As Integer) As List(Of Process)
-            Dim found As New List(Of Process)
-            For Each viewer_Name As String In Viewer_Process_Names
-                Try
-                    For Each proc As Process In Process.GetProcessesByName(viewer_Name)
-                        If proc.Id <> current_Id Then found.Add(proc)
-                    Next
-                Catch
-                End Try
-            Next
-            Return found
-        End Function
+        Friend Shared RunningTargetsFunc As Func(Of Integer, List(Of ViewerProcessTarget)) = Nothing
 
+        ''' <summary>The other viewer processes, under both exe names. The discovery itself (and
+        ''' its guarantee that every Process object is disposed and a vanishing target costs only
+        ''' itself) is ViewerProcessDiscovery, which the tests drive with fakes.</summary>
+        Friend Shared Function GetRunningViewerTargets(current_Id As Integer) As List(Of ViewerProcessTarget)
+            If RunningTargetsFunc IsNot Nothing Then
+                Return RunningTargetsFunc(current_Id)
+            End If
+
+            Return ViewerProcessDiscovery.Discover(
+                Viewer_Process_Names, current_Id,
+                Function(viewer_Name As String) As IList(Of IViewerProcess)
+                    Dim wrapped As New List(Of IViewerProcess)()
+                    For Each proc As Process In Process.GetProcessesByName(viewer_Name)
+                        wrapped.Add(New RealViewerProcess(proc))
+                    Next
+                    Return wrapped
+                End Function,
+                AddressOf GetProcessTopLevelWindows)
+        End Function
         ''' <summary>SendMessage with a deadline. A plain SendMessage is synchronous and
         ''' has none: one hung viewer window and the NEW process hung with it, for ever,
         ''' showing nothing.</summary>
@@ -117,7 +121,6 @@ Namespace My
         End Function
 
         Private Const SMTO_ABORTIFHUNG As Integer = &H2
-        Private Const Copy_Data_Send_Timeout_Ms As Integer = 3000
 
         Private Delegate Function EnumWindowsProc(hWnd As IntPtr, lParam As IntPtr) As Boolean
 
@@ -150,17 +153,18 @@ Namespace My
         ''' Secondary windows use it to cascade their restore position instead of landing
         ''' directly on top of the primary window.</summary>
         Friend Shared Function GetRunningViewerWindowCount() As Integer
-            Dim currentId As Integer = Process.GetCurrentProcess().Id
+            Dim currentId As Integer = 0
+            Try
+                currentId = Process.GetCurrentProcess().Id
+            Catch
+            End Try
             Dim count As Integer = 0
-            For Each proc As Process In GetRunningViewerProcesses(currentId)
-                Try
-                    If proc.MainWindowHandle <> IntPtr.Zero Then
-                        count += 1
-                    Else
-                        count += GetProcessTopLevelWindows(proc.Id).Count
-                    End If
-                Catch
-                End Try
+            For Each target As ViewerProcessTarget In GetRunningViewerTargets(currentId)
+                If target.MainWindowHandle <> IntPtr.Zero Then
+                    count += 1
+                Else
+                    count += target.TopLevelHandles.Count
+                End If
             Next
             Return count
         End Function
@@ -238,7 +242,7 @@ Namespace My
 
             ' VB's IsSingleInstance only works for same exe-path launches. The named
             ' mutex is path-independent (catches debug vs release, a renamed copy, and
-            ' the LITE/x86 pair).
+            ' the mainline/x86 pair).
             '
             ' Created HERE, as the first thing the process does. It used to be created
             ' in Form1_Load instead, and the check below only opened an existing one: in
@@ -278,19 +282,27 @@ Namespace My
 
                 Dim current_Id As Integer = Process.GetCurrentProcess().Id
                 Dim delivered As Boolean = False
-                Dim deadline As DateTime = DateTime.UtcNow.AddMilliseconds(Forward_Deadline_Ms)
 
-                ' A viewer that is still starting has no window yet, or is busy inside
-                ' Form1_Load and cannot answer: try again for a few seconds rather than
-                ' opening a rival instance at the first silence (S6 Б-38, which 053 F-06
-                ' found defeated). Nobody running under either name ends the wait at once.
-                Do
-                    Dim viewer_Found As Boolean = False
-                    delivered = TryForwardOnce(file_Path, current_Id, viewer_Found)
-                    If delivered OrElse Not viewer_Found OrElse DateTime.UtcNow >= deadline Then Exit Do
-                    Thread.Sleep(Forward_Retry_Pause_Ms)
-                Loop
-
+                ' Refused, never truncated: a path cut to fit can name a different folder. A
+                ' payload that cannot be sent whole is simply not forwarded, and this process
+                ' opens the argument itself, as it does whenever nobody takes it.
+                Dim payload_Bytes As Byte() = Nothing
+                Dim refusal As PayloadRefusal
+                If Not CopyDataTransport.TryEncode(file_Path, payload_Bytes, refusal) Then
+                    AppFileLogger.WriteLine("Single instance: the argument cannot be forwarded (" & refusal.ToString() & ")")
+                Else
+                    ' A viewer that is still starting has no window yet, or is busy inside
+                    ' Form1_Load and cannot answer: try again for a few seconds rather than
+                    ' opening a rival instance at the first silence (S6 Б-38, which 053 F-06
+                    ' found defeated). One monotonic deadline for the whole attempt, each send
+                    ' bounded by what remains of it; nobody running under either name ends the
+                    ' wait at once.
+                    Dim forward_Outcome As ForwardOutcome = CopyDataTransport.RunForward(
+                        AddressOf MonotonicClock.NowMs,
+                        Sub(pause_Ms) Thread.Sleep(pause_Ms),
+                        Function(send_Timeout_Ms) TryForwardOnce(payload_Bytes, current_Id, send_Timeout_Ms))
+                    delivered = forward_Outcome = ForwardOutcome.Delivered
+                End If
                 ' Cancel ONLY if the argument really reached someone. It used to be
                 ' unconditional, so a renamed exe (no process under either known name),
                 ' a first instance whose window did not exist yet, or a hung receiver
@@ -313,22 +325,25 @@ Namespace My
         End Sub
 
         ''' <summary>
-        ''' One pass over every running viewer process. True only when a Main_Form
-        ''' answered the tagged forward as handled - a helper window of the process
-        ''' (GDI+, broadcast) answers WM_COPYDATA with 0 and no longer counts (053 F-06).
+        ''' One pass over every running viewer process. Acknowledged only when a Main_Form
+        ''' answered the tagged forward as handled - a helper window of the process (GDI+,
+        ''' broadcast) answers WM_COPYDATA with 0 and no longer counts (053 F-06). NoTarget when
+        ''' no process runs under either name: there is nothing to wait for. Each send is
+        ''' bounded by <paramref name="send_Timeout_Ms"/>, and the process objects are released
+        ''' by GetRunningViewerTargets whatever happens to a target meanwhile.
         ''' </summary>
-        Private Shared Function TryForwardOnce(file_Path As String, current_Id As Integer, ByRef viewer_Found As Boolean) As Boolean
-            viewer_Found = False
-            For Each proc As Process In GetRunningViewerProcesses(current_Id)
+        Private Shared Function TryForwardOnce(payload_Bytes As Byte(), current_Id As Integer, send_Timeout_Ms As Integer) As ForwardAttempt
+            Dim viewer_Found As Boolean = False
+            For Each target As ViewerProcessTarget In GetRunningViewerTargets(current_Id)
                 viewer_Found = True
                 ' A hidden or minimised instance can report MainWindowHandle = 0 - fall
                 ' back to the process's top-level windows. Sending to all of them is safe:
                 ' only Main_Form's WndProc acts on the tagged message.
-                Dim target_Handles As New List(Of IntPtr)
-                If proc.MainWindowHandle <> IntPtr.Zero Then
-                    target_Handles.Add(proc.MainWindowHandle)
+                Dim target_Handles As New List(Of IntPtr)()
+                If target.MainWindowHandle <> IntPtr.Zero Then
+                    target_Handles.Add(target.MainWindowHandle)
                 Else
-                    target_Handles.AddRange(GetProcessTopLevelWindows(proc.Id))
+                    target_Handles.AddRange(target.TopLevelHandles)
                 End If
                 If target_Handles.Count = 0 Then Continue For
 
@@ -336,38 +351,37 @@ Namespace My
                 ' without this grant the foreground lock refuses it and only the taskbar
                 ' button flashes. We are the foreground process right now, so we may.
                 Try
-                    AllowSetForegroundWindow(proc.Id)
+                    AllowSetForegroundWindow(target.Pid)
                 Catch ex As Exception
                     AppFileLogger.LogException("Single instance: AllowSetForegroundWindow", ex)
                 End Try
 
-                Dim bytes() As Byte = System.Text.Encoding.UTF8.GetBytes(file_Path)
-                Dim ptr As IntPtr = Marshal.AllocHGlobal(bytes.Length + 1)
+                Dim ptr As IntPtr = Marshal.AllocHGlobal(payload_Bytes.Length + 1)
                 Try
-                    Marshal.Copy(bytes, 0, ptr, bytes.Length)
-                    Marshal.WriteByte(ptr, bytes.Length, 0)
+                    Marshal.Copy(payload_Bytes, 0, ptr, payload_Bytes.Length)
+                    Marshal.WriteByte(ptr, payload_Bytes.Length, 0)
 
                     Dim cds As New Main_Form.COPYDATASTRUCT()
                     cds.dwData = SingleInstanceProtocol.Tag_Pointer
-                    cds.cbData = bytes.Length
+                    cds.cbData = payload_Bytes.Length
                     cds.lpData = ptr
 
                     For Each target_Handle As IntPtr In target_Handles
                         Dim send_Result As IntPtr = IntPtr.Zero
                         Dim sent As Boolean = SendMessageTimeout(target_Handle, WM_COPYDATA_LOCAL, IntPtr.Zero, cds,
-                                                                 SMTO_ABORTIFHUNG, Copy_Data_Send_Timeout_Ms, send_Result) <> IntPtr.Zero
+                                                                 SMTO_ABORTIFHUNG, send_Timeout_Ms, send_Result) <> IntPtr.Zero
                         If SingleInstanceProtocol.IsDelivered(sent, send_Result) Then
-                            AppFileLogger.WriteLine("Single instance: argument forwarded to PID " & proc.Id.ToString())
-                            Return True
+                            AppFileLogger.WriteLine("Single instance: argument forwarded to a running viewer")
+                            Return ForwardAttempt.Acknowledged
                         End If
                     Next
                 Catch ex As Exception
-                    AppFileLogger.LogException("Single instance: forwarding to PID " & proc.Id.ToString(), ex)
+                    AppFileLogger.LogException("Single instance: forwarding to a running viewer", ex)
                 Finally
                     Marshal.FreeHGlobal(ptr)
                 End Try
             Next
-            Return False
+            Return If(viewer_Found, ForwardAttempt.NotAcknowledged, ForwardAttempt.NoTarget)
         End Function
     End Class
 End Namespace

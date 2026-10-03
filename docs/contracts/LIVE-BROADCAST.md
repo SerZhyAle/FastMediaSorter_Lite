@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `LIVE-BROADCAST` |
-| **Version** | 0.12, draft (read 2026-09-24). Owner: FastMediaSorter Android |
+| **Version** | 0.13, draft (read 2026-10-02; the RTSP stream kinds moved from `[PROPOSED]` to `[CONTRACT]` - no consumer-shape change for the planned reader). Owner: FastMediaSorter Android |
 | **Home** | `live-broadcast/README.md` + `11_live_broadcast_contract.md` in the shared contracts catalog |
 | **Role here** | planned consumer - specification 023, a proposal; no code exists yet |
 

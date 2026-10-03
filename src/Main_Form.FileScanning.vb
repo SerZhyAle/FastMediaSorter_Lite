@@ -49,6 +49,12 @@ Partial Public Class Main_Form
         Public Property Generation As Integer
         Public Property Picture As Image
         Public Property Data As IO.MemoryStream
+#If Not NETFRAMEWORK Then
+        ''' <summary>Where the picture was read from, taken BEFORE the decode (014 U-01): what the
+        ''' box will remember, so that the picture can be offered to the cache - and recognised as
+        ''' stale - once the user has paged past it. Nothing when the file could not be asked about.</summary>
+        Public Property Origin As PictureOrigin
+#End If
     End Class
 
     Private Sub BgWorker_DoWork(sender As Object, e As DoWorkEventArgs) Handles BgWorker.DoWork
@@ -120,7 +126,11 @@ Partial Public Class Main_Form
 
                     If Is_to_show_picture_sizes Then
                         Dim fileExtension As String = current_File_Info.Extension.ToLowerInvariant()
+#If NETFRAMEWORK Then
                         If Image_File_Extensions.Contains(fileExtension) Then
+#Else
+                        If SortableContentKinds.CanDecodeImage(current_File_Name_in_worker, Image_File_Extensions) Then
+#End If
                             ' Header-only read (no GDI+) on the worker-local file. Using
                             ' Image.FromFile(Current_File_Name) here was a double bug: it
                             ' read the shared global instead of this worker's file, and it
@@ -171,7 +181,7 @@ Partial Public Class Main_Form
                 Not next_File_After_Current_in_worker = "" AndAlso
                 Not next_File_After_Current_in_worker = current_File_Name_in_worker Then
 
-                Dim SecondFileExtension = Path.GetExtension(next_File_After_Current_in_worker).ToLowerInvariant()
+                Dim SecondFileExtension = NavigationRules.ExtensionKey(next_File_After_Current_in_worker)
 
 #If Not NETFRAMEWORK Then
                 ' Inside an archive the neighbour is not on disk yet, and the decode below
@@ -185,7 +195,7 @@ Partial Public Class Main_Form
                     ' nothing else, and extracting a 500 MB video ahead held the extraction
                     ' lock the UI thread needs for the entry the user actually went to.
                     If ahead >= 0 AndAlso Not ArchiveEntryFilter.ShouldPrefetch(
-                            Image_File_Extensions.Contains(SecondFileExtension),
+                            SortableContentKinds.CanDecodeImage(next_File_After_Current_in_worker, Image_File_Extensions),
                             request.Archive.Entries(ahead).Size) Then
                         ahead = -1
                     End If
@@ -196,9 +206,13 @@ Partial Public Class Main_Form
                         ' the session past the budget the user just set, right before the
                         ' UI-path extraction evicts it back down again.
                         Dim archivePrefs As ModernViewerPreferences = GetModernPreferences()
+                        ' allowSlow:=False - on a solid archive an entry that is not on disk
+                        ' costs a scan from the start, which a guess must never hold the
+                        ' extraction lock for (the sequential pass already stored what fits).
                         request.Archive.TryEnsureExtracted(ahead, ignored,
                             CLng(archivePrefs.ArchiveMaxEntryMb) * 1024L * 1024L,
-                            CLng(archivePrefs.ArchiveCacheMaxMb) * 1024L * 1024L, allowSlow:=False)
+                            CLng(archivePrefs.ArchiveCacheMaxMb) * 1024L * 1024L,
+                            allowSlow:=False)
                     End If
                 End If
 
@@ -212,7 +226,7 @@ Partial Public Class Main_Form
                     Dim depth As Integer = Math.Max(1, RemoteCacheStore.PrefetchDepth(request.Resource.Provider.Capabilities))
                     For Each ahead_File As String In request.AheadFiles
                         If worker.CancellationPending OrElse Is_No_Background_Tasks Then Exit For
-                        If Not Image_File_Extensions.Contains(Path.GetExtension(ahead_File).ToLowerInvariant()) Then Continue For
+                        If Not SortableContentKinds.CanDecodeImage(ahead_File, Image_File_Extensions) Then Continue For
                         If request.Resource.TryEnsureLocal(ahead_File, protectAround:=depth, prefetch:=True) = EnsureLocalOutcome.Cancelled Then Exit For
                     Next
                 End If
@@ -231,7 +245,16 @@ Partial Public Class Main_Form
                 End If
 #End If
 
+#If NETFRAMEWORK Then
                 If Image_File_Extensions.Contains(SecondFileExtension) Then
+#Else
+                If SortableContentKinds.CanDecodeImage(next_File_After_Current_in_worker, Image_File_Extensions) Then
+#End If
+#If Not NETFRAMEWORK Then
+                    ' Asked BEFORE the decode, never after: a file rewritten in between must make
+                    ' the stamp OLDER than the pixels (a miss later), not newer (a stale hit).
+                    Dim next_Origin As PictureOrigin = OriginOf(next_File_After_Current_in_worker)
+#End If
                     ' sza250609 - GIF fix
                     Dim next_Image_Data As Tuple(Of Image, IO.MemoryStream) = LoadImageWithStream(next_File_After_Current_in_worker)
                     If next_Image_Data IsNot Nothing Then
@@ -239,13 +262,17 @@ Partial Public Class Main_Form
                         ' worker no longer writes current_Second_File_Name (read by the
                         ' UI thread to decide "prefetch ready") nor reads the live
                         ' target-box flag, which by now could mean the visible box.
-                        e.Result = New PrefetchResult With {
+                        Dim prefetched As New PrefetchResult With {
                             .NextFile = next_File_After_Current_in_worker,
                             .TargetIsBox1 = request.TargetIsBox1,
                             .Generation = request.Generation,
                             .Picture = next_Image_Data.Item1,
                             .Data = next_Image_Data.Item2
                         }
+#If Not NETFRAMEWORK Then
+                        prefetched.Origin = next_Origin
+#End If
+                        e.Result = prefetched
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0100: BgWorker loaded image into memory: " & next_File_After_Current_in_worker.ToString)
                     Else
                         e.Cancel = True
@@ -414,17 +441,33 @@ Partial Public Class Main_Form
                 Else
                     ' Success - transfer ownership to UI controls
                     If result.TargetIsBox1 Then
+#If Not NETFRAMEWORK Then
+                        ' What the hidden box held - a picture the user left, or a prefetch they
+                        ' never reached - goes to the cache instead of the bin (014 U-01).
+                        RetireBoxPicture(1)
+#Else
                         If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
                         If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
+#End If
                         Picture_Box_1.Image = result.Picture
                         pictureBox1_Stream = result.Data
+#If Not NETFRAMEWORK Then
+                        box1_Origin = result.Origin
+#End If
 
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0210: bgWorker: P1 is loaded")
                     Else
+#If Not NETFRAMEWORK Then
+                        RetireBoxPicture(2)
+#Else
                         If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
                         If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
+#End If
                         Picture_Box_2.Image = result.Picture
                         pictureBox2_Stream = result.Data
+#If Not NETFRAMEWORK Then
+                        box2_Origin = result.Origin
+#End If
 
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0220: bgWorker: P2 is loaded")
                     End If
@@ -509,6 +552,12 @@ Partial Public Class Main_Form
                 lbl_Status.Text = Localization.T("Папка пустая")
                 Return Nothing
             End If
+
+#If Not NETFRAMEWORK Then
+            ' Size and date ride beside the list of paths for the F3 panel (005 PG-2), which
+            ' used to stat the whole folder again to sort by them.
+            RememberFileMeta(file_Entry_List)
+#End If
 
             Dim is_Over_Limit As Boolean = file_Entry_List.Count >= max_Number_Of_Files_For_List
 #If NETFRAMEWORK Then

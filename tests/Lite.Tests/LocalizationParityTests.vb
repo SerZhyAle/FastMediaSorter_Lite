@@ -51,6 +51,29 @@ Public Class LocalizationParityTests
                     "Only " & Localization.All.Count() & " strings registered - the tables did not all load.")
     End Sub
 
+    ''' <summary>
+    ''' A VB literal is never unescaped: "\r\n" in a key or a translation is shown as those
+    ''' four characters, mid-sentence, in every language (audit 057.S06-1 - the name-collision
+    ''' prompt did exactly that). A line break is written as vbCrLf.
+    ''' </summary>
+    <Fact>
+    Public Sub No_string_carries_an_escape_sequence_vb_never_unescapes()
+        Dim escaped As New Regex("\\[rnt]")
+        Dim found As New List(Of String)()
+
+        For Each entry In Localization.All
+            Dim key = StripContext(entry.Key)
+            If escaped.IsMatch(key) Then found.Add("ru  " & Shorten(key))
+            For i = 0 To entry.Value.Length - 1
+                If entry.Value(i) IsNot Nothing AndAlso escaped.IsMatch(entry.Value(i)) Then
+                    found.Add(FullCodes(i + 1) & "  " & Shorten(key))
+                End If
+            Next
+        Next
+
+        Assert.True(found.Count = 0, "Literal \r / \n / \t in the string tables:" & vbLf & String.Join(vbLf, found))
+    End Sub
+
     <Fact>
     Public Sub Placeholder_arity_matches_across_languages()
         Dim broken As New List(Of String)()

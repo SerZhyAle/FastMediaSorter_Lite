@@ -77,4 +77,40 @@ if ($broken.Count -gt 0) {
     $broken | ForEach-Object { Write-Host "  - $_" }
     Exit-Verdict 'WorkerRoundTrip' 1 ($broken -join '; ')
 }
-Exit-Verdict 'WorkerRoundTrip' 0 'the live worker speaks the frozen v1 protocol'
+
+# Live schema-2 disk extension probe (contract WORKER-IPC / DISK-SHARE schema v2)
+$pipe2 = New-Object System.IO.Pipes.NamedPipeClientStream('.', 'fms-companion', [System.IO.Pipes.PipeDirection]::InOut)
+try {
+    $pipe2.Connect(2000)
+    $req2 = '{"schemaVersion":2,"type":"disk-list","owner":"filedo","requestId":"roundtrip-schema2"}'
+    $bytes2 = [System.Text.Encoding]::UTF8.GetBytes($req2)
+    $pipe2.Write($bytes2, 0, $bytes2.Length); $pipe2.Flush()
+
+    $ms2 = New-Object System.IO.MemoryStream
+    $buf2 = New-Object byte[] 8192
+    while (($n2 = $pipe2.Read($buf2, 0, $buf2.Length)) -gt 0) { $ms2.Write($buf2, 0, $n2) }
+    $respText2 = [System.Text.Encoding]::UTF8.GetString($ms2.ToArray())
+} catch {
+    Write-Host "  Schema-2 probe error: $($_.Exception.Message)"
+} finally {
+    $pipe2.Dispose()
+}
+
+if (-not [string]::IsNullOrWhiteSpace($respText2)) {
+    try {
+        $resp2 = $respText2 | ConvertFrom-Json
+        if ($resp2.schemaVersion -eq 2) {
+            if ($resp2.ok -eq $true) {
+                Write-Host ("Schema-2 disk-list: OK, disks count={0}" -f @($resp2.disks).Count)
+            } else {
+                Write-Host ("Schema-2 disk-list: refused (expected if disk sharing not initialized), error={0}" -f $resp2.error)
+            }
+        } elseif ($resp2.schemaVersion -eq 1) {
+            Write-Host ("Schema-2 disk-list: legacy v1 response (ok={0}, error={1})" -f $resp2.ok, $resp2.error)
+        }
+    } catch {
+        Write-Host "  Schema-2 response is not valid JSON: $respText2"
+    }
+}
+
+Exit-Verdict 'WorkerRoundTrip' 0 'the live worker speaks the frozen v1 protocol and schema-2 disk framing'

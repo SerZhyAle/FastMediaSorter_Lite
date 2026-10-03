@@ -148,6 +148,7 @@ Friend NotInheritable Class FdSecHead
 
         Dim maskKey As Byte() = Nothing
         Dim kek As Byte() = Nothing
+        Dim unwrapped As Byte() = Nothing
         FdSecKdf.DeriveKeys(credentialUtf8, salt, profile, maskKey, kek, cache)
         Try
             FdSecPrimitives.ChaCha20Xor(maskKey, New Byte(11) {}, head, FdSecFormat.MaskOffset, FdSecFormat.MaskLength)
@@ -155,7 +156,7 @@ Friend NotInheritable Class FdSecHead
             Dim parsed As New FdSecHead(head)
             Dim slots As FdSecSlot() = FdSecSlot.ParseAll(head)
 
-            Dim unwrapped As Byte() = FdSecPrimitives.XChaChaOpen(
+            unwrapped = FdSecPrimitives.XChaChaOpen(
                 kek, slots(0).WrapNonce, Slot0AssociatedData(parsed.HeaderDigest), slots(0).Wrapped)
             If unwrapped Is Nothing Then
                 Throw FdSecException.CredentialOrTamper("key slot 0 does not authenticate")
@@ -167,8 +168,10 @@ Friend NotInheritable Class FdSecHead
             FdSecSlot.ValidateAll(slots)
 
             fileKey = unwrapped
+            unwrapped = Nothing ' Ownership transfers only after every validation succeeds.
             Return parsed
         Finally
+            FdSecPrimitives.Wipe(unwrapped)
             FdSecPrimitives.Wipe(maskKey)
             FdSecPrimitives.Wipe(kek)
             FdSecPrimitives.Wipe(head)
@@ -251,9 +254,13 @@ Friend NotInheritable Class FdSecHead
 
     Private Shared Function Nonce(fileKey As Byte(), context As Byte()) As Byte()
         Dim wide As Byte() = FdSecPrimitives.Blake2bKeyed(fileKey, FdSecPrimitives.Ascii(FdSecFormat.NoncePrefix), context)
-        Dim derived(FdSecFormat.NonceSize - 1) As Byte
-        Array.Copy(wide, derived, FdSecFormat.NonceSize)
-        Return derived
+        Try
+            Dim derived(FdSecFormat.NonceSize - 1) As Byte
+            Array.Copy(wide, derived, FdSecFormat.NonceSize)
+            Return derived
+        Finally
+            FdSecPrimitives.Wipe(wide)
+        End Try
     End Function
 
     Friend Shared Function Concat(ParamArray parts As Byte()()) As Byte()

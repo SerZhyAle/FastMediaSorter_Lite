@@ -5,9 +5,9 @@ Imports System.Windows.Forms
 
 ''' <summary>
 ''' Tray-resident application host. Companion is ALWAYS tray-resident (its normal
-''' state, not the close-to-tray crutch LITE needed) - so a bare launch shows no
+''' state, not the close-to-tray crutch the viewer needed) - so a bare launch shows no
 ''' window, just the notify icon and a hidden receiver window for the
-''' LITE -&gt; Companion wake handshake (WM_COPYDATA). Owns the single reusable
+''' viewer -&gt; Companion wake handshake (WM_COPYDATA). Owns the single reusable
 ''' MainWindow and, on launch, silently resumes sharing if the user ever shared
 ''' before (ResumeShareIfEnabled analogue).
 ''' </summary>
@@ -20,9 +20,12 @@ Friend NotInheritable Class TrayContext
     Private _trayHIcon As IntPtr
     Private _mainWindow As MainWindow
     Private _disposed As Boolean
+    Private _pendingStartupProposals As Boolean
     Private ReadOnly _statsTimer As Timer   ' keeps the tooltip's usage counters reasonably fresh while serving
+    Private ReadOnly _diskLetterTimer As Timer
+    Private _diskLetterFetchInFlight As Boolean
 
-    ''' <param name="windowRequested">The launch itself asked for the window (LITE's Share
+    ''' <param name="windowRequested">The launch itself asked for the window (the viewer's Share
     ''' Manager button, --show). Such a request always wins over the startup option.</param>
     ''' <param name="silentLaunch">The logon autostart (--tray). Suppresses even the
     ''' "I am in the tray" hint, so a boot stays completely quiet.</param>
@@ -31,7 +34,7 @@ Friend NotInheritable Class TrayContext
 
         _notifyIcon = New NotifyIcon() With {
             .Icon = _trayIcon,
-            .Text = "Fast Media Sorter: Share Manager",
+            .Text = ProductNames.ShareManager,
             .Visible = True
         }
         _notifyIcon.ContextMenuStrip = BuildMenu()
@@ -39,17 +42,22 @@ Friend NotInheritable Class TrayContext
         AddHandler UiLanguage.Changed, AddressOf OnLanguageChanged
 
         _messageWindow = New MessageWindow()
-        AddHandler _messageWindow.PayloadReceived, AddressOf OnPayloadReceived
+        _messageWindow.StageFolder = AddressOf StageFolder
+        AddHandler _messageWindow.CommandAccepted, AddressOf OnPayloadReceived
+        AddHandler Application.Idle, AddressOf OnFirstIdle
 
         _statsTimer = New Timer With {.Interval = 30000}
         AddHandler _statsTimer.Tick, AddressOf OnStatsTimerTick
+        _diskLetterTimer = New Timer With {.Interval = 30000}
+        AddHandler _diskLetterTimer.Tick, AddressOf OnDiskLetterTimerTick
+        _diskLetterTimer.Start()
 
         ' Resume sharing silently if it was ever started - covers the "dedicated
         ' server" scenario where Companion autostarts into the tray with no window.
         ResumeShareIfEnabled()
 
         ' Who gets a window. An EXPLICIT gesture always does: a folder argument ("share
-        ' this folder", jumps to the package wizard) or windowRequested (LITE's Share
+        ' this folder", jumps to the package wizard) or windowRequested (the viewer's Share
         ' Manager button / --show). Everything else - logon autostart, a double-click on
         ' the exe, a script - is a plain start and obeys the "Открывать окно менеджера
         ' при запуске" option, which is OFF by default: the program then lives in the
@@ -57,7 +65,15 @@ Friend NotInheritable Class TrayContext
         ' not the silent logon one leaves a short tray hint instead, so a user who
         ' double-clicked the exe is not left wondering whether anything started.
         If Not String.IsNullOrEmpty(initialFolder) Then
-            ShowMainWindow(initialFolder)
+            ' A folder handed over on the command line is another process's request too: it is
+            ' staged and put to the user like one that arrives over WM_COPYDATA.
+            Dim startupCommand As CompanionCommand = CompanionCommand.Parse(initialFolder)
+            If startupCommand.Kind = CompanionCommandKind.ShareFolder Then
+                StageFolder(startupCommand)
+                _pendingStartupProposals = True
+            ElseIf windowRequested OrElse WantsWindowOnStartup() Then
+                ShowMainWindow(Nothing)
+            End If
         ElseIf windowRequested OrElse WantsWindowOnStartup() Then
             ShowMainWindow(Nothing)
         ElseIf Not silentLaunch Then
@@ -85,7 +101,7 @@ Friend NotInheritable Class TrayContext
     Private Sub ShowTrayHint()
         Try
             _notifyIcon.ShowBalloonTip(4000,
-                "Fast Media Sorter: Share Manager",
+                ProductNames.ShareManager,
                 Localization.T("Менеджер работает в трее. Двойной щелчок по значку открывает окно."),
                 ToolTipIcon.Info)
         Catch
@@ -97,7 +113,15 @@ Friend NotInheritable Class TrayContext
 
         ' Primary action (bold) - open the Share Manager window.
         Dim miOpen As New ToolStripMenuItem(Localization.T("Открыть менеджер общего доступа"))
-        miOpen.Font = New Font(menu.Font, FontStyle.Bold)
+        Dim boldFont As New Font(menu.Font, FontStyle.Bold)
+        miOpen.Font = boldFont
+        AddHandler menu.Disposed,
+            Sub()
+                Try
+                    boldFont.Dispose()
+                Catch
+                End Try
+            End Sub
         AddHandler miOpen.Click, Sub() ShowMainWindow(Nothing)
         menu.Items.Add(miOpen)
 
@@ -106,6 +130,11 @@ Friend NotInheritable Class TrayContext
         Dim miShare As New ToolStripMenuItem(Localization.T("Поделиться.."))
         AddHandler miShare.Click, Sub() TrayShare()
         menu.Items.Add(miShare)
+
+        ' Broadcasts for StreamsPlayer
+        Dim miBroadcasts As New ToolStripMenuItem(Localization.T("Трансляции для StreamsPlayer.."))
+        AddHandler miBroadcasts.Click, Sub() ShowBroadcastsWindow("")
+        menu.Items.Add(miBroadcasts)
 
         ' Current state + local usage counters (last connection, totals, files served).
         Dim miStatus As New ToolStripMenuItem(Localization.T("Текущее состояние.."))
@@ -131,13 +160,13 @@ Friend NotInheritable Class TrayContext
         UiLanguage.AddLanguageItems(miLang.DropDownItems)
         menu.Items.Add(miLang)
 
-        ' Suite cross-link: open the LITE viewer. Hidden when there is no viewer to
+        ' Suite cross-link: open the viewer. Hidden when there is no viewer to
         ' open - the Server edition installs the Share Manager alone, so next to THAT
         ' exe there is none. Deciding on Opening rather than here: the menu is built
         ' once, and a viewer installed later would otherwise stay unreachable until
         ' the next restart. A menu item that silently does nothing is worse than one
         ' that is not there.
-        Dim miViewer As New ToolStripMenuItem(Localization.T("Открыть Fast Media Sorter"))
+        Dim miViewer As New ToolStripMenuItem(Localization.TF("Открыть {0}", ProductNames.CompactForLabel))
         AddHandler miViewer.Click, Sub() LaunchViewer()
         menu.Items.Add(miViewer)
         AddHandler menu.Opening, Sub() miViewer.Visible = ViewerExePath().Length > 0
@@ -172,7 +201,20 @@ Friend NotInheritable Class TrayContext
         Try
             Dim old As ContextMenuStrip = _notifyIcon.ContextMenuStrip
             _notifyIcon.ContextMenuStrip = BuildMenu()
-            If old IsNot Nothing Then old.Dispose()
+            ' Released POSTED, not here: the switch may have been chosen from this very
+            ' menu (its "Язык интерфейса" submenu), whose click is still being dismissed -
+            ' a synchronous Dispose pulls the strip out from under that dispatch and the
+            ' dismissal crashes (ObjectDisposedException, the same defect the window
+            ' language menu had - UiLanguage.ShowLanguageMenu, companion.log 2026-10-03).
+            If old IsNot Nothing Then
+                Dim sync As System.Threading.SynchronizationContext = System.Threading.SynchronizationContext.Current
+                If sync IsNot Nothing Then
+                    sync.Post(
+                        Sub()
+                            Try : old.Dispose() : Catch : End Try
+                        End Sub, Nothing)
+                End If
+            End If
         Catch
         End Try
         Try
@@ -231,6 +273,24 @@ Friend NotInheritable Class TrayContext
     Private Sub OnStatsTimerTick(sender As Object, e As EventArgs)
         If _statsFetchInFlight Then Return
         Dim t As Task = UpdateTooltipStatsAsync()
+    End Sub
+
+    Private Async Sub OnDiskLetterTimerTick(sender As Object, e As EventArgs)
+        If _disposed OrElse _diskLetterFetchInFlight Then Return
+        _diskLetterFetchInFlight = True
+        Try
+            ' Poll only while this account has an alias. Never start a worker from a
+            ' cleanup timer, nor treat an unavailable worker as a closed disk.
+            If Not DiskDriveLetters.HasMappings() Then Return
+            Dim status As WorkerStatus = Await ShareController.GetStatusAsync()
+            If _disposed OrElse Not DiskSharing.Supported(status) Then Return
+            Dim response As WorkerResponse = Await DiskSharing.SendAsync(New WorkerRequest With {.type = "disk-list"})
+            If Not _disposed AndAlso response.Ok AndAlso response.Disks IsNot Nothing Then DiskDriveLetters.Reconcile(response.Disks)
+        Catch ex As Exception
+            AppFileLogger.LogException("Disk drive alias refresh", ex)
+        Finally
+            _diskLetterFetchInFlight = False
+        End Try
     End Sub
 
     ''' <summary>Enriches the tray tooltip with a concise usage line while serving
@@ -331,7 +391,7 @@ Friend NotInheritable Class TrayContext
 
     ''' <summary>Pulls a just-shown window truly in front. Companion is a background
     ''' (tray) process, so <c>Show</c>/<c>Activate</c> alone often lands the window
-    ''' BEHIND whoever woke us (LITE). LITE grants us the foreground right
+    ''' BEHIND whoever woke us (the viewer). The viewer grants us the foreground right
     ''' (AllowSetForegroundWindow) right before the wake, so SetForegroundWindow now
     ''' succeeds; the brief TopMost toggle is a belt-and-suspenders fallback for when
     ''' that grant window was missed.</summary>
@@ -391,7 +451,7 @@ Friend NotInheritable Class TrayContext
         _refusalShownFor = refusal.WorkerVersion
         Try
             _notifyIcon.ShowBalloonTip(8000,
-                "Fast Media Sorter: Share Manager",
+                ProductNames.ShareManager,
                 ShareController.RefusalMessage(refusal),
                 ToolTipIcon.Warning)
         Catch
@@ -410,7 +470,7 @@ Friend NotInheritable Class TrayContext
         _problemShown = problem
         Try
             _notifyIcon.ShowBalloonTip(8000,
-                "Fast Media Sorter: Share Manager",
+                ProductNames.ShareManager,
                 ShareController.ProblemMessage(problem),
                 ToolTipIcon.Warning)
         Catch
@@ -425,7 +485,7 @@ Friend NotInheritable Class TrayContext
             If _notifyIcon Is Nothing Then Return
             _notifyIcon.Text = If(running,
                 Localization.T("Общий доступ включён"),
-                "Fast Media Sorter: Share Manager")
+                ProductNames.ShareManager)
         Catch
         End Try
         ' While serving, keep the tooltip's usage counters fresh (immediate + every 30s).
@@ -440,18 +500,139 @@ Friend NotInheritable Class TrayContext
         End Try
     End Sub
 
-    Private Sub OnPayloadReceived(payload As String)
-        If String.Equals(payload, Program.ShowWindowCommand, StringComparison.Ordinal) Then
-            ShowMainWindow(Nothing)
-        ElseIf String.Equals(payload, Program.PlainStartCommand, StringComparison.Ordinal) Then
-            ' The exe was run again with nothing attached - same rule as a first plain
-            ' start, and the running instance is the only one that can show the hint.
-            If WantsWindowOnStartup() Then ShowMainWindow(Nothing) Else ShowTrayHint()
-        Else
-            ShowMainWindow(payload)
-        End If
+    ''' <summary>Folders other processes asked this one to share. Never shared from here: each
+    ''' goes to the user first (108 H01).</summary>
+    Private ReadOnly _proposals As New FolderProposalQueue(AddressOf MonotonicClock.NowMs)
+    Private _askingUser As Boolean
+
+    ''' <summary>
+    ''' Runs on the UI thread, AFTER the receiver has validated transport and command and
+    ''' acknowledged. A show-window request shows the window; a folder only ever becomes a
+    ''' proposal, answered by the user before AddShareRow/ApplySharedFolders can run.
+    ''' </summary>
+    Private Sub OnPayloadReceived(command As CompanionCommand)
+        Select Case command.Kind
+            Case CompanionCommandKind.ShowWindow
+                ShowMainWindow(Nothing)
+            Case CompanionCommandKind.PlainStart
+                ' The exe was run again with nothing attached - same rule as a first plain
+                ' start, and the running instance is the only one that can show the hint.
+                If WantsWindowOnStartup() Then ShowMainWindow(Nothing) Else ShowTrayHint()
+            Case CompanionCommandKind.ShareFolder
+                ' Already staged by the receiver (the verdict was part of the acknowledgement).
+                If IsAlreadyShared(command.Folder) Then
+                    ShowMainWindow(Nothing)
+                    _mainWindow.SelectSharedFolder(command.Folder)
+                    Return
+                End If
+                BeginInvokeProposals()
+            Case CompanionCommandKind.Broadcast
+                ShowBroadcastsWindow(command.TargetPath)
+        End Select
     End Sub
 
+    Private Sub ShowBroadcastsWindow(targetPath As String)
+        Try
+            If Not ServerFeatures.IsEnabled() OrElse Not WorkerProcess.IsAvailable() Then
+                ShowMainWindow(Nothing)
+                Return
+            End If
+            Using dlg As New Share_Broadcasts_Form(targetPath)
+                If _mainWindow IsNot Nothing AndAlso _mainWindow.Visible AndAlso Not _mainWindow.IsDisposed Then
+                    dlg.ShowDialog(_mainWindow)
+                Else
+                    dlg.ShowDialog()
+                End If
+            End Using
+        Catch ex As Exception
+            AppFileLogger.LogException("ShowBroadcastsWindow", ex)
+        End Try
+    End Sub
+
+    ''' <summary>The message loop is running: a folder handed over on the command line is put to
+    ''' the user now, not from inside the constructor.</summary>
+    Private Sub OnFirstIdle(sender As Object, e As EventArgs)
+        RemoveHandler Application.Idle, AddressOf OnFirstIdle
+        If _pendingStartupProposals Then
+            _pendingStartupProposals = False
+            BeginInvokeProposals()
+        End If
+    End Sub
+    ''' <summary>The receiver's decision for a validated folder request, taken synchronously so
+    ''' that the acknowledgement reflects it: queued/duplicate/already-shared = accepted.</summary>
+    Private Function StageFolder(command As CompanionCommand) As Boolean
+        If _disposed Then Return False
+        Dim verdict As ProposalVerdict = _proposals.Offer(command.Folder, AddressOf IsAlreadyShared)
+        AppFileLogger.WriteLine("Companion: folder proposal " & verdict.ToString())
+        Return verdict <> ProposalVerdict.Full
+    End Function
+
+    Private Function IsAlreadyShared(canonicalFolder As String) As Boolean
+        Try
+            If _mainWindow Is Nothing OrElse _mainWindow.IsDisposed Then Return False
+            Return _mainWindow.HasShareRow(canonicalFolder)
+        Catch
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>Puts queued proposals to the user one at a time. Posted, so the wake handler has
+    ''' already returned its acknowledgement and the dialog never runs inside WndProc.</summary>
+    Friend Sub BeginInvokeProposals()
+        If _disposed OrElse _askingUser Then Return
+        _askingUser = True
+        Dim t As Task = AskUserAboutProposalsAsync()
+    End Sub
+
+    Private Async Function AskUserAboutProposalsAsync() As Task
+        Try
+            Await Task.Yield()
+            Dim folder As String = _proposals.TakeNext()
+            While folder.Length > 0 AndAlso Not _disposed
+                Try
+                    Await PutProposalToUserAsync(folder)
+                Finally
+                    _proposals.Complete(folder)
+                End Try
+                folder = _proposals.TakeNext()
+            End While
+        Catch ex As Exception
+            AppFileLogger.LogException("Share Manager: putting a folder request to the user", ex)
+        Finally
+            _askingUser = False
+        End Try
+    End Function
+
+    Private Async Function PutProposalToUserAsync(folder As String) As Task
+        ' The existence check can block on a share that stopped answering: never on the UI thread.
+        Dim exists As Boolean = Await Task.Run(Function()
+                                                   Try
+                                                       Return IO.Directory.Exists(folder)
+                                                   Catch
+                                                       Return False
+                                                   End Try
+                                               End Function)
+        If _disposed Then Return
+        If Not exists Then
+            AppFileLogger.WriteLine("Share Manager: a requested folder does not exist - dropped")
+            Return
+        End If
+        If Not ServerFeatures.IsEnabled() OrElse Not WorkerProcess.IsAvailable() Then
+            ' Sharing is not available here; the window explains that. Nothing is queued.
+            ShowMainWindow(Nothing)
+            Return
+        End If
+        Dim answer As DialogResult = MessageBox.Show(
+            Localization.TF("Другая программа просит открыть папку на телефоне:" & vbCrLf & "{0}" & vbCrLf & vbCrLf &
+                            "Телефоны с доступом к этому компьютеру смогут просматривать её файлы. Открыть папку?", folder),
+            ProductNames.ShareManager, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2)
+        If answer <> DialogResult.OK Then Return
+        If _disposed Then Return
+        ShowMainWindow(Nothing)
+        If _disposed OrElse _mainWindow Is Nothing OrElse _mainWindow.IsDisposed Then Return
+        Await _mainWindow.ShareFolderFromWakeAsync(folder)
+    End Function
     ''' <summary>
     ''' The viewer exe to open from the tray, or "" when this machine has none.
     '''
@@ -527,6 +708,17 @@ Friend NotInheritable Class TrayContext
         If disposing AndAlso Not _disposed Then
             _disposed = True
             Try
+                _diskLetterTimer.Stop()
+                _diskLetterTimer.Dispose()
+                DiskDriveLetters.Reconcile(Array.Empty(Of SharedDisk)())
+            Catch ex As Exception
+                AppFileLogger.LogException("Disk drive alias cleanup at exit", ex)
+            End Try
+            Try
+                RemoveHandler UiLanguage.Changed, AddressOf OnLanguageChanged
+            Catch
+            End Try
+            Try
                 _statsTimer.Stop()
                 _statsTimer.Dispose()
             Catch
@@ -559,13 +751,18 @@ Friend NotInheritable Class TrayContext
 
     ''' <summary>
     ''' Hidden top-level window that receives WM_COPYDATA from a second instance /
-    ''' from LITE. Given a fixed caption so <c>FindWindowW</c> can locate it; never
+    ''' from the viewer. Given a fixed caption so <c>FindWindowW</c> can locate it; never
     ''' shown, so it stays out of the taskbar and off-screen.
     ''' </summary>
-    Private NotInheritable Class MessageWindow
+    Friend NotInheritable Class MessageWindow
         Inherits NativeWindow
 
-        Public Event PayloadReceived(payload As String)
+        ''' <summary>A request that passed every check and was acknowledged.</summary>
+        Public Event CommandAccepted(command As CompanionCommand)
+
+        ''' <summary>Stages a validated folder request (the receiver's synchronous half of the
+        ''' decision); False means the queue is full and the sender gets ack 0.</summary>
+        Public Property StageFolder As Func(Of CompanionCommand, Boolean)
 
         Public Sub New()
             Dim cp As New CreateParams() With {.Caption = Program.MessageWindowTitle}
@@ -574,16 +771,25 @@ Friend NotInheritable Class TrayContext
 
         Protected Overrides Sub WndProc(ByRef m As Message)
             If m.Msg = Program.WM_COPYDATA Then
+                If m.LParam = IntPtr.Zero Then
+                    m.Result = IntPtr.Zero
+                    Return
+                End If
                 Try
                     Dim cds = CType(Marshal.PtrToStructure(m.LParam, GetType(Program.COPYDATASTRUCT)), Program.COPYDATASTRUCT)
-                    If cds.cbData > 0 AndAlso cds.lpData <> IntPtr.Zero Then
-                        Dim buf(cds.cbData - 1) As Byte
-                        Marshal.Copy(cds.lpData, buf, 0, cds.cbData)
-                        RaiseEvent PayloadReceived(Encoding.UTF8.GetString(buf))
+                    Dim command As CompanionCommand = Nothing
+                    ' Transport and command are validated BEFORE anything is acknowledged. The
+                    ' acknowledgement means "accepted for handling" - it says nothing about the
+                    ' folder being shared, which only the user can decide.
+                    Dim ack As Integer = ActivationReceiver.Evaluate(cds.dwData, cds.cbData, cds.lpData, StageFolder, command)
+                    m.Result = New IntPtr(ack)
+                    If ack = Program.Handled_Result AndAlso command IsNot Nothing Then
+                        RaiseEvent CommandAccepted(command)
                     End If
-                Catch
+                Catch ex As Exception
+                    AppFileLogger.LogException("Companion WM_COPYDATA processing", ex)
+                    m.Result = New IntPtr(0)
                 End Try
-                m.Result = New IntPtr(1)
                 Return
             End If
             MyBase.WndProc(m)

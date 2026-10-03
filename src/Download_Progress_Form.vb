@@ -209,7 +209,7 @@ Friend Module DownloadMessages
     ''' <summary>Cancelling is an outcome, not a failure: its own sentence, informational.</summary>
     Friend Sub ShowCancelled(owner As IWin32Window, what As String)
         MessageBox.Show(owner, Localization.TF("Загрузка «{0}» отменена. Ничего не установлено; её можно запустить снова.", what),
-                        "Fast Media Sorter", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        ProductNames.Full, MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
     ''' <summary>A failed download: the cause and the actions, Retry first. True = retry.</summary>
@@ -218,7 +218,7 @@ Friend Module DownloadMessages
         Return MessageBox.Show(owner,
                                Localization.TF("Не удалось загрузить «{0}».", what) & Environment.NewLine & Environment.NewLine &
                                FailureText.Describe(failure),
-                               "Fast Media Sorter", MessageBoxButtons.RetryCancel, MessageBoxIcon.Warning) = DialogResult.Retry
+                               ProductNames.Full, MessageBoxButtons.RetryCancel, MessageBoxIcon.Warning) = DialogResult.Retry
     End Function
 
 End Module

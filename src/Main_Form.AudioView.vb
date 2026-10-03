@@ -22,34 +22,22 @@ Partial Public Class Main_Form
     Private audio_Current_Metadata As AudioMetadata
     Private audio_Cover_Bitmap As Bitmap
     Private audio_Sleep_Stopped As Boolean
+    ' The no-cover backdrop is WAVE-PARTICLES (ticket 029): the constants and the session arithmetic
+    ' live in src/Backdrop/ (WaveParticlesConstants, WaveParticlesSession), this file only draws what
+    ' the session hands back and decides when it may move. Surface class: audio player backdrop -
+    ' intent `ambient`, profile `full`, no user tuning (contract section 5).
     Private audio_Visualiser_Buffer As Bitmap
-    Private audio_Visualiser_Particles() As AudioVisualiserParticle
-    Private audio_Visualiser_Last_Frame_Utc As DateTime
-    Private audio_Visualiser_Time As Single
-    Private audio_Visualiser_Startup_Frame_Count As Integer
-    Private audio_Visualiser_Wave_Count As Integer
-    Private audio_Visualiser_Step_Px As Single
-    Private audio_Visualiser_Stroke_Width As Single
-    Private audio_Visualiser_Base_Wave_Hue As Single
-    Private audio_Visualiser_Wave_Hue_Step As Single
-    Private audio_Visualiser_Wave_Amplitude As Single
-    Private audio_Visualiser_Particle_Speed_Multiplier As Single
-    Private audio_Visualiser_Particle_Hue_Base As Single
-    Private audio_Visualiser_Direction_X As Single
-    Private audio_Visualiser_Direction_Y As Single
-    Private audio_Visualiser_Normal_X As Single
-    Private audio_Visualiser_Normal_Y As Single
-    Private audio_Visualiser_Light_Theme As Boolean
-    Private WithEvents audio_Visualiser_Timer As New Timer() With {.Interval = 16}
-
-    Private Structure AudioVisualiserParticle
-        Public X As Single
-        Public Y As Single
-        Public Dx As Single
-        Public Dy As Single
-        Public Radius As Single
-        Public Hue As Single
-    End Structure
+    Private audio_Visualiser_Session As WaveParticlesSession
+    ''' <summary>Stopwatch timestamp of the previous frame; -1 = none (a start, or a resume after a hold,
+    ''' so the gap is never replayed as elapsed time - rule 10).</summary>
+    Private audio_Visualiser_Last_Ticks As Long = -1
+    ''' <summary>The buffer currently holds the settled still frame of rule 9.</summary>
+    Private audio_Visualiser_Still As Boolean
+    Private Const Visualiser_Frame_Interval_Ms As Integer = 16
+    ''' <summary>While the backdrop is held (minimised, cloaked, motion off, energy saver) the timer only
+    ''' polls whether it may move again - no frame, no clock, no repaint.</summary>
+    Private Const Visualiser_Hold_Poll_Ms As Integer = 250
+    Private WithEvents audio_Visualiser_Timer As New Timer() With {.Interval = Visualiser_Frame_Interval_Ms}
 
     ''' <summary>How long the tag parse may take before the plate falls back to the file
     ''' name. Handed to libvlc itself, so a slow share ends the parse instead of a guard
@@ -140,7 +128,7 @@ Partial Public Class Main_Form
             DrawAudioCover(g, audio_Cover_Bitmap, bounds)
         ElseIf modern_Preferences IsNot Nothing AndAlso modern_Preferences.AudioVisualiser Then
             PaintAudioVisualiser(g, bounds)
-            audio_Visualiser_Timer.Start()
+            StartAudioVisualiserTimer()
         Else
             audio_Visualiser_Timer.Stop()
         End If
@@ -165,16 +153,15 @@ Partial Public Class Main_Form
     Private audio_Plate_Format As StringFormat
     Private audio_Visualiser_Pen As Pen
     Private audio_Visualiser_Fill As SolidBrush
-    Private audio_Visualiser_Path As GraphicsPath
 
     Private Sub EnsureAudioPaintObjects()
         If audio_Plate_Brush Is Nothing Then audio_Plate_Brush = New SolidBrush(Color.FromArgb(175, 0, 0, 0))
         If audio_Title_Font Is Nothing Then audio_Title_Font = New Font("Segoe UI", 15.0F, FontStyle.Bold)
         If audio_Detail_Font Is Nothing Then audio_Detail_Font = New Font("Segoe UI", 10.0F)
         If audio_Plate_Format Is Nothing Then audio_Plate_Format = New StringFormat With {.Trimming = StringTrimming.EllipsisCharacter, .FormatFlags = StringFormatFlags.NoWrap}
-        If audio_Visualiser_Pen Is Nothing Then audio_Visualiser_Pen = New Pen(Color.White, 1.0F)
+        ' Round caps and joins: WAVE-PARTICLES section 3.2 / 4 ("stroke path, round cap").
+        If audio_Visualiser_Pen Is Nothing Then audio_Visualiser_Pen = New Pen(Color.White, 1.0F) With {.StartCap = LineCap.Round, .EndCap = LineCap.Round, .LineJoin = LineJoin.Round}
         If audio_Visualiser_Fill Is Nothing Then audio_Visualiser_Fill = New SolidBrush(Color.White)
-        If audio_Visualiser_Path Is Nothing Then audio_Visualiser_Path = New GraphicsPath()
     End Sub
 
     Private Sub DisposeAudioPaintObjects()
@@ -184,7 +171,6 @@ Partial Public Class Main_Form
         If audio_Plate_Format IsNot Nothing Then audio_Plate_Format.Dispose() : audio_Plate_Format = Nothing
         If audio_Visualiser_Pen IsNot Nothing Then audio_Visualiser_Pen.Dispose() : audio_Visualiser_Pen = Nothing
         If audio_Visualiser_Fill IsNot Nothing Then audio_Visualiser_Fill.Dispose() : audio_Visualiser_Fill = Nothing
-        If audio_Visualiser_Path IsNot Nothing Then audio_Visualiser_Path.Dispose() : audio_Visualiser_Path = Nothing
     End Sub
 
     ''' <summary>Fills the media surface as far as the source aspect ratio permits;
@@ -199,119 +185,133 @@ Partial Public Class Main_Form
         g.DrawImage(cover, target)
     End Sub
 
-    ''' <summary>Branded no-cover fallback: sine waves and independently drifting
-    ''' particles with a persistent, translucent wash for a motion-blur trail. It
-    ''' Mirrors Android's AudioWaveParticleView parameter-for-parameter: each playback
-    ''' session gets a new direction, palette, wave field and particle population.</summary>
+    ''' <summary>
+    ''' The no-cover backdrop of an audio file: lines and particles over a trail the frames themselves
+    ''' accumulate - the WAVE-PARTICLES contract, surface class "audio player backdrop" (intent
+    ''' `ambient`, profile `full`, no tuning). The paint handler only PRESENTS the buffer; the clock
+    ''' lives in <see cref="audio_Visualiser_Timer_Tick"/>, so a repaint for any other reason - the video
+    ''' controls, an overlay, a resize - never moves the animation (rule 2).
+    ''' </summary>
     Private Sub PaintAudioVisualiser(g As Graphics, area As Rectangle)
         If area.Width <= 1 OrElse area.Height <= 1 Then Return
         EnsureAudioVisualiserBuffer(area.Size)
-        If audio_Visualiser_Buffer Is Nothing Then Return
-        TickAudioVisualiser()
+        If audio_Visualiser_Buffer Is Nothing OrElse audio_Visualiser_Session Is Nothing Then Return
+        ' Rule 9: motion not allowed means a settled still frame, never an empty or half-washed one.
+        ' A session frozen by the power policy that has already been drawing holds its last frame instead.
+        If Not audio_Visualiser_Still AndAlso (ReduceMotionActive() OrElse
+           (AudioVisualiserPowerFrozen() AndAlso audio_Visualiser_Session.FramesDrawn <= 0.0R)) Then
+            RenderAudioVisualiserStillFrame()
+        End If
         g.DrawImageUnscaled(audio_Visualiser_Buffer, area.Location)
     End Sub
 
+    ''' <summary>A session is rolled only here, when none exists (a new file - ClearAudioSurface - or a
+    ''' preference switched back on after the buffer was dropped: rule 3). A size change keeps it
+    ''' (rule 12): the old buffer is carried into the new one stretched, the ramp is not re-run, and only
+    ''' the particle positions are re-seeded inside the new bounds.</summary>
     Private Sub EnsureAudioVisualiserBuffer(size As Size)
-        If audio_Visualiser_Buffer IsNot Nothing AndAlso audio_Visualiser_Buffer.Size = size Then Return
-        If audio_Visualiser_Buffer IsNot Nothing Then audio_Visualiser_Buffer.Dispose()
+        If audio_Visualiser_Buffer IsNot Nothing AndAlso audio_Visualiser_Session IsNot Nothing AndAlso audio_Visualiser_Buffer.Size = size Then Return
+        Dim previous As Bitmap = audio_Visualiser_Buffer
         audio_Visualiser_Buffer = New Bitmap(size.Width, size.Height)
-        Dim random As New Random()
-        audio_Visualiser_Light_Theme = BackColor.GetBrightness() > 0.5F
-        audio_Visualiser_Wave_Count = random.Next(5, 13)
-        audio_Visualiser_Step_Px = CSng(20.0R * (0.8R + random.NextDouble() * 0.4R))
-        audio_Visualiser_Stroke_Width = CSng(3.0R + random.NextDouble() * 3.0R)
-        audio_Visualiser_Base_Wave_Hue = CSng(random.NextDouble() * 360.0R)
-        audio_Visualiser_Wave_Hue_Step = CSng(8.0R + random.NextDouble() * 12.0R)
-        audio_Visualiser_Wave_Amplitude = CSng(0.28R + random.NextDouble() * 0.20R)
-        audio_Visualiser_Particle_Speed_Multiplier = CSng(0.5R + random.NextDouble())
-        audio_Visualiser_Particle_Hue_Base = CSng(random.NextDouble() * 360.0R)
-        Dim direction = random.NextDouble() * Math.PI * 2.0R
-        audio_Visualiser_Direction_X = CSng(Math.Cos(direction)) : audio_Visualiser_Direction_Y = CSng(Math.Sin(direction))
-        audio_Visualiser_Normal_X = -audio_Visualiser_Direction_Y : audio_Visualiser_Normal_Y = audio_Visualiser_Direction_X
-        ReDim audio_Visualiser_Particles(random.Next(15, 56) - 1)
-        For i = 0 To audio_Visualiser_Particles.Length - 1
-            Dim directionalSpeed = CSng((0.12R + random.NextDouble() * 0.42R) * audio_Visualiser_Particle_Speed_Multiplier)
-            Dim driftSign = If(random.NextDouble() < 0.18R, -0.35F, 1.0F)
-            audio_Visualiser_Particles(i) = New AudioVisualiserParticle With {
-                .X = CSng(random.NextDouble() * size.Width), .Y = CSng(random.NextDouble() * size.Height),
-                .Dx = audio_Visualiser_Direction_X * directionalSpeed * driftSign + CSng((random.NextDouble() - 0.5R) * 0.28R * audio_Visualiser_Particle_Speed_Multiplier),
-                .Dy = audio_Visualiser_Direction_Y * directionalSpeed * driftSign + CSng((random.NextDouble() - 0.5R) * 0.28R * audio_Visualiser_Particle_Speed_Multiplier),
-                .Radius = CSng(1.0R + random.NextDouble() * 5.0R), .Hue = CSng((audio_Visualiser_Particle_Hue_Base + (random.NextDouble() - 0.5R) * 108.0R + 360.0R) Mod 360.0R)}
-        Next
-        audio_Visualiser_Time = 0.0F : audio_Visualiser_Startup_Frame_Count = 0
+        If audio_Visualiser_Session Is Nothing Then
+            audio_Visualiser_Session = New WaveParticlesSession(New Random(), size.Width, size.Height, BackColor.GetBrightness() > 0.5F)
+            audio_Visualiser_Last_Ticks = -1
+            audio_Visualiser_Still = False
+            FillAudioVisualiserWash()
+        Else
+            audio_Visualiser_Session.Resize(size.Width, size.Height)
+            FillAudioVisualiserWash()
+            If previous IsNot Nothing Then
+                Using canvas = Graphics.FromImage(audio_Visualiser_Buffer)
+                    canvas.InterpolationMode = InterpolationMode.Bilinear
+                    canvas.DrawImage(previous, 0, 0, size.Width, size.Height)
+                End Using
+            End If
+            ' A still frame stretched from another size is soft; re-render it at the new one.
+            audio_Visualiser_Still = False
+        End If
+        If previous IsNot Nothing Then previous.Dispose()
+    End Sub
+
+    Private Sub FillAudioVisualiserWash()
         Using canvas = Graphics.FromImage(audio_Visualiser_Buffer)
-            canvas.Clear(If(audio_Visualiser_Light_Theme, Color.White, Color.Black))
+            canvas.Clear(audio_Visualiser_Session.WashColour)
         End Using
     End Sub
 
-    Private Sub TickAudioVisualiser()
-        Dim w = audio_Visualiser_Buffer.Width : Dim h = audio_Visualiser_Buffer.Height
-        audio_Visualiser_Time += 0.003F
-        audio_Visualiser_Startup_Frame_Count = Math.Min(36, audio_Visualiser_Startup_Frame_Count + 1)
-        Dim startupProgress = audio_Visualiser_Startup_Frame_Count / 36.0F
-        Dim startupGain = 0.35F + 0.65F * startupProgress * (2.0F - startupProgress)
+    ''' <summary>The surface changed class (a colour scheme change): lightness follows, hues never do
+    ''' (rule 7), and the wash is laid again so a dark trail is not left on a light surface.</summary>
+    Private Sub SyncAudioVisualiserLightness()
+        Dim light As Boolean = BackColor.GetBrightness() > 0.5F
+        If light = audio_Visualiser_Session.Light Then Return
+        audio_Visualiser_Session.Light = light
+        FillAudioVisualiserWash()
+        audio_Visualiser_Still = False
+    End Sub
+
+    ''' <summary>Rule 9: the frame the animation reaches after RAMP_FRAMES frames, from a buffer filled
+    ''' with the wash colour at full opacity, then held.</summary>
+    Private Sub RenderAudioVisualiserStillFrame()
+        SyncAudioVisualiserLightness()
+        Using canvas = Graphics.FromImage(audio_Visualiser_Buffer)
+            canvas.Clear(audio_Visualiser_Session.WashColour)
+            audio_Visualiser_Session.SettledFrame(Sub(washAlpha As Double) DrawAudioVisualiserPass(canvas, washAlpha))
+        End Using
+        audio_Visualiser_Still = True
+    End Sub
+
+    ''' <summary>One drawn frame covering <paramref name="referenceFrames"/> reference frames.</summary>
+    Private Sub AdvanceAudioVisualiser(referenceFrames As Double)
+        SyncAudioVisualiserLightness()
+        Dim washAlpha As Double = audio_Visualiser_Session.Advance(referenceFrames)
+        Using canvas = Graphics.FromImage(audio_Visualiser_Buffer)
+            DrawAudioVisualiserPass(canvas, washAlpha)
+        End Using
+        audio_Visualiser_Still = False
+    End Sub
+
+    ''' <summary>Section 4 after <see cref="WaveParticlesSession.Advance"/>: wash, then the lines, then the
+    ''' particles. No blur, no second pass - the trail is what the wash leaves behind.</summary>
+    Private Sub DrawAudioVisualiserPass(canvas As Graphics, washAlpha As Double)
+        Dim session As WaveParticlesSession = audio_Visualiser_Session
         EnsureAudioPaintObjects()
         Dim pen As Pen = audio_Visualiser_Pen
         Dim fill As SolidBrush = audio_Visualiser_Fill
-        Dim path As GraphicsPath = audio_Visualiser_Path
-        Using canvas = Graphics.FromImage(audio_Visualiser_Buffer)
-            canvas.SmoothingMode = SmoothingMode.AntiAlias
-            fill.Color = Color.FromArgb(38, If(audio_Visualiser_Light_Theme, 245, 10), If(audio_Visualiser_Light_Theme, 245, 10), If(audio_Visualiser_Light_Theme, 245, 10))
-            canvas.FillRectangle(fill, 0, 0, w, h)
-            Dim travelSpan = CSng(Math.Sqrt(w * w + h * h)) + audio_Visualiser_Step_Px * 6.0F
-            Dim centerDrift = CSng(Math.Sin(audio_Visualiser_Time * 0.45F)) * Math.Min(w, h) * 0.02F
-            Dim centerX = w * 0.5F + audio_Visualiser_Direction_X * centerDrift
-            Dim centerY = h * 0.5F + audio_Visualiser_Direction_Y * centerDrift
-            Dim laneSpacing = Math.Min(w, h) * 0.038F
-            Dim waveAlpha = 0.28F + 0.16F * startupGain
-            For wave = 0 To audio_Visualiser_Wave_Count - 1
-                Dim envelope = 0.40F + 0.60F * CSng(Math.Abs(Math.Sin(audio_Visualiser_Time * 0.4F + wave * 0.2F)))
-                Dim amplitude = h * audio_Visualiser_Wave_Amplitude * startupGain * envelope
-                Dim bandOffset = (wave - (audio_Visualiser_Wave_Count - 1) * 0.5F) * laneSpacing
-                path.Reset()
-                pen.Color = HslColor((audio_Visualiser_Base_Wave_Hue + wave * audio_Visualiser_Wave_Hue_Step) Mod 360.0F, 0.8F, If(audio_Visualiser_Light_Theme, 0.35F, 0.65F), waveAlpha)
-                pen.Width = audio_Visualiser_Stroke_Width
-                Dim distance = -travelSpan * 0.5F : Dim first = True : Dim previous As PointF = PointF.Empty
-                While distance <= travelSpan * 0.5F
-                    Dim displacement = CSng(Math.Sin(distance * 0.0105F + audio_Visualiser_Time + wave * 0.8F)) * amplitude
-                    Dim point As New PointF(centerX + audio_Visualiser_Direction_X * distance + audio_Visualiser_Normal_X * (bandOffset + displacement), centerY + audio_Visualiser_Direction_Y * distance + audio_Visualiser_Normal_Y * (bandOffset + displacement))
-                    If first Then path.AddLine(point, point) : first = False Else path.AddLine(previous, point)
-                    previous = point
-                    distance += audio_Visualiser_Step_Px
-                End While
-                canvas.DrawPath(pen, path)
-            Next
-            For i = 0 To audio_Visualiser_Particles.Length - 1
-                Dim particle = audio_Visualiser_Particles(i)
-                particle.X += particle.Dx : particle.Y += particle.Dy
-                If particle.X < 0 OrElse particle.X > w Then particle.Dx = -particle.Dx
-                If particle.Y < 0 OrElse particle.Y > h Then particle.Dy = -particle.Dy
-                audio_Visualiser_Particles(i) = particle
-                fill.Color = HslColor(particle.Hue, 0.9F, If(audio_Visualiser_Light_Theme, 0.3F, 0.7F), 0.38F + 0.32F * startupGain)
-                canvas.FillEllipse(fill, particle.X - particle.Radius, particle.Y - particle.Radius, particle.Radius * 2, particle.Radius * 2)
-            Next
-        End Using
+        canvas.SmoothingMode = SmoothingMode.AntiAlias
+        fill.Color = Color.FromArgb(CInt(Math.Round(washAlpha * 255.0R)), session.WashColour)
+        canvas.FillRectangle(fill, 0, 0, session.Width, session.Height)
+        pen.Width = CSng(session.StrokeWidth)
+        For lane As Integer = 0 To session.LineCount - 1
+            Dim points As PointF() = session.LinePoints(lane)
+            If points.Length < 2 Then Continue For
+            pen.Color = session.LineColour(lane)
+            canvas.DrawLines(pen, points)
+        Next
+        For i As Integer = 0 To session.Particles.Length - 1
+            Dim p As WaveParticlesSession.Particle = session.Particles(i)
+            fill.Color = session.ParticleColour(i)
+            canvas.FillEllipse(fill, CSng(p.X - p.Radius), CSng(p.Y - p.Radius), CSng(p.Radius * 2.0R), CSng(p.Radius * 2.0R))
+        Next
     End Sub
 
-    Private Shared Function HslColor(hue As Single, saturation As Single, lightness As Single, alpha As Single) As Color
-        Dim c = (1.0F - Math.Abs(2.0F * lightness - 1.0F)) * saturation
-        Dim x = c * (1.0F - Math.Abs((hue / 60.0F) Mod 2.0F - 1.0F))
-        Dim m = lightness - c / 2.0F
-        Dim r As Single = m, green As Single = m, blue As Single = m
-        If hue < 60 Then
-            r = c + m : green = x + m
-        ElseIf hue < 120 Then
-            r = x + m : green = c + m
-        ElseIf hue < 180 Then
-            green = c + m : blue = x + m
-        ElseIf hue < 240 Then
-            green = x + m : blue = c + m
-        ElseIf hue < 300 Then
-            r = x + m : blue = c + m
-        Else
-            r = c + m : blue = x + m
-        End If
-        Return Color.FromArgb(CInt(alpha * 255.0F), CInt(r * 255.0F), CInt(green * 255.0F), CInt(blue * 255.0F))
+    ''' <summary>Starts the timer. A timer that was stopped (a pause, a cover, the preference off) restarts
+    ''' from a fresh timestamp: the time it stood still is not elapsed time (rule 10).</summary>
+    Private Sub StartAudioVisualiserTimer()
+        If audio_Visualiser_Timer.Enabled Then Return
+        audio_Visualiser_Last_Ticks = -1
+        audio_Visualiser_Timer.Start()
+    End Sub
+
+    ''' <summary>Rule 10: nobody can see it - minimised, hidden, or cloaked (another virtual desktop).
+    ''' A window merely covered by another cannot be detected cheaply from WinForms and still draws.</summary>
+    Private Function AudioVisualiserUnseen() As Boolean
+        Return Not Visible OrElse WindowState = FormWindowState.Minimized OrElse BackdropHostSignals.IsWindowCloaked(Handle)
+    End Function
+
+    ''' <summary>Rule 11, intent `ambient`: freezes only at the stricter power level - energy saver on AND
+    ''' on battery.</summary>
+    Private Shared Function AudioVisualiserPowerFrozen() As Boolean
+        Return BackdropHostSignals.IsEnergySaverOnBattery()
     End Function
 
     Private Sub LoadAudioCover(artworkUrl As String, audioPath As String)
@@ -428,6 +428,32 @@ Partial Public Class Main_Form
             audio_Visualiser_Timer.Stop()
             Return
         End If
+        If audio_Visualiser_Buffer Is Nothing OrElse audio_Visualiser_Session Is Nothing Then Return   ' the paint handler makes it
+
+        ' Held: nobody can see it (rule 10), motion is not allowed (rule 9) or the power policy says
+        ' stop (rule 11). No frame, no clock, no repaint - the timer only polls for the way back, and
+        ' the next frame starts from a fresh timestamp so the gap is not replayed as elapsed time.
+        Dim reduced As Boolean = ReduceMotionActive()
+        If AudioVisualiserUnseen() OrElse reduced OrElse AudioVisualiserPowerFrozen() Then
+            audio_Visualiser_Last_Ticks = -1
+            If audio_Visualiser_Timer.Interval <> Visualiser_Hold_Poll_Ms Then audio_Visualiser_Timer.Interval = Visualiser_Hold_Poll_Ms
+            ' Motion switched off while a session is running: settle on the still frame, once.
+            If reduced AndAlso Not audio_Visualiser_Still AndAlso Not AudioVisualiserUnseen() Then
+                RenderAudioVisualiserStillFrame()
+                RepaintMedia()
+            End If
+            Return
+        End If
+        If audio_Visualiser_Timer.Interval <> Visualiser_Frame_Interval_Ms Then audio_Visualiser_Timer.Interval = Visualiser_Frame_Interval_Ms
+
+        ' Rule 2: the clock is real time. The step is the elapsed time in reference frames of 1/60 s -
+        ' not one step per tick, and not one per paint - so the lines cross the window in the same
+        ' time on a 60 Hz and a 165 Hz monitor and whatever the system timer resolution is.
+        Dim now As Long = Stopwatch.GetTimestamp()
+        Dim frames As Double = If(audio_Visualiser_Last_Ticks < 0, 1.0R,
+                                  WaveParticlesSession.FramesIn((now - audio_Visualiser_Last_Ticks) / CDbl(Stopwatch.Frequency)))
+        audio_Visualiser_Last_Ticks = now
+        AdvanceAudioVisualiser(frames)
         RepaintMedia()
     End Sub
 
@@ -449,13 +475,21 @@ Partial Public Class Main_Form
         If Not IsAudioNowPlaying() OrElse audio_Sleep_Stopped OrElse modern_Preferences Is Nothing Then Return
         If Not audio_Sleep_Deadline.IsDue(Environment.TickCount64, modern_Preferences.SleepTimerMinutes) Then Return
         audio_Sleep_Deadline.Disarm()
-        audio_Sleep_Stopped = True
-        StopVlcPlayback()
+        audio_Sleep_Stopped = True : StopVlcPlayback()
+        ' The slideshow goes with the listening (057.S08-5): its tick only waits while a
+        ' track PLAYS, so left alone it opened the next track at once - and that track
+        ' armed a FRESH deadline. Playback then stopped for a few seconds every N minutes
+        ' and never ended. The timer has ended the listening; the slideshow ends with it.
         SlideShowStop()
         lbl_Status.Text = Localization.T("Таймер сна остановил воспроизведение")
     End Sub
 
-    ''' <summary>Disarms the sleep deadline when the user leaves audio playback (audit 057.S08-6).</summary>
+    ''' <summary>A non-audio file is being shown: the listening session is over, and a
+    ''' deadline armed for it must never stop the NEXT one (057.S08-6). A track played
+    ''' with a 30-minute timer, an hour of photos, then a slideshow step onto an audio
+    ''' file used to keep the long-passed deadline and be cut off at its first tick.
+    ''' The audio branch of the display path must NOT come through here - an automatic
+    ''' advance has to keep its running deadline (050 D-03).</summary>
     Friend Sub EndAudioListening()
         audio_Sleep_Deadline.Disarm()
     End Sub
@@ -465,7 +499,11 @@ Partial Public Class Main_Form
         audio_Current_Metadata = Nothing
         If audio_Cover_Bitmap IsNot Nothing Then audio_Cover_Bitmap.Dispose() : audio_Cover_Bitmap = Nothing
         If audio_Visualiser_Buffer IsNot Nothing Then audio_Visualiser_Buffer.Dispose() : audio_Visualiser_Buffer = Nothing
-        audio_Visualiser_Particles = Nothing
+        ' A new file is a fresh start (rule 3): the next paint rolls a new session.
+        audio_Visualiser_Session = Nothing
+        audio_Visualiser_Last_Ticks = -1
+        audio_Visualiser_Still = False
+        audio_Visualiser_Timer.Interval = Visualiser_Frame_Interval_Ms
         audio_Sleep_Stopped = False
     End Sub
 End Class

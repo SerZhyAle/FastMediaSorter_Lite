@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `CHECK-VERDICT`, `CHECK-BASELINE`, `CHECK-PLACEMENT`, `BUILD-EVIDENCE` |
-| **Version** | 0.10 / 0.9 / 0.10 / 0.9, draft (read 2026-09-24). Owner: FastMediaSorter Android. **Implemented here 2026-09-25** (ticket 042): `CHECK-VERDICT`, `CHECK-PLACEMENT`, `BUILD-EVIDENCE` rules 1, 2 and 7; `CHECK-BASELINE` dormant |
+| **Version** | 0.11 / 0.10 / 0.11 / 0.10, draft (read 2026-10-02). Owner: FastMediaSorter Android. **Implemented here 2026-09-25** (ticket 042): `CHECK-VERDICT` (0.11's word set, aggregator precedence and reserved-4 reading were already held), `CHECK-PLACEMENT`, `BUILD-EVIDENCE` rules 1, 2 and 7; `CHECK-BASELINE` dormant |
 | **Home** | `automated-checks/README.md` in the shared contracts catalog |
 | **Role here** | consumer - every check script under `tools/` and `tests/Integration/`, the test runner `tools/Run-AllTests.ps1`, the release preflight in `tools/Release.ps1`, and `build.ps1` |
 

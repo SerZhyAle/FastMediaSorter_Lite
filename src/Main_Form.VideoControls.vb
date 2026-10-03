@@ -26,6 +26,7 @@ Imports System.Windows.Forms
 Partial Public Class Main_Form
 
     Private video_Controls As Panel
+    Private video_Chrome_Host As ChromeHost
     Private WithEvents btn_Video_Play As NonFocusButton
     Private WithEvents btn_Video_Mute As NonFocusButton
     Private WithEvents video_Seek As FlatSlider
@@ -55,14 +56,16 @@ Partial Public Class Main_Form
         End If
 
         If video_Controls IsNot Nothing AndAlso video_Controls.Parent Is Nothing Then
-            panel_Media.Controls.Add(video_Controls)
+            video_Chrome_Host = New ChromeHost(False) With {.Name = "chrome_Transport", .Owner = Me}
+            video_Chrome_Host.Controls.Add(video_Controls)
+            ConfigureFloatingMediaChrome()
         End If
     End Sub
 
     Private Sub BuildVideoControls()
-        Dim pad As Integer = LogicalToDeviceUnits(8)
-        Dim bar_H As Integer = LogicalToDeviceUnits(38)
-        Dim btn_W As Integer = LogicalToDeviceUnits(34)
+        Dim pad As Integer = UiScale.Px(ChromeMetrics.ScreenMargin, ChromeScale())
+        Dim bar_H As Integer = UiScale.Px(ChromeMetrics.TransportHeight, ChromeScale())
+        Dim btn_W As Integer = UiScale.Px(ChromeMetrics.TransportButtonWidth, ChromeScale())
 
         ' Pinned left-to-right (APP-BEHAVIOUR rule 8, ticket 028 Ф-7). The main window takes
         ' RightToLeft from Arabic and Urdu and a child inherits it; a transport bar must not:
@@ -91,7 +94,7 @@ Partial Public Class Main_Form
         video_Seek = New FlatSlider With {
             .Name = "video_Seek",
             .AccessibleRole = AccessibleRole.Slider,
-            .Height = LogicalToDeviceUnits(18),
+            .Height = UiScale.Px(ChromeMetrics.TransportSliderHeight, ChromeScale()),
             .BackColor = video_Controls.BackColor
         }
         video_Controls.Controls.Add(video_Seek)
@@ -99,8 +102,8 @@ Partial Public Class Main_Form
         video_Volume = New FlatSlider With {
             .Name = "video_Volume",
             .AccessibleRole = AccessibleRole.Slider,
-            .Height = LogicalToDeviceUnits(18),
-            .Width = LogicalToDeviceUnits(80),
+            .Height = UiScale.Px(ChromeMetrics.TransportSliderHeight, ChromeScale()),
+            .Width = UiScale.Px(ChromeMetrics.TransportVolumeWidth, ChromeScale()),
             .BackColor = video_Controls.BackColor,
             .FillColor = Color.FromArgb(160, 160, 160)
         }
@@ -113,7 +116,7 @@ Partial Public Class Main_Form
             .TextAlign = ContentAlignment.MiddleCenter,
             .ForeColor = Color.Gainsboro,
             .BackColor = video_Controls.BackColor,
-            .Width = LogicalToDeviceUnits(96),
+            .Width = UiScale.Px(ChromeMetrics.TransportTimeWidth, ChromeScale()),
             .Height = bar_H,
             .Text = "--:-- / --:--"
         }
@@ -150,7 +153,7 @@ Partial Public Class Main_Form
     Private Sub SetVideoGlyph(button As Button, glyphId As String)
         If String.Equals(TryCast(button.Tag, String), glyphId, StringComparison.Ordinal) Then Return
         Dim oldImage As Image = button.Image
-        button.Image = GlyphRenderer.Render(glyphId, LogicalToDeviceUnits(20), button.ForeColor, AddressOf RuntimeBootstrap.OpenBundledAsset)
+        button.Image = GlyphRenderer.Render(glyphId, UiScale.Px(ChromeMetrics.TransportGlyphSize, ChromeScale()), button.ForeColor, AddressOf RuntimeBootstrap.OpenBundledAsset)
         If oldImage IsNot Nothing Then oldImage.Dispose()
         button.ImageAlign = ContentAlignment.MiddleCenter
         button.Tag = glyphId
@@ -171,7 +174,7 @@ Partial Public Class Main_Form
         lbl_Video_Time.Location = New Point(btn_Video_Mute.Left - lbl_Video_Time.Width - pad, 0)
 
         Dim seek_W As Integer = lbl_Video_Time.Left - pad - x
-        If seek_W < LogicalToDeviceUnits(40) Then seek_W = LogicalToDeviceUnits(40)
+        If seek_W < UiScale.Px(ChromeMetrics.TransportSeekMinimum, ChromeScale()) Then seek_W = UiScale.Px(ChromeMetrics.TransportSeekMinimum, ChromeScale())
         video_Seek.Location = New Point(x, (h - video_Seek.Height) \ 2)
         video_Seek.Width = seek_W
     End Sub
@@ -179,14 +182,21 @@ Partial Public Class Main_Form
     ''' <summary>Pins the bar to the bottom of the media panel. Called from
     ''' SyncMediaSurface, so it follows every resize and full-screen switch.</summary>
     Friend Sub PositionVideoControls()
+        If is_Super_Full_Screen_Mode Then
+            HideVideoControls()
+            Return
+        End If
         If video_Controls Is Nothing OrElse panel_Media Is Nothing Then Return
-        Dim margin As Integer = LogicalToDeviceUnits(10)
+        Dim margin As Integer = UiScale.Px(ChromeMetrics.TransportMargin, ChromeScale())
         Dim w As Integer = panel_Media.ClientSize.Width - margin * 2
-        If w < LogicalToDeviceUnits(200) Then w = Math.Max(0, panel_Media.ClientSize.Width)
+        If w < UiScale.Px(ChromeMetrics.TransportMinimumWidth, ChromeScale()) Then w = Math.Max(0, panel_Media.ClientSize.Width)
         video_Controls.Width = w
-        video_Controls.Location = New Point((panel_Media.ClientSize.Width - w) \ 2,
-                                            panel_Media.ClientSize.Height - video_Controls.Height - margin)
-        LayoutVideoControlsRow(LogicalToDeviceUnits(8))
+        video_Controls.Location = Point.Empty
+        If video_Chrome_Host IsNot Nothing Then
+            video_Chrome_Host.Bounds = New Rectangle(panel_Media.PointToScreen(New Point((panel_Media.ClientSize.Width - w) \ 2,
+                                            panel_Media.ClientSize.Height - video_Controls.Height - margin)), video_Controls.Size)
+        End If
+        LayoutVideoControlsRow(UiScale.Px(ChromeMetrics.ScreenMargin, ChromeScale()))
         If video_Controls.Visible Then video_Controls.BringToFront()
     End Sub
 
@@ -216,11 +226,16 @@ Partial Public Class Main_Form
 
     ''' <summary>Brings the bar up and restarts the countdown to hiding it.</summary>
     Friend Sub ShowVideoControls()
+        If is_Super_Full_Screen_Mode Then Return
         If Not is_Vlc_Playing Then Return
         EnsureVideoControls()
         If video_Controls Is Nothing Then Return
 
         PositionVideoControls()
+        If video_Chrome_Host IsNot Nothing AndAlso Not video_Chrome_Host.Visible Then
+            PinToViewerBand(video_Chrome_Host)
+            video_Chrome_Host.Show()
+        End If
         If Not video_Controls.Visible Then
             video_Controls.Visible = True
             RefreshVideoControlsState()
@@ -240,6 +255,7 @@ Partial Public Class Main_Form
         video_Controls_Hide_Timer.Stop()
         video_Controls_Timer.Stop()
         If video_Controls IsNot Nothing Then video_Controls.Visible = False
+        If video_Chrome_Host IsNot Nothing Then video_Chrome_Host.Hide()
     End Sub
 
     Private Sub Video_Controls_Hide_Timer_Tick(sender As Object, e As EventArgs) Handles video_Controls_Hide_Timer.Tick
@@ -254,7 +270,7 @@ Partial Public Class Main_Form
             Return
         End If
         If IsAudioNowPlaying() AndAlso (modern_Preferences Is Nothing OrElse modern_Preferences.AudioControlsAlwaysVisible) Then Return
-        If video_Controls.Bounds.Contains(panel_Media.PointToClient(Cursor.Position)) Then
+        If video_Chrome_Host IsNot Nothing AndAlso video_Chrome_Host.Bounds.Contains(Cursor.Position) Then
             video_Controls_Hide_Timer.Start()
             Return
         End If
@@ -264,6 +280,7 @@ Partial Public Class Main_Form
         End If
 
         video_Controls.Visible = False
+        If video_Chrome_Host IsNot Nothing Then video_Chrome_Host.Hide()
     End Sub
 
     Private Sub VideoControls_MouseMove(sender As Object, e As MouseEventArgs)
@@ -306,6 +323,22 @@ Partial Public Class Main_Form
         If video_Controls Is Nothing OrElse vlc_Media_Player Is Nothing Then Return
 
         Try
+            If IsLiveBroadcastActive() Then
+                video_Seek.Visible = False
+                video_Seek.Enabled = False
+                lbl_Video_Time.Text = "LIVE"
+
+                Dim livePlaying As Boolean = IsVlcActuallyPlaying()
+                SetVideoGlyph(btn_Video_Play, If(livePlaying, "media.stop", "media.play"))
+                btn_Video_Play.AccessibleName = Localization.T(If(livePlaying, "Остановить", "Подключиться снова"))
+                SetVideoGlyph(btn_Video_Mute, If(is_Video_Muted, "media.mute", "media.volume"))
+                If Not video_Volume.IsDragging Then video_Volume.Value = If(is_Video_Muted, 0.0, video_Volume_Level)
+                Return
+            Else
+                video_Seek.Visible = True
+                video_Seek.Enabled = True
+            End If
+
             ' Not while the user is holding it - the tick would fight the drag.
             If Not video_Seek.IsDragging Then video_Seek.Value = vlc_Media_Player.Position
 
@@ -334,6 +367,17 @@ Partial Public Class Main_Form
     End Function
 
     Private Sub btn_Video_Play_Click(sender As Object, e As EventArgs) Handles btn_Video_Play.Click
+        If IsLiveBroadcastActive() Then
+            If IsVlcActuallyPlaying() Then
+                StopLivePlayback(isUserStop:=True)
+            Else
+                ReconnectLiveBroadcast()
+            End If
+            RefreshVideoControlsState()
+            ShowVideoControls()
+            Return
+        End If
+
         TogglePlayPause()
         RefreshVideoControlsState()
         ShowVideoControls()
@@ -520,11 +564,19 @@ Partial Public Class Main_Form
             MyBase.OnMouseUp(e)
         End Sub
 
+        ''' <summary>Windows can take the capture away without a MouseUp: Alt+Tab / Win
+        ''' while holding the knob, or the bar hidden under the hand before the release.
+        ''' Without this the drag never ended - the seek bar froze, the transport stopped
+        ''' auto-hiding, and merely HOVERING the volume slider changed the volume. A
+        ''' normal release clears _dragging BEFORE it lets go of the capture, so this
+        ''' does not fire twice for it. No Scrubbed here: losing the window is not a
+        ''' decision about where to seek.</summary>
         Protected Overrides Sub OnMouseCaptureChanged(e As EventArgs)
+            MyBase.OnMouseCaptureChanged(e)
             If _dragging AndAlso Not Capture Then
                 _dragging = False
+                Invalidate()
             End If
-            MyBase.OnMouseCaptureChanged(e)
         End Sub
 
     End Class

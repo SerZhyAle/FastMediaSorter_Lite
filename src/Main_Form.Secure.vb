@@ -3,6 +3,8 @@ Option Strict On
 
 Imports System.Drawing
 Imports System.IO
+Imports CancellationTokenSource = System.Threading.CancellationTokenSource
+Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 ' The viewer's whole side of secure containers
@@ -28,6 +30,13 @@ Imports System.Windows.Forms
 '
 ' Modern-only: on the net48 fallback a .fd-sec is not even listed.
 Partial Public Class Main_Form
+    Private secure_Verify_Cancellation As CancellationTokenSource
+    Private secure_Verify_Previous_Status As String = ""
+
+    Private Sub CancelSecureVerification()
+        secure_Verify_Cancellation?.Cancel()
+        secure_Verify_Cancellation = Nothing
+    End Sub
 
     ' ------------------------------------------------------------------ state ----
 
@@ -115,7 +124,7 @@ Partial Public Class Main_Form
 
     Friend Function IsCurrentFileSecureContainer() As Boolean
         If String.IsNullOrEmpty(Current_File_Name) Then Return False
-        Return IsSecureContainerExtension(Path.GetExtension(Current_File_Name))
+        Return IsSecureContainerExtension(NavigationRules.ExtensionKey(Current_File_Name))
     End Function
 
     ''' <summary>
@@ -175,6 +184,7 @@ Partial Public Class Main_Form
     ''' down is a password they have to close the program to be rid of.
     ''' </summary>
     Friend Sub SecureForgetCredential(Optional announce As Boolean = True)
+        CancelSecureVerification()
         Dim held As FdSecCredential = secure_Session_Credential
         secure_Session_Credential = Nothing
         held?.Dispose()
@@ -530,7 +540,13 @@ Partial Public Class Main_Form
                 MagickResourceLimits.EnsureApplied()
                 picture = ImageDecoderProvider.Current.DecodeToImage(buffer)
             Else
-                picture = Image.FromStream(buffer)
+                Try
+                    picture = Image.FromStream(buffer)
+                Catch ex As ArgumentException When buffer.Length >= 12 AndAlso ImageDecoderProvider.LooksDecoderBacked(buffer.GetBuffer())
+                    buffer.Position = 0
+                    MagickResourceLimits.EnsureApplied()
+                    picture = ImageDecoderProvider.Current.DecodeToImage(buffer)
+                End Try
             End If
             If picture Is Nothing Then
                 buffer.Dispose()
@@ -814,6 +830,7 @@ Partial Public Class Main_Form
     ''' container into an access-denied, and §7 says those keep working.
     ''' </summary>
     Friend Sub SecureReleaseCurrent()
+        CancelSecureVerification()
         secure_Prompt_Pending_Path = ""
         secure_Prompt_Timer?.Stop()
         ReleaseSecureArtWatch()
@@ -916,7 +933,13 @@ Partial Public Class Main_Form
     ''' read - and because the streaming reader's weaker guarantee is stated honestly
     ''' rather than papered over.
     ''' </summary>
-    Friend Sub SecureVerifyCurrent()
+    Friend Async Sub SecureVerifyCurrent()
+        ' Invoking Verify again cancels the current read; navigation and shutdown do too.
+        If secure_Verify_Cancellation IsNot Nothing Then
+            CancelSecureVerification()
+            lbl_Status.Text = secure_Verify_Previous_Status
+            Return
+        End If
         If Not IsCurrentFileSecureContainer() Then Return
         If Not SecureHasCredential() Then
             lbl_Status.Text = Localization.T("Нужен пароль - нажмите Enter или щёлкните по файлу")
@@ -925,24 +948,51 @@ Partial Public Class Main_Form
 
         Dim filePath As String = Current_File_Name
         Dim previous As String = lbl_Status.Text
+        secure_Verify_Previous_Status = previous
+        Dim credential As FdSecCredential = secure_Session_Credential
+        Dim cache As FdSecKeyCache = SecureKeyCacheFor(credential)
+        Dim cancellation As New CancellationTokenSource()
+        secure_Verify_Cancellation = cancellation
+        Dim stillCurrent As Func(Of Boolean) =
+            Function() Not IsDisposed AndAlso Not Disposing AndAlso
+                       ReferenceEquals(secure_Verify_Cancellation, cancellation) AndAlso
+                       String.Equals(Current_File_Name, filePath, StringComparison.OrdinalIgnoreCase)
+        Dim progress As New Progress(Of (Completed As Long, Total As Long))(
+            Sub(value)
+                If stillCurrent() AndAlso Not cancellation.IsCancellationRequested Then
+                    lbl_Status.Text = Localization.T("Проверка контейнера..") & " " &
+                                      value.Completed.ToString() & "/" & value.Total.ToString()
+                End If
+            End Sub)
         lbl_Status.Text = Localization.T("Проверка контейнера..")
-        ' Refresh, never DoEvents: this is about to block the UI thread for a full read of
-        ' the container, and pumping the message queue first would let a keypress start a
-        ' navigation that runs underneath it.
-        lbl_Status.Refresh()
 
         Try
-            Using probe As FdSecContainer = FdSecContainer.OpenFile(filePath, secure_Session_Credential,
-                                                                    keyCache:=SecureKeyCacheFor(secure_Session_Credential))
-                probe.VerifyAll()
-            End Using
-            lbl_Status.Text = Localization.T("Контейнер цел: все блоки прочитаны и подпись сошлась")
+            Await Task.Run(
+                Sub()
+                    cancellation.Token.ThrowIfCancellationRequested()
+                    Using probe As FdSecContainer = FdSecContainer.OpenFile(filePath, credential, keyCache:=cache)
+                        Dim clock As Diagnostics.Stopwatch = Diagnostics.Stopwatch.StartNew()
+                        probe.VerifyAll(cancellation.Token,
+                            Sub(completed, total)
+                                If clock.ElapsedMilliseconds >= 150 OrElse completed = total Then
+                                    DirectCast(progress, IProgress(Of (Long, Long))).Report((completed, total))
+                                    clock.Restart()
+                                End If
+                            End Sub)
+                    End Using
+                End Sub)
+            If stillCurrent() Then lbl_Status.Text = Localization.T("Контейнер цел: все блоки прочитаны и подпись сошлась")
+        Catch ex As OperationCanceledException
+            If stillCurrent() Then lbl_Status.Text = previous
         Catch ex As FdSecException
             AppFileLogger.WriteLine("Secure container verify failed (" & ex.Outcome.ToString() & "): " & filePath)
-            lbl_Status.Text = SecureOutcomeMessage(ex.Outcome)
+            If stillCurrent() Then lbl_Status.Text = SecureOutcomeMessage(ex.Outcome)
         Catch ex As Exception
             AppFileLogger.LogException("Secure container: verifying " & filePath, ex)
-            lbl_Status.Text = previous
+            If stillCurrent() Then lbl_Status.Text = ReadFailureText(PathFailure.Classify(ex), filePath)
+        Finally
+            If ReferenceEquals(secure_Verify_Cancellation, cancellation) Then secure_Verify_Cancellation = Nothing
+            cancellation.Dispose()
         End Try
     End Sub
 

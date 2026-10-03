@@ -53,11 +53,13 @@ Partial Public NotInheritable Class Localization
             "Desativar a partilha", "إيقاف المشاركة", "साझाकरण बंद करें", "শেয়ারিং বন্ধ করুন",
             "شیئرنگ بند کریں", "关闭共享")
 
-        Add("Открыть Fast Media Sorter",
-            "Open Fast Media Sorter", "Відкрити Fast Media Sorter", "Fast Media Sorter öffnen",
-            "Apri Fast Media Sorter", "Abrir Fast Media Sorter", "Ouvrir Fast Media Sorter",
-            "Abrir o Fast Media Sorter", "فتح Fast Media Sorter", "Fast Media Sorter खोलें",
-            "Fast Media Sorter খুলুন", "Fast Media Sorter کھولیں", "打开 Fast Media Sorter")
+        ' {0} is the Store name of the product (ProductNames.CompactForLabel at the call site: this
+        ' is a menu item, where a single ampersand would be eaten as a mnemonic).
+        Add("Открыть {0}",
+            "Open {0}", "Відкрити {0}", "{0} öffnen",
+            "Apri {0}", "Abrir {0}", "Ouvrir {0}",
+            "Abrir {0}", "فتح {0}", "{0} खोलें",
+            "{0} খুলুন", "{0} کھولیں", "打开 {0}")
 
         Add("Язык интерфейса",
             "Interface language", "Мова інтерфейсу", "Sprache der Oberfläche",

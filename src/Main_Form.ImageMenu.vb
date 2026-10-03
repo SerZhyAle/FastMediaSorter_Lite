@@ -45,7 +45,7 @@ Partial Public Class Main_Form
         BuildImageMenu()
         If image_Menu.Items.Count = 0 Then Return False
 
-        image_Menu.Show(Cursor.Position)
+        ChromeShowToolStripMenu(image_Menu.Items, Cursor.Position)
         Return True
     End Function
 

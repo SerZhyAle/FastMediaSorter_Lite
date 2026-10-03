@@ -108,7 +108,7 @@ Public Class ThemePaletteTests
     Public Sub Status_colours_of_either_palette_are_recognised_as_their_role()
         Assert.Equal(ThemeRole.Success, ThemePalette.RoleForColor(Color.ForestGreen, False))
         Assert.Equal(ThemeRole.Danger, ThemePalette.RoleForColor(Color.Firebrick, False))
-        Assert.Equal(ThemeRole.Warning, ThemePalette.RoleForColor(Color.FromArgb(176, 96, 0), False))
+        Assert.Equal(ThemeRole.Warning, ThemePalette.RoleForColor(Color.FromArgb(239, 108, 0), False))
         Assert.Equal(ThemeRole.Success, ThemePalette.RoleForColor(ThemePalette.Dark.Success, False))
         Assert.Equal(ThemeRole.None, ThemePalette.RoleForColor(Color.FromArgb(30, 120, 220), False))
         Assert.Equal(ThemeRole.None, ThemePalette.RoleForColor(Color.ForestGreen, True))

@@ -91,12 +91,30 @@ Public Module SlotHealthPolicy
         If raw Is Nothing Then Return ""
         Dim trimmed As String = raw.Trim()
         If trimmed.Length = 0 Then Return ""
+        If ResourceLocator.IsLocator(trimmed) Then Return trimmed
         Try
             If System.IO.Path.IsPathFullyQualified(trimmed) Then Return System.IO.Path.GetFullPath(trimmed)
         Catch
             ' Characters no path may hold: keep it as typed - the probe reports it Invalid.
         End Try
         Return trimmed
+    End Function
+
+    ''' <summary>
+    ''' The verdict for a folder that refused to be LISTED, given what reading its
+    ''' attributes said (audit 057.S05-7). A write-only drop-box - add right, no list right,
+    ''' common on a NAS - refuses the listing and still accepts a file, so a listing refusal
+    ''' alone is not "no access": the folder being there (as a folder) is enough to let the
+    ''' operation try, and a genuine write refusal is then reported by the operation itself,
+    ''' which names the folder. A path that turns out to be a file is Invalid, as it is when
+    ''' the listing says so; anything else keeps the denial.
+    ''' </summary>
+    Public Function StateAfterDeniedListing(attributes As PathFailureKind) As SlotState
+        Select Case attributes
+            Case PathFailureKind.None : Return SlotState.Ready
+            Case PathFailureKind.Invalid : Return SlotState.Invalid
+            Case Else : Return SlotState.Denied
+        End Select
     End Function
 
     ''' <summary>May an action against a slot in this state go ahead?</summary>

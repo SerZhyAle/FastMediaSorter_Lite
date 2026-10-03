@@ -49,6 +49,9 @@ Friend NotInheritable Class ThemeApplier
         Public Grid As GridSnapshot
         ' Native theme (scroll bars, list headers) currently switched to dark.
         Public NativeDark As Boolean
+        Public NativeRequestedDark As Boolean
+        Public NativeHooked As Boolean
+        Public RolesHooked As Boolean
     End Class
 
     Private NotInheritable Class GridSnapshot
@@ -87,6 +90,12 @@ Friend NotInheritable Class ThemeApplier
             st = New ControlState()
             States.Add(root, st)
         End If
+        If Not st.NativeHooked Then
+            st.NativeHooked = True
+            AddHandler root.HandleCreated, AddressOf OnNativeHandleCreated
+            AddHandler root.ControlAdded, AddressOf OnNativeControlAdded
+        End If
+        st.NativeRequestedDark = dark
         ApplyNative(root, st, dark)
         For Each child As Control In root.Controls
             ApplyNativeTree(child, dark)
@@ -112,9 +121,17 @@ Friend NotInheritable Class ThemeApplier
         Dim st As ControlState = Nothing
         If Not States.TryGetValue(c, st) Then
             st = New ControlState()
+            States.Add(c, st)
+        End If
+        If Not st.RolesHooked Then
+            st.RolesHooked = True
             st.BackRole = Classify(c, asBackground:=True)
             st.ForeRole = Classify(c, asBackground:=False)
-            States.Add(c, st)
+            If st.NativeHooked Then
+                RemoveHandler c.HandleCreated, AddressOf OnNativeHandleCreated
+                RemoveHandler c.ControlAdded, AddressOf OnNativeControlAdded
+                st.NativeHooked = False
+            End If
             Hook(c)
         End If
 
@@ -271,6 +288,21 @@ Friend NotInheritable Class ThemeApplier
         st.NativeDark = False
         ApplyNative(c, st, ThemeService.Palette.IsDark)
         If TypeOf c Is Form Then ApplyTitleBar(DirectCast(c, Form), ThemeService.Palette.IsDark)
+    End Sub
+
+    Private Shared Sub OnNativeHandleCreated(sender As Object, e As EventArgs)
+        Dim c As Control = TryCast(sender, Control)
+        Dim st As ControlState = Nothing
+        If c Is Nothing OrElse Not States.TryGetValue(c, st) Then Return
+        st.NativeDark = False
+        ApplyNative(c, st, st.NativeRequestedDark)
+    End Sub
+
+    Private Shared Sub OnNativeControlAdded(sender As Object, e As ControlEventArgs)
+        Dim c As Control = TryCast(sender, Control)
+        Dim st As ControlState = Nothing
+        If c Is Nothing OrElse Not States.TryGetValue(c, st) Then Return
+        ApplyNativeTree(e.Control, st.NativeRequestedDark)
     End Sub
 
     ' --- per-type -----------------------------------------------------------------------

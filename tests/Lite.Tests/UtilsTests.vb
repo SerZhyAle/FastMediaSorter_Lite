@@ -6,7 +6,7 @@ Imports Xunit
 Imports fmsl
 
 ''' <summary>
-''' Tests for LITE's Utils module. GetImageDimensions is the important one: the
+''' Tests for the viewer's Utils module. GetImageDimensions is the important one: the
 ''' background worker reads pixel size from the file HEADER (never GDI+ decode) to
 ''' avoid corrupting shared GDI+ state while the UI thread runs GetPixel. These pin
 ''' the PNG/GIF/BMP/JPEG header parsing with crafted byte headers.

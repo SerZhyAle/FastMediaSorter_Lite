@@ -72,6 +72,22 @@ function Get-Field($r, [string]$name) {
 }
 
 # --- the records themselves ---------------------------------------------------
+# CHECK-PLACEMENT 0.11 rule 8: "per-change runner: none" is a declared state, carried by the
+# registry itself as one declaration record (a reason is required) - not by the pointer's prose.
+$declarations = @($records | Where-Object { Get-Field $_ 'declaration' })
+$records = @($records | Where-Object { -not (Get-Field $_ 'declaration') })
+$declarationNote = ''
+if ($declarations.Count -gt 0) {
+    if ($declarations.Count -gt 1) { $problems.Add('the registry may declare "per-change runner: none" once') }
+    foreach ($d in $declarations) {
+        if ((Get-Field $d 'declaration') -ne 'per-change runner: none') {
+            $problems.Add("unknown declaration '$(Get-Field $d 'declaration')' - the only one rule 8 names is 'per-change runner: none'")
+        }
+        if (-not (Get-Field $d 'reason')) { $problems.Add('the per-change declaration carries no reason') }
+    }
+    $declarationNote = '; per-change runner: none (declared)'
+}
+
 $seen = @{}
 $placed = foreach ($r in $records) {
     $check = Get-Field $r 'check'
@@ -150,7 +166,7 @@ foreach ($s in $scripts) {
 }
 
 $byClass = ($classes | ForEach-Object { $c = $_; "$c $(@($placed | Where-Object { $_.Class -eq $c }).Count)" }) -join ', '
-$summary = "$($placed.Count) records ($byClass), $($runnerSet.Count) runners, $verdictScripts verdict scripts"
+$summary = "$($placed.Count) records ($byClass), $($runnerSet.Count) runners, $verdictScripts verdict scripts$declarationNote"
 if ($problems.Count -gt 0) {
     $problems | ForEach-Object { Write-Host "  - $_" }
     Exit-Verdict 'Test-CheckPlacement' 1 "$($problems.Count) disagreement(s); $summary"

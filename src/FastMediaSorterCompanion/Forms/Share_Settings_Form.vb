@@ -31,8 +31,12 @@ Imports System.Windows.Forms
 ''' with them.
 '''
 ''' NOT here, on purpose: anything about a SPECIFIC share (Share_Root_Params_Form), the
-''' server-features gate (Share_Enable_Form), and the UI language (the main window's status
-''' strip owns it - it must stay reachable for someone who cannot read the rest).
+''' server-features gate (Share_Enable_Form).
+'''
+''' Since 2026-10-03 the page also owns the UI language (beside the theme combo) and the Help
+''' links (their own folded group) - both moved here from the main window's status strip. The
+''' tray menu keeps its own language item, so someone who cannot read the UI still reaches a
+''' picker without opening any window.
 ''' </summary>
 Partial Public NotInheritable Class Share_Settings_Form
     Inherits Form
@@ -47,6 +51,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private chkAutostart As CheckBox
     Private chkOpenOnStart As CheckBox
     Private cmbTheme As ComboBox
+    Private cmbLanguage As ComboBox
     Private chkLanOnly As CheckBox
     Private numMaxConns As NumericUpDown
     Private numPort As NumericUpDown
@@ -56,6 +61,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' is only a pending value until "Apply" commits it (ticket 028 Ф-5).</summary>
     Private _committedPort As Integer
     Private lnkFreePort As LinkLabel
+    Private lnkRouterSearch As LinkLabel
     Private lblPortNote As Label
     Private lblAutostartNote As Label
     Private lblLanOnlyNote As Label
@@ -66,6 +72,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _secStartup As CollapsibleSection
     Private _secNetwork As CollapsibleSection
     Private _secHosting As CollapsibleSection
+    Private _secHelp As CollapsibleSection
     ''' <summary>The hosting group runs a blocking worker probe, so it is refreshed the
     ''' first time it is actually unfolded rather than on every open of a dialog most people
     ''' use to tick one checkbox.</summary>
@@ -120,6 +127,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddHandler Me.FormClosed,
             Sub()
                 Try : toolTip.Dispose() : Catch : End Try
+                Try : _lblHost?.Font?.Dispose() : Catch : End Try
+                Try : _lblLive?.Font?.Dispose() : Catch : End Try
                 ShareIcons.FreeIcon(Me.Icon, _iconHandle)
             End Sub
         ' Sizable rather than the usual FixedDialog: an accordion changes height by design,
@@ -141,10 +150,12 @@ Partial Public NotInheritable Class Share_Settings_Form
         _secStartup = New CollapsibleSection("startup", Localization.T("Запуск"))
         _secNetwork = New CollapsibleSection("network", Localization.T("Сеть"))
         _secHosting = New CollapsibleSection("hosting", Localization.T("Хостинг"))
+        _secHelp = New CollapsibleSection("help", Localization.T("Справка"))
         BuildStartupSection(_secStartup)
         BuildNetworkSection(_secNetwork)
         BuildHostingSection(_secHosting)
-        For Each sec As CollapsibleSection In {_secStartup, _secNetwork, _secHosting}
+        BuildHelpSection(_secHelp)
+        For Each sec As CollapsibleSection In {_secStartup, _secNetwork, _secHosting, _secHelp}
             sec.Dock = DockStyle.Fill
             AddHandler sec.ExpandedChanged, AddressOf OnSectionExpandedChanged
             AddRow(_root, sec)
@@ -231,6 +242,86 @@ Partial Public NotInheritable Class Share_Settings_Form
         themeRow.Controls.Add(cmbTheme)
         sec.AddBodyRow(themeRow)
         toolTip.SetToolTip(cmbTheme, Localization.T("Светлая, тёмная или как в Windows - для всех окон просмотрщика и менеджера общего доступа."))
+
+        ' The UI language, beside the theme - the two things that change how every window of
+        ' the program reads. Moved here from the main window's status strip (owner decision,
+        ' 2026-10-03). The combo lists endonyms, so it stays legible in the language being
+        ' left; a switch rebuilds the main window and the tray at once - this dialog resolves
+        ' its captions once, at construction, so it cannot re-caption itself: it closes, and
+        ' the next open reads the new language.
+        Dim langRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .WrapContents = False, .Margin = New Padding(0, 6, 0, 2)}
+        Dim lblLanguage As New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 8, 0),
+            .Text = Localization.T("Язык интерфейса")}
+        cmbLanguage = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 180, .Margin = New Padding(0, 2, 0, 0)}
+        cmbLanguage.Items.AddRange(Localization.Names)
+        cmbLanguage.SelectedIndex = Localization.CurrentIndex
+        AddHandler cmbLanguage.SelectedIndexChanged, AddressOf OnUiLanguageChanged
+        langRow.Controls.Add(lblLanguage)
+        langRow.Controls.Add(cmbLanguage)
+        sec.AddBodyRow(langRow)
+    End Sub
+
+    ''' <summary>The combo's index IS the language's index in Localization.Codes. A choice
+    ''' switches at once - UiLanguage.Changed rebuilds the tray menu and the main window -
+    ''' and closes this dialog: its captions resolved once, at construction, so it cannot
+    ''' re-caption itself; reopening shows the new language.</summary>
+    Private Sub OnUiLanguageChanged(sender As Object, e As EventArgs)
+        If cmbLanguage.SelectedIndex < 0 Then Return
+        Dim code As String = Localization.Codes(cmbLanguage.SelectedIndex)
+        If String.Equals(code, Localization.CurrentCode, StringComparison.OrdinalIgnoreCase) Then Return
+        UiLanguage.Switch(code)
+        DialogResult = DialogResult.OK
+        Close()
+    End Sub
+
+    ''' <summary>The four Help links the main window's status strip used to fold into its
+    ''' drop-down (owner decision, 2026-10-03): read-once material, which is what this page
+    ''' is for. The router link answers through the group's live summary, the way the
+    ''' status strip's hint line used to.</summary>
+    Private Sub BuildHelpSection(sec As CollapsibleSection)
+        AddHelpLink(sec, Localization.T("Приложение для Android"),
+                    Sub() NetworkInfo.OpenInBrowser(ShareGuide.AndroidSite()))
+        AddHelpLink(sec, Localization.T("Как публиковать папки (сайт)"),
+                    Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl))
+        lnkRouterSearch = AddHelpLink(sec, Localization.T("Инструкция для моей модели роутера"),
+                                      AddressOf OnRouterSearchClicked)
+        ' The search walks the port-forward instructions for the model it finds; without a
+        ' running share there is no forwarding to instruct - the status strip disabled the
+        ' item for the same reason.
+        lnkRouterSearch.Enabled = _status IsNot Nothing AndAlso _status.Running
+        AddHelpLink(sec, Localization.TF("Открыть {0}", ProductNames.CompactForLabel),
+                    AddressOf OnOpenViewerClicked)
+    End Sub
+
+    Private Shared Function AddHelpLink(sec As CollapsibleSection, text As String, onClick As Action) As LinkLabel
+        Dim lnk As New LinkLabel With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = text}
+        AddHandler lnk.LinkClicked, Sub(s, e) onClick()
+        sec.AddBodyRow(lnk)
+        Return lnk
+    End Function
+
+    Private Async Sub OnRouterSearchClicked()
+        _secHelp.Summary = Localization.T("Определяем роутер..")
+        Dim rt As RouterIdentity = Await Task.Run(Function() RouterInfo.Detect())
+        If IsDisposed Then Return
+        NetworkInfo.OpenInBrowser(RouterInfo.SearchUrl(rt))
+        _secHelp.Summary = If(rt.DisplayName().Length > 0, Localization.TF("Роутер: {0}", rt.DisplayName()),
+            Localization.T("Модель не определена - открыт общий поиск."))
+    End Sub
+
+    Private Sub OnOpenViewerClicked()
+        Dim exe As String = IO.Path.Combine(IO.Path.GetDirectoryName(Application.ExecutablePath),
+                                            "FastMediaSorter_LITE.exe")
+        If IO.File.Exists(exe) Then
+            Try
+                Diagnostics.Process.Start(New Diagnostics.ProcessStartInfo(exe) With {.UseShellExecute = True})
+            Catch
+            End Try
+        Else
+            MessageBox.Show(Me, Localization.TF("{0} не найден рядом.", ProductNames.CompactForLabel),
+                            ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Information)
+        End If
     End Sub
 
     ''' <summary>The combo's order IS the ThemeMode order: system, light, dark.</summary>

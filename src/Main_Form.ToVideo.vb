@@ -106,6 +106,12 @@ Partial Public Class Main_Form
 
         Dim frameCount As Integer = CurrentAnimationFrameCount()
         Dim durationMs As Integer = gif_Total_Duration_Ms
+        ' The verdict is measured against the SOURCE's duration as FFmpeg reads it
+        ' (057.S09-1) - never against the in-memory GIF the viewer plays: an animated
+        ' WEBP's 34-ms frame delays transcode to whole centiseconds there (30 ms), and
+        ' the completeness check used to throw a COMPLETE video away as OutputIncomplete.
+        ' The playback total still drives fps and the progress dialog, as it always did.
+        Dim expectedDurationMs As Integer = SourceDurationMsAsFfmpegReadsIt(sourcePath)
         Dim hasAlpha As Boolean = CurrentAnimationHasAlpha()
         Dim fps As Integer = VideoConvertPlan.Fps(frameCount, durationMs)
         Dim targetPath As String = VideoConvertPlan.TargetPathFor(sourcePath, Function(candidate) File.Exists(candidate))
@@ -126,14 +132,13 @@ Partial Public Class Main_Form
             Dim run As AnimationToVideo.EncoderRun =
                 Await EncodeWithProgressAsync(ffmpegExe, sourcePath, tempPath, fps, durationMs).ConfigureAwait(True)
 
-            Dim expectedDurationMs As Integer = SourceDurationMsAsFfmpegReadsIt(sourcePath)
-
             ' The video must hold the animation, not merely exist (audit 050 D-18).
             Dim encode As VideoReplaceOutcome = VideoConvertPlan.DecideEncode(
                 run.Cancelled, run.ExitCode, File.Exists(tempPath), FileLength(tempPath),
                 expectedDurationMs, fps, run.FramesWritten, run.OutTimeMs)
             AppFileLogger.WriteLine("Replace with video: " & encode.ToString() & " (source " & frameCount.ToString() & " frames / " &
-                                    expectedDurationMs.ToString() & " ms expected at " & fps.ToString() & " fps; written " &
+                                    durationMs.ToString() & " ms at " & fps.ToString() & " fps; expected " &
+                                    expectedDurationMs.ToString() & " ms; written " &
                                     run.FramesWritten.ToString() & " frames / " & run.OutTimeMs.ToString() & " ms)")
 
             ' 4. Rename the temporary file onto the target.
@@ -286,13 +291,19 @@ Partial Public Class Main_Form
             Case VideoReplaceOutcome.Success
                 lbl_Status.Text = Localization.TF("Готово: {0}", Path.GetFileName(targetPath))
             Case VideoReplaceOutcome.OriginalNotDeleted
-                Dim msg As String = Localization.TF("Видео создано, но не удалось удалить оригинал: {0}", deleteError)
-                lbl_Status.Text = msg
-                MessageBox.Show(Me, msg, Localization.T("Заменить видео"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                lbl_Status.Text = Localization.TF("Видео создано, но не удалось удалить оригинал: {0}", deleteError)
+                ' The reopen of the video below overwrites the status twice - "Проверяю
+                ' доступность..", then the VLC line - before this sentence is ever
+                ' painted, and the user is never told the original stayed, nor why.
+                ' A box survives the reopen (057.S09-2).
+                MessageBox.Show(Me, lbl_Status.Text, Localization.T("Заменить видео"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Case VideoReplaceOutcome.OriginalKeptUnverified
-                Dim msg As String = Localization.TF("Видео создано, но его полноту не удалось проверить - оригинал сохранён: {0}", Path.GetFileName(targetPath))
-                lbl_Status.Text = msg
-                MessageBox.Show(Me, msg, Localization.T("Заменить видео"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+                lbl_Status.Text = Localization.TF("Видео создано, но его полноту не удалось проверить - оригинал сохранён: {0}", Path.GetFileName(targetPath))
+                ' Same reopen (057.S09-2). Information, not Warning: nothing failed -
+                ' the original is kept only because the video could not be proven whole.
+                MessageBox.Show(Me, lbl_Status.Text, Localization.T("Заменить видео"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Information)
             Case VideoReplaceOutcome.Cancelled
                 lbl_Status.Text = Localization.T("Преобразование отменено")
             Case Else
@@ -321,49 +332,6 @@ Partial Public Class Main_Form
         End Select
     End Function
 
-    ''' <summary>
-    ''' Reads the source animation's true expected duration in milliseconds as FFmpeg will
-    ''' demux it (audit 057.S09-1). For GIF, applies FFmpeg's 2-centisecond minimum rule;
-    ''' for WEBP, reads millisecond frame delays via ImageSharp identify; for other formats
-    ''' or unreadable delays, returns 0 (unknown) so DecideEncode yields EncodedUnverified
-    ''' instead of failing against a truncated playback duration.
-    ''' </summary>
-    Private Function SourceDurationMsAsFfmpegReadsIt(sourcePath As String) As Integer
-        Try
-            Dim ext As String = Path.GetExtension(sourcePath).ToLowerInvariant()
-            If ext = ".gif" Then
-                If gif_Restart_Image_Ref Is Nothing Then Return 0
-                Dim frameDimension As New FrameDimension(gif_Restart_Image_Ref.FrameDimensionsList(0))
-                Dim frameCount As Integer = gif_Restart_Image_Ref.GetFrameCount(frameDimension)
-                If frameCount <= 0 Then Return 0
-                Dim item As PropertyItem = gif_Restart_Image_Ref.GetPropertyItem(&H5100)
-                If item Is Nothing OrElse item.Value Is Nothing OrElse item.Len < frameCount * 4 Then Return 0
-                Dim delays(frameCount - 1) As Integer
-                For i As Integer = 0 To frameCount - 1
-                    delays(i) = BitConverter.ToInt32(item.Value, i * 4)
-                Next
-                Return VideoConvertPlan.GifDurationMsAsFfmpegReadsIt(delays)
-            ElseIf ext = ".webp" Then
-                Using stream As Stream = File.OpenRead(sourcePath)
-                    Using sharpImage As SixLabors.ImageSharp.Image = SixLabors.ImageSharp.Image.Load(stream)
-                        If sharpImage Is Nothing OrElse sharpImage.Frames Is Nothing OrElse sharpImage.Frames.Count = 0 Then Return 0
-                        Dim totalMs As Integer = 0
-                        For Each frame In sharpImage.Frames
-                            Dim webpMeta = frame.Metadata.GetFormatMetadata(SixLabors.ImageSharp.Formats.Webp.WebpFormat.Instance)
-                            If webpMeta IsNot Nothing Then
-                                totalMs += CInt(webpMeta.FrameDelay)
-                            End If
-                        Next
-                        Return totalMs
-                    End Using
-                End Using
-            End If
-        Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0043: SourceDurationMsAsFfmpegReadsIt failed: " & ex.Message)
-        End Try
-        Return 0
-    End Function
-
     ' --- what the playing animation can tell us --------------------------------
 
     Private Function CurrentAnimationFrameCount() As Integer
@@ -390,6 +358,65 @@ Partial Public Class Main_Form
             Return (gif_Restart_Image_Ref.Flags And CInt(ImageFlags.HasAlpha)) <> 0
         Catch
             Return False
+        End Try
+    End Function
+
+    ' --- the source's duration, as FFmpeg will read it ---------------------------
+
+    ''' <summary>
+    ''' The source file's duration in ms - DecideEncode's expected duration (057.S09-1).
+    ''' 0 when the timing cannot be read honestly: the verdict then becomes
+    ''' EncodedUnverified (the video is placed, the original is KEPT) instead of
+    ''' comparing FFmpeg's output against a guess. Called at the START of the conversion,
+    ''' while the animation is still on screen.
+    ''' </summary>
+    Private Function SourceDurationMsAsFfmpegReadsIt(sourcePath As String) As Integer
+        Try
+            Select Case NavigationRules.ExtensionKey(sourcePath)
+                Case ".gif"
+                    ' For a real GIF the played animation IS the file - no transcode, no
+                    ' truncation - so its own centisecond delays plus FFmpeg's
+                    ' minimum-delay rule are the duration the encoder will be held to.
+                    Return VideoConvertPlan.GifDurationMsAsFfmpegReadsIt(PlayedGifFrameDelaysCs())
+                Case ".webp"
+                    ' The source's true millisecond delays, from the header - no decode.
+                    Dim info As SixLabors.ImageSharp.ImageInfo = SixLabors.ImageSharp.Image.Identify(sourcePath)
+                    If info Is Nothing OrElse info.FrameMetadataCollection Is Nothing OrElse
+                       info.FrameMetadataCollection.Count = 0 Then Return 0
+                    Dim total_Ms As Long = 0
+                    For Each frame_Meta In info.FrameMetadataCollection
+                        Dim webp_Meta = frame_Meta.GetFormatMetadata(SixLabors.ImageSharp.Formats.Webp.WebpFormat.Instance)
+                        If webp_Meta IsNot Nothing Then total_Ms += CLng(webp_Meta.FrameDelay)
+                    Next
+                    Return CInt(Math.Min(total_Ms, CLng(Integer.MaxValue)))
+                Case Else
+                    ' An APNG's num/den delays are not exposed without a full decode:
+                    ' unknown beats wrong.
+                    Return 0
+            End Select
+        Catch ex As Exception
+            AppFileLogger.WriteLine("Replace with video: the source duration could not be read: " & ex.Message)
+            Return 0
+        End Try
+    End Function
+
+    ''' <summary>The per-frame centisecond delays of the animation being played - for a
+    ''' real GIF source, the file's own values. Nothing when the property is missing or
+    ''' malformed, which the caller reports as "unknown".</summary>
+    Private Function PlayedGifFrameDelaysCs() As Integer()
+        Try
+            If gif_Restart_Image_Ref Is Nothing Then Return Nothing
+            Dim frame_Count As Integer = CurrentAnimationFrameCount()
+            If frame_Count <= 0 Then Return Nothing
+            Dim item As System.Drawing.Imaging.PropertyItem = gif_Restart_Image_Ref.GetPropertyItem(&H5100)
+            If item Is Nothing OrElse item.Value Is Nothing OrElse item.Len < frame_Count * 4 Then Return Nothing
+            Dim delays(frame_Count - 1) As Integer
+            For i As Integer = 0 To frame_Count - 1
+                delays(i) = BitConverter.ToInt32(item.Value, i * 4)
+            Next
+            Return delays
+        Catch
+            Return Nothing
         End Try
     End Function
 

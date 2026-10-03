@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Fast Media Sorter for Windows - the .NET 10 x64 mainline
+    Fast Media Sorter &amp; Sharing for Windows - the .NET 10 x64 mainline
     (SPECIFICATION_DOTNET10_MODERN_BUILD.md). Compiles the SAME sources as the
     frozen net48 project one directory up (two projects, one tree - epic §3);
     divergent subsystems switch on #If NETFRAMEWORK seams. Lives in its own
@@ -13,6 +13,7 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <PlatformTarget>x64</PlatformTarget>
+    <DocnetRuntime>win-x64</DocnetRuntime>
     <RootNamespace>fmsl</RootNamespace>
     <AssemblyName>FastMediaSorter_LITE</AssemblyName>
     <StartupObject>fmsl.My.MyApplication</StartupObject>
@@ -30,11 +31,9 @@
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
 
     <ApplicationIcon>..\..\assets\icons\Fast_Media_Sorter.ico</ApplicationIcon>
-    <!-- No ApplicationManifest on purpose: the shipped net48 exe never embedded
-         app.manifest either (it is only a <None> item there), so the reference
-         behavior is DPI-unaware - pinned in ApplyApplicationDefaults. Embedding
-         the manifest here would force PerMonitorV2 and shift the pixel-tuned
-         layout on >100% scaling (audit 2026-07-16). -->
+    <!-- DPI awareness is selected by ApplyApplicationDefaults (PerMonitorV2 after
+         the modern chrome migration). No manifest override: the x86 executable
+         retains its shipped DPI-unaware behavior independently. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 
     <!-- Everything is included explicitly below: the sources live OUTSIDE this
@@ -43,8 +42,8 @@
 
     <!-- Assembly metadata (the net48 project reads these from AssemblyInfo.vb,
          which is deliberately NOT linked here - the SDK generates the attributes). -->
-    <Product>Fast Media Sorter for Windows</Product>
-    <AssemblyTitle>Fast Media Sorter for Windows</AssemblyTitle>
+    <Product>Fast Media Sorter &amp; Sharing for Windows</Product>
+    <AssemblyTitle>Fast Media Sorter &amp; Sharing for Windows</AssemblyTitle>
     <Company>SZA</Company>
     <!-- Verbatim from the legacy AssemblyInfo.vb - keep the two exes' metadata
          identical (bump both together when the owner decides). -->
@@ -98,8 +97,7 @@
     <!-- The shared tree (one directory up). Divergent files compile to nothing
          here via whole-file #If NETFRAMEWORK blocks, so no per-file excludes
          beyond the sibling projects and the attribute files the SDK replaces. -->
-    <Compile Include="..\**\*.vb"
-             Exclude="..\Modern\**;..\FastMediaSorterCompanion\**;..\obj\**;..\bin\**;..\My Project\AssemblyInfo.vb;..\My Project\VersionInfo.vb" />
+    <Compile Include="..\**\*.vb" Exclude="..\Modern\**;..\FastMediaSorterCompanion\**;..\obj\**;..\bin\**;..\My Project\AssemblyInfo.vb;..\My Project\VersionInfo.vb" />
     <Compile Include="ModernAssemblyInfo.vb" />
   </ItemGroup>
 
@@ -145,6 +143,7 @@
          AVIF/HEIC/HEIF (phone photos) - with no OS codec involved (no Store
          "HEVC Video Extensions" needed). Its native dll publishes loose next to
          the exe, same as libvlc. -->
+    <PackageReference Include="Docnet.Core" Version="2.6.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     <PackageReference Include="Magick.NET-Q8-x64" Version="14.15.0" />
 
@@ -173,10 +172,11 @@
          nothing down per architecture next to the exe. MIT; the notice ships in
          THIRD-PARTY-NOTICES.txt (canon invariant 12). Modern only: the x86 project must
          NOT reference it - src/Secure is whole-file "#If Not NETFRAMEWORK" there. -->
-    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
 
-    <!-- DPAPI (DpapiSecrets): ProtectedData is inbox on net10.0-windows
-         (NU1510 flags the explicit package as redundant) - no PackageReference. -->
+    <!-- SSH.NET for SFTP resource provider (007_SPECIFICATION_REMOTE_RESOURCES_SFTP_SMB_DOTNET10.md).
+         MIT license; recorded in THIRD-PARTY-NOTICES.txt. Modern only. -->
+    <PackageReference Include="SSH.NET" Version="2026.0.0" />
   </ItemGroup>
 
 </Project>

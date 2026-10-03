@@ -1,0 +1,27 @@
+{"path":"*","pattern":"Lite\\.Tests","reason":"The frozen test project folder, project file and namespace (tests/Lite.Tests, Namespace Lite.Tests): an identifier every script path and linked source depends on, never visible text."}
+{"path":"tools/Test-ProductNaming.ps1","pattern":"LITE|Lite|for Windows","reason":"The check names the forbidden forms it searches for."}
+{"path":"tools/product-naming-allow.jsonl","pattern":".","reason":"The allow-list quotes the forms it permits."}
+{"path":"docs/guides/PRODUCT_NAMING.md","pattern":"LITE|Lite|for Windows","reason":"The standard defines the forbidden forms and the frozen identifiers that still carry them."}
+{"path":"CHANGELOG.md","pattern":"FastMediaSorter LITE|for Windows","reason":"Past entries are history, and the Unreleased entry names the old product and the frozen package name once."}
+{"path":"README.md","pattern":"FastMediaSorter LITE","reason":"States once that Add/Remove Programs and winget keep the frozen package name FastMediaSorter LITE."}
+{"path":"README_RU.md","pattern":"FastMediaSorter LITE","reason":"Same statement as README.md, in Russian."}
+{"path":"README_UK.md","pattern":"FastMediaSorter LITE","reason":"Same statement as README.md, in Ukrainian."}
+{"path":"CLAUDE.md","pattern":"FastMediaSorter LITE|\\bLite\\b|\\bLITE\\b","reason":"The naming rule names the frozen package-name anchors and the forbidden word for coding agents."}
+{"path":"AGENTS.md","pattern":"FastMediaSorter LITE|\\bLite\\b|\\bLITE\\b","reason":"The Product naming pointer quotes the forbidden word for coding agents."}
+{"path":"publishing/installer/FastMediaSorter.iss","pattern":"FastMediaSorter LITE","reason":"Frozen Add/Remove Programs name (AppNameArp) and the pre-rename Start-menu group the installer must delete on upgrade (Q-1)."}
+{"path":"publishing/installer/FastMediaSorter.iss","pattern":"Fast Media Sorter for Windows","reason":"The previous Start-menu group and shortcut names, spelled only so [InstallDelete] can remove them on upgrade."}
+{"path":"publishing/installer/FastMediaSorterServer.iss","pattern":"Fast Media Sorter for Windows","reason":"The previous shared Start-menu group; the Server installer removes only its own entries from it."}
+{"path":"publishing/winget/SerZhyAle.FastMediaSorter.locale.en-US.yaml","pattern":"FastMediaSorter LITE","reason":"Frozen winget PackageName (it must match the Add/Remove Programs DisplayName for winget upgrade to correlate) and its comment (Q-1)."}
+{"path":"tools/Store-Prepublish-Checks.ps1","pattern":"FastMediaSorter LITE","reason":"The pre-publish check asserts the frozen winget PackageName."}
+{"path":"docs/guides/SERVER_EDITION_BUILD_AND_TEST.md","pattern":"FastMediaSorter LITE","reason":"A table row documenting the frozen Add/Remove Programs name of the User edition."}
+{"path":"docs/guides/STORE_PUBLISHING.md","pattern":"FastMediaSorter LITE","reason":"The IARC certificate record: the product title it was issued under."}
+{"path":"docs/guides/PROGRESS_DOTNET10_MODERN_BUILD.md","pattern":"\\bLITE\\b|\\bLite\\b","reason":"An engineering journal; one line quotes the old CLAUDE.md text as history."}
+{"path":"trust.html","pattern":"listed there as FastMediaSorter LITE","reason":"Describes the Add/Remove Programs and winget entry, whose frozen name is FastMediaSorter LITE (Q-1)."}
+{"path":"lang/*/trust.html","pattern":"FastMediaSorter LITE","reason":"The same sentence in the 12 translations; the frozen Add/Remove Programs and winget name stays Latin and identical in every language."}
+{"path":"tools/trust-copy.json","pattern":"FastMediaSorter LITE","reason":"Copy source of the trust-page sentences above, in the same 13-language form."}
+{"path":"glossary.html","pattern":"FastMediaSorter LITE","reason":"States that Add/Remove Programs and winget still show the earlier name, which is the frozen update-correlation string."}
+{"path":"publishing/msix/AppxManifest.xml","pattern":"FastMediaSorter LITE","reason":"The Store name is frozen (the reserved name is the update anchor); owner decision 2026-10-03: only the inscriptions change."}
+{"path":"publishing/msix/README.md","pattern":"FastMediaSorter LITE","reason":"Documents the frozen reserved Store name and the Partner Center step for it."}
+{"path":"publishing/store/listingData.csv","pattern":"FastMediaSorter LITE","reason":"The frozen Store listing title and the true 'published as' sentence in the descriptions."}
+{"path":"publishing/store/LOCALES.md","pattern":"FastMediaSorter LITE","reason":"Documents the frozen Store title and the 'published as' sentence."}
+{"path":"src/ProductNames.vb","pattern":"FastMediaSorter LITE","reason":"The comment says which channels keep the frozen name."}

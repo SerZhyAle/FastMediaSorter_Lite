@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    The single elevated, auditable helper for the Fast Media Sorter Server edition
+    The single elevated, auditable helper for the Fast Media Sorter & Sharing: Folder Share Server edition
     (SPECIFICATION_SHARE_SYSTEM_SERVICE.md §3.2, §3.3, §3.4, §4.3).
 
 .DESCRIPTION
@@ -22,14 +22,31 @@
         and a pre-existing LOCAL SERVICE grant is left alone on revoke.
 
     Exit code 0 = success. Any non-zero code is surfaced by the caller as a failure;
-    the reason is appended to <DataDir>\install-share-service.log - or, when that
-    directory cannot be trusted, to install-share-service.log in the elevated
-    account's own %TEMP%. The codes: 1 unexpected error, 2 missing argument or
-    worker, 3 service did not start, 4 an ACL could not be set, 5 not elevated,
-    6 state did not validate, 7 host-key mismatch, 8 firewall, 9 service not
-    installed, 10 several identities, 11 the state directory (or bin) cannot be
-    trusted, 12 some requested folders were not granted, 13 the service account is
-    not LOCAL SERVICE, 14 the old registration is still marked for deletion.
+    the log is appended to <DataDir>\install-share-service.log - or, when that
+    directory is missing or cannot be trusted, to install-share-service.log in the
+    elevated account's own %TEMP% - and that fallback copy is written on SUCCESS too,
+    so a run whose log never opened is still on record. The codes: 1 unexpected
+    error, 2 missing argument or worker, 3 service did not start, 4 an ACL could not
+    be set, 5 not elevated, 6 state did not validate, 7 host-key mismatch, 8
+    firewall, 9 service not installed, 10 several identities, 11 the state
+    directory (or bin) cannot be trusted, 12 some requested folders were not
+    granted, 13 the service account is not LOCAL SERVICE, 14 the old registration
+    is still marked for deletion, 15 the grant ledger cannot be read, 16 another run of
+    this helper holds the state lock (nothing was changed), 17 the grants this run made
+    could not be recorded (they were taken back, or - if that failed too - named in a
+    protected recovery file beside the ledger), 18 the intent record that precedes every
+    grant could not be written (nothing was granted).
+
+    A grant is written ahead: before the first ACE changes, the changes about to be made are
+    recorded in a protected granted-roots.intent-<guid>.json beside the ledger, and dropped once
+    the ledger is published. A run that is killed in between leaves that file; the next grant or
+    remove settles it (takes back what the ledger does not record, or names it in a recovery
+    file). An intent record that is not in the locked form is never acted on or deleted.
+
+    "remove" (and "migrate-to-user") exit 0 once the service is gone, but a revoke that could
+    not be complete - an unreadable ledger, a recovery file, an icacls failure - is never
+    reported as complete: the ledger and recovery files are kept untouched, a WARNING line
+    names each cause, and the closing line says "completed WITH WARNINGS".
 
 .PARAMETER Action
     install | repair | remove | start | stop | migrate-to-server | migrate-to-user |
@@ -43,6 +60,11 @@ param(
 
     # Absolute path of companion\fms-share-worker.exe in the installed folder.
     [string]$ExePath,
+
+    # The application installation folder (the one holding companion\ and filedo\). The service
+    # is registered with it as --filedo-root. Omitted: derived from -ExePath, which is always
+    # <app>\companion\fms-share-worker.exe.
+    [string]$FileDoRoot,
 
     # Machine state directory (%ProgramData%\FastMediaSorterCompanion).
     [string]$DataDir,
@@ -75,8 +97,8 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $ServiceName    = 'FastMediaSorterCompanionSFTP'
-$ServiceDisplay = 'Fast Media Sorter Folder Share'
-$ServiceDesc    = 'Serves the folders you selected in Fast Media Sorter over SFTP, so an Android phone can reach them even when nobody is signed in.'
+$ServiceDisplay = 'Fast Media Sorter & Sharing: Folder Share Server'
+$ServiceDesc    = 'Serves the folders you selected in Fast Media Sorter & Sharing over SFTP, so an Android phone can reach them even when nobody is signed in.'
 $FirewallRule   = 'FastMediaSorter Companion SFTP'
 $LedgerName     = 'granted-roots.json'
 
@@ -132,10 +154,16 @@ function Get-FallbackLogPath {
 
 function Write-PendingLog([string]$path) {
     if (-not $path -or $script:PendingLog.Count -eq 0) { return }
-    try { Add-Content -LiteralPath $path -Value $script:PendingLog.ToArray() -Encoding UTF8 } catch { }
-    $script:PendingLog.Clear()
+    # Cleared ONLY after the append took. A failed append keeps the lines (the next place that
+    # can take them gets them) and says so on the console - a visible secondary diagnostic that
+    # does not go through the log it is about, so it cannot recurse (ticket 102 I02.1).
+    try {
+        Add-Content -LiteralPath $path -Value $script:PendingLog.ToArray() -Encoding UTF8
+        $script:PendingLog.Clear()
+    } catch {
+        Write-Warning ("the helper's log could not be written to '{0}' ({1}); {2} line(s) kept in memory" -f $path, $_.Exception.Message, $script:PendingLog.Count)
+    }
 }
-
 # Opens the log inside the state directory - ONLY after that directory was verified
 # (Assert-TrustedDirectory / Initialize-MachineDataDir), and never by creating it. It used
 # to create %ProgramData%\FastMediaSorterCompanion right here, before the elevation check
@@ -162,7 +190,16 @@ function Write-Log([string]$message) {
     $line = "{0} {1}" -f (Get-Date).ToUniversalTime().ToString('s'), $message
     Write-Host $line
     if ($script:LogPath) {
-        try { Add-Content -LiteralPath $script:LogPath -Value $line -Encoding UTF8 } catch { }
+        try {
+            Add-Content -LiteralPath $script:LogPath -Value $line -Encoding UTF8
+        } catch {
+            # Never a silent loss (ticket 102 I02.1): this line and every later one are kept for the
+            # fallback copy the exit path writes, and the console says where the log stopped. The
+            # warning does not go through Write-Log, so it cannot recurse.
+            Write-Warning ("the helper's log '{0}' stopped taking lines ({1}); the rest goes to the fallback log" -f $script:LogPath, $_.Exception.Message)
+            $script:LogPath = $null
+            $script:PendingLog.Add($line)
+        }
     } else {
         $script:PendingLog.Add($line)
     }
@@ -529,9 +566,31 @@ function Remove-ServiceBinaries {
     }
 }
 
+# The root the service's worker looks for the bundled FileDO (<root>\filedo\) in. Without
+# --filedo-root the worker uses the grandparent of its own executable, and the service runs
+# the copy staged under %ProgramData%, so that default is the machine state directory's
+# parent - not under Program Files, which the bundle check refuses for a service (disk sharing
+# then reports "service FileDO must be inside its Program Files installation").
+# Order: an explicit -FileDoRoot; the installation derived from -ExePath; when this run was
+# started FROM the staged copy (no installation to derive from) the root the existing
+# registration already names; otherwise '' - never a guess.
+function Get-FileDoRoot {
+    if ($FileDoRoot) { return $FileDoRoot.TrimEnd('\') }
+    if ($ExePath) {
+        $staged = Get-StagedExePath
+        if (-not $staged -or ([IO.Path]::GetFullPath($ExePath) -ine [IO.Path]::GetFullPath($staged))) {
+            return (Split-Path -Parent (Split-Path -Parent $ExePath)).TrimEnd('\')
+        }
+    }
+    if ((Get-ServiceRegistryValue 'ImagePath') -match '--filedo-root\s+"([^"]+)"') { return $Matches[1] }
+    return ''
+}
+
 function Get-ServiceBinPath {
     $binPath = '"{0}" --service --datadir "{1}"' -f $script:ServiceExePath, $DataDir
     if ($ManageSid) { $binPath += ' --manage-sid "{0}"' -f $ManageSid }
+    $root = Get-FileDoRoot
+    if ($root) { $binPath += ' --filedo-root "{0}"' -f $root }
     return $binPath
 }
 
@@ -784,12 +843,12 @@ function Get-StateInfo([string]$dir) {
 # user profiles are scanned. Several candidates is a deliberate stop rather than a
 # guess: picking the wrong one would migrate the wrong identity and silently unpair
 # every phone that trusted the right one.
-function Resolve-UserDataDir([string]$hint) {
+function Resolve-UserDataDir([string]$hint, [string]$UsersRoot = '') {
     if ($hint -and (Test-Path -LiteralPath (Join-Path $hint 'hostkey'))) { return $hint }
 
-    $usersRoot = Join-Path $env:SystemDrive 'Users'
-    if (-not (Test-Path -LiteralPath $usersRoot)) { return $hint }
-    $found = @(Get-ChildItem -LiteralPath $usersRoot -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+    $users = if ($UsersRoot) { $UsersRoot } else { Join-Path $env:SystemDrive 'Users' }
+    if (-not (Test-Path -LiteralPath $users)) { return $hint }
+    $found = @(Get-ChildItem -LiteralPath $users -Directory -ErrorAction SilentlyContinue | ForEach-Object {
         $candidate = Join-Path $_.FullName 'AppData\Local\FastMediaSorterCompanion'
         if (Test-Path -LiteralPath (Join-Path $candidate 'hostkey')) { $candidate }
     })
@@ -876,10 +935,34 @@ function ConvertFrom-JsonList([string]$text) {
     foreach ($item in ($text | ConvertFrom-Json)) { $item }
 }
 
+# @() only when there is no ledger. A ledger that EXISTS but cannot be read or parsed
+# THROWS: an unreadable ledger is the one record of what an administrator approved, and
+# a caller that took it for empty would then write over it (ticket 057.S24-2). Every
+# caller decides what an unreadable ledger means for it - abort, warn, keep the file.
+# A file holding no JSON at all counts as unreadable too: only Save-Ledger writes here,
+# and it never writes less than one JSON array.
 function Get-Ledger {
     $path = Join-Path $DataDir $LedgerName
     if (-not (Test-Path -LiteralPath $path)) { return @() }
-    try { return @(ConvertFrom-JsonList (Get-Content -LiteralPath $path -Raw)) } catch { return @() }
+    $raw = Get-Content -LiteralPath $path -Raw
+    if (-not $raw -or -not $raw.Trim()) { throw "the file holds no JSON at all" }
+    # Save-Ledger only ever writes an array; a lone object is somebody else's file, not history.
+    if (-not $raw.TrimStart([char]0xFEFF, ' ', "`t", "`r", "`n").StartsWith('[')) { throw "the file is not a JSON array" }
+    $entries = @(ConvertFrom-JsonList $raw)
+    # Shape, not just syntax: a partly malformed array is never taken for valid history. A valid
+    # empty array "[]" is a ledger with nothing in it; an empty FILE (above) is corrupt.
+    $index = 0
+    foreach ($entry in $entries) {
+        $index++
+        if ($null -eq $entry -or $entry -isnot [System.Management.Automation.PSCustomObject]) { throw "entry $index is not an object" }
+        $pathProp = $entry.PSObject.Properties['path']
+        if (-not $pathProp -or $pathProp.Value -isnot [string] -or -not $pathProp.Value.Trim()) { throw "entry $index has no 'path'" }
+        $rightsProp = $entry.PSObject.Properties['rights']
+        if ($rightsProp -and @('RX', 'M') -notcontains [string]$rightsProp.Value) { throw "entry $index has an unknown 'rights' value '$($rightsProp.Value)'" }
+        $preProp = $entry.PSObject.Properties['preExisting']
+        if ($preProp -and $preProp.Value -isnot [bool]) { throw "entry $index has a non-boolean 'preExisting'" }
+    }
+    return $entries
 }
 
 # The ledger is the one record of what an ADMINISTRATOR approved, and the state
@@ -887,14 +970,9 @@ function Get-Ledger {
 # written with an ACL of its own that only SYSTEM and Administrators can change, created
 # with it (no moment in which it inherits the management user's Modify), and read back
 # for a re-grant only while it still has that ACL (ticket 054 H-09).
-function Save-Ledger($entries) {
-    $path = Join-Path $DataDir $LedgerName
-    # Written fresh, never rewritten: a file someone else created keeps its owner - and
-    # any handle they hold on it - through a rewrite.
-    if ($null -ne (Get-RawAttributes $path)) { Remove-LinkOnly $path }
-    $text = ConvertTo-Json -InputObject @($entries) -Depth 4
-    $bytes = (New-Object System.Text.UTF8Encoding($false)).GetBytes([string]$text)
-
+# Creates $path exclusively with the locked ACL (only SYSTEM and Administrators), already in place
+# at creation - no moment in which it inherits the management user's Modify - and writes $bytes.
+function Write-LockedFile([string]$path, [byte[]]$bytes) {
     $sec = New-Object System.Security.AccessControl.FileSecurity
     $sec.SetOwner((New-Object System.Security.Principal.SecurityIdentifier($SidAdmins)))
     $sec.SetAccessRuleProtection($true, $false)
@@ -904,8 +982,7 @@ function Save-Ledger($entries) {
             [System.Security.AccessControl.FileSystemRights]::FullControl,
             [System.Security.AccessControl.AccessControlType]::Allow)))
     }
-    # CreateNew: if something appeared at the path in between, this fails instead of
-    # writing into it.
+    if ($null -ne (Get-RawAttributes $path)) { Remove-LinkOnly $path }
     if ($script:IsDesktopEdition) {
         $stream = New-Object System.IO.FileStream($path, [System.IO.FileMode]::CreateNew,
             [System.Security.AccessControl.FileSystemRights]::FullControl, [System.IO.FileShare]::None,
@@ -916,37 +993,110 @@ function Save-Ledger($entries) {
             [System.IO.FileShare]::None, 4096, [System.IO.FileOptions]::None, $sec)
     }
     try { $stream.Write($bytes, 0, $bytes.Length) } finally { $stream.Dispose() }
+    return $sec
 }
 
+# The ledger is the one record of what an ADMINISTRATOR approved, and the state
+# directory around it is writable by the management user by design - so the ledger is
+# written with an ACL of its own that only SYSTEM and Administrators can change, created
+# with it, and read back for a re-grant only while it still has that ACL (ticket 054 H-09).
+#
+# Publication is a transaction on names THIS call owns (ticket 102 I02): a unique temporary
+# and a unique backup, so two runs can never share one, and nothing here deletes a file it
+# did not create. The previous ledger survives every failure; the backup is dropped only
+# after the published file has been read back and its ACL verified.
+function Save-Ledger($entries) {
+    $path = Join-Path $DataDir $LedgerName
+    $token = [guid]::NewGuid().ToString('N')
+    $temp = "$path.tmp-$token"
+    $backup = "$path.bak-$token"
+    $text = ConvertTo-Json -InputObject @($entries) -Depth 4
+    $bytes = (New-Object System.Text.UTF8Encoding($false)).GetBytes([string]$text)
+
+    $sec = Write-LockedFile $temp $bytes
+    $published = $false
+    try {
+        # A link at the destination goes, never its target - and the move below then cannot
+        # follow it either.
+        if (Test-ReparsePoint $path) { Remove-LinkOnly $path }
+        if ($null -eq (Get-RawAttributes $path)) {
+            [System.IO.File]::Move($temp, $path)
+        } else {
+            # .NET Framework cannot pass a null backup name to File.Replace, so the replaced
+            # content goes to OUR backup name, kept until the result is verified.
+            [System.IO.File]::Replace($temp, $path, $backup)
+            # The swap keeps the REPLACED file's descriptor and drops the temporary's own,
+            # so the locked one is re-applied: whatever stood at the path, the ledger must
+            # carry its final ACL from this moment on.
+            if ($script:IsDesktopEdition) {
+                (New-Object System.IO.FileInfo($path)).SetAccessControl($sec)
+            } else {
+                [System.IO.FileSystemAclExtensions]::SetAccessControl((New-Object System.IO.FileInfo($path)), $sec)
+            }
+        }
+        $published = $true
+
+        $problem = Get-LedgerLockProblem $path
+        if ($problem) { throw "the published ledger failed verification: $problem" }
+        $readBack = @(Get-Ledger)
+        if ($readBack.Count -ne @($entries).Count) { throw "the published ledger does not read back with its $(@($entries).Count) entries" }
+    } catch {
+        # Nothing is deleted on a failed verification. A temporary that was never published is
+        # ours to remove; a published file that failed its check is swapped back for the previous
+        # ledger (kept in the backup), and the rejected one stays beside it as evidence.
+        if (-not $published -and $null -ne (Get-RawAttributes $temp)) { Remove-LinkOnly $temp }
+        if ($published -and $null -ne (Get-RawAttributes $backup)) {
+            try {
+                [System.IO.File]::Replace($backup, $path, "$path.rejected-$token")
+                Write-Log "the previous ledger was put back; the rejected one is kept as '$path.rejected-$token'"
+            } catch {
+                Write-Log "the previous ledger is kept as '$backup'"
+            }
+        } elseif ($null -ne (Get-RawAttributes $backup)) {
+            Write-Log "the previous ledger is kept as '$backup'"
+        }
+        throw
+    }
+    # Verified: the backup (ours) goes.
+    if ($null -ne (Get-RawAttributes $backup)) { Remove-LinkOnly $backup }
+}
+
+# '' when the ledger at $path is in the locked form Save-Ledger writes, otherwise why not.
+function Get-LedgerLockProblem([string]$path) {
+    $attr = Get-RawAttributes $path
+    if ($null -eq $attr) { return 'it does not exist' }
+    if ($attr -band [System.IO.FileAttributes]::ReparsePoint) { return 'it is a link' }
+    try {
+        $acl = Get-Acl -LiteralPath $path
+        if ($acl.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $SidAdmins) { return 'it is not owned by Administrators' }
+        if (-not $acl.AreAccessRulesProtected) { return 'it inherits the state directory''s write access' }
+        foreach ($rule in $acl.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier])) {
+            if (@($SidSystem, $SidAdmins) -notcontains $rule.IdentityReference.Value) { return "it carries an entry for '$(Get-SidDisplay $rule.IdentityReference.Value)'" }
+        }
+    } catch { return "its ACL cannot be read: $($_.Exception.Message)" }
+    return ''
+}
 # The ledger entries an administrator approved - or nothing, when the ledger is not in the
 # locked form Save-Ledger writes (written by an older version, or changed by someone
 # else). Used to decide what may be RE-granted without showing anyone a list; revoking
 # still reads the plain ledger, since removing a grant can never widen access.
 function Get-ApprovedLedger {
     $path = Join-Path $DataDir $LedgerName
-    $attr = Get-RawAttributes $path
-    if ($null -eq $attr) { return @() }
-    $why = ''
-    if ($attr -band [System.IO.FileAttributes]::ReparsePoint) { $why = 'it is a link' }
-    else {
-        try {
-            $acl = Get-Acl -LiteralPath $path
-            if ($acl.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $SidAdmins) { $why = 'it is not owned by Administrators' }
-            elseif (-not $acl.AreAccessRulesProtected) { $why = 'it inherits the state directory''s write access' }
-            else {
-                foreach ($rule in $acl.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier])) {
-                    if (@($SidSystem, $SidAdmins) -notcontains $rule.IdentityReference.Value) { $why = "it carries an entry for '$(Get-SidDisplay $rule.IdentityReference.Value)'" }
-                }
-            }
-        } catch { $why = "its ACL cannot be read: $($_.Exception.Message)" }
-    }
+    if ($null -eq (Get-RawAttributes $path)) { return @() }
+    $why = Get-LedgerLockProblem $path
     if ($why) {
         Write-Log "the grant ledger is not used to re-grant anything: $why"
         return @()
     }
-    return @(Get-Ledger)
+    try {
+        return @(Get-Ledger)
+    } catch {
+        # Fails closed: nothing is re-granted from a ledger that cannot be parsed, and
+        # this decision path rewrites nothing.
+        Write-Log "the grant ledger is not used to re-grant anything: it cannot be read ($($_.Exception.Message))"
+        return @()
+    }
 }
-
 # Did LOCAL SERVICE already have an explicit grant here before we arrived?
 #
 # Compared by SID, never by the printed account name: icacls resolves the name through
@@ -1023,13 +1173,29 @@ function Get-GrantRefusal([string]$folder) {
 # with every folder skipped, and the app said "Done." over a row that stayed red.
 $script:GrantShortfall = 0
 
+# Set by Revoke-Roots when a recorded grant is - or may still be - on a folder after it ran
+# (unreadable ledger, a recovery file, a failed icacls). The action still exits 0 - the service
+# IS gone - but its closing lines must never read as a complete revoke (ticket 102 I02.3).
+$script:RevokeIncomplete = $false
+
 # Grants (OI)(CI)(RX) to LOCAL SERVICE on each folder and records exactly what was
 # added. Never recursive-rewrites an ACL and never touches an existing administrator
 # grant: it only ADDS one ACE, and the ledger remembers whether it had to.
 function Grant-Roots([string[]]$folders, [string[]]$readOnlyFolders, [bool]$rightsKnown) {
     Assert-DataDir
     $script:GrantShortfall = 0
-    $ledger = @(Get-Ledger)
+    try {
+        $ledger = @(Get-Ledger)
+    } catch {
+        # Saving would persist ONLY this run's entries over a ledger that could not be
+        # read: the record of every folder an administrator approved would be dropped
+        # while its ACEs stay on the folders (ticket 057.S24-2). Nothing is granted.
+        Fail ("the grant ledger '{0}' cannot be read ({1}) - the record of the approved folders is not replaced by this run's list alone. Nothing was granted and the file is left as it is; fix it by hand, or delete it to start a new record, then grant again." -f (Join-Path $DataDir $LedgerName), $_.Exception.Message) 15
+    }
+    # Intent records an earlier, killed run left behind are settled BEFORE this run changes anything.
+    [void](Resolve-StaleGrantIntents $ledger)
+    $plan = New-Object System.Collections.Generic.List[object]
+    $intents = New-Object System.Collections.Generic.List[string]
     $readOnlySet = @{}
     foreach ($ro in @($readOnlyFolders)) {
         if ($ro) { $readOnlySet[$ro.TrimEnd('\')] = $true }
@@ -1038,6 +1204,9 @@ function Grant-Roots([string[]]$folders, [string[]]$readOnlyFolders, [bool]$righ
     # level down a branch - a subfolder must never end up with more access than the
     # shared folder it sits under.
     $granted = @{}
+    # Every ACE change THIS run made, with what it replaced - so a ledger that cannot be written
+    # does not leave grants on the folders that no record names (ticket 102 I02.6).
+    $applied = New-Object System.Collections.Generic.List[object]
     foreach ($folder in $folders) {
         if (-not $folder) { continue }
         if ($folder -like '\\*') {
@@ -1081,17 +1250,27 @@ function Grant-Roots([string[]]$folders, [string[]]$readOnlyFolders, [bool]$righ
             Write-Log "re-granting '$folder': $had -> $rights"
         }
 
+        if (@($plan | Where-Object { $_.path -eq $folder }).Count -gt 0) { continue }   # listed twice
         $preExisting = if ($existing) { [bool]$existing.preExisting } else { Test-LocalServiceAce $folder }
-        Write-Log ("granting LOCAL SERVICE {0} access on '{1}'" -f $(if ($rights -eq 'M') { 'read/write' } else { 'read' }), $folder)
-        & icacls.exe $folder /grant ('*{0}:(OI)(CI)({1})' -f $SidLocalService, $rights) | Out-Null
+        $plan.Add([pscustomobject]@{ path = $folder; rights = $rights; previousRights = $(if ($existing) { $had } else { $null }); preExisting = [bool]$preExisting })
+    }
+
+    # Decided first, written down second, applied third: the intent record names every ACE change
+    # BEFORE the first one is made, so a run that is killed between an ACL change and the ledger
+    # publication leaves protected evidence of exactly what it was about to change (ticket 102).
+    if ($plan.Count -gt 0) { $intents.Add((Write-GrantIntent $plan)) }
+    foreach ($item in $plan) {
+        Write-Log ("granting LOCAL SERVICE {0} access on '{1}'" -f $(if ($item.rights -eq 'M') { 'read/write' } else { 'read' }), $item.path)
+        & icacls.exe $item.path /grant ('*{0}:(OI)(CI)({1})' -f $SidLocalService, $item.rights) | Out-Null
         if ($LASTEXITCODE -ne 0) {
-            Write-Log "WARNING: icacls failed on '$folder' (exit $LASTEXITCODE)"
+            Write-Log "WARNING: icacls failed on '$($item.path)' (exit $LASTEXITCODE)"
             $script:GrantShortfall++
             continue
         }
-        $ledger = @($ledger | Where-Object { $_.path -ne $folder })
-        $ledger += [pscustomobject]@{ path = $folder; sid = $SidLocalService; rights = $rights; preExisting = [bool]$preExisting }
-        $granted[$folder] = $rights
+        $applied.Add([pscustomobject]@{ path = $item.path; previousRights = $item.previousRights; preExisting = $item.preExisting })
+        $ledger = @($ledger | Where-Object { $_.path -ne $item.path })
+        $ledger += [pscustomobject]@{ path = $item.path; sid = $SidLocalService; rights = $item.rights; preExisting = $item.preExisting }
+        $granted[$item.path] = $item.rights
     }
 
     # Second pass: the grant above is (OI)(CI), and inheritance is exactly what a
@@ -1105,22 +1284,170 @@ function Grant-Roots([string[]]$folders, [string[]]$readOnlyFolders, [bool]$righ
     # whole tree below them was being served through the Everyone ACE in that copy. The
     # day a tool created a folder without Everyone, it went dark - and re-enabling
     # inheritance on it, the obvious repair, only ever restored Everyone again.
+    $breakPlan = New-Object System.Collections.Generic.List[object]
     foreach ($entry in $granted.GetEnumerator()) {
         foreach ($break in (Get-InheritanceBreaks $entry.Key)) {
             if ($granted.ContainsKey($break)) { continue }
+            if (@($breakPlan | Where-Object { $_.path -eq $break }).Count -gt 0) { continue }
             if (Test-LocalServiceAce $break) { continue }   # already has its own ACE
-            Write-Log ("granting LOCAL SERVICE {0} access on inheritance break '{1}'" -f $(if ($entry.Value -eq 'M') { 'read/write' } else { 'read' }), $break)
-            & icacls.exe $break /grant ('*{0}:(OI)(CI)({1})' -f $SidLocalService, $entry.Value) | Out-Null
-            if ($LASTEXITCODE -ne 0) {
-                Write-Log "WARNING: icacls failed on '$break' (exit $LASTEXITCODE)"
-                continue
-            }
-            $ledger = @($ledger | Where-Object { $_.path -ne $break })
-            $ledger += [pscustomobject]@{ path = $break; sid = $SidLocalService; rights = $entry.Value; preExisting = $false }
+            $breakPlan.Add([pscustomobject]@{ path = $break; rights = $entry.Value; previousRights = $null; preExisting = $false })
         }
     }
+    if ($breakPlan.Count -gt 0) { $intents.Add((Write-GrantIntent $breakPlan)) }
+    foreach ($item in $breakPlan) {
+        Write-Log ("granting LOCAL SERVICE {0} access on inheritance break '{1}'" -f $(if ($item.rights -eq 'M') { 'read/write' } else { 'read' }), $item.path)
+        & icacls.exe $item.path /grant ('*{0}:(OI)(CI)({1})' -f $SidLocalService, $item.rights) | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Log "WARNING: icacls failed on '$($item.path)' (exit $LASTEXITCODE)"
+            continue
+        }
+        $applied.Add([pscustomobject]@{ path = $item.path; previousRights = $null; preExisting = $false })
+        $ledger = @($ledger | Where-Object { $_.path -ne $item.path })
+        $ledger += [pscustomobject]@{ path = $item.path; sid = $SidLocalService; rights = $item.rights; preExisting = $false }
+    }
 
-    Save-Ledger $ledger
+    try {
+        Save-Ledger $ledger
+    } catch {
+        $why = $_.Exception.Message
+        Write-Log "WARNING: the grant ledger could not be written ($why) - taking back the $($applied.Count) grant(s) this run made"
+        $unresolved = @(Undo-AppliedGrants $applied)
+        if ($unresolved.Count -gt 0) {
+            # The recovery file is written BEFORE the intent records go: if writing it throws, the
+            # intent records are still there to name the grants.
+            $evidence = Write-GrantRecovery $unresolved
+            Remove-GrantIntents $intents
+            Fail ("the grants made by this run could not be recorded ({0}) and {1} of them could not be taken back; they are named in '{2}' - remove them by hand or run 'remove'." -f $why, $unresolved.Count, $evidence) 17
+        }
+        Remove-GrantIntents $intents
+        Fail ("the grants made by this run could not be recorded ({0}); they were taken back, so nothing changed." -f $why) 17
+    }
+    # Published and verified: the ledger now says what the intent records said, and they have done their job.
+    Remove-GrantIntents $intents
+}
+
+# The write-ahead half of a grant (ticket 102): BEFORE any ACE is changed, the changes this run is
+# about to make are written to a protected file of their own - what is granted, at which level, what
+# the level was, and whether LOCAL SERVICE already held a grant. The ledger alone cannot cover a
+# process that is killed between the first icacls call and the ledger publication: the ACEs are on
+# the folders and no record names them. An intent record that is still on disk at the start of the
+# next run IS that record (Resolve-StaleGrantIntents). Same locked form as the ledger, a name of its
+# own, never shared between runs. Returns the path. Nothing is granted when it cannot be written.
+function Write-GrantIntent($items) {
+    $intent = Join-Path $DataDir ("granted-roots.intent-{0}.json" -f [guid]::NewGuid().ToString('N'))
+    try {
+        $text = ConvertTo-Json -InputObject @($items | ForEach-Object {
+            [pscustomobject]@{ path = $_.path; sid = $SidLocalService; rights = $_.rights; previousRights = $_.previousRights; preExisting = [bool]$_.preExisting }
+        }) -Depth 4
+        [void](Write-LockedFile $intent ((New-Object System.Text.UTF8Encoding($false)).GetBytes([string]$text)))
+    } catch {
+        Fail ("the intent record of the grants could not be written ({0}) - nothing was granted." -f $_.Exception.Message) 18
+    }
+    Write-Log "grant intent recorded in '$intent'"
+    return $intent
+}
+
+# Drops the intent records THIS run created - never one it did not write.
+function Remove-GrantIntents($paths) {
+    foreach ($p in @($paths)) {
+        if (-not $p) { continue }
+        try { Remove-LinkOnly $p } catch { Write-Log "WARNING: the intent record '$p' could not be deleted ($($_.Exception.Message)); the next run reads it and finds nothing left to do" }
+    }
+}
+
+# Settles the intent records a run LEFT BEHIND - one that was killed, or lost power, after it began
+# changing ACEs. Called with the state lock held (no live run can own a record) and with the ledger
+# already read, from Grant-Roots and Revoke-Roots. For every record in the locked form:
+#   * an entry the ledger already records at the intended level was published - nothing to do;
+#   * any other entry is a change the dead run may have made and nothing names: it is taken back
+#     (an added grant removed, a changed level restored, a pre-existing grant left alone), the same
+#     reversal a failed publication gets;
+#   * what cannot be taken back is named in a protected recovery file, which Revoke-Roots always
+#     surfaces, and the record is then dropped.
+# A record that is not in the locked form, or cannot be parsed, is somebody else's file or damaged
+# evidence: it is NEVER acted on and NEVER deleted - a WARNING names it. Returns $true when
+# something is left that an administrator has to look at.
+function Resolve-StaleGrantIntents($ledger) {
+    $attention = $false
+    if (-not $DataDir -or -not (Test-Path -LiteralPath $DataDir)) { return $false }
+    foreach ($file in @(Get-ChildItem -LiteralPath $DataDir -Filter 'granted-roots.intent-*.json' -Force -ErrorAction SilentlyContinue)) {
+        $problem = Get-LedgerLockProblem $file.FullName
+        if ($problem) {
+            Write-Log "WARNING: '$($file.FullName)' looks like a grant intent record but $problem, so it is not acted on and is kept - check it by hand."
+            $attention = $true
+            continue
+        }
+        $items = @()
+        try {
+            $items = @(ConvertFrom-JsonList (Get-Content -LiteralPath $file.FullName -Raw))
+            foreach ($item in $items) {
+                if ($item -isnot [System.Management.Automation.PSCustomObject] -or $item.path -isnot [string] -or -not $item.path.Trim()) { throw 'an entry has no path' }
+            }
+        } catch {
+            Write-Log "WARNING: the grant intent record '$($file.FullName)' cannot be read ($($_.Exception.Message)); it is not acted on and is kept - check it by hand."
+            $attention = $true
+            continue
+        }
+        Write-Log "an earlier run ended before it recorded its grants; settling '$($file.FullName)'"
+        $open = New-Object System.Collections.Generic.List[object]
+        foreach ($item in $items) {
+            $wanted = if ($item.PSObject.Properties['rights'] -and $item.rights) { [string]$item.rights } else { 'RX' }
+            $recorded = @($ledger | Where-Object {
+                $_.path -eq $item.path -and $(if ($_.PSObject.Properties['rights'] -and $_.rights) { [string]$_.rights } else { 'RX' }) -eq $wanted
+            })
+            if ($recorded.Count -gt 0) { continue }
+            if (-not (Test-Path -LiteralPath $item.path)) {
+                Write-Log "the folder '$($item.path)' of that run is gone - nothing to take back"
+                continue
+            }
+            $open.Add([pscustomobject]@{ path = [string]$item.path; previousRights = $(if ($item.PSObject.Properties['previousRights'] -and $item.previousRights) { [string]$item.previousRights } else { $null }); preExisting = [bool]$item.preExisting })
+        }
+        $unresolved = @()
+        if ($open.Count -gt 0) {
+            Write-Log "taking back $($open.Count) grant(s) the earlier run may have made without recording them"
+            $unresolved = @(Undo-AppliedGrants $open)
+        }
+        if ($unresolved.Count -gt 0) {
+            $evidence = Write-GrantRecovery $unresolved
+            Write-Log "WARNING: $($unresolved.Count) grant(s) of the earlier run could not be taken back; they are named in '$evidence'"
+            $attention = $true
+        }
+        # Written to the recovery file or taken back: the record has said everything it can.
+        Remove-GrantIntents @($file.FullName)
+    }
+    return $attention
+}
+
+# Reverts only what THIS run changed: a grant it ADDED is removed, a level it CHANGED is put back,
+# and a pre-existing grant it merely recorded is never touched. Returns the entries it could not
+# revert. Existing ancestor grants are not this run's, so they are not here.
+function Undo-AppliedGrants($applied) {
+    $unresolved = New-Object System.Collections.Generic.List[object]
+    foreach ($a in $applied) {
+        try {
+            if ($a.previousRights) {
+                & icacls.exe $a.path /grant:r ('*{0}:(OI)(CI)({1})' -f $SidLocalService, $a.previousRights) | Out-Null
+            } elseif (-not $a.preExisting) {
+                & icacls.exe $a.path /remove:g ('*{0}' -f $SidLocalService) | Out-Null
+            } else {
+                continue
+            }
+            if ($LASTEXITCODE -ne 0) { $unresolved.Add($a) }
+        } catch {
+            $unresolved.Add($a)
+        }
+    }
+    return $unresolved.ToArray()
+}
+
+# The protected record of grants that are on folders but in no ledger: same locked ACL, a name
+# of its own, never replaced or deleted by this script. Returns its path.
+function Write-GrantRecovery($entries) {
+    $evidence = Join-Path $DataDir ("granted-roots.recovery-{0}.json" -f [guid]::NewGuid().ToString('N'))
+    $text = ConvertTo-Json -InputObject @($entries | ForEach-Object { [pscustomobject]@{ path = $_.path; sid = $SidLocalService; note = 'granted by an interrupted run; not in the ledger' } }) -Depth 4
+    [void](Write-LockedFile $evidence ((New-Object System.Text.UTF8Encoding($false)).GetBytes([string]$text)))
+    Write-Log "recovery evidence written to '$evidence'"
+    return $evidence
 }
 
 # Maximum directories one deep pass will look at. A shared root can be a whole disk,
@@ -1267,7 +1594,27 @@ function Grant-StateRoots([string]$reason) {
 # way to strip Administrators from a system folder. System folders are never touched.
 function Revoke-Roots {
     if (-not $DataDir -or -not (Test-Path -LiteralPath $DataDir)) { return }
-    foreach ($entry in @(Get-Ledger)) {
+    $path = Join-Path $DataDir $LedgerName
+    # Evidence this script never deletes: a recovery file names grants that sit on folders but in
+    # no ledger, so a revoke that ignored it would read as complete when it was not.
+    foreach ($recovery in @(Get-ChildItem -LiteralPath $DataDir -Filter 'granted-roots.recovery-*.json' -Force -ErrorAction SilentlyContinue)) {
+        Write-Log "WARNING: '$($recovery.FullName)' names folder grants that are in no ledger; they are NOT revoked here and the file is kept - remove them by hand."
+        $script:RevokeIncomplete = $true
+    }
+    try {
+        $entries = @(Get-Ledger)
+    } catch {
+        # An unreadable ledger is the only record naming the roots whose ACEs the loop
+        # below revokes - deleting it would leave those grants on the folders with no
+        # record of them (ticket 057.S24-2). The file is kept, and nothing is revoked.
+        $script:RevokeIncomplete = $true
+        Write-Log "WARNING: the grant ledger '$path' cannot be read ($($_.Exception.Message)), so it is kept as it is and NO recorded grant is revoked. Fix the file by hand and remove again, or delete it once the shared folders have been checked."
+        return
+    }
+    # Grants a killed run made without recording them are taken back first (or named in a recovery file).
+    if (Resolve-StaleGrantIntents $entries) { $script:RevokeIncomplete = $true }
+    $failedRevokes = 0
+    foreach ($entry in $entries) {
         if (-not $entry.path) { continue }
         if ($entry.preExisting) {
             Write-Log "keeping the pre-existing LOCAL SERVICE grant on '$($entry.path)'"
@@ -1281,9 +1628,23 @@ function Revoke-Roots {
         }
         Write-Log "removing our LOCAL SERVICE grant on '$($entry.path)'"
         & icacls.exe $entry.path /remove:g ('*{0}' -f $SidLocalService) | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            $script:RevokeIncomplete = $true
+            $failedRevokes++
+            Write-Log "WARNING: icacls could not remove the LOCAL SERVICE grant on '$($entry.path)' (exit $LASTEXITCODE)"
+        }
     }
-    $path = Join-Path $DataDir $LedgerName
-    if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue }
+    if ($failedRevokes -gt 0) {
+        # The record of a grant that is still on a folder is not thrown away.
+        Write-Log "WARNING: $failedRevokes recorded grant(s) could not be revoked, so the ledger '$path' is kept; run remove again once they can be."
+        return
+    }
+    if (Test-Path -LiteralPath $path) {
+        try { Remove-Item -LiteralPath $path -Force -ErrorAction Stop } catch {
+            $script:RevokeIncomplete = $true
+            Write-Log "WARNING: the grant ledger '$path' could not be deleted ($($_.Exception.Message))"
+        }
+    }
 }
 
 # --- firewall -----------------------------------------------------------------
@@ -1319,6 +1680,41 @@ function Set-FirewallRule([bool]$enable) {
     Write-Log 'firewall rule in place'
 }
 
+# --- the state lock ------------------------------------------------------------
+
+# Two helpers on the same state directory would read the same ledger, grant on top of each
+# other and publish over each other's result - the later one silently dropping the first's
+# approved history (ticket 102 I02.5). Every action that can read or write the ledger takes
+# this machine-wide lock FIRST; waiting is bounded, and a run that cannot get it changes
+# nothing and says so (exit 16). Held by the process until it exits: Windows releases a named
+# mutex whose owner is gone, and the next waiter is told so (Abandoned) and logs it.
+$StateLockWaitMs = 10000
+$script:StateLock = $null
+
+function Get-StateLockName {
+    $normalized = ([System.IO.Path]::GetFullPath($DataDir)).TrimEnd('\').ToLowerInvariant()
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try { $hash = ($sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($normalized)) | ForEach-Object { $_.ToString('x2') }) -join '' } finally { $sha.Dispose() }
+    return 'Global\FastMediaSorterCompanionHelper-' + $hash.Substring(0, 24)
+}
+
+function Enter-StateLock {
+    if (-not $DataDir) { return }
+    $mutex = New-Object System.Threading.Mutex($false, (Get-StateLockName))
+    $acquired = $false
+    try {
+        $acquired = $mutex.WaitOne($StateLockWaitMs)
+    } catch [System.Threading.AbandonedMutexException] {
+        $acquired = $true
+        Write-Log 'the previous holder of the state lock ended without releasing it; taking it over'
+    }
+    if (-not $acquired) {
+        $mutex.Dispose()
+        Fail ("another run of this helper holds the state lock for '{0}' (waited {1} ms). Nothing was changed; run it again when the other one has finished." -f $DataDir, $StateLockWaitMs) 16
+    }
+    $script:StateLock = $mutex
+}
+
 # --- actions ------------------------------------------------------------------
 
 # Any terminating error from here on - a locked file under Copy-Item, New-Service,
@@ -1344,6 +1740,9 @@ if ($script:DataDirDistrust -and $Action -ne 'remove' -and $Action -ne 'stop') {
     Fail "the machine state directory refused: $script:DataDirDistrust" 11
 }
 if (-not $script:DataDirDistrust) { Initialize-Log }
+
+# Everything that can read or write the grant ledger is serialized per state directory.
+if ($Action -ne 'stop') { Enter-StateLock }
 
 switch ($Action) {
 
@@ -1404,7 +1803,11 @@ switch ($Action) {
         Remove-ServiceBinaries
         # The state directory is deliberately LEFT in place: it holds the identity the
         # phones pinned. Deleting it is a separate, explicit choice.
-        Write-Log "server role removed. State kept in '$DataDir' - delete it by hand only if you want the phones to re-pair."
+        if ($script:RevokeIncomplete) {
+            Write-Log "server role removed, but the folder grants made for it were NOT all revoked (see the WARNING lines above). State kept in '$DataDir'."
+        } else {
+            Write-Log "server role removed. State kept in '$DataDir' - delete it by hand only if you want the phones to re-pair."
+        }
     }
 
     'start' {
@@ -1534,5 +1937,14 @@ switch ($Action) {
     }
 }
 
-Write-Log "action=$Action completed"
+if ($script:RevokeIncomplete) {
+    Write-Log "action=$Action completed WITH WARNINGS: some recorded folder grants were not revoked"
+} else {
+    Write-Log "action=$Action completed"
+}
+# The same rule the trap keeps: when the log never opened - the state directory is
+# gone, so Initialize-Log bailed, or it stopped taking lines mid-run - the lines go to
+# the fallback copy instead of being discarded, and a SUCCESS is on record just like a
+# failure (ticket 057.S24-1).
+if (-not $script:LogPath) { Write-PendingLog (Get-FallbackLogPath) }
 exit 0

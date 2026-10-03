@@ -49,7 +49,7 @@ Namespace Streams
             Catch
             End Try
 
-            Console.Error.WriteLine("Fast Media Sorter: Stream catalog producer/validator is only supported on the 64-bit modern build (.NET 10).")
+            Console.Error.WriteLine(ProductNames.Compact & ": Stream catalog producer/validator is only supported on the 64-bit modern build (.NET 10).")
             Environment.ExitCode = 1
         End Sub
 #Else
@@ -149,7 +149,7 @@ Namespace Streams
                 End If
             End If
 
-            Console.WriteLine("Fast Media Sorter: Building stream catalog...")
+            Console.WriteLine(ProductNames.Compact & ": Building stream catalog...")
             Console.WriteLine("  Input:   " & inputPath)
             Console.WriteLine("  Archive: " & outputPath)
 
@@ -181,7 +181,7 @@ Namespace Streams
                 Return 2
             End If
 
-            Console.WriteLine("Fast Media Sorter: Validating stream catalog archive...")
+            Console.WriteLine(ProductNames.Compact & ": Validating stream catalog archive...")
             Console.WriteLine("  Archive: " & archivePath)
 
             Dim validation = StreamCatalogValidator.ValidateArchive(archivePath)
@@ -211,7 +211,7 @@ Namespace Streams
         End Function
 
         Private Sub PrintUsage()
-            Console.WriteLine("Fast Media Sorter - Stream Catalog Producer & Validator (" & StreamCatalogSchema.ContractTag & ")")
+            Console.WriteLine(ProductNames.Compact & " - Stream Catalog Producer & Validator (" & StreamCatalogSchema.ContractTag & ")")
             Console.WriteLine()
             Console.WriteLine("Usage:")
             Console.WriteLine("  FastMediaSorter_LITE.exe --build-stream-catalog <playlist.m3u|folder> [-o <stream-catalog.zip>] [--force]")

@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `OCR-EXCHANGE` |
-| **Version** | 1.0, record |
+| **Version** | 1.0, record - with the owner's correction addendum of 2026-10-02 (re-checked every section 10.6 value on 2026-09-29: all stand as written; no constant changed value) |
 | **Home** | `ocr-overlay/doc2html-ocr-positioning-exchange.md` in the shared contracts catalog |
 | **Role here** | this product owns the record |
 

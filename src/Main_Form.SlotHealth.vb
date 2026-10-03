@@ -4,6 +4,8 @@ Option Strict On
 Imports System.Collections.Generic
 Imports System.Diagnostics
 Imports System.IO
+Imports System.Linq
+Imports System.Windows.Forms
 Imports System.Threading.Tasks
 
 ''' <summary>
@@ -81,12 +83,18 @@ Partial Public Class Main_Form
     ''' rolling back into the list minutes later.
     ''' </summary>
     Private Function SlotHealthAllowsAction(slot As Integer, action As RecipientActionKind,
-                                            ByRef create_Destination As Boolean) As Boolean
+                                            ByRef create_Destination As Boolean,
+                                            Optional batchRetry As Action = Nothing) As Boolean
         create_Destination = False
 
         Dim destination As String = Hardkeys_to_move_mediafile(slot)
         If String.IsNullOrWhiteSpace(destination) Then Return False
         Dim slot_Key As String = SlotKeyCaption(slot)
+
+        ' A slot that names a saved resource (007 §4.2): everything that needs a person - the
+        ' password, a sentence about a server nobody has verified - happens HERE, on this thread,
+        ' before any probe. The probe itself never asks anyone anything.
+        If Not RemoteSlotReadyToProbe(slot, destination) Then Return False
 
         Dim now_Utc As DateTime = DateTime.UtcNow
         Dim repeat_Press As Boolean = False
@@ -103,7 +111,7 @@ Partial Public Class Main_Form
 
         Dim verdict As SlotVerdict = CachedSlotVerdict(destination)
         If SlotHealthPolicy.ShouldProbe(now_Utc, verdict, repeat_Press) Then
-            BeginSlotProbe(destination, slot, action)
+            BeginSlotProbe(destination, slot, action, batchRetry)
             Return False
         End If
 
@@ -123,7 +131,12 @@ Partial Public Class Main_Form
     ''' hand. The second pass cannot probe again: the answer it reads is younger than the
     ''' retry window and the re-entry flag keeps it from being counted as a press.
     ''' </summary>
-    Private Sub BeginSlotProbe(destination As String, slot As Integer, action As RecipientActionKind)
+    ''' <param name="batchRetry">A batch started this probe (Main_Form.Batch.vb): when the answer
+    ''' lands, that call is made again instead of re-entering the single-file action. The
+    ''' "file on screen changed" guard does not apply - a batch is about the files it was
+    ''' given, not about whatever is displayed.</param>
+    Private Sub BeginSlotProbe(destination As String, slot As Integer, action As RecipientActionKind,
+                               Optional batchRetry As Action = Nothing)
         Dim key As String = destination.Trim()
 
         SyncLock slot_Verdicts
@@ -149,6 +162,18 @@ Partial Public Class Main_Form
                       Sub()
                           ' Back on the UI thread with the verdict already cached.
                           If Me.IsDisposed Then Return
+
+                          If batchRetry IsNot Nothing Then
+                              ' The retry asks the gate again, with the answer now cached, and
+                              ' says the refusal itself when the answer is a bad one.
+                              slot_Health_Reentry = True
+                              Try
+                                  batchRetry()
+                              Finally
+                                  slot_Health_Reentry = False
+                              End Try
+                              Return
+                          End If
 
                           If Not String.Equals(pressed_On, Current_File_Name, StringComparison.Ordinal) Then
                               ' The view moved on. Say what the answer was and stop: a bad
@@ -194,16 +219,36 @@ Partial Public Class Main_Form
                 End SyncLock
                 AppFileLogger.WriteLine("Slot probe [" & verdict.State.ToString() & "] " & key &
                                         If(String.IsNullOrEmpty(verdict.Detail), "", " - " & verdict.Detail))
+                ' A password typed with "remember" ticked is stored once a connection proved it.
+                StoreProvedSlotCredentials()
                 Try
                     RaiseEvent SlotHealthChanged(Me, EventArgs.Empty)
-                Catch
+                Catch ex As Exception
+                    ' A repaint subscriber must not cost the verdict or the continuation, but
+                    ' its failure is a trail worth keeping.
+                    AppFileLogger.LogException("SlotHealthChanged subscriber", ex)
                 End Try
                 If continuation IsNot Nothing Then continuation()
             End Sub
 
+        ' The exit that does not reach finish: the verdict is still cached (StoreSlotVerdict
+        ' takes the lock, so any thread may call it) and the path is released, so the next
+        ' press acts on the answer instead of waiting for one that is never coming. The
+        ' continuation is dropped - the press it belonged to cannot be answered on screen.
+        Dim abandon As Action(Of SlotVerdict) =
+            Sub(verdict As SlotVerdict)
+                StoreSlotVerdict(key, verdict)
+                SyncLock slot_Verdicts
+                    slot_Probes_In_Flight.Remove(key)
+                End SyncLock
+                AppFileLogger.WriteLine("Slot probe [" & verdict.State.ToString() & "] " & key &
+                                        " - answer not delivered to the window; cached, not acted on")
+            End Sub
+
         ' The bound (D2). A probe that runs out of time IS unreachable - and the abandoned
         ' task is left to finish on its own: it holds no form state and nothing waits on it.
-        Dim guard As Task = Task.WhenAny(work, Task.Delay(SlotHealthPolicy.Probe_Timeout_Ms))
+        ' A server folder gets the connect budget on top (RemoteSlotPolicy.ProbeTimeoutMs).
+        Dim guard As Task = Task.WhenAny(work, Task.Delay(RemoteSlotPolicy.ProbeTimeoutMs(key)))
         guard.ContinueWith(
             Sub(done As Task)
                 Dim verdict As SlotVerdict
@@ -213,15 +258,26 @@ Partial Public Class Main_Form
                     verdict = SlotVerdict.ForState(SlotState.Unreachable, DateTime.UtcNow, "probe timed out")
                 End If
 
+                Dim posted As Boolean = False
                 Try
-                    If Me.IsDisposed OrElse Not Me.IsHandleCreated Then Return
-                    Me.BeginInvoke(New Action(Sub()
-                                                  If Me.IsDisposed Then Return
-                                                  finish(verdict)
-                                              End Sub))
+                    If Not Me.IsDisposed AndAlso Me.IsHandleCreated Then
+                        Me.BeginInvoke(New Action(Sub()
+                                                      If Me.IsDisposed Then
+                                                          abandon(verdict)
+                                                          Return
+                                                      End If
+                                                      finish(verdict)
+                                                  End Sub))
+                        posted = True
+                    End If
                 Catch ex As Exception
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1685: slot probe post failed: " & ex.Message)
+                    AppFileLogger.LogException("Slot probe answer could not be posted to the UI thread", ex)
                 End Try
+                ' No handle at this instant - a full-screen toggle re-creates it - or the post
+                ' threw: finish never runs, and the path used to stay "in flight" for good, so
+                ' every later press answered "checking.." and started nothing (057.S05-6).
+                If Not posted Then abandon(verdict)
             End Sub)
     End Sub
 
@@ -241,6 +297,21 @@ Partial Public Class Main_Form
     ''' </summary>
     Private Shared Function ProbeSlot(destination As String, allowCreate As Boolean) As SlotVerdict
         Dim now_Utc As DateTime = DateTime.UtcNow
+        Dim slots As RemoteSlotConnections = RemoteSlotConnections.Current
+        If ResourceLocator.IsLocator(destination) Then
+            ' A folder of a saved resource (007 §4.2): dialled if need be, then asked through its
+            ' provider - the folder, and its parent when the folder is missing.
+            If slots Is Nothing Then Return SlotVerdict.ForState(SlotState.Invalid, now_Utc, "no slot connections")
+            Return slots.Probe(destination, allowCreate)
+        End If
+
+        ' A share that needs a login, saved as a resource (007 §5): this process gets its session
+        ' first, and the plain-folder probe below then answers exactly as for any other share.
+        Dim smb_Failure As ResourceFailure = slots?.EnsureSmbSession(destination)
+        If smb_Failure IsNot Nothing AndAlso RemoteSlotPolicy.StateFor(smb_Failure) = SlotState.Denied Then
+            Return SlotVerdict.ForState(SlotState.Denied, now_Utc, "share session: " & smb_Failure.ToString())
+        End If
+
         Dim full As String
 
         Try
@@ -251,6 +322,14 @@ Partial Public Class Main_Form
 
         Dim leaf As PathFailureKind = TouchDirectory(full)
         If leaf = PathFailureKind.None Then Return SlotVerdict.ForState(SlotState.Ready, now_Utc)
+
+        ' May not LIST is not may not WRITE: a write-only drop-box refuses the listing and
+        ' takes the file (057.S05-7). Its attributes are the second witness.
+        If leaf = PathFailureKind.Denied Then
+            Dim attributes As PathFailureKind = ReadDirectoryAttributes(full)
+            Return SlotVerdict.ForState(SlotHealthPolicy.StateAfterDeniedListing(attributes), now_Utc,
+                                        "listing denied; attributes: " & attributes.ToString())
+        End If
 
         If leaf = PathFailureKind.Missing Then
             Dim parent As String = Nothing
@@ -284,6 +363,18 @@ Partial Public Class Main_Form
             Using walker As IEnumerator(Of String) = Directory.EnumerateFileSystemEntries(folder).GetEnumerator()
                 walker.MoveNext()
             End Using
+            Return PathFailureKind.None
+        Catch ex As Exception
+            Return PathFailure.Classify(ex)
+        End Try
+    End Function
+
+    ''' <summary>Is this a folder, asked through its attributes - which need no right to
+    ''' list it? None means a folder answered; Invalid that the path names a file.</summary>
+    Private Shared Function ReadDirectoryAttributes(folder As String) As PathFailureKind
+        Try
+            Dim attributes As FileAttributes = File.GetAttributes(folder)
+            If (attributes And FileAttributes.Directory) <> FileAttributes.Directory Then Return PathFailureKind.Invalid
             Return PathFailureKind.None
         Catch ex As Exception
             Return PathFailure.Classify(ex)
@@ -373,6 +464,9 @@ Partial Public Class Main_Form
             If String.IsNullOrWhiteSpace(destination) Then Continue For
 
             Dim key As String = destination.Trim()
+            ' Nobody pressed anything: a server folder that would need the user first waits for
+            ' its key press (007 §4.2).
+            If Not MayProbeUnattended(key) Then Continue For
             SyncLock slot_Verdicts
                 If slot_Probes_In_Flight.Contains(key) Then Continue For
                 slot_Probes_In_Flight.Add(key)
@@ -394,6 +488,13 @@ Partial Public Class Main_Form
         End If
 
         Dim key As String = destination.Trim()
+        If Not MayProbeUnattended(key) Then
+            ' A server folder that needs a password or a verified key first: no opinion until
+            ' the slot is used, where the user can be asked (007 §4.2).
+            ForgetSlotVerdict(key)
+            If onDone IsNot Nothing Then onDone()
+            Return
+        End If
         SyncLock slot_Verdicts
             If slot_Probes_In_Flight.Contains(key) Then
                 ' Already on its way; the SlotHealthChanged event will bring the answer.
@@ -403,6 +504,170 @@ Partial Public Class Main_Form
         End SyncLock
 
         ProbeSlotThen(key, AutoCreateDestinationEnabled(), onDone)
+    End Sub
+
+
+    ' --------------------------------------------------- slots that name a resource (007 §4.2) ----
+
+    ''' <summary>Passwords typed for a slot with "remember" ticked, waiting for the first connection
+    ''' that proves them: a credential is stored only after it worked, as when a resource is opened
+    ''' (Main_Form.ResourceOpen.vb). UI thread only.</summary>
+    Private ReadOnly slot_Credentials_To_Store As New Dictionary(Of String, Tuple(Of ResourceDescriptor, String))(StringComparer.OrdinalIgnoreCase)
+
+    ''' <summary>The connections behind slots that name a saved resource, created on first need and
+    ''' published for the routing of FileManager's verbs (which runs on the worker thread).</summary>
+    Friend Function EnsureRemoteSlots() As RemoteSlotConnections
+        Dim slots As RemoteSlotConnections = RemoteSlotConnections.Current
+        If slots IsNot Nothing Then Return slots
+        Dim secrets As IResourceSecretStore = resource_Secrets
+        slots = New RemoteSlotConnections(
+            Function() ResourceRegistry.Load(),
+            Function(descriptor As ResourceDescriptor) As String
+                Dim read As CredentialReadResult = ResourceCommit.ReadCredential(descriptor, secrets)
+                Return If(read.Outcome = CredentialReadOutcome.Ok, read.Secret, Nothing)
+            End Function,
+            AddressOf DialSlotResource,
+            Function(root As String, user As String, password As String) SmbConnectionManager.SharedInstance.AcquireLease(root, user, password))
+        RemoteSlotConnections.Current = slots
+        Return slots
+    End Function
+
+    ''' <summary>
+    ''' One connection for a slot: the resource's own connect, with a trust prompt that always says no
+    ''' and a pin store that never stores. A slot only ever reaches a server whose key is already
+    ''' pinned (the gate refuses any other), so neither is ever asked - and if a key changed, the
+    ''' connection is refused as a mismatch, never re-trusted from the middle of sorting.
+    ''' </summary>
+    Private Shared Function DialSlotResource(descriptor As ResourceDescriptor, password As String,
+                                             ct As Threading.CancellationToken) As ConnectOutcome
+        Return ResourceConnect.ConnectAsync(descriptor, password,
+                                            Function(fingerprint As String, c As Threading.CancellationToken) False,
+                                            Function(fingerprint As String) False,
+                                            Function() False, ct).GetAwaiter().GetResult()
+    End Function
+
+    ''' <summary>
+    ''' The part of the gate that may need the user, for a slot that names a saved resource: a
+    ''' sentence for a server that is not in the list, has never been verified or is read-only, and
+    ''' the password prompt when none is known. True when a probe may go ahead (always, for a plain
+    ''' folder).
+    ''' </summary>
+    Private Function RemoteSlotReadyToProbe(slot As Integer, destination As String) As Boolean
+        Dim slots As RemoteSlotConnections = EnsureRemoteSlots()
+        Dim descriptor As ResourceDescriptor = Nothing
+        Dim remotePath As String = ""
+        Dim slot_Key As String = SlotKeyCaption(slot)
+        Select Case slots.Locate(destination, descriptor, remotePath)
+            Case RemoteSlotProblem.None, RemoteSlotProblem.NotRemote
+                Return True
+            Case RemoteSlotProblem.UnknownResource
+                lbl_Status.Text = Localization.TF("! Каталог {0}: этого сервера нет в списке ресурсов - добавьте его через «Ресурсы»", slot_Key)
+            Case RemoteSlotProblem.NotPinned
+                lbl_Status.Text = Localization.TF("! Каталог {0}: ключ сервера «{1}» ещё не проверен - откройте этот ресурс один раз", slot_Key, descriptor.DisplayName)
+            Case RemoteSlotProblem.ReadOnlyResource
+                lbl_Status.Text = Localization.TF("! Каталог {0}: ресурс «{1}» только для чтения", slot_Key, descriptor.DisplayName)
+            Case RemoteSlotProblem.NoCredential
+                If AskSlotCredential(slots, descriptor) Then
+                    ' A fresh password makes any earlier answer - a refused one - worthless.
+                    ForgetSlotVerdict(destination)
+                    Return True
+                End If
+                lbl_Status.Text = Localization.T("Подключение отменено")
+            Case Else
+                lbl_Status.Text = SlotHealthText(slot_Key, SlotState.Invalid)
+        End Select
+        Return False
+    End Function
+
+    ''' <summary>Asks for the password of the resource a slot names. Kept in memory for the run; stored
+    ''' through DPAPI only once a connection has proved it (<see cref="StoreProvedSlotCredentials"/>).</summary>
+    Private Function AskSlotCredential(slots As RemoteSlotConnections, descriptor As ResourceDescriptor) As Boolean
+        Dim retry As Boolean = slots.WasRefused(descriptor.Id)
+        Using dialog As New Resource_Credential_Form(descriptor.DisplayName, descriptor.UserName, retry)
+            If dialog.ShowDialog(Me) <> DialogResult.OK Then Return False
+            slots.RememberCredential(descriptor.Id, dialog.Credential)
+            ' The resource itself opens without asking again this run, as it would after its own prompt.
+            resource_Session_Passwords(descriptor.Id) = dialog.Credential
+            If dialog.RememberCredential Then
+                slot_Credentials_To_Store(descriptor.Id) = Tuple.Create(descriptor, dialog.Credential)
+            Else
+                slot_Credentials_To_Store.Remove(descriptor.Id)
+            End If
+        End Using
+        Return True
+    End Function
+
+    ''' <summary>After a probe: a password waiting to be remembered is stored once its resource has a
+    ''' working connection, and dropped once the server refused it.</summary>
+    Private Sub StoreProvedSlotCredentials()
+        If slot_Credentials_To_Store.Count = 0 Then Return
+        Dim slots As RemoteSlotConnections = RemoteSlotConnections.Current
+        If slots Is Nothing Then Return
+        For Each id As String In slot_Credentials_To_Store.Keys.ToList()
+            Dim pending As Tuple(Of ResourceDescriptor, String) = slot_Credentials_To_Store(id)
+            If slots.WasRefused(id) Then
+                slot_Credentials_To_Store.Remove(id)
+            ElseIf slots.IsConnected(id) Then
+                slot_Credentials_To_Store.Remove(id)
+                Try
+                    ResourceCommit.Commit(pending.Item1, pending.Item2, AddressOf ResourceRegistry.HiveRead,
+                                          AddressOf ResourceRegistry.HiveWrite, resource_Secrets)
+                Catch ex As Exception
+                    ' Best effort, as after opening a resource: the slot already works this run.
+                    AppFileLogger.WriteLine("Remote slot: the credential could not be stored - " & ex.GetType().Name)
+                End Try
+            End If
+        Next
+    End Sub
+
+    Private Sub ForgetSlotVerdict(destination As String)
+        If String.IsNullOrWhiteSpace(destination) Then Return
+        SyncLock slot_Verdicts
+            slot_Verdicts.Remove(destination.Trim())
+        End SyncLock
+    End Sub
+
+    ''' <summary>May a probe nobody pressed a key for (the pre-warm, the settings grid) ask about this
+    ''' destination? Not a server folder that would first need the user - a password, or a server
+    ''' nobody has verified: those are asked about when the slot is used.</summary>
+    Private Function MayProbeUnattended(destination As String) As Boolean
+        Dim descriptor As ResourceDescriptor = Nothing
+        Dim remotePath As String = ""
+        Select Case EnsureRemoteSlots().Locate(destination, descriptor, remotePath)
+            Case RemoteSlotProblem.None, RemoteSlotProblem.NotRemote, RemoteSlotProblem.Invalid, RemoteSlotProblem.ReadOnlyResource
+                Return True
+            Case Else
+                Return False
+        End Select
+    End Function
+
+    ''' <summary>What the overlay, the menus and the settings grid call a slot: "«Name» /folder" for a
+    ''' folder of a saved resource, the path itself for anything else.</summary>
+    Friend Function SlotCaption(destination As String) As String
+        If Not ResourceLocator.IsLocator(destination) Then Return If(destination, "")
+        Dim named As String = EnsureRemoteSlots().Caption(destination)
+        Return If(named.Length > 0, named, destination)
+    End Function
+
+    ''' <summary>After the resource list was edited: every slot connection is dialled afresh (an
+    ''' address, a key or a password may have changed), every answer about a server folder is asked
+    ''' again, and the overlay re-reads the names.</summary>
+    Friend Sub ResetRemoteSlots()
+        Dim slots As RemoteSlotConnections = RemoteSlotConnections.Current
+        If slots Is Nothing Then Return
+        slots.Reset()
+        For slot As Integer = 1 To 10
+            Dim destination As String = Hardkeys_to_move_mediafile(slot)
+            If ResourceLocator.IsLocator(destination) Then ForgetSlotVerdict(destination)
+        Next
+        ApplyRecipientsOverlay()
+    End Sub
+
+    ''' <summary>The close: every slot connection and share session goes, with the typed passwords.</summary>
+    Friend Sub ShutdownRemoteSlots()
+        Dim slots As RemoteSlotConnections = RemoteSlotConnections.Current
+        RemoteSlotConnections.Current = Nothing
+        slots?.Dispose()
     End Sub
 
 End Class

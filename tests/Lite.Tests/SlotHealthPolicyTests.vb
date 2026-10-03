@@ -247,5 +247,25 @@ Public Class SlotHealthPolicyTests
         Assert.Equal("Sorted", SlotHealthPolicy.NormalizeSlotPath(" Sorted "))
     End Sub
 
+    ''' <summary>057.S05-7: a write-only drop-box refuses the listing and takes the file. A
+    ''' folder whose attributes answer is usable; the operation reports a real write refusal.</summary>
+    <Fact>
+    Public Sub A_folder_that_may_not_be_listed_but_is_there_is_usable()
+        Dim state As SlotState = SlotHealthPolicy.StateAfterDeniedListing(PathFailureKind.None)
+        Assert.Equal(SlotState.Ready, state)
+        Assert.True(SlotHealthPolicy.IsUsable(state))
+    End Sub
+
+    <Theory>
+    <InlineData(PathFailureKind.Denied, SlotState.Denied)>
+    <InlineData(PathFailureKind.Locked, SlotState.Denied)>
+    <InlineData(PathFailureKind.Transport, SlotState.Denied)>
+    <InlineData(PathFailureKind.Missing, SlotState.Denied)>
+    <InlineData(PathFailureKind.Invalid, SlotState.Invalid)>
+    Public Sub A_listing_refusal_with_no_second_witness_keeps_its_verdict(attributes As PathFailureKind, expected As SlotState)
+        Assert.Equal(expected, SlotHealthPolicy.StateAfterDeniedListing(attributes))
+        Assert.False(SlotHealthPolicy.IsUsable(expected))
+    End Sub
+
 End Class
 #End If

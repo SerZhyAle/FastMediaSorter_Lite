@@ -59,10 +59,12 @@ Partial Public Class Main_Form
         SyncMediaSurface()
 
         ' Re-cut the overlay toolbar's holes now the panel has its final size.
+#If NETFRAMEWORK Then
         If is_Full_Screen_Mode AndAlso Not is_Super_Full_Screen_Mode Then
             flow_Toolbar.Width = panel_Media.ClientSize.Width
             ApplyToolbarRegion(True)
         End If
+#End If
 
         ' Fit first, then the bars: a zoomed picture draws none (audit B-12), so the
         ' other order left a resize out of a zoom with no bars at all.
@@ -86,9 +88,15 @@ Partial Public Class Main_Form
     ''' whatever the slideshow had just hidden.
     ''' </summary>
     Private Sub ApplyChromeVisibility()
+#If NETFRAMEWORK Then
         panel_Status.Visible = Not is_Full_Screen_Mode AndAlso Not SlideshowHidesStatus()
         flow_Toolbar.Visible = Not is_Super_Full_Screen_Mode AndAlso Not SlideshowHidesToolbar()
         SetToolbarOverlay(is_Full_Screen_Mode AndAlso Not is_Super_Full_Screen_Mode)
+#Else
+        flow_Toolbar.Visible = False
+        panel_Status.Visible = False
+        PlaceChromePanels()
+#End If
     End Sub
 
     ''' <summary>
@@ -104,6 +112,9 @@ Partial Public Class Main_Form
         Picture_Box_1.Size = full
         Picture_Box_2.Location = Point.Empty
         Picture_Box_2.Size = full
+
+        Picture_Box_1.SizeMode = PictureBoxSizeMode.Zoom
+        Picture_Box_2.SizeMode = PictureBoxSizeMode.Zoom
 
         Web_Browser.Location = Point.Empty
         Web_Browser.Size = full
@@ -153,6 +164,12 @@ Partial Public Class Main_Form
         If panel_Media Is Nothing Then Return
 
         SyncMediaSurface()
+
+#If Not NETFRAMEWORK Then
+        ' Modern: viewport rendering (Ф-Z3) - clear source rects for fit mode
+        Picture_Box_1.SourceRect = Rectangle.Empty
+        Picture_Box_2.SourceRect = Rectangle.Empty
+#End If
 
         zoom_Scale = 1.0F
 #If Not NETFRAMEWORK Then

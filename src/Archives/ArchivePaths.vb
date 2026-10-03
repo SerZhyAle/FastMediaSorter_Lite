@@ -131,7 +131,13 @@ Friend Module ArchivePaths
         Dim extension As String = Sanitize(If(dot > 0, segment.Substring(dot), ""))
         Dim stem As String = Sanitize(If(dot > 0, segment.Substring(0, dot), segment))
 
-        If stem.Length > Max_Stem_Length Then stem = stem.Substring(0, Max_Stem_Length)
+        If stem.Length > Max_Stem_Length Then
+            stem = stem.Substring(0, Max_Stem_Length)
+            ' A cut between the two halves of a surrogate pair leaves an unpaired one in the
+            ' file name, which every UTF-8 hop (a media URI, the log) turns into U+FFFD -
+            ' a different name from the one on disk (057.S17-7).
+            If Char.IsHighSurrogate(stem(stem.Length - 1)) Then stem = stem.Substring(0, stem.Length - 1)
+        End If
         If stem.Length = 0 Then stem = "entry"
         ' A real media extension is a handful of characters; anything longer is not one,
         ' and an unbounded tail would be a way to blow past the file system's name limit.

@@ -15,13 +15,22 @@ Public Module ShareGuide
 
     Private Const AssetPath As String = "help/port-forward.html"
 
-    ''' <summary>Fast Media Sorter for Windows website (GitHub Pages).</summary>
-    Public Const SiteUrl As String = "https://serzhyale.github.io/FastMediaSorter_Lite/"
+    ''' <summary>The Windows product's website (GitHub Pages).</summary>
+    Public Const SiteUrl As String = ShareLinks.SiteUrl
 
     ''' <summary>Online trilingual "How to publish your folders for Android" page.</summary>
-    Public Const SiteGuideUrl As String = "https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html"
+    Public Const SiteGuideUrl As String = ShareLinks.SiteGuideUrl
 
-    ''' <summary>The companion FastMediaSorter Android app landing page (per language).</summary>
+    ''' <summary>FileDO virtual disk sharing guide on Fast Media Sorter site.</summary>
+    Public Const FileDoDisksGuideUrl As String = ShareLinks.FileDoDisksGuideUrl
+
+    ''' <summary>FileDO project website.</summary>
+    Public Const FileDoSiteUrl As String = ShareLinks.FileDoSiteUrl
+
+    ''' <summary>FileDO reciprocal guide for sharing disks with Fast Media Sorter.</summary>
+    Public Const FileDoSharingGuideUrl As String = ShareLinks.FileDoSharingGuideUrl
+
+    ''' <summary>The Android app's landing page (per language).</summary>
     Public Const AndroidSiteEn As String = "https://serzhyale.github.io/FastMediaSorter_mob_v2/"
     Public Const AndroidSiteRu As String = "https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html"
     Public Const AndroidSiteUk As String = "https://serzhyale.github.io/FastMediaSorter_mob_v2/index-uk.html"

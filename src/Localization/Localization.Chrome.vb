@@ -8,6 +8,8 @@ Partial Public NotInheritable Class Localization
 
     Private Shared Sub AddChromeStrings()
 
+        Add("Скругление углов панелей", "Panel corner radius", "Заокруглення кутів панелей", "Eckenradius der Bereiche", "Raggio degli angoli dei pannelli", "Radio de las esquinas de los paneles", "Rayon des angles des panneaux", "Raio dos cantos dos painéis", "نصف قطر زوايا اللوحات", "पैनल के कोनों की त्रिज्या", "প্যানেলের কোণের ব্যাসার্ধ", "پینل کے کونوں کا رداس", "面板圆角半径")
+
         Add("Во весь экран", "Full screen", "На весь екран", "Vollbild", "Schermo intero", "Pantalla completa", "Plein écran", "Tela cheia", "ملء الشاشة", "पूर्ण स्क्रीन", "পূর্ণ পর্দা", "مکمل اسکرین", "全屏")
 
         ' --- toolbar --------------------------------------------------------------
@@ -278,6 +280,49 @@ Partial Public NotInheritable Class Localization
         Add("Это дополнительное окно. Изменения настроек действуют до его закрытия и не сохраняются - настройки хранит первое окно.",
             "This is an additional window. Settings changes apply until it closes and are not saved - the first window owns the settings.", "Це додаткове вікно. Зміни налаштувань діють до його закриття й не зберігаються - налаштування зберігає перше вікно.", "Dies ist ein zusätzliches Fenster. Einstellungsänderungen gelten bis zum Schließen und werden nicht gespeichert - das erste Fenster verwaltet die Einstellungen.", "Questa è una finestra aggiuntiva. Le modifiche alle impostazioni valgono fino alla chiusura e non vengono salvate: le impostazioni sono gestite dalla prima finestra.", "Esta es una ventana adicional. Los cambios de configuración se aplican hasta que se cierre y no se guardan: la primera ventana conserva la configuración.", "Ceci est une fenêtre supplémentaire. Les modifications de réglages s'appliquent jusqu'à sa fermeture et ne sont pas enregistrées : la première fenêtre conserve les réglages.", "Esta é uma janela adicional. As alterações de configuração valem até ela ser fechada e não são salvas: a primeira janela mantém as configurações.", "هذه نافذة إضافية. تسري تغييرات الإعدادات حتى إغلاقها ولا تُحفظ - النافذة الأولى تحتفظ بالإعدادات.", "यह एक अतिरिक्त विंडो है। सेटिंग बदलाव इसके बंद होने तक लागू रहते हैं और सहेजे नहीं जाते - सेटिंग पहली विंडो रखती है।", "এটি একটি অতিরিক্ত উইন্ডো। সেটিংস পরিবর্তন বন্ধ হওয়া পর্যন্ত কার্যকর থাকে এবং সংরক্ষিত হয় না - প্রথম উইন্ডো সেটিংস রাখে।", "یہ ایک اضافی ونڈو ہے۔ ترتیبات میں تبدیلیاں بند ہونے تک لاگو رہتی ہیں اور محفوظ نہیں ہوتیں - ترتیبات پہلی ونڈو رکھتی ہے۔", "这是一个附加窗口。设置更改仅在它关闭前有效，不会保存；设置由第一个窗口保存。")
         Add("дополнительное окно", "additional window", "додаткове вікно", "zusätzliches Fenster", "finestra aggiuntiva", "ventana adicional", "fenêtre supplémentaire", "janela adicional", "نافذة إضافية", "अतिरिक्त विंडो", "অতিরিক্ত উইন্ডো", "اضافی ونڈو", "附加窗口")
+
+        ' --- the floating chrome (002): two settings rows ---------------------------------------
+        Add("Плавающие панели", "Floating panels", "Плаваючі панелі", "Schwebende Leisten", "Pannelli flottanti", "Paneles flotantes", "Panneaux flottants", "Painéis flutuantes", "لوحات عائمة", "तैरते पैनल", "ভাসমান প্যানেল", "تیرتے پینل", "悬浮面板")
+        Add("Не скрывать плавающие панели", "Keep floating panels visible", "Не ховати плаваючі панелі", "Schwebende Leisten nicht ausblenden", "Non nascondere i pannelli flottanti", "No ocultar los paneles flotantes", "Ne pas masquer les panneaux flottants", "Não ocultar os painéis flutuantes", "إبقاء اللوحات العائمة ظاهرة", "तैरते पैनल दिखते रखें", "ভাসমান প্যানেল দৃশ্যমান রাখুন", "تیرتے پینل نظر آتے رکھیں", "保持悬浮面板可见")
+        Add("Часть кнопок плавает над изображением и скрывается, когда не нужна. Выключите - и всё вернётся в верхнюю панель, как было.",
+            "Some buttons float over the picture and hide when not needed. Turn it off and everything returns to the top toolbar, as before.",
+            "Частина кнопок плаває над зображенням і ховається, коли не потрібна. Вимкніть - і все повернеться на верхню панель, як було.",
+            "Einige Schaltflächen schweben über dem Bild und verschwinden, wenn man sie nicht braucht. Ausgeschaltet bleibt alles wie bisher in der oberen Leiste.",
+            "Alcuni pulsanti fluttuano sull'immagine e si nascondono quando non servono. Disattivando l'opzione tutto torna nella barra superiore, come prima.",
+            "Algunos botones flotan sobre la imagen y se ocultan cuando no hacen falta. Si lo desactiva, todo vuelve a la barra superior, como antes.",
+            "Certains boutons flottent au-dessus de l'image et se masquent quand ils ne servent pas. Désactivée, l'option remet tout dans la barre du haut, comme avant.",
+            "Alguns botões flutuam sobre a imagem e se ocultam quando não são necessários. Desativado, tudo volta para a barra superior, como antes.",
+            "تطفو بعض الأزرار فوق الصورة وتختفي عند عدم الحاجة إليها. عند الإيقاف يعود كل شيء إلى الشريط العلوي كما كان.",
+            "कुछ बटन तस्वीर के ऊपर तैरते हैं और ज़रूरत न होने पर छिप जाते हैं। बंद करने पर सब कुछ पहले की तरह ऊपरी टूलबार में लौट आता है।",
+            "কিছু বোতাম ছবির উপরে ভাসে এবং প্রয়োজন না হলে লুকিয়ে যায়। বন্ধ করলে সবকিছু আগের মতো উপরের টুলবারে ফিরে আসে।",
+            "کچھ بٹن تصویر کے اوپر تیرتے ہیں اور ضرورت نہ ہو تو چھپ جاتے ہیں۔ بند کرنے پر سب کچھ پہلے کی طرح اوپر کے ٹول بار میں لوٹ آتا ہے۔",
+            "部分按钮悬浮在图片上方，不需要时自动隐藏。关闭后所有按钮回到顶部工具栏，与以前一样。")
+        Add("Панели не исчезают сами и остаются над изображением постоянно.",
+            "The panels do not hide on their own and stay over the picture all the time.",
+            "Панелі не зникають самі й постійно залишаються над зображенням.",
+            "Die Leisten blenden sich nicht von selbst aus und bleiben dauerhaft über dem Bild.",
+            "I pannelli non si nascondono da soli e restano sempre sopra l'immagine.",
+            "Los paneles no se ocultan solos y permanecen siempre sobre la imagen.",
+            "Les panneaux ne se masquent pas d'eux-mêmes et restent en permanence au-dessus de l'image.",
+            "Os painéis não se ocultam sozinhos e ficam sempre sobre a imagem.",
+            "لا تختفي اللوحات من تلقاء نفسها وتبقى فوق الصورة دائمًا.",
+            "पैनल अपने आप नहीं छिपते और हमेशा तस्वीर के ऊपर बने रहते हैं।",
+            "প্যানেলগুলো নিজে থেকে লুকায় না এবং সবসময় ছবির উপরে থাকে।",
+            "پینل خود بخود نہیں چھپتے اور ہمیشہ تصویر کے اوپر رہتے ہیں۔",
+            "面板不会自动隐藏，始终显示在图片上方。")
+
+        ' --- panel size, panel pin button, opacity hint ----------------------------------------
+        Add("Размер панелей", "Panel size", "Розмір панелей", "Größe der Leisten", "Dimensione dei pannelli", "Tamaño de los paneles", "Taille des panneaux", "Tamanho dos painéis", "حجم اللوحات", "पैनल का आकार", "প্যানেলের আকার", "پینل کا سائز", "面板大小")
+        Add("Малые, средние или крупные; адаптивный следит и за шириной окна.", "Small, medium or large; adaptive also follows the window width.", "Малі, середні або великі; адаптивний враховує й ширину вікна.", "Klein, mittel oder groß; adaptiv folgt auch der Fensterbreite.", "Piccoli, medi o grandi; adattivo segue anche la larghezza della finestra.", "Pequeños, medianos o grandes; el adaptativo sigue también el ancho de la ventana.", "Petits, moyens ou grands ; l'adaptatif suit aussi la largeur de la fenêtre.", "Pequenos, médios ou grandes; o adaptativo acompanha também a largura da janela.", "صغيرة أو متوسطة أو كبيرة؛ والتكيّفي يتبع عرض النافذة أيضًا.", "छोटे, मध्यम या बड़े; अनुकूली आकार विंडो की चौड़ाई को भी देखता है।", "ছোট, মাঝারি বা বড়; অভিযোজিত আকার উইন্ডোর প্রস্থও অনুসরণ করে।", "چھوٹے، درمیانے یا بڑے؛ موافقتی سائز ونڈو کی چوڑائی کو بھی دیکھتا ہے۔", "小、中或大；自适应还会跟随窗口宽度。")
+        Add("Чем меньше значение, тем прозрачнее плавающие панели.", "The lower the value, the more transparent the floating panels.", "Чим менше значення, тим прозоріші плаваючі панелі.", "Je kleiner der Wert, desto durchsichtiger die schwebenden Leisten.", "Più basso è il valore, più trasparenti sono i pannelli flottanti.", "Cuanto menor es el valor, más transparentes son los paneles flotantes.", "Plus la valeur est basse, plus les panneaux flottants sont transparents.", "Quanto menor o valor, mais transparentes ficam os painéis flutuantes.", "كلما قلّت القيمة زادت شفافية اللوحات العائمة.", "मान जितना कम होगा, तैरते पैनल उतने पारदर्शी होंगे।", "মান যত কম, ভাসমান প্যানেল তত স্বচ্ছ।", "قدر جتنی کم ہوگی، تیرتے پینل اتنے شفاف ہوں گے۔", "数值越小，悬浮面板越透明。")
+        Add("Маленький", "Small", "Малий", "Klein", "Piccolo", "Pequeño", "Petit", "Pequeno", "صغير", "छोटा", "ছোট", "چھوٹا", "小")
+        Add("Средний", "Medium", "Середній", "Mittel", "Medio", "Mediano", "Moyen", "Médio", "متوسط", "मध्यम", "মাঝারি", "درمیانہ", "中")
+        Add("Большой", "Large", "Великий", "Groß", "Grande", "Grande", "Grand", "Grande", "كبير", "बड़ा", "বড়", "بڑا", "大")
+        Add("Адаптивный", "Adaptive", "Адаптивний", "Adaptiv", "Adattivo", "Adaptativo", "Adaptatif", "Adaptativo", "تكيّفي", "अनुकूली", "অভিযোজিত", "موافقتی", "自适应")
+        Add("Закрепить панель", "Pin panel", "Закріпити панель", "Leiste fixieren", "Fissa il pannello", "Fijar el panel", "Épingler le panneau", "Fixar o painel", "تثبيت اللوحة", "पैनल पिन करें", "প্যানেল পিন করুন", "پینل پن کریں", "固定面板")
+        Add("Открепить панель", "Unpin panel", "Відкріпити панель", "Leiste lösen", "Sblocca il pannello", "Desanclar el panel", "Détacher le panneau", "Desafixar o painel", "إلغاء تثبيت اللوحة", "पैनल अनपिन करें", "প্যানেল আনপিন করুন", "پینل ان پن کریں", "取消固定面板")
+        Add("Закрепить панель: она перестанет скрываться.", "Pin the panel: it will stop hiding.", "Закріпити панель: вона перестане ховатися.", "Leiste fixieren: Sie blendet sich dann nicht mehr aus.", "Fissa il pannello: non si nasconderà più.", "Fijar el panel: dejará de ocultarse.", "Épingler le panneau : il ne se masquera plus.", "Fixar o painel: ele deixará de se ocultar.", "تثبيت اللوحة: ستتوقف عن الاختفاء.", "पैनल पिन करें: यह छिपना बंद कर देगा।", "প্যানেল পিন করুন: এটি আর লুকাবে না।", "پینل پن کریں: یہ چھپنا بند کر دے گا۔", "固定面板：它将不再自动隐藏。")
+        Add("Панель закреплена и не скрывается. Нажмите, чтобы открепить.", "The panel is pinned and does not hide. Click to unpin.", "Панель закріплено, вона не ховається. Натисніть, щоб відкріпити.", "Die Leiste ist fixiert und blendet sich nicht aus. Zum Lösen anklicken.", "Il pannello è fissato e non si nasconde. Fai clic per sbloccarlo.", "El panel está fijado y no se oculta. Haz clic para desanclarlo.", "Le panneau est épinglé et ne se masque pas. Cliquez pour le détacher.", "O painel está fixado e não se oculta. Clique para desafixar.", "اللوحة مثبّتة ولا تختفي. انقر لإلغاء التثبيت.", "पैनल पिन है और छिपता नहीं। अनपिन करने के लिए क्लिक करें।", "প্যানেল পিন করা আছে, লুকায় না। আনপিন করতে ক্লিক করুন।", "پینل پن ہے اور چھپتا نہیں۔ ان پن کرنے کے لیے کلک کریں۔", "面板已固定，不会隐藏。点击可取消固定。")
     End Sub
 
 End Class

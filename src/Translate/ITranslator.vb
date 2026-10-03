@@ -276,16 +276,22 @@ Friend Module TextScriptHeuristics
     ''' never typed: the VB compiler reads the curly double quotes U+201C/U+201D as string
     ''' delimiters, so the literal this replaced held a doubled "" where the author wrote
     ''' “” and the curly quotes were never in the set (audit 051 E-10). The ellipsis and the
-    ''' dashes are added because Russian dialogue is punctuated with them.
+    ''' dashes are added because Russian dialogue is punctuated with them. The CJK, Indic and
+    ''' Arabic sentence punctuation is here for the same reason (ticket 093): a correct
+    ''' Chinese, Hindi or Urdu answer is full of it.
     ''' </summary>
     Private ReadOnly OrdinaryPunctuation As String =
         ".,!?;:'""-()[]{}«»" &
         ChrW(&H201C) & ChrW(&H201D) & ChrW(&H201E) &   ' curly double quotes: left, right, low
         ChrW(&H2018) & ChrW(&H2019) &                   ' curly single quotes
         ChrW(&H2026) & ChrW(&H2014) & ChrW(&H2013) &    ' ellipsis, em dash, en dash
-        ChrW(&H3001) & ChrW(&H3002) & ChrW(&H300C) & ChrW(&H300D) &
-        ChrW(&H300E) & ChrW(&H300F) & ChrW(65292) & ChrW(65281) & ChrW(65311) &
-        ChrW(&H964) & ChrW(&H965) & ChrW(&H6D4) & ChrW(&H60C) & ChrW(&H61B) & ChrW(&H61F)
+        ChrW(&H3002) & ChrW(65281) & ChrW(65311) &    ' ideographic full stop, fullwidth ! ? (decimal: the UX scan reads &HFxxx as an icon glyph)
+        ChrW(&H3001) & ChrW(65292) & ChrW(65306) & ChrW(65307) &  ' ideographic comma, fullwidth , : ;
+        ChrW(&H300C) & ChrW(&H300D) & ChrW(&H300E) & ChrW(&H300F) &  ' corner brackets
+        ChrW(&H3010) & ChrW(&H3011) & ChrW(65288) & ChrW(65289) & ' lenticular and fullwidth brackets
+        ChrW(&H30FB) & ChrW(&H30FC) &                   ' katakana middle dot, prolonged sound mark
+        ChrW(&H964) & ChrW(&H965) &                     ' danda, double danda (Devanagari, Bengali)
+        ChrW(&H60C) & ChrW(&H61B) & ChrW(&H61F) & ChrW(&H6D4)  ' Arabic comma, semicolon, question mark, full stop
 
     Friend Function SymbolRatio(text As String) As Double
         Dim nonWhitespace As Integer = 0
@@ -293,15 +299,16 @@ Friend Module TextScriptHeuristics
 
         For Each ch As Char In If(text, "")
             If Char.IsWhiteSpace(ch) Then Continue For
-            nonWhitespace += 1
-            If Char.IsLetterOrDigit(ch) Then Continue For
-            ' Vowel signs, virama and accents are part of text, not OCR symbol noise.
+            ' Vowel signs, virama, nukta and diacritics belong to the letter they sit on:
+            ' neither noise nor a character of their own (ticket 093, 057.S12-1).
             Select Case Char.GetUnicodeCategory(ch)
-                Case Globalization.UnicodeCategory.NonSpacingMark,
-                     Globalization.UnicodeCategory.SpacingCombiningMark,
-                     Globalization.UnicodeCategory.EnclosingMark
+                Case System.Globalization.UnicodeCategory.NonSpacingMark,
+                     System.Globalization.UnicodeCategory.SpacingCombiningMark,
+                     System.Globalization.UnicodeCategory.EnclosingMark
                     Continue For
             End Select
+            nonWhitespace += 1
+            If Char.IsLetterOrDigit(ch) Then Continue For
             If OrdinaryPunctuation.IndexOf(ch) >= 0 Then Continue For
             noisy += 1
         Next

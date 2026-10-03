@@ -40,6 +40,12 @@ Public Class SmbConnectionLeaseTests
 
         Public OnAddConnection As Func(Of NETRESOURCE, String, String, Integer, Integer)
         Public OnCancelConnection As Func(Of String, Integer, Boolean, Integer)
+        Public InspectionCode As Integer = SmbConnectionManager.ERROR_NOT_CONNECTED
+
+        Public Function GetConnectedUser(uncRoot As String, ByRef userName As String) As Integer Implements IWNetNative.GetConnectedUser
+            userName = If(InspectionCode = 0, "user", "")
+            Return InspectionCode
+        End Function
 
         Public Structure AddCallRecord
             Public RemoteName As String
@@ -104,6 +110,56 @@ Public Class SmbConnectionLeaseTests
     End Class
 
     ' ------------------------------------------------------------------ Tests ----
+
+    <Fact>
+    Public Sub Successful_add_of_an_existing_connection_does_not_take_ownership()
+        Dim native As New FakeWNetNative With {.InspectionCode = 0}
+        Dim manager As New SmbConnectionManager(native)
+        Dim result = manager.AcquireLease("\\server\share", "user", "pass")
+        Assert.True(result.Succeeded)
+        Assert.False(result.Value.IsAppCreated)
+        result.Value.Dispose()
+        Assert.Empty(native.CancelCalls)
+    End Sub
+
+    <Fact>
+    Public Sub Account_alias_lease_keeps_an_app_owned_share_connected_until_the_last_release()
+        Dim native As New FakeWNetNative()
+        Dim manager As New SmbConnectionManager(native)
+        Dim first = manager.AcquireLease("\\server\share", "user", "pass").Value
+        native.InspectionCode = 0
+        Dim second = manager.AcquireLease("\\server\share", "domain\user", "pass").Value
+        Assert.True(second.IsAppCreated)
+        first.Dispose()
+        Assert.Empty(native.CancelCalls)
+        second.Dispose()
+        Assert.Single(native.CancelCalls)
+    End Sub
+
+    <Fact>
+    Public Sub Unknown_connection_ownership_refuses_without_adding_or_cancelling()
+        Dim native As New FakeWNetNative With {.InspectionCode = 5}
+        Dim manager As New SmbConnectionManager(native)
+        Dim result = manager.AcquireLease("\\server\share", "user", "pass")
+        Assert.False(result.Succeeded)
+        Assert.Equal(ResourceFailureKind.LocalIO, result.Failure.Kind)
+        Assert.Empty(native.AddCalls)
+        Assert.Empty(native.CancelCalls)
+    End Sub
+
+    <Fact>
+    Public Sub Read_only_Smb_provider_refuses_all_write_verbs_before_touching_paths()
+        Using provider As New SmbProvider(New ResourceDescriptor With {.ReadOnlyHint = True}, Nothing)
+            Dim actions As Action() = {
+                Sub() provider.Upload("missing-local", "invalid-destination", Nothing, CancellationToken.None),
+                Sub() provider.DeleteFile("invalid-source"),
+                Sub() provider.Rename("invalid-source", "invalid-destination"),
+                Sub() provider.CreateDirectory("invalid-destination")}
+            For Each action As Action In actions
+                Assert.Equal(ResourceFailureKind.Unsupported, Assert.Throws(Of ResourceFailureException)(action).Failure.Kind)
+            Next
+        End Using
+    End Sub
 
     <Theory>
     <InlineData("\\server\share", "\\server\share")>

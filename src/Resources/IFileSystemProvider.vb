@@ -10,6 +10,7 @@ Friend Enum ResourceKind
     Local = 0
     Unc = 1
     Sftp = 2
+    Smb = 3
 End Enum
 
 ''' <summary>How expensive the link behind a provider is - what the prefetch depth and a
@@ -48,7 +49,9 @@ Friend NotInheritable Class ProviderCapabilities
                    Optional needsMaterialisation As Boolean = True,
                    Optional supportsServerSideRename As Boolean = False,
                    Optional isMetered As Boolean = False,
-                   Optional costHint As ProviderCostHint = ProviderCostHint.Slow)
+                   Optional costHint As ProviderCostHint = ProviderCostHint.Slow,
+                   Optional supportsAtomicOverwriteRename As Boolean = False,
+                   Optional supportsStableSourceDelete As Boolean = False)
         Me.CanWrite = canWrite
         Me.CanDelete = canDelete
         Me.CanRename = canRename
@@ -58,6 +61,8 @@ Friend NotInheritable Class ProviderCapabilities
         Me.SupportsServerSideRename = supportsServerSideRename
         Me.IsMetered = isMetered
         Me.CostHint = costHint
+        Me.SupportsAtomicOverwriteRename = supportsAtomicOverwriteRename
+        Me.SupportsStableSourceDelete = supportsStableSourceDelete
     End Sub
 
     Friend ReadOnly Property CanWrite As Boolean
@@ -74,12 +79,21 @@ Friend NotInheritable Class ProviderCapabilities
     Friend ReadOnly Property SupportsServerSideRename As Boolean
     Friend ReadOnly Property IsMetered As Boolean
     Friend ReadOnly Property CostHint As ProviderCostHint
+    ''' <summary>A rename onto an existing target replaces it in ONE step, so no moment exists with the old
+    ''' target gone and the new one absent. When False, a replace goes through an owned backup.</summary>
+    Friend ReadOnly Property SupportsAtomicOverwriteRename As Boolean
+    ''' <summary>The source can be deleted only if it is still the version that was copied: the provider
+    ''' either offers a conditional delete or the file is owned locally, where re-checking the version
+    ''' immediately before the delete is what the app has always done. Arbitrary SFTP does NOT have
+    ''' this, and is never assumed to - a move out of it is a copy unless the guarantee is declared.</summary>
+    Friend ReadOnly Property SupportsStableSourceDelete As Boolean
 
     ''' <summary>A local disk or a UNC share: every verb, a Recycle Bin, nothing to
     ''' materialise.</summary>
     Friend Shared ReadOnly LocalDisk As New ProviderCapabilities(
         hasRecycleBin:=True, needsMaterialisation:=False,
-        supportsServerSideRename:=True, costHint:=ProviderCostHint.Local)
+        supportsServerSideRename:=True, costHint:=ProviderCostHint.Local,
+        supportsStableSourceDelete:=True)
 
 End Class
 
@@ -98,6 +112,20 @@ Friend NotInheritable Class ResourceEntry
     Friend Property IsDirectory As Boolean
     ''' <summary>Where the bytes are, or will be, on this machine.</summary>
     Friend Property LocalPath As String = ""
+    ''' <summary>A provider's own evidence of WHICH version of the file this entry describes
+    ''' (an etag, a change token). Empty when the provider has none - then size and write time
+    ''' are the evidence, see <see cref="SameVersionAs"/>.</summary>
+    Friend Property VersionTag As String = ""
+
+    ''' <summary>Do two listings of one path describe the same bytes? Used before a downloaded
+    ''' file may replace a cached one: a late download of an OLD version must lose.</summary>
+    Friend Function SameVersionAs(other As ResourceEntry) As Boolean
+        If other Is Nothing Then Return False
+        If VersionTag.Length > 0 OrElse other.VersionTag.Length > 0 Then
+            Return String.Equals(VersionTag, other.VersionTag, StringComparison.Ordinal)
+        End If
+        Return Length = other.Length AndAlso LastWriteUtc = other.LastWriteUtc
+    End Function
 End Class
 
 ''' <summary>
@@ -113,6 +141,9 @@ Friend Interface IFileSystemProvider
     ''' <paramref name="dirPath"/>. A folder that is missing or unreadable is an empty
     ''' list, as it always was for the viewer's own scan.</summary>
     Function ListEntries(dirPath As String, ct As CancellationToken) As IReadOnlyList(Of ResourceEntry)
+    ' FullPath in a successful stat is the canonical stored spelling. A provider must
+    ' resolve aliases/case before returning it, so rename can distinguish the source
+    ' itself from a differently-cased destination on a case-sensitive server (085).
     Function TryStat(path As String, ByRef entry As ResourceEntry) As Boolean
 
     ' Bytes in, bytes out. Both cancellable and both report progress: on a slow link a 2 GB

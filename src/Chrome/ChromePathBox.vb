@@ -12,6 +12,7 @@ Friend NotInheritable Class ChromePathBox
     Inherits Control
     Private ReadOnly input As New TextBox With {.BorderStyle = BorderStyle.None, .ShortcutsEnabled = True, .AllowDrop = True}
     Private ReadOnly debounce As New System.Windows.Forms.Timer With {.Interval = ChromeMetrics.CompletionDelayMilliseconds}
+    Private ReadOnly tooltip As New ToolTip With {.ShowAlways = True}
     Private Shared ReadOnly completionGate As New SemaphoreSlim(1, 1)
     Private generation As Integer
     Private cancellation As CancellationTokenSource
@@ -20,6 +21,8 @@ Friend NotInheritable Class ChromePathBox
     Private scaleFactor As Single = 1.0F
     Private rtl As Boolean
     Private symbols As Font
+    Private textFont As Font
+    Private symbolsFont As Font
     Private editing As Boolean
     Private savedText As String = ""
     Private updating As Boolean
@@ -100,8 +103,19 @@ Friend NotInheritable Class ChromePathBox
         theme = newTheme
         scaleFactor = factor
         rtl = rightToLeft
-        symbols = symbolFont
-        input.Font = font
+        If symbolFont IsNot Nothing AndAlso (symbolsFont Is Nothing OrElse Not symbolsFont.Equals(symbolFont)) Then
+            Dim oldSymbols As Font = symbolsFont
+            symbolsFont = DirectCast(symbolFont.Clone(), Font)
+            If oldSymbols IsNot Nothing Then oldSymbols.Dispose()
+        End If
+        symbols = symbolsFont
+        If font IsNot Nothing AndAlso (textFont Is Nothing OrElse Not textFont.Equals(font)) Then
+            Dim oldFont As Font = textFont
+            textFont = DirectCast(font.Clone(), Font)
+            input.Font = Nothing
+            input.Font = textFont
+            If oldFont IsNot Nothing Then oldFont.Dispose()
+        End If
         input.ForeColor = theme.Foreground
         input.BackColor = theme.PanelFill
         input.RightToLeft = If(rtl, System.Windows.Forms.RightToLeft.Yes, System.Windows.Forms.RightToLeft.No)
@@ -115,6 +129,10 @@ Friend NotInheritable Class ChromePathBox
         savedText = Text
         RaiseEvent EditingStarted(Me, EventArgs.Empty)
         input.Focus()
+    End Sub
+    Public Sub SetTooltip(text As String)
+        tooltip.SetToolTip(Me, text)
+        tooltip.SetToolTip(input, text)
     End Sub
     Public Sub EndEditing(Optional cancel As Boolean = False)
         If Not editing Then Return
@@ -206,9 +224,12 @@ Friend NotInheritable Class ChromePathBox
     End Sub
     Protected Overrides Sub Dispose(disposing As Boolean)
         If disposing Then
+            tooltip.Dispose()
             debounce.Dispose()
             CancelCompletion()
             If editHook IsNot Nothing Then editHook.ReleaseHandle()
+            If textFont IsNot Nothing Then textFont.Dispose() : textFont = Nothing
+            If symbolsFont IsNot Nothing Then symbolsFont.Dispose() : symbolsFont = Nothing
         End If
         MyBase.Dispose(disposing)
     End Sub

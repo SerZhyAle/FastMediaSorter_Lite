@@ -20,10 +20,10 @@ Imports System.Windows.Forms
 ' nothing. OCR and translation stay in x86 - unlike Share, they work there.
 
 ''' <summary>
-''' LITE's entire remaining surface for the Android Folder Share feature after the
-''' Stage 3 migration to the standalone Companion app ("Fast Media Sorter: Share
-''' Manager", src/FastMediaSorterCompanion/) - SPECIFICATION_SHARE_COMPANION_APP.md
-''' §4.2/§5. LITE knows NOTHING about the worker, the pipe, ServerFeatures or any
+''' The viewer's entire remaining surface for the Android Folder Share feature after the
+''' Stage 3 migration to the standalone Companion app ("Share
+''' Manager - Fast Media Sorter & Sharing", src/FastMediaSorterCompanion/) - SPECIFICATION_SHARE_COMPANION_APP.md
+''' §4.2/§5. The viewer knows NOTHING about the worker, the pipe, ServerFeatures or any
 ''' opt-in gate - all of that is Companion's own concern now. This file only finds
 ''' and wakes Companion, forwarding the folder currently being viewed. Two entry
 ''' points remain: the folder-box right-click item (this file) and a button on the
@@ -32,7 +32,7 @@ Imports System.Windows.Forms
 ''' hotkey are gone (owner decision, 2026-07).
 '''
 ''' The wake protocol reuses, in the opposite direction, the exact mutex +
-''' WM_COPYDATA pattern Application_Events.vb already uses for LITE's own
+''' WM_COPYDATA pattern Application_Events.vb already uses for the viewer's own
 ''' single-instance argument forwarding.
 ''' </summary>
 Partial Public Class Main_Form
@@ -46,6 +46,7 @@ Partial Public Class Main_Form
     Private Const ShareDownloadPageUrl As String = "https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest"
     ''' <summary>Empty-call marker (no folder) - Companion just shows its window.</summary>
     Private Const CompanionShowWindowCommand As String = "::fms-show-window::"
+    Private Const CompanionBroadcastCommandPrefix As String = "::fms-broadcast::"
     Private Const WM_COPYDATA_SHARE As Integer = &H4A
 
     <StructLayout(LayoutKind.Sequential)>
@@ -73,7 +74,6 @@ Partial Public Class Main_Form
     End Function
 
     Private Const SMTO_ABORTIFHUNG_COMPANION As Integer = &H2
-    Private Const Companion_Send_Timeout_Ms As Integer = 2000
 
     <DllImport("user32.dll", EntryPoint:="EnumWindows", SetLastError:=True)>
     Private Shared Function EnumWindowsCompanion(callback As EnumWindowsCompanionProc, lParam As IntPtr) As Boolean
@@ -113,14 +113,66 @@ Partial Public Class Main_Form
         ActivateShareEntryPoint(managerOnly:=True)
     End Sub
 
-    ''' <summary>The one action LITE knows about sharing: find/wake Fast Media
-    ''' Sorter: Share Manager. When <paramref name="managerOnly"/> is False (the
-    ''' folder-box right-click) it forwards the folder currently being viewed so
-    ''' Companion jumps to "share this folder"; when True (the Settings button) it
-    ''' forwards nothing and just raises the manager window. Not found next to this
+    ''' <summary>The one action the viewer knows about sharing: find/wake the Share
+    ''' Manager. When <paramref name="managerOnly"/> is False (the
+    ''' folder-box right-click) it offers the folder currently being viewed so
+    ''' Companion can put "share this folder" to the user; when True (the Settings button) it
+    ''' sends nothing and just raises the manager window. Not found next to this
     ''' exe -&gt; a clear message, never a silent no-op (graceful degradation - the
-    ''' app never fails silently when an optional companion component is missing).</summary>
-    Friend Sub ActivateShareEntryPoint(Optional managerOnly As Boolean = False)
+    ''' app never fails silently when an optional companion component is missing).
+    '''
+    ''' A folder is sent only to a Share Manager that is known to ask the user before it shares
+    ''' one (ShareActivationPolicy); an older one is woken and the user told to add the folder.
+    ''' A Share Manager that is running but does not answer is reported, never "fixed" by
+    ''' starting a second one or by replaying the request (an uncertain send is not retried
+    ''' as a mutation).</summary>
+    Friend Async Sub ActivateShareEntryPoint(Optional managerOnly As Boolean = False)
+        Try
+            Await ActivateShareEntryPointAsync(managerOnly)
+        Catch ex As Exception
+            AppFileLogger.LogException("ShareLauncher", ex)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Viewer entry point for broadcasting a file or folder to StreamsPlayer.
+    ''' Forwards ::fms-broadcast::<path> to Companion.
+    ''' </summary>
+    Friend Async Sub ActivateBroadcastEntryPoint(targetPath As String)
+        Try
+            Await ActivateBroadcastEntryPointAsync(targetPath)
+        Catch ex As Exception
+            AppFileLogger.LogException("BroadcastLauncher", ex)
+        End Try
+    End Sub
+
+    Private Async Function ActivateBroadcastEntryPointAsync(targetPath As String) As Task
+        If String.IsNullOrWhiteSpace(targetPath) Then Return
+        Dim exePath As String = CompanionExePath()
+        If String.IsNullOrEmpty(exePath) OrElse Not File.Exists(exePath) Then
+            AppFileLogger.WriteLine("BroadcastLauncher: Companion exe not found at '" & If(exePath, "") & "'")
+            OfferShareComponentDownload()
+            Return
+        End If
+
+        Dim running As Boolean? = ProbeCompanionMutex()
+        Dim payload As String = CompanionBroadcastCommandPrefix & targetPath
+
+        If running = True Then
+            AppFileLogger.WriteLine("BroadcastLauncher: Companion running - forwarding broadcast command")
+            Dim outcome As ForwardOutcome = Await Task.Run(Function() ForwardToCompanion(payload))
+            If outcome = ForwardOutcome.Delivered Then Return
+            AppFileLogger.WriteLine("BroadcastLauncher: Companion running but not reachable (" & outcome.ToString() & ")")
+            MessageBox.Show(Me,
+                Localization.T("Share Manager уже запущен, но не ответил на запрос. Подождите немного и повторите; второй экземпляр не запускается."),
+                Localization.T("Трансляция"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+
+        ColdStartCompanion(exePath, payload)
+    End Function
+
+    Private Async Function ActivateShareEntryPointAsync(managerOnly As Boolean) As Task
         Dim folder As String = If(managerOnly, "", ResolveCurrentFolder())
         Dim exePath As String = CompanionExePath()
         If String.IsNullOrEmpty(exePath) OrElse Not File.Exists(exePath) Then
@@ -129,20 +181,102 @@ Partial Public Class Main_Form
             Return
         End If
 
-        Dim existingMutex As Mutex = Nothing
-        If Mutex.TryOpenExisting(CompanionMutexName, existingMutex) Then
-            existingMutex.Close()
-            AppFileLogger.WriteLine("ShareLauncher: Companion running - forwarding " &
-                                    If(folder.Length > 0, "folder", "show-window"))
-            If ForwardFolderToCompanion(folder) Then Return
-            ' No window took the payload (hung, mid-start, or no window yet). Starting
-            ' the exe again hands the same argument to its own single-instance
-            ' forwarding, so the click is never silently lost.
-            AppFileLogger.WriteLine("ShareLauncher: no Companion window accepted the wake - falling back to a start")
+        Dim running As Boolean? = ProbeCompanionMutex()
+        ' The version that matters is the one that will RECEIVE the folder: the running process
+        ' if it can be read, otherwise (not running) the exe about to be started. A running
+        ' process whose version cannot be read is "unknown", and unknown is not proof.
+        Dim receiver As Version = If(running = True, RunningCompanionVersion(), FileVersionOfExe(exePath))
+        Dim plan As ActivationPlan = ShareActivationPolicy.PlanFor(folder, receiver)
+        Dim sentFolder As String = If(plan = ActivationPlan.SendFolder, folder, "")
+
+        If running = True Then
+            AppFileLogger.WriteLine("ShareLauncher: Companion running - " & plan.ToString())
+            Dim payload As String = If(sentFolder.Length > 0, sentFolder, CompanionShowWindowCommand)
+            Dim outcome As ForwardOutcome = Await Task.Run(Function() ForwardToCompanion(payload))
+            If outcome = ForwardOutcome.Delivered Then
+                If plan = ActivationPlan.WakeAndAdvise Then AdviseManualAdd(folder)
+                Return
+            End If
+            ' Uncertain: the Share Manager exists but did not acknowledge in time. Starting it again
+            ' would only repeat the request through another path (and a second manager must never
+            ' start), so the user is told what happened.
+            AppFileLogger.WriteLine("ShareLauncher: Companion running but not reachable (" & outcome.ToString() & ")")
+            MessageBox.Show(Me,
+                Localization.T("Share Manager уже запущен, но не ответил на запрос. Подождите немного и повторите; второй экземпляр не запускается."),
+                Localization.T("Общий доступ"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
         End If
-        ColdStartCompanion(exePath, folder)
+
+        ColdStartCompanion(exePath, sentFolder)
+        If plan = ActivationPlan.WakeAndAdvise Then AdviseManualAdd(folder)
+    End Function
+
+    Private Sub AdviseManualAdd(folder As String)
+        MessageBox.Show(Me,
+            Localization.TF("Share Manager старой версии не умеет безопасно принимать папку отсюда. Обновите его или добавьте папку в нём вручную:" & vbCrLf & "{0}", folder),
+            Localization.T("Общий доступ"), MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
+    ''' <summary>Does a Share Manager already own its mutex? Nothing = could not tell. The
+    ''' handle that was opened is always released; access denied counts as "yes" (S13-9).</summary>
+    Private Shared Function ProbeCompanionMutex() As Boolean?
+        Dim opened As Mutex = Nothing
+        Dim failure As Exception = Nothing
+        Dim found As Boolean = False
+        Try
+            found = Mutex.TryOpenExisting(CompanionMutexName, opened)
+        Catch ex As Exception
+            failure = ex
+        Finally
+            If opened IsNot Nothing Then
+                Try : opened.Dispose() : Catch : End Try
+            End If
+        End Try
+        If failure IsNot Nothing AndAlso Not TypeOf failure Is UnauthorizedAccessException Then
+            AppFileLogger.LogException("ShareLauncher mutex probe", failure)
+        End If
+        Return ShareActivationPolicy.ExistingInstanceHint(found, failure)
+    End Function
+
+    Private Shared Function FileVersionOfExe(path As String) As Version
+        Try
+            Dim info As FileVersionInfo = FileVersionInfo.GetVersionInfo(path)
+            Return ShareActivationPolicy.VersionOf(info.FileMajorPart, info.FileMinorPart, info.FileBuildPart, info.FilePrivatePart)
+        Catch
+            Return Nothing
+        End Try
+    End Function
+
+    ''' <summary>The oldest version among the running Share Manager processes, or Nothing when
+    ''' any of them cannot be read (an elevated one refuses MainModule) - unknown, not "new".</summary>
+    Private Shared Function RunningCompanionVersion() As Version
+        Dim oldest As Version = Nothing
+        Dim processes As Process() = Nothing
+        Try
+            processes = Process.GetProcessesByName(CompanionProcessName)
+            If processes.Length = 0 Then Return Nothing
+            For Each proc As Process In processes
+                Dim v As Version = Nothing
+                Try
+                    v = FileVersionOfExe(proc.MainModule.FileName)
+                Catch
+                    v = Nothing
+                End Try
+                If v Is Nothing Then Return Nothing
+                If oldest Is Nothing OrElse v < oldest Then oldest = v
+            Next
+        Catch ex As Exception
+            AppFileLogger.LogException("ShareLauncher running version", ex)
+            Return Nothing
+        Finally
+            If processes IsNot Nothing Then
+                For Each proc As Process In processes
+                    Try : proc.Dispose() : Catch : End Try
+                Next
+            End If
+        End Try
+        Return oldest
+    End Function
     Private Sub ColdStartCompanion(exePath As String, folder As String)
         Try
             ' Let the freshly-launched Companion raise its window in front of us
@@ -163,7 +297,7 @@ Partial Public Class Main_Form
         Catch ex As Exception
             AppFileLogger.LogException("ShareLauncher cold-start", ex)
             MessageBox.Show(Me,
-                Localization.TF("Не удалось запустить Fast Media Sorter: Share Manager." & vbCrLf & "{0}", FailureText.Describe(ex)),
+                Localization.TF("Не удалось запустить {1}." & vbCrLf & "{0}", FailureText.Describe(ex), ProductNames.ShareManager),
                 Localization.T("Общий доступ"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End Try
@@ -182,9 +316,9 @@ Partial Public Class Main_Form
     ''' </summary>
     Private Sub OfferShareComponentDownload()
         Dim answer As DialogResult = MessageBox.Show(Me,
-            Localization.T("Компонент общего доступа не установлен (Fast Media Sorter: Share Manager)." & vbCrLf & vbCrLf &
-                           "Он входит в полный установщик: запустите его поверх текущей версии - настройки сохранятся." & vbCrLf & vbCrLf &
-                           "Открыть страницу загрузки?"),
+            Localization.TF("Компонент общего доступа не установлен ({0})." & vbCrLf & vbCrLf &
+                            "Он входит в полный установщик: запустите его поверх текущей версии - настройки сохранятся." & vbCrLf & vbCrLf &
+                            "Открыть страницу загрузки?", ProductNames.ShareManager),
             Localization.T("Общий доступ"),
             MessageBoxButtons.YesNo, MessageBoxIcon.Information)
         If answer <> DialogResult.Yes Then Return
@@ -242,68 +376,78 @@ Partial Public Class Main_Form
         Return ""
     End Function
 
-    ''' <summary>Companion is already running (possibly tray-only, hidden window) -
-    ''' find its top-level window(s) and forward the folder (or the bare show-window
-    ''' marker) via WM_COPYDATA, mirroring Application_Events.vb's own forwarding.
-    ''' True when at least one window accepted it within the deadline.</summary>
-    Private Function ForwardFolderToCompanion(folder As String) As Boolean
-        Dim payload As String = If(folder.Length > 0, folder, CompanionShowWindowCommand)
-        Dim delivered As Boolean = False
-        Dim processes As Process() = Nothing
-        Try
-            ' Every element of GetProcessesByName holds a process handle. This runs per user
-            ' click, so they are released in the Finally below rather than left to the
-            ' finalizer - including the ones the loop never reached.
-            processes = Process.GetProcessesByName(CompanionProcessName)
-            For Each proc As Process In processes
-                ' Let the (background) Companion pull its window in front of us when
-                ' it handles the wake - otherwise the window opens silently behind.
-                Try : AllowSetForegroundWindow(proc.Id) : Catch : End Try
-
-                ' The wake (WM_COPYDATA) is handled ONLY by Companion's hidden
-                ' MessageWindow, never by its main form - so send to ALL of the
-                ' process's top-level windows. Targeting MainWindowHandle alone (as
-                ' before) silently dropped the payload whenever the main window was
-                ' up, which read to the user as "nothing happens".
-                Dim targets As List(Of IntPtr) = GetCompanionTopLevelWindows(proc.Id)
-                If proc.MainWindowHandle <> IntPtr.Zero AndAlso Not targets.Contains(proc.MainWindowHandle) Then
-                    targets.Add(proc.MainWindowHandle)
-                End If
-                If targets.Count = 0 Then Continue For
-
-                Dim bytes() As Byte = Encoding.UTF8.GetBytes(payload)
-                Dim ptr As IntPtr = Marshal.AllocHGlobal(bytes.Length + 1)
-                Try
-                    Marshal.Copy(bytes, 0, ptr, bytes.Length)
-                    Marshal.WriteByte(ptr, bytes.Length, 0)
-                    Dim cds As New COMPANION_COPYDATASTRUCT With {.dwData = IntPtr.Zero, .cbData = bytes.Length, .lpData = ptr}
-                    For Each h As IntPtr In targets
-                        Dim sendResult As IntPtr = IntPtr.Zero
-                        If SendMessageTimeoutCompanion(h, WM_COPYDATA_SHARE, IntPtr.Zero, cds,
-                                                       SMTO_ABORTIFHUNG_COMPANION, Companion_Send_Timeout_Ms,
-                                                       sendResult) <> IntPtr.Zero Then
-                            delivered = True
-                        End If
-                    Next
-                Finally
-                    Marshal.FreeHGlobal(ptr)
-                End Try
-                AppFileLogger.WriteLine("ShareLauncher: wake sent to " & targets.Count.ToString() &
-                                        " window(s), delivered=" & delivered.ToString())
-                If delivered Then Exit For
-            Next
-        Catch ex As Exception
-            AppFileLogger.LogException("ShareLauncher forward", ex)
-        Finally
-            If processes IsNot Nothing Then
-                For Each proc As Process In processes
-                    Try : proc.Dispose() : Catch : End Try
-                Next
-            End If
-        End Try
-        Return delivered
+    ''' <summary>Companion is already running (possibly tray-only, hidden window) - hand it the
+    ''' payload (a folder, or the bare show-window marker) via WM_COPYDATA, tagged for the Share
+    ''' Manager. One monotonic 6 s deadline for the whole attempt, each send bounded by what
+    ''' remains of it, the first acknowledgement ends it. Blocking: call it off the UI thread.
+    ''' A payload that cannot be sent whole is refused, never shortened.</summary>
+    Private Function ForwardToCompanion(payload As String) As ForwardOutcome
+        Dim bytes As Byte() = Nothing
+        Dim refusal As PayloadRefusal
+        If Not CopyDataTransport.TryEncode(payload, bytes, refusal) Then
+            AppFileLogger.WriteLine("ShareLauncher: payload refused (" & refusal.ToString() & "), not sent")
+            Return ForwardOutcome.TimedOut
+        End If
+        Return CopyDataTransport.RunForward(
+            AddressOf MonotonicClock.NowMs,
+            Sub(pauseMs) Thread.Sleep(pauseMs),
+            Function(sendTimeoutMs) SendToCompanionOnce(bytes, sendTimeoutMs))
     End Function
 
+    Private Function SendToCompanionOnce(bytes As Byte(), sendTimeoutMs As Integer) As ForwardAttempt
+        ' Every Process object is owned (and disposed) by the discovery; a Companion that exits
+        ' between the listing and the send costs only that candidate.
+        Dim targets As List(Of ViewerProcessTarget) = ViewerProcessDiscovery.Discover(
+            {CompanionProcessName}, -1,
+            Function(name As String) As IList(Of IViewerProcess)
+                Dim wrapped As New List(Of IViewerProcess)()
+                For Each proc As Process In Process.GetProcessesByName(name)
+                    wrapped.Add(New RealViewerProcess(proc))
+                Next
+                Return wrapped
+            End Function,
+            AddressOf GetCompanionTopLevelWindows)
+        If targets.Count = 0 Then Return ForwardAttempt.NoTarget
+
+        For Each target As ViewerProcessTarget In targets
+            ' Let the (background) Companion pull its window in front of us when
+            ' it windowHandles the wake - otherwise the window opens silently behind.
+            Try : AllowSetForegroundWindow(target.Pid) : Catch : End Try
+
+            ' The wake (WM_COPYDATA) is handled ONLY by Companion's hidden MessageWindow, never by
+            ' its main form - so send to ALL of the process's top-level windows.
+            Dim windowHandles As New List(Of IntPtr)(target.TopLevelHandles)
+            If target.MainWindowHandle <> IntPtr.Zero AndAlso Not windowHandles.Contains(target.MainWindowHandle) Then
+                windowHandles.Add(target.MainWindowHandle)
+            End If
+            If windowHandles.Count = 0 Then Continue For
+
+            Dim ptr As IntPtr = Marshal.AllocHGlobal(bytes.Length + 1)
+            Try
+                Marshal.Copy(bytes, 0, ptr, bytes.Length)
+                Marshal.WriteByte(ptr, bytes.Length, 0)
+                Dim cds As New COMPANION_COPYDATASTRUCT With {
+                    .dwData = New IntPtr(CopyDataTransport.CompanionTag), .cbData = bytes.Length, .lpData = ptr}
+                For Each h As IntPtr In windowHandles
+                    Dim sendResult As IntPtr = IntPtr.Zero
+                    Dim sent As Boolean = SendMessageTimeoutCompanion(h, WM_COPYDATA_SHARE, IntPtr.Zero, cds,
+                                                                      SMTO_ABORTIFHUNG_COMPANION, sendTimeoutMs,
+                                                                      sendResult) <> IntPtr.Zero
+                    ' Delivered only on the receiver's own answer - a helper window of the process
+                    ' answers 0, and a bare successful send proves nothing (S13-8).
+                    If sent AndAlso sendResult = New IntPtr(1) Then
+                        AppFileLogger.WriteLine("ShareLauncher: request acknowledged by the Share Manager")
+                        Return ForwardAttempt.Acknowledged
+                    End If
+                Next
+            Catch ex As Exception
+                AppFileLogger.LogException("ShareLauncher forward", ex)
+            Finally
+                Marshal.FreeHGlobal(ptr)
+            End Try
+        Next
+        Return ForwardAttempt.NotAcknowledged
+    End Function
     ''' <summary>All top-level windows of a process, including hidden ones - a
     ''' tray-resident Companion has MainWindowHandle = Zero.</summary>
     Private Function GetCompanionTopLevelWindows(processId As Integer) As List(Of IntPtr)
@@ -322,6 +466,9 @@ Partial Public Class Main_Form
     End Function
 
     Private Function ResolveCurrentFolder() As String
+        ' Inside an archive the only folder that exists on disk is the temporary session
+        ' directory - never something to hand to another program (010 §2.2, §7). The menu item
+        ' is hidden there; this is the guard for any other way in.
         If IsArchiveMode() OrElse IsArchiveOpenPending() Then Return ""
         Try
             Dim f As String = If(Current_Folder_Path, "").Trim()

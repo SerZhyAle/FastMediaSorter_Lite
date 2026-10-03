@@ -179,6 +179,45 @@ Public Class SettingsPersistenceTests
 
     ' ------------------------------------------------------------------ the writes ----
 
+    <Fact>
+    Public Sub A_failed_deliberate_save_of_a_clean_block_becomes_dirty_and_recovers_on_retry()
+        Dim rig As New Rig()
+        rig.Outcomes.Enqueue(False)
+        rig.Outcomes.Enqueue(True)
+        Assert.False(rig.Scheduler.SaveNow(scheduleRetries:=True))
+        Assert.True(rig.Scheduler.IsDirty)
+        Assert.Equal(New Integer() {1000}, rig.TimerStarts.ToArray())
+        rig.Scheduler.OnTimerTick()
+        Assert.False(rig.Scheduler.IsDirty)
+        Assert.Equal(2, rig.FlushCalls)
+    End Sub
+
+    <Fact>
+    Public Sub A_failed_close_save_of_a_clean_block_retains_pending_state_without_starting_a_timer()
+        Dim rig As New Rig()
+        rig.Outcomes.Enqueue(False)
+        Assert.False(rig.Scheduler.SaveNow())
+        Assert.True(rig.Scheduler.IsDirty)
+        Assert.Empty(rig.TimerStarts)
+    End Sub
+
+    <Fact>
+    Public Sub A_reentrant_tick_does_not_stop_the_timer_of_a_newer_edit()
+        Dim rig As New Rig()
+        rig.Scheduler.MarkDirty()
+        rig.DuringFlush = Sub()
+                              rig.DuringFlush = Nothing
+                              rig.Scheduler.MarkDirty()
+                              Dim stops As Integer = rig.TimerStops
+                              rig.Scheduler.OnTimerTick()
+                              Assert.Equal(stops, rig.TimerStops)
+                          End Sub
+        rig.Scheduler.OnTimerTick()
+        Assert.True(rig.Scheduler.IsDirty)
+        rig.Scheduler.OnTimerTick()
+        Assert.False(rig.Scheduler.IsDirty)
+    End Sub
+
     Private Shared Function Block() As List(Of KeyValuePair(Of String, String))
         Dim list As New List(Of KeyValuePair(Of String, String))()
         list.Add(New KeyValuePair(Of String, String)("ImageFolder", "D:\Photos"))

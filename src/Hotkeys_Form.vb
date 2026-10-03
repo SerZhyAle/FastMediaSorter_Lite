@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -49,8 +49,21 @@ Public NotInheritable Class Hotkeys_Form
         Fill()
     End Sub
 
+    ''' <summary>The form's own font: Form.Font does not take ownership of a Font it was
+    ''' handed, so without this it lived until the finalizer ran.</summary>
+    Private ui_Font As Font
+
+    Protected Overrides Sub Dispose(disposing As Boolean)
+        MyBase.Dispose(disposing)
+        If disposing AndAlso ui_Font IsNot Nothing Then
+            ui_Font.Dispose()
+            ui_Font = Nothing
+        End If
+    End Sub
+
     Private Sub Build()
-        Dim uiFont As New Font(Localization.FontFamily(), 9.0F)
+        ui_Font = New Font(Localization.FontFamily(), 9.0F)
+        Dim uiFont As Font = ui_Font
 
         Text = Localization.T("Сочетания клавиш")
         FormBorderStyle = FormBorderStyle.Sizable
@@ -72,7 +85,12 @@ Public NotInheritable Class Hotkeys_Form
         grid.HeaderStyle = ColumnHeaderStyle.Nonclickable
         grid.Columns.Add(Localization.T("Действие"), Localization.Scaled(360))
         grid.Columns.Add(Localization.T("Сочетание"), Localization.Scaled(210))
-        grid.Bounds = New Rectangle(12, 12, ClientSize.Width - 24, ClientSize.Height - 150)
+        Dim documentHelp As New Label With {.AutoSize = False,
+            .Bounds = New Rectangle(12, 8, ClientSize.Width - 24, 56),
+            .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right,
+            .Text = Localization.T("Документы: колесо и PgUp/PgDn — прокрутка или страницы; Ctrl+колесо — масштаб; Home/End — начало/конец документа, Ctrl+Home/End — первый/последний файл. Стрелки — файлы.")}
+        Controls.Add(documentHelp)
+        grid.Bounds = New Rectangle(12, 68, ClientSize.Width - 24, ClientSize.Height - 206)
         grid.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Bottom
         AddHandler grid.SelectedIndexChanged, Sub() ShowCurrentCombo()
         AddHandler grid.DoubleClick, Sub() captureBox.Focus()
@@ -239,7 +257,7 @@ Public NotInheritable Class Hotkeys_Form
 
     Private Sub ResetAll(sender As Object, e As EventArgs)
         If MessageBox.Show(Me, Localization.T("Вернуть все сочетания к значениям по умолчанию?"),
-                           Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+                           Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         working.Clear()
         Refill()
     End Sub

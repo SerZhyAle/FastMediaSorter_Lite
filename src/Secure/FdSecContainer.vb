@@ -2,6 +2,7 @@
 Option Strict On
 
 Imports System.IO
+Imports System.Threading
 
 ''' <summary>
 ''' One open container: the head, the unwrapped file key, the sealed metadata and the
@@ -131,20 +132,22 @@ Public NotInheritable Class FdSecContainer
     Private Shared Function OpenCore(source As Stream, credentialUtf8 As Byte(), ownsSource As Boolean,
                                      profile As FdSecProfile, keyCache As FdSecKeyCache,
                                      total As Long) As FdSecContainer
+        Dim fileKey As Byte() = Nothing
+        Dim plain As Byte() = Nothing
+        Dim handedOver As Boolean = False
         Try
             source.Seek(0, SeekOrigin.Begin)
 
-            Dim fileKey As Byte() = Nothing
             Dim head As FdSecHead = FdSecHead.Open(source, credentialUtf8, profile, keyCache, fileKey)
 
             Dim sealedMetadata(FdSecFormat.MetadataSize - 1) As Byte
             If Not FdSecHead.ReadExactly(source, sealedMetadata, FdSecFormat.MetadataSize) Then
                 Throw FdSecException.Damaged("metadata block is unreadable")
             End If
-            Dim plain As Byte() = FdSecPrimitives.XChaChaOpen(fileKey,
-                                                              FdSecHead.MetadataNonce(fileKey),
-                                                              FdSecHead.MetadataAssociatedData(head.HeaderDigest),
-                                                              sealedMetadata)
+            plain = FdSecPrimitives.XChaChaOpen(fileKey,
+                                                FdSecHead.MetadataNonce(fileKey),
+                                                FdSecHead.MetadataAssociatedData(head.HeaderDigest),
+                                                sealedMetadata)
             If plain Is Nothing Then
                 ' The credential is already proven right by key slot 0, so this is
                 ' tampering or corruption - reported as indistinguishable, because it is.
@@ -152,12 +155,18 @@ Public NotInheritable Class FdSecContainer
             End If
 
             Dim metadata As FdSecMetadata = FdSecMetadata.Parse(plain)
-            FdSecPrimitives.Wipe(plain)
 
             ValidateLength(head, metadata.Size, total)
+            handedOver = True
             Return New FdSecContainer(source, ownsSource, head, fileKey, metadata, total)
         Finally
+            ' Every exit wipes what it holds (audit 057.S17-4): the credential, the sealed
+            ' metadata's plaintext, and - unless a container took it over - the file key.
+            ' A container that authenticated and then failed a later rule (damaged length,
+            ' unparseable metadata) used to leave both behind in the heap.
             FdSecPrimitives.Wipe(credentialUtf8)
+            FdSecPrimitives.Wipe(plain)
+            If Not handedOver Then FdSecPrimitives.Wipe(fileKey)
         End Try
     End Function
 
@@ -264,17 +273,22 @@ Public NotInheritable Class FdSecContainer
     ''' Returns normally when the container is whole; throws the same three outcome
     ''' classes as everything else.
     ''' </summary>
-    Public Sub VerifyAll()
+    Public Sub VerifyAll(Optional cancellationToken As CancellationToken = Nothing,
+                         Optional chunkProgress As Action(Of Long, Long) = Nothing)
+        cancellationToken.ThrowIfCancellationRequested()
         Dim digest As New Org.BouncyCastle.Crypto.Digests.Blake2bDigest(256)
         Dim count As Long = ChunkCount
         For index As Long = 0 To count - 1
+            cancellationToken.ThrowIfCancellationRequested()
             Dim plain As Byte() = ReadChunk(index)
             Try
                 If plain.Length > 0 Then digest.BlockUpdate(plain, 0, plain.Length)
             Finally
                 FdSecPrimitives.Wipe(plain)
             End Try
+            chunkProgress?.Invoke(index + 1, count)
         Next
+        cancellationToken.ThrowIfCancellationRequested()
         Dim recovered(FdSecFormat.DigestSize - 1) As Byte
         digest.DoFinal(recovered, 0)
 

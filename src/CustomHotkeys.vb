@@ -382,6 +382,32 @@ Public NotInheritable Class CustomHotkeys
         Return False
     End Function
 
+    ''' <summary>The actions that move, copy or delete the file on screen - the ones whose
+    ''' factory keys <see cref="KeyRouting.IsDestructiveKey"/> lists (DEL / D, Shift+DEL,
+    ''' the recipient digits). One press is one operation for these (047 C-20).</summary>
+    Public Shared Function IsDestructiveAction(actionId As String) As Boolean
+        If String.IsNullOrEmpty(actionId) Then Return False
+        Return actionId = "deleteFile" OrElse actionId = "deletePermanent" OrElse RecipientSlotOf(actionId) > 0
+    End Function
+
+    ''' <summary>
+    ''' Does this key press move, copy or delete a file? Decided by the ACTION it resolves
+    ''' to with the custom map applied - the same resolution TryHandleCustomHotkey makes -
+    ''' never by the key code alone (audit 057.S05-5): a custom shortcut bound to "delete"
+    ''' or a slot on F8 or Q still auto-repeated, and "next file" moved onto a digit lost
+    ''' its repeat. A retired factory key does nothing at all, so its repeat is harmless;
+    ''' anything the map does not answer falls back to the historical key list.
+    ''' </summary>
+    Public Shared Function IsDestructivePress(map As Dictionary(Of String, String), keyData As Keys) As Boolean
+        Dim combo As String = Format(keyData)
+        If combo.Length > 0 Then
+            Dim owner As String = OwnerOfOverride(map, combo)
+            If owner.Length > 0 Then Return IsDestructiveAction(owner)
+            If IsRetiredDefault(map, combo) Then Return False
+        End If
+        Return KeyRouting.IsDestructiveKey(keyData And Keys.KeyCode)
+    End Function
+
     ''' <summary>Every combination the viewer answers with this action out of the box, in
     ''' canonical spelling: the shown default first, then the historical extras.</summary>
     Public Shared Function FactoryCombos(action As HotkeyAction) As IEnumerable(Of String)

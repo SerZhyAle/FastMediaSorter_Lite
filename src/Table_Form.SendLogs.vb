@@ -45,6 +45,14 @@ Partial Public Class Table_Form
                                    Return LogPackage.Build()
                                End Function)
 
+            ' The window is modeless and the build runs for a while: it may have been closed
+            ' (and disposed) meanwhile. Nobody is left to ask, ShowDialog(Me) and the message
+            ' boxes below would throw on the dead owner, and the ZIP would wait in %TEMP%.
+            If Me.IsDisposed Then
+                If Not String.IsNullOrEmpty(result.Path) Then DeletePackage(result.Path)
+                Return
+            End If
+
             Me.Cursor = previousCursor
 
             If String.IsNullOrEmpty(result.Path) Then
@@ -57,11 +65,15 @@ Partial Public Class Table_Form
             ShowLogPackageDialog(result)
         Catch ex As Exception
             AppFileLogger.LogException("Table_Form send-logs click", ex)
-            MessageBox.Show(Me, Localization.TF("Не удалось собрать архив: {0}", FailureText.Describe(ex)),
-                            Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            If Not Me.IsDisposed Then
+                MessageBox.Show(Me, Localization.TF("Не удалось собрать архив: {0}", FailureText.Describe(ex)),
+                                Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            End If
         Finally
-            Me.Cursor = previousCursor
-            btn_Send_Logs.Enabled = True
+            If Not Me.IsDisposed Then
+                Me.Cursor = previousCursor
+                btn_Send_Logs.Enabled = True
+            End If
             _sendLogsBusy = False
         End Try
     End Sub
@@ -73,6 +85,8 @@ Partial Public Class Table_Form
     ''' </summary>
     Private Sub ShowLogPackageDialog(package As LogPackage.LogPackageResult)
         Dim sent As Boolean = False
+        ' A control never owns its Font: every one made for this dialog is released with it.
+        Dim ownedFonts As New List(Of Font)()
 
         Using dialog As New Form With {
             .Text = Me.Text,
@@ -88,10 +102,17 @@ Partial Public Class Table_Form
             ' waiting behind the pinned viewer/settings windows, which looks exactly
             ' like the button froze until Esc happens to cancel it.
             dialog.TopMost = Me.TopMost OrElse MainWindowIsTopMost()
+            AddHandler dialog.Disposed,
+                Sub()
+                    For Each owned As Font In ownedFonts
+                        owned.Dispose()
+                    Next
+                    ownedFonts.Clear()
+                End Sub
 
             Dim header As New Label With {
                 .AutoSize = False, .Location = New Point(16, 14), .Size = New Size(528, 22),
-                .Font = New Font(dialog.Font, FontStyle.Bold),
+                .Font = OwnFont(ownedFonts, New Font(dialog.Font, FontStyle.Bold)),
                 .Text = Localization.TF("Готов архив {0} ({1}).",
                                         Path.GetFileName(package.Path),
                                         LogPackage.DescribeSize(package.SizeBytes))
@@ -153,7 +174,7 @@ Partial Public Class Table_Form
                     child.RightToLeft = RightToLeft.Yes
                 Next
             End If
-            ApplySendLogsScriptFont(dialog, header)
+            ApplySendLogsScriptFont(dialog, header, ownedFonts)
 
             dialog.ShowDialog(Me)
         End Using
@@ -170,20 +191,26 @@ Partial Public Class Table_Form
     ''' Microsoft Sans Serif. Same rule as the main window: the font goes on the
     ''' individual controls, not on the form, so nothing shifts on the other languages.
     ''' </summary>
-    Private Shared Sub ApplySendLogsScriptFont(dialog As Form, header As Label)
+    Private Shared Sub ApplySendLogsScriptFont(dialog As Form, header As Label, ownedFonts As List(Of Font))
         Dim family As String = Localization.FontFamily()
         If family Is Nothing Then Return
 
         Try
-            Dim body As New Font(family, 8.25!, FontStyle.Regular, GraphicsUnit.Point)
+            Dim body As Font = OwnFont(ownedFonts, New Font(family, 8.25!, FontStyle.Regular, GraphicsUnit.Point))
             For Each child As Control In dialog.Controls
                 child.Font = body
             Next
-            header.Font = New Font(family, 8.25!, FontStyle.Bold, GraphicsUnit.Point)
+            header.Font = OwnFont(ownedFonts, New Font(family, 8.25!, FontStyle.Bold, GraphicsUnit.Point))
         Catch ex As Exception
             AppFileLogger.LogException("Table_Form send-logs script font", ex)
         End Try
     End Sub
+
+    ''' <summary>Records a Font for disposal when the dialog goes, and hands it back.</summary>
+    Private Shared Function OwnFont(ownedFonts As List(Of Font), created As Font) As Font
+        ownedFonts.Add(created)
+        Return created
+    End Function
 
     ''' <summary>
     ''' Hands the archive to the user's mail client. Simple MAPI is the only path that
@@ -191,7 +218,7 @@ Partial Public Class Table_Form
     ''' client (anyone living in web Gmail) gets the manual route instead.
     ''' </summary>
     Private Sub SendPackage(zipPath As String)
-        Dim subject As String = "Fast Media Sorter for Windows " & Application.ProductVersion & " - logs"
+        Dim subject As String = ProductNames.Full & " " & Application.ProductVersion & " - logs"
         Dim body As String = MailBodyTemplate()
 
         ' Simple MAPI puts its editor up synchronously.  A viewer pinned above all
@@ -202,10 +229,10 @@ Partial Public Class Table_Form
         If restoreMainTopMost Then Main_Form.SuspendAlwaysOnTop()
         Try
             ' Owned by this window, so the client's editor is modal to it (053 F-14).
-            Select Case MailSender.Send(zipPath, subject, body, Me.Handle)
-                Case MailSender.MailSendOutcome.Sent
+            Select Case MailSender.FollowUpFor(MailSender.Send(zipPath, subject, body, Me.Handle))
+                Case MailSender.MailFollowUp.Finished
                     Return
-                Case MailSender.MailSendOutcome.Cancelled
+                Case MailSender.MailFollowUp.DiscardArchive
                     ' Nothing was sent: the archive would otherwise wait in %TEMP% for the
                     ' next send-logs run a week later.
                     Try

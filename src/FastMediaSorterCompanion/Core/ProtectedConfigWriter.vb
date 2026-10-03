@@ -4,6 +4,7 @@ Imports System.IO
 Imports System.Security.AccessControl
 Imports System.Security.Principal
 Imports System.Text
+Imports System.Runtime.InteropServices
 
 ''' <summary>How an attempt to publish a secret-bearing file ended.</summary>
 Friend Enum ConfigWriteOutcome
@@ -16,7 +17,7 @@ Friend Enum ConfigWriteOutcome
     ''' redirected path): nothing was written.</summary>
     RefusedUnsafeTarget = 2
     ''' <summary>Anything else - locked target, no space, a failed verification. The previous target is
-    ''' untouched; only a file this call created may have been removed.</summary>
+    ''' unchanged before publication; uncertain publication retains protected recovery evidence.</summary>
     Failed = 3
 End Enum
 
@@ -50,6 +51,8 @@ Friend Interface IConfigFileOps
     Function IsRedirected(path As String) As Boolean
     ''' <summary>The bytes of the file, for the final hash check.</summary>
     Function ReadAllBytes(path As String) As Byte()
+    ''' <summary>Identity/version of an existing file, or Nothing for an absent target.</summary>
+    Function Identity(path As String) As String
 End Interface
 
 ''' <summary>
@@ -61,10 +64,11 @@ End Interface
 '''  2. A sibling temp file is created exclusively and ALREADY owner-only, before any secret byte is
 '''     written; its descriptor is verified, the bytes are written and flushed.
 '''  3. The temp is renamed over the target. A rename keeps the temp's own descriptor; an in-place
-'''     overwrite (or File.Replace) would keep the OLD target's, which is how a permissive existing
+'''     overwrite (or File.Replace) could keep the OLD target's, which is how a permissive existing
 '''     file would have received the secret. The result is verified (descriptor AND bytes).
-'''  4. Any failure before the rename leaves the previous target exactly as it was; only this call's own
-'''     temp is removed. "Saved" is reported only after the verification.
+'''  4. Verify identity before replacement and retain an owner-only recovery copy until verification.
+'''     A failure never deletes the target by name; another writer may already own it.
+'''     "Saved" is reported only after identity, descriptor and bytes are verified.
 ''' </summary>
 Friend Module ProtectedConfigWriter
 
@@ -80,7 +84,9 @@ Friend Module ProtectedConfigWriter
         Try
             fullPath = System.IO.Path.GetFullPath(path)
             directory = System.IO.Path.GetDirectoryName(fullPath)
-            owner = WindowsIdentity.GetCurrent().User
+            Using identity As WindowsIdentity = WindowsIdentity.GetCurrent()
+                owner = identity.User
+            End Using
         Catch
             Return ConfigWriteOutcome.Failed
         End Try
@@ -97,9 +103,27 @@ Friend Module ProtectedConfigWriter
         Dim bytes As Byte() = Utf8.GetBytes(json)
         Dim temp As String = System.IO.Path.Combine(directory, "." & System.IO.Path.GetFileName(fullPath) & "." & Guid.NewGuid().ToString("N") & ".tmp")
         Dim created As Boolean = False
+        Dim recovery As String = temp & ".recovery.tmp"
+        Dim recoveryCreated As Boolean = False
+        Dim published As Boolean = False
         Try
+            Dim originalIdentity As String = files.Identity(fullPath)
+            Dim previous As Byte() = If(originalIdentity Is Nothing, bytes, files.ReadAllBytes(fullPath))
+            ' Keep a protected rollback copy until final verification. A failed or uncertain
+            ' publication must never destroy the previous generation or an unrelated target.
+            Using stream As Stream = files.CreateProtected(recovery, owner)
+                recoveryCreated = True
+                If Not files.IsOwnerOnly(recovery, owner) Then Throw New IOException("Recovery protection failed.")
+                stream.Write(previous, 0, previous.Length)
+                stream.Flush()
+                If TypeOf stream Is FileStream Then DirectCast(stream, FileStream).Flush(True)
+            End Using
+            If Not files.IsOwnerOnly(recovery, owner) OrElse Not BytesEqual(files.ReadAllBytes(recovery), previous) Then
+                Throw New IOException("Recovery verification failed.")
+            End If
             Using stream As Stream = files.CreateProtected(temp, owner)
                 created = True
+                If Not files.IsOwnerOnly(temp, owner) Then Throw New IOException("Temporary protection failed.")
                 stream.Write(bytes, 0, bytes.Length)
                 stream.Flush()
                 If TypeOf stream Is FileStream Then DirectCast(stream, FileStream).Flush(True)
@@ -110,20 +134,31 @@ Friend Module ProtectedConfigWriter
                 Throw New IOException("The temporary file is not owner-only.")
             End If
 
-            files.Move(temp, fullPath, overwrite:=True)
+            Dim newIdentity As String = files.Identity(temp)
+            If files.IsRedirected(directory) OrElse files.IsRedirected(fullPath) OrElse
+               files.OthersCanReplaceIn(directory, owner) OrElse
+               Not String.Equals(originalIdentity, files.Identity(fullPath), StringComparison.Ordinal) Then
+                Throw New IOException("The destination changed before publication.")
+            End If
+            published = True ' A throwing move may still have changed the destination.
+            files.Move(temp, fullPath, overwrite:=originalIdentity IsNot Nothing)
             created = False ' the temp name no longer exists; what is at the target is the new file
 
-            If Not files.IsOwnerOnly(fullPath, owner) OrElse Not BytesEqual(files.ReadAllBytes(fullPath), bytes) Then
-                ' Published but not as intended: it is ours, and it holds a secret - take it back.
-                Try : files.Delete(fullPath) : Catch : End Try
+            If Not String.Equals(newIdentity, files.Identity(fullPath), StringComparison.Ordinal) OrElse
+               Not files.IsOwnerOnly(fullPath, owner) OrElse Not BytesEqual(files.ReadAllBytes(fullPath), bytes) Then
+                ' Ownership is uncertain. Never delete the target by name: it may already
+                ' belong to another writer. Retain the protected recovery evidence.
                 Return ConfigWriteOutcome.Failed
             End If
+            Cleanup(files, recovery, recoveryCreated)
             Return ConfigWriteOutcome.Saved
         Catch ex As PlatformNotSupportedException
             Cleanup(files, temp, created)
+            If Not published Then Cleanup(files, recovery, recoveryCreated)
             Return ConfigWriteOutcome.RefusedNoAcls
         Catch
             Cleanup(files, temp, created)
+            If Not published Then Cleanup(files, recovery, recoveryCreated)
             Return ConfigWriteOutcome.Failed
         End Try
     End Function
@@ -135,8 +170,12 @@ Friend Module ProtectedConfigWriter
     ''' </summary>
     Friend Function CreatePrivateDirectory(path As String) As Boolean
         Try
-            Dim owner As SecurityIdentifier = WindowsIdentity.GetCurrent().User
+            Dim owner As SecurityIdentifier
+            Using identity As WindowsIdentity = WindowsIdentity.GetCurrent()
+                owner = identity.User
+            End Using
             If owner Is Nothing Then Return False
+            If RealConfigFileOps.Instance.IsRedirected(path) Then Return False
             Dim security As New DirectorySecurity()
             security.SetAccessRuleProtection(True, False)
             Dim inherit As InheritanceFlags = InheritanceFlags.ContainerInherit Or InheritanceFlags.ObjectInherit
@@ -144,7 +183,14 @@ Friend Module ProtectedConfigWriter
             security.AddAccessRule(New FileSystemAccessRule(New SecurityIdentifier(WellKnownSidType.LocalSystemSid, Nothing),
                                                             FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow))
             FileSystemAclExtensions.Create(New DirectoryInfo(path), security)
-            Return True
+            Dim actual As DirectorySecurity = New DirectoryInfo(path).GetAccessControl(AccessControlSections.Access)
+            If Not actual.AreAccessRulesProtected Then Return False
+            Dim systemSid As New SecurityIdentifier(WellKnownSidType.LocalSystemSid, Nothing)
+            For Each rule As FileSystemAccessRule In actual.GetAccessRules(True, True, GetType(SecurityIdentifier))
+                If rule.AccessControlType = AccessControlType.Allow AndAlso
+                   Not rule.IdentityReference.Equals(owner) AndAlso Not rule.IdentityReference.Equals(systemSid) Then Return False
+            Next
+            Return Not RealConfigFileOps.Instance.OthersCanReplaceIn(path, owner)
         Catch
             Return False
         End Try
@@ -227,7 +273,18 @@ Friend NotInheritable Class RealConfigFileOps
     End Function
 
     Public Function OthersCanReplaceIn(directory As String, ownerSid As SecurityIdentifier) As Boolean Implements IConfigFileOps.OthersCanReplaceIn
-        Dim security As DirectorySecurity = New DirectoryInfo(directory).GetAccessControl(AccessControlSections.Access)
+        Dim current As String = Path.GetFullPath(directory)
+        Do While Not String.IsNullOrEmpty(current)
+            Dim di As New DirectoryInfo(current)
+            Dim security As DirectorySecurity = di.GetAccessControl(AccessControlSections.Access)
+            If OthersCanReplaceDirectory(security, ownerSid) Then Return True
+            If security.AreAccessRulesProtected Then Exit Do
+            current = Path.GetDirectoryName(current)
+        Loop
+        Return False
+    End Function
+
+    Private Function OthersCanReplaceDirectory(security As DirectorySecurity, ownerSid As SecurityIdentifier) As Boolean
         Dim trusted As New List(Of SecurityIdentifier) From {
             ownerSid,
             New SecurityIdentifier(WellKnownSidType.LocalSystemSid, Nothing),
@@ -237,6 +294,7 @@ Friend NotInheritable Class RealConfigFileOps
                                              FileSystemRights.ChangePermissions Or FileSystemRights.TakeOwnership
         For Each rule As FileSystemAccessRule In security.GetAccessRules(True, True, GetType(SecurityIdentifier))
             If rule.AccessControlType <> AccessControlType.Allow Then Continue For
+            If (rule.PropagationFlags And PropagationFlags.InheritOnly) <> 0 Then Continue For
             If (rule.FileSystemRights And Replaces) = 0 Then Continue For
             Dim sid As SecurityIdentifier = DirectCast(rule.IdentityReference, SecurityIdentifier)
             If trusted.Contains(sid) Then Continue For
@@ -248,16 +306,49 @@ Friend NotInheritable Class RealConfigFileOps
     End Function
 
     Public Function IsRedirected(path As String) As Boolean Implements IConfigFileOps.IsRedirected
-        Try
-            If Not File.Exists(path) AndAlso Not Directory.Exists(path) Then Return False
-            Dim attributes As FileAttributes = File.GetAttributes(path)
-            Return (attributes And FileAttributes.ReparsePoint) = FileAttributes.ReparsePoint
-        Catch
-            Return False
-        End Try
+        Dim current As String = System.IO.Path.GetFullPath(path)
+        Do While Not String.IsNullOrEmpty(current)
+            If File.Exists(current) OrElse Directory.Exists(current) Then
+                If (File.GetAttributes(current) And FileAttributes.ReparsePoint) <> 0 Then Return True
+            End If
+            current = System.IO.Path.GetDirectoryName(current)
+        Loop
+        Return False
     End Function
 
     Public Function ReadAllBytes(path As String) As Byte() Implements IConfigFileOps.ReadAllBytes
         Return File.ReadAllBytes(path)
+    End Function
+
+    <StructLayout(LayoutKind.Sequential)>
+    Private Structure FileIdentityInfo
+        Public Attributes As UInteger
+        Public Created As Runtime.InteropServices.ComTypes.FILETIME
+        Public Accessed As Runtime.InteropServices.ComTypes.FILETIME
+        Public Written As Runtime.InteropServices.ComTypes.FILETIME
+        Public Volume As UInteger
+        Public SizeHigh As UInteger
+        Public SizeLow As UInteger
+        Public Links As UInteger
+        Public IndexHigh As UInteger
+        Public IndexLow As UInteger
+    End Structure
+
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Private Shared Function GetFileInformationByHandle(handle As Microsoft.Win32.SafeHandles.SafeFileHandle,
+                                                       ByRef info As FileIdentityInfo) As Boolean
+    End Function
+
+    Public Function Identity(path As String) As String Implements IConfigFileOps.Identity
+        Try
+            Using handle As Microsoft.Win32.SafeHandles.SafeFileHandle = File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete)
+                Dim info As New FileIdentityInfo()
+                If Not GetFileInformationByHandle(handle, info) Then Throw New IOException("Cannot examine destination identity.")
+                Return String.Join(":", info.Volume, info.IndexHigh, info.IndexLow, info.SizeHigh, info.SizeLow,
+                                   info.Written.dwHighDateTime, info.Written.dwLowDateTime)
+            End Using
+        Catch ex As FileNotFoundException
+            Return Nothing
+        End Try
     End Function
 End Class

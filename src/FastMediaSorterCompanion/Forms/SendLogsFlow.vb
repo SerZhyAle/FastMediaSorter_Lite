@@ -82,11 +82,12 @@ Friend Module SendLogsFlow
             UiLanguage.ApplyTo(dialog)
             Dim layout As New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
                                                      .ColumnCount = 1, .Dock = DockStyle.Fill}
-            Dim header As New Label With {
-                .AutoSize = True, .MaximumSize = New Size(520, 0), .Margin = New Padding(0, 0, 0, 8),
-                .Font = New Font(dialog.Font, FontStyle.Bold),
-                .Text = Localization.TF("Готов архив {0} ({1}).", Path.GetFileName(package.Path),
-                                        LogPackage.DescribeSize(package.SizeBytes))}
+            Using boldFont As New Font(dialog.Font, FontStyle.Bold)
+                Dim header As New Label With {
+                    .AutoSize = True, .MaximumSize = New Size(520, 0), .Margin = New Padding(0, 0, 0, 8),
+                    .Font = boldFont,
+                    .Text = Localization.TF("Готов архив {0} ({1}).", Path.GetFileName(package.Path),
+                                            LogPackage.DescribeSize(package.SizeBytes))}
             Dim contents As New TextBox With {
                 .Width = 520, .Height = 96, .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical,
                 .Margin = New Padding(0, 0, 0, 8),
@@ -124,21 +125,22 @@ Friend Module SendLogsFlow
             dialog.AcceptButton = If(package.OverSizeLimit, reveal, send)
             dialog.CancelButton = cancel
 
-            Dim answer As DialogResult = If(owner Is Nothing, dialog.ShowDialog(), dialog.ShowDialog(owner))
-            Return answer = DialogResult.OK
+                Dim answer As DialogResult = If(owner Is Nothing, dialog.ShowDialog(), dialog.ShowDialog(owner))
+                Return answer = DialogResult.OK
+            End Using
         End Using
     End Function
 
     ''' <summary>Simple MAPI first (the only path that carries an attachment); without a
     ''' MAPI client, the archive on the clipboard, shown in its folder, and a plain mailto.</summary>
     Private Sub SendPackage(owner As IWin32Window, zipPath As String)
-        Dim subject As String = "Fast Media Sorter: Share Manager " & Application.ProductVersion & " - logs"
+        Dim subject As String = ProductNames.ShareManager & " " & Application.ProductVersion & " - logs"
         Dim body As String = MailBodyTemplate()
         Dim ownerHandle As IntPtr = If(owner Is Nothing, IntPtr.Zero, owner.Handle)
-        Select Case MailSender.Send(zipPath, subject, body, ownerHandle)
-            Case MailSender.MailSendOutcome.Sent
+        Select Case MailSender.FollowUpFor(MailSender.Send(zipPath, subject, body, ownerHandle))
+            Case MailSender.MailFollowUp.Finished
                 Return
-            Case MailSender.MailSendOutcome.Cancelled
+            Case MailSender.MailFollowUp.DiscardArchive
                 ' Nothing was sent - do not leave the archive behind in %TEMP% (053 F-14).
                 Try
                     IO.File.Delete(zipPath)

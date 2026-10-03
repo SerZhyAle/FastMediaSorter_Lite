@@ -178,7 +178,7 @@ kbd{font-size:.8em;padding:.12em .45em;border-radius:5px;background:var(--bg-3);
 /* ---------- INLINE DEMO STRIP ---------- */
 .demo{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;background:var(--code-bg);
   border:1px solid var(--border);border-radius:var(--radius-sm);padding:.8rem 1rem;font-family:var(--font-mono);font-size:.86rem}
-.demo code{color:var(--text)}
+.demo,.demo code{color:var(--code-ink)}
 .demo .arrow{color:var(--acc);font-weight:700;font-family:var(--font-body);font-size:.8rem}
 .demo .out{color:var(--gold)}
 
@@ -195,11 +195,25 @@ kbd{font-size:.8em;padding:.12em .45em;border-radius:5px;background:var(--bg-3);
 @media(min-width:640px){.footer-bottom{flex-direction:row;justify-content:space-between}}
 
 /* ---------- BACK TO TOP ---------- */
-.to-top{position:fixed;right:18px;bottom:18px;width:42px;height:42px;border-radius:50%;z-index:40;
+.to-top{position:fixed;right:18px;bottom:18px;width:44px;height:44px;border-radius:50%;z-index:40;
   background:var(--acc);color:var(--acc-ink);border:none;cursor:pointer;display:none;place-items:center;box-shadow:var(--shadow)}
 .to-top.show{display:grid}
 
 /* ---------- RESPONSIVE / A11Y ---------- */
 @media(max-width:480px){.site-header .btn{display:none}}
-@media(pointer:coarse){.btn,.seg button,.theme-btn{min-height:44px}}
+@media(pointer:coarse){.btn,.seg button,.theme-btn,.copybox .copy,.tools-grid a{min-height:44px}
+  .copybox .copy{min-width:44px;top:50%;transform:translateY(-50%)}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* ---------- PRINT (optional; PAGE-STYLE 4.13) ----------
+   Dark ink on white; chrome hidden; URL after each external link.
+   Expanding closed <details> is script (beforeprint), not CSS. */
+@media print{
+  html,html[data-theme]{--bg:#fff;--bg-2:#fff;--bg-3:#f2f2f2;--card:#fff;--card-hover:#fff;--border:#999;
+    --text:#000;--text-2:#111;--muted:#333;--acc:#000;--acc-strong:#000;--gold:#000;
+    --code-bg:#f2f2f2;--code-ink:#000;--shadow:none;--glow:none}
+  body{background:#fff;color:#000}
+  .bg-blobs,.site-header,.to-top,.btn{display:none!important}
+  .card,.get,details.sec{backdrop-filter:none;box-shadow:none;break-inside:avoid}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.85em;word-break:break-all}
+}

@@ -79,7 +79,7 @@ Friend NotInheritable Class ChromeMenu
             Dim source As ChromeMenuItem = entry
             painted.Add(New ChromeItem(source.Id, If(source.Checked, ChromeItemKind.Toggle, ChromeItemKind.Button)) With {
                 .Caption = source.Caption, .AccessibleName = If(source.AccessibleName.Length > 0, source.AccessibleName, source.Caption),
-                .Tooltip = source.Tooltip, .Enabled = source.Enabled, .Checked = source.Checked, .Destructive = source.Destructive,
+                .Tooltip = If(source.Tooltip.Length > 0, source.Tooltip, source.Caption), .Enabled = source.Enabled, .Checked = source.Checked, .Destructive = source.Destructive,
                 .Tag = source, .Image = source.Image, .GlyphId = source.GlyphId, .Action = Sub() InvokeEntry(source)})
         Next
         Surface.SetItems(painted)

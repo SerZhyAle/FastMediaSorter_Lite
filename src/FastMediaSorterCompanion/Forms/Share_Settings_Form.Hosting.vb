@@ -152,7 +152,11 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Async Sub EnsureHostingLoaded()
         If _hostingLoaded Then Return
         _hostingLoaded = True
-        Await RefreshHostingStateAsync()
+        Try
+            Await RefreshHostingStateAsync()
+        Catch ex As Exception
+            AppFileLogger.LogException("Hosting: ensure loaded", ex)
+        End Try
     End Sub
 
     ''' <summary>The live probe off the UI thread, then the repaint it exists for.</summary>
@@ -299,7 +303,8 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' </summary>
     Private Sub OnSwitchToService()
         If MessageBox.Show(Me, HostingText.SwitchToServicePrompt(), HostingText.Title(),
-                           MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+                           MessageBoxButtons.YesNo, MessageBoxIcon.Question,
+                           MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         RunManage(ServiceControl.ManageAction.MigrateToServer, _grantRoots, _grantReadOnlyRoots)
     End Sub
 
@@ -323,21 +328,32 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lblResult.Text = HostingText.ManageWorking()
         Me.Refresh()
 
-        ' Blocks on the UAC prompt and the helper's work - the app itself stays
-        ' non-elevated, and now also responsive, while it runs.
-        Dim res As ServiceControl.ManageResult =
-            Await Task.Run(Function() ServiceControl.Manage(action, roots, readOnlyRoots))
+        Try
+            ' Blocks on the UAC prompt and the helper's work - the app itself stays
+            ' non-elevated, and now also responsive, while it runs.
+            Dim res As ServiceControl.ManageResult =
+                Await Task.Run(Function() ServiceControl.Manage(action, roots, readOnlyRoots))
 
-        ' The dialog may have been closed while the helper was out (ticket 054 H-11).
-        If IsDisposed OrElse Disposing Then Return
-        If res = ServiceControl.ManageResult.Succeeded Then
-            _changed = True
-            ServerFeatures.RefreshHostMode()
-        End If
-        _lblResult.ForeColor = If(res = ServiceControl.ManageResult.Succeeded, Color.ForestGreen, Color.Firebrick)
-        _lblResult.Text = HostingText.ManageResultLine(res)
-        SetHostingActionsEnabled(True)
-        Await RefreshHostingStateAsync()
+            ' The dialog may have been closed while the helper was out (ticket 054 H-11).
+            If IsDisposed OrElse Disposing Then Return
+            If res = ServiceControl.ManageResult.Succeeded Then
+                _changed = True
+                ServerFeatures.RefreshHostMode()
+            End If
+            _lblResult.ForeColor = If(res = ServiceControl.ManageResult.Succeeded, Color.ForestGreen, Color.Firebrick)
+            _lblResult.Text = HostingText.ManageResultLine(res)
+            Await RefreshHostingStateAsync()
+        Catch ex As Exception
+            AppFileLogger.LogException("Hosting: manage action", ex)
+            If Not (IsDisposed OrElse Disposing) Then
+                _lblResult.ForeColor = Color.Firebrick
+                _lblResult.Text = HostingText.ManageResultLine(ServiceControl.ManageResult.Failed)
+            End If
+        Finally
+            If Not (IsDisposed OrElse Disposing) Then
+                SetHostingActionsEnabled(True)
+            End If
+        End Try
     End Sub
 
     Private Sub SetHostingActionsEnabled(value As Boolean)

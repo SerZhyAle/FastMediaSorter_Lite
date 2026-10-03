@@ -47,7 +47,9 @@ change**:
 
 1. Sign in to [Partner Center](https://partner.microsoft.com/dashboard) with your developer account.
 2. **Apps and games ▸ New product ▸ MSIX or PWA app** → reserve the name **FastMediaSorter LITE**
-   (or another available variant).
+   (or another available variant). The Store name does not follow the product's renamed
+   inscriptions (owner decision, 2026-10-03): the manifest `DisplayName` stays `FastMediaSorter LITE`,
+   exactly the reserved name.
 3. Open **Product ▸ Product identity** and copy the three values Microsoft assigned:
    - **Package/Identity/Name** → pass as `-IdentityName`
    - **Package/Identity/Publisher** (e.g. `CN=ABCD1234-…`) → pass as `-Publisher`

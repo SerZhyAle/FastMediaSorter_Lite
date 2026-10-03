@@ -38,7 +38,17 @@ Friend NotInheritable Class ModernImageSharpEncoder
         If bitmap Is Nothing Then Throw New ArgumentNullException(NameOf(bitmap))
         If String.IsNullOrEmpty(targetPath) Then Throw New ArgumentException("Target path is empty.", NameOf(targetPath))
 
-        Dim extension As String = Path.GetExtension(targetPath).ToLowerInvariant()
+        If Not Writable.Contains(Path.GetExtension(targetPath).ToLowerInvariant()) Then Throw New NotSupportedException("Cannot write " & Path.GetExtension(targetPath))
+        Using output As New FileStream(targetPath, FileMode.Create, FileAccess.Write, FileShare.None)
+            EncodeToStream(bitmap, output, Path.GetExtension(targetPath), exifSource, orientation)
+        End Using
+    End Sub
+
+    Public Sub EncodeToStream(bitmap As Bitmap, output As Stream, extension As String,
+                              exifSource As Byte(), orientation As ExifOrientationPolicy) Implements IImageEncoder.EncodeToStream
+        If bitmap Is Nothing Then Throw New ArgumentNullException(NameOf(bitmap))
+        If output Is Nothing Then Throw New ArgumentNullException(NameOf(output))
+        extension = extension.ToLowerInvariant()
         If Not Writable.Contains(extension) Then
             Throw New NotSupportedException("Cannot write " & extension & " - writable formats are " & String.Join(", ", Writable) & ".")
         End If
@@ -47,7 +57,7 @@ Friend NotInheritable Class ModernImageSharpEncoder
             Dim donor As DonorMetadata = ReadDonorMetadata(exifSource)
             ApplyExifProfile(sharpImage, donor.Exif, orientation, bitmap.Width, bitmap.Height)
             ApplyOtherProfiles(sharpImage, donor)
-            Save(sharpImage, targetPath, extension)
+            Save(sharpImage, output, extension)
         End Using
     End Sub
 
@@ -89,7 +99,7 @@ Friend NotInheritable Class ModernImageSharpEncoder
             End If
         Catch ex As Exception
             ' Losing metadata is bad; losing the edit is worse.
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0041: donor metadata not read: " & ex.Message)
+            AppFileLogger.WriteLine(" w0041: donor metadata not read: " & ex.Message)
         End Try
         Return donor
     End Function
@@ -162,17 +172,17 @@ Friend NotInheritable Class ModernImageSharpEncoder
         Try
             If donor.Icc IsNot Nothing Then sharpImage.Metadata.IccProfile = donor.Icc.DeepClone()
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0042: ICC transfer skipped: " & ex.Message)
+            AppFileLogger.WriteLine(" w0042: ICC transfer skipped: " & ex.Message)
         End Try
         Try
             If donor.Xmp IsNot Nothing Then sharpImage.Metadata.XmpProfile = donor.Xmp.DeepClone()
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0043: XMP transfer skipped: " & ex.Message)
+            AppFileLogger.WriteLine(" w0043: XMP transfer skipped: " & ex.Message)
         End Try
         Try
             If donor.Iptc IsNot Nothing Then sharpImage.Metadata.IptcProfile = donor.Iptc.DeepClone()
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0044: IPTC transfer skipped: " & ex.Message)
+            AppFileLogger.WriteLine(" w0044: IPTC transfer skipped: " & ex.Message)
         End Try
     End Sub
 
@@ -191,22 +201,32 @@ Friend NotInheritable Class ModernImageSharpEncoder
         End Using
     End Function
 
-    Private Shared Sub Save(sharpImage As SixLabors.ImageSharp.Image, targetPath As String, extension As String)
+    Private Shared Sub Save(sharpImage As SixLabors.ImageSharp.Image, output As Stream, extension As String)
         Select Case extension
             Case ".jpg", ".jpeg"
-                SixLabors.ImageSharp.ImageExtensions.Save(sharpImage, targetPath,
+                sharpImage.Save(output,
                     New SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder With {.Quality = JpegQuality})
             Case ".webp"
                 ' Lossless: an edit is already a new file, and re-encoding a photo lossily
                 ' on every save would compound. §14.4 accepts that this can come out larger
                 ' than a lossy source.
-                SixLabors.ImageSharp.ImageExtensions.Save(sharpImage, targetPath,
+                sharpImage.Save(output,
                     New SixLabors.ImageSharp.Formats.Webp.WebpEncoder With {
                         .FileFormat = SixLabors.ImageSharp.Formats.Webp.WebpFileFormatType.Lossless})
             Case Else
-                ' PNG, BMP and TIFF need no options - all three are lossless, and ImageSharp
-                ' picks the encoder from the extension.
-                SixLabors.ImageSharp.ImageExtensions.Save(sharpImage, targetPath)
+                ' Stream output requires an explicit encoder; all three are lossless.
+                Dim encoder As SixLabors.ImageSharp.Formats.IImageEncoder
+                Select Case extension
+                    Case ".png"
+                        encoder = New SixLabors.ImageSharp.Formats.Png.PngEncoder()
+                    Case ".bmp"
+                        encoder = New SixLabors.ImageSharp.Formats.Bmp.BmpEncoder()
+                    Case ".tiff"
+                        encoder = New SixLabors.ImageSharp.Formats.Tiff.TiffEncoder()
+                    Case Else
+                        Throw New NotSupportedException("Cannot write " & extension)
+                End Select
+                sharpImage.Save(output, encoder)
         End Select
     End Sub
 
@@ -253,7 +273,7 @@ Friend NotInheritable Class ModernImageSharpEncoder
             sharpImage.Metadata.ExifProfile = profile
         Catch ex As Exception
             ' Losing metadata is bad; losing the edit is worse.
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0040: EXIF transfer skipped: " & ex.Message)
+            AppFileLogger.WriteLine(" w0040: EXIF transfer skipped: " & ex.Message)
         End Try
     End Sub
 

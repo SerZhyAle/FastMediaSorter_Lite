@@ -27,11 +27,14 @@ Partial Public NotInheritable Class Localization
         AddSecureStrings()      ' secure .fd-sec containers: the password dialog and the three outcomes
         AddAppUxStrings()       ' ticket 028: confirmations, failure causes, the download dialog, accessible names
         AddThemeStrings()       ' spec 060: the system / light / dark theme setting
-        AddSortableContentStrings()  ' spec 003 PK: the opt-in content kinds
-        AddPanelStrings()      ' spec 005 PG: the F3 panel toolbar, details list, report window
-        AddActivationStrings() ' ticket 108 H01: the Share Manager hand-off
-        AddSettingsImportStrings() ' tickets 103 and 105 L12: the settings import preview
-        AddStreamStrings()         ' spec 022: stream catalog producer and validator
+        AddPanelStrings()       ' 005: the mainline F3 panel - toolbar, help, details list, report window
+        AddSortableContentStrings() ' 003/008: sortable documents, other files and doc previews
+        AddActivationStrings()  ' 105/108: the Share Manager hand-off - unreachable, too old to ask first
+        AddSettingsImportStrings()  ' 103/105: the import preview names merge as well as replace; unsaved import
+        AddStreamStrings()          ' 022: the stream catalog producer and validator
+        AddResourceStrings()        ' 007: remote resources - the manager, the trust and password prompts, import, honest failures
+        AddLiveBroadcastStrings()   ' 023: live broadcast consumer
+        AddBroadcastStrings()       ' 016: streamsplayer broadcast resource
     End Sub
 
 End Class

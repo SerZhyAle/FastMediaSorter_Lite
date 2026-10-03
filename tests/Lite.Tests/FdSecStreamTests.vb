@@ -3,6 +3,7 @@ Option Strict On
 
 Imports System.IO
 Imports System.Linq
+Imports System.Threading
 Imports System.Threading.Tasks
 Imports Xunit
 
@@ -19,6 +20,43 @@ Imports Xunit
 ''' Modern-only: on the net48 leg src/Secure and this file compile to nothing.
 ''' </summary>
 Public Class FdSecStreamTests
+
+    <Fact>
+    Public Sub Verification_reports_each_authenticated_chunk()
+        Using container As FdSecContainer = OpenPacked(Payload(3000))
+            Dim reports As New List(Of Long)()
+            container.VerifyAll(chunkProgress:=Sub(completed, total)
+                                                   Assert.Equal(container.ChunkCount, total)
+                                                   reports.Add(completed)
+                                               End Sub)
+            Assert.Equal(Enumerable.Range(1, CInt(container.ChunkCount)).Select(Function(i) CLng(i)), reports)
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub Verification_can_cancel_between_chunks_and_be_retried()
+        Using container As FdSecContainer = OpenPacked(Payload(3000)),
+              cancellation As New CancellationTokenSource()
+            Dim reports As Integer = 0
+            Assert.Throws(Of OperationCanceledException)(
+                Sub() container.VerifyAll(cancellation.Token,
+                    Sub(completed, total)
+                        reports += 1
+                        cancellation.Cancel()
+                    End Sub))
+            Assert.Equal(1, reports)
+            container.VerifyAll()
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub Verification_cancelled_before_start_reports_no_chunks()
+        Using container As FdSecContainer = OpenPacked(Payload(3000))
+            Assert.Throws(Of OperationCanceledException)(
+                Sub() container.VerifyAll(New CancellationToken(True),
+                    Sub(completed, total) Assert.Fail("Cancelled verification read a chunk")))
+        End Using
+    End Sub
 
     Private Const Credential As String = "correct horse battery staple"
     Private Const Alignment As Integer = 512
@@ -245,6 +283,20 @@ Public Class FdSecStreamTests
                 Assert.False(stream.CanWrite)
                 Assert.Throws(Of NotSupportedException)(Sub() stream.Write(New Byte(9) {}, 0, 10))
                 Assert.Throws(Of NotSupportedException)(Sub() stream.SetLength(10))
+            End Using
+        End Using
+    End Sub
+
+    ''' <summary>057.S17-5: an offset near the top of the Integer range is an argument error,
+    ''' not an OverflowException out of <c>offset + count</c>.</summary>
+    <Fact>
+    Public Sub A_read_with_an_impossible_window_is_an_argument_error()
+        Using container As FdSecContainer = OpenPacked(Payload(100))
+            Using stream As Stream = container.OpenContentStream()
+                Dim buffer(9) As Byte
+                Assert.Throws(Of ArgumentOutOfRangeException)(Sub() stream.Read(buffer, Integer.MaxValue, 1))
+                Assert.Throws(Of ArgumentOutOfRangeException)(Sub() stream.Read(buffer, 5, 6))
+                Assert.Equal(5, stream.Read(buffer, 5, 5))
             End Using
         End Using
     End Sub

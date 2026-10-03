@@ -78,6 +78,7 @@ Partial Public Class Table_Form
     ''' default window is pixel-for-pixel the one that shipped.
     ''' </summary>
     Private settingsScale As Single = 1.0F
+    Private fontScale As Single = 1.0F
 
     Private Function Sp(value As Integer) As Integer
         If settingsScale = 1.0F Then Return value
@@ -85,16 +86,43 @@ Partial Public Class Table_Form
     End Function
 
     Private Function Sf(points As Single) As Single
-        If settingsScale = 1.0F Then Return points
-        Return points * settingsScale
+        If fontScale = 1.0F Then Return points
+        Return points * fontScale
     End Function
+
+    ''' <summary>The window's fonts, one per family/size/style, shared by every control that
+    ''' asks for it. A control never owns the Font it is handed, so the per-control
+    ''' <c>New Font(..)</c> this replaces left one native font per control behind each time the
+    ''' window was built (S14-5); here they are released together when the window is.</summary>
+    Private ReadOnly settingsFonts As New Dictionary(Of String, Font)()
+
+    Private Function SettingsFont(family As String, size As Single, Optional style As FontStyle = FontStyle.Regular) As Font
+        Dim key As String = family & "|" & size.ToString("R", Globalization.CultureInfo.InvariantCulture) & "|" &
+                            CInt(style).ToString(Globalization.CultureInfo.InvariantCulture)
+        Dim shared_Font As Font = Nothing
+        If Not settingsFonts.TryGetValue(key, shared_Font) Then
+            shared_Font = New Font(family, size, style)
+            settingsFonts.Add(key, shared_Font)
+        End If
+        Return shared_Font
+    End Function
+
+    Private Sub DisposeSettingsFonts()
+        For Each owned_Font As Font In settingsFonts.Values
+            owned_Font.Dispose()
+        Next
+        settingsFonts.Clear()
+    End Sub
 
     Private Sub BuildModernSettingsLayout()
         If modernSettingsBuilt Then Return
         modernSettingsBuilt = True
 
         Dim percent As Integer = Main_Form.GetModernPreferences().InterfaceScalePercent
-        settingsScale = If(percent <= 0, 1.0F, percent / 100.0F)
+        Dim dpiFactor As Single = Math.Max(1.0F, CSng(DeviceDpi) / 96.0F)
+        Dim userFactor As Single = If(percent <= 0, 1.0F, percent / 100.0F)
+        settingsScale = dpiFactor * userFactor
+        fontScale = userFactor
 
         LoadSystemSettingsPalette()
 
@@ -104,11 +132,11 @@ Partial Public Class Table_Form
         FormBorderStyle = FormBorderStyle.Sizable
         MaximizeBox = True
         MinimizeBox = False
-        MinimumSize = New Size(Sp(760), Sp(520))
-        ClientSize = New Size(Sp(900), Sp(600))
+        MinimumSize = New Size(Sp(780), Sp(520))
+        ClientSize = New Size(Sp(960), Sp(640))
         RestoreModernSettingsWindowSize()
         BackColor = SettingsCanvas
-        Font = New Font("Segoe UI", Sf(9.0F), FontStyle.Regular)
+        Font = SettingsFont("Segoe UI", Sf(9.0F), FontStyle.Regular)
 
         modernSettingsShell = New Panel With {
             .Dock = DockStyle.Fill,
@@ -139,18 +167,22 @@ Partial Public Class Table_Form
             .Padding = New Padding(8, 6, 8, 6)
         }
 
+        ' The full name is longer than the sidebar is wide, so the label wraps to two lines
+        ' (UseMnemonic off: the name carries a plain ampersand) and the rows below start lower.
         modernProductLabel = New Label With {
-            .AutoSize = True,
-            .Text = "Fast Media Sorter",
+            .AutoSize = False,
+            .UseMnemonic = False,
+            .Text = ProductNames.Full,
             .ForeColor = SettingsText,
-            .Font = New Font("Segoe UI", Sf(9.0F), FontStyle.Bold),
-            .Location = New Point(Sp(18), Sp(18))
+            .Font = SettingsFont("Segoe UI", Sf(9.0F), FontStyle.Bold),
+            .Location = New Point(Sp(18), Sp(18)),
+            .Size = New Size(Sp(182), Sp(36))
         }
         modernSidebarSectionLabel = New Label With {
             .AutoSize = True,
             .ForeColor = SettingsSidebarMuted,
-            .Font = New Font("Segoe UI", Sf(8.5F), FontStyle.Regular),
-            .Location = New Point(Sp(19), Sp(43))
+            .Font = SettingsFont("Segoe UI", Sf(8.5F), FontStyle.Regular),
+            .Location = New Point(Sp(19), Sp(55))
         }
         modernSettingsSidebar.Controls.Add(modernProductLabel)
         modernSettingsSidebar.Controls.Add(modernSidebarSectionLabel)
@@ -158,7 +190,7 @@ Partial Public Class Table_Form
         modernSettingsTitle = New Label With {
             .AutoSize = False,
             .ForeColor = SettingsText,
-            .Font = New Font("Segoe UI Semibold", Sf(13.0F), FontStyle.Regular),
+            .Font = SettingsFont("Segoe UI Semibold", Sf(13.0F), FontStyle.Regular),
             .Location = New Point(Sp(20), Sp(3)),
             .Height = Sp(36),
             .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
@@ -166,7 +198,7 @@ Partial Public Class Table_Form
         modernSettingsSubtitle = New Label With {
             .AutoSize = False,
             .ForeColor = SettingsMutedText,
-            .Font = New Font("Segoe UI", Sf(8.5F), FontStyle.Regular),
+            .Font = SettingsFont("Segoe UI", Sf(8.5F), FontStyle.Regular),
             .Location = New Point(Sp(20), Sp(39)),
             .Height = Sp(22),
             .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
@@ -211,7 +243,7 @@ Partial Public Class Table_Form
             page.BackColor = SettingsCanvas
             page.UseVisualStyleBackColor = False
             page.Padding = New Padding(0)
-            page.AutoScroll = True
+            page.AutoScroll = False
         Next
 
         ReparentModernSettingsControl(modernSettingsContent, modernSettingsShell)
@@ -250,7 +282,7 @@ Partial Public Class Table_Form
     Private Sub BuildModernSettingsNavigation()
         ' A dense list (ICON-RENDER rule 5: 20 px glyph, a row of 34 - above the 28 px
         ' mouse floor): nine entries fit the window's minimum height with room to spare.
-        Dim top As Integer = Sp(66)
+        Dim top As Integer = Sp(78)
         Dim navLabels As String() = {"Destination folders", "Viewing", "Video and quality", "Audio", "Files and system",
                                      "OCR", "Translation", "Android / SFTP", "About"}
         modernSettingsNavButtons = New Button(navLabels.Length - 1) {}
@@ -264,7 +296,7 @@ Partial Public Class Table_Form
                 .UseVisualStyleBackColor = False,
                 .BackColor = SettingsSidebar,
                 .ForeColor = SettingsSidebarMuted,
-                .Font = New Font("Segoe UI Semibold", Sf(8.5F), FontStyle.Regular),
+                .Font = SettingsFont("Segoe UI Semibold", Sf(8.5F), FontStyle.Regular),
                 .TextAlign = ContentAlignment.MiddleLeft,
                 .ImageAlign = ContentAlignment.MiddleLeft,
                 .TextImageRelation = TextImageRelation.ImageBeforeText,
@@ -352,6 +384,8 @@ Partial Public Class Table_Form
            Not Integer.TryParse(GetSetting(App_name, Second_App_Name, "SettingsWindowHeight", "0"), savedHeight) OrElse
            savedWidth <= 0 OrElse savedHeight <= 0 Then Return
 
+        savedWidth = Math.Max(savedWidth, MinimumSize.Width)
+        savedHeight = Math.Max(savedHeight, MinimumSize.Height)
         FitModernSettingsClientSize(Screen.FromControl(Me).WorkingArea, savedWidth, savedHeight)
     End Sub
 
@@ -414,6 +448,11 @@ Partial Public Class Table_Form
     Private Sub ModernSettingsContentResized(sender As Object, e As EventArgs)
         LayoutModernSettingsPages()
     End Sub
+
+    ''' <summary>Selects button caption based on packaged (MSIX) status (057.S14-2).</summary>
+    Friend Shared Function AssociationButtonCaption(isPackaged As Boolean) As String
+        Return AssociationUx.Caption(AssociationUx.ModeFor(isPackaged))
+    End Function
 
     ''' <summary>Called by PrepareForDisplay after the existing localization code.</summary>
     Private Sub LocalizeModernSettingsLayout()
@@ -492,7 +531,7 @@ Partial Public Class Table_Form
             Select Case row.Key
                 Case "image_associations", "video_associations"
                     Dim button As Button = TryCast(row.Editor, Button)
-                    If button IsNot Nothing Then button.Text = Localization.T("Открыть параметры Windows")
+                    If button IsNot Nothing Then button.Text = AssociationButtonCaption(Main_Form.IsPackagedApp())
                 Case "sftp_manager"
                     Dim button As Button = TryCast(row.Editor, Button)
                     If button IsNot Nothing Then button.Text = Localization.T("Управление SFTP")
@@ -506,6 +545,9 @@ Partial Public Class Table_Form
                 Case "ocr_model"
                     Dim buttons As List(Of Button) = FindModernControls(Of Button)(row.Host).ToList()
                     If buttons.Count > 0 Then buttons(0).Text = Localization.T("Загрузить")
+                Case "project_trust"
+                    Dim link As LinkLabel = TryCast(row.Title, LinkLabel)
+                    If link IsNot Nothing Then link.Tag = SitePages.TrustPageUrl(Localization.CurrentCode)
             End Select
             For Each link As LinkLabel In FindModernControls(Of LinkLabel)(row.Host)
                 If link IsNot row.Title Then link.Text = Localization.T("Открыть")
@@ -569,9 +611,12 @@ Partial Public Class Table_Form
             Case "thumbnail_size" : Return Localization.T("Размер карточки изображения")
             Case "section_accessibility" : Return Localization.T("Комфорт просмотра")
             Case "interface_scale" : Return Localization.T("Масштаб интерфейса")
-            Case "toolbar_always_visible" : Return Localization.T("Показывать панель инструментов всегда")
             Case "new_image_scale" : Return Localization.T("Масштаб нового изображения")
             Case "reduce_motion" : Return Localization.T("Уменьшать анимацию")
+            Case "chrome_size" : Return Localization.T("Размер панелей")
+            Case "chrome_opacity" : Return Localization.T("Непрозрачность панели")
+            Case "chrome_corners" : Return Localization.T("Скругление углов панелей")
+            Case "chrome_pinned" : Return Localization.T("Не скрывать плавающие панели")
             Case "section_slideshow_behavior" : Return Localization.T("Поведение слайд-шоу")
             Case "slideshow_random_order" : Return Localization.T("Порядок показа")
             Case "stop_slideshow_manual" : Return Localization.T("Останавливать при ручной навигации")
@@ -610,6 +655,11 @@ Partial Public Class Table_Form
             Case "create_missing_destination" : Return Localization.T("Создавать отсутствующий каталог получателя")
             Case "include_subfolders" : Return Localization.T("Просматривать вложенные папки")
             Case "included_extensions" : Return Localization.T("Типы файлов")
+            Case "include_document_navigation" : Return Localization.T("Сортировать документы")
+            Case "sort_other_files" : Return Localization.T("Сортировать другие файлы")
+            Case "document_extensions" : Return Localization.T("Расширения документов")
+            Case "text_preview_max_kb" : Return Localization.T("Размер просмотра текста, КБ")
+            Case "other_extensions" : Return Localization.T("Расширения других файлов")
             Case "custom_hotkeys" : Return Localization.T("Сочетания клавиш")
             Case "recent_files_limit" : Return Localization.T("Размер истории файлов")
             Case "recent_folders_limit" : Return Localization.T("Размер истории папок")
@@ -652,11 +702,12 @@ Partial Public Class Table_Form
             Case "ocr_cache_clear" : Return Localization.T("Занято на диске")
             Case "decode_cache_limit" : Return Localization.T("Кэш декодирования, МБ")
             Case "decode_cache_clear" : Return Localization.T("Занято на диске")
+            Case "thumb_cache_limit" : Return Localization.T("Кэш миниатюр панели, МБ")
             Case "sftp_intro" : Return Localization.T("Доступ к медиатеке с телефона")
             Case "sftp_manager" : Return Localization.T("Публикация папок по SFTP")
             Case "sftp_guide" : Return Localization.T("Инструкция по подключению")
             Case "android_app" : Return Localization.T("Приложение для Android")
-            Case "about_intro" : Return "Fast Media Sorter Lite"
+            Case "about_intro" : Return ProductNames.FullForLabel
             Case "support_send_logs" : Return Localization.T("Отправить логи автору")
             Case "doc_html_intro" : Return "Doc HTML Translate"
             Case "doc_html_site" : Return Localization.T("Сайт Doc HTML Translate")
@@ -693,7 +744,11 @@ Partial Public Class Table_Form
             Case "thumbnail_size" : Return Localization.T("Размер карточек в панели предварительного просмотра.")
             Case "interface_scale" : Return Localization.T("Размер шрифта и элементов окна настроек. Применяется после его перезапуска.")
             Case "new_image_scale" : Return Localization.T("Начальный масштаб при открытии следующего изображения.")
-            Case "reduce_motion" : Return Localization.T("Отключает декоративные переходы и анимацию ореола.")
+            Case "reduce_motion" : Return Localization.T("Отключает декоративные переходы, анимацию ореола и движение фона у аудио без обложки.")
+            Case "chrome_size" : Return Localization.T("Малые, средние или крупные; адаптивный следит и за шириной окна.")
+            Case "chrome_opacity" : Return Localization.T("Чем меньше значение, тем прозрачнее плавающие панели.")
+            Case "chrome_corners" : Return Localization.T("Скругление углов панелей")
+            Case "chrome_pinned" : Return Localization.T("Панели не исчезают сами и остаются над изображением постоянно.")
             Case "slideshow_random_order" : Return Localization.T("Выберите обычный, случайный или перемешанный порядок.")
             Case "stop_slideshow_manual" : Return Localization.T("Ручной переход останавливает таймер слайд-шоу.")
             Case "slideshow_ui" : Return Localization.T("Управление и статус можно временно скрывать для просмотра.")
@@ -704,6 +759,9 @@ Partial Public Class Table_Form
             Case "video_volume" : Return Localization.T("Начальная громкость воспроизведения, от 0 до 100 %.")
             Case "video_autoplay" : Return Localization.T("Если выключено, видео открывается на паузе.")
             Case "include_video_navigation", "include_audio_navigation" : Return Localization.T("Выключенные типы не показываются в текущей папке и не входят в счётчик.")
+            Case "include_document_navigation", "sort_other_files" : Return Localization.T("Вместо картинки — имя, размер и дата. Клавиши сортировки работают как обычно.")
+            Case "text_preview_max_kb" : Return Localization.T("Читается только начало файла. Enter открывает файл целиком во внешнем редакторе.")
+            Case "document_extensions", "other_extensions" : Return Localization.T("Расширения через пробел или точку с запятой, например .pdf;.txt. Без масок.")
             Case "video_remember_position" : Return Localization.T("Изменившийся файл всегда начинается с начала.")
             Case "video_controls_delay" : Return Localization.T("Через сколько секунд бездействия скрывать панель управления.")
             Case "video_controls_paused" : Return Localization.T("Не скрывает управление, пока видео поставлено на паузу.")
@@ -740,7 +798,7 @@ Partial Public Class Table_Form
             Case "secure_open_with" : Return Localization.T("Добавляет программу в меню «Открыть с помощью» для .fd-sec, ничего не отбирая у той программы, которой эти файлы принадлежат сейчас.")
             Case "settings_export_personal" : Return Localization.T("История папок и позиции просмотра попадут в файл. API-ключи и пароли - никогда.")
             Case "settings_export" : Return Localization.T("Сохраняет параметры в файл. Личные данные - пути и позиции просмотра - не включаются.")
-            Case "settings_import" : Return Localization.T("Читает параметры из файла. Прежний профиль сохраняется рядом с ним как .backup.")
+            Case "settings_import" : Return Localization.T("Читает параметры из файла. Прежний профиль сохраняется в резервную копию.")
             Case "allow_new_windows" : Return Localization.T("Обычно повторный запуск программы отдаёт файл уже открытому окну. Если отмечено, каждый запуск открывает своё окно.")
             Case "ocr_enabled" : Return Localization.T("Разрешает распознавание текста на открытых изображениях.")
             Case "ocr_auto" : Return Localization.T("Распознаёт текст без отдельной команды после открытия изображения.")
@@ -761,10 +819,11 @@ Partial Public Class Table_Form
             Case "ocr_cache_clear" : Return Localization.T("Текущий размер сохранённых результатов. Очистка не меняет настройки OCR.")
             Case "decode_cache_limit" : Return Localization.T("Ускоряет повторное открытие анимаций и медленных форматов. 0 отключает кэш.")
             Case "decode_cache_clear" : Return Localization.T("Текущий размер сохранённых результатов декодирования.")
+            Case "thumb_cache_limit" : Return Localization.T("Ускоряет повторное открытие панели F3. 0 отключает кэш.")
             Case "sftp_intro" : Return Localization.T("Опубликуйте выбранные папки встроенным SFTP-сервером и открывайте их в мобильном приложении.")
             Case "sftp_manager" : Return Localization.T("Открывает отдельное приложение управления SFTP-доступом и опубликованными папками.")
             Case "sftp_guide" : Return Localization.T("Пошаговая настройка сервера, сети и подключения мобильного клиента.")
-            Case "android_app" : Return Localization.T("Страница мобильного клиента Fast Media Sorter для Android.")
+            Case "android_app" : Return Localization.T("Страница мобильного приложения для Android.")
             Case "about_intro" : Return Localization.TF("Современный просмотрщик и сортировщик фото и видео." & vbCrLf & "Версия {0}", ShortSettingsVersion())
             Case "support_send_logs" : Return Localization.T("Соберёт журналы работы программы в архив и создаст письмо автору. Ничего не отправляется без вашего подтверждения.")
             Case "doc_html_intro" : Return Localization.T("Преобразует EPUB, PDF и другие документы в локальный HTML с оглавлением и переводом в браузере. Для изображений, сканов и комиксов создаёт переводимый OCR-слой.")
@@ -934,7 +993,7 @@ Partial Public Class Table_Form
 
     Private Sub AddSectionHeader(flow As FlowLayoutPanel, key As String)
         Dim host As New Panel With {.Height = Sp(28), .Margin = New Padding(0, 6, 0, 0), .BackColor = SettingsCanvas, .Tag = "modern:full"}
-        Dim title As New Label With {.AutoSize = False, .Dock = DockStyle.Fill, .Font = New Font("Segoe UI Semibold", Sf(9.5F)),
+        Dim title As New Label With {.AutoSize = False, .Dock = DockStyle.Fill, .Font = SettingsFont("Segoe UI Semibold", Sf(9.5F)),
                                      .ForeColor = SettingsText, .TextAlign = ContentAlignment.MiddleLeft, .Padding = New Padding(4, 0, 0, 0)}
         host.Controls.Add(title)
         flow.Controls.Add(host)
@@ -945,9 +1004,9 @@ Partial Public Class Table_Form
         Dim host As New Panel With {.Height = Sp(56), .Margin = New Padding(0, 0, 6, 6), .BackColor = SettingsSurface, .Padding = New Padding(12, 5, 12, 5),
                                    .Tag = If(compact, "modern:compact", "modern:full")}
         Dim title As New Label With {.AutoSize = False, .Location = New Point(Sp(14), Sp(8)), .Height = Sp(20),
-                                     .Font = New Font("Segoe UI Semibold", Sf(8.75F)), .ForeColor = SettingsText}
+                                     .Font = SettingsFont("Segoe UI Semibold", Sf(8.75F)), .ForeColor = SettingsText}
         Dim description As New Label With {.AutoSize = False, .Location = New Point(Sp(14), Sp(31)), .Height = Sp(22),
-                                           .Font = New Font("Segoe UI", Sf(8.0F)), .ForeColor = SettingsMutedText,
+                                           .Font = SettingsFont("Segoe UI", Sf(8.0F)), .ForeColor = SettingsMutedText,
                                            .AutoEllipsis = True}
         Dim row As New ModernSettingRow With {.Key = key, .Host = host, .Title = title, .Description = description, .Editor = editor, .Compact = compact}
         Dim check As CheckBox = TryCast(editor, CheckBox)
@@ -1018,14 +1077,14 @@ Partial Public Class Table_Form
     Private Sub SizeModernSettingRow(row As ModernSettingRow)
         If row.Description Is Nothing Then Return
         ' Heights come from the fonts, so they follow the interface scale on their own.
-        Dim titleHeight As Integer = Math.Max(Sp(19), row.Title.Font.Height + 2)
+        Dim titleHeight As Integer = Math.Max(Sp(20), row.Title.Font.Height + Sp(4))
         Dim lines As Integer = If(row.Key.EndsWith("_intro", StringComparison.Ordinal), 2, 1)
-        Dim descriptionHeight As Integer = Math.Max(Sp(17), row.Description.Font.Height * lines + 2)
-        row.Title.Top = Sp(6)
+        Dim descriptionHeight As Integer = Math.Max(Sp(18), row.Description.Font.Height * lines + Sp(4))
+        row.Title.Top = Sp(7)
         row.Title.Height = titleHeight
-        row.Description.Top = row.Title.Bottom + 1
+        row.Description.Top = row.Title.Bottom + Sp(2)
         row.Description.Height = descriptionHeight
-        row.Host.Height = row.Description.Bottom + Sp(6)
+        row.Host.Height = row.Description.Bottom + Sp(7)
         Dim check As CheckBox = TryCast(row.Editor, CheckBox)
         If check IsNot Nothing Then
             check.Left = Sp(14)
@@ -1125,15 +1184,15 @@ Partial Public Class Table_Form
         ' the warnings Windows raises and what administrator rights are used for (INSTALL-TRUST
         ' rule 7, ticket 037 Ф-4). In the language the settings window is speaking.
         AddProjectLinkRow(flow, "project_trust", SitePages.TrustPageUrl(Localization.CurrentCode))
-        AddProjectLinkRow(flow, "project_email", "mailto:" & Author_Email & "?subject=Fast Media Sorter for Windows")
+        AddProjectLinkRow(flow, "project_email", "mailto:" & Author_Email & "?subject=" & Uri.EscapeDataString(ProductNames.Full))
     End Sub
 
     Private Sub AddInformationBlock(flow As FlowLayoutPanel, key As String)
         Dim host As New Panel With {.Height = 62, .Margin = New Padding(0, 0, 6, 6), .BackColor = SettingsSurface, .Padding = New Padding(12), .Tag = "modern:full"}
         Dim title As New Label With {.AutoSize = False, .Location = New Point(12, 6), .Height = 20,
-                                     .Font = New Font("Segoe UI Semibold", 9.5F), .ForeColor = SettingsText}
+                                     .Font = SettingsFont("Segoe UI Semibold", 9.5F), .ForeColor = SettingsText}
         Dim description As New Label With {.AutoSize = False, .Location = New Point(12, 27), .Height = 30,
-                                           .Font = New Font("Segoe UI", 8.0F), .ForeColor = SettingsMutedText, .AutoEllipsis = True}
+                                           .Font = SettingsFont("Segoe UI", 8.0F), .ForeColor = SettingsMutedText, .AutoEllipsis = True}
         host.Controls.Add(title)
         host.Controls.Add(description)
         AddHandler host.Resize,
@@ -1148,10 +1207,10 @@ Partial Public Class Table_Form
     Private Sub AddProjectLinkRow(flow As FlowLayoutPanel, key As String, url As String)
         Dim host As New Panel With {.Height = 50, .Margin = New Padding(0, 0, 6, 6), .BackColor = SettingsSurface, .Padding = New Padding(12), .Tag = "modern:compact"}
         Dim link As New LinkLabel With {.AutoSize = False, .Location = New Point(12, 6), .Height = 19,
-                                        .Font = New Font("Segoe UI Semibold", 8.75F), .Tag = url,
+                                        .Font = SettingsFont("Segoe UI Semibold", 8.75F), .Tag = url,
                                         .TextAlign = ContentAlignment.MiddleLeft}
         Dim description As New Label With {.AutoSize = False, .Location = New Point(12, 26), .Height = 18,
-                                           .Font = New Font("Segoe UI", 8.0F), .ForeColor = SettingsMutedText, .AutoEllipsis = True}
+                                           .Font = SettingsFont("Segoe UI", 8.0F), .ForeColor = SettingsMutedText, .AutoEllipsis = True}
         AddHandler link.LinkClicked, AddressOf ModernProjectLinkClicked
         host.Controls.Add(link)
         host.Controls.Add(description)
@@ -1375,7 +1434,7 @@ Partial Public Class Table_Form
         For Each group As GroupBox In New GroupBox() {grp_Background, grp_OnScreen, grp_Slideshow, grp_Panel, grp_Quality, grp_Video, grp_FileOps, grp_Integration, grp_Language}
             group.BackColor = SettingsSurface
             group.ForeColor = SettingsText
-            group.Font = New Font("Segoe UI Semibold", 10.0F, FontStyle.Regular)
+            group.Font = SettingsFont("Segoe UI Semibold", 10.0F, FontStyle.Regular)
             group.FlatStyle = FlatStyle.Flat
             group.Padding = New Padding(16, 20, 16, 12)
             group.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
@@ -1389,7 +1448,7 @@ Partial Public Class Table_Form
         Data_Grid_View.EnableHeadersVisualStyles = False
         Data_Grid_View.ColumnHeadersDefaultCellStyle.BackColor = BlendSettingsColor(SettingsSurface, SettingsCanvas, 0.7F)
         Data_Grid_View.ColumnHeadersDefaultCellStyle.ForeColor = SettingsText
-        Data_Grid_View.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI Semibold", 9.0F, FontStyle.Regular)
+        Data_Grid_View.ColumnHeadersDefaultCellStyle.Font = SettingsFont("Segoe UI Semibold", 9.0F, FontStyle.Regular)
         Data_Grid_View.DefaultCellStyle.BackColor = SettingsSurface
         Data_Grid_View.DefaultCellStyle.ForeColor = SettingsText
         Data_Grid_View.DefaultCellStyle.SelectionBackColor = BlendSettingsColor(SettingsAccent, SettingsSurface, 0.72F)
@@ -1471,18 +1530,23 @@ Partial Public Class Table_Form
                 button.UseVisualStyleBackColor = False
                 button.BackColor = SettingsSurface
                 button.ForeColor = SettingsAccent
-                button.Font = New Font("Segoe UI Semibold", Sf(9.0F), FontStyle.Regular)
+                button.Font = SettingsFont("Segoe UI Semibold", Sf(9.0F), FontStyle.Regular)
             ElseIf TypeOf control Is ComboBox OrElse TypeOf control Is TextBox OrElse TypeOf control Is NumericUpDown Then
                 control.BackColor = If(settingsDarkMode, Color.FromArgb(50, 52, 57), SystemColors.Window)
                 control.ForeColor = SettingsText
-                control.Font = New Font("Segoe UI", Sf(9.0F), FontStyle.Regular)
+                control.Font = SettingsFont("Segoe UI", Sf(9.0F), FontStyle.Regular)
             ElseIf TypeOf control Is CheckBox Then
                 control.BackColor = SettingsSurface
                 control.ForeColor = SettingsText
-                control.Font = New Font("Segoe UI", Sf(9.0F), FontStyle.Regular)
+                control.Font = SettingsFont("Segoe UI", Sf(9.0F), FontStyle.Regular)
             ElseIf TypeOf control Is Label Then
-                control.ForeColor = SettingsMutedText
-                control.Font = New Font("Segoe UI", Sf(9.0F), FontStyle.Regular)
+                Dim isTitle As Boolean = modernSettingsRows.Exists(Function(r) r.Title Is control)
+                If isTitle Then
+                    control.ForeColor = SettingsText
+                Else
+                    control.ForeColor = SettingsMutedText
+                    control.Font = SettingsFont("Segoe UI", Sf(8.0F), FontStyle.Regular)
+                End If
             End If
 
             If control.HasChildren Then StyleModernSettingsControlTree(control)

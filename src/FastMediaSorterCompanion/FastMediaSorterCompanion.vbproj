@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Fast Media Sorter: Share Manager - the Android Folder Share controller,
-    split out of the LITE viewer (SPECIFICATION_SHARE_COMPANION_APP.md).
+    Share Manager - Fast Media Sorter & Sharing - the Android Folder Share controller,
+    split out of the mainline viewer (SPECIFICATION_SHARE_COMPANION_APP.md).
     Public name "Share Manager" rides on the frozen technical anchor
     FastMediaSorterCompanion.exe (CLAUDE.md light-rebrand rule). Written on
     .NET 10 from the start - no intermediate net48 variant.
@@ -26,8 +26,8 @@
     <OptionCompare>Binary</OptionCompare>
 
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Product>Fast Media Sorter: Share Manager</Product>
-    <AssemblyTitle>Fast Media Sorter: Share Manager</AssemblyTitle>
+    <Product>Share Manager - Fast Media Sorter &amp; Sharing</Product>
+    <AssemblyTitle>Share Manager - Fast Media Sorter &amp; Sharing</AssemblyTitle>
     <Company>SZA</Company>
     <NeutralLanguage>en</NeutralLanguage>
     <ApplicationIcon>..\..\assets\icons\Fast_Media_Sorter.ico</ApplicationIcon>
@@ -56,7 +56,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- QR rendering for the .fmscfg export (ShareConfigBuilder), same version as LITE. -->
+    <!-- QR rendering for the .fmscfg export (ShareConfigBuilder), same version as the viewer. -->
     <PackageReference Include="QRCoder" Version="1.4.3" />
   </ItemGroup>
 
@@ -89,6 +89,7 @@
 
       Linked, not copied: a fix to T/TF/TC must not need doing twice.
     -->
+    <Compile Include="..\Theming\IThemeAware.vb" Link="Theming\IThemeAware.vb" />
     <Compile Include="..\Localization\Localization.vb" Link="Localization\Localization.vb" />
     <Compile Include="..\Localization\Localization.Persistence.vb" Link="Localization\Localization.Persistence.vb" />
 
@@ -99,6 +100,12 @@
       linked, not copied, so the P/Invoke exists once.
     -->
     <Compile Include="..\Support\MailSender.vb" Link="Core\MailSender.vb" />
+    <Compile Include="..\CopyDataTransport.vb" Link="Core\CopyDataTransport.vb" />
+    <Compile Include="..\ProbeScheduler.vb" Link="Core\ProbeScheduler.vb" />
+    <Compile Include="..\ShareActivationPolicy.vb" Link="Core\ShareActivationPolicy.vb" />
+    <Compile Include="..\MonotonicClock.vb" Link="Core\MonotonicClock.vb" />
+    <!-- The product's visible names, spelled once (docs/guides/PRODUCT_NAMING.md). -->
+    <Compile Include="..\ProductNames.vb" Link="Core\ProductNames.vb" />
     <!--
       The viewer's log package, for the Share Manager's own "send the log" (ticket 028
       Ф-3, APP-BEHAVIOUR rule 6): one report format, one settings allow-list, one
@@ -123,7 +130,6 @@
     <Compile Include="..\Theming\ThemeApplier.vb" Link="Theming\ThemeApplier.vb" />
     <Compile Include="..\Theming\ThemedMenuRenderer.vb" Link="Theming\ThemedMenuRenderer.vb" />
     <Compile Include="..\Theming\ThemeService.vb" Link="Theming\ThemeService.vb" />
-    <Compile Include="..\CopyDataTransport.vb" Link="Core\CopyDataTransport.vb" />
     <Compile Include="..\Localization\Localization.Theme.vb" Link="Localization\Localization.Theme.vb" />
   </ItemGroup>
 

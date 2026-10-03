@@ -71,7 +71,10 @@ Friend NotInheritable Class Secure_Password_Form
         Me.ClientSize = New Size(460, 186)
 
         Dim family As String = Localization.FontFamily()
-        If family IsNot Nothing Then Me.Font = New Font(family, Me.Font.Size)
+        If family IsNot Nothing Then
+            script_Font = New Font(family, Me.Font.Size)
+            Me.Font = script_Font
+        End If
         If Localization.IsRightToLeft() Then Me.RightToLeft = RightToLeft.Yes
 
         prompt = New Label With {
@@ -146,6 +149,17 @@ Friend NotInheritable Class Secure_Password_Form
         Me.AcceptButton = okButton
         ' Escape, the close box and Cancel are the same path, and it changes nothing.
         Me.CancelButton = dismissButton
+    End Sub
+
+    ''' <summary>The face for a script the pinned font cannot draw. A Control never disposes
+    ''' a Font it was handed, so the dialog does (057.S17-6) - it is shown once per unlock
+    ''' attempt, and each one used to leave a GDI font handle to the finalizer.</summary>
+    Private script_Font As Font
+
+    Protected Overrides Sub Dispose(disposing As Boolean)
+        MyBase.Dispose(disposing)
+        ' After the base: the children are gone by then and nothing paints with it.
+        If disposing Then script_Font?.Dispose()
     End Sub
 
     Protected Overrides Sub OnShown(e As EventArgs)

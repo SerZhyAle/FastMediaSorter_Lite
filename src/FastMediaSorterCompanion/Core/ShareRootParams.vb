@@ -149,7 +149,7 @@ End Class
 ''' Registry-backed store of per-root export params, keyed by the folder's host
 ''' path (case-insensitive) - one JSON blob in the app's registry store
 ''' (Share_RootParams, mirrors the ShareSettings pattern). The folder LIST still
-''' belongs to the worker (shares.json); only LITE-side export metadata lives
+''' belongs to the worker (shares.json); only viewer-side export metadata lives
 ''' here. Params survive a folder being unchecked or re-added and are dropped
 ''' when its row is removed from the Share tab.
 ''' </summary>
@@ -159,10 +159,10 @@ Public Module ShareRootParamsStore
     Private _map As Dictionary(Of String, ShareRootParams)
 
     ' System.Text.Json replaces JavaScriptSerializer (spec §6.2). This blob is
-    ' LITE-side storage, but the format must stay readable across the upgrade:
+    ' viewer-side storage, but the format must stay readable across the upgrade:
     ' STJ (like JavaScriptSerializer) emits verbatim PascalCase property names and
     ' a Dictionary(Of String, T) as a JSON object, so old blobs written by the
-    ' pre-Companion LITE still deserialize (spec §9.1). Case-insensitive for safety.
+    ' pre-Companion viewer still deserialize (spec §9.1). Case-insensitive for safety.
     Private ReadOnly JsonOpts As New JsonSerializerOptions With {.PropertyNameCaseInsensitive = True}
 
     ''' <summary>Params for a host path - always a copy, never the stored instance;

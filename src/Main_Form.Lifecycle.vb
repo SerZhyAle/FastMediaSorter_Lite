@@ -17,18 +17,9 @@ Partial Public Class Main_Form
         all_Supported_Extensions.Clear()
         all_Supported_Extensions.UnionWith(Image_File_Extensions)
 #If Not NETFRAMEWORK Then
-        ' video_File_Extensions also contains audio containers because LibVLC plays both.
-        ' Navigation settings deliberately split that playback set by MediaKind.
-        For Each extension As String In video_File_Extensions
-            Select Case KindOf(extension)
-                Case MediaKind.Video
-                    If modern_Preferences Is Nothing OrElse modern_Preferences.IncludeVideoInNavigation Then all_Supported_Extensions.Add(extension)
-                Case MediaKind.Audio
-                    If modern_Preferences Is Nothing OrElse modern_Preferences.IncludeAudioInNavigation Then all_Supported_Extensions.Add(extension)
-                Case Else
-                    all_Supported_Extensions.Add(extension)
-            End Select
-        Next
+        all_Supported_Extensions.UnionWith(SortableContentKinds.BuildExtensions(
+            Image_File_Extensions, video_File_Extensions, web_specific_image_extensions,
+            GetModernPreferences()))
 #Else
         all_Supported_Extensions.UnionWith(video_File_Extensions)
 #End If
@@ -156,7 +147,7 @@ Partial Public Class Main_Form
     ''' <summary>Brings the main window back on screen and focuses it - unminimizes if
     ''' needed. Generic single-instance relaunch UX (not share-specific): shared by
     ''' Application_Events.vb's bare-second-launch handling and the Show_Window_Command
-    ''' handling above. The window is never hidden to a tray by LITE itself (that
+    ''' handling above. The window is never hidden to a tray by the viewer itself (that
     ''' close-to-tray behavior moved to Share Manager with the share feature), so this
     ''' is just "unminimize + focus", not a tray-restore.</summary>
     Friend Sub RestoreMainWindow()
@@ -214,6 +205,8 @@ Partial Public Class Main_Form
         cmbox_Sort.Items.AddRange(New String() {"abc", "xyz", "rnd", ">size", "<size", ">time", "<time", "<0123", ">3210"})
 
         cmbox_Sort.SelectedIndex = 0
+        lbl_Current_File.Text = ""
+        lbl_Status.Text = ""
         is_TextBox_Editing = False
 
         BgWorker.WorkerReportsProgress = True
@@ -245,8 +238,11 @@ Partial Public Class Main_Form
     ' When a requested file is locked by a writer (still downloading), we don't give
     ' up -- we poll until it unlocks (or the deadline passes) and then open it, so a
     ' freshly-downloaded file appears on its own once it's ready.
-    Private pending_Unlock_Path As String = Nothing
-    Private pending_Unlock_Deadline As DateTime
+    ''' <summary>The wait is keyed by (ticket, path) of the request that started it (ticket
+    ''' 106): once a newer request is accepted or the user navigates, the wait is no longer the
+    ''' latest and ends quietly, and a stale tick can only ever touch its own wait.</summary>
+    Private ReadOnly pending_Unlock As New PendingUnlock()
+    Private Const Unlock_Wait_Ms As Long = 45000
     Private WithEvents pending_Unlock_Timer As New System.Windows.Forms.Timer() With {.Interval = 800}
 
     ''' <summary>Gives up waiting for the file to unlock. Called by any explicit change
@@ -255,15 +251,11 @@ Partial Public Class Main_Form
     ''' working in another folder.</summary>
     Private Sub CancelPendingUnlock(status_Text As String)
         pending_Unlock_Timer.Stop()
-        If String.IsNullOrEmpty(pending_Unlock_Path) Then Return
-        Dim dropped As String = pending_Unlock_Path
-        pending_Unlock_Path = Nothing
+        If Not pending_Unlock.IsActive Then Return
+        Dim dropped As String = pending_Unlock.Path
+        pending_Unlock.Clear()
         If status_Text <> "" Then lbl_Status.Text = status_Text & Path.GetFileName(dropped)
     End Sub
-
-    ''' <summary>Set while a probe of pending_Unlock_Path is in flight on a worker thread, so
-    ''' ticks do not stack up behind a probe that is waiting out a network timeout.</summary>
-    Private pending_Unlock_Probe_Running As Boolean = False
 
     ''' <summary>How a single probe of the locked file came out.</summary>
     Private Enum Unlock_Probe_Result
@@ -274,34 +266,55 @@ Partial Public Class Main_Form
     End Enum
 
     Private Async Sub Pending_Unlock_Timer_Tick(sender As Object, e As EventArgs) Handles pending_Unlock_Timer.Tick
-        If String.IsNullOrEmpty(pending_Unlock_Path) Then
+        If Not pending_Unlock.IsActive Then
             pending_Unlock_Timer.Stop()
             Return
         End If
 
-        If DateTime.Now > pending_Unlock_Deadline Then
+        ' The identity this tick works for. Everything after an Await is checked against it:
+        ' a tick that outlives its wait (a newer request, the same path asked for again) must
+        ' not stop, complete or open anything on behalf of the wait that replaced it.
+        Dim mine As PendingUnlock.Capture = pending_Unlock.Snapshot()
+
+        ' A newer open request (or navigation) made this wait obsolete: end it without a
+        ' word - the status line now belongs to whatever replaced it.
+        If Not open_Requests.IsCurrent(mine.Ticket) Then
+            CancelPendingUnlock("")
+            Return
+        End If
+
+        If pending_Unlock.Expired(MonotonicClock.NowMs()) Then
             CancelPendingUnlock(Localization.T("Файл всё ещё занят: "))
             Return
         End If
 
-        If pending_Unlock_Probe_Running Then Return
+        If pending_Unlock.ProbeInFlight Then Return
 
         ' Off the UI thread. The probe is a single File.GetAttributes, which is cheap on a
         ' local disk but costs a FULL network timeout on a share that stopped answering - and
         ' this tick fires every 800 ms, so the window used to take that stall over and over.
-        Dim probed_Path As String = pending_Unlock_Path
-        pending_Unlock_Probe_Running = True
+        pending_Unlock.ProbeInFlight = True
         Dim outcome As Unlock_Probe_Result
         Try
-            outcome = Await Task.Run(Function() ProbePendingUnlock(probed_Path))
-        Finally
-            pending_Unlock_Probe_Running = False
+            outcome = Await Task.Run(Function() ProbePendingUnlock(mine.Path))
+        Catch ex As Exception
+            ' Async Sub: an unobserved failure here would reach the unhandled-exception path.
+            AppFileLogger.LogException("Probing a file that was locked", ex)
+            If pending_Unlock.Owns(mine) Then pending_Unlock.ProbeInFlight = False
+            Return
         End Try
+        If pending_Unlock.Owns(mine) Then pending_Unlock.ProbeInFlight = False
 
         ' The world may have moved on while the probe was out: a different file requested, or
-        ' the wait cancelled outright.
+        ' the wait cancelled outright. A stale completion must not touch a NEWER wait, so it
+        ' returns here without cancelling anything.
         If Me.IsDisposed Then Return
-        If Not String.Equals(pending_Unlock_Path, probed_Path, StringComparison.Ordinal) Then Return
+        If Not pending_Unlock.Owns(mine) Then Return
+        If Not open_Requests.IsCurrent(mine.Ticket) Then
+            CancelPendingUnlock("")
+            Return
+        End If
+        If open_Coordinator.IsCloseDraining Then Return ' the next tick retries once the close is settled
 
         Select Case outcome
             Case Unlock_Probe_Result.Missing
@@ -317,11 +330,13 @@ Partial Public Class Main_Form
         End Select
 
         pending_Unlock_Timer.Stop()
-        Dim ready_Path As String = pending_Unlock_Path
-        pending_Unlock_Path = Nothing
+        Dim ready_Path As String = pending_Unlock.Path
+        Dim ready_NoBack As Boolean = pending_Unlock.NoBack
+        pending_Unlock.Clear()
         is_External_Input_Received = True
         is_File_Reseived_From_Outside = True
-        ProcessArgument(ready_Path)
+        ' A continuation of the request that started the wait, not a new one (ticket 106 O01.3).
+        ObserveOpen(open_Coordinator.ContinueUnlocked(mine.Ticket, ready_Path, ready_NoBack), "Opening an unlocked file")
     End Sub
 
     ''' <summary>GetAttributes keeps throwing while a writer holds the file; once it succeeds
@@ -369,70 +384,6 @@ Partial Public Class Main_Form
         Return found
     End Function
 
-    ''' <summary>What the filesystem said about an argument. Filled on a worker thread
-    ''' (modern) or inline (net48) - see ProbeArgument.</summary>
-    Private NotInheritable Class ArgumentProbe
-        Public Property IsDirectory As Boolean
-        Public Property Exists As Boolean
-        Public Property Missing As Boolean
-        Public Property Denied As Boolean
-        Public Property LastError As String = ""
-    End Class
-
-    ''' <summary>
-    ''' Asks the filesystem about the argument, with the retry policy this app has always
-    ''' had - unchanged, deliberately:
-    '''   * FileNotFound/DirNotFound -> genuinely gone: fail fast.
-    '''   * UnauthorizedAccess       -> "access denied": almost always a sharing violation
-    '''       because the file is still being written by a downloader. A real lock clears
-    '''       in a moment: a few quick retries. An ACL problem will not clear.
-    '''   * IOException etc.         -> share dropped/busy: retry longer, let the SMB
-    '''       session re-establish.
-    '''
-    ''' Every call here can block for an SMB timeout - which is why on modern this whole
-    ''' function runs on a worker thread (see ProcessArgument). It touches no form state.
-    ''' </summary>
-    Private Shared Function ProbeArgument(path As String) As ArgumentProbe
-        Dim probe As New ArgumentProbe()
-
-        Try
-            If Directory.Exists(path) Then
-                probe.IsDirectory = True
-                probe.Exists = True
-                Return probe
-            End If
-        Catch ex As Exception
-            probe.LastError = "[" & ex.GetType().Name & "] " & ex.Message
-        End Try
-
-        probe.Exists = File.Exists(path)
-        Dim denied_Tries As Integer = 0
-        Dim net_Tries As Integer = 0
-
-        Do While Not probe.Exists
-            Try
-                File.GetAttributes(path)
-                probe.Exists = True
-            Catch ex As FileNotFoundException
-                probe.Missing = True : probe.LastError = ex.Message : Exit Do
-            Catch ex As DirectoryNotFoundException
-                probe.Missing = True : probe.LastError = ex.Message : Exit Do
-            Catch ex As UnauthorizedAccessException
-                probe.Denied = True : probe.LastError = ex.Message
-                denied_Tries += 1
-                If denied_Tries >= 3 Then Exit Do
-                Threading.Thread.Sleep(250)
-            Catch ex As Exception
-                probe.LastError = "[" & ex.GetType().Name & "] " & ex.Message
-                net_Tries += 1
-                If net_Tries >= 8 Then Exit Do
-                Threading.Thread.Sleep(250)
-            End Try
-        Loop
-
-        Return probe
-    End Function
-
     Public Sub ProcessArgument(argument_Raw_Text As String)
         Dim argument_For_Path As String = argument_Raw_Text.Trim()
         Dim is_No_Back_Flag_In_This_Call As Boolean = StripNoBackFlag(argument_For_Path)
@@ -452,6 +403,14 @@ Partial Public Class Main_Form
             Return
         End If
 
+#If Not NETFRAMEWORK Then
+        ' Live broadcast descriptor, .fmsbcast file, barcode text, or intent link (spec 023 §4)
+        If TryHandleLiveBroadcastArgument(argument_For_Path) Then Return
+
+        ' Not a path at all: a resource address, or a Share Manager document to import.
+        If TryHandleResourceArgument(argument_For_Path) Then Return
+#End If
+
         ' Probe off the UI thread. Every one of those Exists/GetAttributes calls blocks for a
         ' full SMB timeout when the server is asleep, and with the retries that is minutes of
         ' a dead window - on a machine whose working folder IS a share. The classification and
@@ -466,30 +425,102 @@ Partial Public Class Main_Form
         ProcessArgumentAsync(argument_For_Path, is_No_Back_Flag_In_This_Call)
     End Sub
 
-    Private Async Sub ProcessArgumentAsync(argument_For_Path As String, is_No_Back_Flag_In_This_Call As Boolean)
-        Dim generation As Integer = media_Generation
-        lbl_Status.Text = Localization.TF("Проверяю доступность: {0}", Path.GetFileName(argument_For_Path))
+    ''' <summary>Actual filesystem probes of "open this path" requests share two permits for
+    ''' the whole process; a viewer keeps at most one request queued behind them, the latest
+    ''' (ticket 106, 105 L01). A request that waited 30 s without a permit never runs.</summary>
+    Private Shared ReadOnly ArgumentProbeScheduler As New ProbeScheduler(Of ArgumentProbe)(
+        New ProbePolicy With {.MaxActive = 2, .MaxPending = 8, .ReplacePendingOfSameOwner = True,
+                              .PendingExpiryMs = 30000})
 
-        Dim probe As ArgumentProbe
-        Try
-            probe = Await Task.Run(Function() ProbeArgument(argument_For_Path))
-        Catch ex As Exception
-            AppFileLogger.LogException("Probing a forwarded argument", ex)
-            Return
-        End Try
+    Private open_Coordinator_Value As OpenCoordinator
 
-        ' The user may have opened something else while we waited on a dead share.
-        If generation <> media_Generation Then
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0282: probe result dropped - user moved on")
-            Return
-        End If
-        If Me.IsDisposed Then Return
+    ''' <summary>The ordering policy of open requests; created on first use because the
+    ''' partial classes initialise their fields in no promised order.</summary>
+    Private ReadOnly Property open_Coordinator As OpenCoordinator
+        Get
+            If open_Coordinator_Value Is Nothing Then
+                open_Coordinator_Value = New OpenCoordinator(open_Requests, ArgumentProbeScheduler, New OpenHost(Me))
+            End If
+            Return open_Coordinator_Value
+        End Get
+    End Property
 
-        ApplyArgument(argument_For_Path, is_No_Back_Flag_In_This_Call, probe)
+    ''' <summary>Logs a failure of an open that nobody awaits (the callers are Async Sub or
+    ''' fire-and-forget): a fault must be observed, never left to the unhandled path.</summary>
+    Private Shared Sub ObserveOpen(task As Task(Of OpenOutcome), what As String)
+        task.ContinueWith(Sub(t) AppFileLogger.LogException(what, t.Exception),
+                          TaskContinuationOptions.OnlyOnFaulted)
     End Sub
 
+    ''' <summary>What the window gives the open coordinator. Every member that touches a
+    ''' control runs on the UI thread, through Post.</summary>
+    Private NotInheritable Class OpenHost
+        Implements IOpenHost
+
+        Private ReadOnly form As Main_Form
+
+        Friend Sub New(form As Main_Form)
+            Me.form = form
+        End Sub
+
+        Public ReadOnly Property IsClosed As Boolean Implements IOpenHost.IsClosed
+            Get
+                Return form.IsDisposed OrElse form.is_Form_Closed
+            End Get
+        End Property
+
+        Public ReadOnly Property IsCloseDraining As Boolean Implements IOpenHost.IsCloseDraining
+            Get
+#If NETFRAMEWORK Then
+                Return False
+#Else
+                Return form.IsCloseDrainActive()
+#End If
+            End Get
+        End Property
+
+        Public Sub Post(action As Action) Implements IOpenHost.Post
+            If form.IsDisposed OrElse Not form.IsHandleCreated Then Throw New ObjectDisposedException("Main_Form")
+            form.BeginInvoke(action)
+        End Sub
+
+        Public Sub ShowChecking(request As OpenRequest) Implements IOpenHost.ShowChecking
+            If request.Kind = OpenKind.Explicit Then
+                form.lbl_Status.Text = Localization.TF("Проверяю доступность: {0}", Path.GetFileName(request.Path))
+            End If
+        End Sub
+
+        Public Sub Apply(request As OpenRequest, probe As ArgumentProbe) Implements IOpenHost.Apply
+            If request.Kind = OpenKind.Explicit Then
+                form.ApplyArgument(request.Path, request.NoBack, probe, request.Ticket)
+            Else
+#If Not NETFRAMEWORK Then
+                form.ApplyResume(request.Path, probe)
+#End If
+            End If
+        End Sub
+
+        Public Sub ReportUnavailable(request As OpenRequest, status As ProbeStatus) Implements IOpenHost.ReportUnavailable
+            ' A resume never shouts (its failure was not caused by the user). An explicit
+            ' open says what it already says for a share that did not answer.
+            If request.Kind = OpenKind.Explicit Then
+                form.lbl_Status.Text = Localization.TF("Сетевой ресурс недоступен, повторите: {0}", Path.GetFileName(request.Path))
+            End If
+        End Sub
+
+        Public Sub Diagnostic(message As String) Implements IOpenHost.Diagnostic
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0282: " & message)
+        End Sub
+    End Class
+
+    Private Sub ProcessArgumentAsync(argument_For_Path As String, is_No_Back_Flag_In_This_Call As Boolean)
+        ' The request's identity is taken when it is ACCEPTED (inside BeginExplicit) - not read
+        ' off media_Generation, which moves when media is displayed (ticket 106). Everything
+        ' after the probe (ownership, lifetime, close admission) is rechecked on the UI thread.
+        ObserveOpen(open_Coordinator.BeginExplicit(argument_For_Path, is_No_Back_Flag_In_This_Call), "Probing a forwarded argument")
+    End Sub
     ''' <summary>Acts on what the probe found. UI thread, both builds.</summary>
-    Private Sub ApplyArgument(argument_For_Path As String, is_No_Back_Flag_In_This_Call As Boolean, probe As ArgumentProbe)
+    Private Sub ApplyArgument(argument_For_Path As String, is_No_Back_Flag_In_This_Call As Boolean, probe As ArgumentProbe, ticket As Integer)
         Try
 #If Not NETFRAMEWORK Then
             ' Any change of context leaves the archive first, with its temporary directory
@@ -533,8 +564,8 @@ Partial Public Class Main_Form
                     If probe.Denied Then
                         ' Locked by a writer (downloading). Watch for it to unlock and
                         ' open it automatically rather than making the user retry.
-                        pending_Unlock_Path = argument_For_Path
-                        pending_Unlock_Deadline = DateTime.Now.AddSeconds(45)
+                        pending_Unlock.Begin(ticket, argument_For_Path, MonotonicClock.NowMs() + Unlock_Wait_Ms,
+                                             is_No_Back_Flag_In_This_Call)
                         pending_Unlock_Timer.Stop()
                         pending_Unlock_Timer.Start()
                         lbl_Status.Text = Localization.TF("Файл занят, ждём разблокировки (качается?): {0}", Path.GetFileName(argument_For_Path))
@@ -647,26 +678,18 @@ Partial Public Class Main_Form
     End Function
 
     ''' <summary>
-    ''' Probes off the UI thread - the same ProbeArgument a command-line file goes through -
-    ''' so a sleeping share costs an empty window, not a frozen one (§3.2.1). Nothing here
-    ''' ever reaches lbl_Status: the user did not ask for this, so a failure they did not
-    ''' cause must not shout at them (§0.3).
+    ''' Probes off the UI thread through the same coordinator a command-line file goes
+    ''' through - so a sleeping share costs an empty window, not a frozen one (§3.2.1). Nothing
+    ''' here ever reaches lbl_Status: the user did not ask for this, so a failure they did not
+    ''' cause must not shout at them (§0.3). Explicit intent accepted before the resume was
+    ''' scheduled declines it before it takes a ticket (ticket 106 O01.3).
     ''' </summary>
-    Private Async Sub ResumeLastPlayedFileAsync(path As String)
-        Dim generation As Integer = media_Generation
+    Private Sub ResumeLastPlayedFileAsync(path As String)
+        ObserveOpen(open_Coordinator.BeginResume(path), "Resume: probing the last file")
+    End Sub
 
-        Dim probe As ArgumentProbe
-        Try
-            probe = Await Task.Run(Function() ProbeArgument(path))
-        Catch ex As Exception
-            AppFileLogger.LogException("Resume: probing the last file", ex)
-            Return
-        End Try
-
-        ' The user opened something themselves while we waited on a dead share.
-        If generation <> media_Generation Then Return
-        If Me.IsDisposed Then Return
-
+    ''' <summary>UI thread, request still current: the resume's commit.</summary>
+    Private Sub ApplyResume(path As String, probe As ArgumentProbe)
         If Not probe.Exists OrElse probe.IsDirectory Then
             ' The path is kept, not cleared: a NAS that is off today is on tomorrow, and
             ' forgetting it over one failed probe throws away the user's state (§3.2.4).
@@ -676,7 +699,6 @@ Partial Public Class Main_Form
 
         OpenResumedFile(path)
     End Sub
-
     ''' <summary>
     ''' Opens the folder the file sits in with the WHOLE folder listed and the cursor on
     ''' that file, so arrows, the slideshow and the N/total counter work immediately - a
@@ -784,6 +806,9 @@ Partial Public Class Main_Form
         ' The custom shortcuts (§3.5). An untouched profile yields an empty map and every
         ' key then reaches the historical dispatch exactly as before.
         ReloadCustomHotkeys()
+        ' The five navigation buttons the floating chrome replaces leave the docked toolbar before
+        ' its first paint; the panel itself is built once the form is shown (Main_Form_Shown).
+        ApplyModernChrome()
 #End If
         InitializeTooltips()
         InitializeOcrTranslate()
@@ -935,7 +960,19 @@ Partial Public Class Main_Form
                 End If
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0040: folder from savings: " & Current_Folder_Path & " - index " & current_File_Index.ToString)
 
+#If Not NETFRAMEWORK Then
+                ' The last folder was a resource: open it again once the window is up (it may need the
+                ' network, and a password prompt must not run inside Form1_Load).
+                If ResourceLocator.IsLocator(Current_Folder_Path) Then
+                    Dim resource_Locator As String = Current_Folder_Path
+                    Current_Folder_Path = ""
+                    BeginInvoke(New Action(Sub() TryOpenAsResourceLocator(resource_Locator)))
+                Else
+                    ReadShowMediaFile(Mode_Files)
+                End If
+#Else
                 ReadShowMediaFile(Mode_Files)
+#End If
             Else
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1158: no folder saved")
             End If
@@ -1045,6 +1082,9 @@ Partial Public Class Main_Form
         ApplyRecipientsOverlay()
 
 #If Not NETFRAMEWORK Then
+        ' The floating chrome: its window needs the final geometry, like the overlay above.
+        ApplyModernChrome()
+
         ' Ask the ten slots whether they are alive, in the background (§3.3, Ф4). Here
         ' rather than in Form1_Load on purpose: by the Shown event the first image is
         ' already on screen, so ten probes against a share that may be asleep cannot delay
@@ -1054,10 +1094,17 @@ Partial Public Class Main_Form
 #End If
     End Sub
 
+    ''' <summary>Set by FormClosed: the close really happened (FormClosing alone can be vetoed).</summary>
+    Private is_Form_Closed As Boolean
+
 #If Not NETFRAMEWORK Then
-    ''' <summary>Set while we let the file-operation queue finish before closing, so the
-    ''' second (real) close does not try to drain again.</summary>
-    Private is_Closing_After_Drain As Boolean = False
+    ''' <summary>Coordinates file-operation queue drain across close attempts (ticket 107).</summary>
+    Private ReadOnly close_Drain_Coordinator As New CloseDrainCoordinator()
+
+    ''' <summary>True while a close drain owns the window: no completion may start new file work.</summary>
+    Private Function IsCloseDrainActive() As Boolean
+        Return close_Drain_Coordinator.IsDraining
+    End Function
 #End If
 
     ''' <summary>Says in the status line that a UI handler failed. Non-modal on purpose:
@@ -1070,94 +1117,155 @@ Partial Public Class Main_Form
     End Sub
 
     Private Async Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
-        ' LITE closes like a normal viewer - no close-to-tray. Sharing (if any) is
-        ' owned entirely by Fast Media Sorter: Share Manager, which keeps
-        ' running independently; closing LITE never touches it.
+        Try
+            ' The window closes like any normal viewer window - no close-to-tray. Sharing (if any) is
+            ' owned entirely by the Share Manager, which keeps
+            ' running independently; closing the viewer never touches it.
 
-        ' A shutdown or logoff arrives here from WM_QUERYENDSESSION, which is a QUESTION:
-        ' another program can still veto it (or `shutdown /a` cancel it), and this window
-        ' then keeps running. So on that path only persist, and leave every piece of
-        ' teardown to FormClosed, which WinForms raises only once the close really happens
-        ' (WM_ENDSESSION with TRUE, or an ordinary close). Tearing down here used to leave a
-        ' cancelled shutdown with disposed timers and images - and, with the slot array
-        ' cleared, a flush a minute later that wiped all ten destination folders (053 F-01).
-        If e.CloseReason = CloseReason.WindowsShutDown Then
-            PersistSettings()
-            Return
-        End If
+            ' A shutdown or logoff arrives here from WM_QUERYENDSESSION, which is a QUESTION:
+            ' another program can still veto it (or `shutdown /a` cancel it), and this window
+            ' then keeps running. So on that path only persist, and leave every piece of
+            ' teardown to FormClosed, which WinForms raises only once the close really happens
+            ' (WM_ENDSESSION with TRUE, or an ordinary close). Tearing down here used to leave a
+            ' cancelled shutdown with disposed timers and images - and, with the slot array
+            ' cleared, a flush a minute later that wiped all ten destination folders (053 F-01).
+            If e.CloseReason = CloseReason.WindowsShutDown Then
+                SettingsFlush.SaveNow()
+                Return
+            End If
 
 #If Not NETFRAMEWORK Then
-        ' Line 2 of the archive cleanup (§4.4): close the archive and take its temporary
-        ' directory with it. Deliberately BEFORE the queue-drain dance below, which can
-        ' cancel the close and come back later - the extracted files are ours and the exit
-        ' must not depend on the rest of this handler being reached.
-        LeaveArchive()
-        LeaveResource()
+            ' If a drain is already waiting on the queue, this close attempt is re-entrant
+            ' (e.g. repeated Alt+F4 or close button clicks while SMB copy finishes).
+            ' Cancel it immediately so we do not bypass the drain or start parallel drains (ticket 107).
+            ' A batch in flight is a tail of queued work like any other: it is told to start
+            ' nothing further, and the one operation already running is waited for below.
+            CancelBatch()
+            Select Case close_Drain_Coordinator.EvaluateClosing(False,
+                    file_Op_Queue IsNot Nothing AndAlso (file_Op_Queue.OutstandingCount > 0 OrElse BatchIsRunning))
+                Case CloseDecision.CancelReentrant
+                    e.Cancel = True
+                    Return
+                Case CloseDecision.StartDrain
+                    ' Give pending cross-share transfers time to finish without freezing
+                    ' the window. Staged destinations remain protected if the user discards.
+                    e.Cancel = True
+                    If Not close_Drain_Coordinator.BeginDrain() Then Return
 
-        ' Same reasoning for a secure container: the open one is closed and the session
-        ' credential dropped here, before anything that can cancel the close. Nothing was
-        ' ever written down for it to survive the process
-        ' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §5.5).
-        SecureShutdown()
+                    ' Admission stops HERE, before the first await (107 C02): a key pressed while
+                    ' the close is being negotiated is refused through the ordinary rollback path.
+                    ' The queue is paused, not completed - a veto or a failed drain reopens it.
+                    ' The archive, the remote resource and the secure container are released when
+                    ' the close is actually approved (the approved Close() comes back through the
+                    ' bottom of this handler), not on the first request: a vetoed or failed close
+                    ' must leave a usable window with its open state intact (C02.5).
+                    Dim admission_Epoch As Integer = If(file_Op_Queue Is Nothing, 0, file_Op_Queue.PauseAdmissionForClose())
+
+                    Await DrainFileOperationsAsync(admission_Epoch)
+                    Return
+            End Select
+            LeaveArchive()
+            LeaveResource()
+            ShutdownRemoteSlots()
+            SecureShutdown()
 #End If
 
-#If Not NETFRAMEWORK Then
-        ' A queued move is a file being COPIED across shares - killing the process
-        ' mid-transfer leaves a half file in the destination. Give the queue its moment,
-        ' without freezing the window while it finishes.
-        If Not is_Closing_After_Drain AndAlso file_Op_Queue IsNot Nothing AndAlso file_Op_Queue.PendingCount > 0 Then
+            ' The whole settings block moved into PersistSettings so it is no longer reachable
+            ' ONLY from here - see B-1 in SPECIFICATION_LONG_RUN_STABILITY.md. Saved here, while
+            ' the settings window and every control still report their live state; the
+            ' teardown waits for FormClosed.
+            SettingsFlush.SaveNow()
+        Catch ex As Exception
             e.Cancel = True
-            is_Closing_After_Drain = True
-            lbl_Status.Text = Localization.T("завершаются файловые операции..")
-
-            ' The 15 s is a hint, not a verdict. A tail of two or three 100-200 MB moves over
-            ' SMB routinely runs longer, and closing anyway kills the consumer thread wherever
-            ' it happens to be - so ask instead of deciding for the user. (What it cannot
-            ' corrupt any more is the destination file: FileManager.MoveFile now stages the
-            ' copy under a temporary name.)
-            Dim drained As Boolean = Await file_Op_Queue.DrainAsync(TimeSpan.FromSeconds(15))
-            While Not drained AndAlso Not Me.IsDisposed
-                Dim still_Pending As Integer = file_Op_Queue.PendingCount
-                If still_Pending <= 0 Then Exit While
-
-                Dim answer As DialogResult = MessageBox.Show(
-                    Me,
-                    Localization.TF("Файловые операции ещё выполняются: {0}." & vbCrLf &
-                                    "Подождать ещё? «Нет» закроет программу, и незавершённые операции не выполнятся.",
-                                    still_Pending),
-                    Localization.T("Закрытие программы"),
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1)
-                If answer <> DialogResult.Yes Then Exit While
-
-                drained = Await file_Op_Queue.DrainAsync(TimeSpan.FromSeconds(15))
-            End While
-
-            If Not Me.IsDisposed Then Me.Close()
-            Return
-        End If
+#If Not NETFRAMEWORK Then
+            close_Drain_Coordinator.Reset()
 #End If
-
-        ' The whole settings block moved into PersistSettings so it is no longer reachable
-        ' ONLY from here - see B-1 in SPECIFICATION_LONG_RUN_STABILITY.md. Saved here, while
-        ' the settings window and every control still report their live state; the
-        ' teardown waits for FormClosed.
-        PersistSettings()
+            AppFileLogger.LogException("Closing the viewer", ex)
+            ReportUiFault(ex)
+        End Try
     End Sub
 
+#If Not NETFRAMEWORK Then
+    Private Async Function DrainFileOperationsAsync(admission_Epoch As Integer) As Task
+        lbl_Status.Text = Localization.T("завершаются файловые операции..")
+
+        ' The sequence itself - wait, ask, close, veto, recover - is FileOpCloseFlow's, driven by
+        ' tests; this window supplies only what is the window's: the prompt and the Close().
+        '
+        ' The 15 s is a hint, not a verdict. A tail of two or three 100-200 MB moves over SMB
+        ' routinely runs longer, and closing anyway kills the consumer thread wherever it happens to
+        ' be - so ask instead of deciding for the user. (What it cannot corrupt any more is the
+        ' destination file: FileManager.MoveFile now stages the copy under a temporary name.)
+        Dim flow As New FileOpCloseFlow(Of FileOp)(
+            close_Drain_Coordinator,
+            Function() file_Op_Queue,
+            Sub()
+                ' The old queue's handler stays attached on purpose: the completions it already
+                ' posted (unstarted operations reported as not executed) still have to reach the
+                ' list rollback.
+                file_Op_Queue = Nothing
+                EnsureFileOpQueue()
+            End Sub,
+            Function(outstanding As Integer) MessageBox.Show(
+                Me,
+                Localization.TF("Файловые операции ещё выполняются: {0}." & vbCrLf &
+                                "Подождать ещё? «Нет» закроет программу, и незавершённые операции не выполнятся.",
+                                outstanding),
+                Localization.T("Закрытие программы"),
+                MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1) = DialogResult.Yes,
+            Function() Not Me.IsDisposed,
+            Function()
+                Me.Close()
+                Return Not Me.IsDisposed
+            End Function,
+            Sub(message As String, ex As Exception)
+                If ex Is Nothing Then AppFileLogger.WriteLine(message) Else AppFileLogger.LogException(message, ex)
+                If ex IsNot Nothing AndAlso Not Me.IsDisposed Then ReportUiFault(ex)
+            End Sub)
+        Await flow.RunAsync(admission_Epoch)
+    End Function
+
+    ''' <summary>Replaces a faulted queue after its consumer has ended (also reached from the next
+    ''' operation, so a dead consumer never silently swallows the user's next key).</summary>
+    Private Sub RecoverFaultedFileOpQueue()
+        If file_Op_Queue Is Nothing OrElse file_Op_Queue.Admission <> QueueAdmission.Faulted Then Return
+        If Not file_Op_Queue.ConsumerIsTerminal Then Return
+        AppFileLogger.WriteLine("FileOpQueue: replacing the queue after its consumer stopped")
+        file_Op_Queue = Nothing
+        EnsureFileOpQueue()
+    End Sub
+#End If
     ''' <summary>
     ''' The teardown half of closing. Raised only when the close really happens - after an
     ''' ordinary FormClosing that nobody cancelled, or on WM_ENDSESSION(TRUE) at the end of
     ''' a shutdown that went through - never for a shutdown that was later cancelled.
     ''' </summary>
     Private Sub Form1_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+        ' Only now, when the close is real (FormClosing can still be cancelled): no probe
+        ' that comes back from here on may open anything (ticket 106).
+        is_Form_Closed = True
+        open_Coordinator.NoteClosed()
+#If Not NETFRAMEWORK Then
+        ' The close is real: admission is closed for good (the consumer ends once it has finished
+        ' what it accepted).
+        If file_Op_Queue IsNot Nothing Then file_Op_Queue.CompleteAdmission()
+        ' A folder still being read has nobody to tell any more (014 U-03c).
+        CancelFolderScan()
+#End If
+        CancelPendingUnlock("")
+        pending_Unlock_Timer.Dispose()
+        If AppFileLogger.UiFaultReporter = New Action(Of Exception)(AddressOf ReportUiFault) Then
+            AppFileLogger.UiFaultReporter = Nothing
+        End If
         If e.CloseReason = CloseReason.WindowsShutDown Then
             ' FormClosing only persisted on this path. Save once more - the session may have
             ' moved on between the question and the answer - and run what an ordinary close
             ' runs before its queue drain. Both are no-ops when nothing is open.
-            PersistSettings()
+            SettingsFlush.SaveNow()
 #If Not NETFRAMEWORK Then
             LeaveArchive()
             LeaveResource()
+            ShutdownRemoteSlots()
             SecureShutdown()
 #End If
         End If
@@ -1199,6 +1307,11 @@ Partial Public Class Main_Form
         End If
         If toolTip IsNot Nothing Then toolTip.Dispose()
 
+#If Not NETFRAMEWORK Then
+        ReleasePdfDocument()
+        ReleaseTextDocument()
+        ClearEpubPlaceholderData()
+#End If
         ShutdownOcrTranslate()
 
         If Web_Browser IsNot Nothing Then
@@ -1214,25 +1327,32 @@ Partial Public Class Main_Form
         If vlc_Media_Player IsNot Nothing Then
             Try
                 vlc_Media_Player.Dispose()
-            Catch
+            Catch ex As Exception
+                AppFileLogger.LogException("Disposing the VLC media player", ex)
             End Try
             vlc_Media_Player = Nothing
         End If
         If vlc_Video_View IsNot Nothing Then
             Try
                 vlc_Video_View.Dispose()
-            Catch
+            Catch ex As Exception
+                AppFileLogger.LogException("Disposing the VLC video view", ex)
             End Try
             vlc_Video_View = Nothing
         End If
         If libVlc IsNot Nothing Then
             Try
                 libVlc.Dispose()
-            Catch
+            Catch ex As Exception
+                AppFileLogger.LogException("Disposing LibVLC", ex)
             End Try
             libVlc = Nothing
         End If
 
+#If Not NETFRAMEWORK Then
+        ' The pictures the cache still holds (014 U-01) go with the boxes'.
+        media_Cache.Clear()
+#End If
         If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
         If Picture_Box_1.BackgroundImage IsNot Nothing Then Picture_Box_1.BackgroundImage?.Dispose()
         If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
@@ -1241,30 +1361,51 @@ Partial Public Class Main_Form
         If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
 
         DisposeRecipientsOverlayResources()
+#If Not NETFRAMEWORK Then
+        DisposeChromeResources()
+#End If
         If ocr_Button_Font_Bold IsNot Nothing Then ocr_Button_Font_Bold.Dispose()
         If ocr_Button_Font_Regular IsNot Nothing Then ocr_Button_Font_Regular.Dispose()
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1230: form is closed")
     End Sub
 
-    ''' <summary>True when something worth keeping changed since the last write.</summary>
-    Private settings_Dirty As Boolean = False
-
     ''' <summary>
-    ''' Debounce for the lazy save: the flush happens this long after the LAST change, so
-    ''' listing files (which moves LastCounter on every flip) does not write the registry
-    ''' thousands of times a session.
+    ''' Owns WHEN the settings block is written: the edit generation, the debounce, the bounded
+    ''' retries after a failed write (SettingsFlushScheduler, 105 L09).
     ''' </summary>
-    Private Const Settings_Flush_Delay_Ms As Integer = 60000
+    Private settings_Scheduler As SettingsFlushScheduler
 
     Private settings_Flush_Timer As System.Windows.Forms.Timer
+
+    Private ReadOnly Property SettingsFlush As SettingsFlushScheduler
+        Get
+            If settings_Scheduler Is Nothing Then
+                settings_Scheduler = New SettingsFlushScheduler(
+                    AddressOf PersistSettings,
+                    Sub(delayMs)
+                        If settings_Flush_Timer Is Nothing Then
+                            settings_Flush_Timer = New System.Windows.Forms.Timer()
+                            AddHandler settings_Flush_Timer.Tick, AddressOf Settings_Flush_Timer_Tick
+                        End If
+                        settings_Flush_Timer.Stop()
+                        settings_Flush_Timer.Interval = delayMs
+                        settings_Flush_Timer.Start()
+                    End Sub,
+                    Sub()
+                        If settings_Flush_Timer IsNot Nothing Then settings_Flush_Timer.Stop()
+                    End Sub,
+                    Sub(message) AppFileLogger.WriteLine(message))
+            End If
+            Return settings_Scheduler
+        End Get
+    End Property
 
     ''' <summary>Flushes the settings block right now - for changes that are deliberate
     ''' configuration rather than a side effect of browsing (a destination folder edited in
     ''' the settings window). Cancels any pending lazy flush.</summary>
     Friend Sub SaveSettingsNow()
-        If settings_Flush_Timer IsNot Nothing Then settings_Flush_Timer.Stop()
-        PersistSettings()
+        SettingsFlush.SaveNow(scheduleRetries:=True)
     End Sub
 
     ''' <summary>
@@ -1277,7 +1418,6 @@ Partial Public Class Main_Form
     ''' last minute" on a crash.
     ''' </summary>
     Friend Sub MarkSettingsDirty()
-        settings_Dirty = True
         If Me.IsDisposed Then Return
 
         ' Some callers (the folder-combo refresh) run on the scanning thread, and a WinForms
@@ -1290,130 +1430,82 @@ Partial Public Class Main_Form
             Return
         End If
 
-        If settings_Flush_Timer Is Nothing Then
-            settings_Flush_Timer = New System.Windows.Forms.Timer() With {.Interval = Settings_Flush_Delay_Ms}
-            AddHandler settings_Flush_Timer.Tick, AddressOf Settings_Flush_Timer_Tick
-        End If
-        ' Restart, so the delay is measured from the last change.
-        settings_Flush_Timer.Stop()
-        settings_Flush_Timer.Start()
+        SettingsFlush.MarkDirty()
     End Sub
 
     Private Sub Settings_Flush_Timer_Tick(sender As Object, e As EventArgs)
-        settings_Flush_Timer.Stop()
-        If Me.IsDisposed OrElse Not settings_Dirty Then Return
-        PersistSettings()
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1191: settings flushed on idle")
+        If Me.IsDisposed Then Return
+        SettingsFlush.OnTimerTick()
     End Sub
 
     ''' <summary>
-    ''' Writes the whole settings block to the registry.
-    '''
-    ''' It used to live inside Form1_FormClosing and nowhere else, which meant every
-    ''' destination-folder mapping, both recent lists, the folder position and every
-    ''' toggle existed only in memory until the app was closed GRACEFULLY. Any exit that
-    ''' skips FormClosing - a native LibVLC crash, a GPU driver reset, taskkill, power
-    ''' loss - silently reverted days of changes to the values from the previous clean
-    ''' exit. Now the same block also runs when a change worth keeping happens, and after
-    ''' an idle pause (see MarkSettingsDirty).
-    '''
-    ''' It never clears anything. It used to take a final_Save flag that also emptied the
-    ''' destination-slot array; a shutdown cancelled after that point left the array empty
-    ''' in a running window, and the next flush wrote ten empty MoveOn values (053 F-01).
-    ''' The process ending frees the array on its own.
+    ''' Writes the whole settings block to the registry and answers whether EVERY write took.
+    ''' It is idempotent: a retry rewrites the complete block. What stays pending, and when it is
+    ''' tried again, is SettingsFlushScheduler's business (057.S13-11).
     ''' </summary>
-    Private Sub PersistSettings()
-        If MultiWindowPolicy.IsSecondaryInstance() Then Return
+    Private Function PersistSettings() As Boolean
+        If MultiWindowPolicy.IsSecondaryInstance() Then Return True
         Try
-            ' PersistableFolderPath, not Current_Folder_Path: inside an archive the latter
-            ' is the archive itself, and the next start would try to list a file as a
-            ' folder (invariant 5 - no container and no temporary path outlives the
-            ' session). Outside an archive the two are the same value.
+            Dim entries As New List(Of KeyValuePair(Of String, String))()
+            Dim add As Action(Of String, String) = Sub(name, value) entries.Add(New KeyValuePair(Of String, String)(name, value))
+
             Dim folder_To_Persist As String = Current_Folder_Path
 #If Not NETFRAMEWORK Then
             folder_To_Persist = PersistableFolderPath()
 #End If
-            If folder_To_Persist IsNot Nothing Then SaveSetting(App_name, Second_App_Name, "ImageFolder", folder_To_Persist)
-            ' Always - zero is as valid a position as any. Skipping it left the previous
-            ' folder's counter in place: close folder B on its first file and the next
-            ' start opened B at file 51, remembered from folder A.
-            SaveSetting(App_name, Second_App_Name, "LastCounter", current_File_Index.ToString)
+            If folder_To_Persist IsNot Nothing Then add("ImageFolder", folder_To_Persist)
+            add("LastCounter", current_File_Index.ToString)
 #If Not NETFRAMEWORK Then
-            ' The file itself, not its position in a list that changes between sessions
-            ' (§0.1). Written always, so switching the resume option on works from the very
-            ' next start instead of after one more file has been viewed (§7).
-            SaveSetting(App_name, Second_App_Name, "LastPlayedFile", If(last_Played_File, ""))
+            add("LastPlayedFile", If(last_Played_File, ""))
 #End If
+            add("chkTopMost", If(chkbox_Top_Most.Checked, "1", "0"))
+            add("ShowRecipientsOverlay", If(Is_Show_Recipients_Overlay, "1", "0"))
+            add("WheelZooms", If(Zoom_Wheel_Zooms, "1", "0"))
 
-            SaveSetting(App_name, Second_App_Name, "chkTopMost", If(chkbox_Top_Most.Checked, "1", "0"))
-            SaveSetting(App_name, Second_App_Name, "ShowRecipientsOverlay", If(Is_Show_Recipients_Overlay, "1", "0"))
-            SaveSetting(App_name, Second_App_Name, "WheelZooms", If(Zoom_Wheel_Zooms, "1", "0"))
-            ' Keys 1..9 -> MoveOn1..MoveOn9. Key "0" is runtime slot 10 and must be
-            ' saved into MoveOn0 (previously only slots 0..9 were saved, so the "0"
-            ' destination was lost on restart). If(...,"") avoids a null .ToString.
             For z = 1 To 9
-                Try
-                    SaveSetting(App_name, Second_App_Name, "MoveOn" & z.ToString, If(Hardkeys_to_move_mediafile(z), ""))
-                Catch ex As Exception
-                    AppFileLogger.LogException("Settings: saving MoveOn" & z.ToString, ex)
-                End Try
+                add("MoveOn" & z.ToString, If(Hardkeys_to_move_mediafile(z), ""))
             Next
-            Try
-                SaveSetting(App_name, Second_App_Name, "MoveOn0", If(Hardkeys_to_move_mediafile(10), ""))
-            Catch ex As Exception
-                AppFileLogger.LogException("Settings: saving MoveOn0", ex)
-            End Try
+            add("MoveOn0", If(Hardkeys_to_move_mediafile(10), ""))
 
-            ' Only the first run's default. The choice itself is saved by SetUiLanguage when
-            ' it is made; writing the in-memory code here on every flush overwrote a
-            ' language picked in the Share Manager meanwhile (053 F-08).
             Localization.SaveIfAbsent()
-            SaveSetting(App_name, Second_App_Name, "FirstRun", "0")
-            SaveSetting(App_name, Second_App_Name, "CopyMode", If(Is_Copying_not_Moving, "1", "0"))
-            SaveSetting(App_name, Second_App_Name, "isPerspective", If(Is_Pespective, "1", "0"))
-            SaveSetting(App_name, Second_App_Name, "DynamicPerspective", If(Is_Dynamic_Perspective, "1", "0"))
-            SaveSetting(App_name, Second_App_Name, "AnimatedPerspective", If(Is_Animated_Perspective, "1", "0"))
-            SaveSetting(App_name, Second_App_Name, "AnimatedPerspectiveSpeed", HaloSpeedToSetting(Halo_Animation_Speed))
-            SaveSetting(App_name, Second_App_Name, "TableOpened", If(Table_Form.Visible, "1", "0"))
-            SaveSetting(App_name, Second_App_Name, "RunsCount", (app_Run_Count + 1).ToString)
-            SaveSetting(App_name, Second_App_Name, "mediaViewedCount", (media_View_Count).ToString)
-            SaveSetting(App_name, Second_App_Name, "SortDir", (cmbox_Sort.SelectedIndex).ToString)
-            SaveSetting(App_name, Second_App_Name, "color_scheme", (Form_Color_Scheme).ToString)
-            SaveSetting(App_name, Second_App_Name, "RecentMediaFiles", String.Join("|", recent_Media_File_List))
+            add("FirstRun", "0")
+            add("CopyMode", If(Is_Copying_not_Moving, "1", "0"))
+            add("isPerspective", If(Is_Pespective, "1", "0"))
+            add("DynamicPerspective", If(Is_Dynamic_Perspective, "1", "0"))
+            add("AnimatedPerspective", If(Is_Animated_Perspective, "1", "0"))
+            add("AnimatedPerspectiveSpeed", HaloSpeedToSetting(Halo_Animation_Speed))
+            add("TableOpened", If(Table_Form.Visible, "1", "0"))
+            add("RunsCount", (app_Run_Count + 1).ToString)
+            add("mediaViewedCount", (media_View_Count).ToString)
+            add("SortDir", (cmbox_Sort.SelectedIndex).ToString)
+            add("color_scheme", (Form_Color_Scheme).ToString)
+            add("RecentMediaFiles", String.Join("|", recent_Media_File_List))
 
-            SaveSetting(App_name, Second_App_Name, "ShowPictureSizes", If(Is_to_show_picture_sizes, "1", "0"))
-            SaveSetting(App_name, Second_App_Name, "ShowFileSizes", If(Is_to_show_file_sizes, "1", "0"))
-            SaveSetting(App_name, Second_App_Name, "ShowFileDates", If(Is_to_show_file_datetime, "1", "0"))
-            SaveSetting(App_name, Second_App_Name, "IsVideoLoop", If(Is_Video_Loop, "1", "0"))
+            add("ShowPictureSizes", If(Is_to_show_picture_sizes, "1", "0"))
+            add("ShowFileSizes", If(Is_to_show_file_sizes, "1", "0"))
+            add("ShowFileDates", If(Is_to_show_file_datetime, "1", "0"))
+            add("IsVideoLoop", If(Is_Video_Loop, "1", "0"))
 
-            SaveSetting(App_name, Second_App_Name, "ExifAutoRotate", If(Is_Exif_AutoRotate, "1", "0"))
-            SaveSetting(App_name, Second_App_Name, "HighQualityScaling", If(Is_HighQuality_Scaling, "1", "0"))
-            SaveSetting(App_name, Second_App_Name, "ShowInfoOverlay", If(Is_Show_Info_Overlay, "1", "0"))
-            SaveSetting(App_name, Second_App_Name, "SlideshowIntervalSec", CInt(Slideshow_Base_Interval_Ms / 1000).ToString())
-            SaveSetting(App_name, Second_App_Name, "NoRequestBeforeFileOperation", If(Is_no_request_before_file_operation, "1", "0"))
+            add("ExifAutoRotate", If(Is_Exif_AutoRotate, "1", "0"))
+            add("HighQualityScaling", If(Is_HighQuality_Scaling, "1", "0"))
+            add("ShowInfoOverlay", If(Is_Show_Info_Overlay, "1", "0"))
+            add("SlideshowIntervalSec", CInt(Slideshow_Base_Interval_Ms / 1000).ToString())
+            add("NoRequestBeforeFileOperation", If(Is_no_request_before_file_operation, "1", "0"))
 
-            SaveSetting(App_name, Second_App_Name, "Picture_Box_Width_At_Panel", Picture_Box_Width_At_Panel.ToString)
-            SaveSetting(App_name, Second_App_Name, "Picture_Box_Height_At_Panel", Picture_Box_Height_At_Panel.ToString)
+            add("Picture_Box_Width_At_Panel", Picture_Box_Width_At_Panel.ToString)
+            add("Picture_Box_Height_At_Panel", Picture_Box_Height_At_Panel.ToString)
 
-            ' Negative coordinates are legal - that is simply a monitor to the left of,
-            ' or above, the primary one; refusing to save them lost the position on
-            ' every restart there. The size guards had their limits swapped: height was
-            ' checked against the WIDTH floor and width against the HEIGHT one.
 #If NETFRAMEWORK Then
-            SaveSetting(App_name, Second_App_Name, "AppTop", Me.Top.ToString)
-            SaveSetting(App_name, Second_App_Name, "AppLeft", Me.Left.ToString)
-            If Me.Height >= main_form_position_Limit_Height_Low Then SaveSetting(App_name, Second_App_Name, "AppHeight", Me.Height.ToString)
-            If Me.Width >= main_form_position_Limit_Width_Low Then SaveSetting(App_name, Second_App_Name, "AppWidth", Me.Width.ToString)
+            add("AppTop", Me.Top.ToString)
+            add("AppLeft", Me.Left.ToString)
+            If Me.Height >= main_form_position_Limit_Height_Low Then add("AppHeight", Me.Height.ToString)
+            If Me.Width >= main_form_position_Limit_Width_Low Then add("AppWidth", Me.Width.ToString)
 #Else
-            ' APP-BEHAVIOUR rule 10 (ticket 028 Ф-2): a maximized or full-screen window
-            ' reports the screen's rectangle, and writing that over the normal one made the
-            ' window forget its size. The normal rectangle and the state are two values.
             Dim normal_Bounds As Rectangle = WindowPlacement.NormalRectangle(Me.WindowState, Me.Bounds, Me.RestoreBounds)
-            SaveSetting(App_name, Second_App_Name, "AppTop", normal_Bounds.Top.ToString)
-            SaveSetting(App_name, Second_App_Name, "AppLeft", normal_Bounds.Left.ToString)
-            If normal_Bounds.Height >= main_form_position_Limit_Height_Low Then SaveSetting(App_name, Second_App_Name, "AppHeight", normal_Bounds.Height.ToString)
-            If normal_Bounds.Width >= main_form_position_Limit_Width_Low Then SaveSetting(App_name, Second_App_Name, "AppWidth", normal_Bounds.Width.ToString)
-            ' Minimized is not a state to come back to: the state before it is kept.
+            add("AppTop", normal_Bounds.Top.ToString)
+            add("AppLeft", normal_Bounds.Left.ToString)
+            If normal_Bounds.Height >= main_form_position_Limit_Height_Low Then add("AppHeight", normal_Bounds.Height.ToString)
+            If normal_Bounds.Width >= main_form_position_Limit_Width_Low Then add("AppWidth", normal_Bounds.Width.ToString)
             If Me.WindowState <> FormWindowState.Minimized Then
                 Dim window_State As String = WindowPlacement.StateNormal
                 If is_Full_Screen_Mode Then
@@ -1421,31 +1513,44 @@ Partial Public Class Main_Form
                 ElseIf Me.WindowState = FormWindowState.Maximized Then
                     window_State = WindowPlacement.StateMaximized
                 End If
-                SaveSetting(App_name, Second_App_Name, "AppWindowState", window_State)
+                add("AppWindowState", window_State)
             End If
 #End If
 
-            SaveSetting(App_name, Second_App_Name, "VideoVolume", video_Volume_Level.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))
-            SaveSetting(App_name, Second_App_Name, "VideoMuted", If(is_Video_Muted, "1", "0"))
-            SaveSetting(App_name, Second_App_Name, "RecentFolders", String.Join("|", recent_Folder_List))
+            add("VideoVolume", video_Volume_Level.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))
+            add("VideoMuted", If(is_Video_Muted, "1", "0"))
+            add("RecentFolders", String.Join("|", recent_Folder_List))
 
-            SaveSetting(App_name, Second_App_Name, "UseIndependentThreadForOperationsWithFiles", If(Is_Independent_Thread_For_File_Operations, "1", "0"))
+            add("UseIndependentThreadForOperationsWithFiles", If(Is_Independent_Thread_For_File_Operations, "1", "0"))
+
+            Dim written As SettingsWriteResult = SettingsWriter.WriteAll(
+                entries,
+                Sub(name, value) SaveSetting(App_name, Second_App_Name, name, value),
+                Sub(name, ex) AppFileLogger.LogException("Settings: saving " & name, ex))
 
             SaveOcrSettings()
 #If Not NETFRAMEWORK Then
             If modern_Preferences IsNot Nothing Then
                 modern_Preferences.PreferredAudioLanguage = preferred_Audio_Language
                 modern_Preferences.PreferredSubtitleLanguage = preferred_Subtitle_Language
+                If pending_Allow_New_Windows_Persistence Then
+                    modern_Preferences.PersistAllowNewWindows()
+                    pending_Allow_New_Windows_Persistence = False
+                End If
                 modern_Preferences.Save()
             End If
 #End If
 
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1190: settings are saved")
+            If written.Succeeded Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1190: settings are saved")
+                Return True
+            End If
+            AppFileLogger.WriteLine("Settings: " & written.Failed.Count.ToString() & " of " &
+                                    (written.Failed.Count + written.Written).ToString() & " values were not written")
+            Return False
         Catch ex As Exception
             AppFileLogger.LogException("Settings: saving the settings block", ex)
+            Return False
         End Try
-
-        settings_Dirty = False
-    End Sub
-
+    End Function
 End Class

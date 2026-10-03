@@ -24,6 +24,7 @@ Partial Public Class Main_Form
 
     Private openUrlMenu As ContextMenuStrip
     Private openUrlMenuItem As ToolStripMenuItem
+    Private openLiveBroadcastMenuItem As ToolStripMenuItem
 
     ''' <summary>Last address the user typed, so a retry after a typo does not start
     ''' from an empty box. Not persisted - it can carry credentials.</summary>
@@ -38,25 +39,31 @@ Partial Public Class Main_Form
         Return MediaUrl.DisplayName(mrl)
     End Function
 
-    ''' <summary>Wires the "Open URL.." item onto the choose-file button's right-click.
-    ''' Called once from Form1_Load. Right-click on the media surfaces is already file
-    ''' navigation, so the secondary action hangs off the button it belongs to - the
-    ''' same shape as the folder box's "Share this folder.." item.</summary>
+    ''' <summary>Wires the "Open URL.." and "Open live broadcast.." items onto the choose-file button's right-click.
+    ''' Called once from Form1_Load.</summary>
     Friend Sub InitializeOpenUrlEntryPoint()
         If openUrlMenu Is Nothing Then
             openUrlMenu = New ContextMenuStrip()
             openUrlMenuItem = New ToolStripMenuItem()
             AddHandler openUrlMenuItem.Click, Sub() ShowOpenUrlPrompt()
             openUrlMenu.Items.Add(openUrlMenuItem)
+
+            openLiveBroadcastMenuItem = New ToolStripMenuItem()
+            AddHandler openLiveBroadcastMenuItem.Click, Sub() ShowLiveBroadcastDialog()
+            openUrlMenu.Items.Add(openLiveBroadcastMenuItem)
+
             If btn_choose_file IsNot Nothing Then btn_choose_file.ContextMenuStrip = openUrlMenu
         End If
         LocalizeOpenUrlEntryPoint()
     End Sub
 
-    ''' <summary>Re-localizes the item and the button's tooltip. Called from LngCh.</summary>
+    ''' <summary>Re-localizes the items and the button's tooltip. Called from LngCh.</summary>
     Friend Sub LocalizeOpenUrlEntryPoint()
         If openUrlMenuItem IsNot Nothing Then
             openUrlMenuItem.Text = Localization.T("Открыть URL..")
+        End If
+        If openLiveBroadcastMenuItem IsNot Nothing Then
+            openLiveBroadcastMenuItem.Text = Localization.T("Открыть live-трансляцию..")
         End If
     End Sub
 
@@ -82,6 +89,13 @@ Partial Public Class Main_Form
     ''' (command line, drag-drop of a link) can reuse the same checks.</summary>
     Friend Sub OpenMediaUrl(url As String)
         Dim title As String = Localization.T("Открыть URL")
+
+        ' Check if this is an auto-detected or explicit live broadcast link (§4.3)
+        Dim liveRes As LiveBroadcastReadResult = LiveBroadcastLinkReader.ReadLink(url)
+        If liveRes.Status = LiveReadStatus.Ok AndAlso liveRes.Descriptor IsNot Nothing Then
+            PlayLiveBroadcast(liveRes.Descriptor)
+            Return
+        End If
 
         If Not MediaUrl.IsRemote(url) Then
             If MediaUrl.LooksLikeLocalPath(url) Then
@@ -150,6 +164,8 @@ Partial Public Class Main_Form
         If is_Vlc_Playing Then RememberCurrentVideoPosition()
         ' Anything still in flight for the previous file is stale from here on.
         media_Generation += 1
+        ' ...and so is any argument or resume probe still out: the stream is what was asked for.
+        open_Coordinator.NoteNavigation()
         ' A container's decrypting stream is what VLC may have been reading: stop first,
         ' then let the container go (the order UpdateCurrentFileAndDisplay keeps).
         If IsSecureContentOnScreen() Then

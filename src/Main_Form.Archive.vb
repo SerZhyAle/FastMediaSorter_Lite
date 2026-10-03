@@ -21,30 +21,6 @@ Imports System.Windows.Forms
 Partial Public Class Main_Form
 
     Private archive_Session As ArchiveSession
-    Private archive_Pending_Session As ArchiveSession
-    Private archive_Open_Generation As Long
-
-    Friend Function IsArchiveOpenPending() As Boolean
-        Return archive_Pending_Session IsNot Nothing
-    End Function
-
-    Friend Sub CancelPendingArchiveOpen()
-        archive_Open_Generation += 1
-        Dim pending = archive_Pending_Session
-        archive_Pending_Session = Nothing
-        If pending Is Nothing Then Return
-        pending.Dispose()
-        ArchiveTempStore.DeleteSession(pending.TempRoot)
-        ApplyArchiveModeUi()
-    End Sub
-
-    Private Sub ApplyArchiveModeUi()
-        Dim active As Boolean = IsArchiveMode() OrElse IsArchiveOpenPending()
-        SetToolbarItemHidden(btn_Rename, active)
-        SetToolbarItemHidden(bt_Delete, active)
-        ApplyRecipientsOverlayHealth()
-        LayoutToolbar()
-    End Sub
 
     ''' <summary>
     ''' The folder the archive itself lives in. Two jobs: it is where "close the archive"
@@ -64,7 +40,9 @@ Partial Public Class Main_Form
     Private Function ArchiveSupportsExtension(extension As String) As Boolean
         Return Image_File_Extensions.Contains(extension) OrElse
                video_File_Extensions.Contains(extension) OrElse
-               web_specific_image_extensions.Contains(extension)
+               web_specific_image_extensions.Contains(extension) OrElse
+               GetModernPreferences().DocumentExtensionSet().Contains(extension) OrElse
+               GetModernPreferences().OtherExtensionSet().Contains(extension)
     End Function
 
     Friend Function IsArchiveMode() As Boolean
@@ -103,13 +81,11 @@ Partial Public Class Main_Form
     ''' Opens an archive as if it were a folder. Every entry point - drag and drop, a
     ''' command line, a second instance - arrives here through ProcessArgument.
     ''' </summary>
-    Friend Async Sub EnterArchive(archivePath As String)
+    Friend Sub EnterArchive(archivePath As String)
         LeaveArchive()
         SlideShowStop()
 
         Dim sessionDir As String = ""
-        Dim session As ArchiveSession = Nothing
-        Dim generation As Long = archive_Open_Generation
         Try
             ' Only now, not at startup: someone who never opens an archive should not pay
             ' for a directory walk (§4.5).
@@ -120,12 +96,12 @@ Partial Public Class Main_Form
             ' Keep every built-in media entry in the session. The navigation kind filter
             ' is applied when rows are built, so turning video or audio back on can reveal
             ' entries without reopening the archive.
-            session = New ArchiveSession(archivePath, sessionDir,
+            Dim session As New ArchiveSession(archivePath, sessionDir,
                                               AddressOf ArchiveSupportsExtension,
                                               maxEntries)
 
             If session.UnsupportedKind.Length > 0 Then
-                ' Content detects unsupported containers even behind an admitted extension.
+                ' A TAR/GZip/.. wearing an archive name (audit 052 G-15).
                 session.Dispose()
                 ArchiveTempStore.DeleteSession(sessionDir)
                 lbl_Status.Text = Localization.TF("Формат архива не поддерживается ({0})", session.UnsupportedKind)
@@ -146,69 +122,202 @@ Partial Public Class Main_Form
                 Return
             End If
 
+            ' A solid 7z/RAR is read in ONE pass (§5.2), and that pass can take seconds to
+            ' minutes - so it runs off the UI thread with progress, and the archive opens
+            ' when it ends. Everything else opens now.
             If session.NeedsSequentialPass Then
-                archive_Pending_Session = session
-                ApplyArchiveModeUi()
-                Dim prefs = GetModernPreferences()
-                Dim maxEntryBytes As Long = CLng(prefs.ArchiveMaxEntryMb) * 1024L * 1024L
-                Dim maxCacheBytes As Long = CLng(prefs.ArchiveCacheMaxMb) * 1024L * 1024L
-                Dim report As IProgress(Of Integer) = New Progress(Of Integer)(
-                    Sub(percent)
-                        If generation = archive_Open_Generation AndAlso archive_Pending_Session Is session Then
-                            lbl_Status.Text = Localization.TF("Распаковываю архив: {0} %", percent)
-                        End If
-                    End Sub)
-                lbl_Status.Text = Localization.TF("Распаковываю архив: {0} %", 0)
-                Dim outcome = Await Threading.Tasks.Task.Run(
-                    Function() session.RunSequentialPass(maxEntryBytes, maxCacheBytes, Sub(percent) report.Report(percent)))
-                If generation <> archive_Open_Generation Then Return
-                archive_Pending_Session = Nothing
-                If outcome <> ArchiveSession.PassOutcome.Completed Then
-                    session.Dispose()
-                    ArchiveTempStore.DeleteSession(sessionDir)
-                    ApplyArchiveModeUi()
-                    If outcome = ArchiveSession.PassOutcome.Broken Then lbl_Status.Text = Localization.T("Не удалось прочитать архив")
-                    Return
-                End If
+                BeginSequentialOpen(session, sessionDir, archivePath, maxEntries)
+                Return
             End If
-            CompleteEnterArchive(session, archivePath, maxEntries)
+
+            CompleteEnterArchive(session, sessionDir, archivePath, maxEntries)
         Catch ex As Exception
             AppFileLogger.LogException("Archive: opening " & archivePath, ex)
-            If generation <> archive_Open_Generation Then Return
-            archive_Pending_Session = Nothing
-            If archive_Session Is session Then archive_Session = Nothing
-            If session IsNot Nothing Then session.Dispose()
-            ApplyArchiveModeUi()
             If sessionDir.Length > 0 Then ArchiveTempStore.DeleteSession(sessionDir)
             lbl_Status.Text = Localization.T("Не удалось прочитать архив")
         End Try
     End Sub
 
-    Private Sub CompleteEnterArchive(session As ArchiveSession, archivePath As String, maxEntries As Integer)
-        archive_Session = session
-        archive_Return_Folder = If(Path.GetDirectoryName(archivePath), "")
+    ''' <summary>The second half of opening: the session is ready (its entries are listable
+    ''' and, for a solid archive, stored) - make it THE open archive and show the first
+    ''' entry. Runs on the UI thread, straight from <see cref="EnterArchive"/> or, after the
+    ''' sequential pass, from <see cref="BeginSequentialOpen"/>.</summary>
+    Private Sub CompleteEnterArchive(session As ArchiveSession, sessionDir As String,
+                                     archivePath As String, maxEntries As Integer)
+        Try
+            archive_Session = session
+            archive_Return_Folder = If(Path.GetDirectoryName(archivePath), "")
 
-        ' The folder box shows the ARCHIVE, never the temporary directory (§2.2) - the
-        ' user is browsing D:\scans\1998.cbz and that is what the address must say.
-        Current_Folder_Path = archivePath
-        is_TextBox_Editing = True
-        cmbox_Media_Folder.Text = archivePath
-        is_TextBox_Editing = False
+            ' The folder box shows the ARCHIVE, never the temporary directory (§2.2) - the
+            ' user is browsing D:\scans\1998.cbz and that is what the address must say.
+            Current_Folder_Path = archivePath
+            is_TextBox_Editing = True
+            cmbox_Media_Folder.Text = archivePath
+            is_TextBox_Editing = False
 
-        current_File_Index = 0
-        Current_File_Name = ""
-        Current_Image_Path = ""
-        is_External_Input_Received = False
-        was_External_Input_Previously = False
+            current_File_Index = 0
+            Current_File_Name = ""
+            Current_Image_Path = ""
+            is_External_Input_Received = False
+            was_External_Input_Previously = False
 
-        ReadShowMediaFile(Mode_FolderAndFile)
+            ApplyArchiveModeUi()
+            ReadShowMediaFile(Mode_FolderAndFile)
 
-        Dim opened As String = Localization.TF("Архив: {0} файлов", session.Entries.Count.ToString())
-        If session.WasTruncated Then
-            opened &= "  " & Localization.TF("Показаны первые {0} записей", maxEntries.ToString())
-        End If
-        lbl_Status.Text = If(archive_Refused_Path.Length > 0, archive_Refused_Text, opened)
-        ApplyArchiveModeUi()
+            Dim opened As String = Localization.TF("Архив: {0} файлов", session.Entries.Count.ToString())
+            If session.WasTruncated Then
+                opened &= "  " & Localization.TF("Показаны первые {0} записей", maxEntries.ToString())
+            End If
+            lbl_Status.Text = opened
+            If IsArchiveEntryRefused(Current_File_Name) Then
+                lbl_Status.Text = archive_Refused_Text & "  " & opened
+            End If
+        Catch ex As Exception
+            AppFileLogger.LogException("Archive: opening " & archivePath, ex)
+            Dim failed As ArchiveSession = archive_Session
+            archive_Session = Nothing
+            If failed IsNot Nothing Then failed.Dispose() Else session.Dispose()
+            If sessionDir.Length > 0 Then ArchiveTempStore.DeleteSession(sessionDir)
+            ApplyArchiveModeUi()
+            lbl_Status.Text = Localization.T("Не удалось прочитать архив")
+        End Try
+    End Sub
+
+    ' ------------------------------------------------- the sequential pass (Ф2) ----
+
+    ''' <summary>The solid archive being unpacked right now, before it becomes the open one.
+    ''' Held here (not in a local) so that ANY change of context can reach it and stop it -
+    ''' <see cref="LeaveArchive"/> does, which is how opening something else, closing the
+    ''' window and Esc all cancel the pass without each knowing about it.</summary>
+    Private archive_Pending_Session As ArchiveSession
+    Private archive_Pending_Dir As String = ""
+    Private archive_Pending_Path As String = ""
+
+    ''' <summary>Bumped whenever a pending open is cancelled or replaced. A pass that ends
+    ''' after that finds its number stale and drops its result - it was already cleaned up by
+    ''' whoever cancelled it.</summary>
+    Private archive_Open_Generation As Integer
+
+    ''' <summary>True while a solid archive is being unpacked and is not yet the open one.
+    ''' File operations are refused in that window and the keyboard is held (Esc cancels):
+    ''' the picture on screen still belongs to the PREVIOUS folder, and a key meant for the
+    ''' archive must not act on it.</summary>
+    Friend Function IsArchiveOpenPending() As Boolean
+        Return archive_Pending_Session IsNot Nothing
+    End Function
+
+    Private Async Sub BeginSequentialOpen(session As ArchiveSession, sessionDir As String,
+                                          archivePath As String, maxEntries As Integer)
+        ' Async Sub: nothing may escape it, or an exception here is an unhandled crash.
+        Dim generation As Integer = Threading.Interlocked.Increment(archive_Open_Generation)
+        Try
+            archive_Pending_Session = session
+            archive_Pending_Dir = sessionDir
+            archive_Pending_Path = archivePath
+            lbl_Status.Text = Localization.TF("Распаковываю архив: {0} %", 0.ToString())
+
+            Dim prefs As ModernViewerPreferences = GetModernPreferences()
+            Dim maxEntryBytes As Long = CLng(prefs.ArchiveMaxEntryMb) * 1024L * 1024L
+            Dim maxCacheBytes As Long = CLng(prefs.ArchiveCacheMaxMb) * 1024L * 1024L
+
+            Dim outcome As ArchiveSession.PassOutcome = ArchiveSession.PassOutcome.Failed
+            Try
+                outcome = Await Task.Run(
+                    Function() session.RunSequentialPass(maxEntryBytes, maxCacheBytes,
+                        Sub(percent As Integer) PostArchivePassProgress(generation, percent)))
+            Catch ex As Exception
+                AppFileLogger.LogException("Archive: sequential pass of " & archivePath, ex)
+            End Try
+
+            ' Back on the UI thread. A newer open (or Leave) has already disposed this session
+            ' and removed its directory.
+            If generation <> Threading.Volatile.Read(archive_Open_Generation) Then Return
+
+            archive_Pending_Session = Nothing
+            archive_Pending_Dir = ""
+            archive_Pending_Path = ""
+
+            If outcome = ArchiveSession.PassOutcome.Completed Then
+                CompleteEnterArchive(session, sessionDir, archivePath, maxEntries)
+            Else
+                session.Dispose()
+                ArchiveTempStore.DeleteSession(sessionDir)
+                lbl_Status.Text = Localization.T("Не удалось прочитать архив")
+            End If
+        Catch ex As Exception
+            AppFileLogger.LogException("Archive: opening " & archivePath, ex)
+            If generation = Threading.Volatile.Read(archive_Open_Generation) Then
+                archive_Pending_Session = Nothing
+                archive_Pending_Dir = ""
+                archive_Pending_Path = ""
+                Try : session.Dispose() : Catch : End Try
+                ArchiveTempStore.DeleteSession(sessionDir)
+                lbl_Status.Text = Localization.T("Не удалось прочитать архив")
+            End If
+        End Try
+    End Sub
+
+    ''' <summary>Progress arrives on the pass's thread; the label belongs to the UI thread.
+    ''' Posted, never invoked: the pass must not wait for the window.</summary>
+    Private Sub PostArchivePassProgress(generation As Integer, percent As Integer)
+        Try
+            If IsDisposed OrElse Not IsHandleCreated Then Return
+            BeginInvoke(New MethodInvoker(
+                Sub()
+                    If generation <> Threading.Volatile.Read(archive_Open_Generation) Then Return
+                    lbl_Status.Text = Localization.TF("Распаковываю архив: {0} %", percent.ToString())
+                End Sub))
+        Catch ex As Exception
+            ' The window is going away; the pass is about to be cancelled with it.
+            Debug.WriteLine("Archive: progress post dropped - " & ex.Message)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Stops a solid archive that is still being unpacked and removes what it had stored.
+    ''' Safe when nothing is pending. <paramref name="announce"/> says so on the status line -
+    ''' wanted for the user's own Esc, not when the pass is dropped because something else
+    ''' was opened (that has its own status).
+    ''' </summary>
+    Friend Sub CancelPendingArchiveOpen(Optional announce As Boolean = False)
+        Dim session As ArchiveSession = archive_Pending_Session
+        If session Is Nothing Then Return
+
+        Dim sessionDir As String = archive_Pending_Dir
+        Threading.Interlocked.Increment(archive_Open_Generation)
+        archive_Pending_Session = Nothing
+        archive_Pending_Dir = ""
+        archive_Pending_Path = ""
+
+        Try
+            session.Dispose()   ' waits for at most one entry's write, then nothing more is written
+        Catch ex As Exception
+            AppFileLogger.LogException("Archive: cancelling the pending open", ex)
+        End Try
+        ArchiveTempStore.DeleteSession(sessionDir)
+        If announce Then lbl_Status.Text = Localization.T("Открытие архива отменено")
+    End Sub
+
+    ' ------------------------------------------------ what archive mode changes ----
+
+    ''' <summary>
+    ''' The parts of the window that follow "an archive is open" (§2.2, §7): the buttons that
+    ''' only make sense for real files are hidden through the toolbar's own mechanism (a bare
+    ''' Visible = False would be undone by the next layout), and the recipient list is redrawn
+    ''' muted. Called on entering AND leaving, so the two can never drift apart.
+    ''' </summary>
+    Private Sub ApplyArchiveModeUi()
+        Try
+            Dim inArchive As Boolean = IsArchiveMode()
+            SetToolbarItemHidden(btn_Rename, inArchive)
+            SetToolbarItemHidden(bt_Delete, inArchive)
+            LayoutToolbar()
+            ApplyRecipientsOverlayHealth()
+        Catch ex As Exception
+            ' Leaving an archive is also what closing the window does; a control that is
+            ' already gone must not turn that into a failure.
+            AppFileLogger.LogException("Archive: refreshing the archive-mode UI", ex)
+        End Try
     End Sub
 
     ' ------------------------------------------------------------------- leaving ----
@@ -224,6 +333,8 @@ Partial Public Class Main_Form
     ''' orphan sweep rather than reported - the disk gets clean either way.
     ''' </summary>
     Friend Sub LeaveArchive()
+        ' A solid archive still being unpacked is not "open" yet, but it is on its way to
+        ' being so: any change of context cancels it first (Esc, another file, closing).
         CancelPendingArchiveOpen()
         If archive_Session Is Nothing Then Return
 
@@ -255,9 +366,9 @@ Partial Public Class Main_Form
     ''' A-13/G-06): the typed folder was then listed with the ARCHIVE's pages in it.
     ''' </summary>
     Friend Sub LeaveArchiveUnlessShowing(typedPath As String)
-        If IsArchiveOpenPending() Then CancelPendingArchiveOpen()
-        If archive_Session Is Nothing Then Return
-        If String.Equals(If(typedPath, "").Trim(), archive_Session.ArchiveFilePath, StringComparison.OrdinalIgnoreCase) Then Return
+        Dim current As String = If(archive_Session IsNot Nothing, archive_Session.ArchiveFilePath, archive_Pending_Path)
+        If String.IsNullOrEmpty(current) Then Return
+        If String.Equals(If(typedPath, "").Trim(), current, StringComparison.OrdinalIgnoreCase) Then Return
         LeaveArchive()
     End Sub
 
@@ -276,7 +387,7 @@ Partial Public Class Main_Form
 
         Dim rows As New List(Of FileEntry)(archive_Session.Entries.Count)
         For Each entry As ArchiveEntryInfo In archive_Session.Entries
-            If Not all_Supported_Extensions.Contains(Path.GetExtension(entry.EntryName).ToLowerInvariant()) Then Continue For
+            If Not MediaBrowsing.IsEligible(entry.EntryName, all_Supported_Extensions) Then Continue For
             rows.Add(New FileEntry With {
                 .FilePath = entry.TempPath,
                 .FileSize = entry.Size,
@@ -302,6 +413,9 @@ Partial Public Class Main_Form
         Dim index As Integer = archive_Session.IndexOfTempPath(filePath)
         If index < 0 Then Return
 
+        ' Sorting or shuffling makes "the entry index next to this one" something other than
+        ' the page next to it on screen - so the rows actually shown and their navigation
+        ' neighbours are pinned against the budget eviction a prefetch may trigger.
         Dim protectedPaths As New List(Of String) From {filePath}
         Dim navigation As IList(Of String) = If(is_Files_Array_Active,
             DirectCast(files_Array, IList(Of String)), files_List)
@@ -389,7 +503,7 @@ Partial Public Class Main_Form
     ''' <summary>
     ''' The folder box menu's "Open archive.." entry (§2.1 point 4, §12 Ф4). Filtered to
     ''' what the viewer can actually open today (ArchiveEntryFilter.Openable_Extensions) -
-    ''' ZIP/CBZ, 7z and RAR/CBR. Delegates to
+    ''' ZIP/CBZ, 7z and RAR/CBR since Ф2. Delegates to
     ''' ProcessArgument, the one ingress for a concrete path (invariant already relied on
     ''' by Choose_file()): it already recognizes an archive extension and routes to
     ''' EnterArchive, so picking one here is exactly like picking a picture.
@@ -400,6 +514,7 @@ Partial Public Class Main_Form
             Dim archiveExtensions As String = String.Join(";",
                 ArchiveEntryFilter.Openable_Extensions.Select(Function(ext) "*" & ext))
             dialog.Filter = Localization.T("Архивы") & "|" & archiveExtensions
+            ' Inside an archive the "folder" is the archive file itself - start next to it.
             Dim folder As String = If(IsArchiveMode(), archive_Return_Folder, Current_Folder_Path)
             dialog.InitialDirectory = If(String.IsNullOrEmpty(folder),
                 Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), folder)

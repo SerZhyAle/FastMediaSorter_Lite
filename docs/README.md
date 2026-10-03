@@ -30,6 +30,8 @@ plain text so maintained documentation works in a fresh clone.
   artifacts convention, reusable across all our products.
 - [guides/DOCUMENTATION_CONCEPT.md](guides/DOCUMENTATION_CONCEPT.md) - sources of truth, versioning,
   SEO/indexing, mandatory site pages, support & voice.
+- [guides/PRODUCT_NAMING.md](guides/PRODUCT_NAMING.md) - the one table of the product's names (full, Store,
+  short, aliases, Share Manager, Server edition), the frozen technical anchors and the naming gate.
 - [guides/BUILD_AND_RELEASE.md](guides/BUILD_AND_RELEASE.md) - the concrete build-vs-release flow.
 - `specifications/RELEASE_QUEUE.md` (local specification) - the common release order for active
   specification tickets.

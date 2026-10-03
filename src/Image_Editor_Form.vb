@@ -88,6 +88,11 @@ Partial Friend NotInheritable Class Image_Editor_Form
     Private WithEvents btn_Close As Button
     Private saving As Boolean = False
 
+    ''' <summary>The script font <see cref="BuildChrome"/> may hand to the form, kept so
+    ''' <see cref="Dispose"/> can return it: a Control never disposes a Font it was
+    ''' handed, and without this field nothing else holds it.</summary>
+    Private editor_Font As Font
+
     Private Const Registry_Top As String = "EditorTop"
     Private Const Registry_Left As String = "EditorLeft"
     Private Const Registry_Width As String = "EditorWidth"
@@ -152,14 +157,21 @@ Partial Friend NotInheritable Class Image_Editor_Form
     ''' through an explicit 32bppArgb surface settles that at load time.
     '''
     ''' <c>SourceCopy</c> + unscaled: the pixels must arrive exactly as decoded, not
-    ''' blended onto the transparent surface underneath and not resampled.
+    ''' blended onto the transparent surface underneath and not resampled. A throw here
+    ''' disposes the copy before re-raising, like <see cref="EditorImageOps.CropTo"/>:
+    ''' the caller aborts the open, so no one else could ever reach the half-made surface.
     ''' </summary>
     Private Shared Function ToEditableCopy(decoded As Image) As Bitmap
         Dim copy As New Bitmap(decoded.Width, decoded.Height, PixelFormat.Format32bppArgb)
-        Using g As Graphics = Graphics.FromImage(copy)
-            g.CompositingMode = CompositingMode.SourceCopy
-            g.DrawImageUnscaled(decoded, 0, 0)
-        End Using
+        Try
+            Using g As Graphics = Graphics.FromImage(copy)
+                g.CompositingMode = CompositingMode.SourceCopy
+                g.DrawImageUnscaled(decoded, 0, 0)
+            End Using
+        Catch
+            copy.Dispose()
+            Throw
+        End Try
         Return copy
     End Function
 
@@ -176,9 +188,14 @@ Partial Friend NotInheritable Class Image_Editor_Form
         ' The application is pinned to HighDpiMode.DpiUnaware (Application_Events.vb) and
         ' this window inherits that on purpose: it must behave like the rest of the app,
         ' not scale on its own next to a viewer that does not. The font is only touched
-        ' for a script the pinned Microsoft Sans Serif cannot draw at all.
+        ' for a script the pinned Microsoft Sans Serif cannot draw at all - and it is
+        ' kept in a field because a Control never disposes a Font it was handed (audit
+        ' 057.S18-1, the class of 057.S17-6); Dispose below lets it go.
         Dim family As String = Localization.FontFamily()
-        If family IsNot Nothing Then Me.Font = New Font(family, Me.Font.Size)
+        If family IsNot Nothing Then
+            editor_Font = New Font(family, Me.Font.Size)
+            Me.Font = editor_Font
+        End If
         If Localization.IsRightToLeft() Then Me.RightToLeft = RightToLeft.Yes
 
         canvas = New EditorCanvas() With {
@@ -387,7 +404,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
         Dim answer As DialogResult = MessageBox.Show(Me,
             Localization.T("JPEG будет пересжат - это необратимо. Дата съёмки и остальные EXIF-данные сохранятся. Продолжить?"),
             Localization.T("Редактирование изображения"),
-            MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+            MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2)
         If answer <> DialogResult.Yes Then Return False
 
         jpeg_Recompression_Confirmed = True
@@ -575,7 +592,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
         Dim answer As DialogResult = MessageBox.Show(Me,
             Localization.T("Правки не сохранены. Закрыть?"),
             Localization.T("Редактирование изображения"),
-            MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
+            MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2)
         Return answer = DialogResult.Yes
     End Function
 
@@ -589,6 +606,24 @@ Partial Friend NotInheritable Class Image_Editor_Form
         ' most of what this window was using.
         undo_History.Dispose()
         original_Bytes = Nothing
+    End Sub
+
+    ''' <summary>
+    ''' The chrome this window was handed but never owns. A Control disposes neither a
+    ''' Font it was handed (057.S18-1) nor the toolbar's ToolTip component (057.S18-3),
+    ''' and <c>FormClosed</c> does not run at all when a failed open disposes the window
+    ''' before it was ever shown - so the one path that covers every exit is this
+    ''' override, after the base has finished tearing the controls down.
+    ''' </summary>
+    Protected Overrides Sub Dispose(disposing As Boolean)
+        MyBase.Dispose(disposing)
+        If disposing Then
+            tool_Tips.Dispose()
+            If editor_Font IsNot Nothing Then
+                editor_Font.Dispose()
+                editor_Font = Nothing
+            End If
+        End If
     End Sub
 
     ' ------------------------------------------------------------------ canvas ----

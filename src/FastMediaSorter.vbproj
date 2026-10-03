@@ -175,6 +175,7 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Theming\IThemeAware.vb" />
     <Compile Include="Application_Events.vb" />
     <Compile Include="ApplicationModel.vb" />
     <Compile Include="AppFileLogger.vb" />
@@ -198,9 +199,19 @@
     <Compile Include="Resources\RemoteCachePaths.vb" />
     <Compile Include="Resources\RemoteCacheStore.vb" />
     <Compile Include="Resources\ResourceRegistry.vb" />
+    <Compile Include="Resources\ResourcePolicy.vb" />
+    <Compile Include="Resources\ResourceFailure.vb" />
+    <Compile Include="Resources\ResourceCommit.vb" />
+    <Compile Include="Resources\HostKeyGate.vb" />
+    <Compile Include="Resources\EndpointResolver.vb" />
+    <Compile Include="Resources\TransferPlan.vb" />
     <Compile Include="Resources\ResourceSession.vb" />
     <Compile Include="Resources\ResourceTransfer.vb" />
     <Compile Include="Resources\ResourceRouting.vb" />
+    <Compile Include="Resources\RemoteSlots.vb" />
+    <Compile Include="Resources\SmbConnectionLease.vb" />
+    <Compile Include="Resources\SmbProvider.vb" />
+    <Compile Include="Resources\SftpProvider.vb" />
     <Compile Include="Main_Form.Resource.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
@@ -227,12 +238,48 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <!-- Live broadcast consumer (023_SPECIFICATION_FMS_LIVE_BROADCAST_CONSUMER.md). Every
+         file is whole-file "#If Not NETFRAMEWORK" - the feature is .NET 10 mainline only.
+         Listed so the project file inventories stay identical. -->
+    <Compile Include="LiveBroadcast\LiveBroadcastDescriptor.vb" />
+    <Compile Include="LiveBroadcast\LiveBroadcastReader.vb" />
+    <Compile Include="LiveBroadcast\LiveBroadcastLinkReader.vb" />
+    <Compile Include="LiveBroadcast\LiveBroadcastStore.vb" />
+    <Compile Include="LiveBroadcast\LiveEndpointSelector.vb" />
+    <Compile Include="LiveBroadcast\LiveHttpPlaybackSession.vb" />
+    <Compile Include="LiveBroadcast\ProgressReadStream.vb" />
+    <Compile Include="LiveBroadcast\LiveReconnectPolicy.vb" />
+    <Compile Include="LiveBroadcast_Form.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.LiveBroadcast.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Localization\Localization.LiveBroadcast.vb" />
     <Compile Include="FileManager.vb" />
     <Compile Include="WebVideoMarkup.vb" />
     <Compile Include="HqPictureBox.vb" />
     <Compile Include="Image_Panel_Form.vb">
       <SubType>Form</SubType>
     </Compile>
+    <!-- The mainline F3 panel (005). Whole-file "#If Not NETFRAMEWORK": the x86 build keeps
+         the original panel inside Image_Panel_Form.vb, fenced by #If NETFRAMEWORK, and these
+         compile to nothing here - listed so the two projects' file sets stay identical. -->
+    <Compile Include="Image_Panel_Form.Modern.vb">
+      <DependentUpon>Image_Panel_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Image_Panel_Form.Grid.vb">
+      <DependentUpon>Image_Panel_Form.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Image_Panel_Form.Details.vb">
+      <DependentUpon>Image_Panel_Form.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Batch_Report_Form.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PanelThumbnailLoader.vb" />
     <Compile Include="Main_Form.vb">
       <SubType>Form</SubType>
     </Compile>
@@ -270,7 +317,24 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <!-- The seam between the batch engine and the main window (004/005). Whole-file
+         "#If Not NETFRAMEWORK": the x86 viewer keeps the single-file loop and the panel's own. -->
+    <Compile Include="Main_Form.Batch.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PanelRows.vb" />
+    <!-- The panel's thumbnails (005 PG-3): the shell's own, then ours, then a decode. Whole-file
+         "#If Not NETFRAMEWORK" - the x86 panel decodes every card itself, as it always did. -->
+    <Compile Include="ThumbnailCache.vb" />
+    <Compile Include="ShellThumbnails.vb" />
     <Compile Include="Main_Form.SlotHealth.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <!-- 014 U-03c: the folder walk off the UI thread. Whole-file "#If Not NETFRAMEWORK" - it
+         compiles to nothing here, and is listed so a file under src/ is never silently absent. -->
+    <Compile Include="Main_Form.FolderScanAsync.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
@@ -358,11 +422,6 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Main_Form.MediaCache.vb">
-      <DependentUpon>Main_Form.vb</DependentUpon>
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="MediaCache.vb" />
     <Compile Include="Imaging\EdgeSampler.vb" />
     <Compile Include="OcrTranslateSettings.vb" />
     <Compile Include="AutoSkipPolicy.vb" />
@@ -372,10 +431,14 @@
     <Compile Include="InputGuards.vb" />
     <!-- Ticket 049 B-10: the one monotonic clock for throttles. -->
     <Compile Include="MonotonicClock.vb" />
+    <!-- The product's visible names, spelled once (docs/guides/PRODUCT_NAMING.md). -->
+    <Compile Include="ProductNames.vb" />
     <!-- Ticket 048: pure navigation/decode rules (slideshow order, prefetch acceptance,
          extension keys, folder-scan and decode-budget helpers). -->
     <Compile Include="SlideshowOrder.vb" />
     <Compile Include="NavigationRules.vb" />
+    <Compile Include="OpenCoordination.vb" />
+    <Compile Include="ProbeScheduler.vb" />
     <Compile Include="FolderScan.vb" />
     <Compile Include="FolderLiveList.vb" />
     <!-- Ticket 086 (audit 057 S01-6): one running display decode per path, handed over
@@ -387,6 +450,11 @@
          and ignored, so the x86 viewer keeps today's drop-the-file behaviour exactly
          (011_SPECIFICATION_SLOT_HEALTH_AND_HONEST_FAILURES_DOTNET10.md §5, invariant 10). -->
     <Compile Include="PathFailure.vb" />
+    <!-- Ticket 090: whether a failed video may go to the shell's default program. Shared by
+         both builds - the x86 fallback takes it as a bug fix. -->
+    <Compile Include="ExternalPlayerPolicy.vb" />
+    <!-- Ticket 107: separates queue drain in flight from approved-to-close permission. -->
+    <Compile Include="CloseDrainCoordinator.vb" />
     <!-- Slot health (same specification, Ф2..Ф4). Both are whole-file
          "#If Not NETFRAMEWORK" and compile to nothing here: this build's file-operation
          transport is a single BackgroundWorker that refuses a second operation anyway, so
@@ -408,9 +476,22 @@
          its one-operation-deep undo. -->
     <Compile Include="FileOpKind.vb" />
     <Compile Include="UndoStack.vb" />
+    <!-- The batch engine (004_SPECIFICATION_BATCH_OPERATIONS_ENGINE_DOTNET10.md). All four are
+         whole-file "#If Not NETFRAMEWORK": the x86 thumbnail panel keeps its own loop, so these
+         compile to nothing here and are listed only so the two projects' file sets stay identical. -->
+    <Compile Include="BatchSelection.vb" />
+    <Compile Include="BatchPlan.vb" />
+    <Compile Include="BatchReport.vb" />
+    <Compile Include="BatchRunner.vb" />
     <Compile Include="DiskCacheTrim.vb" />
     <Compile Include="DocHtmlTranslateLauncher.vb" />
     <Compile Include="ZoomMath.vb" />
+    <!-- The "particles and lines" audio backdrop (WAVE-PARTICLES, ticket 029). Whole-file
+         "#If Not NETFRAMEWORK": the x86 fallback has no visualiser, so all three compile to
+         nothing here and are listed only so the two project lists stay comparable. -->
+    <Compile Include="Backdrop\WaveParticlesConstants.vb" />
+    <Compile Include="Backdrop\WaveParticlesSession.vb" />
+    <Compile Include="Backdrop\BackdropHostSignals.vb" />
     <!-- Window geometry arithmetic (ticket 028 Ф-2). Whole-file "#If Not NETFRAMEWORK":
          the x86 fallback keeps its historical placement under a dated exception. -->
     <Compile Include="WindowPlacement.vb" />
@@ -467,6 +548,14 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FileOpQueue.vb" />
+    <!-- 014 U-01: the decoded-picture cache and the window's side of it. Both whole-file
+         "#If Not NETFRAMEWORK" - they compile to nothing here and are listed so that nothing
+         under src/ is silently absent from this exe. -->
+    <Compile Include="MediaCache.vb" />
+    <Compile Include="Main_Form.MediaCache.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Imaging\ImageDecoder.vb" />
     <Compile Include="Imaging\LegacyWicImageDecoder.vb" />
     <Compile Include="Imaging\ModernImageSharpDecoder.vb" />
@@ -548,8 +637,21 @@
     <Compile Include="RuntimeInstallPlan.vb" />
     <Compile Include="PlaybackRules.vb" />
     <Compile Include="MultiWindowPolicy.vb" />
+    <Compile Include="CopyDataTransport.vb" />
     <Compile Include="SingleInstanceProtocol.vb" />
+    <Compile Include="ViewerProcessDiscovery.vb" />
     <Compile Include="RuntimeBootstrap.vb" />
+    <Compile Include="Documents\TextFileReader.vb" />
+    <Compile Include="Documents\PdfDocumentSource.vb" />
+    <Compile Include="Documents\EpubMetadata.vb" />
+    <Compile Include="Main_Form.TextView.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.PdfView.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Table_Form.Designer.vb">
       <DependentUpon>Table_Form.vb</DependentUpon>
     </Compile>
@@ -607,29 +709,37 @@
     <Compile Include="Localization\Localization.Archive.vb" />
     <Compile Include="Localization\Localization.Video.vb" />
     <Compile Include="Localization\Localization.SlotHealth.vb" />
+    <Compile Include="Localization\Localization.Panel.vb" />
     <!-- Compiled here too, unlike the rest of the secure-container feature: the strings
          are shared by both builds' registry, and a table missing from one project fails
          its shared constructor with BC30451, which is the right failure. -->
     <Compile Include="Localization\Localization.Secure.vb" />
+    <Compile Include="Localization\Localization.Resources.vb" />
+    <Compile Include="Localization\Localization.Broadcast.vb" />
     <!-- Ticket 028 (APP-BEHAVIOUR contract sync). Registered by both builds for the same
          reason as the table above. -->
     <Compile Include="Localization\Localization.AppUx.vb" />
+    <Compile Include="Localization\Localization.Activation.vb" />
+    <Compile Include="Localization\Localization.SettingsImport.vb" />
+    <Compile Include="ShareActivationPolicy.vb" />
+    <Compile Include="SettingsPersistence.vb" />
+    <Compile Include="SettingsImport.vb" />
+    <Compile Include="Resources\SshFingerprint.vb" />
+    <Compile Include="Resources\FmsConfigReader.vb" />
+    <Compile Include="Resources\FmsImportRules.vb" />
+    <Compile Include="FileOpCloseFlow.vb" />
+    <Compile Include="AssociationUx.vb" />
+    <Compile Include="FileTypeSelection.vb" />
+    <Compile Include="Main_Form.PlaceholderView.vb" />
+    <Compile Include="Localization\Localization.SortableContent.vb" />
     <!-- Spec 060 (application theme). The strings are registered by both builds like the
          tables above; the theme itself is .NET 10 only, so the four Theming files compile
          to nothing here. -->
     <Compile Include="Localization\Localization.Theme.vb" />
-    <!-- Specs 003 (PK) and 005 (PG), tickets 103/105/108: the newer string tables.
-         Compiled here too, like the tables above: each project that compiles the
-         registry must compile every table it calls, or the shared constructor fails
-         with BC30451, which is the right failure. -->
-    <Compile Include="Localization\Localization.SortableContent.vb" />
-    <Compile Include="Localization\Localization.Panel.vb" />
-    <Compile Include="Localization\Localization.Activation.vb" />
-    <Compile Include="Localization\Localization.SettingsImport.vb" />
-    <Compile Include="Localization\Localization.Streams.vb" />
-    <!-- Stream catalog producer (022_SPECIFICATION_PC_STREAM_CATALOG_PRODUCER.md). Every
-         file is whole-file "#If Not NETFRAMEWORK" except StreamCatalogCli which provides
+    <!-- Spec 022 (stream catalog producer): its string table, and the producer itself. Every
+         Streams file is whole-file "#If Not NETFRAMEWORK" except StreamCatalogCli, which provides
          the switch refusal on net48. Listed so the two file sets stay identical. -->
+    <Compile Include="Localization\Localization.Streams.vb" />
     <Compile Include="Streams\StreamCatalogSchema.vb" />
     <Compile Include="Streams\StreamCatalogRow.vb" />
     <Compile Include="Streams\StreamRefusal.vb" />
@@ -664,6 +774,25 @@
     <Compile Include="Icons\IconMap.vb" />
     <Compile Include="Icons\SvgPathData.vb" />
     <Compile Include="Icons\GlyphRenderer.vb" />
+    <!-- The floating chrome of the main window (002): whole-file "#If Not NETFRAMEWORK", so they compile to
+         nothing here - listed anyway so the two projects keep one source tree and a reference cannot break. -->
+    <Compile Include="Chrome\ChromeMetrics.vb" />
+    <Compile Include="Chrome\UiScale.vb" />
+    <Compile Include="Chrome\ChromeLayout.vb" />
+    <Compile Include="Chrome\ChromeTheme.vb" />
+    <Compile Include="Chrome\ChromeItem.vb" />
+    <Compile Include="Chrome\ChromeSurface.vb" />
+    <Compile Include="Chrome\ChromeHost.vb" />
+    <Compile Include="Chrome\ChromeMenu.vb" />
+    <Compile Include="Chrome\ChromePathCompletion.vb" />
+    <Compile Include="Chrome\ChromePathBox.vb" />
+    <Compile Include="Chrome\ChromeText.vb" />
+    <Compile Include="Chrome\ChromeStatusBar.vb" />
+    <Compile Include="Main_Form.ChromeMenus.vb" />
+    <Compile Include="Main_Form.Chrome.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Main_Form.resx">

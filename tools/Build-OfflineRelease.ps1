@@ -161,7 +161,7 @@ Get-ChildItem $modernOut -File |
 Remove-Item -LiteralPath $modernOut -Recurse -Force -ErrorAction SilentlyContinue
 
 # Android Folder Share payload (mirror of release.yml): publish the Companion app
-# (Share Manager, net10) as a self-contained single-file exe next to the LITE exe,
+# (Share Manager, net10) as a self-contained single-file exe next to the viewer exe,
 # and stage the committed Go worker under companion\. Both feed the installer's
 # `share` component and the portable ZIP.
 $companionProj = Join-Path $solutionDir "src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj"
@@ -186,7 +186,7 @@ if (-not (Test-Path $worker)) {
 $stageCompanion = Join-Path $stageDir "companion"
 New-Item -ItemType Directory -Path $stageCompanion -Force | Out-Null
 Copy-Item (Join-Path $workerSrc "*") $stageCompanion -Recurse -Force
-
+& (Join-Path $PSScriptRoot "Stage-FileDoPayload.ps1") -Destination $stageDir
 & (Join-Path $PSScriptRoot "Prepare-OcrOfflinePayload.ps1") -StageDir $stageDir -IncludeBest
 
 $zipName = "FastMediaSorter-$Version-windows-x64.zip"
@@ -248,6 +248,7 @@ Copy-Item (Join-Path $stageDir "FastMediaSorterCompanion.exe") $serverStage -For
 $serverCompanion = Join-Path $serverStage "companion"
 New-Item -ItemType Directory -Path $serverCompanion -Force | Out-Null
 Copy-Item (Join-Path $stageCompanion "*") $serverCompanion -Recurse -Force
+& (Join-Path $PSScriptRoot "Stage-FileDoPayload.ps1") -Destination $serverStage
 
 $serverStageAbs = (Resolve-Path $serverStage).Path
 & $iscc "/DVersion=$Version" "/DSourceDir=$serverStageAbs" "/O$distAbs" (Join-Path $solutionDir "publishing\installer\FastMediaSorterServer.iss")

@@ -108,6 +108,8 @@ Partial Public Class Main_Form
     ''' </summary>
     Friend Function MaterializeForThumbnail(filePath As String, maxEntryBytes As Long, maxCacheBytes As Long) As Boolean
         If String.IsNullOrEmpty(filePath) Then Return False
+        Dim resource As ResourceSession = ActiveResourceSession()
+        If resource IsNot Nothing AndAlso resource.OwnsLocalPath(filePath) Then Return resource.MaterializeForThumbnail(filePath)
         If File.Exists(filePath) Then Return True
         Dim session As ArchiveSession = archive_Session
         If session Is Nothing Then Return False
@@ -238,6 +240,16 @@ Partial Public Class Main_Form
             Dim prefs As ModernViewerPreferences = GetModernPreferences()
             Dim paths As List(Of String) = selected.ToList()
             Dim meta As Dictionary(Of String, FileMetaInfo) = file_Meta
+            ' Asked here, on the UI thread that owns the open resource, before the plan goes to the
+            ' pool: a resource file's real name and its address on the server (007 §4.2).
+            Dim transfer_Names As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+            Dim source_Locations As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+            For Each p As String In paths
+                If String.IsNullOrEmpty(p) Then Continue For
+                transfer_Names(p) = TransferNameOf(p)
+                source_Locations(p) = LogicalPathOf(p)
+            Next
+            Dim slots As RemoteSlotConnections = RemoteSlotConnections.Current
 
             Dim ctx As New BatchPlanContext With {
                 .DestinationFolder = destination_Folder,
@@ -245,7 +257,25 @@ Partial Public Class Main_Form
                 .CreateDestinationFolder = create_Destination,
                 .CollisionPolicy = If(prefs Is Nothing, "ask", prefs.NameCollisionPolicy),
                 .ConfirmDeletePolicy = If(prefs Is Nothing, "always", prefs.ConfirmDelete),
-                .FileExists = Function(p As String) File.Exists(p),
+                .FileExists = Function(p As String)
+                                  ' A server folder is asked through the slot connections; a server
+                                  ' that cannot say throws, and the batch stops before it starts.
+                                  If ResourceLocator.IsLocator(p) Then
+                                      If slots Is Nothing Then Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Unsupported))
+                                      Return slots.FileExists(p)
+                                  End If
+                                  Return File.Exists(p)
+                              End Function,
+                .TransferName = Function(p As String)
+                                    Dim name As String = Nothing
+                                    If transfer_Names.TryGetValue(p, name) Then Return name
+                                    Return Path.GetFileName(p)
+                                End Function,
+                .SourceLocation = Function(p As String)
+                                      Dim location As String = Nothing
+                                      If source_Locations.TryGetValue(p, location) Then Return location
+                                      Return p
+                                  End Function,
                 .FileSize = Function(p As String)
                                 Dim m As FileMetaInfo
                                 If meta IsNot Nothing AndAlso meta.TryGetValue(p, m) Then Return m.SizeBytes
@@ -257,11 +287,22 @@ Partial Public Class Main_Form
             ' The plan touches the file system (existence, size, the volume probe for a
             ' delete) once per selected file: off the UI thread, so three hundred files over a
             ' slow share cost a moment of "planning", not a frozen window.
-            Dim plan As BatchPlan = Await Task.Run(
-                Function() As BatchPlan
-                    If intent = BatchIntent.Delete Then ctx.DeleteDecision = SelectionDeleteDecision(paths, bin_Enabled)
-                    Return BatchPlan.Build(paths, intent, ctx)
-                End Function)
+            Dim plan As BatchPlan
+            Try
+                plan = Await Task.Run(
+                    Function() As BatchPlan
+                        If intent = BatchIntent.Delete Then ctx.DeleteDecision = SelectionDeleteDecision(paths, bin_Enabled)
+                        Return BatchPlan.Build(paths, intent, ctx)
+                    End Function)
+            Catch ex As Exception When ResourceLocator.IsLocator(destination_Folder)
+                ' A server folder (a remote slot) that could not say which names are taken: nothing
+                ' has been touched yet, and nothing is planned on a guess.
+                If Me.IsDisposed Then Return False
+                Dim failure As ResourceFailure = ResourceFailure.FromException(ex)
+                AppFileLogger.WriteLine("Batch: planning into a server folder failed - " & failure.ToString())
+                lbl_Status.Text = Localization.TF("«{0}»: {1}", destination_Folder, ResourceMessages.ForFailure(failure))
+                Return False
+            End Try
             If Me.IsDisposed Then Return False
 
             ' --- the questions, once each (PB-6) ---------------------------------------
@@ -293,6 +334,25 @@ Partial Public Class Main_Form
             If Me.IsDisposed Then Return False
 
             ' --- go ---------------------------------------------------------------------
+            If intent <> BatchIntent.Delete Then
+                Dim sourceCaps As ProviderCapabilities = ActiveResourceSession()?.Provider.Capabilities
+                Dim destinationCaps As ProviderCapabilities = Nothing
+                Dim destinationResource As ResourceDescriptor = Nothing
+                Dim remotePath As String = ""
+                If slots IsNot Nothing Then slots.Locate(destination_Folder, destinationResource, remotePath)
+                If destinationResource IsNot Nothing Then
+                    destinationCaps = New ProviderCapabilities(costHint:=If(destinationResource.Kind = ResourceKind.Sftp,
+                                                                           ProviderCostHint.Slow, ProviderCostHint.Fast))
+                End If
+                If RemoteBatchPolicy.NeedsWarning(plan.TotalBytes, sourceCaps, destinationCaps) Then
+                    If MessageBox.Show(owner,
+                        Localization.TF("Будет передано {0} через медленный или тарифицируемый ресурс. Между разными серверами файл сначала скачивается, затем загружается; проверка также расходует трафик. Продолжить?", FormatFileSize(plan.TotalBytes)),
+                        Localization.T("Ресурсы"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+                        MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return False
+                End If
+            End If
+            If Me.IsDisposed Then Return False
+
             Dim run As New BatchRunState With {
                 .IsUndo = False,
                 .Intent = intent,

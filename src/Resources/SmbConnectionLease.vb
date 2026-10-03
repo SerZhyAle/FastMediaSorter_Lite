@@ -3,6 +3,7 @@ Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Runtime.InteropServices
+Imports System.Text
 Imports System.Threading
 
 ''' <summary>
@@ -71,6 +72,7 @@ End Structure
 
 ''' <summary>Abstraction over Win32 mpr.dll WNet calls for testability.</summary>
 Friend Interface IWNetNative
+    Function GetConnectedUser(uncRoot As String, ByRef userName As String) As Integer
     Function WNetAddConnection2(ByRef netResource As NETRESOURCE, password As String, username As String, flags As Integer) As Integer
     Function WNetCancelConnection2(name As String, flags As Integer, force As Boolean) As Integer
 End Interface
@@ -80,6 +82,23 @@ Friend NotInheritable Class NativeWNet
     Implements IWNetNative
 
     Friend Shared ReadOnly Instance As New NativeWNet()
+
+    <DllImport("mpr.dll", CharSet:=CharSet.Unicode, EntryPoint:="WNetGetUserW")>
+    Private Shared Function WNetGetUser(name As String, userName As StringBuilder, ByRef length As Integer) As Integer
+    End Function
+
+    Public Function GetConnectedUser(uncRoot As String, ByRef userName As String) As Integer Implements IWNetNative.GetConnectedUser
+        userName = ""
+        Dim length As Integer = 256
+        Dim buffer As New StringBuilder(length)
+        Dim rc As Integer = WNetGetUser(uncRoot, buffer, length)
+        If rc = 234 AndAlso length > 0 AndAlso length <= 32768 Then
+            buffer = New StringBuilder(length)
+            rc = WNetGetUser(uncRoot, buffer, length)
+        End If
+        If rc = 0 Then userName = buffer.ToString()
+        Return rc
+    End Function
 
     <DllImport("mpr.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
     Private Shared Function WNetAddConnection2(ByRef lpNetResource As NETRESOURCE, lpPassword As String, lpUserName As String, dwFlags As Integer) As Integer
@@ -191,6 +210,7 @@ Friend NotInheritable Class SmbConnectionManager
     Public Const CONNECT_TEMPORARY As Integer = &H4
 
     Public Const NO_ERROR As Integer = 0
+    Public Const ERROR_NOT_CONNECTED As Integer = 2250
     Public Const ERROR_ACCESS_DENIED As Integer = 5
     Public Const ERROR_BAD_NETPATH As Integer = 53
     Public Const ERROR_BAD_NET_NAME As Integer = 67
@@ -240,6 +260,15 @@ Friend NotInheritable Class SmbConnectionManager
                 Return ResourceResult(Of SmbConnectionLease).Ok(New SmbConnectionLease(Me, key, uncRoot, normalizedUser, entry.IsAppCreated))
             End If
 
+            ' WNetAddConnection2 may return success when Windows already has this connection.
+            ' Inspect it first: success alone never establishes ownership of an external mapping.
+            Dim connectedUser As String = ""
+            Dim inspect As Integer = wnetApi.GetConnectedUser(uncRoot, connectedUser)
+            If inspect <> NO_ERROR AndAlso inspect <> ERROR_NOT_CONNECTED Then
+                Return ResourceResult(Of SmbConnectionLease).Fail(New ResourceFailure(ResourceFailureKind.LocalIO, inspect, "SMB connection ownership could not be inspected."))
+            End If
+            Dim existed As Boolean = inspect = NO_ERROR
+
             ' Attempt WNetAddConnection2
             Dim nr As New NETRESOURCE With {
                 .dwType = RESOURCETYPE_DISK,
@@ -251,10 +280,13 @@ Friend NotInheritable Class SmbConnectionManager
 
             Select Case rc
                 Case NO_ERROR
-                    ' Successfully created app-owned connection
-                    entry = New SmbLeaseEntry(key, uncRoot, normalizedUser, isAppCreated:=True, initialLeaseCount:=1)
+                    Dim appCreated As Boolean = Not existed
+                    For Each active As SmbLeaseEntry In activeLeases.Values
+                        If String.Equals(active.UncRoot, uncRoot, StringComparison.OrdinalIgnoreCase) AndAlso active.IsAppCreated Then appCreated = True
+                    Next
+                    entry = New SmbLeaseEntry(key, uncRoot, normalizedUser, isAppCreated:=appCreated, initialLeaseCount:=1)
                     activeLeases(key) = entry
-                    Return ResourceResult(Of SmbConnectionLease).Ok(New SmbConnectionLease(Me, key, uncRoot, normalizedUser, isAppCreated:=True))
+                    Return ResourceResult(Of SmbConnectionLease).Ok(New SmbConnectionLease(Me, key, uncRoot, normalizedUser, isAppCreated:=appCreated))
 
                 Case ERROR_ALREADY_ASSIGNED, ERROR_ALREADY_EXISTS
                     ' Existing OS mapping / connection exists externally
@@ -297,6 +329,11 @@ Friend NotInheritable Class SmbConnectionManager
                 If entry.LeaseCount <= 0 Then
                     activeLeases.Remove(lease.Key)
                     If entry.IsAppCreated Then
+                        ' Windows may accept another spelling of the same account. Such a lease
+                        ' has a different key but holds the same connection; wait for its last user.
+                        For Each active As SmbLeaseEntry In activeLeases.Values
+                            If String.Equals(active.UncRoot, entry.UncRoot, StringComparison.OrdinalIgnoreCase) Then Return
+                        Next
                         Try
                             wnetApi.WNetCancelConnection2(entry.UncRoot, 0, False)
                         Catch

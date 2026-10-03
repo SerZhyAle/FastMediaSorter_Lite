@@ -5,6 +5,7 @@ Imports System.Collections.Generic
 Imports System.Windows.Forms
 Imports System.Linq
 Imports System.IO
+Imports System.Threading.Tasks
 
 Partial Public Class Table_Form
 
@@ -27,9 +28,23 @@ Partial Public Class Table_Form
     ''' <summary>Same, for the decode cache row (§6.2).</summary>
     Private decodeCacheSizeLabel As Label
 
+    ''' <summary>Only the newest cache measurement may update its label (057.S14-1).</summary>
+    Private ReadOnly ocrSizeGate As New RefreshGate()
+    Private ReadOnly decodeSizeGate As New RefreshGate()
+
     ''' <summary>The "include personal data" opt-in of §7.4. Deliberately a field rather
     ''' than a preference: it is a decision about one export, not a setting.</summary>
     Private exportPersonalData As Boolean
+
+    ''' <summary>Actions that refresh choice combo items, button captions, external preference values,
+    ''' and cache measurements on language change and display preparation (057.S14-1).</summary>
+    Private ReadOnly expandedRefreshActions As New List(Of Action)()
+
+    Friend Sub RefreshExpandedSettingsRows()
+        For Each refreshAction As Action In expandedRefreshActions
+            refreshAction()
+        Next
+    End Sub
 
     Private Sub AddExpandedSettingsRows(destinations As FlowLayoutPanel, viewing As FlowLayoutPanel,
                                         video As FlowLayoutPanel, audio As FlowLayoutPanel, files As FlowLayoutPanel,
@@ -37,113 +52,198 @@ Partial Public Class Table_Form
         Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
 
         AddSectionHeader(destinations, "section_overlay_layout")
-        AddPreferenceChoice(destinations, "recipients_position", p.RecipientsOverlayPosition,
-                            {Choice("topLeft", "Вверху слева"), Choice("topRight", "Вверху справа"), Choice("bottomLeft", "Внизу слева"), Choice("bottomRight", "Внизу справа")},
-                            Sub(v) p.RecipientsOverlayPosition = v)
-        AddPreferenceNumber(destinations, "recipients_width", p.RecipientsOverlayWidth, 180, 520, Sub(v) p.RecipientsOverlayWidth = v)
-        AddPreferenceNumber(destinations, "recipients_font", p.RecipientsOverlayFontSize, 9, 18, Sub(v) p.RecipientsOverlayFontSize = v)
-        AddPreferenceNumber(destinations, "recipients_opacity", p.RecipientsOverlayOpacity, 40, 100, Sub(v) p.RecipientsOverlayOpacity = v)
-        AddPreferenceNumber(destinations, "recipients_rows", p.RecipientsOverlayVisibleRows, 3, 11, Sub(v) p.RecipientsOverlayVisibleRows = v)
+        AddPreferenceChoice(destinations, "recipients_position",
+                            Function() {Choice("topLeft", "Вверху слева"), Choice("topRight", "Вверху справа"), Choice("bottomLeft", "Внизу слева"), Choice("bottomRight", "Внизу справа")},
+                            Function() Main_Form.GetModernPreferences().RecipientsOverlayPosition,
+                            Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayPosition = v)
+        AddPreferenceNumber(destinations, "recipients_width", 180, 520,
+                            Function() Main_Form.GetModernPreferences().RecipientsOverlayWidth,
+                            Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayWidth = v)
+        AddPreferenceNumber(destinations, "recipients_font", 9, 18,
+                            Function() Main_Form.GetModernPreferences().RecipientsOverlayFontSize,
+                            Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayFontSize = v)
+        AddPreferenceNumber(destinations, "recipients_opacity", 40, 100,
+                            Function() Main_Form.GetModernPreferences().RecipientsOverlayOpacity,
+                            Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayOpacity = v)
+        AddPreferenceNumber(destinations, "recipients_rows", 3, 11,
+                            Function() Main_Form.GetModernPreferences().RecipientsOverlayVisibleRows,
+                            Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayVisibleRows = v)
 
         AddSectionHeader(viewing, "section_accessibility")
-        AddInterfaceScaleRow(viewing, p)
-        AddPreferenceCheck(viewing, "toolbar_always_visible", p.ToolbarAlwaysVisible, Sub(v) p.ToolbarAlwaysVisible = v)
-        AddPreferenceChoice(viewing, "new_image_scale", p.NewImageScaleMode,
-                            {Choice("fit", "Вписать"), Choice("actual", "100 %"), Choice("perFolder", "Запоминать для папки")},
-                            Sub(v) p.NewImageScaleMode = v)
-        AddPreferenceCheck(viewing, "reduce_motion", p.ReduceMotion, Sub(v) p.ReduceMotion = v)
+        AddInterfaceScaleRow(viewing)
+        AddPreferenceChoice(viewing, "new_image_scale",
+                            Function() {Choice("fit", "Вписать"), Choice("actual", "100 %"), Choice("perFolder", "Запоминать для папки")},
+                            Function() Main_Form.GetModernPreferences().NewImageScaleMode,
+                            Sub(v) Main_Form.GetModernPreferences().NewImageScaleMode = v)
+        AddPreferenceCheck(viewing, "reduce_motion",
+                           Function() Main_Form.GetModernPreferences().ReduceMotion,
+                           Sub(v) Main_Form.GetModernPreferences().ReduceMotion = v)
+        AddPreferenceCheck(viewing, "chrome_pinned",
+                           Function() Main_Form.GetModernPreferences().ChromePinned,
+                           Sub(v) Main_Form.GetModernPreferences().ChromePinned = v)
+        AddPreferenceChoice(viewing, "chrome_size",
+                            Function() {Choice("small", "Маленький"), Choice("medium", "Средний"), Choice("large", "Большой"), Choice("adaptive", "Адаптивный")},
+                            Function() Main_Form.GetModernPreferences().ChromeSize,
+                            Sub(v) Main_Form.GetModernPreferences().ChromeSize = v)
+        AddPreferenceSlider(viewing, "chrome_opacity", 40, 100,
+                            Function() Main_Form.GetModernPreferences().ChromeOpacityPercent,
+                            Sub(v) Main_Form.GetModernPreferences().ChromeOpacityPercent = v)
+        AddPreferenceNumber(viewing, "chrome_corners", 0, 16,
+                            Function() Main_Form.GetModernPreferences().ChromeCornerRadius,
+                            Sub(v) Main_Form.GetModernPreferences().ChromeCornerRadius = v)
         AddSectionHeader(viewing, "section_slideshow_behavior")
-        AddPreferenceChoice(viewing, "slideshow_random_order", p.SlideshowRandomOrder,
-                            {Choice("natural", "Обычный порядок"), Choice("random", "Случайный"), Choice("shuffleCycle", "Без повторов до конца цикла")},
-                            Sub(v) p.SlideshowRandomOrder = v)
-        AddPreferenceCheck(viewing, "stop_slideshow_manual", p.StopSlideshowOnManualNavigation, Sub(v) p.StopSlideshowOnManualNavigation = v)
-        AddPreferenceChoice(viewing, "slideshow_ui", p.SlideshowUiMode,
-                            {Choice("none", "Не скрывать"), Choice("toolbar", "Скрывать панель инструментов"), Choice("toolbarAndStatus", "Скрывать панель и статус")},
-                            Sub(v) p.SlideshowUiMode = v)
+        AddPreferenceChoice(viewing, "slideshow_random_order",
+                            Function() {Choice("natural", "Обычный порядок"), Choice("random", "Случайный"), Choice("shuffleCycle", "Без повторов до конца цикла")},
+                            Function() Main_Form.GetModernPreferences().SlideshowRandomOrder,
+                            Sub(v) Main_Form.GetModernPreferences().SlideshowRandomOrder = v)
+        AddPreferenceCheck(viewing, "stop_slideshow_manual",
+                           Function() Main_Form.GetModernPreferences().StopSlideshowOnManualNavigation,
+                           Sub(v) Main_Form.GetModernPreferences().StopSlideshowOnManualNavigation = v)
+        AddPreferenceChoice(viewing, "slideshow_ui",
+                            Function() {Choice("none", "Не скрывать"), Choice("toolbar", "Скрывать панель инструментов"), Choice("toolbarAndStatus", "Скрывать панель и статус")},
+                            Function() Main_Form.GetModernPreferences().SlideshowUiMode,
+                            Sub(v) Main_Form.GetModernPreferences().SlideshowUiMode = v)
 
         AddSectionHeader(video, "section_video_behavior")
-        AddNavigationKindCheck(video, "include_video_navigation", p.IncludeVideoInNavigation,
-                               Sub(v) p.IncludeVideoInNavigation = v)
-        AddPreferenceCheck(video, "video_autoplay", p.VideoAutoplay, Sub(v) p.VideoAutoplay = v)
-        AddPreferenceCheck(video, "video_remember_position", p.RememberVideoPosition, Sub(v) p.RememberVideoPosition = v)
-        AddPreferenceNumber(video, "video_controls_delay", p.VideoControlsHideDelaySec, 1, 15, Sub(v) p.VideoControlsHideDelaySec = v)
-        AddPreferenceCheck(video, "video_controls_paused", p.ShowVideoControlsWhenPaused, Sub(v) p.ShowVideoControlsWhenPaused = v)
-        AddPreferenceChoice(video, "video_click_action", p.VideoSingleClickAction,
-                            {Choice("pauseResume", "Пауза / продолжить"), Choice("nextFile", "Следующий файл")}, Sub(v) p.VideoSingleClickAction = v)
-        AddPreferenceChoice(video, "video_end_action", p.VideoEndAction,
-                            {Choice("stay", "Оставить последний кадр"), Choice("nextFile", "Следующий файл"), Choice("repeat", "Повторить")}, Sub(v) p.VideoEndAction = v)
+        AddNavigationKindCheck(video, "include_video_navigation",
+                               Function() Main_Form.GetModernPreferences().IncludeVideoInNavigation,
+                               Sub(v) Main_Form.GetModernPreferences().IncludeVideoInNavigation = v)
+        AddPreferenceCheck(video, "video_autoplay",
+                           Function() Main_Form.GetModernPreferences().VideoAutoplay,
+                           Sub(v) Main_Form.GetModernPreferences().VideoAutoplay = v)
+        AddPreferenceCheck(video, "video_remember_position",
+                           Function() Main_Form.GetModernPreferences().RememberVideoPosition,
+                           Sub(v) Main_Form.GetModernPreferences().RememberVideoPosition = v)
+        AddPreferenceNumber(video, "video_controls_delay", 1, 15,
+                            Function() Main_Form.GetModernPreferences().VideoControlsHideDelaySec,
+                            Sub(v) Main_Form.GetModernPreferences().VideoControlsHideDelaySec = v)
+        AddPreferenceCheck(video, "video_controls_paused",
+                           Function() Main_Form.GetModernPreferences().ShowVideoControlsWhenPaused,
+                           Sub(v) Main_Form.GetModernPreferences().ShowVideoControlsWhenPaused = v)
+        AddPreferenceChoice(video, "video_click_action",
+                            Function() {Choice("pauseResume", "Пауза / продолжить"), Choice("nextFile", "Следующий файл")},
+                            Function() Main_Form.GetModernPreferences().VideoSingleClickAction,
+                            Sub(v) Main_Form.GetModernPreferences().VideoSingleClickAction = v)
+        AddPreferenceChoice(video, "video_end_action",
+                            Function() {Choice("stay", "Оставить последний кадр"), Choice("nextFile", "Следующий файл"), Choice("repeat", "Повторить")},
+                            Function() Main_Form.GetModernPreferences().VideoEndAction,
+                            Sub(v) Main_Form.GetModernPreferences().VideoEndAction = v)
         AddSectionHeader(audio, "section_audio_behavior")
-        AddNavigationKindCheck(audio, "include_audio_navigation", p.IncludeAudioInNavigation,
-                               Sub(v) p.IncludeAudioInNavigation = v)
-        AddPreferenceChoice(audio, "audio_end_action", p.AudioEndAction,
-                            {Choice("next", "Следующий файл"), Choice("stay", Localization.T("Остановиться")), Choice("repeat", "Повторить")}, Sub(v) p.AudioEndAction = v)
-        AddPreferenceCheck(audio, "audio_controls_visible", p.AudioControlsAlwaysVisible, Sub(v) p.AudioControlsAlwaysVisible = v)
-        AddPreferenceCheck(audio, "audio_visualiser", p.AudioVisualiser, Sub(v) p.AudioVisualiser = v)
-        AddPreferenceNumber(audio, "audio_sleep_timer", p.SleepTimerMinutes, 0, 180, Sub(v) p.SleepTimerMinutes = v)
-        AddPreferenceChoice(audio, "preferred_audio_language", p.PreferredAudioLanguage,
-                            TrackLanguageChoices(subtitles:=False), Sub(v) p.PreferredAudioLanguage = v)
-        AddPreferenceChoice(audio, "preferred_subtitle_language", p.PreferredSubtitleLanguage,
-                            TrackLanguageChoices(subtitles:=True), Sub(v) p.PreferredSubtitleLanguage = v)
+        AddNavigationKindCheck(audio, "include_audio_navigation",
+                               Function() Main_Form.GetModernPreferences().IncludeAudioInNavigation,
+                               Sub(v) Main_Form.GetModernPreferences().IncludeAudioInNavigation = v)
+        AddPreferenceChoice(audio, "audio_end_action",
+                            Function() {Choice("next", "Следующий файл"), Choice("stay", "Остановиться"), Choice("repeat", "Повторить")},
+                            Function() Main_Form.GetModernPreferences().AudioEndAction,
+                            Sub(v) Main_Form.GetModernPreferences().AudioEndAction = v)
+        AddPreferenceCheck(audio, "audio_controls_visible",
+                           Function() Main_Form.GetModernPreferences().AudioControlsAlwaysVisible,
+                           Sub(v) Main_Form.GetModernPreferences().AudioControlsAlwaysVisible = v)
+        AddPreferenceCheck(audio, "audio_visualiser",
+                           Function() Main_Form.GetModernPreferences().AudioVisualiser,
+                           Sub(v) Main_Form.GetModernPreferences().AudioVisualiser = v)
+        AddPreferenceNumber(audio, "audio_sleep_timer", 0, 180,
+                            Function() Main_Form.GetModernPreferences().SleepTimerMinutes,
+                            Sub(v) Main_Form.GetModernPreferences().SleepTimerMinutes = v)
+        AddPreferenceChoice(audio, "preferred_audio_language",
+                            Function() TrackLanguageChoices(subtitles:=False),
+                            Function() Main_Form.GetModernPreferences().PreferredAudioLanguage,
+                            Sub(v) Main_Form.GetModernPreferences().PreferredAudioLanguage = v)
+        AddPreferenceChoice(audio, "preferred_subtitle_language",
+                            Function() TrackLanguageChoices(subtitles:=True),
+                            Function() Main_Form.GetModernPreferences().PreferredSubtitleLanguage,
+                            Sub(v) Main_Form.GetModernPreferences().PreferredSubtitleLanguage = v)
 
         AddSectionHeader(files, "section_file_behavior")
-        AddPreferenceChoice(files, "name_collision", p.NameCollisionPolicy,
-                            {Choice("ask", "Спрашивать"), Choice("skip", "Пропустить"), Choice("rename", "Сохранить оба"), Choice("replace", "Заменить")}, Sub(v) p.NameCollisionPolicy = v)
-        AddPreferenceChoice(files, "after_file_operation", p.AfterFileOperation,
-                            {Choice("next", "Следующий файл"), Choice("stay", "Остаться на текущем"), Choice("closeIfEmpty", "Закрыть, если файлов не осталось")}, Sub(v) p.AfterFileOperation = v)
-        ' The two deletion rows sit with the transfer policy they belong with, and in this
-        ' order: whether the bin is used at all decides what the confirmation can even say.
-        ' With the transfer policy, because it is one: it says what a recipient slot does
-        ' when its folder is not there yet (SLOT_HEALTH §3.6). Off means "not found" and a
-        ' refusal, which is the behaviour that existed before it.
-        AddPreferenceCheck(files, "create_missing_destination", p.CreateMissingDestination,
-                           Sub(v) p.CreateMissingDestination = v)
-        AddPreferenceCheck(files, "delete_to_recycle_bin", p.DeleteToRecycleBin, Sub(v) p.DeleteToRecycleBin = v)
-        AddPreferenceChoice(files, "confirm_delete", p.ConfirmDelete,
-                            {Choice("always", "Всегда"), Choice("permanentOnly", "Только если файл не попадёт в Корзину"),
-                             Choice("never", "Никогда")}, Sub(v) p.ConfirmDelete = v)
-        ' "Never" is back by owner decision 2026-09-27 (a sorter, not a nursery) - a dated
-        ' exception to APP-BEHAVIOUR rule 5. Still no "ask before Replace with video" row:
-        ' that confirmation's own checkbox lasts for the session only.
-        AddPreferenceCheck(files, "include_subfolders", p.IncludeSubfolders, Sub(v) p.IncludeSubfolders = v)
-        AddFileTypesRow(files, p)
-        AddHotkeysRow(files, p)
-        AddPreferenceNumber(files, "recent_files_limit", p.RecentFilesLimit, 0, 200, Sub(v) p.RecentFilesLimit = v)
-        AddPreferenceNumber(files, "recent_folders_limit", p.RecentFoldersLimit, 0, 200, Sub(v) p.RecentFoldersLimit = v)
+        AddPreferenceChoice(files, "name_collision",
+                            Function() {Choice("ask", "Спрашивать"), Choice("skip", "Пропустить"), Choice("rename", "Сохранить оба"), Choice("replace", "Заменить")},
+                            Function() Main_Form.GetModernPreferences().NameCollisionPolicy,
+                            Sub(v) Main_Form.GetModernPreferences().NameCollisionPolicy = v)
+        AddPreferenceChoice(files, "after_file_operation",
+                            Function() {Choice("next", "Следующий файл"), Choice("stay", "Остаться на текущем"), Choice("closeIfEmpty", "Закрыть, если файлов не осталось")},
+                            Function() Main_Form.GetModernPreferences().AfterFileOperation,
+                            Sub(v) Main_Form.GetModernPreferences().AfterFileOperation = v)
+        AddPreferenceCheck(files, "create_missing_destination",
+                           Function() Main_Form.GetModernPreferences().CreateMissingDestination,
+                           Sub(v) Main_Form.GetModernPreferences().CreateMissingDestination = v)
+        AddPreferenceCheck(files, "delete_to_recycle_bin",
+                           Function() Main_Form.GetModernPreferences().DeleteToRecycleBin,
+                           Sub(v) Main_Form.GetModernPreferences().DeleteToRecycleBin = v)
+        AddPreferenceChoice(files, "confirm_delete",
+                            Function() {Choice("always", "Всегда"), Choice("permanentOnly", "Только если файл не попадёт в Корзину"), Choice("never", "Никогда")},
+                            Function() Main_Form.GetModernPreferences().ConfirmDelete,
+                            Sub(v) Main_Form.GetModernPreferences().ConfirmDelete = v)
+        AddPreferenceCheck(files, "include_subfolders",
+                           Function() Main_Form.GetModernPreferences().IncludeSubfolders,
+                           Sub(v) Main_Form.GetModernPreferences().IncludeSubfolders = v)
+        AddFileTypesRow(files)
+        AddNavigationKindCheck(files, "include_document_navigation",
+                               Function() Main_Form.GetModernPreferences().IncludeDocumentInNavigation,
+                               Sub(v) Main_Form.GetModernPreferences().IncludeDocumentInNavigation = v)
+        AddContentExtensionsRow(files, "document_extensions", True)
+        AddPreferenceNumber(files, "text_preview_max_kb", ModernViewerPreferences.TextPreviewMaxKbMin, ModernViewerPreferences.TextPreviewMaxKbMax,
+                            Function() Main_Form.GetModernPreferences().TextPreviewMaxKb,
+                            Sub(v) Main_Form.GetModernPreferences().TextPreviewMaxKb = v)
+        AddNavigationKindCheck(files, "sort_other_files",
+                               Function() Main_Form.GetModernPreferences().SortOtherFiles,
+                               Sub(v) Main_Form.GetModernPreferences().SortOtherFiles = v)
+        AddContentExtensionsRow(files, "other_extensions", False)
+        AddHotkeysRow(files)
+        AddPreferenceNumber(files, "recent_files_limit", 0, 200,
+                            Function() Main_Form.GetModernPreferences().RecentFilesLimit,
+                            Sub(v) Main_Form.GetModernPreferences().RecentFilesLimit = v)
+        AddPreferenceNumber(files, "recent_folders_limit", 0, 200,
+                            Function() Main_Form.GetModernPreferences().RecentFoldersLimit,
+                            Sub(v) Main_Form.GetModernPreferences().RecentFoldersLimit = v)
         AddHistoryRow(files)
-        AddPreferenceChoice(files, "startup_open", p.StartupOpenMode,
-                            {Choice("home", "Стартовую страницу"), Choice("lastFolder", "Последнюю папку"), Choice("lastFile", "Последний файл")}, Sub(v) p.StartupOpenMode = v)
-        ' Directly under it, because the two are a pair: that row says WHAT to open, this
-        ' one says "and carry on from the same frame" (RESUME_LAST_PLAYBACK §6).
-        AddPreferenceCheck(files, "resume_last_playback", p.ResumeLastPlayback, Sub(v) p.ResumeLastPlayback = v)
+        AddPreferenceChoice(files, "startup_open",
+                            Function() {Choice("home", "Стартовую страницу"), Choice("lastFolder", "Последнюю папку"), Choice("lastFile", "Последний файл")},
+                            Function() Main_Form.GetModernPreferences().StartupOpenMode,
+                            Sub(v) Main_Form.GetModernPreferences().StartupOpenMode = v)
+        AddPreferenceCheck(files, "resume_last_playback",
+                           Function() Main_Form.GetModernPreferences().ResumeLastPlayback,
+                           Sub(v) Main_Form.GetModernPreferences().ResumeLastPlayback = v)
         AddSettingsTransferRows(files)
-        AddAllowNewWindowsRow(files, p)
+        AddAllowNewWindowsRow(files)
 
         ' ZIP/CBZ browsing (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §9, §12 Ф4).
         AddSectionHeader(files, "section_archives")
-        AddPreferenceNumber(files, "archive_cache_limit", p.ArchiveCacheMaxMb, 100, 16384, Sub(v) p.ArchiveCacheMaxMb = v)
-        AddPreferenceNumber(files, "archive_entry_limit", p.ArchiveMaxEntryMb, 16, 4096, Sub(v) p.ArchiveMaxEntryMb = v)
-        AddPreferenceNumber(files, "archive_entries_limit", p.ArchiveMaxEntries, 100, 100000, Sub(v) p.ArchiveMaxEntries = v)
+        ' The bounds are the shared constants, not fresh literals: the spinner, the registry
+        ' loader and the import normalizer must not be able to drift apart (103).
+        AddPreferenceNumber(files, "archive_cache_limit", ModernViewerPreferences.ArchiveCacheMaxMbMin, ModernViewerPreferences.ArchiveCacheMaxMbMax,
+                            Function() Main_Form.GetModernPreferences().ArchiveCacheMaxMb,
+                            Sub(v) Main_Form.GetModernPreferences().ArchiveCacheMaxMb = v)
+        AddPreferenceNumber(files, "archive_entry_limit", ModernViewerPreferences.ArchiveMaxEntryMbMin, ModernViewerPreferences.ArchiveMaxEntryMbMax,
+                            Function() Main_Form.GetModernPreferences().ArchiveMaxEntryMb,
+                            Sub(v) Main_Form.GetModernPreferences().ArchiveMaxEntryMb = v)
+        AddPreferenceNumber(files, "archive_entries_limit", ModernViewerPreferences.ArchiveMaxEntriesMin, ModernViewerPreferences.ArchiveMaxEntriesMax,
+                            Function() Main_Form.GetModernPreferences().ArchiveMaxEntries,
+                            Sub(v) Main_Form.GetModernPreferences().ArchiveMaxEntries = v)
 
         ' Secure containers (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §8, §9).
-        ' Four rows and not one of them stores a credential, a derived key or a sealed true
-        ' name - the whole feature keeps those in memory and nowhere else.
         AddSectionHeader(files, "section_secure")
-        AddPreferenceCheck(files, "secure_in_navigation", p.SecureIncludeInNavigation,
-                           Sub(v) p.SecureIncludeInNavigation = v)
-        AddPreferenceNumber(files, "secure_remember_minutes", p.SecureRememberMinutes, 0, 480,
-                            Sub(v) p.SecureRememberMinutes = v)
-        AddPreferenceCheck(files, "secure_show_true_name", p.SecureShowTrueName,
-                           Sub(v) p.SecureShowTrueName = v)
+        AddPreferenceCheck(files, "secure_in_navigation",
+                           Function() Main_Form.GetModernPreferences().SecureIncludeInNavigation,
+                           Sub(v) Main_Form.GetModernPreferences().SecureIncludeInNavigation = v)
+        AddPreferenceNumber(files, "secure_remember_minutes", ModernViewerPreferences.SecureRememberMinutesMin, ModernViewerPreferences.SecureRememberMinutesMax,
+                            Function() Main_Form.GetModernPreferences().SecureRememberMinutes,
+                            Sub(v) Main_Form.GetModernPreferences().SecureRememberMinutes = v)
+        AddPreferenceCheck(files, "secure_show_true_name",
+                           Function() Main_Form.GetModernPreferences().SecureShowTrueName,
+                           Sub(v) Main_Form.GetModernPreferences().SecureShowTrueName = v)
         AddSecureAssociationRow(files)
 
-        AddPreferenceNumber(ocr, "ocr_cache_limit", p.OcrDiskCacheMaxMb, 0, 1024, Sub(v) p.OcrDiskCacheMaxMb = v)
+        AddPreferenceNumber(ocr, "ocr_cache_limit", 0, 1024,
+                            Function() Main_Form.GetModernPreferences().OcrDiskCacheMaxMb,
+                            Sub(v) Main_Form.GetModernPreferences().OcrDiskCacheMaxMb = v)
         AddOcrCacheRow(ocr)
-        ' The decode cache sits beside the OCR one: they are the same kind of setting - a
-        ' megabyte budget for work already paid for - and the second answer to "what does
-        ' this app keep on disk" belongs next to the first, not on a page of its own
-        ' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §6.2).
-        AddPreferenceNumber(ocr, "decode_cache_limit", p.DecodeCacheMaxMb, 0, 8192, Sub(v) p.DecodeCacheMaxMb = v)
+        AddPreferenceNumber(ocr, "decode_cache_limit", 0, 8192,
+                            Function() Main_Form.GetModernPreferences().DecodeCacheMaxMb,
+                            Sub(v) Main_Form.GetModernPreferences().DecodeCacheMaxMb = v)
         AddDecodeCacheRow(ocr)
+        AddPreferenceNumber(ocr, "thumb_cache_limit", 0, 4096,
+                            Function() Main_Form.GetModernPreferences().PanelThumbCacheMb,
+                            Sub(v) Main_Form.GetModernPreferences().PanelThumbCacheMb = v)
     End Sub
 
     ''' <summary>
@@ -151,19 +251,34 @@ Partial Public Class Table_Form
     ''' are read once while it is being built - so the honest way to apply it is to build
     ''' the window again, which is exactly what the specification asks to confirm first.
     ''' </summary>
-    Private Sub AddInterfaceScaleRow(viewing As FlowLayoutPanel, p As ModernViewerPreferences)
+    Private Sub AddInterfaceScaleRow(viewing As FlowLayoutPanel)
         Dim combo As New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList}
-        Dim choices As PreferenceChoice() = {Choice("0", "Системный"), Choice("90", "90 %"), Choice("100", "100 %"),
-                                             Choice("110", "110 %"), Choice("125", "125 %"), Choice("150", "150 %")}
-        combo.Items.AddRange(choices)
-        Dim currentValue As String = p.InterfaceScalePercent.ToString(Globalization.CultureInfo.InvariantCulture)
-        combo.SelectedItem = If(choices.FirstOrDefault(Function(item) item.Value = currentValue), choices(0))
+        Dim isUpdating As Boolean = False
+        Dim refresh As Action =
+            Sub()
+                isUpdating = True
+                Try
+                    Dim choices As PreferenceChoice() = {Choice("0", "Системный"), Choice("90", "90 %"), Choice("100", "100 %"),
+                                                         Choice("110", "110 %"), Choice("125", "125 %"), Choice("150", "150 %")}
+                    combo.BeginUpdate()
+                    combo.Items.Clear()
+                    combo.Items.AddRange(choices)
+                    Dim currentValue As String = Main_Form.GetModernPreferences().InterfaceScalePercent.ToString(Globalization.CultureInfo.InvariantCulture)
+                    combo.SelectedItem = If(choices.FirstOrDefault(Function(item) item.Value = currentValue), choices(0))
+                    combo.EndUpdate()
+                Finally
+                    isUpdating = False
+                End Try
+            End Sub
+        refresh()
 
         AddHandler combo.SelectedIndexChanged,
             Sub()
+                If isUpdating Then Return
                 Dim choice As PreferenceChoice = TryCast(combo.SelectedItem, PreferenceChoice)
                 If choice Is Nothing Then Return
                 Dim percent As Integer = Integer.Parse(choice.Value, Globalization.CultureInfo.InvariantCulture)
+                Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
                 If percent = p.InterfaceScalePercent Then Return
 
                 p.InterfaceScalePercent = percent
@@ -173,24 +288,60 @@ Partial Public Class Table_Form
                 Main_Form.RequestSettingsWindowRestart()
                 Close()
             End Sub
+        expandedRefreshActions.Add(refresh)
         AddSettingRow(viewing, "interface_scale", combo, 230, True)
     End Sub
 
     ''' <summary>§3.4. The row is a button, not a list of extensions: the answer is
     ''' thirty-odd formats in four groups, and a semicolon-separated field could not be
     ''' checked by eye.</summary>
-    Private Sub AddFileTypesRow(files As FlowLayoutPanel, p As ModernViewerPreferences)
-        Dim button As New Button With {.AutoSize = True, .Text = Localization.T("Настроить..")}
+    Private Sub AddFileTypesRow(files As FlowLayoutPanel)
+        Dim button As New Button With {.AutoSize = True}
+        Dim refresh As Action = Sub() button.Text = Localization.T("Настроить..")
+        refresh()
         AddHandler button.Click,
             Sub()
+                Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
                 Using dialog As New File_Types_Form(Main_Form.SupportedExtensionGroups(), CurrentExtensionFilter(p))
                     PinDialogToViewerBand(dialog)
                     If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
                     p.SetIncludedExtensionsFromEditing(String.Join(";", dialog.Selection))
-                    ApplyExpandedPreferences()
+                    Main_Form.ApplyMediaKindNavigationPreferenceChange()
                 End Using
             End Sub
+        expandedRefreshActions.Add(refresh)
         AddSettingRow(files, "included_extensions", button, 230, True)
+    End Sub
+
+    Private Sub AddContentExtensionsRow(files As FlowLayoutPanel, key As String, documents As Boolean)
+        Dim button As New Button With {.AutoSize = True}
+        Dim refresh As Action = Sub() button.Text = Localization.T("Настроить..")
+        refresh()
+        AddHandler button.Click,
+            Sub()
+                Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
+                Using dialog As New Form With {.Text = Localization.T(If(documents, "Документы", "Другие")),
+                    .ClientSize = New Size(460, 140), .StartPosition = FormStartPosition.CenterParent,
+                    .FormBorderStyle = FormBorderStyle.FixedDialog, .MinimizeBox = False, .MaximizeBox = False}
+                    Dim values = If(documents, p.DocumentExtensionSet(), p.OtherExtensionSet())
+                    Dim input As New TextBox With {.Text = String.Join(";", values.OrderBy(Function(ext) ext)), .Location = New Point(16, 24), .Width = 428}
+                    Dim ok As New Button With {.Text = Localization.T("ОК"), .DialogResult = DialogResult.OK, .Location = New Point(260, 88)}
+                    Dim cancel As New Button With {.Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel, .Location = New Point(350, 88)}
+                    dialog.Controls.AddRange(New Control() {input, ok, cancel})
+                    dialog.AcceptButton = ok
+                    dialog.CancelButton = cancel
+                    PinDialogToViewerBand(dialog)
+                    If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+                    If documents Then
+                        p.DocumentExtensions = input.Text
+                    Else
+                        p.OtherExtensions = input.Text
+                    End If
+                    Main_Form.ApplyMediaKindNavigationPreferenceChange()
+                End Using
+            End Sub
+        expandedRefreshActions.Add(refresh)
+        AddSettingRow(files, key, button, 230, True)
     End Sub
 
     ''' <summary>A dialog owned by this window still has to be put into the viewer's
@@ -210,10 +361,13 @@ Partial Public Class Table_Form
     End Function
 
     ''' <summary>§3.5. Also its own dialog, and for the same reason.</summary>
-    Private Sub AddHotkeysRow(files As FlowLayoutPanel, p As ModernViewerPreferences)
-        Dim button As New Button With {.AutoSize = True, .Text = Localization.T("Настроить..")}
+    Private Sub AddHotkeysRow(files As FlowLayoutPanel)
+        Dim button As New Button With {.AutoSize = True}
+        Dim refresh As Action = Sub() button.Text = Localization.T("Настроить..")
+        refresh()
         AddHandler button.Click,
             Sub()
+                Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
                 Using dialog As New Hotkeys_Form(CustomHotkeys.Load(p.CustomHotkeysJson))
                     PinDialogToViewerBand(dialog)
                     If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
@@ -222,13 +376,16 @@ Partial Public Class Table_Form
                     Main_Form.ReloadCustomHotkeys()
                 End Using
             End Sub
+        expandedRefreshActions.Add(refresh)
         AddSettingRow(files, "custom_hotkeys", button, 230, True)
     End Sub
 
     ''' <summary>§7.2. Opening an entry closes this window: the user asked to look at a
     ''' picture, not to come back to a settings page.</summary>
     Private Sub AddHistoryRow(files As FlowLayoutPanel)
-        Dim button As New Button With {.AutoSize = True, .Text = Localization.T("Открыть историю")}
+        Dim button As New Button With {.AutoSize = True}
+        Dim refresh As Action = Sub() button.Text = Localization.T("Открыть историю")
+        refresh()
         AddHandler button.Click,
             Sub()
                 Dim chosen As String = Nothing
@@ -242,6 +399,7 @@ Partial Public Class Table_Form
                 Close()
                 Main_Form.OpenHistoryEntry(chosen)
             End Sub
+        expandedRefreshActions.Add(refresh)
         AddSettingRow(files, "recent_history", button, 230, True)
     End Sub
 
@@ -276,6 +434,7 @@ Partial Public Class Table_Form
                 ' Whatever the registry actually says now, not what was asked for.
                 refresh()
             End Sub
+        expandedRefreshActions.Add(refresh)
         AddSettingRow(files, "secure_open_with", button, 230, True)
     End Sub
 
@@ -287,23 +446,38 @@ Partial Public Class Table_Form
                                               .Margin = Padding.Empty, .Padding = Padding.Empty}
         ocrCacheSizeLabel = New Label With {.AutoSize = False, .Width = 100, .Height = 26,
                                             .TextAlign = Drawing.ContentAlignment.MiddleLeft}
-        Dim clearButton As New Button With {.AutoSize = True, .Text = Localization.T("Очистить кэш")}
+        Dim clearButton As New Button With {.AutoSize = True}
+        Dim refresh As Action =
+            Sub()
+                clearButton.Text = Localization.T("Очистить кэш")
+                RefreshOcrCacheSize()
+            End Sub
+        refresh()
         AddHandler clearButton.Click,
             Sub()
                 If MessageBox.Show(Me, Localization.T("Удалить сохранённые результаты распознавания? Настройки OCR не изменятся."),
-                                   Localization.T("Настройки"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+                                   Localization.T("Настройки"), MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
                 Main_Form.ClearOcrResultCache()
                 RefreshOcrCacheSize()
             End Sub
         host.Controls.Add(ocrCacheSizeLabel)
         host.Controls.Add(clearButton)
+        expandedRefreshActions.Add(refresh)
         AddSettingRow(ocr, "ocr_cache_clear", host, 300, True)
-        RefreshOcrCacheSize()
     End Sub
 
-    Private Sub RefreshOcrCacheSize()
+    Private Async Sub RefreshOcrCacheSize()
         If ocrCacheSizeLabel Is Nothing Then Return
-        ocrCacheSizeLabel.Text = Localization.TF("{0} МБ", MegabytesOnDisk(OcrPaths.OcrCacheDir(), "*.json"))
+        Dim cacheDir As String = OcrPaths.OcrCacheDir()
+        Dim ticket As Integer = ocrSizeGate.Begin()
+        Try
+            Dim size As String = Await Task.Run(Function() MegabytesOnDisk(cacheDir, "*.json"))
+            If IsDisposed OrElse Disposing OrElse Not IsHandleCreated OrElse ocrCacheSizeLabel Is Nothing Then Return
+            If Not ocrSizeGate.IsLatest(ticket) Then Return
+            ocrCacheSizeLabel.Text = Localization.TF("{0} МБ", size)
+        Catch ex As Exception
+            AppFileLogger.LogException("Settings: measuring OCR cache", ex)
+        End Try
     End Sub
 
     ''' <summary>The decode cache's own size-and-clear row, built exactly like the OCR one
@@ -316,23 +490,43 @@ Partial Public Class Table_Form
                                               .Margin = Padding.Empty, .Padding = Padding.Empty}
         decodeCacheSizeLabel = New Label With {.AutoSize = False, .Width = 100, .Height = 26,
                                                .TextAlign = Drawing.ContentAlignment.MiddleLeft}
-        Dim clearButton As New Button With {.AutoSize = True, .Text = Localization.T("Очистить кэш")}
+        Dim clearButton As New Button With {.AutoSize = True}
+        Dim refresh As Action =
+            Sub()
+                clearButton.Text = Localization.T("Очистить кэш")
+                RefreshDecodeCacheSize()
+            End Sub
+        refresh()
         AddHandler clearButton.Click,
             Sub()
                 If MessageBox.Show(Me, Localization.T("Удалить сохранённые результаты декодирования? Сами изображения не изменятся."),
-                                   Localization.T("Настройки"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+                                   Localization.T("Настройки"), MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
                 DecodeCacheStore.Clear(DecodeCacheStore.CacheDir())
                 RefreshDecodeCacheSize()
             End Sub
         host.Controls.Add(decodeCacheSizeLabel)
         host.Controls.Add(clearButton)
+        expandedRefreshActions.Add(refresh)
         AddSettingRow(ocr, "decode_cache_clear", host, 300, True)
-        RefreshDecodeCacheSize()
     End Sub
 
-    Private Sub RefreshDecodeCacheSize()
+    Private Async Sub RefreshDecodeCacheSize()
         If decodeCacheSizeLabel Is Nothing Then Return
-        decodeCacheSizeLabel.Text = Localization.TF("{0} МБ", Megabytes(DecodeCacheStore.BytesOnDisk(DecodeCacheStore.CacheDir())))
+        Dim cacheDir As String = DecodeCacheStore.CacheDir()
+        Dim ticket As Integer = decodeSizeGate.Begin()
+        Try
+            Dim size As Long = Await Task.Run(Function() DecodeCacheStore.BytesOnDisk(cacheDir))
+            If IsDisposed OrElse Disposing OrElse Not IsHandleCreated OrElse decodeCacheSizeLabel Is Nothing Then Return
+            If Not decodeSizeGate.IsLatest(ticket) Then Return
+            decodeCacheSizeLabel.Text = Localization.TF("{0} МБ", Megabytes(size))
+        Catch ex As Exception
+            AppFileLogger.LogException("Settings: measuring decode cache", ex)
+        End Try
+    End Sub
+
+    Private Sub InvalidateCacheMeasurements(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
+        ocrSizeGate.Begin()
+        decodeSizeGate.Begin()
     End Sub
 
     ''' <summary>One decimal, and never an exception: a cache directory that cannot be
@@ -380,19 +574,27 @@ Partial Public Class Table_Form
     Private Sub AddSettingsTransferRows(files As FlowLayoutPanel)
         Dim personalCheck As New CheckBox With {.Checked = exportPersonalData, .AutoSize = True}
         AddHandler personalCheck.CheckedChanged, Sub() exportPersonalData = personalCheck.Checked
-        AddSettingRow(files, "settings_export_personal", personalCheck, 34, True)
-        If toolTip IsNot Nothing Then
-            toolTip.SetToolTip(personalCheck, Localization.T("Включает в файл историю папок и позиции просмотра видео. API-ключи и пароли не экспортируются никогда."))
-        End If
 
-        Dim exportButton As New Button With {.AutoSize = True, .Text = Localization.T("Экспортировать настройки")}
+        Dim exportButton As New Button With {.AutoSize = True}
+        Dim importButton As New Button With {.AutoSize = True}
+
+        Dim refresh As Action =
+            Sub()
+                If toolTip IsNot Nothing Then
+                    toolTip.SetToolTip(personalCheck, Localization.T("Включает в файл историю папок и позиции просмотра видео. API-ключи и пароли не экспортируются никогда."))
+                End If
+                exportButton.Text = Localization.T("Экспортировать настройки")
+                importButton.Text = Localization.T("Импортировать настройки")
+            End Sub
+        refresh()
+
         AddHandler exportButton.Click,
             Sub()
                 If exportPersonalData AndAlso
                    MessageBox.Show(Me, Localization.T("В файл попадут пути к вашим папкам и позиции просмотра. Продолжить?"),
                                    Localization.T("Настройки"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
 
-                Using dialog As New SaveFileDialog With {.Filter = "Fast Media Sorter settings|*.fms-settings.json", .DefaultExt = "fms-settings.json", .AddExtension = True}
+                Using dialog As New SaveFileDialog With {.Filter = ProductNames.Compact & " settings|*.fms-settings.json", .DefaultExt = "fms-settings.json", .AddExtension = True}
                     If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
                     Try
                         File.WriteAllText(dialog.FileName, Main_Form.GetModernPreferences().ExportJson(exportPersonalData))
@@ -403,20 +605,24 @@ Partial Public Class Table_Form
                     End Try
                 End Using
             End Sub
-        AddSettingRow(files, "settings_export", exportButton, 210, True)
 
-        Dim importButton As New Button With {.AutoSize = True, .Text = Localization.T("Импортировать настройки")}
         AddHandler importButton.Click, AddressOf ImportSettings
+
+        expandedRefreshActions.Add(refresh)
+        AddSettingRow(files, "settings_export_personal", personalCheck, 34, True)
+        AddSettingRow(files, "settings_export", exportButton, 210, True)
         AddSettingRow(files, "settings_import", importButton, 210, True)
     End Sub
 
     ''' <summary>
-    ''' §7.4. Validate, summarize, ask Replace or Merge, back the current profile up, then
-    ''' write. Nothing before the last step touches the profile, so a document that turns
-    ''' out to be unreadable - or an import the user backs out of - leaves it untouched.
+    ''' §7.4 / 103 / 105 L12. The order is the contract: read and validate (FromJson already
+    ''' normalizes) -> work out what Replace AND Merge would really change -> ask -> take the
+    ''' app-private backup (no backup, no import) -> apply into the live object -> persist ->
+    ''' rebuild the window. Cancel, a refused backup or an unreadable file leave the model, the
+    ''' registry and the hotkeys exactly as they were.
     ''' </summary>
     Private Sub ImportSettings(sender As Object, e As EventArgs)
-        Using dialog As New OpenFileDialog With {.Filter = "Fast Media Sorter settings|*.fms-settings.json"}
+        Using dialog As New OpenFileDialog With {.Filter = ProductNames.Compact & " settings|*.fms-settings.json"}
             If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
 
             Dim imported As ModernViewerPreferences
@@ -430,8 +636,8 @@ Partial Public Class Table_Form
             End Try
 
             Dim current As ModernViewerPreferences = Main_Form.GetModernPreferences()
-            Dim changes As List(Of String) = DescribeDifferences(current, imported)
-            If changes.Count = 0 Then
+            Dim plan As SettingsImportPlan.Plan = SettingsImportPlan.Build(current, imported)
+            If plan.ReplaceChanges.Count = 0 Then
                 ' Nothing to import is reported, not confirmed (APP-BEHAVIOUR rule 5, ticket
                 ' 028 Ф-5): no question, no backup, no write.
                 MessageBox.Show(Me, Localization.T("Файл прочитан. Отличий от текущих настроек нет."),
@@ -439,19 +645,27 @@ Partial Public Class Table_Form
                 Return
             End If
             Dim summary As String =
-                Localization.TF("Файл прочитан. Изменится параметров: {0}.", changes.Count) & vbCrLf & vbCrLf &
-                String.Join(vbCrLf, changes.Take(12))
+                Localization.TF("Файл прочитан. Изменится параметров: {0}.", plan.ReplaceChanges.Count) & vbCrLf &
+                Localization.TF("При объединении изменится параметров: {0}.", plan.MergeChanges.Count) & vbCrLf & vbCrLf &
+                String.Join(vbCrLf, plan.ReplaceChanges.Take(12))
 
             ' Yes = replace everything the document describes, No = merge only what differs
             ' from the shipped defaults, so a partial file cannot silently reset the rest.
             Dim answer As DialogResult = MessageBox.Show(Me,
                 summary & vbCrLf & vbCrLf & Localization.T("Да - заменить настройки, Нет - объединить с текущими."),
-                Localization.T("Настройки"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question)
+                Localization.T("Настройки"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button3)
             If answer = DialogResult.Cancel Then Return
 
-            Dim backup As String = dialog.FileName & ".backup"
+            Dim final As ModernViewerPreferences = If(answer = DialogResult.No, plan.Merged, imported)
+            If answer = DialogResult.No AndAlso plan.MergeChanges.Count = 0 Then
+                MessageBox.Show(Me, Localization.T("Файл прочитан. Отличий от текущих настроек нет."),
+                                Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+
+            Dim backup As String
             Try
-                File.WriteAllText(backup, current.ExportJson(includePersonalData:=True))
+                backup = SettingsImportBackupStore.Create(current, SettingsImportBackupStore.DefaultDirectory())
             Catch ex As Exception
                 AppFileLogger.LogException("Settings import backup", ex)
                 MessageBox.Show(Me, Localization.TF("Не удалось создать резервную копию: {0}", FailureText.Describe(ex)),
@@ -459,73 +673,50 @@ Partial Public Class Table_Form
                 Return
             End Try
 
-            If answer = DialogResult.No Then imported = MergeIntoCurrent(current, imported)
-            Main_Form.ReplaceModernPreferences(imported)
+            Dim persisted As Boolean = Main_Form.ReplaceModernPreferences(final)
             Main_Form.ReloadCustomHotkeys()
-            MessageBox.Show(Me, Localization.TF("Настройки импортированы. Резервная копия: {0}", backup) & vbCrLf &
-                                Localization.T("Масштаб интерфейса и режим запуска применятся после перезапуска."),
-                            Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+            If persisted Then
+                MessageBox.Show(Me, Localization.TF("Настройки импортированы. Резервная копия: {0}", backup) & vbCrLf &
+                                    Localization.T("Масштаб интерфейса и режим запуска применятся после перезапуска."),
+                                Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Else
+                MessageBox.Show(Me, Localization.TF("Настройки применены, но записать их не удалось. Повторная попытка будет сделана автоматически. Резервная копия: {0}", backup),
+                                Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            End If
             ' Every row of this window still shows the value it was built with. Rebuild the
             ' window, the way a scale change does, so what is on screen is what was imported.
             Main_Form.RequestSettingsWindowRestart()
             Close()
         End Using
     End Sub
-
-    ''' <summary>
-    ''' Merge: the document wins only where it says something other than the factory
-    ''' default. That is what makes "объединить" mean "do not wipe what I did not send" -
-    ''' a file exported from a fresh profile would otherwise reset every local choice to
-    ''' the defaults it happens to carry.
-    ''' </summary>
-    Private Shared Function MergeIntoCurrent(current As ModernViewerPreferences, imported As ModernViewerPreferences) As ModernViewerPreferences
-        Dim defaults As New ModernViewerPreferences()
-        Dim merged As ModernViewerPreferences = Clone(current)
-        For Each prop As Reflection.PropertyInfo In WritableProperties()
-            Dim fromFile As Object = prop.GetValue(imported)
-            If Equals(fromFile, prop.GetValue(defaults)) Then Continue For
-            prop.SetValue(merged, fromFile)
-        Next
-        merged.Normalize()
-        Return merged
-    End Function
-
-    Private Shared Function Clone(source As ModernViewerPreferences) As ModernViewerPreferences
-        Dim copy As New ModernViewerPreferences()
-        For Each prop As Reflection.PropertyInfo In WritableProperties()
-            prop.SetValue(copy, prop.GetValue(source))
-        Next
-        Return copy
-    End Function
-
-    Private Shared Function WritableProperties() As IEnumerable(Of Reflection.PropertyInfo)
-        Return ModernViewerPreferences.WritableProperties()
-    End Function
-
-    Private Shared Function DescribeDifferences(current As ModernViewerPreferences, imported As ModernViewerPreferences) As List(Of String)
-        Dim changes As New List(Of String)()
-        For Each prop As Reflection.PropertyInfo In WritableProperties()
-            Dim before As Object = prop.GetValue(current)
-            Dim after As Object = prop.GetValue(imported)
-            If Equals(before, after) Then Continue For
-            changes.Add(prop.Name & ": " & Convert.ToString(before) & " -> " & Convert.ToString(after))
-        Next
-        Return changes
-    End Function
-
     ''' <summary>This value is deliberately persisted right away, including from a
     ''' secondary process, so the next Explorer launch follows the new choice.</summary>
-    Private Sub AddAllowNewWindowsRow(files As FlowLayoutPanel, p As ModernViewerPreferences)
-        Dim check As New CheckBox With {.Checked = p.AllowNewWindows, .AutoSize = True}
+    Private Sub AddAllowNewWindowsRow(files As FlowLayoutPanel)
+        Dim check As New CheckBox With {.AutoSize = True}
+        Dim isUpdating As Boolean = False
+        Dim refresh As Action =
+            Sub()
+                isUpdating = True
+                Try
+                    check.Checked = Main_Form.GetModernPreferences().AllowNewWindows
+                    If toolTip IsNot Nothing Then
+                        toolTip.SetToolTip(check, Localization.T("Действует со следующего запуска. Настройки и позицию окна хранит первое окно. Помните: выделив в проводнике десять файлов, вы получите десять окон. По умолчанию выключено."))
+                    End If
+                Finally
+                    isUpdating = False
+                End Try
+            End Sub
+        refresh()
+
         AddHandler check.CheckedChanged,
             Sub()
+                If isUpdating Then Return
+                Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
                 p.AllowNewWindows = check.Checked
                 Microsoft.VisualBasic.Interaction.SaveSetting(App_name, Second_App_Name, "AllowNewWindows", If(check.Checked, "1", "0"))
             End Sub
+        expandedRefreshActions.Add(refresh)
         AddSettingRow(files, "allow_new_windows", check, 34, True)
-        If toolTip IsNot Nothing Then
-            toolTip.SetToolTip(check, Localization.T("Действует со следующего запуска. Настройки и позицию окна хранит первое окно. Помните: выделив в проводнике десять файлов, вы получите десять окон. По умолчанию выключено."))
-        End If
     End Sub
 
     ''' <summary>
@@ -536,17 +727,31 @@ Partial Public Class Table_Form
     ''' keeps its old copy-mode checkbox instead (SPECIFICATION_COPY_ACTIONS_REWORK.md §4.1).
     ''' </summary>
     Private Sub AddAdvanceAfterCopyRow(files As FlowLayoutPanel)
-        Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
-        Dim check As New CheckBox With {.Checked = p.AdvanceAfterCopy, .AutoSize = True}
+        Dim check As New CheckBox With {.AutoSize = True}
+        Dim isUpdating As Boolean = False
+        Dim refresh As Action =
+            Sub()
+                isUpdating = True
+                Try
+                    check.Checked = Main_Form.GetModernPreferences().AdvanceAfterCopy
+                    If toolTip IsNot Nothing Then
+                        toolTip.SetToolTip(check, Localization.T("Если отмечено, после копирования программа сразу показывает следующий файл. Если снять галочку, после копирования остаётся текущий файл. По умолчанию включено."))
+                    End If
+                Finally
+                    isUpdating = False
+                End Try
+            End Sub
+        refresh()
+
         AddHandler check.CheckedChanged,
             Sub()
+                If isUpdating Then Return
+                Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
                 p.AdvanceAfterCopy = check.Checked
                 ApplyExpandedPreferences()
             End Sub
+        expandedRefreshActions.Add(refresh)
         AddSettingRow(files, "advance_after_copy", check, 34, True)
-        If toolTip IsNot Nothing Then
-            toolTip.SetToolTip(check, Localization.T("Если отмечено, после копирования программа сразу показывает следующий файл. Если снять галочку, после копирования остаётся текущий файл. По умолчанию включено."))
-        End If
     End Sub
 
     ''' <summary>
@@ -556,18 +761,34 @@ Partial Public Class Table_Form
     ''' window at once, and telling the other program.
     ''' </summary>
     Private Sub AddUiThemeRow(flow As FlowLayoutPanel)
-        Dim choices As PreferenceChoice() = {Choice("system", "Как в системе"), Choice("light", "Светлая"), Choice("dark", "Тёмная")}
         Dim combo As New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList}
-        combo.Items.AddRange(choices)
-        Dim current As String = ThemeModes.ToSetting(ThemeService.Mode)
-        combo.SelectedItem = If(choices.FirstOrDefault(Function(item) item.Value = current), choices(0))
+        Dim isUpdating As Boolean = False
+        Dim refresh As Action =
+            Sub()
+                isUpdating = True
+                Try
+                    Dim choices As PreferenceChoice() = {Choice("system", "Как в системе"), Choice("light", "Светлая"), Choice("dark", "Тёмная")}
+                    combo.BeginUpdate()
+                    combo.Items.Clear()
+                    combo.Items.AddRange(choices)
+                    Dim current As String = ThemeModes.ToSetting(ThemeService.Mode)
+                    combo.SelectedItem = If(choices.FirstOrDefault(Function(item) item.Value = current), choices(0))
+                    combo.EndUpdate()
+                Finally
+                    isUpdating = False
+                End Try
+            End Sub
+        refresh()
+
         AddHandler combo.SelectedIndexChanged,
             Sub()
+                If isUpdating Then Return
                 Dim choice As PreferenceChoice = TryCast(combo.SelectedItem, PreferenceChoice)
                 If choice Is Nothing Then Return
                 Dim mode As ThemeMode = ThemeModes.Parse(choice.Value)
                 If mode <> ThemeService.Mode Then ThemeService.SetMode(mode)
             End Sub
+        expandedRefreshActions.Add(refresh)
         AddSettingRow(flow, "ui_theme", combo, 230, True)
     End Sub
 
@@ -583,53 +804,167 @@ Partial Public Class Table_Form
         Return New PreferenceChoice(value, Localization.T(text))
     End Function
 
-    Private Sub AddPreferenceCheck(flow As FlowLayoutPanel, key As String, value As Boolean, apply As Action(Of Boolean))
-        Dim check As New CheckBox With {.Checked = value, .AutoSize = True}
+    Private Sub AddPreferenceCheck(flow As FlowLayoutPanel, key As String,
+                                   getter As Func(Of Boolean),
+                                   apply As Action(Of Boolean))
+        Dim check As New CheckBox With {.AutoSize = True}
+        Dim isUpdating As Boolean = False
+        Dim refresh As Action =
+            Sub()
+                isUpdating = True
+                Try
+                    check.Checked = getter()
+                Finally
+                    isUpdating = False
+                End Try
+            End Sub
+        refresh()
+
         AddHandler check.CheckedChanged,
             Sub()
+                If isUpdating Then Return
                 apply(check.Checked)
                 ApplyExpandedPreferences()
             End Sub
+        expandedRefreshActions.Add(refresh)
         AddSettingRow(flow, key, check, 34, True)
     End Sub
 
     ''' <summary>A kind toggle needs more than applying preferences: it changes which
     ''' rows exist in the current folder, so refresh through Main_Form's single reload
     ''' path after persisting the new value.</summary>
-    Private Sub AddNavigationKindCheck(flow As FlowLayoutPanel, key As String, value As Boolean, apply As Action(Of Boolean))
-        Dim check As New CheckBox With {.Checked = value, .AutoSize = True}
+    Private Sub AddNavigationKindCheck(flow As FlowLayoutPanel, key As String,
+                                       getter As Func(Of Boolean),
+                                       apply As Action(Of Boolean))
+        Dim check As New CheckBox With {.AutoSize = True}
+        Dim isUpdating As Boolean = False
+        Dim refresh As Action =
+            Sub()
+                isUpdating = True
+                Try
+                    check.Checked = getter()
+                Finally
+                    isUpdating = False
+                End Try
+            End Sub
+        refresh()
+
         AddHandler check.CheckedChanged,
             Sub()
+                If isUpdating Then Return
                 apply(check.Checked)
                 Main_Form.ApplyMediaKindNavigationPreferenceChange()
             End Sub
+        expandedRefreshActions.Add(refresh)
         AddSettingRow(flow, key, check, 34, True)
     End Sub
 
-    Private Sub AddPreferenceChoice(flow As FlowLayoutPanel, key As String, value As String,
-                                    choices As PreferenceChoice(), apply As Action(Of String))
+    Private Sub AddPreferenceChoice(flow As FlowLayoutPanel, key As String,
+                                    choiceFactory As Func(Of PreferenceChoice()),
+                                    getter As Func(Of String),
+                                    apply As Action(Of String))
         Dim combo As New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList}
-        combo.Items.AddRange(choices)
-        Dim selected As PreferenceChoice = choices.FirstOrDefault(Function(item) item.Value = value)
-        combo.SelectedItem = If(selected, choices(0))
+        Dim isUpdating As Boolean = False
+        Dim refresh As Action =
+            Sub()
+                isUpdating = True
+                Try
+                    Dim current As String = getter()
+                    Dim choices As PreferenceChoice() = choiceFactory()
+                    combo.BeginUpdate()
+                    combo.Items.Clear()
+                    combo.Items.AddRange(choices)
+                    combo.SelectedItem = choices(SettingsRowRefresh.SelectedToken(choices.Select(Function(item) item.Value), current))
+                    combo.EndUpdate()
+                Finally
+                    isUpdating = False
+                End Try
+            End Sub
+        refresh()
+
         AddHandler combo.SelectedIndexChanged,
             Sub()
+                If isUpdating Then Return
                 Dim choice As PreferenceChoice = TryCast(combo.SelectedItem, PreferenceChoice)
                 If choice Is Nothing Then Return
                 apply(choice.Value)
                 ApplyExpandedPreferences()
             End Sub
+        expandedRefreshActions.Add(refresh)
         AddSettingRow(flow, key, combo, 230, True)
     End Sub
 
-    Private Sub AddPreferenceNumber(flow As FlowLayoutPanel, key As String, value As Integer, minimum As Integer, maximum As Integer, apply As Action(Of Integer))
-        Dim number As New NumericUpDown With {.Minimum = minimum, .Maximum = maximum, .Value = Math.Max(minimum, Math.Min(maximum, value))}
+    Private Sub AddPreferenceNumber(flow As FlowLayoutPanel, key As String, minimum As Integer, maximum As Integer,
+                                    getter As Func(Of Integer),
+                                    apply As Action(Of Integer))
+        Dim number As New NumericUpDown With {.Minimum = minimum, .Maximum = maximum}
+        Dim isUpdating As Boolean = False
+        Dim refresh As Action =
+            Sub()
+                ' A field the user is typing into keeps its text until it is committed.
+                If Not SettingsRowRefresh.ShouldReload(number.Focused, number.Text <> number.Value.ToString(Globalization.CultureInfo.CurrentCulture)) Then Return
+                isUpdating = True
+                Try
+                    Dim val As Integer = getter()
+                    number.Value = Math.Max(minimum, Math.Min(maximum, val))
+                Finally
+                    isUpdating = False
+                End Try
+            End Sub
+        refresh()
+
         AddHandler number.ValueChanged,
             Sub()
+                If isUpdating Then Return
                 apply(CInt(number.Value))
                 ApplyExpandedPreferences()
             End Sub
+        expandedRefreshActions.Add(refresh)
         AddSettingRow(flow, key, number, 100, True)
+    End Sub
+
+    ''' <summary>A percentage on a slider with its value beside it. Dragging fires a change per pixel and
+    ''' applying a preference re-reads far more than one number, so the new value is applied once the
+    ''' drag has paused rather than on every step.</summary>
+    Private Sub AddPreferenceSlider(flow As FlowLayoutPanel, key As String, minimum As Integer, maximum As Integer,
+                                    getter As Func(Of Integer),
+                                    apply As Action(Of Integer))
+        Dim host As New Panel With {.Height = 34}
+        Dim valueLabel As New Label With {.Dock = DockStyle.Right, .Width = 48, .TextAlign = ContentAlignment.MiddleRight}
+        Dim slider As New TrackBar With {.Dock = DockStyle.Fill, .Minimum = minimum, .Maximum = maximum, .TickFrequency = 10,
+                                         .SmallChange = 1, .LargeChange = 10, .AutoSize = False}
+        host.Controls.Add(slider)
+        host.Controls.Add(valueLabel)
+        Dim isUpdating As Boolean = False
+        Dim pause As New System.Windows.Forms.Timer With {.Interval = 200}
+        AddHandler host.Disposed, Sub() pause.Dispose()
+        Dim refresh As Action =
+            Sub()
+                isUpdating = True
+                Try
+                    slider.Value = Math.Max(minimum, Math.Min(maximum, getter()))
+                    valueLabel.Text = slider.Value.ToString(Globalization.CultureInfo.CurrentCulture) & " %"
+                Finally
+                    isUpdating = False
+                End Try
+            End Sub
+        refresh()
+
+        AddHandler slider.ValueChanged,
+            Sub()
+                valueLabel.Text = slider.Value.ToString(Globalization.CultureInfo.CurrentCulture) & " %"
+                If isUpdating Then Return
+                apply(slider.Value)
+                pause.Stop()
+                pause.Start()
+            End Sub
+        AddHandler pause.Tick,
+            Sub()
+                pause.Stop()
+                ApplyExpandedPreferences()
+            End Sub
+        expandedRefreshActions.Add(refresh)
+        AddSettingRow(flow, key, host, 230, True)
     End Sub
 
     Private Sub ApplyExpandedPreferences()

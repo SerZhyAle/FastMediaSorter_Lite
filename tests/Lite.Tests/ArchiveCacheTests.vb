@@ -86,6 +86,20 @@ Public Class ArchiveCacheTests
         Assert.Equal("00003_" & New String("z"c, ArchivePaths.Max_Stem_Length) & ".png", name)
     End Sub
 
+    ''' <summary>057.S17-7: the stem is cut at 100 UTF-16 units, and a cut through a
+    ''' surrogate pair must not leave the unpaired half in the name.</summary>
+    <Fact>
+    Public Sub A_cut_through_a_surrogate_pair_leaves_no_unpaired_half()
+        ' 99 letters, then U+1F600 (a pair): unit 100 is the pair's high half.
+        Dim entry = New String("a"c, ArchivePaths.Max_Stem_Length - 1) & Char.ConvertFromUtf32(&H1F600) & ".jpg"
+        Dim name = ArchivePaths.EntryFileName(1, entry)
+
+        Assert.Equal("00001_" & New String("a"c, ArchivePaths.Max_Stem_Length - 1) & ".jpg", name)
+        For i As Integer = 0 To name.Length - 1
+            Assert.False(Char.IsSurrogate(name(i)), "no surrogate half may be left at index " & i.ToString())
+        Next
+    End Sub
+
     ''' <summary>
     ''' Windows drops trailing dots and spaces from a file name silently, so a name that
     ''' kept them would not be the name on disk - and the extractor compares the file it

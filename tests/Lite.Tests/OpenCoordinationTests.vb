@@ -154,8 +154,9 @@ Public Class OpenCoordinationTests
         Dim rig As New Rig()
         rig.Fs.Script("A", True) : rig.Fs.Script("B", True)
         Dim a As Task(Of OpenOutcome) = rig.Coordinator.BeginExplicit("A", False)
+        rig.Fs.WaitEntered(1) ' A is inside the OS call before B supersedes it.
         Dim b As Task(Of OpenOutcome) = rig.Coordinator.BeginExplicit("B", False)
-        rig.Fs.WaitEntered(2)
+        rig.Fs.WaitEntered(1)
 
         rig.Fs.Release("A") : rig.Fs.Release("B")
         rig.Host.RunPosted(2)
@@ -170,8 +171,9 @@ Public Class OpenCoordinationTests
         Dim rig As New Rig()
         rig.Fs.Script("A", True) : rig.Fs.Script("B", True)
         Dim a As Task(Of OpenOutcome) = rig.Coordinator.BeginExplicit("A", False)
+        rig.Fs.WaitEntered(1) ' A is inside the OS call before B supersedes it.
         Dim b As Task(Of OpenOutcome) = rig.Coordinator.BeginExplicit("B", False)
-        rig.Fs.WaitEntered(2)
+        rig.Fs.WaitEntered(1)
 
         rig.Fs.Release("B") : rig.Fs.Release("A")
         rig.Host.RunPosted(2)
@@ -186,8 +188,9 @@ Public Class OpenCoordinationTests
         Dim rig As New Rig()
         rig.Fs.Script("A", True) : rig.Fs.ScriptFault("B")
         Dim a As Task(Of OpenOutcome) = rig.Coordinator.BeginExplicit("A", False)
+        rig.Fs.WaitEntered(1) ' A is inside the OS call before B supersedes it.
         Dim b As Task(Of OpenOutcome) = rig.Coordinator.BeginExplicit("B", False)
-        rig.Fs.WaitEntered(2)
+        rig.Fs.WaitEntered(1)
 
         rig.Fs.Release("A") : rig.Fs.Release("B")
         rig.Host.RunPosted(2)
@@ -272,8 +275,9 @@ Public Class OpenCoordinationTests
             Dim rig As New Rig()
             rig.Fs.Script("last", True) : rig.Fs.Script("explicit", True)
             Dim resumed As Task(Of OpenOutcome) = rig.Coordinator.BeginResume("last")
+            rig.Fs.WaitEntered(1) ' The resume probe is running before the explicit open.
             Dim explicitOpen As Task(Of OpenOutcome) = rig.Coordinator.BeginExplicit("explicit", False)
-            rig.Fs.WaitEntered(2)
+            rig.Fs.WaitEntered(1)
 
             If resumeFirst Then
                 rig.Fs.Release("last") : rig.Fs.Release("explicit")

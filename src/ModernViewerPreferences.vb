@@ -14,6 +14,20 @@ Imports System.Linq
 ''' </summary>
 Public NotInheritable Class ModernViewerPreferences
 
+    ' One range per limit, shared by Load() (registry) and Normalize() (import).
+    Public Const ArchiveCacheMaxMbMin As Integer = 100
+    Public Const ArchiveCacheMaxMbMax As Integer = 16384
+    Public Const ArchiveMaxEntryMbMin As Integer = 16
+    Public Const ArchiveMaxEntryMbMax As Integer = 4096
+    Public Const ArchiveMaxEntriesMin As Integer = 100
+    Public Const ArchiveMaxEntriesMax As Integer = 100000
+    Public Const RemoteCacheMaxMbMin As Integer = 100
+    Public Const RemoteCacheMaxMbMax As Integer = 16384
+    Public Const SecureRememberMinutesMin As Integer = 0
+    Public Const SecureRememberMinutesMax As Integer = 480
+    Public Const TextPreviewMaxKbMin As Integer = 64
+    Public Const TextPreviewMaxKbMax As Integer = 65536
+
     Public Property NameCollisionPolicy As String = "ask"
     Public Property AfterFileOperation As String = "next"
     ''' <summary>Show the next file once a copy has been queued. On by default - that is
@@ -46,9 +60,51 @@ Public NotInheritable Class ModernViewerPreferences
 
     Public Property IncludeSubfolders As Boolean
     Public Property IncludedExtensions As String = ""
+    Public Property SortOtherFiles As Boolean = False
+    Public Property DocumentExtensions As String = ".txt;.md;.log;.csv;.json;.xml;.html;.htm;.pdf;.epub;.fb2;.mobi"
+    Public Property OtherExtensions As String = ""
+
+    Public Function DocumentExtensionSet() As HashSet(Of String)
+        Return ExtensionSet(DocumentExtensions)
+    End Function
+
+    Public Function OtherExtensionSet() As HashSet(Of String)
+        Return ExtensionSet(OtherExtensions)
+    End Function
+
+    Private Shared Function ExtensionSet(value As String) As HashSet(Of String)
+        Dim result As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        Using doc As JsonDocument = JsonDocument.Parse(NormalizeExtensionJson(value))
+            For Each item As JsonElement In doc.RootElement.EnumerateArray()
+                result.Add(item.GetString())
+            Next
+        End Using
+        Return result
+    End Function
     Public Property InterfaceScalePercent As Integer
     Public Property NewImageScaleMode As String = "fit"
     Public Property ReduceMotion As Boolean
+
+    ''' <summary>Retired coexistence value, retained only for old settings profile round trips.
+    ''' The modern viewer always uses floating chrome; this value no longer selects a layout.</summary>
+    Public Property ModernChrome As Boolean = True
+
+    ''' <summary>Keeps the floating panels up permanently instead of auto-hiding them. Not the old docked
+    ''' geometry - only a disabled auto-hide.</summary>
+    Public Property ChromeOpacityPercent As Integer = 86
+    Public Property ChromeCornerRadius As Integer = 6
+    Public Property ChromePinned As Boolean
+
+    ''' <summary>Which size the floating panels take: "small", "medium" (the historical size), "large",
+    ''' or "adaptive" (follows the width of the window as well as the monitor scale). It multiplies
+    ''' whatever <see cref="InterfaceScalePercent"/> settles on, so it never fights that setting.</summary>
+    Public Property ChromeSize As String = "medium"
+
+    ''' <summary>Per-panel pins, set by the small button in each panel's corner: a pinned panel never
+    ''' auto-hides. <see cref="ChromePinned"/> is the same thing for every panel at once.</summary>
+    Public Property ChromeRow1Pinned As Boolean
+    Public Property ChromeRow2Pinned As Boolean
+    Public Property ChromeStatusPinned As Boolean
 
     Public Property RecipientsOverlayPosition As String = "topLeft"
     Public Property RecipientsOverlayWidth As Integer = 280
@@ -78,16 +134,12 @@ Public NotInheritable Class ModernViewerPreferences
     ''' <summary>Whether audio files participate in folder navigation. On by default so
     ''' an upgrade never silently hides music from an existing sorting pass.</summary>
     Public Property IncludeAudioInNavigation As Boolean = True
-    ''' <summary>Reserved for PK/PD. Document enumeration is not enabled until that
-    ''' feature ships, but a profile can already carry the explicit future choice.</summary>
+    ''' <summary>Opt-in document and book sorting (003 PK), even without a preview.</summary>
     Public Property IncludeDocumentInNavigation As Boolean = False
     ''' <summary>Show audio transport bar always, never hide on idle
     ''' (SPECIFICATION_AUDIO_FIRST_CLASS_DOTNET10.md PA-3). On by default - nothing else is
     ''' on the audio surface to interact with, so hiding covers would be pointless.</summary>
     Public Property AudioControlsAlwaysVisible As Boolean = True
-    ''' <summary>Keep the main toolbar always visible, never auto-hide.
-    ''' On by default for consistent access to all tools.</summary>
-    Public Property ToolbarAlwaysVisible As Boolean = True
     ''' <summary>Show the branded fallback when the audio file has no embedded cover art.
     ''' On by default: an otherwise empty audio surface is not useful.</summary>
     Public Property AudioVisualiser As Boolean = True
@@ -114,6 +166,22 @@ Public NotInheritable Class ModernViewerPreferences
     ''' the owner's call. The ceiling is higher than the OCR cache's because one entry here
     ''' is a whole transcoded animation, not a page of JSON.</summary>
     Public Property DecodeCacheMaxMb As Integer = 512
+
+    ''' <summary>How the F3 panel shows the folder: "grid" (thumbnail cards) or "list" (name /
+    ''' kind / size / date). Remembered between sessions and toggled with Ctrl+L
+    ''' (005_SPECIFICATION_THUMBNAIL_GRID_TRIAGE_DOTNET10.md PG-5, PG-7).</summary>
+    Public Property PanelViewMode As String = "grid"
+
+    ''' <summary>Side of a thumbnail card in the F3 panel, in pixels: 96, 128, 192 or 256
+    ''' (PG-3). Zero means "not chosen here yet" - the panel then follows the legacy card size
+    ''' of the old settings combo, rounded to the nearest of these, so an upgrade does not
+    ''' change what a user already picked.</summary>
+    Public Property PanelThumbnailSize As Integer = 0
+
+    ''' <summary>Budget of the on-disk thumbnail cache, in megabytes (PG-3). Zero switches the
+    ''' cache OFF - nothing read, nothing written - and the panel then asks the shell and
+    ''' decodes as it did before the cache existed.</summary>
+    Public Property PanelThumbCacheMb As Integer = 256
 
     ''' <summary>Ceiling on an archive session's temporary directory, in megabytes
     ''' (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §5.3, §9). Enforced by LRU
@@ -160,6 +228,15 @@ Public NotInheritable Class ModernViewerPreferences
     ''' binary settings so an old profile remains readable and portable.</summary>
     Public Property FolderZoomHistory As String = "[]"
     Public Property VideoPositionHistory As String = "[]"
+    Public Property DocumentPageHistory As String = "[]"
+    Public Property TextPreviewMaxKb As Integer = 2048
+
+    Public NotInheritable Class DocumentPageEntry
+        Public Property Path As String = ""
+        Public Property LastWriteUtcTicks As Long
+        Public Property Length As Long
+        Public Property PageNumber As Integer
+    End Class
 
     Public NotInheritable Class VideoPositionEntry
         Public Property Path As String = ""
@@ -186,10 +263,21 @@ Public NotInheritable Class ModernViewerPreferences
         p.CreateMissingDestination = ReadBool("CreateMissingDestination", p.CreateMissingDestination)
         p.IncludeSubfolders = ReadBool("IncludeSubfolders", p.IncludeSubfolders)
         p.IncludedExtensions = NormalizeExtensionJson(ReadString("IncludedExtensions", p.IncludedExtensions))
+        p.SortOtherFiles = ReadBool("SortOtherFiles", p.SortOtherFiles)
+        p.DocumentExtensions = NormalizeExtensionJson(ReadString("DocumentExtensions", p.DocumentExtensions))
+        p.OtherExtensions = NormalizeExtensionJson(ReadString("OtherExtensions", p.OtherExtensions))
         p.InterfaceScalePercent = ReadInt("InterfaceScalePercent", p.InterfaceScalePercent, 0, 150)
         If p.InterfaceScalePercent <> 0 AndAlso p.InterfaceScalePercent < 90 Then p.InterfaceScalePercent = 90
         p.NewImageScaleMode = ReadChoice("NewImageScaleMode", p.NewImageScaleMode, "fit", "actual", "perFolder")
         p.ReduceMotion = ReadBool("ReduceMotion", p.ReduceMotion)
+        p.ModernChrome = ReadBool("ModernChrome", p.ModernChrome)
+        p.ChromeOpacityPercent = ReadInt("ChromeOpacityPercent", p.ChromeOpacityPercent, 40, 100)
+        p.ChromeCornerRadius = ReadInt("ChromeCornerRadius", p.ChromeCornerRadius, 0, 16)
+        p.ChromePinned = ReadBool("ChromePinned", p.ChromePinned)
+        p.ChromeSize = ReadChoice("ChromeSize", p.ChromeSize, "medium", "small", "large", "adaptive")
+        p.ChromeRow1Pinned = ReadBool("ChromeRow1Pinned", p.ChromeRow1Pinned)
+        p.ChromeRow2Pinned = ReadBool("ChromeRow2Pinned", p.ChromeRow2Pinned)
+        p.ChromeStatusPinned = ReadBool("ChromeStatusPinned", p.ChromeStatusPinned)
 
         p.RecipientsOverlayPosition = ReadChoice("RecipientsOverlayPosition", p.RecipientsOverlayPosition, "topLeft", "topRight", "bottomLeft", "bottomRight")
         p.RecipientsOverlayWidth = ReadInt("RecipientsOverlayWidth", p.RecipientsOverlayWidth, 180, 520)
@@ -215,7 +303,6 @@ Public NotInheritable Class ModernViewerPreferences
         p.IncludeAudioInNavigation = ReadBool("IncludeAudioInNavigation", p.IncludeAudioInNavigation)
         p.IncludeDocumentInNavigation = ReadBool("IncludeDocumentInNavigation", p.IncludeDocumentInNavigation)
         p.AudioControlsAlwaysVisible = ReadBool("AudioControlsAlwaysVisible", p.AudioControlsAlwaysVisible)
-        p.ToolbarAlwaysVisible = ReadBool("ToolbarAlwaysVisible", p.ToolbarAlwaysVisible)
         p.AudioVisualiser = ReadBool("AudioVisualiser", p.AudioVisualiser)
         p.SleepTimerMinutes = ReadInt("SleepTimerMinutes", p.SleepTimerMinutes, 0, 180)
 
@@ -226,16 +313,21 @@ Public NotInheritable Class ModernViewerPreferences
         p.RecentFoldersLimit = ReadInt("RecentFoldersLimit", p.RecentFoldersLimit, 0, 200)
         p.OcrDiskCacheMaxMb = ReadInt("OcrDiskCacheMaxMb", p.OcrDiskCacheMaxMb, 0, 1024)
         p.DecodeCacheMaxMb = ReadInt("DecodeCacheMaxMb", p.DecodeCacheMaxMb, 0, 8192)
-        p.ArchiveCacheMaxMb = ReadInt("ArchiveCacheMaxMb", p.ArchiveCacheMaxMb, 100, 16384)
-        p.ArchiveMaxEntryMb = ReadInt("ArchiveMaxEntryMb", p.ArchiveMaxEntryMb, 16, 4096)
-        p.ArchiveMaxEntries = ReadInt("ArchiveMaxEntries", p.ArchiveMaxEntries, 100, 100000)
-        p.RemoteCacheMaxMb = ReadInt("RemoteCacheMaxMb", p.RemoteCacheMaxMb, 100, 16384)
+        p.PanelViewMode = ReadChoice("PanelViewMode", p.PanelViewMode, "grid", "list")
+        p.PanelThumbnailSize = SnapPanelThumbnailSize(ReadInt("PanelThumbnailSize", p.PanelThumbnailSize, 0, 256))
+        p.PanelThumbCacheMb = ReadInt("PanelThumbCacheMb", p.PanelThumbCacheMb, 0, 4096)
+        p.ArchiveCacheMaxMb = ReadInt("ArchiveCacheMaxMb", p.ArchiveCacheMaxMb, ArchiveCacheMaxMbMin, ArchiveCacheMaxMbMax)
+        p.ArchiveMaxEntryMb = ReadInt("ArchiveMaxEntryMb", p.ArchiveMaxEntryMb, ArchiveMaxEntryMbMin, ArchiveMaxEntryMbMax)
+        p.ArchiveMaxEntries = ReadInt("ArchiveMaxEntries", p.ArchiveMaxEntries, ArchiveMaxEntriesMin, ArchiveMaxEntriesMax)
+        p.RemoteCacheMaxMb = ReadInt("RemoteCacheMaxMb", p.RemoteCacheMaxMb, RemoteCacheMaxMbMin, RemoteCacheMaxMbMax)
         p.SecureIncludeInNavigation = ReadBool("SecureIncludeInNavigation", p.SecureIncludeInNavigation)
-        p.SecureRememberMinutes = ReadInt("SecureRememberMinutes", p.SecureRememberMinutes, 0, 480)
+        p.SecureRememberMinutes = ReadInt("SecureRememberMinutes", p.SecureRememberMinutes, SecureRememberMinutesMin, SecureRememberMinutesMax)
         p.SecureShowTrueName = ReadBool("SecureShowTrueName", p.SecureShowTrueName)
+        p.TextPreviewMaxKb = ReadInt("TextPreviewMaxKb", p.TextPreviewMaxKb, TextPreviewMaxKbMin, TextPreviewMaxKbMax)
         p.CustomHotkeysJson = NormalizeJson(ReadString("CustomHotkeys", p.CustomHotkeysJson))
         p.FolderZoomHistory = NormalizeArrayJson(ReadString("FolderZoomHistory", p.FolderZoomHistory))
         p.VideoPositionHistory = NormalizeArrayJson(ReadString("VideoPositionHistory", p.VideoPositionHistory))
+        p.DocumentPageHistory = NormalizeArrayJson(ReadString("DocumentPageHistory", p.DocumentPageHistory))
         Return p
     End Function
 
@@ -252,9 +344,20 @@ Public NotInheritable Class ModernViewerPreferences
         WriteBool("CreateMissingDestination", CreateMissingDestination)
         WriteBool("IncludeSubfolders", IncludeSubfolders)
         WriteString("IncludedExtensions", NormalizeExtensionJson(IncludedExtensions))
+        WriteBool("SortOtherFiles", SortOtherFiles)
+        WriteString("DocumentExtensions", NormalizeExtensionJson(DocumentExtensions))
+        WriteString("OtherExtensions", NormalizeExtensionJson(OtherExtensions))
         WriteString("InterfaceScalePercent", InterfaceScalePercent.ToString(CultureInfo.InvariantCulture))
         WriteString("NewImageScaleMode", NewImageScaleMode)
         WriteBool("ReduceMotion", ReduceMotion)
+        WriteBool("ModernChrome", ModernChrome)
+        WriteString("ChromeOpacityPercent", ChromeOpacityPercent.ToString(CultureInfo.InvariantCulture))
+        WriteString("ChromeCornerRadius", ChromeCornerRadius.ToString(CultureInfo.InvariantCulture))
+        WriteBool("ChromePinned", ChromePinned)
+        WriteString("ChromeSize", ChromeSize)
+        WriteBool("ChromeRow1Pinned", ChromeRow1Pinned)
+        WriteBool("ChromeRow2Pinned", ChromeRow2Pinned)
+        WriteBool("ChromeStatusPinned", ChromeStatusPinned)
         WriteString("RecipientsOverlayPosition", RecipientsOverlayPosition)
         WriteString("RecipientsOverlayWidth", RecipientsOverlayWidth.ToString(CultureInfo.InvariantCulture))
         WriteString("RecipientsOverlayFontSize", RecipientsOverlayFontSize.ToString(CultureInfo.InvariantCulture))
@@ -277,7 +380,6 @@ Public NotInheritable Class ModernViewerPreferences
         WriteBool("IncludeAudioInNavigation", IncludeAudioInNavigation)
         WriteBool("IncludeDocumentInNavigation", IncludeDocumentInNavigation)
         WriteBool("AudioControlsAlwaysVisible", AudioControlsAlwaysVisible)
-        WriteBool("ToolbarAlwaysVisible", ToolbarAlwaysVisible)
         WriteBool("AudioVisualiser", AudioVisualiser)
         WriteString("SleepTimerMinutes", SleepTimerMinutes.ToString(CultureInfo.InvariantCulture))
 
@@ -291,6 +393,9 @@ Public NotInheritable Class ModernViewerPreferences
         WriteString("RecentFoldersLimit", RecentFoldersLimit.ToString(CultureInfo.InvariantCulture))
         WriteString("OcrDiskCacheMaxMb", OcrDiskCacheMaxMb.ToString(CultureInfo.InvariantCulture))
         WriteString("DecodeCacheMaxMb", DecodeCacheMaxMb.ToString(CultureInfo.InvariantCulture))
+        WriteString("PanelViewMode", PanelViewMode)
+        WriteString("PanelThumbnailSize", PanelThumbnailSize.ToString(CultureInfo.InvariantCulture))
+        WriteString("PanelThumbCacheMb", PanelThumbCacheMb.ToString(CultureInfo.InvariantCulture))
         WriteString("ArchiveCacheMaxMb", ArchiveCacheMaxMb.ToString(CultureInfo.InvariantCulture))
         WriteString("ArchiveMaxEntryMb", ArchiveMaxEntryMb.ToString(CultureInfo.InvariantCulture))
         WriteString("ArchiveMaxEntries", ArchiveMaxEntries.ToString(CultureInfo.InvariantCulture))
@@ -300,9 +405,11 @@ Public NotInheritable Class ModernViewerPreferences
         WriteBool("SecureIncludeInNavigation", SecureIncludeInNavigation)
         WriteString("SecureRememberMinutes", SecureRememberMinutes.ToString(CultureInfo.InvariantCulture))
         WriteBool("SecureShowTrueName", SecureShowTrueName)
+        WriteString("TextPreviewMaxKb", TextPreviewMaxKb.ToString(CultureInfo.InvariantCulture))
         WriteString("CustomHotkeys", NormalizeJson(CustomHotkeysJson))
         WriteString("FolderZoomHistory", NormalizeArrayJson(FolderZoomHistory))
         WriteString("VideoPositionHistory", NormalizeArrayJson(VideoPositionHistory))
+        WriteString("DocumentPageHistory", NormalizeArrayJson(DocumentPageHistory))
     End Sub
 
     Public Function ExportJson(Optional includePersonalData As Boolean = False) As String
@@ -313,6 +420,7 @@ Public NotInheritable Class ModernViewerPreferences
             ' share; an explicit future UI opt-in can use includePersonalData:=True.
             exported.FolderZoomHistory = "[]"
             exported.VideoPositionHistory = "[]"
+            exported.DocumentPageHistory = "[]"
         End If
         Return JsonSerializer.Serialize(New SettingsExport With {.SchemaVersion = 1, .Preferences = exported},
                                         New JsonSerializerOptions With {.WriteIndented = True})
@@ -400,6 +508,40 @@ Public NotInheritable Class ModernViewerPreferences
         FolderZoomHistory = JsonSerializer.Serialize(entries)
     End Sub
 
+    Public Function RememberedDocumentPage(path As String, lastWriteUtcTicks As Long, length As Long) As Integer
+        If String.IsNullOrEmpty(path) Then Return 1
+        Dim entries As List(Of DocumentPageEntry) = ReadDocumentPages()
+        Dim entry As DocumentPageEntry = entries.FirstOrDefault(Function(item) String.Equals(item.Path, path, StringComparison.OrdinalIgnoreCase))
+        If entry Is Nothing OrElse entry.LastWriteUtcTicks <> lastWriteUtcTicks OrElse entry.Length <> length Then Return 1
+        If entry.PageNumber < 1 Then Return 1
+        entries.Remove(entry)
+        entries.Add(entry) ' read is use: maintain LRU order
+        DocumentPageHistory = JsonSerializer.Serialize(entries)
+        Return entry.PageNumber
+    End Function
+
+    Public Sub RecordDocumentPage(path As String, lastWriteUtcTicks As Long, length As Long, pageNumber As Integer)
+        If String.IsNullOrEmpty(path) OrElse pageNumber < 1 Then Return
+        Dim entries As List(Of DocumentPageEntry) = ReadDocumentPages()
+        entries.RemoveAll(Function(item) String.Equals(item.Path, path, StringComparison.OrdinalIgnoreCase))
+        entries.Add(New DocumentPageEntry With {.Path = path, .LastWriteUtcTicks = lastWriteUtcTicks, .Length = length, .PageNumber = pageNumber})
+        If entries.Count > 200 Then entries.RemoveRange(0, entries.Count - 200)
+        DocumentPageHistory = JsonSerializer.Serialize(entries)
+    End Sub
+
+    Private Function ReadDocumentPages() As List(Of DocumentPageEntry)
+        Try
+            Dim list As List(Of DocumentPageEntry) = JsonSerializer.Deserialize(Of List(Of DocumentPageEntry))(NormalizeArrayJson(DocumentPageHistory))
+            If list IsNot Nothing Then
+                list.RemoveAll(Function(item) item Is Nothing OrElse String.IsNullOrWhiteSpace(item.Path) OrElse item.PageNumber < 1 OrElse item.Length < 0)
+                If list.Count > 200 Then list.RemoveRange(0, list.Count - 200)
+                Return list
+            End If
+        Catch
+        End Try
+        Return New List(Of DocumentPageEntry)()
+    End Function
+
     Public Shared Function FromJson(json As String) As ModernViewerPreferences
         Dim document As SettingsExport = JsonSerializer.Deserialize(Of SettingsExport)(json)
         If document Is Nothing OrElse document.SchemaVersion <> 1 OrElse document.Preferences Is Nothing Then
@@ -452,6 +594,9 @@ Public NotInheritable Class ModernViewerPreferences
         If InterfaceScalePercent <> 0 AndAlso InterfaceScalePercent < 90 Then InterfaceScalePercent = 90
         NewImageScaleMode = Choice(NewImageScaleMode, "fit", "fit", "actual", "perFolder")
         RecipientsOverlayPosition = Choice(RecipientsOverlayPosition, "topLeft", "topLeft", "topRight", "bottomLeft", "bottomRight")
+        ChromeSize = Choice(ChromeSize, "medium", "medium", "small", "large", "adaptive")
+        ChromeOpacityPercent = Clamp(ChromeOpacityPercent, 40, 100)
+        ChromeCornerRadius = Clamp(ChromeCornerRadius, 0, 16)
         RecipientsOverlayWidth = Clamp(RecipientsOverlayWidth, 180, 520)
         RecipientsOverlayFontSize = Clamp(RecipientsOverlayFontSize, 9, 18)
         RecipientsOverlayOpacity = Clamp(RecipientsOverlayOpacity, 40, 100)
@@ -470,12 +615,29 @@ Public NotInheritable Class ModernViewerPreferences
         RecentFoldersLimit = Clamp(RecentFoldersLimit, 0, 200)
         OcrDiskCacheMaxMb = Clamp(OcrDiskCacheMaxMb, 0, 1024)
         DecodeCacheMaxMb = Clamp(DecodeCacheMaxMb, 0, 8192)
+        PanelViewMode = Choice(PanelViewMode, "grid", "grid", "list")
+        PanelThumbnailSize = SnapPanelThumbnailSize(PanelThumbnailSize)
+        PanelThumbCacheMb = Clamp(PanelThumbCacheMb, 0, 4096)
+        ' The same ranges Load() applies to the registry: an imported profile used to keep
+        ' these as written - a negative credential timeout never expired, a zero archive
+        ' budget disabled eviction, a huge extraction ceiling could fill the disk (072 S15-1).
+        ArchiveCacheMaxMb = Clamp(ArchiveCacheMaxMb, ArchiveCacheMaxMbMin, ArchiveCacheMaxMbMax)
+        ArchiveMaxEntryMb = Clamp(ArchiveMaxEntryMb, ArchiveMaxEntryMbMin, ArchiveMaxEntryMbMax)
+        ArchiveMaxEntries = Clamp(ArchiveMaxEntries, ArchiveMaxEntriesMin, ArchiveMaxEntriesMax)
+        RemoteCacheMaxMb = Clamp(RemoteCacheMaxMb, RemoteCacheMaxMbMin, RemoteCacheMaxMbMax)
+        SecureRememberMinutes = Clamp(SecureRememberMinutes, SecureRememberMinutesMin, SecureRememberMinutesMax)
+        ' "never" is the owner's explicit choice and survives; anything else unknown is the safe default.
+        ConfirmDelete = Choice(ConfirmDelete, "always", "always", "permanentOnly", "never")
+        TextPreviewMaxKb = Clamp(TextPreviewMaxKb, TextPreviewMaxKbMin, TextPreviewMaxKbMax)
         IncludedExtensions = NormalizeExtensionJson(IncludedExtensions)
+        DocumentExtensions = NormalizeExtensionJson(DocumentExtensions)
+        OtherExtensions = NormalizeExtensionJson(OtherExtensions)
         PreferredAudioLanguage = If(PreferredAudioLanguage, String.Empty)
         PreferredSubtitleLanguage = If(PreferredSubtitleLanguage, String.Empty)
         CustomHotkeysJson = NormalizeJson(CustomHotkeysJson)
         FolderZoomHistory = NormalizeArrayJson(FolderZoomHistory)
         VideoPositionHistory = NormalizeArrayJson(VideoPositionHistory)
+        DocumentPageHistory = NormalizeArrayJson(DocumentPageHistory)
     End Sub
 
     Private Shared Function ReadString(key As String, defaultValue As String) As String
@@ -545,6 +707,21 @@ Public NotInheritable Class ModernViewerPreferences
         Return Math.Max(minimum, Math.Min(maximum, value))
     End Function
 
+    ''' <summary>The four sizes a thumbnail card may have (005 PG-3).</summary>
+    Public Shared ReadOnly PanelThumbnailTiers As Integer() = {96, 128, 192, 256}
+
+    ''' <summary>Zero stays zero ("follow the legacy card size"); anything else becomes the
+    ''' nearest of <see cref="PanelThumbnailTiers"/>, so a hand-edited or imported value can
+    ''' never produce a card size the panel's layout was not built for.</summary>
+    Public Shared Function SnapPanelThumbnailSize(value As Integer) As Integer
+        If value <= 0 Then Return 0
+        Dim best As Integer = PanelThumbnailTiers(0)
+        For Each tier As Integer In PanelThumbnailTiers
+            If Math.Abs(tier - value) < Math.Abs(best - value) Then best = tier
+        Next
+        Return best
+    End Function
+
     Private Shared Function NormalizeJson(value As String) As String
         Try
             Using doc As JsonDocument = JsonDocument.Parse(If(value, "{}"))
@@ -598,13 +775,14 @@ Public NotInheritable Class ModernViewerPreferences
                 End If
             End Using
         Catch
-            values.AddRange(value.Split(";"c))
+            values.AddRange(value.Split(New Char() {";"c, " "c, ","c, ChrW(9), ChrW(10), ChrW(13)}, StringSplitOptions.RemoveEmptyEntries))
         End Try
         Dim normalized As New List(Of String)()
         For Each item As String In values
             Dim extension As String = If(item, String.Empty).Trim().ToLowerInvariant()
             If extension.Length = 0 Then Continue For
             If Not extension.StartsWith(".", StringComparison.Ordinal) Then extension = "." & extension
+            If extension.Length < 2 OrElse extension.Substring(1).Any(Function(c) Not Char.IsLetterOrDigit(c) AndAlso c <> "-"c AndAlso c <> "_"c) Then Continue For
             If Not normalized.Contains(extension) Then normalized.Add(extension)
         Next
         Return JsonSerializer.Serialize(normalized)

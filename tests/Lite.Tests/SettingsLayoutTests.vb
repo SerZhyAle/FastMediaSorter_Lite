@@ -235,6 +235,7 @@ Public Class SettingsLayoutTests
             AddSimple(rows, text, name, "AddPreferenceChoice", RowKind.Editor, 230)
             AddSimple(rows, text, name, "AddPreferenceNumber", RowKind.Editor, 100)
             AddSimple(rows, text, name, "AddPreferenceText", RowKind.Editor, 260)
+            AddSimple(rows, text, name, "AddPreferenceSlider", RowKind.Editor, 230)
         Next
 
         ' AddInformationBlock is deliberately absent. Its "title" is a sentence - the

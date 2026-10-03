@@ -33,7 +33,24 @@ Friend NotInheritable Class ChromeSurface
     <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
     Public Property VerticalLayout As Boolean
     <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Public Property StatusLayout As Boolean
+    <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
     Public Property OverflowId As String = "btn_Overflow"
+    ''' <summary>The pin button of this panel's corner (the end of the row, the start edge in a
+    ''' right-to-left language), or Nothing for a panel with none. It is laid out apart from the row, so
+    ''' the row's overflow never takes it into the "more" menu.</summary>
+    <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Public Property PinItem As ChromeItem
+        Get
+            Return pinButton
+        End Get
+        Set(value As ChromeItem)
+            If ReferenceEquals(pinButton, value) Then Return
+            If pinButton IsNot Nothing Then itemList.Remove(pinButton)
+            pinButton = value
+        End Set
+    End Property
+    Private pinButton As ChromeItem
     Private overflowItem As New ChromeItem("btn_Overflow", ChromeItemKind.MenuButton) With {.Caption = "»"}
     Private ReadOnly overflowList As New List(Of ChromeItem)()
     Public Event OverflowRequested As EventHandler
@@ -147,12 +164,12 @@ Friend NotInheritable Class ChromeSurface
     Public Function MeasureItemWidth(item As ChromeItem) As Integer
         Dim square As Integer = Math.Max(Px(ChromeMetrics.ItemHeight), Px(ChromeMetrics.MinTarget))
         If item.PreferredWidth > 0 Then Return Px(item.PreferredWidth)
-        If Not VerticalLayout AndAlso (item.Image IsNot Nothing OrElse item.GlyphId.Length > 0 OrElse item.Caption.Length = 0) Then Return square
+        If Not VerticalLayout AndAlso Not item.ShowCaptionWithGlyph AndAlso (item.Image IsNot Nothing OrElse item.GlyphId.Length > 0 OrElse item.Caption.Length = 0) Then Return square
         Dim font As Font = FontFor(item)
         If font Is Nothing Then Return square
         Dim text As Integer = TextRenderer.MeasureText(item.Caption, font, New Size(Integer.MaxValue, Integer.MaxValue),
                                                        TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine Or TextFormatFlags.NoPrefix).Width
-        Return Math.Max(square, text + 2 * Px(ChromeMetrics.CaptionPadding) + If(VerticalLayout AndAlso (item.Image IsNot Nothing OrElse item.GlyphId.Length > 0), square, 0))
+        Return Math.Max(square, text + 2 * Px(ChromeMetrics.CaptionPadding) + If((VerticalLayout OrElse item.ShowCaptionWithGlyph) AndAlso (item.Image IsNot Nothing OrElse item.GlyphId.Length > 0), square, 0))
     End Function
 
     Public Function ItemHeight() As Integer
@@ -163,6 +180,13 @@ Friend NotInheritable Class ChromeSurface
         Return Px(ChromeMetrics.PanelPadding)
     End Function
 
+    ''' <summary>The width the corner pin takes out of a row, gap included; 0 when there is none (or in
+    ''' a popup menu, which has no corner).</summary>
+    Private Function PinReserve() As Integer
+        If PinItem Is Nothing OrElse VerticalLayout Then Return 0
+        Return Px(ChromeMetrics.MinTarget) + Px(ChromeMetrics.Gap)
+    End Function
+
     ''' <summary>The size a panel with these items wants: one row, padded.</summary>
     Public Function PreferredPanelSize() As Size
         Dim slots As List(Of ChromeSlot) = BuildSlots(Nothing)
@@ -171,13 +195,13 @@ Friend NotInheritable Class ChromeSurface
             Return New Size(If(slots.Count = 0, Px(ChromeMetrics.MenuMinWidth), slots.Max(Function(slot) slot.Width)) + 2 * pad,
                             slots.Count * ItemHeight() + 2 * pad)
         End If
-        Return New Size(ChromeLayout.NaturalWidth(slots, Px(ChromeMetrics.Gap)) + 2 * pad, ItemHeight() + 2 * pad)
+        Return New Size(ChromeLayout.NaturalWidth(slots, Px(ChromeMetrics.Gap)) + PinReserve() + 2 * pad, ItemHeight() + 2 * pad)
     End Function
 
     Private Function BuildSlots(indexMap As List(Of ChromeItem)) As List(Of ChromeSlot)
         Dim slots As New List(Of ChromeSlot)()
         For Each item As ChromeItem In itemList
-            If Not item.Visible OrElse item Is overflowItem Then Continue For
+            If Not item.Visible OrElse item Is overflowItem OrElse item Is pinButton Then Continue For
             slots.Add(New ChromeSlot(item.Id, MeasureItemWidth(item), If(item.MinimumWidth > 0, Px(item.MinimumWidth), -1),
                 pinned:=item.Id = "cmbox_Media_Folder" OrElse item.Id = "chkbox_Top_Most" OrElse item.Id = "cmbox_Sort"))
             If indexMap IsNot Nothing Then indexMap.Add(item)
@@ -188,19 +212,24 @@ Friend NotInheritable Class ChromeSurface
     ''' <summary>Places every visible item. Called when the items, the scale, the fonts or the size change.</summary>
     Public Sub LayoutItems()
         itemList.Remove(overflowItem)
+        itemList.RemoveAll(Function(item) item.IsPin)
         overflowList.Clear()
         Dim order As New List(Of ChromeItem)()
         Dim slots As List(Of ChromeSlot) = BuildSlots(order)
         For Each item As ChromeItem In itemList
             item.Bounds = Rectangle.Empty
         Next
+        If PinItem IsNot Nothing Then PinItem.Bounds = Rectangle.Empty
         If order.Count = 0 Then
             RaiseEvent LayoutChanged(Me, EventArgs.Empty)
             Return
         End If
 
         Dim pad As Integer = PanelPadding()
-        Dim available As Integer = Math.Max(0, ClientSize.Width - 2 * pad)
+        Dim cornerReserve As Integer = PinReserve()
+        Dim available As Integer = Math.Max(0, ClientSize.Width - 2 * pad - cornerReserve)
+        ' The row sits beside the corner pin: after it in a right-to-left panel (the pin is on the left).
+        Dim rowStart As Integer = pad + If(isRightToLeft, cornerReserve, 0)
         If VerticalLayout Then
             For index As Integer = 0 To order.Count - 1
                 order(index).Bounds = New Rectangle(pad, pad + index * ItemHeight(), available, ItemHeight())
@@ -211,6 +240,15 @@ Friend NotInheritable Class ChromeSurface
         End If
         Dim row As ChromeRowLayout = ChromeLayout.ArrangeRow(slots, available, ItemHeight(), Px(ChromeMetrics.Gap),
                                                               ItemHeight(), isRightToLeft)
+        If StatusLayout AndAlso slots.Count = 2 Then
+            Dim contentWidth As Integer = Math.Max(0, available - Px(ChromeMetrics.Gap))
+            Dim statusWidth As Integer = Math.Min(contentWidth * 2 \ 3,
+                TextRenderer.MeasureText(order(1).Caption, If(textFont, Font)).Width + 2 * Px(ChromeMetrics.CaptionPadding))
+            Dim fileWidth As Integer = contentWidth - statusWidth
+            slots = New List(Of ChromeSlot) From {
+                New ChromeSlot(order(0).Id, fileWidth), New ChromeSlot(order(1).Id, statusWidth)}
+            row = ChromeLayout.ArrangeRow(slots, available, ItemHeight(), Px(ChromeMetrics.Gap), ItemHeight(), isRightToLeft)
+        End If
         Dim top As Integer = Math.Max(pad, (ClientSize.Height - ItemHeight()) \ 2)
         For i As Integer = 0 To order.Count - 1
             If row.Overflowed(i) Then
@@ -218,13 +256,18 @@ Friend NotInheritable Class ChromeSurface
                 Continue For
             End If
             Dim r As Rectangle = row.Rects(i)
-            order(i).Bounds = New Rectangle(pad + r.X, top, r.Width, r.Height)
+            order(i).Bounds = New Rectangle(rowStart + r.X, top, r.Width, r.Height)
         Next
         If row.HasOverflow Then
-            overflowItem.Bounds = New Rectangle(pad + row.OverflowButton.X, top, row.OverflowButton.Width, row.OverflowButton.Height)
+            overflowItem.Bounds = New Rectangle(rowStart + row.OverflowButton.X, top, row.OverflowButton.Width, row.OverflowButton.Height)
             overflowItem.AccessibleName = Localization.T("Ещё - кнопки, не поместившиеся в строку.")
             overflowItem.Tooltip = overflowItem.AccessibleName
             itemList.Add(overflowItem)
+        End If
+        If PinItem IsNot Nothing AndAlso cornerReserve > 0 Then
+            Dim pinWidth As Integer = cornerReserve - Px(ChromeMetrics.Gap)
+            PinItem.Bounds = New Rectangle(If(isRightToLeft, pad, ClientSize.Width - pad - pinWidth), top, pinWidth, ItemHeight())
+            itemList.Add(PinItem)
         End If
         Invalidate()
         RaiseEvent LayoutChanged(Me, EventArgs.Empty)
@@ -285,7 +328,10 @@ Friend NotInheritable Class ChromeSurface
 
         Dim ink As Color = chromeTheme.InkFor(item.Enabled, item.Checked, item.Destructive, item.HoverLevel > 0.5F)
         Dim drawn As Boolean = False
-        If item.Kind = ChromeItemKind.Toggle AndAlso item.GlyphId.Length = 0 AndAlso item.Caption.Length = 0 Then
+        If item.IsPin Then
+            PaintPin(g, item, r, ink)
+            drawn = True
+        ElseIf item.Kind = ChromeItemKind.Toggle AndAlso item.GlyphId.Length = 0 AndAlso item.Caption.Length = 0 Then
             Dim side As Integer = Px(ChromeMetrics.GlyphSize)
             Dim box As New Rectangle(r.X + (r.Width - side) \ 2, r.Y + (r.Height - side) \ 2, side, side)
             Using pen As New Pen(ink, Math.Max(1, Px(ChromeMetrics.FocusRingWidth)))
@@ -303,7 +349,7 @@ Friend NotInheritable Class ChromeSurface
             drawn = True
         End If
         If Not drawn AndAlso item.GlyphId.Length > 0 Then drawn = PaintGlyph(g, item, r, ink)
-        If VerticalLayout AndAlso drawn Then
+        If (VerticalLayout OrElse item.ShowCaptionWithGlyph) AndAlso drawn Then
             Dim glyphWidth As Integer = ItemHeight()
             Dim captionRect As New Rectangle(r.X + If(isRightToLeft, 0, glyphWidth), r.Y, Math.Max(0, r.Width - glyphWidth), r.Height)
             PaintCaption(g, item, captionRect, ink)
@@ -337,12 +383,42 @@ Friend NotInheritable Class ChromeSurface
         End If
     End Sub
 
+    ''' <summary>A push-pin drawn from lines, in the item's ink: upright and filled while the panel is
+    ''' pinned, tilted a quarter turn and only outlined while it is free. The vocabulary has no pin
+    ''' glyph yet, so it is painted like the toggle's check box and the secondary-action tick are.</summary>
+    Private Sub PaintPin(g As Graphics, item As ChromeItem, r As Rectangle, ink As Color)
+        Dim unit As Single = Px(ChromeMetrics.PinGlyphSize) / 12.0F
+        Dim state As GraphicsState = g.Save()
+        Try
+            g.TranslateTransform(r.X + r.Width / 2.0F, r.Y + r.Height / 2.0F)
+            If Not item.Checked Then g.RotateTransform(45.0F)
+            Dim head As New RectangleF(-2.5F * unit, -6.0F * unit, 5.0F * unit, 1.5F * unit)
+            Dim body As PointF() = {New PointF(-2.0F * unit, -4.5F * unit), New PointF(2.0F * unit, -4.5F * unit),
+                                    New PointF(3.0F * unit, 0.0F), New PointF(-3.0F * unit, 0.0F)}
+            Using pen As New Pen(ink, Math.Max(1.0F, 1.2F * unit))
+                If item.Checked Then
+                    Using brush As New SolidBrush(ink)
+                        g.FillRectangle(brush, head)
+                        g.FillPolygon(brush, body)
+                    End Using
+                Else
+                    g.DrawRectangle(pen, head.X, head.Y, head.Width, head.Height)
+                    g.DrawPolygon(pen, body)
+                End If
+                g.DrawLine(pen, -4.0F * unit, 0.0F, 4.0F * unit, 0.0F)
+                g.DrawLine(pen, 0.0F, 0.0F, 0.0F, 6.0F * unit)
+            End Using
+        Finally
+            g.Restore(state)
+        End Try
+    End Sub
+
     Private Function PaintGlyph(g As Graphics, item As ChromeItem, r As Rectangle, ink As Color) As Boolean
         Dim size As Integer = Px(ChromeMetrics.GlyphSize)
         Dim bitmap As Bitmap = Nothing
         Try
             bitmap = GlyphRenderer.Render(item.GlyphId, size, ink, AddressOf RuntimeBootstrap.OpenBundledAsset)
-            Dim x As Integer = If(VerticalLayout, If(isRightToLeft, r.Right - ItemHeight(), r.Left) + (ItemHeight() - size) \ 2, r.X + (r.Width - size) \ 2)
+            Dim x As Integer = If(VerticalLayout OrElse item.ShowCaptionWithGlyph, If(isRightToLeft, r.Right - ItemHeight(), r.Left) + (ItemHeight() - size) \ 2, r.X + (r.Width - size) \ 2)
             Dim y As Integer = r.Y + (r.Height - size) \ 2
             If item.MirrorInRtl AndAlso isRightToLeft Then
                 ' "Back" and "forward" follow the reading direction; every other glyph is left alone.
@@ -370,7 +446,7 @@ Friend NotInheritable Class ChromeSurface
         Dim flags As TextFormatFlags = TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or
                                        TextFormatFlags.NoPrefix Or TextFormatFlags.SingleLine Or TextFormatFlags.EndEllipsis Or
                                        TextFormatFlags.NoPadding
-        If VerticalLayout Then flags = (flags And Not TextFormatFlags.HorizontalCenter) Or If(isRightToLeft, TextFormatFlags.Right, TextFormatFlags.Left)
+        If VerticalLayout OrElse item.ShowCaptionWithGlyph Then flags = (flags And Not TextFormatFlags.HorizontalCenter) Or If(isRightToLeft, TextFormatFlags.Right, TextFormatFlags.Left)
         If isRightToLeft AndAlso Not item.CaptionIsSymbol Then flags = flags Or TextFormatFlags.RightToLeft
         TextRenderer.DrawText(g, item.Caption, font, r, ink, flags)
     End Sub
@@ -402,8 +478,9 @@ Friend NotInheritable Class ChromeSurface
     Protected Overrides Sub OnMouseMove(e As MouseEventArgs)
         MyBase.OnMouseMove(e)
         Dim item As ChromeItem = HitTest(e.Location)
-        If item IsNot Nothing AndAlso Not item.Enabled Then item = Nothing   ' a disabled item has no hover response
-        SetHot(item)
+        SetHot(If(item IsNot Nothing AndAlso item.Enabled, item, Nothing))
+        ' Disabled actions still explain their purpose, without a hover animation.
+        UpdateTip(item)
     End Sub
 
     Protected Overrides Sub OnMouseLeave(e As EventArgs)
@@ -443,8 +520,8 @@ Friend NotInheritable Class ChromeSurface
         ' After the press the pointer may no longer be over anything (the action moved the panel).
         If pressedItem Is Nothing Then
             Dim under As ChromeItem = HitTest(PointToClient(Cursor.Position))
-            If under IsNot Nothing AndAlso Not under.Enabled Then under = Nothing
-            SetHot(under)
+            SetHot(If(under IsNot Nothing AndAlso under.Enabled, under, Nothing))
+            UpdateTip(under)
         End If
     End Sub
 

@@ -15,6 +15,61 @@ Imports Xunit
 ''' </summary>
 Public Class ThemeApplierTests
 
+    Private Class NativeTextBox
+        Inherits TextBox
+
+        Public Sub RecreateNativeHandle()
+            RecreateHandle()
+        End Sub
+    End Class
+
+    Private Shared Function NativeIsDark(c As Control) As Boolean
+        Dim states = GetType(ThemeApplier).GetField("States", Reflection.BindingFlags.NonPublic Or Reflection.BindingFlags.Static).GetValue(Nothing)
+        Dim arguments As Object() = {c, Nothing}
+        Assert.True(CBool(states.GetType().GetMethod("TryGetValue").Invoke(states, arguments)))
+        Dim state = arguments(1)
+        Return CBool(state.GetType().GetField("NativeDark").GetValue(state))
+    End Function
+
+    <Fact>
+    Public Sub Native_only_walk_themes_late_handles_and_children_without_repainting_colours()
+        Using host As New Panel With {.BackColor = Color.FromArgb(32, 32, 32)},
+              edit As New NativeTextBox With {.Multiline = True, .ScrollBars = ScrollBars.Vertical}
+            host.Controls.Add(edit)
+            Dim originalBack = edit.BackColor
+            ThemeApplier.ApplyNativeTree(host, True)
+            Assert.False(edit.IsHandleCreated)
+            Dim handle = edit.Handle
+            Assert.True(NativeIsDark(edit))
+            edit.RecreateNativeHandle()
+            Assert.True(NativeIsDark(edit))
+            Assert.Equal(originalBack, edit.BackColor)
+
+            Using late As New NativeTextBox With {.Multiline = True, .ScrollBars = ScrollBars.Vertical}
+                host.Controls.Add(late)
+                handle = late.Handle
+                Assert.True(NativeIsDark(late))
+                Assert.Equal(originalBack, late.BackColor)
+                ThemeApplier.ApplyNativeTree(host, False)
+                late.RecreateNativeHandle()
+                Assert.False(NativeIsDark(late))
+                ThemeApplier.ApplyNativeTree(host, True)
+                Assert.True(NativeIsDark(late))
+            End Using
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub Full_theme_can_follow_a_native_only_walk()
+        Using edit As New TextBox()
+            ThemeApplier.ApplyNativeTree(edit, True)
+            ThemeApplier.ApplyTree(edit, ThemePalette.Dark)
+            Assert.Equal(ThemePalette.Dark.SurfaceRaised, edit.BackColor)
+            ThemeApplier.ApplyTree(edit, ThemePalette.Light)
+            Assert.Equal(SystemColors.Window.ToArgb(), edit.BackColor.ToArgb())
+        End Using
+    End Sub
+
     Private NotInheritable Class Sample
         Public ReadOnly Form As New Form()
         Public ReadOnly Standard As New Button With {.Text = "OK"}

@@ -2,7 +2,7 @@
     # Skip the pre-build housekeeping (tools\Clean-Build.ps1) that prunes
     # superseded stage\ trees, orphaned bin\ folders and temp files.
     [switch]$NoClean,
-    # Skip building the .NET 10 Companion (Fast Media Sorter: Share Manager). By
+    # Skip building the .NET 10 Companion (the Share Manager). By
     # default this script now builds BOTH exes so you can build everything locally.
     [switch]$SkipCompanion,
     # Skip publishing the .NET 10 modern viewer (SPECIFICATION_DOTNET10_MODERN_BUILD).
@@ -97,6 +97,7 @@ function Deploy-Companion([string]$TargetDir) {
     $dest = Join-Path $TargetDir "companion"
     New-Item -ItemType Directory -Path $dest -Force | Out-Null
     Copy-Item -Path (Join-Path $PayloadCompanionDir "*") -Destination $dest -Recurse -Force
+    & (Join-Path $SolutionDir "tools\Stage-FileDoPayload.ps1") -Destination $TargetDir
     Write-Host "Deployed companion payload -> $dest"
 }
 
@@ -187,7 +188,7 @@ function Stop-Companion {
 }
 
 # Copy the published Companion exe next to FastMediaSorter_LITE.exe. No-op (with a
-# warning) when it wasn't built (e.g. -SkipCompanion), so LITE still deploys.
+# warning) when it wasn't built (e.g. -SkipCompanion), so the viewer still deploys.
 function Deploy-CompanionExe([string]$TargetDir) {
     if (-not (Test-Path $CompanionExe)) {
         Write-Warning "Companion exe not built ($CompanionExe) - skipping for: $TargetDir"

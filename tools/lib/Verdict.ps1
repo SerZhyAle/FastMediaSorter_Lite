@@ -46,13 +46,22 @@ function Write-Subject([string]$Check, [string]$Subject) {
     Write-Host "${Check}: subject = $Subject" -ForegroundColor Cyan
 }
 
-# "tree 41fbc1b" or "tree 41fbc1b + uncommitted changes" - the working tree a run read.
+# Ordinary checks inspect the current files; AGENTS.md reserves Git for explicitly
+# requested GitHub work. A revision label would not identify uncommitted input anyway.
 function Get-TreeLabel([string]$RepoRoot) {
-    $head = (& git -C $RepoRoot rev-parse --short HEAD 2>$null)
-    if ($LASTEXITCODE -ne 0 -or -not $head) { return 'tree (not a git checkout)' }
-    $dirty = (& git -C $RepoRoot status --porcelain 2>$null)
-    if ($dirty) { return "tree $($head.Trim()) + uncommitted changes" }
-    return "tree $($head.Trim())"
+    return "current files on disk at $([IO.Path]::GetFullPath($RepoRoot))"
+}
+
+# rg applies the workspace ignore rules without reading Git history or its index.
+# Include dotfiles but never enumerate Git's internal storage.
+function Get-WorkspaceFiles([string]$RepoRoot) {
+    if (-not (Get-Command rg -ErrorAction SilentlyContinue)) { throw 'rg is required for the workspace file inventory' }
+    Push-Location -LiteralPath $RepoRoot
+    try {
+        $files = @(& rg --files --hidden -g '!.git/**')
+        if ($LASTEXITCODE -ne 0) { throw 'workspace file inventory unavailable' }
+        $files | ForEach-Object { $_.Replace('\', '/') }
+    } finally { Pop-Location }
 }
 
 # Runs one check in its own pwsh process, so its exit code is its own and nothing it sets leaks into

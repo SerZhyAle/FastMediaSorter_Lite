@@ -36,7 +36,7 @@ Namespace Streams
             Dim sb As New StringBuilder()
 
             sb.AppendLine("================================================================================")
-            sb.AppendLine("Fast Media Sorter - Stream Catalog Report")
+            sb.AppendLine(ProductNames.Compact & " - Stream Catalog Report")
             sb.AppendLine("Contract: " & StreamCatalogSchema.ContractTag)
             sb.AppendLine("Mode:     " & Mode)
             sb.AppendLine("Date:     " & GeneratedAtUtc.ToString("yyyy-MM-dd HH:mm:ss") & " UTC")

@@ -72,6 +72,7 @@ Partial Public Class Main_Form
         LocalizeImageEditor()
         LocalizeToVideo()
         ApplyCatalogToolbarGlyphs()
+        ChromeRefreshText()
 #End If
         LocalizeToolbarOverflow()
         LocalizeBrowserTranslate()
@@ -133,9 +134,20 @@ Partial Public Class Main_Form
     ''' layout is DPI-unaware and pixel-tuned in the Designer, so swapping the form font
     ''' would move every control. The size stays at the Designer's 8.25pt.
     ''' </summary>
+    Private script_Font As Font
+    Private ReadOnly script_Fonts As New List(Of Font)()
+
+    Private Sub DisposeScriptFont(sender As Object, e As EventArgs) Handles MyBase.Disposed
+        For Each owned As Font In script_Fonts
+            owned.Dispose()
+        Next
+        script_Fonts.Clear()
+        script_Font = Nothing
+    End Sub
+
     Private Sub ApplyScriptFont()
         Dim family = Localization.FontFamily()
-        Dim target As Font
+        Dim target As Font = Nothing
         If family Is Nothing Then
             target = New Font("Microsoft Sans Serif", 8.25!, FontStyle.Regular, GraphicsUnit.Point)
         Else
@@ -146,14 +158,24 @@ Partial Public Class Main_Form
                 If Not String.Equals(target.FontFamily.Name, family, StringComparison.OrdinalIgnoreCase) Then
                     Debug.WriteLine("w0210: font '" & family & "' unavailable, got '" & target.FontFamily.Name & "'")
                 End If
-            Catch
+            Catch ex As Exception
+                If target IsNot Nothing Then target.Dispose()
+                AppFileLogger.LogException("Selecting the UI script font", ex)
                 target = New Font("Microsoft Sans Serif", 8.25!, FontStyle.Regular, GraphicsUnit.Point)
             End Try
         End If
 
+        Dim previous As Font = script_Font
+        ' Keep ownership even if assigning a control font fails part way through.
+        script_Font = target
+        script_Fonts.Add(target)
         For Each c As Control In LocalizedTextControls()
             If c IsNot Nothing Then c.Font = target
         Next
+        If previous IsNot Nothing Then
+            previous.Dispose()
+            script_Fonts.Remove(previous)
+        End If
     End Sub
 
     ''' <summary>Controls whose caption is translated and therefore may need a script font.</summary>

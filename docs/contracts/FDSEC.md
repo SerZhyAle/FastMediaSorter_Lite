@@ -3,9 +3,9 @@
 | | |
 | --- | --- |
 | **Ids** | `FDSEC-FORMAT` (the bytes) and `FDSEC-BEHAVIOUR` (what a program handling them must do) |
-| **Version** | catalog 1.1, active (format version 1). **This reader implements and reads 1.1** - brought up from 1.0 by ticket 038 on 2026-09-24, which closed the registry exception. Owner: FileDO |
+| **Version** | catalog `FDSEC-FORMAT` 1.3, `FDSEC-BEHAVIOUR` 1.5, active (read 2026-10-02). **This reader implements and reads 1.1** - brought up from 1.0 by ticket 038 on 2026-09-24, which closed the registry exception; 1.2-1.3 add suite 3 and suite 2 containers, which a suite-1 reader refuses by name as unsupported ("no shipped consumer does anything wrong"), and 1.5 adds an optional GUI credential source this product does not ship. No reader obligation moved. Owner: FileDO |
 | **Home** | `secure-container/README.md`, with `FDSEC-FORMAT.md`, `FD-SEC-CONTRACT.md` and `vectors/` in the shared contracts catalog |
-| **Role here** | consumer, reader half - [specification 026](../specifications/done/026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md), shipped 2026-09-22 in `src/Secure/` |
+| **Role here** | consumer, reader half - `specification 026` (local specification), shipped 2026-09-22 in `src/Secure/` |
 
 Two ids, deliberately separate: the format is what the bytes are, the behaviour is what a program that
 reads and writes them must do to be safe. This repository implements the **reader half of both** -

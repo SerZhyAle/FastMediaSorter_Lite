@@ -43,10 +43,10 @@ trap {
 # This is deliberately a small, declared product subset.  The catalog remains the
 # source of truth; adding a mapped meaning means adding it here as well.
 $glyphIds = @(
-    'action.add', 'action.copy', 'action.crop', 'action.delete', 'action.download', 'action.edit',
+    'action.add', 'action.choose-file', 'action.choose-folder', 'action.copy', 'action.crop', 'action.delete', 'action.download', 'action.edit',
     'action.extract-text', 'action.refresh', 'action.rename', 'action.search', 'action.send-to',
     'action.share', 'action.translate',
-    'app.info', 'app.settings', 'content.apps', 'content.audio', 'content.folder', 'content.image',
+    'app.info', 'app.settings', 'content.apps', 'content.audio', 'content.disk-container', 'content.folder', 'content.image',
     'content.video', 'device.phone', 'view.screen',
     'media.exit-fullscreen', 'media.fullscreen', 'media.mute', 'media.next', 'media.pause',
     'media.play', 'media.previous', 'media.random', 'media.slideshow', 'media.volume',
@@ -180,6 +180,9 @@ $utf8 = [System.Text.UTF8Encoding]::new($false)
 [System.IO.File]::WriteAllLines($glyphProvenance, $provenance, $utf8)
 
 Copy-Item -LiteralPath $sourceVocabulary -Destination $vendoredVocabulary -Force
+# MSBuild uses PreserveNewest for this test fixture. Catalog timestamps can predate
+# an older build output, so stamp the imported copy rather than retaining the source time.
+(Get-Item -LiteralPath $vendoredVocabulary).LastWriteTimeUtc = [DateTime]::UtcNow
 [System.IO.File]::WriteAllLines($vocabularyProvenance, [string[]]@(
     'ICONOGRAPHY VOCABULARY ARTIFACT',
     "Catalog version: $iconSetVersion",

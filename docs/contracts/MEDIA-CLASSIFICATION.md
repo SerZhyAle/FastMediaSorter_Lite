@@ -3,16 +3,22 @@
 | | |
 | --- | --- |
 | **Id** | `MEDIA-CLASSIFICATION` |
-| **Version** | 0.9, draft (read 2026-09-24). Owner: FastMediaSorter Android. **Implemented: none** - the local classifier predates the draft |
+| **Version** | 0.10, draft (read 2026-10-02). Owner: FastMediaSorter Android. Implemented: rules 1, 2, 3, 5 and section 4 (ticket 043) |
 | **Home** | `media-classification/README.md` in the shared contracts catalog |
 | **Role here** | consumer - `MediaKindClassifier.KindOf` in `src/MediaKind.vb` (.NET 10 mainline only); the net48 fallback keeps plain extension lists |
 
 ## What this repository must do to stay conformant
 
 - An unknown or empty extension classifies as `Other` - the contract's `UNKNOWN` - and never throws (held).
-- Realigning the category set and the extension table changes what a folder lists and what navigation
-  visits, so it goes through [ticket 043](../specifications/043_SPECIFICATION_MEDIA_CLASSIFICATION_ALIGNMENT.md)
-  after the owner answers the desktop-viewer proposal filed beside the contract; the registry carries the
-  dated exception until then.
+- The owner accepted the desktop-viewer proposal into 0.10. `MediaKindClassifier` maps books,
+  streams and containers separately; `.fd-sec` is `Container`. An audiobook is `Audio` unless
+  the caller supplies positive book evidence. Local aliases `.tif/.exif/.log/.html/.htm` remain.
+- Rule 3 normalization is shared by classification, navigation and archive eligibility. Rule 5
+  junk exclusion runs before the browsing extension filter for folder rows, counts and archives;
+  providers and storage operations keep their full file sets.
+- Section 4 conformance vectors are in `tests/Lite.Tests/MediaKindClassifierTests.vb`. Classification
+  does not expand the supported navigation sets or bypass video/audio preferences (ticket 009).
+  Sidecar association (rule 4) is outside ticket 043; no general sidecar resolver is claimed.
+- Plain NTFS supplies no MIME, so rule 6 uses extension fallback here.
 - Classifying an extension is not a promise to render it: the x86 fallback keeps listing formats it cannot
   decode as unsupported.

@@ -13,6 +13,20 @@ Partial Public NotInheritable Class Localization
 
     Private Shared Sub AddActivationStrings()
 
+        Add("Не удалось определить, запущен ли Share Manager. Второй экземпляр не запускается.",
+            "Could not determine whether Share Manager is running. A second copy is not started.",
+            "Не вдалося визначити, чи запущено Share Manager. Другий екземпляр не запускається.",
+            "Es konnte nicht festgestellt werden, ob Share Manager läuft. Eine zweite Instanz wird nicht gestartet.",
+            "Impossibile determinare se Share Manager è in esecuzione. Non viene avviata una seconda istanza.",
+            "No se pudo determinar si Share Manager está en ejecución. No se inicia una segunda instancia.",
+            "Impossible de déterminer si Share Manager est lancé. Une seconde instance n'est pas démarrée.",
+            "Não foi possível determinar se o Share Manager está em execução. Uma segunda instância não é iniciada.",
+            "تعذّر تحديد ما إذا كان Share Manager قيد التشغيل. لن يتم تشغيل نسخة ثانية.",
+            "यह निर्धारित नहीं हो सका कि Share Manager चल रहा है या नहीं। दूसरा इंस्टेंस शुरू नहीं किया जाता।",
+            "Share Manager চলছে কি না নির্ধারণ করা যায়নি। দ্বিতীয় কপি চালু করা হয় না।",
+            "یہ معلوم نہیں ہو سکا کہ Share Manager چل رہا ہے یا نہیں۔ دوسری کاپی شروع نہیں کی جاتی۔",
+            "无法确定 Share Manager 是否正在运行。不会启动第二个实例。")
+
         Add("Share Manager уже запущен, но не ответил на запрос. Подождите немного и повторите; второй экземпляр не запускается.",
             "Share Manager is already running but did not answer the request. Wait a moment and try again; a second copy is not started.",
             "Share Manager уже запущено, але він не відповів на запит. Зачекайте трохи й повторіть; другий екземпляр не запускається.",
@@ -109,6 +123,20 @@ Partial Public NotInheritable Class Localization
             "অন্য ব্যবহারকারীরা এই ফোল্ডারে লিখতে ও এখান থেকে মুছতে পারে, আর ফাইলটিতে একটি অ্যাক্সেস কী আছে। এমন একটি ফোল্ডার বেছে নিন যা শুধু আপনিই বদলাতে পারেন।",
             "دوسرے صارفین اس فولڈر میں لکھ سکتے اور اس سے حذف کر سکتے ہیں، اور فائل میں رسائی کی کلید ہے۔ ایسا فولڈر منتخب کریں جسے صرف آپ تبدیل کر سکیں۔",
             "其他用户可以在此文件夹中写入和删除内容，而该文件包含访问密钥。请选择只有您能修改的文件夹。")
+
+        Add("Share Manager старой версии не умеет безопасно принимать папку отсюда. Обновите его или добавьте папку в нём вручную:" & vbCrLf & "{0}",
+            "This Share Manager is an older version and cannot safely accept a folder from here. Update it, or add the folder in it yourself:" & vbCrLf & "{0}",
+            "Share Manager старої версії не вміє безпечно приймати теку звідси. Оновіть його або додайте теку в ньому вручну:" & vbCrLf & "{0}",
+            "Dieser Share Manager ist eine ältere Version und kann einen Ordner von hier nicht sicher entgegennehmen. Aktualisieren Sie ihn oder fügen Sie den Ordner dort selbst hinzu:" & vbCrLf & "{0}",
+            "Questo Share Manager è una versione precedente e non può accettare in sicurezza una cartella da qui. Aggiornalo oppure aggiungi tu la cartella al suo interno:" & vbCrLf & "{0}",
+            "Este Share Manager es una versión anterior y no puede aceptar una carpeta desde aquí de forma segura. Actualícelo o añada usted mismo la carpeta en él:" & vbCrLf & "{0}",
+            "Ce Share Manager est une version plus ancienne et ne peut pas accepter un dossier d'ici en toute sécurité. Mettez-le à jour ou ajoutez vous-même le dossier dedans :" & vbCrLf & "{0}",
+            "Este Share Manager é uma versão mais antiga e não pode aceitar uma pasta daqui com segurança. Atualize-o ou adicione a pasta nele você mesmo:" & vbCrLf & "{0}",
+            "هذه نسخة أقدم من Share Manager ولا يمكنها قبول مجلد من هنا بأمان. حدّثها أو أضف المجلد فيها بنفسك:" & vbCrLf & "{0}",
+            "यह Share Manager का पुराना संस्करण है और यहाँ से फ़ोल्डर को सुरक्षित रूप से स्वीकार नहीं कर सकता। इसे अपडेट करें, या फ़ोल्डर को उसमें स्वयं जोड़ें:" & vbCrLf & "{0}",
+            "এটি Share Manager-এর একটি পুরনো সংস্করণ এবং এখান থেকে নিরাপদে ফোল্ডার গ্রহণ করতে পারে না। এটি আপডেট করুন, অথবা ফোল্ডারটি নিজে এতে যোগ করুন:" & vbCrLf & "{0}",
+            "یہ Share Manager کا پرانا ورژن ہے اور یہاں سے فولڈر کو محفوظ طریقے سے قبول نہیں کر سکتا۔ اسے اپ ڈیٹ کریں، یا فولڈر خود اس میں شامل کریں:" & vbCrLf & "{0}",
+            "此 Share Manager 版本较旧，无法安全地接收来自这里的文件夹。请更新它，或自行在其中添加该文件夹：" & vbCrLf & "{0}")
 
     End Sub
 

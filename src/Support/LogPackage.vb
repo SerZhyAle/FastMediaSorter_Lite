@@ -52,7 +52,7 @@ Public Module LogPackage
     ''' it only reads files and the registry.
     ''' </summary>
     Public Function Build() As LogPackageResult
-        Return Build(AddressOf ReadRegistrySettings)
+        Return Build(AddressOf ReadRegistrySettings, Nothing, Nothing, Nothing)
     End Function
 
     ''' <summary>
@@ -60,18 +60,59 @@ Public Module LogPackage
     ''' seeded list in the tests that prove a secret never reaches the archive.
     ''' </summary>
     Friend Function Build(settingsSource As Func(Of List(Of KeyValuePair(Of String, Object)))) As LogPackageResult
+        Return Build(settingsSource, Nothing, Nothing, Nothing)
+    End Function
+
+    ''' <summary>
+    ''' Full builder with injectable clock, destination directory, and report generator for deterministic tests.
+    ''' Atomically reserves the unique package with FileMode.CreateNew and deletes on failure only the file
+    ''' reserved by this invocation.
+    ''' </summary>
+    Friend Function Build(settingsSource As Func(Of List(Of KeyValuePair(Of String, Object))),
+                          now As DateTime?,
+                          destinationDirectory As String,
+                          Optional reportGenerator As Func(Of Func(Of List(Of KeyValuePair(Of String, Object))), String) = Nothing) As LogPackageResult
         Dim result As New LogPackageResult With {.Path = "", .Entries = New List(Of String)()}
+        Dim reservedPath As String = Nothing
 
         Try
             ' Both a marker in the log ("this is where the user asked") and a flush.
             AppFileLogger.WriteLine("User requested a log package")
 
-            Dim zipPath As String = Path.Combine(Path.GetTempPath(),
-                PackagePrefix & AppVersion() & "-" & DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture) & ".zip")
+            Dim destDir As String = If(String.IsNullOrEmpty(destinationDirectory), Path.GetTempPath(), destinationDirectory)
+            If Not Directory.Exists(destDir) Then
+                Directory.CreateDirectory(destDir)
+            End If
 
-            Using zipStream As New FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None)
+            Dim currentTime As DateTime = If(now.HasValue, now.Value, DateTime.Now)
+            Dim timeStampString As String = currentTime.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)
+            Dim version As String = AppVersion()
+            Dim effectiveSettingsSource As Func(Of List(Of KeyValuePair(Of String, Object))) = If(settingsSource, AddressOf ReadRegistrySettings)
+
+            Dim zipStream As FileStream = Nothing
+            For attempt As Integer = 1 To 100
+                Dim token As String = Guid.NewGuid().ToString("N").Substring(0, 8)
+                Dim candidate As String = Path.Combine(destDir, PackagePrefix & version & "-" & timeStampString & "-" & token & ".zip")
+                Try
+                    zipStream = New FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None)
+                    reservedPath = candidate
+                    Exit For
+                Catch ex As IOException When File.Exists(candidate)
+                    ' Collision with existing file - retry with another token
+                End Try
+            Next
+
+            If zipStream Is Nothing Then
+                Throw New IOException("Failed to reserve a unique log package file in " & destDir)
+            End If
+
+            Using zipStream
                 Using archive As New ZipArchive(zipStream, ZipArchiveMode.Create)
-                    WriteTextEntry(archive, "report.txt", RedactUserProfile(BuildReport(settingsSource)))
+                    Dim reportText As String = If(reportGenerator IsNot Nothing,
+                                                  reportGenerator(effectiveSettingsSource),
+                                                  BuildReport(effectiveSettingsSource))
+
+                    WriteTextEntry(archive, "report.txt", RedactUserProfile(reportText))
                     result.Entries.Add("report.txt")
 
                     For Each source As KeyValuePair(Of String, String) In LogSources()
@@ -81,12 +122,19 @@ Public Module LogPackage
                 End Using
             End Using
 
-            Dim info As New FileInfo(zipPath)
-            result.Path = zipPath
+            Dim info As New FileInfo(reservedPath)
+            result.Path = reservedPath
             result.SizeBytes = info.Length
             result.OverSizeLimit = info.Length > MaxPackageBytes
         Catch ex As Exception
             AppFileLogger.LogException("LogPackage.Build", ex)
+            If Not String.IsNullOrEmpty(reservedPath) Then
+                Try
+                    If File.Exists(reservedPath) Then File.Delete(reservedPath)
+                Catch delEx As Exception
+                    AppFileLogger.LogException("LogPackage.Build cleanup", delEx)
+                End Try
+            End If
             result.Path = ""
             result.ErrorText = ex.GetType().FullName
             result.Failure = ex
@@ -98,9 +146,18 @@ Public Module LogPackage
     ''' <summary>Deletes leftovers of earlier runs. Quiet by design - a failure here
     ''' must never interrupt the user's actual request.</summary>
     Public Sub SweepOldPackages()
+        SweepOldPackages(Nothing, Nothing)
+    End Sub
+
+    Friend Sub SweepOldPackages(targetDirectory As String, now As DateTime?)
         Try
-            Dim cutoff As DateTime = DateTime.Now.AddDays(-7)
-            For Each stale As String In Directory.GetFiles(Path.GetTempPath(), PackagePrefix & "*.zip")
+            Dim dir As String = If(String.IsNullOrEmpty(targetDirectory), Path.GetTempPath(), targetDirectory)
+            If Not Directory.Exists(dir) Then Return
+
+            Dim currentTime As DateTime = If(now.HasValue, now.Value, DateTime.Now)
+            Dim cutoff As DateTime = currentTime.AddDays(-7)
+
+            For Each stale As String In Directory.GetFiles(dir, PackagePrefix & "*.zip")
                 Try
                     If File.GetLastWriteTime(stale) < cutoff Then File.Delete(stale)
                 Catch
@@ -150,6 +207,71 @@ Public Module LogPackage
         }
     End Function
 
+    ''' <summary>What a bounded read of a live log produced: the bytes themselves, so every
+    ''' later step works on a snapshot that can no longer grow.</summary>
+    Friend Structure TailSnapshot
+        ''' <summary>The source length captured ONCE, at open.</summary>
+        Public SourceLength As Long
+        ''' <summary>The original bytes kept (never more than the cap), partial first record
+        ''' and an incomplete trailing UTF-8 sequence already removed.</summary>
+        Public Bytes As Byte()
+        ''' <summary>True when the source was longer than the cap and only its tail is kept.</summary>
+        Public Truncated As Boolean
+    End Structure
+
+    ''' <summary>
+    ''' Reads at most <paramref name="cap"/> ORIGINAL bytes from the end of <paramref name="source"/>
+    ''' (057.S15-4). The length is captured once; the read loop is bounded by it, so a file that is
+    ''' appended to on every read, truncated or replaced underneath us still ends in a short read
+    ''' rather than a long one. Bytes discarded to land on a record boundary were read, so they
+    ''' count against the cap - the budget is the number of bytes that leave the file.
+    ''' </summary>
+    Friend Function ReadTail(source As Stream, cap As Long) As TailSnapshot
+        Dim snapshot As New TailSnapshot With {.Bytes = New Byte() {}}
+        Dim total As Long = source.Length
+        snapshot.SourceLength = total
+        snapshot.Truncated = total > cap
+        Dim budget As Long = If(snapshot.Truncated, cap, total)
+        If snapshot.Truncated Then source.Seek(total - cap, SeekOrigin.Begin)
+
+        Dim collected As New MemoryStream(CInt(Math.Min(budget, 1024L * 1024L)))
+        Using bounded As New BoundedReadStream(source, budget)
+            Dim chunk(81919) As Byte
+            Dim count As Integer = bounded.Read(chunk, 0, chunk.Length)
+            While count > 0
+                collected.Write(chunk, 0, count)
+                count = bounded.Read(chunk, 0, chunk.Length)
+            End While
+        End Using
+
+        Dim data As Byte() = collected.ToArray()
+        Dim from As Integer = 0
+        If snapshot.Truncated Then
+            ' The tail-seek landed inside a record: start at the next line.
+            Dim lf As Integer = Array.IndexOf(data, CByte(10))
+            from = If(lf < 0, data.Length, lf + 1)
+        End If
+        Dim until As Integer = data.Length - IncompleteUtf8TailLength(data, from)
+        If until < from Then until = from
+        Dim kept(until - from - 1) As Byte
+        If kept.Length > 0 Then Array.Copy(data, from, kept, 0, kept.Length)
+        snapshot.Bytes = kept
+        Return snapshot
+    End Function
+
+    ''' <summary>How many bytes at the end of <paramref name="data"/> are the start of a
+    ''' multi-byte UTF-8 sequence that the cap cut short (0 when the end is clean).</summary>
+    Friend Function IncompleteUtf8TailLength(data As Byte(), lowestIndex As Integer) As Integer
+        Dim n As Integer = data.Length
+        For back As Integer = 1 To Math.Min(3, n - lowestIndex)
+            Dim b As Byte = data(n - back)
+            If (b And &HC0) = &H80 Then Continue For ' a continuation byte: keep looking for its lead
+            Dim needed As Integer = If((b And &HE0) = &HC0, 2, If((b And &HF0) = &HE0, 3, If((b And &HF8) = &HF0, 4, 1)))
+            Return If(needed > back, back, 0)
+        Next
+        Return 0
+    End Function
+
     ''' <summary>
     ''' Copies one log into the archive, keeping only the tail when it is long.
     '''
@@ -157,51 +279,120 @@ Public Module LogPackage
     ''' so ZipFileExtensions.CreateEntryFromFile - which opens with FileShare.Read -
     ''' throws IOException on the very file this feature exists for.
     ''' </summary>
-    Friend Function CopyLogEntry(archive As ZipArchive, entryName As String, sourcePath As String) As String
+    Friend Function CopyLogEntry(archive As ZipArchive, entryName As String, sourcePath As String,
+                                 Optional openSource As Func(Of String, Stream) = Nothing) As String
         Try
-            Using source As New FileStream(sourcePath, FileMode.Open, FileAccess.Read,
-                                           FileShare.ReadWrite Or FileShare.Delete)
-                Dim total As Long = source.Length
-                Dim truncated As Boolean = total > MaxEntryBytes
-                Dim entry As ZipArchiveEntry = archive.CreateEntry(entryName, CompressionLevel.Optimal)
-
-                Using target As New StreamWriter(entry.Open(), New UTF8Encoding(False))
-                    If truncated Then
-                        source.Seek(total - MaxEntryBytes, SeekOrigin.Begin)
-                        target.Write("[.. truncated: original " & total.ToString(CultureInfo.InvariantCulture) &
-                                     " bytes, keeping the last " & MaxEntryBytes.ToString(CultureInfo.InvariantCulture) & " ..]" &
-                                     Environment.NewLine)
-                        SkipPartialLine(source)
-                    End If
-                    ' Line by line, so the user-profile path is replaced before it is
-                    ' written (spec 039 phase 1). ReadLine drops the terminator; LF goes
-                    ' back, which every log reader accepts.
-                    Using reader As New StreamReader(source, New UTF8Encoding(False), False, 81920, True)
-                        Dim line As String = reader.ReadLine()
-                        While line IsNot Nothing
-                            target.Write(RedactUserProfile(line))
-                            target.Write(vbLf)
-                            line = reader.ReadLine()
-                        End While
-                    End Using
-                End Using
-
-                Return entryName & "  (" & DescribeSize(If(truncated, MaxEntryBytes, total)) & ")"
+            Dim opener As Func(Of String, Stream) = If(openSource, AddressOf OpenLiveLog)
+            Dim snapshot As TailSnapshot
+            Using source As Stream = opener(sourcePath)
+                snapshot = ReadTail(source, MaxEntryBytes)
             End Using
+
+            Dim entry As ZipArchiveEntry = archive.CreateEntry(entryName, CompressionLevel.Optimal)
+            Using target As New StreamWriter(entry.Open(), New UTF8Encoding(False))
+                If snapshot.Truncated Then
+                    target.Write("[.. truncated: original " & snapshot.SourceLength.ToString(CultureInfo.InvariantCulture) &
+                                 " bytes, keeping the last " & MaxEntryBytes.ToString(CultureInfo.InvariantCulture) & " ..]" &
+                                 Environment.NewLine)
+                End If
+                ' Line by line, so the user-profile path is replaced before it is
+                ' written (spec 039 phase 1). ReadLine drops the terminator; LF goes
+                ' back, which every log reader accepts.
+                Using reader As New StreamReader(New MemoryStream(snapshot.Bytes), New UTF8Encoding(False), False)
+                    Dim line As String = reader.ReadLine()
+                    While line IsNot Nothing
+                        target.Write(RedactUserProfile(line))
+                        target.Write(vbLf)
+                        line = reader.ReadLine()
+                    End While
+                End Using
+            End Using
+
+            Return entryName & "  (" & DescribeSize(snapshot.Bytes.Length) & ")"
         Catch ex As Exception
             AppFileLogger.LogException("LogPackage.CopyLogEntry " & entryName, ex)
             Return Nothing
         End Try
     End Function
 
-    ''' <summary>Reads to the end of the line the tail-seek landed inside, so the
-    ''' archive never starts with half a record.</summary>
-    Private Sub SkipPartialLine(source As FileStream)
-        Dim value As Integer = source.ReadByte()
-        While value >= 0 AndAlso value <> 10
-            value = source.ReadByte()
-        End While
-    End Sub
+    Private Function OpenLiveLog(path As String) As Stream
+        Return New FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete)
+    End Function
+    ''' <summary>
+    ''' A read-only stream wrapper that bounds reading to a fixed number of bytes from the current position,
+    ''' preventing tail-readers from reading to a growing live EOF (057.S15-4).
+    ''' </summary>
+    Friend NotInheritable Class BoundedReadStream
+        Inherits Stream
+
+        Private ReadOnly inner As Stream
+        Private remainingBytes As Long
+
+        Public Sub New(inner As Stream, maxBytesToRead As Long)
+            Me.inner = inner
+            Me.remainingBytes = Math.Max(0L, maxBytesToRead)
+        End Sub
+
+        Public Overrides ReadOnly Property CanRead As Boolean
+            Get
+                Return inner.CanRead
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property CanSeek As Boolean
+            Get
+                Return False
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property CanWrite As Boolean
+            Get
+                Return False
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property Length As Long
+            Get
+                Return remainingBytes
+            End Get
+        End Property
+
+        Public Overrides Property Position As Long
+            Get
+                Throw New NotSupportedException()
+            End Get
+            Set(value As Long)
+                Throw New NotSupportedException()
+            End Set
+        End Property
+
+        Public Overrides Function Read(buffer As Byte(), offset As Integer, count As Integer) As Integer
+            If remainingBytes <= 0 Then Return 0
+            Dim toRead As Integer = CInt(Math.Min(CLng(count), remainingBytes))
+            Dim readCount As Integer = inner.Read(buffer, offset, toRead)
+            If readCount > 0 Then
+                remainingBytes -= readCount
+            Else
+                remainingBytes = 0
+            End If
+            Return readCount
+        End Function
+
+        Public Overrides Sub Flush()
+        End Sub
+
+        Public Overrides Function Seek(offset As Long, origin As SeekOrigin) As Long
+            Throw New NotSupportedException()
+        End Function
+
+        Public Overrides Sub SetLength(value As Long)
+            Throw New NotSupportedException()
+        End Sub
+
+        Public Overrides Sub Write(buffer As Byte(), offset As Integer, count As Integer)
+            Throw New NotSupportedException()
+        End Sub
+    End Class
 
     Private Sub WriteTextEntry(archive As ZipArchive, entryName As String, text As String)
         Dim entry As ZipArchiveEntry = archive.CreateEntry(entryName, CompressionLevel.Optimal)
@@ -216,7 +407,7 @@ Public Module LogPackage
     Private Function BuildReport(settingsSource As Func(Of List(Of KeyValuePair(Of String, Object)))) As String
         Dim sb As New StringBuilder()
 
-        sb.AppendLine("Fast Media Sorter for Windows - diagnostic report")
+        sb.AppendLine(ProductNames.Full & " - diagnostic report")
         sb.AppendLine("Generated: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
         sb.AppendLine()
 
@@ -321,7 +512,7 @@ Public Module LogPackage
         "UiLanguage", "Is_Russian_Language",
         "NameCollisionPolicy", "AfterFileOperation", "AdvanceAfterCopy", "DeleteToRecycleBin", "ConfirmDelete",
         "CreateMissingDestination", "IncludeSubfolders", "IncludedExtensions", "InterfaceScalePercent",
-        "NewImageScaleMode", "ReduceMotion", "RecipientsOverlayPosition", "RecipientsOverlayWidth",
+        "NewImageScaleMode", "ReduceMotion", "ModernChrome", "ChromePinned", "ChromeSize", "ChromeRow1Pinned", "ChromeRow2Pinned", "ChromeStatusPinned", "ChromeOpacityPercent", "ChromeCornerRadius", "RecipientsOverlayPosition", "RecipientsOverlayWidth",
         "RecipientsOverlayFontSize", "RecipientsOverlayOpacity", "RecipientsOverlayVisibleRows",
         "SlideshowRandomOrder", "StopSlideshowOnManualNavigation", "SlideshowUiMode", "VideoAutoplay",
         "IncludeVideoInNavigation", "RememberVideoPosition", "VideoControlsHideDelaySec",
@@ -452,25 +643,26 @@ Public Module LogPackage
 
     ''' <summary>The last few exception lines of the log - a shortcut so the author does
     ''' not have to scan a two-megabyte tail to see what broke.</summary>
-    Private Function RecentErrorLines() As List(Of String)
+    Friend Function RecentErrorLines(Optional openSource As Func(Of String, Stream) = Nothing, Optional logPathOverride As String = Nothing) As List(Of String)
         Dim found As New List(Of String)()
         Try
-            Dim logPath As String = AppFileLogger.LogFilePath
+            Dim logPath As String = If(logPathOverride, AppFileLogger.LogFilePath)
             If String.IsNullOrEmpty(logPath) OrElse Not File.Exists(logPath) Then Return found
 
-            Using stream As New FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete)
-                If stream.Length > MaxEntryBytes Then stream.Seek(stream.Length - MaxEntryBytes, SeekOrigin.Begin)
-                Using reader As New StreamReader(stream)
-                    Dim line As String = reader.ReadLine()
-                    While line IsNot Nothing
-                        If line.IndexOf("xception", StringComparison.Ordinal) >= 0 OrElse
-                           line.IndexOf("Unhandled", StringComparison.Ordinal) >= 0 Then
-                            found.Add(line)
-                            If found.Count > 200 Then found.RemoveAt(0)
-                        End If
-                        line = reader.ReadLine()
-                    End While
-                End Using
+            Dim snapshot As TailSnapshot
+            Using stream As Stream = If(openSource, AddressOf OpenLiveLog)(logPath)
+                snapshot = ReadTail(stream, MaxEntryBytes)
+            End Using
+            Using reader As New StreamReader(New MemoryStream(snapshot.Bytes), New UTF8Encoding(False), False)
+                Dim line As String = reader.ReadLine()
+                While line IsNot Nothing
+                    If line.IndexOf("xception", StringComparison.Ordinal) >= 0 OrElse
+                       line.IndexOf("Unhandled", StringComparison.Ordinal) >= 0 Then
+                        found.Add(line)
+                        If found.Count > 200 Then found.RemoveAt(0)
+                    End If
+                    line = reader.ReadLine()
+                End While
             End Using
         Catch ex As Exception
             found.Add("unreadable: " & ex.Message)
@@ -497,7 +689,9 @@ Public Module LogPackage
     Private Function CurrentExePath() As String
         Try
             ' Not Assembly.Location: it is "" in a single-file publish.
-            Return Process.GetCurrentProcess().MainModule.FileName
+            Using current As Process = Process.GetCurrentProcess()
+                Return current.MainModule.FileName
+            End Using
         Catch
             Return AppContext.BaseDirectory
         End Try

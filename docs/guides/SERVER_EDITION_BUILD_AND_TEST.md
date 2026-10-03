@@ -1,6 +1,6 @@
 # Server edition - build, publish and verify
 
-Operational companion to [SPECIFICATION_SHARE_SYSTEM_SERVICE.md](../specifications/done/SPECIFICATION_SHARE_SYSTEM_SERVICE.md).
+Operational companion to `SPECIFICATION_SHARE_SYSTEM_SERVICE.md` (local specification).
 The user-facing documentation is the public page [server.html](../../server.html) - this file
 is for whoever builds and ships the thing.
 
@@ -15,6 +15,7 @@ It is a packaging and host-mode variant, never a fork.
 | Inno script | `publishing/installer/FastMediaSorter.iss` | `publishing/installer/FastMediaSorterServer.iss` |
 | Inno `AppId` | `{7371E7F1-B8A8-4786-8173-5F5B2B6E6AC9}` | `{A9F3C61B-4D2E-4F58-9C7A-1E6B0D3F82A4}` |
 | ARP DisplayName | `FastMediaSorter LITE` (frozen) | `Fast Media Sorter Folder Share Server` |
+| Wizard and shortcut name | `Fast Media Sorter & Sharing for Windows` | `Fast Media Sorter & Sharing: Folder Share Server`; its shortcuts say `Folder Share Server - Fast Media Sorter & Sharing` (a file name takes no colon) |
 | Install dir | `FastMediaSorter_LITE` | `FastMediaSorter_Server` |
 | Release asset | `FastMediaSorter-<v>-windows-x64-setup.exe` | `FastMediaSorter-<v>-windows-x64-server-setup.exe` |
 | winget package | `SerZhyAle.FastMediaSorter` | `SerZhyAle.FastMediaSorter.Server` (`publishing/winget/server/`) |
@@ -23,7 +24,8 @@ It is a packaging and host-mode variant, never a fork.
 | Payload | viewer x64 + x86, VLC, OCR, Share Manager, worker | Share Manager + worker + helper scripts **only** |
 | Store / MSIX | yes | **never** |
 
-Everything in that table is an *identity* anchor: once a version ships, changing a row
+Everything in that table except the wizard-name row is an *identity* anchor (the visible names follow `docs/guides/PRODUCT_NAMING.md`;
+the ARP names stay frozen): once a version ships, changing a row
 orphans the installs that correlate on it. The two things the editions must keep
 **identical** are owned by neither installer - the SCM service name
 `FastMediaSorterCompanionSFTP` and the on-disk state format, both defined by the worker.
@@ -65,7 +67,7 @@ that cannot start:
 ## Publishing to winget
 
 Same rules as the User edition (see
-[SPECIFICATION_WINGET_PUBLISHING.md](../specifications/done/SPECIFICATION_WINGET_PUBLISHING.md)):
+`SPECIFICATION_WINGET_PUBLISHING.md` (local specification)):
 point at the Inno `setup.exe`, no `Dependencies`, no `NestedInstallerType`. Two deliberate
 differences, both explained in the manifest comments:
 

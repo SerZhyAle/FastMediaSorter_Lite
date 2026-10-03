@@ -9,7 +9,7 @@
 # worker is a windowless background process RM cannot message either. A file-replacing
 # install/uninstall therefore has to terminate them here - this runs from
 # PrepareToInstall (before the Restart Manager's "Closing applications" step) and from
-# the uninstaller. LITE itself is deliberately left to Inno's AppMutex, which closes it
+# the uninstaller. The viewer itself is deliberately left to Inno's AppMutex, which closes it
 # gracefully so it still saves its settings on exit.
 #
 # In the Server edition the worker is owned by the Windows SCM, not by the tray app.

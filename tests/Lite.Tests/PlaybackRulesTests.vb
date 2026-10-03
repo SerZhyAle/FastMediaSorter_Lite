@@ -112,19 +112,25 @@ Public Class PlaybackRulesTests
         Assert.True(sleep.IsDue(61000, 1))
     End Sub
 
+    ''' <summary>057.S08-6: the display path disarms the deadline when a non-audio file
+    ''' is shown (EndAudioListening). After that - a track with a 30-minute timer, an
+    ''' hour of photos - a slideshow step onto an audio file must arm a FRESH deadline
+    ''' and play, not be cut off at the first tick by the long-passed one.</summary>
     <Fact>
     Public Sub Leaving_audio_lets_the_next_slideshow_step_start_fresh()
         Dim sleep As New SleepDeadline()
-        sleep.TrackStarted(0, 1, automatic:=False)
+        sleep.TrackStarted(0, 30, automatic:=False)
         Assert.True(sleep.IsArmed)
+
+        ' Two minutes of photos: the display path ends the listening session.
         sleep.Disarm()
         Assert.False(sleep.IsArmed)
 
-        ' Later automatic start (slideshow or end-action) arms fresh from nowMs
-        sleep.TrackStarted(120000, 1, automatic:=True)
+        ' The slideshow step lands on an audio file.
+        sleep.TrackStarted(120000, 30, automatic:=True)
         Assert.True(sleep.IsArmed)
-        Assert.False(sleep.IsDue(120000 + 59000, 1))
-        Assert.True(sleep.IsDue(120000 + 60000, 1))
+        Assert.False(sleep.IsDue(121000, 30))
+        Assert.True(sleep.IsDue(120000 + 30 * 60000L, 30))
     End Sub
 
     ' --- D-11: watched to the end opens from the start --------------------------------

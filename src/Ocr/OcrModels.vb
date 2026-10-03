@@ -47,10 +47,12 @@ Public Module OcrPipeline
     '''     ellipsis and the dashes count as punctuation in attempt scoring. It also retires
     '''     every document a failed translation had already written to disk as a success.
     '''     (The E-01 key change - the displayed grid - changes no content and needs none.)
-    ''' 8 - ticket 093: combining marks and local punctuation are ordinary text in OCR
-    '''     scoring; complete non-Latin translations survive quality checks, while foreign
-    '''     kana/Hangul echoes remain retryable. Retire documents built by the old rules.
-    Public Const OcrPipelineVersion As Integer = 8
+    ''' 8, 9 - ticket 093 (audit 057.S12-1/-2/-3/-5/-15): a correct Hindi, Bengali, Chinese or
+    '''     Japanese translation is no longer rejected as noisy or truncated, a Japanese echo for
+    '''     a Chinese target is no longer accepted, and the attempt scorer stops calling every
+    '''     Indic line suspicious - so both the kept translation and the winning OCR attempt change.
+    '''     Two builds of this ticket wrote documents (one as 8, one as 9); 9 retires both.
+    Public Const OcrPipelineVersion As Integer = 9
 End Module
 
 Public Class OcrWord

@@ -3,9 +3,9 @@
 | | |
 | --- | --- |
 | **Ids** | `ICON-SET`, `ICON-RENDER`, `ICON-EXTERNAL` |
-| **Version** | catalog 0.17 / 0.15 / 0.11, all draft (re-imported 2026-10-03 with the Settings navigation glyphs; first aligned at 0.13 / 0.11 / 0.9 by [ticket 044](../specifications/done/044_SPECIFICATION_ICON_GLYPH_RESYNC.md)). **Vendored: 0.17 / 0.15 / 0.11** |
+| **Version** | catalog 0.17 / 0.15 / 0.11, all draft (read 2026-10-02; vendored files re-imported 2026-10-03 with the Settings navigation glyphs). **Implemented: 0.17 / 0.15 / 0.11** - the vendored vocabulary and glyphs were already taken at 0.17 (PROVENANCE, 2026-10-02; re-taken 2026-10-03); the hit-target floor and the warning tone were adopted 2026-10-02 |
 | **Home** | `iconography/README.md` in the shared contracts catalog |
-| **Role here** | consumer - viewer, Share Manager and product site; [specification 027](../specifications/done/027_SPECIFICATION_CONTRACT_SYNC_ICONOGRAPHY.md) |
+| **Role here** | consumer - viewer, Share Manager and product site; `specification 027` (local specification) |
 
 The product vendors only the catalog glyph files it renders, with their source SHA-256 recorded in
 `assets/glyphs/PROVENANCE.txt`, and the vocabulary its tests read, under
@@ -22,13 +22,26 @@ On the site, a control drawn with a vocabulary glyph either references the vendo
 `currentColor` (back-to-top and the releases link on the root page). `IconographyContractTests` holds both
 forms to the vendored files.
 
-The registry row and the dated exception this pointer relied on were first written on 2026-09-24; until
-then neither existed. The drift they recorded (four glyphs and the vocabulary behind `ICON-SET` 0.13, text
-arrows for back-to-top and download on the root page) was closed the same day by ticket 044.
+What 0.14-0.17 added for this product:
 
-Deviations still open, each a dated exception in the registry and a proposal beside the contract (all
-written 2026-09-24 by ticket 027): meanings the vocabulary lacks (`PROPOSAL-2026-09-24-fms-windows-meanings.md`),
-Windows rendering constraints - pointer targets, the colour tray icon (`PROPOSAL-2026-09-24-fms-windows-rendering.md`),
-names in the ten languages beyond en/ru/uk (`PROPOSAL-2026-09-24-fms-names-beyond-three-languages.md`), flags
-as language markers (`PROPOSAL-2026-09-24-fms-flags-for-languages.md`), and the site kit's theme-switch
-symbol `◐`, which has no vocabulary meaning yet (`PROPOSAL-2026-09-24-fms-page-style-kit-symbols.md`).
+- **`status.warning` is active**, and this product's secure-container placeholder is its first shipper;
+  the day tone `#EF6C00` (3.08:1 on white) is section 10 item D and is now what `ThemePalette` returns.
+- **Rule 5 hit targets (0.15):** at least 28 logical px for a mouse- or pen-driven control, at least 44 px
+  under coarse input. The viewer is DPI-unaware (`DpiUnaware`), so the numbers are logical pixels - the
+  registry row says so. The floors the product had below 28 (`ChromeMetrics.MinTarget`, the toolbar row
+  minimum) were raised 2026-10-02. The 44 px coarse-input floor is a separate open question: the product
+  has no touch-specific surfaces, and whether to size everything to 44 (the rule's default when input
+  kind cannot be told) is an owner decision carried in the registry exception.
+- **Rule 6 (0.11, `ICON-EXTERNAL`):** a language is marked by its endonym, never by a flag. The dated
+  exceptions recorded before the rule was decided (this product's flags in three menus, until
+  2026-12-31) stay until their own dates - now as deviations from a decided rule; the owner decides
+  remove-early versus keep-to-date.
+
+Deviation still open, each a dated exception in the registry and a proposal beside the contract: meanings
+the vocabulary lacked were folded into 0.15/0.17 (`app.theme`, `action.reveal`, `action.show-code`,
+`action.choose-file`, `action.choose-folder` and the rest of
+`PROPOSAL-2026-09-24-fms-windows-meanings.md`), the Windows rendering constraints were folded into 0.12-0.15
+(`PROPOSAL-2026-09-24-fms-windows-rendering.md`), names beyond en/ru/uk were partly folded (0.14/0.17,
+`PROPOSAL-2026-09-24-fms-names-beyond-three-languages.md`), flags-for-languages became rule 6 as option A
+(`PROPOSAL-2026-09-24-fms-flags-for-languages.md`), and the site kit's theme-switch symbol `◐` remains the
+one item of `PROPOSAL-2026-09-24-fms-page-style-kit-symbols.md` not folded on this folder's side.

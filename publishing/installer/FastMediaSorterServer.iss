@@ -1,4 +1,4 @@
-; Fast Media Sorter - Folder Share SERVER edition - Inno Setup script
+﻿; Fast Media Sorter & Sharing: Folder Share Server - Inno Setup script (the SERVER edition)
 ; Built by CI / tools\Build-ServerInstaller.ps1; invoke with:
 ;   ISCC.exe /DVersion=<x.y.z.w> /DSourceDir=<staged-tree> /O<output-dir> FastMediaSorterServer.iss
 ;
@@ -25,10 +25,21 @@
   #error SourceDir must be defined (path to the staged build output)
 #endif
 
-#define AppName       "Fast Media Sorter Folder Share Server"
-; ARP DisplayName. NOT the User edition's frozen "FastMediaSorter LITE": the two must
-; correlate to two DIFFERENT winget packages, and a shared DisplayName would make
-; "winget upgrade" hand a machine the wrong edition.
+; The wizard name of this edition (docs/guides/PRODUCT_NAMING.md section 1, "Server
+; edition"). A plain "&" is right in the [Setup] directives and message boxes; a wizard
+; label would need it doubled (this script builds none).
+#define AppName       "Fast Media Sorter & Sharing: Folder Share Server"
+; The name of the SHORTCUTS. A shortcut is a file and a colon is not a legal file-name
+; character, so the component comes first and the product follows as the suffix, the
+; same pattern as the Share Manager's ("Share Manager - Fast Media Sorter & Sharing").
+#define AppShortcutName "Folder Share Server - Fast Media Sorter & Sharing"
+; The name of the User edition, for the messages that speak about it.
+#define UserEditionName "Fast Media Sorter & Sharing for Windows"
+; ARP DisplayName - FROZEN, and spelled out on purpose instead of following AppName: the
+; installed copies already carry this exact string and winget correlates on it. NOT the
+; User edition's frozen ARP name either: the two must correlate to two DIFFERENT winget
+; packages, and a shared DisplayName would make "winget upgrade" hand a machine the
+; wrong edition.
 #define AppNameArp    "Fast Media Sorter Folder Share Server"
 ; Start-menu GROUP - deliberately NOT {#AppName}: both editions live under ONE product
 ; folder in the Start menu, so this must stay byte-identical to the User edition's
@@ -37,7 +48,7 @@
 ; entries it created, and the emptied folder goes with whichever uninstaller runs last.
 ; This is a shortcut-placement name only, NOT an identity anchor: AppId, the ARP
 ; DisplayName and the winget package stay distinct per edition.
-#define AppGroupName  "Fast Media Sorter for Windows"
+#define AppGroupName  "Fast Media Sorter & Sharing for Windows"
 #define AppPublisher  "SerZhyAle"
 #define CompanionExe  "FastMediaSorterCompanion.exe"
 #define WorkerExe     "fms-share-worker.exe"
@@ -115,9 +126,21 @@ Name: "ukrainian"; MessagesFile: "compiler:Languages\Ukrainian.isl"
 Name: "openmanager"; Description: "{cm:OpenManagerTask}"
 
 [CustomMessages]
+english.CompFileDO=FileDO virtual disk support (optional; sharing stays off until enabled)
+russian.CompFileDO=Поддержка виртуальных дисков FileDO (необязательно; общий доступ включается отдельно)
+ukrainian.CompFileDO=Підтримка віртуальних дисків FileDO (необов’язково; спільний доступ вмикається окремо)
 english.OpenManagerTask=Open the Share Manager after installation to choose the folders to publish
 russian.OpenManagerTask=Открыть Менеджер общего доступа после установки, чтобы выбрать публикуемые папки
 ukrainian.OpenManagerTask=Відкрити Менеджер спільного доступу після встановлення, щоб вибрати публіковані теки
+
+[Types]
+Name: "custom"; Description: "Choose optional disk support"; Flags: iscustom
+
+[Components]
+; Types: custom - a custom-only list starts with the component ticked (a component with no
+; Types starts unticked, and the service then reports "bundled FileDO is missing"). The user can
+; still untick it; sharing disks stays off until enabled either way.
+Name: "filedo"; Description: "{cm:CompFileDO}"; Types: custom
 
 [Files]
 ; The Share Manager (self-contained .NET 10) + the headless Go worker. Deliberately
@@ -125,6 +148,7 @@ ukrainian.OpenManagerTask=Відкрити Менеджер спільного �
 ; share on a machine that may well have no interactive user at all.
 Source: "{#SourceDir}\{#CompanionExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\companion\*"; DestDir: "{app}\companion"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "{#SourceDir}\filedo\*"; DestDir: "{app}\filedo"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: filedo
 Source: "{#SourceDir}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#SourceDir}\README.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 ; The worker statically links a dozen Go packages (SFTP, ed25519, mDNS, UPnP/NAT-PMP);
@@ -149,15 +173,27 @@ Source: "stop-companion.ps1"; DestDir: "{app}"; Flags: ignoreversion
 ; {commonprograms} here (PrivilegesRequired=admin), so removing it outright is safe.
 ; Harmless on a fresh install, where the folder does not exist.
 Type: filesandordirs; Name: "{commonprograms}\Fast Media Sorter Folder Share Server"
+; The shared group followed the User edition's rename: it used to be "Fast Media Sorter
+; for Windows" and is now the current AppGroupName. Remove only THIS edition's own
+; entries from the old folder (the shortcut under its former name, the uninstall
+; shortcut in each setup language, the former desktop shortcut) and then the folder if
+; it is empty - never the folder outright, because a User edition upgraded earlier or
+; later may still keep its own shortcuts in it until its installer clears them.
+Type: files; Name: "{commonprograms}\Fast Media Sorter for Windows\Fast Media Sorter Folder Share Server.lnk"
+Type: files; Name: "{commonprograms}\Fast Media Sorter for Windows\* Fast Media Sorter Folder Share Server.lnk"
+Type: dirifempty; Name: "{commonprograms}\Fast Media Sorter for Windows"
+; The desktop shortcut under its former name: Inno never removes a shortcut that an
+; earlier install created under a name this one no longer writes.
+Type: files; Name: "{autodesktop}\Fast Media Sorter Folder Share Server.lnk"
 
 ; The uninstall shortcut is named in the language the install ran in ("Uninstall .." /
 ; "Удалить .." / "Видалити .."), and Inno leaves the previous language's copy behind when
 ; that changes - so a machine reinstalled in two languages ends up with two of them. The
 ; leading space is deliberate: it matches only the "<verb> <AppName>.lnk" forms and never
-; "{#AppName}.lnk" itself, so the product's own shortcut is not deleted and recreated
+; "{#AppShortcutName}.lnk" itself, so the product's own shortcut is not deleted and recreated
 ; (which would break a taskbar pin resolving through it). [InstallDelete] runs before
 ; [Icons], so the current language's copy is written back immediately.
-Type: files; Name: "{group}\* {#AppName}.lnk"
+Type: files; Name: "{group}\* {#AppShortcutName}.lnk"
 
 [UninstallDelete]
 ; The Share Manager writes companion.log next to its exe when that folder is writable;
@@ -169,15 +205,15 @@ Type: files; Name: "{app}\companion.log.old"
 ; "--show": a bare launch obeys the manager's own "open the window at startup" option,
 ; which is OFF by default, so without the flag this Start-menu item would start a
 ; tray-only process and read as a click that did nothing. Clicking a shortcut IS the
-; explicit "open it" gesture, the same one LITE's Share Manager button makes.
-Name: "{group}\{#AppName}"; Filename: "{app}\{#CompanionExe}"; Parameters: "--show"
-Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
+; explicit "open it" gesture, the same one the viewer's Share Manager button makes.
+Name: "{group}\{#AppShortcutName}"; Filename: "{app}\{#CompanionExe}"; Parameters: "--show"
+Name: "{group}\{cm:UninstallProgram,{#AppShortcutName}}"; Filename: "{uninstallexe}"
 ; Same "--show" reasoning. A desktop icon matters more here than on the viewer: the
 ; console has no file association, nothing opens it by double-clicking a document, and
 ; the Start-menu entry sits under a product folder named after the VIEWER (the shared
 ; group), which is not where someone looks for a server they just installed. Create it
 ; on every install, including upgrades that remembered an unchecked desktop task.
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#CompanionExe}"; Parameters: "--show"
+Name: "{autodesktop}\{#AppShortcutName}"; Filename: "{app}\{#CompanionExe}"; Parameters: "--show"
 
 [Code]
 const
@@ -211,17 +247,17 @@ end;
 function MigrationNoticeText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'На этом компьютере уже установлена пользовательская редакция Fast Media Sorter.' + #13#10#13#10 +
+    Result := 'На этом компьютере уже установлена пользовательская редакция {#UserEditionName}.' + #13#10#13#10 +
               'Серверная редакция не работает рядом с ней: обе редакции используют один и тот же канал управления, порт и ключ узла. Установка ПЕРЕНЕСЁТ текущее состояние (ключ узла, пароль, список папок, порт) в машинное хранилище и передаст раздачу службе Windows.' + #13#10#13#10 +
               'Отпечаток ключа узла сохранится - привязанные телефоны продолжат подключаться без повторной привязки. Просмотрщик останется установленным и продолжит работать.' + #13#10#13#10 +
               'Продолжить?'
   else if IsLanguage('ukrainian') then
-    Result := 'На цьому комп''ютері вже встановлено користувацьку редакцію Fast Media Sorter.' + #13#10#13#10 +
+    Result := 'На цьому комп''ютері вже встановлено користувацьку редакцію {#UserEditionName}.' + #13#10#13#10 +
               'Серверна редакція не працює поруч із нею: обидві редакції використовують один канал керування, порт і ключ вузла. Встановлення ПЕРЕНЕСЕ поточний стан (ключ вузла, пароль, список тек, порт) у машинне сховище й передасть роздачу службі Windows.' + #13#10#13#10 +
               'Відбиток ключа вузла збережеться - прив''язані телефони продовжать підключатися без повторної прив''язки. Переглядач залишиться встановленим і працюватиме далі.' + #13#10#13#10 +
               'Продовжити?'
   else
-    Result := 'A User edition of Fast Media Sorter is already installed on this computer.' + #13#10#13#10 +
+    Result := 'A User edition of {#UserEditionName} is already installed on this computer.' + #13#10#13#10 +
               'The Server edition cannot run alongside it: both editions use the same control channel, the same port and the same host key. Setup will MIGRATE the current state (host key, password, folder list, port) into the machine store and hand the sharing over to a Windows service.' + #13#10#13#10 +
               'The host-key fingerprint is preserved, so paired phones keep connecting without re-pairing. The viewer stays installed and keeps working.' + #13#10#13#10 +
               'Continue?';
@@ -230,11 +266,11 @@ end;
 function SilentConflictText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Обнаружена пользовательская редакция Fast Media Sorter. Тихая установка серверной редакции поверх неё остановлена: она выполнила бы перенос состояния без вашего подтверждения. Запустите установщик в обычном режиме или передайте /MIGRATEFROMUSER, чтобы явно разрешить перенос.'
+    Result := 'Обнаружена пользовательская редакция {#UserEditionName}. Тихая установка серверной редакции поверх неё остановлена: она выполнила бы перенос состояния без вашего подтверждения. Запустите установщик в обычном режиме или передайте /MIGRATEFROMUSER, чтобы явно разрешить перенос.'
   else if IsLanguage('ukrainian') then
-    Result := 'Виявлено користувацьку редакцію Fast Media Sorter. Тиху установку серверної редакції поверх неї зупинено: вона виконала б перенесення стану без вашого підтвердження. Запустіть установник у звичайному режимі або передайте /MIGRATEFROMUSER, щоб явно дозволити перенесення.'
+    Result := 'Виявлено користувацьку редакцію {#UserEditionName}. Тиху установку серверної редакції поверх неї зупинено: вона виконала б перенесення стану без вашого підтвердження. Запустіть установник у звичайному режимі або передайте /MIGRATEFROMUSER, щоб явно дозволити перенесення.'
   else
-    Result := 'A User edition of Fast Media Sorter was detected. This silent Server installation was stopped because it would migrate your state without confirmation. Run Setup interactively, or pass /MIGRATEFROMUSER to allow the migration explicitly.';
+    Result := 'A User edition of {#UserEditionName} was detected. This silent Server installation was stopped because it would migrate your state without confirmation. Run Setup interactively, or pass /MIGRATEFROMUSER to allow the migration explicitly.';
 end;
 
 function ServiceFailedText: String;
@@ -300,6 +336,11 @@ begin
   Params := '-NoProfile -ExecutionPolicy Bypass -File "' + ScriptPath + '"' +
             ' -Action ' + Action +
             ' -ExePath "' + WorkerPath + '"' +
+            { The service must look for the bundled FileDO in THIS Program Files installation,
+              not beside its staged copy under ProgramData (its default), which the worker's
+              bundle check refuses for a service. Applies to install, repair, migrate-to-server
+              and the in-place update alike - they all register through the one helper. }
+            ' -FileDoRoot "' + RemoveBackslash(ExpandConstant('{app}')) + '"' +
             ' -DataDir "' + MachineDataDir + '"' +
             ' -UserDataDir "' + UserDataDirHint + '"';
   Exec('powershell.exe', Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);

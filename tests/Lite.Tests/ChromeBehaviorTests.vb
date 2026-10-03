@@ -47,6 +47,41 @@ Public Class ChromeBehaviorTests
     End Sub
 
     <Fact>
+    Public Sub Corner_pin_sits_at_the_end_of_the_row_and_is_never_swallowed_by_overflow()
+        OnSta(Sub()
+                  Using surface As New ChromeSurface()
+                      surface.Size = New Size(140, 44)
+                      Dim pin As New ChromeItem("chrome_pin_row", ChromeItemKind.Toggle) With {.IsPin = True}
+                      surface.PinItem = pin
+                      Dim items As New List(Of ChromeItem)()
+                      For index As Integer = 0 To 5
+                          items.Add(New ChromeItem("button" & index.ToString(), ChromeItemKind.Button))
+                      Next
+                      surface.SetItems(items)
+                      ' Squeezed: some buttons collapse into "more", the pin does not.
+                      Assert.NotEmpty(surface.OverflowItems)
+                      Assert.Contains(pin, surface.Items)
+                      Assert.False(pin.Bounds.IsEmpty)
+                      Assert.True(pin.Bounds.Width >= UiScale.Px(ChromeMetrics.MinTarget, 1.0F))
+                      Assert.True(pin.Bounds.Right <= surface.ClientSize.Width)
+                      For Each item In surface.Items.Where(Function(candidate) candidate IsNot pin AndAlso Not candidate.Bounds.IsEmpty)
+                          Assert.False(item.Bounds.IntersectsWith(pin.Bounds), item.Id & " overlaps the pin")
+                      Next
+                      ' Room enough: nothing overflows, and the pin is still the last thing in the row.
+                      surface.Width = 800
+                      Assert.Empty(surface.OverflowItems)
+                      Assert.True(items.All(Function(item) item.Bounds.Right <= pin.Bounds.Left))
+                      ' The panel asks for room for the pin: the natural size grew by exactly its slot.
+                      Dim withPin As Integer = surface.PreferredPanelSize().Width
+                      surface.PinItem = Nothing
+                      surface.LayoutItems()
+                      Assert.Equal(UiScale.Px(ChromeMetrics.MinTarget, 1.0F) + UiScale.Px(ChromeMetrics.Gap, 1.0F), withPin - surface.PreferredPanelSize().Width)
+                      Assert.DoesNotContain(pin, surface.Items)
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
     Public Sub Keyboard_skips_text_and_disabled_items_and_escape_returns_focus_state()
         OnSta(Sub()
                   Using surface As New ChromeSurface With {.Size = New Size(400, 40)}
@@ -151,6 +186,32 @@ Public Class ChromeBehaviorTests
         Finally
             Directory.Delete(root, True)
         End Try
+    End Sub
+    <Fact>
+    Public Sub PathBox_handle_creation_survives_caller_disposing_borrowed_or_previous_fonts()
+        OnSta(Sub()
+                  Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException)
+                  Using surface As New ChromeSurface()
+                      Using path As New ChromePathBox()
+                          surface.Controls.Add(path)
+                          Dim font1 As New Font("Segoe UI", 12, FontStyle.Regular, GraphicsUnit.Pixel)
+                          Dim symbols1 As New Font("Segoe UI Symbol", 14, FontStyle.Regular, GraphicsUnit.Pixel)
+                          path.Configure(ChromeTheme.FromScheme(Color.Black, Color.White, False), 1.0F, False, font1, symbols1)
+                          font1.Dispose()
+                          symbols1.Dispose()
+
+                          ' Reconfiguring with equivalent font instance (e.g. repeated ChromeConfigure)
+                          Dim font2 As New Font("Segoe UI", 12, FontStyle.Regular, GraphicsUnit.Pixel)
+                          Dim symbols2 As New Font("Segoe UI Symbol", 14, FontStyle.Regular, GraphicsUnit.Pixel)
+                          path.Configure(ChromeTheme.FromScheme(Color.Black, Color.White, False), 1.0F, False, font2, symbols2)
+                          font2.Dispose()
+                          symbols2.Dispose()
+
+                          Dim h As IntPtr = path.Editor.Handle
+                          Assert.NotEqual(IntPtr.Zero, h)
+                      End Using
+                  End Using
+              End Sub)
     End Sub
 End Class
 #End If

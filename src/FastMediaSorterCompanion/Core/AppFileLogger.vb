@@ -4,7 +4,7 @@ Imports System.Windows.Forms
 ''' <summary>
 ''' Minimal file logger for Companion - writes companion.log next to the exe, or
 ''' falls back to %LOCALAPPDATA%\FastMediaSorterCompanion when the install dir is
-''' read-only (e.g. under MSIX). Mirrors the LITE AppFileLogger contract that the
+''' read-only (e.g. under MSIX). Mirrors the viewer's AppFileLogger contract that the
 ''' ported Share code already calls (currently ShareConfigBuilder diagnostics).
 ''' Never throws - a logging failure must never break a share operation.
 '''

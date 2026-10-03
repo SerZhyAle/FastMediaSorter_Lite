@@ -189,7 +189,7 @@ Public Class FdSecRuleTests
     ''' </summary>
     <Fact>
     Public Sub A_container_is_its_own_kind_until_the_true_name_reclassifies_it()
-        Assert.Equal(MediaKind.Secure, MediaKindClassifier.KindOf(FdSecFormat.Extension))
+        Assert.Equal(MediaKind.Container, MediaKindClassifier.KindOf(FdSecFormat.Extension))
 
         Using container As FdSecContainer = OpenPacked(PackedSecret(), Credential)
             Assert.Equal(".jpg", container.Metadata.ContentExtension())

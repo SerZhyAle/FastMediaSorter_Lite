@@ -464,11 +464,12 @@ Public Class ArchiveSessionTests
     <InlineData("PHOTOS.ZIP", True)>
     <InlineData("backup.7z", True)>
     <InlineData("scans.rar", True)>
+    <InlineData("comic.cbr", True)>
     <InlineData("photo.jpg", False)>
     <InlineData("", False)>
-    Public Sub Only_supported_archive_containers_are_offered(name As String, expected As Boolean)
-        ' 7z/RAR are in Archive_Extensions (so they are never listed as entries) but not yet
-        ' openable: they need the sequential path, which is phase Ф2.
+    Public Sub Only_the_containers_the_viewer_can_read_are_offered(name As String, expected As Boolean)
+        ' Phase Ф2 made 7z/RAR/CBR openable (a solid one through the sequential pass); they
+        ' stay in Archive_Extensions too, so they are never listed as ENTRIES either.
         Assert.Equal(expected, ArchiveEntryFilter.IsArchivePath(name))
     End Sub
 

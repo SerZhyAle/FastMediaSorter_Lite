@@ -57,6 +57,8 @@ Public Module IconMap
     Private Const SM As IconSurface = IconSurface.ShareManager
 
     Private ReadOnly meanings As New Dictionary(Of String, IconMeaning)(StringComparer.Ordinal) From {
+        {"btn_choose_file", New IconMeaning("btn_choose_file", "action.choose-file", "Выбрать файл..", IconRole.Content)},
+        {"btn_Select_Folder", New IconMeaning("btn_Select_Folder", "action.choose-folder", "Выбрать папку..", IconRole.Content)},
         {"btn_Review", New IconMeaning("btn_Review", "action.refresh", "Обновить папку", IconRole.Content)},
         {"btn_Panel", New IconMeaning("btn_Panel", "view.grid", "Панель изображений", IconRole.Content)},
         {"btn_Full_Screen", New IconMeaning("btn_Full_Screen", "media.fullscreen", "Во весь экран", IconRole.Content)},
@@ -94,6 +96,7 @@ Public Module IconMap
         {"settingsNavAbout", New IconMeaning("settingsNavAbout", "app.info", "О программе", IconRole.Content)},
         {"btnShare", New IconMeaning("btnShare", "action.share", "Поделиться", IconRole.Content, surface:=SM)},
         {"btnAdd", New IconMeaning("btnAdd", "action.add", "Добавить папку..", IconRole.Content, surface:=SM)},
+        {"btnDisks", New IconMeaning("btnDisks", "content.disk-container", "Диски .fdd..", IconRole.Content, surface:=SM)},
         {"btnSettings", New IconMeaning("btnSettings", "app.settings", "Настройки менеджера..", IconRole.Content, surface:=SM)},
         {"btnRevealPassword", New IconMeaning("btnRevealPassword", "", "Показать пароль", IconRole.Content, DesktopMeaningsProposal, surface:=SM)},
         {"copy", New IconMeaning("copy", "action.copy", "Копировать в буфер", IconRole.Content, surface:=SM)},

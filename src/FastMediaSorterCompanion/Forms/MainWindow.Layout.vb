@@ -42,7 +42,7 @@ Partial Public NotInheritable Class MainWindow
         ' Script font + text direction for the active language, before any control
         ' exists - children inherit both (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
         UiLanguage.ApplyTo(Me)
-        Me.Text = "Fast Media Sorter: Share Manager"
+        Me.Text = ProductNames.ShareManager
         Me.StartPosition = FormStartPosition.CenterScreen
         ' Small on purpose (§3.1). The old 980x700 floor scaled to 1715x1225 at 175%, i.e.
         ' past the height of the screen it was measured on - the window opened at its
@@ -136,10 +136,12 @@ Partial Public NotInheritable Class MainWindow
             .Margin = New Padding(0, 1, 6, 0), .Text = "",
             .Size = New Size(16, 16),
             .ImageAlign = ContentAlignment.MiddleCenter}
+        _fontBold = New Font(Me.Font, FontStyle.Bold)
+        _fontShare = New Font(Me.Font.FontFamily, Me.Font.Size + 2.0F, FontStyle.Bold)
         ' Both start in the empty-list state, which is what a freshly constructed window is
         ' in: the intro speaks, the state line waits for a status to describe.
         lblState = New Label With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 3, 0, 0),
-            .Visible = False, .Font = New Font(Me.Font, FontStyle.Bold)}
+            .Visible = False, .Font = _fontBold}
         ' Server edition only: the ONE administration fact a user reads while looking at a
         ' running share, because there neither checkbox in the settings window decides
         ' whether the folders stay reachable - the service does (§6, "availability is not
@@ -179,7 +181,7 @@ Partial Public NotInheritable Class MainWindow
 
         btnShare = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Padding = New Padding(14, 5, 14, 5), .Margin = New Padding(0),
-            .Font = New Font(Me.Font.FontFamily, Me.Font.Size + 2.0F, FontStyle.Bold),
+            .Font = _fontShare,
             .Text = Localization.T("Поделиться"), .Image = _shareGlyph,
             .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
             .TextAlign = ContentAlignment.MiddleCenter}
@@ -202,18 +204,26 @@ Partial Public NotInheritable Class MainWindow
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(0, 0, 0, 6)}
         btnAdd = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 12, 5), .Text = Localization.T("Добавить папку.."),
             .Image = _addGlyph, .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
-            .TextAlign = ContentAlignment.MiddleCenter, .Font = New Font(Me.Font, FontStyle.Bold)}
+            .TextAlign = ContentAlignment.MiddleCenter, .Font = _fontBold}
         btnAddCurrent = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(8, 5, 8, 5), .Text = Localization.T("+ Текущая"), .Visible = _initialFolder.Length > 0}
         btnRemove = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Убрать")}
         ' Disabled until a row is selected: it edits THE selected folder, and a button that
         ' silently does nothing is worse than one that shows it has nothing to act on.
         btnParams = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5),
             .Text = Localization.T("Редактировать"), .Enabled = False}
+        btnBroadcasts = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5),
+            .Text = Localization.T("Трансляции..")}
         AddHandler btnAdd.Click, AddressOf OnAddFolder
         AddHandler btnAddCurrent.Click, AddressOf OnAddCurrentFolder
         AddHandler btnRemove.Click, AddressOf OnRemoveFolder
         AddHandler btnParams.Click, AddressOf OnConfigureFolder
-        _pnlListButtons.Controls.AddRange(New Control() {btnAdd, btnAddCurrent, btnRemove, btnParams})
+        AddHandler btnBroadcasts.Click, AddressOf OnBroadcastsClicked
+        btnDisks = New Button With {.AutoSize = True, .Padding = New Padding(10, 5, 12, 5),
+            .Text = Localization.T("Диски .fdd.."), .Image = _disksGlyph,
+            .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
+            .TextAlign = ContentAlignment.MiddleCenter}
+        AddHandler btnDisks.Click, AddressOf OnDisksClicked
+        _pnlListButtons.Controls.AddRange(New Control() {btnAdd, btnAddCurrent, btnDisks, btnRemove, btnParams, btnBroadcasts})
 
         ' ShowItemToolTips: a row the service account cannot read is coloured and explains
         ' itself on hover (RefreshFolderAccessWarnings) - without this flag the item tooltip
@@ -273,58 +283,29 @@ Partial Public NotInheritable Class MainWindow
         Next
     End Sub
 
-    ''' <summary>Status strip: the one-line hint, the four links folded into a drop-down
-    ''' (decision C), and the language link left visible beside it - it names the current
-    ''' language in its own script and is the one control a user who cannot read the UI
-    ''' must still be able to find.</summary>
+    ''' <summary>Status strip: the one-line hint. The Help links and the language picker
+    ''' moved into the manager settings (owner decision, 2026-10-03); the tray menu keeps a
+    ''' language item of its own, so someone who cannot read the UI still finds one
+    ''' without opening any window.</summary>
     Private Function BuildStatusStrip() As Control
-        Dim strip As New TableLayoutPanel With {.Dock = DockStyle.Bottom, .ColumnCount = 3,
+        Dim strip As New TableLayoutPanel With {.Dock = DockStyle.Bottom, .ColumnCount = 1,
             .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 4, 14, 6)}
         strip.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
-        strip.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
-        strip.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
 
         lblHint = New Label With {.Dock = DockStyle.Fill, .ForeColor = Color.DimGray, .AutoEllipsis = True,
             .TextAlign = ContentAlignment.MiddleLeft, .Margin = New Padding(0, 0, 10, 0)}
 
-        Dim menu As New ContextMenuStrip()
-        miAndroid = AddHelpItem(menu, Localization.T("FastMediaSorter для Android"), Sub() NetworkInfo.OpenInBrowser(ShareGuide.AndroidSite()))
-        miSiteGuide = AddHelpItem(menu, Localization.T("Как публиковать папки (сайт)"), Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl))
-        miRouterSearch = AddHelpItem(menu, Localization.T("Инструкция для моей модели роутера"), Sub() OnOpenRouterSearch(Me, EventArgs.Empty))
-        miOpenViewer = AddHelpItem(menu, Localization.T("Открыть Fast Media Sorter"), Sub() OnOpenViewerClicked(Me, EventArgs.Empty))
-        ' A field, disposed with the window - see _helpMenu (ticket 054 H-20).
-        _helpMenu = menu
-
-        btnHelp = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Anchor = AnchorStyles.Right, .Padding = New Padding(8, 3, 8, 3), .Margin = New Padding(0, 0, 12, 0),
-            .Text = Localization.T("Справка ▾")}
-        ' Opens UPWARDS: the strip is the bottom edge of the window, so a downward drop-down
-        ' would be flipped by WinForms anyway - naming the direction keeps it predictable.
-        AddHandler btnHelp.Click, Sub() menu.Show(btnHelp, New Point(0, 0), ToolStripDropDownDirection.AboveRight)
-
-        lnkLanguage = New LinkLabel With {.AutoSize = True, .Anchor = AnchorStyles.Right,
-            .Margin = New Padding(0, 4, 0, 0), .Text = Localization.CurrentName}
-        AddHandler lnkLanguage.LinkClicked, Sub() UiLanguage.ShowLanguageMenu(lnkLanguage)
-
         strip.Controls.Add(lblHint, 0, 0)
-        strip.Controls.Add(btnHelp, 1, 0)
-        strip.Controls.Add(lnkLanguage, 2, 0)
         Return strip
-    End Function
-
-    Private Shared Function AddHelpItem(menu As ContextMenuStrip, text As String, onClick As Action) As ToolStripMenuItem
-        Dim item As New ToolStripMenuItem(text)
-        AddHandler item.Click, Sub() onClick()
-        menu.Items.Add(item)
-        Return item
     End Function
 
     Private Sub BuildEnableOverlay()
         pnlEnable = New Panel With {.Dock = DockStyle.Fill, .BackColor = SystemColors.Control, .Visible = False, .Padding = New Padding(28)}
-        Dim lblEnableTitle As New Label With {.Dock = DockStyle.Top, .Height = 36, .Font = New Font(Me.Font.FontFamily, Me.Font.Size * 1.3F, FontStyle.Bold),
+        _fontEnableTitle = New Font(Me.Font.FontFamily, Me.Font.Size * 1.3F, FontStyle.Bold)
+        Dim lblEnableTitle As New Label With {.Dock = DockStyle.Top, .Height = 36, .Font = _fontEnableTitle,
             .Text = Localization.T("Функции сервера выключены")}
         Dim lblEnableIntro As New Label With {.Dock = DockStyle.Top, .Height = 120, .Text = Localization.T("Общий доступ к папкам поднимает локальный SFTP-сервер и требует одного исключения в брандмауэре Windows (один раз, с правами администратора). Пока это не включено, программа ничего не раздаёт.")}
-        btnEnable = New Button With {.Top = 168, .Left = 28, .Width = 300, .Height = 38, .Font = New Font(Me.Font, FontStyle.Bold),
+        btnEnable = New Button With {.Top = 168, .Left = 28, .Width = 300, .Height = 38, .Font = _fontBold,
             .Text = Localization.T("Включить функции сервера..")}
         AddHandler btnEnable.Click, AddressOf OnEnableServer
         pnlEnable.Controls.Add(btnEnable)
@@ -570,15 +551,18 @@ Partial Public NotInheritable Class MainWindow
         Dim oldShare As Image = _shareGlyph
         Dim oldCopy As Image = _copyGlyph
         Dim oldAdd As Image = _addGlyph
+        Dim oldDisks As Image = _disksGlyph
         Dim oldGear As Image = _gearGlyph
         Dim oldEye As Image = _eyeGlyph
         _shareGlyph = CatalogGlyph("action.share", 22)
         _copyGlyph = CatalogGlyph("action.copy", 16)
         _addGlyph = CatalogGlyph("action.add", 18)
+        _disksGlyph = CatalogGlyph("content.disk-container", 18)
         _gearGlyph = CatalogGlyph("app.settings", 18)
         _eyeGlyph = BuildEyeGlyph(LogicalToDeviceUnits(16))
         If btnShare IsNot Nothing Then btnShare.Image = _shareGlyph
         If btnAdd IsNot Nothing Then btnAdd.Image = _addGlyph
+        If btnDisks IsNot Nothing Then btnDisks.Image = _disksGlyph
         If btnSettings IsNot Nothing Then btnSettings.Image = _gearGlyph
         If btnRevealPassword IsNot Nothing Then btnRevealPassword.Image = _eyeGlyph
         For Each sr As ServerRow In _serverRows
@@ -594,6 +578,7 @@ Partial Public NotInheritable Class MainWindow
         DisposeImage(oldShare)
         DisposeImage(oldCopy)
         DisposeImage(oldAdd)
+        DisposeImage(oldDisks)
         DisposeImage(oldGear)
         DisposeImage(oldEye)
     End Sub

@@ -4,11 +4,13 @@ Option Strict On
 Imports System.Collections.Generic
 Imports System.IO
 Imports System.Linq
+Imports System.Threading
+Imports System.Threading.Tasks
 
 ' The viewer's side of the provider layer (006_SPECIFICATION_FILESYSTEM_PROVIDER_LAYER_DOTNET10.md).
 '
 ' A plain folder - local or UNC - is listed through LocalProvider, which is the scan the
-' viewer always had, moved. A configured resource (SFTP and friends, ticket 007) is shown
+' viewer always had, moved. A configured resource (an SFTP server or a network share, ticket 007) is shown
 ' the way an archive is: the file list holds paths in a cache session directory, and each
 ' file appears there the moment something is about to show it, so the decoder, the
 ' prefetch, zoom, OCR and LibVLC keep working on plain paths.
@@ -21,9 +23,13 @@ Imports System.Linq
 ' Modern-only.
 Partial Public Class Main_Form
 
-    ''' <summary>The one open resource, if any - Nothing-equivalent (IsOpen = False) for a
-    ''' plain folder, which is the only thing that can be open until ticket 007.</summary>
+    ''' <summary>The one open resource, if any - IsOpen = False for a plain folder, which is what
+    ''' is on screen unless the user opened an SFTP server or a network share (ticket 007,
+    ''' Main_Form.ResourceOpen.vb).</summary>
     Private ReadOnly resource_Slot As New ResourceSessionSlot()
+    Private resource_Pending As ResourceSession
+    Private resource_Open_Generation As Integer
+    Private resource_Display_Cancel As CancellationTokenSource
 
     ''' <summary>Plain folders. Reads the subfolder preference on every listing, as the
     ''' scan it replaces did - including from the prefetch worker's thread.</summary>
@@ -48,6 +54,9 @@ Partial Public Class Main_Form
     ''' changes, so a refused verb never half-happens.
     ''' </summary>
     Friend Function ResourceBlocksFileOperations(verb As ResourceVerb) As Boolean
+        ' Also while a solid archive is still being unpacked: the picture on screen belongs to
+        ' the previous folder, and the verb was meant for the archive that is opening.
+        If resource_Pending IsNot Nothing Then Return True
         If IsArchiveMode() OrElse IsArchiveOpenPending() Then
             lbl_Status.Text = Localization.T("В архиве файловые операции недоступны")
             Return True
@@ -66,7 +75,9 @@ Partial Public Class Main_Form
     ''' <summary>The same answer without the status line - for surfaces that draw a verb
     ''' disabled rather than refuse it (the recipients overlay).</summary>
     Friend Function ResourceAllows(verb As ResourceVerb) As Boolean
+        ' An archive is view-only (010 §7): the recipients overlay draws every row muted.
         If IsArchiveMode() OrElse IsArchiveOpenPending() Then Return False
+        If resource_Pending IsNot Nothing OrElse resource_Display_Cancel IsNot Nothing Then Return False
         If IsStreamOnScreen() Then Return False
         Dim session As ResourceSession = ActiveResourceSession()
         If session Is Nothing Then Return True
@@ -78,17 +89,21 @@ Partial Public Class Main_Form
     ''' <summary>
     ''' Opens a configured resource as the current folder - the mirror of EnterArchive. The
     ''' folder box shows its locator (<c>sftp://user@host:port/path</c>), never the cache.
-    ''' Nothing in this build calls it yet: the only provider shipped is LocalProvider, and a
-    ''' plain folder is not a resource. Ticket 007 adds the providers and the entry points.
+    ''' Reached through <c>ConnectAndEnterResource</c> (Main_Form.ResourceOpen.vb), which has
+    ''' already connected, asked for what was missing and pinned the host key: this method
+    ''' only turns a connected provider into the current folder, and disposes it again if that
+    ''' fails. A plain folder is not a resource and never comes through here.
     ''' </summary>
-    Friend Sub EnterResource(resource As ResourceDescriptor, provider As IFileSystemProvider)
+    Friend Async Sub EnterResource(resource As ResourceDescriptor, provider As IFileSystemProvider)
         LeaveArchive()
-        ' 057.S07-5: what the folder box and the current folder go back to if opening fails.
-        Dim previous_Folder As String = Current_Folder_Path
-        Dim previous_Box As String = cmbox_Media_Folder.Text
         LeaveResource()
         SlideShowStop()
 
+        Dim generation As Integer = resource_Open_Generation
+        ' Only a plain folder can be restored: the previous resource/archive is closed.
+        Dim previousFolder As String = If(ResourceLocator.IsLocator(Current_Folder_Path) OrElse
+                                          RemoteCachePaths.IsSessionCopy(Current_Folder_Path), "", Current_Folder_Path)
+        Dim previousBox As String = If(previousFolder = "", "", cmbox_Media_Folder.Text)
         Dim sessionDir As String = ""
         Dim session As ResourceSession = Nothing
         Try
@@ -99,7 +114,21 @@ Partial Public Class Main_Form
             If provider.Capabilities.NeedsMaterialisation Then sessionDir = RemoteCacheStore.CreateSession()
             session = New ResourceSession(resource, provider, sessionDir,
                                           CLng(GetModernPreferences().RemoteCacheMaxMb) * 1024L * 1024L)
-            session.LoadListing(resource.RootPath, session.Cancellation)
+            resource_Pending = session
+            Dim listing As Task = Task.Run(Sub() session.LoadListing(resource.RootPath, session.Cancellation))
+            Dim watch As Diagnostics.Stopwatch = Diagnostics.Stopwatch.StartNew()
+            Dim frame As Integer
+            While Not listing.IsCompleted
+                If generation <> resource_Open_Generation OrElse IsDisposed Then Exit While
+                ShowLoadingStatus(resource.DisplayName)
+                ShowLoadingBadge(resource.DisplayName, 0, watch.Elapsed, frame)
+                frame += 1
+                Await Task.WhenAny(listing, Task.Delay(loading_Badge_Frame_Ms))
+            End While
+            Await listing
+            If generation <> resource_Open_Generation OrElse IsDisposed Then Return
+            resource_Pending = Nothing
+            HideLoadingBadge()
             resource_Slot.Enter(session, AddressOf ReleaseActiveMedia)
 
             Current_Folder_Path = session.Locator
@@ -114,6 +143,7 @@ Partial Public Class Main_Form
             was_External_Input_Previously = False
 
             ReadShowMediaFile(Mode_FolderAndFile)
+            ShowResourceListingLimit(session)
             ApplyRecipientsOverlayHealth()
         Catch ex As Exception
             AppFileLogger.LogException("Resource: opening " & If(resource?.DisplayName, ""), ex)
@@ -121,20 +151,27 @@ Partial Public Class Main_Form
                 resource_Slot.Leave(AddressOf ReleaseActiveMedia)
             Else
                 session?.Dispose()
+                ' A connection that never became a session is still a connection: let go of it.
+                If session Is Nothing Then TryCast(provider, IDisposable)?.Dispose()
                 RemoteCacheStore.DeleteSession(sessionDir)
             End If
-            ' 057.S07-5: the box must never name the locator of a session that just closed -
-            ' restored to the previous folder when that is a plain one, cleared when it too
-            ' was a locator (its session is closed as well).
-            ResourceSessionSlot.RestoreFolderAfterFailure(previous_Folder, previous_Box,
-                Sub(path, text)
-                    Current_Folder_Path = path
-                    is_TextBox_Editing = True
-                    cmbox_Media_Folder.Text = text
-                    is_TextBox_Editing = False
-                End Sub)
-            lbl_Status.Text = Localization.T("Не удалось открыть ресурс")
+            If generation = resource_Open_Generation AndAlso Not IsDisposed Then
+                resource_Pending = Nothing
+                HideLoadingBadge()
+                RestoreResourceFolder(previousFolder, previousBox)
+                ' One sentence that says WHICH kind of trouble (the folder is gone, the server said no, the
+                ' link dropped), never the exception's own text.
+                lbl_Status.Text = Localization.TF("«{0}»: {1}", If(resource?.DisplayName, ""),
+                                                  ResourceMessages.ForFailure(ResourceFailure.FromException(ex)))
+            End If
         End Try
+    End Sub
+
+    Private Sub ShowResourceListingLimit(session As ResourceSession)
+        Dim sftp As SftpProvider = TryCast(session.Provider, SftpProvider)
+        If sftp IsNot Nothing AndAlso sftp.WasTruncated Then
+            lbl_Status.Text = Localization.TF("Показаны первые {0} записей", session.Entries.Count.ToString())
+        End If
     End Sub
 
     ''' <summary>
@@ -144,6 +181,18 @@ Partial Public Class Main_Form
     ''' file first (ResourceSessionSlot.Leave).
     ''' </summary>
     Friend Sub LeaveResource()
+        resource_Open_Generation += 1
+        ' A connect that is still dialling belongs to the context being left (Main_Form.ResourceOpen.vb).
+        resource_Connect_Cancel?.Cancel()
+        resource_Display_Cancel?.Cancel()
+        resource_Display_Cancel = Nothing
+        If resource_Pending IsNot Nothing Then
+            Dim pending As ResourceSession = resource_Pending
+            resource_Pending = Nothing
+            pending.Dispose()
+            RemoteCacheStore.DeleteSession(pending.SessionDir)
+        End If
+        HideLoadingBadge()
         If Not resource_Slot.IsOpen Then Return
         resource_Slot.Leave(Sub()
                                 SlideShowStop()
@@ -161,12 +210,22 @@ Partial Public Class Main_Form
     ''' </summary>
     Private Function ProviderFileEntries(folderPath As String) As List(Of FileEntry)
         Dim session As ResourceSession = ActiveResourceSession()
-        Dim listed As IReadOnlyList(Of ResourceEntry) =
-            If(session IsNot Nothing, session.Entries, local_Provider.ListEntries(folderPath, Threading.CancellationToken.None))
+        Dim listed As IReadOnlyList(Of ResourceEntry) = Nothing
+        If session IsNot Nothing Then
+            listed = session.Entries
+        Else
+            ' The walk of a plain folder may already have been done off the UI thread
+            ' (014 U-03c, Main_Form.FolderScanAsync.vb): the listing is taken from there, and the
+            ' FILTER below still runs here, on the thread that owns all_Supported_Extensions.
+            ' A scan that failed rethrows its own exception, so GetFiles classifies it exactly
+            ' as it classifies a synchronous one.
+            listed = TakeScannedListing(folderPath)
+            If listed Is Nothing Then listed = local_Provider.ListEntries(folderPath, Threading.CancellationToken.None)
+        End If
 
         Dim rows As New List(Of FileEntry)(listed.Count)
         For Each entry As ResourceEntry In listed
-            If Not all_Supported_Extensions.Contains(Path.GetExtension(entry.Name).ToLowerInvariant()) Then Continue For
+            If entry.IsDirectory OrElse Not MediaBrowsing.IsEligible(entry.FullPath, all_Supported_Extensions) Then Continue For
             rows.Add(New FileEntry With {
                 .FilePath = entry.LocalPath,
                 .FileSize = entry.Length,
@@ -190,7 +249,7 @@ Partial Public Class Main_Form
             Return -1
         End Try
         ' Enumerable.Count by name: on an IReadOnlyList VB binds ".Count(" to the property.
-        Return Enumerable.Count(listed, Function(entry) all_Supported_Extensions.Contains(Path.GetExtension(entry.Name).ToLowerInvariant()))
+        Return Enumerable.Count(listed, Function(entry) Not entry.IsDirectory AndAlso MediaBrowsing.IsEligible(entry.FullPath, all_Supported_Extensions))
     End Function
 
     ' --------------------------------------------------------- bytes on this machine ----
@@ -201,16 +260,80 @@ Partial Public Class Main_Form
     ''' the file exists - until it is fetched it does not, and the display path drops a
     ''' missing file from the list.
     ''' </summary>
-    Friend Sub EnsureEntryLocal(filePath As String)
+    Friend Async Function EnsureEntryLocal(filePath As String) As Task(Of Boolean)
         EnsureArchiveEntryOnDisk(filePath)
-
         Dim session As ResourceSession = ActiveResourceSession()
-        If session Is Nothing OrElse String.IsNullOrEmpty(filePath) Then Return
-        Dim outcome As EnsureLocalOutcome = session.TryEnsureLocal(
-            filePath, protectAround:=Math.Max(1, RemoteCacheStore.PrefetchDepth(session.Provider.Capabilities)))
-        If outcome = EnsureLocalOutcome.Failed Then
+        If session Is Nothing OrElse String.IsNullOrEmpty(filePath) Then Return True
+        Dim generation As Integer = media_Generation
+        resource_Display_Cancel?.Cancel()
+        Dim cancel As New CancellationTokenSource()
+        resource_Display_Cancel = cancel
+        Dim watch As Diagnostics.Stopwatch = Diagnostics.Stopwatch.StartNew()
+        Dim savedStatus As String = Nothing
+        Try
+            Dim depth As Integer = Math.Max(1, RemoteCacheStore.PrefetchDepth(session.Provider.Capabilities))
+            Dim token As CancellationToken = cancel.Token
+            Dim fetch As Task(Of EnsureLocalOutcome) = Task.Run(
+                Function() session.TryEnsureLocal(filePath, token, protectAround:=depth))
+            Dim frame As Integer
+            While Not fetch.IsCompleted
+                If generation <> media_Generation OrElse session IsNot ActiveResourceSession() OrElse IsDisposed Then
+                    cancel.Cancel()
+                    Return False
+                End If
+                If watch.ElapsedMilliseconds >= loading_Badge_Delay_Ms Then
+                    If savedStatus Is Nothing Then savedStatus = ShowLoadingStatus(filePath)
+                    ShowLoadingBadge(filePath, If(session.EntryAt(filePath)?.Length, 0L), watch.Elapsed, frame)
+                    frame += 1
+                End If
+                Await Task.WhenAny(fetch, Task.Delay(loading_Badge_Frame_Ms))
+            End While
+            Dim outcome As EnsureLocalOutcome = Await fetch
+            If generation <> media_Generation OrElse session IsNot ActiveResourceSession() OrElse IsDisposed Then Return False
+            If outcome = EnsureLocalOutcome.Ready OrElse outcome = EnsureLocalOutcome.NotOurs Then Return True
+            BlankActiveMediaSurface()
             lbl_Status.Text = Localization.T("Не удалось получить файл с ресурса")
-        End If
+            savedStatus = Nothing
+            Return False
+        Catch ex As Exception
+            AppFileLogger.LogException("Resource: fetching for display", ex)
+            If generation = media_Generation AndAlso Not IsDisposed Then
+                BlankActiveMediaSurface()
+                lbl_Status.Text = Localization.T("Не удалось получить файл с ресурса")
+                savedStatus = Nothing
+            End If
+            Return False
+        Finally
+            If resource_Display_Cancel Is cancel Then
+                resource_Display_Cancel = Nothing
+                HideLoadingBadge()
+                RestoreLoadingStatus(savedStatus)
+            End If
+            cancel.Dispose()
+        End Try
+    End Function
+
+    Private Sub RestoreResourceFolder(folder As String, box As String)
+        ResourceSessionSlot.RestoreFolderAfterFailure(folder, box,
+            Sub(path, text)
+                Current_Folder_Path = path
+                is_TextBox_Editing = True
+                Try
+                    cmbox_Media_Folder.Text = text
+                Finally
+                    is_TextBox_Editing = False
+                End Try
+            End Sub)
+        Current_File_Name = ""
+        Current_Image_Path = ""
+        current_File_Index = 0
+        total_File_Count = 0
+        files_Array = Array.Empty(Of String)()
+        files_List = New List(Of String)()
+        BlankActiveMediaSurface()
+        lbl_File_Number.Text = ""
+        lbl_Current_File.Text = ""
+        ApplyRecipientsOverlayHealth()
     End Sub
 
     ''' <summary>What to call a resource file on screen: its own name, never the cache path.</summary>
@@ -219,6 +342,29 @@ Partial Public Class Main_Form
         If session Is Nothing OrElse Not session.NeedsMaterialisation Then Return ""
         Dim entry As ResourceEntry = session.EntryAt(filePath)
         Return If(entry Is Nothing, "", entry.Name)
+    End Function
+
+    ''' <summary>The name a file goes under when it is moved or copied into a slot: its own name. A
+    ''' file of an open resource is listed as its cache copy, "00042_photo.jpg", and that index
+    ''' prefix used to become the file's name in the slot.</summary>
+    Friend Function TransferNameOf(filePath As String) As String
+        Dim real As String = ResourceDisplayName(If(filePath, ""))
+        If real.Length > 0 Then Return real
+        Return Path.GetFileName(If(filePath, ""))
+    End Function
+
+    ''' <summary>Where a file really is, spelled the way a slot would name it: a resource file's
+    ''' address on its server (a locator for SFTP, its UNC path for a share), any other file its
+    ''' own path. What "the slot is the folder this file is already in" is decided on.</summary>
+    Friend Function LogicalPathOf(filePath As String) As String
+        Dim session As ResourceSession = ActiveResourceSession()
+        If session Is Nothing OrElse Not session.NeedsMaterialisation Then Return filePath
+        Dim entry As ResourceEntry = session.EntryAt(filePath)
+        If entry Is Nothing Then Return filePath
+        If session.Resource IsNot Nothing AndAlso session.Resource.Kind = ResourceKind.Sftp Then
+            Return ResourceLocator.AppendName(ResourceLocator.Build(session.Resource, ResourceTransfer.ParentOf(entry.FullPath)), entry.Name)
+        End If
+        Return entry.FullPath
     End Function
 
     ''' <summary>

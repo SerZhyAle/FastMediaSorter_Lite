@@ -213,6 +213,10 @@ Public Class LoggerOwnershipTests
     <InlineData(4)>
     <InlineData(5)>
     <InlineData(6)>
+    <InlineData(7)>
+    <InlineData(8)>
+    <InlineData(9)>
+    <InlineData(10)>
     Public Sub A_failure_at_any_step_gives_back_everything_that_attempt_acquired(failingStep As Integer)
         Using box As New Sandbox()
             AppFileLogger.InitializeFaultInjector = Sub(stepNumber)
@@ -238,6 +242,10 @@ Public Class LoggerOwnershipTests
     <InlineData(3)>
     <InlineData(5)>
     <InlineData(6)>
+    <InlineData(7)>
+    <InlineData(8)>
+    <InlineData(9)>
+    <InlineData(10)>
     Public Sub A_retry_after_a_failure_subscribes_once_and_holds_one_handle(failingStep As Integer)
         Using box As New Sandbox()
             Dim failuresLeft As Integer = 1

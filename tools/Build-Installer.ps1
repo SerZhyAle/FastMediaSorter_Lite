@@ -195,6 +195,7 @@ if (Test-Path $payloadDir) {
     $companionDest = Join-Path $stageDir "companion"
     New-Item -ItemType Directory -Path $companionDest -Force | Out-Null
     Copy-Item -Path (Join-Path $payloadDir "*") -Destination $companionDest -Recurse -Force
+    & (Join-Path $PSScriptRoot "Stage-FileDoPayload.ps1") -Destination $stageDir
     Write-Host "Bundled companion worker -> companion\"
 } else {
     Write-Warning "Companion payload not found ($payloadDir) - the installer will ship without the Android Share worker."
@@ -224,7 +225,7 @@ if (Test-Path $modernProj) {
 }
 
 # The Companion app itself (Share Manager, net10) - published self-contained next
-# to the LITE exe, so the installer's `share` component can ship it.
+# to the viewer exe, so the installer's `share` component can ship it.
 $companionProj = Join-Path $solutionDir "src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj"
 if (Test-Path $companionProj) {
     $companionPub = Join-Path $stageDir "companion-publish-tmp"

@@ -5,7 +5,7 @@ Option Strict On
 ''' (VB SaveSetting/GetSetting, HKCU ...\SZA\FastMediaSorter) - mirrors the
 ''' OcrTranslateSettings POCO pattern. The shared-folder list itself is NOT
 ''' duplicated here: the worker owns and persists it (shares.json). Only
-''' LITE-side UX state lives here.
+''' viewer-side UX state lives here.
 ''' </summary>
 Public Class ShareSettings
 
@@ -16,7 +16,7 @@ Public Class ShareSettings
     ''' double-click on the exe, a script - instead of the tray icon alone. Independent of
     ''' <see cref="AutostartEnabled"/>: that one decides WHETHER the program starts, this one
     ''' whether it shows itself. Default off, and off means off on every such start; only an
-    ''' explicit request (a folder to share, Program.ShowWindowFlag from LITE's Share buttons,
+    ''' explicit request (a folder to share, Program.ShowWindowFlag from the viewer's Share buttons,
     ''' the tray icon) opens the window regardless.</summary>
     Public Property OpenWindowOnStartup As Boolean = False ' Share_OpenWindowOnStartup
 

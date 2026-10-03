@@ -43,6 +43,13 @@ Friend NotInheritable Class ChromeMetrics
     Public Const CaptionPadding As Integer = 8
     ''' <summary>The space between the media edge and a floating panel.</summary>
     Public Const ScreenMargin As Integer = 8
+    ''' <summary>The gap between the window edge and the toolbar/status panels: none - they start flush
+    ''' at the start edge (left; right in a right-to-left language) and the top (status: bottom) of the
+    ''' media area, the way the docked toolbar did.</summary>
+    Public Const PanelEdgeInset As Integer = 0
+    ''' <summary>The glyph of the pin button in a panel's corner (the button itself is a
+    ''' <see cref="MinTarget"/> wide slot, so the hit target stays at the floor).</summary>
+    Public Const PinGlyphSize As Integer = 12
     ''' <summary>How far past a panel the pointer still counts as "near it" - the reveal zone.</summary>
     Public Const HotZoneMargin As Integer = 48
     Public Const FocusRingWidth As Integer = 2

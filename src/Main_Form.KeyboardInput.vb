@@ -38,6 +38,12 @@ Partial Public Class Main_Form
         If msg.Msg = WM_KEYDOWN OrElse msg.Msg = WM_SYSKEYDOWN Then
             last_KeyDown_Code = keyData And Keys.KeyCode
             last_KeyDown_Was_Repeat = KeyRouting.IsAutoRepeat(msg.LParam.ToInt64())
+#If Not NETFRAMEWORK Then
+            ' F10 enters the floating chrome's focus mode, and while it is on the chrome owns the keys
+            ' (002 section 5). Never an auto-repeat: holding F10 must not flip the mode back and forth.
+            If Not last_KeyDown_Was_Repeat AndAlso ChromeHandleKey(keyData) Then Return True
+            If last_KeyDown_Was_Repeat AndAlso (chrome_Keyboard_Mode OrElse chrome_F10_Pending) Then Return True
+#End If
         End If
         Return MyBase.ProcessCmdKey(msg, keyData)
     End Function
@@ -50,6 +56,10 @@ Partial Public Class Main_Form
     ''' not inherit a stale "repeat" and be swallowed: the release clears it.</summary>
     Private Sub Form1_KeyUp(sender As Object, e As KeyEventArgs) Handles MyBase.KeyUp
         If e.KeyCode = last_KeyDown_Code Then last_KeyDown_Was_Repeat = False
+#If Not NETFRAMEWORK Then
+        ' The F10 the chrome took must not reach Windows as "open the system menu".
+        If ChromeSwallowKeyUp(e.KeyCode) Then e.Handled = True
+#End If
     End Sub
 
     Private Shared Function RecipientSlotFromKey(keyCode As Keys) As Integer
@@ -69,23 +79,44 @@ Partial Public Class Main_Form
     End Function
 
     Public Sub KeybUse(e As KeyEventArgs, was_Slide_Show_Mode As Boolean)
-#If Not NETFRAMEWORK Then
-        If IsArchiveOpenPending() Then
-            If e.KeyCode = Keys.Escape Then CancelPendingArchiveOpen()
-            e.Handled = True
-            e.SuppressKeyPress = True
-            Return
-        End If
-#End If
         ' A key that moves, copies or deletes the file acts once per press (audit 047,
         ' C-20): each auto-repeat that arrived after the previous operation had finished
         ' took the next file, so one long press sorted a run of files nobody had looked at.
         ' Swallowed, so the repeat does not reach a focused control either.
-        If KeyRouting.IsDestructiveKey(e.KeyCode) AndAlso IsAutoRepeatOf(e.KeyCode) Then
+#If Not NETFRAMEWORK Then
+        If resource_Pending IsNot Nothing Then
+            If e.KeyCode = Keys.Escape Then LeaveResource()
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Return
+        End If
+        ' Asked about the ACTION the press resolves to, after the custom map (audit
+        ' 057.S05-5): a key list let a custom key bound to "delete" or a slot repeat, and
+        ' took the repeat away from "next file" rebound onto a digit.
+        Dim destructive_Press As Boolean = CustomHotkeys.IsDestructivePress(custom_Hotkeys, e.KeyData)
+#Else
+        Dim destructive_Press As Boolean = KeyRouting.IsDestructiveKey(e.KeyCode)
+#End If
+        If destructive_Press AndAlso IsAutoRepeatOf(e.KeyCode) Then
             e.Handled = True
             e.SuppressKeyPress = True
             Exit Sub
         End If
+
+#If Not NETFRAMEWORK Then
+        ' A solid archive is being unpacked (010 §5.2): Esc stops it, and until it opens the
+        ' other keys are held - the picture on screen is still the PREVIOUS folder's, and a
+        ' flip or a delete meant for the archive would land on that. Typing in the folder box
+        ' is left alone (Enter there is itself a change of context and cancels the open), and
+        ' Ctrl/Alt chords go to Windows as always (Alt+F4 must still close the window).
+        If IsArchiveOpenPending() AndAlso Not e.Control AndAlso Not e.Alt AndAlso
+           Not (e.KeyCode <> Keys.Escape AndAlso cmbox_Media_Folder.Visible AndAlso cmbox_Media_Folder.Focused) Then
+            If e.KeyCode = Keys.Escape Then CancelPendingArchiveOpen(announce:=True)
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Exit Sub
+        End If
+#End If
 
         If cmbox_Media_Folder.Visible AndAlso Me.cmbox_Media_Folder.Focused Then
             SlideShowStop()
@@ -97,6 +128,8 @@ Partial Public Class Main_Form
                 ' (audit 052 A-13/G-06) - and before Current_Folder_Path is overwritten,
                 ' which is what the archive mode is recognised by.
                 LeaveArchiveUnlessShowing(cmbox_Media_Folder.Text)
+                ' An address like sftp://user@host/path is a resource, not a folder to read.
+                If TryOpenAsResourceLocator(cmbox_Media_Folder.Text) Then Exit Sub
 #End If
                 Current_Folder_Path = cmbox_Media_Folder.Text
                 ReadShowMediaFile(Mode_FolderAndFile)
@@ -123,6 +156,15 @@ Partial Public Class Main_Form
         ' looked at, so Alt+F4 opened the file chooser - and, handled, kept the window open
         ' - Alt+Space flipped a file, Ctrl+1 moved one and Alt+D deleted one (audit 047,
         ' C-10). Such a combination is left to Windows and the focused control.
+#If Not NETFRAMEWORK Then
+        If e.Control AndAlso Not e.Alt AndAlso Not e.Shift AndAlso (e.KeyCode = Keys.Home OrElse e.KeyCode = Keys.End) Then
+            SlideShowStop()
+            JumpTo(If(e.KeyCode = Keys.Home, 0, total_File_Count - 1), If(e.KeyCode = Keys.Home, "первый файл", "последний файл"))
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Return
+        End If
+#End If
         If Not KeyRouting.MainMapAccepts(e.KeyData) Then Exit Sub
 
         ' An unconfigured recipient key is not an action. In particular, do not stop
@@ -139,6 +181,11 @@ Partial Public Class Main_Form
         ' independent of Shift, and it only claims those four grey keys - NumPad 0..9
         ' stay with sorting, the arrows stay navigation. Returns False for anything
         ' else, so every historical binding falls through untouched.
+        If TryHandleDocumentKey(e) Then
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Exit Sub
+        End If
         If TryHandleZoomKey(e) Then
             e.Handled = True
             Exit Sub
@@ -228,19 +275,46 @@ Partial Public Class Main_Form
                 ' there: everywhere else Enter has never done anything in this window, so
                 ' this takes nothing away (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §3.3).
                 Case Keys.Enter
-                    If IsSecurePlaceholderLocked() Then
+                    If IsContentPlaceholderShown() OrElse IsTextDocumentShown() OrElse IsPdfDocumentShown() Then
+                        OpenContentInDefaultProgram()
+                    ElseIf IsSecurePlaceholderLocked() Then
                         SecureUnlockCurrent()
                     Else
                         key_Handled = False
                     End If
 #End If
-                ' Keys.N is deliberately NOT here: it used to be, and since the first
-                ' matching Case wins, its own branch below ("jump to file number") was
-                ' unreachable. Space/Right/PageDown already cover "next file".
-                Case Keys.Space, Keys.Right, Keys.BrowserForward, Keys.Next, Keys.PageDown
+                Case Keys.PageDown, Keys.Next
+#If Not NETFRAMEWORK Then
+                    If IsPdfDocumentShown() Then
+                        PdfNextPage()
+                    ElseIf IsTextDocumentShown() Then
+                        ScrollTextPages(1)
+                    Else
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1310: to next file")
+                        ReadShowMediaFile(Mode_Next)
+                    End If
+#Else
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1310: to next file")
                     ReadShowMediaFile(Mode_Next)
-                Case Keys.P, Keys.Left, Keys.B, Keys.BrowserBack, Keys.Back, Keys.PageUp
+#End If
+                Case Keys.PageUp
+#If Not NETFRAMEWORK Then
+                    If IsPdfDocumentShown() Then
+                        PdfPrevPage()
+                    ElseIf IsTextDocumentShown() Then
+                        ScrollTextPages(-1)
+                    Else
+                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1320: to prev file")
+                        ReadShowMediaFile(Mode_Prev)
+                    End If
+#Else
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1320: to prev file")
+                    ReadShowMediaFile(Mode_Prev)
+#End If
+                Case Keys.Space, Keys.Right, Keys.BrowserForward
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1310: to next file")
+                    ReadShowMediaFile(Mode_Next)
+                Case Keys.P, Keys.Left, Keys.B, Keys.BrowserBack, Keys.Back
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1320: to prev file")
                     ReadShowMediaFile(Mode_Prev)
                 Case Keys.Y
@@ -267,10 +341,36 @@ Partial Public Class Main_Form
                 Case Keys.End, Keys.E, Keys.L, Keys.BrowserStop
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1380: to last file")
                     JumpTo(total_File_Count - 1, "последний файл")
+#If Not NETFRAMEWORK Then
+                Case Keys.Add, Keys.Oemplus
+                    If IsTextDocumentShown() Then
+                        ZoomText(0.1F)
+                    Else
+                        key_Handled = False
+                    End If
+                Case Keys.Subtract, Keys.OemMinus
+                    If IsTextDocumentShown() Then
+                        ZoomText(-0.1F)
+                    Else
+                        key_Handled = False
+                    End If
+                Case Keys.Divide
+                    If IsTextDocumentShown() Then
+                        ResetTextZoom()
+                    Else
+                        key_Handled = False
+                    End If
+#End If
                 Case Keys.F, Keys.F4
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1385: choose file")
                     Choose_file()
                 Case Keys.N
+#If Not NETFRAMEWORK Then
+                    If IsTextDocumentShown() OrElse IsPdfDocumentShown() OrElse IsContentPlaceholderShown() Then
+                        ReadShowMediaFile(Mode_Next)
+                        Exit Select
+                    End If
+#End If
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1386: jump to number")
                     Jump_To_file_Number()
                 Case Keys.D, Keys.Delete
@@ -470,12 +570,18 @@ Partial Public Class Main_Form
                     Picture_Box_2.Image.RotateFlip(rot)
                     Picture_Box_2.Invalidate()
                     rotated = True
+#If Not NETFRAMEWORK Then
+                    MarkBoxPictureMutated(2)   ' no longer the file's pixels: never kept for a flip back (014 U-01)
+#End If
                 End If
             Else
                 If is_PictureBox1_Visible AndAlso Picture_Box_1.Image IsNot Nothing Then
                     Picture_Box_1.Image.RotateFlip(rot)
                     Picture_Box_1.Invalidate()
                     rotated = True
+#If Not NETFRAMEWORK Then
+                    MarkBoxPictureMutated(1)
+#End If
                 End If
             End If
             ' Counted only when a picture really turned: the count is part of the OCR

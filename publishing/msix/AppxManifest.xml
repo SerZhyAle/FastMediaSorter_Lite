@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  MSIX package manifest for FastMediaSorter LITE (Microsoft Store / sideload).
+  MSIX package manifest for Fast Media Sorter & Sharing for Windows (Microsoft Store / sideload; the Store name stays FastMediaSorter LITE).
 
   This wraps FastMediaSorter_LITE.exe - the .NET 10 x64 mainline viewer, published self-contained
   (the runtime is inside the exe) - plus its offline payload (LibVLC, Tesseract tessdata, flag
@@ -29,8 +29,12 @@
     __VERSION__           4-part version with the 4th part = 0 (the Store reserves the revision).
                           build-msix.ps1 derives it from the exe's YY.M.D.HHmm stamp.
   The DisplayName below stays "FastMediaSorter LITE" (the reserved Store name) - do NOT
-  rename it or the submission is rejected. Only the Partner Center listing DESCRIPTION text
-  is refreshed with the new brand name; see docs/guides/STORE_PUBLISHING.md.
+  rename it or the submission is rejected. The product's visible name changed (ticket 111),
+  but the owner decided on 2026-10-03 that the Store name does not: only the in-app
+  inscriptions and the Partner Center listing DESCRIPTION text carry the new name; see
+  docs/guides/PRODUCT_NAMING.md and docs/guides/STORE_PUBLISHING.md. The Share Manager
+  application further down keeps the Share Manager name (an in-package label, not the
+  Store name).
 -->
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
@@ -65,7 +69,7 @@
     <Application Id="FastMediaSorterLITE" Executable="FastMediaSorter_LITE.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="FastMediaSorter LITE"
-        Description="Fast image and video viewer/sorter for Windows: slideshow, panel navigation, one-key move/copy/rename/delete, plus on-image OCR translation."
+        Description="Sort, view and share your images and videos: slideshow, panel navigation, one-key move/copy/rename/delete, on-image OCR translation, and sharing folders with your phone."
         BackgroundColor="#171B26"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
@@ -103,13 +107,13 @@
     </Application>
 
     <!-- Second app in the SAME package: the Android Folder Share companion
-         ("Fast Media Sorter: Share Manager", net10 self-contained exe). One MSIX,
+         ("Share Manager - Fast Media Sorter & Sharing", net10 self-contained exe). One MSIX,
          one Store product, two Start-menu tiles. The bundled Go SFTP worker
          (companion\fms-share-worker.exe) is just a payload file this app launches. -->
     <Application Id="FastMediaSorterShareManager" Executable="FastMediaSorterCompanion.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="Fast Media Sorter: Share Manager"
-        Description="Share your PC folders with the Fast Media Sorter Android app over a local SFTP server, paired by scanning a QR code."
+        DisplayName="Share Manager - Fast Media Sorter &amp; Sharing"
+        Description="Share your PC folders with the Android app over a local SFTP server, paired by scanning a QR code."
         BackgroundColor="#171B26"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
@@ -121,7 +125,7 @@
              container an HKCU\Run write is virtualized away, so autostart must be a
              manifest StartupTask; the user enables it in Settings > Startup apps. -->
         <uap5:Extension Category="windows.startupTask" Executable="FastMediaSorterCompanion.exe" EntryPoint="Windows.FullTrustApplication">
-          <uap5:StartupTask TaskId="FastMediaSorterShareManagerAutostart" Enabled="false" DisplayName="Fast Media Sorter: Share Manager" />
+          <uap5:StartupTask TaskId="FastMediaSorterShareManagerAutostart" Enabled="false" DisplayName="Share Manager - Fast Media Sorter &amp; Sharing" />
         </uap5:Extension>
       </Extensions>
     </Application>

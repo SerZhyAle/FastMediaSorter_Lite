@@ -12,6 +12,7 @@
 {"path": "docs/contracts/AUTOMATED-CHECKS.md", "topic": "AUTOMATED-CHECKS", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for AUTOMATED-CHECKS"], "role": "source"}
 {"path": "docs/contracts/CAPTURE-OUTPUT.md", "topic": "CAPTURE-OUTPUT", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CAPTURE-OUTPUT"], "role": "source"}
 {"path": "docs/contracts/CLIPBOARD-GUARD.md", "topic": "CLIPBOARD-GUARD", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CLIPBOARD-GUARD"], "role": "source"}
+{"path": "docs/contracts/CONTRACT_BROADCAST_RESOURCE.md", "topic": "CONTRACT_BROADCAST_RESOURCE", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CONTRACT_BROADCAST_RESOURCE"], "role": "source"}
 {"path": "docs/contracts/DIAGNOSTIC-REPORT.md", "topic": "DIAGNOSTIC-REPORT", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for DIAGNOSTIC-REPORT"], "role": "source"}
 {"path": "docs/contracts/INPUT-CONTROLS.md", "topic": "INPUT-CONTROLS", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for INPUT-CONTROLS"], "role": "source"}
 {"path": "docs/contracts/DOC-QUALITY.md", "topic": "DOC-QUALITY", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for DOC-QUALITY"], "role": "source"}
@@ -33,11 +34,13 @@
 {"path": "docs/contracts/RULE-ADOPTION.md", "topic": "RULE-ADOPTION", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for RULE-ADOPTION"], "role": "source"}
 {"path": "docs/contracts/SHARE-SESSION.md", "topic": "SHARE-SESSION", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for SHARE-SESSION"], "role": "source"}
 {"path": "docs/contracts/STREAM-BANK.md", "topic": "STREAM-BANK", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for STREAM-BANK"], "role": "source"}
+{"path": "docs/contracts/WINDOWS-STORE.md", "topic": "WINDOWS-STORE", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for WINDOWS-STORE"], "role": "source"}
 {"path": "docs/contracts/WAVE-PARTICLES.md", "topic": "WAVE-PARTICLES", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for WAVE-PARTICLES"], "role": "source"}
 {"path": "docs/contracts/WORKER-IPC.md", "topic": "WORKER-IPC", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for WORKER-IPC"], "role": "source"}
 {"path": "docs/guides/BUILD_AND_RELEASE.md", "topic": "BUILD AND RELEASE", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/COMPANION_TEST_PLAN.md", "topic": "COMPANION TEST PLAN", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/DOCUMENTATION_CONCEPT.md", "topic": "DOCUMENTATION CONCEPT", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/guides/PRODUCT_NAMING.md", "topic": "PRODUCT NAMING", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/PROGRESS_DOTNET10_MODERN_BUILD.md", "topic": "PROGRESS DOTNET10 MODERN BUILD", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/REPOSITORY_LAYOUT.md", "topic": "REPOSITORY LAYOUT", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/RESEARCH_COMPETITOR_FEATURES.md", "topic": "RESEARCH COMPETITOR FEATURES", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
@@ -50,7 +53,9 @@
 {"path": "docs/publish-folders-android.html", "topic": "publish-folders-android", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "glossary.html", "topic": "glossary", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "how-to-archives.html", "topic": "how-to-archives", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "how-to-resources.html", "topic": "how-to-resources", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "how-to-editor.html", "topic": "how-to-editor", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "how-to-filedo-disks.html", "topic": "how-to-filedo-disks", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "how-to-keys.html", "topic": "how-to-keys", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "how-to-ocr.html", "topic": "how-to-ocr", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "how-to-setup.html", "topic": "how-to-setup", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
@@ -92,3 +97,4 @@
 {"path": "tools/audit-slice-template.md", "topic": "audit-slice-template", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "topics.html", "topic": "topics", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "docs/contracts/DISK-SHARE.md", "topic": "DISK-SHARE", "area": "contracts", "triggers": ["Adoption, disk lifecycle, ownership, bundle, hosting or conformance changes for DISK-SHARE"], "role": "source"}

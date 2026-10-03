@@ -2,10 +2,39 @@ Option Strict On
 
 Imports System.Diagnostics
 Imports System.IO
+Imports System.Runtime.InteropServices
+Imports System.Text
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 Partial Public Class Main_Form
+
+    <DllImport("shlwapi.dll", EntryPoint:="AssocQueryStringW", CharSet:=CharSet.Unicode)>
+    Private Shared Function AssocQueryString(flags As UInteger, str As Integer, pszAssoc As String,
+                                             pszExtra As String, pszOut As StringBuilder,
+                                             ByRef pcchOut As UInteger) As Integer
+    End Function
+
+    ''' <summary>Paths already handed to the shell AUTOMATICALLY in this session (ticket 090):
+    ''' a second failure of the same file is not handed over again.</summary>
+    Private ReadOnly external_Player_Tried As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+
+    ''' <summary>The executable Windows has registered for the extension, or "" when the query
+    ''' cannot say (nothing registered, a Store app alias). Never throws.</summary>
+    Private Shared Function RegisteredHandlerExecutable(video_File_Path As String) As String
+        Try
+            Dim extension As String = Path.GetExtension(video_File_Path)
+            If String.IsNullOrEmpty(extension) Then Return ""
+            Const ASSOCF_NOTRUNCATE As UInteger = &H20UI
+            Const ASSOCSTR_EXECUTABLE As Integer = 2
+            Dim buffer As New StringBuilder(1024)
+            Dim capacity As UInteger = CUInt(buffer.Capacity)
+            If AssocQueryString(ASSOCF_NOTRUNCATE, ASSOCSTR_EXECUTABLE, extension, Nothing, buffer, capacity) <> 0 Then Return ""
+            Return buffer.ToString()
+        Catch ex As Exception
+            Return ""
+        End Try
+    End Function
 
     Private Function ClampVideoVolume(volume As Double) As Double
         Return Math.Max(0.0, Math.Min(1.0, volume))
@@ -115,20 +144,33 @@ Partial Public Class Main_Form
 
     ''' <summary>Hands the file to whatever Windows plays it with. Takes the path as an
     ''' argument: it used to read Current_File_Name, which by the time a slow VLC init
-    ''' gave up could be a completely different file.</summary>
-    Private Sub TryOpenVideoWithDefaultPlayer(video_File_Path As String)
+    ''' gave up could be a completely different file.
+    ''' <paramref name="automatic"/> is False only for the explicit menu item. The hand-over is
+    ''' refused when the registered handler is one of our own exes or - for an automatic one -
+    ''' when this path was already handed over (ticket 090; <see cref="ExternalPlayerPolicy"/>).</summary>
+    Private Sub TryOpenVideoWithDefaultPlayer(video_File_Path As String, Optional automatic As Boolean = True)
 #If Not NETFRAMEWORK Then
         ' Never for a secure container (§5.4 rule 7, §7). This hands a PATH to whatever
         ' Windows has registered, and for a container that program either cannot open it
         ' or - worse - unpacks it somewhere. The honest message replaces the fallback
         ' rather than the fallback being attempted and failing quietly.
-        If IsSecureContainerExtension(Path.GetExtension(video_File_Path)) Then
+        If IsSecureContainerExtension(NavigationRules.ExtensionKey(video_File_Path)) Then
             lbl_Status.Text = Localization.T("Защищённый файл нельзя открыть во внешнем плеере")
             Return
         End If
 #End If
         Try
             If Not String.IsNullOrEmpty(video_File_Path) AndAlso File.Exists(video_File_Path) Then
+                Dim verdict As ExternalPlayerPolicy.Verdict = ExternalPlayerPolicy.Decide(
+                    video_File_Path, RegisteredHandlerExecutable(video_File_Path),
+                    Common_Module.Viewer_Process_Names, external_Player_Tried, automatic)
+                If verdict <> ExternalPlayerPolicy.Verdict.Allow Then
+                    AppFileLogger.WriteLine("External player hand-over refused (" & verdict.ToString() & "): " & video_File_Path)
+                    ' Appended, not replaced: the caller has just said why VLC gave up.
+                    lbl_Status.Text = (lbl_Status.Text & " " & Localization.T("Во внешнем плеере не открыто.")).Trim()
+                    Return
+                End If
+                If automatic Then external_Player_Tried.Add(video_File_Path)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0866: Opening video with default player: " & video_File_Path)
 
 #If NETFRAMEWORK Then
@@ -216,7 +258,7 @@ Partial Public Class Main_Form
             If vlcDir.Length = 0 Then Return False
 
             LibVLCSharp.Shared.Core.Initialize(vlcDir)
-            libVlc = New LibVLCSharp.Shared.LibVLC("--no-video-title-show", "--no-osd", "--quiet")
+            libVlc = New LibVLCSharp.Shared.LibVLC("--no-video-title-show", "--no-osd", "--quiet", "--no-mouse-events")
             vlc_Media_Player = New LibVLCSharp.Shared.MediaPlayer(libVlc) With {
                 .EnableMouseInput = False,
                 .EnableKeyInput = False
@@ -358,9 +400,14 @@ Partial Public Class Main_Form
                 ' the next prefetch goes to the hidden box 2, not under the cover
                 ' (audit 050 D-04 - PaintAudioSurface also clears, for a prefetch already
                 ' in flight).
-                ' If box 1 held a preloaded photo, reset the preload result so the next
-                ' navigation doesn't present box 2's previous photo as the preloaded one (audit 057.S08-4).
-                If is_Second_PictureBox_Active AndAlso bgWorker_Result = "LOADED" Then
+                ' A prefetch that COMPLETED while VLC was still initialising had put the
+                ' NEXT photo in box 1 - which the release below throws away. Its verdict
+                ' goes with it: left standing, "LOADED" under the next photo's name made
+                ' the Right key take box 2 - still holding the PREVIOUS photo - as the
+                ' ready preload, and the user sorted a picture they never saw
+                ' (057.S08-4). While the verdict stands, "LOADED" can only describe box 1
+                ' here: the loaded box is the hidden one, and box 2 was on screen.
+                If bgWorker_Result = "LOADED" AndAlso is_Second_PictureBox_Active Then
                     bgWorker_Result = "EMPTY"
                     current_Second_File_Name = ""
                 End If
@@ -383,6 +430,22 @@ Partial Public Class Main_Form
             ' navigates the dormant WebBrowser, and even reading DocumentText
             ' would force its IE ActiveX host into existence - so net48 only.
             If Not Web_Browser.DocumentText = "" Then Web_Browser.DocumentText = ""
+#End If
+
+#If Not NETFRAMEWORK Then
+            ' The VLC surface copies Picture_Box_1's geometry below, and a photo zoomed by
+            ' hand left that box enlarged and off-centre: a video played as a magnified crop
+            ' and the audio tag panel (bounds.Height - 118) landed off-screen. Same
+            ' programmatic fit as the image path (LoadStandardImageInPictureBox), so the
+            ' per-folder zoom stays what the user chose (audit 057.S08-3, ticket 091).
+            If zoom_Scale <> 1 Then
+                is_Zoom_Applied_By_Program = True
+                Try
+                    ZoomToFit()
+                Finally
+                    is_Zoom_Applied_By_Program = False
+                End Try
+            End If
 #End If
 
             vlc_Video_View.Location = Picture_Box_1.Location
@@ -477,6 +540,7 @@ Partial Public Class Main_Form
 
     Private Sub StopVlcPlayback()
 #If Not NETFRAMEWORK Then
+        If IsLiveBroadcastActive() Then ExitLiveBroadcastDisplayState()
         RememberCurrentVideoPosition()
         If slideshow_Waits_For_Video Then
             slideshow_Waits_For_Video = False
@@ -511,6 +575,7 @@ Partial Public Class Main_Form
     ''' увести с UI-потока (У-10). ВАЖНО: перед файловой операцией результат обязательно
     ''' await-ить - лок должен быть снят до Move/Delete.</summary>
     Friend Function StopVlcPlaybackAsync() As Task
+        If IsLiveBroadcastActive() Then ExitLiveBroadcastDisplayState()
         RememberCurrentVideoPosition()
         is_Vlc_Playing = False
         vlc_Playing_Path = ""
@@ -563,6 +628,12 @@ Partial Public Class Main_Form
             If Me.IsDisposed OrElse Not Me.IsHandleCreated Then Return
             Me.BeginInvoke(Sub()
                                If Not IsVlcEventCurrent(event_Generation) Then Return
+#If Not NETFRAMEWORK Then
+                               If IsLiveBroadcastActive() Then
+                                   OnLiveSessionStalled(event_Generation)
+                                   Return
+                               End If
+#End If
                                Dim failed_Path As String = vlc_Playing_Path
                                Dim shown_Name As String = Path.GetFileName(failed_Path)
                                Dim logged_Path As String = failed_Path
@@ -685,6 +756,7 @@ Partial Public Class Main_Form
     ''' </summary>
     Friend Sub NoteLeavingCurrentMedia()
         If is_Vlc_Playing Then RememberCurrentVideoPosition()
+        If IsLiveBroadcastActive() Then ExitLiveBroadcastDisplayState()
         is_Stream_On_Screen = False
     End Sub
 
@@ -702,6 +774,10 @@ Partial Public Class Main_Form
             If Me.IsDisposed OrElse Not Me.IsHandleCreated Then Return
             Me.BeginInvoke(Sub()
                                If Not IsVlcEventCurrent(event_Generation) Then Return
+                               If IsLiveBroadcastActive() Then
+                                   OnLiveSessionStalled(event_Generation)
+                                   Return
+                               End If
                                ' Watched to the end: it opens from the start next time, and an
                                ' older mid-file resume point goes (audit 050 D-11).
                                RememberVideoFinished(vlc_Playing_Path)

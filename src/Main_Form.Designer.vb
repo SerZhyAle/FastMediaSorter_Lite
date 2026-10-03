@@ -1,4 +1,4 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
 Partial Class Main_Form
     Inherits System.Windows.Forms.Form
 
@@ -136,7 +136,7 @@ Partial Class Main_Form
         Me.lbl_Current_File.Name = "lbl_Current_File"
         Me.lbl_Current_File.Size = New System.Drawing.Size(101, 25)
         Me.lbl_Current_File.TabIndex = 0
-        Me.lbl_Current_File.Text = "current file"
+        Me.lbl_Current_File.Text = ""
         '
         'lbl_Status
         '
@@ -147,7 +147,7 @@ Partial Class Main_Form
         Me.lbl_Status.Name = "lbl_Status"
         Me.lbl_Status.Size = New System.Drawing.Size(64, 25)
         Me.lbl_Status.TabIndex = 100
-        Me.lbl_Status.Text = "status"
+        Me.lbl_Status.Text = ""
         '
         'lbl_Help_Info
         '
@@ -424,7 +424,7 @@ Partial Class Main_Form
         Me.KeyPreview = True
         Me.Margin = New System.Windows.Forms.Padding(4, 2, 4, 2)
         Me.Name = "Main_Form"
-        Me.Text = "Fast Media Sorter for Windows by SZA"
+        Me.Text = "Fast Media Sorter & Sharing for Windows by SZA"
         CType(Me.Picture_Box_2, System.ComponentModel.ISupportInitialize).EndInit()
         CType(Me.Picture_Box_1, System.ComponentModel.ISupportInitialize).EndInit()
         Me.ResumeLayout(False)

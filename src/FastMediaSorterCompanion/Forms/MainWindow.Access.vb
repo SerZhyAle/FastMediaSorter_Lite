@@ -17,6 +17,9 @@ Imports System.Windows.Forms
 ''' </summary>
 Partial Public NotInheritable Class MainWindow
 
+    ''' <summary>Control name marking the one copy button whose value is a credential (ticket 041).</summary>
+    Private Const SecretCopyButtonName As String = "btnCopySecret"
+
     ' --- section bodies ---------------------------------------------------------
 
     ''' <summary>
@@ -45,7 +48,7 @@ Partial Public NotInheritable Class MainWindow
             .Anchor = AnchorStyles.Left, .AccessibleName = Localization.T("Показать пароль")}
         AddHandler btnRevealPassword.Click, Sub() SetPasswordRevealed(Not _passwordRevealed)
         toolTip.SetToolTip(btnRevealPassword, Localization.T("Показать пароль"))
-        AddServerRow(grid, Localization.T("Пароль:"), AddressOf PasswordDisplay, AddressOf PasswordValue, False, btnRevealPassword)
+        AddServerRow(grid, Localization.T("Пароль:"), AddressOf PasswordDisplay, AddressOf PasswordValue, False, btnRevealPassword, secret:=True)
 
         sec.AddBodyRow(grid)
     End Sub
@@ -120,7 +123,7 @@ Partial Public NotInheritable Class MainWindow
     ''' The value label width is capped so long values (host key, password) ellipsize and
     ''' the copy column stays aligned. <paramref name="extra"/> (the password reveal
     ''' toggle) rides in the row's fourth column.</summary>
-    Private Sub AddServerRow(grid As TableLayoutPanel, caption As String, valueFunc As Func(Of String), copyFunc As Func(Of String), alwaysShow As Boolean, Optional extra As Control = Nothing)
+    Private Sub AddServerRow(grid As TableLayoutPanel, caption As String, valueFunc As Func(Of String), copyFunc As Func(Of String), alwaysShow As Boolean, Optional extra As Control = Nothing, Optional secret As Boolean = False)
         Dim row As Integer = grid.RowCount
         grid.RowCount = row + 1
         grid.RowStyles.Add(New RowStyle(SizeType.AutoSize))
@@ -135,6 +138,7 @@ Partial Public NotInheritable Class MainWindow
         ' the managed Image, so the copy glyph would not appear.
         Dim copy As New Button With {.Width = 28, .Height = 26, .Margin = New Padding(2, 3, 0, 3), .Image = _copyGlyph,
             .ImageAlign = ContentAlignment.MiddleCenter, .TabStop = False, .Anchor = AnchorStyles.Left, .Tag = copyFunc}
+        If secret Then copy.Name = SecretCopyButtonName
         toolTip.SetToolTip(copy, Localization.T("Копировать в буфер"))
         ' Glyph-only: the name says WHAT it copies (APP-BEHAVIOUR rule 9, ticket 028 Ф-7).
         copy.AccessibleName = Localization.TF("{0} - копировать в буфер", caption.TrimEnd(":"c, " "c))
@@ -164,9 +168,16 @@ Partial Public NotInheritable Class MainWindow
         If provider Is Nothing Then Return
         Dim value As String = provider()
         If String.IsNullOrEmpty(value) Then Return
-        If SecureClipboard.SetSecret(value) Then
-            SetHint(Localization.T("Скопировано в буфер."))
+        ' Only the password is a credential: it goes out with the privacy flags (ticket 041). An
+        ' address or a host key is not secret, so it stays an ordinary, history-friendly copy - but
+        ' it retries and reports through the same helper, never a swallowed failure.
+        Dim ok As Boolean
+        If btn.Name = SecretCopyButtonName Then
+            ok = SecureClipboard.SetSecret(value)
+        Else
+            ok = SecureClipboard.TrySetDataObject(New DataObject(DataFormats.UnicodeText, value))
         End If
+        SetHint(If(ok, Localization.T("Скопировано в буфер."), Localization.T("Не удалось скопировать в буфер обмена")))
     End Sub
 
     ' --- value providers (raw values for copy; display shown in the value cell) -
@@ -250,6 +261,7 @@ Partial Public NotInheritable Class MainWindow
     ' --- status -> UI -----------------------------------------------------------
 
     Private Sub ApplyStatusToUi()
+        RefreshExternalRoots()
         Dim running As Boolean = _status IsNot Nothing AndAlso _status.Running
 
         ' Off the UI thread now (ticket 054 H-19): the walk paints the rows and re-runs
@@ -277,7 +289,6 @@ Partial Public NotInheritable Class MainWindow
 
         btnShare.Enabled = running AndAlso Not _busy
         btnGuide.Enabled = running AndAlso Not _busy
-        If miRouterSearch IsNot Nothing Then miRouterSearch.Enabled = running
         ' The router is no longer detected just because this window shows a running share:
         ' detection talks to whatever answers on the LAN, and the privacy text promises
         ' nothing is contacted without being asked (ticket 054 H-17). It runs on the router
@@ -487,7 +498,7 @@ Partial Public NotInheritable Class MainWindow
     ''' does not run the full ApplyStatusToUi, so it never fights the user's in-flight
     ''' actions).</summary>
     Private Async Function RefreshStatsAsync() As Task
-        If _busy OrElse Not Me.Visible Then Return
+        If _busy OrElse _diskDialogOpen OrElse Not Me.Visible Then Return
 
         _statsFetchInFlight = True
         Dim st As WorkerStatus
@@ -500,9 +511,12 @@ Partial Public NotInheritable Class MainWindow
         If IsDisposed OrElse st Is Nothing Then Return
         ' A user action that started while this fetch was out owns the status now - its
         ' snapshot is newer than this one (ticket 054 H-12).
-        If _busy Then Return
+        If _busy OrElse _diskDialogOpen Then Return
         Dim wasRunning As Boolean = _status IsNot Nothing AndAlso _status.Running
         _status = st
+        Await RefreshDiskSnapshotAsync()
+        If IsDisposed OrElse _busy OrElse _diskDialogOpen Then Return
+        RefreshExternalRoots()
         If st.Running <> wasRunning Then
             ' The server changed state under the window (the tray's "turn sharing off", a
             ' service stopped elsewhere): the header, the toggle caption and "Поделиться" all
@@ -597,10 +611,6 @@ Partial Public NotInheritable Class MainWindow
         lnkRouter.Enabled = True
     End Sub
 
-    Private Async Function GetRouterAsync() As Task(Of RouterIdentity)
-        If _router Is Nothing Then _router = Await Task.Run(Function() RouterInfo.Detect())
-        Return _router
-    End Function
 
     Private Sub OnOpenRouter(sender As Object, e As EventArgs)
         Dim url As String = NetworkInfo.DefaultGatewayUrl()
@@ -613,13 +623,6 @@ Partial Public NotInheritable Class MainWindow
         Dim t As Task = DetectRouterAsync()
     End Sub
 
-    Private Async Sub OnOpenRouterSearch(sender As Object, e As EventArgs)
-        SetHint(Localization.T("Определяем роутер.."))
-        Dim rt As RouterIdentity = Await GetRouterAsync()
-        NetworkInfo.OpenInBrowser(RouterInfo.SearchUrl(rt))
-        SetHint(If(rt.DisplayName().Length > 0, Localization.TF("Роутер: {0}", rt.DisplayName()),
-            Localization.T("Модель не определена - открыт общий поиск.")))
-    End Sub
 
     ' --- internet test ----------------------------------------------------------
 
@@ -679,6 +682,7 @@ Partial Public NotInheritable Class MainWindow
             Await Task.Delay(1000)
             If myGen <> _reachPollGen OrElse Me.IsDisposed Then Return
             Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+            If myGen <> _reachPollGen OrElse Me.IsDisposed Then Return
             If st Is Nothing Then Continue For
             _status = st
             ApplyStatusToUi()

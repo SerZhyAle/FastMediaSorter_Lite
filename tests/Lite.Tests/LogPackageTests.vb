@@ -5,6 +5,7 @@ Imports System.Collections.Generic
 Imports System.IO
 Imports System.IO.Compression
 Imports System.Text
+Imports System.Threading.Tasks
 Imports Xunit
 
 ''' <summary>
@@ -164,6 +165,45 @@ Public Class LogPackageTests
         End Try
     End Sub
 
+    ''' <summary>007 acceptance 13: a saved remote resource - its address, its user name, the handle of its
+    ''' stored credential and the fingerprint it is pinned to - is withheld like every other value that is
+    ''' not on the allow-list. The password itself is never in the settings at all (DPAPI blob under a
+    ''' handle), so what is asserted here is that nothing AROUND it leaves the PC either.</summary>
+    <Fact>
+    Public Sub A_saved_resource_never_reaches_any_entry_of_the_archive()
+        Dim secretHost As String = "nas-private.example.lan"
+        Dim secretUser As String = "alice-the-owner"
+        Dim secretHandle As String = "cred:0123456789abcdef0123456789abcdef"
+        Dim resources As String = "[{""Id"":""res:1"",""DisplayName"":""Family NAS"",""Kind"":""Sftp"",""Host"":""" & secretHost & """,""Port"":2022," &
+                                  """UserName"":""" & secretUser & """,""RootPath"":""/Photos"",""SecretHandle"":""" & secretHandle & """," &
+                                  """PinnedFingerprint"":""SHA256:8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk""}]"
+        Dim seeded As Func(Of List(Of KeyValuePair(Of String, Object))) =
+            Function()
+                Dim list As List(Of KeyValuePair(Of String, Object)) = SeededSettings()
+                list.Add(New KeyValuePair(Of String, Object)("Resources", resources))
+                list.Add(New KeyValuePair(Of String, Object)("Resources.bak", resources))
+                Return list
+            End Function
+        Dim result As LogPackage.LogPackageResult = LogPackage.Build(seeded)
+
+        Try
+            Assert.False(String.IsNullOrEmpty(result.Path), "Build() returned no path: " & If(result.ErrorText, ""))
+            Using archive As ZipArchive = ZipFile.OpenRead(result.Path)
+                For Each entry As ZipArchiveEntry In archive.Entries
+                    Using reader As New StreamReader(entry.Open())
+                        Dim text As String = reader.ReadToEnd()
+                        Assert.DoesNotContain(secretHost, text)
+                        Assert.DoesNotContain(secretUser, text)
+                        Assert.DoesNotContain(secretHandle, text)
+                        Assert.DoesNotContain("SHA256:8f6TQ", text)
+                        Assert.DoesNotContain("Family NAS", text)
+                    End Using
+                Next
+            End Using
+        Finally
+            If Not String.IsNullOrEmpty(result.Path) Then Delete(result.Path)
+        End Try
+    End Sub
     <Fact>
     Public Sub Only_allow_listed_values_are_written_and_paths_become_counts()
         Dim lines As List(Of String) = LogPackage.DescribeSettings(SeededSettings())
@@ -218,6 +258,140 @@ Public Class LogPackageTests
         Finally
             Delete(logPath)
             Delete(zipPath)
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Concurrent_builds_with_fixed_time_produce_distinct_packages_and_cancelling_one_leaves_other()
+        Dim testDir As String = Path.Combine(Path.GetTempPath(), "fms-test-pkg-" & Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory(testDir)
+        Dim fixedTime As New DateTime(2026, 10, 1, 14, 0, 0)
+
+        Try
+            Dim task1 As Task(Of LogPackage.LogPackageResult) = Task.Run(
+                Function() LogPackage.Build(AddressOf SeededSettings, fixedTime, testDir, Nothing))
+            Dim task2 As Task(Of LogPackage.LogPackageResult) = Task.Run(
+                Function() LogPackage.Build(AddressOf SeededSettings, fixedTime, testDir, Nothing))
+
+            Task.WaitAll(task1, task2)
+
+            Dim res1 As LogPackage.LogPackageResult = task1.Result
+            Dim res2 As LogPackage.LogPackageResult = task2.Result
+
+            Assert.False(String.IsNullOrEmpty(res1.Path), "First build should succeed")
+            Assert.False(String.IsNullOrEmpty(res2.Path), "Second build should succeed")
+            Assert.NotEqual(res1.Path, res2.Path)
+            Assert.True(File.Exists(res1.Path))
+            Assert.True(File.Exists(res2.Path))
+
+            ' Verify both are valid ZIP archives
+            Assert.Contains("[application]", ReadEntry(res1.Path, "report.txt"))
+            Assert.Contains("[application]", ReadEntry(res2.Path, "report.txt"))
+
+            ' Simulate cancelling request 1: delete only its owned package
+            File.Delete(res1.Path)
+            Assert.False(File.Exists(res1.Path))
+            Assert.True(File.Exists(res2.Path))
+            Assert.Contains("[application]", ReadEntry(res2.Path, "report.txt"))
+        Finally
+            Try
+                If Directory.Exists(testDir) Then Directory.Delete(testDir, True)
+            Catch
+            End Try
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Preseeded_collision_sentinel_survives_intact()
+        Dim testDir As String = Path.Combine(Path.GetTempPath(), "fms-test-sentinel-" & Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory(testDir)
+        Dim fixedTime As New DateTime(2026, 10, 1, 14, 0, 0)
+        Dim sentinelPath As String = Path.Combine(testDir, "fms-logs-sentinel-collision.zip")
+        Dim sentinelBytes As Byte() = Encoding.UTF8.GetBytes("PREEXISTING_COLLISION_SENTINEL_BYTES_MUST_SURVIVE")
+        File.WriteAllBytes(sentinelPath, sentinelBytes)
+
+        Try
+            Dim result As LogPackage.LogPackageResult = LogPackage.Build(AddressOf SeededSettings, fixedTime, testDir, Nothing)
+
+            Assert.False(String.IsNullOrEmpty(result.Path))
+            Assert.True(File.Exists(result.Path))
+            Assert.NotEqual(sentinelPath, result.Path)
+
+            Assert.True(File.Exists(sentinelPath))
+            Assert.Equal(sentinelBytes, File.ReadAllBytes(sentinelPath))
+        Finally
+            Try
+                If Directory.Exists(testDir) Then Directory.Delete(testDir, True)
+            Catch
+            End Try
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Failure_after_reservation_deletes_only_owned_partial_package()
+        Dim testDir As String = Path.Combine(Path.GetTempPath(), "fms-test-fail-" & Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory(testDir)
+        Dim fixedTime As New DateTime(2026, 10, 1, 14, 0, 0)
+        Dim sentinelPath As String = Path.Combine(testDir, "fms-logs-sentinel.zip")
+        Dim sentinelBytes As Byte() = Encoding.UTF8.GetBytes("SENTINEL_PRESERVED")
+        File.WriteAllBytes(sentinelPath, sentinelBytes)
+
+        Try
+            Dim result As LogPackage.LogPackageResult = LogPackage.Build(
+                AddressOf SeededSettings,
+                fixedTime,
+                testDir,
+                Function(src)
+                    Throw New InvalidOperationException("Injected report generation failure")
+                End Function)
+
+            Assert.Equal("", result.Path)
+            Assert.NotNull(result.Failure)
+            Assert.IsType(Of InvalidOperationException)(result.Failure)
+
+            ' Only the sentinel should remain in testDir - no partial or orphan ZIP
+            Dim remainingZipFiles As String() = Directory.GetFiles(testDir, "fms-logs-*.zip")
+            Assert.Single(remainingZipFiles)
+            Assert.Equal(sentinelPath, remainingZipFiles(0))
+            Assert.Equal(sentinelBytes, File.ReadAllBytes(sentinelPath))
+        Finally
+            Try
+                If Directory.Exists(testDir) Then Directory.Delete(testDir, True)
+            Catch
+            End Try
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Sweep_deletes_only_stale_fms_logs_packages()
+        Dim testDir As String = Path.Combine(Path.GetTempPath(), "fms-test-sweep-" & Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory(testDir)
+        Dim now As New DateTime(2026, 10, 1, 14, 0, 0)
+
+        Dim stalePkg As String = Path.Combine(testDir, "fms-logs-stale.zip")
+        Dim freshPkg As String = Path.Combine(testDir, "fms-logs-fresh.zip")
+        Dim otherOldZip As String = Path.Combine(testDir, "other-stale.zip")
+
+        File.WriteAllText(stalePkg, "stale")
+        File.SetLastWriteTime(stalePkg, now.AddDays(-8))
+
+        File.WriteAllText(freshPkg, "fresh")
+        File.SetLastWriteTime(freshPkg, now.AddDays(-2))
+
+        File.WriteAllText(otherOldZip, "other")
+        File.SetLastWriteTime(otherOldZip, now.AddDays(-10))
+
+        Try
+            LogPackage.SweepOldPackages(testDir, now)
+
+            Assert.False(File.Exists(stalePkg), "Stale fms package should be deleted")
+            Assert.True(File.Exists(freshPkg), "Fresh fms package should survive")
+            Assert.True(File.Exists(otherOldZip), "Non-fms zip should survive")
+        Finally
+            Try
+                If Directory.Exists(testDir) Then Directory.Delete(testDir, True)
+            Catch
+            End Try
         End Try
     End Sub
 

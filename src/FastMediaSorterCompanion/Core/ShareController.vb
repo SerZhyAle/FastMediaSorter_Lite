@@ -11,7 +11,7 @@ Imports System.Threading.Tasks
 ''' callers just Await. The worker is a process-wide singleton (one named pipe),
 ''' so the tab and the wizard always drive the same server.
 '''
-''' NOTE: the QR + .fmscfg are built on the LITE side by ShareConfigBuilder from
+''' NOTE: the QR + .fmscfg are built on the viewer side by ShareConfigBuilder from
 ''' the returned Status (not via the worker's ExportConfig), so the "internet
 ''' access" toggle can advertise the external path even for a manual port
 ''' forward. This controller only needs the reachability data in Status.
@@ -84,7 +84,7 @@ Public Module ShareController
         ' pass already honors LAN-only (no UPnP) and the connection cap.
         Await PushNetworkPolicyAsync(pipeName)
 
-        Dim setResp As WorkerResponse = Await SendAsync(New WorkerRequest With {.type = "SetSharedFolders", .folders = folders}, 5000, pipeName)
+        Dim setResp As WorkerResponse = Await SendAsync(New WorkerRequest With {.type = "SetSharedFolders", .folders = FmsFoldersOnly(folders)}, 5000, pipeName)
         Dim refused As String = RefusedText(setResp)
         If refused <> "" Then
             r.ErrorText = refused
@@ -188,7 +188,7 @@ Public Module ShareController
     End Function
 
     ''' <summary>
-    ''' Ensures the worker is up AND reconciles what it ENFORCES with what LITE
+    ''' Ensures the worker is up AND reconciles what it ENFORCES with what the viewer
     ''' ADVERTISES. The worker autostarts its SFTP server from its own persisted
     ''' shares.json (per-root readOnly frozen at the last SetSharedFolders push),
     ''' while the .fmscfg readOnly is recomputed live from ShareRootParams. A bare
@@ -218,6 +218,7 @@ Public Module ShareController
         Dim corrected As New List(Of ShareFolder)()
         Dim drift As Boolean = False
         For Each r As ShareFolder In status.Roots
+            If Not r.IsFmsOwned Then Continue For
             Dim host As String = If(r.hostPath, "")
             Dim desiredReadOnly As Boolean = ReconciledReadOnly(r.readOnly, ShareRootParamsStore.GetFor(host))
             If desiredReadOnly <> r.readOnly Then drift = True
@@ -271,8 +272,9 @@ Public Module ShareController
     ''' persists its list (shares.json) and serves it again on every start (logon autostart,
     ''' a service restart, a crash recovery), so a bare StopServer here used to leave the
     ''' folder shared from the next start on, while the user had just confirmed "phones will
-    ''' stop seeing it" (ticket 046 H-01). The empty list is persisted FIRST, then the server
-    ''' is stopped. Never throws; <see cref="ShareResult.ErrorText"/> carries a refusal.
+    ''' stop seeing it" (ticket 046 H-01). SetSharedFolders applies the persisted selection
+    ''' and its server lifecycle atomically on the worker; other owners are retained.
+    ''' Never throws; <see cref="ShareResult.ErrorText"/> carries a refusal.
     ''' </summary>
     Public Async Function UnshareAllAsync() As Task(Of ShareResult)
         Dim r As New ShareResult()
@@ -295,16 +297,23 @@ Public Module ShareController
     End Function
 
     ''' <summary>The exchanges of <see cref="UnshareAllAsync"/> against an explicit pipe
-    ''' (tests drive a private one): SetSharedFolders with an empty list, then StopServer -
-    ''' the stop is sent even when the list was refused, since not serving is what the user
-    ''' asked for either way - then the status the window shows.</summary>
+    ''' (tests drive a private one): persist the empty FMS list, then read live status.
+    ''' A separate global StopServer would race a concurrent FileDO registration, so the
+    ''' worker's SetSharedFolders lifecycle owns whether the server remains needed.</summary>
     Friend Async Function UnshareAsync(r As ShareResult, pipeName As String) As Task
         Dim setResp As WorkerResponse = Await SendAsync(New WorkerRequest With {.type = "SetSharedFolders", .folders = New List(Of ShareFolder)()}, 5000, pipeName)
         r.ErrorText = RefusedText(setResp)
-        Dim stopResp As WorkerResponse = Await SendAsync(New WorkerRequest With {.type = "StopServer"}, 4000, pipeName)
-        If r.ErrorText = "" Then r.ErrorText = RefusedText(stopResp)
         Dim cur As WorkerResponse = Await Task.Run(Function() WorkerProcess.TryGetStatus(2000, pipeName))
         If cur IsNot Nothing AndAlso cur.Ok AndAlso cur.Status IsNot Nothing Then r.Status = cur.Status
+    End Function
+
+    Friend Function FmsFoldersOnly(folders As IEnumerable(Of ShareFolder)) As List(Of ShareFolder)
+        Dim result As New List(Of ShareFolder)()
+        If folders Is Nothing Then Return result
+        For Each folder As ShareFolder In folders
+            If folder IsNot Nothing AndAlso folder.IsFmsOwned Then result.Add(folder)
+        Next
+        Return result
     End Function
 
     ''' <summary>

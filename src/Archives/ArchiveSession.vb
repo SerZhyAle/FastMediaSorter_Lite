@@ -13,40 +13,41 @@ Imports System.IO
 ''' perspective background, OCR and LibVLC keep working on plain paths, with no idea an
 ''' archive is involved.
 '''
-''' Phase Ф1: ZIP/CBZ, random access. Solid 7z/RAR (one sequential pass) is Ф2 - the same
-''' class gains a Kind, not a second implementation.
+''' Phases Ф1 + Ф2: ZIP/CBZ and non-solid 7z/RAR are <see cref="ArchiveKind.RandomAccess"/>
+''' (one seek per entry); a SOLID 7z/RAR is <see cref="ArchiveKind.Sequential"/>: reaching
+''' one entry means decompressing everything before it, so the first open makes ONE pass
+''' over the archive (<see cref="RunSequentialPass"/>) and every later flip is a file that
+''' is already on disk. Same class, a Kind - not a second implementation.
 '''
 ''' Modern-only, like the whole feature.
 ''' </summary>
 Friend NotInheritable Class ArchiveSession
     Implements IDisposable
 
+    ''' <summary>How an entry is reached (§5.2).</summary>
+    Friend Enum ArchiveKind
+        ''' <summary>ZIP/CBZ and non-solid 7z/RAR: any entry costs one seek.</summary>
+        RandomAccess
+        ''' <summary>Solid 7z/RAR: an entry costs the decompression of all before it.</summary>
+        Sequential
+    End Enum
+
+    ''' <summary>How the one sequential pass ended.</summary>
+    Friend Enum PassOutcome
+        ''' <summary>Finished (or nothing to do). Entries the pass skipped - over the cache
+        ''' budget, too large, bomb, encrypted - are refused or extracted on demand.</summary>
+        Completed
+        ''' <summary>The archive was closed while it ran.</summary>
+        Cancelled
+        ''' <summary>The stream broke before a single entry could be stored.</summary>
+        Failed
+    End Enum
+
     ''' <summary>
     ''' Refused for a reason worth telling the user about (§6, invariant 9). "Say what went
     ''' wrong" is the whole rule here: a picture that silently does not appear is
     ''' indistinguishable from a broken program.
     ''' </summary>
-    Friend Enum ArchiveKind
-        RandomAccess
-        Sequential
-    End Enum
-
-    Friend Enum PassOutcome
-        Completed
-        Cancelled
-        Broken
-    End Enum
-
-    Friend ReadOnly Property Kind As ArchiveKind
-    Private sequential_Pass_Completed As Boolean
-    Private ReadOnly entry_Occurrences As New List(Of Integer)()
-
-    Friend ReadOnly Property NeedsSequentialPass As Boolean
-        Get
-            Return Kind = ArchiveKind.Sequential AndAlso Not sequential_Pass_Completed
-        End Get
-    End Property
-
     Friend Enum EntryRefusal
         None
         ''' <summary>Bigger than the per-entry ceiling (§5.3).</summary>
@@ -142,40 +143,63 @@ Friend NotInheritable Class ArchiveSession
                                            FileShare.ReadWrite Or FileShare.Delete)
         Try
             archive = SharpCompress.Archives.ArchiveFactory.OpenArchive(stream_Of_Archive, ReaderOptionsForLegacyNames())
+            ' The openable set is decided by EXTENSION, but the factory detects the format by
+            ' CONTENT - and a RAR renamed .cbz (or the other way round) is common. What is
+            ' read is what the content says it is: ZIP, 7z and RAR. Anything else the library
+            ' can open (TAR, GZip, ARC..) is refused by name, with no entries (audit 052
+            ' G-15) - the rule is "a format we chose", not "whatever the library knows".
             Select Case archive.Type
                 Case SharpCompress.Common.ArchiveType.Zip
-                    Kind = ArchiveKind.RandomAccess
-                Case SharpCompress.Common.ArchiveType.SevenZip, SharpCompress.Common.ArchiveType.Rar
-                    Kind = ArchiveKind.Sequential
+                    BuildEntryList(isSupportedMedia, maxEntries)
+                Case SharpCompress.Common.ArchiveType.Rar, SharpCompress.Common.ArchiveType.SevenZip
+                    BuildEntryList(isSupportedMedia, maxEntries)
+                    ' When in doubt the archive is sequential (§5.2): one honest pass beats
+                    ' forty slow seeks, and a failure to answer is a doubt.
+                    archive_Kind = If(IsSolidOrUnknown(archive), ArchiveKind.Sequential, ArchiveKind.RandomAccess)
                 Case Else
                     unsupported_Kind = archive.Type.ToString()
             End Select
-            If unsupported_Kind.Length = 0 Then
-                Try
-                    BuildEntryList(isSupportedMedia, maxEntries)
-                    If Kind = ArchiveKind.Sequential Then
-                        ' Enumerate first: asking IsSolid can parse encrypted 7z headers,
-                        ' and swallowing that exception poisons the library's lazy listing.
-                        Try
-                            If Not archive.IsSolid Then Kind = ArchiveKind.RandomAccess
-                        Catch
-                            ' Inconclusive flags keep the conservative sequential path.
-                        End Try
-                    End If
-                Catch ex As SharpCompress.Common.CryptographicException
-                    encrypted_Seen = True
-                    entry_Infos.Clear()
-                    entry_Handles.Clear()
-                    entry_Occurrences.Clear()
-                    by_Temp_Path.Clear()
-                End Try
-            End If
+        Catch ex As SharpCompress.Common.CryptographicException
+            ' A 7z/RAR with ENCRYPTED HEADERS cannot even list its files without the password
+            ' (§6.4): the honest "password protected" case, which would otherwise surface as
+            ' the vaguer "could not read". The session stays alive with no entries so the
+            ' caller can ask IsEncrypted - exactly like an archive whose entries are encrypted.
+            AppFileLogger.WriteLine("Archive: encrypted headers - " & ex.Message)
+            encrypted_Seen = True
         Catch
             If archive IsNot Nothing Then archive.Dispose()
             stream_Of_Archive.Dispose()
             Throw
         End Try
     End Sub
+
+    Private Shared Function IsSolidOrUnknown(source As SharpCompress.Archives.IArchive) As Boolean
+        Try
+            Return source.IsSolid
+        Catch ex As Exception
+            AppFileLogger.WriteLine("Archive: solidity unknown, treating as solid - " & ex.Message)
+            Return True
+        End Try
+    End Function
+
+    Private archive_Kind As ArchiveKind = ArchiveKind.RandomAccess
+
+    ''' <summary>How an entry of this archive is reached. Fixed when the archive opens.</summary>
+    Friend ReadOnly Property Kind As ArchiveKind
+        Get
+            Return archive_Kind
+        End Get
+    End Property
+
+    ''' <summary>True until the one sequential pass has run: the caller must make it (off the
+    ''' UI thread, with progress) before browsing, or the first flip would pay for it
+    ''' synchronously.</summary>
+    Friend ReadOnly Property NeedsSequentialPass As Boolean
+        Get
+            Return archive_Kind = ArchiveKind.Sequential AndAlso Not pass_Done AndAlso entry_Infos.Count > 0
+        End Get
+    End Property
+    Private pass_Done As Boolean = False
 
     ''' <summary>
     ''' G-16: names stored WITHOUT the ZIP UTF-8 flag are in the OEM code page of the machine
@@ -197,7 +221,7 @@ Friend NotInheritable Class ArchiveSession
         Return options
     End Function
 
-    ''' <summary>The detected format when it is not ZIP, 7z or RAR ("Rar", "SevenZip", ..), otherwise
+    ''' <summary>The detected format when it is not ZIP ("Rar", "SevenZip", ..), otherwise
     ''' empty. A session with a kind here has no entries and must not be browsed.</summary>
     Friend ReadOnly Property UnsupportedKind As String
         Get
@@ -229,12 +253,18 @@ Friend NotInheritable Class ArchiveSession
 
     Private Sub BuildEntryList(isSupportedMedia As Func(Of String, Boolean), maxEntries As Integer)
         Dim index As Integer = 0
-        Dim occurrences As New Dictionary(Of String, Integer)(StringComparer.Ordinal)
+        ' How many entries with this exact key came BEFORE the current one, counted over every
+        ' file entry (listed or not). A sequential reader hands entries over in its own order,
+        ' and an archive may repeat a name; (key, occurrence) is what lets the reader's entry
+        ' be matched back to ours without relying on the two orders agreeing.
+        Dim seen As New Dictionary(Of String, Integer)(StringComparer.Ordinal)
         For Each entry As SharpCompress.Archives.IArchiveEntry In archive.Entries
             Dim key As String = If(entry.Key, "")
-            Dim occurrence As Integer
-            occurrences.TryGetValue(key, occurrence)
-            occurrences(key) = occurrence + 1
+            Dim occurrence As Integer = 0
+            If Not entry.IsDirectory Then
+                seen.TryGetValue(key, occurrence)
+                seen(key) = occurrence + 1
+            End If
             If entry.IsEncrypted Then
                 encrypted_Seen = True
                 Continue For
@@ -260,9 +290,17 @@ Friend NotInheritable Class ArchiveSession
             entry_Handles.Add(entry)
             entry_Occurrences.Add(occurrence)
             by_Temp_Path(entry_Infos(entry_Infos.Count - 1).TempPath) = entry_Infos.Count - 1
+            by_Key_Occurrence(KeyOccurrence(key, occurrence)) = entry_Infos.Count - 1
             index += 1
         Next
     End Sub
+
+    Private ReadOnly entry_Occurrences As New List(Of Integer)()
+    Private ReadOnly by_Key_Occurrence As New Dictionary(Of String, Integer)(StringComparer.Ordinal)
+
+    Private Shared Function KeyOccurrence(key As String, occurrence As Integer) As String
+        Return key & ChrW(0) & occurrence.ToString(Globalization.CultureInfo.InvariantCulture)
+    End Function
 
     ''' <summary>Which entry a temporary path belongs to, or -1. The file list holds those
     ''' paths, so this is how the viewer gets back from "the file on screen" to "the entry
@@ -282,6 +320,11 @@ Friend NotInheritable Class ArchiveSession
     ''' half-written file can never be handed to the decoder - which matters because the
     ''' prefetch and the display path can be working on the same entry at once.
     ''' </summary>
+    ''' <param name="allowSlow">False for a background guess (the prefetch): on a sequential
+    ''' archive an entry that is not on disk costs a scan from the start, which a guess about
+    ''' the NEXT picture must never hold the extraction lock for. It then returns False with
+    ''' no refusal, and the display path - which passes True - does the real work if the user
+    ''' actually gets there.</param>
     Friend Function TryEnsureExtracted(index As Integer, ByRef refusal As EntryRefusal,
                                        Optional maxEntryBytes As Long = Default_Max_Entry_Bytes,
                                        Optional maxCacheBytes As Long = Default_Max_Cache_Bytes,
@@ -299,7 +342,8 @@ Friend NotInheritable Class ArchiveSession
     Private ReadOnly extraction_Gate As New Object()
 
     Private Function EnsureExtractedCore(index As Integer, ByRef refusal As EntryRefusal,
-                                         maxEntryBytes As Long, maxCacheBytes As Long, allowSlow As Boolean) As Boolean
+                                         maxEntryBytes As Long, maxCacheBytes As Long,
+                                         allowSlow As Boolean) As Boolean
         refusal = EntryRefusal.None
         ' A late prefetch that reaches here after the archive was left must not recreate the
         ' session directory that LeaveArchive just deleted - it survived the whole process,
@@ -326,8 +370,9 @@ Friend NotInheritable Class ArchiveSession
                 EvictIfOverBudget(index, maxCacheBytes)
                 Return True
             End If
-        Catch
+        Catch ex As Exception
             ' Fall through and extract again.
+            AppFileLogger.WriteLine("Archive: cached entry could not be checked - " & ex.Message)
         End Try
 
         If info.Size > maxEntryBytes Then
@@ -345,133 +390,237 @@ Friend NotInheritable Class ArchiveSession
             Return False
         End If
 
-        If Kind = ArchiveKind.Sequential AndAlso Not allowSlow Then Return False
-        Dim part As String = info.TempPath & ".part"
+        ' A solid entry that is not on disk (over the pass's budget, or evicted since) costs a
+        ' scan from the start of the archive - correct, and slow. Never for a guess.
+        If archive_Kind = ArchiveKind.Sequential AndAlso Not allowSlow Then Return False
+
         Try
-            Directory.CreateDirectory(temp_Root)
-            If Kind = ArchiveKind.Sequential Then
-                If Not allowSlow Then Return False
-                ExtractOneSequentially(index, part)
+            If archive_Kind = ArchiveKind.Sequential Then
+                If Not ExtractOneSequentially(index, info) Then
+                    refusal = EntryRefusal.Broken
+                    Return False
+                End If
             Else
+                Directory.CreateDirectory(temp_Root)
                 Using source As Stream = entry.OpenEntryStream()
-                    WriteEntry(source, part, info.Size)
+                    WriteEntryFile(info, source, requireFullSize:=False)
                 End Using
             End If
-
-            If File.Exists(info.TempPath) Then File.Delete(info.TempPath)
-            File.Move(part, info.TempPath)
             TouchExtracted(index, info.Size)
             EvictIfOverBudget(index, maxCacheBytes)
             Return True
         Catch ex As Exception
             AppFileLogger.WriteLine("Archive: entry not extracted: " & info.EntryName & " - " & ex.Message)
-            Try
-                If File.Exists(part) Then File.Delete(part)
-            Catch
-            End Try
             refusal = EntryRefusal.Broken
             Return False
         End Try
     End Function
 
-    Private Sub WriteEntry(source As Stream, part As String, size As Long)
-        Using target As New FileStream(part, FileMode.Create, FileAccess.Write, FileShare.None)
-            CopyBounded(source, target, size, Function() Threading.Volatile.Read(closing_Requested))
-        End Using
-    End Sub
-
-    ' Use IArchive's reader: ReaderFactory does not support 7z. Each traversal owns a
-    ' separate stream and header parse, so it never seeks the random-access handle.
-    Private Sub ExtractOneSequentially(index As Integer, part As String)
-        Using input As New FileStream(archive_Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete)
-            Using scan = SharpCompress.Archives.ArchiveFactory.OpenArchive(input, ReaderOptionsForLegacyNames())
-                Using reader = scan.ExtractAllEntries()
-                    Dim occurrences As New Dictionary(Of String, Integer)(StringComparer.Ordinal)
-                    While reader.MoveToNextEntry()
-                        If Threading.Volatile.Read(closing_Requested) Then Throw New OperationCanceledException()
-                        Dim key As String = If(reader.Entry.Key, "")
-                        Dim occurrence As Integer
-                        occurrences.TryGetValue(key, occurrence)
-                        occurrences(key) = occurrence + 1
-                        If key <> entry_Infos(index).EntryName OrElse occurrence <> entry_Occurrences(index) Then Continue While
-                        Using source = reader.OpenEntryStream()
-                            WriteEntry(source, part, entry_Infos(index).Size)
-                        End Using
-                        Return
-                    End While
-                End Using
-            End Using
-        End Using
-        Throw New InvalidDataException("The archive entry disappeared during extraction.")
-    End Sub
-
-    Friend Function RunSequentialPass(maxEntryBytes As Long, maxCacheBytes As Long,
-                                      Optional progress As Action(Of Integer) = Nothing) As PassOutcome
-        If Threading.Volatile.Read(closing_Requested) Then Return PassOutcome.Cancelled
-        If Not NeedsSequentialPass Then Return PassOutcome.Completed
-        Dim matches As New Dictionary(Of String, Dictionary(Of Integer, Integer))(StringComparer.Ordinal)
-        For i As Integer = 0 To entry_Infos.Count - 1
-            Dim key As String = entry_Infos(i).EntryName
-            If Not matches.ContainsKey(key) Then matches(key) = New Dictionary(Of Integer, Integer)()
-            matches(key)(entry_Occurrences(i)) = i
-        Next
+    ''' <summary>
+    ''' Writes <paramref name="source"/> to the entry's place on disk: to a neighbouring
+    ''' ".part" file first and renamed into position, so a half-written file is never what the
+    ''' decoder is handed (§5.1), and a failed or cancelled write leaves nothing behind. Throws
+    ''' on any failure after cleaning up. Callers hold the extraction gate.
+    '''
+    ''' <paramref name="requireFullSize"/> is for the sequential reader, whose stream can end
+    ''' early on a damaged solid block without saying so - a short file is then a failure,
+    ''' not a picture. A random-access entry keeps the library's own end-of-stream verdict.
+    ''' </summary>
+    Private Sub WriteEntryFile(info As ArchiveEntryInfo, source As Stream, requireFullSize As Boolean)
+        Dim part As String = info.TempPath & ".part"
         Try
-            Using input As New FileStream(archive_Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete)
-                Using scan = SharpCompress.Archives.ArchiveFactory.OpenArchive(input, ReaderOptionsForLegacyNames())
-                    Using reader = scan.ExtractAllEntries()
-                        Dim occurrences As New Dictionary(Of String, Integer)(StringComparer.Ordinal)
-                        Dim visited As Integer = 0
-                        Do
-                            Dim percent As Integer = -1
-                            ' Closing waits only for the current entry; check again before
-                            ' advancing, which may itself decompress a skipped solid entry.
-                            SyncLock extraction_Gate
-                                If closing_Requested OrElse disposed Then Return PassOutcome.Cancelled
-                                If Not reader.MoveToNextEntry() Then Exit Do
-                                Dim key As String = If(reader.Entry.Key, "")
-                                Dim occurrence As Integer
-                                occurrences.TryGetValue(key, occurrence)
-                                occurrences(key) = occurrence + 1
-                                Dim sameName As Dictionary(Of Integer, Integer) = Nothing
-                                Dim index As Integer
-                                If matches.TryGetValue(key, sameName) AndAlso sameName.TryGetValue(occurrence, index) Then
-                                    Dim info = entry_Infos(index)
-                                    Dim handle = entry_Handles(index)
-                                    Dim fits As Boolean = maxCacheBytes <= 0 OrElse info.Size <= maxCacheBytes - session_Bytes
-                                    If Not handle.IsEncrypted AndAlso info.Size <= maxEntryBytes AndAlso fits AndAlso
-                                       (handle.CompressedSize <= 0 OrElse info.Size / handle.CompressedSize <= Max_Expansion_Ratio) Then
-                                        Dim part As String = info.TempPath & ".part"
-                                        Try
-                                            Directory.CreateDirectory(temp_Root)
-                                            Using source = reader.OpenEntryStream()
-                                                WriteEntry(source, part, info.Size)
-                                            End Using
-                                            File.Move(part, info.TempPath, overwrite:=True)
-                                            TouchExtracted(index, info.Size)
-                                        Finally
-                                            If File.Exists(part) Then File.Delete(part)
-                                        End Try
-                                    End If
-                                    visited += 1
-                                    percent = CInt(100L * visited \ Math.Max(1, entry_Infos.Count))
-                                End If
-                            End SyncLock
-                            ' Callbacks run outside the lock; UI progress cannot hold up cleanup.
-                            If percent >= 0 Then progress?.Invoke(percent)
-                            If visited >= entry_Infos.Count Then Exit Do
-                        Loop
-                    End Using
-                End Using
+            Directory.CreateDirectory(temp_Root)
+            Dim written As Long
+            Using target As New FileStream(part, FileMode.Create, FileAccess.Write, FileShare.None)
+                written = CopyBounded(source, target, info.Size, Function() Threading.Volatile.Read(closing_Requested))
             End Using
-            If Threading.Volatile.Read(closing_Requested) Then Return PassOutcome.Cancelled
-            sequential_Pass_Completed = True
-            progress?.Invoke(100)
-            Return PassOutcome.Completed
-        Catch ex As Exception
-            If Threading.Volatile.Read(closing_Requested) Then Return PassOutcome.Cancelled
-            AppFileLogger.LogException("Archive: sequential extraction", ex)
-            Return PassOutcome.Broken
+            If requireFullSize AndAlso written < info.Size Then
+                Throw New InvalidDataException(
+                    "Entry ended after " & written.ToString() & " of " & info.Size.ToString() & " bytes.")
+            End If
+
+            If File.Exists(info.TempPath) Then File.Delete(info.TempPath)
+            File.Move(part, info.TempPath)
+        Catch
+            Try
+                If File.Exists(part) Then File.Delete(part)
+            Catch cleanupFailure As Exception
+                AppFileLogger.WriteLine("Archive: partial entry cleanup failed - " & cleanupFailure.Message)
+            End Try
+            Throw
         End Try
+    End Sub
+
+    ' --------------------------------------------------------------- sequential ----
+
+    ''' <summary>
+    ''' A forward-only reader over the archive on its OWN file handle and its own parse of the
+    ''' headers - not the session's: a sweep is long, the session's stream is what Dispose
+    ''' closes and what the random-access path seeks, and a reader keeps its position between
+    ''' entries. It is a reader obtained from the ARCHIVE (<c>ExtractAllEntries</c>) rather
+    ''' than from <c>ReaderFactory</c>, because the latter does not know 7z at all - a solid
+    ''' 7z is decoded a block at a time, which only the archive object can do.
+    ''' </summary>
+    Private NotInheritable Class SweepReader
+        Implements IDisposable
+
+        Private ReadOnly source_Stream As FileStream
+        Private ReadOnly source_Archive As SharpCompress.Archives.IArchive
+        Friend ReadOnly Reader As SharpCompress.Readers.IReader
+
+        Friend Sub New(archivePath As String)
+            source_Stream = New FileStream(archivePath, FileMode.Open, FileAccess.Read,
+                                           FileShare.ReadWrite Or FileShare.Delete)
+            Try
+                source_Archive = SharpCompress.Archives.ArchiveFactory.OpenArchive(source_Stream, ReaderOptionsForLegacyNames())
+                Reader = source_Archive.ExtractAllEntries()
+            Catch
+                Dispose()
+                Throw
+            End Try
+        End Sub
+
+        ''' <summary>How far into the file the decompression has read - the only honest
+        ''' progress, since a solid block cannot be sized in advance.</summary>
+        Friend ReadOnly Property Fraction As Double
+            Get
+                Dim length As Long = source_Stream.Length
+                If length <= 0 Then Return 0
+                Return Math.Min(1.0R, source_Stream.Position / length)
+            End Get
+        End Property
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            Try
+                If Reader IsNot Nothing Then Reader.Dispose()
+            Catch ex As Exception
+                AppFileLogger.WriteLine("Archive: sweep reader closing failed - " & ex.Message)
+            End Try
+            Try
+                If source_Archive IsNot Nothing Then source_Archive.Dispose()
+            Catch ex As Exception
+                AppFileLogger.WriteLine("Archive: sweep archive closing failed - " & ex.Message)
+            End Try
+            source_Stream.Dispose()
+        End Sub
+    End Class
+
+    ''' <summary>
+    ''' One entry of a solid archive, reached by reading forward to it (§5.2). The honest slow
+    ''' path: what makes it rare is the pass, which stores every entry that fits the budget
+    ''' in a single sweep. Called with the extraction gate held.
+    ''' </summary>
+    Private Function ExtractOneSequentially(index As Integer, info As ArchiveEntryInfo) As Boolean
+        Dim wanted As String = KeyOccurrence(If(entry_Handles(index).Key, ""), entry_Occurrences(index))
+        Dim seen As New Dictionary(Of String, Integer)(StringComparer.Ordinal)
+        Using sweep As New SweepReader(archive_Path)
+            Dim reader As SharpCompress.Readers.IReader = sweep.Reader
+            Do While reader.MoveToNextEntry()
+                If Threading.Volatile.Read(closing_Requested) Then
+                    Throw New OperationCanceledException("The archive was closed during extraction.")
+                End If
+                If reader.Entry.IsDirectory Then Continue Do
+                If KeyOccurrence(If(reader.Entry.Key, ""), NextOccurrence(seen, reader.Entry.Key)) <> wanted Then Continue Do
+                Using source As Stream = reader.OpenEntryStream()
+                    WriteEntryFile(info, source, requireFullSize:=True)
+                End Using
+                Return True
+            Loop
+        End Using
+        Return False
+    End Function
+
+    ''' <summary>The number of earlier entries with this key (and counts this one).</summary>
+    Private Shared Function NextOccurrence(seen As Dictionary(Of String, Integer), key As String) As Integer
+        Dim k As String = If(key, "")
+        Dim occurrence As Integer = 0
+        seen.TryGetValue(k, occurrence)
+        seen(k) = occurrence + 1
+        Return occurrence
+    End Function
+
+    ''' <summary>
+    ''' The one sweep over a solid archive (§5.2): every listed entry that fits the limits is
+    ''' written in archive order, so the user waits once ("Extracting archive: 37 %") and every
+    ''' flip afterwards is instant. Safe to call off the UI thread; it takes the extraction
+    ''' gate per ENTRY, never for the whole pass, so closing the archive waits for one write at
+    ''' most. It does not evict - everything it stores is the newest there is - and it stops
+    ''' storing at the cache budget: the rest is refused or extracted on demand.
+    '''
+    ''' <paramref name="onProgress"/> receives 0..100 (monotonic, from the archive stream's
+    ''' position - the only honest measure of a decompression it cannot size in advance) and
+    ''' runs on the calling thread.
+    ''' </summary>
+    Friend Function RunSequentialPass(maxEntryBytes As Long, maxCacheBytes As Long,
+                                      onProgress As Action(Of Integer)) As PassOutcome
+        If archive_Kind <> ArchiveKind.Sequential OrElse pass_Done Then Return PassOutcome.Completed
+        If disposed OrElse Threading.Volatile.Read(closing_Requested) Then Return PassOutcome.Cancelled
+
+        Dim seen As New Dictionary(Of String, Integer)(StringComparer.Ordinal)
+        Dim stored As Integer = 0
+        Dim failures As Integer = 0
+        Dim lastPercent As Integer = -1
+
+        Using sweep As New SweepReader(archive_Path)
+            Dim reader As SharpCompress.Readers.IReader = sweep.Reader
+            Try
+                Do While reader.MoveToNextEntry()
+                    If Threading.Volatile.Read(closing_Requested) Then Return PassOutcome.Cancelled
+                    If reader.Entry.IsDirectory Then Continue Do
+
+                    If onProgress IsNot Nothing Then
+                        Dim percent As Integer = CInt(Math.Min(99.0R, sweep.Fraction * 100.0R))
+                        If percent > lastPercent Then
+                            lastPercent = percent
+                            onProgress(percent)
+                        End If
+                    End If
+
+                    Dim entryKey As String = If(reader.Entry.Key, "")
+                    Dim index As Integer
+                    If Not by_Key_Occurrence.TryGetValue(KeyOccurrence(entryKey, NextOccurrence(seen, entryKey)), index) Then
+                        Continue Do   ' not listed: not media, junk, past the entry ceiling..
+                    End If
+
+                    Dim info As ArchiveEntryInfo = entry_Infos(index)
+                    Dim handle As SharpCompress.Archives.IArchiveEntry = entry_Handles(index)
+
+                    ' The same refusals the on-demand path makes, applied here as SKIPS: the
+                    ' entry stays in the list and the display path gives the reason when the
+                    ' user arrives (invariant 9). A skip is not an error.
+                    If info.Size > maxEntryBytes Then Continue Do
+                    If handle.IsEncrypted Then Continue Do
+                    If handle.CompressedSize > 0 AndAlso info.Size / handle.CompressedSize > Max_Expansion_Ratio Then Continue Do
+
+                    SyncLock extraction_Gate
+                        If disposed OrElse closing_Requested Then Return PassOutcome.Cancelled
+                        If maxCacheBytes > 0 AndAlso session_Bytes + info.Size > maxCacheBytes Then Continue Do
+                        Try
+                            Using source As Stream = reader.OpenEntryStream()
+                                WriteEntryFile(info, source, requireFullSize:=True)
+                            End Using
+                            TouchExtracted(index, info.Size)
+                            stored += 1
+                        Catch cancelled As OperationCanceledException
+                            Return PassOutcome.Cancelled
+                        Catch ex As Exception
+                            failures += 1
+                            AppFileLogger.WriteLine("Archive: pass could not store " & info.EntryName & " - " & ex.Message)
+                        End Try
+                    End SyncLock
+                Loop
+            Catch ex As Exception
+                ' The stream itself broke mid-sweep. What was stored stays; the rest fails
+                ' honestly entry by entry when asked for.
+                AppFileLogger.LogException("Archive: sequential pass", ex)
+                pass_Done = True
+                Return If(stored > 0, PassOutcome.Completed, PassOutcome.Failed)
+            End Try
+        End Using
+
+        pass_Done = True
+        If onProgress IsNot Nothing Then onProgress(100)
+        Return If(stored = 0 AndAlso failures > 0, PassOutcome.Failed, PassOutcome.Completed)
     End Function
 
     ''' <summary>Records that <paramref name="index"/> is on disk and just got asked for,
@@ -493,20 +642,6 @@ Friend NotInheritable Class ArchiveSession
     ''' never evicted even when everything else already has been. A session that never
     ''' grows past the budget never deletes anything.
     ''' </summary>
-    Private ReadOnly displayed_Entries As New HashSet(Of Integer)()
-
-    ' Navigation can sort or shuffle the metadata order. Pin the rows actually on
-    ' screen and next to it; a prefetch must not redefine which page is current.
-    Friend Sub ProtectDisplayedEntries(paths As IEnumerable(Of String))
-        SyncLock extraction_Gate
-            displayed_Entries.Clear()
-            For Each path As String In paths
-                Dim index As Integer = IndexOfTempPath(path)
-                If index >= 0 Then displayed_Entries.Add(index)
-            Next
-        End SyncLock
-    End Sub
-
     Private Sub EvictIfOverBudget(justTouched As Integer, maxCacheBytes As Long)
         If maxCacheBytes <= 0 Then Return
         Dim attempted As New HashSet(Of Integer)()
@@ -524,16 +659,33 @@ Friend NotInheritable Class ArchiveSession
         Loop
     End Sub
 
+    Private ReadOnly displayed_Entries As New HashSet(Of Integer)()
+
+    ''' <summary>Navigation can sort or shuffle the list, so "the index next to the one just
+    ''' touched" is not always the page on screen. The UI pins the rows actually displayed
+    ''' and next to it; a prefetch must not redefine which page is current.</summary>
+    Friend Sub ProtectDisplayedEntries(paths As IEnumerable(Of String))
+        SyncLock extraction_Gate
+            displayed_Entries.Clear()
+            For Each path As String In paths
+                Dim index As Integer = IndexOfTempPath(path)
+                If index >= 0 Then displayed_Entries.Add(index)
+            Next
+        End SyncLock
+    End Sub
+
     Private Sub EvictEntry(index As Integer)
         Dim size As Long
         If Not extracted_Sizes.TryGetValue(index, size) Then Return
         Try
             Dim path As String = entry_Infos(index).TempPath
             If File.Exists(path) Then File.Delete(path)
-        Catch
+        Catch ex As Exception
             ' A file that refuses to go (antivirus, a lingering handle) is left for the
-            ' cleanup boundaries (§4). Keep its bytes accounted for and retry on the
-            ' next eviction; this pass tries each candidate only once.
+            ' cleanup boundaries (§4). Its bytes stay accounted for so a later eviction
+            ' retries it; EvictIfOverBudget tries each candidate only once per pass, so the
+            ' budget check does not spin on the same entry.
+            AppFileLogger.WriteLine("Archive: cached entry eviction failed - " & ex.Message)
             Return
         End Try
         extracted_Sizes.Remove(index)
@@ -546,9 +698,11 @@ Friend NotInheritable Class ArchiveSession
     ''' (§6.2). A bomb declares a modest size and then keeps producing bytes; without this
     ''' the check above would be a suggestion.
     ''' </summary>
-    Private Shared Sub CopyBounded(source As Stream, target As Stream, declaredSize As Long,
-                                   cancelled As Func(Of Boolean))
-        Dim ceiling As Long = declaredSize
+    Private Shared Function CopyBounded(source As Stream, target As Stream, declaredSize As Long,
+                                        cancelled As Func(Of Boolean)) As Long
+        ' A little slack: some writers round the stored size, and failing a legitimate
+        ' entry over one byte would be worse than writing one byte too many.
+        Dim ceiling As Long = declaredSize + 4096L
         Dim buffer(81919) As Byte
         Dim written As Long = 0
 
@@ -565,8 +719,8 @@ Friend NotInheritable Class ArchiveSession
             End If
             target.Write(buffer, 0, read)
         Loop
-        If written <> declaredSize Then Throw New InvalidDataException("Entry size does not match its header.")
-    End Sub
+        Return written
+    End Function
 
     ''' <summary>Set before the lock is taken, read inside the copy loop: an extraction in
     ''' flight notices the archive is closing within one block.</summary>
@@ -587,7 +741,8 @@ Friend NotInheritable Class ArchiveSession
             End Try
             Try
                 If stream_Of_Archive IsNot Nothing Then stream_Of_Archive.Dispose()
-            Catch
+            Catch ex As Exception
+                AppFileLogger.WriteLine("Archive: source stream closing failed - " & ex.Message)
             End Try
         End SyncLock
     End Sub

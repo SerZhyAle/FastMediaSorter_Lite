@@ -14,6 +14,39 @@ Imports Xunit
 ''' </summary>
 Public Class ActivationDeliveryTests
 
+    <Theory>
+    <InlineData("C:\folder:stream")>
+    <InlineData("\\server")>
+    <InlineData("\\server\share:stream")>
+    Public Sub Invalid_folder_grammar_is_refused_before_consent(payload As String)
+        Assert.Equal(CompanionCommandKind.Invalid, CompanionCommand.Parse(payload).Kind)
+    End Sub
+
+    <Fact>
+    Public Sub A_new_Companion_never_sends_a_folder_to_an_old_or_unknown_receiver()
+        Assert.Equal(Program.ShowWindowCommand, Program.CompatiblePayload("D:\Photos", Nothing))
+        Assert.Equal(Program.ShowWindowCommand, Program.CompatiblePayload("D:\Photos", New Version(26, 10, 1, 0)))
+        Assert.Equal("D:\Photos", Program.CompatiblePayload("D:\Photos", ShareActivationPolicy.MinConsentVersion))
+        Assert.Equal(Program.ShowWindowCommand, Program.CompatiblePayload(Program.PlainStartCommand, Nothing))
+    End Sub
+
+    <Fact>
+    Public Sub A_slow_pending_or_displayed_proposal_cannot_be_duplicated_after_ten_seconds()
+        Dim clock As New FakeClock()
+        Dim queue As New FolderProposalQueue(AddressOf clock.Read)
+        queue.Offer("D:\Photos", Nothing)
+        clock.NowMs = 20000
+        Assert.Equal(ProposalVerdict.Duplicate, queue.Offer("D:\Photos", Nothing))
+        queue.TakeNext()
+        clock.NowMs = 40000
+        Assert.Equal(ProposalVerdict.Duplicate, queue.Offer("D:\Photos", Nothing))
+        queue.Complete("D:\Photos")
+        clock.NowMs += 9000
+        Assert.Equal(ProposalVerdict.Duplicate, queue.Offer("D:\Photos", Nothing))
+        clock.NowMs += 2000
+        Assert.Equal(ProposalVerdict.Queued, queue.Offer("D:\Photos", Nothing))
+    End Sub
+
     ' ------------------------------------------------------------ instance ownership ----
 
     <Fact>
@@ -220,6 +253,7 @@ Public Class ActivationDeliveryTests
         Dim queue As New FolderProposalQueue(AddressOf clock.Read)
         queue.Offer("D:\Photos", Nothing)
         Assert.Equal("D:\Photos", queue.TakeNext()) ' the user said no
+        queue.Complete("D:\Photos")
         clock.NowMs += 9000
         Assert.Equal(ProposalVerdict.Duplicate, queue.Offer("D:\Photos", Nothing)) ' a retry cannot reopen the question
         Assert.Equal("", queue.TakeNext())
@@ -256,8 +290,9 @@ Public Class ActivationDeliveryTests
         queue.Offer("D:\Photos", Nothing)
         ' Wall time is irrelevant: only the injected clock decides, and it has not moved.
         Assert.Equal(ProposalVerdict.Duplicate, queue.Offer("D:\Photos", Nothing))
-        clock.NowMs = FolderProposalQueue.DedupWindowMs + 1
         queue.TakeNext()
+        queue.Complete("D:\Photos")
+        clock.NowMs = FolderProposalQueue.DedupWindowMs + 1
         Assert.Equal(ProposalVerdict.Queued, queue.Offer("D:\Photos", Nothing))
     End Sub
 

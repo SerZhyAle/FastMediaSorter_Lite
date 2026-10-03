@@ -210,7 +210,7 @@ Go-воркер и два повышающих helper-скрипта (~43 МБ �
 
 **C. winget (после того как GitHub release готов) - два независимых пакета:**
 - [ ] Манифест указывает на Inno **`setup.exe`** напрямую (`InstallerType: inno`), без зависимостей,
-      без `Scope`. Подробности и грабли - [SPECIFICATION_WINGET_PUBLISHING.md](../specifications/done/SPECIFICATION_WINGET_PUBLISHING.md).
+      без `Scope`. Подробности и грабли - `SPECIFICATION_WINGET_PUBLISHING.md` (local specification).
 - [ ] PR в `microsoft/winget-pkgs` для `SerZhyAle.FastMediaSorter` обновлён на новую версию + SHA256.
 - [ ] Отдельный PR для `SerZhyAle.FastMediaSorter.Server` (манифесты -
       [publishing/winget/server/](../../publishing/winget/server)) на `server-setup.exe` + его SHA256.

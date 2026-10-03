@@ -15,7 +15,15 @@
         administrator approved in the locked ledger - never one merely listed in
         shares.json, and nothing at all when the ledger lost its locked form.
 
+      * ticket 102 S24-2: a "[]" ledger permits a first grant; an empty / malformed / shapeless
+        ledger grants nothing, exits 15 and stays byte for byte; repeated grants keep the whole
+        history in a locked ledger with no .tmp/.bak/.rejected leak; four helpers racing on one
+        data directory lose nothing (grant-roots only - no service, no firewall rule).
+
     Only with -ServiceInstall, and only when the service is NOT registered (on a VM):
+      * ticket 102 S24-1 / S24-2: "remove" with no state directory exits 0, does not recreate it
+        and leaves its run in the elevated account's %TEMP% log; "remove" with an unreadable
+        ledger keeps it byte for byte and reports "WITH WARNINGS".
       * H-14: "install" registers the service as NT AUTHORITY\LocalService; "remove"
         then takes it away again. That "remove" also deletes the firewall rule named
         "FastMediaSorter Companion SFTP" and every rule aimed at the repository's worker
@@ -32,7 +40,11 @@
 #>
 [CmdletBinding()]
 param(
-    [switch]$ServiceInstall
+    [switch]$ServiceInstall,
+
+    # The PowerShell the HELPER runs under (default: the one running this script). The installers
+    # run powershell.exe (5.1); pass it from pwsh to exercise both editions of the same helper.
+    [string]$HelperShell
 )
 
 $ErrorActionPreference = 'Stop'
@@ -41,7 +53,7 @@ $repo   = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 . (Join-Path $repo 'tools\lib\Verdict.ps1')
 $helper = Join-Path $repo 'publishing\installer\install-share-service.ps1'
 $worker = Join-Path $repo 'payload\companion\fms-share-worker.exe'
-$shell  = (Get-Process -Id $PID).Path
+$shell  = if ($HelperShell) { $HelperShell } else { (Get-Process -Id $PID).Path }
 $SidLocalService = 'S-1-5-19'
 $SidAdmins = 'S-1-5-32-544'
 
@@ -177,6 +189,74 @@ try {
     Check 'H-09 a tampered ledger re-grants nothing' ((Get-LocalServiceRights $approved) -eq 0 -and $outcome.Second -match 'not used to re-grant') ''
     Check '...the approved folder was re-granted on the first pass' ($outcome.First -match [regex]::Escape("granting LOCAL SERVICE read/write access on '$approved'")) ''
 
+    # ------------------------------------------- ticket 102 / S24-2: the ledger, read and published
+    # Only grant-roots on throw-away data directories and folders: no service, no firewall rule.
+    function Read-LedgerPaths([string]$dataDir) {
+        $text = Get-Content -LiteralPath (Join-Path $dataDir 'granted-roots.json') -Raw
+        return @($text | ConvertFrom-Json | ForEach-Object { $_ } | ForEach-Object { $_.path })
+    }
+    function Get-ByteHash([string]$file) { return (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash }
+    function New-Share([string]$name) {
+        $d = Join-Path $root $name
+        New-Item -ItemType Directory -Path $d | Out-Null
+        $touched.Add($d)
+        return $d
+    }
+
+    # Missing and a valid empty array both permit a first grant.
+    $dEmpty = Join-Path $root 'ledger-empty'; New-Item -ItemType Directory -Path $dEmpty | Out-Null
+    $a = New-Share 'ledger-a'
+    Set-Content -LiteralPath (Join-Path $dEmpty 'granted-roots.json') -Value '[]' -Encoding UTF8
+    $r = Invoke-Helper $dEmpty @('-Action', 'grant-roots', '-Roots', $a, '-ReadOnlyRoots', '|')
+    Check 'S24-2 a valid empty array "[]" permits a first grant (exit 0)' ($r.Code -eq 0 -and (Read-LedgerPaths $dEmpty) -contains $a) "exit $($r.Code)"
+
+    # Corrupt / empty / unreadable input grants nothing, exits 15, and is retained byte for byte.
+    $b = New-Share 'ledger-b'
+    foreach ($case in @(
+            @{ Name = 'an empty file'; Text = '' },
+            @{ Name = 'malformed JSON'; Text = '{ broken' },
+            @{ Name = 'an entry without a path'; Text = '[{"sid":"S-1-5-19","rights":"RX"}]' })) {
+        $dBad = Join-Path $root ('ledger-bad-' + [Guid]::NewGuid().ToString('N').Substring(0, 6)); New-Item -ItemType Directory -Path $dBad | Out-Null
+        $bad = Join-Path $dBad 'granted-roots.json'
+        [IO.File]::WriteAllText($bad, [string]$case.Text, (New-Object Text.UTF8Encoding($false)))
+        $hash = Get-ByteHash $bad
+        $rightsBefore = Get-LocalServiceRights $b
+        $r = Invoke-Helper $dBad @('-Action', 'grant-roots', '-Roots', $b, '-ReadOnlyRoots', '|')
+        Check "S24-2 $($case.Name): grant exits 15, grants nothing, keeps the file byte for byte" (
+            $r.Code -eq 15 -and (Get-LocalServiceRights $b) -eq $rightsBefore -and (Get-ByteHash $bad) -eq $hash) "exit $($r.Code)"
+        $leaks = @(Get-ChildItem -LiteralPath $dBad -Force | Where-Object { $_.Name -match '\.(tmp|bak)-' })
+        Check "S24-2 $($case.Name): no temp or backup is left behind" ($leaks.Count -eq 0) ''
+    }
+
+    # Valid multi-root ledger, repeated grants: history preserved, final ACL locked, nothing leaked.
+    $dMulti = Join-Path $root 'ledger-multi'; New-Item -ItemType Directory -Path $dMulti | Out-Null
+    $m1 = New-Share 'multi-1'; $m2 = New-Share 'multi-2'; $m3 = New-Share 'multi-3'
+    [void](Invoke-Helper $dMulti @('-Action', 'grant-roots', '-Roots', $m1, '-ReadOnlyRoots', '|'))
+    [void](Invoke-Helper $dMulti @('-Action', 'grant-roots', '-Roots', $m2, '-ReadOnlyRoots', $m2))
+    $r = Invoke-Helper $dMulti @('-Action', 'grant-roots', '-Roots', "$m1|$m3", '-ReadOnlyRoots', '|')
+    $paths = Read-LedgerPaths $dMulti
+    Check 'S24-2 repeated grants keep every previously approved entry' ($r.Code -eq 0 -and $paths -contains $m1 -and $paths -contains $m2 -and $paths -contains $m3) "exit $($r.Code); $($paths.Count) entries"
+    $mAcl = Get-Acl -LiteralPath (Join-Path $dMulti 'granted-roots.json')
+    $foreign = @($mAcl.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier]) | Where-Object { @('S-1-5-18', $SidAdmins) -notcontains $_.IdentityReference.Value })
+    Check 'S24-2 the published ledger is Administrators-owned, protected, SYSTEM/Administrators only' (
+        $mAcl.AreAccessRulesProtected -and $mAcl.GetOwner([Security.Principal.SecurityIdentifier]).Value -eq $SidAdmins -and $foreign.Count -eq 0) ''
+    Check 'S24-2 no .tmp/.bak/.rejected generation leaks after successful publications' (
+        @(Get-ChildItem -LiteralPath $dMulti -Force | Where-Object { $_.Name -match '\.(tmp|bak|rejected)-' }).Count -eq 0) ''
+
+    # Two helpers at once on one data directory: no lost history, no exit 16 inside the 10 s wait.
+    $dRace = Join-Path $root 'ledger-race'; New-Item -ItemType Directory -Path $dRace | Out-Null
+    $race = 1..4 | ForEach-Object { New-Share "race-$_" }
+    $procs = foreach ($folder in $race) {
+        Start-Process -FilePath $shell -PassThru -WindowStyle Hidden -ArgumentList @(
+            '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$helper`"", '-Action', 'grant-roots',
+            '-Roots', "`"$folder`"", '-ReadOnlyRoots', '"|"', '-DataDir', "`"$dRace`"", '-ManageSid', $me)
+    }
+    $procs | Wait-Process -Timeout 120
+    $codes = @($procs | ForEach-Object { $_.ExitCode })
+    $racePaths = Read-LedgerPaths $dRace
+    $missingFromLedger = @($race | Where-Object { $racePaths -notcontains $_ })
+    Check 'S24-2 concurrent helpers on one data directory lose no history' (($codes | Where-Object { $_ -ne 0 }).Count -eq 0 -and $missingFromLedger.Count -eq 0) "exit codes $($codes -join ','); missing $($missingFromLedger.Count)"
+
     # ------------------------------------------------------------ H-14: the service account
     if ($ServiceInstall) {
         if (Get-Service -Name 'FastMediaSorterCompanionSFTP' -ErrorAction SilentlyContinue) {
@@ -196,6 +276,29 @@ try {
                 $r = Invoke-Helper $svcData @('-Action', 'remove', '-ExePath', $worker)
                 Check 'H-14 remove takes the service away' ($r.Code -eq 0 -and -not (Get-Service -Name 'FastMediaSorterCompanionSFTP' -ErrorAction SilentlyContinue)) "exit $($r.Code)"
             }
+
+            # ticket 102 S24-1: the state directory is gone, the action still succeeds, and its lines
+            # are on record in the ELEVATED account's own %TEMP% - the directory is not recreated for it.
+            $gone = Join-Path $root 'svc-gone'
+            $fallbackLog = Join-Path ([IO.Path]::GetTempPath()) 'install-share-service.log'
+            $sizeBefore = if (Test-Path -LiteralPath $fallbackLog) { (Get-Item -LiteralPath $fallbackLog).Length } else { 0 }
+            $r = Invoke-Helper $gone @('-Action', 'remove', '-ExePath', $worker)
+            $fallbackTail = if (Test-Path -LiteralPath $fallbackLog) { (Get-Content -LiteralPath $fallbackLog -Raw) } else { '' }
+            $sizeAfter = if (Test-Path -LiteralPath $fallbackLog) { (Get-Item -LiteralPath $fallbackLog).Length } else { 0 }
+            Check 'S24-1 remove with no state directory exits 0' ($r.Code -eq 0) "exit $($r.Code)"
+            Check 'S24-1 ...the state directory is not recreated just for logging' (-not (Test-Path -LiteralPath $gone)) ''
+            Check 'S24-1 ...and the fallback log in this account''s TEMP holds the run' (
+                $sizeAfter -gt $sizeBefore -and $fallbackTail -match 'action=remove completed') "$fallbackLog ($sizeBefore -> $sizeAfter bytes)"
+
+            # ticket 102 S24-2 / I02.3: remove with an unreadable ledger keeps it byte for byte and says so.
+            $dBadRemove = Join-Path $root 'svc-bad-ledger'; New-Item -ItemType Directory -Path $dBadRemove | Out-Null
+            $badLedger = Join-Path $dBadRemove 'granted-roots.json'
+            [IO.File]::WriteAllText($badLedger, '{ broken', (New-Object Text.UTF8Encoding($false)))
+            $badHash = Get-ByteHash $badLedger
+            $r = Invoke-Helper $dBadRemove @('-Action', 'remove', '-ExePath', $worker)
+            Check 'S24-2 remove keeps an unreadable ledger byte for byte' ((Get-ByteHash $badLedger) -eq $badHash) ''
+            Check 'S24-2 ...and does not call the revoke complete (WARNING + "WITH WARNINGS")' (
+                $r.Log -match 'WARNING' -and $r.Log -match 'WITH WARNINGS' -and $r.Log -notmatch 'server role removed\. State kept') "exit $($r.Code)"
         }
     }
 } finally {

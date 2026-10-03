@@ -1,6 +1,10 @@
-# Fast Media Sorter for Windows
+# Fast Media Sorter & Sharing for Windows
 
-Fast Media Sorter for Windows (formerly FastMediaSorter LITE - it is still published under that name in the Microsoft Store and winget) is a Windows Forms application for quickly sorting, viewing, and managing image and video files - because that folder full of 4000 photos is not going to triage itself. It supports a wide range of media formats and provides features such as:
+Fast Media Sorter & Sharing for Windows is a Windows Forms application for quickly sorting, viewing, and managing image and video files - because that folder full of 4000 photos is not going to triage itself. **Sharing** means giving your media to someone else: the folders you pick can be opened from the Android app, from another copy of this program, or from any SFTP client (see [Your folders over SFTP](#your-folders-over-sftp), [how to use the SFTP service](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html) and [publishing folders for Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html)).
+
+The name changed from "Fast Media Sorter for Windows" (earlier still, "FastMediaSorter LITE"). The Microsoft Store, Add/Remove Programs and winget still list the package as "FastMediaSorter LITE" - that name is frozen on purpose, so upgrades keep correlating with installed copies.
+
+It supports a wide range of media formats and provides features such as:
 
 - Fast navigation through large folders of images and videos (even the embarrassingly large ones)
 - Slideshow and random file viewing modes
@@ -11,7 +15,7 @@ Fast Media Sorter for Windows (formerly FastMediaSorter LITE - it is still publi
 - Move or copy, decided as you go: a digit `1..9`/`0` moves the current file into that folder, **Shift + the same top-row digit copies it there** - no mode to switch on beforehand and forget about. The same pair is on the recipients panel, in both media menus, and in the recipients table (Shift + double-click). Whether a copy then jumps to the next file is one checkbox in Settings, on by default (64-bit program)
 - Recipients panel over the media: a floating list of your hotkey destination folders - click a row to move the current file there, the narrow zone beside it to copy it (or delete it), so you can sort one-handed with the mouse (off by default; toggle in Settings)
 - Image panel for quick visual navigation
-- **A ZIP or CBZ opens like a folder** - a comic or a folder of scans browses, slideshows, zooms and translates exactly like loose files, with nothing unpacked in advance and nothing left behind afterwards (64-bit program)
+- **A ZIP, CBZ, 7z, RAR or CBR opens like a folder** - a comic or a folder of scans browses, slideshows, zooms and translates exactly like loose files, with nothing unpacked in advance and nothing left behind afterwards (64-bit program)
 - **Mark up and crop a picture in its own window** - brush, rectangle and ellipse, colour and thickness, a live crop frame with handles, `Ctrl+Z`, then save over the original or beside it in any of six formats. Your EXIF comes with it (64-bit program)
 - **Turn an animation into a real video** - an animated WEBP, APNG or GIF becomes an ordinary MP4 next to it, with a seek bar, a pause, hardware decoding and full colour, and replaces the original. The encoder (FFmpeg, GPL, ~110 MB) is not bundled: the first conversion asks whether to download it. Because the original is deleted permanently, the app says so first, names both files, and warns when transparency is about to be flattened onto black (64-bit program)
 - **A slow format opens once, not once per view** - animated WEBP, AVIF and HEIC have no Windows codec, so the app decodes them itself; that work is now kept on disk and reused while the file is unchanged, so the "Loading.." badge appears once per file instead of every time you come back to it. Visible, clearable and capped in Settings; `0` switches it off (64-bit program)
@@ -50,12 +54,14 @@ Features include:
 - Favorites system and PIN protection
 - Advanced gestures and keyboard navigation
 
-**Desktop as copilot:** Fast Media Sorter for Windows can act as the mobile app's server - its built-in SFTP service publishes the folders you pick, so the Android app browses this PC directly, on your home network or over the internet. That is the next section.
+**Desktop as copilot:** Fast Media Sorter can act as the mobile app's server - its built-in SFTP service publishes the folders you pick, so the Android app browses this PC directly, on your home network or over the internet. That is the next section.
 
 ## Your folders over SFTP
 
+**FileDO disks:** with the optional FileDO disk component installed, start Share Manager, then register a file-backed disk from FileDO's Disk Manager using Share with Fast Media Sorter & Sharing.. (`Ctrl+Shift+S`). Choose a root name and read-only or read/write access; sealed disks are read-only. FileDO confirms a clean transfer of an already mounted disk and explicitly asks before disabling its local automatic mounting. Registration, opening, and FMS autostart are separate choices. In Share Manager, open **.fdd disks.. -> Connect .fdd..** to select a container, root name and read-only access. Choose **No letter - sharing only** or a free Windows drive letter; that letter is a local alias for the current Windows session and is removed when the disk closes. The disk list shows state, holder, open files and autostart, with open, clean close, explicit force close and remove actions. FileDO registrations appear here too. **Mounted drive..** publishes an existing drive through the ordinary folder flow; its mounting remains your responsibility. If FileDO already holds a container, save and close it there before connecting. Disk control requires a compatible FileDO component and an administrator-capable worker; the ordinary LocalService host cannot mount containers. Updating the UI alone does not change that service account. Never add the worker's temporary mount path as an ordinary folder. Closing retains registration; stopping sharing also deletes the disk's saved autostart key. Pair clients with the existing QR or `.fmscfg` flow: they see the open disk as an SFTP folder, not a Windows SMB share. Encrypted disks are unlocked on the PC; autostart stores their credential in the host's protected store only after explicit consent. Session mode requires sign-in; the service host works without sign-in. If a transfer fails, refresh FileDO's state before retrying or restoring local mounting. Partition disks and the unverified FileDO Store control path are unavailable in this workflow. [FileDO disk guide](how-to-filedo-disks.html) · [FileDO documentation](https://serzhyale.github.io/FileDO/guides/virtual-disks.html#sharing).
+
 Sorting media does not have to mean copying it somewhere first. **Android Folder Share** turns this PC
-into a small SFTP server for the folders you choose, so a sorter running somewhere else works on the
+into an SFTP server for the folders you choose, so a sorter running somewhere else works on the
 files where they already live - nothing is uploaded, no cloud account is involved, and the folders stay
 exactly where they are. It is a plain, standard SFTP service, so those folders open in:
 
@@ -80,8 +86,8 @@ What it does, and what it deliberately does not:
   viewer/sorter.
 - **The connection is encrypted and direct** (SSH/SFTP), device to PC. The client pins this PC's host
   key at the first pairing, so a substituted server is noticed rather than trusted.
-- **Sharing is managed by a separate program** - the bundled tray companion **Fast Media Sorter: Share
-  Manager**, opened from the viewer's folder right-click or from Settings &rarr; Files and system.
+- **Sharing is managed by a separate program** - the bundled tray companion **Share Manager - Fast
+  Media Sorter & Sharing**, opened from the viewer's folder right-click or from Settings &rarr; Files and system.
   Being a 64-bit program itself, it is why folder sharing is 64-bit only.
 
 Step by step: [how to use the SFTP service](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html),
@@ -110,6 +116,7 @@ Short, practical walkthroughs on the site - one per task (English and Russian):
 | [OCR](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-ocr.html) | Recognize text on a picture and read it in your language |
 | [Editor](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-editor.html) | Draw on a photo, crop it, and write the result back |
 | [Archives](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html) | Page through a ZIP or CBZ as if it were a folder |
+| [Resources](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-resources.html) | Open an SFTP server or a network share that needs a login like a folder |
 | [SFTP](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html) | Publish selected PC folders to your Android device |
 | [Android network](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html) | Router, port forwarding and the internet path, step by step |
 
@@ -124,7 +131,7 @@ automatically point at the one that actually runs on your machine.
   **Nothing to install** - the .NET runtime lives inside the program itself, so the
   old ".NET Framework 4.8 required" line is gone for good. Needs Windows 10 version
   1607 or newer, Windows 11, or Windows Server 2016+.
-- **`FastMediaSorter_x86.exe`** - the sorter as a small 32-bit program (~3 MB)
+- **`FastMediaSorter_x86.exe`** - the same sorter as a 32-bit program (~3 MB)
   for Windows 7/8.1 and 32-bit Windows, where the modern runtime simply cannot run.
   It needs .NET Framework 4.8, which those Windows versions either already have or
   can get. Sorting, browsing, OCR and translation are all still in there; what it
@@ -178,11 +185,21 @@ automatically picking the ones matching its own bitness.
   back out of the bin, into the folder and onto the screen. The question before a
   deletion is its own three-value setting - always, only when the file will not go
   to the bin, or never. (The 32-bit program deletes finally, as it always did.)
-- **Archives browse like folders**: a `.zip` or `.cbz` opens as an ordinary file
+- **Archives browse like folders**: a `.zip`, `.cbz`, `.7z`, `.rar` or `.cbr` opens as an ordinary file
   list, one picture extracted at a time into a private folder that is swept away
   when you leave - or on the next archive, if the app was killed. The archive is
   only ever read, so `DEL` and the destination folders say so instead of acting.
-  (7z, RAR and CBR are not open yet.)
+  (A solid 7z or RAR is read in one pass with a progress figure - Esc cancels it - and then flips instantly.)
+- **A server opens like a folder.** An SFTP server - a NAS, a PC sharing folders through the Share Manager,
+  anything that speaks SFTP - or a network share that wants a login is added once (by hand, or by importing the
+  `.fmscfg` file or code text the Share Manager makes) and then opens from the folder box's "Resources" menu or
+  from a typed `sftp://user@host:port/folder` address. Pictures, video, audio and documents are fetched as you page;
+  `RE` asks the server again; `DEL`, `0`..`9`, `Shift`+digit, `F6` and `U` work on the server's own files through a
+  transfer that is proven by content before the original is touched. The server's SSH key is pinned - a file from
+  the Share Manager brings it, a server added by hand shows its fingerprint and asks once (default: No), and a
+  changed key stops the connection and shows both fingerprints. The password is kept only encrypted for your
+  Windows account. Not yet: a server as a `0`..`9` destination, QR-image import, and folders the Share Manager
+  locked with a PIN (the whole file is refused). 64-bit program only.
 - **An editing window that writes to disk.** Brush, rectangle and ellipse, outlined
   or filled, eight colour swatches beside the full picker, thickness in the
   picture's own pixels, `Shift` for a square or circle, `Ctrl+Z`. Cropping is a live
@@ -206,7 +223,7 @@ Short version: the installer works this out for you (see above). Long version:
 | **Video** | LibVLC, with a control bar | IE component (H.264) + LibVLC fallback |
 | **HEIC / HEIF / AVIF** | yes | no - Windows 7/8.1 have no codecs for them |
 | **Recycle Bin + 50-step undo** | yes | no - `DEL` is final and undo is one operation deep |
-| **ZIP / CBZ as a folder** | yes | no - "Unsupported format", as before |
+| **ZIP / CBZ / 7z / RAR / CBR as a folder** | yes | no - "Unsupported format", as before |
 | **Image editing (draw, crop, save)** | yes | no |
 | **Zoom keys, track picking, "Open URL..", media menus, perspective halo** | yes | no |
 | **Android folder sharing** | yes | no - the Share Manager is itself a 64-bit program, so it cannot start on the Windows versions this build is for |

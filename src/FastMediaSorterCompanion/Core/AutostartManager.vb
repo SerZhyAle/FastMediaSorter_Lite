@@ -23,7 +23,7 @@ Public Enum AutostartState
 End Enum
 
 ''' <summary>
-''' Channel-aware logon autostart for Fast Media Sorter: Share Manager.
+''' Channel-aware logon autostart for the Share Manager.
 '''
 ''' Unpackaged (portable ZIP / Inno / winget): opt-in HKCU Run value pointing at
 ''' <b>Companion.exe</b> (NOT the bare worker) - it starts silently into the tray
@@ -242,7 +242,7 @@ Public Module AutostartManager
     ''' <summary>
     ''' One-shot upgrade migration (spec §9.3): if logon autostart is enabled but its
     ''' HKCU Run value still points at the old target (the bare worker exe, as written
-    ''' by the pre-Companion LITE), rewrite it to Companion.exe so the tray icon +
+    ''' by the pre-Companion viewer), rewrite it to Companion.exe so the tray icon +
     ''' controls appear at logon instead of a headless worker. No-op when packaged,
     ''' when autostart is off (value absent), or when the value already matches.
     ''' Called once from startup; never throws.
@@ -291,7 +291,7 @@ Public Module AutostartManager
             name = IO.Path.GetFileName(target)
         Catch
         End Try
-        ' The pre-Companion LITE wrote the bare worker here; the viewer's own exe is the
+        ' The pre-Companion viewer wrote the bare worker here; the viewer's own exe is the
         ' other historical shape of the same entry.
         If String.Equals(name, WorkerProcess.ExeName, StringComparison.OrdinalIgnoreCase) OrElse
            String.Equals(name, "FastMediaSorter_LITE.exe", StringComparison.OrdinalIgnoreCase) OrElse

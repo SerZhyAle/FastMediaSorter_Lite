@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.ObjectModel
 Imports System.ComponentModel
@@ -274,12 +274,34 @@ Partial Public Class Main_Form
                                   End Sub))
     End Sub
 
-    Private Sub ReadShowMediaFile(ByVal read_Mode_Type As String, Optional is_Auto_Skip As Boolean = False)
+    ''' <param name="is_Continuation">The second half of a call that returned while the folder was
+    ''' being read off the UI thread (014 U-03c, EnsureFolderList): the same read mode, run again
+    ''' with the listing in hand. It is the user's ONE action, so it is not counted as another
+    ''' view, not throttled and does not take "the user navigated" a second time.</param>
+    Private Sub ReadShowMediaFile(ByVal read_Mode_Type As String, Optional is_Auto_Skip As Boolean = False,
+                                  Optional is_Continuation As Boolean = False)
 #If Not NETFRAMEWORK Then
-        If IsArchiveOpenPending() Then Return
+        ' A solid archive is still being unpacked: the list and the picture on screen are
+        ' the PREVIOUS folder's, so a click, wheel or slideshow tick must not act on them.
+        ' A call that replaces the list (another folder) still passes.
+        If IsArchiveOpenPending() AndAlso Not NavigationRules.IsListReplacingMode(read_Mode_Type) Then Return
 #End If
 
-        media_View_Count += 1
+#If Not NETFRAMEWORK Then
+        ' While a folder is being read, the list in memory is the one about to be replaced: a
+        ' flip, a jump, a delete or a slideshow tick would act on it and on a file that is leaving
+        ' with it. Only a call that REPLACES the list may pass (it supersedes the scan, see
+        ' EnsureFolderList); the rest is told what the window is waiting for. Nothing is lost:
+        ' the continuation of the scan re-displays whatever is current when the listing lands.
+        If Not is_Continuation AndAlso IsFolderScanRunning() AndAlso
+           Not NavigationRules.IsListReplacingMode(read_Mode_Type) Then
+            lbl_Status.Text = Localization.T("чтение каталога.. ждите!")
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0051: " & read_Mode_Type & " refused - the folder is being read")
+            Return
+        End If
+#End If
+
+        If Not is_Continuation Then media_View_Count += 1
 
         If Not is_Folder_Read_Required Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0050: ReadShowMediaFile = " & read_Mode_Type.ToString)
@@ -297,7 +319,7 @@ Partial Public Class Main_Form
             ' already changed state before calling in, and dropping its display left the old
             ' picture up while DEL / 0-9 aimed at the new file. Those still stamp the clock,
             ' so a key repeat right behind them waits its 40 ms.
-            If Not is_Auto_Skip Then
+            If Not is_Auto_Skip AndAlso Not is_Continuation Then
                 Dim current_Operation_Ms As Long = MonotonicClock.NowMs()
                 If NavigationRules.IsThrottledReadMode(read_Mode_Type) AndAlso
                    Not MonotonicClock.HasElapsed(current_Operation_Ms, last_Action_Ms, minimum_time_before_next_media_file_Ms) Then
@@ -362,7 +384,13 @@ Partial Public Class Main_Form
             ' and every undo protection below was dead code.
             Dim is_After_Undo_Operation As Boolean = (read_Mode_Type = "AfterUndo")
             Dim is_File_Found As Boolean = True
-            If Not UpdateFileIndexAndList(read_Mode_Type, is_File_Found, is_Auto_Skip) Then
+            Dim is_List_Ready As Boolean = UpdateFileIndexAndList(read_Mode_Type, is_File_Found, is_Auto_Skip, is_Continuation)
+#If Not NETFRAMEWORK Then
+            ' A listing that came in for this call is consumed by now - or was never needed. Left
+            ' behind it would be read by the NEXT, unrelated scan of the same folder.
+            folder_Scan_Ready = Nothing
+#End If
+            If Not is_List_Ready Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0350: Mastering the file is failed")
                 Return
             End If
@@ -420,12 +448,28 @@ Partial Public Class Main_Form
     End Sub
 
     Private Function UpdateFileIndexAndList(read_Mode_Type As String, ByRef is_File_Found As Boolean,
-                                            Optional is_Auto_Skip As Boolean = False) As Boolean
+                                            Optional is_Auto_Skip As Boolean = False,
+                                            Optional is_Continuation As Boolean = False) As Boolean
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0400: UpdateFileIndexAndList = " & read_Mode_Type.ToString)
 
-        ' The user is choosing a file themselves, so stop waiting for that locked one -
-        ' otherwise its timer fires up to 45 s later and drags the view off to it.
-        CancelPendingUnlock("")
+        ' Both once per user action: the continuation of a folder scan is the second half of
+        ' the call that already did them, and repeating NoteNavigation here would cancel an
+        ' open (a file double-clicked in Explorer meanwhile) that was accepted after that call.
+        If Not is_Continuation Then
+            ' The user is choosing a file themselves, so stop waiting for that locked one -
+            ' otherwise its timer fires up to 45 s later and drags the view off to it.
+            CancelPendingUnlock("")
+            ' Navigation is ACCEPTED here, before anything can fail: every pending open request is
+            ' obsolete now and a startup resume can no longer claim the window (ticket 106 O01.4).
+            open_Coordinator.NoteNavigation()
+        End If
+
+#If Not NETFRAMEWORK Then
+        ' The folder walk, if this mode needs one, is off the UI thread (014 U-03c): False means
+        ' it is still running, this call is over, and ReadShowMediaFile runs again with the same
+        ' mode when the listing lands.
+        If Not EnsureFolderList(read_Mode_Type, is_Continuation) Then Return False
+#End If
 
         Select Case read_Mode_Type
             Case Mode_Next ' 1
@@ -496,6 +540,12 @@ Partial Public Class Main_Form
 #End If
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0460: case RND InSlideShow")
                 Else
+#If Not NETFRAMEWORK Then
+                    ' A slideshow only ever goes forward, whichever way the user last paged by
+                    ' hand: left standing, "backwards" pointed the prefetch at the file the show
+                    ' has just left (014 U-01) and every slide decoded in front of the viewer.
+                    is_Nav_Backwards = False
+#End If
                     ' Wrap to the start, exactly like the manual "next file" does. The
                     ' clamp that used to be here parked the slideshow on the last file
                     ' for good: the timer kept ticking, the mode stayed on, and every
@@ -508,6 +558,11 @@ Partial Public Class Main_Form
 
 
             Case Mode_FolderAndFile '0
+#If Not NETFRAMEWORK Then
+                ' A folder is opened at its start, and the user goes forward from there: the
+                ' direction of the LAST folder's paging has nothing to say about this one (014 U-01).
+                is_Nav_Backwards = False
+#End If
                 lbl_Status.Text = Localization.T("чтение каталога.. ждите!")
 
                 If Not LoadFiles() Then
@@ -526,6 +581,9 @@ Partial Public Class Main_Form
             Case Mode_FolderAndKnownFile '91
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0470: isExternalInputReceived = " & is_External_Input_Received)
                 is_File_Found = False
+#If Not NETFRAMEWORK Then
+                is_Nav_Backwards = False   ' as for a folder: a file is opened, and paging goes on from it
+#End If
 
                 If is_External_Input_Received Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0480: GetDirectoryInfo = " & Current_Folder_Path)
@@ -588,7 +646,7 @@ Partial Public Class Main_Form
                 Dim confirmMsg = Localization.TF("Вы уверены, что хотите безвозвратно удалить файл '{0}'? Обратно его уже не уговорить.", Path.GetFileName(doomed_File))
 
                 If Not Is_no_request_before_file_operation AndAlso
-                    MessageBox.Show(Me, confirmMsg, Localization.T("Подтверждение удаления"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then
+                    MessageBox.Show(Me, confirmMsg, Localization.T("Подтверждение удаления"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
 
                     Return False ' User cancelled
                 End If
@@ -735,6 +793,11 @@ Partial Public Class Main_Form
     ''' positions in the previous one no longer applies (audit 047, C-13).</summary>
     Private Sub NoteFileListReplaced()
         file_List_Generation += 1
+#If Not NETFRAMEWORK Then
+        ' A new list is a new folder or a re-read one: the pictures the user paged past in the
+        ' old one are not the ones that will be asked for (014 U-01).
+        media_Cache.Clear()
+#End If
     End Sub
 
     Private Function LoadFilesForRandomOrSlideshow(ByRef is_File_Found As Boolean, is_Random_File_Mode As Boolean) As Boolean
@@ -1057,11 +1120,23 @@ Partial Public Class Main_Form
                     ' PREVIOUS file still on it. See Main_Form.LoadingIndicator.vb;
                     ' otherwise identical to LoadImageWithStream.
                     Dim decode_Failure As PathFailureKind = PathFailureKind.Content
-                    Dim image_Data_Tuple As Tuple(Of Image, IO.MemoryStream) =
-                        LoadImageWithProgress(Current_File_Name, fileInfo.Length, decode_Failure)
+                    Dim image_Data_Tuple As Tuple(Of Image, IO.MemoryStream) = Nothing
+#If Not NETFRAMEWORK Then
+                    ' A picture the user has just paged past is still in memory (014 U-01): going
+                    ' back to it is not a decode. Only if it is still the file as it is now.
+                    image_Data_Tuple = TakeCachedPicture(Current_File_Name, fileInfo)
+#End If
+                    If image_Data_Tuple Is Nothing Then
+                        image_Data_Tuple = LoadImageWithProgress(Current_File_Name, fileInfo.Length, decode_Failure)
+                    End If
 
                     If image_Data_Tuple IsNot Nothing Then
                         PlaceDecodedImage(image_Data_Tuple.Item1, image_Data_Tuple.Item2)
+#If Not NETFRAMEWORK Then
+                        ' Where this picture came from, from the attributes just read - so that
+                        ' leaving it can offer it back (and a rewritten file is never shown stale).
+                        SetActiveBoxOrigin(OriginOf(Current_File_Name, fileInfo))
+#End If
                         StartGifLoopPlayback(If(is_PictureBox1_Visible, Picture_Box_1.Image, Picture_Box_2.Image))
                     Else
                         ' Image loading failed - skip to next file
@@ -1153,8 +1228,14 @@ Partial Public Class Main_Form
     Private Sub PlaceDecodedImage(loaded_Image As Image, loaded_Image_Stream As IO.MemoryStream)
         If Not is_this_First_Picture_File_We_Show AndAlso is_Second_PictureBox_Active Then
             ' Use PictureBox2 - load image first, then update visibility
+#If Not NETFRAMEWORK Then
+            ' The picture the user has just left is offered to the cache instead of disposed
+            ' (014 U-01) - one owner at a time, see MediaCache.
+            RetireBoxPicture(2)
+#Else
             If Picture_Box_2.Image IsNot Nothing Then Picture_Box_2.Image?.Dispose()
             If pictureBox2_Stream IsNot Nothing Then pictureBox2_Stream?.Dispose()
+#End If
             Picture_Box_2.Image = loaded_Image
             pictureBox2_Stream = loaded_Image_Stream
 
@@ -1166,8 +1247,12 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0890: P2 set (not found loaded) isSecondaryPictureBoxActive=true")
         Else
             ' Use PictureBox1 - load image first, then update visibility
+#If Not NETFRAMEWORK Then
+            RetireBoxPicture(1)
+#Else
             If Picture_Box_1.Image IsNot Nothing Then Picture_Box_1.Image?.Dispose()
             If pictureBox1_Stream IsNot Nothing Then pictureBox1_Stream?.Dispose()
+#End If
             Picture_Box_1.Image = loaded_Image
             pictureBox1_Stream = loaded_Image_Stream
 
@@ -1194,6 +1279,12 @@ Partial Public Class Main_Form
         BlankActiveMediaSurface()
 
         current_Loaded_File_Name = file_Path
+#If Not NETFRAMEWORK Then
+        If KindOf(file_Path) <> MediaKind.Image AndAlso KindOf(file_Path) <> MediaKind.Video Then
+            ShowContentPlaceholder(file_Path)
+            Return
+        End If
+#End If
         lbl_Status.Text = Localization.TF("Формат не поддерживается: {0}", Path.GetFileName(file_Path))
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1045: unsupported format, surface blanked: " & file_Path)
     End Sub
@@ -1213,6 +1304,9 @@ Partial Public Class Main_Form
                 pictureBox1_Stream.Dispose()
                 pictureBox1_Stream = Nothing
             End If
+#If Not NETFRAMEWORK Then
+            ForgetBoxOrigin(1)
+#End If
             is_PictureBox1_Visible = True
             is_Second_PictureBox_Active = False
         End If
@@ -1353,16 +1447,26 @@ Partial Public Class Main_Form
         KeepRecipientsOverlayOnTop()
     End Sub
 
+#If NETFRAMEWORK Then
     Private Sub UpdateCurrentFileAndDisplay(is_File_Found As Boolean, is_After_Undo_Operation As Boolean)
+#Else
+    Private Async Sub UpdateCurrentFileAndDisplay(is_File_Found As Boolean, is_After_Undo_Operation As Boolean)
+        Try
+#End If
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0381: UpdateCurrentFileAndDisplay, currentFileName: " & Current_File_Name)
 
         ' New media from here on: anything already in flight for the previous one is
         ' now stale and must not touch the screen when it comes back.
         media_Generation += 1
+        ' Navigation also makes every argument / resume probe still out obsolete (ticket 106).
+        open_Requests.Invalidate()
 #If Not NETFRAMEWORK Then
         ' The outgoing video's position and the end of an "Open URL" stream (audit 050
         ' D-01, D-05) - before anything below clears the names they need.
         NoteLeavingCurrentMedia()
+        ReleasePdfDocument()
+        ReleaseTextDocument()
+        ClearEpubPlaceholderData()
         ClearAudioSurface()
         SetMediaDisplayKind(MediaKind.Image)
 
@@ -1415,7 +1519,7 @@ Partial Public Class Main_Form
                 ' drops the entry from the list, so every page of a comic would fall out of
                 ' it one flip at a time. The same holds for a remote resource's file, which
                 ' is not here until it is fetched (006 PV-4). A no-op for a plain file.
-                EnsureEntryLocal(Current_File_Name)
+                If Not Await EnsureEntryLocal(Current_File_Name) Then Return
                 ' An entry the archive REFUSED (too large, bomb, encrypted, unreadable) is not
                 ' a vanished file: it keeps its place in the list and its reason on screen,
                 ' and the dispatch below shows it as refused (audit 052 A-12/G-05).
@@ -1491,7 +1595,7 @@ Partial Public Class Main_Form
                         ' The substitute has not been past the extraction either; without
                         ' this an archive entry taken here was dropped as "missing" too
                         ' (audit 052 A-12).
-                        EnsureEntryLocal(Current_File_Name)
+                        If Not Await EnsureEntryLocal(Current_File_Name) Then Return
 #End If
                     Else
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0977: No more files available")
@@ -1524,7 +1628,7 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
                 ' Same reason as above: this branch reaches a file without going past the
                 ' existence check, and inside an archive nothing is on disk until asked.
-                EnsureEntryLocal(Current_File_Name)
+                If Not Await EnsureEntryLocal(Current_File_Name) Then Return
 #End If
             End If
 
@@ -1582,10 +1686,14 @@ Partial Public Class Main_Form
                 If Not Is_No_Background_Tasks Then lbl_Current_File.Text = CurrentFileDisplayName(Current_File_Name)
 
 #If Not NETFRAMEWORK Then
-                If KindOf(current_File_Extension) <> MediaKind.Audio Then
-                    EndAudioListening()
-                End If
+                ' A non-audio file is about to be shown, so the listening session of the
+                ' sleep timer is over and its deadline goes (057.S08-6 - EndAudioListening
+                ' for why). The audio branch below keeps its running deadline: an album's
+                ' automatic advance re-arms nothing (050 D-03).
+                If KindOf(current_File_Extension) <> MediaKind.Audio Then EndAudioListening()
+#End If
 
+#If Not NETFRAMEWORK Then
                 ' The container branch comes FIRST, before the image/video split: what is
                 ' inside is unknown until the container opens, and the split below can only
                 ' see ".fd-sec" (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §5.3).
@@ -1612,6 +1720,14 @@ Partial Public Class Main_Form
                     PlayVideoWithVlcAsync(Current_File_Name)
                     RequestAudioMetadataAsync(Current_File_Name, media_Generation)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: Audio is set")
+                ElseIf current_File_Extension = ".pdf" Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1010: PDF to load")
+                    LoadPdfDocument(Current_File_Name)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: PDF is set")
+                ElseIf TextFileReader.IsTextExtension(current_File_Extension) Then
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1010: Text document to load")
+                    LoadTextDocument(Current_File_Name)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1020: Text is set")
 #End If
                 ElseIf video_File_Extensions.Contains(current_File_Extension) Then
 #If NETFRAMEWORK Then
@@ -1663,7 +1779,13 @@ Partial Public Class Main_Form
                     is_File_Reseived_From_Outside = False
                 ElseIf Not was_External_Input_Previously AndAlso
                         Not (files_List Is Nothing And files_Array Is Nothing) Then
+#If Not NETFRAMEWORK Then
+                    ' The neighbour in the direction of travel (014 U-01): going back, "the next
+                    ' file" is the one BEFORE this - the net48 build keeps decoding the one after.
+                    next_File_After_Current = PrefetchNeighbourPath()
+#Else
                     next_File_After_Current = If(total_File_Count > 0, If(total_File_Count = current_File_Index + 1, If(is_Files_Array_Active, files_Array(0), files_List(0)), If(is_Files_Array_Active, files_Array(current_File_Index + 1), files_List(current_File_Index + 1))), "")
+#End If
                 Else
                     next_File_After_Current = ""
                 End If
@@ -1771,7 +1893,16 @@ Partial Public Class Main_Form
 
         ' New media is on screen: clear/cancel any stale overlay and (in auto
         ' mode) schedule OCR for the freshly-shown image.
+#If Not NETFRAMEWORK Then
+        UpdateContentWindowTitle()
+#End If
         OnMediaDisplayed()
+#If Not NETFRAMEWORK Then
+        Catch ex As Exception
+            AppFileLogger.LogException("Resource: updating media display", ex)
+            lbl_Status.Text = Localization.T("Не удалось получить файл с ресурса")
+        End Try
+#End If
     End Sub
 
 End Class

@@ -34,4 +34,10 @@ Friend Enum FileOpKind
     ''' Mainline only, and the one inverse that can honestly fail without failing - the bin
     ''' may have been emptied in between, which is an answer rather than an error.</summary>
     RestoreFromBin
+
+    ''' <summary>A whole batch as ONE history entry (004_SPECIFICATION_BATCH_OPERATIONS_ENGINE
+    ''' PB-5). Mainline only: it is never queued and never run - it exists so the undo stack
+    ''' can hold "the gesture the user made once" instead of 200 entries that would push the
+    ''' rest of the history out.</summary>
+    Batch
 End Enum

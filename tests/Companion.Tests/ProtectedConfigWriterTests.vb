@@ -47,6 +47,43 @@ Public Class ProtectedConfigWriterTests
     ' ----------------------------------------------------------------- real filesystem ----
 
     <Fact>
+    Public Sub Inherited_read_access_on_the_parent_never_reaches_the_exported_secret()
+        Dim dir As String = NewDir()
+        Try
+            Dim parent As New DirectoryInfo(dir)
+            Dim security As DirectorySecurity = parent.GetAccessControl()
+            security.AddAccessRule(New FileSystemAccessRule(New SecurityIdentifier(WellKnownSidType.WorldSid, Nothing),
+                FileSystemRights.Read, InheritanceFlags.ContainerInherit Or InheritanceFlags.ObjectInherit,
+                PropagationFlags.None, AccessControlType.Allow))
+            parent.SetAccessControl(security)
+            Dim target As String = Path.Combine(dir, "inherited.fmscfg")
+            Assert.Equal(ConfigWriteOutcome.Saved, ProtectedConfigWriter.Publish(target, Secret))
+            Assert.True(IsOwnerOnly(target))
+            Assert.Equal(Secret, File.ReadAllText(target))
+        Finally
+            Remove(dir)
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub A_protected_leaf_beneath_an_ancestor_others_can_replace_is_refused()
+        Dim dir As String = NewDir()
+        Try
+            Dim leaf As String = Path.Combine(dir, "leaf")
+            Directory.CreateDirectory(leaf)
+            Dim parent As New DirectoryInfo(dir)
+            Dim security As DirectorySecurity = parent.GetAccessControl()
+            security.AddAccessRule(New FileSystemAccessRule(New SecurityIdentifier(WellKnownSidType.WorldSid, Nothing),
+                FileSystemRights.Modify, AccessControlType.Allow))
+            parent.SetAccessControl(security)
+            Assert.Equal(ConfigWriteOutcome.RefusedUnsafeTarget, ProtectedConfigWriter.Publish(Path.Combine(leaf, "secret.fmscfg"), Secret))
+            Assert.Empty(Directory.GetFiles(leaf))
+        Finally
+            Remove(dir)
+        End Try
+    End Sub
+
+    <Fact>
     Public Sub A_new_file_in_an_ordinary_folder_is_owner_only_with_exactly_the_bytes_given()
         Dim dir As String = NewDir()
         Try
@@ -152,9 +189,14 @@ Public Class ProtectedConfigWriterTests
         Friend FailCreate As Exception
         Friend FailMove As Boolean
         Friend FailWrite As Boolean
+        Friend FailFlush As Boolean
         Friend TempOwnerOnly As Boolean = True
         Friend FinalOwnerOnly As Boolean = True
         Friend CorruptFinal As Boolean
+        Friend BytesWritten As Integer
+        Friend ReplaceBeforeRecheck As Boolean
+        Friend ReplaceAfterMove As Boolean
+        Private targetIdentityReads As Integer
 
         Public Function CreateProtected(path As String, ownerSid As SecurityIdentifier) As Stream Implements IConfigFileOps.CreateProtected
             Calls.Add("create")
@@ -170,6 +212,7 @@ Public Class ProtectedConfigWriterTests
             If CorruptFinal Then bytes = New Byte() {1, 2, 3}
             Files.Remove(source)
             Files(destination) = bytes
+            If ReplaceAfterMove Then Files(destination) = Encoding.UTF8.GetBytes("another writer")
         End Sub
 
         Public Sub Delete(path As String) Implements IConfigFileOps.Delete
@@ -200,6 +243,15 @@ Public Class ProtectedConfigWriterTests
         Public Function ReadAllBytes(path As String) As Byte() Implements IConfigFileOps.ReadAllBytes
             Return Files(path)
         End Function
+
+        Public Function Identity(path As String) As String Implements IConfigFileOps.Identity
+            If path = Target Then
+                targetIdentityReads += 1
+                If targetIdentityReads = 2 AndAlso ReplaceBeforeRecheck Then Files(path) = Encoding.UTF8.GetBytes("another writer")
+            End If
+            If Not Files.ContainsKey(path) Then Return Nothing
+            Return Runtime.CompilerServices.RuntimeHelpers.GetHashCode(Files(path)).ToString()
+        End Function
     End Class
 
     Private NotInheritable Class CapturingStream
@@ -217,7 +269,13 @@ Public Class ProtectedConfigWriterTests
 
         Public Overrides Sub Write(buffer() As Byte, offset As Integer, count As Integer)
             If failWrite Then Throw New IOException("disk full")
+            owner.BytesWritten += count
             MyBase.Write(buffer, offset, count)
+        End Sub
+
+        Public Overrides Sub Flush()
+            If owner.FailFlush Then Throw New IOException("flush failure")
+            MyBase.Flush()
         End Sub
 
         Protected Overrides Sub Dispose(disposing As Boolean)
@@ -278,6 +336,28 @@ Public Class ProtectedConfigWriterTests
         Assert.DoesNotContain("move", ops.Calls)
         Assert.Equal("old", Encoding.UTF8.GetString(ops.Files(Target)))
         Assert.Single(ops.Files)
+        Assert.Equal(0, ops.BytesWritten) ' The descriptor is checked BEFORE writing any secret bytes.
+    End Sub
+
+    <Fact>
+    Public Sub A_changed_target_is_refused_before_publication_and_the_other_writer_survives()
+        Dim ops As New FakeOps() With {.ReplaceBeforeRecheck = True}
+        ops.Files(Target) = Encoding.UTF8.GetBytes("old")
+        Assert.Equal(ConfigWriteOutcome.Failed, ProtectedConfigWriter.Publish(Target, Secret, ops))
+        Assert.Equal("another writer", Encoding.UTF8.GetString(ops.Files(Target)))
+        Assert.DoesNotContain("move", ops.Calls)
+        Assert.Single(ops.Files)
+    End Sub
+
+    <Fact>
+    Public Sub A_changed_target_after_publication_is_never_deleted_and_the_previous_bytes_are_recoverable()
+        Dim ops As New FakeOps() With {.ReplaceAfterMove = True}
+        ops.Files(Target) = Encoding.UTF8.GetBytes("old")
+        Assert.Equal(ConfigWriteOutcome.Failed, ProtectedConfigWriter.Publish(Target, Secret, ops))
+        Assert.Equal("another writer", Encoding.UTF8.GetString(ops.Files(Target)))
+        Dim recovery As String = Assert.Single(ops.Files.Keys.Where(Function(path) path.EndsWith(".recovery.tmp")))
+        Assert.Equal("old", Encoding.UTF8.GetString(ops.Files(recovery)))
+        Assert.DoesNotContain("delete:FastMediaSorter.fmscfg", ops.Calls)
     End Sub
 
     <Fact>
@@ -286,25 +366,40 @@ Public Class ProtectedConfigWriterTests
         ops.Files(Target) = Encoding.UTF8.GetBytes("old")
         Assert.Equal(ConfigWriteOutcome.Failed, ProtectedConfigWriter.Publish(Target, Secret, ops))
         Assert.Equal("old", Encoding.UTF8.GetString(ops.Files(Target)))
-        Assert.Single(ops.Files)
+        Assert.Equal(2, ops.Files.Count) ' An uncertain publication retains its protected recovery copy.
     End Sub
 
     <Fact>
-    Public Sub A_published_file_that_fails_the_final_verification_is_withdrawn_and_not_reported_saved()
+    Public Sub A_flush_failure_preserves_old_bytes_and_cleans_only_owned_files()
+        Dim ops As New FakeOps() With {.FailFlush = True}
+        ops.Files(Target) = Encoding.UTF8.GetBytes("old")
+        Assert.Equal(ConfigWriteOutcome.Failed, ProtectedConfigWriter.Publish(Target, Secret, ops))
+        Assert.Equal("old", Encoding.UTF8.GetString(ops.Files(Target)))
+        Assert.Single(ops.Files)
+        Assert.DoesNotContain("move", ops.Calls)
+    End Sub
+
+    <Fact>
+    Public Sub A_published_file_that_fails_verification_keeps_recovery_and_never_deletes_the_target_by_name()
         Dim wrongDescriptor As New FakeOps() With {.FinalOwnerOnly = False}
         Assert.Equal(ConfigWriteOutcome.Failed, ProtectedConfigWriter.Publish(Target, Secret, wrongDescriptor))
-        Assert.False(wrongDescriptor.Files.ContainsKey(Target)) ' it holds a secret under the wrong guard: gone
+        Assert.True(wrongDescriptor.Files.ContainsKey(Target))
+        Assert.Contains(wrongDescriptor.Files.Keys, Function(path) path.EndsWith(".recovery.tmp"))
+        Assert.DoesNotContain(wrongDescriptor.Calls, Function(callName) callName = "delete:FastMediaSorter.fmscfg")
 
         Dim wrongBytes As New FakeOps() With {.CorruptFinal = True}
         Assert.Equal(ConfigWriteOutcome.Failed, ProtectedConfigWriter.Publish(Target, Secret, wrongBytes))
-        Assert.False(wrongBytes.Files.ContainsKey(Target))
+        Assert.True(wrongBytes.Files.ContainsKey(Target))
+        Assert.Contains(wrongBytes.Files.Keys, Function(path) path.EndsWith(".recovery.tmp"))
     End Sub
 
     <Fact>
     Public Sub The_happy_path_creates_writes_moves_in_that_order_and_leaves_one_file()
         Dim ops As New FakeOps()
         Assert.Equal(ConfigWriteOutcome.Saved, ProtectedConfigWriter.Publish(Target, Secret, ops))
-        Assert.Equal({"create", "move"}, ops.Calls.ToArray())
+        Assert.Equal("create", ops.Calls(0))
+        Assert.Equal("create", ops.Calls(1))
+        Assert.Equal("move", ops.Calls(2))
         Assert.Equal(Secret, Encoding.UTF8.GetString(ops.Files(Target)))
         Assert.Single(ops.Files)
     End Sub

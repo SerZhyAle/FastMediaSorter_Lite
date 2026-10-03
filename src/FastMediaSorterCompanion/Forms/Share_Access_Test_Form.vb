@@ -30,6 +30,7 @@ Public NotInheritable Class Share_Access_Test_Form
     Private _detail As Label
     Private _btnClose As Button
     Private _iconHandle As IntPtr
+    Private _headlineFont As Font
     Private _probeStarted As Boolean
     Private _resultLine As String = ""
 
@@ -55,7 +56,13 @@ Public NotInheritable Class Share_Access_Test_Form
         UiLanguage.ApplyTo(Me)
         Me.Text = ShareText.AccessTestTitle()
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
-        AddHandler Me.FormClosed, Sub() ShareIcons.FreeIcon(Me.Icon, _iconHandle)
+        AddHandler Me.FormClosed, Sub()
+                                      ShareIcons.FreeIcon(Me.Icon, _iconHandle)
+                                      If _headlineFont IsNot Nothing Then
+                                          _headlineFont.Dispose()
+                                          _headlineFont = Nothing
+                                      End If
+                                  End Sub
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
         Me.MinimizeBox = False
@@ -73,9 +80,10 @@ Public NotInheritable Class Share_Access_Test_Form
             .Padding = New Padding(16, 16, 16, 12), .GrowStyle = TableLayoutPanelGrowStyle.AddRows}
         tlp.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
 
+        _headlineFont = New Font(Me.Font.FontFamily, Me.Font.Size * 1.15F, FontStyle.Bold)
         _headline = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 8),
             .MaximumSize = New Size(contentWidth, 0), .MinimumSize = New Size(contentWidth, 0),
-            .Font = New Font(Me.Font.FontFamily, Me.Font.Size * 1.15F, FontStyle.Bold),
+            .Font = _headlineFont,
             .Text = ShareText.AccessTestRunningLine(_endpoint)}
         _target = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 8),
             .MaximumSize = New Size(contentWidth, 0), .ForeColor = SystemColors.GrayText,

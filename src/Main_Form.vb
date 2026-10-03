@@ -10,7 +10,7 @@
 'sza250609 gif fix
 'sza250617 
 'sza250721 choose file
-'sza250723 LITE
+'sza250723 the viewer
 'sza250808 zoom_Scale 
 'sza251009 is_Super_Full_Screen_Mode
 
@@ -282,6 +282,11 @@ Public Class Main_Form
     ''' resumes - nothing cancels it, so it has to check.</summary>
     Private media_Generation As Integer = 0
 
+    ''' <summary>Identity of the latest "open this path" request (argument, resume, unlock
+    ''' retry) - moved by a request being ACCEPTED and by navigation, never by media being
+    ''' displayed, which is what media_Generation counts (ticket 106).</summary>
+    Private ReadOnly open_Requests As New OpenRequestSequence()
+
 #If NETFRAMEWORK Then
     ' The one-operation-deep history of the x86 viewer. On the mainline these three are
     ' replaced by undo_Entries (Main_Form.FileOperations.vb) - a bounded stack that also
@@ -383,17 +388,11 @@ Public Class Main_Form
                     MyBase.WndProc(m)
                     Return
                 End If
-                ' The sender (Application_Events) encodes the path as UTF-8. Decode it the
-                ' same way: PtrToStringAnsi uses the system code page and silently mangles
-                ' any non-ASCII filename, which then fails File.Exists ("file not found").
+                ' The sender (Application_Events) encodes the path as UTF-8. Decode it safely
+                ' with payload bounds validation to prevent large allocations on UI thread (057.S15-6).
                 Dim received_Data As String = ""
-                If cds.cbData > 0 AndAlso cds.lpData <> IntPtr.Zero Then
-                    Dim received_Bytes(cds.cbData - 1) As Byte
-                    Marshal.Copy(cds.lpData, received_Bytes, 0, cds.cbData)
-                    received_Data = Encoding.UTF8.GetString(received_Bytes)
-                End If
-                If String.IsNullOrEmpty(received_Data) Then
-                    AppFileLogger.WriteLine("WM_COPYDATA from a viewer launch carried no data")
+                If Not SingleInstanceProtocol.TryDecodePayload(cds.cbData, cds.lpData, received_Data) Then
+                    AppFileLogger.WriteLine("WM_COPYDATA from a viewer launch carried invalid or excessive data")
                     Return
                 End If
 
@@ -552,7 +551,7 @@ Public Class Main_Form
     Private Sub lbl_Info_LinkClicked(sender As Object, e As System.Windows.Forms.LinkLabelLinkClickedEventArgs) Handles lbl_Info.LinkClicked
         ' Explicit UseShellExecute: mailto needs the shell; net48 defaulted to True,
         ' .NET defaults to False (would throw Win32Exception on the modern build).
-        System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo("mailto:" & Author_Email & "?subject=Fast Media Sorter for Windows:") With {.UseShellExecute = True})
+        System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo("mailto:" & Author_Email & "?subject=" & Uri.EscapeDataString(ProductNames.Full & ":")) With {.UseShellExecute = True})
     End Sub
 
 
@@ -563,6 +562,14 @@ Public Class Main_Form
 
     Private Sub FolderSelected()
         Is_No_Background_Tasks = False
+#If Not NETFRAMEWORK Then
+        ' Re-reading a remote folder means asking the server again; the listing held by the session is a
+        ' snapshot taken when it was opened.
+        If IsResourceMode() Then
+            RefreshActiveResource()
+            Return
+        End If
+#End If
         If Current_Folder_Path <> "" Then
             ReadShowMediaFile(Mode_FolderAndFile)
         Else
@@ -647,6 +654,7 @@ Public Class Main_Form
                 ' which is what the archive mode is recognised by.
                 LeaveArchive()
                 LeaveResource()
+                If TryOpenAsResourceLocator(cmbox_Media_Folder.SelectedItem.ToString()) Then Return
 #End If
                 Is_No_Background_Tasks = False
                 Current_Folder_Path = cmbox_Media_Folder.SelectedItem.ToString()
@@ -760,6 +768,11 @@ Public Class Main_Form
     ''' that would block there. Empty when there is no parent, which puts the caller back on
     ''' the old wording rather than on a wrong noun.</summary>
     Private Shared Function FolderOfFile(file_Path As String) As String
+#If Not NETFRAMEWORK Then
+        ' A server folder's file (a remote slot): its folder's address, not GetDirectoryName's
+        ' backslashed rewrite of it.
+        If ResourceLocator.IsLocator(file_Path) Then Return ResourceLocator.ParentOf(file_Path)
+#End If
         Try
             Return If(System.IO.Path.GetDirectoryName(file_Path), "")
         Catch

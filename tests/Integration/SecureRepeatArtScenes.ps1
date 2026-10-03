@@ -671,25 +671,10 @@ try {
         throw "the password dialog stayed up after submit$(if ($warning) { ': ' + $warning })"
     }
 
-    Start-Sleep -Seconds 5   # open, first play, first scrub
-    if ($null -ne (Find-PasswordField $viewer.Id)) {
-        throw 'the password dialog is back - the credential did not open the container'
-    }
-    if (Find-VlcSupportPrompt $viewer.Id) {
-        throw 'the viewer is offering to install VLC support - the runtime probe failed this session, playback never started'
-    }
     if (-not (Wait-True 8 { $null -ne (Get-MainWindow $viewer.Id) })) {
         throw 'the viewer window is gone after the unlock'
     }
     $mainWindow = Get-MainWindow $viewer.Id
-
-    # the clock must tick: a covered or dead video surface would make every later step
-    # theatre (this scene drives an on-screen viewer that shares the desktop with
-    # whoever else is using the machine). The control overlay auto-hides, and a mouse
-    # move over the video is what summons it (Main_Form.VideoPlayer.vb) - so each sample
-    # wakes it first.
-    $clock1 = ''
-    $clock2 = ''
     $condPane = New-Object System.Windows.Automation.PropertyCondition(
         [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
         [System.Windows.Automation.ControlType]::Pane)
@@ -701,30 +686,24 @@ try {
         }
         return ''
     }
-    function Wake-Controls([System.Windows.Automation.AutomationElement]$Scope) {
-        [FmsHarness.Native]::SetForegroundWindow($Scope.Current.NativeWindowHandle) | Out-Null
-        $r = $Scope.Current.BoundingRectangle
-        $cx = [int]($r.X + $r.Width / 2)
-        $cy = [int]($r.Y + $r.Height - 25)
-        [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(($cx - 80), $cy)
-        [FmsHarness.Native]::mouse_event(0x0001, 1, 1, 0, [System.UIntPtr]::Zero)
-        Start-Sleep -Milliseconds 100
-        [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(($cx + 80), $cy)
-        [FmsHarness.Native]::mouse_event(0x0001, 1, 1, 0, [System.UIntPtr]::Zero)
-        Start-Sleep -Milliseconds 150
-        [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point($cx, $cy)
-        [FmsHarness.Native]::mouse_event(0x0001, 1, 1, 0, [System.UIntPtr]::Zero)
-        Start-Sleep -Milliseconds 150
+
+    # The clock must tick: a covered or dead video surface would make every later step theatre.
+    $clock1 = ''
+    $clock2 = ''
+    $deadline = (Get-Date).AddSeconds(8)
+    while ((Get-Date) -lt $deadline) {
+        $c = Get-ClockPane $mainWindow
+        if ($c) {
+            if (-not $clock1) {
+                $clock1 = $c
+            } elseif ($c -ne $clock1) {
+                $clock2 = $c
+                break
+            }
+        }
+        Start-Sleep -Milliseconds 400
     }
-    Wake-Controls $mainWindow
-    $clock1 = Get-ClockPane $mainWindow
-    $clock2 = $clock1
-    $deadline = (Get-Date).AddSeconds(10)
-    while ((Get-Date) -lt $deadline -and ($clock2 -eq $clock1 -or -not $clock2)) {
-        Start-Sleep -Milliseconds 500
-        Wake-Controls $mainWindow
-        $clock2 = Get-ClockPane $mainWindow
-    }
+
     try {
         if (-not $clock1 -or -not $clock2 -or $clock1 -eq $clock2) {
             throw "playback is not running (clock '$clock1' -> '$clock2') - is something covering or stopping the video?"
@@ -734,6 +713,14 @@ try {
         throw
     }
     Write-Host "  playback confirmed: $clock1 -> $clock2"
+
+    Start-Sleep -Seconds 3   # open, first play, first scrub
+    if ($null -ne (Find-PasswordField $viewer.Id)) {
+        throw 'the password dialog is back - the credential did not open the container'
+    }
+    if (Find-VlcSupportPrompt $viewer.Id) {
+        throw 'the viewer is offering to install VLC support - the runtime probe failed this session, playback never started'
+    }
 
     $preToggle = @(Get-TreeListing (Join-Path $portableDir 'art'))
     if ($preToggle.Count -ne 0) {

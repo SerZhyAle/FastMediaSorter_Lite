@@ -29,6 +29,10 @@ Partial Public Class Main_Form
     ''' session, which is exactly as long as §4.3 says it applies.</summary>
     Private system_Animations_Enabled As Boolean?
 
+    ' Save() intentionally re-reads this cross-process setting. A failed import write
+    ' must retry the explicit value before Save() can re-read the old registry value.
+    Private pending_Allow_New_Windows_Persistence As Boolean
+
     Private Function RecentFilesLimit() As Integer
         Return If(modern_Preferences Is Nothing, 50, modern_Preferences.RecentFilesLimit)
     End Function
@@ -38,24 +42,41 @@ Partial Public Class Main_Form
         Return modern_Preferences
     End Function
 
-    Friend Sub ReplaceModernPreferences(imported As ModernViewerPreferences)
+    ''' <summary>Applies an imported profile to the live object. True when it was also written
+    ''' to the registry; False when the write failed - the profile IS applied, the unsaved state
+    ''' is kept and retried by the settings flush (105 L09), and the caller says so.</summary>
+    Friend Function ReplaceModernPreferences(imported As ModernViewerPreferences) As Boolean
         If imported Is Nothing Then Throw New ArgumentNullException(NameOf(imported))
         imported.Normalize()
         ' Into the existing object, never a new reference: the settings window's rows
         ' write into the instance they were built from (053 F-02).
         GetModernPreferences().CopyFrom(imported)
-        ' Save() alone can never change this one key - it re-reads it first (053 F-18).
-        modern_Preferences.PersistAllowNewWindows()
-        ApplyModernPreferencesFromSettings()
-    End Sub
+        pending_Allow_New_Windows_Persistence = True
+        Dim persisted As Boolean = True
+        Try
+            ' Save() alone can never change this one key - it re-reads it first (053 F-18).
+            modern_Preferences.PersistAllowNewWindows()
+            pending_Allow_New_Windows_Persistence = False
+        Catch ex As Exception
+            persisted = False
+            AppFileLogger.LogException("Settings import: persisting AllowNewWindows", ex)
+            MarkSettingsDirty()
+        End Try
+        If Not ApplyModernPreferencesFromSettings() Then persisted = False
+        Return persisted
+    End Function
 
-    Friend Sub ApplyModernPreferencesFromSettings()
-        If modern_Preferences Is Nothing Then Return
+    ''' <summary>Applies the live preferences everywhere and writes them. True when the write took;
+    ''' a failed write keeps the main block dirty so the flush retries it (105 L09).</summary>
+    Friend Function ApplyModernPreferencesFromSettings() As Boolean
+        If modern_Preferences Is Nothing Then Return True
         modern_Preferences.Normalize()
         InitializeExtensionLists()
         folder_List_Loaded_For = String.Empty
         ResetShuffleCycle()
         ApplyRecipientsOverlay()
+        ' The floating chrome switch, and the scale / pinned choices the panels read.
+        ApplyModernChrome()
         ' The two track languages have a live copy in the player layer - it is what a
         ' pick from the Tracks menu writes into - so a change made here has to reach it
         ' now, not at the next start (§6.3).
@@ -70,18 +91,33 @@ Partial Public Class Main_Form
         ' Expanded settings are live settings. Persist after normalisation so a change
         ' made in the settings window survives a crash and is visible to the next
         ' process without waiting for the main form to close.
-        modern_Preferences.Save()
-    End Sub
+        Try
+            If pending_Allow_New_Windows_Persistence Then
+                modern_Preferences.PersistAllowNewWindows()
+                pending_Allow_New_Windows_Persistence = False
+            End If
+            modern_Preferences.Save()
+            Return True
+        Catch ex As Exception
+            AppFileLogger.LogException("Settings: persisting the preferences", ex)
+            ' The values are live; only the registry copy is behind. The main settings block
+            ' includes this profile, so marking it dirty schedules the bounded retries.
+            MarkSettingsDirty()
+            Return False
+        End Try
+    End Function
 
     ''' <summary>Applies a video/audio navigation toggle as a visible folder refresh.
     ''' The list is never mutated below a running slideshow: it is stopped first and the
     ''' ordinary load path then rebuilds list, counter, grid and prefetch together.</summary>
     Friend Sub ApplyMediaKindNavigationPreferenceChange()
         If modern_Preferences Is Nothing Then Return
-        If Is_slide_show_mode Then SlideShowStop()
+        Dim stoppedSlideshow As Boolean = Is_slide_show_mode
+        If stoppedSlideshow Then SlideShowStop()
         ApplyModernPreferencesFromSettings()
         If String.IsNullOrEmpty(Current_Folder_Path) Then Return
         ReadShowMediaFile(Mode_FolderAndFile)
+        lbl_Status.Text = Localization.T(If(stoppedSlideshow, "Слайд-шоу остановлено; папка перечитана", "Папка перечитана"))
     End Sub
 
     Private Function RecentFoldersLimit() As Integer
@@ -121,7 +157,6 @@ Partial Public Class Main_Form
     ''' <summary>Audio containers, which the viewer keeps in the video list because LibVLC
     ''' plays them the same way - but §3.4's dialog offers them as their own group, because
     ''' "show me the pictures and the videos but not the podcasts" is a real thing to want.</summary>
-    Private Shared ReadOnly audio_Only_Extensions As String() = {".mp3", ".wav", ".wma", ".m4a", ".ogg"}
 
     ''' <summary>
     ''' Every extension the app can open, in the four groups §3.4 names. Built from the
@@ -130,12 +165,14 @@ Partial Public Class Main_Form
     ''' does not accept.
     ''' </summary>
     Friend Function SupportedExtensionGroups() As List(Of KeyValuePair(Of String, String()))
-        Dim audio As New HashSet(Of String)(audio_Only_Extensions, StringComparer.OrdinalIgnoreCase)
+        Dim p As ModernViewerPreferences = GetModernPreferences()
         Dim groups As New List(Of KeyValuePair(Of String, String()))() From {
-            New KeyValuePair(Of String, String())("Изображения", Image_File_Extensions.OrderBy(Function(e) e).ToArray()),
-            New KeyValuePair(Of String, String())("Видео", video_File_Extensions.Where(Function(e) Not audio.Contains(e)).OrderBy(Function(e) e).ToArray()),
-            New KeyValuePair(Of String, String())("Аудио", video_File_Extensions.Where(Function(e) audio.Contains(e)).OrderBy(Function(e) e).ToArray()),
-            New KeyValuePair(Of String, String())("Другие поддерживаемые", web_specific_image_extensions.OrderBy(Function(e) e).ToArray())}
+            New KeyValuePair(Of String, String())(Localization.T("Изображения"), Image_File_Extensions.OrderBy(Function(e) e).ToArray()),
+            New KeyValuePair(Of String, String())(Localization.T("Видео"), video_File_Extensions.Where(Function(e) KindOf(e) = MediaKind.Video).OrderBy(Function(e) e).ToArray()),
+            New KeyValuePair(Of String, String())(Localization.T("Аудио"), video_File_Extensions.Where(Function(e) KindOf(e) = MediaKind.Audio).OrderBy(Function(e) e).ToArray()),
+            New KeyValuePair(Of String, String())(Localization.T("Другие поддерживаемые"), web_specific_image_extensions.OrderBy(Function(e) e).ToArray()),
+            New KeyValuePair(Of String, String())(Localization.T("Документы"), p.DocumentExtensionSet().OrderBy(Function(e) e).ToArray()),
+            New KeyValuePair(Of String, String())(Localization.T("Другие"), p.OtherExtensionSet().OrderBy(Function(e) e).ToArray())}
         Return groups.Where(Function(group) group.Value.Length > 0).ToList()
     End Function
 
@@ -246,6 +283,7 @@ Partial Public Class Main_Form
                     If factor > 0.0R Then ApplyZoomFactor(factor, PanelCentreAnchor())
             End Select
         Catch ex As Exception
+            AppFileLogger.LogException("Applying the new-image scale", ex)
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1142: new-image scale skipped: [" & ex.GetType().Name & "] " & ex.Message)
         Finally
             is_Zoom_Applied_By_Program = False
@@ -333,7 +371,8 @@ Partial Public Class Main_Form
         Try
             Dim info As New FileInfo(filePath)
             pending_Video_Seek = modern_Preferences.RememberedVideoPosition(info.FullName, info.LastWriteTimeUtc.Ticks, info.Length)
-        Catch
+        Catch ex As Exception
+            AppFileLogger.LogException("Reading the remembered playback position", ex)
             ClearPendingVideoPosition()
         End Try
     End Sub
@@ -348,7 +387,8 @@ Partial Public Class Main_Form
             Dim info As New FileInfo(vlc_Playing_Path)
             modern_Preferences.StoreVideoPosition(info.FullName, info.LastWriteTimeUtc.Ticks, info.Length, vlc_Media_Player.Position)
             modern_Preferences.Save()
-        Catch
+        Catch ex As Exception
+            AppFileLogger.LogException("Saving the playback position", ex)
         End Try
     End Sub
 
@@ -360,7 +400,8 @@ Partial Public Class Main_Form
             Dim info As New FileInfo(filePath)
             modern_Preferences.StoreVideoPosition(info.FullName, info.LastWriteTimeUtc.Ticks, info.Length, 1.0F)
             modern_Preferences.Save()
-        Catch
+        Catch ex As Exception
+            AppFileLogger.LogException("Clearing the finished playback position", ex)
         End Try
     End Sub
 
@@ -372,6 +413,10 @@ Partial Public Class Main_Form
         ' could never be found again, and 010 §4.6 keeps the temporary path out of every
         ' persisted history (audit 052 A-05).
         If ArchivePaths.IsUnderArchiveCache(filePath) Then Return False
+        ' The same holds for a file fetched from a remote resource: its copy sits in a per-session
+        ' directory that is deleted when the resource is left, so a position stored under it could
+        ' never match again - and the cache path must not enter a persisted history (007 section 7).
+        If RemoteCachePaths.IsSessionCopy(filePath) Then Return False
         Return True
     End Function
 

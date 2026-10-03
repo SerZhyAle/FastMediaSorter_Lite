@@ -169,7 +169,7 @@ function Start-Elevated([string]$path, [string[]]$arguments) {
 
 # --- 0. what is on this machine right now ----------------------------------------
 
-Write-Host "Fast Media Sorter - Folder Share SERVER edition: build + reinstall locally" -ForegroundColor Cyan
+Write-Host "Fast Media Sorter & Sharing: Folder Share Server (Server edition): build + reinstall locally" -ForegroundColor Cyan
 Write-Host ""
 
 $arpBefore          = Get-ServerArp

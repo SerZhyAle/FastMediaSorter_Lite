@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.IO
 Imports System.IO.Pipes
@@ -16,14 +16,15 @@ Imports Microsoft.Win32.SafeHandles
 ''' (companion\fms-share-worker.exe). One request -> one response per
 ''' connection; the worker closes the pipe after replying. Transport only -
 ''' the worker owns the SFTP server, keys, mDNS, port mapping and QR/config
-''' rendering. Protocol: WORKER-IPC sections 2-5, wire schemaVersion 1.
+''' rendering. Legacy wire schema 1; DISK-SHARE disk requests use schema 2.
 ''' </summary>
 Public NotInheritable Class WorkerIpc
 
     ''' <summary>Pipe name (server side is \\.\pipe\fms-companion).</summary>
     Public Const PipeName As String = "fms-companion"
 
-    ''' <summary>IPC schema version this client speaks (WORKER-IPC section 3 rule 1).
+    ''' <summary>Legacy IPC schema (WORKER-IPC section 3 rule 1). RequestSchema chooses
+    ''' schema 2 only for the six DISK-SHARE request types.
     ''' It rides on every request, and a response carrying a HIGHER one is refused cleanly by
     ''' <see cref="EnsureUnderstood"/> - WORKER-IPC section 6 rule 3.</summary>
     Public Const SchemaVersion As Integer = 1
@@ -73,7 +74,7 @@ Public NotInheritable Class WorkerIpc
     Public Shared Function Send(request As WorkerRequest, timeoutMs As Integer, pipeName As String) As WorkerResponse
         If request Is Nothing Then Throw New ArgumentNullException(NameOf(request))
         If String.IsNullOrEmpty(pipeName) Then Throw New ArgumentNullException(NameOf(pipeName))
-        request.schemaVersion = SchemaVersion
+        request.schemaVersion = RequestSchema(request)
 
         Using deadline As New CancellationTokenSource(Math.Max(250, timeoutMs))
             Try
@@ -93,7 +94,7 @@ Public NotInheritable Class WorkerIpc
     ''' </summary>
     Friend Shared Function SerializeRequest(request As WorkerRequest) As Byte()
         If request Is Nothing Then Throw New ArgumentNullException(NameOf(request))
-        request.schemaVersion = SchemaVersion
+        request.schemaVersion = RequestSchema(request)
         Return Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request, JsonOpts))
     End Function
 
@@ -102,7 +103,7 @@ Public NotInheritable Class WorkerIpc
     ''' the version check. Throws <see cref="WorkerVersionRefusedException"/> for a response
     ''' from a newer worker - never returns a partially understood one.
     ''' </summary>
-    Friend Shared Function ParseResponse(text As String) As WorkerResponse
+    Friend Shared Function ParseResponse(text As String, Optional understoodSchema As Integer = SchemaVersion) As WorkerResponse
         ' Deserialize is case-insensitive (JsonOpts), so PascalCase DTO names
         ' bind to the worker's camelCase JSON fields.
         Dim response As WorkerResponse
@@ -115,13 +116,27 @@ Public NotInheritable Class WorkerIpc
             ' we could not read", never "nobody answered" (ticket 054 H-22) - that reading sent
             ' EnsureRunning off to spawn a second worker that could only lose the pipe.
             Dim version As Integer = TryReadSchemaVersion(text)
-            If version > SchemaVersion Then Throw New WorkerVersionRefusedException(version, SchemaVersion)
+            If version > understoodSchema Then Throw New WorkerVersionRefusedException(version, understoodSchema)
             Throw New WorkerExchangeException(WorkerExchangeProblem.Malformed, "Unreadable worker answer.", ex)
         End Try
         ' A literal "null" body deserializes to Nothing, which every caller read as silence.
         If response Is Nothing Then Throw New WorkerExchangeException(WorkerExchangeProblem.Malformed, "Empty worker answer.")
-        EnsureUnderstood(response)
+        EnsureUnderstood(response, understoodSchema)
+        If understoodSchema = 2 AndAlso response.Ok AndAlso response.SchemaVersion <> 2 Then
+            Throw New WorkerExchangeException(WorkerExchangeProblem.Malformed, "A disk response must use schema 2.")
+        End If
+        If response.Disks IsNot Nothing AndAlso response.Disks.Count > 1024 Then Throw New WorkerExchangeException(WorkerExchangeProblem.Malformed, "Too many disk records.")
+        If response.Status?.Roots IsNot Nothing AndAlso response.Status.Roots.Count > 1024 Then Throw New WorkerExchangeException(WorkerExchangeProblem.Malformed, "Too many roots.")
         Return response
+    End Function
+
+    Friend Shared Function RequestSchema(request As WorkerRequest) As Integer
+        Select Case request.type
+            Case "disk-share", "disk-open", "disk-close", "disk-autostart", "disk-status", "disk-list"
+                Return 2
+            Case Else
+                Return SchemaVersion
+        End Select
     End Function
 
     ''' <summary>The top-level <c>schemaVersion</c> of an answer that did not bind as a whole,
@@ -228,10 +243,15 @@ Public NotInheritable Class WorkerIpc
         Using pipe As New NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous)
             Await pipe.ConnectAsync(timeoutMs, ct).ConfigureAwait(False)
             VerifyServer(pipe, pipeName)
+            If Not String.IsNullOrEmpty(request.password) AndAlso pipeName = WorkerIpc.PipeName Then VerifyCredentialServer(pipe)
 
             Dim payload As Byte() = SerializeRequest(request)
-            Await pipe.WriteAsync(payload, 0, payload.Length, ct).ConfigureAwait(False)
-            Await pipe.FlushAsync(ct).ConfigureAwait(False)
+            Try
+                Await pipe.WriteAsync(payload, 0, payload.Length, ct).ConfigureAwait(False)
+                Await pipe.FlushAsync(ct).ConfigureAwait(False)
+            Finally
+                Array.Clear(payload)
+            End Try
 
             ' No length prefix - read until the worker closes its end.
             Dim respText As String
@@ -240,6 +260,7 @@ Public NotInheritable Class WorkerIpc
                 Do
                     Dim n As Integer = Await pipe.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(False)
                     If n <= 0 Then Exit Do
+                    If RequestSchema(request) = 2 AndAlso ms.Length + n > 256 * 1024 Then Throw New WorkerExchangeException(WorkerExchangeProblem.Malformed, "Disk response exceeds 256 KiB.")
                     ms.Write(buffer, 0, n)
                 Loop
                 respText = Encoding.UTF8.GetString(ms.ToArray())
@@ -249,7 +270,7 @@ Public NotInheritable Class WorkerIpc
                 Throw New IOException("Companion worker closed the pipe without a response.")
             End If
 
-            Return ParseResponse(respText)
+            Return ParseResponse(respText, RequestSchema(request))
         End Using
     End Function
 
@@ -281,11 +302,40 @@ Public NotInheritable Class WorkerIpc
     ''' "could not reach the companion" and EnsureRunning went on to spawn a second one.
     ''' <see cref="WorkerProcess.Exchange"/> is where it is turned into a typed result.
     ''' </summary>
-    Friend Shared Sub EnsureUnderstood(response As WorkerResponse)
+    Friend Shared Sub EnsureUnderstood(response As WorkerResponse, Optional understoodSchema As Integer = SchemaVersion)
         If response Is Nothing Then Return
-        If response.SchemaVersion <= SchemaVersion Then Return
-        Throw New WorkerVersionRefusedException(response.SchemaVersion, SchemaVersion)
+        If response.SchemaVersion <= understoodSchema Then Return
+        Throw New WorkerVersionRefusedException(response.SchemaVersion, understoodSchema)
     End Sub
+
+    Private Shared Sub VerifyCredentialServer(pipe As NamedPipeClientStream)
+        Dim pid As UInteger
+        If GetNamedPipeServerProcessId(pipe.SafePipeHandle, pid) Then
+            Try
+                Dim handle As IntPtr = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, CInt(pid))
+                If handle = IntPtr.Zero Then Throw New IOException("Cannot query the worker image.")
+                Try
+                    Dim pathBuffer As New StringBuilder(32768)
+                    Dim length As Integer = pathBuffer.Capacity
+                    If Not QueryFullProcessImageName(handle, 0, pathBuffer, length) Then Throw New IOException("Cannot read the worker image.")
+                    Dim path As String = pathBuffer.ToString()
+                    If String.Equals(IO.Path.GetFileName(path), "fms-share-worker.exe", StringComparison.OrdinalIgnoreCase) Then
+                        If ServiceControl.ServiceProcessId() <> CInt(pid) OrElse
+                           path.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles) & "\", StringComparison.OrdinalIgnoreCase) OrElse
+                           path.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86) & "\", StringComparison.OrdinalIgnoreCase) Then Return
+                    End If
+                Finally
+                    CloseHandle(handle)
+                End Try
+            Catch
+            End Try
+        End If
+        Throw New WorkerExchangeException(WorkerExchangeProblem.NotOurWorker, "Credential receiver identity could not be verified.")
+    End Sub
+
+    <DllImport("kernel32.dll", CharSet:=CharSet.Unicode, SetLastError:=True)>
+    Private Shared Function QueryFullProcessImageName(process As IntPtr, flags As UInteger, path As StringBuilder, ByRef size As Integer) As Boolean
+    End Function
 
 End Class
 
@@ -360,9 +410,21 @@ End Class
 
 ''' <summary>Request envelope. type is one of the WORKER-IPC section 4 message names.</summary>
 Public Class WorkerRequest
+    Public Property owner As String
+    Public Property action As String
+    Public Property containerPath As String
+    Public Property rootName As String
+    Public Property [readOnly] As Boolean?
+    Public Property password As String
+    Public Property enable As Boolean?
+    Public Property consent As Boolean?
+    Public Property force As Boolean?
+    Public Property drainTimeout As Integer?
+    <JsonPropertyOrder(-2)>
     Public Property schemaVersion As Integer = WorkerIpc.SchemaVersion
     ' "type" and "readOnly" collide with VB keywords; bracket-escape keeps the
     ' emitted JSON field name (the worker matches it case-insensitively anyway).
+    <JsonPropertyOrder(-1)>
     Public Property [type] As String = ""
     ''' <summary>Only sent for SetSharedFolders; replaces the whole list.</summary>
     Public Property folders As List(Of ShareFolder) = Nothing
@@ -385,10 +447,33 @@ Public Class WorkerRequest
     ''' hence <see cref="WorkerStatus.PortSupported"/>, which turns that into a
     ''' diagnosis.</summary>
     Public Property port As Integer?
+    ''' <summary>SetBroadcastPolicy: enable or disable the HTTP broadcast gateway.</summary>
+    Public Property broadcastEnabled As Boolean?
+    ''' <summary>SetBroadcastPolicy: optional port for the HTTP broadcast gateway.</summary>
+    Public Property broadcastPort As Integer?
+    ''' <summary>CreateBroadcast: "file" or "folder".</summary>
+    Public Property kind As String
+    ''' <summary>CreateBroadcast: host path of file or folder.</summary>
+    Public Property hostPath As String
+    ''' <summary>CreateBroadcast: include subfolders for folder broadcasts.</summary>
+    Public Property recursive As Boolean?
+    ''' <summary>CreateBroadcast: suggested channel title.</summary>
+    Public Property title As String
+    ''' <summary>CreateBroadcast: lifetime in seconds (0 = until revoked).</summary>
+    Public Property ttlSeconds As Long?
+    ''' <summary>RefreshBroadcast / RevokeBroadcast: ID of target broadcast.</summary>
+    Public Property id As String
 End Class
 
 ''' <summary>A shared root. Used both in requests (folders) and status (roots).</summary>
 Public Class ShareFolder
+    Public Property owner As String
+    <JsonIgnore>
+    Public ReadOnly Property IsFmsOwned As Boolean
+        Get
+            Return String.IsNullOrEmpty(owner) OrElse owner = "fms"
+        End Get
+    End Property
     Public Property name As String = ""
     Public Property hostPath As String = ""
     ''' <summary>Default False (writable) mirrors the product default
@@ -398,6 +483,22 @@ Public Class ShareFolder
     ''' that forgets. It used to default True, which silently served folders
     ''' read-only while the .fmscfg advertised them writable.</summary>
     Public Property [readOnly] As Boolean = False
+End Class
+
+''' <summary>A broadcast record served by the HTTP gateway in the worker.</summary>
+Public Class WorkerBroadcast
+    Public Property Id As String = ""
+    Public Property Token As String = ""
+    Public Property Kind As String = ""
+    Public Property HostPath As String = ""
+    Public Property Title As String = ""
+    Public Property Recursive As Boolean
+    Public Property ItemCount As Integer
+    Public Property DurationSeconds As Long
+    Public Property CreatedAt As String = ""
+    Public Property ExpiresAt As String = ""
+    Public Property Hits As Long
+    Public Property BytesServed As Long
 End Class
 
 ' --- response DTOs (WORKER-IPC section 3 envelope + section 5 status) ---------
@@ -413,6 +514,11 @@ Public Class WorkerResponse
     Public Property [Error] As String
     Public Property Status As WorkerStatus
     Public Property Export As WorkerExport
+    Public Property Broadcast As WorkerBroadcast
+    Public Property Broadcasts As List(Of WorkerBroadcast)
+    Public Property Disk As SharedDisk
+    Public Property Disks As List(Of SharedDisk)
+    Public Property OutcomeClass As Integer
 
     ''' <summary>Set only on a response the HOST built: the worker answered with a newer
     ''' protocol version, so nothing it said was read (<see cref="Ok"/> is False and
@@ -455,6 +561,9 @@ Public Class WorkerResponse
 End Class
 
 Public Class WorkerStatus
+    Public Property Mode As String
+    Public Property Capabilities As Dictionary(Of String, Boolean)
+    Public Property DiskSharingError As String
     Public Property Running As Boolean
     Public Property ListenPort As Integer
     Public Property Fingerprint As String
@@ -481,6 +590,12 @@ Public Class WorkerStatus
     ''' Additive field - absent from an older worker, in which case it stays Nothing and is
     ''' treated as "no data yet", never an error (same rule as <see cref="Reachability"/>).</summary>
     Public Property Stats As WorkerStats
+    ''' <summary>Whether the HTTP broadcast gateway is enabled.</summary>
+    Public Property BroadcastEnabled As Boolean
+    ''' <summary>Port the HTTP broadcast gateway is listening on.</summary>
+    Public Property BroadcastPort As Integer
+    ''' <summary>Number of active broadcasts.</summary>
+    Public Property BroadcastCount As Integer
 End Class
 
 ''' <summary>Local-only SFTP usage counters kept by the worker in <c>stats.json</c> and
@@ -530,7 +645,7 @@ Public Class WorkerReachability
 End Class
 
 Public Class WorkerExport
-    ''' <summary>The exact .fmscfg JSON (opaque to LITE).</summary>
+    ''' <summary>The exact .fmscfg JSON (opaque to the viewer).</summary>
     Public Property ConfigJson As String
     ''' <summary>Rendered QR as base64 PNG - decode straight into a PictureBox.</summary>
     Public Property QrPngBase64 As String

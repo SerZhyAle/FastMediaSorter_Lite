@@ -23,6 +23,68 @@ Public Class SettingsImportTests
 
     ' ----------------------------------------------------------------- backup store ----
 
+    <Fact>
+    Public Sub A_protection_failure_refuses_the_backup_before_opening_a_file_or_mutating_preferences()
+        Dim current As ModernViewerPreferences = Profile()
+        Dim before As String = current.ExportJson(True)
+        Dim opened As Boolean = False
+        Assert.Throws(Of UnauthorizedAccessException)(
+            Sub() SettingsImportBackupStore.Create(current, TempDir(),
+                Function(path)
+                    opened = True
+                    Return New MemoryStream()
+                End Function, protectDirectory:=Sub(path) Throw New UnauthorizedAccessException("private ACL unavailable")))
+        Assert.False(opened)
+        Assert.Equal(before, current.ExportJson(True))
+    End Sub
+
+    <Fact>
+    Public Sub A_fixed_name_collision_is_retried_without_overwriting_the_existing_snapshot()
+        Dim dir As String = TempDir()
+        Try
+            Dim original As String = SettingsImportBackupStore.Create(Profile(), dir, nextName:=Function() "fixed.json")
+            Dim before As String = File.ReadAllText(original)
+            Assert.Throws(Of IOException)(Sub() SettingsImportBackupStore.Create(New ModernViewerPreferences(), dir, nextName:=Function() "fixed.json"))
+            Assert.Equal(before, File.ReadAllText(original))
+            Assert.Single(Directory.GetFiles(dir))
+        Finally
+            If Directory.Exists(dir) Then Directory.Delete(dir, True)
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub A_failed_backup_does_not_normalize_or_mutate_the_live_profile()
+        Dim dir As String = TempDir()
+        Dim current As ModernViewerPreferences = Profile()
+        current.ArchiveCacheMaxMb = -1
+        Try
+            Assert.Throws(Of IOException)(Sub() SettingsImportBackupStore.Create(current, dir,
+                Function(path) New FailingStream(path)))
+            Assert.Equal(-1, current.ArchiveCacheMaxMb)
+            Assert.Empty(Directory.GetFiles(dir))
+        Finally
+            If Directory.Exists(dir) Then Directory.Delete(dir, True)
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Backup_storage_and_files_exclude_other_accounts()
+        Dim dir As String = TempDir()
+        Try
+            Dim backup As String = SettingsImportBackupStore.Create(Profile(), dir)
+            Using identity As Security.Principal.WindowsIdentity = Security.Principal.WindowsIdentity.GetCurrent()
+                Dim security As Security.AccessControl.FileSecurity = New FileInfo(backup).GetAccessControl()
+                Assert.True(security.AreAccessRulesProtected)
+                For Each rule As Security.AccessControl.FileSystemAccessRule In security.GetAccessRules(True, True, GetType(Security.Principal.SecurityIdentifier))
+                    Assert.Equal(identity.User, rule.IdentityReference)
+                    Assert.False(rule.IsInherited)
+                Next
+            End Using
+        Finally
+            If Directory.Exists(dir) Then Directory.Delete(dir, True)
+        End Try
+    End Sub
+
     Private Shared Function Profile() As ModernViewerPreferences
         Dim p As New ModernViewerPreferences() With {.ArchiveCacheMaxMb = 2048, .RecentFilesLimit = 7, .ConfirmDelete = "never"}
         p.StoreFolderZoom("D:\Private\Photos", 1.75R)
@@ -128,7 +190,8 @@ Public Class SettingsImportTests
     Public Sub A_write_failure_deletes_only_the_partial_file_of_this_call()
         Dim dir As String = TempDir()
         Try
-            Directory.CreateDirectory(dir)
+            Dim seed As String = SettingsImportBackupStore.Create(Profile(), dir)
+            File.Delete(seed)
             Dim bystander As String = Path.Combine(dir, "settings-backup-older.fms-settings.json")
             File.WriteAllText(bystander, "older backup")
             Assert.Throws(Of IOException)(
@@ -283,7 +346,7 @@ Public Class SettingsImportTests
 
     <Theory>
     <InlineData(False, False, True)>
-    <InlineData(False, True, True)>
+    <InlineData(False, True, False)>
     <InlineData(True, False, True)>
     <InlineData(True, True, False)>
     Public Sub A_focused_field_with_uncommitted_text_is_not_overwritten_by_a_refresh(focused As Boolean, dirty As Boolean, reload As Boolean)

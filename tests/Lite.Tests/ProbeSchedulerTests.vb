@@ -224,6 +224,23 @@ Public Class ProbeSchedulerTests
     End Sub
 
     <Fact>
+    Public Sub Ownership_is_rechecked_on_the_worker_after_pool_admission()
+        Dim scheduler As New ProbeScheduler(Of Integer)(New ProbePolicy With {.MaxActive = 1})
+        Dim checks As Integer
+        Dim calls As Integer
+        Dim answer As Task(Of ProbeResult(Of Integer)) = scheduler.Submit(New Object(), "stale",
+            Function()
+                Interlocked.Increment(calls)
+                Return 1
+            End Function,
+            Function() Interlocked.Increment(checks) = 1)
+        Assert.True(answer.Wait(Watchdog_Ms))
+        Assert.Equal(ProbeStatus.Superseded, answer.Result.Status)
+        Assert.Equal(0, calls)
+        Assert.Equal(0, scheduler.ActiveCount)
+    End Sub
+
+    <Fact>
     Public Sub A_request_nobody_wants_any_more_is_dropped_right_before_the_call()
         Dim scheduler As New ProbeScheduler(Of Integer)(New ProbePolicy With {.MaxActive = 1, .MaxPending = 8})
         Dim gate As New Gate()

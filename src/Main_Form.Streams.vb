@@ -42,7 +42,8 @@ Partial Public Class Main_Form
                 Function(lostCount As Integer, previousCount As Integer, lossPercent As Double, mostAffected As String) As Boolean
                     Dim warningMsg = Localization.TF("Замена каталога приведёт к потере {0} из {1} адресов ({2:F1}%). Продолжить запись?", lostCount, previousCount, lossPercent)
                     Dim title = Localization.T("Предупреждение о потере записей")
-                    Dim dlgResult = MessageBox.Show(Me, warningMsg, title, MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
+                    ' The safe answer holds the default focus (APP-BEHAVIOUR 0.12 rule 5): Enter declines.
+                    Dim dlgResult = MessageBox.Show(Me, warningMsg, title, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2)
                     Return dlgResult = DialogResult.Yes
                 End Function
 

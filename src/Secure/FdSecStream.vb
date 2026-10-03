@@ -97,7 +97,9 @@ Public NotInheritable Class FdSecStream
 
     Public Overrides Function Read(buffer As Byte(), offset As Integer, count As Integer) As Integer
         If buffer Is Nothing Then Throw New ArgumentNullException(NameOf(buffer))
-        If offset < 0 OrElse count < 0 OrElse offset + count > buffer.Length Then
+        ' Subtraction, not offset + count: the sum overflows for a large offset and would
+        ' surface as an OverflowException instead of the argument error (057.S17-5).
+        If offset < 0 OrElse count < 0 OrElse count > buffer.Length - offset Then
             Throw New ArgumentOutOfRangeException(NameOf(count))
         End If
         If count = 0 Then Return 0

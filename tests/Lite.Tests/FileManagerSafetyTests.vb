@@ -204,6 +204,104 @@ Public Class FileManagerSafetyTests
         End Try
     End Sub
 
+    ' ------------------- 057.S05-3: a source that will not go takes its copy back ----
+
+    ''' <summary>The staged move landed its copy and the source would not be deleted for a
+    ''' reason other than read-only (a reader holds it without delete sharing - an AV
+    ''' scanner, the indexer): the move fails, and nothing may be left under the final
+    ''' name, or the retry meets a taken name and breeds "x (2).jpg".</summary>
+    <Fact>
+    Public Sub A_move_whose_source_will_not_go_leaves_nothing_at_the_destination()
+        Dim source As String = MakeFile("held.jpg", "photo")
+        Dim target As String = Path.Combine(_dir, "sorted_held.jpg")
+
+        ' Read sharing lets the copy read it; no delete sharing makes File.Delete fail.
+        Using holder As New FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read)
+            Assert.ThrowsAny(Of IOException)(Sub() FileManager.MoveFile(source, OtherSpelling(target)))
+        End Using
+
+        Assert.Equal("photo", File.ReadAllText(source))
+        Assert.False(File.Exists(target), "The copy of a move that failed was left at the destination.")
+        Assert.False(File.Exists(target & FileManager.Partial_Move_Suffix))
+    End Sub
+
+    ''' <summary>A read-only source that will not go keeps its read-only mark - the move
+    ''' dropped it on the way to File.Delete.</summary>
+    <Fact>
+    Public Sub A_failed_move_puts_the_read_only_mark_back_on_the_source()
+        Dim source As String = MakeFile("protected_held.jpg", "photo")
+        File.SetAttributes(source, File.GetAttributes(source) Or FileAttributes.ReadOnly)
+        Dim target As String = Path.Combine(_dir, "sorted_protected_held.jpg")
+
+        Try
+            Using holder As New FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read)
+                Assert.ThrowsAny(Of IOException)(Sub() FileManager.MoveFile(source, OtherSpelling(target)))
+            End Using
+
+            Assert.True((File.GetAttributes(source) And FileAttributes.ReadOnly) = FileAttributes.ReadOnly,
+                        "The source lost its read-only mark.")
+            Assert.False(File.Exists(target))
+        Finally
+            For Each leftover As String In {source, target}
+                If File.Exists(leftover) Then File.SetAttributes(leftover, FileAttributes.Normal)
+            Next
+        End Try
+    End Sub
+
+    ''' <summary>With "replace" the old destination is already gone when the source refuses
+    ''' to go, so the new copy stays: it is the only thing left at that name.</summary>
+    <Fact>
+    Public Sub A_failed_replacing_move_keeps_the_copy_it_replaced_with()
+        Dim source As String = MakeFile("new_held.jpg", "new")
+        Dim target As String = MakeFile("slot_held.jpg", "old")
+
+        Using holder As New FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read)
+            Assert.ThrowsAny(Of IOException)(Sub() FileManager.MoveFile(source, OtherSpelling(target), overwrite:=True))
+        End Using
+
+        Assert.Equal("new", File.ReadAllText(source))
+        Assert.Equal("new", File.ReadAllText(target))
+    End Sub
+
+    ' ---------------------- 057.S05-4: undo of a copy of a read-only file ----
+
+    <Fact>
+    Public Sub Undo_deletes_the_read_only_copy_it_made()
+        Dim source As String = MakeFile("camera.jpg", "photo")
+        File.SetAttributes(source, File.GetAttributes(source) Or FileAttributes.ReadOnly)
+        Dim copy As String = Path.Combine(_dir, "slot_camera.jpg")
+
+        Try
+            FileManager.CopyFile(source, copy)
+            Assert.True((File.GetAttributes(copy) And FileAttributes.ReadOnly) = FileAttributes.ReadOnly,
+                        "Precondition: File.Copy carries the read-only mark to the copy.")
+
+            FileManager.DeleteCopyForUndo(copy)
+
+            Assert.False(File.Exists(copy), "Undo of the copy could not delete it.")
+            Assert.True(File.Exists(source))
+        Finally
+            For Each leftover As String In {source, copy}
+                If File.Exists(leftover) Then File.SetAttributes(leftover, FileAttributes.Normal)
+            Next
+        End Try
+    End Sub
+
+    ''' <summary>Owner decision: only the undo of a copy clears the mark; a plain permanent
+    ''' delete of a protected file keeps refusing.</summary>
+    <Fact>
+    Public Sub A_plain_delete_of_a_read_only_file_still_refuses()
+        Dim protectedFile As String = MakeFile("protected_keep.jpg", "photo")
+        File.SetAttributes(protectedFile, File.GetAttributes(protectedFile) Or FileAttributes.ReadOnly)
+
+        Try
+            Assert.Throws(Of UnauthorizedAccessException)(Sub() FileManager.DeleteFile(protectedFile))
+            Assert.True(File.Exists(protectedFile))
+        Finally
+            File.SetAttributes(protectedFile, FileAttributes.Normal)
+        End Try
+    End Sub
+
     ' ------------------------------------------------- C-04: undo of a copy ----
 
     <Fact>

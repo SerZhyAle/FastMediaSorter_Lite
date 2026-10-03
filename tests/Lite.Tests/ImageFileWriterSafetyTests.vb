@@ -41,6 +41,90 @@ Public Class ImageFileWriterSafetyTests
         End Try
     End Sub
 
+    <Theory>
+    <InlineData(False)>
+    <InlineData(True)>
+    Public Sub Fixed_name_residue_survives_success_and_encode_failure(fail As Boolean)
+        Dim photo = Path.Combine(workDir, "photo.jpg")
+        Dim residue = Path.Combine(workDir, "photo.fms-tmp.jpg")
+        File.WriteAllBytes(photo, OriginalBytes)
+        File.WriteAllBytes(residue, EditBytes)
+        Using bitmap As New Bitmap(4, 4)
+            If fail Then bitmap.Dispose()
+            If fail Then
+                Assert.ThrowsAny(Of Exception)(Sub() ImageFileWriter.Save(bitmap, photo, Nothing, ExifOrientationPolicy.PixelsAreUpright))
+                Assert.Equal(OriginalBytes, File.ReadAllBytes(photo))
+            Else
+                ImageFileWriter.Save(bitmap, photo, Nothing, ExifOrientationPolicy.PixelsAreUpright)
+                Using written As New Bitmap(photo)
+                    Assert.Equal(4, written.Width)
+                End Using
+            End If
+        End Using
+        Assert.Equal(EditBytes, File.ReadAllBytes(residue))
+        Assert.Single(Directory.GetFiles(workDir, "*.fms-tmp*"))
+    End Sub
+
+    Private NotInheritable Class HeldEncoder
+        Implements IImageEncoder
+
+        Friend ReadOnly Entered As New Threading.ManualResetEventSlim()
+        Friend ReadOnly Release As New Threading.ManualResetEventSlim()
+        Friend TemporaryPath As String
+        Friend Fail As Boolean
+
+        Public Function WritableExtensions() As IReadOnlyCollection(Of String) Implements IImageEncoder.WritableExtensions
+            Return New String() {".png"}
+        End Function
+
+        Public Sub EncodeToFile(bitmap As Bitmap, targetPath As String, exifSource As Byte(), orientation As ExifOrientationPolicy) Implements IImageEncoder.EncodeToFile
+            Throw New InvalidOperationException("Writer must use the reserved stream.")
+        End Sub
+
+        Public Sub EncodeToStream(bitmap As Bitmap, output As Stream, extension As String, exifSource As Byte(), orientation As ExifOrientationPolicy) Implements IImageEncoder.EncodeToStream
+            TemporaryPath = DirectCast(output, FileStream).Name
+            output.Write(EditBytes, 0, EditBytes.Length)
+            output.Flush()
+            Entered.Set()
+            If Not Release.Wait(TimeSpan.FromSeconds(20)) Then Throw New TimeoutException()
+            If Fail Then Throw New IOException("Partial encode failed")
+        End Sub
+    End Class
+
+    <Fact>
+    Public Sub Concurrent_saves_reserve_distinct_files_and_failure_removes_only_its_own()
+        File.WriteAllBytes(target, OriginalBytes)
+        Dim first As New HeldEncoder With {.Fail = True}
+        Dim second As New HeldEncoder()
+        Dim failed = Threading.Tasks.Task.Run(Sub() Assert.Throws(Of IOException)(Sub() ImageFileWriter.SaveWithEncoder(Nothing, target, Nothing, ExifOrientationPolicy.PixelsAreUpright, first)))
+        Dim successful = Threading.Tasks.Task.Run(Sub() ImageFileWriter.SaveWithEncoder(Nothing, target, Nothing, ExifOrientationPolicy.PixelsAreUpright, second))
+        Try
+            Assert.True(first.Entered.Wait(TimeSpan.FromSeconds(10)))
+            Assert.True(second.Entered.Wait(TimeSpan.FromSeconds(10)))
+            Assert.NotEqual(first.TemporaryPath, second.TemporaryPath)
+            Assert.Throws(Of IOException)(Sub()
+                                             Using intruder As New FileStream(second.TemporaryPath, FileMode.Open, FileAccess.Write, FileShare.ReadWrite Or FileShare.Delete)
+                                             End Using
+                                         End Sub)
+            first.Release.Set()
+            Assert.True(failed.Wait(TimeSpan.FromSeconds(10)))
+            Assert.False(File.Exists(first.TemporaryPath))
+            Assert.True(File.Exists(second.TemporaryPath))
+            second.Release.Set()
+            Assert.True(successful.Wait(TimeSpan.FromSeconds(10)))
+            Assert.Equal(EditBytes, File.ReadAllBytes(target))
+            Assert.Empty(Directory.GetFiles(workDir, "*.fms-tmp*"))
+        Finally
+            first.Release.Set()
+            second.Release.Set()
+            Threading.Tasks.Task.WaitAll(failed, successful)
+            first.Entered.Dispose()
+            first.Release.Dispose()
+            second.Entered.Dispose()
+            second.Release.Dispose()
+        End Try
+    End Sub
+
     ''' <summary>A swap file system whose Replace and chosen Moves fail on cue.</summary>
     Private NotInheritable Class ScriptedFileSystem
         Inherits ImageFileWriter.SwapFileSystem

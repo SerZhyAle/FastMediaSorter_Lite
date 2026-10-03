@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `OCR-PIPELINE` |
-| **Version** | 1.2, active. Owner: doc-html-translate (the reference implementation) |
+| **Version** | 1.8, active (re-read 2026-10-02: 1.3-1.8 are additive and no constant this product inherits moved - every `src/Ocr/` value matches the section 5 table). Owner: doc-html-translate (the reference implementation) |
 | **Home** | `ocr-overlay/ocr-pipeline.md` in the shared contracts catalog |
 | **Role here** | none as an implementer - the **source of inherited constants** |
 

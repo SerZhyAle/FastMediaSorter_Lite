@@ -66,18 +66,21 @@ Friend NotInheritable Class SettingsFlushScheduler
     ''' <summary>The timer fired. A tick that finds nothing dirty, or a flush already running
     ''' (re-entry), does nothing.</summary>
     Friend Sub OnTimerTick()
+        If flushing Then Return
         stopTimer()
-        If Not IsDirty OrElse flushing Then Return
+        If Not IsDirty Then Return
         RunFlush(scheduleRetries:=True)
     End Sub
 
-    ''' <summary>A deliberate save or the close: now, no retry schedule (a close must not wait
+    ''' <summary>A deliberate save or the close: now, optionally retry later (a close must not wait
     ''' out retry delays). False when it failed - the state stays dirty and the failure is logged.</summary>
-    Friend Function SaveNow() As Boolean
-        stopTimer()
+    Friend Function SaveNow(Optional scheduleRetries As Boolean = False) As Boolean
         If flushing Then Return False
+        stopTimer()
+        retryCount = 0
+        exhaustionReported = False
         ' Even with nothing pending a deliberate save writes the block (window geometry etc.).
-        Return RunFlush(scheduleRetries:=False)
+        Return RunFlush(scheduleRetries)
     End Function
 
     Private Function RunFlush(scheduleRetries As Boolean) As Boolean
@@ -102,6 +105,9 @@ Friend NotInheritable Class SettingsFlushScheduler
         End If
 
         If generationValue <> snapshot Then Return False ' a newer edit owns the schedule now
+        ' A deliberate save can fail even when no edit had marked the block dirty (geometry,
+        ' for example). Its failure must remain pending just like a failed lazy flush.
+        If Not IsDirty Then generationValue += 1
         If Not scheduleRetries Then
             log("Settings: the save is incomplete and stays pending")
             Return False
@@ -184,13 +190,13 @@ Friend Module SettingsRowRefresh
 
     ''' <summary>
     ''' A row is re-read from the model on a display refresh or a language switch - except a row
-    ''' whose control is being edited and holds text that has not been committed to the model yet:
+    ''' whose control holds text that has not been committed to the model yet, even after focus moves:
     ''' overwriting it would throw away what the user is typing. (Choice rows apply on selection,
     ''' so they are always in step with the model and are matched by their stable token, never by
     ''' the translated caption.)
     ''' </summary>
     Friend Function ShouldReload(controlHasFocus As Boolean, hasUncommittedEdit As Boolean) As Boolean
-        Return Not (controlHasFocus AndAlso hasUncommittedEdit)
+        Return Not hasUncommittedEdit
     End Function
 
     ''' <summary>The item to select after the choices were rebuilt: the one with the same token as

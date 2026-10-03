@@ -83,26 +83,6 @@ Public Class VideoReplaceOutcomeTests
                      VideoConvertPlan.DecideEncode(False, 0, True, Big_Enough, 3000, 10, 30, 1500))
     End Sub
 
-    <Fact>
-    Public Sub A_complete_webp_encode_passes_against_the_source_duration_and_fails_against_the_playback_gif()
-        ' 30 frames at 34 ms: true source duration 1020 ms. Playback GIF truncates to 3 cs (900 ms).
-        ' Written output at 33 fps, 34 frames, out_time 1000 ms (written duration ~1030 ms).
-        Dim playbackVerdict As VideoReplaceOutcome = VideoConvertPlan.DecideEncode(
-            False, 0, True, Big_Enough, expectedDurationMs:=900, fps:=33, framesWritten:=34, outTimeMs:=1000)
-        Assert.Equal(VideoReplaceOutcome.OutputIncomplete, playbackVerdict)
-
-        Dim sourceVerdict As VideoReplaceOutcome = VideoConvertPlan.DecideEncode(
-            False, 0, True, Big_Enough, expectedDurationMs:=1020, fps:=33, framesWritten:=34, outTimeMs:=1000)
-        Assert.Equal(VideoReplaceOutcome.EncodedOk, sourceVerdict)
-    End Sub
-
-    <Fact>
-    Public Sub A_gif_duration_is_read_with_ffmpegs_minimum_delay()
-        Dim delays As Integer() = {1, 5, 0, 15}
-        Dim totalMs As Integer = VideoConvertPlan.GifDurationMsAsFfmpegReadsIt(delays)
-        Assert.Equal(400, totalMs)
-    End Sub
-
     ''' <summary>A two-frame, one-second-per-frame GIF: out_time is 1 s for 2 s of animation,
     ''' and that is complete - the tolerance is at least one and a half frames.</summary>
     <Fact>
@@ -135,6 +115,38 @@ Public Class VideoReplaceOutcomeTests
         Assert.Equal(-1L, VideoConvertPlan.ParseProgressValue("out_time_ms=2800000", "out_time"))
         Assert.Equal(-1L, VideoConvertPlan.ParseProgressValue("fps=12.5", "frame"))
         Assert.Equal(-1L, VideoConvertPlan.ParseProgressValue("frame=N/A", "frame"))
+    End Sub
+
+    ' --- 057.S09-1: the verdict measures the SOURCE, not the playback GIF ------------
+
+    ''' <summary>The audit's measurement: a 30-frame animated WEBP at 34 ms per frame
+    ''' transcodes to whole centiseconds for playback (30 x 30 = 900 ms), while FFmpeg
+    ''' encodes the file's true 1020 ms from the source. Measured against the playback
+    ''' total the complete encode failed as OutputIncomplete and a good video was thrown
+    ''' away; measured against the source's duration it passes. DecideEncode itself is
+    ''' unchanged - the fix is what the caller feeds it.</summary>
+    <Fact>
+    Public Sub A_complete_webp_encode_passes_against_the_source_duration_and_fails_against_the_playback_gif()
+        Assert.Equal(VideoReplaceOutcome.OutputIncomplete,
+                     VideoConvertPlan.DecideEncode(False, 0, True, Big_Enough, 900, 33, 34, 1000))
+        Assert.Equal(VideoReplaceOutcome.EncodedOk,
+                     VideoConvertPlan.DecideEncode(False, 0, True, Big_Enough, 1020, 33, 34, 1000))
+    End Sub
+
+    ''' <summary>FFmpeg's GIF demuxer counts every frame delay under two centiseconds as
+    ''' ten, so the duration it writes is NOT the duration GDI+ plays: a 1-cs GIF plays
+    ''' in a tenth of the time the encoder spends on it. The expected duration must be
+    ''' computed with the same rule - and "nothing to read" stays 0, which the caller
+    ''' passes on as unknown (EncodedUnverified), never as the old 1000-ms guess.</summary>
+    <Fact>
+    Public Sub A_gif_duration_is_read_with_ffmpegs_minimum_delay()
+        Assert.Equal(1000, VideoConvertPlan.GifDurationMsAsFfmpegReadsIt({1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+        Assert.Equal(100, VideoConvertPlan.GifDurationMsAsFfmpegReadsIt({0}))
+        Assert.Equal(3000, VideoConvertPlan.GifDurationMsAsFfmpegReadsIt({100, 100, 100}))
+        ' Mixed: the 1-cs frames read as 10 cs, the rest as they are - 222 cs total.
+        Assert.Equal(2220, VideoConvertPlan.GifDurationMsAsFfmpegReadsIt({1, 100, 2, 100, 1}))
+        Assert.Equal(0, VideoConvertPlan.GifDurationMsAsFfmpegReadsIt(Nothing))
+        Assert.Equal(0, VideoConvertPlan.GifDurationMsAsFfmpegReadsIt(New Integer() {}))
     End Sub
 
     <Fact>

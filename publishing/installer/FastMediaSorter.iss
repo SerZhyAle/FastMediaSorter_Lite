@@ -1,4 +1,4 @@
-; FastMediaSorter LITE - Inno Setup script
+﻿; Fast Media Sorter & Sharing for Windows - Inno Setup script
 ; Built by CI; invoke with:
 ;   ISCC.exe /DVersion=<x.y.z.w> /DSourceDir=<staged-tree> /O<output-dir> FastMediaSorter.iss
 
@@ -12,8 +12,18 @@
 
 ; Display name shown throughout the wizard screens, Start-menu shortcuts and the
 ; setup.exe file properties. The channel/identity name below is kept separate on
-; purpose (light rebrand - see SPECIFICATION_RENAME_FAST_MEDIA_SORTER_FOR_WINDOWS.md).
-#define AppName       "Fast Media Sorter for Windows"
+; purpose (docs/guides/PRODUCT_NAMING.md owns the names and section 2 the frozen anchors).
+#define AppName       "Fast Media Sorter & Sharing for Windows"
+; The same name for a WIZARD LABEL or a checkbox: Inno reads a single "&" there as a
+; mnemonic prefix and would underline the next letter, so it is doubled. The [Setup]
+; directives, the window titles, the message-box texts, the shortcut names and the
+; registry text take the plain AppName. (docs/guides/PRODUCT_NAMING.md rule 1.)
+#define AppNameLabel  StringChange(AppName, "&", "&&")
+; The Share Manager's shortcut name: component first, product as suffix, the same
+; pattern as the program's window title. It is a FILE name (a .lnk), so it must not
+; carry the colon the Server edition's wizard name has (see FastMediaSorterServer.iss);
+; an ampersand is a legal file-name character and the Start menu shows it as it is.
+#define ShareManagerName "Share Manager - Fast Media Sorter & Sharing"
 ; FROZEN identity name for the "Add/Remove Programs" (ARP) entry. winget and the
 ; Store correlate the installed app to their manifests by this ARP DisplayName,
 ; so it must stay "FastMediaSorter LITE" even though the wizard now shows the new
@@ -76,7 +86,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog commandline
 ; Installing/uninstalling is at minimum a version replacement - an already-running
-; LITE instance must not be left holding the old exe open. Setup/Uninstall detect it
+; viewer instance must not be left holding the old exe open. Setup/Uninstall detect it
 ; via this single-instance mutex (Main_Form.vb) and close it gracefully before
 ; touching files. The tray-resident Companion app AND its worker are invisible to
 ; this mutex (and cannot be closed by the Restart Manager - the Companion autostarts
@@ -99,11 +109,15 @@ Name: "ukrainian"; MessagesFile: "compiler:Languages\Ukrainian.isl"
 ; component's on-disk size after the text automatically, so the package weight is
 ; shown per part - the "what & why" is the description itself.
 [CustomMessages]
+english.CompFileDO=FileDO virtual disk support (optional; sharing stays off until enabled)
+russian.CompFileDO=Поддержка виртуальных дисков FileDO (необязательно; общий доступ включается отдельно)
+ukrainian.CompFileDO=Підтримка віртуальних дисків FileDO (необов’язково; спільний доступ вмикається окремо)
 english.TypeFull=Full - everything offline-ready (recommended)
 english.TypeCompact=Compact - viewer only (codecs & models download on demand)
 english.TypeCustom=Custom
 english.CompCore=Core - image & video viewer and sorter (required)
 english.CompCodecs=Video codecs (VLC) - offline playback of AVI, MKV, VP9 and other formats
+english.CompPdf=PDF preview (PDFium, 5 MB) - pages and OCR inside the sorter
 english.CompOcr=OCR & translation models - offline on-image text recognition
 english.CompShare=Android Folder Share companion - share folders to your phone (bundles its own .NET runtime)
 english.ShareManagerComment=Share folders from this PC to an Android phone over Wi-Fi
@@ -114,6 +128,7 @@ russian.TypeCompact=Компактная - только просмотрщик (
 russian.TypeCustom=Выборочная
 russian.CompCore=Ядро - просмотр и сортировка изображений и видео (обязательно)
 russian.CompCodecs=Видео-кодеки (VLC) - оффлайн-воспроизведение AVI, MKV, VP9 и других форматов
+russian.CompPdf=Просмотр PDF (PDFium, 5 МБ) - страницы и OCR в сортировщике
 russian.CompOcr=Модели OCR и перевода - распознавание текста на изображении без интернета
 russian.CompShare=Компаньон Android Folder Share - раздача папок на телефон (включает свой рантайм .NET)
 russian.ShareManagerComment=Раздача папок этого ПК на телефон Android по Wi-Fi
@@ -124,6 +139,7 @@ ukrainian.TypeCompact=Компактна - лише переглядач (код
 ukrainian.TypeCustom=Вибіркова
 ukrainian.CompCore=Ядро - перегляд і сортування зображень та відео (обов'язково)
 ukrainian.CompCodecs=Відео-кодеки (VLC) - офлайн-відтворення AVI, MKV, VP9 та інших форматів
+ukrainian.CompPdf=Перегляд PDF (PDFium, 5 МБ) - сторінки та OCR у сортувальнику
 ukrainian.CompOcr=Моделі OCR та перекладу - розпізнавання тексту на зображенні без інтернету
 ukrainian.CompShare=Компаньйон Android Folder Share - роздача тек на телефон (містить власний рантайм .NET)
 ukrainian.ShareManagerComment=Роздача тек цього ПК на телефон Android через Wi-Fi
@@ -172,6 +188,7 @@ Name: "custom";  Description: "{cm:TypeCustom}"; Flags: iscustom
 [Components]
 Name: "core";   Description: "{cm:CompCore}";   Types: full compact custom; Flags: fixed
 Name: "codecs"; Description: "{cm:CompCodecs}"; Types: full
+Name: "pdf"; Description: "{cm:CompPdf}"; Types: full; MinVersion: 10.0.14393
 Name: "ocr";    Description: "{cm:CompOcr}";    Types: full
 ; Share is offered ONLY where it can actually run. The Share Manager companion is
 ; .NET 10 x64, so on Windows 7/8.1 - which the setup-wide MinVersion=6.1 still lets
@@ -183,6 +200,8 @@ Name: "ocr";    Description: "{cm:CompOcr}";    Types: full
 ; ExtraDiskSpaceRequired/Flags plus the common Languages/MinVersion/OnlyBelowVersion.
 Name: "share";  Description: "{cm:CompShare}";  Types: full; MinVersion: 10.0.14393
 
+Name: "share\filedo"; Description: "{cm:CompFileDO}"; Flags: dontinheritcheck; MinVersion: 10.0.14393
+
 [Files]
 ; Core (always installed): BOTH viewer exes - the .NET 10 x64 mainline
 ; (FastMediaSorter_LITE.exe) and its lean net48 sibling (FastMediaSorter_x86.exe)
@@ -192,8 +211,9 @@ Name: "share";  Description: "{cm:CompShare}";  Types: full; MinVersion: 10.0.14
 ; excluded too: the staging scripts already drop it, but a hand compile against a
 ; tree the app has been RUN from would otherwise install our own current.log into
 ; {app} and the user's log would start with our sessions and our paths.
-Source: "{#SourceDir}\*"; DestDir: "{app}"; Excludes: "libvlc\*,tessdata\*,tessdata-best\*,companion\*,FastMediaSorterCompanion.exe,*.log"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: core
-; The three optional components below are NOT gated on an elevated install, and
+Source: "{#SourceDir}\*"; DestDir: "{app}"; Excludes: "libvlc\*,tessdata\*,tessdata-best\*,companion\*,filedo\*,FastMediaSorterCompanion.exe,pdfium.dll,*.log"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: core
+Source: "{#SourceDir}\pdfium.dll"; DestDir: "{app}"; Flags: ignoreversion; Components: pdf; Check: UseModernExe
+; The optional components below are NOT gated on an elevated install, and
 ; must not be gated on one again. They were (Check: OptionalPayloadAllowed =
 ; IsAdminInstallMode), and that silently reduced EVERY unattended install to the
 ; viewer alone: Inno runs in non administrative install mode whenever
@@ -223,6 +243,7 @@ Source: "{#SourceDir}\tessdata-best\*"; DestDir: "{app}\tessdata-best"; Flags: r
 ; The companion carries its own .NET runtime, which is the bulk of this component.
 Source: "{#SourceDir}\FastMediaSorterCompanion.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: share
 Source: "{#SourceDir}\companion\*"; DestDir: "{app}\companion"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: share
+Source: "{#SourceDir}\filedo\*"; DestDir: "{app}\filedo"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: share\filedo
 ; Helper Setup/Uninstall use to stop the running Companion app and its worker (see
 ; StopCompanionWorker in [Code]). Kept both as a dontcopy temp extract (Setup runs
 ; this before any app files exist yet, so it cannot read one from {app}) and as a
@@ -242,11 +263,31 @@ Source: "enable-share-server.ps1"; DestDir: "{app}"; Flags: ignoreversion; Compo
 Source: "install-share-service.ps1"; DestDir: "{app}"; Flags: ignoreversion; Components: share
 
 [InstallDelete]
-; The Start-menu group used to be named "FastMediaSorter LITE"; it is now the new
-; display name. Remove the stale folder on upgrade so a user is not left with two
-; Start-menu folders. The install dir, exe, AppId and ARP name are unchanged, so
-; this leftover shortcut folder is the only thing to clean.
+; The Start-menu group has been renamed twice: "FastMediaSorter LITE" (the frozen
+; Add/Remove Programs name), then "Fast Media Sorter for Windows", now the current
+; AppName. DefaultGroupName follows AppName, so an upgrade creates a NEW folder and
+; the old ones must go, or a user is left with two or three Start-menu folders. The
+; install dir, exe, AppId and ARP name are unchanged, so these leftover shortcut
+; folders are the only thing to clean.
 Type: filesandordirs; Name: "{autoprograms}\FastMediaSorter LITE"
+; The group of the previous release is removed ENTRY BY ENTRY and then, if nothing else
+; is in it, as a folder - not outright. The Server edition used to share that group
+; name, and a machine that has both editions and upgrades only this one must not lose
+; the Server edition's shortcut; the Server installer clears its own entries from the
+; old folder the next time it runs. Only the entries this installer created are named:
+; the product shortcut, the Share Manager shortcut (old name) and the uninstall
+; shortcut in each setup language (the leading space matches "<verb> <AppName>.lnk").
+; The taskbar-pin care of the entry below applies here too: only the old group's
+; copies go, the new group's shortcut of the same product is written back by [Icons]
+; in this same run, and the exe path a pin resolves to has not moved.
+Type: files; Name: "{autoprograms}\Fast Media Sorter for Windows\Fast Media Sorter for Windows.lnk"
+Type: files; Name: "{autoprograms}\Fast Media Sorter for Windows\Fast Media Sorter - Share Manager.lnk"
+Type: files; Name: "{autoprograms}\Fast Media Sorter for Windows\* Fast Media Sorter for Windows.lnk"
+Type: dirifempty; Name: "{autoprograms}\Fast Media Sorter for Windows"
+; The desktop shortcuts carry the product name too, and Inno never removes a shortcut a
+; previous install created under a name this one no longer writes.
+Type: files; Name: "{autodesktop}\Fast Media Sorter for Windows.lnk"
+Type: files; Name: "{autodesktop}\Fast Media Sorter - Share Manager.lnk"
 
 ; The uninstall shortcut carries the name of the language the install ran in
 ; ("Uninstall .." / "Удалить .." / "Видалити .."), and Inno leaves the previous
@@ -266,12 +307,12 @@ Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeNameX86}"; Check: UseLegacy
 ; running the Server edition, the service). Until this entry existed it could only be
 ; reached from inside the viewer or from its own tray icon, so a user who had closed
 ; the icon, or whose logon autostart never fired, had no way left to open it at all.
-; Named after its window title with the colon dropped (a colon is not a legal file
-; name, and a Start-menu item IS a file).
+; Named exactly like its window title (component first, product as suffix); there is
+; no colon in it, which matters because a Start-menu item IS a file.
 ; "--show" is not optional: a bare launch deliberately obeys the manager's own
 ; "open the window at startup" option, which is OFF by default, so without it the
 ; Start-menu item would start a tray-only process and read as a click that did nothing.
-Name: "{group}\Fast Media Sorter - Share Manager"; Filename: "{app}\FastMediaSorterCompanion.exe"; Parameters: "--show"; Comment: "{cm:ShareManagerComment}"; Components: share
+Name: "{group}\{#ShareManagerName}"; Filename: "{app}\FastMediaSorterCompanion.exe"; Parameters: "--show"; Comment: "{cm:ShareManagerComment}"; Components: share
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
 ; The viewer gets a desktop shortcut on every install, including silent installs and
 ; upgrades where an earlier run remembered the old unchecked desktop task.
@@ -281,7 +322,7 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeNameX86}"; Check: Use
 ; check: the Share Manager is x64 .NET 10 only, which is why the component itself
 ; carries MinVersion 10.0.14393 - on the machines the x86 viewer exists for there is
 ; nothing here to point at.
-Name: "{autodesktop}\Fast Media Sorter - Share Manager"; Filename: "{app}\FastMediaSorterCompanion.exe"; Parameters: "--show"; Comment: "{cm:ShareManagerComment}"; Tasks: sharedesktopicon; Components: share
+Name: "{autodesktop}\{#ShareManagerName}"; Filename: "{app}\FastMediaSorterCompanion.exe"; Parameters: "--show"; Comment: "{cm:ShareManagerComment}"; Tasks: sharedesktopicon; Components: share
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent; Check: UseModernExe
@@ -300,6 +341,8 @@ Filename: "{app}\{#AppExeNameX86}"; Description: "{cm:LaunchProgram,{#StringChan
 ;   decode-cache      decoded AVIF/HEIC/animated-WEBP frames (DecodeCacheStore)
 ;   archive-cache     entries extracted from an open ZIP/CBZ (ArchivePaths)
 ;   browser-translate-cache  pages OCR'd for the browser hand-off (DocHtmlTranslateLauncher)
+;   downloads         Ollama installer and model downloads (OllamaManager)
+;   remote-cache      files a remote resource is materialised to (RemoteCachePaths)
 ;   logs              current.log when the exe's own folder is not writable (AppFileLogger)
 ; Only runtimes, models, caches and logs - never the root. The user's settings (the
 ; registry hive SZA\FastMediaSorter) and the Recycle-Bin index STAY on uninstall, by
@@ -315,6 +358,8 @@ Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\ocr-cache"
 Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\decode-cache"
 Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\archive-cache"
 Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\browser-translate-cache"
+Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\downloads"
+Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\remote-cache"
 Type: filesandordirs; Name: "{localappdata}\SZA\FastMediaSorter\logs"
 Type: dirifempty; Name: "{localappdata}\SZA\FastMediaSorter"
 Type: dirifempty; Name: "{localappdata}\SZA"
@@ -570,24 +615,27 @@ begin
     Result := 'Installation options';
 end;
 
+{ Deliberately does not spell the product name: this text lands in the wizard's page
+  description, whose treatment of an ampersand is not ours to rely on. The labels this
+  page builds itself use {#AppNameLabel} (doubled ampersand). }
 function OptionsPageDescriptionText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Выберите, нужно ли зарегистрировать {#AppName} для изображений и обратите внимание на рекомендуемый companion-проект.'
+    Result := 'Выберите, нужно ли зарегистрировать программу для изображений и обратите внимание на рекомендуемый companion-проект.'
   else if IsLanguage('ukrainian') then
-    Result := 'Виберіть, чи потрібно зареєструвати {#AppName} для зображень, і зверніть увагу на рекомендований companion-проєкт.'
+    Result := 'Виберіть, чи потрібно зареєструвати програму для зображень, і зверніть увагу на рекомендований companion-проєкт.'
   else
-    Result := 'Choose whether {#AppName} should register for image files, and see the recommended companion project.';
+    Result := 'Choose whether the program should register for image files, and see the recommended companion project.';
 end;
 
 function DefaultViewerPromptText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Сделать {#AppName} просмотрщиком изображений по умолчанию?'
+    Result := 'Сделать {#AppNameLabel} просмотрщиком изображений по умолчанию?'
   else if IsLanguage('ukrainian') then
-    Result := 'Зробити {#AppName} типовим переглядачем зображень?'
+    Result := 'Зробити {#AppNameLabel} типовим переглядачем зображень?'
   else
-    Result := 'Make {#AppName} the default viewer for common image formats?';
+    Result := 'Make {#AppNameLabel} the default viewer for common image formats?';
 end;
 
 { Names only what RegisterRequestedImageAssociations claims on THIS machine: HEIC,

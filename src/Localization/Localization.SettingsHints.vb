@@ -12,7 +12,7 @@ Partial Public NotInheritable Class Localization
         ' --- headings and buttons ------------------------------------------------
         Add("Настройки", "Settings", "Налаштування", "Einstellungen", "Impostazioni", "Configuración", "Paramètres", "Configurações", "الإعدادات", "सेटिंग्स", "সেটিংস", "ترتیبات", "设置")
         Add("Открыть параметры Windows", "Open Windows settings", "Відкрити параметри Windows", "Windows-Einstellungen öffnen", "Apri le impostazioni di Windows", "Abrir la configuración de Windows", "Ouvrir les paramètres Windows", "Abrir as configurações do Windows", "فتح إعدادات Windows", "Windows सेटिंग्स खोलें", "Windows সেটিংস খুলুন", "Windows ترتیبات کھولیں", "打开 Windows 设置")
-        Add("Зарегистрировать", "Register", "Зареєструвати", "Registrieren", "Registra", "Registrar", "Inscrire", "Registrar", "تسجيل", "पंजीकृत करें", "নিবন্ধন করুন", "رجسٹر کریں", "注册")
+        Add("Зарегистрировать", "Register", "Зареєструвати", "Registrieren", "Registra", "Registrar", "Enregistrer", "Registrar", "تسجيل", "पंजीकृत करें", "নিবন্ধন করুন", "رجسٹر کریں", "注册")
         Add("Управление SFTP", "Manage SFTP", "Керування SFTP", "SFTP verwalten", "Gestisci SFTP", "Gestionar SFTP", "Gérer SFTP", "Gerenciar SFTP", "إدارة SFTP", "SFTP प्रबंधित करें", "SFTP পরিচালনা", "SFTP کا انتظام", "管理 SFTP")
         Add("Установить", "Install", "Встановити", "Installieren", "Installa", "Instalar", "Installer", "Instalar", "تثبيت", "इंस्टॉल करें", "ইনস্টল করুন", "انسٹال کریں", "安装")
         Add("Запустить", "Start", "Запустити", "Starten", "Avvia", "Iniciar", "Démarrer", "Iniciar", "تشغيل", "शुरू करें", "চালু করুন", "شروع کریں", "启动")

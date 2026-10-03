@@ -2,22 +2,23 @@
 <html lang="en" data-theme="dark" data-lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Always-on Folder Share Server | Fast Media Sorter</title>
-<meta name="description" content="The Server edition of Fast Media Sorter folder sharing: a Windows service that publishes selected folders to Android over SFTP from boot, with nobody signed in.">
+<title>Always-on Folder Share Server | Fast Media Sorter &amp; Sharing</title>
+<meta name="description" content="The Server edition of Fast Media Sorter &amp; Sharing: a Windows service that publishes selected folders to Android over SFTP from boot, with nobody signed in.">
 <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">
 <link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">
-<meta property="og:type" content="article">
-<meta property="og:site_name" content="Fast Media Sorter for Windows">
-<meta property="og:title" content="Always-on Folder Share Server | Fast Media Sorter">
-<meta property="og:description" content="The Server edition of Fast Media Sorter folder sharing: a Windows service that publishes selected folders to Android over SFTP from boot, with nobody signed in.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Always-on Folder Share Server | Fast Media Sorter &amp; Sharing">
+<meta property="og:description" content="The Server edition of Fast Media Sorter &amp; Sharing: a Windows service that publishes selected folders to Android over SFTP from boot, with nobody signed in.">
 <meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">
 <meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png">
 <meta property="og:locale" content="en">
+<meta property="og:locale:alternate" content="ru">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Always-on Folder Share Server | Fast Media Sorter">
-<meta name="twitter:description" content="The Server edition of Fast Media Sorter folder sharing: a Windows service that publishes selected folders to Android over SFTP from boot, with nobody signed in.">
+<meta name="twitter:title" content="Always-on Folder Share Server | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:description" content="The Server edition of Fast Media Sorter &amp; Sharing: a Windows service that publishes selected folders to Android over SFTP from boot, with nobody signed in.">
 <meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","headline":"Always-on Folder Share Server | Fast Media Sorter","description":"The Server edition of Fast Media Sorter folder sharing: a Windows service that publishes selected folders to Android over SFTP from boot, with nobody signed in.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html","inLanguage":"en","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png","author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","headline":"Always-on Folder Share Server | Fast Media Sorter & Sharing","description":"The Server edition of Fast Media Sorter & Sharing: a Windows service that publishes selected folders to Android over SFTP from boot, with nobody signed in.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html","inLanguage":["en","ru"],"image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
 <link rel="icon" href="assets/icons/Fast_Media_Sorter.ico" sizes="any">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/sza-kit.css"><link rel="stylesheet" href="assets/fms-site.css">
@@ -27,7 +28,7 @@ html[data-lang="ru"] [data-l="en"],html[data-lang="en"] [data-l="ru"]{display:no
 <script>(function(){try{var t=localStorage.getItem('sza-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.dataset.theme=t;var l=localStorage.getItem('sza-lang')||((navigator.language||'en').toLowerCase().indexOf('ru')===0?'ru':'en');document.documentElement.dataset.lang=l==='ru'?'ru':'en'}catch(e){}})();</script>
 </head>
 <body><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
-<header class="site-header"><a class="brand" href="./">FMS<span class="dot">.</span></a><div class="seg" role="group" aria-label="Language"><button data-setlang="ru">RU</button><button data-setlang="en">EN</button></div><button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button><a class="btn btn-primary btn-sm" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest"><span data-l="en">Download</span><span data-l="ru">Скачать</span></a></header>
+<header class="site-header"><a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a><div class="seg" role="group" aria-label="Language"><button data-setlang="ru">RU</button><button data-setlang="en">EN</button></div><button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button><a class="btn btn-primary btn-sm" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest"><span data-l="en">Download</span><span data-l="ru">Скачать</span></a></header>
 
 <main class="container">
 
@@ -137,6 +138,7 @@ winget uninstall --id SerZhyAle.FastMediaSorter.Server</pre>
 
 <section class="section"><div class="tools-grid">
 <a href="how-to-sftp.html"><b>HOW TO · SFTP</b><span data-l="en">Publish selected PC folders over SFTP</span><span data-l="ru">Публикация выбранных папок ПК по SFTP</span></a>
+<a href="how-to-filedo-disks.html"><b>HOW TO · FileDO</b><span data-l="en">Share FileDO .fdd virtual disks</span><span data-l="ru">Общий доступ к дискам FileDO .fdd</span></a>
 <a href="publish-folders-android.html"><b>HOW TO · Android</b><span data-l="en">Network and router, step by step</span><span data-l="ru">Сеть и роутер, шаг за шагом</span></a>
 <a href="how-to-viewer.html"><b>HOW TO · Viewer</b><span data-l="en">Review and sort a media folder</span><span data-l="ru">Просмотр и сортировка медиафайлов</span></a>
 <a href="how-to-keys.html"><b>HOW TO · Keys</b><span data-l="en">Keys, zoom and full screen</span><span data-l="ru">Клавиши, масштаб и полный экран</span></a>
@@ -144,6 +146,6 @@ winget uninstall --id SerZhyAle.FastMediaSorter.Server</pre>
 <a href="how-to-archives.html"><b>HOW TO · Archives</b><span data-l="en">Read a ZIP or CBZ like a folder</span><span data-l="ru">Читать ZIP или CBZ как папку</span></a>
 </div></section>
 </main>
-<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter</a> · <a href="how-to-sftp.html">SFTP HOW TO</a> · <a href="publish-folders-android.html"><span data-l="en">Detailed Android guide</span><span data-l="ru">Подробная инструкция для Android</span></a></span><span>© 2026 Serhii Zhyhunenko</span></div></div></footer>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="how-to-sftp.html">SFTP HOW TO</a> · <a href="publish-folders-android.html"><span data-l="en">Detailed Android guide</span><span data-l="ru">Подробная инструкция для Android</span></a></span><span>© 2026 Serhii Zhyhunenko</span></div></div></footer>
 <script>(function(){var d=document.documentElement;function lang(v){d.dataset.lang=v;document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.setlang===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.dataset.setlang)}});lang(d.dataset.lang==='ru'?'ru':'en');document.getElementById('themeBtn').onclick=function(){var v=d.dataset.theme==='light'?'dark':'light';d.dataset.theme=v;try{localStorage.setItem('sza-theme',v)}catch(e){}}})();</script>
 </body></html>

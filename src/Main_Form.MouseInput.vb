@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.ObjectModel
 Imports System.ComponentModel
@@ -14,6 +14,9 @@ Imports System.Diagnostics
 Partial Public Class Main_Form
 
     Private Sub HandlePictureBoxMouseDown(sender As Object, e As MouseEventArgs)
+#If Not NETFRAMEWORK Then
+        If e.Button = MouseButtons.Left AndAlso TryHandlePdfIndicatorClick(TryCast(sender, PictureBox), e.Location) Then Return
+#End If
         ' Store the initial mouse position for drag detection
         mouse_Down_Start_Point = e.Location
 
@@ -106,6 +109,14 @@ Partial Public Class Main_Form
                 pending_Single_Click_Timer.Stop()
                 pending_Single_Click_Event = Nothing
 
+#If Not NETFRAMEWORK Then
+                If IsContentPlaceholderShown() AndAlso e.Button = MouseButtons.Left Then
+                    last_Media_Area_Click_Time = DateTime.MinValue
+                    last_Media_Area_Click_Button = MouseButtons.None
+                    OpenContentInDefaultProgram()
+                    Return
+                End If
+#End If
                 is_Full_Screen_Mode = Not is_Full_Screen_Mode
                 If Not is_Full_Screen_Mode Then is_Super_Full_Screen_Mode = False
                 SetViewSizes()
@@ -158,11 +169,27 @@ Partial Public Class Main_Form
         SlideShowStop()
 
 #If Not NETFRAMEWORK Then
+        ' Document scrolling / zooming exception (§2.4)
+        If IsTextDocumentShown() Then
+            If (Control.ModifierKeys And Keys.Control) = Keys.Control Then
+                If e.Delta <> 0 Then ZoomText(If(e.Delta > 0, 0.1F, -0.1F))
+            Else
+                If e.Delta <> 0 Then ScrollTextLines(If(e.Delta > 0, -3, 3))
+            End If
+            Return
+        End If
+
         ' Modern: one place decides what the wheel means (zoom vs flip) - see
         ' Main_Form.Zoom.vb. It consumes the event only when it actually zoomed, so
         ' everything below (including the historical modifier handling) still runs
         ' untouched when it declines.
+        If IsPdfDocumentShown() AndAlso (Control.ModifierKeys And Keys.Control) <> Keys.Control Then
+            If e.Delta > 0 Then PdfPrevPage()
+            If e.Delta < 0 Then PdfNextPage()
+            Return
+        End If
         If TryHandleWheelZoom(e) Then Return
+
 #End If
 
         If (Control.ModifierKeys And Keys.Alt) = Keys.Alt Then

@@ -40,6 +40,17 @@ The site copy is the closest match to a Store description: it is the same produc
 pitch, already translated and already reviewed for the same audience. Use it as the
 draft rather than translating a fourth time.
 
+## The name in every locale
+
+The listing **title is the frozen Store name `FastMediaSorter LITE`, written in Latin in all 13
+locales** (including `ar`, `hi`, `bn`, `ur` and `zh-hans`): the name is not translated, only the words
+around it are (docs/guides/PRODUCT_NAMING.md rules 1 and 2). The `Title` row of `listingData.csv` is the
+one place it is set for `en-us` and `ru` today; a locale added later takes the same string. The Store
+name did not follow the product's rename (owner decision, 2026-10-03: only the inscriptions change), so
+each description keeps one truthful closing sentence that on the Microsoft Store the app is published
+as `FastMediaSorter LITE`, and the first mention in a description is the full name, `Fast Media Sorter &
+Sharing for Windows`. Nothing needs reserving in Partner Center.
+
 ## Keyword policy - check this per locale, not once
 
 Store policy 10.1.3: at most **7** search terms, and **no third-party product names in

@@ -32,8 +32,7 @@ Friend Module ResourceTransfer
                               overwrite As Boolean, Optional progress As IProgress(Of Long) = Nothing,
                               Optional ct As CancellationToken = Nothing)
         Dim expected As Long = New FileInfo(localSource).Length
-        Dim existing As ResourceEntry = Nothing
-        Dim destinationExisted As Boolean = provider.TryStat(remoteDest, existing)
+        Dim destinationExisted As Boolean = ProbeExists(provider, remoteDest, Nothing)
         ' Refused before a byte is sent: finding the collision after 2 GB would waste them.
         If destinationExisted AndAlso Not overwrite Then Throw DestinationExists()
 
@@ -52,7 +51,7 @@ Friend Module ResourceTransfer
                                 overwrite As Boolean, Optional progress As IProgress(Of Long) = Nothing,
                                 Optional ct As CancellationToken = Nothing)
         Dim source As ResourceEntry = Nothing
-        If Not provider.TryStat(remoteSource, source) Then
+        If Not ProbeExists(provider, remoteSource, source) Then
             Throw New FileNotFoundException("The file is not on the resource any more.", remoteSource)
         End If
         If Not overwrite AndAlso File.Exists(localDest) Then Throw DestinationExists()
@@ -114,18 +113,30 @@ Friend Module ResourceTransfer
             Throw New IOException("The source and the destination are the same file; nothing was replaced.")
         End If
 
-        ' A case-only rename ("photo.jpg" -> "Photo.jpg", 057.S07-7) is the file itself on a
-        ' case-insensitive server, and the stat of the new name finds exactly that file - so
-        ' a stat that answers with the SOURCE's own name is not a collision, it IS the
-        ' source, and the rename goes ahead. Anything else the stat names is another file
-        ' (a case-sensitive server holding both names), and it is refused as before.
+        ' Case-only rename support (057.S07-7): allow renaming when paths differ only in case
+        ' on case-insensitive servers, even when overwrite=False.
+        Dim isCaseOnlyRename As Boolean = Not String.Equals(remoteSource, remoteDest, StringComparison.Ordinal) AndAlso
+                                       String.Equals(remoteSource, remoteDest, StringComparison.OrdinalIgnoreCase)
+
         If provider.Capabilities.SupportsServerSideRename Then
             Dim existing As ResourceEntry = Nothing
-            If provider.TryStat(remoteDest, existing) Then
-                Dim sameFile As Boolean =
-                    String.Equals(existing.Name, Path.GetFileName(remoteSource), StringComparison.OrdinalIgnoreCase)
-                If Not sameFile AndAlso Not overwrite Then Throw DestinationExists()
-                If Not sameFile Then provider.DeleteFile(remoteDest)
+            If ProbeExists(provider, remoteDest, existing) Then
+                If Not overwrite AndAlso Not isCaseOnlyRename Then
+                    Throw DestinationExists()
+                End If
+                If Not overwrite Then
+                    ' Case-only rename: the destination is the source itself only when the server's
+                    ' canonical spelling of it IS the source path (IFileSystemProvider.TryStat). A
+                    ' case-sensitive server answers with the destination's own spelling - a different
+                    ' file, a collision. Folding case here would take it for the source.
+                    If isCaseOnlyRename AndAlso existing IsNot Nothing AndAlso
+                       String.Equals(existing.FullPath, remoteSource, StringComparison.Ordinal) Then
+                        provider.Rename(remoteSource, remoteDest)
+                        Return
+                    End If
+                    Throw DestinationExists()
+                End If
+                provider.DeleteFile(remoteDest)
             End If
             provider.Rename(remoteSource, remoteDest)
             Return
@@ -134,8 +145,16 @@ Friend Module ResourceTransfer
         Directory.CreateDirectory(stagingDir)
         Dim staged As String = Path.Combine(stagingDir, "move-" & Guid.NewGuid().ToString("N") & ".tmp")
         Try
+            ' For case-only rename, delete the destination first if it exists (it's the same file)
+            If isCaseOnlyRename Then
+                Try
+                    provider.DeleteFile(remoteDest)
+                Catch
+                    ' Ignore delete failure for case-only rename - the upload will handle it
+                End Try
+            End If
             DownloadVerified(provider, remoteSource, staged, True, progress, ct)
-            UploadVerified(provider, staged, remoteDest, overwrite, progress, ct)
+            UploadVerified(provider, staged, remoteDest, overwrite OrElse isCaseOnlyRename, progress, ct)
             provider.DeleteFile(remoteSource)
         Finally
             Try
@@ -147,13 +166,32 @@ Friend Module ResourceTransfer
 
     Private Sub RequireLength(provider As IFileSystemProvider, remotePath As String, expected As Long)
         Dim landed As ResourceEntry = Nothing
-        If Not provider.TryStat(remotePath, landed) Then
+        If Not ProbeExists(provider, remotePath, landed) Then
             Throw New IOException("The uploaded file is not on the resource: " & remotePath)
         End If
         If landed.Length >= 0 AndAlso landed.Length <> expected Then
             Throw New IOException("Uploaded " & landed.Length.ToString() & " of " & expected.ToString() & " bytes.")
         End If
     End Sub
+
+    ''' <summary>
+    ''' "Is it there" with the typed answer (100 §15.4 item 3): True for Found, False ONLY for
+    ''' a definite Missing, and a permission refusal or a dead link throws its
+    ''' <see cref="ResourceFailureException"/>. An overwrite check, a verification and a
+    ''' "gone from the server" verdict must never rest on an error read as absence.
+    ''' </summary>
+    Private Function ProbeExists(provider As IFileSystemProvider, path As String, ByRef entry As ResourceEntry) As Boolean
+        Dim result As StatResult = ResourceProviderCalls.Stat(provider, path)
+        entry = result.Entry
+        Select Case result.Outcome
+            Case StatOutcome.Found
+                Return True
+            Case StatOutcome.Missing
+                Return False
+            Case Else
+                Throw New ResourceFailureException(result.Failure)
+        End Select
+    End Function
 
     ' ------------------------------------------------------------ provider paths ----
 
@@ -176,6 +214,14 @@ Friend Module ResourceTransfer
             Return parent & name
         End If
         Return parent & separator & name
+    End Function
+
+    ''' <summary>The file name part of a provider path. Pure.</summary>
+    Friend Function FileNameOf(remotePath As String) As String
+        If String.IsNullOrEmpty(remotePath) Then Return ""
+        Dim cut As Integer = remotePath.LastIndexOfAny(New Char() {"/"c, "\"c})
+        If cut < 0 Then Return remotePath
+        Return remotePath.Substring(cut + 1)
     End Function
 
 End Module

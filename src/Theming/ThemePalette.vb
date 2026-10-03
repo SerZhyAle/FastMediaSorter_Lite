@@ -236,7 +236,9 @@ Public NotInheritable Class ThemePalette
             Case ThemeRole.Link : Return SystemColors.HotTrack
             Case ThemeRole.Info : Return System.Drawing.Color.FromArgb(0, 102, 204)
             Case ThemeRole.Success : Return System.Drawing.Color.ForestGreen
-            Case ThemeRole.Warning : Return System.Drawing.Color.FromArgb(176, 96, 0)
+            ' ICON-RENDER 0.14 section 10 D pins the shared day tone of state.warning: #EF6C00,
+            ' 3.08:1 on white (the previous #B06000 measured 4.4:1 but broke the shared hue).
+            Case ThemeRole.Warning : Return System.Drawing.Color.FromArgb(239, 108, 0)
             Case ThemeRole.Danger : Return System.Drawing.Color.Firebrick
             Case Else : Return System.Drawing.Color.Empty
         End Select

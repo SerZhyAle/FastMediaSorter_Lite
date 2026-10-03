@@ -59,6 +59,23 @@ Public Class ResourceSessionTests
     ' ------------------------------------------------------------ acceptance 2 ----
 
     <Fact>
+    Public Sub Thumbnail_materialisation_fetches_an_unviewed_remote_file_once_and_refuses_foreign_paths()
+        Dim provider As ResourceTestProvider = NewProvider()
+        Using session As ResourceSession = OpenSession(provider)
+            Dim entry As ResourceEntry = session.Entries.Single(Function(e) e.Name = "c.jpg")
+            Assert.False(File.Exists(entry.LocalPath))
+            Assert.True(session.MaterializeForThumbnail(entry.LocalPath))
+            Assert.Equal(New Byte(299) {}, File.ReadAllBytes(entry.LocalPath))
+            Assert.True(session.MaterializeForThumbnail(entry.LocalPath))
+            Assert.Equal(1, provider.DownloadCalls)
+            Assert.False(session.MaterializeForThumbnail(Path.Combine(workDir, "foreign.jpg")))
+            Assert.Equal(1, provider.DownloadCalls)
+            session.Dispose()
+            Assert.False(session.MaterializeForThumbnail(entry.LocalPath))
+        End Using
+    End Sub
+
+    <Fact>
     Public Sub Entering_a_second_resource_disposes_the_first_and_deletes_its_directory()
         Dim slot As New ResourceSessionSlot()
         Dim first As ResourceSession = OpenSession(NewProvider("one"))

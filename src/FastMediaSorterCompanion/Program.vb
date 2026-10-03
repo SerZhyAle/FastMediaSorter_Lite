@@ -1,15 +1,16 @@
 Imports System.Drawing
+Imports System.Diagnostics
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
 Imports System.Windows.Forms
 
 ''' <summary>
-''' Entry point for Fast Media Sorter: Share Manager. Owns single-instance
-''' enforcement and the LITE -&gt; Companion wake handshake, then hands off to the
+''' Entry point for the Share Manager (see ProductNames.ShareManager). Owns single-instance
+''' enforcement and the viewer -&gt; Companion wake handshake, then hands off to the
 ''' tray-resident <see cref="TrayContext"/>. This is the Companion analogue of
-''' LITE's <c>Application_Events.vb</c> (mutex + WM_COPYDATA), with the roles
-''' reversed: LITE is the sender, Companion the receiver.
+''' the viewer's <c>Application_Events.vb</c> (mutex + WM_COPYDATA), with the roles
+''' reversed: the viewer is the sender, Companion the receiver.
 ''' </summary>
 Friend Module Program
 
@@ -17,7 +18,7 @@ Friend Module Program
     Public Const MutexName As String = "FastMediaSorterCompanionSingleInstanceMutex"
 
     ''' <summary>WM_COPYDATA payload meaning "just show your window" - no folder to share.
-    ''' Frozen: LITE sends this exact string (Main_Form.ShareLauncher.vb).</summary>
+    ''' Frozen: the viewer sends this exact string (Main_Form.ShareLauncher.vb).</summary>
     Public Const ShowWindowCommand As String = "::fms-show-window::"
 
     ''' <summary>WM_COPYDATA payload meaning "the exe was run again with no request attached".
@@ -29,6 +30,16 @@ Friend Module Program
     ''' <summary>Title of the hidden receiver window, used by a second instance to find the first.</summary>
     Friend Const MessageWindowTitle As String = "FastMediaSorterCompanionMessageWindow_{2f6a1c94}"
 
+    ''' <summary>Tag for WM_COPYDATA messages to a Share Manager - one value for the viewer's wake
+    ''' and this program's own second-instance forward (see <see cref="CopyDataTransport"/>).</summary>
+    Friend Const CopyDataTag As Integer = CopyDataTransport.CompanionTag
+    Friend ReadOnly Property CopyDataTagPointer As IntPtr
+        Get
+            Return New IntPtr(CopyDataTag)
+        End Get
+    End Property
+    Friend Const MaxPayloadBytes As Integer = CopyDataTransport.MaxPayloadBytes
+    Friend Const Handled_Result As Integer = 1
     ''' <summary>Autostart passes this so a logon launch stays silently in the tray
     ''' (spec §4.5.1). A launch WITHOUT it is no longer "open the window" by itself -
     ''' see <see cref="ShowWindowFlag"/> and the startup option below.</summary>
@@ -36,7 +47,7 @@ Friend Module Program
 
     ''' <summary>Command line form of <see cref="ShowWindowCommand"/>: "the user asked for the
     ''' window", so it opens whatever the "Open the manager window at startup" option says.
-    ''' LITE's Share Manager button passes it when it COLD-STARTS us (a running instance gets
+    ''' The viewer's Share Manager button passes it when it COLD-STARTS us (a running instance gets
     ''' the same intent over WM_COPYDATA instead).</summary>
     Public Const ShowWindowFlag As String = "--show"
 
@@ -78,27 +89,50 @@ Friend Module Program
             payload = PlainStartCommand
         End If
 
-        Dim createdNew As Boolean
+        Dim createdNew As Boolean = False
         Dim mtx As Mutex = Nothing
+        Dim mutexFailure As Exception = Nothing
         Try
             mtx = New Mutex(True, MutexName, createdNew)
-        Catch
-            createdNew = True
+        Catch ex As Exception
+            mutexFailure = ex
         End Try
 
+        ' The decision is a function of what the call did (InstanceOwnership): access denied is
+        ' "an instance exists" (an elevated one's DACL excludes our token), and an UNEXPECTED
+        ' failure is never "first" - that used to start a second tray icon and a second manager
+        ' over one worker pipe, with nothing in the log.
+        Dim role As InstanceRole = InstanceOwnership.Decide(createdNew, mutexFailure)
+        If InstanceOwnership.IsUnexpected(mutexFailure) Then
+            AppFileLogger.LogException("Share Manager single-instance mutex", mutexFailure)
+        ElseIf mutexFailure IsNot Nothing Then
+            AppFileLogger.WriteLine("Mutex creation denied (UnauthorizedAccessException) - an instance exists")
+        End If
+
         Try
-            If Not createdNew Then
-                ' Another instance already owns the tray - forward our intent to it and exit.
-                If payload.Length > 0 Then ForwardToRunningInstance(payload)
+            If role = InstanceRole.Unavailable Then
+                AppFileLogger.WriteLine("Share Manager not started: the single-instance mutex could not be examined")
+                CompanionGlobals.LoadLanguage()
+                MessageBox.Show(Localization.T("Не удалось определить, запущен ли Share Manager. Второй экземпляр не запускается."),
+                                ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Return
             End If
 
+            If role = InstanceRole.Existing Then
+                ' Another instance already owns the tray - forward our intent to it and exit.
+                ' Never start a competing manager: if it cannot be reached, say so.
+                If payload.Length > 0 Then
+                    Dim forwarded As ForwardOutcome = ForwardToRunningInstance(payload)
+                    If forwarded <> ForwardOutcome.Delivered Then ReportForwardFailure()
+                End If
+                Return
+            End If
             ' Read the shared UI-language flag before any Share text is built, so
-            ' Companion matches LITE's language (invariant 9).
+            ' Companion matches the viewer's language (invariant 9).
             CompanionGlobals.LoadLanguage()
 
             ' Upgrade migration (spec §9.3): if logon autostart still points at the
-            ' bare worker (old LITE behavior), repoint it at Companion.exe so the
+            ' bare worker (old viewer behavior), repoint it at Companion.exe so the
             ' tray icon appears at logon. No-op otherwise.
             AutostartManager.MigrateRunTargetIfNeeded()
 
@@ -138,7 +172,7 @@ Friend Module Program
             ThemeService.Initialize()
 
             ' Who decides whether the window shows: an EXPLICIT request always wins (a
-            ' folder to share, or --show from LITE's Share Manager button), and every
+            ' folder to share, or --show from the viewer's Share Manager button), and every
             ' other launch - logon autostart, a double-click on the exe, a script -
             ' obeys the "Open the manager window at startup" option, off by default.
             Using ctx As New TrayContext(folder, windowRequested, silentTray)
@@ -146,7 +180,10 @@ Friend Module Program
             End Using
         Finally
             If mtx IsNot Nothing Then
-                Try : mtx.ReleaseMutex() : Catch : End Try
+                ' Released only when this process acquired it; the handle is disposed either way.
+                If role = InstanceRole.Primary Then
+                    Try : mtx.ReleaseMutex() : Catch : End Try
+                End If
                 mtx.Dispose()
             End If
         End Try
@@ -176,26 +213,104 @@ Friend Module Program
 
     ' --- WM_COPYDATA forward to the already-running instance ------------------
 
-    Private Sub ForwardToRunningInstance(payload As String)
-        Dim hwnd As IntPtr = FindWindowW(Nothing, MessageWindowTitle)
-        If hwnd = IntPtr.Zero Then Return
+    ''' <summary>
+    ''' Hands the request to the running instance. The payload is refused whole if it cannot be sent
+    ''' whole - never truncated, because a shorter path can name a different folder. One monotonic
+    ''' deadline bounds the window search and every send; the first acknowledgement stops it. A
+    ''' send that timed out has an UNCERTAIN outcome: the folder request is therefore never replayed
+    ''' as a mutation by a fallback - the receiver de-duplicates what it did get.
+    ''' </summary>
+    Private Function ForwardToRunningInstance(payload As String) As ForwardOutcome
+        Dim bytes As Byte() = Nothing
+        Dim refusal As PayloadRefusal
+        If CompanionCommand.Parse(payload).Kind = CompanionCommandKind.Invalid OrElse
+           Not CopyDataTransport.TryEncode(payload, bytes, refusal) Then
+            AppFileLogger.WriteLine("Companion forward: payload refused (" & refusal.ToString() & "), not sent")
+            Return ForwardOutcome.TimedOut
+        End If
 
-        Dim bytes As Byte() = Encoding.UTF8.GetBytes(payload)
+        Dim manualAdvice As Boolean = False
+        Dim outcome As ForwardOutcome = CopyDataTransport.RunForward(
+            AddressOf MonotonicClock.NowMs,
+            Sub(pauseMs) Thread.Sleep(pauseMs),
+            Function(sendTimeoutMs) SendOnce(bytes, sendTimeoutMs, manualAdvice))
+        If outcome = ForwardOutcome.Delivered AndAlso manualAdvice Then
+            CompanionGlobals.LoadLanguage()
+            MessageBox.Show(Localization.TF("Share Manager старой версии не умеет безопасно принимать папку отсюда. Обновите его или добавьте папку в нём вручную:" & vbCrLf & "{0}", payload),
+                            ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Information)
+        End If
+        AppFileLogger.WriteLine("Companion forward: " & outcome.ToString())
+        Return outcome
+    End Function
+
+    Private Function SendOnce(bytes As Byte(), sendTimeoutMs As Integer, ByRef manualAdvice As Boolean) As ForwardAttempt
+        Dim hwnd As IntPtr = FindWindowW(Nothing, MessageWindowTitle)
+        ' The instance exists (we do not hold the mutex) but may not have created its message
+        ' window yet: that is worth another try inside the deadline.
+        If hwnd = IntPtr.Zero Then Return ForwardAttempt.NotAcknowledged
+
+        Dim payload As String = Encoding.UTF8.GetString(bytes)
+        Dim receiverVersion As Version = VersionForWindow(hwnd)
+        Dim forwarded As String = CompatiblePayload(payload, receiverVersion)
+        manualAdvice = Not String.Equals(payload, forwarded, StringComparison.Ordinal) AndAlso
+                       CompanionCommand.Parse(payload).Kind = CompanionCommandKind.ShareFolder
+        bytes = Encoding.UTF8.GetBytes(forwarded)
+
         Dim unmanaged As IntPtr = Marshal.AllocHGlobal(bytes.Length)
         Try
             Marshal.Copy(bytes, 0, unmanaged, bytes.Length)
             Dim cds As New COPYDATASTRUCT With {
-                .dwData = IntPtr.Zero,
+                .dwData = CopyDataTagPointer,
                 .cbData = bytes.Length,
                 .lpData = unmanaged
             }
-            SendMessageTimeoutW(hwnd, WM_COPYDATA, IntPtr.Zero, cds,
-                                SMTO_ABORTIFHUNG, 3000, Nothing)
+            Dim result As IntPtr = IntPtr.Zero
+            Dim sent As Boolean = SendMessageTimeoutW(hwnd, WM_COPYDATA, IntPtr.Zero, cds,
+                                                        SMTO_ABORTIFHUNG, CUInt(sendTimeoutMs), result) <> IntPtr.Zero
+            ' Delivered only when the send succeeded AND the window answered Handled_Result.
+            Return If(sent AndAlso result = New IntPtr(Handled_Result), ForwardAttempt.Acknowledged, ForwardAttempt.NotAcknowledged)
         Finally
             Marshal.FreeHGlobal(unmanaged)
         End Try
-    End Sub
+    End Function
 
+    Friend Function CompatiblePayload(payload As String, receiverVersion As Version) As String
+        Dim command As CompanionCommand = CompanionCommand.Parse(payload)
+        If command.Kind = CompanionCommandKind.ShareFolder AndAlso
+           ShareActivationPolicy.PlanFor(command.Folder, receiverVersion) <> ActivationPlan.SendFolder Then Return ShowWindowCommand
+        If command.Kind = CompanionCommandKind.PlainStart AndAlso Not ShareActivationPolicy.IsConsentCapable(receiverVersion) Then Return ShowWindowCommand
+        Return payload
+    End Function
+
+    Private Function VersionForWindow(hwnd As IntPtr) As Version
+        Try
+            Dim pid As UInteger
+            GetWindowThreadProcessId(hwnd, pid)
+            If pid = 0 Then Return Nothing
+            Using process As Process = Process.GetProcessById(CInt(pid))
+                Dim info As FileVersionInfo = FileVersionInfo.GetVersionInfo(process.MainModule.FileName)
+                Return ShareActivationPolicy.VersionOf(info.FileMajorPart, info.FileMinorPart, info.FileBuildPart, info.FilePrivatePart)
+            End Using
+        Catch
+            Return Nothing ' Unknown is wake-only, never permission to publish a folder.
+        End Try
+    End Function
+
+    <DllImport("user32.dll")>
+    Private Function GetWindowThreadProcessId(hwnd As IntPtr, ByRef pid As UInteger) As UInteger
+    End Function
+
+    ''' <summary>The running Share Manager could not be reached. Said once, plainly, instead of a
+    ''' second manager appearing or nothing happening at all.</summary>
+    Private Sub ReportForwardFailure()
+        Try
+            CompanionGlobals.LoadLanguage()
+            MessageBox.Show(Localization.T("Share Manager уже запущен, но не ответил на запрос. Подождите немного и повторите; второй экземпляр не запускается."),
+                            ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Catch ex As Exception
+            AppFileLogger.LogException("Share Manager: reporting an unreachable instance", ex)
+        End Try
+    End Sub
     Friend Const WM_COPYDATA As Integer = &H4A
     Private Const SMTO_ABORTIFHUNG As UInteger = &H2
 
@@ -206,11 +321,11 @@ Friend Module Program
         Public lpData As IntPtr
     End Structure
 
-    <DllImport("user32.dll", CharSet:=CharSet.Unicode, SetLastError:=True)>
+    <DllImport("user32.dll", EntryPoint:="FindWindowW", ExactSpelling:=True, CharSet:=CharSet.Unicode, SetLastError:=True)>
     Private Function FindWindowW(lpClassName As String, lpWindowName As String) As IntPtr
     End Function
 
-    <DllImport("user32.dll", CharSet:=CharSet.Unicode, SetLastError:=True)>
+    <DllImport("user32.dll", EntryPoint:="SendMessageTimeoutW", ExactSpelling:=True, CharSet:=CharSet.Unicode, SetLastError:=True)>
     Private Function SendMessageTimeoutW(hWnd As IntPtr, Msg As Integer, wParam As IntPtr,
                                          ByRef lParam As COPYDATASTRUCT, fuFlags As UInteger,
                                          uTimeout As UInteger, ByRef lpdwResult As IntPtr) As IntPtr

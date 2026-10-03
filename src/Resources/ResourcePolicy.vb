@@ -205,5 +205,61 @@ Friend Module ResourceMatching
         Return Nothing
     End Function
 
+    ''' <summary>
+    ''' The saved resource an ADDRESS belongs to (a typed or restored <c>sftp://user@host:port/path</c>): the same
+    ''' server through any of its addresses, the same port, the user if the address names one - and, among several
+    ''' roots of one server, the deepest one the path is under, or - when the path is outside every saved root -
+    ''' the first of that server's resources (same server, same user: the same credential, opened at the path
+    ''' given). Nothing when no saved resource is that server: the address is then offered to the user as a NEW
+    ''' resource, because a typed address cannot carry the password.
+    ''' </summary>
+    Friend Function FindForAddress(resources As IEnumerable(Of ResourceDescriptor), host As String, port As Integer,
+                                   user As String, remotePath As String) As ResourceDescriptor
+        If resources Is Nothing Then Return Nothing
+        Dim wantedPort As Integer = If(port > 0, port, 22)
+        Dim candidates As New List(Of ResourceDescriptor)()
+        For Each r As ResourceDescriptor In resources
+            If r Is Nothing OrElse r.Kind <> ResourceKind.Sftp Then Continue For
+            If Not String.IsNullOrEmpty(user) AndAlso Not String.Equals(r.UserName, user, StringComparison.Ordinal) Then Continue For
+            For Each e As FmsEndpoint In ResourceConnect.CandidatesOf(r)
+                If String.Equals(e.Host, host, StringComparison.OrdinalIgnoreCase) AndAlso e.Port = wantedPort Then
+                    candidates.Add(r)
+                    Exit For
+                End If
+            Next
+        Next
+        If candidates.Count = 0 Then Return Nothing
+        Dim path As String = If(FmsConfigReader.CanonicalVirtualPath(remotePath), "/")
+        Dim best As ResourceDescriptor = Nothing
+        Dim bestLength As Integer = -1
+        For Each r As ResourceDescriptor In candidates
+            Dim root As String = If(FmsConfigReader.CanonicalVirtualPath(r.RootPath), "/")
+            If IsUnder(path, root) AndAlso root.Length > bestLength Then
+                best = r
+                bestLength = root.Length
+            End If
+        Next
+        Return If(best, candidates(0))
+    End Function
+
+    Private Function IsUnder(path As String, root As String) As Boolean
+        If root = "/" Then Return True
+        Return String.Equals(path, root, StringComparison.Ordinal) OrElse path.StartsWith(root & "/", StringComparison.Ordinal)
+    End Function
+End Module
+''' <summary>The preflight warning for a large batch over a slow or metered resource (007 §4.3).
+''' Uses the final plan's bytes, after collision skips, and never probes or connects.</summary>
+Friend Module RemoteBatchPolicy
+    Friend Const WarningThresholdBytes As Long = 1024L * 1024L * 1024L
+
+    Friend Function NeedsWarning(totalBytes As Long, source As ProviderCapabilities,
+                                 destination As ProviderCapabilities) As Boolean
+        Return totalBytes > WarningThresholdBytes AndAlso (IsCostly(source) OrElse IsCostly(destination))
+    End Function
+
+    Private Function IsCostly(capabilities As ProviderCapabilities) As Boolean
+        Return capabilities IsNot Nothing AndAlso
+               (capabilities.IsMetered OrElse capabilities.CostHint = ProviderCostHint.Slow)
+    End Function
 End Module
 #End If

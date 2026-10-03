@@ -20,6 +20,14 @@ Imports System.Windows.Forms
 ' ReadShowMediaFile(Mode_Delete) - identical behaviour, no new file logic.
 Partial Public Class Main_Form
 
+    Private Function RecipientPx(logical As Integer) As Integer
+#If NETFRAMEWORK Then
+        Return LogicalToDeviceUnits(logical)
+#Else
+        Return UiScale.Px(logical, ChromeScale())
+#End If
+    End Function
+
     Private recipients_Overlay As RecipientsOverlayWindow
     Private recipients_ToolTip As ToolTip
     Private recipients_Overlay_Tracking As Boolean
@@ -91,6 +99,9 @@ Partial Public Class Main_Form
             ' the viewer already has "always on top" enabled.
             PinToViewerBand(recipients_Overlay)
             recipients_Overlay.Show()
+#If Not NETFRAMEWORK Then
+            ConfigureFloatingMediaChrome()
+#End If
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2400: recipients overlay build failed: " & ex.Message)
             ' Debug.WriteLine is stripped from Release: without this a table that never
@@ -127,6 +138,16 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
+    ''' <summary>What a recipient row says after its key: the folder - or, on the mainline, for a
+    ''' folder of a saved resource, "«Name» /folder" (007 §4.2) instead of the bare address.</summary>
+    Private Function RecipientRowCaption(destination As String) As String
+#If NETFRAMEWORK Then
+        Return destination
+#Else
+        Return SlotCaption(destination)
+#End If
+    End Function
+
     Private Sub BuildRecipientsOverlay()
         ' Rows: registered destinations (keys 1..9, then 0) + Delete last.
         ' Item1 = slot (1..10; -1 = delete). Runtime convention: key "k" -> slot k,
@@ -134,19 +155,23 @@ Partial Public Class Main_Form
         Dim rows As New List(Of Tuple(Of Integer, String))()
         For k As Integer = 1 To 9
             Dim keyPath As String = Hardkeys_to_move_mediafile(k)
-            If Not String.IsNullOrEmpty(keyPath) Then rows.Add(Tuple.Create(k, k.ToString() & "  " & keyPath))
+            If Not String.IsNullOrEmpty(keyPath) Then rows.Add(Tuple.Create(k, k.ToString() & "  " & RecipientRowCaption(keyPath)))
         Next
         Dim zeroPath As String = Hardkeys_to_move_mediafile(10)
-        If Not String.IsNullOrEmpty(zeroPath) Then rows.Add(Tuple.Create(10, "0  " & zeroPath))
+        If Not String.IsNullOrEmpty(zeroPath) Then rows.Add(Tuple.Create(10, "0  " & RecipientRowCaption(zeroPath)))
         ' Delete is always available (a valid sort action even with no folders set).
         rows.Add(Tuple.Create(-1, ChrW(215) & "  " & Localization.T("Удалить")))
 
         If recipients_ToolTip Is Nothing Then recipients_ToolTip = New ToolTip()
 
         ' Held in a field so the NEXT rebuild can dispose it (see ApplyRecipientsOverlay).
+#If NETFRAMEWORK Then
         Dim ui_Font As New Font(Me.Font.FontFamily, RecipientsOverlayFontSize(), Me.Font.Style)
+#Else
+        Dim ui_Font As Font = CreateRecipientChromeFont()
+#End If
         recipients_Overlay_Font = ui_Font
-        Dim rowH As Integer = ui_Font.Height + LogicalToDeviceUnits(10)
+        Dim rowH As Integer = ui_Font.Height + RecipientPx(10)
 
         ' Width from the widest caption, capped so it never eats more than half the
         ' media panel (longer paths ellipsize; full path stays in the tooltip).
@@ -155,9 +180,9 @@ Partial Public Class Main_Form
             Dim w As Integer = TextRenderer.MeasureText(r.Item2, ui_Font).Width
             If w > maxTextW Then maxTextW = w
         Next
-        Dim desiredW As Integer = LogicalToDeviceUnits(RecipientsOverlayWidth())
-        Dim capW As Integer = Math.Min(LogicalToDeviceUnits(480), CInt(panel_Media.ClientSize.Width * 0.5))
-        If capW < LogicalToDeviceUnits(120) Then capW = LogicalToDeviceUnits(120)   ' usable floor on tiny windows
+        Dim desiredW As Integer = RecipientPx(RecipientsOverlayWidth())
+        Dim capW As Integer = Math.Min(RecipientPx(480), CInt(panel_Media.ClientSize.Width * 0.5))
+        If capW < RecipientPx(120) Then capW = RecipientPx(120)   ' usable floor on tiny windows
         Dim panelW As Integer = Math.Min(desiredW, capW)
 
         ' WinForms does not alpha-compose a normal child Panel over its sibling
@@ -184,11 +209,11 @@ Partial Public Class Main_Form
         Dim copyW As Integer = 0
 #If Not NETFRAMEWORK Then
         copy_Caption = Localization.T("копия")
-        copyW = Math.Max(LogicalToDeviceUnits(38),
-                         TextRenderer.MeasureText(copy_Caption, ui_Font).Width + LogicalToDeviceUnits(14))
+        copyW = Math.Max(RecipientPx(38),
+                         TextRenderer.MeasureText(copy_Caption, ui_Font).Width + RecipientPx(14))
         ' A narrow window must not lose the path to the copy zone: below a usable width the
         ' row goes back to move-only, and the copy stays reachable by Shift+digit.
-        If copyW > panelW - LogicalToDeviceUnits(80) Then copyW = 0
+        If copyW > panelW - RecipientPx(80) Then copyW = 0
 #End If
 
         Dim y As Integer = 0
@@ -207,7 +232,7 @@ Partial Public Class Main_Form
                 .Font = ui_Font,
                 .FlatStyle = FlatStyle.Flat,
                 .TextAlign = ContentAlignment.MiddleLeft,
-                .Padding = New Padding(LogicalToDeviceUnits(6), 0, LogicalToDeviceUnits(2), 0),
+                .Padding = New Padding(RecipientPx(6), 0, RecipientPx(2), 0),
                 .AutoEllipsis = True,
                 .TabStop = False,
                 .UseVisualStyleBackColor = False,
@@ -296,8 +321,10 @@ Partial Public Class Main_Form
                 Dim slot As Integer = CInt(row.Tag)
                 If slot = -1 Then
                     ' The delete row: its own colours, as BuildRecipientsOverlay paints them.
-                    row.ForeColor = If(delete_Allowed, Color.White, Color.FromArgb(122, 122, 122))
-                    row.BackColor = If(delete_Allowed, Color.FromArgb(96, 32, 32), Color.FromArgb(42, 42, 42))
+                    row.ForeColor = If(delete_Allowed, chrome_Theme.DestructiveForeground, chrome_Theme.DisabledForeground)
+                    row.BackColor = If(delete_Allowed, chrome_Theme.DestructiveRest, chrome_Theme.PanelFill)
+                    row.FlatAppearance.MouseOverBackColor = If(delete_Allowed AndAlso Not chrome_Theme.IsHighContrast, chrome_Theme.DestructiveHover, chrome_Theme.PanelFill)
+                    row.FlatAppearance.MouseDownBackColor = If(delete_Allowed AndAlso Not chrome_Theme.IsHighContrast, chrome_Theme.DestructivePressed, chrome_Theme.PanelFill)
                     Continue For
                 End If
                 If slot < 1 OrElse slot > 10 Then Continue For   ' the delete row has no destination
@@ -309,13 +336,16 @@ Partial Public Class Main_Form
                                           (Not is_Copy_Zone AndAlso Not move_Allowed)
 
                 If unusable Then
-                    row.ForeColor = Color.FromArgb(122, 122, 122)
-                    row.BackColor = If(is_Copy_Zone, Color.FromArgb(40, 48, 40), Color.FromArgb(42, 42, 42))
+                    row.ForeColor = chrome_Theme.DisabledForeground
+                    row.BackColor = chrome_Theme.PanelFill
                 Else
-                    row.ForeColor = Color.Gainsboro
-                    row.BackColor = If(is_Copy_Zone, Color.FromArgb(38, 62, 38), Color.FromArgb(52, 52, 52))
+                    row.ForeColor = chrome_Theme.Foreground
+                    row.BackColor = If(is_Copy_Zone AndAlso Not chrome_Theme.IsHighContrast,
+                        ChromeTheme.Blend(chrome_Theme.PanelFill, chrome_Theme.Accent, ChromeMetrics.HoverPercent / 100.0F), chrome_Theme.PanelFill)
                 End If
 
+                row.FlatAppearance.MouseOverBackColor = If(unusable OrElse chrome_Theme.IsHighContrast, chrome_Theme.PanelFill, chrome_Theme.ItemHover)
+                row.FlatAppearance.MouseDownBackColor = If(unusable OrElse chrome_Theme.IsHighContrast, chrome_Theme.PanelFill, chrome_Theme.ItemPressed)
                 If recipients_ToolTip IsNot Nothing Then
                     Dim note As String = SlotHealthNote(verdict)
                     Dim tip As String = If(is_Copy_Zone,
@@ -333,6 +363,12 @@ Partial Public Class Main_Form
 
     Private Sub PositionRecipientsOverlay()
         If recipients_Overlay Is Nothing OrElse panel_Media Is Nothing Then Return
+#If Not NETFRAMEWORK Then
+        If is_Super_Full_Screen_Mode Then
+            recipients_Overlay.Hide()
+            Return
+        End If
+#End If
 
         ' A window of its own is not clipped by the form, so it must hide itself whenever
         ' the media surface is not on screen - minimized, or the form hidden.
@@ -343,7 +379,7 @@ Partial Public Class Main_Form
         End If
         If Not recipients_Overlay.Visible AndAlso recipients_Overlay.IsHandleCreated Then recipients_Overlay.Visible = True
 
-        Dim margin As Integer = LogicalToDeviceUnits(8)
+        Dim margin As Integer = RecipientPx(8)
         Dim topOffset As Integer = margin
         ' In full-screen (not super) the floating toolbar sits over the top strip;
         ' drop the overlay below it so it never covers the toolbar buttons.
@@ -351,6 +387,12 @@ Partial Public Class Main_Form
            flow_Toolbar IsNot Nothing AndAlso flow_Toolbar.Parent Is panel_Media Then
             topOffset = flow_Toolbar.Height + margin
         End If
+#If Not NETFRAMEWORK Then
+        If chrome_Panels.Count >= 2 AndAlso Not is_Super_Full_Screen_Mode Then
+            topOffset = margin + chrome_Panels(0).Host.Surface.PreferredPanelSize().Height +
+                chrome_Panels(1).Host.Surface.PreferredPanelSize().Height + UiScale.Px(ChromeMetrics.Gap, ChromeScale())
+        End If
+#End If
         Dim x As Integer = margin
         Dim y As Integer = topOffset
         Select Case RecipientsOverlayPosition()
@@ -440,6 +482,14 @@ Partial Public Class Main_Form
     ''' created at all - see the comment at BuildRecipientsOverlay). It never activates:
     ''' the app is keyboard-driven and a click here must not take focus from the viewer.
     ''' </summary>
+#If Not NETFRAMEWORK Then
+    Private NotInheritable Class RecipientsOverlayWindow
+        Inherits ChromeHost
+        Public Sub New()
+            MyBase.New(False)
+        End Sub
+    End Class
+#Else
     Private NotInheritable Class RecipientsOverlayWindow
         Inherits Form
 
@@ -472,4 +522,5 @@ Partial Public Class Main_Form
         End Property
     End Class
 
+#End If
 End Class

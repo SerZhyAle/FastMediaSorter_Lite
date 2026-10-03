@@ -43,6 +43,8 @@ Friend NotInheritable Class ChromeItem
     ''' <summary>The caption is a symbol, not a word: it is drawn in the symbol font, never the script font.</summary>
     Public Property CaptionIsSymbol As Boolean
 
+    Public Property ShowCaptionWithGlyph As Boolean
+
     ''' <summary>The words a screen reader says and the menu line shows.</summary>
     Public Property AccessibleName As String = ""
 
@@ -55,6 +57,10 @@ Friend NotInheritable Class ChromeItem
 
     ''' <summary>The red family: the only element that means "this destroys".</summary>
     Public Property Destructive As Boolean
+
+    ''' <summary>The pin button of a panel's corner: painted as a pin (upright and filled while
+    ''' <see cref="Checked"/>, tilted and outlined while not), never as a checkbox.</summary>
+    Public Property IsPin As Boolean
 
     ''' <summary>A direction ("back"/"forward"): drawn mirrored when the UI language reads right to left.</summary>
     Public Property MirrorInRtl As Boolean

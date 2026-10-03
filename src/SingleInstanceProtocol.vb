@@ -36,6 +36,21 @@ Friend Module SingleInstanceProtocol
         Return dwData = Tag_Pointer
     End Function
 
+    ''' <summary>Upper limit on forwarded command line / path BYTES (64 KiB) - the policy lives
+    ''' in <see cref="CopyDataTransport"/>, shared with the Share Manager.</summary>
+    Friend Const MaxPayloadBytes As Integer = CopyDataTransport.MaxPayloadBytes
+
+    ''' <summary>True when cbData is within valid bounds (1 .. MaxPayloadBytes) and lpData is valid.</summary>
+    Friend Function IsValidPayload(cbData As Integer, lpData As IntPtr) As Boolean
+        Return CopyDataTransport.CheckBounds(cbData, lpData) = PayloadRefusal.None
+    End Function
+
+    ''' <summary>Decodes a payload only after validating its bounds, allocating at most cbData
+    ''' bytes; strict UTF-8, and no control character (NUL included) anywhere in it.</summary>
+    Friend Function TryDecodePayload(cbData As Integer, lpData As IntPtr, ByRef result As String) As Boolean
+        Dim refusal As PayloadRefusal
+        Return CopyDataTransport.TryDecode(cbData, lpData, result, refusal)
+    End Function
     ''' <summary>A forward is delivered only when the send succeeded AND the window that
     ''' received it said it handled it - never on a bare successful send.</summary>
     Friend Function IsDelivered(sendSucceeded As Boolean, result As IntPtr) As Boolean

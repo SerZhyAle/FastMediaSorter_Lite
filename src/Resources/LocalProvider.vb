@@ -16,6 +16,7 @@ Imports System.Threading
 ''' </summary>
 Friend NotInheritable Class LocalProvider
     Implements IFileSystemProvider
+    Implements ITypedStatProvider
 
     Private ReadOnly include_Subfolders As Func(Of Boolean)
 
@@ -78,6 +79,26 @@ Friend NotInheritable Class LocalProvider
             Return True
         Catch
             Return False
+        End Try
+    End Function
+
+    ''' <summary>The typed answer: GetAttributes tells "not there" (FileNotFound/DirectoryNotFound)
+    ''' from "not allowed" (UnauthorizedAccess) from a share that did not answer, which
+    ''' <c>FileInfo.Exists</c> folds into one False.</summary>
+    Public Function Stat(path As String) As StatResult Implements ITypedStatProvider.Stat
+        If String.IsNullOrEmpty(path) Then Return StatResult.Missing()
+        Try
+            Dim attributes As FileAttributes = File.GetAttributes(path)
+            If (attributes And FileAttributes.Directory) <> 0 Then Return StatResult.Missing()
+            Return StatResult.Found(ToEntry(New FileInfo(path)))
+        Catch ex As FileNotFoundException
+            Return StatResult.Missing()
+        Catch ex As DirectoryNotFoundException
+            Return StatResult.Missing()
+        Catch ex As UnauthorizedAccessException
+            Return StatResult.Denied(New ResourceFailure(ResourceFailureKind.LocalIO, Nothing, "access denied"))
+        Catch ex As Exception
+            Return StatResult.Failed(ResourceFailure.FromException(ex))
         End Try
     End Function
 

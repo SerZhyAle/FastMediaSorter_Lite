@@ -123,26 +123,25 @@ Public Class WorkerIpcOkTests
     ''' has to be PERSISTED - SetSharedFolders with folders:[] - before the stop. A bare
     ''' StopServer left the last folder shared from the next logon / service restart on.</summary>
     <Fact>
-    Public Async Function Unshare_PersistsTheEmptyList_BeforeStopping() As Task
+    Public Async Function Unshare_PersistsTheEmptyList_AndLetsTheWorkerApplyItsLifecycle() As Task
         Using stub As New StubWorker(Function(t) Accept)
             Dim r As New ShareController.ShareResult()
             Await ShareController.UnshareAsync(r, stub.PipeName)
-            Assert.Equal(New String() {"SetSharedFolders", "StopServer", "GetStatus"}, stub.Seen().ToArray())
+            Assert.Equal(New String() {"SetSharedFolders", "GetStatus"}, stub.Seen().ToArray())
             Dim sent As String = stub.SeenRequests()(0)
             Assert.Contains("""folders"":[]", sent.Replace(" ", ""))
             Assert.Equal("", r.ErrorText)
         End Using
     End Function
 
-    ''' <summary>A refused empty list is reported, and the server is still stopped - not
-    ''' serving is what the user asked for either way.</summary>
+    ''' <summary>A refused folder update does not authorize stopping other owners.</summary>
     <Fact>
-    Public Async Function Unshare_RefusedList_IsReported_AndStillStops() As Task
+    Public Async Function Unshare_RefusedList_IsReported_AndPreservesTheServer() As Task
         Using stub As New StubWorker(Function(t) If(t = "SetSharedFolders", Refuse("list refused"), Accept))
             Dim r As New ShareController.ShareResult()
             Await ShareController.UnshareAsync(r, stub.PipeName)
             Assert.Contains("list refused", r.ErrorText)
-            Assert.Contains("StopServer", stub.Seen())
+            Assert.DoesNotContain("StopServer", stub.Seen())
         End Using
     End Function
 

@@ -252,7 +252,11 @@ Public Class ImageEncoderTests
     <InlineData("\\server\share\scan.tiff", "\\server\share\scan.fms-tmp.tiff")>
     <InlineData("photo.webp", "photo.fms-tmp.webp")>
     Public Sub The_temporary_file_keeps_the_real_extension_last(target As String, expected As String)
-        Assert.Equal(expected, ImageFileWriter.TempPathFor(target))
+        Dim temporary = ImageFileWriter.TempPathFor(target)
+        Assert.Equal(Path.GetDirectoryName(target), Path.GetDirectoryName(temporary))
+        Assert.Equal(Path.GetExtension(target), Path.GetExtension(temporary))
+        Assert.StartsWith(Path.GetFileNameWithoutExtension(target) & ImageFileWriter.TempMarker & "-", Path.GetFileName(temporary))
+        Assert.NotEqual(temporary, ImageFileWriter.TempPathFor(target))
     End Sub
 
     ''' <summary>
@@ -274,7 +278,7 @@ Public Class ImageEncoderTests
             Sub() ImageFileWriter.Save(broken, target, Nothing, ExifOrientationPolicy.PixelsAreUpright))
 
         Assert.Equal(before, File.ReadAllBytes(target))
-        Assert.False(File.Exists(ImageFileWriter.TempPathFor(target)), "The temporary file was left behind.")
+        Assert.Empty(Directory.GetFiles(workDir, "*.fms-tmp*"))
     End Sub
 
     <Fact>
@@ -286,7 +290,7 @@ Public Class ImageEncoderTests
             ImageFileWriter.Save(bitmap, target, Nothing, ExifOrientationPolicy.PixelsAreUpright)
         End Using
 
-        Assert.False(File.Exists(ImageFileWriter.TempPathFor(target)))
+        Assert.Empty(Directory.GetFiles(workDir, "*.fms-tmp*"))
         Using written As New Bitmap(target)
             Assert.Equal(New Size(6, 6), written.Size)
         End Using

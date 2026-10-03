@@ -1,12 +1,17 @@
 <#
 .SYNOPSIS
-    Runs the automated test suites for all three programs of the Fast Media Sorter
+    Runs the automated test suites for all three programs of Fast Media Sorter & Sharing
     package and ends in one CHECK-VERDICT line.
 
-    1. Sorter (LITE, net48 + net10) -> tests/Lite.Tests        (dotnet test / xUnit)
+    1. Viewer (net48 + net10)       -> tests/Lite.Tests        (dotnet test / xUnit)
     2. Share Manager (net10)        -> tests/Companion.Tests   (dotnet test / xUnit)
     3. SFTP worker (Go)             -> the fms_companion repository (go test ./...)
     4. Check placement              -> tools/Test-CheckPlacement.ps1 (the registry vs its runners)
+
+    5. Documentation registry       -> tools/Test-DocRegistry.ps1 (coverage, links, style, facts)
+    5b. Product naming              -> tools/Test-ProductNaming.ps1 (no old name form without a written reason)
+    6. Published site quality       -> tools/Test-SiteQuality.ps1 (DOC-EXTERNAL-QUALITY rules 1-7
+                                       over every page the sitemap announces)
 
     These are UNIT/logic suites - fast, no network, no phone. Two live suites are opt-in:
     -Integration sends GetStatus to a RUNNING worker and validates the answer (read-only - it
@@ -65,8 +70,8 @@ trap {
 if (-not $WorkerRepo) { $WorkerRepo = $env:FMS_WORKER_REPO }
 if (-not $WorkerRepo) { $WorkerRepo = Join-Path (Split-Path $root -Parent) 'fms_companion' }
 
-$plan = @('viewer', 'share-manager', $(if ($SkipGo) { 'worker-go (skipped)' } else { 'worker-go' }), 'placement')
-if ($Integration) { $plan += 'worker-ipc' }
+$plan = @('viewer', 'share-manager', $(if ($SkipGo) { 'worker-go (skipped)' } else { 'worker-go' }), 'placement', 'documentation', 'naming', 'site')
+if ($Integration) { $plan += 'share-identity', 'share-helper-logic', 'worker-ipc' }
 if ($OcrScenes)   { $plan += 'ocr-scenes' }
 Write-Subject 'Run-AllTests' "$($plan -join ', '); $(Get-TreeLabel $root)"
 
@@ -157,9 +162,16 @@ if ($SkipGo) {
 # --- 4: the placement registry against its runners ----------------------------
 Invoke-ScriptSuite 'placement' 'Check placement' (Join-Path $root 'tools\Test-CheckPlacement.ps1')
 
+Invoke-ScriptSuite 'documentation' 'Documentation registry' (Join-Path $root 'tools\Test-DocRegistry.ps1')
+Invoke-ScriptSuite 'naming' 'Product naming' (Join-Path $root 'tools\Test-ProductNaming.ps1')
+
+Invoke-ScriptSuite 'site' 'Published site quality' (Join-Path $root 'tools\Test-SiteQuality.ps1')
+
 # --- optional live suites -----------------------------------------------------
 if ($Integration) {
-    Invoke-ScriptSuite 'worker-ipc' 'Live IPC round-trip' (Join-Path $root 'tests\Integration\WorkerRoundTrip.ps1')
+    Invoke-ScriptSuite 'share-identity' 'Share identity migration' (Join-Path $root 'tests\Integration\ShareIdentityMigration.ps1')
+    Invoke-ScriptSuite 'share-helper-logic' 'Share helper ledger and lock logic' (Join-Path $root 'tests\Integration\ShareServiceHelperLogic.ps1')
+    Invoke-ScriptSuite 'worker-ipc'     'Live IPC round-trip'      (Join-Path $root 'tests\Integration\WorkerRoundTrip.ps1')
 }
 if ($OcrScenes) {
     Invoke-ScriptSuite 'ocr-scenes' 'OCR overlay scenes' (Join-Path $root 'tests\Integration\OcrOverlayScenes.ps1')

@@ -9,10 +9,10 @@ Imports System.Runtime.InteropServices
 
 ' Проверьте значения атрибутов сборки
 
-<Assembly: AssemblyTitle("Fast Media Sorter for Windows")>
+<Assembly: AssemblyTitle("Fast Media Sorter & Sharing for Windows")>
 <Assembly: AssemblyDescription("sza@ukr.net")>
 <Assembly: AssemblyCompany("SZA")>
-<Assembly: AssemblyProduct("Fast Media Sorter for Windows")>
+<Assembly: AssemblyProduct("Fast Media Sorter & Sharing for Windows")>
 <Assembly: AssemblyCopyright("Copyright © 2013-2025")>
 <Assembly: AssemblyTrademark("sza")>
 

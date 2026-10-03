@@ -186,7 +186,11 @@ Partial Public Class Main_Form
 
         Dim host As Control = If(anchor, btn_Translate)
         If host IsNot Nothing Then
+#If NETFRAMEWORK Then
             translate_Menu.Show(host, New Point(0, host.Height))
+#Else
+            ChromeShowToolStripMenu(translate_Menu.Items, ChromeControlMenuPoint(host))
+#End If
         End If
     End Sub
 

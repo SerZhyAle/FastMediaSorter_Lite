@@ -163,13 +163,14 @@ Friend NotInheritable Class ProbeScheduler(Of T)
 
     ''' <summary>Owner went away: its queued requests never run. Calls already running keep
     ''' their permit until they return; whoever receives their result must check for itself.</summary>
-    Friend Function CancelOwner(owner As Object) As Integer
+    Friend Function CancelOwner(owner As Object, Optional key As String = Nothing) As Integer
         Dim dropped As New List(Of Item)()
         SyncLock gate
             Dim node As LinkedListNode(Of Item) = pending.First
             While node IsNot Nothing
                 Dim nextNode As LinkedListNode(Of Item) = node.Next
-                If ReferenceEquals(node.Value.Owner, owner) Then
+                If ReferenceEquals(node.Value.Owner, owner) AndAlso
+                   (key Is Nothing OrElse String.Equals(node.Value.Key, key, StringComparison.Ordinal)) Then
                     dropped.Add(node.Value)
                     pending.Remove(node)
                 End If
@@ -240,7 +241,13 @@ Friend NotInheritable Class ProbeScheduler(Of T)
     Private Sub Execute(item As Item)
         Dim result As ProbeResult(Of T)
         Try
-            result = ProbeResult(Of T).Done(item.Work())
+            ' Pool admission and execution are separate moments. A newer open or closed
+            ' dialog may invalidate this request while the worker is waiting to run.
+            If item.IsWanted IsNot Nothing AndAlso Not item.IsWanted() Then
+                result = ProbeResult(Of T).Without(ProbeStatus.Superseded)
+            Else
+                result = ProbeResult(Of T).Done(item.Work())
+            End If
         Catch ex As Exception
             ' Observed here, once, whoever is still waiting for it.
             result = ProbeResult(Of T).Fault(ex)

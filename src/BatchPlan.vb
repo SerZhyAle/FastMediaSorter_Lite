@@ -143,6 +143,12 @@ Friend NotInheritable Class BatchPlanContext
     Public Property FileExists As Func(Of String, Boolean) = Function(p) True
     Public Property FileSize As Func(Of String, Long) = Function(p) 0L
     Public Property IsSameFile As Func(Of String, String, Boolean) = Function(a, b) False
+    ''' <summary>The name a file goes under in the slot - its own name. A file of an open resource
+    ''' is listed as its cache copy ("00042_photo.jpg"), and the prefix must never reach the slot.</summary>
+    Public Property TransferName As Func(Of String, String) = Function(p) Path.GetFileName(p)
+    ''' <summary>Where a file really is, for "already in this folder": the server address of a
+    ''' resource file (a slot may name the very folder it came from), any other file's own path.</summary>
+    Public Property SourceLocation As Func(Of String, String) = Function(p) p
 End Class
 
 ''' <summary>The plan. Built by <see cref="Build"/>; never mutated afterwards - the one
@@ -255,12 +261,13 @@ Friend NotInheritable Class BatchPlan
                 Continue For
             End If
 
-            Dim destination As String = DestinationFor(ctx.DestinationFolder, source)
-            If SameFolder(destination, source) Then
+            Dim destination As String = DestinationFor(ctx.DestinationFolder, ctx.TransferName(source))
+            If SameFolder(destination, ctx.SourceLocation(source)) Then
                 skipped.Add(Skip(source, SkipReason.AlreadyInDestination))
                 Continue For
             End If
-            If ctx.FileExists(destination) AndAlso ctx.IsSameFile(source, destination) Then
+            ' A server folder has no file identity to ask; the transfer itself refuses the same path.
+            If Not ResourceLocator.IsLocator(destination) AndAlso ctx.FileExists(destination) AndAlso ctx.IsSameFile(source, destination) Then
                 skipped.Add(Skip(source, SkipReason.SameFile))
                 Continue For
             End If
@@ -394,32 +401,31 @@ Friend NotInheritable Class BatchPlan
         End Try
     End Function
 
-    ''' <summary>The destination of one file: the slot's folder and the file's own name.</summary>
-    Friend Shared Function DestinationFor(folder As String, source As String) As String
-        Return Path.Combine(If(folder, ""), Path.GetFileName(source))
+    ''' <summary>The destination of one file: the slot's folder - on this PC or on a server (007
+    ''' §4.2) - and the file's own name.</summary>
+    Friend Shared Function DestinationFor(folder As String, fileName As String) As String
+        Return SlotPaths.Combine(If(folder, ""), fileName)
     End Function
 
     ''' <summary>Does the destination sit in the very folder the source is in?</summary>
     Private Shared Function SameFolder(destination As String, source As String) As Boolean
-        Try
-            Return String.Equals(Path.GetDirectoryName(destination), Path.GetDirectoryName(source),
-                                 StringComparison.OrdinalIgnoreCase)
-        Catch
-            Return False
-        End Try
+        Return SlotPaths.SameFolder(destination, source)
     End Function
 
     ''' <summary>
     ''' "IMG_0001.jpg" taken -> "IMG_0001 (2).jpg", the first free one, Explorer-style. Free
-    ''' means free in the destination AND not claimed by another file of the same run.
+    ''' means free in the destination AND not claimed by another file of the same run. A server
+    ''' folder's name is split by hand, never by Path - a remote name may hold a colon.
     ''' </summary>
     Friend Shared Function FreeName(destination As String, exists As Func(Of String, Boolean),
                                     reserved As ISet(Of String)) As String
-        Dim dir As String = Path.GetDirectoryName(destination)
-        Dim base As String = Path.GetFileNameWithoutExtension(destination)
-        Dim ext As String = Path.GetExtension(destination)
+        Dim dir As String = SlotPaths.FolderOf(destination)
+        Dim name As String = SlotPaths.FileNameOf(destination)
+        Dim dot As Integer = name.LastIndexOf("."c)
+        Dim base As String = If(dot > 0, name.Substring(0, dot), name)
+        Dim ext As String = If(dot > 0, name.Substring(dot), "")
         For n As Integer = 2 To 9999
-            Dim candidate As String = Path.Combine(dir, base & " (" & n.ToString() & ")" & ext)
+            Dim candidate As String = SlotPaths.Combine(dir, base & " (" & n.ToString() & ")" & ext)
             If reserved IsNot Nothing AndAlso reserved.Contains(candidate) Then Continue For
             If Not exists(candidate) Then Return candidate
         Next
@@ -433,7 +439,7 @@ Friend NotInheritable Class BatchPlan
         If Not String.Equals(free, op.Destination, StringComparison.OrdinalIgnoreCase) Then
             reserved?.Add(free)
             op.Destination = free
-            op.StatusNote = Path.GetFileName(free)
+            op.StatusNote = SlotPaths.FileNameOf(free)
         End If
     End Sub
 

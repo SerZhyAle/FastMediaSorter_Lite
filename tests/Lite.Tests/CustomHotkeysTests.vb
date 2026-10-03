@@ -245,5 +245,50 @@ Public Class CustomHotkeysTests
         Next
     End Sub
 
+    ' ------------------------------------- 057.S05-5: repeat guard by action ----
+
+    ''' <summary>A custom key bound to a destructive action acts once per press, whatever
+    ''' key it is - the guard asked about the key code and let F8 = "delete" repeat.</summary>
+    <Theory>
+    <InlineData("deleteFile")>
+    <InlineData("deletePermanent")>
+    <InlineData("recipient3")>
+    Public Sub A_custom_key_bound_to_a_destructive_action_does_not_repeat(actionId As String)
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""" & actionId & """:""F8""}")
+        Assert.True(CustomHotkeys.IsDestructivePress(map, Keys.F8))
+        Assert.False(CustomHotkeys.IsDestructivePress(map, Keys.Q))
+    End Sub
+
+    ''' <summary>The reverse: "next file" moved onto a digit keeps its auto-repeat.</summary>
+    <Fact>
+    Public Sub Next_file_rebound_to_a_digit_keeps_repeating()
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""nextFile"":""5""}")
+        Assert.False(CustomHotkeys.IsDestructivePress(map, Keys.D5))
+        ' The factory homes of "next file" are retired and do nothing, so their repeat is harmless.
+        Assert.False(CustomHotkeys.IsDestructivePress(map, Keys.Right))
+    End Sub
+
+    ''' <summary>Without a custom map the historical key list answers, unchanged.</summary>
+    <Fact>
+    Public Sub Without_a_custom_map_the_historical_keys_decide()
+        For Each map As Dictionary(Of String, String) In {Nothing, CustomHotkeys.Load("{}")}
+            Assert.True(CustomHotkeys.IsDestructivePress(map, Keys.D5))
+            Assert.True(CustomHotkeys.IsDestructivePress(map, Keys.NumPad0))
+            Assert.True(CustomHotkeys.IsDestructivePress(map, Keys.Delete))
+            Assert.True(CustomHotkeys.IsDestructivePress(map, Keys.Shift Or Keys.D))
+            Assert.False(CustomHotkeys.IsDestructivePress(map, Keys.Right))
+            Assert.False(CustomHotkeys.IsDestructivePress(map, Keys.F8))
+        Next
+    End Sub
+
+    ''' <summary>A destructive action moved away from its factory key: that key is retired
+    ''' and does nothing, and the new home is the one that must not repeat.</summary>
+    <Fact>
+    Public Sub Delete_moved_off_its_factory_key()
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""deleteFile"":""Ctrl+Shift+X""}")
+        Assert.True(CustomHotkeys.IsDestructivePress(map, Keys.Control Or Keys.Shift Or Keys.X))
+        Assert.False(CustomHotkeys.IsDestructivePress(map, Keys.Delete))
+    End Sub
+
 End Class
 #End If

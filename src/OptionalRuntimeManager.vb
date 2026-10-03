@@ -349,7 +349,7 @@ Friend Module OptionalRuntimeManager
 
         If Not IsRuntimeInstalled(kind) Then
             Dim confirmText As String = GetInstallPrompt(kind)
-            If MessageBox.Show(owner, confirmText, "Fast Media Sorter", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
+            If MessageBox.Show(owner, confirmText, ProductNames.Full, MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
                 Return False
             End If
 
@@ -380,7 +380,7 @@ Friend Module OptionalRuntimeManager
             ' the viewer. Microsoft's installer asks for its own rights when the user runs it.
             AppFileLogger.WriteLine("Runtime " & kind.ToString() & " needs the VC++ runtime: " & reason)
             Dim vcUrl As String = If(Environment.Is64BitProcess, VcRedistX64Url, VcRedistX86Url)
-            If MessageBox.Show(owner, GetVcPrompt(kind), "Fast Media Sorter", MessageBoxButtons.YesNo, MessageBoxIcon.Information) = DialogResult.Yes Then
+            If MessageBox.Show(owner, GetVcPrompt(kind), ProductNames.Full, MessageBoxButtons.YesNo, MessageBoxIcon.Information) = DialogResult.Yes Then
                 Try
                     Process.Start(New ProcessStartInfo(vcUrl) With {.UseShellExecute = True})
                 Catch ex As Exception
@@ -399,7 +399,7 @@ Friend Module OptionalRuntimeManager
         MessageBox.Show(owner,
                         Localization.TF("Компонент «{0}» установлен, но не загружается.", GetRuntimeName(kind)) &
                         Environment.NewLine & Environment.NewLine & FailureText.Sentence(FailureText.FailureCause.Unknown),
-                        "Fast Media Sorter", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                        ProductNames.Full, MessageBoxButtons.OK, MessageBoxIcon.Warning)
 #End If
         Return False
     End Function
@@ -799,7 +799,7 @@ Friend Module OptionalRuntimeManager
 
         MessageBox.Show(owner,
                         prefix & Environment.NewLine & Environment.NewLine & details,
-                        "Fast Media Sorter",
+                        ProductNames.Full,
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning)
     End Sub

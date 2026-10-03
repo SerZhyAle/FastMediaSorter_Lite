@@ -12,6 +12,19 @@ payload/*
 payload/companion/*
 !payload/companion/fms-share-worker.exe
 !payload/companion/fms-share-worker.exe.sha256
+!payload/filedo/
+payload/filedo/*
+!payload/filedo/filedo.sha256
+!payload/filedo/release.json
+
+# Committed test fixtures - the deterministic 7z archives of ArchiveSequentialTests
+# (tests/Lite.Tests/TestData/archives/README.txt). Nothing in the test process can
+# write a 7z (SharpCompress reads only), so a fresh clone needs them for the suite.
+!tests/Lite.Tests/TestData/archives/solid.7z
+!tests/Lite.Tests/TestData/archives/nonsolid.7z
+!tests/Lite.Tests/TestData/archives/solid-many.7z
+!tests/Lite.Tests/TestData/archives/encrypted-headers.7z
+!tests/Lite.Tests/TestData/archives/encrypted-data.7z
 
 # Auto-generated version file
 src/My Project/VersionInfo.vb

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fast Media Sorter for Windows - Privacy Policy</title>
-    <meta name="description" content="Fast Media Sorter for Windows privacy policy: runs on your device, collects no personal data, no telemetry. Network is used only by features you switch on and components you ask for.">
+    <title>Fast Media Sorter &amp; Sharing for Windows - Privacy Policy</title>
+    <meta name="description" content="Fast Media Sorter &amp; Sharing for Windows privacy policy: runs on your device, collects no personal data, no telemetry. Network is used only by features you switch on and components you ask for.">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -34,11 +34,11 @@
 </head>
 <body>
     <div class="container">
-        <p><a href="./">&larr; Fast Media Sorter for Windows</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a></p>
+        <p><a href="./">&larr; Fast Media Sorter &amp; Sharing for Windows</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a></p>
         <h1>Privacy Policy</h1>
         <p class="note">Last updated: 25 September 2026</p>
 
-        <p><strong>Fast Media Sorter for Windows collects no personal data.</strong> It has no user accounts, no
+        <p><strong>Fast Media Sorter &amp; Sharing for Windows collects no personal data.</strong> It has no user accounts, no
         advertising, and no telemetry or analytics. It runs entirely on your own device, and the developer
         receives no data about you or your use of the app - unless you choose to send your logs yourself (see
         <a href="#logs">Diagnostic logs</a>) - honestly, we wouldn't know what to do with it anyway.</p>
@@ -49,6 +49,18 @@
             deletes the image and video files in the folders you open - that is its core purpose. It only
             ever touches files and folders you point it at (including network shares you browse to). It has
             seen your meme folder and judged nothing.</li>
+
+            <li><strong>Servers and network shares you add yourself.</strong> A folder on an SFTP server, or a
+            network share that needs a login, is opened only after you add it (by hand, or by importing the
+            file the Share Manager makes). The app then opens a direct, outbound connection to the address you
+            gave it and to nothing else - it never listens for connections for this and never contacts the
+            developer. Three small things are kept on your PC, in your Windows account: the server's address and
+            user name, the server's SSH key fingerprint (so a server pretending to be yours is refused), and the
+            password, encrypted with Windows (DPAPI) so it can be read only by you on this PC. If you untick
+            &quot;Remember&quot;, the password is held in memory until the program closes and is never written
+            anywhere. Files you open from a server are copied into a private cache folder that is deleted when
+            you leave the resource or close the program. Passwords are never included in the logs package you may
+            choose to send.</li>
 
             <li><strong>Folder sharing - optional, opt-in.</strong> If you enable it, the bundled Share
             Manager companion runs a local SFTP server so your own phone can browse the folders you choose.
@@ -65,6 +77,17 @@
             share runs the PC announces itself on your local network (mDNS) so a paired phone can find it
             again when its address changes; neither of those leaves your network. The app keeps
             local-only connection counters (this is not telemetry and never leaves your PC).</li>
+
+            <li><strong>FileDO disks - optional, opt-in.</strong> If you connect a .fdd container for sharing,
+            the server mounts it on this PC and publishes its contents to authorized SFTP clients.
+            A selected Windows drive letter is a local alias for the current signed-in session; it does
+            not create an SMB share. An encrypted disk is unlocked on the PC. Its password is sent only
+            to the verified local worker and FileDO, never in command arguments or logs. Disk autostart
+            is a separate choice: only after explicit consent is its credential stored in protected
+            Windows storage on this PC. Disabling autostart or removing the disk from sharing deletes
+            that stored key. Mounting requires administrator rights; enabling ordinary folder sharing
+            does not silently elevate the server or change a service account. See the
+            <a href="../how-to-filedo-disks.html">FileDO disk sharing guide</a>.</li>
 
             <li><strong>Always-on sharing - a Windows service, only if you ask for it.</strong> It comes
             either from the separate Server edition download or from the Share Manager's own "Switch sharing to
@@ -110,6 +133,14 @@
         <ul>
             <li><strong>Settings.</strong> Preferences and hotkeys are stored in the Windows registry (in the
             Microsoft Store build these live inside the app's package container).</li>
+            <li><strong>Settings import backups (64-bit program).</strong> Before importing a profile,
+            the app saves your current preferences, including folder histories and playback positions,
+            in a protected folder under <code>%LOCALAPPDATA%\SZA\FastMediaSorter\settings-backups</code>
+            (inside the app's local data root in the Microsoft Store build). These local rollback copies
+            exclude passwords and API keys. The import stops if a private backup cannot be created;
+            nothing is saved beside the imported file or in a shared temporary folder. Backups are not
+            deleted automatically. You can restore one through Settings &rarr; Import settings, or delete
+            old copies yourself when you no longer need them.</li>
             <li><strong>OCR data and caches.</strong> Downloaded Tesseract language packs, a downloaded copy
             of FFmpeg, the translation cache and the decode cache (decoded copies of the WEBP, AVIF and HEIC
             files you have opened, kept so the second view is instant) are stored under
@@ -138,7 +169,7 @@
         <p>The app collects no data from anyone, including children.</p>
 
         <h2>Open source</h2>
-        <p>Fast Media Sorter for Windows is open source - you can review exactly what it does, no hidden surprises, at
+        <p>Fast Media Sorter &amp; Sharing for Windows is open source - you can review exactly what it does, no hidden surprises, at
         <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">github.com/SerZhyAle/FastMediaSorter_Lite</a>.</p>
 
         <h2>Changes to this policy</h2>
@@ -146,7 +177,7 @@
         "Last updated" date.</p>
 
         <h2>Contact</h2>
-        <p>Questions about this policy: <a href="mailto:serzhyale@gmail.com">serzhyale@gmail.com</a>.</p>
+        <p>Questions about this policy: <a href="mailto:sza@ukr.net">sza@ukr.net</a>.</p>
 
         <footer>
             MIT licensed &middot; &copy; 2026 <a href="https://github.com/SerZhyAle">SerZhyAle</a> &middot;

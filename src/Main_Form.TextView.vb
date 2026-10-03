@@ -65,7 +65,7 @@ Partial Public Class Main_Form
         End If
 
         SetMediaDisplayKind(MediaKind.Document)
-        zoom_Scale = 1
+        ResetZoomViewport()
         SetViewSizes()
 
         If text_Current_Result.IsTruncated Then

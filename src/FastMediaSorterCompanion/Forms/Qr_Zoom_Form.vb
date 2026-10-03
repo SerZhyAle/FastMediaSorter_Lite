@@ -47,7 +47,9 @@ Public Class Qr_Zoom_Form
     ''' whole-number nearest-neighbour factor, because a messenger's own re-compression
     ''' on top of a small code is what makes it unscannable.</summary>
     Private Const MinSavedSide As Integer = 512
-    ''' <summary>Sub-folder created under the user's Pictures folder.</summary>
+    ''' <summary>Sub-folder created under the user's Pictures folder. An on-disk name, not the product's visible name
+    ''' (ProductNames): it is the legacy short name kept so images already saved there are not orphaned, and
+    ''' it cannot carry the ampersand of the new name (not allowed in a file name).</summary>
     Private Const OutputFolderName As String = "Fast Media Sorter"
     ''' <summary>Sub-folder of %TEMP% used when Pictures cannot be written.</summary>
     Private Const FallbackFolderName As String = "FastMediaSorter"
@@ -335,8 +337,8 @@ Public Class Qr_Zoom_Form
     ''' <summary>One DataObject carrying every form the receiving application might want:
     ''' a plain opaque bitmap (chats, Word), the exact PNG bytes (applications that prefer
     ''' lossless), and - once a file exists - the file itself (Explorer, mail attachments).
-    ''' A clipboard held by another process is a real and common Windows failure, so one
-    ''' retry, then report and keep the saved file, which is still useful.</summary>
+    ''' A clipboard held by another process is a real and common Windows failure, so a
+    ''' bounded retry, then report and keep the saved file, which is still useful.</summary>
     Private Shared Function CopyToClipboard(bmp As Bitmap, filePath As String) As Boolean
         Dim data As New DataObject()
         Try
@@ -354,6 +356,15 @@ Public Class Qr_Zoom_Form
             Return False
         End Try
 
+        ' The code opens the shared folders, so it is a credential like the password: kept out
+        ' of Win+V history and the cloud clipboard (CLIPBOARD-GUARD rule 6, ticket 041). The
+        ' shared write flushes to the OLE clipboard (it survives the Share Manager closing and
+        ' lets the bitmap be disposed right after) and retries while another process holds it.
+        Try
+            SecureClipboard.ApplyPrivacyFlags(data)
+        Catch
+            Return False
+        End Try
         Return SecureClipboard.TrySetDataObject(data)
     End Function
 

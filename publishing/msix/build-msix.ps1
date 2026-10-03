@@ -1,5 +1,5 @@
 <#
-    Builds an MSIX package for FastMediaSorter LITE (Microsoft Store / sideload).
+    Builds an MSIX package for Fast Media Sorter & Sharing for Windows (Microsoft Store / sideload).
 
     What it does:
       1. Builds Release with MSBuild (unless -NoBuild) and locates FastMediaSorter_LITE.exe.
@@ -176,7 +176,7 @@ foreach ($extra in 'README.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt') {
 }
 
 # Android Folder Share payload: the Companion app (Share Manager, net10) published
-# self-contained next to the LITE exe, plus the committed Go SFTP worker under
+# self-contained next to the viewer exe, plus the committed Go SFTP worker under
 # companion\. The manifest declares both as <Application> nodes; these are their files.
 $companionProj = Join-Path $RepoRoot 'src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj'
 $companionPub  = Join-Path $MsixDir 'companion-publish-tmp'

@@ -26,6 +26,8 @@ Partial Public Class Main_Form
     Private folder_Menu_Open_Archive_Item As ToolStripMenuItem
     Private folder_Menu_Close_Archive_Item As ToolStripMenuItem
     Private folder_Menu_Share_Item As ToolStripMenuItem
+    Private folder_Menu_Broadcast_Item As ToolStripMenuItem
+    Private folder_Menu_Resources_Item As ToolStripMenuItem
     Private folder_Menu_StreamCatalog_Item As ToolStripMenuItem
     Private folder_Combo_Edit_Hook As ComboEditContextMenuHook
 
@@ -60,12 +62,24 @@ Partial Public Class Main_Form
             AddHandler folder_Menu_Close_Archive_Item.Click, Sub() CloseArchiveAndReturn()
             folder_Context_Menu.Items.Add(folder_Menu_Close_Archive_Item)
 
+            ' Servers and network shares that are not a drive letter (007): the last few used, then the
+            ' manager. The submenu is rebuilt on every Opening, so it can never list a removed resource.
+            folder_Menu_Resources_Item = New ToolStripMenuItem()
+            folder_Context_Menu.Items.Add(folder_Menu_Resources_Item)
+
             folder_Context_Menu.Items.Add(New ToolStripSeparator())
 
             folder_Menu_Share_Item = New ToolStripMenuItem()
             AddHandler folder_Menu_Share_Item.Click, Sub() ActivateShareEntryPoint()
             folder_Context_Menu.Items.Add(folder_Menu_Share_Item)
 
+            folder_Menu_Broadcast_Item = New ToolStripMenuItem()
+            AddHandler folder_Menu_Broadcast_Item.Click, Sub() ActivateBroadcastEntryPoint(ResolveCurrentFolder())
+            folder_Context_Menu.Items.Add(folder_Menu_Broadcast_Item)
+
+            ' Share hands a FOLDER to the Share Manager; inside an archive the only folder on
+            ' disk is the temporary one, which is never shown or handed out (010 §2.2, §7).
+            ' The stream catalog is built from the playlists of a real folder for the same reason.
             folder_Menu_StreamCatalog_Item = New ToolStripMenuItem()
             AddHandler folder_Menu_StreamCatalog_Item.Click, Sub() BuildStreamCatalogViaDialog()
             folder_Context_Menu.Items.Add(folder_Menu_StreamCatalog_Item)
@@ -73,7 +87,10 @@ Partial Public Class Main_Form
             AddHandler folder_Context_Menu.Opening,
                 Sub()
                     folder_Menu_Close_Archive_Item.Visible = IsArchiveMode()
+                    folder_Menu_Resources_Item.Visible = Not IsArchiveMode() AndAlso Not IsArchiveOpenPending()
+                    RebuildResourceMenu(folder_Menu_Resources_Item)
                     folder_Menu_Share_Item.Visible = Not IsArchiveMode() AndAlso Not IsArchiveOpenPending()
+                    folder_Menu_Broadcast_Item.Visible = Not IsArchiveMode() AndAlso Not IsArchiveOpenPending()
                     folder_Menu_StreamCatalog_Item.Visible = Not IsArchiveMode() AndAlso Not IsArchiveOpenPending()
                 End Sub
 
@@ -106,6 +123,7 @@ Partial Public Class Main_Form
         Catch ex As Exception
             ' Worst case the old behaviour returns (the native edit menu) - never a crash.
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2521: folder combo hook failed: " & ex.Message)
+            AppFileLogger.LogException("Folder combo context-menu hook", ex)
         End Try
     End Sub
 
@@ -126,7 +144,7 @@ Partial Public Class Main_Form
 
         If folder_Menu_Open_Archive_Item IsNot Nothing Then
             folder_Menu_Open_Archive_Item.Text = Localization.T("Открыть архив..")
-            folder_Menu_Open_Archive_Item.ToolTipText = Localization.T("Открыть ZIP, CBZ, 7z, RAR или CBR как папку")
+            folder_Menu_Open_Archive_Item.ToolTipText = Localization.T("Открыть архив (ZIP, CBZ, 7z, RAR, CBR) как папку")
         End If
 
         If folder_Menu_Close_Archive_Item IsNot Nothing Then
@@ -139,6 +157,16 @@ Partial Public Class Main_Form
             ' other end is the Android one, and a tablet is not a phone.
             folder_Menu_Share_Item.Text = Localization.T("Поделиться этой папкой с Android..")
             folder_Menu_Share_Item.ToolTipText = Localization.T("Открыть Share Manager и раздать эту папку на Android")
+        End If
+
+        If folder_Menu_Broadcast_Item IsNot Nothing Then
+            folder_Menu_Broadcast_Item.Text = Localization.T("Транслировать эту папку..")
+            folder_Menu_Broadcast_Item.ToolTipText = Localization.T("Открыть трансляцию этой папки для StreamsPlayer")
+        End If
+
+        If folder_Menu_Resources_Item IsNot Nothing Then
+            folder_Menu_Resources_Item.Text = Localization.T("Ресурсы")
+            folder_Menu_Resources_Item.ToolTipText = Localization.T("Папка на SFTP-сервере или сетевая папка с паролем")
         End If
 
         If folder_Menu_StreamCatalog_Item IsNot Nothing Then

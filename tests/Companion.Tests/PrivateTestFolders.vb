@@ -9,7 +9,8 @@ Imports System.Security.Principal
 Friend Module PrivateTestFolders
 
     Friend Function Create(Optional prefix As String = "fms-priv-") As String
-        Dim dir As String = Path.Combine(Path.GetTempPath(), prefix & Guid.NewGuid().ToString("N"))
+        ' Shared TEMP can permit renaming an ancestor even when the leaf is protected.
+        Dim dir As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), prefix & Guid.NewGuid().ToString("N"))
         Dim security As New DirectorySecurity()
         security.SetAccessRuleProtection(True, False)
         Dim inherit As InheritanceFlags = InheritanceFlags.ContainerInherit Or InheritanceFlags.ObjectInherit

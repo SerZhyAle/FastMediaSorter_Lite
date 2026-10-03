@@ -173,8 +173,7 @@ function Attr([string]$html, [string]$pattern) {
     if ($m.Success) { [Net.WebUtility]::HtmlDecode($m.Groups[1].Value) } else { $null }
 }
 
-$inventory = @(& git -C $Root ls-files --cached --others --exclude-standard)
-if ($LASTEXITCODE -ne 0) { Exit-Verdict 'Test-SiteQuality' 2 'git file inventory unavailable' }
+$inventory = @(Get-WorkspaceFiles $Root)
 
 $anchorCache = @{}
 function Target-Anchors([string]$rel) {

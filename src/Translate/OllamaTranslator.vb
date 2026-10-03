@@ -234,15 +234,15 @@ Public Class OllamaTranslator
                 result.Add(one.Key, one.Value)
             Next
             Return result
-        Catch ex As OperationCanceledException When Not ct.IsCancellationRequested
+        Catch ex As OperationCanceledException When ct.IsCancellationRequested
+            Throw
+        Catch ex As OperationCanceledException
             ' The HttpClient timeout, not the user: an expired Timeout surfaces as a
             ' TaskCanceledException, and the pipeline used to take it for "navigated away"
             ' and drop the recognized text in silence (audit 051 E-04). One timeout ends the
             ' whole batch - the per-segment fallback would only wait for the next one.
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ollama: timed out")
             Return TranslationBatch.AllFailed(texts, TranslationFailure.Timeout)
-        Catch ex As OperationCanceledException
-            Throw
         Catch ex As Exception
             ' Ollama restarting or a LAN endpoint dropping after /api/tags answered: the
             ' ITranslator contract is "never throw for an unreachable backend", and an escape

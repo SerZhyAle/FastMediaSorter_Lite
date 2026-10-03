@@ -1,6 +1,7 @@
 Option Strict On
 
 Imports System.Drawing
+Imports System.Threading
 Imports System.Windows.Forms
 
 ''' <summary>
@@ -55,14 +56,31 @@ Friend Module UiLanguage
     End Sub
 
     ''' <summary>Drops the language list under <paramref name="anchor"/>. A fresh menu per
-    ''' click, disposed the moment it closes: a shown ContextMenuStrip keeps a native window
+    ''' click, released once it has closed: a shown ContextMenuStrip keeps a native window
     ''' and closures over the anchor, and this menu can outlive the window it was dropped
-    ''' from - every language switch rebuilds the main window (ticket 054 H-20).</summary>
+    ''' from - every language switch rebuilds the main window (ticket 054 H-20).
+    '''
+    ''' The release is POSTED, never run inside Closed: choosing a language tears the
+    ''' anchor's window down while this menu is still dismissing the click, and a Dispose
+    ''' from Closed then runs mid-dispatch - the dismissal crashed with
+    ''' ObjectDisposedException (companion.log, 2026-10-03) and the reentrant disposal
+    ''' aborted the rebuild, leaving the window in the old language. The viewer's
+    ''' language button postposes the same release for the same reason
+    ''' (Main_Form.Localization.vb); posted rather than anchor.BeginInvoke because
+    ''' the switch disposes the anchor itself.</summary>
     Friend Sub ShowLanguageMenu(anchor As Control)
         If anchor Is Nothing Then Return
         Dim menu As New ContextMenuStrip()
         AddLanguageItems(menu.Items)
-        AddHandler menu.Closed, Sub() menu.Dispose()
+        AddHandler menu.Closed,
+            Sub()
+                Dim sync As SynchronizationContext = SynchronizationContext.Current
+                If sync IsNot Nothing Then
+                    sync.Post(Sub()
+                                  Try : menu.Dispose() : Catch : End Try
+                              End Sub, Nothing)
+                End If
+            End Sub
         menu.Show(anchor, New Point(0, anchor.Height))
     End Sub
 
@@ -97,6 +115,9 @@ Friend Module UiLanguage
                 ' script either - keep Segoe UI rather than swap to an unknown.
                 If String.Equals(candidate.FontFamily.Name, family, StringComparison.OrdinalIgnoreCase) Then
                     f.Font = candidate
+                    ' A form does not own the Font it is handed: release it with the window,
+                    ' or every language switch (which rebuilds the window) strands one.
+                    AddHandler f.Disposed, Sub() candidate.Dispose()
                 Else
                     candidate.Dispose()
                 End If

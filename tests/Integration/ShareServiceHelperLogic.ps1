@@ -44,7 +44,9 @@ $wanted = @(
     'Get-FallbackLogPath', 'Write-PendingLog', 'Get-RawAttributes', 'Test-ReparsePoint', 'Remove-LinkOnly',
     'Get-SidDisplay', 'ConvertFrom-JsonList', 'Get-Ledger', 'Write-LockedFile', 'Save-Ledger',
     'Get-LedgerLockProblem', 'Get-ApprovedLedger', 'Undo-AppliedGrants', 'Write-GrantRecovery',
-    'Get-StateLockName', 'Enter-StateLock', 'Grant-Roots', 'Revoke-Roots', 'Write-Log')
+    'Get-StateLockName', 'Enter-StateLock', 'Grant-Roots', 'Revoke-Roots', 'Write-Log',
+    'Write-GrantIntent', 'Remove-GrantIntents', 'Resolve-StaleGrantIntents',
+    'Get-StagedExePath', 'Get-FileDoRoot', 'Get-ServiceBinPath')
 $defs = $ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $wanted -contains $n.Name }, $true)
 $missing = @($wanted | Where-Object { $name = $_; -not ($defs | Where-Object { $_.Name -eq $name }) })
 if ($missing.Count -gt 0) { Exit-Verdict 'ShareServiceHelperLogic' 2 "not found in the helper: $($missing -join ', ')" }
@@ -313,7 +315,154 @@ try {
     Check 'log: the lines the state log refused reach the fallback copy, in order' ((Get-Content -LiteralPath $fallback -Raw) -match 'second line[\s\S]*third line' -and $script:PendingLog.Count -eq 0)
 } finally { $script:LogPath = $null; Invoke-Expression $stubWriteLogText; Remove-Sandbox $dir }
 
+# ------------------------------------------- 8. the write-ahead intent record (a hard kill mid-grant) ----
+function Intent-Files { @(Get-ChildItem -LiteralPath $script:DataDir -Filter 'granted-roots.intent-*.json' -Force -ErrorAction SilentlyContinue) }
+function Write-Intent([object[]]$items) {
+    $p = Join-Path $script:DataDir ("granted-roots.intent-{0}.json" -f [guid]::NewGuid().ToString('N'))
+    [void](Write-LockedFile $p ((New-Object Text.UTF8Encoding($false)).GetBytes((ConvertTo-Json -InputObject @($items) -Depth 4))))
+    return $p
+}
+function IntentItem([string]$path, [string]$rights = 'RX', $previous = $null, [bool]$pre = $false) {
+    [pscustomobject]@{ path = $path; sid = $SidLocalService; rights = $rights; previousRights = $previous; preExisting = $pre }
+}
+
+# 8a. the record is on disk BEFORE the first ACE changes, and gone once the ledger is published.
+$dir = New-Sandbox
+$folderA = Join-Path $dir 'shareA'
+New-Item -ItemType Directory -Path $folderA | Out-Null
+try {
+    $script:seenAtFirstIcacls = -1
+    $script:IcaclsFail = { param($c) if ($script:seenAtFirstIcacls -lt 0) { $script:seenAtFirstIcacls = @(Intent-Files).Count }; $false }
+    Grant-Roots @($folderA) @() $true
+    Check 'intent: the record exists before the first ACE is changed' ($script:seenAtFirstIcacls -eq 1)
+    Check 'intent: ...and is dropped once the ledger is published' ((Intent-Files).Count -eq 0 -and (@(Get-Ledger)).Count -eq 1)
+} finally { Remove-Sandbox $dir }
+
+# 8b. a hard kill between the ACL change and the ledger publication, then the next grant settles it.
+$dir = New-Sandbox
+$folderA = Join-Path $dir 'shareA'; $folderB = Join-Path $dir 'shareB'
+New-Item -ItemType Directory -Path $folderA, $folderB | Out-Null
+try {
+    $script:IcaclsFail = { param($c) throw 'injected kill' }
+    [void](Throws { Grant-Roots @($folderA) @() $true })
+    $left = @(Intent-Files)
+    Check 'intent: a killed run leaves its record, in the locked form, and no ledger' (
+        $left.Count -eq 1 -and (Get-LedgerLockProblem $left[0].FullName) -eq '' -and -not (Test-Path -LiteralPath (Ledger-Path)) -and ((Get-Content -LiteralPath $left[0].FullName -Raw) -like '*shareA*'))
+    $script:IcaclsFail = { param($c) $false }; $script:IcaclsCalls.Clear(); $script:LogLines.Clear()
+    Grant-Roots @($folderB) @() $true
+    $removes = @($script:IcaclsCalls | Where-Object { $_ -like '*remove:g*' })
+    Check 'intent: the next grant takes back what the dead run may have granted, and drops the record' (
+        $removes.Count -eq 1 -and $removes[0] -like '*shareA*' -and (Intent-Files).Count -eq 0)
+    $ledgerPaths = @(Get-Ledger | ForEach-Object { $_.path })
+    Check 'intent: ...and the new grant itself is recorded alone' ($ledgerPaths.Count -eq 1 -and $ledgerPaths[0] -eq $folderB)
+} finally { Remove-Sandbox $dir }
+
+# 8c. what the ledger already records is never taken back; a pre-existing grant and a gone folder are left alone.
+$dir = New-Sandbox
+$folderA = Join-Path $dir 'shareA'; $folderB = Join-Path $dir 'shareB'
+New-Item -ItemType Directory -Path $folderA, $folderB | Out-Null
+try {
+    Save-Ledger @((Entry $folderA 'RX'))
+    [void](Write-Intent @((IntentItem $folderA 'RX'), (IntentItem $folderB 'RX' $null $true), (IntentItem (Join-Path $dir 'gone'))))
+    $script:IcaclsCalls.Clear()
+    [void](Resolve-StaleGrantIntents @(Get-Ledger))
+    Check 'intent: a recorded entry, a pre-existing grant and a vanished folder cause no ACL change' ($script:IcaclsCalls.Count -eq 0 -and (Intent-Files).Count -eq 0)
+
+    # a level that was changed (RX -> M) and not recorded is restored, not removed
+    [void](Write-Intent @((IntentItem $folderA 'M' 'RX')))
+    $script:IcaclsCalls.Clear()
+    [void](Resolve-StaleGrantIntents @(Get-Ledger))
+    Check 'intent: a level changed by the dead run is put back to what it was' (
+        @($script:IcaclsCalls | Where-Object { $_ -like '*/grant:r*(RX)*' }).Count -eq 1 -and @($script:IcaclsCalls | Where-Object { $_ -like '*remove:g*' }).Count -eq 0)
+} finally { Remove-Sandbox $dir }
+
+# 8d. a record that is not in the locked form is never acted on and never deleted.
+$dir = New-Sandbox
+$folderA = Join-Path $dir 'shareA'
+New-Item -ItemType Directory -Path $folderA | Out-Null
+try {
+    $foreign = Join-Path $dir 'granted-roots.intent-planted.json'
+    [IO.File]::WriteAllText($foreign, ('[{"path":"' + ($folderA -replace '\\', '\\') + '","rights":"RX","preExisting":false}]'))
+    $script:IcaclsCalls.Clear(); $script:LogLines.Clear()
+    $attention = Resolve-StaleGrantIntents @()
+    Check 'intent: a record in an unlocked form is kept, flagged and acts on nothing' (
+        $attention -and (Test-Path -LiteralPath $foreign) -and $script:IcaclsCalls.Count -eq 0 -and (($script:LogLines -join "`n") -like '*not acted on*'))
+    Remove-Item -LiteralPath $foreign -Force
+    $broken = Join-Path $dir 'granted-roots.intent-broken.json'
+    [void](Write-LockedFile $broken ([Text.Encoding]::UTF8.GetBytes('{ not json')))
+    $attention = Resolve-StaleGrantIntents @()
+    Check 'intent: a locked record that cannot be parsed is kept and flagged' ($attention -and (Test-Path -LiteralPath $broken) -and $script:IcaclsCalls.Count -eq 0)
+} finally { Remove-Sandbox $dir }
+
+# 8e. a take-back that fails is named in a recovery file; the record is then dropped.
+$dir = New-Sandbox
+$folderA = Join-Path $dir 'shareA'
+New-Item -ItemType Directory -Path $folderA | Out-Null
+try {
+    [void](Write-Intent @((IntentItem $folderA)))
+    $script:IcaclsFail = { param($c) $c -like '*remove:g*' }
+    $attention = Resolve-StaleGrantIntents @()
+    $evidence = @(Get-ChildItem -LiteralPath $dir -Filter 'granted-roots.recovery-*.json' -Force)
+    Check 'intent: a grant that cannot be taken back lands in a recovery file and the record goes' (
+        $attention -and $evidence.Count -eq 1 -and ((Get-Content -LiteralPath $evidence[0].FullName -Raw) -like '*shareA*') -and (Intent-Files).Count -eq 0)
+    $script:IcaclsFail = { param($c) $false }
+} finally { Remove-Sandbox $dir }
+
+# 8f. the record cannot be written: nothing is granted, exit 18.
+$dir = New-Sandbox
+$folderA = Join-Path $dir 'shareA'
+New-Item -ItemType Directory -Path $folderA | Out-Null
+try {
+    $script:DataDir = Join-Path $dir 'no-such-state-dir'
+    $script:IcaclsCalls.Clear()
+    $err = Throws { Grant-Roots @($folderA) @() $true }
+    Check 'intent: when it cannot be written nothing is granted and the run exits 18' ($err -like 'FAIL:18:*' -and $script:IcaclsCalls.Count -eq 0)
+} finally { Remove-Sandbox $dir }
+
+# 8g. remove settles a dead run's record too.
+$dir = New-Sandbox
+$folderA = Join-Path $dir 'shareA'
+New-Item -ItemType Directory -Path $folderA | Out-Null
+try {
+    [void](Write-Intent @((IntentItem $folderA)))
+    $script:RevokeIncomplete = $false; $script:IcaclsCalls.Clear()
+    [void](Throws { Revoke-Roots })
+    Check 'revoke: a dead run''s unrecorded grant is taken back and the record dropped, complete' (
+        -not $script:RevokeIncomplete -and @($script:IcaclsCalls | Where-Object { $_ -like '*remove:g*' -and $_ -like '*shareA*' }).Count -eq 1 -and (Intent-Files).Count -eq 0)
+} finally { Remove-Sandbox $dir }
+
+# ------------------------------------------------- 9. the FileDO bundle root on the service line ----
+# The worker takes the bundle root from the executable's grandparent when no --filedo-root is
+# given, and a service runs a copy staged under %ProgramData%, so that default names
+# %ProgramData%\FastMediaSorterCompanion and the Program Files check refuses it. Every
+# registration the helper writes (install, repair, migrate-to-server, the in-place update) goes
+# through Get-ServiceBinPath, so that one function is where the root has to be named.
+$BinDirName = 'bin'
+$installed = 'C:\Program Files\FastMediaSorter_Server'
+$installedExe = "$installed\companion\fms-share-worker.exe"
+$machineDir = 'C:\ProgramData\FastMediaSorterCompanion'
+$stagedExe = "$machineDir\bin\fms-share-worker.exe"
+$script:RegistryImagePath = ''
+function Get-ServiceRegistryValue([string]$name) { if ($name -eq 'ImagePath') { return $script:RegistryImagePath } else { return '' } }
+function Binpath-For([string]$exe, [string]$explicitRoot = '', [string]$serviceExe = $stagedExe) {
+    $script:FileDoRoot = $explicitRoot; $script:ExePath = $exe; $script:ServiceExePath = $serviceExe
+    $script:DataDir = $machineDir; $script:ManageSid = 'S-1-5-21-1-2-3-1001'
+    return (Get-ServiceBinPath)
+}
+$line = Binpath-For $installedExe
+Check 'filedo: the service line names the installation folder as the bundle root' ($line -like '*--filedo-root "C:\Program Files\FastMediaSorter_Server"*') $line
+Check 'filedo: the service line still starts with the staged worker and carries datadir and manage-sid' (
+    $line.StartsWith("`"$stagedExe`" --service --datadir `"$machineDir`"") -and $line -like '*--manage-sid "S-1-5-21-1-2-3-1001"*')
+$line = Binpath-For $installedExe 'D:\Apps\FMS\'
+Check 'filedo: an explicit -FileDoRoot wins over the derived one, trailing backslash dropped' ($line -like '*--filedo-root "D:\Apps\FMS"' -or $line -like '*--filedo-root "D:\Apps\FMS" *') $line
+$script:RegistryImagePath = "`"$stagedExe`" --service --datadir `"$machineDir`" --filedo-root `"$installed`""
+$line = Binpath-For $stagedExe
+Check 'filedo: a repair run started from the staged copy keeps the root the registration already names' ($line -like '*--filedo-root "C:\Program Files\FastMediaSorter_Server"*') $line
+$script:RegistryImagePath = ''
+$line = Binpath-For $stagedExe
+Check 'filedo: from the staged copy with nothing to keep, no root is invented (never the ProgramData parent)' ($line -notlike '*--filedo-root*') $line
+
 # --------------------------------------------------------------------------------- verdict ----
-$failed = @($results | Where-Object { -not $_.Passed })
+$failed =@($results | Where-Object { -not $_.Passed })
 if ($failed.Count -gt 0) { Exit-Verdict 'ShareServiceHelperLogic' 1 "$($failed.Count) of $($results.Count) check(s) failed" }
 Exit-Verdict 'ShareServiceHelperLogic' 0 "$($results.Count) checks; unelevated - the elevated ownership/ACE scenarios stay with ShareServiceHelper.ps1 on a VM"

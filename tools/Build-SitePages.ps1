@@ -1,7 +1,8 @@
 ﻿<#
 .SYNOPSIS
     Renders the per-language first pages of the site - lang/<code>/index.html -
-    from tools/site-copy.json, and the install-trust page from tools/trust-copy.json.
+    from tools/site-copy.json, and the install-trust page from tools/trust-copy.json,
+    and generates robots.txt, sitemap.xml and search-index.json over the page set.
 
 .DESCRIPTION
     The site is served from the repository ROOT (see .sza-canon.json: site.root ".").
@@ -13,10 +14,10 @@
     branch-based here (source main:/), so a clean per-language URL needs a real
     directory, and 12 single-file directories in the repository root was noise.
     `lang/` is the only knob: change $LangDir and every URL, hreflang alternate and
-    output path follows. The root index.html's own switcher is hand-authored and
-    must be kept in step by hand.
+    output path follows. The root index.html's shared regions (channels, family) are
+    marked and kept in sync by this generator.
 
-    See docs/specifications/013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block B.
+    See docs/specifications/030_SPECIFICATION_CONTRACT_SYNC_PRODUCT_WEB_PAGES.md.
 
     The generated HTML is a render target - edit site-copy.json and re-run, never the
     pages themselves (canon invariant 16).
@@ -26,19 +27,21 @@
     lang/<code>/trust.html for the other twelve. Its copy lives in tools/trust-copy.json
     and its language metadata does NOT - dir, endonym, the machine-translation flag and
     the switcher label are read from site-copy.json, so a language is described once.
-    It is rendered here rather than hand-authored like the how-to pages precisely because
-    the contract requires it in all thirteen locales in one edit (canon invariant 17).
+
+    The script also renders robots.txt, sitemap.xml and search-index.json. The search
+    index covers the same public page set as the sitemap (DOC-EXTERNAL-QUALITY rules 2
+    and 5 - ticket 059); a hand-authored root page is read back out of its own HTML,
+    the generated pages out of the copy JSON.
 
 .PARAMETER Check
-    Render into memory and fail if any page on disk differs. For a pre-flight sweep:
-    it proves the committed HTML still matches its source. tools\Release.ps1 runs it
-    before every tag (tools\check-placement.jsonl).
+    Render into memory and fail if any page or marked region on disk differs, or if any
+    of the 11 contract conformance checks fail. For a pre-flight sweep:
+    it proves the committed HTML still matches its source and contracts.
 
 .NOTES
     Exit codes with -Check (CHECK-VERDICT):
-      0 - every render target on disk matches its source;
-      1 - a render target differs or is missing, or a legacy per-language folder is left
-          in the repository root;
+      0 - every render target and conformance check passes;
+      1 - a render target differs or is missing, or a conformance check fails;
       2 - could not verify: a copy source is missing or unreadable, or rendering failed.
     The last line is the verdict, `Build-SitePages: <WORD> (..)`. Without -Check the
     script writes the pages and a failure is an ordinary error (exit 1).
@@ -49,16 +52,14 @@ param([switch]$Check)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'lib\Verdict.ps1')
 
-# In check mode an unexpected terminating error - an unreadable copy file, a render that
-# throws - means nothing was compared, which is not the same fact as "a page is stale".
 trap {
     if (-not $Check) { break }
     Write-Host "  $($_.Exception.Message)"
     Exit-Verdict 'Build-SitePages' 2 'the check could not run'
 }
 if ($Check) {
-    Write-Subject 'Build-SitePages' ('the trust pages, the per-language index pages, robots.txt and sitemap.xml ' +
-        'against tools/site-copy.json + tools/trust-copy.json')
+    Write-Subject 'Build-SitePages' ('the trust pages, the per-language index pages, robots.txt, sitemap.xml, ' +
+        'search-index.json and index.html marked regions against tools/site-copy.json + tools/trust-copy.json')
 }
 $Root     = Split-Path $PSScriptRoot -Parent
 $CopyFile = Join-Path $PSScriptRoot 'site-copy.json'
@@ -66,8 +67,13 @@ $BaseUrl  = 'https://serzhyale.github.io/FastMediaSorter_Lite'
 $LangDir  = 'lang'   # the one root folder that holds every translated page
 $Releases = 'https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest'
 $Repo     = 'https://github.com/SerZhyAle/FastMediaSorter_Lite'
-$OgImage  = 'assets/social-preview-1280x640.png'          # verified present; assets/og-image.png never was
-$Favicon  = 'assets/icons/Fast_Media_Sorter.ico'          # ditto for assets/favicon.ico
+$OgImage  = 'assets/social-preview-1280x640.png'
+$Favicon  = 'assets/icons/Fast_Media_Sorter.ico'
+# The product names (docs/guides/PRODUCT_NAMING.md section 1; src/ProductNames.vb). The name is NOT translated: it is
+# written in Latin in all 13 languages, and "&" is part of it (Esc turns it into "&amp;" in HTML).
+# $ProductCompact is the compact name: the short title-length form only, NOT a Microsoft Store name.
+$ProductFull  = 'Fast Media Sorter & Sharing for Windows'
+$ProductCompact = 'Fast Media Sorter & Sharing'
 
 $TrustFile = Join-Path $PSScriptRoot 'trust-copy.json'
 
@@ -75,7 +81,6 @@ if (-not (Test-Path $CopyFile))  { throw "Missing copy source: $CopyFile" }
 if (-not (Test-Path $TrustFile)) { throw "Missing copy source: $TrustFile" }
 $copy  = Get-Content $CopyFile  -Raw -Encoding UTF8 | ConvertFrom-Json
 $trust = Get-Content $TrustFile -Raw -Encoding UTF8 | ConvertFrom-Json
-# Anything starting with '_' is shared copy, not a language: '_comment', '_howto'.
 $codes = $copy.PSObject.Properties.Name | Where-Object { -not $_.StartsWith('_') }
 
 function Esc([string]$s) {
@@ -83,8 +88,15 @@ function Esc([string]$s) {
     $s.Replace('&','&amp;').Replace('<','&lt;').Replace('>','&gt;').Replace('"','&quot;')
 }
 
-# Structured data. Built through ConvertTo-Json so the localized strings are escaped as JSON
-# rather than as HTML - Esc() is the wrong tool inside a script block and would emit &quot;.
+# Body text: escaped like Esc, and on a right-to-left page the name is wrapped in <bdi> so it stays one LTR run
+# (PRODUCT_NAMING.md rule 3.2) - otherwise the "&" visually swaps sides. Attributes and <title> use Esc, never this.
+$script:RtlPage = $false
+function Body([string]$s) {
+    $h = Esc $s
+    if ($script:RtlPage) { $h = [regex]::Replace($h, 'Fast Media Sorter &amp; Sharing(?: for Windows)?|«Sharing»', '<bdi>$0</bdi>') }
+    $h
+}
+
 function JsonLd([string]$code, $e) {
     $ld = [ordered]@{
         '@context'            = 'https://schema.org'
@@ -96,22 +108,117 @@ function JsonLd([string]$code, $e) {
         'applicationCategory' = 'MultimediaApplication'
         'operatingSystem'     = 'Windows 7, Windows 8.1, Windows 10, Windows 11'
         'image'               = "$BaseUrl/$OgImage"
-        'downloadUrl'         = $Releases
+        'downloadUrl'         = $copy._channels.github.url
         'isAccessibleForFree' = $true
         'offers'              = [ordered]@{ '@type' = 'Offer'; 'price' = '0'; 'priceCurrency' = 'USD' }
-        'author'              = [ordered]@{ '@type' = 'Person'; 'name' = 'SerZhyAle' }
+        'author'              = [ordered]@{ '@type' = 'Person'; 'name' = $copy._contact.github }
     }
-    # No softwareVersion: a version baked into a page goes stale on the next release (SZA-VER04).
     ($ld | ConvertTo-Json -Depth 5 -Compress)
 }
 
-# Absolute paths from the site root: a relative href breaks one directory down.
+function TrustJsonLd([string]$code, $t) {
+    $ld = [ordered]@{
+        '@context'    = 'https://schema.org'
+        '@type'       = 'WebPage'
+        'headline'    = $t.title
+        'description' = $t.desc
+        'url'         = (TrustUrl $code)
+        'inLanguage'  = $code
+        'image'       = "$BaseUrl/$OgImage"
+        'isPartOf'    = [ordered]@{ '@type' = 'WebSite'; 'name' = $ProductFull; 'url' = "$BaseUrl/" }
+        'author'      = [ordered]@{ '@type' = 'Person'; 'name' = $copy._contact.github }
+    }
+    ($ld | ConvertTo-Json -Depth 5 -Compress)
+}
+
 function PageUrl([string]$code) { if ($code -eq 'en') { "$BaseUrl/" } else { "$BaseUrl/$LangDir/$code/" } }
 function TrustUrl([string]$code) { if ($code -eq 'en') { "$BaseUrl/trust.html" } else { "$BaseUrl/$LangDir/$code/trust.html" } }
+
+function RenderFamilyGridForLocale([string]$code) {
+    $familyTitle = $copy._family.title
+    if ($copy._familyTranslations.PSObject.Properties[$code] -and $copy._familyTranslations.$code.title) {
+        $familyTitle = $copy._familyTranslations.$code.title
+    }
+
+    $cards = ($copy._family.members | ForEach-Object {
+        $m = $_
+        $name = $m.name
+        $url  = $m.url
+        $mType = $m.type
+        if ($copy._familyTranslations.PSObject.Properties[$code] -and $copy._familyTranslations.$code.types.PSObject.Properties[$name]) {
+            $mType = $copy._familyTranslations.$code.types.$name
+        }
+        "    <a href=`"$url`"><b>$(Esc $name)</b><span>$(Esc $mType)</span></a>"
+    }) -join "`n"
+
+    @"
+  <h2 class="sec-head" style="margin-bottom:1rem;font-size:1.1rem">$(Esc $familyTitle)</h2>
+  <div class="tools-grid">
+$cards
+  </div>
+"@
+}
+
+function RenderIndexChannels {
+    @"
+    <!-- gen:channels -->
+    <div>
+      <div class="copybox"><span class="tok">winget</span> install --id $($copy._channels.winget.id)
+        <button class="copy" data-copy="$($copy._channels.winget.command)">Copy</button></div>
+    </div>
+
+    <div class="dl-row" id="dlRow">
+      <a class="btn btn-primary" id="dl-setup" href="$($copy._channels.github.url)">
+        <span data-l="en">Install with setup (.exe)</span><span data-l="ru">Установить через setup (.exe)</span><span data-l="ua">Встановити через setup (.exe)</span>
+      </a>
+      <a class="btn btn-ghost" id="dl-zip" href="$($copy._channels.github.url)">
+        <span data-l="en">Portable (.zip)</span><span data-l="ru">Портативная (.zip)</span><span data-l="ua">Портативна (.zip)</span>
+      </a>
+      <a class="btn btn-ghost btn-sm" href="$($copy._channels.github.url)">
+        <span data-l="en">All releases</span><span data-l="ru">Все релизы</span><span data-l="ua">Усі релізи</span>
+        <svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg>
+      </a>
+      <a class="btn btn-ghost btn-sm" href="$($copy._channels.store.url)" target="_blank" rel="noopener">
+        <span>Microsoft Store</span>
+      </a>
+      <span class="dl-meta" id="dlMeta">
+        <span data-l="en">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
+        <span data-l="ru">Готовы к работе офлайн - библиотеки VLC и пакеты OCR уже внутри. Windows 10 1607+ / 11; 32-битная сборка для Windows 7/8.1 - в том же файле.</span>
+        <span data-l="ua">Готові до роботи офлайн - бібліотеки VLC та пакети OCR уже всередині. Windows 10 1607+ / 11; 32-бітна збірка для Windows 7/8.1 - у тому ж файлі.</span>
+      </span>
+    </div>
+    <!-- /gen:channels -->
+"@ -replace "`r`n", "`n"
+}
+
+function RenderIndexFamily {
+    $familyItems = ($copy._family.members | ForEach-Object {
+        $m = $_
+        $name = $m.name
+        $url  = $m.url
+        $enType = $m.type
+        $ruType = if ($copy._familyTranslations.ru.types.PSObject.Properties[$name]) { $copy._familyTranslations.ru.types.$name } else { $enType }
+        $uaType = if ($copy._familyTranslations.uk.types.PSObject.Properties[$name]) { $copy._familyTranslations.uk.types.$name } else { $enType }
+        "    <a href=`"$url`"><b>$(Esc $name)</b><span data-l=`"en`">$(Esc $enType)</span><span data-l=`"ru`">$(Esc $ruType)</span><span data-l=`"ua`">$(Esc $uaType)</span></a>"
+    }) -join "`n"
+
+    @"
+  <!-- gen:family -->
+  <h2 class="sec-head" style="margin-bottom:1rem;font-size:1.1rem">
+    <span data-l="en">$($copy._family.title)</span><span data-l="ru">$($copy._familyTranslations.ru.title)</span><span data-l="ua">$($copy._familyTranslations.uk.title)</span>
+  </h2>
+  <div class="tools-grid">
+$familyItems
+  </div>
+  <!-- /gen:family -->
+"@ -replace "`r`n", "`n"
+}
 
 function Render([string]$code) {
     $e = $copy.$code
     $rtl = ($e.dir -eq 'rtl')
+    $script:RtlPage = $rtl
+    $scriptClass = if ($code -in @('ar','ur','hi','bn','zh')) { " class=`"script-$code`"" } else { '' }
 
     $alts = ($codes | ForEach-Object {
         '<link rel="alternate" hreflang="{0}" href="{1}">' -f $_, (PageUrl $_)
@@ -121,26 +228,36 @@ function Render([string]$code) {
     $switcher = ($codes | ForEach-Object {
         $cls = if ($_ -eq $code) { ' class="on"' } else { '' }
         '<a{0} hreflang="{1}" href="{2}">{3}</a>' -f $cls, $_, (PageUrl $_), (Esc $copy.$_.name)
-    }) -join "`n      "
+    }) -join "`n    "
 
-    $cards = ($e.features | ForEach-Object {
+    $know = ($e.know | ForEach-Object { "      <li>$(Body $_)</li>" }) -join "`n"
+
+    $scenarioCards = ($e.features[0..2] | ForEach-Object {
+        "    <article class=`"card scenario-card`">`n      <h3>$(Esc $_[0])</h3>`n      <p>$(Esc $_[1])</p>`n    </article>"
+    }) -join "`n"
+
+    $featureGroupCards = ($e.features[3..5] | ForEach-Object {
+        "    <article class=`"card`">`n      <h3>$(Esc $_[0])</h3>`n      <p>$(Esc $_[1])</p>`n    </article>"
+    }) -join "`n"
+
+    $allFeatureCards = ($e.features | ForEach-Object {
         "      <article class=`"card`">`n        <h3>$(Esc $_[0])</h3>`n        <p>$(Esc $_[1])</p>`n      </article>"
     }) -join "`n"
 
-    $know = ($e.know | ForEach-Object { "        <li>$(Esc $_)</li>" }) -join "`n"
-
+    $howtoSftp    = ($copy._howto.items | Where-Object { $_[0] -eq 'how-to-sftp.html' } | ForEach-Object { $_[1] })
+    $howtoAndroid = ($copy._howto.items | Where-Object { $_[0] -eq 'publish-folders-android.html' } | ForEach-Object { $_[1] })
     $note = ''
-    if ($e.machine) { $note = "    <p class=`"note`">$(Esc $e.machineNote)</p>`n" }
+    if ($e.machine) { $note = "      <p class=`"note`">$(Esc $e.machineNote)</p>`n" }
 
-    # The HOW TO block is the same English copy on every page - see '_howto' in
-    # site-copy.json for why it is not translated.
     $howto = ($copy._howto.items | ForEach-Object {
         '      <li><a href="{0}/{1}">{2}</a></li>' -f $BaseUrl, $_[0], (Esc $_[1])
     }) -join "`n"
 
+    $familyGrid = RenderFamilyGridForLocale $code
+
 @"
 <!DOCTYPE html>
-<html lang="$code"$(if ($rtl) { ' dir="rtl"' })>
+<html lang="$code"$(if ($rtl) { ' dir="rtl"' })$scriptClass>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -153,94 +270,172 @@ $alts
 <meta property="og:description" content="$(Esc $e.tagline)">
 <meta property="og:url" content="$(PageUrl $code)">
 <meta property="og:image" content="$BaseUrl/$OgImage">
-<meta property="og:site_name" content="Fast Media Sorter for Windows">
+<meta property="og:site_name" content="$(Esc $ProductCompact)">
 <meta property="og:locale" content="$code">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="$(Esc $e.title)">
 <meta name="twitter:description" content="$(Esc $e.tagline)">
 <meta name="twitter:image" content="$BaseUrl/$OgImage">
-<meta name="theme-color" content="#0d1017">
+<meta name="theme-color" content="#0a0f0a">
 <link rel="icon" href="$BaseUrl/$Favicon" sizes="any">
+<link rel="apple-touch-icon" href="$BaseUrl/assets/icons/store-icon-256.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="$BaseUrl/assets/sza-kit.css">
+<link rel="stylesheet" href="$BaseUrl/assets/fms-site.css">
+<script>(function(){try{var t=localStorage.getItem('sza-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
 <script type="application/ld+json">$(JsonLd $code $e)</script>
-<style>
-  :root{--bg:#0d1017;--bg2:#171b26;--fg:#e8ecf4;--muted:#aab2be;--accent:#7aa2ff;--border:rgba(255,255,255,.10)}
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);
-       font:16px/1.6 "Segoe UI",system-ui,-apple-system,"Noto Sans","Noto Sans Arabic","Noto Sans Devanagari","Noto Sans Bengali","Microsoft YaHei",sans-serif}
-  .wrap{max-width:980px;margin:0 auto;padding:0 20px}
-  header{padding:56px 0 8px}
-  h1{font-size:clamp(28px,5vw,44px);line-height:1.15;margin:0 0 14px}
-  .tagline{font-size:clamp(16px,2.2vw,20px);color:var(--muted);margin:0 0 28px;max-width:62ch}
-  h2{font-size:20px;margin:40px 0 14px}
-  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-  .card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
-  .card h3{margin:0 0 8px;font-size:17px}
-  .card p{margin:0;color:var(--muted);font-size:15px}
-  ul{padding-inline-start:22px;color:var(--muted)}
-  li{margin:6px 0}
-  .btns{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 6px}
-  .btn{display:inline-block;padding:11px 18px;border-radius:10px;text-decoration:none;
-       border:1px solid var(--border);color:var(--fg);background:var(--bg2)}
-  .btn.primary{background:var(--accent);color:#0d1017;border-color:transparent;font-weight:600}
-  .note{margin:22px 0 0;padding:12px 16px;border-inline-start:3px solid var(--accent);
-        background:rgba(122,162,255,.07);border-radius:0 10px 10px 0;color:var(--muted);font-size:14px}
-  .langs{display:flex;flex-wrap:wrap;gap:8px 14px;margin:10px 0 0;font-size:14px}
-  .langs a{color:var(--muted);text-decoration:none}
-  .langs a:hover{color:var(--fg)}
-  .langs a.on{color:var(--accent);font-weight:600}
-  footer{margin:56px 0 40px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:14px}
-  footer a{color:var(--muted)}
-  a{color:var(--accent)}
-</style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>$(Esc $e.title)</h1>
-    <p class="tagline">$(Esc $e.tagline)</p>
-  </header>
+<header class="site-header">
+  <a class="brand" href="$(PageUrl $code)" aria-label="$(Esc $ProductFull)"><span class="brand-mark"><img src="$BaseUrl/$Favicon" alt="" width="24" height="24"></span>$(Body $ProductFull)</a>
+  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
+  <a class="btn btn-primary btn-sm" href="#get">$(Esc $e.dlSetup)</a>
+</header>
 
-  <section>
-    <h2>$(Esc $e.knowTitle)</h2>
-    <ul>
+<main class="container">
+  <section class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow">Windows desktop app</span>
+      <h1>$(Body $e.title)</h1>
+      <span class="kicker">Free &amp; open-source</span>
+    </div>
+    <p class="lead lead-narrow">$(Body $e.tagline)</p>
+    <p class="lead lead-narrow">$(Body $e.sharing) <a href="$BaseUrl/how-to-sftp.html" lang="en" dir="ltr">$(Esc $howtoSftp)</a> &middot; <a href="$BaseUrl/publish-folders-android.html" lang="en" dir="ltr">$(Esc $howtoAndroid)</a></p>
+    <div class="button-group">
+      <a class="btn btn-primary" href="#get">$(Esc $e.dlSetup)</a>
+      <a class="btn btn-ghost" href="#features">$(Esc $e.knowTitle)</a>
+    </div>
+  </section>
+
+  <section class="sec-head">
+    <h2 class="section-title"><span class="hash">#</span>$(Esc $e.knowTitle)</h2>
+    <ul class="know-list">
 $know
     </ul>
   </section>
 
-  <section>
+  <section class="scenarios">
     <div class="grid">
-$cards
+$scenarioCards
     </div>
   </section>
 
-  <section id="get">
-    <h2>$(Esc $e.downloadTitle)</h2>
-    <div class="btns">
-      <a class="btn primary" href="$Releases">$(Esc $e.dlSetup)</a>
-      <a class="btn" href="$Repo#winget">$(Esc $e.dlWinget)</a>
-      <a class="btn" href="https://apps.microsoft.com/search?query=FastMediaSorter">$(Esc $e.dlStore)</a>
+  <section class="download-section" id="get">
+    <div class="sec-head">
+      <h2 class="section-title"><span class="hash">#</span>$(Esc $e.downloadTitle)</h2>
     </div>
-    <p><a href="$BaseUrl/how-to-viewer.html">$(Esc $e.guide)</a></p>
-    <p><a href="$BaseUrl/server.html">$(Esc $e.serverLink)</a></p>
-    <p><a href="$(TrustUrl $code)">$(Esc $trust.$code.title)</a></p>
-$note  </section>
+    <div class="get">
+      <div>
+        <div class="copybox"><span class="tok">winget</span> install --id $($copy._channels.winget.id)
+          <button class="copy" data-copy="$($copy._channels.winget.command)">Copy</button></div>
+      </div>
+      <div class="dl-row" id="dlRow">
+        <a class="btn btn-primary" id="dl-setup" href="$($copy._channels.github.url)">$(Esc $e.dlSetup)</a>
+        <a class="btn btn-ghost" id="dl-zip" href="$($copy._channels.github.url)">Portable (.zip)</a>
+        <a class="btn btn-ghost btn-sm" href="$($copy._channels.github.url)">All releases</a>
+        <a class="btn btn-ghost btn-sm" href="$($copy._channels.store.url)" target="_blank" rel="noopener"><span>Microsoft Store</span></a>
+        <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
+      </div>
+      <p class="dl-meta">
+        <a href="$(TrustUrl $code)">$(Esc $trust.$code.title)</a>
+      </p>
+$note      <p><a href="$BaseUrl/server.html">$(Esc $e.serverLink)</a></p>
+    </div>
+  </section>
 
-  <section id="howto">
-    <h2>$(Esc $copy._howto.title)</h2>
-    <p class="tagline" lang="en" dir="ltr">$(Esc $copy._howto.note)</p>
+  <section class="section" id="features">
+    <div class="sec-head">
+      <h2 class="section-title"><span class="hash">#</span>$(Esc $e.knowTitle)</h2>
+    </div>
+    <div class="grid">
+$featureGroupCards
+    </div>
+    <details class="sec" id="all-features" style="margin-top:1.5rem">
+      <summary><span class="secnum">01</span>$(Body $e.title) - Features</summary>
+      <div class="grid" style="margin-top:1rem">
+$allFeatureCards
+      </div>
+    </details>
+  </section>
+
+  <section class="section" id="howto">
+    <div class="sec-head">
+      <h2 class="section-title"><span class="hash">#</span>$(Esc $copy._howto.title)</h2>
+      <p class="section-desc" lang="en" dir="ltr">$(Esc $copy._howto.note)</p>
+    </div>
     <ul lang="en" dir="ltr">
 $howto
     </ul>
   </section>
 
-  <footer>
-    <p>$(Esc $e.langLabel):</p>
-    <nav class="langs">
-      $switcher
-    </nav>
-    <p><a href="$Repo">GitHub</a> &middot; <a href="$BaseUrl/docs/privacy.html">Privacy</a></p>
-  </footer>
-</div>
+  <section class="tech-links">
+    <p><a href="$BaseUrl/docs/privacy.html">Privacy</a> &middot; <a href="$Repo/blob/main/LICENSE">LICENSE</a> &middot; <a href="$Repo">GitHub</a></p>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="container">
+$familyGrid
+  <div class="footer-langs">
+    <span class="footer-langs-label">$(Esc $e.langLabel):</span>
+    $switcher
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; $(Get-Date -Format 'yyyy') <a href="https://$($copy._contact.website)">$($copy._contact.github)</a></span>
+    <span><a href="https://$($copy._contact.website)">$($copy._contact.website)</a> &middot; <a href="$Repo">GitHub</a> &middot; <a href="mailto:$($copy._contact.email)">$($copy._contact.email)</a></span>
+  </div>
+</div></footer>
+
+<script>
+(function(){
+  var doc=document.documentElement;
+  function setTheme(t){
+    doc.setAttribute('data-theme',t);
+    try{localStorage.setItem('sza-theme',t);}catch(e){}
+    var m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', t==='light'?'#eef3ea':'#0a0f0a');
+    var b=document.getElementById('themeBtn'); if(b) b.setAttribute('aria-label', t==='light'?'Switch to dark theme':'Switch to light theme');
+  }
+  var tb=document.getElementById('themeBtn');
+  if(tb) tb.addEventListener('click',function(){setTheme(doc.getAttribute('data-theme')==='light'?'dark':'light');});
+  setTheme(doc.getAttribute('data-theme')||'dark');
+
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var txt=btn.getAttribute('data-copy')||'';
+      var done=function(){var o=btn.textContent;btn.textContent='✓ Copied';btn.classList.add('done');
+        setTimeout(function(){btn.textContent=o;btn.classList.remove('done');},1600);};
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(txt).then(done,function(){fallback(txt);done();});
+      }else{fallback(txt);done();}
+    });
+  });
+  function fallback(txt){try{var ta=document.createElement('textarea');ta.value=txt;
+    ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);}catch(e){}}
+
+  (function(){
+    fetch('https://api.github.com/repos/SerZhyAle/FastMediaSorter_Lite/releases/latest')
+      .then(function(r){return r.ok?r.json():Promise.reject();})
+      .then(function(rel){
+        var assets=rel.assets||[];
+        function find(re){for(var i=0;i<assets.length;i++){if(re.test(assets[i].name))return assets[i];}return null;}
+        var setup=find(/windows-x64-setup\.exe$/);
+        var zip=find(/windows-x64\.zip$/);
+        var tag=rel.tag_name||'';
+        var s=document.getElementById('dl-setup'), z=document.getElementById('dl-zip');
+        if(setup&&s) s.href=setup.browser_download_url;
+        if(zip&&z) z.href=zip.browser_download_url;
+        if(tag){
+          var meta=document.getElementById('dlMeta');
+          if(meta){var b=document.createElement('span');b.style.color='var(--acc)';b.style.fontWeight='600';
+            b.textContent=' '+tag;meta.appendChild(b);}
+        }
+      })
+      .catch(function(){});
+  })();
+})();
+</script>
 </body>
 </html>
 "@
@@ -248,8 +443,10 @@ $howto
 
 function RenderTrust([string]$code) {
     $t   = $trust.$code
-    $e   = $copy.$code          # language metadata only - one description per language
+    $e   = $copy.$code
     $rtl = ($e.dir -eq 'rtl')
+    $script:RtlPage = $rtl
+    $scriptClass = if ($code -in @('ar','ur','hi','bn','zh')) { " class=`"script-$code`"" } else { '' }
 
     $alts = ($codes | ForEach-Object {
         '<link rel="alternate" hreflang="{0}" href="{1}">' -f $_, (TrustUrl $_)
@@ -259,21 +456,21 @@ function RenderTrust([string]$code) {
     $switcher = ($codes | ForEach-Object {
         $cls = if ($_ -eq $code) { ' class="on"' } else { '' }
         '<a{0} hreflang="{1}" href="{2}">{3}</a>' -f $cls, $_, (TrustUrl $_), (Esc $copy.$_.name)
-    }) -join "`n      "
+    }) -join "`n    "
 
-    # The four sections INSTALL-TRUST rule 1 fixes, plus rule 6's list, in the order the
-    # contract states. The order is the JSON's; nothing here reorders it.
     $sections = ($t.sections | ForEach-Object {
-        $items = ($_.items | ForEach-Object { "        <li>$(Esc $_)</li>" }) -join "`n"
-        "  <section>`n    <h2>$(Esc $_.h)</h2>`n    <p class=`"tagline`">$(Esc $_.p)</p>`n    <ul>`n$items`n    </ul>`n  </section>"
+        $items = ($_.items | ForEach-Object { "      <li>$(Body $_)</li>" }) -join "`n"
+        "  <section class=`"section`">`n    <h2>$(Body $_.h)</h2>`n    <p class=`"lead`">$(Body $_.p)</p>`n    <ul>`n$items`n    </ul>`n  </section>"
     }) -join "`n"
 
     $mt = ''
-    if ($e.machine) { $mt = "    <p class=`"note`">$(Esc $e.machineNote)</p>`n" }
+    if ($e.machine) { $mt = "  <p class=`"note`">$(Esc $e.machineNote)</p>`n" }
+
+    $familyGrid = RenderFamilyGridForLocale $code
 
 @"
 <!DOCTYPE html>
-<html lang="$code"$(if ($rtl) { ' dir="rtl"' })>
+<html lang="$code"$(if ($rtl) { ' dir="rtl"' })$scriptClass>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -286,65 +483,73 @@ $alts
 <meta property="og:description" content="$(Esc $t.desc)">
 <meta property="og:url" content="$(TrustUrl $code)">
 <meta property="og:image" content="$BaseUrl/$OgImage">
-<meta property="og:site_name" content="Fast Media Sorter for Windows">
+<meta property="og:site_name" content="$(Esc $ProductCompact)">
 <meta property="og:locale" content="$code">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="$(Esc $t.title)">
 <meta name="twitter:description" content="$(Esc $t.desc)">
 <meta name="twitter:image" content="$BaseUrl/$OgImage">
-<meta name="theme-color" content="#0d1017">
+<meta name="theme-color" content="#0a0f0a">
 <link rel="icon" href="$BaseUrl/$Favicon" sizes="any">
-<style>
-  :root{--bg:#0d1017;--bg2:#171b26;--fg:#e8ecf4;--muted:#aab2be;--accent:#7aa2ff;--border:rgba(255,255,255,.10)}
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);
-       font:16px/1.6 "Segoe UI",system-ui,-apple-system,"Noto Sans","Noto Sans Arabic","Noto Sans Devanagari","Noto Sans Bengali","Microsoft YaHei",sans-serif}
-  .wrap{max-width:820px;margin:0 auto;padding:0 20px}
-  header{padding:56px 0 8px}
-  h1{font-size:clamp(26px,4.4vw,38px);line-height:1.2;margin:0 0 14px}
-  .tagline{font-size:16px;color:var(--muted);margin:0 0 14px;max-width:70ch}
-  h2{font-size:20px;margin:40px 0 10px}
-  ul{padding-inline-start:22px;color:var(--muted)}
-  li{margin:10px 0}
-  .note{margin:28px 0 0;padding:12px 16px;border-inline-start:3px solid var(--accent);
-        background:rgba(122,162,255,.07);border-radius:0 10px 10px 0;color:var(--muted);font-size:14px}
-  .btns{display:flex;flex-wrap:wrap;gap:10px;margin:28px 0 6px}
-  .btn{display:inline-block;padding:11px 18px;border-radius:10px;text-decoration:none;
-       border:1px solid var(--border);color:var(--fg);background:var(--bg2)}
-  .langs{display:flex;flex-wrap:wrap;gap:8px 14px;margin:10px 0 0;font-size:14px}
-  .langs a{color:var(--muted);text-decoration:none}
-  .langs a:hover{color:var(--fg)}
-  .langs a.on{color:var(--accent);font-weight:600}
-  footer{margin:56px 0 40px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:14px}
-  footer a{color:var(--muted)}
-  a{color:var(--accent)}
-</style>
+<link rel="apple-touch-icon" href="$BaseUrl/assets/icons/store-icon-256.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="$BaseUrl/assets/sza-kit.css">
+<link rel="stylesheet" href="$BaseUrl/assets/fms-site.css">
+<script>(function(){try{var t=localStorage.getItem('sza-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
+<script type="application/ld+json">$(TrustJsonLd $code $t)</script>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>$(Esc $t.title)</h1>
-    <p class="tagline">$(Esc $t.intro)</p>
-  </header>
+<header class="site-header">
+  <a class="brand" href="$(PageUrl $code)" aria-label="$(Esc $ProductFull)"><span class="brand-mark"><img src="$BaseUrl/$Favicon" alt="" width="24" height="24"></span>$(Body $ProductFull)</a>
+  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
+  <a class="btn btn-ghost btn-sm" href="$(PageUrl $code)">$(Esc $t.backLabel)</a>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <h1>$(Body $t.title)</h1>
+    <p class="lead">$(Body $t.intro)</p>
+  </section>
 
 $sections
 
-  <p class="note">$(Esc $t.note)</p>
+  <p class="note">$(Body $t.note)</p>
 
-  <div class="btns">
-    <a class="btn" href="$(PageUrl $code)">$(Esc $t.backLabel)</a>
-    <a class="btn" href="$Releases">$(Esc $t.dlLabel)</a>
-    <a class="btn" href="$BaseUrl/docs/privacy.html">$(Esc $t.privacyLabel)</a>
+  <div class="button-group" style="margin:2rem 0">
+    <a class="btn btn-primary" href="$($copy._channels.github.url)">$(Esc $t.dlLabel)</a>
+    <a class="btn btn-ghost" href="$BaseUrl/docs/privacy.html">$(Esc $t.privacyLabel)</a>
+    <a class="btn btn-ghost" href="$(PageUrl $code)">$(Esc $t.backLabel)</a>
   </div>
-$mt
-  <footer>
-    <p>$(Esc $e.langLabel):</p>
-    <nav class="langs">
-      $switcher
-    </nav>
-    <p><a href="$Repo">GitHub</a></p>
-  </footer>
-</div>
+$mt</main>
+
+<footer class="site-footer"><div class="container">
+$familyGrid
+  <div class="footer-langs">
+    <span class="footer-langs-label">$(Esc $e.langLabel):</span>
+    $switcher
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; $(Get-Date -Format 'yyyy') <a href="https://$($copy._contact.website)">$($copy._contact.github)</a></span>
+    <span><a href="https://$($copy._contact.website)">$($copy._contact.website)</a> &middot; <a href="$Repo">GitHub</a> &middot; <a href="mailto:$($copy._contact.email)">$($copy._contact.email)</a></span>
+  </div>
+</div></footer>
+
+<script>
+(function(){
+  var doc=document.documentElement;
+  function setTheme(t){
+    doc.setAttribute('data-theme',t);
+    try{localStorage.setItem('sza-theme',t);}catch(e){}
+    var m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', t==='light'?'#eef3ea':'#0a0f0a');
+    var b=document.getElementById('themeBtn'); if(b) b.setAttribute('aria-label', t==='light'?'Switch to dark theme':'Switch to light theme');
+  }
+  var tb=document.getElementById('themeBtn');
+  if(tb) tb.addEventListener('click',function(){setTheme(doc.getAttribute('data-theme')==='light'?'dark':'light');});
+  setTheme(doc.getAttribute('data-theme')||'dark');
+})();
+</script>
 </body>
 </html>
 "@
@@ -352,8 +557,41 @@ $mt
 
 $written = @(); $stale = @(); $compared = 0
 
-# The install-trust page, English at the site root and the other twelve beside their
-# index. Written BEFORE the sitemap block below, which globs the root for *.html.
+# 1. Update/check root index.html marked regions (gen:channels, gen:family)
+$indexFile = Join-Path $Root 'index.html'
+if (Test-Path $indexFile) {
+    $indexContent = Get-Content $indexFile -Raw -Encoding UTF8
+    $expectedChannels = (RenderIndexChannels).Trim()
+    $expectedFamily   = (RenderIndexFamily).Trim()
+
+    $chanMatch = [regex]::Match($indexContent, '(?s)<!-- gen:channels -->.*?<!-- /gen:channels -->')
+    $famMatch  = [regex]::Match($indexContent, '(?s)<!-- gen:family -->.*?<!-- /gen:family -->')
+
+    if ($Check) {
+        $compared++
+        if (-not $chanMatch.Success -or $chanMatch.Value.Trim() -ne $expectedChannels) {
+            $stale += "index.html (gen:channels)"
+        }
+        if (-not $famMatch.Success -or $famMatch.Value.Trim() -ne $expectedFamily) {
+            $stale += "index.html (gen:family)"
+        }
+    } else {
+        $newIndex = $indexContent
+        if ($chanMatch.Success) {
+            $newIndex = $newIndex.Substring(0, $chanMatch.Index) + $expectedChannels + $newIndex.Substring($chanMatch.Index + $chanMatch.Length)
+        }
+        $famMatchAfter = [regex]::Match($newIndex, '(?s)<!-- gen:family -->.*?<!-- /gen:family -->')
+        if ($famMatchAfter.Success) {
+            $newIndex = $newIndex.Substring(0, $famMatchAfter.Index) + $expectedFamily + $newIndex.Substring($famMatchAfter.Index + $famMatchAfter.Length)
+        }
+        if ($newIndex -ne $indexContent) {
+            [IO.File]::WriteAllText($indexFile, ($newIndex -replace "`r`n", "`n"), (New-Object Text.UTF8Encoding $false))
+            $written += 'index.html (marked regions)'
+        }
+    }
+}
+
+# 2. Render/check trust pages
 foreach ($code in $codes) {
     $path = if ($code -eq 'en') { Join-Path $Root 'trust.html' }
             else { Join-Path (Join-Path (Join-Path $Root $LangDir) $code) 'trust.html' }
@@ -372,8 +610,8 @@ foreach ($code in $codes) {
     $written += (Resolve-Path -Relative $path)
 }
 
+# 3. Render/check per-language index pages
 foreach ($code in $codes) {
-    # English is the root entry page, which is hand-authored and trilingual.
     if ($code -eq 'en') { continue }
 
     $dir  = Join-Path (Join-Path $Root $LangDir) $code
@@ -394,11 +632,6 @@ foreach ($code in $codes) {
 }
 
 # --- robots.txt + sitemap.xml -------------------------------------------------
-# Both are render targets, not hand-maintained files: the public set is the root
-# .html pages plus one directory per translated language, and a hand-written
-# sitemap goes stale the first time either set changes. The root page is listed
-# as the bare directory URL, which is what canonical says, so a crawler is never
-# offered index.html and / as two things.
 function RootPages {
     Get-ChildItem -LiteralPath $Root -Filter '*.html' -File |
         Sort-Object Name | ForEach-Object { $_.Name }
@@ -415,21 +648,9 @@ Sitemap: $BaseUrl/sitemap.xml
 }
 
 function RenderSitemap {
-    $urls = @()
-    foreach ($f in RootPages) {
-        $urls += if ($f -eq 'index.html') { "$BaseUrl/" } else { "$BaseUrl/$f" }
-    }
-    foreach ($code in ($codes | Where-Object { $_ -ne 'en' })) {
-        $urls += (PageUrl $code)
-        # The trust page exists in every language, so its twelve translated URLs need
-        # listing too; the English one is already picked up by the root *.html glob.
-        $urls += (TrustUrl $code)
-    }
+    $urls = @(SiteEntries | ForEach-Object { $_.url })
 
     $body = ($urls | ForEach-Object {
-        # The entry page carries the hreflang set, so it is the one that declares the
-        # alternates; a per-page alternate block on a how-to that has no translation
-        # would be a lie.
         if ($_ -eq "$BaseUrl/") {
             $alts = (($codes | ForEach-Object {
                 '    <xhtml:link rel="alternate" hreflang="{0}" href="{1}"/>' -f $_, (PageUrl $_)
@@ -449,7 +670,31 @@ $body
 "@ -replace "`r`n", "`n"
 }
 
-foreach ($pair in @(@('robots.txt', (RenderRobots)), @('sitemap.xml', (RenderSitemap)))) {
+function SiteEntries {
+    $entries = @()
+    foreach ($f in (RootPages)) {
+        $url = if ($f -eq 'index.html') { "$BaseUrl/" } else { "$BaseUrl/$f" }
+        $html = Get-Content (Join-Path $Root $f) -Raw -Encoding UTF8
+        $title = if ($html -match '(?s)<title>(.*?)</title>') { [Net.WebUtility]::HtmlDecode($Matches[1]) } else { '' }
+        $desc  = if ($html -match '(?s)<meta\s+name="description"\s+content="(.*?)"') { [Net.WebUtility]::HtmlDecode($Matches[1]) } else { '' }
+        if (-not $title -or -not $desc) { throw "root page $f carries no title or description for the search index" }
+        $entries += [pscustomobject]@{ url = $url; lang = 'en'; title = $title; description = $desc }
+    }
+    foreach ($code in ($codes | Where-Object { $_ -ne 'en' })) {
+        $entries += [pscustomobject]@{ url = (PageUrl $code); lang = $code; title = $copy.$code.title; description = $copy.$code.tagline }
+        $entries += [pscustomobject]@{ url = (TrustUrl $code); lang = $code; title = $trust.$code.title; description = $trust.$code.desc }
+    }
+    return $entries
+}
+
+function RenderSearchIndex {
+    $entries = @(SiteEntries)
+    ((@($entries | ForEach-Object {
+        [ordered]@{ 'url' = $_.url; 'lang' = $_.lang; 'title' = $_.title; 'description' = $_.description }
+    } | ConvertTo-Json -Depth 3) -join "`n") -replace "`r`n", "`n") + "`n"
+}
+
+foreach ($pair in @(@('robots.txt', (RenderRobots)), @('sitemap.xml', (RenderSitemap)), @('search-index.json', (RenderSearchIndex)))) {
     $name = $pair[0]; $text = $pair[1]
     $dest = Join-Path $Root $name
     if ($Check) {
@@ -462,25 +707,162 @@ foreach ($pair in @(@('robots.txt', (RenderRobots)), @('sitemap.xml', (RenderSit
     [IO.File]::WriteAllText($dest, $text, (New-Object Text.UTF8Encoding $false))
     $written += $name
 }
+
 if ($Check) {
-    # The pages used to live one per folder in the repository root. A leftover there
-    # would still be served by Pages and would silently outrank the real page.
     $orphans = @($codes | Where-Object { $_ -ne 'en' -and (Test-Path (Join-Path $Root "$_/index.html")) })
     if ($compared -eq 0) { Exit-Verdict 'Build-SitePages' 2 'no render target was compared' }
-    # Both findings are reported together: stopping at the first turns one fix into two runs.
     $problems = @()
-    if ($orphans.Count -gt 0) {
-        Write-Host "Legacy per-language folders left in the repository root: $($orphans -join ', ')"
-        Write-Host "  Delete them - the pages live under $LangDir/ now."
-        $problems += "$($orphans.Count) legacy folder(s)"
-    }
     if ($stale.Count -gt 0) {
         Write-Host "Render targets out of date with their copy source: $($stale -join ', ')"
         Write-Host "  Run .\tools\Build-SitePages.ps1 to regenerate."
         $problems += "$($stale.Count) of $compared render target(s) stale"
     }
-    if ($problems.Count -gt 0) { Exit-Verdict 'Build-SitePages' 1 ($problems -join ', ') }
-    Exit-Verdict 'Build-SitePages' 0 "$compared render targets match tools/site-copy.json + tools/trust-copy.json"
+    if ($orphans.Count -gt 0) {
+        Write-Host "Legacy per-language folders left in the repository root: $($orphans -join ', ')"
+        Write-Host "  Delete them - the pages live under $LangDir/ now."
+        $problems += "$($orphans.Count) legacy folder(s)"
+    }
+
+    # --- 11 Contract Conformance Checks (ticket 030 section 5, DOC-EXTERNAL-QUALITY) ---
+    # 1. Kit identity - the catalog's reference/sza-kit.css as re-vendored 2026-10-02 (kit 1.2).
+    # Hashed with CRLF folded to LF: the catalog file is LF, and a text=auto checkout with
+    # core.autocrlf turns the working copy CRLF without changing a single character of the kit.
+    $pinnedKitSha = 'E544A6CE47160F827DC97379C3E4814D4AECE763593C5A9420E681F1F4E4EB48'
+    $kitFile = Join-Path $Root 'assets/sza-kit.css'
+    if (-not (Test-Path $kitFile)) {
+        $problems += "Kit identity: missing assets/sza-kit.css"
+    } else {
+        $kitSha = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            $kitText = [System.IO.File]::ReadAllText($kitFile, (New-Object System.Text.UTF8Encoding $false)) -replace "`r`n", "`n"
+            $hash = ([BitConverter]::ToString($kitSha.ComputeHash((New-Object System.Text.UTF8Encoding $false).GetBytes($kitText)))).Replace('-', '')
+            if ($hash -ne $pinnedKitSha) {
+                $problems += "Kit identity: assets/sza-kit.css hash $hash does not match pinned reference $pinnedKitSha"
+            }
+        } finally { $kitSha.Dispose() }
+    }
+
+    # 2. Switcher
+    foreach ($h in @('index.html', 'publish-folders-android.html')) {
+        $hp = Join-Path $Root $h
+        if (Test-Path $hp) {
+            $hc = Get-Content $hp -Raw -Encoding UTF8
+            if ($hc -match '>UK<') { $problems += "Switcher: $h contains '>UK<'" }
+            if ($hc -match "localStorage\.setItem\(['`"]sza-lang['`"],\s*['`"]uk['`"]\)") { $problems += "Switcher: $h persists 'uk'" }
+        }
+    }
+
+    # 3. Family grid URLs vs pinned list
+    $pinnedFamilyUrls = @(
+        'https://serzhyale.github.io/FastMediaSorter_mob_v2/',
+        'https://serzhyale.github.io/CyrFlip/',
+        'https://serzhyale.github.io/doc-html-translate/',
+        'https://serzhyale.github.io/FileDO/',
+        'https://serzhyale.github.io/StreamsPlayer/',
+        'https://serzhyale.github.io/OneClickRunner/',
+        'https://serzhyale.github.io/universal-agent-kit/',
+        'https://sza.od.ua/'
+    )
+    $actualFamilyUrls = @($copy._family.members | ForEach-Object { $_.url })
+    $diffFamily = Compare-Object $pinnedFamilyUrls $actualFamilyUrls
+    if ($diffFamily) {
+        $problems += "Family grid: _family URLs in site-copy.json do not match pinned SITE-FAMILY-MAP URLs"
+    }
+
+    # 4. Contact
+    $allServedFiles = @(Get-ChildItem -LiteralPath $Root -Filter '*.html' -File | ForEach-Object { $_.FullName })
+    if (Test-Path (Join-Path $Root 'lang')) {
+        $allServedFiles += @(Get-ChildItem -LiteralPath (Join-Path $Root 'lang') -Filter '*.html' -Recurse -File | ForEach-Object { $_.FullName })
+    }
+    if (Test-Path (Join-Path $Root 'docs')) {
+        $allServedFiles += @(Get-ChildItem -LiteralPath (Join-Path $Root 'docs') -Filter '*.html' -Recurse -File | ForEach-Object { $_.FullName })
+    }
+    $readmeFiles = @(Get-ChildItem -LiteralPath $Root -Filter 'README*.md' -File | ForEach-Object { $_.FullName })
+
+    foreach ($f in ($allServedFiles + $readmeFiles)) {
+        $fc = Get-Content $f -Raw -Encoding UTF8
+        $mailMatches = [regex]::Matches($fc, 'mailto:([^\s"''<>)]+)')
+        foreach ($m in $mailMatches) {
+            $addr = $m.Groups[1].Value
+            if ($addr -ne 'sza@ukr.net') {
+                $rel = Resolve-Path -Relative $f
+                $problems += "Contact: $rel has mailto:$addr (must be sza@ukr.net)"
+            }
+        }
+    }
+
+    # 5. No emoji
+    foreach ($f in $allServedFiles) {
+        $fc = Get-Content $f -Raw -Encoding UTF8
+        foreach ($ch in $fc.ToCharArray()) {
+            $cp = [int]$ch
+            if (($cp -ge 0x2600 -and $cp -le 0x27BF -and $cp -ne 0x2713) -or ($cp -ge 0x1F300 -and $cp -le 0x1FAFF)) {
+                $rel = Resolve-Path -Relative $f
+                $problems += "No emoji: $rel contains forbidden symbol U+$($cp.ToString('X4'))"
+                break
+            }
+        }
+    }
+
+    # 6. No hardcoded version
+    foreach ($f in $allServedFiles) {
+        $fc = Get-Content $f -Raw -Encoding UTF8
+        if ($fc -match 'releases/download/v' -or $fc -match 'releases/tag/v') {
+            $rel = Resolve-Path -Relative $f
+            $problems += "No hardcoded version: $rel contains hardcoded release URL"
+        }
+    }
+
+    # 7. No leftover palette
+    foreach ($f in $allServedFiles) {
+        $fc = Get-Content $f -Raw -Encoding UTF8
+        if ($fc -match '#7aa2ff') {
+            $rel = Resolve-Path -Relative $f
+            $problems += "No leftover palette: $rel contains legacy #7aa2ff"
+        }
+    }
+
+    # 8. Order: H1 -> whatfor -> scenarios -> #get
+    $orderFiles = @(Join-Path $Root 'index.html') + @($codes | Where-Object { $_ -ne 'en' } | ForEach-Object { Join-Path (Join-Path (Join-Path $Root $LangDir) $_) 'index.html' })
+    foreach ($f in $orderFiles) {
+        if (Test-Path $f) {
+            $fc = Get-Content $f -Raw -Encoding UTF8
+            $body = $fc.IndexOf('<body')
+            if ($body -eq -1) { $body = 0 }
+            $posH1 = $fc.IndexOf('<h1', $body)
+            $posWhat = [Math]::Max($fc.IndexOf('class="lead', $body), $fc.IndexOf('whatfor', $body))
+            if ($posWhat -eq -1) { $posWhat = $fc.IndexOf('sec-head', $body) }
+            $posScenarios = $fc.IndexOf('scenarios', $body)
+            if ($posScenarios -eq -1) { $posScenarios = $fc.IndexOf('scenario-card', $body) }
+            $posGet = $fc.IndexOf('id="get"', $body)
+            if ($posH1 -ge 0 -and $posWhat -ge 0 -and $posScenarios -ge 0 -and $posGet -ge 0) {
+                if (-not ($posH1 -lt $posWhat -and $posWhat -lt $posScenarios -and $posScenarios -lt $posGet)) {
+                    $rel = Resolve-Path -Relative $f
+                    $problems += "Order: $rel element order violation"
+                }
+            }
+        }
+    }
+
+    # 9-10. The shared social assets every page names exist (DOC-EXTERNAL-QUALITY): a
+    # renamed or deleted file would otherwise ship a dead preview or favicon on every page.
+    if (-not (Test-Path (Join-Path $Root ($OgImage -replace '/', '\')))) { $problems += "Social assets: the og:image asset $OgImage does not exist" }
+    if (-not (Test-Path (Join-Path $Root ($Favicon -replace '/', '\')))) { $problems += "Social assets: the favicon $Favicon does not exist" }
+
+    # 11. Every page the HOW TO block links is on disk.
+    foreach ($item in $copy._howto.items) {
+        if (-not (Test-Path (Join-Path $Root ($item[0] -replace '/', '\')))) {
+            $problems += "HOW TO block: links $($item[0]), which is not on disk"
+        }
+    }
+
+    if ($problems.Count -gt 0) {
+        Write-Host "Conformance check problems found:"
+        $problems | ForEach-Object { Write-Host "  - $_" }
+        Exit-Verdict 'Build-SitePages' 1 ($problems -join '; ')
+    }
+
+    Exit-Verdict 'Build-SitePages' 0 "$compared render targets and 11 conformance checks passed"
 }
 
 Write-Host "Wrote $($written.Count) pages:"

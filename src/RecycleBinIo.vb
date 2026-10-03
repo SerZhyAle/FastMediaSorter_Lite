@@ -40,14 +40,31 @@ Friend Module RecycleBinIo
     ''' Deletes exactly the way the decision said it would. The one place where the
     ''' outcome the user was shown turns into an action - a second executor somewhere
     ''' else is how the two would start to disagree (invariant 1).
+    '''
+    ''' Returns True when the decision said "Recycle Bin" and the shell deleted the file for
+    ''' good instead (audit 057.S05-2): the F3 panel's bulk delete used to believe the
+    ''' prediction and report "to the Recycle Bin" for a file nobody can get back. The check
+    ''' is the queue path's own (047 C-09), so the two surfaces cannot disagree about it.
     ''' </summary>
-    Friend Sub DeleteAs(path As String, decision As DeleteDecision)
+    Friend Function DeleteAs(path As String, decision As DeleteDecision) As Boolean
         If decision IsNot Nothing AndAlso decision.Outcome = DeleteOutcome.Recycle Then
-            SendToBin(path)
-        Else
-            DeleteFile(path)
+            Return SendToBinChecked(path, DateTime.UtcNow)
         End If
-    End Sub
+        DeleteFile(path)
+        Return False
+    End Function
+
+    ''' <summary>
+    ''' <see cref="SendToBin"/>, then the question the shell does not answer for us: did the
+    ''' bin really take it? True when the file is gone and the bin holds no record of it -
+    ''' the shell deleted it for good in silence (a subst drive, a volume mounted in a
+    ''' folder, a virtual disk; audit 047, C-09). <paramref name="sentAtUtc"/> is stamped by
+    ''' the caller just before the call: the record is matched against it within a tolerance.
+    ''' </summary>
+    Friend Function SendToBinChecked(path As String, sentAtUtc As DateTime) As Boolean
+        SendToBin(path)
+        Return Not File.Exists(path) AndAlso Not IsInBin(path, sentAtUtc)
+    End Function
 
     ''' <summary>
     ''' Hands the file to the shell, which writes the $I/$R pair the Recycle Bin is made
@@ -146,7 +163,13 @@ Friend Module RecycleBinIo
         End Try
         If String.IsNullOrEmpty(root) Then Return Nothing
 
-        Dim sid As SecurityIdentifier = WindowsIdentity.GetCurrent().User
+        ' GetCurrent() duplicates the process token into an IDisposable identity; this runs
+        ' for every recycle-delete and every restore, so it is released, not left to the
+        ' finalizer. The SecurityIdentifier it hands out does not depend on the identity.
+        Dim sid As SecurityIdentifier = Nothing
+        Using identity As WindowsIdentity = WindowsIdentity.GetCurrent()
+            sid = identity.User
+        End Using
         If sid Is Nothing Then Return Nothing
 
         Dim bin_Dir As String = Path.Combine(root, "$Recycle.Bin", sid.Value)
@@ -191,10 +214,32 @@ Friend Module RecycleBinIo
         worker.IsBackground = True
         worker.SetApartmentState(ApartmentState.STA)
         worker.Start()
-        worker.Join()
+        ' Bounded (audit 057.S05-1). OnlyErrorDialogs lets the shell raise its own error box
+        ' ("file in use", retry/cancel) from this ownerless thread, where it can sit behind
+        ' the viewer unseen - and an unbounded Join then held the queue's single consumer,
+        ' so every later move, copy and delete waited behind one invisible dialog. Past the
+        ' limit the operation is reported failed and the queue moves on; the thread is a
+        ' background one and is left to finish, or to end with the process. Should the user
+        ' answer that dialog later and the shell then delete the file, the row the failure
+        ' rolled back names a file that is gone, and the display path drops it the way it
+        ' drops any file deleted behind its back.
+        If Not worker.Join(Sta_Call_Limit) Then
+            Throw New IOException("The shell did not finish the Recycle Bin call within " &
+                                  CInt(Sta_Call_Limit.TotalSeconds).ToString() &
+                                  " s; it may be showing an error dialog.", HResultTimeout)
+        End If
 
         If failure IsNot Nothing Then ExceptionDispatchInfo.Capture(failure).Throw()
     End Sub
+
+    ''' <summary>Longer than an SMB session takes to give up on a server, so a slow but
+    ''' genuine delete on a share is not cut short; short enough that a stuck dialog does not
+    ''' hold the queue for good.</summary>
+    Private ReadOnly Sta_Call_Limit As TimeSpan = TimeSpan.FromSeconds(90)
+
+    ''' <summary>ERROR_TIMEOUT, so the failure classifiers read it as "did not answer" -
+    ''' which is what happened - and the status line names the folder.</summary>
+    Private Const HResultTimeout As Integer = &H800705B4
 
 End Module
 #End If

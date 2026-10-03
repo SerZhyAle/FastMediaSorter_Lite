@@ -54,6 +54,7 @@ Public NotInheritable Class PackageWizardForm
     Private toolTip As ToolTip
     Private _qrGlyph As Image
     Private _qrImage As Image   ' the current QR bitmap - opened enlarged on demand (no inline preview)
+    Private _fontBold As Font   ' one bold face shared by the two section headers and the QR button - owned here, disposed in HandleFormClosed
     ' Access preflight. A code is a promise that the folders behind it open, and until
     ' the 2026-09-01 incident nothing here checked: the share root was readable, so the
     ' wizard happily produced a code for a tree whose subfolders the serving account
@@ -61,10 +62,17 @@ Public NotInheritable Class PackageWizardForm
     ' UI thread and its result is cached per SELECTION, so toggling the export options
     ' does not re-walk the disk; _accessGen drops the answer of a scan whose selection
     ' has already moved on (the generation guard used elsewhere in the app).
-    Private _accessGen As Integer
-    Private _accessKey As String = Nothing
+    '
+    ' WHO may be handed the code is PreflightTracker's decision (108 H02): a verdict belongs to
+    ' the selection the scan looked at, a payload to a revision, and pending / timed-out /
+    ' failed / cancelled are never permission. This form only carries it out.
+    Private ReadOnly _preflight As New PreflightTracker()
     Private _accessScan As FolderAccess.SubtreeScan
-    Private _accessChecking As Boolean
+    Private _exportServiceAccount As Boolean
+    Private _scanTicket As Integer
+    Private btnRetryCheck As Button
+    ''' <summary>The first scan keeps the 2 s budget; an explicit "check again" gets room for a big tree.</summary>
+    Private _retryBudget As Boolean
     ' Accent colours for the "Show QR" button - match the app's blue share glyph (ShareIcons).
     Private Shared ReadOnly QrAccent As Color = Color.FromArgb(30, 120, 220)
     Private Shared ReadOnly QrAccentDark As Color = Color.FromArgb(18, 78, 150)
@@ -106,6 +114,7 @@ Public NotInheritable Class PackageWizardForm
         ' Script font + text direction for the active language, before any control
         ' exists - children inherit both (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
         UiLanguage.ApplyTo(Me)
+        _fontBold = New Font(Me.Font, FontStyle.Bold)
         Me.Text = Localization.T("Поделиться - код доступа")
         Me.FormBorderStyle = FormBorderStyle.Sizable
         Me.MaximizeBox = True
@@ -124,7 +133,7 @@ Public NotInheritable Class PackageWizardForm
         ' Header (top).
         Dim topBar As New FlowLayoutPanel With {.Dock = DockStyle.Top, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .FlowDirection = FlowDirection.TopDown, .WrapContents = False, .Padding = New Padding(16, 12, 16, 6)}
-        topBar.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0), .Font = New Font(Me.Font, FontStyle.Bold),
+        topBar.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0), .Font = _fontBold,
             .Text = Localization.T("Папки и параметры этого кода доступа")})
         topBar.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 0), .ForeColor = Color.DimGray,
             .Text = Localization.T("Нажмите на любую ячейку, чтобы изменить значение. Значения взяты из настроек папки; правки - только для этого кода.")})
@@ -134,7 +143,7 @@ Public NotInheritable Class PackageWizardForm
 
         ' Below the grid: common per-export settings (full width), then ONE action-button row.
         Dim leftCol As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.TopDown, .WrapContents = False, .Margin = New Padding(0)}
-        leftCol.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 4), .Font = New Font(Me.Font, FontStyle.Bold), .Text = Localization.T("Общие настройки передачи:")})
+        leftCol.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 4), .Font = _fontBold, .Text = Localization.T("Общие настройки передачи:")})
         ' Per-CODE only (ticket 054 H-06): this shapes what THIS export carries and nothing
         ' else. It used to be worded - and wired - as the server-wide "LAN only", while
         ' silently acting as one at the next resume; the enforcing switch is its own,
@@ -167,7 +176,7 @@ Public NotInheritable Class PackageWizardForm
         _qrGlyph = BuildQrGlyph(LogicalToDeviceUnits(16))
         Dim btnRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Anchor = AnchorStyles.Left Or AnchorStyles.Right, .FlowDirection = FlowDirection.LeftToRight, .WrapContents = True, .Margin = New Padding(0, 4, 0, 0)}
         btnShowQr = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Font = New Font(Me.Font, FontStyle.Bold), .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 12, 5),
+            .Font = _fontBold, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 12, 5),
             .Text = Localization.T("Показать QR-код"), .MinimumSize = New Size(128, 0),
             .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
             .TextAlign = ContentAlignment.MiddleCenter, .FlatStyle = FlatStyle.Flat}
@@ -177,10 +186,12 @@ Public NotInheritable Class PackageWizardForm
         btnSave = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Сохранить файл .fmscfg.."), .Enabled = False}
         btnEmail = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Отправить по почте.."), .Enabled = False}
         btnClose = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 0, 2), .Padding = New Padding(16, 5, 16, 5), .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.Cancel}
+        btnRetryCheck = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Проверить доступ снова"), .Visible = False}
+        AddHandler btnRetryCheck.Click, AddressOf OnRetryCheck
         AddHandler btnCopyLogin.Click, AddressOf OnCopyLogin
         AddHandler btnSave.Click, AddressOf OnSaveConfig
         AddHandler btnEmail.Click, AddressOf OnEmail
-        btnRow.Controls.AddRange(New Control() {btnShowQr, btnCopyLogin, btnSave, btnEmail, btnClose})
+        btnRow.Controls.AddRange(New Control() {btnShowQr, btnRetryCheck, btnCopyLogin, btnSave, btnEmail, btnClose})
         SetQrAvailable(False)
 
         ' Bottom band: common per-export settings on the LEFT, the action-button row filling the
@@ -517,6 +528,12 @@ Public NotInheritable Class PackageWizardForm
     End Sub
 
     Private Sub ScheduleRebuild()
+        _preflight.InvalidatePayload()
+        _preflight.Cancel()
+        Threading.Volatile.Write(_scanTicket, 0)
+        AccessProbes.CancelOwner(Me)
+        ShowQr(Nothing)
+        RefreshOfferState()
         _rebuildTimer.Stop()
         _rebuildTimer.Start()
     End Sub
@@ -561,10 +578,16 @@ Public NotInheritable Class PackageWizardForm
             If Not perRoot.ContainsKey(st.HostPath) Then perRoot.Add(st.HostPath, p)
         Next
 
+        ' Every edit is a new revision: the previous payload is void from this line on, whatever
+        ' the check says about the folders (108 H02).
+        _preflight.Edit(AccessKeyOf(selected) & System.Text.Json.JsonSerializer.Serialize(perRoot) &
+                        "|lan=" & chkLanOnly.Checked.ToString() & "|password=" & chkNoPassword.Checked.ToString())
+        _exportServiceAccount = ServerFeatures.HostMode() = ServerFeatures.ServerHostMode.SystemService
+
         If selected.Count = 0 Then
             _config = Nothing
             ShowQr(Nothing)
-            EnableExport(False)
+            RefreshOfferState()
             SetHint(Localization.T("Отметьте хотя бы одну папку."))
             Return
         End If
@@ -580,84 +603,111 @@ Public NotInheritable Class PackageWizardForm
 
         If _config Is Nothing Then
             ShowQr(Nothing)
-            EnableExport(False)
+            RefreshOfferState()
             SetHint(Localization.T("Нет доступного адреса для раздачи."))
             Return
         End If
 
+        _preflight.PayloadBuilt()
         ShowQr(_config)
-        EnableExport(True)
+        ' The check is started (or joined, or its verdict reused) and every surface is gated by the
+        ' ONE decision: nothing is offered while it is pending (spec 057.S22-4).
+        BeginAccessCheck(selected)
+        RefreshOfferState()
         btnCopyLogin.Enabled = Not String.IsNullOrEmpty(_status.Password)
 
-        If _config.QrOverflow Then
+        If PreflightHint().Length > 0 Then
+            SetHint(PreflightHint())
+        ElseIf _config.QrOverflow Then
             SetHint(Localization.T("Код слишком большой для QR - сохраните файл .fmscfg и передайте его."))
         ElseIf chkNoPassword.Checked AndAlso Not String.IsNullOrEmpty(_status.Password) Then
             SetHint(Localization.TF("Пароль (передайте отдельно): {0}", _status.Password))
         Else
             SetHint("")
         End If
-
-        BeginAccessCheck(selected)
     End Sub
 
     ' --- access preflight -------------------------------------------------------
 
     ''' <summary>
-    ''' Checks that the folders this code promises can actually be served, and holds the
-    ''' code back until the answer is in. Handing out a QR for a tree the serving account
-    ''' cannot read is the failure this exists to remove - the recipient scans it, gets an
-    ''' empty folder, and nothing on this PC ever says why.
-    '''
-    ''' Cached per selection and run off the UI thread: the walk is bounded but still far
-    ''' too slow to sit in a 250 ms debounce, and re-walking the same folders every time a
-    ''' checkbox moves would make the wizard feel broken.
+    ''' Starts - or joins, or reuses the verdict of - the access check for the current selection.
+    ''' Handing out a code for a tree the serving account cannot read is the failure this exists to
+    ''' remove: the recipient scans it, gets an empty folder, and nothing on this PC ever says why.
+    ''' Run off the UI thread: the walk is bounded but far too slow for a 250 ms debounce, and a scan
+    ''' for a selection that has since changed can never answer for the new one (PreflightTracker).
     ''' </summary>
     Private Sub BeginAccessCheck(selected As List(Of ShareFolder))
-        Dim key As String = AccessKeyOf(selected)
-        If String.Equals(key, _accessKey, StringComparison.Ordinal) Then
-            ApplyAccessResult(_accessScan)   ' same folders as last time - reuse the verdict
-            Return
-        End If
-
-        _accessKey = key
-        _accessScan = Nothing
-        _accessChecking = True
-        _accessGen += 1
-        Dim gen As Integer = _accessGen
-
-        ' Held back, not shown-then-withdrawn: a code that appears and then turns out to
-        ' be worthless may already have been scanned.
-        SetQrAvailable(False)
-        SetHint(HostingText.CheckingAccessHint())
-
-        Dim roots As New List(Of ShareFolder)(selected)
-        Task.Run(Function() FolderAccess.ScanRoots(roots, Access_Check_Budget)).
-            ContinueWith(Sub(t As Task(Of FolderAccess.SubtreeScan))
-                             Dim scan As FolderAccess.SubtreeScan = Nothing
-                             Try : scan = t.Result : Catch : End Try
-                             If Me.IsDisposed OrElse Not Me.IsHandleCreated Then Return
-                             Try
-                                 Me.BeginInvoke(Sub()
-                                                    If gen <> _accessGen Then Return   ' the selection moved on
-                                                    _accessChecking = False
-                                                    _accessScan = scan
-                                                    ApplyAccessResult(scan)
-                                                End Sub)
-                             Catch
-                             End Try
-                         End Sub)
+        _lastSelected = New List(Of ShareFolder)(selected)
+        Dim id As Integer = _preflight.Begin()
+        If id = 0 Then Return ' a verdict for this exact selection is in hand, or its scan is in flight
+        StartScan(id, _lastSelected, If(_retryBudget, Retry_Check_Budget, Access_Check_Budget))
     End Sub
 
-    ''' <summary>The wizard gets a tighter budget than the default: it runs while someone
-    ''' is clicking checkboxes, so a slow answer is worse than a partial one - and a
-    ''' partial one is reported as partial rather than as "all clear".</summary>
-    Private Shared ReadOnly Access_Check_Budget As TimeSpan = TimeSpan.FromSeconds(2)
+    Private _lastSelected As New List(Of ShareFolder)()
 
-    ''' <summary>Identity of a selection, so an unrelated edit does not re-walk the disk.
-    ''' Read/write matters as much as the path: a folder shared writable needs more from
-    ''' the serving account than a read-only one.</summary>
+    Private Shared ReadOnly AccessProbes As New ProbeScheduler(Of FolderAccess.SubtreeScan)(
+        New ProbePolicy With {.MaxActive = 2, .MaxPending = 8, .ReplacePendingOfSameOwner = True})
+    Private Shared ReadOnly AccessRunner As New PreflightScanRunner(Of FolderAccess.SubtreeScan)(AccessProbes)
+
+    Private Async Sub StartScan(id As Integer, selected As List(Of ShareFolder), budget As TimeSpan)
+        Threading.Volatile.Write(_scanTicket, id)
+        _accessScan = Nothing
+        ' Held back, not shown-then-withdrawn: a code that appears and then turns out to be
+        ' worthless may already have been scanned.
+        SetHint(HostingText.CheckingAccessHint())
+        Dim roots As List(Of ShareFolder) = selected.Select(Function(root) New ShareFolder With {
+            .hostPath = root.hostPath, .readOnly = root.readOnly}).ToList()
+        Dim serviceAccount As Boolean = _exportServiceAccount
+        Try
+            Dim result As ProbeResult(Of FolderAccess.SubtreeScan) = Await AccessRunner.Run(Me, id.ToString(),
+                Function() FolderAccess.ScanRoots(roots, budget, forServiceAccount:=serviceAccount),
+                budget, Function() Threading.Volatile.Read(_scanTicket) = id AndAlso Not IsDisposed AndAlso Not Disposing,
+                Sub(ex) AppFileLogger.LogException("Package wizard: late access preflight", ex))
+            If result.Failure IsNot Nothing Then AppFileLogger.LogException("Package wizard: access preflight", result.Failure)
+            OnScanFinished(id, result.Value, result.Status = ProbeStatus.Faulted)
+        Catch ex As Exception
+            AppFileLogger.LogException("Package wizard: access preflight", ex)
+            OnScanFinished(id, Nothing, True)
+        End Try
+    End Sub
+
+    Private Sub OnScanFinished(id As Integer, scan As FolderAccess.SubtreeScan, faulted As Boolean)
+        If Me.IsDisposed Then Return
+        Dim outcome As PreflightOutcome = PreflightLogic.Judge(
+            faulted, scan IsNot Nothing AndAlso scan.Completed,
+            If(scan Is Nothing, 0, scan.Blocked.Count), scan IsNot Nothing AndAlso AllRootsBlocked(scan))
+        If Not _preflight.Complete(id, outcome) Then Return ' stale: the selection moved on or the wizard closed
+        _accessScan = scan
+        RefreshOfferState()
+    End Sub
+
+    ''' <summary>The wizard gets a tighter budget than the default: it runs while someone is clicking
+    ''' checkboxes. Running out of it is a TIMEOUT - not a pass; the user can ask again with room.</summary>
+    Private Shared ReadOnly Access_Check_Budget As TimeSpan = TimeSpan.FromSeconds(2)
+    Private Shared ReadOnly Retry_Check_Budget As TimeSpan = TimeSpan.FromSeconds(20)
+
+    ''' <summary>The ONE question every surface asks: may the code, the file or the e-mail go out for
+    ''' the current revision? Never "is the button enabled".</summary>
+    Private Function CanOfferNow() As Boolean
+        Return Not IsDisposed AndAlso Not Disposing AndAlso _config IsNot Nothing AndAlso _preflight.CanOffer() AndAlso
+               _exportServiceAccount = (ServerFeatures.HostMode() = ServerFeatures.ServerHostMode.SystemService)
+    End Function
+
+    ''' <summary>Pure function: may the QR code be offered right now?</summary>
+    Private Function MayOfferQr() As Boolean
+        Return CanOfferNow() AndAlso _qrImage IsNot Nothing
+    End Function
+
+    ''' <summary>Identity of what the scan looks at: the roots, their read/write flags (a folder shared
+    ''' writable needs more from the serving account than a read-only one) and the host mode - the
+    ''' account that will actually serve them.</summary>
     Private Shared Function AccessKeyOf(selected As List(Of ShareFolder)) As String
         Dim sb As New StringBuilder()
+        Try
+            sb.Append("mode=").Append(ServerFeatures.HostMode().ToString()).Append(vbLf)
+        Catch
+            sb.Append("mode=?").Append(vbLf)
+        End Try
         For Each r As ShareFolder In selected
             If r Is Nothing Then Continue For
             sb.Append(If(r.hostPath, "")).Append(If(r.readOnly, "|ro", "|rw")).Append(vbLf)
@@ -665,33 +715,42 @@ Public NotInheritable Class PackageWizardForm
         Return sb.ToString()
     End Function
 
-    Private Sub ApplyAccessResult(scan As FolderAccess.SubtreeScan)
-        If _accessChecking Then Return
-        Dim usable As Boolean = _config IsNot Nothing AndAlso _qrImage IsNot Nothing
-
-        If scan Is Nothing OrElse scan.Blocked.Count = 0 Then
-            SetQrAvailable(usable)
-            If scan IsNot Nothing AndAlso Not scan.Completed Then SetHint(HostingText.SubtreeScanTruncated(scan.Scanned))
-            Return
-        End If
-
-        ' Every shared folder itself unreadable: the code would open an empty tree, so it
-        ' is not offered at all. The .fmscfg export stays available - a user who knows
-        ' they are about to fix the rights should not have to redo the whole wizard.
-        If AllRootsBlocked(scan) Then
-            SetQrAvailable(False)
-            SetHint(HostingText.SubtreeNothingReadable())
-            Return
-        End If
-
-        ' Part of the tree is served: the code is real, so it is shown - with what it
-        ' will NOT deliver stated plainly next to it.
-        SetQrAvailable(usable)
-        Dim msg As String = HostingText.SubtreeBlockedWarning(scan.Blocked.Count)
-        If Not scan.Completed Then msg &= " " & HostingText.SubtreeScanTruncated(scan.Scanned)
-        SetHint(msg)
+    ''' <summary>Applies the verdict to every surface at once: QR, save, e-mail, the retry button and
+    ''' the explaining line. Nothing else may enable a handout.</summary>
+    Private Sub RefreshOfferState()
+        Dim can As Boolean = MayOfferQr()
+        SetQrAvailable(can)
+        EnableExport(CanOfferNow()) ' A QR overflow still permits a verified file export.
+        If btnRetryCheck IsNot Nothing Then btnRetryCheck.Visible = _config IsNot Nothing AndAlso _preflight.CanRetry
+        Dim hint As String = PreflightHint()
+        If hint.Length > 0 Then SetHint(hint)
     End Sub
 
+    ''' <summary>What the current state asks the user to know ("" = nothing to add).</summary>
+    Private Function PreflightHint() As String
+        Select Case _preflight.State
+            Case PreflightState.Checking
+                Return HostingText.CheckingAccessHint()
+            Case PreflightState.Blocked
+                Return HostingText.SubtreeNothingReadable()
+            Case PreflightState.TimedOut, PreflightState.Failed, PreflightState.Cancelled
+                Return Localization.T("Проверка доступа не завершена - код и файл не выдаются. Нажмите «Проверить доступ снова».")
+            Case PreflightState.Allowed
+                If _accessScan IsNot Nothing AndAlso _accessScan.Blocked.Count > 0 Then
+                    ' Part of the tree is served: the code is real, shown with what it will NOT deliver.
+                    Return HostingText.SubtreeBlockedWarning(_accessScan.Blocked.Count)
+                End If
+        End Select
+        Return ""
+    End Function
+
+    Private Sub OnRetryCheck(sender As Object, e As EventArgs)
+        If _config Is Nothing Then Return
+        _retryBudget = True
+        Dim id As Integer = _preflight.Retry()
+        If id <> 0 Then StartScan(id, _lastSelected, Retry_Check_Budget)
+        RefreshOfferState()
+    End Sub
     ''' <summary>True when every selected folder is blocked at its own root - the case
     ''' where the code promises nothing at all.</summary>
     Private Function AllRootsBlocked(scan As FolderAccess.SubtreeScan) As Boolean
@@ -729,14 +788,18 @@ Public NotInheritable Class PackageWizardForm
     Private Sub OnCopyLogin(sender As Object, e As EventArgs)
         If _status Is Nothing OrElse String.IsNullOrEmpty(_status.Password) Then Return
         Dim user As String = If(String.IsNullOrEmpty(_status.Username), "fms", _status.Username)
-        Dim text As String = Localization.TF("Логин: {0}", user) & Environment.NewLine & Localization.TF("Пароль: {0}", _status.Password)
-        If SecureClipboard.SetSecret(text) Then
+        If SecureClipboard.SetSecret(Localization.TF("Логин: {0}", user) & Environment.NewLine & Localization.TF("Пароль: {0}", _status.Password)) Then
             SetHint(Localization.T("Логин и пароль скопированы."))
+        Else
+            SetHint(Localization.T("Не удалось скопировать в буфер обмена"))
         End If
     End Sub
 
     Private Sub OnShowQr(sender As Object, e As EventArgs)
         FlushPendingRebuild()
+        ' The flush may have started a NEW revision and a new check: ask the one decision again,
+        ' for the current revision, rather than trusting what the button looked like a moment ago.
+        If Not MayOfferQr() Then Return
         Qr_Zoom_Form.ShowImage(Me, _qrImage, QrFileBaseName())
     End Sub
 
@@ -757,13 +820,28 @@ Public NotInheritable Class PackageWizardForm
 
     Private Sub OnSaveConfig(sender As Object, e As EventArgs)
         FlushPendingRebuild()
-        If _config Is Nothing OrElse String.IsNullOrEmpty(_config.ConfigJson) Then Return
+        If Not CanOfferNow() OrElse String.IsNullOrEmpty(_config.ConfigJson) Then Return
+        Dim revision As Integer = _preflight.Revision
+        Dim json As String = _config.ConfigJson
         Using dlg As New SaveFileDialog() With {.Filter = "FMS config (*.fmscfg)|*.fmscfg", .FileName = "FastMediaSorter.fmscfg"}
             If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
+            If Not CanOfferNow() OrElse revision <> _preflight.Revision Then Return
             Try
-                ShareConfigBuilder.WriteConfigFile(dlg.FileName, _config.ConfigJson)
+                ShareConfigBuilder.WriteConfigFile(dlg.FileName, json)
                 SetHint(Localization.T("Файл сохранён."))
-            Catch
+            Catch ex As ConfigWriteRefusedException
+                ' Refused for a reason the user can act on - and never reported as saved.
+                AppFileLogger.WriteLine("Package wizard: the .fmscfg was not written (" & ex.Outcome.ToString() & ")")
+                Select Case ex.Outcome
+                    Case ConfigWriteOutcome.RefusedNoAcls
+                        SetHint(Localization.T("Эта файловая система не умеет ограничивать доступ к файлу, а в нём ключ доступа. Выберите диск с NTFS."))
+                    Case ConfigWriteOutcome.RefusedUnsafeTarget
+                        SetHint(Localization.T("В эту папку могут писать и удалять из неё другие пользователи, а в файле ключ доступа. Выберите папку, доступную только вам."))
+                    Case Else
+                        SetHint(Localization.T("Не удалось сохранить файл."))
+                End Select
+            Catch ex As Exception
+                AppFileLogger.LogException("Package wizard: saving the .fmscfg failed", ex)
                 SetHint(Localization.T("Не удалось сохранить файл."))
             End Try
         End Using
@@ -778,26 +856,31 @@ Public NotInheritable Class PackageWizardForm
     ''' </summary>
     Private Sub OnEmail(sender As Object, e As EventArgs)
         FlushPendingRebuild()
-        If _config Is Nothing OrElse String.IsNullOrEmpty(_config.ConfigJson) Then Return
-        Dim root As String = Path.Combine(Path.GetTempPath(), "FastMediaSorter")
+        If Not CanOfferNow() OrElse String.IsNullOrEmpty(_config.ConfigJson) Then Return
+        Dim root As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FastMediaSorterCompanion", "mail")
         Dim dir As String = Path.Combine(root, "mail-" & Guid.NewGuid().ToString("N"))
+        Dim ownedDirectory As Boolean = False
         Try
-            ShareConfigBuilder.DeleteStaleConfigCopies(root)   ' what builds before 034 left behind
-            Directory.CreateDirectory(dir)
+            If Not ProtectedConfigWriter.CreatePrivateDirectory(root) Then Throw New ConfigWriteRefusedException(ConfigWriteOutcome.RefusedUnsafeTarget)
+            ShareConfigBuilder.DeleteStaleConfigCopies(root)
+            ' A folder only this user can touch: a shared TEMP is not a safe place for a key.
+            If Not ProtectedConfigWriter.CreatePrivateDirectory(dir) Then Throw New ConfigWriteRefusedException(ConfigWriteOutcome.Failed)
+            ownedDirectory = True
             Dim cfgFile As String = Path.Combine(dir, "FastMediaSorter.fmscfg")
             ShareConfigBuilder.WriteConfigFile(cfgFile, _config.ConfigJson)
-            Dim subject As String = Localization.T("Доступ к папкам Fast Media Sorter")
-            Dim body As String = Localization.T("Импортируйте вложенный файл .fmscfg в приложении FastMediaSorter на Android.") &
+            Dim subject As String = Localization.TF("Доступ к папкам {0}", ProductNames.Compact)
+            Dim body As String = Localization.T("Импортируйте вложенный файл .fmscfg в приложении для Android.") &
                 Environment.NewLine & Environment.NewLine &
                 Localization.T("Этот файл открывает доступ к папкам: не пересылайте его и удалите после импорта.")
             If Not MailSender.SendFile(cfgFile, subject, body) Then
                 SetHint(Localization.T("Не удалось открыть почтовый клиент."))
             End If
-        Catch
+        Catch ex As Exception
+            AppFileLogger.LogException("Package wizard: preparing the e-mail failed", ex)
             SetHint(Localization.T("Не удалось отправить письмо."))
         Finally
             Try
-                If Directory.Exists(dir) Then Directory.Delete(dir, recursive:=True)
+                If ownedDirectory AndAlso Directory.Exists(dir) Then Directory.Delete(dir, recursive:=True)
             Catch
             End Try
         End Try
@@ -819,7 +902,7 @@ Public NotInheritable Class PackageWizardForm
         End Try
         _qrImage = newImg
         If old IsNot Nothing Then old.Dispose()
-        SetQrAvailable(newImg IsNot Nothing)
+        SetQrAvailable(MayOfferQr())
     End Sub
 
     ''' <summary>Switches the QR preview + button between the bright, clickable "ready" look and a
@@ -876,6 +959,10 @@ Public NotInheritable Class PackageWizardForm
     End Sub
 
     Private Sub HandleFormClosed(sender As Object, e As FormClosedEventArgs)
+        ' A scan still running must never answer into a closed wizard.
+        _preflight.Cancel()
+        Threading.Volatile.Write(_scanTicket, 0)
+        AccessProbes.CancelOwner(Me)
         Dim old As Image = _qrImage
         _qrImage = Nothing
         If old IsNot Nothing Then old.Dispose()
@@ -883,6 +970,10 @@ Public NotInheritable Class PackageWizardForm
         Try : toolTip.Dispose() : Catch : End Try
         Try
             If _qrGlyph IsNot Nothing Then _qrGlyph.Dispose()
+        Catch
+        End Try
+        Try
+            If _fontBold IsNot Nothing Then _fontBold.Dispose()
         Catch
         End Try
         ShareIcons.FreeIcon(Me.Icon, _iconHandle)

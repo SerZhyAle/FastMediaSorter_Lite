@@ -37,7 +37,7 @@ Partial Public Class Main_Form
         ClearEpubPlaceholderData()
         content_Placeholder_Path = filePath
         SetMediaDisplayKind(KindOf(filePath))
-        zoom_Scale = 1
+        ResetZoomViewport()
         SetViewSizes()
 
         Dim ext As String = MediaKindClassifier.ExtensionOf(filePath)

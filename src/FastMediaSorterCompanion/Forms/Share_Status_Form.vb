@@ -117,30 +117,33 @@ Public NotInheritable Class Share_Status_Form
                            MessageBoxDefaultButton.Button2) <> DialogResult.OK Then Return
         _busy = True
         btnReset.Enabled = False
-        Dim failure As String = ""
         Try
-            ' Only an answer with ok reset anything (WORKER-IPC section 3 rule 2). An older
-            ' worker answers ok=false WITH a status, and those are the counters it still
-            ' has - so a refused reset leaves the numbers on screen exactly as they were.
-            Dim resp As WorkerResponse = Await ShareController.ResetStatsAsync()
-            failure = ShareController.ResetFailureText(resp)
-            If failure = "" AndAlso resp.Status IsNot Nothing Then _status = resp.Status
-        Catch
-            failure = ShareController.ResetFailureText(Nothing)
-        End Try
-        If Not IsDisposed Then
-            btnReset.Enabled = True
-            If failure <> "" Then
-                btnReset.Text = Localization.T("Сброс не удался")
-                If _tip Is Nothing Then _tip = New ToolTip()
-                _tip.SetToolTip(btnReset, failure)
-            Else
-                btnReset.Text = Localization.T("Сбросить счётчики")
-                If _tip IsNot Nothing Then _tip.SetToolTip(btnReset, "")
+            Dim failure As String = ""
+            Try
+                ' Only an answer with ok reset anything (WORKER-IPC section 3 rule 2). An older
+                ' worker answers ok=false WITH a status, and those are the counters it still
+                ' has - so a refused reset leaves the numbers on screen exactly as they were.
+                Dim resp As WorkerResponse = Await ShareController.ResetStatsAsync()
+                failure = ShareController.ResetFailureText(resp)
+                If failure = "" AndAlso resp.Status IsNot Nothing Then _status = resp.Status
+            Catch
+                failure = ShareController.ResetFailureText(Nothing)
+            End Try
+            If Not IsDisposed Then
+                btnReset.Enabled = True
+                If failure <> "" Then
+                    btnReset.Text = Localization.T("Сброс не удался")
+                    If _tip Is Nothing Then _tip = New ToolTip()
+                    _tip.SetToolTip(btnReset, failure)
+                Else
+                    btnReset.Text = Localization.T("Сбросить счётчики")
+                    If _tip IsNot Nothing Then _tip.SetToolTip(btnReset, "")
+                End If
+                Populate()
             End If
-            Populate()
-        End If
-        _busy = False
+        Finally
+            _busy = False
+        End Try
     End Sub
 
     Private Async Function RefreshAsync() As Task
@@ -148,15 +151,18 @@ Public NotInheritable Class Share_Status_Form
         _busy = True
         btnRefresh.Enabled = False
         Try
-            Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
-            If st IsNot Nothing Then _status = st
-        Catch
+            Try
+                Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+                If st IsNot Nothing Then _status = st
+            Catch
+            End Try
+            If Not IsDisposed Then
+                btnRefresh.Enabled = True
+                Populate()
+            End If
+        Finally
+            _busy = False
         End Try
-        If Not IsDisposed Then
-            btnRefresh.Enabled = True
-            Populate()
-        End If
-        _busy = False
     End Function
 
     Private Sub Populate()

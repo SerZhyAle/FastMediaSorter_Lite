@@ -2,16 +2,25 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>https://serzhyale.github.io/FastMediaSorter_Lite/glossary.html</loc>
+  </url>
+  <url>
     <loc>https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html</loc>
   </url>
   <url>
     <loc>https://serzhyale.github.io/FastMediaSorter_Lite/how-to-editor.html</loc>
   </url>
   <url>
+    <loc>https://serzhyale.github.io/FastMediaSorter_Lite/how-to-filedo-disks.html</loc>
+  </url>
+  <url>
     <loc>https://serzhyale.github.io/FastMediaSorter_Lite/how-to-keys.html</loc>
   </url>
   <url>
     <loc>https://serzhyale.github.io/FastMediaSorter_Lite/how-to-ocr.html</loc>
+  </url>
+  <url>
+    <loc>https://serzhyale.github.io/FastMediaSorter_Lite/how-to-resources.html</loc>
   </url>
   <url>
     <loc>https://serzhyale.github.io/FastMediaSorter_Lite/how-to-setup.html</loc>
@@ -44,6 +53,9 @@
   </url>
   <url>
     <loc>https://serzhyale.github.io/FastMediaSorter_Lite/server.html</loc>
+  </url>
+  <url>
+    <loc>https://serzhyale.github.io/FastMediaSorter_Lite/topics.html</loc>
   </url>
   <url>
     <loc>https://serzhyale.github.io/FastMediaSorter_Lite/trust.html</loc>

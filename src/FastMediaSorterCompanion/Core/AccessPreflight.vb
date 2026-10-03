@@ -1,5 +1,42 @@
 Option Strict On
 
+Imports System.Threading
+Imports System.Threading.Tasks
+
+''' <summary>The UI deadline never releases a synchronous call's scheduler permit.
+''' Queued expired work is withdrawn by key, without cancelling a newer revision.</summary>
+Friend NotInheritable Class PreflightScanRunner(Of T)
+    Private ReadOnly scheduler As ProbeScheduler(Of T)
+    Private ReadOnly delay As Func(Of TimeSpan, Task)
+
+    Friend Sub New(scheduler As ProbeScheduler(Of T), Optional delay As Func(Of TimeSpan, Task) = Nothing)
+        Me.scheduler = scheduler
+        Me.delay = delay
+        If Me.delay Is Nothing Then Me.delay = Function(budget As TimeSpan) Task.Delay(budget)
+    End Sub
+
+    Friend Async Function Run(owner As Object, key As String, work As Func(Of T), budget As TimeSpan,
+                              isWanted As Func(Of Boolean), lateFailure As Action(Of Exception)) As Task(Of ProbeResult(Of T))
+        Dim wanted As Integer = 1
+        Dim answer As Task(Of ProbeResult(Of T)) = scheduler.Submit(owner, key, work,
+            Function() Volatile.Read(wanted) = 1 AndAlso isWanted())
+        Dim deadline As Task = delay(budget)
+        Dim winner As Task = Await Task.WhenAny(answer, deadline)
+        If winner Is answer Then Return Await answer
+        Interlocked.Exchange(wanted, 0)
+        scheduler.CancelOwner(owner, key)
+        Dim observation As Task = answer.ContinueWith(
+            Sub(t)
+                Try
+                    If t.Result.Failure IsNot Nothing Then lateFailure(t.Result.Failure)
+                Catch
+                    ' Diagnostics cannot create an unobserved continuation fault.
+                End Try
+            End Sub, TaskScheduler.Default)
+        Return ProbeResult(Of T).Without(ProbeStatus.TimedOut)
+    End Function
+End Class
+
 ''' <summary>Where the access check of the CURRENT export payload stands.</summary>
 Friend Enum PreflightState
     ''' <summary>No verdict for the current selection.</summary>
@@ -87,6 +124,12 @@ Friend NotInheritable Class PreflightTracker
         End If
     End Sub
 
+    ''' <summary>Invalidate at the edit event, before a debounced rebuild can run.</summary>
+    Friend Sub InvalidatePayload()
+        revisionValue += 1
+        builtRevision = 0
+    End Sub
+
     ''' <summary>The payload for the CURRENT revision has been built.</summary>
     Friend Sub PayloadBuilt()
         builtRevision = revisionValue
@@ -131,7 +174,9 @@ Friend NotInheritable Class PreflightTracker
     ''' <summary>The wizard is going away (or the scan is abandoned): nothing may land afterwards.</summary>
     Friend Sub Cancel()
         scanId += 1
-        If stateValue = PreflightState.Checking Then stateValue = PreflightState.Cancelled
+        builtRevision = 0
+        cachedKey = Nothing
+        stateValue = PreflightState.Cancelled
     End Sub
 
     ''' <summary>"Check again": forget any verdict for this key and start over. Used after a timeout,

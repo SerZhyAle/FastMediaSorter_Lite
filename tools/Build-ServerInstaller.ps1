@@ -140,6 +140,7 @@ if (-not (Test-Path $payloadDir)) {
 $companionDest = Join-Path $stageDir "companion"
 New-Item -ItemType Directory -Path $companionDest -Force | Out-Null
 Copy-Item -Path (Join-Path $payloadDir "*") -Destination $companionDest -Recurse -Force
+    & (Join-Path $PSScriptRoot "Stage-FileDoPayload.ps1") -Destination $stageDir
 if (-not (Test-Path (Join-Path $companionDest "fms-share-worker.exe"))) {
     throw "fms-share-worker.exe is missing from $companionDest - the service would have no executable to run."
 }

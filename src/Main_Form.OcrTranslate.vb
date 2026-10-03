@@ -34,6 +34,7 @@ Partial Public Class Main_Form
 
     Private NotInheritable Class OcrJob
         Public FilePath As String
+        Public CachePath As String
         Public FileWriteTicks As Long
         Public Bitmap As Bitmap
         Public ImageSize As Size
@@ -251,7 +252,7 @@ Partial Public Class Main_Form
 
         Dim question As String = Localization.TF("Для распознавания нужны языковые пакеты OCR: {0}. Скачать их сейчас?",
                                                  OcrLanguageCatalog.DescribeTesseractCodes(wanted))
-        If MessageBox.Show(Me, question, "Fast Media Sorter", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
+        If MessageBox.Show(Me, question, ProductNames.Full, MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
             Dim toFetch As List(Of String) = wanted
             If Await OptionalRuntimeManager.DownloadWithDialogAsync(
                     Me, Localization.T("Языковые пакеты OCR"),
@@ -337,6 +338,7 @@ Partial Public Class Main_Form
 
         Dim job As New OcrJob With {
             .FilePath = path,
+            .CachePath = path,
             .FileWriteTicks = ticks,
             .Bitmap = snapshot,
             .ImageSize = New Size(snapshot.Width, snapshot.Height),
@@ -350,6 +352,9 @@ Partial Public Class Main_Form
         ' An archive entry's path carries the session's random token, so a result filed
         ' under it can never be found again - it would only evict entries that can
         ' (audit 052 G-21). Memory still serves the session.
+        If IsPdfDocumentPageOnScreen() Then
+            job.CachePath &= "#page=" & pdf_Current_Page.ToString(Globalization.CultureInfo.InvariantCulture)
+        End If
         job.IsSealedContent = Not SecureAllowsDiskCache()
         job.AllowDiskCache = Not job.IsSealedContent AndAlso Not ArchivePaths.IsUnderArchiveCache(path)
 #End If
@@ -372,7 +377,7 @@ Partial Public Class Main_Form
             Dim engineName As String = ocr_Engine.Name & "|" & ocr_Settings.OcrModelQuality & "|" & ocr_Settings.OcrPageMode &
                                        "|v" & OcrPipelineVersion.ToString(Globalization.CultureInfo.InvariantCulture)
             Dim provider As String = ocr_Settings.Provider & "|" & ocr_Settings.OllamaModel
-            Dim key As String = OcrResultPolicy.BuildCacheKey(job.FilePath, job.FileWriteTicks,
+            Dim key As String = OcrResultPolicy.BuildCacheKey(job.CachePath, job.FileWriteTicks,
                                                               job.ImageSize.Width, job.ImageSize.Height,
                                                               job.QuarterTurns, job.ExifAutoRotate,
                                                               engineName, provider, job.SourceLang, job.TargetLang)
@@ -384,34 +389,42 @@ Partial Public Class Main_Form
 #End If
 
             Dim cached As OcrOverlayDocument = ocr_Cache.TryGetMemory(key)
-            Dim fromDisk As Boolean = False
-            If cached Is Nothing AndAlso diskCacheAllowed Then
-                ' Awaited on the pool (057.S11-2): the read and parse of a document - and, below,
-                ' the plate-colour backfill of one the x86 viewer wrote - used to run on the UI
-                ' thread and stutter the window on T. ConfigureAwait(False) keeps everything
-                ' after this on the pool too; the memory-hit path above stays synchronous, and
-                ' every UI touch downstream already marshals (SetStatusOnUi, ApplyOnUi).
-                cached = Await Task.Run(Function() ocr_Cache.TryLoadFromDisk(key), token).ConfigureAwait(False)
-                fromDisk = cached IsNot Nothing
-            End If
-            ' Boxes in another grid than the one on screen are not this picture's plates,
-            ' whatever the key says (audit 051 E-01, fix c): run afresh instead.
             If cached IsNot Nothing AndAlso Not OcrResultPolicy.DocumentFitsGrid(cached.ImageSize.Width, cached.ImageSize.Height,
                                                                                   job.ImageSize.Width, job.ImageSize.Height) Then
                 cached = Nothing
             End If
-            If cached IsNot Nothing AndAlso fromDisk Then ocr_Cache.PutMemory(key, cached)
             If cached IsNot Nothing Then
-#If Not NETFRAMEWORK Then
-                ' A document written by the x86 viewer - or by any build older than the plate
-                ' colours - lands under the SAME key and arrives here with no colours at all.
-                ' The snapshot is still alive on this branch, so it is coloured in on the spot;
-                ' without that, such a file would keep its white plate forever. Not written
-                ' back: sampling 6000 pixels again is cheaper than a write path inside a read.
-                ApplyPlateColors(job.Bitmap, cached.Blocks)
-#End If
                 ApplyOnUi(cached, Localization.T("Из кэша"), token)
                 Return
+            End If
+
+            If diskCacheAllowed Then
+                token.ThrowIfCancellationRequested()
+                cached = Await Task.Run(
+                    Function()
+                        Dim doc As OcrOverlayDocument = ocr_Cache.TryLoadFromDisk(key)
+                        If doc IsNot Nothing Then
+                            If Not OcrResultPolicy.DocumentFitsGrid(doc.ImageSize.Width, doc.ImageSize.Height,
+                                                                   job.ImageSize.Width, job.ImageSize.Height) Then
+                                Return Nothing
+                            End If
+#If Not NETFRAMEWORK Then
+                            ' A document written by the x86 viewer - or by any build older than the plate
+                            ' colours - lands under the SAME key and arrives here with no colours at all.
+                            ' The snapshot is still alive on this branch, so it is coloured in on the spot;
+                            ' without that, such a file would keep its white plate forever. Not written
+                            ' back: sampling 6000 pixels again is cheaper than a write path inside a read.
+                            ApplyPlateColors(job.Bitmap, doc.Blocks)
+#End If
+                        End If
+                        Return doc
+                    End Function, token).ConfigureAwait(False)
+
+                If cached IsNot Nothing Then
+                    ocr_Cache.PutMemory(key, cached)
+                    ApplyOnUi(cached, Localization.T("Из кэша"), token)
+                    Return
+                End If
             End If
 
             token.ThrowIfCancellationRequested()
@@ -723,8 +736,14 @@ Partial Public Class Main_Form
         ' one thing §0 promises works exactly as usual. The overlay it produces is kept in
         ' memory only - the disk half of the cache is off for containers (§5.4 rule 2).
         If IsSecureImageOnScreen() Then Return is_PictureBox1_Visible OrElse is_PictureBox2_Visible
+        ' PDF pages rendered to Bitmap (008_SPECIFICATION_DOCUMENT_PREVIEW_DOTNET10.md §3.2)
+        If IsPdfDocumentPageOnScreen() Then Return is_PictureBox1_Visible OrElse is_PictureBox2_Visible
 #End If
+#If NETFRAMEWORK Then
         If Not Image_File_Extensions.Contains(ext) Then Return False
+#Else
+        If Not SortableContentKinds.CanDecodeImage(Current_File_Name, Image_File_Extensions) OrElse ActiveMediaImage() Is Nothing Then Return False
+#End If
 
         ' No File.Exists here. OnMediaDisplayed calls this after EVERY flip, and on a share
         ' that stopped answering a single Exists costs the whole network timeout on the UI

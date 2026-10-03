@@ -11,7 +11,7 @@ Imports System.Windows.Forms
 ' separate FEATURE_FULL constant.
 
 ' The single remaining Share entry point inside the Settings window after the
-' Stage 3 migration to the standalone Fast Media Sorter: Share Manager app (§4.2/
+' Stage 3 migration to the standalone Share Manager app (§4.2/
 ' O-3 of the migration spec): the "Поделиться" tab is gone - instead, one big
 ' button sits in the "Files and system" tab's existing "Associations and
 ' integration" group, next to the default-viewer/player buttons. Clicking it calls

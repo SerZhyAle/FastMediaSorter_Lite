@@ -7,9 +7,9 @@
 > до готовности; владелец мержит сам).
 
 Спецификации-источники (все решения - там):
-- [SPECIFICATION_DOTNET10_MODERN_BUILD.md](../specifications/done/SPECIFICATION_DOTNET10_MODERN_BUILD.md) - эпик (фазы Ф0-Ф7)
-- [012_SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md](../specifications/012_SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md) - зум/панорама (Ф-Z0..Ф-Z5, все O-Z-* решены)
-- [SPECIFICATION_MKV_ISO_PLAYBACK_DOTNET10.md](../specifications/done/SPECIFICATION_MKV_ISO_PLAYBACK_DOTNET10.md) - MKV/ISO (Ф-A..Ф-G)
+- `SPECIFICATION_DOTNET10_MODERN_BUILD.md` (local specification) - эпик (фазы Ф0-Ф7)
+- `012_SPECIFICATION_ZOOM_PAN_CLASSIC_DOTNET10.md` (local specification) - зум/панорама (Ф-Z0..Ф-Z5, все O-Z-* решены)
+- `SPECIFICATION_MKV_ISO_PLAYBACK_DOTNET10.md` (local specification) - MKV/ISO (Ф-A..Ф-G)
 
 Дата старта: 2026-07-16.
 
@@ -407,7 +407,7 @@ dcc066e; найдено и **ИСПРАВЛЕНО** (коммит см. журн
         Build-Installer/.iss/CI - [ ] (следующая итерация): [~]
 Этап 8 - **зум/панорама Ф-Z1..Ф-Z5** (по спеке, только modern): [ ]
 Этап 9 - **MKV/ISO Ф-A..Ф-G** (по спеке, только modern): [ ]
-Этап 10 - **Legacy x86 LITE** (FEATURE_FULL-урезка, PlatformTarget=x86, standalone zip): [ ]
+Этап 10 - **Legacy x86 viewer** (FEATURE_FULL-урезка, PlatformTarget=x86, standalone zip): [ ]
 Этап 11 - **Ф6 каналы** (winget/Store на modern-ассет, сайт) + **Ф7 доки** (CLAUDE.md и пр.): [ ]
 
 ## Архитектурные решения реализации (чтобы не передумывать заново)
@@ -451,7 +451,7 @@ dcc066e; найдено и **ИСПРАВЛЕНО** (коммит см. журн
    Guid + ComVisible - в новом мелком `src/Modern/ModernAssemblyInfo.vb`.
 7. **Пакеты modern**: SixLabors.ImageSharp 3.1.x, LibVLCSharp 3.9.3,
    LibVLCSharp.WinForms 3.9.3, VideoLAN.LibVLC.Windows 3.0.21, Tesseract 5.2.0,
-   System.Security.Cryptography.ProtectedData. БЕЗ QRCoder (0 использований в LITE),
+   System.Security.Cryptography.ProtectedData. БЕЗ QRCoder (0 использований в просмотрщике),
    БЕЗ WebView2, БЕЗ ImageSharp 2. Registry/GetSetting - в net10-windows из коробки.
 8. **Замороженные якоря в modern**: AssemblyName **FastMediaSorter_LITE**,
    RootNamespace fmsl, StartupObject fmsl.My.MyApplication, mutex тот же, реестр
@@ -523,19 +523,61 @@ dcc066e; найдено и **ИСПРАВЛЕНО** (коммит см. журн
   писать `System.Windows.Forms.`; `Debug.Listeners` нет на .NET -> Trace.Listeners;
   WebpFrameMetadata.FrameDelay (мс, uint) vs GifFrameMetadata.FrameDelay (сс, int).
 
-### Сессия - 2026-10-03: С9, остаток (У-04 живой список, У-05 сортировка больших папок)
-- Реализовано по [020_SPECIFICATION_VIEWER_CORE_S9_MODERN_FOLDER.md](../specifications/020_SPECIFICATION_VIEWER_CORE_S9_MODERN_FOLDER.md) (раздел 8 там): `src/FolderLiveList.vb`
-  (чистая логика, тесты `FolderLiveListTests`) + `src/Main_Form.FolderWatch.vb`; обе сборки собираются,
-  юнит-сьюты зелёные (Viewer net48 459 + net10 1206, Share Manager 282).
-- Замер памяти и времени сортировки (синтетика, строки вида `\\p7\_i\output\C\sub\IMG_..._N.jpg`,
-  `OrderBy(FileName)` со сравнением по культуре, как в `GetFiles`; x64, PowerShell 7 / .NET 10):
-  | файлов | строки скана (FileEntry) | список путей после сортировки | OrderBy + ToList | OrderBy + ToArray |
+### Session - 2026-10-02 (specification 014, S11: the two parts that were left)
+Written in English, like every file the repository's rules cover; the entries above predate that.
+
+- **U-03(c)**, the folder walk off the UI thread: `Main_Form.FolderScanAsync.vb`. The UI thread waits
+  100 ms for the scan (the fast path is byte-for-byte the old synchronous behaviour); a slower scan
+  returns the call, shows `чтение каталога.. ждите!`, and re-runs the same read mode when the
+  listing lands. Seams: `EnsureFolderList` (called from `UpdateFileIndexAndList`), a gate at the
+  top of `ReadShowMediaFile`, `TakeScannedListing` (consumed by `ProviderFileEntries`). Details and
+  the reasons for each rule: 014 §9.1.
+- **U-01**, the decoded-picture cache: `MediaCache.vb` + `Main_Form.MediaCache.vb`. Built by MOVING a
+  picture between a picture box and the cache (one owner at a time), not by sharing it as 014 §2
+  sketched - see 014 §9.2. The prefetch now follows the direction of travel.
+- New whole-file modern seams are listed in `src/FastMediaSorter.vbproj` by hand (they compile to
+  nothing there) and `MediaCache.vb` is linked into `tests/Lite.Tests`.
+- Measurements. The network folder the specification is about was **not measurable**: `\\p7` did not
+  answer on this day (the destination-slot probe of `\\p7\down` timed out). What was measured is
+  local, on 12 JPEGs of 2400x1600, from the Debug build's own log lines: decode-and-place of one
+  photo ~23 ms (`w1030` -> `w0900`), a cache hit ~3-4 ms (`n0050` -> `w0900`); a backwards flip
+  after a forward run is a cache hit, the second one a prefetch hit. The before/after numbers on a
+  network share (time to first frame, paging back) remain to be taken by the owner with acceptance
+  014 §6 - on `\\szamedia\common`, which the owner decided on 2026-10-02 to use instead of `\\p7`
+  once it is up (it is not yet).
+- Seen, NOT investigated: the Debug log shows `w0946: background analysis skipped
+  [OverflowException]` for some photos in the smoke runs. It is swallowed by the try/catch around
+  the dynamic-background analysis in `UpdateControlVisibility` and the picture is shown normally.
+  It looks deterministic per PICTURE, not per path: of the four photos the runs displayed, `p02`
+  threw both through the prefetch box and after a cache hit, `p04` through the prefetch box, and
+  `p01` and `p03` never did, by any path -
+  so it is a property of those pictures' colours in that analysis, not of the cache. The cause
+  was not chased (out of this ticket); no baseline build was run.
+
+
+Modern main-window chrome update (2026-10-02): the toolbar and status strip now float
+over the media through the shared chrome host. The mainline selects PerMonitorV2 in
+ApplyApplicationDefaults and remeasures/reanchors the chrome on monitor DPI changes.
+The DPI-unaware entries above describe the earlier migration baseline; the x86
+viewer retains that baseline. Actual-window chrome scenes run separately through
+`tests/Integration/ModernChromeScenes.ps1`, without reading or saving viewer settings.
+
+### Session - 2026-10-03 (specification 020, S9 remainder: U-04 live folder list, U-05 sorting large folders)
+- Implemented per `020_SPECIFICATION_VIEWER_CORE_S9_MODERN_FOLDER.md` (local specification; section 8 there):
+  `src/FolderLiveList.vb` (pure logic, tests `FolderLiveListTests`) + `src/Main_Form.FolderWatch.vb`; both
+  builds compiled and the unit suites were green at the time (viewer net48 459 + net10 1206, Share Manager 282 -
+  counted on the post-reset tree, before the 2026-10-02 work was restored).
+- Memory and sort-time measurement (synthetic rows shaped like `\\p7\_i\output\C\sub\IMG_..._N.jpg`,
+  `OrderBy(FileName)` with the culture comparison `GetFiles` uses; x64, PowerShell 7 / .NET 10):
+  | files | scan rows (FileEntry) | path list after sort | OrderBy + ToList | OrderBy + ToArray |
   |---|---|---|---|---|
-  | 100 000 | ~20 МБ | ~0 МБ | 263 мс | 187 мс |
-  | 500 000 | ~102 МБ | ~3 МБ | 873 мс | 1019 мс |
-  Вывод: порог 100k в mainline можно снять (пик ~100 МБ на 500k строк, сортировка ~1 с, и это на UI-потоке,
-  пока скан не вынесен в фон - см. §0.1 С11); защитный максимум 2 000 000 (~400 МБ строк).
-- Смоук реального окна (Debug-сборка в scratchpad, реестр владельца сохранён и восстановлен байт в байт):
-  открыт файл папки из 6 картинок; скопированы 3 новых -> `live folder list +3 -0, now 9`; удалён не показанный
-  файл -> `+0 -1, now 8`; созданный пустым и затем заполненный файл -> `+1 -0, now 9`; `.txt` проигнорирован.
-- Не проверено: приёмка на сетевой шаре (`\\szamedia\common` ещё не поднята, `\\p7` не отвечал), `.\build.ps1` целиком.
+  | 100 000 | ~20 MB | ~0 MB | 263 ms | 187 ms |
+  | 500 000 | ~102 MB | ~3 MB | 873 ms | 1019 ms |
+  Conclusion: the 100k cap can be lifted in the mainline (peak ~100 MB for 500k rows, sort ~1 s); the safety
+  maximum is 2 000 000 (~400 MB of rows). The measurement was taken on a tree where the scan still ran on the UI
+  thread; S11 U-03(c) above has since moved the folder walk off it.
+- Smoke of the real window (Debug build in a scratchpad, the owner's registry saved and restored byte for byte):
+  opened a file in a folder of 6 pictures; copied 3 new ones -> `live folder list +3 -0, now 9`; deleted a file
+  not on screen -> `+0 -1, now 8`; a file created empty and then filled -> `+1 -0, now 9`; a `.txt` was ignored.
+- Not verified: acceptance on a network share (`\\szamedia\common` is not up yet, `\\p7` did not answer), a full
+  `.\build.ps1`.

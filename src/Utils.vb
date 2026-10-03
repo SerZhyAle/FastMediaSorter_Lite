@@ -167,13 +167,22 @@ Module Utils
 
     ''' <summary>
     ''' Copies the given text to the clipboard and optionally updates a status label.
+    ''' Another process holding the clipboard is a real, common Windows failure (CLIPBOARD-GUARD
+    ''' rule 2, ticket 041): a bounded retry, then the label says so - never an exception into
+    ''' the UI. The names and paths copied here are not secrets, so no privacy flags.
     ''' </summary>
     Public Sub CopyTextToClipboard(text As String, Optional statusLabel As Label = Nothing, Optional statusMessage As String = "")
-        If Not String.IsNullOrEmpty(text) Then
-            Clipboard.SetText(text)
-            If statusLabel IsNot Nothing AndAlso Not String.IsNullOrEmpty(statusMessage) Then
-                statusLabel.Text = statusMessage
-            End If
+        If String.IsNullOrEmpty(text) Then Return
+        Dim message As String = statusMessage
+        Try
+            ' Explicit 3 x 120 ms; the 2-argument overload retries ten times, 100 ms apart.
+            Clipboard.SetDataObject(New DataObject(DataFormats.UnicodeText, text), True, 3, 120)
+        Catch ex As Exception
+            AppFileLogger.LogException("Clipboard copy failed", ex)
+            message = Localization.T("Не удалось скопировать в буфер обмена")
+        End Try
+        If statusLabel IsNot Nothing AndAlso Not String.IsNullOrEmpty(message) Then
+            statusLabel.Text = message
         End If
     End Sub
 

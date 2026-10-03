@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Unit tests for the Fast Media Sorter: Share Manager (.NET 10) core logic.
+  <!-- Unit tests for the Share Manager (.NET 10) core logic.
        Covers the frozen wire/.fmscfg contracts and the per-root param rules that
        the Android release depends on. Runner: `dotnet test` or tools/Run-AllTests.ps1. -->
   <PropertyGroup>

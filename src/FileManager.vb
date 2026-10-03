@@ -227,6 +227,41 @@ Public Module FileManager
     End Sub
 
     ''' <summary>
+    ''' Undo of a copy: deletes the copy the application itself made. File.Copy carries the
+    ''' source's attributes, so the copy of a camera's read-only ("protected") photo is
+    ''' read-only too, and U answered "access denied" for a file the application had just
+    ''' created (audit 057.S05-4). The attribute is dropped on THAT file only - owner
+    ''' decision: a plain permanent delete of a protected file may keep refusing. The caller
+    ''' has already asked <see cref="CopyUndoMayDelete(String, String)"/>.
+    ''' </summary>
+    Public Sub DeleteCopyForUndo(copyPath As String)
+#If Not NETFRAMEWORK Then
+        If ResourceRouting.TryDelete(copyPath) Then Return
+#End If
+        If Not File.Exists(copyPath) Then Return
+        ClearReadOnly(copyPath)
+        File.Delete(copyPath)
+    End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>
+    ''' The worker's move: exactly <see cref="MoveFile"/>, plus - when a resource carried the
+    ''' transfer - the typed outcome it ended with (100 §15.6), which is what the conditional
+    ''' undo is built from. Nothing for a plain local transfer.
+    ''' </summary>
+    Friend Sub MoveFileTracked(sourceFile As String, destFile As String, overwrite As Boolean, ByRef outcome As TransferOutcome)
+        If ResourceRouting.TryMove(sourceFile, destFile, overwrite, outcome) Then Return
+        MoveFile(sourceFile, destFile, overwrite)
+    End Sub
+
+    ''' <summary>The tracked form of <see cref="CopyFile"/> - see <see cref="MoveFileTracked"/>.</summary>
+    Friend Sub CopyFileTracked(sourceFile As String, destFile As String, overwrite As Boolean, ByRef outcome As TransferOutcome)
+        If ResourceRouting.TryCopy(sourceFile, destFile, overwrite, outcome) Then Return
+        CopyFile(sourceFile, destFile, overwrite)
+    End Sub
+#End If
+
+    ''' <summary>
     ''' Copies a file to a new location - staged, exactly like a cross-volume move (audit
     ''' 047, C-08). A File.Copy straight onto the final name left a truncated file there
     ''' when the copy was interrupted - the app closed with "No" during a 200 MB copy to a
@@ -351,8 +386,34 @@ Public Module FileManager
         ' move was reported failed and rolled back, the file sat in both places, and every
         ' retry bred "x (2).jpg" (audit 047, C-16). The file is being moved, and its copy
         ' already carries the attribute, so dropping it on the source loses nothing.
-        ClearReadOnly(sourceFile)
-        File.Delete(sourceFile)
+        Dim source_Attributes As FileAttributes? = Nothing
+        Try
+            source_Attributes = File.GetAttributes(sourceFile)
+            ClearReadOnly(sourceFile)
+            File.Delete(sourceFile)
+        Catch
+            ' Any other reason the source will not go - a reader holds it (an AV scanner, the
+            ' indexer, a second viewer): the move is reported failed and rolled back, and the
+            ' complete copy used to stay at the destination, so the retry met a taken name
+            ' and bred "x (2).jpg" (audit 057.S05-3). Without "replace" the destination did
+            ' not exist before this call (CopyThroughStaging refuses a taken name), so the
+            ' copy is ours to take back - but only while the source is provably still there:
+            ' otherwise the copy is the one instance left. With "replace" the old destination
+            ' is already gone, and the copy is kept: it is now the only thing at that name.
+            Try
+                If File.Exists(sourceFile) Then
+                    If Not overwrite AndAlso File.Exists(destFile) Then
+                        ClearReadOnly(destFile)
+                        File.Delete(destFile)
+                    End If
+                    ' The read-only mark dropped above goes back on the file that stays.
+                    If source_Attributes.HasValue Then File.SetAttributes(sourceFile, source_Attributes.Value)
+                End If
+            Catch
+                ' The rollback is best effort; the failure that matters is rethrown below.
+            End Try
+            Throw
+        End Try
     End Sub
 
     ''' <summary>
@@ -383,6 +444,12 @@ Public Module FileManager
     ''' stands. The pure rule is <see cref="CopyUndoMayDelete(Boolean, Long, Boolean, Long, Boolean)"/>.
     ''' </summary>
     Friend Function CopyUndoMayDelete(originalPath As String, copyPath As String) As Boolean
+#If Not NETFRAMEWORK Then
+        ' A copy in a server folder (a remote slot, 007 §4.2) cannot be judged through FileInfo -
+        ' it would read as "not there" and so as safe to delete. Such a copy is taken back only
+        ' through its transfer record (TransferUndo); without one it stays.
+        If ResourceLocator.IsLocator(copyPath) Then Return False
+#End If
         Try
             Dim copy As New FileInfo(copyPath)
             Dim original As New FileInfo(originalPath)

@@ -5,7 +5,8 @@ Generated, never hand-edited. Each file is the exact byte sequence the Share Man
 own serializer (WorkerIpc.SerializeRequest) writes to the pipe for one request type,
 as the product builds that request. No trailing newline: the pipe carries none.
 
-Contract   : WORKER-IPC 0.9 (pointer: docs/contracts/WORKER-IPC.md)
+Contract   : WORKER-IPC 0.10 + DISK-SHARE 1.3 (pointers: docs/contracts/)
+Credentials: synthetic vector literals, never user credentials
 Generator  : WorkerIpcConformanceTests.Generate_RequestFixtures_WhenAsked
 Command    : set FMS_REGENERATE_WORKER_IPC=1, then run tests/Companion.Tests
 Pinned by  : WorkerIpcConformanceTests.RequestFixtures_MatchTheProductSerializer_ByteForByte
@@ -13,6 +14,14 @@ Pinned by  : WorkerIpcConformanceTests.RequestFixtures_MatchTheProductSerializer
 Digests
 -------
 
+  SHA-256  244b1e67561353de30cd1c3c44c77d83e04c245e7e8cdb9c75da63a67f1c982d  disk-autostart-off.json
+  SHA-256  554555bfcaa4f8dad6faaebcb254b104d72f26edb58fb29cf4a540b8ebf06d5c  disk-autostart-on.json
+  SHA-256  286f89a2ee66911a95dfbb80e2cf726a8bbc1ffcd1f8dd4854387f14e5d30001  disk-close.json
+  SHA-256  1c2964883b3a81c6f051e1a5aac3b33e1a0bb0043a4235321d555cb538b3ec25  disk-list.json
+  SHA-256  1e473e4bb64011eedf08dc5f4d8b78d586587f3c8670290024fdd97cee22409a  disk-open.json
+  SHA-256  58c9adeaf10e7d6d82e2f1026306a6d6cce37e5bc8517a569a2249e8f9902883  disk-share.json
+  SHA-256  7b9694864aa3de761ceac212eb2ba446e1019a60e9149b6037c004ba9612b317  disk-status.json
+  SHA-256  ca821bfc4417a7f96f0026aab60f25c2f3ec7d69fd4bf73a582f5984bef3ef86  disk-unshare.json
   SHA-256  a052d6343870b31cbe4062e3a76f67c47394d6ff669f55bd02970f26a34c4de6  get-status.json
   SHA-256  94fb95918a7b0fd0da1f5d5bf373b7d81f1a10fcbd69191f42a22ac6e920f489  reset-stats.json
   SHA-256  c2500d616dec13e27811441562f230a870d443f7441b7e9ef66fec1a4df394e7  set-network-policy-full.json

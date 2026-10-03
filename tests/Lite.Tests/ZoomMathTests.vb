@@ -425,5 +425,44 @@ Public Class ZoomMathTests
         Assert.Equal(0, clampedMin.Y)
     End Sub
 
+    ' --- Viewport calculation (more shapes) ----------------------------------
+
+    <Fact>
+    Public Sub ComputeViewport_CenteredZoomIn_ExtractsCenteredSourceSlice()
+        Dim imgW As Integer = 1920
+        Dim imgH As Integer = 1080
+        Dim panelSize As New Size(800, 600)
+        ' 2x zoom centered in panel:
+        Dim factor As Double = 2.0
+        Dim fraction As New PointF(0.5F, 0.5F)
+        Dim anchor As New Point(400, 300)
+        Dim bounds As Rectangle = ZoomMath.AnchoredBounds(imgW, imgH, factor, anchor, fraction, panelSize)
+
+        Dim destRect As Rectangle = Rectangle.Empty
+        Dim srcRect As Rectangle = Rectangle.Empty
+        ZoomMath.ComputeViewport(bounds, imgW, imgH, panelSize, destRect, srcRect)
+
+        Assert.Equal(New Rectangle(0, 0, 800, 600), destRect)
+        Assert.Equal(400, srcRect.Width)
+        Assert.Equal(300, srcRect.Height)
+        Assert.Equal((imgW - 400) \ 2, srcRect.X)
+        Assert.Equal((imgH - 300) \ 2, srcRect.Y)
+    End Sub
+
+    <Fact>
+    Public Sub ComputeViewport_ZoomedOut_DrawsIntoLetterboxedDest()
+        Dim imgW As Integer = 1000
+        Dim imgH As Integer = 500
+        Dim panelSize As New Size(800, 600)
+        Dim bounds As New Rectangle(150, 175, 500, 250)
+
+        Dim destRect As Rectangle = Rectangle.Empty
+        Dim srcRect As Rectangle = Rectangle.Empty
+        ZoomMath.ComputeViewport(bounds, imgW, imgH, panelSize, destRect, srcRect)
+
+        Assert.Equal(bounds, destRect)
+        Assert.Equal(New Rectangle(0, 0, imgW, imgH), srcRect)
+    End Sub
+
 End Class
 #End If

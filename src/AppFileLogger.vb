@@ -1,5 +1,9 @@
+Option Explicit On
 Option Strict On
+Option Infer On
+Option Compare Binary
 
+Imports System.Collections.Generic
 Imports System.Diagnostics
 Imports System.IO
 Imports System.Reflection
@@ -32,60 +36,177 @@ Friend Module AppFileLogger
         End Get
     End Property
 
+    ''' <summary>True while the process-wide handlers (UI/unhandled/unobserved/exit) are subscribed -
+    ''' exactly once, whatever happened to earlier initialization attempts.</summary>
+    Friend ReadOnly Property HandlersAttached As Boolean
+        Get
+            Return eventsAttached
+        End Get
+    End Property
+
     Public ReadOnly Property LogFilePath As String
         Get
             Return logPathValue
         End Get
     End Property
 
+    ''' <summary>Resets initialization state for testing (057.S13-12).</summary>
+    Friend Sub ResetForTesting()
+        SyncLock syncRoot
+            If eventsAttached Then
+                Try : RemoveHandler Application.ThreadException, AddressOf OnThreadException : Catch : End Try
+                Try : RemoveHandler AppDomain.CurrentDomain.UnhandledException, AddressOf OnUnhandledException : Catch : End Try
+                Try : RemoveHandler TaskScheduler.UnobservedTaskException, AddressOf OnUnobservedTaskException : Catch : End Try
+                Try : RemoveHandler AppDomain.CurrentDomain.ProcessExit, AddressOf OnProcessExit : Catch : End Try
+                eventsAttached = False
+            End If
+            If logListener IsNot Nothing Then
+                Try
+#If NETFRAMEWORK Then
+                    Debug.Listeners.Remove(logListener)
+#Else
+                    Trace.Listeners.Remove(logListener)
+#End If
+                Catch
+                End Try
+                Try : logListener.Dispose() : Catch : End Try
+                logListener = Nothing
+            End If
+            If logWriter IsNot Nothing Then
+                Try : logWriter.Dispose() : Catch : End Try
+                logWriter = Nothing
+            End If
+            isInitialized = False
+            logPathValue = ""
+        End SyncLock
+    End Sub
+
+    Private eventsAttached As Boolean = False
+    Friend InitializeFaultInjector As Action(Of Integer) = Nothing
+
+    ''' <summary>Tests only: the folder the log lives in, instead of next to the exe.</summary>
+    Friend LogDirectoryOverride As String = Nothing
+
     Public Sub Initialize()
         SyncLock syncRoot
             If isInitialized Then Return
+
+            Dim acquiredStream As Stream = Nothing
+            Dim acquiredWriter As StreamWriter = Nothing
+            Dim acquiredListener As TextWriterTraceListener = Nothing
+            Dim listenerAdded As Boolean = False
+            Dim handlersAdded As Integer = 0
 
             Try
                 logPathValue = ResolveLogPath()
                 Dim logDir As String = Path.GetDirectoryName(logPathValue)
                 If Not String.IsNullOrEmpty(logDir) Then Directory.CreateDirectory(logDir)
 
+                If InitializeFaultInjector IsNot Nothing Then InitializeFaultInjector(1)
+
                 RotateIfOversized(logPathValue)
+
+                If InitializeFaultInjector IsNot Nothing Then InitializeFaultInjector(2)
 
                 ' Append-only, not FileMode.Append: Append seeks to the end ONCE, at open,
                 ' and each handle then writes at its own offset - a second process (the
                 ' forwarding launch, a second window) overwrote this one's lines and this
                 ' one overwrote its (053 F-11). An append-only handle always writes at EOF.
-                logWriter = New StreamWriter(OpenAppendOnly(logPathValue))
-                logWriter.AutoFlush = True
-                logListener = New TextWriterTraceListener(logWriter)
+                acquiredStream = OpenAppendOnly(logPathValue)
+                acquiredWriter = New StreamWriter(acquiredStream)
+                acquiredWriter.AutoFlush = True
+                acquiredListener = New TextWriterTraceListener(acquiredWriter)
+
+                If InitializeFaultInjector IsNot Nothing Then InitializeFaultInjector(3)
+
 #If NETFRAMEWORK Then
-                Debug.Listeners.Add(logListener)
+                Debug.Listeners.Add(acquiredListener)
 #Else
                 ' .NET has no Debug.Listeners; Debug.WriteLine routes through the
                 ' shared Trace listener collection instead.
-                Trace.Listeners.Add(logListener)
+                Trace.Listeners.Add(acquiredListener)
 #End If
+                listenerAdded = True
                 Trace.AutoFlush = True
 
-                AddHandler Application.ThreadException, AddressOf OnThreadException
-                AddHandler AppDomain.CurrentDomain.UnhandledException, AddressOf OnUnhandledException
-                AddHandler TaskScheduler.UnobservedTaskException, AddressOf OnUnobservedTaskException
-                AddHandler AppDomain.CurrentDomain.ProcessExit, AddressOf OnProcessExit
+                If InitializeFaultInjector IsNot Nothing Then InitializeFaultInjector(4)
 
+                If Not eventsAttached Then
+                    AddHandler Application.ThreadException, AddressOf OnThreadException
+                    handlersAdded = 1
+                    If InitializeFaultInjector IsNot Nothing Then InitializeFaultInjector(7)
+                    AddHandler AppDomain.CurrentDomain.UnhandledException, AddressOf OnUnhandledException
+                    handlersAdded = 2
+                    If InitializeFaultInjector IsNot Nothing Then InitializeFaultInjector(8)
+                    AddHandler TaskScheduler.UnobservedTaskException, AddressOf OnUnobservedTaskException
+                    handlersAdded = 3
+                    If InitializeFaultInjector IsNot Nothing Then InitializeFaultInjector(9)
+                    AddHandler AppDomain.CurrentDomain.ProcessExit, AddressOf OnProcessExit
+                    handlersAdded = 4
+                    If InitializeFaultInjector IsNot Nothing Then InitializeFaultInjector(10)
+                    eventsAttached = True
+                End If
+
+                If InitializeFaultInjector IsNot Nothing Then InitializeFaultInjector(5)
+
+                ' The session header is the last thing that can fail; everything above is already
+                ' acquired, so a failure here has to give all of it back.
+                If InitializeFaultInjector IsNot Nothing Then InitializeFaultInjector(6)
+
+                acquiredWriter.WriteLine("============================================================")
+                Using currentProcess As Process = Process.GetCurrentProcess()
+                    acquiredWriter.WriteLine("Session started: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff") &
+                                             "; PID=" & currentProcess.Id.ToString() &
+                                             "; role=" & MultiWindowPolicy.InstanceRoleName())
+                    acquiredWriter.WriteLine("Log file: " & logPathValue)
+                    ' MainModule works for a single-file publish, where Assembly.Location is empty.
+                    acquiredWriter.WriteLine("Executable: " & currentProcess.MainModule.FileName)
+                End Using
+                acquiredWriter.WriteLine("Version: " & Assembly.GetExecutingAssembly().GetName().Version.ToString())
+                acquiredWriter.WriteLine("OS: " & Environment.OSVersion.ToString())
+                acquiredWriter.WriteLine("64-bit OS: " & Environment.Is64BitOperatingSystem.ToString() & "; 64-bit process: " & Environment.Is64BitProcess.ToString())
+                acquiredWriter.WriteLine("Command line: " & Environment.CommandLine)
+                acquiredWriter.Flush()
+
+                logWriter = acquiredWriter
+                logListener = acquiredListener
                 isInitialized = True
-
-                WriteLine("============================================================")
-                WriteLine("Session started: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff") &
-                          "; PID=" & Process.GetCurrentProcess().Id.ToString() &
-                          "; role=" & MultiWindowPolicy.InstanceRoleName())
-                WriteLine("Log file: " & logPathValue)
-                ' Process.MainModule, not Assembly.Location: the latter is an empty
-                ' string in a single-file publish (.NET 10 build).
-                WriteLine("Executable: " & Process.GetCurrentProcess().MainModule.FileName)
-                WriteLine("Version: " & Assembly.GetExecutingAssembly().GetName().Version.ToString())
-                WriteLine("OS: " & Environment.OSVersion.ToString())
-                WriteLine("64-bit OS: " & Environment.Is64BitOperatingSystem.ToString() & "; 64-bit process: " & Environment.Is64BitProcess.ToString())
-                WriteLine("Command line: " & Environment.CommandLine)
             Catch ex As Exception
-                ' Logging must never break app startup.
+                ' Transactional rollback of acquired resources (057.S13-12).
+                If handlersAdded > 0 Then
+                    If handlersAdded >= 4 Then
+                        Try : RemoveHandler AppDomain.CurrentDomain.ProcessExit, AddressOf OnProcessExit : Catch : End Try
+                    End If
+                    If handlersAdded >= 3 Then
+                        Try : RemoveHandler TaskScheduler.UnobservedTaskException, AddressOf OnUnobservedTaskException : Catch : End Try
+                    End If
+                    If handlersAdded >= 2 Then
+                        Try : RemoveHandler AppDomain.CurrentDomain.UnhandledException, AddressOf OnUnhandledException : Catch : End Try
+                    End If
+                    Try : RemoveHandler Application.ThreadException, AddressOf OnThreadException : Catch : End Try
+                    eventsAttached = False
+                End If
+                If listenerAdded AndAlso acquiredListener IsNot Nothing Then
+                    Try
+#If NETFRAMEWORK Then
+                        Debug.Listeners.Remove(acquiredListener)
+#Else
+                        Trace.Listeners.Remove(acquiredListener)
+#End If
+                    Catch
+                    End Try
+                End If
+                If acquiredListener IsNot Nothing Then
+                    Try : acquiredListener.Dispose() : Catch : End Try
+                End If
+                If acquiredWriter IsNot Nothing Then
+                    Try : acquiredWriter.Dispose() : Catch : End Try
+                ElseIf acquiredStream IsNot Nothing Then
+                    Try : acquiredStream.Dispose() : Catch : End Try
+                End If
+                logWriter = Nothing
+                logListener = Nothing
+                isInitialized = False
             End Try
         End SyncLock
     End Sub
@@ -100,6 +221,10 @@ Friend Module AppFileLogger
             Catch
             End Try
         End SyncLock
+    End Sub
+
+    Public Sub LogMessage(message As String)
+        WriteLine(message)
     End Sub
 
     Public Sub LogException(context As String, ex As Exception)
@@ -121,48 +246,87 @@ Friend Module AppFileLogger
     ''' <summary>
     ''' Rolls <paramref name="log_Path"/> over to "previous.log" beside it when it has grown
     ''' past <see cref="Max_Log_Bytes"/>, so the next Append starts from empty. Returns True
-    ''' when it rotated.
+    ''' when the current log was rolled away.
     '''
     ''' Runs once per start, before the file is opened - the cheapest possible place, and the
     ''' only one where no writer holds the handle. Never throws: a log that cannot be rotated
-    ''' must not stop the app from starting (an unwritable folder falls back to
-    ''' %LOCALAPPDATA% in ResolveLogPath, and a locked file simply keeps growing until a
-    ''' start where it is free).
+    ''' must not stop the app from starting.
+    '''
+    ''' Ownership (057.S13-10): the current log is MOVED to a staging name no other process can
+    ''' also be using ("previous.log.rotating.&lt;guid&gt;"), and only then published over
+    ''' previous.log. A failure at any later step RETAINS the staging file: nothing is deleted
+    ''' that this call did not create, previous.log is replaced atomically (never deleted first),
+    ''' and the next start completes the stranded rotation instead of discarding it.
     ''' </summary>
-    Friend Function RotateIfOversized(log_Path As String) As Boolean
+    Friend Function RotateIfOversized(log_Path As String, Optional ops As ILogFileOps = Nothing) As Boolean
+        Dim files As ILogFileOps = If(ops, RealLogFileOps.Instance)
         Try
             If String.IsNullOrEmpty(log_Path) Then Return False
-
-            Dim current As New FileInfo(log_Path)
-            If Not current.Exists OrElse current.Length <= Max_Log_Bytes Then Return False
-
             Dim folder As String = Path.GetDirectoryName(log_Path)
             If String.IsNullOrEmpty(folder) Then Return False
             Dim rolled As String = Path.Combine(folder, "previous.log")
 
-            ' One generation back, not a numbered series: the previous session is what an
-            ' incident report needs, and a series is another thing that grows.
-            '
-            ' Move current.log aside FIRST and only then replace previous.log. The other
-            ' order deleted previous.log and then failed the move whenever another
-            ' instance held current.log - destroying a generation without rotating
-            ' (053 F-11). A locked file now leaves both untouched and keeps growing until
-            ' a start where it is free.
-            Dim staging As String = Path.Combine(folder, "previous.log.rotating")
-            If File.Exists(staging) Then File.Delete(staging)
+            ' A rotation an earlier start could not finish is finished first. Nothing is overwritten
+            ' or removed to do it: with previous.log in place the stranded data simply stays.
+            CompleteStrandedRotations(folder, rolled, files)
+
+            If Not files.Exists(log_Path) OrElse files.Length(log_Path) <= Max_Log_Bytes Then Return False
+
+            Dim staging As String = Path.Combine(folder, Staging_Prefix & Guid.NewGuid().ToString("N"))
             Try
-                File.Move(log_Path, staging)
+                files.Move(log_Path, staging)
             Catch
                 Return False
             End Try
-            If File.Exists(rolled) Then File.Delete(rolled)
-            File.Move(staging, rolled)
-            Return True
+
+            Try
+                Publish(staging, rolled, files)
+                Return True
+            Catch publishEx As Exception
+                ' previous.log could not be replaced (locked, say). Put the data back as the
+                ' current log when that name is still free - Move never overwrites, so a log
+                ' another process has started meanwhile is untouched - and otherwise leave the
+                ' staging file where it is for the next start to finish.
+                Try
+                    If Not files.Exists(log_Path) Then files.Move(staging, log_Path)
+                Catch
+                End Try
+                Return False
+            End Try
         Catch
             Return False
         End Try
     End Function
 
+    Friend Const Staging_Prefix As String = "previous.log.rotating."
+
+    Private Sub Publish(staging As String, rolled As String, files As ILogFileOps)
+        If Not files.Exists(staging) Then
+            Throw New FileNotFoundException("Staging file not found", staging)
+        End If
+        If Not files.Exists(rolled) Then
+            Try
+                files.Move(staging, rolled)
+                Return
+            Catch ex As IOException
+                If Not files.Exists(rolled) Then Throw
+            End Try
+        End If
+        Dim backup As String = rolled & ".replaced." & Guid.NewGuid().ToString("N")
+        files.Replace(staging, rolled, backup)
+        ' The replaced generation was ours to discard; failing to drop it only leaves it behind.
+        Try : files.Delete(backup) : Catch : End Try
+    End Sub
+
+    Private Sub CompleteStrandedRotations(folder As String, rolled As String, files As ILogFileOps)
+        For Each stranded As String In files.StagingFiles(folder, Staging_Prefix)
+            Try
+                If Not files.Exists(rolled) Then files.Move(stranded, rolled)
+            Catch
+                ' Retained: the next start tries again.
+            End Try
+        Next
+    End Sub
     Private Const FILE_APPEND_DATA As UInteger = &H4UI
     Private Const SYNCHRONIZE As UInteger = &H100000UI
     Private Const FILE_SHARE_READ As UInteger = &H1UI
@@ -199,7 +363,7 @@ Friend Module AppFileLogger
     Private Function ResolveLogPath() As String
         ' AppContext.BaseDirectory = exe directory on net48 AND in a .NET 10
         ' single-file publish (where Assembly.Location is empty).
-        Dim exeDir As String = AppContext.BaseDirectory
+        Dim exeDir As String = If(LogDirectoryOverride, AppContext.BaseDirectory)
 
         If Not String.IsNullOrEmpty(exeDir) Then
             Try
@@ -346,7 +510,11 @@ Friend NotInheritable Class AppendOnlyFileStream
 
     Public Overrides Sub Write(buffer As Byte(), offset As Integer, count As Integer)
         If buffer Is Nothing Then Throw New ArgumentNullException(NameOf(buffer))
-        If count <= 0 Then Return
+        If offset < 0 Then Throw New ArgumentOutOfRangeException(NameOf(offset))
+        If count < 0 Then Throw New ArgumentOutOfRangeException(NameOf(count))
+        If offset > buffer.Length OrElse count > buffer.Length - offset Then Throw New ArgumentException("The buffer range is invalid.")
+        If handle.IsClosed Then Throw New ObjectDisposedException(NameOf(AppendOnlyFileStream))
+        If count = 0 Then Return
         Dim chunk As Byte() = buffer
         If offset <> 0 OrElse count <> buffer.Length Then
             chunk = New Byte(count - 1) {}
@@ -357,6 +525,7 @@ Friend NotInheritable Class AppendOnlyFileStream
             Throw New IOException("Writing the log failed.",
                                   New System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error()))
         End If
+        If written <> count Then Throw New IOException("The log write was incomplete.")
     End Sub
 
     Public Overrides Sub Flush()
@@ -379,4 +548,45 @@ Friend NotInheritable Class AppendOnlyFileStream
         If disposing Then handle.Dispose()
         MyBase.Dispose(disposing)
     End Sub
+End Class
+
+''' <summary>The file operations the log rotation performs - injectable so each failure of the
+''' rotation can be produced on demand (two rotators, a locked previous.log, a vanished staging).</summary>
+Friend Interface ILogFileOps
+    Function Exists(path As String) As Boolean
+    Function Length(path As String) As Long
+    Sub Move(source As String, destination As String)
+    Sub Replace(source As String, destination As String, backup As String)
+    Sub Delete(path As String)
+    Function StagingFiles(folder As String, prefix As String) As IEnumerable(Of String)
+End Interface
+
+Friend NotInheritable Class RealLogFileOps
+    Implements ILogFileOps
+
+    Friend Shared ReadOnly Instance As New RealLogFileOps()
+
+    Public Function Exists(path As String) As Boolean Implements ILogFileOps.Exists
+        Return File.Exists(path)
+    End Function
+
+    Public Function Length(path As String) As Long Implements ILogFileOps.Length
+        Return New FileInfo(path).Length
+    End Function
+
+    Public Sub Move(source As String, destination As String) Implements ILogFileOps.Move
+        File.Move(source, destination)
+    End Sub
+
+    Public Sub Replace(source As String, destination As String, backup As String) Implements ILogFileOps.Replace
+        File.Replace(source, destination, backup)
+    End Sub
+
+    Public Sub Delete(path As String) Implements ILogFileOps.Delete
+        File.Delete(path)
+    End Sub
+
+    Public Function StagingFiles(folder As String, prefix As String) As IEnumerable(Of String) Implements ILogFileOps.StagingFiles
+        Return Directory.GetFiles(folder, prefix & "*")
+    End Function
 End Class

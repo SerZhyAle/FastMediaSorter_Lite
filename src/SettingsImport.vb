@@ -5,6 +5,8 @@ Imports System.Collections.Generic
 Imports System.IO
 Imports System.Linq
 Imports System.Text
+Imports System.Security.AccessControl
+Imports System.Security.Principal
 
 ''' <summary>
 ''' What an imported settings profile would do, worked out BEFORE anything is asked or written
@@ -98,22 +100,29 @@ Friend Module SettingsImportBackupStore
     ''' of its own) when it cannot be created, written, flushed or read back identical.</summary>
     Friend Function Create(current As ModernViewerPreferences, directory As String,
                            Optional openNew As Func(Of String, Stream) = Nothing,
-                           Optional readAll As Func(Of String, String) = Nothing) As String
+                           Optional readAll As Func(Of String, String) = Nothing,
+                           Optional nextName As Func(Of String) = Nothing,
+                           Optional protectDirectory As Action(Of String) = Nothing) As String
         If current Is Nothing Then Throw New ArgumentNullException(NameOf(current))
         If String.IsNullOrEmpty(directory) Then Throw New ArgumentException("No backup directory.", NameOf(directory))
 
         Dim open As Func(Of String, Stream) = If(openNew, AddressOf OpenExclusive)
         Dim read As Func(Of String, String) = If(readAll, AddressOf File.ReadAllText)
 
-        System.IO.Directory.CreateDirectory(directory)
-        Dim expected As String = current.ExportJson(includePersonalData:=True)
+        Dim protect As Action(Of String) = If(protectDirectory, AddressOf EnsurePrivateDirectory)
+        protect(directory)
+        ' ExportJson normalizes its receiver. Snapshot a clone so even a later write,
+        ' flush or read-back failure cannot change the live preferences.
+        Dim expected As String = SettingsImportPlan.Clone(current).ExportJson(includePersonalData:=True)
         Dim timestamp As String = DateTime.Now.ToString("yyyyMMdd-HHmmss", Globalization.CultureInfo.InvariantCulture)
+        Dim name As Func(Of String) = If(nextName, Function() "settings-backup-" & timestamp & "-" & Guid.NewGuid().ToString("N") & ".fms-settings.json")
 
         Dim created As String = Nothing
         Dim stream As Stream = Nothing
         For attempt As Integer = 1 To MaxNameAttempts
-            Dim candidate As String = Path.Combine(directory,
-                "settings-backup-" & timestamp & "-" & Guid.NewGuid().ToString("N").Substring(0, 8) & ".fms-settings.json")
+            Dim leaf As String = name()
+            If String.IsNullOrEmpty(leaf) OrElse Path.GetFileName(leaf) <> leaf Then Throw New IOException("Invalid backup name.")
+            Dim candidate As String = Path.Combine(directory, leaf)
             Try
                 stream = open(candidate)
                 created = candidate
@@ -148,8 +157,54 @@ Friend Module SettingsImportBackupStore
     End Function
 
     Private Function OpenExclusive(path As String) As Stream
-        Return New FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None)
+        Using identity As WindowsIdentity = WindowsIdentity.GetCurrent()
+            Dim owner As SecurityIdentifier = identity.User
+            If owner Is Nothing Then Throw New UnauthorizedAccessException("No backup owner.")
+            Dim security As New FileSecurity()
+            security.SetAccessRuleProtection(True, False)
+            security.AddAccessRule(New FileSystemAccessRule(owner, FileSystemRights.FullControl, AccessControlType.Allow))
+            Return FileSystemAclExtensions.Create(New FileInfo(path), FileMode.CreateNew,
+                FileSystemRights.WriteData Or FileSystemRights.ReadData Or FileSystemRights.ReadAttributes Or FileSystemRights.Synchronize,
+                FileShare.None, 4096, FileOptions.None, security)
+        End Using
     End Function
+
+    ''' <summary>Protect before writing personal data; refuse existing permissive or redirected
+    ''' directories rather than modifying their owners' access policy.</summary>
+    Private Sub EnsurePrivateDirectory(path As String)
+        Dim fullPath As String = System.IO.Path.GetFullPath(path)
+        Dim root As String = System.IO.Path.GetPathRoot(fullPath)
+        Dim format As String = New DriveInfo(root).DriveFormat
+        If Not String.Equals(format, "NTFS", StringComparison.OrdinalIgnoreCase) AndAlso
+           Not String.Equals(format, "ReFS", StringComparison.OrdinalIgnoreCase) Then
+            Throw New IOException("Private backups require a filesystem with Windows access controls.")
+        End If
+        Using identity As WindowsIdentity = WindowsIdentity.GetCurrent()
+            Dim owner As SecurityIdentifier = identity.User
+            If owner Is Nothing Then Throw New UnauthorizedAccessException("No backup owner.")
+            Dim systemSid As New SecurityIdentifier(WellKnownSidType.LocalSystemSid, Nothing)
+            If Not System.IO.Directory.Exists(fullPath) Then
+                Dim security As New DirectorySecurity()
+                security.SetAccessRuleProtection(True, False)
+                Dim inherit As InheritanceFlags = InheritanceFlags.ContainerInherit Or InheritanceFlags.ObjectInherit
+                security.AddAccessRule(New FileSystemAccessRule(owner, FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow))
+                security.AddAccessRule(New FileSystemAccessRule(systemSid, FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow))
+                FileSystemAclExtensions.Create(New DirectoryInfo(fullPath), security)
+            End If
+            If (File.GetAttributes(fullPath) And FileAttributes.ReparsePoint) <> 0 Then Throw New IOException("The backup directory is redirected.")
+            Dim actual As DirectorySecurity = New DirectoryInfo(fullPath).GetAccessControl(AccessControlSections.Access)
+            If Not actual.AreAccessRulesProtected Then Throw New UnauthorizedAccessException("The backup directory is not private.")
+            Dim ownerAllowed As Boolean = False
+            For Each rule As FileSystemAccessRule In actual.GetAccessRules(True, True, GetType(SecurityIdentifier))
+                If rule.AccessControlType <> AccessControlType.Allow Then Continue For
+                If Not rule.IdentityReference.Equals(owner) AndAlso Not rule.IdentityReference.Equals(systemSid) Then
+                    Throw New UnauthorizedAccessException("The backup directory grants access to another account.")
+                End If
+                If rule.IdentityReference.Equals(owner) Then ownerAllowed = True
+            Next
+            If Not ownerAllowed Then Throw New UnauthorizedAccessException("The backup owner has no access.")
+        End Using
+    End Sub
 
     ''' <summary>Restores through the ordinary validated import, never a registry or file swap.</summary>
     Friend Function Restore(backupPath As String) As ModernViewerPreferences

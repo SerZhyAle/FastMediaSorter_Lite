@@ -107,13 +107,38 @@ Partial Public NotInheritable Class Localization
             "Abrir archivo comprimido..", "Ouvrir une archive..", "Abrir arquivo compactado..",
             "فتح أرشيف..", "संग्रह खोलें..", "আর্কাইভ খুলুন..", "آرکائیو کھولیں..", "打开压缩包..")
 
-        Add("Открыть ZIP или CBZ как папку",
-            "Open a ZIP or CBZ as a folder", "Відкрити ZIP або CBZ як папку",
-            "ZIP oder CBZ als Ordner öffnen", "Apri uno ZIP o CBZ come cartella",
-            "Abrir un ZIP o CBZ como carpeta", "Ouvrir un ZIP ou CBZ comme un dossier",
-            "Abrir um ZIP ou CBZ como pasta", "افتح ZIP أو CBZ كمجلد",
-            "ZIP या CBZ को फ़ोल्डर की तरह खोलें", "ZIP বা CBZ ফোল্ডারের মতো খুলুন",
-            "ZIP یا CBZ کو فولڈر کی طرح کھولیں", "将 ZIP 或 CBZ 作为文件夹打开")
+        Add("Открыть архив (ZIP, CBZ, 7z, RAR, CBR) как папку",
+            "Open an archive (ZIP, CBZ, 7z, RAR, CBR) as a folder",
+            "Відкрити архів (ZIP, CBZ, 7z, RAR, CBR) як папку",
+            "Archiv (ZIP, CBZ, 7z, RAR, CBR) als Ordner öffnen",
+            "Apri un archivio (ZIP, CBZ, 7z, RAR, CBR) come cartella",
+            "Abrir un archivo comprimido (ZIP, CBZ, 7z, RAR, CBR) como carpeta",
+            "Ouvrir une archive (ZIP, CBZ, 7z, RAR, CBR) comme un dossier",
+            "Abrir um arquivo compactado (ZIP, CBZ, 7z, RAR, CBR) como pasta",
+            "افتح أرشيفًا (ZIP وCBZ و7z وRAR وCBR) كمجلد",
+            "किसी संग्रह (ZIP, CBZ, 7z, RAR, CBR) को फ़ोल्डर की तरह खोलें",
+            "একটি আর্কাইভ (ZIP, CBZ, 7z, RAR, CBR) ফোল্ডারের মতো খুলুন",
+            "کسی آرکائیو (ZIP، CBZ، 7z، RAR، CBR) کو فولڈر کی طرح کھولیں",
+            "将压缩包（ZIP、CBZ、7z、RAR、CBR）作为文件夹打开")
+
+        ' --- the sequential pass over a solid 7z/RAR (§5.2, §10, Ф2) -----------------
+
+        Add("Распаковываю архив: {0} %",
+            "Extracting archive: {0} %", "Розпаковую архів: {0} %",
+            "Archiv wird entpackt: {0} %", "Estrazione dell'archivio: {0} %",
+            "Extrayendo el archivo comprimido: {0} %", "Extraction de l'archive : {0} %",
+            "Extraindo o arquivo compactado: {0} %", "جارٍ استخراج الأرشيف: {0} %",
+            "संग्रह निकाला जा रहा है: {0} %", "আর্কাইভ বের করা হচ্ছে: {0} %",
+            "آرکائیو نکالا جا رہا ہے: {0} %", "正在解压压缩包：{0} %")
+
+        Add("Открытие архива отменено",
+            "Opening the archive was cancelled", "Відкриття архіву скасовано",
+            "Das Öffnen des Archivs wurde abgebrochen", "Apertura dell'archivio annullata",
+            "Se canceló la apertura del archivo comprimido",
+            "L'ouverture de l'archive a été annulée",
+            "A abertura do arquivo compactado foi cancelada", "تم إلغاء فتح الأرشيف",
+            "संग्रह खोलना रद्द किया गया", "আর্কাইভ খোলা বাতিল করা হয়েছে",
+            "آرکائیو کھولنا منسوخ کر دیا گیا", "已取消打开压缩包")
 
         Add("Закрыть архив",
             "Close archive", "Закрити архів", "Archiv schließen", "Chiudi archivio",
@@ -245,19 +270,16 @@ Partial Public NotInheritable Class Localization
 
         ' --- audit 052 G-15, G-17 -----------------------------------------------------
 
-        Add("Это не ZIP-архив ({0}) - такие архивы пока не поддерживаются",
-            "This is not a ZIP archive ({0}) - such archives are not supported yet",
-            "Це не ZIP-архів ({0}) - такі архіви поки не підтримуються",
-            "Das ist kein ZIP-Archiv ({0}) - solche Archive werden noch nicht unterstützt",
-            "Questo non è un archivio ZIP ({0}) - archivi di questo tipo non sono ancora supportati",
-            "Esto no es un archivo ZIP ({0}) - estos archivos aún no son compatibles",
-            "Ce n'est pas une archive ZIP ({0}) - ces archives ne sont pas encore prises en charge",
-            "Isto não é um arquivo ZIP ({0}) - esses arquivos ainda não são suportados",
-            "هذا ليس أرشيف ZIP ({0}) - هذه الأرشيفات غير مدعومة بعد",
-            "यह ZIP संग्रह नहीं है ({0}) - ऐसे संग्रह अभी समर्थित नहीं हैं",
-            "এটি ZIP আর্কাইভ নয় ({0}) - এমন আর্কাইভ এখনও সমর্থিত নয়",
-            "یہ ZIP آرکائیو نہیں ہے ({0}) - ایسے آرکائیو ابھی معاون نہیں ہیں",
-            "这不是 ZIP 压缩包（{0}）- 暂不支持此类压缩包")
+        ' Ф2: ZIP, 7z and RAR are read now, so the old "this is not a ZIP" wording is gone -
+        ' what is refused is a format outside that set (a TAR in a .cbz name).
+        Add("Формат архива не поддерживается ({0})",
+            "Archive format not supported ({0})", "Формат архіву не підтримується ({0})",
+            "Archivformat wird nicht unterstützt ({0})", "Formato di archivio non supportato ({0})",
+            "Formato de archivo comprimido no compatible ({0})",
+            "Format d'archive non pris en charge ({0})",
+            "Formato de arquivo compactado não suportado ({0})", "تنسيق الأرشيف غير مدعوم ({0})",
+            "संग्रह प्रारूप समर्थित नहीं है ({0})", "আর্কাইভ ফরম্যাট সমর্থিত নয় ({0})",
+            "آرکائیو فارمیٹ معاون نہیں ہے ({0})", "不支持该压缩包格式（{0}）")
 
         Add("Путь к архиву скопирован в буфер",
             "The archive path was copied to the clipboard",
@@ -273,29 +295,6 @@ Partial Public NotInheritable Class Localization
             "آرکائیو کا راستہ کلپ بورڈ میں کاپی کر دیا گیا",
             "压缩包路径已复制到剪贴板")
 
-        ' --- extraction progress and the unsupported-format verdict (010 Ф2/Ф3) ------
-        ' Registered here because the shared localization gate flags them for every
-        ' language until the table carries them (LocalizationParityTests).
-        Add("Формат архива не поддерживается ({0})",
-            "Archive format is not supported ({0})",
-            "Формат архіву не підтримується ({0})",
-            "Archivformat wird nicht unterstützt ({0})",
-            "Formato di archivio non supportato ({0})",
-            "Formato de archivo no admitido ({0})",
-            "Format d'archive non pris en charge ({0})",
-            "Formato de pacote não suportado ({0})",
-            "تنسيق الأرشيف غير مدعوم ({0})",
-            "आर्काइव प्रारूप समर्थित नहीं है ({0})",
-            "আর্কাইভ ফরম্যাট সমর্থিত নয় ({0})",
-            "آرکائیو فارمیٹ معاون نہیں ({0})",
-            "不支持的压缩包格式（{0}）")
-        Add("Распаковываю архив: {0} %",
-            "Extracting archive: {0} %", "Розпаковую архів: {0} %",
-            "Archiv wird entpackt: {0} %", "Estrazione dell'archivio: {0} %",
-            "Extrayendo el archivo: {0} %", "Extraction de l'archive : {0} %",
-            "Extraindo o pacote: {0} %", "جارٍ استخراج الأرشيف: {0} %",
-            "आर्काइव निकाला जा रहा है: {0} %", "আর্কাইভ আনজিপ করা হচ্ছে: {0} %",
-            "آرکائیو نکالی جا رہی ہے: {0} %", "正在解压：{0} %")
         Add("Открыть ZIP, CBZ, 7z, RAR или CBR как папку",
             "Open ZIP, CBZ, 7z, RAR or CBR as a folder",
             "Відкрити ZIP, CBZ, 7z, RAR або CBR як папку",

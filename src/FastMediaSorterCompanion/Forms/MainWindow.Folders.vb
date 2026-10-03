@@ -63,12 +63,14 @@ Partial Public NotInheritable Class MainWindow
                 Next
             End If
         End Using
+        If IsDisposed Then Return
         Await ApplySharedFoldersAsync()
     End Function
 
     Private Async Sub OnRemoveFolder(sender As Object, e As EventArgs)
         If _busy OrElse lvFolders.SelectedItems.Count = 0 Then Return
         Dim it As ListViewItem = lvFolders.SelectedItems(0)
+        If TypeOf it.Tag Is ShareFolder Then Return
         Dim host As String = Convert.ToString(it.Tag)
         ' The folder's own settings - PIN, filters, destination - go with it and nothing
         ' brings them back (APP-BEHAVIOUR rule 5, ticket 028 Ф-5). Cancel is the default.
@@ -90,6 +92,10 @@ Partial Public NotInheritable Class MainWindow
     Private Async Sub OnConfigureFolder(sender As Object, e As EventArgs)
         If _busy OrElse lvFolders.SelectedItems.Count = 0 Then Return
         Dim it As ListViewItem = lvFolders.SelectedItems(0)
+        If TypeOf it.Tag Is ShareFolder Then
+            If DirectCast(it.Tag, ShareFolder).owner = "filedo" Then Await ShowDisksAsync()
+            Return
+        End If
         Dim host As String = Convert.ToString(it.Tag)
         If String.IsNullOrEmpty(host) Then Return
         Dim before As ShareRootParams = ShareRootParamsStore.GetFor(host)
@@ -101,6 +107,7 @@ Partial Public NotInheritable Class MainWindow
             it.SubItems(1).Text = ProfileLabel(after)
             it.SubItems(3).Text = RoLabel(after)
             If before.IsWritable() <> after.IsWritable() AndAlso it.Checked AndAlso _status IsNot Nothing AndAlso _status.Running Then
+                If IsDisposed Then Return
                 Await ApplySharedFoldersAsync()
             End If
         End Using
@@ -115,6 +122,10 @@ Partial Public NotInheritable Class MainWindow
     End Sub
 
     Private Sub OnItemCheck(sender As Object, e As ItemCheckEventArgs)
+        If Not _loading AndAlso TypeOf lvFolders.Items(e.Index).Tag Is ShareFolder Then
+            e.NewValue = e.CurrentValue
+            Return
+        End If
         If _suppressCheck Then
             e.NewValue = e.CurrentValue
             _suppressCheck = False
@@ -123,9 +134,10 @@ Partial Public NotInheritable Class MainWindow
 
     Private Async Sub OnItemChecked(sender As Object, e As ItemCheckedEventArgs)
         If _loading OrElse _busy Then Return
+        If TypeOf e.Item.Tag Is ShareFolder Then Return
         ' Unticking the last folder stops a running server and disconnects every phone
         ' on it - asked first (APP-BEHAVIOUR rule 5, ticket 028 Ф-5).
-        If Not e.Item.Checked AndAlso ServerIsRunning() AndAlso CurrentShareFolders().Count = 0 Then
+        If Not e.Item.Checked AndAlso ServerIsRunning() AndAlso CurrentShareFolders().Count = 0 AndAlso Not HasExternalRoots() Then
             If MessageBox.Show(Me, Localization.T("Это последняя отмеченная папка. Снять отметку и остановить раздачу? Подключённые телефоны будут отключены."),
                                Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
                                MessageBoxDefaultButton.Button2) <> DialogResult.OK Then
@@ -146,12 +158,31 @@ Partial Public NotInheritable Class MainWindow
     ''' <summary>True when removing <paramref name="item"/> leaves a running server with no
     ''' checked folder - ApplySharedFoldersAsync then stops it.</summary>
     Private Function WillStopServer(item As ListViewItem) As Boolean
+        If HasExternalRoots() Then Return False
         If Not ServerIsRunning() OrElse Not item.Checked Then Return False
         For Each other As ListViewItem In lvFolders.Items
             If other IsNot item AndAlso other.Checked Then Return False
         Next
         Return True
     End Function
+
+    ''' <summary>True when the folder is already in the share list (UI thread).</summary>
+    Friend Function HasShareRow(path As String) As Boolean
+        If String.IsNullOrWhiteSpace(path) OrElse lvFolders Is Nothing Then Return False
+        For Each existing As ListViewItem In lvFolders.Items
+            If String.Equals(Convert.ToString(existing.Tag), path, StringComparison.OrdinalIgnoreCase) Then Return True
+        Next
+        Return False
+    End Function
+
+    Friend Sub SelectSharedFolder(path As String)
+        For Each item As ListViewItem In lvFolders.Items
+            If String.Equals(Convert.ToString(item.Tag), path, StringComparison.OrdinalIgnoreCase) Then
+                SelectRow(item)
+                Return
+            End If
+        Next
+    End Sub
 
     Private Function AddShareRow(path As String) As Boolean
         If String.IsNullOrWhiteSpace(path) Then Return False
@@ -193,6 +224,7 @@ Partial Public NotInheritable Class MainWindow
         Try
             lvFolders.Items.Clear()
             For Each r As ShareFolder In roots
+                If Not r.IsFmsOwned Then Continue For
                 Dim host As String = If(r.hostPath, "")
                 If host.Length = 0 Then Continue For
                 Dim prm As ShareRootParams = ShareRootParamsStore.GetFor(host)
@@ -258,6 +290,12 @@ Partial Public NotInheritable Class MainWindow
         If btnParams Is Nothing OrElse lvFolders Is Nothing Then Return
         btnParams.Enabled = Not _busy AndAlso WorkerProcess.IsAvailable() AndAlso
                             lvFolders.Enabled AndAlso lvFolders.SelectedItems.Count > 0
+        If lvFolders.SelectedItems.Count > 0 AndAlso TypeOf lvFolders.SelectedItems(0).Tag Is ShareFolder Then
+            btnParams.Enabled = btnParams.Enabled AndAlso DirectCast(lvFolders.SelectedItems(0).Tag, ShareFolder).owner = "filedo"
+            btnRemove.Enabled = False
+        Else
+            btnRemove.Enabled = Not _busy AndAlso WorkerProcess.IsAvailable() AndAlso lvFolders.SelectedItems.Count > 0
+        End If
     End Sub
 
     Private Sub OnListSelectionChanged(sender As Object, e As EventArgs)
@@ -268,6 +306,7 @@ Partial Public NotInheritable Class MainWindow
         Dim hosts As New List(Of String)()
         Dim wanted As New List(Of String)()
         For Each it As ListViewItem In lvFolders.Items
+            If TypeOf it.Tag Is ShareFolder Then Continue For
             If Not it.Checked Then Continue For
             Dim host As String = Convert.ToString(it.Tag)
             If String.IsNullOrEmpty(host) Then Continue For
@@ -513,8 +552,8 @@ Partial Public NotInheritable Class MainWindow
             Dim host As String = Convert.ToString(it.Tag)
             Dim isNetwork As Boolean = Not String.IsNullOrEmpty(host) AndAlso network.Contains(host)
             Dim bad As Boolean = isNetwork OrElse (Not String.IsNullOrEmpty(host) AndAlso blocked.Contains(host))
-            ' Empty resets the row to the list's own ink, which follows the theme by itself.
-            it.ForeColor = If(bad, ThemeService.Palette.Danger, Color.Empty)
+            ' Set the ink explicitly: native owner-draw can use black for an empty row colour.
+            it.ForeColor = If(bad, ThemeService.Palette.Danger, ThemeService.Palette.TextPrimary)
             it.ToolTipText = If(isNetwork, networkTip, If(bad, tip, ""))
         Next
         Return blocked.Count + network.Count
@@ -535,6 +574,7 @@ Partial Public NotInheritable Class MainWindow
         If _rootsWithoutAccess = 0 Then Return
         _grantOffered = True
         Await EnsureServiceAccessAsync(CurrentShareFolders())
+        If IsDisposed Then Return
         ApplyStatusToUi()
     End Function
 
@@ -584,7 +624,7 @@ Partial Public NotInheritable Class MainWindow
         End If
 
         Dim folders As List(Of ShareFolder) = CurrentShareFolders()
-        If folders.Count = 0 Then
+        If folders.Count = 0 AndAlso Not HasExternalRoots() Then
             SetBusy(False)
             SetHint(Localization.T("Сначала добавьте папку и отметьте её галочкой."))
             Return
@@ -627,27 +667,53 @@ Partial Public NotInheritable Class MainWindow
         Return Localization.T(IconMap.GetMeaning("folderReadOnly").LocalizationKey)
     End Function
 
-    ''' <summary>The list is owner-drawn for ONE cell kind only: a hard read-only RO cell
-    ''' gets the status.locked glyph; everything else - headers, the check boxes, every
-    ''' other cell, the row colours of RefreshFolderAccessWarnings - is drawn by Windows.</summary>
+    ''' <summary>Two kinds of cell are drawn here. A hard read-only RO cell gets the
+    ''' status.locked glyph. And every cell of a SELECTED row: once the list loses the
+    ''' focus - a click on any button, another window, the screenshot tool - a selected
+    ''' row falls back to the classic inactive-selection look, SystemColors.Control grey
+    ''' with black text, unreadable on the dark palette; the RO cell already painted
+    ''' itself from the palette for that reason. The unselected rows - zebra stripes,
+    ''' warning ink, the check boxes, the headers - stay with Windows. In the light
+    ''' palette these formulas restate to exactly the classic colours, so light mode
+    ''' keeps its look.</summary>
     Private Sub OnFolderDrawSubItem(sender As Object, e As DrawListViewSubItemEventArgs)
-        If e.ColumnIndex <> 3 OrElse e.SubItem Is Nothing OrElse e.SubItem.Text <> HardReadOnlyText() Then
+        Dim selected As Boolean = e.Item.Selected
+        Dim lockCell As Boolean = e.ColumnIndex = 3 AndAlso e.SubItem IsNot Nothing AndAlso
+                                  e.SubItem.Text = HardReadOnlyText()
+        If Not selected AndAlso Not lockCell Then
             e.DrawDefault = True
             Return
         End If
-        Dim selected As Boolean = e.Item.Selected
+        e.DrawDefault = False
         Dim focused As Boolean = lvFolders.Focused
         Dim theme As ThemePalette = ThemeService.Palette
         Dim back As Color = If(selected, If(focused, theme.Accent, theme.SurfaceWindow), lvFolders.BackColor)
         Dim ink As Color = If(selected AndAlso focused, theme.AccentInk, theme.Restate(e.Item.ForeColor, False))
+        ' Column 0 carries the check box Windows draws at the cell's left edge; the
+        ' fill starts at the label so that box is not painted over.
+        Dim left As Integer = e.Bounds.Left
+        If e.ColumnIndex = 0 Then
+            Dim label As Rectangle = lvFolders.GetItemRect(e.ItemIndex, ItemBoundsPortion.Label)
+            left = Math.Max(e.Bounds.Left, label.Left)
+        End If
         Using b As New SolidBrush(back)
-            e.Graphics.FillRectangle(b, e.Bounds)
+            e.Graphics.FillRectangle(b, left, e.Bounds.Top, e.Bounds.Right - left, e.Bounds.Height)
         End Using
-        Dim size As Integer = Math.Min(LogicalToDeviceUnits(16), Math.Max(1, e.Bounds.Height - 2))
-        Using glyph As Bitmap = GlyphRenderer.Render("status.locked", size, ink, AddressOf CompanionAssets.OpenBundledAsset)
-            e.Graphics.DrawImage(glyph, e.Bounds.Left + (e.Bounds.Width - size) \ 2,
-                                 e.Bounds.Top + (e.Bounds.Height - size) \ 2, size, size)
-        End Using
+        If lockCell Then
+            Dim size As Integer = Math.Min(LogicalToDeviceUnits(16), Math.Max(1, e.Bounds.Height - 2))
+            Using glyph As Bitmap = GlyphRenderer.Render("status.locked", size, ink, AddressOf CompanionAssets.OpenBundledAsset)
+                e.Graphics.DrawImage(glyph, e.Bounds.Left + (e.Bounds.Width - size) \ 2,
+                                     e.Bounds.Top + (e.Bounds.Height - size) \ 2, size, size)
+            End Using
+            Return
+        End If
+        Dim cellText As String = If(e.SubItem Is Nothing, "", e.SubItem.Text)   ' column 0's SubItem is the item itself
+        If cellText.Length > 0 Then
+            Dim bounds As New Rectangle(left + 2, e.Bounds.Top, e.Bounds.Right - left - 4, e.Bounds.Height)
+            TextRenderer.DrawText(e.Graphics, cellText, lvFolders.Font, bounds, ink,
+                                  TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine Or
+                                  TextFormatFlags.EndEllipsis Or TextFormatFlags.NoPrefix)
+        End If
     End Sub
 
     ''' <summary>Owner-drawn full-row-select lists repaint a hovered row without raising
@@ -697,7 +763,8 @@ Partial Public NotInheritable Class MainWindow
         For i As Integer = 0 To lvFolders.Items.Count - 1
             Dim it As ListViewItem = lvFolders.Items(i)
             it.BackColor = If((i And 1) = 0, even, odd)
-            If ThemePalette.RoleForColor(it.ForeColor, False) = ThemeRole.Danger Then it.ForeColor = theme.Danger
+            it.ForeColor = If(ThemePalette.RoleForColor(it.ForeColor, False) = ThemeRole.Danger,
+                             theme.Danger, theme.TextPrimary)
         Next
     End Sub
 

@@ -47,6 +47,19 @@ Public Class HostingWiringTests
     End Sub
 
     <Fact>
+    Public Sub TheHelperCall_NamesTheInstallationAsTheFileDoRoot()
+        ' The service runs a copy of the worker staged under ProgramData, and without --filedo-root
+        ' the worker looks for the bundled FileDO beside THAT copy and refuses it (disk sharing:
+        ' "service FileDO must be inside its Program Files installation"). The helper registers
+        ' the service with -FileDoRoot; the Hosting console is one of its callers, so it passes it.
+        Dim src As String = CodeOnly(ReadSource(Path.Combine("Core", "ServiceControl.vb")))
+        Assert.Contains("-FileDoRoot", src)
+        Dim helper As String = File.ReadAllText(Path.Combine(FindCompanionSourceDir(), "..", "..", "publishing", "installer", "install-share-service.ps1"))
+        Assert.Contains("[string]$FileDoRoot", helper)
+        Assert.Contains("--filedo-root", helper)
+    End Sub
+
+    <Fact>
     Public Sub ThePolicyPush_IsBuiltFromTheServerLevelLanOnlyFlag()
         ' The controller owns the push; the export flag must not reach it in any form.
         ' Comments may explain the split by name; code may not use the export flag.

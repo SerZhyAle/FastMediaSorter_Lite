@@ -3,9 +3,24 @@
 | | |
 | --- | --- |
 | **Id** | `INSTALL-TRUST` |
-| **Version** | 1.0, active. Owner: shared |
+| **Version** | 1.1, active (read 2026-10-02). Owner: shared |
 | **Home** | `install-trust/README.md` + `TRUST_GUIDE.md` (the reference rendering) in the shared contracts catalog |
-| **Role here** | producer - **adopted 2026-09-22** (ticket 025 section 7), **re-aligned 2026-09-25** (ticket 037) |
+| **Role here** | producer - **adopted 2026-09-22** (ticket 025 section 7), **re-aligned 2026-09-25** (ticket 037), **re-read against 1.1 on 2026-10-02** |
+
+What 1.1 added, and where this page stands:
+
+- **Rule 5b (SHOULD, persistent unelevated changes with undo)** and the itemized elevations of rule 5 are
+  held by the existing copy; the Share Manager's autostart is the one persistent unelevated change not yet
+  listed - an open adoption item.
+- **Rule 7 (item H):** the download-surface and in-app links are held (`TrustPageContractTests`); the
+  winget manifests now carry `InstallationNotes` pointing at the page (ships with the next manifest
+  version bump).
+- **Item C:** the portable-archive instruction "unpack to a permanent folder before the first run" is not
+  in the page copy yet, and the behaviour-heuristics naming applies only if the product registers global
+  hotkeys - both open adoption items.
+- **Item A:** the translated dialog quotes for hi/bn/ur/zh/pt/fr/ar stand unconfirmed on native-locale
+  Windows; until confirmed they should fall back to the English string with a bracketed gloss - open
+  adoption item.
 
 The installer, the Server edition's installer and the portable ZIP are unsigned, so every GitHub and
 winget user may meet SmartScreen. (Releases before 12 June 2026 also offered a single-exe download whose

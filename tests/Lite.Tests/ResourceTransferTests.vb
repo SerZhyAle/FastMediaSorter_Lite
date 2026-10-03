@@ -191,6 +191,109 @@ Public Class ResourceTransferTests
         End Try
     End Sub
 
+    ' ------------------------------------------------- routing through T10 (100) ----
+
+    <Fact>
+    Public Sub A_move_out_of_an_sftp_shaped_resource_keeps_both_copies_and_says_so()
+        Dim slot As New ResourceSessionSlot()
+        ' Arbitrary SFTP declares no stable-delete guarantee, so a move out of it may not
+        ' delete its source - the transfer lands as a completed copy, reported as exactly
+        ' that (100 §14.2, §15.6 item 3).
+        Dim provider As New ResourceTestProvider(Path.Combine(workDir, "remote-sftp"),
+                                                 New ProviderCapabilities(supportsStableSourceDelete:=False))
+        Try
+            Dim session As ResourceSession = OpenRoutedSession(provider, slot)
+            Dim cached As String = session.Entries.Single(Function(e) e.Name = "a.jpg").LocalPath
+            Dim dest As String = Path.Combine(workDir, "sorted", "a.jpg")
+            Directory.CreateDirectory(Path.GetDirectoryName(dest))
+
+            Dim outcome As TransferOutcome = Nothing
+            Assert.Throws(Of TransferOutcomeException)(Sub() FileManager.MoveFileTracked(cached, dest, False, outcome))
+
+            Assert.True(File.Exists(provider.BackingPath("/MOV/a.jpg"))) ' the source was kept
+            Assert.True(File.Exists(dest))                               ' and the copy exists
+            Assert.Equal(0, provider.DeleteCalls)                        ' nothing was deleted there
+        Finally
+            slot.Leave()
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub A_truncated_fetch_is_caught_by_the_content_check_and_the_remote_original_is_kept()
+        Dim slot As New ResourceSessionSlot()
+        Dim provider As New ResourceTestProvider(Path.Combine(workDir, "remote-trunc"),
+                                                 New ProviderCapabilities(supportsStableSourceDelete:=True)) With {.TruncateDownloadsTo = 10}
+        Try
+            Dim session As ResourceSession = OpenRoutedSession(provider, slot)
+            Dim cached As String = session.Entries.Single(Function(e) e.Name = "a.jpg").LocalPath
+            Dim dest As String = Path.Combine(workDir, "sorted", "a.jpg")
+            Directory.CreateDirectory(Path.GetDirectoryName(dest))
+
+            Assert.Throws(Of TransferOutcomeException)(Sub() FileManager.MoveFile(cached, dest))
+
+            Assert.True(File.Exists(provider.BackingPath("/MOV/a.jpg"))) ' the original was never deleted
+            Assert.False(File.Exists(dest))                              ' nothing half-finished landed
+            Assert.Equal(0, provider.DeleteCalls)
+        Finally
+            slot.Leave()
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub A_copy_into_the_resource_is_verified_by_content_and_a_corrupted_upload_never_lands()
+        Dim slot As New ResourceSessionSlot()
+        Dim provider As New ResourceTestProvider(Path.Combine(workDir, "remote-copy"),
+                                                 New ProviderCapabilities(supportsStableSourceDelete:=True)) With {.TruncateUploadsTo = 10}
+        Try
+            Dim session As ResourceSession = OpenRoutedSession(provider, slot)
+            Dim b As String = session.Entries.Single(Function(e) e.Name = "b.jpg").LocalPath
+            Dim remote_Before As Byte() = File.ReadAllBytes(provider.BackingPath("/MOV/b.jpg"))
+            Dim local As String = LocalFile("incoming.jpg", 300)
+
+            Assert.Throws(Of TransferOutcomeException)(Sub() FileManager.CopyFile(local, b, True))
+
+            Assert.Equal(remote_Before, File.ReadAllBytes(provider.BackingPath("/MOV/b.jpg"))) ' the file there is untouched
+            Assert.True(File.Exists(local))
+            Assert.Empty(Directory.GetFiles(provider.BackingPath("/MOV")).
+                         Select(AddressOf Path.GetFileName).Where(Function(n) n.StartsWith("."))) ' no stage, no backup left
+        Finally
+            slot.Leave()
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub The_undo_of_a_resource_move_validates_its_record_and_refuses_an_occupied_slot()
+        Dim slot As New ResourceSessionSlot()
+        Dim provider As New ResourceTestProvider(Path.Combine(workDir, "remote-undo"),
+                                                 New ProviderCapabilities(supportsStableSourceDelete:=True))
+        Try
+            Dim session As ResourceSession = OpenRoutedSession(provider, slot)
+            Dim cached As String = session.Entries.Single(Function(e) e.Name = "a.jpg").LocalPath
+            Dim dest As String = Path.Combine(workDir, "sorted", "a.jpg")
+            Directory.CreateDirectory(Path.GetDirectoryName(dest))
+
+            Dim outcome As TransferOutcome = Nothing
+            FileManager.MoveFileTracked(cached, dest, False, outcome)
+            Assert.False(File.Exists(provider.BackingPath("/MOV/a.jpg")))
+            Dim record As UndoRecord = TransferUndo.Record(outcome)
+            Assert.NotNull(record)
+
+            provider.PutFile("/MOV/a.jpg", New Byte(9) {}) ' the slot is taken meanwhile
+            Dim refused As TransferOutcome = TransferUndo.Undo(record, ResourceRouting.TransferScratchDir)
+            Assert.Equal(TransferResult.Refused, refused.Result)
+            Assert.Equal(TransferReason.SourceSlotOccupied, refused.Reason)
+            Assert.True(File.Exists(dest)) ' the moved file was not returned - and not destroyed
+
+            provider.DeleteFile("/MOV/a.jpg")
+            Dim undone As TransferOutcome = TransferUndo.Undo(record, ResourceRouting.TransferScratchDir)
+            Assert.Equal(TransferResult.Completed, undone.Result)
+            Assert.Equal(300L, New FileInfo(provider.BackingPath("/MOV/a.jpg")).Length) ' the very file came back
+            Assert.False(File.Exists(dest))
+        Finally
+            slot.Leave()
+        End Try
+    End Sub
+
     <Fact>
     Public Sub FileManager_copies_delete_and_renames_through_the_resource()
         Dim slot As New ResourceSessionSlot()

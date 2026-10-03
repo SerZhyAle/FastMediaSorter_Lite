@@ -124,7 +124,12 @@ Partial Public Class Main_Form
         Me.Controls.Add(panel_Status)
         Me.Controls.Add(flow_Toolbar)
 
+#If NETFRAMEWORK Then
         ApplyModernStyling()
+#Else
+        flow_Toolbar.Visible = False
+        panel_Status.Visible = False
+#End If
 
         Me.ResumeLayout(True)
 
@@ -146,6 +151,7 @@ Partial Public Class Main_Form
     ''' used cryptic ASCII captions. Tooltips (set in InitializeTooltips) remain
     ''' the discoverability layer.
     ''' </summary>
+#If NETFRAMEWORK Then
     Private Sub ApplyModernStyling()
         Dim ui_Font As New Font("Segoe UI", 9.0F, FontStyle.Regular)
         Dim glyph_Font As New Font("Segoe UI Symbol", 10.0F, FontStyle.Regular)
@@ -161,8 +167,9 @@ Partial Public Class Main_Form
         cmbox_Sort.Width = 70
 
         ' One uniform row height so every button/combo lines up - no vertical
-        ' "jumping" from glyph-vs-text font metrics.
-        Dim row_H As Integer = Math.Max(cmbox_Media_Folder.PreferredHeight, 24)
+        ' "jumping" from glyph-vs-text font metrics. The floor is the ICON-RENDER 0.15
+        ' rule 5 hit-target minimum: 28 logical px for a mouse- or pen-driven control.
+        Dim row_H As Integer = Math.Max(cmbox_Media_Folder.PreferredHeight, 28)
         toolbar_Row_Height = row_H
 
         For Each c As Control In flow_Toolbar.Controls
@@ -233,11 +240,14 @@ Partial Public Class Main_Form
         Next
     End Sub
 
+#End If
+
     ''' <summary>
     ''' Full-screen overlay mode: hosts the toolbar inside panel_Media, floated
     ''' over the (full-screen) image with a see-through background. In windowed
     ''' mode the toolbar is docked at the top of the form instead.
     ''' </summary>
+#If NETFRAMEWORK Then
     Friend Sub SetToolbarOverlay(overlay As Boolean)
         If flow_Toolbar Is Nothing OrElse panel_Media Is Nothing Then Return
 
@@ -303,6 +313,8 @@ Partial Public Class Main_Form
         If previous IsNot Nothing Then previous.Dispose()
     End Sub
 
+#End If
+
     ''' <summary>
     ''' Re-applies the active colour scheme to the chrome. Replaces the old
     ''' "For Each ctrl In Me.Controls" loop, recursing into the new container
@@ -322,7 +334,9 @@ Partial Public Class Main_Form
         RecolorContainer(flow_Toolbar, back_Color, opposite_Color, hover_Color)
         RecolorContainer(panel_Status, back_Color, opposite_Color, hover_Color)
 #If Not NETFRAMEWORK Then
-        RecolorCatalogToolbarGlyphs()
+
+        ' The floating panels follow the picture the way this toolbar does.
+        ChromeApplyScheme(back_Color, opposite_Color)
 #End If
 
 #If NETFRAMEWORK Then

@@ -19,7 +19,7 @@ Imports System.Windows.Forms
 ''' window holds what is only interesting once (autostart, the connection cap, hosting).
 ''' Nothing was dropped in that move - §3.7 of the spec is the map, and §1 the inventory.
 '''
-''' The class is split by concern, LITE's Main_Form style; fields and methods are shared
+''' The class is split by concern, the viewer's Main_Form style; fields and methods are shared
 ''' across all four files, so edit the one matching the concern:
 '''   MainWindow.vb          - state, constructor, lifecycle, gate, busy/hint, tray entry points
 '''   MainWindow.Layout.vb   - BuildUi, header/status strips, sections, geometry, DPI
@@ -61,9 +61,13 @@ Partial Public NotInheritable Class MainWindow
     ''' next action is almost always meant for.</summary>
     Private _lastTouchedRoot As String = ""
     Private _iconHandle As IntPtr
+    Private _fontBold As Font
+    Private _fontShare As Font
+    Private _fontEnableTitle As Font
     ' Code-drawn button glyphs; built in BuildUi at the display's DPI (see _shareGlyph there).
     Private _copyGlyph As Image
     Private _addGlyph As Image
+    Private _disksGlyph As Image
     Private _shareGlyph As Image
     Private _gearGlyph As Image
     Private _eyeGlyph As Image
@@ -87,9 +91,11 @@ Partial Public NotInheritable Class MainWindow
     Private progressBar As ProgressBar
     Private lvFolders As ListView
     Private btnAdd As Button
+    Private btnDisks As Button
     Private btnAddCurrent As Button
     Private btnRemove As Button
     Private btnParams As Button
+    Private btnBroadcasts As Button
     Private btnToggle As Button
     Private btnShare As Button
     Private btnSettings As Button
@@ -97,7 +103,6 @@ Partial Public NotInheritable Class MainWindow
     Private btnTest As Button
     Private btnStatsDetails As Button
     Private btnRevealPassword As Button
-    Private btnHelp As Button
     Private lblState As Label
     Private lblStateDot As Label
     Private lblIntro As Label
@@ -111,17 +116,7 @@ Partial Public NotInheritable Class MainWindow
     Private lblStatFiles As Label
     Private _statsTimer As Timer   ' periodic status refresh so the usage block stays live while the window is open
     Private lblHosting As Label
-    Private miAndroid As ToolStripMenuItem
-    Private miSiteGuide As ToolStripMenuItem
-    Private miRouterSearch As ToolStripMenuItem
-    Private miOpenViewer As ToolStripMenuItem
-    Private lnkLanguage As LinkLabel
     Private toolTip As ToolTip
-    ''' <summary>The help drop-down. A shown ContextMenuStrip keeps a native window rooted
-    ''' in the handle table and closures over this window's handlers, so it is a field and
-    ''' dies with the form (ticket 054 H-20) - otherwise every closed MainWindow (and a
-    ''' language switch rebuilds it) could stay reachable from the tray process.</summary>
-    Private _helpMenu As ContextMenuStrip
     Private ReadOnly _serverRows As New List(Of ServerRow)()
 
     ' --- layout containers ------------------------------------------------------
@@ -218,19 +213,29 @@ Partial Public NotInheritable Class MainWindow
     ''' worked whenever the window happened to be closed, the failure looked random.
     ''' </summary>
     Friend Async Function ShareFolderFromWakeAsync(folder As String) As Task
+        If Not Await wake_Ready.Task OrElse IsDisposed Then Return
         If String.IsNullOrEmpty(folder) Then Return
         If Not ServerFeatures.IsEnabled() OrElse Not WorkerProcess.IsAvailable() Then Return
-        If Not Directory.Exists(folder) Then Return
+        If Not Await Task.Run(Function() Directory.Exists(folder)) OrElse IsDisposed Then Return
 
         ' Same three steps OnShownFirst takes for a folder handed to the constructor.
         If AddShareRow(folder) Then Await ApplySharedFoldersAsync()
         OnShareClicked(Me, EventArgs.Empty)
     End Function
 
+    Private ReadOnly wake_Ready As New TaskCompletionSource(Of Boolean)(TaskCreationOptions.RunContinuationsAsynchronously)
+
     Private Async Sub OnShownFirst(sender As Object, e As EventArgs)
         If _entered Then Return
         _entered = True
-        Await EnterAsync()
+        Try
+            Await EnterAsync()
+            wake_Ready.TrySetResult(True)
+        Catch ex As Exception
+            wake_Ready.TrySetResult(False)
+            AppFileLogger.LogException("Share Manager: opening the manager window", ex)
+            Return
+        End Try
         _statsTimer.Start()   ' keep the usage-stats block live while the window is open
         If _initialFolder.Length > 0 AndAlso ServerFeatures.IsEnabled() AndAlso WorkerProcess.IsAvailable() Then
             If Directory.Exists(_initialFolder) AndAlso AddShareRow(_initialFolder) Then Await ApplySharedFoldersAsync()
@@ -256,11 +261,25 @@ Partial Public NotInheritable Class MainWindow
         End Try
         Try : _statsTimer.Stop() : _statsTimer.Dispose() : Catch : End Try
         ' What outlives the form is released here rather than left to finalization
-        ' (ticket 054 H-20): the tooltip and the help menu each hold a native window and
-        ' references back into this form, and the glyph bitmaps are plain GDI objects a
+        ' (ticket 054 H-20): the tooltip holds a native window and references back into
+        ' this form, and the glyph bitmaps are plain GDI objects a
         ' tray process has no reason to keep.
         Try : toolTip.Dispose() : Catch : End Try
-        Try : _helpMenu.Dispose() : Catch : End Try
+        Try
+            If _fontBold IsNot Nothing Then _fontBold.Dispose()
+        Catch
+        End Try
+        Try
+            If _fontShare IsNot Nothing Then _fontShare.Dispose()
+        Catch
+        End Try
+        Try
+            If _fontEnableTitle IsNot Nothing Then _fontEnableTitle.Dispose()
+        Catch
+        End Try
+        _fontBold = Nothing
+        _fontShare = Nothing
+        _fontEnableTitle = Nothing
         DisposeImage(_copyGlyph)
         DisposeImage(_addGlyph)
         DisposeImage(_shareGlyph)
@@ -318,6 +337,8 @@ Partial Public NotInheritable Class MainWindow
         End If
 
         _status = st
+        Await RefreshDiskSnapshotAsync()
+        If IsDisposed Then Return
         If Not _listPopulated Then
             PopulateFolders(st.Roots)
             _listPopulated = True
@@ -356,6 +377,7 @@ Partial Public NotInheritable Class MainWindow
     Private Sub OnEnableServer(sender As Object, e As EventArgs)
         Using dlg As New Share_Enable_Form()
             If dlg.ShowDialog(Me) = DialogResult.OK Then
+                If IsDisposed Then Return
                 ApplyGate()
                 _entered = False
                 _listPopulated = False
@@ -402,18 +424,6 @@ Partial Public NotInheritable Class MainWindow
         End Try
     End Sub
 
-    Private Sub OnOpenViewerClicked(sender As Object, e As EventArgs)
-        Try
-            Dim dir As String = Path.GetDirectoryName(Application.ExecutablePath)
-            Dim exe As String = Path.Combine(dir, "FastMediaSorter_LITE.exe")
-            If File.Exists(exe) Then
-                Process.Start(New ProcessStartInfo(exe) With {.UseShellExecute = True})
-            Else
-                SetHint(Localization.T("Fast Media Sorter не найден рядом."))
-            End If
-        Catch
-        End Try
-    End Sub
 
     ''' <summary>Opens the manager settings (autostart, connection cap, hosting). Re-reads
     ''' status afterwards only when an elevated hosting action actually changed the machine
@@ -447,8 +457,18 @@ Partial Public NotInheritable Class MainWindow
         lblHint.Text = If(text, "")
     End Sub
 
+    Private Sub OnBroadcastsClicked(sender As Object, e As EventArgs)
+        Try
+            Using dlg As New Share_Broadcasts_Form()
+                dlg.ShowDialog(Me)
+            End Using
+        Catch ex As Exception
+            AppFileLogger.LogException("MainWindow.OnBroadcastsClicked", ex)
+        End Try
+    End Sub
+
     Private Sub SetServerControlsEnabled(enabled As Boolean)
-        For Each c As Control In New Control() {btnToggle, btnAdd, btnAddCurrent, btnRemove, btnParams, lvFolders, btnShare, btnGuide}
+        For Each c As Control In New Control() {btnToggle, btnAdd, btnDisks, btnAddCurrent, btnRemove, btnParams, btnBroadcasts, lvFolders, btnShare, btnGuide}
             If c IsNot Nothing Then c.Enabled = enabled
         Next
     End Sub
@@ -459,6 +479,7 @@ Partial Public NotInheritable Class MainWindow
         Dim running As Boolean = _status IsNot Nothing AndAlso _status.Running
         btnToggle.Enabled = Not value AndAlso avail
         btnAdd.Enabled = Not value AndAlso avail
+        btnDisks.Enabled = Not value AndAlso avail
         btnAddCurrent.Enabled = Not value AndAlso avail
         btnRemove.Enabled = Not value AndAlso avail
         lvFolders.Enabled = Not value AndAlso avail

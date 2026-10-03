@@ -8,22 +8,28 @@ PublisherUrl: https://github.com/SerZhyAle
 PublisherSupportUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/issues
 Author: Serhii Zhyhunenko
 # PackageName is FROZEN as "FastMediaSorter LITE" (it matches the installed ARP
-# DisplayName, which is how winget correlates `winget upgrade`) - do NOT rename it.
-# Only ShortDescription/Description are refreshed with the new brand name; the
-# product is described as "Fast Media Sorter for Windows (published as
-# FastMediaSorter LITE)". See SPECIFICATION_RENAME_FAST_MEDIA_SORTER_FOR_WINDOWS.md.
+# DisplayName, which is how winget correlates `winget upgrade`) - do NOT rename it, and do
+# NOT add AppsAndFeaturesEntries to move it (owner decision, ticket 111 Q-1: the two are
+# pinned together and stay). It is the one visible survivor of the old name here; only
+# ShortDescription/Description carry the product's current name, "Fast Media Sorter &
+# Sharing for Windows" (docs/guides/PRODUCT_NAMING.md). `winget search` still lists the
+# package under the frozen PackageName.
 PackageName: FastMediaSorter LITE
 PackageUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite
 License: MIT
 LicenseUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/main/LICENSE
 Copyright: Copyright (c) 2025 SZA
-ShortDescription: Fast Media Sorter for Windows - keyboard-driven viewer and sorter for images and videos, now a modern 64-bit build that needs no .NET Framework.
+ShortDescription: Fast Media Sorter & Sharing for Windows - sort, view and share images and videos with a keyboard-driven viewer and sorter that also shares folders to your phone over SFTP.
 Description: |-
-  Fast Media Sorter for Windows (published here as "FastMediaSorter LITE") is a fast, keyboard-driven
-  viewer and sorter for images and video on Windows. Tick folders to browse, then move, copy, rename or
+  Fast Media Sorter & Sharing for Windows is a fast, keyboard-driven viewer and sorter for images and
+  video on Windows - sort, view and share. Tick folders to browse, then move, copy, rename or
   delete files with single-key hotkeys - built for photographers and creators who triage large media
   folders quickly. It handles a wide range of formats, slideshow and random modes, EXIF auto-rotate, an
   Ambilight-style background fill, and optional on-image OCR translation.
+
+  Sharing here means giving your own media to your own devices: the bundled Share Manager turns the PC
+  into a private SFTP server for the folders you pick, and the Android app pairs with it by QR code. It
+  is opt-in and stays off until you switch it on.
 
   The main program is now a 64-bit .NET 10 build that carries its own runtime - there is nothing extra
   to install and no .NET Framework requirement. It replaces the previous version in place and keeps
@@ -43,6 +49,9 @@ Description: |-
   English, Russian and Ukrainian are proofread by the author; the rest are machine translations,
   and corrections are welcome through the issue tracker. The setup wizard itself stays English.
 Moniker: fastmediasorter
+# INSTALL-TRUST 1.1 rule 7 (item H): the builds are unsigned, so winget tells the user
+# where the SmartScreen page lives. Ships with the next manifest version bump.
+InstallationNotes: "This package is unsigned - Windows may show a SmartScreen warning on first run. What to expect and click: https://serzhyale.github.io/FastMediaSorter_Lite/trust.html"
 Tags:
 - file-manager
 - hotkeys
@@ -51,6 +60,7 @@ Tags:
 - organizer
 - photos
 - pictures
+- sharing
 - slideshow
 - sorter
 - triage

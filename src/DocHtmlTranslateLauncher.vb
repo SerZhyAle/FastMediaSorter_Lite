@@ -202,10 +202,16 @@ Public Module DocHtmlTranslate
         End Try
     End Function
 
-    ''' <summary>Opens the Microsoft Store page. False when the shell refused it.</summary>
+    ''' <summary>Opens the Microsoft Store page - on the x86 fallback, whose systems have no
+    ''' Store, the project page instead. False when the shell refused it.</summary>
     Public Function OpenStorePage() As Boolean
+#If NETFRAMEWORK Then
+        Dim url As String = ProjectPage
+#Else
+        Dim url As String = StorePage
+#End If
         Try
-            Using started As Process = Process.Start(New ProcessStartInfo(StorePage) With {.UseShellExecute = True})
+            Using started As Process = Process.Start(New ProcessStartInfo(url) With {.UseShellExecute = True})
             End Using
             Return True
         Catch ex As Exception

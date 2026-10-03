@@ -1,73 +1,127 @@
 #If Not NETFRAMEWORK Then
+Option Explicit On
 Option Strict On
+Option Infer On
+Option Compare Binary
 
-''' <summary>
-''' Media content classifier (003_SPECIFICATION_SORTABLE_CONTENT_KINDS_DOTNET10.md PK-1).
-''' A single source of truth for what kind of file we are dealing with.
-''' </summary>
+Imports System.Collections.Generic
+Imports System.Linq
+
+''' <summary>MEDIA-CLASSIFICATION 0.10 rule 1: categories describe content, not renderer support.</summary>
 Public Enum MediaKind
-    Image       ' Something the IImageDecoder seam or GDI+ can turn into pixels
-    Video       ' Something LibVLC plays with a picture (video/WebM/MKV/3GP/MOV/AVI/WMV/etc.)
-    Audio       ' Something LibVLC plays without a picture (MP3/WAV/M4A/WMA/OGG)
-    Document    ' Text, PDF, EPUB - sortable now, previewable later (PD)
-    Secure      ' A sealed .fd-sec container: its real kind is unknown until it is opened
-    Other       ' User-configured, no built-in renderer
+    Image = 0
+    Video = 1
+    Audio = 2
+    Document = 3
+    Container = 4
+    Other = 5 ' Contract UNKNOWN
+    Book = 6
+    Stream = 7
 End Enum
 
 Public Module MediaKindClassifier
-    ''' <summary>
-    ''' Classify a file by its extension. The table is the single source of truth,
-    ''' and existing extension sets are derived from it.
-    ''' </summary>
-    Friend Function KindOf(extension As String) As MediaKind
-        If String.IsNullOrEmpty(extension) Then Return MediaKind.Other
+    Private ReadOnly Categories As Dictionary(Of String, MediaKind) = CreateCategories()
+    Private ReadOnly TemporarySuffixes As String() = {".temp_copy", ".download"}
 
-        Dim ext = extension.ToLowerInvariant()
+    Private Function CreateCategories() As Dictionary(Of String, MediaKind)
+        Dim result As New Dictionary(Of String, MediaKind)(StringComparer.OrdinalIgnoreCase)
+        AddCategory(result, MediaKind.Image, ".jpg .jpeg .png .webp .gif .bmp .avif .heic .heif .svg .tiff .ico .wmf .emf .tif .exif")
+        AddCategory(result, MediaKind.Video, ".mp4 .mkv .mov .webm .3gp .flv .wmv .m4v .avi .mpg .mpeg .ts .m2ts .vob .ogv .divx .m2v .mts .3g2 .asf")
+        AddCategory(result, MediaKind.Audio, ".mp3 .m4a .flac .aac .ogg .wma .opus .amr .awb .ac3 .ec3 .ac4 .adts .thd .mka .oga .caf .alac .mia .mid .midi .wav .wave .m4b")
+        AddCategory(result, MediaKind.Book, ".epub .pdf .cbz .cbr .fb2 .mobi")
+        AddCategory(result, MediaKind.Stream, ".m3u .m3u8 .pls .xspf .fmsbcast")
+        AddCategory(result, MediaKind.Container, ".fd-sec .zip .rar .7z .tar .gz .bz2 .xz .cab .arj .lzh .iso .dmg .img .vhd .vdi .qcow2 .vmdk")
+        AddCategory(result, MediaKind.Document, ".doc .docx .rtf .odt .xls .xlsx .ods .ppt .pptx .odp .txt .md .json .xml .csv .tsv .yaml .yml .toml .ini .conf .log .html .htm")
+        Return result
+    End Function
 
-        ' A secure container, whose real kind nobody can know until it is opened
-        ' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §5.3). After opening, the
-        ' sealed TRUE name comes back through this same function, so there is still one
-        ' classifier - the container is simply a kind of its own until then.
-        If ext = ".fd-sec" Then Return MediaKind.Secure
+    Private Sub AddCategory(table As Dictionary(Of String, MediaKind), kind As MediaKind, extensions As String)
+        For Each extension As String In extensions.Split(" "c)
+            table.Add(extension, kind)
+        Next
+    End Sub
 
-        ' Image formats: all decodable image types on modern build
-        If IsImageExtension(ext) Then Return MediaKind.Image
-
-        ' Audio: no video picture, handled by LibVLC
-        If IsAudioExtension(ext) Then Return MediaKind.Audio
-
-        ' Document: text and ebook formats (PD will render these later)
-        If IsDocumentExtension(ext) Then Return MediaKind.Document
-
-        ' Video: handled by LibVLC with a picture
-        If IsVideoExtension(ext) Then Return MediaKind.Video
-
-        ' Everything else
+    ''' <summary>Classify an extension or filename. No I/O; .m4b defaults to AUDIO unless
+    ''' the caller supplies chapter/container evidence (rule 2). Local aliases .tif/.exif
+    ''' and .log/.html/.htm remain supported. This table never expands navigation.</summary>
+    Friend Function KindOf(nameOrExtension As String, Optional hasBookCues As Boolean = False) As MediaKind
+        Dim extension As String = ExtensionOf(nameOrExtension)
+        If extension = ".m4b" AndAlso hasBookCues Then Return MediaKind.Book
+        Dim kind As MediaKind
+        If Categories.TryGetValue(extension, kind) Then Return kind
         Return MediaKind.Other
     End Function
 
-    Private Function IsImageExtension(ext As String) As Boolean
-        Return ext = ".jpg" OrElse ext = ".jpeg" OrElse ext = ".png" OrElse ext = ".gif" OrElse
-               ext = ".bmp" OrElse ext = ".tif" OrElse ext = ".tiff" OrElse ext = ".ico" OrElse ext = ".wmf" OrElse
-               ext = ".emf" OrElse ext = ".exif" OrElse ext = ".webp" OrElse ext = ".avif" OrElse
-               ext = ".heic" OrElse ext = ".heif"
+    ''' <summary>Rule 3. Strip repeated temporary suffixes, trailing spaces and dots,
+    ''' then take the final extension. Works for Windows paths and archive names without
+    ''' Path parsing (an archive name may contain a colon). Never changes the actual path.</summary>
+    Friend Function ExtensionOf(nameOrExtension As String) As String
+        Dim name As String = NormalizeSuffix(nameOrExtension)
+        Dim slash As Integer = name.LastIndexOfAny(New Char() {"/"c, "\"c})
+        Dim dot As Integer = name.LastIndexOf("."c)
+        If dot <= slash Then Return ""
+        Return name.Substring(dot).ToLowerInvariant()
     End Function
 
-    Private Function IsAudioExtension(ext As String) As Boolean
-        Return ext = ".mp3" OrElse ext = ".wav" OrElse ext = ".m4a" OrElse ext = ".wma" OrElse ext = ".ogg"
+    Friend Function NormalizeSuffix(name As String) As String
+        name = If(name, "").TrimEnd(" "c, "."c)
+        Do
+            Dim removed As Boolean = False
+            For Each suffix As String In TemporarySuffixes
+                If name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase) Then
+                    name = name.Substring(0, name.Length - suffix.Length).TrimEnd(" "c, "."c)
+                    removed = True
+                    Exit For
+                End If
+            Next
+            If Not removed Then Return name
+        Loop
+    End Function
+End Module
+
+Friend Module SortableContentKinds
+    Friend Function BuildExtensions(images As IEnumerable(Of String), playback As IEnumerable(Of String),
+                                    unsupportedImages As IEnumerable(Of String), preferences As ModernViewerPreferences) As HashSet(Of String)
+        Dim result As New HashSet(Of String)(images, StringComparer.OrdinalIgnoreCase)
+        result.UnionWith(unsupportedImages)
+        For Each extension As String In playback
+            Dim kind As MediaKind = KindOf(extension)
+            If kind = MediaKind.Audio AndAlso Not preferences.IncludeAudioInNavigation Then Continue For
+            If kind = MediaKind.Video AndAlso Not preferences.IncludeVideoInNavigation Then Continue For
+            result.Add(extension)
+        Next
+        If preferences.IncludeDocumentInNavigation Then result.UnionWith(preferences.DocumentExtensionSet())
+        If preferences.SortOtherFiles Then result.UnionWith(preferences.OtherExtensionSet())
+        Return result
     End Function
 
-    Private Function IsDocumentExtension(ext As String) As Boolean
-        Return ext = ".txt" OrElse ext = ".md" OrElse ext = ".log" OrElse ext = ".csv" OrElse
-               ext = ".json" OrElse ext = ".xml" OrElse ext = ".html" OrElse ext = ".htm" OrElse
-               ext = ".pdf" OrElse ext = ".epub" OrElse ext = ".fb2"
+    Friend Function CanDecodeImage(path As String, decoderExtensions As IEnumerable(Of String)) As Boolean
+        Return KindOf(path) = MediaKind.Image AndAlso decoderExtensions.Contains(MediaKindClassifier.ExtensionOf(path), StringComparer.OrdinalIgnoreCase)
+    End Function
+End Module
+
+''' <summary>Rule 5 excludes junk before browsing/classification, never from storage verbs.</summary>
+Friend Module MediaBrowsing
+    Friend Function IsJunk(path As String) As Boolean
+        If String.IsNullOrEmpty(path) Then Return True
+        Dim segments As String() = path.Split(New Char() {"/"c, "\"c})
+        For Each segment As String In segments
+            If segment.Length = 0 OrElse segment = "." OrElse segment = ".." Then Continue For
+            If segment.StartsWith(".", StringComparison.Ordinal) OrElse
+               String.Equals(segment, "__MACOSX", StringComparison.OrdinalIgnoreCase) Then Return True
+        Next
+        Dim leaf As String = MediaKindClassifier.NormalizeSuffix(segments(segments.Length - 1))
+        Return leaf.Length = 0 OrElse
+            String.Equals(leaf, "Thumbs.db", StringComparison.OrdinalIgnoreCase) OrElse
+            String.Equals(leaf, "desktop.ini", StringComparison.OrdinalIgnoreCase) OrElse
+            leaf.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase) OrElse
+            leaf.EndsWith(".swp", StringComparison.OrdinalIgnoreCase) OrElse
+            leaf.IndexOf(".~", StringComparison.Ordinal) >= 0
     End Function
 
-    Private Function IsVideoExtension(ext As String) As Boolean
-        Return ext = ".webm" OrElse ext = ".3g2" OrElse ext = ".mkv" OrElse ext = ".3gp" OrElse
-               ext = ".mp4" OrElse ext = ".m4v" OrElse ext = ".mov" OrElse ext = ".avi" OrElse
-               ext = ".wmv" OrElse ext = ".asf" OrElse ext = ".mpg" OrElse ext = ".mpeg" OrElse
-               ext = ".flv"
+    Friend Function IsEligible(path As String, supportedExtensions As ISet(Of String)) As Boolean
+        Return Not IsJunk(path) AndAlso supportedExtensions IsNot Nothing AndAlso
+            supportedExtensions.Contains(MediaKindClassifier.ExtensionOf(path))
     End Function
 End Module
 #End If

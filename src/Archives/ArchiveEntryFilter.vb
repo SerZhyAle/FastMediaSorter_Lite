@@ -24,18 +24,12 @@ Friend Module ArchiveEntryFilter
         ".zip", ".cbz", ".7z", ".rar", ".cbr"}
 
     ''' <summary>
-    ''' Formats admitted by name; ArchiveSession verifies their detected content.
+    ''' What the viewer opens as a folder. Phase Ф2 added 7z/RAR/CBR: a solid one is read in a
+    ''' single sequential pass (<see cref="ArchiveSession.RunSequentialPass"/>) instead of one
+    ''' slow seek per picture, so the whole set of containers it recognizes is now openable.
     ''' </summary>
     Friend ReadOnly Openable_Extensions As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
         ".zip", ".cbz", ".7z", ".rar", ".cbr"}
-
-    ''' <summary>
-    ''' Names archivers and file managers leave behind that are never content: the resource
-    ''' forks a Mac adds to every ZIP, and Explorer's own droppings. Without this a CBZ made
-    ''' on a Mac shows a second, invisible copy of every page.
-    ''' </summary>
-    Private ReadOnly Junk_Prefixes As String() = {"__MACOSX/", "__MACOSX\"}
-    Private ReadOnly Junk_Names As String() = {"Thumbs.db", "desktop.ini", ".DS_Store"}
 
     ''' <summary>Is this path an archive the viewer knows how to open at all?</summary>
     Friend Function IsArchivePath(filePath As String) As Boolean
@@ -59,18 +53,12 @@ Friend Module ArchiveEntryFilter
         ' the decoder would only fail on it later, one flip further from the cause.
         If size <= 0 Then Return False
 
-        For Each prefix As String In Junk_Prefixes
-            If entryName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) Then Return False
-        Next
+        If MediaBrowsing.IsJunk(entryName) Then Return False
 
         Dim leaf As String = LastSegmentOf(entryName)
         If leaf.Length = 0 Then Return False
-        If leaf.StartsWith("._", StringComparison.Ordinal) Then Return False   ' AppleDouble
-        For Each junk As String In Junk_Names
-            If String.Equals(leaf, junk, StringComparison.OrdinalIgnoreCase) Then Return False
-        Next
 
-        If Archive_Extensions.Contains(Path.GetExtension(leaf)) Then Return False
+        If Archive_Extensions.Contains(ExtensionOf(leaf)) Then Return False
         Return isSupportedMedia
     End Function
 
@@ -92,9 +80,8 @@ Friend Module ArchiveEntryFilter
     ''' </summary>
     Friend Function ExtensionOf(entryName As String) As String
         Dim leaf As String = LastSegmentOf(entryName)
-        Dim dot As Integer = leaf.LastIndexOf("."c)
-        If dot <= 0 Then Return ""
-        Return leaf.Substring(dot).ToLowerInvariant()
+        If leaf.StartsWith(".", StringComparison.Ordinal) Then Return ""
+        Return MediaKindClassifier.ExtensionOf(leaf)
     End Function
 
     ''' <summary>

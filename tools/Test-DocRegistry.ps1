@@ -3,7 +3,7 @@
     Validate the maintained documentation corpus against DOC-INTERNAL-QUALITY.
 .DESCRIPTION
     Registry coverage includes non-vendored Markdown and HTML. Source Markdown is checked for
-    links, anchors, tracked assets, house style and offline safety. Published HTML and site render
+    links, anchors, available assets, house style and offline safety. Published HTML and site render
     synchronization remain owned by Build-SitePages -Check (release preflight).
 #>
 [CmdletBinding()]
@@ -31,10 +31,8 @@ function Ignored([string]$path) {
     }
     return $false
 }
-# Git's candidate set excludes owner-local files and includes new, not-yet-staged documents.
-$files = @(& git -C $Root ls-files --cached --others --exclude-standard)
-if ($LASTEXITCODE -ne 0) { Exit-Verdict 'Test-DocRegistry' 2 'git file inventory unavailable' }
-$tracked = @(& git -C $Root ls-files --cached)
+# Inspect the maintained files on disk, including new documents, without invoking Git.
+$files = @(Get-WorkspaceFiles $Root)
 $disk = @($files | Where-Object { ([IO.Path]::GetExtension($_) -in $policy.extensions -or $_ -in $policy.extraFiles) -and !(Ignored $_) } | Sort-Object -Unique)
 $seen = @{}
 $records = @(Get-Content $registry | Where-Object { $_.Trim() } | ForEach-Object { $_ | ConvertFrom-Json })
@@ -113,8 +111,8 @@ function Check-Link([string]$source, [string]$url, [bool]$image) {
     $rel = [IO.Path]::GetRelativePath($Root, $full).Replace('\','/')
     if ($rel -match '^docs/specifications(/|$)') { Problem "${source}: owner-local specification link: $url"; return }
     if (!(Test-Path -LiteralPath $full)) { Problem "${source}: missing target: $url"; return }
-    if ($image -and $rel -notin $tracked) { Problem "${source}: asset is not tracked: $url" }
-    if ((Test-Path -LiteralPath $full -PathType Leaf) -and $rel -notin $files) { Problem "${source}: target unavailable in a clone: $url" }
+    if ($image -and $rel -notin $files) { Problem "${source}: asset outside maintained inventory: $url" }
+    if ((Test-Path -LiteralPath $full -PathType Leaf) -and $rel -notin $files) { Problem "${source}: target outside maintained inventory: $url" }
     if ($split.Count -gt 1 -and $split[1]) {
         if ($split[1] -match '^L(\d+)(?:-L(\d+))?$' -and [IO.Path]::GetExtension($full) -notin '.md','.html') {
             $lineTotal = @(Get-Content -LiteralPath $full).Count

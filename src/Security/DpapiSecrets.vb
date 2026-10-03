@@ -40,3 +40,70 @@ Public Module DpapiSecrets
     End Function
 
 End Module
+
+''' <summary>What protecting or unprotecting a secret came to - three outcomes a caller
+''' must not collapse: "nothing to protect" is not a failure, and "protection failed" must
+''' never be saved as if an empty blob were the secret (100 §15.4 item 6).</summary>
+Public Enum SecretProtectionStatus
+    EmptyInput = 0
+    Success = 1
+    ProtectionFailed = 2
+End Enum
+
+Public NotInheritable Class SecretProtectionResult
+    Friend Sub New(status As SecretProtectionStatus, value As String)
+        Me.Status = status
+        Me.Value = If(value, "")
+    End Sub
+
+    Public ReadOnly Property Status As SecretProtectionStatus
+    ''' <summary>The base64 blob (protect) or the plaintext (unprotect); "" unless Success.</summary>
+    Public ReadOnly Property Value As String
+
+    Public ReadOnly Property Succeeded As Boolean
+        Get
+            Return Status = SecretProtectionStatus.Success
+        End Get
+    End Property
+
+    ''' <summary>Never the value.</summary>
+    Public Overrides Function ToString() As String
+        Return Status.ToString()
+    End Function
+End Class
+
+''' <summary>The result-returning form of <see cref="DpapiSecrets"/>. The existing
+''' Protect/Unprotect keep their "empty string on failure" contract, which the cloud API
+''' key code relies on; a caller that must tell failure from empty uses these. The cipher
+''' is injectable so the failure paths are testable without a broken DPAPI.</summary>
+Public Module DpapiSecretChecks
+
+    Public Function ProtectChecked(plain As String, Optional cipher As Func(Of Byte(), Byte()) = Nothing) As SecretProtectionResult
+        If String.IsNullOrEmpty(plain) Then Return New SecretProtectionResult(SecretProtectionStatus.EmptyInput, "")
+        Try
+            Dim encrypt As Func(Of Byte(), Byte()) = If(cipher, Function(data As Byte()) ProtectedData.Protect(data, Nothing, DataProtectionScope.CurrentUser))
+            Dim blob As Byte() = encrypt(Encoding.UTF8.GetBytes(plain))
+            ' A non-empty secret that produced no blob is a failure, whatever the API said.
+            If blob Is Nothing OrElse blob.Length = 0 Then Return New SecretProtectionResult(SecretProtectionStatus.ProtectionFailed, "")
+            Return New SecretProtectionResult(SecretProtectionStatus.Success, Convert.ToBase64String(blob))
+        Catch ex As Exception
+            AppFileLogger.WriteLine("DPAPI: protect failed - " & ex.GetType().Name)
+            Return New SecretProtectionResult(SecretProtectionStatus.ProtectionFailed, "")
+        End Try
+    End Function
+
+    Public Function UnprotectChecked(protectedBase64 As String, Optional cipher As Func(Of Byte(), Byte()) = Nothing) As SecretProtectionResult
+        If String.IsNullOrEmpty(protectedBase64) Then Return New SecretProtectionResult(SecretProtectionStatus.EmptyInput, "")
+        Try
+            Dim decrypt As Func(Of Byte(), Byte()) = If(cipher, Function(data As Byte()) ProtectedData.Unprotect(data, Nothing, DataProtectionScope.CurrentUser))
+            Dim plain As Byte() = decrypt(Convert.FromBase64String(protectedBase64))
+            If plain Is Nothing OrElse plain.Length = 0 Then Return New SecretProtectionResult(SecretProtectionStatus.ProtectionFailed, "")
+            Return New SecretProtectionResult(SecretProtectionStatus.Success, Encoding.UTF8.GetString(plain))
+        Catch ex As Exception
+            ' The caller re-prompts; the stored blob is left exactly as it was.
+            AppFileLogger.WriteLine("DPAPI: a stored secret could not be decrypted - " & ex.GetType().Name)
+            Return New SecretProtectionResult(SecretProtectionStatus.ProtectionFailed, "")
+        End Try
+    End Function
+
+End Module

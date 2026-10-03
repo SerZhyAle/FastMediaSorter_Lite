@@ -22,7 +22,7 @@ Public Class LifecycleAndSettingsAuditTests
     Public Sub F01_saving_the_settings_never_clears_the_destination_slots()
         Dim lifecycle As String = ReadSource("Main_Form.Lifecycle.vb")
         Assert.DoesNotMatch(New Regex("Hardkeys_to_move_mediafile\(\w+\)\s*=\s*Nothing"), lifecycle)
-        Assert.Contains("Private Sub PersistSettings()", lifecycle)
+        Assert.Contains("Private Function PersistSettings() As Boolean", lifecycle)
         Assert.DoesNotMatch(New Regex("PersistSettings\(\s*final_Save"), lifecycle)
     End Sub
 
@@ -30,7 +30,7 @@ Public Class LifecycleAndSettingsAuditTests
     Public Sub F01_a_shutdown_only_persists_in_FormClosing_and_tears_down_in_FormClosed()
         Dim lifecycle As String = ReadSource("Main_Form.Lifecycle.vb")
         Dim closing As String = MethodBody(lifecycle, "Form1_FormClosing")
-        Assert.Matches(New Regex("If e\.CloseReason = CloseReason\.WindowsShutDown Then\s+PersistSettings\(\)\s+Return"), closing)
+        Assert.Matches(New Regex("If e\.CloseReason = CloseReason\.WindowsShutDown Then\s+(?:PersistSettings|SettingsFlush\.SaveNow)\(\)\s+Return"), closing)
         Assert.DoesNotContain("Dispose()", closing)
 
         Dim closed As String = MethodBody(lifecycle, "Form1_FormClosed")

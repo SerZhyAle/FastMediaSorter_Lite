@@ -1,4 +1,4 @@
-Imports System.ComponentModel
+﻿Imports System.ComponentModel
 Imports System.Drawing
 Imports System.Drawing.Drawing2D
 Imports System.IO
@@ -6,7 +6,7 @@ Imports System.Runtime.InteropServices
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
-Public Class Image_Panel_Form
+Partial Public Class Image_Panel_Form
     Inherits Form
 #If Not NETFRAMEWORK Then
     Implements IThemeAware
@@ -23,6 +23,15 @@ Public Class Image_Panel_Form
     Private Sub ApplyTheme(palette As ThemePalette) Implements IThemeAware.ApplyTheme
     End Sub
 #End If
+
+#If NETFRAMEWORK Then
+    ' ----------------------------------------------------------------------------------
+    ' THE x86 FALLBACK PANEL, verbatim. Everything from here to the matching #End If is the
+    ' panel as it was before 004/005: a PictureBox per file, its own sort, its own move/copy/
+    ' delete loop. The maintenance policy freezes the net48 build (CLAUDE.md), and it has no
+    ' batch engine to call. The mainline panel is Image_Panel_Form.Modern.vb / .Grid.vb /
+    ' .Details.vb (005_SPECIFICATION_THUMBNAIL_GRID_TRIAGE_DOTNET10.md).
+    ' ----------------------------------------------------------------------------------
 
     ' --- UI Controls and Constants ---
     Private Const resize_debounce_interval As Integer = 200
@@ -557,8 +566,9 @@ Public Class Image_Panel_Form
         Dim confirmMsg = Localization.TF("Вы уверены, что хотите безвозвратно удалить {0} файл(ов)?", work.Count)
         Dim mustAsk As Boolean = Not Is_no_request_before_file_operation
 #End If
+        ' The safe answer holds the default focus (APP-BEHAVIOUR 0.12 rule 5): Enter declines.
         If mustAsk AndAlso
-            MessageBox.Show(confirmMsg, Localization.TC("panel", "Подтверждение удаления"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
+            MessageBox.Show(confirmMsg, Localization.TC("panel", "Подтверждение удаления"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
 
         Dim errors As New System.Text.StringBuilder()
         Dim done As Integer = 0
@@ -572,10 +582,13 @@ Public Class Image_Panel_Form
                 SetPanelBusy(True, Localization.TF("{0}: {1} из {2}", Localization.T("Удаление.."), done + 1, work.Count))
 
                 Dim failure As Exception = Nothing
+                ' The bin was promised and the shell deleted the file for good instead
+                ' (audit 057.S05-2) - the confirmation said "Recycle Bin", so say otherwise.
+                Dim went_For_Good As Boolean = False
                 Await Task.Run(Sub()
                                    Try
 #If Not NETFRAMEWORK Then
-                                       RecycleBinIo.DeleteAs(filePath, decision)
+                                       went_For_Good = RecycleBinIo.DeleteAs(filePath, decision)
 #Else
                                        File.Delete(filePath)
 #End If
@@ -588,6 +601,10 @@ Public Class Image_Panel_Form
                 If failure Is Nothing Then
                     RemoveCardForVanishedFile(pb, filePath)
                     done += 1
+                    If went_For_Good Then
+                        AppFileLogger.WriteLine("Thumbnail panel: Recycle Bin kept no record - the file was deleted permanently: " & filePath)
+                        errors.AppendLine(Localization.TF("! Корзина не приняла файл - он удалён безвозвратно: {0}", filePath).TrimStart("!"c, " "c))
+                    End If
                 Else
                     AppFileLogger.LogException("Thumbnail panel: delete " & filePath, failure)
                     errors.AppendLine(Localization.T("Не удалось удалить файл: ") & filePath & " - " & FailureText.Describe(failure))
@@ -650,7 +667,14 @@ Public Class Image_Panel_Form
         Dim current_Folder_Path As String = Main_Form.Current_Folder_Path
         If Not String.IsNullOrEmpty(current_Folder_Path) AndAlso Directory.Exists(current_Folder_Path) Then
             Dim extensions As String() = Main_Form.Image_File_Extensions
+#If Not NETFRAMEWORK Then
+            Dim thumbnailExtensions As New HashSet(Of String)(extensions, StringComparer.OrdinalIgnoreCase)
+            Dim preferences As ModernViewerPreferences = Main_Form.GetModernPreferences()
+            If preferences.IncludeDocumentInNavigation AndAlso preferences.DocumentExtensionSet().Contains(".pdf") Then thumbnailExtensions.Add(".pdf")
+            Dim files = Directory.GetFiles(current_Folder_Path).Where(Function(f) thumbnailExtensions.Contains(Path.GetExtension(f))).ToList()
+#Else
             Dim files = Directory.GetFiles(current_Folder_Path).Where(Function(f) extensions.Contains(Path.GetExtension(f).ToLowerInvariant())).ToList()
+#End If
             Dim sortIndex As Integer = sortIndexFromMainForm
             Try
                 If sortIndex = 0 AndAlso Main_Form.cmbox_Sort IsNot Nothing Then
@@ -963,7 +987,7 @@ Public Class Image_Panel_Form
     ''' </summary>
     Private Sub ShowMissingThumbnail(pb As PictureBox, file_Path As String)
         If pb.IsDisposed OrElse CStr(pb.Tag) <> file_Path Then Return
-        Dim mapName As String = If(MediaKindClassifier.KindOf(Path.GetExtension(file_Path)) = MediaKind.Video,
+        Dim mapName As String = If(MediaKindClassifier.KindOf(file_Path) = MediaKind.Video,
                                    "thumbnail_Video_Missing", "thumbnail_Image_Missing")
         Dim meaning As IconMeaning = IconMap.GetMeaning(mapName)
         Dim w As Integer = Math.Max(1, pb.Width)
@@ -999,6 +1023,14 @@ Public Class Image_Panel_Form
 
     Private Function CreateThumbnail(imagePath As String, width As Integer, height As Integer) As Image
         Try
+#If Not NETFRAMEWORK Then
+            If String.Equals(Path.GetExtension(imagePath), ".pdf", StringComparison.OrdinalIgnoreCase) Then
+                Using document As New PdfDocumentSource()
+                    document.Open(imagePath)
+                    Return document.RenderPage(1, width, height)
+                End Using
+            End If
+#End If
             Dim imageData = LoadImageWithStream(imagePath)
             If imageData Is Nothing Then Return Nothing
 
@@ -1146,11 +1178,12 @@ MessageBox.Show(confirmMsg, Localization.T("Подтверждение"), Messag
         End If
 
         ' "No confirmation" means do not ask before acting, not do not say what failed: a
-        ' skipped or failed file is always reported; only the all-success summary is dropped.
-        Dim has_errors As Boolean = error_messages.Length > 0
-        If has_errors OrElse Not Is_no_request_before_file_operation Then
+        ' skipped or failed file is always reported (ticket 088); only the all-success
+        ' summary is suppressed under no-confirm.
+        Dim has_Errors As Boolean = error_messages.Length > 0
+        If has_Errors OrElse Not Is_no_request_before_file_operation Then
             MessageBox.Show(summary_message.ToString(), Localization.T("Операция завершена"), MessageBoxButtons.OK,
-                            If(has_errors, MessageBoxIcon.Warning, MessageBoxIcon.Information))
+                            If(has_Errors, MessageBoxIcon.Warning, MessageBoxIcon.Information))
         End If
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & $" p0085: pics moved/copied. Success: {success_count}, Failed: {work.Count - success_count}")
@@ -1172,4 +1205,5 @@ MessageBox.Show(confirmMsg, Localization.T("Подтверждение"), Messag
             toolTip = Nothing
         End If
     End Sub
+#End If
 End Class

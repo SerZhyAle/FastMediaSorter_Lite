@@ -25,15 +25,128 @@
       ["how-to-ocr.html",               "Read and translate text on a picture"],
       ["how-to-editor.html",            "Draw on a photo and crop it"],
       ["how-to-archives.html",          "Read a ZIP or CBZ like a folder"],
+      ["how-to-resources.html",         "Open a server or a network share like a folder"],
       ["how-to-sftp.html",              "Publish selected PC folders over SFTP"],
+      ["how-to-filedo-disks.html",      "Share FileDO .fdd virtual disks"],
       ["publish-folders-android.html",  "Network and router, step by step"]
     ]
   },
 
+  "_channels": {
+    "store": {
+      "url": "https://apps.microsoft.com/detail/9N59Z73WZ53C",
+      "label": "Microsoft Store"
+    },
+    "winget": {
+      "id": "SerZhyAle.FastMediaSorter",
+      "command": "winget install --id SerZhyAle.FastMediaSorter",
+      "label": "winget"
+    },
+    "github": {
+      "url": "https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest",
+      "label": "GitHub Releases"
+    }
+  },
+
+  "_family": {
+    "title": "More tools by SZA",
+    "members": [
+      {
+        "name": "FastMediaSorter v2",
+        "type": "Android media sorter",
+        "url": "https://serzhyale.github.io/FastMediaSorter_mob_v2/"
+      },
+      {
+        "name": "CyrFlip",
+        "type": "Windows layout fixer",
+        "url": "https://serzhyale.github.io/CyrFlip/"
+      },
+      {
+        "name": "doc-html-translate",
+        "type": "Windows ebook converter",
+        "url": "https://serzhyale.github.io/doc-html-translate/"
+      },
+      {
+        "name": "FileDO",
+        "type": "Windows storage CLI",
+        "url": "https://serzhyale.github.io/FileDO/"
+      },
+      {
+        "name": "StreamsPlayer",
+        "type": "Windows stream player",
+        "url": "https://serzhyale.github.io/StreamsPlayer/"
+      },
+      {
+        "name": "OneClickRunner",
+        "type": "Windows tray launcher",
+        "url": "https://serzhyale.github.io/OneClickRunner/"
+      },
+      {
+        "name": "Universal Agent Kit",
+        "type": "AI-dev methodology",
+        "url": "https://serzhyale.github.io/universal-agent-kit/"
+      },
+      {
+        "name": "SZA",
+        "type": "Portfolio hub",
+        "url": "https://sza.od.ua/"
+      }
+    ]
+  },
+
+  "_familyTranslations": {
+    "en": {
+      "title": "More tools by SZA",
+      "types": {
+        "FastMediaSorter v2": "Android media sorter",
+        "CyrFlip": "Windows layout fixer",
+        "doc-html-translate": "Windows ebook converter",
+        "FileDO": "Windows storage CLI",
+        "StreamsPlayer": "Windows stream player",
+        "OneClickRunner": "Windows tray launcher",
+        "Universal Agent Kit": "AI-dev methodology",
+        "SZA": "Portfolio hub"
+      }
+    },
+    "ru": {
+      "title": "Другие инструменты SZA",
+      "types": {
+        "FastMediaSorter v2": "Сортировщик медиа для Android",
+        "CyrFlip": "Исправление раскладки Windows",
+        "doc-html-translate": "Конвертер книг для Windows",
+        "FileDO": "CLI для проверки накопителей",
+        "StreamsPlayer": "Плеер стримов для Windows",
+        "OneClickRunner": "Лаунчер Windows в трее",
+        "Universal Agent Kit": "Методология AI-разработки",
+        "SZA": "Портфолио"
+      }
+    },
+    "uk": {
+      "title": "Інші інструменти SZA",
+      "types": {
+        "FastMediaSorter v2": "Сортувальник медіа для Android",
+        "CyrFlip": "Виправлення розкладки Windows",
+        "doc-html-translate": "Конвертер книг для Windows",
+        "FileDO": "CLI для перевірки носіїв",
+        "StreamsPlayer": "Плеєр стрімів для Windows",
+        "OneClickRunner": "Лаунчер Windows у треї",
+        "Universal Agent Kit": "Методологія AI-розробки",
+        "SZA": "Портфоліо"
+      }
+    }
+  },
+
+  "_contact": {
+    "email": "sza@ukr.net",
+    "github": "SerZhyAle",
+    "website": "sza.od.ua"
+  },
+
   "en": {
     "dir": "ltr", "machine": false, "name": "English",
-    "title": "Fast Media Sorter for Windows",
+    "title": "Fast Media Sorter & Sharing for Windows",
     "tagline": "Browse huge folders of photos and videos at speed, then move, copy, rename or delete each file with a single key.",
+    "sharing": "«Sharing» in the name means giving your media to someone else: your Android phone, another copy of the program or any SFTP client. It stays off until you switch it on.",
     "features": [
       ["One key per file", "Assign folders to the keys 1-9, 0 and Del, then sort a folder without ever reaching for the mouse. Hold Shift and the file is copied instead of moved."],
       ["Slideshow and panel", "Automatic or random slideshow, and a thumbnail panel for jumping straight to a picture."],
@@ -45,7 +158,8 @@
       ["Archives open like folders", "A ZIP or CBZ browses like an ordinary folder, slideshow, zoom and translation included. Nothing is unpacked in advance and nothing is left behind."],
       ["Draw on a picture, crop it, save it", "Brush, rectangle and ellipse, a live crop frame with handles, then save over the original or beside it. Your EXIF travels with the picture."],
       ["Turn an animation into a video", "An animated WEBP, APNG or GIF becomes an ordinary MP4 - with a seek bar, a pause and full colour - and replaces the original. The encoder is downloaded only if you ask for it, and those same slow formats now reopen instantly the second time."],
-      ["Music gets a screen", "An MP3, WAV, M4A, WMA or OGG shows its album cover - or a wave-and-particle animation when it has none - with the title, artist, album and format along the bottom. Its own settings decide what happens at the end of a track, and a sleep timer stops playback after up to three hours."]
+      ["Music gets a screen", "An MP3, WAV, M4A, WMA or OGG shows its album cover - or a wave-and-particle animation when it has none - with the title, artist, album and format along the bottom. Its own settings decide what happens at the end of a track, and a sleep timer stops playback after up to three hours."],
+      ["Open a server like a folder", "An SFTP server or a network share with a login opens as an ordinary folder: pictures, video and documents are fetched as you page, the server's key is pinned, and the password stays encrypted for your Windows account."]
     ],
     "knowTitle": "Worth knowing",
     "know": [
@@ -65,8 +179,9 @@
 
   "ru": {
     "dir": "ltr", "machine": false, "name": "Русский",
-    "title": "Fast Media Sorter для Windows",
+    "title": "Fast Media Sorter & Sharing for Windows",
     "tagline": "Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши.",
+    "sharing": "«Sharing» в названии - это передача ваших медиафайлов другому: телефону с Android, другой копии программы или любому SFTP-клиенту. Пока вы не включите, она выключена.",
     "features": [
       ["Одна клавиша на файл", "Назначьте папки клавишам 1-9, 0 и Del - и разберите каталог, ни разу не потянувшись к мыши. С Shift тот же файл копируется, а не переносится."],
       ["Слайд-шоу и панель", "Обычное или случайное слайд-шоу и панель миниатюр, чтобы сразу прыгнуть к нужному снимку."],
@@ -78,7 +193,8 @@
       ["Архивы открываются как папки", "ZIP или CBZ листается как обычная папка - со слайд-шоу, масштабом и переводом. Ничего не распаковывается заранее и ничего не остаётся после."],
       ["Рисование и кадрирование", "Кисть, прямоугольник и эллипс, живая рамка кадрирования с маркерами, затем сохранение поверх оригинала или рядом с ним. EXIF едет вместе с картинкой."],
       ["Анимация превращается в видео", "Анимированный WEBP, APNG или GIF становится обычным MP4 - с перемоткой, паузой и полным цветом - и заменяет оригинал. Кодировщик загружается, только если вы этого попросите, а те же медленные форматы теперь открываются повторно мгновенно."],
-      ["У музыки появился экран", "MP3, WAV, M4A, WMA или OGG показывает обложку альбома - или анимацию из волн и частиц, если обложки нет - с названием, исполнителем, альбомом и форматом внизу. Свои настройки решают, что делать в конце дорожки, а таймер сна останавливает воспроизведение не позже чем через три часа."]
+      ["У музыки появился экран", "MP3, WAV, M4A, WMA или OGG показывает обложку альбома - или анимацию из волн и частиц, если обложки нет - с названием, исполнителем, альбомом и форматом внизу. Свои настройки решают, что делать в конце дорожки, а таймер сна останавливает воспроизведение не позже чем через три часа."],
+      ["Сервер как папка", "SFTP-сервер или сетевая папка с паролем открывается как обычная папка: картинки, видео и документы подгружаются по мере листания, ключ сервера запоминается, а пароль хранится в зашифрованном виде для вашей учётной записи Windows."]
     ],
     "knowTitle": "Что стоит знать",
     "know": [
@@ -98,8 +214,9 @@
 
   "uk": {
     "dir": "ltr", "machine": false, "name": "Українська",
-    "title": "Fast Media Sorter для Windows",
+    "title": "Fast Media Sorter & Sharing for Windows",
     "tagline": "Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.",
+    "sharing": "«Sharing» у назві - це передача ваших медіафайлів комусь іншому: телефону з Android, іншій копії програми або будь-якому SFTP-клієнту. Доки ви не ввімкнете, вона вимкнена.",
     "features": [
       ["Одна клавіша на файл", "Призначте теки клавішам 1-9, 0 і Del - і розберіть каталог, жодного разу не потягнувшись до миші. З Shift той самий файл копіюється, а не переноситься."],
       ["Слайд-шоу та панель", "Звичайне або випадкове слайд-шоу і панель мініатюр, щоб одразу перейти до потрібного знімка."],
@@ -111,7 +228,8 @@
       ["Архіви відкриваються як теки", "ZIP або CBZ гортається як звичайна тека - зі слайд-шоу, масштабом і перекладом. Нічого не розпаковується заздалегідь і нічого не лишається після."],
       ["Малювання та кадрування", "Пензель, прямокутник та еліпс, жива рамка кадрування з маркерами, потім збереження поверх оригіналу або поруч із ним. EXIF їде разом із картинкою."],
       ["Анімація стає відео", "Анімований WEBP, APNG чи GIF перетворюється на звичайний MP4 - з перемоткою, паузою та повним кольором - і замінює оригінал. Кодувальник завантажується, лише якщо ви попросите, а ті самі повільні формати тепер відкриваються повторно миттєво."],
-      ["У музики з'явився екран", "MP3, WAV, M4A, WMA чи OGG показує обкладинку альбому - або анімацію з хвиль і частинок, якщо обкладинки немає - із назвою, виконавцем, альбомом і форматом унизу. Власні налаштування вирішують, що робити наприкінці доріжки, а таймер сну зупиняє відтворення не пізніше ніж за три години."]
+      ["У музики з'явився екран", "MP3, WAV, M4A, WMA чи OGG показує обкладинку альбому - або анімацію з хвиль і частинок, якщо обкладинки немає - із назвою, виконавцем, альбомом і форматом унизу. Власні налаштування вирішують, що робити наприкінці доріжки, а таймер сну зупиняє відтворення не пізніше ніж за три години."],
+      ["Сервер як тека", "SFTP-сервер або мережева тека з паролем відкривається як звичайна тека: зображення, відео та документи підвантажуються під час гортання, ключ сервера запам'ятовується, а пароль зберігається в зашифрованому вигляді для вашого облікового запису Windows."]
     ],
     "knowTitle": "Що варто знати",
     "know": [
@@ -131,8 +249,9 @@
 
   "de": {
     "dir": "ltr", "machine": true, "name": "Deutsch",
-    "title": "Fast Media Sorter für Windows",
+    "title": "Fast Media Sorter & Sharing for Windows",
     "tagline": "Blättern Sie im Tempo durch riesige Foto- und Videoordner und verschieben, kopieren, benennen oder löschen Sie jede Datei mit einer einzigen Taste.",
+    "sharing": "«Sharing» im Namen heißt: Ihre Medien an jemand anderen weitergeben - an Ihr Android-Telefon, eine weitere Kopie des Programms oder einen beliebigen SFTP-Client. Es bleibt aus, bis Sie es einschalten.",
     "features": [
       ["Eine Taste pro Datei", "Weisen Sie den Tasten 1-9, 0 und Entf Ordner zu und sortieren Sie einen Ordner, ohne je zur Maus zu greifen. Mit Shift wird die Datei kopiert statt verschoben."],
       ["Diashow und Leiste", "Automatische oder zufällige Diashow und eine Miniaturleiste, um direkt zu einem Bild zu springen."],
@@ -144,7 +263,8 @@
       ["Archive öffnen sich wie Ordner", "Ein ZIP oder CBZ blättert wie ein gewöhnlicher Ordner - mit Diashow, Zoom und Übersetzung. Nichts wird vorab entpackt und nichts bleibt zurück."],
       ["Zeichnen, zuschneiden, speichern", "Pinsel, Rechteck und Ellipse, ein lebendiger Zuschnittrahmen mit Griffen, dann über das Original speichern oder daneben. Ihre EXIF-Daten reisen mit dem Bild."],
       ["Aus einer Animation wird ein Video", "Ein animiertes WEBP, APNG oder GIF wird ein gewöhnliches MP4 - mit Suchleiste, Pause und vollen Farben - und ersetzt das Original. Der Encoder wird nur auf Nachfrage geladen, und dieselben langsamen Formate öffnen sich beim zweiten Mal sofort."],
-      ["Musik bekommt einen Bildschirm", "Eine MP3, WAV, M4A, WMA oder OGG zeigt ihr Albumcover - oder eine Wellen- und Partikelanimation, wenn keines vorhanden ist - mit Titel, Interpret, Album und Format am unteren Rand. Eigene Einstellungen bestimmen, was am Ende eines Titels geschieht, und ein Sleeptimer beendet die Wiedergabe nach höchstens drei Stunden."]
+      ["Musik bekommt einen Bildschirm", "Eine MP3, WAV, M4A, WMA oder OGG zeigt ihr Albumcover - oder eine Wellen- und Partikelanimation, wenn keines vorhanden ist - mit Titel, Interpret, Album und Format am unteren Rand. Eigene Einstellungen bestimmen, was am Ende eines Titels geschieht, und ein Sleeptimer beendet die Wiedergabe nach höchstens drei Stunden."],
+      ["Server wie ein Ordner", "Ein SFTP-Server oder eine Netzwerkfreigabe mit Anmeldung öffnet sich wie ein gewöhnlicher Ordner: Bilder, Videos und Dokumente werden beim Blättern nachgeladen, der Schlüssel des Servers wird gemerkt, und das Kennwort bleibt für Ihr Windows-Konto verschlüsselt."]
     ],
     "knowTitle": "Gut zu wissen",
     "know": [
@@ -164,8 +284,9 @@
 
   "it": {
     "dir": "ltr", "machine": true, "name": "Italiano",
-    "title": "Fast Media Sorter per Windows",
+    "title": "Fast Media Sorter & Sharing for Windows",
     "tagline": "Sfoglia velocemente cartelle enormi di foto e video e sposta, copia, rinomina o elimina ogni file con un solo tasto.",
+    "sharing": "«Sharing» nel nome significa dare i tuoi file multimediali a qualcun altro: il tuo telefono Android, un'altra copia del programma o un qualsiasi client SFTP. Resta disattivato finché non lo attivi.",
     "features": [
       ["Un tasto per file", "Assegna cartelle ai tasti 1-9, 0 e Canc e ordina una cartella senza mai toccare il mouse. Con Shift il file viene copiato invece che spostato."],
       ["Presentazione e pannello", "Presentazione automatica o casuale e un pannello di miniature per saltare subito a un'immagine."],
@@ -177,7 +298,8 @@
       ["Gli archivi si aprono come cartelle", "Uno ZIP o CBZ si sfoglia come una cartella normale - con presentazione, zoom e traduzione. Nulla viene estratto in anticipo e nulla resta dopo."],
       ["Disegna, ritaglia, salva", "Pennello, rettangolo ed ellisse, una cornice di ritaglio dal vivo con maniglie, poi salva sull'originale o accanto. I tuoi dati EXIF viaggiano con l'immagine."],
       ["Un'animazione diventa un video", "Un WEBP, APNG o GIF animato diventa un normale MP4 - con barra di scorrimento, pausa e colori pieni - e sostituisce l'originale. L'encoder si scarica solo se lo chiedi, e gli stessi formati lenti ora si riaprono all'istante."],
-      ["La musica ha il suo schermo", "Un MP3, WAV, M4A, WMA o OGG mostra la copertina dell'album - o un'animazione di onde e particelle quando non ce n'è - con titolo, artista, album e formato in basso. Impostazioni dedicate decidono cosa succede alla fine di un brano, e un timer di spegnimento ferma la riproduzione entro tre ore."]
+      ["La musica ha il suo schermo", "Un MP3, WAV, M4A, WMA o OGG mostra la copertina dell'album - o un'animazione di onde e particelle quando non ce n'è - con titolo, artista, album e formato in basso. Impostazioni dedicate decidono cosa succede alla fine di un brano, e un timer di spegnimento ferma la riproduzione entro tre ore."],
+      ["Un server come una cartella", "Un server SFTP o una condivisione di rete con accesso si apre come una cartella normale: immagini, video e documenti vengono scaricati mentre sfogli, la chiave del server viene memorizzata e la password resta cifrata per il tuo account Windows."]
     ],
     "knowTitle": "Da sapere",
     "know": [
@@ -197,8 +319,9 @@
 
   "es": {
     "dir": "ltr", "machine": true, "name": "Español",
-    "title": "Fast Media Sorter para Windows",
+    "title": "Fast Media Sorter & Sharing for Windows",
     "tagline": "Recorra a toda velocidad carpetas enormes de fotos y vídeos y mueva, copie, renombre o elimine cada archivo con una sola tecla.",
+    "sharing": "«Sharing» en el nombre significa entregar sus archivos multimedia a otra persona: su teléfono Android, otra copia del programa o cualquier cliente SFTP. Permanece desactivado hasta que lo active.",
     "features": [
       ["Una tecla por archivo", "Asigne carpetas a las teclas 1-9, 0 y Supr y ordene una carpeta sin tocar el ratón. Con Shift el archivo se copia en vez de moverse."],
       ["Pase de diapositivas y panel", "Pase automático o aleatorio y un panel de miniaturas para saltar directamente a una imagen."],
@@ -210,7 +333,8 @@
       ["Los archivos comprimidos se abren como carpetas", "Un ZIP o CBZ se recorre como una carpeta normal - con pase de diapositivas, zoom y traducción. Nada se extrae por adelantado y nada queda después."],
       ["Dibuje, recorte, guarde", "Pincel, rectángulo y elipse, un marco de recorte en vivo con tiradores, y luego guardar sobre el original o junto a él. Sus datos EXIF viajan con la imagen."],
       ["Una animación se convierte en vídeo", "Un WEBP, APNG o GIF animado pasa a ser un MP4 normal - con barra de avance, pausa y color completo - y sustituye al original. El codificador se descarga solo si lo pides, y esos mismos formatos lentos ahora se reabren al instante."],
-      ["La música tiene su propia pantalla", "Un MP3, WAV, M4A, WMA u OGG muestra la portada del álbum - o una animación de ondas y partículas cuando no la hay - con el título, el artista, el álbum y el formato abajo. Sus propios ajustes deciden qué pasa al terminar la pista, y un temporizador de apagado detiene la reproducción como mucho a las tres horas."]
+      ["La música tiene su propia pantalla", "Un MP3, WAV, M4A, WMA u OGG muestra la portada del álbum - o una animación de ondas y partículas cuando no la hay - con el título, el artista, el álbum y el formato abajo. Sus propios ajustes deciden qué pasa al terminar la pista, y un temporizador de apagado detiene la reproducción como mucho a las tres horas."],
+      ["Un servidor como una carpeta", "Un servidor SFTP o un recurso de red con inicio de sesión se abre como una carpeta normal: las imágenes, los vídeos y los documentos se descargan mientras pasa de uno a otro, se recuerda la clave del servidor y la contraseña queda cifrada para su cuenta de Windows."]
     ],
     "knowTitle": "Conviene saber",
     "know": [
@@ -230,8 +354,9 @@
 
   "fr": {
     "dir": "ltr", "machine": true, "name": "Français",
-    "title": "Fast Media Sorter pour Windows",
+    "title": "Fast Media Sorter & Sharing for Windows",
     "tagline": "Parcourez à toute vitesse d'énormes dossiers de photos et de vidéos, puis déplacez, copiez, renommez ou supprimez chaque fichier d'une seule touche.",
+    "sharing": "«Sharing» dans le nom signifie donner vos médias à quelqu'un d'autre : votre téléphone Android, une autre copie du programme ou n'importe quel client SFTP. Désactivé tant que vous ne l'activez pas.",
     "features": [
       ["Une touche par fichier", "Attribuez des dossiers aux touches 1-9, 0 et Suppr, puis triez un dossier sans jamais toucher la souris. Avec Shift, le fichier est copié au lieu d'être déplacé."],
       ["Diaporama et panneau", "Diaporama automatique ou aléatoire, et un panneau de miniatures pour sauter directement à une image."],
@@ -243,7 +368,8 @@
       ["Les archives s'ouvrent comme des dossiers", "Un ZIP ou CBZ se feuillette comme un dossier ordinaire - diaporama, zoom et traduction compris. Rien n'est extrait à l'avance et rien ne reste après."],
       ["Dessinez, recadrez, enregistrez", "Pinceau, rectangle et ellipse, un cadre de recadrage vivant avec poignées, puis enregistrez sur l'original ou à côté. Vos données EXIF voyagent avec l'image."],
       ["Une animation devient une vidéo", "Un WEBP, APNG ou GIF animé devient un MP4 ordinaire - avec barre de lecture, pause et couleurs complètes - et remplace l'original. L'encodeur n'est téléchargé que si vous le demandez, et ces mêmes formats lents se rouvrent désormais instantanément."],
-      ["La musique a son propre écran", "Un MP3, WAV, M4A, WMA ou OGG affiche la pochette de l'album - ou une animation d'ondes et de particules à défaut - avec le titre, l'artiste, l'album et le format en bas. Des réglages dédiés décident de ce qui se passe à la fin d'une piste, et une minuterie de veille arrête la lecture au bout de trois heures au plus."]
+      ["La musique a son propre écran", "Un MP3, WAV, M4A, WMA ou OGG affiche la pochette de l'album - ou une animation d'ondes et de particules à défaut - avec le titre, l'artiste, l'album et le format en bas. Des réglages dédiés décident de ce qui se passe à la fin d'une piste, et une minuterie de veille arrête la lecture au bout de trois heures au plus."],
+      ["Un serveur comme un dossier", "Un serveur SFTP ou un partage réseau avec identifiant s'ouvre comme un dossier ordinaire : images, vidéos et documents sont récupérés au fil du feuilletage, la clé du serveur est mémorisée et le mot de passe reste chiffré pour votre compte Windows."]
     ],
     "knowTitle": "Bon à savoir",
     "know": [
@@ -263,8 +389,9 @@
 
   "pt": {
     "dir": "ltr", "machine": true, "name": "Português",
-    "title": "Fast Media Sorter para Windows",
+    "title": "Fast Media Sorter & Sharing for Windows",
     "tagline": "Percorra rapidamente pastas enormes de fotos e vídeos e mova, copie, renomeie ou exclua cada arquivo com uma única tecla.",
+    "sharing": "«Sharing» no nome significa entregar suas mídias a outra pessoa: seu telefone Android, outra cópia do programa ou qualquer cliente SFTP. Fica desligado até você ligar.",
     "features": [
       ["Uma tecla por arquivo", "Atribua pastas às teclas 1-9, 0 e Del e organize uma pasta sem nunca pegar no mouse. Com Shift o arquivo é copiado em vez de movido."],
       ["Apresentação e painel", "Apresentação automática ou aleatória e um painel de miniaturas para pular direto para uma imagem."],
@@ -276,7 +403,8 @@
       ["Os arquivos compactados abrem como pastas", "Um ZIP ou CBZ é folheado como uma pasta comum - com apresentação, zoom e tradução. Nada é extraído com antecedência e nada fica para trás."],
       ["Desenhe, recorte, salve", "Pincel, retângulo e elipse, uma moldura de corte ao vivo com alças, e então salve sobre o original ou ao lado dele. Seus dados EXIF viajam com a imagem."],
       ["Uma animação vira um vídeo", "Um WEBP, APNG ou GIF animado passa a ser um MP4 comum - com barra de busca, pausa e cor completa - e substitui o original. O codificador só é baixado se você pedir, e esses mesmos formatos lentos agora reabrem na hora."],
-      ["A música ganha uma tela", "Um MP3, WAV, M4A, WMA ou OGG mostra a capa do álbum - ou uma animação de ondas e partículas quando não há capa - com título, artista, álbum e formato embaixo. Ajustes próprios decidem o que acontece no fim da faixa, e um temporizador de sono para a reprodução em até três horas."]
+      ["A música ganha uma tela", "Um MP3, WAV, M4A, WMA ou OGG mostra a capa do álbum - ou uma animação de ondas e partículas quando não há capa - com título, artista, álbum e formato embaixo. Ajustes próprios decidem o que acontece no fim da faixa, e um temporizador de sono para a reprodução em até três horas."],
+      ["Um servidor como uma pasta", "Um servidor SFTP ou um compartilhamento de rede com login abre como uma pasta comum: imagens, vídeos e documentos são baixados conforme você navega, a chave do servidor é memorizada e a senha fica criptografada para a sua conta do Windows."]
     ],
     "knowTitle": "Vale saber",
     "know": [
@@ -296,8 +424,9 @@
 
   "ar": {
     "dir": "rtl", "machine": true, "name": "العربية",
-    "title": "Fast Media Sorter لنظام ويندوز",
+    "title": "Fast Media Sorter & Sharing for Windows",
     "tagline": "تصفّح مجلدات ضخمة من الصور والفيديو بسرعة، ثم انقل أو انسخ أو أعد تسمية أو احذف كل ملف بمفتاح واحد.",
+    "sharing": "«Sharing» في الاسم تعني تسليم وسائطك إلى طرف آخر: هاتف Android الخاص بك أو نسخة أخرى من البرنامج أو أي عميل SFTP. يبقى معطّلًا حتى تفعّله بنفسك.",
     "features": [
       ["مفتاح واحد لكل ملف", "خصّص مجلدات للمفاتيح 1-9 و0 وDel، ثم رتّب مجلدًا كاملًا دون أن تمسّ الفأرة. وبالضغط على Shift يُنسخ الملف بدل نقله."],
       ["عرض شرائح ولوحة", "عرض شرائح تلقائي أو عشوائي، ولوحة مصغّرات للانتقال مباشرة إلى صورة."],
@@ -309,7 +438,8 @@
       ["الأرشيفات تُفتح كالمجلدات", "يُتصفَّح ملف ZIP أو CBZ كمجلد عادي - مع عرض الشرائح والتكبير والترجمة. لا شيء يُستخرج مسبقًا ولا شيء يبقى بعده."],
       ["ارسم على الصورة، اقتصّها، احفظها", "فرشاة ومستطيل وقطع ناقص، وإطار اقتصاص حي بمقابض، ثم احفظ فوق الأصل أو بجانبه. وبيانات EXIF تسافر مع الصورة."],
       ["تحويل الصورة المتحركة إلى فيديو", "يتحول ملف WEBP أو APNG أو GIF المتحرك إلى ملف MP4 عادي - بشريط تقدم وإيقاف مؤقت وألوان كاملة - ويحل محل الأصل. لا يُنزَّل المُرمِّز إلا إذا طلبت ذلك، وهذه الصيغ البطيئة نفسها تُفتح الآن فورًا في المرة الثانية."],
-      ["للموسيقى شاشة خاصة بها", "يعرض ملف MP3 أو WAV أو M4A أو WMA أو OGG غلاف الألبوم - أو رسمًا متحركًا من الموجات والجسيمات عند غيابه - مع العنوان والفنان والألبوم والصيغة في الأسفل. إعدادات خاصة تقرر ما يحدث عند انتهاء المقطع، ومؤقّت النوم يوقف التشغيل خلال ثلاث ساعات على الأكثر."]
+      ["للموسيقى شاشة خاصة بها", "يعرض ملف MP3 أو WAV أو M4A أو WMA أو OGG غلاف الألبوم - أو رسمًا متحركًا من الموجات والجسيمات عند غيابه - مع العنوان والفنان والألبوم والصيغة في الأسفل. إعدادات خاصة تقرر ما يحدث عند انتهاء المقطع، ومؤقّت النوم يوقف التشغيل خلال ثلاث ساعات على الأكثر."],
+      ["خادم كأنه مجلد", "يُفتح خادم SFTP أو مجلد شبكة يتطلب تسجيل الدخول كمجلد عادي: تُجلب الصور ومقاطع الفيديو والمستندات أثناء التصفح، ويُحفظ مفتاح الخادم، وتبقى كلمة المرور مشفّرة لحساب Windows الخاص بك."]
     ],
     "knowTitle": "جدير بالمعرفة",
     "know": [
@@ -329,8 +459,9 @@
 
   "hi": {
     "dir": "ltr", "machine": true, "name": "हिन्दी",
-    "title": "विंडोज़ के लिए Fast Media Sorter",
+    "title": "Fast Media Sorter & Sharing for Windows",
     "tagline": "फ़ोटो और वीडियो के विशाल फ़ोल्डर तेज़ी से देखें और हर फ़ाइल को एक ही कुंजी से ले जाएँ, कॉपी करें, नाम बदलें या हटाएँ।",
+    "sharing": "नाम में «Sharing» का मतलब है अपनी मीडिया किसी और को देना: आपका Android फ़ोन, प्रोग्राम की कोई दूसरी प्रति, या कोई भी SFTP क्लाइंट। जब तक आप चालू न करें, यह बंद रहता है।",
     "features": [
       ["हर फ़ाइल के लिए एक कुंजी", "कुंजियों 1-9, 0 और Del को फ़ोल्डर सौंपें और माउस छुए बिना पूरा फ़ोल्डर छाँट लें। Shift दबाकर वही फ़ाइल स्थानांतरित होने के बजाय कॉपी होती है।"],
       ["स्लाइडशो और पैनल", "स्वचालित या यादृच्छिक स्लाइडशो, और सीधे किसी चित्र पर जाने के लिए थंबनेल पैनल।"],
@@ -342,7 +473,8 @@
       ["संग्रह फ़ोल्डर की तरह खुलते हैं", "ZIP या CBZ सामान्य फ़ोल्डर की तरह देखा जाता है - स्लाइडशो, ज़ूम और अनुवाद सहित। कुछ भी पहले से नहीं खोला जाता और बाद में कुछ नहीं बचता।"],
       ["चित्र पर बनाएँ, काटें, सहेजें", "ब्रश, आयत और दीर्घवृत्त, हैंडल वाला जीवंत क्रॉप फ़्रेम, फिर मूल पर या उसके पास सहेजें। आपका EXIF डेटा चित्र के साथ चलता है।"],
       ["एनिमेशन से असली वीडियो", "एनिमेटेड WEBP, APNG या GIF एक साधारण MP4 बन जाता है - सीक बार, पॉज़ और पूरे रंग के साथ - और मूल फ़ाइल की जगह ले लेता है। एन्कोडर तभी डाउनलोड होता है जब आप कहें, और वही धीमे प्रारूप अब दूसरी बार तुरंत खुलते हैं।"],
-      ["संगीत को अपनी स्क्रीन मिली", "MP3, WAV, M4A, WMA या OGG अपना एल्बम कवर दिखाता है - और कवर न हो तो लहरों और कणों का एनिमेशन - नीचे शीर्षक, कलाकार, एल्बम और प्रारूप के साथ। अपनी सेटिंग्स तय करती हैं कि ट्रैक खत्म होने पर क्या हो, और स्लीप टाइमर अधिकतम तीन घंटे में प्लेबैक रोक देता है।"]
+      ["संगीत को अपनी स्क्रीन मिली", "MP3, WAV, M4A, WMA या OGG अपना एल्बम कवर दिखाता है - और कवर न हो तो लहरों और कणों का एनिमेशन - नीचे शीर्षक, कलाकार, एल्बम और प्रारूप के साथ। अपनी सेटिंग्स तय करती हैं कि ट्रैक खत्म होने पर क्या हो, और स्लीप टाइमर अधिकतम तीन घंटे में प्लेबैक रोक देता है।"],
+      ["सर्वर, फ़ोल्डर की तरह", "लॉगिन वाला SFTP सर्वर या नेटवर्क शेयर आम फ़ोल्डर की तरह खुलता है: पन्ने पलटते समय तस्वीरें, वीडियो और दस्तावेज़ लाए जाते हैं, सर्वर की कुंजी याद रखी जाती है, और पासवर्ड आपके Windows खाते के लिए एन्क्रिप्टेड रहता है।"]
     ],
     "knowTitle": "जानने योग्य",
     "know": [
@@ -362,8 +494,9 @@
 
   "bn": {
     "dir": "ltr", "machine": true, "name": "বাংলা",
-    "title": "উইন্ডোজের জন্য Fast Media Sorter",
+    "title": "Fast Media Sorter & Sharing for Windows",
     "tagline": "ছবি ও ভিডিওর বিশাল ফোল্ডার দ্রুত ঘুরে দেখুন এবং প্রতিটি ফাইল এক কী চেপেই সরান, কপি করুন, নাম বদলান বা মুছুন।",
+    "sharing": "নামের «Sharing»-এর অর্থ আপনার মিডিয়া অন্য কাউকে দেওয়া: আপনার Android ফোন, প্রোগ্রামের অন্য কোনো কপি, বা যেকোনো SFTP ক্লায়েন্ট। না চালানো পর্যন্ত এটি বন্ধ থাকে।",
     "features": [
       ["প্রতি ফাইলে এক কী", "1-9, 0 আর Del কী-তে ফোল্ডার বেঁধে দিন, তারপর মাউস না ছুঁয়েই পুরো ফোল্ডার গুছিয়ে ফেলুন। Shift ধরে রাখলে ফাইলটি সরানোর বদলে কপি হয়।"],
       ["স্লাইডশো ও প্যানেল", "স্বয়ংক্রিয় বা এলোমেলো স্লাইডশো, আর সরাসরি কোনো ছবিতে যেতে থাম্বনেইল প্যানেল।"],
@@ -375,7 +508,8 @@
       ["আর্কাইভ খোলে ফোল্ডারের মতো", "ZIP বা CBZ সাধারণ ফোল্ডারের মতোই দেখা যায় - স্লাইডশো, জুম আর অনুবাদসহ। আগেভাগে কিছু খোলা হয় না, পরেও কিছু পড়ে থাকে না।"],
       ["ছবিতে আঁকুন, ছাঁটুন, সংরক্ষণ করুন", "তুলি, আয়ত ও উপবৃত্ত, হাতলসহ জীবন্ত ক্রপ ফ্রেম, তারপর মূলটির উপরে বা তার পাশে সংরক্ষণ। আপনার EXIF তথ্য ছবির সঙ্গেই যায়।"],
       ["অ্যানিমেশন থেকে সত্যিকারের ভিডিও", "অ্যানিমেটেড WEBP, APNG বা GIF সাধারণ MP4 হয়ে যায় - সিক বার, পজ ও পূর্ণ রঙসহ - এবং মূল ফাইলের জায়গা নেয়। এনকোডার কেবল আপনি চাইলেই নামে, আর সেই ধীর ফরম্যাটগুলোই এখন দ্বিতীয়বার সঙ্গে সঙ্গে খোলে।"],
-      ["গানের নিজস্ব পর্দা", "MP3, WAV, M4A, WMA বা OGG তার অ্যালবাম কভার দেখায় - কভার না থাকলে ঢেউ ও কণার অ্যানিমেশন - নিচে শিরোনাম, শিল্পী, অ্যালবাম ও ফরম্যাট সহ। নিজস্ব সেটিংস ঠিক করে ট্র্যাক শেষ হলে কী হবে, আর স্লিপ টাইমার সর্বোচ্চ তিন ঘণ্টার মধ্যে বাজানো থামিয়ে দেয়।"]
+      ["গানের নিজস্ব পর্দা", "MP3, WAV, M4A, WMA বা OGG তার অ্যালবাম কভার দেখায় - কভার না থাকলে ঢেউ ও কণার অ্যানিমেশন - নিচে শিরোনাম, শিল্পী, অ্যালবাম ও ফরম্যাট সহ। নিজস্ব সেটিংস ঠিক করে ট্র্যাক শেষ হলে কী হবে, আর স্লিপ টাইমার সর্বোচ্চ তিন ঘণ্টার মধ্যে বাজানো থামিয়ে দেয়।"],
+      ["সার্ভার, ফোল্ডারের মতো", "লগইনসহ SFTP সার্ভার বা নেটওয়ার্ক শেয়ার সাধারণ ফোল্ডারের মতো খোলে: পাতা ওল্টানোর সময় ছবি, ভিডিও ও নথি আনা হয়, সার্ভারের কী মনে রাখা হয়, আর পাসওয়ার্ড আপনার Windows অ্যাকাউন্টের জন্য এনক্রিপ্টেড থাকে।"]
     ],
     "knowTitle": "জেনে রাখা ভালো",
     "know": [
@@ -395,8 +529,9 @@
 
   "ur": {
     "dir": "rtl", "machine": true, "name": "اردو",
-    "title": "ونڈوز کے لیے Fast Media Sorter",
+    "title": "Fast Media Sorter & Sharing for Windows",
     "tagline": "تصاویر اور ویڈیو کے بڑے فولڈرز تیزی سے دیکھیں اور ہر فائل کو ایک ہی کلید سے منتقل، نقل، نام تبدیل یا حذف کریں۔",
+    "sharing": "نام میں «Sharing» کا مطلب ہے اپنا میڈیا کسی اور کو دینا: آپ کا Android فون، پروگرام کی کوئی دوسری کاپی، یا کوئی بھی SFTP کلائنٹ۔ جب تک آپ آن نہ کریں، یہ بند رہتا ہے۔",
     "features": [
       ["ہر فائل کے لیے ایک کلید", "کلیدوں 1-9، 0 اور Del کو فولڈر تفویض کریں اور ماؤس کو ہاتھ لگائے بغیر پورا فولڈر ترتیب دیں۔ Shift دبانے پر وہی فائل منتقل ہونے کے بجائے نقل ہوتی ہے۔"],
       ["سلائیڈ شو اور پینل", "خودکار یا بے ترتیب سلائیڈ شو، اور کسی تصویر پر براہِ راست جانے کے لیے تھمب نیل پینل۔"],
@@ -408,7 +543,8 @@
       ["آرکائیو فولڈر کی طرح کھلتے ہیں", "ZIP یا CBZ عام فولڈر کی طرح دیکھا جاتا ہے - سلائیڈ شو، زوم اور ترجمے کے ساتھ۔ کچھ بھی پہلے سے نہیں کھولا جاتا اور بعد میں کچھ باقی نہیں رہتا۔"],
       ["تصویر پر بنائیں، تراشیں، محفوظ کریں", "برش، مستطیل اور بیضوی، دستوں والا زندہ کراپ فریم، پھر اصل پر یا اُس کے ساتھ محفوظ کریں۔ آپ کا EXIF ڈیٹا تصویر کے ساتھ سفر کرتا ہے۔"],
       ["اینیمیشن سے اصل ویڈیو", "اینیمیٹڈ WEBP، APNG یا GIF ایک عام MP4 بن جاتا ہے - سیک بار، پاز اور مکمل رنگ کے ساتھ - اور اصل فائل کی جگہ لے لیتا ہے۔ اینکوڈر صرف آپ کے کہنے پر ڈاؤن لوڈ ہوتا ہے، اور وہی سست فارمیٹ اب دوسری بار فوراً کھلتے ہیں۔"],
-      ["موسیقی کی اپنی سکرین", "MP3، WAV، M4A، WMA یا OGG اپنا البم کور دکھاتا ہے - اور کور نہ ہو تو لہروں اور ذرات کی حرکت پذیری - نیچے عنوان، فنکار، البم اور فارمیٹ کے ساتھ۔ اپنی ترتیبات طے کرتی ہیں کہ ٹریک ختم ہونے پر کیا ہو، اور سلیپ ٹائمر زیادہ سے زیادہ تین گھنٹے میں چلنا روک دیتا ہے۔"]
+      ["موسیقی کی اپنی سکرین", "MP3، WAV، M4A، WMA یا OGG اپنا البم کور دکھاتا ہے - اور کور نہ ہو تو لہروں اور ذرات کی حرکت پذیری - نیچے عنوان، فنکار، البم اور فارمیٹ کے ساتھ۔ اپنی ترتیبات طے کرتی ہیں کہ ٹریک ختم ہونے پر کیا ہو، اور سلیپ ٹائمر زیادہ سے زیادہ تین گھنٹے میں چلنا روک دیتا ہے۔"],
+      ["سرور، فولڈر کی طرح", "لاگ اِن والا SFTP سرور یا نیٹ ورک شیئر عام فولڈر کی طرح کھلتا ہے: ورق پلٹتے وقت تصاویر، ویڈیوز اور دستاویزات لائی جاتی ہیں، سرور کی کلید یاد رکھی جاتی ہے، اور پاس ورڈ آپ کے Windows اکاؤنٹ کے لیے خفیہ رہتا ہے۔"]
     ],
     "knowTitle": "جاننے کے قابل",
     "know": [
@@ -428,8 +564,9 @@
 
   "zh": {
     "dir": "ltr", "machine": true, "name": "中文",
-    "title": "Windows 上的 Fast Media Sorter",
+    "title": "Fast Media Sorter & Sharing for Windows",
     "tagline": "飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。",
+    "sharing": "名称中的「Sharing」指把你的媒体交给别人：你的 Android 手机、本程序的另一份副本，或任何 SFTP 客户端。你不开启它，它就保持关闭。",
     "features": [
       ["一个文件一个键", "把文件夹绑定到 1-9、0 和 Del 键，然后全程不碰鼠标就整理完一个文件夹。按住 Shift 则是复制而不是移动。"],
       ["幻灯片与面板", "自动或随机幻灯片，还有缩略图面板，直接跳到想看的那张。"],
@@ -441,7 +578,8 @@
       ["压缩包像文件夹一样打开", "ZIP 或 CBZ 可以像普通文件夹一样浏览 - 幻灯片、缩放和翻译都在。事先不解包，事后不留痕。"],
       ["在图片上绘制、裁剪、保存", "画笔、矩形和椭圆，带控制点的实时裁剪框，然后覆盖原图保存或另存到旁边。EXIF 数据随图片一起走。"],
       ["把动画变成真正的视频", "动画 WEBP、APNG 或 GIF 会变成普通的 MP4 - 有进度条、可暂停、色彩完整 - 并取代原文件。编码器只在你要求时才下载，而这些原本很慢的格式现在第二次打开是瞬间的。"],
-      ["音乐也有了自己的画面", "MP3、WAV、M4A、WMA 或 OGG 会显示专辑封面 - 没有封面时则显示波纹与粒子动画 - 底部列出标题、艺术家、专辑和格式。专属设置决定曲目结束时的行为，睡眠定时器最多三小时后停止播放。"]
+      ["音乐也有了自己的画面", "MP3、WAV、M4A、WMA 或 OGG 会显示专辑封面 - 没有封面时则显示波纹与粒子动画 - 底部列出标题、艺术家、专辑和格式。专属设置决定曲目结束时的行为，睡眠定时器最多三小时后停止播放。"],
+      ["把服务器当作文件夹", "需要登录的 SFTP 服务器或网络共享可像普通文件夹一样打开：翻页时按需取回图片、视频和文档，服务器密钥会被记住，密码则以加密形式仅供您的 Windows 账户使用。"]
     ],
     "knowTitle": "值得一提",
     "know": [

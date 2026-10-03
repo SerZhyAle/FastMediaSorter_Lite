@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-  <!-- Unit tests for LITE-unique pure logic (net48). The Share subsystem is covered
+  <!-- Unit tests for viewer-unique pure logic (net48). The Share subsystem is covered
        by Companion.Tests (same ported code); this project targets code that lives
-       ONLY in LITE - currently Utils (array ops, contrast colour, and the header-only
+       ONLY in the viewer - currently Utils (array ops, contrast colour, and the header-only
        GetImageDimensions parser the background worker relies on). Source files are
        LINKED (not project-referenced) so the tests don't drag in the whole ILMerge/
-       LibVLC/Tesseract LITE assembly. RootNamespace matches LITE (fmsl) so the linked
+       LibVLC/Tesseract viewer assembly. RootNamespace matches the viewer (fmsl) so the linked
        modules resolve by their real names. -->
   <PropertyGroup>
     <!-- Multi-targeted ON PURPOSE. The linked sources compile into BOTH shipped
@@ -21,7 +20,6 @@
     <OptionCompare>Binary</OptionCompare>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <DefaultItemExcludes>$(DefaultItemExcludes);ModernAsyncCoreTests.vb;AppendOnlyFileStreamTests.vb;ArchiveSequentialTests.vb;ArgumentProbeOrderingTests.vb;BatchPlanTests.vb;BatchRunnerTests.vb;BatchSelectionTests.vb;BatchUndoTests.vb;ChromeBehaviorTests.vb;ChromeCaptionFitTests.vb;ChromeFoundationTests.vb;CloseDrainTests.vb;CopyDataTransportTests.vb;EndpointResolverTests.vb;EpubMetadataTests.vb;ExternalPlayerPolicyTests.vb;FdSecAuditTests.vb;FileOpCloseFlowTests.vb;FileOpQueueAdmissionTests.vb;FileTypeSelectionTests.vb;FmsConfigReaderTests.vb;FmsImportRulesTests.vb;ImportedSettingsLimitsTests.vb;LifecycleAuditFollowupTests.vb;LogTailSnapshotTests.vb;LoggerOwnershipTests.vb;MailSenderBehaviorTests.vb;MediaKindClassifierTests.vb;MediaKindTests.vb;OllamaTranslatorTests.vb;OpenCoordinationTests.vb;PanelRowsTests.vb;PdfDocumentSourceTests.vb;ProbeSchedulerTests.vb;ResourceFoundationTests.vb;SettingsImportTests.vb;SettingsPersistenceTests.vb;SettingsRegistryParityTests.vb;SftpProviderTests.vb;SftpReadOnlyFixtureTests.vb;ShareActivationPolicyTests.vb;SmbConnectionLeaseTests.vb;TextFileReaderTests.vb;ThumbnailCacheKeyTests.vb;ThumbnailMemoryCacheTests.vb;TransferExecutorTests.vb;WaveParticlesSessionTests.vb</DefaultItemExcludes>
   </PropertyGroup>
 
   <!-- net48 leg: mirrors src/FastMediaSorter.vbproj. SDK-style projects targeting
@@ -30,7 +28,7 @@
        this the seam would compile its .NET 10 branch into a net48 run. WPF is only
        here because the legacy decoder reads WEBP through WIC. -->
   <PropertyGroup Condition="'$(TargetFramework)' == 'net48'">
-    <DefineConstants>NETFRAMEWORK=True</DefineConstants>
+    <DefineConstants>NETFRAMEWORK=True,DOCUMENT_PREVIEW_TESTS=True</DefineConstants>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
@@ -39,8 +37,8 @@
        the OCR code mapping the language-naming tests use - does. -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <Reference Include="System.Security" />
-    <!-- OllamaTranslator's net48 branch shares the main project's references: HttpClient
-         and the JavaScriptSerializer JSON reader, as in src/FastMediaSorter.vbproj. -->
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Web.Extensions" />
   </ItemGroup>
@@ -61,6 +59,7 @@
 
   <ItemGroup>
     <!-- Link the production source directly (same assembly => Friend members visible). -->
+    <Compile Include="..\..\src\Theming\IThemeAware.vb"><Link>Linked\Theming\IThemeAware.vb</Link></Compile>
     <Compile Include="..\..\src\Utils.vb">
       <Link>Linked\Utils.vb</Link>
     </Compile>
@@ -131,9 +130,6 @@
     <Compile Include="..\..\src\Imaging\EdgeSampler.vb">
       <Link>Linked\Imaging\EdgeSampler.vb</Link>
     </Compile>
-    <Compile Include="..\..\src\MediaCache.vb">
-      <Link>Linked\MediaCache.vb</Link>
-    </Compile>
     <!-- The pure half of the live folder list (020 U-04): the placement and reconcile rules,
          held against a full sort. Whole-file "#If Not NETFRAMEWORK". -->
     <Compile Include="..\..\src\FolderLiveList.vb">
@@ -154,6 +150,38 @@
          the honest shape: the classic zoom model does not exist in the x86 viewer. -->
     <Compile Include="..\..\src\ZoomMath.vb">
       <Link>Linked\ZoomMath.vb</Link>
+    </Compile>
+    <!-- The pure half of the floating chrome (002): scale, row layout, theme arithmetic and the one
+         table of metrics. The painted surface, the host window and the controller stay out - they are
+         WinForms glue, and the tests that matter (overflow, RTL mirroring, the 24 px minimum, high
+         contrast) need none of it. Whole-file "#If Not NETFRAMEWORK", like ZoomMath. -->
+    <Compile Include="..\..\src\Chrome\ChromePathCompletion.vb"><Link>Linked\Chrome\ChromePathCompletion.vb</Link></Compile>
+    <Compile Include="..\..\src\Chrome\ChromeItem.vb"><Link>Linked\Chrome\ChromeItem.vb</Link></Compile>
+    <Compile Include="..\..\src\Chrome\ChromeSurface.vb"><Link>Linked\Chrome\ChromeSurface.vb</Link></Compile>
+    <Compile Include="..\..\src\Chrome\ChromeHost.vb"><Link>Linked\Chrome\ChromeHost.vb</Link></Compile>
+    <Compile Include="..\..\src\Chrome\ChromeMenu.vb"><Link>Linked\Chrome\ChromeMenu.vb</Link></Compile>
+    <Compile Include="..\..\src\Chrome\ChromePathBox.vb"><Link>Linked\Chrome\ChromePathBox.vb</Link></Compile>
+    <Compile Include="..\..\src\Chrome\ChromeMetrics.vb">
+      <Link>Linked\Chrome\ChromeMetrics.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Chrome\UiScale.vb">
+      <Link>Linked\Chrome\UiScale.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Chrome\ChromeLayout.vb">
+      <Link>Linked\Chrome\ChromeLayout.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Chrome\ChromeTheme.vb">
+      <Link>Linked\Chrome\ChromeTheme.vb</Link>
+    </Compile>
+    <!-- The "particles and lines" backdrop's pure half (WAVE-PARTICLES, ticket 029 F-1): section 3's
+         constants once, and the session arithmetic of section 4 with no Graphics. Whole-file
+         "#If Not NETFRAMEWORK", so on the net48 leg these - and WaveParticlesSessionTests -
+         compile to nothing. BackdropHostSignals.vb (P/Invoke) is deliberately not linked. -->
+    <Compile Include="..\..\src\Backdrop\WaveParticlesConstants.vb">
+      <Link>Linked\Backdrop\WaveParticlesConstants.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Backdrop\WaveParticlesSession.vb">
+      <Link>Linked\Backdrop\WaveParticlesSession.vb</Link>
     </Compile>
     <!-- Window geometry (APP-BEHAVIOUR rule 10, ticket 028 Ф-2): which rectangle to
          remember and where a remembered one goes when its monitor is gone. Pure, and
@@ -240,6 +268,38 @@
       <Link>Linked\MultiWindowPolicy.vb</Link>
     </Compile>
     <!-- The WM_COPYDATA hand-off rules between the viewer processes (053 F-03/F-06/F-07). -->
+    <Compile Include="..\..\src\CopyDataTransport.vb">
+      <Link>Linked\CopyDataTransport.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\ViewerProcessDiscovery.vb">
+      <Link>Linked\ViewerProcessDiscovery.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\FileTypeSelection.vb">
+      <Link>Linked\FileTypeSelection.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\AssociationUx.vb">
+      <Link>Linked\AssociationUx.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\FileOpCloseFlow.vb">
+      <Link>Linked\FileOpCloseFlow.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\SshFingerprint.vb">
+      <Link>Linked\Resources\SshFingerprint.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\FmsConfigReader.vb">
+      <Link>Linked\Resources\FmsConfigReader.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\FmsImportRules.vb">
+      <Link>Linked\Resources\FmsImportRules.vb</Link>
+    </Compile>    <Compile Include="..\..\src\SettingsImport.vb">
+      <Link>Linked\SettingsImport.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\SettingsPersistence.vb">
+      <Link>Linked\SettingsPersistence.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\ShareActivationPolicy.vb">
+      <Link>Linked\ShareActivationPolicy.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\SingleInstanceProtocol.vb">
       <Link>Linked\SingleInstanceProtocol.vb</Link>
     </Compile>
@@ -295,6 +355,24 @@
     <Compile Include="..\..\src\Resources\ResourceRegistry.vb">
       <Link>Linked\Resources\ResourceRegistry.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Resources\ResourcePolicy.vb">
+      <Link>Linked\Resources\ResourcePolicy.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\ResourceFailure.vb">
+      <Link>Linked\Resources\ResourceFailure.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\ResourceCommit.vb">
+      <Link>Linked\Resources\ResourceCommit.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\HostKeyGate.vb">
+      <Link>Linked\Resources\HostKeyGate.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\TransferPlan.vb">
+      <Link>Linked\Resources\TransferPlan.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\EndpointResolver.vb">
+      <Link>Linked\Resources\EndpointResolver.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Resources\ResourceSession.vb">
       <Link>Linked\Resources\ResourceSession.vb</Link>
     </Compile>
@@ -303,6 +381,42 @@
     </Compile>
     <Compile Include="..\..\src\Resources\ResourceRouting.vb">
       <Link>Linked\Resources\ResourceRouting.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\RemoteSlots.vb">
+      <Link>Linked\Resources\RemoteSlots.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\SmbConnectionLease.vb">
+      <Link>Linked\Resources\SmbConnectionLease.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\SmbProvider.vb">
+      <Link>Linked\Resources\SmbProvider.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\SftpProvider.vb">
+      <Link>Linked\Resources\SftpProvider.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\ResourceImport.vb">
+      <Link>Linked\Resources\ResourceImport.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\ResourceConnect.vb">
+      <Link>Linked\Resources\ResourceConnect.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\ResourceMessages.vb">
+      <Link>Linked\Resources\ResourceMessages.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\ResourceProbe.vb">
+      <Link>Linked\Resources\ResourceProbe.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resource_Credential_Form.vb">
+      <Link>Linked\Resource_Credential_Form.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resource_Edit_Form.vb">
+      <Link>Linked\Resource_Edit_Form.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\ResourceImportFlow.vb">
+      <Link>Linked\ResourceImportFlow.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resource_Manager_Form.vb">
+      <Link>Linked\Resource_Manager_Form.vb</Link>
     </Compile>
     <Compile Include="..\..\src\Common_Module.vb">
       <Link>Linked\Common_Module.vb</Link>
@@ -355,6 +469,9 @@
       <Link>Linked\InputGuards.vb</Link>
     </Compile>
     <!-- Ticket 049 B-10: the monotonic throttle clock. Shared, so both legs prove it. -->
+    <Compile Include="..\..\src\ProductNames.vb">
+      <Link>Linked\ProductNames.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\MonotonicClock.vb">
       <Link>Linked\MonotonicClock.vb</Link>
     </Compile>
@@ -362,6 +479,12 @@
          extension keys, decode budget). Shared, so both legs prove them. -->
     <Compile Include="..\..\src\SlideshowOrder.vb">
       <Link>Linked\SlideshowOrder.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\OpenCoordination.vb">
+      <Link>Linked\OpenCoordination.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\ProbeScheduler.vb">
+      <Link>Linked\ProbeScheduler.vb</Link>
     </Compile>
     <Compile Include="..\..\src\NavigationRules.vb">
       <Link>Linked\NavigationRules.vb</Link>
@@ -383,6 +506,16 @@
          on both legs: the enum is shared, only the behaviour is fenced. -->
     <Compile Include="..\..\src\PathFailure.vb">
       <Link>Linked\PathFailure.vb</Link>
+    </Compile>
+    <!-- The rule behind "the external-player fallback must not hand a failed video back to
+         this viewer" (ticket 090). Pure and shared by both runtimes, so it compiles on both
+         legs. -->
+    <Compile Include="..\..\src\ExternalPlayerPolicy.vb">
+      <Link>Linked\ExternalPlayerPolicy.vb</Link>
+    </Compile>
+    <!-- Ticket 107: separates queue drain in flight from approved-to-close permission. -->
+    <Compile Include="..\..\src\CloseDrainCoordinator.vb">
+      <Link>Linked\CloseDrainCoordinator.vb</Link>
     </Compile>
     <!-- The cache policy behind "a dead slot costs one probe, not twenty SMB timeouts"
          (SLOT_HEALTH Ф2, invariant 5). Linked because the promise is entirely about a
@@ -422,11 +555,71 @@
     <Compile Include="..\..\src\UndoStack.vb">
       <Link>Linked\UndoStack.vb</Link>
     </Compile>
+    <!-- The batch engine (004): selection model, plan, report, runner. Pure and modern-only,
+         linked so every rule in its acceptance list is a unit test on the net10 leg and compiles
+         to nothing on the net48 leg. -->
+    <Compile Include="..\..\src\BatchSelection.vb">
+      <Link>Linked\BatchSelection.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\BatchPlan.vb">
+      <Link>Linked\BatchPlan.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\BatchReport.vb">
+      <Link>Linked\BatchReport.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\BatchRunner.vb">
+      <Link>Linked\BatchRunner.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\PanelRows.vb">
+      <Link>Linked\PanelRows.vb</Link>
+    </Compile>
+    <!-- The F3 panel's thumbnails (005 PG-3): the cache key and store are pure enough to prove
+         against a temporary directory; the shell half degrades to "no thumbnail", so its test
+         asserts only what is true on any machine. -->
+    <Compile Include="..\..\src\ThumbnailCache.vb">
+      <Link>Linked\ThumbnailCache.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\ShellThumbnails.vb">
+      <Link>Linked\ShellThumbnails.vb</Link>
+    </Compile>
+    <!-- The thumbnail memory cache (a byte-budgeted LRU) is provable without a window; the
+         loader beside it only adds threads and so rides along. -->
+    <Compile Include="..\..\src\PanelThumbnailLoader.vb">
+      <Link>Linked\PanelThumbnailLoader.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\DiskCacheTrim.vb">
       <Link>Linked\DiskCacheTrim.vb</Link>
     </Compile>
     <Compile Include="..\..\src\FileOpQueue.vb">
       <Link>Linked\FileOpQueue.vb</Link>
+    </Compile>
+    <!-- 014 U-01: the decoded-picture cache. Modern-only (whole-file "#If Not NETFRAMEWORK"), so
+         the net48 leg compiles it to nothing and its tests are fenced the same way. -->
+    <Compile Include="..\..\src\MediaCache.vb">
+      <Link>Linked\MediaCache.vb</Link>
+    </Compile>
+    <!-- Live broadcast consumer (023_SPECIFICATION_FMS_LIVE_BROADCAST_CONSUMER.md).
+         Pure logic and models linked for contract and unit testing. -->
+    <Compile Include="..\..\src\LiveBroadcast\LiveBroadcastDescriptor.vb">
+      <Link>Linked\LiveBroadcast\LiveBroadcastDescriptor.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\LiveBroadcast\LiveBroadcastReader.vb">
+      <Link>Linked\LiveBroadcast\LiveBroadcastReader.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\LiveBroadcast\LiveBroadcastLinkReader.vb">
+      <Link>Linked\LiveBroadcast\LiveBroadcastLinkReader.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\LiveBroadcast\LiveBroadcastStore.vb">
+      <Link>Linked\LiveBroadcast\LiveBroadcastStore.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\LiveBroadcast\LiveEndpointSelector.vb">
+      <Link>Linked\LiveBroadcast\LiveEndpointSelector.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\LiveBroadcast\LiveReconnectPolicy.vb">
+      <Link>Linked\LiveBroadcast\LiveReconnectPolicy.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\LiveBroadcast\ProgressReadStream.vb">
+      <Link>Linked\LiveBroadcast\ProgressReadStream.vb</Link>
     </Compile>
     <!-- OCR overlay accuracy (SPECIFICATION_OCR_OVERLAY_ACCURACY.md). Pure logic, kept
          out of Main_Form exactly so it can be proven here: line clustering, the
@@ -490,16 +683,14 @@
     <Compile Include="..\..\src\Translate\ITranslator.vb">
       <Link>Linked\Translate\ITranslator.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Translate\OllamaTranslator.vb">
+      <Link>Linked\Translate\OllamaTranslator.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Translate\TranslationQuality.vb">
       <Link>Linked\Translate\TranslationQuality.vb</Link>
     </Compile>
     <Compile Include="..\..\src\Translate\OcrResultPolicy.vb">
       <Link>Linked\Translate\OcrResultPolicy.vb</Link>
-    </Compile>
-    <!-- 057.S10-1: a backend that drops mid-run must come back as AllFailed(Other), not throw.
-         Also hosts TranslateHttp, which the other translators share. -->
-    <Compile Include="..\..\src\Translate\OllamaTranslator.vb">
-      <Link>Linked\Translate\OllamaTranslator.vb</Link>
     </Compile>
     <!-- 057.S10-4: the OS rule for offering the Ollama installer. -->
     <Compile Include="..\..\src\Translate\OllamaManager.vb">
@@ -582,6 +773,15 @@
     <Compile Include="..\..\src\MediaKind.vb">
       <Link>Linked\MediaKind.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Documents\TextFileReader.vb">
+      <Link>Linked\Documents\TextFileReader.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Documents\PdfDocumentSource.vb">
+      <Link>Linked\Documents\PdfDocumentSource.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Documents\EpubMetadata.vb">
+      <Link>Linked\Documents\EpubMetadata.vb</Link>
+    </Compile>
     <!-- Stream catalog producer and validator (022_SPECIFICATION_PC_STREAM_CATALOG_PRODUCER.md).
          Pure logic linked so unit tests can prove rules V1..V12 and producer/cli behavior. -->
     <Compile Include="..\..\src\Streams\*.vb">
@@ -595,10 +795,23 @@
        letter cannot run for anyone else, which is why they travel with the suite; the
        documents themselves stay in the catalog and are only cited. -->
   <ItemGroup>
-    <None Update="TestData\archives\**" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="TestData\fdsec-vectors\**">
+    <None Include="TestData\resources\fmscfg\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestData\resources\fmscfg\%(Filename)%(Extension)</Link>
+    </None>    <None Include="TestData\fdsec-vectors\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>TestData\fdsec-vectors\%(Filename)%(Extension)</Link>
+    </None>
+    <!-- Real 7z files made by 7-Zip (ArchiveSequentialTests): a solid and a non-solid one, a
+         twelve-page solid one for the cache-budget rows, and two encrypted. manifest.txt lists
+         what is inside (size + SHA-256), so a test proves WHAT came out, not only that
+         something did. README.txt says how to make them again. -->
+    <None Include="TestData\documents\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="TestData\archives\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestData\archives\%(Filename)%(Extension)</Link>
     </None>
     <None Include="TestData\icon-vocabulary\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -631,7 +844,9 @@
     <!-- The same cryptography library the mainline ships with, so the conformance run
          exercises the shipping code path rather than a stand-in. Modern leg only:
          src/Secure compiles to nothing on net48. -->
-    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
+    <PackageReference Include="Docnet.Core" Version="2.6.0" />
+    <PackageReference Include="SSH.NET" Version="2026.0.0" />
   </ItemGroup>
 
 </Project>

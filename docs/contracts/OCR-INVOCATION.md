@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `OCR-INVOCATION` |
-| **Version** | 1.0, active. Owner: doc-html-translate |
+| **Version** | 1.1, active (read 2026-10-02: the 1.1 amendment changes no flag, default or exit code - a caller built against 1.0 keeps working, and the launcher already omits `-ocr-lang` on `auto` and treats the 1.1 no-plates stop as success). Owner: doc-html-translate |
 | **Home** | `ocr-overlay/integration-image-translate.md` in the shared contracts catalog |
 | **Role here** | consumer - the "translate in the browser" button, `src/DocHtmlTranslateLauncher.vb` |
 

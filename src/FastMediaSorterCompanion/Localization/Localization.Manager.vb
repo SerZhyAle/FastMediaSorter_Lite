@@ -29,13 +29,14 @@ Partial Public NotInheritable Class Localization
             "Share", "Поділитися", "Teilen", "Condividi", "Compartir", "Partager", "Partilhar",
             "مشاركة", "साझा करें", "শেয়ার করুন", "شیئر کریں", "共享")
 
-        Add("FastMediaSorter для Android",
-            "FastMediaSorter for Android", "FastMediaSorter для Android",
-            "FastMediaSorter für Android", "FastMediaSorter per Android",
-            "FastMediaSorter para Android", "FastMediaSorter pour Android",
-            "FastMediaSorter para Android", "FastMediaSorter لنظام Android",
-            "Android के लिए FastMediaSorter", "Android-এর জন্য FastMediaSorter",
-            "Android کے لیے FastMediaSorter", "FastMediaSorter Android 版")
+        ' The Android product's name is not settled (ticket 111 Q-4): user text says "the Android app".
+        Add("Приложение для Android",
+            "Android app", "Застосунок для Android",
+            "Android-App", "App per Android",
+            "Aplicación para Android", "Application Android",
+            "Aplicação para Android", "تطبيق Android",
+            "Android ऐप", "Android অ্যাপ",
+            "Android ایپ", "Android 应用")
 
         Add("Как публиковать папки (сайт)",
             "How to publish folders (website)", "Як публікувати папки (сайт)",
@@ -596,13 +597,14 @@ Partial Public NotInheritable Class Localization
             "Inicie primeiro o servidor.", "شغّل الخادم أولاً.", "पहले सर्वर शुरू करें।",
             "প্রথমে সার্ভার চালু করুন।", "پہلے سرور شروع کریں۔", "请先启动服务器。")
 
-        Add("Fast Media Sorter не найден рядом.",
-            "Fast Media Sorter not found alongside.", "Fast Media Sorter не знайдено поряд.",
-            "Fast Media Sorter wurde nicht daneben gefunden.", "Fast Media Sorter non è stato trovato accanto.",
-            "No se encontró Fast Media Sorter al lado.", "Fast Media Sorter est introuvable à côté.",
-            "O Fast Media Sorter não foi encontrado ao lado.", "لم يُعثر على Fast Media Sorter بجواره.",
-            "Fast Media Sorter पास नहीं मिला।", "পাশে Fast Media Sorter পাওয়া যায়নি।",
-            "Fast Media Sorter ساتھ نہیں ملا۔", "未在旁边找到 Fast Media Sorter。")
+        ' {0} = ProductNames.CompactForLabel (the hint is a Label, mnemonics on).
+        Add("{0} не найден рядом.",
+            "{0} not found alongside.", "{0} не знайдено поряд.",
+            "{0} wurde nicht daneben gefunden.", "{0} non è stato trovato accanto.",
+            "No se encontró {0} al lado.", "{0} est introuvable à côté.",
+            "{0} não foi encontrado ao lado.", "لم يُعثر على {0} بجواره.",
+            "{0} पास नहीं मिला।", "পাশে {0} পাওয়া যায়নি।",
+            "{0} ساتھ نہیں ملا۔", "未在旁边找到 {0}。")
 
         ' --- resource types (also used by the wizard and the per-folder dialog) ----
 
@@ -688,6 +690,10 @@ Partial Public NotInheritable Class Localization
             "Details..", "Докладніше..", "Details..", "Dettagli..", "Detalles..",
             "Détails..", "Detalhes..", "التفاصيل..", "विवरण..", "বিস্তারিত..",
             "تفصیلات..", "详情..")
+
+        Add("Справка",
+            "Help", "Довідка", "Hilfe", "Guida", "Ayuda", "Aide", "Ajuda",
+            "المساعدة", "सहायता", "সहায়তা", "مدد", "帮助")
 
         Add("Справка ▾",
             "Help ▾", "Довідка ▾", "Hilfe ▾", "Guida ▾", "Ayuda ▾", "Aide ▾", "Ajuda ▾",

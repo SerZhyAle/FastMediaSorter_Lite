@@ -76,13 +76,12 @@ Public Class Share_Root_Params_Form
         UiLanguage.ApplyTo(Me)
         Me.Text = Localization.TF("Параметры ресурса - {0}", _folderName)
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
-        ' Created before the close hook below can reference it: the tooltip keeps a
-        ' native window and references to the controls it serves, so it is disposed with
-        ' the dialog rather than left to finalization (ticket 054 H-20).
+        Dim boldFont As New Font(Me.Font, FontStyle.Bold)
         Dim tip As New ToolTip()
         AddHandler Me.FormClosed,
             Sub()
                 Try : tip.Dispose() : Catch : End Try
+                Try : boldFont.Dispose() : Catch : End Try
                 ShareIcons.FreeIcon(Me.Icon, _iconHandle)
             End Sub
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
@@ -149,7 +148,7 @@ Public Class Share_Root_Params_Form
 
         ' 5. Access section (all full-width, AutoSize -> never clipped).
         AddFullRow(tlp, New Label With {.AutoSize = True, .Margin = New Padding(0, 12, 0, 2),
-            .Font = New Font(Me.Font, FontStyle.Bold), .Text = Localization.T("Доступ:")}, r) : r += 1
+            .Font = boldFont, .Text = Localization.T("Доступ:")}, r) : r += 1
         AddFullRow(tlp, Note(Localization.T("По умолчанию телефон может добавлять, переименовывать и удалять файлы в папке.")), r) : r += 1
         chkReadOnly = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2),
             .Text = Localization.T("Недоступно для записи на уровне сервера - сервер запрещает изменения")}

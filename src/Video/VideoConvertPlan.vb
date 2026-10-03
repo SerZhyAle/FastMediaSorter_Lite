@@ -46,22 +46,6 @@ Friend Module VideoConvertPlan
     End Function
 
     ''' <summary>
-    ''' Computes the total duration in milliseconds as FFmpeg's GIF demuxer reads it
-    ''' (audit 057.S09-1). FFmpeg enforces a minimum frame delay of 10 cs (100 ms) for any
-    ''' frame delay under 2 cs (&lt; 20 ms).
-    ''' </summary>
-    ''' <param name="delaysCentiseconds">The per-frame delays in centiseconds (1/100 s).</param>
-    Friend Function GifDurationMsAsFfmpegReadsIt(delaysCentiseconds As IEnumerable(Of Integer)) As Integer
-        If delaysCentiseconds Is Nothing Then Return 0
-        Dim totalMs As Integer = 0
-        For Each delayCs As Integer In delaysCentiseconds
-            Dim effectiveCs As Integer = If(delayCs < 2, 10, delayCs)
-            totalMs += effectiveCs * 10
-        Next
-        Return totalMs
-    End Function
-
-    ''' <summary>
     ''' Where the video goes: the source name with the extension replaced, in the same
     ''' folder - and never over a file that is already there.
     '''
@@ -138,6 +122,23 @@ Friend Module VideoConvertPlan
     Friend Const Frame_Tolerance As Double = 0.9R
 
     ''' <summary>
+    ''' The duration in milliseconds FFmpeg will read out of a GIF whose frames carry these
+    ''' CENTISECOND delays - the duration the completeness check is held to (057.S09-1).
+    ''' The demuxer counts every delay under two centiseconds as ten, so a 1-cs GIF is
+    ''' written ten times longer than GDI+ plays it, and a verdict fed with the playback
+    ''' total threw complete videos away. 0 for nothing measurable - which the caller
+    ''' passes on as "unknown", never as a guess.
+    ''' </summary>
+    Friend Function GifDurationMsAsFfmpegReadsIt(frameDelaysCentiseconds As IReadOnlyList(Of Integer)) As Integer
+        If frameDelaysCentiseconds Is Nothing OrElse frameDelaysCentiseconds.Count = 0 Then Return 0
+        Dim total_Ms As Long = 0
+        For Each delay_Cs As Integer In frameDelaysCentiseconds
+            total_Ms += If(delay_Cs < 2, 10, delay_Cs) * 10L
+        Next
+        Return CInt(Math.Min(total_Ms, CLng(Integer.MaxValue)))
+    End Function
+
+    ''' <summary>
     ''' The encoder's verdict (audit 050 D-18). Success requires ALL of: not cancelled, exit
     ''' code 0, the file is there, it is not just a header - AND it holds the animation the
     ''' viewer is playing. Exit 0 alone proves nothing: FFmpeg treats decode errors as
@@ -149,7 +150,12 @@ Friend Module VideoConvertPlan
     ''' FFmpeg reported no progress) is <see cref="VideoReplaceOutcome.EncodedUnverified"/>:
     ''' it is kept, and so is the original.
     ''' </summary>
-    ''' <param name="expectedDurationMs">The summed frame delays the viewer is playing; 0 when unknown.</param>
+    ''' <param name="expectedDurationMs">The SOURCE file's duration in ms as FFmpeg reads
+    ''' it (057.S09-1) - for a GIF through
+    ''' <see cref="GifDurationMsAsFfmpegReadsIt"/>, since the demuxer's minimum-delay rule
+    ''' makes the file longer than the viewer's playback GIF. NOT the in-memory GIF the
+    ''' viewer plays: its WEBP delays are truncated to whole centiseconds, and a verdict
+    ''' against that total threw complete videos away. 0 when unknown.</param>
     ''' <param name="fps">The output rate passed to the encoder.</param>
     ''' <param name="framesWritten">The last <c>frame=</c> of the progress stream, or -1.</param>
     ''' <param name="outTimeMs">The last <c>out_time=</c> of the progress stream, or -1.</param>

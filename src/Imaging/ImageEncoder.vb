@@ -47,6 +47,10 @@ Friend Interface IImageEncoder
     Sub EncodeToFile(bitmap As Bitmap, targetPath As String, exifSource As Byte(),
                      orientation As ExifOrientationPolicy)
 
+    ' Writes to the caller-owned stream without closing it; format comes from extension.
+    Sub EncodeToStream(bitmap As Bitmap, output As Stream, extension As String,
+                       exifSource As Byte(), orientation As ExifOrientationPolicy)
+
 End Interface
 
 ''' <summary>

@@ -68,6 +68,7 @@ Friend NotInheritable Class HostKeyGate
     Private pinned As String
     Private consent_Ms As Long
     Private consent_Started As Long = -1
+    Private lastRefusal_Value As HostKeyDecision
 
     ''' <param name="pinnedFingerprint">Empty for an unpinned server.</param>
     ''' <param name="requestConsent">Asks the user about the offered fingerprint; returns True
@@ -103,8 +104,24 @@ Friend NotInheritable Class HostKeyGate
         End Get
     End Property
 
+    ''' <summary>The last verdict that was NOT an acceptance, kept so the caller can show both
+    ''' fingerprints (what the pin says, what the server offered) after the connection failed -
+    ''' SSH.NET reports a refused key only as a generic failure. Nothing when every key so far was
+    ''' accepted. A fingerprint is public information.</summary>
+    Friend ReadOnly Property LastRefusal As HostKeyDecision
+        Get
+            Return Volatile.Read(lastRefusal_Value)
+        End Get
+    End Property
+
     ''' <summary>Decides whether the offered host key may be used. Thread-safe.</summary>
     Friend Function Verify(hostKeyBlob As Byte(), ct As CancellationToken) As HostKeyDecision
+        Dim decision As HostKeyDecision = VerifyCore(hostKeyBlob, ct)
+        If Not decision.IsAccepted Then Volatile.Write(lastRefusal_Value, decision)
+        Return decision
+    End Function
+
+    Private Function VerifyCore(hostKeyBlob As Byte(), ct As CancellationToken) As HostKeyDecision
         If hostKeyBlob Is Nothing OrElse hostKeyBlob.Length = 0 Then Return New HostKeyDecision(HostKeyVerdict.Malformed)
         Dim received As String = SshFingerprint.OfHostKey(hostKeyBlob)
 

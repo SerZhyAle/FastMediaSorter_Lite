@@ -44,6 +44,10 @@ Public Class Table_Form
             toolTip.Dispose()
             toolTip = Nothing
         End If
+#If Not NETFRAMEWORK Then
+        ' The fonts the modern shell handed to its controls (S14-5); the controls are gone.
+        DisposeSettingsFonts()
+#End If
     End Sub
 
     Private Sub InitializeTooltips()
@@ -367,6 +371,7 @@ Public Class Table_Form
         ' gives the navigation/header the same RU/EN wording as the page content.
         BuildModernSettingsLayout()
         LocalizeModernSettingsLayout()
+        RefreshExpandedSettingsRows()
 #End If
     End Sub
 
@@ -384,36 +389,90 @@ Public Class Table_Form
             Main_Form.DoKey(e.RowIndex)
         Else
             If e.RowIndex > 0 Then
-                Dim folderBrowse As New FolderBrowserDialog()
-                folderBrowse.SelectedPath = Hardkeys_to_move_mediafile(e.RowIndex)
-                Dim textKey As String = e.RowIndex.ToString
-                If textKey = "10" Then textKey = "0"
-                folderBrowse.Description = Localization.TF("Укажите каталог переноса/копирования для клавиши {0}", textKey)
 #If Not NETFRAMEWORK Then
-                ' The Vista-style dialog .NET uses shows Description only as the title.
-                folderBrowse.UseDescriptionForTitle = True
+                ' "..or a resource" (007 §4.2): with a server or a share saved, the slot may be a
+                ' folder of it instead of a folder on this PC.
+                If OfferResourceForSlot(e.RowIndex) Then Return
 #End If
-                ' Explicit owner: this window rides the viewer's always-on-top band,
-                ' and an ownerless native dialog would open behind it.
-                If folderBrowse.ShowDialog(Me) = System.Windows.Forms.DialogResult.OK Then
-#If Not NETFRAMEWORK Then
-                    Hardkeys_to_move_mediafile(e.RowIndex) = SlotHealthPolicy.NormalizeSlotPath(folderBrowse.SelectedPath)
-#Else
-                    Hardkeys_to_move_mediafile(e.RowIndex) = folderBrowse.SelectedPath
-#End If
-                    Data_Grid_View.Item(1, e.RowIndex).Value = Hardkeys_to_move_mediafile(e.RowIndex)
-                    Data_Grid_View.Refresh()
-#If Not NETFRAMEWORK Then
-                    ProbeGridRow(e.RowIndex)
-#End If
-                    ' Straight to the registry, not on a timer: picking a destination folder is
-                    ' deliberate configuration, and it used to live only in memory until the
-                    ' viewer was closed cleanly.
-                    Main_Form.SaveSettingsNow()
-                End If
+                BrowseLocalSlotFolder(e.RowIndex)
             End If
         End If
     End Sub
+
+    ''' <summary>The folder picker for a slot - a folder on this PC.</summary>
+    Private Sub BrowseLocalSlotFolder(rowIndex As Integer)
+        Using folderBrowse As New FolderBrowserDialog()
+            folderBrowse.SelectedPath = Hardkeys_to_move_mediafile(rowIndex)
+            Dim textKey As String = rowIndex.ToString
+            If textKey = "10" Then textKey = "0"
+            folderBrowse.Description = Localization.TF("Укажите каталог переноса/копирования для клавиши {0}", textKey)
+#If Not NETFRAMEWORK Then
+            ' The Vista-style dialog .NET uses shows Description only as the title.
+            folderBrowse.UseDescriptionForTitle = True
+            ' A slot that names a server folder is not a path this dialog can open at.
+            If ResourceLocator.IsLocator(folderBrowse.SelectedPath) Then folderBrowse.SelectedPath = ""
+#End If
+            ' Explicit owner: this window rides the viewer's always-on-top band,
+            ' and an ownerless native dialog would open behind it.
+            If folderBrowse.ShowDialog(Me) = System.Windows.Forms.DialogResult.OK Then
+                SetSlotDestination(rowIndex, folderBrowse.SelectedPath)
+            End If
+        End Using
+    End Sub
+
+    ''' <summary>Stores a slot's new destination, shows it, asks about it, and saves it.</summary>
+    Private Sub SetSlotDestination(rowIndex As Integer, destination As String)
+#If Not NETFRAMEWORK Then
+        Hardkeys_to_move_mediafile(rowIndex) = SlotHealthPolicy.NormalizeSlotPath(destination)
+#Else
+        Hardkeys_to_move_mediafile(rowIndex) = destination
+#End If
+        Data_Grid_View.Item(1, rowIndex).Value = Hardkeys_to_move_mediafile(rowIndex)
+        Data_Grid_View.Refresh()
+#If Not NETFRAMEWORK Then
+        ProbeGridRow(rowIndex)
+#End If
+        ' Straight to the registry, not on a timer: picking a destination folder is
+        ' deliberate configuration, and it used to live only in memory until the
+        ' viewer was closed cleanly.
+        Main_Form.SaveSettingsNow()
+    End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>
+    ''' With servers or shares saved (007 §4.2), double-clicking a slot's folder offers them next to
+    ''' "a folder on this PC": a resource picked here makes the slot its root folder - the cell stays
+    ''' editable, so a subfolder is typed after it. False when there is nothing to offer, and the
+    ''' plain folder picker opens as it always did.
+    ''' </summary>
+    Private Function OfferResourceForSlot(rowIndex As Integer) As Boolean
+        Dim resources As List(Of ResourceDescriptor)
+        Try
+            resources = ResourceRegistry.Load()
+        Catch ex As Exception
+            AppFileLogger.WriteLine("Settings: the resource list could not be read - " & ex.GetType().Name)
+            Return False
+        End Try
+        If resources.Count = 0 Then Return False
+
+        Dim menu As New ContextMenuStrip()
+        Dim local As New ToolStripMenuItem(Localization.T("Папка на этом компьютере.."))
+        AddHandler local.Click, Sub() BrowseLocalSlotFolder(rowIndex)
+        menu.Items.Add(local)
+        menu.Items.Add(New ToolStripSeparator())
+        For Each resource As ResourceDescriptor In resources.OrderBy(Function(r) r.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+            Dim chosen As ResourceDescriptor = resource
+            Dim item As New ToolStripMenuItem(Localization.TF("Ресурс: {0}", resource.DisplayName)) With {
+                .ToolTipText = ResourceMessages.DisplayAddress(resource)}
+            AddHandler item.Click, Sub() SetSlotDestination(rowIndex, ResourceLocator.Build(chosen, chosen.RootPath))
+            menu.Items.Add(item)
+        Next
+        ' Disposed once it has closed and the click it carried has run.
+        AddHandler menu.Closed, Sub() BeginInvoke(New Action(Sub() menu.Dispose()))
+        menu.Show(Cursor.Position)
+        Return True
+    End Function
+#End If
 
     Private Sub DataGridView1_CellEndEdit(sender As Object, e As DataGridViewCellEventArgs) Handles Data_Grid_View.CellEndEdit
         If Data_Grid_View.Item(1, e.RowIndex).Value Is Nothing Then
@@ -737,6 +796,6 @@ Public Class Table_Form
     Private Sub LinkLabel1_LinkClicked(sender As Object, e As System.Windows.Forms.LinkLabelLinkClickedEventArgs) Handles LinkLabel1.LinkClicked
         ' Explicit UseShellExecute: mailto needs the shell; net48 defaulted to True,
         ' .NET defaults to False (would throw Win32Exception on the modern build).
-        System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo("mailto:" & Author_Email & "?subject=Fast Media Sorter for Windows:") With {.UseShellExecute = True})
+        System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo("mailto:" & Author_Email & "?subject=" & Uri.EscapeDataString(ProductNames.Full & ":")) With {.UseShellExecute = True})
     End Sub
 End Class

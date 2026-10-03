@@ -56,7 +56,12 @@ Public Module NavigationRules
     End Function
 
     ''' <summary>
-    ''' True when the read mode is one that replaces the entire file list (scan or rescan).
+    ''' Does this read mode REPLACE the list the window holds - an explicit folder (re)load or an
+    ''' external open (014 U-03c)? Only such a call may arrive while a background folder scan is
+    ''' running: it supersedes the scan, because it either names another folder or asks for the
+    ''' same one afresh. Every other mode (a flip, a jump, a delete, the display after a file
+    ''' operation) is about the list the scan is about to replace, so it waits out the scan's
+    ''' status line instead of acting on a list that is already going away.
     ''' </summary>
     Public Function IsListReplacingMode(read_Mode As String) As Boolean
         Select Case read_Mode
@@ -68,39 +73,41 @@ Public Module NavigationRules
     End Function
 
     ''' <summary>
-    ''' Decides whether a given read mode should scan/read the folder from disk.
+    ''' Will the pipeline walk the folder for this read mode (014 U-03c)? The same four places
+    ''' that call GetFiles decide it: an explicit (re)load always does; the slideshow and
+    ''' random modes only when the list in memory is not the scan of the current folder; a
+    ''' flip only when a file opened from outside still holds a one-file list. An external
+    ''' open itself never scans - the folder is read at the first flip.
     ''' </summary>
-    Public Function ModeReadsFolder(read_Mode As String, is_Folder_Loaded As Boolean, is_External As Boolean) As Boolean
+    ''' <param name="is_List_Loaded">files_List/files_Array really describe the current folder.</param>
+    ''' <param name="is_External_Pending">A file opened from outside is still the whole list.</param>
+    Public Function ModeReadsFolder(read_Mode As String, is_List_Loaded As Boolean,
+                                    is_External_Pending As Boolean) As Boolean
         Select Case read_Mode
             Case ReadMode_Files, ReadMode_FolderAndFile
                 Return True
             Case ReadMode_ForRandom, ReadMode_ForSlideShow
-                Return Not is_Folder_Loaded
+                Return Not is_List_Loaded
             Case ReadMode_Next, ReadMode_Prev
-                Return Not is_Folder_Loaded AndAlso is_External
+                Return is_External_Pending
             Case Else
                 Return False
         End Select
     End Function
 
     ''' <summary>
-    ''' Computes the index of the neighbor file to prefetch based on direction and total count.
-    ''' Clamps out-of-range index to valid bounds and wraps at boundaries.
+    ''' The index of the file the prefetch should decode while <paramref name="current"/> is on
+    ''' screen: the neighbour in the direction the user is going, wrapping at both ends like every
+    ''' other flip (014 U-01). It used to be "the next file" whichever way the user went, so paging
+    ''' backwards decoded the wrong picture ahead of every step and each step back paid a decode in
+    ''' front of the user. -1 for an empty list; a one-file list names itself, which the worker
+    ''' recognises as nothing to do.
     ''' </summary>
-    Public Function PrefetchIndex(current_Index As Integer, total_Count As Integer, is_Backwards As Boolean) As Integer
-        If total_Count <= 0 Then Return -1
-        If total_Count = 1 Then Return 0
-
-        Dim clamped As Integer = Math.Max(0, Math.Min(current_Index, total_Count - 1))
-        If is_Backwards Then
-            Dim prevIdx As Integer = clamped - 1
-            If prevIdx < 0 Then prevIdx = total_Count - 1
-            Return prevIdx
-        Else
-            Dim nextIdx As Integer = clamped + 1
-            If nextIdx >= total_Count Then nextIdx = 0
-            Return nextIdx
-        End If
+    Public Function PrefetchIndex(current As Integer, total As Integer, backwards As Boolean) As Integer
+        If total <= 0 Then Return -1
+        Dim at As Integer = Math.Min(Math.Max(current, 0), total - 1)
+        If backwards Then Return If(at = 0, total - 1, at - 1)
+        Return If(at = total - 1, 0, at + 1)
     End Function
 
     ''' <summary>
@@ -174,10 +181,14 @@ Public Module NavigationRules
     ''' Azerbaijani Windows. "" for a path without an extension or no path at all.
     ''' </summary>
     Public Function ExtensionKey(file_Path As String) As String
+#If Not NETFRAMEWORK Then
+        Return MediaKindClassifier.ExtensionOf(file_Path)
+#Else
         If String.IsNullOrEmpty(file_Path) Then Return ""
         Dim extension As String = Path.GetExtension(file_Path)
         If String.IsNullOrEmpty(extension) Then Return ""
         Return extension.ToLowerInvariant()
+#End If
     End Function
 
     ''' <summary>
@@ -195,3 +206,42 @@ Public Module NavigationRules
     End Function
 
 End Module
+
+''' <summary>
+''' Which "open this path" request is the latest one (ticket 106, 057.S13-5).
+'''
+''' An argument, a startup resume and an unlock retry each probe the filesystem off the UI
+''' thread and open the file when the probe comes back. They used to compare
+''' <c>media_Generation</c> before and after the probe - but that counter moves when media is
+''' DISPLAYED, not when an open is REQUESTED. Request A, then B, both probes pending: both
+''' captured the same generation, A finished first and displayed (generation + 1), and B -
+''' the file the user asked for last - was dropped as "the user moved on".
+'''
+''' Here the identity moves at the two moments that matter: <see cref="Accept"/> when a new
+''' request is taken (it makes every earlier one obsolete) and <see cref="Invalidate"/> when
+''' the user navigates or the window closes (it makes every pending one obsolete without
+''' starting a new one). A completion opens its file only while <see cref="IsCurrent"/> still
+''' holds for the ticket it took. Thread-safe on purpose: the probe loop on a worker thread
+''' polls it to stop retrying a request nobody is waiting for any more.
+''' Both builds compile it.
+''' </summary>
+Public NotInheritable Class OpenRequestSequence
+
+    Private current_Ticket As Integer
+
+    ''' <summary>Takes a new request. Every ticket handed out before this one is obsolete.</summary>
+    Public Function Accept() As Integer
+        Return System.Threading.Interlocked.Increment(current_Ticket)
+    End Function
+
+    ''' <summary>Navigation or close: every pending request is obsolete, none is the latest.</summary>
+    Public Sub Invalidate()
+        System.Threading.Interlocked.Increment(current_Ticket)
+    End Sub
+
+    ''' <summary>True while nothing has been accepted or invalidated since <paramref name="ticket"/>.</summary>
+    Public Function IsCurrent(ticket As Integer) As Boolean
+        Return System.Threading.Volatile.Read(current_Ticket) = ticket
+    End Function
+
+End Class

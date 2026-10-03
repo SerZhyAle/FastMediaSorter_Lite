@@ -211,7 +211,8 @@ Partial Public Class Main_Form
 
     Private Sub btn_Tracks_Click(sender As Object, e As EventArgs) Handles btn_Tracks.Click
         If tracks_Menu Is Nothing OrElse btn_Tracks Is Nothing Then Return
-        tracks_Menu.Show(btn_Tracks, New Drawing.Point(0, btn_Tracks.Height))
+        BuildTracksMenu()
+        ChromeShowToolStripMenu(tracks_Menu.Items, ChromeControlMenuPoint(btn_Tracks))
     End Sub
 
     ''' <summary>Rebuilds the menu each time it opens - the track list belongs to the

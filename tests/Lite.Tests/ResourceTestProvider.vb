@@ -3,6 +3,7 @@ Option Strict On
 
 Imports System.Collections.Generic
 Imports System.IO
+Imports System.Linq
 Imports System.Threading
 
 ''' <summary>
@@ -19,10 +20,12 @@ Friend NotInheritable Class ResourceTestProvider
 
     Friend Sub New(backingRoot As String, Optional capabilities As ProviderCapabilities = Nothing)
         backing_Root = backingRoot
-        caps = If(capabilities, New ProviderCapabilities())
+        caps = If(capabilities, New ProviderCapabilities(supportsStableSourceDelete:=True))
         Directory.CreateDirectory(backing_Root)
     End Sub
 
+    Friend Property StatOverride As Func(Of String, ResourceEntry)
+    Friend Property BeforeDownload As Action(Of String, CancellationToken)
     Friend Property DownloadCalls As Integer
     Friend Property UploadCalls As Integer
     Friend Property DeleteCalls As Integer
@@ -31,14 +34,6 @@ Friend NotInheritable Class ResourceTestProvider
     Friend Property TruncateUploadsTo As Long = -1
     ''' <summary>When set, a download writes only this many bytes.</summary>
     Friend Property TruncateDownloadsTo As Long = -1
-    ''' <summary>When set, called at the start of every download with the session's own
-    ''' token - the hook a test uses to hold one download and watch what the session does
-    ''' while it is in flight. A test that blocks here and ignores the token stands in for
-    ''' a provider that does not cancel mid-flight.</summary>
-    Friend Property BeforeDownload As Action(Of String, CancellationToken)
-    ''' <summary>When set, the answer to every stat - the stand-in for a server whose
-    ''' names resolve differently than the backing store's (a case-sensitive server).</summary>
-    Friend Property StatOverride As Func(Of String, ResourceEntry)
 
     ''' <summary>The scratch file behind a remote path.</summary>
     Friend Function BackingPath(remotePath As String) As String
@@ -83,22 +78,34 @@ Friend NotInheritable Class ResourceTestProvider
     End Function
 
     Public Function TryStat(path As String, ByRef entry As ResourceEntry) As Boolean Implements IFileSystemProvider.TryStat
-        entry = Nothing
         If StatOverride IsNot Nothing Then
             entry = StatOverride(path)
             Return entry IsNot Nothing
         End If
-        Dim f As New FileInfo(BackingPath(path))
+        entry = Nothing
+        Dim requested As String = BackingPath(path)
+        Dim parent As String = IO.Path.GetDirectoryName(requested)
+        Dim canonical As String = If(Directory.Exists(parent), Directory.EnumerateFiles(parent).
+            FirstOrDefault(Function(candidate) String.Equals(candidate, requested, StringComparison.OrdinalIgnoreCase)), Nothing)
+        If canonical Is Nothing Then
+            ' A folder answers too, as a real server's stat does - what a slot probe asks (007 §4.2).
+            If Directory.Exists(requested) Then
+                entry = New ResourceEntry With {.FullPath = path, .Name = IO.Path.GetFileName(requested.TrimEnd(IO.Path.DirectorySeparatorChar)), .IsDirectory = True}
+                Return True
+            End If
+            Return False
+        End If
+        Dim f As New FileInfo(canonical)
         If Not f.Exists Then Return False
-        entry = New ResourceEntry With {.FullPath = path, .Name = f.Name, .Length = f.Length, .LastWriteUtc = f.LastWriteTimeUtc}
+        entry = New ResourceEntry With {.FullPath = ResourceTransfer.Combine(ResourceTransfer.ParentOf(path), f.Name), .Name = f.Name, .Length = f.Length, .LastWriteUtc = f.LastWriteTimeUtc}
         Return True
     End Function
 
     Public Sub Download(remotePath As String, localPath As String, progress As IProgress(Of Long), ct As CancellationToken) Implements IFileSystemProvider.Download
         DownloadCalls += 1
+        BeforeDownload?.Invoke(remotePath, ct)
         ct.ThrowIfCancellationRequested()
         Dim bytes As Byte() = File.ReadAllBytes(BackingPath(remotePath))
-        BeforeDownload?.Invoke(remotePath, ct)
         If TruncateDownloadsTo >= 0 AndAlso TruncateDownloadsTo < bytes.Length Then Array.Resize(bytes, CInt(TruncateDownloadsTo))
         File.WriteAllBytes(localPath, bytes)
         progress?.Report(bytes.Length)

@@ -3,14 +3,15 @@
 | | |
 | --- | --- |
 | **Id** | `STREAM-BANK` |
-| **Version** | 2.1, active (read 2026-09-24). Owner: FastMediaSorter Android |
+| **Version** | 2.2, active (read 2026-10-02; 2.2 adds rule 13 - a blank or absent `is_live` means "not stated" - additive to this producer). Owner: FastMediaSorter Android |
 | **Home** | `stream-catalog/README.md` in the shared contracts catalog |
 | **Role here** | **producer** - implemented under specification 022 (`src/Streams/`) |
 
-Specification 022 implements Fast Media Sorter for Windows as a conforming producer of `stream-catalog.zip`
-from `.m3u` and `.m3u8` playlists on the PC.
+Specification 022 implements Fast Media Sorter & Sharing for Windows (FMS_W) as a conforming producer of `stream-catalog.zip`
+from `.m3u` and `.m3u8` playlists on the PC. The registry row for this product used to read "planned
+consumer"; it is a producer.
 
-## Producer Rules Implemented (STREAM-BANK 2.1)
+## Producer Rules Implemented (STREAM-BANK 2.1, unchanged by 2.2)
 
 - **Entry zero is `streams.csv`**, followed optionally by `favicon-atlas.png`. No stray entries, no directories, and no second `.csv` file.
 - **RFC-4180 CSV**, UTF-8 without BOM, with all 19 canonical columns in exact producer order.
@@ -18,5 +19,5 @@ from `.m3u` and `.m3u8` playlists on the PC.
 - **Five `name` guarantees** maintained on every row: HTML entities decoded (including double-encoded), leading encoder slots stripped, empty/junk names rebuilt from `host[:port]`, and `U+FFFD` refused and reported.
 - **Refusal rules**: non-launchable schemes (only `http`, `https`, `rtsp` permitted), credentials (`user:pass@`), broadcast tokens (`/b/...`), and nested playlist references (`.m3u`, `.pls`) are refused and named in the run report.
 - **No favicon index without atlas**: in the first version, no atlas and no `favicon_index` values are emitted (preventing S0925 favicon wiping hazards).
-- **Validation suite (V1–V12)**: written bytes are validated prior to atomic destination replacement.
+- **Validation suite (V1-V12)**: written bytes are validated prior to atomic destination replacement.
 - **Churn guard**: protects against accidental loss of >20% URLs when updating an existing catalog of >=50 rows.

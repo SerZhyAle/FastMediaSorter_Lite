@@ -45,13 +45,12 @@ Public NotInheritable Class InternetAccessForm
         UiLanguage.ApplyTo(Me)
         Me.Text = Localization.T("Инструкция по пробросу порта")
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
-        ' Created before the close hook below can reference it: the tooltip keeps a
-        ' native window and references to the controls it serves, so it is disposed with
-        ' the dialog rather than left to finalization (ticket 054 H-20).
+        Dim boldFont As New Font(Me.Font, FontStyle.Bold)
         Dim tip As New ToolTip()
         AddHandler Me.FormClosed,
             Sub()
                 Try : tip.Dispose() : Catch : End Try
+                Try : boldFont.Dispose() : Catch : End Try
                 ShareIcons.FreeIcon(Me.Icon, _iconHandle)
             End Sub
         Me.FormBorderStyle = FormBorderStyle.Sizable
@@ -79,7 +78,7 @@ Public NotInheritable Class InternetAccessForm
         header.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
         header.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
         lblNet = New Label With {.Dock = DockStyle.Fill, .AutoEllipsis = True, .TextAlign = ContentAlignment.MiddleLeft,
-            .Font = New Font(Me.Font, FontStyle.Bold), .Margin = New Padding(0, 6, 12, 0)}
+            .Font = boldFont, .Margin = New Padding(0, 6, 12, 0)}
         Dim btnFlow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .WrapContents = False, .Margin = New Padding(0)}
         btnTestNet = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
@@ -146,6 +145,7 @@ Public NotInheritable Class InternetAccessForm
     Private Async Function RefreshStatusAsync(poll As Boolean) As Task
         SetHint(Localization.T("Обновление.."))
         Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+        If Me.IsDisposed Then Return
         If st IsNot Nothing Then _status = st
         Render()
         If poll AndAlso _status IsNot Nothing AndAlso _status.Running AndAlso _status.Reachability Is Nothing Then
@@ -153,16 +153,17 @@ Public NotInheritable Class InternetAccessForm
                 Await Task.Delay(1000)
                 If Me.IsDisposed Then Return
                 st = Await ShareController.GetStatusAsync()
+                If Me.IsDisposed Then Return
                 If st IsNot Nothing Then _status = st
                 Render()
                 If _status Is Nothing OrElse Not _status.Running OrElse _status.Reachability IsNot Nothing Then Exit For
             Next
         End If
-        SetHint("")
+        If Not Me.IsDisposed Then SetHint("")
     End Function
 
     ''' <summary>Fills the status line + guidance text (CGNAT / UPnP-mapped / needs-forward
-    ''' / unknown), mirroring the LITE UpdateInternetUi.</summary>
+    ''' / unknown), mirroring the viewer's UpdateInternetUi.</summary>
     Private Sub Render()
         Dim st As WorkerStatus = _status
         Dim running As Boolean = st IsNot Nothing AndAlso st.Running
@@ -272,6 +273,7 @@ Public NotInheritable Class InternetAccessForm
         Dim lanIp As String = If(reach IsNot Nothing AndAlso Not String.IsNullOrEmpty(reach.LanAddress), reach.LanAddress, NetworkInfo.LocalIPv4())
         SetHint(Localization.T("Определяем роутер.."))
         Dim rt As RouterIdentity = Await GetRouterAsync()
+        If Me.IsDisposed Then Return
         Dim model As String = rt.DisplayName()
         If Not ShareGuide.OpenPortForwardGuide(NetworkInfo.DefaultGatewayUrl(), port, lanIp, port, model, RouterInfo.SearchUrl(rt)) Then
             SetHint(Localization.T("Не удалось открыть инструкцию."))

@@ -25,27 +25,47 @@ Public NotInheritable Class File_Types_Form
     Private ReadOnly btnCancel As New Button()
     Private ReadOnly groups As List(Of KeyValuePair(Of String, String()))
     Private suspendCascade As Boolean
+    Private dialogFont As Font
 
-    ''' <summary>The chosen extensions, lowercase and dotted; empty means all supported.</summary>
+    Protected Overrides Sub Dispose(disposing As Boolean)
+        Try
+            MyBase.Dispose(disposing)
+        Finally
+            If disposing AndAlso dialogFont IsNot Nothing Then
+                dialogFont.Dispose()
+                dialogFont = Nothing
+            End If
+        End Try
+    End Sub
+
+    ''' <summary>The chosen extensions, lowercase and dotted; empty means all supported. The
+    ''' verdict (including "nothing ticked cannot be accepted") is FileTypeSelection's.</summary>
     Public ReadOnly Property Selection As List(Of String)
         Get
-            Dim chosen As New List(Of String)()
-            Dim total As Integer = 0
-            For Each group As TreeNode In tree.Nodes
-                For Each leaf As TreeNode In group.Nodes
-                    total += 1
-                    If leaf.Checked Then chosen.Add(Convert.ToString(leaf.Tag))
-                Next
-            Next
-            If chosen.Count = total Then Return New List(Of String)()
-            Return chosen
+            Return CurrentVerdict().Selection
         End Get
     End Property
 
+    Private Function CurrentVerdict() As FileTypeSelection.Verdict
+        Dim chosen As New List(Of String)()
+        Dim total As Integer = 0
+        For Each group As TreeNode In tree.Nodes
+            For Each leaf As TreeNode In group.Nodes
+                total += 1
+                If leaf.Checked Then chosen.Add(Convert.ToString(leaf.Tag))
+            Next
+        Next
+        Return FileTypeSelection.Evaluate(total, chosen)
+    End Function
     Public Sub New(groups As List(Of KeyValuePair(Of String, String())), current As IEnumerable(Of String))
         Me.groups = groups
-        Build()
-        Fill(current)
+        Try
+            Build()
+            Fill(current)
+        Catch
+            Dispose()
+            Throw
+        End Try
     End Sub
 
     Private Sub Build()
@@ -57,7 +77,8 @@ Public NotInheritable Class File_Types_Form
         StartPosition = FormStartPosition.CenterParent
         ClientSize = New Size(Localization.Scaled(420), 520)
         MinimumSize = New Size(Localization.Scaled(360), 380)
-        Font = New Font(Localization.FontFamily(), 9.0F)
+        dialogFont = New Font(Localization.FontFamily(), 9.0F)
+        Font = dialogFont
         If Localization.IsRightToLeft() Then RightToLeft = RightToLeft.Yes
 
         tree.CheckBoxes = True
@@ -83,10 +104,11 @@ Public NotInheritable Class File_Types_Form
     End Sub
 
     Private Sub Fill(current As IEnumerable(Of String))
-        Dim allowed As New HashSet(Of String)(If(current, Enumerable.Empty(Of String)()), StringComparer.OrdinalIgnoreCase)
         ' An empty stored list is the "everything" sentinel, so it must arrive here as
         ' every box ticked - not as an empty dialog.
-        Dim everything As Boolean = allowed.Count = 0
+        Dim allowed As HashSet(Of String) = FileTypeSelection.TickedOnOpen(
+            current, groups.SelectMany(Function(g) g.Value))
+        Dim everything As Boolean = False
 
         suspendCascade = True
         For Each group As KeyValuePair(Of String, String()) In groups
@@ -101,8 +123,12 @@ Public NotInheritable Class File_Types_Form
             parent.Expand()
         Next
         suspendCascade = False
+        UpdateOkButtonState()
     End Sub
 
+    Private Sub UpdateOkButtonState()
+        btnOk.Enabled = CurrentVerdict().CanAccept
+    End Sub
     ''' <summary>A group ticks and unticks its whole set; a leaf keeps its group's own box
     ''' honest. AfterCheck fires for the nodes we change here too, hence the guard.</summary>
     Private Sub NodeChecked(sender As Object, e As TreeViewEventArgs)
@@ -119,6 +145,7 @@ Public NotInheritable Class File_Types_Form
         Finally
             suspendCascade = False
         End Try
+        UpdateOkButtonState()
     End Sub
 
 End Class
@@ -145,6 +172,20 @@ Public NotInheritable Class History_Form
 
     Private ReadOnly files As List(Of String)
     Private ReadOnly folders As List(Of String)
+    Private dialogFont As Font
+
+    Protected Overrides Sub Dispose(disposing As Boolean)
+        Try
+            ' Queued probes of this dialog never run; a call already in flight finishes on its own.
+            If disposing Then HistoryProbes.CancelOwner(Me)
+            MyBase.Dispose(disposing)
+        Finally
+            If disposing AndAlso dialogFont IsNot Nothing Then
+                dialogFont.Dispose()
+                dialogFont = Nothing
+            End If
+        End Try
+    End Sub
 
     ''' <summary>Raised when the user asked to open an entry - the viewer owns what that
     ''' means, this window only knows the path.</summary>
@@ -165,8 +206,13 @@ Public NotInheritable Class History_Form
     Public Sub New(files As List(Of String), folders As List(Of String))
         Me.files = New List(Of String)(If(files, New List(Of String)()))
         Me.folders = New List(Of String)(If(folders, New List(Of String)()))
-        Build()
-        Fill()
+        Try
+            Build()
+            Fill()
+        Catch
+            Dispose()
+            Throw
+        End Try
     End Sub
 
     Private Sub Build()
@@ -178,7 +224,8 @@ Public NotInheritable Class History_Form
         StartPosition = FormStartPosition.CenterParent
         ClientSize = New Size(Localization.Scaled(660), 480)
         MinimumSize = New Size(Localization.Scaled(520), 340)
-        Font = New Font(Localization.FontFamily(), 9.0F)
+        dialogFont = New Font(Localization.FontFamily(), 9.0F)
+        Font = dialogFont
         If Localization.IsRightToLeft() Then RightToLeft = RightToLeft.Yes
 
         tabs.Bounds = New Rectangle(12, 12, ClientSize.Width - 24, ClientSize.Height - 62)
@@ -243,9 +290,14 @@ Public NotInheritable Class History_Form
         folderList.EndUpdate()
     End Sub
 
-    ''' <summary>How long one existence probe may take before its entry stays "unknown".
-    ''' A sleeping NAS answers File.Exists after a full SMB timeout.</summary>
-    Private Const Probe_Timeout_Ms As Integer = 2000
+    ''' <summary>Every history dialog shares two actual existence calls and at most 64 queued
+    ''' keys (105 L01, 057.S15-3). A call stuck on a dead share keeps its permit until the OS
+    ''' returns - closing the dialog drops its queue, not a call already in flight - so repeated
+    ''' opens cannot pile blocked probes onto the thread pool. The same (dialog, kind, path) is
+    ''' asked once.</summary>
+    Friend Shared ReadOnly HistoryProbes As New ProbeScheduler(Of Boolean)(
+        New ProbePolicy With {.MaxActive = 2, .MaxPending = 64, .CoalesceByKey = True})
+    Friend Shared ExistsFunc As Func(Of String, Boolean, Boolean) = AddressOf Exists
 
     ''' <summary>Existence verdicts, by list and path. Filled off the UI thread; read by
     ''' DrawEntry, which never touches the disk itself.</summary>
@@ -255,12 +307,13 @@ Public NotInheritable Class History_Form
 
     ''' <summary>
     ''' The verdict for one entry, or Nothing while it is unknown - in which case a probe is
-    ''' started once, on a worker, with a time limit, and the list is repainted when it
-    ''' answers. DrawEntry used to call File.Exists/Directory.Exists itself on every paint
-    ''' of every row: a history with NAS paths froze the dialog for tens of seconds per row,
-    ''' again on every scroll (053 F-04).
+    ''' started once, on a worker, and the list is repainted when it answers. DrawEntry used to
+    ''' call File.Exists/Directory.Exists itself on every paint of every row: a history with NAS
+    ''' paths froze the dialog for tens of seconds per row, again on every scroll (053 F-04).
     ''' </summary>
     Private Function KnownExistence(entry As String, isFolder As Boolean, list As ListBox) As Boolean?
+        If IsDisposed OrElse Disposing Then Return Nothing
+
         Dim key As String = If(isFolder, "D|", "F|") & entry
         SyncLock existenceLock
             Dim known As Boolean
@@ -268,23 +321,37 @@ Public NotInheritable Class History_Form
             If Not probing.Add(key) Then Return Nothing
         End SyncLock
 
-        Threading.Tasks.Task.Run(
-            Sub()
-                Dim probe As Threading.Tasks.Task(Of Boolean) =
-                    Threading.Tasks.Task.Run(Function() Exists(entry, isFolder))
-                If Not probe.Wait(Probe_Timeout_Ms) Then Return ' stays unknown: drawn as present
-                SyncLock existenceLock
-                    existence(key) = probe.Result
-                End SyncLock
-                Try
-                    If Not list.IsDisposed AndAlso list.IsHandleCreated Then list.BeginInvoke(New MethodInvoker(AddressOf list.Invalidate))
-                Catch ex As Exception
-                    AppFileLogger.LogException("History: repainting after a probe", ex)
-                End Try
-            End Sub)
+        ScheduleProbe(key, entry, isFolder, list)
         Return Nothing
     End Function
 
+    Private Sub ScheduleProbe(key As String, entry As String, isFolder As Boolean, list As ListBox)
+        Dim checker As Func(Of String, Boolean, Boolean) = If(ExistsFunc, AddressOf Exists)
+        Dim answer As Threading.Tasks.Task(Of ProbeResult(Of Boolean)) =
+            HistoryProbes.Submit(Me, key, Function() checker(entry, isFolder), Function() Not IsDisposed AndAlso Not Disposing)
+        answer.ContinueWith(Sub(done) ProbeFinished(key, list, done.Result), Threading.Tasks.TaskScheduler.Default)
+    End Sub
+
+    ''' <summary>Runs on a pool thread when the scheduler has an outcome for a row. Anything
+    ''' other than an answer leaves the row UNKNOWN (drawn as present) - never "missing".</summary>
+    Private Sub ProbeFinished(key As String, list As ListBox, result As ProbeResult(Of Boolean))
+        Try
+            SyncLock existenceLock
+                probing.Remove(key)
+                If result.Status = ProbeStatus.Completed Then existence(key) = result.Value
+            End SyncLock
+            If result.Status = ProbeStatus.Faulted Then
+                AppFileLogger.LogException("History probe", result.Failure)
+            End If
+            If result.Status = ProbeStatus.Completed AndAlso Not IsDisposed AndAlso Not Disposing AndAlso
+               Not list.IsDisposed AndAlso list.IsHandleCreated Then
+                list.BeginInvoke(New MethodInvoker(AddressOf list.Invalidate))
+            End If
+        Catch ex As Exception
+            ' The dialog went away between the check and the post; nothing to repaint.
+            AppFileLogger.LogException("History: repainting after a probe", ex)
+        End Try
+    End Sub
     Private Sub DrawEntry(sender As Object, e As DrawItemEventArgs)
         Dim list As ListBox = TryCast(sender, ListBox)
         If list Is Nothing OrElse e.Index < 0 OrElse e.Index >= list.Items.Count Then Return
@@ -331,7 +398,7 @@ Public NotInheritable Class History_Form
 
     Private Sub ClearCurrent(sender As Object, e As EventArgs)
         If MessageBox.Show(Me, Localization.T("Очистить весь список?"), Text,
-                           MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+                           MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         If CurrentList() Is folderList Then folders.Clear() Else files.Clear()
         Fill()
     End Sub

@@ -82,33 +82,47 @@ Friend Module TranslationQuality
             Case "uk", "ukr" : foreign = "ыэъёў"
             Case "be", "bel" : foreign = "щиїєґъ"
             Case "bg", "bul" : foreign = "ыэёіїєґў"
-            Case "zh", "zh-cn", "zh-tw", "chi_sim", "chi-sim", "chi_tra", "chi-tra",
-                 "ja", "jpn", "ko", "kor"
-                Dim target As String = If(targetLang, "").Trim().ToLowerInvariant()
-                For Each ch As Char In t
-                    If Not Char.IsLetter(ch) Then Continue For
-                    Dim code As Integer = Convert.ToInt32(ch)
-                    Dim kana As Boolean = (code >= &H3040 AndAlso code <= &H30FF) OrElse
-                                          (code >= &H31F0 AndAlso code <= &H31FF) OrElse
-                                          (code >= 65382 AndAlso code <= 65437)
-                    Dim hangul As Boolean = (code >= &H1100 AndAlso code <= &H11FF) OrElse
-                                            (code >= &H3130 AndAlso code <= &H318F) OrElse
-                                            (code >= &HA960 AndAlso code <= &HA97F) OrElse
-                                            (code >= &HAC00 AndAlso code <= &HD7AF)
-                    If kana AndAlso target <> "ja" AndAlso target <> "jpn" Then Return True
-                    If hangul AndAlso target <> "ko" AndAlso target <> "kor" Then Return True
-                Next
-                ' Han characters alone cannot distinguish Chinese from Japanese.
-                Return False
             Case "en", "eng"
                 ' Any accented Latin letter says the text is not English.
                 For Each ch As Char In t
                     If Char.IsLetter(ch) AndAlso AscW(ch) > &H7F AndAlso AscW(ch) <= &H24F Then Return True
                 Next
                 Return False
+            Case "zh", "zh-cn", "zh-tw", "chi_sim", "chi-sim", "chi_tra", "chi-tra", "chi"
+                ' Han is shared with Japanese, so it proves nothing; kana and Hangul do.
+                Return HasKana(t) OrElse HasHangul(t)
+            Case "ja", "jpn"
+                Return HasHangul(t)
+            Case "ko", "kor"
+                Return HasKana(t)
             Case Else : Return False
         End Select
         Return t.IndexOfAny(foreign.ToCharArray()) >= 0
+    End Function
+
+    ''' <summary>Hiragana, katakana (with its phonetic extensions and the halfwidth forms). The
+    ''' katakana middle dot and the prolonged sound mark are left out: Chinese text uses them too.</summary>
+    Private Function HasKana(text As String) As Boolean
+        For Each ch As Char In text
+            Dim code As Integer = AscW(ch)
+            If code = &H30FB OrElse code = &H30FC Then Continue For
+            If (code >= &H3040 AndAlso code <= &H30FF) OrElse
+               (code >= &H31F0 AndAlso code <= &H31FF) OrElse
+               (code >= 65382 AndAlso code <= 65437) Then Return True
+        Next
+        Return False
+    End Function
+
+    ''' <summary>Hangul syllables, jamo, compatibility jamo and extended jamo.</summary>
+    Private Function HasHangul(text As String) As Boolean
+        For Each ch As Char In text
+            Dim code As Integer = AscW(ch)
+            If (code >= &HAC00 AndAlso code <= &HD7AF) OrElse
+               (code >= &H1100 AndAlso code <= &H11FF) OrElse
+               (code >= &H3130 AndAlso code <= &H318F) OrElse
+               (code >= &HA960 AndAlso code <= &HA97F) Then Return True
+        Next
+        Return False
     End Function
 
     Friend Function LooksWrongScript(text As String, targetLang As String) As Boolean
@@ -135,6 +149,9 @@ Friend Module TranslationQuality
     ''' concept, across languages: a group counts only when the SOURCE mentions none of it, so
     ''' a page that itself says "I can't translate this" still translates to "Я не могу это
     ''' перевести".
+    ''' The first group is widened on the SOURCE side only by <see cref="SourceTranslationWords"/>
+    ''' (ticket 093, 057.S12-15): a German page that says "übersetzen" may be answered with
+    ''' "перевести" without that being a refusal.
     ''' </summary>
     Private ReadOnly MetaConceptGroups As String()() = {
         New String() {"translat", "перевод", "перевест", "переклад", "перекласти"},
@@ -153,9 +170,14 @@ Friend Module TranslationQuality
 
     ' Ticket 093: recognize source dialogue about translation across languages. These
     ' only suppress a meta hit; they do not introduce new candidate refusal triggers.
+    ' CJK and Indic entries are built with ChrW: zh-Hans, zh-Hant, ja, ko, hi, bn.
     Private ReadOnly SourceTranslationWords As String() = {
         "übersetz", "traduc", "tradu", "traduz", "tradott", "tłumacz", "přelož", "překlad",
-        "çevir", "vertaal", "översätt", "翻译", "翻譯", "翻訳", "번역", "अनुवाद", "অনুবাদ"
+        "çevir", "vertal", "vertaal", "översätt",
+        ChrW(&H7FFB) & ChrW(&H8BD1), ChrW(&H7FFB) & ChrW(&H8B6F), ChrW(&H7FFB) & ChrW(&H8A33),
+        ChrW(&HBC88) & ChrW(&HC5ED),
+        ChrW(&H905) & ChrW(&H928) & ChrW(&H941) & ChrW(&H935) & ChrW(&H93E) & ChrW(&H926),
+        ChrW(&H985) & ChrW(&H9A8) & ChrW(&H9C1) & ChrW(&H9AC) & ChrW(&H9BE) & ChrW(&H9A6)
     }
 
     ''' <summary>
@@ -251,10 +273,16 @@ Friend Module TranslationQuality
     Private Function CountSentenceMarkers(text As String) As Integer
         Dim count As Integer = 0
         For Each ch As Char In If(text, "")
-            Select Case Convert.ToInt32(ch)
-                Case 46, 33, 63, &H3002, 65281, 65311, &H964, &H6D4, &H61F
-                    count += 1
-            End Select
+            If ch = "."c OrElse ch = "!"c OrElse ch = "?"c Then
+                count += 1
+            Else
+                Select Case AscW(ch)
+                    ' Ideographic full stop, fullwidth ! and ?, danda, Arabic question mark and
+                    ' full stop: the sentence ends of the scripts the ASCII three miss (ticket 093).
+                    Case &H3002, &HFF01, &HFF1F, &H964, &H6D4, &H61F
+                        count += 1
+                End Select
+            End If
         Next
         Return count
     End Function

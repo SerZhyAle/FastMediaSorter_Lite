@@ -12,7 +12,7 @@ Imports System.Text.Json
 Imports System.Text.RegularExpressions
 
 ''' <summary>
-''' Builds the .fmscfg resource config and its QR code entirely on the LITE side,
+''' Builds the .fmscfg resource config and its QR code entirely on the viewer side,
 ''' straight from the worker's live Status. The worker's own ExportConfig omits
 ''' the internet access path unless it auto-mapped the port via UPnP, so a manual
 ''' router forward never reaches the phone. Building it here lets the "open
@@ -73,7 +73,7 @@ End Class
 ''' or a different resource-name shape than the one that actually ships.
 ''' </summary>
 Public NotInheritable Class ShareConfigStamp
-    ''' <summary>Replaces "FastMediaSorter Companion on &lt;machine&gt;". Empty = the real one.</summary>
+    ''' <summary>Replaces "Fast Media Sorter &amp; Sharing on &lt;machine&gt;" (ProductNames.Compact). Empty = the real one.</summary>
     Public Property ResourceName As String = ""
     ''' <summary>Replaces DateTime.UtcNow. Date.MinValue = the real clock.</summary>
     Public Property CreatedAtUtc As Date = Date.MinValue
@@ -205,7 +205,7 @@ Public Module ShareConfigBuilder
         ' Field order mirrors CONFIG_FORMAT.md "Canonical test vector" and the Android
         ' fixture built from the same bytes (FMSCFG rule 5); accessNote is the optional
         ' trailing field.
-        Dim resourceName As String = "FastMediaSorter Companion on " & SafeMachineName()
+        Dim resourceName As String = ProductNames.Compact & " on " & SafeMachineName()
         Dim createdAt As Date = DateTime.UtcNow
         If stamp IsNot Nothing Then
             If Not String.IsNullOrEmpty(stamp.ResourceName) Then resourceName = stamp.ResourceName
@@ -379,18 +379,15 @@ Public Module ShareConfigBuilder
     End Function
 
     ''' <summary>
-    ''' Writes an exported .fmscfg the way the reference exporter does: owner-only (FMSCFG
-    ''' rule 6 - the file is a key). Where the file system has ACLs, inheritance is cut and
-    ''' only the current user keeps access; a FAT stick has none and keeps its default
-    ''' silently - the file is still written (ticket 034 phase 1).
+    ''' Writes an exported .fmscfg - a KEY (FMSCFG rule 6) - through ProtectedConfigWriter: the file is
+    ''' created owner-only before any secret byte exists, published by rename, and verified. Throws
+    ''' <see cref="ConfigWriteRefusedException"/> when it was not written (an unsuitable destination,
+    ''' a failed verification): nothing may say "saved" after that. 108 H03.
     ''' </summary>
     Public Sub WriteConfigFile(path As String, json As String)
         Dim outcome As ConfigWriteOutcome = ProtectedConfigWriter.Publish(path, json)
-        If outcome <> ConfigWriteOutcome.Saved Then
-            Throw New ConfigWriteRefusedException(outcome)
-        End If
+        If outcome <> ConfigWriteOutcome.Saved Then Throw New ConfigWriteRefusedException(outcome)
     End Sub
-
     ''' <summary>Owner-only ACL on <paramref name="path"/>. False when the file system has no
     ''' ACLs or the change was refused - never an exception.</summary>
     Friend Function RestrictToCurrentUser(path As String) As Boolean

@@ -1,10 +1,11 @@
 {
-  "$comment": "site.root is '.' because Pages serves this repo from the root, NOT from docs/. The larger docs/index.html is an unpublished staging copy - do not assume the two are meant to match.",
+  "$comment": "site.root is '.' because Pages serves this repo from the root, NOT from docs/. The larger docs/index.html is an unpublished staging copy - do not assume the two are meant to match. editions names the Server edition (its own winget package SerZhyAle.FastMediaSorter.Server, Inno AppId and ARP name); it is a packaging and host-mode variant of this same source tree (tools/Build-ServerInstaller.ps1), so it ships off the same v* tag and editionTagPrefixes stays empty.",
 
   "canon": {
-    "version": "2026.09.06.1",
-    "coreDigest": "sha256:cdf49be6d22723aaaed939965af4aea5568c4159f69fe61c49e2e7774d8b942a",
+    "version": "2026.10.02.3",
+    "coreDigest": "sha256:410463a9ccdfd75af7a233fc91656c200fe05f047cf7617d7fc53d32e7b81afa",
     "adoptedOn": "2026-08-18",
+    "reconciledOn": "2026-10-03",
     "model": "reference",
     "contribRecord": "contrib/fastmediasorter_lite.md"
   },
@@ -13,7 +14,7 @@
 
   "overlay": ["A"],
   "shapes": ["dual-runtime-build-variant", "co-shipped-companion"],
-  "editions": [],
+  "editions": ["server"],
 
   "versionShape": {
     "tagRegex": "^v\\d{2}\\.\\d{1,2}\\.\\d{1,2}\\.\\d{4}$",
@@ -22,6 +23,9 @@
 
   "ledgerShape": 1,
   "ledgerFile": null,
+
+  "docRegistryShape": 1,
+  "docRegistryFile": "docs/DOCUMENT_REGISTRY.jsonl",
 
   "channels": ["github", "winget", "msstore", "installer"],
 

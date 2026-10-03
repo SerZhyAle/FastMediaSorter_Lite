@@ -46,7 +46,7 @@ Partial Public Class Main_Form
             If String.IsNullOrEmpty(folder_Path) Then Continue For
 
             Dim slot As Integer = k
-            Dim item As New ToolStripMenuItem(If(k = 10, "0", k.ToString()) & "  " & folder_Path)
+            Dim item As New ToolStripMenuItem(If(k = 10, "0", k.ToString()) & "  " & RecipientRowCaption(folder_Path))
             AddHandler item.Click, Sub() ExecuteRecipientAction(slot, action)
             root.DropDownItems.Add(item)
         Next
@@ -58,7 +58,18 @@ Partial Public Class Main_Form
     ''' <summary>Rename / move / copy / delete - identical in both menus, and in every case
     ''' the very methods the F6, number and Del keys call.</summary>
     Private Sub AddFileOperationItems(target As ToolStripItemCollection)
-        If IsArchiveMode() OrElse IsArchiveOpenPending() Then Return
+        ' View-only (010 §7): inside an archive these items are not offered at all - an item
+        ' that is shown and then declines is worse than one that was never there. The same
+        ' while an archive is still being unpacked: file operations are refused then.
+        If IsArchiveMode() OrElse IsArchiveOpenPending() Then
+            ' The callers put a separator in front of this group; with the group gone it
+            ' would stand next to the one after it.
+            If target.Count > 0 AndAlso TypeOf target(target.Count - 1) Is ToolStripSeparator Then
+                target.RemoveAt(target.Count - 1)
+            End If
+            Return
+        End If
+
         AddMenuItem(target, Localization.T("Переименовать.. (F6)"), Sub() RenameCurrentFile())
 
         Dim move_Item As ToolStripMenuItem = CreateRecipientsSubmenu(RecipientActionKind.Move)

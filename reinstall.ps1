@@ -1,15 +1,15 @@
 ﻿<#
 .SYNOPSIS
     Fast local test loop: silently kill every running instance, rebuild EVERYTHING
-    (LITE + Share Manager companion + worker payload) via build.ps1, then relaunch
+    (viewer + Share Manager companion + worker payload) via build.ps1, then relaunch
     the fresh exes locally so a change can be eyeballed immediately.
 
 .DESCRIPTION
     "reinstall" here = "replace the local build and restart it" - the quick dev
     cycle, NOT a run of the real Inno setup.exe. It is a thin wrapper around
     build.ps1 (same rebuild + deploy to the work folders) with two extras:
-      1. BEFORE building - stop LITE, the Share Manager and the Go worker (build.ps1
-         stops the worker/companion but not LITE; a LITE still running from a deploy
+      1. BEFORE building - stop the viewer, the Share Manager and the Go worker (build.ps1
+         stops the worker/companion but not the viewer; a viewer still running from a deploy
          target would lock its own exe and fail the copy).
       2. AFTER building - Start-Process both exes from bin\Release so they run at once.
 
@@ -24,7 +24,7 @@
     Passed through to build.ps1 (skip tools\Clean-Build.ps1 housekeeping).
 
 .PARAMETER SkipCompanion
-    Passed through to build.ps1 (build LITE only; Share Manager is not rebuilt).
+    Passed through to build.ps1 (build the viewer only; Share Manager is not rebuilt).
 
 .PARAMETER NoLaunch
     Rebuild + redeploy but do not relaunch anything.
@@ -42,7 +42,7 @@
 .EXAMPLE
     .\reinstall.ps1
     .\reinstall.ps1 -NoClean          # faster: skip the stage/bin/temp housekeeping
-    .\reinstall.ps1 -SkipCompanion    # LITE only
+    .\reinstall.ps1 -SkipCompanion    # viewer only
 #>
 param(
     [switch]$NoClean,
@@ -80,7 +80,7 @@ function Stop-Quiet([string]$procName) {
     }
 }
 
-Write-Host "Stopping running instances (LITE, Share Manager, worker).." -ForegroundColor Cyan
+Write-Host "Stopping running instances (viewer, Share Manager, worker).." -ForegroundColor Cyan
 Stop-Quiet 'FastMediaSorter_LITE'
 Stop-Quiet 'FastMediaSorter_x86'
 Stop-Quiet 'FastMediaSorterCompanion'
@@ -115,10 +115,10 @@ $liteExe      = Join-Path $runDir 'FastMediaSorter_LITE.exe'
 $companionExe = Join-Path $runDir 'FastMediaSorterCompanion.exe'
 
 if (Test-Path $liteExe) {
-    Write-Host "Launching Fast Media Sorter (LITE): $liteExe" -ForegroundColor Green
+    Write-Host "Launching the viewer: $liteExe" -ForegroundColor Green
     Start-Process -FilePath $liteExe -WorkingDirectory $runDir
 } else {
-    Write-Warning "LITE exe not found at $liteExe"
+    Write-Warning "Viewer exe not found at $liteExe"
 }
 
 if (Test-Path $companionExe) {

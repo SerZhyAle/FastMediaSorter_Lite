@@ -47,7 +47,7 @@ Partial Public Class Main_Form
     ''' True when it handled the request that way.
     ''' </summary>
     Private Function OpenDefaultAppsSettingsWhenPackaged() As Boolean
-        If Not IsPackagedApp() Then Return False
+        If AssociationUx.ModeFor(IsPackagedApp()) <> AssociationMode.OpenWindowsSettings Then Return False
         Try
             Process.Start(New ProcessStartInfo("ms-settings:defaultapps") With {.UseShellExecute = True})
         Catch ex As Exception
@@ -87,7 +87,7 @@ Partial Public Class Main_Form
             Try
                 Dim clean As String = ext.TrimStart("."c)
                 Dim prog_Id As String = "FastMediaSorter." & clean
-                Dim description As String = clean.ToUpper() & " Image - Fast Media Sorter"
+                Dim description As String = clean.ToUpper() & " Image - " & ProductNames.Compact
 
                 ' HKCU\Software\Classes - не требует прав администратора, работает для текущего пользователя
                 Using classes_Key = Registry.CurrentUser.OpenSubKey("Software\Classes", True)
@@ -106,6 +106,7 @@ Partial Public Class Main_Form
                 End Using
             Catch ex As Exception
                 failed.Add(ext)
+                AppFileLogger.LogException("Registering image association " & ext, ex)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2501: Error registering " & ext & ": " & ex.Message)
             End Try
         Next
@@ -146,7 +147,7 @@ Partial Public Class Main_Form
             Try
                 Dim clean As String = ext.TrimStart("."c)
                 Dim prog_Id As String = "FastMediaSorter." & clean
-                Dim description As String = clean.ToUpper() & " Video - Fast Media Sorter"
+                Dim description As String = clean.ToUpper() & " Video - " & ProductNames.Compact
 
                 ' HKCU\Software\Classes - не требует прав администратора, работает для текущего пользователя
                 Using classes_Key = Registry.CurrentUser.OpenSubKey("Software\Classes", True)
@@ -165,6 +166,7 @@ Partial Public Class Main_Form
                 End Using
             Catch ex As Exception
                 failed.Add(ext)
+                AppFileLogger.LogException("Registering video association " & ext, ex)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2502: Error registering " & ext & ": " & ex.Message)
             End Try
         Next
@@ -231,7 +233,7 @@ Partial Public Class Main_Form
                 Using progKey = classesKey.CreateSubKey(Secure_Prog_Id)
                     ' The ProgID's own name says what the file is, not what is inside it -
                     ' nothing outside the container may ever claim to know that.
-                    progKey.SetValue("", "Secure container - Fast Media Sorter")
+                    progKey.SetValue("", "Secure container - " & ProductNames.Compact)
                     Using shellKey = progKey.CreateSubKey("shell\open\command")
                         shellKey.SetValue("", """" & exePath & """ ""%1""")
                     End Using

@@ -124,8 +124,11 @@ Public Module RouterInfo
                         If gatewayIp.Length > 0 AndAlso String.Equals(UriHost(loc), gatewayIp, StringComparison.OrdinalIgnoreCase) Then
                             Return loc
                         End If
-                        ' Otherwise keep it only if it self-identifies as an IGD.
-                        If igdFallback.Length = 0 Then
+                        ' Otherwise keep it only if it self-identifies as an IGD AND names an address
+                        ' on this network: LOCATION is whatever the responder wrote, and fetching a
+                        ' public host (or resolving a name) on its say-so is a request nobody asked
+                        ' for (ticket 054 H-17 closed the redirect, this is the first hop).
+                        If igdFallback.Length = 0 AndAlso IsLanLocation(loc) Then
                             Dim tag As String = ExtractHeader(resp, "ST") & " " & ExtractHeader(resp, "USN")
                             If tag.IndexOf("InternetGatewayDevice", StringComparison.OrdinalIgnoreCase) >= 0 Then igdFallback = loc
                         End If
@@ -137,6 +140,29 @@ Public Module RouterInfo
         Catch
         End Try
         Return igdFallback
+    End Function
+
+    ''' <summary>True when an SSDP LOCATION is plain http to a LITERAL address that belongs to
+    ''' this network (private, link-local, unique-local, loopback or the 100.64/10 shared
+    ''' range some LAN gateways use). A name or a public address is refused - the fetch would
+    ''' otherwise go wherever a device on the LAN pointed it.</summary>
+    Friend Function IsLanLocation(url As String) As Boolean
+        Dim u As Uri = Nothing
+        If Not Uri.TryCreate(url, UriKind.Absolute, u) Then Return False
+        If Not String.Equals(u.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) Then Return False
+        Dim ip As IPAddress = Nothing
+        If Not IPAddress.TryParse(u.DnsSafeHost, ip) Then Return False
+        If ip.IsIPv4MappedToIPv6 Then ip = ip.MapToIPv4()
+        If IPAddress.IsLoopback(ip) Then Return True
+        Dim b As Byte() = ip.GetAddressBytes()
+        If ip.AddressFamily = AddressFamily.InterNetworkV6 Then
+            Return ip.IsIPv6LinkLocal OrElse ip.IsIPv6SiteLocal OrElse (b(0) And &HFE) = &HFC
+        End If
+        Return b(0) = 10 OrElse
+               (b(0) = 172 AndAlso b(1) >= 16 AndAlso b(1) <= 31) OrElse
+               (b(0) = 192 AndAlso b(1) = 168) OrElse
+               (b(0) = 169 AndAlso b(1) = 254) OrElse
+               (b(0) = 100 AndAlso b(1) >= 64 AndAlso b(1) <= 127)
     End Function
 
     ''' <summary>Host of a URL (IP or name), or "" if it will not parse.</summary>

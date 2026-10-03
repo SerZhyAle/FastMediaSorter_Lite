@@ -207,8 +207,8 @@ Public Class LongRunStabilityTests
         Assert.True(queue.Enqueue("work"))
         Assert.False(queue.IsClosed)
 
-        Assert.True(Await queue.DrainAsync(TimeSpan.FromSeconds(5)))
-        Assert.True(ran.IsSet, "the queued operation should have run before the drain returned")
+        Assert.True(Await queue.WaitForQuiescenceAsync(TimeSpan.FromSeconds(5)))
+        Assert.True(ran.IsSet, "the queued operation should have run before the queue went quiet")
         Assert.Equal(0, queue.PendingCount)
     End Function
 
@@ -217,7 +217,8 @@ Public Class LongRunStabilityTests
         Dim ran As Integer = 0
         Dim queue As New FileOpQueue(Of String)(Sub(op) Interlocked.Increment(ran))
 
-        Await queue.DrainAsync(TimeSpan.FromSeconds(5))
+        Await queue.WaitForQuiescenceAsync(TimeSpan.FromSeconds(5))
+        queue.CompleteAdmission() ' the actual close
 
         ' The refusal has to be visible: the caller has already removed the file from the list
         ' and told the user it was moved, and only a reported failure rolls that back.
@@ -230,7 +231,8 @@ Public Class LongRunStabilityTests
     Public Async Function A_refused_operation_does_not_leave_the_pending_count_stuck() As Task
         Dim queue As New FileOpQueue(Of String)(Sub(op)
                                                 End Sub)
-        Await queue.DrainAsync(TimeSpan.FromSeconds(5))
+        Await queue.WaitForQuiescenceAsync(TimeSpan.FromSeconds(5))
+        queue.CompleteAdmission()
 
         queue.Enqueue("too late")
 

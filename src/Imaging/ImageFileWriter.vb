@@ -23,19 +23,11 @@ Friend Module ImageFileWriter
     ''' </summary>
     Friend Const TempMarker As String = ".fms-tmp"
 
-    ''' <summary>
-    ''' Where the encoder writes before the swap: <c>photo.fms-tmp.jpg</c>, NOT
-    ''' <c>photo.jpg.fms-tmp</c>.
-    '''
-    ''' The marker goes BEFORE the extension, and that is not cosmetic. The encoder picks
-    ''' the format from the extension of the path it is handed, so a name ending in
-    ''' ".fms-tmp" is a format it does not know and every save fails - which is exactly what
-    ''' happened, because the sketch in §9.6 of the specification appends the suffix. The
-    ''' real extension has to stay last.
-    ''' </summary>
+    ' Unique neighbor, with the real extension last. CreateNew establishes ownership;
+    ' generating a name alone does not reserve it.
     Friend Function TempPathFor(targetPath As String) As String
         Dim directory As String = Path.GetDirectoryName(targetPath)
-        Dim name As String = Path.GetFileNameWithoutExtension(targetPath) & TempMarker & Path.GetExtension(targetPath)
+        Dim name As String = Path.GetFileNameWithoutExtension(targetPath) & TempMarker & "-" & Guid.NewGuid().ToString("N") & Path.GetExtension(targetPath)
         Return If(String.IsNullOrEmpty(directory), name, Path.Combine(directory, name))
     End Function
 
@@ -129,14 +121,25 @@ Friend Module ImageFileWriter
     ''' </summary>
     Friend Sub Save(bitmap As Bitmap, targetPath As String, exifSource As Byte(),
                     orientation As ExifOrientationPolicy)
+        SaveWithEncoder(bitmap, targetPath, exifSource, orientation, ImageEncoderProvider.Current)
+    End Sub
+
+    Friend Sub SaveWithEncoder(bitmap As Bitmap, targetPath As String, exifSource As Byte(),
+                               orientation As ExifOrientationPolicy, encoder As IImageEncoder)
         Dim temporary As String = TempPathFor(targetPath)
-        Try
-            ImageEncoderProvider.Current.EncodeToFile(bitmap, temporary, exifSource, orientation)
-        Catch
-            DeleteQuietly(temporary, Default_File_System)
-            Throw
-        End Try
-        SwapInto(temporary, targetPath, Default_File_System)
+        ' CreateNew must succeed before cleanup is allowed. Keep this same handle through
+        ' encoding and swapping: Delete sharing permits renames but denies read/write opens.
+        Dim reservation As New FileStream(temporary, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Delete)
+        Using reservation
+            Try
+                encoder.EncodeToStream(bitmap, reservation, Path.GetExtension(temporary), exifSource, orientation)
+                reservation.Flush(flushToDisk:=True)
+            Catch
+                DeleteQuietly(temporary, Default_File_System)
+                Throw
+            End Try
+            SwapInto(temporary, targetPath, Default_File_System)
+        End Using
     End Sub
 
     ''' <summary>
@@ -205,7 +208,8 @@ Friend Module ImageFileWriter
             Dim targetStillThere As Boolean = False
             Try
                 targetStillThere = fs.Exists(targetPath)
-            Catch
+            Catch ex As Exception
+                AppFileLogger.WriteLine("Image save: target could not be checked after failed swap - " & ex.Message)
             End Try
             If targetStillThere Then DeleteQuietly(temporary, fs)
             Throw
@@ -231,7 +235,7 @@ Friend Module ImageFileWriter
             replaced = True
         Catch ex As Exception
             ' Not an answer yet: where the failed Replace left the files is decided below.
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0042: File.Replace failed, falling back to renames: " & ex.Message)
+            AppFileLogger.WriteLine(" w0042: File.Replace failed, falling back to renames: " & ex.Message)
         End Try
 
         If replaced Then
@@ -257,7 +261,8 @@ Friend Module ImageFileWriter
             Try
                 created = File.GetCreationTimeUtc(targetPath)
                 attributes = File.GetAttributes(targetPath)
-            Catch
+            Catch ex As Exception
+                AppFileLogger.WriteLine("Image save: original file attributes could not be read - " & ex.Message)
             End Try
             ' Throws with nothing changed yet; SwapInto then sees the target and cleans up.
             fs.Move(targetPath, backup)
@@ -284,7 +289,8 @@ Friend Module ImageFileWriter
         Try
             If created.HasValue Then File.SetCreationTimeUtc(targetPath, created.Value)
             If attributes.HasValue Then File.SetAttributes(targetPath, attributes.Value And Not FileAttributes.ReadOnly)
-        Catch
+        Catch ex As Exception
+            AppFileLogger.WriteLine("Image save: original file attributes could not be restored - " & ex.Message)
         End Try
         DeleteQuietly(backup, fs)
     End Sub
@@ -315,7 +321,7 @@ Friend Module ImageFileWriter
         Try
             If fs.Exists(filePath) Then fs.Delete(filePath)
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0041: leftover not removed: " & ex.Message)
+            AppFileLogger.WriteLine(" w0041: leftover not removed: " & ex.Message)
         End Try
     End Sub
 

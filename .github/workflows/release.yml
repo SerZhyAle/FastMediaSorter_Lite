@@ -66,7 +66,7 @@ jobs:
           Write-Host "HEAD=$head  $env:RELEASE_TAG=$tagged"
           if (-not $tagged -or $head -ne $tagged) { throw "Checked-out HEAD $head is not the commit of $env:RELEASE_TAG ($tagged)." }
 
-      - uses: microsoft/setup-msbuild@v3
+      - uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3
 
       # .NET 10 SDK - required to build the Companion app (Share Manager,
       # src/FastMediaSorterCompanion, net10.0-windows). Without it the .sln build
@@ -75,7 +75,7 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - uses: NuGet/setup-nuget@v4
+      - uses: NuGet/setup-nuget@fd55a6f3b34392fa83fde1454582407d8c714123 # v4
 
       # Кэш NuGet-пакетов. Эффект небольшой (packages/ вендорится в репо),
       # но шаг дешёвый и страхует restore от обращений к сети.
@@ -89,7 +89,7 @@ jobs:
       - name: Restore NuGet packages
         run: nuget restore FastMediaSorter.sln
 
-      # Build the whole solution (LITE net48 + Companion net10). The bare
+      # Build the whole solution (viewer net48 + Companion net10). The bare
       # FastMediaSorter.vbproj is old-style and only resolves its Release|AnyCPU
       # OutputPath through the .sln, so build the solution, not the project.
       # setup-dotnet (above) supplies the net10 SDK the Companion project needs.
@@ -167,7 +167,7 @@ jobs:
             ForEach-Object { Copy-Item $_.FullName (Join-Path $stage $_.Name) -Force }
 
           # Android Folder Share payload: the Companion exe (published above) next
-          # to the LITE exe, and the committed Go worker under companion\. Both are
+          # to the viewer exe, and the committed Go worker under companion\. Both are
           # picked up by the installer's `share` component and shipped in the ZIP.
           $companionExe = "companion-publish/FastMediaSorterCompanion.exe"
           if (-not (Test-Path $companionExe)) { throw "Companion exe not found at $companionExe (dotnet publish step failed?)" }
@@ -306,10 +306,10 @@ jobs:
           Write-Host "Server installer: $setupName"
           Write-Host "SHA256:           $hash"
 
-      - uses: softprops/action-gh-release@v3
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
-          name: Fast Media Sorter for Windows ${{ steps.ver.outputs.version }}
+          name: Fast Media Sorter & Sharing for Windows ${{ steps.ver.outputs.version }}
           files: |
             dist/${{ steps.setup.outputs.name }}
             dist/${{ steps.setup.outputs.name }}.sha256
@@ -318,7 +318,7 @@ jobs:
             dist/${{ steps.serversetup.outputs.name }}
             dist/${{ steps.serversetup.outputs.name }}.sha256
           body: |
-            Fast Media Sorter for Windows ${{ steps.ver.outputs.version }}
+            Fast Media Sorter & Sharing for Windows ${{ steps.ver.outputs.version }} - sort, view and share your images and videos.
 
             ## Install
 

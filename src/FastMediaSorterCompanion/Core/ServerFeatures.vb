@@ -12,7 +12,7 @@ Imports System.Windows.Forms
 ''' admin-level action, so the WHOLE Share surface (toolbar-button action, the
 ''' Settings "Поделиться" tab body, the tray indicator, Shift+S, and - crucially -
 ''' spawning the worker) is gated behind <see cref="IsEnabled"/>. Until the user
-''' consents, Fast Media Sorter is a pure image/video viewer and sorter and the
+''' consents, the viewer is a pure image/video viewer and sorter and the
 ''' worker process is never started.
 '''
 ''' <see cref="IsEnabled"/> is true when ANY of:
@@ -320,6 +320,7 @@ Public Module ServerFeatures
         psi.Verb = "runas"                 ' the single UAC prompt
         psi.WindowStyle = ProcessWindowStyle.Hidden
         Using p As Process = Process.Start(psi)
+            If p Is Nothing Then Return -1
             p.WaitForExit()
             Return p.ExitCode
         End Using

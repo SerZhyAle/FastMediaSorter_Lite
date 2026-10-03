@@ -29,6 +29,35 @@ Public Class ChromeFoundationTests
     End Sub
 
     <Fact>
+    Public Sub Panel_size_presets_multiply_the_scale_and_medium_is_the_historical_size()
+        Assert.Equal(1.0F, UiScale.SizeMultiplier("medium", 1000.0F))
+        Assert.Equal(1.0F, UiScale.SizeMultiplier("", 1000.0F))
+        Assert.Equal(1.0F, UiScale.SizeMultiplier(Nothing, 1000.0F))
+        Assert.Equal(1.0F, UiScale.SizeMultiplier("nonsense", 1000.0F))
+        Assert.Equal(UiScale.SmallPreset, UiScale.SizeMultiplier("small", 3000.0F))
+        Assert.Equal(UiScale.LargePreset, UiScale.SizeMultiplier("large", 300.0F))
+        Assert.True(UiScale.SmallPreset < 1.0F AndAlso 1.0F < UiScale.LargePreset)
+    End Sub
+
+    <Fact>
+    Public Sub Adaptive_size_is_bounded_stepped_and_never_shrinks_as_the_window_grows()
+        Assert.Equal(1.0F, UiScale.AdaptiveMultiplier(UiScale.AdaptiveReferenceWidth))
+        Assert.Equal(1.0F, UiScale.AdaptiveMultiplier(0.0F))
+        Assert.Equal(1.0F, UiScale.AdaptiveMultiplier(Single.NaN))
+        Dim previous As Single = 0.0F
+        For width As Integer = 100 To 6000 Step 7
+            Dim value As Single = UiScale.AdaptiveMultiplier(width)
+            Assert.InRange(value, UiScale.AdaptiveMin, UiScale.AdaptiveMax)
+            Assert.True(value >= previous, "The adaptive size must not shrink as the window widens.")
+            previous = value
+        Next
+        Assert.Equal(UiScale.AdaptiveMin, UiScale.AdaptiveMultiplier(100.0F))
+        Assert.Equal(UiScale.AdaptiveMax, UiScale.AdaptiveMultiplier(6000.0F))
+        ' Step-quantised: a one-pixel drag of the window edge does not change it.
+        Assert.Equal(UiScale.AdaptiveMultiplier(1600.0F), UiScale.AdaptiveMultiplier(1601.0F))
+    End Sub
+
+    <Fact>
     Public Sub Px_of_a_non_size_is_zero_and_a_bad_factor_falls_back_to_one()
         Assert.Equal(0, UiScale.Px(0, 1.5F))
         Assert.Equal(0, UiScale.Px(-3, 1.5F))

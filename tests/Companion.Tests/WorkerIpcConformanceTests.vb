@@ -50,6 +50,14 @@ Public Class WorkerIpcConformanceTests
         c("set-network-policy-full") = ShareController.NetworkPolicyRequest(10, True, 2222)
         c("set-network-policy-partial") = ShareController.NetworkPolicyRequest(10, False, ShareSettings.UnsetPort)
         c("set-network-policy-port-only") = New WorkerRequest With {.type = "SetNetworkPolicy", .port = 2222}
+        c("disk-share") = New WorkerRequest With {.type = "disk-share", .owner = "filedo", .action = "share", .containerPath = "D:\Demo\photos.fdd", .rootName = "Photos", .readOnly = True}
+        c("disk-unshare") = New WorkerRequest With {.type = "disk-share", .owner = "filedo", .action = "unshare", .containerPath = "D:\Demo\photos.fdd", .drainTimeout = 30}
+        c("disk-open") = New WorkerRequest With {.type = "disk-open", .owner = "filedo", .containerPath = "D:\Demo\photos.fdd", .password = "synthetic-vector-credential"}
+        c("disk-close") = New WorkerRequest With {.type = "disk-close", .owner = "filedo", .containerPath = "D:\Demo\photos.fdd", .force = False, .drainTimeout = 30}
+        c("disk-autostart-on") = New WorkerRequest With {.type = "disk-autostart", .owner = "filedo", .containerPath = "D:\Demo\photos.fdd", .enable = True, .consent = True, .password = "synthetic-vector-credential"}
+        c("disk-autostart-off") = New WorkerRequest With {.type = "disk-autostart", .owner = "filedo", .containerPath = "D:\Demo\photos.fdd", .enable = False}
+        c("disk-status") = New WorkerRequest With {.type = "disk-status", .owner = "filedo", .containerPath = "D:\Demo\photos.fdd"}
+        c("disk-list") = New WorkerRequest With {.type = "disk-list", .owner = "filedo"}
         Return c
     End Function
 
@@ -117,7 +125,7 @@ Public Class WorkerIpcConformanceTests
     Public Sub RequestFixtures_OmitUnsetKnobs_AndCarryTheVersion()
         For Each kv As KeyValuePair(Of String, WorkerRequest) In RequestCases()
             Dim text As String = Encoding.UTF8.GetString(WorkerIpc.SerializeRequest(kv.Value))
-            Assert.StartsWith("{""schemaVersion"":1,""type"":", text)
+            Assert.StartsWith("{""schemaVersion"":" & WorkerIpc.RequestSchema(kv.Value).ToString() & ",""type"":", text)
             Assert.DoesNotContain(":null", text)
         Next
         Dim partialPolicy As String = Encoding.UTF8.GetString(WorkerIpc.SerializeRequest(RequestCases()("set-network-policy-partial")))
@@ -167,7 +175,8 @@ Public Class WorkerIpcConformanceTests
             "own serializer (WorkerIpc.SerializeRequest) writes to the pipe for one request type,",
             "as the product builds that request. No trailing newline: the pipe carries none.",
             "",
-            "Contract   : WORKER-IPC 0.9 (pointer: docs/contracts/WORKER-IPC.md)",
+            "Contract   : WORKER-IPC 0.10 + DISK-SHARE 1.3 (pointers: docs/contracts/)",
+            "Credentials: synthetic vector literals, never user credentials",
             "Generator  : WorkerIpcConformanceTests.Generate_RequestFixtures_WhenAsked",
             "Command    : set FMS_REGENERATE_WORKER_IPC=1, then run tests/Companion.Tests",
             "Pinned by  : WorkerIpcConformanceTests.RequestFixtures_MatchTheProductSerializer_ByteForByte",

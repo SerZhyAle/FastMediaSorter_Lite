@@ -2,6 +2,7 @@ Option Strict On
 
 Imports System.Collections.Generic
 Imports System.IO
+Imports System.Linq
 
 ''' <summary>Who owns the Share Manager's single-instance mutex after a launch tried to take it.</summary>
 Friend Enum InstanceRole
@@ -43,25 +44,34 @@ Friend Enum CompanionCommandKind
     ShowWindow = 1
     PlainStart = 2
     ShareFolder = 3
+    Broadcast = 4
 End Enum
 
 ''' <summary>What a WM_COPYDATA payload asks of the Share Manager, parsed strictly.</summary>
 Friend NotInheritable Class CompanionCommand
+    Public Const BroadcastCommandPrefix As String = "::fms-broadcast::"
+
     Friend ReadOnly Property Kind As CompanionCommandKind
+    ''' <summary>The canonical folder or target path (fully qualified, no trailing separator) for ShareFolder / Broadcast.</summary>
+    Friend ReadOnly Property TargetPath As String
     ''' <summary>The canonical folder (fully qualified, no trailing separator) for ShareFolder.</summary>
     Friend ReadOnly Property Folder As String
+        Get
+            Return TargetPath
+        End Get
+    End Property
 
-    Private Sub New(kind As CompanionCommandKind, folder As String)
+    Private Sub New(kind As CompanionCommandKind, targetPath As String)
         Me.Kind = kind
-        Me.Folder = folder
+        Me.TargetPath = targetPath
     End Sub
 
     Friend Shared ReadOnly Invalid As New CompanionCommand(CompanionCommandKind.Invalid, "")
 
     ''' <summary>
-    ''' The two sentinels are exact; anything else must be a folder: a fully qualified drive or
+    ''' The sentinels are exact; anything else must be a valid folder or broadcast path: a fully qualified drive or
     ''' UNC path, no device namespace, no wildcard or reserved characters, no ".." segment. The
-    ''' folder need not exist here - that check can block on a dead share, so the consent step
+    ''' path need not exist here - that check can block on a dead share, so the consent step
     ''' makes it off the UI thread.
     ''' </summary>
     Friend Shared Function Parse(payload As String) As CompanionCommand
@@ -71,6 +81,12 @@ Friend NotInheritable Class CompanionCommand
         End If
         If String.Equals(payload, Program.PlainStartCommand, StringComparison.Ordinal) Then
             Return New CompanionCommand(CompanionCommandKind.PlainStart, "")
+        End If
+        If payload.StartsWith(BroadcastCommandPrefix, StringComparison.Ordinal) Then
+            Dim rawPath As String = payload.Substring(BroadcastCommandPrefix.Length).Trim()
+            Dim canonicalBroadcast As String = CanonicalFolder(rawPath)
+            If canonicalBroadcast.Length = 0 Then Return Invalid
+            Return New CompanionCommand(CompanionCommandKind.Broadcast, canonicalBroadcast)
         End If
         Dim canonical As String = CanonicalFolder(payload)
         If canonical.Length = 0 Then Return Invalid
@@ -86,6 +102,8 @@ Friend NotInheritable Class CompanionCommand
         Dim isDrive As Boolean = path.Length >= 3 AndAlso Char.IsLetter(path(0)) AndAlso path(1) = ":"c AndAlso (path(2) = "\"c OrElse path(2) = "/"c)
         Dim isUnc As Boolean = path.StartsWith("\\", StringComparison.Ordinal) AndAlso path.Length > 2 AndAlso path(2) <> "\"c
         If Not isDrive AndAlso Not isUnc Then Return ""
+        If path.IndexOf(":"c, If(isDrive, 2, 0)) >= 0 OrElse path.Any(Function(c) Char.IsControl(c)) Then Return ""
+        If isUnc AndAlso path.Substring(2).Split(New Char() {"\"c, "/"c}, StringSplitOptions.RemoveEmptyEntries).Length < 2 Then Return ""
         For Each segment As String In path.Split("\"c, "/"c)
             If segment = ".." Then Return ""
         Next
@@ -149,6 +167,7 @@ Friend NotInheritable Class FolderProposalQueue
     Private ReadOnly gate As New Object()
     Private ReadOnly pending As New Queue(Of String)()
     Private ReadOnly seen As New Dictionary(Of String, Long)(StringComparer.OrdinalIgnoreCase)
+    Private ReadOnly outstanding As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
 
     Friend Sub New(clock As Func(Of Long))
         Me.clock = clock
@@ -167,7 +186,7 @@ Friend NotInheritable Class FolderProposalQueue
             Dim now As Long = clock()
             Dim expired As New List(Of String)()
             For Each entry As KeyValuePair(Of String, Long) In seen
-                If now - entry.Value > DedupWindowMs Then expired.Add(entry.Key)
+                If now - entry.Value > DedupWindowMs AndAlso Not outstanding.Contains(entry.Key) Then expired.Add(entry.Key)
             Next
             For Each key As String In expired
                 seen.Remove(key)
@@ -180,6 +199,7 @@ Friend NotInheritable Class FolderProposalQueue
             End If
             If pending.Count >= MaxPending Then Return ProposalVerdict.Full
             pending.Enqueue(canonicalFolder)
+            outstanding.Add(canonicalFolder)
             seen(canonicalFolder) = now
             Return ProposalVerdict.Queued
         End SyncLock
@@ -192,6 +212,15 @@ Friend NotInheritable Class FolderProposalQueue
             Return pending.Dequeue()
         End SyncLock
     End Function
+
+    ''' <summary>A pending or displayed proposal remains unique however long consent takes.
+    ''' Cancellation stays deduplicated for a full retry window after handling finishes.</summary>
+    Friend Sub Complete(folder As String)
+        SyncLock gate
+            outstanding.Remove(folder)
+            seen(folder) = clock()
+        End SyncLock
+    End Sub
 
 End Class
 

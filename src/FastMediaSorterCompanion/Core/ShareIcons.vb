@@ -8,7 +8,7 @@ Imports System.Runtime.InteropServices
 ''' <summary>
 ''' The recognizable Android-share glyph - a blue four-way arrow ("shared in all
 ''' directions") with a white halo for contrast on light/dark taskbars. Drawn in
-''' code (no asset file) so it scales cleanly. Ported verbatim from LITE's
+''' code (no asset file) so it scales cleanly. Ported verbatim from the viewer's
 ''' Main_Form.ShareTray.BuildShareTrayIcon, and used for BOTH the tray NotifyIcon
 ''' and the Share Manager window icon so the two match.
 ''' </summary>

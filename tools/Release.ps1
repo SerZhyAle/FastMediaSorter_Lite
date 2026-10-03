@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    The RELEASE orchestrator of Fast Media Sorter for Windows. See ../docs/guides/BUILD_AND_RELEASE.md.
+    The RELEASE orchestrator of Fast Media Sorter & Sharing for Windows. See ../docs/guides/BUILD_AND_RELEASE.md.
 
 .DESCRIPTION
     "Release" = build on GitHub + publish. GitHub Actions (release.yml) runs ONLY when a 'v*' tag
@@ -17,12 +17,14 @@
                                              suites; release.yml runs no tests, so this is the last
                                              point a red suite can stop a release;
       2. tools\Build-SitePages.ps1 -Check  - the generated site pages still match their copy sources;
-      3. tools\Sync-IconGlyphs.ps1 -Check  - the vendored glyphs still match the catalog;
-      4. tools\Build-OfflineRelease.ps1    - builds locally, for free, what release.yml builds: the
+      3. tools\Test-SiteQuality.ps1        - the published site holds DOC-EXTERNAL-QUALITY rules 1-7
+                                             over the whole page set (ticket 059);
+      4. tools\Sync-IconGlyphs.ps1 -Check  - the vendored glyphs still match the catalog;
+      5. tools\Build-OfflineRelease.ps1    - builds locally, for free, what release.yml builds: the
                                              ZIP and both installers;
-      5. tools\Test-ArtifactVersion.ps1    - every staged exe and both setup.exe files carry the
+      6. tools\Test-ArtifactVersion.ps1    - every staged exe and both setup.exe files carry the
                                              version being tagged (BUILD-EVIDENCE rule 2).
-    Steps 1-3 all run whatever the one before returned. The build runs only when they all passed:
+    Steps 1-4 all run whatever the one before returned. The build runs only when they all passed:
     a release that is already blocked does not need the slowest step to say so.
 
     The preflight ends in one line, `Release-Preflight: <WORD> (v<version>; ..)`. Only a bare PASS
@@ -85,7 +87,7 @@ trap {
     Exit-Verdict 'Release-Preflight' 2 "$tag; the release script itself failed"
 }
 
-Say "Fast Media Sorter for Windows - RELEASE" "Green"
+Say "Fast Media Sorter & Sharing for Windows - RELEASE" "Green"
 Say "Version : $Version"
 Say "Tag     : $tag"
 Say ("Mode    : " + $(if ($Push) { "PUSH (starts the paid GitHub Actions run)" } else { "DRY RUN (nothing is pushed)" })) `
@@ -141,8 +143,10 @@ if ($SkipTests) {
     Invoke-Step "Tests (viewer + Share Manager + worker)" 'Run-AllTests.ps1'
 }
 
-# 2 and 3. The generated artifacts still match their sources.
+# 2 and 3. The generated artifacts still match their sources, and the published pages hold
+# the DOC-EXTERNAL-QUALITY gates (SEO block, links, freshness, termbase - ticket 059).
 Invoke-Step "Site pages match their copy sources" 'Build-SitePages.ps1' @('-Check')
+Invoke-Step "Published site quality" 'Test-SiteQuality.ps1'
 Invoke-Step "Vendored glyphs match the catalog" 'Sync-IconGlyphs.ps1' @('-Check')
 
 # 4 and 5. The local package build (free; catches a CI failure before it is paid for), and the
@@ -222,7 +226,7 @@ if ($dirty) {
 }
 
 Step "Creating and pushing the tag $tag (starts GitHub Actions)"
-git -C $repoRoot tag -a $tag -m "Fast Media Sorter for Windows $Version"
+git -C $repoRoot tag -a $tag -m "Fast Media Sorter & Sharing for Windows $Version"
 if ($LASTEXITCODE -ne 0) { Say "Could not create the tag $tag." "Red"; exit 1 }
 
 git -C $repoRoot push origin $tag

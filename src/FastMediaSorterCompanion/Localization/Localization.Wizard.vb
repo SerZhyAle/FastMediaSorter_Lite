@@ -345,27 +345,28 @@ Partial Public NotInheritable Class Localization
             "Não foi possível guardar o ficheiro.", "تعذّر حفظ الملف.",
             "फ़ाइल सहेजी नहीं जा सकी।", "ফাইল সংরক্ষণ করা যায়নি।", "فائل محفوظ نہ ہو سکی۔", "无法保存文件。")
 
-        Add("Доступ к папкам Fast Media Sorter",
-            "Fast Media Sorter folder access", "Доступ до папок Fast Media Sorter",
-            "Fast Media Sorter - Ordnerzugriff", "Accesso alle cartelle di Fast Media Sorter",
-            "Acceso a carpetas de Fast Media Sorter", "Accès aux dossiers Fast Media Sorter",
-            "Acesso às pastas do Fast Media Sorter", "الوصول إلى مجلدات Fast Media Sorter",
-            "Fast Media Sorter फ़ोल्डर पहुँच", "Fast Media Sorter ফোল্ডার অ্যাক্সেস",
-            "Fast Media Sorter فولڈر رسائی", "Fast Media Sorter 文件夹访问")
+        ' {0} = ProductNames.Compact (a mail subject is plain text, so a single ampersand).
+        Add("Доступ к папкам {0}",
+            "{0} folder access", "Доступ до папок {0}",
+            "{0} - Ordnerzugriff", "Accesso alle cartelle di {0}",
+            "Acceso a carpetas de {0}", "Accès aux dossiers {0}",
+            "Acesso às pastas de {0}", "الوصول إلى مجلدات {0}",
+            "{0} फ़ोल्डर पहुँच", "{0} ফোল্ডার অ্যাক্সেস",
+            "{0} فولڈر رسائی", "{0} 文件夹访问")
 
-        Add("Импортируйте вложенный файл .fmscfg в приложении FastMediaSorter на Android.",
-            "Import the attached .fmscfg file in the FastMediaSorter Android app.",
-            "Імпортуйте вкладений файл .fmscfg у застосунку FastMediaSorter на Android.",
-            "Importieren Sie die angehängte .fmscfg-Datei in der FastMediaSorter-App für Android.",
-            "Importa il file .fmscfg allegato nell'app FastMediaSorter per Android.",
-            "Importa el archivo .fmscfg adjunto en la aplicación FastMediaSorter para Android.",
-            "Importez le fichier .fmscfg joint dans l'application FastMediaSorter pour Android.",
-            "Importe o ficheiro .fmscfg anexado na aplicação FastMediaSorter para Android.",
-            "استورد ملف ‎.fmscfg‎ المرفق في تطبيق FastMediaSorter على Android.",
-            "संलग्न .fmscfg फ़ाइल को Android के FastMediaSorter ऐप में आयात करें।",
-            "সংযুক্ত .fmscfg ফাইলটি Android-এর FastMediaSorter অ্যাপে আমদানি করুন।",
-            "منسلک ‎.fmscfg‎ فائل کو Android کی FastMediaSorter ایپ میں درآمد کریں۔",
-            "请在 Android 版 FastMediaSorter 应用中导入附带的 .fmscfg 文件。")
+        Add("Импортируйте вложенный файл .fmscfg в приложении для Android.",
+            "Import the attached .fmscfg file in the Android app.",
+            "Імпортуйте вкладений файл .fmscfg у застосунку для Android.",
+            "Importieren Sie die angehängte .fmscfg-Datei in der Android-App.",
+            "Importa il file .fmscfg allegato nell'app per Android.",
+            "Importa el archivo .fmscfg adjunto en la aplicación para Android.",
+            "Importez le fichier .fmscfg joint dans l'application pour Android.",
+            "Importe o ficheiro .fmscfg anexado na aplicação para Android.",
+            "استورد ملف ‎.fmscfg‎ المرفق في تطبيق Android.",
+            "संलग्न .fmscfg फ़ाइल को Android ऐप में आयात करें।",
+            "সংযুক্ত .fmscfg ফাইলটি Android অ্যাপে আমদানি করুন।",
+            "منسلک ‎.fmscfg‎ فائل کو Android ایپ میں درآمد کریں۔",
+            "请在 Android 应用中导入附带的 .fmscfg 文件。")
 
         Add("Не удалось открыть почтовый клиент.",
             "Could not open the mail client.", "Не вдалося відкрити поштовий клієнт.",

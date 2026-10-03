@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Fast Media Sorter for Windows - project scripts launcher
+    Fast Media Sorter & Sharing for Windows - project scripts launcher
 .DESCRIPTION
     Quick alias launcher for the common project scripts (analog of the mobile
     repo's a.ps1, remapped to this .NET/MSBuild project's tooling).
@@ -93,7 +93,7 @@ $scripts = @{
 $gitCommands = @('c', 'cc')
 
 function Show-Help {
-    Write-Host "Fast Media Sorter for Windows - scripts launcher" -ForegroundColor Green
+    Write-Host "Fast Media Sorter & Sharing for Windows - scripts launcher" -ForegroundColor Green
     Write-Host ""
     Write-Host "Build / run (local build - free, never tags):" -ForegroundColor Yellow
     Write-Host "  b    - Local build (MSBuild Rebuild + deploy exe + Companion)" -ForegroundColor Cyan

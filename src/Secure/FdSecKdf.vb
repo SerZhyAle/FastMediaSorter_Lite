@@ -92,7 +92,13 @@ Public NotInheritable Class FdSecKeyCache
     Friend Sub Put(credentialUtf8 As Byte(), salt As Byte(), maskKey As Byte(), kek As Byte())
         Dim key As String = KeyFor(credentialUtf8, salt)
         SyncLock gate
-            entries(key) = New Byte()() {CType(maskKey.Clone(), Byte()), CType(kek.Clone(), Byte())}
+            Dim replacement As Byte()() = {CType(maskKey.Clone(), Byte()), CType(kek.Clone(), Byte())}
+            Dim previous As Byte()() = Nothing
+            If entries.TryGetValue(key, previous) Then
+                FdSecPrimitives.Wipe(previous(0))
+                FdSecPrimitives.Wipe(previous(1))
+            End If
+            entries(key) = replacement
         End SyncLock
     End Sub
 
@@ -112,13 +118,19 @@ Public NotInheritable Class FdSecKeyCache
     Private Shared Function KeyFor(credentialUtf8 As Byte(), salt As Byte()) As String
         ' Keyed rather than plain: the cache tag must not be something an attacker with a
         ' memory dump could match against a guess any more cheaply than the format allows.
-        Dim tagged As Byte() = FdSecPrimitives.Blake2bKeyed(FdSecPrimitives.Blake2b(256, credentialUtf8),
-                                                            FdSecPrimitives.Ascii(Tag), salt)
-        Dim builder As New Text.StringBuilder(tagged.Length * 2)
-        For Each b As Byte In tagged
-            builder.Append(b.ToString("x2"))
-        Next
-        Return builder.ToString()
+        Dim credentialDigest As Byte() = FdSecPrimitives.Blake2b(256, credentialUtf8)
+        Dim tagged As Byte() = Nothing
+        Try
+            tagged = FdSecPrimitives.Blake2bKeyed(credentialDigest, FdSecPrimitives.Ascii(Tag), salt)
+            Dim builder As New Text.StringBuilder(tagged.Length * 2)
+            For Each b As Byte In tagged
+                builder.Append(b.ToString("x2"))
+            Next
+            Return builder.ToString()
+        Finally
+            FdSecPrimitives.Wipe(credentialDigest)
+            FdSecPrimitives.Wipe(tagged)
+        End Try
     End Function
 
 End Class

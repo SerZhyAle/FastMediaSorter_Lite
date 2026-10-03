@@ -28,6 +28,8 @@ Public Class DesktopUxConformanceTests
          "a trace token compared against LOADED/SKIPED and written only to Debug (w0230)"),
         ("Main_Form.Lifecycle.vb", "probe.LastError",
          "the argument probe's reason, written only to Debug (w0280)"),
+        ("OpenCoordination.vb", "result.LastError",
+         "the argument probe's reason (moved here from Main_Form.Lifecycle.vb), written only to Debug (w0280)"),
         ("Main_Form.SlotHealth.vb", "SlotVerdict.ForState(",
          "a verdict's Detail, written only to the log; the user reads SlotHealthText"),
         ("TesseractOcrEngine.vb", ".IndexOf(",

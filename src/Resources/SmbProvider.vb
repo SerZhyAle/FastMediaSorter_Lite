@@ -31,11 +31,14 @@ Friend NotInheritable Class SmbProvider
 
         ' SMB capabilities: can write/delete/rename/createFolder, no RecycleBin, no materialisation,
         ' server-side rename supported, Fast cost hint, stable source delete supported.
+        ' The user's "read only" choice is honoured here as it is for SFTP: a share they asked to be
+        ' left alone must not offer a verb the viewer would then have to refuse after the fact.
+        Dim canWrite As Boolean = descriptor Is Nothing OrElse Not descriptor.ReadOnlyHint
         Dim defaultCaps As New ProviderCapabilities(
-            canWrite:=True,
-            canDelete:=True,
-            canRename:=True,
-            canCreateFolder:=True,
+            canWrite:=canWrite,
+            canDelete:=canWrite,
+            canRename:=canWrite,
+            canCreateFolder:=canWrite,
             hasRecycleBin:=False,
             needsMaterialisation:=False,
             supportsServerSideRename:=True,
@@ -91,22 +94,30 @@ Friend NotInheritable Class SmbProvider
 
     Public Sub Upload(localPath As String, remotePath As String, progress As IProgress(Of Long), ct As CancellationToken) Implements IFileSystemProvider.Upload
         CheckNotDisposed()
+        RequireCapability(Capabilities.CanWrite)
         inner_Provider.Upload(localPath, remotePath, progress, ct)
     End Sub
 
     Public Sub DeleteFile(remotePath As String) Implements IFileSystemProvider.DeleteFile
         CheckNotDisposed()
+        RequireCapability(Capabilities.CanDelete)
         inner_Provider.DeleteFile(remotePath)
     End Sub
 
     Public Sub Rename(remotePath As String, newRemotePath As String) Implements IFileSystemProvider.Rename
         CheckNotDisposed()
+        RequireCapability(Capabilities.CanRename)
         inner_Provider.Rename(remotePath, newRemotePath)
     End Sub
 
     Public Sub CreateDirectory(remotePath As String) Implements IFileSystemProvider.CreateDirectory
         CheckNotDisposed()
+        RequireCapability(Capabilities.CanCreateFolder)
         inner_Provider.CreateDirectory(remotePath)
+    End Sub
+
+    Private Shared Sub RequireCapability(allowed As Boolean)
+        If Not allowed Then Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Unsupported))
     End Sub
 
     Private Sub CheckNotDisposed()

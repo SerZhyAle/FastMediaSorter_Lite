@@ -21,7 +21,10 @@ Partial Public NotInheritable Class Localization
         AddParamsStrings()      ' per-folder options + the status window
         AddHostingStrings()     ' User vs Server edition hosting + service management
         AddAppUxStrings()       ' ticket 028: confirmations, failure actions, consent, accessible names
+        AddActivationStrings()  ' ticket 105/108: single-instance hand-off, folder-request consent
         AddThemeStrings()       ' spec 060: the theme setting (table linked from the viewer)
+        AddBroadcastStrings()   ' spec 016: streamsplayer broadcast resource management
+        AddDiskStrings()        ' DISK-SHARE: file-backed containers and local drive aliases
     End Sub
 
     ''' <summary>

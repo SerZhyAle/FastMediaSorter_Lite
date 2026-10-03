@@ -2,6 +2,8 @@ Option Strict On
 
 Imports FastMediaSorterCompanion
 Imports Xunit
+Imports System.Threading
+Imports System.Threading.Tasks
 
 ''' <summary>
 ''' 108 H02 (057.S22-4, Q108-2): the one decision behind the QR code, the saved file and the
@@ -10,6 +12,88 @@ Imports Xunit
 ''' permission, and there is no override.
 ''' </summary>
 Public Class PreflightTrackerTests
+
+    <Fact>
+    Public Sub An_edit_event_hides_the_old_payload_before_the_debounce_runs()
+        Dim tracker As New PreflightTracker()
+        tracker.Complete(Ready(tracker, KeyA), PreflightOutcome.Allowed)
+        Assert.True(tracker.CanOffer())
+        tracker.InvalidatePayload()
+        Assert.False(tracker.CanOffer())
+        tracker.Cancel()
+        Assert.Equal(PreflightState.Cancelled, tracker.State)
+        Assert.False(tracker.CanOffer())
+    End Sub
+
+    <Fact>
+    Public Async Function Timed_out_scans_keep_actual_permits_and_expired_pending_calls_never_start() As Task
+        Dim scheduler As New ProbeScheduler(Of Integer)(New ProbePolicy With {.MaxActive = 1, .MaxPending = 8, .ReplacePendingOfSameOwner = True})
+        Dim clock As New TaskCompletionSource(Of Boolean)(TaskCreationOptions.RunContinuationsAsynchronously)
+        Dim runner As New PreflightScanRunner(Of Integer)(scheduler, Function(budget) clock.Task)
+        Using entered As New ManualResetEventSlim(), release As New ManualResetEventSlim()
+            Dim lateFault As New TaskCompletionSource(Of Exception)(TaskCreationOptions.RunContinuationsAsynchronously)
+            Dim active As Task(Of ProbeResult(Of Integer)) = runner.Run(New Object(), "active",
+                Function() As Integer
+                    entered.Set()
+                    If Not release.Wait(10000) Then Throw New TimeoutException("test gate")
+                    Throw New IO.IOException("late failure")
+                End Function, TimeSpan.FromSeconds(2), Function() True, Sub(ex) lateFault.TrySetResult(ex))
+            Try
+                Assert.True(entered.Wait(10000))
+                Dim queuedOwner As New Object()
+                Dim calls As Integer
+                Dim latest As Task(Of ProbeResult(Of Integer)) = Nothing
+                For i As Integer = 1 To 100
+                    latest = runner.Run(queuedOwner, i.ToString(), Function() Interlocked.Increment(calls),
+                                        TimeSpan.FromSeconds(2), Function() True, Sub(ex) Return)
+                Next
+                Assert.Equal(1, scheduler.PendingCount)
+                clock.SetResult(True)
+                Assert.Equal(ProbeStatus.TimedOut, (Await active.WaitAsync(TimeSpan.FromSeconds(10))).Status)
+                Assert.Equal(ProbeStatus.TimedOut, (Await latest.WaitAsync(TimeSpan.FromSeconds(10))).Status)
+                Assert.Equal(1, scheduler.ActiveCount)
+                Assert.Equal(0, scheduler.PendingCount)
+                Assert.Equal(0, calls)
+                release.Set()
+                Assert.IsType(Of IO.IOException)(Await lateFault.Task.WaitAsync(TimeSpan.FromSeconds(10)))
+                Assert.Equal(0, scheduler.ActiveCount)
+            Finally
+                release.Set()
+            End Try
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function An_older_UI_timeout_does_not_cancel_a_newer_queued_revision() As Task
+        Dim scheduler As New ProbeScheduler(Of Integer)(New ProbePolicy With {.MaxActive = 1, .MaxPending = 8})
+        Dim oldClock As New TaskCompletionSource(Of Boolean)(TaskCreationOptions.RunContinuationsAsynchronously)
+        Dim newClock As New TaskCompletionSource(Of Boolean)(TaskCreationOptions.RunContinuationsAsynchronously)
+        Dim delays As Integer
+        Dim runner As New PreflightScanRunner(Of Integer)(scheduler,
+            Function(budget) If(Interlocked.Increment(delays) = 1, oldClock.Task, newClock.Task))
+        Dim owner As New Object()
+        Using entered As New ManualResetEventSlim(), release As New ManualResetEventSlim()
+            Dim first As Task(Of ProbeResult(Of Integer)) = runner.Run(owner, "old", Function()
+                entered.Set()
+                release.Wait(10000)
+                Return 1
+            End Function, TimeSpan.FromSeconds(2), Function() True, Sub(ex) Return)
+            Try
+                Assert.True(entered.Wait(10000))
+                Dim latest As Task(Of ProbeResult(Of Integer)) = runner.Run(owner, "new", Function() 2,
+                    TimeSpan.FromSeconds(2), Function() True, Sub(ex) Return)
+                oldClock.SetResult(True)
+                Assert.Equal(ProbeStatus.TimedOut, (Await first.WaitAsync(TimeSpan.FromSeconds(10))).Status)
+                Assert.Equal(1, scheduler.PendingCount)
+                release.Set()
+                Dim result As ProbeResult(Of Integer) = Await latest.WaitAsync(TimeSpan.FromSeconds(10))
+                Assert.Equal(ProbeStatus.Completed, result.Status)
+                Assert.Equal(2, result.Value)
+            Finally
+                release.Set()
+            End Try
+        End Using
+    End Function
 
     Private Const KeyA As String = "mode=User" & vbLf & "D:\a|rw" & vbLf
     Private Const KeyB As String = "mode=User" & vbLf & "D:\b|ro" & vbLf

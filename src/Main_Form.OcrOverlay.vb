@@ -42,12 +42,20 @@ Partial Public Class Main_Form
     Private Sub Picture_Box_1_Paint(sender As Object, e As PaintEventArgs) Handles Picture_Box_1.MediaPaint
 #If Not NETFRAMEWORK Then
         PaintAudioSurface(e.Graphics, Picture_Box_1.ClientRectangle)
+        PaintContentPlaceholder(Picture_Box_1, e)
+        PaintTextDocument(Picture_Box_1, e)
+        PaintPdfOverlay(Picture_Box_1, e)
 #End If
         PaintOcrOverlay(Picture_Box_1, e)
         PaintInfoOverlay(Picture_Box_1, e)
     End Sub
 
     Private Sub Picture_Box_2_Paint(sender As Object, e As PaintEventArgs) Handles Picture_Box_2.MediaPaint
+#If Not NETFRAMEWORK Then
+        PaintContentPlaceholder(Picture_Box_2, e)
+        PaintTextDocument(Picture_Box_2, e)
+        PaintPdfOverlay(Picture_Box_2, e)
+#End If
         PaintOcrOverlay(Picture_Box_2, e)
         PaintInfoOverlay(Picture_Box_2, e)
     End Sub

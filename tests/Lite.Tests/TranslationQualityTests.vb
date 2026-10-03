@@ -165,6 +165,70 @@ Public Class TranslationQualityTests
         Assert.True(SymbolRatio("#$%^&*@~") > 0.9)
     End Sub
 
+    ' --- ticket 093: Indic and CJK answers are not rejected by rules written for Latin ---
+
+    <Fact>
+    Public Sub HindiTranslation_IsNotNoise()
+        ' Vowel signs and virama are Mn/Mc: neither letters nor punctuation, 6 of 15 counted as noise.
+        Dim hindi As String = "तुम कहाँ जा रहे हो?"
+        Assert.True(SymbolRatio(hindi) <= 0.18)
+        Assert.Equal("", TranslationQuality.BadTranslationReason("Where are you going?", hindi, "hi"))
+    End Sub
+
+    <Fact>
+    Public Sub BengaliTranslation_IsNotNoise()
+        Assert.Equal("", TranslationQuality.BadTranslationReason("Where are you going?", "তুমি কোথায় যাচ্ছো?", "bn"))
+    End Sub
+
+    <Fact>
+    Public Sub JapaneseBrackets_AreNotNoise()
+        Dim line As String = "「待って！」「どこへ行くの？」"
+        Assert.True(SymbolRatio(line) <= 0.18)
+        Assert.Equal("", TranslationQuality.BadTranslationReason("Wait! Where are you going?", line, "ja"))
+    End Sub
+
+    <Fact>
+    Public Sub RealSymbolNoise_IsStillNoise_AmongMarks()
+        Assert.Equal("noisy", TranslationQuality.BadTranslationReason("Where are you going?", "तुम #$%^&*@~ ~~ %%$#", "hi"))
+    End Sub
+
+    <Fact>
+    Public Sub ThreeSentenceBalloon_IntoChinese_IsNotTruncated()
+        ' Sentence ends counted in ASCII only made "。" worth zero, so 24 letters against 3 ends looked cut off.
+        Assert.Equal("", TranslationQuality.BadTranslationReason(
+            "I already told you. We can't stay here tonight. A storm is coming.",
+            "我已经告诉过你了。我们今晚不能待在这里。暴风雨要来了。", "zh"))
+    End Sub
+
+    <Fact>
+    Public Sub DandaAndArabicFullStop_AreSentenceEnds()
+        ' Same rule for the other scripts: three sentences in, three sentences out.
+        Assert.Equal("", TranslationQuality.BadTranslationReason(
+            "I already told you. We can't stay here tonight. A storm is coming.",
+            "मैंने तुम्हें बताया। हम आज रात यहाँ नहीं रुक सकते। तूफ़ान आ रहा है।", "hi"))
+    End Sub
+
+    <Fact>
+    Public Sub JapaneseSource_EchoedForAChineseTarget_IsAnEcho()
+        Assert.Equal("echo", TranslationQuality.BadTranslationReason("どこへ行くの？", "どこへ行くの？", "zh"))
+    End Sub
+
+    <Fact>
+    Public Sub HangulSource_EchoedForAJapaneseTarget_IsAnEcho()
+        Assert.Equal("echo", TranslationQuality.BadTranslationReason("어디 가는 거야?", "어디 가는 거야?", "ja"))
+    End Sub
+
+    <Fact>
+    Public Sub HanOnlySource_EchoedForAChineseTarget_IsAccepted()
+        ' Han is shared by Chinese and Japanese: it is not evidence of the wrong language.
+        Assert.Equal("", TranslationQuality.BadTranslationReason("你要去哪里？", "你要去哪里？", "zh"))
+    End Sub
+
+    <Fact>
+    Public Sub GermanPageAboutTranslating_IntoRussian_IsNotARefusal()
+        Assert.Equal("", TranslationQuality.BadTranslationReason("Ich kann das nicht übersetzen.", "Я не могу это перевести.", "ru"))
+    End Sub
+
     ' --- E-11: paragraph direction follows the drawn text --------------------------
 
     <Fact>

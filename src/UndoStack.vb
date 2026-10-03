@@ -89,7 +89,91 @@ Friend Enum UndoPlan
     ''' happened to that file instead of "there is no history" - the file is not missing
     ''' from the history, it is beyond returning, and those are different sentences.</summary>
     RefusePermanent
+    ''' <summary>A whole batch: every completed operation of it, taken back in REVERSE order
+    ''' as one gesture (004_SPECIFICATION_BATCH_OPERATIONS_ENGINE PB-5).</summary>
+    ReverseBatch
 End Enum
+
+''' <summary>One completed operation of a batch, as the undo needs to remember it.</summary>
+Friend NotInheritable Class BatchUndoItem
+    Public Property Kind As FileOpKind
+    Public Property Source As String = ""
+    Public Property Destination As String = ""
+    ''' <summary>Where the file sat in the main window's list when it left it; -1 when it
+    ''' was not in the list on screen.</summary>
+    Public Property ListIndex As Integer = -1
+    Public Property DeletedAtUtc As DateTime
+    Public Property PermanentDeleteReason As PermanentReason
+End Class
+
+''' <summary>
+''' A batch is ONE history entry, not N. The stack is bounded at fifty
+''' (UndoPolicy.Max_Undo_Depth): 200 entries from one gesture would erase the whole history,
+''' and U would then walk back one file at a time through something the user did once.
+''' </summary>
+Friend NotInheritable Class BatchUndoEntry
+    ''' <summary>The operations that actually completed, in the order they completed.</summary>
+    Public ReadOnly Property Items As New List(Of BatchUndoItem)()
+    ''' <summary>The generation of the main window's file list the batch started from (the
+    ''' same stamp a single FileOp carries) - an undo touches the list only while it matches.</summary>
+    Public Property ListGeneration As Integer
+End Class
+
+''' <summary>What U will do with a batch entry.</summary>
+Friend NotInheritable Class BatchUndoPlan
+    ''' <summary>The inverse operations, already in REVERSE order of the batch.</summary>
+    Public ReadOnly Property Inverse As New List(Of BatchOp)()
+    ''' <summary>Items that cannot come back: permanent deletions. Recorded on purpose so the
+    ''' report can say "N deleted for good" instead of pretending they were never part of it.</summary>
+    Public ReadOnly Property NotReturnable As New List(Of BatchUndoItem)()
+End Class
+
+Friend Module BatchUndoPlanner
+
+    ''' <summary>
+    ''' The batch taken back: every item reversed through the per-kind inverse that already
+    ''' exists (move -> move back, copy -> delete the copy, recycled delete -> restore from
+    ''' the bin), last first. Inverse kinds are never in an entry (UndoPolicy.IsRecorded), so
+    ''' "an undo is never itself undoable" holds here as it does for a single file.
+    ''' </summary>
+    ''' <param name="resolveFreeName">For a restore: the name the file will come back under
+    ''' when its old name has been taken meanwhile. Nothing means "the old name, as is".</param>
+    Friend Function Build(entry As BatchUndoEntry, resolveFreeName As Func(Of String, String)) As BatchUndoPlan
+        Dim plan As New BatchUndoPlan()
+        If entry Is Nothing Then Return plan
+
+        For i As Integer = entry.Items.Count - 1 To 0 Step -1
+            Dim item As BatchUndoItem = entry.Items(i)
+            Select Case UndoPolicy.PlanFor(item.Kind)
+                Case UndoPlan.MoveBack
+                    plan.Inverse.Add(New BatchOp With {
+                        .Kind = FileOpKind.MoveUndo,
+                        .Source = item.Destination,
+                        .Destination = item.Source,
+                        .ListIndex = item.ListIndex})
+                Case UndoPlan.DeleteTheCopy
+                    plan.Inverse.Add(New BatchOp With {
+                        .Kind = FileOpKind.DeleteUndo,
+                        .Source = item.Destination,
+                        .OriginalSource = item.Source,
+                        .ListIndex = item.ListIndex})
+                Case UndoPlan.RestoreFromBin
+                    plan.Inverse.Add(New BatchOp With {
+                        .Kind = FileOpKind.RestoreFromBin,
+                        .Source = item.Source,
+                        .Destination = If(resolveFreeName Is Nothing, item.Source, resolveFreeName(item.Source)),
+                        .DeletedAtUtc = item.DeletedAtUtc,
+                        .ListIndex = item.ListIndex})
+                Case UndoPlan.RefusePermanent
+                    plan.NotReturnable.Add(item)
+                Case Else
+                    ' RenameBack never belongs to a batch; anything unlisted is not recorded.
+            End Select
+        Next
+        Return plan
+    End Function
+
+End Module
 
 Friend Module UndoPolicy
 
@@ -115,6 +199,8 @@ Friend Module UndoPolicy
                 Return UndoPlan.RestoreFromBin
             Case FileOpKind.Delete
                 Return UndoPlan.RefusePermanent
+            Case FileOpKind.Batch
+                Return UndoPlan.ReverseBatch
             Case Else
                 ' DeleteUndo, MoveUndo, RenameUndo, RestoreFromBin - the inverses themselves.
                 Return UndoPlan.None
@@ -131,7 +217,7 @@ Friend Module UndoPolicy
     ''' caller has to know the difference before it touches the file list.</summary>
     Friend Function RestoresAFile(plan As UndoPlan) As Boolean
         Select Case plan
-            Case UndoPlan.MoveBack, UndoPlan.DeleteTheCopy, UndoPlan.RenameBack, UndoPlan.RestoreFromBin
+            Case UndoPlan.MoveBack, UndoPlan.DeleteTheCopy, UndoPlan.RenameBack, UndoPlan.RestoreFromBin, UndoPlan.ReverseBatch
                 Return True
             Case Else
                 Return False

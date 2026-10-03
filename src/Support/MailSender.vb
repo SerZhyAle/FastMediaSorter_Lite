@@ -103,6 +103,18 @@ Public Module MailSender
     Private Function MAPISendMailW(session As IntPtr, uiParam As IntPtr, ByRef message As MapiMessageW, flags As Integer, reserved As Integer) As Integer
     End Function
 
+    Friend Enum UnicodeMapiResult
+        Answered
+        NotSupported
+        ExecutionFailed
+    End Enum
+
+    Friend Delegate Function UnicodeMapiSendDelegate(attachmentPath As String, subject As String, body As String,
+                                                     owner As IntPtr, ByRef rc As Integer) As UnicodeMapiResult
+
+    Friend Delegate Function AnsiMapiSendDelegate(attachmentPath As String, subject As String, body As String,
+                                                  owner As IntPtr, ByRef rc As Integer) As Boolean
+
     ''' <summary>Composes a new mail with <paramref name="attachmentPath"/> attached,
     ''' opening the default mail client's editor. Must run on the UI (STA) thread.
     ''' Returns True on success or user-cancel; False when no MAPI client / failure.</summary>
@@ -118,16 +130,68 @@ Public Module MailSender
     ''' </summary>
     Public Function Send(attachmentPath As String, subject As String, body As String,
                          Optional owner As IntPtr = Nothing) As MailSendOutcome
-        If String.IsNullOrEmpty(attachmentPath) OrElse Not File.Exists(attachmentPath) Then Return MailSendOutcome.Failed
-
-        Dim rc As Integer
-        Dim unicodeAnswered As Boolean = TrySendUnicode(attachmentPath, subject, body, owner, rc)
-        If Not unicodeAnswered Then
-            If Not TrySendAnsi(attachmentPath, subject, body, owner, rc) Then Return MailSendOutcome.Failed
-        End If
-        Return OutcomeOf(rc)
+        Return SendCore(attachmentPath, subject, body, owner, AddressOf TrySendUnicode, AddressOf TrySendAnsi)
     End Function
 
+    Friend Function SendCore(attachmentPath As String, subject As String, body As String,
+                             owner As IntPtr,
+                             unicodeSender As UnicodeMapiSendDelegate,
+                             ansiSender As AnsiMapiSendDelegate) As MailSendOutcome
+        If String.IsNullOrEmpty(attachmentPath) OrElse Not File.Exists(attachmentPath) Then Return MailSendOutcome.Failed
+
+        ' Send never throws: whatever goes wrong in the interop - including a failure before the
+        ' sender's own Try - is a Failed outcome, because the callers' manual route (clipboard,
+        ' the folder, a plain mailto) hangs off that outcome and not off an exception (105 L03).
+        Try
+            Dim rc As Integer = 0
+            Dim unicodeStatus As UnicodeMapiResult = If(unicodeSender IsNot Nothing,
+                                                       unicodeSender(attachmentPath, subject, body, owner, rc),
+                                                       UnicodeMapiResult.NotSupported)
+            Select Case unicodeStatus
+                Case UnicodeMapiResult.Answered
+                    Return OutcomeOf(rc)
+                Case UnicodeMapiResult.ExecutionFailed
+                    Return MailSendOutcome.Failed
+                Case UnicodeMapiResult.NotSupported
+                    Dim ansiAnswered As Boolean = False
+                    If ansiSender IsNot Nothing Then
+                        ansiAnswered = ansiSender(attachmentPath, subject, body, owner, rc)
+                    End If
+                    If Not ansiAnswered Then Return MailSendOutcome.Failed
+                    Return OutcomeOf(rc)
+            End Select
+        Catch ex As Exception
+            Try
+                AppFileLogger.LogException("Composing mail through MAPI", ex)
+            Catch
+                ' The logger is not the broken part we were asked about; never recurse into it.
+            End Try
+        End Try
+
+        Return MailSendOutcome.Failed
+    End Function
+
+    ''' <summary>What a caller does next. One decision for both programs, so that "Failed"
+    ''' always means the manual route and never an error box.</summary>
+    Friend Enum MailFollowUp
+        ''' <summary>The client took it; nothing more to do.</summary>
+        Finished
+        ''' <summary>The user cancelled: nothing was sent, so the archive is not left in TEMP.</summary>
+        DiscardArchive
+        ''' <summary>No usable MAPI client: clipboard, folder, plain mailto, explanation.</summary>
+        ManualRoute
+    End Enum
+
+    Friend Function FollowUpFor(outcome As MailSendOutcome) As MailFollowUp
+        Select Case outcome
+            Case MailSendOutcome.Sent
+                Return MailFollowUp.Finished
+            Case MailSendOutcome.Cancelled
+                Return MailFollowUp.DiscardArchive
+            Case Else
+                Return MailFollowUp.ManualRoute
+        End Select
+    End Function
     Friend Function OutcomeOf(rc As Integer) As MailSendOutcome
         If rc = SUCCESS_SUCCESS Then Return MailSendOutcome.Sent
         If rc = MAPI_E_USER_ABORT Then Return MailSendOutcome.Cancelled
@@ -137,16 +201,18 @@ Public Module MailSender
     ''' <summary>False when the Unicode entry point is missing (Windows 7) or the client
     ''' says it does not support it - the caller then tries ANSI. Any other answer is
     ''' final and lands in <paramref name="rc"/>.</summary>
-    Private Function TrySendUnicode(attachmentPath As String, subject As String, body As String,
-                                    owner As IntPtr, ByRef rc As Integer) As Boolean
+    Friend Function TrySendUnicode(attachmentPath As String, subject As String, body As String,
+                                   owner As IntPtr, ByRef rc As Integer) As UnicodeMapiResult
         Dim fileDesc As New MapiFileDescW With {
             .position = -1,
             .path = attachmentPath,
             .fileName = Path.GetFileName(attachmentPath)
         }
         Dim fileMem As IntPtr = Marshal.AllocHGlobal(Marshal.SizeOf(GetType(MapiFileDescW)))
+        Dim fileInitialized As Boolean = False
         Try
             Marshal.StructureToPtr(fileDesc, fileMem, False)
+            fileInitialized = True
             Dim msg As New MapiMessageW With {
                 .subject = subject,
                 .noteText = body,
@@ -154,31 +220,41 @@ Public Module MailSender
                 .files = fileMem
             }
             rc = MAPISendMailW(IntPtr.Zero, owner, msg, MAPI_LOGON_UI Or MAPI_DIALOG, 0)
-            Return rc <> MAPI_E_NOT_SUPPORTED
+            If rc = MAPI_E_NOT_SUPPORTED Then
+                Return UnicodeMapiResult.NotSupported
+            End If
+            Return UnicodeMapiResult.Answered
         Catch ex As EntryPointNotFoundException
-            Return False
+            Return UnicodeMapiResult.NotSupported
         Catch ex As DllNotFoundException
-            Return False
+            Return UnicodeMapiResult.NotSupported
+        Catch ex As Exception
+            AppFileLogger.LogException("Composing mail through Unicode MAPI", ex)
+            Return UnicodeMapiResult.ExecutionFailed
         Finally
             Try
-                Marshal.DestroyStructure(fileMem, GetType(MapiFileDescW))
-            Catch
+                If fileInitialized Then Marshal.DestroyStructure(fileMem, GetType(MapiFileDescW))
+            Catch ex As Exception
+                AppFileLogger.LogException("Releasing the Unicode MAPI attachment descriptor", ex)
+            Finally
+                Marshal.FreeHGlobal(fileMem)
             End Try
-            Marshal.FreeHGlobal(fileMem)
         End Try
     End Function
 
     ''' <summary>The ANSI call, as before. False when it could not be made at all.</summary>
-    Private Function TrySendAnsi(attachmentPath As String, subject As String, body As String,
-                                 owner As IntPtr, ByRef rc As Integer) As Boolean
+    Friend Function TrySendAnsi(attachmentPath As String, subject As String, body As String,
+                                owner As IntPtr, ByRef rc As Integer) As Boolean
         Dim fileDesc As New MapiFileDesc With {
             .position = -1,
             .path = attachmentPath,
             .fileName = Path.GetFileName(attachmentPath)
         }
         Dim fileMem As IntPtr = Marshal.AllocHGlobal(Marshal.SizeOf(GetType(MapiFileDesc)))
+        Dim fileInitialized As Boolean = False
         Try
             Marshal.StructureToPtr(fileDesc, fileMem, False)
+            fileInitialized = True
             Dim msg As New MapiMessage With {
                 .subject = subject,
                 .noteText = body,
@@ -187,14 +263,17 @@ Public Module MailSender
             }
             rc = MAPISendMail(IntPtr.Zero, owner, msg, MAPI_LOGON_UI Or MAPI_DIALOG, 0)
             Return True
-        Catch
+        Catch ex As Exception
+            AppFileLogger.LogException("Composing mail through ANSI MAPI", ex)
             Return False
         Finally
             Try
-                Marshal.DestroyStructure(fileMem, GetType(MapiFileDesc))
-            Catch
+                If fileInitialized Then Marshal.DestroyStructure(fileMem, GetType(MapiFileDesc))
+            Catch ex As Exception
+                AppFileLogger.LogException("Releasing the ANSI MAPI attachment descriptor", ex)
+            Finally
+                Marshal.FreeHGlobal(fileMem)
             End Try
-            Marshal.FreeHGlobal(fileMem)
         End Try
     End Function
 

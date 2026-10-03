@@ -337,6 +337,7 @@ Public Module ServiceControl
         Dim args As String = "-NoProfile -ExecutionPolicy Bypass -File """ & script & """" &
                              " -Action " & VerbOf(action) &
                              " -ExePath """ & WorkerProcess.WorkerExePath() & """" &
+                             FileDoRootArgument(WorkerProcess.WorkerExePath()) &
                              " -DataDir """ & MachineDataDir() & """" &
                              " -UserDataDir """ & UserDataDir() & """"
         Dim sid As String = CurrentUserSid()
@@ -360,6 +361,7 @@ Public Module ServiceControl
             .WindowStyle = ProcessWindowStyle.Hidden}
         Try
             Using p As Process = Process.Start(psi)
+                If p Is Nothing Then Return ManageResult.Failed
                 p.WaitForExit()
                 If p.ExitCode <> 0 Then
                     AppFileLogger.WriteLine("Share service: manage " & action.ToString() & " - helper exit code " & p.ExitCode.ToString() &
@@ -410,6 +412,10 @@ Public Module ServiceControl
             Case 12 : Return "some folders were not granted"
             Case 13 : Return "the service account is not LOCAL SERVICE"
             Case 14 : Return "the old registration is still marked for deletion"
+            Case 15 : Return "the grant ledger cannot be read - nothing was granted or revoked"
+            Case 16 : Return "another run of the helper holds the state lock - nothing was changed"
+            Case 17 : Return "the grants made by this run could not be recorded - they were taken back, or named in a recovery file"
+            Case 18 : Return "the intent record of the grants could not be written - nothing was granted"
             Case Else : Return "unexpected error - see install-share-service.log"
         End Select
     End Function
@@ -442,6 +448,22 @@ Public Module ServiceControl
             If v.Length > 0 AndAlso v.IndexOf(""""c) < 0 AndAlso v.IndexOf("|"c) < 0 Then kept.Add(v)
         Next
         Return String.Join("|", kept)
+    End Function
+
+    ''' <summary>The helper's <c>-FileDoRoot</c>: the installation folder, the grandparent of
+    ''' <c>companion\fms-share-worker.exe</c>. The service the helper registers runs a copy of the
+    ''' worker staged under ProgramData and, without this, would look for the bundled FileDO beside
+    ''' that copy - which the worker's Program Files check refuses. Empty when the path has no
+    ''' grandparent (the helper then derives it itself).</summary>
+    Friend Function FileDoRootArgument(workerExe As String) As String
+        Try
+            Dim companionDir As String = Path.GetDirectoryName(workerExe)
+            Dim root As String = If(String.IsNullOrEmpty(companionDir), Nothing, Path.GetDirectoryName(companionDir))
+            If String.IsNullOrEmpty(root) OrElse root.IndexOf(""""c) >= 0 Then Return ""
+            Return " -FileDoRoot """ & root.TrimEnd("\"c) & """"
+        Catch
+            Return ""
+        End Try
     End Function
 
     Private Function HelperScriptPath() As String

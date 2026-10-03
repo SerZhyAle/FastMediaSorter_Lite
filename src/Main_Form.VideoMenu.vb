@@ -43,7 +43,7 @@ Partial Public Class Main_Form
         If video_Menu Is Nothing Then video_Menu = New ContextMenuStrip()
         BuildVideoMenu()
         If video_Menu.Items.Count = 0 Then Return
-        video_Menu.Show(at_Screen)
+        ChromeShowToolStripMenu(video_Menu.Items, at_Screen)
     End Sub
 
     Private Sub BuildVideoMenu()
@@ -100,7 +100,9 @@ Partial Public Class Main_Form
         video_Menu.Items.Add(New ToolStripSeparator())
         If is_Local_File Then
             AddMenuItem(video_Menu.Items, Localization.T("Открыть во внешнем плеере"),
-                        Sub() TryOpenVideoWithDefaultPlayer(current_Loaded_File_Name))
+                        Sub() TryOpenVideoWithDefaultPlayer(current_Loaded_File_Name, automatic:=False))
+            AddMenuItem(video_Menu.Items, Localization.T("Транслировать этот файл.."),
+                        Sub() ActivateBroadcastEntryPoint(current_Loaded_File_Name))
         End If
         AddMenuItem(video_Menu.Items, Localization.T("Открыть URL.."), Sub() ShowOpenUrlPrompt())
     End Sub

@@ -47,6 +47,40 @@ Friend NotInheritable Class UiScale
         Return automatic
     End Function
 
+    ''' <summary>Multipliers of the "small" and "large" panel sizes; "medium" is 1.0 - the size the
+    ''' panels had before the choice existed.</summary>
+    Public Const SmallPreset As Single = 0.85F
+    Public Const LargePreset As Single = 1.25F
+
+    ''' <summary>The adaptive size is the media width, in logical px, over this reference (1.0 at it),
+    ''' kept between the two bounds and moved in <see cref="AdaptiveStep"/> steps so that dragging a
+    ''' window edge does not re-measure every panel on every pixel.</summary>
+    Public Const AdaptiveReferenceWidth As Single = 1600.0F
+    Public Const AdaptiveMin As Single = 0.85F
+    Public Const AdaptiveMax As Single = 1.4F
+    Public Const AdaptiveStep As Single = 0.05F
+
+    ''' <summary>The extra factor a panel-size choice puts on top of <see cref="Factor"/>.
+    ''' <paramref name="logicalWidth"/> is the media area's width divided by the monitor scale, so
+    ''' the same window on a 175 % screen and on a 100 % one adapts alike.</summary>
+    Public Shared Function SizeMultiplier(choice As String, logicalWidth As Single) As Single
+        Select Case If(choice, "")
+            Case "small" : Return SmallPreset
+            Case "large" : Return LargePreset
+            Case "adaptive" : Return AdaptiveMultiplier(logicalWidth)
+            Case Else : Return 1.0F
+        End Select
+    End Function
+
+    Public Shared Function AdaptiveMultiplier(logicalWidth As Single) As Single
+        If Single.IsNaN(logicalWidth) OrElse logicalWidth <= 0.0F Then Return 1.0F
+        Dim raw As Single = logicalWidth / AdaptiveReferenceWidth
+        Dim stepped As Single = CSng(Math.Round(raw / AdaptiveStep, MidpointRounding.AwayFromZero)) * AdaptiveStep
+        If stepped < AdaptiveMin Then Return AdaptiveMin
+        If stepped > AdaptiveMax Then Return AdaptiveMax
+        Return stepped
+    End Function
+
     ''' <summary>A logical size in device pixels. Monotonic in <paramref name="logical"/>, equal
     ''' inputs give equal outputs, and a positive size is never rounded down to nothing.
     ''' Zero and negative sizes are 0 - they are not sizes.</summary>
