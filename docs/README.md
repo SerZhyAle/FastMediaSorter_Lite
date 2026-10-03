@@ -4,13 +4,20 @@ Start here. This tree holds all internal documentation; user-facing files (`READ
 stay at the repo root. Structure and naming follow
 [guides/REPOSITORY_LAYOUT.md](guides/REPOSITORY_LAYOUT.md).
 
+The maintained corpus is declared in [DOCUMENT_REGISTRY.jsonl](DOCUMENT_REGISTRY.jsonl), with
+exclusions in [document-registry-policy.json](document-registry-policy.json). Add a record with topic,
+product area, update triggers and `source`/`render` role when adding a document. Render entries name
+an automated generator. `tools/Test-DocRegistry.ps1` runs in the default test runner and checks
+coverage, links, images, prose and documented source facts. Owner-local specifications are cited in
+plain text so maintained documentation works in a fresh clone.
+
 ## Where things live
 
 | Folder | Holds | Filename prefix |
 | --- | --- | --- |
 | [guides/](guides/) | living operational docs - read while doing the task | *(descriptive names)* |
-| [specifications/](specifications/) | specs still being built | `NNN_SPECIFICATION_` |
-| [specifications/done/](specifications/done/) | shipped specs (archive - historical, do not churn) | `SPECIFICATION_` |
+| `specifications/` (local specification) | specs still being built | `NNN_SPECIFICATION_` |
+| `specifications/done/` (local specification) | shipped specs (archive - historical, do not churn) | `SPECIFICATION_` |
 | roadmaps/ | forward-looking plans - none open right now, so the folder is absent | `ROADMAP_` |
 | [contracts/](contracts/) | one short **pointer** per contract this product touches, into the shared contracts catalog (see [contracts/README.md](contracts/README.md)); never a copy of the contract - a disagreement is an amendment or a dated registry exception, not a local edit | contract id (`FDSEC.md`) |
 | [dev-notes/](dev-notes/) | throwaway diagnostics/captures (not authoritative) | *(none)* |
@@ -24,7 +31,7 @@ stay at the repo root. Structure and naming follow
 - [guides/DOCUMENTATION_CONCEPT.md](guides/DOCUMENTATION_CONCEPT.md) - sources of truth, versioning,
   SEO/indexing, mandatory site pages, support & voice.
 - [guides/BUILD_AND_RELEASE.md](guides/BUILD_AND_RELEASE.md) - the concrete build-vs-release flow.
-- [specifications/RELEASE_QUEUE.md](specifications/RELEASE_QUEUE.md) - the common release order for active
+- `specifications/RELEASE_QUEUE.md` (local specification) - the common release order for active
   specification tickets.
 - [guides/STORE_PUBLISHING.md](guides/STORE_PUBLISHING.md) - the Microsoft Store playbook + listing copy.
 - [guides/SERVER_EDITION_BUILD_AND_TEST.md](guides/SERVER_EDITION_BUILD_AND_TEST.md) - the always-on
@@ -36,6 +43,6 @@ stay at the repo root. Structure and naming follow
 New doc = `TYPE_` prefix (`SPECIFICATION_`, `ROADMAP_`, `PROGRESS_`, `RESEARCH_`, `PLAN_`)
 in the matching folder. A contract is never a new doc here: it lives in the shared catalog, and
 `contracts/` only gains a pointer named by the contract's id. Active specifications additionally start with their three-digit sequential
-ticket: `NNN_SPECIFICATION_...`; see [specifications/README.md](specifications/README.md). A spec
+ticket: `NNN_SPECIFICATION_...`; see `specifications/README.md` (local specification). A spec
 that ships moves to `specifications/done/`. Text style: hyphen not em-dash, `..` not `...`, `ё` in
 Russian.
