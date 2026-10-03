@@ -24,12 +24,10 @@ Friend Module ArchiveEntryFilter
         ".zip", ".cbz", ".7z", ".rar", ".cbr"}
 
     ''' <summary>
-    ''' What phase Ф1 actually opens. 7z/RAR/CBR need the sequential (solid) path, which is
-    ''' Ф2 - offering them now would mean a random-access seek per entry on a solid archive,
-    ''' i.e. seconds per picture.
+    ''' Formats admitted by name; ArchiveSession verifies their detected content.
     ''' </summary>
     Friend ReadOnly Openable_Extensions As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
-        ".zip", ".cbz"}
+        ".zip", ".cbz", ".7z", ".rar", ".cbr"}
 
     ''' <summary>
     ''' Names archivers and file managers leave behind that are never content: the resource

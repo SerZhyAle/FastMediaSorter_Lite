@@ -1118,8 +1118,7 @@ MessageBox.Show(confirmMsg, Localization.T("Подтверждение"), Messag
                 If Me.IsDisposed Then Return
 
                 If name_Taken Then
-                    ' Logged as well: with "no confirmation" on, the summary below is never
-                    ' shown, and this skip would leave no trace at all (audit 057.S03).
+                    ' Logged as well as listed in the summary below (audit 057.S03, ticket 088).
                     AppFileLogger.WriteLine("Thumbnail panel: skipped, name already taken in the slot: " & destination_file_path)
                     error_messages.AppendLine(Localization.TF("Не удалось обработать {0}: {1}", source_file_path,
                                                               Localization.T("Файл с таким именем уже есть: операция пропущена")))
@@ -1146,8 +1145,12 @@ MessageBox.Show(confirmMsg, Localization.T("Подтверждение"), Messag
             summary_message.Append(error_messages.ToString())
         End If
 
-        If Not Is_no_request_before_file_operation Then
-            MessageBox.Show(summary_message.ToString(), Localization.T("Операция завершена"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+        ' "No confirmation" means do not ask before acting, not do not say what failed: a
+        ' skipped or failed file is always reported; only the all-success summary is dropped.
+        Dim has_errors As Boolean = error_messages.Length > 0
+        If has_errors OrElse Not Is_no_request_before_file_operation Then
+            MessageBox.Show(summary_message.ToString(), Localization.T("Операция завершена"), MessageBoxButtons.OK,
+                            If(has_errors, MessageBoxIcon.Warning, MessageBoxIcon.Information))
         End If
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & $" p0085: pics moved/copied. Success: {success_count}, Failed: {work.Count - success_count}")

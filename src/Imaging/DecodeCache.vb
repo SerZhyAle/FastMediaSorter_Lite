@@ -118,14 +118,24 @@ Friend Module DecodeCache
     End Function
 
     ''' <summary>
-    ''' Payload bytes -> a GDI+ image over a live stream. Nothing when GDI+ refuses them,
-    ''' which is what turns a corrupt entry into a plain miss.
+    ''' Payload bytes -> a GDI+ image over a live stream for animations, or a detached Bitmap
+    ''' with stream disposed for static images (018_SPECIFICATION_VIEWER_CORE_S7_MODERN_PIPELINE.md U-13).
+    ''' Nothing when GDI+ refuses them, which is what turns a corrupt entry into a plain miss.
     ''' </summary>
     Private Function Materialize(payload As DecodedPayload) As Tuple(Of Image, MemoryStream)
         Dim stream As New MemoryStream(payload.Bytes)
         Try
-            Dim image As Image = Image.FromStream(stream)
-            Return Tuple.Create(image, stream)
+            If payload.IsAnimation Then
+                Dim image As Image = Image.FromStream(stream)
+                Return Tuple.Create(image, stream)
+            Else
+                Using stream
+                    Using rawImage As Image = Image.FromStream(stream)
+                        Dim bmp As New Bitmap(rawImage)
+                        Return Tuple.Create(CType(bmp, Image), CType(Nothing, MemoryStream))
+                    End Using
+                End Using
+            End If
         Catch ex As Exception
             stream.Dispose()
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " decode-cache: payload refused by GDI+: " & ex.Message)

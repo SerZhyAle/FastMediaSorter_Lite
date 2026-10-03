@@ -126,12 +126,14 @@ Partial Public Class Main_Form
             Dim run As AnimationToVideo.EncoderRun =
                 Await EncodeWithProgressAsync(ffmpegExe, sourcePath, tempPath, fps, durationMs).ConfigureAwait(True)
 
+            Dim expectedDurationMs As Integer = SourceDurationMsAsFfmpegReadsIt(sourcePath)
+
             ' The video must hold the animation, not merely exist (audit 050 D-18).
             Dim encode As VideoReplaceOutcome = VideoConvertPlan.DecideEncode(
                 run.Cancelled, run.ExitCode, File.Exists(tempPath), FileLength(tempPath),
-                durationMs, fps, run.FramesWritten, run.OutTimeMs)
+                expectedDurationMs, fps, run.FramesWritten, run.OutTimeMs)
             AppFileLogger.WriteLine("Replace with video: " & encode.ToString() & " (source " & frameCount.ToString() & " frames / " &
-                                    durationMs.ToString() & " ms at " & fps.ToString() & " fps; written " &
+                                    expectedDurationMs.ToString() & " ms expected at " & fps.ToString() & " fps; written " &
                                     run.FramesWritten.ToString() & " frames / " & run.OutTimeMs.ToString() & " ms)")
 
             ' 4. Rename the temporary file onto the target.
@@ -284,9 +286,13 @@ Partial Public Class Main_Form
             Case VideoReplaceOutcome.Success
                 lbl_Status.Text = Localization.TF("Готово: {0}", Path.GetFileName(targetPath))
             Case VideoReplaceOutcome.OriginalNotDeleted
-                lbl_Status.Text = Localization.TF("Видео создано, но не удалось удалить оригинал: {0}", deleteError)
+                Dim msg As String = Localization.TF("Видео создано, но не удалось удалить оригинал: {0}", deleteError)
+                lbl_Status.Text = msg
+                MessageBox.Show(Me, msg, Localization.T("Заменить видео"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Case VideoReplaceOutcome.OriginalKeptUnverified
-                lbl_Status.Text = Localization.TF("Видео создано, но его полноту не удалось проверить - оригинал сохранён: {0}", Path.GetFileName(targetPath))
+                Dim msg As String = Localization.TF("Видео создано, но его полноту не удалось проверить - оригинал сохранён: {0}", Path.GetFileName(targetPath))
+                lbl_Status.Text = msg
+                MessageBox.Show(Me, msg, Localization.T("Заменить видео"), MessageBoxButtons.OK, MessageBoxIcon.Information)
             Case VideoReplaceOutcome.Cancelled
                 lbl_Status.Text = Localization.T("Преобразование отменено")
             Case Else
@@ -313,6 +319,49 @@ Partial Public Class Main_Form
             Case Else
                 Return Localization.T("FFmpeg завершился с ошибкой. Оригинал не тронут; подробности записаны в журнал.")
         End Select
+    End Function
+
+    ''' <summary>
+    ''' Reads the source animation's true expected duration in milliseconds as FFmpeg will
+    ''' demux it (audit 057.S09-1). For GIF, applies FFmpeg's 2-centisecond minimum rule;
+    ''' for WEBP, reads millisecond frame delays via ImageSharp identify; for other formats
+    ''' or unreadable delays, returns 0 (unknown) so DecideEncode yields EncodedUnverified
+    ''' instead of failing against a truncated playback duration.
+    ''' </summary>
+    Private Function SourceDurationMsAsFfmpegReadsIt(sourcePath As String) As Integer
+        Try
+            Dim ext As String = Path.GetExtension(sourcePath).ToLowerInvariant()
+            If ext = ".gif" Then
+                If gif_Restart_Image_Ref Is Nothing Then Return 0
+                Dim frameDimension As New FrameDimension(gif_Restart_Image_Ref.FrameDimensionsList(0))
+                Dim frameCount As Integer = gif_Restart_Image_Ref.GetFrameCount(frameDimension)
+                If frameCount <= 0 Then Return 0
+                Dim item As PropertyItem = gif_Restart_Image_Ref.GetPropertyItem(&H5100)
+                If item Is Nothing OrElse item.Value Is Nothing OrElse item.Len < frameCount * 4 Then Return 0
+                Dim delays(frameCount - 1) As Integer
+                For i As Integer = 0 To frameCount - 1
+                    delays(i) = BitConverter.ToInt32(item.Value, i * 4)
+                Next
+                Return VideoConvertPlan.GifDurationMsAsFfmpegReadsIt(delays)
+            ElseIf ext = ".webp" Then
+                Using stream As Stream = File.OpenRead(sourcePath)
+                    Using sharpImage As SixLabors.ImageSharp.Image = SixLabors.ImageSharp.Image.Load(stream)
+                        If sharpImage Is Nothing OrElse sharpImage.Frames Is Nothing OrElse sharpImage.Frames.Count = 0 Then Return 0
+                        Dim totalMs As Integer = 0
+                        For Each frame In sharpImage.Frames
+                            Dim webpMeta = frame.Metadata.GetFormatMetadata(SixLabors.ImageSharp.Formats.Webp.WebpFormat.Instance)
+                            If webpMeta IsNot Nothing Then
+                                totalMs += CInt(webpMeta.FrameDelay)
+                            End If
+                        Next
+                        Return totalMs
+                    End Using
+                End Using
+            End If
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0043: SourceDurationMsAsFfmpegReadsIt failed: " & ex.Message)
+        End Try
+        Return 0
     End Function
 
     ' --- what the playing animation can tell us --------------------------------

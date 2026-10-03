@@ -198,7 +198,7 @@ Partial Public Class Main_Form
                         Dim archivePrefs As ModernViewerPreferences = GetModernPreferences()
                         request.Archive.TryEnsureExtracted(ahead, ignored,
                             CLng(archivePrefs.ArchiveMaxEntryMb) * 1024L * 1024L,
-                            CLng(archivePrefs.ArchiveCacheMaxMb) * 1024L * 1024L)
+                            CLng(archivePrefs.ArchiveCacheMaxMb) * 1024L * 1024L, allowSlow:=False)
                     End If
                 End If
 
@@ -213,7 +213,7 @@ Partial Public Class Main_Form
                     For Each ahead_File As String In request.AheadFiles
                         If worker.CancellationPending OrElse Is_No_Background_Tasks Then Exit For
                         If Not Image_File_Extensions.Contains(Path.GetExtension(ahead_File).ToLowerInvariant()) Then Continue For
-                        If request.Resource.TryEnsureLocal(ahead_File, protectAround:=depth) = EnsureLocalOutcome.Cancelled Then Exit For
+                        If request.Resource.TryEnsureLocal(ahead_File, protectAround:=depth, prefetch:=True) = EnsureLocalOutcome.Cancelled Then Exit For
                     Next
                 End If
 #End If
@@ -510,43 +510,71 @@ Partial Public Class Main_Form
                 Return Nothing
             End If
 
-            If file_Entry_List.Count < max_Number_Of_Files_For_List Then
-                is_Files_Array_Active = False
-                files_Array = Nothing ' Clear array when using list
-
-                Dim orderedEntries As IEnumerable(Of FileEntry)
-                Select Case cmbox_Sort.SelectedItem?.ToString()
-                    Case "abc"
-                        orderedEntries = file_Entry_List.OrderBy(Function(f) f.FileName)
-                    Case "xyz"
-                        orderedEntries = file_Entry_List.OrderByDescending(Function(f) f.FileName)
-                    Case "rnd"
-                        orderedEntries = file_Entry_List.OrderBy(Function(f) Guid.NewGuid())
-                    Case ">size"
-                        orderedEntries = file_Entry_List.OrderByDescending(Function(f) f.FileSize)
-                    Case "<size"
-                        orderedEntries = file_Entry_List.OrderBy(Function(f) f.FileSize)
-                    Case ">time"
-                        orderedEntries = file_Entry_List.OrderByDescending(Function(f) f.FileDate)
-                    Case "<time"
-                        orderedEntries = file_Entry_List.OrderBy(Function(f) f.FileDate)
-                    Case "<0123"
-                        orderedEntries = file_Entry_List.OrderBy(Function(f) f.FileName, New NaturalFilenameComparer())
-                    Case ">3210"
-                        orderedEntries = file_Entry_List.OrderByDescending(Function(f) f.FileName, New NaturalFilenameComparer())
-                    Case Else
-                        orderedEntries = file_Entry_List.OrderBy(Function(f) f.FilePath)
-                        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1107:  sort is lost?!")
-                End Select
-
-                Dim file_Paths_List As List(Of String) = orderedEntries.Select(Function(f) f.FilePath).ToList()
-                Return file_Paths_List
-            Else
+            Dim is_Over_Limit As Boolean = file_Entry_List.Count >= max_Number_Of_Files_For_List
+#If NETFRAMEWORK Then
+            If is_Over_Limit Then
+                ' x86 (a 32-bit process, memory to match): past the limit the order of the file
+                ' system is kept, as it always was (020 section 4).
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1109:  too mant files - just array, no sorting !")
                 is_Files_Array_Active = True
                 files_List = Nothing ' Clear list when using array
                 Return file_Entry_List.ToArray()
             End If
+#End If
+            Dim sort_Label As String = cmbox_Sort.SelectedItem?.ToString()
+            Dim orderedEntries As IEnumerable(Of FileEntry)
+            Select Case sort_Label
+                Case "abc"
+                    orderedEntries = file_Entry_List.OrderBy(Function(f) f.FileName)
+                Case "xyz"
+                    orderedEntries = file_Entry_List.OrderByDescending(Function(f) f.FileName)
+                Case "rnd"
+                    orderedEntries = file_Entry_List.OrderBy(Function(f) Guid.NewGuid())
+                Case ">size"
+                    orderedEntries = file_Entry_List.OrderByDescending(Function(f) f.FileSize)
+                Case "<size"
+                    orderedEntries = file_Entry_List.OrderBy(Function(f) f.FileSize)
+                Case ">time"
+                    orderedEntries = file_Entry_List.OrderByDescending(Function(f) f.FileDate)
+                Case "<time"
+                    orderedEntries = file_Entry_List.OrderBy(Function(f) f.FileDate)
+                Case "<0123"
+                    orderedEntries = file_Entry_List.OrderBy(Function(f) f.FileName, New NaturalFilenameComparer())
+                Case ">3210"
+                    orderedEntries = file_Entry_List.OrderByDescending(Function(f) f.FileName, New NaturalFilenameComparer())
+                Case Else
+                    orderedEntries = file_Entry_List.OrderBy(Function(f) f.FilePath)
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1107:  sort is lost?!")
+            End Select
+
+#If Not NETFRAMEWORK Then
+            ' What the live folder list (U-04) places a newcomer against when the order is by size
+            ' or time. Handed to the list that is accepted (MarkFolderListLoaded), not set on the
+            ' list here: a scan whose result is thrown away must leave nothing behind.
+            pending_Sort_Kind = FolderLiveList.SortKindOf(sort_Label)
+            pending_Sort_Facts = Nothing
+            If FolderLiveList.NeedsMetadata(pending_Sort_Kind) AndAlso file_Entry_List.Count <= folder_Watch_Facts_Cap Then
+                pending_Sort_Facts = New Dictionary(Of String, LiveFileFact)(file_Entry_List.Count, StringComparer.OrdinalIgnoreCase)
+                For Each entry As FileEntry In file_Entry_List
+                    pending_Sort_Facts(entry.FilePath) = New LiveFileFact(entry.FilePath, entry.FileSize, entry.FileDate)
+                Next
+            End If
+#End If
+
+            If is_Over_Limit Then
+                ' Past the limit the result is an array - and, on the mainline, a SORTED one (the
+                ' limit is a leftover of weak hardware: ordering 100k names costs tens of
+                ' milliseconds, and the sort box silently lied about the order of a big folder).
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1109:  big folder - array, sorted")
+                is_Files_Array_Active = True
+                files_List = Nothing ' Clear list when using array
+                Return orderedEntries.ToArray()
+            End If
+
+            is_Files_Array_Active = False
+            files_Array = Nothing ' Clear array when using list
+            Dim file_Paths_List As List(Of String) = orderedEntries.Select(Function(f) f.FilePath).ToList()
+            Return file_Paths_List
 
         Catch ex As Exception
             ' The folder itself could not be read (the scan throws for its root since audit

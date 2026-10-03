@@ -124,7 +124,7 @@ Partial Public Class Main_Form
         End If
 
         ' PRIORITY 3: DELAY LEFT-CLICK to allow double-click detection
-        If e.Button = MouseButtons.Left AndAlso zoom_Scale = 1 Then
+        If e.Button = MouseButtons.Left AndAlso MediaIsAtFit() Then
             ' Always delay to allow double-click detection (enter/exit fullscreen)
             pending_Single_Click_Timer.Stop()
             pending_Single_Click_Event = e
@@ -132,7 +132,7 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1148: Left-click delayed for double-click detection")
         Else
             ' Right-click, middle-click, or zoomed - execute immediately
-            If zoom_Scale = 1 OrElse e.Button <> MouseButtons.Left Then
+            If MediaIsAtFit() OrElse e.Button <> MouseButtons.Left Then
                 MouseUse(e)
             End If
         End If
@@ -171,7 +171,7 @@ Partial Public Class Main_Form
 #Else
             SkipZoom()
 #End If
-
+#If NETFRAMEWORK Then
         ElseIf e.Delta <> 0 AndAlso (is_PictureBox1_Visible OrElse is_PictureBox2_Visible) AndAlso (Control.ModifierKeys And Keys.Shift) = Keys.Shift Then
             ' SHIFT + Scroll: Set to original 1:1 resolution
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1174: zoom to original 1:1 resolution")
@@ -260,6 +260,7 @@ Partial Public Class Main_Form
 
             zoom_Scale = If(zoom_Scale = 0, 1, zoom_Scale) * zoom_Scale_Factor
             lbl_Zoom.Text = "" & zoom_Scale.ToString("F2")
+#End If
         Else
             ' One flip per WHEEL_DELTA, not per message (audit 047, C-21): a precision
             ' touchpad or a free-spinning wheel sends many small messages, and each used to
@@ -328,25 +329,35 @@ Partial Public Class Main_Form
         Pic_MouseMove(sender, e)
     End Sub
 
-    ''' <summary>Starts panning: remembers WHERE INSIDE the box the user grabbed it, in
-    ''' panel coordinates (the panel does not move; the box does).</summary>
+    ''' <summary>Starts panning: remembers WHERE INSIDE the image the user grabbed it,
+    ''' in panel coordinates (the panel does not move; legacy moves the box, modern
+    ''' slides the viewport under it - either way the grab point stays put).</summary>
     Private Sub BeginPan()
         If panel_Media Is Nothing Then Return
         is_Dragging = True
         Dim cursor_On_Panel As Point = panel_Media.PointToClient(Cursor.Position)
+#If Not NETFRAMEWORK Then
+        drag_Grab_Offset = New Size(cursor_On_Panel.X - current_ImageBounds.X, cursor_On_Panel.Y - current_ImageBounds.Y)
+#Else
         drag_Grab_Offset = New Size(cursor_On_Panel.X - Picture_Box_1.Left, cursor_On_Panel.Y - Picture_Box_1.Top)
+#End If
         last_Drag_Update_Time = DateTime.Now
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2475: pic_MouseMove - drag started, grab offset " & drag_Grab_Offset.ToString())
     End Sub
 
     ''' <summary>Re-takes the grab offset after something OTHER than the drag moved the
-    ''' box - a zoom step while the button is still held. Without it the next mouse move
-    ''' hauls the box back to the pan's starting geometry and throws the zoom anchor
-    ''' away.</summary>
+    ''' image - a zoom step while the button is still held. Without it the next mouse
+    ''' move hauls the image back to the pan's starting geometry and throws the zoom
+    ''' anchor away.</summary>
     Private Sub RebasePan(box_Location As Point)
         If panel_Media Is Nothing OrElse Not is_Dragging Then Return
         Dim cursor_On_Panel As Point = panel_Media.PointToClient(Cursor.Position)
+#If Not NETFRAMEWORK Then
+        ' The argument is the legacy box location; the modern image rect is the state.
+        drag_Grab_Offset = New Size(cursor_On_Panel.X - current_ImageBounds.X, cursor_On_Panel.Y - current_ImageBounds.Y)
+#Else
         drag_Grab_Offset = New Size(cursor_On_Panel.X - box_Location.X, cursor_On_Panel.Y - box_Location.Y)
+#End If
     End Sub
 
     Private Sub EndPan()
@@ -377,7 +388,11 @@ Partial Public Class Main_Form
             If panel_Media Is Nothing Then Exit Sub
 
             ' Add drag functionality when zoomed
+#If Not NETFRAMEWORK Then
+            If Not MediaIsAtFit() Then
+#Else
             If zoom_Scale = 0 OrElse zoom_Scale > 1 Then
+#End If
                 If Not is_Dragging Then
                     ' Check if mouse has moved enough to be considered a drag
                     Dim drag_Threshold As Integer = 5 ' Increased threshold
@@ -392,12 +407,25 @@ Partial Public Class Main_Form
                     If (current_Time - last_Drag_Update_Time).TotalMilliseconds >= DRAG_UPDATE_INTERVAL_MS Then
 
                         ' Measured against panel_Media, which stands still. e.X/e.Y are
-                        ' client coordinates OF THE VERY BOX BEING MOVED, so the frame of
+                        ' client coordinates OF THE THING BEING MOVED, so the frame of
                         ' reference travelled with the object: the applied offset followed
                         ' a(n) = D(n) - a(n-1), i.e. the picture crawled after the hand at
                         ' half speed, every second event moved it not at all (the stutter),
                         ' and the grab point slid out from under the cursor.
                         Dim cursor_On_Panel As Point = panel_Media.PointToClient(Cursor.Position)
+#If Not NETFRAMEWORK Then
+                        ' The viewport pans: the image rect slides under the still panel
+                        ' and the boxes repaint the newly visible strip (spec 012 §5).
+                        Dim grabbed As New Point(cursor_On_Panel.X - drag_Grab_Offset.Width,
+                                                 cursor_On_Panel.Y - drag_Grab_Offset.Height)
+                        Dim clamped As Point = ClampPan(grabbed, current_ImageBounds.Size, panel_Media.ClientSize)
+                        If clamped <> current_ImageBounds.Location Then
+                            current_ImageBounds = New Rectangle(clamped, current_ImageBounds.Size)
+                            ApplyViewportToBoxes(ActiveMediaImage())
+
+                            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2476: pic_MouseMove - panning viewport to " & clamped.ToString())
+                        End If
+#Else
                         Dim new_Left As Integer = cursor_On_Panel.X - drag_Grab_Offset.Width
                         Dim new_Top As Integer = cursor_On_Panel.Y - drag_Grab_Offset.Height
 
@@ -407,6 +435,7 @@ Partial Public Class Main_Form
 
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2476: pic_MouseMove - dragging to " & new_Left.ToString() & "," & new_Top.ToString())
                         End If
+#End If
 
                         ' Update the last update time
                         last_Drag_Update_Time = current_Time

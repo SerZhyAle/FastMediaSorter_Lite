@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 2,
+  "protocol": "sftp",
+  "resourceName": "Android Phone Media",
+  "username": "user",
+  "password": "sample_password_123",
+  "accessNote": "Media from Android phone",
+  "hostKeyFingerprintSha256": "SHA256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab",
+  "accessPaths": [
+    {
+      "kind": "lan",
+      "host": "192.168.1.100",
+      "port": 22
+    },
+    {
+      "kind": "ipv6",
+      "host": "2001:db8::1",
+      "port": 22
+    }
+  ],
+  "roots": [
+    {
+      "virtualPath": "/DCIM/Camera",
+      "label": "Camera Photos",
+      "readOnly": false,
+      "isDestination": true,
+      "profile": "photo_storage",
+      "mediaTypes": ["image", "video"],
+      "scanSubdirectories": true,
+      "showSubfoldersAsItems": false,
+      "showHiddenFiles": false,
+      "allFiles": false,
+      "destinationColor": 4286946304,
+      "slideshowInterval": 5,
+      "comment": "Photos from camera"
+    },
+    {
+      "virtualPath": "/Download/Media",
+      "label": "Downloaded Media",
+      "readOnly": true,
+      "isDestination": false,
+      "profile": "video_library",
+      "mediaTypes": ["video", "audio"],
+      "scanSubdirectories": true,
+      "comment": "Media downloads"
+    }
+  ]
+}

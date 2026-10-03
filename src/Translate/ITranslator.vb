@@ -282,7 +282,10 @@ Friend Module TextScriptHeuristics
         ".,!?;:'""-()[]{}«»" &
         ChrW(&H201C) & ChrW(&H201D) & ChrW(&H201E) &   ' curly double quotes: left, right, low
         ChrW(&H2018) & ChrW(&H2019) &                   ' curly single quotes
-        ChrW(&H2026) & ChrW(&H2014) & ChrW(&H2013)      ' ellipsis, em dash, en dash
+        ChrW(&H2026) & ChrW(&H2014) & ChrW(&H2013) &    ' ellipsis, em dash, en dash
+        ChrW(&H3001) & ChrW(&H3002) & ChrW(&H300C) & ChrW(&H300D) &
+        ChrW(&H300E) & ChrW(&H300F) & ChrW(65292) & ChrW(65281) & ChrW(65311) &
+        ChrW(&H964) & ChrW(&H965) & ChrW(&H6D4) & ChrW(&H60C) & ChrW(&H61B) & ChrW(&H61F)
 
     Friend Function SymbolRatio(text As String) As Double
         Dim nonWhitespace As Integer = 0
@@ -292,6 +295,13 @@ Friend Module TextScriptHeuristics
             If Char.IsWhiteSpace(ch) Then Continue For
             nonWhitespace += 1
             If Char.IsLetterOrDigit(ch) Then Continue For
+            ' Vowel signs, virama and accents are part of text, not OCR symbol noise.
+            Select Case Char.GetUnicodeCategory(ch)
+                Case Globalization.UnicodeCategory.NonSpacingMark,
+                     Globalization.UnicodeCategory.SpacingCombiningMark,
+                     Globalization.UnicodeCategory.EnclosingMark
+                    Continue For
+            End Select
             If OrdinaryPunctuation.IndexOf(ch) >= 0 Then Continue For
             noisy += 1
         Next

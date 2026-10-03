@@ -19,12 +19,24 @@ Friend Module PlaybackRules
     ''' Whether playback repeats (audit 050 D-14). Two settings can ask for it - the old
     ''' "repeat" flag (the video menu and the Settings checkbox) and the end action of the
     ''' kind on screen - and the checkmark, the reopen and the next file must all agree on
-    ''' one answer.
+    ''' one answer. In slideshow mode, looping is disabled so each video plays once and advances.
     ''' </summary>
     Friend Function EffectiveRepeat(isLoopFlagOn As Boolean, isAudio As Boolean,
-                                    audioEndAction As String, videoEndAction As String) As Boolean
+                                    audioEndAction As String, videoEndAction As String,
+                                    Optional isSlideshow As Boolean = False) As Boolean
+        If isSlideshow Then Return False
         If isLoopFlagOn Then Return True
         Return String.Equals(If(isAudio, audioEndAction, videoEndAction), "repeat", StringComparison.Ordinal)
+    End Function
+
+    ''' <summary>
+    ''' Fallback timeout for a video in slideshow mode: max(duration + 5s, 60s).
+    ''' </summary>
+    Friend Function SlideshowVideoFallbackTimeoutMs(durationMs As Long) As Integer
+        Dim baseMs As Long = If(durationMs > 0, durationMs + 5000L, 60000L)
+        Dim timeoutMs As Long = Math.Max(baseMs, 60000L)
+        If timeoutMs > Integer.MaxValue Then timeoutMs = Integer.MaxValue
+        Return CInt(timeoutMs)
     End Function
 
     ''' <summary>The end action to keep once the user turns repeat OFF from the menu: a

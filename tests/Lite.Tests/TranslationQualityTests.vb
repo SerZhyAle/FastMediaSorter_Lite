@@ -6,6 +6,71 @@ Imports Xunit
 ' Both legs - the translators ship in both viewers.
 Public Class TranslationQualityTests
 
+    ' Ticket 093: ordinary non-Latin translations must survive quality checks.
+    <Theory>
+    <InlineData("hi", "तुम कहाँ जा रहे हो?")>
+    <InlineData("bn", "তুমি কোথায় যাচ্ছ?")>
+    <InlineData("ja", "「待って！」「どこへ行くの？」")>
+    Public Sub NonLatinDialogue_IsNotNoise(target As String, candidate As String)
+        Assert.Equal(0.0, SymbolRatio(candidate))
+        Assert.Equal("", TranslationQuality.BadTranslationReason("Where are you going?", candidate, target))
+    End Sub
+
+    <Fact>
+    Public Sub CombiningMarkCategories_AreNotNoise()
+        Assert.Equal(0.0, SymbolRatio("a" & ChrW(&H301) & ChrW(&H93E) & ChrW(&H20DD)))
+    End Sub
+
+    <Theory>
+    <InlineData("zh", "我已经告诉过你了。我们今晚不能待在这里。暴风雨要来了。")>
+    <InlineData("ja", "もう言いました。今夜ここにはいられません。嵐が来ています。")>
+    Public Sub CompleteCjkSentences_AreNotTruncated(target As String, candidate As String)
+        Assert.Equal("", TranslationQuality.BadTranslationReason(
+            "I have already told you. We cannot stay here tonight. The storm is coming.", candidate, target))
+    End Sub
+
+    <Theory>
+    <InlineData(12290)>
+    <InlineData(65281)>
+    <InlineData(65311)>
+    <InlineData(2404)>
+    <InlineData(1748)>
+    <InlineData(1567)>
+    Public Sub LocalSentenceEnds_CountAsCompleteSentences(marker As Integer)
+        Dim ending As String = ChrW(marker)
+        Dim candidate As String = "你好我的朋友们" & ending & "今晚我们要离开" & ending & "暴风雨马上来了" & ending
+        Assert.Equal(0.0, SymbolRatio(candidate))
+        Assert.False(TranslationQuality.LooksTruncated(
+            "I have already told you. We cannot stay here tonight. The storm is coming.", candidate, "zh"))
+    End Sub
+
+    <Theory>
+    <InlineData("zh", "どこへ行くの？")>
+    <InlineData("chi_tra", "どこへ行くの？")>
+    <InlineData("ko", "どこへ行くの？")>
+    <InlineData("ja", "어디로 가세요?")>
+    <InlineData("zh-cn", "어디로 가세요?")>
+    Public Sub ForeignCjkScript_EchoRemainsRetryable(target As String, source As String)
+        Assert.Equal("echo", TranslationQuality.BadTranslationReason(source, source, target))
+    End Sub
+
+    <Theory>
+    <InlineData("zh", "明天見")>
+    <InlineData("ja", "明天見")>
+    <InlineData("ja", "どこへ行くの？")>
+    <InlineData("ko", "어디로 가세요?")>
+    Public Sub CompatibleCjkScript_EchoIsAccepted(target As String, source As String)
+        Assert.Equal("", TranslationQuality.BadTranslationReason(source, source, target))
+    End Sub
+
+    <Theory>
+    <InlineData("Ich kann das nicht übersetzen.")>
+    <InlineData("No puedo traducir esto.")>
+    <InlineData("আমি এটা অনুবাদ করতে পারি না।")>
+    Public Sub DialogueAboutTranslation_InOtherSourceLanguages_IsNotRefusal(source As String)
+        Assert.Equal("", TranslationQuality.BadTranslationReason(source, "Я не могу это перевести.", "ru"))
+    End Sub
+
     ' --- E-03: a refusal is judged by shape, not by vocabulary ------------------
 
     <Fact>

@@ -47,7 +47,10 @@ Public Module OcrPipeline
     '''     ellipsis and the dashes count as punctuation in attempt scoring. It also retires
     '''     every document a failed translation had already written to disk as a success.
     '''     (The E-01 key change - the displayed grid - changes no content and needs none.)
-    Public Const OcrPipelineVersion As Integer = 7
+    ''' 8 - ticket 093: combining marks and local punctuation are ordinary text in OCR
+    '''     scoring; complete non-Latin translations survive quality checks, while foreign
+    '''     kana/Hangul echoes remain retryable. Retire documents built by the old rules.
+    Public Const OcrPipelineVersion As Integer = 8
 End Module
 
 Public Class OcrWord

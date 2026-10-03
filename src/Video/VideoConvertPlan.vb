@@ -46,6 +46,22 @@ Friend Module VideoConvertPlan
     End Function
 
     ''' <summary>
+    ''' Computes the total duration in milliseconds as FFmpeg's GIF demuxer reads it
+    ''' (audit 057.S09-1). FFmpeg enforces a minimum frame delay of 10 cs (100 ms) for any
+    ''' frame delay under 2 cs (&lt; 20 ms).
+    ''' </summary>
+    ''' <param name="delaysCentiseconds">The per-frame delays in centiseconds (1/100 s).</param>
+    Friend Function GifDurationMsAsFfmpegReadsIt(delaysCentiseconds As IEnumerable(Of Integer)) As Integer
+        If delaysCentiseconds Is Nothing Then Return 0
+        Dim totalMs As Integer = 0
+        For Each delayCs As Integer In delaysCentiseconds
+            Dim effectiveCs As Integer = If(delayCs < 2, 10, delayCs)
+            totalMs += effectiveCs * 10
+        Next
+        Return totalMs
+    End Function
+
+    ''' <summary>
     ''' Where the video goes: the source name with the extension replaced, in the same
     ''' folder - and never over a file that is already there.
     '''

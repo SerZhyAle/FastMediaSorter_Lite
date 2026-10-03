@@ -58,6 +58,7 @@ Partial Public Class Main_Form
     ''' <summary>Rename / move / copy / delete - identical in both menus, and in every case
     ''' the very methods the F6, number and Del keys call.</summary>
     Private Sub AddFileOperationItems(target As ToolStripItemCollection)
+        If IsArchiveMode() OrElse IsArchiveOpenPending() Then Return
         AddMenuItem(target, Localization.T("Переименовать.. (F6)"), Sub() RenameCurrentFile())
 
         Dim move_Item As ToolStripMenuItem = CreateRecipientsSubmenu(RecipientActionKind.Move)

@@ -31,6 +31,14 @@ Friend NotInheritable Class ResourceTestProvider
     Friend Property TruncateUploadsTo As Long = -1
     ''' <summary>When set, a download writes only this many bytes.</summary>
     Friend Property TruncateDownloadsTo As Long = -1
+    ''' <summary>When set, called at the start of every download with the session's own
+    ''' token - the hook a test uses to hold one download and watch what the session does
+    ''' while it is in flight. A test that blocks here and ignores the token stands in for
+    ''' a provider that does not cancel mid-flight.</summary>
+    Friend Property BeforeDownload As Action(Of String, CancellationToken)
+    ''' <summary>When set, the answer to every stat - the stand-in for a server whose
+    ''' names resolve differently than the backing store's (a case-sensitive server).</summary>
+    Friend Property StatOverride As Func(Of String, ResourceEntry)
 
     ''' <summary>The scratch file behind a remote path.</summary>
     Friend Function BackingPath(remotePath As String) As String
@@ -76,6 +84,10 @@ Friend NotInheritable Class ResourceTestProvider
 
     Public Function TryStat(path As String, ByRef entry As ResourceEntry) As Boolean Implements IFileSystemProvider.TryStat
         entry = Nothing
+        If StatOverride IsNot Nothing Then
+            entry = StatOverride(path)
+            Return entry IsNot Nothing
+        End If
         Dim f As New FileInfo(BackingPath(path))
         If Not f.Exists Then Return False
         entry = New ResourceEntry With {.FullPath = path, .Name = f.Name, .Length = f.Length, .LastWriteUtc = f.LastWriteTimeUtc}
@@ -86,6 +98,7 @@ Friend NotInheritable Class ResourceTestProvider
         DownloadCalls += 1
         ct.ThrowIfCancellationRequested()
         Dim bytes As Byte() = File.ReadAllBytes(BackingPath(remotePath))
+        BeforeDownload?.Invoke(remotePath, ct)
         If TruncateDownloadsTo >= 0 AndAlso TruncateDownloadsTo < bytes.Length Then Array.Resize(bytes, CInt(TruncateDownloadsTo))
         File.WriteAllBytes(localPath, bytes)
         progress?.Report(bytes.Length)

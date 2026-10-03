@@ -582,6 +582,19 @@ Partial Public NotInheritable Class Localization
             "انٹرفیس اسکیل اور اسٹارٹ اپ موڈ دوبارہ شروع کرنے پر لاگو ہوتے ہیں۔",
             "界面缩放和启动模式将在重启后生效。")
 
+        Add("Показывать панель инструментов всегда",
+            "Show toolbar always", "Показувати панель інструментів завжди", "Symbolleiste immer anzeigen", "Mostra sempre la barra degli strumenti",
+            "Mostrar siempre la barra de herramientas", "Toujours afficher la barre d'outils", "Sempre mostrar a barra de ferramentas",
+            "إظهار شريط الأدوات دائمًا", "हमेशा टूलबार दिखाएं", "সদা টুলবার দেখান", "ہمیشہ ٹولبار دکھائیں", "始终显示工具栏")
+
+        Add("Если отмечено, панель инструментов всегда видна и не скрывается автоматически.",
+            "If checked, the toolbar is always visible and never auto-hides.", "Якщо позначено, панель інструментів завжди видима і ніколи не приховується автоматично.", "Wenn aktiviert, ist die Symbolleiste immer sichtbar und wird nie automatisch ausgeblendet.",
+            "Se selezionato, la barra degli strumenti è sempre visibile e non si nasconde automaticamente.",
+            "Si está marcado, la barra de herramientas siempre está visible y nunca se oculta automáticamente.", "Si coché, la barre d'outils reste toujours visible et ne se masque jamais automatiquement.",
+            "Se marcado, a barra de ferramentas sempre está visível e nunca desaparece automaticamente.",
+            "عند التحديد، يبقى شريط الأدوات ظاهرًا دائمًا ولا يختفي تلقائيًا.", "चुनने पर टूलबार हमेशा दिखाई देता है और स्वतः छुपता नहीं है.",
+            "নির্বাচিত হলে টুলবার সর্বদা দৃশ্যমান থাকে এবং স্বয়ংক্রিয়ভাবে লুকায় না.", "منتخب ہونے پر ٹولبار ہمیشہ نظر آتا ہے اور خود بخود چھپتا نہیں ہے.",
+            "勾选后工具栏将始终可见，不会自动隐藏。")
     End Sub
 
 End Class

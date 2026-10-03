@@ -155,7 +155,14 @@ Partial Public Class Main_Form
         SyncMediaSurface()
 
         zoom_Scale = 1.0F
+#If Not NETFRAMEWORK Then
+        ' Spec 012: Fit is the viewport dropped - the boxes paint the whole image
+        ' per SizeMode again, and the percent readout reflects the panel-derived fit.
+        ResetZoomViewport()
+        UpdateZoomLabel()
+#Else
         lbl_Zoom.Text = ""
+#End If
     End Sub
 
     Private Sub Button7_Click(sender As Object, e As EventArgs) Handles btn_Full_Screen.Click

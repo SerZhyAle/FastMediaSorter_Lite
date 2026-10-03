@@ -238,14 +238,26 @@ Partial Public Class Table_Form
         target.Controls.Add(control)
     End Sub
 
+    ''' <summary>Control names of the nav buttons, in tab order. Each is a row of
+    ''' <see cref="IconMap"/>: the picture and the canonical name come from the vocabulary
+    ''' (ICON-SET), never from a second table kept here.</summary>
+    Private Shared ReadOnly ModernNavControlNames As String() = {
+        "settingsNavRecipients", "settingsNavViewing", "settingsNavVideo", "settingsNavAudio", "settingsNavFiles",
+        "settingsNavOcr", "settingsNavTranslation", "settingsNavSftp", "settingsNavAbout"}
+
+    Private ReadOnly modernNavTips As New ToolTip()
+
     Private Sub BuildModernSettingsNavigation()
-        Dim top As Integer = Sp(70)
+        ' A dense list (ICON-RENDER rule 5: 20 px glyph, a row of 34 - above the 28 px
+        ' mouse floor): nine entries fit the window's minimum height with room to spare.
+        Dim top As Integer = Sp(66)
         Dim navLabels As String() = {"Destination folders", "Viewing", "Video and quality", "Audio", "Files and system",
                                      "OCR", "Translation", "Android / SFTP", "About"}
         modernSettingsNavButtons = New Button(navLabels.Length - 1) {}
 
         For index As Integer = 0 To navLabels.Length - 1
             Dim button As New Button With {
+                .Name = ModernNavControlNames(index),
                 .Tag = index,
                 .Text = navLabels(index),
                 .FlatStyle = FlatStyle.Flat,
@@ -254,11 +266,14 @@ Partial Public Class Table_Form
                 .ForeColor = SettingsSidebarMuted,
                 .Font = New Font("Segoe UI Semibold", Sf(8.5F), FontStyle.Regular),
                 .TextAlign = ContentAlignment.MiddleLeft,
-                .Height = Sp(38),
+                .ImageAlign = ContentAlignment.MiddleLeft,
+                .TextImageRelation = TextImageRelation.ImageBeforeText,
+                .AutoEllipsis = True,
+                .Height = Sp(34),
                 .Width = modernSettingsSidebar.ClientSize.Width - Sp(24),
                 .Location = New Point(Sp(12), top),
                 .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right,
-                .Padding = New Padding(12, 0, 8, 0),
+                .Padding = New Padding(Sp(10), 0, Sp(6), 0),
                 .Cursor = Cursors.Hand,
                 .TabStop = True
             }
@@ -266,8 +281,34 @@ Partial Public Class Table_Form
             AddHandler button.Click, AddressOf ModernSettingsNavClicked
             modernSettingsSidebar.Controls.Add(button)
             modernSettingsNavButtons(index) = button
-            top += Sp(42)
+            top += Sp(38)
         Next
+    End Sub
+
+    ''' <summary>Draws the vocabulary glyph of a nav button in the button's CURRENT ink.
+    ''' The picture is padded on the right so the gap to the caption is ours and not the
+    ''' button layout's; it is re-rendered whenever the colour changes (selection, theme),
+    ''' because a cached bitmap would keep the colour it was first drawn in.</summary>
+    Private Sub RenderModernNavGlyph(button As Button)
+        Dim meaning As IconMeaning = IconMap.GetMeaning(button.Name)
+        If meaning Is Nothing OrElse String.IsNullOrEmpty(meaning.GlyphId) Then Return
+        Dim tier As Integer = Sp(20)
+        Dim gap As Integer = Sp(10)
+        Dim padded As New Bitmap(tier + gap, tier)
+        Try
+            padded.SetResolution(96.0F, 96.0F)
+            Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, tier, button.ForeColor, AddressOf RuntimeBootstrap.OpenBundledAsset)
+                Using g As Graphics = Graphics.FromImage(padded)
+                    g.DrawImageUnscaled(glyph, 0, 0)
+                End Using
+            End Using
+        Catch
+            padded.Dispose()
+            Throw
+        End Try
+        Dim previous As Image = button.Image
+        button.Image = padded
+        If previous IsNot Nothing Then previous.Dispose()
     End Sub
 
     Private Sub BuildExtraModernSettingsPages()
@@ -390,6 +431,10 @@ Partial Public Class Table_Form
              Localization.T("О программе")}
         For index As Integer = 0 To modernSettingsNavButtons.Length - 1
             modernSettingsNavButtons(index).Text = navLabels(index)
+            ' The caption can be clipped by a long translation: the tooltip and the
+            ' accessible name always carry the whole word (ICON-RENDER rule 8).
+            modernSettingsNavButtons(index).AccessibleName = navLabels(index)
+            modernNavTips.SetToolTip(modernSettingsNavButtons(index), navLabels(index))
         Next
 
         LinkLabel1.Text = ShortSettingsVersion()
@@ -432,6 +477,7 @@ Partial Public Class Table_Form
             button.ForeColor = If(selected, If(GetSettingsBrightness(SettingsAccent) >= 155, Color.Black, Color.White), SettingsSidebarMuted)
             button.FlatAppearance.MouseOverBackColor = If(selected, BlendSettingsColor(SettingsAccent, Color.White, 0.12F), BlendSettingsColor(SettingsSidebar, SettingsAccent, 0.18F))
             button.FlatAppearance.MouseDownBackColor = If(selected, BlendSettingsColor(SettingsAccent, Color.Black, 0.12F), BlendSettingsColor(SettingsSidebar, SettingsAccent, 0.28F))
+            RenderModernNavGlyph(button)
         Next
     End Sub
 
@@ -523,6 +569,7 @@ Partial Public Class Table_Form
             Case "thumbnail_size" : Return Localization.T("Размер карточки изображения")
             Case "section_accessibility" : Return Localization.T("Комфорт просмотра")
             Case "interface_scale" : Return Localization.T("Масштаб интерфейса")
+            Case "toolbar_always_visible" : Return Localization.T("Показывать панель инструментов всегда")
             Case "new_image_scale" : Return Localization.T("Масштаб нового изображения")
             Case "reduce_motion" : Return Localization.T("Уменьшать анимацию")
             Case "section_slideshow_behavior" : Return Localization.T("Поведение слайд-шоу")
@@ -817,6 +864,13 @@ Partial Public Class Table_Form
         AddSettingRow(ocr, "ocr_quality", cmbOcrQuality, 300, True)
         AddSettingRow(ocr, "ocr_mode", cmbOcrMode, 300, True)
         AddSettingRow(ocr, "ocr_download", btnOcrDownload, 300, True)
+        ' The shared status line lives on the Translation page; the download button's own
+        ' answer ("already installed", "engine missing") has to show where the button is
+        ' (audit 057.S10-2).
+        lblOcrRecognitionStatus = New Label With {
+            .AutoSize = False, .Height = 34, .Margin = New Padding(8, 4, 8, 8),
+            .ForeColor = SettingsMutedText, .AutoEllipsis = True, .Tag = "modern:full"}
+        ocr.Controls.Add(lblOcrRecognitionStatus)
 
         AddSectionHeader(translation, "section_translation")
         AddSettingRow(translation, "ocr_provider", cmbOcrProvider, 260, True)

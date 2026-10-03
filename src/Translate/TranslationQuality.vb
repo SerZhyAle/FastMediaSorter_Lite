@@ -82,6 +82,24 @@ Friend Module TranslationQuality
             Case "uk", "ukr" : foreign = "ыэъёў"
             Case "be", "bel" : foreign = "щиїєґъ"
             Case "bg", "bul" : foreign = "ыэёіїєґў"
+            Case "zh", "zh-cn", "zh-tw", "chi_sim", "chi-sim", "chi_tra", "chi-tra",
+                 "ja", "jpn", "ko", "kor"
+                Dim target As String = If(targetLang, "").Trim().ToLowerInvariant()
+                For Each ch As Char In t
+                    If Not Char.IsLetter(ch) Then Continue For
+                    Dim code As Integer = Convert.ToInt32(ch)
+                    Dim kana As Boolean = (code >= &H3040 AndAlso code <= &H30FF) OrElse
+                                          (code >= &H31F0 AndAlso code <= &H31FF) OrElse
+                                          (code >= 65382 AndAlso code <= 65437)
+                    Dim hangul As Boolean = (code >= &H1100 AndAlso code <= &H11FF) OrElse
+                                            (code >= &H3130 AndAlso code <= &H318F) OrElse
+                                            (code >= &HA960 AndAlso code <= &HA97F) OrElse
+                                            (code >= &HAC00 AndAlso code <= &HD7AF)
+                    If kana AndAlso target <> "ja" AndAlso target <> "jpn" Then Return True
+                    If hangul AndAlso target <> "ko" AndAlso target <> "kor" Then Return True
+                Next
+                ' Han characters alone cannot distinguish Chinese from Japanese.
+                Return False
             Case "en", "eng"
                 ' Any accented Latin letter says the text is not English.
                 For Each ch As Char In t
@@ -133,6 +151,13 @@ Friend Module TranslationQuality
         "не могу", "невозможно", "не удаётся", "не удается", "к сожалению", "извините, но"
     }
 
+    ' Ticket 093: recognize source dialogue about translation across languages. These
+    ' only suppress a meta hit; they do not introduce new candidate refusal triggers.
+    Private ReadOnly SourceTranslationWords As String() = {
+        "übersetz", "traduc", "tradu", "traduz", "tradott", "tłumacz", "přelož", "překlad",
+        "çevir", "vertaal", "översätt", "翻译", "翻譯", "翻訳", "번역", "अनुवाद", "অনুবাদ"
+    }
+
     ''' <summary>
     ''' A refusal or a meta-answer: the candidate names a concept of the REQUEST that the source
     ''' never mentions, and either says it cannot, or is nothing but that talk. "Please wait!"
@@ -149,6 +174,9 @@ Friend Module TranslationQuality
             Dim inCandidate As Boolean = group.Any(Function(w) c.IndexOf(w, StringComparison.Ordinal) >= 0)
             If Not inCandidate Then Continue For
             Dim inSource As Boolean = group.Any(Function(w) s.IndexOf(w, StringComparison.Ordinal) >= 0)
+            If group Is MetaConceptGroups(0) Then
+                inSource = inSource OrElse SourceTranslationWords.Any(Function(w) s.IndexOf(w, StringComparison.Ordinal) >= 0)
+            End If
             If Not inSource Then metaHits += 1
         Next
         If metaHits = 0 Then Return False
@@ -223,7 +251,10 @@ Friend Module TranslationQuality
     Private Function CountSentenceMarkers(text As String) As Integer
         Dim count As Integer = 0
         For Each ch As Char In If(text, "")
-            If ch = "."c OrElse ch = "!"c OrElse ch = "?"c Then count += 1
+            Select Case Convert.ToInt32(ch)
+                Case 46, 33, 63, &H3002, 65281, 65311, &H964, &H6D4, &H61F
+                    count += 1
+            End Select
         Next
         Return count
     End Function

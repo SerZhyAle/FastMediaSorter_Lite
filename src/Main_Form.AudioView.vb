@@ -449,7 +449,15 @@ Partial Public Class Main_Form
         If Not IsAudioNowPlaying() OrElse audio_Sleep_Stopped OrElse modern_Preferences Is Nothing Then Return
         If Not audio_Sleep_Deadline.IsDue(Environment.TickCount64, modern_Preferences.SleepTimerMinutes) Then Return
         audio_Sleep_Deadline.Disarm()
-        audio_Sleep_Stopped = True : StopVlcPlayback() : lbl_Status.Text = Localization.T("Таймер сна остановил воспроизведение")
+        audio_Sleep_Stopped = True
+        StopVlcPlayback()
+        SlideShowStop()
+        lbl_Status.Text = Localization.T("Таймер сна остановил воспроизведение")
+    End Sub
+
+    ''' <summary>Disarms the sleep deadline when the user leaves audio playback (audit 057.S08-6).</summary>
+    Friend Sub EndAudioListening()
+        audio_Sleep_Deadline.Disarm()
     End Sub
     Friend Sub ClearAudioSurface()
         audio_Visualiser_Timer.Stop()

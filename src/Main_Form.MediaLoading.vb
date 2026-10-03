@@ -275,6 +275,9 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub ReadShowMediaFile(ByVal read_Mode_Type As String, Optional is_Auto_Skip As Boolean = False)
+#If Not NETFRAMEWORK Then
+        If IsArchiveOpenPending() Then Return
+#End If
 
         media_View_Count += 1
 
@@ -698,6 +701,10 @@ Partial Public Class Main_Form
         ' for the folder's scan when an undo brought a file back.
         folder_List_Loaded_For = ""
         NoteFileListReplaced()
+#If Not NETFRAMEWORK Then
+        ' Not the scan of any folder: there is nothing for a watcher to keep current (U-04).
+        StopFolderWatcher()
+#End If
     End Sub
 
     ''' <summary>True when files_List/files_Array really describe Current_Folder_Path.
@@ -718,6 +725,10 @@ Partial Public Class Main_Form
     Private Sub MarkFolderListLoaded()
         folder_List_Loaded_For = Current_Folder_Path
         NoteFileListReplaced()
+#If Not NETFRAMEWORK Then
+        ' The list now describes this folder: keep it current while it is open (U-04).
+        SyncFolderWatcher()
+#End If
     End Sub
 
     ''' <summary>A new list is in memory: whatever an older operation remembered about
@@ -964,15 +975,15 @@ Partial Public Class Main_Form
 
 #If Not NETFRAMEWORK Then
             ' Invariant 8 of the zoom spec: every new file opens fitted. Nothing in the
-            ' display path did it, so the boxes kept the previous picture's geometry -
+            ' display path did it, so the surface kept the previous picture's viewport -
             ' a 4000x3000 shot left at 200 % made the next 800x600 one show at roughly
             ' 1000 % while the label still said "200 %", the left click stopped flipping
-            ' (zoom_Scale = 0 means "zoomed"), and Draw_Perspective went off to build a
-            ' background for an 8000x6000 box on every single file.
+            ' (free zoom means "zoomed"), and Draw_Perspective went off to build a
+            ' background for an 8000x6000 surface on every single file.
             ' Programmatic: this fit is the display path tidying up after the previous
             ' picture, not the user choosing Fit, so it must not overwrite the per-folder
             ' zoom §4.2 remembers.
-            If zoom_Scale <> 1 Then
+            If Not MediaIsAtFit() Then
                 is_Zoom_Applied_By_Program = True
                 Try
                     ZoomToFit()
@@ -1259,7 +1270,11 @@ Partial Public Class Main_Form
 
         ' Any navigation to an image or a browser-played video supersedes VLC fallback playback.
         If is_Vlc_Playing AndAlso (is_PictureBox1_Visible OrElse is_PictureBox2_Visible OrElse is_WebBrowser_Visible) Then
+#If Not NETFRAMEWORK Then
+            StopVlcPlaybackAsync()
+#Else
             StopVlcPlayback()
+#End If
         End If
 
         Picture_Box_1.Visible = is_PictureBox1_Visible
@@ -1292,139 +1307,36 @@ Partial Public Class Main_Form
 
             Dim active_Bitmap As Bitmap = Nothing
 
-            ' The dynamic-background analysis below pokes the freshly-loaded bitmap
-            ' with GetPixel/.Width. GDI+ can transiently fail there (e.g. while the
-            ' background worker is concurrently decoding on a slow network share),
-            ' throwing OverflowException / "Parameter is not valid". That must NOT
-            ' abort the display: the image is already on the PictureBox. Swallow the
-            ' analysis failure and keep the previous background colour for this frame.
+            ' The dynamic-background analysis below samples the freshly-loaded bitmap
+            ' using EdgeSampler (LockBits) instead of GetPixel (018_SPECIFICATION_VIEWER_CORE_S7_MODERN_PIPELINE.md U-15).
+            ' GDI+ can transiently fail on concurrent access, so the Try/Catch protects
+            ' against display disruption.
             Try
+                If Form_Color_Scheme = 2 Then
+                    back_Color = System.Drawing.Color.White
+                ElseIf Form_Color_Scheme = 0 OrElse Form_Color_Scheme = 3 OrElse Form_Color_Scheme = 4 OrElse Form_Color_Scheme = 5 Then
+                    If pic_to_Display = 1 Then
+                        active_Bitmap = CType(Picture_Box_1.Image, Bitmap)
+                    ElseIf pic_to_Display = 2 Then
+                        active_Bitmap = CType(Picture_Box_2.Image, Bitmap)
+                    End If
 
-            If Form_Color_Scheme = 2 Then
-                back_Color = System.Drawing.Color.White
-            ElseIf Form_Color_Scheme = 0 Then
-
-                If pic_to_Display = 1 Then
-                    active_Bitmap = CType(Picture_Box_1.Image, Bitmap)
-                ElseIf pic_to_Display = 2 Then
-                    active_Bitmap = CType(Picture_Box_2.Image, Bitmap)
-                End If
-
-                If active_Bitmap IsNot Nothing Then
-                    If 1 < active_Bitmap.Width AndAlso
-                    1 < active_Bitmap.Height Then
-
-                        If active_Bitmap.Width > second_Color_X AndAlso
-                        active_Bitmap.Height > second_Color_Y Then
-
-                            Dim first_Color_Pixel = active_Bitmap.GetPixel(first_Color_X, first_Color_Y)
-                            Dim second_Color_Pixel = active_Bitmap.GetPixel(second_Color_X, second_Color_Y)
-
-                            ' Fix: Remove alpha channel to prevent transparent background colors
-                            first_Color_Pixel = Color.FromArgb(255, first_Color_Pixel.R, first_Color_Pixel.G, first_Color_Pixel.B)
-                            second_Color_Pixel = Color.FromArgb(255, second_Color_Pixel.R, second_Color_Pixel.G, second_Color_Pixel.B)
-
-                            Dim dif As Long = CLng(Math.Abs(CInt(second_Color_Pixel.R) - CInt(first_Color_Pixel.R))) +
-                                              CLng(Math.Abs(CInt(second_Color_Pixel.G) - CInt(first_Color_Pixel.G))) +
-                                              CLng(Math.Abs(CInt(second_Color_Pixel.B) - CInt(first_Color_Pixel.B)))
-                            If dif < percent_of_color_deviation Then
-                                back_Color = first_Color_Pixel
-                            Else
-                                Dim corner_Pixel = active_Bitmap.GetPixel(CInt(active_Bitmap.Width / percent_of_second_Color_Point), CInt(active_Bitmap.Height / percent_of_second_Color_Point))
-                                ' Fix: Remove alpha channel
-                                back_Color = Color.FromArgb(255, corner_Pixel.R, corner_Pixel.G, corner_Pixel.B)
+                    If active_Bitmap IsNot Nothing Then
+                        Using sampler As EdgeSampler = EdgeSampler.TryCreate(active_Bitmap)
+                            If sampler IsNot Nothing Then
+                                back_Color = sampler.CalculateBackgroundColor(Form_Color_Scheme,
+                                                                              first_Color_X, first_Color_Y,
+                                                                              second_Color_X, second_Color_Y,
+                                                                              percent_of_color_deviation,
+                                                                              percent_of_second_Color_Point,
+                                                                              step_size_while_color_Search,
+                                                                              back_Color)
                             End If
-                        Else
-                            Dim corner_Pixel = active_Bitmap.GetPixel(CInt(active_Bitmap.Width / percent_of_second_Color_Point), CInt(active_Bitmap.Height / percent_of_second_Color_Point))
-                            ' Fix: Remove alpha channel
-                            back_Color = Color.FromArgb(255, corner_Pixel.R, corner_Pixel.G, corner_Pixel.B)
-                        End If
-
+                        End Using
                     End If
                 End If
-            ElseIf Form_Color_Scheme = 3 Then 'by side
 
-                If pic_to_Display = 1 Then
-                    active_Bitmap = CType(Picture_Box_1.Image, Bitmap)
-                ElseIf pic_to_Display = 2 Then
-                    active_Bitmap = CType(Picture_Box_2.Image, Bitmap)
-                End If
-
-                If active_Bitmap IsNot Nothing AndAlso
-                 1 < active_Bitmap.Width AndAlso
-                    1 < active_Bitmap.Height Then
-
-                    Dim side_Pixel_Color As System.Drawing.Color
-                    Dim difR, difG, difB As Long
-                    Dim c As Integer = 0
-                    For z = 0 To active_Bitmap.Height - 1 Step step_size_while_color_Search
-                        side_Pixel_Color = active_Bitmap.GetPixel(1, z)
-                        difR += CInt(side_Pixel_Color.R)
-                        difG += CInt(side_Pixel_Color.G)
-                        difB += CInt(side_Pixel_Color.B)
-                        c += 1
-                    Next
-
-                    ' Fix: Ensure the resulting color is fully opaque
-                    back_Color = Color.FromArgb(255, CInt(difR / c), CInt(difG / c), CInt(difB / c))
-                End If
-
-            ElseIf Form_Color_Scheme = 4 Then 'by top
-
-                If pic_to_Display = 1 Then
-                    active_Bitmap = CType(Picture_Box_1.Image, Bitmap)
-                ElseIf pic_to_Display = 2 Then
-                    active_Bitmap = CType(Picture_Box_2.Image, Bitmap)
-                End If
-
-                If active_Bitmap IsNot Nothing AndAlso
-                 1 < active_Bitmap.Width AndAlso
-                    1 < active_Bitmap.Height Then
-
-                    Dim top_Pixel_Color As System.Drawing.Color
-                    Dim difR, difG, difB As Long
-                    Dim c As Integer = 0
-                    For z = 0 To active_Bitmap.Width - 1 Step step_size_while_color_Search
-                        top_Pixel_Color = active_Bitmap.GetPixel(z, 1)
-                        difR += CInt(top_Pixel_Color.R)
-                        difG += CInt(top_Pixel_Color.G)
-                        difB += CInt(top_Pixel_Color.B)
-                        c += 1
-                    Next
-
-                    ' Fix: Ensure the resulting color is fully opaque
-                    back_Color = Color.FromArgb(255, CInt(difR / c), CInt(difG / c), CInt(difB / c))
-                End If
-            ElseIf Form_Color_Scheme = 5 Then 'by buttom
-
-                If pic_to_Display = 1 Then
-                    active_Bitmap = CType(Picture_Box_1.Image, Bitmap)
-                ElseIf pic_to_Display = 2 Then
-                    active_Bitmap = CType(Picture_Box_2.Image, Bitmap)
-                End If
-
-                If active_Bitmap IsNot Nothing AndAlso
-                 1 < active_Bitmap.Width AndAlso
-                    1 < active_Bitmap.Height Then
-
-                    Dim bottom_Pixel_Color As System.Drawing.Color
-                    Dim difR, difG, difB As Long
-                    Dim c As Integer = 0
-                    For z = 0 To active_Bitmap.Width - 1 Step step_size_while_color_Search
-                        bottom_Pixel_Color = active_Bitmap.GetPixel(z, active_Bitmap.Height - 1)
-                        difR += CInt(bottom_Pixel_Color.R)
-                        difG += CInt(bottom_Pixel_Color.G)
-                        difB += CInt(bottom_Pixel_Color.B)
-                        c += 1
-                    Next
-
-                    ' Fix: Ensure the resulting color is fully opaque
-                    back_Color = Color.FromArgb(255, CInt(difR / c), CInt(difG / c), CInt(difB / c))
-                End If
-            End If
-
-
-            ApplyBackgroundColor(back_Color)
+                ApplyBackgroundColor(back_Color)
 
             Catch ex As Exception
                 ' Keep the image visible; just skip recoloring this frame.
@@ -1670,6 +1582,10 @@ Partial Public Class Main_Form
                 If Not Is_No_Background_Tasks Then lbl_Current_File.Text = CurrentFileDisplayName(Current_File_Name)
 
 #If Not NETFRAMEWORK Then
+                If KindOf(current_File_Extension) <> MediaKind.Audio Then
+                    EndAudioListening()
+                End If
+
                 ' The container branch comes FIRST, before the image/video split: what is
                 ' inside is unknown until the container opens, and the split below can only
                 ' see ".fd-sec" (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §5.3).

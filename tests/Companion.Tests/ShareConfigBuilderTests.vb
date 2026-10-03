@@ -288,8 +288,7 @@ Public Class ShareConfigBuilderTests
     ''' <summary>Phase 1 - a saved .fmscfg is owner-only, like the reference exporter's.</summary>
     <Fact>
     Public Sub WriteConfigFile_IsOwnerOnly()
-        Dim dir As String = IO.Path.Combine(IO.Path.GetTempPath(), "fms-034-" & Guid.NewGuid().ToString("N"))
-        IO.Directory.CreateDirectory(dir)
+        Dim dir As String = PrivateTestFolders.Create("fms-034-")
         Try
             Dim path As String = IO.Path.Combine(dir, "t.fmscfg")
             ShareConfigBuilder.WriteConfigFile(path, "{""a"":1}")

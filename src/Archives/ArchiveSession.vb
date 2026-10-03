@@ -26,6 +26,27 @@ Friend NotInheritable Class ArchiveSession
     ''' wrong" is the whole rule here: a picture that silently does not appear is
     ''' indistinguishable from a broken program.
     ''' </summary>
+    Friend Enum ArchiveKind
+        RandomAccess
+        Sequential
+    End Enum
+
+    Friend Enum PassOutcome
+        Completed
+        Cancelled
+        Broken
+    End Enum
+
+    Friend ReadOnly Property Kind As ArchiveKind
+    Private sequential_Pass_Completed As Boolean
+    Private ReadOnly entry_Occurrences As New List(Of Integer)()
+
+    Friend ReadOnly Property NeedsSequentialPass As Boolean
+        Get
+            Return Kind = ArchiveKind.Sequential AndAlso Not sequential_Pass_Completed
+        End Get
+    End Property
+
     Friend Enum EntryRefusal
         None
         ''' <summary>Bigger than the per-entry ceiling (§5.3).</summary>
@@ -121,15 +142,33 @@ Friend NotInheritable Class ArchiveSession
                                            FileShare.ReadWrite Or FileShare.Delete)
         Try
             archive = SharpCompress.Archives.ArchiveFactory.OpenArchive(stream_Of_Archive, ReaderOptionsForLegacyNames())
-            ' The openable set is decided by EXTENSION, but the factory detects the format by
-            ' CONTENT - and a RAR or 7z renamed .cbz is common. A solid RAR refuses random
-            ' access (every page "broken"), a 7z unpacks its solid block from the start for
-            ' every page on the UI thread: exactly the Ф2 cost 010 kept out. Refused by name
-            ' instead, with no entries (audit 052 G-15).
-            If archive.Type <> SharpCompress.Common.ArchiveType.Zip Then
-                unsupported_Kind = archive.Type.ToString()
-            Else
-                BuildEntryList(isSupportedMedia, maxEntries)
+            Select Case archive.Type
+                Case SharpCompress.Common.ArchiveType.Zip
+                    Kind = ArchiveKind.RandomAccess
+                Case SharpCompress.Common.ArchiveType.SevenZip, SharpCompress.Common.ArchiveType.Rar
+                    Kind = ArchiveKind.Sequential
+                Case Else
+                    unsupported_Kind = archive.Type.ToString()
+            End Select
+            If unsupported_Kind.Length = 0 Then
+                Try
+                    BuildEntryList(isSupportedMedia, maxEntries)
+                    If Kind = ArchiveKind.Sequential Then
+                        ' Enumerate first: asking IsSolid can parse encrypted 7z headers,
+                        ' and swallowing that exception poisons the library's lazy listing.
+                        Try
+                            If Not archive.IsSolid Then Kind = ArchiveKind.RandomAccess
+                        Catch
+                            ' Inconclusive flags keep the conservative sequential path.
+                        End Try
+                    End If
+                Catch ex As SharpCompress.Common.CryptographicException
+                    encrypted_Seen = True
+                    entry_Infos.Clear()
+                    entry_Handles.Clear()
+                    entry_Occurrences.Clear()
+                    by_Temp_Path.Clear()
+                End Try
             End If
         Catch
             If archive IsNot Nothing Then archive.Dispose()
@@ -158,7 +197,7 @@ Friend NotInheritable Class ArchiveSession
         Return options
     End Function
 
-    ''' <summary>The detected format when it is not ZIP ("Rar", "SevenZip", ..), otherwise
+    ''' <summary>The detected format when it is not ZIP, 7z or RAR ("Rar", "SevenZip", ..), otherwise
     ''' empty. A session with a kind here has no entries and must not be browsed.</summary>
     Friend ReadOnly Property UnsupportedKind As String
         Get
@@ -190,8 +229,12 @@ Friend NotInheritable Class ArchiveSession
 
     Private Sub BuildEntryList(isSupportedMedia As Func(Of String, Boolean), maxEntries As Integer)
         Dim index As Integer = 0
+        Dim occurrences As New Dictionary(Of String, Integer)(StringComparer.Ordinal)
         For Each entry As SharpCompress.Archives.IArchiveEntry In archive.Entries
             Dim key As String = If(entry.Key, "")
+            Dim occurrence As Integer
+            occurrences.TryGetValue(key, occurrence)
+            occurrences(key) = occurrence + 1
             If entry.IsEncrypted Then
                 encrypted_Seen = True
                 Continue For
@@ -215,6 +258,7 @@ Friend NotInheritable Class ArchiveSession
                 If(entry.LastModifiedTime.HasValue, entry.LastModifiedTime.Value, Date.Now),
                 Path.Combine(temp_Root, ArchivePaths.EntryFileName(index, key))))
             entry_Handles.Add(entry)
+            entry_Occurrences.Add(occurrence)
             by_Temp_Path(entry_Infos(entry_Infos.Count - 1).TempPath) = entry_Infos.Count - 1
             index += 1
         Next
@@ -240,21 +284,22 @@ Friend NotInheritable Class ArchiveSession
     ''' </summary>
     Friend Function TryEnsureExtracted(index As Integer, ByRef refusal As EntryRefusal,
                                        Optional maxEntryBytes As Long = Default_Max_Entry_Bytes,
-                                       Optional maxCacheBytes As Long = Default_Max_Cache_Bytes) As Boolean
+                                       Optional maxCacheBytes As Long = Default_Max_Cache_Bytes,
+                                       Optional allowSlow As Boolean = True) As Boolean
         ' Serialized on purpose: the display path and the prefetch worker both call this,
         ' and they would otherwise be reading two entries out of ONE archive stream at the
         ' same time - SharpCompress seeks that stream per entry, so concurrent reads do not
         ' race over a lock, they race over the file position. The work inside is one
         ' entry's decompression, so the wait is bounded by the picture being fetched.
         SyncLock extraction_Gate
-            Return EnsureExtractedCore(index, refusal, maxEntryBytes, maxCacheBytes)
+            Return EnsureExtractedCore(index, refusal, maxEntryBytes, maxCacheBytes, allowSlow)
         End SyncLock
     End Function
 
     Private ReadOnly extraction_Gate As New Object()
 
     Private Function EnsureExtractedCore(index As Integer, ByRef refusal As EntryRefusal,
-                                         maxEntryBytes As Long, maxCacheBytes As Long) As Boolean
+                                         maxEntryBytes As Long, maxCacheBytes As Long, allowSlow As Boolean) As Boolean
         refusal = EntryRefusal.None
         ' A late prefetch that reaches here after the archive was left must not recreate the
         ' session directory that LeaveArchive just deleted - it survived the whole process,
@@ -300,14 +345,18 @@ Friend NotInheritable Class ArchiveSession
             Return False
         End If
 
+        If Kind = ArchiveKind.Sequential AndAlso Not allowSlow Then Return False
         Dim part As String = info.TempPath & ".part"
         Try
             Directory.CreateDirectory(temp_Root)
-            Using source As Stream = entry.OpenEntryStream()
-                Using target As New FileStream(part, FileMode.Create, FileAccess.Write, FileShare.None)
-                    CopyBounded(source, target, info.Size, Function() Threading.Volatile.Read(closing_Requested))
+            If Kind = ArchiveKind.Sequential Then
+                If Not allowSlow Then Return False
+                ExtractOneSequentially(index, part)
+            Else
+                Using source As Stream = entry.OpenEntryStream()
+                    WriteEntry(source, part, info.Size)
                 End Using
-            End Using
+            End If
 
             If File.Exists(info.TempPath) Then File.Delete(info.TempPath)
             File.Move(part, info.TempPath)
@@ -322,6 +371,106 @@ Friend NotInheritable Class ArchiveSession
             End Try
             refusal = EntryRefusal.Broken
             Return False
+        End Try
+    End Function
+
+    Private Sub WriteEntry(source As Stream, part As String, size As Long)
+        Using target As New FileStream(part, FileMode.Create, FileAccess.Write, FileShare.None)
+            CopyBounded(source, target, size, Function() Threading.Volatile.Read(closing_Requested))
+        End Using
+    End Sub
+
+    ' Use IArchive's reader: ReaderFactory does not support 7z. Each traversal owns a
+    ' separate stream and header parse, so it never seeks the random-access handle.
+    Private Sub ExtractOneSequentially(index As Integer, part As String)
+        Using input As New FileStream(archive_Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete)
+            Using scan = SharpCompress.Archives.ArchiveFactory.OpenArchive(input, ReaderOptionsForLegacyNames())
+                Using reader = scan.ExtractAllEntries()
+                    Dim occurrences As New Dictionary(Of String, Integer)(StringComparer.Ordinal)
+                    While reader.MoveToNextEntry()
+                        If Threading.Volatile.Read(closing_Requested) Then Throw New OperationCanceledException()
+                        Dim key As String = If(reader.Entry.Key, "")
+                        Dim occurrence As Integer
+                        occurrences.TryGetValue(key, occurrence)
+                        occurrences(key) = occurrence + 1
+                        If key <> entry_Infos(index).EntryName OrElse occurrence <> entry_Occurrences(index) Then Continue While
+                        Using source = reader.OpenEntryStream()
+                            WriteEntry(source, part, entry_Infos(index).Size)
+                        End Using
+                        Return
+                    End While
+                End Using
+            End Using
+        End Using
+        Throw New InvalidDataException("The archive entry disappeared during extraction.")
+    End Sub
+
+    Friend Function RunSequentialPass(maxEntryBytes As Long, maxCacheBytes As Long,
+                                      Optional progress As Action(Of Integer) = Nothing) As PassOutcome
+        If Threading.Volatile.Read(closing_Requested) Then Return PassOutcome.Cancelled
+        If Not NeedsSequentialPass Then Return PassOutcome.Completed
+        Dim matches As New Dictionary(Of String, Dictionary(Of Integer, Integer))(StringComparer.Ordinal)
+        For i As Integer = 0 To entry_Infos.Count - 1
+            Dim key As String = entry_Infos(i).EntryName
+            If Not matches.ContainsKey(key) Then matches(key) = New Dictionary(Of Integer, Integer)()
+            matches(key)(entry_Occurrences(i)) = i
+        Next
+        Try
+            Using input As New FileStream(archive_Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete)
+                Using scan = SharpCompress.Archives.ArchiveFactory.OpenArchive(input, ReaderOptionsForLegacyNames())
+                    Using reader = scan.ExtractAllEntries()
+                        Dim occurrences As New Dictionary(Of String, Integer)(StringComparer.Ordinal)
+                        Dim visited As Integer = 0
+                        Do
+                            Dim percent As Integer = -1
+                            ' Closing waits only for the current entry; check again before
+                            ' advancing, which may itself decompress a skipped solid entry.
+                            SyncLock extraction_Gate
+                                If closing_Requested OrElse disposed Then Return PassOutcome.Cancelled
+                                If Not reader.MoveToNextEntry() Then Exit Do
+                                Dim key As String = If(reader.Entry.Key, "")
+                                Dim occurrence As Integer
+                                occurrences.TryGetValue(key, occurrence)
+                                occurrences(key) = occurrence + 1
+                                Dim sameName As Dictionary(Of Integer, Integer) = Nothing
+                                Dim index As Integer
+                                If matches.TryGetValue(key, sameName) AndAlso sameName.TryGetValue(occurrence, index) Then
+                                    Dim info = entry_Infos(index)
+                                    Dim handle = entry_Handles(index)
+                                    Dim fits As Boolean = maxCacheBytes <= 0 OrElse info.Size <= maxCacheBytes - session_Bytes
+                                    If Not handle.IsEncrypted AndAlso info.Size <= maxEntryBytes AndAlso fits AndAlso
+                                       (handle.CompressedSize <= 0 OrElse info.Size / handle.CompressedSize <= Max_Expansion_Ratio) Then
+                                        Dim part As String = info.TempPath & ".part"
+                                        Try
+                                            Directory.CreateDirectory(temp_Root)
+                                            Using source = reader.OpenEntryStream()
+                                                WriteEntry(source, part, info.Size)
+                                            End Using
+                                            File.Move(part, info.TempPath, overwrite:=True)
+                                            TouchExtracted(index, info.Size)
+                                        Finally
+                                            If File.Exists(part) Then File.Delete(part)
+                                        End Try
+                                    End If
+                                    visited += 1
+                                    percent = CInt(100L * visited \ Math.Max(1, entry_Infos.Count))
+                                End If
+                            End SyncLock
+                            ' Callbacks run outside the lock; UI progress cannot hold up cleanup.
+                            If percent >= 0 Then progress?.Invoke(percent)
+                            If visited >= entry_Infos.Count Then Exit Do
+                        Loop
+                    End Using
+                End Using
+            End Using
+            If Threading.Volatile.Read(closing_Requested) Then Return PassOutcome.Cancelled
+            sequential_Pass_Completed = True
+            progress?.Invoke(100)
+            Return PassOutcome.Completed
+        Catch ex As Exception
+            If Threading.Volatile.Read(closing_Requested) Then Return PassOutcome.Cancelled
+            AppFileLogger.LogException("Archive: sequential extraction", ex)
+            Return PassOutcome.Broken
         End Try
     End Function
 
@@ -344,16 +493,33 @@ Friend NotInheritable Class ArchiveSession
     ''' never evicted even when everything else already has been. A session that never
     ''' grows past the budget never deletes anything.
     ''' </summary>
+    Private ReadOnly displayed_Entries As New HashSet(Of Integer)()
+
+    ' Navigation can sort or shuffle the metadata order. Pin the rows actually on
+    ' screen and next to it; a prefetch must not redefine which page is current.
+    Friend Sub ProtectDisplayedEntries(paths As IEnumerable(Of String))
+        SyncLock extraction_Gate
+            displayed_Entries.Clear()
+            For Each path As String In paths
+                Dim index As Integer = IndexOfTempPath(path)
+                If index >= 0 Then displayed_Entries.Add(index)
+            Next
+        End SyncLock
+    End Sub
+
     Private Sub EvictIfOverBudget(justTouched As Integer, maxCacheBytes As Long)
         If maxCacheBytes <= 0 Then Return
+        Dim attempted As New HashSet(Of Integer)()
         Do While session_Bytes > maxCacheBytes
             Dim victim As Integer = -1
             For Each candidate As Integer In lru_Recency
+                If attempted.Contains(candidate) OrElse displayed_Entries.Contains(candidate) Then Continue For
                 If candidate = justTouched OrElse candidate = justTouched - 1 OrElse candidate = justTouched + 1 Then Continue For
                 victim = candidate
                 Exit For
             Next
             If victim < 0 Then Exit Do   ' nothing left to evict - everything is protected
+            attempted.Add(victim)
             EvictEntry(victim)
         Loop
     End Sub
@@ -366,8 +532,9 @@ Friend NotInheritable Class ArchiveSession
             If File.Exists(path) Then File.Delete(path)
         Catch
             ' A file that refuses to go (antivirus, a lingering handle) is left for the
-            ' cleanup rubezhi (§4) - the accounting below still drops it, so the budget
-            ' check does not spin on the same entry forever.
+            ' cleanup boundaries (§4). Keep its bytes accounted for and retry on the
+            ' next eviction; this pass tries each candidate only once.
+            Return
         End Try
         extracted_Sizes.Remove(index)
         lru_Recency.Remove(index)
@@ -381,9 +548,7 @@ Friend NotInheritable Class ArchiveSession
     ''' </summary>
     Private Shared Sub CopyBounded(source As Stream, target As Stream, declaredSize As Long,
                                    cancelled As Func(Of Boolean))
-        ' A little slack: some writers round the stored size, and failing a legitimate
-        ' entry over one byte would be worse than writing one byte too many.
-        Dim ceiling As Long = declaredSize + 4096L
+        Dim ceiling As Long = declaredSize
         Dim buffer(81919) As Byte
         Dim written As Long = 0
 
@@ -400,6 +565,7 @@ Friend NotInheritable Class ArchiveSession
             End If
             target.Write(buffer, 0, read)
         Loop
+        If written <> declaredSize Then Throw New InvalidDataException("Entry size does not match its header.")
     End Sub
 
     ''' <summary>Set before the lock is taken, read inside the copy loop: an extraction in

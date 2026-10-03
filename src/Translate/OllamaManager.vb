@@ -2,6 +2,7 @@ Option Strict On
 
 Imports System.IO
 Imports System.Net.Http
+Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Threading.Tasks
 
@@ -42,6 +43,48 @@ Public Module OllamaManager
 
     Public Function IsInstalled() As Boolean
         Return FindExe().Length > 0
+    End Function
+
+    ''' <summary>Ollama for Windows is a 64-bit program for Windows 10 and newer (audit
+    ''' 057.S10-4). Pure, so the rule is held by a test: the decision is about the OPERATING
+    ''' SYSTEM, not the process - the x86 viewer on 64-bit Windows 10 can still install it.</summary>
+    Friend Function IsSupportedOs(majorVersion As Integer, is64BitOs As Boolean) As Boolean
+        Return is64BitOs AndAlso majorVersion >= 10
+    End Function
+
+    ''' <summary>True when this machine can run the Ollama installer. Unknown version
+    ''' (the query failed) is treated as supported: refusing on a guess would take the
+    ''' offer away from a machine that could use it.</summary>
+    Public Function IsSupportedOs() As Boolean
+        Dim major As Integer = WindowsMajorVersion()
+        Return IsSupportedOs(If(major > 0, major, 10), Environment.Is64BitOperatingSystem)
+    End Function
+
+    <StructLayout(LayoutKind.Sequential, CharSet:=CharSet.Unicode)>
+    Private Structure OsVersionInfo
+        Public Size As Integer
+        Public Major As Integer
+        Public Minor As Integer
+        Public Build As Integer
+        Public PlatformId As Integer
+        <MarshalAs(UnmanagedType.ByValTStr, SizeConst:=128)> Public CsdVersion As String
+    End Structure
+
+    <DllImport("ntdll.dll")>
+    Private Function RtlGetVersion(ByRef info As OsVersionInfo) As Integer
+    End Function
+
+    ''' <summary>The real Windows major version, 0 when it cannot be read. Not
+    ''' Environment.OSVersion: the net48 viewer ships without a manifest, and an
+    ''' unmanifested process is told it runs on Windows 8 (6.2) even on Windows 10.</summary>
+    Private Function WindowsMajorVersion() As Integer
+        Try
+            Dim info As New OsVersionInfo()
+            info.Size = Marshal.SizeOf(GetType(OsVersionInfo))
+            If RtlGetVersion(info) = 0 Then Return info.Major
+        Catch
+        End Try
+        Return 0
     End Function
 
     Public Function IsProcessRunning() As Boolean

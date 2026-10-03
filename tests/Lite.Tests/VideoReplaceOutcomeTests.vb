@@ -83,6 +83,26 @@ Public Class VideoReplaceOutcomeTests
                      VideoConvertPlan.DecideEncode(False, 0, True, Big_Enough, 3000, 10, 30, 1500))
     End Sub
 
+    <Fact>
+    Public Sub A_complete_webp_encode_passes_against_the_source_duration_and_fails_against_the_playback_gif()
+        ' 30 frames at 34 ms: true source duration 1020 ms. Playback GIF truncates to 3 cs (900 ms).
+        ' Written output at 33 fps, 34 frames, out_time 1000 ms (written duration ~1030 ms).
+        Dim playbackVerdict As VideoReplaceOutcome = VideoConvertPlan.DecideEncode(
+            False, 0, True, Big_Enough, expectedDurationMs:=900, fps:=33, framesWritten:=34, outTimeMs:=1000)
+        Assert.Equal(VideoReplaceOutcome.OutputIncomplete, playbackVerdict)
+
+        Dim sourceVerdict As VideoReplaceOutcome = VideoConvertPlan.DecideEncode(
+            False, 0, True, Big_Enough, expectedDurationMs:=1020, fps:=33, framesWritten:=34, outTimeMs:=1000)
+        Assert.Equal(VideoReplaceOutcome.EncodedOk, sourceVerdict)
+    End Sub
+
+    <Fact>
+    Public Sub A_gif_duration_is_read_with_ffmpegs_minimum_delay()
+        Dim delays As Integer() = {1, 5, 0, 15}
+        Dim totalMs As Integer = VideoConvertPlan.GifDurationMsAsFfmpegReadsIt(delays)
+        Assert.Equal(400, totalMs)
+    End Sub
+
     ''' <summary>A two-frame, one-second-per-frame GIF: out_time is 1 s for 2 s of animation,
     ''' and that is complete - the tolerance is at least one and a half frames.</summary>
     <Fact>

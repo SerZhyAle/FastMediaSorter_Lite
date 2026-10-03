@@ -354,17 +354,7 @@ Public Class Qr_Zoom_Form
             Return False
         End Try
 
-        For attempt As Integer = 1 To 2
-            Try
-                ' copy:=True flushes the data to the OLE clipboard, so it survives the
-                ' Share Manager closing - and lets the bitmap be disposed right after.
-                Clipboard.SetDataObject(data, True)
-                Return True
-            Catch
-                If attempt = 1 Then Threading.Thread.Sleep(120)
-            End Try
-        Next
-        Return False
+        Return SecureClipboard.TrySetDataObject(data)
     End Function
 
     ''' <summary>Latches the per-window file name at the first save (see <see cref="_fileName"/>).</summary>

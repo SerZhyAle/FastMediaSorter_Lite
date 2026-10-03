@@ -273,6 +273,42 @@ Partial Public NotInheritable Class Localization
             "آرکائیو کا راستہ کلپ بورڈ میں کاپی کر دیا گیا",
             "压缩包路径已复制到剪贴板")
 
+        ' --- extraction progress and the unsupported-format verdict (010 Ф2/Ф3) ------
+        ' Registered here because the shared localization gate flags them for every
+        ' language until the table carries them (LocalizationParityTests).
+        Add("Формат архива не поддерживается ({0})",
+            "Archive format is not supported ({0})",
+            "Формат архіву не підтримується ({0})",
+            "Archivformat wird nicht unterstützt ({0})",
+            "Formato di archivio non supportato ({0})",
+            "Formato de archivo no admitido ({0})",
+            "Format d'archive non pris en charge ({0})",
+            "Formato de pacote não suportado ({0})",
+            "تنسيق الأرشيف غير مدعوم ({0})",
+            "आर्काइव प्रारूप समर्थित नहीं है ({0})",
+            "আর্কাইভ ফরম্যাট সমর্থিত নয় ({0})",
+            "آرکائیو فارمیٹ معاون نہیں ({0})",
+            "不支持的压缩包格式（{0}）")
+        Add("Распаковываю архив: {0} %",
+            "Extracting archive: {0} %", "Розпаковую архів: {0} %",
+            "Archiv wird entpackt: {0} %", "Estrazione dell'archivio: {0} %",
+            "Extrayendo el archivo: {0} %", "Extraction de l'archive : {0} %",
+            "Extraindo o pacote: {0} %", "جارٍ استخراج الأرشيف: {0} %",
+            "आर्काइव निकाला जा रहा है: {0} %", "আর্কাইভ আনজিপ করা হচ্ছে: {0} %",
+            "آرکائیو نکالی جا رہی ہے: {0} %", "正在解压：{0} %")
+        Add("Открыть ZIP, CBZ, 7z, RAR или CBR как папку",
+            "Open ZIP, CBZ, 7z, RAR or CBR as a folder",
+            "Відкрити ZIP, CBZ, 7z, RAR або CBR як папку",
+            "ZIP, CBZ, 7z, RAR oder CBR als Ordner öffnen",
+            "Apri ZIP, CBZ, 7z, RAR o CBR come cartella",
+            "Abrir ZIP, CBZ, 7z, RAR o CBR como carpeta",
+            "Ouvrir ZIP, CBZ, 7z, RAR ou CBR comme un dossier",
+            "Abrir ZIP, CBZ, 7z, RAR ou CBR como pasta",
+            "فتح ZIP أو CBZ أو 7z أو RAR أو CBR كمجلد",
+            "ZIP, CBZ, 7z, RAR या CBR को फ़ोल्डर के रूप में खोलें",
+            "ZIP, CBZ, 7z, RAR বা CBR ফোল্ডার হিসেবে খুলুন",
+            "ZIP، CBZ، 7z، RAR یا CBR کو فولڈر کے طور پر کھولیں",
+            "将 ZIP、CBZ、7z、RAR 或 CBR 作为文件夹打开")
     End Sub
 
 End Class

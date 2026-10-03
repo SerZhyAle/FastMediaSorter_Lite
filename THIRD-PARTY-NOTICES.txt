@@ -149,8 +149,8 @@ Microsoft Edge WebView2 SDK loader (WebView2Loader.dll, 32-bit build only)
   Only in packages built with the 32-bit native trees kept (runtimes\win-x86);
   the default packages trim it.
 
-System.Buffers 4.5.1, System.Memory 4.5.4, System.Numerics.Vectors 4.5.0,
-System.Runtime.CompilerServices.Unsafe 5.0.0 (32-bit build only)
+System.Buffers 4.6.1, System.Memory 4.6.3, System.Numerics.Vectors 4.6.1,
+System.Runtime.CompilerServices.Unsafe 6.1.2 (32-bit build only)
   https://github.com/dotnet/runtime
   License: MIT
   Copyright (c) .NET Foundation and Contributors

@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `ICON-SET`, `ICON-RENDER`, `ICON-EXTERNAL` |
-| **Version** | catalog 0.13 / 0.11 / 0.9, all draft (read 2026-09-24). **Implemented: 0.13 / 0.11 / 0.9** since [ticket 044](../specifications/done/044_SPECIFICATION_ICON_GLYPH_RESYNC.md) |
+| **Version** | catalog 0.17 / 0.15 / 0.11, all draft (re-imported 2026-10-03 with the Settings navigation glyphs; first aligned at 0.13 / 0.11 / 0.9 by [ticket 044](../specifications/done/044_SPECIFICATION_ICON_GLYPH_RESYNC.md)). **Vendored: 0.17 / 0.15 / 0.11** |
 | **Home** | `iconography/README.md` in the shared contracts catalog |
 | **Role here** | consumer - viewer, Share Manager and product site; [specification 027](../specifications/done/027_SPECIFICATION_CONTRACT_SYNC_ICONOGRAPHY.md) |
 

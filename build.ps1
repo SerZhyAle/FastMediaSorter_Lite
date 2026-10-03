@@ -9,6 +9,8 @@
     # By default it is published to bin\ModernPublish and mirrored into a "modern\"
     # subfolder of each deploy target for side-by-side testing with the net48 exe.
     [switch]$SkipModern,
+    # Skip opening the freshly built modern viewer for manual testing.
+    [switch]$SkipLaunch,
     # Skip the final packaging step (tools\Build-Installer.ps1). By default a local
     # build ends by packaging the copy-anywhere offline installer into dist\, so the
     # thing you hand to someone else is never older than the exes you just tested.
@@ -489,4 +491,22 @@ if (-not $SkipServerInstaller) {
     }
 } else {
     Write-Host "Skipping Server edition installer (-SkipServerInstaller)."
+}
+
+# Open the freshly built x64 viewer with the adjacent runtime trees and sidecars.
+# Never launch a previous build when this run skipped publishing the modern viewer.
+if (-not $SkipLaunch -and -not $SkipModern) {
+    $ViewerToLaunch = Join-Path $OutputDir $ExeName
+    try {
+        if (-not (Test-Path -LiteralPath $ViewerToLaunch -PathType Leaf)) {
+            throw "Viewer exe not found: $ViewerToLaunch"
+        }
+        Write-Host "Launching modern viewer for testing: $ViewerToLaunch"
+        Start-Process -FilePath $ViewerToLaunch -WorkingDirectory $OutputDir -ErrorAction Stop
+    } catch {
+        Write-Error "Viewer launch failed: $($_.Exception.Message)"
+        exit 1
+    }
+} else {
+    Write-Host "Skipping viewer launch (-SkipLaunch or -SkipModern)."
 }

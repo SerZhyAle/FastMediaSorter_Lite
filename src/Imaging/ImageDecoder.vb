@@ -28,6 +28,13 @@ Public Interface IImageDecoder
     ''' </summary>
     Function TryGetPixelSize(stream As Stream) As Size
 
+    ''' <summary>
+    ''' True when the decoded Image owns all its pixel data in memory and does not hold onto
+    ''' the input MemoryStream (e.g. ModernImageSharpDecoder). When True, callers may safely
+    ''' dispose the source MemoryStream after decoding.
+    ''' </summary>
+    ReadOnly Property ImageOwnsData As Boolean
+
 End Interface
 
 ''' <summary>

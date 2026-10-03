@@ -61,7 +61,7 @@ Partial Public NotInheritable Class MainWindow
         lblAccessState = New Label With {.AutoSize = True, .MaximumSize = New Size(560, 0), .Margin = New Padding(0, 2, 0, 2)}
         sec.AddBodyRow(lblAccessState)
         lblAccessNext = New Label With {.AutoSize = True, .MaximumSize = New Size(560, 0),
-            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 0, 0, 2)}
+            .ForeColor = ThemeService.Palette.TextMuted, .Margin = New Padding(0, 0, 0, 2)}
         sec.AddBodyRow(lblAccessNext)
 
         btnTest = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
@@ -125,7 +125,7 @@ Partial Public NotInheritable Class MainWindow
         grid.RowCount = row + 1
         grid.RowStyles.Add(New RowStyle(SizeType.AutoSize))
 
-        Dim cap As New Label With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 6, 12, 6), .ForeColor = Color.DimGray, .Text = caption}
+        Dim cap As New Label With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 6, 12, 6), .ForeColor = ThemeService.Palette.TextMuted, .Text = caption}
         ' Fixed-width single-line value cell with ellipsis: a long fingerprint/IPv6 is
         ' truncated (user copies it with the button) instead of wrapping to 3 lines or
         ' pushing the copy button off the edge. Scales with AutoScaleMode.Font.
@@ -151,7 +151,7 @@ Partial Public NotInheritable Class MainWindow
     Private Shared Function AddStatRow(tlp As TableLayoutPanel, caption As String, row As Integer) As Label
         tlp.RowCount = row + 1
         tlp.RowStyles.Add(New RowStyle(SizeType.AutoSize))
-        tlp.Controls.Add(New Label With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 3, 12, 1), .ForeColor = Color.DimGray, .Text = caption}, 0, row)
+        tlp.Controls.Add(New Label With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 3, 12, 1), .ForeColor = ThemeService.Palette.TextMuted, .Text = caption}, 0, row)
         Dim val As New Label With {.AutoSize = True, .MaximumSize = New Size(300, 0), .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 3, 0, 1), .Text = "-"}
         tlp.Controls.Add(val, 1, row)
         Return val
@@ -164,11 +164,9 @@ Partial Public NotInheritable Class MainWindow
         If provider Is Nothing Then Return
         Dim value As String = provider()
         If String.IsNullOrEmpty(value) Then Return
-        Try
-            Clipboard.SetText(value)
+        If SecureClipboard.SetSecret(value) Then
             SetHint(Localization.T("Скопировано в буфер."))
-        Catch
-        End Try
+        End If
     End Sub
 
     ' --- value providers (raw values for copy; display shown in the value cell) -
@@ -344,7 +342,7 @@ Partial Public NotInheritable Class MainWindow
             SetStateGlyph("shareStatusOk")
         Else
             lblState.Text = Localization.T("Раздача выключена")
-            lblState.ForeColor = Color.DimGray
+            lblState.ForeColor = ThemeService.Palette.TextMuted
             SetStateGlyph("shareStatus")
         End If
     End Sub
@@ -414,7 +412,7 @@ Partial Public NotInheritable Class MainWindow
         Else
             _secAccess.Summary = "-"
         End If
-        _secAccess.SummaryColor = SystemColors.GrayText
+        _secAccess.SummaryColor = ThemeService.Palette.TextMuted
 
         Dim reach As WorkerReachability = If(_status IsNot Nothing, _status.Reachability, Nothing)
         If running Then
@@ -428,7 +426,7 @@ Partial Public NotInheritable Class MainWindow
             _secInternet.SummaryColor = AccessStateColor(reach)
         Else
             _secInternet.Summary = "-"
-            _secInternet.SummaryColor = SystemColors.GrayText
+            _secInternet.SummaryColor = ThemeService.Palette.TextMuted
         End If
 
         ' The amber case, and the only auto-expand in the design: the user set something up
@@ -449,7 +447,7 @@ Partial Public NotInheritable Class MainWindow
             Return
         End If
         _secStats.Summary = Localization.TF("{0} подключений, {1} файлов", s.TotalConnections, s.FilesServedTotal)
-        _secStats.SummaryColor = SystemColors.GrayText
+        _secStats.SummaryColor = ThemeService.Palette.TextMuted
     End Sub
 
     ''' <summary>Fills the usage-stats block from the current Status.Stats. The whole section
@@ -573,7 +571,7 @@ Partial Public NotInheritable Class MainWindow
     ''' broken), plain text otherwise: LAN-only is a normal, perfectly usable state and must not
     ''' be painted as a problem just because the internet half is unproven.</summary>
     Private Shared Function AccessStateColor(reach As WorkerReachability) As Color
-        If reach Is Nothing Then Return SystemColors.GrayText
+        If reach Is Nothing Then Return ThemeService.Palette.TextMuted
         If reach.ExternalPortChecked Then
             Return If(reach.ExternalPortOpen, Color.ForestGreen, CollapsibleSection.AttentionColor)
         End If

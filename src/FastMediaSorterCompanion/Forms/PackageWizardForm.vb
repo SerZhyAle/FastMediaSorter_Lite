@@ -728,12 +728,11 @@ Public NotInheritable Class PackageWizardForm
 
     Private Sub OnCopyLogin(sender As Object, e As EventArgs)
         If _status Is Nothing OrElse String.IsNullOrEmpty(_status.Password) Then Return
-        Try
-            Dim user As String = If(String.IsNullOrEmpty(_status.Username), "fms", _status.Username)
-            Clipboard.SetText(Localization.TF("Логин: {0}", user) & Environment.NewLine & Localization.TF("Пароль: {0}", _status.Password))
+        Dim user As String = If(String.IsNullOrEmpty(_status.Username), "fms", _status.Username)
+        Dim text As String = Localization.TF("Логин: {0}", user) & Environment.NewLine & Localization.TF("Пароль: {0}", _status.Password)
+        If SecureClipboard.SetSecret(text) Then
             SetHint(Localization.T("Логин и пароль скопированы."))
-        Catch
-        End Try
+        End If
     End Sub
 
     Private Sub OnShowQr(sender As Object, e As EventArgs)

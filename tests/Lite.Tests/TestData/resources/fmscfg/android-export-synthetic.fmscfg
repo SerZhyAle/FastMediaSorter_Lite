@@ -1,0 +1,1 @@
+{"schemaVersion":2,"resourceName":"Pixel","protocol":"sftp","accessPaths":[{"kind":"lan","host":"192.168.1.50","port":2222}],"username":"phone","password":"","hostKeyFingerprintSha256":"","roots":[{"virtualPath":"/DCIM","label":"DCIM","slideshowInterval":10}],"createdAt":"2026-10-01T09:00:00Z"}

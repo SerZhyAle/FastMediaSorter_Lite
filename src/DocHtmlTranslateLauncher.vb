@@ -23,6 +23,7 @@ Public Module DocHtmlTranslate
     Public Const ExeFileName As String = "doc-html-translate.exe"
     Public Const WingetId As String = "SerZhyAle.DocHtmlTranslate"
     Public Const StorePage As String = "https://apps.microsoft.com/detail/9PMHSWQPR6V1"
+    Public Const ProjectPage As String = "https://github.com/SerZhyAle/doc-html-translate"
 
     ' Cached availability for the UI thread (recomputed off-thread) - FindExe()
     ' touches the filesystem/registry and must not run on every navigation.
@@ -184,28 +185,47 @@ Public Module DocHtmlTranslate
 
     ''' <summary>Runs the winget install for the companion (non-blocking). Callers
     ''' should refresh availability afterwards - but note an already-running process
-    ''' won't see the new PATH; FindExe re-checks the WinGet\Links absolute path.</summary>
-    Public Sub StartWingetInstall()
+    ''' won't see the new PATH; FindExe re-checks the WinGet\Links absolute path.
+    ''' Returns False when the process could not be started at all (no winget: Server,
+    ''' LTSC, Windows 7/8.1, a profile before App Installer registers) - the caller must
+    ''' not tell the user an install is running then (audit 057.S10-3).</summary>
+    Public Function StartWingetInstall() As Boolean
         Try
             Dim args As String = "install --id " & WingetId &
                 " -e --source winget --accept-package-agreements --accept-source-agreements"
             Using started As Process = Process.Start(New ProcessStartInfo("winget", args) With {.UseShellExecute = True})
             End Using
+            Return True
         Catch ex As Exception
-            ' No winget (Server, LTSC, Windows 7/8.1, a profile before App Installer registers):
-            ' the caller's status still says an install is running (audit 057.S10-3).
             AppFileLogger.WriteLine("doc-html-translate: winget install could not start - " & ex.Message)
+            Return False
         End Try
-    End Sub
+    End Function
 
-    Public Sub OpenStorePage()
+    ''' <summary>Opens the Microsoft Store page. False when the shell refused it.</summary>
+    Public Function OpenStorePage() As Boolean
         Try
             Using started As Process = Process.Start(New ProcessStartInfo(StorePage) With {.UseShellExecute = True})
             End Using
+            Return True
         Catch ex As Exception
             AppFileLogger.WriteLine("doc-html-translate: store page could not open - " & ex.Message)
+            Return False
         End Try
-    End Sub
+    End Function
+
+    ''' <summary>Opens the project page - the install route on the x86 fallback's systems
+    ''' (Windows 7/8.1, 32-bit), where there is no Store. False when the shell refused it.</summary>
+    Public Function OpenProjectPage() As Boolean
+        Try
+            Using started As Process = Process.Start(New ProcessStartInfo(ProjectPage) With {.UseShellExecute = True})
+            End Using
+            Return True
+        Catch ex As Exception
+            AppFileLogger.WriteLine("doc-html-translate: project page could not open - " & ex.Message)
+            Return False
+        End Try
+    End Function
 
     ''' <summary>Size budget for the browser-translate cache. Each entry is a whole folder
     ''' (an OCR'd HTML page plus its assets), and because the folder name folds in the source

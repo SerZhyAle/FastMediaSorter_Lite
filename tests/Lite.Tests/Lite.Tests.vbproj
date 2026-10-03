@@ -21,6 +21,7 @@
     <OptionCompare>Binary</OptionCompare>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <DefaultItemExcludes>$(DefaultItemExcludes);ModernAsyncCoreTests.vb;AppendOnlyFileStreamTests.vb;ArchiveSequentialTests.vb;ArgumentProbeOrderingTests.vb;BatchPlanTests.vb;BatchRunnerTests.vb;BatchSelectionTests.vb;BatchUndoTests.vb;ChromeBehaviorTests.vb;ChromeCaptionFitTests.vb;ChromeFoundationTests.vb;CloseDrainTests.vb;CopyDataTransportTests.vb;EndpointResolverTests.vb;EpubMetadataTests.vb;ExternalPlayerPolicyTests.vb;FdSecAuditTests.vb;FileOpCloseFlowTests.vb;FileOpQueueAdmissionTests.vb;FileTypeSelectionTests.vb;FmsConfigReaderTests.vb;FmsImportRulesTests.vb;ImportedSettingsLimitsTests.vb;LifecycleAuditFollowupTests.vb;LogTailSnapshotTests.vb;LoggerOwnershipTests.vb;MailSenderBehaviorTests.vb;MediaKindClassifierTests.vb;MediaKindTests.vb;OllamaTranslatorTests.vb;OpenCoordinationTests.vb;PanelRowsTests.vb;PdfDocumentSourceTests.vb;ProbeSchedulerTests.vb;ResourceFoundationTests.vb;SettingsImportTests.vb;SettingsPersistenceTests.vb;SettingsRegistryParityTests.vb;SftpProviderTests.vb;SftpReadOnlyFixtureTests.vb;ShareActivationPolicyTests.vb;SmbConnectionLeaseTests.vb;TextFileReaderTests.vb;ThumbnailCacheKeyTests.vb;ThumbnailMemoryCacheTests.vb;TransferExecutorTests.vb;WaveParticlesSessionTests.vb</DefaultItemExcludes>
   </PropertyGroup>
 
   <!-- net48 leg: mirrors src/FastMediaSorter.vbproj. SDK-style projects targeting
@@ -38,6 +39,10 @@
        the OCR code mapping the language-naming tests use - does. -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <Reference Include="System.Security" />
+    <!-- OllamaTranslator's net48 branch shares the main project's references: HttpClient
+         and the JavaScriptSerializer JSON reader, as in src/FastMediaSorter.vbproj. -->
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Web.Extensions" />
   </ItemGroup>
 
   <!-- The same project-level imports both viewer vbprojs declare. The linked sources
@@ -122,6 +127,17 @@
     </Compile>
     <Compile Include="..\..\src\Imaging\DecodeCache.vb">
       <Link>Linked\Imaging\DecodeCache.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\EdgeSampler.vb">
+      <Link>Linked\Imaging\EdgeSampler.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\MediaCache.vb">
+      <Link>Linked\MediaCache.vb</Link>
+    </Compile>
+    <!-- The pure half of the live folder list (020 U-04): the placement and reconcile rules,
+         held against a full sort. Whole-file "#If Not NETFRAMEWORK". -->
+    <Compile Include="..\..\src\FolderLiveList.vb">
+      <Link>Linked\FolderLiveList.vb</Link>
     </Compile>
     <!-- "Replace with video" (same specification, §9-§10). Only the PURE half is linked:
          AnimationToVideo spawns a process and Main_Form.ToVideo owns the window, and keeping
@@ -480,6 +496,18 @@
     <Compile Include="..\..\src\Translate\OcrResultPolicy.vb">
       <Link>Linked\Translate\OcrResultPolicy.vb</Link>
     </Compile>
+    <!-- 057.S10-1: a backend that drops mid-run must come back as AllFailed(Other), not throw.
+         Also hosts TranslateHttp, which the other translators share. -->
+    <Compile Include="..\..\src\Translate\OllamaTranslator.vb">
+      <Link>Linked\Translate\OllamaTranslator.vb</Link>
+    </Compile>
+    <!-- 057.S10-4: the OS rule for offering the Ollama installer. -->
+    <Compile Include="..\..\src\Translate\OllamaManager.vb">
+      <Link>Linked\Translate\OllamaManager.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Security\AuthenticodeCheck.vb">
+      <Link>Linked\Security\AuthenticodeCheck.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Ocr\OcrImageScale.vb">
       <Link>Linked\Ocr\OcrImageScale.vb</Link>
     </Compile>
@@ -554,6 +582,11 @@
     <Compile Include="..\..\src\MediaKind.vb">
       <Link>Linked\MediaKind.vb</Link>
     </Compile>
+    <!-- Stream catalog producer and validator (022_SPECIFICATION_PC_STREAM_CATALOG_PRODUCER.md).
+         Pure logic linked so unit tests can prove rules V1..V12 and producer/cli behavior. -->
+    <Compile Include="..\..\src\Streams\*.vb">
+      <Link>Linked\Streams\%(Filename)%(Extension)</Link>
+    </Compile>
   </ItemGroup>
 
   <!-- The catalog's conformance vectors, vendored as ARTIFACTS beside a PROVENANCE.txt
@@ -562,6 +595,7 @@
        letter cannot run for anyone else, which is why they travel with the suite; the
        documents themselves stay in the catalog and are only cited. -->
   <ItemGroup>
+    <None Update="TestData\archives\**" CopyToOutputDirectory="PreserveNewest" />
     <None Include="TestData\fdsec-vectors\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>TestData\fdsec-vectors\%(Filename)%(Extension)</Link>

@@ -26,6 +26,12 @@ Imports System.IO
 Friend NotInheritable Class ModernImageSharpDecoder
     Implements IImageDecoder, IImageDecoderPayload
 
+    Public ReadOnly Property ImageOwnsData As Boolean Implements IImageDecoder.ImageOwnsData
+        Get
+            Return True
+        End Get
+    End Property
+
     Public Function DecodeToImage(stream As MemoryStream) As Image Implements IImageDecoder.DecodeToImage
         Dim payload As DecodedPayload = DecodeToPayload(stream)
         If payload Is Nothing OrElse payload.Bytes Is Nothing Then Return Nothing

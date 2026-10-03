@@ -192,7 +192,7 @@ Partial Public Class Main_Form
             ElseIf TypeOf c Is Label Then
                 c.Font = ui_Font
                 ' Vertically centre the (shorter) label text within the row.
-                c.Margin = New Padding(4, Math.Max(1, (row_H - c.PreferredSize.Height) \ 2), 4, 0)
+                c.Margin = New Padding(0, Math.Max(1, (row_H - c.PreferredSize.Height) \ 2), 4, 0)
             ElseIf TypeOf c Is CheckBox Then
                 c.Font = ui_Font
                 c.Margin = New Padding(2, 2, 6, 2)   ' always-on-top: pinned top-left

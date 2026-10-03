@@ -1,0 +1,63 @@
+{
+  "extensions": [
+    ".md",
+    ".html"
+  ],
+  "ignore": [
+    {
+      "prefix": "packages/",
+      "reason": "Vendored dependencies"
+    },
+    {
+      "prefix": "bin/",
+      "reason": "Build output"
+    },
+    {
+      "prefix": "obj/",
+      "reason": "Build output"
+    },
+    {
+      "prefix": "dist/",
+      "reason": "Release output"
+    },
+    {
+      "prefix": "stage/",
+      "reason": "Release staging"
+    },
+    {
+      "prefix": "payload/",
+      "reason": "Vendored runtime payload"
+    },
+    {
+      "prefix": "docs/specifications/",
+      "reason": "Owner-local ignored planning queue"
+    },
+    {
+      "prefix": "demo/",
+      "reason": "Sample and demo resources"
+    }
+  ],
+  "localSpecificationLinks": "forbidden",
+  "extraFiles": [
+    "robots.txt",
+    "sitemap.xml"
+  ],
+  "ignoredDirectoryNames": [
+    {
+      "name": "bin",
+      "reason": "Generated build or release output at any depth"
+    },
+    {
+      "name": "obj",
+      "reason": "Generated build or release output at any depth"
+    },
+    {
+      "name": "dist",
+      "reason": "Generated build or release output at any depth"
+    },
+    {
+      "name": "stage",
+      "reason": "Generated build or release output at any depth"
+    }
+  ]
+}

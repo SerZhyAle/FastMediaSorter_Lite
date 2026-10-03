@@ -386,7 +386,12 @@ Partial Public Class Main_Form
             Dim cached As OcrOverlayDocument = ocr_Cache.TryGetMemory(key)
             Dim fromDisk As Boolean = False
             If cached Is Nothing AndAlso diskCacheAllowed Then
-                cached = ocr_Cache.TryLoadFromDisk(key)
+                ' Awaited on the pool (057.S11-2): the read and parse of a document - and, below,
+                ' the plate-colour backfill of one the x86 viewer wrote - used to run on the UI
+                ' thread and stutter the window on T. ConfigureAwait(False) keeps everything
+                ' after this on the pool too; the memory-hit path above stays synchronous, and
+                ' every UI touch downstream already marshals (SetStatusOnUi, ApplyOnUi).
+                cached = Await Task.Run(Function() ocr_Cache.TryLoadFromDisk(key), token).ConfigureAwait(False)
                 fromDisk = cached IsNot Nothing
             End If
             ' Boxes in another grid than the one on screen are not this picture's plates,

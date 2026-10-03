@@ -198,11 +198,30 @@ Partial Public Class Main_Form
 
         Select Case result
             Case DialogResult.Yes
-                DocHtmlTranslate.StartWingetInstall()
-                SetOcrStatus(Localization.T("Устанавливаю doc-html-translate.. после установки откройте меню снова"))
+                If DocHtmlTranslate.StartWingetInstall() Then
+                    SetOcrStatus(Localization.T("Устанавливаю doc-html-translate.. после установки откройте меню снова"))
+                Else
+                    OfferInstallPageInstead()
+                End If
             Case DialogResult.No
-                DocHtmlTranslate.OpenStorePage()
+                If Not DocHtmlTranslate.OpenStorePage() Then
+                    SetOcrStatus(Localization.T("Не удалось открыть страницу doc-html-translate"))
+                End If
         End Select
+    End Sub
+
+    ''' <summary>winget would not start (audit 057.S10-3): say so, and open the page the user
+    ''' can install from by hand - the Store page, or on the x86 fallback, which serves
+    ''' systems with no Store, the project page.</summary>
+    Private Sub OfferInstallPageInstead()
+#If NETFRAMEWORK Then
+        Dim opened As Boolean = DocHtmlTranslate.OpenProjectPage()
+        Dim note As String = Localization.T("winget не запустился - открываю страницу проекта doc-html-translate")
+#Else
+        Dim opened As Boolean = DocHtmlTranslate.OpenStorePage()
+        Dim note As String = Localization.T("winget не запустился - открываю страницу doc-html-translate в магазине приложений")
+#End If
+        SetOcrStatus(If(opened, note, Localization.T("Не удалось открыть страницу doc-html-translate")))
     End Sub
 
     ' --- companion icon -------------------------------------------------------

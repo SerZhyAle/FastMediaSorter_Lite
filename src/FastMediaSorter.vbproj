@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\ILMerge.3.0.41\build\ILMerge.props" Condition="Exists('..\packages\ILMerge.3.0.41\build\ILMerge.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -133,16 +133,16 @@
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Buffers">
-      <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
+      <HintPath>..\packages\System.Buffers.4.6.1\lib\net462\System.Buffers.dll</HintPath>
     </Reference>
     <Reference Include="System.Memory">
-      <HintPath>..\packages\System.Memory.4.5.4\lib\net461\System.Memory.dll</HintPath>
+      <HintPath>..\packages\System.Memory.4.6.3\lib\net462\System.Memory.dll</HintPath>
     </Reference>
     <Reference Include="System.Numerics.Vectors">
-      <HintPath>..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+      <HintPath>..\packages\System.Numerics.Vectors.4.6.1\lib\net462\System.Numerics.Vectors.dll</HintPath>
     </Reference>
     <Reference Include="System.Runtime.CompilerServices.Unsafe">
-      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.5.0.0\lib\net45\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.1.2\lib\net462\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
     <Reference Include="SixLabors.ImageSharp">
       <HintPath>..\packages\SixLabors.ImageSharp.2.1.13\lib\net472\SixLabors.ImageSharp.dll</HintPath>
@@ -358,6 +358,12 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.MediaCache.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MediaCache.vb" />
+    <Compile Include="Imaging\EdgeSampler.vb" />
     <Compile Include="OcrTranslateSettings.vb" />
     <Compile Include="AutoSkipPolicy.vb" />
     <!-- Ticket 047: the pure rename / list-stamp rules and the input guards (Ctrl/Alt gate,
@@ -371,6 +377,7 @@
     <Compile Include="SlideshowOrder.vb" />
     <Compile Include="NavigationRules.vb" />
     <Compile Include="FolderScan.vb" />
+    <Compile Include="FolderLiveList.vb" />
     <!-- Ticket 086 (audit 057 S01-6): one running display decode per path, handed over
          rather than duplicated, with a cap on the abandoned ones. Pure, both builds. -->
     <Compile Include="InFlightDecodeRegistry.vb" />
@@ -450,6 +457,10 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Main_Form.ImageMenu.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.FolderWatch.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Main_Form.FolderMenu.vb">
@@ -607,6 +618,32 @@
          tables above; the theme itself is .NET 10 only, so the four Theming files compile
          to nothing here. -->
     <Compile Include="Localization\Localization.Theme.vb" />
+    <!-- Specs 003 (PK) and 005 (PG), tickets 103/105/108: the newer string tables.
+         Compiled here too, like the tables above: each project that compiles the
+         registry must compile every table it calls, or the shared constructor fails
+         with BC30451, which is the right failure. -->
+    <Compile Include="Localization\Localization.SortableContent.vb" />
+    <Compile Include="Localization\Localization.Panel.vb" />
+    <Compile Include="Localization\Localization.Activation.vb" />
+    <Compile Include="Localization\Localization.SettingsImport.vb" />
+    <Compile Include="Localization\Localization.Streams.vb" />
+    <!-- Stream catalog producer (022_SPECIFICATION_PC_STREAM_CATALOG_PRODUCER.md). Every
+         file is whole-file "#If Not NETFRAMEWORK" except StreamCatalogCli which provides
+         the switch refusal on net48. Listed so the two file sets stay identical. -->
+    <Compile Include="Streams\StreamCatalogSchema.vb" />
+    <Compile Include="Streams\StreamCatalogRow.vb" />
+    <Compile Include="Streams\StreamRefusal.vb" />
+    <Compile Include="Streams\StreamIdentity.vb" />
+    <Compile Include="Streams\M3uPlaylistReader.vb" />
+    <Compile Include="Streams\StreamCsvWriter.vb" />
+    <Compile Include="Streams\StreamCatalogValidator.vb" />
+    <Compile Include="Streams\StreamCatalogReport.vb" />
+    <Compile Include="Streams\StreamCatalogProducer.vb" />
+    <Compile Include="Streams\StreamCatalogCli.vb" />
+    <Compile Include="Main_Form.Streams.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Theming\ThemePalette.vb" />
     <Compile Include="Theming\ThemeApplier.vb" />
     <Compile Include="Theming\ThemedMenuRenderer.vb" />
@@ -694,16 +731,16 @@
     <EmbeddedResource Include="..\packages\SixLabors.ImageSharp.2.1.13\lib\net472\SixLabors.ImageSharp.dll">
       <LogicalName>FmsPayloadmanaged/SixLabors.ImageSharp.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll">
+    <EmbeddedResource Include="..\packages\System.Buffers.4.6.1\lib\net462\System.Buffers.dll">
       <LogicalName>FmsPayloadmanaged/System.Buffers.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\packages\System.Memory.4.5.4\lib\net461\System.Memory.dll">
+    <EmbeddedResource Include="..\packages\System.Memory.4.6.3\lib\net462\System.Memory.dll">
       <LogicalName>FmsPayloadmanaged/System.Memory.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll">
+    <EmbeddedResource Include="..\packages\System.Numerics.Vectors.4.6.1\lib\net462\System.Numerics.Vectors.dll">
       <LogicalName>FmsPayloadmanaged/System.Numerics.Vectors.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\packages\System.Runtime.CompilerServices.Unsafe.5.0.0\lib\net45\System.Runtime.CompilerServices.Unsafe.dll">
+    <EmbeddedResource Include="..\packages\System.Runtime.CompilerServices.Unsafe.6.1.2\lib\net462\System.Runtime.CompilerServices.Unsafe.dll">
       <LogicalName>FmsPayloadmanaged/System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\assets\flags\*.png">

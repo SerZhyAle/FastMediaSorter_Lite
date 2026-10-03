@@ -26,6 +26,7 @@ Partial Public Class Main_Form
     Private folder_Menu_Open_Archive_Item As ToolStripMenuItem
     Private folder_Menu_Close_Archive_Item As ToolStripMenuItem
     Private folder_Menu_Share_Item As ToolStripMenuItem
+    Private folder_Menu_StreamCatalog_Item As ToolStripMenuItem
     Private folder_Combo_Edit_Hook As ComboEditContextMenuHook
 
     <DllImport("user32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
@@ -65,7 +66,16 @@ Partial Public Class Main_Form
             AddHandler folder_Menu_Share_Item.Click, Sub() ActivateShareEntryPoint()
             folder_Context_Menu.Items.Add(folder_Menu_Share_Item)
 
-            AddHandler folder_Context_Menu.Opening, Sub() folder_Menu_Close_Archive_Item.Visible = IsArchiveMode()
+            folder_Menu_StreamCatalog_Item = New ToolStripMenuItem()
+            AddHandler folder_Menu_StreamCatalog_Item.Click, Sub() BuildStreamCatalogViaDialog()
+            folder_Context_Menu.Items.Add(folder_Menu_StreamCatalog_Item)
+
+            AddHandler folder_Context_Menu.Opening,
+                Sub()
+                    folder_Menu_Close_Archive_Item.Visible = IsArchiveMode()
+                    folder_Menu_Share_Item.Visible = Not IsArchiveMode() AndAlso Not IsArchiveOpenPending()
+                    folder_Menu_StreamCatalog_Item.Visible = Not IsArchiveMode() AndAlso Not IsArchiveOpenPending()
+                End Sub
 
             ' The label answers a right-click by itself, so the plain assignment works
             ' there. The combo needs the hook below.
@@ -116,7 +126,7 @@ Partial Public Class Main_Form
 
         If folder_Menu_Open_Archive_Item IsNot Nothing Then
             folder_Menu_Open_Archive_Item.Text = Localization.T("Открыть архив..")
-            folder_Menu_Open_Archive_Item.ToolTipText = Localization.T("Открыть ZIP или CBZ как папку")
+            folder_Menu_Open_Archive_Item.ToolTipText = Localization.T("Открыть ZIP, CBZ, 7z, RAR или CBR как папку")
         End If
 
         If folder_Menu_Close_Archive_Item IsNot Nothing Then
@@ -129,6 +139,11 @@ Partial Public Class Main_Form
             ' other end is the Android one, and a tablet is not a phone.
             folder_Menu_Share_Item.Text = Localization.T("Поделиться этой папкой с Android..")
             folder_Menu_Share_Item.ToolTipText = Localization.T("Открыть Share Manager и раздать эту папку на Android")
+        End If
+
+        If folder_Menu_StreamCatalog_Item IsNot Nothing Then
+            folder_Menu_StreamCatalog_Item.Text = Localization.T("Собрать каталог потоков (.zip)..")
+            folder_Menu_StreamCatalog_Item.ToolTipText = Localization.T("Создать stream-catalog.zip из плейлистов в этой папке")
         End If
     End Sub
 

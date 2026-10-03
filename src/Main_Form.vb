@@ -52,7 +52,14 @@ Public Class Main_Form
     ' arguments) finds this instance already running: "bring your window back".
     ' Colons make it impossible to collide with a real path.
     Friend Const Show_Window_Command As String = "::fms-show-window::"
-    Private Const max_Number_Of_Files_For_List As Integer = 100000 'after - the array without sorting
+#If NETFRAMEWORK Then
+    Private Const max_Number_Of_Files_For_List As Integer = 100000 'after - the array without sorting (x86: a 32-bit process)
+#Else
+    ' Mainline: a guard against an absurd folder, not a sorting limit - past it the list is an array,
+    ' still sorted (020 section 4). Above 100 000 files the limit used to hand back the file-system
+    ' order while the sort box kept naming the one the user had chosen.
+    Private Const max_Number_Of_Files_For_List As Integer = 2000000
+#End If
     Private Const height_For_instruments_on_WebPanel As String = "45"
     Private Const percent_of_second_Color_Point = 20
     Private Const step_size_while_color_Search = 100
@@ -119,6 +126,19 @@ Public Class Main_Form
     Private zoom_Scale As Single = 1.0F
     Private smoothIndex As Double = 0.0006
 
+    ''' <summary>True when the media surface is at Fit - no free zoom: left clicks
+    ''' navigate, drag pans, and (modern) the perspective bars may show. Legacy reads
+    ''' its zoom_Scale arithmetic; the modern build reads the viewport state (spec 012
+    ''' §4.1, where the zoom_Scale = 0 flag no longer exists).</summary>
+    Private Function MediaIsAtFit() As Boolean
+#If Not NETFRAMEWORK Then
+        Return Not zoom_Mode_Free
+#Else
+        Return zoom_Scale = 1.0F
+#End If
+    End Function
+
+
     ' Add these missing variable declarations near the top of the class:
     'Private Current_File_Name As String = ""
     'Private Current_Image_Path As String = ""
@@ -153,7 +173,7 @@ Public Class Main_Form
             pending_Single_Click_Event = Nothing
 
             ' Only call MouseUse if not in zoom mode or not left button
-            If zoom_Scale = 1 OrElse delayed_Event.Button <> MouseButtons.Left Then
+            If MediaIsAtFit() OrElse delayed_Event.Button <> MouseButtons.Left Then
                 MouseUse(delayed_Event)
             End If
 

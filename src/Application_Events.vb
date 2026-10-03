@@ -1,4 +1,4 @@
-﻿Imports Microsoft.VisualBasic.ApplicationServices
+Imports Microsoft.VisualBasic.ApplicationServices
 Imports System.Windows.Forms
 Imports System.Runtime.InteropServices
 Imports System.Threading
@@ -216,6 +216,25 @@ Namespace My
 
         Private Sub MyApplication_Startup(sender As Object, e As StartupEventArgs) Handles Me.Startup
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-1: MyApplication_Startup")
+
+            ' Spec 022 §7.1: Intercept stream catalog CLI switches BEFORE the single-instance
+            ' mutex is created or inspected, so CLI operations never forward to a running viewer
+            ' window or disturb running GUI instances.
+            Dim rawCmdArgs As String() = e.CommandLine.ToArray()
+#If NETFRAMEWORK Then
+            If Streams.StreamCatalogCli.IsCatalogCommandLine(rawCmdArgs) Then
+                Streams.StreamCatalogCli.RefuseNetFramework()
+                e.Cancel = True
+                Return
+            End If
+#Else
+            If Streams.StreamCatalogCli.IsCatalogCommandLine(rawCmdArgs) Then
+                Dim exitCode As Integer = Streams.StreamCatalogCli.Run(rawCmdArgs)
+                Environment.ExitCode = exitCode
+                e.Cancel = True
+                Return
+            End If
+#End If
 
             ' VB's IsSingleInstance only works for same exe-path launches. The named
             ' mutex is path-independent (catches debug vs release, a renamed copy, and

@@ -79,6 +79,21 @@ Friend Module ZoomMath
     End Function
 
     ''' <summary>
+    ''' Не даёт увести бокс целиком за пределы панели: те же 100 px, что
+    ''' гарантирует AnchoredBounds - одно правило на шаг зума и на drag.
+    ''' </summary>
+    Friend Function ClampPan(location As Point, boxSize As Size, panelSize As Size) As Point
+        ' The strip can never exceed the box itself: an image zoomed down to a handful
+        ' of pixels would otherwise be shoved away from the panel edge to satisfy a
+        ' 100 px promise it is too small to keep.
+        Dim keepX As Integer = Math.Min(Keep_Visible_Px, boxSize.Width)
+        Dim keepY As Integer = Math.Min(Keep_Visible_Px, boxSize.Height)
+        Dim clampedX As Integer = Math.Max(Math.Min(location.X, panelSize.Width - keepX), -boxSize.Width + keepX)
+        Dim clampedY As Integer = Math.Max(Math.Min(location.Y, panelSize.Height - keepY), -boxSize.Height + keepY)
+        Return New Point(clampedX, clampedY)
+    End Function
+
+    ''' <summary>
     ''' The box the image gets at <paramref name="factor"/>, placed so the pixel under
     ''' <paramref name="anchorOnPanel"/> does not move - the whole point of zooming at
     ''' the cursor. Then nudged so a grabbable strip stays on screen (a large image can
@@ -92,16 +107,69 @@ Friend Module ZoomMath
         Dim newLeft As Integer = CInt(Math.Round(anchorOnPanel.X - fraction.X * newWidth))
         Dim newTop As Integer = CInt(Math.Round(anchorOnPanel.Y - fraction.Y * newHeight))
 
-        ' The strip can never exceed the box itself: an image zoomed down to a handful
-        ' of pixels would otherwise be shoved away from the panel edge to satisfy a
-        ' 100 px promise it is too small to keep.
-        Dim keepX As Integer = Math.Min(Keep_Visible_Px, newWidth)
-        Dim keepY As Integer = Math.Min(Keep_Visible_Px, newHeight)
-        newLeft = Math.Max(Math.Min(newLeft, panelSize.Width - keepX), -newWidth + keepX)
-        newTop = Math.Max(Math.Min(newTop, panelSize.Height - keepY), -newHeight + keepY)
+        Dim clamped As Point = ClampPan(New Point(newLeft, newTop), New Size(newWidth, newHeight), panelSize)
 
-        Return New Rectangle(newLeft, newTop, newWidth, newHeight)
+        Return New Rectangle(clamped.X, clamped.Y, newWidth, newHeight)
     End Function
+
+    ''' <summary>
+    ''' The rectangle the WHOLE image occupies on the panel at Fit: letterboxed exactly
+    ''' the way PictureBox.SizeMode = Zoom letterboxes it, centered with bars on the two
+    ''' longer sides. At Fit this is also the displayed-image rectangle the OCR overlay
+    ''' and the perspective background take, so all three agree on one definition.
+    ''' </summary>
+    Friend Function FitBounds(imageWidth As Integer, imageHeight As Integer, panelSize As Size) As Rectangle
+        If imageWidth <= 0 OrElse imageHeight <= 0 OrElse panelSize.Width <= 0 OrElse panelSize.Height <= 0 Then
+            Return Rectangle.Empty
+        End If
+
+        Dim scale As Double = Math.Min(1.0R, Math.Min(panelSize.Width / CDbl(imageWidth), panelSize.Height / CDbl(imageHeight)))
+        Dim width As Integer = Math.Max(1, Math.Min(panelSize.Width, CInt(Math.Round(imageWidth * scale))))
+        Dim height As Integer = Math.Max(1, Math.Min(panelSize.Height, CInt(Math.Round(imageHeight * scale))))
+
+        Return New Rectangle((panelSize.Width - width) \ 2, (panelSize.Height - height) \ 2, width, height)
+    End Function
+
+    ''' <summary>
+    ''' The paint pair for the viewport (spec 012 §5): which part of the native image
+    ''' (<paramref name="srcRect"/>) is visible through the panel, drawn into which part
+    ''' of the panel (<paramref name="destRect"/>). <paramref name="imageBounds"/> is the
+    ''' rectangle the WHOLE image occupies in panel coordinates - larger than the panel
+    ''' while zoomed, letterboxed inside it at Fit. Both come back Empty when nothing
+    ''' would be drawn, which doubles as the "no viewport" signal to the picture box.
+    ''' </summary>
+    Friend Sub ComputeViewport(imageBounds As Rectangle, imageWidth As Integer, imageHeight As Integer,
+                               panelSize As Size, ByRef destRect As Rectangle, ByRef srcRect As Rectangle)
+        destRect = Rectangle.Empty
+        srcRect = Rectangle.Empty
+        If imageWidth <= 0 OrElse imageHeight <= 0 OrElse panelSize.Width <= 0 OrElse panelSize.Height <= 0 OrElse
+           imageBounds.Width <= 0 OrElse imageBounds.Height <= 0 Then Return
+
+        ' Round the visible source strip OUTWARD, then derive the destination back from
+        ' the clamped strip: clipping one rect without the other would stretch the image.
+        Dim scaleX As Double = imageWidth / CDbl(imageBounds.Width)
+        Dim scaleY As Double = imageHeight / CDbl(imageBounds.Height)
+
+        Dim srcLeft As Integer = Math.Max(0, Math.Min(imageWidth, CInt(Math.Floor(-imageBounds.X * scaleX))))
+        Dim srcTop As Integer = Math.Max(0, Math.Min(imageHeight, CInt(Math.Floor(-imageBounds.Y * scaleY))))
+        Dim srcRight As Integer = Math.Max(0, Math.Min(imageWidth, CInt(Math.Ceiling((panelSize.Width - imageBounds.X) * scaleX))))
+        Dim srcBottom As Integer = Math.Max(0, Math.Min(imageHeight, CInt(Math.Ceiling((panelSize.Height - imageBounds.Y) * scaleY))))
+        If srcRight <= srcLeft OrElse srcBottom <= srcTop Then Return
+
+        Dim invX As Double = imageBounds.Width / CDbl(imageWidth)
+        Dim invY As Double = imageBounds.Height / CDbl(imageHeight)
+        Dim dest As New Rectangle(CInt(Math.Floor(imageBounds.X + srcLeft * invX)),
+                                  CInt(Math.Floor(imageBounds.Y + srcTop * invY)),
+                                  CInt(Math.Ceiling((srcRight - srcLeft) * invX)),
+                                  CInt(Math.Ceiling((srcBottom - srcTop) * invY)))
+
+        destRect = Rectangle.Intersect(dest, New Rectangle(Point.Empty, panelSize))
+        If destRect.Width <= 0 OrElse destRect.Height <= 0 Then
+            destRect = Rectangle.Empty
+            Return
+        End If
+        srcRect = New Rectangle(srcLeft, srcTop, srcRight - srcLeft, srcBottom - srcTop)
+    End Sub
 
 End Module
 #End If

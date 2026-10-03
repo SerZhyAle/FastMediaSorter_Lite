@@ -1,0 +1,3 @@
+Synthetic fixtures created for specification 008; no third-party content.
+48-pages.pdf: 48 portrait pages, Helvetica labels and a black rectangle.
+password.pdf: one page, PDF Standard R2 encryption; user password preview, owner owner.

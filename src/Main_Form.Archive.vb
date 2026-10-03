@@ -21,6 +21,30 @@ Imports System.Windows.Forms
 Partial Public Class Main_Form
 
     Private archive_Session As ArchiveSession
+    Private archive_Pending_Session As ArchiveSession
+    Private archive_Open_Generation As Long
+
+    Friend Function IsArchiveOpenPending() As Boolean
+        Return archive_Pending_Session IsNot Nothing
+    End Function
+
+    Friend Sub CancelPendingArchiveOpen()
+        archive_Open_Generation += 1
+        Dim pending = archive_Pending_Session
+        archive_Pending_Session = Nothing
+        If pending Is Nothing Then Return
+        pending.Dispose()
+        ArchiveTempStore.DeleteSession(pending.TempRoot)
+        ApplyArchiveModeUi()
+    End Sub
+
+    Private Sub ApplyArchiveModeUi()
+        Dim active As Boolean = IsArchiveMode() OrElse IsArchiveOpenPending()
+        SetToolbarItemHidden(btn_Rename, active)
+        SetToolbarItemHidden(bt_Delete, active)
+        ApplyRecipientsOverlayHealth()
+        LayoutToolbar()
+    End Sub
 
     ''' <summary>
     ''' The folder the archive itself lives in. Two jobs: it is where "close the archive"
@@ -79,11 +103,13 @@ Partial Public Class Main_Form
     ''' Opens an archive as if it were a folder. Every entry point - drag and drop, a
     ''' command line, a second instance - arrives here through ProcessArgument.
     ''' </summary>
-    Friend Sub EnterArchive(archivePath As String)
+    Friend Async Sub EnterArchive(archivePath As String)
         LeaveArchive()
         SlideShowStop()
 
         Dim sessionDir As String = ""
+        Dim session As ArchiveSession = Nothing
+        Dim generation As Long = archive_Open_Generation
         Try
             ' Only now, not at startup: someone who never opens an archive should not pay
             ' for a directory walk (§4.5).
@@ -94,15 +120,15 @@ Partial Public Class Main_Form
             ' Keep every built-in media entry in the session. The navigation kind filter
             ' is applied when rows are built, so turning video or audio back on can reveal
             ' entries without reopening the archive.
-            Dim session As New ArchiveSession(archivePath, sessionDir,
+            session = New ArchiveSession(archivePath, sessionDir,
                                               AddressOf ArchiveSupportsExtension,
                                               maxEntries)
 
             If session.UnsupportedKind.Length > 0 Then
-                ' A RAR or 7z wearing a .zip/.cbz name (audit 052 G-15).
+                ' Content detects unsupported containers even behind an admitted extension.
                 session.Dispose()
                 ArchiveTempStore.DeleteSession(sessionDir)
-                lbl_Status.Text = Localization.TF("Это не ZIP-архив ({0}) - такие архивы пока не поддерживаются", session.UnsupportedKind)
+                lbl_Status.Text = Localization.TF("Формат архива не поддерживается ({0})", session.UnsupportedKind)
                 Return
             End If
 
@@ -120,37 +146,69 @@ Partial Public Class Main_Form
                 Return
             End If
 
-            archive_Session = session
-            archive_Return_Folder = If(Path.GetDirectoryName(archivePath), "")
-
-            ' The folder box shows the ARCHIVE, never the temporary directory (§2.2) - the
-            ' user is browsing D:\scans\1998.cbz and that is what the address must say.
-            Current_Folder_Path = archivePath
-            is_TextBox_Editing = True
-            cmbox_Media_Folder.Text = archivePath
-            is_TextBox_Editing = False
-
-            current_File_Index = 0
-            Current_File_Name = ""
-            Current_Image_Path = ""
-            is_External_Input_Received = False
-            was_External_Input_Previously = False
-
-            ReadShowMediaFile(Mode_FolderAndFile)
-
-            Dim opened As String = Localization.TF("Архив: {0} файлов", session.Entries.Count.ToString())
-            If session.WasTruncated Then
-                opened &= "  " & Localization.TF("Показаны первые {0} записей", maxEntries.ToString())
+            If session.NeedsSequentialPass Then
+                archive_Pending_Session = session
+                ApplyArchiveModeUi()
+                Dim prefs = GetModernPreferences()
+                Dim maxEntryBytes As Long = CLng(prefs.ArchiveMaxEntryMb) * 1024L * 1024L
+                Dim maxCacheBytes As Long = CLng(prefs.ArchiveCacheMaxMb) * 1024L * 1024L
+                Dim report As IProgress(Of Integer) = New Progress(Of Integer)(
+                    Sub(percent)
+                        If generation = archive_Open_Generation AndAlso archive_Pending_Session Is session Then
+                            lbl_Status.Text = Localization.TF("Распаковываю архив: {0} %", percent)
+                        End If
+                    End Sub)
+                lbl_Status.Text = Localization.TF("Распаковываю архив: {0} %", 0)
+                Dim outcome = Await Threading.Tasks.Task.Run(
+                    Function() session.RunSequentialPass(maxEntryBytes, maxCacheBytes, Sub(percent) report.Report(percent)))
+                If generation <> archive_Open_Generation Then Return
+                archive_Pending_Session = Nothing
+                If outcome <> ArchiveSession.PassOutcome.Completed Then
+                    session.Dispose()
+                    ArchiveTempStore.DeleteSession(sessionDir)
+                    ApplyArchiveModeUi()
+                    If outcome = ArchiveSession.PassOutcome.Broken Then lbl_Status.Text = Localization.T("Не удалось прочитать архив")
+                    Return
+                End If
             End If
-            lbl_Status.Text = opened
+            CompleteEnterArchive(session, archivePath, maxEntries)
         Catch ex As Exception
             AppFileLogger.LogException("Archive: opening " & archivePath, ex)
-            Dim failed As ArchiveSession = archive_Session
-            archive_Session = Nothing
-            If failed IsNot Nothing Then failed.Dispose()
+            If generation <> archive_Open_Generation Then Return
+            archive_Pending_Session = Nothing
+            If archive_Session Is session Then archive_Session = Nothing
+            If session IsNot Nothing Then session.Dispose()
+            ApplyArchiveModeUi()
             If sessionDir.Length > 0 Then ArchiveTempStore.DeleteSession(sessionDir)
             lbl_Status.Text = Localization.T("Не удалось прочитать архив")
         End Try
+    End Sub
+
+    Private Sub CompleteEnterArchive(session As ArchiveSession, archivePath As String, maxEntries As Integer)
+        archive_Session = session
+        archive_Return_Folder = If(Path.GetDirectoryName(archivePath), "")
+
+        ' The folder box shows the ARCHIVE, never the temporary directory (§2.2) - the
+        ' user is browsing D:\scans\1998.cbz and that is what the address must say.
+        Current_Folder_Path = archivePath
+        is_TextBox_Editing = True
+        cmbox_Media_Folder.Text = archivePath
+        is_TextBox_Editing = False
+
+        current_File_Index = 0
+        Current_File_Name = ""
+        Current_Image_Path = ""
+        is_External_Input_Received = False
+        was_External_Input_Previously = False
+
+        ReadShowMediaFile(Mode_FolderAndFile)
+
+        Dim opened As String = Localization.TF("Архив: {0} файлов", session.Entries.Count.ToString())
+        If session.WasTruncated Then
+            opened &= "  " & Localization.TF("Показаны первые {0} записей", maxEntries.ToString())
+        End If
+        lbl_Status.Text = If(archive_Refused_Path.Length > 0, archive_Refused_Text, opened)
+        ApplyArchiveModeUi()
     End Sub
 
     ' ------------------------------------------------------------------- leaving ----
@@ -166,6 +224,7 @@ Partial Public Class Main_Form
     ''' orphan sweep rather than reported - the disk gets clean either way.
     ''' </summary>
     Friend Sub LeaveArchive()
+        CancelPendingArchiveOpen()
         If archive_Session Is Nothing Then Return
 
         Dim sessionDir As String = archive_Session.TempRoot
@@ -186,6 +245,7 @@ Partial Public Class Main_Form
         archive_Refused_Path = ""
 
         ArchiveTempStore.DeleteSession(sessionDir)
+        ApplyArchiveModeUi()
     End Sub
 
     ''' <summary>
@@ -195,6 +255,7 @@ Partial Public Class Main_Form
     ''' A-13/G-06): the typed folder was then listed with the ARCHIVE's pages in it.
     ''' </summary>
     Friend Sub LeaveArchiveUnlessShowing(typedPath As String)
+        If IsArchiveOpenPending() Then CancelPendingArchiveOpen()
         If archive_Session Is Nothing Then Return
         If String.Equals(If(typedPath, "").Trim(), archive_Session.ArchiveFilePath, StringComparison.OrdinalIgnoreCase) Then Return
         LeaveArchive()
@@ -241,6 +302,18 @@ Partial Public Class Main_Form
         Dim index As Integer = archive_Session.IndexOfTempPath(filePath)
         If index < 0 Then Return
 
+        Dim protectedPaths As New List(Of String) From {filePath}
+        Dim navigation As IList(Of String) = If(is_Files_Array_Active,
+            DirectCast(files_Array, IList(Of String)), files_List)
+        If navigation IsNot Nothing AndAlso navigation.Count > 0 Then
+            Dim row As Integer = navigation.IndexOf(filePath)
+            If row >= 0 Then
+                protectedPaths.Add(navigation((row + navigation.Count - 1) Mod navigation.Count))
+                protectedPaths.Add(navigation((row + 1) Mod navigation.Count))
+            End If
+        End If
+        archive_Session.ProtectDisplayedEntries(protectedPaths)
+
         Dim prefs As ModernViewerPreferences = GetModernPreferences()
         Dim maxEntryBytes As Long = CLng(prefs.ArchiveMaxEntryMb) * 1024L * 1024L
         Dim maxCacheBytes As Long = CLng(prefs.ArchiveCacheMaxMb) * 1024L * 1024L
@@ -253,6 +326,7 @@ Partial Public Class Main_Form
 
         archive_Refused_Path = filePath
         archive_Refused_Text = ArchiveRefusalText(refusal, archive_Session.Entries(index))
+        AppFileLogger.WriteLine("Archive: " & archive_Session.Entries(index).EntryName & " - " & archive_Refused_Text)
         lbl_Status.Text = archive_Refused_Text
     End Sub
 
@@ -315,8 +389,7 @@ Partial Public Class Main_Form
     ''' <summary>
     ''' The folder box menu's "Open archive.." entry (§2.1 point 4, §12 Ф4). Filtered to
     ''' what the viewer can actually open today (ArchiveEntryFilter.Openable_Extensions) -
-    ''' 7z/RAR/CBR are containers the viewer already recognizes but cannot read yet (Ф2),
-    ''' so offering them in this dialog would be a filter that lies. Delegates to
+    ''' ZIP/CBZ, 7z and RAR/CBR. Delegates to
     ''' ProcessArgument, the one ingress for a concrete path (invariant already relied on
     ''' by Choose_file()): it already recognizes an archive extension and routes to
     ''' EnterArchive, so picking one here is exactly like picking a picture.
@@ -327,8 +400,9 @@ Partial Public Class Main_Form
             Dim archiveExtensions As String = String.Join(";",
                 ArchiveEntryFilter.Openable_Extensions.Select(Function(ext) "*" & ext))
             dialog.Filter = Localization.T("Архивы") & "|" & archiveExtensions
-            dialog.InitialDirectory = If(String.IsNullOrEmpty(Current_Folder_Path),
-                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), Current_Folder_Path)
+            Dim folder As String = If(IsArchiveMode(), archive_Return_Folder, Current_Folder_Path)
+            dialog.InitialDirectory = If(String.IsNullOrEmpty(folder),
+                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), folder)
             dialog.Title = Localization.T("Открыть архив..")
             If dialog.ShowDialog(Me) = DialogResult.OK Then
                 ProcessArgument(dialog.FileName)

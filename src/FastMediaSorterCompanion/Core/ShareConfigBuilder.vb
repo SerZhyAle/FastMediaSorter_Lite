@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Globalization
@@ -385,8 +385,10 @@ Public Module ShareConfigBuilder
     ''' silently - the file is still written (ticket 034 phase 1).
     ''' </summary>
     Public Sub WriteConfigFile(path As String, json As String)
-        File.WriteAllText(path, json, New UTF8Encoding(False))
-        RestrictToCurrentUser(path)
+        Dim outcome As ConfigWriteOutcome = ProtectedConfigWriter.Publish(path, json)
+        If outcome <> ConfigWriteOutcome.Saved Then
+            Throw New ConfigWriteRefusedException(outcome)
+        End If
     End Sub
 
     ''' <summary>Owner-only ACL on <paramref name="path"/>. False when the file system has no

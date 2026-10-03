@@ -44,8 +44,10 @@ trap {
 # source of truth; adding a mapped meaning means adding it here as well.
 $glyphIds = @(
     'action.add', 'action.copy', 'action.crop', 'action.delete', 'action.download', 'action.edit',
-    'action.refresh', 'action.rename', 'action.search', 'action.share', 'action.translate',
-    'app.settings', 'content.apps', 'content.image', 'content.video', 'device.phone',
+    'action.extract-text', 'action.refresh', 'action.rename', 'action.search', 'action.send-to',
+    'action.share', 'action.translate',
+    'app.info', 'app.settings', 'content.apps', 'content.audio', 'content.folder', 'content.image',
+    'content.video', 'device.phone', 'view.screen',
     'media.exit-fullscreen', 'media.fullscreen', 'media.mute', 'media.next', 'media.pause',
     'media.play', 'media.previous', 'media.random', 'media.slideshow', 'media.volume',
     'nav.collapse', 'nav.expand', 'nav.more', 'nav.scroll-top', 'source.recent',

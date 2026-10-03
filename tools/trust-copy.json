@@ -64,7 +64,7 @@
   },
   "ru": {
     "title": "Почему Windows предупреждает об этой загрузке",
-    "desc": "Что означает предупреждение SmartScreen при установке Fast Media Sorter для Windows, почему оно появляется, на что именно нажать и чего программа не делает никогда.",
+    "desc": "Что означает предупреждение SmartScreen при установке Fast Media Sorter для Windows, почему оно появляется, на что именно нажать и чего программа не делает.",
     "intro": "Fast Media Sorter для Windows - небольшая бесплатная программа одного независимого разработчика. Сборки, опубликованные на GitHub (их же ставит и winget), не подписаны сертификатом, поэтому Windows относится к ним настороженно, и вы можете увидеть одно-два предупреждения. Ниже - что это за предупреждения, почему они появляются, на что именно нажать и чего программа не делает никогда.",
     "sections": [
       {
@@ -126,7 +126,7 @@
   },
   "uk": {
     "title": "Чому Windows попереджає про це завантаження",
-    "desc": "Що означає попередження SmartScreen під час встановлення Fast Media Sorter для Windows, чому воно з'являється, на що саме натиснути і чого програма не робить ніколи.",
+    "desc": "Що означає попередження SmartScreen під час встановлення Fast Media Sorter для Windows, чому воно з'являється, на що саме натиснути і чого програма не робить.",
     "intro": "Fast Media Sorter для Windows - невелика безкоштовна програма одного незалежного розробника. Збірки, опубліковані на GitHub (їх же встановлює і winget), не підписані сертифікатом, тому Windows ставиться до них обережно, і ви можете побачити одне-два попередження. Нижче - що це за попередження, чому вони з'являються, на що саме натиснути і чого програма не робить ніколи.",
     "sections": [
       {
@@ -374,7 +374,7 @@
   },
   "fr": {
     "title": "Pourquoi Windows met en garde à propos de ce téléchargement",
-    "desc": "Ce que signifie l'avertissement SmartScreen pour Fast Media Sorter pour Windows, pourquoi il apparaît, sur quoi cliquer exactement et ce que le programme ne fait jamais.",
+    "desc": "Ce que signifie l'avertissement SmartScreen pour Fast Media Sorter pour Windows, pourquoi il apparaît, sur quoi cliquer et ce que le programme ne fait jamais.",
     "intro": "Fast Media Sorter pour Windows est un petit logiciel gratuit écrit par un seul développeur indépendant. Les versions publiées sur GitHub, celles qu'installe aussi winget, ne sont pas signées, Windows les traite donc avec une prudence particulière et vous verrez peut-être un ou deux avertissements. Voici ce qu'est chacun d'eux, pourquoi il apparaît, sur quoi cliquer exactement et ce que le programme ne fait jamais.",
     "sections": [
       {

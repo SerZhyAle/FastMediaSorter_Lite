@@ -522,3 +522,20 @@ dcc066e; найдено и **ИСПРАВЛЕНО** (коммит см. журн
   net10.0-windows inbox (NU1510); на net10 корневой namespace `Windows.` затенён -
   писать `System.Windows.Forms.`; `Debug.Listeners` нет на .NET -> Trace.Listeners;
   WebpFrameMetadata.FrameDelay (мс, uint) vs GifFrameMetadata.FrameDelay (сс, int).
+
+### Сессия - 2026-10-03: С9, остаток (У-04 живой список, У-05 сортировка больших папок)
+- Реализовано по [020_SPECIFICATION_VIEWER_CORE_S9_MODERN_FOLDER.md](../specifications/020_SPECIFICATION_VIEWER_CORE_S9_MODERN_FOLDER.md) (раздел 8 там): `src/FolderLiveList.vb`
+  (чистая логика, тесты `FolderLiveListTests`) + `src/Main_Form.FolderWatch.vb`; обе сборки собираются,
+  юнит-сьюты зелёные (Viewer net48 459 + net10 1206, Share Manager 282).
+- Замер памяти и времени сортировки (синтетика, строки вида `\\p7\_i\output\C\sub\IMG_..._N.jpg`,
+  `OrderBy(FileName)` со сравнением по культуре, как в `GetFiles`; x64, PowerShell 7 / .NET 10):
+  | файлов | строки скана (FileEntry) | список путей после сортировки | OrderBy + ToList | OrderBy + ToArray |
+  |---|---|---|---|---|
+  | 100 000 | ~20 МБ | ~0 МБ | 263 мс | 187 мс |
+  | 500 000 | ~102 МБ | ~3 МБ | 873 мс | 1019 мс |
+  Вывод: порог 100k в mainline можно снять (пик ~100 МБ на 500k строк, сортировка ~1 с, и это на UI-потоке,
+  пока скан не вынесен в фон - см. §0.1 С11); защитный максимум 2 000 000 (~400 МБ строк).
+- Смоук реального окна (Debug-сборка в scratchpad, реестр владельца сохранён и восстановлен байт в байт):
+  открыт файл папки из 6 картинок; скопированы 3 новых -> `live folder list +3 -0, now 9`; удалён не показанный
+  файл -> `+0 -1, now 8`; созданный пустым и затем заполненный файл -> `+1 -0, now 9`; `.txt` проигнорирован.
+- Не проверено: приёмка на сетевой шаре (`\\szamedia\common` ещё не поднята, `\\p7` не отвечал), `.\build.ps1` целиком.

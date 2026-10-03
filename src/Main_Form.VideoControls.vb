@@ -520,6 +520,13 @@ Partial Public Class Main_Form
             MyBase.OnMouseUp(e)
         End Sub
 
+        Protected Overrides Sub OnMouseCaptureChanged(e As EventArgs)
+            If _dragging AndAlso Not Capture Then
+                _dragging = False
+            End If
+            MyBase.OnMouseCaptureChanged(e)
+        End Sub
+
     End Class
 
 End Class

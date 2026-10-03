@@ -1,0 +1,69 @@
+{
+  "_comment": [
+    "The site termbase (DOC-EXTERNAL-QUALITY rule 4, ticket 059): the few terms this",
+    "corpus must keep consistent, checked against the rendered pages by",
+    "tools/Test-SiteQuality.ps1. 'stems' are accepted substrings per locale,",
+    "case-insensitive, inflection-tolerant ('олучател' covers получатели/получателя);",
+    "a term's approved form must appear somewhere in the pages of its scope for each",
+    "locale that has pages there. 'forbidden' substrings must not appear in those pages",
+    "at all. 'everyPage' terms must hit on every public page, title text included.",
+    "Scope 'lang' looks at the two pages of each locale under lang/; scope 'guides'",
+    "looks at the eight English task guides, whose RU spans carry the Russian text.",
+    "The product name of the Android reader app is FastMediaSorter - one word - and is",
+    "a legitimate string on publish-folders-android.html, so it is not forbidden here."
+  ],
+
+  "locales": ["en", "ru", "uk", "de", "it", "es", "fr", "pt", "ar", "hi", "bn", "ur", "zh"],
+
+  "terms": [
+    {
+      "id": "product-name",
+      "everyPage": ["Fast Media Sorter"],
+      "forbidden": {}
+    },
+    {
+      "id": "share-manager",
+      "scope": "lang",
+      "stems": {
+        "en": ["Share Manager"],
+        "ru": ["Менеджер общего доступа", "Менеджере общего доступа", "Share Manager"],
+        "uk": ["Менеджер спільного доступу", "Менеджері спільного доступу", "Share Manager"],
+        "de": ["Share Manager"],
+        "it": ["Share Manager"],
+        "es": ["Share Manager"],
+        "fr": ["Share Manager"],
+        "pt": ["Share Manager"],
+        "ar": ["Share Manager"],
+        "hi": ["Share Manager"],
+        "bn": ["Share Manager"],
+        "ur": ["Share Manager"],
+        "zh": ["Share Manager"]
+      },
+      "forbidden": {
+        "ru": ["Диспетчер общего доступа"],
+        "uk": ["Диспетчер спільного доступу"]
+      }
+    },
+    {
+      "id": "destination-folder",
+      "scope": "guides",
+      "stems": {
+        "en": ["estination folder"],
+        "ru": ["олучател"]
+      },
+      "forbidden": {}
+    },
+    {
+      "id": "hotkeys",
+      "scope": "guides",
+      "stems": {
+        "en": ["NumPad"],
+        "ru": ["NumPad"]
+      },
+      "forbidden": {
+        "ru": ["Шифт", "НумПад"],
+        "uk": ["Шифт", "НумПад"]
+      }
+    }
+  ]
+}

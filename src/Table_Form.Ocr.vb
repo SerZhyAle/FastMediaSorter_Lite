@@ -75,6 +75,9 @@ Partial Public Class Table_Form
     Private chkOcrOverlayVisible As CheckBox
     Private chkOcrDisk As CheckBox
     Private lblOcrStatus As Label
+    ''' <summary>Modern shell only: the status line of the OCR page, next to the download button
+    ''' (the shared <see cref="lblOcrStatus"/> is reparented onto the Translation page).</summary>
+    Private lblOcrRecognitionStatus As Label
 
     ' --- public hooks called by Table_Form / Main_Form ------------------------
 
@@ -622,6 +625,13 @@ Partial Public Class Table_Form
             Return
         End If
 
+        ' Nothing is offered that cannot run here: the x86 fallback's systems (32-bit Windows,
+        ' Windows 7/8.1) cannot start Ollama's installer (audit 057.S10-4).
+        If Not OllamaManager.IsSupportedOs() Then
+            lblOcrStatus.Text = Localization.T("Ollama требует 64-разрядную Windows 10 или новее - на этом компьютере его не установить.")
+            Return
+        End If
+
         Dim confirm As String = Localization.T("Скачать и установить Ollama? Это несколько сотен МБ, загрузка может занять время.")
         If MessageBox.Show(Me, confirm, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
 
@@ -658,7 +668,12 @@ Partial Public Class Table_Form
             ' deleted and the download page opened instead.
             If OllamaManager.IsGenuineInstaller(installerPath) Then
                 lblOcrStatus.Text = Localization.T("Запуск установщика Ollama..")
-                OllamaManager.RunInstaller(installerPath)
+                If Not OllamaManager.RunInstaller(installerPath) Then
+                    ' A declined UAC prompt or an antivirus block: the status must not keep
+                    ' saying the installer is starting (audit 057.S10-4).
+                    lblOcrStatus.Text = Localization.T("Не удалось запустить установщик Ollama - открываю сайт Ollama..")
+                    OllamaManager.OpenWebPage()
+                End If
             Else
                 OllamaManager.DiscardInstaller(installerPath)
                 lblOcrStatus.Text = Localization.T("Установщик Ollama не прошёл проверку подписи - открываю сайт Ollama..")
@@ -756,8 +771,9 @@ Partial Public Class Table_Form
         Dim tessLangs As String = OcrTranslateSettings.TessLanguages(srcCode)
 
         Dim preferBest As Boolean = (cmbOcrQuality.SelectedIndex = 1)
+        SetRecognitionStatus("")
         If Not Await OptionalRuntimeManager.EnsureOcrRuntimeInteractiveAsync(Me) Then
-            lblOcrStatus.Text = Localization.T("OCR-движок не установлен.")
+            SetRecognitionStatus(Localization.T("OCR-движок не установлен."))
             Return
         End If
 
@@ -766,32 +782,39 @@ Partial Public Class Table_Form
         ' pack already on disk is reported, not downloaded again (APP-BEHAVIOUR rule 5).
         Dim missing As List(Of String) = TesseractOcrEngine.MissingLanguageCodes(TesseractOcrEngine.DownloadLanguageCodes(tessLangs), preferBest)
         If missing.Count = 0 Then
-            lblOcrStatus.Text = Localization.TF("Уже установлено: пакет {0}", tessLangs)
+            SetRecognitionStatus(Localization.TF("Уже установлено: пакет {0}", tessLangs))
             Return
         End If
         Dim ok As Boolean = Await OptionalRuntimeManager.DownloadWithDialogAsync(
             Me, Localization.T("Языковые пакеты OCR"),
             Function(p, t) TesseractOcrEngine.DownloadLanguagesAsync(missing, preferBest, p, t))
         If Not ok Then
-            lblOcrStatus.Text = ""
+            SetRecognitionStatus("")
             Return
         End If
 #Else
         SetOcrBusy(True)
-        lblOcrStatus.Text = Localization.T("Скачивание языкового пакета: ") & tessLangs
+        SetRecognitionStatus(Localization.T("Скачивание языкового пакета: ") & tessLangs)
         Dim ok As Boolean = False
         Try
             ok = Await Task.Run(Function() TesseractOcrEngine.EnsureLanguagesPublic(tessLangs, preferBest))
         Catch ex As Exception
             AppFileLogger.LogException("OCR settings: download", ex)
-            lblOcrStatus.Text = FailureText.Describe(ex)
+            SetRecognitionStatus(FailureText.Describe(ex))
         End Try
         SetOcrBusy(False)
 #End If
 
-        lblOcrStatus.Text = If(ok,
+        SetRecognitionStatus(If(ok,
             Localization.T("Готово: пакет ") & tessLangs,
-            Localization.T("Не удалось скачать (нет сети?)"))
+            Localization.T("Не удалось скачать (нет сети?)")))
+    End Sub
+
+    ''' <summary>The recognition (OCR pack) status: the shared line, plus - in the modern shell,
+    ''' where that line sits on another page - the one beside the download button (057.S10-2).</summary>
+    Private Sub SetRecognitionStatus(text As String)
+        lblOcrStatus.Text = text
+        If lblOcrRecognitionStatus IsNot Nothing Then lblOcrRecognitionStatus.Text = text
     End Sub
 
     ' --- language combo helpers ----------------------------------------------

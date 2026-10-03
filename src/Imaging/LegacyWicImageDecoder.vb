@@ -18,6 +18,12 @@ Imports System.Windows.Media.Imaging
 Friend NotInheritable Class LegacyWicImageDecoder
     Implements IImageDecoder
 
+    Public ReadOnly Property ImageOwnsData As Boolean Implements IImageDecoder.ImageOwnsData
+        Get
+            Return False
+        End Get
+    End Property
+
     Public Function DecodeToImage(stream As MemoryStream) As Image Implements IImageDecoder.DecodeToImage
         Try
             Return LoadBitmapViaWic(stream)

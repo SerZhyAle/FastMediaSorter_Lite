@@ -1,0 +1,64 @@
+{
+  "_comment": [
+    "Freshness record for the translated site copy (DOC-EXTERNAL-QUALITY rule 3, ticket 059).",
+    "Per locale, the fingerprint of the ENGLISH copy (site-copy.json and trust-copy.json)",
+    "that locale's translation was last made from, stamped by",
+    "  pwsh -NoProfile -File tools\\Test-SiteQuality.ps1 -Record",
+    "Test-SiteQuality reports a locale whose record no longer matches the current English",
+    "as stale, by name. Re-translate the named locales first - batching the fan-out to the",
+    "release boundary is allowed - then re-record. Never edit the hashes by hand."
+  ],
+  "recorded": "2026-10-01",
+  "siteFingerprint": "98d530833967a20f",
+  "trustFingerprint": "fdb658d6ff3bd1e3",
+  "locales": {
+    "ru": {
+      "site": "98d530833967a20f",
+      "trust": "fdb658d6ff3bd1e3"
+    },
+    "uk": {
+      "site": "98d530833967a20f",
+      "trust": "fdb658d6ff3bd1e3"
+    },
+    "de": {
+      "site": "98d530833967a20f",
+      "trust": "fdb658d6ff3bd1e3"
+    },
+    "it": {
+      "site": "98d530833967a20f",
+      "trust": "fdb658d6ff3bd1e3"
+    },
+    "es": {
+      "site": "98d530833967a20f",
+      "trust": "fdb658d6ff3bd1e3"
+    },
+    "fr": {
+      "site": "98d530833967a20f",
+      "trust": "fdb658d6ff3bd1e3"
+    },
+    "pt": {
+      "site": "98d530833967a20f",
+      "trust": "fdb658d6ff3bd1e3"
+    },
+    "ar": {
+      "site": "98d530833967a20f",
+      "trust": "fdb658d6ff3bd1e3"
+    },
+    "hi": {
+      "site": "98d530833967a20f",
+      "trust": "fdb658d6ff3bd1e3"
+    },
+    "bn": {
+      "site": "98d530833967a20f",
+      "trust": "fdb658d6ff3bd1e3"
+    },
+    "ur": {
+      "site": "98d530833967a20f",
+      "trust": "fdb658d6ff3bd1e3"
+    },
+    "zh": {
+      "site": "98d530833967a20f",
+      "trust": "fdb658d6ff3bd1e3"
+    }
+  }
+}

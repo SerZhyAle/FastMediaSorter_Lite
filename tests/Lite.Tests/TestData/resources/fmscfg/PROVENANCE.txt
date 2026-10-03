@@ -1,0 +1,23 @@
+FMSCFG interchange fixtures - vendored artifacts, not a vendored contract
+========================================================================
+
+canonical-v1.fmscfg, canonical-v2.fmscfg
+  The two canonical vectors of the FMSCFG contract (catalog: config-interchange/CONFIG_FORMAT.md,
+  document version 2.1, read 2026-10-02). Extracted VERBATIM from the contract's own code fences by
+  script, byte for byte, no trailing newline. They are the shared bytes the parser is pinned to; they
+  must never be regenerated from this repository's serializer.
+
+android-export-synthetic.fmscfg, companion-export-synthetic.fmscfg
+  SYNTHETIC. Written by hand to the SHAPE the Android response 101 section 11 describes (one root, one
+  lan path, schemaVersion 2, readOnly omitted, slideshowInterval written, password and fingerprint empty)
+  and the Share Manager's own producer (readOnly written on every root, a destination with readOnly:true
+  and isDestination:true, an ipv6 path, an accessNote). Dummy credentials and documentation addresses
+  (RFC 5737 / 3849) only. They are not captures from a named build; a live Android export remains a manual
+  acceptance item.
+
+SHA-256
+-------
+2b7aa660c0744a667d5a1d7382fe0e682b2df33c38ce7c78d7163a88b553e105  android-export-synthetic.fmscfg
+fbaeb3572266c1f94084dbc4a28f3887dbba77cb2d5d33157f115175a2c9a56f  canonical-v1.fmscfg
+cbf71972f466629eb1d7249640a92290288064de22cbb6b1e38a82afe0cac10c  canonical-v2.fmscfg
+4e0c8ea9b1d113afd079d16a9ad29c602ede6eca697d0708ab52af37d79d2df4  companion-export-synthetic.fmscfg

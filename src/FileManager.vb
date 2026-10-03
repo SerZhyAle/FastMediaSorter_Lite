@@ -54,6 +54,10 @@ Public Module FileManager
                 If source_Bytes Is Nothing Then Return Nothing
                 ms = New IO.MemoryStream(source_Bytes)
                 nextImage = ImageDecoderProvider.Current.DecodeToImage(ms)
+                If ImageDecoderProvider.Current.ImageOwnsData AndAlso ms IsNot Nothing Then
+                    ms.Dispose()
+                    ms = Nothing
+                End If
 #Else
                 ' The one modern-only branch of this function
                 ' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §3.1).

@@ -22,6 +22,18 @@ Public Class PlaybackRulesTests
         Assert.False(PlaybackRules.EffectiveRepeat(False, True, "next", "repeat"))
         Assert.False(PlaybackRules.EffectiveRepeat(False, False, "next", "nextFile"))
         Assert.False(PlaybackRules.EffectiveRepeat(False, True, "stay", "stay"))
+        ' In slideshow mode, repeat is always disabled (У-09)
+        Assert.False(PlaybackRules.EffectiveRepeat(True, False, "repeat", "repeat", isSlideshow:=True))
+        Assert.False(PlaybackRules.EffectiveRepeat(False, True, "repeat", "repeat", isSlideshow:=True))
+    End Sub
+
+    <Fact>
+    Public Sub Slideshow_video_fallback_timeout_is_at_least_60_seconds_and_5_seconds_past_duration()
+        Assert.Equal(60000, PlaybackRules.SlideshowVideoFallbackTimeoutMs(0))
+        Assert.Equal(60000, PlaybackRules.SlideshowVideoFallbackTimeoutMs(10000))
+        Assert.Equal(60000, PlaybackRules.SlideshowVideoFallbackTimeoutMs(55000))
+        Assert.Equal(65000, PlaybackRules.SlideshowVideoFallbackTimeoutMs(60000))
+        Assert.Equal(185000, PlaybackRules.SlideshowVideoFallbackTimeoutMs(180000))
     End Sub
 
     <Fact>
@@ -98,6 +110,21 @@ Public Class PlaybackRulesTests
         sleep.TrackStarted(1000, 1, automatic:=True)
         Assert.True(sleep.IsArmed)
         Assert.True(sleep.IsDue(61000, 1))
+    End Sub
+
+    <Fact>
+    Public Sub Leaving_audio_lets_the_next_slideshow_step_start_fresh()
+        Dim sleep As New SleepDeadline()
+        sleep.TrackStarted(0, 1, automatic:=False)
+        Assert.True(sleep.IsArmed)
+        sleep.Disarm()
+        Assert.False(sleep.IsArmed)
+
+        ' Later automatic start (slideshow or end-action) arms fresh from nowMs
+        sleep.TrackStarted(120000, 1, automatic:=True)
+        Assert.True(sleep.IsArmed)
+        Assert.False(sleep.IsDue(120000 + 59000, 1))
+        Assert.True(sleep.IsDue(120000 + 60000, 1))
     End Sub
 
     ' --- D-11: watched to the end opens from the start --------------------------------

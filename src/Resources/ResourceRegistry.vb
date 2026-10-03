@@ -3,6 +3,7 @@ Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Globalization
+Imports System.IO
 Imports System.Linq
 Imports System.Text.Json
 Imports System.Text.Json.Serialization
@@ -29,6 +30,12 @@ Friend NotInheritable Class ResourceDescriptor
     ''' still have the last word.</summary>
     Public Property ReadOnlyHint As Boolean
     Public Property SecretHandle As String = ""
+
+    ''' <summary>Fields a newer build wrote that this one does not know, kept as they came:
+    ''' a read-edit-save carries them through unchanged, so saving here never forgets what
+    ''' another build added (057.S07-9, canon invariant 10).</summary>
+    <JsonExtensionData>
+    Public Property UnknownFields As New Dictionary(Of String, JsonElement)()
 End Class
 
 ''' <summary>
@@ -102,17 +109,46 @@ End Module
 ''' The persisted list of resources: JSON in the SZA\FastMediaSorter hive, next to the other
 ''' modern preferences (006 PV-2). The pure half - parsing and serialising - is what the
 ''' tests hold; the registry half is two calls.
+'''
+''' A stored value this build cannot fully read back is user-authored data (canon invariant
+''' 10): <see cref="Save(IEnumerable(Of ResourceDescriptor), Func(Of String, String), Action(Of String, String))"/>
+''' copies it aside before overwriting, and refuses to save over it at all when a different
+''' copy is already aside (057.S07-9) - so the first resource a newer build's user adds never
+''' erases a list an older build could not read.
 ''' </summary>
 Friend Module ResourceRegistry
 
     Private Const Value_Name As String = "Resources"
+    Private Const Backup_Name As String = "Resources.bak"
 
     Friend Function Load() As List(Of ResourceDescriptor)
         Return Parse(Microsoft.VisualBasic.Interaction.GetSetting(App_name, Second_App_Name, Value_Name, "[]"))
     End Function
 
     Friend Sub Save(resources As IEnumerable(Of ResourceDescriptor))
-        Microsoft.VisualBasic.Interaction.SaveSetting(App_name, Second_App_Name, Value_Name, Serialize(resources))
+        Save(resources,
+             Function(name) CStr(Microsoft.VisualBasic.Interaction.GetSetting(App_name, Second_App_Name, name, "")),
+             Sub(name, value) Microsoft.VisualBasic.Interaction.SaveSetting(App_name, Second_App_Name, name, value))
+    End Sub
+
+    ''' <summary>
+    ''' Saves the list through the caller's registry seam. A stored value that would not
+    ''' survive <see cref="Parse"/> - damaged, not the shape of a list, an entry the registry
+    ''' must not hold, a duplicate id - is copied to <c>Resources.bak</c> FIRST (057.S07-9):
+    ''' if a DIFFERENT copy is already there, the save is refused outright rather than
+    ''' destroy the only other copy of the user's list.
+    ''' </summary>
+    Friend Sub Save(resources As IEnumerable(Of ResourceDescriptor),
+                    readValue As Func(Of String, String), writeValue As Action(Of String, String))
+        Dim raw As String = If(readValue(Value_Name), "")
+        If Not String.IsNullOrWhiteSpace(raw) AndAlso Not SurvivesParse(raw) Then
+            Dim backup As String = If(readValue(Backup_Name), "")
+            If backup.Length > 0 AndAlso Not String.Equals(backup, raw, StringComparison.Ordinal) Then
+                Throw New IOException("The stored resource list could not be read; it was left untouched.")
+            End If
+            writeValue(Backup_Name, raw)
+        End If
+        writeValue(Value_Name, Serialize(resources))
     End Sub
 
     ''' <summary>
@@ -138,6 +174,32 @@ Friend Module ResourceRegistry
             result.Add(item)
         Next
         Return result
+    End Function
+
+    ''' <summary>Would <see cref="Parse"/> keep every entry of this stored value? Unknown
+    ''' FIELDS are fine - they ride along on the descriptor - but a value that is not a
+    ''' list, or holds an entry the registry would drop (not storable, or a duplicate id),
+    ''' would come back shorter, and the next save would forget what was dropped.</summary>
+    Private Function SurvivesParse(raw As String) As Boolean
+        Dim seen As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(raw)
+                If doc.RootElement.ValueKind <> JsonValueKind.Array Then Return False
+                For Each element As JsonElement In doc.RootElement.EnumerateArray()
+                    Dim candidate As ResourceDescriptor
+                    Try
+                        candidate = JsonSerializer.Deserialize(Of ResourceDescriptor)(element)
+                    Catch
+                        Return False
+                    End Try
+                    If Not IsStorable(candidate) Then Return False
+                    If Not seen.Add(candidate.Id) Then Return False
+                Next
+            End Using
+        Catch
+            Return False
+        End Try
+        Return True
     End Function
 
     Friend Function Serialize(resources As IEnumerable(Of ResourceDescriptor)) As String

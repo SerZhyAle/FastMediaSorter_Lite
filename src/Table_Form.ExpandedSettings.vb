@@ -47,6 +47,7 @@ Partial Public Class Table_Form
 
         AddSectionHeader(viewing, "section_accessibility")
         AddInterfaceScaleRow(viewing, p)
+        AddPreferenceCheck(viewing, "toolbar_always_visible", p.ToolbarAlwaysVisible, Sub(v) p.ToolbarAlwaysVisible = v)
         AddPreferenceChoice(viewing, "new_image_scale", p.NewImageScaleMode,
                             {Choice("fit", "Вписать"), Choice("actual", "100 %"), Choice("perFolder", "Запоминать для папки")},
                             Sub(v) p.NewImageScaleMode = v)

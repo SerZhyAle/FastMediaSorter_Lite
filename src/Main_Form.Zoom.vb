@@ -8,31 +8,36 @@ Imports System.Windows.Forms
 ' The x86 viewer keeps the historical mechanics untouched (the spec freezes it), so
 ' this whole file compiles to nothing there.
 '
-' WHY THIS IS A SEPARATE LAYER: the input handlers (wheel, NumPad) call the small API
-' below - ZoomToFit / ZoomToActualSize / ZoomStepAt - and never touch geometry
-' themselves. Zoom is still *expressed* the historical way (resizing the picture
-' boxes; SizeMode = Zoom scales the image inside), because the perspective background
-' and the OCR overlay both re-derive their geometry from that box rectangle and stay
-' aligned for free. Swapping to a viewport/srcRect model (Ф-Z3) means reimplementing
-' ApplyZoomFactor + CurrentZoomFactor ONLY - the input layer above does not move.
+' RENDERING (spec §5): zoom and pan are a viewport. current_ImageBounds is the
+' rectangle the WHOLE image occupies on panel_Media - letterboxed inside it at Fit,
+' larger than it while zoomed. HqPictureBox paints only the visible strip:
+' ZoomMath.ComputeViewport turns the bounds into a SourceRect (native image pixels)
+' drawn into a DestRect (panel pixels). The picture boxes stay panel-sized always,
+' so SyncMediaSurface never competes with the zoom, there is no box geometry to
+' swap, and the perspective background and the OCR overlay re-derive their geometry
+' from DisplayedImageRectangleOnPanel - the one rectangle everything agrees on.
 '
-' STATE, and why zoom_Scale is set the way it is: the shared code checks
-' `zoom_Scale = 1` for "fit" (left click navigates, no panning) and
-' `zoom_Scale = 0 OrElse zoom_Scale > 1` for "zoomed" (drag pans, click does not
-' navigate). So here zoom_Scale carries exactly two meanings - 1 = fit, 0 = zoomed -
-' and the real scale lives in zoom_Factor. That also fixes a historical bug: the old
-' Ctrl+wheel wrote the raw product into zoom_Scale, so zooming OUT (0.9, 0.81..)
-' landed below 1 and silently killed panning and click-delegation.
+' STATE: zoom_Mode_Free separates Fit from Free, and zoom_Factor carries the absolute
+' scale against the image's native pixels (1.0 = 100 %). The historical zoom_Scale
+' triple semantics (1 = fit / 0 = 1:1 flag / >1 = free) are gone from the modern
+' build: zoom_Scale stays at 1 here and only the x86 build still writes it. Shared
+' code that only needs "is this fitted?" reads MediaIsAtFit() (Main_Form.vb).
 '
-' The arithmetic itself (fit / clamp / snap / step / anchor) lives in ZoomMath.vb as
-' pure functions so it can be tested; what stays here is the WinForms glue that reads
-' panel_Media and moves the boxes.
+' The arithmetic itself (fit / clamp / snap / step / anchor / viewport) lives in
+' ZoomMath.vb as pure functions so it can be tested; what stays here is the WinForms
+' glue that reads panel_Media and feeds the boxes.
 Partial Public Class Main_Form
 
     ''' <summary>Live scale relative to the image's native pixels (1.0 = 100 %).
-    ''' Only meaningful while zoom_Scale = 0 (free zoom); at Fit the effective scale
-    ''' is derived from the panel, see CurrentZoomFactor.</summary>
+    ''' At Fit the effective scale is derived from the panel, see CurrentZoomFactor.</summary>
     Private zoom_Factor As Double = 1.0
+
+    ''' <summary>False at Fit; True once the user has zoomed or panned freely.</summary>
+    Private zoom_Mode_Free As Boolean = False
+
+    ''' <summary>Where the whole image sits on panel_Media right now (panel
+    ''' coordinates). Empty while at Fit - Fit derives it from the panel on demand.</summary>
+    Private current_ImageBounds As Rectangle = Rectangle.Empty
 
     ''' <summary>The image currently on screen, or Nothing when none/video.</summary>
     Private Function ActiveMediaImage() As Image
@@ -55,7 +60,7 @@ Partial Public Class Main_Form
     Private Function CurrentZoomFactor() As Double
         Dim img As Image = ActiveMediaImage()
         If img Is Nothing Then Return 1.0
-        If zoom_Scale = 1 Then Return FitFactorFor(img)   ' at Fit the panel decides
+        If Not zoom_Mode_Free Then Return FitFactorFor(img)   ' at Fit the panel decides
         Return zoom_Factor
     End Function
 
@@ -77,10 +82,19 @@ Partial Public Class Main_Form
     End Function
 
     ''' <summary>
+    ''' The image's rectangle in panel coordinates as painted right now: the viewport
+    ''' bounds while zoomed, the SizeMode = Zoom letterbox at Fit. The one rectangle
+    ''' the zoom anchor, the OCR overlay and the perspective background all agree on.
+    ''' </summary>
+    Private Function DisplayedImageRectangleOnPanel(img As Image) As Rectangle
+        If img Is Nothing OrElse panel_Media Is Nothing Then Return Rectangle.Empty
+        If zoom_Mode_Free Then Return current_ImageBounds
+        Return ZoomMath.FitBounds(img.Width, img.Height, panel_Media.ClientSize)
+    End Function
+
+    ''' <summary>
     ''' Puts the media at an absolute scale, keeping the point under
-    ''' <paramref name="anchorOnPanel"/> visually still. Geometry: the boxes are sized
-    ''' to the image's own aspect (factor x native), so SizeMode = Zoom maps them 1:1
-    ''' with no inner letterbox and the displayed scale IS the factor.
+    ''' <paramref name="anchorOnPanel"/> visually still (spec 4.1).
     ''' </summary>
     Private Sub ApplyZoomFactor(factor As Double, anchorOnPanel As Point)
         Dim img As Image = ActiveMediaImage()
@@ -96,49 +110,75 @@ Partial Public Class Main_Form
         End If
 
         ' The anchor's place inside the image is read from the DISPLAYED rectangle, so
-        ' it is correct both at Fit (image letterboxed inside a panel-sized box) and
-        ' while zoomed (box == image rect).
+        ' it is correct both at Fit (letterboxed) and while zoomed (bounds cover the panel).
         Dim fraction As PointF = ZoomMath.AnchorFraction(anchorOnPanel, DisplayedImageRectangleOnPanel(img))
         Dim bounds As Rectangle = ZoomMath.AnchoredBounds(img.Width, img.Height, target,
                                                           anchorOnPanel, fraction, panel_Media.ClientSize)
 
-        Picture_Box_1.Bounds = bounds
-        Picture_Box_2.Bounds = bounds
+        SetFreeViewport(bounds, target, img)
 
         ' The wheel can turn while the left button is still held: re-anchor the pan, or
-        ' the next mouse move hauls the box back to the geometry the pan started from
+        ' the next mouse move hauls the image back to the geometry the pan started from
         ' and this anchored position is lost.
         RebasePan(bounds.Location)
-
-        zoom_Factor = target
-        zoom_Scale = 0.0F   ' "not fit" - enables panning, stops click-navigation
-        ' The fit-time bars are box-sized: left on an enlarged box they tile across it
-        ' and show through every transparent pixel (audit B-12). Zoomed has no bars.
-        ClearPerspectiveBackground()
-        UpdateZoomLabel()
-        RememberFolderZoom(target)
     End Sub
 
-    ''' <summary>
-    ''' The image's rectangle in panel coordinates as painted right now. At Fit the box
-    ''' spans the panel and SizeMode = Zoom letterboxes inside it; when zoomed the box
-    ''' IS the image. Same helper the OCR overlay and the perspective background use,
-    ''' so all three agree.
-    ''' </summary>
-    Private Function DisplayedImageRectangleOnPanel(img As Image) As Rectangle
-        If img Is Nothing Then Return Rectangle.Empty
-        Dim box As Control = If(is_PictureBox2_Visible, CType(Picture_Box_2, Control), CType(Picture_Box_1, Control))
-        Dim inner As Rectangle = GetZoomedImageRectangle(img.Width, img.Height, box.ClientSize.Width, box.ClientSize.Height)
-        inner.Offset(box.Left, box.Top)
-        Return inner
-    End Function
+    ''' <summary>Enters Free zoom: the image rect goes where the anchor math put it and
+    ''' the boxes paint only what the panel can see of it.</summary>
+    Private Sub SetFreeViewport(bounds As Rectangle, factor As Double, img As Image)
+        current_ImageBounds = bounds
+        zoom_Factor = factor
+        zoom_Mode_Free = True
+        ApplyViewportToBoxes(img)
+        ' The fit-time bars are panel-sized: under an enlarged viewport they would show
+        ' through around the image and tile across it (audit B-12). Zoomed has no bars.
+        ClearPerspectiveBackground()
+        UpdateZoomLabel()
+        RememberFolderZoom(factor)
+    End Sub
 
-    ''' <summary>Fit (the default on every load/resize). Delegates to the historical
-    ''' reset so there is exactly one definition of "fit" in the app.</summary>
-    Friend Sub ZoomToFit()
-        Dim was_Zoomed As Boolean = zoom_Scale <> 1
-        SkipZoom()
+    ''' <summary>Feeds the viewport pair to both boxes of the swap pair and repaints
+    ''' them. Degenerate panels come back with empty rects, which the box reads as
+    ''' "draw the base way" for that paint.</summary>
+    Private Sub ApplyViewportToBoxes(img As Image)
+        If img Is Nothing OrElse panel_Media Is Nothing Then Return
+
+        Dim dest As Rectangle = Rectangle.Empty
+        Dim src As Rectangle = Rectangle.Empty
+        ZoomMath.ComputeViewport(current_ImageBounds, img.Width, img.Height, panel_Media.ClientSize, dest, src)
+
+        Picture_Box_1.SourceRect = src
+        Picture_Box_1.DestRect = dest
+        Picture_Box_1.Invalidate()
+        Picture_Box_2.SourceRect = src
+        Picture_Box_2.DestRect = dest
+        Picture_Box_2.Invalidate()
+    End Sub
+
+    ''' <summary>Back to Fit: viewport dropped, boxes paint the whole image per
+    ''' SizeMode = Zoom again. Called from SkipZoom, so it stays cheap enough to run
+    ''' on every resize.</summary>
+    Friend Sub ResetZoomViewport()
+        zoom_Mode_Free = False
         zoom_Factor = 1.0
+        current_ImageBounds = Rectangle.Empty
+        If Picture_Box_1 IsNot Nothing Then
+            Picture_Box_1.SourceRect = Rectangle.Empty
+            Picture_Box_1.DestRect = Rectangle.Empty
+            Picture_Box_1.Invalidate()
+        End If
+        If Picture_Box_2 IsNot Nothing Then
+            Picture_Box_2.SourceRect = Rectangle.Empty
+            Picture_Box_2.DestRect = Rectangle.Empty
+            Picture_Box_2.Invalidate()
+        End If
+    End Sub
+
+    ''' <summary>Fit (the default on every load/resize). Delegates to the shared reset
+    ''' so there is exactly one definition of "fit" in the app.</summary>
+    Friend Sub ZoomToFit()
+        Dim was_Zoomed As Boolean = zoom_Mode_Free
+        SkipZoom()
         UpdateZoomLabel()
         ForgetFolderZoom()
         ' Back at Fit the bars come back (a zoom took them down - audit B-12). Not when
@@ -168,7 +208,7 @@ Partial Public Class Main_Form
         End If
 
         Dim percent As Integer = CInt(Math.Round(CurrentZoomFactor() * 100))
-        If zoom_Scale = 1 Then
+        If Not zoom_Mode_Free Then
             ' At Fit the number is informative, not a state the user chose - say so.
             lbl_Zoom.Text = Localization.TF("Вписать {0} %", percent.ToString())
         Else

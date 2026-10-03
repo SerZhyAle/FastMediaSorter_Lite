@@ -1,0 +1,94 @@
+{"path": ".github/agents/vb-net-profy.agent.md", "topic": "vb-net-profy.agent", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "AGENTS.md", "topic": "AGENTS", "area": "engineering", "triggers": ["Changes to build commands, source structure, runtime policy or agent workflow"], "role": "source"}
+{"path": "CHANGELOG.md", "topic": "CHANGELOG", "area": "engineering", "triggers": ["User-visible behavior changes and releases"], "role": "source"}
+{"path": "CLAUDE.md", "topic": "CLAUDE", "area": "engineering", "triggers": ["Changes to build commands, source structure, runtime policy or agent workflow"], "role": "source"}
+{"path": "README.md", "topic": "README", "area": "engineering", "triggers": ["Changes to product features, installation or support information"], "role": "source"}
+{"path": "README_RU.md", "topic": "README RU", "area": "engineering", "triggers": ["Changes to product features, installation or support information"], "role": "source"}
+{"path": "README_UK.md", "topic": "README UK", "area": "engineering", "triggers": ["Changes to product features, installation or support information"], "role": "source"}
+{"path": "assets/help/port-forward.html", "topic": "port-forward", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "docs/README.md", "topic": "README", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/contracts/APP-ACTIVATION.md", "topic": "APP-ACTIVATION", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for APP-ACTIVATION"], "role": "source"}
+{"path": "docs/contracts/APP-UX.md", "topic": "APP-UX", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for APP-UX"], "role": "source"}
+{"path": "docs/contracts/AUTOMATED-CHECKS.md", "topic": "AUTOMATED-CHECKS", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for AUTOMATED-CHECKS"], "role": "source"}
+{"path": "docs/contracts/CAPTURE-OUTPUT.md", "topic": "CAPTURE-OUTPUT", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CAPTURE-OUTPUT"], "role": "source"}
+{"path": "docs/contracts/CLIPBOARD-GUARD.md", "topic": "CLIPBOARD-GUARD", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CLIPBOARD-GUARD"], "role": "source"}
+{"path": "docs/contracts/DIAGNOSTIC-REPORT.md", "topic": "DIAGNOSTIC-REPORT", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for DIAGNOSTIC-REPORT"], "role": "source"}
+{"path": "docs/contracts/INPUT-CONTROLS.md", "topic": "INPUT-CONTROLS", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for INPUT-CONTROLS"], "role": "source"}
+{"path": "docs/contracts/DOC-QUALITY.md", "topic": "DOC-QUALITY", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for DOC-QUALITY"], "role": "source"}
+{"path": "docs/contracts/FDSEC.md", "topic": "FDSEC", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for FDSEC"], "role": "source"}
+{"path": "docs/contracts/FMSCFG.md", "topic": "FMSCFG", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for FMSCFG"], "role": "source"}
+{"path": "docs/contracts/ICON.md", "topic": "ICON", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for ICON"], "role": "source"}
+{"path": "docs/contracts/INSTALL-TRUST.md", "topic": "INSTALL-TRUST", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for INSTALL-TRUST"], "role": "source"}
+{"path": "docs/contracts/LETTERBOX-FILL.md", "topic": "LETTERBOX-FILL", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for LETTERBOX-FILL"], "role": "source"}
+{"path": "docs/contracts/LIVE-BROADCAST.md", "topic": "LIVE-BROADCAST", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for LIVE-BROADCAST"], "role": "source"}
+{"path": "docs/contracts/MEDIA-CLASSIFICATION.md", "topic": "MEDIA-CLASSIFICATION", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for MEDIA-CLASSIFICATION"], "role": "source"}
+{"path": "docs/contracts/NO-ROLE.md", "topic": "NO-ROLE", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for NO-ROLE"], "role": "source"}
+{"path": "docs/contracts/PACKAGE-VERSIONING.md", "topic": "PACKAGE-VERSIONING", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for PACKAGE-VERSIONING"], "role": "source"}
+{"path": "docs/contracts/OCR-EXCHANGE.md", "topic": "OCR-EXCHANGE", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for OCR-EXCHANGE"], "role": "source"}
+{"path": "docs/contracts/OCR-INVOCATION.md", "topic": "OCR-INVOCATION", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for OCR-INVOCATION"], "role": "source"}
+{"path": "docs/contracts/OCR-OVERLAY.md", "topic": "OCR-OVERLAY", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for OCR-OVERLAY"], "role": "source"}
+{"path": "docs/contracts/OCR-PIPELINE.md", "topic": "OCR-PIPELINE", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for OCR-PIPELINE"], "role": "source"}
+{"path": "docs/contracts/PAGE.md", "topic": "PAGE", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for PAGE"], "role": "source"}
+{"path": "docs/contracts/README.md", "topic": "README", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for README"], "role": "source"}
+{"path": "docs/contracts/RULE-ADOPTION.md", "topic": "RULE-ADOPTION", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for RULE-ADOPTION"], "role": "source"}
+{"path": "docs/contracts/SHARE-SESSION.md", "topic": "SHARE-SESSION", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for SHARE-SESSION"], "role": "source"}
+{"path": "docs/contracts/STREAM-BANK.md", "topic": "STREAM-BANK", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for STREAM-BANK"], "role": "source"}
+{"path": "docs/contracts/WAVE-PARTICLES.md", "topic": "WAVE-PARTICLES", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for WAVE-PARTICLES"], "role": "source"}
+{"path": "docs/contracts/WORKER-IPC.md", "topic": "WORKER-IPC", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for WORKER-IPC"], "role": "source"}
+{"path": "docs/guides/BUILD_AND_RELEASE.md", "topic": "BUILD AND RELEASE", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/guides/COMPANION_TEST_PLAN.md", "topic": "COMPANION TEST PLAN", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/guides/DOCUMENTATION_CONCEPT.md", "topic": "DOCUMENTATION CONCEPT", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/guides/PROGRESS_DOTNET10_MODERN_BUILD.md", "topic": "PROGRESS DOTNET10 MODERN BUILD", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/guides/REPOSITORY_LAYOUT.md", "topic": "REPOSITORY LAYOUT", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/guides/RESEARCH_COMPETITOR_FEATURES.md", "topic": "RESEARCH COMPETITOR FEATURES", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/guides/SERVER_EDITION_BUILD_AND_TEST.md", "topic": "SERVER EDITION BUILD AND TEST", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/guides/SETTINGS_WINDOW_INVENTORY_DOTNET10.md", "topic": "SETTINGS WINDOW INVENTORY DOTNET10", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/guides/STORE_PUBLISHING.md", "topic": "STORE PUBLISHING", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/guides/TESTING.md", "topic": "TESTING", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "docs/privacy.html", "topic": "privacy", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "docs/publish-folders-android.html", "topic": "publish-folders-android", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "glossary.html", "topic": "glossary", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "how-to-archives.html", "topic": "how-to-archives", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "how-to-editor.html", "topic": "how-to-editor", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "how-to-keys.html", "topic": "how-to-keys", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "how-to-ocr.html", "topic": "how-to-ocr", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "how-to-setup.html", "topic": "how-to-setup", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "how-to-sftp.html", "topic": "how-to-sftp", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "how-to-viewer.html", "topic": "how-to-viewer", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "lang/ar/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/ar/trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/bn/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/bn/trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/de/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/de/trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/es/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/es/trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/fr/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/fr/trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/hi/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/hi/trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/it/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/it/trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/pt/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/pt/trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/ru/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/ru/trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/uk/trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/ur/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/ur/trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/zh/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "lang/zh/trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "publish-folders-android.html", "topic": "publish-folders-android", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "publishing/msix/README.md", "topic": "README", "area": "publishing", "triggers": ["Changes to publishing behavior, structure or workflow"], "role": "source"}
+{"path": "publishing/store/LOCALES.md", "topic": "LOCALES", "area": "publishing", "triggers": ["Changes to publishing behavior, structure or workflow"], "role": "source"}
+{"path": "publishing/store/STORE_PUBLISHING_PROMPT.md", "topic": "STORE PUBLISHING PROMPT", "area": "publishing", "triggers": ["Changes to publishing behavior, structure or workflow"], "role": "source"}
+{"path": "publishing/store/screenshots/README.md", "topic": "README", "area": "publishing", "triggers": ["Changes to publishing behavior, structure or workflow"], "role": "source"}
+{"path": "robots.txt", "topic": "Site discovery and crawling", "area": "website", "triggers": ["Changes to public page inventory or canonical URLs"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "server.html", "topic": "server", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "sitemap.xml", "topic": "Site discovery and crawling", "area": "website", "triggers": ["Changes to public page inventory or canonical URLs"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "tools/audit-slice-template.md", "topic": "audit-slice-template", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "topics.html", "topic": "topics", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}

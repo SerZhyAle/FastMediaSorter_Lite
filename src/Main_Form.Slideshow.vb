@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.ObjectModel
 Imports System.ComponentModel
@@ -45,6 +45,7 @@ Partial Public Class Main_Form
     Private Sub SlideShow_Elapsed() Handles SlideShowTimer.Tick
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1890: SlideShowTimer")
 #If Not NETFRAMEWORK Then
+        If slideshow_Waits_For_Video Then Return
         ' A known-length audio track owns the slide interval; streams (unknown length)
         ' retain the ordinary interval so a radio URL cannot hold the slideshow forever.
         If IsAudioNowPlaying() AndAlso IsVlcActuallyPlaying() AndAlso vlc_Media_Player IsNot Nothing AndAlso vlc_Media_Player.Length > 0 Then Return
@@ -58,6 +59,8 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
         ' Leaving the slideshow restores the interface at once (§5.2) - the reveal flag
         ' goes back up BEFORE the applier reads it.
+        slideshow_Waits_For_Video = False
+        slideshow_Video_Fallback_Timer.Stop()
         slideshow_Chrome_Revealed = True
         slideshow_Chrome_Timer.Stop()
         ApplySlideshowChrome()

@@ -268,5 +268,162 @@ Public Class ZoomMathTests
         Assert.Equal(fit, result, 6)
     End Sub
 
+    ' --- FitBounds (the viewport's Fit state, spec §5) -----------------------
+
+    <Fact>
+    Public Sub FitBounds_WideImage_LetterboxesTopAndBottom()
+        ' 4000x1000 into 800x600 fits at 0.2: an 800x200 strip, 200 px of bar above
+        ' and below - exactly what SizeMode = Zoom paints.
+        Dim r As Rectangle = ZoomMath.FitBounds(4000, 1000, New Size(800, 600))
+        Assert.Equal(800, r.Width)
+        Assert.Equal(200, r.Height)
+        Assert.Equal(0, r.X)
+        Assert.Equal(200, r.Y)
+    End Sub
+
+    <Fact>
+    Public Sub FitBounds_SmallImage_IsCentered()
+        Dim r As Rectangle = ZoomMath.FitBounds(400, 300, New Size(800, 600))
+        Assert.Equal(New Rectangle(200, 150, 400, 300), r)
+    End Sub
+
+    <Theory>
+    <InlineData(0, 100, 800, 600)>
+    <InlineData(100, 100, 0, 600)>
+    <InlineData(-5, 100, 800, 600)>
+    Public Sub FitBounds_DegenerateInput_IsEmpty(imgW As Integer, imgH As Integer, panelW As Integer, panelH As Integer)
+        Assert.True(ZoomMath.FitBounds(imgW, imgH, New Size(panelW, panelH)).IsEmpty)
+    End Sub
+
+    ' --- ComputeViewport (the paint pair, spec §5) ---------------------------
+
+    <Fact>
+    Public Sub ComputeViewport_AtFit_ShowsTheWholeImageInTheLetterbox()
+        Dim bounds As Rectangle = ZoomMath.FitBounds(1000, 500, New Size(800, 600))
+        Dim dest As Rectangle = Rectangle.Empty
+        Dim src As Rectangle = Rectangle.Empty
+        ZoomMath.ComputeViewport(bounds, 1000, 500, New Size(800, 600), dest, src)
+
+        ' The panel sees all of the image, and only where the letterbox sits.
+        Assert.Equal(New Rectangle(0, 0, 1000, 500), src)
+        Assert.Equal(bounds, dest)
+    End Sub
+
+    <Fact>
+    Public Sub ComputeViewport_Zoomed_ShowsOnlyTheVisibleStrip()
+        ' 2x zoom of an 800x600 image into the same panel: the bounds are double and
+        ' shifted 100 px up-left, so the visible strip starts at image pixel (50, 50).
+        Dim bounds As New Rectangle(-100, -100, 1600, 1200)
+        Dim dest As Rectangle = Rectangle.Empty
+        Dim src As Rectangle = Rectangle.Empty
+        ZoomMath.ComputeViewport(bounds, 800, 600, New Size(800, 600), dest, src)
+
+        Assert.Equal(New Rectangle(0, 0, 800, 600), dest)   ' the panel is filled
+        Assert.Equal(New Rectangle(50, 50, 400, 300), src)
+    End Sub
+
+    <Fact>
+    Public Sub ComputeViewport_PannedRight_ShowsTheStripThePanelCovers()
+        ' Image pushed 100 px to the right: the panel's left 100 px show nothing, and
+        ' what remains is the LEFT part of the image, drawn from panel x=100 onward.
+        Dim bounds As New Rectangle(100, 0, 1600, 1200)
+        Dim dest As Rectangle = Rectangle.Empty
+        Dim src As Rectangle = Rectangle.Empty
+        ZoomMath.ComputeViewport(bounds, 800, 600, New Size(800, 600), dest, src)
+
+        Assert.Equal(New Rectangle(100, 0, 700, 600), dest)
+        Assert.Equal(New Rectangle(0, 0, 350, 300), src)
+    End Sub
+
+    <Fact>
+    Public Sub ComputeViewport_SourceAndDestinationMapBackOntoEachOther()
+        ' The pair's whole contract: the image pixel at fraction f of the source strip
+        ' is painted at fraction f of the destination strip. This is what keeps the
+        ' pixel under the cursor still and the OCR overlay aligned with the picture.
+        Dim bounds As New Rectangle(-333, -97, 1600, 1200)
+        Dim dest As Rectangle = Rectangle.Empty
+        Dim src As Rectangle = Rectangle.Empty
+        ZoomMath.ComputeViewport(bounds, 800, 600, New Size(800, 600), dest, src)
+
+        Assert.False(src.IsEmpty)
+        Dim scaleX As Double = 800 / CDbl(bounds.Width)
+        Dim scaleY As Double = 600 / CDbl(bounds.Height)
+
+        For Each f As Double In {0.0, 0.37, 0.62, 1.0}
+            Dim panelX As Double = dest.X + f * dest.Width
+            Dim expectedSrcX As Double = (panelX - bounds.X) * scaleX
+            Assert.InRange(src.X + f * src.Width, expectedSrcX - 1.0, expectedSrcX + 1.0)
+
+            Dim panelY As Double = dest.Y + f * dest.Height
+            Dim expectedSrcY As Double = (panelY - bounds.Y) * scaleY
+            Assert.InRange(src.Y + f * src.Height, expectedSrcY - 1.0, expectedSrcY + 1.0)
+        Next
+    End Sub
+
+    <Theory>
+    <InlineData(0, 600)>
+    <InlineData(800, 0)>
+    Public Sub ComputeViewport_DegeneratePanel_IsEmpty(panelW As Integer, panelH As Integer)
+        Dim dest As Rectangle = Rectangle.Empty
+        Dim src As Rectangle = Rectangle.Empty
+        ZoomMath.ComputeViewport(New Rectangle(-100, -100, 1600, 1200), 800, 600, New Size(panelW, panelH), dest, src)
+        Assert.True(dest.IsEmpty AndAlso src.IsEmpty)
+    End Sub
+
+    <Fact>
+    Public Sub ComputeViewport_ImageOffThePanel_IsEmpty()
+        ' ClampToKeepVisible makes this unreachable in the app, but the pure function
+        ' still answers honestly: nothing of the image is over the panel, nothing draws.
+        Dim dest As Rectangle = Rectangle.Empty
+        Dim src As Rectangle = Rectangle.Empty
+        ZoomMath.ComputeViewport(New Rectangle(2000, 2000, 800, 600), 800, 600, New Size(800, 600), dest, src)
+        Assert.True(dest.IsEmpty AndAlso src.IsEmpty)
+    End Sub
+
+    ' --- ClampPan (У-14) -----------------------------------------------------
+
+    <Fact>
+    Public Sub ClampPan_WithinBounds_LeavesPositionUnchanged()
+        Dim panel As New Size(800, 600)
+        Dim box As New Size(400, 300)
+        Dim pt As New Point(100, 150)
+        Dim clamped As Point = ZoomMath.ClampPan(pt, box, panel)
+        Assert.Equal(pt, clamped)
+    End Sub
+
+    <Fact>
+    Public Sub ClampPan_DraggedTooFarRightOrDown_LeavesKeepVisiblePx()
+        Dim panel As New Size(800, 600)
+        Dim box As New Size(1200, 900)
+        ' Dragged way past the right / bottom edges: location (2000, 2000)
+        Dim clamped As Point = ZoomMath.ClampPan(New Point(2000, 2000), box, panel)
+        Assert.Equal(panel.Width - ZoomMath.Keep_Visible_Px, clamped.X)
+        Assert.Equal(panel.Height - ZoomMath.Keep_Visible_Px, clamped.Y)
+    End Sub
+
+    <Fact>
+    Public Sub ClampPan_DraggedTooFarLeftOrUp_LeavesKeepVisiblePx()
+        Dim panel As New Size(800, 600)
+        Dim box As New Size(1200, 900)
+        ' Dragged way past top-left: location (-5000, -5000)
+        Dim clamped As Point = ZoomMath.ClampPan(New Point(-5000, -5000), box, panel)
+        Assert.Equal(-box.Width + ZoomMath.Keep_Visible_Px, clamped.X)
+        Assert.Equal(-box.Height + ZoomMath.Keep_Visible_Px, clamped.Y)
+    End Sub
+
+    <Fact>
+    Public Sub ClampPan_BoxSmallerThanKeepVisible_KeepsEntireBoxInPanel()
+        Dim panel As New Size(800, 600)
+        Dim box As New Size(50, 40)
+        ' When box is 50x40 (< 100 px), keepVisible shrinks to 50x40
+        Dim clampedMax As Point = ZoomMath.ClampPan(New Point(2000, 2000), box, panel)
+        Assert.Equal(panel.Width - 50, clampedMax.X)
+        Assert.Equal(panel.Height - 40, clampedMax.Y)
+
+        Dim clampedMin As Point = ZoomMath.ClampPan(New Point(-2000, -2000), box, panel)
+        Assert.Equal(0, clampedMin.X)
+        Assert.Equal(0, clampedMin.Y)
+    End Sub
+
 End Class
 #End If

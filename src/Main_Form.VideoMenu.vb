@@ -138,7 +138,7 @@ Partial Public Class Main_Form
     ''' <summary>Whether what is playing repeats: the loop flag or the end action of the
     ''' kind on screen (PlaybackRules.EffectiveRepeat).</summary>
     Friend Function CurrentEffectiveRepeat() As Boolean
-        Return PlaybackRules.EffectiveRepeat(Is_Video_Loop, IsAudioNowPlaying(), AudioEndAction(), VideoEndAction())
+        Return PlaybackRules.EffectiveRepeat(Is_Video_Loop, IsAudioNowPlaying(), AudioEndAction(), VideoEndAction(), Is_slide_show_mode)
     End Function
 
     Private Sub RestartCurrentVideoPreservingPosition()
@@ -154,8 +154,9 @@ Partial Public Class Main_Form
 
             Dim media As LibVLCSharp.Shared.Media = CreateVlcMedia(file_Path)
             If CurrentEffectiveRepeat() Then media.AddOption(":input-repeat=65535")
+            Dim keep_Media_For_Art_Watch As Boolean = WatchSecureMediaArt(file_Path, media)
             vlc_Media_Player.Play(media)
-            media.Dispose()
+            If Not keep_Media_For_Art_Watch Then media.Dispose()
             ' A reopened media starts on VLC's own track pick again (050 D-10).
             vlc_Play_Serial += 1
         Catch ex As Exception

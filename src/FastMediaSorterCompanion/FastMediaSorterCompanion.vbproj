@@ -123,6 +123,7 @@
     <Compile Include="..\Theming\ThemeApplier.vb" Link="Theming\ThemeApplier.vb" />
     <Compile Include="..\Theming\ThemedMenuRenderer.vb" Link="Theming\ThemedMenuRenderer.vb" />
     <Compile Include="..\Theming\ThemeService.vb" Link="Theming\ThemeService.vb" />
+    <Compile Include="..\CopyDataTransport.vb" Link="Core\CopyDataTransport.vb" />
     <Compile Include="..\Localization\Localization.Theme.vb" Link="Localization\Localization.Theme.vb" />
   </ItemGroup>
 

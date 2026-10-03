@@ -358,6 +358,12 @@ Partial Public Class Main_Form
                 ' the next prefetch goes to the hidden box 2, not under the cover
                 ' (audit 050 D-04 - PaintAudioSurface also clears, for a prefetch already
                 ' in flight).
+                ' If box 1 held a preloaded photo, reset the preload result so the next
+                ' navigation doesn't present box 2's previous photo as the preloaded one (audit 057.S08-4).
+                If is_Second_PictureBox_Active AndAlso bgWorker_Result = "LOADED" Then
+                    bgWorker_Result = "EMPTY"
+                    current_Second_File_Name = ""
+                End If
                 ReleasePictureBoxMedia(1)
                 is_Second_PictureBox_Active = False
             End If
@@ -418,6 +424,15 @@ Partial Public Class Main_Form
             vlc_Media_Player.Play(media)
 #If Not NETFRAMEWORK Then
             If Not keep_Media_For_Art_Watch Then media.Dispose()
+            If Is_slide_show_mode Then
+                ' Слайдшоу отдаёт темп ролику: таймер молчит, пока видео не кончится (У-09).
+                SlideShowTimer.Enabled = False
+                slideshow_Waits_For_Video = True
+                slideshow_Video_Fallback_Timer.Stop()
+                Dim dur As Long = If(vlc_Media_Player IsNot Nothing AndAlso vlc_Media_Player.Length > 0, vlc_Media_Player.Length, 0L)
+                slideshow_Video_Fallback_Timer.Interval = PlaybackRules.SlideshowVideoFallbackTimeoutMs(dur)
+                slideshow_Video_Fallback_Timer.Start()
+            End If
 #Else
             media.Dispose()
 #End If
@@ -463,6 +478,11 @@ Partial Public Class Main_Form
     Private Sub StopVlcPlayback()
 #If Not NETFRAMEWORK Then
         RememberCurrentVideoPosition()
+        If slideshow_Waits_For_Video Then
+            slideshow_Waits_For_Video = False
+            slideshow_Video_Fallback_Timer.Stop()
+            If Is_slide_show_mode Then SlideShowTimer.Enabled = True
+        End If
 #End If
         If vlc_Media_Player IsNot Nothing AndAlso is_Vlc_Playing Then
             Try
@@ -485,6 +505,35 @@ Partial Public Class Main_Form
         ApplyVideoTracksButtonVisibility()
 #End If
     End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>Скрыть поверхность сразу (визуально мгновенно), а блокирующий Stop
+    ''' увести с UI-потока (У-10). ВАЖНО: перед файловой операцией результат обязательно
+    ''' await-ить - лок должен быть снят до Move/Delete.</summary>
+    Friend Function StopVlcPlaybackAsync() As Task
+        RememberCurrentVideoPosition()
+        is_Vlc_Playing = False
+        vlc_Playing_Path = ""
+        If vlc_Video_View IsNot Nothing Then vlc_Video_View.Visible = False
+        HideVideoControls()
+        ApplyVideoTracksButtonVisibility()
+        If slideshow_Waits_For_Video Then
+            slideshow_Waits_For_Video = False
+            slideshow_Video_Fallback_Timer.Stop()
+            If Is_slide_show_mode Then SlideShowTimer.Enabled = True
+        End If
+
+        Dim player = vlc_Media_Player
+        If player Is Nothing Then Return Task.CompletedTask
+        Return Task.Run(Sub()
+                            Try
+                                player.Stop()
+                                player.Media = Nothing
+                            Catch
+                            End Try
+                        End Sub)
+    End Function
+#End If
 
     ''' <summary>The file VLC was last told to play, "" when stopped. Not
     ''' current_Loaded_File_Name: the display path clears that before VLC is stopped, which
@@ -581,6 +630,11 @@ Partial Public Class Main_Form
                                    vlc_Media_Player.Pause()
                                    ShowVideoControls()
                                End If
+                               If slideshow_Waits_For_Video AndAlso vlc_Media_Player IsNot Nothing AndAlso vlc_Media_Player.Length > 0 Then
+                                   slideshow_Video_Fallback_Timer.Stop()
+                                   slideshow_Video_Fallback_Timer.Interval = PlaybackRules.SlideshowVideoFallbackTimeoutMs(vlc_Media_Player.Length)
+                                   slideshow_Video_Fallback_Timer.Start()
+                               End If
 #End If
                            End Sub)
         Catch
@@ -601,6 +655,26 @@ Partial Public Class Main_Form
     ''' click of a double-click (full screen) never navigates (audit 050 D-15).</summary>
     Private WithEvents video_Click_Next_Timer As New Timer()
     Private video_Click_Next_Generation As Integer = -1
+
+    ''' <summary>Whether the slideshow is paused waiting for a video to reach EndReached (У-09).</summary>
+    Private slideshow_Waits_For_Video As Boolean = False
+    Private WithEvents slideshow_Video_Fallback_Timer As New Timer()
+
+    Private Sub Slideshow_Video_Fallback_Timer_Tick(sender As Object, e As EventArgs) Handles slideshow_Video_Fallback_Timer.Tick
+        slideshow_Video_Fallback_Timer.Stop()
+        AdvanceSlideshowAfterVideo()
+    End Sub
+
+    ''' <summary>Advances the slideshow after a video finishes, or on fallback timeout.</summary>
+    Private Function AdvanceSlideshowAfterVideo() As Boolean
+        slideshow_Video_Fallback_Timer.Stop()
+        If Not slideshow_Waits_For_Video Then Return False
+        slideshow_Waits_For_Video = False
+        If Not Is_slide_show_mode Then Return False
+        SlideShowTimer.Enabled = True
+        ReadShowMediaFile(Mode_InSlideShow)
+        Return True
+    End Function
 
     ''' <summary>
     ''' Called by the display path as the screen moves to another file, BEFORE it clears
@@ -631,6 +705,7 @@ Partial Public Class Main_Form
                                ' Watched to the end: it opens from the start next time, and an
                                ' older mid-file resume point goes (audit 050 D-11).
                                RememberVideoFinished(vlc_Playing_Path)
+                               If AdvanceSlideshowAfterVideo() Then Return
                                If If(IsAudioNowPlaying(), AudioEndAction() <> "next", VideoEndAction() <> "nextFile") Then Return
                                audio_Auto_Advancing = True
                                Try

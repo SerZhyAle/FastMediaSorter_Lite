@@ -322,6 +322,7 @@ Partial Public Class Main_Form
     End Function
 
     Private Function ResolveCurrentFolder() As String
+        If IsArchiveMode() OrElse IsArchiveOpenPending() Then Return ""
         Try
             Dim f As String = If(Current_Folder_Path, "").Trim()
             If f.Length > 0 AndAlso Directory.Exists(f) Then Return f

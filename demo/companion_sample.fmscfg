@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 2,
+  "protocol": "sftp",
+  "resourceName": "FastMediaSorter Companion",
+  "username": "fmsuser",
+  "password": "companion_password_456",
+  "accessNote": "Shared from FastMediaSorter Companion Server",
+  "hostKeyFingerprintSha256": "SHA256:9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba",
+  "accessPaths": [
+    {
+      "kind": "lan",
+      "host": "192.168.1.200",
+      "port": 55259
+    },
+    {
+      "kind": "portforward",
+      "host": "example.com",
+      "port": 443
+    }
+  ],
+  "roots": [
+    {
+      "virtualPath": "/Media/Photos",
+      "label": "Shared Photos",
+      "readOnly": false,
+      "isDestination": true,
+      "profile": "photo_storage",
+      "mediaTypes": ["image", "gif"],
+      "scanSubdirectories": true,
+      "showHiddenFiles": false,
+      "allFiles": false,
+      "comment": "Photos shared from Companion"
+    },
+    {
+      "virtualPath": "/Media/Videos",
+      "label": "Shared Videos",
+      "readOnly": false,
+      "isDestination": true,
+      "profile": "video_library",
+      "mediaTypes": ["video"],
+      "scanSubdirectories": true,
+      "comment": "Videos shared from Companion"
+    },
+    {
+      "virtualPath": "/Media/Archives",
+      "label": "Archives",
+      "readOnly": true,
+      "isDestination": false,
+      "profile": "all_files",
+      "mediaTypes": [],
+      "scanSubdirectories": false,
+      "comment": "Archive files - read only"
+    }
+  ]
+}

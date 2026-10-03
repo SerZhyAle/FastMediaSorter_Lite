@@ -1185,6 +1185,11 @@ Partial Public Class Main_Form
 
         SlideShowStop()
         SlideShowTimer.Dispose()
+#If Not NETFRAMEWORK Then
+        ' The close is real now: stop the folder watcher before anything it feeds goes away.
+        StopFolderWatcher()
+        If folder_Watch_Timer IsNot Nothing Then folder_Watch_Timer.Dispose()
+#End If
         StopGifLoopPlayback()
         gif_Restart_Timer.Dispose()
         If settings_Flush_Timer IsNot Nothing Then

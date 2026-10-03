@@ -56,6 +56,54 @@ Public Module NavigationRules
     End Function
 
     ''' <summary>
+    ''' True when the read mode is one that replaces the entire file list (scan or rescan).
+    ''' </summary>
+    Public Function IsListReplacingMode(read_Mode As String) As Boolean
+        Select Case read_Mode
+            Case ReadMode_Files, ReadMode_FolderAndFile, ReadMode_FolderAndKnownFile
+                Return True
+            Case Else
+                Return False
+        End Select
+    End Function
+
+    ''' <summary>
+    ''' Decides whether a given read mode should scan/read the folder from disk.
+    ''' </summary>
+    Public Function ModeReadsFolder(read_Mode As String, is_Folder_Loaded As Boolean, is_External As Boolean) As Boolean
+        Select Case read_Mode
+            Case ReadMode_Files, ReadMode_FolderAndFile
+                Return True
+            Case ReadMode_ForRandom, ReadMode_ForSlideShow
+                Return Not is_Folder_Loaded
+            Case ReadMode_Next, ReadMode_Prev
+                Return Not is_Folder_Loaded AndAlso is_External
+            Case Else
+                Return False
+        End Select
+    End Function
+
+    ''' <summary>
+    ''' Computes the index of the neighbor file to prefetch based on direction and total count.
+    ''' Clamps out-of-range index to valid bounds and wraps at boundaries.
+    ''' </summary>
+    Public Function PrefetchIndex(current_Index As Integer, total_Count As Integer, is_Backwards As Boolean) As Integer
+        If total_Count <= 0 Then Return -1
+        If total_Count = 1 Then Return 0
+
+        Dim clamped As Integer = Math.Max(0, Math.Min(current_Index, total_Count - 1))
+        If is_Backwards Then
+            Dim prevIdx As Integer = clamped - 1
+            If prevIdx < 0 Then prevIdx = total_Count - 1
+            Return prevIdx
+        Else
+            Dim nextIdx As Integer = clamped + 1
+            If nextIdx >= total_Count Then nextIdx = 0
+            Return nextIdx
+        End If
+    End Function
+
+    ''' <summary>
     ''' Records <paramref name="folder"/> as the most recent folder (audit 057, S02-6) and
     ''' says whether the list changed. Moves it to the front (once - Ordinal, as the list has
     ''' always compared), then holds the list to <paramref name="limit"/>: 0 records nothing

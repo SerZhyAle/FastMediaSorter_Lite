@@ -85,6 +85,9 @@ Public NotInheritable Class ModernViewerPreferences
     ''' (SPECIFICATION_AUDIO_FIRST_CLASS_DOTNET10.md PA-3). On by default - nothing else is
     ''' on the audio surface to interact with, so hiding covers would be pointless.</summary>
     Public Property AudioControlsAlwaysVisible As Boolean = True
+    ''' <summary>Keep the main toolbar always visible, never auto-hide.
+    ''' On by default for consistent access to all tools.</summary>
+    Public Property ToolbarAlwaysVisible As Boolean = True
     ''' <summary>Show the branded fallback when the audio file has no embedded cover art.
     ''' On by default: an otherwise empty audio surface is not useful.</summary>
     Public Property AudioVisualiser As Boolean = True
@@ -212,6 +215,7 @@ Public NotInheritable Class ModernViewerPreferences
         p.IncludeAudioInNavigation = ReadBool("IncludeAudioInNavigation", p.IncludeAudioInNavigation)
         p.IncludeDocumentInNavigation = ReadBool("IncludeDocumentInNavigation", p.IncludeDocumentInNavigation)
         p.AudioControlsAlwaysVisible = ReadBool("AudioControlsAlwaysVisible", p.AudioControlsAlwaysVisible)
+        p.ToolbarAlwaysVisible = ReadBool("ToolbarAlwaysVisible", p.ToolbarAlwaysVisible)
         p.AudioVisualiser = ReadBool("AudioVisualiser", p.AudioVisualiser)
         p.SleepTimerMinutes = ReadInt("SleepTimerMinutes", p.SleepTimerMinutes, 0, 180)
 
@@ -273,6 +277,7 @@ Public NotInheritable Class ModernViewerPreferences
         WriteBool("IncludeAudioInNavigation", IncludeAudioInNavigation)
         WriteBool("IncludeDocumentInNavigation", IncludeDocumentInNavigation)
         WriteBool("AudioControlsAlwaysVisible", AudioControlsAlwaysVisible)
+        WriteBool("ToolbarAlwaysVisible", ToolbarAlwaysVisible)
         WriteBool("AudioVisualiser", AudioVisualiser)
         WriteString("SleepTimerMinutes", SleepTimerMinutes.ToString(CultureInfo.InvariantCulture))
 

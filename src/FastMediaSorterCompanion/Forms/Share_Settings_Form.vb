@@ -203,7 +203,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' to "autostart was never switched on", which is how a machine sat for weeks with a
         ' running share and no console. Ticking the box repairs it - SetEnabled lifts the veto.
         lblAutostartNote = New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
-            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 2, 0, 2)}
+            .ForeColor = ThemeService.Palette.TextMuted, .Margin = New Padding(0, 2, 0, 2)}
         sec.AddBodyRow(lblAutostartNote)
 
         ' Off by default, and it governs EVERY plain start - the logon one, a double-click on
@@ -289,14 +289,14 @@ Partial Public NotInheritable Class Share_Settings_Form
         toolTip.SetToolTip(numPort, ShareText.PortHint())
 
         sec.AddBodyRow(New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
-            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 4, 0, 0),
+            .ForeColor = ThemeService.Palette.TextMuted, .Margin = New Padding(0, 4, 0, 0),
             .Text = ShareText.PortHint()})
 
         ' One live line under the control: why the port is not serving, or that the codes
         ' handed out earlier no longer match. A port that failed to bind must never read as
         ' a plain "sharing is off".
         lblPortNote = New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
-            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 4, 0, 0)}
+            .ForeColor = ThemeService.Palette.TextMuted, .Margin = New Padding(0, 4, 0, 0)}
         sec.AddBodyRow(lblPortNote)
 
         ' The SERVER-WIDE "LAN only" enforcement (ticket 054 H-06). This is the switch the
@@ -310,7 +310,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddHandler chkLanOnly.CheckedChanged, AddressOf OnLanOnlyChanged
         sec.AddBodyRow(chkLanOnly)
         lblLanOnlyNote = New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
-            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 2, 0, 0)}
+            .ForeColor = ThemeService.Palette.TextMuted, .Margin = New Padding(0, 2, 0, 0)}
         sec.AddBodyRow(lblLanOnlyNote)
         toolTip.SetToolTip(chkLanOnly, Localization.T("Относится ко всей раздаче, а не к одному коду: пока включено, программа не просит роутер открыть порт (UPnP/NAT-PMP) и не даёт адрес из интернета. Адрес из интернета, уже вписанный в выданные коды, перестаёт работать; по локальной сети всё работает как раньше."))
 
@@ -318,7 +318,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' share while it runs. It sits here rather than on the main window because it is
         ' the footnote of the setting above, not a state anybody reads per session.
         sec.AddBodyRow(New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
-            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 10, 0, 0),
+            .ForeColor = ThemeService.Palette.TextMuted, .Margin = New Padding(0, 10, 0, 0),
             .Text = ShareText.NetworkReachNote()})
 
         ' The way back from the opt-in (ticket 028 Ф-6, APP-BEHAVIOUR rule 4): a standing
@@ -452,17 +452,17 @@ Partial Public NotInheritable Class Share_Settings_Form
             _secStartup.Summary = If(chkAutostart.Checked,
                                      Localization.T("Автозапуск включён"),
                                      Localization.T("Автозапуск выключен"))
-            _secStartup.SummaryColor = SystemColors.GrayText
+            _secStartup.SummaryColor = ThemeService.Palette.TextMuted
         End If
         ' The port is exactly the kind of fact a folded section must still answer: someone
         ' opens this dialog to check which number their router rule has to name.
         _secNetwork.Summary = Localization.TF("до {0} подключений, порт {1}",
                                               CInt(numMaxConns.Value), If(_committedPort > 0, _committedPort, CInt(numPort.Value)))
-        _secNetwork.SummaryColor = SystemColors.GrayText
+        _secNetwork.SummaryColor = ThemeService.Palette.TextMuted
         ' Verbatim from HostingText - the same sentence the group's own first line shows,
         ' so the folded and unfolded states cannot drift apart.
         _secHosting.Summary = HostingText.HostModeLine(ServerFeatures.HostMode())
-        _secHosting.SummaryColor = SystemColors.GrayText
+        _secHosting.SummaryColor = ThemeService.Palette.TextMuted
     End Sub
 
     ' --- the pinned listen port -------------------------------------------------
@@ -527,7 +527,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             lblAutostartNote.ForeColor = CollapsibleSection.AttentionColor
         Else
             lblAutostartNote.Text = ""
-            lblAutostartNote.ForeColor = SystemColors.GrayText
+            lblAutostartNote.ForeColor = ThemeService.Palette.TextMuted
         End If
         lblAutostartNote.Visible = lblAutostartNote.Text <> ""
     End Sub
@@ -550,7 +550,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             lblPortNote.ForeColor = CollapsibleSection.AttentionColor
         Else
             lblPortNote.Text = ""
-            lblPortNote.ForeColor = SystemColors.GrayText
+            lblPortNote.ForeColor = ThemeService.Palette.TextMuted
         End If
         lblPortNote.Visible = lblPortNote.Text <> ""
     End Sub

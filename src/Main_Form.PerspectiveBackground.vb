@@ -158,39 +158,21 @@ Partial Public Class Main_Form
     End Function
 
     Private Function SampleVerticalEdgeColor(sourceBitmap As Bitmap, isLeftEdge As Boolean, sourceY As Integer, sampleDepth As Integer) As Color
-        Dim clampedY As Integer = Math.Max(0, Math.Min(sourceY, sourceBitmap.Height - 1))
-        Dim effectiveDepth As Integer = Math.Max(1, Math.Min(sampleDepth, sourceBitmap.Width))
-        Dim startX As Integer = If(isLeftEdge, 0, sourceBitmap.Width - effectiveDepth)
-        Dim sumR As Integer = 0
-        Dim sumG As Integer = 0
-        Dim sumB As Integer = 0
-
-        For x As Integer = startX To startX + effectiveDepth - 1
-            Dim px = sourceBitmap.GetPixel(x, clampedY)
-            sumR += CInt(px.R)
-            sumG += CInt(px.G)
-            sumB += CInt(px.B)
-        Next
-
-        Return Color.FromArgb(255, sumR \ effectiveDepth, sumG \ effectiveDepth, sumB \ effectiveDepth)
+        Using sampler As EdgeSampler = EdgeSampler.TryCreate(sourceBitmap)
+            If sampler IsNot Nothing Then
+                Return sampler.SampleVerticalEdgeColor(isLeftEdge, sourceY, sampleDepth)
+            End If
+        End Using
+        Return Color.Black
     End Function
 
     Private Function SampleHorizontalEdgeColor(sourceBitmap As Bitmap, isTopEdge As Boolean, sourceX As Integer, sampleDepth As Integer) As Color
-        Dim clampedX As Integer = Math.Max(0, Math.Min(sourceX, sourceBitmap.Width - 1))
-        Dim effectiveDepth As Integer = Math.Max(1, Math.Min(sampleDepth, sourceBitmap.Height))
-        Dim startY As Integer = If(isTopEdge, 0, sourceBitmap.Height - effectiveDepth)
-        Dim sumR As Integer = 0
-        Dim sumG As Integer = 0
-        Dim sumB As Integer = 0
-
-        For y As Integer = startY To startY + effectiveDepth - 1
-            Dim px = sourceBitmap.GetPixel(clampedX, y)
-            sumR += CInt(px.R)
-            sumG += CInt(px.G)
-            sumB += CInt(px.B)
-        Next
-
-        Return Color.FromArgb(255, sumR \ effectiveDepth, sumG \ effectiveDepth, sumB \ effectiveDepth)
+        Using sampler As EdgeSampler = EdgeSampler.TryCreate(sourceBitmap)
+            If sampler IsNot Nothing Then
+                Return sampler.SampleHorizontalEdgeColor(isTopEdge, sourceX, sampleDepth)
+            End If
+        End Using
+        Return Color.Black
     End Function
 
     Private Function GetTrimmedChannelAverage(channelValues As IEnumerable(Of Integer)) As Integer
@@ -218,6 +200,10 @@ Partial Public Class Main_Form
     End Function
 
     Private Function GetZoomedImageRectangle(sourceWidth As Integer, sourceHeight As Integer, targetWidth As Integer, targetHeight As Integer) As Rectangle
+#If Not NETFRAMEWORK Then
+        ' One definition of the letterbox math, proven in ZoomMathTests (spec 012 §5).
+        Return ZoomMath.FitBounds(sourceWidth, sourceHeight, New Size(targetWidth, targetHeight))
+#Else
         If sourceWidth <= 0 OrElse
             sourceHeight <= 0 OrElse
             targetWidth <= 0 OrElse
@@ -233,6 +219,7 @@ Partial Public Class Main_Form
         Dim top As Integer = (targetHeight - scaledHeight) \ 2
 
         Return New Rectangle(left, top, scaledWidth, scaledHeight)
+#End If
     End Function
 
     Private Function CreateDisplayedImageBitmap(sourceImage As Image, displaySize As Size, backgroundColor As Color) As Bitmap
@@ -278,38 +265,21 @@ Partial Public Class Main_Form
     End Function
 
     Private Function GetDisplayedVerticalEdgeColors(displayedBitmap As Bitmap, targetHeight As Integer, imageRect As Rectangle, isLeftEdge As Boolean) As List(Of Color)
-        Dim edgeColors As New List(Of Color)(targetHeight)
-        ' Sample one pixel in from the very edge. The outermost downscaled column folds
-        ' in the image's darkest border/vignette pixels and comes out a few levels darker
-        ' than what the PictureBox (SizeMode = Zoom) actually paints for the photo's edge,
-        ' which left a faint dark vertical seam between the photo and the bar. The second
-        ' column equals the displayed photo edge, so the bar now joins it seamlessly.
-        Dim edgeInset As Integer = If(displayedBitmap.Width >= 3, 1, 0)
-        Dim sourceX As Integer = If(isLeftEdge, edgeInset, displayedBitmap.Width - 1 - edgeInset)
-
-        For targetY As Integer = 0 To targetHeight - 1
-            Dim sourceY As Integer = Math.Max(0, Math.Min(targetY - imageRect.Top, displayedBitmap.Height - 1))
-            Dim px As Color = displayedBitmap.GetPixel(sourceX, sourceY)
-            edgeColors.Add(Color.FromArgb(255, px.R, px.G, px.B))
-        Next
-
-        Return edgeColors
+        Using sampler As EdgeSampler = EdgeSampler.TryCreate(displayedBitmap)
+            If sampler IsNot Nothing Then
+                Return sampler.GetDisplayedVerticalEdgeColors(targetHeight, imageRect, isLeftEdge)
+            End If
+        End Using
+        Return New List(Of Color)()
     End Function
 
     Private Function GetDisplayedHorizontalEdgeColors(displayedBitmap As Bitmap, targetWidth As Integer, imageRect As Rectangle, isTopEdge As Boolean) As List(Of Color)
-        Dim edgeColors As New List(Of Color)(targetWidth)
-        ' One pixel in from the very edge - see GetDisplayedVerticalEdgeColors for why
-        ' the outermost downscaled row darkens the seam.
-        Dim edgeInset As Integer = If(displayedBitmap.Height >= 3, 1, 0)
-        Dim sourceY As Integer = If(isTopEdge, edgeInset, displayedBitmap.Height - 1 - edgeInset)
-
-        For targetX As Integer = 0 To targetWidth - 1
-            Dim sourceX As Integer = Math.Max(0, Math.Min(targetX - imageRect.Left, displayedBitmap.Width - 1))
-            Dim px As Color = displayedBitmap.GetPixel(sourceX, sourceY)
-            edgeColors.Add(Color.FromArgb(255, px.R, px.G, px.B))
-        Next
-
-        Return edgeColors
+        Using sampler As EdgeSampler = EdgeSampler.TryCreate(displayedBitmap)
+            If sampler IsNot Nothing Then
+                Return sampler.GetDisplayedHorizontalEdgeColors(targetWidth, imageRect, isTopEdge)
+            End If
+        End Using
+        Return New List(Of Color)()
     End Function
 
     Private Function PaintVerticalPerspectiveBackground(g As Graphics, edgeColors As List(Of Color), targetRect As Rectangle, colorDeviationThreshold As Double) As Boolean
@@ -415,10 +385,10 @@ Partial Public Class Main_Form
             SlideShowTimer.Interval >= slideshow_limit_to_change_color)
 
 #If Not NETFRAMEWORK Then
-        ' A zoomed picture has no bars: its box is the image rectangle, so the "bars"
-        ' would be 0-1 px wide, built from a box-sized bitmap that can reach hundreds of
-        ' MB at high zoom (audit B-12).
-        If zoom_Scale <> 1 Then perspective_Applies = False
+        ' A zoomed picture has no bars: the viewport covers the whole panel, so the
+        ' "bars" would be 0-1 px wide, built from a panel-sized bitmap that can reach
+        ' hundreds of MB at high zoom (audit B-12).
+        If Not MediaIsAtFit() Then perspective_Applies = False
 #End If
 
         Dim throttle_Elapsed As Boolean =

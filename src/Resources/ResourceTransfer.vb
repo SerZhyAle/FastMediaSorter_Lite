@@ -114,11 +114,18 @@ Friend Module ResourceTransfer
             Throw New IOException("The source and the destination are the same file; nothing was replaced.")
         End If
 
+        ' A case-only rename ("photo.jpg" -> "Photo.jpg", 057.S07-7) is the file itself on a
+        ' case-insensitive server, and the stat of the new name finds exactly that file - so
+        ' a stat that answers with the SOURCE's own name is not a collision, it IS the
+        ' source, and the rename goes ahead. Anything else the stat names is another file
+        ' (a case-sensitive server holding both names), and it is refused as before.
         If provider.Capabilities.SupportsServerSideRename Then
             Dim existing As ResourceEntry = Nothing
             If provider.TryStat(remoteDest, existing) Then
-                If Not overwrite Then Throw DestinationExists()
-                provider.DeleteFile(remoteDest)
+                Dim sameFile As Boolean =
+                    String.Equals(existing.Name, Path.GetFileName(remoteSource), StringComparison.OrdinalIgnoreCase)
+                If Not sameFile AndAlso Not overwrite Then Throw DestinationExists()
+                If Not sameFile Then provider.DeleteFile(remoteDest)
             End If
             provider.Rename(remoteSource, remoteDest)
             Return

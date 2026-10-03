@@ -48,7 +48,7 @@ Partial Public Class Main_Form
     ''' changes, so a refused verb never half-happens.
     ''' </summary>
     Friend Function ResourceBlocksFileOperations(verb As ResourceVerb) As Boolean
-        If IsArchiveMode() Then
+        If IsArchiveMode() OrElse IsArchiveOpenPending() Then
             lbl_Status.Text = Localization.T("В архиве файловые операции недоступны")
             Return True
         End If
@@ -66,6 +66,7 @@ Partial Public Class Main_Form
     ''' <summary>The same answer without the status line - for surfaces that draw a verb
     ''' disabled rather than refuse it (the recipients overlay).</summary>
     Friend Function ResourceAllows(verb As ResourceVerb) As Boolean
+        If IsArchiveMode() OrElse IsArchiveOpenPending() Then Return False
         If IsStreamOnScreen() Then Return False
         Dim session As ResourceSession = ActiveResourceSession()
         If session Is Nothing Then Return True
@@ -82,6 +83,9 @@ Partial Public Class Main_Form
     ''' </summary>
     Friend Sub EnterResource(resource As ResourceDescriptor, provider As IFileSystemProvider)
         LeaveArchive()
+        ' 057.S07-5: what the folder box and the current folder go back to if opening fails.
+        Dim previous_Folder As String = Current_Folder_Path
+        Dim previous_Box As String = cmbox_Media_Folder.Text
         LeaveResource()
         SlideShowStop()
 
@@ -119,6 +123,16 @@ Partial Public Class Main_Form
                 session?.Dispose()
                 RemoteCacheStore.DeleteSession(sessionDir)
             End If
+            ' 057.S07-5: the box must never name the locator of a session that just closed -
+            ' restored to the previous folder when that is a plain one, cleared when it too
+            ' was a locator (its session is closed as well).
+            ResourceSessionSlot.RestoreFolderAfterFailure(previous_Folder, previous_Box,
+                Sub(path, text)
+                    Current_Folder_Path = path
+                    is_TextBox_Editing = True
+                    cmbox_Media_Folder.Text = text
+                    is_TextBox_Editing = False
+                End Sub)
             lbl_Status.Text = Localization.T("Не удалось открыть ресурс")
         End Try
     End Sub

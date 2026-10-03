@@ -7,13 +7,15 @@ Imports System.Windows.Forms
 
 ' OCR + Translation overlay rendering.
 '
-' The overlay is NEVER baked into the bitmap; it is painted in the PictureBox
-' Paint handlers, on top of the image. Because the app expresses zoom/pan by
-' resizing/moving the PictureBox itself (SizeMode = Zoom), the displayed image
-' rectangle is exactly GetZoomedImageRectangle(image, pb.ClientSize) - so the
-' overlay re-derives its geometry from the live ClientSize on every paint and
-' therefore stays aligned through fullscreen, super-fullscreen, Ctrl+wheel zoom,
-' Shift+wheel 1:1, drag and resize, with no separate pan model.
+' The overlay is NEVER baked into the bitmap; it is painted in the PictureBox Paint
+' handlers, on top of the image. The displayed-image rectangle comes from one place:
+' DisplayedImageRectangleOnPanel - the SizeMode = Zoom letterbox at Fit, and the
+' viewport bounds (spec 012 §5) while zoomed - so the overlay re-derives its geometry
+' from that rectangle on every paint and therefore stays aligned through fullscreen,
+' super-fullscreen, zoom, drag and resize, with no separate pan model.
+' The handlers hang on HqPictureBox.MediaPaint (raised at the end of OnPaint on every
+' path, viewport or base) rather than Control.Paint, which the viewport path cannot
+' raise because its OnPaint skips the base drawing.
 '
 ' THE OVERFLOW RULE (OCR-OVERLAY rule 9, which requires this product to write one down
 ' rather than decide it per case).
@@ -37,7 +39,7 @@ Imports System.Windows.Forms
 '     reading order already, so the loop below IS the rule.
 Partial Public Class Main_Form
 
-    Private Sub Picture_Box_1_Paint(sender As Object, e As PaintEventArgs) Handles Picture_Box_1.Paint
+    Private Sub Picture_Box_1_Paint(sender As Object, e As PaintEventArgs) Handles Picture_Box_1.MediaPaint
 #If Not NETFRAMEWORK Then
         PaintAudioSurface(e.Graphics, Picture_Box_1.ClientRectangle)
 #End If
@@ -45,7 +47,7 @@ Partial Public Class Main_Form
         PaintInfoOverlay(Picture_Box_1, e)
     End Sub
 
-    Private Sub Picture_Box_2_Paint(sender As Object, e As PaintEventArgs) Handles Picture_Box_2.Paint
+    Private Sub Picture_Box_2_Paint(sender As Object, e As PaintEventArgs) Handles Picture_Box_2.MediaPaint
         PaintOcrOverlay(Picture_Box_2, e)
         PaintInfoOverlay(Picture_Box_2, e)
     End Sub
@@ -109,7 +111,15 @@ Partial Public Class Main_Form
         ' than drawn in the wrong place (audit 051 E-01, fix d).
         If doc.ImageSize.Width <> img.Width OrElse doc.ImageSize.Height <> img.Height Then Return
 
-        Dim fit As Rectangle = GetZoomedImageRectangle(doc.ImageSize.Width, doc.ImageSize.Height, pb.ClientSize.Width, pb.ClientSize.Height)
+        Dim fit As Rectangle
+#If Not NETFRAMEWORK Then
+        ' The rectangle the image is really painted into: the viewport bounds while
+        ' zoomed, the SizeMode = Zoom letterbox at Fit - the plates ride the same
+        ' image->screen transform as the picture (spec 012 §8).
+        fit = DisplayedImageRectangleOnPanel(img)
+#Else
+        fit = GetZoomedImageRectangle(doc.ImageSize.Width, doc.ImageSize.Height, pb.ClientSize.Width, pb.ClientSize.Height)
+#End If
         If fit.IsEmpty Then Return
         Dim scale As Double = fit.Width / CDbl(doc.ImageSize.Width)
 

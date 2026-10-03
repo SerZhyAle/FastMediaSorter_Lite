@@ -320,6 +320,48 @@ Public Class ArchiveSessionTests
         End Using
     End Sub
 
+    <Fact>
+    Public Sub A_locked_eviction_candidate_is_still_accounted_for_and_retried_after_release()
+        Dim archivePath = MakeArchive("locked.zip",
+            Sub(zip)
+                For i = 0 To 4
+                    AddEntry(zip, "p" & i.ToString("00") & ".jpg", Incompressible(1000, i))
+                Next
+            End Sub)
+        Using session = OpenSession(archivePath)
+            Dim refusal As ArchiveSession.EntryRefusal
+            Assert.True(session.TryEnsureExtracted(0, refusal, maxCacheBytes:=0))
+            Using held As New FileStream(session.Entries(0).TempPath, FileMode.Open, FileAccess.Read, FileShare.Read)
+                Assert.True(session.TryEnsureExtracted(3, refusal, maxCacheBytes:=1000))
+                Assert.True(File.Exists(session.Entries(0).TempPath))
+            End Using
+            Assert.True(session.TryEnsureExtracted(4, refusal, maxCacheBytes:=2000))
+            Assert.False(File.Exists(session.Entries(0).TempPath))
+            Assert.Equal(2000L, Directory.GetFiles(sessionDir).Sum(Function(f) New FileInfo(f).Length))
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub Prefetch_cannot_evict_the_displayed_page_after_sorting_changes_neighbour_order()
+        Dim archivePath = MakeArchive("sorted.zip",
+            Sub(zip)
+                For i = 0 To 4
+                    AddEntry(zip, "p" & i.ToString("00") & ".jpg", Incompressible(1000, i))
+                Next
+            End Sub)
+        Using session = OpenSession(archivePath)
+            Dim refusal As ArchiveSession.EntryRefusal
+            Assert.True(session.TryEnsureExtracted(0, refusal, maxCacheBytes:=0))
+            session.ProtectDisplayedEntries({session.Entries(0).TempPath, session.Entries(4).TempPath})
+            Assert.True(session.TryEnsureExtracted(4, refusal, maxCacheBytes:=1000))
+            Assert.True(File.Exists(session.Entries(0).TempPath))
+            Assert.True(File.Exists(session.Entries(4).TempPath))
+            session.ProtectDisplayedEntries({session.Entries(4).TempPath})
+            Assert.True(session.TryEnsureExtracted(4, refusal, maxCacheBytes:=1000))
+            Assert.False(File.Exists(session.Entries(0).TempPath))
+        End Using
+    End Sub
+
     ' ---------------------------------------------------------------- hostile ----
 
     ''' <summary>
@@ -420,11 +462,11 @@ Public Class ArchiveSessionTests
     <InlineData("comic.cbz", True)>
     <InlineData("photos.zip", True)>
     <InlineData("PHOTOS.ZIP", True)>
-    <InlineData("backup.7z", False)>
-    <InlineData("scans.rar", False)>
+    <InlineData("backup.7z", True)>
+    <InlineData("scans.rar", True)>
     <InlineData("photo.jpg", False)>
     <InlineData("", False)>
-    Public Sub Only_the_containers_phase_one_can_read_are_offered(name As String, expected As Boolean)
+    Public Sub Only_supported_archive_containers_are_offered(name As String, expected As Boolean)
         ' 7z/RAR are in Archive_Extensions (so they are never listed as entries) but not yet
         ' openable: they need the sequential path, which is phase Ф2.
         Assert.Equal(expected, ArchiveEntryFilter.IsArchivePath(name))

@@ -241,6 +241,14 @@ Public Class OllamaTranslator
             ' whole batch - the per-segment fallback would only wait for the next one.
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ollama: timed out")
             Return TranslationBatch.AllFailed(texts, TranslationFailure.Timeout)
+        Catch ex As OperationCanceledException
+            Throw
+        Catch ex As Exception
+            ' Ollama restarting or a LAN endpoint dropping after /api/tags answered: the
+            ' ITranslator contract is "never throw for an unreachable backend", and an escape
+            ' here discarded the recognized text (057.S10-1). Shown untranslated, never cached.
+            AppFileLogger.WriteLine("Ollama: translation failed - " & ex.Message)
+            Return TranslationBatch.AllFailed(texts, TranslationFailure.Other)
         End Try
     End Function
 

@@ -69,6 +69,14 @@ Partial Public Class Main_Form
     End Function
 
     Public Sub KeybUse(e As KeyEventArgs, was_Slide_Show_Mode As Boolean)
+#If Not NETFRAMEWORK Then
+        If IsArchiveOpenPending() Then
+            If e.KeyCode = Keys.Escape Then CancelPendingArchiveOpen()
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Return
+        End If
+#End If
         ' A key that moves, copies or deletes the file acts once per press (audit 047,
         ' C-20): each auto-repeat that arrived after the previous operation had finished
         ' took the next file, so one long press sorted a run of files nobody had looked at.
@@ -477,6 +485,13 @@ Partial Public Class Main_Form
             Else
                 current_Overlay_Document = Nothing
             End If
+#If Not NETFRAMEWORK Then
+            ' A 90° turn swaps the pixel dimensions, and a free zoom's viewport was
+            ' sized for the old aspect - re-place it at the same factor, about the
+            ' panel centre. Fit needs nothing: SizeMode = Zoom letterboxes the rotated
+            ' image by itself (spec 012 §6).
+            If rotated AndAlso Not MediaIsAtFit() Then ApplyZoomFactor(zoom_Factor, PanelCentreAnchor())
+#End If
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1505: rotated " & If(clockwise, "CW", "CCW"))
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1530: ERR: " & ex.Message)
