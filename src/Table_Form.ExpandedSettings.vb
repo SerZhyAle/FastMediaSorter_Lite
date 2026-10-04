@@ -85,7 +85,7 @@ Partial Public Class Table_Form
                             Function() {Choice("small", "Маленький"), Choice("medium", "Средний"), Choice("large", "Большой"), Choice("adaptive", "Адаптивный")},
                             Function() Main_Form.GetModernPreferences().ChromeSize,
                             Sub(v) Main_Form.GetModernPreferences().ChromeSize = v)
-        AddPreferenceSlider(viewing, "chrome_opacity", 40, 100,
+        AddPreferenceSlider(viewing, "chrome_opacity", 0, 100,
                             Function() Main_Form.GetModernPreferences().ChromeOpacityPercent,
                             Sub(v) Main_Form.GetModernPreferences().ChromeOpacityPercent = v)
         AddPreferenceNumber(viewing, "chrome_corners", 0, 16,
@@ -752,6 +752,44 @@ Partial Public Class Table_Form
             End Sub
         expandedRefreshActions.Add(refresh)
         AddSettingRow(files, "advance_after_copy", check, 34, True)
+    End Sub
+
+    ''' <summary>
+    ''' The interface language (APP-SETTINGS rule 5): on the first page, every shipped language
+    ''' by its endonym and never by a flag (ICON-EXTERNAL rule 6), applied at once to every open
+    ''' window without a restart. The toolbar menu writes the same setting through
+    ''' Main_Form.SetUiLanguage, so the selected entry is re-read on every refresh.
+    ''' </summary>
+    Private Sub AddUiLanguageRow(flow As FlowLayoutPanel)
+        Dim combo As New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Name = "cmbox_Ui_Language"}
+        Dim isUpdating As Boolean = False
+        Dim refresh As Action =
+            Sub()
+                isUpdating = True
+                Try
+                    If combo.Items.Count = 0 Then
+                        For index As Integer = 0 To Localization.Codes.Length - 1
+                            combo.Items.Add(New PreferenceChoice(Localization.Codes(index), Localization.Names(index)))
+                        Next
+                    End If
+                    combo.SelectedIndex = Math.Max(0, Localization.CurrentIndex)
+                    combo.AccessibleName = Localization.T("Язык интерфейса")
+                Finally
+                    isUpdating = False
+                End Try
+            End Sub
+        refresh()
+
+        AddHandler combo.SelectedIndexChanged,
+            Sub()
+                If isUpdating Then Return
+                Dim choice As PreferenceChoice = TryCast(combo.SelectedItem, PreferenceChoice)
+                If choice Is Nothing OrElse choice.Value = Localization.CurrentCode Then Return
+                Main_Form.SetUiLanguage(choice.Value)
+                LngCh()
+            End Sub
+        expandedRefreshActions.Add(refresh)
+        AddSettingRow(flow, "interface_language", combo, 230, True)
     End Sub
 
     ''' <summary>

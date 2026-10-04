@@ -234,7 +234,9 @@ Partial Public Class Main_Form
             Dim code = Localization.Codes(i)
             Dim item As New ToolStripMenuItem(Localization.Names(i))
             item.Checked = (code = Localization.CurrentCode)
+#If NETFRAMEWORK Then
             item.Image = FlagImages.Get(code)
+#End If
             item.Tag = code
             AddHandler item.Click, Sub(s2, e2) SetUiLanguage(CStr(DirectCast(s2, ToolStripMenuItem).Tag))
             menu.Items.Add(item)

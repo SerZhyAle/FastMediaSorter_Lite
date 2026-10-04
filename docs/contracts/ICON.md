@@ -35,7 +35,10 @@ What 0.14-0.17 added for this product:
 - **Rule 6 (0.11, `ICON-EXTERNAL`):** a language is marked by its endonym, never by a flag. The dated
   exceptions recorded before the rule was decided (this product's flags in three menus, until
   2026-12-31) stay until their own dates - now as deviations from a decided rule; the owner decides
-  remove-early versus keep-to-date.
+  remove-early versus keep-to-date. **Decided 2026-10-04 (owner: "everything by the contracts"): removed
+  early on the .NET 10 build** - the interface-language menus and the OCR source/target lists show the
+  endonym only (`LanguageSelectorContractTests`). The x86 fallback keeps its flags. The catalog
+  registry row for the exception is the owner's to close; nothing in the catalog was edited from here.
 
 Deviation still open, each a dated exception in the registry and a proposal beside the contract: meanings
 the vocabulary lacked were folded into 0.15/0.17 (`app.theme`, `action.reveal`, `action.show-code`,

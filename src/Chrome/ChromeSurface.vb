@@ -29,6 +29,30 @@ Friend NotInheritable Class ChromeSurface
     Private textFont As Font
     Private symbolFont As Font
     Private animated As Boolean = True
+    Private inkExternalMode As Boolean
+    Private inkPainting As Boolean
+
+    ''' <summary>Raised at the end of a paint while the ink is external: the host then redraws its ink layer
+    ''' from the same state, so the two never disagree.</summary>
+    Friend Event InkNeeded As EventHandler
+
+    ''' <summary>True while the glyphs and captions are drawn by the host's ink layer
+    ''' (<see cref="PaintInk"/>) instead of here: the fills stay translucent with the window, the ink does not.</summary>
+    <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Friend Property InkExternal As Boolean
+        Get
+            Return inkExternalMode
+        End Get
+        Set(value As Boolean)
+            If inkExternalMode = value Then Return
+            inkExternalMode = value
+            For Each child As Control In Controls
+                Dim source As IChromeInkSource = TryCast(child, IChromeInkSource)
+                If source IsNot Nothing Then source.InkModeChanged(value)
+            Next
+            Invalidate(True)
+        End Set
+    End Property
 
     <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
     Public Property VerticalLayout As Boolean
@@ -299,13 +323,76 @@ Friend NotInheritable Class ChromeSurface
         End Using
 
         For Each item As ChromeItem In itemList
-            If item.Visible AndAlso Not item.Bounds.IsEmpty Then PaintItem(g, item)
+            If item.Visible AndAlso Not item.Bounds.IsEmpty Then
+                PaintItemFill(g, item)
+                If Not inkExternalMode Then PaintItemInk(g, item)
+            End If
         Next
+        If inkExternalMode Then RaiseEvent InkNeeded(Me, EventArgs.Empty)
     End Sub
 
-    Private Sub PaintItem(g As Graphics, item As ChromeItem)
+    ''' <summary>
+    ''' Everything the panel shows that is NOT fill: glyphs, captions, the focus ring. Drawn onto a
+    ''' transparent surface with per-pixel alpha, origin at this control's top-left, so the host can
+    ''' present it fully opaque over a translucent panel. Items an own-painting child control sits
+    ''' on (the path box) are skipped, exactly as the child covers them in the ordinary paint.
+    ''' </summary>
+    Friend Sub PaintInk(g As Graphics)
+        g.SmoothingMode = SmoothingMode.AntiAlias
+        g.PixelOffsetMode = PixelOffsetMode.HighQuality
+        ' GDI text writes no alpha, so the layered paint uses GDI+'s own grayscale antialiasing.
+        g.TextRenderingHint = Drawing.Text.TextRenderingHint.AntiAliasGridFit
+        inkPainting = True
+        Try
+            For Each item As ChromeItem In itemList
+                If item.Visible AndAlso Not item.Bounds.IsEmpty AndAlso Not IsCoveredByInkChild(item.Bounds) Then PaintItemInk(g, item)
+            Next
+            For Each child As Control In Controls
+                Dim source As IChromeInkSource = TryCast(child, IChromeInkSource)
+                If source Is Nothing OrElse Not child.Visible Then Continue For
+                Dim state As GraphicsState = g.Save()
+                Try
+                    g.TranslateTransform(child.Left, child.Top)
+                    g.IntersectClip(New Rectangle(0, 0, child.Width, child.Height))
+                    source.PaintInk(g)
+                Finally
+                    g.Restore(state)
+                End Try
+            Next
+        Finally
+            inkPainting = False
+        End Try
+    End Sub
+
+    Private Function IsCoveredByInkChild(bounds As Rectangle) As Boolean
+        For Each child As Control In Controls
+            If child.Visible AndAlso TypeOf child Is IChromeInkSource AndAlso child.Bounds = bounds Then Return True
+        Next
+        Return False
+    End Function
+
+    Private Sub PaintItemFill(g As Graphics, item As ChromeItem)
         Dim r As Rectangle = item.Bounds
         Dim itemCorner As Integer = Px(ChromeMetrics.ItemCorner)
+
+        If item.IsPin Then
+            ' The pin in the panel's corner is an ambient, low-profile control:
+            ' no bright accent fill at rest, only a small subtle hover/press cue.
+            If item.HoverLevel <= 0.0F AndAlso item.PressLevel <= 0.0F Then Return
+            Dim size As Integer = Math.Min(r.Width, Math.Min(r.Height, Px(ChromeMetrics.PinButtonSize)))
+            Dim box As New Rectangle(r.X + (r.Width - size) \ 2, r.Y + (r.Height - size) \ 2, size, size)
+            Dim pinFill As Color = chromeTheme.ItemHover
+            If item.PressLevel > 0.0F Then
+                pinFill = ChromeTheme.Blend(pinFill, chromeTheme.ItemPressed, item.PressLevel)
+            End If
+            pinFill = ChromeTheme.Blend(chromeTheme.PanelFill, pinFill, Math.Max(item.HoverLevel, item.PressLevel))
+            Using path As GraphicsPath = RoundedRect(New RectangleF(box.X, box.Y, box.Width, box.Height), itemCorner)
+                Using brush As New SolidBrush(pinFill)
+                    g.FillPath(brush, path)
+                End Using
+            End Using
+            Return
+        End If
 
         Dim rest As Color = chromeTheme.FillFor(item.Enabled, item.Checked, item.Destructive, False, False)
         Dim hot As Color = chromeTheme.FillFor(item.Enabled, item.Checked, item.Destructive, True, False)
@@ -325,11 +412,22 @@ Friend NotInheritable Class ChromeSurface
                 End Using
             End Using
         End If
+    End Sub
 
+    Private Sub PaintItemInk(g As Graphics, item As ChromeItem)
+        Dim r As Rectangle = item.Bounds
+        Dim itemCorner As Integer = Px(ChromeMetrics.ItemCorner)
         Dim ink As Color = chromeTheme.InkFor(item.Enabled, item.Checked, item.Destructive, item.HoverLevel > 0.5F)
         Dim drawn As Boolean = False
         If item.IsPin Then
-            PaintPin(g, item, r, ink)
+            Dim pinInk As Color
+            If chromeTheme.IsHighContrast Then
+                pinInk = If(item.Checked, SystemColors.HighlightText, SystemColors.WindowText)
+            Else
+                Dim restInk As Color = ChromeTheme.Blend(chromeTheme.PanelFill, chromeTheme.Foreground, If(item.Checked, 0.5F, 0.35F))
+                pinInk = If(item.HoverLevel > 0.0F, ChromeTheme.Blend(restInk, chromeTheme.Foreground, item.HoverLevel), restInk)
+            End If
+            PaintPin(g, item, r, pinInk)
             drawn = True
         ElseIf item.Kind = ChromeItemKind.Toggle AndAlso item.GlyphId.Length = 0 AndAlso item.Caption.Length = 0 Then
             Dim side As Integer = Px(ChromeMetrics.GlyphSize)
@@ -443,12 +541,55 @@ Friend NotInheritable Class ChromeSurface
     Private Sub PaintCaption(g As Graphics, item As ChromeItem, r As Rectangle, ink As Color)
         Dim font As Font = FontFor(item)
         If font Is Nothing Then Return
-        Dim flags As TextFormatFlags = TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or
+        Dim isLeftAligned As Boolean = item.AlignLeft OrElse VerticalLayout OrElse item.ShowCaptionWithGlyph
+        Dim flags As TextFormatFlags = TextFormatFlags.VerticalCenter Or
                                        TextFormatFlags.NoPrefix Or TextFormatFlags.SingleLine Or TextFormatFlags.EndEllipsis Or
                                        TextFormatFlags.NoPadding
-        If VerticalLayout OrElse item.ShowCaptionWithGlyph Then flags = (flags And Not TextFormatFlags.HorizontalCenter) Or If(isRightToLeft, TextFormatFlags.Right, TextFormatFlags.Left)
+        If isLeftAligned Then
+            flags = flags Or If(isRightToLeft, TextFormatFlags.Right, TextFormatFlags.Left)
+        Else
+            flags = flags Or TextFormatFlags.HorizontalCenter
+        End If
         If isRightToLeft AndAlso Not item.CaptionIsSymbol Then flags = flags Or TextFormatFlags.RightToLeft
-        TextRenderer.DrawText(g, item.Caption, font, r, ink, flags)
+
+        Dim textRect As Rectangle = r
+        If item.AlignLeft AndAlso Not item.ShowCaptionWithGlyph Then
+            Dim hPad As Integer = Px(ChromeMetrics.CaptionPadding)
+            textRect = New Rectangle(r.X + hPad, r.Y, Math.Max(0, r.Width - 2 * hPad), r.Height)
+        End If
+
+        If inkPainting Then
+            DrawCaptionWithAlpha(g, item.Caption, font, textRect, ink, (flags And TextFormatFlags.HorizontalCenter) <> 0,
+                                 (flags And TextFormatFlags.RightToLeft) <> 0)
+            Return
+        End If
+        TextRenderer.DrawText(g, item.Caption, font, textRect, ink, flags)
+    End Sub
+
+    ''' <summary>The caption on a transparent surface: GDI text (TextRenderer) leaves the alpha channel
+    ''' empty, so it would vanish there. Same placement as the ordinary paint - centred, or on the
+    ''' start edge in the reading direction; one line, ellipsis at the end, no prefix, no padding.</summary>
+    Private Sub DrawCaptionWithAlpha(g As Graphics, text As String, font As Font, r As Rectangle, ink As Color,
+                                     centered As Boolean, readsRightToLeft As Boolean)
+        Using format As New StringFormat(StringFormat.GenericTypographic)
+            format.FormatFlags = StringFormatFlags.NoWrap Or StringFormatFlags.LineLimit
+            If readsRightToLeft Then format.FormatFlags = format.FormatFlags Or StringFormatFlags.DirectionRightToLeft
+            format.Trimming = StringTrimming.EllipsisCharacter
+            format.HotkeyPrefix = Drawing.Text.HotkeyPrefix.None
+            format.LineAlignment = StringAlignment.Center
+            ' In a right-to-left StringFormat "near" is the right edge; the ordinary paint puts a
+            ' start-aligned caption on the right in a right-to-left panel and on the left otherwise.
+            If centered Then
+                format.Alignment = StringAlignment.Center
+            ElseIf isRightToLeft Then
+                format.Alignment = If(readsRightToLeft, StringAlignment.Near, StringAlignment.Far)
+            Else
+                format.Alignment = StringAlignment.Near
+            End If
+            Using brush As New SolidBrush(ink)
+                g.DrawString(text, font, brush, New RectangleF(r.X, r.Y, r.Width, r.Height), format)
+            End Using
+        End Using
     End Sub
 
     Friend Shared Function RoundedRect(r As RectangleF, radius As Integer) As GraphicsPath

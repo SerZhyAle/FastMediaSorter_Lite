@@ -62,6 +62,9 @@ Friend NotInheritable Class ChromeItem
     ''' <see cref="Checked"/>, tilted and outlined while not), never as a checkbox.</summary>
     Public Property IsPin As Boolean
 
+    ''' <summary>True when caption text should align to the start/left edge rather than centered.</summary>
+    Public Property AlignLeft As Boolean
+
     ''' <summary>A direction ("back"/"forward"): drawn mirrored when the UI language reads right to left.</summary>
     Public Property MirrorInRtl As Boolean
 

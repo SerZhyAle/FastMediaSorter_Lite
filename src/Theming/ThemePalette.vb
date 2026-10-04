@@ -256,7 +256,7 @@ Public NotInheritable Class ThemePalette
             Case ThemeRole.Border : Return System.Drawing.Color.FromArgb(85, 85, 85)
             Case ThemeRole.TextPrimary : Return System.Drawing.Color.FromArgb(240, 240, 240)
             Case ThemeRole.TextMuted : Return System.Drawing.Color.FromArgb(170, 170, 170)
-            Case ThemeRole.TextDisabled : Return System.Drawing.Color.FromArgb(118, 118, 118)
+            Case ThemeRole.TextDisabled : Return System.Drawing.Color.FromArgb(140, 140, 140)
             Case ThemeRole.Accent : Return System.Drawing.Color.FromArgb(0, 103, 192)
             Case ThemeRole.AccentInk : Return System.Drawing.Color.White
             Case ThemeRole.Link : Return System.Drawing.Color.FromArgb(125, 185, 250)

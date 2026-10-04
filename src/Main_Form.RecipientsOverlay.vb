@@ -209,8 +209,7 @@ Partial Public Class Main_Form
         Dim copyW As Integer = 0
 #If Not NETFRAMEWORK Then
         copy_Caption = Localization.T("копия")
-        copyW = Math.Max(RecipientPx(38),
-                         TextRenderer.MeasureText(copy_Caption, ui_Font).Width + RecipientPx(14))
+        copyW = Math.Max(RecipientPx(38), MeasureRowText(copy_Caption, ui_Font) + RecipientPx(14))
         ' A narrow window must not lose the path to the copy zone: below a usable width the
         ' row goes back to move-only, and the copy stays reachable by Shift+digit.
         If copyW > panelW - RecipientPx(80) Then copyW = 0
@@ -242,6 +241,9 @@ Partial Public Class Main_Form
                 .BackColor = If(isDelete, Color.FromArgb(96, 32, 32), Color.FromArgb(52, 52, 52))
             }
             b.FlatAppearance.BorderSize = 0
+#If Not NETFRAMEWORK Then
+            b.RowFont = ui_Font
+#End If
             b.FlatAppearance.MouseOverBackColor = If(isDelete, Color.FromArgb(140, 44, 44), Color.FromArgb(72, 72, 72))
             b.FlatAppearance.MouseDownBackColor = If(isDelete, Color.FromArgb(170, 50, 50), Color.FromArgb(96, 96, 96))
             ' Full path in the tooltip - the caption may be ellipsized.
@@ -274,6 +276,7 @@ Partial Public Class Main_Form
                     .BackColor = Color.FromArgb(38, 62, 38)
                 }
                 c.Name = Recipients_Copy_Row_Name
+                c.RowFont = ui_Font
                 c.FlatAppearance.BorderSize = 0
                 c.FlatAppearance.MouseOverBackColor = Color.FromArgb(52, 88, 52)
                 c.FlatAppearance.MouseDownBackColor = Color.FromArgb(66, 112, 66)
@@ -294,6 +297,16 @@ Partial Public Class Main_Form
     End Sub
 
 #If Not NETFRAMEWORK Then
+    ''' <summary>The width a caption takes when it is drawn the way the rows draw it (GDI+, in pixels), so the
+    ''' copy zone is sized by what is painted and not by a second, differently-scaled measurement.</summary>
+    Private Shared Function MeasureRowText(text As String, font As Font) As Integer
+        Using scratch As New Bitmap(1, 1)
+            Using g As Graphics = Graphics.FromImage(scratch)
+                Return CInt(Math.Ceiling(g.MeasureString(text, font, Integer.MaxValue, StringFormat.GenericTypographic).Width))
+            End Using
+        End Using
+    End Function
+
     ''' <summary>Names for the two zones of a recipient row, so the health pass can find
     ''' them again without rebuilding the overlay (which would dispose and remake every
     ''' button and its font).</summary>
@@ -473,6 +486,63 @@ Partial Public Class Main_Form
             ' Captions are folder paths: "R&D" must not become an underlined D (audit B-20).
             Me.UseMnemonic = False
         End Sub
+
+#If Not NETFRAMEWORK Then
+        Private hovering As Boolean
+        Private pressing As Boolean
+
+        ''' <summary>The caption's font, held here and not read back from <c>Font</c>: a pixel font handed to a
+        ''' control came out of its GDI text path about twice the size it was built at on a scaled display,
+        ''' and the table's captions overflowed their rows.</summary>
+        Public Property RowFont As Font
+
+        Protected Overrides Sub OnMouseEnter(e As EventArgs)
+            MyBase.OnMouseEnter(e)
+            hovering = True
+            Invalidate()
+        End Sub
+
+        Protected Overrides Sub OnMouseLeave(e As EventArgs)
+            MyBase.OnMouseLeave(e)
+            hovering = False
+            pressing = False
+            Invalidate()
+        End Sub
+
+        Protected Overrides Sub OnMouseDown(mevent As MouseEventArgs)
+            MyBase.OnMouseDown(mevent)
+            If mevent.Button = MouseButtons.Left Then pressing = True
+            Invalidate()
+        End Sub
+
+        Protected Overrides Sub OnMouseUp(mevent As MouseEventArgs)
+            MyBase.OnMouseUp(mevent)
+            pressing = False
+            Invalidate()
+        End Sub
+
+        ''' <summary>Fill, then the caption with the outline that keeps it readable over a see-through table.</summary>
+        Protected Overrides Sub OnPaint(pevent As PaintEventArgs)
+            Dim g As Graphics = pevent.Graphics
+            Dim fill As Color = If(Not Enabled, BackColor,
+                                   If(pressing, FlatAppearance.MouseDownBackColor,
+                                      If(hovering, FlatAppearance.MouseOverBackColor, BackColor)))
+            Using brush As New SolidBrush(fill)
+                g.FillRectangle(brush, ClientRectangle)
+            End Using
+            If String.IsNullOrEmpty(Text) Then Return
+            Dim captionFont As Font = If(RowFont, Font)
+            Using format As New StringFormat(StringFormatFlags.NoWrap)
+                format.LineAlignment = StringAlignment.Center
+                format.Trimming = StringTrimming.EllipsisCharacter
+                format.HotkeyPrefix = Drawing.Text.HotkeyPrefix.None
+                format.Alignment = If(TextAlign = ContentAlignment.MiddleCenter, StringAlignment.Center, StringAlignment.Near)
+                If RightToLeft = RightToLeft.Yes Then format.FormatFlags = format.FormatFlags Or StringFormatFlags.DirectionRightToLeft
+                Dim area As New RectangleF(Padding.Left, 0, Math.Max(0, Width - Padding.Horizontal), Height)
+                ChromeInkOutline.DrawText(g, Text, captionFont, area, ForeColor, format, ChromeInkOutline.RadiusFor(DeviceDpi / 96.0F))
+            End Using
+        End Sub
+#End If
     End Class
 
     ''' <summary>

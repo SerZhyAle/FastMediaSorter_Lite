@@ -45,4 +45,9 @@
   positive mark; on a confirmation the role marks the acting button, never the focus. The shared day tone
   of `state.warning`, pinned by `ICON-RENDER` 0.14 section 10 D, is `#EF6C00` - `ThemePalette` follows it
   since 2026-10-02, and no window paints a role colour as a literal.
+- **The language selector follows `APP-SETTINGS` rules 5 and 7** (read against this product 2026-10-04, owner
+  direction): on the first settings page, every shipped language by its endonym, no flag, applied at once
+  to every open window (`LanguageSelectorContractTests`); the settings drop-down lists share one pixel font
+  and an item height of at least 28 logical px. Not yet read the same way: rule 6 (the theme selector is
+  on the Viewing page, not the first) and the 44 px coarse-input floor.
 - The net48 x86 fallback takes bug fixes only; its gaps are one dated exception in the registry.

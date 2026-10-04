@@ -107,6 +107,72 @@ Partial Public Class Table_Form
         Return shared_Font
     End Function
 
+    ''' <summary>A font sized in device pixels from a logical size (12 = what 9 pt is at 96 dpi).
+    ''' A native list or edit box measures itself from its font; a pixel font carries no
+    ''' point-to-pixel conversion for the system to get wrong, so the control follows
+    ''' <see cref="Sp"/> like everything else in this window.</summary>
+    Private Function SettingsPixelFont(family As String, logicalPixels As Integer, Optional style As FontStyle = FontStyle.Regular) As Font
+        Dim pixels As Integer = Math.Max(8, Sp(logicalPixels))
+        Dim key As String = family & "|" & pixels.ToString(Globalization.CultureInfo.InvariantCulture) & "px|" &
+                            CInt(style).ToString(Globalization.CultureInfo.InvariantCulture)
+        Dim shared_Font As Font = Nothing
+        If Not settingsFonts.TryGetValue(key, shared_Font) Then
+            shared_Font = New Font(family, CSng(pixels), style, GraphicsUnit.Pixel)
+            settingsFonts.Add(key, shared_Font)
+        End If
+        Return shared_Font
+    End Function
+
+    ''' <summary>
+    ''' Every drop-down list of this window is drawn here: the field and the list share one
+    ''' item height of at least 28 logical px (ICON-RENDER section 3 rule 5, APP-SETTINGS rule 7)
+    ''' and one pixel font, in the window's own colours. Left to the system, a list took the
+    ''' size of its point font at the wrong scale and came out smaller than the buttons beside it.
+    ''' A list that is already owner-drawn (the OCR languages) keeps its own handler.
+    ''' </summary>
+    Private Sub StyleModernComboBox(combo As ComboBox)
+        If combo.DrawMode <> DrawMode.Normal Then Return
+        combo.DrawMode = DrawMode.OwnerDrawFixed
+        combo.ItemHeight = Math.Max(Sp(24), SettingsPixelFont("Segoe UI", 12).Height + Sp(8))
+        combo.MaxDropDownItems = 16
+        AddHandler combo.DrawItem, AddressOf ModernComboBox_DrawItem
+    End Sub
+
+    Private Sub ModernComboBox_DrawItem(sender As Object, e As DrawItemEventArgs)
+        Dim combo As ComboBox = DirectCast(sender, ComboBox)
+        Dim inField As Boolean = (e.State And DrawItemState.ComboBoxEdit) <> 0
+        Dim highlighted As Boolean = Not inField AndAlso (e.State And DrawItemState.Selected) <> 0
+        Dim back As Color = If(highlighted, SettingsAccent, combo.BackColor)
+        Dim fore As Color = If(Not combo.Enabled, SystemColors.GrayText,
+                               If(highlighted, If(IsDarkColor(SettingsAccent), Color.White, Color.Black), combo.ForeColor))
+        Using brush As New SolidBrush(back)
+            e.Graphics.FillRectangle(brush, e.Bounds)
+        End Using
+        If e.Index >= 0 AndAlso e.Index < combo.Items.Count Then
+            Dim padding As Integer = Sp(8)
+            Dim area As New RectangleF(e.Bounds.X + padding, e.Bounds.Y, Math.Max(0, e.Bounds.Width - 2 * padding), e.Bounds.Height)
+            ' DrawString, not TextRenderer: TextRenderer converts a pixel font through the
+            ' point size at the device DPI, which scaled this one a second time (about 1.75x
+            ' too large at 175 %) while the numeric boxes beside it, on the same font, were
+            ' right. GDI+ draws a pixel font in pixels, so every list is one size at any
+            ' scale - the font is the window's shared one, not whatever the control carries.
+            Using sf As New StringFormat(StringFormatFlags.NoWrap)
+                sf.LineAlignment = StringAlignment.Center
+                sf.Trimming = StringTrimming.EllipsisCharacter
+                sf.HotkeyPrefix = Drawing.Text.HotkeyPrefix.None
+                If combo.RightToLeft = RightToLeft.Yes Then sf.FormatFlags = sf.FormatFlags Or StringFormatFlags.DirectionRightToLeft
+                Using textBrush As New SolidBrush(fore)
+                    e.Graphics.DrawString(combo.GetItemText(combo.Items(e.Index)), SettingsPixelFont("Segoe UI", 12), textBrush, area, sf)
+                End Using
+            End Using
+        End If
+        e.DrawFocusRectangle()
+    End Sub
+
+    Private Shared Function IsDarkColor(c As Color) As Boolean
+        Return (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) < 140.0
+    End Function
+
     Private Sub DisposeSettingsFonts()
         For Each owned_Font As Font In settingsFonts.Values
             owned_Font.Dispose()
@@ -182,7 +248,8 @@ Partial Public Class Table_Form
             .AutoSize = True,
             .ForeColor = SettingsSidebarMuted,
             .Font = SettingsFont("Segoe UI", Sf(8.5F), FontStyle.Regular),
-            .Location = New Point(Sp(19), Sp(55))
+            .Location = New Point(Sp(19), Sp(55)),
+            .Visible = False
         }
         modernSettingsSidebar.Controls.Add(modernProductLabel)
         modernSettingsSidebar.Controls.Add(modernSidebarSectionLabel)
@@ -282,7 +349,7 @@ Partial Public Class Table_Form
     Private Sub BuildModernSettingsNavigation()
         ' A dense list (ICON-RENDER rule 5: 20 px glyph, a row of 34 - above the 28 px
         ' mouse floor): nine entries fit the window's minimum height with room to spare.
-        Dim top As Integer = Sp(78)
+        Dim top As Integer = Sp(66)
         Dim navLabels As String() = {"Destination folders", "Viewing", "Video and quality", "Audio", "Files and system",
                                      "OCR", "Translation", "Android / SFTP", "About"}
         modernSettingsNavButtons = New Button(navLabels.Length - 1) {}
@@ -477,7 +544,8 @@ Partial Public Class Table_Form
         Next
 
         LinkLabel1.Text = ShortSettingsVersion()
-        modernSidebarSectionLabel.Text = Localization.T("Настройки")
+        ' The window's title bar already says "Settings"; the sidebar names only the product.
+        modernSidebarSectionLabel.Text = String.Empty
         LocalizeModernSettingRows()
         RefreshModernSettingsHeader()
     End Sub
@@ -847,6 +915,8 @@ Partial Public Class Table_Form
         modernDataLayoutBuilt = True
 
         Dim destinations As FlowLayoutPanel = CreateModernPageFlow(Tab_Page_1)
+        ' APP-SETTINGS rule 5: the language selector is on the first page.
+        AddUiLanguageRow(destinations)
         AddSettingRow(destinations, "recipients_overlay", SetOnTop, 34)
         Dim gridHost As New Panel With {.Height = 398, .BackColor = SettingsSurface, .Padding = New Padding(12)}
         ReparentModernSettingsControl(lbl_Grid_Hint, gridHost)
@@ -911,7 +981,8 @@ Partial Public Class Table_Form
         AddSettingRow(files, "no_confirmation", chkb_no_request_before_file_operation, 34, True)
         AddSettingRow(files, "image_associations", btn_Set_As_Default, 230, True)
         AddSettingRow(files, "video_associations", btn_Set_As_Default_Video, 230, True)
-        AddSettingRow(files, "interface_language", btn_Language, 100, True)
+        ' The language button (a flag menu) is replaced by the first page's selector.
+        btn_Language.Visible = False
 
         Dim ocr As FlowLayoutPanel = CreateModernPageFlow(Tab_Page_5)
         Dim translation As FlowLayoutPanel = CreateModernPageFlow(modernTranslationPage)
@@ -1024,7 +1095,7 @@ Partial Public Class Table_Form
             AddHandler description.Click, AddressOf ToggleModernCheckboxFromText
         ElseIf TypeOf editor Is Button Then
             editor.Anchor = AnchorStyles.Top Or AnchorStyles.Right
-            editor.Height = 34
+            editor.Height = Sp(34)
         Else
             editor.Anchor = AnchorStyles.Top Or AnchorStyles.Right
         End If
@@ -1099,35 +1170,36 @@ Partial Public Class Table_Form
     End Sub
 
     Private Function MakeModernControlStrip(controls As Control(), width As Integer) As FlowLayoutPanel
-        Dim strip As New FlowLayoutPanel With {.Width = width, .Height = 34, .FlowDirection = FlowDirection.LeftToRight,
+        Dim strip As New FlowLayoutPanel With {.Width = Sp(width), .Height = Sp(34), .FlowDirection = FlowDirection.LeftToRight,
                                                .WrapContents = False, .Margin = Padding.Empty, .Padding = Padding.Empty,
                                                .BackColor = SettingsSurface}
         For index As Integer = 0 To controls.Length - 1
             Dim control As Control = controls(index)
             ReparentModernSettingsControl(control, strip)
-            control.Margin = New Padding(0, 2, 6, 2)
+            control.Margin = New Padding(0, Sp(2), Sp(6), Sp(2))
             If controls.Length = 2 Then
                 If index = 0 AndAlso TypeOf control Is ComboBox Then
-                    control.Width = 208
+                    control.Width = Sp(208)
                 ElseIf index = 1 AndAlso TypeOf controls(0) Is ComboBox Then
-                    control.Width = 96
+                    control.Width = Sp(96)
                 Else
-                    control.Width = (width - 8) \ 2
+                    control.Width = (Sp(width) - 8) \ 2
                 End If
             End If
-            If TypeOf control Is Button Then control.Height = 30
+            ' 30 logical px stays above the 28 px floor for a mouse (ICON-RENDER section 3 rule 5).
+            If TypeOf control Is Button Then control.Height = Sp(30)
         Next
         AddHandler strip.Resize, Sub() LayoutModernControlStrip(strip, controls)
         LayoutModernControlStrip(strip, controls)
         Return strip
     End Function
 
-    Private Shared Sub LayoutModernControlStrip(strip As FlowLayoutPanel, controls As Control())
+    Private Sub LayoutModernControlStrip(strip As FlowLayoutPanel, controls As Control())
         If controls.Length <> 2 Then Return
-        Dim available As Integer = Math.Max(120, strip.ClientSize.Width - 8)
+        Dim available As Integer = Math.Max(Sp(120), strip.ClientSize.Width - 8)
         If TypeOf controls(0) Is ComboBox Then
-            controls(1).Width = Math.Min(96, Math.Max(72, available \ 3))
-            controls(0).Width = Math.Max(80, available - controls(1).Width)
+            controls(1).Width = Math.Min(Sp(96), Math.Max(Sp(72), available \ 3))
+            controls(0).Width = Math.Max(Sp(80), available - controls(1).Width)
         Else
             controls(0).Width = available \ 2
             controls(1).Width = available - controls(0).Width
@@ -1534,7 +1606,11 @@ Partial Public Class Table_Form
             ElseIf TypeOf control Is ComboBox OrElse TypeOf control Is TextBox OrElse TypeOf control Is NumericUpDown Then
                 control.BackColor = If(settingsDarkMode, Color.FromArgb(50, 52, 57), SystemColors.Window)
                 control.ForeColor = SettingsText
-                control.Font = SettingsFont("Segoe UI", Sf(9.0F), FontStyle.Regular)
+                ' Pixel-sized, so a native control is exactly as tall as its neighbours at any
+                ' display scale instead of taking whatever size the system picks for a point font.
+                control.Font = SettingsPixelFont("Segoe UI", 12)
+                Dim list As ComboBox = TryCast(control, ComboBox)
+                If list IsNot Nothing Then StyleModernComboBox(list)
             ElseIf TypeOf control Is CheckBox Then
                 control.BackColor = SettingsSurface
                 control.ForeColor = SettingsText

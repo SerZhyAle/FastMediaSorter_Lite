@@ -5,6 +5,47 @@ Partial Public NotInheritable Class Localization
         Add("Открыть после регистрации", "Open after registration", "Відкрити після реєстрації", "Nach Registrierung öffnen", "Apri dopo la registrazione", "Abrir tras registrar", "Ouvrir après l'enregistrement", "Abrir após registar", "فتح بعد التسجيل", "पंजीकरण के बाद खोलें", "নিবন্ধনের পরে খুলুন", "اندراج کے بعد کھولیں", "注册后打开")
         Add("Инструкция: диски FileDO", "FileDO disks guide", "Посібник: диски FileDO", "Anleitung: FileDO-Laufwerke", "Guida: dischi FileDO", "Guía: discos FileDO", "Guide : disques FileDO", "Guia: discos FileDO", "دليل أقراص FileDO", "FileDO डिस्क मार्गदर्शिका", "FileDO ডিস্ক নির্দেশিকা", "FileDO ڈسک گائیڈ", "FileDO 磁盘指南")
         Add("Сайт FileDO", "FileDO website", "Сайт FileDO", "FileDO-Website", "Sito web di FileDO", "Sitio web de FileDO", "Site web de FileDO", "Site do FileDO", "موقع FileDO", "FileDO वेबसाइट", "FileDO ওয়েবসাইট", "FileDO ویب سائٹ", "FileDO 网站")
+        Add("Открыть менеджер дисков FileDO", "Open FileDO Disk Manager", "Відкрити менеджер дисків FileDO", "FileDO-Laufwerksverwaltung öffnen", "Apri Gestione dischi FileDO", "Abrir el administrador de discos de FileDO", "Ouvrir le gestionnaire de disques FileDO", "Abrir o Gestor de discos do FileDO", "فتح مدير أقراص FileDO", "FileDO डिस्क प्रबंधक खोलें", "FileDO ডিস্ক ম্যানেজার খুলুন", "FileDO ڈسک مینیجر کھولیں", "打开 FileDO 磁盘管理器")
+        Add("Менеджер дисков FileDO не найден на этом ПК. Установите FileDO с его сайта и повторите.",
+            "FileDO Disk Manager was not found on this PC. Install FileDO from its website and retry.",
+            "Менеджер дисків FileDO не знайдено на цьому ПК. Встановіть FileDO з його сайту та повторіть.",
+            "Die FileDO-Laufwerksverwaltung wurde auf diesem PC nicht gefunden. FileDO von dessen Website installieren und erneut versuchen.",
+            "Gestione dischi FileDO non trovato su questo PC. Installa FileDO dal suo sito e riprova.",
+            "No se encontró el administrador de discos de FileDO en este PC. Instala FileDO desde su sitio web e inténtalo de nuevo.",
+            "Le gestionnaire de disques FileDO est introuvable sur ce PC. Installez FileDO depuis son site web et réessayez.",
+            "O Gestor de discos do FileDO não foi encontrado neste PC. Instale o FileDO a partir do seu site e tente novamente.",
+            "لم يُعثر على مدير أقراص FileDO على هذا الكمبيوتر. ثبّت FileDO من موقعه وأعد المحاولة.",
+            "इस पीसी पर FileDO डिस्क प्रबंधक नहीं मिला। FileDO को उसकी वेबसाइट से स्थापित करें और पुनः प्रयास करें।",
+            "এই পিসিতে FileDO ডিস্ক ম্যানেজার পাওয়া যায়নি। FileDO-এর ওয়েবসাইট থেকে ইনস্টল করে আবার চেষ্টা করুন।",
+            "اس پی سی پر FileDO ڈسک مینیجر نہیں ملا۔ FileDO کو اس کی ویب سائٹ سے انسٹال کریں اور دوبارہ کوشش کریں۔",
+            "此电脑上未找到 FileDO 磁盘管理器。请从其网站安装 FileDO 后重试。")
+        Add("Не удалось запустить менеджер дисков FileDO.", "Could not start FileDO Disk Manager.", "Не вдалося запустити менеджер дисків FileDO.", "FileDO-Laufwerksverwaltung konnte nicht gestartet werden.", "Impossibile avviare Gestione dischi FileDO.", "No se pudo iniciar el administrador de discos de FileDO.", "Impossible de lancer le gestionnaire de disques FileDO.", "Não foi possível iniciar o Gestor de discos do FileDO.", "تعذّر تشغيل مدير أقراص FileDO.", "FileDO डिस्क प्रबंधक शुरू नहीं हो सका।", "FileDO ডিস্ক ম্যানেজার চালু করা যায়নি।", "FileDO ڈسک مینیجر شروع نہیں ہو سکا۔", "无法启动 FileDO 磁盘管理器。")
+        Add("Диск уже смонтирован в FileDO как {0}. Размонтируйте его в менеджере дисков FileDO и повторите.",
+            "The disk is already mounted in FileDO as {0}. Unmount it in FileDO Disk Manager and retry.",
+            "Диск уже змонтовано у FileDO як {0}. Розмонтуйте його в менеджері дисків FileDO та повторіть.",
+            "Das Laufwerk ist in FileDO bereits als {0} eingebunden. In der FileDO-Laufwerksverwaltung trennen und erneut versuchen.",
+            "Il disco è già montato in FileDO come {0}. Smontalo in Gestione dischi FileDO e riprova.",
+            "El disco ya está montado en FileDO como {0}. Desmóntalo en el administrador de discos de FileDO e inténtalo de nuevo.",
+            "Le disque est déjà monté dans FileDO sous {0}. Démontez-le dans le gestionnaire de disques FileDO et réessayez.",
+            "O disco já está montado no FileDO como {0}. Desmonte-o no Gestor de discos do FileDO e tente novamente.",
+            "القرص مركّب بالفعل في FileDO باسم {0}. أزل تركيبه في مدير أقراص FileDO وأعد المحاولة.",
+            "डिस्क FileDO में पहले से {0} के रूप में माउंट है। उसे FileDO डिस्क प्रबंधक में अनमाउंट करें और पुनः प्रयास करें।",
+            "ডিস্কটি FileDO-তে ইতিমধ্যে {0} হিসেবে মাউন্ট করা আছে। FileDO ডিস্ক ম্যানেজারে আনমাউন্ট করে আবার চেষ্টা করুন।",
+            "ڈسک FileDO میں پہلے ہی {0} کے طور پر ماؤنٹ ہے۔ اسے FileDO ڈسک مینیجر میں انماؤنٹ کریں اور دوبارہ کوشش کریں۔",
+            "该磁盘已在 FileDO 中挂载为 {0}。请在 FileDO 磁盘管理器中卸载后重试。")
+        Add("Диск уже смонтирован в FileDO. Размонтируйте его в менеджере дисков FileDO и повторите.",
+            "The disk is already mounted in FileDO. Unmount it in FileDO Disk Manager and retry.",
+            "Диск уже змонтовано у FileDO. Розмонтуйте його в менеджері дисків FileDO та повторіть.",
+            "Das Laufwerk ist in FileDO bereits eingebunden. In der FileDO-Laufwerksverwaltung trennen und erneut versuchen.",
+            "Il disco è già montato in FileDO. Smontalo in Gestione dischi FileDO e riprova.",
+            "El disco ya está montado en FileDO. Desmóntalo en el administrador de discos de FileDO e inténtalo de nuevo.",
+            "Le disque est déjà monté dans FileDO. Démontez-le dans le gestionnaire de disques FileDO et réessayez.",
+            "O disco já está montado no FileDO. Desmonte-o no Gestor de discos do FileDO e tente novamente.",
+            "القرص مركّب بالفعل في FileDO. أزل تركيبه في مدير أقراص FileDO وأعد المحاولة.",
+            "डिस्क FileDO में पहले से माउंट है। उसे FileDO डिस्क प्रबंधक में अनमाउंट करें और पुनः प्रयास करें।",
+            "ডিস্কটি FileDO-তে ইতিমধ্যে মাউন্ট করা আছে। FileDO ডিস্ক ম্যানেজারে আনমাউন্ট করে আবার চেষ্টা করুন।",
+            "ڈسک FileDO میں پہلے ہی ماؤنٹ ہے۔ اسے FileDO ڈسک مینیجر میں انماؤنٹ کریں اور دوبارہ کوشش کریں۔",
+            "该磁盘已在 FileDO 中挂载。请在 FileDO 磁盘管理器中卸载后重试。")
         Add("Для монтирования .fdd нужны права администратора. Служба LocalService подключение дисков не поддерживает. Уже смонтированный диск можно добавить отдельно.",
             "Mounting .fdd needs administrator rights. A LocalService host cannot mount disks. An already mounted drive can be added separately.",
             "Монтування .fdd потребує прав адміністратора. Служба LocalService не підтримує підключення дисків. Уже змонтований диск можна додати окремо.",

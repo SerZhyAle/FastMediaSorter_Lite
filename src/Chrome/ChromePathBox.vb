@@ -4,12 +4,15 @@ Option Strict On
 Option Infer On
 Option Compare Binary
 Imports System.Drawing
+Imports System.Drawing.Drawing2D
 Imports System.Threading
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 Friend NotInheritable Class ChromePathBox
     Inherits Control
+    Implements IChromeInkSource
+    Private inkExternal As Boolean
     Private ReadOnly input As New TextBox With {.BorderStyle = BorderStyle.None, .ShortcutsEnabled = True, .AllowDrop = True}
     Private ReadOnly debounce As New System.Windows.Forms.Timer With {.Interval = ChromeMetrics.CompletionDelayMilliseconds}
     Private ReadOnly tooltip As New ToolTip With {.ShowAlways = True}
@@ -90,8 +93,48 @@ Friend NotInheritable Class ChromePathBox
             Finally
                 updating = False
             End Try
+            ' The text is the ink layer's while the box is not being edited: it repaints the panel.
+            If inkExternal AndAlso Parent IsNot Nothing Then Parent.Invalidate()
         End Set
     End Property
+
+    ''' <summary>While the panel is translucent its ink is drawn by the host's ink layer (opaque), so the
+    ''' native box shows nothing of its own text until it is being edited: the text is painted in the
+    ''' panel's fill colour, which is invisible against it.</summary>
+    Private Sub InkModeChanged(external As Boolean) Implements IChromeInkSource.InkModeChanged
+        inkExternal = external
+        ApplyInputInk()
+        Invalidate()
+    End Sub
+
+    Private Sub ApplyInputInk()
+        input.ForeColor = If(inkExternal AndAlso Not editing, theme.PanelFill, theme.Foreground)
+    End Sub
+
+    Private Sub PaintInk(g As Graphics) Implements IChromeInkSource.PaintInk
+        Dim drop As Integer = UiScale.Px(ChromeMetrics.ItemHeight, scaleFactor)
+        Dim arrowArea As New RectangleF(If(rtl, 0, Width - drop), 0, drop, Height)
+        Using brush As New SolidBrush(theme.Foreground)
+            Using format As New StringFormat(StringFormat.GenericTypographic)
+                format.Alignment = StringAlignment.Center
+                format.LineAlignment = StringAlignment.Center
+                g.DrawString(ChrW(&H25BE), If(symbols, input.Font), brush, arrowArea, format)
+            End Using
+            If editing OrElse String.IsNullOrEmpty(input.Text) Then Return
+            Using format As New StringFormat(StringFormat.GenericTypographic)
+                format.FormatFlags = StringFormatFlags.NoWrap
+                If rtl Then format.FormatFlags = format.FormatFlags Or StringFormatFlags.DirectionRightToLeft
+                format.Alignment = StringAlignment.Near
+                format.LineAlignment = StringAlignment.Center
+                format.HotkeyPrefix = Drawing.Text.HotkeyPrefix.None
+                Dim area As New RectangleF(input.Left, 0, input.Width, Height)
+                Dim state As GraphicsState = g.Save()
+                g.IntersectClip(area)
+                g.DrawString(input.Text, input.Font, brush, area, format)
+                g.Restore(state)
+            End Using
+        End Using
+    End Sub
     <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
     Public WriteOnly Property RecentFolders As IEnumerable(Of String)
         Set(value As IEnumerable(Of String))
@@ -116,7 +159,7 @@ Friend NotInheritable Class ChromePathBox
             input.Font = textFont
             If oldFont IsNot Nothing Then oldFont.Dispose()
         End If
-        input.ForeColor = theme.Foreground
+        ApplyInputInk()
         input.BackColor = theme.PanelFill
         input.RightToLeft = If(rtl, System.Windows.Forms.RightToLeft.Yes, System.Windows.Forms.RightToLeft.No)
         input.AccessibleName = AccessibleName
@@ -126,9 +169,11 @@ Friend NotInheritable Class ChromePathBox
     Public Sub BeginEditing()
         If editing Then Return
         editing = True
+        ApplyInputInk()
         savedText = Text
         RaiseEvent EditingStarted(Me, EventArgs.Empty)
         input.Focus()
+        If inkExternal AndAlso Parent IsNot Nothing Then Parent.Invalidate()
     End Sub
     Public Sub SetTooltip(text As String)
         tooltip.SetToolTip(Me, text)
@@ -141,7 +186,9 @@ Friend NotInheritable Class ChromePathBox
         CancelCompletion()
         If cancel Then Text = savedText
         editing = False
+        ApplyInputInk()
         RaiseEvent EditingEnded(Me, EventArgs.Empty)
+        If inkExternal AndAlso Parent IsNot Nothing Then Parent.Invalidate()
     End Sub
     Private Sub InputKeyDown(sender As Object, args As KeyEventArgs)
         If ChromeMenu.HandlePopupKey(args.KeyData) Then
@@ -217,6 +264,7 @@ Friend NotInheritable Class ChromePathBox
     End Sub
     Protected Overrides Sub OnPaint(args As PaintEventArgs)
         args.Graphics.Clear(theme.PanelFill)
+        If inkExternal Then Return
         Dim drop As Integer = UiScale.Px(ChromeMetrics.ItemHeight, scaleFactor)
         Dim area As New Rectangle(If(rtl, 0, Width - drop), 0, drop, Height)
         TextRenderer.DrawText(args.Graphics, ChrW(&H25BE), If(symbols, input.Font), area, theme.Foreground,

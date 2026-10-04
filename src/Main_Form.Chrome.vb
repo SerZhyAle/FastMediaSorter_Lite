@@ -158,7 +158,7 @@ Partial Public Class Main_Form
             If carrier Is cmbox_Sort OrElse carrier Is btn_Language OrElse carrier Is btn_RecentFiles Then kind = ChromeItemKind.MenuButton
             Dim item As New ChromeItem(carrier.Name, kind) With {
                 .Destructive = carrier Is bt_Delete,
-                .ShowCaptionWithGlyph = carrier Is btn_Prev_File OrElse carrier Is btn_Next_File,
+                .ShowCaptionWithGlyph = carrier Is btn_Prev_File OrElse carrier Is btn_Next_File OrElse carrier Is bt_Delete,
                 .MirrorInRtl = carrier Is btn_Prev_File OrElse carrier Is btn_Next_File}
             Dim meaning As IconMeaning = IconMap.GetMeaning(carrier.Name)
             If meaning IsNot Nothing Then item.GlyphId = meaning.GlyphId
@@ -179,6 +179,7 @@ Partial Public Class Main_Form
                 item.MinimumWidth = ChromeMetrics.PathMinWidth
                 item.Kind = ChromeItemKind.Button
                 item.Action = Sub() CopyFilePathToClipboard()
+                If carrier Is lbl_Current_File Then item.AlignLeft = True
             End If
             If carrier Is cmbox_Sort Then item.Action = Sub() ChromeShowSort(item)
             If carrier Is btn_Language Then item.Action = Sub() ChromeShowLanguages(item)
@@ -300,7 +301,7 @@ Partial Public Class Main_Form
         For index As Integer = 0 To Localization.Codes.Length - 1
             Dim code As String = Localization.Codes(index)
             entries.Add(New ChromeMenuItem("language_" & code) With {
-                .Caption = Localization.Names(index), .Image = FlagImages.Get(code),
+                .Caption = Localization.Names(index),
                 .Checked = code = Localization.CurrentCode, .Action = Sub() SetUiLanguage(code)})
         Next
         ChromeShowMenu(item, entries)
@@ -474,6 +475,8 @@ Partial Public Class Main_Form
 
         For Each p As ChromePanel In chrome_Panels
             p.Host.BackColor = chrome_Theme.PanelFill
+            ' The panel's fill is as translucent as the user chose; its glyphs and captions are not.
+            p.Host.UseInkLayer = Not chrome_High_Contrast AndAlso chrome_Theme.PanelOpacity < 0.999R
             p.Host.SetCornerRadius(UiScale.Px(ChromeCorner(), factor))
             p.Host.Surface.Configure(chrome_Theme, factor, Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font)
             p.Host.Surface.SetAnimationEnabled(Not ReduceMotionActive())
@@ -529,7 +532,9 @@ Partial Public Class Main_Form
             video_Seek.FillColor = chrome_Theme.Accent
             video_Volume.FillColor = chrome_Theme.Accent
             video_Chrome_Host.BackColor = chrome_Theme.PanelFill
-            video_Chrome_Host.Opacity = chrome_Theme.PanelOpacity
+            ' The transport is made of real controls, which have no ink layer to keep them legible: its
+            ' window never goes below the old 40 % floor, even though the other panels may reach 0.
+            video_Chrome_Host.Opacity = Math.Max(0.4R, chrome_Theme.PanelOpacity)
             video_Chrome_Host.SetCornerRadius(UiScale.Px(ChromeCorner(), ChromeScale()))
             For Each control As Control In video_Controls.Controls
                 control.BackColor = chrome_Theme.PanelFill
@@ -585,7 +590,7 @@ Partial Public Class Main_Form
             caption = Localization.T("Выбрать файл..")
         ElseIf carrier Is btn_Select_Folder Then
             caption = Localization.T("Выбрать папку..")
-        ElseIf carrier Is btn_Prev_File OrElse carrier Is btn_Next_File Then
+        ElseIf carrier Is btn_Prev_File OrElse carrier Is btn_Next_File OrElse carrier Is bt_Delete Then
             caption = Localization.T(IconMap.GetMeaning(carrier.Name).LocalizationKey)
         ElseIf TypeOf carrier Is Button AndAlso item.GlyphId.Length = 0 AndAlso carrier IsNot btn_Random_Slideshow Then
             caption = carrier.Text
@@ -823,6 +828,7 @@ Partial Public Class Main_Form
             p.Host.Bounds = r
             PinToViewerBand(p.Host)
             p.Host.Opacity = 0.0R
+            p.Host.InkOpacity = 0.0R
             p.Host.Visible = True
             p.AppliedOpacity = 0.0R
         Else
@@ -833,6 +839,8 @@ Partial Public Class Main_Form
         Dim opacity As Double = Math.Max(0.02R, Math.Min(1.0R, p.Alpha * chrome_Theme.PanelOpacity))
         If Math.Abs(opacity - p.AppliedOpacity) > 0.004R Then
             p.Host.Opacity = opacity
+            ' The ink layer follows only the panel's own fade (show / hide), never its translucency.
+            p.Host.InkOpacity = Math.Max(0.02R, Math.Min(1.0R, p.Alpha))
             p.AppliedOpacity = opacity
         End If
     End Sub

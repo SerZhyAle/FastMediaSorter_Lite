@@ -326,7 +326,7 @@ Partial Public Class Main_Form
     End Function
 
     Private Function RecipientsOverlayFontSize() As Single
-        Return CSng(If(modern_Preferences Is Nothing, 11, modern_Preferences.RecipientsOverlayFontSize))
+        Return CSng(If(modern_Preferences Is Nothing, 9, modern_Preferences.RecipientsOverlayFontSize))
     End Function
 
     Private Function RecipientsOverlayAlpha() As Integer

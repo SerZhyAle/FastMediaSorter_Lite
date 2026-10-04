@@ -108,7 +108,7 @@ Public NotInheritable Class ModernViewerPreferences
 
     Public Property RecipientsOverlayPosition As String = "topLeft"
     Public Property RecipientsOverlayWidth As Integer = 280
-    Public Property RecipientsOverlayFontSize As Integer = 11
+    Public Property RecipientsOverlayFontSize As Integer = 9
     Public Property RecipientsOverlayOpacity As Integer = 88
     Public Property RecipientsOverlayVisibleRows As Integer = 11   ' ten slots + Delete fit without scrolling (audit B-13)
 
@@ -271,7 +271,7 @@ Public NotInheritable Class ModernViewerPreferences
         p.NewImageScaleMode = ReadChoice("NewImageScaleMode", p.NewImageScaleMode, "fit", "actual", "perFolder")
         p.ReduceMotion = ReadBool("ReduceMotion", p.ReduceMotion)
         p.ModernChrome = ReadBool("ModernChrome", p.ModernChrome)
-        p.ChromeOpacityPercent = ReadInt("ChromeOpacityPercent", p.ChromeOpacityPercent, 40, 100)
+        p.ChromeOpacityPercent = ReadInt("ChromeOpacityPercent", p.ChromeOpacityPercent, 0, 100)
         p.ChromeCornerRadius = ReadInt("ChromeCornerRadius", p.ChromeCornerRadius, 0, 16)
         p.ChromePinned = ReadBool("ChromePinned", p.ChromePinned)
         p.ChromeSize = ReadChoice("ChromeSize", p.ChromeSize, "medium", "small", "large", "adaptive")
@@ -595,7 +595,7 @@ Public NotInheritable Class ModernViewerPreferences
         NewImageScaleMode = Choice(NewImageScaleMode, "fit", "fit", "actual", "perFolder")
         RecipientsOverlayPosition = Choice(RecipientsOverlayPosition, "topLeft", "topLeft", "topRight", "bottomLeft", "bottomRight")
         ChromeSize = Choice(ChromeSize, "medium", "medium", "small", "large", "adaptive")
-        ChromeOpacityPercent = Clamp(ChromeOpacityPercent, 40, 100)
+        ChromeOpacityPercent = Clamp(ChromeOpacityPercent, 0, 100)
         ChromeCornerRadius = Clamp(ChromeCornerRadius, 0, 16)
         RecipientsOverlayWidth = Clamp(RecipientsOverlayWidth, 180, 520)
         RecipientsOverlayFontSize = Clamp(RecipientsOverlayFontSize, 9, 18)

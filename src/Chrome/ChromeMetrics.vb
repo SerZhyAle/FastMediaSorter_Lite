@@ -49,7 +49,9 @@ Friend NotInheritable Class ChromeMetrics
     Public Const PanelEdgeInset As Integer = 0
     ''' <summary>The glyph of the pin button in a panel's corner (the button itself is a
     ''' <see cref="MinTarget"/> wide slot, so the hit target stays at the floor).</summary>
-    Public Const PinGlyphSize As Integer = 12
+    Public Const PinGlyphSize As Integer = 10
+    ''' <summary>The visual size of the corner pin button (a small unobtrusive button).</summary>
+    Public Const PinButtonSize As Integer = 20
     ''' <summary>How far past a panel the pointer still counts as "near it" - the reveal zone.</summary>
     Public Const HotZoneMargin As Integer = 48
     Public Const FocusRingWidth As Integer = 2

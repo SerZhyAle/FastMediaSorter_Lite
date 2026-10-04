@@ -24,11 +24,15 @@ Public NotInheritable Class Share_Disks_Form
     Private _add As Button
     Private _mounted As Button
     Private _refresh As Button
+    Private _manager As Button
+    Private ReadOnly _managerHint As New LinkLabel With {.AutoSize = True, .Visible = False, .Margin = New Padding(0, 4, 0, 0)}
     Private _open As Button
     Private _close As Button
     Private _force As Button
     Private _remove As Button
     Private _auto As Button
+    Private _exit As Button
+    Private ReadOnly _layout As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .RowCount = 5, .Padding = New Padding(12)}
     Public ReadOnly Property MountedFolder As String
         Get
             Return _mountedFolder
@@ -41,7 +45,8 @@ Public NotInheritable Class Share_Disks_Form
         StartPosition = FormStartPosition.CenterParent
         MinimumSize = New Size(560, 380)
         ClientSize = New Size(740, 480)
-        Dim layout As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .RowCount = 5, .Padding = New Padding(12)}
+        MinimizeBox = False
+        Dim layout As TableLayoutPanel = _layout
         layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
         layout.RowStyles.Add(New RowStyle(SizeType.Percent, 100))
         layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
@@ -51,6 +56,11 @@ Public NotInheritable Class Share_Disks_Form
         _add = AddButton(top, Localization.T("Подключить .fdd.."), AddressOf OnAdd)
         _mounted = AddButton(top, Localization.T("Смонтированный диск.."), AddressOf OnMounted)
         _refresh = AddButton(top, Localization.T("Обновить"), AddressOf OnRefresh)
+        ' Always offered, also while disk sharing is unavailable: that is when a disk held by FileDO
+        ' has to be unmounted there before anything here can work.
+        _manager = AddButton(top, Localization.T("Открыть менеджер дисков FileDO"), AddressOf OnOpenManager)
+        _managerHint.Text = Localization.T("Открыть менеджер дисков FileDO")
+        AddHandler _managerHint.LinkClicked, AddressOf OnOpenManager
         _list.Columns.Add(Localization.T("Название"), 170)
         _list.Columns.Add(Localization.T("Состояние"), 100)
         _list.Columns.Add(Localization.T("Владелец"), 110)
@@ -68,7 +78,8 @@ Public NotInheritable Class Share_Disks_Form
             .AutoSize = True,
             .Dock = DockStyle.Fill,
             .FlowDirection = FlowDirection.LeftToRight,
-            .Margin = New Padding(0, 6, 0, 0)
+            .Anchor = AnchorStyles.Left,
+            .Margin = New Padding(0)
         }
         Dim lnkGuide As New LinkLabel With {
             .AutoSize = True,
@@ -84,11 +95,27 @@ Public NotInheritable Class Share_Disks_Form
         AddHandler lnkFileDo.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareLinks.FileDoSiteUrl)
         linksFlow.Controls.Add(lnkGuide)
         linksFlow.Controls.Add(lnkFileDo)
+        ' APP-BEHAVIOUR rule 1: one no-action exit - the close box, Escape and this button are the
+        ' same path. Busy work cannot be cancelled here, so FormClosing below refuses all three alike.
+        _exit = New Button With {.AutoSize = True, .Text = Localization.T("Закрыть"), .Padding = New Padding(6),
+            .DialogResult = DialogResult.Cancel, .Anchor = AnchorStyles.Right}
+        CancelButton = _exit
+        Dim footer As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 2, .RowCount = 1, .AutoSize = True,
+            .Margin = New Padding(0, 6, 0, 0)}
+        footer.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
+        footer.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
+        footer.Controls.Add(linksFlow, 0, 0)
+        footer.Controls.Add(_exit, 1, 0)
         layout.Controls.Add(top, 0, 0)
         layout.Controls.Add(_list, 0, 1)
         layout.Controls.Add(_actions, 0, 2)
-        layout.Controls.Add(_note, 0, 3)
-        layout.Controls.Add(linksFlow, 0, 4)
+        Dim noteBox As New FlowLayoutPanel With {.AutoSize = True, .Dock = DockStyle.Fill, .FlowDirection = FlowDirection.TopDown,
+            .WrapContents = False, .Margin = New Padding(0)}
+        _note.Margin = New Padding(0)
+        noteBox.Controls.Add(_note)
+        noteBox.Controls.Add(_managerHint)
+        layout.Controls.Add(noteBox, 0, 3)
+        layout.Controls.Add(footer, 0, 4)
         Controls.Add(layout)
         DpiLayout.ApplyAutoScale(Me)
         AddHandler Shown, AddressOf OnRefresh
@@ -113,7 +140,14 @@ Public NotInheritable Class Share_Disks_Form
 
     Private Sub UpdateActions()
         Dim disk As SharedDisk = SelectedDisk()
-        Dim supported As Boolean = Not _busy AndAlso DiskSharing.Supported(_status)
+        Dim available As Boolean = DiskSharing.Supported(_status)
+        Dim supported As Boolean = Not _busy AndAlso available
+        ' APP-BEHAVIOUR rule 11: what cannot work here is hidden, not left as a row of dead buttons.
+        ' The cause is the note and the way forward is Refresh (rule 6) - both stay.
+        _add.Visible = available
+        _actions.Visible = available
+        _list.Visible = available
+        _layout.RowStyles(1) = If(available, New RowStyle(SizeType.Percent, 100.0F), New RowStyle(SizeType.AutoSize))
         _add.Enabled = supported
         _mounted.Enabled = Not _busy
         _refresh.Enabled = Not _busy
@@ -130,8 +164,10 @@ Public NotInheritable Class Share_Disks_Form
         If Not DiskSharing.Supported(_status) Then
             _list.Items.Clear()
             _note.Text = DiskSharing.UnavailableText(_status)
+            _managerHint.Visible = DiskSharing.IsMountedByFileDo(_status?.DiskSharingError)
             Return
         End If
+        _managerHint.Visible = False
         Dim response As WorkerResponse = Await DiskSharing.SendAsync(New WorkerRequest With {.type = "disk-list"})
         DiskSharing.RequireSuccess(response)
         If response.Disks Is Nothing Then Throw New IOException("Missing disk list.")
@@ -185,10 +221,12 @@ Public NotInheritable Class Share_Disks_Form
         UseWaitCursor = True
         UpdateActions()
         Dim errorText As String = ""
+        Dim heldByFileDo As Boolean
         Try
             Await operation()
         Catch ex As Exception
             errorText = DiskSharing.FailureText(ex)
+            heldByFileDo = DiskSharing.IsMountedByFileDo(TryCast(ex, DiskOperationRefusedException)?.Reason)
         End Try
         ' Mutations may have partially succeeded or timed out. Always reconcile live state.
         Try
@@ -201,7 +239,16 @@ Public NotInheritable Class Share_Disks_Form
             UpdateActions()
         End Try
         If errorText.Trim().Length > 0 Then _note.Text = Localization.TF("Операция не завершена: {0}", errorText.Trim())
+        If heldByFileDo Then _managerHint.Visible = True
     End Function
+
+    Private Sub OnOpenManager(sender As Object, e As EventArgs)
+        Dim result As FileDoLaunchResult = FileDoDiskManager.Launch()
+        If result = FileDoLaunchResult.Started Then Return
+        MessageBox.Show(Me, If(result = FileDoLaunchResult.Failed, Localization.T("Не удалось запустить менеджер дисков FileDO."),
+            Localization.T("Менеджер дисков FileDO не найден на этом ПК. Установите FileDO с его сайта и повторите.")),
+            Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
+    End Sub
 
     Private Async Sub OnRefresh(sender As Object, e As EventArgs)
         Await RunAsync(Function() Task.CompletedTask)
@@ -316,10 +363,15 @@ Public NotInheritable Class Share_Disks_Form
                 If drive.IsReady Then drives.Items.Add(drive.Name)
             Next
             If drives.Items.Count > 0 Then drives.SelectedIndex = 0
-            Dim ok As New Button With {.Text = Localization.T("ОК"), .Dock = DockStyle.Bottom, .DialogResult = DialogResult.OK}
+            ' APP-BEHAVIOUR rule 1: Enter takes the recommended answer, Escape / the close box / Cancel leave.
+            Dim ok As New Button With {.AutoSize = True, .Text = Localization.T("ОК"), .Padding = New Padding(6), .DialogResult = DialogResult.OK}
+            Dim cancel As New Button With {.AutoSize = True, .Text = Localization.T("Отмена"), .Padding = New Padding(6), .DialogResult = DialogResult.Cancel}
+            Dim row As New FlowLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .FlowDirection = FlowDirection.LeftToRight}
+            row.Controls.AddRange(New Control() {ok, cancel})
             picker.Controls.Add(drives)
-            picker.Controls.Add(ok)
+            picker.Controls.Add(row)
             picker.AcceptButton = ok
+            picker.CancelButton = cancel
             UiLanguage.ApplyTo(picker)
             DpiLayout.ApplyAutoScale(picker)
             If picker.ShowDialog(Me) <> DialogResult.OK OrElse drives.SelectedItem Is Nothing Then Return
@@ -337,6 +389,9 @@ Public NotInheritable Class Share_Disks_Form
         MyBase.OnLoad(e)
         DpiLayout.ClampToWorkingArea(Me)
         ScaleColumns()
+        ' A child's Visible = False set while the window was never shown is not kept (the getter already
+        ' answers False), so the first state - nothing known yet, nothing offered - is applied here.
+        UpdateActions()
     End Sub
 
     Protected Overrides Sub OnDpiChanged(e As DpiChangedEventArgs)

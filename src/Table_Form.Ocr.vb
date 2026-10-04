@@ -303,6 +303,9 @@ Partial Public Class Table_Form
         Dim entry As LanguageEntry = TryCast(combo.Items(e.Index), LanguageEntry)
         If entry Is Nothing Then Return
 
+        ' A language is marked by its name, never by a flag (ICON-EXTERNAL rule 6); the
+        ' x86 fallback keeps its flags under its dated exception.
+#If NETFRAMEWORK Then
         Dim fw As Integer = LU(22)
         Dim fh As Integer = LU(16)
         Dim iy As Integer = e.Bounds.Top + (e.Bounds.Height - fh) \ 2
@@ -311,6 +314,9 @@ Partial Public Class Table_Form
             If img IsNot Nothing Then e.Graphics.DrawImage(img, e.Bounds.Left + LU(4), iy, fw, fh)
         Catch
         End Try
+#Else
+        Dim fw As Integer = 0
+#End If
 
         Using b As New SolidBrush(e.ForeColor)
             Using sf As New StringFormat()

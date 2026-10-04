@@ -594,6 +594,18 @@ function Get-ServiceBinPath {
     return $binPath
 }
 
+# The account the service is registered as. LocalService is the rule (ticket 054 H-14); the one
+# exception is a machine that carries the optional FileDO component, because mounting a virtual
+# disk needs a LocalSystem holder (the worker refuses disk sharing under any other account,
+# internal/service/disksharing.go). The component is unticked by default, so an installation
+# without it never runs as SYSTEM. Derived from the bundle on disk rather than passed as a switch,
+# so repair, migrate-to-server and the Hosting console's UAC run all reach the same answer.
+function Get-WantedServiceAccount {
+    $root = Get-FileDoRoot
+    if ($root -and (Test-Path -LiteralPath (Join-Path $root 'filedo\filedo.exe') -PathType Leaf)) { return 'LocalSystem' }
+    return 'NT AUTHORITY\LocalService'
+}
+
 function Get-ServiceRegistryValue([string]$name) {
     try {
         return [string](Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName" -Name $name -ErrorAction Stop).$name
@@ -616,8 +628,9 @@ function New-ServiceRegistration {
     # LocalService: low local privilege, and it presents anonymous credentials on the
     # network. That last part is why a UNC root does not work under it - documented,
     # not worked around. New-Service registers LocalSystem, so this call is what keeps
-    # the SFTP server from running as SYSTEM - checked, and verified below.
-    & sc.exe config $ServiceName obj= 'NT AUTHORITY\LocalService' | Out-Null
+    # the SFTP server from running as SYSTEM unless the FileDO component asks for it
+    # (Get-WantedServiceAccount) - checked, and verified below.
+    & sc.exe config $ServiceName obj= (Get-WantedServiceAccount) | Out-Null
     if ($LASTEXITCODE -ne 0) { Write-Log "WARNING: setting the service account returned $LASTEXITCODE" }
     Set-ServiceOptions
 }
@@ -638,7 +651,7 @@ function Update-ServiceRegistration {
             DisplayName   = $ServiceDisplay
             PathName      = $binPath
             StartMode     = 'Automatic'
-            StartName     = 'NT AUTHORITY\LocalService'
+            StartName     = (Get-WantedServiceAccount)
             StartPassword = ''
         }
         if ($result.ReturnValue -ne 0) {
@@ -679,18 +692,21 @@ function Set-ServiceOptions {
 }
 
 # The account is read back, never assumed (ticket 054 H-14). A registration that would
-# run the SFTP server as anything but LOCAL SERVICE - LocalSystem above all, New-Service's
-# default - is removed rather than started: every root-confinement bug would otherwise be a
-# full-disk exposure.
+# run the SFTP server as anything but the wanted account - LocalSystem above all when the
+# FileDO component is absent, New-Service's default - is removed rather than started: every
+# root-confinement bug would otherwise be a full-disk exposure.
 function Assert-ServiceAccount {
     $account = Get-ServiceRegistryValue 'ObjectName'
-    if ($account -ieq 'NT AUTHORITY\LocalService') {
+    $wanted = Get-WantedServiceAccount
+    # The SCM stores LocalSystem as "LocalSystem"; accept its long spelling too.
+    $accepted = if ($wanted -eq 'LocalSystem') { @('LocalSystem', 'NT AUTHORITY\SYSTEM') } else { @($wanted) }
+    if ($accepted -contains $account) {
         Write-Log "service account: $account"
         return
     }
-    Write-Log "the service account is '$account', not LOCAL SERVICE - removing the registration so nothing runs with more rights than intended"
+    Write-Log "the service account is '$account', not '$wanted' - removing the registration so nothing runs with more rights than intended"
     & sc.exe delete $ServiceName | Out-Null
-    Fail "could not set the service account to LOCAL SERVICE (it read '$account')" 13
+    Fail "could not set the service account to '$wanted' (it read '$account')" 13
 }
 
 # Brings the registration to this script's command line, account, start type and
@@ -749,6 +765,26 @@ function Set-MachineDataDirAcl {
     Set-DirectorySecurity $DataDir (New-DataDirSecurity)
     $problem = Get-LockdownProblem $DataDir (@($SidSystem, $SidAdmins, $SidLocalService) + @(Split-Sids $ManageSid))
     if ($problem) { Fail "could not secure '$DataDir': $problem" 4 }
+    Move-UntrustedWorkerStateAside
+}
+
+# The worker keeps its FileDO event files in <DataDir>\filedo-state and refuses to reuse
+# that directory when anyone but the system or an administrator owns it. A foreground
+# worker that ran as the signed-in user before the service existed leaves one owned by
+# that user, and then every FileDO call of the service fails before FileDO starts - the
+# Server edition reports disk sharing as unavailable while everything else looks fine.
+# The directory is transient (per-run event files), so it is renamed aside - never
+# followed or deleted, since its owner may have put a link inside - and the worker
+# creates a fresh one with its own ACL.
+function Move-UntrustedWorkerStateAside {
+    $dir = Join-Path $DataDir 'filedo-state'
+    if (-not (Test-Path -LiteralPath $dir -PathType Container)) { return }
+    $owner = $null
+    try { $owner = (Get-Acl -LiteralPath $dir).GetOwner([Security.Principal.SecurityIdentifier]).Value } catch { return }
+    if ($owner -eq $SidSystem -or $owner -eq $SidAdmins) { return }
+    $aside = '{0}.untrusted-{1:yyyyMMddHHmmss}' -f $dir, (Get-Date)
+    Write-Log "moving '$dir' (owned by $owner) aside to '$aside'"
+    Move-Item -LiteralPath $dir -Destination $aside -Force
 }
 
 # The one way the machine state directory comes into use by an action that writes to it

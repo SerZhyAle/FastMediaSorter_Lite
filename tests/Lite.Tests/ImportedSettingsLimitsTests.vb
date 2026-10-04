@@ -245,7 +245,7 @@ Public Class ImportedSettingsLimitsTests
         Return New List(Of NumericSpec) From {
             New NumericSpec("RecipientsOverlayWidth", 180, 520),
             New NumericSpec("RecipientsOverlayFontSize", 9, 18),
-            New NumericSpec("ChromeOpacityPercent", 40, 100),
+            New NumericSpec("ChromeOpacityPercent", 0, 100),
             New NumericSpec("ChromeCornerRadius", 0, 16),
             New NumericSpec("RecipientsOverlayOpacity", 40, 100),
             New NumericSpec("RecipientsOverlayVisibleRows", 3, 11),

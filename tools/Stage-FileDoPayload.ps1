@@ -1,9 +1,36 @@
 [CmdletBinding()]
-param([switch]$Refresh, [string]$Destination)
+param([string]$Destination)
+# The FileDO that ships beside the worker is never pinned: every run takes the freshest one and rewrites
+# payload\filedo (exe + filedo.sha256 + release.json). Owner decision 2026-10-04: no fixing on releases,
+# always build with the fresh one. The sha256 and release.json are RECORDS of what was staged this run,
+# not expectations the next run must meet.
+#
+# Where "fresh" comes from, in order:
+#   1. $env:FMS_FILEDO_EXE - an explicit filedo.exe.
+#   2. The FileDO repository's own build output, <FMS_FILEDO_REPO or ..\FileDo>\exe_to_download\filedo.exe.
+#   3. The latest stable GitHub release of SerZhyAle/FileDO (a clean checkout / CI has no local FileDO).
+# Nothing here falls back to an older copy: if none of the three yields an exe the run fails.
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $payload = Join-Path $repoRoot 'payload\filedo'
-if ($Refresh) {
+New-Item -ItemType Directory -Path $payload -Force | Out-Null
+$exe = Join-Path $payload 'filedo.exe'
+
+$localExe = $null
+if ($env:FMS_FILEDO_EXE) {
+    if (-not (Test-Path -LiteralPath $env:FMS_FILEDO_EXE)) { throw "FMS_FILEDO_EXE does not exist: $env:FMS_FILEDO_EXE" }
+    $localExe = (Resolve-Path -LiteralPath $env:FMS_FILEDO_EXE).Path
+} else {
+    $fileDoRepo = if ($env:FMS_FILEDO_REPO) { $env:FMS_FILEDO_REPO } else { Join-Path (Split-Path $repoRoot -Parent) 'FileDo' }
+    $candidate = Join-Path $fileDoRepo 'exe_to_download\filedo.exe'
+    if (Test-Path -LiteralPath $candidate) { $localExe = (Resolve-Path -LiteralPath $candidate).Path }
+}
+
+if ($localExe) {
+    Copy-Item -LiteralPath $localExe -Destination $exe -Force
+    $binaryHash = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+    $manifest = [ordered]@{ version = (Get-Item -LiteralPath $exe).VersionInfo.FileVersion; origin = 'local build'; source = $localExe; binarySha256 = $binaryHash }
+} else {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $release = Invoke-RestMethod 'https://api.github.com/repos/SerZhyAle/FileDO/releases/latest' -Headers @{ 'User-Agent' = 'FMS-FileDO-Payload' }
     if ($release.tag_name -notmatch '^v\d{10}$' -or $release.draft -or $release.prerelease) { throw 'Latest FileDO release is not a stable stamped release.' }
@@ -25,51 +52,28 @@ if ($Refresh) {
     try {
         $entries = @($archive.Entries | Where-Object { $_.Name -ceq 'filedo.exe' })
         if ($entries.Count -ne 1) { throw 'Expected exactly one filedo.exe in release zip.' }
-        $exePath = Join-Path $scratch 'filedo.exe'
         # Extract only this member to an explicit destination; zip paths are never used.
-        [IO.Compression.ZipFileExtensions]::ExtractToFile($entries[0], $exePath)
+        [IO.Compression.ZipFileExtensions]::ExtractToFile($entries[0], $exe, $true)
     } finally { $archive.Dispose() }
-    $binaryHash = (Get-FileHash -LiteralPath $exePath -Algorithm SHA256).Hash.ToLowerInvariant()
-    New-Item -ItemType Directory -Path $payload -Force | Out-Null
-    Copy-Item -LiteralPath $exePath -Destination (Join-Path $payload 'filedo.exe') -Force
-    [IO.File]::WriteAllText((Join-Path $payload 'filedo.sha256'), "$binaryHash  filedo.exe`n", [Text.UTF8Encoding]::new($false))
-    $manifest = [ordered]@{ version = $release.tag_name; asset = $asset[0].name; archiveSha256 = $expected.ToLowerInvariant(); binarySha256 = $binaryHash; source = $asset[0].browser_download_url }
-    [IO.File]::WriteAllText((Join-Path $payload 'release.json'), ($manifest | ConvertTo-Json) + "`n", [Text.UTF8Encoding]::new($false))
+    $binaryHash = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+    $manifest = [ordered]@{ version = $release.tag_name; origin = 'github release'; asset = $asset[0].name; archiveSha256 = $expected.ToLowerInvariant(); binarySha256 = $binaryHash; source = $asset[0].browser_download_url }
 }
-$exe = Join-Path $payload 'filedo.exe'
-$hashFile = Join-Path $payload 'filedo.sha256'
-if (-not (Test-Path -LiteralPath $exe) -and (Test-Path -LiteralPath (Join-Path $payload 'release.json'))) {
-    # A clean checkout fetches the committed release, never "latest" during a build.
-    $pinnedRelease = Get-Content -LiteralPath (Join-Path $payload 'release.json') -Raw | ConvertFrom-Json
-    if ($pinnedRelease.version -notmatch '^v\d{10}$' -or
-        $pinnedRelease.source -cne ('https://github.com/SerZhyAle/FileDO/releases/download/' + $pinnedRelease.version + '/' + $pinnedRelease.asset) -or
-        $pinnedRelease.archiveSha256 -notmatch '^[a-fA-F0-9]{64}$') { throw 'Invalid pinned FileDO provenance.' }
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $scratch = Join-Path $repoRoot ('bin\filedo-download-' + [Guid]::NewGuid().ToString('N'))
-    New-Item -ItemType Directory -Path $scratch -Force | Out-Null
-    $zipPath = Join-Path $scratch 'release.zip'
-    Invoke-WebRequest $pinnedRelease.source -OutFile $zipPath
-    if ((Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash -ne $pinnedRelease.archiveSha256) { throw 'Pinned archive SHA-256 mismatch.' }
-    $archive = [IO.Compression.ZipFile]::OpenRead($zipPath)
-    try {
-        $entries = @($archive.Entries | Where-Object { $_.Name -ceq 'filedo.exe' })
-        if ($entries.Count -ne 1) { throw 'Expected exactly one filedo.exe in pinned archive.' }
-        $downloaded = Join-Path $scratch 'filedo.exe'
-        [IO.Compression.ZipFileExtensions]::ExtractToFile($entries[0], $downloaded)
-    } finally { $archive.Dispose() }
-    if ((Get-FileHash -LiteralPath $downloaded -Algorithm SHA256).Hash -ne $pinnedRelease.binarySha256) { throw 'Pinned binary SHA-256 mismatch.' }
-    Copy-Item -LiteralPath $downloaded -Destination $exe
+
+[IO.File]::WriteAllText((Join-Path $payload 'filedo.sha256'), "$binaryHash  filedo.exe`n", [Text.UTF8Encoding]::new($false))
+[IO.File]::WriteAllText((Join-Path $payload 'release.json'), ($manifest | ConvertTo-Json) + "`n", [Text.UTF8Encoding]::new($false))
+
+# The disk-sharing worker refuses a FileDO that has no `vd` command; say so at build time, not at the first share.
+$probe = Join-Path $env:TEMP ('filedo-vd-probe-' + [Guid]::NewGuid().ToString('N') + '.jsonl')
+try {
+    & $exe vd --events $probe --no-history *> $null
+    $text = if (Test-Path -LiteralPath $probe) { Get-Content -LiteralPath $probe -Raw } else { '' }
+    if ($text -match 'Unknown command') { Write-Warning ('Staged FileDO ' + $manifest.version + ' has no "vd" command: disk sharing will be refused by the worker.') }
+} finally {
+    Remove-Item -LiteralPath $probe -Force -ErrorAction SilentlyContinue
+    # The probe's own exit code (2: usage) must not become this script's.
+    $global:LASTEXITCODE = 0
 }
-if (-not (Test-Path -LiteralPath $exe) -or -not (Test-Path -LiteralPath $hashFile)) { throw 'FileDO payload is missing; run Stage-FileDoPayload.ps1 -Refresh.' }
-$pinned = (Get-Content -LiteralPath $hashFile -Raw).Trim().Split(' ')[0]
-if ($pinned -notmatch '^[a-fA-F0-9]{64}$' -or (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash -ne $pinned) { throw 'Pinned FileDO SHA-256 verification failed.' }
-# filedo.sha256 sits next to the exe, so replacing both together would pass the check above.
-# release.json is the committed provenance record: the exe must match its binarySha256 too.
-$provenancePath = Join-Path $payload 'release.json'
-if (-not (Test-Path -LiteralPath $provenancePath)) { throw 'FileDO payload provenance (release.json) is missing; run Stage-FileDoPayload.ps1 -Refresh.' }
-$provenance = Get-Content -LiteralPath $provenancePath -Raw | ConvertFrom-Json
-if ($provenance.binarySha256 -notmatch '^[a-fA-F0-9]{64}$') { throw 'Invalid pinned FileDO binarySha256 in release.json.' }
-if ((Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash -ne $provenance.binarySha256) { throw 'FileDO binary does not match the binarySha256 pinned in release.json.' }
+
 if ($Destination) {
     $target = Join-Path $Destination 'filedo'
     New-Item -ItemType Directory -Path $target -Force | Out-Null
@@ -77,4 +81,4 @@ if ($Destination) {
         Copy-Item -LiteralPath (Join-Path $payload $fileName) -Destination $target -Force
     }
 }
-Write-Host ('Verified FileDO payload: ' + $pinned)
+Write-Host ('Staged FileDO ' + $manifest.version + ' (' + $manifest.origin + '): ' + $binaryHash)

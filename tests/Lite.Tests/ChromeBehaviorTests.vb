@@ -213,6 +213,79 @@ Public Class ChromeBehaviorTests
                   End Using
               End Sub)
     End Sub
+
+    <Fact>
+    Public Sub AlignLeft_item_and_Delete_button_with_caption_measure_and_layout_properly()
+        OnSta(Sub()
+                  Using surface As New ChromeSurface()
+                      Dim font As New Font("Segoe UI", 12, FontStyle.Regular, GraphicsUnit.Pixel)
+                      Dim symbols As New Font("Segoe UI Symbol", 14, FontStyle.Regular, GraphicsUnit.Pixel)
+                      surface.Configure(ChromeTheme.FromScheme(Color.Black, Color.White, False), 1.0F, False, font, symbols)
+
+                      Dim fileItem As New ChromeItem("lbl_Current_File", ChromeItemKind.Button) With {
+                          .Caption = "C:\Photos\sample.jpg",
+                          .AlignLeft = True
+                      }
+                      Assert.True(fileItem.AlignLeft)
+
+                      Dim deleteItem As New ChromeItem("bt_Delete", ChromeItemKind.Button) With {
+                          .GlyphId = "action.delete",
+                          .Caption = "Delete",
+                          .ShowCaptionWithGlyph = True,
+                          .Destructive = True
+                      }
+                      Dim deleteWidth As Integer = surface.MeasureItemWidth(deleteItem)
+                      Dim singleWidth As Integer = Math.Max(UiScale.Px(ChromeMetrics.ItemHeight, 1.0F), UiScale.Px(ChromeMetrics.MinTarget, 1.0F))
+                      Assert.True(deleteWidth > singleWidth, "Delete button with caption should be wider than a bare glyph icon button")
+                      font.Dispose()
+                      symbols.Dispose()
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub Corner_pin_does_not_paint_accent_fill_when_pinned()
+        OnSta(Sub()
+                  Using surface As New ChromeSurface()
+                      surface.Size = New Size(200, 44)
+                      Dim font As New Font("Segoe UI", 12, FontStyle.Regular, GraphicsUnit.Pixel)
+                      Dim symbols As New Font("Segoe UI Symbol", 14, FontStyle.Regular, GraphicsUnit.Pixel)
+                      Dim theme As ChromeTheme = ChromeTheme.FromScheme(Color.Black, Color.White, False)
+                      surface.Configure(theme, 1.0F, False, font, symbols)
+
+                      Dim pin As New ChromeItem("chrome_pin_row", ChromeItemKind.Toggle) With {
+                          .IsPin = True,
+                          .Checked = True
+                      }
+                      surface.PinItem = pin
+                      surface.LayoutItems()
+
+                      Using bmp As New Bitmap(surface.Width, surface.Height)
+                          Using g As Graphics = Graphics.FromImage(bmp)
+                              g.Clear(Color.Black)
+                              Dim pe As New PaintEventArgs(g, New Rectangle(0, 0, surface.Width, surface.Height))
+                              surface.GetType().GetMethod("OnPaint", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.NonPublic).Invoke(surface, {pe})
+                          End Using
+
+                          Dim accent As Color = theme.Accent
+                          Dim foundAccent As Boolean = False
+                          For x As Integer = pin.Bounds.Left To pin.Bounds.Right - 1
+                              For y As Integer = pin.Bounds.Top To pin.Bounds.Bottom - 1
+                                  Dim pixel As Color = bmp.GetPixel(x, y)
+                                  If pixel.R = accent.R AndAlso pixel.G = accent.G AndAlso pixel.B = accent.B Then
+                                      foundAccent = True
+                                      Exit For
+                                  End If
+                              Next
+                              If foundAccent Then Exit For
+                          Next
+                          Assert.False(foundAccent, "Pin button should not have bright accent fill when pinned")
+                      End Using
+                      font.Dispose()
+                      symbols.Dispose()
+                  End Using
+              End Sub)
+    End Sub
 End Class
 #End If
 

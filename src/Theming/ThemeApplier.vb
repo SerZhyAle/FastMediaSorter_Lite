@@ -27,6 +27,8 @@ Friend NotInheritable Class ThemeApplier
         Public ButtonSeen As Boolean
         Public ButtonStandard As Boolean
         Public ButtonConverted As Boolean
+        Public DisabledPaintHooked As Boolean
+        Public AppliedPalette As ThemePalette
         Public OrigFlatStyle As FlatStyle
         Public OrigBorderColor As Color
         Public OrigBorderSize As Integer
@@ -329,6 +331,7 @@ Friend NotInheritable Class ThemeApplier
                                 (b.UseVisualStyleBackColor OrElse Not IsSerialized(b, "BackColor") OrElse b.BackColor.IsSystemColor)
         End If
 
+        st.AppliedPalette = palette
         If palette.IsDark Then
             If st.ButtonStandard Then
                 st.ButtonConverted = True
@@ -336,6 +339,10 @@ Friend NotInheritable Class ThemeApplier
                 b.UseVisualStyleBackColor = False
                 b.FlatAppearance.BorderSize = 1
                 st.BackRole = ThemeRole.Control
+                If Not st.DisabledPaintHooked Then
+                    st.DisabledPaintHooked = True
+                    AddHandler b.Paint, AddressOf OnConvertedButtonPaint
+                End If
             End If
             If st.ButtonConverted OrElse b.FlatAppearance.BorderColor.IsSystemColor OrElse b.FlatAppearance.BorderColor.IsEmpty Then
                 If b.FlatStyle = FlatStyle.Flat Then b.FlatAppearance.BorderColor = palette.Border
@@ -364,6 +371,68 @@ Friend NotInheritable Class ThemeApplier
         ElseIf b.FlatStyle = FlatStyle.Flat AndAlso b.FlatAppearance.BorderColor = ThemePalette.Dark.Border Then
             b.FlatAppearance.BorderColor = st.OrigBorderColor
         End If
+    End Sub
+
+    ''' <summary>
+    ''' A flat button that is disabled draws its caption in a colour WinForms derives from the face
+    ''' (darker than it) and ignores ForeColor - measured at 18 on a 55 face, about 1.6 : 1, so every
+    ''' unavailable button in dark mode was unreadable. APP-STYLE section 4 names the role
+    ''' (`text.disabled`) for exactly this text; the button is repainted over the framework's own
+    ''' drawing: the same face and border, the picture at reduced strength, the caption in the role.
+    ''' Only buttons this module converted (a button the code styled keeps its own look), and only
+    ''' while dark and disabled - every other state is the framework's untouched drawing.
+    ''' </summary>
+    Private Shared Sub OnConvertedButtonPaint(sender As Object, e As PaintEventArgs)
+        Dim b As Button = TryCast(sender, Button)
+        If b Is Nothing OrElse b.Enabled Then Return
+        Dim st As ControlState = Nothing
+        If Not States.TryGetValue(b, st) OrElse Not st.ButtonConverted OrElse st.AppliedPalette Is Nothing Then Return
+        Dim palette As ThemePalette = st.AppliedPalette
+        If Not palette.IsDark Then Return
+        Dim g As Graphics = e.Graphics
+        Dim bounds As Rectangle = b.ClientRectangle
+        Using face As New SolidBrush(palette.ControlFace)
+            g.FillRectangle(face, bounds)
+        End Using
+        Using edge As New Pen(palette.Border)
+            g.DrawRectangle(edge, 0, 0, bounds.Width - 1, bounds.Height - 1)
+        End Using
+
+        Dim rtl As Boolean = b.RightToLeft = RightToLeft.Yes
+        Dim flags As TextFormatFlags = TextFormatFlags.NoPadding Or TextFormatFlags.HidePrefix Or TextFormatFlags.SingleLine Or
+                                       TextFormatFlags.VerticalCenter Or TextFormatFlags.Left
+        If rtl Then flags = flags Or TextFormatFlags.RightToLeft
+        Dim caption As String = If(b.Text, "")
+        Dim textSize As Size = If(caption.Length = 0, Size.Empty,
+            TextRenderer.MeasureText(g, caption, b.Font, New Size(Short.MaxValue, Short.MaxValue), flags))
+        Dim picture As Image = b.Image
+        Dim pictureSize As Size = If(picture Is Nothing, Size.Empty, picture.Size)
+        Dim gap As Integer = If(picture IsNot Nothing AndAlso caption.Length > 0, b.LogicalToDeviceUnits(4), 0)
+        Dim x As Integer = Math.Max(0, (bounds.Width - (pictureSize.Width + gap + textSize.Width)) \ 2)
+        Dim pictureFirst As Boolean = Not rtl
+
+        If picture IsNot Nothing AndAlso pictureFirst Then
+            DrawDimmed(g, picture, x, (bounds.Height - pictureSize.Height) \ 2)
+            x += pictureSize.Width + gap
+        End If
+        If caption.Length > 0 Then
+            TextRenderer.DrawText(g, caption, b.Font, New Rectangle(x, 0, textSize.Width, bounds.Height), palette.TextDisabled, flags)
+            x += textSize.Width + gap
+        End If
+        If picture IsNot Nothing AndAlso Not pictureFirst Then
+            DrawDimmed(g, picture, x, (bounds.Height - pictureSize.Height) \ 2)
+        End If
+    End Sub
+
+    Private Shared Sub DrawDimmed(g As Graphics, picture As Image, x As Integer, y As Integer)
+        Dim matrix As New Imaging.ColorMatrix(New Single()() {
+            New Single() {1, 0, 0, 0, 0}, New Single() {0, 1, 0, 0, 0}, New Single() {0, 0, 1, 0, 0},
+            New Single() {0, 0, 0, 0.6F, 0}, New Single() {0, 0, 0, 0, 1}})
+        Using attributes As New Imaging.ImageAttributes()
+            attributes.SetColorMatrix(matrix)
+            g.DrawImage(picture, New Rectangle(x, y, picture.Width, picture.Height), 0, 0, picture.Width, picture.Height,
+                        GraphicsUnit.Pixel, attributes)
+        End Using
     End Sub
 
     ''' <summary>Tab headers are drawn by the visual style in its own light colours; dark mode draws

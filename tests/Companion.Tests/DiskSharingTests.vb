@@ -160,7 +160,7 @@ Public Class DiskSharingTests
 
     <Fact>
     Public Sub FileDoLinksPointToCanonicalDestinations()
-        Assert.Equal("https://serzhyale.github.io/FastMediaSorter_Lite/how-to-filedo-disks.html", ShareLinks.FileDoDisksGuideUrl)
+        Assert.Equal("https://serzhyale.github.io/FileDO/guides/virtual-disks.html", ShareLinks.FileDoDisksGuideUrl)
         Assert.Equal("https://serzhyale.github.io/FileDO/", ShareLinks.FileDoSiteUrl)
         Assert.Equal("https://serzhyale.github.io/FileDO/guides/fms-sharing.html", ShareLinks.FileDoSharingGuideUrl)
         Assert.Equal(ShareLinks.FileDoDisksGuideUrl, ShareGuide.FileDoDisksGuideUrl)

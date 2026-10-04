@@ -86,6 +86,17 @@ Public Class ThemePaletteTests
         Assert.True(Contrast(p.AccentInk, p.Accent) >= 4.5, "accent ink")
     End Sub
 
+    ''' <summary>APP-STYLE section 4: `text.disabled` is the text of an unavailable control, and a control
+    ''' the user cannot use still has to be legible enough to say what it is (the 3 : 1 floor of
+    ''' ICON-RENDER section 3 rule 3, the only measured floor the catalog gives an inactive mark).</summary>
+    <Fact>
+    Public Sub Dark_disabled_text_holds_three_to_one_on_the_control_face()
+        Dim p As ThemePalette = ThemePalette.Dark
+        For Each surface As Color In {p.SurfaceWindow, p.SurfaceRaised, p.ControlFace}
+            Assert.True(Contrast(p.TextDisabled, surface) >= 3.0, "disabled on " & surface.ToString())
+        Next
+    End Sub
+
     <Fact>
     Public Sub System_colours_map_to_roles_and_the_codes_own_colours_do_not()
         Assert.Equal(ThemeRole.SurfaceWindow, ThemePalette.RoleForSystemColor(SystemColors.Control, True))

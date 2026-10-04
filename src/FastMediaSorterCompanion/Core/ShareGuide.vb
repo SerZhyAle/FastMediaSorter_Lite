@@ -21,7 +21,7 @@ Public Module ShareGuide
     ''' <summary>Online trilingual "How to publish your folders for Android" page.</summary>
     Public Const SiteGuideUrl As String = ShareLinks.SiteGuideUrl
 
-    ''' <summary>FileDO virtual disk sharing guide on Fast Media Sorter site.</summary>
+    ''' <summary>FileDO's own guide to its virtual disks.</summary>
     Public Const FileDoDisksGuideUrl As String = ShareLinks.FileDoDisksGuideUrl
 
     ''' <summary>FileDO project website.</summary>

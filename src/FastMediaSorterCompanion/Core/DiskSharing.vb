@@ -49,13 +49,38 @@ Public Module DiskSharing
     ''' LocalService hint is kept for the one cause it describes, the account refusal, which
     ''' the worker words with "LocalSystem".</summary>
     Public Function UnavailableText(status As WorkerStatus) As String
-        Dim reason As String = SafeError(If(status?.DiskSharingError, ""))
+        Dim reason As String = PlainReason(SafeError(If(status?.DiskSharingError, "")))
         If reason.Length = 0 Then reason = Localization.T("Не удалось связаться с компаньоном.")
         Dim text As String = Localization.TF("Подключение .fdd недоступно. Причина: {0}", reason)
         If status?.Mode = "service" AndAlso reason.IndexOf("LocalSystem", StringComparison.OrdinalIgnoreCase) >= 0 Then
             text &= vbCrLf & Localization.T("Для монтирования .fdd нужны права администратора. Служба LocalService подключение дисков не поддерживает. Уже смонтированный диск можно добавить отдельно.")
         End If
         Return text
+    End Function
+
+    Private Const MountedByFileDoMarker As String = "already mounted by FileDO"
+
+    ''' <summary>True when the worker refused because FileDO itself holds the disk mounted
+    ''' ("already mounted by FileDO at D:; unmount it before sharing") - the one refusal the person
+    ''' fixes in FileDO's Disk Manager, which is why the window offers it right there.</summary>
+    Public Function IsMountedByFileDo(reason As String) As Boolean
+        Return Not String.IsNullOrEmpty(reason) AndAlso reason.IndexOf(MountedByFileDoMarker, StringComparison.OrdinalIgnoreCase) >= 0
+    End Function
+
+    ''' <summary>A worker reason in plain words where there is a plain way to say it; every other reason
+    ''' is returned as the worker worded it (see <see cref="UnavailableText"/>).</summary>
+    Public Function PlainReason(reason As String) As String
+        If Not IsMountedByFileDo(reason) Then Return If(reason, "")
+        Dim start As Integer = reason.IndexOf(MountedByFileDoMarker, StringComparison.OrdinalIgnoreCase) + MountedByFileDoMarker.Length
+        Dim rest As String = reason.Substring(start).TrimStart()
+        Dim drive As String = ""
+        If rest.StartsWith("at ", StringComparison.OrdinalIgnoreCase) Then
+            Dim endAt As Integer = rest.IndexOfAny({";"c, " "c}, 3)
+            drive = rest.Substring(3, If(endAt < 0, rest.Length, endAt) - 3).Trim().TrimEnd("."c)
+        End If
+        Return If(drive.Length > 0,
+            Localization.TF("Диск уже смонтирован в FileDO как {0}. Размонтируйте его в менеджере дисков FileDO и повторите.", drive),
+            Localization.T("Диск уже смонтирован в FileDO. Размонтируйте его в менеджере дисков FileDO и повторите."))
     End Function
 
     Public Async Function SendAsync(request As WorkerRequest, Optional pipeName As String = WorkerIpc.PipeName) As Task(Of WorkerResponse)
@@ -81,7 +106,7 @@ Public Module DiskSharing
 
     Public Function FailureText(problem As Exception) As String
         Dim refused As DiskOperationRefusedException = TryCast(problem, DiskOperationRefusedException)
-        If refused IsNot Nothing AndAlso refused.Reason.Length > 0 Then Return refused.Reason
+        If refused IsNot Nothing AndAlso refused.Reason.Length > 0 Then Return PlainReason(refused.Reason)
         Dim version As WorkerVersionRefusedException = TryCast(problem, WorkerVersionRefusedException)
         If version IsNot Nothing Then Return ShareController.RefusalMessage(version)
         Dim exchange As WorkerExchangeException = TryCast(problem, WorkerExchangeException)

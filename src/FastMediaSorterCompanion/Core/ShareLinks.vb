@@ -13,8 +13,8 @@ Public Module ShareLinks
     ''' <summary>Where the Server edition is obtained.</summary>
     Public Const ServerEditionUrl As String = "https://serzhyale.github.io/FastMediaSorter_Lite/server.html"
 
-    ''' <summary>FileDO virtual disk sharing guide on Fast Media Sorter site.</summary>
-    Public Const FileDoDisksGuideUrl As String = "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-filedo-disks.html"
+    ''' <summary>FileDO's own guide to its virtual disks (the Disk Manager, mounting, unmounting).</summary>
+    Public Const FileDoDisksGuideUrl As String = "https://serzhyale.github.io/FileDO/guides/virtual-disks.html"
 
     ''' <summary>FileDO project website.</summary>
     Public Const FileDoSiteUrl As String = "https://serzhyale.github.io/FileDO/"

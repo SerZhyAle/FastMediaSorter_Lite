@@ -46,7 +46,7 @@ $wanted = @(
     'Get-LedgerLockProblem', 'Get-ApprovedLedger', 'Undo-AppliedGrants', 'Write-GrantRecovery',
     'Get-StateLockName', 'Enter-StateLock', 'Grant-Roots', 'Revoke-Roots', 'Write-Log',
     'Write-GrantIntent', 'Remove-GrantIntents', 'Resolve-StaleGrantIntents',
-    'Get-StagedExePath', 'Get-FileDoRoot', 'Get-ServiceBinPath')
+    'Get-StagedExePath', 'Get-FileDoRoot', 'Get-ServiceBinPath', 'Get-WantedServiceAccount', 'Move-UntrustedWorkerStateAside')
 $defs = $ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $wanted -contains $n.Name }, $true)
 $missing = @($wanted | Where-Object { $name = $_; -not ($defs | Where-Object { $_.Name -eq $name }) })
 if ($missing.Count -gt 0) { Exit-Verdict 'ShareServiceHelperLogic' 2 "not found in the helper: $($missing -join ', ')" }
@@ -461,6 +461,44 @@ Check 'filedo: a repair run started from the staged copy keeps the root the regi
 $script:RegistryImagePath = ''
 $line = Binpath-For $stagedExe
 Check 'filedo: from the staged copy with nothing to keep, no root is invented (never the ProgramData parent)' ($line -notlike '*--filedo-root*') $line
+
+# ---------------------------------------------- 10. the service account follows the FileDO bundle ----
+# LocalService is the rule (H-14); LocalSystem only where the optional FileDO component is on disk,
+# because the worker refuses disk sharing under any other holder.
+$acctRoot = Join-Path ([IO.Path]::GetTempPath()) ('fms-acct-' + [guid]::NewGuid().ToString('N'))
+try {
+    New-Item -ItemType Directory -Path (Join-Path $acctRoot 'companion') | Out-Null
+    $script:RegistryImagePath = ''
+    $script:ExePath = Join-Path $acctRoot 'companion\fms-share-worker.exe'; $script:FileDoRoot = ''
+    Check 'account: an installation without the FileDO component runs as LocalService' ((Get-WantedServiceAccount) -eq 'NT AUTHORITY\LocalService') (Get-WantedServiceAccount)
+    New-Item -ItemType Directory -Path (Join-Path $acctRoot 'filedo') | Out-Null
+    Check 'account: an empty filedo folder is not the component' ((Get-WantedServiceAccount) -eq 'NT AUTHORITY\LocalService') (Get-WantedServiceAccount)
+    Set-Content -LiteralPath (Join-Path $acctRoot 'filedo\filedo.exe') -Value 'x'
+    Check 'account: with filedo.exe in the bundle the holder is LocalSystem' ((Get-WantedServiceAccount) -eq 'LocalSystem') (Get-WantedServiceAccount)
+    $script:ExePath = ''; $script:FileDoRoot = ''
+    Check 'account: no known installation root never selects LocalSystem' ((Get-WantedServiceAccount) -eq 'NT AUTHORITY\LocalService') (Get-WantedServiceAccount)
+} finally { Remove-Item -LiteralPath $acctRoot -Recurse -Force -ErrorAction SilentlyContinue }
+
+# ------------------------------------ 11. a stale filedo-state owned by someone else is set aside ----
+# The worker reuses <DataDir>\filedo-state only when the system or an administrator owns it. The
+# directory just created is owned by whoever runs this test, so the trusted SIDs are swapped per case.
+$sandbox = New-Sandbox
+try {
+    $stateDir = Join-Path $sandbox 'filedo-state'
+    New-Item -ItemType Directory -Path $stateDir | Out-Null
+    Set-Content -LiteralPath (Join-Path $stateDir 'planted.txt') -Value 'x'
+    $realOwner = (Get-Acl -LiteralPath $stateDir).GetOwner([Security.Principal.SecurityIdentifier]).Value
+    $SidSystem = $realOwner; $SidAdmins = $realOwner
+    Move-UntrustedWorkerStateAside
+    Check 'state: a directory owned by the system or an administrator is left in place' (Test-Path -LiteralPath $stateDir -PathType Container)
+    $SidSystem = 'S-1-5-18'; $SidAdmins = 'S-1-5-99-1'
+    Move-UntrustedWorkerStateAside
+    $aside = @(Get-ChildItem -LiteralPath $sandbox -Directory | Where-Object { $_.Name -like 'filedo-state.untrusted-*' })
+    Check 'state: a directory owned by anyone else is renamed, not deleted' (-not (Test-Path -LiteralPath $stateDir) -and $aside.Count -eq 1 -and (Test-Path -LiteralPath (Join-Path $aside[0].FullName 'planted.txt')))
+    Check 'state: ...and the move is logged' (@($script:LogLines | Where-Object { $_ -like 'moving*filedo-state*aside*' }).Count -eq 1)
+    Move-UntrustedWorkerStateAside
+    Check 'state: no directory is nothing to do' ($true)
+} finally { Remove-Sandbox $sandbox; $SidSystem = $me; $SidAdmins = $me }
 
 # --------------------------------------------------------------------------------- verdict ----
 $failed =@($results | Where-Object { -not $_.Passed })

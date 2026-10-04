@@ -65,7 +65,11 @@ Friend NotInheritable Class ChromeMenu
         menuFont = DirectCast(font.Clone(), Font)
         symbolFont = DirectCast(symbols.Clone(), Font)
         BackColor = theme.PanelFill
-        Opacity = theme.PanelOpacity
+        ' A popup is something the user is choosing from right now: it stays at least 40 % solid even
+        ' when the floating panels are set fully see-through.
+        Opacity = Math.Max(0.4R, theme.PanelOpacity)
+        ' A translucent menu keeps its captions and glyphs fully opaque (the ink layer).
+        UseInkLayer = Not theme.IsHighContrast AndAlso theme.PanelOpacity < 0.999R
         SetCornerRadius(UiScale.Px(theme.PanelCornerRadius, scale))
         Surface.Configure(theme, scale, rtl, menuFont, symbolFont)
         Surface.SetAnimationEnabled(False)
