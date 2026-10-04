@@ -48,6 +48,9 @@
 - **The language selector follows `APP-SETTINGS` rules 5 and 7** (read against this product 2026-10-04, owner
   direction): on the first settings page, every shipped language by its endonym, no flag, applied at once
   to every open window (`LanguageSelectorContractTests`); the settings drop-down lists share one pixel font
-  and an item height of at least 28 logical px. Not yet read the same way: rule 6 (the theme selector is
-  on the Viewing page, not the first) and the 44 px coarse-input floor.
+  and an item height of at least 28 logical px. The modern revision now places language and theme together
+  on General, with independent collapsible groups and persisted page/viewport context
+  (`Table_Form.SettingsGroups.vb`, `SettingsUiContext.vb`). `APP-SETTINGS` 0.1 was mapped on 2026-10-04;
+  the catalog registry distinguishes the implemented foundation from remaining DPI/touch, documentation,
+  operations and About-page gaps. The 44 px coarse-input floor and full driven conformance remain open.
 - The net48 x86 fallback takes bug fixes only; its gaps are one dated exception in the registry.

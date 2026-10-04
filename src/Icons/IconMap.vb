@@ -90,6 +90,8 @@ Public Module IconMap
         {"settingsNavVideo", New IconMeaning("settingsNavVideo", "content.video", "Видео", IconRole.Content)},
         {"settingsNavAudio", New IconMeaning("settingsNavAudio", "content.audio", "Аудио", IconRole.Content)},
         {"settingsNavFiles", New IconMeaning("settingsNavFiles", "content.folder", "Файлы", IconRole.Content)},
+        {"settingsNavResources", New IconMeaning("settingsNavResources", "source.resource", "Ресурсы", IconRole.Content)},
+        {"btn_Resource", New IconMeaning("btn_Resource", "source.resource", "Ресурс", IconRole.Content)},
         {"settingsNavOcr", New IconMeaning("settingsNavOcr", "action.extract-text", "OCR", IconRole.Content)},
         {"settingsNavTranslation", New IconMeaning("settingsNavTranslation", "action.translate", "Перевод", IconRole.Content)},
         {"settingsNavSftp", New IconMeaning("settingsNavSftp", "device.phone", "Android / SFTP", IconRole.Content)},

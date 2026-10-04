@@ -549,9 +549,12 @@ Public Class Main_Form
     End Sub
 
     Private Sub lbl_Info_LinkClicked(sender As Object, e As System.Windows.Forms.LinkLabelLinkClickedEventArgs) Handles lbl_Info.LinkClicked
-        ' Explicit UseShellExecute: mailto needs the shell; net48 defaulted to True,
-        ' .NET defaults to False (would throw Win32Exception on the modern build).
-        System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo("mailto:" & Author_Email & "?subject=" & Uri.EscapeDataString(ProductNames.Full & ":")) With {.UseShellExecute = True})
+        ' The "i" of the first panel used to open a mailto: to the author - the user's
+        ' registered mail client (Outlook, whenever it was set) springing open on an
+        ' information button. It is the "about file" button now: the details of the file
+        ' on screen. The author stays reachable where he always was - the project link of
+        ' the settings window's About page.
+        ShowFileDetailsDialog()
     End Sub
 
 

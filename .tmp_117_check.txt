@@ -1,0 +1,3 @@
+SD12:         Add("Показывает компактный список папок в левом верхнем углу просмотрщика.", "Shows a compact folder list in the
+SD41:         Add("Через сколько секунд бездействия скрывать панель управления видео.", "Seconds of inactivity before the vide
+SH65:         Add("Задержка скрытия панели управления видео, с", "Video controls hide delay, s", "Затримка приховування панелі

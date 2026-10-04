@@ -53,6 +53,12 @@ Partial Public Class Table_Form
     Private modernAudioPage As TabPage
     Private modernSftpPage As TabPage
     Private modernAboutPage As TabPage
+    ' The resources page (ticket 118 Ф-1): the shared panel lives here, and the window records
+    ' what the user changed so the main form can react after ShowDialog (13.4).
+    Private modernResourcesPage As TabPage
+    Private resourcesPanel As Resource_List_Panel
+    Private resourcesTouchedInSettings As Boolean
+    Private ReadOnly settingsRemovedResourceIds As New List(Of String)()
     Private ReadOnly modernSettingsRows As New List(Of ModernSettingRow)()
     Private ReadOnly modernPageFlows As New List(Of FlowLayoutPanel)()
 
@@ -281,8 +287,8 @@ Partial Public Class Table_Form
         LinkLabel1.Location = New Point(18, modernSettingsSidebar.ClientSize.Height - LinkLabel1.Height - 16)
         AddHandler modernSettingsSidebar.Resize,
             Sub()
-                LinkLabel1.Left = 18
-                LinkLabel1.Top = Math.Max(58, modernSettingsSidebar.ClientSize.Height - LinkLabel1.Height - 16)
+                LinkLabel1.Left = Sp(2)
+                LinkLabel1.Top = Sp(4)
             End Sub
         AddHandler modernSettingsHeader.Resize,
             Sub()
@@ -291,8 +297,8 @@ Partial Public Class Table_Form
                 modernSettingsSubtitle.Width = width
             End Sub
 
-        BuildModernSettingsNavigation()
         BuildExtraModernSettingsPages()
+        BuildModernSettingsNavigation()
 
         ' Preserve the real TabControl for accessibility and existing event code,
         ' but remove its dated strip of tab headers. Navigation buttons select the
@@ -306,7 +312,7 @@ Partial Public Class Table_Form
         Tab_Control.Multiline = True
         Tab_Control.BackColor = SettingsCanvas
 
-        For Each page As TabPage In New TabPage() {Tab_Page_1, Tab_Page_2, Tab_Page_3, modernAudioPage, Tab_Page_4, Tab_Page_5, modernTranslationPage, modernSftpPage, modernAboutPage}
+        For Each page As TabPage In Tab_Control.TabPages
             page.BackColor = SettingsCanvas
             page.UseVisualStyleBackColor = False
             page.Padding = New Padding(0)
@@ -320,11 +326,13 @@ Partial Public Class Table_Form
         modernSettingsShell.BringToFront()
 
         AddHandler Tab_Control.SelectedIndexChanged, AddressOf ModernSettingsTabChanged
+        AddHandler Tab_Control.Deselecting, Sub(sender, e) CaptureSettingsPage(e.TabPage)
         AddHandler modernSettingsContent.Resize, AddressOf ModernSettingsContentResized
         AddHandler VisibleChanged, AddressOf ModernSettingsVisibleChanged
         AddHandler Shown, AddressOf ModernSettingsShown
         AddHandler FormClosing, AddressOf SaveModernSettingsWindowSize
         BuildModernDataLayout()
+        BuildSettingsGroups()
         StyleModernSettingsControls()
         LayoutModernSettingsPages()
         ApplySystemSettingsPalette()
@@ -341,17 +349,31 @@ Partial Public Class Table_Form
     ''' <see cref="IconMap"/>: the picture and the canonical name come from the vocabulary
     ''' (ICON-SET), never from a second table kept here.</summary>
     Private Shared ReadOnly ModernNavControlNames As String() = {
-        "settingsNavRecipients", "settingsNavViewing", "settingsNavVideo", "settingsNavAudio", "settingsNavFiles",
-        "settingsNavOcr", "settingsNavTranslation", "settingsNavSftp", "settingsNavAbout"}
+        "settingsNavGeneral", "settingsNavRecipients", "settingsNavViewing", "settingsNavVideo", "settingsNavAudio", "settingsNavFiles",
+        "settingsNavResources",
+        "settingsNavOcr", "settingsNavTranslation", "settingsNavStorage", "settingsNavSftp", "settingsNavAbout"}
 
     Private ReadOnly modernNavTips As New ToolTip()
 
     Private Sub BuildModernSettingsNavigation()
         ' A dense list (ICON-RENDER rule 5: 20 px glyph, a row of 34 - above the 28 px
         ' mouse floor): nine entries fit the window's minimum height with room to spare.
-        Dim top As Integer = Sp(66)
-        Dim navLabels As String() = {"Destination folders", "Viewing", "Video and quality", "Audio", "Files and system",
-                                     "OCR", "Translation", "Android / SFTP", "About"}
+        Dim top As Integer = 0
+        Dim navLabels As String() = {"General", "Destination folders", "Images", "Video", "Audio", "Files and system",
+                                     "Resources",
+                                     "OCR", "Translation", "Storage", "Android / SFTP", "About"}
+        Dim navigation As New Panel With {.Dock = DockStyle.Fill, .AutoScroll = True, .Padding = Padding.Empty}
+        Dim branding As New Panel With {.Dock = DockStyle.Top, .Height = Sp(66)}
+        branding.Controls.Add(modernProductLabel)
+        Dim versionFooter As New Panel With {.Dock = DockStyle.Bottom, .Height = Sp(28)}
+        versionFooter.Controls.Add(LinkLabel1)
+        LinkLabel1.Location = New Point(Sp(2), Sp(4))
+        LinkLabel1.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+        modernSettingsSidebar.Controls.Add(versionFooter)
+        modernSettingsSidebar.Controls.Add(navigation)
+        modernSettingsSidebar.Controls.Add(branding)
+        navigation.BringToFront()
+        top = 0
         modernSettingsNavButtons = New Button(navLabels.Length - 1) {}
 
         For index As Integer = 0 To navLabels.Length - 1
@@ -367,9 +389,9 @@ Partial Public Class Table_Form
                 .TextAlign = ContentAlignment.MiddleLeft,
                 .ImageAlign = ContentAlignment.MiddleLeft,
                 .TextImageRelation = TextImageRelation.ImageBeforeText,
-                .AutoEllipsis = True,
+                .AutoEllipsis = False,
                 .Height = Sp(34),
-                .Width = modernSettingsSidebar.ClientSize.Width - Sp(24),
+                .Width = Math.Max(1, modernSettingsSidebar.ClientSize.Width - Sp(48)),
                 .Location = New Point(Sp(12), top),
                 .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right,
                 .Padding = New Padding(Sp(10), 0, Sp(6), 0),
@@ -378,7 +400,7 @@ Partial Public Class Table_Form
             }
             button.FlatAppearance.BorderSize = 0
             AddHandler button.Click, AddressOf ModernSettingsNavClicked
-            modernSettingsSidebar.Controls.Add(button)
+            navigation.Controls.Add(button)
             modernSettingsNavButtons(index) = button
             top += Sp(38)
         Next
@@ -411,14 +433,22 @@ Partial Public Class Table_Form
     End Sub
 
     Private Sub BuildExtraModernSettingsPages()
+        modernGeneralPage = New TabPage With {.Name = "Tab_Page_General", .Text = "General"}
+        modernStoragePage = New TabPage With {.Name = "Tab_Page_Storage", .Text = "Storage"}
         modernAudioPage = New TabPage With {.Name = "Tab_Page_Audio", .Text = "Audio"}
         modernTranslationPage = New TabPage With {.Name = "Tab_Page_Translation", .Text = "Translation"}
         modernSftpPage = New TabPage With {.Name = "Tab_Page_Sftp", .Text = "Android / SFTP"}
         modernAboutPage = New TabPage With {.Name = "Tab_Page_About", .Text = "About"}
+        modernResourcesPage = New TabPage With {.Name = "Tab_Page_Resources", .Text = "Resources"}
         Tab_Control.TabPages.Insert(3, modernAudioPage)
+        ' «Ресурсы» between Files (Tab_Page_4) and OCR (Tab_Page_5): Insert(5) lands right there
+        ' (ticket 118 Q118-5), and the nav array above says the same order.
+        Tab_Control.TabPages.Insert(5, modernResourcesPage)
         Tab_Control.TabPages.Add(modernTranslationPage)
         Tab_Control.TabPages.Add(modernSftpPage)
         Tab_Control.TabPages.Add(modernAboutPage)
+        Tab_Control.TabPages.Insert(0, modernGeneralPage)
+        Tab_Control.TabPages.Insert(Tab_Control.TabPages.IndexOf(modernSftpPage), modernStoragePage)
     End Sub
 
     Private Sub ModernSettingsNavClicked(sender As Object, e As EventArgs)
@@ -429,14 +459,14 @@ Partial Public Class Table_Form
     End Sub
 
     Private Sub ModernSettingsTabChanged(sender As Object, e As EventArgs)
-        If Tab_Control.SelectedTab Is modernTranslationPage Then OnEnterOcrTab()
+        If Not restoringSettingsContext AndAlso Tab_Control.SelectedTab Is modernTranslationPage Then OnEnterOcrTab()
         RefreshModernSettingsHeader()
-        ScrollActiveModernPageToTop()
+        ChangeSettingsContextPage()
     End Sub
 
     Private Sub ModernSettingsShown(sender As Object, e As EventArgs)
         PositionModernSettingsOnOwnerMonitor()
-        ScrollActiveModernPageToTop()
+        QueueRestoreSettingsContext()
     End Sub
 
     ''' <summary>
@@ -491,29 +521,10 @@ Partial Public Class Table_Form
         SaveSetting(App_name, Second_App_Name, "SettingsWindowHeight", ClientSize.Height.ToString())
     End Sub
 
-    ''' <summary>A settings page always opens at its top. Both the TabPage and its flow
-    ''' panel have AutoScroll on, and such a container scrolls a newly focused child into
-    ''' view - so whichever control WinForms focuses on entering the page decided where
-    ''' the page started, hiding the rows above it. BeginInvoke runs after focus has been
-    ''' placed, which is the whole point.</summary>
-    Private Sub ScrollActiveModernPageToTop()
-        If Not modernSettingsBuilt OrElse Tab_Control Is Nothing OrElse Not IsHandleCreated Then Return
-        Dim page As TabPage = Tab_Control.SelectedTab
-        If page Is Nothing Then Return
-        BeginInvoke(New MethodInvoker(
-            Sub()
-                Try
-                    page.AutoScrollPosition = Point.Empty
-                    For Each flow As FlowLayoutPanel In modernPageFlows
-                        If flow.Parent Is page Then flow.AutoScrollPosition = Point.Empty
-                    Next
-                Catch
-                End Try
-            End Sub))
-    End Sub
-
     Private Sub ModernSettingsContentResized(sender As Object, e As EventArgs)
+        CaptureSettingsPage(Tab_Control.SelectedTab)
         LayoutModernSettingsPages()
+        QueueRestoreSettingsContext()
     End Sub
 
     ''' <summary>Selects button caption based on packaged (MSIX) status (057.S14-2).</summary>
@@ -526,17 +537,22 @@ Partial Public Class Table_Form
         If Not modernSettingsBuilt Then Return
 
         Dim ru As Boolean = Is_Russian_Language
-        Dim navLabels As String() = {Localization.T("Получатели"),
-             Localization.T("Просмотр"),
+        Dim navLabels As String() = {Localization.T("Общие"), Localization.T("Получатели"),
+             Localization.T("Изображения"),
              Localization.T("Видео"),
              Localization.T("Аудио"),
              Localization.T("Файлы"),
+             Localization.T("Ресурсы"),
              Localization.T("OCR"),
              Localization.TC("settings", "Перевод"),
+             Localization.T("Хранилище"),
              Localization.T("Android / SFTP"),
              Localization.T("О программе")}
         For index As Integer = 0 To modernSettingsNavButtons.Length - 1
             modernSettingsNavButtons(index).Text = navLabels(index)
+            modernSettingsNavButtons(index).Height = Math.Max(Sp(34), TextRenderer.MeasureText(navLabels(index), modernSettingsNavButtons(index).Font,
+                New Size(Math.Max(1, modernSettingsNavButtons(index).Width - Sp(48)), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(12))
+            modernSettingsNavButtons(index).Top = If(index = 0, 0, modernSettingsNavButtons(index - 1).Bottom + Sp(4))
             ' The caption can be clipped by a long translation: the tooltip and the
             ' accessible name always carry the whole word (ICON-RENDER rule 8).
             modernSettingsNavButtons(index).AccessibleName = navLabels(index)
@@ -547,29 +563,35 @@ Partial Public Class Table_Form
         ' The window's title bar already says "Settings"; the sidebar names only the product.
         modernSidebarSectionLabel.Text = String.Empty
         LocalizeModernSettingRows()
+        LocalizeSettingsGroups()
         RefreshModernSettingsHeader()
+        QueueRestoreSettingsContext()
     End Sub
 
     Private Sub RefreshModernSettingsHeader()
         If Not modernSettingsBuilt Then Return
         Dim ru As Boolean = Is_Russian_Language
         Dim index As Integer = Math.Max(0, Tab_Control.SelectedIndex)
-        Dim titles As String() = {Localization.T("Каталоги-получатели"),
-             Localization.T("Просмотр"),
-             Localization.T("Видео и качество"),
+        Dim titles As String() = {Localization.T("Общие"), Localization.T("Каталоги-получатели"),
+             Localization.T("Изображения"),
+             Localization.T("Видео"),
              Localization.T("Аудио"),
              Localization.T("Файлы и система"),
+             Localization.T("Серверы и сетевые папки"),
              Localization.T("OCR"),
              Localization.TC("settings", "Перевод"),
+             Localization.T("Хранилище"),
              Localization.T("Android и SFTP"),
              Localization.T("О программе")}
-        Dim subtitles As String() = {Localization.T("Назначьте папки для быстрого перемещения и копирования."),
+        Dim subtitles As String() = {Localization.T("Язык, оформление и запуск приложения."), Localization.T("Назначьте папки для быстрого перемещения и копирования."),
              Localization.T("Настройте фон, информацию на экране и слайдшоу."),
              Localization.T("Качество изображения и привычное поведение видео."),
              Localization.T("Обложки, управление и поведение аудиодорожек."),
              Localization.T("Операции с файлами, интеграция и язык интерфейса."),
+             Localization.T("Серверы и сетевые папки: добавить, удалить, проверить, импортировать и передать на другой компьютер."),
              Localization.T("Распознавание текста на изображениях и параметры OCR."),
              Localization.T("Сервис и параметры перевода распознанного текста."),
+             Localization.T("Кэш изображений и миниатюр."),
              Localization.T("SFTP-сервер и мобильное приложение Android."),
              Localization.T("Версия приложения, документация и ссылки проекта.")}
 
@@ -693,12 +715,12 @@ Partial Public Class Table_Form
             Case "hq_scaling" : Return Localization.T("Качественное масштабирование")
             Case "video_loop" : Return Localization.T("Повторять видео")
             Case "video_mute" : Return Localization.T("Запускать без звука")
-            Case "video_volume" : Return Localization.T("Громкость видео")
+            Case "video_volume" : Return Localization.T("Громкость по умолчанию (%):")
             Case "section_video_behavior" : Return Localization.T("Поведение видео")
             Case "include_video_navigation" : Return Localization.T("Учитывать видео при пролистывании файлов")
             Case "video_autoplay" : Return Localization.T("Запускать видео автоматически")
             Case "video_remember_position" : Return Localization.T("Запоминать позицию просмотра")
-            Case "video_controls_delay" : Return Localization.T("Задержка скрытия панели, с")
+            Case "video_controls_delay" : Return Localization.T("Задержка скрытия панели управления видео, с")
             Case "video_controls_paused" : Return Localization.T("Показывать панель при паузе")
             Case "video_click_action" : Return Localization.T("Одиночный клик по видео")
             Case "video_end_action" : Return Localization.T("После окончания видео")
@@ -772,6 +794,7 @@ Partial Public Class Table_Form
             Case "decode_cache_clear" : Return Localization.T("Занято на диске")
             Case "thumb_cache_limit" : Return Localization.T("Кэш миниатюр панели, МБ")
             Case "sftp_intro" : Return Localization.T("Доступ к медиатеке с телефона")
+            Case "resources_intro" : Return Localization.T("Серверы и сетевые папки")
             Case "sftp_manager" : Return Localization.T("Публикация папок по SFTP")
             Case "sftp_guide" : Return Localization.T("Инструкция по подключению")
             Case "android_app" : Return Localization.T("Приложение для Android")
@@ -791,7 +814,7 @@ Partial Public Class Table_Form
 
     Private Function ModernSettingDescription(key As String, ru As Boolean) As String
         Select Case key
-            Case "recipients_overlay" : Return Localization.T("Показывает компактный список папок в левом верхнем углу просмотрщика.")
+            Case "recipients_overlay" : Return Localization.T("Показывает компактный список папок поверх изображения; закрепляется и открепляется своей булавкой, как панели.")
             Case "recipients_position" : Return Localization.T("Угол области просмотра, в котором будет показана таблица.")
             Case "recipients_width" : Return Localization.T("Ширина панели в пикселях.")
             Case "recipients_font" : Return Localization.T("Размер текста в пунктах.")
@@ -831,7 +854,7 @@ Partial Public Class Table_Form
             Case "text_preview_max_kb" : Return Localization.T("Читается только начало файла. Enter открывает файл целиком во внешнем редакторе.")
             Case "document_extensions", "other_extensions" : Return Localization.T("Расширения через пробел или точку с запятой, например .pdf;.txt. Без масок.")
             Case "video_remember_position" : Return Localization.T("Изменившийся файл всегда начинается с начала.")
-            Case "video_controls_delay" : Return Localization.T("Через сколько секунд бездействия скрывать панель управления.")
+            Case "video_controls_delay" : Return Localization.T("Через сколько секунд бездействия скрывать панель управления видео.")
             Case "video_controls_paused" : Return Localization.T("Не скрывает управление, пока видео поставлено на паузу.")
             Case "video_click_action" : Return Localization.T("Действие левой кнопки мыши на поверхности видео.")
             Case "video_end_action" : Return Localization.T("Что делать, когда воспроизведение достигло конца.")
@@ -889,6 +912,7 @@ Partial Public Class Table_Form
             Case "decode_cache_clear" : Return Localization.T("Текущий размер сохранённых результатов декодирования.")
             Case "thumb_cache_limit" : Return Localization.T("Ускоряет повторное открытие панели F3. 0 отключает кэш.")
             Case "sftp_intro" : Return Localization.T("Опубликуйте выбранные папки встроенным SFTP-сервером и открывайте их в мобильном приложении.")
+            Case "resources_intro" : Return Localization.T("Сохранённые серверы SFTP и сетевые папки с паролем: открываются как обычные папки.")
             Case "sftp_manager" : Return Localization.T("Открывает отдельное приложение управления SFTP-доступом и опубликованными папками.")
             Case "sftp_guide" : Return Localization.T("Пошаговая настройка сервера, сети и подключения мобильного клиента.")
             Case "android_app" : Return Localization.T("Страница мобильного приложения для Android.")
@@ -1018,6 +1042,7 @@ Partial Public Class Table_Form
         lblOcrStatus.Height = 34
         lblOcrStatus.Margin = New Padding(8, 4, 8, 8)
 
+        BuildModernResourcesPage()
         BuildModernSftpPage()
         BuildModernAboutPage()
         If MultiWindowPolicy.IsSecondaryInstance() Then AddInformationBlock(files, "secondary_instance_warning")
@@ -1039,8 +1064,8 @@ Partial Public Class Table_Form
         Dim flow As New FlowLayoutPanel With {
             .Dock = DockStyle.Fill,
             .AutoScroll = True,
-            .FlowDirection = FlowDirection.LeftToRight,
-            .WrapContents = True,
+            .FlowDirection = FlowDirection.TopDown,
+            .WrapContents = False,
             .Padding = New Padding(6),
             .BackColor = SettingsCanvas
         }
@@ -1057,6 +1082,12 @@ Partial Public Class Table_Form
         Dim width As Integer = Math.Max(Sp(460), flow.ClientSize.Width - flow.Padding.Horizontal - Sp(18))
         Dim useTwoColumns As Boolean = width >= Sp(820)
         For Each child As Control In flow.Controls
+            Dim group As SettingsCollapsibleGroup = TryCast(child, SettingsCollapsibleGroup)
+            If group IsNot Nothing Then
+                group.Width = width
+                group.ArrangeContents()
+                Continue For
+            End If
             Dim compact As Boolean = String.Equals(TryCast(child.Tag, String), "modern:compact", StringComparison.Ordinal)
             child.Width = If(compact AndAlso useTwoColumns, Math.Max(Sp(300), (width - 8) \ 2), width)
         Next
@@ -1131,6 +1162,7 @@ Partial Public Class Table_Form
                     description.Width = labelWidth
                     editor.Top = Math.Max(Sp(10), (host.ClientSize.Height - editor.Height) \ 2)
                 End If
+                SizeModernSettingRow(row)
             End Sub
         flow.Controls.Add(host)
         modernSettingsRows.Add(row)
@@ -1148,9 +1180,11 @@ Partial Public Class Table_Form
     Private Sub SizeModernSettingRow(row As ModernSettingRow)
         If row.Description Is Nothing Then Return
         ' Heights come from the fonts, so they follow the interface scale on their own.
-        Dim titleHeight As Integer = Math.Max(Sp(20), row.Title.Font.Height + Sp(4))
-        Dim lines As Integer = If(row.Key.EndsWith("_intro", StringComparison.Ordinal), 2, 1)
-        Dim descriptionHeight As Integer = Math.Max(Sp(18), row.Description.Font.Height * lines + Sp(4))
+        Dim titleHeight As Integer = Math.Max(Sp(20), TextRenderer.MeasureText(row.Title.Text, row.Title.Font,
+            New Size(Math.Max(1, row.Title.Width), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(4))
+        row.Description.AutoEllipsis = False
+        Dim descriptionHeight As Integer = Math.Max(Sp(18), TextRenderer.MeasureText(row.Description.Text, row.Description.Font,
+            New Size(Math.Max(1, row.Description.Width), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(4))
         row.Title.Top = Sp(7)
         row.Title.Height = titleHeight
         row.Description.Top = row.Title.Bottom + Sp(2)
@@ -1229,6 +1263,45 @@ Partial Public Class Table_Form
             End Sub
         Return strip
     End Function
+
+    ''' <summary>The resources page (ticket 118 Ф-1): the same list+actions panel the manager dialog
+    ''' hosts, embedded once. A list is not a label+editor row, so it sits in a host Panel, not an
+    ''' AddSettingRow; the removal/add/import facts travel to the main form through the panel's
+    ''' ResourcesChanged and the window's own ResourcesTouched / RemovedResourceIds (13.4).</summary>
+    Private Sub BuildModernResourcesPage()
+        If modernResourcesPage Is Nothing OrElse resourcesPanel IsNot Nothing Then Return
+        Dim flow As FlowLayoutPanel = CreateModernPageFlow(modernResourcesPage)
+        AddInformationBlock(flow, "resources_intro")
+
+        resourcesPanel = New Resource_List_Panel(settingsScale) With {
+            .Dock = DockStyle.Fill, .Tag = "modern:full", .BackColor = SettingsSurface}
+        AddHandler resourcesPanel.ResourcesChanged,
+            Sub(removedIds As IReadOnlyList(Of String))
+                resourcesTouchedInSettings = True
+                For Each id As String In removedIds
+                    If Not settingsRemovedResourceIds.Contains(id) Then settingsRemovedResourceIds.Add(id)
+                Next
+            End Sub
+        Dim host As New Panel With {.Height = Sp(380), .BackColor = SettingsSurface, .Padding = New Padding(8, 0, 8, 8), .Tag = "modern:full"}
+        host.Controls.Add(resourcesPanel)
+        flow.Controls.Add(host)
+        host.BringToFront()
+    End Sub
+
+    ''' <summary>True when anything in the resources list was changed while the window was open;
+    ''' the main form reads it (and <see cref="SettingsRemovedResourceIds"/>) after ShowDialog.</summary>
+    Friend ReadOnly Property ResourcesTouched As Boolean
+        Get
+            Return resourcesTouchedInSettings
+        End Get
+    End Property
+
+    ''' <summary>Ids removed while the window was open, for closing a resource that is on screen.</summary>
+    Friend ReadOnly Property SettingsRemovedResourceIds As IReadOnlyList(Of String)
+        Get
+            Return settingsRemovedResourceIds
+        End Get
+    End Property
 
     Private Sub BuildModernSftpPage()
         Dim flow As FlowLayoutPanel = CreateModernPageFlow(modernSftpPage)
@@ -1395,6 +1468,11 @@ Partial Public Class Table_Form
         Data_Grid_View.DefaultCellStyle.SelectionForeColor = SettingsText
 
         RefreshModernSettingsHeader()
+        For Each group As SettingsCollapsibleGroup In settingsGroups.Values
+            group.Header.ForeColor = SettingsText
+            group.Header.BackColor = SettingsSurface
+            group.Header.FlatAppearance.BorderColor = SettingsBorder
+        Next
         ApplySettingsTitleBarTheme()
         ThemeApplier.ApplyNativeTree(Me, settingsDarkMode)
         Invalidate(True)
@@ -1473,11 +1551,17 @@ Partial Public Class Table_Form
     ''' hidden window is not always among the open forms the service repaints (053 F-09 was the
     ''' same trap with the old per-window subscription). Catch up on every show.</summary>
     Private Sub ModernSettingsVisibleChanged(sender As Object, e As EventArgs)
-        If Not Visible OrElse IsDisposed Then Return
+        If IsDisposed Then Return
+        If Not Visible Then
+            SaveSettingsContext()
+            Return
+        End If
         If settingsDarkMode <> ThemeService.IsDark AndAlso Not SystemInformation.HighContrast Then
             LoadSystemSettingsPalette()
             ApplySystemSettingsPalette()
         End If
+        PositionModernSettingsOnOwnerMonitor()
+        QueueRestoreSettingsContext()
     End Sub
 
     Private Sub ApplySettingsTitleBarTheme()
@@ -1536,6 +1620,7 @@ Partial Public Class Table_Form
         StyleModernSettingsControlTree(modernTranslationPage)
         StyleModernSettingsControlTree(modernSftpPage)
         StyleModernSettingsControlTree(modernAboutPage)
+        StyleModernSettingsControlTree(modernResourcesPage)
 
         ' OCR is built in code and has its own inner tabs. Give that otherwise
         ' classic grey control the same light surface as the rest of Settings.

@@ -71,6 +71,7 @@ Partial Public Class Main_Form
         LocalizeVideoControls()
         LocalizeImageEditor()
         LocalizeToVideo()
+        LocalizeResourceButton()
         ApplyCatalogToolbarGlyphs()
         ChromeRefreshText()
 #End If

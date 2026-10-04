@@ -59,6 +59,8 @@
 
   <ItemGroup>
     <!-- Link the production source directly (same assembly => Friend members visible). -->
+    <Compile Include="..\..\src\SettingsUiContext.vb"><Link>Linked\SettingsUiContext.vb</Link></Compile>
+    <Compile Include="..\..\src\SettingsCollapsibleGroup.vb"><Link>Linked\SettingsCollapsibleGroup.vb</Link></Compile>
     <Compile Include="..\..\src\Theming\IThemeAware.vb"><Link>Linked\Theming\IThemeAware.vb</Link></Compile>
     <Compile Include="..\..\src\Utils.vb">
       <Link>Linked\Utils.vb</Link>
@@ -164,6 +166,9 @@
     <Compile Include="..\..\src\Chrome\ChromeMetrics.vb">
       <Link>Linked\Chrome\ChromeMetrics.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Chrome\ChromeAutoHide.vb">
+      <Link>Linked\Chrome\ChromeAutoHide.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Chrome\UiScale.vb">
       <Link>Linked\Chrome\UiScale.vb</Link>
     </Compile>
@@ -234,6 +239,10 @@
     <Compile Include="..\..\src\PlaybackRules.vb">
       <Link>Linked\PlaybackRules.vb</Link>
     </Compile>
+    <!-- Ticket 115: who may still be inside the native LibVLC instance (whole-file modern-only). -->
+    <Compile Include="..\..\src\VlcNativeLease.vb">
+      <Link>Linked\VlcNativeLease.vb</Link>
+    </Compile>
     <!-- The custom-shortcut model (SPECIFICATION_SETTINGS_EXPANSION.md §3.5). Here rather
          than in the dialog because everything that can go wrong with a remapping is a
          rule about strings: which combinations may be assigned, who already owns one, and
@@ -261,6 +270,7 @@
          the logger reads two name constants from Common_Module. Both are small leaf
          modules - declarations and P/Invoke - so this still does not drag in the
          LibVLC/Tesseract/ILMerge machinery the project comment warns about. -->
+    <Compile Include="..\..\src\LogSessionDiagnostics.vb" Link="Linked\LogSessionDiagnostics.vb" />
     <Compile Include="..\..\src\AppFileLogger.vb">
       <Link>Linked\AppFileLogger.vb</Link>
     </Compile>
@@ -289,6 +299,23 @@
     <Compile Include="..\..\src\Resources\FmsConfigReader.vb">
       <Link>Linked\Resources\FmsConfigReader.vb</Link>
     </Compile>
+    <!-- Ticket 118: the viewer's own .fmscfg producer, the button rule, the protected
+         file writer and the secret clipboard - all whole-file "#If Not NETFRAMEWORK",
+         so on the net48 leg they and their tests compile to nothing, matching the
+         shipped shape. The exporter is pure; the writer is proven against a fake
+         IExportFileOps like the Companion's ProtectedConfigWriter. -->
+    <Compile Include="..\..\src\Resources\FmsConfigExport.vb">
+      <Link>Linked\Resources\FmsConfigExport.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\ResourceUiRules.vb">
+      <Link>Linked\Resources\ResourceUiRules.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\ExportWriter.vb">
+      <Link>Linked\Resources\ExportWriter.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\SecretClipboard.vb">
+      <Link>Linked\Resources\SecretClipboard.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Resources\FmsImportRules.vb">
       <Link>Linked\Resources\FmsImportRules.vb</Link>
     </Compile>    <Compile Include="..\..\src\SettingsImport.vb">
@@ -314,6 +341,13 @@
     </Compile>
     <Compile Include="..\..\src\AudioMetadata.vb">
       <Link>Linked\AudioMetadata.vb</Link>
+    </Compile>
+    <!-- The pure model of the "about file" window (the first panel's "i" item): the
+         EXIF reader and formatters are shared between both viewers, so their tests run
+         on both legs. The window itself (File_Details_Form) and the libvlc track reader
+         (Main_Form.FileDetails.vb) are UI/engine code and stay out of the suite. -->
+    <Compile Include="..\..\src\FileDetails.vb">
+      <Link>Linked\FileDetails.vb</Link>
     </Compile>
     <!-- Where the app keeps state on disk, and the archive cache built on it. The two
          Archives files are whole-file "#If Not NETFRAMEWORK", so they and their tests
@@ -417,6 +451,15 @@
     </Compile>
     <Compile Include="..\..\src\Resource_Manager_Form.vb">
       <Link>Linked\Resource_Manager_Form.vb</Link>
+    </Compile>
+    <!-- Ticket 118 moved the resource list into its own panel, hosted by both the
+         manager dialog and the settings page; whole-file "#If Not NETFRAMEWORK",
+         so the net48 leg compiles it to nothing. -->
+    <Compile Include="..\..\src\Resource_List_Panel.vb">
+      <Link>Linked\Resource_List_Panel.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resource_Export_Form.vb">
+      <Link>Linked\Resource_Export_Form.vb</Link>
     </Compile>
     <Compile Include="..\..\src\Common_Module.vb">
       <Link>Linked\Common_Module.vb</Link>

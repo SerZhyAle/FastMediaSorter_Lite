@@ -1,5 +1,53 @@
 # Инвентаризация окна «Настройки» для современного UI .NET 10
 
+> Modern revision, verified 2026-10-04: the current modern placement and restoration behavior are described
+> below. The original dated inventory remains the compatibility reference for keys/defaults and legacy
+> behavior; its RU/EN-only and former page-layout statements do not describe the modern viewer today.
+
+## Current modern settings foundation
+
+The modern viewer has eleven pages: General, Destination folders, Images, Video, Audio, Files and system,
+OCR, Translation, Storage, Android/SFTP and About. Resources will be integrated when its feature is ready;
+there is no placeholder page. The net48 fallback retains its five Designer pages.
+
+The placement catalog is `AddSettingsGroup` in
+[Table_Form.SettingsGroups.vb](../../src/Table_Form.SettingsGroups.vb), keyed by stable page/group/row ids.
+Existing row captions/hints come from `ModernSettingTitle`/`ModernSettingDescription`, editors remain
+bound to the original services, and their storage keys/defaults remain unchanged. Moving a row does not
+create a second setting or migrate its value. Section headings are replaced by independently collapsible
+groups; Basic defaults to expanded, Advanced to collapsed, other defaults are explicit in the catalog.
+
+| Area | Current placement |
+| --- | --- |
+| Language and theme | General / Basic; all thirteen modern languages by endonym, applied live |
+| Chrome and information | General / Appearance; startup preferences in their own group |
+| Image orientation, fit and quality | Images / Basic or Advanced; background and slideshow have separate groups |
+| Audio/subtitle track languages | Video / Tracks and subtitles |
+| Shared startup volume/mute | Audio / Basic; values are still shared with video |
+| Image/thumbnail caches | Storage; OCR-specific cache stays in OCR |
+| File, archive and secure preferences | Files, with separate task groups |
+
+The per-user `ModernSettingsContext` registry value is private modern-viewer state, with schema version 1.
+It remembers the selected page, each group's expansion, a semantic viewport anchor and safe focus.
+Closing/reopening, switching pages and a fresh process restore context. Missing pages fall back to General,
+missing groups to declared defaults, and malformed/future context resets only UI state. The x86 fallback
+does not consume it; secondary modern viewer instances do not overwrite it. Profile exchange excludes it.
+Persistence uses `SettingsFlushScheduler`, including bounded retries and a close/shutdown flush; failure
+keeps context pending, logs the fault and offers a retry instruction. Geometry remains fitted to the owner's
+monitor. Modern settings navigation keys stay in the settings window; legacy forwarding is preserved.
+
+Keyboard focus on a group's header toggles it with Enter/Space. Collapse preserves values and unfinished
+edits, moves focus out of hidden contents, and exposes expanded/collapsed state to accessibility.
+Rows form one vertical sequence and hints wrap. The left navigation scrolls and captions wrap. Palette
+changes retain the existing dynamic theme mechanism and high-contrast override.
+
+Verification: context/group unit tests and full .NET suites; actual window scenes at 175% system DPI in
+English, Russian and Arabic, including independent expansion, row ownership, viewport return and
+fresh-process page/group restoration. Search, full editor revision, all DPI/touch scenarios and real
+screen-reader speech remain future acceptance work; this foundation is not full APP-SETTINGS conformance.
+
+## Historical compatibility inventory (2026-07-18)
+
 Дата среза: 2026-07-18.  Это контракт сохранения функциональности при
 перерисовке `Table_Form`: новый интерфейс может менять компоновку и названия
 контролов, но не должен потерять описанное ниже поведение, зависимости и

@@ -151,8 +151,8 @@ Public NotInheritable Class Share_Disks_Form
         _add.Enabled = supported
         _mounted.Enabled = Not _busy
         _refresh.Enabled = Not _busy
-        _open.Enabled = supported AndAlso disk IsNot Nothing AndAlso disk.State <> "open" AndAlso disk.State <> "opening" AndAlso disk.State <> "closing"
-        _close.Enabled = supported AndAlso disk IsNot Nothing AndAlso disk.State = "open"
+        _open.Enabled = supported AndAlso DiskOperations.CanOpen(disk)
+        _close.Enabled = supported AndAlso DiskOperations.CanClose(disk)
         _force.Enabled = _close.Enabled
         _remove.Enabled = supported AndAlso disk IsNot Nothing
         _auto.Enabled = supported AndAlso disk IsNot Nothing AndAlso DiskSharing.Supported(_status, "disk-autostart")
@@ -261,14 +261,28 @@ Public NotInheritable Class Share_Disks_Form
             Using options As New DiskOptionsForm(True, True)
                 options.RootName.Text = Path.GetFileNameWithoutExtension(picker.FileName)
                 If options.ShowDialog(Me) <> DialogResult.OK Then Return
+                Dim openFailure As String = ""
                 Await RunAsync(Async Function()
                     Dim response As WorkerResponse = Await DiskSharing.SendAsync(New WorkerRequest With {
                         .type = "disk-share", .action = "share", .containerPath = picker.FileName,
                         .rootName = options.RootName.Text.Trim(), .readOnly = options.ReadOnlyAccess.Checked})
                     DiskSharing.RequireSuccess(response)
                     If response.Disk Is Nothing Then Throw New IOException("Missing registered disk record.")
-                    If options.OpenNow.Checked Then Await OpenDiskAsync(response.Disk, options)
+                    If options.OpenNow.Checked Then
+                        ' The disk is registered by now. A failed open must not read as a failed
+                        ' registration - and must not hide in the small note either: a registered
+                        ' but closed disk answers every phone with "no such file".
+                        Try
+                            Await OpenDiskAsync(response.Disk, options)
+                        Catch ex As Exception
+                            openFailure = DiskSharing.FailureText(ex)
+                        End Try
+                    End If
                 End Function)
+                If openFailure.Trim().Length > 0 AndAlso Not IsDisposed Then
+                    MessageBox.Show(Me, Localization.TF("Диск добавлен в раздачу, но не открылся: {0}", openFailure.Trim()),
+                        Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                End If
             End Using
         End Using
     End Sub
@@ -283,16 +297,13 @@ Public NotInheritable Class Share_Disks_Form
     End Sub
 
     Private Async Function OpenDiskAsync(disk As SharedDisk, options As DiskOptionsForm) As Task
-        Dim response As WorkerResponse = Await DiskSharing.SendAsync(New WorkerRequest With {
-            .type = "disk-open", .containerPath = disk.ContainerPath,
-            .password = If(disk.Encrypted, options.Password.Text, Nothing)})
-        options.Password.Clear()
-        DiskSharing.RequireSuccess(response)
-        If options.Letter.SelectedIndex > 0 Then DiskDriveLetters.Attach(response.Disk, CStr(options.Letter.SelectedItem))
-        If Not _status.Running Then
-            ' Start only when needed. Never replace folder roots or push network policy here.
-            DiskSharing.RequireSuccess(Await Task.Run(Function() WorkerIpc.Send(New WorkerRequest With {.type = "StartServer"}, 10000)))
-        End If
+        Dim opened As SharedDisk
+        Try
+            opened = Await DiskOperations.OpenAsync(disk, options.Password.Text, _status.Running)
+        Finally
+            options.Password.Clear()
+        End Try
+        If options.Letter.SelectedIndex > 0 Then DiskDriveLetters.Attach(opened, CStr(options.Letter.SelectedItem))
     End Function
 
     Private Async Sub OnCloseDisk(sender As Object, e As EventArgs)
@@ -308,19 +319,13 @@ Public NotInheritable Class Share_Disks_Form
             Localization.T("Принудительно закрыть диск? Открытые файлы будут отключены, несохранённые данные могут быть потеряны."),
             Localization.T("Закрыть диск? Клиенты временно потеряют доступ к его содержимому. Открытые файлы будут ожидаться до 30 секунд."))
         If Not Confirm(question) Then Return
-        Await RunAsync(Async Function()
-            DiskSharing.RequireSuccess(Await DiskSharing.SendAsync(New WorkerRequest With {
-                .type = "disk-close", .containerPath = disk.ContainerPath, .force = force, .drainTimeout = 30}))
-        End Function)
+        Await RunAsync(Function() DiskOperations.CloseAsync(disk, force))
     End Function
 
     Private Async Sub OnRemove(sender As Object, e As EventArgs)
         Dim disk As SharedDisk = SelectedDisk()
         If _busy OrElse disk Is Nothing OrElse Not Confirm(Localization.T("Убрать диск из раздачи? Диск будет закрыт, автозапуск и сохранённый ключ будут удалены. Файл .fdd сохранится.")) Then Return
-        Await RunAsync(Async Function()
-            DiskSharing.RequireSuccess(Await DiskSharing.SendAsync(New WorkerRequest With {
-                .type = "disk-share", .action = "unshare", .containerPath = disk.ContainerPath, .drainTimeout = 30}))
-        End Function)
+        Await RunAsync(Function() DiskOperations.UnshareAsync(disk))
     End Sub
 
     Private Async Sub OnAutostart(sender As Object, e As EventArgs)
@@ -328,28 +333,18 @@ Public NotInheritable Class Share_Disks_Form
         If _busy OrElse disk Is Nothing Then Return
         If disk.Autostart Then
             If Not Confirm(Localization.T("Отключить автозапуск диска и удалить сохранённый ключ?")) Then Return
-            Await RunAsync(Async Function()
-                DiskSharing.RequireSuccess(Await DiskSharing.SendAsync(New WorkerRequest With {
-                    .type = "disk-autostart", .containerPath = disk.ContainerPath, .enable = False}))
-            End Function)
+            Await RunAsync(Function() DiskOperations.DisableAutostartAsync(disk))
             Return
         End If
         If Not Confirm(Localization.T("Включить автозапуск диска вместе с сервером? Для зашифрованного диска пароль будет сохранён в защищённом хранилище Windows на этом ПК.")) Then Return
         Using options As New DiskOptionsForm(False, disk.Encrypted, False)
             If disk.Encrypted AndAlso options.ShowDialog(Me) <> DialogResult.OK Then Return
             Await RunAsync(Async Function()
-                ' A successful open proves the supplied credential before storing it.
-                If disk.Encrypted Then
-                    If disk.State = "open" Then Throw New DiskOperationRefusedException(Localization.T("Сначала закройте диск, чтобы проверить пароль для автозапуска."))
-                    DiskSharing.RequireSuccess(Await DiskSharing.SendAsync(New WorkerRequest With {
-                        .type = "disk-open", .containerPath = disk.ContainerPath, .password = options.Password.Text}))
-                    DiskSharing.RequireSuccess(Await DiskSharing.SendAsync(New WorkerRequest With {
-                        .type = "disk-close", .containerPath = disk.ContainerPath, .drainTimeout = 30}))
-                End If
-                DiskSharing.RequireSuccess(Await DiskSharing.SendAsync(New WorkerRequest With {
-                    .type = "disk-autostart", .containerPath = disk.ContainerPath, .enable = True,
-                    .consent = True, .password = If(disk.Encrypted, options.Password.Text, Nothing)}))
-                options.Password.Clear()
+                Try
+                    Await DiskOperations.EnableAutostartAsync(disk, options.Password.Text)
+                Finally
+                    options.Password.Clear()
+                End Try
             End Function)
         End Using
     End Sub

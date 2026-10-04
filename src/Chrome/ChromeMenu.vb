@@ -6,13 +6,21 @@ Option Compare Binary
 
 Imports System.Collections.Generic
 Imports System.Drawing
+Imports System.Runtime.InteropServices
 Imports System.Windows.Forms
 
 ' All popups share ChromeHost's non-activation and region behavior. The message filter
-' routes deliberate menu navigation from the active viewer without activating a popup.
+' routes deliberate menu navigation from the active viewer without activating a popup,
+' and dismisses the menu when activation moves to a window that is neither the viewer
+' nor one of its owned forms - a change, not a state, because the panels are no-activate
+' and a menu opened from a background viewer is legitimate.
 Friend NotInheritable Class ChromeMenu
     Inherits ChromeHost
     Implements IMessageFilter
+
+    <DllImport("user32.dll")>
+    Private Shared Function GetForegroundWindow() As IntPtr
+    End Function
 
     Public Shared Event FocusKeyConsumed As Action
     Private Shared popup As ChromeMenu
@@ -21,6 +29,7 @@ Friend NotInheritable Class ChromeMenu
     Private symbolFont As Font
     Private viewer As Form
     Private scrollOffset As Integer
+    Private openForeground As IntPtr
     Public Event MenuItemClicked As EventHandler(Of ChromeMenuItem)
 
     Public Sub New()
@@ -114,6 +123,7 @@ Friend NotInheritable Class ChromeMenu
         Bounds = New Rectangle(Math.Max(work.Left, Math.Min(location.X, work.Right - width)),
                                Math.Max(work.Top, Math.Min(location.Y, work.Bottom - height)), width, height)
         Surface.Bounds = New Rectangle(0, 0, width, preferred.Height)
+        openForeground = GetForegroundWindow()
         Application.AddMessageFilter(Me)
         Show()
         Surface.EnterKeyboardMode()
@@ -155,8 +165,18 @@ Friend NotInheritable Class ChromeMenu
 
     Public Function PreFilterMessage(ByRef message As Message) As Boolean Implements IMessageFilter.PreFilterMessage
         If Not Visible Then Return False
-        Dim active As Form = Form.ActiveForm
-        If Not viewer.ContainsFocus AndAlso Not viewer.OwnedForms.Any(Function(form) form.ContainsFocus) AndAlso active IsNot viewer AndAlso (active Is Nothing OrElse active.Owner IsNot viewer) Then
+        ' A click on a no-activate panel opens the menu without activating the viewer, so
+        ' "the viewer is not focused" is how the menu looks when it opens from a background
+        ' window. Dismiss on an activation CHANGE to a window that is neither the viewer nor
+        ' one of its owned forms; the click-outside rule below still covers our own windows.
+        Dim owned As New List(Of IntPtr)()
+        If viewer IsNot Nothing Then
+            If viewer.IsHandleCreated Then owned.Add(viewer.Handle)
+            For Each form As Form In viewer.OwnedForms
+                If form.IsHandleCreated Then owned.Add(form.Handle)
+            Next
+        End If
+        If Not ChromeAutoHide.ShouldPopupCloseOnActivationChange(openForeground, GetForegroundWindow(), owned) Then
             CloseMenu()
             Return False
         End If

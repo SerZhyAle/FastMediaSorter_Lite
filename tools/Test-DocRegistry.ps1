@@ -152,7 +152,7 @@ $designer = Get-Content (Join-Path $Root 'src/Table_Form.Designer.vb') -Raw
 $modern = Get-Content (Join-Path $Root 'src/Table_Form.ModernLayout.vb') -Raw
 $sharedCount = [regex]::Matches($designer, 'Me\.Tab_Control\.Controls\.Add\(Me\.Tab_Page_\d+\)').Count
 $extraCount = [regex]::Matches($modern, 'Tab_Control\.TabPages\.(?:Add|Insert)\(').Count
-$numbers = @('zero','one','two','three','four','five','six','seven','eight','nine','ten')
+$numbers = @('zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve')
 if (!$sharedCount -or !$extraCount -or $sharedCount + $extraCount -ge $numbers.Count) { Problem 'settings page source model changed; update fact extraction' }
 elseif ($claude -notmatch "same $($numbers[$sharedCount]) Designer pages" -or $claude -notmatch "layout of $($numbers[$sharedCount + $extraCount]) pages" -or $claude -notmatch "plus $($numbers[$extraCount]) that exist only there") { Problem 'CLAUDE.md: settings page counts drifted from source' }
 $warningLists = foreach ($project in 'src/FastMediaSorter.vbproj','src/Modern/FastMediaSorter.Modern.vbproj') {

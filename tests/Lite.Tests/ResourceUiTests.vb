@@ -390,5 +390,149 @@ Public Class ResourceUiTests
               End Sub)
     End Sub
 
+    ' --------------------------------------------------------------------- ticket 118 ----
+
+    Private NotInheritable Class MemoryStore
+        Implements IResourceSecretStore
+
+        Friend ReadOnly Blobs As New Dictionary(Of String, String)()
+        Friend Sub PutBlob(handle As String, protectedBlob As String) Implements IResourceSecretStore.PutBlob
+            Blobs(handle) = protectedBlob
+        End Sub
+        Friend Function GetBlob(handle As String) As String Implements IResourceSecretStore.GetBlob
+            Dim v As String = Nothing
+            Return If(Blobs.TryGetValue(handle, v), v, "")
+        End Function
+        Friend Sub DeleteBlob(handle As String) Implements IResourceSecretStore.DeleteBlob
+            Blobs.Remove(handle)
+        End Sub
+        Friend Function AllHandles() As IReadOnlyList(Of String) Implements IResourceSecretStore.AllHandles
+            Return Blobs.Keys.ToList()
+        End Function
+    End Class
+
+    Private NotInheritable class MemoryRegistry
+        Friend ReadOnly Values As New Dictionary(Of String, String)()
+        Friend Function Read(name As String) As String
+            Dim v As String = Nothing
+            Return If(Values.TryGetValue(name, v), v, "")
+        End Function
+        Friend Sub Write(name As String, value As String)
+            Values(name) = value
+        End Sub
+    End Class
+
+    ''' <summary>An in-memory hive with one SFTP and one SMB resource; the SFTP one carries a secret.</summary>
+    Private Shared Function SeededRegistry() As MemoryRegistry
+        Dim hive As New MemoryRegistry()
+        Dim sftp As New ResourceDescriptor With {
+            .Id = "sftp1", .Kind = ResourceKind.Sftp, .DisplayName = "NAS", .Host = "nas.local", .Port = 22,
+            .UserName = "alice", .RootPath = "/Photos", .SecretHandle = "cred:1", .PinnedFingerprint = "SHA256:" & New String("A"c, 43)}
+        Dim smb As New ResourceDescriptor With {
+            .Id = "smb1", .Kind = ResourceKind.Smb, .DisplayName = "Share", .RootPath = "\\server\photos"}
+        hive.Write(ResourceRegistry.Value_Name, ResourceRegistry.Serialize({sftp, smb}))
+        Return hive
+    End Function
+
+    <Fact>
+    Public Sub ResourceButtonShouldShow_IsAFunctionOfTheCountAndArchiveMode()
+        ' T-U1: no resources, no button - hidden, never a disabled stub.
+        Assert.False(ResourceUiRules.ResourceButtonShouldShow(0, False))
+        Assert.True(ResourceUiRules.ResourceButtonShouldShow(1, False))
+        Assert.True(ResourceUiRules.ResourceButtonShouldShow(3, False))
+        ' An open archive hides it exactly like the folder menu's resource entries.
+        Assert.False(ResourceUiRules.ResourceButtonShouldShow(1, True))
+        ' Removing the last resource flips the visible state back off.
+        Dim wasVisible As Boolean = ResourceUiRules.ResourceButtonShouldShow(1, False)
+        Assert.True(wasVisible)
+        Assert.False(ResourceUiRules.ResourceButtonShouldShow(0, False))
+    End Sub
+
+    <Fact>
+    Public Sub ThePanelForBothHostsHasTheSameNames_ButtonOrder_AndEnabledMatrix()
+        ' T-U2: the panel embedded by the dialog and by the Settings page is one control. The
+        ' button order is the dialog's reading order with Export beside its siblings.
+        OnSta(Sub()
+                  Dim hive As MemoryRegistry = SeededRegistry()
+                  Dim secrets As New MemoryStore()
+                  secrets.Blobs("cred:1") = "blob:pw"
+                  Using panel As New Resource_List_Panel(1.0F, AddressOf hive.Read, AddressOf hive.Write, secrets)
+                      For Each name As String In {"res_List", "res_Hint", "res_Status", "res_Add", "res_Edit", "res_Remove",
+                                                  "res_Test", "res_Export", "res_ImportFile", "res_ImportClipboard"}
+                          Assert.Single(panel.Controls.Find(name, True))
+                      Next
+                      Dim buttons As IEnumerable(Of String) = panel.Controls.Find("res_Add", True)(0).Parent.Controls.OfType(Of Button)().
+                          Select(Function(b) b.Name)
+                      Assert.Equal({"res_Add", "res_Edit", "res_Remove", "res_Test", "res_Export", "res_ImportFile", "res_ImportClipboard"}, buttons)
+
+                      ' The panel auto-selects its first row once it has one (the dialog's own
+                      ' rule, kept) - so the "nothing selected" matrix is read on an EMPTY list.
+                      Dim empty As New MemoryRegistry()
+                      Using bare As New Resource_List_Panel(1.0F, AddressOf empty.Read, AddressOf empty.Write, secrets)
+                          Dim bareHandle As IntPtr = DirectCast(bare.Controls.Find("res_List", True)(0), ListView).Handle
+                          Assert.False(DirectCast(bare.Controls.Find("res_Edit", True)(0), Button).Enabled)
+                          Assert.False(DirectCast(bare.Controls.Find("res_Export", True)(0), Button).Enabled)
+                          ' Add and the imports never depend on a selection.
+                          Assert.True(DirectCast(bare.Controls.Find("res_Add", True)(0), Button).Enabled)
+                          Assert.True(DirectCast(bare.Controls.Find("res_ImportFile", True)(0), Button).Enabled)
+                      End Using
+
+                      ' With the first row auto-selected: edit, remove, test and export all come on.
+                      Dim list As ListView = DirectCast(panel.Controls.Find("res_List", True)(0), ListView)
+                      Dim listHandle As IntPtr = list.Handle
+                      Assert.True(DirectCast(panel.Controls.Find("res_Edit", True)(0), Button).Enabled)
+                      Assert.True(DirectCast(panel.Controls.Find("res_Remove", True)(0), Button).Enabled)
+                      Assert.True(DirectCast(panel.Controls.Find("res_Test", True)(0), Button).Enabled)
+                      Assert.True(DirectCast(panel.Controls.Find("res_Export", True)(0), Button).Enabled)
+
+                      ' The dialog builds the same panel: its own chrome is just Open and Close.
+                      Using manager As New Resource_Manager_Form()
+                          Assert.NotNull(manager.Controls.Find("res_Open", True).Single())
+                          Assert.NotNull(manager.Controls.Find("res_Close", True).Single())
+                          Assert.NotNull(manager.Controls.Find("res_Add", True).Single())
+                      End Using
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub RemovingThroughThePanelRemovesTheEntryAndItsSecret_AndRecordsTheId()
+        ' T-U3: Remove goes through ResourceCommit, so the credential blob goes with the entry,
+        ' and the host learns the id through RemovedIds / ResourcesChanged.
+        OnSta(Sub()
+                  Dim hive As MemoryRegistry = SeededRegistry()
+                  Dim secrets As New MemoryStore()
+                  secrets.Blobs("cred:1") = "blob:pw"
+                  Dim changed As IReadOnlyList(Of String) = Nothing
+                  Using panel As New Resource_List_Panel(1.0F, AddressOf hive.Read, AddressOf hive.Write, secrets,
+                                                         Function(r) True) ' the confirmation is the test's yes
+                      AddHandler panel.ResourcesChanged, Sub(ids) changed = ids
+                      Dim list As ListView = DirectCast(panel.Controls.Find("res_List", True)(0), ListView)
+                      Dim listHandle As IntPtr = list.Handle ' the selection speaks through the handle
+                      Dim sftpRow As ListViewItem = list.Items.OfType(Of ListViewItem)().Single(Function(i) DirectCast(i.Tag, ResourceDescriptor).Id = "sftp1")
+                      sftpRow.Selected = True
+                      panel.GetType().GetMethod("OnRemove", BindingFlags.NonPublic Or BindingFlags.Instance).
+                          Invoke(panel, New Object() {Nothing, EventArgs.Empty})
+
+                      Dim left As String = hive.Read(ResourceRegistry.Value_Name)
+                      Assert.DoesNotContain("sftp1", left)
+                      Assert.Contains("smb1", left)
+                      Assert.False(secrets.Blobs.ContainsKey("cred:1"), "the secret blob goes with the entry")
+                      Assert.Contains("sftp1", panel.RemovedIds)
+                      Assert.NotNull(changed)
+                      Assert.Contains("sftp1", changed)
+
+                      ' Double-click raises ItemActivated with the selected resource.
+                      Dim activated As ResourceDescriptor = Nothing
+                      AddHandler panel.ItemActivated, Sub(r) activated = r
+                      Dim smbRow As ListViewItem = list.Items.OfType(Of ListViewItem)().Single(Function(i) DirectCast(i.Tag, ResourceDescriptor).Id = "smb1")
+                      smbRow.Selected = True
+                      list.GetType().GetMethod("OnDoubleClick", BindingFlags.NonPublic Or BindingFlags.Instance).
+                          Invoke(list, New Object() {EventArgs.Empty})
+                      Assert.Equal("smb1", activated.Id)
+                  End Using
+              End Sub)
+    End Sub
+
 End Class
 #End If

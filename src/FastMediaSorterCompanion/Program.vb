@@ -53,6 +53,7 @@ Friend Module Program
 
     <STAThread>
     Friend Sub Main(args As String())
+        AppFileLogger.Initialize()
         ' Sort the arguments into: silent-tray flag, explicit show-window request, folder.
         Dim silentTray As Boolean = False
         Dim windowRequested As Boolean = False

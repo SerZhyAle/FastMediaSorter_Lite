@@ -320,7 +320,9 @@ End Module
 ''' </summary>
 Friend Module ResourceRegistry
 
-    Private Const Value_Name As String = "Resources"
+    ''' <summary>The hive value the list lives under. Friend so a host that takes an injected
+    ''' hive reader (the resource panel's tests) can name the same value the real Load reads.</summary>
+    Friend Const Value_Name As String = "Resources"
 
     Friend Function Load() As List(Of ResourceDescriptor)
         Dim raw As String = Microsoft.VisualBasic.Interaction.GetSetting(App_name, Second_App_Name, Value_Name, "[]")

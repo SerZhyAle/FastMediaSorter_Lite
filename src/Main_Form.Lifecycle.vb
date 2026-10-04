@@ -1324,7 +1324,16 @@ Partial Public Class Main_Form
         End If
 
         StopVlcPlayback()
-        If vlc_Media_Player IsNot Nothing Then
+        ' Ticket 115: no new native work from here on, and the work in flight (a pool-thread
+        ' stop, a tag parse) must be out before the player and the instance are freed - a free
+        ' under a running thread is the access violation of the crash dumps. If something is
+        ' still inside after the bound, the native objects are left to the process exit.
+        Dim vlc_May_Be_Freed As Boolean = True
+#If Not NETFRAMEWORK Then
+        vlc_May_Be_Freed = vlc_Lease.CloseAndWaitForIdle(3000)
+        If Not vlc_May_Be_Freed Then AppFileLogger.WriteLine("LibVLC still busy at close; native objects left to process exit")
+#End If
+        If vlc_Media_Player IsNot Nothing AndAlso vlc_May_Be_Freed Then
             Try
                 vlc_Media_Player.Dispose()
             Catch ex As Exception
@@ -1340,7 +1349,7 @@ Partial Public Class Main_Form
             End Try
             vlc_Video_View = Nothing
         End If
-        If libVlc IsNot Nothing Then
+        If libVlc IsNot Nothing AndAlso vlc_May_Be_Freed Then
             Try
                 libVlc.Dispose()
             Catch ex As Exception

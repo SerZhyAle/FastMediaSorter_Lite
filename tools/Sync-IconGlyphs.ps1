@@ -50,7 +50,7 @@ $glyphIds = @(
     'content.video', 'device.phone', 'view.screen',
     'media.exit-fullscreen', 'media.fullscreen', 'media.mute', 'media.next', 'media.pause',
     'media.play', 'media.previous', 'media.random', 'media.slideshow', 'media.volume',
-    'nav.collapse', 'nav.expand', 'nav.more', 'nav.scroll-top', 'source.recent',
+    'nav.collapse', 'nav.expand', 'nav.more', 'nav.scroll-top', 'source.recent', 'source.resource',
     'status.error', 'status.locked', 'status.ok', 'status.unknown', 'status.warning',
     'system.internet', 'system.wifi', 'tool.brush', 'tool.oval', 'tool.rectangle', 'view.grid'
 )

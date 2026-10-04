@@ -53,33 +53,20 @@ Partial Public Class Main_Form
         Return True
     End Function
 
-    ''' <summary>"Keep floating panels visible" in the settings: every panel pinned at once.</summary>
-    Private Function ChromePinnedOn() As Boolean
-        Return modern_Preferences IsNot Nothing AndAlso modern_Preferences.ChromePinned
+    ''' <summary>The five persisted pin switches as one value (see <see cref="ChromeAutoHide"/>).</summary>
+    Private Function ChromePinSnapshot() As ChromeAutoHide.ChromePinState
+        If modern_Preferences Is Nothing Then Return New ChromeAutoHide.ChromePinState()
+        Return New ChromeAutoHide.ChromePinState With {
+            .GlobalPinned = modern_Preferences.ChromePinned,
+            .Row1Pinned = modern_Preferences.ChromeRow1Pinned,
+            .Row2Pinned = modern_Preferences.ChromeRow2Pinned,
+            .StatusPinned = modern_Preferences.ChromeStatusPinned,
+            .OverlayPinned = modern_Preferences.RecipientsOverlayPinned}
     End Function
-
-    ''' <summary>The panel's own pin - the button in its corner.</summary>
-    Private Function ChromeOwnPin(p As ChromePanel) As Boolean
-        If modern_Preferences Is Nothing Then Return False
-        Select Case p.Name
-            Case "chrome_Row1" : Return modern_Preferences.ChromeRow1Pinned
-            Case "chrome_Row2" : Return modern_Preferences.ChromeRow2Pinned
-            Case Else : Return modern_Preferences.ChromeStatusPinned
-        End Select
-    End Function
-
-    Private Sub ChromeSetOwnPin(p As ChromePanel, value As Boolean)
-        If modern_Preferences Is Nothing Then Return
-        Select Case p.Name
-            Case "chrome_Row1" : modern_Preferences.ChromeRow1Pinned = value
-            Case "chrome_Row2" : modern_Preferences.ChromeRow2Pinned = value
-            Case Else : modern_Preferences.ChromeStatusPinned = value
-        End Select
-    End Sub
 
     ''' <summary>Whether this panel stays up: pinned for all, or pinned on its own.</summary>
     Private Function ChromePanelPinned(p As ChromePanel) As Boolean
-        Return ChromePinnedOn() OrElse ChromeOwnPin(p)
+        Return ChromeAutoHide.PanelPinned(ChromePinSnapshot(), p.Name)
     End Function
 
     ''' <summary>The corner button's click. While "keep visible" is on for every panel, unpinning one
@@ -87,23 +74,17 @@ Partial Public Class Main_Form
     ''' do nothing visible.</summary>
     Private Sub ChromeTogglePin(p As ChromePanel)
         If modern_Preferences Is Nothing Then Return
-        If ChromePanelPinned(p) Then
-            If modern_Preferences.ChromePinned Then
-                modern_Preferences.ChromePinned = False
-                For Each other As ChromePanel In chrome_Panels
-                    ChromeSetOwnPin(other, True)
-                Next
-            End If
-            ChromeSetOwnPin(p, False)
-        Else
-            ChromeSetOwnPin(p, True)
-        End If
+        WriteChromePinState(ChromeAutoHide.TogglePin(ChromePinSnapshot(), p.Name))
         For Each other As ChromePanel In chrome_Panels
             SyncChromePin(other)
             other.Host.Surface.Invalidate()
         Next
         p.Wanted = True
         p.LastActivity = chrome_Clock.ElapsedMilliseconds
+        SyncRecipientsOverlayPin()
+        ' The global switch may have flipped (the split) - the overlay's own lifecycle follows it,
+        ' so re-evaluate it now, not on the next tick.
+        ChromeSyncRecipientsOverlayLifecycle()
         Try
             modern_Preferences.Save()
         Catch ex As Exception
@@ -112,7 +93,40 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
-    ''' <summary>The button's state and words follow the preference (a language switch re-reads them).</summary>
+    ''' <summary>Writes the pin switches back to the preferences. Callers persist and re-sync.</summary>
+    Private Sub WriteChromePinState(updated As ChromeAutoHide.ChromePinState)
+        modern_Preferences.ChromePinned = updated.GlobalPinned
+        modern_Preferences.ChromeRow1Pinned = updated.Row1Pinned
+        modern_Preferences.ChromeRow2Pinned = updated.Row2Pinned
+        modern_Preferences.ChromeStatusPinned = updated.StatusPinned
+        modern_Preferences.RecipientsOverlayPinned = updated.OverlayPinned
+    End Sub
+
+    ''' <summary>The recipients overlay's own pin button (2026-10-04 revision of 117 Ф-2). The same
+    ''' rule as a panel's: while the global switch is on, unpinning converts it into the panels'
+    ''' three pins and the overlay's pin goes off, so the click does something visible.</summary>
+    Private Sub ChromeToggleRecipientsPin()
+        If modern_Preferences Is Nothing Then Return
+        WriteChromePinState(ChromeAutoHide.TogglePin(ChromePinSnapshot(), Recipients_Overlay_Panel_Name))
+        For Each other As ChromePanel In chrome_Panels
+            SyncChromePin(other)
+            other.Host.Surface.Invalidate()
+        Next
+        SyncRecipientsOverlayPin()
+        ' Land in the phase the cycle is in right now: pinning shows the overlay at once, unpinning
+        ' keeps it up while the pointer is over it and hands it to the countdown after that.
+        ChromeSyncRecipientsOverlayLifecycle()
+        Try
+            modern_Preferences.Save()
+        Catch ex As Exception
+            AppFileLogger.LogException("Chrome: persisting the recipients pin", ex)
+            MarkSettingsDirty()
+        End Try
+    End Sub
+
+    ''' <summary>The button's state and words follow the preference (a language switch re-reads them).
+    ''' Since the 2026-10-04 revision the overlay has a pin of its own, so the panel tooltips no
+    ''' longer promise that the destination table follows the panels.</summary>
     Private Sub SyncChromePin(p As ChromePanel)
         Dim pinned As Boolean = ChromePanelPinned(p)
         p.Pin.Checked = pinned
@@ -126,17 +140,21 @@ Partial Public Class Main_Form
         flow_Toolbar.Visible = False
         panel_Status.Visible = False
         If Not IsHandleCreated OrElse Not Visible Then Return
+        ' The carrier must exist before the rows are built: a Nothing carrier is skipped by
+        ' BuildChromeRow, which would drop the button for the whole session (ticket 118 13.3).
+        EnsureResourceButton()
         If chrome_Panels.Count = 0 Then BuildChromePanels()
         ChromeConfigure()
         chrome_Last_Tick = chrome_Clock.ElapsedMilliseconds
         chrome_Timer.Start()
+        RefreshResourceButton()
     End Sub
 
     Private Sub BuildChromePanels()
         AddHandler chrome_Timer.Tick, AddressOf Chrome_Timer_Tick
         AddHandler ChromeMenu.FocusKeyConsumed, AddressOf ChromePopupFocusKeyConsumed
         BuildChromeRow("chrome_Row1", New Control() {
-            chkbox_Top_Most, cmbox_Sort, cmbox_Media_Folder, btn_choose_file, btn_Select_Folder,
+            chkbox_Top_Most, cmbox_Sort, cmbox_Media_Folder, btn_choose_file, btn_Select_Folder, btn_Resource,
             btn_Review, btn_Panel, btn_Full_Screen, lbl_Slideshow_Time, btn_Language, lbl_Info})
         Dim row2 As New List(Of Control)(toolbar_Row2_Items)
         If btn_ToVideo IsNot Nothing AndAlso Not row2.Contains(btn_ToVideo) Then row2.Add(btn_ToVideo)
@@ -155,7 +173,7 @@ Partial Public Class Main_Form
             Dim kind As ChromeItemKind = ChromeItemKind.Button
             If TypeOf carrier Is Label AndAlso carrier IsNot lbl_Info Then kind = ChromeItemKind.Text
             If carrier Is chkbox_Top_Most OrElse carrier Is btn_Slideshow Then kind = ChromeItemKind.Toggle
-            If carrier Is cmbox_Sort OrElse carrier Is btn_Language OrElse carrier Is btn_RecentFiles Then kind = ChromeItemKind.MenuButton
+            If carrier Is cmbox_Sort OrElse carrier Is btn_Language OrElse carrier Is btn_RecentFiles OrElse carrier Is btn_Resource Then kind = ChromeItemKind.MenuButton
             Dim item As New ChromeItem(carrier.Name, kind) With {
                 .Destructive = carrier Is bt_Delete,
                 .ShowCaptionWithGlyph = carrier Is btn_Prev_File OrElse carrier Is btn_Next_File OrElse carrier Is bt_Delete,
@@ -184,6 +202,7 @@ Partial Public Class Main_Form
             If carrier Is cmbox_Sort Then item.Action = Sub() ChromeShowSort(item)
             If carrier Is btn_Language Then item.Action = Sub() ChromeShowLanguages(item)
             If carrier Is btn_RecentFiles Then item.Action = Sub() ChromeShowRecentFiles(item)
+            If carrier Is btn_Resource Then item.Action = Sub() ChromeShowResourceMenu(item)
             If carrier Is btn_choose_file Then item.SecondaryAction = Sub() ShowOpenUrlPrompt()
             If carrier Is btn_Translate Then item.SecondaryAction = Sub() btn_Translate_MouseUp(btn_Translate, New MouseEventArgs(MouseButtons.Right, 1, 0, 0, 0))
             If carrier Is cmbox_Media_Folder Then
@@ -326,14 +345,19 @@ Partial Public Class Main_Form
             New ChromeMenuItem("archive_open") With {.Caption = folder_Menu_Open_Archive_Item.Text, .Action = Sub() OpenArchiveViaDialog()}}
         If IsArchiveMode() Then entries.Add(New ChromeMenuItem("archive_close") With {.Caption = folder_Menu_Close_Archive_Item.Text, .Action = Sub() CloseArchiveAndReturn()})
         If Not IsArchiveMode() AndAlso Not IsArchiveOpenPending() Then
-            For Each r As ResourceDescriptor In RecentResources()
-                Dim chosen As ResourceDescriptor = r
-                entries.Add(New ChromeMenuItem("resource_" & r.Id) With {.Caption = r.DisplayName, .Tooltip = ResourceMessages.DisplayAddress(r), .Action = Sub() ConnectAndEnterResource(chosen, "")})
-            Next
-            entries.Add(New ChromeMenuItem("resource_manage") With {.Caption = Localization.T("Управление ресурсами.."), .Action = Sub() ShowResourceManager()})
+            ' The shared builder (ticket 118 Q118-7): the same entries the «Ресурс» button shows,
+            ' minus the never-opened resources the folder menu's recent rule keeps out (Q118-14).
+            entries.AddRange(BuildResourceMenuEntries(includeNeverUsed:=False))
         End If
         If Not IsArchiveMode() AndAlso Not IsArchiveOpenPending() Then entries.Add(New ChromeMenuItem("folder_share") With {.Caption = folder_Menu_Share_Item.Text, .Action = Sub() ActivateShareEntryPoint()})
         ChromeShowMenu(item, entries)
+    End Sub
+
+    ''' <summary>The «Ресурс» button's popup: the shared resource entries, including resources that
+    ''' have never been opened (Q118-14 - the button exists while the registry is non-empty, so a
+    ''' freshly registered resource must be offered from it).</summary>
+    Private Sub ChromeShowResourceMenu(item As ChromeItem)
+        ChromeShowMenu(item, BuildResourceMenuEntries(includeNeverUsed:=True))
     End Sub
 
     Private Sub ChromeShowOverflow(panel As ChromePanel)
@@ -487,6 +511,8 @@ Partial Public Class Main_Form
             Next
             p.Host.Surface.LayoutItems()
         Next
+        ' The overlay's pin re-reads its words with the panels' (a language switch runs this too).
+        SyncRecipientsOverlayPin()
         ConfigureFloatingMediaChrome()
         If recipients_Overlay IsNot Nothing AndAlso (previousScale <> factor OrElse previousFamily <> chrome_Text_Font.FontFamily.Name) Then ApplyRecipientsOverlay()
         PlaceChromePanels()
@@ -556,11 +582,13 @@ Partial Public Class Main_Form
         If recipients_Overlay IsNot Nothing Then
             recipients_Overlay.BackColor = chrome_Theme.PanelFill
             recipients_Overlay.SetCornerRadius(UiScale.Px(ChromeCorner(), ChromeScale()))
-            If chrome_High_Contrast Then
-                recipients_Overlay.Opacity = 1.0R
-            Else
-                recipients_Overlay.Opacity = Math.Max(0.15R, Math.Min(1.0R, RecipientsOverlayAlpha() / 255.0R))
-            End If
+            ' The pin paints from the current theme, so a re-check (and the Invalidate that comes
+            ' with it) is all its recolouring takes.
+            SyncRecipientsOverlayPin()
+            ' The overlay's opacity belongs to the chrome cycle (fade times the configured
+            ' translucency, 117 Ф-2) and is applied by ApplyRecipientsOverlayVisibility; setting
+            ' it here as well would give the two writers a fight.
+            ApplyRecipientsOverlayVisibility()
             ApplyRecipientsOverlayHealth()
         End If
     End Sub
@@ -599,7 +627,7 @@ Partial Public Class Main_Form
             item.CaptionIsSymbol = True
         End If
         If carrier Is btn_Translate OrElse carrier Is btn_TranslateBrowser OrElse carrier Is btn_Edit OrElse
-           carrier Is btn_Tracks OrElse carrier Is btn_ToVideo Then visible = Not toolbar_Hidden_Items.Contains(carrier)
+           carrier Is btn_Tracks OrElse carrier Is btn_ToVideo OrElse carrier Is btn_Resource Then visible = Not toolbar_Hidden_Items.Contains(carrier)
         Dim checked As Boolean = If(carrier Is chkbox_Top_Most, chkbox_Top_Most.Checked,
                                     carrier Is btn_Slideshow AndAlso Is_slide_show_mode)
         Dim tip As String = If(toolTip Is Nothing, "", toolTip.GetToolTip(carrier))
@@ -609,7 +637,7 @@ Partial Public Class Main_Form
         If name.Length = 0 AndAlso meaning IsNot Nothing Then name = Localization.T(meaning.LocalizationKey)
         tip = If(tip.Length = 0, If(name.Length > 0, name, caption), tip)
         If carrier Is lbl_Status Then tip = carrier.Text
-        If carrier Is lbl_Info Then tip = Localization.T("О программе")
+        If carrier Is lbl_Info Then tip = Localization.T("О файле")
         Dim changed As Boolean = previousGlyph <> item.GlyphId OrElse item.Caption <> caption OrElse item.Visible <> visible OrElse
             item.Checked <> checked OrElse item.Enabled <> carrier.Enabled OrElse item.Tooltip <> tip OrElse item.AccessibleName <> name
         item.Caption = caption
@@ -719,6 +747,13 @@ Partial Public Class Main_Form
         Return True
     End Function
 
+    ''' <summary>Whether the viewer (or its path editor) holds the input focus: the auto-hide
+    ''' countdown is only meaningful while it does, and losing it drops an unpinned surface at once.</summary>
+    Private Function ChromeWindowActive() As Boolean
+        Return Me.ContainsFocus OrElse (Form.ActiveForm Is Me) OrElse
+               (chrome_Path IsNot Nothing AndAlso chrome_Path.ContainsFocus)
+    End Function
+
     ' --- the shared tick: summon, fade, hide -------------------------------------------------------
 
     Private Sub Chrome_Timer_Tick(sender As Object, e As EventArgs) 
@@ -739,8 +774,11 @@ Partial Public Class Main_Form
             Dim moved As Boolean = pointer <> chrome_Last_Pointer
             chrome_Last_Pointer = pointer
             Dim usable As Boolean = ChromeUsable()
-            Dim delayMs As Long = If(modern_Preferences Is Nothing, 3000L, modern_Preferences.VideoControlsHideDelaySec * 1000L)
-            Dim active As Boolean = Me.ContainsFocus OrElse (Form.ActiveForm Is Me) OrElse (chrome_Path IsNot Nothing AndAlso chrome_Path.ContainsFocus)
+            Dim active As Boolean = ChromeWindowActive()
+            ' The holds the panels share with the overlay: an open chrome popup, path editing,
+            ' the F10 keyboard mode (117 §2.6).
+            Dim hold As Boolean = ChromeMenu.PopupVisible OrElse chrome_Keyboard_Mode OrElse
+                                  (chrome_Path IsNot Nothing AndAlso chrome_Path.ContainsFocus)
             Dim animating As Boolean = False
 
             For Each p As ChromePanel In chrome_Panels
@@ -757,20 +795,14 @@ Partial Public Class Main_Form
                     Dim rect As Rectangle = If(p.Host.Visible, p.Host.Bounds, ChromePanelRect(p))
                     Dim over As Boolean = rect.Contains(pointer)
 
-                    If ChromeMenu.PopupVisible OrElse (chrome_Path IsNot Nothing AndAlso chrome_Path.ContainsFocus) OrElse chrome_Keyboard_Mode OrElse over OrElse (ChromePanelPinned(p) AndAlso Me.Visible) Then
-                        ' Never while the pointer is over it, never in focus mode, never when pinned: a panel
-                        ' sliding out from under the reaching hand is worse than one that never appeared.
-                        p.Wanted = True
-                        p.LastActivity = now
-                    ElseIf active AndAlso moved AndAlso Control.MouseButtons = MouseButtons.None AndAlso
-                           ChromeHotZone(p).Contains(pointer) Then
-                        p.Wanted = True
-                        p.LastActivity = now
-                    ElseIf p.Wanted AndAlso (now - p.LastActivity) >= delayMs Then
-                        p.Wanted = False
-                    End If
-                    ' Unpinned and the window not in use: let it go.
-                    If Not active AndAlso Not ChromePanelPinned(p) AndAlso Not over Then p.Wanted = False
+                    ' Never while the pointer is over it, never in focus mode, never when pinned: a panel
+                    ' sliding out from under the reaching hand is worse than one that never appeared.
+                    ' The countdown is the panels' own fixed 5 s from the leave (117 Ф-1); the video
+                    ' controls' hide setting does not appear here any more.
+                    Dim hotZoneReveal As Boolean = active AndAlso moved AndAlso Control.MouseButtons = MouseButtons.None AndAlso
+                                                   ChromeHotZone(p).Contains(pointer)
+                    p.Wanted = ChromeAutoHide.NextWanted(now, p.Wanted, p.LastActivity,
+                                                         ChromePanelPinned(p), over, hold, hotZoneReveal, active)
 
                     Dim target As Double = If(p.Wanted, 1.0R, 0.0R)
                     Dim fadeElapsed As Integer = elapsed
@@ -778,13 +810,7 @@ Partial Public Class Main_Form
                         p.TargetAlpha = target
                         fadeElapsed = 0 ' The idle poll precedes this transition; it is not part of the fade.
                     End If
-                    If Not ChromeFadeAllowed() Then
-                        p.Alpha = target
-                    ElseIf p.Alpha < target Then
-                        p.Alpha = Math.Min(target, p.Alpha + fadeElapsed / CDbl(ChromeMetrics.FadeMilliseconds))
-                    ElseIf p.Alpha > target Then
-                        p.Alpha = Math.Max(target, p.Alpha - fadeElapsed / CDbl(ChromeMetrics.FadeMilliseconds))
-                    End If
+                    p.Alpha = ChromeAutoHide.NextAlpha(target, p.Alpha, ChromeFadeAllowed(), fadeElapsed)
                     If p.Alpha <> target Then animating = True
                 End If
 
@@ -795,6 +821,9 @@ Partial Public Class Main_Form
                     animating = True
                 End If
             Next
+
+            ' The recipients overlay rides the same cycle (117 Ф-2).
+            If ChromeTickRecipientsOverlay(now, pointer, active, moved, elapsed, usable, False) Then animating = True
 
             If chrome_Path IsNot Nothing AndAlso Not chrome_Path.ContainsFocus Then
                 chrome_Path.Text = cmbox_Media_Folder.Text
@@ -842,6 +871,121 @@ Partial Public Class Main_Form
             ' The ink layer follows only the panel's own fade (show / hide), never its translucency.
             p.Host.InkOpacity = Math.Max(0.02R, Math.Min(1.0R, p.Alpha))
             p.AppliedOpacity = opacity
+        End If
+    End Sub
+
+    ' --- the recipients overlay's ride on the chrome cycle (117 Ф-2) ------------------------------
+    ' The same wanted/alpha pair the panels carry, evaluated in Chrome_Timer_Tick. The overlay has
+    ' a pin of its own (2026-10-04 revision of Ф-2) - PanelPinned by its window name, so the global
+    ' switch and its own corner button hold it up; the per-panel pins do not. While it is in the
+    ' auto-hidden phase nothing else may show it (PositionRecipientsOverlay no longer does).
+
+    Private recipients_Wanted As Boolean
+    Private recipients_LastActivity As Long
+    Private recipients_Alpha As Double
+    Private recipients_TargetAlpha As Double
+    Private recipients_AppliedOpacity As Double = -1.0R
+    ''' <summary>The overlay's own pin button, built with the overlay (nothing on net48).</summary>
+    Private recipients_Overlay_Pin As RecipientsPinButton
+    ''' <summary>The scrollable host of the recipient rows below the pin strip (nothing on net48).</summary>
+    Private recipients_Overlay_Rows As Control
+
+    ''' <summary>The overlay's pin button follows the preference: the checked state (the glyph's tilt
+    ''' and fill), the accessible name and the words. A pin click, a language switch and a theme
+    ''' change all land here; a disposed or missing button makes it a no-op.</summary>
+    Private Sub SyncRecipientsOverlayPin()
+        If recipients_Overlay_Pin Is Nothing OrElse recipients_Overlay_Pin.IsDisposed OrElse recipients_Overlay_Pin.Disposing Then Return
+        Dim pinned As Boolean = ChromeAutoHide.PanelPinned(ChromePinSnapshot(), Recipients_Overlay_Panel_Name)
+        recipients_Overlay_Pin.PinChecked = pinned
+        recipients_Overlay_Pin.AccessibleName = If(pinned, Localization.T("Открепить таблицу получателей"),
+                                                   Localization.T("Закрепить таблицу получателей"))
+        If recipients_ToolTip IsNot Nothing Then
+            recipients_ToolTip.SetToolTip(recipients_Overlay_Pin, If(pinned,
+                Localization.T("Таблица получателей закреплена и не скрывается. Нажмите, чтобы открепить."),
+                Localization.T("Закрепить таблицу получателей: она перестанет скрываться.")))
+        End If
+        recipients_Overlay_Pin.Invalidate()
+    End Sub
+
+    ''' <summary>One cycle step for the overlay. Pinned, it stays up exactly as the panels did;
+    ''' unpinned, it fades out <see cref="ChromeMetrics.PanelHideDelayMilliseconds"/> after the
+    ''' pointer leaves it and reveals from a hot zone at its configured corner, with the panels'
+    ''' holds. The slideshow's "hide toolbar/status" hides it with the chrome (117 §2.6). Returns
+    ''' True while its fade runs, so the tick keeps the fast interval. The net48 overlay is always
+    ''' on while enabled and knows nothing of this (Q117-4).</summary>
+    Private Function ChromeTickRecipientsOverlay(nowMs As Long, pointer As Point, windowActive As Boolean,
+                                                 pointerMoved As Boolean, elapsedMs As Integer, usable As Boolean,
+                                                 snapAlpha As Boolean) As Boolean
+        If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed Then Return False
+        Try
+            Dim wanted As Boolean = False
+            If usable AndAlso Is_Show_Recipients_Overlay AndAlso Not SlideshowHidesToolbar() Then
+                Dim pinned As Boolean = ChromeAutoHide.PanelPinned(ChromePinSnapshot(), Recipients_Overlay_Panel_Name)
+                ' The placed rectangle, not the window's bounds: the overlay may not have been
+                ' shown yet, and its geometry is where the cycle would show it anyway.
+                Dim over As Boolean = RecipientsOverlayPlacedRect().Contains(pointer)
+                Dim hold As Boolean = ChromeMenu.PopupVisible OrElse chrome_Keyboard_Mode OrElse
+                                      (chrome_Path IsNot Nothing AndAlso chrome_Path.ContainsFocus)
+                Dim hotZone As Boolean = windowActive AndAlso pointerMoved AndAlso
+                                         Control.MouseButtons = MouseButtons.None AndAlso
+                                         RecipientsOverlayHotZone().Contains(pointer)
+                wanted = ChromeAutoHide.NextWanted(nowMs, recipients_Wanted, recipients_LastActivity,
+                                                   pinned, over, hold, hotZone, windowActive)
+            End If
+            recipients_Wanted = wanted
+            Dim target As Double = If(wanted, 1.0R, 0.0R)
+            If snapAlpha Then
+                ' A pin toggle or a fresh build: land in the phase the cycle is in right now.
+                recipients_TargetAlpha = target
+                recipients_Alpha = target
+            Else
+                Dim fadeElapsed As Integer = elapsedMs
+                If target <> recipients_TargetAlpha Then
+                    recipients_TargetAlpha = target
+                    fadeElapsed = 0
+                End If
+                recipients_Alpha = ChromeAutoHide.NextAlpha(target, recipients_Alpha, ChromeFadeAllowed(), fadeElapsed)
+            End If
+            ApplyRecipientsOverlayVisibility()
+            Return recipients_Alpha <> target
+        Catch ex As Exception
+            ' Same contract as the panels' tick: this runs ten times a second for the life of the window.
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2602: recipients overlay tick failed: " & ex.Message)
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>Re-evaluates the overlay's lifecycle at once - a pin toggle (either
+    ''' ChromeTogglePin or ChromeToggleRecipientsPin), a fresh build (ApplyRecipientsOverlay) - with
+    ''' no fade: the overlay lands in the phase the cycle is in, shown when pinned or under the
+    ''' pointer, hidden otherwise.</summary>
+    Private Sub ChromeSyncRecipientsOverlayLifecycle()
+        If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed Then Return
+        ChromeTickRecipientsOverlay(chrome_Clock.ElapsedMilliseconds, Cursor.Position, ChromeWindowActive(),
+                                    False, 0, ChromeUsable(), True)
+    End Sub
+
+    ''' <summary>Shows or hides the overlay window for its current fade - the overlay's half of
+    ''' <see cref="ApplyChromeVisibility"/>. At zero it is hidden outright: a layered window at
+    ''' alpha 0 still takes the clicks. The configured translucency multiplies the fade.</summary>
+    Private Sub ApplyRecipientsOverlayVisibility()
+        If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed Then Return
+        If recipients_Alpha <= 0.0R Then
+            If recipients_Overlay.Visible Then recipients_Overlay.Visible = False
+            recipients_AppliedOpacity = -1.0R
+            Return
+        End If
+        If Not recipients_Overlay.Visible Then
+            PositionRecipientsOverlay()
+            PinToViewerBand(recipients_Overlay)
+            recipients_Overlay.Visible = True
+        End If
+        Dim configured As Double = If(chrome_High_Contrast, 1.0R,
+                                      Math.Max(0.15R, Math.Min(1.0R, RecipientsOverlayAlpha() / 255.0R)))
+        Dim opacity As Double = Math.Max(0.02R, Math.Min(1.0R, recipients_Alpha * configured))
+        If Math.Abs(opacity - recipients_AppliedOpacity) > 0.004R Then
+            recipients_Overlay.Opacity = opacity
+            recipients_AppliedOpacity = opacity
         End If
     End Sub
 

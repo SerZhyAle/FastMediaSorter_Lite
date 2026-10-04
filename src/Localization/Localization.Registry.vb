@@ -11,7 +11,8 @@ Partial Public NotInheritable Class Localization
     Private Shared Sub RegisterStrings()
         AddChromeStrings()      ' main-window captions + the first-run help
         AddRuntimeStrings()     ' strings carrying a {0} value + multi-line messages
-        AddMainStrings()        ' -> AddMediaStrings, AddFileStrings
+        AddMainStrings()        ' -> AddMediaStrings, AddFileStrings -> AddFileDetailsStrings
+        AddFileDetailsStrings() ' the "about file" window of the first panel's "i" item
         AddNavStrings()             ' .NET 10 shell navigation + page headers
         AddSettingsChromeStrings()  ' classic settings window captions
         AddSettingsStrings()    ' -> AddSettingsHintStrings -> AddSettingsDescriptionStrings, AddOcrStrings

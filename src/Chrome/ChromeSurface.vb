@@ -427,7 +427,7 @@ Friend NotInheritable Class ChromeSurface
                 Dim restInk As Color = ChromeTheme.Blend(chromeTheme.PanelFill, chromeTheme.Foreground, If(item.Checked, 0.5F, 0.35F))
                 pinInk = If(item.HoverLevel > 0.0F, ChromeTheme.Blend(restInk, chromeTheme.Foreground, item.HoverLevel), restInk)
             End If
-            PaintPin(g, item, r, pinInk)
+            PaintPin(g, item.Checked, r, pinInk, currentScale)
             drawn = True
         ElseIf item.Kind = ChromeItemKind.Toggle AndAlso item.GlyphId.Length = 0 AndAlso item.Caption.Length = 0 Then
             Dim side As Integer = Px(ChromeMetrics.GlyphSize)
@@ -483,18 +483,19 @@ Friend NotInheritable Class ChromeSurface
 
     ''' <summary>A push-pin drawn from lines, in the item's ink: upright and filled while the panel is
     ''' pinned, tilted a quarter turn and only outlined while it is free. The vocabulary has no pin
-    ''' glyph yet, so it is painted like the toggle's check box and the secondary-action tick are.</summary>
-    Private Sub PaintPin(g As Graphics, item As ChromeItem, r As Rectangle, ink As Color)
-        Dim unit As Single = Px(ChromeMetrics.PinGlyphSize) / 12.0F
+    ''' glyph yet, so it is painted like the toggle's check box and the secondary-action tick are.
+    ''' Shared so the recipients overlay's own pin button draws the very same glyph.</summary>
+    Friend Shared Sub PaintPin(g As Graphics, pinned As Boolean, r As Rectangle, ink As Color, scale As Single)
+        Dim unit As Single = UiScale.Px(ChromeMetrics.PinGlyphSize, scale) / 12.0F
         Dim state As GraphicsState = g.Save()
         Try
             g.TranslateTransform(r.X + r.Width / 2.0F, r.Y + r.Height / 2.0F)
-            If Not item.Checked Then g.RotateTransform(45.0F)
+            If Not pinned Then g.RotateTransform(45.0F)
             Dim head As New RectangleF(-2.5F * unit, -6.0F * unit, 5.0F * unit, 1.5F * unit)
             Dim body As PointF() = {New PointF(-2.0F * unit, -4.5F * unit), New PointF(2.0F * unit, -4.5F * unit),
                                     New PointF(3.0F * unit, 0.0F), New PointF(-3.0F * unit, 0.0F)}
             Using pen As New Pen(ink, Math.Max(1.0F, 1.2F * unit))
-                If item.Checked Then
+                If pinned Then
                     Using brush As New SolidBrush(ink)
                         g.FillRectangle(brush, head)
                         g.FillPolygon(brush, body)

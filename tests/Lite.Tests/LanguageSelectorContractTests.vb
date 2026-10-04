@@ -26,11 +26,11 @@ Public Class LanguageSelectorContractTests
         Dim layout As String = Source("Table_Form.ModernLayout.vb")
         Dim data As Match = Regex.Match(layout, "Sub BuildModernDataLayout\b.*?End Sub", RegexOptions.Singleline)
         Assert.True(data.Success)
-        Dim firstPage As Integer = data.Value.IndexOf("CreateModernPageFlow(Tab_Page_1)", StringComparison.Ordinal)
-        Dim selector As Integer = data.Value.IndexOf("AddUiLanguageRow(destinations)", StringComparison.Ordinal)
-        Dim firstRow As Integer = data.Value.IndexOf("AddSettingRow(destinations", StringComparison.Ordinal)
-        Assert.True(firstPage >= 0 AndAlso selector > firstPage, "The language selector is not built on the first page.")
-        Assert.True(selector < firstRow, "Another row comes before the language selector on the first page.")
+        Dim groups As String = Source("Table_Form.SettingsGroups.vb")
+        Assert.Contains("Tab_Control.TabPages.Insert(0, modernGeneralPage)", layout)
+        Assert.Contains("AddUiLanguageRow(destinations)", data.Value)
+        Assert.Matches("AddSettingsGroup\(""general"", ""basic"", .*?""interface_language"", ""ui_theme""\)", groups)
+        Assert.Contains("settingsGroups(ownerId).Body.Controls.Add(row.Host)", groups)
         Assert.DoesNotContain("""interface_language"", btn_Language", data.Value)
     End Sub
 

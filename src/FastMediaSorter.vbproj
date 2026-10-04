@@ -179,6 +179,7 @@
     <Compile Include="Application_Events.vb" />
     <Compile Include="ApplicationModel.vb" />
     <Compile Include="AppFileLogger.vb" />
+    <Compile Include="LogSessionDiagnostics.vb" />
     <Compile Include="AppPaths.vb" />
     <!-- Archive browsing (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md). Whole-file
          "#If Not NETFRAMEWORK": on Windows 7/8.1 a dropped .zip still answers
@@ -303,7 +304,12 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.FileDetails.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="AudioMetadata.vb" />
+    <Compile Include="FileDetails.vb" />
     <Compile Include="MediaKind.vb" />
     <Compile Include="Main_Form.DragDrop.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
@@ -519,6 +525,9 @@
     <Compile Include="Hotkeys_Form.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="File_Details_Form.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="ExpandedSettingsDialogs.vb">
       <SubType>Form</SubType>
     </Compile>
@@ -636,6 +645,7 @@
     <Compile Include="OptionalRuntimeManager.vb" />
     <Compile Include="RuntimeInstallPlan.vb" />
     <Compile Include="PlaybackRules.vb" />
+    <Compile Include="VlcNativeLease.vb" />
     <Compile Include="MultiWindowPolicy.vb" />
     <Compile Include="CopyDataTransport.vb" />
     <Compile Include="SingleInstanceProtocol.vb" />
@@ -694,6 +704,7 @@
     <Compile Include="Localization\Localization.Main.vb" />
     <Compile Include="Localization\Localization.Media.vb" />
     <Compile Include="Localization\Localization.Files.vb" />
+    <Compile Include="Localization\Localization.FileDetails.vb" />
     <Compile Include="Localization\Localization.Settings.vb" />
     <Compile Include="Localization\Localization.SettingsChrome.vb" />
     <Compile Include="Localization\Localization.Nav.vb" />
@@ -723,6 +734,9 @@
     <Compile Include="Localization\Localization.SettingsImport.vb" />
     <Compile Include="ShareActivationPolicy.vb" />
     <Compile Include="SettingsPersistence.vb" />
+    <Compile Include="SettingsUiContext.vb" />
+    <Compile Include="SettingsCollapsibleGroup.vb" />
+    <Compile Include="Table_Form.SettingsGroups.vb"><DependentUpon>Table_Form.vb</DependentUpon></Compile>
     <Compile Include="SettingsImport.vb" />
     <Compile Include="Resources\SshFingerprint.vb" />
     <Compile Include="Resources\FmsConfigReader.vb" />
@@ -777,6 +791,7 @@
     <!-- The floating chrome of the main window (002): whole-file "#If Not NETFRAMEWORK", so they compile to
          nothing here - listed anyway so the two projects keep one source tree and a reference cannot break. -->
     <Compile Include="Chrome\ChromeMetrics.vb" />
+    <Compile Include="Chrome\ChromeAutoHide.vb" />
     <Compile Include="Chrome\UiScale.vb" />
     <Compile Include="Chrome\ChromeLayout.vb" />
     <Compile Include="Chrome\ChromeTheme.vb" />

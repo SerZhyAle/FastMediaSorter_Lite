@@ -38,7 +38,7 @@ Public Class SettingsLayoutTests
 
     ' --- geometry, copied from Table_Form.ModernLayout.vb -------------------------
     '
-    ' ResizeModernPageItems:
+    ' ResizeModernPageItems: grouped settings use full-width, vertically ordered bodies.
     '     width = Math.Max(460, flow.ClientSize.Width - flow.Padding.Horizontal - 18)
     '     useTwoColumns = width >= 820
     '     child.Width = If(compact AndAlso useTwoColumns, Math.Max(300, (width - 8) \ 2), width)
@@ -111,10 +111,10 @@ Public Class SettingsLayoutTests
 
         Public Function TitleBudget() As Integer
             Select Case Kind
-                Case RowKind.CheckBox : Return CheckRowTitleWidth(NarrowestCompactHost)
+                Case RowKind.CheckBox : Return CheckRowTitleWidth(NarrowestFullHost)
                 Case RowKind.SectionHeader : Return SectionHeaderWidth
                 Case RowKind.ProjectLink : Return ProjectLinkWidth
-                Case Else : Return EditorRowTitleWidth(NarrowestCompactHost, EditorWidth)
+                Case Else : Return EditorRowTitleWidth(NarrowestFullHost, EditorWidth)
             End Select
         End Function
 

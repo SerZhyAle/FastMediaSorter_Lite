@@ -499,6 +499,14 @@ Partial Public Class Main_Form
     ''' modal F2 path and the modeless toolbar one - and runs off the closing stack.
     ''' </summary>
     Private Sub SettingsWindowClosed(sender As Object, e As FormClosedEventArgs)
+        ' Ticket 118: resources may have been changed in the Settings window's own page. The
+        ' reaction is the same one the manager dialog gets (13.4), applied whatever else the
+        ' close asks for - the window instance stays alive after ShowDialog, so its record
+        ' of what the user touched is still readable here.
+        Dim settingsWindow As Table_Form = TryCast(sender, Table_Form)
+        If settingsWindow IsNot Nothing AndAlso settingsWindow.ResourcesTouched Then
+            ApplyResourceChanges(settingsWindow.SettingsRemovedResourceIds)
+        End If
         If Not settings_Restart_Requested Then Return
         settings_Restart_Requested = False
         If IsDisposed OrElse Not IsHandleCreated Then Return

@@ -89,6 +89,7 @@
 
       Linked, not copied: a fix to T/TF/TC must not need doing twice.
     -->
+    <Compile Include="..\LogSessionDiagnostics.vb" Link="LogSessionDiagnostics.vb" />
     <Compile Include="..\Theming\IThemeAware.vb" Link="Theming\IThemeAware.vb" />
     <Compile Include="..\Localization\Localization.vb" Link="Localization\Localization.vb" />
     <Compile Include="..\Localization\Localization.Persistence.vb" Link="Localization\Localization.Persistence.vb" />

@@ -104,6 +104,7 @@ Friend Module AppFileLogger
 
                 If InitializeFaultInjector IsNot Nothing Then InitializeFaultInjector(1)
 
+                Dim previousWarnings = LogSessionDiagnostics.ReadPreviousWarnings(logPathValue)
                 RotateIfOversized(logPathValue)
 
                 If InitializeFaultInjector IsNot Nothing Then InitializeFaultInjector(2)
@@ -153,9 +154,12 @@ Friend Module AppFileLogger
                 ' acquired, so a failure here has to give all of it back.
                 If InitializeFaultInjector IsNot Nothing Then InitializeFaultInjector(6)
 
+                For Each warning In previousWarnings
+                    acquiredWriter.WriteLine(warning)
+                Next
                 acquiredWriter.WriteLine("============================================================")
                 Using currentProcess As Process = Process.GetCurrentProcess()
-                    acquiredWriter.WriteLine("Session started: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff") &
+                    acquiredWriter.WriteLine("Session started: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff", Globalization.CultureInfo.InvariantCulture) &
                                              "; PID=" & currentProcess.Id.ToString() &
                                              "; role=" & MultiWindowPolicy.InstanceRoleName())
                     acquiredWriter.WriteLine("Log file: " & logPathValue)
@@ -424,7 +428,9 @@ Friend Module AppFileLogger
         SyncLock syncRoot
             Try
                 If logWriter IsNot Nothing Then
-                    logWriter.WriteLine("Session finished: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"))
+                    Using currentProcess = Process.GetCurrentProcess()
+                        logWriter.WriteLine("Session finished: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff", Globalization.CultureInfo.InvariantCulture) & "; PID=" & currentProcess.Id.ToString(Globalization.CultureInfo.InvariantCulture))
+                    End Using
                     logWriter.Flush()
                 End If
             Catch

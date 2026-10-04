@@ -130,6 +130,9 @@ Public Class Table_Form
         PrepareForDisplay()
     End Sub
     Public Sub PrepareForDisplay()
+#If Not NETFRAMEWORK Then
+        CaptureSettingsPage(Tab_Control.SelectedTab)
+#End If
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-2: the_Table_Form_Load")
 
         ' Direction from the language table, like every other window (APP-BEHAVIOUR rule 8,
@@ -625,6 +628,10 @@ Public Class Table_Form
         ' Only paging keys reach the viewer - the reason this forwarding exists is to
         ' flip photos while the settings stay open. Everything else (D/Delete delete the
         ' file on screen, X/Q close the app, the slot digits move it) stays here.
+#If Not NETFRAMEWORK Then
+        ' Group headers and their value editors own navigation keys in the modern UI (120).
+        Return
+#End If
         If Not IsForwardedToViewer(e.KeyData) Then Return
 
         Main_Form.KeybUse(e, Main_Form.GetWas_slideshow())

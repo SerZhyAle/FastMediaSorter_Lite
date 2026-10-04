@@ -404,7 +404,7 @@ Public Module LogPackage
     ''' <summary>
     ''' The diagnostic sheet. English on purpose - the author reads it, not the user.
     ''' </summary>
-    Private Function BuildReport(settingsSource As Func(Of List(Of KeyValuePair(Of String, Object)))) As String
+    Friend Function BuildReport(settingsSource As Func(Of List(Of KeyValuePair(Of String, Object))), Optional dumpDirectory As String = Nothing) As String
         Dim sb As New StringBuilder()
 
         sb.AppendLine(ProductNames.Full & " - diagnostic report")
@@ -454,6 +454,9 @@ Public Module LogPackage
         End Try
         sb.AppendLine()
 
+        sb.AppendLine("[crash dumps - names and sizes only; contents excluded]")
+        sb.AppendLine(DescribeCrashDumps(If(dumpDirectory, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CrashDumps"))))
+        sb.AppendLine()
         sb.AppendLine("[recent errors]")
         Dim errors As List(Of String) = RecentErrorLines()
         If errors.Count = 0 Then
@@ -465,6 +468,20 @@ Public Module LogPackage
         End If
 
         Return sb.ToString()
+    End Function
+
+    Friend Function DescribeCrashDumps(dumpDirectory As String) As String
+        Try
+            If Not Directory.Exists(dumpDirectory) Then Return "none found"
+            Dim lines As New List(Of String)
+            For Each dump In New DirectoryInfo(dumpDirectory).EnumerateFiles("FastMediaSorter*.dmp").OrderBy(Function(item) item.Name, StringComparer.OrdinalIgnoreCase)
+                ' Metadata only: never open a dump, copy it or add it as a ZIP entry.
+                lines.Add(dump.Name & ": " & dump.Length.ToString(CultureInfo.InvariantCulture) & " bytes")
+            Next
+            Return If(lines.Count = 0, "none found", String.Join(Environment.NewLine, lines))
+        Catch
+            Return "could not list dump metadata"
+        End Try
     End Function
 
     Private Function ComponentPaths() As List(Of KeyValuePair(Of String, String))
@@ -513,7 +530,7 @@ Public Module LogPackage
         "NameCollisionPolicy", "AfterFileOperation", "AdvanceAfterCopy", "DeleteToRecycleBin", "ConfirmDelete",
         "CreateMissingDestination", "IncludeSubfolders", "IncludedExtensions", "InterfaceScalePercent",
         "NewImageScaleMode", "ReduceMotion", "ModernChrome", "ChromePinned", "ChromeSize", "ChromeRow1Pinned", "ChromeRow2Pinned", "ChromeStatusPinned", "ChromeOpacityPercent", "ChromeCornerRadius", "RecipientsOverlayPosition", "RecipientsOverlayWidth",
-        "RecipientsOverlayFontSize", "RecipientsOverlayOpacity", "RecipientsOverlayVisibleRows",
+        "RecipientsOverlayFontSize", "RecipientsOverlayOpacity", "RecipientsOverlayVisibleRows", "RecipientsOverlayPinned",
         "SlideshowRandomOrder", "StopSlideshowOnManualNavigation", "SlideshowUiMode", "VideoAutoplay",
         "IncludeVideoInNavigation", "RememberVideoPosition", "VideoControlsHideDelaySec",
         "ShowVideoControlsWhenPaused", "VideoSingleClickAction", "VideoEndAction", "PreferredAudioLanguage",

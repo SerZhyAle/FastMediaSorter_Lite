@@ -73,6 +73,10 @@ Friend NotInheritable Class ChromeMetrics
     Public Const IdleTickMilliseconds As Integer = 100
     ''' <summary>The shared tick while anything animates.</summary>
     Public Const AnimationTickMilliseconds As Integer = 16
+    ''' <summary>How long an unpinned surface - a floating panel, the recipients overlay - stays up
+    ''' after the pointer leaves it (117 Ф-1/Ф-2). A fixed number, on purpose NOT the video controls'
+    ''' <c>VideoControlsHideDelaySec</c>: the panels stopped borrowing that setting.</summary>
+    Public Const PanelHideDelayMilliseconds As Integer = 5000
 
     ' --- the destructive family (the recipients overlay's delete row; one colour = "this destroys") ---
     Public Shared ReadOnly DestructiveRest As Color = Color.FromArgb(96, 32, 32)

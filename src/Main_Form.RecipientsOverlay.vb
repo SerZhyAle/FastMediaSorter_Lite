@@ -3,6 +3,7 @@ Option Strict On
 Imports System.Collections.Generic
 Imports System.Diagnostics
 Imports System.Drawing
+Imports System.Drawing.Drawing2D
 Imports System.Runtime.InteropServices
 Imports System.Windows.Forms
 
@@ -19,6 +20,10 @@ Imports System.Windows.Forms
 ' key: recipients go through PoMove(slot), Delete through
 ' ReadShowMediaFile(Mode_Delete) - identical behaviour, no new file logic.
 Partial Public Class Main_Form
+
+    ''' <summary>The name the overlay's window carries - and the name its own pin answers by in
+    ''' the chrome's pin algebra (2026-10-04 revision of 117 Ф-2).</summary>
+    Private Const Recipients_Overlay_Panel_Name As String = "recipients_Overlay"
 
     Private Function RecipientPx(logical As Integer) As Integer
 #If NETFRAMEWORK Then
@@ -79,6 +84,11 @@ Partial Public Class Main_Form
             End Try
             recipients_Overlay = Nothing
         End If
+#If Not NETFRAMEWORK Then
+        ' The pin button and the rows host die with the window; drop the stale references.
+        recipients_Overlay_Pin = Nothing
+        recipients_Overlay_Rows = Nothing
+#End If
 
         If recipients_Overlay_Font IsNot Nothing Then
             recipients_Overlay_Font.Dispose()
@@ -98,9 +108,14 @@ Partial Public Class Main_Form
             ' Pin it before Show so an overlay created during startup is visible when
             ' the viewer already has "always on top" enabled.
             PinToViewerBand(recipients_Overlay)
-            recipients_Overlay.Show()
 #If Not NETFRAMEWORK Then
+            ' The overlay is born in the phase the chrome cycle is in right now (117 Ф-2):
+            ' pinned, or with the pointer on it, it appears at once; otherwise it stays hidden
+            ' and the cycle owns it from here. The net48 build keeps its always-on overlay.
+            ChromeSyncRecipientsOverlayLifecycle()
             ConfigureFloatingMediaChrome()
+#Else
+            recipients_Overlay.Show()
 #End If
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2400: recipients overlay build failed: " & ex.Message)
@@ -194,7 +209,7 @@ Partial Public Class Main_Form
         ' layered by the shell in the normal way - and it also floats over the LibVLC
         ' VideoView, which a sibling control cannot reliably do.
         Dim overlay As New RecipientsOverlayWindow With {
-            .Name = "recipients_Overlay",
+            .Name = Recipients_Overlay_Panel_Name,
             .BackColor = Color.FromArgb(32, 32, 32),
             .Opacity = Math.Max(0.15R, Math.Min(1.0R, RecipientsOverlayAlpha() / 255.0R)),
             .Padding = New Padding(0)
@@ -218,10 +233,39 @@ Partial Public Class Main_Form
         Dim y As Integer = 0
         Dim visibleRows As Integer = RecipientsOverlayVisibleRows()
         Dim scrollRows As Boolean = rows.Count > visibleRows
-        overlay.AutoScroll = scrollRows
         ' With a scrollbar the rows must fit beside it: full-width rows grew a horizontal
         ' scrollbar too, and the copy zones sat under the vertical one (audit B-13).
         Dim rowW As Integer = If(scrollRows, panelW - SystemInformation.VerticalScrollBarWidth, panelW)
+
+        ' The rows' host. net48 adds them to the window itself. The modern build puts them into an
+        ' inner scrollable panel below a slim header strip, so the strip's pin button stays put
+        ' while the rows scroll under it - the overlay pins like a panel now (2026-10-04 revision
+        ' of 117 Ф-2), and its pin must never scroll out of reach.
+        Dim rowsHost As Control = overlay
+        Dim headerH As Integer = 0
+#If Not NETFRAMEWORK Then
+        Dim pinSize As Integer = RecipientPx(ChromeMetrics.MinTarget)
+        ' Two px off the end edge keep the hover box clear of the window's rounded corner.
+        ' (VB rejects a comment INSIDE a multi-line object initializer, so it sits here.)
+        Dim pin As New RecipientsPinButton(Me) With {
+            .Name = "recipients_Overlay_Pin",
+            .Size = New Size(pinSize, pinSize),
+            .Location = New Point(Math.Max(0, panelW - pinSize - RecipientPx(2)), 0)}
+        AddHandler pin.Click, Sub() ChromeToggleRecipientsPin()
+        overlay.Controls.Add(pin)
+        recipients_Overlay_Pin = pin
+
+        Dim rowsPanel As New Panel With {
+            .Location = New Point(0, pinSize),
+            .Size = New Size(panelW, 0),
+            .BorderStyle = BorderStyle.None}
+        overlay.Controls.Add(rowsPanel)
+        recipients_Overlay_Rows = rowsPanel
+        rowsHost = rowsPanel
+        rowsPanel.AutoScroll = scrollRows
+        headerH = pinSize
+        SyncRecipientsOverlayPin()
+#End If
         For Each r In rows
             Dim isDelete As Boolean = (r.Item1 = -1)
             Dim showCopy As Boolean = Not isDelete AndAlso copyW > 0
@@ -256,7 +300,7 @@ Partial Public Class Main_Form
                                                     Hardkeys_to_move_mediafile(r.Item1)))
             End If
             AddHandler b.Click, AddressOf RecipientOverlayButton_Click
-            overlay.Controls.Add(b)
+            rowsHost.Controls.Add(b)
 
 #If Not NETFRAMEWORK Then
             If showCopy Then
@@ -282,14 +326,20 @@ Partial Public Class Main_Form
                 c.FlatAppearance.MouseDownBackColor = Color.FromArgb(66, 112, 66)
                 recipients_ToolTip.SetToolTip(c, Localization.TF("Скопировать в: {0}", Hardkeys_to_move_mediafile(r.Item1)))
                 AddHandler c.Click, AddressOf RecipientOverlayCopyButton_Click
-                overlay.Controls.Add(c)
+                rowsHost.Controls.Add(c)
             End If
 #End If
 
             y += rowH
         Next
 
+#If Not NETFRAMEWORK Then
+        rowsPanel.Size = New Size(panelW, If(scrollRows, rowH * visibleRows, y))
+        overlay.ClientSize = New Size(panelW, headerH + If(scrollRows, rowH * visibleRows, y))
+#Else
+        overlay.AutoScroll = scrollRows
         overlay.ClientSize = New Size(panelW, If(scrollRows, rowH * visibleRows, y))
+#End If
         recipients_Overlay = overlay
 #If Not NETFRAMEWORK Then
         ApplyRecipientsOverlayHealth()
@@ -328,7 +378,11 @@ Partial Public Class Main_Form
             Dim move_Allowed As Boolean = ResourceAllows(ResourceVerb.Move)
             Dim delete_Allowed As Boolean = ResourceAllows(ResourceVerb.Delete)
 
-            For Each control As Control In recipients_Overlay.Controls
+            ' The rows live in the inner scrollable panel below the pin strip (modern build); the
+            ' pin is not a Button, so a fallback to the window itself skips it either way.
+            Dim rowsHost As Control = recipients_Overlay
+            If recipients_Overlay_Rows IsNot Nothing AndAlso Not recipients_Overlay_Rows.IsDisposed Then rowsHost = recipients_Overlay_Rows
+            For Each control As Control In rowsHost.Controls
                 Dim row As Button = TryCast(control, Button)
                 If row Is Nothing OrElse row.Tag Is Nothing Then Continue For
                 Dim slot As Integer = CInt(row.Tag)
@@ -390,8 +444,24 @@ Partial Public Class Main_Form
             If recipients_Overlay.Visible Then recipients_Overlay.Visible = False
             Return
         End If
+#If NETFRAMEWORK Then
+        ' net48 keeps the overlay always on while enabled (117 Q117-4). The modern build's chrome
+        ' cycle owns the overlay's visibility (117 Ф-2), so there it must NOT be force-shown:
+        ' while the overlay is in its auto-hidden phase it stays hidden even though the media
+        ' surface is on screen, and the chrome timer shows it through ApplyRecipientsOverlayVisibility.
         If Not recipients_Overlay.Visible AndAlso recipients_Overlay.IsHandleCreated Then recipients_Overlay.Visible = True
+#End If
 
+        Dim onScreen As Point = RecipientsOverlayPlacedRect().Location
+        If recipients_Overlay.Location <> onScreen Then recipients_Overlay.Location = onScreen
+    End Sub
+
+    ''' <summary>Where the overlay sits over the media surface, in screen coordinates - the one
+    ''' geometry <see cref="PositionRecipientsOverlay"/> places by and the modern build's reveal
+    ''' hot zone extends toward the configured corner. No visibility side effects: the overlay's
+    ''' window may be hidden while this runs.</summary>
+    Private Function RecipientsOverlayPlacedRect() As Rectangle
+        If recipients_Overlay Is Nothing OrElse panel_Media Is Nothing Then Return Rectangle.Empty
         Dim margin As Integer = RecipientPx(8)
         Dim topOffset As Integer = margin
         ' In full-screen (not super) the floating toolbar sits over the top strip;
@@ -420,9 +490,40 @@ Partial Public Class Main_Form
 
         ' The corner is the media area's, expressed on screen - the overlay is a separate
         ' window, so its Location is in screen coordinates, not the form's client space.
-        Dim onScreen As Point = panel_Media.PointToScreen(New Point(x, y))
-        If recipients_Overlay.Location <> onScreen Then recipients_Overlay.Location = onScreen
-    End Sub
+        Return New Rectangle(panel_Media.PointToScreen(New Point(x, y)), recipients_Overlay.Size)
+    End Function
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>The pointer reveals the auto-hidden overlay from near its configured corner
+    ''' (117 Ф-2): the placed rectangle extended outward toward that corner, by the panels'
+    ''' hot-zone reach. It follows <see cref="RecipientsOverlayPosition"/>, so a moved overlay
+    ''' carries its zone with it.</summary>
+    Private Function RecipientsOverlayHotZone() As Rectangle
+        Dim placed As Rectangle = RecipientsOverlayPlacedRect()
+        If placed.IsEmpty Then Return Rectangle.Empty
+        Dim reach As Integer = RecipientPx(ChromeMetrics.HotZoneMargin)
+        Dim zone As Rectangle = placed
+        Select Case RecipientsOverlayPosition()
+            Case "topRight"
+                zone.Y -= reach
+                zone.Height += reach
+                zone.Width += reach
+            Case "bottomLeft"
+                zone.Height += reach
+                zone.X -= reach
+                zone.Width += reach
+            Case "bottomRight"
+                zone.Height += reach
+                zone.Width += reach
+            Case Else   ' topLeft
+                zone.Y -= reach
+                zone.Height += reach
+                zone.X -= reach
+                zone.Width += reach
+        End Select
+        Return zone
+    End Function
+#End If
 
     ''' <summary>Remembers the last click per row, to drop a double-click's second one.</summary>
     Private ReadOnly recipient_Click_Guard As New RepeatClickGuard()
@@ -544,6 +645,105 @@ Partial Public Class Main_Form
         End Sub
 #End If
     End Class
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>The recipients overlay's own pin button (2026-10-04 revision of 117 Ф-2): the same
+    ''' ambient corner control the chrome panels carry - no fill at rest, a small hover/press cue, an
+    ''' upright filled pin while pinned and a tilted outlined one while free - drawn by the shared
+    ''' <see cref="ChromeSurface.PaintPin"/>. It never takes focus, so clicking it leaves the
+    ''' keyboard with the viewer, exactly like a recipient row.</summary>
+    Private NotInheritable Class RecipientsPinButton
+        Inherits Control
+
+        Private ReadOnly owner As Main_Form
+        Private hovering As Boolean
+        Private pressing As Boolean
+        Private checkedState As Boolean
+
+        Public Sub New(form As Main_Form)
+            owner = form
+            SetStyle(ControlStyles.UserPaint Or ControlStyles.AllPaintingInWmPaint Or
+                     ControlStyles.OptimizedDoubleBuffer Or ControlStyles.ResizeRedraw, True)
+            ' Never selectable: the click must not pull the keyboard focus from the media surface.
+            SetStyle(ControlStyles.Selectable, False)
+            TabStop = False
+            AccessibleRole = AccessibleRole.CheckButton
+        End Sub
+
+        ''' <summary>Set by SyncRecipientsOverlayPin from the persisted preference; drives the glyph.</summary>
+        Public Property PinChecked As Boolean
+            Get
+                Return checkedState
+            End Get
+            Set(value As Boolean)
+                If value = checkedState Then Return
+                checkedState = value
+                Invalidate()
+            End Set
+        End Property
+
+        Protected Overrides Sub OnMouseEnter(e As EventArgs)
+            MyBase.OnMouseEnter(e)
+            hovering = True
+            Invalidate()
+        End Sub
+
+        Protected Overrides Sub OnMouseLeave(e As EventArgs)
+            MyBase.OnMouseLeave(e)
+            hovering = False
+            pressing = False
+            Invalidate()
+        End Sub
+
+        Protected Overrides Sub OnMouseDown(mevent As MouseEventArgs)
+            MyBase.OnMouseDown(mevent)
+            If mevent.Button = MouseButtons.Left Then pressing = True
+            Invalidate()
+        End Sub
+
+        Protected Overrides Sub OnMouseUp(mevent As MouseEventArgs)
+            MyBase.OnMouseUp(mevent)
+            pressing = False
+            Invalidate()
+        End Sub
+
+        Protected Overrides Sub OnPaintBackground(e As PaintEventArgs)
+            ' Nothing: the strip is the window's own flat fill, painted under this control already.
+        End Sub
+
+        ''' <summary>The hover/press cue, then the pin - the panels' ambient corner button, verbatim.</summary>
+        Protected Overrides Sub OnPaint(e As PaintEventArgs)
+            Dim g As Graphics = e.Graphics
+            g.SmoothingMode = SmoothingMode.AntiAlias
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality
+            Dim theme As ChromeTheme = owner.chrome_Theme
+            Dim scale As Single = owner.ChromeScale()
+            Dim r As Rectangle = ClientRectangle
+            Dim size As Integer = Math.Min(r.Width, Math.Min(r.Height, UiScale.Px(ChromeMetrics.PinButtonSize, scale)))
+            If hovering OrElse pressing Then
+                Dim fill As Color = If(pressing, theme.ItemPressed, theme.ItemHover)
+                fill = ChromeTheme.Blend(theme.PanelFill, fill, 1.0F)
+                Using path As GraphicsPath = ChromeSurface.RoundedRect(
+                        New RectangleF(r.X + (r.Width - size) \ 2, r.Y + (r.Height - size) \ 2, size, size),
+                        UiScale.Px(ChromeMetrics.ItemCorner, scale))
+                    Using brush As New SolidBrush(fill)
+                        g.FillPath(brush, path)
+                    End Using
+                End Using
+            End If
+            Dim ink As Color
+            If theme.IsHighContrast Then
+                ink = If(checkedState, SystemColors.HighlightText, SystemColors.WindowText)
+            Else
+                Dim restInk As Color = ChromeTheme.Blend(theme.PanelFill, theme.Foreground, If(checkedState, 0.5F, 0.35F))
+                ink = If(hovering, ChromeTheme.Blend(restInk, theme.Foreground, 1.0F), restInk)
+            End If
+            ChromeSurface.PaintPin(g, checkedState,
+                                   New Rectangle(r.X + (r.Width - size) \ 2, r.Y + (r.Height - size) \ 2, size, size),
+                                   ink, scale)
+        End Sub
+    End Class
+#End If
 
     ''' <summary>
     ''' The overlay's host: a borderless owned window, so Form.Opacity gives it a real

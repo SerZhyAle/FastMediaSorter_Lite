@@ -18,6 +18,36 @@ Public Module AppFileLogger
     Private ReadOnly Gate As New Object()
     Private _path As String
     Private _resolved As Boolean
+    Private _sessionStarted As Boolean
+    Private _sessionHeader As String
+
+    Public Sub Initialize()
+        Try
+            SyncLock Gate
+                If _sessionStarted Then Return
+                Dim p = LogPath()
+                If p Is Nothing Then Return
+                Dim warnings = LogSessionDiagnostics.ReadPreviousWarnings(p)
+                RotateIfOversized(p)
+                Using process = Diagnostics.Process.GetCurrentProcess()
+                    Dim header = String.Join(Environment.NewLine, warnings)
+                    If header <> "" Then header &= Environment.NewLine
+                    _sessionHeader = "Session started: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff", Globalization.CultureInfo.InvariantCulture) & "; PID=" & process.Id.ToString(Globalization.CultureInfo.InvariantCulture) & Environment.NewLine
+                    header &= _sessionHeader
+                    File.AppendAllText(p, header)
+                End Using
+                _sessionStarted = True
+                AddHandler AppDomain.CurrentDomain.ProcessExit, AddressOf OnProcessExit
+            End SyncLock
+        Catch
+        End Try
+    End Sub
+
+    Private Sub OnProcessExit(sender As Object, e As EventArgs)
+        Using process = Diagnostics.Process.GetCurrentProcess()
+            WriteLine("Session finished: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff", Globalization.CultureInfo.InvariantCulture) & "; PID=" & process.Id.ToString(Globalization.CultureInfo.InvariantCulture))
+        End Using
+    End Sub
 
     ''' <summary>Past this size the log is rotated to companion.log.old on the next write.</summary>
     Friend Const Max_Log_Bytes As Long = 2L * 1024L * 1024L
@@ -54,10 +84,11 @@ Public Module AppFileLogger
 
     Public Sub WriteLine(message As String)
         Try
+            Initialize()
             Dim p As String = LogPath()
             If p Is Nothing Then Return
             SyncLock Gate
-                RotateIfOversized(p)
+                If RotateIfOversized(p) AndAlso _sessionStarted Then File.AppendAllText(p, _sessionHeader)
                 File.AppendAllText(p, message & Environment.NewLine)
             End SyncLock
         Catch

@@ -311,6 +311,8 @@ Partial Public Class Main_Form
             Dim inArchive As Boolean = IsArchiveMode()
             SetToolbarItemHidden(btn_Rename, inArchive)
             SetToolbarItemHidden(bt_Delete, inArchive)
+            ' The «Ресурс» button hides with the folder menu's resource entries (ticket 118).
+            RefreshResourceButton()
             LayoutToolbar()
             ApplyRecipientsOverlayHealth()
         Catch ex As Exception

@@ -99,9 +99,15 @@ Partial Public Class Table_Form
         Else
             Tab_Control.SelectedTab = Tab_Page_5 ' fires SelectedIndexChanged -> OnEnterOcrTab
         End If
+#If Not NETFRAMEWORK Then
+        RevealModernSetting("ocr_enabled")
+#End If
     End Sub
 
     Private Sub Tab_Control_SelectedIndexChanged(sender As Object, e As EventArgs) Handles Tab_Control.SelectedIndexChanged
+#If Not NETFRAMEWORK Then
+        If restoringSettingsContext Then Return
+#End If
         If Tab_Control.SelectedTab Is Tab_Page_5 Then OnEnterOcrTab()
     End Sub
 

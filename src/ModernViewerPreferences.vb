@@ -106,6 +106,11 @@ Public NotInheritable Class ModernViewerPreferences
     Public Property ChromeRow2Pinned As Boolean
     Public Property ChromeStatusPinned As Boolean
 
+    ''' <summary>The recipients overlay's own pin (2026-10-04 revision of 117 Ф-2), set by the small
+    ''' button in its corner: a pinned table never auto-hides. <see cref="ChromePinned"/> holds it up
+    ''' as well; the per-panel pins do not - the table pins like a panel, not with the panels.</summary>
+    Public Property RecipientsOverlayPinned As Boolean
+
     Public Property RecipientsOverlayPosition As String = "topLeft"
     Public Property RecipientsOverlayWidth As Integer = 280
     Public Property RecipientsOverlayFontSize As Integer = 9
@@ -278,6 +283,7 @@ Public NotInheritable Class ModernViewerPreferences
         p.ChromeRow1Pinned = ReadBool("ChromeRow1Pinned", p.ChromeRow1Pinned)
         p.ChromeRow2Pinned = ReadBool("ChromeRow2Pinned", p.ChromeRow2Pinned)
         p.ChromeStatusPinned = ReadBool("ChromeStatusPinned", p.ChromeStatusPinned)
+        p.RecipientsOverlayPinned = ReadBool("RecipientsOverlayPinned", p.RecipientsOverlayPinned)
 
         p.RecipientsOverlayPosition = ReadChoice("RecipientsOverlayPosition", p.RecipientsOverlayPosition, "topLeft", "topRight", "bottomLeft", "bottomRight")
         p.RecipientsOverlayWidth = ReadInt("RecipientsOverlayWidth", p.RecipientsOverlayWidth, 180, 520)
@@ -358,6 +364,7 @@ Public NotInheritable Class ModernViewerPreferences
         WriteBool("ChromeRow1Pinned", ChromeRow1Pinned)
         WriteBool("ChromeRow2Pinned", ChromeRow2Pinned)
         WriteBool("ChromeStatusPinned", ChromeStatusPinned)
+        WriteBool("RecipientsOverlayPinned", RecipientsOverlayPinned)
         WriteString("RecipientsOverlayPosition", RecipientsOverlayPosition)
         WriteString("RecipientsOverlayWidth", RecipientsOverlayWidth.ToString(CultureInfo.InvariantCulture))
         WriteString("RecipientsOverlayFontSize", RecipientsOverlayFontSize.ToString(CultureInfo.InvariantCulture))

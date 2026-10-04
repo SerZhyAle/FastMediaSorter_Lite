@@ -500,6 +500,22 @@ Partial Public NotInheritable Class Localization
             "Importar recurso", "Importer une ressource", "Importar recurso", "استيراد مورد",
             "संसाधन आयात", "রিসোর্স আমদানি", "وسیلہ درآمد کریں", "导入资源")
 
+        ' The export dialog's own filter (Resource_Export_Form): settings only, no
+        ' json/txt passenger - a different string from the import filter below it.
+        Add("Файл настроек ресурса (*.fmscfg)|*.fmscfg",
+            "Resource settings file (*.fmscfg)|*.fmscfg",
+            "Файл налаштувань ресурсу (*.fmscfg)|*.fmscfg",
+            "Ressourcen-Einstellungsdatei (*.fmscfg)|*.fmscfg",
+            "File di impostazioni risorsa (*.fmscfg)|*.fmscfg",
+            "Archivo de configuración del recurso (*.fmscfg)|*.fmscfg",
+            "Fichier de paramètres de ressource (*.fmscfg)|*.fmscfg",
+            "Arquivo de configuração do recurso (*.fmscfg)|*.fmscfg",
+            "ملف إعدادات المورد (*.fmscfg)|*.fmscfg",
+            "संसाधन सेटिंग्स फ़ाइल (*.fmscfg)|*.fmscfg",
+            "রিসোর্স সেটিংস ফাইল (*.fmscfg)|*.fmscfg",
+            "ریسورس سیٹنگز فائل (*.fmscfg)|*.fmscfg",
+            "资源设置文件 (*.fmscfg)|*.fmscfg")
+
         Add("Файл настроек ресурса (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|Все файлы (*.*)|*.*",
             "Resource settings file (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|All files (*.*)|*.*",
             "Файл налаштувань ресурсу (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|Усі файли (*.*)|*.*",
@@ -821,6 +837,259 @@ Partial Public NotInheritable Class Localization
             "Resource: {0}", "Ресурс: {0}", "Ressource: {0}", "Risorsa: {0}",
             "Recurso: {0}", "Ressource : {0}", "Recurso: {0}", "المورد: {0}",
             "संसाधन: {0}", "রিসোর্স: {0}", "وسیلہ: {0}", "资源: {0}")
+
+        ' --- the resources tab and the toolbar button (ticket 118) ------------------
+
+        Add("Ресурс",
+            "Resource", "Ресурс", "Ressource", "Risorsa",
+            "Recurso", "Ressource", "Recurso", "مورد",
+            "संसाधन", "রিসোর্স", "وسیلہ", "资源")
+
+        Add("Открыть сохранённый ресурс..",
+            "Open a saved resource..", "Відкрити збережений ресурс..", "Gespeicherte Ressource öffnen..", "Apri una risorsa salvata..",
+            "Abrir un recurso guardado..", "Ouvrir une ressource enregistrée..", "Abrir um recurso salvo..", "فتح مورد محفوظ..",
+            "सहेजा संसाधन खोलें..", "সংরক্ষিত রিসোর্স খুলুন..", "محفوظ وسیلہ کھولیں..", "打开已保存的资源..")
+
+        Add("Экспорт..",
+            "Export..", "Експорт..", "Exportieren..", "Esporta..",
+            "Exportar..", "Exporter..", "Exportar..", "تصدير..",
+            "निर्यात करें..", "রপ্তানি..", "برآمد کریں..", "导出..")
+
+        Add("Серверы и сетевые папки",
+            "Servers and network folders", "Сервери та мережеві папки", "Server und Netzwerkordner", "Server e cartelle di rete",
+            "Servidores y carpetas de red", "Serveurs et dossiers réseau", "Servidores e pastas de rede", "الخوادم والمجلدات الشبكية",
+            "सर्वर और नेटवर्क फ़ोल्डर", "সার্ভার ও নেটওয়ার্ক ফোল্ডার", "سرورز اور نیٹ ورک فولڈرز", "服务器和网络文件夹")
+
+        Add("Сохранённые серверы SFTP и сетевые папки с паролем: открываются как обычные папки.",
+            "Saved SFTP servers and password-protected network folders: they open like ordinary folders.",
+            "Збережені SFTP-сервери та мережеві папки з паролем: відкриваються як звичайні папки.",
+            "Gespeicherte SFTP-Server und Netzwerkordner mit Kennwort: Sie öffnen sich wie gewöhnliche Ordner.",
+            "Server SFTP e cartelle di rete con password salvate: si aprono come cartelle normali.",
+            "Servidores SFTP y carpetas de red con contraseña guardados: se abren como carpetas normales.",
+            "Serveurs SFTP et dossiers réseau avec mot de passe enregistrés : ils s'ouvrent comme des dossiers ordinaires.",
+            "Servidores SFTP e pastas de rede com senha salvos: abrem como pastas comuns.",
+            "خوادم SFTP ومجلدات شبكة محمية بكلمة مرور محفوظة: تُفتح كمجلدات عادية.",
+            "सहेजे गए SFTP सर्वर और पासवर्ड वाले नेटवर्क फ़ोल्डर: ये सामान्य फ़ोल्डर की तरह खुलते हैं।",
+            "সংরক্ষিত SFTP সার্ভার ও পাসওয়ার্ডসহ নেটওয়ার্ক ফোল্ডার: এগি সাধারণ ফোল্ডারের মতো খোলে।",
+            "محفوظ SFTP سرورز اور پاس ورڈ والے نیٹ ورک فولڈرز: یہ عام فولڈرز کی طرح کھلتے ہیں۔",
+            "已保存的 SFTP 服务器和带密码的网络文件夹：像普通文件夹一样打开。")
+
+        Add("Серверы и сетевые папки: добавить, удалить, проверить, импортировать и передать на другой компьютер.",
+            "Servers and network folders: add, remove, test, import and hand over to another computer.",
+            "Сервери та мережеві папки: додати, видалити, перевірити, імпортувати та передати на інший комп'ютер.",
+            "Server und Netzwerkordner: hinzufügen, entfernen, prüfen, importieren und an einen anderen Computer übergeben.",
+            "Server e cartelle di rete: aggiungere, rimuovere, verificare, importare e trasferire su un altro computer.",
+            "Servidores y carpetas de red: añadir, quitar, comprobar, importar y pasar a otro equipo.",
+            "Serveurs et dossiers réseau : ajouter, supprimer, vérifier, importer et transmettre à un autre ordinateur.",
+            "Servidores e pastas de rede: adicionar, remover, verificar, importar e passar para outro computador.",
+            "خوادم ومجلدات شبكية: أضف واحذف وافحص واستورد ومرر إلى كمبيوتر آخر.",
+            "सर्वर और नेटवर्क फ़ोल्डर: जोड़ें, हटाएँ, जाँचें, आयात करें और दूसरे कंप्यूटर पर भेजें।",
+            "সার্ভার ও নেটওয়ার্ক ফোল্ডার: যোগ করুন, মুছুন, যাচাই করুন, আমদানি করুন ও অন্য কম্পিউটারে পাঠান।",
+            "سرورز اور نیٹ ورک فولڈرز: شامل کریں، حذف کریں، جانچیں، درآمد کریں اور دوسرے کمپیوٹر پر بھیجیں۔",
+            "服务器和网络文件夹：添加、删除、检查、导入并传送到另一台计算机。")
+
+        ' --- the export dialog (ticket 118) -----------------------------------------
+
+        Add("Экспорт ресурса",
+            "Export resource", "Експорт ресурсу", "Ressource exportieren", "Esporta risorsa",
+            "Exportar recurso", "Exporter la ressource", "Exportar recurso", "تصدير المورد",
+            "संसाधन निर्यात", "রিসোর্স রপ্তানি", "وسیلہ برآمد کریں", "导出资源")
+
+        Add("Сохранить в файл..",
+            "Save to file..", "Зберегти у файл..", "In Datei speichern..", "Salva su file..",
+            "Guardar en archivo..", "Enregistrer dans un fichier..", "Salvar em arquivo..", "حفظ في ملف..",
+            "फ़ाइल में सहेजें..", "ফাইলে সংরক্ষণ..", "فائل میں محفوظ کریں..", "保存到文件..")
+
+        Add("Копировать текст",
+            "Copy text", "Копіювати текст", "Text kopieren", "Copia testo",
+            "Copiar texto", "Copier le texte", "Copiar texto", "نسخ النص",
+            "टेक्स्ट कॉपी करें", "টেক্সট কপি করুন", "ٹیکسٹ کاپی کریں", "复制文本")
+
+        Add("Копировать код",
+            "Copy code", "Копіювати код", "Code kopieren", "Copia codice",
+            "Copiar código", "Copier le code", "Copiar código", "نسخ الرمز",
+            "कोड कॉपी करें", "কোড কপি করুন", "کوڈ کاپی کریں", "复制代码")
+
+        Add("Без пароля",
+            "Without the password", "Без пароля", "Ohne Kennwort", "Senza password",
+            "Sin contraseña", "Sans le mot de passe", "Sem a senha", "بدون كلمة المرور",
+            "पासवर्ड के बिना", "পাসওয়ার্ড ছাড়া", "پاس ورڈ کے بغیر", "不带密码")
+
+        Add("С паролем",
+            "With the password", "З паролем", "Mit Kennwort", "Con password",
+            "Con contraseña", "Avec le mot de passe", "Com a senha", "مع كلمة المرور",
+            "पासवर्ड के साथ", "পাসওয়ার্ডসহ", "پاس ورڈ کے ساتھ", "带密码")
+
+        Add("Передать можно только сервер SFTP: файл настроек не описывает сетевую папку Windows.",
+            "Only an SFTP server can be handed over: the settings file does not describe a Windows network folder.",
+            "Передати можна лише сервер SFTP: файл налаштувань не описує мережеву папку Windows.",
+            "Nur ein SFTP-Server kann übergeben werden: Die Einstellungsdatei beschreibt keinen Windows-Netzwerkordner.",
+            "È possibile trasferire solo un server SFTP: il file di impostazioni non descrive una cartella di rete Windows.",
+            "Solo se puede pasar un servidor SFTP: el archivo de configuración no describe una carpeta de red de Windows.",
+            "Seul un serveur SFTP peut être transmis : le fichier de paramètres ne décrit pas un dossier réseau Windows.",
+            "Apenas um servidor SFTP pode ser passado: o arquivo de configurações não descreve uma pasta de rede do Windows.",
+            "لا يمكن تمرير سوى خادم SFTP: ملف الإعدادات لا يصف مجلد شبكة من Windows.",
+            "केवल SFTP सर्वर ही भेजा जा सकता है: सेटिंग फ़ाइल Windows के नेटवर्क फ़ोल्डर का वर्णन नहीं करती।",
+            "শুধুমাত্র SFTP সার্ভার পাঠানো যায়: সেটিংস ফাইল Windows নেটওয়ার্ক ফোল্ডার বর্ণনা করে না।",
+            "صرف SFTP سرور ہی بھیجا جا سکتا ہے: ترتیبات کی فائل Windows کے نیٹ ورک فولڈر کو بیان نہیں کرتی۔",
+            "只能传送 SFTP 服务器：设置文件不描述 Windows 网络文件夹。")
+
+        Add("Ключ сервера ещё не запомнен. Откройте ресурс один раз и подтвердите ключ - тогда его можно передать.",
+            "The server key is not remembered yet. Open the resource once and confirm the key - then it can be handed over.",
+            "Ключ сервера ще не запам'ятовано. Відкрийте ресурс один раз і підтвердіть ключ - тоді його можна передати.",
+            "Der Serverschlüssel ist noch nicht gemerkt. Öffnen Sie die Ressource einmal und bestätigen Sie den Schlüssel - dann kann er übergeben werden.",
+            "La chiave del server non è ancora memorizzata. Aprire la risorsa una volta e confermare la chiave - poi potrà essere trasferita.",
+            "La clave del servidor aún no está guardada. Abra el recurso una vez y confirme la clave - entonces se podrá pasar.",
+            "La clé du serveur n'est pas encore mémorisée. Ouvrez la ressource une fois et confirmez la clé - elle pourra alors être transmise.",
+            "A chave do servidor ainda não foi lembrada. Abra o recurso uma vez e confirme a chave - então ela poderá ser passada.",
+            "مفتاح الخادم غير محفوظ بعد. افتح المورد مرة واحدة وأكد المفتاح - عندها يمكن تمريره.",
+            "सर्वर की कुंजी अभी याद नहीं है। संसाधन एक बार खोलें और कुंजी की पुष्टि करें - तब उसे भेजा जा सकेगा।",
+            "সার্ভারের কী এখনও মনে রাখা হয়নি। রিসোর্সটি একবার খুলুন ও কী নিশ্চিত করুন - তখন এটি পাঠানো যাবে।",
+            "سرور کی کلید ابھی محفوظ نہیں ہے۔ وسیلہ ایک بار کھولیں اور کلید کی تصدیق کریں - پھر اسے بھیجا جا سکتا ہے۔",
+            "服务器密钥尚未记住。请先打开一次该资源并确认密钥 - 之后才能传送。")
+
+        Add("У ресурса нет адреса, который можно передать.",
+            "The resource has no address that can be handed over.",
+            "У ресурса немає адреси, яку можна передати.",
+            "Die Ressource hat keine Adresse, die übergeben werden könnte.",
+            "La risorsa non ha un indirizzo che possa essere trasferito.",
+            "El recurso no tiene una dirección que se pueda pasar.",
+            "La ressource n'a aucune adresse transmissible.",
+            "O recurso não tem endereço que possa ser passado.",
+            "لا مورد له عنوان يمكن تمريره.",
+            "संसाधन का कोई ऐसा पता नहीं है जो भेजा जा सके।",
+            "রিসোর্সের এমন কোনো ঠিকানা নেই যা পাঠানো যায়।",
+            "وسیلے کا کوئی ایسا پتہ نہیں جو بھیجا جا سکے۔",
+            "该资源没有可传送的地址。")
+
+        Add("Папка ресурса записана так, что файл настроек её не примет. Исправьте её через «Изменить..».",
+            "The resource's folder is written in a way the settings file will not accept. Fix it via «Edit..».",
+            "Папку ресурсу записано так, що файл налаштувань її не прийме. Виправте її через «Змінити..».",
+            "Der Ordner der Ressource ist so geschrieben, dass die Einstellungsdatei ihn nicht annimmt. Korrigieren Sie ihn über «Bearbeiten..».",
+            "La cartella della risorsa è scritta in modo che il file di impostazioni non la accetterà. Correggerla tramite «Modifica..».",
+            "La carpeta del recurso está escrita de forma que el archivo de configuración no la aceptará. Corríjala mediante «Editar..».",
+            "Le dossier de la ressource est écrit d'une façon que le fichier de paramètres n'acceptera pas. Corrigez-le via «Modifier..».",
+            "A pasta do recurso está escrita de um jeito que o arquivo de configurações não aceitará. Corrija-a por «Editar..».",
+            "مجلد المورد مكتوب بطريقة لن يقبلها ملف الإعدادات. صححه عبر «تعديل..».",
+            "संसाधन का फ़ोल्डर ऐसे लिखा गया है जिसे सेटिंग फ़ाइल स्वीकार नहीं करेगी। «बदलें..» से उसे ठीक करें।",
+            "রিসোর্সের ফোল্ডাটি এমনভাবে লেখা যা সেটিংস ফাইল গ্রহণ করবে না। «সম্পাদনা..» দিয়ে ঠিক করুন।",
+            "وسیلے کا فولڈر اسی طرح لکھا گیا ہے جسے ترتیبات کی فائل قبول نہیں کرے گی۔ «ترمیم..» کے ذریعے درست کریں۔",
+            "资源文件夹的写法是设置文件不会接受的。请通过「编辑..」修正。")
+
+        Add("Пароль не сохранён - файл будет без пароля.",
+            "The password is not saved - the file will be without one.",
+            "Пароль не збережено - файл буде без пароля.",
+            "Das Kennwort ist nicht gespeichert - die Datei wird ohne eines erstellt.",
+            "La password non è salvata - il file sarà senza password.",
+            "La contraseña no está guardada - el archivo irá sin ella.",
+            "Le mot de passe n'est pas enregistré - le fichier n'en contiendra pas.",
+            "A senha não está salva - o arquivo ficará sem ela.",
+            "كلمة المرور غير محفوظة - سيكون الملف بدون واحدة.",
+            "पासवर्ड सहेजा नहीं गया है - फ़ाइल उसके बिना बनेगी।",
+            "পাসওয়ার্ড সংরক্ষিত নেই - ফাইলটি এমনি ছাড়া হবে।",
+            "پاس ورڈ محفوظ نہیں ہے - فائل اس کے بغیر بنے گی۔",
+            "密码未保存 - 文件将不含密码。")
+
+        Add("Файл содержит ключ доступа к серверу. Передавайте его только владельцу и не оставляйте на общих дисках.",
+            "The file carries the access key to the server. Hand it only to its owner and never leave it on shared disks.",
+            "Файл містить ключ доступу до сервера. Передавайте його лише власнику і не залишайте на спільних дисках.",
+            "Die Datei enthält den Zugriffsschlüssel zum Server. Geben Sie ihn nur dem Besitzer und lassen Sie ihn nie auf gemeinsamen Laufwerken.",
+            "Il file contiene la chiave di accesso al server. Consegnarla solo al proprietario e non lasciarla su dischi condivisi.",
+            "El archivo contiene la clave de acceso al servidor. Entrégueselo solo a su dueño y no lo deje en discos compartidos.",
+            "Le fichier contient la clé d'accès au serveur. Ne le transmettez qu'à son propriétaire et ne le laissez pas sur des disques partagés.",
+            "O arquivo contém a chave de acesso ao servidor. Entregue-o apenas ao dono e não o deixe em discos compartilhados.",
+            "يحتوي الملف على مفتاح الوصول إلى الخادم. مرره للمالك فقط ولا تتركه على الأقراص المشتركة.",
+            "फ़ाइल में सर्वर की एक्सेस कुंजी है। उसे केवल स्वामी को दें और साझा डिस्क पर न छोड़ें।",
+            "ফাইলে সার্ভারের অ্যাক্সেস কী আছে। শুধু মালিককে দিন ও শেয়ার্ড ডিস্কে রাখবেন না।",
+            "فائل میں سرور کی رسائی کلید ہے۔ اسے صرف مالک کو دیں اور مشترکہ ڈسکس پر نہ چھوڑیں۔",
+            "文件包含服务器的访问密钥。只交给所有者本人，不要留在共享磁盘上。")
+
+        ' "Сохранено: {0}" is registered once, by Localization.Editor.vb - a second
+        ' registration here broke F19 (no localization key is registered twice).
+
+        Add("Здесь нельзя сохранить: диск (FAT/exFAT или сетевой) не умеет закрывать файл от других пользователей. Выберите папку на диске NTFS.",
+            "It cannot be saved here: this disk (FAT/exFAT or a network one) cannot keep a file closed to other users. Choose a folder on an NTFS disk.",
+            "Тут не можна зберегти: диск (FAT/exFAT або мережевий) не вміє закривати файл від інших користувачів. Виберіть папку на диску NTFS.",
+            "Hier kann nicht gespeichert werden: Das Laufwerk (FAT/exFAT oder ein Netzlaufwerk) kann eine Datei nicht vor anderen Benutzern schützen. Wählen Sie einen Ordner auf einem NTFS-Laufwerk.",
+            "Non è possibile salvare qui: il disco (FAT/exFAT o di rete) non sa tenere un file chiuso agli altri utenti. Scegliere una cartella su un disco NTFS.",
+            "No se puede guardar aquí: el disco (FAT/exFAT o de red) no sabe mantener un archivo cerrado a otros usuarios. Elija una carpeta en un disco NTFS.",
+            "Impossible d'enregistrer ici : le disque (FAT/exFAT ou réseau) ne sait pas tenir un fichier fermé aux autres utilisateurs. Choisissez un dossier sur un disque NTFS.",
+            "Não é possível salvar aqui: o disco (FAT/exFAT ou de rede) não sabe manter um arquivo fechado para outros usuários. Escolha uma pasta em um disco NTFS.",
+            "لا يمكن الحفظ هنا: القرص (FAT/exFAT أو شبكي) لا يعرف إغلاق الملف أمام المستخدمين الآخرين. اختر مجلدًا على قرص NTFS.",
+            "यहाँ सहेजा नहीं जा सकता: डिस्क (FAT/exFAT या नेटवर्क) फ़ाइल को दूसरे उपयोगकर्ताओं से बंद नहीं रख सकती। NTFS डिस्क पर फ़ोल्डर चुनें।",
+            "এখানে সংরক্ষণ করা যায় না: ডিস্ক (FAT/exFAT বা নেটওয়ার্ক) ফাইল অন্য ব্যবহারকারীর থেকে বন্ধ রাখতে পারে না। NTFS ডিস্কে ফোল্ডার বাছুন।",
+            "یہاں محفوظ نہیں کیا جا سکتا: ڈسک (FAT/exFAT یا نیٹ ورک) فائل کو دوسرے صارفین سے بند نہیں رکھ سکتی۔ NTFS ڈسک پر فولڈر منتخب کریں۔",
+            "无法保存在这里：该磁盘（FAT/exFAT 或网络磁盘）不能将文件对其他用户关闭。请选择 NTFS 磁盘上的文件夹。")
+
+        Add("Здесь нельзя сохранить: эту папку могут менять другие пользователи или она перенаправлена. Выберите свою папку.",
+            "It cannot be saved here: other users can change this folder, or it is redirected. Choose a folder of your own.",
+            "Тут не можна зберегти: цю папку можуть змінювати інші користувачі або вона перенаправлена. Виберіть власну папку.",
+            "Hier kann nicht gespeichert werden: Diesen Ordner können andere Benutzer ändern, oder er ist umgeleitet. Wählen Sie einen eigenen Ordner.",
+            "Non è possibile salvare qui: questa cartella può essere modificata da altri utenti oppure è reindirizzata. Scegliere una cartella propria.",
+            "No se puede guardar aquí: otros usuarios pueden cambiar esta carpeta o está redirigida. Elija una carpeta suya.",
+            "Impossible d'enregistrer ici : ce dossier peut être modifié par d'autres utilisateurs ou il est redirigé. Choisissez un dossier à vous.",
+            "Não é possível salvar aqui: esta pasta pode ser alterada por outros usuários ou é redirecionada. Escolha uma pasta sua.",
+            "لا يمكن الحفظ هنا: مستخدمون آخرون قد يغيرون هذا المجلد أو أنه مُعاد توجيهه. اختر مجلدًا خاصًا بك.",
+            "यहाँ सहेजा नहीं जा सकता: इस फ़ोल्डर को दूसरे उपयोगकर्ता बदल सकते हैं या वह रीडायरेक्टेड है। अपना फ़ोल्डर चुनें।",
+            "এখানে সংরক্ষণ করা যায় না: এই ফোল্ডার অন্যরা বদলাতে পারে বা এটি রিডাইরেক্টেড। নিজের ফোল্ডার বাছুন।",
+            "یہاں محفوظ نہیں کیا جا سکتا: دوسرے صارفین اس فولڈر کو بدل سکتے ہیں یا یہ ری ڈائریکٹ ہے۔ اپنا فولڈر منتخب کریں۔",
+            "无法保存在这里：其他用户可以更改此文件夹，或者它已被重定向。请选择您自己的文件夹。")
+
+        Add("Не удалось сохранить файл. Ничего не потеряно: прежний файл остался как был.",
+            "The file could not be saved. Nothing is lost: the previous file is unchanged.",
+            "Не вдалося зберегти файл. Нічого не втрачено: попередній файл залишився як був.",
+            "Die Datei konnte nicht gespeichert werden. Nichts ist verloren: Die bisherige Datei ist unverändert.",
+            "Il file non è stato salvato. Nulla è perso: il file precedente è rimasto com'era.",
+            "No se pudo guardar el archivo. Nada se pierde: el archivo anterior quedó como estaba.",
+            "Le fichier n'a pas pu être enregistré. Rien n'est perdu : le fichier précédent est resté tel quel.",
+            "Não foi possível salvar o arquivo. Nada se perdeu: o arquivo anterior permaneceu como estava.",
+            "تعذر حفظ الملف. لم يُفقد شيء: الملف السابق بقي كما كان.",
+            "फ़ाइल सहेजी नहीं जा सकी। कुछ नहीं खोया: पहले की फ़ाइल वैसी ही है।",
+            "ফাইল সংরক্ষণ করা যায়নি। কিছুই হারায়নি: আগের ফাইল অক্ষত।",
+            "فائل محفوظ نہیں ہو سکی۔ کچھ نہیں کھویا: پرانی فائل ویسے ہی ہے۔",
+            "文件保存失败。没有任何损失：原来的文件保持原样。")
+
+        Add("Скопировано. Это ключ доступа: вставьте его только туда, куда нужно.",
+            "Copied. This is an access key: paste it only where it is needed.",
+            "Скопійовано. Це ключ доступу: вставте його лише туди, куди треба.",
+            "Kopiert. Dies ist ein Zugriffsschlüssel: Fügen Sie ihn nur dort ein, wo er gebraucht wird.",
+            "Copiato. È una chiave di accesso: incollarla solo dove serve.",
+            "Copiado. Es una clave de acceso: péguela solo donde haga falta.",
+            "Copié. C'est une clé d'accès : collez-la uniquement là où elle est nécessaire.",
+            "Copiado. Esta é uma chave de acesso: cole-a somente onde for necessário.",
+            "تم النسخ. هذا مفتاح وصول: ألصقه فقط حيث يلزم.",
+            "कॉपी हो गया। यह एक्सेस कुंजी है: इसे केवल जहाँ ज़रूरी है वहीं पेस्ट करें।",
+            "কপি হয়েছে। এটি অ্যাক্সেস কী: শুধু যেখানে দরকার সেখানেই পেস্ট করুন।",
+            "کاپی ہو گیا۔ یہ رسائی کلید ہے: اسے صرف جہاں ضرورت ہو وہیں پیسٹ کریں۔",
+            "已复制。这是访问密钥：只粘贴到需要的地方。")
+
+        Add("Буфер обмена занят другой программой. Повторите.",
+            "The clipboard is busy with another program. Try again.",
+            "Буфер обміну зайнятий іншою програмою. Повторіть.",
+            "Die Zwischenablage ist von einem anderen Programm belegt. Versuchen Sie es erneut.",
+            "Gli appunti sono occupati da un altro programma. Riprovare.",
+            "El portapapeles está ocupado por otro programa. Inténtelo de nuevo.",
+            "Le presse-papiers est occupé par un autre programme. Réessayez.",
+            "A área de transferência está ocupada por outro programa. Tente novamente.",
+            "الحافظة مشغولة ببرنامج آخر. أعد المحاولة.",
+            "क्लिपबोर्ड किसी अन्य प्रोग्राम के उपयोग में है। फिर कोशिश करें।",
+            "ক্লিপবোর্ড অন্য প্রোগ্রামের দখলে। আবার চেষ্টা করুন।",
+            "کلپ بورڈ کسی اور پروگرام کے پاس ہے۔ دوبارہ کوشش کریں۔",
+            "剪贴板被另一个程序占用。请重试。")
+
+        Add("Не удалось подготовить файл настроек.",
+            "The settings file could not be prepared.",
+            "Не вдалося підготувати файл налаштувань.",
+            "Die Einstellungsdatei konnte nicht vorbereitet werden.",
+            "Impossibile preparare il file di impostazioni.",
+            "No se pudo preparar el archivo de configuración.",
+            "Le fichier de paramètres n'a pas pu être préparé.",
+            "Não foi possível preparar o arquivo de configurações.",
+            "تعذر تجهيز ملف الإعدادات.",
+            "सेटिंग फ़ाइल तैयार नहीं की जा सकी।",
+            "সেটিংস ফাইল তৈরি করা যায়নি।",
+            "ترتیبات کی فائل تیار نہیں ہو سکی۔",
+            "无法生成设置文件。")
     End Sub
 
 End Class

@@ -477,7 +477,7 @@ Public Class ImportedSettingsLimitsTests
         Dim listed As New HashSet(Of String) From {
             "AdvanceAfterCopy", "AllowNewWindows", "AudioControlsAlwaysVisible", "AudioVisualiser",
             "CreateMissingDestination", "DeleteToRecycleBin", "IncludeAudioInNavigation",
-            "IncludeDocumentInNavigation", "IncludeSubfolders", "IncludeVideoInNavigation", "ModernChrome", "ChromePinned", "ChromeRow1Pinned", "ChromeRow2Pinned", "ChromeStatusPinned",
+            "IncludeDocumentInNavigation", "IncludeSubfolders", "IncludeVideoInNavigation", "ModernChrome", "ChromePinned", "ChromeRow1Pinned", "ChromeRow2Pinned", "ChromeStatusPinned", "RecipientsOverlayPinned",
             "ReduceMotion", "RememberVideoPosition", "ResumeLastPlayback", "SortOtherFiles", "SecureIncludeInNavigation",
             "SecureShowTrueName", "ShowVideoControlsWhenPaused", "StopSlideshowOnManualNavigation",
             "VideoAutoplay"}
@@ -498,7 +498,7 @@ Public Class ImportedSettingsLimitsTests
             .DocumentExtensions = "[""txt"", ""pdf""]", .OtherExtensions = "[""xyz""]",
             .TextPreviewMaxKb = 1024,
             .InterfaceScalePercent = 120,
-            .NewImageScaleMode = "perFolder", .ReduceMotion = True, .ModernChrome = False, .ChromePinned = True, .ChromeRow1Pinned = True, .ChromeRow2Pinned = True, .ChromeStatusPinned = True, .ChromeSize = "adaptive", .ChromeOpacityPercent = 75, .ChromeCornerRadius = 10,
+            .NewImageScaleMode = "perFolder", .ReduceMotion = True, .ModernChrome = False, .ChromePinned = True, .ChromeRow1Pinned = True, .ChromeRow2Pinned = True, .ChromeStatusPinned = True, .RecipientsOverlayPinned = True, .ChromeSize = "adaptive", .ChromeOpacityPercent = 75, .ChromeCornerRadius = 10,
             .RecipientsOverlayPosition = "bottomRight", .RecipientsOverlayWidth = 400,
             .RecipientsOverlayFontSize = 14, .RecipientsOverlayOpacity = 77,
             .RecipientsOverlayVisibleRows = 8, .SlideshowRandomOrder = "shuffleCycle",

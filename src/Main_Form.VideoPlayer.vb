@@ -389,6 +389,17 @@ Partial Public Class Main_Form
             Return
         End If
 
+#If Not NETFRAMEWORK Then
+        ' Ticket 115: a stop started on a pool thread (a flip onto an image) may still be inside
+        ' this player. Play() is only legal after it has left, so wait for it - and then look
+        ' again, because the user went on flipping while we waited.
+        Dim pending_Stop As Task = vlc_Pending_Stop
+        If pending_Stop IsNot Nothing AndAlso Not pending_Stop.IsCompleted Then
+            Try : Await pending_Stop : Catch : End Try
+            If generation <> media_Generation OrElse Me.IsDisposed Then Return
+        End If
+#End If
+
         Try
             StopGifLoopPlayback()
 
@@ -548,6 +559,9 @@ Partial Public Class Main_Form
             If Is_slide_show_mode Then SlideShowTimer.Enabled = True
         End If
 #End If
+#If Not NETFRAMEWORK Then
+        WaitForPendingVlcStop()
+#End If
         If vlc_Media_Player IsNot Nothing AndAlso is_Vlc_Playing Then
             Try
                 vlc_Media_Player.Stop()
@@ -590,14 +604,42 @@ Partial Public Class Main_Form
 
         Dim player = vlc_Media_Player
         If player Is Nothing Then Return Task.CompletedTask
-        Return Task.Run(Sub()
-                            Try
-                                player.Stop()
-                                player.Media = Nothing
-                            Catch
-                            End Try
-                        End Sub)
+        ' Ticket 115: the stop is native work on a pool thread. It is counted in, so the
+        ' instance is not freed under it, and chained behind the previous stop, so two never
+        ' run against one player. The next Play awaits it (PlayVideoWithVlcAsync).
+        If Not vlc_Lease.TryEnter() Then Return Task.CompletedTask
+        Dim previous As Task = vlc_Pending_Stop
+        Dim stopping As Task = Task.Run(Sub()
+                                            Try
+                                                If previous IsNot Nothing Then
+                                                    Try : previous.Wait() : Catch : End Try
+                                                End If
+                                                player.Stop()
+                                                player.Media = Nothing
+                                            Catch
+                                            Finally
+                                                vlc_Lease.Leave()
+                                            End Try
+                                        End Sub)
+        vlc_Pending_Stop = stopping
+        Return stopping
     End Function
+
+    ''' <summary>Ticket 115: counts native LibVLC work in flight (a pool-thread stop, a tag
+    ''' parse) and refuses new work once the window is closing, so the instance is never freed
+    ''' under a running thread.</summary>
+    Private ReadOnly vlc_Lease As New VlcNativeLease()
+
+    ''' <summary>The newest pool-thread stop; the next Play and the synchronous stop wait for it.</summary>
+    Private vlc_Pending_Stop As Task
+
+    ''' <summary>Synchronous callers (UI thread) must not call into the player while a pool
+    ''' stop is still inside it. Bounded: a share that never lets go must not hang the window.</summary>
+    Private Sub WaitForPendingVlcStop()
+        Dim pending As Task = vlc_Pending_Stop
+        If pending Is Nothing OrElse pending.IsCompleted Then Return
+        Try : pending.Wait(3000) : Catch : End Try
+    End Sub
 #End If
 
     ''' <summary>The file VLC was last told to play, "" when stopped. Not

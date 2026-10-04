@@ -250,6 +250,7 @@ Partial Public NotInheritable Class MainWindow
         AddHandler lvFolders.ItemCheck, AddressOf OnItemCheck
         AddHandler lvFolders.ItemChecked, AddressOf OnItemChecked
         AddHandler lvFolders.DoubleClick, AddressOf OnConfigureFolder
+        BuildDiskMenu()
 
         ' Fill first, then the docked button row - see the docking note in BuildUi.
         _pnlList.Controls.Add(lvFolders)

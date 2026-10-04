@@ -57,6 +57,7 @@ Partial Public Class Main_Form
         SlideShowStop()
         Dim stored As IReadOnlyList(Of String) = ResourceImportFlow.Run(Me, ResourceImportFlow.ReadFile(path))
         If stored.Count = 0 Then Return
+        RefreshResourceButton()
         If stored.Count = 1 Then
             Dim imported As ResourceDescriptor = ResourceRegistry.Load().FirstOrDefault(Function(r) String.Equals(r.Id, stored(0), StringComparison.OrdinalIgnoreCase))
             If imported IsNot Nothing Then
@@ -74,16 +75,25 @@ Partial Public Class Main_Form
         SlideShowStop()
         Using dialog As New Resource_Manager_Form(draft)
             Dim answer As DialogResult = dialog.ShowDialog(Me)
-            Dim active As ResourceSession = ActiveResourceSession()
-            If active IsNot Nothing AndAlso dialog.RemovedIds.Any(Function(id) String.Equals(id, active.Resource.Id, StringComparison.OrdinalIgnoreCase)) Then
-                LeaveResource()
-                lbl_Status.Text = Localization.T("Ресурс удалён")
-            End If
-            ' Whatever was edited - an address, a key, a password, a removal - the slots that name a
-            ' resource are dialled and asked afresh (007 §4.2).
-            ResetRemoteSlots()
+            ApplyResourceChanges(dialog.RemovedIds)
             If answer = DialogResult.OK AndAlso dialog.ToOpen IsNot Nothing Then ConnectAndEnterResource(dialog.ToOpen, "")
         End Using
+    End Sub
+
+    ''' <summary>What every host of a resource editor says back to the viewer when it closes and the
+    ''' registry may have changed (ticket 118 13.4): the active resource that was removed is closed,
+    ''' the slots that name a resource are dialled afresh, and the toolbar button follows the count.
+    ''' One implementation for the manager dialog AND the Settings window, so the two cannot drift.</summary>
+    Friend Sub ApplyResourceChanges(removedIds As IReadOnlyList(Of String))
+        Dim active As ResourceSession = ActiveResourceSession()
+        If active IsNot Nothing AndAlso removedIds.Any(Function(id) String.Equals(id, active.Resource.Id, StringComparison.OrdinalIgnoreCase)) Then
+            LeaveResource()
+            lbl_Status.Text = Localization.T("Ресурс удалён")
+        End If
+        ' Whatever was edited - an address, a key, a password, a removal - the slots that name a
+        ' resource are dialled and asked afresh (007 §4.2).
+        ResetRemoteSlots()
+        RefreshResourceButton()
     End Sub
 
     ''' <summary>The resources used most recently, newest first - what the folder menu offers for one click.</summary>
@@ -92,6 +102,25 @@ Partial Public Class Main_Form
             Where(Function(r) r.LastUsedUtc.HasValue).
             OrderByDescending(Function(r) r.LastUsedUtc.Value).
             Take(Resource_Menu_Recent_Count).ToList()
+    End Function
+
+    ''' <summary>The entries of the shared resource popup (ticket 118 Ф-2, Q118-7): saved resources in
+    ''' the manager's order (last-used first, then name), capped like the folder menu, then «Управление
+    ''' ресурсами..». One builder for the folder menu AND the «Ресурс» button, so the two cannot drift.
+    ''' The button lists never-opened resources too (Q118-14); the folder menu keeps its recent rule.</summary>
+    Friend Function BuildResourceMenuEntries(Optional includeNeverUsed As Boolean = False) As List(Of ChromeMenuItem)
+        Dim entries As New List(Of ChromeMenuItem)()
+        Dim all As List(Of ResourceDescriptor) = ResourceRegistry.Load()
+        Dim ordered As IEnumerable(Of ResourceDescriptor) = If(includeNeverUsed, all, all.Where(Function(r) r.LastUsedUtc.HasValue))
+        For Each r As ResourceDescriptor In ordered.
+                OrderByDescending(Function(x) If(x.LastUsedUtc, DateTime.MinValue)).
+                ThenBy(Function(x) x.DisplayName, StringComparer.CurrentCultureIgnoreCase).
+                Take(Resource_Menu_Recent_Count)
+            Dim chosen As ResourceDescriptor = r
+            entries.Add(New ChromeMenuItem("resource_" & r.Id) With {.Caption = r.DisplayName, .Tooltip = ResourceMessages.DisplayAddress(r), .Action = Sub() ConnectAndEnterResource(chosen, "")})
+        Next
+        entries.Add(New ChromeMenuItem("resource_manage") With {.Caption = Localization.T("Управление ресурсами.."), .Action = Sub() ShowResourceManager()})
+        Return entries
     End Function
 
     ''' <summary>Fills the folder menu's "Resources" submenu: the recent ones, then the manager. Rebuilt on

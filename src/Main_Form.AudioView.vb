@@ -62,7 +62,7 @@ Partial Public Class Main_Form
                 If Not Await EnsureVlcInitializedAsync().ConfigureAwait(True) Then Return
                 If generation <> media_Generation Then Return
             End If
-            Dim tags As AudioMetadata = Await Task.Run(Function() ParseAudioMetadataAsync(filePath)).ConfigureAwait(True)
+            Dim tags As AudioMetadata = Await Task.Run(Function() ParseAudioMetadataAsync(filePath, generation)).ConfigureAwait(True)
             If Me.IsDisposed OrElse generation <> media_Generation OrElse
                Not String.Equals(Current_File_Name, filePath, StringComparison.Ordinal) Then Return
             audio_Current_Metadata = tags
@@ -77,15 +77,50 @@ Partial Public Class Main_Form
 
     ''' <summary>Reads the tags of one file. Values are taken only from a parse that
     ''' finished; anything else keeps the file-name fallback of AudioMetadata.FromValues.</summary>
-    Private Async Function ParseAudioMetadataAsync(filePath As String) As Task(Of AudioMetadata)
+    ''' <summary>Ticket 115: one parse at a time. A parse is native work on libvlc's own
+    ''' threads, and rapid flipping used to start a new one on top of the last (and on top of
+    ''' the player's Play) for every track.</summary>
+    Private ReadOnly audio_Parse_Gate As New System.Threading.SemaphoreSlim(1, 1)
+
+    Private Async Function ParseAudioMetadataAsync(filePath As String, generation As Integer) As Task(Of AudioMetadata)
         Dim size As Long = -1
         Try : size = New FileInfo(filePath).Length : Catch : End Try
 
+        ' The window is closing, or the user has left this track already: the answer would
+        ' be dropped anyway, so touch nothing native for it.
+        If generation <> media_Generation OrElse Not vlc_Lease.TryEnter() Then
+            Return AudioMetadata.FromValues(filePath, fileSizeBytes:=size)
+        End If
+        Try
+            Await audio_Parse_Gate.WaitAsync().ConfigureAwait(False)
+            Try
+                If generation <> media_Generation OrElse libVlc Is Nothing Then
+                    Return AudioMetadata.FromValues(filePath, fileSizeBytes:=size)
+                End If
+                Return Await ParseOneAudioFileAsync(filePath, size).ConfigureAwait(False)
+            Finally
+                audio_Parse_Gate.Release()
+            End Try
+        Finally
+            vlc_Lease.Leave()
+        End Try
+    End Function
+
+    Private Async Function ParseOneAudioFileAsync(filePath As String, size As Long) As Task(Of AudioMetadata)
+        ' A native crash leaves no managed trace (ticket 116), so the last line of the log is
+        ' the only clue to what was open. The file name only, never an address (it can carry a
+        ' password) and never the folder.
+        If Not IsRemoteMediaUrl(filePath) Then AppFileLogger.WriteLine("Reading audio tags: " & Path.GetFileName(filePath))
         Using media As Media = CreateVlcMedia(filePath)
             ' FetchLocal as well: it is what turns an embedded picture ("attachment://") into
             ' a file:// ArtworkURL the cover loader can open.
             Dim status As MediaParsedStatus = Await media.Parse(MediaParseOptions.ParseLocal Or MediaParseOptions.FetchLocal,
                                                                 Audio_Parse_Timeout_Ms).ConfigureAwait(False)
+            ' Ticket 115: the continuation of that await runs INLINE on the libvlc thread that
+            ' raised the parsed event. Everything below - reading the tracks and, above all,
+            ' releasing the Media (which tears down its event manager) - must not happen on
+            ' that thread, inside its own callback. Yield puts the rest on the pool.
+            Await Task.Yield()
             If status <> MediaParsedStatus.Done Then
                 Debug.WriteLine("Audio metadata parse: " & status.ToString() & " for " & filePath)
                 Return AudioMetadata.FromValues(filePath, fileSizeBytes:=size)
