@@ -58,19 +58,19 @@ Partial Public NotInheritable Class Localization
             "অ্যানিমেশন ও ধীর ফরম্যাট আবার খোলা দ্রুত করে। 0 দিলে ক্যাশ বন্ধ।",
             "اینیمیشن اور سست فارمیٹ دوبارہ کھولنا تیز کرتا ہے۔ 0 کیش بند کر دیتا ہے۔",
             "加快再次打开动画和慢速格式的速度。0 表示关闭缓存。")
-        Add("Текущий размер сохранённых результатов декодирования.",
-            "How much decoded data is currently kept.",
-            "Поточний розмір збережених результатів декодування.",
-            "Aktuelle Größe der gespeicherten Dekodier-Ergebnisse.",
-            "Dimensione attuale dei risultati di decodifica salvati.",
-            "Tamaño actual de los resultados de decodificación guardados.",
-            "Taille actuelle des résultats de décodage enregistrés.",
-            "Tamanho atual dos resultados de decodificação salvos.",
-            "الحجم الحالي لنتائج فك الترميز المحفوظة.",
-            "सहेजे गए डिकोड परिणामों का वर्तमान आकार।",
-            "সংরক্ষিত ডিকোড ফলাফলের বর্তমান আকার।",
-            "محفوظ شدہ ڈی کوڈ نتائج کا موجودہ حجم۔",
-            "已保存解码结果的当前大小。")
+        Add("Сколько места занимают сохранённые результаты декодирования. Очистка не меняет сами изображения - они декодируются заново.",
+            "How much room the stored decode results take. Clearing changes nothing in the images themselves - they are decoded again.",
+            "Скільки місця займають збережені результати декодування. Очищення не змінює самі зображення - вони декодуються знову.",
+            "Wie viel Raum die gespeicherten Dekodierergebnisse belegen. Leeren ändert nichts an den Bildern selbst - sie werden neu dekodiert.",
+            "Quanto spazio occupano i risultati di decodifica salvati. Svuotare non cambia le immagini stesse - vengono decodificate di nuovo.",
+            "Cuánto espacio ocupan los resultados de decodificado guardados. Vaciar no cambia las imágenes mismas - se vuelven a decodificar.",
+            "Place occupée par les résultats de décodage enregistrés. Vider ne change rien aux images elles-mêmes - elles sont décodées à nouveau.",
+            "Quanto espaço ocupam os resultados de decodificação salvos. Limpar não muda as próprias imagens - elas são decodificadas de novo.",
+            "كم يشغل من المكان نتائج فك الترميز المحفوظة. المسح لا يغيّر الصور نفسها - تُفك من جديد.",
+            "सहेजे गए डिकोड परिणाम कितनी जगह लेते हैं। साफ़ करने से चित्रों में कोई बदलाव नहीं होता - वे फिर से डिकोड होते हैं।",
+            "সংরক্ষিত ডিকোড ফলাফল কত জায়গা নেয়। পরিষ্কার করলে ছবিগুলোর কিছুই বদলায় না - সেগুলো আবার ডিকোড হয়।",
+            "محفوظ ڈی کوڈ نتائج کتنی جگہ لیتے ہیں۔ صاف کرنے سے تصاویر خود نہیں بدلتیں - وہ دوبارہ ڈی کوڈ ہوتی ہیں۔",
+            "保存的解码结果占用多少空间。清空不会更改图像本身 - 它们会重新解码。")
         Add("Удалить сохранённые результаты декодирования? Сами изображения не изменятся.",
             "Delete the saved decode results? The images themselves are not changed.",
             "Видалити збережені результати декодування? Самі зображення не зміняться.",
@@ -223,6 +223,249 @@ Partial Public NotInheritable Class Localization
             "মূল ফাইল স্থায়ীভাবে মুছে যায়, তাই প্রোগ্রাম ডিফল্টভাবে জিজ্ঞাসা করে।",
             "اصل فائل مستقل طور پر حذف ہوتی ہے، اس لیے پروگرام بطور طے شدہ پوچھتا ہے۔",
             "原文件会被永久删除，因此程序默认会先询问。")
+
+        ' --- the playback extras of ticket 119 ----------------------------------------
+        ' Status lines, the transport speed button and the A-B machine's answers.
+        Add("Скорость: {0}",
+            "Speed: {0}", "Швидкість: {0}", "Geschwindigkeit: {0}",
+            "Velocità: {0}", "Velocidad: {0}", "Vitesse : {0}",
+            "Velocidade: {0}", "السرعة: {0}", "गति: {0}",
+            "গতি: {0}", "رفتار: {0}", "速度：{0}")
+        Add("Скорость воспроизведения",
+            "Playback speed", "Швидкість відтворення", "Wiedergabegeschwindigkeit",
+            "Velocità di riproduzione", "Velocidad de reproducción", "Vitesse de lecture",
+            "Velocidade de reprodução", "سرعة التشغيل", "प्लेबैक गति",
+            "প্লেব্যাক গতি", "پلے بیک رفتار", "播放速度")
+        Add("Скорость недоступна для этого файла",
+            "This file does not support speed changes", "Швидкість недоступна для цього файлу", "Für diese Datei ist keine Geschwindigkeitsänderung möglich",
+            "Velocità non disponibile per questo file", "La velocidad no está disponible para este archivo", "Vitesse non disponible pour ce fichier",
+            "Velocidade indisponível para este ficheiro", "تغيير السرعة غير مدعوم لهذا الملف", "इस फ़ाइल के लिए गति उपलब्ध नहीं है",
+            "এই ফাইলের জন্য গতি পরিবর্তন সম্ভব নয়", "اس فائل کے لیے رفتار دستیاب نہیں", "此文件不支持调整速度")
+        Add("Обычная",
+            "Normal", "Звичайна", "Normal",
+            "Normale", "Normal", "Normale",
+            "Normal", "عادي", "सामान्य",
+            "স্বাভাবিক", "معمول", "正常")
+        Add("Перемотка: {0} с",
+            "Seek: {0} s", "Перемотка: {0} с", "Sprung: {0} s",
+            "Salto: {0} s", "Salto: {0} s", "Saut : {0} s",
+            "Salto: {0} s", "قفزة: {0} ث", "सीक: {0} से",
+            "সিক: {0} সে", "سیک: {0} سی", "跳转：{0} 秒")
+        Add("Нет воспроизводимого видео",
+            "No video is playing", "Немає відео, що відтворюється", "Es wird kein Video abgespielt",
+            "Nessun video in riproduzione", "No hay vídeo en reproducción", "Aucune vidéo en lecture",
+            "Nenhum vídeo em reprodução", "لا يوجد فيديو قيد التشغيل", "कोई वीडियो नहीं चल रहा है",
+            "কোনো ভিডিও চলছে না", "کوئی ویڈیو نہیں چل رہی", "没有正在播放的视频")
+        Add("Метка A: {0}",
+            "Mark A: {0}", "Мітка A: {0}", "Marke A: {0}",
+            "Punto A: {0}", "Marca A: {0}", "Marque A : {0}",
+            "Marca A: {0}", "العلامة A: {0}", "मार्क A: {0}",
+            "মার্ক A: {0}", "مارک A: {0}", "标记 A：{0}")
+        Add("Повтор A-B: {0} - {1}",
+            "A-B repeat: {0} - {1}", "Повтор A-B: {0} - {1}", "A-B-Wiederholung: {0} - {1}",
+            "Ripetizione A-B: {0} - {1}", "Repetición A-B: {0} - {1}", "Répétition A-B : {0} - {1}",
+            "Repetição A-B: {0} - {1}", "تكرار A-B: {0} - {1}", "A-B रिपीट: {0} - {1}",
+            "A-B রিপিট: {0} - {1}", "A-B ریپیٹ: {0} - {1}", "A-B 重复：{0} - {1}")
+        Add("Повтор A-B выключен",
+            "A-B repeat cleared", "Повтор A-B вимкнено", "A-B-Wiederholung ausgeschaltet",
+            "Ripetizione A-B disattivata", "Repetición A-B desactivada", "Répétition A-B désactivée",
+            "Repetição A-B desligada", "تم إيقاف تكرار A-B", "A-B रिपीट बंद",
+            "A-B রিপিট বন্ধ", "A-B ریپیٹ بند", "A-B 重复已关闭")
+        Add("Метка B слишком близко к A (нужна минимум 1 с)",
+            "Mark B is too close to A (1 s minimum)", "Мітка B надто близько до A (потрібна мінімум 1 с)", "Marke B ist zu nahe an A (mindestens 1 s)",
+            "Il punto B è troppo vicino ad A (minimo 1 s)", "La marca B está demasiado cerca de A (mínimo 1 s)", "La marque B est trop proche de A (1 s minimum)",
+            "A marca B está demasiado perto de A (mínimo 1 s)", "العلامة B قريبة جدًا من A (يلزم ثانية واحدة على الأقل)", "मार्क B, A के बहुत करीब है (न्यूनतम 1 से)",
+            "মার্ক B, A-এর খুব কাছে (কমপক্ষে 1 সেকেন্ড দরকার)", "مارک B، A کے بہت قریب ہے (کم از کم 1 سیکنڈ درکار)", "标记 B 距 A 过近（至少需要 1 秒）")
+        Add("Метка B слишком близко к концу",
+            "Mark B is too close to the end", "Мітка B надто близько до кінця", "Marke B ist zu nah am Ende",
+            "Il punto B è troppo vicino alla fine", "La marca B está demasiado cerca del final", "La marque B est trop proche de la fin",
+            "A marca B está demasiado perto do fim", "العلامة B قريبة جدًا من النهاية", "मार्क B अंत से बहुत करीब है",
+            "মার্ক B শেষের খুব কাছে", "مارک B اختتام کے بہت قریب ہے", "标记 B 距结尾过近")
+        Add("Повтор A-B требует файл с известной длиной",
+            "A-B repeat needs a file with a known length", "Повтор A-B потребує файл з відомою тривалістю", "A-B-Wiederholung benötigt eine Datei mit bekannter Länge",
+            "La ripetizione A-B richiede un file di durata nota", "La repetición A-B necesita un archivo de duración conocida", "La répétition A-B exige un fichier de durée connue",
+            "A repetição A-B precisa de um ficheiro com duração conhecida", "يتطلب تكرار A-B ملفًا بمدة معروفة", "A-B रिपीट को ज्ञात अवधि वाली फ़ाइल चाहिए",
+            "A-B রিপিটের জন্য পরিচিত দৈর্ঘ্যের ফাইল দরকার", "A-B ریپیٹ کو معلوم دورانیے کی فائل درکار ہے", "A-B 重复需要时长已知的文件")
+        Add("На паузе. Следующий кадр - ещё раз эту клавишу",
+            "Paused. Press again for the next frame", "На паузі. Наступний кадр - ще раз цю клавішу", "Angehalten. Für das nächste Bild dieselbe Taste erneut drücken",
+            "In pausa. Premere di nuovo per il fotogramma successivo", "En pausa. Pulse de nuevo para el fotograma siguiente", "En pause. Appuyez à nouveau pour l'image suivante",
+            "Em pausa. Prima outra vez para o fotograma seguinte", "متوقف مؤقتًا. اضغط المفتاح نفسه مرة أخرى للإطار التالي", "रुका हुआ। अगले फ़्रेम के लिए फिर से यही कुंजी दबाएँ",
+            "বিরত। পরের ফ্রেমের জন্য আবার একই কী চাপুন", "روکا ہوا۔ اگلے فریم کے لیے دوبارہ یہی کلید دبائیں", "已暂停。再按一次该键查看下一帧")
+        Add("Следующий кадр",
+            "Next frame", "Наступний кадр", "Nächstes Bild",
+            "Fotogramma successivo", "Fotograma siguiente", "Image suivante",
+            "Fotograma seguinte", "الإطار التالي", "अगला फ़्रेम",
+            "পরের ফ্রেম", "اگلا فریم", "下一帧")
+        Add("Следующий кадр (назад на кадр VLC не умеет)",
+            "Next frame (VLC cannot step back)", "Наступний кадр (назад на кадр VLC не вміє)", "Nächstes Bild (zurück kann VLC nicht)",
+            "Fotogramma successivo (VLC non può tornare indietro)", "Fotograma siguiente (VLC no sabe retroceder)", "Image suivante (VLC ne sait pas revenir en arrière)",
+            "Fotograma seguinte (o VLC não consegue recuar)", "الإطار التالي (لا يمكن لـ VLC التراجع إطارًا)", "अगला फ़्रेम (VLC पीछे नहीं जा सकता)",
+            "পরের ফ্রেম (VLC পিছনে যেতে পারে না)", "اگلا فریم (VLC پیچھے نہیں جا سکتا)", "下一帧（VLC 无法后退一帧）")
+        Add("Повтор A-B: отметить A",
+            "A-B repeat: mark A", "Повтор A-B: позначити A", "A-B-Wiederholung: A markieren",
+            "Ripetizione A-B: segna A", "Repetición A-B: marcar A", "Répétition A-B : marquer A",
+            "Repetição A-B: marcar A", "تكرار A-B: تحديد A", "A-B रिपीट: A चिह्नित करें",
+            "A-B রিপিট: A চিহ্নিত করুন", "A-B ریپیٹ: A نشان زد کریں", "A-B 重复：标记 A")
+        Add("Повтор A-B: отметить B",
+            "A-B repeat: mark B", "Повтор A-B: позначити B", "A-B-Wiederholung: B markieren",
+            "Ripetizione A-B: segna B", "Repetición A-B: marcar B", "Répétition A-B : marquer B",
+            "Repetição A-B: marcar B", "تكرار A-B: تحديد B", "A-B रिपीट: B चिह्नित करें",
+            "A-B রিপিট: B চিহ্নিত করুন", "A-B ریپیٹ: B نشان زد کریں", "A-B 重复：标记 B")
+        Add("Повтор A-B: сбросить",
+            "A-B repeat: clear", "Повтор A-B: скинути", "A-B-Wiederholung: zurücksetzen",
+            "Ripetizione A-B: azzera", "Repetición A-B: borrar", "Répétition A-B : effacer",
+            "Repetição A-B: limpar", "تكرار A-B: مسح", "A-B रिपीट: साफ़ करें",
+            "A-B রিপিট: মুছুন", "A-B ریپیٹ: صاف کریں", "A-B 重复：清除")
+
+        ' The hotkey catalogue captions of the eleven playback actions (119 §5.0.2) -
+        ' the shortcuts dialog shows them through Localization.T(action.Caption).
+        Add("Медленнее",
+            "Slower", "Повільніше", "Langsamer",
+            "Più lento", "Más lento", "Plus lent",
+            "Mais lento", "أبطأ", "धीमा",
+            "ধীর", "سست", "减速")
+        Add("Быстрее",
+            "Faster", "Швидше", "Schneller",
+            "Più veloce", "Más rápido", "Plus rapide",
+            "Mais rápido", "أسرع", "तेज़",
+            "দ্রুত", "تیز", "加速")
+        Add("Нормальная скорость",
+            "Normal speed", "Звичайна швидкість", "Normale Geschwindigkeit",
+            "Velocità normale", "Velocidad normal", "Vitesse normale",
+            "Velocidade normal", "السرعة العادية", "सामान्य गति",
+            "স্বাভাবিক গতি", "معمول رفتار", "正常速度")
+        Add("Назад на короткий шаг",
+            "Back one short step", "Назад на короткий крок", "Kurzer Rücksprung",
+            "Indietro di un passo breve", "Atrás un paso corto", "Recul d'un pas court",
+            "Recuar um passo curto", "خطوة قصيرة إلى الخلف", "एक छोटा कदम पीछे",
+            "একটি ছোট ধাপ পিছনে", "ایک مختصر قدم پیچھے", "后退一小步")
+        Add("Вперёд на короткий шаг",
+            "Forward one short step", "Вперед на короткий крок", "Kurzer Vorsprung",
+            "Avanti di un passo breve", "Adelante un paso corto", "Avance d'un pas court",
+            "Avançar um passo curto", "خطوة قصيرة إلى الأمام", "एक छोटा कदम आगे",
+            "একটি ছোট ধাপ সামনে", "ایک مختصر قدم آگے", "前进一小步")
+        Add("Назад на средний шаг",
+            "Back one medium step", "Назад на середній крок", "Mittlerer Rücksprung",
+            "Indietro di un passo medio", "Atrás un paso medio", "Recul d'un pas moyen",
+            "Recuar um passo médio", "خطوة متوسطة إلى الخلف", "एक मध्यम कदम पीछे",
+            "একটি মাঝারি ধাপ পিছনে", "درمیانہ قدم پیچھے", "后退中步")
+        Add("Вперёд на средний шаг",
+            "Forward one medium step", "Вперед на середній крок", "Mittlerer Vorsprung",
+            "Avanti di un passo medio", "Adelante un paso medio", "Avance d'un pas moyen",
+            "Avançar um passo médio", "خطوة متوسطة إلى الأمام", "एक मध्यम कदम आगे",
+            "একটি মাঝারি ধাপ সামনে", "درمیانہ قدم آگے", "前进中步")
+        Add("Назад на длинный шаг",
+            "Back one long step", "Назад на довгий крок", "Langer Rücksprung",
+            "Indietro di un passo lungo", "Atrás un paso largo", "Recul d'un pas long",
+            "Recuar um passo longo", "خطوة طويلة إلى الخلف", "एक लंबा कदम पीछे",
+            "একটি দীর্ঘ ধাপ পিছনে", "طویل قدم پیچھے", "后退一大步")
+        Add("Вперёд на длинный шаг",
+            "Forward one long step", "Вперед на довгий крок", "Langer Vorsprung",
+            "Avanti di un passo lungo", "Adelante un paso largo", "Avance d'un pas long",
+            "Avançar um passo longo", "خطوة طويلة إلى الأمام", "एक लंबा कदम आगे",
+            "একটি দীর্ঘ ধাপ সামনে", "طویل قدم آگے", "前进一大步")
+        Add("Повтор A-B",
+            "A-B repeat", "Повтор A-B", "A-B-Wiederholung",
+            "Ripetizione A-B", "Repetición A-B", "Répétition A-B",
+            "Repetição A-B", "تكرار A-B", "A-B रिपीट",
+            "A-B রিপিট", "A-B ریپیٹ", "A-B 重复")
+
+        ' --- ticket 123 Ф-3: the video basics and the rebindable track / copy keys ----------
+        ' Catalogue captions ("Пауза / продолжить" and "Звук вкл/выкл" already exist in the
+        ' tables of the click-on-video choices and the transport bar) ...
+        Add("Громче",
+            "Volume up", "Гучніше", "Lauter",
+            "Alza il volume", "Subir volumen", "Augmenter le volume",
+            "Aumentar o volume", "رفع الصوت", "आवाज़ बढ़ाएँ",
+            "আওয়াজ বাড়ান", "آواز بڑھائیں", "调高音量")
+        Add("Тише",
+            "Volume down", "Тихіше", "Leiser",
+            "Abbassa il volume", "Bajar volumen", "Baisser le volume",
+            "Diminuir o volume", "خفض الصوت", "आवाज़ घटाएँ",
+            "আওয়াজ কমান", "آواز کم کریں", "调低音量")
+        Add("Следующая звуковая дорожка",
+            "Next audio track", "Наступна звукова доріжка", "Nächste Tonspur",
+            "Traccia audio successiva", "Pista de audio siguiente", "Piste audio suivante",
+            "Faixa de áudio seguinte", "المسار الصوتي التالي", "अगला ऑडियो ट्रैक",
+            "পরবর্তী অডিও ট্র্যাক", "اگلا آڈیو ٹریک", "下一音轨")
+        Add("Следующие субтитры",
+            "Next subtitles", "Наступні субтитри", "Nächste Untertitel",
+            "Sottotitoli successivi", "Subtítulos siguientes", "Sous-titres suivants",
+            "Legendas seguintes", "الترجمة التالية", "अगले उपशीर्षक",
+            "পরবর্তী সাবটাইটেল", "اگلے سب ٹائٹل", "下一字幕")
+        Add("Копировать в папку {0}",
+            "Copy to folder {0}", "Копіювати до теки {0}", "In Ordner {0} kopieren",
+            "Copia nella cartella {0}", "Copiar a la carpeta {0}", "Copier vers le dossier {0}",
+            "Copiar para a pasta {0}", "النسخ إلى المجلد {0}", "फ़ोल्डर {0} में कॉपी करें",
+            "ফোল্ডার {0}-এ কপি করুন", "فولڈر {0} میں کاپی کریں", "复制到文件夹 {0}")
+        Add("Меню файла - ещё одна клавиша (Menu и Shift+F10 работают всегда)",
+            "File menu - an extra key (Menu and Shift+F10 always work)", "Меню файлу - ще одна клавіша (Menu і Shift+F10 працюють завжди)", "Dateimenü - zusätzliche Taste (Menütaste und Shift+F10 funktionieren immer)",
+            "Menu del file - un tasto aggiuntivo (Menu e Shift+F10 funzionano sempre)", "Menú del archivo - una tecla adicional (Menú y Shift+F10 funcionan siempre)", "Menu du fichier - une touche supplémentaire (Menu et Shift+F10 fonctionnent toujours)",
+            "Menu do ficheiro - uma tecla adicional (Menu e Shift+F10 funcionam sempre)", "قائمة الملف - مفتاح إضافي (مفتاح القائمة وShift+F10 يعملان دائمًا)", "फ़ाइल मेनू - एक अतिरिक्त कुंजी (Menu और Shift+F10 हमेशा काम करते हैं)",
+            "ফাইল মেনু - একটি অতিরিক্ত কী (Menu এবং Shift+F10 সবসময় কাজ করে)", "فائل مینو - ایک اضافی کلید (Menu اور Shift+F10 ہمیشہ کام کرتے ہیں)", "文件菜单 - 额外的按键（Menu 键和 Shift+F10 始终有效）")
+        Add("Режим клавиатуры панелей: стрелки и Tab - выбор, Enter - нажать, Esc - выйти",
+            "Panel keyboard mode: arrows and Tab choose, Enter presses, Esc leaves", "Режим клавіатури панелей: стрілки та Tab - вибір, Enter - натиснути, Esc - вийти", "Tastaturmodus der Leisten: Pfeile und Tab wählen, Enter drückt, Esc beendet",
+            "Modalità tastiera dei pannelli: frecce e Tab scelgono, Invio preme, Esc esce", "Modo de teclado de los paneles: flechas y Tab eligen, Intro pulsa, Esc sale", "Mode clavier des panneaux : flèches et Tab choisissent, Entrée active, Échap quitte",
+            "Modo de teclado dos painéis: setas e Tab escolhem, Enter prime, Esc sai", "وضع لوحة المفاتيح للّوحات: الأسهم وTab للاختيار وEnter للضغط وEsc للخروج", "पैनल कीबोर्ड मोड: तीर और Tab से चुनें, Enter से दबाएँ, Esc से बाहर निकलें",
+            "প্যানেল কীবোর্ড মোড: তীর ও Tab দিয়ে বাছুন, Enter চাপুন, Esc দিয়ে বেরোন", "پینل کی بورڈ موڈ: تیر اور Tab سے منتخب کریں، Enter دبائیں، Esc سے باہر نکلیں", "面板键盘模式：方向键和 Tab 选择，Enter 按下，Esc 退出")
+        ' ... and the status lines the mute and volume keys answer with.
+        Add("Звук выключен",
+            "Sound off", "Звук вимкнено", "Ton aus",
+            "Audio disattivato", "Sonido desactivado", "Son coupé",
+            "Som desativado", "الصوت مكتوم", "ध्वनि बंद",
+            "শব্দ বন্ধ", "آواز بند", "已静音")
+        Add("Звук включён",
+            "Sound on", "Звук увімкнено", "Ton ein",
+            "Audio attivato", "Sonido activado", "Son rétabli",
+            "Som ativado", "تم تشغيل الصوت", "ध्वनि चालू",
+            "শব্দ চালু", "آواز آن", "已取消静音")
+        Add("Громкость: {0} %",
+            "Volume: {0} %", "Гучність: {0} %", "Lautstärke: {0} %",
+            "Volume: {0} %", "Volumen: {0} %", "Volume : {0} %",
+            "Volume: {0} %", "مستوى الصوت: {0} %", "वॉल्यूम: {0} %",
+            "ভলিউম: {0} %", "والیوم: {0} %", "音量：{0} %")
+
+        ' --- ticket 121 section 7: the transport bar's "more" button, the clock, opening and buffering ----------
+        Add("Ещё",
+            "More", "Ще", "Mehr",
+            "Altro", "Más", "Plus",
+            "Mais", "المزيد", "और",
+            "আরও", "مزید", "更多")
+        Add("Скорость, дорожки, повтор и другие операции с файлом",
+            "Speed, tracks, repeat and other operations on the file", "Швидкість, доріжки, повтор та інші операції з файлом", "Geschwindigkeit, Spuren, Wiederholung und weitere Aktionen für die Datei",
+            "Velocità, tracce, ripetizione e altre operazioni sul file", "Velocidad, pistas, repetición y otras operaciones con el archivo", "Vitesse, pistes, répétition et autres opérations sur le fichier",
+            "Velocidade, faixas, repetição e outras operações com o ficheiro", "السرعة والمسارات والتكرار وعمليات أخرى على الملف", "गति, ट्रैक, दोहराव और फ़ाइल पर अन्य कार्य",
+            "গতি, ট্র্যাক, পুনরাবৃত্তি এবং ফাইলের অন্যান্য কাজ", "رفتار، ٹریک، تکرار اور فائل پر دیگر کام", "速度、音轨、重复及对文件的其他操作")
+        Add("Нажмите, чтобы показать оставшееся время",
+            "Click to show the remaining time", "Натисніть, щоб показати час, що залишився", "Klicken, um die Restzeit anzuzeigen",
+            "Fai clic per mostrare il tempo rimanente", "Haga clic para mostrar el tiempo restante", "Cliquez pour afficher le temps restant",
+            "Clique para mostrar o tempo restante", "انقر لإظهار الوقت المتبقي", "शेष समय दिखाने के लिए क्लिक करें",
+            "অবশিষ্ট সময় দেখাতে ক্লিক করুন", "باقی وقت دکھانے کے لیے کلک کریں", "点击显示剩余时间")
+        Add("Время",
+            "Time", "Час", "Zeit",
+            "Tempo", "Tiempo", "Durée",
+            "Tempo", "الوقت", "समय",
+            "সময়", "وقت", "时间")
+        Add("Открываю: {0}..",
+            "Opening: {0}..", "Відкриваю: {0}..", "Öffne: {0}..",
+            "Apertura: {0}..", "Abriendo: {0}..", "Ouverture : {0}..",
+            "A abrir: {0}..", "جارٍ فتح: {0}..", "खोल रहे हैं: {0}..",
+            "খোলা হচ্ছে: {0}..", "کھول رہے ہیں: {0}..", "正在打开：{0}..")
+        Add("Буферизация: {0} %",
+            "Buffering: {0} %", "Буферизація: {0} %", "Pufferung: {0} %",
+            "Buffering: {0} %", "Almacenando en búfer: {0} %", "Mise en mémoire tampon : {0} %",
+            "A armazenar em buffer: {0} %", "جارٍ التخزين المؤقت: {0} %", "बफ़र हो रहा है: {0} %",
+            "বাফার হচ্ছে: {0} %", "بفرنگ: {0} %", "正在缓冲：{0} %")
+        Add("Воспроизводится: {0}",
+            "Playing: {0}", "Відтворюється: {0}", "Wiedergabe: {0}",
+            "In riproduzione: {0}", "Reproduciendo: {0}", "Lecture : {0}",
+            "A reproduzir: {0}", "قيد التشغيل: {0}", "चल रहा है: {0}",
+            "চলছে: {0}", "چل رہا ہے: {0}", "正在播放：{0}")
+        Add("Готово, на паузе: {0}",
+            "Ready, paused: {0}", "Готово, на паузі: {0}", "Bereit, pausiert: {0}",
+            "Pronto, in pausa: {0}", "Listo, en pausa: {0}", "Prêt, en pause : {0}",
+            "Pronto, em pausa: {0}", "جاهز، متوقف مؤقتاً: {0}", "तैयार, रुका हुआ: {0}",
+            "প্রস্তুত, বিরতিতে: {0}", "تیار، رکا ہوا: {0}", "已就绪，已暂停：{0}")
 
     End Sub
 

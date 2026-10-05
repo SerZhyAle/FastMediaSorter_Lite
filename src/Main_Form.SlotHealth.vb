@@ -41,6 +41,11 @@ Partial Public Class Main_Form
     ''' another probe, forever).</summary>
     Private slot_Health_Reentry As Boolean
 
+    ''' <summary>The press that is being gated was a CLICK on the recipients overlay, not a key (125 UX-332): the
+    ''' refusal then says "click again", not "press the key again" to someone who never pressed a key. Set by the
+    ''' overlay's click handlers around the one call they make; read once, at the top of the gate.</summary>
+    Private slot_Press_By_Pointer As Boolean
+
     ''' <summary>Raised whenever a verdict lands, so the surfaces that only ever read the
     ''' CACHE - the recipients overlay and the settings grid - can restate themselves without
     ''' polling and without probing.</summary>
@@ -90,6 +95,7 @@ Partial Public Class Main_Form
         Dim destination As String = Hardkeys_to_move_mediafile(slot)
         If String.IsNullOrWhiteSpace(destination) Then Return False
         Dim slot_Key As String = SlotKeyCaption(slot)
+        Dim by_Pointer As Boolean = slot_Press_By_Pointer
 
         ' A slot that names a saved resource (007 §4.2): everything that needs a person - the
         ' password, a sentence about a server nobody has verified - happens HERE, on this thread,
@@ -111,7 +117,7 @@ Partial Public Class Main_Form
 
         Dim verdict As SlotVerdict = CachedSlotVerdict(destination)
         If SlotHealthPolicy.ShouldProbe(now_Utc, verdict, repeat_Press) Then
-            BeginSlotProbe(destination, slot, action, batchRetry)
+            BeginSlotProbe(destination, slot, action, batchRetry, by_Pointer)
             Return False
         End If
 
@@ -120,7 +126,7 @@ Partial Public Class Main_Form
             Return True
         End If
 
-        lbl_Status.Text = SlotHealthText(slot_Key, verdict.State)
+        lbl_Status.Text = SlotHealthText(slot_Key, verdict.State, by_Pointer)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1684: slot " & slot_Key & " refused: " &
                         verdict.State.ToString() & " (" & verdict.Detail & ")")
         Return False
@@ -136,7 +142,7 @@ Partial Public Class Main_Form
     ''' "file on screen changed" guard does not apply - a batch is about the files it was
     ''' given, not about whatever is displayed.</param>
     Private Sub BeginSlotProbe(destination As String, slot As Integer, action As RecipientActionKind,
-                               Optional batchRetry As Action = Nothing)
+                               Optional batchRetry As Action = Nothing, Optional by_Pointer As Boolean = False)
         Dim key As String = destination.Trim()
 
         SyncLock slot_Verdicts
@@ -181,7 +187,9 @@ Partial Public Class Main_Form
                               ' next press into an instant, cached move of the RIGHT file.
                               Dim answer As SlotVerdict = CachedSlotVerdict(destination)
                               If answer IsNot Nothing AndAlso Not SlotHealthPolicy.IsUsable(answer.State) Then
-                                  lbl_Status.Text = SlotHealthText(SlotKeyCaption(slot), answer.State)
+                                  lbl_Status.Text = SlotHealthText(SlotKeyCaption(slot), answer.State, by_Pointer)
+                              ElseIf by_Pointer Then
+                                  lbl_Status.Text = Localization.TF("каталог {0} доступен - нажмите ещё раз", SlotKeyCaption(slot))
                               Else
                                   lbl_Status.Text = Localization.TF("каталог {0} доступен - нажмите клавишу ещё раз", SlotKeyCaption(slot))
                               End If
@@ -411,7 +419,7 @@ Partial Public Class Main_Form
     ''' <summary>The refusal, naming the slot AND the reason (§3.4). The retry hint rides on
     ''' the unreachable case only - it is the one state where pressing again is the right
     ''' thing to do, because it is the one that a woken NAS changes.</summary>
-    Private Shared Function SlotHealthText(slot_Key As String, state As SlotState) As String
+    Private Shared Function SlotHealthText(slot_Key As String, state As SlotState, Optional fromPointer As Boolean = False) As String
         Select Case state
             Case SlotState.Missing
                 Return Localization.TF("! Каталог {0} не найден", slot_Key)
@@ -422,6 +430,7 @@ Partial Public Class Main_Form
             Case SlotState.NotConfigured
                 Return Localization.TF("! Каталог {0} не задан", slot_Key)
             Case Else
+                If fromPointer Then Return Localization.TF("! Каталог {0}: нет связи с папкой. Нажмите ещё раз, чтобы повторить проверку.", slot_Key)
                 Return Localization.TF("! Каталог {0}: нет связи с папкой. Нажмите клавишу ещё раз, чтобы повторить проверку.", slot_Key)
         End Select
     End Function
@@ -584,7 +593,7 @@ Partial Public Class Main_Form
     Private Function AskSlotCredential(slots As RemoteSlotConnections, descriptor As ResourceDescriptor) As Boolean
         Dim retry As Boolean = slots.WasRefused(descriptor.Id)
         Using dialog As New Resource_Credential_Form(descriptor.DisplayName, descriptor.UserName, retry)
-            If dialog.ShowDialog(Me) <> DialogResult.OK Then Return False
+            If DialogLayer.ShowViewerDialog(dialog, Me) <> DialogResult.OK Then Return False
             slots.RememberCredential(descriptor.Id, dialog.Credential)
             ' The resource itself opens without asking again this run, as it would after its own prompt.
             resource_Session_Passwords(descriptor.Id) = dialog.Credential

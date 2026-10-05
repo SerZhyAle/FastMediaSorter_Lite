@@ -143,6 +143,7 @@ Partial Public Class Main_Form
         ' The carrier must exist before the rows are built: a Nothing carrier is skipped by
         ' BuildChromeRow, which would drop the button for the whole session (ticket 118 13.3).
         EnsureResourceButton()
+        EnsureImageMenuButton()
         If chrome_Panels.Count = 0 Then BuildChromePanels()
         ChromeConfigure()
         chrome_Last_Tick = chrome_Clock.ElapsedMilliseconds
@@ -153,11 +154,18 @@ Partial Public Class Main_Form
     Private Sub BuildChromePanels()
         AddHandler chrome_Timer.Tick, AddressOf Chrome_Timer_Tick
         AddHandler ChromeMenu.FocusKeyConsumed, AddressOf ChromePopupFocusKeyConsumed
+        ' The language button is not on the panel: the settings window is the one surface that
+        ' offers the 13 languages on this build (120, AddUiLanguageRow) and the row needs the room.
         BuildChromeRow("chrome_Row1", New Control() {
             chkbox_Top_Most, cmbox_Sort, cmbox_Media_Folder, btn_choose_file, btn_Select_Folder, btn_Resource,
-            btn_Review, btn_Panel, btn_Full_Screen, lbl_Slideshow_Time, btn_Language, lbl_Info})
+            btn_Review, btn_Panel, btn_Full_Screen, lbl_Slideshow_Time, lbl_Info, btn_Move_Table})
+        ' The settings button lives on row 1, after "i": the row reads folder first, file
+        ' second, window-level commands last. toolbar_Row2_Items itself stays as the shared
+        ' net48 toolbar order, so only this build's copy drops the button.
         Dim row2 As New List(Of Control)(toolbar_Row2_Items)
+        row2.RemoveAll(Function(carrier) carrier Is btn_Move_Table)
         If btn_ToVideo IsNot Nothing AndAlso Not row2.Contains(btn_ToVideo) Then row2.Add(btn_ToVideo)
+        row2.Add(btn_Image_Menu)
         BuildChromeRow("chrome_Row2", row2)
         BuildChromeRow("chrome_Status", New Control() {lbl_Current_File, lbl_Status})
         TrackChromeGeometry()
@@ -167,20 +175,32 @@ Partial Public Class Main_Form
         Dim panel As New ChromePanel(name)
         chrome_Panels.Add(panel)
         panel.Host.Owner = Me
+        ' A panel is a window of its own and a drop target only where it registers as one: a file dropped over
+        ' a panel showed the no-drop cursor while the picture under it took it (124 UX-212). The host and the
+        ' surface that fills it both take the same handlers as the picture.
+        AdmitLowerIntegrityMessages(panel.Host)
+        For Each target As Control In New Control() {panel.Host, panel.Host.Surface}
+            target.AllowDrop = True
+            AddHandler target.DragEnter, AddressOf Form1_DragEnter
+            AddHandler target.DragDrop, AddressOf Form1_DragDrop
+        Next
         Dim items As New List(Of ChromeItem)()
         For Each carrier As Control In controls
             If carrier Is Nothing Then Continue For
             Dim kind As ChromeItemKind = ChromeItemKind.Button
             If TypeOf carrier Is Label AndAlso carrier IsNot lbl_Info Then kind = ChromeItemKind.Text
             If carrier Is chkbox_Top_Most OrElse carrier Is btn_Slideshow Then kind = ChromeItemKind.Toggle
-            If carrier Is cmbox_Sort OrElse carrier Is btn_Language OrElse carrier Is btn_RecentFiles OrElse carrier Is btn_Resource Then kind = ChromeItemKind.MenuButton
+            If carrier Is cmbox_Sort OrElse carrier Is btn_RecentFiles OrElse carrier Is btn_Resource Then kind = ChromeItemKind.MenuButton
             Dim item As New ChromeItem(carrier.Name, kind) With {
-                .Destructive = carrier Is bt_Delete,
+                .Destructive = carrier Is bt_Delete OrElse carrier Is btn_ToVideo,
                 .ShowCaptionWithGlyph = carrier Is btn_Prev_File OrElse carrier Is btn_Next_File OrElse carrier Is bt_Delete,
                 .MirrorInRtl = carrier Is btn_Prev_File OrElse carrier Is btn_Next_File}
             Dim meaning As IconMeaning = IconMap.GetMeaning(carrier.Name)
             If meaning IsNot Nothing Then item.GlyphId = meaning.GlyphId
             If carrier Is btn_Move_Table Then item.GlyphId = "app.settings"
+            ' "On top" was a bare check box that meant something only in its tooltip; the catalogue has no glyph for
+            ' it yet, so the surface paints one from lines (125 UX-311).
+            If carrier Is chkbox_Top_Most Then item.CustomGlyph = ChromeCustomGlyph.OnTop
             If carrier Is lbl_Info Then item.Caption = "i" : item.CaptionIsSymbol = True
             Dim source As Control = carrier
             item.Action = Sub() InvokeOnClick(source, EventArgs.Empty)
@@ -195,12 +215,17 @@ Partial Public Class Main_Form
             If carrier Is lbl_Current_File OrElse carrier Is lbl_Status Then
                 item.PreferredWidth = ChromeMetrics.PathWidth
                 item.MinimumWidth = ChromeMetrics.PathMinWidth
-                item.Kind = ChromeItemKind.Button
-                item.Action = Sub() CopyFilePathToClipboard()
-                If carrier Is lbl_Current_File Then item.AlignLeft = True
+                If carrier Is lbl_Current_File Then
+                    item.Kind = ChromeItemKind.Button
+                    item.Action = Sub() CopyFilePathToClipboard()
+                    item.AlignLeft = True
+                Else
+                    ' The status line is a readout. A click on it used to copy the FILE's path - a command its
+                    ' tooltip never announced and its words had nothing to do with (125 UX-313c).
+                    item.Kind = ChromeItemKind.Text
+                End If
             End If
             If carrier Is cmbox_Sort Then item.Action = Sub() ChromeShowSort(item)
-            If carrier Is btn_Language Then item.Action = Sub() ChromeShowLanguages(item)
             If carrier Is btn_RecentFiles Then item.Action = Sub() ChromeShowRecentFiles(item)
             If carrier Is btn_Resource Then item.Action = Sub() ChromeShowResourceMenu(item)
             If carrier Is btn_choose_file Then item.SecondaryAction = Sub() ShowOpenUrlPrompt()
@@ -243,6 +268,10 @@ Partial Public Class Main_Form
         panel.Host.Surface.StatusLayout = name = "chrome_Status"
         panel.Host.Surface.SetItems(items)
         AddHandler panel.Host.Surface.ItemInvoked, AddressOf Chrome_ItemInvoked
+        ' A panel floats over the picture: the wheel over it still pages the files (or zooms), as it does over the
+        ' picture beside it, instead of going nowhere (125 UX-313a). The middle click is NOT forwarded: it is a
+        ' gesture of the media surface, and on a button it has no meaning to borrow.
+        AddHandler panel.Host.Surface.MouseWheel, Sub(sender, args) MouseUse(args)
         AddHandler panel.Host.Surface.LayoutChanged, Sub() ChromePlacePath()
         AddHandler panel.Host.Surface.OverflowRequested, Sub(sender, args) ChromeShowOverflow(panel)
     End Sub
@@ -287,7 +316,9 @@ Partial Public Class Main_Form
                 Exit For
             End If
         Next
-        ChromeMenu.ShowPopup(Me, location, entries, chrome_Theme, ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font)
+        ' The ring on the first row only when the keyboard (the F10 ring) opened it (125 UX-313j).
+        ChromeMenu.ShowPopup(Me, location, entries, chrome_Theme, ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font,
+                             focusFirstRow:=chrome_Keyboard_Mode)
     End Sub
 
     Private Sub ChromeShowSort(item As ChromeItem)
@@ -295,11 +326,21 @@ Partial Public Class Main_Form
         For index As Integer = 0 To cmbox_Sort.Items.Count - 1
             Dim selected As Integer = index
             entries.Add(New ChromeMenuItem("sort_" & index.ToString()) With {
-                .Caption = cmbox_Sort.Items(index).ToString(), .Checked = index = cmbox_Sort.SelectedIndex,
+                .Caption = SortDisplayText(index), .Checked = index = cmbox_Sort.SelectedIndex,
                 .Action = Sub() ChromeApplySort(selected)})
         Next
         ChromeShowMenu(item, entries)
     End Sub
+
+    ''' <summary>The sort order in words with its direction - "Имя ↑", "Размер ↓", "Случайно" - in the UI language
+    ''' (125 UX-304). The combo keeps its codes ("abc", ">size"): the stored index and the sort itself read them.</summary>
+    Private Function SortDisplayText(index As Integer) As String
+        Dim arrow As Char
+        Dim key As String = ChromeMenuRules.SortOrderLabel(index, arrow)
+        If key.Length = 0 Then Return If(index >= 0 AndAlso index < cmbox_Sort.Items.Count, cmbox_Sort.Items(index).ToString(), "")
+        Dim words As String = Localization.T(key)
+        Return If(arrow = ChrW(0), words, words & " " & arrow)
+    End Function
 
     Private Sub ChromeApplySort(index As Integer)
         ' This is an explicit command, including choosing the current order again.
@@ -315,17 +356,6 @@ Partial Public Class Main_Form
         If Not String.IsNullOrEmpty(Current_Folder_Path) Then ReadShowMediaFile(Mode_FolderAndFile)
     End Sub
 
-    Private Sub ChromeShowLanguages(item As ChromeItem)
-        Dim entries As New List(Of ChromeMenuItem)()
-        For index As Integer = 0 To Localization.Codes.Length - 1
-            Dim code As String = Localization.Codes(index)
-            entries.Add(New ChromeMenuItem("language_" & code) With {
-                .Caption = Localization.Names(index),
-                .Checked = code = Localization.CurrentCode, .Action = Sub() SetUiLanguage(code)})
-        Next
-        ChromeShowMenu(item, entries)
-    End Sub
-
     Private Sub ChromeShowRecentFiles(item As ChromeItem)
         Dim entries As New List(Of ChromeMenuItem)()
         If recent_Media_File_List IsNot Nothing Then
@@ -338,18 +368,19 @@ Partial Public Class Main_Form
         ChromeShowMenu(item, entries)
     End Sub
 
+    ''' <summary>The folder box's right-click menu. ONE list (125 UX-327): the same rows the native menu of
+    ''' <c>Main_Form.FolderMenu.vb</c> holds - words, tooltips, which are visible - so the painted menu can no longer
+    ''' lose "Транслировать эту папку..", the stream catalog or the tooltip of the file row. Only the resources row
+    ''' is swapped for the shared builder's entries (ticket 118 Q118-7: the same ones the «Ресурс» button shows,
+    ''' minus the never-opened resources the folder menu's recent rule keeps out, Q118-14).</summary>
     Private Sub ChromeShowFolderMenu(item As ChromeItem)
-        Dim entries As New List(Of ChromeMenuItem) From {
-            New ChromeMenuItem("folder_select") With {.Caption = folder_Menu_Select_Item.Text, .Action = Sub() SelectFolderViaDialog()},
-            New ChromeMenuItem("file_select") With {.Caption = folder_Menu_File_Item.Text, .Action = Sub() Choose_file()},
-            New ChromeMenuItem("archive_open") With {.Caption = folder_Menu_Open_Archive_Item.Text, .Action = Sub() OpenArchiveViaDialog()}}
-        If IsArchiveMode() Then entries.Add(New ChromeMenuItem("archive_close") With {.Caption = folder_Menu_Close_Archive_Item.Text, .Action = Sub() CloseArchiveAndReturn()})
-        If Not IsArchiveMode() AndAlso Not IsArchiveOpenPending() Then
-            ' The shared builder (ticket 118 Q118-7): the same entries the «Ресурс» button shows,
-            ' minus the never-opened resources the folder menu's recent rule keeps out (Q118-14).
-            entries.AddRange(BuildResourceMenuEntries(includeNeverUsed:=False))
+        ApplyFolderMenuVisibility()
+        Dim entries As List(Of ChromeMenuItem) = BuildChromeMenuEntries(folder_Context_Menu.Items)
+        Dim resourcesAt As Integer = entries.FindIndex(Function(entry) entry.Id = "folder_resources")
+        If resourcesAt >= 0 Then
+            entries.RemoveAt(resourcesAt)
+            entries.InsertRange(resourcesAt, BuildResourceMenuEntries(includeNeverUsed:=False))
         End If
-        If Not IsArchiveMode() AndAlso Not IsArchiveOpenPending() Then entries.Add(New ChromeMenuItem("folder_share") With {.Caption = folder_Menu_Share_Item.Text, .Action = Sub() ActivateShareEntryPoint()})
         ChromeShowMenu(item, entries)
     End Sub
 
@@ -363,20 +394,35 @@ Partial Public Class Main_Form
     Private Sub ChromeShowOverflow(panel As ChromePanel)
         Dim entries As New List(Of ChromeMenuItem)()
         For Each item In panel.Host.Surface.OverflowItems
+            ' A counter or a zoom label does nothing when pressed; it has no row in a menu (125 UX-310).
+            If Not ChromeMenuRules.OverflowEntryIsActionable(item.Kind) Then Continue For
             Dim source As ChromeItem = item
             entries.Add(New ChromeMenuItem(item.Id) With {.Caption = If(item.AccessibleName.Length > 0, item.AccessibleName, item.Caption),
                 .Enabled = item.Enabled, .Checked = item.Checked, .Destructive = item.Destructive,
                 .Action = Sub() source.Action?.Invoke()})
         Next
-        ChromeMenu.ShowPopup(Me, panel.Host.PointToScreen(New Point(0, panel.Host.Height)), entries,
-                             chrome_Theme, ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font)
+        ' Under the » button itself, like every other menu button - not at the panel's start edge.
+        Dim button As ChromeItem = panel.Host.Surface.Items.FirstOrDefault(Function(candidate) candidate.Id = panel.Host.Surface.OverflowId)
+        If button IsNot Nothing Then
+            ChromeShowMenu(button, entries)
+        Else
+            ChromeMenu.ShowPopup(Me, panel.Host.PointToScreen(New Point(0, panel.Host.Height)), entries,
+                                 chrome_Theme, ChromeScale(), Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font,
+                                 focusFirstRow:=chrome_Keyboard_Mode)
+        End If
     End Sub
 
     Private Sub TrackChromeGeometry()
         If chrome_Tracking Then Return
         chrome_Tracking = True
-        AddHandler Me.LocationChanged, Sub() PlaceChromePanels()
-        AddHandler Me.SizeChanged, Sub() PlaceChromePanels()
+        AddHandler Me.LocationChanged, Sub()
+                                          PlaceChromePanels()
+                                          MarkSettingsDirty()
+                                      End Sub
+        AddHandler Me.SizeChanged, Sub()
+                                      PlaceChromePanels()
+                                      MarkSettingsDirty()
+                                  End Sub
         AddHandler Me.Deactivate, Sub() ChromeLeaveKeyboardMode()
         AddHandler Me.DpiChanged, Sub() ChromeHandleDpiChanged()
         AddHandler panel_Media.SizeChanged, Sub()
@@ -428,7 +474,7 @@ Partial Public Class Main_Form
     ''' small / medium / large are fixed multipliers, adaptive follows the media width in logical px.</summary>
     Private Function ChromeScale() As Single
         Dim percent As Integer = If(modern_Preferences Is Nothing, 0, modern_Preferences.InterfaceScalePercent)
-        Dim factor As Single = UiScale.Factor(percent, Me.DeviceDpi)
+        Dim factor As Single = If(modern_Preferences Is Nothing, UiScale.Factor(0, Me.DeviceDpi), modern_Preferences.InterfaceFactor(Me.DeviceDpi))
         If modern_Preferences Is Nothing Then Return factor
         Dim logicalWidth As Single = 0.0F
         If panel_Media IsNot Nothing Then logicalWidth = panel_Media.ClientSize.Width / (Math.Max(1, Me.DeviceDpi) / CSng(UiScale.BaselineDpi))
@@ -501,6 +547,9 @@ Partial Public Class Main_Form
             p.Host.BackColor = chrome_Theme.PanelFill
             ' The panel's fill is as translucent as the user chose; its glyphs and captions are not.
             p.Host.UseInkLayer = Not chrome_High_Contrast AndAlso chrome_Theme.PanelOpacity < 0.999R
+            ' A panel's window has a name a screen reader can say (125 UX-313g); it was an untitled window.
+            p.Host.Text = ChromePanelTitle(p.Name)
+            p.Host.AccessibleName = p.Host.Text
             p.Host.SetCornerRadius(UiScale.Px(ChromeCorner(), factor))
             p.Host.Surface.Configure(chrome_Theme, factor, Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font)
             p.Host.Surface.SetAnimationEnabled(Not ReduceMotionActive())
@@ -519,6 +568,14 @@ Partial Public Class Main_Form
         If previousTextFont IsNot Nothing Then previousTextFont.Dispose()
         If previousSymbolFont IsNot Nothing Then previousSymbolFont.Dispose()
     End Sub
+
+    Private Shared Function ChromePanelTitle(panelName As String) As String
+        Select Case panelName
+            Case "chrome_Row1" : Return Localization.T("Панель инструментов, строка 1")
+            Case "chrome_Row2" : Return Localization.T("Панель инструментов, строка 2")
+            Case Else : Return Localization.T("Строка состояния")
+        End Select
+    End Function
 
     ''' <summary>The colour scheme changed (RecolorChrome calls this): the panels follow the picture the
     ''' way the docked toolbar does.</summary>
@@ -545,18 +602,28 @@ Partial Public Class Main_Form
     Private Sub ConfigureFloatingMediaChrome()
         If video_Chrome_Host IsNot Nothing Then
             Dim factor As Single = ChromeScale()
+            ' Every part's size and place is TransportRules.ArrangeRow's (through LayoutVideoControlsRow, run by
+            ' PositionVideoControls below) - the speed and the "more" buttons included (121 UX-406); only the bar's own
+            ' height is set here, from the scale, and the measured widths are forgotten so they are taken again.
             video_Controls.Height = UiScale.Px(ChromeMetrics.TransportHeight, factor)
-            btn_Video_Play.Size = New Size(UiScale.Px(ChromeMetrics.TransportButtonWidth, factor), video_Controls.Height)
-            btn_Video_Mute.Size = btn_Video_Play.Size
-            video_Seek.Height = UiScale.Px(ChromeMetrics.TransportSliderHeight, factor)
-            video_Volume.Size = New Size(UiScale.Px(ChromeMetrics.TransportVolumeWidth, factor), video_Seek.Height)
-            lbl_Video_Time.Size = New Size(UiScale.Px(ChromeMetrics.TransportTimeWidth, factor), video_Controls.Height)
-            If Not Object.ReferenceEquals(lbl_Video_Time.Font, chrome_Text_Font) Then
-                lbl_Video_Time.Font = Nothing
-                lbl_Video_Time.Font = chrome_Text_Font
-            End If
-            video_Seek.FillColor = chrome_Theme.Accent
-            video_Volume.FillColor = chrome_Theme.Accent
+            video_Speed_Width = 0
+            video_Clock_Width = 0
+            For Each text_Part As Control In New Control() {lbl_Video_Time, lbl_Video_Ab, video_Seek, video_Volume}
+                If Not Object.ReferenceEquals(text_Part.Font, chrome_Text_Font) Then
+                    text_Part.Font = Nothing
+                    text_Part.Font = chrome_Text_Font
+                End If
+            Next
+            btn_Video_Speed.RowFont = chrome_Text_Font
+            ' The sliders and the A-B chip paint from the theme: the scheme, high contrast and the opacity setting reach
+            ' the bar through the same ChromeTheme as the panels (121 UX-403).
+            For Each slider As FlatSlider In New FlatSlider() {video_Seek, video_Volume}
+                slider.FillColor = chrome_Theme.Accent
+                slider.TrackColor = ChromeTheme.Blend(chrome_Theme.PanelFill, chrome_Theme.Foreground, 0.28F)
+                slider.ThumbColor = chrome_Theme.Foreground
+            Next
+            lbl_Video_Ab.ChipColor = chrome_Theme.Accent
+            If video_Ring_Control IsNot Nothing Then SetBarRing(video_Ring_Control, True)
             video_Chrome_Host.BackColor = chrome_Theme.PanelFill
             ' The transport is made of real controls, which have no ink layer to keep them legible: its
             ' window never goes below the old 40 % floor, even though the other panels may reach 0.
@@ -564,7 +631,7 @@ Partial Public Class Main_Form
             video_Chrome_Host.SetCornerRadius(UiScale.Px(ChromeCorner(), ChromeScale()))
             For Each control As Control In video_Controls.Controls
                 control.BackColor = chrome_Theme.PanelFill
-                control.ForeColor = chrome_Theme.Foreground
+                control.ForeColor = If(control Is lbl_Video_Ab, chrome_Theme.AccentForeground, chrome_Theme.Foreground)
                 Dim button As Button = TryCast(control, Button)
                 If button IsNot Nothing Then
                     button.FlatAppearance.MouseOverBackColor = chrome_Theme.ItemHover
@@ -608,16 +675,23 @@ Partial Public Class Main_Form
         Dim caption As String = item.Caption
         Dim visible As Boolean = True
         If TypeOf carrier Is Label Then
-            caption = If(carrier Is lbl_Info, "i", carrier.Text)
+            caption = If(carrier Is lbl_Info, "i", If(carrier Is lbl_Status, StatusMessage.Text, carrier.Text))
             If carrier Is lbl_Zoom Then visible = caption.Length > 0
             If carrier Is lbl_Slideshow_Time Then visible = Is_slide_show_mode AndAlso caption.Length > 0
         ElseIf carrier Is cmbox_Sort Then
-            caption = cmbox_Sort.Text
+            caption = SortDisplayText(cmbox_Sort.SelectedIndex)
             item.GlyphId = ""
+        ElseIf carrier Is btn_ToVideo Then
+            ' The carrier's own text is a private-use code point of an icon font - a box in the panel's font.
+            caption = Localization.T("В видео")
         ElseIf carrier Is btn_choose_file Then
             caption = Localization.T("Выбрать файл..")
         ElseIf carrier Is btn_Select_Folder Then
             caption = Localization.T("Выбрать папку..")
+        ElseIf carrier Is btn_Image_Menu Then
+            caption = Localization.T("Меню текущего файла")
+            visible = Not is_Vlc_Playing AndAlso (is_PictureBox1_Visible OrElse is_PictureBox2_Visible) AndAlso
+                      Not String.IsNullOrEmpty(Current_File_Name)
         ElseIf carrier Is btn_Prev_File OrElse carrier Is btn_Next_File OrElse carrier Is bt_Delete Then
             caption = Localization.T(IconMap.GetMeaning(carrier.Name).LocalizationKey)
         ElseIf TypeOf carrier Is Button AndAlso item.GlyphId.Length = 0 AndAlso carrier IsNot btn_Random_Slideshow Then
@@ -636,16 +710,42 @@ Partial Public Class Main_Form
         Dim meaning As IconMeaning = IconMap.GetMeaning(carrier.Name)
         If name.Length = 0 AndAlso meaning IsNot Nothing Then name = Localization.T(meaning.LocalizationKey)
         tip = If(tip.Length = 0, If(name.Length > 0, name, caption), tip)
-        If carrier Is lbl_Status Then tip = carrier.Text
+        Dim tone As NotifyLevel = NotifyLevel.Info
+        If carrier Is lbl_Status Then
+            ' The words without the legacy "!" and the level that prefix stood for (124 UX-206): the panel writes the
+            ' text in the level's colour, and a screen reader says the level in words instead of "exclamation".
+            Dim status As NotifyMessage = StatusMessage
+            tone = status.Level
+            tip = status.Text
+            If tone <> NotifyLevel.Info AndAlso status.Text.Length > 0 Then
+                name = Localization.TF("{0}: {1}", Localization.T(If(tone = NotifyLevel.Error, "Ошибка", "Внимание")), status.Text)
+            End If
+        End If
+        ' The name is cut with an ellipsis in the panel; its tooltip is where it shows in full.
+        If carrier Is lbl_Current_File AndAlso carrier.Text.Length > 0 Then tip = carrier.Text & vbLf & tip
         If carrier Is lbl_Info Then tip = Localization.T("О файле")
+        If carrier Is btn_Image_Menu Then
+            name = Localization.T("Меню текущего файла")
+            tip = name & " (Menu, Shift+F10)"
+        End If
+        ' The folder box has a menu on the right button that nothing on screen announced (125 UX-306).
+        If carrier Is cmbox_Media_Folder Then tip &= vbLf & Localization.T("Правая кнопка - меню: папка, файл, архив, ресурсы, раздача")
+        If carrier Is cmbox_Sort Then tip = Localization.TF("Порядок сортировки файлов: {0}", caption)
+        If carrier Is btn_ToVideo Then name = Localization.T("Анимацию - в видео")
+        ' A counter or a zoom value keeps its slot while its text changes length (125 UX-313b).
+        If carrier Is lbl_File_Number Then item.ReservedText = Localization.TF("{0} из {1}", 9999, 9999)
+        If carrier Is lbl_Zoom Then item.ReservedText = "1600 %"
+        If carrier Is lbl_Slideshow_Time Then item.ReservedText = "99.9s"
         Dim changed As Boolean = previousGlyph <> item.GlyphId OrElse item.Caption <> caption OrElse item.Visible <> visible OrElse
-            item.Checked <> checked OrElse item.Enabled <> carrier.Enabled OrElse item.Tooltip <> tip OrElse item.AccessibleName <> name
+            item.Checked <> checked OrElse item.Enabled <> carrier.Enabled OrElse item.Tooltip <> tip OrElse item.AccessibleName <> name OrElse
+            item.Tone <> tone
         item.Caption = caption
         item.Visible = visible
         item.Enabled = carrier.Enabled
         item.Checked = checked
         item.Tooltip = If(tip.Length = 0, caption, tip)
         item.AccessibleName = name
+        item.Tone = tone
         If TypeOf carrier Is Button Then
             Dim button As Button = DirectCast(carrier, Button)
             If item.GlyphId.Length = 0 Then item.Image = button.Image
@@ -659,7 +759,11 @@ Partial Public Class Main_Form
             chrome_Path.SetTooltip(tip)
         End If
         If changed AndAlso (carrier Is lbl_File_Number OrElse carrier Is lbl_Zoom OrElse carrier Is lbl_Status) Then
+            ' Paging or wheel-zooming raised both toolbar rows over the picture for five seconds (and a slideshow
+            ' under five seconds kept them up). Only the status panel is the readout of these three; the rows
+            ' come from the pointer, a pin or F10 (125 UX-309).
             For Each panel In chrome_Panels
+                If Not ChromeMenuRules.PanelRevealsOnTextChange(panel.Name) Then Continue For
                 panel.Wanted = True
                 panel.LastActivity = chrome_Clock.ElapsedMilliseconds
             Next
@@ -697,7 +801,10 @@ Partial Public Class Main_Form
         ' starts at the right.
         Dim top As Integer = media.Top + inset
         If p.Name = "chrome_Status" Then
-            If video_Controls IsNot Nothing AndAlso video_Controls.Visible Then top = media.Bottom - video_Controls.Height - size.Height - margin * 2 Else top = media.Bottom - size.Height - inset
+            ' Fixed (121 UX-415): while a video or a track is open the strip stands above the bar's slot whether the bar
+            ' is up or not. It used to drop by the bar's height every time the bar went away and rise when it came back.
+            top = TransportRules.StatusTop(media.Bottom, size.Height, inset, margin, UiScale.Px(ChromeMetrics.TransportHeight, factor),
+                                           is_Vlc_Playing AndAlso Not is_Super_Full_Screen_Mode)
         ElseIf p.Name = "chrome_Row2" AndAlso chrome_Panels.Count > 0 Then
             top += chrome_Panels(0).Host.Surface.PreferredPanelSize().Height + UiScale.Px(ChromeMetrics.Gap, factor)
         End If
@@ -727,13 +834,15 @@ Partial Public Class Main_Form
                 ' Status bar revealed from bottom
                 Dim top As Integer = r.Top - zoneHeight
                 Return New Rectangle(media.Left, Math.Max(media.Top, top), media.Width, Math.Max(0, r.Bottom - top))
-            Case "chrome_Window", "chrome_Path", "chrome_Nav"
-                ' Top panels revealed from top
-                Dim bottom As Integer = r.Bottom + zoneHeight
-                Return New Rectangle(media.Left, media.Top, media.Width, Math.Max(0, bottom - media.Top))
             Case Else
-                ' Default: top zone
-                Dim bottom As Integer = r.Bottom + zoneHeight
+                ' The top rows are summoned together: the zone is measured from the bottom of the LOWEST of them
+                ' (row 2), for both - from each row's own bottom, row 2 hung alone in the band between the two
+                ' (125 UX-308).
+                Dim bottoms As New List(Of Integer)()
+                For Each other As ChromePanel In chrome_Panels
+                    If other.Name <> "chrome_Status" Then bottoms.Add(ChromePanelRect(other).Bottom)
+                Next
+                Dim bottom As Integer = ChromeAutoHide.TopHotZoneBottom(bottoms, zoneHeight)
                 Return New Rectangle(media.Left, media.Top, media.Width, Math.Max(0, bottom - media.Top))
         End Select
     End Function
@@ -773,6 +882,7 @@ Partial Public Class Main_Form
             Dim pointer As Point = Cursor.Position
             Dim moved As Boolean = pointer <> chrome_Last_Pointer
             chrome_Last_Pointer = pointer
+            If moved Then NotePointerMovedOnScreen()   ' feeds the cursor-hide stillness clock (UX-108 of 123)
             Dim usable As Boolean = ChromeUsable()
             Dim active As Boolean = ChromeWindowActive()
             ' The holds the panels share with the overlay: an open chrome popup, path editing,
@@ -827,7 +937,13 @@ Partial Public Class Main_Form
 
             If chrome_Path IsNot Nothing AndAlso Not chrome_Path.ContainsFocus Then
                 chrome_Path.Text = cmbox_Media_Folder.Text
-                chrome_Path.RecentFolders = cmbox_Media_Folder.Items.Cast(Of Object)().Select(Function(entry) entry.ToString()).ToArray()
+                ' The list is rebuilt only when it changed (125 UX-313k): ten times a second for the life of the
+                ' window was a copy of up to a hundred strings for nothing.
+                Dim recentSignature As String = RecentFoldersSignature()
+                If recentSignature <> chrome_Recent_Signature Then
+                    chrome_Recent_Signature = recentSignature
+                    chrome_Path.RecentFolders = cmbox_Media_Folder.Items.Cast(Of Object)().Select(Function(entry) entry.ToString()).ToArray()
+                End If
             End If
             Dim interval As Integer = If(animating, ChromeMetrics.AnimationTickMilliseconds, ChromeMetrics.IdleTickMilliseconds)
             If chrome_Timer.Interval <> interval Then chrome_Timer.Interval = interval
@@ -836,6 +952,16 @@ Partial Public Class Main_Form
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2601: chrome tick failed: " & ex.Message)
         End Try
     End Sub
+
+    Private chrome_Recent_Signature As String = Nothing
+
+    ''' <summary>Cheap fingerprint of the folder box's list: its size and its two ends. The list only ever changes by
+    ''' moving a folder to the front or dropping one off the back, so an unchanged fingerprint is an unchanged list.</summary>
+    Private Function RecentFoldersSignature() As String
+        Dim count As Integer = cmbox_Media_Folder.Items.Count
+        If count = 0 Then Return "0"
+        Return count.ToString() & "|" & cmbox_Media_Folder.Items(0).ToString() & "|" & cmbox_Media_Folder.Items(count - 1).ToString()
+    End Function
 
     ''' <summary>The fade runs only when neither the user (Reduce motion, or Windows' animation switch)
     ''' nor high contrast has asked for stillness; the states still change, just without the in-between.</summary>
@@ -1012,8 +1138,12 @@ Partial Public Class Main_Form
         If (modifiers And (Keys.Control Or Keys.Alt)) <> Keys.None Then Return False
 
         Dim rtl As Boolean = Localization.IsRightToLeft()
+        ChromeEnsureFocusValid()
+        ' On a slider of the transport the vertical arrows and the page keys adjust it (121 UX-403); the bar is pinned
+        ' left-to-right, so Right is forward there whatever the language.
+        If ChromeFocusOnTransport() AndAlso TransportRingAdjust(code) Then Return True
         If keyData = (Keys.Shift Or Keys.F10) OrElse code = Keys.Apps Then
-            chrome_Panels(chrome_Focus_Panel).Host.Surface.ActivateFocusedSecondary()
+            If Not ChromeFocusOnTransport() Then chrome_Panels(chrome_Focus_Panel).Host.Surface.ActivateFocusedSecondary()
             Return True
         End If
         Select Case code
@@ -1023,15 +1153,17 @@ Partial Public Class Main_Form
             Case Keys.Tab
                 ChromeStepFocus(forward:=((modifiers And Keys.Shift) = Keys.None))
             Case Keys.Right, Keys.Down
-                ChromeStepFocus(forward:=Not (rtl AndAlso code = Keys.Right))
+                ChromeStepFocus(forward:=Not (rtl AndAlso code = Keys.Right AndAlso Not ChromeFocusOnTransport()))
             Case Keys.Left, Keys.Up
-                ChromeStepFocus(forward:=(rtl AndAlso code = Keys.Left))
+                ChromeStepFocus(forward:=(rtl AndAlso code = Keys.Left AndAlso Not ChromeFocusOnTransport()))
             Case Keys.Home
                 ChromeJumpFocus(last:=False)
             Case Keys.End
                 ChromeJumpFocus(last:=True)
             Case Keys.Enter, Keys.Space
-                If chrome_Focus_Panel >= 0 AndAlso chrome_Focus_Panel < chrome_Panels.Count Then
+                If ChromeFocusOnTransport() Then
+                    TransportRingActivate()
+                ElseIf chrome_Focus_Panel >= 0 AndAlso chrome_Focus_Panel < chrome_Panels.Count Then
                     chrome_Panels(chrome_Focus_Panel).Host.Surface.ActivateFocused()
                 End If
             Case Keys.ShiftKey, Keys.ControlKey, Keys.Menu
@@ -1069,13 +1201,25 @@ Partial Public Class Main_Form
             p.Wanted = True
             p.LastActivity = now
         Next
+        ' The transport bar is the last stop of the ring (121 UX-403): bring it up with the panels while a media plays.
+        If is_Vlc_Playing Then ShowVideoControls()
         ' Up at once, not after the next idle tick.
         chrome_Timer.Interval = ChromeMetrics.AnimationTickMilliseconds
+        ' While the ring is up every other key is inert, and nothing on screen said how to get out of it
+        ' (UX-105 of 123): say it once per session, in the status line.
+        If Not chrome_F10_Hint_Shown Then
+            chrome_F10_Hint_Shown = True
+            lbl_Status.Text = Localization.T("Режим клавиатуры панелей: стрелки и Tab - выбор, Enter - нажать, Esc - выйти")
+        End If
     End Sub
+
+    ''' <summary>The "how to leave the F10 mode" line was shown already in this run (UX-105 of 123).</summary>
+    Private chrome_F10_Hint_Shown As Boolean
 
     Private Sub ChromeLeaveKeyboardMode()
         If Not chrome_Keyboard_Mode Then Return
         chrome_Keyboard_Mode = False
+        TransportRingLeave()
         For Each p As ChromePanel In chrome_Panels
             p.Host.Surface.LeaveKeyboardMode()
             ' Leaving starts the ordinary countdown from now.
@@ -1083,23 +1227,64 @@ Partial Public Class Main_Form
         Next
     End Sub
 
+    ''' <summary>The ring stands in the transport bar: it is the stop after the last panel (121 UX-403).</summary>
+    Private Function ChromeFocusOnTransport() As Boolean
+        Return chrome_Keyboard_Mode AndAlso chrome_Panels.Count > 0 AndAlso chrome_Focus_Panel >= chrome_Panels.Count
+    End Function
+
+    ''' <summary>The stops of the ring: every panel, and the transport bar after them while it is up.</summary>
+    Private Function ChromeRingCount() As Integer
+        Return chrome_Panels.Count + If(TransportRingAvailable(), 1, 0)
+    End Function
+
+    ''' <summary>The bar can go away under the ring (the video ended, the file changed): the ring goes back to the last panel.</summary>
+    Private Sub ChromeEnsureFocusValid()
+        If chrome_Focus_Panel < chrome_Panels.Count OrElse TransportRingAvailable() Then Return
+        TransportRingLeave()
+        chrome_Focus_Panel = chrome_Panels.Count - 1
+        chrome_Panels(chrome_Focus_Panel).Host.Surface.EnterKeyboardMode(last:=True)
+    End Sub
+
+    ''' <summary>Takes the ring off whatever it stands on (a panel or the bar).</summary>
+    Private Sub ChromeLeaveCurrentStop()
+        If ChromeFocusOnTransport() Then
+            TransportRingLeave()
+        ElseIf chrome_Focus_Panel >= 0 AndAlso chrome_Focus_Panel < chrome_Panels.Count Then
+            chrome_Panels(chrome_Focus_Panel).Host.Surface.LeaveKeyboardMode()
+        End If
+    End Sub
+
+    ''' <summary>Puts the ring on a stop, at its near end (or far end).</summary>
+    Private Sub ChromeEnterStop(index As Integer, last As Boolean)
+        chrome_Focus_Panel = index
+        If index >= chrome_Panels.Count Then
+            If Not TransportRingEnter(last) Then
+                chrome_Focus_Panel = chrome_Panels.Count - 1
+                chrome_Panels(chrome_Focus_Panel).Host.Surface.EnterKeyboardMode(last)
+            End If
+        Else
+            chrome_Panels(index).Host.Surface.EnterKeyboardMode(last)
+        End If
+    End Sub
+
     Private Sub ChromeStepFocus(forward As Boolean)
         If chrome_Panels.Count = 0 Then Return
-        Dim current As ChromePanel = chrome_Panels(chrome_Focus_Panel)
-        If current.Host.Surface.MoveFocus(forward) Then Return
+        If ChromeFocusOnTransport() Then
+            If TransportRingMove(forward) Then Return
+        Else
+            If chrome_Panels(chrome_Focus_Panel).Host.Surface.MoveFocus(forward) Then Return
+        End If
 
-        ' Off the end of this panel: on to the next one (wrapping), starting at its near end.
-        current.Host.Surface.LeaveKeyboardMode()
-        chrome_Focus_Panel = (chrome_Focus_Panel + If(forward, 1, -1) + chrome_Panels.Count) Mod chrome_Panels.Count
-        chrome_Panels(chrome_Focus_Panel).Host.Surface.EnterKeyboardMode(last:=Not forward)
+        ' Off the end of this stop: on to the next one (wrapping), starting at its near end.
+        ChromeLeaveCurrentStop()
+        Dim count As Integer = ChromeRingCount()
+        ChromeEnterStop((chrome_Focus_Panel + If(forward, 1, -1) + count) Mod count, last:=Not forward)
     End Sub
 
     Private Sub ChromeJumpFocus(last As Boolean)
         If chrome_Panels.Count = 0 Then Return
-        chrome_Panels(chrome_Focus_Panel).Host.Surface.LeaveKeyboardMode()
-        chrome_Focus_Panel = If(last, chrome_Panels.Count - 1, 0)
-        chrome_Panels(chrome_Focus_Panel).Host.Surface.EnterKeyboardMode(last)
+        ChromeLeaveCurrentStop()
+        ChromeEnterStop(If(last, ChromeRingCount() - 1, 0), last)
     End Sub
-
 End Class
 #End If

@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 Imports System.Threading
@@ -35,6 +35,11 @@ Partial Public Class Table_Form
     Private _ocrBusy As Boolean
     Private _ocrDroppedMainTopMost As Boolean
     Private _ocrSettings As OcrTranslateSettings
+#If Not NETFRAMEWORK Then
+    Private endpointEditPending As Boolean
+    Private modelEditPending As Boolean
+    Private apiEditPending As Boolean
+#End If
 
     Private ocrInner As TabControl
     Private ocrTabTranslate As TabPage
@@ -116,10 +121,14 @@ Partial Public Class Table_Form
     ''' values and probes Ollama for installed models / state.</summary>
     Private Sub OnEnterOcrTab()
         If Not _ocrBuilt Then Return
+#If NETFRAMEWORK Then
         Main_Form.ClearOcrResultCache()
+#End If
         LoadOcrFromSettings()
         UpdateOllamaStateHint()
+#If NETFRAMEWORK Then
         RefreshInstalledOcrModels()
+#End If
     End Sub
 
     Private Sub OcrTab_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
@@ -186,7 +195,14 @@ Partial Public Class Table_Form
         lblOcrEndpoint = MakeOcrLabel(14, y, labelW)
         ocrTabTranslate.Controls.Add(lblOcrEndpoint)
         txtOcrEndpoint = New TextBox With {.Left = LU(ctlX), .Top = LU(y), .Width = LU(ctlW)}
+#If NETFRAMEWORK Then
         AddHandler txtOcrEndpoint.TextChanged, AddressOf OcrEndpoint_TextChanged
+#Else
+        AddHandler txtOcrEndpoint.Validated, AddressOf OcrEndpoint_TextChanged
+        AddHandler txtOcrEndpoint.TextChanged, Sub()
+                                                   If Not _ocrLoading Then endpointEditPending = True
+                                               End Sub
+#End If
         ocrTabTranslate.Controls.Add(txtOcrEndpoint)
         y += 32
 
@@ -204,7 +220,14 @@ Partial Public Class Table_Form
         ocrTabTranslate.Controls.Add(lblOcrModel)
         cmbOcrModelName = New ComboBox With {.Left = LU(ctlX), .Top = LU(y), .Width = LU(330), .DropDownStyle = ComboBoxStyle.DropDown}
         btnOcrPullModel = New Button With {.Left = LU(ctlX + ctlW - 84), .Top = LU(y - 1), .Width = LU(84), .Height = LU(25)}
+#If NETFRAMEWORK Then
         AddHandler cmbOcrModelName.TextChanged, AddressOf OcrModelName_TextChanged
+#Else
+        AddHandler cmbOcrModelName.Validated, AddressOf OcrModelName_TextChanged
+        AddHandler cmbOcrModelName.TextChanged, Sub()
+                                                    If Not _ocrLoading Then modelEditPending = True
+                                                End Sub
+#End If
         AddHandler btnOcrPullModel.Click, AddressOf OnPullModel
         ocrTabTranslate.Controls.Add(cmbOcrModelName)
         ocrTabTranslate.Controls.Add(btnOcrPullModel)
@@ -213,7 +236,14 @@ Partial Public Class Table_Form
         lblOcrApi = MakeOcrLabel(14, y, labelW)
         ocrTabTranslate.Controls.Add(lblOcrApi)
         txtOcrApi = New TextBox With {.Left = LU(ctlX), .Top = LU(y), .Width = LU(ctlW), .UseSystemPasswordChar = True}
+#If NETFRAMEWORK Then
         AddHandler txtOcrApi.TextChanged, AddressOf OcrApi_TextChanged
+#Else
+        AddHandler txtOcrApi.Validated, AddressOf OcrApi_TextChanged
+        AddHandler txtOcrApi.TextChanged, Sub()
+                                              If Not _ocrLoading Then apiEditPending = True
+                                          End Sub
+#End If
         ocrTabTranslate.Controls.Add(txtOcrApi)
         y += 32
 
@@ -341,7 +371,6 @@ Partial Public Class Table_Form
 
     Private Sub LocalizeOcrTab()
         If Not _ocrBuilt Then Return
-        Dim rus As Boolean = Is_Russian_Language
         Dim prev As Boolean = _ocrLoading
         _ocrLoading = True
 
@@ -370,8 +399,8 @@ Partial Public Class Table_Form
         chkOcrOverlayVisible.Text = Localization.T("Показывать панель перевода")
         chkOcrDisk.Text = Localization.T("Дисковый кэш результатов")
 
-        PopulateOcrQualityItems(rus)
-        PopulateOcrModeItems(rus)
+        PopulateOcrQualityItems()
+        PopulateOcrModeItems()
 
         ' Owner-drawn language combos redraw with the active language.
         cmbOcrSource.Invalidate()
@@ -380,7 +409,7 @@ Partial Public Class Table_Form
         _ocrLoading = prev
     End Sub
 
-    Private Sub PopulateOcrQualityItems(rus As Boolean)
+    Private Sub PopulateOcrQualityItems()
         Dim idx As Integer = cmbOcrQuality.SelectedIndex
         cmbOcrQuality.Items.Clear()
         cmbOcrQuality.Items.AddRange(New Object() {
@@ -389,7 +418,7 @@ Partial Public Class Table_Form
         If idx >= 0 AndAlso idx < cmbOcrQuality.Items.Count Then cmbOcrQuality.SelectedIndex = idx
     End Sub
 
-    Private Sub PopulateOcrModeItems(rus As Boolean)
+    Private Sub PopulateOcrModeItems()
         Dim idx As Integer = cmbOcrMode.SelectedIndex
         cmbOcrMode.Items.Clear()
         cmbOcrMode.Items.AddRange(New Object() {
@@ -404,7 +433,6 @@ Partial Public Class Table_Form
     Private Sub InitializeOcrTooltips()
         BuildOcrTabIfNeeded()
         If toolTip Is Nothing OrElse Not _ocrBuilt Then Return
-        Dim rus As Boolean = Is_Russian_Language
         toolTip.SetToolTip(chkOcrEnabled, Localization.T("Включить распознавание текста и перевод на изображениях - для картинок, что упорно говорят на чужом языке."))
         toolTip.SetToolTip(chkOcrAuto, Localization.T("Распознавать и переводить автоматически после каждого изображения - вы только смотрите, программа отдувается."))
         toolTip.SetToolTip(cmbOcrProvider, Localization.T("Сервис перевода: локальный Ollama или LibreTranslate."))
@@ -438,9 +466,15 @@ Partial Public Class Table_Form
         chkOcrAuto.Checked = s.AutoMode
         chkOcrOverlayVisible.Checked = s.OverlayVisible
         cmbOcrProvider.SelectedIndex = If(String.Equals(s.Provider, "libretranslate", StringComparison.OrdinalIgnoreCase), 1, 0)
+#If NETFRAMEWORK Then
         txtOcrEndpoint.Text = s.Endpoint
         cmbOcrModelName.Text = s.OllamaModel
         txtOcrApi.Text = s.ApiKey
+#Else
+        If Not endpointEditPending Then txtOcrEndpoint.Text = s.Endpoint
+        If Not modelEditPending Then cmbOcrModelName.Text = s.OllamaModel
+        If Not apiEditPending Then txtOcrApi.Text = s.ApiKey
+#End If
         SelectLanguageInCombo(cmbOcrSource, s.SourceLang, "auto")
         SelectLanguageInCombo(cmbOcrTarget, s.TargetLang, "en")
         cmbOcrQuality.SelectedIndex = If(String.Equals(s.OcrModelQuality, "best", StringComparison.OrdinalIgnoreCase), 1, 0)
@@ -459,6 +493,7 @@ Partial Public Class Table_Form
     Private Sub OcrEnabled_CheckedChanged(sender As Object, e As EventArgs)
         If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
         _ocrSettings.Enabled = chkOcrEnabled.Checked
+        UpdateOcrProviderControls()
         Main_Form.OnOcrSettingsEditedFromSettingsWindow(False, True)
     End Sub
 
@@ -484,6 +519,14 @@ Partial Public Class Table_Form
     Private Sub OcrEndpoint_TextChanged(sender As Object, e As EventArgs)
         If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
         Dim endpoint As String = txtOcrEndpoint.Text.Trim()
+#If Not NETFRAMEWORK Then
+        If Not SettingsSearchRules.IsServiceEndpoint(endpoint) Then
+            SetSettingsInputError("ocr_endpoint", Localization.T("Укажите полный адрес HTTP или HTTPS."))
+            Return
+        End If
+        SetSettingsInputError("ocr_endpoint", String.Empty)
+        endpointEditPending = False
+#End If
         If String.Equals(_ocrSettings.Endpoint, endpoint, StringComparison.Ordinal) Then Return
         _ocrSettings.Endpoint = endpoint
         Main_Form.ClearOcrResultCache()
@@ -492,10 +535,16 @@ Partial Public Class Table_Form
     Private Sub OcrModelName_TextChanged(sender As Object, e As EventArgs)
         If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
         _ocrSettings.OllamaModel = cmbOcrModelName.Text.Trim()
+#If Not NETFRAMEWORK Then
+        modelEditPending = False
+#End If
     End Sub
 
     Private Sub OcrApi_TextChanged(sender As Object, e As EventArgs)
         If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
+#If Not NETFRAMEWORK Then
+        apiEditPending = False
+#End If
         If String.Equals(_ocrSettings.ApiKey, txtOcrApi.Text, StringComparison.Ordinal) Then Return
         _ocrSettings.ApiKey = txtOcrApi.Text
         Main_Form.ClearOcrResultCache()
@@ -546,6 +595,10 @@ Partial Public Class Table_Form
     Private Sub OcrDisk_CheckedChanged(sender As Object, e As EventArgs)
         If _ocrLoading OrElse _ocrSettings Is Nothing Then Return
         _ocrSettings.DiskCache = chkOcrDisk.Checked
+#If Not NETFRAMEWORK Then
+        ocrBudgetRefresh?.Invoke()
+        Main_Form.MarkSettingsDirty()
+#End If
     End Sub
 
     ' --- provider / model state ----------------------------------------------
@@ -560,6 +613,15 @@ Partial Public Class Table_Form
         btnOcrPullModel.Enabled = ollama AndAlso Not _ocrBusy
         btnOcrInstallOllama.Enabled = ollama AndAlso Not _ocrBusy
         btnOcrStartOllama.Enabled = ollama AndAlso Not _ocrBusy
+#If Not NETFRAMEWORK Then
+        Dim enabled As Boolean = chkOcrEnabled.Checked
+        chkOcrAuto.Enabled = enabled
+        cmbOcrSource.Enabled = enabled
+        cmbOcrQuality.Enabled = enabled
+        cmbOcrMode.Enabled = enabled
+        txtOcrApi.Enabled = Not ollama
+        RefreshSettingsDependencies()
+#End If
     End Sub
 
     Private Sub UpdateOllamaStateHint()
@@ -645,7 +707,7 @@ Partial Public Class Table_Form
         End If
 
         Dim confirm As String = Localization.T("Скачать и установить Ollama? Это несколько сотен МБ, загрузка может занять время.")
-        If MessageBox.Show(Me, confirm, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+        If ViewerBox.Show(Me, confirm, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
 
 #If Not NETFRAMEWORK Then
         ' Behind the download dialog: progress, a Cancel that removes the partial installer,
@@ -742,7 +804,7 @@ Partial Public Class Table_Form
         ' own Cancel (APP-BEHAVIOUR rules 3 and 4, ticket 028 Ф-6). Ollama reports the size
         ' only once the pull has started, so the question states the range honestly instead
         ' of a number fetched behind the user's back.
-        If MessageBox.Show(Me, Localization.TF("Скачать модель «{0}» через Ollama? Модели занимают от сотен МБ до десятков ГБ; загрузку можно отменить.", modelName),
+        If ViewerBox.Show(Me, Localization.TF("Скачать модель «{0}» через Ollama? Модели занимают от сотен МБ до десятков ГБ; загрузку можно отменить.", modelName),
                            Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
         Dim run As DownloadRun(Of Boolean) = Await Download_Progress_Form.RunAsync(Of Boolean)(
             Me, OllamaProductName, Localization.TF("Загрузка: {0}", modelName),

@@ -32,6 +32,15 @@ Public Class OcrResult
     ''' </summary>
     Public Property LinesRegrouped As Boolean
 
+    ''' <summary>
+    ''' Mean line confidence (0..1) of the pass that produced <see cref="Lines"/>, in the
+    ''' engine's own words. Nothing when no pass measured it - an empty or failed result - which
+    ''' is NOT the same as 0: "not measured" must never read as "read badly" (and the other way
+    ''' round). It is what tells a wrong-language reading from a right one, because the score
+    ''' the engine ranks passes by cannot (see <see cref="OcrLanguageGuard"/>).
+    ''' </summary>
+    Public Property MeanConfidence As Double? = Nothing
+
     Public Shared Function Runtime(message As String) As OcrResult
         Return New OcrResult With {.Status = OcrStatus.RuntimeMissing, .Message = message}
     End Function

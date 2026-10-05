@@ -86,7 +86,28 @@ Partial Friend NotInheritable Class Image_Editor_Form
     Private WithEvents btn_Save As Button
     Private WithEvents btn_Save_As As Button
     Private WithEvents btn_Close As Button
+    Private WithEvents btn_Undo As Button
+    Private WithEvents btn_Redo As Button
     Private saving As Boolean = False
+
+    ''' <summary>Whether the editor restored a remembered window rectangle at open
+    ''' (126 UX-606). The viewer centres it on its own monitor only when there is
+    ''' nothing remembered - the same rule the thumbnail panel already follows.</summary>
+    Friend ReadOnly Property HasRememberedPlacement As Boolean
+        Get
+            Return has_Remembered_Placement
+        End Get
+    End Property
+    Private has_Remembered_Placement As Boolean = False
+
+    ''' <summary>True once the close question was answered with "Не сохранять": the
+    ''' next FormClosing runs without asking again.</summary>
+    Private discard_Confirmed As Boolean = False
+
+    ''' <summary>True while the close question's own save flow is putting the file
+    ''' away, so a close attempt during it is held by the saving flag, not by a second
+    ''' question.</summary>
+    Private close_Question_Open As Boolean = False
 
     ''' <summary>The script font <see cref="BuildChrome"/> may hand to the form, kept so
     ''' <see cref="Dispose"/> can return it: a Control never disposes a Font it was
@@ -185,9 +206,10 @@ Partial Friend NotInheritable Class Image_Editor_Form
         Me.KeyPreview = True
         Me.ShowInTaskbar = False
 
-        ' The application is pinned to HighDpiMode.DpiUnaware (Application_Events.vb) and
-        ' this window inherits that on purpose: it must behave like the rest of the app,
-        ' not scale on its own next to a viewer that does not. The font is only touched
+        ' The viewer is PerMonitorV2 (Application_Events.vb) - the old note here said DpiUnaware, which
+        ' is true of the net48 reference build only (124 UX-202). This window is not auto-scaled yet: it
+        ' restores its rectangle in device pixels, so scaling on open would grow it each session; ticket 126
+        ' owns that. The font is only touched
         ' for a script the pinned Microsoft Sans Serif cannot draw at all - and it is
         ' kept in a field because a Control never disposes a Font it was handed (audit
         ' 057.S18-1, the class of 057.S17-6); Dispose below lets it go.
@@ -216,22 +238,25 @@ Partial Friend NotInheritable Class Image_Editor_Form
         btn_Save = NewFooterButton("btn_Editor_Save", Localization.T("Сохранить"))
         btn_Undo = NewFooterButton("btn_Editor_Undo", Localization.T("Отменить"))
         btn_Undo.Enabled = False
+        btn_Redo = NewFooterButton("btn_Editor_Redo", Localization.T("Вернуть"))
+        btn_Redo.Enabled = False
 
         lbl_Editor_Status = New Label With {
             .Name = "lbl_Editor_Status",
             .AutoSize = False,
             .Dock = DockStyle.Fill,
             .TextAlign = ContentAlignment.MiddleLeft,
+            .AutoEllipsis = True,
             .Text = ""
         }
 
         ' Docked controls are laid out back-to-front, so the FIRST one brought to the
         ' front is the one that ends up outermost - each later BringToFront pushes the
         ' previous one inwards. Hence the reversed list: on screen it reads
-        ' "Undo | Save | Save as.. | Close", with the way out under the right hand.
+        ' "Undo | Redo | Save | Save as.. | Close", with the way out under the right hand.
         ' (Ф-1 had this list in reading order and shipped with Close on the left.)
         bottom.Controls.Add(lbl_Editor_Status)
-        For Each b As Button In New Button() {btn_Close, btn_Save_As, btn_Save, btn_Undo}
+        For Each b As Button In New Button() {btn_Close, btn_Save_As, btn_Save, btn_Redo, btn_Undo}
             b.Dock = DockStyle.Right
             bottom.Controls.Add(b)
             b.BringToFront()
@@ -282,6 +307,11 @@ Partial Friend NotInheritable Class Image_Editor_Form
             End If
         End If
 
+        ' 126 UX-606: a remembered rectangle is the user's choice, and the viewer is told
+        ' whether there was one - it centres the editor on its monitor only when there is
+        ' nothing remembered, exactly as it already does for the thumbnail panel.
+        has_Remembered_Placement = placed
+
         If Not placed Then
             Dim work As Rectangle = Screen.PrimaryScreen.WorkingArea
             width = Math.Min(width, work.Width)
@@ -323,6 +353,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
         btn_Save_As.Enabled = Not saving
         btn_Close.Enabled = Not saving
         btn_Undo.Enabled = undo_History.CanUndo AndAlso Not saving
+        btn_Redo.Enabled = undo_History.CanRedo AndAlso Not saving
         If btn_Apply_Crop IsNot Nothing Then btn_Apply_Crop.Enabled = Not saving
         tool_Tips.SetToolTip(btn_Save, If(allowed AndAlso Not dirty, Localization.T("Нечего сохранять: изображение не изменено"), ""))
 
@@ -338,12 +369,23 @@ Partial Friend NotInheritable Class Image_Editor_Form
         SetStatus(SizeText() & " - " & message)
     End Sub
 
-    ''' <summary>The picture's size, marked when it is no longer what is on disk.</summary>
+    ''' <summary>The picture's size, marked when it is no longer what is on disk - and,
+    ''' from 126 Ф-2, where the user stands in the history: "Шаг N из M" is N steps still
+    ''' undoable out of the M that were made. When the budget has dropped old steps, that
+    ''' is said on the same line, from the first drop on: the counter alone would invite
+    ''' an undo that silently goes back further than it promises.</summary>
     Private Function SizeText() As String
         If image_Bitmap Is Nothing Then Return ""
         Dim size As String = image_Bitmap.Width.ToString() & " × " & image_Bitmap.Height.ToString()
         If Not dirty Then Return size
-        Return size & " · " & Localization.T("изменено")
+        Dim text As String = size & " · " & Localization.T("изменено")
+        If edits_Made > 0 Then
+            text &= " · " & Localization.TF("Шаг {0} из {1}", undo_History.Count, edits_Made)
+            If undo_History.StepsWereDropped Then
+                text &= " · " & Localization.T("Старые шаги отброшены: лимит памяти")
+            End If
+        End If
+        Return text
     End Function
 
     Private Shared Function RefusalReason(refusal As ImageFileWriter.ReplaceRefusal) As String
@@ -401,7 +443,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
         If extension <> ".jpg" AndAlso extension <> ".jpeg" Then Return True
         If jpeg_Recompression_Confirmed OrElse Is_no_request_before_file_operation Then Return True
 
-        Dim answer As DialogResult = MessageBox.Show(Me,
+        Dim answer As DialogResult = ViewerBox.Show(Me,
             Localization.T("JPEG будет пересжат - это необратимо. Дата съёмки и остальные EXIF-данные сохранятся. Продолжить?"),
             Localization.T("Редактирование изображения"),
             MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2)
@@ -424,7 +466,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
             dialog.Title = Localization.T("Сохранить как..")
             dialog.InitialDirectory = If(String.IsNullOrEmpty(save_As_Folder), Path.GetDirectoryName(source_Path), save_As_Folder)
             dialog.FileName = If(String.IsNullOrEmpty(save_As_Stem), Path.GetFileNameWithoutExtension(source_Path), save_As_Stem) &
-                              " (edited)" & preferred
+                              Localization.T(" (ред.)") & preferred
             dialog.OverwritePrompt = True
             dialog.AddExtension = True
             dialog.Filter = BuildSaveFilter(preferred)
@@ -532,18 +574,68 @@ Partial Friend NotInheritable Class Image_Editor_Form
 
     ' ------------------------------------------------------------------ window ----
 
+    ''' <summary>
+    ''' The keyboard (126 Ф-1): B/R/O/C select the tools, [ and ] walk the stroke width,
+    ''' Ctrl+S saves, Ctrl+Z undoes, Ctrl+Shift+Z and Ctrl+Y redo, Ctrl+[ and Ctrl+] turn
+    ''' the picture, H and V mirror it. The window is its own surface - none of this
+    ''' collides with the viewer's letters (126 Q126-2), and with KeyPreview on every
+    ''' handled key stops at the form, so a focused tool button is never pressed by
+    ''' accident.
+    ''' </summary>
     Private Sub Image_Editor_Form_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
         If saving Then Return
 
-        If e.KeyCode = Keys.Z AndAlso e.Control Then
+        Dim handled As Boolean = True
+        If e.Control AndAlso Not e.Alt Then
+            Select Case e.KeyCode
+                Case Keys.Z
+                    If e.Shift Then RedoLastEdit() Else UndoLastEdit()
+                Case Keys.Y
+                    RedoLastEdit()
+                Case Keys.S
+                    SaveFromKeyboard()
+                Case Keys.OemOpenBrackets
+                    RotateEditorImage(clockwise:=False)
+                Case Keys.OemCloseBrackets
+                    RotateEditorImage(clockwise:=True)
+                Case Else
+                    handled = False
+            End Select
+        ElseIf Not e.Alt Then
+            Select Case e.KeyCode
+                Case Keys.B
+                    SelectTool(EditorTool.Brush)
+                Case Keys.R
+                    SelectTool(EditorTool.RectangleOutline)
+                Case Keys.O
+                    SelectTool(EditorTool.EllipseOutline)
+                Case Keys.C
+                    SelectTool(EditorTool.Crop)
+                Case Keys.H
+                    FlipEditorImage(horizontal:=True)
+                Case Keys.V
+                    FlipEditorImage(horizontal:=False)
+                Case Keys.OemOpenBrackets
+                    StepThickness(-1)
+                Case Keys.OemCloseBrackets
+                    StepThickness(+1)
+                Case Else
+                    handled = False
+            End Select
+        Else
+            handled = False
+        End If
+
+        If handled Then
             e.Handled = True
-            UndoLastEdit()
             Return
         End If
 
-        ' Enter applies the crop frame (§6.1). It does nothing else in this window - there
-        ' is no default button - so it cannot be pressed by accident into something worse.
         If e.KeyCode = Keys.Enter Then
+            ' Enter applies the crop frame (§6.1). It does nothing else in this window -
+            ' there is no default button - so it cannot be pressed by accident into
+            ' something worse. It stays outside the letter ladder: Ctrl+Enter meant the
+            ' same thing before the keyboard grew, and still does.
             e.Handled = True
             ApplyCrop()
             Return
@@ -558,6 +650,18 @@ Partial Friend NotInheritable Class Image_Editor_Form
             If CancelGesture() Then Return
             If ClearCropFrameIfAny() Then Return
             Me.Close()
+        End If
+    End Sub
+
+    ''' <summary>Ctrl+S: the Save button's own path, so the JPEG confirmation and the
+    ''' enabled-state reasoning happen exactly once, in one place.</summary>
+    Private Sub SaveFromKeyboard()
+        If btn_Save.Enabled Then
+            btn_Save.PerformClick()
+        Else
+            ' The reason is already in the status line and on the button's tooltip;
+            ' re-deriving it here would only be a second place to drift.
+            ApplySaveAvailability()
         End If
     End Sub
 
@@ -581,6 +685,12 @@ Partial Friend NotInheritable Class Image_Editor_Form
     ''' The one question the "no confirmations" setting does NOT silence (§9.7): that flag
     ''' is about file operations, which are undoable and reversible here, while this is
     ''' work that exists only in memory and is gone the moment the window is.
+    '''
+    ''' Asked through the dialog layer with NAMED answers (126 UX-605): "Сохранить" saves
+    ''' and the window closes when the write is done, "Не сохранять" discards, "Отмена" -
+    ''' and Escape, and the close box - stays. The old Yes/No box had the user press No to
+    ''' mean keep, which is the wrong question. This attempt at closing is always
+    ''' cancelled; the answer's own flow closes the window when it is ready to.
     ''' </summary>
     Private Function ConfirmDiscardingEdits(reason As CloseReason) As Boolean
         If Not dirty Then Return True
@@ -588,13 +698,42 @@ Partial Friend NotInheritable Class Image_Editor_Form
         ' DialogResult.OK is the save path closing the window itself - there is nothing
         ' unsaved left to ask about.
         If Me.DialogResult = DialogResult.OK Then Return True
+        If discard_Confirmed OrElse close_Question_Open Then Return discard_Confirmed
 
-        Dim answer As DialogResult = MessageBox.Show(Me,
-            Localization.T("Правки не сохранены. Закрыть?"),
-            Localization.T("Редактирование изображения"),
-            MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2)
-        Return answer = DialogResult.Yes
+        close_Question_Open = True
+        Dim answer As Integer = AskDialogs.Choose(Me, AskSpecs.EditorUnsavedClose())
+        close_Question_Open = False
+
+        Select Case answer
+            Case AskSpecs.EditorCloseSave
+                SaveFromCloseQuestion()
+            Case AskSpecs.EditorCloseDiscard
+                discard_Confirmed = True
+                Me.Close()
+            Case Else
+                ' Отмена: the window stays exactly as it is.
+        End Select
+
+        ' Whatever the answer, this close request itself is over - the save flow and the
+        ' discard above close the window through their own calls.
+        Return False
     End Function
+
+    ''' <summary>The "Сохранить" answer. Over the original when that is allowed, else the
+    ''' "Save as.." the status line has been advertising all along. A refused JPEG
+    ''' confirmation or an abandoned file dialog leaves the window open with the edits
+    ''' still in it - nothing was saved, so there is nothing to close over.</summary>
+    Private Async Sub SaveFromCloseQuestion()
+        If replace_Refusal = ImageFileWriter.ReplaceRefusal.None Then
+            If Not ConfirmJpegRecompression(source_Path) Then Return
+            Await WriteTo(source_Path, overOriginal:=True)
+            Return
+        End If
+
+        Dim target As String = AskWhereToSave()
+        If String.IsNullOrEmpty(target) Then Return
+        Await WriteTo(target, overOriginal:=String.Equals(target, source_Path, StringComparison.OrdinalIgnoreCase))
+    End Sub
 
     Private Sub Image_Editor_Form_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
         If canvas IsNot Nothing Then canvas.Bitmap = Nothing

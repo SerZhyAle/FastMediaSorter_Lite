@@ -52,7 +52,11 @@ Public Module OcrPipeline
     '''     a Chinese target is no longer accepted, and the attempt scorer stops calling every
     '''     Indic line suspicious - so both the kept translation and the winning OCR attempt change.
     '''     Two builds of this ticket wrote documents (one as 8, one as 9); 9 retires both.
-    Public Const OcrPipelineVersion As Integer = 9
+    ''' 10 - 2026-10-04: with the language on `auto` the engine now compares the languages by mean
+    '''     line confidence instead of taking the first "strong" reading, so an English page is no
+    '''     longer read by the Russian model into Cyrillic debris. The recognized text of an
+    '''     existing document changes, and a cached wrong-language document must not be served again.
+    Public Const OcrPipelineVersion As Integer = 10
 End Module
 
 Public Class OcrWord

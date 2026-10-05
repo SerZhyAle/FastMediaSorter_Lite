@@ -64,6 +64,8 @@ Partial Public Class Main_Form
         slideshow_Chrome_Revealed = True
         slideshow_Chrome_Timer.Stop()
         ApplySlideshowChrome()
+        ' 119 Ф-6: a hidden pointer never survives a stop.
+        UpdateCursorHideTimer()
 #End If
         ' Clear it HERE, the one place every stop goes through. It used to be cleared
         ' only by KeybUse and SetSlideShow, while the mouse (clicks, toolbar buttons)
@@ -92,6 +94,7 @@ Partial Public Class Main_Form
         slideshow_Chrome_Revealed = False
         slideshow_Chrome_Timer.Stop()
         ApplySlideshowChrome()
+        UpdateCursorHideTimer()
 #End If
     End Sub
 

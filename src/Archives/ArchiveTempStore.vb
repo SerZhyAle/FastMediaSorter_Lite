@@ -130,7 +130,7 @@ Friend Module ArchiveTempStore
     ''' is exactly what an orphan looks like. Shared with the remote cache's sweep
     ''' (RemoteCacheStore), which asks the same question about the same kind of directory.
     ''' </summary>
-    Friend Function IsLiveViewerProcess(processId As Integer) As Boolean
+    Friend Function IsLiveViewerProcess(processId As Integer, Optional unknownIsLive As Boolean = False) As Boolean
         Try
             If processId = Diagnostics.Process.GetCurrentProcess().Id Then Return True
 
@@ -145,6 +145,7 @@ Friend Module ArchiveTempStore
         Catch ex As Exception
             AppFileLogger.WriteLine("Archive cache: could not identify session owner " &
                                     processId.ToString() & " - " & ex.Message)
+            Return unknownIsLive
         End Try
         Return False
     End Function

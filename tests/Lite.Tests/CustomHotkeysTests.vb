@@ -167,6 +167,12 @@ Public Class CustomHotkeysTests
     Public Sub Every_catalogue_entry_has_a_usable_unique_default()
         Dim seen As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
         For Each action As HotkeyAction In CustomHotkeys.Catalog
+            ' The one action with no default of its own (123 Q123-6): its keys, Menu and Shift+F10, are
+            ' reserved OS-standard keys that always work, so the catalogue offers only an EXTRA key for it.
+            If action.DefaultCombo.Length = 0 Then
+                Assert.Equal("mediaMenu", action.Id)
+                Continue For
+            End If
             Dim combo As String = CustomHotkeys.Canonical(action.DefaultCombo)
             Assert.False(combo.Length = 0, "Unusable default for " & action.Id & ": " & action.DefaultCombo)
             Assert.True(seen.Add(combo), "Two actions ship with " & combo)
@@ -288,6 +294,75 @@ Public Class CustomHotkeysTests
         Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""deleteFile"":""Ctrl+Shift+X""}")
         Assert.True(CustomHotkeys.IsDestructivePress(map, Keys.Control Or Keys.Shift Or Keys.X))
         Assert.False(CustomHotkeys.IsDestructivePress(map, Keys.Delete))
+    End Sub
+
+    ' --------------------------- ticket 119: the playback actions ----
+
+    <Fact>
+    Public Sub The_eleven_playback_actions_exist_and_nothing_else_is_one()
+        Dim playback As String() = {
+            "speedSlower", "speedFaster", "speedReset",
+            "seekBackShort", "seekFwdShort", "seekBackMedium", "seekFwdMedium", "seekBackLong", "seekFwdLong",
+            "frameStep", "abLoop"}
+        For Each id As String In playback
+            Assert.True(CustomHotkeys.IsPlaybackAction(id), id)
+            Assert.NotNull(CustomHotkeys.Find(id))
+        Next
+        Assert.False(CustomHotkeys.IsPlaybackAction("nextFile"))
+        Assert.False(CustomHotkeys.IsPlaybackAction("undo"))
+        Assert.False(CustomHotkeys.IsPlaybackAction(""))
+        Assert.False(CustomHotkeys.IsPlaybackAction(Nothing))
+    End Sub
+
+    <Fact>
+    Public Sub Every_playback_factory_key_resolves_to_its_action()
+        Assert.Equal("speedSlower", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.OemOpenBrackets))
+        Assert.Equal("speedFaster", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.OemCloseBrackets))
+        Assert.Equal("speedReset", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.OemPipe))
+        Assert.Equal("seekBackShort", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.Shift Or Keys.Left))
+        Assert.Equal("seekFwdShort", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.Shift Or Keys.Right))
+        Assert.Equal("seekBackMedium", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.Alt Or Keys.Left))
+        Assert.Equal("seekFwdMedium", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.Alt Or Keys.Right))
+        Assert.Equal("seekBackLong", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.Control Or Keys.Left))
+        Assert.Equal("seekFwdLong", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.Control Or Keys.Right))
+        Assert.Equal("frameStep", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.OemPeriod))
+        Assert.Equal("abLoop", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.Shift Or Keys.L))
+    End Sub
+
+    <Fact>
+    Public Sub A_taken_key_never_resolves_to_a_playback_action()
+        ' The three the research found already owned (119 §0 #5) and the plain
+        ' navigation keys stay navigation.
+        Assert.Equal(String.Empty, CustomHotkeys.PlaybackActionOfFactoryKey(Keys.E))
+        Assert.Equal(String.Empty, CustomHotkeys.PlaybackActionOfFactoryKey(Keys.L))
+        Assert.Equal(String.Empty, CustomHotkeys.PlaybackActionOfFactoryKey(Keys.Right))
+        Assert.Equal(String.Empty, CustomHotkeys.PlaybackActionOfFactoryKey(Keys.Shift Or Keys.Delete))
+        Assert.Equal(String.Empty, CustomHotkeys.PlaybackActionOfFactoryKey(Keys.None))
+    End Sub
+
+    <Fact>
+    Public Sub Moving_a_playback_action_retires_its_factory_key()
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""seekFwdLong"":""F9""}")
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "Ctrl+Right"))
+        Assert.Equal("seekFwdLong", CustomHotkeys.OwnerOfOverride(map, "F9"))
+        ' The factory key of an UNTOUCHED playback action still resolves - that is the
+        ' factory path's job, and it must not be swallowed by somebody else's move.
+        Assert.Equal("seekBackLong", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.Control Or Keys.Left))
+    End Sub
+
+    <Fact>
+    Public Sub A_playback_default_collides_with_no_other_action()
+        ' The test that would have caught E/L: every factory combo (defaults and extras,
+        ' old and new) belongs to exactly one action - the uniqueness test above covers
+        ' the shown defaults; this covers the playback actions' Oem* spellings being
+        ' fixed points of Canonical rather than drifting to an alias.
+        Dim seen As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        For Each id As String In {"speedSlower", "speedFaster", "speedReset", "seekBackShort", "seekFwdShort",
+                                  "seekBackMedium", "seekFwdMedium", "seekBackLong", "seekFwdLong", "frameStep", "abLoop"}
+            Dim combo As String = CustomHotkeys.Canonical(CustomHotkeys.Find(id).DefaultCombo)
+            Assert.True(combo.Length > 0, id & " has an unusable default")
+            Assert.True(seen.Add(combo), id & " ships with " & combo)
+        Next
     End Sub
 
 End Class

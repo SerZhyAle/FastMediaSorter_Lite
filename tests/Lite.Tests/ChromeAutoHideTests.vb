@@ -192,6 +192,14 @@ Public Class ChromeAutoHideTests
     End Function
 
     <Fact>
+    Public Sub A_press_outside_an_open_popup_is_consumed_and_nothing_else_is()
+        Assert.True(ChromeAutoHide.ShouldConsumePressThatClosesPopup(True, True))
+        Assert.False(ChromeAutoHide.ShouldConsumePressThatClosesPopup(True, False))
+        Assert.False(ChromeAutoHide.ShouldConsumePressThatClosesPopup(False, True))
+        Assert.False(ChromeAutoHide.ShouldConsumePressThatClosesPopup(False, False))
+    End Sub
+
+    <Fact>
     Public Sub A_popup_from_a_background_viewer_survives_until_the_foreground_moves()
         Dim viewer As New IntPtr(100)
         Dim browser As New IntPtr(200)

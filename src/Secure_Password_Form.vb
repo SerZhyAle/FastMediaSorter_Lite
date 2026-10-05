@@ -8,10 +8,11 @@ Imports System.Windows.Forms
 ''' The one dialog of the secure-container feature
 ''' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §3.2).
 '''
-''' Built in code and sized in plain pixels: the viewer is pinned to DpiUnaware and to
-''' Microsoft Sans Serif 8.25 (CLAUDE.md, "Modern-only compatibility pins"), so a window
-''' that scaled itself would be the odd one out on this band. The font is only touched for
-''' a script the pinned face cannot draw at all.
+''' Built in code from 96-dpi positions. The viewer has been PerMonitorV2 since the chrome migration, so at
+''' 175 % the point font grows while literal pixels do not: DialogLayout.ApplyAutoScale is the LAST line of the
+''' builder and DialogLayout.FitContent runs from OnLoad (124 UX-202/UX-203), so a wrapped warning pushes the
+''' buttons down instead of lying over them. The font is only touched for a script the pinned face cannot draw
+''' at all.
 '''
 ''' Three things about it are rules rather than taste:
 '''
@@ -120,7 +121,6 @@ Friend NotInheritable Class Secure_Password_Form
             .ForeColor = Color.Firebrick,
             .Text = If(retry, Localization.T("Не открылось: пароль может быть неверным, файл может не быть контейнером, либо его изменили."), "")
         }
-        If retry Then warning.Size = New Size(432, 30)
 
         okButton = New Button With {
             .Name = "secure_Ok",
@@ -149,6 +149,9 @@ Friend NotInheritable Class Secure_Password_Form
         Me.AcceptButton = okButton
         ' Escape, the close box and Cancel are the same path, and it changes nothing.
         Me.CancelButton = dismissButton
+
+        ' LAST line of the builder: scaling touches only the children that exist by now.
+        DialogLayout.ApplyAutoScale(Me)
     End Sub
 
     ''' <summary>The face for a script the pinned font cannot draw. A Control never disposes
@@ -160,6 +163,11 @@ Friend NotInheritable Class Secure_Password_Form
         MyBase.Dispose(disposing)
         ' After the base: the children are gone by then and nothing paints with it.
         If disposing Then script_Font?.Dispose()
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        DialogLayout.FitContent(Me)
     End Sub
 
     Protected Overrides Sub OnShown(e As EventArgs)
@@ -182,8 +190,8 @@ Friend NotInheritable Class Secure_Password_Form
     Private Sub Confirm(sender As Object, e As EventArgs)
         If field.Text.Length = 0 AndAlso Not emptyWarned Then
             emptyWarned = True
-            warning.Size = New Size(432, 30)
             warning.Text = Localization.T("Пустой пароль - это не защита: такой файл лишь скрыт от беглого взгляда. Нажмите ещё раз, чтобы открыть.")
+            DialogLayout.FitLabel(warning)
             Return
         End If
         Me.DialogResult = DialogResult.OK

@@ -170,6 +170,18 @@ Friend NotInheritable Class ChromeLayout
         Return total + Math.Max(0, gap) * (slots.Count - 1)
     End Function
 
+    ''' <summary>
+    ''' The status strip's two cells: the file name and the status words (121 UX-415). The name is entitled to its own
+    ''' width up to half the strip, so a long sentence can no longer squeeze it (it used to be left with the third
+    ''' the sentence did not take); the words get everything the name leaves, never more than they need.
+    ''' </summary>
+    ''' <returns>The width of the status cell; the file name's is <c>contentWidth - result</c>.</returns>
+    Public Shared Function StatusCellWidth(contentWidth As Integer, fileNaturalWidth As Integer, statusNaturalWidth As Integer) As Integer
+        If contentWidth <= 0 Then Return 0
+        Dim nameShare As Integer = Math.Min(Math.Max(0, fileNaturalWidth), contentWidth \ 2)
+        Return Math.Max(0, Math.Min(Math.Max(0, statusNaturalWidth), contentWidth - nameShare))
+    End Function
+
     Private Shared Function Mirror(r As Rectangle, availableWidth As Integer) As Rectangle
         Return New Rectangle(availableWidth - r.Right, r.Y, r.Width, r.Height)
     End Function

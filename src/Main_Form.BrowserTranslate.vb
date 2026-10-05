@@ -195,7 +195,7 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub OfferInstallCompanion()
-        Dim result As DialogResult = MessageBox.Show(Me,
+        Dim result As DialogResult = ViewerBox.Show(Me,
             Localization.T("Установить бесплатный перевод изображения в браузере (doc-html-translate)?" & vbCrLf & "" & vbCrLf & "Да - установить через winget." & vbCrLf & "Нет - открыть страницу в магазине приложений."),
             Localization.T("Перевод в браузере"),
             MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question)

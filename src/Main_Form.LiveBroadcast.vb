@@ -33,7 +33,7 @@ Partial Public Class Main_Form
     Friend Sub ShowLiveBroadcastDialog()
         SlideShowStop()
         Using dlg As New LiveBroadcast_Form()
-            If dlg.ShowDialog(Me) = DialogResult.OK AndAlso dlg.ResultDescriptor IsNot Nothing Then
+            If DialogLayer.ShowViewerDialog(dlg, Me) = DialogResult.OK AndAlso dlg.ResultDescriptor IsNot Nothing Then
                 PlayLiveBroadcast(dlg.ResultDescriptor)
             End If
         End Using

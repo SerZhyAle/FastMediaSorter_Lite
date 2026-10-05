@@ -46,8 +46,15 @@ Friend NotInheritable Class ChromePathBox
                                         If args.Button = MouseButtons.Left Then BeginEditing()
                                     End Sub
         AddHandler input.KeyDown, AddressOf InputKeyDown
+        ' Editing ends when the box loses the keyboard (a click on the picture, another window): the typed
+        ' text is dropped like an Esc, and the tick may show the folder again (125 UX-303).
+        AddHandler input.LostFocus, Sub()
+                                        If editing Then EndEditing(True)
+                                    End Sub
         AddHandler input.TextChanged, Sub()
                                           If updating OrElse Not editing Then Return
+                                          ' The list on screen belongs to the text that was there a moment ago.
+                                          If ChromeMenu.SuggestionListVisible Then ChromeMenu.DismissPopup()
                                           generation += 1
                                           CancelCompletion()
                                           debounce.Stop()
@@ -120,6 +127,8 @@ Friend NotInheritable Class ChromePathBox
                 format.LineAlignment = StringAlignment.Center
                 g.DrawString(ChrW(&H25BE), If(symbols, input.Font), brush, arrowArea, format)
             End Using
+            ' The right click opens the folder menu: the same corner mark the panel's other items carry (125 UX-306).
+            ChromeSurface.PaintSecondaryMark(g, New Rectangle(0, 0, Width, Height), theme.Foreground, scaleFactor, rtl)
             If editing OrElse String.IsNullOrEmpty(input.Text) Then Return
             Using format As New StringFormat(StringFormat.GenericTypographic)
                 format.FormatFlags = StringFormatFlags.NoWrap
@@ -184,6 +193,7 @@ Friend NotInheritable Class ChromePathBox
         debounce.Stop()
         generation += 1
         CancelCompletion()
+        If ChromeMenu.SuggestionListVisible Then ChromeMenu.DismissPopup()
         If cancel Then Text = savedText
         editing = False
         ApplyInputInk()
@@ -224,13 +234,16 @@ Friend NotInheritable Class ChromePathBox
                 completionGate.Release()
             End Try
             If IsDisposed OrElse Not editing OrElse request <> generation OrElse token.IsCancellationRequested Then Return
-            If matches.Length > 0 Then ShowPaths(matches, False)
+            If matches.Length > 0 Then ShowPaths(matches, False, isSuggestionList:=True)
         Catch ex As OperationCanceledException
         Catch ex As Exception
             AppFileLogger.LogException("Chrome path completion", ex)
         End Try
     End Sub
-    Private Sub ShowPaths(paths As IEnumerable(Of String), accept As Boolean)
+    ''' <summary>The completion list (isSuggestionList) is a helper of the text box: no row has the ring until an
+    ''' arrow key asks, and every key that edits text stays the box's (125 UX-302). The recent-folders list, which
+    ''' a click opens, is an ordinary menu, but a mouse opens it without a ring.</summary>
+    Private Sub ShowPaths(paths As IEnumerable(Of String), accept As Boolean, Optional isSuggestionList As Boolean = False)
         Dim entries As New List(Of ChromeMenuItem)()
         For Each path In paths
             Dim selected As String = path
@@ -241,7 +254,8 @@ Friend NotInheritable Class ChromePathBox
                           End Sub})
         Next
         Dim host As Form = FindForm()
-        ChromeMenu.ShowPopup(If(host.Owner, host), PointToScreen(New Point(0, Height)), entries, theme, scaleFactor, rtl, input.Font, symbols)
+        ChromeMenu.ShowPopup(If(host.Owner, host), PointToScreen(New Point(0, Height)), entries, theme, scaleFactor, rtl, input.Font, symbols,
+                             focusFirstRow:=False, isSuggestionList:=isSuggestionList)
     End Sub
     Protected Overrides Sub OnMouseUp(args As MouseEventArgs)
         MyBase.OnMouseUp(args)
@@ -269,6 +283,8 @@ Friend NotInheritable Class ChromePathBox
         Dim area As New Rectangle(If(rtl, 0, Width - drop), 0, drop, Height)
         TextRenderer.DrawText(args.Graphics, ChrW(&H25BE), If(symbols, input.Font), area, theme.Foreground,
                               TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or TextFormatFlags.NoPrefix)
+        args.Graphics.SmoothingMode = SmoothingMode.AntiAlias
+        ChromeSurface.PaintSecondaryMark(args.Graphics, New Rectangle(0, 0, Width, Height), theme.Foreground, scaleFactor, rtl)
     End Sub
     Protected Overrides Sub Dispose(disposing As Boolean)
         If disposing Then

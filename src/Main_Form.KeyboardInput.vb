@@ -39,6 +39,17 @@ Partial Public Class Main_Form
             last_KeyDown_Code = keyData And Keys.KeyCode
             last_KeyDown_Was_Repeat = KeyRouting.IsAutoRepeat(msg.LParam.ToInt64())
 #If Not NETFRAMEWORK Then
+            ' A toast over the media (124 UX-207) goes with the next key - never an auto-repeat of the key that raised it.
+            If Not last_KeyDown_Was_Repeat Then DismissNotifyToast()
+            ' The card is above panel focus mode in the Escape ladder. Its scroll keys also
+            ' precede user bindings, so reading help never navigates or sorts the hidden file.
+            If Not ChromeMenu.PopupVisible AndAlso help_Card IsNot Nothing AndAlso help_Card.Visible Then
+                If keyData = Keys.Escape Then
+                    If Not last_KeyDown_Was_Repeat Then RunEscapeStep()
+                    Return True
+                End If
+                If keyData = (keyData And Keys.KeyCode) AndAlso help_Card.TryScrollKey(keyData) Then Return True
+            End If
             ' F10 enters the floating chrome's focus mode, and while it is on the chrome owns the keys
             ' (002 section 5). Never an auto-repeat: holding F10 must not flip the mode back and forth.
             If Not last_KeyDown_Was_Repeat AndAlso ChromeHandleKey(keyData) Then Return True
@@ -59,8 +70,19 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
         ' The F10 the chrome took must not reach Windows as "open the system menu".
         If ChromeSwallowKeyUp(e.KeyCode) Then e.Handled = True
+        ' Likewise the Menu key / Shift+F10 the viewer took for its media menu (UX-104 of 123): Windows
+        ' raises its own context-menu message from the key-up unless the key-up is handled.
+        If media_Menu_Key_Pending AndAlso (e.KeyCode = Keys.Apps OrElse e.KeyCode = Keys.F10) Then
+            media_Menu_Key_Pending = False
+            e.Handled = True
+        End If
 #End If
     End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>The Menu key / Shift+F10 went down here and its key-up is still to come (UX-104 of 123).</summary>
+    Private media_Menu_Key_Pending As Boolean
+#End If
 
     Private Shared Function RecipientSlotFromKey(keyCode As Keys) As Integer
         Select Case keyCode
@@ -79,6 +101,15 @@ Partial Public Class Main_Form
     End Function
 
     Public Sub KeybUse(e As KeyEventArgs, was_Slide_Show_Mode As Boolean)
+#If Not NETFRAMEWORK Then
+        ' KeybUse is also called directly by forwarding windows, without ProcessCmdKey.
+        If Not ChromeMenu.PopupVisible AndAlso help_Card IsNot Nothing AndAlso help_Card.Visible AndAlso
+           e.KeyData = e.KeyCode AndAlso help_Card.TryScrollKey(e.KeyCode) Then
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Return
+        End If
+#End If
         ' A key that moves, copies or deletes the file acts once per press (audit 047,
         ' C-20): each auto-repeat that arrived after the previous operation had finished
         ' took the next file, so one long press sorted a run of files nobody had looked at.
@@ -150,6 +181,31 @@ Partial Public Class Main_Form
             e.SuppressKeyPress = True
             Exit Sub
         End If
+
+        ' Modern: the playback extras (119 Ф-1..Ф-5) are asked BEFORE the Ctrl/Alt gate,
+        ' because three of the seek chords ARE Ctrl/Alt chords the historical map never
+        ' accepted (MainMapAccepts rejects every Ctrl/Alt combination). Returns False
+        ' when no media of the right kind is playing, so Shift+Left, Ctrl+Left, "." and
+        ' the rest fall through to exactly the behaviour they have today - the same
+        ' "do not steal a key you cannot use" rule TryHandleTrackKey documents.
+        If TryHandlePlaybackKey(e) Then
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Exit Sub
+        End If
+
+        ' Menu key / Shift+F10: the media menu of the current file, from the viewer's main mode (UX-104
+        ' of 123; inside the F10 panel mode the chrome already took these in ProcessCmdKey). Asked before
+        ' the Ctrl/Alt gate and the main map, so it neither stops the slideshow by itself nor reaches the
+        ' historical dispatch. A held key opens the menu once; its key-up is swallowed in Form1_KeyUp so
+        ' Windows does not add a WM_CONTEXTMENU of its own on top.
+        If CustomHotkeys.IsMediaMenuKey(e.KeyData) Then
+            media_Menu_Key_Pending = True
+            If Not IsAutoRepeatOf(e.KeyCode) Then ShowMediaMenuFromKeyboard()
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Exit Sub
+        End If
 #End If
 
         ' The historical map was written for bare keys and Shift. Ctrl and Alt were never
@@ -171,6 +227,25 @@ Partial Public Class Main_Form
         ' the slideshow or show a status message for a slot that has no destination.
         Dim recipient_Slot As Integer = RecipientSlotFromKey(e.KeyCode)
         If recipient_Slot <> 0 AndAlso Not IsRecipientSlotConfigured(recipient_Slot) Then Return
+
+#If Not NETFRAMEWORK Then
+        ' Esc is a ladder, not a close key (UX-101 of 123): one press undoes the one layer that is on
+        ' top. It is answered HERE - before the SlideShowStop below, which used to run for Esc too, so a
+        ' slideshow was stopped and the window closed by the same press. A held key peels one layer only.
+        If e.KeyData = Keys.Escape Then
+            If Not IsAutoRepeatOf(Keys.Escape) Then RunEscapeStep()
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Return
+        End If
+        ' A reference card taller than the window scrolls with the plain navigation keys while it is up
+        ' (UX-115 of 123) - they would otherwise flip files unseen behind it.
+        If help_Card IsNot Nothing AndAlso help_Card.Visible AndAlso e.KeyData = e.KeyCode AndAlso help_Card.TryScrollKey(e.KeyCode) Then
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Return
+        End If
+#End If
 
         SlideShowStop()
         is_Slide_Show_Random_Mode = False
@@ -480,9 +555,108 @@ Partial Public Class Main_Form
     ''' <summary>F1 - the first-run help card.</summary>
     Private Sub ShowFirstRunHelp()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1620: F1 help")
+#If Not NETFRAMEWORK Then
+        ' Modern: F1 is the reference card (UX-115 of 123), built from the live shortcut map; the playful
+        ' introduction stays on the first-run screen, which is the label this key used to bring back.
+        ToggleHelpCard()
+#Else
         lbl_Help_Info.Visible = True
         lbl_Help_Info.BringToFront()
+#End If
     End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>The F1 reference card, created on first use (UX-115 of 123).</summary>
+    Private help_Card As HelpCardPanel
+
+    ''' <summary>Either help surface is on screen: the first-run introduction or the reference card.</summary>
+    Private Function IsHelpCardUp() As Boolean
+        If help_Card IsNot Nothing AndAlso help_Card.Visible Then Return True
+        ' The first-run label sits at the very BACK of the media panel and stays "Visible" behind the first
+        ' picture - it is a layer only while nothing is shown over it, or Esc would "close" a card nobody sees.
+        Return lbl_Help_Info.Visible AndAlso Not is_PictureBox1_Visible AndAlso Not is_PictureBox2_Visible AndAlso Not is_Vlc_Playing
+    End Function
+
+    ''' <summary>F1: shows the reference card, or hides it when it is already up.</summary>
+    Private Sub ToggleHelpCard()
+        If help_Card IsNot Nothing AndAlso help_Card.Visible Then
+            HideHelpCard()
+            Return
+        End If
+        If panel_Media Is Nothing Then Return
+        If help_Card Is Nothing Then
+            help_Card = New HelpCardPanel() With {.Dock = DockStyle.Fill, .AllowDrop = True}
+            AddHandler help_Card.CloseRequested, Sub() HideHelpCard()
+            ' Like the first-run label: a drop over the card opens the file instead of showing "no-drop".
+            AdmitLowerIntegrityMessages(help_Card)
+            AddHandler help_Card.DragEnter, AddressOf Form1_DragEnter
+            AddHandler help_Card.DragDrop, AddressOf Form1_DragDrop
+            panel_Media.Controls.Add(help_Card)
+        End If
+        lbl_Help_Info.Visible = False
+        help_Card.SetContent(HelpCardRows.Build(custom_Hotkeys))
+        help_Card.BringToFront()
+        help_Card.Visible = True
+    End Sub
+
+    ''' <summary>Hides whichever help surface is up (Esc, a click, F1 again).</summary>
+    Private Sub HideHelpCard()
+        If help_Card IsNot Nothing Then help_Card.Visible = False
+        lbl_Help_Info.Visible = False
+        lbl_Help_Info.Hide()
+    End Sub
+
+    ''' <summary>The language changed under an open card: redraw it in the new one.</summary>
+    Private Sub RefreshHelpCardLanguage()
+        If help_Card IsNot Nothing AndAlso help_Card.Visible Then help_Card.SetContent(HelpCardRows.Build(custom_Hotkeys))
+    End Sub
+#End If
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>What is on top right now, for <see cref="EscapeLadder"/>. Reads state only.</summary>
+    Private Function CaptureEscapeState() As EscapeLadder.State
+        Dim state As New EscapeLadder.State
+        state.PopupOpen = ChromeMenu.PopupVisible
+        state.HelpCardShown = IsHelpCardUp()
+        state.KeyboardModeOn = chrome_Keyboard_Mode
+        state.OcrOverlayShown = ocr_Settings IsNot Nothing AndAlso ocr_Overlay_Visible AndAlso
+                                CurrentDocBelongsToCurrentFile() AndAlso current_Overlay_Document.Blocks.Count > 0
+        state.ZoomedOrPanned = zoom_Mode_Free
+        state.SlideshowRunning = Is_slide_show_mode
+        state.FullScreen = is_Full_Screen_Mode
+        state.Connecting = resource_Connect_Cancel IsNot Nothing
+        Return state
+    End Function
+
+    ''' <summary>One Esc: undoes the single layer <see cref="EscapeLadder.[Next]"/> names (UX-101 of 123);
+    ''' with nothing left the window closes, as Esc always did outside full screen (Q123-1).</summary>
+    Private Sub RunEscapeStep()
+        Dim rung As EscapeLadder.Rung = EscapeLadder.Next(CaptureEscapeState())
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1641: ESC -> " & rung.ToString())
+        Select Case rung
+            Case EscapeLadder.Rung.ClosePopup
+                ChromeMenu.DismissPopup()
+            Case EscapeLadder.Rung.CancelConnect
+                CancelResourceConnect()
+            Case EscapeLadder.Rung.CloseHelpCard
+                HideHelpCard()
+            Case EscapeLadder.Rung.LeaveKeyboardMode
+                ChromeLeaveKeyboardMode()
+            Case EscapeLadder.Rung.HideOcrOverlay
+                SetOcrOverlayVisibility(False)
+            Case EscapeLadder.Rung.ZoomToFit
+                ZoomToFit()
+            Case EscapeLadder.Rung.StopSlideshow
+                SlideShowStop()
+                is_Slide_Show_Random_Mode = False
+            Case EscapeLadder.Rung.LeaveFullScreen
+                is_Full_Screen_Mode = False
+                SetViewSizes()
+            Case Else
+                Me.Close()
+        End Select
+    End Sub
+#End If
 
 #If Not NETFRAMEWORK Then
     ''' <summary>Set by the interface-scale row of §4.1, which cannot take effect in a
@@ -542,7 +716,11 @@ Partial Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1630: F2")
         EnsureSettingsWindow()
         If Table_Form.Visible Then
+#If NETFRAMEWORK Then
             Table_Form.Activate()
+#Else
+            Table_Form.ActivateModernSettingsOnOwnerMonitor()
+#End If
         Else
             Table_Form.PrepareForDisplay()
             ' Modal is no protection: an owned window still has to be put
@@ -557,15 +735,32 @@ Partial Public Class Main_Form
     ''' must not drift apart.</summary>
     Friend Sub ToggleFullScreenMode()
         is_Full_Screen_Mode = Not is_Full_Screen_Mode
+        ' Modern: SetViewSizes starts or stops the cursor-hide timer for every way into and out of
+        ' full screen (119 Ф-6, UX-107 of 123) - this call used to be the only one that did.
         SetViewSizes()
     End Sub
 
     ''' <summary>F11 - full screen with the panels gone too.</summary>
     Friend Sub ToggleSuperFullScreenMode()
+#If Not NETFRAMEWORK Then
+        ' From the plain full screen F11 ADDS the panel-less mode and keeps full screen, and the next F11
+        ' returns to the plain one (UX-106 of 123); inverting both flags here left full screen instead.
+        Dim after As FullScreenRules.Modes = FullScreenRules.AfterSuperToggle(New FullScreenRules.Modes With {
+            .IsFull = is_Full_Screen_Mode, .IsSuper = is_Super_Full_Screen_Mode, .SuperEnteredFromFull = super_Entered_From_Full_Screen})
+        is_Full_Screen_Mode = after.IsFull
+        is_Super_Full_Screen_Mode = after.IsSuper
+        super_Entered_From_Full_Screen = after.SuperEnteredFromFull
+#Else
         is_Full_Screen_Mode = Not is_Full_Screen_Mode
         is_Super_Full_Screen_Mode = Not is_Super_Full_Screen_Mode
+#End If
         SetViewSizes()
     End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>The panel-less full screen was entered from the plain one (UX-106 of 123): F11 again goes back to it.</summary>
+    Private super_Entered_From_Full_Screen As Boolean
+#End If
 
     ''' <summary>Rotates the active picture 90°; clears any OCR overlay (the
     ''' pixel grid changed, so cached boxes no longer align).</summary>

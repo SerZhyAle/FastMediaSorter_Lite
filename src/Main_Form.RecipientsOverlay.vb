@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Diagnostics
@@ -170,10 +170,20 @@ Partial Public Class Main_Form
         Dim rows As New List(Of Tuple(Of Integer, String))()
         For k As Integer = 1 To 9
             Dim keyPath As String = Hardkeys_to_move_mediafile(k)
+#If Not NETFRAMEWORK Then
+            ' The key written on the row is the one the slot answers to now - a rebound slot said "3" while Q moved
+            ' (125 UX-334).
+            If Not String.IsNullOrEmpty(keyPath) Then rows.Add(Tuple.Create(k, SlotKeyLabel(k) & "  " & RecipientRowCaption(keyPath)))
+#Else
             If Not String.IsNullOrEmpty(keyPath) Then rows.Add(Tuple.Create(k, k.ToString() & "  " & RecipientRowCaption(keyPath)))
+#End If
         Next
         Dim zeroPath As String = Hardkeys_to_move_mediafile(10)
+#If Not NETFRAMEWORK Then
+        If Not String.IsNullOrEmpty(zeroPath) Then rows.Add(Tuple.Create(10, SlotKeyLabel(10) & "  " & RecipientRowCaption(zeroPath)))
+#Else
         If Not String.IsNullOrEmpty(zeroPath) Then rows.Add(Tuple.Create(10, "0  " & RecipientRowCaption(zeroPath)))
+#End If
         ' Delete is always available (a valid sort action even with no folders set).
         rows.Add(Tuple.Create(-1, ChrW(215) & "  " & Localization.T("Удалить")))
 
@@ -281,15 +291,16 @@ Partial Public Class Main_Form
                 .UseVisualStyleBackColor = False,
                 .Location = New Point(0, y),
                 .Size = New Size(If(showCopy, rowW - copyW, rowW), rowH),
-                .ForeColor = If(isDelete, Color.White, Color.Gainsboro),
-                .BackColor = If(isDelete, Color.FromArgb(96, 32, 32), Color.FromArgb(52, 52, 52))
+                .ForeColor = If(isDelete, Color.White, RecipientRowInk()),
+                .BackColor = If(isDelete, Color.FromArgb(96, 32, 32), RecipientRowFill(r.Item1))
             }
             b.FlatAppearance.BorderSize = 0
 #If Not NETFRAMEWORK Then
             b.RowFont = ui_Font
 #End If
-            b.FlatAppearance.MouseOverBackColor = If(isDelete, Color.FromArgb(140, 44, 44), Color.FromArgb(72, 72, 72))
-            b.FlatAppearance.MouseDownBackColor = If(isDelete, Color.FromArgb(170, 50, 50), Color.FromArgb(96, 96, 96))
+            ' Hover deepens the row's own blend (129 §3.3); only the DEL row keeps its own reds.
+            b.FlatAppearance.MouseOverBackColor = If(isDelete, Color.FromArgb(140, 44, 44), RecipientRowHoverFill(r.Item1))
+            b.FlatAppearance.MouseDownBackColor = If(isDelete, Color.FromArgb(170, 50, 50), RecipientRowHoverFill(r.Item1))
             ' Full path in the tooltip - the caption may be ellipsized.
             If Not isDelete Then
 #If Not NETFRAMEWORK Then
@@ -362,7 +373,44 @@ Partial Public Class Main_Form
     ''' button and its font).</summary>
     Private Const Recipients_Move_Row_Name As String = "recipient_move_row"
     Private Const Recipients_Copy_Row_Name As String = "recipient_copy_row"
+#End If
 
+    ''' <summary>The identity fill of a recipient row: the slot's pastel from the one palette the
+    ''' settings grid reads too, so a slot is the same colour on both surfaces (129 §3.3). The
+    ''' themed build turns high contrast back to the panel fill - identity colour is an aid,
+    ''' never a substitute for the system scheme; the legacy overlay, which has no theme, is
+    ''' always dark and says so.</summary>
+    Private Function RecipientRowFill(slot As Integer) As Color
+#If NETFRAMEWORK Then
+        Return RecipientPalette.ColorFor(slot, True)
+#Else
+        If chrome_Theme.IsHighContrast Then Return chrome_Theme.PanelFill
+        Return RecipientPalette.ColorFor(slot, ThemeService.IsDark)
+#End If
+    End Function
+
+    ''' <summary>The hover fill: the same blend deepened (129 §3.3), never a different colour role.</summary>
+    Private Function RecipientRowHoverFill(slot As Integer) As Color
+#If NETFRAMEWORK Then
+        Return RecipientPalette.HoverColorFor(slot, True)
+#Else
+        If chrome_Theme.IsHighContrast Then Return chrome_Theme.ItemHover
+        Return RecipientPalette.HoverColorFor(slot, ThemeService.IsDark)
+#End If
+    End Function
+
+    ''' <summary>The ink on an identity fill stays the theme's text ink (129 §3.1) - never a
+    ''' per-row black/white guess.</summary>
+    Private Function RecipientRowInk() As Color
+#If NETFRAMEWORK Then
+        Return Color.Gainsboro
+#Else
+        If chrome_Theme.IsHighContrast Then Return chrome_Theme.Foreground
+        Return ThemePalette.ForDark(ThemeService.IsDark).TextPrimary
+#End If
+    End Function
+
+#If Not NETFRAMEWORK Then
     ''' <summary>
     ''' Redraws the rows from the CACHED slot verdicts (§3.5). It probes nothing: opening the
     ''' overlay must never be able to cost a timeout, and a slot nobody has asked about yet is
@@ -402,17 +450,24 @@ Partial Public Class Main_Form
                 Dim unusable As Boolean = (verdict IsNot Nothing AndAlso Not SlotHealthPolicy.IsUsable(verdict.State)) OrElse
                                           (Not is_Copy_Zone AndAlso Not move_Allowed)
 
-                If unusable Then
-                    row.ForeColor = chrome_Theme.DisabledForeground
-                    row.BackColor = chrome_Theme.PanelFill
+                ' The fill is the slot's identity (129 §3.3): health answers in the ink and the
+                ' tooltip, never by swapping the fill. The copy zone keeps its accent marker and
+                ' the DEL row its destructive red - states of the panel, not recipients.
+                If is_Copy_Zone Then
+                    row.BackColor = If(unusable OrElse chrome_Theme.IsHighContrast, chrome_Theme.PanelFill,
+                                       ChromeTheme.Blend(chrome_Theme.PanelFill, chrome_Theme.Accent, ChromeMetrics.HoverPercent / 100.0F))
                 Else
-                    row.ForeColor = chrome_Theme.Foreground
-                    row.BackColor = If(is_Copy_Zone AndAlso Not chrome_Theme.IsHighContrast,
-                        ChromeTheme.Blend(chrome_Theme.PanelFill, chrome_Theme.Accent, ChromeMetrics.HoverPercent / 100.0F), chrome_Theme.PanelFill)
+                    row.BackColor = RecipientRowFill(slot)
                 End If
+                row.ForeColor = If(is_Copy_Zone, chrome_Theme.Foreground, RecipientRowInk())
+                If unusable Then row.ForeColor = If(is_Copy_Zone OrElse chrome_Theme.IsHighContrast,
+                                                   chrome_Theme.DisabledForeground,
+                                                   ThemePalette.ForDark(ThemeService.IsDark).TextDisabled)
 
-                row.FlatAppearance.MouseOverBackColor = If(unusable OrElse chrome_Theme.IsHighContrast, chrome_Theme.PanelFill, chrome_Theme.ItemHover)
-                row.FlatAppearance.MouseDownBackColor = If(unusable OrElse chrome_Theme.IsHighContrast, chrome_Theme.PanelFill, chrome_Theme.ItemPressed)
+                row.FlatAppearance.MouseOverBackColor = If(unusable OrElse chrome_Theme.IsHighContrast, row.BackColor,
+                                                            If(is_Copy_Zone, chrome_Theme.ItemHover, RecipientRowHoverFill(slot)))
+                row.FlatAppearance.MouseDownBackColor = If(unusable OrElse chrome_Theme.IsHighContrast, row.BackColor,
+                                                            If(is_Copy_Zone, chrome_Theme.ItemPressed, RecipientRowHoverFill(slot)))
                 If recipients_ToolTip IsNot Nothing Then
                     Dim note As String = SlotHealthNote(verdict)
                     Dim tip As String = If(is_Copy_Zone,
@@ -547,7 +602,17 @@ Partial Public Class Main_Form
         If slot = -1 Then
             ReadShowMediaFile(Mode_Delete)
         Else
+#If Not NETFRAMEWORK Then
+            ' The refusal says "click again" to someone who clicked (125 UX-332); the net48 gate has no such wording.
+            slot_Press_By_Pointer = True
+            Try
+                PoMove(slot)
+            Finally
+                slot_Press_By_Pointer = False
+            End Try
+#Else
             PoMove(slot)
+#End If
         End If
 
         ' The media surface may have changed under us - stay clickable on top.
@@ -570,7 +635,12 @@ Partial Public Class Main_Form
         End If
 
         SlideShowStop()
-        ExecuteRecipientAction(slot, RecipientActionKind.Copy)
+        slot_Press_By_Pointer = True
+        Try
+            ExecuteRecipientAction(slot, RecipientActionKind.Copy)
+        Finally
+            slot_Press_By_Pointer = False
+        End Try
         KeepRecipientsOverlayOnTop()
     End Sub
 #End If
@@ -591,6 +661,30 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
         Private hovering As Boolean
         Private pressing As Boolean
+        Private ringColor As Color = Color.Empty
+
+        ''' <summary>The F10 ring's mark (121 UX-403): a frame in this colour while the keyboard ring stands on this
+        ''' button, nothing when it is <see cref="Color.Empty"/>. The button never takes real focus, so the ring is
+        ''' the host's to say, and it is painted here, with the button.</summary>
+        Public Property FocusRingColor As Color
+            Get
+                Return ringColor
+            End Get
+            Set(value As Color)
+                If ringColor = value Then Return
+                ringColor = value
+                Invalidate()
+            End Set
+        End Property
+
+        ''' <summary>The frame's width in device pixels.</summary>
+        Public Property FocusRingWidth As Integer = 2
+
+        ''' <summary>Tells assistive technology the ring arrived here (the control is not focusable, so the framework
+        ''' would never say it).</summary>
+        Public Sub NotifyFocused()
+            AccessibilityNotifyClients(AccessibleEvents.Focus, -1)
+        End Sub
 
         ''' <summary>The caption's font, held here and not read back from <c>Font</c>: a pixel font handed to a
         ''' control came out of its GDI text path about twice the size it was built at on a scaled display,
@@ -631,6 +725,21 @@ Partial Public Class Main_Form
             Using brush As New SolidBrush(fill)
                 g.FillRectangle(brush, ClientRectangle)
             End Using
+            If ringColor <> Color.Empty Then
+                Dim ringWidth As Integer = Math.Max(1, FocusRingWidth)
+                Using pen As New Pen(ringColor, ringWidth)
+                    g.DrawRectangle(pen, ringWidth \ 2, ringWidth \ 2, Width - ringWidth, Height - ringWidth)
+                End Using
+            End If
+            ' The icon is drawn by the control, not by whoever sets it (121 Ф-1): this override used to paint
+            ' the caption only, so the transport's Play and Mute - Text "" and the glyph in Image - came out as
+            ' flat empty squares. A caption-only row never reaches this branch, so its pixels are unchanged.
+            Dim imageEnd As Integer = 0
+            If Image IsNot Nothing Then
+                Dim box As Rectangle = ImageBox(Image.Size)
+                g.DrawImage(Image, box)
+                imageEnd = box.Right
+            End If
             If String.IsNullOrEmpty(Text) Then Return
             Dim captionFont As Font = If(RowFont, Font)
             Using format As New StringFormat(StringFormatFlags.NoWrap)
@@ -639,10 +748,30 @@ Partial Public Class Main_Form
                 format.HotkeyPrefix = Drawing.Text.HotkeyPrefix.None
                 format.Alignment = If(TextAlign = ContentAlignment.MiddleCenter, StringAlignment.Center, StringAlignment.Near)
                 If RightToLeft = RightToLeft.Yes Then format.FormatFlags = format.FormatFlags Or StringFormatFlags.DirectionRightToLeft
-                Dim area As New RectangleF(Padding.Left, 0, Math.Max(0, Width - Padding.Horizontal), Height)
+                Dim left As Single = If(imageEnd > 0, imageEnd, Padding.Left)
+                Dim area As New RectangleF(left, 0, Math.Max(0, Width - left - Padding.Right), Height)
                 ChromeInkOutline.DrawText(g, Text, captionFont, area, ForeColor, format, ChromeInkOutline.RadiusFor(DeviceDpi / 96.0F))
             End Using
         End Sub
+
+        ''' <summary>Where the icon goes: <c>ImageAlign</c> inside the client area, at the icon's own size.</summary>
+        Private Function ImageBox(size As Size) As Rectangle
+            Dim x As Integer = (Width - size.Width) \ 2
+            Dim y As Integer = (Height - size.Height) \ 2
+            Select Case ImageAlign
+                Case ContentAlignment.TopLeft, ContentAlignment.MiddleLeft, ContentAlignment.BottomLeft
+                    x = Padding.Left
+                Case ContentAlignment.TopRight, ContentAlignment.MiddleRight, ContentAlignment.BottomRight
+                    x = Width - size.Width - Padding.Right
+            End Select
+            Select Case ImageAlign
+                Case ContentAlignment.TopLeft, ContentAlignment.TopCenter, ContentAlignment.TopRight
+                    y = Padding.Top
+                Case ContentAlignment.BottomLeft, ContentAlignment.BottomCenter, ContentAlignment.BottomRight
+                    y = Height - size.Height - Padding.Bottom
+            End Select
+            Return New Rectangle(x, y, size.Width, size.Height)
+        End Function
 #End If
     End Class
 

@@ -101,6 +101,14 @@ Public NotInheritable Class File_Types_Form
 
         AcceptButton = btnOk
         CancelButton = btnCancel
+
+        ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
+        DialogLayout.ApplyAutoScale(Me)
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        DialogLayout.ClampToWorkingArea(Me)
     End Sub
 
     Private Sub Fill(current As IEnumerable(Of String))
@@ -249,6 +257,14 @@ Public NotInheritable Class History_Form
 
         AddHandler fileList.DoubleClick, Sub() OpenSelected(Nothing, EventArgs.Empty)
         AddHandler folderList.DoubleClick, Sub() OpenSelected(Nothing, EventArgs.Empty)
+
+        ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
+        DialogLayout.ApplyAutoScale(Me)
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        DialogLayout.ClampToWorkingArea(Me)
     End Sub
 
     Private Function NewPage(caption As String, list As ListBox) As TabPage
@@ -397,7 +413,7 @@ Public NotInheritable Class History_Form
     End Sub
 
     Private Sub ClearCurrent(sender As Object, e As EventArgs)
-        If MessageBox.Show(Me, Localization.T("Очистить весь список?"), Text,
+        If ViewerBox.Show(Me, Localization.T("Очистить весь список?"), Text,
                            MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         If CurrentList() Is folderList Then folders.Clear() Else files.Clear()
         Fill()

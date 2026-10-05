@@ -56,7 +56,7 @@ Partial Public Class Main_Form
                 source.Dispose()
                 ReleasePdfDocument()
                 ShowContentPlaceholder(filePath)
-                lbl_Status.Text = Localization.TF("{0} — {1}", Path.GetFileName(filePath), message)
+                lbl_Status.Text = Localization.TF("{0} - {1}", Path.GetFileName(filePath), message)
                 Return
             End If
             pdf_Current_Source = source
@@ -77,7 +77,7 @@ Partial Public Class Main_Form
             If Not IsDisposed AndAlso session = pdf_Session AndAlso generation = media_Generation Then
                 ReleasePdfDocument()
                 ShowContentPlaceholder(filePath)
-                lbl_Status.Text = Localization.TF("{0} — {1}", Path.GetFileName(filePath), FailureText.Describe(ex))
+                lbl_Status.Text = Localization.TF("{0} - {1}", Path.GetFileName(filePath), FailureText.Describe(ex))
             End If
         End Try
     End Sub
@@ -138,7 +138,7 @@ Partial Public Class Main_Form
             If rendered Is Nothing Then
                 If box.Image IsNot Nothing Then box.Image.Dispose()
                 box.Image = Nothing
-                pdf_Page_Error = Localization.TF("{0} — ошибка отображения страницы {1}", Path.GetFileName(pdf_Current_File_Path), pageNumber)
+                pdf_Page_Error = Localization.TF("{0} - ошибка отображения страницы {1}", Path.GetFileName(pdf_Current_File_Path), pageNumber)
                 lbl_Status.Text = pdf_Page_Error
                 ApplyTranslateButtonsVisibility()
                 box.Invalidate()
@@ -163,7 +163,7 @@ Partial Public Class Main_Form
                 ZoomToFit()
             End If
             Draw_Perspective()
-            lbl_Status.Text = Localization.TF("{0} — страница {1} из {2}", Path.GetFileName(pdf_Current_File_Path), pageNumber, pdf_Total_Pages)
+            lbl_Status.Text = Localization.TF("{0} - страница {1} из {2}", Path.GetFileName(pdf_Current_File_Path), pageNumber, pdf_Total_Pages)
             UpdateContentWindowTitle()
             OnMediaDisplayed()
             box.Invalidate()
@@ -171,13 +171,13 @@ Partial Public Class Main_Form
         Catch ex As OperationCanceledException
             If Not IsDisposed AndAlso session = pdf_Session AndAlso generation = media_Generation AndAlso
                 pdf_Render_Cts IsNot Nothing AndAlso pdf_Render_Cts.Token = token AndAlso ActiveMediaImage() Is Nothing Then
-                pdf_Page_Error = Localization.TF("{0} — ошибка отображения страницы {1}", Path.GetFileName(pdf_Current_File_Path), pageNumber)
+                pdf_Page_Error = Localization.TF("{0} - ошибка отображения страницы {1}", Path.GetFileName(pdf_Current_File_Path), pageNumber)
                 lbl_Status.Text = pdf_Page_Error
                 GetActivePictureBox()?.Invalidate()
             End If
         Catch ex As Exception
             If Not IsDisposed AndAlso session = pdf_Session AndAlso Not token.IsCancellationRequested Then
-                pdf_Page_Error = Localization.TF("{0} — ошибка отображения страницы {1}", Path.GetFileName(pdf_Current_File_Path), pageNumber)
+                pdf_Page_Error = Localization.TF("{0} - ошибка отображения страницы {1}", Path.GetFileName(pdf_Current_File_Path), pageNumber)
                 lbl_Status.Text = pdf_Page_Error
                 GetActivePictureBox()?.Invalidate()
                 AppFileLogger.LogException("Rendering PDF page", ex)
@@ -288,7 +288,7 @@ Partial Public Class Main_Form
         ' On-surface page indicator (3 / 48) in bottom-right corner (§3.3)
         Dim indicatorText As String = pdf_Current_Page.ToString() & " / " & pdf_Total_Pages.ToString()
         Dim scale As Single = GetCurrentDpiScale()
-        Dim font As New Font("Segoe UI", Math.Max(9.0F, 11.0F * scale), FontStyle.Bold)
+        Dim font As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(9.0F, 11.0F * scale), FontStyle.Bold)
         Dim textSize As Size = TextRenderer.MeasureText(e.Graphics, indicatorText, font)
 
         Dim padX As Integer = CInt(10 * scale)

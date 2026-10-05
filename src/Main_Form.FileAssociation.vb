@@ -116,7 +116,7 @@ Partial Public Class Main_Form
 
         Dim registered_Count As Integer = all_Image_Extensions.Length - failed.Count
         If failed.Count = 0 Then
-            MessageBox.Show(Me,
+            ViewerBox.Show(Me,
                 Localization.TF("Успешно зарегистрировано {0} форматов:" & vbCrLf &
                                 "{1}" & vbCrLf & vbCrLf &
                                 "Изменения применены для текущего пользователя.",
@@ -124,7 +124,7 @@ Partial Public Class Main_Form
                 Localization.T("Регистрация завершена"),
                 MessageBoxButtons.OK, MessageBoxIcon.Information)
         Else
-            MessageBox.Show(Me,
+            ViewerBox.Show(Me,
                 Localization.TF("Зарегистрировано: {0}" & vbCrLf & "Ошибок: {1} ({2})", registered_Count.ToString(), failed.Count.ToString(), String.Join(", ", failed)),
                 Localization.T("Регистрация"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning)
@@ -176,7 +176,7 @@ Partial Public Class Main_Form
 
         Dim registered_Count As Integer = all_Video_Extensions.Length - failed.Count
         If failed.Count = 0 Then
-            MessageBox.Show(Me,
+            ViewerBox.Show(Me,
                 Localization.TF("Успешно зарегистрировано {0} форматов:" & vbCrLf &
                                 "{1}" & vbCrLf & vbCrLf &
                                 "Изменения применены для текущего пользователя.",
@@ -184,7 +184,7 @@ Partial Public Class Main_Form
                 Localization.T("Регистрация завершена"),
                 MessageBoxButtons.OK, MessageBoxIcon.Information)
         Else
-            MessageBox.Show(Me,
+            ViewerBox.Show(Me,
                 Localization.TF("Зарегистрировано: {0}" & vbCrLf & "Ошибок: {1} ({2})", registered_Count.ToString(), failed.Count.ToString(), String.Join(", ", failed)),
                 Localization.T("Регистрация"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning)

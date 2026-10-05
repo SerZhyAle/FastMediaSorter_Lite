@@ -53,7 +53,7 @@ Public Structure TextReadResult
             Dim result As New TextReadResult()
             If String.IsNullOrEmpty(filePath) OrElse Not File.Exists(filePath) Then
                 result.Success = False
-                result.ErrorMessage = "File not found"
+                result.ErrorMessage = Localization.T("Файл не найден")
                 Return result
             End If
 

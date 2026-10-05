@@ -646,7 +646,7 @@ Partial Public Class Main_Form
                 Dim confirmMsg = Localization.TF("Вы уверены, что хотите безвозвратно удалить файл '{0}'? Обратно его уже не уговорить.", Path.GetFileName(doomed_File))
 
                 If Not Is_no_request_before_file_operation AndAlso
-                    MessageBox.Show(Me, confirmMsg, Localization.T("Подтверждение удаления"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
+                    ViewerBox.Show(Me, confirmMsg, Localization.T("Подтверждение удаления"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
 
                     Return False ' User cancelled
                 End If
@@ -682,7 +682,7 @@ Partial Public Class Main_Form
                             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0560: file deleted: " & doomed_File)
                             RemoveCurrentFileFromList(doomed_File)
                         End If
-                        lbl_Status.Text = Localization.T("удалён: ") & doomed_File
+                        lbl_Status.Text = Localization.TF("удалён: {0}", doomed_File)
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0570: case DeleteFile")
                     Else
                         lbl_Status.Text = Localization.T("! Файл не найден")
@@ -1494,6 +1494,9 @@ Partial Public Class Main_Form
         End If
 
         If total_File_Count > 0 Then
+#If Not NETFRAMEWORK Then
+            HideEmptyState()
+#End If
             If current_File_Index < 0 Then current_File_Index = 0
             If current_File_Index >= total_File_Count Then
                 current_File_Index = Math.Max(0, total_File_Count - 1)
@@ -1831,7 +1834,7 @@ Partial Public Class Main_Form
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1060: BgWorker is run")
                     End If
                 Else
-                    lbl_Current_File.Text = Localization.T("Текущий: ") & Current_File_Name
+                    lbl_Current_File.Text = Localization.TF("Текущий: {0}", Current_File_Name)
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1065: BgWorker is not run, online=" & is_BgWorker_Online.ToString & " IsBusy=" & BgWorker.IsBusy.ToString)
                 End If
 
@@ -1876,7 +1879,13 @@ Partial Public Class Main_Form
             ' No file, so no file name either (audit 048, A-15): no worker runs here, and the
             ' label went on naming - with size and date - the file that had just left.
             lbl_Current_File.Text = ""
+#If Not NETFRAMEWORK Then
+            ' The surface says it (below) and the status line repeats it as information, not as a warning:
+            ' the same state must not read as two different severities (124 UX-206/UX-209).
+            Notify(NotifyRules.Classify(Localization.T("! Нет файлов в папке")).Text, NotifyLevel.Info)
+#Else
             lbl_Status.Text = Localization.T("! Нет файлов в папке")
+#End If
             is_PictureBox1_Visible = False
             is_PictureBox2_Visible = False
             is_WebBrowser_Visible = False
@@ -1887,6 +1896,9 @@ Partial Public Class Main_Form
             ResetBackgroundToNeutral()
 
             UpdateControlVisibility()
+#If Not NETFRAMEWORK Then
+            ShowEmptyState()
+#End If
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1090: No files in folder, all wiped")
         End If

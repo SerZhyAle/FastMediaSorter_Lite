@@ -49,20 +49,33 @@ Friend NotInheritable Class ChromeMetrics
     Public Const PanelEdgeInset As Integer = 0
     ''' <summary>The glyph of the pin button in a panel's corner (the button itself is a
     ''' <see cref="MinTarget"/> wide slot, so the hit target stays at the floor).</summary>
-    Public Const PinGlyphSize As Integer = 10
+    Public Const PinGlyphSize As Integer = 12
     ''' <summary>The visual size of the corner pin button (a small unobtrusive button).</summary>
     Public Const PinButtonSize As Integer = 20
     ''' <summary>How far past a panel the pointer still counts as "near it" - the reveal zone.</summary>
     Public Const HotZoneMargin As Integer = 48
     Public Const FocusRingWidth As Integer = 2
     Public Const FocusRingInset As Integer = 2
+    ''' <summary>The room a menu button keeps at its end for its ▾ (125 UX-305), and a submenu row for its ▸.</summary>
+    Public Const ChevronWidth As Integer = 14
+    ''' <summary>The corner mark of an item that has a secondary action (the right click); it was 4 px (125 UX-306).</summary>
+    Public Const SecondaryMarkSize As Integer = 6
+    ''' <summary>How far a submenu overlaps its parent's edge, so the pointer can slide across.</summary>
+    Public Const SubmenuOverlap As Integer = 4
+    ''' <summary>The strip a scrolling menu paints its ▴ / ▾ cue in (125 UX-329).</summary>
+    Public Const ScrollCueHeight As Integer = 14
 
     ' --- ratios (percent, never scaled) -------------------------------------------------
     Public Const PanelOpacityPercent As Integer = 86
     Public Const HairlinePercent As Integer = 12
     Public Const HoverPercent As Integer = 14
     Public Const PressedPercent As Integer = 26
-    Public Const DisabledPercent As Integer = 38
+    ''' <summary>The disabled ink: the foreground at half strength, about 3:1 against the panel on both a light
+    ''' and a dark scheme (125 Q125-5; it was 38 %, near 2.7:1, and an empty recipient slot read poorly).</summary>
+    Public Const DisabledPercent As Integer = 50
+    ''' <summary>The corner pin's ink at rest: free, and pinned (125 UX-313h - it was 35 % / 50 %, about 2.4:1 on a light scheme).</summary>
+    Public Const PinRestPercent As Integer = 55
+    Public Const PinPinnedPercent As Integer = 75
 
     ' --- time ---------------------------------------------------------------------------
     Public Const HoldMilliseconds As Integer = 500

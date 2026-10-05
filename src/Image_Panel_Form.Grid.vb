@@ -480,7 +480,17 @@ Partial Public Class Image_Panel_Form
         Protected Overrides Sub OnPaint(e As PaintEventArgs)
             Dim g As Graphics = e.Graphics
             g.Clear(BackColor)
-            If rows.Count = 0 Then Return
+            If rows.Count = 0 Then
+                ' An empty folder says so (126 UX-609): a bare surface reads the same as
+                ' "the panel has not finished opening".
+                Using ink As New SolidBrush(Color.FromArgb(150, ForeColor))
+                    Using centre As New StringFormat With {
+                            .Alignment = StringAlignment.Center, .LineAlignment = StringAlignment.Center}
+                        g.DrawString(Localization.T("Папка пуста"), Font, ink, ClientRectangle, centre)
+                    End Using
+                End Using
+                Return
+            End If
 
             EnsureGlyphs()
             Dim c As Integer = Cols()

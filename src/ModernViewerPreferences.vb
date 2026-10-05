@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Globalization
@@ -82,6 +82,32 @@ Public NotInheritable Class ModernViewerPreferences
         Return result
     End Function
     Public Property InterfaceScalePercent As Integer
+    Public Property InterfaceScaleRelativePercent As Integer
+
+    Public Function InterfaceFactor(dpi As Integer) As Single
+        If InterfaceScaleRelativePercent > 0 Then Return UiScale.Factor(0, dpi) * InterfaceScaleRelativePercent / 100.0F
+        Return UiScale.Factor(InterfaceScalePercent, dpi)
+    End Function
+
+    Friend Function FolderEnumerationKey() As String
+        Return JsonSerializer.Serialize(New Object() {IncludeSubfolders, IncludedExtensions, IncludeVideoInNavigation,
+            IncludeAudioInNavigation, IncludeDocumentInNavigation, DocumentExtensions, SortOtherFiles,
+            OtherExtensions, SecureIncludeInNavigation, ArchiveMaxEntryMb, ArchiveMaxEntries})
+    End Function
+
+    Friend Function ChromeLayoutKey() As String
+        Return JsonSerializer.Serialize(New Object() {InterfaceScalePercent, InterfaceScaleRelativePercent, ChromeSize,
+            ChromePinned, ChromeOpacityPercent, ChromeCornerRadius, ChromeRow1Pinned, ChromeRow2Pinned, ChromeStatusPinned})
+    End Function
+
+    Friend Function OverlayLayoutKey() As String
+        Return JsonSerializer.Serialize(New Object() {RecipientsOverlayPosition, RecipientsOverlayWidth,
+            RecipientsOverlayFontSize, RecipientsOverlayOpacity, RecipientsOverlayVisibleRows, RecipientsOverlayPinned})
+    End Function
+
+    Friend Function Snapshot() As ModernViewerPreferences
+        Return JsonSerializer.Deserialize(Of ModernViewerPreferences)(JsonSerializer.Serialize(Me))
+    End Function
     Public Property NewImageScaleMode As String = "fit"
     Public Property ReduceMotion As Boolean
 
@@ -96,7 +122,7 @@ Public NotInheritable Class ModernViewerPreferences
     Public Property ChromePinned As Boolean
 
     ''' <summary>Which size the floating panels take: "small", "medium" (the historical size), "large",
-    ''' or "adaptive" (follows the width of the window as well as the monitor scale). It multiplies
+    ''' "adaptive" (follows the width of the window as well as the monitor scale) or "touch" (large targets: every button at least 44 px, 125 Q125-4). It multiplies
     ''' whatever <see cref="InterfaceScalePercent"/> settles on, so it never fights that setting.</summary>
     Public Property ChromeSize As String = "medium"
 
@@ -132,6 +158,16 @@ Public NotInheritable Class ModernViewerPreferences
     Public Property VideoEndAction As String = "stay"
     Public Property PreferredAudioLanguage As String = ""
     Public Property PreferredSubtitleLanguage As String = ""
+
+    ''' <summary>The three keyboard seek steps of 119 Ф-2, in seconds. Shift+arrows use the
+    ''' short one, Alt+arrows the medium one, Ctrl+arrows the long one (VLC's scheme).</summary>
+    Public Property SeekShortSec As Integer = 3
+    Public Property SeekMediumSec As Integer = 10
+    Public Property SeekLongSec As Integer = 60
+
+    ''' <summary>Seconds of pointer stillness before the cursor hides itself in a slideshow
+    ''' or full-screen viewing (119 Ф-6, modern only). Zero means never.</summary>
+    Public Property HideCursorAfterSec As Integer = 3
 
     ''' <summary>What to do when an audio track finishes (SPECIFICATION_AUDIO_FIRST_CLASS_DOTNET10.md PA-4).
     ''' Default "next" - advancing at the end of a track makes sense in a music folder.</summary>
@@ -271,6 +307,7 @@ Public NotInheritable Class ModernViewerPreferences
         p.SortOtherFiles = ReadBool("SortOtherFiles", p.SortOtherFiles)
         p.DocumentExtensions = NormalizeExtensionJson(ReadString("DocumentExtensions", p.DocumentExtensions))
         p.OtherExtensions = NormalizeExtensionJson(ReadString("OtherExtensions", p.OtherExtensions))
+        p.InterfaceScaleRelativePercent = UiScale.NormalizePercent(ReadInt("InterfaceScaleRelativePercent", 0, 0, 150))
         p.InterfaceScalePercent = ReadInt("InterfaceScalePercent", p.InterfaceScalePercent, 0, 150)
         If p.InterfaceScalePercent <> 0 AndAlso p.InterfaceScalePercent < 90 Then p.InterfaceScalePercent = 90
         p.NewImageScaleMode = ReadChoice("NewImageScaleMode", p.NewImageScaleMode, "fit", "actual", "perFolder")
@@ -279,7 +316,7 @@ Public NotInheritable Class ModernViewerPreferences
         p.ChromeOpacityPercent = ReadInt("ChromeOpacityPercent", p.ChromeOpacityPercent, 0, 100)
         p.ChromeCornerRadius = ReadInt("ChromeCornerRadius", p.ChromeCornerRadius, 0, 16)
         p.ChromePinned = ReadBool("ChromePinned", p.ChromePinned)
-        p.ChromeSize = ReadChoice("ChromeSize", p.ChromeSize, "medium", "small", "large", "adaptive")
+        p.ChromeSize = ReadChoice("ChromeSize", p.ChromeSize, "medium", "small", "large", "adaptive", "touch")
         p.ChromeRow1Pinned = ReadBool("ChromeRow1Pinned", p.ChromeRow1Pinned)
         p.ChromeRow2Pinned = ReadBool("ChromeRow2Pinned", p.ChromeRow2Pinned)
         p.ChromeStatusPinned = ReadBool("ChromeStatusPinned", p.ChromeStatusPinned)
@@ -302,6 +339,10 @@ Public NotInheritable Class ModernViewerPreferences
         p.ShowVideoControlsWhenPaused = ReadBool("ShowVideoControlsWhenPaused", p.ShowVideoControlsWhenPaused)
         p.VideoSingleClickAction = ReadChoice("VideoSingleClickAction", p.VideoSingleClickAction, "pauseResume", "nextFile")
         p.VideoEndAction = ReadChoice("VideoEndAction", p.VideoEndAction, "stay", "nextFile", "repeat")
+        p.SeekShortSec = ReadInt("SeekShortSec", p.SeekShortSec, 1, 600)
+        p.SeekMediumSec = ReadInt("SeekMediumSec", p.SeekMediumSec, 1, 600)
+        p.SeekLongSec = ReadInt("SeekLongSec", p.SeekLongSec, 1, 600)
+        p.HideCursorAfterSec = ReadInt("HideCursorAfterSec", p.HideCursorAfterSec, 0, 30)
         p.PreferredAudioLanguage = ReadString("PreferredAudioLanguage", p.PreferredAudioLanguage)
         p.PreferredSubtitleLanguage = ReadString("PreferredSubtitleLanguage", p.PreferredSubtitleLanguage)
 
@@ -353,6 +394,7 @@ Public NotInheritable Class ModernViewerPreferences
         WriteBool("SortOtherFiles", SortOtherFiles)
         WriteString("DocumentExtensions", NormalizeExtensionJson(DocumentExtensions))
         WriteString("OtherExtensions", NormalizeExtensionJson(OtherExtensions))
+        WriteString("InterfaceScaleRelativePercent", InterfaceScaleRelativePercent.ToString(CultureInfo.InvariantCulture))
         WriteString("InterfaceScalePercent", InterfaceScalePercent.ToString(CultureInfo.InvariantCulture))
         WriteString("NewImageScaleMode", NewImageScaleMode)
         WriteBool("ReduceMotion", ReduceMotion)
@@ -380,6 +422,10 @@ Public NotInheritable Class ModernViewerPreferences
         WriteBool("ShowVideoControlsWhenPaused", ShowVideoControlsWhenPaused)
         WriteString("VideoSingleClickAction", VideoSingleClickAction)
         WriteString("VideoEndAction", VideoEndAction)
+        WriteString("SeekShortSec", SeekShortSec.ToString(CultureInfo.InvariantCulture))
+        WriteString("SeekMediumSec", SeekMediumSec.ToString(CultureInfo.InvariantCulture))
+        WriteString("SeekLongSec", SeekLongSec.ToString(CultureInfo.InvariantCulture))
+        WriteString("HideCursorAfterSec", HideCursorAfterSec.ToString(CultureInfo.InvariantCulture))
         WriteString("PreferredAudioLanguage", PreferredAudioLanguage)
         WriteString("PreferredSubtitleLanguage", PreferredSubtitleLanguage)
 
@@ -597,11 +643,12 @@ Public NotInheritable Class ModernViewerPreferences
     Public Sub Normalize()
         NameCollisionPolicy = Choice(NameCollisionPolicy, "ask", "ask", "skip", "rename", "replace")
         AfterFileOperation = Choice(AfterFileOperation, "next", "next", "stay", "closeIfEmpty")
+        InterfaceScaleRelativePercent = UiScale.NormalizePercent(InterfaceScaleRelativePercent)
         InterfaceScalePercent = Clamp(InterfaceScalePercent, 0, 150)
         If InterfaceScalePercent <> 0 AndAlso InterfaceScalePercent < 90 Then InterfaceScalePercent = 90
         NewImageScaleMode = Choice(NewImageScaleMode, "fit", "fit", "actual", "perFolder")
         RecipientsOverlayPosition = Choice(RecipientsOverlayPosition, "topLeft", "topLeft", "topRight", "bottomLeft", "bottomRight")
-        ChromeSize = Choice(ChromeSize, "medium", "medium", "small", "large", "adaptive")
+        ChromeSize = Choice(ChromeSize, "medium", "medium", "small", "large", "adaptive", "touch")
         ChromeOpacityPercent = Clamp(ChromeOpacityPercent, 0, 100)
         ChromeCornerRadius = Clamp(ChromeCornerRadius, 0, 16)
         RecipientsOverlayWidth = Clamp(RecipientsOverlayWidth, 180, 520)
@@ -613,6 +660,10 @@ Public NotInheritable Class ModernViewerPreferences
         VideoControlsHideDelaySec = Clamp(VideoControlsHideDelaySec, 1, 15)
         VideoSingleClickAction = Choice(VideoSingleClickAction, "pauseResume", "pauseResume", "nextFile")
         VideoEndAction = Choice(VideoEndAction, "stay", "stay", "nextFile", "repeat")
+        SeekShortSec = Clamp(SeekShortSec, 1, 600)
+        SeekMediumSec = Clamp(SeekMediumSec, 1, 600)
+        SeekLongSec = Clamp(SeekLongSec, 1, 600)
+        HideCursorAfterSec = Clamp(HideCursorAfterSec, 0, 30)
 
         AudioEndAction = Choice(AudioEndAction, "next", "next", "stay", "repeat")
         SleepTimerMinutes = Clamp(SleepTimerMinutes, 0, 180)

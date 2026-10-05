@@ -23,7 +23,14 @@ Partial Public Class Main_Form
     End Property
 
     Private Sub ApplyTheme(palette As ThemePalette) Implements IThemeAware.ApplyTheme
-        ' Content-coloured: nothing here follows the palette (see the file remark).
+        ' Content-coloured: nothing here follows the palette (see the file remark) - EXCEPT the first-run card.
+        ' It is a text card, not content: the Designer made it white with black text, which in a dark theme was the one
+        ' white slab in the whole application (124 UX-210).
+        If lbl_Help_Info IsNot Nothing AndAlso Not lbl_Help_Info.IsDisposed Then
+            lbl_Help_Info.BackColor = palette.SurfaceRaised
+            lbl_Help_Info.ForeColor = palette.TextPrimary
+            lbl_Help_Info.BorderStyle = If(palette.IsDark, BorderStyle.FixedSingle, BorderStyle.Fixed3D)
+        End If
     End Sub
 
 End Class

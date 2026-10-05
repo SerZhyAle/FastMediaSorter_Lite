@@ -84,7 +84,11 @@ Partial Public Class Main_Form
         ocr_Auto_Timer.Stop()
         UpdateOcrButtonVisual()
         If toolTip IsNot Nothing AndAlso btn_Translate IsNot Nothing Then
+#If Not NETFRAMEWORK Then
+            toolTip.SetToolTip(btn_Translate, Localization.T("OCR + перевод текущего изображения (T). ПКМ - настройки. Shift+T - авто-режим."))
+#Else
             toolTip.SetToolTip(btn_Translate, Localization.T("OCR + перевод текущего изображения (T) - притворимся, что понимаем эту мангу. ПКМ - настройки. Shift+T - авто-режим."))
+#End If
         End If
     End Sub
 
@@ -252,7 +256,7 @@ Partial Public Class Main_Form
 
         Dim question As String = Localization.TF("Для распознавания нужны языковые пакеты OCR: {0}. Скачать их сейчас?",
                                                  OcrLanguageCatalog.DescribeTesseractCodes(wanted))
-        If MessageBox.Show(Me, question, ProductNames.Full, MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
+        If ViewerBox.Show(Me, question, ProductNames.Full, MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
             Dim toFetch As List(Of String) = wanted
             If Await OptionalRuntimeManager.DownloadWithDialogAsync(
                     Me, Localization.T("Языковые пакеты OCR"),
@@ -477,7 +481,7 @@ Partial Public Class Main_Form
             ' "no text found" hides the one fact that would let them fix it. Never cached -
             ' picking the language is exactly the thing that makes the next run different.
             If OcrLanguageGuard.ShouldRefuse(String.Equals(job.OcrSourceHint, "auto", StringComparison.Ordinal),
-                                             blocks, dropped) Then
+                                             blocks, dropped, ocrResult.MeanConfidence) Then
 #If Not NETFRAMEWORK Then
                 ' Nothing is painted, so nothing would dump - and a refused run is precisely
                 ' the scene the record exists for.
@@ -856,12 +860,32 @@ Partial Public Class Main_Form
 
     ''' <summary>Drops every cached OCR/translation result and clears the current
     ''' overlay. Called when the OCR tab of the Settings window is opened so a
-    ''' parameter change can't reuse a stale result.</summary>
-    Friend Sub ClearOcrResultCache()
-        If ocr_Cache IsNot Nothing Then ocr_Cache.Clear()
+    ''' parameter change can't reuse a stale result. Storage passes memoryOnly after
+    ''' its background disk clear, avoiding a second disk walk on the UI thread.</summary>
+    Friend Sub ClearOcrResultCache(Optional memoryOnly As Boolean = False)
+        If ocr_Cache IsNot Nothing Then
+            If memoryOnly Then
+                ocr_Cache.ClearMemory()
+            Else
+                ocr_Cache.Clear()
+            End If
+        End If
         CancelOcrJob()
         current_Overlay_Document = Nothing
         InvalidateOverlay()
+    End Sub
+
+    ''' <summary>Deletes the OCR cache documents on disk only - the slow half of a clear,
+    ''' handed to <see cref="ClearOcrResultCache"/> callers that run off the UI thread
+    ''' (the Storage page's clear, 130 §3.3). The memory tier and the overlay stay with
+    ''' <see cref="ClearOcrResultCache"/>, which belongs to the UI thread.</summary>
+    Friend Sub ClearOcrResultCacheOnDisk()
+#If NETFRAMEWORK Then
+        If ocr_Cache IsNot Nothing Then ocr_Cache.ClearDisk()
+#Else
+        ' Disk results may exist before this process has created its memory cache.
+        CacheMaintenance.ClearFiles(OcrPaths.OcrCacheDir(), "*.json")
+#End If
     End Sub
 
     ''' <summary>Applies a live edit made on the Settings window's OCR tab: pushes
@@ -885,8 +909,12 @@ Partial Public Class Main_Form
         Table_Form.PrepareForDisplay()
         Table_Form.SelectOcrTab()
         PinToViewerBand(Table_Form)
-        Table_Form.Show(Me)
+        If Not Table_Form.Visible Then Table_Form.Show(Me)
+#If NETFRAMEWORK Then
         Table_Form.Activate()
+#Else
+        Table_Form.ActivateModernSettingsOnOwnerMonitor()
+#End If
     End Sub
 
 End Class

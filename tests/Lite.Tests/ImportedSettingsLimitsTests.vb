@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Globalization
@@ -196,7 +196,7 @@ Public Class ImportedSettingsLimitsTests
             New ChoiceSpec("AudioEndAction", "next", "next", "stay", "repeat"),
             New ChoiceSpec("StartupOpenMode", "home", "home", "lastFolder", "lastFile"),
             New ChoiceSpec("PanelViewMode", "grid", "grid", "list"),
-            New ChoiceSpec("ChromeSize", "medium", "medium", "small", "large", "adaptive")
+            New ChoiceSpec("ChromeSize", "medium", "medium", "small", "large", "adaptive", "touch")
         }
     End Function
 
@@ -250,6 +250,10 @@ Public Class ImportedSettingsLimitsTests
             New NumericSpec("RecipientsOverlayOpacity", 40, 100),
             New NumericSpec("RecipientsOverlayVisibleRows", 3, 11),
             New NumericSpec("VideoControlsHideDelaySec", 1, 15),
+            New NumericSpec("SeekShortSec", 1, 600),
+            New NumericSpec("SeekMediumSec", 1, 600),
+            New NumericSpec("SeekLongSec", 1, 600),
+            New NumericSpec("HideCursorAfterSec", 0, 30),
             New NumericSpec("SleepTimerMinutes", 0, 180),
             New NumericSpec("RecentFilesLimit", 0, 200),
             New NumericSpec("RecentFoldersLimit", 0, 200),
@@ -344,6 +348,7 @@ Public Class ImportedSettingsLimitsTests
             .IncludeSubfolders = True,
             .IncludedExtensions = "[""jpg"", ""png""]",
             .InterfaceScalePercent = 120,
+            .InterfaceScaleRelativePercent = 110,
             .NewImageScaleMode = "actual",
             .ReduceMotion = True,
             .RecipientsOverlayPosition = "bottomRight",
@@ -358,6 +363,10 @@ Public Class ImportedSettingsLimitsTests
             .IncludeVideoInNavigation = False,
             .RememberVideoPosition = False,
             .VideoControlsHideDelaySec = 5,
+            .SeekShortSec = 4,
+            .SeekMediumSec = 12,
+            .SeekLongSec = 90,
+            .HideCursorAfterSec = 7,
             .ShowVideoControlsWhenPaused = False,
             .VideoSingleClickAction = "nextFile",
             .VideoEndAction = "repeat",
@@ -431,7 +440,7 @@ Public Class ImportedSettingsLimitsTests
 
     <Fact>
     Public Sub The_numeric_inventory_covers_every_integer_property_including_the_two_specials()
-        Dim listed As New HashSet(Of String)(NumericSpecs().Select(Function(spec) spec.Name)) From {"InterfaceScalePercent", "PanelThumbnailSize"}
+        Dim listed As New HashSet(Of String)(NumericSpecs().Select(Function(spec) spec.Name)) From {"InterfaceScalePercent", "InterfaceScaleRelativePercent", "PanelThumbnailSize"}
         Dim actual As New HashSet(Of String)(ModernViewerPreferences.WritableProperties().
                                              Where(Function(prop) prop.PropertyType = GetType(Integer)).
                                              Select(Function(prop) prop.Name))
@@ -498,6 +507,7 @@ Public Class ImportedSettingsLimitsTests
             .DocumentExtensions = "[""txt"", ""pdf""]", .OtherExtensions = "[""xyz""]",
             .TextPreviewMaxKb = 1024,
             .InterfaceScalePercent = 120,
+            .InterfaceScaleRelativePercent = 110,
             .NewImageScaleMode = "perFolder", .ReduceMotion = True, .ModernChrome = False, .ChromePinned = True, .ChromeRow1Pinned = True, .ChromeRow2Pinned = True, .ChromeStatusPinned = True, .RecipientsOverlayPinned = True, .ChromeSize = "adaptive", .ChromeOpacityPercent = 75, .ChromeCornerRadius = 10,
             .RecipientsOverlayPosition = "bottomRight", .RecipientsOverlayWidth = 400,
             .RecipientsOverlayFontSize = 14, .RecipientsOverlayOpacity = 77,
@@ -505,6 +515,7 @@ Public Class ImportedSettingsLimitsTests
             .StopSlideshowOnManualNavigation = False, .SlideshowUiMode = "toolbarAndStatus",
             .VideoAutoplay = False, .IncludeVideoInNavigation = False, .RememberVideoPosition = False,
             .VideoControlsHideDelaySec = 9, .ShowVideoControlsWhenPaused = False,
+            .SeekShortSec = 5, .SeekMediumSec = 15, .SeekLongSec = 120, .HideCursorAfterSec = 9,
             .VideoSingleClickAction = "nextFile", .VideoEndAction = "repeat",
             .PreferredAudioLanguage = "ru", .PreferredSubtitleLanguage = "en",
             .AudioEndAction = "repeat", .IncludeAudioInNavigation = False,

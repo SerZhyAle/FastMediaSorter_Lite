@@ -47,6 +47,9 @@ Partial Public Class Main_Form
 
         ' Leaving full-screen always clears super-full-screen.
         If Not is_Full_Screen_Mode Then is_Super_Full_Screen_Mode = False
+#If Not NETFRAMEWORK Then
+        MarkSettingsDirty()
+#End If
 
         ApplyChromeVisibility()
 #If Not NETFRAMEWORK Then
@@ -139,6 +142,12 @@ Partial Public Class Main_Form
 
     Private Sub SetViewSizes()
         ISizeChanged()
+#If Not NETFRAMEWORK Then
+        ' Every way into and out of full screen (F7, F11, Esc, the toolbar button, a double click) comes
+        ' through here, so the 119 Ф-6 cursor-hide timer starts and stops with it (UX-107 of 123): it was
+        ' started by the two hotkeys only, so a full screen entered with the button never hid the pointer.
+        UpdateCursorHideTimer()
+#End If
     End Sub
 
     Private Sub Form1_Resize(sender As Object, e As EventArgs) Handles Me.Resize

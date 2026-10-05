@@ -39,6 +39,10 @@ Partial Public Class Main_Form
     Private Const Visualiser_Hold_Poll_Ms As Integer = 250
     Private WithEvents audio_Visualiser_Timer As New Timer() With {.Interval = Visualiser_Frame_Interval_Ms}
 
+    ''' <summary>Polls the sleep timer while audio plays. Its own timer, NOT the transport bar's tick (121 UX-404): that tick
+    ''' stops with the bar, and the bar is never shown in the full screen without panels - music went on past the deadline.</summary>
+    Private WithEvents audio_Sleep_Poll_Timer As New Timer() With {.Interval = 1000}
+
     ''' <summary>How long the tag parse may take before the plate falls back to the file
     ''' name. Handed to libvlc itself, so a slow share ends the parse instead of a guard
     ''' nobody reaches.</summary>
@@ -505,7 +509,23 @@ Partial Public Class Main_Form
                                           If(modern_Preferences Is Nothing, 0, modern_Preferences.SleepTimerMinutes),
                                           automatic:=audio_Auto_Advancing OrElse Is_slide_show_mode)
         audio_Sleep_Stopped = False
+        UpdateAudioSleepPoll()
     End Sub
+
+    ''' <summary>The poll runs exactly while TransportRules.SleepCheckNeeded says so.</summary>
+    Private Sub UpdateAudioSleepPoll()
+        If TransportRules.SleepCheckNeeded(IsAudioNowPlaying(), is_Vlc_Playing, audio_Sleep_Stopped) Then
+            If Not audio_Sleep_Poll_Timer.Enabled Then audio_Sleep_Poll_Timer.Start()
+        Else
+            audio_Sleep_Poll_Timer.Stop()
+        End If
+    End Sub
+
+    Private Sub Audio_Sleep_Poll_Timer_Tick(sender As Object, e As EventArgs) Handles audio_Sleep_Poll_Timer.Tick
+        CheckAudioSleepTimer()
+        UpdateAudioSleepPoll()
+    End Sub
+
     Friend Sub CheckAudioSleepTimer()
         If Not IsAudioNowPlaying() OrElse audio_Sleep_Stopped OrElse modern_Preferences Is Nothing Then Return
         If Not audio_Sleep_Deadline.IsDue(Environment.TickCount64, modern_Preferences.SleepTimerMinutes) Then Return
@@ -516,7 +536,10 @@ Partial Public Class Main_Form
         ' armed a FRESH deadline. Playback then stopped for a few seconds every N minutes
         ' and never ended. The timer has ended the listening; the slideshow ends with it.
         SlideShowStop()
-        lbl_Status.Text = Localization.T("Таймер сна остановил воспроизведение")
+        ' A warning, so that where the status line is not on screen (the full screen without panels) the toast says
+        ' why the music stopped (121 UX-404).
+        Notify(Localization.T("Таймер сна остановил воспроизведение"), NotifyLevel.Warning)
+        UpdateAudioSleepPoll()
     End Sub
 
     ''' <summary>A non-audio file is being shown: the listening session is over, and a
@@ -527,6 +550,7 @@ Partial Public Class Main_Form
     ''' advance has to keep its running deadline (050 D-03).</summary>
     Friend Sub EndAudioListening()
         audio_Sleep_Deadline.Disarm()
+        audio_Sleep_Poll_Timer.Stop()
     End Sub
     Friend Sub ClearAudioSurface()
         audio_Visualiser_Timer.Stop()
@@ -540,6 +564,7 @@ Partial Public Class Main_Form
         audio_Visualiser_Still = False
         audio_Visualiser_Timer.Interval = Visualiser_Frame_Interval_Ms
         audio_Sleep_Stopped = False
+        audio_Sleep_Poll_Timer.Stop()
     End Sub
 End Class
 #End If

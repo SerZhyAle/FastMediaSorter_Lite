@@ -5,7 +5,8 @@ Imports System.Collections.Generic
 Imports System.Drawing
 
 ''' <summary>
-''' The editor's own undo history (SPECIFICATION_IMAGE_EDITOR_DOTNET10.md §8).
+''' The editor's own undo and redo history (SPECIFICATION_IMAGE_EDITOR_DOTNET10.md §8,
+''' ticket 126 Ф-2).
 '''
 ''' <b>Snapshots, not a journal of operations.</b> A journal has to be replayed to be
 ''' useful, and replaying is where a drawing editor grows bugs: every tool would need an
@@ -17,6 +18,15 @@ Imports System.Drawing
 ''' 1.9 GB</b>, so the editor would die of OutOfMemory on exactly the machine where big
 ''' photos are sorted. The budget is therefore two limits at once - a step count and a
 ''' byte total - and the older half is dropped when either is exceeded.
+'''
+''' <b>Redo shares the budget</b> (126 Q126-1): the byte total and the step count cover
+''' both stacks together, so a photo small enough for twenty undo steps keeps its redo
+''' steps too, and a photo big enough to evict starts dropping the oldest undo steps
+''' first - the steps already behind the user matter more than the ones they walked away
+''' from. A new edit invalidates the redo stack, as everywhere; that is
+''' <see cref="ClearRedo"/>, called by the window when an edit COMMITS, not when it
+''' starts - a gesture that ends as a stray click would otherwise wipe a redo it never
+''' earned.
 '''
 ''' Not connected to the viewer's own <c>Undo()</c> (the <c>U</c> key), which undoes a
 ''' file operation - a different history of a different thing (§4, invariant 9).
@@ -30,9 +40,11 @@ Friend NotInheritable Class EditorUndoStack
     ''' needs, and it is the number the specification names.</summary>
     Friend Const Default_Max_Steps As Integer = 20
 
-    ''' <summary>~512 MB of snapshots. Reached at 20 steps only once a picture is past
-    ''' 6 megapixels; below that the step count is the binding limit, which is the
-    ''' intended order.</summary>
+    ''' <summary>~512 MB of snapshots, undo and redo together (126 Q126-1). Reached at 20
+    ''' steps only once a picture is past 6 megapixels; below that the step count is the
+    ''' binding limit, which is the intended order. It stays where the specification put
+    ''' it: raising it trades real gigabytes for undo depth and is an owner decision with
+    ''' a measured reason, not a number to bump.</summary>
     Friend Const Default_Max_Bytes As Long = 512L * 1024L * 1024L
 
     ''' <summary>What one snapshot costs: the copy is 32bpp regardless of what the
@@ -46,7 +58,19 @@ Friend NotInheritable Class EditorUndoStack
     ''' back. A List is enough at twenty entries and keeps the byte accounting readable.</summary>
     Private ReadOnly snapshots As New List(Of Bitmap)()
 
+    ''' <summary>The states an undo walked away from, oldest first. Each holds the REAL
+    ''' bitmap the window swapped out - no second copy is taken - which is why
+    ''' <see cref="Undo"/> and <see cref="Redo"/> take ownership of the picture being
+    ''' left instead of the window disposing it.</summary>
+    Private ReadOnly redo_Snapshots As New List(Of Bitmap)()
+
     Private total_Bytes As Long
+    Private redo_Bytes As Long
+
+    ''' <summary>Set once any eviction has dropped a step, and never cleared: once the
+    ''' history has thrown something away the window's status line has to keep saying
+    ''' so, or the next undo would quietly jump further than the one step it promises.</summary>
+    Private steps_Dropped As Boolean
 
     Friend Sub New()
         Me.New(Default_Max_Steps, Default_Max_Bytes)
@@ -65,17 +89,37 @@ Friend NotInheritable Class EditorUndoStack
         End Get
     End Property
 
-    ''' <summary>What the history is holding right now. Exposed for the test that proves
-    ''' the budget is real; the editor itself only asks <see cref="CanUndo"/>.</summary>
+    Friend ReadOnly Property RedoCount As Integer
+        Get
+            Return redo_Snapshots.Count
+        End Get
+    End Property
+
+    ''' <summary>What both stacks are holding right now. The budget they share is the
+    ''' sum, so the exposed figure is the sum.</summary>
     Friend ReadOnly Property ByteSize As Long
         Get
-            Return total_Bytes
+            Return total_Bytes + redo_Bytes
         End Get
     End Property
 
     Friend ReadOnly Property CanUndo As Boolean
         Get
             Return snapshots.Count > 0
+        End Get
+    End Property
+
+    Friend ReadOnly Property CanRedo As Boolean
+        Get
+            Return redo_Snapshots.Count > 0
+        End Get
+    End Property
+
+    ''' <summary>True from the first eviction on, for the window's
+    ''' "old steps were dropped" message.</summary>
+    Friend ReadOnly Property StepsWereDropped As Boolean
+        Get
+            Return steps_Dropped
         End Get
     End Property
 
@@ -87,6 +131,9 @@ Friend NotInheritable Class EditorUndoStack
     ''' <b>cleared</b> rather than left as it was: leaving it would put an older state on
     ''' top, and the next "Undo" would silently throw away more than the one step it
     ''' promises. No undo is honest; an undo that jumps two edits back is not.
+    '''
+    ''' The redo stack is NOT touched here: a gesture that will end as a stray click has
+    ''' not earned that. The window calls <see cref="ClearRedo"/> when the edit commits.
     ''' </summary>
     Friend Sub Push(image As Bitmap)
         If image Is Nothing Then Return
@@ -109,7 +156,8 @@ Friend NotInheritable Class EditorUndoStack
     ''' The most recent snapshot, removed from the history. <b>The caller owns the bitmap
     ''' it gets</b> and must dispose it once it has been swapped in - the alternative is
     ''' this class holding a reference to pixels the editor is actively drawing on.
-    ''' Nothing when there is nothing to undo.
+    ''' Nothing when there is nothing to undo. This is the plain take the window uses to
+    ''' give back a gesture's own snapshot; the user-facing undo is <see cref="Undo"/>.
     ''' </summary>
     Friend Function Pop() As Bitmap
         If snapshots.Count = 0 Then Return Nothing
@@ -122,12 +170,77 @@ Friend NotInheritable Class EditorUndoStack
         Return snapshot
     End Function
 
+    ''' <summary>
+    ''' One user-visible undo, as a transaction: the newest snapshot comes back to be
+    ''' restored, and the picture being left goes onto the redo stack AS IT IS - no copy,
+    ''' the same pixels the eye just saw.
+    '''
+    ''' <paramref name="current"/> is handed over: the caller swaps in the returned bitmap
+    ''' and must NOT dispose what it passed here. Nothing when there is nothing to undo,
+    ''' in which case <paramref name="current"/> is left alone.
+    ''' </summary>
+    Friend Function Undo(current As Bitmap) As Bitmap
+        Dim previous As Bitmap = Pop()
+        If previous Is Nothing Then Return Nothing
+
+        If current IsNot Nothing Then
+            redo_Snapshots.Add(current)
+            redo_Bytes += SnapshotBytes(current.Width, current.Height)
+            ' The redo side grows here, so this is where the shared budget can overflow
+            ' with undo nowhere near its cap. The step being walked back TO is the newest
+            ' redo and is never dropped, like the newest undo on Push.
+            While redo_Snapshots.Count > 1 AndAlso OverBudget()
+                DropOldestRedo()
+            End While
+        End If
+        Return previous
+    End Function
+
+    ''' <summary>
+    ''' One user-visible redo, the mirror of <see cref="Undo"/>: the state that was
+    ''' undone comes back, and the picture being left returns to the undo stack - where
+    ''' it came from, so undo and redo stay exact inverses however far the user walks in
+    ''' either direction.
+    '''
+    ''' <paramref name="current"/> is handed over and must NOT be disposed by the caller.
+    ''' Nothing when there is nothing to redo.
+    ''' </summary>
+    Friend Function Redo(current As Bitmap) As Bitmap
+        If redo_Snapshots.Count = 0 Then Return Nothing
+
+        Dim last As Integer = redo_Snapshots.Count - 1
+        Dim target As Bitmap = redo_Snapshots(last)
+        redo_Snapshots.RemoveAt(last)
+        redo_Bytes -= SnapshotBytes(target.Width, target.Height)
+        If redo_Bytes < 0 Then redo_Bytes = 0
+
+        If current IsNot Nothing Then
+            snapshots.Add(current)
+            total_Bytes += SnapshotBytes(current.Width, current.Height)
+            ' The just-returned state is the NEWEST undo entry and eviction only takes
+            ' from the front, so one entry always survives the same way Push guarantees.
+            EvictWhileOverBudget()
+        End If
+        Return target
+    End Function
+
+    ''' <summary>Called by the window when an edit commits: from here the redo states no
+    ''' longer describe any future this picture can have.</summary>
+    Friend Sub ClearRedo()
+        For Each snapshot As Bitmap In redo_Snapshots
+            snapshot.Dispose()
+        Next
+        redo_Snapshots.Clear()
+        redo_Bytes = 0
+    End Sub
+
     Friend Sub Clear()
         For Each snapshot As Bitmap In snapshots
             snapshot.Dispose()
         Next
         snapshots.Clear()
         total_Bytes = 0
+        ClearRedo()
     End Sub
 
     ''' <summary>What a snapshot of this size costs. Public to the tests for the same
@@ -136,21 +249,39 @@ Friend NotInheritable Class EditorUndoStack
         Return CLng(Math.Max(0, width)) * Math.Max(0, height) * Bytes_Per_Pixel
     End Function
 
+    Private Function OverBudget() As Boolean
+        Return snapshots.Count + redo_Snapshots.Count > max_Steps OrElse
+               total_Bytes + redo_Bytes > max_Bytes
+    End Function
+
     ''' <summary>
-    ''' Drops the oldest snapshots until both limits are met.
+    ''' Drops the oldest undo snapshots until both limits are met.
     '''
     ''' <b>The newest is never dropped</b>, even when it alone is over the byte budget.
     ''' On a picture that big the alternative is an editor with no undo at all, and the
     ''' live bitmap already costs the same amount - one step back is worth the second copy.
     ''' </summary>
     Private Sub EvictWhileOverBudget()
-        While snapshots.Count > 1 AndAlso (snapshots.Count > max_Steps OrElse total_Bytes > max_Bytes)
+        While snapshots.Count > 1 AndAlso OverBudget()
             Dim oldest As Bitmap = snapshots(0)
             snapshots.RemoveAt(0)
             total_Bytes -= SnapshotBytes(oldest.Width, oldest.Height)
             oldest.Dispose()
+            steps_Dropped = True
         End While
         If total_Bytes < 0 Then total_Bytes = 0
+    End Sub
+
+    ''' <summary>The redo side's own overflow: the OLDEST redo state goes first - it is
+    ''' the one furthest from where the user is standing - and the one just added is
+    ''' never dropped, or the undo that put it there would not invert.</summary>
+    Private Sub DropOldestRedo()
+        Dim oldest As Bitmap = redo_Snapshots(0)
+        redo_Snapshots.RemoveAt(0)
+        redo_Bytes -= SnapshotBytes(oldest.Width, oldest.Height)
+        If redo_Bytes < 0 Then redo_Bytes = 0
+        oldest.Dispose()
+        steps_Dropped = True
     End Sub
 
     Public Sub Dispose() Implements IDisposable.Dispose

@@ -47,7 +47,7 @@ Friend NotInheritable Class ResourceImportFlow
     Friend Shared Function Run(owner As IWin32Window, read As FmsConfigReadResult) As IReadOnlyList(Of String)
         Dim title As String = Localization.T("Импорт ресурса")
         If read Is Nothing OrElse Not read.Succeeded Then
-            MessageBox.Show(owner, ResourceMessages.ForImportFailure(If(read, New FmsConfigReadResult()).Failure), title,
+            ViewerBox.Show(owner, ResourceMessages.ForImportFailure(If(read, New FmsConfigReadResult()).Failure), title,
                             MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return New List(Of String)()
         End If
@@ -57,23 +57,23 @@ Friend NotInheritable Class ResourceImportFlow
 
         If preview.Refusal = ImportRefusal.PinnedRoot Then
             Dim locked As FmsRootPlan = read.Plan.RefusedRoots.FirstOrDefault()
-            MessageBox.Show(owner,
+            ViewerBox.Show(owner,
                 Localization.TF("Файл не импортирован: папка «{0}» защищена PIN-кодом, а Fast Media Sorter пока не умеет открывать такие ресурсы.",
                                 If(locked IsNot Nothing, If(locked.Label.Length > 0, locked.Label, locked.VirtualPath), "")),
                 title, MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return New List(Of String)()
         End If
         If Not preview.CanApply Then
-            MessageBox.Show(owner, Localization.T("В файле нет ни одной папки для импорта"), title, MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ViewerBox.Show(owner, Localization.T("В файле нет ни одной папки для импорта"), title, MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return New List(Of String)()
         End If
 
-        If MessageBox.Show(owner, Summary(preview), title, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) <> DialogResult.OK Then Return New List(Of String)()
+        If ViewerBox.Show(owner, Summary(preview), title, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) <> DialogResult.OK Then Return New List(Of String)()
 
         Dim password As String = Nothing
         If preview.NeedsPassword Then
             Using dialog As New Resource_Credential_Form(read.Plan.ResourceName, read.Plan.UserName, retry:=False, showRemember:=False)
-                If dialog.ShowDialog(owner) <> DialogResult.OK Then Return New List(Of String)()
+                If DialogLayer.ShowViewerDialog(dialog, owner) <> DialogResult.OK Then Return New List(Of String)()
                 password = dialog.Credential
             End Using
         End If
@@ -82,7 +82,7 @@ Friend NotInheritable Class ResourceImportFlow
         If preview.RequiresPinConfirmation Then
             Dim changed As ImportItem = preview.Items.First(Function(i) i.Pin.RequiresConfirmation)
             ' Cancel is the default: a changed key is the one thing in an import that must be a deliberate yes.
-            confirmedPin = MessageBox.Show(owner,
+            confirmedPin = ViewerBox.Show(owner,
                 Localization.TF("Ключ сервера в файле отличается от запомненного.{0}Запомнен: {1}{0}В файле: {2}{0}{0}Заменить его? Если вы не ждали этого, ответьте «Нет».",
                                 vbLf, changed.Pin.StoredPin, changed.Pin.ImportedPin),
                 title, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) = DialogResult.Yes
@@ -92,7 +92,7 @@ Friend NotInheritable Class ResourceImportFlow
             AddressOf ResourceRegistry.HiveRead, AddressOf ResourceRegistry.HiveWrite, New RegistryResourceSecretStore())
         If result.Outcome <> ImportApplyOutcome.Applied Then
             AppFileLogger.WriteLine("Resource: import stopped - " & result.Outcome.ToString() & "/" & result.Failure.ToString() & " after " & result.Committed.ToString())
-            MessageBox.Show(owner, Localization.T("Не удалось сохранить ресурс. Ничего не потеряно: то, что было сохранено раньше, осталось как было"),
+            ViewerBox.Show(owner, Localization.T("Не удалось сохранить ресурс. Ничего не потеряно: то, что было сохранено раньше, осталось как было"),
                             title, MessageBoxButtons.OK, MessageBoxIcon.Error)
         End If
         Return result.Ids

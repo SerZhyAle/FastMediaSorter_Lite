@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Explicit On
 Option Strict On
 Option Infer On
@@ -16,6 +16,7 @@ Partial Public Class Table_Form
     Private ReadOnly pageIds As New Dictionary(Of TabPage, String)()
     Private ReadOnly rowGroups As New Dictionary(Of String, String)(StringComparer.Ordinal)
     Private ReadOnly groupCaptionKeys As New Dictionary(Of String, String)(StringComparer.Ordinal)
+    Private ReadOnly groupRowOrder As New Dictionary(Of String, String())(StringComparer.Ordinal)
     Private settingsContext As New SettingsUiContext()
     Private settingsContextReady As Boolean
     Private restoringSettingsContext As Boolean
@@ -61,43 +62,49 @@ Partial Public Class Table_Form
         AddSettingsGroup("general", "basic", "Основные настройки", True, "interface_language", "ui_theme")
         AddSettingsGroup("general", "interface", "Оформление", True,
                          "interface_scale", "reduce_motion", "chrome_pinned", "chrome_size", "chrome_opacity", "chrome_corners",
-                         "show_picture_size", "show_file_size", "show_file_date", "show_info_overlay")
-        AddSettingsGroup("general", "startup", "При запуске открывать", True, "startup_open", "resume_last_playback", "allow_new_windows", "secondary_instance_warning")
-        AddSettingsGroup("general", "advanced", "Дополнительные настройки", False, "settings_export_personal", "settings_export", "settings_import")
+                         "show_info_overlay", "video_hide_cursor")
+        AddSettingsGroup("general", "startup", "Запуск", True, "startup_open", "resume_last_playback", "allow_new_windows", "secondary_instance_warning")
+        AddSettingsGroup("general", "advanced", "Дополнительные настройки", False, "settings_export_personal", "settings_export", "settings_import", "settings_defaults")
         AddSettingsGroup("recipients", "basic", "Основные настройки", True, "recipients_overlay")
         AddSettingsGroup("recipients", "overlay", "Вид таблицы получателей", False,
                          "recipients_position", "recipients_width", "recipients_font", "recipients_opacity", "recipients_rows")
-        AddSettingsGroup("images", "basic", "Основные настройки", True, "new_image_scale", "exif_rotate", "wheel_zooms")
+        AddSettingsGroup("images", "basic", "Основные настройки", True, "new_image_scale", "exif_rotate", "wheel_zooms", "show_picture_size", "show_file_size", "show_file_date")
         AddSettingsGroup("images", "background", "Фон изображения", False, "background_color", "perspective", "dynamic_perspective", "animated_perspective", "halo_speed")
         AddSettingsGroup("images", "slideshow", "Поведение слайд-шоу", True, "slideshow_interval", "slideshow_random_order", "stop_slideshow_manual", "slideshow_ui")
         AddSettingsGroup("images", "advanced", "Дополнительные настройки", False, "hq_scaling", "thumbnail_size")
         AddSettingsGroup("video", "basic", "Основные настройки", True,
-                         "include_video_navigation", "video_autoplay", "video_loop", "video_end_action", "video_remember_position")
+                         "include_video_navigation", "video_autoplay", "video_end_action", "video_remember_position", "shared_audio_settings")
         AddSettingsGroup("video", "tracks", "Дорожки и субтитры", False, "preferred_audio_language", "preferred_subtitle_language")
-        AddSettingsGroup("video", "controls", "Информация и управление", False, "video_click_action", "video_controls_delay", "video_controls_paused")
+        AddSettingsGroup("video", "controls", "Управление воспроизведением", False, "video_click_action", "video_controls_delay", "video_controls_paused",
+                         "video_seek_short", "video_seek_medium", "video_seek_long")
         AddSettingsGroup("audio", "basic", "Основные настройки", True, "include_audio_navigation", "audio_end_action", "video_volume", "video_mute")
-        AddSettingsGroup("audio", "display", "Информация и управление", True, "audio_controls_visible", "audio_visualiser")
-        AddSettingsGroup("audio", "advanced", "Дополнительные настройки", False, "audio_sleep_timer")
+        AddSettingsGroup("audio", "display", "Информация и управление", True, "audio_controls_visible", "audio_visualiser", "audio_sleep_timer")
         AddSettingsGroup("files", "basic", "Основные настройки", True,
-                         "advance_after_copy", "no_confirmation", "name_collision", "after_file_operation", "create_missing_destination", "delete_to_recycle_bin", "confirm_delete")
+                         "advance_after_copy", "name_collision", "after_file_operation", "create_missing_destination", "delete_to_recycle_bin", "confirm_delete", "no_confirmation")
         AddSettingsGroup("files", "content", "Типы файлов", True,
                          "include_subfolders", "included_extensions", "include_document_navigation", "document_extensions", "text_preview_max_kb", "sort_other_files", "other_extensions")
         AddSettingsGroup("files", "history", "Недавние файлы и папки", False, "recent_files_limit", "recent_folders_limit", "recent_history")
-        AddSettingsGroup("files", "archives", "Архивы", False, "archive_cache_limit", "archive_entry_limit", "archive_entries_limit")
+        AddSettingsGroup("files", "archives", "Архивы", False, "archive_entry_limit", "archive_entries_limit")
         AddSettingsGroup("files", "secure", "Защищённые файлы", False, "secure_in_navigation", "secure_remember_minutes", "secure_show_true_name", "secure_open_with")
-        AddSettingsGroup("files", "advanced", "Дополнительные настройки", False, "custom_hotkeys", "image_associations", "video_associations")
+        AddSettingsGroup("files", "advanced", "Клавиши и ассоциации", True, "custom_hotkeys", "image_associations", "video_associations")
         AddSettingsGroup("ocr", "basic", "Основные настройки", True, "ocr_enabled", "ocr_auto")
         AddSettingsGroup("ocr", "recognition", "Распознавание текста", True, "ocr_source", "ocr_quality", "ocr_mode", "ocr_download")
-        AddSettingsGroup("ocr", "advanced", "Дополнительные настройки", False, "ocr_cache_limit", "ocr_cache_clear")
         AddSettingsGroup("translation", "basic", "Основные настройки", True, "ocr_provider", "ocr_target")
         AddSettingsGroup("translation", "provider", "Сервис перевода", True, "ocr_endpoint", "ocr_server", "ocr_model", "ocr_api")
-        AddSettingsGroup("translation", "overlay", "Информация поверх изображения", False, "ocr_opacity", "ocr_overlay_visible")
-        AddSettingsGroup("translation", "advanced", "Дополнительные настройки", False, "ocr_disk_cache")
-        AddSettingsGroup("storage", "basic", "Основные настройки", True, "decode_cache_limit", "thumb_cache_limit")
-        AddSettingsGroup("storage", "advanced", "Дополнительные настройки", False, "decode_cache_clear")
+        AddSettingsGroup("translation", "overlay", "Перевод поверх изображения", False, "ocr_opacity", "ocr_overlay_visible")
+        ' 130 §3.2: limits and clearing for the same cache belong together - per cache its
+        ' limit row, then its usage+clear row. The OCR trio stays a group of its own (the
+        ' disk toggle and the OCR limits); the collapsed "cache management" group is gone.
+        AddSettingsGroup("storage", "basic", "Основные настройки", True,
+                         "decode_cache_limit", "decode_cache_clear",
+                         "thumb_cache_limit", "thumb_cache_clear",
+                         "archive_cache_limit", "archive_cache_clear",
+                         "remote_cache_limit", "remote_cache_clear")
+        AddSettingsGroup("storage", "ocr", "Распознавание текста", True, "ocr_disk_cache", "ocr_cache_limit", "ocr_cache_clear")
         AddSettingsGroup("sharing", "basic", "Основные настройки", True, "sftp_intro", "sftp_manager", "sftp_guide", "android_app")
-        ' Ticket 118: the resources page is one group whose body holds the intro block and the
-        ' shared list panel (moved in below, like the recipients grid).
+        ' Ticket 118, revised by 131: the resources page is one group whose body holds the intro
+        ' block and the shared list panel (moved in below, like the recipients grid); the Open
+        ' command lives in the panel's own action row, so there is no resources_open row here.
         AddSettingsGroup("resources", "basic", "Основные настройки", True, "resources_intro")
         Dim resourcesFlow As FlowLayoutPanel = PageFlow(modernResourcesPage)
         For Each child As Control In resourcesFlow.Controls.Cast(Of Control)().Where(Function(c) Not TypeOf c Is SettingsCollapsibleGroup).ToArray()
@@ -129,6 +136,12 @@ Partial Public Class Table_Form
         ' The grid must remain keyboard reachable; focus restoration now handles its auto-scroll.
         Data_Grid_View.TabStop = True
         For Each group As SettingsCollapsibleGroup In settingsGroups.Values
+            Dim order = groupRowOrder.First(Function(item) settingsGroups(item.Key) Is group).Value
+            For index As Integer = 0 To order.Length - 1
+                Dim rowId As String = order(index)
+                Dim row = modernSettingsRows.FirstOrDefault(Function(item) item.Key = rowId)
+                If row IsNot Nothing Then group.Body.Controls.SetChildIndex(row.Host, index)
+            Next
             group.ArrangeContents()
         Next
 
@@ -163,9 +176,15 @@ Partial Public Class Table_Form
     Private Sub AddSettingsGroup(pageId As String, groupId As String, captionKey As String, defaultExpanded As Boolean, ParamArray rows As String())
         Dim id As String = pageId & "/" & groupId
         Dim page As TabPage = pageIds.First(Function(entry) entry.Value = pageId).Key
-        Dim group As New SettingsCollapsibleGroup(id, settingsScale, SettingsFont("Segoe UI Semibold", Sf(9.5F)))
+        ' The header caption is Semibold 10.5 - visibly larger than a row's 8.75, one half
+        ' of how a header stands apart from the rows it governs (127 §3.4; the blended
+        ' band fill is the other half and arrives with the palette pass).
+        Dim group As New SettingsCollapsibleGroup(id, settingsScale, SettingsFont("Segoe UI Semibold", Sf(10.5F)),
+            Function(expanded, ink) GlyphRenderer.Render(IconMap.GetMeaning(If(expanded, "collapsibleSectionOpen", "collapsibleSection")).GlyphId,
+                Sp(20), ink, AddressOf RuntimeBootstrap.OpenBundledAsset))
         group.Expanded = settingsContext.Page(pageId).Expanded(groupId, defaultExpanded)
         groupCaptionKeys.Add(id, captionKey)
+        groupRowOrder.Add(id, rows)
         settingsGroups.Add(id, group)
         PageFlow(page).Controls.Add(group)
         For Each row As String In rows
@@ -295,6 +314,9 @@ Partial Public Class Table_Form
     End Sub
 
     Private Sub SaveSettingsContextOnClose(sender As Object, e As FormClosingEventArgs)
+        OcrEndpoint_TextChanged(txtOcrEndpoint, EventArgs.Empty)
+        OcrModelName_TextChanged(cmbOcrModelName, EventArgs.Empty)
+        OcrApi_TextChanged(txtOcrApi, EventArgs.Empty)
         SaveSettingsContext()
     End Sub
 
@@ -323,7 +345,7 @@ Partial Public Class Table_Form
             AppFileLogger.LogException("Settings UI: saving context", ex)
             If Not contextSaveFailed Then
                 contextSaveFailed = True
-                MessageBox.Show(Me, Localization.T("Не удалось сохранить расположение настроек. Закройте и снова откройте настройки, чтобы повторить."),
+                ViewerBox.Show(Me, Localization.T("Не удалось сохранить расположение настроек. Закройте и снова откройте настройки, чтобы повторить."),
                                 Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
             End If
             Return False

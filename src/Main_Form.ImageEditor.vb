@@ -80,11 +80,12 @@ Partial Public Class Main_Form
                 Return
             End If
 
-            ' An owned window still has to be put into the viewer's z-order band by hand
-            ' when "always on top" is on - see Main_Form.WindowPinning.vb.
-            PinToViewerBand(editor)
-            PositionChildOnViewerMonitor(editor)
-            If editor.ShowDialog(Me) <> DialogResult.OK Then Return
+            ' The dialog layer puts an owned window into the viewer's z-order band when "always on top" is on
+            ' (Main_Form.WindowPinning.vb, 124 UX-201). The editor keeps its remembered rectangle when it has one
+            ' (126 UX-606) - it is the user's choice, judged against the virtual screen at open - and is centred
+            ' on the viewer's monitor only when there is nothing remembered, the panel's own rule.
+            If Not editor.HasRememberedPlacement Then PositionChildOnViewerMonitor(editor)
+            If DialogLayer.ShowViewerDialog(editor, Me) <> DialogResult.OK Then Return
 
             savedPath = editor.SavedPath
             savedOverOriginal = editor.SavedOverOriginal

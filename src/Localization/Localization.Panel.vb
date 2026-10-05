@@ -181,6 +181,29 @@ Partial Public NotInheritable Class Localization
             "F3 প্যানেল আবার খোলা দ্রুত করে। 0 দিলে ক্যাশ বন্ধ হয়।",
             "F3 پینل کو دوبارہ کھولنا تیز کرتا ہے۔ 0 کیش بند کر دیتا ہے۔",
             "加快重新打开 F3 面板的速度。设为 0 将关闭缓存。")
+
+        ' --- the busy band, the empty folder and the F1 title (126) -------------
+        Add("Идёт операция - дождитесь или нажмите Esc",
+            "An operation is running - wait for it, or press Esc",
+            "Триває операція - дочекайтеся або натисніть Esc",
+            "Ein Vorgang läuft - warten Sie, oder drücken Sie Esc",
+            "Un'operazione è in corso - attendere o premere Esc",
+            "Hay una operación en curso - espere o pulse Esc",
+            "Une opération est en cours - attendez ou appuyez sur Échap",
+            "Há uma operação em andamento - aguarde ou pressione Esc",
+            "عملية قيد التنفيذ - انتظر أو اضغط Esc",
+            "एक ऑपरेशन चल रहा है - प्रतीक्षा करें, या Esc दबाएँ",
+            "একটি কাজ চলছে - অপেক্ষা করুন, বা Esc চাপুন",
+            "ایک آپریشن جاری ہے - انتظار کریں، یا Esc دبائیں",
+            "正在执行操作 - 请等待，或按 Esc")
+        Add("Папка пуста",
+            "The folder is empty", "Тека порожня", "Der Ordner ist leer", "La cartella è vuota",
+            "La carpeta está vacía", "Le dossier est vide", "A pasta está vazia", "المجلد فارغ",
+            "फ़ोल्डर खाली है", "ফোল্ডারটি খালি", "فولڈر خالی ہے", "文件夹为空")
+        Add("Клавиши панели",
+            "Panel keys", "Клавіші панелі", "Panel-Tasten", "Tasti del pannello",
+            "Teclas del panel", "Touches du panneau", "Teclas do painel", "مفاتيح اللوحة",
+            "पैनल की कुंजियाँ", "প্যানেলের কীগুলি", "پینل کی کلیدیں", "面板快捷键")
     End Sub
 
 End Class

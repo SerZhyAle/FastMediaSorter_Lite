@@ -39,10 +39,12 @@ Partial Public Class Main_Form
         End If
 #If Not NETFRAMEWORK Then
         file_Details_Dialog = New File_Details_Form(path, AddressOf BuildMediaDetailSectionsAsync)
+        ' Through the dialog layer: a bare Show(Me) opened the window BEHIND a viewer pinned "on top" (124 UX-201).
+        DialogLayer.ShowViewerWindow(file_Details_Dialog, Me)
 #Else
         file_Details_Dialog = New File_Details_Form(path)
-#End If
         file_Details_Dialog.Show(Me)
+#End If
     End Sub
 
 #If Not NETFRAMEWORK Then

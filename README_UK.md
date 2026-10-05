@@ -1,4 +1,4 @@
-# Fast Media Sorter & Sharing for Windows
+﻿# Fast Media Sorter & Sharing for Windows
 
 Fast Media Sorter & Sharing for Windows - це застосунок Windows Forms для швидкого сортування, перегляду та керування файлами зображень і відео. Бо папка з 4000 фотографій сама себе не розбере. **Sharing** означає «ділитися своїми медіа з кимось іншим»: вибрані вами теки можна відкрити з Android-застосунку, з іншої копії цієї програми або з будь-якого SFTP-клієнта (див. [Ваші теки через SFTP](#ваші-папки-через-sftp), [як користуватися SFTP-сервісом](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html) і [публікацію тек для Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html)).
 
@@ -47,6 +47,9 @@ Fast Media Sorter & Sharing for Windows - це застосунок Windows Form
 Встановити: **[Google Play](https://play.google.com/store/apps/details?id=com.sza.fastmediasorter)**, **[IzzyOnDroid](https://apt.izzysoft.de/fdroid/index/apk/com.sza.fastmediasorter)** або прямий **[APK зі сторінки релізів GitHub](https://github.com/SerZhyAle/FastMediaSorter_mob_v2/releases)**.
 
 Можливості включають:
+
+- Налаштування пам'ятають останню сторінку, розгорнуті групи та приблизну позицію прокручування. Мова й тема розміщені в «Загальних»; пошук налаштувань або `Ctrl+F` знаходить назву, пояснення чи варіант значення. «Розгорнути всі» та «Згорнути всі» діють на поточну сторінку (64-бітна програма).
+- Ліміти кешів та їх очищення розташовані у «Сховищі». Розмір мініатюр має чотири реальні варіанти; у «Загальних» є скидання додаткових налаштувань із резервною копією.
 - Єдиний інтерфейс для всіх джерел файлів (локальні, мережеві, хмарні)
 - Вбудований медіа-плеєр та читалка EPUB
 - Редагування зображень (поворот, віддзеркалення, фільтри, налаштування)

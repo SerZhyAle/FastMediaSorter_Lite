@@ -165,6 +165,34 @@ Partial Public NotInheritable Class Localization
             "গন্তব্যে যদি কেবল শেষ ফোল্ডারটি না থাকে এবং তার উপরেরটি সাড়া দেয়, প্রথম স্থানান্তরেই সেটি তৈরি হয়। বন্ধ থাকলে এমন গন্তব্য «পাওয়া যায়নি» ধরা হয়।",
             "اگر منزل میں صرف آخری فولڈر موجود نہ ہو اور اس کے اوپر والا جواب دے تو وہ پہلی منتقلی پر بن جاتا ہے۔ بند ہونے پر ایسی منزل «نہیں ملی» شمار ہوتی ہے۔",
             "如果目标只缺最后一级文件夹，而其上一级可访问，则首次转移时创建该文件夹。关闭时，此类目标视为未找到。")
+        ' --- the same two sentences for a CLICK on the recipients overlay (125 UX-332) ---
+        ' A click is not a key press: it says "click again" to someone who never pressed a key.
+        Add("! Каталог {0}: нет связи с папкой. Нажмите ещё раз, чтобы повторить проверку.",
+            "! Folder {0}: no connection. Click again to check once more.",
+            "! Каталог {0}: немає зв'язку з текою. Натисніть ще раз, щоб перевірити знову.",
+            "! Ordner {0}: keine Verbindung. Erneut klicken, um noch einmal zu prüfen.",
+            "! Cartella {0}: nessuna connessione. Fai di nuovo clic per riprovare.",
+            "! Carpeta {0}: sin conexión. Haga clic otra vez para volver a comprobar.",
+            "! Dossier {0} : pas de connexion. Cliquez de nouveau pour revérifier.",
+            "! Pasta {0}: sem conexão. Clique novamente para verificar de novo.",
+            "! المجلد {0}: لا يوجد اتصال. انقر مرة أخرى لإعادة الفحص.",
+            "! फ़ोल्डर {0}: संपर्क नहीं। दोबारा जाँचने के लिए फिर क्लिक करें।",
+            "! ফোল্ডার {0}: সংযোগ নেই। আবার পরীক্ষা করতে পুনরায় ক্লিক করুন।",
+            "! فولڈر {0}: رابطہ نہیں۔ دوبارہ جانچنے کے لیے پھر کلک کریں۔",
+            "! 文件夹 {0}：无法连接。再次点击可重新检查。")
+        Add("каталог {0} доступен - нажмите ещё раз",
+            "folder {0} is available - click again",
+            "каталог {0} доступний - натисніть ще раз",
+            "Ordner {0} ist verfügbar - erneut klicken",
+            "la cartella {0} è disponibile - fai di nuovo clic",
+            "la carpeta {0} está disponible: haga clic otra vez",
+            "le dossier {0} est disponible - cliquez de nouveau",
+            "a pasta {0} está disponível - clique novamente",
+            "المجلد {0} متاح - انقر مرة أخرى",
+            "फ़ोल्डर {0} उपलब्ध है - फिर क्लिक करें",
+            "ফোল্ডার {0} উপলব্ধ - আবার ক্লিক করুন",
+            "فولڈر {0} دستیاب ہے - پھر کلک کریں",
+            "文件夹 {0} 可用 - 请再点击一次")
 
     End Sub
 

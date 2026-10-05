@@ -67,14 +67,27 @@ Public NotInheritable Class CustomHotkeys
     Public Shared ReadOnly Catalog As HotkeyAction() = BuildCatalog()
 
     Private Shared Function BuildCatalog() As HotkeyAction()
+        ' The playback extras at the end of this catalog (ticket 119 §5.0.2). The Oem*
+        ' defaults are PHYSICAL-key bindings: on a layout where "[" needs AltGr the dialog
+        ' still shows the US name - that is what the shortcuts dialog is for, and the
+        ' persisted spelling is the enum name exactly as any other Oem* key has always
+        ' been spelled. The defaults dodge the keys this viewer already answers with
+        ' (E, L, Backspace - audit-checked in 119 §5.0.3).
+        '
+        ' Ticket 123: Ctrl+Home / Ctrl+End were hard-coded in KeybUse outside this map (UX-112) - as
+        ' extra factory keys of firstFile / lastFile they are retired when the action is rebound. The
+        ' last six entries (Ф-3, UX-102/UX-112) are the video basics and the track keys, which had no
+        ' entry to rebind; their defaults were checked free against KeybUse and the reserved list
+        ' (Q123-3): K and M are unused letters, Ctrl+Up / Ctrl+Down are Ctrl chords the historical
+        ' map throws away. The four basics live only while a video or audio file is the current media.
         Dim actions As New List(Of HotkeyAction) From {
             New HotkeyAction("nextFile", "Следующий файл", "Right", "Space", "PageDown", "BrowserForward"),
             New HotkeyAction("prevFile", "Предыдущий файл", "Left", "P", "B", "Backspace", "PageUp", "BrowserBack"),
             New HotkeyAction("randomFile", "Случайный файл", "Y"),
             New HotkeyAction("slideshow", "Слайд-шоу", "S"),
             New HotkeyAction("randomSlideshow", "Случайное слайд-шоу", "I", "F5"),
-            New HotkeyAction("firstFile", "Первый файл", "Home", "H", "BrowserHome"),
-            New HotkeyAction("lastFile", "Последний файл", "End", "E", "L", "BrowserStop"),
+            New HotkeyAction("firstFile", "Первый файл", "Home", "H", "BrowserHome", "Ctrl+Home"),
+            New HotkeyAction("lastFile", "Последний файл", "End", "E", "L", "BrowserStop", "Ctrl+End"),
             New HotkeyAction("back10", "Назад на 10 файлов", "Up"),
             New HotkeyAction("forward10", "Вперёд на 10 файлов", "Down"),
             New HotkeyAction("back100", "Назад на 100 файлов", "Shift+PageUp"),
@@ -96,14 +109,56 @@ Public NotInheritable Class CustomHotkeys
             New HotkeyAction("zoomIn", "Увеличить масштаб", "Num +"),
             New HotkeyAction("zoomOut", "Уменьшить масштаб", "Num -"),
             New HotkeyAction("zoomFit", "Вписать в окно", "Num /"),
-            New HotkeyAction("zoomActual", "Реальный размер", "Num *")}
+            New HotkeyAction("zoomActual", "Реальный размер", "Num *"),
+            New HotkeyAction("speedSlower", "Медленнее", "OemOpenBrackets"),
+            New HotkeyAction("speedFaster", "Быстрее", "OemCloseBrackets"),
+            New HotkeyAction("speedReset", "Нормальная скорость", "OemPipe"),
+            New HotkeyAction("seekBackShort", "Назад на короткий шаг", "Shift+Left"),
+            New HotkeyAction("seekFwdShort", "Вперёд на короткий шаг", "Shift+Right"),
+            New HotkeyAction("seekBackMedium", "Назад на средний шаг", "Alt+Left"),
+            New HotkeyAction("seekFwdMedium", "Вперёд на средний шаг", "Alt+Right"),
+            New HotkeyAction("seekBackLong", "Назад на длинный шаг", "Ctrl+Left"),
+            New HotkeyAction("seekFwdLong", "Вперёд на длинный шаг", "Ctrl+Right"),
+            New HotkeyAction("frameStep", "Следующий кадр", "OemPeriod"),
+            New HotkeyAction("abLoop", "Повтор A-B", "Shift+L"),
+            New HotkeyAction("playPause", "Пауза / продолжить", "K", "MediaPlayPause"),
+            New HotkeyAction("mute", "Звук вкл/выкл", "M"),
+            New HotkeyAction("volumeUp", "Громче", "Ctrl+Up"),
+            New HotkeyAction("volumeDown", "Тише", "Ctrl+Down"),
+            New HotkeyAction("audioTrack", "Следующая звуковая дорожка", "A"),
+            New HotkeyAction("subtitleTrack", "Следующие субтитры", "V"),
+            New HotkeyAction("mediaMenu", "Меню файла - ещё одна клавиша (Menu и Shift+F10 работают всегда)", "")}
 
         ' Slots 1..9 answer to their own digit, slot 10 to "0" - the frozen MoveOn0 rule.
         For slot As Integer = 1 To 10
             Dim digit As String = If(slot = 10, "0", slot.ToString(Globalization.CultureInfo.InvariantCulture))
             actions.Add(New HotkeyAction(RecipientActionId(slot), "", digit, "Num " & digit))
         Next
+        ' Shift + a TOP-ROW digit copies into the same slot (UX-112): a catalogue action of its own, so it
+        ' can be rebound. Top row only - Shift+NumPad1 arrives as Keys.End (see KeybUse).
+        For slot As Integer = 1 To 10
+            Dim digit As String = If(slot = 10, "0", slot.ToString(Globalization.CultureInfo.InvariantCulture))
+            actions.Add(New HotkeyAction(CopyActionId(slot), "", "Shift+" & digit))
+        Next
         Return actions.ToArray()
+    End Function
+
+    Public Shared Function CopyActionId(slot As Integer) As String
+        Return "copySlot" & slot.ToString(Globalization.CultureInfo.InvariantCulture)
+    End Function
+
+    ''' <summary>The slot a copy-to-slot action id names, or 0 when it names something else.</summary>
+    Public Shared Function CopySlotOf(actionId As String) As Integer
+        If actionId Is Nothing OrElse Not actionId.StartsWith("copySlot", StringComparison.Ordinal) Then Return 0
+        Dim slot As Integer
+        If Not Integer.TryParse(actionId.Substring("copySlot".Length), Globalization.NumberStyles.None, Globalization.CultureInfo.InvariantCulture, slot) Then Return 0
+        If slot < 1 OrElse slot > 10 Then Return 0
+        Return slot
+    End Function
+
+    ''' <summary>The digit a slot is labelled with: 1..9, and 0 for slot 10.</summary>
+    Public Shared Function SlotDigit(slot As Integer) As String
+        Return If(slot = 10, "0", slot.ToString(Globalization.CultureInfo.InvariantCulture))
     End Function
 
     Public Shared Function RecipientActionId(slot As Integer) As String
@@ -195,13 +250,15 @@ Public NotInheritable Class CustomHotkeys
 
     ''' <summary>
     ''' The combinations §3.5 keeps out of the user's hands: the ones Windows owns, and
-    ''' the two the viewer itself must always answer to - F11 leaves and enters the
-    ''' panel-less full screen, Esc gets out of it.
+    ''' the ones the viewer itself must always answer to - F11 leaves and enters the
+    ''' panel-less full screen, Esc gets out of it (one layer at a time, 123 §3.1), F10 is
+    ''' the chrome's keyboard mode (taken in ProcessCmdKey before this map is ever asked, so a
+    ''' binding on it would be silently dead - UX-111 of 123), Apps / Shift+F10 open the media menu.
     ''' </summary>
     Public Shared Function IsReserved(keyData As Keys) As Boolean
         Dim code As Keys = keyData And Keys.KeyCode
         Select Case code
-            Case Keys.F11, Keys.Escape, Keys.LWin, Keys.RWin, Keys.Apps : Return True
+            Case Keys.F11, Keys.F10, Keys.Escape, Keys.LWin, Keys.RWin, Keys.Apps : Return True
             Case Keys.Tab
                 If (keyData And Keys.Alt) = Keys.Alt Then Return True
             Case Keys.F4
@@ -238,6 +295,14 @@ Public NotInheritable Class CustomHotkeys
             Case Keys.Back : Return "Backspace"
             Case Keys.Return : Return "Enter"
             Case Keys.Space : Return "Space"
+                ' The playback defaults of ticket 119. These values carry a second enum
+                ' name (Oem4 = OemOpenBrackets = 219, Oem5 = OemPipe = 220, Oem6 =
+                ' OemCloseBrackets = 221) and Keys.ToString() answers with whichever alias
+                ' was declared first - so the spelling is pinned here, like "Num +" above,
+                ' or a round-trip through Canonical would rename the key.
+            Case Keys.OemOpenBrackets : Return "OemOpenBrackets"
+            Case Keys.OemPipe : Return "OemPipe"
+            Case Keys.OemCloseBrackets : Return "OemCloseBrackets"
         End Select
 
         Dim name As String = code.ToString()
@@ -265,6 +330,11 @@ Public NotInheritable Class CustomHotkeys
             Case "backspace" : Return Keys.Back
             Case "enter" : Return Keys.Return
             Case "space" : Return Keys.Space
+                ' The aliases whose enum name is not what ToString() reports - the generic
+                ' TryParse below would refuse them (119 playback defaults).
+            Case "oemopenbrackets" : Return Keys.OemOpenBrackets
+            Case "oempipe" : Return Keys.OemPipe
+            Case "oemclosebrackets" : Return Keys.OemCloseBrackets
         End Select
 
         If trimmed.StartsWith("Num ", StringComparison.OrdinalIgnoreCase) AndAlso trimmed.Length = 5 AndAlso
@@ -387,7 +457,74 @@ Public NotInheritable Class CustomHotkeys
     ''' the recipient digits). One press is one operation for these (047 C-20).</summary>
     Public Shared Function IsDestructiveAction(actionId As String) As Boolean
         If String.IsNullOrEmpty(actionId) Then Return False
-        Return actionId = "deleteFile" OrElse actionId = "deletePermanent" OrElse RecipientSlotOf(actionId) > 0
+        Return actionId = "deleteFile" OrElse actionId = "deletePermanent" OrElse RecipientSlotOf(actionId) > 0 OrElse CopySlotOf(actionId) > 0
+    End Function
+
+    ' ------------------------------------------------- ticket 119: playback keys ----
+
+    ''' <summary>The video basics of ticket 123 Ф-3: pause, mute and the two volume keys. They sit
+    ''' beside the eleven playback extras of 119 - same gate (a media that LibVLC owns is on screen),
+    ''' same dispatch, same "does not stop a slideshow" rule - but are listed apart so a test can say
+    ''' which is which.</summary>
+    Private Shared ReadOnly VideoBasicsActionIds As String() = {"playPause", "mute", "volumeUp", "volumeDown"}
+
+    ''' <summary>The ids of the playback extras, in catalogue order. A factory key of one
+    ''' of these is answered by the playback dispatch even without an override, because
+    ''' the historical map never accepted the Ctrl/Alt chords three of them need (and a
+    ''' fourth, Ctrl+Up / Ctrl+Down, is the volume pair of 123).</summary>
+    Private Shared ReadOnly PlaybackActionIds As String() = {
+        "speedSlower", "speedFaster", "speedReset",
+        "seekBackShort", "seekFwdShort", "seekBackMedium", "seekFwdMedium", "seekBackLong", "seekFwdLong",
+        "frameStep", "abLoop",
+        "playPause", "mute", "volumeUp", "volumeDown"}
+
+    ''' <summary>True for the eleven playback actions of ticket 119 and the four video basics of 123.</summary>
+    Public Shared Function IsPlaybackAction(actionId As String) As Boolean
+        If String.IsNullOrEmpty(actionId) Then Return False
+        For Each id As String In PlaybackActionIds
+            If String.Equals(id, actionId, StringComparison.Ordinal) Then Return True
+        Next
+        Return False
+    End Function
+
+    ''' <summary>
+    ''' The two keys that open the media menu of the current file from the keyboard (UX-104 of 123,
+    ''' Q123-6): the Menu key and Shift+F10, the OS-standard "context menu" pair. They are reserved
+    ''' (nothing else can be bound to them) and always work - the catalogue's <c>mediaMenu</c> action
+    ''' only adds one more key of the user's choice, which is why it ships with no default of its own.
+    ''' </summary>
+    Public Shared Function IsMediaMenuKey(keyData As Keys) As Boolean
+        Return keyData = Keys.Apps OrElse keyData = (Keys.Shift Or Keys.F10)
+    End Function
+
+    ''' <summary>True for pause, mute, volume up and volume down (ticket 123 Ф-3).</summary>
+    Public Shared Function IsVideoBasicsAction(actionId As String) As Boolean
+        If String.IsNullOrEmpty(actionId) Then Return False
+        For Each id As String In VideoBasicsActionIds
+            If String.Equals(id, actionId, StringComparison.Ordinal) Then Return True
+        Next
+        Return False
+    End Function
+
+    ''' <summary>
+    ''' The playback action whose FACTORY key is this combination, or "" - the overrides-only
+    ''' rule is untouched: a moved action still answers only through the override map, a
+    ''' retired factory key is still swallowed, and an untouched action is answered here.
+    ''' "" for anything that is not a playback default, so the historical dispatch sees the
+    ''' key exactly as before. Every factory spelling counts (the shown default and the
+    ''' extras: <c>MediaPlayPause</c> is a second home of the pause key), not just the default.
+    ''' </summary>
+    Public Shared Function PlaybackActionOfFactoryKey(keyData As Keys) As String
+        Dim combo As String = Format(keyData)
+        If combo.Length = 0 Then Return String.Empty
+        For Each id As String In PlaybackActionIds
+            Dim action As HotkeyAction = Find(id)
+            If action Is Nothing Then Continue For
+            For Each factory As String In FactoryCombos(action)
+                If String.Equals(factory, combo, StringComparison.OrdinalIgnoreCase) Then Return id
+            Next
+        Next
+        Return String.Empty
     End Function
 
     ''' <summary>

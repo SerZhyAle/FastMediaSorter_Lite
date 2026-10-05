@@ -384,7 +384,7 @@ Partial Public Class Main_Form
                 Dim credential As FdSecCredential = Nothing
                 Dim remember As Boolean
                 Using dialog As New Secure_Password_Form(Path.GetFileName(filePath), attemptRetry)
-                    answer = dialog.ShowDialog(Me)
+                    answer = DialogLayer.ShowViewerDialog(dialog, Me)
                     ' Normalised to bytes at once (G-19): the String the TextBox hands back
                     ' is the one copy this code cannot wipe, so it is not kept.
                     If answer = DialogResult.OK Then credential = FdSecCredential.FromText(dialog.Credential)
@@ -435,6 +435,13 @@ Partial Public Class Main_Form
     Private Function TryShowSecureContent(filePath As String, credential As FdSecCredential) As Boolean
         secure_Last_Attempt = SecureAttempt.Shown
         Dim container As FdSecContainer = Nothing
+        ' Argon2id (64 MiB, 4 lanes) and the full decrypt run synchronously below: say so first, and show the wait
+        ' cursor, so the pause after "Open" is not a window that looks hung (124 UX-213). The derivation itself stays
+        ' on this thread for now - moving it off needs its own re-entrancy design around the display path.
+        Notify(Localization.T("Проверяю пароль.."), NotifyLevel.Info)
+        ChromeRepaintStatusNow()
+        Dim previousCursor As Cursor = Cursor.Current
+        Cursor.Current = Cursors.WaitCursor
         Try
             container = FdSecContainer.OpenFile(filePath, credential, keyCache:=SecureKeyCacheFor(credential))
         Catch ex As FdSecException
@@ -459,6 +466,8 @@ Partial Public Class Main_Form
             AppFileLogger.LogException("Secure container: opening " & filePath, ex)
             ShowSecurePlaceholder(filePath, ReadFailureText(PathFailure.Classify(ex), filePath), locked:=False)
             Return False
+        Finally
+            Cursor.Current = previousCursor
         End Try
 
         Try
@@ -915,7 +924,7 @@ Partial Public Class Main_Form
         If SecureAllowsDiskCache() Then Return True
         If SecurePolicy.IsLoopbackEndpoint(endpoint) Then Return True
 
-        Dim answer As DialogResult = MessageBox.Show(
+        Dim answer As DialogResult = ViewerBox.Show(
             Me,
             Localization.TF("Текст защищённого файла будет отправлен переводчику на {0}. Продолжить?",
                             SecurePolicy.EndpointHost(endpoint)),

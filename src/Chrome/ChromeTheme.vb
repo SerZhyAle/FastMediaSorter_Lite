@@ -48,7 +48,9 @@ Friend NotInheritable Class ChromeTheme
 
         Dim fill As Color = Opaque(back)
         Dim ink As Color = Opaque(fore)
-        Dim accent As Color = Opaque(SystemColors.Highlight)
+        ' The user's own accent from Windows (the same source the dark palette uses), the system highlight when
+        ' Windows gives none (124 UX-215): one blue for the chrome and the windows beside it.
+        Dim accent As Color = Opaque(AccentColors.ForChrome(SystemColors.Highlight))
 
         Return New ChromeTheme() With {
             .PanelFill = fill,
@@ -124,6 +126,34 @@ Friend NotInheritable Class ChromeTheme
     End Function
 
     ' --- colour arithmetic ---------------------------------------------------------------
+
+    ''' <summary>The corner pin's ink at rest. Strong enough to read on a light scheme and a dark one (about
+    ''' 3:1 or better - 125 UX-313h); under high contrast the system pair is used by the caller.</summary>
+    Public Function PinRestInk(pinned As Boolean) As Color
+        Return Blend(PanelFill, Foreground, If(pinned, ChromeMetrics.PinPinnedPercent, ChromeMetrics.PinRestPercent) / 100.0F)
+    End Function
+
+    ''' <summary>WCAG relative luminance of an sRGB colour.</summary>
+    Public Shared Function RelativeLuminance(c As Color) As Double
+        Dim r As Double = Linear(c.R)
+        Dim g As Double = Linear(c.G)
+        Dim b As Double = Linear(c.B)
+        Return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    End Function
+
+    Private Shared Function Linear(channel As Integer) As Double
+        Dim v As Double = channel / 255.0
+        Return If(v <= 0.03928, v / 12.92, Math.Pow((v + 0.055) / 1.055, 2.4))
+    End Function
+
+    ''' <summary>WCAG contrast ratio of two colours, 1 (none) to 21 (black on white).</summary>
+    Public Shared Function ContrastRatio(a As Color, b As Color) As Double
+        Dim la As Double = RelativeLuminance(a)
+        Dim lb As Double = RelativeLuminance(b)
+        Dim hi As Double = Math.Max(la, lb)
+        Dim lo As Double = Math.Min(la, lb)
+        Return (hi + 0.05) / (lo + 0.05)
+    End Function
 
     ''' <summary>Rec. 601 luma below 128 is a dark colour (the rule the window already uses).</summary>
     Public Shared Function IsDark(c As Color) As Boolean

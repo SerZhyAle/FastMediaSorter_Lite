@@ -349,7 +349,7 @@ Friend Module OptionalRuntimeManager
 
         If Not IsRuntimeInstalled(kind) Then
             Dim confirmText As String = GetInstallPrompt(kind)
-            If MessageBox.Show(owner, confirmText, ProductNames.Full, MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
+            If ViewerBox.Show(owner, confirmText, ProductNames.Full, MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
                 Return False
             End If
 
@@ -380,7 +380,7 @@ Friend Module OptionalRuntimeManager
             ' the viewer. Microsoft's installer asks for its own rights when the user runs it.
             AppFileLogger.WriteLine("Runtime " & kind.ToString() & " needs the VC++ runtime: " & reason)
             Dim vcUrl As String = If(Environment.Is64BitProcess, VcRedistX64Url, VcRedistX86Url)
-            If MessageBox.Show(owner, GetVcPrompt(kind), ProductNames.Full, MessageBoxButtons.YesNo, MessageBoxIcon.Information) = DialogResult.Yes Then
+            If ViewerBox.Show(owner, GetVcPrompt(kind), ProductNames.Full, MessageBoxButtons.YesNo, MessageBoxIcon.Information) = DialogResult.Yes Then
                 Try
                     Process.Start(New ProcessStartInfo(vcUrl) With {.UseShellExecute = True})
                 Catch ex As Exception
@@ -396,7 +396,7 @@ Friend Module OptionalRuntimeManager
         ' Installed and still not loading: the loader's own words go to the log, the user
         ' reads what it means and where the details are (APP-BEHAVIOUR rule 6).
         AppFileLogger.WriteLine("Runtime " & kind.ToString() & " not ready: " & reason)
-        MessageBox.Show(owner,
+        ViewerBox.Show(owner,
                         Localization.TF("Компонент «{0}» установлен, но не загружается.", GetRuntimeName(kind)) &
                         Environment.NewLine & Environment.NewLine & FailureText.Sentence(FailureText.FailureCause.Unknown),
                         ProductNames.Full, MessageBoxButtons.OK, MessageBoxIcon.Warning)
@@ -797,7 +797,7 @@ Friend Module OptionalRuntimeManager
     Private Sub ShowRuntimeError(owner As IWin32Window, title As String, details As String)
         Dim prefix As String = Localization.TF("Не удалось подготовить {0}.", title)
 
-        MessageBox.Show(owner,
+        ViewerBox.Show(owner,
                         prefix & Environment.NewLine & Environment.NewLine & details,
                         ProductNames.Full,
                         MessageBoxButtons.OK,

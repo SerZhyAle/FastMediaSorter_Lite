@@ -82,7 +82,21 @@ Public Class SettingsUiContextTests
                         Assert.False(group.Body.Visible)
                         Assert.True(group.Header.Focused)
                         Assert.True((group.Header.AccessibilityObject.State And AccessibleStates.Collapsed) <> 0)
-                        group.Header.AccessibilityObject.DoDefaultAction()
+                        Using summaryFont As New System.Drawing.Font("Segoe UI", 8.0F)
+                            group.SetSummary("A summary that wraps onto multiple lines at a narrow width")
+                            group.SetSummaryStyle(summaryFont, System.Drawing.Color.Gray)
+                            group.Width = 180
+                            group.SetLayoutScale(1.75F)
+                            Assert.Equal(System.Drawing.ContentAlignment.TopLeft, group.Header.TextAlign)
+                            Dim captionHeight = TextRenderer.MeasureText(group.Caption, group.Header.Font,
+                                New System.Drawing.Size(group.Header.Width - group.Header.Padding.Horizontal - 4, Integer.MaxValue), TextFormatFlags.WordBreak).Height
+                            Dim summaryHeight = TextRenderer.MeasureText(group.Header.AccessibleDescription, summaryFont,
+                                New System.Drawing.Size(group.Header.Width - group.Header.Padding.Horizontal - 4, Integer.MaxValue), TextFormatFlags.WordBreak).Height
+                            Assert.True(group.Header.Height >= group.Header.Padding.Top + captionHeight + 2 + summaryHeight,
+                                        "The collapsed summary must fit below the caption.")
+                            group.Header.AccessibilityObject.DoDefaultAction()
+                            Assert.Equal(System.Drawing.ContentAlignment.MiddleLeft, group.Header.TextAlign)
+                        End Using
                         Assert.True(group.Expanded)
                         Assert.True(group.Body.Visible)
                         Assert.True(group.Height > group.Header.Height)

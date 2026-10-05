@@ -76,11 +76,10 @@ Partial Public Class Main_Form
     Private Sub ShowOpenUrlPrompt()
         SlideShowStop()
 
-        Dim prompt As String = Localization.T("Адрес видеопотока или файла на сервере:" & vbLf & "" & vbLf & "smb://сервер/шара/фильм.mkv" & vbLf & "http://сервер/видео.mp4" & vbLf & "sftp://пользователь@сервер/путь/фильм.mkv" & vbLf & "" & vbLf & "Обычные сетевые папки (\\сервер\шара\..) открываются кнопкой ""Выбрать файл.."" как есть.")
-
-        Dim title As String = Localization.T("Открыть URL")
-        Dim entered As String = Microsoft.VisualBasic.Interaction.InputBox(prompt, title, last_Opened_Url)
-        If String.IsNullOrWhiteSpace(entered) Then Return   ' cancelled
+        ' The instruction and the example addresses have their own room, and Cancel (Nothing) is not an empty
+        ' string - an empty one is refused with a reason (124 UX-204).
+        Dim entered As String = AskDialogs.Prompt(Me, AskSpecs.OpenUrlPrompt(last_Opened_Url))
+        If entered Is Nothing Then Return   ' cancelled
 
         OpenMediaUrl(entered.Trim())
     End Sub
@@ -99,12 +98,12 @@ Partial Public Class Main_Form
 
         If Not MediaUrl.IsRemote(url) Then
             If MediaUrl.LooksLikeLocalPath(url) Then
-                MessageBox.Show(Me,
+                ViewerBox.Show(Me,
                     Localization.T("Это обычный путь, а не URL. Откройте его кнопкой ""Выбрать файл.."".") ,
                     title, MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Return
             End If
-            MessageBox.Show(Me,
+            ViewerBox.Show(Me,
                 Localization.TF("Не понимаю эту схему адреса. Поддерживаются: " & vbLf & "{0}", String.Join(", ", MediaUrl.Remote_Media_Schemes)),
                 title, MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
@@ -114,7 +113,7 @@ Partial Public Class Main_Form
         ' picture needs a decoded local bitmap, and VLC would only paint it.
         Dim guessed_Extension As String = MediaUrl.ExtensionOf(url)
         If guessed_Extension.Length > 0 AndAlso Image_File_Extensions.Contains(guessed_Extension) Then
-            MessageBox.Show(Me,
+            ViewerBox.Show(Me,
                 Localization.T("По URL можно открыть только видео. Картинку скачайте и откройте файлом."),
                 Localization.T("Открыть URL"),
                 MessageBoxButtons.OK, MessageBoxIcon.Information)

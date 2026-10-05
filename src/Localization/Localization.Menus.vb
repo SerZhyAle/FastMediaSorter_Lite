@@ -647,6 +647,85 @@ Partial Public NotInheritable Class Localization
             "{0} فارمیٹس رجسٹر ہو گئے:" & vbCrLf & "{1}" & vbCrLf & vbCrLf & "تبدیلیاں موجودہ صارف پر لاگو ہیں۔",
             "已注册 {0} 种格式：" & vbCrLf & "{1}" & vbCrLf & vbCrLf & "更改已应用于当前用户。")
 
+        ' --- ticket 125: painted menus, panels and their accessible words ----------------
+
+        ' The words of a screen reader for what pressing an item does (the default action).
+        Add("Переключить",
+            "Toggle", "Перемкнути", "Umschalten", "Attiva/disattiva", "Alternar", "Basculer",
+            "Alternar", "تبديل", "टॉगल करें", "টগল করুন", "ٹوگل کریں", "切换")
+        Add("Нажать",
+            "Press", "Натиснути", "Drücken", "Premi", "Pulsar", "Appuyer",
+            "Premir", "اضغط", "दबाएँ", "চাপুন", "دبائیں", "按下")
+
+        ' The sort button: the order in words, an arrow after it says the direction (125 UX-304).
+        Add("Дата",
+            "Date", "Дата", "Datum", "Data", "Fecha", "Date",
+            "Data", "التاريخ", "दिनांक", "তারিখ", "تاریخ", "日期")
+        Add("Случайно",
+            "Random", "Випадково", "Zufällig", "Casuale", "Aleatorio", "Aléatoire",
+            "Aleatório", "عشوائي", "यादृच्छिक", "এলোমেলো", "بے ترتیب", "随机")
+        Add("Имя по числам",
+            "Name (numeric)", "Ім'я за числами", "Name (numerisch)", "Nome (numerico)", "Nombre (numérico)", "Nom (numérique)",
+            "Nome (numérico)", "الاسم (رقمي)", "नाम (संख्यात्मक)", "নাম (সংখ্যাগত)", "نام (عددی)", "名称（按数字）")
+
+        ' Rows of the shared "File" block of both media menus (125 UX-324, UX-330).
+        Add("Нечего отменять",
+            "Nothing to undo", "Нічого скасовувати", "Nichts rückgängig zu machen", "Niente da annullare", "Nada que deshacer", "Rien à annuler",
+            "Nada para anular", "لا شيء للتراجع عنه", "पूर्ववत करने के लिए कुछ नहीं", "পূর্বাবস্থায় ফেরানোর কিছু নেই", "واپس کرنے کے لیے کچھ نہیں", "没有可撤销的操作")
+        Add("Показать в проводнике",
+            "Show in Explorer", "Показати в Провіднику", "Im Explorer anzeigen", "Mostra in Esplora risorse", "Mostrar en el Explorador", "Afficher dans l'Explorateur",
+            "Mostrar no Explorador", "إظهار في مستكشف الملفات", "एक्सप्लोरर में दिखाएँ", "এক্সপ্লোরারে দেখান", "ایکسپلورر میں دکھائیں", "在资源管理器中显示")
+        Add("Недоступно для аудио и прямых трансляций",
+            "Not available for audio and live streams", "Недоступно для аудіо та прямих трансляцій", "Für Audio und Livestreams nicht verfügbar",
+            "Non disponibile per audio e dirette", "No disponible para audio ni emisiones en directo", "Indisponible pour l'audio et les diffusions en direct",
+            "Indisponível para áudio e transmissões em direto", "غير متاح للصوت والبث المباشر", "ऑडियो और लाइव स्ट्रीम के लिए उपलब्ध नहीं",
+            "অডিও এবং লাইভ স্ট্রিমের জন্য উপলব্ধ নয়", "آڈیو اور لائیو سٹریمز کے لیے دستیاب نہیں", "不适用于音频和直播流")
+
+        ' The animation-to-video action: named for what it does (125 UX-312). The original goes away once
+        ' the video exists - the tooltip says so; the row and the button look destructive.
+        Add("Анимацию - в видео",
+            "Animation to video", "Анімацію - у відео", "Animation in Video umwandeln", "Da animazione a video", "Animación a vídeo", "Animation en vidéo",
+            "Animação para vídeo", "تحويل الصورة المتحركة إلى فيديو", "एनिमेशन को वीडियो में बदलें", "অ্যানিমেশন থেকে ভিডিও", "اینیمیشن سے ویڈیو", "动画转视频")
+        Add("Анимацию - в видео..",
+            "Animation to video..", "Анімацію - у відео..", "Animation in Video umwandeln..", "Da animazione a video..", "Animación a vídeo..", "Animation en vidéo..",
+            "Animação para vídeo..", "تحويل الصورة المتحركة إلى فيديو..", "एनिमेशन को वीडियो में बदलें..", "অ্যানিমেশন থেকে ভিডিও..", "اینیمیشن سے ویڈیو..", "动画转视频..")
+        Add("В видео",
+            "To video", "У відео", "In Video", "In video", "A vídeo", "En vidéo",
+            "Para vídeo", "إلى فيديو", "वीडियो में", "ভিডিওতে", "ویڈیو میں", "转视频")
+
+        ' The folder box's tooltip: what its right button opens (125 UX-306).
+        Add("Правая кнопка - меню: папка, файл, архив, ресурсы, раздача",
+            "Right button - menu: folder, file, archive, resources, sharing", "Права кнопка - меню: тека, файл, архів, ресурси, роздача",
+            "Rechte Taste - Menü: Ordner, Datei, Archiv, Ressourcen, Freigabe", "Tasto destro - menu: cartella, file, archivio, risorse, condivisione",
+            "Botón derecho - menú: carpeta, archivo, archivo comprimido, recursos, compartir", "Clic droit - menu : dossier, fichier, archive, ressources, partage",
+            "Botão direito - menu: pasta, ficheiro, arquivo, recursos, partilha", "الزر الأيمن - قائمة: المجلد، الملف، الأرشيف، الموارد، المشاركة",
+            "दायाँ बटन - मेनू: फ़ोल्डर, फ़ाइल, संग्रह, संसाधन, साझाकरण", "ডান বোতাম - মেনু: ফোল্ডার, ফাইল, আর্কাইভ, রিসোর্স, শেয়ারিং",
+            "دایاں بٹن - مینو: فولڈر، فائل، آرکائیو، وسائل، شیئرنگ", "右键 - 菜单：文件夹、文件、压缩包、资源、共享")
+
+        ' The panels' windows, for assistive technology (125 UX-313g).
+        Add("Панель инструментов, строка 1",
+            "Toolbar, row 1", "Панель інструментів, рядок 1", "Symbolleiste, Zeile 1", "Barra degli strumenti, riga 1", "Barra de herramientas, fila 1", "Barre d'outils, ligne 1",
+            "Barra de ferramentas, linha 1", "شريط الأدوات، الصف 1", "टूलबार, पंक्ति 1", "টুলবার, সারি ১", "ٹول بار، قطار 1", "工具栏，第 1 行")
+        Add("Панель инструментов, строка 2",
+            "Toolbar, row 2", "Панель інструментів, рядок 2", "Symbolleiste, Zeile 2", "Barra degli strumenti, riga 2", "Barra de herramientas, fila 2", "Barre d'outils, ligne 2",
+            "Barra de ferramentas, linha 2", "شريط الأدوات، الصف 2", "टूलबार, पंक्ति 2", "টুলবার, সারি ২", "ٹول بار، قطار 2", "工具栏，第 2 行")
+        Add("Строка состояния",
+            "Status bar", "Рядок стану", "Statusleiste", "Barra di stato", "Barra de estado", "Barre d'état",
+            "Barra de estado", "شريط الحالة", "स्थिति पट्टी", "স্ট্যাটাস বার", "اسٹیٹس بار", "状态栏")
+
+        ' The panel size that makes every target 44 px (125 Q125-4): for a touch screen or a pen.
+        Add("Крупные цели (касание)",
+            "Large targets (touch)", "Великі цілі (дотик)", "Große Ziele (Touch)", "Bersagli grandi (tocco)", "Objetivos grandes (táctil)", "Grandes cibles (tactile)",
+            "Alvos grandes (toque)", "أهداف كبيرة (لمس)", "बड़े लक्ष्य (स्पर्श)", "বড় লক্ষ্য (স্পর্শ)", "بڑے ہدف (ٹچ)", "大触控目标（触摸）")
+        ' The delete row's tooltip: what the plain key does and what the permanent one does (125 UX-330).
+        Add("В Корзину. {0} - безвозвратно, минуя Корзину",
+            "To the Recycle Bin. {0} - permanently, bypassing the Recycle Bin", "У Кошик. {0} - назавжди, повз Кошик",
+            "In den Papierkorb. {0} - endgültig, am Papierkorb vorbei", "Nel Cestino. {0} - definitivamente, senza passare dal Cestino",
+            "A la Papelera. {0} - de forma permanente, sin pasar por la Papelera", "Vers la Corbeille. {0} - définitivement, sans passer par la Corbeille",
+            "Para a Reciclagem. {0} - permanentemente, sem passar pela Reciclagem", "إلى سلة المحذوفات. {0} - نهائيًا دون المرور بسلة المحذوفات",
+            "रीसायकल बिन में। {0} - स्थायी रूप से, रीसायकल बिन को छोड़कर", "রিসাইকেল বিনে। {0} - স্থায়ীভাবে, রিসাইকেল বিন এড়িয়ে",
+            "ری سائیکل بن میں۔ {0} - مستقل طور پر، ری سائیکل بن کو چھوڑ کر", "移入回收站。{0} - 永久删除，绕过回收站")
+
     End Sub
 
 End Class

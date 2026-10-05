@@ -52,6 +52,11 @@ Friend NotInheritable Class UiScale
     Public Const SmallPreset As Single = 0.85F
     Public Const LargePreset As Single = 1.25F
 
+    ''' <summary>The "large targets" size (125 Q125-4): every button is at least 44 logical px - the touch
+    ''' target spec 120 §8 asks for - because 44 / <see cref="ChromeMetrics.MinTarget"/> (28) is the factor.
+    ''' The default size does not change.</summary>
+    Public Const TouchPreset As Single = 44.0F / 28.0F
+
     ''' <summary>The adaptive size is the media width, in logical px, over this reference (1.0 at it),
     ''' kept between the two bounds and moved in <see cref="AdaptiveStep"/> steps so that dragging a
     ''' window edge does not re-measure every panel on every pixel.</summary>
@@ -67,6 +72,7 @@ Friend NotInheritable Class UiScale
         Select Case If(choice, "")
             Case "small" : Return SmallPreset
             Case "large" : Return LargePreset
+            Case "touch" : Return TouchPreset
             Case "adaptive" : Return AdaptiveMultiplier(logicalWidth)
             Case Else : Return 1.0F
         End Select

@@ -111,7 +111,7 @@ Partial Public Class Main_Form
             If session.IsEncrypted Then
                 session.Dispose()
                 ArchiveTempStore.DeleteSession(sessionDir)
-                lbl_Status.Text = Localization.T("Архив защищён паролем - откройте его архиватором")
+                Notify(Localization.T("Архив защищён паролем, а программа такие не открывает. Распакуйте его архиватором и откройте папку."), NotifyLevel.Warning)
                 Return
             End If
 
@@ -134,7 +134,8 @@ Partial Public Class Main_Form
         Catch ex As Exception
             AppFileLogger.LogException("Archive: opening " & archivePath, ex)
             If sessionDir.Length > 0 Then ArchiveTempStore.DeleteSession(sessionDir)
-            lbl_Status.Text = Localization.T("Не удалось прочитать архив")
+            ' The cause and the next step, from the one place that reads an exception (124 UX-208).
+            Notify(Localization.TF("Не удалось открыть архив: {0}", FailureText.Describe(ex)), NotifyLevel.Error)
         End Try
     End Sub
 
@@ -179,7 +180,7 @@ Partial Public Class Main_Form
             If failed IsNot Nothing Then failed.Dispose() Else session.Dispose()
             If sessionDir.Length > 0 Then ArchiveTempStore.DeleteSession(sessionDir)
             ApplyArchiveModeUi()
-            lbl_Status.Text = Localization.T("Не удалось прочитать архив")
+            Notify(Localization.TF("Не удалось открыть архив: {0}", FailureText.Describe(ex)), NotifyLevel.Error)
         End Try
     End Sub
 
@@ -242,7 +243,7 @@ Partial Public Class Main_Form
             Else
                 session.Dispose()
                 ArchiveTempStore.DeleteSession(sessionDir)
-                lbl_Status.Text = Localization.T("Не удалось прочитать архив")
+                Notify(Localization.T("Архив не распакован до конца: он повреждён или неполон. Попробуйте открыть его архиватором."), NotifyLevel.Warning)
             End If
         Catch ex As Exception
             AppFileLogger.LogException("Archive: opening " & archivePath, ex)
@@ -252,7 +253,7 @@ Partial Public Class Main_Form
                 archive_Pending_Path = ""
                 Try : session.Dispose() : Catch : End Try
                 ArchiveTempStore.DeleteSession(sessionDir)
-                lbl_Status.Text = Localization.T("Не удалось прочитать архив")
+                Notify(Localization.TF("Не удалось открыть архив: {0}", FailureText.Describe(ex)), NotifyLevel.Error)
             End If
         End Try
     End Sub
@@ -480,9 +481,9 @@ Partial Public Class Main_Form
                 Return Localization.TF("Запись слишком большая для просмотра ({0} МБ)",
                                        (entry.Size \ (1024L * 1024L)).ToString())
             Case ArchiveSession.EntryRefusal.Bomb
-                Return Localization.T("Похоже на архив-бомбу")
+                Return Localization.T("Запись сжата слишком сильно, чтобы открыть её безопасно. Распакуйте архив архиватором и проверьте файл.")
             Case ArchiveSession.EntryRefusal.Encrypted
-                Return Localization.T("Архив защищён паролем - откройте его архиватором")
+                Return Localization.T("Архив защищён паролем, а программа такие не открывает. Распакуйте его архиватором и откройте папку.")
             Case Else
                 Return Localization.T("Не удалось распаковать запись")
         End Select

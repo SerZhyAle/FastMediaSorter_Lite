@@ -375,6 +375,21 @@ Public Class Main_Form
     ' whatever else might post WM_USER+1 to our window.
     Protected Overrides Sub WndProc(ByRef m As Message)
 
+#If Not NETFRAMEWORK Then
+        ' Hardware media keys may arrive as an application command rather than KeyDown.
+        ' The normal key route honours the current binding and the media applicability gate.
+        If m.Msg = &H319 AndAlso PlaybackRules.IsMediaPlayPauseCommand(m.LParam.ToInt64()) Then
+            Dim press As New KeyEventArgs(Keys.MediaPlayPause)
+            last_KeyDown_Code = Keys.MediaPlayPause
+            last_KeyDown_Was_Repeat = False
+            KeybUse(press, GetWas_slideshow())
+            If press.Handled Then
+                m.Result = New IntPtr(1)
+                Return
+            End If
+        End If
+#End If
+
         If m.Msg = WM_COPYDATA Then
 
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0888: WM_COPYDATA")
@@ -454,7 +469,7 @@ Public Class Main_Form
                 LeaveResource()
 #End If
                 Current_Folder_Path = folder_Browser_Dialog.SelectedPath
-                lbl_Status.Text = Localization.T("выбрана папка") & ": " & Current_Folder_Path
+                lbl_Status.Text = Localization.TF("выбрана папка: {0}", Current_Folder_Path)
                 Is_No_Background_Tasks = False
                 ReadShowMediaFile(Mode_FolderAndFile)
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0310: Folder read")
@@ -487,6 +502,14 @@ Public Class Main_Form
                 ProcessArgument(file)
                 Exit For
             Next
+#If Not NETFRAMEWORK Then
+            ' Several files dropped: the first opens and the rest are not queued - say so, instead of nothing
+            ' (124 UX-212). After the open, so its own status line does not cover this one.
+            If files IsNot Nothing AndAlso files.Length > 1 Then
+                Dim dropped As Integer = files.Length
+                BeginInvoke(New MethodInvoker(Sub() Notify(Localization.TF("Открыт первый из {0} файлов - остальные не открыты.", dropped), NotifyLevel.Info)))
+            End If
+#End If
         End If
     End Sub
 
@@ -494,7 +517,7 @@ Public Class Main_Form
         If recent_Media_File_List Is Nothing OrElse
             recent_Media_File_List.Count = 0 Then
 
-            '   MessageBox.Show(Localization.T("Нет недавних файлов."), "Recent Files", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            '   ViewerBox.Show(Localization.T("Нет недавних файлов."), "Recent Files", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return
         End If
 
@@ -576,7 +599,12 @@ Public Class Main_Form
         If Current_Folder_Path <> "" Then
             ReadShowMediaFile(Mode_FolderAndFile)
         Else
+#If Not NETFRAMEWORK Then
+            ' News, not a question: the status line says it (124 UX-206/UX-207 - a modal box is for a question).
+            Notify(Localization.T("Сначала откройте файл (F4) или папку с медиафайлами"), NotifyLevel.Warning)
+#Else
             MsgBox(Localization.T("Сначала укажите каталог с медиафайлами.. Программа хороша, но не телепат."))
+#End If
         End If
     End Sub
 
@@ -611,7 +639,11 @@ Public Class Main_Form
         ' so a second click on "Настройки" while the window is open just re-surfaces it.
         If Table_Form.Visible Then
             If Table_Form.WindowState = FormWindowState.Minimized Then Table_Form.WindowState = FormWindowState.Normal
+#If NETFRAMEWORK Then
             Table_Form.Activate()
+#Else
+            Table_Form.ActivateModernSettingsOnOwnerMonitor()
+#End If
         Else
             Table_Form.Show(Me)
         End If
@@ -724,7 +756,13 @@ Public Class Main_Form
     Private Sub ReportOperationError(diagnostic_Code As String, ex As Exception,
                                      Optional context_Folder As String = "")
         Try
+#If Not NETFRAMEWORK Then
+            ' A failed operation is an ERROR, whatever prefix its sentence carries (124 UX-206): in full screen
+            ' without panels it raises a toast and plays the system sound, because the status line is not on screen.
+            Notify(NotifyRules.Classify(OperationErrorText(diagnostic_Code, ex, context_Folder)).Text, NotifyLevel.Error)
+#Else
             lbl_Status.Text = OperationErrorText(diagnostic_Code, ex, context_Folder)
+#End If
         Catch
         End Try
         AppFileLogger.LogException("Operation failed (" & diagnostic_Code & ")", ex)
@@ -812,6 +850,10 @@ Public Class Main_Form
         ' A key released while another window had focus never sends us its key-up; the
         ' next press of it must not look like an auto-repeat (audit 047, C-20).
         last_KeyDown_Was_Repeat = False
+#If Not NETFRAMEWORK Then
+        ' 119 Ф-6: a hidden pointer must not carry into the window the user went to.
+        RestorePlaybackCursorForInterruption()
+#End If
     End Sub
 
     Private Sub btn_choose_file_Click(sender As Object, e As EventArgs) Handles btn_choose_file.Click
@@ -873,7 +915,22 @@ Public Class Main_Form
 
 
     Private Sub Jump_To_file_Number()
-
+#If Not NETFRAMEWORK Then
+        ' One prompt that checks the number while it is still up (124 UX-204): a mistyped number keeps the field
+        ' and says why, instead of closing on a system box titled "Error" in English. Cancel is Nothing.
+        Dim typed As String = AskDialogs.Prompt(Me, AskSpecs.JumpToNumberPrompt(current_File_Index + 1, total_File_Count))
+        If typed Is Nothing Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2464: jump to file cancelled")
+            Return
+        End If
+        Dim number As Integer
+        If Integer.TryParse(typed.Trim(), Globalization.NumberStyles.None, Globalization.CultureInfo.InvariantCulture, number) AndAlso
+           number > 0 AndAlso number <= total_File_Count Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2465: Jumping to file number " & number.ToString())
+            JumpTo(number - 1)
+        End If
+        Return
+#Else
         Dim fileNumber As Integer
         Dim take_number As String
 
@@ -899,12 +956,13 @@ Public Class Main_Form
                 ' it only ever worked because the index was moved here beforehand.
                 JumpTo(fileNumber - 1)
             Else
-                MessageBox.Show(Localization.T("Номер файла вне диапазона."), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                ViewerBox.Show(Localization.T("Номер файла вне диапазона."), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End If
 
         Else
-            MessageBox.Show(Localization.T("Неверный номер файла."), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            ViewerBox.Show(Localization.T("Неверный номер файла."), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End If
+#End If
     End Sub
 
 

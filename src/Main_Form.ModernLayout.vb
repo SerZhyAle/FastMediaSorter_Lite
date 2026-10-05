@@ -110,6 +110,11 @@ Partial Public Class Main_Form
         ' "Replace with video" - the mirror image of the editor's predicate, shown only
         ' while an animation is actually playing.
         BuildToVideoToolbarControls(flow_Toolbar)
+
+        ' The «Ресурс» button (ticket 118 Ф-2): created here so it joins the docked layout and
+        ' the overflow set like every other carrier, and exists before BuildChromePanels.
+        EnsureResourceButton()
+        RefreshResourceButton()
 #End If
 
         ' Right-edge "more" button + the priority/overflow partitioning that

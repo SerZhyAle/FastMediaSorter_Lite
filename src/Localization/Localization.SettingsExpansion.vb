@@ -378,19 +378,19 @@ Partial Public NotInheritable Class Localization
             "Ocupado en disco", "Occupé sur le disque", "Ocupado no disco",
             "المستخدَم على القرص", "डिस्क पर उपयोग", "ডিস্কে ব্যবহৃত", "ڈسک پر استعمال", "占用磁盘")
 
-        Add("Текущий размер сохранённых результатов. Очистка не меняет настройки OCR.",
-            "How much the stored results take now. Clearing does not change the OCR settings.",
-            "Поточний розмір збережених результатів. Очищення не змінює налаштування OCR.",
-            "Aktuelle Größe der gespeicherten Ergebnisse. Das Leeren ändert die OCR-Einstellungen nicht.",
-            "Dimensione attuale dei risultati salvati. Svuotare non cambia le impostazioni OCR.",
-            "Tamaño actual de los resultados guardados. Vaciar no cambia los ajustes de OCR.",
-            "Taille actuelle des résultats enregistrés. Vider ne modifie pas les réglages OCR.",
-            "Tamanho atual dos resultados guardados. Limpar não altera as configurações de OCR.",
-            "الحجم الحالي للنتائج المحفوظة. المسح لا يغيّر إعدادات OCR.",
-            "सहेजे गए परिणामों का वर्तमान आकार। साफ़ करने से OCR सेटिंग्स नहीं बदलतीं।",
-            "সংরক্ষিত ফলাফলের বর্তমান আকার। পরিষ্কার করলে OCR সেটিংস বদলায় না।",
-            "محفوظ نتائج کا موجودہ حجم۔ صاف کرنے سے OCR ترتیبات نہیں بدلتیں۔",
-            "已保存结果的当前大小。清空不会改变 OCR 设置。")
+        Add("Сколько места занимают сохранённые результаты распознавания и перевода. Очистка не меняет настройки OCR и не удаляет языковые данные - текст распознаётся заново.",
+            "How much room the stored recognition and translation results take. Clearing changes no OCR setting and removes no language data - the text is recognized again.",
+            "Скільки місця займають збережені результати розпізнавання й перекладу. Очищення не змінює налаштування OCR і не видаляє мовні дані - текст розпізнається знову.",
+            "Wie viel Raum die gespeicherten Erkennungs- und Übersetzungsergebnisse belegen. Leeren ändert keine OCR-Einstellung und löscht keine Sprachdaten - der Text wird neu erkannt.",
+            "Quanto spazio occupano i risultati salvati di riconoscimento e traduzione. Svuotare non cambia le impostazioni OCR e non rimuove i dati linguistici - il testo viene riconosciuto di nuovo.",
+            "Cuánto espacio ocupan los resultados guardados de reconocimiento y traducción. Vaciar no cambia los ajustes de OCR ni elimina los datos de idioma - el texto se vuelve a reconocer.",
+            "Place occupée par les résultats enregistrés de reconnaissance et de traduction. Vider ne modifie aucun réglage OCR et ne supprime pas les données de langue - le texte est reconnu à nouveau.",
+            "Quanto espaço ocupam os resultados salvos de reconhecimento e tradução. Limpar não altera as configurações de OCR nem remove os dados de idioma - o texto é reconhecido de novo.",
+            "كم يشغل من المكان نتائج التعرّف والترجمة المحفوظة. المسح لا يغيّر إعدادات OCR ولا يحذف البيانات اللغوية - يُتعرّف على النص من جديد.",
+            "सहेजे गए पहचान और अनुवाद परिणाम कितनी जगह लेते हैं। साफ़ करने से OCR सेटिंग्स नहीं बदलतीं और भाषा डेटा नहीं हटता - पाठ फिर से पहचाना जाता है।",
+            "সংরক্ষিত শনাক্তকরণ ও অনুবাদ ফলাফল কত জায়গা নেয়। পরিষ্কার করলে OCR সেটিংস বদলায় না এবং ভাষার ডেটা মুছে যায় না - লেখা আবার শনাক্ত হয়।",
+            "محفوظ شناخت اور ترجمہ نتائج کتنی جگہ لیتے ہیں۔ صاف کرنے سے OCR ترتیبات نہیں بدلتیں اور زبان کا ڈیٹا نہیں مٹتا - متن دوبارہ شناخت ہوتا ہے۔",
+            "保存的识别和翻译结果占用多少空间。清空不会更改 OCR 设置，也不会删除语言数据 - 文本会重新识别。")
 
         Add("Очистить кэш",
             "Clear the cache", "Очистити кеш", "Cache leeren", "Svuota la cache", "Vaciar la caché",
@@ -413,6 +413,127 @@ Partial Public NotInheritable Class Localization
 
         Add("{0} МБ", "{0} MB", "{0} МБ", "{0} MB", "{0} MB", "{0} MB", "{0} Mo", "{0} MB",
             "{0} م.ب", "{0} एमबी", "{0} এমবি", "{0} ایم بی", "{0} MB")
+
+        ' --- Storage page cache rows (130 §3.3) -------------------------------------
+
+        Add("Обновить",
+            "Refresh", "Оновити", "Aktualisieren", "Aggiorna", "Actualizar",
+            "Actualiser", "Atualizar", "تحديث", "रिफ्रेश", "রিফ্রেশ", "ریفریش", "刷新")
+
+        Add("Неизвестно",
+            "Unknown", "Невідомо", "Unbekannt", "Sconosciuto", "Desconocido",
+            "Inconnu", "Desconhecido", "غير معروف", "अज्ञात", "অজানা", "نامعلوم", "未知")
+
+        Add("Не удалось измерить: {0}. Кнопка «Обновить» повторит попытку.",
+            "Could not measure: {0}. The Refresh button will try again.",
+            "Не вдалося виміряти: {0}. Кнопка «Оновити» повторить спробу.",
+            "Messen nicht möglich: {0}. Die Schaltfläche »Aktualisieren« versucht es erneut.",
+            "Impossibile misurare: {0}. Il pulsante Aggiorna riproverà.",
+            "No se pudo medir: {0}. El botón Actualizar lo reintentará.",
+            "Impossible de mesurer : {0}. Le bouton Actualiser réessaiera.",
+            "Não foi possível medir: {0}. O botão Atualizar tentará de novo.",
+            "تعذّر القياس: {0}. زر «تحديث» سيحاول مجددًا.",
+            "मापन नहीं हो सका: {0}. रिफ्रेश बटन फिर कोशिश करेगा।",
+            "মাপা যায়নি: {0}. রিফ্রেশ বোতাম আবার চেষ্টা করবে।",
+            "ماپنا ممکن نہیں: {0}. ریفریش بٹن دوبارہ کوشش کرے گا۔",
+            "无法测量：{0}。「刷新」按钮会重试。")
+
+        Add("Кэш декодирования очищен.",
+            "Decode cache cleared.", "Кеш декодування очищено.", "Dekodierer-Cache geleert.",
+            "Cache di decodifica svuotata.", "Caché de decodificado vaciada.", "Cache de décodage vidé.",
+            "Cache de decodificação limpo.", "تم مسح ذاكرة فك الترميز.", "डिकोड कैश साफ़ हो गया।",
+            "ডিকোড ক্যাশ পরিষ্কার হয়েছে।", "ڈی کوڈ کیش صاف ہو گیا۔", "解码缓存已清空。")
+
+        Add("Кэш миниатюр очищен.",
+            "Thumbnail cache cleared.", "Кеш мініатюр очищено.", "Vorschaubild-Cache geleert.",
+            "Cache delle miniature svuotata.", "Caché de miniaturas vaciada.", "Cache des miniatures vidé.",
+            "Cache de miniaturas limpo.", "تم مسح ذاكرة الصور المصغرة.", "थंबनेल कैश साफ़ हो गया।",
+            "থাম্বনেইল ক্যাশ পরিষ্কার হয়েছে।", "تھمب نیل کیش صاف ہو گیا۔", "缩略图缓存已清空。")
+
+        Add("Сохранённые результаты распознавания удалены.",
+            "Stored recognition results deleted.", "Збережені результати розпізнавання видалено.",
+            "Gespeicherte Erkennungsergebnisse gelöscht.", "Risultati di riconoscimento salvati eliminati.",
+            "Resultados de reconocimiento guardados eliminados.", "Résultats de reconnaissance enregistrés supprimés.",
+            "Resultados de reconhecimento salvos excluídos.", "تم حذف نتائج التعرّف المحفوظة.",
+            "सहेजे गए पहचान परिणाम हटा दिए गए।", "সংরক্ষিত শনাক্তকরণ ফলাফল মুছে ফেলা হয়েছে।",
+            "محفوظ شناخت نتائج حذف ہو گئے۔", "已删除保存的识别结果。")
+
+        Add("Сколько места занимают временные копии записей открытых архивов. Очистка убирает только оставшиеся копии - открытый архив продолжит работать.",
+            "How much room the temporary copies of opened archive entries take. Clearing removes only the copies left behind - an open archive keeps working.",
+            "Скільки місця займають тимчасові копії записів відкритих архівів. Очищення прибирає лише копії, що залишилися - відкритий архів продовжить працювати.",
+            "Wie viel Raum die temporären Kopien geöffneter Archiveinträge belegen. Leeren entfernt nur zurückgebliebene Kopien - ein geöffnetes Archiv arbeitet weiter.",
+            "Quanto spazio occupano le copie temporanee delle voci degli archivi aperti. Svuotare rimuove solo le copie rimaste - un archivio aperto continua a funzionare.",
+            "Cuánto espacio ocupan las copias temporales de las entradas de archivos abiertos. Vaciar elimina solo las copias que quedaron - un archivo abierto sigue funcionando.",
+            "Place occupée par les copies temporaires des entrées des archives ouvertes. Vider ne supprime que les copies restées - une archive ouverte continue de fonctionner.",
+            "Quanto espaço ocupam as cópias temporárias das entradas de arquivos abertos. Limpar remove apenas as cópias que ficaram - um arquivo aberto continua funcionando.",
+            "كم تشغل من المكان النسخ المؤقتة لإدخالات الأرشيف المفتوح. المسح يزيل النسخ المتبقية فقط - الأرشيف المفتوح يواصل العمل.",
+            "खुले संग्रह प्रविष्टियों की अस्थायी प्रतियाँ कितनी जगह लेती हैं। साफ़ करने से केवल बची प्रतियाँ हटती हैं - खुला संग्रह काम करता रहता है।",
+            "খোলা আর্কাইভ এন্ট্রির অস্থায়ী কপি কত জায়গা নেয়। পরিষ্কার করলে শুধু বাকি থাকা কপিগুলো মুছে যায় - খোলা আর্কাইভ কাজ চালিয়ে যায়।",
+            "کھلے آرکائو انٹریوں کی عارضی کاپیاں کتنی جگہ لیتی ہیں۔ صاف کرنے سے صرف بچی کاپیاں ہٹتی ہیں - کھلا آرکائو کام کرتا رہتا ہے۔",
+            "打开的归档条目的临时副本占用多少空间。清空只清除遗留的副本 - 打开的归档继续正常工作。")
+
+        Add("Удалить временные копии записей архивов? Открытые архивы продолжат работать.",
+            "Delete the temporary copies of archive entries? Open archives keep working.",
+            "Видалити тимчасові копії записів архівів? Відкриті архіви продовжать працювати.",
+            "Temporäre Kopien von Archiveinträgen löschen? Geöffnete Archive arbeiten weiter.",
+            "Eliminare le copie temporanee delle voci degli archivi? Gli archivi aperti continuano a funzionare.",
+            "¿Eliminar las copias temporales de las entradas de los archivos? Los archivos abiertos siguen funcionando.",
+            "Supprimer les copies temporaires des entrées d'archives ? Les archives ouvertes continuent de fonctionner.",
+            "Excluir as cópias temporárias das entradas dos arquivos? Arquivos abertos continuam funcionando.",
+            "حذف النسخ المؤقتة لإدخالات الأرشيف؟ الأرشيف المفتوح يواصل العمل.",
+            "संग्रह प्रविष्टियों की अस्थायी प्रतियाँ हटाएँ? खुले संग्रह काम करते रहेंगे।",
+            "আর্কাইভ এন্ট্রির অস্থায়ী কপি মুছবেন? খোলা আর্কাইভ কাজ চালিয়ে যাবে।",
+            "آرکائو انٹریوں کی عارضی کاپیاں حذف کریں؟ کھلے آرکائو کام کرتے رہیں گے۔",
+            "删除归档条目的临时副本吗？打开的归档继续正常工作。")
+
+        Add("Временные копии архивов удалены.",
+            "Temporary archive copies deleted.", "Тимчасові копії архівів видалено.",
+            "Temporäre Archivkopien gelöscht.", "Copie temporanee degli archivi eliminate.",
+            "Copias temporales de archivos eliminadas.", "Copies temporaires des archives supprimées.",
+            "Cópias temporárias de arquivos excluídas.", "تم حذف النسخ المؤقتة للأرشيف.",
+            "संग्रह की अस्थायी प्रतियाँ हटा दी गईं।", "আর্কাইভের অস্থায়ী কপি মুছে ফেলা হয়েছে।",
+            "آرکائو کی عارضی کاپیاں حذف ہو گئیں۔", "归档临时副本已删除。")
+
+        Add("Сетевые ресурсы",
+            "Network resources", "Мережеві ресурси", "Netzwerkressourcen", "Risorse di rete",
+            "Recursos de red", "Ressources réseau", "Recursos de rede", "موارد الشبكة",
+            "नेटवर्क संसाधन", "নেটওয়ার্ক রিসোর্স", "نیٹ ورک وسائل", "网络资源")
+
+        Add("Сколько места занимают временные копии файлов сетевых ресурсов. Очистка не прерывает активные подключения - копия загрузится заново при обращении.",
+            "How much room the temporary copies of network resource files take. Clearing interrupts no active connection - a copy is fetched again when needed.",
+            "Скільки місця займають тимчасові копії файлів мережевих ресурсів. Очищення не перериває активні підключення - копія завантажиться знову при зверненні.",
+            "Wie viel Raum die temporären Kopien von Netzwerkressourcen-Dateien belegen. Leeren unterbricht keine aktive Verbindung - eine Kopie wird bei Bedarf neu geladen.",
+            "Quanto spazio occupano le copie temporanee dei file delle risorse di rete. Svuotare non interrompe le connessioni attive - la copia viene riscaricata quando serve.",
+            "Cuánto espacio ocupan las copias temporales de los archivos de recursos de red. Vaciar no interrumpe las conexiones activas - la copia se descarga de nuevo cuando se necesita.",
+            "Place occupée par les copies temporaires des fichiers des ressources réseau. Vider n'interrompt aucune connexion active - la copie est retéléchargée quand nécessaire.",
+            "Quanto espaço ocupam as cópias temporárias dos arquivos de recursos de rede. Limpar não interrompe conexões ativas - a cópia é baixada de novo quando necessário.",
+            "كم تشغل من المكان النسخ المؤقتة لملفات موارد الشبكة. المسح لا يقطع الاتصالات النشطة - تُحمَّل النسخة من جديد عند الحاجة.",
+            "नेटवर्क संसाधन फ़ाइलों की अस्थायी प्रतियाँ कितनी जगह लेती हैं। साफ़ करने से सक्रिय कनेक्शन नहीं टूटते - ज़रूरत पर प्रति फिर से डाउनलोड हो जाती है।",
+            "নেটওয়ার্ক রিসোর্স ফাইলের অস্থায়ী কপি কত জায়গা নেয়। পরিষ্কার করলে সক্রিয় সংযোগ ভাঙে না - দরকারে কপি আবার ডাউনলোড হয়।",
+            "نیٹ ورک وسائل کی فائلوں کی عارضی کاپیاں کتنی جگہ لیتی ہیں۔ صاف کرنے سے فعال کنکشن منقطع نہیں ہوتے - ضرورت پر کاپی دوبارہ ڈاؤن لوڈ ہو جاتی ہے۔",
+            "网络资源文件的临时副本占用多少空间。清空不会中断活动连接 - 需要时会重新下载副本。")
+
+        Add("Удалить временные копии файлов сетевых ресурсов? Активные подключения не пострадают.",
+            "Delete the temporary copies of network resource files? Active connections are not affected.",
+            "Видалити тимчасові копії файлів мережевих ресурсів? Активні підключення не постраждають.",
+            "Temporäre Kopien von Netzwerkressourcen-Dateien löschen? Aktive Verbindungen bleiben unberührt.",
+            "Eliminare le copie temporanee dei file delle risorse di rete? Le connessioni attive non ne risentono.",
+            "¿Eliminar las copias temporales de los archivos de recursos de red? Las conexiones activas no se ven afectadas.",
+            "Supprimer les copies temporaires des fichiers des ressources réseau ? Les connexions actives ne sont pas affectées.",
+            "Excluir as cópias temporárias dos arquivos de recursos de rede? Conexões ativas não são afetadas.",
+            "حذف النسخ المؤقتة لملفات موارد الشبكة؟ الاتصالات النشطة لن تتأثر.",
+            "नेटवर्क संसाधन फ़ाइलों की अस्थायी प्रतियाँ हटाएँ? सक्रिय कनेक्शन प्रभावित नहीं होंगे।",
+            "নেটওয়ার্ক রিসোর্স ফাইলের অস্থায়ী কপি মুছবেন? সক্রিয় সংযোগ ক্ষতিগ্রস্ত হবে না।",
+            "نیٹ ورک وسائل کی فائلوں کی عارضی کاپیاں حذف کریں؟ فعال کنکشن متاثر نہیں ہوں گے۔",
+            "删除网络资源文件的临时副本吗？活动连接不受影响。")
+
+        Add("Временные копии файлов сетевых ресурсов удалены.",
+            "Temporary network resource copies deleted.", "Тимчасові копії файлів мережевих ресурсів видалено.",
+            "Temporäre Kopien von Netzwerkressourcen gelöscht.", "Copie temporanee delle risorse di rete eliminate.",
+            "Copias temporales de recursos de red eliminadas.", "Copies temporaires des ressources réseau supprimées.",
+            "Cópias temporárias de recursos de rede excluídas.", "تم حذف النسخ المؤقتة لموارد الشبكة.",
+            "नेटवर्क संसाधनों की अस्थायी प्रतियाँ हटा दी गईं।", "নেটওয়ার্ক রিসোর্সের অস্থায়ী কপি মুছে ফেলা হয়েছে।",
+            "نیٹ ورک وسائل کی عارضی کاپیاں حذف ہو گئیں۔", "网络资源临时副本已删除。")
 
         ' --- video track languages (§6.3) -------------------------------------------
 

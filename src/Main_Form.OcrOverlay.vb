@@ -87,16 +87,32 @@ Partial Public Class Main_Form
         Dim g As Graphics = e.Graphics
         g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit
 
-        Using fnt As New Font("Segoe UI", 11.0F, FontStyle.Regular)
+#If Not NETFRAMEWORK Then
+        ' The HUD is UI: the script face of the interface language, and right to left in Arabic and Urdu - the card
+        ' sits in the corner the language starts from and the text runs the way the language does (124 UX-216).
+        Dim hud_Family As String = ScriptFonts.Family("Segoe UI")
+        Dim hud_Rtl As Boolean = Localization.IsRightToLeft()
+#Else
+        Dim hud_Family As String = "Segoe UI"
+        Dim hud_Rtl As Boolean = False
+#End If
+        Using fnt As New Font(hud_Family, 11.0F, FontStyle.Regular)
             Dim sz As SizeF = g.MeasureString(caption, fnt)
             Dim padX As Integer = 8
             Dim padY As Integer = 4
             Dim box As New Rectangle(8, 8, CInt(Math.Ceiling(sz.Width)) + padX * 2, CInt(Math.Ceiling(sz.Height)) + padY * 2)
+            If hud_Rtl Then box.X = Math.Max(0, pb.ClientSize.Width - 8 - box.Width)
             Using bg As New SolidBrush(Color.FromArgb(160, 0, 0, 0))
                 g.FillRectangle(bg, box)
             End Using
             Using tb As New SolidBrush(Color.White)
-                g.DrawString(caption, fnt, tb, box.X + padX, box.Y + padY)
+                If hud_Rtl Then
+                    Using fmt As New StringFormat(StringFormatFlags.DirectionRightToLeft)
+                        g.DrawString(caption, fnt, tb, New RectangleF(box.X + padX, box.Y + padY, box.Width - padX * 2, box.Height - padY * 2), fmt)
+                    End Using
+                Else
+                    g.DrawString(caption, fnt, tb, box.X + padX, box.Y + padY)
+                End If
             End Using
         End Using
     End Sub

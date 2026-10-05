@@ -18,7 +18,7 @@ Partial Public Class Main_Form
         "",
         "Сначала заполните таблицу каталогов-получателей по клавишам 1,2,3.. - 0. ",
         "Затем укажите каталог-источник для сортировки (тот самый, где творится беспорядок). ",
-        "Продвигайтесь по файлам с помощью стрелок, P/N (PgDn/PgUp) или кликов/скролла мыши. ",
+        "Продвигайтесь по файлам с помощью стрелок, Space/PgDn - вперёд, P/PgUp - назад или кликов/скролла мыши. ",
         "Стрелки вверх/вниз: -10/+10 и Shift+ PgDn/PgUp: +100/-100 файлов",
         "Y- случайно, S- слайдшоу, I- случайное слайдшоу. ",
         "R/Shift+R для поворота картинки, если фотограф держал камеру боком (T тоже, пока не включён OCR-перевод). "
@@ -32,8 +32,11 @@ Partial Public Class Main_Form
         "Окно таблицы можно закрепить и щёлкать мышью по колонке с цифрой. ",
         "(U) - вернуть последний перенесённый файл (на случай, если рука дрогнула). ",
         "",
-        " Щёлкните на этот текст (F1), чтобы он деликатно исчез."
+        First_Run_Dismiss_Line
     }
+
+    ''' <summary>The closing line of the first-run card as the shared table holds it (the x86 build keeps it as it was).</summary>
+    Private Const First_Run_Dismiss_Line As String = " Щёлкните на этот текст (F1), чтобы он деликатно исчез."
 
     ''' <summary>
     ''' Re-caption the whole main window in the active UI language. Called on start and
@@ -49,14 +52,29 @@ Partial Public Class Main_Form
         btn_Move_Table.Text = Localization.T("Настройки")
 
         Dim help As New StringBuilder()
+#If Not NETFRAMEWORK Then
+        ' How to START comes first (124 UX-210); the playful intro follows it - the one place that tone stays (Q124-1).
+        help.AppendLine(Localization.T("Начните с F4: выберите файл - откроется вся его папка."))
+        help.AppendLine()
+#End If
         For Each line In Help_Lines_Before_Zoom
             help.AppendLine(Localization.T(line))
         Next
         help.Append(ModernHelpLines())
         For Each line In Help_Lines_After_Zoom
+#If Not NETFRAMEWORK Then
+            ' "Click this text (F1) so it discreetly disappears" read as if F1 was the text's name.
+            If line = First_Run_Dismiss_Line Then
+                help.AppendLine(Localization.T("Щёлкните по этому тексту или нажмите F1 - он исчезнет."))
+                Continue For
+            End If
+#End If
             help.AppendLine(Localization.T(line))
         Next
         lbl_Help_Info.Text = help.ToString()
+#If Not NETFRAMEWORK Then
+        RefreshHelpCardLanguage()
+#End If
 
         UpdateLanguageButtonCaption()
         ApplyScriptFont()

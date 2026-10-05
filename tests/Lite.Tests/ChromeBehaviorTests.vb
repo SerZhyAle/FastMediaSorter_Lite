@@ -98,7 +98,11 @@ Public Class ChromeBehaviorTests
                       surface.LeaveKeyboardMode()
                       Assert.False(surface.KeyboardMode)
                       Assert.False(surface.ActivateFocused())
-                      Assert.Equal("btn_Next_File", surface.AccessibleFor(button).Description)
+                      ' The technical id is not the description any more (125 UX-313g): a screen reader would
+                      ' spell it out. With no tooltip beyond the name there is nothing more to say.
+                      Assert.Equal("", surface.AccessibleFor(button).Description)
+                      button.Tooltip = "Next file (Right)"
+                      Assert.Equal("Next file (Right)", surface.AccessibleFor(button).Description)
                   End Using
               End Sub)
     End Sub
@@ -153,6 +157,8 @@ Public Class ChromeBehaviorTests
                           .Action = Sub() primary += 1, .SecondaryAction = Sub() secondary += 1}
                       surface.SetItems({item})
                       surface.SetAnimationEnabled(False)
+                      ' The long press is for a touch screen or a pen (125 Q125-1): this press says it came from one.
+                      surface.PressExtraInfo = Function() &HFF515780L
                       Dim at As New Point(item.Bounds.Left + 1, item.Bounds.Top + 1)
                       Dim args As New MouseEventArgs(MouseButtons.Left, 1, at.X, at.Y, 0)
                       surface.GetType().GetMethod("OnMouseDown", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.NonPublic).Invoke(surface, {args})
@@ -162,6 +168,52 @@ Public Class ChromeBehaviorTests
                       surface.GetType().GetMethod("OnMouseUp", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.NonPublic).Invoke(surface, {args})
                       Assert.Equal(0, primary)
                       Assert.Equal(1, secondary)
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub Editing_the_path_ends_when_the_box_loses_the_keyboard()
+        OnSta(Sub()
+                  Using path As New ChromePathBox()
+                      Dim ended As Integer = 0
+                      AddHandler path.EditingEnded, Sub() ended += 1
+                      path.Text = "C:\photos"
+                      path.BeginEditing()
+                      path.Text = "C:\typed-but-never-accepted"
+                      ' A click on the picture, another window: the text box loses the keyboard.
+                      Dim loseFocus As Reflection.MethodInfo = GetType(Control).GetMethod("OnLostFocus", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.NonPublic)
+                      loseFocus.Invoke(path.Editor, {EventArgs.Empty})
+                      Assert.Equal(1, ended)
+                      ' Nothing typed is kept: the folder text is back, so the tick may show the folder again.
+                      Assert.Equal("C:\photos", path.Text)
+                      ' A second loss of focus with no editing is nothing.
+                      loseFocus.Invoke(path.Editor, {EventArgs.Empty})
+                      Assert.Equal(1, ended)
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub A_slow_mouse_click_is_still_a_click_and_never_the_secondary_action()
+        OnSta(Sub()
+                  Using surface As New ChromeSurface With {.Size = New Size(100, 44)}
+                      Dim primary As Integer = 0
+                      Dim secondary As Integer = 0
+                      Dim item As New ChromeItem("open", ChromeItemKind.Button) With {
+                          .Action = Sub() primary += 1, .SecondaryAction = Sub() secondary += 1}
+                      surface.SetItems({item})
+                      surface.SetAnimationEnabled(False)
+                      surface.PressExtraInfo = Function() 0L
+                      Dim at As New Point(item.Bounds.Left + 1, item.Bounds.Top + 1)
+                      Dim args As New MouseEventArgs(MouseButtons.Left, 1, at.X, at.Y, 0)
+                      surface.GetType().GetMethod("OnMouseDown", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.NonPublic).Invoke(surface, {args})
+                      Assert.False(surface.NeedsAnimation, "a mouse press does not run a hold timer")
+                      surface.Animate(ChromeMetrics.HoldMilliseconds)
+                      surface.Animate(ChromeMetrics.HoldMilliseconds)
+                      surface.GetType().GetMethod("OnMouseUp", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.NonPublic).Invoke(surface, {args})
+                      Assert.Equal(1, primary)
+                      Assert.Equal(0, secondary)
                   End Using
               End Sub)
     End Sub

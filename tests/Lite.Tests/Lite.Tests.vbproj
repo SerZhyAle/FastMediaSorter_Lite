@@ -61,6 +61,13 @@
     <!-- Link the production source directly (same assembly => Friend members visible). -->
     <Compile Include="..\..\src\SettingsUiContext.vb"><Link>Linked\SettingsUiContext.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsCollapsibleGroup.vb"><Link>Linked\SettingsCollapsibleGroup.vb</Link></Compile>
+    <Compile Include="..\..\src\SettingsSearchRules.vb"><Link>Linked\SettingsSearchRules.vb</Link></Compile>
+    <!-- The row grid and the drawn checkbox of 127: pure layout arithmetic and a Paint-only
+         configurator, so both are provable here. Whole-file "#If Not NETFRAMEWORK", like
+         SettingsCollapsibleGroup - on the net48 leg they and their tests compile to nothing. -->
+    <Compile Include="..\..\src\SettingsRowGrid.vb"><Link>Linked\SettingsRowGrid.vb</Link></Compile>
+    <Compile Include="..\..\src\SettingsCheckBox.vb"><Link>Linked\SettingsCheckBox.vb</Link></Compile>
+    <Compile Include="..\..\src\SettingsNavIconPalette.vb"><Link>Linked\SettingsNavIconPalette.vb</Link></Compile>
     <Compile Include="..\..\src\Theming\IThemeAware.vb"><Link>Linked\Theming\IThemeAware.vb</Link></Compile>
     <Compile Include="..\..\src\Utils.vb">
       <Link>Linked\Utils.vb</Link>
@@ -129,6 +136,16 @@
     <Compile Include="..\..\src\Imaging\DecodeCache.vb">
       <Link>Linked\Imaging\DecodeCache.vb</Link>
     </Compile>
+    <!-- The Storage page's cache-size measurement (130 §3.3): missing directory is an
+         honest zero, a directory that cannot be listed throws so the row can say
+         "unknown". Whole-file "#If Not NETFRAMEWORK", so on the net48 leg this - and
+         CacheUsageMeasureTests - compile to nothing. Needs nothing but System.IO. -->
+    <Compile Include="..\..\src\CacheUsageMeasure.vb">
+      <Link>Linked\CacheUsageMeasure.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\CacheMaintenance.vb">
+      <Link>Linked\CacheMaintenance.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Imaging\EdgeSampler.vb">
       <Link>Linked\Imaging\EdgeSampler.vb</Link>
     </Compile>
@@ -161,6 +178,7 @@
     <Compile Include="..\..\src\Chrome\ChromeItem.vb"><Link>Linked\Chrome\ChromeItem.vb</Link></Compile>
     <Compile Include="..\..\src\Chrome\ChromeSurface.vb"><Link>Linked\Chrome\ChromeSurface.vb</Link></Compile>
     <Compile Include="..\..\src\Chrome\ChromeHost.vb"><Link>Linked\Chrome\ChromeHost.vb</Link></Compile>
+    <Compile Include="..\..\src\Chrome\ChromeMenuRules.vb"><Link>Linked\Chrome\ChromeMenuRules.vb</Link></Compile>
     <Compile Include="..\..\src\Chrome\ChromeMenu.vb"><Link>Linked\Chrome\ChromeMenu.vb</Link></Compile>
     <Compile Include="..\..\src\Chrome\ChromePathBox.vb"><Link>Linked\Chrome\ChromePathBox.vb</Link></Compile>
     <Compile Include="..\..\src\Chrome\ChromeMetrics.vb">
@@ -169,6 +187,33 @@
     <Compile Include="..\..\src\Chrome\ChromeAutoHide.vb">
       <Link>Linked\Chrome\ChromeAutoHide.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\EscapeLadder.vb">
+      <Link>Linked\EscapeLadder.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\HelpCardRows.vb">
+      <Link>Linked\HelpCardRows.vb</Link>
+    </Compile>
+    <!-- Ticket 124: the dialog layer. The pure rules (notification severity, placement, reflow, the question
+         model and its call-site specs), the layout helper, the open-a-window entry point and the question window
+         itself. DialogLayer.Viewer.vb names Main_Form and the theme service, so it stays out (the layer's hook is
+         simply not installed here), and its source is read by the scan test instead. -->
+    <Compile Include="..\..\src\DialogRules.vb"><Link>Linked\DialogRules.vb</Link></Compile>
+    <Compile Include="..\..\src\NotifyToast.vb"><Link>Linked\NotifyToast.vb</Link></Compile>
+    <Compile Include="..\..\src\DialogLayout.vb"><Link>Linked\DialogLayout.vb</Link></Compile>
+    <Compile Include="..\..\src\DialogLayer.vb"><Link>Linked\DialogLayer.vb</Link></Compile>
+    <Compile Include="..\..\src\ViewerBox.vb"><Link>Linked\ViewerBox.vb</Link></Compile>
+    <Compile Include="..\..\src\AskModel.vb"><Link>Linked\AskModel.vb</Link></Compile>
+    <Compile Include="..\..\src\AskSpecs.vb"><Link>Linked\AskSpecs.vb</Link></Compile>
+    <Compile Include="..\..\src\Ask_Dialog.vb"><Link>Linked\Ask_Dialog.vb</Link></Compile>
+    <!-- The secondary windows whose layout the dialog-layer tests drive at 100/150/175 % (124 UX-202/UX-203):
+         built in code, so a layout rule is checked by building them. Resource_Edit_Form and
+         Resource_Credential_Form are linked further down with the resource tests. -->
+    <Compile Include="..\..\src\Secure_Password_Form.vb"><Link>Linked\Secure_Password_Form.vb</Link></Compile>
+    <Compile Include="..\..\src\LiveBroadcast_Form.vb"><Link>Linked\LiveBroadcast_Form.vb</Link></Compile>
+    <Compile Include="..\..\src\Batch_Report_Form.vb"><Link>Linked\Batch_Report_Form.vb</Link></Compile>
+    <Compile Include="..\..\src\File_Details_Form.vb"><Link>Linked\File_Details_Form.vb</Link></Compile>
+    <Compile Include="..\..\src\Hotkeys_Form.vb"><Link>Linked\Hotkeys_Form.vb</Link></Compile>
+    <Compile Include="..\..\src\Video\Video_Convert_Form.vb"><Link>Linked\Video\Video_Convert_Form.vb</Link></Compile>
     <Compile Include="..\..\src\Chrome\UiScale.vb">
       <Link>Linked\Chrome\UiScale.vb</Link>
     </Compile>
@@ -196,8 +241,16 @@
     </Compile>
     <!-- The application theme's pure half (spec 060, APP-STYLE rules 2-4): the mode codec,
          its resolution and the one palette table. Whole-file "#If Not NETFRAMEWORK". -->
+    <Compile Include="..\..\src\Theming\AccentColors.vb">
+      <Link>Linked\Theming\AccentColors.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Theming\ThemePalette.vb">
       <Link>Linked\Theming\ThemePalette.vb</Link>
+    </Compile>
+    <!-- One pastel fill per destination slot (spec 129): shared, no "#If" - the contrast and
+         source-scan tests run on both runtimes. -->
+    <Compile Include="..\..\src\Theming\RecipientPalette.vb">
+      <Link>Linked\Theming\RecipientPalette.vb</Link>
     </Compile>
     <!-- Failure cause from the exception's type (APP-BEHAVIOUR rule 6, ticket 028 Ф-3).
          Both legs: net48 keeps the raw text, net10 names a cause. -->
@@ -238,6 +291,10 @@
     </Compile>
     <Compile Include="..\..\src\PlaybackRules.vb">
       <Link>Linked\PlaybackRules.vb</Link>
+    </Compile>
+    <!-- Ticket 121 section 7: the transport bar's pure rules (row layout, clock, seek hold, hold-up, buffering). -->
+    <Compile Include="..\..\src\TransportRules.vb">
+      <Link>Linked\TransportRules.vb</Link>
     </Compile>
     <!-- Ticket 115: who may still be inside the native LibVLC instance (whole-file modern-only). -->
     <Compile Include="..\..\src\VlcNativeLease.vb">

@@ -60,7 +60,7 @@ Partial Public Class Main_Form
         If Not text_Current_Result.Success Then
             ReleaseTextDocument()
             ShowContentPlaceholder(filePath)
-            lbl_Status.Text = Localization.TF("{0} — {1}", Path.GetFileName(filePath), If(text_Current_Result.IsBinary, Localization.T("Бинарный файл"), text_Current_Result.ErrorMessage))
+            lbl_Status.Text = Localization.TF("{0} - {1}", Path.GetFileName(filePath), If(text_Current_Result.IsBinary, Localization.T("Бинарный файл"), text_Current_Result.ErrorMessage))
             Return
         End If
 
@@ -69,12 +69,12 @@ Partial Public Class Main_Form
         SetViewSizes()
 
         If text_Current_Result.IsTruncated Then
-            lbl_Status.Text = Localization.TF("{0} — показаны первые {1} из {2}",
+            lbl_Status.Text = Localization.TF("{0} - показаны первые {1} из {2}",
                 Path.GetFileName(filePath),
                 FormatFileSize(text_Current_Result.ReadBytes),
                 FormatFileSize(text_Current_Result.TotalBytes))
         Else
-            lbl_Status.Text = Localization.TF("{0} — {1}",
+            lbl_Status.Text = Localization.TF("{0} - {1}",
                 Path.GetFileName(filePath),
                 FormatFileSize(text_Current_Result.TotalBytes))
         End If
@@ -113,7 +113,7 @@ Partial Public Class Main_Form
         Dim contentWidth As Integer = Math.Max(100, bounds.Width - marginX * 2)
 
         Using font As New Font(fontFamily, fontSize, FontStyle.Regular),
-              footerFont As New Font("Segoe UI", Math.Max(8.0F, 9.5F * scale), FontStyle.Italic)
+              footerFont As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 9.5F * scale), FontStyle.Italic)
 
             Dim lineHeight As Integer = Math.Max(14, CInt(font.GetHeight(g) * 1.15F))
             Dim footerHeight As Integer = If(text_Current_Result.IsTruncated, CInt(footerFont.GetHeight(g) * 1.5F) + 8, 0)
@@ -170,7 +170,7 @@ Partial Public Class Main_Form
 
             ' Draw footer if truncated
             If text_Current_Result.IsTruncated Then
-                Dim footerText As String = Localization.TF("Показаны первые {0} из {1}. Enter — открыть файл целиком.",
+                Dim footerText As String = Localization.TF("Показаны первые {0} из {1}. Enter - открыть файл целиком.",
                     FormatFileSize(text_Current_Result.ReadBytes),
                     FormatFileSize(text_Current_Result.TotalBytes))
                 Dim footerRect As New Rectangle(marginX, bounds.Height - footerHeight - marginY \ 2, contentWidth, footerHeight)
@@ -223,21 +223,23 @@ Partial Public Class Main_Form
     End Sub
 
     Private Function FormatFileSize(bytes As Long) As String
+        ' Units in the interface language, each with its number in ONE sentence (124 UX-216/UX-217); the same
+        ' binary units the loading badge uses, so two surfaces never print one size two ways.
         If bytes < 1024L Then
-            Return bytes.ToString() & " B"
+            Return Localization.TF("{0} Б", bytes.ToString())
         ElseIf bytes < 1048576L Then
-            Return (bytes / 1024.0R).ToString("0.#") & " KB"
+            Return Localization.TF("{0} КиБ", (bytes / 1024.0R).ToString("0.#"))
         ElseIf bytes < 1073741824L Then
-            Return (bytes / 1048576.0R).ToString("0.#") & " MB"
+            Return Localization.TF("{0} МиБ", (bytes / 1048576.0R).ToString("0.#"))
         Else
-            Return (bytes / 1073741824.0R).ToString("0.##") & " GB"
+            Return Localization.TF("{0} ГиБ", (bytes / 1073741824.0R).ToString("0.##"))
         End If
     End Function
 
     Private Function GetCurrentDpiScale() As Single
         Dim scale As Single = Math.Max(1.0F, DeviceDpi / 96.0F)
-        If modern_Preferences IsNot Nothing AndAlso modern_Preferences.InterfaceScalePercent > 0 Then
-            scale = modern_Preferences.InterfaceScalePercent / 100.0F
+        If modern_Preferences IsNot Nothing AndAlso (modern_Preferences.InterfaceScalePercent > 0 OrElse modern_Preferences.InterfaceScaleRelativePercent > 0) Then
+            scale = modern_Preferences.InterfaceFactor(DeviceDpi)
         End If
         Return Math.Max(0.5F, scale)
     End Function

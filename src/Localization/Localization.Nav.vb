@@ -29,6 +29,17 @@ Partial Public NotInheritable Class Localization
         ' "OCR" is an acronym everywhere; registered so the parity test can see it.
         Add("OCR", "OCR", "OCR", "OCR", "OCR", "OCR", "OCR", "OCR", "OCR", "OCR", "OCR", "OCR", "OCR")
 
+        ' The canonical names of the two glyphs the navigation newly carries (spec 128):
+        ' app.settings and content.disk-container are shared with the Share Manager's
+        ' buttons, so Icon-Set rule 1 pins the same canonical key here; the nav rows
+        ' themselves show the page words above. The translations are the Share Manager's.
+        Add("Настройки менеджера..",
+            "Manager settings..", "Налаштування менеджера..", "Manager-Einstellungen..",
+            "Impostazioni del gestore..", "Ajustes del gestor..",
+            "Paramètres du gestionnaire..", "Definições do gestor..", "إعدادات المدير..",
+            "मैनेजर सेटिंग्स..", "ম্যানেজার সেটিংস..", "مینیجر کی ترتیبات..", "管理器设置..")
+        Add("Диски .fdd..", ".fdd disks..", "Диски .fdd..", ".fdd-Laufwerke..", "Dischi .fdd..", "Discos .fdd..", "Disques .fdd..", "Discos .fdd..", "أقراص .fdd..", ".fdd डिस्क..", ".fdd ডিস্ক..", ".fdd ڈسک..", ".fdd 磁盘..")
+
         ' page subtitles
         Add("Назначьте папки для быстрого перемещения и копирования.", "Assign folders for quick moving and copying.", "Призначте теки для швидкого переміщення та копіювання.", "Weisen Sie Ordner für schnelles Verschieben und Kopieren zu.", "Assegna le cartelle per spostare e copiare rapidamente.", "Asigne carpetas para mover y copiar rápidamente.", "Attribuez des dossiers pour déplacer et copier rapidement.", "Atribua pastas para mover e copiar rapidamente.", "خصّص المجلدات للنقل والنسخ السريع.", "तेज़ी से ले जाने और कॉपी करने के लिए फ़ोल्डर तय करें।", "দ্রুত সরানো ও কপি করার জন্য ফোল্ডার নির্ধারণ করুন।", "تیزی سے منتقل اور نقل کرنے کے لیے فولڈرز مقرر کریں۔", "指定用于快速移动和复制的文件夹。")
         Add("Настройте фон, информацию на экране и слайдшоу.", "Tune the background, on-screen information and slideshow.", "Налаштуйте фон, інформацію на екрані та слайд-шоу.", "Stellen Sie Hintergrund, Bildschirminfos und Diashow ein.", "Regola sfondo, informazioni a schermo e presentazione.", "Ajuste el fondo, la información en pantalla y el pase de diapositivas.", "Réglez le fond, les infos à l'écran et le diaporama.", "Ajuste o fundo, as informações na tela e a apresentação.", "اضبط الخلفية والمعلومات على الشاشة وعرض الشرائح.", "पृष्ठभूमि, स्क्रीन जानकारी और स्लाइडशो सेट करें।", "পটভূমি, পর্দার তথ্য ও স্লাইডশো সেট করুন।", "پس منظر، اسکرین معلومات اور سلائیڈ شو ترتیب دیں۔", "调整背景、屏幕信息与幻灯片。")

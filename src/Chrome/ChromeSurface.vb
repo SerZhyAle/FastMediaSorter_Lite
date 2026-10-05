@@ -4,6 +4,7 @@ Option Strict On
 Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.Drawing.Drawing2D
+Imports System.Runtime.InteropServices
 Imports System.Windows.Forms
 
 ''' <summary>
@@ -92,6 +93,21 @@ Friend NotInheritable Class ChromeSurface
     Private shownTip As String = ""
     Private holdElapsed As Integer
     Private holdInvoked As Boolean
+    ''' <summary>The press that is running came from a touch screen or a pen, so a long press may fire the
+    ''' secondary action (125 Q125-1). A mouse press never does: it has the right button.</summary>
+    Private holdArmed As Boolean
+    ' A menu's scrolled window onto this surface (set by ChromeMenu): where the visible part starts and
+    ' how tall it is, so the scroll cues can be painted at its edges (125 UX-329).
+    Private viewOffset As Integer
+    Private viewHeight As Integer
+
+    ''' <summary>A test seam: what the pointer says about where the press came from. Nothing = ask Windows.</summary>
+    <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Friend Property PressExtraInfo As Func(Of Long)
+
+    <DllImport("user32.dll")>
+    Private Shared Function GetMessageExtraInfo() As IntPtr
+    End Function
 
     ''' <summary>Raised after an item's action ran, so the owner can re-assert z-order or reposition.</summary>
     Public Event ItemInvoked As EventHandler(Of ChromeItem)
@@ -186,18 +202,51 @@ Friend NotInheritable Class ChromeSurface
     ''' pointer minimum), the measured caption plus padding for a word (a German caption is 30-40 %
     ''' longer than a Russian one, so it is measured, never assumed).</summary>
     Public Function MeasureItemWidth(item As ChromeItem) As Integer
-        Dim square As Integer = Math.Max(Px(ChromeMetrics.ItemHeight), Px(ChromeMetrics.MinTarget))
+        If item.IsSeparator Then Return 0
+        Dim square As Integer = Math.Max(Px(ChromeMetrics.ItemHeight), MinTargetPx())
         If item.PreferredWidth > 0 Then Return Px(item.PreferredWidth)
-        If Not VerticalLayout AndAlso Not item.ShowCaptionWithGlyph AndAlso (item.Image IsNot Nothing OrElse item.GlyphId.Length > 0 OrElse item.Caption.Length = 0) Then Return square
+        Dim chevron As Integer = If(ShowsMenuChevron(item), ChevronStrip(), 0)
+        If Not VerticalLayout AndAlso Not item.ShowCaptionWithGlyph AndAlso (item.Image IsNot Nothing OrElse item.GlyphId.Length > 0 OrElse item.Caption.Length = 0) Then Return square + chevron
         Dim font As Font = FontFor(item)
         If font Is Nothing Then Return square
-        Dim text As Integer = TextRenderer.MeasureText(item.Caption, font, New Size(Integer.MaxValue, Integer.MaxValue),
-                                                       TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine Or TextFormatFlags.NoPrefix).Width
-        Return Math.Max(square, text + 2 * Px(ChromeMetrics.CaptionPadding) + If((VerticalLayout OrElse item.ShowCaptionWithGlyph) AndAlso (item.Image IsNot Nothing OrElse item.GlyphId.Length > 0), square, 0))
+        Dim flags As TextFormatFlags = TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine Or TextFormatFlags.NoPrefix
+        Dim text As Integer = TextRenderer.MeasureText(item.Caption, font, New Size(Integer.MaxValue, Integer.MaxValue), flags).Width
+        If item.ReservedText.Length > 0 Then
+            text = Math.Max(text, TextRenderer.MeasureText(item.ReservedText, font, New Size(Integer.MaxValue, Integer.MaxValue), flags).Width)
+        End If
+        ' A menu row also carries its key hint and, for a submenu, the chevron, at its end.
+        Dim tail As Integer = 0
+        If VerticalLayout Then
+            If item.Hint.Length > 0 Then tail += TextRenderer.MeasureText(item.Hint, font, New Size(Integer.MaxValue, Integer.MaxValue), flags).Width + 2 * Px(ChromeMetrics.CaptionPadding)
+            If item.Chevron Then tail += ChevronStrip()
+        End If
+        Return Math.Max(square, text + tail + 2 * Px(ChromeMetrics.CaptionPadding) + chevron +
+                        If((VerticalLayout OrElse item.ShowCaptionWithGlyph) AndAlso (item.Image IsNot Nothing OrElse item.GlyphId.Length > 0), square, 0))
+    End Function
+
+    ''' <summary>The smallest a hit target gets: <see cref="ChromeMetrics.MinTarget"/> scaled, but never under
+    ''' the logical floor itself - the "small" panel size shrinks the look, not the 28 px that ICON-RENDER 0.15
+    ''' rule 5 asks of a mouse target (125 UX-313e).</summary>
+    Private Function MinTargetPx() As Integer
+        Return Math.Max(ChromeMetrics.MinTarget, Px(ChromeMetrics.MinTarget))
+    End Function
+
+    ''' <summary>The "▾" of a menu button, at the end of its row: the item opens a menu (125 UX-305).</summary>
+    Private Function ShowsMenuChevron(item As ChromeItem) As Boolean
+        Return Not VerticalLayout AndAlso item.Kind = ChromeItemKind.MenuButton AndAlso item.Id <> OverflowId AndAlso item IsNot overflowItem
+    End Function
+
+    Private Function ChevronStrip() As Integer
+        Return Px(ChromeMetrics.ChevronWidth)
     End Function
 
     Public Function ItemHeight() As Integer
-        Return Math.Max(Math.Max(Px(ChromeMetrics.ItemHeight), Px(ChromeMetrics.MinTarget)), If(textFont Is Nothing, 0, textFont.Height + 2 * Px(ChromeMetrics.Gap)))
+        Return Math.Max(Math.Max(Px(ChromeMetrics.ItemHeight), MinTargetPx()), If(textFont Is Nothing, 0, textFont.Height + 2 * Px(ChromeMetrics.Gap)))
+    End Function
+
+    ''' <summary>The height of one row of a vertical layout: a separator is a hairline's worth.</summary>
+    Private Function RowHeight(item As ChromeItem) As Integer
+        Return If(item.IsSeparator, ChromeMenuRules.SeparatorHeight(Px(ChromeMetrics.Gap)), ItemHeight())
     End Function
 
     Public Function PanelPadding() As Integer
@@ -208,7 +257,7 @@ Friend NotInheritable Class ChromeSurface
     ''' a popup menu, which has no corner).</summary>
     Private Function PinReserve() As Integer
         If PinItem Is Nothing OrElse VerticalLayout Then Return 0
-        Return Px(ChromeMetrics.MinTarget) + Px(ChromeMetrics.Gap)
+        Return MinTargetPx() + Px(ChromeMetrics.Gap)
     End Function
 
     ''' <summary>The size a panel with these items wants: one row, padded.</summary>
@@ -216,8 +265,13 @@ Friend NotInheritable Class ChromeSurface
         Dim slots As List(Of ChromeSlot) = BuildSlots(Nothing)
         Dim pad As Integer = PanelPadding()
         If VerticalLayout Then
-            Return New Size(If(slots.Count = 0, Px(ChromeMetrics.MenuMinWidth), slots.Max(Function(slot) slot.Width)) + 2 * pad,
-                            slots.Count * ItemHeight() + 2 * pad)
+            Dim heights As New List(Of Integer)()
+            For Each item As ChromeItem In itemList
+                If item.Visible AndAlso item IsNot overflowItem AndAlso item IsNot pinButton Then heights.Add(RowHeight(item))
+            Next
+            Dim total As Integer = 0
+            ChromeMenuRules.StackRows(heights, pad, total)
+            Return New Size(If(slots.Count = 0, Px(ChromeMetrics.MenuMinWidth), slots.Max(Function(slot) slot.Width)) + 2 * pad, total)
         End If
         Return New Size(ChromeLayout.NaturalWidth(slots, Px(ChromeMetrics.Gap)) + PinReserve() + 2 * pad, ItemHeight() + 2 * pad)
     End Function
@@ -255,8 +309,14 @@ Friend NotInheritable Class ChromeSurface
         ' The row sits beside the corner pin: after it in a right-to-left panel (the pin is on the left).
         Dim rowStart As Integer = pad + If(isRightToLeft, cornerReserve, 0)
         If VerticalLayout Then
+            Dim heights As New List(Of Integer)()
+            For Each entry As ChromeItem In order
+                heights.Add(RowHeight(entry))
+            Next
+            Dim stackTotal As Integer = 0
+            Dim tops As Integer() = ChromeMenuRules.StackRows(heights, pad, stackTotal)
             For index As Integer = 0 To order.Count - 1
-                order(index).Bounds = New Rectangle(pad, pad + index * ItemHeight(), available, ItemHeight())
+                order(index).Bounds = New Rectangle(pad, tops(index), available, heights(index))
             Next
             Invalidate()
             RaiseEvent LayoutChanged(Me, EventArgs.Empty)
@@ -266,8 +326,10 @@ Friend NotInheritable Class ChromeSurface
                                                               ItemHeight(), isRightToLeft)
         If StatusLayout AndAlso slots.Count = 2 Then
             Dim contentWidth As Integer = Math.Max(0, available - Px(ChromeMetrics.Gap))
-            Dim statusWidth As Integer = Math.Min(contentWidth * 2 \ 3,
-                TextRenderer.MeasureText(order(1).Caption, If(textFont, Font)).Width + 2 * Px(ChromeMetrics.CaptionPadding))
+            Dim captionPad As Integer = 2 * Px(ChromeMetrics.CaptionPadding)
+            Dim statusWidth As Integer = ChromeLayout.StatusCellWidth(contentWidth,
+                TextRenderer.MeasureText(order(0).Caption, If(textFont, Font)).Width + captionPad,
+                TextRenderer.MeasureText(order(1).Caption, If(textFont, Font)).Width + captionPad)
             Dim fileWidth As Integer = contentWidth - statusWidth
             slots = New List(Of ChromeSlot) From {
                 New ChromeSlot(order(0).Id, fileWidth), New ChromeSlot(order(1).Id, statusWidth)}
@@ -328,7 +390,36 @@ Friend NotInheritable Class ChromeSurface
                 If Not inkExternalMode Then PaintItemInk(g, item)
             End If
         Next
+        If Not inkExternalMode Then PaintScrollCues(g)
         If inkExternalMode Then RaiseEvent InkNeeded(Me, EventArgs.Empty)
+    End Sub
+
+    ''' <summary>A menu taller than its window scrolls; this tells it where the visible part is, so a cue
+    ''' (a small arrow at the edge that has more behind it) can be painted (125 UX-329).</summary>
+    Public Sub SetViewport(offset As Integer, height As Integer)
+        If offset = viewOffset AndAlso height = viewHeight Then Return
+        viewOffset = offset
+        viewHeight = height
+        Invalidate()
+    End Sub
+
+    Private Sub PaintScrollCues(g As Graphics)
+        If Not VerticalLayout OrElse viewHeight <= 0 Then Return
+        Dim above As Boolean
+        Dim below As Boolean
+        ChromeMenuRules.ScrollCues(viewOffset, Height, viewHeight, above, below)
+        If Not above AndAlso Not below Then Return
+        Dim cue As Integer = Px(ChromeMetrics.ScrollCueHeight)
+        Dim ink As Color = chromeTheme.Foreground
+        If above Then PaintScrollCue(g, New Rectangle(0, viewOffset, Width, cue), ChrW(&H25B4), ink)
+        If below Then PaintScrollCue(g, New Rectangle(0, viewOffset + viewHeight - cue, Width, cue), ChrW(&H25BE), ink)
+    End Sub
+
+    Private Sub PaintScrollCue(g As Graphics, area As Rectangle, symbol As Char, ink As Color)
+        Using brush As New SolidBrush(chromeTheme.PanelFill)
+            g.FillRectangle(brush, area)
+        End Using
+        PaintAccessory(g, symbol, area, ink)
     End Sub
 
     ''' <summary>
@@ -347,6 +438,7 @@ Friend NotInheritable Class ChromeSurface
             For Each item As ChromeItem In itemList
                 If item.Visible AndAlso Not item.Bounds.IsEmpty AndAlso Not IsCoveredByInkChild(item.Bounds) Then PaintItemInk(g, item)
             Next
+            PaintScrollCues(g)
             For Each child As Control In Controls
                 Dim source As IChromeInkSource = TryCast(child, IChromeInkSource)
                 If source Is Nothing OrElse Not child.Visible Then Continue For
@@ -415,19 +507,35 @@ Friend NotInheritable Class ChromeSurface
     End Sub
 
     Private Sub PaintItemInk(g As Graphics, item As ChromeItem)
-        Dim r As Rectangle = item.Bounds
+        Dim bounds As Rectangle = item.Bounds
+        If item.IsSeparator Then
+            PaintSeparator(g, bounds)
+            Return
+        End If
+        ' What the glyph or caption is laid out in: the item, less the strip a menu button keeps for its chevron.
+        Dim r As Rectangle = bounds
+        Dim chevronRoom As Integer = If(ShowsMenuChevron(item), ChevronStrip(), 0)
+        If chevronRoom > 0 AndAlso r.Width > chevronRoom Then r = New Rectangle(If(isRightToLeft, r.X + chevronRoom, r.X), r.Y, r.Width - chevronRoom, r.Height)
         Dim itemCorner As Integer = Px(ChromeMetrics.ItemCorner)
         Dim ink As Color = chromeTheme.InkFor(item.Enabled, item.Checked, item.Destructive, item.HoverLevel > 0.5F)
+        ' A status line that carries a warning or an error is written in the theme's role colour, contrast-checked
+        ' against the panel (124 UX-206, Q124-2); under high contrast the system pair is left alone.
+        If item.Tone <> NotifyLevel.Info AndAlso item.Enabled AndAlso Not chromeTheme.IsHighContrast Then
+            ink = NotifyRules.InkOnSurface(item.Tone, chromeTheme.PanelFill, chromeTheme.Foreground)
+        End If
         Dim drawn As Boolean = False
         If item.IsPin Then
             Dim pinInk As Color
             If chromeTheme.IsHighContrast Then
                 pinInk = If(item.Checked, SystemColors.HighlightText, SystemColors.WindowText)
             Else
-                Dim restInk As Color = ChromeTheme.Blend(chromeTheme.PanelFill, chromeTheme.Foreground, If(item.Checked, 0.5F, 0.35F))
+                Dim restInk As Color = chromeTheme.PinRestInk(item.Checked)
                 pinInk = If(item.HoverLevel > 0.0F, ChromeTheme.Blend(restInk, chromeTheme.Foreground, item.HoverLevel), restInk)
             End If
             PaintPin(g, item.Checked, r, pinInk, currentScale)
+            drawn = True
+        ElseIf item.CustomGlyph = ChromeCustomGlyph.OnTop Then
+            PaintOnTop(g, item.Checked, r, ink, currentScale)
             drawn = True
         ElseIf item.Kind = ChromeItemKind.Toggle AndAlso item.GlyphId.Length = 0 AndAlso item.Caption.Length = 0 Then
             Dim side As Integer = Px(ChromeMetrics.GlyphSize)
@@ -447,6 +555,7 @@ Friend NotInheritable Class ChromeSurface
             drawn = True
         End If
         If Not drawn AndAlso item.GlyphId.Length > 0 Then drawn = PaintGlyph(g, item, r, ink)
+        If VerticalLayout AndAlso (item.Hint.Length > 0 OrElse item.Chevron) Then r = PaintMenuRowTail(g, item, r, ink)
         If (VerticalLayout OrElse item.ShowCaptionWithGlyph) AndAlso drawn Then
             Dim glyphWidth As Integer = ItemHeight()
             Dim captionRect As New Rectangle(r.X + If(isRightToLeft, 0, glyphWidth), r.Y, Math.Max(0, r.Width - glyphWidth), r.Height)
@@ -454,6 +563,7 @@ Friend NotInheritable Class ChromeSurface
         ElseIf Not drawn AndAlso item.Caption.Length > 0 Then
             PaintCaption(g, item, r, ink)
         End If
+        If chevronRoom > 0 Then PaintAccessory(g, ChrW(&H25BE), New Rectangle(If(isRightToLeft, bounds.X, bounds.Right - chevronRoom), bounds.Y, chevronRoom, bounds.Height), ink)
 
         If item.Checked AndAlso chromeTheme.IsHighContrast Then
             Using pen As New Pen(chromeTheme.Foreground, Math.Max(1, Px(ChromeMetrics.FocusRingWidth)))
@@ -461,25 +571,111 @@ Friend NotInheritable Class ChromeSurface
                 g.DrawRectangle(pen, box)
             End Using
         End If
-        If item.SecondaryAction IsNot Nothing Then
-            Dim size As Integer = Px(ChromeMetrics.Gap)
-            Dim x As Integer = If(isRightToLeft, r.Left + size, r.Right - 2 * size)
-            Dim y As Integer = r.Bottom - 2 * size
-            Using pen As New Pen(ink)
-                g.DrawLine(pen, x, y, x + size \ 2, y + size \ 2)
-                g.DrawLine(pen, x + size \ 2, y + size \ 2, x + size, y)
-            End Using
-        End If
+        If item.SecondaryAction IsNot Nothing Then PaintSecondaryMark(g, bounds, ink, currentScale, isRightToLeft)
         If inKeyboardMode AndAlso item Is focusedItem Then
             Dim inset As Integer = Px(ChromeMetrics.FocusRingInset)
-            Dim ring As Rectangle = Rectangle.Inflate(r, -inset + 1, -inset + 1)
-            Using path As GraphicsPath = RoundedRect(New RectangleF(ring.X, ring.Y, ring.Width, ring.Height), itemCorner)
-                Using pen As New Pen(chromeTheme.FocusRing, Math.Max(1, Px(ChromeMetrics.FocusRingWidth)))
-                    g.DrawPath(pen, path)
+            Dim ring As Rectangle = Rectangle.Inflate(bounds, -inset + 1, -inset + 1)
+            Dim ringWidth As Integer = Math.Max(1, Px(ChromeMetrics.FocusRingWidth))
+            ' Two contours (UX-105 of 123): the foreground ink outside and the accent inside. A checked button
+            ' (the slideshow, "on top") is filled with the accent and a bluish panel scheme is close to it, so
+            ' a lone accent ring merged with the fill or the panel and the focus vanished; the ink contour
+            ' always differs from both.
+            Using outerPath As GraphicsPath = RoundedRect(New RectangleF(ring.X, ring.Y, ring.Width, ring.Height), itemCorner)
+                Using pen As New Pen(chromeTheme.Foreground, ringWidth)
+                    g.DrawPath(pen, outerPath)
                 End Using
             End Using
+            Dim innerRing As Rectangle = Rectangle.Inflate(ring, -ringWidth, -ringWidth)
+            If innerRing.Width > 2 AndAlso innerRing.Height > 2 Then
+                Using innerPath As GraphicsPath = RoundedRect(New RectangleF(innerRing.X, innerRing.Y, innerRing.Width, innerRing.Height), Math.Max(0, itemCorner - ringWidth))
+                    Using pen As New Pen(chromeTheme.FocusRing, ringWidth)
+                        g.DrawPath(pen, innerPath)
+                    End Using
+                End Using
+            End If
         End If
     End Sub
+
+    ''' <summary>The corner tick of an item that answers a right click (125 UX-306). Shared with the path box,
+    ''' whose element is covered by a control of its own.</summary>
+    Friend Shared Sub PaintSecondaryMark(g As Graphics, r As Rectangle, ink As Color, scale As Single, rightToLeft As Boolean)
+        Dim size As Integer = UiScale.Px(ChromeMetrics.SecondaryMarkSize, scale)
+        Dim gap As Integer = UiScale.Px(ChromeMetrics.Gap, scale)
+        Dim x As Integer = If(rightToLeft, r.Left + gap \ 2, r.Right - size - gap \ 2)
+        Dim y As Integer = r.Bottom - size - gap \ 2
+        Using pen As New Pen(ink, Math.Max(1.0F, scale))
+            g.DrawLine(pen, x, y, x + size \ 2, y + size \ 2)
+            g.DrawLine(pen, x + size \ 2, y + size \ 2, x + size, y)
+        End Using
+    End Sub
+
+    ''' <summary>"Always on top" from lines: two stacked windows, the front one filled while the mode is on
+    ''' and only outlined while it is off. The catalogue has no glyph for it yet (125 UX-311).</summary>
+    Friend Shared Sub PaintOnTop(g As Graphics, onTop As Boolean, r As Rectangle, ink As Color, scale As Single)
+        Dim side As Integer = UiScale.Px(ChromeMetrics.GlyphSize, scale)
+        Dim unit As Single = side / 16.0F
+        Dim cx As Single = r.X + r.Width / 2.0F
+        Dim cy As Single = r.Y + r.Height / 2.0F
+        Dim back As New RectangleF(cx - 7.0F * unit, cy - 7.0F * unit, 10.0F * unit, 9.0F * unit)
+        Dim front As New RectangleF(cx - 3.0F * unit, cy - 2.0F * unit, 10.0F * unit, 9.0F * unit)
+        Using pen As New Pen(ink, Math.Max(1.0F, 1.2F * unit))
+            g.DrawRectangle(pen, back.X, back.Y, back.Width, back.Height)
+            If onTop Then
+                Using brush As New SolidBrush(ink)
+                    g.FillRectangle(brush, front)
+                End Using
+            Else
+                g.DrawRectangle(pen, front.X, front.Y, front.Width, front.Height)
+            End If
+        End Using
+    End Sub
+
+    Private Sub PaintSeparator(g As Graphics, r As Rectangle)
+        Dim inset As Integer = Px(ChromeMetrics.CaptionPadding)
+        Dim y As Integer = r.Y + r.Height \ 2
+        Using pen As New Pen(chromeTheme.Hairline, 1.0F)
+            g.DrawLine(pen, r.Left + inset, y, r.Right - inset, y)
+        End Using
+    End Sub
+
+    ''' <summary>A small symbol in the symbol font, centred in a strip: a menu button's chevron, a submenu
+    ''' row's arrow.</summary>
+    Private Sub PaintAccessory(g As Graphics, symbol As Char, area As Rectangle, ink As Color)
+        Dim font As Font = If(symbolFont, textFont)
+        If font Is Nothing OrElse area.Width <= 0 Then Return
+        If inkPainting Then
+            DrawCaptionWithAlpha(g, symbol.ToString(), font, area, ink, True, False)
+        Else
+            TextRenderer.DrawText(g, symbol.ToString(), font, area, ink, TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or TextFormatFlags.NoPadding Or TextFormatFlags.NoPrefix)
+        End If
+    End Sub
+
+    ''' <summary>Paints a menu row's key hint (dimmed) and its submenu arrow at the end of the row, and returns
+    ''' the part of the row left for the caption.</summary>
+    Private Function PaintMenuRowTail(g As Graphics, item As ChromeItem, r As Rectangle, ink As Color) As Rectangle
+        Dim font As Font = FontFor(item)
+        Dim pad As Integer = Px(ChromeMetrics.CaptionPadding)
+        Dim remaining As Rectangle = r
+        If item.Chevron Then
+            Dim strip As Integer = ChevronStrip()
+            Dim arrow As Char = If(isRightToLeft, ChrW(&H25C2), ChrW(&H25B8))
+            PaintAccessory(g, arrow, New Rectangle(If(isRightToLeft, r.Left, r.Right - strip), r.Y, strip, r.Height), ink)
+            remaining = New Rectangle(If(isRightToLeft, r.X + strip, r.X), r.Y, Math.Max(0, r.Width - strip), r.Height)
+        End If
+        If item.Hint.Length > 0 AndAlso font IsNot Nothing Then
+            Dim hintWidth As Integer = TextRenderer.MeasureText(item.Hint, font, New Size(Integer.MaxValue, Integer.MaxValue),
+                TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine Or TextFormatFlags.NoPrefix).Width
+            Dim hintInk As Color = If(item.Enabled, ChromeTheme.Blend(If(item.Destructive, chromeTheme.DestructiveForeground, chromeTheme.Foreground), chromeTheme.PanelFill, 0.45F), ink)
+            Dim hintRect As New Rectangle(If(isRightToLeft, remaining.Left + pad, remaining.Right - pad - hintWidth), r.Y, hintWidth, r.Height)
+            If inkPainting Then
+                DrawCaptionWithAlpha(g, item.Hint, font, hintRect, hintInk, False, False)
+            Else
+                TextRenderer.DrawText(g, item.Hint, font, hintRect, hintInk, TextFormatFlags.VerticalCenter Or TextFormatFlags.NoPadding Or TextFormatFlags.NoPrefix Or TextFormatFlags.SingleLine)
+            End If
+            remaining = New Rectangle(If(isRightToLeft, remaining.X + hintWidth + 2 * pad, remaining.X), remaining.Y, Math.Max(0, remaining.Width - hintWidth - 2 * pad), remaining.Height)
+        End If
+        Return remaining
+    End Function
 
     ''' <summary>A push-pin drawn from lines, in the item's ink: upright and filled while the panel is
     ''' pinned, tilted a quarter turn and only outlined while it is free. The vocabulary has no pin
@@ -612,7 +808,7 @@ Friend NotInheritable Class ChromeSurface
 
     Public Function HitTest(point As Point) As ChromeItem
         For Each item As ChromeItem In itemList
-            If item.Visible AndAlso Not item.Bounds.IsEmpty AndAlso item.Bounds.Contains(point) Then Return item
+            If item.Visible AndAlso Not item.IsSeparator AndAlso Not item.Bounds.IsEmpty AndAlso item.Bounds.Contains(point) Then Return item
         Next
         Return Nothing
     End Function
@@ -638,6 +834,8 @@ Friend NotInheritable Class ChromeSurface
         pressedItem = item
         holdElapsed = 0
         holdInvoked = False
+        ' A slow mouse click is not a different command (125 UX-307): the long press is for touch and pen.
+        holdArmed = ChromeMenuRules.IsTouchOrPenExtraInfo(If(PressExtraInfo Is Nothing, GetMessageExtraInfo().ToInt64(), PressExtraInfo.Invoke()))
         item.IsPressed = True
         Capture = True
         RefreshLevels()
@@ -690,6 +888,9 @@ Friend NotInheritable Class ChromeSurface
         Dim text As String = If(item Is Nothing, "", item.Tooltip)
         If text = shownTip Then Return
         shownTip = text
+        ' The one ToolTip keeps showing its old text while the pointer moves between two items: hide it, so
+        ' the next one is raised with the new words (125 UX-313f).
+        toolTip.Hide(Me)
         toolTip.SetToolTip(Me, text)
     End Sub
 
@@ -698,7 +899,7 @@ Friend NotInheritable Class ChromeSurface
     ''' <summary>True while any item's hover or press level has not reached its target.</summary>
     Public ReadOnly Property NeedsAnimation As Boolean
         Get
-            If pressedItem IsNot Nothing AndAlso pressedItem.SecondaryAction IsNot Nothing AndAlso Not holdInvoked Then Return True
+            If pressedItem IsNot Nothing AndAlso pressedItem.SecondaryAction IsNot Nothing AndAlso holdArmed AndAlso Not holdInvoked Then Return True
             For Each item As ChromeItem In itemList
                 If item.HoverLevel <> HoverTarget(item) OrElse item.PressLevel <> PressTarget(item) Then Return True
             Next
@@ -729,7 +930,7 @@ Friend NotInheritable Class ChromeSurface
 
     ''' <summary>One step of the ease: every level moves toward its target by elapsed / ease time.</summary>
     Public Sub Animate(elapsedMilliseconds As Integer)
-        If pressedItem IsNot Nothing AndAlso pressedItem.SecondaryAction IsNot Nothing AndAlso Not holdInvoked Then
+        If pressedItem IsNot Nothing AndAlso pressedItem.SecondaryAction IsNot Nothing AndAlso holdArmed AndAlso Not holdInvoked Then
             holdElapsed += Math.Max(0, elapsedMilliseconds)
             If holdElapsed >= ChromeMetrics.HoldMilliseconds Then
                 holdInvoked = True
@@ -758,7 +959,7 @@ Friend NotInheritable Class ChromeSurface
     ' --- the keyboard (focus mode, 002 section 5) ------------------------------------------------
 
     Private Function IsReachable(item As ChromeItem) As Boolean
-        Return item.Kind <> ChromeItemKind.Text AndAlso item.Visible AndAlso item.Enabled AndAlso Not item.Bounds.IsEmpty
+        Return item.Kind <> ChromeItemKind.Text AndAlso Not item.IsSeparator AndAlso item.Visible AndAlso item.Enabled AndAlso Not item.Bounds.IsEmpty
     End Function
 
     ''' <summary>Puts the focus ring on the first (or last) reachable item. False when there is none.</summary>
@@ -774,6 +975,28 @@ Friend NotInheritable Class ChromeSurface
         inKeyboardMode = False
         focusedItem = Nothing
         Invalidate()
+    End Sub
+
+    ''' <summary>The item that has the keyboard ring now, or Nothing (no ring, or none put on an item yet).</summary>
+    Public ReadOnly Property FocusedRow As ChromeItem
+        Get
+            Return If(inKeyboardMode, focusedItem, Nothing)
+        End Get
+    End Property
+
+    Public ReadOnly Property HasFocusedItem As Boolean
+        Get
+            Return inKeyboardMode AndAlso focusedItem IsNot Nothing
+        End Get
+    End Property
+
+    ''' <summary>Puts the keyboard ring on one given item (type-ahead in a menu).</summary>
+    Public Sub FocusItem(item As ChromeItem)
+        If item Is Nothing OrElse Not IsReachable(item) Then Return
+        inKeyboardMode = True
+        focusedItem = item
+        Invalidate()
+        NotifyFocusChanged(item)
     End Sub
 
     ''' <summary>Moves the ring to the next or previous reachable item in reading order. False when it
@@ -809,7 +1032,10 @@ Friend NotInheritable Class ChromeSurface
 
     Private Sub NotifyFocusChanged(item As ChromeItem)
         If IsHandleCreated AndAlso item IsNot Nothing Then
-            AccessibilityNotifyClients(AccessibleEvents.Focus, itemList.IndexOf(item))
+            ' The child index is the one GetChild hands out - the list without hidden and overflowed items -
+            ' not the position in the full list (125 UX-313g).
+            Dim index As Integer = AccessibleItems().IndexOf(item)
+            If index >= 0 Then AccessibilityNotifyClients(AccessibleEvents.Focus, index)
         End If
     End Sub
 
@@ -894,9 +1120,12 @@ Friend NotInheritable Class ChromeSurface
             End Set
         End Property
 
+        ''' <summary>The longer text (the tooltip, which carries the key), not the technical id a screen reader
+        ''' would spell out ("btn_Prev_File") - 125 UX-313g.</summary>
         Public Overrides ReadOnly Property Description As String
             Get
-                Return item.Id
+                Dim spoken As String = If(item.AccessibleName.Length > 0, item.AccessibleName, item.Caption)
+                Return If(item.Tooltip = spoken, "", item.Tooltip)
             End Get
         End Property
 
@@ -939,7 +1168,7 @@ Friend NotInheritable Class ChromeSurface
 
         Public Overrides ReadOnly Property DefaultAction As String
             Get
-                Return If(item.Kind = ChromeItemKind.Text, "", If(item.Kind = ChromeItemKind.Toggle, "Toggle", "Press"))
+                Return If(item.Kind = ChromeItemKind.Text, "", If(item.Kind = ChromeItemKind.Toggle, Localization.T("Переключить"), Localization.T("Нажать")))
             End Get
         End Property
 

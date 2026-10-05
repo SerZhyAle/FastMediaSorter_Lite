@@ -25,6 +25,7 @@ Friend NotInheritable Class LiveBroadcast_Form
     Private recentDescriptors As List(Of LiveBroadcastDescriptor)
     Private scriptFont As Font
 
+    <System.ComponentModel.Browsable(False), System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
     Public Property ResultDescriptor As LiveBroadcastDescriptor
 
     Public Sub New()
@@ -128,6 +129,17 @@ Friend NotInheritable Class LiveBroadcast_Form
         Me.CancelButton = btnCancel
 
         LoadRecentList()
+
+        ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
+        DialogLayout.ApplyAutoScale(Me)
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        ' WinForms never scales a ListView's column widths; they are logical 96-dpi pixels until the window has its DPI.
+        lstRecent.Columns(0).Width = DialogLayout.Device(lstRecent, 240)
+        lstRecent.Columns(1).Width = DialogLayout.Device(lstRecent, 260)
+        DialogLayout.FitContent(Me)
     End Sub
 
     Protected Overrides Sub Dispose(disposing As Boolean)
@@ -211,6 +223,7 @@ Friend NotInheritable Class LiveBroadcast_Form
         Dim text As String = txtInput.Text.Trim()
         If String.IsNullOrEmpty(text) Then
             lblStatus.Text = Localization.T("Введите адрес или код трансляции")
+            DialogLayout.FitLabel(lblStatus)
             Return
         End If
 
@@ -258,6 +271,7 @@ Friend NotInheritable Class LiveBroadcast_Form
             Case Else
                 lblStatus.Text = Localization.T("Не удалось распознать трансляцию")
         End Select
+        DialogLayout.FitLabel(lblStatus)
     End Sub
 
 End Class

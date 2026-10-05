@@ -344,6 +344,25 @@ Public Class LifecycleAndSettingsAuditTests
         ' F-18: the one key Save() re-reads is written explicitly.
         Assert.Contains("PersistAllowNewWindows()", replace)
     End Sub
+
+    ''' <summary>119 Ф-3, the residue of the withdrawn "save the slideshow interval"
+    ''' item: the saved interval already ships (Lifecycle reads it at start-up, Settings
+    ''' edits it, exit writes it), and the only thing missing was a pin. The loader must
+    ''' keep using the same helper with the same literals - default 10, clamp 1..120 -
+    ''' so a refactor cannot silently loosen the corrupt-value rule (053 F-17).</summary>
+    <Fact>
+    Public Sub F3_the_slideshow_interval_still_loads_through_the_clamped_helper()
+        Dim lifecycle As String = ReadSource("Main_Form.Lifecycle.vb")
+        Assert.Contains("Utils.ParseIntSetting(GetSetting(App_name, Second_App_Name, ""SlideshowIntervalSec"", ""10""), 10, 1, 120)", lifecycle)
+
+        ' The helper behaviour the loader depends on: a corrupt value yields the
+        ' DEFAULT, not the minimum or zero (053 F-17).
+        Assert.Equal(10, Utils.ParseIntSetting("abc", 10, 1, 120))
+        Assert.Equal(10, Utils.ParseIntSetting("", 10, 1, 120))
+        Assert.Equal(1, Utils.ParseIntSetting("0", 10, 1, 120))
+        Assert.Equal(120, Utils.ParseIntSetting("999", 10, 1, 120))
+        Assert.Equal(45, Utils.ParseIntSetting("45", 10, 1, 120))
+    End Sub
 #End If
 
     ' ---------------------------------------------------------------- helpers ----

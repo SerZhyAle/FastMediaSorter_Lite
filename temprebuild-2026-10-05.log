@@ -1,0 +1,72 @@
+Using MSBuild: C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe
+Cleaning old build output in P:\WINDOWS\FastMediaSorter_Lite
+  removed bin\ModernPublish (267.8 MB)
+Clean-up done - reclaimed 267.8 MB.
+Restoring NuGet packages...
+MSBuild auto-detection: using msbuild version '18.9.1.35102' from 'C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\bin'.
+All packages listed in packages.config are already installed.
+  CACHE https://api.nuget.org/v3/vulnerabilities/index.json
+  CACHE https://api.nuget.org/v3-vulnerabilities/2026.09.26.05.43.06/vulnerability.base.json
+  CACHE https://api.nuget.org/v3-vulnerabilities/2026.09.26.05.43.06/2026.10.04.11.44.04/vulnerability.update.json
+Restoring packages for P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj...
+Restoring packages for P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj...
+  CACHE https://api.nuget.org/v3/vulnerabilities/index.json
+  CACHE https://api.nuget.org/v3-vulnerabilities/2026.09.26.05.43.06/vulnerability.base.json
+  CACHE https://api.nuget.org/v3-vulnerabilities/2026.09.26.05.43.06/2026.10.04.11.44.04/vulnerability.update.json
+Generating MSBuild file P:\WINDOWS\FastMediaSorter_Lite\src\Modern\obj\FastMediaSorter.Modern.vbproj.nuget.g.props.
+Writing assets file to disk. Path: P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorterCompanion\obj\project.assets.json
+Writing assets file to disk. Path: P:\WINDOWS\FastMediaSorter_Lite\src\Modern\obj\project.assets.json
+Restored P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj (in 410 ms).
+Restored P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj (in 410 ms).
+
+NuGet Config files used:
+    C:\Users\serzh\AppData\Roaming\NuGet\NuGet.Config
+    C:\Program Files (x86)\NuGet\Config\Microsoft.VisualStudio.Offline.config
+
+Feeds used:
+    C:\Program Files (x86)\Microsoft SDKs\NuGetPackages\
+    https://api.nuget.org/v3/index.json
+Building Release (version 26.10.5.0107)...
+
+  Auto-generating version: 26.10.5.0107
+P:\WINDOWS\FastMediaSorter_Lite\src\Main_Form.Lifecycle.vb(1149,23): warning BC42356: This async method lacks 'Await' operators and so will run synchronously. Consider using the 'Await' operator to await non-blocking API calls, or 'Await Task.Run(...)' to do CPU-bound work on a background thread. [P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorter.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Main_Form.FileOperations.vb(1600,9): warning BC42305: XML comment tag 'summary' appears with identical attributes more than once in the same XML comment block. [P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorter.vbproj]
+  FastMediaSorter -> P:\WINDOWS\FastMediaSorter_Lite\bin\Release\FastMediaSorter_x86.exe
+  FastMediaSorterCompanion -> P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorterCompanion\bin\Release\net10.0-windows\FastMediaSorterCompanion.dll
+P:\WINDOWS\FastMediaSorter_Lite\src\Video\Video_Convert_Form.vb(26,22): warning BC40004: variable 'cancelButton' conflicts with property 'cancelButton' in the base class 'Form' and should be declared 'Shadows'. [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Ocr\TesseractOcrEngine.vb(1000,13): warning SYSLIB0014: 'ServicePointManager' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. Settings on ServicePointManager no longer affect SslStream or HttpClient.'. (https://aka.ms/dotnet-warnings/SYSLIB0014) [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Ocr\TesseractOcrEngine.vb(1000,52): warning SYSLIB0014: 'ServicePointManager' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. Settings on ServicePointManager no longer affect SslStream or HttpClient.'. (https://aka.ms/dotnet-warnings/SYSLIB0014) [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Ocr\TesseractOcrEngine.vb(1001,52): warning SYSLIB0014: 'Public Shared Overloads Function Create(requestUriString As String) As WebRequest' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.'. (https://aka.ms/dotnet-warnings/SYSLIB0014) [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Secure\FdSecStream.vb(231,29): warning BC42108: Variable 'held' is passed by reference before it has been assigned a value. A null reference exception could result at runtime. Make sure the structure or all the reference members are initialized before use [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+  FastMediaSorter.Modern -> P:\WINDOWS\FastMediaSorter_Lite\src\Modern\bin\Release\net10.0-windows\FastMediaSorter_LITE.dll
+Single-file x86 viewer staged at: P:\WINDOWS\FastMediaSorter_Lite\bin\SingleFile\FastMediaSorter_x86.exe
+Skipping Companion build (-SkipCompanion).
+Publishing modern viewer (net10 x64, self-contained single-file)..
+  Determining projects to restore...
+  Restored P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj (in 213 ms).
+P:\WINDOWS\FastMediaSorter_Lite\src\Video\Video_Convert_Form.vb(26,22): warning BC40004: variable 'cancelButton' conflicts with property 'cancelButton' in the base class 'Form' and should be declared 'Shadows'. [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Ocr\TesseractOcrEngine.vb(1000,13): warning SYSLIB0014: 'ServicePointManager' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. Settings on ServicePointManager no longer affect SslStream or HttpClient.'. (https://aka.ms/dotnet-warnings/SYSLIB0014) [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Ocr\TesseractOcrEngine.vb(1000,52): warning SYSLIB0014: 'ServicePointManager' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. Settings on ServicePointManager no longer affect SslStream or HttpClient.'. (https://aka.ms/dotnet-warnings/SYSLIB0014) [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Ocr\TesseractOcrEngine.vb(1001,52): warning SYSLIB0014: 'Public Shared Overloads Function Create(requestUriString As String) As WebRequest' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.'. (https://aka.ms/dotnet-warnings/SYSLIB0014) [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Secure\FdSecStream.vb(231,29): warning BC42108: Variable 'held' is passed by reference before it has been assigned a value. A null reference exception could result at runtime. Make sure the structure or all the reference members are initialized before use [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+  FastMediaSorter.Modern -> P:\WINDOWS\FastMediaSorter_Lite\src\Modern\bin\Release\net10.0-windows\win-x64\FastMediaSorter_LITE.dll
+  FastMediaSorter.Modern -> P:\WINDOWS\FastMediaSorter_Lite\bin\ModernPublish\
+Modern viewer published at: P:\WINDOWS\FastMediaSorter_Lite\bin\ModernPublish\FastMediaSorter_LITE.exe
+  loose publish asset -> LICENSE
+  loose publish asset -> Magick.Native-Q8-x64.dll
+  loose publish asset -> pdfium.dll
+Modern viewer staged next to the x86 sibling -> P:\WINDOWS\FastMediaSorter_Lite\bin\Release\FastMediaSorter_LITE.exe
+PASS: P:\WINDOWS\FastMediaSorter_Lite\bin\SingleFile\FastMediaSorter_x86.exe (version 26.10.5.0107)
+PASS: P:\WINDOWS\FastMediaSorter_Lite\bin\ModernPublish\FastMediaSorter_LITE.exe (version 26.10.5.0107)
+All 2 artifacts carry version 26.10.5.0107.
+Server edition detected (FastMediaSorterCompanionSFTP is running) - leaving its worker alone.
+  It serves from its own install directory; nothing here is locked by it.
+filedo.exe : Error: vdisk: invalid request: vd needs a verb: new, mount, unmount, info, verify, export, save, compact, 
+grow, format, seal, clone, pass, destroy, share, autostart, open, close, disks, image, adopt, add, forget, list, auto, 
+guard, status, register, unregister or stop
+At P:\WINDOWS\FastMediaSorter_Lite\tools\Stage-FileDoPayload.ps1:68 char:5
++     & $exe vd --events $probe --no-history *> $null
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Error: vdisk: i...egister or stop:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

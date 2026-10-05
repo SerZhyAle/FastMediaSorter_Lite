@@ -9,10 +9,9 @@ Imports System.Windows.Forms
 ''' The two windows of "Replace with video"
 ''' (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §9.4, §10.1).
 '''
-''' Both are built in code rather than in the Designer, and both are sized in plain pixels:
-''' the viewer is pinned to DpiUnaware and to Microsoft Sans Serif 8.25 (see the
-''' compatibility pins in CLAUDE.md), so a form that scaled itself would be the odd one out
-''' on this window band, not the modern one.
+''' Both are built in code rather than in the Designer, from 96-dpi positions: the viewer has been
+''' PerMonitorV2 since the chrome migration, so each scales itself with DialogLayout (the old note that
+''' the viewer is DpiUnaware described the net48 reference build only - 124 UX-202).
 '''
 ''' The progress dialog is MODAL on purpose. The file on screen is about to be deleted, and
 ''' a keypress that navigated away mid-conversion would leave the delete pointing at a file
@@ -74,6 +73,14 @@ Friend NotInheritable Class Video_Convert_Form
         Me.Controls.Add(bar)
         Me.Controls.Add(cancelButton)
         Me.CancelButton = cancelButton
+
+        ' LAST line of the builder: scaling touches only the children that exist by now.
+        DialogLayout.ApplyAutoScale(Me)
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        DialogLayout.FitContent(Me)
     End Sub
 
     ''' <summary>Called from the encoder's progress reports, already marshalled onto this
@@ -197,6 +204,14 @@ Friend NotInheritable Class Video_Replace_Confirm_Form
         ' Cancel is the default: an irreversible action should not be one Enter away.
         Me.AcceptButton = Nothing
         Me.CancelButton = decline
+
+        ' LAST line of the builder: scaling touches only the children that exist by now.
+        DialogLayout.ApplyAutoScale(Me)
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        DialogLayout.FitContent(Me)
     End Sub
 
 End Class

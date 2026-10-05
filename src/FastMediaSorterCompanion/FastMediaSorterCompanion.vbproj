@@ -128,6 +128,7 @@
       strings table comes along because both settings windows offer the choice.
     -->
     <Compile Include="..\Theming\ThemePalette.vb" Link="Theming\ThemePalette.vb" />
+    <Compile Include="..\Theming\AccentColors.vb" Link="Theming\AccentColors.vb" />
     <Compile Include="..\Theming\ThemeApplier.vb" Link="Theming\ThemeApplier.vb" />
     <Compile Include="..\Theming\ThemedMenuRenderer.vb" Link="Theming\ThemedMenuRenderer.vb" />
     <Compile Include="..\Theming\ThemeService.vb" Link="Theming\ThemeService.vb" />

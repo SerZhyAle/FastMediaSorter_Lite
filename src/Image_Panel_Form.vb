@@ -568,7 +568,7 @@ Partial Public Class Image_Panel_Form
 #End If
         ' The safe answer holds the default focus (APP-BEHAVIOUR 0.12 rule 5): Enter declines.
         If mustAsk AndAlso
-            MessageBox.Show(confirmMsg, Localization.TC("panel", "Подтверждение удаления"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
+            ViewerBox.Show(confirmMsg, Localization.TC("panel", "Подтверждение удаления"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
 
         Dim errors As New System.Text.StringBuilder()
         Dim done As Integer = 0
@@ -618,7 +618,7 @@ Partial Public Class Image_Panel_Form
         UpdateSelectionVisuals()
 
         If errors.Length > 0 Then
-            MessageBox.Show(errors.ToString(), Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
+            ViewerBox.Show(errors.ToString(), Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
         End If
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " p0080: pics deleted: " & done.ToString())
     End Sub
@@ -1105,7 +1105,7 @@ Partial Public Class Image_Panel_Form
         Dim confirmMsg = Localization.TF("Вы уверены, что хотите {0} {1} файл(ов) в '{2}'?", operation_type_string, work.Count, destination_Folder_Path)
 
         If Not Is_no_request_before_file_operation AndAlso
-MessageBox.Show(confirmMsg, Localization.T("Подтверждение"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+ViewerBox.Show(confirmMsg, Localization.T("Подтверждение"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
 
         Dim success_count As Integer = 0
         Dim error_messages As New System.Text.StringBuilder()
@@ -1182,7 +1182,7 @@ MessageBox.Show(confirmMsg, Localization.T("Подтверждение"), Messag
         ' summary is suppressed under no-confirm.
         Dim has_Errors As Boolean = error_messages.Length > 0
         If has_Errors OrElse Not Is_no_request_before_file_operation Then
-            MessageBox.Show(summary_message.ToString(), Localization.T("Операция завершена"), MessageBoxButtons.OK,
+            ViewerBox.Show(summary_message.ToString(), Localization.T("Операция завершена"), MessageBoxButtons.OK,
                             If(has_Errors, MessageBoxIcon.Warning, MessageBoxIcon.Information))
         End If
 

@@ -163,9 +163,8 @@ Partial Public Class Main_Form
             Dim outcome As ForwardOutcome = Await Task.Run(Function() ForwardToCompanion(payload))
             If outcome = ForwardOutcome.Delivered Then Return
             AppFileLogger.WriteLine("BroadcastLauncher: Companion running but not reachable (" & outcome.ToString() & ")")
-            MessageBox.Show(Me,
-                Localization.T("Share Manager уже запущен, но не ответил на запрос. Подождите немного и повторите; второй экземпляр не запускается."),
-                Localization.T("Трансляция"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ' News, not a question: the status line (and, in full screen without panels, a toast) says it (124 UX-206).
+            Notify(Localization.T("Share Manager уже запущен, но не ответил на запрос. Подождите немного и повторите; второй экземпляр не запускается."), NotifyLevel.Warning)
             Return
         End If
 
@@ -201,9 +200,8 @@ Partial Public Class Main_Form
             ' would only repeat the request through another path (and a second manager must never
             ' start), so the user is told what happened.
             AppFileLogger.WriteLine("ShareLauncher: Companion running but not reachable (" & outcome.ToString() & ")")
-            MessageBox.Show(Me,
-                Localization.T("Share Manager уже запущен, но не ответил на запрос. Подождите немного и повторите; второй экземпляр не запускается."),
-                Localization.T("Общий доступ"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ' News, not a question: the status line (and, in full screen without panels, a toast) says it (124 UX-206).
+            Notify(Localization.T("Share Manager уже запущен, но не ответил на запрос. Подождите немного и повторите; второй экземпляр не запускается."), NotifyLevel.Warning)
             Return
         End If
 
@@ -212,7 +210,7 @@ Partial Public Class Main_Form
     End Function
 
     Private Sub AdviseManualAdd(folder As String)
-        MessageBox.Show(Me,
+        ViewerBox.Show(Me,
             Localization.TF("Share Manager старой версии не умеет безопасно принимать папку отсюда. Обновите его или добавьте папку в нём вручную:" & vbCrLf & "{0}", folder),
             Localization.T("Общий доступ"), MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
@@ -296,7 +294,7 @@ Partial Public Class Main_Form
             If started IsNot Nothing Then started.Dispose()
         Catch ex As Exception
             AppFileLogger.LogException("ShareLauncher cold-start", ex)
-            MessageBox.Show(Me,
+            ViewerBox.Show(Me,
                 Localization.TF("Не удалось запустить {1}." & vbCrLf & "{0}", FailureText.Describe(ex), ProductNames.ShareManager),
                 Localization.T("Общий доступ"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning)
@@ -315,7 +313,7 @@ Partial Public Class Main_Form
     ''' place - same AppId, same directory, settings and associations untouched.
     ''' </summary>
     Private Sub OfferShareComponentDownload()
-        Dim answer As DialogResult = MessageBox.Show(Me,
+        Dim answer As DialogResult = ViewerBox.Show(Me,
             Localization.TF("Компонент общего доступа не установлен ({0})." & vbCrLf & vbCrLf &
                             "Он входит в полный установщик: запустите его поверх текущей версии - настройки сохранятся." & vbCrLf & vbCrLf &
                             "Открыть страницу загрузки?", ProductNames.ShareManager),
@@ -330,7 +328,7 @@ Partial Public Class Main_Form
             If started IsNot Nothing Then started.Dispose()
         Catch ex As Exception
             AppFileLogger.LogException("ShareLauncher download page", ex)
-            MessageBox.Show(Me,
+            ViewerBox.Show(Me,
                 Localization.TF("Не удалось открыть страницу загрузки." & vbCrLf & "{0}", FailureText.Describe(ex)),
                 Localization.T("Общий доступ"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning)

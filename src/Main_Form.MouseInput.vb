@@ -15,6 +15,9 @@ Partial Public Class Main_Form
 
     Private Sub HandlePictureBoxMouseDown(sender As Object, e As MouseEventArgs)
 #If Not NETFRAMEWORK Then
+        ' A press on the media means the user's attention is back on the picture: the F10 panel mode,
+        ' which swallows every other key, ends with it (UX-105 of 123) instead of staying on unseen.
+        ChromeLeaveKeyboardMode()
         If e.Button = MouseButtons.Left AndAlso TryHandlePdfIndicatorClick(TryCast(sender, PictureBox), e.Location) Then Return
 #End If
         ' Store the initial mouse position for drag detection
@@ -165,6 +168,14 @@ Partial Public Class Main_Form
 
     Private Sub MouseUse(ByVal e As MouseEventArgs)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1170: MouseUse Delta: " & e.Delta.ToString)
+
+#If Not NETFRAMEWORK Then
+        ' With the F1 reference card up the wheel is the card's, never a file flip behind it (UX-115 of 123).
+        If e.Delta <> 0 AndAlso help_Card IsNot Nothing AndAlso help_Card.Visible Then
+            help_Card.ScrollByWheel(e.Delta)
+            Return
+        End If
+#End If
 
         SlideShowStop()
 
@@ -330,6 +341,9 @@ Partial Public Class Main_Form
 
     Private Sub Form1_MouseDown(sender As Object, e As MouseEventArgs) Handles MyBase.MouseDown
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1660: Form MouseDown")
+#If Not NETFRAMEWORK Then
+        ChromeLeaveKeyboardMode()   ' see HandlePictureBoxMouseDown (UX-105 of 123)
+#End If
         MouseUse(e)
     End Sub
 
@@ -406,6 +420,11 @@ Partial Public Class Main_Form
         ' Moving the mouse is how a slideshow with hidden chrome is asked to show it
         ' again for a moment - without stopping the slideshow, which any key would.
         RevealSlideshowChromeTemporarily()
+#If Not NETFRAMEWORK Then
+        ' An audio file has no LibVLC picture to move the pointer over - its surface is Picture_Box_1 - so this is where the
+        ' transport is summoned for it when "always show the controls" is off (121 UX-407).
+        If IsAudioNowPlaying() Then ShowVideoControls()
+#End If
 
         If e.Button = MouseButtons.Left Then
             If Not is_PictureBox1_Visible AndAlso Not is_PictureBox2_Visible Then

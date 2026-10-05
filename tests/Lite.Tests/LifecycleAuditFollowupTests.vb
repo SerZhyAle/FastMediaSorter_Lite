@@ -282,8 +282,11 @@ Public Class LifecycleAuditFollowupTests
         Dim source As String = ReadSource("Table_Form.ExpandedSettings.vb")
         Assert.Contains("expandedRefreshActions", source)
         Assert.Contains("RefreshExpandedSettingsRows", source)
-        Assert.Contains("RefreshOcrCacheSize()", source)
-        Assert.Contains("RefreshDecodeCacheSize()", source)
+        ' 130: the cache rows' localize+measure actions ride the same list, and
+        ' RefreshCacheUsageMeasurements re-measures them when the Storage page opens.
+        Assert.Contains("cacheUsageRefresh", source)
+        Assert.Contains("expandedRefreshActions.Add(localize)", source)
+        Assert.Contains("RefreshCacheUsageMeasurements", source)
     End Sub
 
     ' --------------------------------------------------------------- 057.S14-2 ----

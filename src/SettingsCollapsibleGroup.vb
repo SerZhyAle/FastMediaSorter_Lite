@@ -18,20 +18,30 @@ Friend NotInheritable Class SettingsCollapsibleGroup
     Friend Event ExpansionChanged As EventHandler
     Private expandedValue As Boolean = True
     Private captionValue As String = String.Empty
+    Private summaryValue As String = String.Empty
     Private arranging As Boolean
-    Private ReadOnly headerHeight As Integer
+    Private headerHeight As Integer
+    Private headerTextInset As Integer
+    Private summaryFontValue As Font
+    Private summaryInkValue As Color
+    Private ReadOnly renderDisclosure As Func(Of Boolean, Color, Bitmap)
 
-    Friend Sub New(id As String, logicalScale As Single, headerFont As Font)
+    Friend Sub New(id As String, logicalScale As Single, headerFont As Font, Optional glyphFactory As Func(Of Boolean, Color, Bitmap) = Nothing)
+        renderDisclosure = glyphFactory
         GroupId = id
         Name = "settingsGroup_" & id
-        headerHeight = Math.Max(28, CInt(Math.Ceiling(36 * logicalScale)))
+        headerHeight = Math.Max(44, CInt(Math.Ceiling(44 * logicalScale)))
+        headerTextInset = CInt(Math.Ceiling(8 * logicalScale))
         Margin = New Padding(0, 0, 0, CInt(Math.Ceiling(8 * logicalScale)))
         Header = New GroupHeader(Me) With {
             .Name = Name & "_header", .FlatStyle = FlatStyle.Flat,
             .UseMnemonic = False, .Font = headerFont, .TabStop = True,
             .TextAlign = ContentAlignment.MiddleLeft, .AutoSize = False,
+            .TextImageRelation = TextImageRelation.ImageBeforeText, .ImageAlign = ContentAlignment.MiddleLeft,
             .Padding = New Padding(CInt(Math.Ceiling(8 * logicalScale)), 0, 0, 0)}
-        Header.FlatAppearance.BorderSize = 1
+        ' The header is a band, not a bordered row (127 §3.4): the blended fill and the
+        ' larger Semibold caption set it apart, colour loss only strengthens the band.
+        Header.FlatAppearance.BorderSize = 0
         Body = New FlowLayoutPanel With {
             .Name = Name & "_body", .FlowDirection = FlowDirection.TopDown,
             .WrapContents = False, .AutoScroll = False, .TabStop = False,
@@ -39,8 +49,21 @@ Friend NotInheritable Class SettingsCollapsibleGroup
         Controls.Add(Body)
         Controls.Add(Header)
         AddHandler Header.Click, Sub() Expanded = Not Expanded
+        AddHandler Header.ForeColorChanged, Sub() RefreshDisclosure()
+        AddHandler Header.Paint, AddressOf PaintHeaderSummary
+        AddHandler Disposed, Sub()
+                                 If Header.Image IsNot Nothing Then Header.Image.Dispose()
+                             End Sub
         AddHandler Body.Layout, Sub() ArrangeContents()
         AddHandler Resize, Sub() ArrangeContents()
+        RefreshDisclosure()
+    End Sub
+
+    Friend Sub SetSummaryStyle(font As Font, ink As Color)
+        summaryFontValue = font
+        summaryInkValue = ink
+        Caption = captionValue
+        ArrangeContents()
     End Sub
 
     <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
@@ -51,9 +74,58 @@ Friend NotInheritable Class SettingsCollapsibleGroup
         Set(value As String)
             captionValue = value
             Header.AccessibleName = value
-            Header.Text = If(expandedValue, "−  ", "+  ") & value
+            ' The collapsed summary is painted under the caption in muted small text
+            ' (127 §3.4). Until a summary style has arrived the old two-line Text
+            ' behaviour still applies.
+            Header.Text = value & If(Not expandedValue AndAlso summaryValue.Length > 0 AndAlso summaryFontValue Is Nothing,
+                                      Environment.NewLine & summaryValue, String.Empty)
+            Dim hasPaintedSummary As Boolean = Not expandedValue AndAlso summaryValue.Length > 0 AndAlso summaryFontValue IsNot Nothing
+            Header.TextAlign = If(hasPaintedSummary, ContentAlignment.TopLeft, ContentAlignment.MiddleLeft)
+            Header.Padding = New Padding(headerTextInset, If(hasPaintedSummary, headerTextInset, 0), 0, 0)
+            Header.Invalidate()
         End Set
     End Property
+
+    Friend Sub SetSummary(value As String)
+        summaryValue = value
+        Header.AccessibleDescription = value
+        Caption = captionValue
+        ArrangeContents()
+    End Sub
+
+    Friend Sub SetLayoutScale(scale As Single)
+        headerHeight = Math.Max(44, CInt(Math.Ceiling(44 * scale)))
+        headerTextInset = CInt(Math.Ceiling(8 * scale))
+        Caption = captionValue
+        RefreshDisclosure()
+        ArrangeContents()
+    End Sub
+
+    ''' <summary>Draws the collapsed summary line in its muted small font, under the
+    ''' caption the button itself renders (127 §3.4). Expanded headers have no summary.</summary>
+    Private Sub PaintHeaderSummary(sender As Object, e As PaintEventArgs)
+        If summaryFontValue Is Nothing OrElse expandedValue OrElse summaryValue.Length = 0 OrElse captionValue.Length = 0 Then Return
+        ' Not "header": a local of that name shadows the Header field - VB is
+        ' case-insensitive, so the initializer would read the local itself.
+        Dim headerButton As Button = Header
+        Dim imageWidth As Integer = If(headerButton.Image IsNot Nothing, headerButton.Image.Width + 2, 0)
+        Dim textWidth As Integer = Math.Max(1, headerButton.ClientSize.Width - headerButton.Padding.Horizontal - imageWidth - 4)
+        Dim captionHeight As Integer = TextRenderer.MeasureText(captionValue, headerButton.Font,
+            New Size(textWidth, Integer.MaxValue), TextFormatFlags.WordBreak).Height
+        Dim top As Integer = headerButton.Padding.Top + captionHeight + 2
+        Dim bounds As New Rectangle(headerButton.Padding.Left + imageWidth, top,
+                                    textWidth, Math.Max(1, headerButton.ClientSize.Height - top - headerTextInset))
+        Dim flags As TextFormatFlags = TextFormatFlags.NoPrefix Or TextFormatFlags.WordBreak
+        If headerButton.RightToLeft = RightToLeft.Yes Then flags = flags Or TextFormatFlags.RightToLeft
+        TextRenderer.DrawText(e.Graphics, summaryValue, summaryFontValue, bounds, summaryInkValue, flags)
+    End Sub
+
+    Private Sub RefreshDisclosure()
+        If renderDisclosure Is Nothing OrElse Header Is Nothing Then Return
+        Dim oldImage = Header.Image
+        Header.Image = renderDisclosure(expandedValue, Header.ForeColor)
+        If oldImage IsNot Nothing Then oldImage.Dispose()
+    End Sub
 
     <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
     Friend Property Expanded As Boolean
@@ -67,6 +139,7 @@ Friend NotInheritable Class SettingsCollapsibleGroup
             expandedValue = value
             Body.Visible = value
             Caption = captionValue
+            RefreshDisclosure()
             ArrangeContents()
             DirectCast(Header, GroupHeader).NotifyState()
             RaiseEvent ExpansionChanged(Me, EventArgs.Empty)
@@ -77,15 +150,24 @@ Friend NotInheritable Class SettingsCollapsibleGroup
         If arranging Then Return
         arranging = True
         Try
-            Header.SetBounds(0, 0, ClientSize.Width, headerHeight)
+            Dim measuredHeight As Integer = TextRenderer.MeasureText(Header.Text, Header.Font,
+                New Size(Math.Max(1, ClientSize.Width - Header.Padding.Horizontal - 16 - If(Header.Image Is Nothing, 0, Header.Image.Width)), Integer.MaxValue), TextFormatFlags.WordBreak).Height + 2 * headerTextInset
+            ' The painted summary line grows the collapsed header the same way the old
+            ' two-line Text did (127 §3.4).
+            If Not expandedValue AndAlso summaryValue.Length > 0 AndAlso summaryFontValue IsNot Nothing Then
+                measuredHeight += TextRenderer.MeasureText(summaryValue, summaryFontValue,
+                    New Size(Math.Max(1, ClientSize.Width - Header.Padding.Horizontal - 16 - If(Header.Image Is Nothing, 0, Header.Image.Width)), Integer.MaxValue), TextFormatFlags.WordBreak).Height + 2
+            End If
+            Dim currentHeaderHeight As Integer = Math.Max(headerHeight, measuredHeight)
+            Header.SetBounds(0, 0, ClientSize.Width, currentHeaderHeight)
             Dim contentHeight As Integer = 0
             For Each child As Control In Body.Controls
                 child.Width = Math.Max(1, ClientSize.Width - child.Margin.Horizontal)
                 ' Visible depends on the selected TabPage too; layout must include hidden pages.
                 contentHeight += child.Height + child.Margin.Vertical
             Next
-            Body.SetBounds(0, headerHeight, ClientSize.Width, Math.Max(1, contentHeight))
-            Dim targetHeight As Integer = headerHeight + If(expandedValue, contentHeight, 0)
+            Body.SetBounds(0, currentHeaderHeight, ClientSize.Width, Math.Max(1, contentHeight))
+            Dim targetHeight As Integer = currentHeaderHeight + If(expandedValue, contentHeight, 0)
             If Height <> targetHeight Then Height = targetHeight
         Finally
             arranging = False

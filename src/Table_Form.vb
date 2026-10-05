@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 'sza130806
 'sza250617
 Imports System.ComponentModel
@@ -71,15 +71,25 @@ Public Class Table_Form
 
         ' --- TabPage 2: Settings ---
         toolTip.SetToolTip(cmbox_color_schema, Localization.T("Выберите цветовую схему фона для просмотра изображений."))
+#If Not NETFRAMEWORK Then
+        ' Plain words on a setting (124 UX-210, Q124-1): the playful tone stays in the first-run card only.
+        toolTip.SetToolTip(chb_perspectiva, Localization.T("Включить перспективный фон: чёрные поля по краям превращаются в продолжение картинки."))
+#Else
         toolTip.SetToolTip(chb_perspectiva, Localization.T("Включить перспективный фон: чёрные поля по краям превращаются в продолжение картинки. Чисто для красоты."))
+#End If
         toolTip.SetToolTip(chk_Dynamic_Perspective, Localization.T("Полосы гаснут к цвету фона по мере удаления от фото - получается ореол, а не сплошная полоса. Применяется со следующего фото."))
         toolTip.SetToolTip(chk_Animated_Perspective, Localization.T("Ореол не появляется сразу, а вырастает от края фото к краю экрана - длительность выбирается ниже. Снимите галку, и он будет просто нарисован мгновенно. В покое кадр в обоих случаях одинаковый. Растёт только на новом фото: ресайз окна и зум перерисовывают фон сразу."))
         toolTip.SetToolTip(cmb_Halo_Speed, Localization.T("Как быстро ореол вырастает у нового фото. Средняя - вдвое быстрее прежней анимации, быстрая - вчетверо. На вид ореола в покое это не влияет."))
         toolTip.SetToolTip(chkb_show_pic_size, Localization.T("Показывать размеры изображения (ширина x высота)."))
         toolTip.SetToolTip(chkb_is_to_show_file_datetime, Localization.T("Показывать дату и время последнего изменения файла."))
         toolTip.SetToolTip(chkb_show_file_size, Localization.T("Показывать размер файла."))
+#If Not NETFRAMEWORK Then
+        toolTip.SetToolTip(chkb_video_loop, Localization.T("Повторять видео по кругу."))
+        toolTip.SetToolTip(chkb_no_request_before_file_operation, Localization.T("Отключить подтверждения перед файловыми операциями: действия будут выполняться без вопросов."))
+#Else
         toolTip.SetToolTip(chkb_video_loop, Localization.T("Крутить видео по кругу - пока вам не надоест или не кончится терпение."))
         toolTip.SetToolTip(chkb_no_request_before_file_operation, Localization.T("Отключить подтверждения перед файловыми операциями. Программа поверит, что вы знаете, что делаете - смелое допущение."))
+#End If
         toolTip.SetToolTip(cmb_Picture_Size, Localization.T("Выберите размер карточки для формы панели изображений"))
 
         toolTip.SetToolTip(chk_Exif_AutoRotate, Localization.T("Автоматически поворачивать фото по тегу EXIF Orientation (снимки с телефонов/камер)."))
@@ -184,6 +194,7 @@ Public Class Table_Form
         cmb_Halo_Speed.Items.Add(Localization.T("Средняя"))   '1 - default, twice as fast
         cmb_Halo_Speed.Items.Add(Localization.T("Быстрая"))   '2 - four times as fast
 
+#If NETFRAMEWORK Then
         cmb_Picture_Size.Items.Clear()
         cmb_Picture_Size.Items.Add("30x40")
         cmb_Picture_Size.Items.Add("50x50")
@@ -222,6 +233,21 @@ Public Class Table_Form
             cmb_Picture_Size.SelectedIndex = 4
         End If
 
+#Else
+        cmb_Picture_Size.Items.Clear()
+        For Each tier As Integer In ModernViewerPreferences.PanelThumbnailTiers
+            cmb_Picture_Size.Items.Add(tier.ToString() & " px")
+        Next
+        Dim size As Integer = Main_Form.GetModernPreferences().PanelThumbnailSize
+        If size = 0 Then size = ModernViewerPreferences.SnapPanelThumbnailSize(Math.Max(Picture_Box_Width_At_Panel, Picture_Box_Height_At_Panel))
+        updatingThumbnailChoice = True
+        Try
+            cmb_Picture_Size.SelectedIndex = Array.IndexOf(ModernViewerPreferences.PanelThumbnailTiers, size)
+        Finally
+            updatingThumbnailChoice = False
+        End Try
+#End If
+
         chkb_show_pic_size.Checked = Main_Form.Is_to_show_picture_sizes
         chkb_is_to_show_file_datetime.Checked = Main_Form.Is_to_show_file_datetime
         chkb_show_file_size.Checked = Main_Form.Is_to_show_file_sizes
@@ -239,18 +265,34 @@ Public Class Table_Form
         chk_Wheel_Zooms.Checked = Zoom_Wheel_Zooms
 #End If
 
-        Dim slideshow_Seconds As Integer = CInt(Slideshow_Base_Interval_Ms / 1000)
+        #If NETFRAMEWORK Then
+        Dim slideshow_Seconds As Decimal = CInt(Slideshow_Base_Interval_Ms / 1000)
+#Else
+        num_Slideshow_Interval.DecimalPlaces = 3
+        num_Slideshow_Interval.Increment = 0.1D
+        Dim slideshow_Seconds As Decimal = Slideshow_Base_Interval_Ms / 1000D
+#End If
         If slideshow_Seconds < CInt(num_Slideshow_Interval.Minimum) Then slideshow_Seconds = CInt(num_Slideshow_Interval.Minimum)
         If slideshow_Seconds > CInt(num_Slideshow_Interval.Maximum) Then slideshow_Seconds = CInt(num_Slideshow_Interval.Maximum)
         num_Slideshow_Interval.Value = slideshow_Seconds
 
         ' Video audio defaults live in Main_Form (private fields); read via its
         ' accessors. Set mute first so the volume ValueChanged applies the pair.
-        chk_Video_Mute.Checked = Main_Form.CurrentVideoMuted
+        Dim video_Muted As Boolean = Main_Form.CurrentVideoMuted
         Dim video_Volume_Percent As Integer = Main_Form.CurrentVideoVolumePercent
         If video_Volume_Percent < CInt(num_Video_Volume.Minimum) Then video_Volume_Percent = CInt(num_Video_Volume.Minimum)
         If video_Volume_Percent > CInt(num_Video_Volume.Maximum) Then video_Volume_Percent = CInt(num_Video_Volume.Maximum)
-        num_Video_Volume.Value = video_Volume_Percent
+#If Not NETFRAMEWORK Then
+        updatingAudioDefaults = True
+#End If
+        Try
+            chk_Video_Mute.Checked = video_Muted
+            num_Video_Volume.Value = video_Volume_Percent
+        Finally
+#If Not NETFRAMEWORK Then
+            updatingAudioDefaults = False
+#End If
+        End Try
 
         chb_perspectiva.Text = Localization.T("Перспектива")
         chk_Dynamic_Perspective.Text = Localization.T("Динамическая перспектива")
@@ -261,17 +303,28 @@ Public Class Table_Form
         chkbox_Independent_Thread_For_File_Operation.Checked = Is_Independent_Thread_For_File_Operations
         Data_Grid_View.Rows.Clear()
         Data_Grid_View.Rows.Add()
+#If Not NETFRAMEWORK Then
+        ' The labels follow the live key map: a slot or the delete action can be rebound (125 UX-334).
+        Data_Grid_View.Item(0, 0).Value = Main_Form.DeleteKeyLabel()
+#Else
         Data_Grid_View.Item(0, 0).Value = "DEL"
+#End If
         Data_Grid_View.Item(0, 0).ReadOnly = True
         Data_Grid_View.Item(1, 0).Value = Localization.T("Удаление файла")
         Data_Grid_View.Item(1, 0).ReadOnly = True
         For z As Integer = 1 To 10
             Data_Grid_View.Rows.Add()
+#If Not NETFRAMEWORK Then
+            Data_Grid_View.Item(0, z).Value = Main_Form.SlotKeyLabel(If(z = 10, 10, z))
+#Else
             Data_Grid_View.Item(0, z).Value = z.ToString()
+#End If
             Data_Grid_View.Item(1, z).Value = If(Hardkeys_to_move_mediafile(z), "")
         Next
 
+#If NETFRAMEWORK Then
         Data_Grid_View.Item(0, 10).Value = "0"
+#End If
 
 #If Not NETFRAMEWORK Then
         ApplySlotHealthToGrid()
@@ -504,14 +557,10 @@ Public Class Table_Form
 
 #If Not NETFRAMEWORK Then
     ''' <summary>
-    ''' Paints the cached slot verdicts onto column 1 - a tint plus a tooltip, and
-    ''' deliberately NO new column (§3.5): CellMouseDoubleClick branches on
-    ''' e.ColumnIndex = 0 and CellEndEdit reads Item(1, ..) unconditionally, so a third
-    ''' column needs both guarded. That work belongs to the slot-names item, which
-    ''' actually wants columns; the trap is recorded here so whoever takes it finds it
-    ''' already named.
-    '''
-    ''' Reads the cache only - the settings window never probes on its own.
+    ''' Paints column 1 of the destination grid (129 §3.2): every slot row carries its own pastel
+    ''' identity fill from <see cref="RecipientPalette"/> - the same colour the recipients overlay
+    ''' paints for the slot - and health answers with a leading glyph, not with the fill. Reads the
+    ''' cache only - the settings window never probes on its own.
     ''' </summary>
     Private Sub ApplySlotHealthToGrid()
         If Data_Grid_View Is Nothing OrElse Data_Grid_View.Rows.Count < 11 Then Return
@@ -521,21 +570,120 @@ Public Class Table_Form
             Dim destination As String = If(Hardkeys_to_move_mediafile(z), "")
             Dim verdict As SlotVerdict = Main_Form.CachedSlotVerdict(destination)
 
-            If verdict Is Nothing OrElse String.IsNullOrWhiteSpace(destination) Then
-                ' Nobody has asked yet. Leave it alone rather than imply an answer.
-                cell.Style.BackColor = Color.Empty
-                cell.ToolTipText = ""
-            ElseIf verdict.State = SlotState.WillBeCreated Then
-                cell.Style.BackColor = Color.FromArgb(255, 248, 220)
-                cell.ToolTipText = Main_Form.SlotHealthNote(verdict)
-            ElseIf SlotHealthPolicy.IsUsable(verdict.State) Then
-                cell.Style.BackColor = Color.Empty
-                cell.ToolTipText = ""
-            Else
-                cell.Style.BackColor = Color.FromArgb(255, 226, 226)
-                cell.ToolTipText = Main_Form.SlotHealthNote(verdict)
-            End If
+            ' The fill is the slot's identity, health-neutral by design: a folder that went
+            ' missing keeps its colour, so what the user memorized never reshuffles.
+            cell.Style.BackColor = If(SystemInformation.HighContrast, SettingsSurface, RecipientPalette.ColorFor(z, settingsDarkMode))
+            cell.Style.SelectionBackColor = If(SystemInformation.HighContrast, SettingsAccent, cell.Style.BackColor)
+            cell.Style.SelectionForeColor = If(SystemInformation.HighContrast, SettingsOnAccent, SettingsText)
+            cell.Style.Padding = If(Data_Grid_View.RightToLeft = RightToLeft.Yes,
+                                    New Padding(0, 0, Sp(SlotMarkZone), 0),
+                                    New Padding(Sp(SlotMarkZone), 0, 0, 0))
+            cell.Style.ForeColor = SettingsText
+
+            ' The state is the glyph's ink plus the tooltip; a slot nobody has asked about yet
+            ' draws no glyph rather than imply an answer.
+            Dim mark As SlotHealthMark = SlotHealthMarkFor(destination, verdict)
+            cell.ToolTipText = If(mark = SlotHealthMark.None, "", Main_Form.SlotHealthNote(verdict))
         Next
+        Data_Grid_View.Invalidate()
+        RefreshSlotHealthDetails()
+    End Sub
+
+    ''' <summary>Which status glyph (if any) leads the folder cell: ok once the folder answered,
+    ''' will-be-created when the worker will make it, unusable when it refused. Nothing yet is
+    ''' nothing shown.</summary>
+    Private Shared Function SlotHealthMarkFor(destination As String, verdict As SlotVerdict) As SlotHealthMark
+        If String.IsNullOrWhiteSpace(destination) OrElse verdict Is Nothing Then Return SlotHealthMark.None
+        If verdict.State = SlotState.NotConfigured Then Return SlotHealthMark.None
+        If verdict.State = SlotState.WillBeCreated Then Return SlotHealthMark.WillBeCreated
+        If SlotHealthPolicy.IsUsable(verdict.State) Then Return SlotHealthMark.Ok
+        Return SlotHealthMark.Unusable
+    End Function
+
+    ''' <summary>The state glyphs drawn leading in the folder cell (129 §3.2): their own zone
+    ''' between the cell edge and the path text, in the theme's role inks.</summary>
+    Private Enum SlotHealthMark
+        None
+        Ok
+        WillBeCreated
+        Unusable
+    End Enum
+
+    ' Logical sizes of the reserved leading zone and of the glyph inside it.
+    Private Const SlotMarkZone As Integer = 18
+    Private Const SlotMarkGlyph As Integer = 12
+
+    Private Function SlotHealthMarkInk(mark As SlotHealthMark) As Color
+        If SystemInformation.HighContrast Then Return SettingsText
+        Dim palette As ThemePalette = ThemePalette.ForDark(settingsDarkMode)
+        Select Case mark
+            Case SlotHealthMark.Ok : Return palette.Success
+            Case SlotHealthMark.WillBeCreated : Return palette.Warning
+            Case SlotHealthMark.Unusable : Return palette.Danger
+            Case Else : Return Color.Empty
+        End Select
+    End Function
+
+    ''' <summary>Paints one row's identity fill, health glyph and path: the glyph owns a reserved
+    ''' leading strip and the content is painted shifted past it, so the two never collide.</summary>
+    Private Sub Data_Grid_View_CellPainting(sender As Object, e As DataGridViewCellPaintingEventArgs)
+        If e.ColumnIndex <> 1 OrElse e.RowIndex < 1 OrElse e.RowIndex > 10 Then Return
+        Dim destination As String = If(Hardkeys_to_move_mediafile(e.RowIndex), "")
+        Dim mark As SlotHealthMark = SlotHealthMarkFor(destination, Main_Form.CachedSlotVerdict(destination))
+
+        ' Padding moves the text AND its editing control; PaintContent's argument only clips.
+        e.Paint(e.ClipBounds, DataGridViewPaintParts.All)
+        If mark <> SlotHealthMark.None Then
+            Dim zone As New Rectangle(If(Data_Grid_View.RightToLeft = RightToLeft.Yes,
+                                         e.CellBounds.Right - Sp(SlotMarkZone), e.CellBounds.Left + 1),
+                                      e.CellBounds.Top + 1, Sp(SlotMarkZone) - 1,
+                                      Math.Max(0, e.CellBounds.Height - 2))
+            Dim saved As Drawing2D.GraphicsState = e.Graphics.Save()
+            Try
+                e.Graphics.SetClip(e.ClipBounds, Drawing2D.CombineMode.Intersect)
+                ' Role inks are calibrated for the neutral surface, not every pastel hue.
+                Using brush As New SolidBrush(SettingsSurface)
+                    e.Graphics.FillRectangle(brush, zone)
+                End Using
+                DrawSlotHealthMark(e.Graphics, e.CellBounds, mark)
+            Finally
+                e.Graphics.Restore(saved)
+            End Try
+        End If
+        e.Handled = True
+    End Sub
+
+    Private Sub DrawSlotHealthMark(g As Graphics, cell As Rectangle, mark As SlotHealthMark)
+        Dim zone As Integer = Sp(SlotMarkZone)
+        Dim side As Integer = Sp(SlotMarkGlyph)
+        Dim rtl As Boolean = Data_Grid_View.RightToLeft = RightToLeft.Yes
+        Dim x As Integer = If(rtl, cell.Right - zone + (zone - side) \ 2, cell.Left + (zone - side) \ 2)
+        Dim y As Integer = cell.Top + Math.Max(0, (cell.Height - side) \ 2)
+        g.SmoothingMode = Drawing2D.SmoothingMode.AntiAlias
+        Using pen As New Pen(SlotHealthMarkInk(mark), Math.Max(1.5F, side / 8.0F)) With {
+            .StartCap = Drawing2D.LineCap.Round, .EndCap = Drawing2D.LineCap.Round}
+            Dim l As Single = x + side * 0.2F
+            Dim m As Single = x + side * 0.5F
+            Dim r As Single = x + side * 0.8F
+            Dim t As Single = y + side * 0.2F
+            Dim c As Single = y + side * 0.5F
+            Dim b As Single = y + side * 0.8F
+            Select Case mark
+                Case SlotHealthMark.Ok
+                    ' A check: down-right, then a longer up-right.
+                    g.DrawLine(pen, l, y + side * 0.55F, x + side * 0.42F, b)
+                    g.DrawLine(pen, x + side * 0.42F, b, r, t)
+                Case SlotHealthMark.WillBeCreated
+                    ' A plus: the folder that does not exist yet but will.
+                    g.DrawLine(pen, l, c, r, c)
+                    g.DrawLine(pen, m, t, m, b)
+                Case SlotHealthMark.Unusable
+                    ' An exclamation: something answered and said no.
+                    g.DrawLine(pen, m, t, m, y + side * 0.62F)
+                    Dim dot As Single = Math.Max(1.5F, side / 8.0F)
+                    g.FillEllipse(pen.Brush, m - dot, b - dot, dot * 2.0F, dot * 2.0F)
+            End Select
+        End Using
     End Sub
 
     ''' <summary>Re-asks about one row's destination and repaints the grid when the answer
@@ -583,18 +731,35 @@ Public Class Table_Form
     End Sub
 
     Private Sub Num_Slideshow_Interval_ValueChanged(sender As Object, e As EventArgs) Handles num_Slideshow_Interval.ValueChanged
+        #If NETFRAMEWORK Then
         Slideshow_Base_Interval_Ms = CInt(num_Slideshow_Interval.Value) * 1000
+#Else
+        Slideshow_Base_Interval_Ms = CInt(num_Slideshow_Interval.Value * 1000D)
+#End If
     End Sub
 
     Private Sub Num_Video_Volume_ValueChanged(sender As Object, e As EventArgs) Handles num_Video_Volume.ValueChanged
+#If Not NETFRAMEWORK Then
+        If updatingAudioDefaults Then Return
+#End If
         Main_Form.SetVideoAudioState(CDbl(num_Video_Volume.Value) / 100.0, chk_Video_Mute.Checked)
     End Sub
 
     Private Sub Chk_Video_Mute_CheckedChanged(sender As Object, e As EventArgs) Handles chk_Video_Mute.CheckedChanged
+#If Not NETFRAMEWORK Then
+        If updatingAudioDefaults Then Return
+#End If
         Main_Form.SetVideoAudioState(CDbl(num_Video_Volume.Value) / 100.0, chk_Video_Mute.Checked)
     End Sub
 
     Private Sub Form2_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
+#If Not NETFRAMEWORK Then
+        If e.KeyData = (Keys.Control Or Keys.F) Then
+            ShowSettingsSearch()
+            e.SuppressKeyPress = True
+            Return
+        End If
+#End If
         ' Recipient shortcuts are deliberately exclusive to the viewer. Returning here
         ' still lets the focused control receive the key, so NumPad digits edit a
         ' NumericUpDown (for example table opacity) instead of moving the current file.
@@ -611,6 +776,9 @@ Public Class Table_Form
         ' "close the application" (spec 028 phase 1, APP-BEHAVIOUR rule 1). An open
         ' drop-down keeps its own Escape (fold the list).
         If e.KeyCode = Keys.Escape AndAlso e.Modifiers = Keys.None Then
+#If Not NETFRAMEWORK Then
+            If FindModernControls(Of ComboBox)(Me).Any(Function(list) list.DroppedDown) Then Return
+#End If
             Dim combo As ComboBox = TryCast(Me.ActiveControl, ComboBox)
             If combo IsNot Nothing AndAlso combo.DroppedDown Then Return
             e.Handled = True
@@ -688,6 +856,9 @@ Public Class Table_Form
         chk_Dynamic_Perspective.Enabled = chb_perspectiva.Checked
         chk_Animated_Perspective.Enabled = chb_perspectiva.Checked AndAlso chk_Dynamic_Perspective.Checked
         cmb_Halo_Speed.Enabled = chk_Animated_Perspective.Enabled AndAlso chk_Animated_Perspective.Checked
+#If Not NETFRAMEWORK Then
+        RefreshSettingsDependencies()
+#End If
     End Sub
 
     ''' <summary>Drop-down position of a stored speed. The list is ordered slowest first,
@@ -753,8 +924,16 @@ Public Class Table_Form
     End Sub
 
     Private Sub Cmb_Picture_Size_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmb_Picture_Size.SelectedIndexChanged
+        If cmb_Picture_Size.SelectedItem Is Nothing Then Return
+#If NETFRAMEWORK Then
         Picture_Box_Width_At_Panel = CInt(cmb_Picture_Size.SelectedItem.ToString().Split("x"c)(0))
         Picture_Box_Height_At_Panel = CInt(cmb_Picture_Size.SelectedItem.ToString().Split("x"c)(1))
+#Else
+        Dim tier As Integer = ModernViewerPreferences.PanelThumbnailTiers(cmb_Picture_Size.SelectedIndex)
+        If updatingThumbnailChoice OrElse Main_Form.GetModernPreferences().PanelThumbnailSize = tier Then Return
+        Main_Form.GetModernPreferences().PanelThumbnailSize = tier
+        Main_Form.MarkSettingsDirty()
+#End If
     End Sub
 
     ''' <summary>

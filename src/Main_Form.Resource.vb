@@ -54,22 +54,33 @@ Partial Public Class Main_Form
     ''' changes, so a refused verb never half-happens.
     ''' </summary>
     Friend Function ResourceBlocksFileOperations(verb As ResourceVerb) As Boolean
+        Dim silent As Boolean
+        Dim reason As String = ResourceRefusalReason(verb, silent)
+        If reason.Length > 0 Then lbl_Status.Text = reason
+        Return reason.Length > 0 OrElse silent
+    End Function
+
+    ''' <summary>
+    ''' Why a file verb is refused right now, in one localized sentence - or "" when it is allowed. The one
+    ''' place the rule lives: <see cref="ResourceBlocksFileOperations"/> says it on the status line, and the
+    ''' media menus (125 UX-326) draw the same verb disabled with the same sentence as its tooltip instead of
+    ''' hiding it or letting the click fail. <paramref name="silent"/> is set when the verb is refused with
+    ''' nothing to say (a resource is still opening).
+    ''' </summary>
+    Friend Function ResourceRefusalReason(verb As ResourceVerb, ByRef silent As Boolean) As String
+        silent = False
         ' Also while a solid archive is still being unpacked: the picture on screen belongs to
         ' the previous folder, and the verb was meant for the archive that is opening.
-        If resource_Pending IsNot Nothing Then Return True
-        If IsArchiveMode() OrElse IsArchiveOpenPending() Then
-            lbl_Status.Text = Localization.T("В архиве файловые операции недоступны")
-            Return True
+        If resource_Pending IsNot Nothing Then
+            silent = True
+            Return ""
         End If
+        If IsArchiveMode() OrElse IsArchiveOpenPending() Then Return Localization.T("В архиве файловые операции недоступны")
         ' A stream from "Open URL" is on screen and the folder's file is only underneath it:
         ' a verb here would act on a file the user cannot see (audit 050 D-05).
-        If IsStreamOnScreen() Then
-            lbl_Status.Text = Localization.T("Открыт поток по URL - файловые операции недоступны")
-            Return True
-        End If
-        If ResourceAllows(verb) Then Return False
-        lbl_Status.Text = Localization.T("Этот ресурс не позволяет эту операцию с файлами")
-        Return True
+        If IsStreamOnScreen() Then Return Localization.T("Открыт поток по URL - файловые операции недоступны")
+        If ResourceAllows(verb) Then Return ""
+        Return Localization.T("Этот ресурс не позволяет эту операцию с файлами")
     End Function
 
     ''' <summary>The same answer without the status line - for surfaces that draw a verb

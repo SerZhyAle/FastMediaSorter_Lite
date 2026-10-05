@@ -79,6 +79,14 @@ Friend NotInheritable Class Resource_Manager_Form
 
         RefillForFirstShow()
         Me.pendingDraft = draft
+
+        ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
+        DialogLayout.ApplyAutoScale(Me)
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        DialogLayout.ClampToWorkingArea(Me)
     End Sub
 
     Private pendingDraft As ResourceDescriptor

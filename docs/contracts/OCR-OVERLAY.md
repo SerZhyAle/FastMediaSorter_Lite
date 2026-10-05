@@ -41,6 +41,15 @@ What 1.1-1.3 added, and where this product stands:
   language was assumed and the translatability filter refused almost everything it read, the status names
   the fix, and the browser button no longer sends the assumed ladder as a chosen language. What was an
   interpretation is now the rule's own second evidence route; the registry row cites the amendment.
+  **Gap found and closed 2026-10-04:** that route is blind to debris the filter lets through - an English
+  page read by the Cyrillic model came back as 20 "natural" lines, the record held nothing, and the plates
+  were drawn (and the translator then invented text around them). The engine now compares the ladder's
+  languages by the engine's own mean line confidence instead of taking the first "strong" reading, and
+  `OcrLanguageGuard` gained the confidence of the winning reading as a second thing it reads
+  (`MinAssumedConfidence` 0.64, `ClearlyReadConfidence` 0.80, both rule 13 `policy` rows in that file with
+  the measurements they sit between). Refusing more than the amendment asks is conformant; what is owed
+  is the registry row, which still describes the discard record alone, and an amendment proposal if the
+  catalog should name confidence as an evidence kind (`OcrPipelineVersion` is 10 for the same change).
 
 Dated exceptions still carried, each a written decision rather than an omission:
 

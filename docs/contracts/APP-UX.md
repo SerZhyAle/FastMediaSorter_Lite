@@ -44,13 +44,18 @@
   `danger` marks an irreversible action, `warning` a "may not do what you expect" caveat, `success` a
   positive mark; on a confirmation the role marks the acting button, never the focus. The shared day tone
   of `state.warning`, pinned by `ICON-RENDER` 0.14 section 10 D, is `#EF6C00` - `ThemePalette` follows it
-  since 2026-10-02, and no window paints a role colour as a literal.
+  since 2026-10-02, and no window paints a role colour as a literal. The one deliberate exception is the
+  settings navigation's per-page identity inks (specification 128, 2026-10-05): a dated registry exception
+  and `iconography/PROPOSAL-2026-10-05-fms-windows-nav-identity-colors.md` carry it until the owner
+  decides; the inks live in one gated table, never at a call site.
 - **The language selector follows `APP-SETTINGS` rules 5 and 7** (read against this product 2026-10-04, owner
   direction): on the first settings page, every shipped language by its endonym, no flag, applied at once
   to every open window (`LanguageSelectorContractTests`); the settings drop-down lists share one pixel font
   and an item height of at least 28 logical px. The modern revision now places language and theme together
   on General, with independent collapsible groups and persisted page/viewport context
   (`Table_Form.SettingsGroups.vb`, `SettingsUiContext.vb`). `APP-SETTINGS` 0.1 was mapped on 2026-10-04;
-  the catalog registry distinguishes the implemented foundation from remaining DPI/touch, documentation,
-  operations and About-page gaps. The 44 px coarse-input floor and full driven conformance remain open.
+  the catalog registry distinguishes the implemented revision (search, independent groups, remembered context,
+  owned operations, license and source-derived inventory) from physical DPI/touch/text-scale and screen-reader
+  acceptance still unverified. Group/navigation/value targets are enlarged; real spoken output is not inferred
+  from accessibility properties. Later findings of audit 122 remain separate open follow-ups.
 - The net48 x86 fallback takes bug fixes only; its gaps are one dated exception in the registry.

@@ -74,7 +74,7 @@ Partial Public Class Main_Form
     Friend Sub ShowResourceManager(Optional draft As ResourceDescriptor = Nothing)
         SlideShowStop()
         Using dialog As New Resource_Manager_Form(draft)
-            Dim answer As DialogResult = dialog.ShowDialog(Me)
+            Dim answer As DialogResult = DialogLayer.ShowViewerDialog(dialog, Me)
             ApplyResourceChanges(dialog.RemovedIds)
             If answer = DialogResult.OK AndAlso dialog.ToOpen IsNot Nothing Then ConnectAndEnterResource(dialog.ToOpen, "")
         End Using
@@ -199,7 +199,8 @@ Partial Public Class Main_Form
         Dim cancel As New CancellationTokenSource()
         resource_Connect_Cancel = cancel
         Try
-            lbl_Status.Text = Localization.TF("Подключение к «{0}»..", descriptor.DisplayName)
+            ' Says how to stop it: a dial to a server can wait a long time, and Esc reads as "close the program" (124 UX-211).
+            lbl_Status.Text = Localization.TF("Подключение к «{0}».. Esc - отмена", descriptor.DisplayName)
 
             Dim password As String = StoredPassword(descriptor)
             Dim typed As Boolean
@@ -209,7 +210,7 @@ Partial Public Class Main_Form
             Do
                 If password Is Nothing Then
                     Using dialog As New Resource_Credential_Form(descriptor.DisplayName, descriptor.UserName, retry)
-                        If dialog.ShowDialog(Me) <> DialogResult.OK Then
+                        If DialogLayer.ShowViewerDialog(dialog, Me) <> DialogResult.OK Then
                             If resource_Connect_Cancel Is cancel Then lbl_Status.Text = Localization.T("Подключение отменено")
                             Return
                         End If
@@ -256,6 +257,20 @@ Partial Public Class Main_Form
             If resource_Connect_Cancel Is cancel Then resource_Connect_Cancel = Nothing
             cancel.Dispose()
         End Try
+    End Sub
+
+    ''' <summary>Esc while a connection is being dialled: the attempt is cancelled and the window stays (the
+    ''' ladder's CancelConnect rung). The awaiting code sees the cancelled token and unwinds by itself.</summary>
+    Private Sub CancelResourceConnect()
+        Dim attempt As CancellationTokenSource = resource_Connect_Cancel
+        If attempt Is Nothing Then Return
+        Try
+            attempt.Cancel()
+        Catch ex As ObjectDisposedException
+            ' The attempt finished a moment ago; nothing is left to cancel.
+            Return
+        End Try
+        Notify(Localization.T("Подключение отменено"), NotifyLevel.Info)
     End Sub
 
     ''' <summary>The stored credential, the one typed earlier this run, or Nothing when the user must be asked.</summary>
@@ -310,7 +325,7 @@ Partial Public Class Main_Form
     Private Function AskTrust(descriptor As ResourceDescriptor, fingerprint As String) As Boolean
         If IsDisposed OrElse Not IsHandleCreated Then Return False
         Dim answer As Object = Me.Invoke(New Func(Of Object)(
-            Function() CObj(MessageBox.Show(Me,
+            Function() CObj(ViewerBox.Show(Me,
                 Localization.TF("Этот сервер программе ещё незнаком: {0}{1}Отпечаток его ключа:{1}{2}{1}{1}Сверьте его с отпечатком, который вам дал владелец сервера (в Share Manager он показан рядом с адресом). Доверять этому серверу и запомнить его ключ?",
                                 descriptor.DisplayName, vbLf, fingerprint),
                 Localization.T("Новый сервер"), MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2))))
@@ -324,7 +339,7 @@ Partial Public Class Main_Form
         Dim refusal As HostKeyDecision = outcome.HostKeyRefusal
         If outcome.Failure.Kind = ResourceFailureKind.KeyMismatch AndAlso refusal IsNot Nothing Then
             lbl_Status.Text = ResourceMessages.ForFailure(outcome.Failure)
-            MessageBox.Show(Me,
+            ViewerBox.Show(Me,
                 Localization.TF("Ключ сервера «{0}» не совпал с запомненным.{1}Запомнен: {2}{1}Предложен: {3}{1}{1}Это может быть переустановка сервера - а может быть подмена. Подключение отменено. Если вы уверены в сервере, откройте «Изменить..» в списке ресурсов и забудьте его ключ.",
                                 descriptor.DisplayName, vbLf, refusal.Expected, refusal.Received),
                 Localization.T("Ключ сервера изменился"), MessageBoxButtons.OK, MessageBoxIcon.Warning)

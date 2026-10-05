@@ -64,7 +64,8 @@ Partial Public Class Main_Form
 
             ' Servers and network shares that are not a drive letter (007): the last few used, then the
             ' manager. The submenu is rebuilt on every Opening, so it can never list a removed resource.
-            folder_Menu_Resources_Item = New ToolStripMenuItem()
+            ' Named: the painted menu swaps this row for the resource builder's entries (125 UX-327).
+            folder_Menu_Resources_Item = New ToolStripMenuItem() With {.Name = "folder_resources"}
             folder_Context_Menu.Items.Add(folder_Menu_Resources_Item)
 
             folder_Context_Menu.Items.Add(New ToolStripSeparator())
@@ -86,12 +87,8 @@ Partial Public Class Main_Form
 
             AddHandler folder_Context_Menu.Opening,
                 Sub()
-                    folder_Menu_Close_Archive_Item.Visible = IsArchiveMode()
-                    folder_Menu_Resources_Item.Visible = Not IsArchiveMode() AndAlso Not IsArchiveOpenPending()
+                    ApplyFolderMenuVisibility()
                     RebuildResourceMenu(folder_Menu_Resources_Item)
-                    folder_Menu_Share_Item.Visible = Not IsArchiveMode() AndAlso Not IsArchiveOpenPending()
-                    folder_Menu_Broadcast_Item.Visible = Not IsArchiveMode() AndAlso Not IsArchiveOpenPending()
-                    folder_Menu_StreamCatalog_Item.Visible = Not IsArchiveMode() AndAlso Not IsArchiveOpenPending()
                 End Sub
 
             ' The label answers a right-click by itself, so the plain assignment works
@@ -106,6 +103,18 @@ Partial Public Class Main_Form
             End If
         End If
         LocalizeFolderMenu()
+    End Sub
+
+    ''' <summary>Which rows of the folder menu exist right now - decided fresh on every open, so the state can never
+    ''' go stale. The native menu's Opening event and the painted menu (Main_Form.Chrome.vb) both ask here.</summary>
+    Private Sub ApplyFolderMenuVisibility()
+        If folder_Context_Menu Is Nothing Then Return
+        Dim plainFolder As Boolean = Not IsArchiveMode() AndAlso Not IsArchiveOpenPending()
+        folder_Menu_Close_Archive_Item.Visible = IsArchiveMode()
+        folder_Menu_Resources_Item.Visible = plainFolder
+        folder_Menu_Share_Item.Visible = plainFolder
+        folder_Menu_Broadcast_Item.Visible = plainFolder
+        folder_Menu_StreamCatalog_Item.Visible = plainFolder
     End Sub
 
     ''' <summary>Subclasses the ComboBox's inner EDIT so the right-click on the folder

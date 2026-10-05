@@ -15,6 +15,7 @@ Partial Public NotInheritable Class Localization
         AddFileDetailsStrings() ' the "about file" window of the first panel's "i" item
         AddNavStrings()             ' .NET 10 shell navigation + page headers
         AddSettingsChromeStrings()  ' classic settings window captions
+        AddSettingsDiscoveryStrings() ' modern settings search and independent groups
         AddSettingsStrings()    ' -> AddSettingsHintStrings -> AddSettingsDescriptionStrings, AddOcrStrings
         AddMenuStrings()        ' media context menus, toolbar overflow, status hints
         AddOcrTabStrings()      ' the OCR & translation tab of the settings window
@@ -36,6 +37,8 @@ Partial Public NotInheritable Class Localization
         AddResourceStrings()        ' 007: remote resources - the manager, the trust and password prompts, import, honest failures
         AddLiveBroadcastStrings()   ' 023: live broadcast consumer
         AddBroadcastStrings()       ' 016: streamsplayer broadcast resource
+        AddHelpCardStrings()        ' 123: the F1 reference card - groups, fixed rows, mouse chords
+        AddDialogStrings()          ' 124: named-button questions, prompts, notifications, empty and first-run states
     End Sub
 
 End Class

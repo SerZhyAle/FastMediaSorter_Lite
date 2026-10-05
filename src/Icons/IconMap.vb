@@ -70,11 +70,12 @@ Public Module IconMap
         {"btn_Prev_File", New IconMeaning("btn_Prev_File", "media.previous", "Предыдущий файл", IconRole.Content)},
         {"btn_Next_File", New IconMeaning("btn_Next_File", "media.next", "Следующий файл", IconRole.Content)},
         {"bt_Delete", New IconMeaning("bt_Delete", "action.delete", "Удалить", IconRole.Content)},
-        {"btn_Overflow", New IconMeaning("btn_Overflow", "nav.more", "Ещё - кнопки, не поместившиеся в строку.", IconRole.Content)},
-        {"btn_Overflow_2", New IconMeaning("btn_Overflow_2", "nav.more", "Ещё - кнопки, не поместившиеся в строку.", IconRole.Content)},
+        {"btn_Overflow", New IconMeaning("btn_Overflow", "nav.more", "Ещё", IconRole.Content)},
+        {"btn_Overflow_2", New IconMeaning("btn_Overflow_2", "nav.more", "Ещё", IconRole.Content)},
+        {"btn_Image_Menu", New IconMeaning("btn_Image_Menu", "nav.more", "Ещё", IconRole.Content)},
         {"btn_Translate", New IconMeaning("btn_Translate", "action.translate", "Перевод", IconRole.Content)},
         {"btn_Edit", New IconMeaning("btn_Edit", "action.edit", "Редактировать", IconRole.Content)},
-        {"btn_ToVideo", New IconMeaning("btn_ToVideo", "", "Заменить видео", IconRole.Content, DesktopMeaningsProposal)},
+        {"btn_ToVideo", New IconMeaning("btn_ToVideo", "", "Анимацию - в видео", IconRole.Content, DesktopMeaningsProposal)},
         {"btn_Video_Play", New IconMeaning("btn_Video_Play", "media.play", "Воспроизвести", IconRole.Content)},
         {"btn_Video_Mute", New IconMeaning("btn_Video_Mute", "media.volume", "Громкость", IconRole.Content)},
         {"editor_Tool_Crop", New IconMeaning("editor_Tool_Crop", "action.crop", "Обрезка", IconRole.Content)},
@@ -85,17 +86,20 @@ Public Module IconMap
         {"editor_Tool_Oval_Filled", New IconMeaning("editor_Tool_Oval_Filled", "", "Залитый овал", IconRole.Content, DesktopMeaningsProposal)},
         {"thumbnail_Image_Missing", New IconMeaning("thumbnail_Image_Missing", "content.image", "Изображение", IconRole.Content)},
         {"thumbnail_Video_Missing", New IconMeaning("thumbnail_Video_Missing", "content.video", "Видео", IconRole.Content)},
+        {"settingsNavGeneral", New IconMeaning("settingsNavGeneral", "app.settings", "Настройки менеджера..", IconRole.Content)},
         {"settingsNavRecipients", New IconMeaning("settingsNavRecipients", "action.send-to", "Получатели", IconRole.Content)},
         {"settingsNavViewing", New IconMeaning("settingsNavViewing", "view.screen", "Просмотр", IconRole.Content)},
         {"settingsNavVideo", New IconMeaning("settingsNavVideo", "content.video", "Видео", IconRole.Content)},
         {"settingsNavAudio", New IconMeaning("settingsNavAudio", "content.audio", "Аудио", IconRole.Content)},
         {"settingsNavFiles", New IconMeaning("settingsNavFiles", "content.folder", "Файлы", IconRole.Content)},
-        {"settingsNavResources", New IconMeaning("settingsNavResources", "source.resource", "Ресурсы", IconRole.Content)},
+        {"settingsNavResources", New IconMeaning("settingsNavResources", "source.resource", "Ресурс", IconRole.Content)},
         {"btn_Resource", New IconMeaning("btn_Resource", "source.resource", "Ресурс", IconRole.Content)},
         {"settingsNavOcr", New IconMeaning("settingsNavOcr", "action.extract-text", "OCR", IconRole.Content)},
         {"settingsNavTranslation", New IconMeaning("settingsNavTranslation", "action.translate", "Перевод", IconRole.Content)},
         {"settingsNavSftp", New IconMeaning("settingsNavSftp", "device.phone", "Android / SFTP", IconRole.Content)},
         {"settingsNavAbout", New IconMeaning("settingsNavAbout", "app.info", "О программе", IconRole.Content)},
+        {"settingsNavStorage", New IconMeaning("settingsNavStorage", "content.disk-container", "Диски .fdd..", IconRole.Content)},
+        {"settingsSearch", New IconMeaning("settingsSearch", "action.search", "Поиск настроек", IconRole.Content)},
         {"btnShare", New IconMeaning("btnShare", "action.share", "Поделиться", IconRole.Content, surface:=SM)},
         {"btnAdd", New IconMeaning("btnAdd", "action.add", "Добавить папку..", IconRole.Content, surface:=SM)},
         {"btnDisks", New IconMeaning("btnDisks", "content.disk-container", "Диски .fdd..", IconRole.Content, surface:=SM)},
@@ -114,6 +118,14 @@ Public Module IconMap
     ''' text caption instead of the catalog picture: the Translate button shows the target
     ''' language, which is the information the user needs from it.</summary>
     Public ReadOnly TextCaptionToolbarControls As New HashSet(Of String)(StringComparer.Ordinal) From {"btn_Translate"}
+
+    ' One glyph, one name (ICON-SET rule 1): source.resource is the resource meaning, so
+    ' settingsNavResources and btn_Resource carry the same canonical key; app.settings and
+    ' content.disk-container are likewise shared with the Share Manager's btnSettings and
+    ' btnDisks. The visible words come from each surface's own strings (the nav's «Ресурсы»,
+    ' the button's «Ресурс»), never from a second map here; the canonical keys of the two
+    ' glyphs the viewer nav newly carries are registered in the viewer's table too
+    ' (Localization.Nav.vb), so the names test sees them.
 
     ''' <summary>
     ''' True when a viewer control's picture is rendered from the catalog - and therefore

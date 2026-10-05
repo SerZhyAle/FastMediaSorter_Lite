@@ -11,6 +11,27 @@ Imports Xunit
 ''' against a recording timer - no test waits for time to pass.
 ''' </summary>
 Public Class SettingsPersistenceTests
+    <Fact>
+    Public Sub Short_live_settings_debounce_keeps_the_same_failure_retry_guarantees()
+        Dim delay As Integer
+        Dim writes As Integer
+        Dim scheduler As New SettingsFlushScheduler(Function()
+                                                        writes += 1
+                                                        Return writes > 1
+                                                    End Function,
+                                                    Sub(ms) delay = ms, Sub()
+                                                                           End Sub,
+                                                    Sub(message)
+                                                    End Sub, 1500)
+        scheduler.MarkDirty()
+        Assert.Equal(1500, delay)
+        scheduler.OnTimerTick()
+        Assert.True(scheduler.IsDirty)
+        Assert.Equal(SettingsFlushScheduler.RetryDelaysMs(0), delay)
+        scheduler.OnTimerTick()
+        Assert.False(scheduler.IsDirty)
+        Assert.Equal(2, writes)
+    End Sub
 
     Private NotInheritable Class Rig
         Friend ReadOnly Scheduler As SettingsFlushScheduler

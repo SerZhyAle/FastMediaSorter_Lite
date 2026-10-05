@@ -32,8 +32,13 @@ Partial Public Class Main_Form
     Private pending_Video_Seek As Single = -1.0F
     Private pending_Video_Pause As Boolean = False
 
-    ''' <summary>Opens the menu at a screen point. No video, no menu.</summary>
-    Private Sub ShowVideoContextMenu(at_Screen As Point)
+    ''' <summary>The media playing now was opened with <c>:input-repeat</c> (the native loop). libvlc cannot change that
+    ''' on a running media, which is why switching repeat OFF still has to reopen it (121 UX-413).</summary>
+    Private video_Started_With_Repeat As Boolean = False
+
+    ''' <summary>Opens the menu at a screen point. No video, no menu. <paramref name="anchorTop"/> is the top edge of the
+    ''' control the menu opens from (the transport bar's "more" button): a menu that does not fit below it opens above it.</summary>
+    Private Sub ShowVideoContextMenu(at_Screen As Point, Optional fromKeyboard As Boolean = False, Optional anchorTop As Integer = Integer.MinValue)
         If Not is_Vlc_Playing OrElse vlc_Media_Player Is Nothing Then Return
 
         ' Otherwise the slideshow flips the file out from under the open menu, and the
@@ -43,7 +48,7 @@ Partial Public Class Main_Form
         If video_Menu Is Nothing Then video_Menu = New ContextMenuStrip()
         BuildVideoMenu()
         If video_Menu.Items.Count = 0 Then Return
-        ChromeShowToolStripMenu(video_Menu.Items, at_Screen)
+        ChromeShowToolStripMenu(video_Menu.Items, at_Screen, fromKeyboard, anchorTop)
     End Sub
 
     Private Sub BuildVideoMenu()
@@ -61,17 +66,27 @@ Partial Public Class Main_Form
                         TogglePlayPause()
                         RefreshVideoControlsState()
                         ShowVideoControls()
-                    End Sub)
+                    End Sub, actionId:="playPause")
 
         AddMenuItem(video_Menu.Items, Localization.T("Без звука"),
                     Sub()
-                        SetVideoAudioState(video_Volume_Level, Not is_Video_Muted)
+                        ToggleVideoMute()
                         RefreshVideoControlsState()
                         ShowVideoControls()
                     End Sub,
-                    checked:=is_Video_Muted)
+                    checked:=is_Video_Muted, actionId:="mute")
 
         AddMenuItem(video_Menu.Items, Localization.T("Повторять"), AddressOf ToggleVideoLoop, checked:=CurrentEffectiveRepeat())
+
+        ' --- the playback extras of 119, in the playback group after "Repeat" --------
+        AddSpeedMenuItems(video_Menu.Items)
+        AddAbLoopMenuItem(video_Menu.Items)
+        ' Both rows are drawn disabled, with the reason, where the keys' own gate says no: an audio file has no
+        ' frames, and a live broadcast is nobody's playback experiment (125 UX-328).
+        Dim frame_Step_Applicable As Boolean = PlaybackActionApplicable("frameStep")
+        AddMenuItem(video_Menu.Items, Localization.T("Следующий кадр"), Sub() RunFrameStep(), actionId:="frameStep",
+                    enabled:=frame_Step_Applicable,
+                    disabledReason:=Localization.T("Недоступно для аудио и прямых трансляций"))
 
         ' --- tracks
         Dim audio_Item As ToolStripMenuItem = CreateTrackSubmenu(audio:=True)
@@ -89,11 +104,16 @@ Partial Public Class Main_Form
         ' --- navigation
         video_Menu.Items.Add(New ToolStripSeparator())
         AddNavigationItems(video_Menu.Items)
+        ' The key Y has a row here too (121 Ф-3). Only where a folder navigates: a single opened file has nowhere
+        ' random to go.
+        If files_List IsNot Nothing AndAlso files_List.Count > 1 Then
+            AddMenuItem(video_Menu.Items, Localization.T("Случайный файл (Y)"), Sub() ReadShowMediaFile(Mode_ForRandom), actionId:="randomFile")
+        End If
 
-        ' --- the file itself
+        ' --- the file itself: the same block as the picture menu (125 UX-330)
         If is_Local_File Then
             video_Menu.Items.Add(New ToolStripSeparator())
-            AddFileOperationItems(video_Menu.Items)
+            AddFileBlock(video_Menu.Items)
         End If
 
         ' --- hand it elsewhere
@@ -111,8 +131,9 @@ Partial Public Class Main_Form
     ''' Repeat is a MEDIA option (":input-repeat"), baked in when Play() is called - so
     ''' flipping the flag alone would leave the video playing right now on the old setting
     ''' until it was reopened, and a tick that only takes effect on the NEXT file reads as
-    ''' broken. Reopen it here, at the same second, and let the Settings checkbox keep the
-    ''' choice from then on (it is the same global).
+    ''' broken. Turning it OFF therefore reopens the video here, at the same second; turning it ON does not
+    ''' (121 UX-413): the end of the pass reopens it once (Vlc_Media_Player_EndReached). The Settings checkbox
+    ''' keeps the choice from then on (it is the same global).
     ''' </summary>
     Private Sub ToggleVideoLoop()
         ' One answer for the checkmark, the reopen and the next file (audit 050 D-14): the
@@ -127,13 +148,22 @@ Partial Public Class Main_Form
                 Else
                     modern_Preferences.VideoEndAction = PlaybackRules.EndActionAfterRepeatOff(modern_Preferences.VideoEndAction)
                 End If
-                modern_Preferences.Save()
+                MarkSettingsDirty()
             End If
         Else
-            Is_Video_Loop = True
+            Is_Video_Loop = False
+            If IsAudioNowPlaying() Then
+                GetModernPreferences().AudioEndAction = "repeat"
+            Else
+                GetModernPreferences().VideoEndAction = "repeat"
+            End If
         End If
+        MarkSettingsDirty()
         lbl_Status.Text = Localization.T(If(CurrentEffectiveRepeat(), "Повтор включён", "Повтор выключен"))
-        RestartCurrentVideoPreservingPosition()
+        ' Only turning it OFF under a media that was started with the native loop needs the reopen (121 UX-413):
+        ' turning it ON no longer restarts the video - the end of the pass is caught by Vlc_Media_Player_EndReached,
+        ' which reopens the file once and from then on the native loop runs.
+        If TransportRules.RepeatToggleNeedsReopen(video_Started_With_Repeat, CurrentEffectiveRepeat()) Then RestartCurrentVideoPreservingPosition()
         ShowVideoControls()
     End Sub
 
@@ -143,7 +173,41 @@ Partial Public Class Main_Form
         Return PlaybackRules.EffectiveRepeat(Is_Video_Loop, IsAudioNowPlaying(), AudioEndAction(), VideoEndAction(), Is_slide_show_mode)
     End Function
 
+    ''' <summary>The Speed submenu of 119 Ф-1: the ladder as radio-checked items (checked
+    ''' = the nearest step to the rate the user asked for), keys and button stay one
+    ''' truth through ApplyPlaybackRate. The rows are BuildSpeedLadderItems' - the speed button's own menu is the same list.</summary>
+    Private Sub AddSpeedMenuItems(target As ToolStripItemCollection)
+        Dim speed_Item As New ToolStripMenuItem(Localization.T("Скорость воспроизведения"))
+        speed_Item.DropDownItems.AddRange(BuildSpeedLadderItems().ToArray())
+        target.Add(speed_Item)
+    End Sub
+
+    ''' <summary>The A-B menu item of 119 Ф-4: one item whose caption follows the phase
+    ''' - mark A, mark B, clear - the same Cycle the key drives.</summary>
+    Private Sub AddAbLoopMenuItem(target As ToolStripItemCollection)
+        Dim caption As String
+        Select Case ab_Loop.Phase
+            Case AbPhase.MarkedA : caption = Localization.T("Повтор A-B: отметить B")
+            Case AbPhase.Armed : caption = Localization.T("Повтор A-B: сбросить")
+            Case Else : caption = Localization.T("Повтор A-B: отметить A")
+        End Select
+
+        AddMenuItem(target, caption, Sub() RunAbLoop(), actionId:="abLoop",
+                    enabled:=PlaybackActionApplicable("abLoop"),
+                    disabledReason:=Localization.T("Недоступно для аудио и прямых трансляций"))
+    End Sub
+
     Private Sub RestartCurrentVideoPreservingPosition()
+        RestartCurrentVideoPreservingPosition(-1.0F)
+    End Sub
+
+    ''' <summary>
+    ''' Reopens the current file at the same second. The optional seek is the A-B end
+    ''' guard's way back into the span (119 Ф-4, Q119-2): the caller knows the fraction
+    ''' it wants, because at EndReached the player's own IsPlaying can no longer be
+    ''' trusted to say whether the reopened media should resume paused.
+    ''' </summary>
+    Private Sub RestartCurrentVideoPreservingPosition(at_Position As Single)
         If vlc_Media_Player Is Nothing OrElse Not is_Vlc_Playing Then Return
         Dim file_Path As String = current_Loaded_File_Name
         If String.IsNullOrEmpty(file_Path) Then Return
@@ -151,11 +215,13 @@ Partial Public Class Main_Form
         Try
             ' A live stream has no position to come back to - reopening one restarts it at
             ' "now", which is the only thing it could mean anyway.
-            pending_Video_Seek = If(vlc_Media_Player.IsSeekable, vlc_Media_Player.Position, -1.0F)
-            pending_Video_Pause = Not vlc_Media_Player.IsPlaying
+            pending_Video_Seek = If(at_Position >= 0.0F, at_Position,
+                                    If(vlc_Media_Player.IsSeekable, vlc_Media_Player.Position, -1.0F))
+            pending_Video_Pause = If(at_Position >= 0.0F, False, Not vlc_Media_Player.IsPlaying)
 
             Dim media As LibVLCSharp.Shared.Media = CreateVlcMedia(file_Path)
-            If CurrentEffectiveRepeat() Then media.AddOption(":input-repeat=65535")
+            video_Started_With_Repeat = CurrentEffectiveRepeat()
+            If video_Started_With_Repeat Then media.AddOption(":input-repeat=65535")
             Dim keep_Media_For_Art_Watch As Boolean = WatchSecureMediaArt(file_Path, media)
             vlc_Media_Player.Play(media)
             If Not keep_Media_For_Art_Watch Then media.Dispose()

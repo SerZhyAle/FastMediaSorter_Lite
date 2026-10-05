@@ -7,7 +7,8 @@ Imports System.Windows.Forms
 
 ''' <summary>
 ''' Adds or edits one resource by hand (007 §3.2): an SFTP server or a network share that wants a login.
-''' Built in code and sized in plain pixels, like the other viewer dialogs.
+''' Built in code from 96-dpi positions; DialogLayout scales it and reflows a wrapped caption (the viewer has
+''' been PerMonitorV2 since the chrome migration - 124 UX-202/UX-203).
 '''
 ''' What it will not do, by design:
 ''' - Hold a password longer than it takes to hand it to the caller. An existing resource shows no password
@@ -34,6 +35,7 @@ Friend NotInheritable Class Resource_Edit_Form
     Private ReadOnly userBox As TextBox
     Private ReadOnly passwordBox As TextBox
     Private ReadOnly passwordHint As Label
+    Private ReadOnly revealBox As CheckBox
     Private ReadOnly folderLabel As Label
     Private ReadOnly folderBox As TextBox
     Private ReadOnly readOnlyBox As CheckBox
@@ -113,7 +115,12 @@ Friend NotInheritable Class Resource_Edit_Form
                                        .ForeColor = SystemColors.GrayText,
                                        .Text = If(isNew, "", Localization.T("Пусто - оставить сохранённый пароль"))}
 
-        y += 22
+        ' The same deliberate reveal the password window of a resource has: off at the start (124 UX-203).
+        y += 20
+        revealBox = New CheckBox With {.Name = "res_Reveal", .AutoSize = True, .Location = New Point(FieldX, y), .Text = Localization.T("Показать пароль")}
+        AddHandler revealBox.CheckedChanged, Sub() passwordBox.UseSystemPasswordChar = Not revealBox.Checked
+
+        y += 24
         folderLabel = AddRow("res_FolderLabel", Localization.T("Папка на сервере:"), y)
         folderBox = New TextBox With {.Name = "res_Folder", .Location = New Point(FieldX, y), .Size = New Size(FieldWidth, 24)}
 
@@ -129,18 +136,19 @@ Friend NotInheritable Class Resource_Edit_Form
                                      .Text = Localization.T("Забыть ключ сервера..")}
         AddHandler forgetKey.Click, AddressOf OnForgetKey
 
-        problem = New Label With {.Name = "res_Problem", .AutoSize = False, .Location = New Point(LabelX, 332), .Size = New Size(432, 30), .ForeColor = Color.Firebrick}
+        problem = New Label With {.Name = "res_Problem", .AutoSize = False, .Location = New Point(LabelX, y + 26), .Size = New Size(432, 30), .ForeColor = Color.Firebrick}
 
-        okButton = New Button With {.Name = "res_Ok", .Location = New Point(264, 366), .Size = New Size(86, 28), .Text = Localization.T("Сохранить")}
+        okButton = New Button With {.Name = "res_Ok", .Location = New Point(264, y + 60), .Size = New Size(86, 28), .Text = Localization.T("Сохранить")}
         AddHandler okButton.Click, AddressOf Confirm
-        dismissButton = New Button With {.Name = "res_Cancel", .Location = New Point(358, 366), .Size = New Size(88, 28),
+        dismissButton = New Button With {.Name = "res_Cancel", .Location = New Point(358, y + 60), .Size = New Size(88, 28),
                                          .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
 
-        For Each c As Control In New Control() {kind, nameBox, hostBox, portBox, userBox, passwordBox, passwordHint, folderBox, readOnlyBox, keyValue, forgetKey, problem, okButton, dismissButton}
+        For Each c As Control In New Control() {kind, nameBox, hostBox, portBox, userBox, passwordBox, passwordHint, revealBox, folderBox, readOnlyBox, keyValue, forgetKey, problem, okButton, dismissButton}
             Me.Controls.Add(c)
         Next
         Me.AcceptButton = okButton
         Me.CancelButton = dismissButton
+        Me.ClientSize = New Size(460, y + 98)
 
         If start.Kind = ResourceKind.Smb OrElse start.Kind = ResourceKind.Unc Then
             hostBox.Text = start.RootPath
@@ -151,6 +159,14 @@ Friend NotInheritable Class Resource_Edit_Form
         End If
         AddHandler kind.SelectedIndexChanged, Sub() ApplyKind()
         ApplyKind()
+
+        ' LAST line of the builder: scaling touches only the children that exist by now.
+        DialogLayout.ApplyAutoScale(Me)
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        DialogLayout.FitContent(Me)
     End Sub
 
     Private Function AddRow(controlName As String, text As String, y As Integer) As Label
@@ -189,7 +205,7 @@ Friend NotInheritable Class Resource_Edit_Form
     ''' <summary>The deliberate re-pin: not the default button, not a dismissable dialog, and it only
     ''' clears the pin - the next connection shows the new fingerprint and asks again.</summary>
     Private Sub OnForgetKey(sender As Object, e As EventArgs)
-        Dim answer As DialogResult = MessageBox.Show(Me,
+        Dim answer As DialogResult = ViewerBox.Show(Me,
             Localization.TF("Сейчас запомнен ключ:{0}{1}{0}{0}Если сервер переустановили, это нормально. Если нет - кто-то может выдавать себя за него. Забыть ключ и доверять новому при следующем подключении?", vbLf, pin),
             Localization.T("Забыть ключ сервера"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2)
         If answer <> DialogResult.Yes Then Return
@@ -204,6 +220,7 @@ Friend NotInheritable Class Resource_Edit_Form
 
     Private Sub Fail(message As String, target As Control)
         problem.Text = message
+        DialogLayout.FitLabel(problem)
         target.Focus()
     End Sub
 

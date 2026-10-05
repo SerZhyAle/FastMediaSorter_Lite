@@ -450,46 +450,64 @@ Public Class ResourceUiTests
 
     <Fact>
     Public Sub ThePanelForBothHostsHasTheSameNames_ButtonOrder_AndEnabledMatrix()
-        ' T-U2: the panel embedded by the dialog and by the Settings page is one control. The
-        ' button order is the dialog's reading order with Export beside its siblings.
+        ' T-U2, revised by 131: the panel embedded by the dialog and by the Settings page is one
+        ' control. The action row reads Add, Edit, Remove, Test, then the overflow; the Settings
+        ' host inserts the primary Open before the overflow, the dialog keeps Open in its own
+        ' chrome. Export and the two imports are rows of the overflow, not buttons.
         OnSta(Sub()
                   Dim hive As MemoryRegistry = SeededRegistry()
                   Dim secrets As New MemoryStore()
                   secrets.Blobs("cred:1") = "blob:pw"
-                  Using panel As New Resource_List_Panel(1.0F, AddressOf hive.Read, AddressOf hive.Write, secrets)
-                      For Each name As String In {"res_List", "res_Hint", "res_Status", "res_Add", "res_Edit", "res_Remove",
-                                                  "res_Test", "res_Export", "res_ImportFile", "res_ImportClipboard"}
+                  Using panel As New Resource_List_Panel(1.0F, AddressOf hive.Read, AddressOf hive.Write, secrets, withPrimaryOpen:=True)
+                      For Each name As String In {"res_List", "res_Hint", "res_Status", "res_Summary", "res_Empty", "res_EmptyAdd",
+                                                  "res_Add", "res_Edit", "res_Remove", "res_Test", "res_Open", "res_More"}
                           Assert.Single(panel.Controls.Find(name, True))
                       Next
-                      Dim buttons As IEnumerable(Of String) = panel.Controls.Find("res_Add", True)(0).Parent.Controls.OfType(Of Button)().
-                          Select(Function(b) b.Name)
-                      Assert.Equal({"res_Add", "res_Edit", "res_Remove", "res_Test", "res_Export", "res_ImportFile", "res_ImportClipboard"}, buttons)
+                      Dim row As Control = panel.Controls.Find("res_Add", True)(0).Parent
+                      Dim buttons As IEnumerable(Of String) = row.Controls.OfType(Of Button)().Select(Function(b) b.Name)
+                      Assert.Equal({"res_Add", "res_Edit", "res_Remove", "res_Test", "res_Open", "res_More"}, buttons)
 
-                      ' The panel auto-selects its first row once it has one (the dialog's own
-                      ' rule, kept) - so the "nothing selected" matrix is read on an EMPTY list.
-                      Dim empty As New MemoryRegistry()
-                      Using bare As New Resource_List_Panel(1.0F, AddressOf empty.Read, AddressOf empty.Write, secrets)
-                          Dim bareHandle As IntPtr = DirectCast(bare.Controls.Find("res_List", True)(0), ListView).Handle
-                          Assert.False(DirectCast(bare.Controls.Find("res_Edit", True)(0), Button).Enabled)
-                          Assert.False(DirectCast(bare.Controls.Find("res_Export", True)(0), Button).Enabled)
-                          ' Add and the imports never depend on a selection.
-                          Assert.True(DirectCast(bare.Controls.Find("res_Add", True)(0), Button).Enabled)
-                          Assert.True(DirectCast(bare.Controls.Find("res_ImportFile", True)(0), Button).Enabled)
-                      End Using
-
-                      ' With the first row auto-selected: edit, remove, test and export all come on.
+                      ' With the first row auto-selected (the dialog's own rule, kept): the selection
+                      ' commands and the primary Open are all on, Add and the imports never depend
+                      ' on a selection. The handle makes the auto-selection real for the list.
                       Dim list As ListView = DirectCast(panel.Controls.Find("res_List", True)(0), ListView)
                       Dim listHandle As IntPtr = list.Handle
                       Assert.True(DirectCast(panel.Controls.Find("res_Edit", True)(0), Button).Enabled)
                       Assert.True(DirectCast(panel.Controls.Find("res_Remove", True)(0), Button).Enabled)
                       Assert.True(DirectCast(panel.Controls.Find("res_Test", True)(0), Button).Enabled)
-                      Assert.True(DirectCast(panel.Controls.Find("res_Export", True)(0), Button).Enabled)
+                      Assert.True(DirectCast(panel.Controls.Find("res_Open", True)(0), Button).Enabled)
+                      Assert.True(DirectCast(panel.Controls.Find("res_Add", True)(0), Button).Enabled)
+                      Dim overflow As IEnumerable(Of ChromeMenuItem) = panel.BuildOverflowItems()
+                      Assert.Equal({"res_Export", "res_ImportFile", "res_ImportClipboard"}, overflow.Select(Function(item) item.Id))
+                      Assert.All(overflow, Sub(item) Assert.True(item.Enabled))
 
-                      ' The dialog builds the same panel: its own chrome is just Open and Close.
+                      ' The dialog builds the same panel without the primary Open: its own chrome
+                      ' is just Open and Close.
                       Using manager As New Resource_Manager_Form()
                           Assert.NotNull(manager.Controls.Find("res_Open", True).Single())
                           Assert.NotNull(manager.Controls.Find("res_Close", True).Single())
                           Assert.NotNull(manager.Controls.Find("res_Add", True).Single())
+                          Dim dialogRow As Control = manager.Controls.Find("res_Add", True)(0).Parent
+                          Assert.Equal({"res_Add", "res_Edit", "res_Remove", "res_Test", "res_More"},
+                                       dialogRow.Controls.OfType(Of Button)().Select(Function(b) b.Name))
+                      End Using
+
+                      ' The "nothing selected" matrix is read on an EMPTY list (131 §3.2): the
+                      ' selection commands are off AND say why in their accessible names.
+                      Dim empty As New MemoryRegistry()
+                      Using bare As New Resource_List_Panel(1.0F, AddressOf empty.Read, AddressOf empty.Write, secrets, withPrimaryOpen:=True)
+                          Dim bareHandle As IntPtr = DirectCast(bare.Controls.Find("res_List", True)(0), ListView).Handle
+                          Dim reason As String = Localization.T("Сначала выберите ресурс в списке")
+                          For Each name As String In {"res_Edit", "res_Remove", "res_Test", "res_Open"}
+                              Dim button As Button = DirectCast(bare.Controls.Find(name, True)(0), Button)
+                              Assert.False(button.Enabled)
+                              Assert.Contains(reason, button.AccessibleName)
+                          Next
+                          Assert.True(DirectCast(bare.Controls.Find("res_Add", True)(0), Button).Enabled)
+                          Dim bareExport As ChromeMenuItem = bare.BuildOverflowItems().Single(Function(item) item.Id = "res_Export")
+                          Assert.False(bareExport.Enabled)
+                          Assert.Equal(reason, bareExport.DisabledReason)
+                          Assert.True(bare.BuildOverflowItems().Where(Function(item) item.Id.StartsWith("res_Import", StringComparison.Ordinal)).All(Function(item) item.Enabled))
                       End Using
                   End Using
               End Sub)
@@ -530,6 +548,274 @@ Public Class ResourceUiTests
                       list.GetType().GetMethod("OnDoubleClick", BindingFlags.NonPublic Or BindingFlags.Instance).
                           Invoke(list, New Object() {EventArgs.Empty})
                       Assert.Equal("smb1", activated.Id)
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub ThePanelButtonsKeepTheTwentyEightPixelFloorAtBothHostScales_AndTheListCarriesItsAccessibleName()
+        ' T-U5: the ICON-RENDER floor scales with the host window - 1.0 is the manager
+        ' dialog's own metrics, 1.5 stands for the settings window's scale. The list's
+        ' accessible name is the screen-reader word the settings page is reached by (§14).
+        OnSta(Sub()
+                  For Each scale As Single In {1.0F, 1.5F}
+                      Dim hive As New MemoryRegistry()
+                      Using panel As New Resource_List_Panel(scale, AddressOf hive.Read, AddressOf hive.Write, New MemoryStore())
+                          Dim floor As Integer = CInt(Math.Floor(28.0F * scale))
+                          For Each b As Button In panel.Controls.Find("res_Add", True)(0).Parent.Controls.OfType(Of Button)()
+                              Assert.True(b.MinimumSize.Height >= floor,
+                                          b.Name & " sits below the scaled floor at scale " &
+                                          scale.ToString(Globalization.CultureInfo.InvariantCulture))
+                          Next
+                          Assert.Equal(Localization.T("Ресурсы"),
+                                       DirectCast(panel.Controls.Find("res_List", True)(0), ListView).AccessibleName)
+                      End Using
+                  Next
+              End Sub)
+    End Sub
+
+    ' ---------------------------------------------------------------- ticket 131 ----
+
+    <Fact>
+    Public Sub CommandsStayInReadingOrderAndInsideTheHostAcrossLanguagesAndScales()
+        OnSta(Sub()
+                  Dim saved As String = Localization.CurrentCode
+                  Try
+                      For Each code As String In Localization.Codes
+                          Localization.CurrentCode = code
+                          For Each scale As Single In {1.0F, 1.75F}
+                              Dim hive As MemoryRegistry = SeededRegistry()
+                              Using panel As New Resource_List_Panel(scale, AddressOf hive.Read, AddressOf hive.Write, New MemoryStore(),
+                                                                     withPrimaryOpen:=True, deviceScale:=True)
+                                  panel.Font = New Drawing.Font("Segoe UI", 9.0F * scale)
+                                  panel.Size = New Size(CInt(560 * scale), CInt(650 * scale))
+                                  Dim panelHandle As IntPtr = panel.Handle
+                                  panel.Localize()
+                                  Dim row As Control = panel.Controls.Find("res_ActionRow", True)(0)
+                                  Dim buttons As Button() = row.Controls.OfType(Of Button)().ToArray()
+                                  Dim rtl As Boolean = Localization.IsRightToLeft()
+                                  For index As Integer = 0 To buttons.Length - 1
+                                      Assert.True(row.ClientRectangle.Contains(buttons(index).Bounds), code & ": " & buttons(index).Name)
+                                      Assert.Equal(CInt(32 * scale), buttons(index).Height)
+                                      For other As Integer = index + 1 To buttons.Length - 1
+                                          Assert.False(buttons(index).Bounds.IntersectsWith(buttons(other).Bounds))
+                                      Next
+                                      If index > 0 AndAlso buttons(index).Top = buttons(index - 1).Top Then
+                                          Assert.True(If(rtl, buttons(index).Right <= buttons(index - 1).Left,
+                                                             buttons(index).Left >= buttons(index - 1).Right))
+                                      End If
+                                  Next
+                                  Dim summary As Control = panel.Controls.Find("res_Summary", True)(0)
+                                  Assert.All(buttons, Sub(b) Assert.False(summary.Bounds.IntersectsWith(b.Bounds)))
+                                  Dim list As ListView = DirectCast(panel.Controls.Find("res_List", True)(0), ListView)
+                                  Assert.True(list.Height >= CInt(320 * scale))
+                                  Assert.True(list.Columns.Cast(Of ColumnHeader)().Sum(Function(c) c.Width) <= list.ClientSize.Width)
+                              End Using
+                          Next
+                      Next
+                  Finally
+                      Localization.CurrentCode = saved
+                  End Try
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub SwitchingLanguageRefreshesRowTextAndDirectionWithoutLosingSelection()
+        OnSta(Sub()
+                  Dim saved As String = Localization.CurrentCode
+                  Try
+                      Localization.CurrentCode = "en"
+                      Dim hive As MemoryRegistry = SeededRegistry()
+                      Using panel As New Resource_List_Panel(1.0F, AddressOf hive.Read, AddressOf hive.Write, New MemoryStore(), withPrimaryOpen:=True)
+                          panel.Size = New Size(900, 500)
+                          Dim list As ListView = DirectCast(panel.Controls.Find("res_List", True)(0), ListView)
+                          Dim listHandle As IntPtr = list.Handle
+                          Dim selectedId As String = panel.SelectedResource.Id
+                          For Each code As String In {"ru", "ar", "en"}
+                              Localization.CurrentCode = code
+                              panel.Localize()
+                              Assert.Equal(selectedId, panel.SelectedResource.Id)
+                              Assert.Equal(Localization.IsRightToLeft(), list.RightToLeftLayout)
+                              Assert.Equal(If(Localization.IsRightToLeft(), RightToLeft.Yes, RightToLeft.No), panel.RightToLeft)
+                              For Each item As ListViewItem In list.Items
+                                  Dim resource As ResourceDescriptor = DirectCast(item.Tag, ResourceDescriptor)
+                                  Dim access As String = Localization.T(If(resource.ReadOnlyHint, "только чтение", "чтение и запись"))
+                                  Assert.Equal(ResourceMessages.KindLabel(resource.Kind), item.SubItems(1).Text)
+                                  Assert.Equal(access, item.SubItems(3).Text)
+                                  Assert.Contains(access, item.ToolTipText)
+                              Next
+                          Next
+                      End Using
+                  Finally
+                      Localization.CurrentCode = saved
+                  End Try
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub ChangingTheSettingsDeviceScaleResizesCommandsAndColumnMinimums()
+        OnSta(Sub()
+                  Dim hive As MemoryRegistry = SeededRegistry()
+                  Using panel As New Resource_List_Panel(1.0F, AddressOf hive.Read, AddressOf hive.Write, New MemoryStore(),
+                                                         withPrimaryOpen:=True, deviceScale:=True)
+                      panel.Size = New Size(1200, 800)
+                      Dim panelHandle As IntPtr = panel.Handle
+                      panel.SetDeviceScale(1.75F)
+                      Dim add As Control = panel.Controls.Find("res_Add", True)(0)
+                      Assert.Equal(56, add.Height)
+                      Dim list As ListView = DirectCast(panel.Controls.Find("res_List", True)(0), ListView)
+                      Assert.Equal(CInt(110 * 1.75F), list.Columns(0).Width)
+                      Assert.Equal(CInt(16 * 1.75F), list.SmallImageList.ImageSize.Width)
+                      panel.SetDeviceScale(1.0F)
+                      Assert.Equal(32, add.Height)
+                      Assert.Equal(110, list.Columns(0).Width)
+                  End Using
+              End Sub)
+    End Sub
+
+    Private Shared Sub InvokeSay(panel As Resource_List_Panel, text As String, severity As Integer)
+        Dim say As MethodInfo = panel.GetType().GetMethod("Say", BindingFlags.NonPublic Or BindingFlags.Instance)
+        Dim kind As Type = panel.GetType().GetNestedType("ResourceStatusSeverity", BindingFlags.NonPublic Or BindingFlags.Public)
+        say.Invoke(panel, New Object() {text, [Enum].ToObject(kind, severity)})
+    End Sub
+
+    <Fact>
+    Public Sub DisabledCommandsExposeTheirReasonThroughTheParentsHoverTooltip()
+        OnSta(Sub()
+                  Dim hive As New MemoryRegistry()
+                  Using panel As New Resource_List_Panel(1.0F, AddressOf hive.Read, AddressOf hive.Write, New MemoryStore(), withPrimaryOpen:=True)
+                      panel.Size = New Size(900, 500)
+                      Dim edit As Control = panel.Controls.Find("res_Edit", True)(0)
+                      Dim row As Control = edit.Parent
+                      Dim tips As ToolTip = DirectCast(panel.GetType().GetField("tips", BindingFlags.NonPublic Or BindingFlags.Instance).GetValue(panel), ToolTip)
+                      Dim move As MethodInfo = GetType(Control).GetMethod("OnMouseMove", BindingFlags.NonPublic Or BindingFlags.Instance)
+                      move.Invoke(row, {New MouseEventArgs(MouseButtons.None, 0, edit.Left + 2, edit.Top + 2, 0)})
+                      Assert.Equal(Localization.T("Сначала выберите ресурс в списке"), tips.GetToolTip(row))
+                      Dim add As Control = panel.Controls.Find("res_Add", True)(0)
+                      move.Invoke(row, {New MouseEventArgs(MouseButtons.None, 0, add.Left + 2, add.Top + 2, 0)})
+                      Assert.Equal("", tips.GetToolTip(row))
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub SelectedAndUnselectedCellsUseTheDarkPaletteInsteadOfNativeLightSelection()
+        OnSta(Sub()
+                  Dim hive As MemoryRegistry = SeededRegistry()
+                  Using panel As New Resource_List_Panel(1.0F, AddressOf hive.Read, AddressOf hive.Write, New MemoryStore())
+                      panel.Size = New Size(900, 500)
+                      Dim list As ListView = DirectCast(panel.Controls.Find("res_List", True)(0), ListView)
+                      Dim listHandle As IntPtr = list.Handle
+                      Dim theme As ThemePalette = ThemePalette.Dark
+                      Dim palette As New ResourcePanelPalette With {
+                          .Dark = True, .Surface = theme.SurfaceRaised, .Text = theme.TextPrimary,
+                          .Muted = theme.TextMuted, .Border = theme.Border, .EditorBack = theme.SurfaceSunken,
+                          .EditorText = theme.TextPrimary, .Accent = theme.Accent, .OnAccent = theme.AccentInk,
+                          .Success = theme.Success, .Warning = theme.Warning, .Danger = theme.Danger}
+                      panel.ApplyPalette(palette)
+                      Dim draw As MethodInfo = panel.GetType().GetMethod("OnDrawSubItem", BindingFlags.NonPublic Or BindingFlags.Instance)
+                      Dim item As ListViewItem = list.Items(0)
+                      Using bitmap As New Drawing.Bitmap(220, 48), graphics As Drawing.Graphics = Drawing.Graphics.FromImage(bitmap)
+                          For Each selected As Boolean In {False, True}
+                              item.Selected = selected
+                              Dim args As New DrawListViewSubItemEventArgs(graphics, New Drawing.Rectangle(0, 0, 220, 48),
+                                  item, item.SubItems(2), 0, 2, list.Columns(2), CType(0, ListViewItemStates))
+                              draw.Invoke(panel, {list, args})
+                              Assert.False(args.DrawDefault)
+                              Dim background As Drawing.Color = bitmap.GetPixel(1, 1)
+                              If selected Then
+                                  Assert.NotEqual(palette.EditorBack.ToArgb(), background.ToArgb())
+                                  Assert.True(background.GetBrightness() < 0.5F)
+                              Else
+                                  Assert.Equal(palette.EditorBack.ToArgb(), background.ToArgb())
+                              End If
+                          Next
+                      End Using
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub TheSummaryCountsAndTheEmptyStateTakesOver()
+        ' 131 §3.1/§3.4: the row's summary says the count (nothing when empty); with no
+        ' resources the empty state replaces the list body and the column headers do not
+        ' float over it, because the list itself is hidden.
+        OnSta(Sub()
+                  Dim hive As MemoryRegistry = SeededRegistry()
+                  Using panel As New Resource_List_Panel(1.0F, AddressOf hive.Read, AddressOf hive.Write, New MemoryStore())
+                      Dim listHandle As IntPtr = DirectCast(panel.Controls.Find("res_List", True)(0), ListView).Handle
+                      Dim summary As Label = DirectCast(panel.Controls.Find("res_Summary", True)(0), Label)
+                      Assert.Equal(Localization.TF("Ресурсов: {0}", 2), summary.Text)
+                      Assert.False(OwnVisible(panel.Controls.Find("res_Empty", True)(0)))
+                      Assert.True(OwnVisible(panel.Controls.Find("res_List", True)(0)))
+
+                      Dim empty As New MemoryRegistry()
+                      Using bare As New Resource_List_Panel(1.0F, AddressOf empty.Read, AddressOf empty.Write, New MemoryStore())
+                          Dim bareList As ListView = DirectCast(bare.Controls.Find("res_List", True)(0), ListView)
+                          Dim bareHandle As IntPtr = bareList.Handle
+                          Assert.Equal("", DirectCast(bare.Controls.Find("res_Summary", True)(0), Label).Text)
+                          Assert.True(OwnVisible(bare.Controls.Find("res_Empty", True)(0)))
+                          Assert.False(OwnVisible(bareList))
+                          Assert.False(String.IsNullOrEmpty(DirectCast(bare.Controls.Find("res_Hint", True)(0), Label).Text))
+                          ' The empty state offers its own Add into the existing add path.
+                          Assert.True(DirectCast(bare.Controls.Find("res_EmptyAdd", True)(0), Button).Enabled)
+                      End Using
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub TheStatusLineStaysOneLine_AndKeepsTheWholeSentenceOnItsTooltip()
+        ' 131 §3.4: multi-part results join on one line; the full text lives in the tooltip;
+        ' the severity is recorded for the leading glyph, nothing when there is nothing to
+        ' say. (The glyph BITMAP itself needs the bundled assets - the scenes prove it; what
+        ' the tests' world can hold is the decision.)
+        OnSta(Sub()
+                  Dim empty As New MemoryRegistry()
+                  Using panel As New Resource_List_Panel(1.0F, AddressOf empty.Read, AddressOf empty.Write, New MemoryStore())
+                      Dim listHandle As IntPtr = DirectCast(panel.Controls.Find("res_List", True)(0), ListView).Handle
+                      Dim status As Label = DirectCast(panel.Controls.Find("res_Status", True)(0), Label)
+                      Dim tips As ToolTip = DirectCast(panel.GetType().GetField("tips", BindingFlags.NonPublic Or BindingFlags.Instance).GetValue(panel), ToolTip)
+                      Dim severity As FieldInfo = panel.GetType().GetField("lastSeverity", BindingFlags.NonPublic Or BindingFlags.Instance)
+
+                      Dim sentence As String = "a:22 - доступен; b:22 - отказано в доступе"
+                      InvokeSay(panel, sentence, 4) ' Danger
+                      Assert.Equal(sentence, status.Text)
+                      Assert.Equal(sentence, tips.GetToolTip(status))
+                      Assert.Equal(4, CInt(severity.GetValue(panel)))
+
+                      InvokeSay(panel, "", 0) ' Nothing to say: no text, no tooltip, no severity.
+                      Assert.Equal("", status.Text)
+                      Assert.Equal("", tips.GetToolTip(status))
+                      Assert.Equal(0, CInt(severity.GetValue(panel)))
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub TheListKeepsTheMinimumWidths_GrowsAddress_AndMarksTheTypeGlyphs()
+        ' 131 §3.3: the five columns hold their minimums at the window's narrowest, Address
+        ' absorbs what is left and is therefore the widest on a wide host; every row carries
+        ' the catalogue type glyph and the full row text in its tooltip.
+        OnSta(Sub()
+                  Dim hive As MemoryRegistry = SeededRegistry()
+                  Using panel As New Resource_List_Panel(1.0F, AddressOf hive.Read, AddressOf hive.Write, New MemoryStore())
+                      panel.Size = New Size(900, 400)
+                      Dim list As ListView = DirectCast(panel.Controls.Find("res_List", True)(0), ListView)
+                      Dim listHandle As IntPtr = list.Handle
+                      panel.GetType().GetMethod("Relayout", BindingFlags.NonPublic Or BindingFlags.Instance).Invoke(panel, New Object() {})
+
+                      Assert.Equal(5, list.Columns.Count)
+                      Dim widths As Integer() = list.Columns.Cast(Of ColumnHeader)().Select(Function(c) c.Width).ToArray()
+                      Assert.True(widths(2) = widths.Max(), "Address must be the growing column")
+                      Assert.True(widths(0) > widths(3), "Name keeps a wider minimum than Access")
+                      Assert.True(widths.Sum() <= list.ClientSize.Width, "the minimums must fit the host")
+
+                      Dim sftpRow As ListViewItem = list.Items.OfType(Of ListViewItem)().Single(Function(i) DirectCast(i.Tag, ResourceDescriptor).Id = "sftp1")
+                      Dim smbRow As ListViewItem = list.Items.OfType(Of ListViewItem)().Single(Function(i) DirectCast(i.Tag, ResourceDescriptor).Id = "smb1")
+                      Assert.Equal("source.resource", sftpRow.ImageKey)
+                      Assert.Equal("content.folder", smbRow.ImageKey)
+                      Assert.Contains(ResourceMessages.DisplayAddress(DirectCast(sftpRow.Tag, ResourceDescriptor)), sftpRow.ToolTipText)
                   End Using
               End Sub)
     End Sub

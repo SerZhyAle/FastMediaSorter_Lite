@@ -1,4 +1,4 @@
-# Fast Media Sorter & Sharing for Windows
+﻿# Fast Media Sorter & Sharing for Windows
 
 Fast Media Sorter & Sharing for Windows is a Windows Forms application for quickly sorting, viewing, and managing image and video files - because that folder full of 4000 photos is not going to triage itself. **Sharing** means giving your media to someone else: the folders you pick can be opened from the Android app, from another copy of this program, or from any SFTP client (see [Your folders over SFTP](#your-folders-over-sftp), [how to use the SFTP service](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html) and [publishing folders for Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html)).
 
@@ -6,6 +6,8 @@ The name changed from "Fast Media Sorter for Windows" (earlier still, "FastMedia
 
 It supports a wide range of media formats and provides features such as:
 
+- Settings keep your last page, expanded groups and approximate scroll position. Language and theme are in General; use Search settings or `Ctrl+F` to find a caption, explanation or choice, and Expand all / Collapse all for the current page (64-bit program).
+- Storage owns the cache budgets and cleanup actions. Thumbnail size uses four real pixel tiers; General offers a backed-up reset of additional preferences.
 - Fast navigation through large folders of images and videos (even the embarrassingly large ones)
 - Slideshow and random file viewing modes
 - Recent files and folders tracking, so you don't have to remember where you left off

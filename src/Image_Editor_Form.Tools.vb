@@ -64,6 +64,15 @@ Partial Friend NotInheritable Class Image_Editor_Form
         Color.Black, Color.White, Color.Red, Color.Yellow,
         Color.Lime, Color.Blue, Color.Magenta, Color.Gray}
 
+    ''' <summary>The letter that selects a tool (126 Ф-1). The editor is its own window,
+    ''' so these do not collide with the viewer's letters (126 Q126-2) - and before the
+    ''' key handler grew, this window knew Ctrl+Z, Enter and Esc only.</summary>
+    Private Shared ReadOnly Tool_Keys As New Dictionary(Of EditorTool, Keys)() From {
+        {EditorTool.Brush, Keys.B},
+        {EditorTool.RectangleOutline, Keys.R},
+        {EditorTool.EllipseOutline, Keys.O},
+        {EditorTool.Crop, Keys.C}}
+
     ' --- the gesture in flight, in IMAGE coordinates -----------------------------
 
     Private gesture_Active As Boolean
@@ -96,9 +105,10 @@ Partial Friend NotInheritable Class Image_Editor_Form
     Private crop_Drag_Start_Rect As Rectangle
     Private crop_Drag_Origin As Point
 
-    ''' <summary>How close to an edge counts as grabbing it, in SCREEN pixels. In image
-    ''' pixels it would be unusable: on a 6000-wide photo fitted to 1200 the same eight
-    ''' pixels are under two on screen.</summary>
+    ''' <summary>How close to an edge counts as grabbing it, in SCREEN pixels at 96 dpi.
+    ''' In image pixels it would be unusable: on a 6000-wide photo fitted to 1200 the
+    ''' same eight pixels are under two on screen. Scaled by the monitor's DPI at run
+    ''' time (126 UX-604) - a 7 px zone is guesswork at 175 %.</summary>
     Private Const Crop_Grip_Tolerance As Integer = 7
     Private Const Crop_Grip_Size As Integer = 7
 
@@ -107,6 +117,12 @@ Partial Friend NotInheritable Class Image_Editor_Form
     Private Const Crop_Min_Drag_Pixels As Integer = 2
 
     Private ReadOnly undo_History As New EditorUndoStack()
+
+    ''' <summary>How many edits have actually been committed to the picture - strokes,
+    ''' crops, turns and flips - whether or not their undo steps survive the budget. The
+    ''' "Шаг N из M" pair (126 Ф-2): N = steps still undoable, M = edits ever made. An
+    ''' abandoned gesture does not count; nothing was done.</summary>
+    Private edits_Made As Integer = 0
 
     ''' <summary>Set by the first committed stroke and never cleared - including by Undo.
     ''' Undo can empty the stack without returning the picture to what is on disk (an
@@ -125,7 +141,8 @@ Partial Friend NotInheritable Class Image_Editor_Form
     Private ReadOnly tool_Tips As New ToolTip()
     Private WithEvents btn_Color As Button
     Private WithEvents num_Thickness As NumericUpDown
-    Private WithEvents btn_Undo As Button
+    ' btn_Undo (and btn_Redo) are declared in the window partial: the footer is built there,
+    ' and a second WithEvents here would be a duplicate declaration (BC30260), not an overload.
     ''' <summary>Shown only while a frame exists (§6.1). A permanently visible button that
     ''' does nothing most of the time is worse than one that appears when it can act - and
     ''' its appearing is also the clearest signal that the frame is now live.</summary>
@@ -133,11 +150,31 @@ Partial Friend NotInheritable Class Image_Editor_Form
 
     ' ---------------------------------------------------------------- toolbar ----
 
+    ''' <summary>The grab zone of a crop grip, at the DPI the canvas is really on. The
+    ''' window does not auto-scale its hand-laid toolbar, so screen pixels here are
+    ''' device pixels - and a fixed 7 was comfortable at 96 dpi and guesswork at 175 %.</summary>
+    Private Function GripTolerancePx() As Integer
+        Return ScaleForDpi(Crop_Grip_Tolerance)
+    End Function
+
+    ''' <summary>The painted grip, scaled by the same factor as the zone it stands for,
+    ''' so what looks grabbable is grabbable.</summary>
+    Private Function GripSizePx() As Integer
+        Return ScaleForDpi(Crop_Grip_Size)
+    End Function
+
+    Private Function ScaleForDpi(logical As Integer) As Integer
+        Dim dpi As Integer = If(canvas IsNot Nothing, canvas.DeviceDpi, 96)
+        Return Math.Max(logical, CInt(Math.Round(logical * dpi / 96.0)))
+    End Function
+
     ''' <summary>
-    ''' Builds the one toolbar row (§5). Laid out by hand along a running x: the
-    ''' application is pinned to HighDpiMode.DpiUnaware and this window inherits that, so
-    ''' a pixel here is a pixel on screen and a FlowLayoutPanel would only add a layout
-    ''' pass that has nothing to decide.
+    ''' Builds the one toolbar row (§5). Laid out by hand along a running x, in 96-dpi pixels. NOTE (124 UX-202):
+    ''' the viewer has been PerMonitorV2 since the chrome migration, so the old claim that a pixel here is a pixel
+    ''' on screen no longer holds at 150-175 %. The window is NOT auto-scaled yet on purpose - it restores its
+    ''' rectangle in device pixels, so scaling it on open would grow it every session - and its toolbar, its
+    ''' 40 px strip and its remembered placement are owned by ticket 126 (which scaled what is a matter of aim -
+    ''' the crop grip zone - and left the chrome where it is).
     ''' </summary>
     Private Function BuildToolBar() As Panel
         tool_Bar = New Panel With {
@@ -162,10 +199,40 @@ Partial Friend NotInheritable Class Image_Editor_Form
             }
             tool_Tips.SetToolTip(button, ToolHint(tool))
             AddHandler button.Click, AddressOf ToolButton_Click
+            AddHandler button.KeyDown, AddressOf ToolButton_KeyDown
             tool_Bar.Controls.Add(button)
             tool_Buttons.Add(button)
             x += Tool_Button_Size + 4
         Next
+
+        x += 6
+        tool_Bar.Controls.Add(NewSeparator(x))
+        x += 9
+
+        ' Turn and mirror (126 Ф-3): the one place that writes pixels has to offer what
+        ' the viewer's display-only R cannot. Flips ride the same pair of buttons' hints -
+        ' they are keys only, H and V, and there is no third button to say so.
+        Dim rotate_Left As New RotateButton(False) With {
+            .Name = "btn_Editor_Rotate_Left",
+            .Location = New Point(x, topOfButtons),
+            .Size = New Size(Tool_Button_Size, Tool_Button_Size),
+            .AccessibleName = Localization.T("Повернуть влево")
+        }
+        tool_Tips.SetToolTip(rotate_Left, Localization.T("Повернуть влево (Ctrl+[); отразить - H / V"))
+        AddHandler rotate_Left.Click, Sub(s, e) RotateEditorImage(clockwise:=False)
+        tool_Bar.Controls.Add(rotate_Left)
+        x += Tool_Button_Size + 4
+
+        Dim rotate_Right As New RotateButton(True) With {
+            .Name = "btn_Editor_Rotate_Right",
+            .Location = New Point(x, topOfButtons),
+            .Size = New Size(Tool_Button_Size, Tool_Button_Size),
+            .AccessibleName = Localization.T("Повернуть вправо")
+        }
+        tool_Tips.SetToolTip(rotate_Right, Localization.T("Повернуть вправо (Ctrl+]); отразить - H / V"))
+        AddHandler rotate_Right.Click, Sub(s, e) RotateEditorImage(clockwise:=True)
+        tool_Bar.Controls.Add(rotate_Right)
+        x += Tool_Button_Size + 8
 
         x += 6
         tool_Bar.Controls.Add(NewSeparator(x))
@@ -274,30 +341,83 @@ Partial Friend NotInheritable Class Image_Editor_Form
         End Select
     End Function
 
-    ''' <summary>The name, plus the one thing about a tool that is not discoverable by
-    ''' trying it - nobody holds Shift on the off chance, and nothing about a frame on
-    ''' screen says which key applies it.</summary>
+    ''' <summary>The name, the one thing about a tool that is not discoverable by trying
+    ''' it - nobody holds Shift on the off chance - and, from 126 Ф-1, its letter. The
+    ''' letter is the only reason a keyboard user ever finds the tool strip.</summary>
     Private Shared Function ToolHint(tool As EditorTool) As String
-        If tool = EditorTool.Brush Then Return ToolName(tool)
-        If tool = EditorTool.Crop Then Return Localization.T("Обрезка (Enter - применить, Esc - снять рамку)")
-        Return Localization.TF("{0} (с Shift - квадрат или круг)", ToolName(tool))
+        Dim name As String = ToolName(tool)
+        Dim key As Keys = Keys.None
+        If Not Tool_Keys.TryGetValue(tool, key) Then key = Keys.None
+
+        If tool = EditorTool.Crop Then
+            Return Localization.TF("{0} (клавиша {1}; Enter - применить, Esc - снять рамку)",
+                                   name, KeyLetter(key))
+        End If
+        If key <> Keys.None Then
+            If tool = EditorTool.RectangleOutline OrElse tool = EditorTool.EllipseOutline Then
+                Return Localization.TF("{0} (клавиша {1}; с Shift - квадрат или круг)", name, KeyLetter(key))
+            End If
+            Return Localization.TF("{0} (клавиша {1})", name, KeyLetter(key))
+        End If
+        ' The filled variants have no letter (their outline sibling selects the shape).
+        Return Localization.TF("{0} (с Shift - квадрат или круг)", name)
     End Function
+
+    ''' <summary>The tooltip face of a tool key: Keys.B renders as "B".</summary>
+    Private Shared Function KeyLetter(key As Keys) As String
+        Return If(key = Nothing, "?", key.ToString())
+    End Function
+
+    ''' <summary>Selects a tool - the one body behind both the buttons and the letters
+    ''' (126 Ф-1). Leaving the crop tool drops the frame: keeping it would leave a frame
+    ''' on screen that Enter still applies while the toolbar says the brush is selected -
+    ''' and the first stroke would be drawn through a dimmed overlay nobody asked for.</summary>
+    Private Sub SelectTool(tool As EditorTool)
+        current_Tool = tool
+        If tool <> EditorTool.Crop AndAlso canvas IsNot Nothing Then canvas.Cursor = Cursors.Cross
+        ApplyToolSelection()
+    End Sub
+
+    ''' <summary>Arrow keys rove the focus across the tool buttons (126 Ф-1): the strip
+    ''' is one tab stop, and within it the arrows - not Tab - carry the focus, Windows'
+    ''' own tool-strip manner. Enter and Space stay with the focused button's click.</summary>
+    Private Sub ToolButton_KeyDown(sender As Object, e As KeyEventArgs)
+        Dim button = TryCast(sender, ToolButton)
+        If button Is Nothing Then Return
+
+        Dim stepBy As Integer = 0
+        Select Case e.KeyCode
+            Case Keys.Right, Keys.Down : stepBy = 1
+            Case Keys.Left, Keys.Up : stepBy = -1
+        End Select
+        If stepBy = 0 OrElse tool_Buttons.Count < 2 Then Return
+
+        e.Handled = True
+        e.SuppressKeyPress = True
+
+        Dim at As Integer = tool_Buttons.IndexOf(button)
+        If at < 0 Then Return
+        Dim nextButton As ToolButton = tool_Buttons((at + stepBy + tool_Buttons.Count) Mod tool_Buttons.Count)
+        For Each other As ToolButton In tool_Buttons
+            other.TabStop = (other Is nextButton)
+        Next
+        nextButton.Focus()
+    End Sub
 
     Private Sub ApplyToolSelection()
         For Each button As ToolButton In tool_Buttons
-            button.IsSelected = (button.Tool = current_Tool)
+            Dim isSelected As Boolean = (button.Tool = current_Tool)
+            button.IsSelected = isSelected
+            ' One tab stop for the whole strip: it sits on the selected tool, so Tab
+            ' lands where the eye already is, and roving moves it along (126 Ф-1).
+            button.TabStop = isSelected
         Next
     End Sub
 
     Private Sub ToolButton_Click(sender As Object, e As EventArgs)
         Dim button = TryCast(sender, ToolButton)
         If button Is Nothing Then Return
-        current_Tool = button.Tool
-        ' Leaving the crop tool drops the frame. Keeping it would leave a frame on screen
-        ' that Enter still applies while the toolbar says the brush is selected - and the
-        ' first stroke would be drawn through a dimmed overlay nobody asked for.
-        If current_Tool <> EditorTool.Crop Then ClearCropFrame()
-        ApplyToolSelection()
+        SelectTool(button.Tool)
     End Sub
 
     Private Sub Swatch_Click(sender As Object, e As EventArgs)
@@ -380,7 +500,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
 
         If crop_Has_Frame Then
             Dim on_Canvas As Rectangle = EditorGeometry.ImageToCanvas(crop_Rect, fit, image_Bitmap.Size)
-            crop_Drag_Handle = EditorGeometry.CropHandleAt(on_Canvas, canvasPoint, Crop_Grip_Tolerance)
+            crop_Drag_Handle = EditorGeometry.CropHandleAt(on_Canvas, canvasPoint, GripTolerancePx())
         End If
 
         If crop_Drag_Handle = EditorGeometry.CropHandle.None Then
@@ -394,8 +514,54 @@ Partial Friend NotInheritable Class Image_Editor_Form
         crop_Drag_Origin = gesture_Anchor
     End Sub
 
+    ''' <summary>
+    ''' The cursor says what a press would do (126 UX-604): the eight resize arrows over
+    ''' the grips, the move cross over the frame, the drawing cross elsewhere. It is
+    ''' picked on EVERY move - including with no gesture in flight, which is the finding:
+    ''' the old handler returned immediately when idle, so the 7 px grab zone was
+    ''' guesswork. During a drag the grabbed handle keeps its cursor even when the hand
+    ''' slips off it, or the arrow would flicker away mid-resize.
+    ''' </summary>
+    Private Sub UpdateCropCursor(canvasPoint As Point)
+        If canvas Is Nothing OrElse image_Bitmap Is Nothing Then Return
+
+        If gesture_Active Then
+            canvas.Cursor = CursorForCropHandle(crop_Drag_Handle)
+            Return
+        End If
+        If current_Tool <> EditorTool.Crop OrElse Not crop_Has_Frame Then Return
+
+        Dim fit As Rectangle = canvas.ImageRect()
+        If fit.Width <= 0 OrElse fit.Height <= 0 Then Return
+
+        Dim on_Canvas As Rectangle = EditorGeometry.ImageToCanvas(crop_Rect, fit, image_Bitmap.Size)
+        canvas.Cursor = CursorForCropHandle(EditorGeometry.CropHandleAt(on_Canvas, canvasPoint, GripTolerancePx()))
+    End Sub
+
+    Private Shared Function CursorForCropHandle(handle As EditorGeometry.CropHandle) As Cursor
+        Select Case handle
+            Case EditorGeometry.CropHandle.TopLeft, EditorGeometry.CropHandle.BottomRight
+                Return Cursors.SizeNWSE
+            Case EditorGeometry.CropHandle.TopRight, EditorGeometry.CropHandle.BottomLeft
+                Return Cursors.SizeNESW
+            Case EditorGeometry.CropHandle.Left, EditorGeometry.CropHandle.Right
+                Return Cursors.SizeWE
+            Case EditorGeometry.CropHandle.Top, EditorGeometry.CropHandle.Bottom
+                Return Cursors.SizeNS
+            Case EditorGeometry.CropHandle.Inside
+                Return Cursors.SizeAll
+            Case Else
+                Return Cursors.Cross
+        End Select
+    End Function
+
     Private Sub Canvas_MouseMove(sender As Object, e As MouseEventArgs)
-        If Not gesture_Active OrElse image_Bitmap Is Nothing Then Return
+        If image_Bitmap Is Nothing Then Return
+
+        ' The cursor feedback is not a gesture - it works between gestures too.
+        If current_Tool = EditorTool.Crop Then UpdateCropCursor(e.Location)
+
+        If Not gesture_Active Then Return
 
         Dim fit As Rectangle = canvas.ImageRect()
         If fit.Width <= 0 OrElse fit.Height <= 0 Then Return
@@ -492,7 +658,11 @@ Partial Friend NotInheritable Class Image_Editor_Form
         End If
 
         brush_Points.Clear()
+        ' The edit exists from here: the redo states no longer describe any future this
+        ' picture can have (126 Ф-2), and the step counter has one more edit behind it.
+        undo_History.ClearRedo()
         dirty = True
+        edits_Made += 1
         ' Not Invalidate: the pixels behind the canvas' scaled copy changed, so the copy
         ' has to go or the stroke would only appear on the next resize.
         canvas.PixelsChanged()
@@ -537,7 +707,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
         ' to whatever the second click happened to land on.
         Dim fit As Rectangle = canvas.ImageRect()
         Dim on_Canvas As Rectangle = EditorGeometry.ImageToCanvas(crop_Rect, fit, image_Bitmap.Size)
-        If EditorGeometry.CropHandleAt(on_Canvas, e.Location, Crop_Grip_Tolerance) <> EditorGeometry.CropHandle.Inside Then Return
+        If EditorGeometry.CropHandleAt(on_Canvas, e.Location, GripTolerancePx()) <> EditorGeometry.CropHandle.Inside Then Return
 
         ApplyCrop()
     End Sub
@@ -579,6 +749,8 @@ Partial Friend NotInheritable Class Image_Editor_Form
         If cropped Is Nothing Then Return
 
         undo_History.Push(image_Bitmap)
+        ' The crop is committed - the redo states are history now (126 Ф-2).
+        undo_History.ClearRedo()
 
         Dim replaced As Bitmap = image_Bitmap
         image_Bitmap = cropped
@@ -587,6 +759,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
 
         ClearCropFrame()
         dirty = True
+        edits_Made += 1
         ApplySaveAvailability()
     End Sub
 
@@ -770,8 +943,9 @@ Partial Friend NotInheritable Class Image_Editor_Form
 
     ''' <summary>The eight grips, in screen pixels and centred on the corners and edge
     ''' midpoints - the same eight points <see cref="EditorGeometry.CropHandleAt"/> tests
-    ''' for, so what is drawn is exactly what can be grabbed.</summary>
-    Private Shared Sub PaintCropGrips(g As Graphics, frame As Rectangle)
+    ''' for, so what is drawn is exactly what can be grabbed. The grip grows with the
+    ''' grab zone it stands for (126 UX-604).</summary>
+    Private Sub PaintCropGrips(g As Graphics, frame As Rectangle)
         Dim middle_X As Integer = frame.Left + frame.Width \ 2
         Dim middle_Y As Integer = frame.Top + frame.Height \ 2
         Dim points As Point() = {
@@ -779,12 +953,13 @@ Partial Friend NotInheritable Class Image_Editor_Form
             New Point(frame.Right, middle_Y), New Point(frame.Right, frame.Bottom),
             New Point(middle_X, frame.Bottom), New Point(frame.Left, frame.Bottom), New Point(frame.Left, middle_Y)}
 
-        Dim half As Integer = Crop_Grip_Size \ 2
+        Dim grip As Integer = GripSizePx()
+        Dim half As Integer = grip \ 2
         Using fill As New SolidBrush(Color.White), pen As New Pen(Color.Black)
             For Each point As Point In points
-                Dim grip As New Rectangle(point.X - half, point.Y - half, Crop_Grip_Size, Crop_Grip_Size)
-                g.FillRectangle(fill, grip)
-                g.DrawRectangle(pen, grip)
+                Dim box As New Rectangle(point.X - half, point.Y - half, grip, grip)
+                g.FillRectangle(fill, box)
+                g.DrawRectangle(pen, box)
             Next
         End Using
     End Sub
@@ -795,10 +970,17 @@ Partial Friend NotInheritable Class Image_Editor_Form
         UndoLastEdit()
     End Sub
 
+    Private Sub btn_Redo_Click(sender As Object, e As EventArgs) Handles btn_Redo.Click
+        RedoLastEdit()
+    End Sub
+
     ''' <summary>
     ''' Puts the previous snapshot back (§8). The picture can change size doing it (a crop
-    ''' undone in Ф-4), which is why the canvas is handed the new bitmap rather than just
+    ''' undone), which is why the canvas is handed the new bitmap rather than just
     ''' invalidated - it re-derives the fit from what it is holding.
+    '''
+    ''' The state being left goes onto the redo stack AS IT IS - the stack owns it now, so
+    ''' it is not disposed here (126 Ф-2).
     ''' </summary>
     Private Sub UndoLastEdit()
         If saving Then Return
@@ -809,16 +991,102 @@ Partial Friend NotInheritable Class Image_Editor_Form
         ' size: a frame aimed at the small version means nothing on the large one.
         ClearCropFrame()
 
-        Dim previous As Bitmap = undo_History.Pop()
+        Dim previous As Bitmap = undo_History.Undo(image_Bitmap)
         If previous Is Nothing Then Return
 
-        Dim replaced As Bitmap = image_Bitmap
         image_Bitmap = previous
         canvas.Bitmap = image_Bitmap
-        If replaced IsNot Nothing Then replaced.Dispose()
 
-        canvas.Invalidate()
         ApplySaveAvailability()
+    End Sub
+
+    ''' <summary>
+    ''' The mirror of <see cref="UndoLastEdit"/> (126 Ф-2): the state an undo walked away
+    ''' from comes back, and what is on screen now returns to the undo side - owned by
+    ''' the stack, not disposed here. Redo dies the moment the next edit commits, which
+    ''' is every commit point's business, not this one's.
+    ''' </summary>
+    Private Sub RedoLastEdit()
+        If saving Then Return
+        If gesture_Active Then CancelGesture()
+        If Not undo_History.CanRedo Then Return
+
+        ' A redo can bring a crop back just as an undo can take one away.
+        ClearCropFrame()
+
+        Dim target As Bitmap = undo_History.Redo(image_Bitmap)
+        If target Is Nothing Then Return
+
+        image_Bitmap = target
+        canvas.Bitmap = image_Bitmap
+
+        ApplySaveAvailability()
+    End Sub
+
+    ' ------------------------------------------------------------ rotate and flip ----
+
+    ''' <summary>A quarter turn (126 Ф-3, UX-603). Each one is an undo step through the
+    ''' same <see cref="EditorUndoStack"/> as every other edit, and goes out through the
+    ''' writer the save path already uses; the encoder's EXIF rule is untouched, because
+    ''' the policy describes the pixels written, whatever turn they took.</summary>
+    Private Sub RotateEditorImage(clockwise As Boolean)
+        ApplyWholePictureChange(Function(source As Bitmap) EditorImageOps.Rotate90(source, clockwise),
+                                "Image editor: rotating")
+    End Sub
+
+    ''' <summary>A mirror (126 Ф-3). True is a horizontal flip - left and right swap.</summary>
+    Private Sub FlipEditorImage(horizontal As Boolean)
+        ApplyWholePictureChange(Function(source As Bitmap) EditorImageOps.Mirror(source, horizontal),
+                                "Image editor: flipping")
+    End Sub
+
+    ''' <summary>
+    ''' The one body behind the whole-picture operations. It follows the crop's pattern:
+    ''' the new bitmap is made BEFORE anything is touched, a failure leaves the window
+    ''' exactly as it was, the old bitmap becomes the undo step, and the swap hands the
+    ''' canvas a new bitmap because the fit has to be re-derived.
+    ''' </summary>
+    Private Sub ApplyWholePictureChange(make As Func(Of Bitmap, Bitmap), logContext As String)
+        If saving OrElse image_Bitmap Is Nothing Then Return
+        If gesture_Active Then CancelGesture()
+
+        Dim changed As Bitmap
+        Try
+            changed = make(image_Bitmap)
+        Catch ex As Exception
+            AppFileLogger.LogException(logContext, ex)
+            SetStatus(Localization.TF("Не удалось повернуть или отразить: {0}", FailureText.Describe(ex)))
+            Return
+        End Try
+        If changed Is Nothing Then Return
+
+        undo_History.Push(image_Bitmap)
+        undo_History.ClearRedo()
+
+        Dim replaced As Bitmap = image_Bitmap
+        image_Bitmap = changed
+        canvas.Bitmap = image_Bitmap
+        replaced.Dispose()
+
+        ' A turned or mirrored picture means a frame aimed at the old pixels meant
+        ' nothing where it stood.
+        ClearCropFrame()
+        dirty = True
+        edits_Made += 1
+        ApplySaveAvailability()
+    End Sub
+
+    ' ------------------------------------------------------------------ thickness ----
+
+    ''' <summary>The [ and ] keys (126 Ф-1), walking the same range the spin box offers.
+    ''' The box is kept in step through its own Value so the two can never disagree.</summary>
+    Private Sub StepThickness(delta As Integer)
+        Dim nextValue As Integer = Math.Max(Min_Thickness, Math.Min(Max_Thickness, current_Thickness + delta))
+        If nextValue = current_Thickness Then Return
+        current_Thickness = nextValue
+        If num_Thickness IsNot Nothing AndAlso num_Thickness.Value <> nextValue Then
+            num_Thickness.Value = nextValue
+        End If
     End Sub
 
     ' --------------------------------------------------------------- tool button ----
@@ -831,8 +1099,11 @@ Partial Friend NotInheritable Class Image_Editor_Form
     ''' easy to get subtly wrong - a wrong one renders as an empty box with nothing to
     ''' say it was wrong. Four GDI+ calls draw exactly the shape the tool produces.
     '''
-    ''' Non-focusable for the same reason the viewer's NonFocusButton is: this window has
-    ''' KeyPreview on and Ctrl+Z has to reach it, not re-press whatever was last clicked.
+    ''' Focusable since 126 Ф-1: the strip is one tab stop with arrow-key roving, and a
+    ''' screen reader or a keyboard-only hand has to be able to land on a tool. The old
+    ''' reason for the Selectable=False - keeping Ctrl+Z away from re-clicking the last
+    ''' pressed button - is gone for good: the form's KeyPreview handles every bound key
+    ''' first and marks it Handled, so a focused button never sees one.
     ''' </summary>
     Private NotInheritable Class ToolButton
         Inherits Button
@@ -856,7 +1127,6 @@ Partial Friend NotInheritable Class Image_Editor_Form
         Friend Sub New(forTool As EditorTool)
             Me.Tool = forTool
             Me.Name = MapName(forTool)
-            Me.SetStyle(ControlStyles.Selectable, False)
             Me.TabStop = False
             Me.Text = ""
             Me.FlatStyle = FlatStyle.Flat
@@ -929,6 +1199,62 @@ Partial Friend NotInheritable Class Image_Editor_Form
                             New Point(box.Right - box.Width \ 3, box.Bottom - box.Height \ 4),
                             New Point(box.Right, box.Top)})
                 End Select
+            End Using
+        End Sub
+
+    End Class
+
+    ''' <summary>
+    ''' The rotate button (126 Ф-3): a circular arrow, drawn with GDI+ for the reason the
+    ''' ToolButton gives - the pinned font has no glyph for one, and a wrong Segoe
+    ''' codepoint renders as an empty box. Clockwise is the arc that ends on the left
+    ''' moving up; counterclockwise mirrors it. Not focusable: Ctrl+[ and Ctrl+] are its
+    ''' keyboard answer, and the window's KeyPreview owns them.
+    ''' </summary>
+    Private NotInheritable Class RotateButton
+        Inherits Button
+
+        Private ReadOnly is_Clockwise As Boolean
+
+        Friend Sub New(clockwise As Boolean)
+            is_Clockwise = clockwise
+            Me.TabStop = False
+            Me.SetStyle(ControlStyles.Selectable, False)
+            Me.Text = ""
+            Me.FlatStyle = FlatStyle.Flat
+            Me.UseVisualStyleBackColor = False
+            Me.BackColor = SystemColors.Control
+            Me.FlatAppearance.BorderSize = 1
+            Me.FlatAppearance.BorderColor = SystemColors.ControlDark
+        End Sub
+
+        Protected Overrides Sub OnPaint(e As PaintEventArgs)
+            MyBase.OnPaint(e)
+
+            Dim box As Rectangle = Rectangle.Inflate(Me.ClientRectangle, -8, -8)
+            If box.Width <= 0 OrElse box.Height <= 0 Then Return
+
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias
+            Using pen As New Pen(ThemeService.Palette.TextPrimary, 2.0F)
+                ' Start at the top and travel 270 degrees: the missing quarter is the
+                ' gap the arrowhead points out of.
+                e.Graphics.DrawArc(pen, box, -90.0F, If(is_Clockwise, 270.0F, -270.0F))
+
+                Dim centre As New Point(box.Left + box.Width \ 2, box.Top + box.Height \ 2)
+                Dim radius As Integer = box.Width \ 2
+                ' The arc ends west for clockwise, east for counterclockwise - and at the
+                ' 9 o'clock mark a clockwise hand moves up, at 3 o'clock the other way down.
+                Dim endAngle As Double = If(is_Clockwise, Math.PI, 0.0R)
+                Dim tip As New Point(CInt(centre.X + radius * Math.Cos(endAngle)),
+                                     CInt(centre.Y + radius * Math.Sin(endAngle)))
+                Dim toward As Integer = If(is_Clockwise, -1, 1)
+                Dim head As Integer = Math.Max(3, box.Width \ 4)
+                Using fill As New SolidBrush(ThemeService.Palette.TextPrimary)
+                    e.Graphics.FillPolygon(fill, New Point() {
+                        New Point(tip.X, tip.Y + toward * head),
+                        New Point(tip.X - head, tip.Y),
+                        New Point(tip.X + head, tip.Y)})
+                End Using
             End Using
         End Sub
 

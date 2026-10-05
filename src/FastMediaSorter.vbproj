@@ -176,6 +176,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Theming\IThemeAware.vb" />
+    <Compile Include="Theming\RecipientPalette.vb" />
     <Compile Include="Application_Events.vb" />
     <Compile Include="ApplicationModel.vb" />
     <Compile Include="AppFileLogger.vb" />
@@ -239,6 +240,13 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <!-- Ticket 124: Notify (severity of the status line, the F11 toast, the empty state) - whole-file
+         "#If Not NETFRAMEWORK", listed so the two projects keep one source tree. -->
+    <Compile Include="Main_Form.Notify.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="NotifyToast.vb" />
     <!-- Live broadcast consumer (023_SPECIFICATION_FMS_LIVE_BROADCAST_CONSUMER.md). Every
          file is whole-file "#If Not NETFRAMEWORK" - the feature is .NET 10 mainline only.
          Listed so the project file inventories stay identical. -->
@@ -490,6 +498,8 @@
     <Compile Include="BatchReport.vb" />
     <Compile Include="BatchRunner.vb" />
     <Compile Include="DiskCacheTrim.vb" />
+    <Compile Include="CacheUsageMeasure.vb" />
+    <Compile Include="CacheMaintenance.vb" />
     <Compile Include="DocHtmlTranslateLauncher.vb" />
     <Compile Include="ZoomMath.vb" />
     <!-- The "particles and lines" audio backdrop (WAVE-PARTICLES, ticket 029). Whole-file
@@ -541,6 +551,10 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Main_Form.VideoMenu.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.PlaybackControls.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Main_Form.MediaMenu.vb">
@@ -645,6 +659,7 @@
     <Compile Include="OptionalRuntimeManager.vb" />
     <Compile Include="RuntimeInstallPlan.vb" />
     <Compile Include="PlaybackRules.vb" />
+    <Compile Include="TransportRules.vb" />
     <Compile Include="VlcNativeLease.vb" />
     <Compile Include="MultiWindowPolicy.vb" />
     <Compile Include="CopyDataTransport.vb" />
@@ -727,6 +742,10 @@
     <Compile Include="Localization\Localization.Secure.vb" />
     <Compile Include="Localization\Localization.Resources.vb" />
     <Compile Include="Localization\Localization.Broadcast.vb" />
+    <!-- Ticket 123: the F1 reference card's strings; shared registry, so compiled here too. -->
+    <Compile Include="Localization\Localization.HelpCard.vb" />
+    <!-- Ticket 124: the dialog layer's strings (shared registry). -->
+    <Compile Include="Localization\Localization.Dialogs.vb" />
     <!-- Ticket 028 (APP-BEHAVIOUR contract sync). Registered by both builds for the same
          reason as the table above. -->
     <Compile Include="Localization\Localization.AppUx.vb" />
@@ -736,7 +755,13 @@
     <Compile Include="SettingsPersistence.vb" />
     <Compile Include="SettingsUiContext.vb" />
     <Compile Include="SettingsCollapsibleGroup.vb" />
+    <!-- Whole-file "#If Not NETFRAMEWORK" (the modern settings shell's identity-ink table,
+         specification 128): compiles to nothing here - listed so the two projects keep one
+         source tree and a reference cannot break. -->
+    <Compile Include="SettingsNavIconPalette.vb" />
     <Compile Include="Table_Form.SettingsGroups.vb"><DependentUpon>Table_Form.vb</DependentUpon></Compile>
+    <Compile Include="Table_Form.SettingsDiscovery.vb"><DependentUpon>Table_Form.vb</DependentUpon></Compile>
+    <Compile Include="SettingsSearchRules.vb" />
     <Compile Include="SettingsImport.vb" />
     <Compile Include="Resources\SshFingerprint.vb" />
     <Compile Include="Resources\FmsConfigReader.vb" />
@@ -792,17 +817,33 @@
          nothing here - listed anyway so the two projects keep one source tree and a reference cannot break. -->
     <Compile Include="Chrome\ChromeMetrics.vb" />
     <Compile Include="Chrome\ChromeAutoHide.vb" />
+    <!-- Ticket 123: the Esc ladder + full-screen rule, and the F1 reference card (rows and panel) - pure / UI,
+         whole-file "#If Not NETFRAMEWORK", listed so the two projects keep one source tree. -->
+    <Compile Include="EscapeLadder.vb" />
+    <Compile Include="HelpCardRows.vb" />
+    <Compile Include="HelpCardPanel.vb" />
+    <!-- Ticket 124: the dialog layer (viewer band, DPI/long-caption layout, named-button questions,
+         notification severity). All whole-file "#If Not NETFRAMEWORK" - the x86 fallback keeps its system
+         boxes and its "!" prefix - listed so the two projects keep one source tree. -->
+    <Compile Include="DialogRules.vb" />
+    <Compile Include="Theming\AccentColors.vb" />
+    <Compile Include="ViewerBox.vb" />
+    <Compile Include="DialogLayout.vb" />
+    <Compile Include="DialogLayer.vb" />
+    <Compile Include="DialogLayer.Viewer.vb" />
+    <Compile Include="AskModel.vb" />
+    <Compile Include="AskSpecs.vb" />
+    <Compile Include="Ask_Dialog.vb" />
     <Compile Include="Chrome\UiScale.vb" />
     <Compile Include="Chrome\ChromeLayout.vb" />
     <Compile Include="Chrome\ChromeTheme.vb" />
     <Compile Include="Chrome\ChromeItem.vb" />
     <Compile Include="Chrome\ChromeSurface.vb" />
     <Compile Include="Chrome\ChromeHost.vb" />
+    <Compile Include="Chrome\ChromeMenuRules.vb" />
     <Compile Include="Chrome\ChromeMenu.vb" />
     <Compile Include="Chrome\ChromePathCompletion.vb" />
     <Compile Include="Chrome\ChromePathBox.vb" />
-    <Compile Include="Chrome\ChromeText.vb" />
-    <Compile Include="Chrome\ChromeStatusBar.vb" />
     <Compile Include="Main_Form.ChromeMenus.vb" />
     <Compile Include="Main_Form.Chrome.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>

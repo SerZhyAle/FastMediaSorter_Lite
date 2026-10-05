@@ -20,7 +20,24 @@ Partial Public Class Main_Form
 
     Friend Sub ReloadCustomHotkeys()
         custom_Hotkeys = CustomHotkeys.Load(If(modern_Preferences Is Nothing, "{}", modern_Preferences.CustomHotkeysJson))
+        ' The recipients overlay writes each slot's key on its row: a rebinding must reach it now, not at the next
+        ' rebuild (125 UX-334). Nothing exists to redraw while the form is still loading.
+        If recipients_Overlay IsNot Nothing AndAlso IsHandleCreated Then ApplyRecipientsOverlay()
     End Sub
+
+    ''' <summary>The key a recipient slot answers to RIGHT NOW, for the settings grid's first column (125 UX-334):
+    ''' the live map, not the factory digit - a slot rebound to Q is labelled Q, one with its key taken away "-".</summary>
+    Friend Function SlotKeyLabel(slot As Integer) As String
+        Dim combo As String = ChromeMenuRules.HintFor(custom_Hotkeys, CustomHotkeys.RecipientActionId(slot), CustomHotkeys.SlotDigit(slot))
+        Return If(combo.Length = 0, "-", combo)
+    End Function
+
+    ''' <summary>The same for the delete row ("DEL" while the factory key stands).</summary>
+    Friend Function DeleteKeyLabel() As String
+        Dim combo As String = ChromeMenuRules.HintFor(custom_Hotkeys, "deleteFile", "DEL")
+        If combo.Length = 0 Then Return "-"
+        Return If(String.Equals(combo, "Delete", StringComparison.Ordinal), "DEL", combo)
+    End Function
 
     ''' <summary>
     ''' Returns True when this key press belongs to the custom map and must not travel on
@@ -39,10 +56,24 @@ Partial Public Class Main_Form
             ' KeybUse asks the custom map before it stops the slideshow (so a digit bound to
             ' an action works whatever its slot holds - audit 047, C-19), so the stop is
             ' done here - except for a slot with no folder, which is not an action at all.
+            ' A playback action is not navigation either (119 §5.0.2): the speed / seek /
+            ' A-B keys work INSIDE the clip a slideshow is waiting on, so they must not
+            ' stop it - the actions that mean "I am inspecting this clip" stop it
+            ' themselves (frame step, arming A-B).
             Dim slot As Integer = CustomHotkeys.RecipientSlotOf(actionId)
-            If slot = 0 OrElse IsRecipientSlotConfigured(slot) Then
+            If slot = 0 Then slot = CustomHotkeys.CopySlotOf(actionId)
+            If Not CustomHotkeys.IsPlaybackAction(actionId) AndAlso
+               (slot = 0 OrElse IsRecipientSlotConfigured(slot)) Then
                 SlideShowStop()
                 is_Slide_Show_Random_Mode = False
+            End If
+            ' The one action id both dispatch paths answer through - a rebound key and
+            ' its factory key cannot drift (the invariant of the Select Case below).
+            If CustomHotkeys.IsPlaybackAction(actionId) Then
+                If PlaybackActionIgnoresRepeat(actionId) AndAlso IsAutoRepeatOf(e.KeyCode) Then Return True
+                If Not PlaybackActionApplicable(actionId) Then Return CustomHotkeys.IsVideoBasicsAction(actionId)
+                RunPlaybackAction(actionId)
+                Return True
             End If
             RunHotkeyAction(actionId, wasSlideShow)
             Return True
@@ -58,6 +89,12 @@ Partial Public Class Main_Form
         Dim slot As Integer = CustomHotkeys.RecipientSlotOf(actionId)
         If slot > 0 Then
             If IsRecipientSlotConfigured(slot) Then PoMove(slot)
+            Return
+        End If
+        ' Shift + digit, rebindable (UX-112): the same implementation the Shift+digit key calls.
+        Dim copySlot As Integer = CustomHotkeys.CopySlotOf(actionId)
+        If copySlot > 0 Then
+            If IsRecipientSlotConfigured(copySlot) Then ExecuteRecipientAction(copySlot, RecipientActionKind.Copy)
             Return
         End If
 
@@ -92,6 +129,19 @@ Partial Public Class Main_Form
             Case "zoomOut" : ZoomStepAt(False, False, CursorAnchorOnPanel())
             Case "zoomFit" : ZoomToFit()
             Case "zoomActual" : ZoomToActualSize(CursorAnchorOnPanel())
+                ' Same calls the A / V keys make (TryHandleTrackKey): nothing happens, and nothing is
+                ' said, when the file offers no choice.
+            Case "mediaMenu" : ShowMediaMenuFromKeyboard()
+            Case "audioTrack" : CycleTrack(audio:=True)
+            Case "subtitleTrack" : CycleTrack(audio:=False)
+                ' The playback extras (119 §5.0.2) and the video basics (123 Ф-3): an owned override
+                ' always consumes the key, and when the action is not applicable RunPlaybackAction
+                ' only says so in the status line and changes no state.
+            Case "speedSlower", "speedFaster", "speedReset",
+                 "seekBackShort", "seekFwdShort", "seekBackMedium", "seekFwdMedium", "seekBackLong", "seekFwdLong",
+                 "frameStep", "abLoop",
+                 "playPause", "mute", "volumeUp", "volumeDown"
+                RunPlaybackAction(actionId)
         End Select
     End Sub
 

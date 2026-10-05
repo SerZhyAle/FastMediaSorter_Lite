@@ -96,6 +96,14 @@ Friend NotInheritable Class Resource_Export_Form
         Controls.AddRange(New Control() {nameHeader, warning, noPasswordRadio, withPasswordRadio,
                                          noStoredPasswordHint, status, saveButton, copyTextButton, copyCodeButton, closeButton})
         Me.CancelButton = closeButton
+
+        ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
+        DialogLayout.ApplyAutoScale(Me)
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        DialogLayout.FitContent(Me)
     End Sub
 
     Private Function MakeButton(controlName As String, text As String, handler As EventHandler) As Button
@@ -188,6 +196,7 @@ Friend NotInheritable Class Resource_Export_Form
 
     Private Sub Say(text As String)
         status.Text = text
+        DialogLayout.FitLabel(status)
     End Sub
 
 End Class

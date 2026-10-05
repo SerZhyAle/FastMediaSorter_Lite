@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.ObjectModel
 Imports System.ComponentModel
@@ -64,7 +64,11 @@ Partial Public Class Main_Form
         toolTip.SetToolTip(btn_Full_Screen, Localization.T("Полноэкранный режим - картинка во весь экран и ничего лишнего."))
         toolTip.SetToolTip(btn_Prev_File, Localization.T("Предыдущий файл (Стрелка влево, PgUp)"))
         toolTip.SetToolTip(btn_Next_File, Localization.T("Следующий файл (Стрелка вправо, PgDn)"))
+#If Not NETFRAMEWORK Then
+        toolTip.SetToolTip(btn_Next_Random, Localization.T("Случайный файл (Y)"))
+#Else
         toolTip.SetToolTip(btn_Next_Random, Localization.T("Случайный файл (Y) - пусть судьба выбирает за вас."))
+#End If
         toolTip.SetToolTip(btn_Random_Slideshow, Localization.T("Случайное слайд-шоу (I, F5)"))
         toolTip.SetToolTip(btn_Slideshow, Localization.T("Слайд-шоу (S)"))
         toolTip.SetToolTip(btn_Move_Table, Localization.T("Настройки: папки-получатели, OCR и перевод (F2)"))
@@ -755,10 +759,22 @@ Partial Public Class Main_Form
         ' An exception that escapes a UI handler is logged by AppFileLogger and would
         ' otherwise leave no visible trace at all (053 F-15).
         AppFileLogger.UiFaultReporter = AddressOf ReportUiFault
+#If Not NETFRAMEWORK Then
+        ' Every window the viewer opens joins its z-order band, monitor, reading direction and theme through
+        ' one layer (124 UX-201); it needs this window, so it is installed once the window exists.
+        ViewerDialogPrep.Install()
+#End If
 
         ' Build the modern docked layout (reparents the Designer controls into
         ' flow_Toolbar / panel_Status / panel_Media) before anything lays out.
         BuildModernLayout()
+#If Not NETFRAMEWORK Then
+        ' Severity of the status line: every write to it - the legacy "! .." ones included - is classified in one
+        ' place (Main_Form.Notify.vb), and the empty state paints itself on the media panel (124 UX-206/UX-209).
+        AddHandler lbl_Status.TextChanged, AddressOf StatusLabelTextChanged
+        AddHandler Microsoft.Win32.SystemEvents.UserPreferenceChanged, AddressOf OnSystemPreferenceChanged
+        AddHandler panel_Media.Paint, AddressOf PaintEmptyState
+#End If
 
         ' Accept dropped media files on the picture/video surfaces, not just the form.
         WireSurfaceDragDrop()
@@ -839,6 +855,10 @@ Partial Public Class Main_Form
         Is_to_show_file_sizes = GetSetting(App_name, Second_App_Name, "ShowFileSizes", "1") = "1"
         Is_to_show_file_datetime = GetSetting(App_name, Second_App_Name, "ShowFileDates", "1") = "1"
         Is_Video_Loop = GetSetting(App_name, Second_App_Name, "IsVideoLoop", "0") = "1"
+#If Not NETFRAMEWORK Then
+        If Is_Video_Loop Then GetModernPreferences().VideoEndAction = "repeat"
+        Is_Video_Loop = False
+#End If
 
         ' Viewer options (see the "Просмотр" tab of the settings window).
         Is_Exif_AutoRotate = GetSetting(App_name, Second_App_Name, "ExifAutoRotate", "1") = "1"
@@ -847,6 +867,9 @@ Partial Public Class Main_Form
         ' A corrupt value means the default 10 s, not a 1-second slideshow (053 F-17).
         Dim slideshow_Seconds As Integer = Utils.ParseIntSetting(GetSetting(App_name, Second_App_Name, "SlideshowIntervalSec", "10"), 10, 1, 120)
         Slideshow_Base_Interval_Ms = slideshow_Seconds * 1000
+#If Not NETFRAMEWORK Then
+        Slideshow_Base_Interval_Ms = Utils.ParseIntSetting(GetSetting(App_name, Second_App_Name, "SlideshowIntervalMs", Slideshow_Base_Interval_Ms.ToString()), Slideshow_Base_Interval_Ms, 1000, 120000)
+#End If
 
         Dim sort_Direction_Index = 0
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "SortDir", "0"), sort_Direction_Index)
@@ -1049,6 +1072,7 @@ Partial Public Class Main_Form
                 Case WindowPlacement.StateFullScreen
                     ' ISizeChanged below applies the border and the state together.
                     is_Full_Screen_Mode = True
+                    is_Super_Full_Screen_Mode = GetSetting(App_name, Second_App_Name, "AppSuperFullScreen", "0") = "1"
             End Select
         End If
 #End If
@@ -1112,12 +1136,22 @@ Partial Public Class Main_Form
     ''' repaint. The message names the cause and points at the log.</summary>
     Private Sub ReportUiFault(ex As Exception)
         If Me.IsDisposed OrElse lbl_Status Is Nothing OrElse lbl_Status.IsDisposed Then Return
+#If Not NETFRAMEWORK Then
+        ' One sentence, not two: FailureText.Describe already says where the details are for an unclassified failure
+        ' (124 UX-208) - and an internal fault is an ERROR, so in full screen without panels it raises a toast.
+        Notify(Localization.TF("Внутренняя ошибка: {0}. Последнее действие могло выполниться не полностью.", FailureText.Describe(ex)), NotifyLevel.Error)
+#Else
         lbl_Status.Text = Localization.TF("Внутренняя ошибка: {0}. Последнее действие могло выполниться не полностью; подробности - в журнале.",
                                           FailureText.Describe(ex))
+#End If
     End Sub
 
     Private Async Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
         Try
+#If Not NETFRAMEWORK Then
+            ' 119 Ф-6: the pointer is never buried with the window.
+            RestorePlaybackCursorForInterruption()
+#End If
             ' The window closes like any normal viewer window - no close-to-tray. Sharing (if any) is
             ' owned entirely by the Share Manager, which keeps
             ' running independently; closing the viewer never touches it.
@@ -1206,7 +1240,7 @@ Partial Public Class Main_Form
                 file_Op_Queue = Nothing
                 EnsureFileOpQueue()
             End Sub,
-            Function(outstanding As Integer) MessageBox.Show(
+            Function(outstanding As Integer) ViewerBox.Show(
                 Me,
                 Localization.TF("Файловые операции ещё выполняются: {0}." & vbCrLf &
                                 "Подождать ещё? «Нет» закроет программу, и незавершённые операции не выполнятся.",
@@ -1246,6 +1280,7 @@ Partial Public Class Main_Form
         is_Form_Closed = True
         open_Coordinator.NoteClosed()
 #If Not NETFRAMEWORK Then
+        RemoveHandler Microsoft.Win32.SystemEvents.UserPreferenceChanged, AddressOf OnSystemPreferenceChanged
         ' The close is real: admission is closed for good (the consumer ends once it has finished
         ' what it accepted).
         If file_Op_Queue IsNot Nothing Then file_Op_Queue.CompleteAdmission()
@@ -1404,11 +1439,19 @@ Partial Public Class Main_Form
                     Sub()
                         If settings_Flush_Timer IsNot Nothing Then settings_Flush_Timer.Stop()
                     End Sub,
-                    Sub(message) AppFileLogger.WriteLine(message))
+                    Sub(message) AppFileLogger.WriteLine(message), SettingsDebounceMilliseconds())
             End If
             Return settings_Scheduler
         End Get
     End Property
+
+    Private Shared Function SettingsDebounceMilliseconds() As Integer
+#If NETFRAMEWORK Then
+        Return SettingsFlushScheduler.IdleDelayMs
+#Else
+        Return 1500
+#End If
+    End Function
 
     ''' <summary>Flushes the settings block right now - for changes that are deliberate
     ''' configuration rather than a side effect of browsing (a destination folder edited in
@@ -1493,6 +1536,9 @@ Partial Public Class Main_Form
             add("ShowPictureSizes", If(Is_to_show_picture_sizes, "1", "0"))
             add("ShowFileSizes", If(Is_to_show_file_sizes, "1", "0"))
             add("ShowFileDates", If(Is_to_show_file_datetime, "1", "0"))
+            #If Not NETFRAMEWORK Then
+            add("SlideshowIntervalMs", Slideshow_Base_Interval_Ms.ToString())
+#End If
             add("IsVideoLoop", If(Is_Video_Loop, "1", "0"))
 
             add("ExifAutoRotate", If(Is_Exif_AutoRotate, "1", "0"))
@@ -1523,6 +1569,7 @@ Partial Public Class Main_Form
                     window_State = WindowPlacement.StateMaximized
                 End If
                 add("AppWindowState", window_State)
+                add("AppSuperFullScreen", If(is_Super_Full_Screen_Mode, "1", "0"))
             End If
 #End If
 

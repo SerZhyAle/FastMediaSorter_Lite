@@ -132,6 +132,74 @@ Public Class OcrLanguageGuardTests
         Next
     End Sub
 
+    ' --- the second evidence route: how sure the engine was -------------------
+    ' Measured on a real 4384 px English page, 2026-10-04: the Cyrillic model read it into
+    ' "КМОСК,КМОСК!" at mean line confidence 0.49-0.56, the English model read it correctly at
+    ' 0.883, and the discard record held NOTHING - every debris line was "natural" and passed the
+    ' translatability filter.
+
+    <Fact>
+    Public Sub AssumedLanguage_ReadWithoutConfidence_IsRefused_EvenWhenNothingWasDropped()
+        Dim kept As New List(Of OcrBlock) From {Block("Уез, ме! хй1се Сго#{ тя$е4")}
+
+        Assert.True(OcrLanguageGuard.ShouldRefuse(True, kept, New List(Of OcrDroppedLine)(), 0.52))
+        Assert.Equal("assumed-language-low-confidence",
+                     OcrLanguageGuard.RefusalReason(True, kept, New List(Of OcrDroppedLine)(), 0.52))
+    End Sub
+
+    <Fact>
+    Public Sub AssumedLanguage_ReadConfidently_IsNotRefused()
+        Dim kept As New List(Of OcrBlock) From {Block("Look your father and I have apologised")}
+
+        Assert.False(OcrLanguageGuard.ShouldRefuse(True, kept, New List(Of OcrDroppedLine)(), 0.883))
+        ' The weakest legitimate reading measured (a mixed English/Russian UI screenshot) stays.
+        Assert.False(OcrLanguageGuard.ShouldRefuse(True, kept, New List(Of OcrDroppedLine)(), 0.723))
+    End Sub
+
+    <Fact>
+    Public Sub TheConfidenceFloor_SitsBetweenTheTwoMeasurements()
+        ' Rule 13: a constant is set BETWEEN the measurements it was derived from, and the test
+        ' holds it there, so moving it past either one is a visible decision.
+        Assert.True(OcrLanguageGuard.MinAssumedConfidence > 0.561, "the best WRONG-language reading measured")
+        Assert.True(OcrLanguageGuard.MinAssumedConfidence < 0.723, "the weakest legitimate reading measured")
+        Assert.True(OcrLanguageGuard.ClearlyReadConfidence > 0.723, "a mixed page must still compare languages")
+        Assert.True(OcrLanguageGuard.ClearlyReadConfidence < 0.883, "a clean real page must stop the search")
+        Assert.True(OcrLanguageGuard.MinAssumedConfidence < OcrLanguageGuard.ClearlyReadConfidence)
+    End Sub
+
+    <Fact>
+    Public Sub ExplicitLanguage_IsNeverRefusedForLowConfidence()
+        Dim kept As New List(Of OcrBlock) From {Block("blurry but chosen by the user")}
+
+        Assert.False(OcrLanguageGuard.ShouldRefuse(False, kept, New List(Of OcrDroppedLine)(), 0.1))
+    End Sub
+
+    <Fact>
+    Public Sub ConfidenceNotMeasured_IsNeverRefused()
+        ' Nothing is not 0: a result nobody measured has not been read badly.
+        Dim kept As New List(Of OcrBlock) From {Block("a perfectly ordinary sentence")}
+
+        Assert.False(OcrLanguageGuard.ShouldRefuse(True, kept, New List(Of OcrDroppedLine)(), Nothing))
+    End Sub
+
+    <Fact>
+    Public Sub NothingKept_IsNotALowConfidenceRefusal()
+        ' An empty page is "no text found", a different outcome (rule 16) - not a language failure.
+        Assert.False(OcrLanguageGuard.ShouldRefuse(True, New List(Of OcrBlock)(), New List(Of OcrDroppedLine)(), 0.0))
+    End Sub
+
+    <Fact>
+    Public Sub IndexOfSurest_PicksTheHighestConfidence_EarlierOnATie()
+        ' The three readings of the real page, in ladder order: rus, ukr, eng.
+        Assert.Equal(2, OcrLanguageGuard.IndexOfSurest(New List(Of Double) From {0.489, 0.552, 0.883}))
+        ' The Russian page: the first language is the right one and stays.
+        Assert.Equal(0, OcrLanguageGuard.IndexOfSurest(New List(Of Double) From {0.958, 0.517, 0.517}))
+        ' A tie keeps the ladder's order.
+        Assert.Equal(0, OcrLanguageGuard.IndexOfSurest(New List(Of Double) From {0.7, 0.7}))
+        Assert.Equal(-1, OcrLanguageGuard.IndexOfSurest(New List(Of Double)()))
+        Assert.Equal(-1, OcrLanguageGuard.IndexOfSurest(Nothing))
+    End Sub
+
     <Fact>
     Public Sub DegenerateInput_DoesNotThrow()
         Assert.False(OcrLanguageGuard.ShouldRefuse(True, Nothing, Nothing))

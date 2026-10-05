@@ -88,7 +88,7 @@ Public NotInheritable Class Hotkeys_Form
         Dim documentHelp As New Label With {.AutoSize = False,
             .Bounds = New Rectangle(12, 8, ClientSize.Width - 24, 56),
             .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right,
-            .Text = Localization.T("Документы: колесо и PgUp/PgDn — прокрутка или страницы; Ctrl+колесо — масштаб; Home/End — начало/конец документа, Ctrl+Home/End — первый/последний файл. Стрелки — файлы.")}
+            .Text = Localization.T("Документы: колесо и PgUp/PgDn - прокрутка или страницы; Ctrl+колесо - масштаб; Home/End - начало/конец документа, Ctrl+Home/End - первый/последний файл. Стрелки - файлы.")}
         Controls.Add(documentHelp)
         grid.Bounds = New Rectangle(12, 68, ClientSize.Width - 24, ClientSize.Height - 206)
         grid.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Bottom
@@ -117,8 +117,11 @@ Public NotInheritable Class Hotkeys_Form
         LayoutButton(btnClear, Localization.T("Снять сочетание"), btnReset.Right + 8, captureBox.Top, 150)
         AddHandler btnClear.Click, Sub() ApplyToSelection(CustomHotkeys.NoShortcut)
 
-        LayoutButton(btnResetAll, Localization.T("Сбросить всё"), ClientSize.Width - 12 - 140, captureBox.Top, 140)
-        btnResetAll.Anchor = AnchorStyles.Right Or AnchorStyles.Bottom
+        ' On the OK / Cancel row, at the start edge: on the capture row it started at x = 488 while "Снять сочетание"
+        ' ends at x = 518, so the two overlapped by 30 px and one hid part of the other's caption at every scale
+        ' in English and Arabic (the 124 layout audit finds it).
+        LayoutButton(btnResetAll, Localization.T("Сбросить всё"), 12, ClientSize.Height - 42, 140)
+        btnResetAll.Anchor = AnchorStyles.Left Or AnchorStyles.Bottom
         AddHandler btnResetAll.Click, AddressOf ResetAll
 
         LayoutButton(btnOk, Localization.T("ОК"), ClientSize.Width - 24 - 220, ClientSize.Height - 42, 105)
@@ -131,6 +134,31 @@ Public NotInheritable Class Hotkeys_Form
 
         AcceptButton = btnOk
         CancelButton = btnCancel
+
+        ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
+        DialogLayout.ApplyAutoScale(Me)
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        ' WinForms never scales a ListView's column widths: logical 96-dpi pixels until the window has its DPI.
+        grid.Columns(0).Width = DialogLayout.Device(grid, Localization.Scaled(360))
+        grid.Columns(1).Width = DialogLayout.Device(grid, Localization.Scaled(210))
+        ' The window is taller than a small laptop screen at a high scale: keep it on the monitor.
+        DialogLayout.ClampToWorkingArea(Me)
+        ' OnLoad can clamp while the form's initial anchor layout is still pending.
+        ' Restate the footer against the final client size instead of retaining its
+        ' pre-clamp bottom coordinates at 175 percent.
+        For Each command As Button In New Button() {btnResetAll, btnOk, btnCancel}
+            command.Top = ClientSize.Height - command.Height - DialogLayout.Device(Me, 14)
+        Next
+        Dim captureHeight As Integer = Math.Max(captureBox.Height, Math.Max(btnReset.Height, btnClear.Height))
+        Dim captureTop As Integer = btnOk.Top - captureHeight - DialogLayout.Device(Me, 8)
+        captureBox.Top = captureTop
+        btnReset.Top = captureTop
+        btnClear.Top = captureTop
+        hint.Top = captureTop - hint.Height - DialogLayout.Device(Me, 4)
+        grid.Height = Math.Max(1, hint.Top - grid.Top - DialogLayout.Device(Me, 8))
     End Sub
 
     Private Sub LayoutButton(button As Button, caption As String, left As Integer, top As Integer, width As Integer)
@@ -159,6 +187,8 @@ Public NotInheritable Class Hotkeys_Form
     Private Shared Function ActionCaption(action As HotkeyAction) As String
         Dim slot As Integer = CustomHotkeys.RecipientSlotOf(action.Id)
         If slot > 0 Then Return Localization.TF("Переместить в папку {0}", action.DefaultCombo)
+        Dim copySlot As Integer = CustomHotkeys.CopySlotOf(action.Id)
+        If copySlot > 0 Then Return Localization.TF("Копировать в папку {0}", CustomHotkeys.SlotDigit(copySlot))
         Return Localization.T(action.Caption)
     End Function
 
@@ -196,7 +226,7 @@ Public NotInheritable Class Hotkeys_Form
         Dim combo As String = CustomHotkeys.Format(keyData)
         If combo.Length = 0 Then
             If CustomHotkeys.IsReserved(keyData) Then
-                MessageBox.Show(Me,
+                ViewerBox.Show(Me,
                     Localization.T("Это сочетание зарезервировано системой или программой и не может быть назначено."),
                     Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
             End If
@@ -218,18 +248,16 @@ Public NotInheritable Class Hotkeys_Form
     Private Function ResolveConflict(action As HotkeyAction, owner As HotkeyAction, combo As String) As Boolean
         If owner Is Nothing Then Return True
 
-        Dim answer As DialogResult = MessageBox.Show(Me,
-            Localization.TF("Сочетание {0} уже назначено действию «{1}».", combo, ActionCaption(owner)) & vbCrLf & vbCrLf &
-            Localization.T("Да - обменять сочетания, Нет - снять сочетание у этого действия."),
-            Text, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question)
+        ' Named answers (124 UX-205, 125 UX-331): "No" used to read as "cancel" and the meaning sat in a sentence.
+        Dim answer As Integer = AskDialogs.Choose(Me, AskSpecs.HotkeyConflict(combo, ActionCaption(owner)))
 
         Select Case answer
-            Case DialogResult.Yes
+            Case AskSpecs.ConflictSwap
                 ' The swap gives the previous owner what THIS action answers to now, which
                 ' may itself be "nothing" - and that is a legitimate binding.
                 Dim freed As String = CustomHotkeys.EffectiveCombo(working, action)
                 Assign(owner, If(freed.Length = 0, CustomHotkeys.NoShortcut, freed))
-            Case DialogResult.No
+            Case AskSpecs.ConflictClear
                 Assign(owner, CustomHotkeys.NoShortcut)
             Case Else
                 Return False
@@ -256,8 +284,7 @@ Public NotInheritable Class Hotkeys_Form
     End Sub
 
     Private Sub ResetAll(sender As Object, e As EventArgs)
-        If MessageBox.Show(Me, Localization.T("Вернуть все сочетания к значениям по умолчанию?"),
-                           Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
+        If AskDialogs.Choose(Me, AskSpecs.ResetHotkeys()) <> 0 Then Return
         working.Clear()
         Refill()
     End Sub

@@ -10,34 +10,88 @@ Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 ''' <summary>
-''' The resource list and its actions (ticket 118 Ф-1, one implementation for two hosts): the
-''' list, hint, status line and buttons of the former manager-only dialog, extracted verbatim so
-''' the manager dialog keeps its window chrome and the new Settings page embeds this same panel.
-''' There is deliberately no second, drifting copy of the list, the buttons or the commit order.
+''' The colours a host hands the panel (131 §3.3). Only the Settings window fills it - the
+''' panel paints itself from it; the manager dialog passes nothing and keeps the machine's
+''' SystemColors look. No colour literal lives in the panel itself, except the status roles'
+''' fallback below, which repeats the contract's own light defaults.
+''' </summary>
+Friend NotInheritable Class ResourcePanelPalette
+    Public Surface As Color
+    Public Text As Color
+    Public Muted As Color
+    Public Border As Color
+    Public EditorBack As Color
+    Public EditorText As Color
+    Public Accent As Color
+    Public OnAccent As Color
+    Public Success As Color
+    Public Warning As Color
+    Public Danger As Color
+    Public Dark As Boolean
+End Class
+
+''' <summary>
+''' The resource list and its actions (tickets 118 and 131): one implementation for two hosts.
+''' The panel reads top-to-bottom as action row, list, status - the action row carries the
+''' list summary on the left and the commands on the right (Add, Edit, Remove, Test, then Open
+''' as the row's primary action on the Settings host, then the "more" overflow holding Export
+''' and the two imports behind the 125 painted menu); the list fills every remaining pixel and
+''' is fully themed in the dark through the host palette (owner-drawn header, editor-fill rows,
+''' catalogue type glyphs); the status line is one always-visible line whose full text lives in
+''' its tooltip and whose severity is a coloured catalogue glyph, never colour alone; with no
+''' resources the list gives way to the 124 empty state - a muted glyph, one sentence and an
+''' Add button.
 '''
 ''' Everything it stores goes through <see cref="ResourceCommit"/> (the credential first, the
 ''' registry reference last), so no order of clicks and no failure part-way leaves a list entry
 ''' without its password. The hosts learn what happened through three events:
-''' <see cref="ResourcesChanged"/> (any registry write), <see cref="ItemActivated"/> (a
-''' double-click; only the manager dialog answers it) and <see cref="SelectionChanged"/>.
+''' <see cref="ResourcesChanged"/> (any registry write), <see cref="ItemActivated"/> (the Open
+''' action: a double-click or the Open button - both hosts answer it) and
+''' <see cref="SelectionChanged"/>.
 ''' </summary>
 Friend NotInheritable Class Resource_List_Panel
     Inherits UserControl
 
+    ' Logical metrics (96-dpi px), scaled with the host window (131 §3.2/§3.3).
+    Private Const ActionRowHeight As Integer = 40
+    Private Const CommandHeight As Integer = 32
+    Private Const CommandPadding As Integer = 16
+    Private Const CommandGap As Integer = 8
+    Private Const StatusHeight As Integer = 24
+    Private Const RowHeight As Integer = 28
+    Private Const GlyphSize As Integer = 16
+    Private Const EmptyGlyphSize As Integer = 48
+
+    ''' <summary>Column minimums (131 §3.3): their 536 logical sum fits the ~560 px content
+    ''' width at the window's minimum - the 666 px total of UX-526 is gone; Address (index 2)
+    ''' is the growing column and absorbs whatever the minimums leave.</summary>
+    Private Shared ReadOnly ColumnMinimums As Integer() = {110, 96, 150, 90, 90}
+
     Private ReadOnly list As ListView
+    Private ReadOnly actionRow As Panel
+    Private ReadOnly summary As Label
+    Private ReadOnly emptyPanel As Panel
+    Private ReadOnly emptyGlyph As Label
     Private ReadOnly hint As Label
+    Private ReadOnly emptyAddButton As Button
+    Private ReadOnly statusRow As Panel
     Private ReadOnly status As Label
+    Private ReadOnly statusGlyph As Label
     Private ReadOnly addButton As Button
     Private ReadOnly editButton As Button
     Private ReadOnly removeButton As Button
     Private ReadOnly testButton As Button
-    Private ReadOnly exportButton As Button
-    Private ReadOnly importFileButton As Button
-    Private ReadOnly importClipboardButton As Button
-    Private ReadOnly buttonsFlow As FlowLayoutPanel
+    Private ReadOnly openButton As Button
+    Private ReadOnly moreButton As Button
+    Private ReadOnly tips As New ToolTip()
     Private ReadOnly removed As New List(Of String)()
     Private testCancel As CancellationTokenSource
-    Private ReadOnly panelScale As Single
+    Private panelScale As Single
+    Private scaleIncludesDpi As Boolean
+    Private palette As ResourcePanelPalette
+    Private rowImages As ImageList
+    Private menuTheme As ChromeTheme
+    Private lastSeverity As ResourceStatusSeverity = ResourceStatusSeverity.None
 
     ' Persistence and prompts, injectable so the tests drive the same code the two hosts ship
     ' with; every default is exactly what the dialog used before the extraction.
@@ -51,8 +105,11 @@ Friend NotInheritable Class Resource_List_Panel
     ''' Carries the ids removed so far, so a host can close a resource that is on screen.</summary>
     Friend Event ResourcesChanged(removedIds As IReadOnlyList(Of String))
 
-    ''' <summary>The user double-clicked a resource. Only the manager dialog subscribes: there it
-    ''' means Open. In the Settings page a double-click only selects (Q118-13).</summary>
+    ''' <summary>The user asked to open a resource: a double-click on a row or the Open button -
+    ''' the same action (131 §3.2; this revises Q118-13, which kept the Settings page's
+    ''' double-click to selection only). Both hosts answer it: the manager dialog hands the
+    ''' resource back to the viewer, the Settings page closes itself first and the viewer
+    ''' connects through its own path.</summary>
     Friend Event ItemActivated(resource As ResourceDescriptor)
 
     ''' <summary>The selection moved; the argument says whether anything is selected.</summary>
@@ -60,12 +117,17 @@ Friend NotInheritable Class Resource_List_Panel
 
     ''' <param name="scale">The interface scale: 1.0 for the dialog (its exact former metrics),
     ''' the settings window's own scale for the Settings page.</param>
+    ''' <param name="withPrimaryOpen">The Settings page's Open action lives in the row as the
+    ''' primary button; the manager dialog keeps Open in its own chrome and passes nothing.</param>
     Friend Sub New(Optional scale As Single = 1.0F,
                    Optional readValue As Func(Of String, String) = Nothing,
                    Optional writeValue As Action(Of String, String) = Nothing,
                    Optional secretStore As IResourceSecretStore = Nothing,
-                   Optional removeConfirmation As Func(Of ResourceDescriptor, Boolean) = Nothing)
+                   Optional removeConfirmation As Func(Of ResourceDescriptor, Boolean) = Nothing,
+                   Optional withPrimaryOpen As Boolean = False,
+                   Optional deviceScale As Boolean = False)
         panelScale = If(scale > 0.0F, scale, 1.0F)
+        scaleIncludesDpi = deviceScale
         customStore = readValue IsNot Nothing OrElse writeValue IsNot Nothing OrElse secretStore IsNot Nothing
         hiveRead = If(readValue, AddressOf ResourceRegistry.HiveRead)
         hiveWrite = If(writeValue, AddressOf ResourceRegistry.HiveWrite)
@@ -76,17 +138,31 @@ Friend NotInheritable Class Resource_List_Panel
 
         list = New ListView With {
             .Name = "res_List", .View = View.Details, .FullRowSelect = True, .MultiSelect = False, .HideSelection = False,
-            .Location = New Point(Sp(12), Sp(12)),
-            .Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right}
-        list.Columns.Add(Localization.T("Название"), Sp(150))
-        list.Columns.Add(Localization.T("Тип"), Sp(120))
-        list.Columns.Add(Localization.T("Адрес"), Sp(210))
+            .ShowItemToolTips = True, .LabelWrap = False, .OwnerDraw = True,
+            .AccessibleName = Localization.T("Ресурсы")}
+        list.Columns.Add(Localization.T("Название"), Sp(110))
+        list.Columns.Add(Localization.T("Тип"), Sp(96))
+        list.Columns.Add(Localization.T("Адрес"), Sp(150))
         list.Columns.Add(Localization.T("Доступ"), Sp(90))
-        list.Columns.Add(Localization.T("Открывался"), Sp(96))
+        list.Columns.Add(Localization.T("Открывался"), Sp(90))
         AddHandler list.SelectedIndexChanged,
             Sub()
                 UpdateButtons()
                 RaiseEvent SelectionChanged(Selected() IsNot Nothing)
+            End Sub
+        AddHandler HandleCreated,
+            Sub()
+                RefreshGlyphImages()
+                Relayout()
+            End Sub
+        AddHandler list.DrawColumnHeader, AddressOf OnDrawColumnHeader
+        AddHandler list.DrawSubItem, AddressOf OnDrawSubItem
+        AddHandler list.DrawItem, Sub(sender As Object, e As DrawListViewItemEventArgs) e.DrawDefault = palette Is Nothing
+        AddHandler list.MouseMove,
+            Sub(sender, e)
+                Dim item As ListViewItem = list.GetItemAt(e.X, e.Y)
+                Dim fullText As String = If(item Is Nothing, "", item.ToolTipText)
+                If tips.GetToolTip(list) <> fullText Then tips.SetToolTip(list, fullText)
             End Sub
         AddHandler list.DoubleClick,
             Sub()
@@ -94,42 +170,80 @@ Friend NotInheritable Class Resource_List_Panel
                 If chosen IsNot Nothing Then RaiseEvent ItemActivated(chosen)
             End Sub
 
-        hint = New Label With {
-            .Name = "res_Hint", .AutoSize = False, .Location = New Point(Sp(24), Sp(60)), .Size = New Size(Sp(0), Sp(80)),
-            .TextAlign = ContentAlignment.TopCenter, .ForeColor = SystemColors.GrayText,
-            .Text = Localization.T("Здесь пока нет ресурсов. Добавьте сервер вручную или импортируйте файл настроек из Share Manager (.fmscfg)."),
-            .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right}
+        summary = New Label With {
+            .Name = "res_Summary", .AutoSize = False, .Text = "", .AutoEllipsis = True,
+            .TextAlign = ContentAlignment.MiddleLeft, .ForeColor = SystemColors.GrayText}
+        actionRow = New Panel With {.Name = "res_ActionRow", .Height = Sp(ActionRowHeight)}
+        actionRow.Controls.Add(summary)
+        ' Disabled buttons do not receive mouse messages. Their parent owns the hover
+        ' reason so the tooltip remains available while the command is disabled.
+        AddHandler actionRow.MouseMove,
+            Sub(sender, e)
+                Dim disabled As Button = ActionRowButtons().FirstOrDefault(Function(b) Not b.Enabled AndAlso b.Bounds.Contains(e.Location))
+                Dim reason As String = If(disabled Is Nothing, "", tips.GetToolTip(disabled))
+                If tips.GetToolTip(actionRow) <> reason Then tips.SetToolTip(actionRow, reason)
+            End Sub
 
-        status = New Label With {
-            .Name = "res_Status", .AutoSize = False, .Height = Sp(34),
-            .Anchor = AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right}
-
-        buttonsFlow = New FlowLayoutPanel With {
-            .Dock = DockStyle.Bottom, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .WrapContents = True, .Margin = Padding.Empty, .Padding = New Padding(Sp(8), Sp(4), Sp(8), Sp(8))}
-        addButton = MakeButton("res_Add", Localization.T("Добавить.."), AddressOf OnAdd)
-        editButton = MakeButton("res_Edit", Localization.T("Изменить.."), AddressOf OnEdit)
-        removeButton = MakeButton("res_Remove", Localization.T("Удалить"), AddressOf OnRemove)
-        testButton = MakeButton("res_Test", Localization.T("Проверить"), AddressOf OnTest)
-        exportButton = MakeButton("res_Export", Localization.T("Экспорт.."), AddressOf OnExport)
-        importFileButton = MakeButton("res_ImportFile", Localization.T("Импорт из файла.."), AddressOf OnImportFile)
-        importClipboardButton = MakeButton("res_ImportClipboard", Localization.T("Импорт из буфера"), AddressOf OnImportClipboard)
-        For Each b As Button In {addButton, editButton, removeButton, testButton, exportButton, importFileButton, importClipboardButton}
-            b.AutoSize = True
-            b.AutoSizeMode = AutoSizeMode.GrowAndShrink
-            b.MinimumSize = New Size(0, Sp(28)) ' the ICON-RENDER floor, scaled with the host window
-            buttonsFlow.Controls.Add(b)
+        addButton = MakeCommandButton("res_Add", Localization.T("Добавить.."), AddressOf OnAdd)
+        editButton = MakeCommandButton("res_Edit", Localization.T("Изменить.."), AddressOf OnEdit)
+        removeButton = MakeCommandButton("res_Remove", Localization.T("Удалить"), AddressOf OnRemove)
+        testButton = MakeCommandButton("res_Test", Localization.T("Проверить"), AddressOf OnTest)
+        If withPrimaryOpen Then
+            openButton = MakeCommandButton("res_Open", Localization.T("Открыть"), AddressOf OnOpen)
+        End If
+        moreButton = New Button With {
+            .Name = "res_More", .Text = "", .ImageAlign = ContentAlignment.MiddleCenter,
+            .MinimumSize = New Size(0, Sp(28)), .Height = Sp(CommandHeight),
+            .AccessibleName = Localization.T("Ещё")}
+        AddHandler moreButton.Click, AddressOf OnMore
+        For Each b As Button In ActionRowButtons()
+            actionRow.Controls.Add(b)
+            AddHandler b.TextChanged, Sub() Relayout()
         Next
 
+        ' The 124 empty-state pattern: with no resources it replaces the list body - a centred
+        ' muted glyph, one sentence, an Add button - and the list's column headers do not float
+        ' over it, because the list itself is hidden.
+        emptyGlyph = New Label With {
+            .Name = "res_EmptyGlyph", .AutoSize = False, .Size = New Size(Sp(EmptyGlyphSize), Sp(EmptyGlyphSize))}
+        hint = New Label With {
+            .Name = "res_Hint", .AutoSize = False, .TextAlign = ContentAlignment.TopCenter,
+            .ForeColor = SystemColors.GrayText,
+            .Text = Localization.T("Здесь пока нет ресурсов. Добавьте сервер вручную или импортируйте файл настроек из Share Manager (.fmscfg).")}
+        emptyAddButton = New Button With {
+            .Name = "res_EmptyAdd", .Text = Localization.T("Добавить.."),
+            .MinimumSize = New Size(0, Sp(28)), .Height = Sp(CommandHeight)}
+        AddHandler emptyAddButton.Click, AddressOf OnAdd
+        emptyPanel = New Panel With {.Name = "res_Empty"}
+        emptyPanel.Controls.Add(emptyGlyph)
+        emptyPanel.Controls.Add(hint)
+        emptyPanel.Controls.Add(emptyAddButton)
+
+        statusGlyph = New Label With {
+            .Name = "res_StatusGlyph", .AutoSize = False, .Size = New Size(Sp(GlyphSize), Sp(GlyphSize))}
+        status = New Label With {
+            .Name = "res_Status", .AutoSize = False, .AutoEllipsis = True, .Height = Sp(StatusHeight),
+            .TextAlign = ContentAlignment.MiddleLeft, .ForeColor = SystemColors.GrayText}
+        statusRow = New Panel With {.Name = "res_StatusRow", .Height = Sp(StatusHeight)}
+        statusRow.Controls.Add(statusGlyph)
+        statusRow.Controls.Add(status)
+
         Controls.Add(list)
-        Controls.Add(hint)
-        Controls.Add(status)
-        Controls.Add(buttonsFlow)
-        hint.BringToFront()
+        Controls.Add(emptyPanel)
+        Controls.Add(statusRow)
+        Controls.Add(actionRow)
 
         AddHandler Resize, Sub() Relayout()
+        AddHandler FontChanged, Sub() Relayout()
+        AddHandler RightToLeftChanged, Sub() Relayout()
+        AddHandler DpiChangedAfterParent,
+            Sub()
+                RefreshGlyphImages()
+                Relayout()
+            End Sub
         Relayout()
         Refill()
+        Localize()
     End Sub
 
     Private Function Sp(value As Integer) As Integer
@@ -137,24 +251,293 @@ Friend NotInheritable Class Resource_List_Panel
         Return CInt(Math.Round(value * panelScale))
     End Function
 
-    Private Function MakeButton(controlName As String, text As String, handler As EventHandler) As Button
-        Dim b As New Button With {.Name = controlName, .Text = text}
+    ''' <summary>Convert logical metrics once. Settings already includes monitor DPI in
+    ''' panelScale; a dialog supplies only interface scaling and still needs DeviceDpi.</summary>
+    Private Function Dv(value As Integer) As Integer
+        If scaleIncludesDpi OrElse Not IsHandleCreated Then Return Sp(value)
+        Return LogicalToDeviceUnits(Sp(value))
+    End Function
+
+    ''' <summary>Settings supplies its already DPI-adjusted scale, including monitor changes.
+    ''' Dialog hosts supply logical interface scaling and use DeviceDpi in Dv instead.</summary>
+    Friend Sub SetDeviceScale(scale As Single)
+        scaleIncludesDpi = True
+        Dim nextScale As Single = If(scale > 0.0F, scale, 1.0F)
+        If panelScale = nextScale Then Return
+        panelScale = nextScale
+        RefreshGlyphImages()
+        Relayout()
+    End Sub
+
+    Friend ReadOnly Property MinimumPageHeight As Integer
+        Get
+            Return actionRow.Height + Dv(320 + StatusHeight + 12)
+        End Get
+    End Property
+
+    Private Function MakeCommandButton(controlName As String, text As String, handler As EventHandler) As Button
+        Dim b As New Button With {.Name = controlName, .Text = text,
+                                  .MinimumSize = New Size(0, Sp(28)), .Height = Sp(CommandHeight)}
         AddHandler b.Click, handler
         Return b
     End Function
 
-    ''' <summary>The list fills the panel above the status line and the button row; the hint sits
-    ''' over the empty list, centred. Everything follows the panel's own size, so the two hosts
-    ''' (a 700x372 dialog and a settings page) need no layout code of their own.</summary>
+    ''' <summary>The action row's commands, in reading order: Add, Edit, Remove, Test, the
+    ''' primary Open (Settings host only) and the overflow. The empty state's Add is not part
+    ''' of the row; it is styled with the same palette below.</summary>
+    Private Function ActionRowButtons() As IEnumerable(Of Button)
+        Dim buttons As New List(Of Button) From {addButton, editButton, removeButton, testButton}
+        If openButton IsNot Nothing Then buttons.Add(openButton)
+        buttons.Add(moreButton)
+        Return buttons
+    End Function
+
+    Private Function Mirror(x As Integer, w As Integer, width As Integer) As Integer
+        If RightToLeft <> RightToLeft.Yes Then Return x
+        Return width - x - w
+    End Function
+
+    ''' <summary>A command fits its text with 16 logical px of horizontal padding at the uniform
+    ''' 32 px height (127 §3.2); the overflow is square. Never docked, never stretched.</summary>
+    Private Function MeasureCommandButton(button As Button) As Integer
+        If button Is moreButton Then Return Dv(CommandHeight)
+        Dim textWidth As Integer = TextRenderer.MeasureText(button.Text, button.Font,
+            New Size(Integer.MaxValue, Integer.MaxValue), TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine).Width
+        Return Math.Max(Dv(64), textWidth + 2 * Dv(CommandPadding))
+    End Function
+
+    ''' <summary>The panel's whole layout (131 §3.1): action row, list (or the empty state over
+    ''' its place), status line. Everything follows the panel's own size, so the two hosts (a
+    ''' 700x372 dialog and a settings page that fills the window) need no layout code of their
+    ''' own; the minimum list height of 320 logical px is the Settings host's decision.</summary>
     Private Sub Relayout()
-        Dim width As Integer = Math.Max(Sp(120), ClientSize.Width)
-        list.Size = New Size(width - Sp(24), Math.Max(Sp(60), ClientSize.Height - Sp(12) - status.Height - Sp(10) - buttonsFlow.Height - Sp(4)))
-        hint.Size = New Size(width - Sp(48), Sp(80))
-        status.SetBounds(Sp(12), ClientSize.Height - buttonsFlow.Height - status.Height - Sp(10), width - Sp(24), status.Height)
-        list.BringToFront()
-        hint.BringToFront()
-        status.BringToFront()
-        buttonsFlow.BringToFront()
+        ' Dv, not Sp: this runs after the window has its DPI (a Resize), where a logical 96-dpi pixel has to be
+        ' turned into a device one - the constants used to stay small beside a font 1.75x larger (124 UX-202).
+        Dim width As Integer = Math.Max(Dv(160), ClientSize.Width)
+        Dim rowHeight As Integer = Dv(ActionRowHeight)
+        actionRow.SetBounds(0, 0, width, rowHeight)
+        LayoutActionRow(width, rowHeight)
+        rowHeight = actionRow.Height
+        ' The local is statusRowHeight, not statusHeight: VB matches names case-insensitively,
+        ' so a local named like the StatusHeight constant would shadow it and Dv(StatusHeight)
+        ' would read the not-yet-assigned local - a silent 0.
+        Dim statusRowHeight As Integer = Dv(StatusHeight)
+        Dim bodyTop As Integer = rowHeight + Dv(6)
+        Dim bodyHeight As Integer = Math.Max(Dv(60), ClientSize.Height - bodyTop - statusRowHeight - Dv(6))
+        list.SetBounds(0, bodyTop, width, bodyHeight)
+        emptyPanel.SetBounds(0, bodyTop, width, bodyHeight)
+        statusRow.SetBounds(0, ClientSize.Height - statusRowHeight, width, statusRowHeight)
+        LayoutStatusRow(width, statusRowHeight)
+        LayoutColumns()
+        LayoutEmptyState()
+    End Sub
+
+    ''' <summary>Summary at the reading start, commands at the end in reading order.
+    ''' Long captions wrap at narrow widths; RTL mirrors every computed rectangle.</summary>
+    Private Sub LayoutActionRow(width As Integer, rowHeight As Integer)
+        Dim buttons As Button() = ActionRowButtons().ToArray()
+        Dim gap As Integer = Dv(CommandGap)
+        Dim widths As Integer() = buttons.Select(Function(b) MeasureCommandButton(b)).ToArray()
+        Dim total As Integer = widths.Sum() + gap * (buttons.Length - 1)
+        Dim summaryWidth As Integer = If(summary.Text.Length = 0, 0,
+            TextRenderer.MeasureText(summary.Text, summary.Font, Size.Empty, TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine).Width + Dv(8))
+        Dim separateSummary As Boolean = summaryWidth > 0 AndAlso total + summaryWidth + gap > width
+        Dim top As Integer = If(separateSummary, rowHeight, 0)
+        Dim index As Integer = 0
+        While index < buttons.Length
+            Dim start As Integer = index
+            Dim used As Integer = Math.Min(width, widths(index))
+            index += 1
+            While index < buttons.Length AndAlso used + gap + widths(index) <= width
+                used += gap + widths(index)
+                index += 1
+            End While
+            Dim edge As Integer = width - used
+            For position As Integer = start To index - 1
+                Dim buttonWidth As Integer = Math.Min(width, widths(position))
+                buttons(position).SetBounds(Mirror(edge, buttonWidth, width),
+                    top + (rowHeight - Dv(CommandHeight)) \ 2, buttonWidth, Dv(CommandHeight))
+                edge += buttonWidth + gap
+            Next
+            top += rowHeight
+        End While
+        Dim availableSummary As Integer = If(separateSummary, width, Math.Max(0, width - total - gap))
+        summary.SetBounds(Mirror(0, availableSummary, width), 0, availableSummary, rowHeight)
+        actionRow.Height = top
+    End Sub
+
+    ' The local is statusGlyphSize, not glyphSize: VB matches names case-insensitively, so a
+    ' local named like the GlyphSize constant would shadow it and Dv(GlyphSize) would read
+    ' the not-yet-assigned local - a silent 0 (same trap as statusRowHeight above).
+    Private Sub LayoutStatusRow(width As Integer, rowHeight As Integer)
+        Dim statusGlyphSize As Integer = Dv(GlyphSize)
+        Dim glyphVisible As Boolean = statusGlyph.Image IsNot Nothing
+        Dim textLeft As Integer = If(glyphVisible, statusGlyphSize + Dv(8), 0)
+        status.SetBounds(Mirror(textLeft, width - textLeft, width), 0, Math.Max(Dv(40), width - textLeft), rowHeight)
+        statusGlyph.SetBounds(Mirror(0, statusGlyphSize, width), (rowHeight - statusGlyphSize) \ 2, statusGlyphSize, statusGlyphSize)
+        statusGlyph.Visible = glyphVisible
+    End Sub
+
+    Private Sub LayoutEmptyState()
+        Dim width As Integer = Math.Max(Dv(160), emptyPanel.ClientSize.Width)
+        Dim height As Integer = Math.Max(Dv(120), emptyPanel.ClientSize.Height)
+        Dim glyphSize As Integer = Dv(EmptyGlyphSize)
+        Dim textWidth As Integer = Math.Max(Dv(160), width - Dv(48))
+        Dim hintTextHeight As Integer = Math.Max(Dv(18), TextRenderer.MeasureText(hint.Text, hint.Font,
+            New Size(textWidth, Integer.MaxValue), TextFormatFlags.WordBreak).Height + Dv(4))
+        Dim buttonWidth As Integer = MeasureCommandButton(emptyAddButton)
+        Dim gap As Integer = Dv(10)
+        Dim total As Integer = glyphSize + gap + hintTextHeight + gap + Dv(CommandHeight)
+        Dim top As Integer = Math.Max(0, (height - total) \ 2)
+        emptyGlyph.SetBounds((width - glyphSize) \ 2, top, glyphSize, glyphSize)
+        hint.SetBounds((width - textWidth) \ 2, top + glyphSize + gap, textWidth, hintTextHeight)
+        emptyAddButton.SetBounds((width - buttonWidth) \ 2, top + glyphSize + gap + hintTextHeight + gap,
+                                 buttonWidth, Dv(CommandHeight))
+    End Sub
+
+    ''' <summary>Minimum widths that fit at the window's narrowest; Address grows into what is
+    ''' left (131 §3.3). Rows ellipsize natively and carry the full row text in a tooltip.</summary>
+    Private Sub LayoutColumns()
+        If list.Columns.Count < ColumnMinimums.Length Then Return
+        Dim available As Integer = Math.Max(0, list.ClientSize.Width)
+        Dim widths(ColumnMinimums.Length - 1) As Integer
+        Dim used As Integer = 0
+        For index As Integer = 0 To ColumnMinimums.Length - 1
+            widths(index) = Dv(ColumnMinimums(index))
+            used += widths(index)
+        Next
+        If available > used Then widths(2) += available - used
+        For index As Integer = 0 To widths.Length - 1
+            list.Columns(index).Width = widths(index)
+        Next
+    End Sub
+
+    ''' <summary>The host's palette on every part of the panel (131 §3.3). Only the Settings
+    ''' window calls it - the manager dialog keeps the machine's SystemColors look. The rows
+    ''' sit on the editor fill, the header is owner-drawn from the palette in the dark (the
+    ''' light strips of the review are gone) and native in the light, the themed cells are
+    ''' owner-drawn in both schemes, the scrollbars follow the
+    ''' host's own ApplyNativeTree call, and the commands take the 127 button treatment with
+    ''' Open in the accent.</summary>
+    Friend Sub ApplyPalette(theme As ResourcePanelPalette)
+        palette = theme
+        BackColor = theme.Surface
+        actionRow.BackColor = theme.Surface
+        emptyPanel.BackColor = theme.Surface
+        statusRow.BackColor = theme.Surface
+        list.BackColor = theme.EditorBack
+        list.ForeColor = theme.EditorText
+        list.BorderStyle = If(theme.Dark, BorderStyle.None, BorderStyle.Fixed3D)
+        summary.ForeColor = theme.Muted
+        hint.ForeColor = theme.Muted
+        status.ForeColor = theme.Muted
+        For Each command As Button In ActionRowButtons().Concat({emptyAddButton})
+            command.FlatStyle = FlatStyle.Flat
+            command.BackColor = theme.Surface
+            command.ForeColor = theme.Text
+            command.FlatAppearance.BorderSize = 1
+            command.FlatAppearance.BorderColor = theme.Border
+            command.FlatAppearance.MouseOverBackColor = Blend(theme.Surface, theme.Text, 0.08F)
+            command.FlatAppearance.MouseDownBackColor = Blend(theme.Surface, theme.Text, 0.16F)
+        Next
+        If openButton IsNot Nothing Then
+            openButton.BackColor = theme.Accent
+            openButton.ForeColor = theme.OnAccent
+            openButton.FlatAppearance.BorderColor = theme.Accent
+            openButton.FlatAppearance.MouseOverBackColor = Blend(theme.Accent, theme.OnAccent, 0.12F)
+            openButton.FlatAppearance.MouseDownBackColor = Blend(theme.Accent, theme.OnAccent, 0.22F)
+            StylePrimaryOpen(openButton.Enabled)
+        End If
+        ' The painted menu follows the same scheme; a stale theme is simply replaced.
+        menuTheme = Nothing
+        RefreshGlyphImages()
+        list.Invalidate()
+    End Sub
+
+    ''' <summary>The primary Open at reduced strength while it is disabled (the 124 disabled
+    ''' treatment): an accent that stays full when the button cannot be pressed reads as an
+    ''' invitation, and the palette keeps the difference visible in both themes.</summary>
+    Private Sub StylePrimaryOpen(enabled As Boolean)
+        If openButton Is Nothing OrElse palette Is Nothing Then Return
+        Dim face As Color = If(enabled, palette.Accent, Blend(palette.Accent, palette.Surface, 0.5F))
+        openButton.BackColor = face
+        openButton.ForeColor = If(enabled, palette.OnAccent, Blend(palette.OnAccent, palette.Surface, 0.55F))
+        openButton.FlatAppearance.BorderColor = face
+    End Sub
+
+    ''' <summary>Blends towards <paramref name="b"/> by t. The channels are widened before
+    ''' subtracting: VB keeps Byte arithmetic in Byte, and 0 - 255 in the checked default
+    ''' would overflow exactly when a light theme blends towards black.</summary>
+    Private Shared Function Blend(a As Color, b As Color, t As Single) As Color
+        Return Color.FromArgb(255,
+            Math.Max(0, Math.Min(255, CInt(CInt(a.R) + (CInt(b.R) - CInt(a.R)) * t))),
+            Math.Max(0, Math.Min(255, CInt(CInt(a.G) + (CInt(b.G) - CInt(a.G)) * t))),
+            Math.Max(0, Math.Min(255, CInt(CInt(a.B) + (CInt(b.B) - CInt(a.B)) * t))))
+    End Function
+
+    ''' <summary>The dark header is painted here, not asked from the native theme: the
+    ''' DarkMode sub-theme darkens the strip but kept it a light island on the review's
+    ''' screenshot, so the palette draws the strip, the hairline under it and the muted
+    ''' caption itself. In the light theme the header stays native.</summary>
+    Private Sub OnDrawColumnHeader(sender As Object, e As DrawListViewColumnHeaderEventArgs)
+        If palette Is Nothing OrElse Not palette.Dark Then
+            e.DrawDefault = True
+            Return
+        End If
+        Using back As New SolidBrush(palette.Surface)
+            e.Graphics.FillRectangle(back, e.Bounds)
+        End Using
+        Using line As New Pen(palette.Border)
+            e.Graphics.DrawLine(line, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right - 1, e.Bounds.Bottom - 1)
+        End Using
+        Dim flags As TextFormatFlags = TextFormatFlags.Left Or TextFormatFlags.VerticalCenter Or
+                                       TextFormatFlags.EndEllipsis Or TextFormatFlags.NoPadding
+        If RightToLeft = RightToLeft.Yes Then flags = flags Or TextFormatFlags.RightToLeft
+        Dim bounds As Rectangle = e.Bounds
+        bounds.Inflate(-Dv(6), 0)
+        TextRenderer.DrawText(e.Graphics, e.Header.Text, Font, bounds, palette.Muted, flags)
+    End Sub
+
+    ''' <summary>Keep the native ListView selection and accessibility, but paint its cells
+    ''' in the host palette. Native inactive selection otherwise leaves a light strip in
+    ''' dark mode, and native image-list drawing can put a light tile behind a mono glyph.</summary>
+    Private Sub OnDrawSubItem(sender As Object, e As DrawListViewSubItemEventArgs)
+        If palette Is Nothing Then
+            e.DrawDefault = True
+            Return
+        End If
+        Dim back As Color = If(e.Item.Selected,
+            Blend(palette.EditorBack, palette.Accent, If(list.Focused, 0.35F, 0.2F)), palette.EditorBack)
+        Using fill As New SolidBrush(back)
+            e.Graphics.FillRectangle(fill, e.Bounds)
+        End Using
+        Dim bounds As Rectangle = e.Bounds
+        bounds.Inflate(-Dv(6), 0)
+        Dim rtl As Boolean = RightToLeft = RightToLeft.Yes
+        If e.ColumnIndex = 0 Then
+            Dim size As Integer = Dv(GlyphSize)
+            Using glyph As Bitmap = RenderGlyphForList(e.Item.ImageKey, palette.EditorText, size)
+                If glyph IsNot Nothing Then
+                    ' RightToLeftLayout mirrors the native drawing context already;
+                    ' the logical start remains Left, including the leading glyph.
+                    e.Graphics.DrawImageUnscaled(glyph, bounds.Left,
+                                                 bounds.Top + (bounds.Height - size) \ 2)
+                End If
+            End Using
+            Dim inset As Integer = size + Dv(6)
+            bounds.X += inset
+            bounds.Width = Math.Max(0, bounds.Width - inset)
+        End If
+        Dim flags As TextFormatFlags = TextFormatFlags.SingleLine Or TextFormatFlags.VerticalCenter Or
+            TextFormatFlags.EndEllipsis Or TextFormatFlags.NoPadding Or TextFormatFlags.NoPrefix
+        If rtl Then flags = flags Or TextFormatFlags.RightToLeft
+        TextRenderer.DrawText(e.Graphics, e.SubItem.Text, list.Font, bounds, palette.EditorText, flags)
+        If e.Item.Focused AndAlso list.Focused Then
+            Using pen As New Pen(palette.Accent)
+                e.Graphics.DrawLine(pen, e.Bounds.Left, e.Bounds.Top, e.Bounds.Right - 1, e.Bounds.Top)
+                e.Graphics.DrawLine(pen, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right - 1, e.Bounds.Bottom - 1)
+            End Using
+        End If
     End Sub
 
     ''' <summary>Ids removed while this panel was open, so a host can close one that is on screen.</summary>
@@ -163,6 +546,36 @@ Friend NotInheritable Class Resource_List_Panel
             Return removed
         End Get
     End Property
+
+    ''' <summary>Re-reads every caption, tooltip and accessible name after a language switch:
+    ''' the panel outlives the switch inside the reused Settings window, so its texts cannot
+    ''' stay with the language it was built in.</summary>
+    Friend Sub Localize()
+        RightToLeft = If(Localization.IsRightToLeft(), RightToLeft.Yes, RightToLeft.No)
+        list.RightToLeftLayout = RightToLeft = RightToLeft.Yes
+        summary.TextAlign = If(RightToLeft = RightToLeft.Yes, ContentAlignment.MiddleRight, ContentAlignment.MiddleLeft)
+        status.TextAlign = summary.TextAlign
+        addButton.Text = Localization.T("Добавить..")
+        editButton.Text = Localization.T("Изменить..")
+        removeButton.Text = Localization.T("Удалить")
+        testButton.Text = Localization.T("Проверить")
+        emptyAddButton.Text = Localization.T("Добавить..")
+        If openButton IsNot Nothing Then openButton.Text = Localization.T("Открыть")
+        moreButton.AccessibleName = Localization.T("Ещё")
+        hint.Text = Localization.T("Здесь пока нет ресурсов. Добавьте сервер вручную или импортируйте файл настроек из Share Manager (.fmscfg).")
+        list.AccessibleName = Localization.T("Ресурсы")
+        Dim captions As String() = {Localization.T("Название"), Localization.T("Тип"), Localization.T("Адрес"),
+                                    Localization.T("Доступ"), Localization.T("Открывался")}
+        For index As Integer = 0 To Math.Min(captions.Length, list.Columns.Count) - 1
+            list.Columns(index).Text = captions(index)
+        Next
+        For Each item As ListViewItem In list.Items
+            UpdateRowPresentation(item, DirectCast(item.Tag, ResourceDescriptor))
+        Next
+        UpdateSummary()
+        UpdateButtons()
+        Relayout()
+    End Sub
 
     ''' <summary>Starts the "new resource" form with <paramref name="draft"/> filled in. The manager
     ''' dialog calls it from OnShown for a typed sftp:// address.</summary>
@@ -179,6 +592,14 @@ Friend NotInheritable Class Resource_List_Panel
         Return ResourceRegistry.Load()
     End Function
 
+    ''' <summary>The type glyph of a row (131 §3.3): the catalogue's resource meaning for an
+    ''' SFTP server, the folder for a network share. Mono ink here - the 128 identity-colour
+    ''' exception covers the navigation list only.</summary>
+    Private Shared Function GlyphKeyForKind(kind As ResourceKind) As String
+        If kind = ResourceKind.Sftp Then Return "source.resource"
+        Return "content.folder"
+    End Function
+
     Private Sub Refill(Optional select_Id As String = Nothing)
         list.BeginUpdate()
         Try
@@ -188,11 +609,8 @@ Friend NotInheritable Class Resource_List_Panel
                 OrderByDescending(Function(r) If(r.LastUsedUtc, DateTime.MinValue)).
                 ThenBy(Function(r) r.DisplayName, StringComparer.CurrentCultureIgnoreCase)
             For Each r As ResourceDescriptor In ordered
-                Dim item As New ListViewItem(r.DisplayName) With {.Tag = r}
-                item.SubItems.Add(ResourceMessages.KindLabel(r.Kind))
-                item.SubItems.Add(ResourceMessages.DisplayAddress(r))
-                item.SubItems.Add(If(r.ReadOnlyHint, Localization.T("только чтение"), Localization.T("чтение и запись")))
-                item.SubItems.Add(If(r.LastUsedUtc.HasValue, r.LastUsedUtc.Value.ToLocalTime().ToString("g", CultureInfo.CurrentCulture), ""))
+                Dim item As New ListViewItem(r.DisplayName) With {.Tag = r, .ImageKey = GlyphKeyForKind(r.Kind)}
+                UpdateRowPresentation(item, r)
                 list.Items.Add(item)
                 If select_Id IsNot Nothing AndAlso String.Equals(r.Id, select_Id, StringComparison.OrdinalIgnoreCase) Then item.Selected = True
             Next
@@ -200,8 +618,26 @@ Friend NotInheritable Class Resource_List_Panel
         Finally
             list.EndUpdate()
         End Try
-        hint.Visible = list.Items.Count = 0
+        Dim empty As Boolean = list.Items.Count = 0
+        emptyPanel.Visible = empty
+        list.Visible = Not empty
+        UpdateSummary()
         UpdateButtons()
+        Relayout()
+    End Sub
+
+    Private Sub UpdateRowPresentation(item As ListViewItem, resource As ResourceDescriptor)
+        Dim values As String() = {resource.DisplayName, ResourceMessages.KindLabel(resource.Kind),
+            ResourceMessages.DisplayAddress(resource),
+            If(resource.ReadOnlyHint, Localization.T("только чтение"), Localization.T("чтение и запись")),
+            If(resource.LastUsedUtc.HasValue, resource.LastUsedUtc.Value.ToLocalTime().ToString("g", CultureInfo.CurrentCulture), "")}
+        While item.SubItems.Count < values.Length
+            item.SubItems.Add("")
+        End While
+        For index As Integer = 0 To values.Length - 1
+            item.SubItems(index).Text = values(index)
+        Next
+        item.ToolTipText = String.Join(" - ", values.Where(Function(part) part.Length > 0))
     End Sub
 
     Private Function Selected() As ResourceDescriptor
@@ -215,16 +651,150 @@ Friend NotInheritable Class Resource_List_Panel
         End Get
     End Property
 
-    Private Sub UpdateButtons()
-        Dim has As Boolean = Selected() IsNot Nothing
-        editButton.Enabled = has
-        removeButton.Enabled = has
-        testButton.Enabled = has
-        exportButton.Enabled = has
+    Private Sub UpdateSummary()
+        summary.Text = If(list.Items.Count = 0, "", Localization.TF("Ресурсов: {0}", list.Items.Count))
     End Sub
 
-    Private Sub Say(text As String)
+    ''' <summary>Disabled-with-reason (131 §3.2): a command that needs a selection says why in
+    ''' its tooltip and in its accessible name, not by greying alone.</summary>
+    Private Sub SetSelectionState(button As Button, hasSelection As Boolean)
+        button.Enabled = hasSelection
+        Dim reason As String = If(hasSelection, "", Localization.T(NoSelectionReasonKey))
+        tips.SetToolTip(button, If(reason.Length = 0, Nothing, reason))
+        button.AccessibleName = If(reason.Length = 0, button.Text, button.Text & " - " & reason)
+    End Sub
+
+    Private Sub UpdateButtons()
+        Dim has As Boolean = Selected() IsNot Nothing
+        SetSelectionState(editButton, has)
+        SetSelectionState(removeButton, has)
+        SetSelectionState(testButton, has)
+        If openButton IsNot Nothing Then
+            SetSelectionState(openButton, has)
+            StylePrimaryOpen(has)
+        End If
+    End Sub
+
+    ' ------------------------------------------------------------------------ status ----
+
+    Friend Enum ResourceStatusSeverity
+        None
+        Busy
+        Success
+        Warning
+        Danger
+    End Enum
+
+    Private Const NoSelectionReasonKey As String = "Сначала выберите ресурс в списке"
+
+    Private Sub Say(text As String, Optional severity As ResourceStatusSeverity = ResourceStatusSeverity.None)
+        lastSeverity = severity
         status.Text = text
+        ' Multi-part results stay on one line: joined with "; " above, ellipsized here, and the
+        ' whole sentence lives in the tooltip (131 §3.4).
+        tips.SetToolTip(status, If(text.Length = 0, Nothing, text))
+        RefreshStatusGlyph()
+        Relayout()
+    End Sub
+
+    ''' <summary>The leading severity glyph (131 §3.4): the catalogue's status mark in the
+    ''' success/warning/danger role the host's palette carries - shape AND colour, never
+    ''' colour alone. Without a host palette (the manager dialog) the roles fall back to the
+    ''' contract's light defaults, the same values ThemePalette answers for the light scheme.</summary>
+    Private Shared ReadOnly StatusSuccessFallback As Color = Color.ForestGreen
+    Private Shared ReadOnly StatusWarningFallback As Color = Color.FromArgb(239, 108, 0)
+    Private Shared ReadOnly StatusDangerFallback As Color = Color.Firebrick
+
+    Private Sub RefreshStatusGlyph()
+        Dim glyphId As String = ""
+        Dim hue As Color = If(palette IsNot Nothing, palette.Muted, SystemColors.GrayText)
+        Select Case lastSeverity
+            Case ResourceStatusSeverity.Success
+                glyphId = "status.ok"
+                hue = If(palette IsNot Nothing, palette.Success, StatusSuccessFallback)
+            Case ResourceStatusSeverity.Warning
+                glyphId = "status.warning"
+                hue = If(palette IsNot Nothing, palette.Warning, StatusWarningFallback)
+            Case ResourceStatusSeverity.Danger
+                glyphId = "status.error"
+                hue = If(palette IsNot Nothing, palette.Danger, StatusDangerFallback)
+            Case ResourceStatusSeverity.Busy
+                glyphId = "status.unknown"
+        End Select
+        Dim previous As Image = statusGlyph.Image
+        statusGlyph.Image = If(glyphId.Length = 0, Nothing, RenderGlyph(glyphId, hue, GlyphSize))
+        If previous IsNot Nothing Then previous.Dispose()
+        LayoutStatusRow(Math.Max(Dv(160), ClientSize.Width), Dv(StatusHeight))
+    End Sub
+
+    ''' <summary>Renders a catalogue glyph as a bitmap, or Nothing when the asset cannot be
+    ''' read - a missing glyph must never take the panel down.</summary>
+    Private Function RenderGlyph(glyphId As String, hue As Color, logicalSize As Integer) As Bitmap
+        Try
+            Return GlyphRenderer.Render(glyphId, Dv(logicalSize), hue, AddressOf RuntimeBootstrap.OpenBundledAsset)
+        Catch
+            Return Nothing
+        End Try
+    End Function
+
+    ''' <summary>The row-height image list is the honest way to a 28+ logical px row (131 §3.3):
+    ''' the Details view sizes its rows after the small image list, and a 16 px glyph centred in
+    ''' the taller cell keeps the leading type glyph at its own size. Rebuilt when the ink, the
+    ''' scale or the handle changes. The PANEL's handle drives this, not the list's: with no
+    ''' resources the list stays hidden and never creates a handle, and the empty state's own
+    ''' glyph would never arrive.</summary>
+    Private Sub RefreshGlyphImages()
+        Dim ink As Color = If(palette IsNot Nothing, palette.EditorText, list.ForeColor)
+        Dim cellWidth As Integer = Math.Max(1, Dv(GlyphSize))
+        Dim cellHeight As Integer = Math.Max(cellWidth, Dv(RowHeight))
+        Dim images As New ImageList With {.ImageSize = New Size(cellWidth, cellHeight), .ColorDepth = ColorDepth.Depth32Bit}
+        ' Materialize the native list before Add: a lazy ImageList retains the source
+        ' bitmaps until its handle is created, so disposing a cell earlier invalidates it.
+        Dim imageHandle As IntPtr = images.Handle
+        For Each glyphId As String In New String() {"source.resource", "content.folder"}
+            Using cell As New Bitmap(cellWidth, cellHeight)
+                Using glyph As Bitmap = RenderGlyphForList(glyphId, ink, cellWidth)
+                    If glyph IsNot Nothing Then
+                        Using g As Graphics = Graphics.FromImage(cell)
+                            g.DrawImageUnscaled(glyph, (cellWidth - glyph.Width) \ 2, (cellHeight - glyph.Height) \ 2)
+                        End Using
+                    End If
+                End Using
+                images.Images.Add(glyphId, cell)
+            End Using
+        Next
+        Dim old As ImageList = rowImages
+        rowImages = images
+        list.SmallImageList = images
+        If old IsNot Nothing Then old.Dispose()
+        ' The empty state and the overflow carry palette-inked glyphs too.
+        Dim previousEmpty As Image = emptyGlyph.Image
+        emptyGlyph.Image = RenderGlyph("source.resource", If(palette IsNot Nothing, palette.Muted, SystemColors.GrayText), EmptyGlyphSize)
+        If previousEmpty IsNot Nothing Then previousEmpty.Dispose()
+        RefreshMoreImage()
+        RefreshStatusGlyph()
+    End Sub
+
+    Private Function RenderGlyphForList(glyphId As String, ink As Color, size As Integer) As Bitmap
+        Try
+            Return GlyphRenderer.Render(glyphId, size, ink, AddressOf RuntimeBootstrap.OpenBundledAsset)
+        Catch
+            Return Nothing
+        End Try
+    End Function
+
+    Private Sub RefreshMoreImage()
+        Using glyph As Bitmap = RenderGlyphForList("nav.more", If(palette IsNot Nothing, palette.Text, ForeColor), Dv(GlyphSize))
+            If glyph IsNot Nothing Then
+                moreButton.Text = ""
+                Dim previous As Image = moreButton.Image
+                moreButton.Image = DirectCast(glyph.Clone(), Bitmap)
+                If previous IsNot Nothing Then previous.Dispose()
+            Else
+                ' No catalogue asset readable (the tests' world): the typographic fallback.
+                moreButton.Text = "⋯"
+            End If
+        End Using
     End Sub
 
     ' -------------------------------------------------------------------------- actions ----
@@ -238,14 +808,19 @@ Friend NotInheritable Class Resource_List_Panel
         If current IsNot Nothing Then AddOrEdit(current, Nothing)
     End Sub
 
+    Private Sub OnOpen(sender As Object, e As EventArgs)
+        Dim chosen As ResourceDescriptor = Selected()
+        If chosen IsNot Nothing Then RaiseEvent ItemActivated(chosen)
+    End Sub
+
     Private Sub AddOrEdit(existing As ResourceDescriptor, draft As ResourceDescriptor)
         Dim owner As IWin32Window = If(FindForm(), DirectCast(Me, IWin32Window))
         Using dialog As New Resource_Edit_Form(existing, draft)
-            If dialog.ShowDialog(owner) <> DialogResult.OK Then Return
+            If DialogLayer.ShowViewerDialog(dialog, owner) <> DialogResult.OK Then Return
             Dim result As ResourceCommitResult = ResourceCommit.Commit(dialog.Result, dialog.NewPassword, hiveRead, hiveWrite, secrets)
             If Not result.Succeeded Then
                 AppFileLogger.WriteLine("Resource: save failed - " & result.Outcome.ToString())
-                MessageBox.Show(owner, Localization.T("Не удалось сохранить ресурс. Ничего не потеряно: то, что было сохранено раньше, осталось как было"),
+                ViewerBox.Show(owner, Localization.T("Не удалось сохранить ресурс. Ничего не потеряно: то, что было сохранено раньше, осталось как было"),
                                 dialog.Text, MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Return
             End If
@@ -257,7 +832,7 @@ Friend NotInheritable Class Resource_List_Panel
     ''' <summary>The dialog's own question, the default answer No. Injectable for the tests.</summary>
     Private Function AskRemoveConfirmation(current As ResourceDescriptor) As Boolean
         Dim owner As IWin32Window = If(FindForm(), DirectCast(Me, IWin32Window))
-        Return MessageBox.Show(owner,
+        Return ViewerBox.Show(owner,
                                Localization.TF("Удалить ресурс «{0}»? Сохранённый для него пароль тоже будет удалён. Файлы на сервере не затрагиваются.", current.DisplayName),
                                If(FindForm()?.Text, Localization.T("Ресурсы")),
                                MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) = DialogResult.Yes
@@ -273,7 +848,7 @@ Friend NotInheritable Class Resource_List_Panel
             Say("")
             RaiseEvent ResourcesChanged(removed)
         Else
-            Say(Localization.T("Не удалось удалить ресурс"))
+            Say(Localization.T("Не удалось удалить ресурс"), ResourceStatusSeverity.Danger)
         End If
         Refill()
     End Sub
@@ -286,28 +861,45 @@ Friend NotInheritable Class Resource_List_Panel
         Dim cancel As New CancellationTokenSource()
         testCancel = cancel
         testButton.Enabled = False
-        Say(Localization.T("Проверка.."))
+        Say(Localization.T("Проверка.."), ResourceStatusSeverity.Busy)
         Try
             Dim sentence As String
+            Dim severity As ResourceStatusSeverity
             If current.Kind = ResourceKind.Sftp Then
                 ' Every address is asked, in the producer's order: a stale LAN address next to a live
                 ' port forward is the ordinary state of an imported resource, and saying only the
-                ' first verdict would call a working resource broken.
+                ' first verdict would call a working resource broken. The overall severity is the
+                ' best news the addresses carry: one live SSH answers for the resource, an open
+                ' port that is not SSH is a warning, silence is the failure (131 §3.4).
                 Dim answers As New List(Of String)()
+                Dim reachable As Boolean = False
+                Dim openPortOnly As Boolean = False
                 For Each endpoint As FmsEndpoint In ResourceConnect.CandidatesOf(current).Distinct(New EndpointKeyComparer())
                     Dim verdict As ProbeVerdict = Await ResourceProbe.ProbeSftpAsync(endpoint.Host, endpoint.Port, cancel.Token)
                     If cancel.IsCancellationRequested Then Return
                     answers.Add(endpoint.Host & ":" & endpoint.Port.ToString(CultureInfo.InvariantCulture) & " - " & ResourceProbe.VerdictSentence(verdict))
+                    If verdict = ProbeVerdict.SshOk Then reachable = True
+                    If verdict = ProbeVerdict.PortOpen Then openPortOnly = True
                 Next
-                sentence = String.Join(vbLf, answers)
+                sentence = String.Join("; ", answers)
+                severity = If(reachable, ResourceStatusSeverity.Success, If(openPortOnly, ResourceStatusSeverity.Warning, ResourceStatusSeverity.Danger))
             Else
-                sentence = Await TestShareAsync(current, cancel.Token)
+                Dim outcome As TestOutcome = Await TestShareAsync(current, cancel.Token)
+                sentence = outcome.Sentence
+                severity = outcome.Severity
             End If
-            If Not cancel.IsCancellationRequested Then Say(sentence)
+            If Not cancel.IsCancellationRequested Then Say(sentence, severity)
         Finally
-            If testCancel Is cancel Then testButton.Enabled = Selected() IsNot Nothing
+            If testCancel Is cancel Then SetSelectionState(testButton, Selected() IsNot Nothing)
         End Try
     End Sub
+
+    ''' <summary>A sentence and the severity it is said with: the status line's glyph must
+    ''' match the outcome, so the test carries both back instead of the caller parsing text.</summary>
+    Private NotInheritable Class TestOutcome
+        Public Sentence As String
+        Public Severity As ResourceStatusSeverity
+    End Class
 
     Private NotInheritable Class EndpointKeyComparer
         Implements IEqualityComparer(Of FmsEndpoint)
@@ -321,20 +913,66 @@ Friend NotInheritable Class Resource_List_Panel
 
     ''' <summary>A share is tested the only honest way: by opening it and reading its top folder, with the
     ''' stored credential, then letting go of the connection.</summary>
-    Private Async Function TestShareAsync(current As ResourceDescriptor, ct As CancellationToken) As Task(Of String)
+    Private Async Function TestShareAsync(current As ResourceDescriptor, ct As CancellationToken) As Task(Of TestOutcome)
         Dim credential As CredentialReadResult = ResourceCommit.ReadCredential(current, secrets)
-        If credential.Outcome <> CredentialReadOutcome.Ok Then Return Localization.T("Пароль не сохранён: введите его через «Изменить..»")
+        If credential.Outcome <> CredentialReadOutcome.Ok Then
+            Return New TestOutcome With {.Sentence = Localization.T("Пароль не сохранён: введите его через «Изменить..»"),
+                                         .Severity = ResourceStatusSeverity.Warning}
+        End If
         Dim outcome As ConnectOutcome = Await ResourceConnect.ConnectAsync(current, credential.Secret, Nothing, Nothing, Nothing, ct)
-        If Not outcome.Succeeded Then Return ResourceMessages.ForFailure(outcome.Failure)
+        If Not outcome.Succeeded Then
+            Return New TestOutcome With {.Sentence = ResourceMessages.ForFailure(outcome.Failure),
+                                         .Severity = ResourceStatusSeverity.Danger}
+        End If
         Try
             Await Task.Run(Sub() outcome.Provider.ListEntries(current.RootPath, ct))
-            Return Localization.T("Папка открывается")
+            Return New TestOutcome With {.Sentence = Localization.T("Папка открывается"),
+                                         .Severity = ResourceStatusSeverity.Success}
         Catch ex As Exception
-            Return ResourceMessages.ForFailure(ResourceFailure.FromException(ex))
+            Return New TestOutcome With {.Sentence = ResourceMessages.ForFailure(ResourceFailure.FromException(ex)),
+                                         .Severity = ResourceStatusSeverity.Danger}
         Finally
             DirectCast(outcome.Provider, IDisposable)?.Dispose()
         End Try
     End Function
+
+    ' ------------------------------------------------------------------------ overflow ----
+
+    ''' <summary>The overflow's rows (131 §3.2): Export beside the two imports, behind the 125
+    ''' painted menu. Export needs a selection and says why when it has none; the imports never
+    ''' do. The rows carry no key hints - no hotkey action exists for them, and the 125 rule
+    ''' shows a hint only for an action the live map answers for. Friend so the tests can read
+    ''' the offer without opening a popup.</summary>
+    Friend Function BuildOverflowItems() As List(Of ChromeMenuItem)
+        Dim hasSelection As Boolean = Selected() IsNot Nothing
+        Dim reason As String = If(hasSelection, "", Localization.T(NoSelectionReasonKey))
+        Dim export As New ChromeMenuItem("res_Export") With {
+            .GlyphId = "action.share", .Caption = Localization.T("Экспорт.."),
+            .AccessibleName = If(hasSelection, Localization.T("Экспорт.."), Localization.T("Экспорт..") & " - " & reason),
+            .Enabled = hasSelection, .DisabledReason = reason}
+        If hasSelection Then export.Action = Sub() OnExport(Nothing, EventArgs.Empty)
+        Dim importFile As New ChromeMenuItem("res_ImportFile") With {
+            .GlyphId = "action.choose-file", .Caption = Localization.T("Импорт из файла.."),
+            .AccessibleName = Localization.T("Импорт из файла..")}
+        importFile.Action = Sub() OnImportFile(Nothing, EventArgs.Empty)
+        Dim importClipboard As New ChromeMenuItem("res_ImportClipboard") With {
+            .GlyphId = "action.copy", .Caption = Localization.T("Импорт из буфера"),
+            .AccessibleName = Localization.T("Импорт из буфера")}
+        importClipboard.Action = Sub() OnImportClipboard(Nothing, EventArgs.Empty)
+        Return New List(Of ChromeMenuItem) From {export, importFile, importClipboard}
+    End Function
+
+    Private Sub OnMore(sender As Object, e As EventArgs)
+        Dim owner As Form = FindForm()
+        If owner Is Nothing Then Return
+        If menuTheme Is Nothing Then
+            menuTheme = ChromeTheme.FromScheme(If(palette IsNot Nothing, palette.Surface, SystemColors.Control),
+                                               If(palette IsNot Nothing, palette.Text, SystemColors.ControlText),
+                                               SystemInformation.HighContrast)
+        End If
+        ChromeMenu.ShowPopup(owner, moreButton.PointToScreen(New Point(0, moreButton.Height)), BuildOverflowItems(),
+                             menuTheme, panelScale, RightToLeft = RightToLeft.Yes, Font, Font)
+    End Sub
 
     ' --------------------------------------------------------------------------- import ----
 
@@ -357,7 +995,7 @@ Friend NotInheritable Class Resource_List_Panel
             ' The clipboard can be held by another process for a moment; "nothing there" is the honest answer.
         End Try
         If String.IsNullOrWhiteSpace(text) Then
-            Say(Localization.T("В буфере обмена нет настроек ресурса"))
+            Say(Localization.T("В буфере обмена нет настроек ресурса"), ResourceStatusSeverity.Warning)
             Return
         End If
         ImportAndRefresh(FmsConfigReader.ReadText(text))
@@ -367,7 +1005,7 @@ Friend NotInheritable Class Resource_List_Panel
         Dim owner As IWin32Window = If(FindForm(), DirectCast(Me, IWin32Window))
         Dim stored As IReadOnlyList(Of String) = ResourceImportFlow.Run(owner, read)
         If stored.Count > 0 Then
-            Say(Localization.TF("Добавлено или обновлено ресурсов: {0}", stored.Count))
+            Say(Localization.TF("Добавлено или обновлено ресурсов: {0}", stored.Count), ResourceStatusSeverity.Success)
             Refill()
             RaiseEvent ResourcesChanged(removed)
         End If
@@ -380,7 +1018,7 @@ Friend NotInheritable Class Resource_List_Panel
         If current Is Nothing Then Return
         Dim owner As IWin32Window = If(FindForm(), DirectCast(Me, IWin32Window))
         Using dialog As New Resource_Export_Form(current, secrets)
-            dialog.ShowDialog(owner)
+            DialogLayer.ShowViewerDialog(dialog, owner)
         End Using
     End Sub
 
@@ -389,6 +1027,11 @@ Friend NotInheritable Class Resource_List_Panel
         If disposing Then
             testCancel?.Cancel()
             testCancel?.Dispose()
+            tips.Dispose()
+            rowImages?.Dispose()
+            statusGlyph.Image?.Dispose()
+            emptyGlyph.Image?.Dispose()
+            moreButton.Image?.Dispose()
         End If
     End Sub
 

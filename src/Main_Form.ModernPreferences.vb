@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.IO
@@ -25,13 +25,21 @@ Partial Public Class Main_Form
 
     Private Const spi_Get_Client_Area_Animation As UInteger = &H1042UI
 
-    ''' <summary>Nothing until the first read - the system answer is taken once per
-    ''' session, which is exactly as long as §4.3 says it applies.</summary>
-    Private system_Animations_Enabled As Boolean?
+    ''' <summary>-1 until the first read, then 0 (animations off) or 1 (on). It used to be taken once per process, so
+    ''' toggling Windows' "Animation effects" was ignored until the next start while high contrast was polled; now
+    ''' any user-preference change from the system throws it away (124 UX-220, 125 UX-335) and the next ask re-reads.</summary>
+    Private system_Animations_State As Integer = -1
+
+    ''' <summary>Windows told us a user preference changed (Animation effects among them): forget the cached answer.
+    ''' Raised on a system-events thread, so it only stores an integer.</summary>
+    Private Sub OnSystemPreferenceChanged(sender As Object, e As Microsoft.Win32.UserPreferenceChangedEventArgs)
+        Threading.Volatile.Write(system_Animations_State, -1)
+    End Sub
 
     ' Save() intentionally re-reads this cross-process setting. A failed import write
     ' must retry the explicit value before Save() can re-read the old registry value.
     Private pending_Allow_New_Windows_Persistence As Boolean
+    Private last_Applied_Preferences As ModernViewerPreferences
 
     Private Function RecentFilesLimit() As Integer
         Return If(modern_Preferences Is Nothing, 50, modern_Preferences.RecentFilesLimit)
@@ -39,6 +47,7 @@ Partial Public Class Main_Form
 
     Friend Function GetModernPreferences() As ModernViewerPreferences
         If modern_Preferences Is Nothing Then modern_Preferences = ModernViewerPreferences.Load()
+        If last_Applied_Preferences Is Nothing Then last_Applied_Preferences = modern_Preferences.Snapshot()
         Return modern_Preferences
     End Function
 
@@ -51,6 +60,7 @@ Partial Public Class Main_Form
         ' Into the existing object, never a new reference: the settings window's rows
         ' write into the instance they were built from (053 F-02).
         GetModernPreferences().CopyFrom(imported)
+        Is_Video_Loop = False
         pending_Allow_New_Windows_Persistence = True
         Dim persisted As Boolean = True
         Try
@@ -62,35 +72,43 @@ Partial Public Class Main_Form
             AppFileLogger.LogException("Settings import: persisting AllowNewWindows", ex)
             MarkSettingsDirty()
         End Try
-        If Not ApplyModernPreferencesFromSettings() Then persisted = False
+        If Not ApplyModernPreferencesFromSettings(persistImmediately:=True) Then persisted = False
         Return persisted
     End Function
 
-    ''' <summary>Applies the live preferences everywhere and writes them. True when the write took;
-    ''' a failed write keeps the main block dirty so the flush retries it (105 L09).</summary>
-    Friend Function ApplyModernPreferencesFromSettings() As Boolean
+    ''' <summary>Applies changed domains and schedules a bounded save. An explicit import writes immediately;
+    ''' a failed immediate write keeps the block dirty for retry (105 L09).</summary>
+    Friend Function ApplyModernPreferencesFromSettings(Optional persistImmediately As Boolean = False) As Boolean
         If modern_Preferences Is Nothing Then Return True
         modern_Preferences.Normalize()
-        InitializeExtensionLists()
-        folder_List_Loaded_For = String.Empty
-        ResetShuffleCycle()
-        ApplyRecipientsOverlay()
-        ' The floating chrome switch, and the scale / pinned choices the panels read.
-        ApplyModernChrome()
+        Dim previous As ModernViewerPreferences = last_Applied_Preferences
+        If previous Is Nothing OrElse previous.FolderEnumerationKey() <> modern_Preferences.FolderEnumerationKey() Then
+            InitializeExtensionLists()
+            folder_List_Loaded_For = String.Empty
+        End If
+        If previous Is Nothing OrElse previous.SlideshowRandomOrder <> modern_Preferences.SlideshowRandomOrder Then ResetShuffleCycle()
+        If previous Is Nothing OrElse previous.OverlayLayoutKey() <> modern_Preferences.OverlayLayoutKey() Then ApplyRecipientsOverlay()
+        If previous Is Nothing OrElse previous.ChromeLayoutKey() <> modern_Preferences.ChromeLayoutKey() Then ApplyModernChrome()
         ' The two track languages have a live copy in the player layer - it is what a
         ' pick from the Tracks menu writes into - so a change made here has to reach it
         ' now, not at the next start (§6.3).
         preferred_Audio_Language = modern_Preferences.PreferredAudioLanguage
         preferred_Subtitle_Language = modern_Preferences.PreferredSubtitleLanguage
         If video_Controls IsNot Nothing Then video_Controls_Hide_Timer.Interval = VideoControlsHideDelayMilliseconds()
+        ' 119 Ф-6: the cursor-hiding length (or its switch to 0) takes effect at once.
+        UpdateCursorHideTimer()
         ' Mirrored rather than read: the decode cache is consulted from pool threads.
         DecodeCacheStore.BudgetMb = modern_Preferences.DecodeCacheMaxMb
         ' And the OCR cache's, which was read once at start-up: lowering it from 250 to 20
         ' kept trimming to 250 for the rest of the session (audit 051 E-07).
         ApplyOcrCacheBudget()
-        ' Expanded settings are live settings. Persist after normalisation so a change
-        ' made in the settings window survives a crash and is visible to the next
-        ' process without waiting for the main form to close.
+        If previous IsNot Nothing AndAlso (previous.VideoEndAction <> modern_Preferences.VideoEndAction OrElse
+            previous.AudioEndAction <> modern_Preferences.AudioEndAction) Then RestartCurrentVideoPreservingPosition()
+        last_Applied_Preferences = modern_Preferences.Snapshot()
+        If Not persistImmediately Then
+            MarkSettingsDirty()
+            Return True
+        End If
         Try
             If pending_Allow_New_Windows_Persistence Then
                 modern_Preferences.PersistAllowNewWindows()
@@ -251,7 +269,8 @@ Partial Public Class Main_Form
     End Function
 
     Private Function SystemAnimationsEnabled() As Boolean
-        If system_Animations_Enabled.HasValue Then Return system_Animations_Enabled.Value
+        Dim cached As Integer = Threading.Volatile.Read(system_Animations_State)
+        If cached >= 0 Then Return cached = 1
 
         Dim enabled As Boolean = True
         Try
@@ -260,7 +279,7 @@ Partial Public Class Main_Form
         Catch
             enabled = True
         End Try
-        system_Animations_Enabled = enabled
+        Threading.Volatile.Write(system_Animations_State, If(enabled, 1, 0))
         Return enabled
     End Function
 
@@ -297,6 +316,7 @@ Partial Public Class Main_Form
         If is_Zoom_Applied_By_Program Then Return
         If modern_Preferences Is Nothing OrElse modern_Preferences.NewImageScaleMode <> "perFolder" Then Return
         modern_Preferences.StoreFolderZoom(PersistableFolderPath(), factor)
+        MarkSettingsDirty()
     End Sub
 
     ''' <summary>The user asked for Fit, so this folder has no scale to restore.</summary>
@@ -304,6 +324,7 @@ Partial Public Class Main_Form
         If is_Zoom_Applied_By_Program Then Return
         If modern_Preferences Is Nothing OrElse modern_Preferences.NewImageScaleMode <> "perFolder" Then Return
         modern_Preferences.ForgetFolderZoom(PersistableFolderPath())
+        MarkSettingsDirty()
     End Sub
 
     ''' <summary>Chrome the running slideshow hides (§5.2). Both answers are False unless a

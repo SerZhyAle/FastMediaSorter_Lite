@@ -56,7 +56,7 @@ Partial Public Class Table_Form
             Me.Cursor = previousCursor
 
             If String.IsNullOrEmpty(result.Path) Then
-                MessageBox.Show(Me,
+                ViewerBox.Show(Me,
                     Localization.TF("Не удалось собрать архив: {0}", FailureText.Describe(result.Failure)),
                     Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
@@ -66,7 +66,7 @@ Partial Public Class Table_Form
         Catch ex As Exception
             AppFileLogger.LogException("Table_Form send-logs click", ex)
             If Not Me.IsDisposed Then
-                MessageBox.Show(Me, Localization.TF("Не удалось собрать архив: {0}", FailureText.Describe(ex)),
+                ViewerBox.Show(Me, Localization.TF("Не удалось собрать архив: {0}", FailureText.Describe(ex)),
                                 Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
             End If
         Finally
@@ -176,7 +176,7 @@ Partial Public Class Table_Form
             End If
             ApplySendLogsScriptFont(dialog, header, ownedFonts)
 
-            dialog.ShowDialog(Me)
+            DialogLayer.ShowViewerDialog(dialog, Me)
         End Using
 
         If sent Then
@@ -265,7 +265,7 @@ Partial Public Class Table_Form
             AppFileLogger.LogException("Table_Form send-logs mailto", ex)
         End Try
 
-        MessageBox.Show(Me,
+        ViewerBox.Show(Me,
             Localization.T("Почтовый клиент с вложением открыть не удалось. Архив скопирован в буфер обмена и показан в папке - вложите его в письмо вручную."),
             Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub

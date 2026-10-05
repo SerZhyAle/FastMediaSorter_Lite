@@ -5,12 +5,17 @@
 | **Id** | `FMSCFG` |
 | **Version** | 2.2, active (read 2026-10-02; this producer already behaves as 2.2 describes - it was written from this code). Owner: FMS Companion (the Go worker repository) |
 | **Home** | `config-interchange/README.md` + `CONFIG_FORMAT.md` in the shared contracts catalog |
-| **Role here** | **producer** - `src/FastMediaSorterCompanion/Core/ShareConfigBuilder.vb` builds the shipped `.fmscfg` and its QR |
+| **Role here** | **producer** - `src/FastMediaSorterCompanion/Core/ShareConfigBuilder.vb` builds the Share Manager's shipped `.fmscfg` and its QR; since ticket 118 the viewer is the **second producer**: [src/Resources/FmsConfigExport.vb](../../src/Resources/FmsConfigExport.vb) turns one registered resource into the same document (file save + both clipboard transports, one resource per document, no `accessNote`, no PIN fields), published through [src/Resources/ExportWriter.vb](../../src/Resources/ExportWriter.vb) under the same rule 5 discipline, and pinned by its own bytes in `FmsConfigExportTests` (the per-producer vectors rule, 2.2 item B) |
 
 This product is the producer that actually ships. The worker has an exporter of its own and it is unused:
 it cannot advertise a manually forwarded router port, so the payload is assembled here instead.
 
 ## What this repository must do to stay conformant
+
+These rules bind BOTH producers - the Share Manager and, since ticket 118, the viewer's
+`FmsConfigExport` (which offers SFTP resources only: an SMB selection and an unpinned one are
+refused with their own sentence, `accessPin` is never emitted because the viewer holds none,
+and `"password":""` is written whenever the user chose "without" or no credential is stored).
 
 - **The payload is a secret.** It carries the SFTP password, and `accessPin` travels in plaintext beside
   it. Nothing may log it unredacted - `ShareConfigBuilder.RedactSecrets` blanks the password **and every

@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Drawing
@@ -27,6 +27,10 @@ Partial Public Class Table_Form
     Private SettingsText As Color
     Private SettingsMutedText As Color
     Private SettingsBorder As Color
+    Private SettingsEditorBack As Color
+    Private SettingsEditorText As Color
+    Private SettingsOnAccent As Color
+    Private SettingsCheckTick As Color
     Private settingsDarkMode As Boolean
 
     Private Const DwmwaUseImmersiveDarkMode As Integer = 20
@@ -53,12 +57,16 @@ Partial Public Class Table_Form
     Private modernAudioPage As TabPage
     Private modernSftpPage As TabPage
     Private modernAboutPage As TabPage
+    ' The shared value column of each page's row grid, in device pixels (127 §3.1.3):
+    ' recomputed from the widest editor of the page on every resize, language change and
+    ' scale change, so captions and editors align in two visual columns.
+    Private ReadOnly pageValueColumns As New Dictionary(Of FlowLayoutPanel, Integer)()
     ' The resources page (ticket 118 Ф-1): the shared panel lives here, and the window records
     ' what the user changed so the main form can react after ShowDialog (13.4).
     Private modernResourcesPage As TabPage
     Private resourcesPanel As Resource_List_Panel
     Private resourcesTouchedInSettings As Boolean
-    Private ReadOnly settingsRemovedResourceIds As New List(Of String)()
+    Private ReadOnly settingsRemovedResourceIdList As New List(Of String)()
     Private ReadOnly modernSettingsRows As New List(Of ModernSettingRow)()
     Private ReadOnly modernPageFlows As New List(Of FlowLayoutPanel)()
 
@@ -69,6 +77,12 @@ Partial Public Class Table_Form
         Public Description As Label
         Public Editor As Control
         Public Compact As Boolean
+        Public Stacked As Boolean
+        Public Arranging As Boolean
+        ' The row grid of 127 §3.1: which page's shared value column this row belongs to,
+        ' and the muted unit suffix that sits immediately left of a numeric editor.
+        Public PageFlow As FlowLayoutPanel
+        Public UnitLabel As Label
     End Class
 
     ''' <summary>
@@ -137,11 +151,116 @@ Partial Public Class Table_Form
     ''' A list that is already owner-drawn (the OCR languages) keeps its own handler.
     ''' </summary>
     Private Sub StyleModernComboBox(combo As ComboBox)
-        If combo.DrawMode <> DrawMode.Normal Then Return
-        combo.DrawMode = DrawMode.OwnerDrawFixed
-        combo.ItemHeight = Math.Max(Sp(24), SettingsPixelFont("Segoe UI", 12).Height + Sp(8))
-        combo.MaxDropDownItems = 16
-        AddHandler combo.DrawItem, AddressOf ModernComboBox_DrawItem
+        ' Idempotent: it runs again after every DPI change (the pixel font and the item height are scale
+        ' dependent) and for the combos that were added to a row after the first styling pass.
+        combo.Font = SettingsPixelFont("Segoe UI", 12)
+        If Not styledSettingsCombos.Contains(combo) Then
+            styledSettingsCombos.Add(combo)
+            If combo.DrawMode = DrawMode.Normal Then
+                combo.DrawMode = DrawMode.OwnerDrawFixed
+                AddHandler combo.DrawItem, AddressOf ModernComboBox_DrawItem
+            End If
+            If combo.DropDownStyle = ComboBoxStyle.DropDownList Then HookModernComboField(combo)
+        End If
+        If combo.DrawMode = DrawMode.OwnerDrawFixed Then
+            ' The closed field is this height plus the control's own 6 px frame: >= 36 logical px, comfortable to hit.
+            combo.ItemHeight = Math.Max(Sp(SettingsComboItemHeight), SettingsPixelFont("Segoe UI", 12).Height + Sp(8))
+            combo.MaxDropDownItems = 16
+        End If
+    End Sub
+
+    ''' <summary>Logical item height of every list row and (plus the control's 6 px frame) of the closed field.</summary>
+    Private Const SettingsComboItemHeight As Integer = 38
+    Private ReadOnly styledSettingsCombos As New HashSet(Of ComboBox)()
+
+    ''' <summary>Re-applies the combo look to EVERY drop-down of the window - the General page's rows are added
+    ''' after the first styling pass and were never reached by it, and a DPI change leaves the pixel fonts of
+    ''' the combos at the old scale.</summary>
+    Private Sub RestyleAllSettingsCombos()
+        For Each combo As ComboBox In FindModernControls(Of ComboBox)(Me)
+            StyleModernComboBox(combo)
+        Next
+    End Sub
+
+    ''' <summary>The closed field of a drop-down LIST is painted by us (UserPaint): the system's flat style drew a
+    ''' small white square for the arrow on the dark theme and put the value in a frame the size of a point font.
+    ''' The list that opens stays the system's, drawn by <see cref="ModernComboBox_DrawItem"/>.</summary>
+    Private Sub HookModernComboField(combo As ComboBox)
+        Dim setStyle As Reflection.MethodInfo = GetType(Control).GetMethod("SetStyle",
+            Reflection.BindingFlags.Instance Or Reflection.BindingFlags.NonPublic)
+        If setStyle Is Nothing Then Return
+        setStyle.Invoke(combo, New Object() {ControlStyles.UserPaint Or ControlStyles.AllPaintingInWmPaint Or
+                                             ControlStyles.OptimizedDoubleBuffer Or ControlStyles.ResizeRedraw, True})
+        AddHandler combo.Paint, AddressOf ModernComboBox_Paint
+        Dim repaint As EventHandler = Sub(sender As Object, e As EventArgs) combo.Invalidate()
+        AddHandler combo.MouseEnter, repaint
+        AddHandler combo.MouseLeave, repaint
+        AddHandler combo.GotFocus, repaint
+        AddHandler combo.LostFocus, repaint
+        AddHandler combo.DropDown, repaint
+        AddHandler combo.DropDownClosed, repaint
+        AddHandler combo.SelectedIndexChanged, repaint
+        AddHandler combo.EnabledChanged, repaint
+        AddHandler combo.RightToLeftChanged, repaint
+        AddHandler combo.TextChanged, repaint
+        AddHandler combo.BackColorChanged, repaint
+        AddHandler combo.ForeColorChanged, repaint
+        combo.Invalidate()
+    End Sub
+
+    Private Sub ModernComboBox_Paint(sender As Object, e As PaintEventArgs)
+        Dim combo As ComboBox = DirectCast(sender, ComboBox)
+        Dim g As Graphics = e.Graphics
+        Dim bounds As Rectangle = combo.ClientRectangle
+        If bounds.Width < 8 OrElse bounds.Height < 8 Then Return
+        Dim rtl As Boolean = combo.RightToLeft = RightToLeft.Yes
+        Dim enabled As Boolean = combo.Enabled
+        Dim hot As Boolean = enabled AndAlso bounds.Contains(combo.PointToClient(Control.MousePosition))
+        Dim active As Boolean = enabled AndAlso (combo.DroppedDown OrElse combo.Focused)
+        Dim back As Color = If(enabled, combo.BackColor, BlendSettingsColor(combo.BackColor, SettingsCanvas, 0.5F))
+        Dim ink As Color = If(enabled, SettingsText, SettingsMutedText)
+        Using brush As New SolidBrush(back)
+            g.FillRectangle(brush, bounds)
+        End Using
+
+        ' The arrow zone: a calmer tone than the field, ink in the text colour so it reads on both themes.
+        Dim zoneWidth As Integer = Math.Min(bounds.Width \ 2, Math.Max(Sp(36), bounds.Height))
+        Dim zone As Rectangle = If(rtl, New Rectangle(bounds.X, bounds.Y, zoneWidth, bounds.Height),
+                                   New Rectangle(bounds.Right - zoneWidth, bounds.Y, zoneWidth, bounds.Height))
+        Using brush As New SolidBrush(BlendSettingsColor(back, SettingsText, If(hot OrElse combo.DroppedDown, 0.16F, 0.08F)))
+            g.FillRectangle(brush, zone)
+        End Using
+        g.SmoothingMode = SmoothingMode.AntiAlias
+        Dim cx As Single = zone.X + zone.Width / 2.0F
+        Dim cy As Single = zone.Y + zone.Height / 2.0F
+        Dim half As Single = Math.Max(4.0F, Sp(6))
+        Using pen As New Pen(ink, Math.Max(1.75F, Sp(2))) With {.StartCap = LineCap.Round, .EndCap = LineCap.Round, .LineJoin = LineJoin.Round}
+            g.DrawLines(pen, New PointF() {New PointF(cx - half, cy - half / 2.0F), New PointF(cx, cy + half / 2.0F), New PointF(cx + half, cy - half / 2.0F)})
+        End Using
+
+        Dim item As Object = combo.SelectedItem
+        If item IsNot Nothing Then
+            Dim text As String = If(TypeOf item Is LanguageEntry, DirectCast(item, LanguageEntry).DisplayName(), combo.GetItemText(item))
+            Dim pad As Integer = Sp(10)
+            Dim area As New RectangleF(If(rtl, zone.Right + pad, bounds.X + pad), bounds.Y, Math.Max(0, bounds.Width - zoneWidth - 2 * pad), bounds.Height)
+            ' DrawString: a pixel font is drawn in pixels there, exactly as in the list rows (see ModernComboBox_DrawItem).
+            Using sf As New StringFormat(StringFormatFlags.NoWrap)
+                sf.LineAlignment = StringAlignment.Center
+                sf.Trimming = StringTrimming.EllipsisCharacter
+                sf.HotkeyPrefix = Drawing.Text.HotkeyPrefix.None
+                If rtl Then sf.FormatFlags = sf.FormatFlags Or StringFormatFlags.DirectionRightToLeft
+                g.TextRenderingHint = Drawing.Text.TextRenderingHint.ClearTypeGridFit
+                Using textBrush As New SolidBrush(ink)
+                    g.DrawString(text, combo.Font, textBrush, area, sf)
+                End Using
+            End Using
+        End If
+
+        g.SmoothingMode = SmoothingMode.None
+        Dim lineWidth As Integer = If(active, Math.Max(2, Sp(2)), Math.Max(1, Sp(1)))
+        Using pen As New Pen(If(active, SettingsAccent, SettingsBorder), lineWidth) With {.Alignment = PenAlignment.Inset}
+            g.DrawRectangle(pen, bounds.X, bounds.Y, bounds.Width - 1, bounds.Height - 1)
+        End Using
     End Sub
 
     Private Sub ModernComboBox_DrawItem(sender As Object, e As DrawItemEventArgs)
@@ -149,8 +268,8 @@ Partial Public Class Table_Form
         Dim inField As Boolean = (e.State And DrawItemState.ComboBoxEdit) <> 0
         Dim highlighted As Boolean = Not inField AndAlso (e.State And DrawItemState.Selected) <> 0
         Dim back As Color = If(highlighted, SettingsAccent, combo.BackColor)
-        Dim fore As Color = If(Not combo.Enabled, SystemColors.GrayText,
-                               If(highlighted, If(IsDarkColor(SettingsAccent), Color.White, Color.Black), combo.ForeColor))
+        Dim fore As Color = If(Not combo.Enabled, SettingsMutedText,
+                               If(highlighted, SettingsOnAccent, combo.ForeColor))
         Using brush As New SolidBrush(back)
             e.Graphics.FillRectangle(brush, e.Bounds)
         End Using
@@ -168,7 +287,9 @@ Partial Public Class Table_Form
                 sf.HotkeyPrefix = Drawing.Text.HotkeyPrefix.None
                 If combo.RightToLeft = RightToLeft.Yes Then sf.FormatFlags = sf.FormatFlags Or StringFormatFlags.DirectionRightToLeft
                 Using textBrush As New SolidBrush(fore)
-                    e.Graphics.DrawString(combo.GetItemText(combo.Items(e.Index)), SettingsPixelFont("Segoe UI", 12), textBrush, area, sf)
+                    ' combo.Font, not a font rebuilt from the layout scale: the control's own font is the one
+                    ' WinForms rescales when the window changes monitor, so the list and the field agree.
+                    e.Graphics.DrawString(If(TypeOf combo.Items(e.Index) Is LanguageEntry, DirectCast(combo.Items(e.Index), LanguageEntry).DisplayName(), combo.GetItemText(combo.Items(e.Index))), combo.Font, textBrush, area, sf)
                 End Using
             End Using
         End If
@@ -192,7 +313,8 @@ Partial Public Class Table_Form
 
         Dim percent As Integer = Main_Form.GetModernPreferences().InterfaceScalePercent
         Dim dpiFactor As Single = Math.Max(1.0F, CSng(DeviceDpi) / 96.0F)
-        Dim userFactor As Single = If(percent <= 0, 1.0F, percent / 100.0F)
+        Dim relative As Integer = Main_Form.GetModernPreferences().InterfaceScaleRelativePercent
+        Dim userFactor As Single = If(relative > 0, relative / 100.0F, If(percent <= 0, 1.0F, percent / 100.0F))
         settingsScale = dpiFactor * userFactor
         fontScale = userFactor
 
@@ -331,12 +453,32 @@ Partial Public Class Table_Form
         AddHandler VisibleChanged, AddressOf ModernSettingsVisibleChanged
         AddHandler Shown, AddressOf ModernSettingsShown
         AddHandler FormClosing, AddressOf SaveModernSettingsWindowSize
+        AddHandler DpiChanged, Sub()
+                                   settingsScale = Math.Max(1.0F, CSng(DeviceDpi) / 96.0F) * fontScale
+                                   resourcesPanel?.SetDeviceScale(settingsScale)
+                                   For Each group In settingsGroups.Values
+                                       group.SetLayoutScale(settingsScale)
+                                   Next
+                                   For Each row As ModernSettingRow In modernSettingsRows
+                                       For Each check As CheckBox In FindModernControls(Of CheckBox)(row.Host)
+                                           ConfigureModernCheckbox(check, row)
+                                       Next
+                                   Next
+                                   LayoutModernSettingsPages()
+                                   ' The nav glyphs are baked bitmaps at Sp(20): a tier change
+                                   ' must re-render them, or the old size survives the DPI
+                                   ' change (128 §5 scenario 3).
+                                   RefreshModernSettingsHeader()
+                                   QueueRestoreSettingsContext()
+                               End Sub
         BuildModernDataLayout()
         BuildSettingsGroups()
+        BuildSettingsDiscovery()
         StyleModernSettingsControls()
         LayoutModernSettingsPages()
         ApplySystemSettingsPalette()
         ResumeLayout(True)
+        FitInitialSettingsWindowToContent()
     End Sub
 
     Private Sub ReparentModernSettingsControl(control As Control, target As Control)
@@ -400,16 +542,21 @@ Partial Public Class Table_Form
             }
             button.FlatAppearance.BorderSize = 0
             AddHandler button.Click, AddressOf ModernSettingsNavClicked
+            AddHandler button.Paint, AddressOf PaintModernNavEdge
+            AddHandler button.GotFocus, Sub() button.Invalidate()
+            AddHandler button.LostFocus, Sub() button.Invalidate()
             navigation.Controls.Add(button)
             modernSettingsNavButtons(index) = button
             top += Sp(38)
         Next
     End Sub
 
-    ''' <summary>Draws the vocabulary glyph of a nav button in the button's CURRENT ink.
-    ''' The picture is padded on the right so the gap to the caption is ours and not the
-    ''' button layout's; it is re-rendered whenever the colour changes (selection, theme),
-    ''' because a cached bitmap would keep the colour it was first drawn in.</summary>
+    ''' <summary>Draws the vocabulary glyph of a nav button in the page's identity ink
+    ''' (128 §3.3), not the caption ink - the picture carries the page's own hue in both
+    ''' themes and keeps it on the selected row. The picture is padded on the right so
+    ''' the gap to the caption is ours and not the button layout's; it is re-rendered
+    ''' whenever the colour changes (selection, theme), because a cached bitmap would
+    ''' keep the colour it was first drawn in.</summary>
     Private Sub RenderModernNavGlyph(button As Button)
         Dim meaning As IconMeaning = IconMap.GetMeaning(button.Name)
         If meaning Is Nothing OrElse String.IsNullOrEmpty(meaning.GlyphId) Then Return
@@ -418,7 +565,9 @@ Partial Public Class Table_Form
         Dim padded As New Bitmap(tier + gap, tier)
         Try
             padded.SetResolution(96.0F, 96.0F)
-            Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, tier, button.ForeColor, AddressOf RuntimeBootstrap.OpenBundledAsset)
+            Dim ink As Color = Nothing
+            If Not SettingsNavIconPalette.TryGetInk(button.Name, settingsDarkMode, ink) Then ink = button.ForeColor
+            Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, tier, ink, AddressOf RuntimeBootstrap.OpenBundledAsset)
                 Using g As Graphics = Graphics.FromImage(padded)
                     g.DrawImageUnscaled(glyph, 0, 0)
                 End Using
@@ -494,9 +643,16 @@ Partial Public Class Table_Form
 
         Dim workArea As Rectangle = Screen.FromControl(ownerForm).WorkingArea
         FitModernSettingsClientSize(workArea, ClientSize.Width, ClientSize.Height)
-        Location = New Point(
-            workArea.Left + Math.Max(0, (workArea.Width - Width) \ 2),
-            workArea.Top + Math.Max(0, (workArea.Height - Height) \ 2))
+        Dim savedX As Integer
+        Dim savedY As Integer
+        If Not Integer.TryParse(GetSetting(App_name, Second_App_Name, "SettingsWindowX", ""), savedX) OrElse
+           Not Integer.TryParse(GetSetting(App_name, Second_App_Name, "SettingsWindowY", ""), savedY) Then
+            savedX = If(ownerForm.Right + Width <= workArea.Right, ownerForm.Right,
+                If(ownerForm.Left - Width >= workArea.Left, ownerForm.Left - Width, workArea.Left))
+            savedY = ownerForm.Top
+        End If
+        Location = New Point(Math.Max(workArea.Left, Math.Min(savedX, workArea.Right - Width)),
+            Math.Max(workArea.Top, Math.Min(savedY, workArea.Bottom - Height)))
     End Sub
 
     Private Sub FitModernSettingsClientSize(workArea As Rectangle, desiredWidth As Integer, desiredHeight As Integer)
@@ -517,6 +673,8 @@ Partial Public Class Table_Form
     Private Sub SaveModernSettingsWindowSize(sender As Object, e As FormClosingEventArgs)
         If WindowState <> FormWindowState.Normal Then Return
 
+        SaveSetting(App_name, Second_App_Name, "SettingsWindowX", Location.X.ToString())
+        SaveSetting(App_name, Second_App_Name, "SettingsWindowY", Location.Y.ToString())
         SaveSetting(App_name, Second_App_Name, "SettingsWindowWidth", ClientSize.Width.ToString())
         SaveSetting(App_name, Second_App_Name, "SettingsWindowHeight", ClientSize.Height.ToString())
     End Sub
@@ -536,7 +694,6 @@ Partial Public Class Table_Form
     Private Sub LocalizeModernSettingsLayout()
         If Not modernSettingsBuilt Then Return
 
-        Dim ru As Boolean = Is_Russian_Language
         Dim navLabels As String() = {Localization.T("Общие"), Localization.T("Получатели"),
              Localization.T("Изображения"),
              Localization.T("Видео"),
@@ -550,7 +707,8 @@ Partial Public Class Table_Form
              Localization.T("О программе")}
         For index As Integer = 0 To modernSettingsNavButtons.Length - 1
             modernSettingsNavButtons(index).Text = navLabels(index)
-            modernSettingsNavButtons(index).Height = Math.Max(Sp(34), TextRenderer.MeasureText(navLabels(index), modernSettingsNavButtons(index).Font,
+            Tab_Control.TabPages(index).Text = navLabels(index)
+            modernSettingsNavButtons(index).Height = Math.Max(Sp(44), TextRenderer.MeasureText(navLabels(index), modernSettingsNavButtons(index).Font,
                 New Size(Math.Max(1, modernSettingsNavButtons(index).Width - Sp(48)), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(12))
             modernSettingsNavButtons(index).Top = If(index = 0, 0, modernSettingsNavButtons(index - 1).Bottom + Sp(4))
             ' The caption can be clipped by a long translation: the tooltip and the
@@ -564,57 +722,84 @@ Partial Public Class Table_Form
         modernSidebarSectionLabel.Text = String.Empty
         LocalizeModernSettingRows()
         LocalizeSettingsGroups()
+        LocalizeSettingsDiscovery()
         RefreshModernSettingsHeader()
         QueueRestoreSettingsContext()
     End Sub
 
     Private Sub RefreshModernSettingsHeader()
         If Not modernSettingsBuilt Then Return
-        Dim ru As Boolean = Is_Russian_Language
         Dim index As Integer = Math.Max(0, Tab_Control.SelectedIndex)
-        Dim titles As String() = {Localization.T("Общие"), Localization.T("Каталоги-получатели"),
-             Localization.T("Изображения"),
-             Localization.T("Видео"),
-             Localization.T("Аудио"),
-             Localization.T("Файлы и система"),
-             Localization.T("Серверы и сетевые папки"),
-             Localization.T("OCR"),
-             Localization.TC("settings", "Перевод"),
-             Localization.T("Хранилище"),
-             Localization.T("Android и SFTP"),
-             Localization.T("О программе")}
         Dim subtitles As String() = {Localization.T("Язык, оформление и запуск приложения."), Localization.T("Назначьте папки для быстрого перемещения и копирования."),
-             Localization.T("Настройте фон, информацию на экране и слайдшоу."),
-             Localization.T("Качество изображения и привычное поведение видео."),
+             Localization.T("Фон изображения") & ". " & Localization.T("Поведение слайд-шоу") & ".",
+             Localization.T("Дорожки и субтитры") & ". " & Localization.T("Информация и управление") & ".",
              Localization.T("Обложки, управление и поведение аудиодорожек."),
-             Localization.T("Операции с файлами, интеграция и язык интерфейса."),
+             Localization.T("Операции с файлами") & ". " & Localization.T("Типы файлов") & ".",
              Localization.T("Серверы и сетевые папки: добавить, удалить, проверить, импортировать и передать на другой компьютер."),
              Localization.T("Распознавание текста на изображениях и параметры OCR."),
              Localization.T("Сервис и параметры перевода распознанного текста."),
-             Localization.T("Кэш изображений и миниатюр."),
+             Localization.T("Управление кэшем"),
              Localization.T("SFTP-сервер и мобильное приложение Android."),
              Localization.T("Версия приложения, документация и ссылки проекта.")}
 
-        If index >= titles.Length Then index = 0
-        modernSettingsTitle.Text = titles(index)
+        If index >= modernSettingsNavButtons.Length Then index = 0
+        modernSettingsTitle.Text = modernSettingsNavButtons(index).Text
         modernSettingsSubtitle.Text = subtitles(index)
+        ArrangeSettingsDiscoveryHeader()
 
         For buttonIndex As Integer = 0 To modernSettingsNavButtons.Length - 1
             Dim selected As Boolean = buttonIndex = index
             Dim button As Button = modernSettingsNavButtons(buttonIndex)
-            button.BackColor = If(selected, SettingsAccent, SettingsSidebar)
-            button.ForeColor = If(selected, If(GetSettingsBrightness(SettingsAccent) >= 155, Color.Black, Color.White), SettingsSidebarMuted)
-            button.FlatAppearance.MouseOverBackColor = If(selected, BlendSettingsColor(SettingsAccent, Color.White, 0.12F), BlendSettingsColor(SettingsSidebar, SettingsAccent, 0.18F))
-            button.FlatAppearance.MouseDownBackColor = If(selected, BlendSettingsColor(SettingsAccent, Color.Black, 0.12F), BlendSettingsColor(SettingsSidebar, SettingsAccent, 0.28F))
+            ' The selected row of 128 §3.3: a softened accent fill plus the leading bar,
+            ' caption in the normal text ink. A solid accent fill forces the identity
+            ' glyph either back to monochrome or into a hue clash, so every row keeps
+            ' its colored picture on its own background.
+            button.BackColor = If(selected, BlendSettingsColor(SettingsSidebar, SettingsAccent, 0.22F), SettingsSidebar)
+            button.ForeColor = If(selected, SettingsText, SettingsSidebarMuted)
+            button.FlatAppearance.MouseOverBackColor = If(selected, BlendSettingsColor(SettingsSidebar, SettingsAccent, 0.30F), BlendSettingsColor(SettingsSidebar, SettingsAccent, 0.18F))
+            button.FlatAppearance.MouseDownBackColor = If(selected, BlendSettingsColor(SettingsSidebar, SettingsAccent, 0.40F), BlendSettingsColor(SettingsSidebar, SettingsAccent, 0.28F))
             RenderModernNavGlyph(button)
         Next
     End Sub
 
+    ''' <summary>True when <paramref name="button"/> is the row of the selected page -
+    ''' the paint handler asks this rather than caching a flag, so a tab switch through
+    ''' the keyboard (Ctrl+Tab) repaints the bar with the background.</summary>
+    Private Function IsModernNavButtonSelected(button As Button) As Boolean
+        If modernSettingsNavButtons Is Nothing OrElse Tab_Control Is Nothing Then Return False
+        Dim index As Integer = Array.IndexOf(modernSettingsNavButtons, button)
+        Return index >= 0 AndAlso index = Math.Max(0, Tab_Control.SelectedIndex)
+    End Function
+
+    ''' <summary>The leading accent bar of the selected row and the keyboard focus ring
+    ''' (128 §3.3, the ring rules of 127 §3.3: 2 px accent, offset 2 px, never removed).
+    ''' The bar rides the leading edge and mirrors under RTL with the row's own content;
+    ''' the bar marks selection and the ring marks focus, so the two signals stay
+    ''' independent and a focused row is told from the selected one.</summary>
+    Private Sub PaintModernNavEdge(sender As Object, e As PaintEventArgs)
+        Dim button As Button = TryCast(sender, Button)
+        If button Is Nothing Then Return
+        If IsModernNavButtonSelected(button) Then
+            Dim barWidth As Integer = Sp(3)
+            Dim barX As Integer = If(button.RightToLeft = RightToLeft.Yes, button.Width - barWidth, 0)
+            Using accent As New SolidBrush(SettingsAccent)
+                e.Graphics.FillRectangle(accent, barX, 0, barWidth, button.Height)
+            End Using
+        End If
+        If button.Focused Then
+            Dim inset As Integer = Sp(2) + 1
+            If button.Width > inset * 2 + 2 AndAlso button.Height > inset * 2 + 2 Then
+                Using ringPen As New Pen(SettingsAccent, Math.Max(1.0F, 2.0F * settingsScale))
+                    e.Graphics.DrawRectangle(ringPen, inset, inset, button.Width - inset * 2 - 1, button.Height - inset * 2 - 1)
+                End Using
+            End If
+        End If
+    End Sub
+
     Private Sub LocalizeModernSettingRows()
-        Dim ru As Boolean = Is_Russian_Language
         For Each row As ModernSettingRow In modernSettingsRows
-            row.Title.Text = ModernSettingTitle(row.Key, ru)
-            If row.Description IsNot Nothing Then row.Description.Text = ModernSettingDescription(row.Key, ru)
+            row.Title.Text = ModernSettingTitle(row.Key)
+            If row.Description IsNot Nothing Then row.Description.Text = ModernSettingDescription(row.Key)
             For Each check As CheckBox In FindModernControls(Of CheckBox)(row.Host)
                 ConfigureModernCheckbox(check, row)
             Next
@@ -638,6 +823,11 @@ Partial Public Class Table_Form
                 Case "project_trust"
                     Dim link As LinkLabel = TryCast(row.Title, LinkLabel)
                     If link IsNot Nothing Then link.Tag = SitePages.TrustPageUrl(Localization.CurrentCode)
+                Case "slideshow_interval"
+                    ' PrepareForDisplay's legacy block (which runs before this pass on every
+                    ' opening) pins DecimalPlaces = 3; restate the whole-seconds presentation
+                    ' after it, so 10 s renders "10", never "10.000" (127 §3.2).
+                    RefreshSlideshowIntervalDecimals(row.Editor, EventArgs.Empty)
             End Select
             For Each link As LinkLabel In FindModernControls(Of LinkLabel)(row.Host)
                 If link IsNot row.Title Then link.Text = Localization.T("Открыть")
@@ -663,18 +853,15 @@ Partial Public Class Table_Form
         ' is already rendered by row.Title; keeping it on the tiny editor produces
         ' the stray first letters seen to the right of the checkbox.
         check.Text = String.Empty
-        check.AutoSize = False
-        check.Size = New Size(Sp(28), Sp(28))
-        check.CheckAlign = ContentAlignment.MiddleCenter
-        check.TextAlign = ContentAlignment.MiddleCenter
-        check.Padding = Padding.Empty
-        check.Margin = Padding.Empty
-        check.RightToLeft = RightToLeft.No
+        ' The drawn box of 127 §3.3: fill AND glyph distinguish the states in both themes.
+        SettingsCheckBox.Attach(check, settingsScale)
+        SettingsCheckBox.ApplyPalette(check, SettingsSurface, SettingsEditorBack, SettingsMutedText,
+                                      SettingsText, SettingsAccent, SettingsCheckTick)
         check.AccessibleName = row.Title.Text
         check.AccessibleDescription = If(row.Description Is Nothing, String.Empty, row.Description.Text)
     End Sub
 
-    Private Function ModernSettingTitle(key As String, ru As Boolean) As String
+    Private Function ModernSettingTitle(key As String) As String
         Select Case key
             Case "recipients_overlay" : Return Localization.T("Таблица получателей поверх изображения")
             Case "section_overlay_layout" : Return Localization.T("Вид таблицы получателей")
@@ -716,6 +903,7 @@ Partial Public Class Table_Form
             Case "video_loop" : Return Localization.T("Повторять видео")
             Case "video_mute" : Return Localization.T("Запускать без звука")
             Case "video_volume" : Return Localization.T("Громкость по умолчанию (%):")
+            Case "shared_audio_settings" : Return Localization.T("Общий звук: аудио и видео")
             Case "section_video_behavior" : Return Localization.T("Поведение видео")
             Case "include_video_navigation" : Return Localization.T("Учитывать видео при пролистывании файлов")
             Case "video_autoplay" : Return Localization.T("Запускать видео автоматически")
@@ -724,6 +912,10 @@ Partial Public Class Table_Form
             Case "video_controls_paused" : Return Localization.T("Показывать панель при паузе")
             Case "video_click_action" : Return Localization.T("Одиночный клик по видео")
             Case "video_end_action" : Return Localization.T("После окончания видео")
+            Case "video_seek_short" : Return Localization.T("Короткий шаг перемотки, с")
+            Case "video_seek_medium" : Return Localization.T("Средний шаг перемотки, с")
+            Case "video_seek_long" : Return Localization.T("Длинный шаг перемотки, с")
+            Case "video_hide_cursor" : Return Localization.T("Скрывать указатель мыши через, с (0 - не скрывать)")
             Case "section_audio_behavior" : Return Localization.T("Поведение аудио")
             Case "include_audio_navigation" : Return Localization.T("Учитывать аудио при пролистывании файлов")
             Case "audio_end_action" : Return Localization.T("После окончания аудио")
@@ -766,8 +958,11 @@ Partial Public Class Table_Form
             Case "secure_show_true_name" : Return Localization.T("Показывать настоящее имя файла")
             Case "secure_open_with" : Return Localization.T("Контейнеры .fd-sec")
             Case "settings_export_personal" : Return Localization.T("Включить личные данные")
-            Case "settings_export" : Return Localization.T("Экспорт настроек")
-            Case "settings_import" : Return Localization.T("Импорт настроек")
+            Case "settings_export" : Return Localization.T("Экспорт дополнительных настроек")
+            Case "settings_import" : Return Localization.T("Импорт дополнительных настроек")
+            Case "settings_defaults" : Return Localization.T("Восстановить по умолчанию")
+            Case "remote_cache_limit" : Return Localization.T("Кэш сетевых ресурсов, МБ")
+            Case "thumb_cache_clear" : Return Localization.T("Кэш миниатюр")
             Case "allow_new_windows" : Return Localization.T("Разрешать запуск в новых окнах")
             Case "secondary_instance_warning" : Return Localization.T("Это дополнительное окно. Изменения настроек действуют до его закрытия и не сохраняются - настройки хранит первое окно.")
             Case "ocr_enabled" : Return Localization.T("Включить OCR")
@@ -789,9 +984,11 @@ Partial Public Class Table_Form
             Case "ocr_overlay_visible" : Return Localization.T("Показывать панель перевода")
             Case "ocr_disk_cache" : Return Localization.T("Кэшировать результаты на диске")
             Case "ocr_cache_limit" : Return Localization.T("Максимальный размер OCR-кэша, МБ")
-            Case "ocr_cache_clear" : Return Localization.T("Занято на диске")
+            Case "ocr_cache_clear" : Return Localization.T("OCR")
+            Case "archive_cache_clear" : Return Localization.T("Архивы")
+            Case "remote_cache_clear" : Return Localization.T("Сетевые ресурсы")
             Case "decode_cache_limit" : Return Localization.T("Кэш декодирования, МБ")
-            Case "decode_cache_clear" : Return Localization.T("Занято на диске")
+            Case "decode_cache_clear" : Return Localization.T("Изображения")
             Case "thumb_cache_limit" : Return Localization.T("Кэш миниатюр панели, МБ")
             Case "sftp_intro" : Return Localization.T("Доступ к медиатеке с телефона")
             Case "resources_intro" : Return Localization.T("Серверы и сетевые папки")
@@ -806,13 +1003,14 @@ Partial Public Class Table_Form
             Case "project_github" : Return "GitHub"
             Case "project_releases" : Return Localization.T("Новые версии")
             Case "project_privacy" : Return Localization.T("Политика конфиденциальности")
+            Case "project_license" : Return Localization.T("Лицензия MIT")
             Case "project_trust" : Return Localization.T("Почему Windows предупреждает")
             Case "project_email" : Return Localization.T("Связаться с автором")
             Case Else : Return key
         End Select
     End Function
 
-    Private Function ModernSettingDescription(key As String, ru As Boolean) As String
+    Private Function ModernSettingDescription(key As String) As String
         Select Case key
             Case "recipients_overlay" : Return Localization.T("Показывает компактный список папок поверх изображения; закрепляется и открепляется своей булавкой, как панели.")
             Case "recipients_position" : Return Localization.T("Угол области просмотра, в котором будет показана таблица.")
@@ -825,7 +1023,7 @@ Partial Public Class Table_Form
             Case "perspective" : Return Localization.T("Продолжает края фотографии на свободную область экрана.")
             Case "dynamic_perspective" : Return Localization.T("Плавно смешивает продолжение изображения с выбранным фоном.")
             Case "animated_perspective" : Return Localization.T("Проявляет ореол короткой анимацией при открытии следующего файла.")
-            Case "halo_speed" : Return Localization.T("Средняя - вдвое быстрее прежней анимации, быстрая - вчетверо.")
+            Case "halo_speed" : Return Localization.T("Медленная") & ": 350 ms; " & Localization.T("Средняя") & ": 175 ms; " & Localization.T("Быстрая") & ": 88 ms."
             Case "show_picture_size" : Return Localization.T("Показывает ширину и высоту текущего изображения.")
             Case "show_file_size" : Return Localization.T("Добавляет размер текущего файла в информационную строку.")
             Case "show_file_date" : Return Localization.T("Добавляет дату и время последнего изменения файла.")
@@ -833,7 +1031,7 @@ Partial Public Class Table_Form
             Case "wheel_zooms" : Return Localization.T("Колесо меняет масштаб; при отключении оно листает файлы.")
             Case "slideshow_interval" : Return Localization.T("Базовая пауза между изображениями, в секундах.")
             Case "thumbnail_size" : Return Localization.T("Размер карточек в панели предварительного просмотра.")
-            Case "interface_scale" : Return Localization.T("Размер шрифта и элементов окна настроек. Применяется после его перезапуска.")
+            Case "interface_scale" : Return Localization.T("Множитель масштаба Windows для настроек, плавающих панелей и текстового просмотра. Системный - без изменения.")
             Case "new_image_scale" : Return Localization.T("Начальный масштаб при открытии следующего изображения.")
             Case "reduce_motion" : Return Localization.T("Отключает декоративные переходы, анимацию ореола и движение фона у аудио без обложки.")
             Case "chrome_size" : Return Localization.T("Малые, средние или крупные; адаптивный следит и за шириной окна.")
@@ -846,11 +1044,12 @@ Partial Public Class Table_Form
             Case "exif_rotate" : Return Localization.T("Учитывает ориентацию, записанную камерой или телефоном.")
             Case "hq_scaling" : Return Localization.T("Делает уменьшенные изображения резче, используя качественную интерполяцию.")
             Case "video_loop" : Return Localization.T("После окончания видео запускается снова.")
-            Case "video_mute" : Return Localization.T("Каждое видео начинает воспроизводиться с выключенным звуком.")
-            Case "video_volume" : Return Localization.T("Начальная громкость воспроизведения, от 0 до 100 %.")
+            Case "video_mute" : Return Localization.T("Общий звук: аудио и видео")
+            Case "video_volume" : Return Localization.T("Начальная громкость воспроизведения, от 0 до 100 %.") & " " & Localization.T("Общий звук: аудио и видео")
+            Case "shared_audio_settings" : Return Localization.T("Общий звук: аудио и видео")
             Case "video_autoplay" : Return Localization.T("Если выключено, видео открывается на паузе.")
             Case "include_video_navigation", "include_audio_navigation" : Return Localization.T("Выключенные типы не показываются в текущей папке и не входят в счётчик.")
-            Case "include_document_navigation", "sort_other_files" : Return Localization.T("Вместо картинки — имя, размер и дата. Клавиши сортировки работают как обычно.")
+            Case "include_document_navigation", "sort_other_files" : Return Localization.T("Вместо картинки - имя, размер и дата. Клавиши сортировки работают как обычно.")
             Case "text_preview_max_kb" : Return Localization.T("Читается только начало файла. Enter открывает файл целиком во внешнем редакторе.")
             Case "document_extensions", "other_extensions" : Return Localization.T("Расширения через пробел или точку с запятой, например .pdf;.txt. Без масок.")
             Case "video_remember_position" : Return Localization.T("Изменившийся файл всегда начинается с начала.")
@@ -858,13 +1057,17 @@ Partial Public Class Table_Form
             Case "video_controls_paused" : Return Localization.T("Не скрывает управление, пока видео поставлено на паузу.")
             Case "video_click_action" : Return Localization.T("Действие левой кнопки мыши на поверхности видео.")
             Case "video_end_action" : Return Localization.T("Что делать, когда воспроизведение достигло конца.")
+            Case "video_seek_short" : Return Localization.T("Прыжок назад или вперёд по Shift+стрелкам, от 1 до 600 секунд.")
+            Case "video_seek_medium" : Return Localization.T("Прыжок назад или вперёд по Alt+стрелкам.")
+            Case "video_seek_long" : Return Localization.T("Прыжок назад или вперёд по Ctrl+стрелкам.")
+            Case "video_hide_cursor" : Return Localization.T("Скрывает указатель после стольких секунд неподвижности во время слайд-шоу и полноэкранного просмотра. 0 - не скрывать.")
             Case "audio_end_action" : Return Localization.T("Что делать, когда аудиодорожка достигла конца.")
             Case "audio_controls_visible" : Return Localization.T("Оставляет транспортную панель видимой во время аудио.")
             Case "audio_visualiser" : Return Localization.T("Показывает фирменные волны и частицы, если в аудио нет встроенной обложки.")
             Case "audio_sleep_timer" : Return Localization.T("Через сколько минут остановить воспроизведение. 0 отключает таймер.")
             Case "preferred_audio_language", "preferred_subtitle_language" : Return Localization.T("Если такой дорожки нет, выбор остаётся за плеером.")
             Case "advance_after_copy" : Return Localization.T("После копирования сразу показывается следующий файл. Снимите галочку, чтобы остаться на текущем.")
-            Case "no_confirmation" : Return Localization.T("Файловые операции выполняются сразу. Используйте осторожно.")
+            Case "no_confirmation" : Return Localization.T("Отключает вопросы при перекодировании JPEG и операциях панели миниатюр. Удаление настраивается отдельно.")
             Case "image_associations" : Return Localization.T("Регистрирует программу для открытия изображений у текущего пользователя, без прав администратора.")
             Case "video_associations" : Return Localization.T("Регистрирует программу для открытия видео и аудио у текущего пользователя, без прав администратора.")
             Case "interface_language" : Return Localization.T("Выберите, на каком языке показывать интерфейс.")
@@ -888,9 +1091,9 @@ Partial Public Class Table_Form
             Case "secure_show_true_name" : Return Localization.T("Открытый контейнер показывает имя файла, который в нём спрятан - в строке состояния и в подписи поверх картинки. Выключите, если на экран смотрит кто-то ещё.")
             Case "secure_open_with" : Return Localization.T("Добавляет программу в меню «Открыть с помощью» для .fd-sec, ничего не отбирая у той программы, которой эти файлы принадлежат сейчас.")
             Case "settings_export_personal" : Return Localization.T("История папок и позиции просмотра попадут в файл. API-ключи и пароли - никогда.")
-            Case "settings_export" : Return Localization.T("Сохраняет параметры в файл. Личные данные - пути и позиции просмотра - не включаются.")
-            Case "settings_import" : Return Localization.T("Читает параметры из файла. Прежний профиль сохраняется в резервную копию.")
-            Case "allow_new_windows" : Return Localization.T("Обычно повторный запуск программы отдаёт файл уже открытому окну. Если отмечено, каждый запуск открывает своё окно.")
+            Case "settings_export" : Return Localization.T("Файл содержит только дополнительные настройки. Получатели, язык, тема, звук и OCR не включаются.")
+            Case "settings_import" : Return Localization.T("Файл содержит только дополнительные настройки. Получатели, язык, тема, звук и OCR не включаются.") & " " & Localization.T("Читает параметры из файла. Прежний профиль сохраняется в резервную копию.")
+            Case "allow_new_windows" : Return Localization.T("Каждый запуск открывает отдельное окно. Применяется при следующем запуске.")
             Case "ocr_enabled" : Return Localization.T("Разрешает распознавание текста на открытых изображениях.")
             Case "ocr_auto" : Return Localization.T("Распознаёт текст без отдельной команды после открытия изображения.")
             Case "ocr_provider" : Return Localization.T("Выберите локальный или сетевой движок, который выполнит перевод.")
@@ -906,10 +1109,15 @@ Partial Public Class Table_Form
             Case "ocr_opacity" : Return Localization.T("Непрозрачность фона перевода: от 30 до 100 %.")
             Case "ocr_overlay_visible" : Return Localization.T("Показывает или скрывает уже распознанный перевод поверх изображения.")
             Case "ocr_disk_cache" : Return Localization.T("Сохраняет распознанный текст, чтобы повторно не обрабатывать файл.")
-            Case "ocr_cache_limit" : Return Localization.T("0 означает без ограничения; очистка по LRU выполняется после записи.")
-            Case "ocr_cache_clear" : Return Localization.T("Текущий размер сохранённых результатов. Очистка не меняет настройки OCR.")
+            Case "ocr_cache_limit" : Return Localization.T("0 отключает дисковый кэш; -1 снимает ограничение. При заполнении удаляются старые результаты.")
+            Case "ocr_cache_clear" : Return Localization.T("Сколько места занимают сохранённые результаты распознавания и перевода. Очистка не меняет настройки OCR и не удаляет языковые данные - текст распознаётся заново.")
+            Case "archive_cache_clear" : Return Localization.T("Сколько места занимают временные копии записей открытых архивов. Очистка убирает только оставшиеся копии - открытый архив продолжит работать.")
+            Case "remote_cache_clear" : Return Localization.T("Сколько места занимают временные копии файлов сетевых ресурсов. Очистка не прерывает активные подключения - копия загрузится заново при обращении.")
             Case "decode_cache_limit" : Return Localization.T("Ускоряет повторное открытие анимаций и медленных форматов. 0 отключает кэш.")
-            Case "decode_cache_clear" : Return Localization.T("Текущий размер сохранённых результатов декодирования.")
+            Case "decode_cache_clear" : Return Localization.T("Сколько места занимают сохранённые результаты декодирования. Очистка не меняет сами изображения - они декодируются заново.")
+            Case "settings_defaults" : Return Localization.T("Файл содержит только дополнительные настройки. Получатели, язык, тема, звук и OCR не включаются.")
+            Case "remote_cache_limit" : Return Localization.T("Ограничивает временные копии файлов сетевых ресурсов.")
+            Case "thumb_cache_clear" : Return Localization.T("Сколько места занимают сохранённые миниатюры. Очистка не удаляет исходные файлы - миниатюры строятся заново.")
             Case "thumb_cache_limit" : Return Localization.T("Ускоряет повторное открытие панели F3. 0 отключает кэш.")
             Case "sftp_intro" : Return Localization.T("Опубликуйте выбранные папки встроенным SFTP-сервером и открывайте их в мобильном приложении.")
             Case "resources_intro" : Return Localization.T("Сохранённые серверы SFTP и сетевые папки с паролем: открываются как обычные папки.")
@@ -924,6 +1132,7 @@ Partial Public Class Table_Form
             Case "project_github" : Return Localization.T("Исходный код, задачи и техническая документация.")
             Case "project_releases" : Return Localization.T("Список опубликованных версий и файлов для установки.")
             Case "project_privacy" : Return Localization.T("Как приложение обрабатывает пользовательские данные.")
+            Case "project_license" : Return "MIT"
             Case "project_trust" : Return Localization.T("Предупреждение SmartScreen, на что нажать и зачем нужны права администратора.")
             Case "project_email" : Return Localization.T("Написать автору проекта по электронной почте.")
             Case Else : Return String.Empty
@@ -958,6 +1167,7 @@ Partial Public Class Table_Form
         ' is tall enough that doing so pushed the row above it - the recipients-overlay
         ' switch - out of sight. A click still focuses and edits the grid as before.
         Data_Grid_View.TabStop = False
+        AddRecipientGridActions(gridHost)
         destinations.Controls.Add(gridHost)
 
         Dim viewing As FlowLayoutPanel = CreateModernPageFlow(Tab_Page_2)
@@ -983,7 +1193,7 @@ Partial Public Class Table_Form
         Dim video As FlowLayoutPanel = CreateModernPageFlow(Tab_Page_3)
         AddSettingRow(video, "exif_rotate", chk_Exif_AutoRotate, 34, True)
         AddSettingRow(video, "hq_scaling", chk_Hq_Scaling, 34, True)
-        AddSettingRow(video, "video_loop", chkb_video_loop, 34, True)
+        chkb_video_loop.Visible = False
         AddSettingRow(video, "video_mute", chk_Video_Mute, 34, True)
         AddSettingRow(video, "video_volume", num_Video_Volume, 100, True)
 
@@ -1077,9 +1287,17 @@ Partial Public Class Table_Form
     End Function
 
     ''' <summary>The two column thresholds move with the interface scale (§4.1) - at 150 %
-    ''' a row genuinely needs half again as much room before it can be halved.</summary>
+    ''' a row genuinely needs half again as much room before it can be halved. The page's
+    ''' shared value column is recomputed here from the widest editor it has to hold
+    ''' (127 §3.1.3), before the groups pass it down to their rows.</summary>
     Private Sub ResizeModernPageItems(flow As FlowLayoutPanel)
-        Dim width As Integer = Math.Max(Sp(460), flow.ClientSize.Width - flow.Padding.Horizontal - Sp(18))
+        Dim width As Integer = Math.Max(1, flow.ClientSize.Width - flow.Padding.Horizontal - Sp(18))
+        Dim widestEditor As Integer = 0
+        For Each row As ModernSettingRow In modernSettingsRows
+            If row.PageFlow IsNot flow OrElse row.Editor Is Nothing Then Continue For
+            widestEditor = Math.Max(widestEditor, ToLogicalPx(MeasureModernEditorControl(row)))
+        Next
+        pageValueColumns(flow) = Sp(SettingsRowGridRules.PageValueColumn(widestEditor))
         Dim useTwoColumns As Boolean = width >= Sp(820)
         For Each child As Control In flow.Controls
             Dim group As SettingsCollapsibleGroup = TryCast(child, SettingsCollapsibleGroup)
@@ -1090,6 +1308,11 @@ Partial Public Class Table_Form
             End If
             Dim compact As Boolean = String.Equals(TryCast(child.Tag, String), "modern:compact", StringComparison.Ordinal)
             child.Width = If(compact AndAlso useTwoColumns, Math.Max(Sp(300), (width - 8) \ 2), width)
+        Next
+        ' A new page column does not necessarily change host widths (language switches
+        ' in particular). Reflow even when WinForms has no Resize event to deliver.
+        For Each row As ModernSettingRow In modernSettingsRows
+            If row.PageFlow Is flow Then SizeModernSettingRow(row)
         Next
     End Sub
 
@@ -1102,6 +1325,14 @@ Partial Public Class Table_Form
         modernSettingsRows.Add(New ModernSettingRow With {.Key = key, .Host = host, .Title = title})
     End Sub
 
+    ''' <summary>
+    ''' One regular settings row of the two-column grid (127 §3.1): the caption and its
+    ''' hint wrap inside the label column on the left, the editor sits in the page's
+    ''' shared value column on the right, flush to the row's right padding. Below the
+    ''' stacked threshold - or when the shared column would leave the labels too little
+    ''' room - the editor moves under the hint instead; only fill-eligible editors (text)
+    ''' stretch there, a command button keeps its text-fitted width.
+    ''' </summary>
     Private Sub AddSettingRow(flow As FlowLayoutPanel, key As String, editor As Control, editorWidth As Integer, Optional compact As Boolean = False)
         Dim host As New Panel With {.Height = Sp(56), .Margin = New Padding(0, 0, 6, 6), .BackColor = SettingsSurface, .Padding = New Padding(12, 5, 12, 5),
                                    .Tag = If(compact, "modern:compact", "modern:full")}
@@ -1110,13 +1341,15 @@ Partial Public Class Table_Form
         Dim description As New Label With {.AutoSize = False, .Location = New Point(Sp(14), Sp(31)), .Height = Sp(22),
                                            .Font = SettingsFont("Segoe UI", Sf(8.0F)), .ForeColor = SettingsMutedText,
                                            .AutoEllipsis = True}
-        Dim row As New ModernSettingRow With {.Key = key, .Host = host, .Title = title, .Description = description, .Editor = editor, .Compact = compact}
+        Dim row As New ModernSettingRow With {.Key = key, .Host = host, .Title = title, .Description = description, .Editor = editor, .Compact = compact, .PageFlow = flow}
         Dim check As CheckBox = TryCast(editor, CheckBox)
+        Dim numeric As NumericUpDown = TryCast(editor, NumericUpDown)
         ReparentModernSettingsControl(editor, host)
-        editor.Width = Sp(editorWidth)
 
         If check IsNot Nothing Then
-            editor.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+            ' Boolean rows follow the same grid: the box sits in the value column, flush
+            ' right, so every caption starts at the same x (127 §3.1.6). Whole-row clicks
+            ' still toggle through the labels' tags.
             ConfigureModernCheckbox(check, row)
             title.Cursor = Cursors.Hand
             description.Cursor = Cursors.Hand
@@ -1124,46 +1357,19 @@ Partial Public Class Table_Form
             description.Tag = check
             AddHandler title.Click, AddressOf ToggleModernCheckboxFromText
             AddHandler description.Click, AddressOf ToggleModernCheckboxFromText
+        ElseIf numeric IsNot Nothing Then
+            AddModernNumericUnit(row, key)
         ElseIf TypeOf editor Is Button Then
-            editor.Anchor = AnchorStyles.Top Or AnchorStyles.Right
-            editor.Height = Sp(34)
-        Else
-            editor.Anchor = AnchorStyles.Top Or AnchorStyles.Right
+            StyleModernCommandButton(DirectCast(editor, Button))
         End If
 
         host.Controls.Add(title)
         host.Controls.Add(description)
+        If row.UnitLabel IsNot Nothing Then host.Controls.Add(row.UnitLabel)
         title.BringToFront()
         description.BringToFront()
-        AddHandler host.Resize,
-            Sub()
-                If check IsNot Nothing Then
-                    editor.Left = Sp(14)
-                    title.Left = editor.Right + Sp(10)
-                    description.Left = title.Left
-                    title.Width = Math.Max(Sp(180), host.ClientSize.Width - title.Left - Sp(14))
-                    description.Width = title.Width
-                    editor.Top = title.Top + Math.Max(0, (title.Height - editor.Height) \ 2)
-                Else
-                    editor.Width = Math.Min(Sp(editorWidth), Math.Max(Sp(150), host.ClientSize.Width - Sp(260)))
-                    editor.Left = Math.Max(Sp(230), Math.Min(Sp(420), host.ClientSize.Width - editor.Width - Sp(12)))
-                    ' The caption ends 14 px before the editor - the same inset it starts
-                    ' at on the left. It used to be 32, an 18 px gap wider than the row's
-                    ' own margin, and those four pixels were the whole difference for the
-                    ' longest caption in the window ("После копирования или перемещения",
-                    ' 216 px) once two columns squeeze a row down to ~406 px wide.
-                    ' SettingsLayoutTests measures every caption in all 13 languages
-                    ' against exactly this arithmetic - at the default scale, where every
-                    ' Sp() below returns its argument unchanged.
-                    Dim labelWidth As Integer = Math.Max(Sp(180), editor.Left - Sp(28))
-                    title.Left = Sp(14)
-                    description.Left = Sp(14)
-                    title.Width = labelWidth
-                    description.Width = labelWidth
-                    editor.Top = Math.Max(Sp(10), (host.ClientSize.Height - editor.Height) \ 2)
-                End If
-                SizeModernSettingRow(row)
-            End Sub
+        AddHandler host.Resize, Sub() SizeModernSettingRow(row)
+        AddHandler editor.EnabledChanged, Sub() RefreshSettingsDependencies()
         flow.Controls.Add(host)
         modernSettingsRows.Add(row)
         SizeModernSettingRow(row)
@@ -1177,71 +1383,307 @@ Partial Public Class Table_Form
         check.Focus()
     End Sub
 
-    Private Sub SizeModernSettingRow(row As ModernSettingRow)
-        If row.Description Is Nothing Then Return
-        ' Heights come from the fonts, so they follow the interface scale on their own.
-        Dim titleHeight As Integer = Math.Max(Sp(20), TextRenderer.MeasureText(row.Title.Text, row.Title.Font,
-            New Size(Math.Max(1, row.Title.Width), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(4))
-        row.Description.AutoEllipsis = False
-        Dim descriptionHeight As Integer = Math.Max(Sp(18), TextRenderer.MeasureText(row.Description.Text, row.Description.Font,
-            New Size(Math.Max(1, row.Description.Width), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(4))
-        row.Title.Top = Sp(7)
-        row.Title.Height = titleHeight
-        row.Description.Top = row.Title.Bottom + Sp(2)
-        row.Description.Height = descriptionHeight
-        row.Host.Height = row.Description.Bottom + Sp(7)
-        Dim check As CheckBox = TryCast(row.Editor, CheckBox)
-        If check IsNot Nothing Then
-            check.Left = Sp(14)
-            row.Title.Left = check.Right + Sp(10)
-            row.Description.Left = row.Title.Left
-            row.Title.Width = Math.Max(Sp(180), row.Host.ClientSize.Width - row.Title.Left - Sp(14))
-            row.Description.Width = row.Title.Width
-            check.Top = row.Title.Top + Math.Max(0, (row.Title.Height - check.Height) \ 2)
-        ElseIf row.Editor IsNot Nothing Then
-            row.Editor.Top = Math.Max(Sp(10), (row.Host.ClientSize.Height - row.Editor.Height) \ 2)
+    ''' <summary>The muted unit suffix of 127 §3.2: immediately left of a numeric editor.
+    ''' The slideshow interval is the one key whose backing store carries decimals - a
+    ''' whole-seconds value renders "10", never "10.000".</summary>
+    Private Sub AddModernNumericUnit(row As ModernSettingRow, key As String)
+        Dim unit As String = ModernSettingUnit(key)
+        If unit.Length = 0 Then Return
+        Dim label As New Label With {.AutoSize = False, .Text = unit,
+                                     .Font = SettingsPixelFont("Segoe UI", 12), .ForeColor = SettingsMutedText,
+                                     .TextAlign = ContentAlignment.MiddleRight, .BackColor = SettingsSurface}
+        row.Host.Controls.Add(label)
+        row.UnitLabel = label
+        If key = "slideshow_interval" Then
+            AddHandler DirectCast(row.Editor, NumericUpDown).ValueChanged, AddressOf RefreshSlideshowIntervalDecimals
+            RefreshSlideshowIntervalDecimals(row.Editor, EventArgs.Empty)
         End If
     End Sub
 
+    Private Shared Sub RefreshSlideshowIntervalDecimals(sender As Object, e As EventArgs)
+        Dim number As NumericUpDown = TryCast(sender, NumericUpDown)
+        If number Is Nothing Then Return
+        ' Decimals only when the backing key carries them: 1.5 s shows "1.5", 10 s shows "10".
+        Dim needed As Integer = If(number.Value = Decimal.Truncate(number.Value), 0, 3)
+        If number.DecimalPlaces <> needed Then number.DecimalPlaces = needed
+    End Sub
+
+    ''' <summary>The unit suffix per key, from the units the captions already name. Captions
+    ''' and hints stay with 120 (127 §3.6) - this is editor presentation only.</summary>
+    Private Shared Function ModernSettingUnit(key As String) As String
+        Select Case key
+            Case "slideshow_interval", "video_controls_delay", "video_seek_short", "video_seek_medium", "video_seek_long", "video_hide_cursor"
+                Return "s"
+            Case "audio_sleep_timer", "secure_remember_minutes"
+                Return "min"
+            Case "recipients_opacity", "video_volume"
+                Return "%"
+            Case "archive_cache_limit", "archive_entry_limit", "archive_entries_limit", "ocr_cache_limit", "decode_cache_limit", "thumb_cache_limit", "remote_cache_limit"
+                Return "MB"
+            Case "text_preview_max_kb"
+                Return "KB"
+            Case "recipients_width", "chrome_corners"
+                Return "px"
+            Case Else
+                Return String.Empty
+        End Select
+    End Function
+
+    ''' <summary>The value column of the row's page, in device pixels. Computed per page by
+    ''' <see cref="ResizeModernPageItems"/> from the widest editor on the page; until that
+    ''' has run, the floor applies.</summary>
+    Private Function PageValueColumnWidth(flow As FlowLayoutPanel) As Integer
+        Dim value As Integer = Nothing
+        If flow IsNot Nothing AndAlso pageValueColumns.TryGetValue(flow, value) Then Return value
+        Return Sp(SettingsRowGridRules.MinValueColumnWidth)
+    End Function
+
+    Private Function ToLogicalPx(devicePixels As Integer) As Integer
+        If settingsScale <= 0.0F Then Return devicePixels
+        Return CInt(Math.Round(devicePixels / settingsScale))
+    End Function
+
+    ''' <summary>Text-like editors (endpoints, the editable model field) take the whole
+    ''' value column; fixed ones keep their measured width.</summary>
+    Private Function RowEditorFillsColumn(row As ModernSettingRow) As Boolean
+        Dim editor As Control = row.Editor
+        If editor Is Nothing Then Return False
+        If TypeOf editor Is TextBox Then Return True
+        Dim combo As ComboBox = TryCast(editor, ComboBox)
+        If combo IsNot Nothing Then Return combo.DropDownStyle <> ComboBoxStyle.DropDownList
+        Dim strip As FlowLayoutPanel = TryCast(editor, FlowLayoutPanel)
+        If strip IsNot Nothing Then
+            For Each child As Control In strip.Controls
+                Dim inner As ComboBox = TryCast(child, ComboBox)
+                If inner IsNot Nothing AndAlso inner.DropDownStyle <> ComboBoxStyle.DropDownList Then Return True
+                If TypeOf child Is TextBox Then Return True
+            Next
+        End If
+        Return False
+    End Function
+
+    ''' <summary>The width of the editor CONTROL itself (unit suffix excluded), device px.</summary>
+    Private Function MeasureModernEditorControl(row As ModernSettingRow) As Integer
+        Dim editor As Control = row.Editor
+        If editor Is Nothing Then Return 0
+        If TypeOf editor Is CheckBox Then Return Sp(28)
+        If TypeOf editor Is NumericUpDown Then Return Sp(SettingsRowGridRules.NumericEditorWidth)
+        Dim combo As ComboBox = TryCast(editor, ComboBox)
+        If combo IsNot Nothing Then
+            If combo.DropDownStyle = ComboBoxStyle.DropDownList Then Return MeasureModernComboWidth(combo)
+            Return Sp(200)
+        End If
+        If TypeOf editor Is TextBox Then Return Sp(200)
+        Dim button As Button = TryCast(editor, Button)
+        If button IsNot Nothing Then Return MeasureModernCommandButtonWidth(button)
+        Dim strip As FlowLayoutPanel = TryCast(editor, FlowLayoutPanel)
+        If strip IsNot Nothing Then Return MeasureModernStripWidth(strip)
+        ' A slider host (the track bar with its exact numeric companion) or a similar panel.
+        Return Sp(SettingsRowGridRules.SliderEditorWidth + SettingsRowGridRules.SliderCompanionWidth)
+    End Function
+
+    ''' <summary>A closed drop-down field is sized for its longest localized item plus the
+    ''' chevron zone, clamped to the §3.2 bounds.</summary>
+    Private Function MeasureModernComboWidth(combo As ComboBox) As Integer
+        Dim font As Font = SettingsPixelFont("Segoe UI", 12)
+        Dim widest As Integer = 0
+        For Each item As Object In combo.Items
+            Dim text As String = If(TypeOf item Is LanguageEntry, DirectCast(item, LanguageEntry).DisplayName(), combo.GetItemText(item))
+            If String.IsNullOrEmpty(text) Then Continue For
+            widest = Math.Max(widest, TextRenderer.MeasureText(text, font, New Size(Integer.MaxValue, Integer.MaxValue), TextFormatFlags.NoPadding).Width)
+        Next
+        Dim field As Integer = widest + Sp(10) * 2 + Sp(36) + Sp(6)
+        Return Math.Max(Sp(160), Math.Min(Sp(340), field))
+    End Function
+
+    ''' <summary>A command button fits its text with 16 logical px of horizontal padding
+    ''' (127 §3.2) - never docked, never stretched.</summary>
+    Private Sub StyleModernCommandButton(button As Button)
+        button.Dock = DockStyle.None
+        button.AutoSize = False
+        button.Height = Sp(SettingsRowGridRules.ButtonHeight)
+        button.TextAlign = ContentAlignment.MiddleCenter
+    End Sub
+
+    Private Function MeasureModernCommandButtonWidth(button As Button) As Integer
+        Dim text As String = button.Text
+        If String.IsNullOrEmpty(text) Then Return Sp(96)
+        Dim textWidth As Integer = TextRenderer.MeasureText(text, SettingsFont("Segoe UI Semibold", Sf(9.0F)),
+            New Size(Integer.MaxValue, Integer.MaxValue), TextFormatFlags.NoPadding).Width
+        Return Math.Max(Sp(64), textWidth + 2 * Sp(SettingsRowGridRules.ButtonHorizontalPadding))
+    End Function
+
+    ''' <summary>The natural width of a strip: its controls' own widths plus the 8 px gaps.</summary>
+    Private Function MeasureModernStripWidth(strip As FlowLayoutPanel) As Integer
+        Dim total As Integer = 0
+        For Each child As Control In strip.Controls
+            Dim childWidth As Integer
+            Dim button As Button = TryCast(child, Button)
+            If button IsNot Nothing Then
+                childWidth = MeasureModernCommandButtonWidth(button)
+            ElseIf TypeOf child Is Label AndAlso child.AutoSize Then
+                childWidth = TextRenderer.MeasureText(child.Text, child.Font, New Size(Integer.MaxValue, Integer.MaxValue), TextFormatFlags.NoPadding).Width
+            Else
+                childWidth = child.Width
+            End If
+            total += childWidth + child.Margin.Horizontal
+        Next
+        ' MakeModernControlStrip already carries each gap in the preceding margin.
+        Return Math.Max(Sp(64), total)
+    End Function
+
+    ''' <summary>
+    ''' Sizes one row: the two-column grid at and above the stacked threshold, the stacked
+    ''' fallback below it. Also the single owner of the host's height, so the Resize
+    ''' handler, localization and layout passes all end here.
+    ''' </summary>
+    Private Sub SizeModernSettingRow(row As ModernSettingRow)
+        If row.Description Is Nothing OrElse row.Arranging Then Return
+        row.Arranging = True
+        Try
+            Dim host As Panel = DirectCast(row.Host, Panel)
+            Dim hostWidth As Integer = host.ClientSize.Width
+            Dim valueColumn As Integer = PageValueColumnWidth(row.PageFlow)
+            Dim twoColumn As Boolean = row.Editor IsNot Nothing AndAlso
+                SettingsRowGridRules.IsTwoColumn(ToLogicalPx(hostWidth), ToLogicalPx(valueColumn))
+
+            ' The shared label column: everything left of the page's value column.
+            Dim labelLeft As Integer = Sp(14)
+            Dim labelWidth As Integer = If(twoColumn,
+                Math.Max(Sp(40), Sp(SettingsRowGridRules.LabelColumnWidth(ToLogicalPx(hostWidth), ToLogicalPx(valueColumn)))),
+                Math.Max(Sp(40), hostWidth - Sp(28)))
+
+            ' Heights come from the fonts, so they follow the interface scale on their own.
+            row.Title.AutoEllipsis = False
+            Dim titleHeight As Integer = Math.Max(Sp(20), TextRenderer.MeasureText(row.Title.Text, row.Title.Font,
+                New Size(Math.Max(1, labelWidth), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(4))
+            row.Description.AutoEllipsis = False
+            Dim descriptionHeight As Integer = Math.Max(Sp(18), TextRenderer.MeasureText(row.Description.Text, row.Description.Font,
+                New Size(Math.Max(1, labelWidth), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(4))
+            Dim titleTop As Integer = Sp(7)
+            If twoColumn Then titleTop = Math.Max(titleTop, Sp(4) + (row.Editor.Height - titleHeight) \ 2)
+            row.Title.SetBounds(labelLeft, titleTop, labelWidth, titleHeight)
+            row.Description.SetBounds(labelLeft, row.Title.Bottom + Sp(2), labelWidth, descriptionHeight)
+            row.Description.AutoEllipsis = True
+
+            Dim editor As Control = row.Editor
+            If editor Is Nothing Then
+                host.Height = row.Description.Bottom + Sp(7)
+                Return
+            End If
+
+            Dim unitWidth As Integer = 0
+            If row.UnitLabel IsNot Nothing Then
+                ' The generous slack: GDI+ measures a pixel font tighter than the label
+                ' draws it, and a clipped unit ("p" for "px") reads as a typo.
+                row.UnitLabel.Width = Math.Max(Sp(20), TextRenderer.MeasureText(row.UnitLabel.Text, row.UnitLabel.Font,
+                    New Size(Integer.MaxValue, Integer.MaxValue), TextFormatFlags.NoPadding).Width + Sp(12))
+                unitWidth = row.UnitLabel.Width + Sp(4)
+            End If
+
+            Dim controlWidth As Integer = Math.Max(Sp(24), MeasureModernEditorControl(row))
+            If twoColumn Then
+                controlWidth = If(RowEditorFillsColumn(row), Math.Max(Sp(24), valueColumn - unitWidth),
+                                  Math.Min(controlWidth, Math.Max(Sp(24), valueColumn - unitWidth)))
+                editor.Width = controlWidth
+                editor.Left = hostWidth - Sp(12) - controlWidth
+                ' The editor is centred on the CAPTION line, not on the whole row (§3.1.4):
+                ' a two-line hint never pushes its control off its caption.
+                editor.Top = row.Title.Top + (row.Title.Height - editor.Height) \ 2
+                If row.UnitLabel IsNot Nothing Then
+                    row.UnitLabel.Height = editor.Height
+                    row.UnitLabel.Left = editor.Left - Sp(4) - row.UnitLabel.Width
+                    row.UnitLabel.Top = editor.Top
+                    row.UnitLabel.BringToFront()
+                End If
+                host.Height = Math.Max(row.Description.Bottom + Sp(7), editor.Top + editor.Height + Sp(8))
+                row.Stacked = False
+            Else
+                Dim stackedLogical As Integer = SettingsRowGridRules.StackedEditorWidth(
+                    ToLogicalPx(controlWidth), ToLogicalPx(Math.Max(1, hostWidth - Sp(28))), RowEditorFillsColumn(row))
+                controlWidth = Math.Max(Sp(24), Math.Min(Sp(stackedLogical), hostWidth - Sp(28) - unitWidth))
+                editor.Width = controlWidth
+                If row.UnitLabel IsNot Nothing Then
+                    row.UnitLabel.Height = editor.Height
+                    row.UnitLabel.Left = Sp(14)
+                    row.UnitLabel.Top = row.Description.Bottom + Sp(6)
+                    row.UnitLabel.BringToFront()
+                    editor.Left = Sp(14) + row.UnitLabel.Width + Sp(4)
+                Else
+                    editor.Left = Sp(14)
+                End If
+                editor.Top = row.Description.Bottom + Sp(6)
+                host.Height = editor.Bottom + Sp(10)
+                row.Stacked = True
+            End If
+        Finally
+            row.Arranging = False
+        End Try
+    End Sub
+
+    ''' <summary>A strip of commands beside a description: every button text-fitted at the
+    ''' uniform 32 px height, the strip as wide as its controls plus the gaps between them
+    ''' (carried in the controls' own right margins), right aligned in the value column by
+    ''' the row grid (127 §3.2). The proportional width split for command buttons is gone;
+    ''' only an editable field beside a command (the model field and Pull) flexes, through
+    ''' <see cref="LayoutModernControlStrip"/>. The strip never sizes ITSELF: its width and
+    ''' position belong to the row grid alone.</summary>
     Private Function MakeModernControlStrip(controls As Control(), width As Integer) As FlowLayoutPanel
-        Dim strip As New FlowLayoutPanel With {.Width = Sp(width), .Height = Sp(34), .FlowDirection = FlowDirection.LeftToRight,
+        Dim strip As New FlowLayoutPanel With {.Width = Sp(width), .Height = Sp(40), .FlowDirection = FlowDirection.LeftToRight,
                                                .WrapContents = False, .Margin = Padding.Empty, .Padding = Padding.Empty,
                                                .BackColor = SettingsSurface}
         For index As Integer = 0 To controls.Length - 1
             Dim control As Control = controls(index)
             ReparentModernSettingsControl(control, strip)
-            control.Margin = New Padding(0, Sp(2), Sp(6), Sp(2))
-            If controls.Length = 2 Then
-                If index = 0 AndAlso TypeOf control Is ComboBox Then
-                    control.Width = Sp(208)
-                ElseIf index = 1 AndAlso TypeOf controls(0) Is ComboBox Then
-                    control.Width = Sp(96)
-                Else
-                    control.Width = (Sp(width) - 8) \ 2
-                End If
-            End If
-            ' 30 logical px stays above the 28 px floor for a mouse (ICON-RENDER section 3 rule 5).
-            If TypeOf control Is Button Then control.Height = Sp(30)
+            control.Dock = DockStyle.None
+            control.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+            control.Margin = If(index < controls.Length - 1,
+                                New Padding(0, Sp(2), Sp(SettingsRowGridRules.StripGap), Sp(2)),
+                                New Padding(0, Sp(2), 0, Sp(2)))
+            Dim button As Button = TryCast(control, Button)
+            If button IsNot Nothing Then StyleModernCommandButton(button)
         Next
-        AddHandler strip.Resize, Sub() LayoutModernControlStrip(strip, controls)
-        LayoutModernControlStrip(strip, controls)
+        AddHandler strip.Resize, Sub() LayoutModernControlStrip(strip)
+        For Each control As Control In controls
+            AddHandler control.TextChanged, Sub() LayoutModernControlStrip(strip)
+        Next
+        LayoutModernControlStrip(strip)
         Return strip
     End Function
 
-    Private Sub LayoutModernControlStrip(strip As FlowLayoutPanel, controls As Control())
-        If controls.Length <> 2 Then Return
-        Dim available As Integer = Math.Max(Sp(120), strip.ClientSize.Width - 8)
-        If TypeOf controls(0) Is ComboBox Then
-            controls(1).Width = Math.Min(Sp(96), Math.Max(Sp(72), available \ 3))
-            controls(0).Width = Math.Max(Sp(80), available - controls(1).Width)
-        Else
-            controls(0).Width = available \ 2
-            controls(1).Width = available - controls(0).Width
+    ''' <summary>Buttons keep their text-fitted width; only an editable field beside a
+    ''' command (model field + Pull) flexes to the strip's width.</summary>
+    Private Sub LayoutModernControlStrip(strip As FlowLayoutPanel)
+        Dim fixedTotal As Integer = 0
+        Dim field As Control = Nothing
+        For Each child As Control In strip.Controls
+            Dim button As Button = TryCast(child, Button)
+            If button IsNot Nothing Then
+                StyleModernCommandButton(button)
+                button.Width = MeasureModernCommandButtonWidth(button)
+                fixedTotal += button.Width + child.Margin.Horizontal
+            ElseIf TypeOf child Is ComboBox AndAlso DirectCast(child, ComboBox).DropDownStyle = ComboBoxStyle.DropDownList Then
+                Dim list As ComboBox = DirectCast(child, ComboBox)
+                list.Width = MeasureModernComboWidth(list)
+                fixedTotal += list.Width + child.Margin.Horizontal
+            ElseIf TypeOf child Is TextBox OrElse TypeOf child Is ComboBox Then
+                field = child
+            Else
+                fixedTotal += child.Width + child.Margin.Horizontal
+            End If
+        Next
+        If field IsNot Nothing Then
+            field.Width = Math.Max(Sp(120), strip.ClientSize.Width - fixedTotal - field.Margin.Horizontal)
         End If
+        Dim requiredHeight As Integer = Sp(SettingsRowGridRules.ButtonHeight)
+        For Each child As Control In strip.Controls
+            requiredHeight = Math.Max(requiredHeight, child.Height + child.Margin.Vertical)
+        Next
+        strip.Height = requiredHeight
     End Sub
 
     Private Function MakeModernOpacityStrip() As Panel
-        Dim strip As New Panel With {.Width = 330, .Height = 48, .Margin = Padding.Empty, .Padding = Padding.Empty,
+        Dim strip As New Panel With {.Width = Sp(SettingsRowGridRules.SliderEditorWidth + SettingsRowGridRules.SliderCompanionWidth), .Height = Sp(48), .Margin = Padding.Empty, .Padding = Padding.Empty,
                                      .BackColor = SettingsSurface}
         ReparentModernSettingsControl(trkOcrOpacity, strip)
         trkOcrOpacity.Location = Point.Empty
@@ -1249,43 +1691,81 @@ Partial Public Class Table_Form
         ReparentModernSettingsControl(lblOcrOpacityVal, strip)
         lblOcrOpacityVal.AutoSize = False
         lblOcrOpacityVal.Visible = True
-        lblOcrOpacityVal.Width = 66
-        lblOcrOpacityVal.Height = 34
+        lblOcrOpacityVal.Width = Sp(SettingsRowGridRules.SliderCompanionWidth)
+        lblOcrOpacityVal.Height = Sp(34)
         lblOcrOpacityVal.TextAlign = ContentAlignment.MiddleLeft
         lblOcrOpacityVal.Anchor = AnchorStyles.Top Or AnchorStyles.Right
         lblOcrOpacityVal.BringToFront()
         AddHandler strip.Resize,
             Sub()
-                lblOcrOpacityVal.Width = 66
+                lblOcrOpacityVal.Width = Sp(SettingsRowGridRules.SliderCompanionWidth)
                 lblOcrOpacityVal.Left = Math.Max(0, strip.ClientSize.Width - lblOcrOpacityVal.Width)
-                lblOcrOpacityVal.Top = 6
-                trkOcrOpacity.Width = Math.Max(100, lblOcrOpacityVal.Left - 6)
+                lblOcrOpacityVal.Top = Sp(6)
+                trkOcrOpacity.Width = Math.Max(Sp(100), lblOcrOpacityVal.Left)
             End Sub
         Return strip
     End Function
 
-    ''' <summary>The resources page (ticket 118 Ф-1): the same list+actions panel the manager dialog
-    ''' hosts, embedded once. A list is not a label+editor row, so it sits in a host Panel, not an
-    ''' AddSettingRow; the removal/add/import facts travel to the main form through the panel's
+    ''' <summary>The resources page (tickets 118 and 131): the shared panel the manager dialog
+    ''' hosts too, embedded once, reading top-to-bottom as introduction, actions, list, status.
+    ''' The panel is not an AddSettingRow - a list is not a label+editor row - and its host no
+    ''' longer sits at a fixed 380 px: the host takes the page's remaining height with a 320
+    ''' logical px floor (131 §3.1), so the list answers the window. The Open action lives in
+    ''' the panel's action row as its primary command (131 §3.2) and answers ItemActivated the
+    ''' same way a double-click does: the window closes first, the viewer connects (120 §15).
+    ''' The removal/add/import facts travel to the main form through the panel's
     ''' ResourcesChanged and the window's own ResourcesTouched / RemovedResourceIds (13.4).</summary>
     Private Sub BuildModernResourcesPage()
         If modernResourcesPage Is Nothing OrElse resourcesPanel IsNot Nothing Then Return
         Dim flow As FlowLayoutPanel = CreateModernPageFlow(modernResourcesPage)
         AddInformationBlock(flow, "resources_intro")
 
-        resourcesPanel = New Resource_List_Panel(settingsScale) With {
+        resourcesPanel = New Resource_List_Panel(settingsScale, withPrimaryOpen:=True, deviceScale:=True) With {
             .Dock = DockStyle.Fill, .Tag = "modern:full", .BackColor = SettingsSurface}
         AddHandler resourcesPanel.ResourcesChanged,
             Sub(removedIds As IReadOnlyList(Of String))
                 resourcesTouchedInSettings = True
                 For Each id As String In removedIds
-                    If Not settingsRemovedResourceIds.Contains(id) Then settingsRemovedResourceIds.Add(id)
+                    If Not settingsRemovedResourceIdList.Contains(id) Then settingsRemovedResourceIdList.Add(id)
                 Next
             End Sub
-        Dim host As New Panel With {.Height = Sp(380), .BackColor = SettingsSurface, .Padding = New Padding(8, 0, 8, 8), .Tag = "modern:full"}
+        AddHandler resourcesPanel.ItemActivated,
+            Sub(resource As ResourceDescriptor)
+                If resource Is Nothing Then Return
+                Close()
+                Main_Form.BeginInvoke(New Action(Sub() Main_Form.ConnectAndEnterResource(resource, String.Empty)))
+            End Sub
+        ' The window outlives a language switch; the panel's captions travel with it.
+        Dim host As New Panel With {.BackColor = SettingsSurface, .Padding = New Padding(12, 0, 12, 0),
+                                    .Margin = New Padding(0, 0, 6, 6), .Tag = "modern:full"}
         host.Controls.Add(resourcesPanel)
         flow.Controls.Add(host)
         host.BringToFront()
+        AddHandler flow.ClientSizeChanged, Sub() SizeResourcesListHost(flow, host)
+        AddHandler host.ClientSizeChanged, Sub() SizeResourcesListHost(flow, host)
+        expandedRefreshActions.Add(Sub()
+                                       resourcesPanel.Localize()
+                                       SizeResourcesListHost(flow, host)
+                                   End Sub)
+        SizeResourcesListHost(flow, host)
+    End Sub
+
+    ''' <summary>The fluid list host of 131 §3.1: everything else on the page (the group's
+    ''' header band, the introduction block and the margins) is measured, and the host takes
+    ''' what is left of the page - keeping 320 logical px for the list body, plus its actions
+    ''' and status, at which point the page itself
+    ''' scrolls. Runs on every page resize.</summary>
+    Private Sub SizeResourcesListHost(flow As FlowLayoutPanel, host As Panel)
+        resourcesPanel.SetDeviceScale(settingsScale)
+        Dim occupied As Integer = flow.Padding.Vertical + host.Margin.Vertical
+        Dim group As SettingsCollapsibleGroup = Nothing
+        If settingsGroups.TryGetValue("resources/basic", group) Then
+            occupied += group.Header.Height + group.Margin.Vertical
+            For Each sibling As Control In group.Body.Controls
+                If sibling IsNot host Then occupied += sibling.Height + sibling.Margin.Vertical
+            Next
+        End If
+        host.Height = Math.Max(resourcesPanel.MinimumPageHeight, flow.ClientSize.Height - occupied)
     End Sub
 
     ''' <summary>True when anything in the resources list was changed while the window was open;
@@ -1299,7 +1779,7 @@ Partial Public Class Table_Form
     ''' <summary>Ids removed while the window was open, for closing a resource that is on screen.</summary>
     Friend ReadOnly Property SettingsRemovedResourceIds As IReadOnlyList(Of String)
         Get
-            Return settingsRemovedResourceIds
+            Return settingsRemovedResourceIdList
         End Get
     End Property
 
@@ -1325,6 +1805,7 @@ Partial Public Class Table_Form
         AddProjectLinkRow(flow, "project_releases", "https://github.com/SerZhyAle/FastMediaSorter_Lite/releases")
         ' The policy lives under docs/ - the root /privacy.html this row used to open is a 404.
         AddProjectLinkRow(flow, "project_privacy", SitePages.PrivacyPageUrl)
+        AddProjectLinkRow(flow, "project_license", "https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/main/LICENSE")
         ' Beside the privacy page, because it answers the same question from the other side:
         ' the warnings Windows raises and what administrator rights are used for (INSTALL-TRUST
         ' rule 7, ticket 037 Ф-4). In the language the settings window is speaking.
@@ -1377,7 +1858,7 @@ Partial Public Class Table_Form
             ' The action is the address itself, so the user can open it by hand
             ' (APP-BEHAVIOUR rule 6, ticket 028 Ф-3); the exception goes to the log.
             AppFileLogger.LogException("Settings: opening a project link", ex)
-            MessageBox.Show(Me, Localization.TF("Не удалось открыть ссылку в браузере. Откройте её вручную: {0}", Convert.ToString(link.Tag)),
+            ViewerBox.Show(Me, Localization.TF("Не удалось открыть ссылку в браузере. Откройте её вручную: {0}", Convert.ToString(link.Tag)),
                             Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End Try
     End Sub
@@ -1394,6 +1875,10 @@ Partial Public Class Table_Form
             SettingsText = SystemColors.WindowText
             SettingsMutedText = SystemColors.GrayText
             SettingsBorder = SystemColors.ControlDark
+            SettingsEditorBack = SystemColors.Window
+            SettingsEditorText = SystemColors.WindowText
+            SettingsOnAccent = SystemColors.HighlightText
+            SettingsCheckTick = SystemColors.HighlightText
             Return
         End If
 
@@ -1402,6 +1887,8 @@ Partial Public Class Table_Form
         ' which was right only while "system" was the only mode there was.
         settingsDarkMode = ThemeService.IsDark
         SettingsAccent = SystemColors.Highlight
+        ' Ink that survives on the accent (selected rows, checked boxes, list highlights)
+        ' is a palette decision, not a brightness branch at each call site (127 §3.5).
         If settingsDarkMode Then
             SettingsCanvas = Color.FromArgb(30, 31, 34)
             SettingsSurface = Color.FromArgb(39, 41, 45)
@@ -1410,6 +1897,8 @@ Partial Public Class Table_Form
             SettingsText = Color.FromArgb(244, 245, 247)
             SettingsMutedText = Color.FromArgb(177, 181, 189)
             SettingsBorder = Color.FromArgb(68, 71, 78)
+            SettingsEditorBack = Color.FromArgb(50, 52, 57)
+            SettingsEditorText = Color.FromArgb(244, 245, 247)
             ' A standard accent blue is too dark and saturated for small text on
             ' a charcoal surface. Keep links recognisably blue, but use a calm,
             ' high-contrast tint that is comfortable in a long list of links.
@@ -1422,8 +1911,19 @@ Partial Public Class Table_Form
             SettingsText = SystemColors.WindowText
             SettingsMutedText = SystemColors.GrayText
             SettingsBorder = Color.FromArgb(214, 217, 223)
+            SettingsEditorBack = SystemColors.Window
+            SettingsEditorText = SystemColors.WindowText
             SettingsLink = SystemColors.HotTrack
         End If
+        ' The checkbox needs a white tick AND a fill distinguishable from its row.
+        ' Extreme custom Windows highlights cannot satisfy both; use the standard blue
+        ' in that case. High contrast retains the OS highlight pair above.
+        SettingsCheckTick = Color.White
+        If Utils.ContrastRatio(SettingsAccent, SettingsSurface) < 3.0 OrElse
+           Utils.ContrastRatio(SettingsCheckTick, SettingsAccent) < 3.0 Then
+            SettingsAccent = Color.FromArgb(0, 120, 215)
+        End If
+        SettingsOnAccent = Utils.GetOppositeColor(SettingsAccent)
     End Sub
 
     Private Sub ApplySystemSettingsPalette()
@@ -1467,14 +1967,31 @@ Partial Public Class Table_Form
         Data_Grid_View.DefaultCellStyle.SelectionBackColor = BlendSettingsColor(SettingsAccent, SettingsSurface, 0.72F)
         Data_Grid_View.DefaultCellStyle.SelectionForeColor = SettingsText
 
+        ' The resources panel owns the colours the walker above has no branch for (13.1, 131 §3.3):
+        ' the whole panel follows the same palette as the grid here, Open takes the accent, and
+        ' the status roles come from the application theme's own palette.
+        resourcesPanel?.ApplyPalette(New ResourcePanelPalette With {
+            .Surface = SettingsSurface, .Text = SettingsText, .Muted = SettingsMutedText, .Border = SettingsBorder,
+            .EditorBack = SettingsEditorBack, .EditorText = SettingsEditorText,
+            .Accent = SettingsAccent, .OnAccent = SettingsOnAccent,
+            .Success = ThemeService.Palette.Success, .Warning = ThemeService.Palette.Warning,
+            .Danger = ThemeService.Palette.Danger, .Dark = settingsDarkMode})
+
         RefreshModernSettingsHeader()
         For Each group As SettingsCollapsibleGroup In settingsGroups.Values
+            ' The header band of 127 §3.4: a blended fill, no border, so a group header
+            ' reads as a band and not as one more row - and the summary line under the
+            ' caption is muted small text.
             group.Header.ForeColor = SettingsText
-            group.Header.BackColor = SettingsSurface
-            group.Header.FlatAppearance.BorderColor = SettingsBorder
+            group.Header.BackColor = BlendSettingsColor(SettingsSurface, SettingsAccent, 0.08F)
+            group.Header.FlatAppearance.BorderColor = BlendSettingsColor(SettingsSurface, SettingsAccent, 0.08F)
+            group.Header.FlatAppearance.BorderSize = 0
+            group.SetSummaryStyle(SettingsFont("Segoe UI", Sf(8.0F)), SettingsMutedText)
         Next
         ApplySettingsTitleBarTheme()
         ThemeApplier.ApplyNativeTree(Me, settingsDarkMode)
+        RefreshSettingsDependencies()
+        ApplySlotHealthToGrid()
         Invalidate(True)
     End Sub
 
@@ -1500,15 +2017,21 @@ Partial Public Class Table_Form
                     button.FlatAppearance.MouseDownBackColor = BlendSettingsColor(SettingsSurface, SettingsAccent, 0.18F)
                 End If
             ElseIf TypeOf control Is TextBox OrElse TypeOf control Is ComboBox OrElse TypeOf control Is NumericUpDown Then
-                control.BackColor = If(settingsDarkMode, Color.FromArgb(50, 52, 57), SystemColors.Window)
-                control.ForeColor = SettingsText
+                control.BackColor = SettingsEditorBack
+                control.ForeColor = SettingsEditorText
                 ' A visual-styles drop-down list ignores BackColor and stayed white on the dark
                 ' cards; the flat style paints with it (spec 060).
                 Dim combo As ComboBox = TryCast(control, ComboBox)
                 If combo IsNot Nothing Then combo.FlatStyle = If(settingsDarkMode, FlatStyle.Flat, FlatStyle.Standard)
             ElseIf TypeOf control Is CheckBox Then
-                control.BackColor = SettingsSurface
-                control.ForeColor = SettingsText
+                Dim box As CheckBox = DirectCast(control, CheckBox)
+                If SettingsCheckBox.IsAttached(box) Then
+                    SettingsCheckBox.ApplyPalette(box, SettingsSurface, SettingsEditorBack, SettingsMutedText,
+                                                  SettingsText, SettingsAccent, SettingsCheckTick)
+                Else
+                    control.BackColor = SettingsSurface
+                    control.ForeColor = SettingsText
+                End If
             ElseIf TypeOf control Is LinkLabel Then
                 Dim link As LinkLabel = DirectCast(control, LinkLabel)
                 link.BackColor = SettingsSurface
@@ -1584,6 +2107,17 @@ Partial Public Class Table_Form
             CInt(CSng(baseColor.R) + (CSng(overlay.R) - CSng(baseColor.R)) * amount),
             CInt(CSng(baseColor.G) + (CSng(overlay.G) - CSng(baseColor.G)) * amount),
             CInt(CSng(baseColor.B) + (CSng(overlay.B) - CSng(baseColor.B)) * amount))
+    End Function
+
+    ''' <summary>Lightens (positive) or darkens (negative) a palette colour without naming
+    ''' literal whites and blacks - hover and pressed states, 127 §3.5.</summary>
+    Private Shared Function ScaleSettingsColor(baseColor As Color, amount As Single) As Color
+        Dim target As Single = If(amount >= 0.0F, 255.0F, 0.0F)
+        Dim a As Single = Math.Max(0.0F, Math.Min(1.0F, Math.Abs(amount)))
+        Return Color.FromArgb(
+            CInt(CSng(baseColor.R) + (target - CSng(baseColor.R)) * a),
+            CInt(CSng(baseColor.G) + (target - CSng(baseColor.G)) * a),
+            CInt(CSng(baseColor.B) + (target - CSng(baseColor.B)) * a))
     End Function
 
     Private Sub StyleModernSettingsControls()
@@ -1687,10 +2221,11 @@ Partial Public Class Table_Form
                 button.UseVisualStyleBackColor = False
                 button.BackColor = SettingsSurface
                 button.ForeColor = SettingsAccent
-                button.Font = SettingsFont("Segoe UI Semibold", Sf(9.0F), FontStyle.Regular)
+                Dim group As SettingsCollapsibleGroup = TryCast(button.Parent, SettingsCollapsibleGroup)
+                button.Font = SettingsFont("Segoe UI Semibold", Sf(If(group IsNot Nothing AndAlso group.Header Is button, 10.5F, 9.0F)), FontStyle.Regular)
             ElseIf TypeOf control Is ComboBox OrElse TypeOf control Is TextBox OrElse TypeOf control Is NumericUpDown Then
-                control.BackColor = If(settingsDarkMode, Color.FromArgb(50, 52, 57), SystemColors.Window)
-                control.ForeColor = SettingsText
+                control.BackColor = SettingsEditorBack
+                control.ForeColor = SettingsEditorText
                 ' Pixel-sized, so a native control is exactly as tall as its neighbours at any
                 ' display scale instead of taking whatever size the system picks for a point font.
                 control.Font = SettingsPixelFont("Segoe UI", 12)
@@ -1718,6 +2253,23 @@ Partial Public Class Table_Form
         If Not modernSettingsBuilt OrElse Tab_Control Is Nothing Then Return
         For Each flow As FlowLayoutPanel In modernPageFlows
             ResizeModernPageItems(flow)
+            ' WinForms can retain the old horizontal extent after a font/language or width
+            ' change, even though every current group fits. Recompute it without losing Y.
+            If flow.HorizontalScroll.Visible Then
+                Dim offset = flow.AutoScrollPosition.Y
+                Dim wasRestoring = restoringSettingsContext
+                restoringSettingsContext = True
+                Try
+                    flow.AutoScroll = False
+                    ResizeModernPageItems(flow)
+                    flow.AutoScroll = True
+                    ResizeModernPageItems(flow)
+                    flow.PerformLayout()
+                    flow.AutoScrollPosition = New Point(0, Math.Max(0, -offset))
+                Finally
+                    restoringSettingsContext = wasRestoring
+                End Try
+            End If
         Next
     End Sub
 End Class

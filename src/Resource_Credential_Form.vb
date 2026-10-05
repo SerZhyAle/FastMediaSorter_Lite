@@ -6,9 +6,8 @@ Imports System.Windows.Forms
 
 ''' <summary>
 ''' Asks for the password of a resource (007 §3, §5): when none is stored, when the stored one cannot be
-''' read back, and when the server refused it. Built in code and sized in plain pixels, like the other
-''' viewer dialogs - the viewer is pinned to a DPI-unaware, pixel-tuned layout (CLAUDE.md, "Modern-only
-''' compatibility pins").
+''' read back, and when the server refused it. Built in code from 96-dpi positions; DialogLayout scales it and
+''' reflows a wrapped caption (the viewer has been PerMonitorV2 since the chrome migration, 124 UX-202).
 '''
 ''' Three rules, not taste:
 ''' - The password is returned, never kept: the caller decides whether to store it (DPAPI, through
@@ -128,12 +127,20 @@ Friend NotInheritable Class Resource_Credential_Form
         Me.Controls.Add(dismissButton)
         Me.AcceptButton = okButton
         Me.CancelButton = dismissButton
+
+        ' LAST line of the builder: scaling touches only the children that exist by now.
+        DialogLayout.ApplyAutoScale(Me)
     End Sub
 
     Protected Overrides Sub Dispose(disposing As Boolean)
         MyBase.Dispose(disposing)
         ' After the base: the children are gone by then and nothing paints with it.
         If disposing Then script_Font?.Dispose()
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        DialogLayout.FitContent(Me)
     End Sub
 
     Protected Overrides Sub OnShown(e As EventArgs)

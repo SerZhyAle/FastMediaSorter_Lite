@@ -64,6 +64,26 @@ Partial Public NotInheritable Class Localization
             "یہاں ابھی کوئی وسیلہ نہیں ہے۔ سرور ہاتھ سے شامل کریں یا Share Manager سے ترتیبات کی فائل (.fmscfg) درآمد کریں۔",
             "这里还没有资源。请手动添加服务器，或从 Share Manager 导入设置文件 (.fmscfg)。")
 
+        ' 131: the action row's list summary and the disabled-with-reason sentence.
+        Add("Ресурсов: {0}",
+            "Resources: {0}", "Ресурсів: {0}", "Ressourcen: {0}", "Risorse: {0}",
+            "Recursos: {0}", "Ressources : {0}", "Recursos: {0}", "الموارد: {0}",
+            "संसाधन: {0}", "রিসোর্স: {0}", "وسائل: {0}", "资源：{0}")
+
+        Add("Сначала выберите ресурс в списке",
+            "Select a resource in the list first",
+            "Спочатку виберіть ресурс у списку",
+            "Wählen Sie zuerst eine Ressource in der Liste aus",
+            "Selezionare prima una risorsa nell'elenco",
+            "Seleccione primero un recurso de la lista",
+            "Sélectionnez d'abord une ressource dans la liste",
+            "Selecione primeiro um recurso na lista",
+            "حدد موردًا في القائمة أولاً",
+            "पहले सूची से एक संसाधन चुनें",
+            "তালিকা থেকে প্রথমে একটি রিসোর্স নির্বাচন করুন",
+            "پہلے فہرست سے ایک وسیلہ منتخب کریں",
+            "请先在列表中选择一个资源")
+
         Add("Название",
             "Name", "Назва", "Name", "Nome",
             "Nombre", "Nom", "Nome", "الاسم",

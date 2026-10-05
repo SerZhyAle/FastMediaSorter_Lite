@@ -1,236 +1,236 @@
 [
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/glossary.html",
-        "lang":  "en",
-        "title":  "Glossary: the words we use | Fast Media Sorter \u0026 Sharing",
-        "description":  "What Fast Media Sorter \u0026 Sharing for Windows means by Share Manager, destination folder, NumPad and its other terms - the same words in every language."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html",
-        "lang":  "en",
-        "title":  "ZIP, CBZ, 7z, RAR as a folder | Fast Media Sorter \u0026 Sharing",
-        "description":  "Open a ZIP, CBZ, 7z, RAR or CBR archive in Fast Media Sorter \u0026 Sharing for Windows and page through the pictures inside without unpacking it first."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-editor.html",
-        "lang":  "en",
-        "title":  "Draw on a photo and crop it | Fast Media Sorter \u0026 Sharing",
-        "description":  "Mark up a picture, crop it and write the result back to disk with the built-in image editor of Fast Media Sorter \u0026 Sharing for Windows."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-filedo-disks.html",
-        "lang":  "en",
-        "title":  "Share FileDO .fdd Disks | Fast Media Sorter \u0026 Sharing",
-        "description":  "How to share FileDO .fdd virtual disks to paired phones over SFTP with Fast Media Sorter \u0026 Sharing for Windows, setup, autostart and troubleshooting."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-keys.html",
-        "lang":  "en",
-        "title":  "Keys, zoom and full screen | Fast Media Sorter \u0026 Sharing",
-        "description":  "The full keyboard and mouse map of Fast Media Sorter \u0026 Sharing for Windows: navigation, sorting, zoom, full screen, slideshow and video keys."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-ocr.html",
-        "lang":  "en",
-        "title":  "Translate text on a picture | Fast Media Sorter \u0026 Sharing",
-        "description":  "Recognize the text on a photo or a screenshot and show its translation over the image, with a translator that runs on your own PC."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-resources.html",
-        "lang":  "en",
-        "title":  "Open a server like a folder | Fast Media Sorter \u0026 Sharing",
-        "description":  "Open an SFTP server or a network share with a login as an ordinary folder in Fast Media Sorter \u0026 Sharing for Windows; the server key is pinned."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-setup.html",
-        "lang":  "en",
-        "title":  "Setup: viewer, language, rules | Fast Media Sorter \u0026 Sharing",
-        "description":  "Make Fast Media Sorter the default viewer for your pictures and video, choose the interface language, and set what happens to files as you sort them."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html",
-        "lang":  "en",
-        "title":  "How to use the SFTP service | Fast Media Sorter \u0026 Sharing",
-        "description":  "How to publish selected PC folders securely to the Android app through the built-in SFTP service."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-viewer.html",
-        "lang":  "en",
-        "title":  "Viewer guide | Fast Media Sorter \u0026 Sharing",
-        "description":  "A practical guide to reviewing, sorting and managing photos and video with Fast Media Sorter \u0026 Sharing for Windows."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/",
-        "lang":  "en",
-        "title":  "Photo \u0026 video sorting | Fast Media Sorter \u0026 Sharing",
-        "description":  "Sort large photo and video folders with one-key actions, play video offline and share folders over SFTP to the Android app."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html",
-        "lang":  "en",
-        "title":  "Publish folders for Android - Fast Media Sorter \u0026 Sharing",
-        "description":  "Share your PC folders with the Android app over your local network - or the internet. Step-by-step guide using the Share Manager companion app."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/server.html",
-        "lang":  "en",
-        "title":  "Always-on Folder Share Server | Fast Media Sorter \u0026 Sharing",
-        "description":  "The Server edition of Fast Media Sorter \u0026 Sharing: a Windows service that publishes selected folders to Android over SFTP from boot, with nobody signed in."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/topics.html",
-        "lang":  "en",
-        "title":  "Topics: every task on one page | Fast Media Sorter \u0026 Sharing",
-        "description":  "Every Fast Media Sorter \u0026 Sharing for Windows guide and reference page, from a first look at the viewer to SFTP sharing and the always-on server edition."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/trust.html",
-        "lang":  "en",
-        "title":  "Why Windows warns about this download",
-        "description":  "What the SmartScreen warning on Fast Media Sorter \u0026 Sharing means, why it appears, exactly what to click, and what the program never does."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/",
-        "lang":  "ru",
-        "title":  "Fast Media Sorter \u0026 Sharing for Windows",
-        "description":  "Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/trust.html",
-        "lang":  "ru",
-        "title":  "Почему Windows предупреждает об этой загрузке",
-        "description":  "Что означает предупреждение SmartScreen при установке Fast Media Sorter \u0026 Sharing, почему оно появляется, на что нажать и чего программа не делает никогда."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/",
-        "lang":  "uk",
-        "title":  "Fast Media Sorter \u0026 Sharing for Windows",
-        "description":  "Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/trust.html",
-        "lang":  "uk",
-        "title":  "Чому Windows попереджає про це завантаження",
-        "description":  "Що означає попередження SmartScreen під час встановлення Fast Media Sorter \u0026 Sharing, чому воно з\u0027являється, на що натиснути і чого програма не робить ніколи."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/de/",
-        "lang":  "de",
-        "title":  "Fast Media Sorter \u0026 Sharing for Windows",
-        "description":  "Blättern Sie im Tempo durch riesige Foto- und Videoordner und verschieben, kopieren, benennen oder löschen Sie jede Datei mit einer einzigen Taste."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/de/trust.html",
-        "lang":  "de",
-        "title":  "Warum Windows vor diesem Download warnt",
-        "description":  "Was die SmartScreen-Warnung bei Fast Media Sorter \u0026 Sharing bedeutet, warum sie erscheint, worauf genau zu klicken ist und was das Programm niemals tut."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/it/",
-        "lang":  "it",
-        "title":  "Fast Media Sorter \u0026 Sharing for Windows",
-        "description":  "Sfoglia velocemente cartelle enormi di foto e video e sposta, copia, rinomina o elimina ogni file con un solo tasto."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/it/trust.html",
-        "lang":  "it",
-        "title":  "Perché Windows avvisa su questo download",
-        "description":  "Che cosa significa l\u0027avviso SmartScreen su Fast Media Sorter \u0026 Sharing, perché compare, su cosa cliccare esattamente e cosa il programma non fa mai."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/es/",
-        "lang":  "es",
-        "title":  "Fast Media Sorter \u0026 Sharing for Windows",
-        "description":  "Recorra a toda velocidad carpetas enormes de fotos y vídeos y mueva, copie, renombre o elimine cada archivo con una sola tecla."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/es/trust.html",
-        "lang":  "es",
-        "title":  "Por qué Windows advierte sobre esta descarga",
-        "description":  "Qué significa el aviso de SmartScreen en Fast Media Sorter \u0026 Sharing, por qué aparece, en qué hay que hacer clic exactamente y qué no hace nunca el programa."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/",
-        "lang":  "fr",
-        "title":  "Fast Media Sorter \u0026 Sharing for Windows",
-        "description":  "Parcourez à toute vitesse d\u0027énormes dossiers de photos et de vidéos, puis déplacez, copiez, renommez ou supprimez chaque fichier d\u0027une seule touche."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/trust.html",
-        "lang":  "fr",
-        "title":  "Pourquoi Windows met en garde à propos de ce téléchargement",
-        "description":  "Ce que signifie l\u0027avertissement SmartScreen pour Fast Media Sorter \u0026 Sharing, pourquoi il apparaît, sur quoi cliquer et ce que le programme ne fait jamais."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/pt/",
-        "lang":  "pt",
-        "title":  "Fast Media Sorter \u0026 Sharing for Windows",
-        "description":  "Percorra rapidamente pastas enormes de fotos e vídeos e mova, copie, renomeie ou exclua cada arquivo com uma única tecla."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/pt/trust.html",
-        "lang":  "pt",
-        "title":  "Porque é que o Windows avisa sobre esta transferência",
-        "description":  "O que significa o aviso do SmartScreen no Fast Media Sorter \u0026 Sharing, porque aparece, onde clicar exatamente e o que o programa nunca faz."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/",
-        "lang":  "ar",
-        "title":  "Fast Media Sorter \u0026 Sharing for Windows",
-        "description":  "تصفّح مجلدات ضخمة من الصور والفيديو بسرعة، ثم انقل أو انسخ أو أعد تسمية أو احذف كل ملف بمفتاح واحد."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/trust.html",
-        "lang":  "ar",
-        "title":  "لماذا يحذّر Windows من هذا التنزيل",
-        "description":  "ما معنى تحذير SmartScreen في Fast Media Sorter \u0026 Sharing، ولماذا يظهر، وعلى ماذا تضغط بالضبط، وما الذي لا يفعله البرنامج أبدًا."
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/",
-        "lang":  "hi",
-        "title":  "Fast Media Sorter \u0026 Sharing for Windows",
-        "description":  "फ़ोटो और वीडियो के विशाल फ़ोल्डर तेज़ी से देखें और हर फ़ाइल को एक ही कुंजी से ले जाएँ, कॉपी करें, नाम बदलें या हटाएँ।"
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/trust.html",
-        "lang":  "hi",
-        "title":  "Windows इस डाउनलोड पर चेतावनी क्यों देता है",
-        "description":  "Fast Media Sorter \u0026 Sharing पर आने वाली SmartScreen चेतावनी का क्या मतलब है, वह क्यों दिखती है, ठीक किस पर क्लिक करना है, और प्रोग्राम कभी क्या नहीं करता।"
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/",
-        "lang":  "bn",
-        "title":  "Fast Media Sorter \u0026 Sharing for Windows",
-        "description":  "ছবি ও ভিডিওর বিশাল ফোল্ডার দ্রুত ঘুরে দেখুন এবং প্রতিটি ফাইল এক কী চেপেই সরান, কপি করুন, নাম বদলান বা মুছুন।"
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/trust.html",
-        "lang":  "bn",
-        "title":  "Windows কেন এই ডাউনলোড নিয়ে সতর্ক করে",
-        "description":  "Fast Media Sorter \u0026 Sharing-এ আসা SmartScreen সতর্কবার্তার অর্থ কী, কেন তা দেখা যায়, ঠিক কোথায় ক্লিক করতে হবে, আর প্রোগ্রামটি কখনও কী করে না।"
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ur/",
-        "lang":  "ur",
-        "title":  "Fast Media Sorter \u0026 Sharing for Windows",
-        "description":  "تصاویر اور ویڈیو کے بڑے فولڈرز تیزی سے دیکھیں اور ہر فائل کو ایک ہی کلید سے منتقل، نقل، نام تبدیل یا حذف کریں۔"
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ur/trust.html",
-        "lang":  "ur",
-        "title":  "ونڈوز اس ڈاؤن لوڈ پر خبردار کیوں کرتا ہے",
-        "description":  "‏Fast Media Sorter \u0026 Sharing پر آنے والی SmartScreen وارننگ کا کیا مطلب ہے، یہ کیوں آتی ہے، بالکل کس پر کلک کرنا ہے، اور پروگرام کبھی کیا نہیں کرتا۔"
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/",
-        "lang":  "zh",
-        "title":  "Fast Media Sorter \u0026 Sharing for Windows",
-        "description":  "飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。"
-    },
-    {
-        "url":  "https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/trust.html",
-        "lang":  "zh",
-        "title":  "为什么 Windows 会对这个下载发出警告",
-        "description":  "Fast Media Sorter \u0026 Sharing 的 SmartScreen 警告是什么意思、为什么出现、到底该点哪里，以及这个程序从不做什么。"
-    }
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/glossary.html",
+    "lang": "en",
+    "title": "Glossary: the words we use | Fast Media Sorter & Sharing",
+    "description": "What Fast Media Sorter & Sharing for Windows means by Share Manager, destination folder, NumPad and its other terms - the same words in every language."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html",
+    "lang": "en",
+    "title": "ZIP, CBZ, 7z, RAR as a folder | Fast Media Sorter & Sharing",
+    "description": "Open a ZIP, CBZ, 7z, RAR or CBR archive in Fast Media Sorter & Sharing for Windows and page through the pictures inside without unpacking it first."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-editor.html",
+    "lang": "en",
+    "title": "Draw on a photo and crop it | Fast Media Sorter & Sharing",
+    "description": "Mark up a picture, crop it and write the result back to disk with the built-in image editor of Fast Media Sorter & Sharing for Windows."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-filedo-disks.html",
+    "lang": "en",
+    "title": "Share FileDO .fdd Disks | Fast Media Sorter & Sharing",
+    "description": "How to share FileDO .fdd virtual disks to paired phones over SFTP with Fast Media Sorter & Sharing for Windows, setup, autostart and troubleshooting."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-keys.html",
+    "lang": "en",
+    "title": "Keys, zoom and full screen | Fast Media Sorter & Sharing",
+    "description": "The full keyboard and mouse map of Fast Media Sorter & Sharing for Windows: navigation, sorting, zoom, full screen, slideshow and video keys."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-ocr.html",
+    "lang": "en",
+    "title": "Translate text on a picture | Fast Media Sorter & Sharing",
+    "description": "Recognize the text on a photo or a screenshot and show its translation over the image, with a translator that runs on your own PC."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-resources.html",
+    "lang": "en",
+    "title": "Open a server like a folder | Fast Media Sorter & Sharing",
+    "description": "Open an SFTP server or a network share with a login as an ordinary folder in Fast Media Sorter & Sharing for Windows; the server key is pinned."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-setup.html",
+    "lang": "en",
+    "title": "Setup: viewer, language, rules | Fast Media Sorter & Sharing",
+    "description": "Make Fast Media Sorter the default viewer for your pictures and video, choose the interface language, and set what happens to files as you sort them."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html",
+    "lang": "en",
+    "title": "How to use the SFTP service | Fast Media Sorter & Sharing",
+    "description": "How to publish selected PC folders securely to the Android app through the built-in SFTP service."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-viewer.html",
+    "lang": "en",
+    "title": "Viewer guide | Fast Media Sorter & Sharing",
+    "description": "A practical guide to reviewing, sorting and managing photos and video with Fast Media Sorter & Sharing for Windows."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/",
+    "lang": "en",
+    "title": "Photo & video sorting | Fast Media Sorter & Sharing",
+    "description": "Sort large photo and video folders with one-key actions, play video offline and share folders over SFTP to the Android app."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html",
+    "lang": "en",
+    "title": "Publish folders for Android - Fast Media Sorter & Sharing",
+    "description": "Share your PC folders with the Android app over your local network - or the internet. Step-by-step guide using the Share Manager companion app."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/server.html",
+    "lang": "en",
+    "title": "Always-on Folder Share Server | Fast Media Sorter & Sharing",
+    "description": "The Server edition of Fast Media Sorter & Sharing: a Windows service that publishes selected folders to Android over SFTP from boot, with nobody signed in."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/topics.html",
+    "lang": "en",
+    "title": "Topics: every task on one page | Fast Media Sorter & Sharing",
+    "description": "Every Fast Media Sorter & Sharing for Windows guide and reference page, from a first look at the viewer to SFTP sharing and the always-on server edition."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/trust.html",
+    "lang": "en",
+    "title": "Why Windows warns about this download",
+    "description": "What the SmartScreen warning on Fast Media Sorter & Sharing means, why it appears, exactly what to click, and what the program never does."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/",
+    "lang": "ru",
+    "title": "Fast Media Sorter & Sharing for Windows",
+    "description": "Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/trust.html",
+    "lang": "ru",
+    "title": "Почему Windows предупреждает об этой загрузке",
+    "description": "Что означает предупреждение SmartScreen при установке Fast Media Sorter & Sharing, почему оно появляется, на что нажать и чего программа не делает никогда."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/",
+    "lang": "uk",
+    "title": "Fast Media Sorter & Sharing for Windows",
+    "description": "Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/trust.html",
+    "lang": "uk",
+    "title": "Чому Windows попереджає про це завантаження",
+    "description": "Що означає попередження SmartScreen під час встановлення Fast Media Sorter & Sharing, чому воно з'являється, на що натиснути і чого програма не робить ніколи."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/de/",
+    "lang": "de",
+    "title": "Fast Media Sorter & Sharing for Windows",
+    "description": "Blättern Sie im Tempo durch riesige Foto- und Videoordner und verschieben, kopieren, benennen oder löschen Sie jede Datei mit einer einzigen Taste."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/de/trust.html",
+    "lang": "de",
+    "title": "Warum Windows vor diesem Download warnt",
+    "description": "Was die SmartScreen-Warnung bei Fast Media Sorter & Sharing bedeutet, warum sie erscheint, worauf genau zu klicken ist und was das Programm niemals tut."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/it/",
+    "lang": "it",
+    "title": "Fast Media Sorter & Sharing for Windows",
+    "description": "Sfoglia velocemente cartelle enormi di foto e video e sposta, copia, rinomina o elimina ogni file con un solo tasto."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/it/trust.html",
+    "lang": "it",
+    "title": "Perché Windows avvisa su questo download",
+    "description": "Che cosa significa l'avviso SmartScreen su Fast Media Sorter & Sharing, perché compare, su cosa cliccare esattamente e cosa il programma non fa mai."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/es/",
+    "lang": "es",
+    "title": "Fast Media Sorter & Sharing for Windows",
+    "description": "Recorra a toda velocidad carpetas enormes de fotos y vídeos y mueva, copie, renombre o elimine cada archivo con una sola tecla."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/es/trust.html",
+    "lang": "es",
+    "title": "Por qué Windows advierte sobre esta descarga",
+    "description": "Qué significa el aviso de SmartScreen en Fast Media Sorter & Sharing, por qué aparece, en qué hay que hacer clic exactamente y qué no hace nunca el programa."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/",
+    "lang": "fr",
+    "title": "Fast Media Sorter & Sharing for Windows",
+    "description": "Parcourez à toute vitesse d'énormes dossiers de photos et de vidéos, puis déplacez, copiez, renommez ou supprimez chaque fichier d'une seule touche."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/trust.html",
+    "lang": "fr",
+    "title": "Pourquoi Windows met en garde à propos de ce téléchargement",
+    "description": "Ce que signifie l'avertissement SmartScreen pour Fast Media Sorter & Sharing, pourquoi il apparaît, sur quoi cliquer et ce que le programme ne fait jamais."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/pt/",
+    "lang": "pt",
+    "title": "Fast Media Sorter & Sharing for Windows",
+    "description": "Percorra rapidamente pastas enormes de fotos e vídeos e mova, copie, renomeie ou exclua cada arquivo com uma única tecla."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/pt/trust.html",
+    "lang": "pt",
+    "title": "Porque é que o Windows avisa sobre esta transferência",
+    "description": "O que significa o aviso do SmartScreen no Fast Media Sorter & Sharing, porque aparece, onde clicar exatamente e o que o programa nunca faz."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/",
+    "lang": "ar",
+    "title": "Fast Media Sorter & Sharing for Windows",
+    "description": "تصفّح مجلدات ضخمة من الصور والفيديو بسرعة، ثم انقل أو انسخ أو أعد تسمية أو احذف كل ملف بمفتاح واحد."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/trust.html",
+    "lang": "ar",
+    "title": "لماذا يحذّر Windows من هذا التنزيل",
+    "description": "ما معنى تحذير SmartScreen في Fast Media Sorter & Sharing، ولماذا يظهر، وعلى ماذا تضغط بالضبط، وما الذي لا يفعله البرنامج أبدًا."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/",
+    "lang": "hi",
+    "title": "Fast Media Sorter & Sharing for Windows",
+    "description": "फ़ोटो और वीडियो के विशाल फ़ोल्डर तेज़ी से देखें और हर फ़ाइल को एक ही कुंजी से ले जाएँ, कॉपी करें, नाम बदलें या हटाएँ।"
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/trust.html",
+    "lang": "hi",
+    "title": "Windows इस डाउनलोड पर चेतावनी क्यों देता है",
+    "description": "Fast Media Sorter & Sharing पर आने वाली SmartScreen चेतावनी का क्या मतलब है, वह क्यों दिखती है, ठीक किस पर क्लिक करना है, और प्रोग्राम कभी क्या नहीं करता।"
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/",
+    "lang": "bn",
+    "title": "Fast Media Sorter & Sharing for Windows",
+    "description": "ছবি ও ভিডিওর বিশাল ফোল্ডার দ্রুত ঘুরে দেখুন এবং প্রতিটি ফাইল এক কী চেপেই সরান, কপি করুন, নাম বদলান বা মুছুন।"
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/trust.html",
+    "lang": "bn",
+    "title": "Windows কেন এই ডাউনলোড নিয়ে সতর্ক করে",
+    "description": "Fast Media Sorter & Sharing-এ আসা SmartScreen সতর্কবার্তার অর্থ কী, কেন তা দেখা যায়, ঠিক কোথায় ক্লিক করতে হবে, আর প্রোগ্রামটি কখনও কী করে না।"
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ur/",
+    "lang": "ur",
+    "title": "Fast Media Sorter & Sharing for Windows",
+    "description": "تصاویر اور ویڈیو کے بڑے فولڈرز تیزی سے دیکھیں اور ہر فائل کو ایک ہی کلید سے منتقل، نقل، نام تبدیل یا حذف کریں۔"
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ur/trust.html",
+    "lang": "ur",
+    "title": "ونڈوز اس ڈاؤن لوڈ پر خبردار کیوں کرتا ہے",
+    "description": "‏Fast Media Sorter & Sharing پر آنے والی SmartScreen وارننگ کا کیا مطلب ہے، یہ کیوں آتی ہے، بالکل کس پر کلک کرنا ہے، اور پروگرام کبھی کیا نہیں کرتا۔"
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/",
+    "lang": "zh",
+    "title": "Fast Media Sorter & Sharing for Windows",
+    "description": "飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。"
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/trust.html",
+    "lang": "zh",
+    "title": "为什么 Windows 会对这个下载发出警告",
+    "description": "Fast Media Sorter & Sharing 的 SmartScreen 警告是什么意思、为什么出现、到底该点哪里，以及这个程序从不做什么。"
+  }
 ]

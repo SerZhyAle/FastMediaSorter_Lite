@@ -257,7 +257,9 @@ Public NotInheritable Class ThemePalette
             Case ThemeRole.TextPrimary : Return System.Drawing.Color.FromArgb(240, 240, 240)
             Case ThemeRole.TextMuted : Return System.Drawing.Color.FromArgb(170, 170, 170)
             Case ThemeRole.TextDisabled : Return System.Drawing.Color.FromArgb(140, 140, 140)
-            Case ThemeRole.Accent : Return System.Drawing.Color.FromArgb(0, 103, 192)
+            ' The user's own accent from Windows, kept dark enough for white ink; the fixed blue it used to be is the
+            ' fallback (124 UX-215 - one source with the viewer's chrome, see AccentColors).
+            Case ThemeRole.Accent : Return AccentColors.ForDarkSurface(System.Drawing.Color.FromArgb(0, 103, 192))
             Case ThemeRole.AccentInk : Return System.Drawing.Color.White
             Case ThemeRole.Link : Return System.Drawing.Color.FromArgb(125, 185, 250)
             Case ThemeRole.Info : Return System.Drawing.Color.FromArgb(110, 175, 235)

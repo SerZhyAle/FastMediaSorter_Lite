@@ -533,6 +533,7 @@ Public Module LogPackage
         "RecipientsOverlayFontSize", "RecipientsOverlayOpacity", "RecipientsOverlayVisibleRows", "RecipientsOverlayPinned",
         "SlideshowRandomOrder", "StopSlideshowOnManualNavigation", "SlideshowUiMode", "VideoAutoplay",
         "IncludeVideoInNavigation", "RememberVideoPosition", "VideoControlsHideDelaySec",
+        "SeekShortSec", "SeekMediumSec", "SeekLongSec", "HideCursorAfterSec",
         "ShowVideoControlsWhenPaused", "VideoSingleClickAction", "VideoEndAction", "PreferredAudioLanguage",
         "PreferredSubtitleLanguage", "AudioEndAction", "IncludeAudioInNavigation", "IncludeDocumentInNavigation",
         "AudioControlsAlwaysVisible", "AudioVisualiser", "SleepTimerMinutes", "StartupOpenMode",

@@ -90,6 +90,15 @@ Partial Public Class Main_Form
         End Get
     End Property
 
+    ''' <summary>The status line as words and a level (124 UX-206): the F3 panel reads the LEVEL, not a leading
+    ''' "!" it had to strip and test for.</summary>
+    Friend ReadOnly Property StatusMessageNow As NotifyMessage
+        Get
+            If lbl_Status Is Nothing Then Return New NotifyMessage(String.Empty, NotifyLevel.Info)
+            Return StatusMessage
+        End Get
+    End Property
+
     ''' <summary>U pressed in the F3 panel. Exactly the main window's U - same stack, same
     ''' refusals - so a user who did something in the panel can take it back where they did it
     ''' (005 PG-1).</summary>
@@ -311,7 +320,7 @@ Partial Public Class Main_Form
                     Dim decision As New DeleteDecision With {
                         .Outcome = If(plan.PermanentDeletionReason = PermanentReason.NotPermanent, DeleteOutcome.Recycle, DeleteOutcome.Permanent),
                         .Reason = plan.PermanentDeletionReason}
-                    If MessageBox.Show(owner, DeleteText.ConfirmMany(decision, plan.Count),
+                    If ViewerBox.Show(owner, DeleteText.ConfirmMany(decision, plan.Count),
                                        Localization.T("Подтверждение удаления"),
                                        MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return False
                 End If
@@ -324,7 +333,7 @@ Partial Public Class Main_Form
                 ' warning only makes sure they know it is being acted on (SETTINGS_EXPANSION 3.1).
                 Dim first_Replaced As BatchOp = plan.Operations.FirstOrDefault(Function(o) o.ReplaceExisting)
                 If first_Replaced IsNot Nothing Then
-                    If MessageBox.Show(owner,
+                    If ViewerBox.Show(owner,
                         Localization.TF("В настройках выбрано «заменять»: файл {0} в папке назначения будет перезаписан. Продолжить? Это предупреждение показывается один раз за сеанс.", Path.GetFileName(first_Replaced.Destination)),
                         Localization.T("Совпадение имён"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
                         MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return False
@@ -345,7 +354,7 @@ Partial Public Class Main_Form
                                                                            ProviderCostHint.Slow, ProviderCostHint.Fast))
                 End If
                 If RemoteBatchPolicy.NeedsWarning(plan.TotalBytes, sourceCaps, destinationCaps) Then
-                    If MessageBox.Show(owner,
+                    If ViewerBox.Show(owner,
                         Localization.TF("Будет передано {0} через медленный или тарифицируемый ресурс. Между разными серверами файл сначала скачивается, затем загружается; проверка также расходует трафик. Продолжить?", FormatFileSize(plan.TotalBytes)),
                         Localization.T("Ресурсы"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
                         MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return False
@@ -458,7 +467,7 @@ Partial Public Class Main_Form
         End If
 
         batch_Run = run
-        lbl_Status.Text = Localization.T("!Ждите. Возвращаются файлы..")
+        SayProgress(Localization.T("!Ждите. Возвращаются файлы.."))
         If Not EnsureBatchRunner().Start(BatchRunKind.Undo, undo_Plan.Inverse, Nothing, undo_Plan.NotReturnable.Count) Then
             batch_Run = Nothing
         End If

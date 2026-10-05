@@ -56,7 +56,7 @@ Partial Public Class Main_Form
             End Try
         End If
 
-        lbl_Status.Text = Localization.TF("{0} — {1}", Path.GetFileName(CurrentFileDisplayName(filePath)), ContentKindLabel(filePath))
+        lbl_Status.Text = Localization.TF("{0} - {1}", Path.GetFileName(CurrentFileDisplayName(filePath)), ContentKindLabel(filePath))
         GetActivePictureBox()?.Invalidate()
     End Sub
 
@@ -76,7 +76,7 @@ Partial Public Class Main_Form
         If content_Base_Title Is Nothing Then content_Base_Title = Me.Text
         Dim kind As MediaKind = KindOf(Current_File_Name)
         If IsContentPlaceholderShown() OrElse (kind = MediaKind.Audio AndAlso IsAudioNowPlaying()) Then
-            Me.Text = content_Base_Title & " — " & Localization.TF("{0} — {1}", Path.GetFileName(CurrentFileDisplayName(Current_File_Name)), ContentKindLabel(Current_File_Name))
+            Me.Text = content_Base_Title & " - " & Localization.TF("{0} - {1}", Path.GetFileName(CurrentFileDisplayName(Current_File_Name)), ContentKindLabel(Current_File_Name))
         Else
             Me.Text = content_Base_Title
         End If
@@ -151,11 +151,11 @@ Partial Public Class Main_Form
         Dim ext As String = MediaKindClassifier.ExtensionOf(content_Placeholder_Path)
         Dim isDocHtmlEbook As Boolean = (ext = ".epub" OrElse ext = ".fb2" OrElse ext = ".mobi")
         Dim enterActionText As String = If(isDocHtmlEbook,
-            Localization.T("Enter — открыть в doc-html-translate"),
-            Localization.T("Enter — открыть в программе по умолчанию"))
+            Localization.T("Enter - открыть в doc-html-translate"),
+            Localization.T("Enter - открыть в программе по умолчанию"))
 
-        Using nameFont As New Font("Segoe UI", Math.Max(8.0F, 16.0F * scale), FontStyle.Bold),
-              detailFont As New Font("Segoe UI", Math.Max(8.0F, 11.0F * scale))
+        Using nameFont As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 16.0F * scale), FontStyle.Bold),
+              detailFont As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 11.0F * scale))
             Dim y As Integer = CInt(top + If(epub_Cover_Bitmap IsNot Nothing, 128 * scale, 78 * scale))
             Dim line As Integer = Math.Max(24, CInt(36 * scale))
             TextRenderer.DrawText(e.Graphics, titleText, nameFont, New Rectangle(12, y, Math.Max(0, bounds.Width - 24), line), ink, flags)

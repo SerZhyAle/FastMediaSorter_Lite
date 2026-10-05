@@ -57,6 +57,11 @@ Partial Public Class Image_Panel_Form
     Private strip As Panel
     Private lbl_Strip As Label
     Private btn_Cancel As Button
+    ''' <summary>The "an operation is running" band (126 UX-608): shown when a close is
+    ''' attempted during a run, because a window that only beeps teaches nothing - the
+    ''' user does not learn that an operation is running, or that Esc cancels it.</summary>
+    Private busy_Band As Panel
+    Private lbl_Busy As Label
     Private tip As ToolTip
     Private ReadOnly flush_Timer As New System.Windows.Forms.Timer() With {.Interval = 80}
 
@@ -100,11 +105,13 @@ Partial Public Class Image_Panel_Form
         BuildToolbar()
         BuildSurfaces()
         BuildStrip()
+        BuildBusyBand()
 
         ' Fill first, edges after: the edge-docked controls are laid out before it.
         Controls.Add(grid)
         Controls.Add(details)
         Controls.Add(strip)
+        Controls.Add(busy_Band)
         Controls.Add(toolbar)
 
         ApplyContentColors()
@@ -115,7 +122,7 @@ Partial Public Class Image_Panel_Form
     Private Sub BuildToolbar()
         toolbar = New ToolStrip With {
             .GripStyle = ToolStripGripStyle.Hidden,
-            .CanOverflow = False,
+            .CanOverflow = True,
             .RenderMode = ToolStripRenderMode.System,
             .Dock = DockStyle.Top,
             .TabStop = False}
@@ -189,6 +196,42 @@ Partial Public Class Image_Panel_Form
 
         strip.Controls.Add(lbl_Strip)
         strip.Controls.Add(btn_Cancel)
+    End Sub
+
+    ''' <summary>The band under the toolbar (126 UX-608). It is shown, not composed per
+    ''' tick: the strip already reports what a run is doing - this one says what a CLOSED
+    ''' window would have meant, and stays until the run is over.</summary>
+    Private Sub BuildBusyBand()
+        Dim band_Text As String = Localization.T("Идёт операция - дождитесь или нажмите Esc")
+        Dim band_Ink As Color = ThemeService.Palette.ColorOf(ThemeRole.Warning)
+        busy_Band = New Panel With {
+            .Name = "panel_Busy_Band",
+            .Dock = DockStyle.Top,
+            .Height = 30,
+            .Visible = False}
+        lbl_Busy = New Label With {
+            .Name = "lbl_Panel_Busy",
+            .Dock = DockStyle.Fill,
+            .Text = band_Text,
+            .TextAlign = ContentAlignment.MiddleCenter,
+            .BackColor = band_Ink,
+            .ForeColor = If(LuminanceOf(band_Ink) > 0.5, Color.Black, Color.White),
+            .AccessibleName = band_Text}
+        busy_Band.Controls.Add(lbl_Busy)
+    End Sub
+
+    ''' <summary>Perceived brightness, for ink that reads on the warning colour whatever
+    ''' the theme is - the same weighting ApplyContentColors uses.</summary>
+    Private Shared Function LuminanceOf(c As Color) As Double
+        Return (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) / 255
+    End Function
+
+    Private Sub ShowBusyBand()
+        If busy_Band IsNot Nothing Then busy_Band.Visible = True
+    End Sub
+
+    Private Sub HideBusyBand()
+        If busy_Band IsNot Nothing Then busy_Band.Visible = False
     End Sub
 
     ''' <summary>The panel is content-coloured: it takes the main window's background scheme
@@ -304,9 +347,11 @@ Partial Public Class Image_Panel_Form
         ' A run keeps going after the window closes: files kept moving with no progress shown,
         ' and a panel reopened meanwhile would have edited the list under the old run (audit
         ' B-14). The user waits for the run, or cancels it; Windows shutting down still closes.
+        ' Said on a band (126 UX-608) - a beep tells nobody that an operation is running or
+        ' that Esc cancels it.
         If Main_Form.BatchIsRunning AndAlso e.CloseReason = CloseReason.UserClosing Then
             e.Cancel = True
-            System.Media.SystemSounds.Beep.Play()
+            ShowBusyBand()
             Return
         End If
 
@@ -360,6 +405,7 @@ Partial Public Class Image_Panel_Form
         UnwireMainEvents()
         flush_Timer.Stop()
         pending_Removed.Clear()
+        HideBusyBand()
         If loader IsNot Nothing Then
             loader.Dispose()
             loader = Nothing
@@ -641,6 +687,15 @@ Partial Public Class Image_Panel_Form
     Private Sub OnFormKeyDown(sender As Object, e As KeyEventArgs)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " p0070: key down: " & e.KeyCode.ToString())
 
+        ' F1 opens the same reference the empty grid's tooltip carries (126 UX-609): a
+        ' tooltip on empty space is the one place nobody looks first.
+        If e.KeyCode = Keys.F1 Then
+            AskDialogs.Tell(Me, Localization.T("Клавиши панели"), HelpText(), AskIcon.None)
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Return
+        End If
+
         ' The size drop-down owns the keys while it is open.
         If cmb_CardSize IsNot Nothing AndAlso cmb_CardSize.DroppedDown Then Return
 
@@ -734,8 +789,8 @@ Partial Public Class Image_Panel_Form
             If Not started AndAlso Not Main_Form.BatchIsRunning Then
                 ' Refused with a sentence on the main window's status line (a slot that is
                 ' down, a busy queue, an archive) - which is behind this window: say it here.
-                Dim reason As String = Main_Form.StatusLineText
-                If Not String.IsNullOrWhiteSpace(reason) Then ShowStrip(reason.TrimStart("!"c, " "c), running:=False, clickable:=False, warning:=True)
+                Dim reason As NotifyMessage = Main_Form.StatusMessageNow
+                If Not String.IsNullOrWhiteSpace(reason.Text) Then ShowStrip(reason.Text, running:=False, clickable:=False, warning:=True)
             End If
         Catch ex As Exception
             AppFileLogger.LogException("Thumbnail panel: batch", ex)
@@ -747,8 +802,8 @@ Partial Public Class Image_Panel_Form
     Private Sub UndoFromHere()
         Main_Form.UndoFromPanel()
         If Not Main_Form.BatchIsRunning Then
-            Dim said As String = Main_Form.StatusLineText
-            If Not String.IsNullOrWhiteSpace(said) Then ShowStrip(said.TrimStart("!"c, " "c), running:=False, clickable:=False, warning:=said.StartsWith("!", StringComparison.Ordinal))
+            Dim said As NotifyMessage = Main_Form.StatusMessageNow
+            If Not String.IsNullOrWhiteSpace(said.Text) Then ShowStrip(said.Text, running:=False, clickable:=False, warning:=said.Level >= NotifyLevel.Warning)
         End If
     End Sub
 
@@ -811,6 +866,7 @@ Partial Public Class Image_Panel_Form
         Dim line As String = report.SummaryLine()
         If Not report.IsClean Then line &= "  -  " & Localization.T("нажмите, чтобы увидеть подробности")
         ShowStrip(line, running:=False, clickable:=Not report.IsClean OrElse report.Results.Count > 0, warning:=Not report.IsClean)
+        HideBusyBand()
         FocusActiveView()
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " p0085: batch finished: " & report.SummaryLine())
     End Sub
@@ -819,6 +875,7 @@ Partial Public Class Image_Panel_Form
 
     Private Sub ShowIdleStrip()
         ShowStrip("", running:=False, clickable:=False, warning:=False)
+        HideBusyBand()
     End Sub
 
     Private Sub ShowStrip(text As String, running As Boolean, clickable As Boolean, warning As Boolean)
@@ -841,7 +898,7 @@ Partial Public Class Image_Panel_Form
     Private Sub OnStripClicked(sender As Object, e As EventArgs)
         If last_Report Is Nothing OrElse Main_Form.BatchIsRunning Then Return
         Using dialog As New Batch_Report_Form(last_Report)
-            dialog.ShowDialog(Me)
+            DialogLayer.ShowViewerDialog(dialog, Me)
         End Using
         FocusActiveView()
     End Sub

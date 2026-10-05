@@ -43,7 +43,7 @@ Partial Public Class Main_Form
                     Dim warningMsg = Localization.TF("Замена каталога приведёт к потере {0} из {1} адресов ({2:F1}%). Продолжить запись?", lostCount, previousCount, lossPercent)
                     Dim title = Localization.T("Предупреждение о потере записей")
                     ' The safe answer holds the default focus (APP-BEHAVIOUR 0.12 rule 5): Enter declines.
-                    Dim dlgResult = MessageBox.Show(Me, warningMsg, title, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2)
+                    Dim dlgResult = ViewerBox.Show(Me, warningMsg, title, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2)
                     Return dlgResult = DialogResult.Yes
                 End Function
 
@@ -55,7 +55,7 @@ Partial Public Class Main_Form
                     Dim msg = Localization.TF("Каталог потоков успешно создан: {0} записей.", buildResult.Report.ShippedRowCount) & vbCrLf &
                               Localization.TF("Отчёт сохранён: {0}", Path.GetFileName(buildResult.ReportFilePath))
                     Dim caption = Localization.T("Каталог потоков создан")
-                    Dim choice = MessageBox.Show(Me, msg & vbCrLf & vbCrLf & Localization.T("Открыть папку с каталогом?"),
+                    Dim choice = ViewerBox.Show(Me, msg & vbCrLf & vbCrLf & Localization.T("Открыть папку с каталогом?"),
                                                  caption, MessageBoxButtons.YesNo, MessageBoxIcon.Information)
                     If choice = DialogResult.Yes Then
                         Try
@@ -67,11 +67,11 @@ Partial Public Class Main_Form
                     ' Churn refused by user
                 Else
                     Dim failMsg = Localization.TF("Не удалось создать каталог потоков: {0}", buildResult.ErrorDescription)
-                    MessageBox.Show(Me, failMsg, Localization.T("Ошибка создания каталога"), MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    ViewerBox.Show(Me, failMsg, Localization.T("Ошибка создания каталога"), MessageBoxButtons.OK, MessageBoxIcon.Error)
                 End If
             Catch ex As Exception
                 AppFileLogger.LogException("BuildStreamCatalogViaDialog", ex)
-                MessageBox.Show(Me, FailureText.Describe(ex), Localization.T("Ошибка создания каталога"), MessageBoxButtons.OK, MessageBoxIcon.Error)
+                ViewerBox.Show(Me, FailureText.Describe(ex), Localization.T("Ошибка создания каталога"), MessageBoxButtons.OK, MessageBoxIcon.Error)
             Finally
                 Cursor.Current = Cursors.Default
             End Try

@@ -76,6 +76,17 @@ Public NotInheritable Class File_Details_Form
         box.DetectUrls = False
         box.WordWrap = True
         box.AccessibleName = Localization.T("О файле")
+        status.ForeColor = SystemColors.GrayText
+        btnCopy.Text = Localization.T("Копировать")
+        AddHandler btnCopy.Click, AddressOf CopyAllText
+        btnClose.Text = Localization.T("Закрыть")
+        AddHandler btnClose.Click, Sub() Close()
+
+#If Not NETFRAMEWORK Then
+        BuildDockedLayout()
+        ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
+        DialogLayout.ApplyAutoScale(Me)
+#Else
         box.Bounds = New Rectangle(12, 12, ClientSize.Width - 24, ClientSize.Height - 66)
         box.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Bottom
         Controls.Add(box)
@@ -83,21 +94,81 @@ Public NotInheritable Class File_Details_Form
         status.AutoSize = False
         status.Bounds = New Rectangle(12, box.Bottom + 8, ClientSize.Width - 24, 24)
         status.Anchor = AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Bottom
-        status.ForeColor = SystemColors.GrayText
         Controls.Add(status)
 
-        btnCopy.Text = Localization.T("Копировать")
         btnCopy.Bounds = New Rectangle(ClientSize.Width - 12 - Localization.Scaled(220), ClientSize.Height - 40, Localization.Scaled(105), 28)
         btnCopy.Anchor = AnchorStyles.Right Or AnchorStyles.Bottom
-        AddHandler btnCopy.Click, AddressOf CopyAllText
         Controls.Add(btnCopy)
 
-        btnClose.Text = Localization.T("Закрыть")
         btnClose.Bounds = New Rectangle(ClientSize.Width - 12 - Localization.Scaled(105), ClientSize.Height - 40, Localization.Scaled(105), 28)
         btnClose.Anchor = AnchorStyles.Right Or AnchorStyles.Bottom
-        AddHandler btnClose.Click, Sub() Close()
         Controls.Add(btnClose)
+#End If
     End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>
+    ''' The modern window is a docked layout, not absolute positions. The absolute one put the status line
+    ''' (24 px, 8 px under the text box) over the top 18 px of the button row (28 px high, 40 px from the bottom),
+    ''' and a control added earlier is drawn OVER one added later, so the file name's label hid the buttons - at
+    ''' every scale, and with a 42 px label at 175 % (ticket 124 left the numbers alone and only scaled them).
+    ''' Here the text box fills what is left, and one strip along the bottom holds the status (it takes the room
+    ''' the buttons leave and ellipsizes a long file name) and the buttons (as wide as their caption needs, so a
+    ''' German, Hindi or Arabic caption is never cut). The strip sizes itself from the buttons' height, so
+    ''' neither the scale nor the language can push the buttons out of the window. Measures are 96-dpi pixels:
+    ''' DialogLayout.ApplyAutoScale, the builder's last line, scales them.
+    ''' </summary>
+    Private Sub BuildDockedLayout()
+        box.Dock = DockStyle.Fill
+        box.Name = "details_Box"
+        Dim body As New Panel With {.Dock = DockStyle.Fill, .Padding = New Padding(12, 12, 12, 4), .Name = "details_Body"}
+        body.Controls.Add(box)
+
+        status.AutoSize = False
+        status.AutoEllipsis = True
+        status.Dock = DockStyle.Fill
+        status.TextAlign = ContentAlignment.MiddleLeft
+        status.Margin = New Padding(0)
+        status.Name = "details_Status"
+
+        For Each button As Button In New Button() {btnCopy, btnClose}
+            button.AutoSize = True
+            button.AutoSizeMode = AutoSizeMode.GrowOnly
+            button.MinimumSize = New Size(Localization.Scaled(105), 28)
+            button.Margin = New Padding(8, 0, 0, 0)
+            button.Padding = New Padding(6, 0, 6, 0)
+        Next
+        btnCopy.Name = "details_Copy"
+        btnClose.Name = "details_Close"
+
+        Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = False,
+            .FlowDirection = FlowDirection.LeftToRight, .Margin = New Padding(0), .Dock = DockStyle.Fill, .Name = "details_Buttons"}
+        buttons.Controls.Add(btnCopy)
+        buttons.Controls.Add(btnClose)
+
+        Dim strip As New TableLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .ColumnCount = 2, .RowCount = 1, .Padding = New Padding(12, 8, 12, 12), .Name = "details_Strip"}
+        strip.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
+        strip.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
+        strip.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+        strip.Controls.Add(status, 0, 0)
+        strip.Controls.Add(buttons, 1, 0)
+
+        ' The strip is added AFTER the body: a later docked control is laid out first and keeps its edge,
+        ' the Fill one takes what remains.
+        Controls.Add(body)
+        Controls.Add(strip)
+    End Sub
+#End If
+
+#If Not NETFRAMEWORK Then
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        ' A window authored in 96-dpi pixels grows with the scale; on a small or very high-scale display it
+        ' can end up larger than the monitor, which pushes the bottom strip with the buttons off the screen.
+        DialogLayout.ClampToWorkingArea(Me)
+    End Sub
+#End If
 
     Private Async Sub File_Details_Form_Shown(sender As Object, e As EventArgs) Handles MyBase.Shown
         box.Text = ""
@@ -121,6 +192,10 @@ Public NotInheritable Class File_Details_Form
             ' The rows already rendered stay: a details window that lost only one source
             ' still answers for the rest.
             status.Text = Path.GetFileName(filePath)
+#If Not NETFRAMEWORK Then
+            ' Nothing rendered at all: say so instead of leaving an empty body (124 UX-208).
+            If box.TextLength = 0 Then box.Text = Localization.T("Не удалось прочитать сведения о файле.")
+#End If
             AppFileLogger.WriteLine("File details not read [" & ex.GetType().Name & "]: " & ex.Message)
         End Try
     End Sub
@@ -140,6 +215,13 @@ Public NotInheritable Class File_Details_Form
             AppendLine("")
         Next
         box.ResumeLayout()
+#If Not NETFRAMEWORK Then
+        ' Appending at the end leaves the view scrolled to the bottom when the text is longer than the box (a long
+        ' path, a small window): the user opens the window to read from the top.
+        box.SelectionStart = 0
+        box.SelectionLength = 0
+        box.ScrollToCaret()
+#End If
     End Sub
 
     Private Sub AppendTitle(text As String)
@@ -164,6 +246,10 @@ Public NotInheritable Class File_Details_Form
             Clipboard.SetText(box.Text)
             status.Text = Localization.T("Скопировано в буфер обмена")
         Catch ex As Exception
+#If Not NETFRAMEWORK Then
+            ' The clipboard is held by another program for a moment: tell the user, do not fail silently.
+            status.Text = Localization.T("Буфер обмена занят другой программой. Повторите.")
+#End If
             AppFileLogger.WriteLine("File details copy skipped [" & ex.GetType().Name & "]: " & ex.Message)
         End Try
     End Sub

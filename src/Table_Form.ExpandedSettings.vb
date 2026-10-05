@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -21,20 +21,16 @@ Partial Public Class Table_Form
         End Function
     End Class
 
-    ''' <summary>Kept so the OCR cache row can restate the size after a clear without
-    ''' rebuilding the page.</summary>
-    Private ocrCacheSizeLabel As Label
-
-    ''' <summary>Same, for the decode cache row (§6.2).</summary>
-    Private decodeCacheSizeLabel As Label
-
-    ''' <summary>Only the newest cache measurement may update its label (057.S14-1).</summary>
-    Private ReadOnly ocrSizeGate As New RefreshGate()
-    Private ReadOnly decodeSizeGate As New RefreshGate()
+    ''' <summary>The five Storage usage rows' re-measure actions and their tickets
+    ''' (130 §3.3): opening the Storage page re-runs the measures, closing the window
+    ''' invalidates every outstanding one.</summary>
+    Private ReadOnly cacheUsageRefresh As New List(Of Action)()
+    Private ReadOnly cacheUsageGates As New List(Of RefreshGate)()
 
     ''' <summary>The "include personal data" opt-in of §7.4. Deliberately a field rather
     ''' than a preference: it is a decision about one export, not a setting.</summary>
     Private exportPersonalData As Boolean
+    Private ocrBudgetRefresh As Action
 
     ''' <summary>Actions that refresh choice combo items, button captions, external preference values,
     ''' and cache measurements on language change and display preparation (057.S14-1).</summary>
@@ -44,6 +40,9 @@ Partial Public Class Table_Form
         For Each refreshAction As Action In expandedRefreshActions
             refreshAction()
         Next
+        ' Choice items and command captions change after the initial localization pass.
+        ' Measure the final localized editors before assigning the shared page columns.
+        LayoutModernSettingsPages()
     End Sub
 
     Private Sub AddExpandedSettingsRows(destinations As FlowLayoutPanel, viewing As FlowLayoutPanel,
@@ -82,7 +81,7 @@ Partial Public Class Table_Form
                            Function() Main_Form.GetModernPreferences().ChromePinned,
                            Sub(v) Main_Form.GetModernPreferences().ChromePinned = v)
         AddPreferenceChoice(viewing, "chrome_size",
-                            Function() {Choice("small", "Маленький"), Choice("medium", "Средний"), Choice("large", "Большой"), Choice("adaptive", "Адаптивный")},
+                            Function() {Choice("small", "Маленький"), Choice("medium", "Средний"), Choice("large", "Большой"), Choice("adaptive", "Адаптивный"), Choice("touch", "Крупные цели (касание)")},
                             Function() Main_Form.GetModernPreferences().ChromeSize,
                             Sub(v) Main_Form.GetModernPreferences().ChromeSize = v)
         AddPreferenceSlider(viewing, "chrome_opacity", 0, 100,
@@ -103,6 +102,11 @@ Partial Public Class Table_Form
                             Function() {Choice("none", "Не скрывать"), Choice("toolbar", "Скрывать панель инструментов"), Choice("toolbarAndStatus", "Скрывать панель и статус")},
                             Function() Main_Form.GetModernPreferences().SlideshowUiMode,
                             Sub(v) Main_Form.GetModernPreferences().SlideshowUiMode = v)
+        ' 119 Ф-6, modern only: stillness before the pointer hides itself in a slideshow
+        ' or full-screen viewing; 0 = never.
+        AddPreferenceNumber(viewing, "video_hide_cursor", 0, 30,
+                            Function() Main_Form.GetModernPreferences().HideCursorAfterSec,
+                            Sub(v) Main_Form.GetModernPreferences().HideCursorAfterSec = v)
 
         AddSectionHeader(video, "section_video_behavior")
         AddNavigationKindCheck(video, "include_video_navigation",
@@ -128,6 +132,16 @@ Partial Public Class Table_Form
                             Function() {Choice("stay", "Оставить последний кадр"), Choice("nextFile", "Следующий файл"), Choice("repeat", "Повторить")},
                             Function() Main_Form.GetModernPreferences().VideoEndAction,
                             Sub(v) Main_Form.GetModernPreferences().VideoEndAction = v)
+        ' The three keyboard seek steps of 119 Ф-2: Shift+arrows / Alt+arrows / Ctrl+arrows.
+        AddPreferenceNumber(video, "video_seek_short", 1, 600,
+                            Function() Main_Form.GetModernPreferences().SeekShortSec,
+                            Sub(v) Main_Form.GetModernPreferences().SeekShortSec = v)
+        AddPreferenceNumber(video, "video_seek_medium", 1, 600,
+                            Function() Main_Form.GetModernPreferences().SeekMediumSec,
+                            Sub(v) Main_Form.GetModernPreferences().SeekMediumSec = v)
+        AddPreferenceNumber(video, "video_seek_long", 1, 600,
+                            Function() Main_Form.GetModernPreferences().SeekLongSec,
+                            Sub(v) Main_Form.GetModernPreferences().SeekLongSec = v)
         AddSectionHeader(audio, "section_audio_behavior")
         AddNavigationKindCheck(audio, "include_audio_navigation",
                                Function() Main_Form.GetModernPreferences().IncludeAudioInNavigation,
@@ -233,17 +247,163 @@ Partial Public Class Table_Form
                            Sub(v) Main_Form.GetModernPreferences().SecureShowTrueName = v)
         AddSecureAssociationRow(files)
 
-        AddPreferenceNumber(ocr, "ocr_cache_limit", 0, 1024,
-                            Function() Main_Form.GetModernPreferences().OcrDiskCacheMaxMb,
-                            Sub(v) Main_Form.GetModernPreferences().OcrDiskCacheMaxMb = v)
-        AddOcrCacheRow(ocr)
+        AddPreferenceNumber(ocr, "ocr_cache_limit", -1, 1024,
+                            Function() If(Not _ocrSettings.DiskCache, 0, If(Main_Form.GetModernPreferences().OcrDiskCacheMaxMb = 0, -1, Main_Form.GetModernPreferences().OcrDiskCacheMaxMb)),
+                            Sub(v)
+                                _ocrSettings.DiskCache = v <> 0
+                                If v <> 0 Then Main_Form.GetModernPreferences().OcrDiskCacheMaxMb = Math.Max(0, v)
+                                chkOcrDisk.Checked = _ocrSettings.DiskCache
+                                Main_Form.OnOcrSettingsEditedFromSettingsWindow(False, False)
+                            End Sub)
         AddPreferenceNumber(ocr, "decode_cache_limit", 0, 8192,
                             Function() Main_Form.GetModernPreferences().DecodeCacheMaxMb,
                             Sub(v) Main_Form.GetModernPreferences().DecodeCacheMaxMb = v)
-        AddDecodeCacheRow(ocr)
         AddPreferenceNumber(ocr, "thumb_cache_limit", 0, 4096,
                             Function() Main_Form.GetModernPreferences().PanelThumbCacheMb,
                             Sub(v) Main_Form.GetModernPreferences().PanelThumbCacheMb = v)
+        AddPreferenceNumber(ocr, "remote_cache_limit", ModernViewerPreferences.RemoteCacheMaxMbMin, ModernViewerPreferences.RemoteCacheMaxMbMax,
+                            Function() Main_Form.GetModernPreferences().RemoteCacheMaxMb,
+                            Sub(v) Main_Form.GetModernPreferences().RemoteCacheMaxMb = v)
+
+        ' 130 §3.2/§3.3: one usage+clear row per cache. Where each lands next to its limit
+        ' row is the group catalog's decision (AddSettingsGroup in SettingsGroups), never
+        ' this construction order.
+        AddCacheUsageRow(ocr, "decode_cache_clear",
+                         Function() CacheUsageMeasure.FlatBytes(DecodeCacheStore.CacheDir(), DecodeCacheKey.File_Pattern),
+                         "Удалить сохранённые результаты декодирования? Сами изображения не изменятся.",
+                         Sub() CacheMaintenance.ClearFiles(DecodeCacheStore.CacheDir(), DecodeCacheKey.File_Pattern),
+                         "Кэш декодирования очищен.")
+        AddCacheUsageRow(ocr, "thumb_cache_clear",
+                         Function() CacheUsageMeasure.FlatBytes(ThumbnailCacheStore.DefaultDirectory(), ThumbnailCacheKey.File_Pattern),
+                         "Очистить кэш миниатюр?",
+                         Sub() CacheMaintenance.ClearFiles(ThumbnailCacheStore.DefaultDirectory(), ThumbnailCacheKey.File_Pattern, "*.tmp"),
+                         "Кэш миниатюр очищен.")
+        AddCacheUsageRow(ocr, "ocr_cache_clear",
+                         Function() CacheUsageMeasure.FlatBytes(OcrPaths.OcrCacheDir(), "*.json"),
+                         "Удалить сохранённые результаты распознавания? Настройки OCR не изменятся.",
+                         AddressOf Main_Form.ClearOcrResultCacheOnDisk,
+                         "Сохранённые результаты распознавания удалены.",
+                         Sub() Main_Form.ClearOcrResultCache(memoryOnly:=True))
+        AddCacheUsageRow(ocr, "archive_cache_clear",
+                         Function() CacheUsageMeasure.TreeBytes(ArchivePaths.CacheRoot()),
+                         "Удалить временные копии записей архивов? Открытые архивы продолжат работать.",
+                         Sub() CacheMaintenance.ClearSessions(ArchivePaths.CacheRoot(), Date.UtcNow,
+                                                             Function(pid) ArchiveTempStore.IsLiveViewerProcess(pid, unknownIsLive:=True)),
+                         "Временные копии архивов удалены.")
+        AddCacheUsageRow(ocr, "remote_cache_clear",
+                         Function() CacheUsageMeasure.TreeBytes(RemoteCachePaths.CacheRoot()),
+                         "Удалить временные копии файлов сетевых ресурсов? Активные подключения не пострадают.",
+                         Sub() CacheMaintenance.ClearSessions(RemoteCachePaths.CacheRoot(), Date.UtcNow,
+                                                             Function(pid) ArchiveTempStore.IsLiveViewerProcess(pid, unknownIsLive:=True)),
+                         "Временные копии файлов сетевых ресурсов удалены.")
+    End Sub
+
+    ''' <summary>
+    ''' One usage+clear row of 130 §3.3 on the 127 anatomy: the cache's measured size, a
+    ''' compact Clear beside it and a refresh affordance between them, 8 px apart, flush
+    ''' right in the row's value column. <paramref name="measure"/> and
+    ''' <paramref name="clearWork"/> are the cache's own facts; the row owns the rest - the
+    ''' off-thread measure through a gate (only the newest answer lands; a failed one shows
+    ''' "unknown" with the reason on the label's tooltip and Refresh as the retry), the
+    ''' confirmed async clear (the safe default stays focused), the success via Notify,
+    ''' errors via FailureText, and the re-measure afterwards.
+    ''' </summary>
+    Private Sub AddCacheUsageRow(flow As FlowLayoutPanel, key As String,
+                                 measure As Func(Of Long),
+                                 confirmText As String,
+                                 clearWork As Action,
+                                 successText As String,
+                                 Optional afterClear As Action = Nothing)
+        Dim usage As New Label With {.AutoSize = False, .Width = Sp(96),
+                                     .Height = Sp(SettingsRowGridRules.ButtonHeight),
+                                     .TextAlign = Drawing.ContentAlignment.MiddleLeft,
+                                     .BackColor = SettingsSurface}
+        Dim refreshButton As New Button With {.Text = Localization.T("Обновить")}
+        Dim clearButton As New Button With {.Text = Localization.T("Очистить")}
+        Dim gate As New RefreshGate()
+        cacheUsageGates.Add(gate)
+        Dim unknownText As String = Localization.T("Неизвестно")
+        Dim clearing As Boolean = False
+
+        Dim refresh As Action =
+            Async Sub()
+                If clearing OrElse Not CacheUsageRowAlive(usage) Then Return
+                Dim ticket As Integer = gate.Begin()
+                usage.Text = unknownText
+                If toolTip IsNot Nothing Then toolTip.SetToolTip(usage, String.Empty)
+                Try
+                    Dim bytes As Long = Await Task.Run(measure)
+                    If Not CacheUsageRowAlive(usage) OrElse Not gate.IsLatest(ticket) Then Return
+                    usage.Text = Localization.TF("{0} МБ", Megabytes(bytes))
+                    If toolTip IsNot Nothing Then toolTip.SetToolTip(usage, String.Empty)
+                Catch ex As Exception
+                    If Not CacheUsageRowAlive(usage) OrElse Not gate.IsLatest(ticket) Then Return
+                    AppFileLogger.LogException("Settings: measuring " & key, ex)
+                    ' 130 §3.3: a failed measurement is never a stale number presented as
+                    ' fresh - the label says unknown, the tooltip names the reason and the
+                    ' refresh button beside it is the retry.
+                    usage.Text = unknownText
+                    If toolTip IsNot Nothing Then
+                        toolTip.SetToolTip(usage, Localization.TF("Не удалось измерить: {0}. Кнопка «Обновить» повторит попытку.", FailureText.Describe(ex)))
+                    End If
+                End Try
+            End Sub
+        Dim localize As Action =
+            Sub()
+                refreshButton.Text = Localization.T("Обновить")
+                clearButton.Text = Localization.T("Очистить")
+                unknownText = Localization.T("Неизвестно")
+                refresh()
+            End Sub
+        localize()
+
+        AddHandler refreshButton.Click, Sub() refresh()
+        AddHandler clearButton.Click,
+            Async Sub()
+                If clearing OrElse Not CacheUsageRowAlive(usage) Then Return
+                If ViewerBox.Show(Me, Localization.T(confirmText), Localization.T("Настройки"),
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
+                clearing = True
+                gate.Begin()
+                usage.Text = unknownText
+                clearButton.Enabled = False
+                refreshButton.Enabled = False
+                Try
+                    Await Task.Run(clearWork)
+                    If IsDisposed OrElse Disposing Then Return
+                    If afterClear IsNot Nothing Then afterClear()
+                    Main_Form.Notify(Localization.T(successText), NotifyLevel.Info)
+                Catch ex As Exception
+                    AppFileLogger.LogException("Settings: clearing " & key, ex)
+                    If Not IsDisposed AndAlso Not Disposing Then
+                        ViewerBox.Show(Me, FailureText.Describe(ex), Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    End If
+                Finally
+                    clearing = False
+                    If Not clearButton.IsDisposed Then clearButton.Enabled = True
+                    If Not refreshButton.IsDisposed Then refreshButton.Enabled = True
+                End Try
+                refresh()
+            End Sub
+
+        Dim strip As FlowLayoutPanel = MakeModernControlStrip({usage, refreshButton, clearButton}, 320)
+        expandedRefreshActions.Add(localize)
+        cacheUsageRefresh.Add(refresh)
+        AddSettingRow(flow, key, strip, 320, True)
+    End Sub
+
+    ''' <summary>False once the window or the row's own label has gone: a late measurement
+    ''' must not touch controls that no longer exist.</summary>
+    Private Function CacheUsageRowAlive(usage As Label) As Boolean
+        Return Not IsDisposed AndAlso Not Disposing AndAlso usage IsNot Nothing AndAlso Not usage.IsDisposed
+    End Function
+
+    ''' <summary>Re-measures every cache row - what opening the Storage page means
+    ''' (130 §3.3). Wired to the tab's SelectedIndexChanged in SettingsDiscovery.</summary>
+    Friend Sub RefreshCacheUsageMeasurements()
+        For Each refreshUsage As Action In cacheUsageRefresh
+            refreshUsage()
+        Next
     End Sub
 
     ''' <summary>
@@ -263,8 +423,15 @@ Partial Public Class Table_Form
                     combo.BeginUpdate()
                     combo.Items.Clear()
                     combo.Items.AddRange(choices)
-                    Dim currentValue As String = Main_Form.GetModernPreferences().InterfaceScalePercent.ToString(Globalization.CultureInfo.InvariantCulture)
-                    combo.SelectedItem = If(choices.FirstOrDefault(Function(item) item.Value = currentValue), choices(0))
+                    Dim currentValue As String = Main_Form.GetModernPreferences().InterfaceScaleRelativePercent.ToString(Globalization.CultureInfo.InvariantCulture)
+                    Dim absolute As Integer = Main_Form.GetModernPreferences().InterfaceScalePercent
+                    If absolute > 0 AndAlso currentValue = "0" Then
+                        Dim legacy As New PreferenceChoice("legacy", absolute.ToString(Globalization.CultureInfo.CurrentCulture) & " % (96 DPI)")
+                        combo.Items.Add(legacy)
+                        combo.SelectedItem = legacy
+                    Else
+                        combo.SelectedItem = If(choices.FirstOrDefault(Function(item) item.Value = currentValue), choices(0))
+                    End If
                     combo.EndUpdate()
                 Finally
                     isUpdating = False
@@ -276,14 +443,15 @@ Partial Public Class Table_Form
             Sub()
                 If isUpdating Then Return
                 Dim choice As PreferenceChoice = TryCast(combo.SelectedItem, PreferenceChoice)
-                If choice Is Nothing Then Return
+                If choice Is Nothing OrElse choice.Value = "legacy" Then Return
                 Dim percent As Integer = Integer.Parse(choice.Value, Globalization.CultureInfo.InvariantCulture)
                 Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
-                If percent = p.InterfaceScalePercent Then Return
+                If percent = p.InterfaceScaleRelativePercent AndAlso p.InterfaceScalePercent = 0 Then Return
 
-                p.InterfaceScalePercent = percent
+                p.InterfaceScalePercent = 0
+                p.InterfaceScaleRelativePercent = percent
                 ApplyExpandedPreferences()
-                If MessageBox.Show(Me, Localization.T("Новый масштаб применится после перезапуска окна настроек. Перезапустить сейчас?"),
+                If ViewerBox.Show(Me, Localization.T("Новый масштаб применится после перезапуска окна настроек. Перезапустить сейчас?"),
                                    Localization.T("Настройки"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
                 Main_Form.RequestSettingsWindowRestart()
                 Close()
@@ -303,8 +471,7 @@ Partial Public Class Table_Form
             Sub()
                 Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
                 Using dialog As New File_Types_Form(Main_Form.SupportedExtensionGroups(), CurrentExtensionFilter(p))
-                    PinDialogToViewerBand(dialog)
-                    If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+                    If DialogLayer.ShowViewerDialog(dialog, Me) <> DialogResult.OK Then Return
                     p.SetIncludedExtensionsFromEditing(String.Join(";", dialog.Selection))
                     Main_Form.ApplyMediaKindNavigationPreferenceChange()
                 End Using
@@ -324,14 +491,33 @@ Partial Public Class Table_Form
                     .ClientSize = New Size(460, 140), .StartPosition = FormStartPosition.CenterParent,
                     .FormBorderStyle = FormBorderStyle.FixedDialog, .MinimizeBox = False, .MaximizeBox = False}
                     Dim values = If(documents, p.DocumentExtensionSet(), p.OtherExtensionSet())
-                    Dim input As New TextBox With {.Text = String.Join(";", values.OrderBy(Function(ext) ext)), .Location = New Point(16, 24), .Width = 428}
-                    Dim ok As New Button With {.Text = Localization.T("ОК"), .DialogResult = DialogResult.OK, .Location = New Point(260, 88)}
-                    Dim cancel As New Button With {.Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel, .Location = New Point(350, 88)}
-                    dialog.Controls.AddRange(New Control() {input, ok, cancel})
+                    Dim layout As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .RowCount = 3, .Padding = New Padding(12)}
+                    layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+                    layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+                    layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+                    Dim label As New Label With {.AutoSize = True, .MaximumSize = New Size(420, 0),
+                        .Text = Localization.T("Расширения через пробел или точку с запятой, например .pdf;.txt. Без масок.")}
+                    Dim input As New TextBox With {.Text = String.Join(";", values.OrderBy(Function(ext) ext)), .Dock = DockStyle.Top, .AccessibleName = label.Text}
+                    Dim ok As New Button With {.Text = Localization.T("ОК"), .DialogResult = DialogResult.OK, .AutoSize = True}
+                    Dim cancel As New Button With {.Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel, .AutoSize = True}
+                    Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .Dock = DockStyle.Fill, .FlowDirection = FlowDirection.RightToLeft}
+                    buttons.Controls.AddRange({cancel, ok})
+                    layout.Controls.Add(label, 0, 0)
+                    layout.Controls.Add(input, 0, 1)
+                    layout.Controls.Add(buttons, 0, 2)
+                    dialog.Controls.Add(layout)
+                    AddHandler dialog.FormClosing,
+                        Sub(sender, args)
+                            If dialog.DialogResult <> DialogResult.OK OrElse SettingsSearchRules.IsExtensionList(input.Text) Then Return
+                            args.Cancel = True
+                            ViewerBox.Show(dialog, label.Text, Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                            input.Focus()
+                        End Sub
                     dialog.AcceptButton = ok
                     dialog.CancelButton = cancel
-                    PinDialogToViewerBand(dialog)
-                    If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+                    ' Literal 96-dpi pixels in a PerMonitorV2 process: scale them with the window (124 UX-202).
+                    DialogLayout.ApplyAutoScale(dialog)
+                    If DialogLayer.ShowViewerDialog(dialog, Me) <> DialogResult.OK Then Return
                     If documents Then
                         p.DocumentExtensions = input.Text
                     Else
@@ -342,14 +528,6 @@ Partial Public Class Table_Form
             End Sub
         expandedRefreshActions.Add(refresh)
         AddSettingRow(files, key, button, 230, True)
-    End Sub
-
-    ''' <summary>A dialog owned by this window still has to be put into the viewer's
-    ''' z-order band by hand - being owned is not enough to leave the normal band, so
-    ''' without this it opens BEHIND a viewer pinned «поверх всех окон»
-    ''' (Main_Form.WindowPinning.vb; same line as Table_Form.SendLogs.vb).</summary>
-    Private Sub PinDialogToViewerBand(dialog As Form)
-        dialog.TopMost = Me.TopMost OrElse MainWindowIsTopMost()
     End Sub
 
     Private Shared Function CurrentExtensionFilter(p As ModernViewerPreferences) As List(Of String)
@@ -369,8 +547,7 @@ Partial Public Class Table_Form
             Sub()
                 Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
                 Using dialog As New Hotkeys_Form(CustomHotkeys.Load(p.CustomHotkeysJson))
-                    PinDialogToViewerBand(dialog)
-                    If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+                    If DialogLayer.ShowViewerDialog(dialog, Me) <> DialogResult.OK Then Return
                     p.CustomHotkeysJson = CustomHotkeys.Save(dialog.Result)
                     ApplyExpandedPreferences()
                     Main_Form.ReloadCustomHotkeys()
@@ -391,8 +568,7 @@ Partial Public Class Table_Form
                 Dim chosen As String = Nothing
                 Using dialog As New History_Form(Main_Form.RecentFilesSnapshot(), Main_Form.RecentFoldersSnapshot())
                     AddHandler dialog.EntryChosen, Sub(entry) chosen = entry
-                    PinDialogToViewerBand(dialog)
-                    dialog.ShowDialog(Me)
+                    DialogLayer.ShowViewerDialog(dialog, Me)
                     Main_Form.ReplaceRecentHistory(dialog.Files_Result, dialog.Folders_Result)
                 End Using
                 If String.IsNullOrEmpty(chosen) Then Return
@@ -428,7 +604,7 @@ Partial Public Class Table_Form
                                        Main_Form.UnregisterSecureContainerOpenWith(),
                                        Main_Form.RegisterSecureContainerOpenWith())
                 If Not ok Then
-                    MessageBox.Show(Me, Localization.T("Не удалось изменить запись в реестре"),
+                    ViewerBox.Show(Me, Localization.T("Не удалось изменить запись в реестре"),
                                     Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 End If
                 ' Whatever the registry actually says now, not what was asked for.
@@ -438,114 +614,13 @@ Partial Public Class Table_Form
         AddSettingRow(files, "secure_open_with", button, 230, True)
     End Sub
 
-    ''' <summary>§7.3. The number above sets the budget; this row says what the cache
-    ''' costs right now and offers the one action that is not automatic.</summary>
-    Private Sub AddOcrCacheRow(ocr As FlowLayoutPanel)
-        Dim host As New FlowLayoutPanel With {.Width = 300, .Height = 30, .WrapContents = False,
-                                              .FlowDirection = FlowDirection.LeftToRight,
-                                              .Margin = Padding.Empty, .Padding = Padding.Empty}
-        ocrCacheSizeLabel = New Label With {.AutoSize = False, .Width = 100, .Height = 26,
-                                            .TextAlign = Drawing.ContentAlignment.MiddleLeft}
-        Dim clearButton As New Button With {.AutoSize = True}
-        Dim refresh As Action =
-            Sub()
-                clearButton.Text = Localization.T("Очистить кэш")
-                RefreshOcrCacheSize()
-            End Sub
-        refresh()
-        AddHandler clearButton.Click,
-            Sub()
-                If MessageBox.Show(Me, Localization.T("Удалить сохранённые результаты распознавания? Настройки OCR не изменятся."),
-                                   Localization.T("Настройки"), MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
-                Main_Form.ClearOcrResultCache()
-                RefreshOcrCacheSize()
-            End Sub
-        host.Controls.Add(ocrCacheSizeLabel)
-        host.Controls.Add(clearButton)
-        expandedRefreshActions.Add(refresh)
-        AddSettingRow(ocr, "ocr_cache_clear", host, 300, True)
-    End Sub
-
-    Private Async Sub RefreshOcrCacheSize()
-        If ocrCacheSizeLabel Is Nothing Then Return
-        Dim cacheDir As String = OcrPaths.OcrCacheDir()
-        Dim ticket As Integer = ocrSizeGate.Begin()
-        Try
-            Dim size As String = Await Task.Run(Function() MegabytesOnDisk(cacheDir, "*.json"))
-            If IsDisposed OrElse Disposing OrElse Not IsHandleCreated OrElse ocrCacheSizeLabel Is Nothing Then Return
-            If Not ocrSizeGate.IsLatest(ticket) Then Return
-            ocrCacheSizeLabel.Text = Localization.TF("{0} МБ", size)
-        Catch ex As Exception
-            AppFileLogger.LogException("Settings: measuring OCR cache", ex)
-        End Try
-    End Sub
-
-    ''' <summary>The decode cache's own size-and-clear row, built exactly like the OCR one
-    ''' above (§6.2). Its size comes from DecodeCacheStore rather than from a second walk
-    ''' of the directory: the store owns the file pattern, and a copy of it here is a copy
-    ''' that would be wrong the day the extension changes.</summary>
-    Private Sub AddDecodeCacheRow(ocr As FlowLayoutPanel)
-        Dim host As New FlowLayoutPanel With {.Width = 300, .Height = 30, .WrapContents = False,
-                                              .FlowDirection = FlowDirection.LeftToRight,
-                                              .Margin = Padding.Empty, .Padding = Padding.Empty}
-        decodeCacheSizeLabel = New Label With {.AutoSize = False, .Width = 100, .Height = 26,
-                                               .TextAlign = Drawing.ContentAlignment.MiddleLeft}
-        Dim clearButton As New Button With {.AutoSize = True}
-        Dim refresh As Action =
-            Sub()
-                clearButton.Text = Localization.T("Очистить кэш")
-                RefreshDecodeCacheSize()
-            End Sub
-        refresh()
-        AddHandler clearButton.Click,
-            Sub()
-                If MessageBox.Show(Me, Localization.T("Удалить сохранённые результаты декодирования? Сами изображения не изменятся."),
-                                   Localization.T("Настройки"), MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
-                DecodeCacheStore.Clear(DecodeCacheStore.CacheDir())
-                RefreshDecodeCacheSize()
-            End Sub
-        host.Controls.Add(decodeCacheSizeLabel)
-        host.Controls.Add(clearButton)
-        expandedRefreshActions.Add(refresh)
-        AddSettingRow(ocr, "decode_cache_clear", host, 300, True)
-    End Sub
-
-    Private Async Sub RefreshDecodeCacheSize()
-        If decodeCacheSizeLabel Is Nothing Then Return
-        Dim cacheDir As String = DecodeCacheStore.CacheDir()
-        Dim ticket As Integer = decodeSizeGate.Begin()
-        Try
-            Dim size As Long = Await Task.Run(Function() DecodeCacheStore.BytesOnDisk(cacheDir))
-            If IsDisposed OrElse Disposing OrElse Not IsHandleCreated OrElse decodeCacheSizeLabel Is Nothing Then Return
-            If Not decodeSizeGate.IsLatest(ticket) Then Return
-            decodeCacheSizeLabel.Text = Localization.TF("{0} МБ", Megabytes(size))
-        Catch ex As Exception
-            AppFileLogger.LogException("Settings: measuring decode cache", ex)
-        End Try
-    End Sub
-
+    ''' <summary>The window is closing: every outstanding cache measurement is invalidated,
+    ''' so a late answer cannot touch a label that no longer exists.</summary>
     Private Sub InvalidateCacheMeasurements(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
-        ocrSizeGate.Begin()
-        decodeSizeGate.Begin()
+        For Each gate As RefreshGate In cacheUsageGates
+            gate.Begin()
+        Next
     End Sub
-
-    ''' <summary>One decimal, and never an exception: a cache directory that cannot be
-    ''' measured is a disk problem, not a reason to fail opening the settings.</summary>
-    Private Shared Function MegabytesOnDisk(cacheDir As String, filePattern As String) As String
-        Dim bytes As Long = 0
-        Try
-            If Not String.IsNullOrEmpty(cacheDir) AndAlso Directory.Exists(cacheDir) Then
-                For Each entry As String In Directory.GetFiles(cacheDir, filePattern)
-                    Try
-                        bytes += New FileInfo(entry).Length
-                    Catch
-                    End Try
-                Next
-            End If
-        Catch
-        End Try
-        Return Megabytes(bytes)
-    End Function
 
     Private Shared Function Megabytes(bytes As Long) As String
         Return (bytes / 1048576.0R).ToString("0.0", Globalization.CultureInfo.CurrentCulture)
@@ -583,25 +658,25 @@ Partial Public Class Table_Form
                 If toolTip IsNot Nothing Then
                     toolTip.SetToolTip(personalCheck, Localization.T("Включает в файл историю папок и позиции просмотра видео. API-ключи и пароли не экспортируются никогда."))
                 End If
-                exportButton.Text = Localization.T("Экспортировать настройки")
-                importButton.Text = Localization.T("Импортировать настройки")
+                exportButton.Text = Localization.T("Экспорт дополнительных настроек")
+                importButton.Text = Localization.T("Импорт дополнительных настроек")
             End Sub
         refresh()
 
         AddHandler exportButton.Click,
             Sub()
                 If exportPersonalData AndAlso
-                   MessageBox.Show(Me, Localization.T("В файл попадут пути к вашим папкам и позиции просмотра. Продолжить?"),
+                   ViewerBox.Show(Me, Localization.T("В файл попадут пути к вашим папкам и позиции просмотра. Продолжить?"),
                                    Localization.T("Настройки"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
 
-                Using dialog As New SaveFileDialog With {.Filter = ProductNames.Compact & " settings|*.fms-settings.json", .DefaultExt = "fms-settings.json", .AddExtension = True}
+                Using dialog As New SaveFileDialog With {.Filter = Localization.TF("{0} - настройки|*.fms-settings.json", ProductNames.Compact), .DefaultExt = "fms-settings.json", .AddExtension = True}
                     If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
                     Try
                         File.WriteAllText(dialog.FileName, Main_Form.GetModernPreferences().ExportJson(exportPersonalData))
-                        MessageBox.Show(Me, Localization.T("Настройки экспортированы."), Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        ViewerBox.Show(Me, Localization.T("Настройки экспортированы."), Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Information)
                     Catch ex As Exception
                         AppFileLogger.LogException("Settings export", ex)
-                        MessageBox.Show(Me, Localization.TF("Не удалось экспортировать настройки: {0}", FailureText.Describe(ex)), Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
+                        ViewerBox.Show(Me, Localization.TF("Не удалось экспортировать настройки: {0}", FailureText.Describe(ex)), Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
                     End Try
                 End Using
             End Sub
@@ -612,6 +687,21 @@ Partial Public Class Table_Form
         AddSettingRow(files, "settings_export_personal", personalCheck, 34, True)
         AddSettingRow(files, "settings_export", exportButton, 210, True)
         AddSettingRow(files, "settings_import", importButton, 210, True)
+        Dim reset As New Button With {.AutoSize = True}
+        expandedRefreshActions.Add(Sub() reset.Text = Localization.T("Восстановить по умолчанию"))
+        reset.Text = Localization.T("Восстановить по умолчанию")
+        AddHandler reset.Click,
+            Sub()
+                Dim defaults As New ModernViewerPreferences()
+                Dim current = Main_Form.GetModernPreferences()
+                defaults.FolderZoomHistory = current.FolderZoomHistory
+                defaults.VideoPositionHistory = current.VideoPositionHistory
+                defaults.DocumentPageHistory = current.DocumentPageHistory
+                If ViewerBox.Show(Me, Localization.T("Восстановить дополнительные настройки по умолчанию? Получатели, язык, тема, звук, OCR и история сохранятся."),
+                    Localization.T("Настройки"), MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
+                ApplyImportedPreferencesWithBackup(current, defaults)
+            End Sub
+        AddSettingRow(files, "settings_defaults", reset, 230, True)
     End Sub
 
     ''' <summary>
@@ -622,7 +712,7 @@ Partial Public Class Table_Form
     ''' registry and the hotkeys exactly as they were.
     ''' </summary>
     Private Sub ImportSettings(sender As Object, e As EventArgs)
-        Using dialog As New OpenFileDialog With {.Filter = ProductNames.Compact & " settings|*.fms-settings.json"}
+        Using dialog As New OpenFileDialog With {.Filter = Localization.TF("{0} - настройки|*.fms-settings.json", ProductNames.Compact)}
             If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
 
             Dim imported As ModernViewerPreferences
@@ -630,7 +720,7 @@ Partial Public Class Table_Form
                 imported = ModernViewerPreferences.FromJson(File.ReadAllText(dialog.FileName))
             Catch ex As Exception
                 AppFileLogger.LogException("Settings import", ex)
-                MessageBox.Show(Me, Localization.TF("Не удалось импортировать настройки: {0}", FailureText.Describe(ex)),
+                ViewerBox.Show(Me, Localization.TF("Не удалось импортировать настройки: {0}", FailureText.Describe(ex)),
                                 Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Return
             End Try
@@ -640,7 +730,7 @@ Partial Public Class Table_Form
             If plan.ReplaceChanges.Count = 0 Then
                 ' Nothing to import is reported, not confirmed (APP-BEHAVIOUR rule 5, ticket
                 ' 028 Ф-5): no question, no backup, no write.
-                MessageBox.Show(Me, Localization.T("Файл прочитан. Отличий от текущих настроек нет."),
+                ViewerBox.Show(Me, Localization.T("Файл прочитан. Отличий от текущих настроек нет."),
                                 Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Return
             End If
@@ -649,45 +739,48 @@ Partial Public Class Table_Form
                 Localization.TF("При объединении изменится параметров: {0}.", plan.MergeChanges.Count) & vbCrLf & vbCrLf &
                 String.Join(vbCrLf, plan.ReplaceChanges.Take(12))
 
-            ' Yes = replace everything the document describes, No = merge only what differs
-            ' from the shipped defaults, so a partial file cannot silently reset the rest.
-            Dim answer As DialogResult = MessageBox.Show(Me,
-                summary & vbCrLf & vbCrLf & Localization.T("Да - заменить настройки, Нет - объединить с текущими."),
-                Localization.T("Настройки"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button3)
-            If answer = DialogResult.Cancel Then Return
+            ' Replace = take everything the document describes, Merge = take only what differs from the
+            ' shipped defaults, so a partial file cannot silently reset the rest. Named buttons, Cancel the
+            ' default (124 UX-205) - the old Yes/No/Cancel box explained them in a sentence.
+            Dim answer As Integer = AskDialogs.Choose(Me, AskSpecs.SettingsImport(summary))
+            If answer = AskSpecs.ImportCancel Then Return
 
-            Dim final As ModernViewerPreferences = If(answer = DialogResult.No, plan.Merged, imported)
-            If answer = DialogResult.No AndAlso plan.MergeChanges.Count = 0 Then
-                MessageBox.Show(Me, Localization.T("Файл прочитан. Отличий от текущих настроек нет."),
+            Dim final As ModernViewerPreferences = If(answer = AskSpecs.ImportMerge, plan.Merged, imported)
+            If answer = AskSpecs.ImportMerge AndAlso plan.MergeChanges.Count = 0 Then
+                ViewerBox.Show(Me, Localization.T("Файл прочитан. Отличий от текущих настроек нет."),
                                 Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Return
             End If
 
-            Dim backup As String
-            Try
-                backup = SettingsImportBackupStore.Create(current, SettingsImportBackupStore.DefaultDirectory())
-            Catch ex As Exception
-                AppFileLogger.LogException("Settings import backup", ex)
-                MessageBox.Show(Me, Localization.TF("Не удалось создать резервную копию: {0}", FailureText.Describe(ex)),
-                                Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
-                Return
-            End Try
-
-            Dim persisted As Boolean = Main_Form.ReplaceModernPreferences(final)
-            Main_Form.ReloadCustomHotkeys()
-            If persisted Then
-                MessageBox.Show(Me, Localization.TF("Настройки импортированы. Резервная копия: {0}", backup) & vbCrLf &
-                                    Localization.T("Масштаб интерфейса и режим запуска применятся после перезапуска."),
-                                Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Information)
-            Else
-                MessageBox.Show(Me, Localization.TF("Настройки применены, но записать их не удалось. Повторная попытка будет сделана автоматически. Резервная копия: {0}", backup),
-                                Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            End If
-            ' Every row of this window still shows the value it was built with. Rebuild the
-            ' window, the way a scale change does, so what is on screen is what was imported.
-            Main_Form.RequestSettingsWindowRestart()
-            Close()
+            ApplyImportedPreferencesWithBackup(current, final)
         End Using
+    End Sub
+
+    Private Sub ApplyImportedPreferencesWithBackup(current As ModernViewerPreferences, final As ModernViewerPreferences)
+        Dim backup As String
+        Try
+            backup = SettingsImportBackupStore.Create(current, SettingsImportBackupStore.DefaultDirectory())
+        Catch ex As Exception
+            AppFileLogger.LogException("Settings import backup", ex)
+            ViewerBox.Show(Me, Localization.TF("Не удалось создать резервную копию: {0}", FailureText.Describe(ex)),
+                            Localization.T("Ошибка"), MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return
+        End Try
+
+        Dim persisted As Boolean = Main_Form.ReplaceModernPreferences(final)
+        Main_Form.ReloadCustomHotkeys()
+        If persisted Then
+            ViewerBox.Show(Me, Localization.TF("Настройки импортированы. Резервная копия: {0}", backup) & vbCrLf &
+                                Localization.T("Масштаб интерфейса и режим запуска применятся после перезапуска."),
+                            Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Else
+            ViewerBox.Show(Me, Localization.TF("Настройки применены, но записать их не удалось. Повторная попытка будет сделана автоматически. Резервная копия: {0}", backup),
+                            Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End If
+        ' Every row of this window still shows the value it was built with. Rebuild the
+        ' window, the way a scale change does, so what is on screen is what was imported.
+        Main_Form.RequestSettingsWindowRestart()
+        Close()
     End Sub
     ''' <summary>This value is deliberately persisted right away, including from a
     ''' secondary process, so the next Explorer launch follows the new choice.</summary>
@@ -949,6 +1042,7 @@ Partial Public Class Table_Form
                     isUpdating = False
                 End Try
             End Sub
+        If key = "ocr_cache_limit" Then ocrBudgetRefresh = refresh
         refresh()
 
         AddHandler number.ValueChanged,
@@ -967,12 +1061,13 @@ Partial Public Class Table_Form
     Private Sub AddPreferenceSlider(flow As FlowLayoutPanel, key As String, minimum As Integer, maximum As Integer,
                                     getter As Func(Of Integer),
                                     apply As Action(Of Integer))
-        Dim host As New Panel With {.Height = 34}
-        Dim valueLabel As New Label With {.Dock = DockStyle.Right, .Width = 48, .TextAlign = ContentAlignment.MiddleRight}
+        Dim host As New Panel With {.Height = Sp(34)}
+        ' 127 §3.2: the slider is 180 logical px plus a 64 numeric companion.
+        Dim exact As New NumericUpDown With {.Dock = DockStyle.Right, .Width = Sp(SettingsRowGridRules.SliderCompanionWidth), .Minimum = minimum, .Maximum = maximum}
         Dim slider As New TrackBar With {.Dock = DockStyle.Fill, .Minimum = minimum, .Maximum = maximum, .TickFrequency = 10,
                                          .SmallChange = 1, .LargeChange = 10, .AutoSize = False}
         host.Controls.Add(slider)
-        host.Controls.Add(valueLabel)
+        host.Controls.Add(exact)
         Dim isUpdating As Boolean = False
         Dim pause As New System.Windows.Forms.Timer With {.Interval = 200}
         AddHandler host.Disposed, Sub() pause.Dispose()
@@ -981,7 +1076,7 @@ Partial Public Class Table_Form
                 isUpdating = True
                 Try
                     slider.Value = Math.Max(minimum, Math.Min(maximum, getter()))
-                    valueLabel.Text = slider.Value.ToString(Globalization.CultureInfo.CurrentCulture) & " %"
+                    exact.Value = slider.Value
                 Finally
                     isUpdating = False
                 End Try
@@ -990,11 +1085,16 @@ Partial Public Class Table_Form
 
         AddHandler slider.ValueChanged,
             Sub()
-                valueLabel.Text = slider.Value.ToString(Globalization.CultureInfo.CurrentCulture) & " %"
+                exact.Value = slider.Value
                 If isUpdating Then Return
                 apply(slider.Value)
                 pause.Stop()
                 pause.Start()
+            End Sub
+        AddHandler exact.ValueChanged,
+            Sub()
+                If isUpdating Then Return
+                slider.Value = CInt(exact.Value)
             End Sub
         AddHandler pause.Tick,
             Sub()

@@ -47,7 +47,7 @@ Partial Public Class Main_Form
             .AutoSize = True,
             .TabStop = False,
             .Visible = False,
-            .AccessibleName = Localization.T("Заменить видео")
+            .AccessibleName = Localization.T("Анимацию - в видео")
         }
         host.Controls.Add(btn_ToVideo)
         ' Collapsed until an animation is actually playing. Visible = False alone would not
@@ -59,7 +59,7 @@ Partial Public Class Main_Form
     ''' InitializeTooltips and LngCh, exactly like LocalizeImageEditor.</summary>
     Friend Sub LocalizeToVideo()
         If btn_ToVideo Is Nothing Then Return
-        btn_ToVideo.AccessibleName = Localization.T("Заменить видео")
+        btn_ToVideo.AccessibleName = Localization.T("Анимацию - в видео")
         ' The name is the menu's name for the action; the tooltip's longer wording is its
         ' description, so a screen reader hears both and they never contradict (spec 027).
         Dim hint As String = Localization.T("Преобразовать анимацию в видео и удалить оригинал")
@@ -184,8 +184,7 @@ Partial Public Class Main_Form
         If to_Video_Confirm_Skipped_This_Session Then Return True
 
         Using dialog As New Video_Replace_Confirm_Form(Path.GetFileName(sourcePath), Path.GetFileName(targetPath), hasAlpha)
-            PinToViewerBand(dialog)
-            If dialog.ShowDialog(Me) <> DialogResult.OK Then Return False
+            If DialogLayer.ShowViewerDialog(dialog, Me) <> DialogResult.OK Then Return False
             If dialog.DoNotAskAgain Then to_Video_Confirm_Skipped_This_Session = True
         End Using
         Return True
@@ -209,7 +208,6 @@ Partial Public Class Main_Form
     Private Async Function EncodeWithProgressAsync(ffmpegExe As String, sourcePath As String, tempPath As String,
                                                    fps As Integer, durationMs As Integer) As Task(Of AnimationToVideo.EncoderRun)
         Using dialog As New Video_Convert_Form(determinate:=durationMs > 0)
-            PinToViewerBand(dialog)
             Dim reporter As New Progress(Of Integer)(Sub(percent As Integer) dialog.ReportPercent(percent))
             Dim work As Task(Of AnimationToVideo.EncoderRun) = Nothing
 
@@ -218,7 +216,7 @@ Partial Public Class Main_Form
                     work = RunEncoderThenCloseAsync(dialog, ffmpegExe, sourcePath, tempPath, fps, durationMs, reporter)
                 End Sub
 
-            dialog.ShowDialog(Me)
+            DialogLayer.ShowViewerDialog(dialog, Me)
 
             ' Shown never fired - the window could not be displayed at all. Nothing ran, so
             ' nothing may be deleted.
@@ -289,25 +287,25 @@ Partial Public Class Main_Form
     Private Sub ReportOutcome(outcome As VideoReplaceOutcome, targetPath As String, encoderDetail As String, deleteError As String)
         Select Case outcome
             Case VideoReplaceOutcome.Success
-                lbl_Status.Text = Localization.TF("Готово: {0}", Path.GetFileName(targetPath))
+                Notify(Localization.TF("Готово: {0}", Path.GetFileName(targetPath)), NotifyLevel.Info)
             Case VideoReplaceOutcome.OriginalNotDeleted
-                lbl_Status.Text = Localization.TF("Видео создано, но не удалось удалить оригинал: {0}", deleteError)
+                Notify(Localization.TF("Видео создано, но не удалось удалить оригинал: {0}", deleteError), NotifyLevel.Warning)
                 ' The reopen of the video below overwrites the status twice - "Проверяю
                 ' доступность..", then the VLC line - before this sentence is ever
                 ' painted, and the user is never told the original stayed, nor why.
                 ' A box survives the reopen (057.S09-2).
-                MessageBox.Show(Me, lbl_Status.Text, Localization.T("Заменить видео"),
+                ViewerBox.Show(Me, lbl_Status.Text, Localization.T("Анимацию - в видео"),
                                 MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Case VideoReplaceOutcome.OriginalKeptUnverified
-                lbl_Status.Text = Localization.TF("Видео создано, но его полноту не удалось проверить - оригинал сохранён: {0}", Path.GetFileName(targetPath))
+                Notify(Localization.TF("Видео создано, но его полноту не удалось проверить - оригинал сохранён: {0}", Path.GetFileName(targetPath)), NotifyLevel.Info)
                 ' Same reopen (057.S09-2). Information, not Warning: nothing failed -
                 ' the original is kept only because the video could not be proven whole.
-                MessageBox.Show(Me, lbl_Status.Text, Localization.T("Заменить видео"),
+                ViewerBox.Show(Me, lbl_Status.Text, Localization.T("Анимацию - в видео"),
                                 MessageBoxButtons.OK, MessageBoxIcon.Information)
             Case VideoReplaceOutcome.Cancelled
-                lbl_Status.Text = Localization.T("Преобразование отменено")
+                Notify(Localization.T("Преобразование отменено"), NotifyLevel.Info)
             Case Else
-                lbl_Status.Text = Localization.TF("Не удалось создать видео: {0}", DescribeFailure(outcome, encoderDetail))
+                Notify(Localization.TF("Не удалось создать видео: {0}", DescribeFailure(outcome, encoderDetail)), NotifyLevel.Error)
         End Select
     End Sub
 

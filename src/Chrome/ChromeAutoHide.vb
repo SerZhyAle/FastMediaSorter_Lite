@@ -61,6 +61,27 @@ Friend NotInheritable Class ChromeAutoHide
         Return True
     End Function
 
+    ''' <summary>Where the reveal zone of the TOP rows ends: the bottom of the lowest of them plus the zone
+    ''' margin, for every top row alike. Each row used to measure from its own bottom, so row 2 (which sits
+    ''' below row 1) hung alone in the band between the two zones (125 UX-308).</summary>
+    Public Shared Function TopHotZoneBottom(panelBottoms As IEnumerable(Of Integer), zoneMargin As Integer) As Integer
+        Dim lowest As Integer = Integer.MinValue
+        If panelBottoms IsNot Nothing Then
+            For Each bottom As Integer In panelBottoms
+                If bottom > lowest Then lowest = bottom
+            Next
+        End If
+        If lowest = Integer.MinValue Then lowest = 0
+        Return lowest + zoneMargin
+    End Function
+
+    ''' <summary>Whether a mouse press belongs to the popup that it closes (UX-103 of 123): a press outside
+    ''' a visible popup dismisses it and goes no further, so a click-away never flips a file or pauses a
+    ''' video. A press with no popup open, or one inside the popup, is none of this rule's business.</summary>
+    Public Shared Function ShouldConsumePressThatClosesPopup(popupWasVisible As Boolean, pressIsOutside As Boolean) As Boolean
+        Return popupWasVisible AndAlso pressIsOutside
+    End Function
+
     ''' <summary>One fade step toward the target. Without animation (reduce motion, high contrast)
     ''' the alpha jumps. <paramref name="fadeElapsedMs"/> is the time since the previous tick, and
     ''' the caller passes 0 on the tick a transition starts, because the idle poll that noticed the

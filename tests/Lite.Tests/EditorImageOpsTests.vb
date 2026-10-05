@@ -101,5 +101,127 @@ Public Class EditorImageOpsTests
         Assert.Null(EditorImageOps.CropTo(Nothing, New Rectangle(0, 0, 4, 4)))
     End Sub
 
+    ' ------------------------------------------------- rotate and flip (126 Ф-3) ----
+    '
+    ' The rotate and flip are worth the same kind of test as the crop: a right angle
+    ' cannot be resampled, but a wrong direction or a mirror of the wrong axis is exactly
+    ' the kind of mistake that looks fine on screen and is found later, in the file.
+
+    ''' <summary>One pixel of every colour in a 2x2: R G over B W. A quarter turn maps
+    ''' source (x, y) onto (H-1-y, x), so clockwise gives B R over W G.</summary>
+    Private Shared Function TwoByTwo() As Bitmap
+        Dim map As New Bitmap(2, 2, PixelFormat.Format32bppArgb)
+        map.SetPixel(0, 0, Color.Red)
+        map.SetPixel(1, 0, Color.Lime)
+        map.SetPixel(0, 1, Color.Blue)
+        map.SetPixel(1, 1, Color.White)
+        Return map
+    End Function
+
+    <Fact>
+    Public Sub A_clockwise_turn_swaps_the_sides_and_moves_the_pixels_exactly()
+        Using source As Bitmap = TwoByTwo()
+            Using turned As Bitmap = EditorImageOps.Rotate90(source, clockwise:=True)
+                Assert.Equal(2, turned.Width)
+                Assert.Equal(2, turned.Height)
+                Assert.Equal(Color.Blue.ToArgb(), turned.GetPixel(0, 0).ToArgb())
+                Assert.Equal(Color.Red.ToArgb(), turned.GetPixel(1, 0).ToArgb())
+                Assert.Equal(Color.White.ToArgb(), turned.GetPixel(0, 1).ToArgb())
+                Assert.Equal(Color.Lime.ToArgb(), turned.GetPixel(1, 1).ToArgb())
+            End Using
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_counter_clockwise_turn_is_the_other_direction()
+        Using source As Bitmap = TwoByTwo()
+            Using turned As Bitmap = EditorImageOps.Rotate90(source, clockwise:=False)
+                ' The mirror mapping of the clockwise one: G W over R B.
+                Assert.Equal(Color.Lime.ToArgb(), turned.GetPixel(0, 0).ToArgb())
+                Assert.Equal(Color.White.ToArgb(), turned.GetPixel(1, 0).ToArgb())
+                Assert.Equal(Color.Red.ToArgb(), turned.GetPixel(0, 1).ToArgb())
+                Assert.Equal(Color.Blue.ToArgb(), turned.GetPixel(1, 1).ToArgb())
+            End Using
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub Four_quarters_come_back_to_the_start()
+        Using source As Bitmap = TwoByTwo()
+            Using once As Bitmap = EditorImageOps.Rotate90(source, True)
+                Using twice As Bitmap = EditorImageOps.Rotate90(once, True)
+                    Using thrice As Bitmap = EditorImageOps.Rotate90(twice, True)
+                        Using four As Bitmap = EditorImageOps.Rotate90(thrice, True)
+                            For y As Integer = 0 To 1
+                                For x As Integer = 0 To 1
+                                    Assert.Equal(source.GetPixel(x, y), four.GetPixel(x, y))
+                                Next
+                            Next
+                        End Using
+                    End Using
+                End Using
+            End Using
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_horizontal_flip_swaps_left_and_right_only()
+        Using source As Bitmap = TwoByTwo()
+            Using mirrored As Bitmap = EditorImageOps.Mirror(source, horizontal:=True)
+                Assert.Equal(Color.Lime.ToArgb(), mirrored.GetPixel(0, 0).ToArgb())
+                Assert.Equal(Color.Red.ToArgb(), mirrored.GetPixel(1, 0).ToArgb())
+                Assert.Equal(Color.White.ToArgb(), mirrored.GetPixel(0, 1).ToArgb())
+                Assert.Equal(Color.Blue.ToArgb(), mirrored.GetPixel(1, 1).ToArgb())
+            End Using
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_vertical_flip_swaps_top_and_bottom_only()
+        Using source As Bitmap = TwoByTwo()
+            Using mirrored As Bitmap = EditorImageOps.Mirror(source, horizontal:=False)
+                Assert.Equal(Color.Blue.ToArgb(), mirrored.GetPixel(0, 0).ToArgb())
+                Assert.Equal(Color.White.ToArgb(), mirrored.GetPixel(1, 0).ToArgb())
+                Assert.Equal(Color.Red.ToArgb(), mirrored.GetPixel(0, 1).ToArgb())
+                Assert.Equal(Color.Lime.ToArgb(), mirrored.GetPixel(1, 1).ToArgb())
+            End Using
+        End Using
+    End Sub
+
+    ''' <summary>The undo step is the untouched original: the operations work on a copy,
+    ''' so the caller's bitmap keeps its pixels after a turn.</summary>
+    <Fact>
+    Public Sub The_source_is_never_touched()
+        Using source As Bitmap = TwoByTwo()
+            Using EditorImageOps.Rotate90(source, True)
+            End Using
+            Using EditorImageOps.Mirror(source, True)
+            End Using
+            Assert.Equal(Color.Red.ToArgb(), source.GetPixel(0, 0).ToArgb())
+            Assert.Equal(Color.Lime.ToArgb(), source.GetPixel(1, 0).ToArgb())
+            Assert.Equal(Color.Blue.ToArgb(), source.GetPixel(0, 1).ToArgb())
+            Assert.Equal(Color.White.ToArgb(), source.GetPixel(1, 1).ToArgb())
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_rectangle_turns_into_a_rectangle_of_swapped_sides()
+        Using source As Bitmap = Coordinates(24, 12)
+            Using turned As Bitmap = EditorImageOps.Rotate90(source, clockwise:=True)
+                Assert.Equal(12, turned.Width)
+                Assert.Equal(24, turned.Height)
+                ' Corners travel with the picture: source (0,0) lands at (11,0).
+                Assert.Equal(source.GetPixel(0, 0), turned.GetPixel(11, 0))
+                Assert.Equal(source.GetPixel(23, 11), turned.GetPixel(0, 23))
+            End Using
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub Nothing_in_gives_nothing_out_for_the_turns_too()
+        Assert.Null(EditorImageOps.Rotate90(Nothing, True))
+        Assert.Null(EditorImageOps.Mirror(Nothing, True))
+    End Sub
+
 End Class
 #End If

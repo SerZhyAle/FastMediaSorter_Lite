@@ -109,6 +109,7 @@ Public Class TesseractOcrEngine
         Public Property Score As Double
         Public Property IsStrong As Boolean
         Public Property Profile As OcrAttemptProfile
+        Public Property AvgConfidence As Double
     End Class
 
     Public ReadOnly Property Name As String Implements IOcrEngine.Name
@@ -158,7 +159,8 @@ Public Class TesseractOcrEngine
             End Function)
 
         Try
-            Return RecognizeAttempts(source, profiles, preparedImages, ct)
+            Dim assumed As Boolean = String.Equals(OcrTranslateSettings.NormalizeOcrSourceCode(languages), "auto", StringComparison.Ordinal)
+            Return RecognizeAttempts(source, profiles, preparedImages, assumed, ct)
         Finally
             If flat IsNot Nothing Then flat.Dispose()
         End Try
@@ -168,96 +170,78 @@ Public Class TesseractOcrEngine
     ''' engine (usually memory on the 32-bit viewer); the pipeline names it.</summary>
     Public Const ImagePreparationFailed As String = "image preparation failed"
 
+    ''' <summary>What one attempt left behind besides its (optional) early return - the pieces
+    ''' <see cref="RecognizeAttempts"/> needs to carry from one profile to the next.</summary>
+    Private NotInheritable Class AttemptState
+        Public Property Scored As OcrAttemptScore
+        Public Property LastFailure As OcrResult
+        Public Property LanguagesMissing As Boolean
+    End Class
+
+    ''' <param name="languageAssumed">The source language is `auto`. Then the ladder is NOT a
+    ''' first-strong-wins race: every language reads the page once with the same profile, the
+    ''' languages are compared by the engine's own mean line confidence, and only the best one
+    ''' gets the rescue profiles. See <see cref="OcrLanguageGuard"/> for why the score cannot do
+    ''' that comparison (a wrong-language reading is "natural" by every count in it).</param>
     Private Function RecognizeAttempts(source As Bitmap, profiles As List(Of OcrAttemptProfile),
                                        preparedImages As LazyByKey(Of OcrPreprocessMode, PreparedOcrImage),
+                                       languageAssumed As Boolean,
                                        ct As CancellationToken) As OcrResult
         Dim best As OcrAttemptScore = Nothing
-        Dim lastFailure As OcrResult = Nothing
-        Dim languagesMissing As Boolean = False
+        Dim state As New AttemptState()
 
-        For Each profile As OcrAttemptProfile In profiles
-            ' Once per attempt, and again before the (possibly 60 s) language download below:
-            ' those are the only two places long enough to matter, and they are exactly where
-            ' a stale job used to keep going after the user had flipped to another image.
-            If ct.IsCancellationRequested Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: cancelled before attempt lang=" & profile.Language)
-                Return OcrResult.FromError("cancelled")
+        Dim queue As List(Of OcrAttemptProfile) = profiles
+        Dim firstPassCount As Integer = 0
+        If languageAssumed Then queue = OrderForAssumedLanguage(profiles, firstPassCount)
+        Dim firstPass As New List(Of OcrAttemptScore)
+
+        Dim index As Integer = 0
+        While index < queue.Count
+            If languageAssumed AndAlso index = firstPassCount AndAlso firstPass.Count > 0 Then
+                ' Every language has read the page once. Keep the one the engine was surest of;
+                ' the others were measured and lost, on the same profile, by a margin the
+                ' score could never see.
+                best = BestOfFirstPass(firstPass)
+                queue = NarrowToLanguage(queue, firstPassCount, best.Profile.Language)
+                firstPassCount = -1
+                If index >= queue.Count Then Exit While
             End If
 
-            Dim dataDir As String
-            Try
-                dataDir = EnsureTessData(profile.Language, PreferBest, allowDownload:=RecognitionMayDownload)
-            Catch ex As Exception
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: tessdata error: " & ex.Message)
-                AppFileLogger.WriteLine("OCR: language data for " & profile.Language & " - [" & ex.GetType().FullName & "] " & ex.Message)
-                Return OcrResult.Runtime(LanguageDataMissing)
-            End Try
+            Dim profile As OcrAttemptProfile = queue(index)
+            Dim inFirstPass As Boolean = languageAssumed AndAlso firstPassCount > 0 AndAlso index < firstPassCount
+            index += 1
 
-            If dataDir Is Nothing Then
-#If Not NETFRAMEWORK Then
-                ' Nothing is downloaded from inside recognition (APP-BEHAVIOUR rule 4, ticket
-                ' 028 Ф-6): a language with no data is skipped, and the caller - which asks
-                ' before recognition starts - hears about it only if no language had data.
-                languagesMissing = True
-                Continue For
-#Else
-                ' The same message as the mainline's, so the pipeline names the language and
-                ' the download instead of "OCR engine unavailable" (ticket 033 Ф-6, F7 - taken
-                ' on x86 as a bug fix, owner decision O-5).
-                Return OcrResult.Runtime(LanguageDataMissing)
-#End If
-            End If
+            Dim early As OcrResult = RunAttempt(source, profile, preparedImages, state, ct)
+            If early IsNot Nothing Then Return early
+            Dim scored As OcrAttemptScore = state.Scored
+            If scored Is Nothing Then Continue While
 
-            ' EnsureTessData can have spent up to a minute downloading a pack; the user may
-            ' well have moved on in that time.
-            If ct.IsCancellationRequested Then
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: cancelled after tessdata lang=" & profile.Language)
-                Return OcrResult.FromError("cancelled")
-            End If
-
-            Dim prepared As PreparedOcrImage
-            Try
-                prepared = preparedImages.Get(profile.Preprocess)
-            Catch ex As Exception
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: buffer error: " & ex.Message)
-                AppFileLogger.WriteLine("OCR: image preparation, mode " & profile.Preprocess.ToString() & " - [" & ex.GetType().FullName & "] " & ex.Message)
-                Return OcrResult.FromError(ImagePreparationFailed)
-            End Try
-
-            Dim attemptResult As OcrResult = RecognizeSingleAttempt(source, prepared, dataDir, profile)
-            If attemptResult.Status = OcrStatus.RuntimeMissing Then Return attemptResult
-
-            If attemptResult.Status = OcrStatus.Failed Then
-                lastFailure = attemptResult
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
-                                " ocr: attempt failed lang=" & profile.Language &
-                                " psm=" & profile.Segmentation.ToString() &
-                                " prep=" & profile.Preprocess.ToString() &
-                                " msg=" & attemptResult.Message)
-                Continue For
-            End If
-
-            Dim scored As OcrAttemptScore = ScoreAttempt(attemptResult, profile)
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
-                            " ocr: attempt lang=" & profile.Language &
-                            " psm=" & profile.Segmentation.ToString() &
-                            " prep=" & profile.Preprocess.ToString() &
-                            " lines=" & attemptResult.Lines.Count.ToString() &
-                            " score=" & scored.Score.ToString("0.0"))
-
-            If attemptResult.Status = OcrStatus.Ok AndAlso
-               (best Is Nothing OrElse scored.Score > best.Score) Then
+            If inFirstPass Then
+                firstPass.Add(scored)
+            ElseIf scored.Result.Status = OcrStatus.Ok AndAlso
+                   (best Is Nothing OrElse scored.Score > best.Score) Then
                 best = scored
             End If
 
-            If scored.IsStrong Then
+            ' An assumed language needs the engine to be sure as well as the lines to look
+            ' natural. In the first pass the bar is "clearly read", so a page one language reads
+            ' well stops there; later, only the floor below which rule 10 refuses anyway.
+            Dim floor As Double = 0.0
+            If languageAssumed Then
+                floor = If(inFirstPass, OcrLanguageGuard.ClearlyReadConfidence, OcrLanguageGuard.MinAssumedConfidence)
+            End If
+            If scored.IsStrong AndAlso scored.AvgConfidence >= floor Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
                                 " ocr: winner lang=" & profile.Language &
                                 " psm=" & profile.Segmentation.ToString() &
                                 " prep=" & profile.Preprocess.ToString())
-                Return attemptResult
+                Return scored.Result
             End If
-        Next
+        End While
+
+        If languageAssumed AndAlso best Is Nothing AndAlso firstPass.Count > 0 Then
+            best = BestOfFirstPass(firstPass)
+        End If
 
         If best IsNot Nothing Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
@@ -267,9 +251,131 @@ Public Class TesseractOcrEngine
             Return best.Result
         End If
 
-        If lastFailure IsNot Nothing Then Return lastFailure
-        If languagesMissing Then Return OcrResult.Runtime(LanguageDataMissing)
+        If state.LastFailure IsNot Nothing Then Return state.LastFailure
+        If state.LanguagesMissing Then Return OcrResult.Runtime(LanguageDataMissing)
         Return New OcrResult With {.Status = OcrStatus.NoText, .Message = "no text after retries"}
+    End Function
+
+    ''' <summary>The profile list reordered so that the FIRST profile of every language comes
+    ''' first, in ladder order, and everything else keeps its place after them.
+    ''' <paramref name="firstPassCount"/> is how many came first.</summary>
+    Private Shared Function OrderForAssumedLanguage(profiles As List(Of OcrAttemptProfile),
+                                                    ByRef firstPassCount As Integer) As List(Of OcrAttemptProfile)
+        Dim ordered As New List(Of OcrAttemptProfile)
+        Dim seen As New HashSet(Of String)(StringComparer.Ordinal)
+        For Each p As OcrAttemptProfile In profiles
+            If seen.Add(p.Language) Then ordered.Add(p)
+        Next
+        firstPassCount = ordered.Count
+        For Each p As OcrAttemptProfile In profiles
+            If Not ordered.Contains(p) Then ordered.Add(p)
+        Next
+        Return ordered
+    End Function
+
+    ''' <summary>The attempt whose language read the page with the highest mean line confidence;
+    ''' the earlier language on a tie, which is the ladder's own order.</summary>
+    Private Shared Function BestOfFirstPass(firstPass As List(Of OcrAttemptScore)) As OcrAttemptScore
+        Dim confidences As New List(Of Double)
+        For Each s As OcrAttemptScore In firstPass
+            confidences.Add(s.AvgConfidence)
+        Next
+        Return firstPass(OcrLanguageGuard.IndexOfSurest(confidences))
+    End Function
+
+    ''' <summary>What is already done (the first pass) plus the remaining profiles of ONE language.</summary>
+    Private Shared Function NarrowToLanguage(queue As List(Of OcrAttemptProfile), done As Integer,
+                                             language As String) As List(Of OcrAttemptProfile)
+        Dim narrowed As New List(Of OcrAttemptProfile)
+        For i As Integer = 0 To queue.Count - 1
+            If i < done OrElse String.Equals(queue(i).Language, language, StringComparison.Ordinal) Then
+                narrowed.Add(queue(i))
+            End If
+        Next
+        Return narrowed
+    End Function
+
+    ''' <summary>One recognition pass and its score, left in <paramref name="state"/>.Scored
+    ''' (Nothing when the pass produced no result worth scoring). A non-Nothing return ends the
+    ''' whole recognition: cancelled, runtime missing, or an image that could not be prepared.</summary>
+    Private Function RunAttempt(source As Bitmap, profile As OcrAttemptProfile,
+                                preparedImages As LazyByKey(Of OcrPreprocessMode, PreparedOcrImage),
+                                state As AttemptState, ct As CancellationToken) As OcrResult
+        state.Scored = Nothing
+
+        ' Once per attempt, and again before the (possibly 60 s) language download below:
+        ' those are the only two places long enough to matter, and they are exactly where
+        ' a stale job used to keep going after the user had flipped to another image.
+        If ct.IsCancellationRequested Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: cancelled before attempt lang=" & profile.Language)
+            Return OcrResult.FromError("cancelled")
+        End If
+
+        Dim dataDir As String
+        Try
+            dataDir = EnsureTessData(profile.Language, PreferBest, allowDownload:=RecognitionMayDownload)
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: tessdata error: " & ex.Message)
+            AppFileLogger.WriteLine("OCR: language data for " & profile.Language & " - [" & ex.GetType().FullName & "] " & ex.Message)
+            Return OcrResult.Runtime(LanguageDataMissing)
+        End Try
+
+        If dataDir Is Nothing Then
+#If Not NETFRAMEWORK Then
+            ' Nothing is downloaded from inside recognition (APP-BEHAVIOUR rule 4, ticket
+            ' 028 Ф-6): a language with no data is skipped, and the caller - which asks
+            ' before recognition starts - hears about it only if no language had data.
+            state.LanguagesMissing = True
+            Return Nothing
+#Else
+            ' The same message as the mainline's, so the pipeline names the language and
+            ' the download instead of "OCR engine unavailable" (ticket 033 Ф-6, F7 - taken
+            ' on x86 as a bug fix, owner decision O-5).
+            Return OcrResult.Runtime(LanguageDataMissing)
+#End If
+        End If
+
+        ' EnsureTessData can have spent up to a minute downloading a pack; the user may
+        ' well have moved on in that time.
+        If ct.IsCancellationRequested Then
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: cancelled after tessdata lang=" & profile.Language)
+            Return OcrResult.FromError("cancelled")
+        End If
+
+        Dim prepared As PreparedOcrImage
+        Try
+            prepared = preparedImages.Get(profile.Preprocess)
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " ocr: buffer error: " & ex.Message)
+            AppFileLogger.WriteLine("OCR: image preparation, mode " & profile.Preprocess.ToString() & " - [" & ex.GetType().FullName & "] " & ex.Message)
+            Return OcrResult.FromError(ImagePreparationFailed)
+        End Try
+
+        Dim attemptResult As OcrResult = RecognizeSingleAttempt(source, prepared, dataDir, profile)
+        If attemptResult.Status = OcrStatus.RuntimeMissing Then Return attemptResult
+
+        If attemptResult.Status = OcrStatus.Failed Then
+            state.LastFailure = attemptResult
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
+                            " ocr: attempt failed lang=" & profile.Language &
+                            " psm=" & profile.Segmentation.ToString() &
+                            " prep=" & profile.Preprocess.ToString() &
+                            " msg=" & attemptResult.Message)
+            Return Nothing
+        End If
+
+        Dim scored As OcrAttemptScore = ScoreAttempt(attemptResult, profile)
+        attemptResult.MeanConfidence = scored.AvgConfidence
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") &
+                        " ocr: attempt lang=" & profile.Language &
+                        " psm=" & profile.Segmentation.ToString() &
+                        " prep=" & profile.Preprocess.ToString() &
+                        " lines=" & attemptResult.Lines.Count.ToString() &
+                        " score=" & scored.Score.ToString("0.0") &
+                        " conf=" & scored.AvgConfidence.ToString("0.000") &
+                        " strong=" & scored.IsStrong.ToString())
+        state.Scored = scored
+        Return Nothing
     End Function
 
     ''' <summary>The Message of a RuntimeMissing result that means "no language had data",
@@ -795,7 +901,8 @@ Public Class TesseractOcrEngine
             .Profile = profile,
             .Result = result,
             .Score = score,
-            .IsStrong = isStrong
+            .IsStrong = isStrong,
+            .AvgConfidence = avgConfidence
         }
     End Function
 

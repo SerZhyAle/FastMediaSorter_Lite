@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 
@@ -22,6 +22,7 @@ Friend NotInheritable Class SettingsFlushScheduler
     Private ReadOnly startTimer As Action(Of Integer)
     Private ReadOnly stopTimer As Action
     Private ReadOnly log As Action(Of String)
+    Private ReadOnly debounceMs As Integer
 
     Private generationValue As Integer
     Private flushedGeneration As Integer
@@ -29,11 +30,12 @@ Friend NotInheritable Class SettingsFlushScheduler
     Private flushing As Boolean
     Private exhaustionReported As Boolean
 
-    Friend Sub New(flush As Func(Of Boolean), startTimer As Action(Of Integer), stopTimer As Action, log As Action(Of String))
+    Friend Sub New(flush As Func(Of Boolean), startTimer As Action(Of Integer), stopTimer As Action, log As Action(Of String), Optional debounceMs As Integer = IdleDelayMs)
         Me.flushAll = flush
         Me.startTimer = startTimer
         Me.stopTimer = stopTimer
         Me.log = log
+        Me.debounceMs = Math.Max(1, debounceMs)
     End Sub
 
     ''' <summary>True while an edit exists that no complete flush has covered.</summary>
@@ -60,7 +62,7 @@ Friend NotInheritable Class SettingsFlushScheduler
         generationValue += 1
         retryCount = 0
         exhaustionReported = False
-        startTimer(IdleDelayMs)
+        startTimer(debounceMs)
     End Sub
 
     ''' <summary>The timer fired. A tick that finds nothing dirty, or a flush already running

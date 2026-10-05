@@ -119,7 +119,7 @@ Friend NotInheritable Class Download_Progress_Form
 
             Dim ownerForm As Form = TryCast(owner, Form)
             If ownerForm IsNot Nothing AndAlso ownerForm.TopMost Then dialog.TopMost = True
-            If owner Is Nothing Then dialog.ShowDialog() Else dialog.ShowDialog(owner)
+            DialogLayer.ShowViewerDialog(dialog, owner)
 
             ' Shown never fired - the window could not be displayed, so nothing ran.
             If running Is Nothing Then Return New DownloadRun(Of T) With {.Cancelled = True}
@@ -208,14 +208,20 @@ Friend Module DownloadMessages
 
     ''' <summary>Cancelling is an outcome, not a failure: its own sentence, informational.</summary>
     Friend Sub ShowCancelled(owner As IWin32Window, what As String)
-        MessageBox.Show(owner, Localization.TF("Загрузка «{0}» отменена. Ничего не установлено; её можно запустить снова.", what),
-                        ProductNames.Full, MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Dim words As String = Localization.TF("Загрузка «{0}» отменена. Ничего не установлено; её можно запустить снова.", what)
+        ' The user's own Cancel is answered on the status line, not with a modal box (124 UX-208): a box for news.
+        Dim viewer As Main_Form = ViewerDialogPrep.FindViewer(owner)
+        If viewer IsNot Nothing Then
+            viewer.Notify(words, NotifyLevel.Info)
+        Else
+            ViewerBox.Show(owner, words, ProductNames.Full, MessageBoxButtons.OK, MessageBoxIcon.Information)
+        End If
     End Sub
 
     ''' <summary>A failed download: the cause and the actions, Retry first. True = retry.</summary>
     Friend Function AskRetry(owner As IWin32Window, what As String, failure As Exception) As Boolean
         AppFileLogger.LogException("Download failed: " & what, failure)
-        Return MessageBox.Show(owner,
+        Return ViewerBox.Show(owner,
                                Localization.TF("Не удалось загрузить «{0}».", what) & Environment.NewLine & Environment.NewLine &
                                FailureText.Describe(failure),
                                ProductNames.Full, MessageBoxButtons.RetryCancel, MessageBoxIcon.Warning) = DialogResult.Retry

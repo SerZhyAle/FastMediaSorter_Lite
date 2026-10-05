@@ -47,4 +47,9 @@ the vocabulary lacked were folded into 0.15/0.17 (`app.theme`, `action.reveal`, 
 (`PROPOSAL-2026-09-24-fms-windows-rendering.md`), names beyond en/ru/uk were partly folded (0.14/0.17,
 `PROPOSAL-2026-09-24-fms-names-beyond-three-languages.md`), flags-for-languages became rule 6 as option A
 (`PROPOSAL-2026-09-24-fms-flags-for-languages.md`), and the site kit's theme-switch symbol `◐` remains the
-one item of `PROPOSAL-2026-09-24-fms-page-style-kit-symbols.md` not folded on this folder's side.
+one item of `PROPOSAL-2026-09-24-fms-page-style-kit-symbols.md` not folded on this folder's side. Since
+2026-10-05 (specification 128) the settings navigation list also draws each page's glyph in the page's own
+identity ink - the one deliberate departure from rule 2's role colour, carried by the dated registry
+exception and `iconography/PROPOSAL-2026-10-05-fms-windows-nav-identity-colors.md` until the owner decides;
+the ink table (`src/SettingsNavIconPalette.vb`) is gated to 3 : 1 against the sidebar and pairwise
+distinct dark inks, and every other glyph surface stays mono.

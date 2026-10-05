@@ -588,10 +588,18 @@ Partial Public Class Main_Form
         Cancel
     End Enum
 
+    ''' <summary>Size and date of one of the two files of a name collision, for the window that asks. A file on a
+    ''' server (a locator) has no local stat: it is shown without them rather than read over the network on the
+    ''' UI thread.</summary>
+    Private Shared Function CollisionFactsOf(path As String) As AskFileFacts
+        If String.IsNullOrEmpty(path) OrElse ResourceLocator.IsLocator(path) Then Return New AskFileFacts(-1, Nothing)
+        Return AskFileFacts.Read(path)
+    End Function
+
     ''' <summary>Resolves the user's configured policy before an operation reaches the
     ''' queue. In particular, Skip and Cancel never mutate the source or its list entry.</summary>
     Private Function ResolveConfiguredCollision(ByRef destination As String, ByRef statusNote As String,
-                                                ByRef replaceExisting As Boolean) As CollisionResolution
+                                                ByRef replaceExisting As Boolean, sourcePath As String) As CollisionResolution
         Dim name_Taken As Boolean
         If ResourceLocator.IsLocator(destination) Then
             ' A server folder (007 §4.2): the slot was probed a moment ago, so this is one stat on a
@@ -624,10 +632,8 @@ Partial Public Class Main_Form
                 ' the setting is the user's standing answer, the warning only makes sure
                 ' they know it is being acted on. The default is No.
                 If Not replace_Warned_This_Session Then
-                    If MessageBox.Show(Me,
-                        Localization.TF("В настройках выбрано «заменять»: файл {0} в папке назначения будет перезаписан. Продолжить? Это предупреждение показывается один раз за сеанс.", SlotPaths.FileNameOf(destination)),
-                        Localization.T("Совпадение имён"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
-                        MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
+                    ' Named answers through the dialog layer (124 UX-205): the default is the way out, as before.
+                    If AskDialogs.Choose(Me, AskSpecs.ReplacePolicyWarning(SlotPaths.FileNameOf(destination))) <> 0 Then
                         Return CollisionResolution.Cancel
                     End If
                     replace_Warned_This_Session = True
@@ -636,19 +642,17 @@ Partial Public Class Main_Form
                 statusNote = Localization.T(" (существующий файл будет заменён)")
                 Return CollisionResolution.Proceed
             Case Else
-                ' WinForms' stock three-button prompt maps cleanly to the safe choices:
-                ' Yes = replace, No = save both, Cancel = do nothing.  The target and
-                ' source paths are named, so this is not a blind overwrite question.
-                ' The DEFAULT is Cancel: sorting is a run of key presses, and the Space or
-                ' Enter already typed for the next picture lands on this box - with the
-                ' stock default that was "Yes" and it overwrote a different photo
-                ' (audit 046, C-01). Replacing now takes a click or the Y accelerator.
-                Dim answer As DialogResult = MessageBox.Show(Me,
-                    Localization.TF("В папке назначения уже есть файл {0}." & vbCrLf & "Да - заменить; Нет - сохранить оба; Отмена - пропустить.", SlotPaths.FileNameOf(destination)),
-                    Localization.T("Совпадение имён"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning,
-                    MessageBoxDefaultButton.Button3)
-                If answer = DialogResult.Cancel Then Return CollisionResolution.Cancel
-                If answer = DialogResult.No Then
+                ' Three NAMED answers, in the interface language and its reading direction (124 UX-205): Replace,
+                ' Keep both, Skip - with the size and date of both files on the window, so it is not a blind
+                ' overwrite question. The DEFAULT - and Escape - is Skip: sorting is a run of key presses, and
+                ' the Space or Enter already typed for the next picture lands on this window; with the stock
+                ' default that was "Yes" and it overwrote a different photo (audit 046, C-01). Replacing now
+                ' takes a click or the Alt accelerator (AskSpecs.NameCollision, held by a test).
+                Dim answer As Integer = AskDialogs.Choose(Me, AskSpecs.NameCollision(
+                    SlotPaths.FileNameOf(destination),
+                    CollisionFactsOf(destination), CollisionFactsOf(sourcePath)))
+                If answer = AskSpecs.CollisionSkip Then Return CollisionResolution.Cancel
+                If answer = AskSpecs.CollisionKeepBoth Then
                     If Not TryFreeDestinationName(destination) Then Return CollisionResolution.Cancel
                     statusNote = Localization.TF(" (имя занято, сохранён как {0})", SlotPaths.FileNameOf(destination))
                 Else
@@ -725,6 +729,22 @@ Partial Public Class Main_Form
             End If
             Dim current_File_Name_Without_Extension As String = Path.GetFileNameWithoutExtension(source_Path)
             Dim current_File_Extension As String = Path.GetExtension(source_Path)
+#If Not NETFRAMEWORK Then
+            ' One themed prompt in the viewer's band (124 UX-204): a refused name keeps what was typed and the
+            ' reason sits beside the field, where the InputBox closed, threw the text away and left only a
+            ' status line. Cancel (Nothing) and an empty text are different answers now.
+            Dim rename_Folder As String = Path.GetDirectoryName(source_Path)
+            Dim new_File_Name As String = AskDialogs.Prompt(Me, AskSpecs.RenamePrompt(
+                current_File_Name_Without_Extension, current_File_Extension,
+                Function(candidate As String) As Boolean
+                    Dim candidate_Path As String = Path.Combine(rename_Folder, candidate)
+                    Return File.Exists(candidate_Path) AndAlso Not String.Equals(candidate_Path, source_Path, StringComparison.OrdinalIgnoreCase)
+                End Function))
+            If new_File_Name Is Nothing Then
+                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1260: rename cancelled")
+                Return
+            End If
+#Else
             Dim new_File_Name As String = InputBox(Localization.T("Введите новое имя файла:"),
                                             Localization.T("Переименование файла"),
                                             current_File_Name_Without_Extension)
@@ -732,6 +752,7 @@ Partial Public Class Main_Form
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1260: empty new file name - no rename")
                 Return
             End If
+#End If
 
             If Not String.Equals(Current_File_Name, source_Path, StringComparison.Ordinal) Then
                 lbl_Status.Text = Localization.T("! Файл на экране сменился, пока было открыто окно - действие отменено")
@@ -957,7 +978,7 @@ Partial Public Class Main_Form
             ' above), so net48 keeps its historical behavior: never replace.
             Dim replace_Existing As Boolean = False
 #If Not NETFRAMEWORK Then
-            Dim collision As CollisionResolution = ResolveConfiguredCollision(destination_Folder_Full_Path, collision_Note, replace_Existing)
+            Dim collision As CollisionResolution = ResolveConfiguredCollision(destination_Folder_Full_Path, collision_Note, replace_Existing, source_Path)
             If collision <> CollisionResolution.Proceed Then Return
 
             ' The prompt (and the first-use "replace" warning) ran a modal message loop. If
@@ -1008,7 +1029,7 @@ Partial Public Class Main_Form
 #End If
 
             If is_Copy Then
-                lbl_Status.Text = Localization.TF("!Ждите.. Файл копируется ({0}) в каталог {1}", move_Slot_Key, destination_Folder_Full_Path)
+                SayProgress(Localization.TF("!Ждите.. Файл копируется ({0}) в каталог {1}", move_Slot_Key, destination_Folder_Full_Path))
 
                 If use_Worker Then
                     QueueFileOp(op)
@@ -1032,7 +1053,7 @@ Partial Public Class Main_Form
                 ' Moving needs delete access to the file, so let go of it first.
                 ReleaseActiveMedia()
 
-                lbl_Status.Text = Localization.TF("!Ждите.. Файл переносится ({0}) в каталог {1}", move_Slot_Key, destination_Folder_Full_Path)
+                SayProgress(Localization.TF("!Ждите.. Файл переносится ({0}) в каталог {1}", move_Slot_Key, destination_Folder_Full_Path))
 
                 If use_Worker Then
                     QueueFileOp(op)
@@ -1076,6 +1097,12 @@ Partial Public Class Main_Form
     ''' RECORDED rather than skipped - "this file was deleted for good, there is nothing to
     ''' bring back" is a true answer, and "there is no history" would not be.
     ''' </summary>
+    ''' <summary>Whether U has anything to take back - the media menus show their "Undo" row disabled
+    ''' while the history is empty (125 UX-324). Reads the stack only.</summary>
+    Friend Function UndoAvailable() As Boolean
+        Return undo_Entries.Peek() IsNot Nothing
+    End Function
+
     Private Sub Undo()
         If FileOpWorkerBusy() Then Return
         ' Undo moves a file back from wherever it went, and inside an archive the list is the
@@ -1138,7 +1165,7 @@ Partial Public Class Main_Form
                     Dim op As New FileOp With {.Kind = FileOpKind.DeleteUndo, .Source = entry.Destination,
                                                .UndoOrigin = entry, .UndoRecord = entry.UndoRecord,
                                                .ListGeneration = file_List_Generation}
-                    lbl_Status.Text = Localization.TF("!Ждите. Файл удаляется в каталоге {0}", entry.Destination)
+                    SayProgress(Localization.TF("!Ждите. Файл удаляется в каталоге {0}", entry.Destination))
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1750: undo copied async deletion")
                     QueueFileOp(op)
 
@@ -1152,7 +1179,7 @@ Partial Public Class Main_Form
                         .UndoRecord = entry.UndoRecord,
                         .ListGeneration = file_List_Generation
                     }
-                    lbl_Status.Text = Localization.TF("!Ждите. Возвращается в каталог {0}", entry.Source)
+                    SayProgress(Localization.TF("!Ждите. Возвращается в каталог {0}", entry.Source))
                     ' Only the file being moved has to be let go of - the slot folder can be
                     ' the one on screen, with that very file playing. Anything else on screen
                     ' is replaced by the display below, or stays, when nothing is inserted.
@@ -1192,7 +1219,7 @@ Partial Public Class Main_Form
                         .UndoOrigin = entry,
                         .ListGeneration = file_List_Generation
                     }
-                    lbl_Status.Text = Localization.T("!Ждите. Возвращается прежнее имя..")
+                    SayProgress(Localization.T("!Ждите. Возвращается прежнее имя.."))
                     ' Only the renamed file has to be let go of, exactly as MoveBack does: U
                     ' for an old rename while another file is on screen blanked THAT file,
                     ' and nothing showed it again (audit 057.S06-3).
@@ -1225,7 +1252,7 @@ Partial Public Class Main_Form
                         .DeletedAtUtc = entry.DeletedAtUtc,
                         .UndoOrigin = entry,
                         .ListGeneration = entry.ListGeneration}
-                    lbl_Status.Text = Localization.T("!Ждите. Файл возвращается из Корзины..")
+                    SayProgress(Localization.T("!Ждите. Файл возвращается из Корзины.."))
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1814: undo restore from the Recycle Bin")
                     QueueFileOp(op)
                     ' Deliberately NOT optimistic, unlike the move above: this operation can
@@ -1287,7 +1314,7 @@ Partial Public Class Main_Form
                     Return
                 End If
                 Dim op As New FileOp With {.Kind = FileOpKind.DeleteUndo, .Source = history_Destination_File_Name}
-                lbl_Status.Text = Localization.TF("!Ждите. Файл удаляется в каталоге {0}", history_Destination_File_Name)
+                SayProgress(Localization.TF("!Ждите. Файл удаляется в каталоге {0}", history_Destination_File_Name))
 
                 If use_Worker Then
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1750: undo copied async deletion")
@@ -1308,7 +1335,7 @@ Partial Public Class Main_Form
                     .ListIndex = current_File_Index,
                     .ListGeneration = file_List_Generation
                 }
-                lbl_Status.Text = Localization.TF("!Ждите. Возвращается в каталог {0}", history_Source_File_Name)
+                SayProgress(Localization.TF("!Ждите. Возвращается в каталог {0}", history_Source_File_Name))
                 ReleaseActiveMedia()
 
                 If use_Worker Then
@@ -1515,7 +1542,7 @@ Partial Public Class Main_Form
         ' flag: that one still governs every other file operation, and it could never say
         ' "ask me only about the deletions that cannot be taken back" (§3.7, §0.4).
         If DeletePolicy.ShouldConfirm(prefs.ConfirmDelete, decision) Then
-            If MessageBox.Show(Me, DeleteText.ConfirmOne(decision, Path.GetFileName(targetPath)),
+            If ViewerBox.Show(Me, DeleteText.ConfirmOne(decision, Path.GetFileName(targetPath)),
                                Localization.T("Подтверждение удаления"),
                                MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
                 Return False

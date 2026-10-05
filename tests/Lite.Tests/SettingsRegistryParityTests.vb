@@ -49,6 +49,9 @@ Public Class SettingsRegistryParityTests
         CheckSpecial("InterfaceScalePercent",
                      New Integer() {Integer.MinValue, -1, 0, 1, 89, 90, 120, 150, 151, Integer.MaxValue},
                      AddressOf InterfaceScaleExpected)
+        CheckSpecial("InterfaceScaleRelativePercent",
+                     New Integer() {Integer.MinValue, -1, 0, 1, 89, 90, 120, 150, 151, Integer.MaxValue},
+                     AddressOf InterfaceScaleExpected)
         ' PanelThumbnailSize: 0 stays 0 ("follow the legacy card size"), anything else
         ' lands on the nearest of the four sizes the panel's layout was built for.
         CheckSpecial("PanelThumbnailSize",

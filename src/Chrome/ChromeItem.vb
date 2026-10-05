@@ -14,6 +14,13 @@ Friend Enum ChromeItemKind
     Text
 End Enum
 
+''' <summary>Pictures the surface paints itself (no catalogue glyph exists for them yet).</summary>
+Friend Enum ChromeCustomGlyph
+    None
+    ''' <summary>"Always on top": two stacked windows, the front one filled while the mode is on.</summary>
+    OnTop
+End Enum
+
 ''' <summary>
 ''' One thing a floating panel shows (002 section 2.2): a plain object, not a control - twenty child
 ''' controls would mean twenty window handles per panel, no rounded corners without regions and
@@ -58,9 +65,29 @@ Friend NotInheritable Class ChromeItem
     ''' <summary>The red family: the only element that means "this destroys".</summary>
     Public Property Destructive As Boolean
 
+    ''' <summary>How much the text of this item matters (the status line: a warning or an error is written in the
+    ''' theme's own role colour instead of the plain ink, 124 UX-206). Information changes nothing.</summary>
+    Public Property Tone As NotifyLevel = NotifyLevel.Info
+
     ''' <summary>The pin button of a panel's corner: painted as a pin (upright and filled while
     ''' <see cref="Checked"/>, tilted and outlined while not), never as a checkbox.</summary>
     Public Property IsPin As Boolean
+
+    ''' <summary>A menu row that is a dividing line: no caption, no action, never focused or hit (125 UX-320).</summary>
+    Public Property IsSeparator As Boolean
+
+    ''' <summary>The key that does the same, painted dimmed at the row's end (a menu row; 125 UX-325).</summary>
+    Public Property Hint As String = ""
+
+    ''' <summary>The row opens a submenu: a chevron at its end, and Right / Enter open it (125 UX-322).</summary>
+    Public Property Chevron As Boolean
+
+    ''' <summary>A glyph the surface draws from lines because the catalogue has none yet (125 UX-311).</summary>
+    Public Property CustomGlyph As ChromeCustomGlyph = ChromeCustomGlyph.None
+
+    ''' <summary>A text that sets the width this item reserves (it keeps its place while its own text changes
+    ''' length - a counter, a zoom value; 125 UX-313b). Empty = the caption's own width.</summary>
+    Public Property ReservedText As String = ""
 
     ''' <summary>True when caption text should align to the start/left edge rather than centered.</summary>
     Public Property AlignLeft As Boolean

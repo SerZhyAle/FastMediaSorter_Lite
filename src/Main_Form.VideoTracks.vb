@@ -347,7 +347,7 @@ Partial Public Class Main_Form
     ''' blind would be useless.</summary>
     Private Sub AnnounceTrack(kind As String, name As String)
         If String.IsNullOrEmpty(name) Then Return
-        lbl_Status.Text = kind & ": " & name
+        lbl_Status.Text = Localization.TF("{0}: {1}", kind, name)
     End Sub
 
     ''' <summary>

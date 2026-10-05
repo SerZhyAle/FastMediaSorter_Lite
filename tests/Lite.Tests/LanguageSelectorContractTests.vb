@@ -60,7 +60,21 @@ Public Class LanguageSelectorContractTests
     Public Sub Every_drop_down_list_is_drawn_at_a_scaled_item_height_in_a_pixel_font()
         Dim text As String = Source("Table_Form.ModernLayout.vb")
         Assert.Contains("SettingsPixelFont(""Segoe UI"", 12)", text)
-        Assert.Matches("combo\.ItemHeight\s*=\s*Math\.Max\(Sp\(24\)", text)
+        ' The row height may be a literal or a named Const (it is the Const now): resolve
+        ' either, so the contract survives the rename without going blind to the value.
+        Dim height = Regex.Match(text, "combo\.ItemHeight\s*=\s*Math\.Max\(Sp\((\w+)\)")
+        Assert.True(height.Success)
+        Dim token As String = height.Groups(1).Value
+        Dim logical As Integer
+        If Not Integer.TryParse(token, Globalization.CultureInfo.InvariantCulture, logical) Then
+            Dim declared = Regex.Match(text, "Const\s+" & Regex.Escape(token) & "\s+As\s+Integer\s*=\s*(\d+)")
+            Assert.True(declared.Success, token & " is neither a number nor a Const in this file.")
+            logical = Integer.Parse(declared.Groups(1).Value, Globalization.CultureInfo.InvariantCulture)
+        End If
+        ' The row itself is 38 logical px; the closed field adds the control's own 6 px
+        ' frame, which keeps the field the user actually points at at the 44 the old
+        ' literal pinned - so 38 is the floor the row must not go under.
+        Assert.True(logical >= 38)
         Assert.Contains("DrawMode.OwnerDrawFixed", text)
     End Sub
 

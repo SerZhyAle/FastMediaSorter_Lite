@@ -100,19 +100,6 @@ Partial Public NotInheritable Class Localization
         Add("Обрезка",
             "Crop", "Обрізання", "Zuschneiden", "Ritaglio", "Recortar", "Rogner",
             "Recortar", "اقتصاص", "काट-छाँट", "ছাঁটাই", "کٹائی", "裁剪")
-        Add("Обрезка (Enter - применить, Esc - снять рамку)",
-            "Crop (Enter applies it, Esc drops the frame)",
-            "Обрізання (Enter - застосувати, Esc - зняти рамку)",
-            "Zuschneiden (Enter wendet an, Esc verwirft den Rahmen)",
-            "Ritaglio (Invio applica, Esc rimuove il riquadro)",
-            "Recortar (Entrar aplica, Esc quita el marco)",
-            "Rogner (Entrée applique, Échap retire le cadre)",
-            "Recortar (Enter aplica, Esc remove a moldura)",
-            "اقتصاص (Enter للتطبيق، Esc لإزالة الإطار)",
-            "काट-छाँट (Enter लागू करता है, Esc फ़्रेम हटाता है)",
-            "ছাঁটাই (Enter প্রয়োগ করে, Esc ফ্রেম সরায়)",
-            "کٹائی (Enter لاگو کرے، Esc فریم ہٹائے)",
-            "裁剪（Enter 应用，Esc 取消选框）")
         Add("Применить обрезку",
             "Apply crop", "Застосувати обрізання", "Zuschnitt anwenden", "Applica ritaglio",
             "Aplicar recorte", "Appliquer le rognage", "Aplicar recorte", "تطبيق الاقتصاص",
@@ -129,6 +116,75 @@ Partial Public NotInheritable Class Localization
             "Não foi possível recortar: {0}", "تعذّر الاقتصاص: {0}",
             "काट-छाँट नहीं हो सकी: {0}", "ছাঁটাই করা যায়নি: {0}",
             "کٹائی نہیں ہو سکی: {0}", "无法裁剪：{0}")
+
+        ' --- keyboard (126 Ф-1) -------------------------------------------------
+        '
+        ' The tooltips name the tool's letter: a keyboard user finds the strip no other
+        ' way. The key letter rides {1} unchanged in every language, like a hotkey name.
+        Add("{0} (клавиша {1})",
+            "{0} (key {1})", "{0} (клавіша {1})", "{0} (Taste {1})", "{0} (tasto {1})",
+            "{0} (tecla {1})", "{0} (touche {1})", "{0} (tecla {1})", "{0} (المفتاح {1})",
+            "{0} (कुंजी {1})", "{0} (কী {1})", "{0} (کلید {1})", "{0}（按键 {1}）")
+        Add("{0} (клавиша {1}; с Shift - квадрат или круг)",
+            "{0} (key {1}; with Shift - a square or a circle)",
+            "{0} (клавіша {1}; з Shift - квадрат або коло)",
+            "{0} (Taste {1}; mit Umschalt - Quadrat oder Kreis)",
+            "{0} (tasto {1}; con Maiusc - quadrato o cerchio)",
+            "{0} (tecla {1}; con Mayús - cuadrado o círculo)",
+            "{0} (touche {1} ; avec Maj - carré ou cercle)",
+            "{0} (tecla {1}; com Shift - quadrado ou círculo)",
+            "{0} (المفتاح {1}؛ مع Shift - مربع أو دائرة)",
+            "{0} (कुंजी {1}; Shift के साथ - वर्ग या वृत्त)",
+            "{0} (কী {1}; Shift সহ - বর্গ বা বৃত্ত)",
+            "{0} (کلید {1}؛ Shift کے ساتھ - مربع یا دائرہ)",
+            "{0}（按键 {1}；按住 Shift - 正方形或圆形）")
+        Add("{0} (клавиша {1}; Enter - применить, Esc - снять рамку)",
+            "{0} (key {1}; Enter applies it, Esc drops the frame)",
+            "{0} (клавіша {1}; Enter - застосувати, Esc - зняти рамку)",
+            "{0} (Taste {1}; Enter wendet an, Esc verwirft den Rahmen)",
+            "{0} (tasto {1}; Invio applica, Esc rimuove il riquadro)",
+            "{0} (tecla {1}; Entrar aplica, Esc quita el marco)",
+            "{0} (touche {1} ; Entrée applique, Échap retire le cadre)",
+            "{0} (tecla {1}; Enter aplica, Esc remove a moldura)",
+            "{0} (المفتاح {1}؛ Enter للتطبيق، Esc لإزالة الإطار)",
+            "{0} (कुंजी {1}; Enter लागू करता है, Esc फ़्रेम हटाता है)",
+            "{0} (কী {1}; Enter প্রয়োগ করে, Esc ফ্রেম সরায়)",
+            "{0} (کلید {1}؛ Enter لاگو کرے، Esc فریم ہٹائے)",
+            "{0}（按键 {1}；Enter 应用，Esc 取消选框）")
+
+        ' --- rotate and flip (126 Ф-3) ------------------------------------------
+        '
+        ' The flips have no button - H and V are keys - so their hint rides on the rotate
+        ' buttons' tooltips, the two places a hand looking for a turn already visits.
+        Add("Повернуть влево",
+            "Rotate left", "Повернути ліворуч", "Nach links drehen", "Ruota a sinistra",
+            "Girar a la izquierda", "Pivoter vers la gauche", "Girar à esquerda",
+            "تدوير لليسار", "बाएँ घुमाएँ", "বাঁয়ে ঘোরান", "بائیں گھمائیں", "向左旋转")
+        Add("Повернуть вправо",
+            "Rotate right", "Повернути праворуч", "Nach rechts drehen", "Ruota a destra",
+            "Girar a la derecha", "Pivoter vers la droite", "Girar à direita",
+            "تدوير لليمين", "दाएँ घुमाएँ", "ডানে ঘোরান", "دائیں گھمائیں", "向右旋转")
+        Add("Повернуть влево (Ctrl+[); отразить - H / V",
+            "Rotate left (Ctrl+[); flip - H / V", "Повернути ліворуч (Ctrl+[); відобразити - H / V",
+            "Nach links drehen (Ctrl+[); spiegeln - H / V", "Ruota a sinistra (Ctrl+[); specchia - H / V",
+            "Girar a la izquierda (Ctrl+[); voltear - H / V", "Pivoter vers la gauche (Ctrl+[) ; retourner - H / V",
+            "Girar à esquerda (Ctrl+[); espelhar - H / V", "تدوير لليسار (Ctrl+[)؛ الانعكاس - H / V",
+            "बाएँ घुमाएँ (Ctrl+[); फ़्लिप - H / V", "বাঁয়ে ঘোরান (Ctrl+[); ফ্লিপ - H / V",
+            "بائیں گھمائیں (Ctrl+[)؛ فلیپ - H / V", "向左旋转（Ctrl+[）；翻转 - H / V")
+        Add("Повернуть вправо (Ctrl+]); отразить - H / V",
+            "Rotate right (Ctrl+]); flip - H / V", "Повернути праворуч (Ctrl+]); відобразити - H / V",
+            "Nach rechts drehen (Ctrl+]); spiegeln - H / V", "Ruota a destra (Ctrl+]); specchia - H / V",
+            "Girar a la derecha (Ctrl+]); voltear - H / V", "Pivoter vers la droite (Ctrl+]) ; retourner - H / V",
+            "Girar à direita (Ctrl+]); espelhar - H / V", "تدوير لليمين (Ctrl+])؛ الانعكاس - H / V",
+            "दाएँ घुमाएँ (Ctrl+]); फ़्लिप - H / V", "ডানে ঘোরান (Ctrl+]); ফ্লিপ - H / V",
+            "دائیں گھمائیں (Ctrl+])؛ فلیپ - H / V", "向右旋转（Ctrl+]）；翻转 - H / V")
+        Add("Не удалось повернуть или отразить: {0}",
+            "Could not rotate or flip: {0}", "Не вдалося повернути або відобразити: {0}",
+            "Drehen oder Spiegeln fehlgeschlagen: {0}", "Impossibile ruotare o specchiare: {0}",
+            "No se pudo girar o voltear: {0}", "Impossible de pivoter ou de retourner : {0}",
+            "Não foi possível girar ou espelhar: {0}", "تعذّر التدوير أو الانعكاس: {0}",
+            "घुमाने या फ़्लिप करने में विफल: {0}", "ঘোরানো বা ফ্লিপ করা যায়নি: {0}",
+            "گھمانے یا فلیپ کرنے میں ناکام: {0}", "无法旋转或翻转：{0}")
 
         Add("Выбрать цвет",
             "Choose a colour", "Вибрати колір", "Farbe wählen", "Scegli il colore",
@@ -155,9 +211,33 @@ Partial Public NotInheritable Class Localization
         Add("Отменить",
             "Undo", "Скасувати", "Rückgängig", "Annulla", "Deshacer", "Annuler",
             "Desfazer", "تراجع", "पूर्ववत करें", "পূর্বাবস্থা", "واپس", "撤销")
+        ' The undo pair of the footer (126 Ф-2).
+        Add("Вернуть",
+            "Redo", "Повторити", "Wiederherstellen", "Ripeti", "Rehacer", "Rétablir",
+            "Refazer", "إعادة", "फिर करें", "আবার করুন", "دوبارہ کریں", "重做")
+        ' The "Шаг N из M" pair: N steps still undoable of the M edits ever made (126 Ф-2).
+        Add("Шаг {0} из {1}",
+            "Step {0} of {1}", "Крок {0} з {1}", "Schritt {0} von {1}", "Passo {0} di {1}",
+            "Paso {0} de {1}", "Étape {0} sur {1}", "Passo {0} de {1}", "خطوة {0} من {1}",
+            "चरण {0} / {1}", "ধাপ {0} / {1}", "مرحلہ {0} از {1}", "第 {0} 步，共 {1} 步")
+        Add("Старые шаги отброшены: лимит памяти",
+            "Old steps were dropped: memory limit", "Старі кроки відкинуто: ліміт пам'яті",
+            "Alte Schritte wurden verworfen: Speichergrenze",
+            "I passi più vecchi sono stati scartati: limite di memoria",
+            "Se descartaron los pasos antiguos: límite de memoria",
+            "Les anciennes étapes ont été abandonnées : limite de mémoire",
+            "Passos antigos foram descartados: limite de memória",
+            "تم تجاهل الخطوات القديمة: حد الذاكرة",
+            "पुराने चरण हटा दिए गए: मेमोरी सीमा", "পুরোনো ধাপ বাদ দেওয়া হয়েছে: মেমরির সীমা",
+            "پرانے مراحل خارج کر دیے گئے: میموری کی حد", "较早的步骤已丢弃：内存已达上限")
         Add("изменено",
             "modified", "змінено", "geändert", "modificato", "modificado", "modifié",
             "modificado", "مُعدَّل", "बदला गया", "পরিবর্তিত", "تبدیل شدہ", "已修改")
+        ' The "Save as.." suffix (126 UX-605) - it used to be a hard-coded English literal.
+        Add(" (ред.)",
+            " (edited)", " (ред.)", " (bearbeitet)", " (modificata)", " (editada)",
+            " (modifiée)", " (editada)", " (معدَّل)", " (संपादित)", " (সম্পাদিত)",
+            " (ترمیم شدہ)", "（已编辑）")
         ' Asked even when "no confirmations" is on (§9.7): that setting is about file
         ' operations, this is about work that exists nowhere but in this window.
         Add("Правки не сохранены. Закрыть?",

@@ -1,8 +1,10 @@
 #If Not NETFRAMEWORK Then
 Option Strict On
 
+Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.Drawing.Imaging
+Imports System.Linq
 Imports Xunit
 
 ''' <summary>
@@ -192,6 +194,228 @@ Public Class EditorUndoStackTests
         Assert.Equal(96000000L, EditorUndoStack.SnapshotBytes(6000, 4000))
         Assert.Equal(1920000000L, EditorUndoStack.SnapshotBytes(6000, 4000) * 20)
         Assert.Equal(0L, EditorUndoStack.SnapshotBytes(0, 4000))
+    End Sub
+
+    ' -------------------------------------------------------------------- redo ----
+    '
+    ' 126 Ф-2: the states an undo walks away from come back, share the budget with the
+    ' undo side, and die the moment an edit commits. Undo and redo here are
+    ' transactions - Undo(current)/Redo(current) take ownership of the picture being
+    ' left - so the tests hand pictures over and dispose only what comes back.
+
+    <Fact>
+    Public Sub An_empty_history_offers_no_redo()
+        Using history As New EditorUndoStack()
+            Assert.False(history.CanRedo)
+            Assert.Equal(0, history.RedoCount)
+            Assert.Null(history.Redo(Nothing))
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub Undo_puts_the_state_it_leaves_on_the_redo_side()
+        Using history As New EditorUndoStack()
+            Using restored As Bitmap = NewPicture(6, 6, Color.Red)
+                history.Push(restored)
+            End Using
+
+            Using leaving As Bitmap = NewPicture(6, 6, Color.Blue)
+                Using history.Undo(leaving)
+                End Using
+                Assert.True(history.CanRedo)
+                Assert.Equal(1, history.RedoCount)
+            End Using
+        End Using
+    End Sub
+
+    ''' <summary>The promise redo exists for: undo then redo lands on the same pixels the
+    ''' eye last saw.</summary>
+    <Fact>
+    Public Sub Redo_restores_exactly_what_undo_took_away()
+        Using history As New EditorUndoStack()
+            Using pushed As Bitmap = NewPicture(4, 4, Color.Lime)
+                history.Push(pushed)
+            End Using
+
+            ' The stack takes ownership of `leaving`; the redo transaction hands it back
+            ' to the undo side, and what comes back is the state the user walked from.
+            Dim leaving As Bitmap = NewPicture(4, 4, Color.Blue)
+            Using history.Undo(leaving)
+            End Using
+            Assert.True(history.CanRedo)
+
+            Using redone As Bitmap = history.Redo(leaving)
+                Assert.Equal(Color.Blue.ToArgb(), redone.GetPixel(0, 0).ToArgb())
+            End Using
+            Assert.False(history.CanRedo)
+            Assert.True(history.CanUndo)
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub Undo_and_redo_walk_inversely_over_several_steps()
+        Using history As New EditorUndoStack()
+            Dim tints As Color() = New Color() {Color.Red, Color.Lime, Color.Blue}
+            For Each tint As Color In tints
+                Using pushed As Bitmap = NewPicture(4, 4, tint)
+                    history.Push(pushed)
+                End Using
+            Next
+
+            Dim walking As Bitmap = NewPicture(4, 4, Color.FromArgb(255, 9, 9, 9))
+            Dim colours_Seen As New List(Of Color)()
+            While history.CanUndo
+                walking = history.Undo(walking)
+                colours_Seen.Add(walking.GetPixel(0, 0))
+            End While
+            ' Newest first: Blue, Lime, Red.
+            Assert.Equal(tints.Reverse().Select(Function(c) c.ToArgb()).ToList(),
+                         colours_Seen.Select(Function(c) c.ToArgb()).ToList())
+
+            While history.CanRedo
+                walking = history.Redo(walking)
+            End While
+            Assert.Equal(Color.FromArgb(255, 9, 9, 9).ToArgb(), walking.GetPixel(0, 0).ToArgb())
+            walking.Dispose()
+        End Using
+    End Sub
+
+    ''' <summary>A committed edit kills the redo stack - but at the window's CALL, not on
+    ''' Push: a gesture that ends as a stray click must not wipe a redo it never earned.</summary>
+    <Fact>
+    Public Sub ClearRedo_is_what_kills_the_redo_side()
+        Using history As New EditorUndoStack()
+            Using pushed As Bitmap = NewPicture(4, 4, Color.Red)
+                history.Push(pushed)
+            End Using
+            Using leaving As Bitmap = NewPicture(4, 4, Color.Lime)
+                Using history.Undo(leaving)
+                End Using
+            End Using
+            Assert.True(history.CanRedo)
+
+            ' A stray click: pushed, popped back, no edit - redo survives.
+            Using stray As Bitmap = NewPicture(4, 4, Color.White)
+                history.Push(stray)
+            End Using
+            history.Pop().Dispose()
+            Assert.True(history.CanRedo)
+
+            ' The edit commits.
+            history.ClearRedo()
+            Assert.False(history.CanRedo)
+            Assert.Equal(0L, history.ByteSize)
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub Clearing_empties_both_sides()
+        Using history As New EditorUndoStack()
+            Using pushed As Bitmap = NewPicture(8, 8, Color.Red)
+                history.Push(pushed)
+            End Using
+            Using leaving As Bitmap = NewPicture(8, 8, Color.Lime)
+                Using history.Undo(leaving)
+                End Using
+            End Using
+
+            history.Clear()
+
+            Assert.Equal(0, history.Count)
+            Assert.Equal(0, history.RedoCount)
+            Assert.Equal(0L, history.ByteSize)
+            Assert.False(history.CanUndo)
+            Assert.False(history.CanRedo)
+        End Using
+    End Sub
+
+    ''' <summary>Q126-1: the two stacks share one budget. The step the user just walked
+    ''' back to is the newest redo and is never dropped - the oldest redo state goes
+    ''' first, and the drop is reported.</summary>
+    <Fact>
+    Public Sub The_redo_side_shares_the_byte_budget()
+        ' Room for three 20x20 snapshots and not a byte more.
+        Dim budget As Long = EditorUndoStack.SnapshotBytes(20, 20) * 3
+
+        Using history As New EditorUndoStack(maxSteps:=EditorUndoStack.Default_Max_Steps, maxBytes:=budget)
+            For index As Integer = 0 To 1
+                Using pushed As Bitmap = NewPicture(20, 20, Color.FromArgb(255, index, 0, 0))
+                    history.Push(pushed)
+                End Using
+            Next
+
+            ' First undo: a 40x40 state moves onto the redo side - over the budget
+            ' together with the undo snapshot, but it is the newest redo, so it stays.
+            Dim first As Bitmap = NewPicture(40, 40, Color.Lime)
+            Using history.Undo(first)
+            End Using
+            Assert.Equal(1, history.RedoCount)
+            Assert.Equal(EditorUndoStack.SnapshotBytes(20, 20) + EditorUndoStack.SnapshotBytes(40, 40), history.ByteSize)
+
+            ' Second undo: a second 40x40 joins the redo side and breaches the budget -
+            ' the OLDEST redo state goes instead.
+            Dim second As Bitmap = NewPicture(40, 40, Color.Blue)
+            Using history.Undo(second)
+            End Using
+
+            Assert.Equal(1, history.RedoCount)
+            Assert.Equal(EditorUndoStack.SnapshotBytes(40, 40), history.ByteSize)
+            Assert.True(history.StepsWereDropped)
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub The_step_limit_covers_both_sides_together()
+        Using history As New EditorUndoStack(maxSteps:=3, maxBytes:=EditorUndoStack.Default_Max_Bytes)
+            For index As Integer = 0 To 2
+                Using pushed As Bitmap = NewPicture(4, 4, Color.FromArgb(255, index, 0, 0))
+                    history.Push(pushed)
+                End Using
+            Next
+
+            ' Two undos: one undo snapshot left, two redo states - three steps in total,
+            ' at the cap but not over it.
+            Using first As Bitmap = NewPicture(4, 4, Color.White)
+                Using history.Undo(first)
+                End Using
+            End Using
+            Using second As Bitmap = NewPicture(4, 4, Color.Black)
+                Using history.Undo(second)
+                End Using
+            End Using
+
+            Assert.Equal(1, history.Count)
+            Assert.Equal(2, history.RedoCount)
+
+            ' One more undo would breach the step cap - with nothing on the redo side to
+            ' evict, the oldest UNDO snapshot goes instead, and the redo side keeps the
+            ' states the user can still walk forward to.
+            Using pushed As Bitmap = NewPicture(4, 4, Color.Gray)
+                history.Push(pushed)
+            End Using
+            Assert.Equal(3, history.Count + history.RedoCount)
+            Assert.Equal(2, history.RedoCount)
+            Assert.True(history.StepsWereDropped)
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub Dropping_a_step_is_reported_and_sticks()
+        Using history As New EditorUndoStack(maxSteps:=1, maxBytes:=EditorUndoStack.Default_Max_Bytes)
+            Assert.False(history.StepsWereDropped)
+            Using pushed As Bitmap = NewPicture(4, 4, Color.Red)
+                history.Push(pushed)
+            End Using
+            Using pushed As Bitmap = NewPicture(4, 4, Color.Lime)
+                history.Push(pushed)
+            End Using
+            Assert.True(history.StepsWereDropped)
+            ' Sticky: the status line keeps saying so for the rest of the session.
+            Using pushed As Bitmap = NewPicture(4, 4, Color.Blue)
+                history.Push(pushed)
+            End Using
+            Assert.True(history.StepsWereDropped)
+        End Using
     End Sub
 
 End Class

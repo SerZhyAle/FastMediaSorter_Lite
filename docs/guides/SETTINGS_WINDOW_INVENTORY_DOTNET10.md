@@ -4,11 +4,13 @@
 > below. The original dated inventory remains the compatibility reference for keys/defaults and legacy
 > behavior; its RU/EN-only and former page-layout statements do not describe the modern viewer today.
 
-## Current modern settings foundation
+## Current modern settings revision
 
-The modern viewer has eleven pages: General, Destination folders, Images, Video, Audio, Files and system,
-OCR, Translation, Storage, Android/SFTP and About. Resources will be integrated when its feature is ready;
-there is no placeholder page. The net48 fallback retains its five Designer pages.
+The modern viewer has twelve pages: General, Destination folders, Images, Video, Audio, Files and system,
+Resources, OCR, Translation, Storage, Android/SFTP and About. The **Resources** page (ticket 118) hosts the
+same [Resource_List_Panel.vb](../../src/Resource_List_Panel.vb) the resource-manager dialog embeds - one
+list, add/edit/remove/test/import/export - and records `ResourcesTouched` plus the removed ids so the main
+viewer reacts after the window closes. The net48 fallback retains its five Designer pages (no resources).
 
 The placement catalog is `AddSettingsGroup` in
 [Table_Form.SettingsGroups.vb](../../src/Table_Form.SettingsGroups.vb), keyed by stable page/group/row ids.
@@ -24,7 +26,7 @@ groups; Basic defaults to expanded, Advanced to collapsed, other defaults are ex
 | Image orientation, fit and quality | Images / Basic or Advanced; background and slideshow have separate groups |
 | Audio/subtitle track languages | Video / Tracks and subtitles |
 | Shared startup volume/mute | Audio / Basic; values are still shared with video |
-| Image/thumbnail caches | Storage; OCR-specific cache stays in OCR |
+| Image/thumbnail caches | Storage, including OCR policy, archive and remote-resource budgets |
 | File, archive and secure preferences | Files, with separate task groups |
 
 The per-user `ModernSettingsContext` registry value is private modern-viewer state, with schema version 1.
@@ -41,10 +43,67 @@ edits, moves focus out of hidden contents, and exposes expanded/collapsed state 
 Rows form one vertical sequence and hints wrap. The left navigation scrolls and captions wrap. Palette
 changes retain the existing dynamic theme mechanism and high-contrast override.
 
+Search settings (`Ctrl+F`) opens a temporary discovery dialog. It searches localized captions, hints and
+noneditable option labels; results show page/group breadcrumbs and safe checkbox/number/choice values.
+Editable fields, API keys, paths, resources and history values are excluded. Choosing a result reveals the
+original row and expands only its owning group. Every opening starts with an empty search; searching does
+not filter the settings viewport or change unrelated groups. Expand all / Collapse all affects the current
+page; collapsed groups summarize up to two safe values and any input validation error.
+
+Rows stack their editor beneath wrapped text in a narrow window. Group/navigation/action targets have
+44 logical-pixel floors; checkboxes have a clickable caption and explanation. Native number/text editors
+have enlarged targets, choice lists measure their localized options when opened, and the opacity slider
+has an exact numeric editor. Text values for OCR service/model/key commit on blur or closing settings;
+nonempty endpoints must be HTTP(S), while malformed edits remain pending through grouping/language refresh.
+
+Cache clearing and shell-association entries open separate owned operation dialogs; existing history,
+profile import/export, model downloads and support-package flows keep their explicit operation dialogs,
+consent, progress and error handling. About includes the MIT license link. Video has a link to the shared
+volume/mute owner in Audio / Basic. Initial window sizing uses General content and monitor constraints;
+an explicitly remembered normal size wins. A repeated visible-window entry fits the current owner's monitor.
+
+Actual UI evidence for ticket 120 is generated locally under `bin/Settings120Scenes`, at DeviceDpi 168
+(175%), including the search dialog, all thirteen language refreshes and narrow stacked rows. Physical
+mixed-DPI transitions, Windows text scaling, high-contrast switching and real screen-reader speech remain
+unverified and are recorded as dated APP-SETTINGS acceptance exceptions; accessibility properties alone
+are not evidence of spoken output.
+
 Verification: context/group unit tests and full .NET suites; actual window scenes at 175% system DPI in
 English, Russian and Arabic, including independent expansion, row ownership, viewport return and
 fresh-process page/group restoration. Search, full editor revision, all DPI/touch scenarios and real
-screen-reader speech remain future acceptance work; this foundation is not full APP-SETTINGS conformance.
+screen-reader speech were foundation gaps; search and the original editor revision are now implemented.
+Physical DPI/touch/text-scale and screen-reader acceptance remain unverified. The section 13 audit changes are implemented; full APP-SETTINGS conformance still depends on physical driven acceptance.
+
+### Audit completion (2026-10-04)
+
+Ordinary additional-preference edits preserve the current folder list and shuffle progress.
+Registry writes use a 1.5-second trailing debounce with the existing bounded failure retries;
+closing flushes changes. Volume, mute, normal geometry, no-panels full-screen mode and per-folder
+zoom participate in this persistence. The modern repeat checkbox is retired: the end-action choice
+and playback menu share the same value; an old loop flag migrates to Repeat once.
+
+Thumbnail size selects the actual 96/128/192/256 px panel preference. Slideshow seconds retain
+millisecond precision. Numeric hints show ranges and units. Closed choices, numbers and sliders
+route the wheel to page scrolling instead of changing values. Disabled dependent rows have neutral
+cursors, muted captions and a visible reason. The API-key editor is unavailable for Ollama.
+
+All cache budgets are on Storage. Decode/thumbnail zero remains off; the OCR editor displays zero
+for its existing off switch and -1 for the legacy unlimited budget, preserving old registry/profile
+semantics. Archive/remote session budgets retain their nonzero minimum. Thumbnail cache size and
+explicit clearing join the existing OCR/decode operations; active archive/remote sessions are not
+deleted by settings cleanup.
+
+General offers an explicit additional-preference reset with confirmation and a required backup.
+Destination folders, language, theme, sound, OCR and personal histories are retained. Export/import
+continue to identify their limited scope. Settings normal position is remembered and clamped to the
+owner's current monitor; first opening prefers space beside the viewer when available.
+Destination-grid buttons browse, choose resources or clear a selected slot; folder drops assign a
+slot, and a visible text line explains its checked state. Key labels follow the current shortcut map.
+Resources has a deliberate Open action; navigating its page does not open or probe a resource.
+
+Fresh local verification artifacts: `temp/Settings120Scenes` (isolated profile, source/project,
+command logs and EN/RU/DE/Arabic screenshots at 175%). Physical DPI/text-scale/high-contrast/touch
+and screen-reader speech remain explicit acceptance exceptions rather than inferred passes.
 
 ## Historical compatibility inventory (2026-07-18)
 
@@ -296,3 +355,146 @@ DEL; перечислены точные наборы ассоциаций. Та
 - [ ] Overlay получателей перестраивается при изменении списка и при закрытии настроек.
 - [ ] OCR API key остаётся DPAPI-защищённым; OCR сохраняется при закрытии настроек.
 - [ ] Все зависимости disabled/busy и RU/EN локализация из раздела выше проверены.
+
+<!-- settings-catalog:start -->
+## Current catalog generated from production declarations
+
+Regenerate this region with `tools/Export-SettingsInventory.ps1`. It contains no profile values.
+Every id uses `ModernSettingTitle(id)` and `ModernSettingDescription(id)` for its localized caption/hint;
+the matching constructor in `Table_Form.ModernLayout.vb` or `Table_Form.ExpandedSettings.vb` owns its editor,
+numeric range/step, units and stable choice tokens. `Table_Form.Ocr.vb` owns OCR dependencies and busy states;
+`SyncDynamicPerspectiveEnabled` owns halo dependencies. Those authorities are reused by the actual controls
+and search, so translation, defaults, ranges and persistence are never copied into another profile model.
+
+Modern preference booleans/choices/numbers apply live through their existing handlers. Interface scale
+requires reopening settings; startup options affect subsequent starts; initial image/video/track choices
+apply when opening media; disk budgets affect subsequent cache use. OCR text edits commit on blur/close,
+validating nonempty HTTP(S) endpoints before applying. Invalid pending input survives regrouping and language
+refresh. Empty endpoint/model retains the existing automatic behavior. Secrets remain masked and DPAPI-protected.
+Actions are entry points, not preferences: no stored default/range, and opening a dialog does not execute them.
+
+| Stable id | Page / group | Persistence / default authority | Values / validation authority |
+| --- | --- | --- | --- |
+| `interface_language` | general / basic | Localization / UiLanguage; first-run Windows language; live | Matching row constructor |
+| `ui_theme` | general / basic | ThemeService / UiTheme; system; live across applications | Matching row constructor |
+| `interface_scale` | general / interface | ModernViewerPreferences.InterfaceScaleRelativePercent; Integer; default type default; Load/Save key InterfaceScaleRelativePercent | Bound property type; matching row constructor / Normalize |
+| `reduce_motion` | general / interface | ModernViewerPreferences.ReduceMotion; Boolean; default False; Load/Save key ReduceMotion | Bound property type; matching row constructor / Normalize |
+| `chrome_pinned` | general / interface | ModernViewerPreferences.ChromePinned; Boolean; default False; Load/Save key ChromePinned | Bound property type; matching row constructor / Normalize |
+| `chrome_size` | general / interface | ModernViewerPreferences.ChromeSize; String; default "medium"; Load/Save key ChromeSize | tokens: small, medium, large, adaptive, touch |
+| `chrome_opacity` | general / interface | ModernViewerPreferences.ChromeOpacityPercent; Integer; default 86; Load/Save key ChromeOpacityPercent | range: 0, 100 |
+| `chrome_corners` | general / interface | ModernViewerPreferences.ChromeCornerRadius; Integer; default 6; Load/Save key ChromeCornerRadius | range: 0, 16 |
+| `show_info_overlay` | general / interface | Main_Form.Lifecycle; key ShowInfoOverlay; storage default '0' | Original native editor bounds/choices; Lifecycle loader validation |
+| `video_hide_cursor` | general / interface | ModernViewerPreferences.HideCursorAfterSec; Integer; default 3; Load/Save key HideCursorAfterSec | range: 0, 30 |
+| `startup_open` | general / startup | ModernViewerPreferences.StartupOpenMode; String; default "home"; Load/Save key StartupOpenMode | tokens: home, lastFolder, lastFile |
+| `resume_last_playback` | general / startup | ModernViewerPreferences.ResumeLastPlayback; Boolean; default False; Load/Save key ResumeLastPlayback | Bound property type; matching row constructor / Normalize |
+| `allow_new_windows` | general / startup | ModernViewerPreferences.AllowNewWindows; Boolean; default False; Load/Save key AllowNewWindows | Bound property type; matching row constructor / Normalize |
+| `secondary_instance_warning` | general / startup | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `settings_export_personal` | general / advanced | Per-export choice; False; not persisted | Matching row constructor |
+| `settings_export` | general / advanced | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `settings_import` | general / advanced | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `settings_defaults` | general / advanced | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `recipients_overlay` | recipients / basic | Main_Form.Lifecycle; key ShowRecipientsOverlay; storage default '0' | Original native editor bounds/choices; Lifecycle loader validation |
+| `recipients_position` | recipients / overlay | ModernViewerPreferences.RecipientsOverlayPosition; String; default "topLeft"; Load/Save key RecipientsOverlayPosition | tokens: topLeft, topRight, bottomLeft, bottomRight |
+| `recipients_width` | recipients / overlay | ModernViewerPreferences.RecipientsOverlayWidth; Integer; default 280; Load/Save key RecipientsOverlayWidth | range: 180, 520 |
+| `recipients_font` | recipients / overlay | ModernViewerPreferences.RecipientsOverlayFontSize; Integer; default 9; Load/Save key RecipientsOverlayFontSize | range: 9, 18 |
+| `recipients_opacity` | recipients / overlay | ModernViewerPreferences.RecipientsOverlayOpacity; Integer; default 88; Load/Save key RecipientsOverlayOpacity | range: 40, 100 |
+| `recipients_rows` | recipients / overlay | ModernViewerPreferences.RecipientsOverlayVisibleRows; Integer; default 11   ' ten slots + Delete fit without scrolling (audit B-13); Load/Save key RecipientsOverlayVisibleRows | range: 3, 11 |
+| `new_image_scale` | images / basic | ModernViewerPreferences.NewImageScaleMode; String; default "fit"; Load/Save key NewImageScaleMode | tokens: fit, actual, perFolder |
+| `exif_rotate` | images / basic | Main_Form.Lifecycle; key ExifAutoRotate; storage default '1' | Original native editor bounds/choices; Lifecycle loader validation |
+| `wheel_zooms` | images / basic | Main_Form.Lifecycle; key WheelZooms; storage default '0' | Original native editor bounds/choices; Lifecycle loader validation |
+| `show_picture_size` | images / basic | Main_Form.Lifecycle; key ShowPictureSizes; storage default '1' | Original native editor bounds/choices; Lifecycle loader validation |
+| `show_file_size` | images / basic | Main_Form.Lifecycle; key ShowFileSizes; storage default '1' | Original native editor bounds/choices; Lifecycle loader validation |
+| `show_file_date` | images / basic | Main_Form.Lifecycle; key ShowFileDates; storage default '1' | Original native editor bounds/choices; Lifecycle loader validation |
+| `background_color` | images / background | Main_Form.Lifecycle; key color_scheme; storage default '1' | Original native editor bounds/choices; Lifecycle loader validation |
+| `perspective` | images / background | Main_Form.Lifecycle; key isPerspective; storage default '1' | Original native editor bounds/choices; Lifecycle loader validation |
+| `dynamic_perspective` | images / background | Main_Form.Lifecycle; key DynamicPerspective; storage default '0' | Original native editor bounds/choices; Lifecycle loader validation |
+| `animated_perspective` | images / background | Main_Form.Lifecycle; key AnimatedPerspective; storage default '1' | Original native editor bounds/choices; Lifecycle loader validation |
+| `halo_speed` | images / background | Main_Form.Lifecycle; key AnimatedPerspectiveSpeed; storage default '' | Original native editor bounds/choices; Lifecycle loader validation |
+| `slideshow_interval` | images / slideshow | Main_Form.Lifecycle; key SlideshowIntervalSec; storage default '10' | Original native editor bounds/choices; Lifecycle loader validation |
+| `slideshow_random_order` | images / slideshow | ModernViewerPreferences.SlideshowRandomOrder; String; default "natural"; Load/Save key SlideshowRandomOrder | tokens: natural, random, shuffleCycle |
+| `stop_slideshow_manual` | images / slideshow | ModernViewerPreferences.StopSlideshowOnManualNavigation; Boolean; default True; Load/Save key StopSlideshowOnManualNavigation | Bound property type; matching row constructor / Normalize |
+| `slideshow_ui` | images / slideshow | ModernViewerPreferences.SlideshowUiMode; String; default "none"; Load/Save key SlideshowUiMode | tokens: none, toolbar, toolbarAndStatus |
+| `hq_scaling` | images / advanced | Main_Form.Lifecycle; key HighQualityScaling; storage default '1' | Original native editor bounds/choices; Lifecycle loader validation |
+| `thumbnail_size` | images / advanced | Main_Form.Lifecycle; key Picture_Box_Width_At_Panel; storage default '80'; paired Picture_Box_Height_At_Panel | Original native editor bounds/choices; Lifecycle loader validation |
+| `include_video_navigation` | video / basic | ModernViewerPreferences.IncludeVideoInNavigation; Boolean; default True; Load/Save key IncludeVideoInNavigation | Bound property type; matching row constructor / Normalize |
+| `video_autoplay` | video / basic | ModernViewerPreferences.VideoAutoplay; Boolean; default True; Load/Save key VideoAutoplay | Bound property type; matching row constructor / Normalize |
+| `video_end_action` | video / basic | ModernViewerPreferences.VideoEndAction; String; default "stay"; Load/Save key VideoEndAction | tokens: stay, nextFile, repeat |
+| `video_remember_position` | video / basic | ModernViewerPreferences.RememberVideoPosition; Boolean; default True; Load/Save key RememberVideoPosition | Bound property type; matching row constructor / Normalize |
+| `shared_audio_settings` | video / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `preferred_audio_language` | video / tracks | ModernViewerPreferences.PreferredAudioLanguage; String; default ""; Load/Save key PreferredAudioLanguage | Bound property type; matching row constructor / Normalize |
+| `preferred_subtitle_language` | video / tracks | ModernViewerPreferences.PreferredSubtitleLanguage; String; default ""; Load/Save key PreferredSubtitleLanguage | Bound property type; matching row constructor / Normalize |
+| `video_click_action` | video / controls | ModernViewerPreferences.VideoSingleClickAction; String; default "pauseResume"; Load/Save key VideoSingleClickAction | tokens: pauseResume, nextFile |
+| `video_controls_delay` | video / controls | ModernViewerPreferences.VideoControlsHideDelaySec; Integer; default 3; Load/Save key VideoControlsHideDelaySec | range: 1, 15 |
+| `video_controls_paused` | video / controls | ModernViewerPreferences.ShowVideoControlsWhenPaused; Boolean; default True; Load/Save key ShowVideoControlsWhenPaused | Bound property type; matching row constructor / Normalize |
+| `video_seek_short` | video / controls | ModernViewerPreferences.SeekShortSec; Integer; default 3; Load/Save key SeekShortSec | range: 1, 600 |
+| `video_seek_medium` | video / controls | ModernViewerPreferences.SeekMediumSec; Integer; default 10; Load/Save key SeekMediumSec | range: 1, 600 |
+| `video_seek_long` | video / controls | ModernViewerPreferences.SeekLongSec; Integer; default 60; Load/Save key SeekLongSec | range: 1, 600 |
+| `include_audio_navigation` | audio / basic | ModernViewerPreferences.IncludeAudioInNavigation; Boolean; default True; Load/Save key IncludeAudioInNavigation | Bound property type; matching row constructor / Normalize |
+| `audio_end_action` | audio / basic | ModernViewerPreferences.AudioEndAction; String; default "next"; Load/Save key AudioEndAction | tokens: next, stay, repeat |
+| `video_volume` | audio / basic | Main_Form.Lifecycle; key VideoVolume; storage default '1.0'; UI percent 0-100, shared with audio | Original native editor bounds/choices; Lifecycle loader validation |
+| `video_mute` | audio / basic | Main_Form.Lifecycle; key VideoMuted; storage default '0' | Original native editor bounds/choices; Lifecycle loader validation |
+| `audio_controls_visible` | audio / display | ModernViewerPreferences.AudioControlsAlwaysVisible; Boolean; default True; Load/Save key AudioControlsAlwaysVisible | Bound property type; matching row constructor / Normalize |
+| `audio_visualiser` | audio / display | ModernViewerPreferences.AudioVisualiser; Boolean; default True; Load/Save key AudioVisualiser | Bound property type; matching row constructor / Normalize |
+| `audio_sleep_timer` | audio / display | ModernViewerPreferences.SleepTimerMinutes; Integer; default 0; Load/Save key SleepTimerMinutes | range: 0, 180 |
+| `advance_after_copy` | files / basic | ModernViewerPreferences.AdvanceAfterCopy; Boolean; default True; Load/Save key AdvanceAfterCopy | Bound property type; matching row constructor / Normalize |
+| `name_collision` | files / basic | ModernViewerPreferences.NameCollisionPolicy; String; default "ask"; Load/Save key NameCollisionPolicy | tokens: ask, skip, rename, replace |
+| `after_file_operation` | files / basic | ModernViewerPreferences.AfterFileOperation; String; default "next"; Load/Save key AfterFileOperation | tokens: next, stay, closeIfEmpty |
+| `create_missing_destination` | files / basic | ModernViewerPreferences.CreateMissingDestination; Boolean; default True; Load/Save key CreateMissingDestination | Bound property type; matching row constructor / Normalize |
+| `delete_to_recycle_bin` | files / basic | ModernViewerPreferences.DeleteToRecycleBin; Boolean; default True; Load/Save key DeleteToRecycleBin | Bound property type; matching row constructor / Normalize |
+| `confirm_delete` | files / basic | ModernViewerPreferences.ConfirmDelete; String; default "always"; Load/Save key ConfirmDelete | tokens: always, permanentOnly, never |
+| `no_confirmation` | files / basic | Main_Form.Lifecycle; key NoRequestBeforeFileOperation; storage default '0' | Original native editor bounds/choices; Lifecycle loader validation |
+| `include_subfolders` | files / content | ModernViewerPreferences.IncludeSubfolders; Boolean; default False; Load/Save key IncludeSubfolders | Bound property type; matching row constructor / Normalize |
+| `included_extensions` | files / content | ModernViewerPreferences.IncludedExtensions; String; default ""; Load/Save key IncludedExtensions | Bound property type; matching row constructor / Normalize |
+| `include_document_navigation` | files / content | ModernViewerPreferences.IncludeDocumentInNavigation; Boolean; default False; Load/Save key IncludeDocumentInNavigation | Bound property type; matching row constructor / Normalize |
+| `document_extensions` | files / content | ModernViewerPreferences.DocumentExtensions; String; default ".txt;.md;.log;.csv;.json;.xml;.html;.htm;.pdf;.epub;.fb2;.mobi"; Load/Save key DocumentExtensions | Bound property type; matching row constructor / Normalize |
+| `text_preview_max_kb` | files / content | ModernViewerPreferences.TextPreviewMaxKb; Integer; default 2048; Load/Save key TextPreviewMaxKb | range: ModernViewerPreferences.TextPreviewMaxKbMin, ModernViewerPreferences.TextPreviewMaxKbMax |
+| `sort_other_files` | files / content | ModernViewerPreferences.SortOtherFiles; Boolean; default False; Load/Save key SortOtherFiles | Bound property type; matching row constructor / Normalize |
+| `other_extensions` | files / content | ModernViewerPreferences.OtherExtensions; String; default ""; Load/Save key OtherExtensions | Bound property type; matching row constructor / Normalize |
+| `recent_files_limit` | files / history | ModernViewerPreferences.RecentFilesLimit; Integer; default 50; Load/Save key RecentFilesLimit | range: 0, 200 |
+| `recent_folders_limit` | files / history | ModernViewerPreferences.RecentFoldersLimit; Integer; default 100; Load/Save key RecentFoldersLimit | range: 0, 200 |
+| `recent_history` | files / history | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `archive_entry_limit` | files / archives | ModernViewerPreferences.ArchiveMaxEntryMb; Integer; default 512; Load/Save key ArchiveMaxEntryMb | range: ModernViewerPreferences.ArchiveMaxEntryMbMin, ModernViewerPreferences.ArchiveMaxEntryMbMax |
+| `archive_entries_limit` | files / archives | ModernViewerPreferences.ArchiveMaxEntries; Integer; default 20000; Load/Save key ArchiveMaxEntries | range: ModernViewerPreferences.ArchiveMaxEntriesMin, ModernViewerPreferences.ArchiveMaxEntriesMax |
+| `secure_in_navigation` | files / secure | ModernViewerPreferences.SecureIncludeInNavigation; Boolean; default True; Load/Save key SecureIncludeInNavigation | Bound property type; matching row constructor / Normalize |
+| `secure_remember_minutes` | files / secure | ModernViewerPreferences.SecureRememberMinutes; Integer; default 15; Load/Save key SecureRememberMinutes | range: ModernViewerPreferences.SecureRememberMinutesMin, ModernViewerPreferences.SecureRememberMinutesMax |
+| `secure_show_true_name` | files / secure | ModernViewerPreferences.SecureShowTrueName; Boolean; default True; Load/Save key SecureShowTrueName | Bound property type; matching row constructor / Normalize |
+| `secure_open_with` | files / secure | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `custom_hotkeys` | files / advanced | ModernViewerPreferences.CustomHotkeysJson; empty map; explicit editor commit | Matching row constructor |
+| `image_associations` | files / advanced | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `video_associations` | files / advanced | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `ocr_enabled` | ocr / basic | OcrTranslateSettings.Enabled; False; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
+| `ocr_auto` | ocr / basic | OcrTranslateSettings.AutoMode; False; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
+| `ocr_source` | ocr / recognition | OcrTranslateSettings.SourceLang; "auto"; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
+| `ocr_quality` | ocr / recognition | OcrTranslateSettings.OcrModelQuality; "fast"; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
+| `ocr_mode` | ocr / recognition | OcrTranslateSettings.OcrPageMode; "auto"; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
+| `ocr_download` | ocr / recognition | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `ocr_provider` | translation / basic | OcrTranslateSettings.Provider; "ollama"; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
+| `ocr_target` | translation / basic | OcrTranslateSettings.TargetLang; "en"; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
+| `ocr_endpoint` | translation / provider | OcrTranslateSettings.Endpoint; ""; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
+| `ocr_server` | translation / provider | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `ocr_model` | translation / provider | OcrTranslateSettings.OllamaModel; "qwen2.5:3b"; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
+| `ocr_api` | translation / provider | OcrTranslateSettings.ApiKey; ""; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
+| `ocr_opacity` | translation / overlay | OcrTranslateSettings.OverlayOpacity; DefaultOverlayOpacity; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
+| `ocr_overlay_visible` | translation / overlay | OcrTranslateSettings.OverlayVisible; True; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
+| `decode_cache_limit` | storage / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `decode_cache_clear` | storage / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `thumb_cache_limit` | storage / basic | ModernViewerPreferences.PanelThumbCacheMb; Integer; default 256; Load/Save key PanelThumbCacheMb | range: 0, 4096 |
+| `thumb_cache_clear` | storage / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `archive_cache_limit` | storage / basic | ModernViewerPreferences.ArchiveCacheMaxMb; Integer; default 2048; Load/Save key ArchiveCacheMaxMb | range: ModernViewerPreferences.ArchiveCacheMaxMbMin, ModernViewerPreferences.ArchiveCacheMaxMbMax |
+| `archive_cache_clear` | storage / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `remote_cache_limit` | storage / basic | ModernViewerPreferences.RemoteCacheMaxMb; Integer; default RemoteCacheStore.Default_Max_Mb; Load/Save key RemoteCacheMaxMb | range: ModernViewerPreferences.RemoteCacheMaxMbMin, ModernViewerPreferences.RemoteCacheMaxMbMax |
+| `remote_cache_clear` | storage / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `ocr_disk_cache` | storage / ocr | OcrTranslateSettings.DiskCache; True; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
+| `ocr_cache_limit` | storage / ocr | ModernViewerPreferences.DecodeCacheMaxMb; Integer; default 512; Load/Save key DecodeCacheMaxMb | range: -1, 1024 |
+| `ocr_cache_clear` | storage / ocr | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `sftp_intro` | sharing / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `sftp_manager` | sharing / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `sftp_guide` | sharing / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `android_app` | sharing / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `resources_intro` | resources / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `resources_open` | resources / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
+
+Recipients additionally persist the grid slots under `MoveOn1` through `MoveOn9` and `MoveOn0`;
+DEL is an action. Resources use the shared resource registry and dedicated editors (ticket 118). About
+contains information/links, the MIT license and the existing explicit support-package dialog.
+<!-- settings-catalog:end -->

@@ -120,10 +120,23 @@ Public Class TranslationCache
     ''' <summary>Drops every cached result (memory + disk). Called when the OCR/
     ''' translation settings window opens so stale results are never reused.</summary>
     Public Sub Clear()
+        ClearMemory()
+        ClearDisk()
+    End Sub
+
+    ''' <summary>The in-memory tier only. The quick half of <see cref="Clear"/>; it touches
+    ''' the process's own map, so it stays on the caller's thread.</summary>
+    Public Sub ClearMemory()
         SyncLock sync
             memory.Clear()
             memory_Order.Clear()
         End SyncLock
+    End Sub
+
+    ''' <summary>The disk tier only - plain file deletion, safe off the UI thread. The slow
+    ''' half of <see cref="Clear"/>: a directory holding months of results takes a visible
+    ''' moment, which is why the Storage page's clear runs this under Task.Run (130 §3.3).</summary>
+    Public Sub ClearDisk()
         Try
             Dim dir As String = OcrPaths.OcrCacheDir()
             If Directory.Exists(dir) Then

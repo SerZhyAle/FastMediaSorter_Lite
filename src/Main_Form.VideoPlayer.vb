@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Diagnostics
 Imports System.IO
@@ -84,18 +84,31 @@ Partial Public Class Main_Form
         video_Volume_Level = ClampVideoVolume(volume)
         is_Video_Muted = muted
         ApplyVideoAudioStateToVlc()
+#If Not NETFRAMEWORK Then
+        MarkSettingsDirty()
+#End If
     End Sub
 
     Public Sub HandleWebBrowserDoubleClick()
         If Me.InvokeRequired Then
             Me.Invoke(New Action(AddressOf HandleWebBrowserDoubleClick))
         Else
+#If Not NETFRAMEWORK Then
+            ' A double click on a video TOGGLES full screen, exactly as it does on a picture (UX-109 of
+            ' 123): this used to be able to leave it only, so the same gesture entered full screen over an
+            ' image and did nothing over a video. The pause the first click of the pair caused is already
+            ' taken back by Vlc_Video_View_MouseDoubleClick before it calls this.
+            ToggleFullScreenMode()
+            SlideShowStop()
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0842: HandleWebBrowserDoubleClick: toggled to " & is_Full_Screen_Mode.ToString())
+#Else
             If is_Full_Screen_Mode Then
                 is_Full_Screen_Mode = False
                 is_Super_Full_Screen_Mode = False
                 SetViewSizes()
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0842: HandleWebBrowserDoubleClick: (WebBrowser)")
             End If
+#End If
         End If
     End Sub
 
@@ -269,6 +282,9 @@ Partial Public Class Main_Form
             AddHandler vlc_Media_Player.EncounteredError, AddressOf Vlc_Media_Player_EncounteredError
 #If Not NETFRAMEWORK Then
             AddHandler vlc_Media_Player.EndReached, AddressOf Vlc_Media_Player_EndReached
+            ' The cache level while a slow source fills it (121 UX-405). Like the others it does nothing on the
+            ' libvlc thread but post to the UI thread.
+            AddHandler vlc_Media_Player.Buffering, AddressOf Vlc_Media_Player_Buffering
 #End If
             vlc_Video_View = New LibVLCSharp.WinForms.VideoView() With {
                 .MediaPlayer = vlc_Media_Player,
@@ -480,11 +496,14 @@ Partial Public Class Main_Form
             ' A different file starts here: whatever restore the previous one was still
             ' owed must not land on this one.
             ClearPendingVideoPosition()
+            ' And a different file starts at 1x with no A-B marks (119 §5.1.2, Q119-1).
+            ResetPlaybackExtrasForNewMedia()
             QueueRememberedVideoPosition(file_Path)
 #End If
             Dim media As LibVLCSharp.Shared.Media = CreateVlcMedia(file_Path)
 #If Not NETFRAMEWORK Then
-            If CurrentEffectiveRepeat() Then media.AddOption(":input-repeat=65535")
+            video_Started_With_Repeat = CurrentEffectiveRepeat()
+            If video_Started_With_Repeat Then media.AddOption(":input-repeat=65535")
 #Else
             If Is_Video_Loop OrElse VideoEndAction() = "repeat" Then media.AddOption(":input-repeat=65535")
 #End If
@@ -504,7 +523,7 @@ Partial Public Class Main_Form
                 slideshow_Waits_For_Video = True
                 slideshow_Video_Fallback_Timer.Stop()
                 Dim dur As Long = If(vlc_Media_Player IsNot Nothing AndAlso vlc_Media_Player.Length > 0, vlc_Media_Player.Length, 0L)
-                slideshow_Video_Fallback_Timer.Interval = PlaybackRules.SlideshowVideoFallbackTimeoutMs(dur)
+                slideshow_Video_Fallback_Timer.Interval = PlaybackRules.SlideshowVideoFallbackTimeoutMs(dur, playback_Rate)
                 slideshow_Video_Fallback_Timer.Start()
             End If
 #Else
@@ -538,7 +557,17 @@ Partial Public Class Main_Form
             Dim archive_Entry_Name As String = ArchiveDisplayName(file_Path)
             If archive_Entry_Name.Length > 0 Then shown_Name = archive_Entry_Name
 #End If
+#If Not NETFRAMEWORK Then
+            ' "Playing" is not true yet: Play() only STARTED the open, and a slow share or an address can take
+            ' seconds before the first frame (121 UX-405). Say "opening" now; the Playing event says the rest.
+            vlc_Shown_Name = shown_Name
+            open_Announce_Pending = True
+            buffering_Last_Step = -1
+            buffering_Showing = False
+            lbl_Status.Text = Localization.TF("Открываю: {0}..", shown_Name)
+#Else
             lbl_Status.Text = Localization.TF("Видео воспроизводится через VLC: {0}", shown_Name)
+#End If
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0871: Playing via LibVLC: " & file_Path)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0872: LibVLC play failed: " & ex.Message)
@@ -558,6 +587,10 @@ Partial Public Class Main_Form
             slideshow_Video_Fallback_Timer.Stop()
             If Is_slide_show_mode Then SlideShowTimer.Enabled = True
         End If
+        ' The extras belong to the media that is going away: 1x again, no A-B marks
+        ' (119 §5.0.1).
+        ResetPlaybackExtrasForNewMedia()
+        UpdateCursorHideTimer()
 #End If
 #If Not NETFRAMEWORK Then
         WaitForPendingVlcStop()
@@ -596,6 +629,8 @@ Partial Public Class Main_Form
         If vlc_Video_View IsNot Nothing Then vlc_Video_View.Visible = False
         HideVideoControls()
         ApplyVideoTracksButtonVisibility()
+        ResetPlaybackExtrasForNewMedia()
+        UpdateCursorHideTimer()
         If slideshow_Waits_For_Video Then
             slideshow_Waits_For_Video = False
             slideshow_Video_Fallback_Timer.Stop()
@@ -689,7 +724,13 @@ Partial Public Class Main_Form
 #End If
                                AppFileLogger.WriteLine("LibVLC could not play: " & logged_Path)
                                StopVlcPlayback()
+#If Not NETFRAMEWORK Then
+                               ' An error level, so that in the full screen without panels - where the status line
+                               ' cannot be seen - the toast says it (121 UX-404, 124).
+                               Notify(Localization.TF("VLC не смог воспроизвести: {0}", shown_Name), NotifyLevel.Error)
+#Else
                                lbl_Status.Text = Localization.TF("VLC не смог воспроизвести: {0}", shown_Name)
+#End If
 #If Not NETFRAMEWORK Then
                                If IsRemoteMediaUrl(failed_Path) Then Return
 #End If
@@ -710,6 +751,9 @@ Partial Public Class Main_Form
         video_Click_Next_Timer.Stop()
         If e.Button = MouseButtons.Left AndAlso last_Click_Toggled_Generation = media_Generation Then RevertClickPlayPause()
         last_Click_Toggled_Generation = -1
+        ' Only the left button's pair means full screen (UX-109 of 123): the right button's double press
+        ' is two menu requests, and it now TOGGLES, so it must not be allowed to flip the screen.
+        If e.Button <> MouseButtons.Left Then Return
 #End If
         HandleWebBrowserDoubleClick()
     End Sub
@@ -725,29 +769,46 @@ Partial Public Class Main_Form
             Me.BeginInvoke(Sub()
                                ApplyVideoAudioStateToVlc()
 #If Not NETFRAMEWORK Then
-                               ' A video reopened to apply Repeat owes the user the second
-                               ' it was at - and this is the first moment it will seek.
-                               ApplyPendingVideoPosition()
-                               ' Track lists do not exist until VLC is actually playing -
-                               ' this event is the first moment they can be read. ONCE per
-                               ' media (audit 050 D-10): Playing is raised again on every
-                               ' resume from pause, and re-applying the preference then
-                               ' took back the user's pick of a second track in the same
-                               ' language. Marked only once the lists were readable.
-                               If tracks_Applied_Serial <> vlc_Play_Serial AndAlso ApplyPreferredTracks() Then
-                                   tracks_Applied_Serial = vlc_Play_Serial
-                               End If
-                               ApplyVideoTracksButtonVisibility()
-                               If pause_New_Video_When_Ready Then
-                                   pause_New_Video_When_Ready = False
-                                   vlc_Media_Player.Pause()
-                                   ShowVideoControls()
-                               End If
-                               If slideshow_Waits_For_Video AndAlso vlc_Media_Player IsNot Nothing AndAlso vlc_Media_Player.Length > 0 Then
-                                   slideshow_Video_Fallback_Timer.Stop()
-                                   slideshow_Video_Fallback_Timer.Interval = PlaybackRules.SlideshowVideoFallbackTimeoutMs(vlc_Media_Player.Length)
-                                   slideshow_Video_Fallback_Timer.Start()
-                               End If
+            ' A video reopened to apply Repeat owes the user the second
+            ' it was at - and this is the first moment it will seek.
+            ApplyPendingVideoPosition()
+            ' Track lists do not exist until VLC is actually playing -
+            ' this event is the first moment they can be read. ONCE per
+            ' media (audit 050 D-10): Playing is raised again on every
+            ' resume from pause, and re-applying the preference then
+            ' took back the user's pick of a second track in the same
+            ' language. Marked only once the lists were readable.
+            If tracks_Applied_Serial <> vlc_Play_Serial AndAlso ApplyPreferredTracks() Then
+                tracks_Applied_Serial = vlc_Play_Serial
+            End If
+            ' The rate, applied ONCE per media for the same reason (119 §5.1.3):
+            ' re-applying on every resume would fight a speed the user just set.
+            ' A new file arrives here at 1x (explicit SetRate, never "assume");
+            ' a repeat reopen arrives at the kept rate.
+            If rate_Applied_Serial <> vlc_Play_Serial Then
+                rate_Applied_Serial = vlc_Play_Serial
+                ApplyPlaybackRate(playback_Rate, announce:=False)
+            End If
+            ApplyVideoTracksButtonVisibility()
+            Dim started_Paused As Boolean = pause_New_Video_When_Ready
+            If pause_New_Video_When_Ready Then
+                pause_New_Video_When_Ready = False
+                vlc_Media_Player.Pause()
+                ShowVideoControls()
+            End If
+            ' The first Playing of a media says what is happening now (121 UX-405, UX-416): playing, or - with
+            ' autoplay off - ready and paused; and a different sentence for audio. Not on a resume, not on a reopen.
+            If open_Announce_Pending Then
+                open_Announce_Pending = False
+                AnnouncePlaybackStarted(started_Paused)
+            End If
+            ' 119 Ф-6: a video over full screen joins the hiding modes.
+            UpdateCursorHideTimer()
+            If slideshow_Waits_For_Video AndAlso vlc_Media_Player IsNot Nothing AndAlso vlc_Media_Player.Length > 0 Then
+                slideshow_Video_Fallback_Timer.Stop()
+                slideshow_Video_Fallback_Timer.Interval = PlaybackRules.SlideshowVideoFallbackTimeoutMs(vlc_Media_Player.Length, playback_Rate)
+                slideshow_Video_Fallback_Timer.Start()
+            End If
 #End If
                            End Sub)
         Catch
@@ -759,6 +820,62 @@ Partial Public Class Main_Form
     ''' <summary>Which Play() the preferred tracks were applied for (audit 050 D-10).</summary>
     Private vlc_Play_Serial As Integer = 0
     Private tracks_Applied_Serial As Integer = -1
+
+    ' --- opening and buffering (121 UX-405) ---------------------------------------------------
+
+    ''' <summary>The name the status line uses for the media that was just opened.</summary>
+    Private vlc_Shown_Name As String = ""
+
+    ''' <summary>A new media was opened and its first Playing has not said so yet.</summary>
+    Private open_Announce_Pending As Boolean
+
+    ''' <summary>The last buffering step written to the status line (-1 = none), and whether the line shows one now.</summary>
+    Private buffering_Last_Step As Integer = -1
+    Private buffering_Showing As Boolean
+
+    ''' <summary>What the status line says once a media plays: for a video the sentence it always had, for audio its own
+    ''' ("Воспроизводится"), and for a media opened paused (autoplay off) that it is ready and waiting. A muted start says
+    ''' so (UX-416): the program can start silent by a remembered default, and nothing on the bar used to show it.</summary>
+    Private Sub AnnouncePlaybackStarted(startedPaused As Boolean)
+        If IsLiveBroadcastActive() Then Return
+        Dim sentence As String
+        If startedPaused Then
+            sentence = Localization.TF("Готово, на паузе: {0}", vlc_Shown_Name)
+        ElseIf IsAudioNowPlaying() Then
+            sentence = Localization.TF("Воспроизводится: {0}", vlc_Shown_Name)
+        Else
+            sentence = Localization.TF("Видео воспроизводится через VLC: {0}", vlc_Shown_Name)
+        End If
+        If is_Video_Muted Then sentence &= " - " & Localization.T("Звук выключен")
+        buffering_Showing = False
+        lbl_Status.Text = sentence
+    End Sub
+
+    ''' <summary>libvlc raised the cache level (0..100) on one of its own threads: post it to the UI thread, the same
+    ''' way the Playing event does, and only for the media on screen.</summary>
+    Private Sub Vlc_Media_Player_Buffering(sender As Object, e As LibVLCSharp.Shared.MediaPlayerBufferingEventArgs)
+        Dim event_Generation As Integer = vlc_Play_Generation
+        Dim cache As Single = e.Cache
+        Try
+            If Me.IsDisposed OrElse Not Me.IsHandleCreated Then Return
+            Me.BeginInvoke(Sub()
+                               If Not IsVlcEventCurrent(event_Generation) OrElse IsLiveBroadcastActive() Then Return
+                               Dim shown As Integer = TransportRules.NextBufferingStep(cache, buffering_Last_Step)
+                               If shown < 0 Then Return
+                               If shown >= 100 Then
+                                   ' Full again: go back to the ordinary sentence - but only if the line still shows ours.
+                                   buffering_Last_Step = -1
+                                   If buffering_Showing Then AnnouncePlaybackStarted(Not IsVlcActuallyPlaying())
+                                   Return
+                               End If
+                               buffering_Last_Step = shown
+                               buffering_Showing = True
+                               lbl_Status.Text = Localization.TF("Буферизация: {0} %", shown.ToString(Globalization.CultureInfo.InvariantCulture))
+                           End Sub)
+        Catch
+            ' The form can go away between the check and the post - nothing to do.
+        End Try
+    End Sub
 
     ''' <summary>media_Generation of the last left click that flipped playback, -1 when the
     ''' last click did not (audit 050 D-15).</summary>
@@ -820,6 +937,23 @@ Partial Public Class Main_Form
                                    OnLiveSessionStalled(event_Generation)
                                    Return
                                End If
+                               ' The defensive A-B path (119 Ф-4, decision Q119-2): inside an
+                               ' armed span reaching the end is never "end" - the watcher
+                               ' always wins because B cannot be set in the last 500 ms, and
+                               ' this catches a stalled UI thread or a lost tick. The video
+                               ' reopens at A without being marked finished and without
+                               ' advancing the slideshow.
+                               If ab_Loop.Phase = AbPhase.Armed Then
+                                   ReopenAtAbStart()
+                                   Return
+                               End If
+                               ' Repeat was switched on while this media played (121 UX-413): it was not started with the
+                               ' native loop, so the end of the pass is where it goes round - one reopen at the start,
+                               ' now WITH the loop, instead of a restart at the moment the user flipped the switch.
+                               If TransportRules.RepeatAtEnd(CurrentEffectiveRepeat(), video_Started_With_Repeat, IsLiveBroadcastActive()) Then
+                                   RestartCurrentVideoPreservingPosition(0.0F)
+                                   Return
+                               End If
                                ' Watched to the end: it opens from the start next time, and an
                                ' older mid-file resume point goes (audit 050 D-11).
                                RememberVideoFinished(vlc_Playing_Path)
@@ -851,6 +985,8 @@ Partial Public Class Main_Form
             End Try
         End If
 #Else
+        ' The press on the video ends the F10 panel mode, like a press on a picture (UX-105 of 123).
+        ChromeLeaveKeyboardMode()
         Select Case e.Button
             Case System.Windows.Forms.MouseButtons.Left
                 ' Play/pause moved to the left button - where every video player has put
