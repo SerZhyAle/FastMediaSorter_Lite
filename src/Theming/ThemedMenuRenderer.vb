@@ -24,8 +24,13 @@ Friend NotInheritable Class ThemedMenuRenderer
     ''' <summary>An item whose colour the code chose keeps it; one left at a system colour takes
     ''' the palette's ink, and a disabled one the disabled ink.</summary>
     Protected Overrides Sub OnRenderItemText(e As ToolStripItemTextRenderEventArgs)
-        If e.Item IsNot Nothing AndAlso (e.Item.ForeColor.IsSystemColor OrElse e.Item.ForeColor.IsEmpty) Then
-            e.TextColor = If(e.Item.Enabled, _palette.TextPrimary, _palette.TextDisabled)
+        If e.Item IsNot Nothing Then
+            Dim role As ThemeRole = ThemePalette.RoleForColor(e.Item.ForeColor, False)
+            If role <> ThemeRole.None OrElse e.Item.ForeColor.IsEmpty Then
+                Dim ink As Color = If(e.Item.Enabled, If(role = ThemeRole.None, _palette.TextPrimary, _palette.ColorOf(role)), _palette.TextDisabled)
+                Dim surface As Color = If(e.Item.Selected, _palette.SurfaceSelected, _palette.SurfaceWindow)
+                e.TextColor = If(e.Item.Enabled, ThemePalette.ReadableText(ink, surface), ink)
+            End If
         End If
         MyBase.OnRenderItemText(e)
     End Sub

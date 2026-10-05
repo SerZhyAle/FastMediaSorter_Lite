@@ -23,7 +23,7 @@ Imports System.Windows.Forms
 ''' the settings window as its ONLY caller, the console did not have to be a window at all.
 ''' It is the big one - four state lines, up to nine buttons, three paragraphs of notes,
 ''' against two checkboxes and a spinner - which is exactly why it starts folded: the
-''' dialog opens at the size of the two small groups and grows only if you ask for it.
+''' dialog initially fits the small groups; additional content scrolls within the user's window size.
 '''
 ''' The handlers moved verbatim, split semantics included: the connection cap persists on
 ''' every change (cheap, local) but is pushed to the worker on Leave, so holding the spinner
@@ -188,6 +188,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' The two small groups open, the big one folded (see the class remark).
         _secStartup.Expanded = True
         _secNetwork.Expanded = True
+        RestoreSettingsUiContext()
         _built = True
 
         DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
@@ -197,7 +198,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         MyBase.OnLoad(e)
         FitToContent()
         DpiLayout.ClampToWorkingArea(Me)
-        DpiLayout.CenterOnOwner(Me)
+        If Not RestoreSettingsWindowBounds() Then DpiLayout.CenterOnOwner(Me)
     End Sub
 
     ''' <summary>The Запуск group: whether the program starts, and whether it shows itself
@@ -216,6 +217,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         lblAutostartNote = New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
             .ForeColor = ThemeService.Palette.TextMuted, .Margin = New Padding(0, 2, 0, 2)}
         sec.AddBodyRow(lblAutostartNote)
+        CheckBoxLayout.BindHint(chkAutostart, lblAutostartNote)
 
         ' Off by default, and it governs EVERY plain start - the logon one, a double-click on
         ' the exe, a script - so unticked really means "no window" (TrayContext). Only an
@@ -238,9 +240,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         cmbTheme.Items.AddRange(New Object() {Localization.T("Как в системе"), Localization.T("Светлая"), Localization.T("Тёмная")})
         cmbTheme.SelectedIndex = CInt(ThemeService.Mode)
         AddHandler cmbTheme.SelectedIndexChanged, AddressOf OnThemeChanged
-        themeRow.Controls.Add(lblTheme)
-        themeRow.Controls.Add(cmbTheme)
-        sec.AddBodyRow(themeRow)
+        sec.AddBodyRow(SettingsEditorRow(lblTheme, cmbTheme, themeRow.Margin))
         toolTip.SetToolTip(cmbTheme, Localization.T("Светлая, тёмная или как в Windows - для всех окон просмотрщика и менеджера общего доступа."))
 
         ' The UI language, beside the theme - the two things that change how every window of
@@ -257,9 +257,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         cmbLanguage.Items.AddRange(Localization.Names)
         cmbLanguage.SelectedIndex = Localization.CurrentIndex
         AddHandler cmbLanguage.SelectedIndexChanged, AddressOf OnUiLanguageChanged
-        langRow.Controls.Add(lblLanguage)
-        langRow.Controls.Add(cmbLanguage)
-        sec.AddBodyRow(langRow)
+        sec.AddBodyRow(SettingsEditorRow(lblLanguage, cmbLanguage, langRow.Margin))
     End Sub
 
     ''' <summary>The combo's index IS the language's index in Localization.Codes. A choice
@@ -343,9 +341,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             .Width = 84, .Margin = New Padding(0, 2, 0, 0)}
         AddHandler numMaxConns.ValueChanged, AddressOf OnMaxConnsChanged
         AddHandler numMaxConns.Leave, AddressOf OnMaxConnsCommit
-        pnlConns.Controls.Add(lblConns)
-        pnlConns.Controls.Add(numMaxConns)
-        sec.AddBodyRow(pnlConns)
+        sec.AddBodyRow(SettingsEditorRow(lblConns, numMaxConns, pnlConns.Margin))
         toolTip.SetToolTip(numMaxConns, Localization.T("Сколько устройств могут быть подключены одновременно. По умолчанию 10; можно от 1 до 99999. Значение меньше 2 может кратко отклонять переподключение телефона."))
 
         ' The listen port (015_SPECIFICATION_SHARE_MANUAL_PORT.md). A plain number, not a
@@ -372,8 +368,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddHandler numPort.ValueChanged, AddressOf OnPortValueChanged
         AddHandler btnApplyPort.Click, AddressOf OnApplyPort
         AddHandler lnkFreePort.LinkClicked, AddressOf OnPickFreePort
-        pnlPort.Controls.Add(lblPort)
-        pnlPort.Controls.Add(numPort)
+        sec.AddBodyRow(SettingsEditorRow(lblPort, numPort, pnlPort.Margin))
         pnlPort.Controls.Add(btnApplyPort)
         pnlPort.Controls.Add(lnkFreePort)
         sec.AddBodyRow(pnlPort)
@@ -403,6 +398,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         lblLanOnlyNote = New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
             .ForeColor = ThemeService.Palette.TextMuted, .Margin = New Padding(0, 2, 0, 0)}
         sec.AddBodyRow(lblLanOnlyNote)
+        CheckBoxLayout.BindHint(chkLanOnly, lblLanOnlyNote)
         toolTip.SetToolTip(chkLanOnly, Localization.T("Относится ко всей раздаче, а не к одному коду: пока включено, программа не просит роутер открыть порт (UPnP/NAT-PMP) и не даёт адрес из интернета. Адрес из интернета, уже вписанный в выданные коды, перестаёт работать; по локальной сети всё работает как раньше."))
 
         ' Calm, factual reachability note (decision F): same-network devices can reach the
@@ -458,6 +454,19 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     ' --- layout helpers ---------------------------------------------------------
 
+    Private Shared Function SettingsEditorRow(caption As Label, editor As Control, margin As Padding) As Control
+        Dim row As New TableLayoutPanel With {.AutoSize = True, .ColumnCount = 2,
+            .Dock = DockStyle.Top, .Margin = margin, .Padding = Padding.Empty}
+        row.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
+        row.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 180))
+        caption.MaximumSize = New Size(PageWidth - 260, 0)
+        caption.Anchor = AnchorStyles.Left
+        editor.Anchor = AnchorStyles.Right
+        row.Controls.Add(caption, 0, 0)
+        row.Controls.Add(editor, 1, 0)
+        Return row
+    End Function
+
     Private Shared Sub AddRow(tlp As TableLayoutPanel, c As Control)
         Dim row As Integer = tlp.RowCount
         tlp.RowCount = row + 1
@@ -466,11 +475,8 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     ''' <summary>
-    ''' Sizes the dialog to whatever the groups currently need, capped by the screen. Only
-    ''' the HEIGHT follows the accordion: the width is set once by the hosting group's prose,
-    ''' and a dialog that also changed width per group would be worse than a little air on
-    ''' the two narrow ones. The top edge stays put, so the Close button moves with the
-    ''' bottom edge instead of jumping out from under the cursor.
+    ''' Fits the initial dialog to content, capped by the screen. Called only on load;
+    ''' subsequent group changes preserve user geometry and scroll the content instead.
     ''' </summary>
     Private Sub FitToContent()
         If _root Is Nothing Then Return
@@ -479,7 +485,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' ancestor-aware property). Reading it there measured the page as empty and the
         ' dialog opened at its 220 px minimum with a scrollbar over content that fits.
         Dim content As Integer = 0
-        For Each sec As CollapsibleSection In {_secStartup, _secNetwork, _secHosting}
+        For Each sec As CollapsibleSection In {_secStartup, _secNetwork, _secHosting, _secHelp}
             content += sec.PreferredSize.Height + sec.Margin.Vertical
         Next
         Dim needed As Integer = content + _root.Padding.Vertical + _strip.Height +
@@ -491,11 +497,12 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     ''' <summary>Unfolding the hosting group is the moment its live probe is worth paying
-    ''' for - and the moment the dialog has to make room for it.</summary>
+    ''' for. The content pane makes room without resizing the window.</summary>
     Private Sub OnSectionExpandedChanged(sender As Object, e As EventArgs)
         If Not _built Then Return
         If _secHosting IsNot Nothing AndAlso _secHosting.Expanded Then EnsureHostingLoaded()
-        FitToContent()
+        ' WINDOWS-UI section 5: preserve user geometry; the content pane scrolls.
+        _root.PerformLayout()
     End Sub
 
     ' --- state ------------------------------------------------------------------

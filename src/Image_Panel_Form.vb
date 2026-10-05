@@ -21,6 +21,19 @@ Partial Public Class Image_Panel_Form
     End Property
 
     Private Sub ApplyTheme(palette As ThemePalette) Implements IThemeAware.ApplyTheme
+        ' The picture grid remains content-colored; command/status chrome follows the app.
+        If toolbar IsNot Nothing Then
+            ThemeApplier.ApplyTree(toolbar, palette)
+            toolbar.BackColor = palette.SurfaceWindow
+            toolbar.ForeColor = palette.TextPrimary
+        End If
+        If strip IsNot Nothing Then
+            ThemeApplier.ApplyTree(strip, palette)
+            strip.BackColor = palette.SurfaceWindow
+            strip.ForeColor = palette.TextPrimary
+        End If
+        ThemeApplier.ApplyNativeTree(Me, palette.IsDark)
+        ThemeApplier.ApplyTitleBar(Me, palette.IsDark)
     End Sub
 #End If
 

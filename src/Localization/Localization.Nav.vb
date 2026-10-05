@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 ' <summary>
 ' The .NET 10 settings shell's left-hand navigation and its page headers - the
@@ -7,6 +7,7 @@ Option Strict On
 Partial Public NotInheritable Class Localization
 
     Private Shared Sub AddNavStrings()
+        Add("Сервер и ресурсы", "Server and resources", "Сервер і ресурси", "Server und Ressourcen", "Server e risorse", "Servidor y recursos", "Serveur et ressources", "Servidor e recursos", "الخادم والموارد", "सर्वर और संसाधन", "সার্ভার ও রিসোর্স", "سرور اور وسائل", "服务器和资源")
         Add("Общие", "General", "Загальні", "Allgemein", "Generali", "General", "Général", "Geral", "عام", "सामान्य", "সাধারণ", "عمومی", "常规")
         Add("Хранилище", "Storage", "Сховище", "Speicher", "Archiviazione", "Almacenamiento", "Stockage", "Armazenamento", "التخزين", "भंडारण", "সঞ্চয়স্থান", "ذخیرہ", "存储")
         Add("Основные настройки", "Basic settings", "Основні налаштування", "Grundeinstellungen", "Impostazioni di base", "Ajustes básicos", "Paramètres de base", "Configurações básicas", "الإعدادات الأساسية", "मूल सेटिंग", "মৌলিক সেটিংস", "بنیادی ترتیبات", "基本设置")

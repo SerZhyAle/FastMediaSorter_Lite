@@ -33,6 +33,17 @@ Public NotInheritable Class ThemeService
     Private Shared _broadcastMessage As Integer
     Private Shared _marshal As Control
     Private Shared ReadOnly Themed As New ConditionalWeakTable(Of Form, Object)()
+    Private Shared _revision As Integer
+
+    Private NotInheritable Class AppliedTheme
+        Public ReadOnly Palette As ThemePalette
+        Public ReadOnly Revision As Integer
+
+        Public Sub New(palette As ThemePalette, revision As Integer)
+            Me.Palette = palette
+            Me.Revision = revision
+        End Sub
+    End Class
 
     ''' <summary>Raised on the UI thread after the resolved theme changed and every open window
     ''' has been repainted.</summary>
@@ -131,10 +142,11 @@ Public NotInheritable Class ThemeService
     End Function
 
     ''' <summary>Re-resolves and, only if the answer changed, repaints every open window.</summary>
-    Private Shared Sub Refresh()
+    Private Shared Sub Refresh(Optional force As Boolean = False)
         Dim dark As Boolean = ResolveNow()
-        If dark = _palette.IsDark Then Return
+        If dark = _palette.IsDark AndAlso Not force Then Return
         _palette = ThemePalette.ForDark(dark)
+        _revision += 1
         ApplyRenderer()
         Dim forms As New List(Of Form)()
         For Each f As Form In Application.OpenForms
@@ -157,11 +169,13 @@ Public NotInheritable Class ThemeService
 
     Private Shared Sub ApplyForm(form As Form)
         If form.IsDisposed Then Return
-        Themed.AddOrUpdate(form, Nothing)
+        CheckBoxLayout.ApplyTree(form)
+        Themed.AddOrUpdate(form, New AppliedTheme(_palette, _revision))
         Dim aware As IThemeAware = TryCast(form, IThemeAware)
         Try
             If aware IsNot Nothing AndAlso aware.ThemesItself Then
                 aware.ApplyTheme(_palette)
+                ThemeApplier.ApplyButtonCaptions(form, _palette)
                 Return
             End If
             form.SuspendLayout()
@@ -172,6 +186,7 @@ Public NotInheritable Class ThemeService
             End Try
             ThemeApplier.ApplyTitleBar(form, _palette.IsDark)
             If aware IsNot Nothing Then aware.ApplyTheme(_palette)
+            ThemeApplier.ApplyButtonCaptions(form, _palette)
             form.Invalidate(True)
         Catch ex As Exception
             ' The theme is decoration: a window it cannot paint still has to work.
@@ -188,7 +203,8 @@ Public NotInheritable Class ThemeService
             Case Else
                 Return
         End Select
-        RunOnUi(AddressOf Refresh)
+        ' System colors/high contrast can change while resolved Light/Dark stays the same.
+        RunOnUi(Sub() Refresh(force:=True))
     End Sub
 
     Private Shared Sub RunOnUi(action As Action)
@@ -223,7 +239,13 @@ Public NotInheritable Class ThemeService
                 Dim f As Form = TryCast(c, Form)
                 If f Is Nothing Then f = c.FindForm()
                 Dim seen As Object = Nothing
-                If f IsNot Nothing AndAlso Not Themed.TryGetValue(f, seen) Then ApplyForm(f)
+                ' Reused/hidden windows may have missed Refresh's OpenForms enumeration.
+                ' Compare the applied palette so their first new paint catches up as well.
+                If f IsNot Nothing Then
+                    Themed.TryGetValue(f, seen)
+                    Dim applied As AppliedTheme = TryCast(seen, AppliedTheme)
+                    If applied Is Nothing OrElse applied.Palette IsNot _palette OrElse applied.Revision <> _revision Then ApplyForm(f)
+                End If
             ElseIf _broadcastMessage <> 0 AndAlso m.Msg = _broadcastMessage Then
                 If m.WParam.ToInt64() <> Environment.ProcessId Then OnBroadcast()
             End If

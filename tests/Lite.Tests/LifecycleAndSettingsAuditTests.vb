@@ -34,8 +34,13 @@ Public Class LifecycleAndSettingsAuditTests
         Assert.DoesNotContain("Dispose()", closing)
 
         Dim closed As String = MethodBody(lifecycle, "Form1_FormClosed")
-        Assert.Contains("SlideShowTimer.Dispose()", closed)
-        Assert.Contains("libVlc.Dispose()", closed)
+        ' The handler delegates to CloseTeardown, guarded so no teardown fault can abort the
+        ' close (a fault escaping OnFormClosed leaves a window no close attempt can finish);
+        ' the teardown itself still runs only on the FormClosed path this audit pins.
+        Assert.Contains("CloseTeardown(e)", closed)
+        Dim teardown As String = MethodBody(lifecycle, "CloseTeardown")
+        Assert.Contains("SlideShowTimer.Dispose()", teardown)
+        Assert.Contains("libVlc.Dispose()", teardown)
     End Sub
 
     ' ---------------------------------------------------------------- F-06 ----

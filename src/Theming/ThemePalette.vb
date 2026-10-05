@@ -316,6 +316,24 @@ Public NotInheritable Class ThemePalette
         Return If(role = ThemeRole.None, value, ColorOf(role))
     End Function
 
+    ''' <summary>Text uses at least 4.5:1 on its actual surface. Semantic glyph tones stay
+    ''' unchanged; a text use may need a darker/lighter tone of the same role.</summary>
+    Public Shared Function ReadableText(ink As Color, surface As Color) As Color
+        If AccentColors.Contrast(ink, surface) >= 4.5R Then Return ink
+        Dim endpoint As Color = If(AccentColors.Contrast(System.Drawing.Color.White, surface) >
+                                  AccentColors.Contrast(System.Drawing.Color.Black, surface),
+                                  System.Drawing.Color.White, System.Drawing.Color.Black)
+        For stepIndex As Integer = 1 To 100
+            Dim amount As Double = stepIndex / 100.0R
+            Dim candidate As Color = System.Drawing.Color.FromArgb(
+                CInt(Math.Round(ink.R + (CInt(endpoint.R) - CInt(ink.R)) * amount)),
+                CInt(Math.Round(ink.G + (CInt(endpoint.G) - CInt(ink.G)) * amount)),
+                CInt(Math.Round(ink.B + (CInt(endpoint.B) - CInt(ink.B)) * amount)))
+            If AccentColors.Contrast(candidate, surface) >= 4.5R Then Return candidate
+        Next
+        Return endpoint
+    End Function
+
     ''' <summary>
     ''' Which role a system colour stood for when a control carried it (spec 060 rule 7).
     ''' <paramref name="asBackground"/> separates the two readings of the same colour -

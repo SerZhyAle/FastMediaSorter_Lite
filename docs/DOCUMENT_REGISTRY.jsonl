@@ -9,6 +9,7 @@
 {"path": "docs/README.md", "topic": "README", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/contracts/APP-ACTIVATION.md", "topic": "APP-ACTIVATION", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for APP-ACTIVATION"], "role": "source"}
 {"path": "docs/contracts/APP-UX.md", "topic": "APP-UX", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for APP-UX"], "role": "source"}
+{"path": "docs/contracts/ANYWHERE-ACCESS.md", "topic": "ANYWHERE-ACCESS", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for ANYWHERE-ACCESS"], "role": "source"}
 {"path": "docs/contracts/AUTOMATED-CHECKS.md", "topic": "AUTOMATED-CHECKS", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for AUTOMATED-CHECKS"], "role": "source"}
 {"path": "docs/contracts/CAPTURE-OUTPUT.md", "topic": "CAPTURE-OUTPUT", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CAPTURE-OUTPUT"], "role": "source"}
 {"path": "docs/contracts/CLIPBOARD-GUARD.md", "topic": "CLIPBOARD-GUARD", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CLIPBOARD-GUARD"], "role": "source"}
@@ -98,3 +99,4 @@
 {"path": "topics.html", "topic": "topics", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "docs/contracts/DISK-SHARE.md", "topic": "DISK-SHARE", "area": "contracts", "triggers": ["Adoption, disk lifecycle, ownership, bundle, hosting or conformance changes for DISK-SHARE"], "role": "source"}
+{"path":"docs/guides/WINDOWS_UI_AUDIT.md","topic":"Windows UI contract audit","area":"engineering","triggers":["Windows viewer, settings, server dialogs, menu/theme/DPI or UI acceptance changes"],"role":"source"}

@@ -13,6 +13,7 @@ Imports Xunit
 ''' The EXIF fixtures are built in memory: a real photo per test would make the
 ''' suite depend on somebody's holiday pictures.
 ''' </summary>
+<Collection("LocalizationState")>
 Public Class FileDetailsTests
 
     ' --- formatters -----------------------------------------------------------------------

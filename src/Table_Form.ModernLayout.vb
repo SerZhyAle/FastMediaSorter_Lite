@@ -55,7 +55,6 @@ Partial Public Class Table_Form
     Private modernDataLayoutBuilt As Boolean
     Private modernTranslationPage As TabPage
     Private modernAudioPage As TabPage
-    Private modernSftpPage As TabPage
     Private modernAboutPage As TabPage
     ' The shared value column of each page's row grid, in device pixels (127 §3.1.3):
     ' recomputed from the widest editor of the page on every resize, language change and
@@ -77,7 +76,6 @@ Partial Public Class Table_Form
         Public Description As Label
         Public Editor As Control
         Public Compact As Boolean
-        Public Stacked As Boolean
         Public Arranging As Boolean
         ' The row grid of 127 §3.1: which page's shared value column this row belongs to,
         ' and the muted unit suffix that sits immediately left of a numeric editor.
@@ -464,6 +462,7 @@ Partial Public Class Table_Form
                                            ConfigureModernCheckbox(check, row)
                                        Next
                                    Next
+                                   StyleModernSettingsControls()
                                    LayoutModernSettingsPages()
                                    ' The nav glyphs are baked bitmaps at Sp(20): a tier change
                                    ' must re-render them, or the old size survives the DPI
@@ -493,7 +492,7 @@ Partial Public Class Table_Form
     Private Shared ReadOnly ModernNavControlNames As String() = {
         "settingsNavGeneral", "settingsNavRecipients", "settingsNavViewing", "settingsNavVideo", "settingsNavAudio", "settingsNavFiles",
         "settingsNavResources",
-        "settingsNavOcr", "settingsNavTranslation", "settingsNavStorage", "settingsNavSftp", "settingsNavAbout"}
+        "settingsNavOcr", "settingsNavTranslation", "settingsNavStorage", "settingsNavAbout"}
 
     Private ReadOnly modernNavTips As New ToolTip()
 
@@ -502,8 +501,8 @@ Partial Public Class Table_Form
         ' mouse floor): nine entries fit the window's minimum height with room to spare.
         Dim top As Integer = 0
         Dim navLabels As String() = {"General", "Destination folders", "Images", "Video", "Audio", "Files and system",
-                                     "Resources",
-                                     "OCR", "Translation", "Storage", "Android / SFTP", "About"}
+                                     "Server and resources",
+                                     "OCR", "Translation", "Storage", "About"}
         Dim navigation As New Panel With {.Dock = DockStyle.Fill, .AutoScroll = True, .Padding = Padding.Empty}
         Dim branding As New Panel With {.Dock = DockStyle.Top, .Height = Sp(66)}
         branding.Controls.Add(modernProductLabel)
@@ -565,8 +564,9 @@ Partial Public Class Table_Form
         Dim padded As New Bitmap(tier + gap, tier)
         Try
             padded.SetResolution(96.0F, 96.0F)
-            Dim ink As Color = Nothing
-            If Not SettingsNavIconPalette.TryGetInk(button.Name, settingsDarkMode, ink) Then ink = button.ForeColor
+            Dim ink As Color = SettingsNavIconPalette.ResolveInk(button.Name, settingsDarkMode,
+                {button.BackColor, button.FlatAppearance.MouseOverBackColor, button.FlatAppearance.MouseDownBackColor},
+                button.ForeColor, SystemInformation.HighContrast)
             Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, tier, ink, AddressOf RuntimeBootstrap.OpenBundledAsset)
                 Using g As Graphics = Graphics.FromImage(padded)
                     g.DrawImageUnscaled(glyph, 0, 0)
@@ -586,18 +586,16 @@ Partial Public Class Table_Form
         modernStoragePage = New TabPage With {.Name = "Tab_Page_Storage", .Text = "Storage"}
         modernAudioPage = New TabPage With {.Name = "Tab_Page_Audio", .Text = "Audio"}
         modernTranslationPage = New TabPage With {.Name = "Tab_Page_Translation", .Text = "Translation"}
-        modernSftpPage = New TabPage With {.Name = "Tab_Page_Sftp", .Text = "Android / SFTP"}
         modernAboutPage = New TabPage With {.Name = "Tab_Page_About", .Text = "About"}
-        modernResourcesPage = New TabPage With {.Name = "Tab_Page_Resources", .Text = "Resources"}
+        modernResourcesPage = New TabPage With {.Name = "Tab_Page_Resources", .Text = "Server and resources"}
         Tab_Control.TabPages.Insert(3, modernAudioPage)
         ' «Ресурсы» between Files (Tab_Page_4) and OCR (Tab_Page_5): Insert(5) lands right there
         ' (ticket 118 Q118-5), and the nav array above says the same order.
         Tab_Control.TabPages.Insert(5, modernResourcesPage)
         Tab_Control.TabPages.Add(modernTranslationPage)
-        Tab_Control.TabPages.Add(modernSftpPage)
         Tab_Control.TabPages.Add(modernAboutPage)
         Tab_Control.TabPages.Insert(0, modernGeneralPage)
-        Tab_Control.TabPages.Insert(Tab_Control.TabPages.IndexOf(modernSftpPage), modernStoragePage)
+        Tab_Control.TabPages.Insert(Tab_Control.TabPages.IndexOf(modernAboutPage), modernStoragePage)
     End Sub
 
     Private Sub ModernSettingsNavClicked(sender As Object, e As EventArgs)
@@ -699,11 +697,10 @@ Partial Public Class Table_Form
              Localization.T("Видео"),
              Localization.T("Аудио"),
              Localization.T("Файлы"),
-             Localization.T("Ресурсы"),
+             Localization.T("Сервер и ресурсы"),
              Localization.T("OCR"),
              Localization.TC("settings", "Перевод"),
              Localization.T("Хранилище"),
-             Localization.T("Android / SFTP"),
              Localization.T("О программе")}
         For index As Integer = 0 To modernSettingsNavButtons.Length - 1
             modernSettingsNavButtons(index).Text = navLabels(index)
@@ -735,11 +732,10 @@ Partial Public Class Table_Form
              Localization.T("Дорожки и субтитры") & ". " & Localization.T("Информация и управление") & ".",
              Localization.T("Обложки, управление и поведение аудиодорожек."),
              Localization.T("Операции с файлами") & ". " & Localization.T("Типы файлов") & ".",
-             Localization.T("Серверы и сетевые папки: добавить, удалить, проверить, импортировать и передать на другой компьютер."),
+             Localization.T("Серверы и сетевые папки") & ". " & Localization.T("SFTP-сервер и мобильное приложение Android."),
              Localization.T("Распознавание текста на изображениях и параметры OCR."),
              Localization.T("Сервис и параметры перевода распознанного текста."),
              Localization.T("Управление кэшем"),
-             Localization.T("SFTP-сервер и мобильное приложение Android."),
              Localization.T("Версия приложения, документация и ссылки проекта.")}
 
         If index >= modernSettingsNavButtons.Length Then index = 0
@@ -758,6 +754,12 @@ Partial Public Class Table_Form
             button.ForeColor = If(selected, SettingsText, SettingsSidebarMuted)
             button.FlatAppearance.MouseOverBackColor = If(selected, BlendSettingsColor(SettingsSidebar, SettingsAccent, 0.30F), BlendSettingsColor(SettingsSidebar, SettingsAccent, 0.18F))
             button.FlatAppearance.MouseDownBackColor = If(selected, BlendSettingsColor(SettingsSidebar, SettingsAccent, 0.40F), BlendSettingsColor(SettingsSidebar, SettingsAccent, 0.28F))
+            If SystemInformation.HighContrast Then
+                button.BackColor = If(selected, SettingsAccent, SettingsSidebar)
+                button.ForeColor = If(selected, SettingsOnAccent, SettingsSidebarMuted)
+                button.FlatAppearance.MouseOverBackColor = button.BackColor
+                button.FlatAppearance.MouseDownBackColor = button.BackColor
+            End If
             RenderModernNavGlyph(button)
         Next
     End Sub
@@ -1286,15 +1288,14 @@ Partial Public Class Table_Form
         Return flow
     End Function
 
-    ''' <summary>The two column thresholds move with the interface scale (§4.1) - at 150 %
-    ''' a row genuinely needs half again as much room before it can be halved. The page's
-    ''' shared value column is recomputed here from the widest editor it has to hold
+    ''' <summary>The page's preferred value column follows the interface scale (§4.1)
+    ''' and is recomputed here from the widest editor it has to hold
     ''' (127 §3.1.3), before the groups pass it down to their rows.</summary>
     Private Sub ResizeModernPageItems(flow As FlowLayoutPanel)
         Dim width As Integer = Math.Max(1, flow.ClientSize.Width - flow.Padding.Horizontal - Sp(18))
         Dim widestEditor As Integer = 0
         For Each row As ModernSettingRow In modernSettingsRows
-            If row.PageFlow IsNot flow OrElse row.Editor Is Nothing Then Continue For
+            If row.PageFlow IsNot flow OrElse row.Editor Is Nothing OrElse TypeOf row.Editor Is CheckBox Then Continue For
             widestEditor = Math.Max(widestEditor, ToLogicalPx(MeasureModernEditorControl(row)))
         Next
         pageValueColumns(flow) = Sp(SettingsRowGridRules.PageValueColumn(widestEditor))
@@ -1328,10 +1329,8 @@ Partial Public Class Table_Form
     ''' <summary>
     ''' One regular settings row of the two-column grid (127 §3.1): the caption and its
     ''' hint wrap inside the label column on the left, the editor sits in the page's
-    ''' shared value column on the right, flush to the row's right padding. Below the
-    ''' stacked threshold - or when the shared column would leave the labels too little
-    ''' room - the editor moves under the hint instead; only fill-eligible editors (text)
-    ''' stretch there, a command button keeps its text-fitted width.
+    ''' shared value column on the right, flush to the row's right padding. The column
+    ''' shrinks in a narrow window to keep the editor beside the labels.
     ''' </summary>
     Private Sub AddSettingRow(flow As FlowLayoutPanel, key As String, editor As Control, editorWidth As Integer, Optional compact As Boolean = False)
         Dim host As New Panel With {.Height = Sp(56), .Margin = New Padding(0, 0, 6, 6), .BackColor = SettingsSurface, .Padding = New Padding(12, 5, 12, 5),
@@ -1347,9 +1346,8 @@ Partial Public Class Table_Form
         ReparentModernSettingsControl(editor, host)
 
         If check IsNot Nothing Then
-            ' Boolean rows follow the same grid: the box sits in the value column, flush
-            ' right, so every caption starts at the same x (127 §3.1.6). Whole-row clicks
-            ' still toggle through the labels' tags.
+            ' Boolean rows keep the box immediately before the caption and the hint
+            ' beneath the caption. Label clicks toggle the original control.
             ConfigureModernCheckbox(check, row)
             title.Cursor = Cursors.Hand
             description.Cursor = Cursors.Hand
@@ -1533,8 +1531,8 @@ Partial Public Class Table_Form
     End Function
 
     ''' <summary>
-    ''' Sizes one row: the two-column grid at and above the stacked threshold, the stacked
-    ''' fallback below it. Also the single owner of the host's height, so the Resize
+    ''' Sizes one row with the editor beside its labels at every window width.
+    ''' Also the single owner of the host's height, so the Resize
     ''' handler, localization and layout passes all end here.
     ''' </summary>
     Private Sub SizeModernSettingRow(row As ModernSettingRow)
@@ -1543,15 +1541,17 @@ Partial Public Class Table_Form
         Try
             Dim host As Panel = DirectCast(row.Host, Panel)
             Dim hostWidth As Integer = host.ClientSize.Width
-            Dim valueColumn As Integer = PageValueColumnWidth(row.PageFlow)
-            Dim twoColumn As Boolean = row.Editor IsNot Nothing AndAlso
-                SettingsRowGridRules.IsTwoColumn(ToLogicalPx(hostWidth), ToLogicalPx(valueColumn))
+            Dim valueColumn As Integer = Sp(SettingsRowGridRules.FitValueColumn(
+                ToLogicalPx(hostWidth), ToLogicalPx(PageValueColumnWidth(row.PageFlow))))
+            Dim check As CheckBox = TryCast(row.Editor, CheckBox)
+            Dim twoColumn As Boolean = row.Editor IsNot Nothing AndAlso check Is Nothing
 
             ' The shared label column: everything left of the page's value column.
             Dim labelLeft As Integer = Sp(14)
+            If check IsNot Nothing Then labelLeft += check.Width + Sp(CheckBoxLayout.CaptionGapLogical)
             Dim labelWidth As Integer = If(twoColumn,
                 Math.Max(Sp(40), Sp(SettingsRowGridRules.LabelColumnWidth(ToLogicalPx(hostWidth), ToLogicalPx(valueColumn)))),
-                Math.Max(Sp(40), hostWidth - Sp(28)))
+                Math.Max(Sp(40), hostWidth - labelLeft - Sp(14)))
 
             ' Heights come from the fonts, so they follow the interface scale on their own.
             row.Title.AutoEllipsis = False
@@ -1562,6 +1562,7 @@ Partial Public Class Table_Form
                 New Size(Math.Max(1, labelWidth), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(4))
             Dim titleTop As Integer = Sp(7)
             If twoColumn Then titleTop = Math.Max(titleTop, Sp(4) + (row.Editor.Height - titleHeight) \ 2)
+            If check IsNot Nothing Then titleTop = Math.Max(titleTop, Sp(4) + (check.Height - titleHeight) \ 2)
             row.Title.SetBounds(labelLeft, titleTop, labelWidth, titleHeight)
             row.Description.SetBounds(labelLeft, row.Title.Bottom + Sp(2), labelWidth, descriptionHeight)
             row.Description.AutoEllipsis = True
@@ -1569,6 +1570,13 @@ Partial Public Class Table_Form
             Dim editor As Control = row.Editor
             If editor Is Nothing Then
                 host.Height = row.Description.Bottom + Sp(7)
+                Return
+            End If
+
+            If check IsNot Nothing Then
+                check.Left = Sp(14)
+                check.Top = row.Title.Top + (row.Title.Height - check.Height) \ 2
+                host.Height = Math.Max(row.Description.Bottom + Sp(7), check.Bottom + Sp(8))
                 Return
             End If
 
@@ -1597,24 +1605,6 @@ Partial Public Class Table_Form
                     row.UnitLabel.BringToFront()
                 End If
                 host.Height = Math.Max(row.Description.Bottom + Sp(7), editor.Top + editor.Height + Sp(8))
-                row.Stacked = False
-            Else
-                Dim stackedLogical As Integer = SettingsRowGridRules.StackedEditorWidth(
-                    ToLogicalPx(controlWidth), ToLogicalPx(Math.Max(1, hostWidth - Sp(28))), RowEditorFillsColumn(row))
-                controlWidth = Math.Max(Sp(24), Math.Min(Sp(stackedLogical), hostWidth - Sp(28) - unitWidth))
-                editor.Width = controlWidth
-                If row.UnitLabel IsNot Nothing Then
-                    row.UnitLabel.Height = editor.Height
-                    row.UnitLabel.Left = Sp(14)
-                    row.UnitLabel.Top = row.Description.Bottom + Sp(6)
-                    row.UnitLabel.BringToFront()
-                    editor.Left = Sp(14) + row.UnitLabel.Width + Sp(4)
-                Else
-                    editor.Left = Sp(14)
-                End If
-                editor.Top = row.Description.Bottom + Sp(6)
-                host.Height = editor.Bottom + Sp(10)
-                row.Stacked = True
             End If
         Finally
             row.Arranging = False
@@ -1720,7 +1710,8 @@ Partial Public Class Table_Form
         Dim flow As FlowLayoutPanel = CreateModernPageFlow(modernResourcesPage)
         AddInformationBlock(flow, "resources_intro")
 
-        resourcesPanel = New Resource_List_Panel(settingsScale, withPrimaryOpen:=True, deviceScale:=True) With {
+        resourcesPanel = New Resource_List_Panel(settingsScale, withPrimaryOpen:=True, deviceScale:=True,
+                                                 openShareManager:=Sub() Main_Form.OpenShareManagerWindow()) With {
             .Dock = DockStyle.Fill, .Tag = "modern:full", .BackColor = SettingsSurface}
         AddHandler resourcesPanel.ResourcesChanged,
             Sub(removedIds As IReadOnlyList(Of String))
@@ -1765,6 +1756,10 @@ Partial Public Class Table_Form
                 If sibling IsNot host Then occupied += sibling.Height + sibling.Margin.Vertical
             Next
         End If
+        Dim serverGroup As SettingsCollapsibleGroup = Nothing
+        If settingsGroups.TryGetValue("resources/server", serverGroup) Then
+            occupied += serverGroup.Height + serverGroup.Margin.Vertical
+        End If
         host.Height = Math.Max(resourcesPanel.MinimumPageHeight, flow.ClientSize.Height - occupied)
     End Sub
 
@@ -1784,7 +1779,7 @@ Partial Public Class Table_Form
     End Property
 
     Private Sub BuildModernSftpPage()
-        Dim flow As FlowLayoutPanel = CreateModernPageFlow(modernSftpPage)
+        Dim flow As FlowLayoutPanel = PageFlow(modernResourcesPage)
         AddInformationBlock(flow, "sftp_intro")
         If btn_Share_Manager IsNot Nothing Then AddSettingRow(flow, "sftp_manager", btn_Share_Manager, 230, True)
         AddProjectLinkRow(flow, "sftp_guide", "https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html")
@@ -1869,7 +1864,7 @@ Partial Public Class Table_Form
             SettingsCanvas = SystemColors.Control
             SettingsSurface = SystemColors.Window
             SettingsSidebar = SystemColors.Control
-            SettingsSidebarMuted = SystemColors.GrayText
+            SettingsSidebarMuted = SystemColors.ControlText
             SettingsAccent = SystemColors.Highlight
             SettingsLink = SystemColors.HotTrack
             SettingsText = SystemColors.WindowText
@@ -1990,6 +1985,7 @@ Partial Public Class Table_Form
         Next
         ApplySettingsTitleBarTheme()
         ThemeApplier.ApplyNativeTree(Me, settingsDarkMode)
+        ThemeApplier.ApplyButtonCaptions(Me, ThemePalette.ForDark(settingsDarkMode))
         RefreshSettingsDependencies()
         ApplySlotHealthToGrid()
         Invalidate(True)
@@ -1998,13 +1994,17 @@ Partial Public Class Table_Form
     Private Sub ApplyModernPaletteToTree(parent As Control)
         For Each control As Control In parent.Controls
             If TypeOf control Is FlowLayoutPanel Then
-                control.BackColor = If(modernPageFlows.Contains(DirectCast(control, FlowLayoutPanel)), SettingsCanvas, SettingsSurface)
+                control.BackColor = If(modernSettingsSidebar.Contains(control), SettingsSidebar,
+                    If(modernPageFlows.Contains(DirectCast(control, FlowLayoutPanel)), SettingsCanvas, SettingsSurface))
             ElseIf TypeOf control Is Panel Then
                 Dim row As ModernSettingRow = modernSettingsRows.Find(Function(candidate) candidate.Host Is control)
                 If row IsNot Nothing Then
                     control.BackColor = If(row.Description Is Nothing, SettingsCanvas, SettingsSurface)
-                ElseIf TypeOf control.Parent Is FlowLayoutPanel Then
-                    control.BackColor = SettingsSurface
+                ElseIf control IsNot modernSettingsSidebar AndAlso control IsNot modernSettingsHeader AndAlso
+                       control IsNot modernSettingsContent AndAlso control IsNot modernSettingsFooter Then
+                    ' Composite editors have panels several levels below a row. Their original
+                    ' literal fill must follow the palette just like the row itself.
+                    control.BackColor = If(modernSettingsSidebar.Contains(control), SettingsSidebar, SettingsSurface)
                 End If
             ElseIf TypeOf control Is Button Then
                 Dim button As Button = DirectCast(control, Button)
@@ -2016,13 +2016,22 @@ Partial Public Class Table_Form
                     button.FlatAppearance.MouseOverBackColor = BlendSettingsColor(SettingsSurface, SettingsAccent, 0.1F)
                     button.FlatAppearance.MouseDownBackColor = BlendSettingsColor(SettingsSurface, SettingsAccent, 0.18F)
                 End If
-            ElseIf TypeOf control Is TextBox OrElse TypeOf control Is ComboBox OrElse TypeOf control Is NumericUpDown Then
+            ElseIf TypeOf control Is TextBoxBase OrElse TypeOf control Is ComboBox OrElse TypeOf control Is NumericUpDown OrElse
+                   TypeOf control Is ListBox OrElse TypeOf control Is ListView OrElse TypeOf control Is TreeView Then
                 control.BackColor = SettingsEditorBack
                 control.ForeColor = SettingsEditorText
                 ' A visual-styles drop-down list ignores BackColor and stayed white on the dark
                 ' cards; the flat style paints with it (spec 060).
                 Dim combo As ComboBox = TryCast(control, ComboBox)
                 If combo IsNot Nothing Then combo.FlatStyle = If(settingsDarkMode, FlatStyle.Flat, FlatStyle.Standard)
+                Dim number As NumericUpDown = TryCast(control, NumericUpDown)
+                If number IsNot Nothing Then SettingsNumericStepper.Apply(number, settingsScale, SettingsEditorBack,
+                                                                         SettingsEditorText, SettingsBorder, SettingsAccent)
+            ElseIf TypeOf control Is TrackBar OrElse TypeOf control Is RadioButton Then
+                control.BackColor = SettingsSurface
+                control.ForeColor = SettingsText
+            ElseIf TypeOf control Is TabControl OrElse TypeOf control Is TabPage Then
+                control.BackColor = SettingsCanvas
             ElseIf TypeOf control Is CheckBox Then
                 Dim box As CheckBox = DirectCast(control, CheckBox)
                 If SettingsCheckBox.IsAttached(box) Then
@@ -2034,11 +2043,14 @@ Partial Public Class Table_Form
                 End If
             ElseIf TypeOf control Is LinkLabel Then
                 Dim link As LinkLabel = DirectCast(control, LinkLabel)
-                link.BackColor = SettingsSurface
+                link.BackColor = Color.Transparent
                 link.LinkColor = SettingsLink
                 link.ActiveLinkColor = SettingsLink
                 link.VisitedLinkColor = SettingsLink
             ElseIf TypeOf control Is Label Then
+                ' Units, slider values and cache usage labels used explicit fills at construction.
+                ' Inherit the current parent surface instead of retaining that first theme.
+                control.BackColor = Color.Transparent
                 ' Titles and descriptions already carry their semantic colour.
                 If control IsNot modernSettingsTitle AndAlso control IsNot modernProductLabel Then
                     If Not modernSettingsRows.Exists(Function(row) row.Title Is control OrElse row.Description Is control) Then
@@ -2146,15 +2158,11 @@ Partial Public Class Table_Form
         Data_Grid_View.RowTemplate.Height = 30
         Data_Grid_View.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
 
-        StyleModernSettingsControlTree(Tab_Page_1)
-        StyleModernSettingsControlTree(Tab_Page_2)
-        StyleModernSettingsControlTree(Tab_Page_3)
-        StyleModernSettingsControlTree(Tab_Page_4)
-        StyleModernSettingsControlTree(Tab_Page_5)
-        StyleModernSettingsControlTree(modernTranslationPage)
-        StyleModernSettingsControlTree(modernSftpPage)
-        StyleModernSettingsControlTree(modernAboutPage)
-        StyleModernSettingsControlTree(modernResourcesPage)
+        ' Placement can move rows to new pages. Style the actual tab collection so
+        ' General, Audio, Storage and future pages receive the same editor metrics.
+        For Each page As TabPage In Tab_Control.TabPages
+            StyleModernSettingsControlTree(page)
+        Next
 
         ' OCR is built in code and has its own inner tabs. Give that otherwise
         ' classic grey control the same light surface as the rest of Settings.
@@ -2223,12 +2231,22 @@ Partial Public Class Table_Form
                 button.ForeColor = SettingsAccent
                 Dim group As SettingsCollapsibleGroup = TryCast(button.Parent, SettingsCollapsibleGroup)
                 button.Font = SettingsFont("Segoe UI Semibold", Sf(If(group IsNot Nothing AndAlso group.Header Is button, 10.5F, 9.0F)), FontStyle.Regular)
+                ThemeApplier.ApplyButtonCaptions(button, ThemePalette.ForDark(settingsDarkMode))
             ElseIf TypeOf control Is ComboBox OrElse TypeOf control Is TextBox OrElse TypeOf control Is NumericUpDown Then
                 control.BackColor = SettingsEditorBack
                 control.ForeColor = SettingsEditorText
                 ' Pixel-sized, so a native control is exactly as tall as its neighbours at any
                 ' display scale instead of taking whatever size the system picks for a point font.
                 control.Font = SettingsPixelFont("Segoe UI", 12)
+                Dim number As NumericUpDown = TryCast(control, NumericUpDown)
+                If number IsNot Nothing Then
+                    number.Font = SettingsPixelFont("Segoe UI", SettingsRowGridRules.NumericFontPixels)
+                    ' WinForms fixes a spinner's height to its native text metrics.
+                    ' Size through the font instead of requesting an ignored height.
+                    number.Height = number.PreferredHeight
+                    SettingsNumericStepper.Apply(number, settingsScale, SettingsEditorBack,
+                                                 SettingsEditorText, SettingsBorder, SettingsAccent)
+                End If
                 Dim list As ComboBox = TryCast(control, ComboBox)
                 If list IsNot Nothing Then StyleModernComboBox(list)
             ElseIf TypeOf control Is CheckBox Then
@@ -2245,7 +2263,9 @@ Partial Public Class Table_Form
                 End If
             End If
 
-            If control.HasChildren Then StyleModernSettingsControlTree(control)
+            ' UpDownBase owns its internal edit and arrow controls. They inherit the
+            ' numeric font; walking them as ordinary text fields overwrites that font.
+            If control.HasChildren AndAlso Not TypeOf control Is UpDownBase Then StyleModernSettingsControlTree(control)
         Next
     End Sub
 

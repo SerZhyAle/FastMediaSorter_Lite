@@ -96,6 +96,33 @@ Public Class SettingsNavPaletteTests
 
     ' --- §3.2 distinctness -----------------------------------------------------------
 
+    <Theory>
+    <InlineData(True)>
+    <InlineData(False)>
+    Public Sub Identity_inks_meet_contrast_on_selected_hover_and_pressed_surfaces(dark As Boolean)
+        Dim sidebar As Color = If(dark, Color.FromArgb(25, 26, 29), Color.FromArgb(238, 240, 244))
+        Dim accent As Color = Color.FromArgb(0, 120, 215)
+        Dim fills As New List(Of Color) From {sidebar}
+        For Each amount As Double In {0.18, 0.22, 0.28, 0.3, 0.4}
+            fills.Add(Color.FromArgb(CInt(sidebar.R + (CInt(accent.R) - CInt(sidebar.R)) * amount),
+                                    CInt(sidebar.G + (CInt(accent.G) - CInt(sidebar.G)) * amount),
+                                    CInt(sidebar.B + (CInt(accent.B) - CInt(sidebar.B)) * amount)))
+        Next
+        For Each entry In SettingsNavIconPalette.All
+            Dim ink As Color = SettingsNavIconPalette.ResolveInk(entry.ControlName, dark, fills.ToArray(),
+                                                                  If(dark, Color.White, Color.Black), False)
+            For Each fill As Color In fills
+                Assert.True(Utils.ContrastRatio(ink, fill) >= 3.0, entry.ControlName & " " & fill.ToString())
+            Next
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub High_contrast_uses_the_system_row_foreground_instead_of_identity()
+        Assert.Equal(Color.Yellow, SettingsNavIconPalette.ResolveInk("settingsNavOcr", True,
+                     {Color.Black}, Color.Yellow, True))
+    End Sub
+
     <Fact>
     Public Sub The_twelve_dark_inks_are_pairwise_distinguishable()
         Assert.Empty(DistinctnessViolations(SettingsNavIconPalette.All))
@@ -183,7 +210,7 @@ Public Class SettingsNavPaletteTests
         Dim namePattern As New Regex("""([^""]+)""", RegexOptions.Compiled)
         Dim names As List(Of String) = namePattern.Matches(match.Groups(1).Value).
             Cast(Of Match)().Select(Function(m) m.Groups(1).Value).ToList()
-        Assert.True(names.Count >= 12, "only " & names.Count & " navigation rows parsed")
+        Assert.True(names.Count >= 11, "only " & names.Count & " navigation rows parsed")
         Return names.ToArray()
     End Function
 

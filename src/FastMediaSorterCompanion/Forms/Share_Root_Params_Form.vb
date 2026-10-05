@@ -166,6 +166,7 @@ Public Class Share_Root_Params_Form
         lblDestNote = Note(Localization.T("Папка станет доступна на запись; ресурс попадёт в список получателей. Цвет метки выберет приложение."))
         lblDestNote.Margin = New Padding(24, 0, 0, 6)
         AddFullRow(tlp, lblDestNote, r) : r += 1
+        CheckBoxLayout.BindHint(chkDestination, lblDestNote)
 
         ' 6. Comment / PIN / slideshow.
         txtComment = New TextBox With {.Width = 420, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 8, 0, 0)}

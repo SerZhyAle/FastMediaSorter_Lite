@@ -63,6 +63,10 @@ Namespace My
         ''' The net48 application retains its shipped DPI-unaware behavior.
         ''' </summary>
         Private Sub MyApplication_ApplyApplicationDefaults(sender As Object, e As ApplyApplicationDefaultsEventArgs) Handles Me.ApplyApplicationDefaults
+            ' The VB application model installs e.Font before it applies e.HighDpiMode.
+            ' Set awareness now, before the default native HFONT is cached at 96 dpi.
+            ' Otherwise native editors stay tiny beside correctly scaled painted captions.
+            System.Windows.Forms.Application.SetHighDpiMode(System.Windows.Forms.HighDpiMode.PerMonitorV2)
             e.HighDpiMode = System.Windows.Forms.HighDpiMode.PerMonitorV2
             e.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25F)
         End Sub

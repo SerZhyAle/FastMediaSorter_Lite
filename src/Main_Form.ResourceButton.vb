@@ -46,12 +46,14 @@ Partial Public Class Main_Form
         toolTip?.SetToolTip(btn_Resource, Localization.T("Открыть сохранённый ресурс.."))
     End Sub
 
-    ''' <summary>The visibility trigger: the registry count read once, the tested rule applied,
-    ''' then the toolbar and the chrome item re-flowed with the same call pattern the tracks
-    ''' button uses (Main_Form.VideoTracks.vb). Cheap enough to call at every bounded trigger.</summary>
+    ''' <summary>The visibility trigger: the merged catalog's count (the registered resources
+    ''' plus the local server's shares - both make the button true) read once, the tested
+    ''' rule applied, then the toolbar and the chrome item re-flowed with the same call
+    ''' pattern the tracks button uses (Main_Form.VideoTracks.vb). Cheap enough to call at
+    ''' every bounded trigger.</summary>
     Friend Sub RefreshResourceButton()
         If btn_Resource Is Nothing Then Return
-        Dim show As Boolean = ResourceUiRules.ResourceButtonShouldShow(ResourceRegistry.Load().Count,
+        Dim show As Boolean = ResourceUiRules.ResourceButtonShouldShow(WorkerShares.Catalog().Count,
                                                                       IsArchiveMode() OrElse IsArchiveOpenPending())
         SetToolbarItemHidden(btn_Resource, Not show)
         LayoutToolbar()

@@ -33,7 +33,7 @@ Public Class SettingsColorGateTests
     ''' arithmetic. They live in Table_Form.ModernLayout.vb and SettingsCheckBox.vb.</summary>
     Private Shared ReadOnly AllowedMethods As String() =
         {"LoadSystemSettingsPalette", "BlendSettingsColor", "ScaleSettingsColor", "BlendSettingsInk",
-         "LoadSettingsNavIdentityInks"} ' Reviewed identity palette of specification 128.
+         "LoadSettingsNavIdentityInks", "ResolveInk"} ' Palette-owned contrast arithmetic (WINDOWS-UI section 6).
 
     ''' <summary>Reviewed allow-list. The Designer file is generated; its one GrayText
     ''' label is recoloured by the runtime palette walker on every theme pass.</summary>

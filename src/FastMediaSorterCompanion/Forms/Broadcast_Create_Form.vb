@@ -191,6 +191,7 @@ Public NotInheritable Class Broadcast_Create_Form
                                                    End If
                                                End Sub
         tlp.Controls.Add(lblWarning, 0, r)
+        CheckBoxLayout.BindHint(chkExternal, lblWarning)
         tlp.SetColumnSpan(lblWarning, 2)
         r += 1
 

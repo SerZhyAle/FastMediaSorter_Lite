@@ -123,7 +123,7 @@ Partial Public Class Image_Panel_Form
         toolbar = New ToolStrip With {
             .GripStyle = ToolStripGripStyle.Hidden,
             .CanOverflow = True,
-            .RenderMode = ToolStripRenderMode.System,
+            .RenderMode = ToolStripRenderMode.ManagerRenderMode,
             .Dock = DockStyle.Top,
             .TabStop = False}
 

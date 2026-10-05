@@ -387,7 +387,9 @@ Friend NotInheritable Class ChromeSurface
         For Each item As ChromeItem In itemList
             If item.Visible AndAlso Not item.Bounds.IsEmpty Then
                 PaintItemFill(g, item)
-                If Not inkExternalMode Then PaintItemInk(g, item)
+                ' The path field owns its text. GDI captions underneath it can spill past the child
+                ' window's edge, leaving a second line of fragments below the folder address.
+                If Not inkExternalMode AndAlso Not IsCoveredByInkChild(item.Bounds) Then PaintItemInk(g, item)
             End If
         Next
         If Not inkExternalMode Then PaintScrollCues(g)
@@ -426,7 +428,7 @@ Friend NotInheritable Class ChromeSurface
     ''' Everything the panel shows that is NOT fill: glyphs, captions, the focus ring. Drawn onto a
     ''' transparent surface with per-pixel alpha, origin at this control's top-left, so the host can
     ''' present it fully opaque over a translucent panel. Items an own-painting child control sits
-    ''' on (the path box) are skipped, exactly as the child covers them in the ordinary paint.
+    ''' on (the path box) are skipped in both paint modes: the child owns their text.
     ''' </summary>
     Friend Sub PaintInk(g As Graphics)
         g.SmoothingMode = SmoothingMode.AntiAlias

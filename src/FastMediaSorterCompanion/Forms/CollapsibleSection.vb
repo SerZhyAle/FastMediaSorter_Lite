@@ -107,6 +107,7 @@ Public NotInheritable Class CollapsibleSection
         End Get
         Set(value As Boolean)
             If _expanded = value Then Return
+            If Not value AndAlso _body.ContainsFocus Then _header.Focus()
             _expanded = value
             _header.Expanded = value
             _body.Visible = value
@@ -159,7 +160,7 @@ Public NotInheritable Class CollapsibleSection
     ''' answer" - same value as MainWindow's access-state amber.</summary>
     Public Shared ReadOnly Property AttentionColor As Color
         Get
-            Return Color.FromArgb(176, 96, 0)
+            Return ThemeService.Palette.Warning
         End Get
     End Property
 
@@ -255,6 +256,35 @@ Public NotInheritable Class CollapsibleSection
             Me.AccessibleDescription = If(_expanded, "expanded", "collapsed")
         End Sub
 
+        Protected Overrides Function CreateAccessibilityInstance() As AccessibleObject
+            Return New HeaderAccessibility(Me)
+        End Function
+
+        Private NotInheritable Class HeaderAccessibility
+            Inherits ControlAccessibleObject
+
+            Private ReadOnly header As SectionHeader
+
+            Public Sub New(owner As SectionHeader)
+                MyBase.New(owner)
+                header = owner
+            End Sub
+
+            Public Overrides ReadOnly Property State As AccessibleStates
+                Get
+                    Return MyBase.State Or If(header.Expanded, AccessibleStates.Expanded, AccessibleStates.Collapsed)
+                End Get
+            End Property
+
+            Public Overrides Sub DoDefaultAction()
+                header.ActivateHeader()
+            End Sub
+        End Class
+
+        Private Sub ActivateHeader()
+            RaiseEvent Toggled(Me, EventArgs.Empty)
+        End Sub
+
         Protected Overrides Sub OnFontChanged(e As EventArgs)
             MyBase.OnFontChanged(e)
             ' One line of text plus breathing room; follows the script font, which is taller
@@ -327,8 +357,8 @@ Public NotInheritable Class CollapsibleSection
             ' Spec 060: the palette in dark mode. The two light tints predate the palette and are
             ' kept, so the light header is the one it always was.
             Dim theme As ThemePalette = ThemeService.Palette
-            Dim hotBack As Color = If(theme.IsDark, theme.ControlHover, Color.FromArgb(238, 243, 250))
-            Dim hairline As Color = If(theme.IsDark, theme.Border, Color.FromArgb(224, 228, 234))
+            Dim hotBack As Color = theme.ControlHover
+            Dim hairline As Color = theme.Border
             g.Clear(If(_hot, hotBack,
                        If(Me.Parent IsNot Nothing, Me.Parent.BackColor, theme.SurfaceWindow)))
             ' A hairline under the row: three stacked sections read as three rows rather
@@ -368,7 +398,8 @@ Public NotInheritable Class CollapsibleSection
             Dim sumRect As Rectangle = If(rtl,
                 New Rectangle(pad, 0, available, h),
                 New Rectangle(right - available, 0, available, h))
-            Dim summaryInk As Color = theme.Restate(_summaryColor, False)
+            Dim surface As Color = If(_hot, hotBack, If(Parent IsNot Nothing, Parent.BackColor, theme.SurfaceWindow))
+            Dim summaryInk As Color = ThemePalette.ReadableText(theme.Restate(_summaryColor, False), surface)
             TextRenderer.DrawText(g, _summary, Me.Font, sumRect, summaryInk,
                                   textFlags Or TextFormatFlags.EndEllipsis Or If(rtl, TextFormatFlags.Left, TextFormatFlags.Right))
         End Sub

@@ -67,6 +67,8 @@
          SettingsCollapsibleGroup - on the net48 leg they and their tests compile to nothing. -->
     <Compile Include="..\..\src\SettingsRowGrid.vb"><Link>Linked\SettingsRowGrid.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsCheckBox.vb"><Link>Linked\SettingsCheckBox.vb</Link></Compile>
+    <Compile Include="..\..\src\SettingsNumericStepper.vb"><Link>Linked\SettingsNumericStepper.vb</Link></Compile>
+    <Compile Include="..\..\src\Theming\CheckBoxLayout.vb"><Link>Linked\Theming\CheckBoxLayout.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsNavIconPalette.vb"><Link>Linked\SettingsNavIconPalette.vb</Link></Compile>
     <Compile Include="..\..\src\Theming\IThemeAware.vb"><Link>Linked\Theming\IThemeAware.vb</Link></Compile>
     <Compile Include="..\..\src\Utils.vb">
@@ -445,6 +447,11 @@
     </Compile>
     <Compile Include="..\..\src\Resources\ResourceRegistry.vb">
       <Link>Linked\Resources\ResourceRegistry.vb</Link>
+    </Compile>
+    <!-- The local SFTP server's shares as the viewer's mirror rows: whole-file
+         "#If Not NETFRAMEWORK", so the net48 leg compiles it to nothing. -->
+    <Compile Include="..\..\src\Resources\WorkerShares.vb">
+      <Link>Linked\Resources\WorkerShares.vb</Link>
     </Compile>
     <Compile Include="..\..\src\Resources\ResourcePolicy.vb">
       <Link>Linked\Resources\ResourcePolicy.vb</Link>

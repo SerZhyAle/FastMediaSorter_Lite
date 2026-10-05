@@ -35,7 +35,11 @@ Friend NotInheritable Class Resource_Manager_Form
 
     ''' <param name="draft">An address the user typed that matches no saved resource: the dialog opens the
     ''' "new resource" form with it already filled in.</param>
-    Friend Sub New(Optional draft As ResourceDescriptor = Nothing)
+    ''' <param name="openShareManager">The handover a managed share's Edit/Remove becomes. The viewer
+    ''' names its own Share entry point; Nothing keeps the panel's quiet form-free default, which is
+    ''' what the tests construct with.</param>
+    Friend Sub New(Optional draft As ResourceDescriptor = Nothing,
+                   Optional openShareManager As Action = Nothing)
         Me.Text = Localization.T("Ресурсы")
         Me.FormBorderStyle = FormBorderStyle.Sizable
         Me.MinimumSize = New Size(640, 340)
@@ -53,7 +57,9 @@ Friend NotInheritable Class Resource_Manager_Form
         If Localization.IsRightToLeft() Then Me.RightToLeft = RightToLeft.Yes
 
         ' The shared list+actions panel (the Settings window's resources page embeds the same one).
-        panel = New Resource_List_Panel() With {.Dock = DockStyle.Fill}
+        ' A managed share's Edit/Remove hands the user over to the Share Manager - the viewer
+        ' passes its own wake (Main_Form.ShowResourceManager), the tests construct without one.
+        panel = New Resource_List_Panel(openShareManager:=openShareManager) With {.Dock = DockStyle.Fill}
         AddHandler panel.ItemActivated, AddressOf OnOpenFromPanel
         AddHandler panel.SelectionChanged, Sub(has As Boolean) openButton.Enabled = has
 

@@ -83,7 +83,7 @@ Public NotInheritable Class AccentColors
         Return cachedValue
     End Function
 
-    Private Shared Function Contrast(a As Color, b As Color) As Double
+    Friend Shared Function Contrast(a As Color, b As Color) As Double
         Dim la As Double = Luminance(a)
         Dim lb As Double = Luminance(b)
         Return (Math.Max(la, lb) + 0.05) / (Math.Min(la, lb) + 0.05)

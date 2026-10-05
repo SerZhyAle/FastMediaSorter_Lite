@@ -504,7 +504,9 @@ Public Class Table_Form
     Private Function OfferResourceForSlot(rowIndex As Integer) As Boolean
         Dim resources As List(Of ResourceDescriptor)
         Try
-            resources = ResourceRegistry.Load()
+            ' The registered resources AND the local server's shares: a share is offered by
+            ' its own path on this machine, which is a folder like any other to a slot.
+            resources = WorkerShares.Catalog()
         Catch ex As Exception
             AppFileLogger.WriteLine("Settings: the resource list could not be read - " & ex.GetType().Name)
             Return False

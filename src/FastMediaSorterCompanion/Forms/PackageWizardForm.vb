@@ -20,6 +20,21 @@ Imports System.Windows.Forms
 ''' </summary>
 Public NotInheritable Class PackageWizardForm
     Inherits Form
+    Implements IThemeAware
+
+    Private ReadOnly Property ThemesItself As Boolean Implements IThemeAware.ThemesItself
+        Get
+            Return False
+        End Get
+    End Property
+
+    Private Sub ApplyTheme(palette As ThemePalette) Implements IThemeAware.ApplyTheme
+        If btnShowQr Is Nothing Then Return
+        Dim previous As Image = _qrGlyph
+        _qrGlyph = BuildQrGlyph(LogicalToDeviceUnits(16), palette.AccentInk)
+        SetQrAvailable(btnShowQr.Enabled)
+        If previous IsNot Nothing Then previous.Dispose()
+    End Sub
 
     ' Profile + media tokens/displays kept identical to Share_Root_Params_Form so a folder's
     ' defaults round-trip and the .fmscfg emits the exact frozen tokens.
@@ -73,9 +88,6 @@ Public NotInheritable Class PackageWizardForm
     Private btnRetryCheck As Button
     ''' <summary>The first scan keeps the 2 s budget; an explicit "check again" gets room for a big tree.</summary>
     Private _retryBudget As Boolean
-    ' Accent colours for the "Show QR" button - match the app's blue share glyph (ShareIcons).
-    Private Shared ReadOnly QrAccent As Color = Color.FromArgb(30, 120, 220)
-    Private Shared ReadOnly QrAccentDark As Color = Color.FromArgb(18, 78, 150)
 
     Public Sub New(preselect As List(Of String))
         _preselect = If(preselect, New List(Of String)())
@@ -160,6 +172,7 @@ Public NotInheritable Class PackageWizardForm
         ' toggles that decide what the secret contains (ticket 034 phase 1).
         lblSecret = New Label With {.AutoSize = True, .MaximumSize = New Size(520, 0), .ForeColor = Color.Firebrick, .Margin = New Padding(0, 2, 0, 2)}
         leftCol.Controls.AddRange(New Control() {chkLanOnly, chkNoPassword, lblSecret})
+        CheckBoxLayout.BindHint(chkNoPassword, lblSecret)
         ' NB: the LAN address + host-key fingerprint are deliberately NOT shown here. The
         ' package embeds ALL access paths (LAN + IPv6 + internet), so showing only the LAN
         ' address misleads the user into thinking the code is local-only; those details already
@@ -173,7 +186,7 @@ Public NotInheritable Class PackageWizardForm
         ' settings (see bottomBar), filling that otherwise-empty band. Anchored Left+Right so it
         ' spans the right column (and can wrap when the window is narrow) while staying vertically
         ' centred against the taller settings block.
-        _qrGlyph = BuildQrGlyph(LogicalToDeviceUnits(16))
+        _qrGlyph = BuildQrGlyph(LogicalToDeviceUnits(16), ThemeService.Palette.AccentInk)
         Dim btnRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Anchor = AnchorStyles.Left Or AnchorStyles.Right, .FlowDirection = FlowDirection.LeftToRight, .WrapContents = True, .Margin = New Padding(0, 4, 0, 0)}
         btnShowQr = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Font = _fontBold, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 12, 5),
@@ -911,9 +924,9 @@ Public NotInheritable Class PackageWizardForm
         btnShowQr.Enabled = available
         btnShowQr.Image = If(available, _qrGlyph, Nothing)
         If available Then
-            btnShowQr.BackColor = QrAccent
-            btnShowQr.ForeColor = Color.White
-            btnShowQr.FlatAppearance.BorderColor = QrAccentDark
+            btnShowQr.BackColor = ThemeService.Palette.Accent
+            btnShowQr.ForeColor = ThemeService.Palette.AccentInk
+            btnShowQr.FlatAppearance.BorderColor = ThemeService.Palette.Border
         Else
             btnShowQr.BackColor = SystemColors.Control
             btnShowQr.ForeColor = SystemColors.GrayText
@@ -922,16 +935,16 @@ Public NotInheritable Class PackageWizardForm
     End Sub
 
     ''' <summary>A tiny QR glyph (three finder squares + a few modules) for the Show-QR button,
-    ''' drawn white to sit on the blue accent - matches the app's other in-code glyphs. Drawn at
+    ''' drawn in the active accent ink - matches the app's other in-code glyphs. Drawn at
     ''' <paramref name="size"/> px (artwork authored for 16 px), since the form's auto-scaling
     ''' grows the button but never the image inside it.</summary>
-    Private Shared Function BuildQrGlyph(size As Integer) As Bitmap
+    Private Shared Function BuildQrGlyph(size As Integer, ink As Color) As Bitmap
         Dim bmp As New Bitmap(size, size)
         Using g As Graphics = Graphics.FromImage(bmp)
             g.SmoothingMode = Drawing2D.SmoothingMode.None
             g.Clear(Color.Transparent)
             g.ScaleTransform(size / 16.0F, size / 16.0F)
-            Using pen As New Pen(Color.White, 1.0F), b As New SolidBrush(Color.White)
+            Using pen As New Pen(ink, 1.0F), b As New SolidBrush(ink)
                 DrawQrFinder(g, pen, b, 0, 0)
                 DrawQrFinder(g, pen, b, 9, 0)
                 DrawQrFinder(g, pen, b, 0, 9)

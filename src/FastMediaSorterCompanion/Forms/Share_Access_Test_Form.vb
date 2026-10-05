@@ -149,7 +149,7 @@ Public NotInheritable Class Share_Access_Test_Form
             Case SftpProbe.ProbeResult.SshOk
                 Return Color.ForestGreen
             Case SftpProbe.ProbeResult.PortOpen
-                Return Color.FromArgb(176, 96, 0)
+                Return ThemeService.Palette.Warning
             Case Else
                 Return SystemColors.ControlText
         End Select

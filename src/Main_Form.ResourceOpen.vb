@@ -70,10 +70,12 @@ Partial Public Class Main_Form
     End Sub
 
     ''' <summary>The "Resources.." dialog. What it returns to open is opened here; what was removed while
-    ''' it was up is closed here if it is the one on screen.</summary>
+    ''' it was up is closed here if it is the one on screen. The dialog's managed-share handover is this
+    ''' form's own Share entry point - a managed row's Edit/Remove in the dialog wakes the Share Manager
+    ''' the same way the Settings window's panel does.</summary>
     Friend Sub ShowResourceManager(Optional draft As ResourceDescriptor = Nothing)
         SlideShowStop()
-        Using dialog As New Resource_Manager_Form(draft)
+        Using dialog As New Resource_Manager_Form(draft, AddressOf OpenShareManagerWindow)
             Dim answer As DialogResult = DialogLayer.ShowViewerDialog(dialog, Me)
             ApplyResourceChanges(dialog.RemovedIds)
             If answer = DialogResult.OK AndAlso dialog.ToOpen IsNot Nothing Then ConnectAndEnterResource(dialog.ToOpen, "")
@@ -110,7 +112,9 @@ Partial Public Class Main_Form
     ''' The button lists never-opened resources too (Q118-14); the folder menu keeps its recent rule.</summary>
     Friend Function BuildResourceMenuEntries(Optional includeNeverUsed As Boolean = False) As List(Of ChromeMenuItem)
         Dim entries As New List(Of ChromeMenuItem)()
-        Dim all As List(Of ResourceDescriptor) = ResourceRegistry.Load()
+        ' The registered resources AND the local server's shares (the mirror) - one list,
+        ' because both are "what this viewer can open".
+        Dim all As List(Of ResourceDescriptor) = WorkerShares.Catalog()
         Dim ordered As IEnumerable(Of ResourceDescriptor) = If(includeNeverUsed, all, all.Where(Function(r) r.LastUsedUtc.HasValue))
         For Each r As ResourceDescriptor In ordered.
                 OrderByDescending(Function(x) If(x.LastUsedUtc, DateTime.MinValue)).
@@ -196,6 +200,14 @@ Partial Public Class Main_Form
         LeaveResource()
         SlideShowStop()
 
+        ' A share of the local SFTP server is a folder of this machine: it opens the plain
+        ' local way - no credential, no dial - and the server's own read-only rule keeps
+        ' living on its phone side, in the Share Manager.
+        If WorkerShares.IsManaged(descriptor) Then
+            OpenManagedShareFolder(descriptor)
+            Return
+        End If
+
         Dim cancel As New CancellationTokenSource()
         resource_Connect_Cancel = cancel
         Try
@@ -257,6 +269,26 @@ Partial Public Class Main_Form
             If resource_Connect_Cancel Is cancel Then resource_Connect_Cancel = Nothing
             cancel.Dispose()
         End Try
+    End Sub
+
+    ''' <summary>A managed share opens like the folder it is: the path goes into the folder
+    ''' box and the ordinary local scan reads it - the same triple the typed-folder path
+    ''' runs (Main_Form.KeyboardInput). Nothing is stored about it here; the mirror row
+    ''' itself stays the Share Manager's. "Not there" and "not for this user" are said
+    ''' apart - a service-held FileDO disk is mounted with FileDO's private SYSTEM-only
+    ''' DACL, which is a refusal, not an absence.</summary>
+    Private Sub OpenManagedShareFolder(descriptor As ResourceDescriptor)
+        Dim path As String = If(descriptor.RootPath, "").Trim()
+        Select Case WorkerShares.ClassifyFolder(path)
+            Case WorkerShares.FolderPresence.Present
+                Current_Folder_Path = path
+                cmbox_Media_Folder.Text = path
+                ReadShowMediaFile(Mode_FolderAndFile)
+            Case WorkerShares.FolderPresence.Denied
+                lbl_Status.Text = Localization.TF("«{0}»: нет доступа к папке на этом компьютере - она смонтирована службой. Проверьте общую папку в Share Manager", descriptor.DisplayName)
+            Case Else
+                lbl_Status.Text = Localization.TF("«{0}»: папки нет на диске - проверьте общую папку в Share Manager", descriptor.DisplayName)
+        End Select
     End Sub
 
     ''' <summary>Esc while a connection is being dialled: the attempt is cancelled and the window stays (the

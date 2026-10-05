@@ -28,6 +28,7 @@ Friend NotInheritable Class ThemeApplier
         Public ButtonStandard As Boolean
         Public ButtonConverted As Boolean
         Public DisabledPaintHooked As Boolean
+        Public CaptionTreeHooked As Boolean
         Public AppliedPalette As ThemePalette
         Public OrigFlatStyle As FlatStyle
         Public OrigBorderColor As Color
@@ -54,6 +55,7 @@ Friend NotInheritable Class ThemeApplier
         Public NativeRequestedDark As Boolean
         Public NativeHooked As Boolean
         Public RolesHooked As Boolean
+        Public StripHooked As Boolean
     End Class
 
     Private NotInheritable Class GridSnapshot
@@ -76,11 +78,46 @@ Friend NotInheritable Class ThemeApplier
     Friend Shared Sub ApplyTree(root As Control, palette As ThemePalette)
         If root Is Nothing OrElse root.IsDisposed Then Return
         ApplyOne(root, palette)
-        ' ToolStrips paint through the renderer (spec 060 rule 9); their items are not controls.
-        If TypeOf root Is ToolStrip Then Return
+        ' ToolStrip items paint through the renderer; hosted editors still need a control walk.
+        Dim strip As ToolStrip = TryCast(root, ToolStrip)
+        If strip IsNot Nothing Then
+            For Each item As ToolStripItem In strip.Items
+                Dim host As ToolStripControlHost = TryCast(item, ToolStripControlHost)
+                If host IsNot Nothing Then ApplyTree(host.Control, palette)
+            Next
+            Return
+        End If
         For Each child As Control In root.Controls
             ApplyTree(child, palette)
         Next
+    End Sub
+
+    ''' <summary>Readable disabled captions for standard flat buttons, including windows
+    ''' that own their palette. This pass preserves faces, borders and enabled captions.</summary>
+    Friend Shared Sub ApplyButtonCaptions(root As Control, palette As ThemePalette)
+        If root Is Nothing OrElse root.IsDisposed Then Return
+        Dim st As ControlState = States.GetValue(root, Function(control) New ControlState())
+        st.AppliedPalette = palette
+        If Not st.CaptionTreeHooked Then
+            st.CaptionTreeHooked = True
+            AddHandler root.ControlAdded, AddressOf OnButtonCaptionControlAdded
+        End If
+        Dim button As Button = TryCast(root, Button)
+        If button IsNot Nothing AndAlso Not st.DisabledPaintHooked Then
+            st.DisabledPaintHooked = True
+            AddHandler button.Paint, AddressOf OnConvertedButtonPaint
+        End If
+        For Each child As Control In root.Controls
+            ApplyButtonCaptions(child, palette)
+        Next
+        If button IsNot Nothing Then button.Invalidate()
+    End Sub
+
+    Private Shared Sub OnButtonCaptionControlAdded(sender As Object, e As ControlEventArgs)
+        Dim st As ControlState = Nothing
+        If States.TryGetValue(DirectCast(sender, Control), st) AndAlso st.AppliedPalette IsNot Nothing Then
+            ApplyButtonCaptions(e.Control, st.AppliedPalette)
+        End If
     End Sub
 
     ''' <summary>Only the native parts (scroll bars, list headers) - for a window that paints its
@@ -138,7 +175,17 @@ Friend NotInheritable Class ThemeApplier
         End If
 
         Dim dark As Boolean = palette.IsDark
+        Dim strip As ToolStrip = TryCast(c, ToolStrip)
+        If strip IsNot Nothing AndAlso Not st.StripHooked Then
+            st.StripHooked = True
+            AddHandler strip.ItemAdded,
+                Sub(sender, e)
+                    Dim host As ToolStripControlHost = TryCast(e.Item, ToolStripControlHost)
+                    If host IsNot Nothing Then ApplyTree(host.Control, ThemeService.Palette)
+                End Sub
+        End If
 
+        If TypeOf c Is CheckBox Then CheckBoxLayout.Apply(DirectCast(c, CheckBox))
         If TypeOf c Is Button Then
             ApplyButton(DirectCast(c, Button), st, palette)
         ElseIf TypeOf c Is ComboBox Then
@@ -154,6 +201,7 @@ Friend NotInheritable Class ThemeApplier
             ElseIf combo.FlatStyle <> st.OrigComboFlat Then
                 combo.FlatStyle = st.OrigComboFlat
             End If
+            ThemedComboBox.Apply(combo, palette)
         ElseIf TypeOf c Is LinkLabel Then
             Dim link As LinkLabel = DirectCast(c, LinkLabel)
             If Not st.LinkSeen Then
@@ -188,7 +236,19 @@ Friend NotInheritable Class ThemeApplier
         End If
 
         If st.BackRole <> ThemeRole.None Then SetBack(c, palette.ColorOf(st.BackRole))
-        If st.ForeRole <> ThemeRole.None Then SetFore(c, palette.ColorOf(st.ForeRole))
+        If st.ForeRole <> ThemeRole.None Then
+            Dim ink As Color = palette.ColorOf(st.ForeRole)
+            If c.Enabled AndAlso st.ForeRole <> ThemeRole.TextDisabled AndAlso Not SystemInformation.HighContrast Then
+                ink = ThemePalette.ReadableText(ink, c.BackColor)
+            End If
+            SetFore(c, ink)
+        End If
+
+        Dim number As NumericUpDown = TryCast(c, NumericUpDown)
+        If number IsNot Nothing Then
+            SettingsNumericStepper.Apply(number, number.DeviceDpi / 96.0F, number.BackColor,
+                                         number.ForeColor, palette.Border, palette.Accent, trackDpi:=True)
+        End If
 
         ApplyNative(c, st, dark)
     End Sub
@@ -332,6 +392,10 @@ Friend NotInheritable Class ThemeApplier
         End If
 
         st.AppliedPalette = palette
+        If Not st.DisabledPaintHooked Then
+            st.DisabledPaintHooked = True
+            AddHandler b.Paint, AddressOf OnConvertedButtonPaint
+        End If
         If palette.IsDark Then
             If st.ButtonStandard Then
                 st.ButtonConverted = True
@@ -339,10 +403,6 @@ Friend NotInheritable Class ThemeApplier
                 b.UseVisualStyleBackColor = False
                 b.FlatAppearance.BorderSize = 1
                 st.BackRole = ThemeRole.Control
-                If Not st.DisabledPaintHooked Then
-                    st.DisabledPaintHooked = True
-                    AddHandler b.Paint, AddressOf OnConvertedButtonPaint
-                End If
             End If
             If st.ButtonConverted OrElse b.FlatAppearance.BorderColor.IsSystemColor OrElse b.FlatAppearance.BorderColor.IsEmpty Then
                 If b.FlatStyle = FlatStyle.Flat Then b.FlatAppearance.BorderColor = palette.Border
@@ -379,24 +439,31 @@ Friend NotInheritable Class ThemeApplier
     ''' unavailable button in dark mode was unreadable. APP-STYLE section 4 names the role
     ''' (`text.disabled`) for exactly this text; the button is repainted over the framework's own
     ''' drawing: the same face and border, the picture at reduced strength, the caption in the role.
-    ''' Only buttons this module converted (a button the code styled keeps its own look), and only
-    ''' while dark and disabled - every other state is the framework's untouched drawing.
+    ''' Covers converted buttons and ordinary flat buttons on dark faces, including
+    ''' self-themed windows. Faces and borders come from the button's own live colours.
     ''' </summary>
     Private Shared Sub OnConvertedButtonPaint(sender As Object, e As PaintEventArgs)
         Dim b As Button = TryCast(sender, Button)
         If b Is Nothing OrElse b.Enabled Then Return
         Dim st As ControlState = Nothing
-        If Not States.TryGetValue(b, st) OrElse Not st.ButtonConverted OrElse st.AppliedPalette Is Nothing Then Return
+        If Not States.TryGetValue(b, st) OrElse st.AppliedPalette Is Nothing Then Return
         Dim palette As ThemePalette = st.AppliedPalette
-        If Not palette.IsDark Then Return
+        If Not palette.IsDark OrElse b.FlatStyle <> FlatStyle.Flat Then Return
+        ' Derived controls that draw their own glyphs retain their paint implementation.
+        If Not st.ButtonConverted AndAlso b.GetType() IsNot GetType(Button) Then Return
+        ' Content-coloured windows can keep light buttons in a dark application theme.
+        If Not st.ButtonConverted AndAlso Math.Max(b.BackColor.R, Math.Max(b.BackColor.G, b.BackColor.B)) > 100 Then Return
         Dim g As Graphics = e.Graphics
         Dim bounds As Rectangle = b.ClientRectangle
-        Using face As New SolidBrush(palette.ControlFace)
+        If bounds.Width < 2 OrElse bounds.Height < 2 Then Return
+        Using face As New SolidBrush(b.BackColor)
             g.FillRectangle(face, bounds)
         End Using
-        Using edge As New Pen(palette.Border)
-            g.DrawRectangle(edge, 0, 0, bounds.Width - 1, bounds.Height - 1)
-        End Using
+        If b.FlatAppearance.BorderSize > 0 Then
+            Using edge As New Pen(b.FlatAppearance.BorderColor, b.FlatAppearance.BorderSize)
+                g.DrawRectangle(edge, 0, 0, bounds.Width - 1, bounds.Height - 1)
+            End Using
+        End If
 
         Dim rtl As Boolean = b.RightToLeft = RightToLeft.Yes
         Dim flags As TextFormatFlags = TextFormatFlags.NoPadding Or TextFormatFlags.HidePrefix Or TextFormatFlags.SingleLine Or

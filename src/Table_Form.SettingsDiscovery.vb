@@ -11,7 +11,7 @@ Imports System.Linq
 Imports System.Windows.Forms
 
 Partial Public Class Table_Form
-    ' The four header tools are icon buttons (search, expand all, collapse all, close): each draws its
+    ' The header tools are icon buttons (search, expand all, collapse all): each draws its
     ' picture in the button's CURRENT ink at the CURRENT scale, so a theme or a DPI change re-renders it.
     Private ReadOnly settingsToolIcons As New Dictionary(Of Button, Func(Of Integer, Color, Bitmap))()
     Private settingsPageHasGroups As Boolean = True
@@ -19,7 +19,6 @@ Partial Public Class Table_Form
     Private expandSettingsButton As Button
     Private collapseSettingsButton As Button
     Private sharedSoundButton As Button
-    Private closeSettingsButton As Button
     Private arrangingSettingsHeader As Boolean
     Private updatingThumbnailChoice As Boolean
     Private updatingAudioDefaults As Boolean
@@ -125,9 +124,7 @@ Partial Public Class Table_Form
         collapseSettingsButton = SettingsIconButton("settingsToolCollapseAll", Sub() SetPageGroupsExpanded(False),
             Function(size, ink) RenderSettingsGlyph(IconMap.GetMeaning("collapsibleSectionOpen").GlyphId, size, ink))
         sharedSoundButton = SettingsToolButton(Sub() RevealModernSetting("video_volume"))
-        ' The catalog has no close meaning; the cross is drawn here, not added to the vendored set.
-        closeSettingsButton = SettingsIconButton("settingsToolClose", Sub() Close(), AddressOf RenderSettingsCloseGlyph)
-        For Each tool As Button In {searchSettingsButton, expandSettingsButton, collapseSettingsButton, closeSettingsButton}
+        For Each tool As Button In {searchSettingsButton, expandSettingsButton, collapseSettingsButton}
             modernSettingsHeader.Controls.Add(tool)
         Next
         AddHandler modernSettingsHeader.Resize, Sub() ArrangeSettingsDiscoveryHeader()
@@ -243,29 +240,7 @@ Partial Public Class Table_Form
         Return GlyphRenderer.Render(glyphId, size, ink, AddressOf RuntimeBootstrap.OpenBundledAsset)
     End Function
 
-    ''' <summary>Two anti-aliased strokes inside the same live area the vocabulary glyphs keep (1..23 of 24).</summary>
-    Private Shared Function RenderSettingsCloseGlyph(size As Integer, ink As Color) As Bitmap
-        Dim bitmap As New Bitmap(size, size)
-        Try
-            bitmap.SetResolution(96.0F, 96.0F)
-            Using g As Graphics = Graphics.FromImage(bitmap)
-                g.SmoothingMode = Drawing2D.SmoothingMode.AntiAlias
-                g.PixelOffsetMode = Drawing2D.PixelOffsetMode.HighQuality
-                Dim inset As Single = size * 5.0F / 24.0F
-                Dim far As Single = size - inset
-                Using pen As New Pen(ink, Math.Max(1.5F, size / 12.0F)) With {.StartCap = Drawing2D.LineCap.Round, .EndCap = Drawing2D.LineCap.Round}
-                    g.DrawLine(pen, inset, inset, far, far)
-                    g.DrawLine(pen, far, inset, inset, far)
-                End Using
-            End Using
-        Catch
-            bitmap.Dispose()
-            Throw
-        End Try
-        Return bitmap
-    End Function
-
-    ''' <summary>Names, tooltips and pictures of the four header tools - the words are the localized strings the old
+    ''' <summary>Names, tooltips and pictures of the header tools - the words are the localized strings the old
     ''' text buttons carried, now the tooltip and the accessible name (an icon alone says nothing to a screen reader).</summary>
     Private Sub SetSettingsToolWords(button As Button, text As String)
         button.Text = String.Empty
@@ -280,7 +255,6 @@ Partial Public Class Table_Form
         SetSettingsToolWords(expandSettingsButton, Localization.T("Развернуть все"))
         SetSettingsToolWords(collapseSettingsButton, Localization.T("Свернуть все"))
         sharedSoundButton.Text = Localization.T("Общий звук: аудио и видео")
-        SetSettingsToolWords(closeSettingsButton, Localization.T("Закрыть"))
         For Each row In modernSettingsRows
             Dim number = TryCast(row.Editor, NumericUpDown)
             If number Is Nothing AndAlso row.Editor IsNot Nothing Then number = FindModernControls(Of NumericUpDown)(row.Editor).FirstOrDefault()
@@ -381,7 +355,7 @@ Partial Public Class Table_Form
         arrangingSettingsHeader = True
         Try
             ' One row of square icon tools on the header's END side (right; left under RTL), in reading order:
-            ' search, expand all, collapse all, close. A tool that is hidden on this page leaves no gap.
+            ' search, expand all, collapse all. A tool that is hidden on this page leaves no gap.
             Dim tools As New List(Of Button)()
             ' Control.Visible is False for everything while the window is not shown yet, so the page's own
             ' answer (the page has groups) is kept in a field instead of being read back from the buttons.
@@ -390,7 +364,6 @@ Partial Public Class Table_Form
                 tools.Add(expandSettingsButton)
                 tools.Add(collapseSettingsButton)
             End If
-            tools.Add(closeSettingsButton)
             Dim side As Integer = Sp(SettingsToolSide)
             Dim gap As Integer = Sp(6)
             Dim edge As Integer = Sp(16)

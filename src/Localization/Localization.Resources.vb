@@ -1110,6 +1110,104 @@ Partial Public NotInheritable Class Localization
             "সেটিংস ফাইল তৈরি করা যায়নি।",
             "ترتیبات کی فائل تیار نہیں ہو سکی۔",
             "无法生成设置文件。")
+
+        ' --- the local SFTP server's shares, shown in the viewer's list as a mirror ---------
+        ' The Share Manager owns these folders; the viewer only shows them and hands the
+        ' user over. The sentences name the Share Manager as the place to go - they never
+        ' offer to change the folder here.
+
+        Add("Общая папка (Share Manager)",
+            "Shared folder (Share Manager)", "Спільна папка (Share Manager)",
+            "Freigegebener Ordner (Share Manager)", "Cartella condivisa (Share Manager)",
+            "Carpeta compartida (Share Manager)", "Dossier partagé (Share Manager)", "Pasta compartilhada (Share Manager)",
+            "مجلد مشترك (Share Manager)",
+            "साझा फ़ोल्डर (Share Manager)", "শেয়ার করা ফোল্ডার (Share Manager)", "مشترک فولڈر (Share Manager)",
+            "共享文件夹 (Share Manager)")
+
+        Add("Диск (Share Manager)",
+            "Disk (Share Manager)", "Диск (Share Manager)",
+            "Datenträger (Share Manager)", "Disco (Share Manager)",
+            "Disco (Share Manager)", "Disque (Share Manager)", "Disco (Share Manager)",
+            "قرص (Share Manager)",
+            "डिस्क (Share Manager)", "ডিস্ক (Share Manager)", "ڈسک (Share Manager)",
+            "磁盘 (Share Manager)")
+
+        Add("Этой общей папкой управляет Share Manager",
+            "This shared folder is managed in Share Manager", "Цією спільною папкою керує Share Manager",
+            "Dieser freigegebene Ordner wird im Share Manager verwaltet", "Questa cartella condivisa è gestita in Share Manager",
+            "Esta carpeta compartida se gestiona en Share Manager", "Ce dossier partagé est géré dans Share Manager",
+            "Esta pasta compartilhada é gerenciada no Share Manager", "هذا المجلد المشترك يُدار في Share Manager",
+            "इस साझा फ़ोल्डर को Share Manager में प्रबंधित किया जाता है", "এই শেয়ার করা ফোল্ডারটি Share Manager-এ পরিচালিত হয়",
+            "یہ مشترک فولڈر Share Manager میں منظم کیا جاتا ہے", "此共享文件夹由 Share Manager 管理")
+
+        Add("Этой общей папкой управляет Share Manager - открываю его..",
+            "This shared folder is managed in Share Manager - opening it..", "Цією спільною папкою керує Share Manager - відкриваю його..",
+            "Dieser freigegebene Ordner wird im Share Manager verwaltet - er wird geöffnet..",
+            "Questa cartella condivisa è gestita in Share Manager - apertura..",
+            "Esta carpeta compartida se gestiona en Share Manager - abriéndolo..",
+            "Ce dossier partagé est géré dans Share Manager - ouverture..",
+            "Esta pasta compartilhada é gerenciada no Share Manager - abrindo-o..",
+            "هذا المجلد المشترك يُدار في Share Manager - جارٍ فتحه..",
+            "इस साझा फ़ोल्डर को Share Manager में प्रबंधित किया जाता है - उसे खोल रहा हूँ..",
+            "এই শেয়ার করা ফোল্ডারটি Share Manager-এ পরিচালিত হয় - খুলছি..",
+            "یہ مشترک فولڈر Share Manager میں منظم کیا جاتا ہے - کھول رہا ہوں..",
+            "此共享文件夹由 Share Manager 管理 - 正在打开..")
+
+        Add("Папки нет на диске - проверьте общую папку в Share Manager",
+            "The folder is not on the disk - check the shared folder in Share Manager",
+            "Папки немає на диску - перевірте спільну папку в Share Manager",
+            "Der Ordner ist nicht auf dem Datenträger - prüfen Sie den freigegebenen Ordner im Share Manager",
+            "La cartella non è sul disco - controllare la cartella condivisa in Share Manager",
+            "La carpeta no está en el disco - compruebe la carpeta compartida en Share Manager",
+            "Le dossier n'est pas sur le disque - vérifiez le dossier partagé dans Share Manager",
+            "A pasta não está no disco - verifique a pasta compartilhada no Share Manager",
+            "المجلد غير موجود على القرص - تحقق من المجلد المشترك في Share Manager",
+            "फ़ोल्डर डिस्क पर नहीं है - साझा फ़ोल्डर की Share Manager में जाँच करें",
+            "ফোল্ডারটি ডিস্কে নেই - শেয়ার করা ফোল্ডারটি Share Manager-এ দেখুন",
+            "فولڈر ڈسک پر موجود نہیں - مشترک فولڈر کی Share Manager میں تصدیق کریں",
+            "磁盘上没有该文件夹 - 请在 Share Manager 中检查此共享文件夹")
+
+        Add("Нет доступа к папке на этом компьютере - она смонтирована службой. Проверьте общую папку в Share Manager",
+            "No access to the folder on this computer - it is mounted by the service. Check the shared folder in Share Manager",
+            "Немає доступу до папки на цьому комп'ютері - її змонтовано службою. Перевірте спільну папку в Share Manager",
+            "Kein Zugriff auf den Ordner auf diesem Computer - er wird vom Dienst gemountet. Prüfen Sie den freigegebenen Ordner im Share Manager",
+            "Nessun accesso alla cartella su questo computer - è montata dal servizio. Controllare la cartella condivisa in Share Manager",
+            "Sin acceso a la carpeta en este ordenador - está montada por el servicio. Compruebe la carpeta compartida en Share Manager",
+            "Pas d'accès au dossier sur cet ordinateur - il est monté par le service. Vérifiez le dossier partagé dans Share Manager",
+            "Sem acesso à pasta neste computador - ela é montada pelo serviço. Verifique a pasta compartilhada no Share Manager",
+            "لا يمكن الوصول إلى المجلد على هذا الكمبيوتر - فهو مثبت بواسطة الخدمة. تحقق من المجلد المشترك في Share Manager",
+            "इस कंप्यूटर पर फ़ोल्डर तक पहुँच नहीं है - यह सेवा द्वारा माउंट किया गया है। साझा फ़ोल्डर की Share Manager में जाँच करें",
+            "নো অ্যাক্সেস কম্পিউটারের এই ফোল্ডারে - এটি পরিষেবা দ্বারা মাউন্ট করা। শেয়ার করা ফোল্ডারটি Share Manager-এ দেখুন",
+            "اس فولڈر تک رسائی نہیں اس کمپیوٹر پر - یہ سروس نے ماؤنٹ کیا ہے۔ مشترک فولڈر کی Share Manager میں تصدیق کریں",
+            "无法访问此计算机上的该文件夹 - 它由服务挂载。请在 Share Manager 中检查此共享文件夹")
+
+        Add("«{0}»: папки нет на диске - проверьте общую папку в Share Manager",
+            "«{0}»: the folder is not on the disk - check the shared folder in Share Manager",
+            "«{0}»: папки немає на диску - перевірте спільну папку в Share Manager",
+            "«{0}»: Der Ordner ist nicht auf dem Datenträger - prüfen Sie den freigegebenen Ordner im Share Manager",
+            "«{0}»: la cartella non è sul disco - controllare la cartella condivisa in Share Manager",
+            "«{0}»: la carpeta no está en el disco - compruebe la carpeta compartida en Share Manager",
+            "«{0}» : le dossier n'est pas sur le disque - vérifiez le dossier partagé dans Share Manager",
+            "«{0}»: a pasta não está no disco - verifique a pasta compartilhada no Share Manager",
+            "«{0}»: المجلد غير موجود على القرص - تحقق من المجلد المشترك في Share Manager",
+            "«{0}»: फ़ोल्डर डिस्क पर नहीं है - साझा फ़ोल्डर की Share Manager में जाँच करें",
+            "«{0}»: ফোল্ডারটি ডিস্কে নেই - শেয়ার করা ফোল্ডারটি Share Manager-এ দেখুন",
+            "«{0}»: فولڈر ڈسک پر موجود نہیں - مشترک فولڈر کی Share Manager میں تصدیق کریں",
+            "「{0}」：磁盘上没有该文件夹 - 请在 Share Manager 中检查此共享文件夹")
+
+        Add("«{0}»: нет доступа к папке на этом компьютере - она смонтирована службой. Проверьте общую папку в Share Manager",
+            "«{0}»: no access to the folder on this computer - it is mounted by the service. Check the shared folder in Share Manager",
+            "«{0}»: немає доступу до папки на цьому комп'ютері - її змонтовано службою. Перевірте спільну папку в Share Manager",
+            "«{0}»: Kein Zugriff auf den Ordner auf diesem Computer - er wird vom Dienst gemountet. Prüfen Sie den freigegebenen Ordner im Share Manager",
+            "«{0}»: Nessun accesso alla cartella su questo computer - è montata dal servizio. Controllare la cartella condivisa in Share Manager",
+            "«{0}»: Sin acceso a la carpeta en este ordenador - está montada por el servicio. Compruebe la carpeta compartida en Share Manager",
+            "«{0}» : Pas d'accès au dossier sur cet ordinateur - il est monté par le service. Vérifiez le dossier partagé dans Share Manager",
+            "«{0}»: Sem acesso à pasta neste computador - ela é montada pelo serviço. Verifique a pasta compartilhada no Share Manager",
+            "«{0}»: لا يمكن الوصول إلى المجلد على هذا الكمبيوتر - فهو مثبت بواسطة الخدمة. تحقق من المجلد المشترك في Share Manager",
+            "«{0}»: इस कंप्यूटर पर फ़ोल्डर तक पहुँच नहीं है - यह सेवा द्वारा माउंट किया गया है। साझा फ़ोल्डर की Share Manager में जाँच करें",
+            "«{0}»: নো অ্যাক্সেস কম্পিউটারের এই ফোল্ডারে - এটি পরিষেবা দ্বারা মাউন্ট করা। শেয়ার করা ফোল্ডারটি Share Manager-এ দেখুন",
+            "«{0}»: اس فولڈر تک رسائی نہیں اس کمپیوٹر پر - یہ سروس نے ماؤنٹ کیا ہے۔ مشترک فولڈر کی Share Manager میں تصدیق کریں",
+            "「{0}」：无法访问此计算机上的该文件夹 - 它由服务挂载。请在 Share Manager 中检查此共享文件夹")
     End Sub
 
 End Class

@@ -4,6 +4,7 @@ Option Strict On
 Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.Globalization
+Imports System.IO
 Imports System.Linq
 Imports System.Threading
 Imports System.Threading.Tasks
@@ -100,6 +101,15 @@ Friend NotInheritable Class Resource_List_Panel
     Private ReadOnly secrets As IResourceSecretStore
     Private ReadOnly confirmRemove As Func(Of ResourceDescriptor, Boolean)
     Private ReadOnly customStore As Boolean
+    ''' <summary>Where the local SFTP server's mirror rows come from. Nothing means "none":
+    ''' the tests' injected world (a custom hive) shows no shares unless it names a source,
+    ''' so a test never reads the machine's share list; the shipped hosts inject the real one.</summary>
+    Private ReadOnly managedShareSource As Func(Of IEnumerable(Of ResourceDescriptor))
+    ''' <summary>The handover for a managed row's Edit/Remove - waking the Share Manager.
+    ''' The hosts pass their own entry point; without one the mirror rule still holds (the
+    ''' command only says where the folder is managed), so the panel never grows a
+    ''' dependency on a form.</summary>
+    Private ReadOnly manageSharesAction As Action
 
     ''' <summary>Any registry write happened through this panel: adds, edits, removals, imports.
     ''' Carries the ids removed so far, so a host can close a resource that is on screen.</summary>
@@ -125,7 +135,9 @@ Friend NotInheritable Class Resource_List_Panel
                    Optional secretStore As IResourceSecretStore = Nothing,
                    Optional removeConfirmation As Func(Of ResourceDescriptor, Boolean) = Nothing,
                    Optional withPrimaryOpen As Boolean = False,
-                   Optional deviceScale As Boolean = False)
+                   Optional deviceScale As Boolean = False,
+                   Optional managedShares As Func(Of IEnumerable(Of ResourceDescriptor)) = Nothing,
+                   Optional openShareManager As Action = Nothing)
         panelScale = If(scale > 0.0F, scale, 1.0F)
         scaleIncludesDpi = deviceScale
         customStore = readValue IsNot Nothing OrElse writeValue IsNot Nothing OrElse secretStore IsNot Nothing
@@ -133,6 +145,8 @@ Friend NotInheritable Class Resource_List_Panel
         hiveWrite = If(writeValue, AddressOf ResourceRegistry.HiveWrite)
         secrets = If(secretStore, New RegistryResourceSecretStore())
         confirmRemove = If(removeConfirmation, AddressOf AskRemoveConfirmation)
+        managedShareSource = managedShares
+        manageSharesAction = openShareManager
 
         If Localization.IsRightToLeft() Then RightToLeft = RightToLeft.Yes
 
@@ -585,11 +599,21 @@ Friend NotInheritable Class Resource_List_Panel
 
     ' ---------------------------------------------------------------------------- list ----
 
-    ''' <summary>The list's source. The real hive keeps its own recovery path
-    ''' (<see cref="ResourceRegistry.Load"/>); an injected reader is the tests' in-memory registry.</summary>
+    ''' <summary>The list's source: the user's registered resources plus the local SFTP
+    ''' server's shares as mirror rows (<see cref="WorkerShares"/>). The real hive keeps its
+    ''' own recovery path (<see cref="ResourceRegistry.Load"/>); an injected reader is the
+    ''' tests' in-memory registry, and an injected share source the tests' share list - a
+    ''' custom hive must never make the panel read the machine's real shares.</summary>
     Private Function LoadResources() As List(Of ResourceDescriptor)
-        If customStore Then Return ResourceRegistry.Parse(hiveRead(ResourceRegistry.Value_Name))
-        Return ResourceRegistry.Load()
+        Dim registered As List(Of ResourceDescriptor) =
+            If(customStore, ResourceRegistry.Parse(hiveRead(ResourceRegistry.Value_Name)), ResourceRegistry.Load())
+        Dim managed As IEnumerable(Of ResourceDescriptor) = Nothing
+        If managedShareSource IsNot Nothing Then
+            managed = managedShareSource()
+        ElseIf Not customStore Then
+            managed = WorkerShares.Load()
+        End If
+        Return WorkerShares.Combined(registered, managed)
     End Function
 
     ''' <summary>The type glyph of a row (131 §3.3): the catalogue's resource meaning for an
@@ -627,7 +651,15 @@ Friend NotInheritable Class Resource_List_Panel
     End Sub
 
     Private Sub UpdateRowPresentation(item As ListViewItem, resource As ResourceDescriptor)
-        Dim values As String() = {resource.DisplayName, ResourceMessages.KindLabel(resource.Kind),
+        Dim typeText As String
+        If WorkerShares.IsManagedDisk(resource) Then
+            typeText = Localization.T(ManagedDiskTypeLabelKey)
+        ElseIf WorkerShares.IsManaged(resource) Then
+            typeText = Localization.T(ManagedTypeLabelKey)
+        Else
+            typeText = ResourceMessages.KindLabel(resource.Kind)
+        End If
+        Dim values As String() = {resource.DisplayName, typeText,
             ResourceMessages.DisplayAddress(resource),
             If(resource.ReadOnlyHint, Localization.T("только чтение"), Localization.T("чтение и запись")),
             If(resource.LastUsedUtc.HasValue, resource.LastUsedUtc.Value.ToLocalTime().ToString("g", CultureInfo.CurrentCulture), "")}
@@ -665,13 +697,24 @@ Friend NotInheritable Class Resource_List_Panel
     End Sub
 
     Private Sub UpdateButtons()
-        Dim has As Boolean = Selected() IsNot Nothing
+        Dim current As ResourceDescriptor = Selected()
+        Dim has As Boolean = current IsNot Nothing
         SetSelectionState(editButton, has)
         SetSelectionState(removeButton, has)
         SetSelectionState(testButton, has)
         If openButton IsNot Nothing Then
             SetSelectionState(openButton, has)
             StylePrimaryOpen(has)
+        End If
+        ' A managed row's Edit and Remove stay ON - the click hands the user over to the
+        ' Share Manager - so the tooltip and the accessible name say up front where the
+        ' folder is really managed.
+        If has AndAlso WorkerShares.IsManaged(current) Then
+            Dim note As String = Localization.T(ManagedNoteKey)
+            tips.SetToolTip(editButton, note)
+            tips.SetToolTip(removeButton, note)
+            editButton.AccessibleName = editButton.Text & " - " & note
+            removeButton.AccessibleName = removeButton.Text & " - " & note
         End If
     End Sub
 
@@ -686,6 +729,9 @@ Friend NotInheritable Class Resource_List_Panel
     End Enum
 
     Private Const NoSelectionReasonKey As String = "Сначала выберите ресурс в списке"
+    Private Const ManagedTypeLabelKey As String = "Общая папка (Share Manager)"
+    Private Const ManagedDiskTypeLabelKey As String = "Диск (Share Manager)"
+    Private Const ManagedNoteKey As String = "Этой общей папкой управляет Share Manager"
 
     Private Sub Say(text As String, Optional severity As ResourceStatusSeverity = ResourceStatusSeverity.None)
         lastSeverity = severity
@@ -805,8 +851,20 @@ Friend NotInheritable Class Resource_List_Panel
 
     Private Sub OnEdit(sender As Object, e As EventArgs)
         Dim current As ResourceDescriptor = Selected()
-        If current IsNot Nothing Then AddOrEdit(current, Nothing)
+        If current Is Nothing Then Return
+        If HandOverToShareManager(current) Then Return
+        AddOrEdit(current, Nothing)
     End Sub
+
+    ''' <summary>A share of the local SFTP server is the Share Manager's business: its Edit
+    ''' and Remove become a handover - the mirror is neither changed nor deleted here. True
+    ''' when the row was one.</summary>
+    Private Function HandOverToShareManager(current As ResourceDescriptor) As Boolean
+        If Not WorkerShares.IsManaged(current) Then Return False
+        Say(Localization.T("Этой общей папкой управляет Share Manager - открываю его.."))
+        If manageSharesAction IsNot Nothing Then manageSharesAction()
+        Return True
+    End Function
 
     Private Sub OnOpen(sender As Object, e As EventArgs)
         Dim chosen As ResourceDescriptor = Selected()
@@ -841,6 +899,7 @@ Friend NotInheritable Class Resource_List_Panel
     Private Sub OnRemove(sender As Object, e As EventArgs)
         Dim current As ResourceDescriptor = Selected()
         If current Is Nothing Then Return
+        If HandOverToShareManager(current) Then Return
         If Not confirmRemove(current) Then Return
         Dim result As ResourceCommitResult = ResourceCommit.Remove(current.Id, hiveRead, hiveWrite, secrets)
         If result.Succeeded Then
@@ -856,6 +915,22 @@ Friend NotInheritable Class Resource_List_Panel
     Private Async Sub OnTest(sender As Object, e As EventArgs)
         Dim current As ResourceDescriptor = Selected()
         If current Is Nothing Then Return
+        ' A managed row is a folder of this machine: the honest test is the folder itself,
+        ' right now - no credential read, no dial. "Not there" and "not for this user"
+        ' are different sentences: a service-held FileDO disk is mounted with FileDO's
+        ' private SYSTEM-only DACL, and the share itself may be perfectly alive.
+        If WorkerShares.IsManaged(current) Then
+            Select Case WorkerShares.ClassifyFolder(current.RootPath)
+                Case WorkerShares.FolderPresence.Present
+                    Say(Localization.T("Папка открывается"), ResourceStatusSeverity.Success)
+                Case WorkerShares.FolderPresence.Denied
+                    Say(Localization.T("Нет доступа к папке на этом компьютере - она смонтирована службой. Проверьте общую папку в Share Manager"),
+                        ResourceStatusSeverity.Warning)
+                Case Else
+                    Say(Localization.T("Папки нет на диске - проверьте общую папку в Share Manager"), ResourceStatusSeverity.Danger)
+            End Select
+            Return
+        End If
         testCancel?.Cancel()
         testCancel?.Dispose()
         Dim cancel As New CancellationTokenSource()
@@ -946,10 +1021,14 @@ Friend NotInheritable Class Resource_List_Panel
     Friend Function BuildOverflowItems() As List(Of ChromeMenuItem)
         Dim hasSelection As Boolean = Selected() IsNot Nothing
         Dim reason As String = If(hasSelection, "", Localization.T(NoSelectionReasonKey))
+        ' Exporting a managed share is the Share Manager's job (its wizard builds the phone's
+        ' .fmscfg), so the row is refused with the handover as the reason.
+        Dim managedNote As String = If(hasSelection AndAlso WorkerShares.IsManaged(Selected()), Localization.T(ManagedNoteKey), "")
+        Dim exportReason As String = If(managedNote.Length > 0, managedNote, reason)
         Dim export As New ChromeMenuItem("res_Export") With {
             .GlyphId = "action.share", .Caption = Localization.T("Экспорт.."),
-            .AccessibleName = If(hasSelection, Localization.T("Экспорт.."), Localization.T("Экспорт..") & " - " & reason),
-            .Enabled = hasSelection, .DisabledReason = reason}
+            .AccessibleName = If(exportReason.Length = 0, Localization.T("Экспорт.."), Localization.T("Экспорт..") & " - " & exportReason),
+            .Enabled = exportReason.Length = 0, .DisabledReason = exportReason}
         If hasSelection Then export.Action = Sub() OnExport(Nothing, EventArgs.Empty)
         Dim importFile As New ChromeMenuItem("res_ImportFile") With {
             .GlyphId = "action.choose-file", .Caption = Localization.T("Импорт из файла.."),

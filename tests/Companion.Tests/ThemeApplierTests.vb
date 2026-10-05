@@ -127,7 +127,7 @@ Public Class ThemeApplierTests
     End Sub
 
     <Fact>
-    Public Sub Light_after_dark_puts_back_exactly_what_was_there()
+    Public Sub Light_after_dark_restores_surfaces_and_keeps_status_text_readable()
         Dim s As New Sample()
         Dim before As Color() = {s.Form.BackColor, s.Edit.BackColor, s.Combo.BackColor, s.List.BackColor, s.Note.ForeColor}
         Dim originalLink As Color = s.Link.LinkColor
@@ -140,7 +140,7 @@ Public Class ThemeApplierTests
         For i As Integer = 0 To before.Length - 1
             Assert.Equal(before(i).ToArgb(), after(i).ToArgb())
         Next
-        Assert.Equal(Color.ForestGreen.ToArgb(), s.Status.ForeColor.ToArgb())
+        Assert.True(AccentColors.Contrast(s.Status.ForeColor, s.Status.BackColor) >= 4.5R)
         Assert.Equal(FlatStyle.Standard, s.Standard.FlatStyle)
         Assert.True(s.Standard.UseVisualStyleBackColor)
         Assert.Equal(FlatStyle.Standard, s.Combo.FlatStyle)

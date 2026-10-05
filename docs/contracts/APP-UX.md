@@ -1,9 +1,9 @@
-# Pointer - `APP-BEHAVIOUR` and `APP-STYLE`
+# Pointer - desktop UX and `WINDOWS-UI`
 
 | | |
 | --- | --- |
-| **Ids** | `APP-BEHAVIOUR` (the twelve shared moments) and `APP-STYLE` (theme mechanism, palette roles) |
-| **Version** | 0.12 / 0.11, draft (read 2026-10-02). Owner: StreamsPlayer. The same folder founded `APP-SETTINGS` 0.1 (CyrFlip) on 2026-10-02 - not yet read against this product |
+| **Ids** | `APP-BEHAVIOUR`, `APP-STYLE`, `APP-SETTINGS`, `WINDOWS-UI` |
+| **Version** | 0.12 / 0.12 / 0.2 / 0.1, draft. Windows profile and amendments read 2026-10-05; general behaviour retains its 2026-10-02 audit. Owners: StreamsPlayer, CyrFlip, and this Windows reference respectively |
 | **Home** | `desktop-app-ux/README.md` in the shared contracts catalog |
 | **Role here** | consumer, twice - the viewer (.NET 10 mainline) and the Share Manager each have their own registry row; audit and phases in `specification 028` (local specification) |
 
@@ -45,9 +45,9 @@
   positive mark; on a confirmation the role marks the acting button, never the focus. The shared day tone
   of `state.warning`, pinned by `ICON-RENDER` 0.14 section 10 D, is `#EF6C00` - `ThemePalette` follows it
   since 2026-10-02, and no window paints a role colour as a literal. The one deliberate exception is the
-  settings navigation's per-page identity inks (specification 128, 2026-10-05): a dated registry exception
-  and `iconography/PROPOSAL-2026-10-05-fms-windows-nav-identity-colors.md` carry it until the owner
-  decides; the inks live in one gated table, never at a call site.
+  settings navigation's per-page identity inks (specification 128, 2026-10-05), accepted by
+  `ICON-RENDER` 0.16 section 11 and `APP-STYLE` 0.12 section 10. The inks live in one gated table,
+  never at a call site; actual row-state contrast and high contrast require their own acceptance.
 - **The language selector follows `APP-SETTINGS` rules 5 and 7** (read against this product 2026-10-04, owner
   direction): on the first settings page, every shipped language by its endonym, no flag, applied at once
   to every open window (`LanguageSelectorContractTests`); the settings drop-down lists share one pixel font
@@ -59,3 +59,19 @@
   acceptance still unverified. Group/navigation/value targets are enlarged; real spoken output is not inferred
   from accessibility properties. Later findings of audit 122 remain separate open follow-ups.
 - The net48 x86 fallback takes bug fixes only; its gaps are one dated exception in the registry.
+
+## Windows reference profile - owner decision 2026-10-05
+
+`WINDOWS-UI` 0.1 is the shared Windows settings/dialog/working-viewer profile requested by the portfolio
+owner. `APP-SETTINGS` 0.2 section 8 accepts the previously proposed independent groups and remembered
+context; `APP-STYLE` 0.12 section 10 clarifies complete theme lifecycle coverage. Earlier 0.1 references
+above describe historical audit evidence, not the current catalog version.
+
+The modern viewer is the reference. Adopt by ID and section; the shared catalog holds the normative
+text and source-derived metric/hash artifact. Full runtime, physical DPI, high-contrast and spoken
+accessibility conformance remains separately verified. The net48 maintenance policy is unchanged.
+
+The [2026-10-05 Windows UI audit](../guides/WINDOWS_UI_AUDIT.md) records a bounded construction/theme pass
+over all 37 viewer and Share Manager form types, seven rendered dialog types, native numeric checks,
+menu construction and corrected shared defects. Full interaction, physical DPI, live high contrast and
+spoken accessibility acceptance remains open; the audit does not declare whole-profile conformity.

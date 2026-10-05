@@ -43,9 +43,9 @@ Partial Public Class Table_Form
         pageIds.Add(Tab_Page_5, "ocr")
         pageIds.Add(modernTranslationPage, "translation")
         pageIds.Add(modernStoragePage, "storage")
-        pageIds.Add(modernSftpPage, "sharing")
         pageIds.Add(modernAboutPage, "about")
         pageIds.Add(modernResourcesPage, "resources")
+        settingsContext.MergeSharingIntoResources()
         CreateModernPageFlow(modernGeneralPage)
         CreateModernPageFlow(modernStoragePage)
         For Each page As TabPage In pageIds.Keys
@@ -101,16 +101,19 @@ Partial Public Class Table_Form
                          "archive_cache_limit", "archive_cache_clear",
                          "remote_cache_limit", "remote_cache_clear")
         AddSettingsGroup("storage", "ocr", "Распознавание текста", True, "ocr_disk_cache", "ocr_cache_limit", "ocr_cache_clear")
-        AddSettingsGroup("sharing", "basic", "Основные настройки", True, "sftp_intro", "sftp_manager", "sftp_guide", "android_app")
-        ' Ticket 118, revised by 131: the resources page is one group whose body holds the intro
-        ' block and the shared list panel (moved in below, like the recipients grid); the Open
-        ' command lives in the panel's own action row, so there is no resources_open row here.
-        AddSettingsGroup("resources", "basic", "Основные настройки", True, "resources_intro")
+        ' One page hosts the resource list and server controls in independent groups.
+        ' The Open command remains in the list panel's own action row.
+        AddSettingsGroup("resources", "basic", "Ресурсы", True, "resources_intro")
+        AddSettingsGroup("resources", "server", "Android / SFTP", True, "sftp_intro", "sftp_manager", "sftp_guide", "android_app")
         Dim resourcesFlow As FlowLayoutPanel = PageFlow(modernResourcesPage)
         For Each child As Control In resourcesFlow.Controls.Cast(Of Control)().Where(Function(c) Not TypeOf c Is SettingsCollapsibleGroup).ToArray()
+            If modernSettingsRows.Any(Function(row) row.Host Is child) Then Continue For
             child.Name = "settingsResourcesPanel"
             settingsGroups("resources/basic").Body.Controls.Add(child)
         Next
+        Dim resourcesHost As Panel = DirectCast(resourcesPanel.Parent, Panel)
+        AddHandler settingsGroups("resources/server").SizeChanged,
+            Sub() SizeResourcesListHost(resourcesFlow, resourcesHost)
 
         For Each heading As ModernSettingRow In modernSettingsRows.Where(Function(r) r.Key.StartsWith("section_", StringComparison.Ordinal)).ToArray()
             modernSettingsRows.Remove(heading)

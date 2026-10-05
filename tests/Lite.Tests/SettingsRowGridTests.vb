@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Explicit On
 Option Strict On
 Option Infer On
@@ -25,25 +25,26 @@ Public Class SettingsRowGridTests
         Assert.Equal(SettingsRowGridRules.MaxValueColumnWidth, SettingsRowGridRules.PageValueColumn(Integer.MaxValue))
     End Sub
 
-    <Fact>
-    Public Sub Two_columns_apply_at_and_above_the_stacked_threshold()
-        Dim column As Integer = SettingsRowGridRules.PageValueColumn(340)
-        Assert.False(SettingsRowGridRules.IsTwoColumn(SettingsRowGridRules.StackedBelowWidth - 1, column))
-        Assert.False(SettingsRowGridRules.IsTwoColumn(SettingsRowGridRules.StackedBelowWidth, column))
-        Assert.True(SettingsRowGridRules.IsTwoColumn(SettingsRowGridRules.StackedBelowWidth, SettingsRowGridRules.MinValueColumnWidth))
-        Assert.True(SettingsRowGridRules.IsTwoColumn(SettingsRowGridRules.StackedBelowWidth + 400, column))
+    <Theory>
+    <InlineData(880, 340, 340)>
+    <InlineData(598, 340, 340)>
+    <InlineData(560, 340, 302)>
+    <InlineData(440, 340, 201)>
+    <InlineData(320, 340, 141)>
+    Public Sub Narrow_rows_keep_the_editor_beside_readable_labels(contentWidth As Integer, preferredWidth As Integer, expectedWidth As Integer)
+        Dim column As Integer = SettingsRowGridRules.FitValueColumn(contentWidth, preferredWidth)
+        Assert.Equal(expectedWidth, column)
+        Dim labels As Integer = SettingsRowGridRules.LabelColumnWidth(contentWidth, column)
+        Assert.True(labels >= Math.Min(SettingsRowGridRules.MinLabelColumnWidth,
+                                      (contentWidth - SettingsRowGridRules.RowColumnInsets) \ 2))
+        Assert.Equal(contentWidth, labels + column + SettingsRowGridRules.RowColumnInsets)
     End Sub
 
     <Fact>
-    Public Sub A_page_column_that_would_starve_the_labels_stacks()
-        ' Insets count against the label floor as well as the shared column.
-        Dim column As Integer = SettingsRowGridRules.MaxValueColumnWidth
-        Dim minimumHost As Integer = column + SettingsRowGridRules.MinLabelColumnWidth + SettingsRowGridRules.RowColumnInsets
-        Assert.True(SettingsRowGridRules.IsTwoColumn(minimumHost, column))
-        ' One logical px more column and the labels are under their floor.
-        Assert.False(SettingsRowGridRules.IsTwoColumn(minimumHost - 1, column))
-        ' A narrower column on the same content width keeps two columns.
-        Assert.True(SettingsRowGridRules.IsTwoColumn(SettingsRowGridRules.StackedBelowWidth, SettingsRowGridRules.MinValueColumnWidth))
+    Public Sub A_narrow_preferred_column_does_not_expand_when_the_window_shrinks()
+        Assert.Equal(200, SettingsRowGridRules.FitValueColumn(560, 200))
+        Assert.Equal(110, SettingsRowGridRules.FitValueColumn(440, 110))
+        Assert.Equal(1, SettingsRowGridRules.FitValueColumn(0, 340))
     End Sub
 
     <Fact>
@@ -60,17 +61,6 @@ Public Class SettingsRowGridTests
         Assert.Equal(280, SettingsRowGridRules.EditorWidth(280, 300, False))
         ' A fixed editor never overflows the column it belongs to.
         Assert.Equal(340, SettingsRowGridRules.EditorWidth(400, 340, False))
-    End Sub
-
-    <Fact>
-    Public Sub The_stacked_fallback_stretches_only_fill_editors()
-        ' A text editor fills the stacked row's content width.
-        Assert.Equal(400, SettingsRowGridRules.StackedEditorWidth(200, 400, True))
-        ' A button, a checkbox and a spinner keep their text-fitted or declared width.
-        Assert.Equal(120, SettingsRowGridRules.StackedEditorWidth(120, 400, False))
-        ' And nothing is wider than the row actually is.
-        Assert.Equal(150, SettingsRowGridRules.StackedEditorWidth(280, 150, False))
-        Assert.Equal(150, SettingsRowGridRules.StackedEditorWidth(280, 150, True))
     End Sub
 
     <Fact>

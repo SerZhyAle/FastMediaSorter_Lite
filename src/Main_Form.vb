@@ -652,12 +652,19 @@ Public Class Main_Form
     ' lbl_Folder.MouseClick used to also run CopyFilePathToClipboard() here, which
     ' fired after Label1_Click and overwrote the clipboard with the FILE path - so a
     ' click on "Каталог:" copied the file, contradicting the "copy the folder path"
-    ' tooltip. The file-path copy already lives on lbl_Current_File / lbl_Status; the
-    ' folder label keeps only Label1_Click (folder path).
+    ' tooltip. The file-path copy now lives on lbl_Current_File only; the folder label
+    ' keeps only Label1_Click (folder path).
+    '
+    ' A click on lbl_Status copies the status line itself: it can be a long error
+    ' message the user needs verbatim (support), and the label may clip what does not
+    ' fit - lbl_Status.Text still carries the whole string. The guard keeps a second
+    ' click (double-click) from copying the confirmation message instead.
 
     Private Sub StatusL_MouseClick(sender As Object, e As MouseEventArgs) Handles lbl_Status.MouseClick
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1980: lbl_Status MouseClick")
-        CopyFilePathToClipboard()
+        Dim copied_Message As String = Localization.T("Текст статуса скопирован в буфер")
+        If lbl_Status.Text = copied_Message Then Return
+        CopyTextToClipboard(lbl_Status.Text, lbl_Status, copied_Message)
     End Sub
 
 

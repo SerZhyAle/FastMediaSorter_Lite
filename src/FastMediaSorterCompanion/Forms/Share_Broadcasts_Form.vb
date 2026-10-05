@@ -87,6 +87,8 @@ Public NotInheritable Class Share_Broadcasts_Form
         pnlDesc.Controls.Add(lblGatewayDesc)
         pnlDesc.Controls.Add(lblGatewayStatus)
         pnlMain.Controls.Add(pnlDesc, 0, 1)
+        lblGatewayDesc.Margin = Padding.Empty
+        CheckBoxLayout.BindHint(chkEnableGateway, pnlDesc)
 
         ' Broadcasts ListView
         lvBroadcasts = New ListView With {

@@ -152,6 +152,47 @@ Public Class ChromeInkLayerTests
         Assert.Matches("UseInkLayer\s*=\s*Not theme\.IsHighContrast AndAlso theme\.PanelOpacity\s*<\s*0\.999R", menu)
     End Sub
 
+    <Theory>
+    <InlineData(False)>
+    <InlineData(True)>
+    Public Sub The_folder_field_owns_its_caption_in_both_paint_modes(external As Boolean)
+        OnSta(Sub()
+                  Using surface As ChromeSurface = NewSurface()
+                      Dim item As ChromeItem = surface.Items(0)
+                      Using field As New ChromePathBox With {.Bounds = item.Bounds, .Text = "C:\Media"}
+                          surface.Controls.Add(field)
+                          surface.InkExternal = external
+                          Using baseline As New Bitmap(surface.Width, surface.Height)
+                              Using actual As New Bitmap(surface.Width, surface.Height)
+                                  Dim paint As Action(Of Bitmap) =
+                                      Sub(bitmap)
+                                          Using g As Graphics = Graphics.FromImage(bitmap)
+                                              If external Then
+                                                  surface.PaintInk(g)
+                                              Else
+                                                  Dim method = GetType(ChromeSurface).GetMethod("OnPaint", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.NonPublic)
+                                                  Using args As New System.Windows.Forms.PaintEventArgs(g, New Rectangle(Point.Empty, surface.Size))
+                                                      method.Invoke(surface, {args})
+                                                  End Using
+                                              End If
+                                          End Using
+                                      End Sub
+                                  item.Caption = ""
+                                  paint(baseline)
+                                  item.Caption = "Hidden duplicate folder caption"
+                                  paint(actual)
+                                  For y As Integer = 0 To surface.Height - 1
+                                      For x As Integer = 0 To surface.Width - 1
+                                          Assert.Equal(baseline.GetPixel(x, y).ToArgb(), actual.GetPixel(x, y).ToArgb())
+                                      Next
+                                  Next
+                              End Using
+                          End Using
+                      End Using
+                  End Using
+              End Sub)
+    End Sub
+
     Private Shared Function SourceDir() As String
         Dim dir As New DirectoryInfo(AppContext.BaseDirectory)
         While dir IsNot Nothing

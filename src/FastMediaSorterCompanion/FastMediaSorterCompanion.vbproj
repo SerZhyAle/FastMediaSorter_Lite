@@ -130,6 +130,10 @@
     <Compile Include="..\Theming\ThemePalette.vb" Link="Theming\ThemePalette.vb" />
     <Compile Include="..\Theming\AccentColors.vb" Link="Theming\AccentColors.vb" />
     <Compile Include="..\Theming\ThemeApplier.vb" Link="Theming\ThemeApplier.vb" />
+    <Compile Include="..\SettingsNumericStepper.vb" Link="Theming\SettingsNumericStepper.vb" />
+    <Compile Include="..\SettingsUiContext.vb" Link="Core\SettingsUiContext.vb" />
+    <Compile Include="..\Theming\ThemedComboBox.vb" Link="Theming\ThemedComboBox.vb" />
+    <Compile Include="..\Theming\CheckBoxLayout.vb" Link="Theming\CheckBoxLayout.vb" />
     <Compile Include="..\Theming\ThemedMenuRenderer.vb" Link="Theming\ThemedMenuRenderer.vb" />
     <Compile Include="..\Theming\ThemeService.vb" Link="Theming\ThemeService.vb" />
     <Compile Include="..\Localization\Localization.Theme.vb" Link="Localization\Localization.Theme.vb" />

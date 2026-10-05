@@ -299,7 +299,7 @@ Friend NotInheritable Class DialogReflow
 
 End Class
 
-''' <summary>The Settings window's header: one row of square icon tools (search, expand all, collapse all, close)
+''' <summary>The Settings window's header: one row of square icon tools (search, expand all, collapse all)
 ''' on the END side of the header and the title block in the room that is left. Pure arithmetic, held by tests.</summary>
 Friend NotInheritable Class SettingsHeaderRules
 

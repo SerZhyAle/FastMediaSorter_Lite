@@ -77,6 +77,7 @@ Friend NotInheritable Class LiveBroadcast_Form
             .ForeColor = Color.DimGray,
             .Text = Localization.T("ПК и вещающее устройство должны находиться в одной локальной сети (Wi-Fi / Ethernet).")
         }
+        CheckBoxLayout.BindHint(chkIsLive, lblLanHint)
 
         Dim lblRecentTitle As New Label With {
             .AutoSize = True,

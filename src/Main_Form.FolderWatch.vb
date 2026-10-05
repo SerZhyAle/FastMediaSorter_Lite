@@ -162,14 +162,22 @@ Partial Public Class Main_Form
 
     ''' <summary>Stops watching and forgets everything the watcher told us. Safe at any time, in any state.</summary>
     Private Sub StopFolderWatcher()
-        Interlocked.Increment(folder_Watch_Ticket)
-        Dim watcher As FileSystemWatcher = folder_Watcher
-        folder_Watcher = Nothing
-        DisposeWatcher(watcher)
-        folder_Watch_Folder = ""
-        folder_Watch_Touched.Clear()
-        folder_Watch_Overflow = 0
-        If folder_Watch_Timer IsNot Nothing Then folder_Watch_Timer.Stop()
+        Try
+            Interlocked.Increment(folder_Watch_Ticket)
+            Dim watcher As FileSystemWatcher = folder_Watcher
+            folder_Watcher = Nothing
+            DisposeWatcher(watcher)
+            folder_Watch_Folder = ""
+            folder_Watch_Touched.Clear()
+            folder_Watch_Overflow = 0
+            If folder_Watch_Timer IsNot Nothing Then folder_Watch_Timer.Stop()
+        Catch ex As Exception
+            ' "Safe at any time, in any state" is the contract, not just the happy path: a
+            ' watcher whose folder vanished or a timer already gone must never reach a caller
+            ' that cannot handle it - least of all FormClosed, where an escaped fault aborts
+            ' the window destroy and leaves a window that can no longer be closed.
+            AppFileLogger.LogException("Stopping the folder watcher", ex)
+        End Try
     End Sub
 
     ''' <summary>The watcher failed for the folder on screen: back to the snapshot the viewer always

@@ -28,6 +28,25 @@ Friend NotInheritable Class SettingsUiContext
         Return If(ids.Contains("general", StringComparer.Ordinal), "general", ids.FirstOrDefault())
     End Function
 
+    ''' <summary>Merge the former sharing page while retaining independent group and focus state.</summary>
+    Friend Sub MergeSharingIntoResources()
+        Dim sharing As SettingsPageContext = Nothing
+        If Pages.TryGetValue("sharing", sharing) Then
+            Dim resources As SettingsPageContext = Page("resources")
+            Dim expanded As Boolean
+            If sharing.Groups.TryGetValue("basic", expanded) AndAlso Not resources.Groups.ContainsKey("server") Then
+                resources.Groups("server") = expanded
+            End If
+            If LastPageId = "sharing" Then
+                resources.AnchorId = If(sharing.AnchorId = "sharing/basic", "resources/server", sharing.AnchorId)
+                resources.FocusId = If(sharing.FocusId = "sharing/basic", "resources/server", sharing.FocusId)
+                resources.AnchorOffsetLogical = sharing.AnchorOffsetLogical
+            End If
+            Pages.Remove("sharing")
+        End If
+        If LastPageId = "sharing" Then LastPageId = "resources"
+    End Sub
+
     Friend Function ToJson() As String
         Return JsonSerializer.Serialize(Me)
     End Function

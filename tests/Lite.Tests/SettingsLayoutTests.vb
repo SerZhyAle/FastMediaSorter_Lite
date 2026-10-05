@@ -39,37 +39,16 @@ Public Class SettingsLayoutTests
 
     ' --- geometry, mirrored from Table_Form.ModernLayout.vb -----------------------
     '
-    ' SizeModernSettingRow, the two-column grid: the page's shared value column V is
-    ' the widest editor on the page clamped to 200..340; a row is two-column from 560
-    ' logical px of content while the labels keep their floor. Inside the row the
-    ' caption starts at 14 and ends 12 before the value column, whose own right edge
-    ' is 12 inside the host (the row's right padding):
-    '     labelWidth = hostWidth - V - 38
-    '
-    ' The label floor is checked after the row insets: the widest column stacks
-    ' until the host reaches 598, leaving exactly 220 for the caption. Below the threshold the
-    ' caption gets the whole stacked row (hostWidth - 28), which is roomier - the
-    ' two-column grid at its floor is the true worst case.
-
-    ''' <summary>The narrowest two-column label width: the stacked threshold minus the
-    ''' widest value column minus the row's own insets.</summary>
-    Private Shared ReadOnly NarrowestLabelWidth As Integer =
-        SettingsRowGridRules.MinLabelColumnWidth
-
-    ''' <summary>A stacked caption gets the whole row minus the two 14 px insets.</summary>
-    Private Const StackedLabelWidth As Integer = SettingsRowGridRules.StackedBelowWidth - 28
-
-    ''' <summary>A compact row (the About page's link rows) is at its narrowest exactly at
-    ''' the two-column page threshold - one pixel more flow and it is cut in half.</summary>
+    ' Editors stay in the right column at every window width. The shared preferred
+    ' column is fitted to the row while retaining 220 px for captions where possible.
+    ' The default content budget below remains the localization readability check;
+    ' narrower geometry is covered by SettingsRowGridTests.
+    Private Const ReferenceContentWidth As Integer = 560
+    Private Const NarrowestLabelWidth As Integer = SettingsRowGridRules.MinLabelColumnWidth
+    Private Const FullLabelWidth As Integer = ReferenceContentWidth - 28
     Private Const NarrowestCompactHost As Integer = 406
-
-    ''' <summary>AddProjectLinkRow: link.Width = host.ClientSize.Width - 24, compact row.</summary>
     Private Shared ReadOnly ProjectLinkWidth As Integer = NarrowestCompactHost - 24
-
-    ''' <summary>AddSectionHeader: a Dock=Fill label with Padding(4, 0, 0, 0) in a full row.
-    ''' These headings are re-parented into groups (their hosts disposed) and rendered as
-    ''' group header bands instead, so the stacked row width is the honest budget.</summary>
-    Private Shared ReadOnly SectionHeaderWidth As Integer = StackedLabelWidth - 4
+    Private Shared ReadOnly SectionHeaderWidth As Integer = FullLabelWidth - 4
 
     ' The fonts the captions are drawn in, verbatim from the builders.
     Private Const RowTitleFont As String = "Segoe UI Semibold"
@@ -102,8 +81,9 @@ Public Class SettingsLayoutTests
             Select Case Kind
                 Case RowKind.SectionHeader : Return SectionHeaderWidth
                 Case RowKind.ProjectLink : Return ProjectLinkWidth
-                Case Else : Return Math.Max(SettingsRowGridRules.MinLabelColumnWidth,
-                    SettingsRowGridRules.LabelColumnWidth(SettingsRowGridRules.StackedBelowWidth, pageColumn))
+                Case RowKind.CheckBox : Return ReferenceContentWidth - 28 - 28 - CheckBoxLayout.CaptionGapLogical
+                Case Else : Return SettingsRowGridRules.LabelColumnWidth(ReferenceContentWidth,
+                    SettingsRowGridRules.FitValueColumn(ReferenceContentWidth, pageColumn))
             End Select
         End Function
 
@@ -150,9 +130,9 @@ Public Class SettingsLayoutTests
     End Sub
 
     <Fact>
-    Public Sub Every_caption_fits_the_stacked_fallback_on_one_line()
-        ' Below the two-column threshold a caption owns the whole row. A caption that
-        ' cannot stand on ONE line there would be a wall of text in the narrow layout.
+    Public Sub Every_caption_fits_the_full_row_text_budget_on_one_line()
+        ' Keep captions concise even before the right column takes its share.
+        ' Captions that exceed this budget become walls of text in narrow rows.
         Dim rows As List(Of SettingRow) = DiscoverRows()
         Dim titles As Dictionary(Of String, String) = DiscoverTitles()
 
@@ -165,15 +145,15 @@ Public Class SettingsLayoutTests
                 For index As Integer = 0 To Localization.Codes.Length - 1
                     Dim text As String = Translate(ru, index)
                     Dim needed As Integer = Measure(text, font)
-                    If needed <= StackedLabelWidth Then Continue For
+                    If needed <= FullLabelWidth Then Continue For
                     overflow.Add(String.Format("{0} [{1}]: needs {2} px, has {3} px - ""{4}""",
-                                               row.Key, Localization.Codes(index), needed, StackedLabelWidth, Shorten(text)))
+                                               row.Key, Localization.Codes(index), needed, FullLabelWidth, Shorten(text)))
                 Next
             End Using
         Next
 
         Assert.True(overflow.Count = 0,
-                    "Settings captions that overflow even the stacked fallback (" & overflow.Count & "):" & vbLf &
+                    "Settings captions that overflow the full row text budget (" & overflow.Count & "):" & vbLf &
                     String.Join(vbLf, overflow.OrderByDescending(Function(line) line).Take(40)))
     End Sub
 
@@ -240,7 +220,6 @@ Public Class SettingsLayoutTests
         ("settingsNavOcr", "Tab_Page_5"),
         ("settingsNavTranslation", "Tab_Page_Translation"),
         ("settingsNavStorage", "Tab_Page_Storage"),
-        ("settingsNavSftp", "Tab_Page_Sftp"),
         ("settingsNavAbout", "Tab_Page_About")}
 
     ''' <summary>

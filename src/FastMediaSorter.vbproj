@@ -201,6 +201,7 @@
     <Compile Include="Resources\RemoteCachePaths.vb" />
     <Compile Include="Resources\RemoteCacheStore.vb" />
     <Compile Include="Resources\ResourceRegistry.vb" />
+    <Compile Include="Resources\WorkerShares.vb" />
     <Compile Include="Resources\ResourcePolicy.vb" />
     <Compile Include="Resources\ResourceFailure.vb" />
     <Compile Include="Resources\ResourceCommit.vb" />
@@ -755,6 +756,7 @@
     <Compile Include="SettingsPersistence.vb" />
     <Compile Include="SettingsUiContext.vb" />
     <Compile Include="SettingsCollapsibleGroup.vb" />
+    <Compile Include="SettingsNumericStepper.vb" />
     <!-- Whole-file "#If Not NETFRAMEWORK" (the modern settings shell's identity-ink table,
          specification 128): compiles to nothing here - listed so the two projects keep one
          source tree and a reference cannot break. -->
@@ -795,6 +797,8 @@
     </Compile>
     <Compile Include="Theming\ThemePalette.vb" />
     <Compile Include="Theming\ThemeApplier.vb" />
+    <Compile Include="Theming\ThemedComboBox.vb" />
+    <Compile Include="Theming\CheckBoxLayout.vb" />
     <Compile Include="Theming\ThemedMenuRenderer.vb" />
     <Compile Include="Theming\ThemeService.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />

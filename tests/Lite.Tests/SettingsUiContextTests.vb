@@ -12,6 +12,27 @@ Imports Xunit
 
 Public Class SettingsUiContextTests
     <Fact>
+    Public Sub Merged_resources_page_preserves_both_group_states_and_sharing_focus()
+        Dim state As New SettingsUiContext With {.LastPageId = "sharing"}
+        state.Page("resources").Groups("basic") = False
+        state.Page("sharing").Groups("basic") = True
+        state.Page("sharing").AnchorId = "sharing/basic"
+        state.Page("sharing").FocusId = "sftp_manager"
+        state.Page("sharing").AnchorOffsetLogical = -10
+        state.MergeSharingIntoResources()
+        Assert.Equal("resources", state.LastPageId)
+        Assert.False(state.Page("resources").Expanded("basic", True))
+        Assert.True(state.Page("resources").Expanded("server", False))
+        Assert.Equal("resources/server", state.Page("resources").AnchorId)
+        Assert.Equal("sftp_manager", state.Page("resources").FocusId)
+        Assert.Equal(-10, state.Page("resources").AnchorOffsetLogical)
+        Assert.False(state.Pages.ContainsKey("sharing"))
+        state.Page("resources").Groups("server") = False
+        state.MergeSharingIntoResources()
+        Assert.False(state.Page("resources").Expanded("server", True))
+    End Sub
+
+    <Fact>
     Public Sub Reordered_pages_and_independent_group_states_round_trip_without_captions()
         Dim state As New SettingsUiContext With {.LastPageId = "video"}
         state.Page("video").Groups("tracks") = True

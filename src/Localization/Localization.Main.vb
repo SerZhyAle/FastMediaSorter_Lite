@@ -37,6 +37,12 @@ Partial Public NotInheritable Class Localization
             "Chemin du dossier copié dans le presse-papiers", "Caminho da pasta copiado",
             "تم نسخ مسار المجلد", "फ़ोल्डर पथ क्लिपबोर्ड पर कॉपी हुआ", "ফোল্ডার পাথ ক্লিপবোর্ডে কপি হয়েছে",
             "فولڈر کا راستہ کلپ بورڈ پر نقل ہوا", "文件夹路径已复制到剪贴板")
+        Add("Текст статуса скопирован в буфер",
+            "Status text sent to clipboard", "Текст статусу скопійовано в буфер", "Statustext in die Zwischenablage kopiert",
+            "Testo di stato copiato negli appunti", "Texto de estado copiado al portapapeles",
+            "Texte d'état copié dans le presse-papiers", "Texto de status copiado",
+            "تم نسخ نص الحالة إلى الحافظة", "स्थिति टेक्स्ट क्लिपबोर्ड पर कॉपी हुआ", "স্ট্যাটাস টেক্সট ক্লিপবোর্ডে কপি হয়েছে",
+            "اسٹیٹس ٹیکسٹ کلپ بورڈ پر نقل ہوا", "状态文本已复制到剪贴板")
         Add("Выберите медиафайл",
             "Select a media file", "Виберіть медіафайл", "Mediendatei wählen", "Seleziona un file multimediale",
             "Seleccione un archivo multimedia", "Sélectionnez un fichier multimédia", "Selecione um arquivo de mídia",
@@ -212,11 +218,19 @@ Partial Public NotInheritable Class Localization
             "Clique para copiar o caminho do arquivo", "انقر لنسخ مسار الملف",
             "फ़ाइल पथ कॉपी करने के लिए क्लिक करें", "ফাইল পাথ কপি করতে ক্লিক করুন",
             "فائل کا راستہ نقل کرنے کے لیے کلک کریں", "点击复制文件路径")
-        Add("Статус текущей операции",
-            "Status of the current operation", "Стан поточної операції", "Status des aktuellen Vorgangs",
-            "Stato dell'operazione corrente", "Estado de la operación actual",
-            "État de l'opération en cours", "Status da operação atual", "حالة العملية الحالية",
-            "मौजूदा कार्रवाई की स्थिति", "বর্তমান কাজের অবস্থা", "موجودہ عمل کی حالت", "当前操作的状态")
+        Add("Статус текущей операции. Нажмите, чтобы скопировать текст сообщения.",
+            "Status of the current operation. Click to copy the message text.",
+            "Стан поточної операції. Натисніть, щоб скопіювати текст повідомлення.",
+            "Status des aktuellen Vorgangs. Klicken, um den Meldungstext zu kopieren.",
+            "Stato dell'operazione corrente. Fai clic per copiare il testo del messaggio.",
+            "Estado de la operación actual. Haga clic para copiar el texto del mensaje.",
+            "État de l'opération en cours. Cliquez pour copier le texte du message.",
+            "Status da operação atual. Clique para copiar o texto da mensagem.",
+            "حالة العملية الحالية. انقر لنسخ نص الرسالة.",
+            "मौजूदा कार्रवाई की स्थिति. संदेश टेक्स्ट कॉपी करने के लिए क्लिक करें।",
+            "বর্তমান কাজের অবস্থা. মেসেজ টেক্সট কপি করতে ক্লিক করুন।",
+            "موجودہ عمل کی حالت. پیغام کا متن نقل کرنے کے لیے کلک کریں۔",
+            "当前操作的状态。点击可复制消息文本。")
         Add("Номер текущего файла и сколько их всего - чтобы оценить масштаб предстоящего.",
             "Current file number and the total - so you can grasp the scale of what's ahead.",
             "Номер поточного файлу і скільки їх усього - щоб оцінити масштаб роботи.",

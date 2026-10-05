@@ -18,6 +18,7 @@ Imports Xunit
 ''' add/edit dialog accepts and refuses. The dialogs are built and driven on an STA thread without being
 ''' shown; what stays for a human is how they look, not what they decide.
 ''' </summary>
+<Collection("LocalizationState")>
 Public Class ResourceUiTests
 
     Private Shared Sub OnSta(action As Action)

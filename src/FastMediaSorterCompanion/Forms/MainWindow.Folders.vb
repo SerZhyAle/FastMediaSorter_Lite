@@ -759,7 +759,7 @@ Partial Public NotInheritable Class MainWindow
     Private Sub RestripeList()
         Dim theme As ThemePalette = ThemeService.Palette
         Dim even As Color = theme.SurfaceRaised
-        Dim odd As Color = If(theme.IsDark, theme.SurfaceWindow, Color.FromArgb(244, 247, 252))
+        Dim odd As Color = theme.SurfaceWindow
         For i As Integer = 0 To lvFolders.Items.Count - 1
             Dim it As ListViewItem = lvFolders.Items(i)
             it.BackColor = If((i And 1) = 0, even, odd)

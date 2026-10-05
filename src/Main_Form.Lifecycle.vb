@@ -89,7 +89,7 @@ Partial Public Class Main_Form
         toolTip.SetToolTip(cmbox_Media_Folder, Localization.T("Текущая папка. Введите путь и нажмите Enter для перехода."))
         toolTip.SetToolTip(lbl_Folder, Localization.T("Нажмите, чтобы скопировать путь к папке (вдруг пригодится)."))
         toolTip.SetToolTip(lbl_Current_File, Localization.T("Нажмите, чтобы скопировать путь к файлу"))
-        toolTip.SetToolTip(lbl_Status, Localization.T("Статус текущей операции"))
+        toolTip.SetToolTip(lbl_Status, Localization.T("Статус текущей операции. Нажмите, чтобы скопировать текст сообщения."))
         toolTip.SetToolTip(lbl_File_Number, Localization.T("Номер текущего файла и сколько их всего - чтобы оценить масштаб предстоящего."))
 
         toolTip.SetToolTip(btn_RecentFiles, Localization.T("Недавние файлы"))
@@ -1275,6 +1275,19 @@ Partial Public Class Main_Form
     ''' a shutdown that went through - never for a shutdown that was later cancelled.
     ''' </summary>
     Private Sub Form1_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+        ' A fault inside the teardown must never escape this handler: WinForms aborts the
+        ' window destroy on an exception from OnFormClosed, so one fault leaves a window that
+        ' no close attempt can ever finish - every retry walks into the same fault (the
+        ' un-closable viewer window of the 2026-10-05 session). Log it and let the close
+        ' complete; the process exit reclaims whatever the fault skipped.
+        Try
+            CloseTeardown(e)
+        Catch ex As Exception
+            AppFileLogger.LogException("Closing the viewer: teardown fault", ex)
+        End Try
+    End Sub
+
+    Private Sub CloseTeardown(e As FormClosedEventArgs)
         ' Only now, when the close is real (FormClosing can still be cancelled): no probe
         ' that comes back from here on may open anything (ticket 106).
         is_Form_Closed = True

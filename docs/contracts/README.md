@@ -21,6 +21,7 @@ not a local edit and not a local copy kept "in sync".
 | [`WORKER-IPC.md`](WORKER-IPC.md) | `WORKER-IPC` | consumer - the Share Manager drives the worker (0.10, schema-1 client) |
 | [`DISK-SHARE.md`](DISK-SHARE.md) | `DISK-SHARE` | consumer - file-backed Share Manager disk control; native/service release proof remains open |
 | [`SHARE-SESSION.md`](SHARE-SESSION.md) | `SHARE-SESSION` | custodian of guarantee 3's state across installs, uninstalls and host-mode changes; no session implementation (1.1) |
+| [`ANYWHERE-ACCESS.md`](ANYWHERE-ACCESS.md) | `ANYWHERE-ACCESS` | exchange-server implementer (section 5; local specification 133) - 0.10 draft [PROPOSED], nothing ships before its ladder moves; the server-role review is a catalog proposal |
 | [`LIVE-BROADCAST.md`](LIVE-BROADCAST.md) | `LIVE-BROADCAST` | planned consumer (specification 023) |
 | [`STREAM-BANK.md`](STREAM-BANK.md) | `STREAM-BANK` | planned producer (specification 022) |
 | [`INSTALL-TRUST.md`](INSTALL-TRUST.md) | `INSTALL-TRUST` | producer - adopted 2026-09-22; the page is a render target in 13 locales (1.1) |
@@ -48,6 +49,10 @@ freeze). Every contract in the catalog was re-classified for this product agains
 `docs/specifications/098_freeze_inventory_2026-10-02.md`. Not listed here: `OCR-ACCURACY` - the Android
 sibling's record; since ticket 033 Ф-3 removed the mis-citations nothing in this repository cites it, so
 no pointer is owed (a decision, 2026-09-25) - and `CLI-EVENT-STREAM`, `LAYOUT-SIGNAL`, `LAYOUT-PALETTE`,
-`SCENARIO-FILE`, `FDD-FORMAT`, `FDD-BEHAVIOUR`, `DISK-SHARE` and `APP-SETTINGS`, which belong to other
-products' functions and bind nothing here (`APP-SETTINGS` is noted in the `APP-UX` pointer; the
+`SCENARIO-FILE`, `FDD-FORMAT`, `FDD-BEHAVIOUR` and `DISK-SHARE`, which belong to other
+products' functions and bind nothing here (the
 `WORKER-IPC` pointer covers the schema-2 disk extension of `DISK-SHARE` this host does not use).
+
+Windows UI amendment, 2026-10-05: the `APP-UX` pointer covers `APP-SETTINGS` 0.2, `APP-STYLE` 0.12
+and `WINDOWS-UI` 0.1. The owner adopted the modern viewer/settings as the shared Windows reference;
+other projects' implementation and acceptance remain their own audits.
